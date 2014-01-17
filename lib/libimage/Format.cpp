@@ -156,7 +156,7 @@ std::string toString ( eSampleFormat sf ) {
 
 }
 
-namespace Format {
+namespace Rok4Format {
 
 const char *eformat_name[] = {
     "UNKNOWN",

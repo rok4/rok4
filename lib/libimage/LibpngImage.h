@@ -83,16 +83,7 @@ private:
      * \~french \brief Stockage de l'image entière, décompressée
      * \~english \brief Full uncompressed image storage
      */
-    png_bytep * row_pointers;
-
-    /** \~french
-     * \brief Retourne une ligne, flottante ou entière
-     * \param[out] buffer Tableau contenant au moins width*channels valeurs
-     * \param[in] line Indice de la ligne à retourner (0 <= line < height)
-     * \return taille utile du buffer, 0 si erreur
-     */
-    template<typename T>
-    int _getline ( T* buffer, int line );
+    png_bytep * pngRowsPointers;
 
 protected:
     /** \~french
@@ -109,7 +100,7 @@ protected:
      * \param[in] bitspersample nombre de bits par canal
      * \param[in] photometric photométrie des données
      * \param[in] compression compression des données
-     * \param[in] row_pointers image complète, dans un tableau
+     * \param[in] pngRows image complète, dans un tableau
      ** \~english
      * \brief Create a LibpngImage object, from all attributes
      * \param[in] width image width, in pixel
@@ -123,12 +114,12 @@ protected:
      * \param[in] bitspersample number of bits per sample
      * \param[in] photometric data photometric
      * \param[in] compression data compression
-     * \param[in] row_pointers complete image, in an array
+     * \param[in] pngRows whole image, in an array
      */
     LibpngImage (
         int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name,
         SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
-        png_bytep* row_pointers
+        png_bytep* pngRows
     );
 
 public:
@@ -210,8 +201,8 @@ public:
     ~LibpngImage() {
         /* cleanup heap allocation */
         for (int y = 0; y < height; y++)
-            free(row_pointers[y]);
-        free(row_pointers);
+            free(pngRowsPointers[y]);
+        free(pngRowsPointers);
     }
 
     /** \~french

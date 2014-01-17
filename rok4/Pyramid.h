@@ -60,7 +60,7 @@ private:
     const TileMatrixSet tms;
 //    std::map<std::string, DataSource*> noDataSources;
     std::string best_level ( double resolution_x, double resolution_y );
-    const Format::eformat_data format; //format d'image des tuiles
+    const Rok4Format::eformat_data format; //format d'image des tuiles
     const int     channels;
 //    DataStream* nodatastream;
     Level* highestLevel;
@@ -80,7 +80,7 @@ public:
     std::map<std::string, Level*>& getLevels() {
         return levels;
     }
-    Format::eformat_data getFormat() {
+    Rok4Format::eformat_data getFormat() {
         return format;
     }
     int getChannels() {
@@ -90,7 +90,7 @@ public:
     DataSource* getTile ( int x, int y, std::string tmId, DataSource* errorDataSource = NULL );
     Image* getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error );
 
-    Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, Format::eformat_data format, int channels );
+    Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format, int channels );
     ~Pyramid();
 };
 

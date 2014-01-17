@@ -63,8 +63,8 @@ public:
     TiffEncoder(Image *image, int line);
     ~TiffEncoder();
   
-    static DataStream* getTiffEncoder ( Image* image, Format::eformat_data format, bool isGeoTiff );
-    static DataStream* getTiffEncoder ( Image* image, Format::eformat_data format );
+    static DataStream* getTiffEncoder ( Image* image, Rok4Format::eformat_data format, bool isGeoTiff );
+    static DataStream* getTiffEncoder ( Image* image, Rok4Format::eformat_data format );
 
     virtual size_t read ( uint8_t *buffer, size_t size );
     virtual bool eof();
