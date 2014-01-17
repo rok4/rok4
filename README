@@ -109,3 +109,22 @@ DEB_PACKAGE : (EXPERIMENTAL)
 USE_SYSTEM_LIB : (EXPERIMENTAL)
   In order to compile against the system libraries
   Default value : FALSE 
+
+CMake Build Optional Dependencies (External)
+---------------------------------
+
+Options are fed to CMake using the following syntax : -DOPTION
+
+WITH_JASPER   : (NOT YET IMPLEMENTED)
+
+WITH_KAKADU   : (NOT YET IMPLEMENTED)
+
+WITH_OPENJPEG :
+  Use Driver JPEG2000 (BOOL)
+  Default Value : FALSE
+
+OPENJPEG_PREFIX : (OPTIONAL)
+  Custom Installation Folder (PATH)
+  Default : /usr/local/
+    Search 'lib'     in '/usr/local/lib', '/usr/lib', or internal
+    Search 'include' in '/usr/local/include/openjpeg-2.0', '/usr/include/openjpeg-2.0', or internal

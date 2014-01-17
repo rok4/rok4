@@ -72,6 +72,36 @@ else(RPM_PACKAGE)
   set(CPACK_GENERATOR "TGZ")
 endif(RPM_PACKAGE)
 
+##################################################################################
+# optional external dependencies
+
+# try to configure and build OPENJPEG support
+SET(WITH_OPENJPEG FALSE CACHE BOOL "Determines whether OPENJPEG support should be built")
+
+IF(WITH_OPENJPEG)
+  SET(OPENJPEG_PREFIX "" CACHE PATH "Path to OPENJPEG base directory")
+  SET(USE_DRIVERJPEG2000 TRUE)
+ENDIF(WITH_OPENJPEG)
+
+IF(WITH_OPENJPEG)
+  MESSAGE(STATUS "OPENJPEG, search external package in system or in a custom path...")
+  FIND_PACKAGE(OPENJPEG)
+ENDIF(WITH_OPENJPEG)
+
+IF(OPENJPEG_FOUND)
+  # message
+  MESSAGE(STATUS "OPENJPEG, found (external) !")
+  SET(HAVE_OPENJPEG TRUE)
+  # SET (USE_DRIVERJPEG2000 TRUE)
+  # target
+  # FIXME : a t on besoin de cette lib. ?
+  # ADD_LIBRARY(openjp2 STATIC IMPORTED)
+  # ADD_LIBRARY(openmj2 STATIC IMPORTED)
+  # FIXME : a t on besoin de cette lib. ?
+  # SET_PROPERTY(TARGET openjp2 PROPERTY IMPORTED_LOCATION ${OPENJPEG_LIBRARY})
+  # SET_PROPERTY(TARGET openmj2 PROPERTY IMPORTED_LOCATION ${OPENJPEG_LIBRARY})
+ENDIF(OPENJPEG_FOUND)
+##################################################################################
 
 include(${Rok4_SOURCE_DIR}/cmake/Modules/ROK4Dependencies.cmake)
 

@@ -175,6 +175,29 @@ else(PNG_FOUND)
 endif(PNG_FOUND)
 endif(NOT TARGET png)
 
+##################################################################################
+# optional internal dependencies
+
+IF(USE_DRIVERJPEG2000)
+    IF(OPENJPEG_FOUND)
+      # target
+      # FIXME : a t on besoin de cette lib. ?
+      # ADD_LIBRARY(openjp2 STATIC IMPORTED)
+      ADD_LIBRARY(openmj2 STATIC IMPORTED)
+      # FIXME : a t on besoin de cette lib. ?
+      # SET_PROPERTY(TARGET openjp2 PROPERTY IMPORTED_LOCATION ${OPENJPEG_LIBRARY})
+      SET_PROPERTY(TARGET openmj2 PROPERTY IMPORTED_LOCATION ${OPENJPEG_LIBRARY})
+    ELSE(OPENJPEG_FOUND)
+      MESSAGE(STATUS "OPENJPEG, not found external package, so try to build it with an internal package !")
+      IF(BUILD_DEPENDENCIES)
+        MESSAGE(STATUS "Building libOpenJpeg : NOT YET IMPLEMENTED !")
+#        SET(HAVE_OPENJPEG TRUE)
+#        ADD_SUBDIRECTORY(${ROK4LIBSDIR}/libopenjpeg)
+      ENDIF(BUILD_DEPENDENCIES)
+    ENDIF(OPENJPEG_FOUND)
+ENDIF(USE_DRIVERJPEG2000)
+##################################################################################
+
 if(NOT TARGET image)
 find_package(Image)
 if(IMAGE_FOUND)

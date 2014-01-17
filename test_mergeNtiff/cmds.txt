@@ -1,0 +1,2 @@
+time valgrind mergeNtiff -f confs/png.txt -p rgb -b 8 -s 3 -c zip -a uint -n 0,0,255 -i bicubic
+time valgrind mergeNtiff -f confs/jp2.txt -r results-jp2/ -p rgb -b 8 -s 3 -c zip -a uint -n 0,0,255 -i bicubic

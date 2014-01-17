@@ -1,0 +1,8 @@
+IMG IMAGE.tif  EPSG:3857    -499       1501    1501    -499       2       2
+MSK MASK.tif
+IMG sources/imagefond.png   EPSG:3857   -499       1501    1501    -499       4       4
+MSK sources/maskfond.png
+IMG sources/image1.png  EPSG:3857    0       1000    1000    0       1       1
+MSK sources/mask1.png
+IMG sources/image2.png  EPSG:3857    500       1500    1500    500       1       1
+MSK sources/mask2.png

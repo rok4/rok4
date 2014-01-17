@@ -55,6 +55,12 @@
 #include "LibtiffImage.h"
 #include "LibpngImage.h"
 
+#include "image_config.h"
+
+#ifdef USE_DRIVERJPEG2000
+#include "Libjp2Image.h"
+#endif
+
 /* ------------------------------------------------------------------------------------------------ */
 /* -------------------------------------------- USINES -------------------------------------------- */
 
@@ -95,8 +101,18 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
 
     /******************* JPEG 2000 ******************/
     else if ( strncmp ( extension, "jp2", 3 ) == 0 || strncmp ( extension, "JP2", 3 ) == 0 ) {
-        LOGGER_ERROR ( "JPEG2000 image to read : NOT YET IMPLEMENTED" );
-        return NULL;
+		
+		#ifdef USE_DRIVERJPEG2000
+		
+			Libjp2ImageFactory LJIF;
+			return LJIF.createLibjp2ImageToRead ( name, bbox, resx, resy );
+			
+		#else
+		
+			LOGGER_ERROR ( "JPEG2000 image to read : NOT FOUND DRIVER JPEG2000 !" );
+			return NULL;
+			
+		#endif
     }
 
     /* /!\ Format inconnu en lecture /!\ */
