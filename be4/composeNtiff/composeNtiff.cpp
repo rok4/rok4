@@ -121,6 +121,7 @@ bool debugLogger=false;
  * Usage: composeNtiff <DIRECTORY> -c <VAL> -g <VAL> <VAL> <OUTPUT FILE>
  *
  * Parameters:
+ *      -s sources directory. All file into  have to be images. If too much images are present, first are used.
  *      -c output compression : default value : none
  *              raw     no compression
  *              none    no compression
@@ -140,9 +141,10 @@ void usage() {
 
                   "Monte N TIFF image, forming a regular grid\n\n" <<
 
-                  "Usage: composeNtiff <DIRECTORY> -g <VAL> <VAL> <OUTPUT FILE>\n\n" <<
+                  "Usage: composeNtiff -s <DIRECTORY> -g <VAL> <VAL> -c <VAL> <OUTPUT FILE>\n\n" <<
 
                   "Parameters:\n" <<
+                  "     -s source directory. All file into have to be images. If too much images are present, first are used.\n" <<
                   "     -c output compression : default value : none\n" <<
                   "             raw     no compression\n" <<
                   "             none    no compression\n" <<
@@ -154,7 +156,7 @@ void usage() {
                   "     -d debug logger activation\n\n" <<
  
                   "Example\n" <<
-                  "     composeNtiff -d /home/ign/sources -g 10 10 -c zip output.tif\n\n" );
+                  "     composeNtiff -s /home/ign/sources -g 10 10 -c zip output.tif\n\n" );
 }
 
 /**
@@ -192,7 +194,7 @@ int parseCommandLine ( int argc, char** argv ) {
                 break;
             case 's': // Input directory
                 if ( i++ >= argc ) {
-                    LOGGER_ERROR ( "Error id -d option" );
+                    LOGGER_ERROR ( "Error id -s option" );
                     return -1;
                 }
                 strcpy ( inputDir,argv[i] );
@@ -219,7 +221,7 @@ int parseCommandLine ( int argc, char** argv ) {
                 break;
             case 'g':
                 if ( i+2 >= argc ) {
-                    LOGGER_ERROR ( "Error in -t option" );
+                    LOGGER_ERROR ( "Error in -g option" );
                     return -1;
                 }
                 widthwiseImage = atoi ( argv[++i] );
