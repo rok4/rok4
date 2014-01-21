@@ -647,6 +647,7 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
         }
 
         pImageIn->push_back ( pImage );
+        
     }
 
     if ( out != -1 ) {
