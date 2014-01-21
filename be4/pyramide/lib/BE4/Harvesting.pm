@@ -515,12 +515,17 @@ sub getCommandWms2work {
     my $format = undef;
     if ($self->getFormat eq "image/png") {
         $format = "png";
+        $cmd .= " \"$format\"";
     } else {
         $format = "tif";
+        $cmd .= " \"$format\"";
     }
-    $cmd .= " \"$format\"";
     
     $cmd .= sprintf " \"%s %s\"",$imagePerWidth,$imagePerHeight;
+    if ($imagePerWidth != 1 || $imagePerHeight != 1) {
+        # composeNtiff will be used to merge images; final image's format will be "tif"
+        $format = "tif";
+    }
 
     $cmd .= sprintf " \"%s\"",$self->{min_size};
 

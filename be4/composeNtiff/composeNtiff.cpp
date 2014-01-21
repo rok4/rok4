@@ -181,8 +181,7 @@ void error ( std::string message, int errorCode ) {
  * \return code de retour, 0 si réussi, -1 sinon
  */
 int parseCommandLine ( int argc, char** argv ) {
-
-
+    
     for ( int i = 1; i < argc; i++ ) {
         if ( argv[i][0] == '-' ) {
             switch ( argv[i][1] ) {
@@ -197,7 +196,7 @@ int parseCommandLine ( int argc, char** argv ) {
                     LOGGER_ERROR ( "Error id -s option" );
                     return -1;
                 }
-                strcpy ( inputDir,argv[i] );
+                inputDir = argv[i];
                 break;
             case 'c': // compression
                 if ( ++i == argc ) {
@@ -228,28 +227,27 @@ int parseCommandLine ( int argc, char** argv ) {
                 heightwiseImage = atoi ( argv[++i] );
                 break;
             default:
-                LOGGER_ERROR ( "Unknown option : -" << argv[i][1] );
+                LOGGER_ERROR ( "Unknown option : " << argv[i] );
                 return -1;
             }
         } else {
-            if ( inputDir == 0 ) inputDir = argv[i];
-            else if ( outputImage == 0 ) outputImage = argv[i];
+            if ( outputImage == 0 ) outputImage = argv[i];
             else {
-                LOGGER_ERROR( "Argument must specify ONE input directory and ONE output file" );
+                LOGGER_ERROR( "Argument must specify just ONE output file" );
                 return -1;
             }
         }
     }
 
     // Input directory control
-    if ( strlen ( inputDir ) == 0 ) {
-        LOGGER_ERROR ( "We need to have a source images directory" );
+    if ( inputDir == 0 ) {
+        LOGGER_ERROR ( "We need to have a source images' directory (option -s)" );
         return -1;
     }
 
     // Output file control
-    if ( strlen ( outputImage ) == 0 ) {
-        LOGGER_ERROR ( "We need to have an output file (option -d)" );
+    if ( outputImage == 0 ) {
+        LOGGER_ERROR ( "We need to have an output file" );
         return -1;
     }
 
@@ -423,7 +421,6 @@ int main ( int argc, char **argv ) {
     logw.precision ( 16 );
     logw.setf ( std::ios::fixed,std::ios::floatfield );
 
-    LOGGER_DEBUG ( "Read parameters" );
     // Lecture des parametres de la ligne de commande
     if ( parseCommandLine ( argc,argv ) < 0 ) {
         error ( "Cannot parse command line",-1 );

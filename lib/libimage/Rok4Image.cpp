@@ -636,6 +636,8 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
         LOGGER_ERROR("Cannot close the ROK4 images (write index and clean) for " << filename);
         return -1;
     }
+    
+    return 0;
 }
 
 int Rok4Image::writeImage ( Image* pIn )
