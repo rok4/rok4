@@ -37,22 +37,25 @@ if(NOT DEFINED DEP_PATH)
 endif(NOT DEFINED DEP_PATH)
 
 set(ROK4LIBSDIR ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+
 if(NOT DEFINED BUILD_DEPENDENCIES)
-  set(BUILD_DEPENDENCIES TRUE)
+  set(BUILD_DEPENDENCIES TRUE CACHE BOOL "Build dependencies")
 endif(NOT DEFINED BUILD_DEPENDENCIES)
 if(NOT DEFINED BUILD_ROK4)
-  set(BUILD_ROK4 TRUE)
+  set(BUILD_ROK4 TRUE CACHE BOOL "Build Rok4")
 endif(NOT DEFINED BUILD_ROK4)
 if(NOT DEFINED BUILD_BE4)
-  set(BUILD_BE4 TRUE)
+  set(BUILD_BE4 TRUE CACHE BOOL "Build BE4")
 endif(NOT DEFINED BUILD_BE4)
 if(NOT DEFINED BUILD_DOC)
-  set(BUILD_DOC TRUE)
+  set(BUILD_DOC TRUE CACHE BOOL "Build Documentation")
   set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
 endif(NOT DEFINED BUILD_DOC)
 if(NOT DEFINED DEBUG_BUILD)
-  set(DEBUG_BUILD FALSE)
+  set(DEBUG_BUILD FALSE CACHE BOOL "Mode debug ")
 endif(NOT DEFINED DEBUG_BUILD)
+
+set(UNITTEST FALSE CACHE BOOL "Build Test")
 if(UNITTEST)
   enable_testing()
   set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
@@ -73,34 +76,36 @@ else(RPM_PACKAGE)
 endif(RPM_PACKAGE)
 
 ##################################################################################
-# optional external dependencies
+# optional external dependencies for JPEG2000
 
-# try to configure and build OPENJPEG support
-SET(WITH_OPENJPEG FALSE CACHE BOOL "Determines whether OPENJPEG support should be built")
+# try to configure and build JPEG2000 support
+SET(WITH_OPENJPEG FALSE CACHE BOOL "[OPENJPEG] Determines whether OPENJPEG support should be built")
+SET(WITH_KAKADU   FALSE CACHE BOOL "[KAKADU] Determines whether KAKADU support should be built")
+SET(WITH_JASPER   FALSE CACHE BOOL "[JASPER] Determines whether JASPER support should be built")
 
-IF(WITH_OPENJPEG)
-  SET(OPENJPEG_PREFIX "" CACHE PATH "Path to OPENJPEG base directory")
+IF(WITH_OPENJPEG OR WITH_KAKADU OR WITH_JASPER)
   SET(USE_DRIVERJPEG2000 TRUE)
-ENDIF(WITH_OPENJPEG)
+ENDIF(WITH_OPENJPEG OR WITH_KAKADU OR WITH_JASPER)
 
-IF(WITH_OPENJPEG)
-  MESSAGE(STATUS "OPENJPEG, search external package in system or in a custom path...")
-  FIND_PACKAGE(OPENJPEG)
-ENDIF(WITH_OPENJPEG)
+IF(USE_DRIVERJPEG2000)
+    IF(WITH_OPENJPEG)
+      SET(OPENJPEG_PREFIX "" CACHE PATH "[OPENJPEG] Path to base directory")
+      SET(HAVE_OPENJPEG TRUE)
+      MESSAGE(STATUS "[OPENJPEG] Search external package system or with a custom path...")
+    ENDIF(WITH_OPENJPEG)
 
-IF(OPENJPEG_FOUND)
-  # message
-  MESSAGE(STATUS "OPENJPEG, found (external) !")
-  SET(HAVE_OPENJPEG TRUE)
-  # SET (USE_DRIVERJPEG2000 TRUE)
-  # target
-  # FIXME : a t on besoin de cette lib. ?
-  # ADD_LIBRARY(openjp2 STATIC IMPORTED)
-  # ADD_LIBRARY(openmj2 STATIC IMPORTED)
-  # FIXME : a t on besoin de cette lib. ?
-  # SET_PROPERTY(TARGET openjp2 PROPERTY IMPORTED_LOCATION ${OPENJPEG_LIBRARY})
-  # SET_PROPERTY(TARGET openmj2 PROPERTY IMPORTED_LOCATION ${OPENJPEG_LIBRARY})
-ENDIF(OPENJPEG_FOUND)
+    IF(WITH_KAKADU)
+      SET(KAKADU_PREFIX "" CACHE PATH "[KAKADU] Path to base directory")
+      SET(HAVE_KAKADU TRUE)
+      MESSAGE(STATUS "[KAKADU] Search external package system or with a custom path...")
+    ENDIF(WITH_KAKADU)
+
+    IF(WITH_JASPER)
+      SET(JASPER_PREFIX "" CACHE PATH "[JASPER] Path to base directory")
+      SET(HAVE_JASPER TRUE)
+      MESSAGE(STATUS "[JASPER] Search external package system or with a custom path...")
+    ENDIF(WITH_JASPER)
+ENDIF(USE_DRIVERJPEG2000)
 ##################################################################################
 
 include(${Rok4_SOURCE_DIR}/cmake/Modules/ROK4Dependencies.cmake)

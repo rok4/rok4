@@ -51,7 +51,7 @@ if(WIN32)
 endif()
 add_library(${OPENJPEG_LIBRARY_NAME} ${OPENJPEG_SRCS})
 if(UNIX)
-  target_link_libraries(${OPENJPEG_LIBRARY_NAME} m)
+  target_link_libraries(${OPENJPEG_LIBRARY_NAME} openjp2)
 endif()
 set_target_properties(${OPENJPEG_LIBRARY_NAME} PROPERTIES ${OPENJPEG_LIBRARY_PROPERTIES})
 
@@ -75,14 +75,14 @@ install(
 
 # internal utilities to generate t1_luts.h (part of the jp2 lib)
 # no need to install:
-add_executable(t1_generate_luts t1_generate_luts.c)
-if(UNIX)
-  target_link_libraries(t1_generate_luts m)
-endif()
+# add_executable(t1_generate_luts t1_generate_luts.c)
+# if(UNIX)
+#  target_link_libraries(t1_generate_luts openjp2)
+# endif()
 
 # Experimental option; let's how cppcheck performs
 # Implementation details:
-# I could not figure out how to easily upload a file to CDash. Instead simply
+# I could not figure out how to easily upload a file to CDash. Instead simply
 # pretend cppcheck is part of the Build step. Technically cppcheck can even
 # output gcc formatted error/warning report
 # Another implementation detail: I could not redirect error to the error

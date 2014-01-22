@@ -36,5 +36,23 @@ class Jp2DriverOpenJpeg {
         * \brief caracteristique de l'image
         */
         void information();
+
+        /**
+         * \~french
+         * \brief callback
+         */
+//        void info_callback(const char *msg, void *client_data) {
+//            (void)client_data;
+//            LOGGER_INFO(msg);
+//        }
+//        void warning_callback(const char *msg, void *client_data) {
+//            (void)client_data;
+//            LOGGER_WARN(msg);
+//        }
+//        void error_callback(const char *msg, void *client_data) {
+//            (void)client_data;
+//            LOGGER_ERROR(msg);
+//        }
+
 };
 
