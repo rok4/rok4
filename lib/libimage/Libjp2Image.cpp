@@ -139,7 +139,7 @@ Libjp2Image::Libjp2Image (
 template<typename T>
 int Libjp2Image::_getline ( T* buffer, int line ) {
     
-    int pos = channels * width * (line - 1);
+    int pos = channels * width * line;
     for (int x = 0;  x < width * channels; x++) {
         buffer[x] = m_data[pos + x];
     }
