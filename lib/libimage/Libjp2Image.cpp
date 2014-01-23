@@ -76,46 +76,34 @@
 /* ----- Pour la lecture ----- */
 Libjp2Image* Libjp2ImageFactory::createLibjp2ImageToRead ( char* filename, BoundingBox< double > bbox, double resx, double resy ) {
 	
-    // FIXME : memmory leak !
-    // if you call a new operator, so you must call too a delete operator !
-    // => bug design...
+    LOGGER_DEBUG("Utilisation du driver JPEG2000.");
 
-	Libjp2Image *pImage;
-	
 	#ifdef HAVE_OPENJPEG
-	
-    pImage = (new Jp2DriverOpenJpeg(filename, bbox, resx, resy))->createLibjp2ImageToRead();
-	
-	if(! pImage) {
-		LOGGER_ERROR("DRIVER OPENJPEG, failed to read image !");
-		return NULL;		
-	}
+
+    LOGGER_DEBUG("Driver JPEG2000 : OPENJPEG.");
+
+    Jp2DriverOpenJpeg DRVOJ;
+    return DRVOJ.createLibjp2ImageToRead(filename, bbox, resx, resy);
 	
 	#endif
 
 	#ifdef HAVE_KAKADU
-	
-	pImage = (new Jp2DriverKakadu(filename, bbox, resx, resy))->createLibjp2ImageToRead();
-	
-	if(! pImage) {
-		LOGGER_ERROR("DRIVER KAKADU, failed to read image !");
-		return NULL;		
-	}
+
+    LOGGER_DEBUG("Driver JPEG2000 : KAKADU.");
+
+    Jp2DriverKakadu DRVKDU;
+    return DRVKDU.createLibjp2ImageToRead(filename, bbox, resx, resy);
 	
 	#endif
 
 	#ifdef HAVE_JASPER
-	
-	pImage = (new Jp2DriverJasper(filename, bbox, resx, resy))->createLibjp2ImageToRead();
-	
-	if(! pImage) {
-		LOGGER_ERROR("DRIVER JASPER, failed to read image !");
-		return NULL;		
-	}
+
+    LOGGER_DEBUG("Driver JPEG2000 : JASPER.");
+
+    Jp2DriverJasper DRVJSP;
+    return DRVJSP.createLibjp2ImageToRead(filename, bbox, resx, resy);
 	
 	#endif
-	
-	return pImage;
 	
 }
 

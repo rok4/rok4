@@ -1,4 +1,4 @@
 IMG ?IMAGE.tif  epsg:3857    -499       1501    1501    -499       2       2
-IMG sources/imagefond.tif   epsg:3857   -499       1501    1501    -499       4       4
+IMG sources/imagefond.jp2   epsg:3857   -499       1501    1501    -499       4       4
 IMG sources/image1.jp2   epsg:3857   0       1000    1000    0       1       1
 IMG sources/image2.jp2   epsg:3857   500       1500    1500    500       1       1

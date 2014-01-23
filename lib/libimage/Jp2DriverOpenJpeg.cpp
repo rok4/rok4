@@ -46,45 +46,12 @@
 #include "Format.h"
 
 #include "openjpeg.h"
-// OLD : #include "openmj2/openjpeg.h"
 
 #define JP2_RFC3745_MAGIC    "\x00\x00\x00\x0c\x6a\x50\x20\x20\x0d\x0a\x87\x0a"
 #define JP2_MAGIC            "\x0d\x0a\x87\x0a"
 #define J2K_CODESTREAM_MAGIC "\xff\x4f\xff\x51"
 
-Jp2DriverOpenJpeg::Jp2DriverOpenJpeg(char *filename, BoundingBox< double > bbox, double resx, double resy)
-{
-    LOGGER_DEBUG ( "USE DRIVER OPENJPEG FOR JPEG2000." );
-
-    m_cFilename.assign(filename);
-
-    m_dResx     = resx;
-    m_dResy     = resy;
-
-    m_xmax      = bbox.xmax;
-    m_ymin      = bbox.ymin;
-    m_xmin      = bbox.xmin;
-    m_ymax      = bbox.ymax;
-
-    LOGGER_DEBUG ("Call Image (m_cFilename) : " << m_cFilename);
-}
-Jp2DriverOpenJpeg::Jp2DriverOpenJpeg()
-{
-    LOGGER_DEBUG ( "USE DRIVER OPENJPEG FOR JPEG2000." );
-
-    m_dResx     = 0.;
-    m_dResy     = 0.;
-    m_xmax      = 0.;
-    m_ymin      = 0.;
-    m_xmin      = 0.;
-    m_ymax      = 0.;
-}
-
-Jp2DriverOpenJpeg::~Jp2DriverOpenJpeg()
-{
-}
-
-Libjp2Image *Jp2DriverOpenJpeg::createLibjp2ImageToRead()
+Libjp2Image *Jp2DriverOpenJpeg::createLibjp2ImageToRead(char *filename, BoundingBox< double > bbox, double resx, double resy)
 {
     int     width,
             height,
@@ -94,8 +61,6 @@ Libjp2Image *Jp2DriverOpenJpeg::createLibjp2ImageToRead()
     int has_alpha = 0;
 
     uint8_t * data;
-
-    // OLD : uint8_t * data_ini; // JPEG2000 data in memory
 
     /* ---------------------------------------- */
     /* Read the input file and put it in memory */
@@ -109,7 +74,7 @@ Libjp2Image *Jp2DriverOpenJpeg::createLibjp2ImageToRead()
     opj_stream_t *stream = NULL;
 
     // File
-    strncpy(parameters.infile, m_cFilename.c_str(), 4096 * sizeof(char));
+    strncpy(parameters.infile, filename, 4096 * sizeof(char));
 
     // Open
     FILE *fsrc = NULL;
@@ -127,17 +92,8 @@ Libjp2Image *Jp2DriverOpenJpeg::createLibjp2ImageToRead()
 
     LOGGER_DEBUG("File Size : " << file_length << " octets.");
 
-    // OLD : data_ini = (unsigned char *) malloc(file_length);
-
     // Read MAGIC Code
     unsigned char * magic_code = (unsigned char *) malloc(12);
-
-    // OLD : if (fread(data_ini, 1, file_length, fsrc) != (size_t) file_length) {
-    // OLD :      free(data_ini);
-    // OLD :      fclose(fsrc);
-    // OLD :      LOGGER_ERROR ("failed to read image !");
-    // OLD :      return NULL;
-    // OLD : }
 
     if (fread(magic_code, 1, 12, fsrc) != 12) {
          free(magic_code);
@@ -164,6 +120,10 @@ Libjp2Image *Jp2DriverOpenJpeg::createLibjp2ImageToRead()
         return NULL;
     }
 
+    // Nettoyage
+    free(magic_code);
+
+    // On repart du debut...
     fseek(fsrc, 0, SEEK_SET);
 
     // Read All...
@@ -171,29 +131,21 @@ Libjp2Image *Jp2DriverOpenJpeg::createLibjp2ImageToRead()
 
     if (! stream) {
         LOGGER_ERROR ("failed to create the stream from the file !");
-        free(magic_code);
         fclose(fsrc);
         return NULL;
     }
-
 
     /* ---------------------- */
     /* Decode the code-stream */
     /* ---------------------- */
 
-    // OLD : opj_dinfo_t *dinfo = NULL;        // Handle to a decompressor
-    // OLD : opj_cio_t *cio = NULL;            // Byte input-output stream (CIO)
-    // OLD : opj_codestream_info_t cstr_info;  // Codestream information structure
-
     opj_image_t  *image  = NULL;        // Defines image data and characteristics
     opj_codec_t  *codec  = NULL;        // Handle to a decompressor
 
     // Creates a J2K/JPT/JP2 decompression structure
-    // OLD : dinfo = opj_create_decompress(CODEC_JP2);
     codec = opj_create_decompress(OPJ_CODEC_JP2);
 
     // Setup the decoder decoding parameters using the current image and user parameters
-    // OLD : opj_setup_decoder(dinfo, &parameters);
     if (! opj_setup_decoder(codec, &parameters)) {
         LOGGER_ERROR ("failed to setup the decoder !");
         opj_stream_destroy(stream);
@@ -202,6 +154,7 @@ Libjp2Image *Jp2DriverOpenJpeg::createLibjp2ImageToRead()
         return NULL;
     }
 
+    // FIXME :
     // Catch events using our callbacks and give a local context
     // opj_set_info_handler(codec, info_callback, 00);
     // opj_set_warning_handler(codec, warning_callback, 00);
@@ -226,37 +179,6 @@ Libjp2Image *Jp2DriverOpenJpeg::createLibjp2ImageToRead()
         fclose(fsrc);
         return NULL;
     }
-
-    // Open and allocate a memory stream for read / write */
-    // OLD : cio = opj_cio_open((opj_common_ptr) dinfo, data_ini, file_length);
-    // OLD :
-    // OLD : if(!cio) {
-    // OLD :     LOGGER_ERROR ("failed to allocate the memory stream !");
-    // OLD :     opj_destroy_decompress(dinfo);
-    // OLD :     free(data_ini);
-    // OLD :     return NULL;
-    // OLD : }
-
-    // Decode an image from a JPEG-2000 codestream and extract the codestream information */
-    // OLD : image = opj_decode_with_info(dinfo, cio, &cstr_info);
-
-    // OLD : if(!image) {
-    // OLD :     LOGGER_ERROR ("failed to decode image!");
-    // OLD :     opj_destroy_decompress(dinfo);
-    // OLD :     opj_cio_close(cio);
-    // OLD :     free(data_ini);
-    // OLD :     return NULL;
-    // OLD : }
-
-    // Close the byte stream */
-    // OLD : opj_cio_close(cio);
-
-    // Free the memory containing the code-stream */
-    // OLD : free(data_ini);
-    // OLD : data_ini = NULL;
-
-    // information sur l'image
-    this->information();
 
     // BitsPerSample
     bitspersample = image->comps[0].prec;
@@ -305,9 +227,6 @@ Libjp2Image *Jp2DriverOpenJpeg::createLibjp2ImageToRead()
                 LOGGER_INFO ("There's an alpha component !");
             }
     }
-
-    // bbox
-    BoundingBox<double> bbox (m_xmin, m_ymin, m_xmax, m_ymax);
 
     /* ---------------------- */
     /* Encode the new stream  */
@@ -361,17 +280,12 @@ Libjp2Image *Jp2DriverOpenJpeg::createLibjp2ImageToRead()
     }
 
     // Free remaining structures
-    // OLD : if (dinfo) {
-    // OLD :     opj_destroy_decompress(dinfo);
-    // OLD :     dinfo = NULL;
-    // OLD : }
     if (codec) {
         opj_destroy_codec(codec);
         codec = NULL;
     }
 
     // Free codestream information structure
-    // OLD : opj_destroy_cstr_info(&cstr_info);
     opj_stream_destroy(stream);
     stream = NULL;
 
@@ -381,16 +295,12 @@ Libjp2Image *Jp2DriverOpenJpeg::createLibjp2ImageToRead()
 
     // Close
     fclose(fsrc);
-    
-    return new Libjp2Image (
-        width, height, m_dResx, m_dResy, channels, bbox, parameters.infile,
-        SampleFormat::UINT, bitspersample, Photometric::RGB, Compression::NONE,
-        data);
-}
 
-void Jp2DriverOpenJpeg::information()
-{
-    LOGGER_DEBUG ("Use Driver JPEG2000 : OpenJpeg !" );
+    return new Libjp2Image (
+            width, height, resx, resy, channels, bbox, filename,
+            SampleFormat::UINT, bitspersample, Photometric::RGB, Compression::NONE,
+            data);
+
 }
 
 

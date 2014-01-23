@@ -1,0 +1,87 @@
+##############################################################################
+JP2 (OPENJPEG)
+time valgrind --leak-check=full ../install/bin/mergeNtiff -f confs/jp2.txt -r results/ -p rgb -b 8 -s 3 -c none -a uint -n 0,0,0 -i bicubic
+==15761== Memcheck, a memory error detector
+==15761== Copyright (C) 2002-2012, and GNU GPL'd, by Julian Seward et al.
+==15761== Using Valgrind-3.8.1 and LibVEX; rerun with -h for copyright info
+==15761== Command: ../install/bin/mergeNtiff -f confs/jp2.txt -r results/ -p rgb -b 8 -s 3 -c none -a uint -n 0,0,0 -i bicubic
+==15761== 
+==15761== 
+==15761== HEAP SUMMARY:
+==15761==     in use at exit: 266 bytes in 5 blocks
+==15761==   total heap usage: 115,525 allocs, 115,520 frees, 521,462,342 bytes allocated
+==15761== 
+==15761== LEAK SUMMARY:
+==15761==    definitely lost: 0 bytes in 0 blocks
+==15761==    indirectly lost: 0 bytes in 0 blocks
+==15761==      possibly lost: 0 bytes in 0 blocks
+==15761==    still reachable: 266 bytes in 5 blocks
+==15761==         suppressed: 0 bytes in 0 blocks
+==15761== Reachable blocks (those to which a pointer was found) are not shown.
+==15761== To see them, rerun with: --leak-check=full --show-reachable=yes
+==15761== 
+==15761== For counts of detected and suppressed errors, rerun with: -v
+==15761== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 2 from 2)
+
+real	0m52.600s
+user	0m52.420s
+sys	0m0.106s
+
+##############################################################################
+TIFF
+time valgrind --leak-check=full ../install/bin/mergeNtiff -f confs/nomask.txt -r results/ -p rgb -b 8 -s 3 -c none -a uint -n 0,0,0 -i bicubic
+==4402== Memcheck, a memory error detector
+==4402== Copyright (C) 2002-2012, and GNU GPL'd, by Julian Seward et al.
+==4402== Using Valgrind-3.8.1 and LibVEX; rerun with -h for copyright info
+==4402== Command: ../install/bin/mergeNtiff -f confs/nomask.txt -r result -p rgb -b 8 -s 3 -c none -a uint -n 0,0,0 -i bicubic
+==4402== 
+==4402== 
+==4402== HEAP SUMMARY:
+==4402==     in use at exit: 266 bytes in 5 blocks
+==4402==   total heap usage: 98,241 allocs, 98,236 frees, 405,371,565 bytes allocated
+==4402== 
+==4402== LEAK SUMMARY:
+==4402==    definitely lost: 0 bytes in 0 blocks
+==4402==    indirectly lost: 0 bytes in 0 blocks
+==4402==      possibly lost: 0 bytes in 0 blocks
+==4402==    still reachable: 266 bytes in 5 blocks
+==4402==         suppressed: 0 bytes in 0 blocks
+==4402== Reachable blocks (those to which a pointer was found) are not shown.
+==4402== To see them, rerun with: --leak-check=full --show-reachable=yes
+==4402== 
+==4402== For counts of detected and suppressed errors, rerun with: -v
+==4402== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 2 from 2)
+
+real	0m35.037s
+user	0m34.891s
+sys	0m0.098s
+
+##############################################################################
+PNG
+time valgrind --leak-check=full ../install/bin/mergeNtiff -f confs/png-nomask.txt -r results/ -p rgb -b 8 -s 3 -c none -a uint -n 0,0,0 -i bicubic
+==20990== Memcheck, a memory error detector
+==20990== Copyright (C) 2002-2012, and GNU GPL'd, by Julian Seward et al.
+==20990== Using Valgrind-3.8.1 and LibVEX; rerun with -h for copyright info
+==20990== Command: ../install/bin/mergeNtiff -f confs/png-nomask.txt -r results/ -p rgb -b 8 -s 3 -c none -a uint -n 0,0,0 -i bicubic
+==20990== 
+==20990== 
+==20990== HEAP SUMMARY:
+==20990==     in use at exit: 266 bytes in 5 blocks
+==20990==   total heap usage: 100,787 allocs, 100,782 frees, 411,812,323 bytes allocated
+==20990== 
+==20990== LEAK SUMMARY:
+==20990==    definitely lost: 0 bytes in 0 blocks
+==20990==    indirectly lost: 0 bytes in 0 blocks
+==20990==      possibly lost: 0 bytes in 0 blocks
+==20990==    still reachable: 266 bytes in 5 blocks
+==20990==         suppressed: 0 bytes in 0 blocks
+==20990== Reachable blocks (those to which a pointer was found) are not shown.
+==20990== To see them, rerun with: --leak-check=full --show-reachable=yes
+==20990== 
+==20990== For counts of detected and suppressed errors, rerun with: -v
+==20990== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 2 from 2)
+
+real	0m41.663s
+user	0m41.496s
+sys	0m0.093s
+

@@ -209,7 +209,7 @@ IF(USE_DRIVERJPEG2000)
       ADD_LIBRARY(kdu STATIC IMPORTED)
       SET_PROPERTY(TARGET kdu PROPERTY IMPORTED_LOCATION ${KDU_LIBRARY})
     ELSE(KAKADU_FOUND)
-      MESSAGE(FATAL_ERROR "[KAKADU] unable to found an external package (not yet implemented) !")
+      MESSAGE(FATAL_ERROR "[KAKADU] unable to found an external or internal (not implemented) package !")
     ENDIF(KAKADU_FOUND)
   ENDIF(HAVE_KAKADU)
 

@@ -9,28 +9,8 @@
 
 class Jp2DriverKakadu {
 
-    private:
-
-        char* m_cFilename;
-
-        double m_dResx;
-        double m_dResy;
-
-        double m_xmin, m_ymin, m_xmax, m_ymax;
-
     public:
 
-        // constructeur
-        Jp2DriverKakadu();
-        Jp2DriverKakadu(char* filename, BoundingBox<double> bbox, double resx, double resy);
-
-        // desctructeur
-        ~Jp2DriverKakadu();
-
-        // methodes
-        Libjp2Image * createLibjp2ImageToRead() {
-			LOGGER_ERROR("Not yet implemented !");
-			return NULL;
-		}
+        Libjp2Image * createLibjp2ImageToRead(char* filename, BoundingBox<double> bbox, double resx, double resy);
 };
 

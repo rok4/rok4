@@ -3,7 +3,7 @@ set(OPENMJ2_LIBRARY_NAME openmj2)
 
 include_directories(
   ${OPENJPEG_BINARY_DIR}/src/lib/openjp2 # opj_config.h
-)
+  )
 
 set(OPENMJ2_SRCS
   mj2.c
@@ -41,9 +41,9 @@ endif()
 # build mj2 lib:
 add_library(${OPENMJ2_LIBRARY_NAME} ${OPENMJ2_SRCS})
 # FIXME: We are using an openjpeg 1.5 copy:
-target_link_libraries(${OPENMJ2_LIBRARY_NAME} openmj2)
+#target_link_libraries(${OPENMJ2_LIBRARY_NAME} openjp2)
 if(UNIX)
-  target_link_libraries(${OPENMJ2_LIBRARY_NAME} openmj2)
+  target_link_libraries(${OPENMJ2_LIBRARY_NAME} m)
 endif()
 set_target_properties(${OPENMJ2_LIBRARY_NAME} PROPERTIES ${OPENJPEG_LIBRARY_PROPERTIES})
 
@@ -55,7 +55,11 @@ install(TARGETS ${OPENMJ2_LIBRARY_NAME}
 )
 
 # Install includes files
-INSTALL(FILES openjpeg.h
-  DESTINATION ${OPENJPEG_INSTALL_INCLUDE_DIR}/openmj2/
+INSTALL(FILES mj2.h
+  DESTINATION ${OPENJPEG_INSTALL_INCLUDE_DIR}/${subdir} 
   COMPONENT Headers
 )
+#INSTALL(FILES openjpeg.h
+#  DESTINATION ${OPENJPEG_INSTALL_INCLUDE_DIR}/${subdir}/openmj2/ 
+#  COMPONENT Headers
+#)
