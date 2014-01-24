@@ -55,6 +55,9 @@ public:
     std::string getType() {
         return "image/x-bil;bits=32";
     }
+    std::string getEncoding() {
+        return "";
+    }
     bool eof();
 
 };

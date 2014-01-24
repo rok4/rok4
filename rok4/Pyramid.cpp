@@ -55,7 +55,7 @@
 #include "config.h"
 #include "EmptyImage.h"
 
-Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, Format::eformat_data format, int channels ) : levels ( levels ), tms ( tms ), format ( format ), channels ( channels ) {
+Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format, int channels ) : levels ( levels ), tms ( tms ), format ( format ), channels ( channels ) {
     std::map<std::string, Level*>::iterator itLevel;
     double minRes= DBL_MAX;
     double maxRes= DBL_MIN;
@@ -64,11 +64,11 @@ Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, For
         DataSource* noDataSource;
         DataStream* nodatastream;
 
-        if ( format==Format::TIFF_JPG_INT8 ) {
+        if ( format==Rok4Format::TIFF_JPG_INT8 ) {
             nodatastream = new JPEGEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ) );
-        } else if ( format==Format::TIFF_PNG_INT8 ) {
+        } else if ( format==Rok4Format::TIFF_PNG_INT8 ) {
             nodatastream = new PNGEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ) );
-        } else if ( format==Format::TIFF_RAW_FLOAT32 ) {
+        } else if ( format==Rok4Format::TIFF_RAW_FLOAT32 ) {
             nodatastream = new BilEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ) );
         } else {
             nodatastream = TiffEncoder::getTiffEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ), format );
@@ -78,7 +78,7 @@ Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, For
             delete nodatastream;
             nodatastream = NULL;
         } else {
-            LOGGER_ERROR ( "Format non pris en charge : "<< Format::toString ( format ) );
+            LOGGER_ERROR ( "Format non pris en charge : "<< Rok4Format::toString ( format ) );
         }
         itLevel->second->setNoDataSource ( noDataSource );
 

@@ -61,7 +61,7 @@
 
 template <typename T>
 int MergeImage::_getline ( T* buffer, int line ) {
-    Line<T> aboveLine ( width );
+    Line aboveLine ( width, sizeof(T) );
     T* imageLine = new T[width*4];
     uint8_t* maskLine = new uint8_t[width];
     memset ( maskLine, 0, width );
@@ -70,7 +70,7 @@ int MergeImage::_getline ( T* buffer, int line ) {
     for ( int i = 0; i < channels*width; i++ ) {
         bg[i] = ( T ) bgValue[i%channels];
     }
-    Line<T> workLine ( bg, maskLine, channels, width );
+    Line workLine ( bg, maskLine, channels, width );
 
     T* transparent;
     if ( transparentValue != NULL ) {

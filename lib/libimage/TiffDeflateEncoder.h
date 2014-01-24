@@ -160,6 +160,10 @@ public:
         if ( linebuffer ) delete[] linebuffer;
 //         deflateEnd ( &zstream );
     }
+    
+    std::string getEncoding() {
+        return "deflate";
+    }
 
 };
 

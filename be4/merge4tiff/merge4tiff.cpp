@@ -116,6 +116,9 @@ int samplesperpixel;
 /** \~french Photométrie (rgb, gray), dans les images en entrée et celle en sortie */
 Photometric::ePhotometric photometric;
 
+/** \~french Activation du niveau de log debug. Faux par défaut */
+bool debugLogger=false;
+
 /**
  * \~french
  * \brief Affiche l'utilisation et les différentes options de la commande merge4tiff
@@ -150,6 +153,7 @@ Photometric::ePhotometric photometric;
  *              X = b           background image
  *      -mX input associated masks (optionnal)
  *              X = [1..4] or X = b
+ *      -d debug logger activation
  *
  * Examples
  *      - without mask, with background image
@@ -190,7 +194,8 @@ void usage() {
 
                   "             X = b           background image\n" <<
                   "     -mX input associated masks (optionnal)\n" <<
-                  "             X = [1..4] or X = b\n\n" <<
+                  "             X = [1..4] or X = b\n" <<
+                  "     -d debug logger activation\n\n" <<
 
                   "Examples\n" <<
                   "     - without mask, with background image\n" <<
@@ -240,6 +245,9 @@ int parseCommandLine ( int argc, char* argv[] ) {
             case 'h': // help
                 usage();
                 exit ( 0 );
+            case 'd': // debug logs
+                debugLogger = true;
+                break;
             case 'g': // gamma
                 if ( ++i == argc ) {
                     LOGGER_ERROR ( "Error in option -g" );
@@ -751,15 +759,10 @@ int main ( int argc, char* argv[] ) {
     Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
 
     Accumulator* acc = new StreamAccumulator();
-    //Logger::setAccumulator(DEBUG, acc);
     Logger::setAccumulator ( INFO , acc );
     Logger::setAccumulator ( WARN , acc );
     Logger::setAccumulator ( ERROR, acc );
     Logger::setAccumulator ( FATAL, acc );
-
-    std::ostream &logd = LOGGER ( DEBUG );
-    logd.precision ( 16 );
-    logd.setf ( std::ios::fixed,std::ios::floatfield );
 
     std::ostream &logw = LOGGER ( WARN );
     logw.precision ( 16 );
@@ -769,6 +772,14 @@ int main ( int argc, char* argv[] ) {
     // Lecture des parametres de la ligne de commande
     if ( parseCommandLine ( argc, argv ) < 0 ) {
         error ( "Echec lecture ligne de commande",-1 );
+    }
+
+    // On sait maintenant si on doit activer le niveau de log DEBUG
+    if (debugLogger) {
+        Logger::setAccumulator(DEBUG, acc);
+        std::ostream &logd = LOGGER ( DEBUG );
+        logd.precision ( 16 );
+        logd.setf ( std::ios::fixed,std::ios::floatfield );
     }
 
     LOGGER_DEBUG ( "Check images" );

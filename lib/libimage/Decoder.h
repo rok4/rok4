@@ -118,6 +118,9 @@ public:
     int getHttpStatus() {
         return 200;
     }
+    std::string getEncoding() {
+        return "";
+    }
 };
 
 

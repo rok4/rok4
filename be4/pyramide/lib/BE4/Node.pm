@@ -208,6 +208,39 @@ sub _init {
     return TRUE;
 }
 
+=begin nd
+Constructor: clone
+
+Clone Node. Bless an instance with same attributes.
+
+See also:
+    <_init>
+=cut
+sub clone {
+    my $this = shift;
+
+    my $class= ref($this) || $this;
+    # IMPORTANT : if modification, think to update natural documentation (just above)
+    my $clone = {
+        i => $this->{i},
+        j => $this->{j},
+        pyramidName => $this->{pyramidName},
+        workExtension => $this->{workExtension},
+        tm => $this->{tm},
+        graph => $this->{graph},
+        w => $this->{w},
+        W => $this->{W},
+        code => $this->{code},
+        script => $this->{script},
+        nodeSources => $this->{nodeSources},
+        geoImages => $this->{geoImages},
+    };
+
+    bless($clone, $class);    
+
+    return $clone;
+}
+
 ####################################################################################################
 #                                Group: Geographic tools                                           #
 ####################################################################################################

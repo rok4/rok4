@@ -276,9 +276,9 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( char* filename, BoundingBox
         uint16_t extrasamplesCount;
         uint16_t* extrasamples;
         if ( TIFFGetField ( tif, TIFFTAG_EXTRASAMPLES, &extrasamplesCount, &extrasamples ) > 0 ) {
-            // On a des canaux en plus, si c'est de l'alpha, il doit être associé
-            if ( extrasamples[0] == EXTRASAMPLE_UNASSALPHA ) {
-                LOGGER_ERROR ( "Alpha sample is unassociated for the file " << filename );
+            // On a des canaux en plus, si c'est de l'alpha, il ne doit pas être associé 
+            if ( extrasamples[0] == EXTRASAMPLE_ASSOCALPHA ) {
+                LOGGER_ERROR ( "Alpha sample should be unassociated for the rok4 image " << filename );
                 return NULL;
             }
         }
@@ -636,6 +636,8 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
         LOGGER_ERROR("Cannot close the ROK4 images (write index and clean) for " << filename);
         return -1;
     }
+    
+    return 0;
 }
 
 int Rok4Image::writeImage ( Image* pIn )
@@ -670,10 +672,10 @@ bool Rok4Image::prepare()
     * ( ( uint16_t* ) ( p + 6 ) ) = (uint16_t) bitspersample;
     p += 8;
 
-    if ( photometric == Photometric::YCBCR ) // Number of tags
-        * ( ( uint16_t* ) p ) = 12;
-    else
-        * ( ( uint16_t* ) p ) = 11;
+    // Number of tags
+    * ( ( uint16_t* ) p ) = 11;
+    if ( photometric == Photometric::YCBCR ) * ( ( uint16_t* ) p ) += 1;
+    if ( channels == 4 || channels == 2 ) * ( ( uint16_t* ) p ) += 1;
     p += 2;
 
     //  Offset of the IFD is here
@@ -682,6 +684,13 @@ bool Rok4Image::prepare()
 
     if ( channels == 1 ) {
         writeTIFFTAG(&p, TIFFTAG_BITSPERSAMPLE, TIFF_SHORT, 1, bitspersample);
+    } else if ( channels == 2 ) {
+        * ( ( uint16_t* ) ( p ) ) = TIFFTAG_BITSPERSAMPLE;
+        * ( ( uint16_t* ) ( p + 2 ) ) = TIFF_SHORT;
+        * ( ( uint32_t* ) ( p + 4 ) ) = 2;
+        * ( ( uint16_t* ) ( p + 8 ) ) = 8;
+        * ( ( uint16_t* ) ( p + 10 ) )  = 8;
+        p += 12;
     } else {
         writeTIFFTAG(&p, TIFFTAG_BITSPERSAMPLE, TIFF_SHORT, channels, 8);
     }
@@ -705,6 +714,10 @@ bool Rok4Image::prepare()
     // Dans le cas d'un tuile unique, on vidra écraser la valeur mise ici avec directement sa taille
     writeTIFFTAG(&p, TIFFTAG_TILEBYTECOUNTS, TIFF_LONG, tilesNumber, ROK4_IMAGE_HEADER_SIZE + 4 * tilesNumber);
     
+    if ( channels == 4 || channels == 2 ) {
+        writeTIFFTAG(&p, TIFFTAG_EXTRASAMPLES, TIFF_SHORT, 1, EXTRASAMPLE_UNASSALPHA);
+    }
+    
     writeTIFFTAG(&p, TIFFTAG_SAMPLEFORMAT, TIFF_SHORT, 1, fromROK4SampleFormat(sampleformat));
 
     if ( photometric == Photometric::YCBCR ) {
@@ -716,8 +729,10 @@ bool Rok4Image::prepare()
         p += 12;
     }
 
-    * ( ( uint32_t* ) ( p ) ) = 0;                // end of IFD
+    // end of IFD
+    * ( ( uint32_t* ) ( p ) ) = 0; 
     p += 4;
+    
     output.write ( header, sizeof ( header ) );
 
     // variables initalizations

@@ -68,6 +68,9 @@ public:
     inline int getHttpStatus()                  {
         return dataSource->getHttpStatus();
     }
+    inline std::string getEncoding()                {
+        return dataSource->getEncoding();
+    }
     virtual const uint8_t* getData ( size_t& size );
     virtual ~PaletteDataSource();
 };

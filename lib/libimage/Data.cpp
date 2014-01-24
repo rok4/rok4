@@ -45,7 +45,7 @@
  */
 
 // TODO : peut être optimisé, à mettre au propre
-BufferedDataSource::BufferedDataSource ( DataStream& dataStream ) : type ( dataStream.getType() ), httpStatus ( dataStream.getHttpStatus() ), dataSize ( 0 ) {
+BufferedDataSource::BufferedDataSource ( DataStream& dataStream ) : type ( dataStream.getType() ), httpStatus ( dataStream.getHttpStatus() ), dataSize ( 0 ), encoding( dataStream.getEncoding()) {
     // On initialise data à une taille arbitraire de 32Ko.
     size_t maxSize = 32768;
     data = new uint8_t[maxSize];
