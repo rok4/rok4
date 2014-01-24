@@ -73,6 +73,11 @@ else(RPM_PACKAGE)
 endif(RPM_PACKAGE)
 
 
+if(NOT DEFINED USE_SYSTEM_LIB)
+  set(USE_SYSTEM_LIB FALSE)
+endif(NOT DEFINED USE_SYSTEM_LIB)
+
+
 include(${Rok4_SOURCE_DIR}/cmake/Modules/ROK4Dependencies.cmake)
 
 if(BUILD_ROK4)
