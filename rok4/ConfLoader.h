@@ -349,6 +349,19 @@ private:
      * \return pointer to the newly created ServicesConf, NULL if something went wrong
      */
     static ServicesConf * parseServicesConf ( TiXmlDocument* doc,std::string servicesConfigFile );
+    
+    /**
+     * \~french
+     * \brief Chargement de la liste des CRS équivalents à partir du fichier listofequalscrs.txt dans le dossier Proj
+     * \~english
+     * \brief Load equivalents CRS list from listofequalscrs.txt file in Proj directory
+     */
+    static std::vector<std::string> loadListEqualsCRS();
+    static std::vector<std::string> loadRestrictedCRSList();
+    static std::vector<std::string> loadStringVectorFromFile(std::string file);
+    static bool isCRSAllowed(std::vector<std::string> restrictedCRSList, std::string crs, std::vector<CRS> equiCRSList);
+    
+    static std::vector<CRS> getEqualsCRS(std::vector<std::string> listofequalsCRS, std::string crs);
 };
 
 #endif /* CONFLOADER_H_ */
