@@ -102,7 +102,7 @@ public:
                    std::string deliveryPoint, std::string city, std::string administrativeArea, std::string postCode,
                    std::string country, std::string electronicMailAddress , MetadataURL metadataWMS, MetadataURL metadataWMTS,
                    std::vector<std::string> listofequalsCRS, std::vector<std::string> restrictedCRSList,
-                   bool postMode=0,bool fullStyling=0, bool inspire=0, bool doweuselistofequalsCRS=0, bool dowerestrictCRSList=0) :
+                   bool postMode=0,bool fullStyling=0, bool inspire=0, bool doweuselistofequalsCRS=0, bool addEqualsCRS=0, bool dowerestrictCRSList=0) :
         name ( name ), title ( title ), abstract ( abstract ), keyWords ( keyWords ),
         serviceProvider ( serviceProvider ), fee ( fee ), accessConstraint ( accessConstraint ), layerLimit ( layerLimit ),
         maxWidth ( maxWidth ), maxHeight ( maxHeight ), maxTileX ( maxTileX ), maxTileY ( maxTileY ) , formatList ( formatList ), globalCRSList ( globalCRSList ), serviceType ( serviceType ),
@@ -111,7 +111,7 @@ public:
         deliveryPoint ( deliveryPoint ), city ( city ), administrativeArea ( administrativeArea ), postCode ( postCode ),
         country ( country ), electronicMailAddress ( electronicMailAddress ), metadataWMS ( metadataWMS ), metadataWMTS ( metadataWMTS ),
         listofequalsCRS ( listofequalsCRS ), restrictedCRSList ( restrictedCRSList ),
-        postMode ( postMode ), fullStyling ( fullStyling ), inspire ( inspire ),doweuselistofequalsCRS ( doweuselistofequalsCRS ), dowerestrictCRSList ( dowerestrictCRSList ) {};
+        postMode ( postMode ), fullStyling ( fullStyling ), inspire ( inspire ),doweuselistofequalsCRS ( doweuselistofequalsCRS ), addEqualsCRS ( addEqualsCRS ), dowerestrictCRSList (dowerestrictCRSList)  {};
     //  WMS & WMTS
     std::string inline getAbstract() const      {
         return abstract;
@@ -219,6 +219,9 @@ public:
     // CRS
     bool inline getDoWeUseListOfEqualsCRS() {
         return doweuselistofequalsCRS;
+    }
+     bool inline getAddEqualsCRS() {
+        return addEqualsCRS;
     }
     std::vector<std::string> getListOfEqualsCRS() {
         return listofequalsCRS;

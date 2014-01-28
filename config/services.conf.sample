@@ -58,5 +58,12 @@
         <url>http://www.geocatalogue.fr/api-public/servicesRest?SERVICE=CSW&amp;VERSION=2.0.2&amp;REQUEST=GetRecordById&outputSchema=http://www.isotc211.org/2005/gmd&amp;elementSetName=full&amp;Id=IGNF_INSPIRE_WMTS.xml</url>
         <mediaType>application/vnd.ogc.csw.GetRecordByIdResponse_xml</mediaType>
     </metadataWMTS>
+
+    <!-- CRS et WMS -->
+    <!-- pour ne pas effectuer de reprojection pour 2 CRS égaux (ex : IGNF:LAMB93 et EPSG:2154) -->
     <avoidEqualsCRSReprojection>true</avoidEqualsCRSReprojection>
+    <!-- ajoute automatiquement les CRS équivalents à la liste des CRS globale et aux listes des CRS par layer -->
+    <addEqualsCRS>true</addEqualsCRS>
+    <!-- Fichier contenant la liste des seuls CRS autorisés (si addEqualsCRS est à true ou 1, les CRS équivalents sont aussi autorisés) -->
+    <restrictedCRSList>../config/restrictedCRSList.txt.sample</restrictedCRSList>
 </servicesConf>

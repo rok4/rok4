@@ -1066,7 +1066,10 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
                 
                 if ( crsOk ){
                     bool allowedCRS = true;
-                    std::vector<CRS> tmpEquilist = getEqualsCRS(servicesConf->getListOfEqualsCRS(), str_crs );
+                    std::vector<CRS> tmpEquilist;
+                    if (servicesConf->getAddEqualsCRS()){
+                        tmpEquilist = getEqualsCRS(servicesConf->getListOfEqualsCRS(), str_crs );
+                    }
                     if ( servicesConf->getDoWeRestrictCRSList() ){
                         allowedCRS = isCRSAllowed(servicesConf->getRestrictedCRSList(), str_crs, tmpEquilist);
                     }
@@ -1647,6 +1650,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
             LOGGER_INFO ( _ ( "Liste restreinte de CRS à partir du fichier " ) << restritedCRSListfile );
             dowerestrictCRSList = true;
             restrictedCRSList = loadStringVectorFromFile(restritedCRSListfile);
+            
         }
         
     }
@@ -1660,7 +1664,10 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
         if ( !crs.isProj4Compatible() ) {
             LOGGER_ERROR ( servicesConfigFile << _ ( "The CRS [" ) << crsStr << _ ( "] is not present in Proj4" ) );
         } else {
-            std::vector<CRS> tmpEquilist = getEqualsCRS(listofequalsCRS, crsStr );
+            std::vector<CRS> tmpEquilist;
+            if (addEqualsCRS){
+               tmpEquilist = getEqualsCRS(listofequalsCRS, crsStr );
+            }
             bool allowedCRS = true;
             if ( dowerestrictCRSList ){
                 allowedCRS = isCRSAllowed(restrictedCRSList, crsStr, tmpEquilist);
@@ -1785,7 +1792,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
                                       accessConstraint, layerLimit, maxWidth, maxHeight, maxTileX, maxTileY, formatList, globalCRSList , serviceType, serviceTypeVersion,
                                       providerSite, individualName, individualPosition, voice, facsimile,
                                       addressType, deliveryPoint, city, administrativeArea, postCode, country,
-                                      electronicMailAddress, mtdMWS, mtdWMTS, listofequalsCRS, restrictedCRSList, postMode, fullStyling, inspire, doweuselistofequalsCRS, dowerestrictCRSList);
+                                      electronicMailAddress, mtdMWS, mtdWMTS, listofequalsCRS, restrictedCRSList, postMode, fullStyling, inspire, doweuselistofequalsCRS, addEqualsCRS, dowerestrictCRSList);
     return servicesConf;
 }
 
