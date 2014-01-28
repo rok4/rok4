@@ -1825,13 +1825,19 @@ std::vector<std::string> ConfLoader::loadStringVectorFromFile(std::string file){
 std::vector<CRS> ConfLoader::getEqualsCRS(std::vector<std::string> listofequalsCRS, std::string basecrs)
 {
     std::vector<CRS> returnCRS;
-    LOGGER_DEBUG( "getEqualsCRS de " << basecrs );
     for ( unsigned int l=0; l<listofequalsCRS.size(); l++ ){
-        size_t found = listofequalsCRS.at( l ).find ( basecrs );
+        std::string workingbasecrs(basecrs);
+        workingbasecrs.append(" ");
+        size_t found = listofequalsCRS.at( l ).find ( workingbasecrs );
+        if (found == std::string::npos){
+            found = listofequalsCRS.at( l ).find ( basecrs );
+            if ( found != ( listofequalsCRS.at( l ).size() - basecrs.size()) ){
+                found = std::string::npos;
+            }
+        }
         if (found != std::string::npos) {
             //Global CRS found !
             std::string line = listofequalsCRS.at( l );
-            LOGGER_DEBUG( "  -> line : " << line );
             std::string crsstr = "";
             //split
             size_t start_index = 0;
@@ -1840,22 +1846,22 @@ std::vector<CRS> ConfLoader::getEqualsCRS(std::vector<std::string> listofequalsC
             while ( found_space != std::string::npos ){
                 found_space = line.find(" ", start_index );
                 if ( found_space == std::string::npos ) {
-                    len = line.size() - start_index;
+                    len = line.size() - start_index -1 ; //-1 pour le retour chariot
                 } else {
                     len = found_space - start_index;
                 }
                 crsstr = line.substr( start_index, len );
-                LOGGER_DEBUG("crs trouve "<<crsstr);
-                start_index = found_space + 1;
+                
                 if ( crsstr.compare(basecrs) != 0 ){
                     //is the new CRS compatible with Proj4 ?
                     CRS crs ( crsstr );
                     if ( !crs.isProj4Compatible() ) {
-                        LOGGER_ERROR ( _ ( "The Equivalent CRS [" ) << crsstr << _ ( "] of [" ) << basecrs << _ ( "] is not present in Proj4" ) );
+                        LOGGER_DEBUG ( _ ( "The Equivalent CRS [" ) << crsstr << _ ( "] of [" ) << basecrs << _ ( "] is not present in Proj4" ) );
                     } else {
                         returnCRS.push_back( crs );
                     }
                 }
+                start_index = found_space + 1;
             }
         }
     }

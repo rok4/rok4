@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2014-01-28 09:06+0100\n"
+"POT-Creation-Date: 2014-01-28 11:32+0100\n"
 "PO-Revision-Date: 2014-01-28 09:36+0100\n"
 "Last-Translator: \n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -466,7 +466,7 @@ msgid "Aucun level n'a pu etre charge pour la pyramide "
 msgstr "Aucun niveau (<level>) n'a pu être chargé pour la pyramide "
 
 #: ConfLoader.cpp:806 ConfLoader.cpp:1195 ConfLoader.cpp:1817
-#: ConfLoader.cpp:1901 ConfLoader.cpp:2056
+#: ConfLoader.cpp:1907 ConfLoader.cpp:2062
 msgid "Ne peut pas charger le fichier "
 msgstr "                Ne peut pas charger le fichier "
 
@@ -830,7 +830,7 @@ msgstr "Construction de la liste restreinte de CRS à partir du fichier "
 msgid "The CRS ["
 msgstr "Le CRS ["
 
-#: ConfLoader.cpp:1665 ConfLoader.cpp:1854
+#: ConfLoader.cpp:1665 ConfLoader.cpp:1859
 msgid "] is not present in Proj4"
 msgstr "] n'est pas présent dans Proj4"
 
@@ -842,7 +842,7 @@ msgstr "Ajout du CRS global "
 msgid "Adding equivalent global CRS ["
 msgstr "Ajout du CRS global équivalent ["
 
-#: ConfLoader.cpp:1680 ConfLoader.cpp:1854
+#: ConfLoader.cpp:1680 ConfLoader.cpp:1859
 msgid "] of ["
 msgstr "] de ["
 
@@ -880,95 +880,95 @@ msgstr "Construction de la liste des CRS équivalents depuis le fichier "
 msgid " ou fichier vide"
 msgstr " ou fichier vide"
 
-#: ConfLoader.cpp:1854
+#: ConfLoader.cpp:1859
 msgid "The Equivalent CRS ["
 msgstr "Le CRS équivalent ["
 
-#: ConfLoader.cpp:1898
+#: ConfLoader.cpp:1904
 msgid "Chargement des parametres techniques depuis "
 msgstr "Chargement des paramètres techniques depuis "
 
-#: ConfLoader.cpp:1908
+#: ConfLoader.cpp:1914
 msgid "CHARGEMENT DES STYLES"
 msgstr "CHARGEMENT DES STYLES"
 
-#: ConfLoader.cpp:1917
+#: ConfLoader.cpp:1923
 msgid "Le repertoire des Styles "
 msgstr "Le répertoire des Styles "
 
-#: ConfLoader.cpp:1917 ConfLoader.cpp:1966 ConfLoader.cpp:2015
+#: ConfLoader.cpp:1923 ConfLoader.cpp:1972 ConfLoader.cpp:2021
 msgid " n'est pas accessible."
 msgstr " n'est pas accessible."
 
-#: ConfLoader.cpp:1932
+#: ConfLoader.cpp:1938
 msgid "Aucun fichier *.stl dans le repertoire "
 msgstr "Aucun fichier *.stl dans le répertoire "
 
-#: ConfLoader.cpp:1943
+#: ConfLoader.cpp:1949
 msgid "Ne peut charger le style: "
 msgstr "Ne peut charger le style: "
 
-#: ConfLoader.cpp:1948
+#: ConfLoader.cpp:1954
 msgid "Aucun Style n'a pu etre charge!"
 msgstr "Aucun Style n'a pu être chargé !"
 
-#: ConfLoader.cpp:1952
+#: ConfLoader.cpp:1958
 msgid "NOMBRE DE STYLES CHARGES : "
 msgstr "NOMBRE DE STYLES CHARGÉS : "
 
-#: ConfLoader.cpp:1958
+#: ConfLoader.cpp:1964
 msgid "CHARGEMENT DES TMS"
 msgstr "CHARGEMENT DES TMS"
 
-#: ConfLoader.cpp:1966
+#: ConfLoader.cpp:1972
 msgid "Le repertoire des TMS "
 msgstr "Le répertoire des TMS "
 
-#: ConfLoader.cpp:1982
+#: ConfLoader.cpp:1988
 msgid "Aucun fichier *.tms dans le repertoire "
 msgstr "Aucun fichier *.tms dans le répertoire "
 
-#: ConfLoader.cpp:1993
+#: ConfLoader.cpp:1999
 msgid "Ne peut charger le tms: "
 msgstr "Ne peut charger le tms: "
 
-#: ConfLoader.cpp:1998
+#: ConfLoader.cpp:2004
 msgid "Aucun TMS n'a pu etre charge!"
 msgstr "Aucun TMS n'a pu être chargé!"
 
-#: ConfLoader.cpp:2002
+#: ConfLoader.cpp:2008
 msgid "NOMBRE DE TMS CHARGES : "
 msgstr "NOMBRE DE TMS CHARGÉS : "
 
-#: ConfLoader.cpp:2008
+#: ConfLoader.cpp:2014
 msgid "CHARGEMENT DES LAYERS"
 msgstr "CHARGEMENT DES LAYERS"
 
-#: ConfLoader.cpp:2015
+#: ConfLoader.cpp:2021
 msgid "Le repertoire "
 msgstr "Le répertoire "
 
-#: ConfLoader.cpp:2027
+#: ConfLoader.cpp:2033
 msgid "Aucun fichier *.lay dans le repertoire "
 msgstr "Aucun fichier *.lay dans le répertoire "
 
-#: ConfLoader.cpp:2028
+#: ConfLoader.cpp:2034
 msgid "Le serveur n'a aucune donnees à servir. Dommage..."
 msgstr "Le serveur n'a aucune données à servir. Dommage..."
 
-#: ConfLoader.cpp:2039
+#: ConfLoader.cpp:2045
 msgid "Ne peut charger le layer: "
 msgstr "Ne peut charger la couche : "
 
-#: ConfLoader.cpp:2044
+#: ConfLoader.cpp:2050
 msgid "Aucun layer n'a pu etre charge!"
 msgstr "Aucune couche n'a pu être chargée !"
 
-#: ConfLoader.cpp:2048
+#: ConfLoader.cpp:2054
 msgid "NOMBRE DE LAYERS CHARGES : "
 msgstr "NOMBRE DE COUCHES CHARGÉES : "
 
-#: ConfLoader.cpp:2053
+#: ConfLoader.cpp:2059
 msgid "Construction de la configuration des services depuis "
 msgstr "Construction de la configuration des services depuis "
 
