@@ -61,7 +61,7 @@ set(OPENJPEG_LIBRARY_PROPERTIES
 # --------------------------------------------------------------------------
 # Path to additional CMake modules
 set(CMAKE_MODULE_PATH
-    ${CMAKE_SOURCE_DIR}/cmake
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake
     ${CMAKE_MODULE_PATH})
 
 # --------------------------------------------------------------------------

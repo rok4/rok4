@@ -37,7 +37,97 @@
 
 #include "Jp2DriverJasper.h"
 
+#include <jasper/jasper.h>
+
 Libjp2Image * Jp2DriverJasper::createLibjp2ImageToRead(char* filename, BoundingBox<double> bbox, double resx, double resy) {
-    LOGGER_ERROR("Not yet implemented !");
+
+    LOGGER_DEBUG("Not yet implemented !");
+    LOGGER_DEBUG("Version Driver Jasper : " << jas_getversion());
+
+    int     width,
+            height,
+            channels,
+            bitspersample;
+
+    int has_alpha = 0;
+
+    uint8_t * data;
+
     return NULL;
+
+
+//    // The input image is to be read from a file.
+//    jas_stream_t *in = NULL;
+//    in = jas_stream_fopen(filename, "rb");
+//    if (! in) {
+//        LOGGER_ERROR("canot open input image file !");
+//        return NULL;
+//    }
+
+//    // FIXME : get list format ?
+//    // jas_image_fmtinfo_t *fmtinfo;
+//    // int fmtid;
+//    // for (fmtid = 0;; ++fmtid) {
+//    //     if (! (fmtinfo = jas_image_lookupfmtbyid(fmtid))) {
+//    //         break;
+//    //     }
+//    //     LOGGER_DEBUG("frmt : " << fmtinfo->name << " | " << fmtinfo->desc);
+//    // }
+
+//    int idfmt = -1; // 4 -> jp2 : JPEG-2000 JP2 File Format Syntax (ISO/IEC 15444-1)
+//    // idfmt = jas_image_getfmt(in);
+
+
+//    // if (idfmt < 0) {
+//    //     LOGGER_ERROR("input image has unknown format !");
+//    //     return NULL;
+//    // }
+
+//    // uint_fast32_t size = jas_image_rawsize(in);
+
+//    // Get the input image data.
+//    jas_tmr_t dectmr;
+//    jas_image_t *image;
+
+//    jas_tmr_start(&dectmr);
+//    image = jas_image_decode(in, idfmt, NULL);
+//    if (! image) {
+//        LOGGER_ERROR("cannot load image data !");
+//        return NULL;
+//    }
+//    jas_tmr_stop(&dectmr);
+
+//    // Component with 3 or 4 channels only...
+//    int numcmpts = jas_image_numcmpts(image);
+
+//    if (numcmpts == 1 || numcmpts == 2) { // Gray + (Alpha)
+//        LOGGER_ERROR("Gray (A) has not been yet implemented !");
+//        return NULL;
+//    }
+//    else if (numcmpts == 3 || numcmpts == 4) { // RGB + (Alpha)
+//        LOGGER_DEBUG("Component : RGB(Alpha).");
+//        if (numcmpts == 4) {
+//            has_alpha = 1;
+//        }
+//    }
+//    else {
+//        LOGGER_ERROR("Number of component > 4, unknow ?!");
+//        return NULL;
+//    }
+
+//    // FIXME : we could force the color space to RGB ?
+
+//    // FIXME : data ?
+
+//    // If this fails, we don't care.
+//    (void) jas_stream_close(in);
+
+//    // Clean
+//    jas_image_destroy(image);
+//    jas_image_clearfmts();
+
+//    return new Libjp2Image (
+//            width, height, resx, resy, channels, bbox, filename,
+//            SampleFormat::UINT, bitspersample, Photometric::RGB, Compression::NONE,
+//            data);
 }

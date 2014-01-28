@@ -1,0 +1,36 @@
+$ checkImage 
+pid=10900  INFO : Version 0.17.0-SNAPSHOT
+pid=10900  INFO : Test image decoding : PNG/JP2/TIFF to TIFF (use libImage).
+pid=10900  INFO : usage : ./checkImage input.(png|jp2|tif) [output.tif]
+
+$ checkImage ORT_2013110637587641_1051_6302_LA93_8Bits.jp2 ORT_2013110637587641_1051_6302_LA93_8Bits.tif
+pid=10907  INFO : Version 0.17.0-SNAPSHOT
+pid=10907  INFO : File name in  : ORT_2013110637587641_1051_6302_LA93_8Bits.jp2
+pid=10907  INFO : File name out : ORT_2013110637587641_1051_6302_LA93_8Bits.tif
+pid=10907  INFO : File size : 6707454
+pid=10907 DEBUG : Utilisation du driver JPEG2000. (/home/jpbazonnais/Workspace-IGN/Mercurial-Repo-Rok4-BE4-develop/lib/libimage/Libjp2Image.cpp:79 in createLibjp2ImageToRead)
+pid=10907 DEBUG : Driver JPEG2000 : OPENJPEG. (/home/jpbazonnais/Workspace-IGN/Mercurial-Repo-Rok4-BE4-develop/lib/libimage/Libjp2Image.cpp:83 in createLibjp2ImageToRead)
+pid=10907 DEBUG : File Size : 6707454 octets. (/home/jpbazonnais/Workspace-IGN/Mercurial-Repo-Rok4-BE4-develop/lib/libimage/Jp2DriverOpenJpeg.cpp:93 in createLibjp2ImageToRead)
+pid=10907 DEBUG : Ok, use format JP2 ! (/home/jpbazonnais/Workspace-IGN/Mercurial-Repo-Rok4-BE4-develop/lib/libimage/Jp2DriverOpenJpeg.cpp:108 in createLibjp2ImageToRead)
+pid=10907 DEBUG : GET Information INPUT ... (/home/jpbazonnais/Workspace-IGN/Mercurial-Repo-Rok4-BE4-develop/be4/checkImage/checkImage.cpp:134 in main)
+pid=10907  INFO : 
+pid=10907  INFO : ---------- Libjp2Image ------------
+pid=10907  INFO : 	- File name : ORT_2013110637587641_1051_6302_LA93_8Bits.jp2
+pid=10907  INFO : 	- Compression : NONE
+pid=10907  INFO : 	- Photometric : RGB
+pid=10907  INFO : 	- Bits per sample : 8
+pid=10907  INFO : 	- Sample format : UINT
+pid=10907  INFO : 
+pid=10907 DEBUG : TIFF image to write : ORT_2013110637587641_1051_6302_LA93_8Bits.tif (/home/jpbazonnais/Workspace-IGN/Mercurial-Repo-Rok4-BE4-develop/lib/libimage/FileImage.cpp:140 in createImageToWrite)
+pid=10907 DEBUG : GET Information OUTPUT ... (/home/jpbazonnais/Workspace-IGN/Mercurial-Repo-Rok4-BE4-develop/be4/checkImage/checkImage.cpp:162 in main)
+pid=10907  INFO : 
+pid=10907  INFO : ---------- LibtiffImage ------------
+pid=10907  INFO : 	- File name : ORT_2013110637587641_1051_6302_LA93_8Bits.tif
+pid=10907  INFO : 	- Compression : NONE
+pid=10907  INFO : 	- Photometric : RGB
+pid=10907  INFO : 	- Bits per sample : 8
+pid=10907  INFO : 	- Sample format : UINT
+pid=10907  INFO : 
+pid=10907  INFO : 	- Rows per strip : 16
+pid=10907  INFO : 
+pid=10907  INFO : All seems ok !
