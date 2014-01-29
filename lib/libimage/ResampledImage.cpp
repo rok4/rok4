@@ -61,6 +61,8 @@ ResampledImage::ResampledImage ( Image* image, int width, int height,
 
     ratioX = resx / resX_src;
     ratioY = resy / resY_src;
+    
+    setCRS(image->getCRS());
 
     // Pour considérer les valeurs comme celles aux centres des pixels, on ramène les coordonnées au centre
     left = ( ( bbox.xmin + 0.5*resx ) - ( image->getBbox().xmin + 0.5*resX_src ) ) / resX_src;

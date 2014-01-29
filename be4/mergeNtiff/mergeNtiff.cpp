@@ -981,6 +981,7 @@ bool reprojectImages ( FileImage* pImageOut, ExtendedCompoundImage* pECI, Reproj
 
     LOGGER_DEBUG ( "        BBOX dst (srs source) : " << tmpBbox.toString() );
     LOGGER_DEBUG ( "        BBOX source : " << pECI->getBbox().toString() );
+    
 
     /************************ Ajout des miroirs *************************/
 
@@ -1004,16 +1005,14 @@ bool reprojectImages ( FileImage* pImageOut, ExtendedCompoundImage* pECI, Reproj
 
     /********************** Image source agrandie ***********************/
 
-    if ( ! pECI->getBbox().contains ( tmpBbox ) ) {
-        /* L'image à reprojeter n'est pas intégralement contenue dans l'image source. Cela va poser des problèmes lors de l'interpolation :
-         * ReprojectedImage va vouloir accéder à des coordonnées pixel négatives -> segmentation fault.
-         * Pour éviter cela, on va agrandir artificiellemnt l'étendue de l'image source (avec du nodata) */
-        if ( ! pECI->extendBbox ( tmpBbox, mirrorSize ) ) {
-            LOGGER_ERROR ( "Unable to extend the source image extent for the reprojection" );
-            return false;
-        }
-        LOGGER_DEBUG ( "        BBOX source agrandie : " << pECI->getBbox().toString() );
+    /* L'image à reprojeter n'est pas intégralement contenue dans l'image source. Cela va poser des problèmes lors de l'interpolation :
+     * ReprojectedImage va vouloir accéder à des coordonnées pixel négatives -> segmentation fault.
+     * Pour éviter cela, on va agrandir artificiellemnt l'étendue de l'image source (avec du nodata) */
+    if ( ! pECI->extendBbox ( tmpBbox, mirrorSize ) ) {
+        LOGGER_ERROR ( "Unable to extend the source image extent for the reprojection" );
+        return false;
     }
+    LOGGER_DEBUG ( "        BBOX source agrandie : " << pECI->getBbox().toString() );
 
     /********************** Grille de reprojection **********************/
 
@@ -1032,13 +1031,11 @@ bool reprojectImages ( FileImage* pImageOut, ExtendedCompoundImage* pECI, Reproj
     // On  reprojete le masque : TOUJOURS EN PPV, sans utilisation de masque pour l'interpolation
     ReprojectedImage* pRMask = new ReprojectedImage ( pECI->Image::getMask(), BBOX_dst, resx_dst, resy_dst, grid,
             Interpolation::NEAREST_NEIGHBOUR, false );
+    pRMask->setCRS(pImageOut->getCRS());
 
-    //saveImage(pRMask, "/home/theo/TEST/reprojection/reprojMask.tif",8,SAMPLEFORMAT_UINT,PHOTOMETRIC_MINISBLACK,COMPRESSION_ADOBE_DEFLATE);
-
-    // Reprojection de l'image
+    // Reprojection de l'image    
     *ppRImage = new ReprojectedImage ( pECI, BBOX_dst, resx_dst, resy_dst, grid, interpolation, pECI->useMasks() );
-
-    //saveImage(pRImage, "/home/theo/TEST/reprojection/reprojImage.tif",8,SAMPLEFORMAT_UINT,PHOTOMETRIC_RGB,COMPRESSION_NONE);
+    (*ppRImage)->setCRS(pImageOut->getCRS());
 
     if ( ! ( *ppRImage )->setMask ( pRMask ) ) {
         LOGGER_ERROR ( "Cannot add mask to the ReprojectedImage" );
@@ -1089,15 +1086,13 @@ int mergeTabImages ( FileImage* pImageOut, // Sortie
             LOGGER_ERROR ( "Impossible d'assembler les images" );
             return -1;
         }
-        pECI->setCRS ( TabImageIn.at ( i ).at ( 0 )->getCRS() );
 
         ExtendedCompoundMask* pECMI = new ExtendedCompoundMask ( pECI );
+        pECMI->setCRS ( TabImageIn.at ( i ).at ( 0 )->getCRS() );
         if ( ! pECI->setMask ( pECMI ) ) {
             LOGGER_ERROR ( "Cannot add mask to the Image's pack " << i );
             return -1;
         }
-
-        pECMI->setCRS ( TabImageIn.at ( i ).at ( 0 )->getCRS() );
 
         if ( pImageOut->isCompatibleWith ( pECI ) ) {
             LOGGER_DEBUG ( "\t is compatible" );
