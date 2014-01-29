@@ -1059,7 +1059,7 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
                     BoundingBox<double> cropBBox = crs.cropBBoxGeographic ( geographicBoundingBox.minx,geographicBoundingBox.miny,geographicBoundingBox.maxx,geographicBoundingBox.maxy );
                     // Test if the remaining bbox contain useful data
                     if ( cropBBox.xmax - cropBBox.xmin <= 0 || cropBBox.ymax - cropBBox.ymin <= 0 ) {
-                        LOGGER_WARN ( _ ( "Le CRS " ) <<str_crs<<_ ( " n est pas compatible avec l'emprise de la couche" ) );
+                        LOGGER_WARN ( _ ( "         Le CRS " ) <<str_crs<<_ ( " n est pas compatible avec l'emprise de la couche" ) );
                         crsOk = false;
                     }
                 }
@@ -1074,18 +1074,40 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
                         allowedCRS = isCRSAllowed(servicesConf->getRestrictedCRSList(), str_crs, tmpEquilist);
                     }
                     if (!allowedCRS){
-                        LOGGER_WARN ( _ ( "Forbiden CRS " ) << str_crs  );
+                        LOGGER_WARN ( _ ( "         Forbiden CRS " ) << str_crs  );
                         crsOk = false;
                     }
                 }
                 
                 if ( crsOk ) {
-                    LOGGER_INFO ( _ ( "         Adding CRS " ) <<str_crs );
-                    WMSCRSList.push_back ( crs );
+                    bool found = false;
+                    for ( int i = 0; i<WMSCRSList.size() ; i++ ){
+                        if ( WMSCRSList.at( i ) == crs ){
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found){
+                        LOGGER_INFO ( _ ( "         Adding CRS " ) <<str_crs );
+                        WMSCRSList.push_back ( crs );
+                    } else {
+                        LOGGER_WARN ( _ ( "         Already present CRS " ) << str_crs  );
+                    }
                     std::vector<CRS> tmpEquilist = getEqualsCRS(servicesConf->getListOfEqualsCRS() , str_crs );
                     for (unsigned int l = 0; l< tmpEquilist.size();l++){
-                        WMSCRSList.push_back( tmpEquilist.at( l ) );
-                        LOGGER_INFO ( _ ( "         Adding Equivalent CRS " ) << tmpEquilist.at( l ).getRequestCode() );
+                        found = false;
+                        for ( int i = 0; i<WMSCRSList.size() ; i++ ){
+                            if ( WMSCRSList.at( i ) == tmpEquilist.at( l ) ){
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found){
+                            WMSCRSList.push_back( tmpEquilist.at( l ) );
+                            LOGGER_INFO ( _ ( "         Adding Equivalent CRS " ) << tmpEquilist.at( l ).getRequestCode() );
+                        } else {
+                            LOGGER_WARN ( _ ( "         Already present CRS " ) << tmpEquilist.at( l ).getRequestCode()  );
+                        }
                     }
                 }
             }
@@ -1673,11 +1695,33 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
                 allowedCRS = isCRSAllowed(restrictedCRSList, crsStr, tmpEquilist);
             }
             if (allowedCRS) {
-                globalCRSList.push_back ( crs );
-                LOGGER_INFO ( _ ( "Adding global CRS " ) << crsStr  );
+                bool found = false;
+                for ( int i = 0; i<globalCRSList.size() ; i++ ){
+                    if (globalCRSList.at( i ) == crs ){
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found){
+                    globalCRSList.push_back ( crs );
+                    LOGGER_INFO ( _ ( "Adding global CRS " ) << crsStr  );
+                } else {
+                    LOGGER_WARN ( _ ( "Already present in global CRS list " ) << crsStr  );
+                }
                 for (unsigned int l = 0; l< tmpEquilist.size();l++){
-                    globalCRSList.push_back( tmpEquilist.at( l ) );
-                    LOGGER_INFO ( _ ( "Adding equivalent global CRS [" ) << tmpEquilist.at( l ).getRequestCode() << _ ( "] of [" ) << crsStr << "]" );
+                    found = false;
+                    for ( int i = 0; i<globalCRSList.size() ; i++ ){
+                        if ( globalCRSList.at( i ) == tmpEquilist.at( l ) ){
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found){
+                        globalCRSList.push_back( tmpEquilist.at( l ) );
+                        LOGGER_INFO ( _ ( "Adding equivalent global CRS [" ) << tmpEquilist.at( l ).getRequestCode() << _ ( "] of [" ) << crsStr << "]" );
+                    } else {
+                        LOGGER_WARN ( _ ( "Already present in global CRS list " ) << tmpEquilist.at( l ).getRequestCode()  );   
+                    }
                 }
             } else {
                 LOGGER_WARN ( _ ( "Forbiden global CRS " ) << crsStr  );
@@ -1830,7 +1874,7 @@ std::vector<CRS> ConfLoader::getEqualsCRS(std::vector<std::string> listofequalsC
         workingbasecrs.append(" ");
         size_t found = listofequalsCRS.at( l ).find ( workingbasecrs );
         if (found == std::string::npos){
-            found = listofequalsCRS.at( l ).find ( basecrs );
+            size_t found = listofequalsCRS.at( l ).find ( basecrs );
             if ( found != ( listofequalsCRS.at( l ).size() - basecrs.size()) ){
                 found = std::string::npos;
             }
