@@ -73,11 +73,11 @@
  *
  * Les méthodes de fusion disponibles sont :
  * \~
- * \li TRANSPARENCY
+ * \li ALPHATOP
  * \image html merge_transparency.png
  * \li MULTIPLY
  * \image html merge_multiply.png
- * \li MASK
+ * \li TOP
  * \image html merge_mask.png
  * \~french
  */
@@ -116,8 +116,11 @@ Merge::eMergeType mergeMethod = Merge::UNKNOWN;
 
 /** \~french Couleur à considérer comme transparent dans le images en entrée. Vrai couleur (sur 3 canaux). Peut ne pas être définie */
 int* transparent;
-/** \~french Couleur à utiliser comme fond. Doit comporter autant de valeur qu'on veut de canaux dans l'image finale. Si un canal alpha est présent, il doit également être prémultiplié aux autres canaux */
+/** \~french Couleur à utiliser comme fond. Doit comporter autant de valeur qu'on veut de canaux dans l'image finale. Si un canal alpha est présent, il ne doit pas être prémultiplié aux autres canaux */
 int* background;
+
+/** \~french Activation du niveau de log debug. Faux par défaut */
+bool debugLogger=false;
 
 /**
  * \~french
@@ -127,7 +130,7 @@ int* background;
  * overlayNtiff version X.X.X
  *
  * Create one TIFF image, from several TIFF images with same dimensions, with different available merge methods.
- * Sources and output image can have different numbers of samples per pixel. The sample type have to be the same for all sdources and will be the output one
+ * Sources and output image can have different numbers of samples per pixel. The sample type have to be the same for all sources and will be the output one
  *
  * Usage: overlayNtiff -f <FILE> -m <VAL> -c <VAL> -s <VAL> -p <VAL [-n <VAL>] -b <VAL>
  * Parameters:
@@ -140,7 +143,7 @@ int* background;
  *             pkb     PackBits encoding
  *             zip     Deflate encoding
  *     -t value to consider as transparent, 3 integers, separated with comma. Optionnal
- *     -b value to use as background, one integer per output sample, separated with comma. If an alpha sample is provided, other samples hav to be pre-multiplied with it.
+ *     -b value to use as background, one integer per output sample, separated with comma.
  *     -m merge method : used to merge input images, associated masks are always used if provided :
  *             ALPHATOP       images are merged by alpha blending
  *             MULTIPLY       samples are multiplied one by one
@@ -149,6 +152,7 @@ int* background;
  *     -p photometric :
  *             gray    min is black
  *             rgb     for image with alpha too
+ *      -d debug logger activation
  *
  * Examples
  *     - for gray orthophotography, with transparency (white is transparent)
@@ -161,7 +165,7 @@ void usage() {
     LOGGER_INFO ( "\noverlayNtiff version " << BE4_VERSION << "\n\n" <<
 
                   "Create one TIFF image, from several TIFF images with same dimensions, with different available merge methods.\n" <<
-                  "Sources and output image can have different numbers of samples per pixel. The sample type have to be the same for all sdources and will be the output one\n\n" <<
+                  "Sources and output image can have different numbers of samples per pixel. The sample type have to be the same for all sources and will be the output one\n\n" <<
 
                   "Usage: overlayNtiff -f <FILE> -m <VAL> -c <VAL> -s <VAL> -p <VAL [-n <VAL>] -b <VAL>\n" <<
 
@@ -175,15 +179,16 @@ void usage() {
                   "            pkb     PackBits encoding\n" <<
                   "            zip     Deflate encoding\n" <<
                   "    -t value to consider as transparent, 3 integers, separated with comma. Optionnal\n" <<
-                  "    -b value to use as background, one integer per output sample, separated with comma. If an alpha sample is provided, other samples hav to be pre-multiplied with it\n" <<
+                  "    -b value to use as background, one integer per output sample, separated with comma\n" <<
                   "    -m merge method : used to merge input images, associated masks are always used if provided :\n" <<
                   "            ALPHATOP       images are merged by alpha blending\n" <<
                   "            MULTIPLY       samples are multiplied one by one\n" <<
                   "            TOP            only the top data pixel is kept\n" <<
-                  "    -s samples per pixel : 1, 2, 3 or 4\n" <<
-                  "    -p photometric :\n" <<
+                  "    -s output samples per pixel : 1, 2, 3 or 4\n" <<
+                  "    -p output photometric :\n" <<
                   "            gray    min is black\n" <<
-                  "            rgb     for image with alpha too\n\n" <<
+                  "            rgb     for image with alpha too\n" <<
+                  "    -d debug logger activation\n\n" <<
 
                   "Examples\n" <<
                   "    - for gray orthophotography, with transparency (white is transparent)\n" <<
@@ -226,6 +231,9 @@ int parseCommandLine ( int argc, char** argv ) {
             case 'h': // help
                 usage();
                 exit ( 0 );
+            case 'd': // debug logs
+                debugLogger = true;
+                break;
             case 'f': // Images' list file
                 if ( i++ >= argc ) {
                     LOGGER_ERROR ( "Error with images' list file (option -f)" );
@@ -325,7 +333,7 @@ int parseCommandLine ( int argc, char** argv ) {
         return -1;
     }
 
-    if ( strlen ( strTransparent ) != 0 ) {
+    if (mergeMethod == Merge::ALPHATOP && strlen ( strTransparent ) != 0 ) {
         transparent = new int[3];
 
         // Transparent interpretation
@@ -567,15 +575,10 @@ int main ( int argc, char **argv ) {
     Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
 
     Accumulator* acc = new StreamAccumulator();
-    //Logger::setAccumulator(DEBUG, acc);
     Logger::setAccumulator ( INFO , acc );
     Logger::setAccumulator ( WARN , acc );
     Logger::setAccumulator ( ERROR, acc );
     Logger::setAccumulator ( FATAL, acc );
-
-    std::ostream &logd = LOGGER ( DEBUG );
-    logd.precision ( 16 );
-    logd.setf ( std::ios::fixed,std::ios::floatfield );
 
     std::ostream &logw = LOGGER ( WARN );
     logw.precision ( 16 );
@@ -585,6 +588,14 @@ int main ( int argc, char **argv ) {
     // Lecture des parametres de la ligne de commande
     if ( parseCommandLine ( argc,argv ) < 0 ) {
         error ( "Cannot parse command line",-1 );
+    }
+
+    // On sait maintenant si on doit activer le niveau de log DEBUG
+    if (debugLogger) {
+        Logger::setAccumulator(DEBUG, acc);
+        std::ostream &logd = LOGGER ( DEBUG );
+        logd.precision ( 16 );
+        logd.setf ( std::ios::fixed,std::ios::floatfield );
     }
 
     LOGGER_DEBUG ( "Load" );

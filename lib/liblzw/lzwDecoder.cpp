@@ -85,9 +85,11 @@ void lzwDecoder::clearDict() {
     firstPass = true;
 }
 
-
-uint8_t* lzwDecoder::decode ( const uint8_t* in, size_t inSize, size_t& outPos ) {
-    
+/** \warning Accès à un emplacement dans dict impossible. Des sortie ont été mises, pour pointer le problème. Le plantage n'est pas systématique pour une même image.
+ ** \warning Performance de décodage assez mauvaises.
+ */
+uint8_t* lzwDecoder::decode ( const uint8_t* in, size_t inSize, size_t& outPos )
+{
     size_t outSize= (outPos?outPos:BUFFER_SIZE);
     uint8_t* out = new uint8_t[outSize];
     outPos=0;
@@ -123,7 +125,6 @@ uint8_t* lzwDecoder::decode ( const uint8_t* in, size_t inSize, size_t& outPos )
                 firstPass = false;
             }
         }
-
         //Read enough data from input stream
         while ( nReadbits < bitSize) {
             if ( inSize > 0) {
@@ -147,8 +148,9 @@ uint8_t* lzwDecoder::decode ( const uint8_t* in, size_t inSize, size_t& outPos )
         if ( code == M_CLR ) { // Reset Dictionary
             this->clearDict();
         } else {
-            if (code > dict.size() - 1) {// Code Not found
+            if (code > dict.size() - 1) { // Code Not found
                 //itCode = dict.find(lastCode);
+                if (lastCode >= dict.size()) std::cout << "1 lastCode = " << lastCode << " et dict size = " << dict.size() << std::endl;
                 lzwWord oldstring = dict.at(lastCode);
                 outString.assign(oldstring.begin(),oldstring.end());
                 outString.push_back(lastChar);
@@ -156,10 +158,6 @@ uint8_t* lzwDecoder::decode ( const uint8_t* in, size_t inSize, size_t& outPos )
                 outString.assign(dict.at(code).begin(),dict.at(code).end());
             }
             lastChar = *(outString.begin());
-
-
-
-
 
             for (lzwWord::iterator it = outString.begin(); it != outString.end(); it++) {
                 if (outPos >= outSize) {
@@ -177,6 +175,8 @@ uint8_t* lzwDecoder::decode ( const uint8_t* in, size_t inSize, size_t& outPos )
                 }
                 out[outPos++]= *it;
             }
+
+            if (lastCode >= dict.size()) std::cout << "2 lastCode = " << lastCode << " et dict size = " << dict.size() << std::endl;
             lzwWord newEntry = dict.at(lastCode);
             newEntry.push_back(lastChar);
             dict.push_back(newEntry);
@@ -202,5 +202,7 @@ lzwDecoder::~lzwDecoder()
 {
     dict.clear();
 }
+
+
 
 

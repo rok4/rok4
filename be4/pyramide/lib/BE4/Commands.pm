@@ -99,14 +99,12 @@ use constant FALSE => 0;
 use constant MERGE4TIFF_W => 1;
 # Constant: MERGENTIFF_W
 use constant MERGENTIFF_W => 4;
-# Constant: CACHE2WORK_PNG_W
-use constant CACHE2WORK_PNG_W => 3;
+# Constant: CACHE2WORK_W
+use constant CACHE2WORK_W => 1;
 # Constant: WGET_W
 use constant WGET_W => 35;
 # Constant: TIFF2TILE_W
-use constant TIFF2TILE_W => 0;
-# Constant: TIFFCP_W
-use constant TIFFCP_W => 0;
+use constant TIFF2TILE_W => 1;
 
 =begin nd
 Constant: BASHFUNCTIONS
@@ -124,11 +122,10 @@ declare -A RM_IMGS
 Wms2work () {
     local dir=$1
     local fmt=$2
-    local imgSize=$3
-    local nbTiles=$4
-    local min_size=$5
-    local url=$6
-    shift 6
+    local nbTiles=$3
+    local min_size=$4
+    local url=$5
+    shift 5
 
     local size=0
 
@@ -136,16 +133,19 @@ Wms2work () {
 
     for i in `seq 1 $#`;
     do
-        nameImg=`printf "$dir/img%.2d.$fmt" $i`
+        nameImg=`printf "$dir/img%.5d.$fmt" $i`
         local count=0; local wait_delay=1
         while :
         do
             let count=count+1
             wget --no-verbose -O $nameImg "$url&BBOX=$1"
-            if [ "$fmt" == "png" ] ; then
-                if pngcheck $nameImg 1>/dev/null ; then break ; fi
-            else
-                if tiffck $nameImg 1>/dev/null ; then break ; fi
+
+            if [ $? == 0 ] ; then
+                if [ "$fmt" == "png" ] ; then
+                    if pngcheck $nameImg 1>/dev/null ; then break ; fi
+                else
+                    if tiffck $nameImg 1>/dev/null ; then break ; fi
+                fi
             fi
             
             echo "Failure $count : wait for $wait_delay s"
@@ -161,16 +161,16 @@ Wms2work () {
     done
     
     if [ "$size" -le "$min_size" ] ; then
-        RM_IMGS["$dir.tif"]="1"
+        RM_IMGS["$dir.$fmt"]="1"
         rm -rf $dir
         return
     fi
 
-    if [ "$nbTiles" != "1x1" ] ; then
-        montage -geometry $imgSize -tile $nbTiles $dir/*.$fmt __montageOut__ $dir.$fmt
+    if [ "$nbTiles" != "1 1" ] ; then
+        composeNtiff -g $nbTiles -s $dir/ -c zip $dir.tif
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     else
-        mv $dir/img01.$fmt $dir.$fmt
+        mv $dir/img00001.$fmt $dir.$fmt
     fi
 
     rm -rf $dir
@@ -179,24 +179,9 @@ Wms2work () {
 Cache2work () {
     local imgSrc=$1
     local workName=$2
-    local type=$3
-    
-    if [  "$type" == "png"  ] ; then
-        cp $imgSrc $workName.tif
-        mkdir $workName
-        untile $workName.tif $workName/
-        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-        montage __montageIn__ $workName/*.png __montageOut__ $workName.tif
-        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-        rm -rf $workName/
-    elif [  "$type" == "jpg"  ] ; then
-        convert $imgSrc __conv__ $workName.tif
-        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi        
-    else
-        tiffcp __tcpI__ $imgSrc $workName.tif
-        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-    fi
 
+    cache2work __c2w__ $imgSrc $workName.tif
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 
 Work2cache () {
@@ -236,7 +221,7 @@ Work2cache () {
 
                 tiff2tile $workDir/$workMskName __t2tM__ ${PYR_DIR}/$mskName
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-                echo "0/$mskName" >> ${LIST_FILE}
+                echo "0/$mskName" >> ${TMP_LIST_FILE}
 
             fi
             
@@ -416,7 +401,7 @@ Example:
     11271098.442818944,-2504688.54284865024,11897270.57853110784,-1878516.4071364864
     11897270.57853110784,-2504688.54284865024,12523442.71424327168,-1878516.4071364864"
     #
-    Wms2work "path/image_several_requests" "png" "1024x1024" "4x4" "250000" "http://localhost/wms-vector?LAYERS=BDD_WLD_WM&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/png&CRS=EPSG:3857&WIDTH=1024&HEIGHT=1024&STYLES=line&BGCOLOR=0x80BBDA&TRANSPARENT=0X80BBDA" $BBOXES
+    Wms2work "path/image_several_requests" "png" "4 4" "250000" "http://localhost/wms-vector?LAYERS=BDD_WLD_WM&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/png&CRS=EPSG:3857&WIDTH=1024&HEIGHT=1024&STYLES=line&BGCOLOR=0x80BBDA&TRANSPARENT=0X80BBDA" $BBOXES
     (end code)
 
 Parameters (list):
@@ -447,6 +432,10 @@ sub wms2work {
         width => $imgSize[0],
         height => $imgSize[1]
     });
+    
+    if (! defined $cmd) {
+        return (undef, WGET_W);
+    }
 
     $node->setWorkExtension($format);
     
@@ -456,18 +445,14 @@ sub wms2work {
 =begin nd
 Function: cache2work
 
-Copy image from cache to work directory and transform (work format : untiles, uncompressed). Use the 'Cache2work' bash function.
+Copy image from cache to work directory and transform (work format : untiled, zip-compression). Use the 'Cache2work' bash function.
 
 (see cache2work.png)
-
-2 cases:
-    - legal tiff compression -> tiffcp
-    - png -> untile + montage
     
 Examples:
     (start code)
     Cache2work ${PYR_DIR}/IMAGE/19/02/BF/24.tif ${TMP_DIR}/19_398_3136_BgI
-    Cache2work ${PYR_DIR}/IMAGE/19/02/BF/24.tif ${TMP_DIR}/19_398_3136_BgI png
+    Cache2work ${PYR_DIR}/IMAGE/19/02/BF/24.tif ${TMP_DIR}/19_398_3136_BgM
     (end code)
     
 Parameters (list):
@@ -492,18 +477,8 @@ sub cache2work {
     my $cmd = "";
     my $weight = 0;
     
-    if ($self->{pyramid}->getCompression eq 'png') {
-        # Dans le cas du png, l'opération de copie doit se faire en 3 étapes :
-        #       - la copie du fichier dans le dossier temporaire
-        #       - le détuilage (untile)
-        #       - la fusion de tous les png en un tiff
-        $cmd = sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s png\n", $fileName , $workBaseName);
-        $weight = CACHE2WORK_PNG_W;
-        
-    } else {
-        $cmd = sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s %s\n", $fileName, $workBaseName, $self->{pyramid}->getCompression);
-        $weight = TIFFCP_W;
-    }
+    $cmd = sprintf "Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $fileName, $workBaseName;
+    $weight = CACHE2WORK_W;
     
     #### Rappatriement du masque de donnée (si présent) ####
     
@@ -513,7 +488,7 @@ sub cache2work {
         $workBaseName = $node->getWorkBaseName("BgM");
         
         $cmd .= sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $fileName , $workBaseName);
-        $weight += TIFFCP_W;
+        $weight += CACHE2WORK_W;
     }
     
     return ($cmd,$weight);
@@ -607,22 +582,26 @@ sub mergeNtiff {
     my $imgPath = File::Spec->catfile($self->{pyramid}->getRootPerType("data",TRUE),$node->getPyramidName);
     
     if ( -f $imgPath ) {
-        my $maskPath = File::Spec->catfile($self->{pyramid}->getRootPerType("mask",TRUE),$node->getPyramidName);
+        my $clonedNodeBg = $node->clone();
+        
+        my $maskPath = File::Spec->catfile($self->{pyramid}->getRootPerType("mask",TRUE),$clonedNodeBg->getPyramidName);
         
         if ( $self->{useMasks} && -f $maskPath ) {
             # On a en plus un masque associé à l'image de fond
-            ($c,$w) = $self->cache2work($node,TRUE);
+            ($c,$w) = $self->cache2work($clonedNodeBg,TRUE);
             $code .= $c;
             $weight += $w;
             
-            $workBgM = $node->getWorkName("BgM");
+            $workBgM = $clonedNodeBg->getWorkName("BgM");
         } else {
-            ($c,$w) = $self->cache2work($node,FALSE);
+            ($c,$w) = $self->cache2work($clonedNodeBg,FALSE);
             $code .= $c;
             $weight += $w;
         }
         
-        $workBgI = $node->getWorkName("BgI");
+        $workBgI = $clonedNodeBg->getWorkName("BgI");
+
+        undef $clonedNodeBg;
     }
     
     my $workImgPath = $node->getWorkName("I");
@@ -718,6 +697,7 @@ sub merge4tiff {
     my $imgPath = File::Spec->catfile($self->{pyramid}->getRootPerType("data",TRUE),$node->getPyramidName);
     my $maskPath = File::Spec->catfile($self->{pyramid}->getRootPerType("mask",TRUE),$node->getPyramidName);
     if ( -f $imgPath && ($self->{useMasks} || scalar @childList != 4) ) {
+        my $clonedNodeBg = $node->clone();
         
         # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
         
@@ -728,39 +708,41 @@ sub merge4tiff {
             # rok4, qui n'aime pas). Si l'image contient plus de tuile que le niveau, on ne demande plus
             # (c'est qu'on a déjà tout ce qu'il faut avec les niveaux inférieurs).
 
-            my $tm = $self->{pyramid}->getTileMatrixSet->getTileMatrix($node->getLevel);
+            my $tm = $self->{pyramid}->getTileMatrixSet->getTileMatrix($clonedNodeBg->getLevel);
 
             my $tooWide = ($tm->getMatrixWidth() < $self->{pyramid}->getTilesPerWidth);
             my $tooHigh = ($tm->getMatrixHeight() < $self->{pyramid}->getTilesPerHeight);
 
             if (! $tooWide && ! $tooHigh) {
-                ($c,$w) = $self->wms2work($node,$harvesting,"BgI");
+                ($c,$w) = $self->wms2work($clonedNodeBg,$harvesting,"BgI");
                 if (! defined $c) {
-                    ERROR(sprintf "Cannot harvest the back ground image %s",$node->getWorkBaseName("BgI"));
+                    ERROR(sprintf "Cannot harvest the back ground image %s",$clonedNodeBg->getWorkBaseName("BgI"));
                     return ("",-1);
                 }
 
                 $code .= $c;
                 $weight += $w;
-                $workBgI = $node->getWorkName("BgI");
+                $workBgI = $clonedNodeBg->getWorkName("BgI");
             }
 
         } else {
             # On détuile l'image de fond (et éventuellement le masque), pour pouvoir travailler avec.
-            $workBgI = $node->getWorkName("BgI");
+            $workBgI = $clonedNodeBg->getWorkName("BgI");
 
             if ( $self->{useMasks} && -f $maskPath ) {
                 # On a en plus un masque associé à l'image de fond
-                ($c,$w) = $self->cache2work($node,TRUE);
+                ($c,$w) = $self->cache2work($clonedNodeBg,TRUE);
                 $code .= $c;
                 $weight += $w;
-                $workBgM = $node->getWorkName("BgM");
+                $workBgM = $clonedNodeBg->getWorkName("BgM");
             } else {
-                ($c,$w) = $self->cache2work($node,FALSE);
+                ($c,$w) = $self->cache2work($clonedNodeBg,FALSE);
                 $code .= $c;
                 $weight += $w;
             }
         }
+
+        undef $clonedNodeBg;
     }
     
     # We compose the 'Merge4tiff' call
@@ -844,48 +826,10 @@ sub configureFunctions {
 
     $configuredFunc =~ s/__m4t__/$conf_m4t/;
 
-    ######## montage ########
-    my $conf_montageIn = "";
-
-    $conf_montageIn .= sprintf "-geometry %sx%s",$self->{pyramid}->getTileWidth,$self->{pyramid}->getTileHeight;
-    $conf_montageIn .= sprintf " -tile %sx%s",$self->{pyramid}->getTilesPerWidth,$self->{pyramid}->getTilesPerHeight;
+    ######## cache2work ########
     
-    $configuredFunc =~ s/__montageIn__/$conf_montageIn/;
-    
-    my $conf_montageOut = "";
-    
-    $conf_montageOut .= "-depth $bps ";
-    
-    $conf_montageOut .= sprintf "-define tiff:rows-per-strip=%s -compress Zip ",$self->{pyramid}->getCacheImageHeight;
-    if ($spp == 4) {
-        $conf_montageOut .= "-type TrueColorMatte -background none ";
-    } elsif ($spp == 3) {
-        $conf_montageOut .= "-type TrueColor ";
-    } elsif ($spp == 1) {
-        $conf_montageOut .= "-type Grayscale ";
-    }
-
-    $configuredFunc =~ s/__montageOut__/$conf_montageOut/g;
-
-    ######## tiffcp ########
-    
-    my $conf_tcp = "-s -c zip";
-    $configuredFunc =~ s/__tcpI__/$conf_tcp/;
-
-    ######## convert ########
-
-    my $conf_convert = "-compress zip";
-    if ($spp == 4) {
-        $conf_convert .= " -type TrueColorMatte -background none";
-    } elsif ($spp == 3) {
-        $conf_convert .= " -type TrueColor";
-    } elsif ($spp == 1) {
-        $conf_convert .= " -type Grayscale";
-    }
-
-    $conf_convert .= " -depth $bps";
-    
-    $configuredFunc =~ s/__conv__/$conf_convert/;
+    my $conf_c2w = "-c zip";
+    $configuredFunc =~ s/__c2w__/$conf_c2w/;
     
     ######## tiff2tile ########
     my $conf_t2t = "";
@@ -898,13 +842,12 @@ sub configureFunctions {
         $conf_t2t .= "-crop ";
     }
 
-    $conf_t2t .= "-p $ph -b $bps -a $sf -s $spp ";
     $conf_t2t .= sprintf "-t %s %s ",$pyr->getTileMatrixSet->getTileWidth,$pyr->getTileMatrixSet->getTileHeight;
 
     $configuredFunc =~ s/__t2tI__/$conf_t2t/;
     
     # pour les masques
-    $conf_t2t = sprintf "-c zip -p gray -t %s %s -b 8 -a uint -s 1",
+    $conf_t2t = sprintf "-c zip -t %s %s",
         $pyr->getTileMatrixSet->getTileWidth,$pyr->getTileMatrixSet->getTileHeight;
     $configuredFunc =~ s/__t2tM__/$conf_t2t/;
     

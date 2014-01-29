@@ -44,8 +44,10 @@
 // Taille maximum d'une tuile WMTS
 #define MAX_TILE_SIZE 1048576
 
-FileDataSource::FileDataSource ( const char* filename, const uint32_t posoff, const uint32_t possize, std::string type ) : filename ( filename ), posoff ( posoff ), possize ( possize ), type ( type ) {
-    data=0;
+FileDataSource::FileDataSource ( const char* filename, const uint32_t posoff, const uint32_t possize, std::string type, std::string encoding ) : filename ( filename ), posoff ( posoff ), possize ( possize ), type ( type ) , encoding( encoding ){    data=0;
+    size=0;
+}
+FileDataSource::FileDataSource ( const char* filename, const uint32_t posoff, const uint32_t possize, std::string type ) : filename ( filename ), posoff ( posoff ), possize ( possize ), type ( type ) , encoding( "" ){    data=0;
     size=0;
 }
 

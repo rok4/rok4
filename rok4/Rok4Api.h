@@ -70,6 +70,7 @@ typedef void Rok4Server;
     typedef struct {
         int status;
         char* type;
+        char* encoding;
         uint8_t* content;
         size_t contentSize;
     } HttpResponse;
@@ -79,6 +80,7 @@ typedef void Rok4Server;
         uint32_t posoff;
         uint32_t possize;
         char* type;
+        char* encoding;
         int width;
         int height;
         int channels;

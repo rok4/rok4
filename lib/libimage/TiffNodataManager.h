@@ -352,8 +352,6 @@ bool TiffNodataManager<T>::treatNodata ( char* inputImage, char* outputImage, ch
         return false;
     }
 
-    sourceImage->print();
-
     /*************** Chargement de l'image ***************/
 
     T *IM  = new T[width * height * samplesperpixel];
@@ -408,27 +406,30 @@ bool TiffNodataManager<T>::treatNodata ( char* inputImage, char* outputImage, ch
 
     } else {
         if ( memcmp ( inputImage, outputImage, sizeof ( outputImage ) ) )
-            LOGGER_WARN ( "The image have not be modified, the file '" << outputImage <<"' is not written" );
+            LOGGER_INFO ( "The image have not be modified, the file '" << outputImage <<"' is not written" );
     }
 
     /**************** Ecriture du masque ? ****************/
-    if ( outputMask && containNodata ) {
-        FileImage* destMask = FIF.createImageToWrite(
-            outputMask, BoundingBox<double>(0,0,0,0), -1, -1, width, height,
-            1, SampleFormat::UINT, 8, Photometric::MASK, Compression::DEFLATE
-        );
+    if ( outputMask ) {
+        if (containNodata) {
+            FileImage* destMask = FIF.createImageToWrite(
+                outputMask, BoundingBox<double>(0,0,0,0), -1, -1, width, height,
+                1, SampleFormat::UINT, 8, Photometric::MASK, Compression::DEFLATE
+            );
 
-        if ( destMask == NULL )  {
-            LOGGER_ERROR ( "Cannot create the output mask "<< outputMask );
-            return false;
+            if ( destMask == NULL )  {
+                LOGGER_ERROR ( "Cannot create the output mask "<< outputMask );
+                return false;
+            }
+
+            LOGGER_DEBUG("We write the output mask " << outputMask);
+            destMask->writeImage(MSK);
+
+            delete destMask;
+        } else {
+            LOGGER_INFO ( "The image contains only data, the mask '" << outputMask <<"' is not written" );
         }
-
-        LOGGER_DEBUG("We write the output mask " << outputMask);
-        destMask->writeImage(MSK);
-
-        delete destMask;
     }
-
 
     delete[] IM;
     delete[] MSK;

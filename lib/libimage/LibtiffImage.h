@@ -66,7 +66,7 @@
  *
  * Cette classe va utiliser la librairie TIFF afin de lire/écrire les données et de récupérer/fournir les informations sur les images.
  *
- * Si les images lues possèdent un canal alpha, celui-ci doit être associé, c'est-à-dire prémultiplié aux autres canaux. De même en écriture, on considère que s'il y a un canal alpha, il a été prémultiplié aux autres canaux lors des traitements.
+ * Si les images lues possèdent un canal alpha, celui-ci ne doit pas être associé, c'est-à-dire qu'on conserve la valeur des autres canaux. De même en écriture, on considère que s'il y a un canal alpha, il n'a pas été prémultiplié aux autres canaux lors des traitements et l'image écrite est en alpha non associé.
  *
  * \todo Utiliser le code de la classe TiffReader pour permettre à LibtiffImage de lire des images tuilées.
  */
@@ -113,6 +113,8 @@ private:
     template<typename T>
     int _getline ( T* buffer, int line );
 
+    int unassociateAlpha ( uint8_t* buffer );
+
 protected:
     /** \~french
      * \brief Crée un objet LibtiffImage à partir de tous ses éléments constitutifs
@@ -130,6 +132,7 @@ protected:
      * \param[in] compression compression des données
      * \param[in] tiff interface de la librairie TIFF entre le fichier et l'objet
      * \param[in] rowsperstrip taille de la bufferisation des données, en nombre de lignes
+     * \param[in] associatedalpha le canal d'alpha (le 2ème ou le 4ème) est-il prémultiplié dans les données ?
      ** \~english
      * \brief Create a LibtiffImage object, from all attributes
      * \param[in] width image width, in pixel
@@ -145,11 +148,12 @@ protected:
      * \param[in] compression data compression
      * \param[in] tiff interface between file and object
      * \param[in] rowsperstrip data buffering size, in line number
+     * \param[in] associatedalpha alpha sample (the second or the fourth sample) is associated (premutliplied) ?
      */
     LibtiffImage (
         int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name,
         SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
-        Compression::eCompression compression, TIFF* tif, int rowsperstrip
+        Compression::eCompression compression, TIFF* tif, int rowsperstrip, bool associatedalpha = false
     );
 
 public:

@@ -2,12 +2,13 @@
 SET(PARENT_PROJECT_NAME ${PROJECT_NAME})
 
 #Défini le nom du projet 
-project(untile)
+project(composeNtiff)
 
 #définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
 list(GET BE4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
 list(GET BE4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
 list(GET BE4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
+
 
 cmake_minimum_required(VERSION 2.6)
 
@@ -32,11 +33,11 @@ set(BUILD_SHARED_LIBS OFF)
 #set(CMAKE_C_FLAGS_SPECIFICBUILD "")
 if(DEBUG_BUILD)
   set(CMAKE_BUILD_TYPE debugbuild)
-  set(CMAKE_CXX_FLAGS_DEBUGBUILD "-g -O0")
+  set(CMAKE_CXX_FLAGS_DEBUGBUILD "-g -O0 -msse -msse2 -msse3")
   set(CMAKE_C_FLAGS_DEBUGBUILD "-g -std=c99")
 else(DEBUG_BUILD)
   set(CMAKE_BUILD_TYPE specificbuild)
-  set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3")
+  set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3 -msse -msse2 -msse3")
   set(CMAKE_C_FLAGS_SPECIFICBUILD "-std=c99")
 endif(DEBUG_BUILD)
 
@@ -45,7 +46,7 @@ endif(DEBUG_BUILD)
 ########################################
 #définition des fichiers sources
 
-set(${PROJECT_NAME}_SRCS untile.cpp )
+set(${PROJECT_NAME}_SRCS composeNtiff.cpp )
 
 
 
@@ -53,17 +54,17 @@ add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRCS})
 
 ########################################
 #Définition des dépendances.
-#include(ROK4Dependencies)
-#
-#set(DEP_INCLUDE_DIR ${JPEG_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
-#
-##Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
-#set(DEP_LIBRARY tiff zlib jpeg)
-#
+include(ROK4Dependencies)
+
+set(DEP_INCLUDE_DIR ${IMAGE_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
+
+#Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
+set(DEP_LIBRARY tiff logger proj image)
+
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
-#
-#target_link_libraries(${PROJECT_NAME} ${DEP_LIBRARY})
-#
+
+target_link_libraries(${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+
 ########################################
 # Gestion des tests unitaires (CPPUnit)
 # Les fichiers tests doivent être dans le répertoire tests/cppunit
@@ -83,7 +84,7 @@ if(UNITTEST)
   "tests/cppunit/CppUnit*.cpp" )
     ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} tests/cppunit/main.cpp ${UnitTests_SRCS} )
     #Bibliothèque à lier (ajouter la cible (executable/library) du projet
-    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
+    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit lib${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
     FOREACH(test ${UnitTests_SRCS})
           MESSAGE("  - adding test ${test}")
           GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
@@ -117,7 +118,6 @@ INSTALL(FILES ${headers-${PROJECT_NAME}}
 ########################################
 # Paramétrage de la gestion de package CPack
 # Génère un fichier PROJET-VERSION-OS-32/64bit.tar.gz 
-
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
   SET(BUILD_ARCHITECTURE "64bit")

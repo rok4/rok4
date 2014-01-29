@@ -38,17 +38,21 @@
 /**
  * \file Format.h
  ** \~french
- * \brief Définition de la classe SampleType des namespaces Compression et Format
+ * \brief Définition des namespaces Compression, SampleFormat, Photometric, ExtraSample et Format
  * \details
- * \li SampleType : gère les types de canaux acceptés par les classes d'Image
+ * \li SampleFormat : gère les types de canaux acceptés par les classes d'Image
  * \li Compression : énumère et manipule les différentes compressions
  * \li Format : énumère et manipule les différents format d'image
+ * \li Photometric : énumère et manipule les différentes photométries
+ * \li ExtraSample : énumère et manipule les différents type de canal supplémentaire
  ** \~english
- * \brief Define class SampleType and the namespaces Compression and Format
+ * \brief Define and the namespaces Compression, SampleFormat, Photometric, ExtraSample et Format
  * \details
- * \li SampleType : managed sample type accepted by Image classes
+ * \li SampleFormat : managed sample type accepted by Image classes
  * \li Compression : enumerate and managed different compressions
  * \li Format : enumerate and managed different formats
+ * \li Photometric : enumerate and managed different photometrics
+ * \li ExtraSample : enumerate and managed different extra sample types
  */
 
 #ifndef FORMAT_H
@@ -197,14 +201,15 @@ enum ePhotometric {
     UNKNOWN = 0,
     GRAY = 1,
     RGB = 2,
-    MASK = 3
+    YCBCR = 3,
+    MASK = 4
 };
 
 /**
  * \~french \brief Nombre de photométries disponibles
  * \~english \brief Number of photometrics compressions
  */
-const int photometric_size = 3;
+const int photometric_size = 4;
 
 /**
  * \~french \brief Conversion d'une chaîne de caractères vers une photométrie de l'énumération
@@ -229,12 +234,59 @@ std::string toString ( ePhotometric ph );
 }
 
 
+
+/**
+ * \author Institut national de l'information géographique et forestière
+ * \~french \brief Gestion des informations liées aux canaux supplémentaires
+ * \~english \brief Manage informations in connection with extra samples
+ */
+namespace ExtraSample {
+/**
+ * \~french \brief Énumération des types de canal supplémentaire
+ * \~english \brief Available extra samples type enumeration
+ */
+enum eExtraSample {
+    UNKNOWN = 0,
+    ALPHA_ASSOC = 1,
+    ALPHA_UNASSOC = 2
+};
+
+/**
+ * \~french \brief Nombre de type de canal supplémentaire disponibles
+ * \~english \brief Number of extra sample type compressions
+ */
+const int extraSample_size = 2;
+
+/**
+ * \~french \brief Conversion d'une chaîne de caractères vers un type de canal supplémentaire de l'énumération
+ * \param[in] strComp chaîne de caractère à convertir
+ * \return le type de canal supplémentaire correspondante, UNKNOWN (0) si la chaîne n'est pas reconnue
+ * \~english \brief Convert a string to a extra sample type enumeration member
+ * \param[in] strComp string to convert
+ * \return the binding extra sample type, UNKNOWN (0) if string is not recognized
+ */
+eExtraSample fromString ( std::string strES );
+
+/**
+ * \~french \brief Conversion d'un type de canal supplémentaire vers une chaîne de caractères
+ * \param[in] comp type de canal supplémentaire à convertir
+ * \return la chaîne de caractère nommant le type de canal supplémentaire
+ * \~english \brief Convert a extra sample type to a string
+ * \param[in] comp extra sample type to convert
+ * \return string namming the extra sample type
+ */
+std::string toString ( eExtraSample es );
+
+}
+
+
+
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french \brief Gestion des informations liées au format des données
  * \~english \brief Manage informations in connection with data format
  */
-namespace Format {
+namespace Rok4Format {
 
 /**
  * \~french \brief Énumération des formats d'images disponibles
@@ -297,6 +349,8 @@ std::string toString ( eformat_data format );
  * \return MIME type of the format
  */
 std::string toMimeType ( eformat_data format );
+
+std::string toEncoding ( eformat_data format );
 
 }
 

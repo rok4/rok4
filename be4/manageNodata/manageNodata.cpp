@@ -101,6 +101,7 @@ using namespace std;
  *      -mask-out       path to the mask to write
  *      -format         image's samples' format : uint8 or float32
  *      -channels       samples per pixel,number of samples in provided colors
+ *      -d              debug logger activation
  *
  * Examples :
  *      - to keep pure white for nodata, and write a new image :
@@ -128,7 +129,8 @@ void usage() {
         "      -nodata         new color for nodata pixel\n" <<
         "      -mask-out       path to the mask to write\n" <<
         "      -format         image's samples' format : uint8 or float32\n" <<
-        "      -channels       samples per pixel,number of samples in provided colors\n\n" <<
+        "      -channels       samples per pixel,number of samples in provided colors\n" <<
+        "      -d              debug logger activation\n\n" <<
 
         "Examples :\n" <<
         "      - to keep pure white for nodata, and write a new image :\n" <<
@@ -181,20 +183,16 @@ int main ( int argc, char* argv[] ) {
 
     bool touchEdges = false;
     int tolerance = 0;
+    bool debugLogger=false;
 
     /* Initialisation des Loggers */
     Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
 
     Accumulator* acc = new StreamAccumulator();
-    //Logger::setAccumulator(DEBUG, acc);
     Logger::setAccumulator ( INFO , acc );
     Logger::setAccumulator ( WARN , acc );
     Logger::setAccumulator ( ERROR, acc );
     Logger::setAccumulator ( FATAL, acc );
-
-    std::ostream &logd = LOGGER ( DEBUG );
-    logd.precision ( 16 );
-    logd.setf ( std::ios::fixed,std::ios::floatfield );
 
     std::ostream &logw = LOGGER ( WARN );
     logw.precision ( 16 );
@@ -205,6 +203,11 @@ int main ( int argc, char* argv[] ) {
         if ( !strcmp ( argv[i],"-h" ) ) {
             usage();
             exit ( 0 ) ;
+        }
+        
+        if ( !strcmp ( argv[i],"-d" ) ) { // debug logs
+            debugLogger = true;
+            break;
         }
 
         if ( !strcmp ( argv[i],"-touch-edges" ) ) {
@@ -262,6 +265,14 @@ int main ( int argc, char* argv[] ) {
         } else {
             error ( "Error : unknown option : " + string ( argv[i] ),-1 );
         }
+    }
+
+    if (debugLogger) {
+        // le niveau debug du logger est activé
+        Logger::setAccumulator ( DEBUG, acc);
+        std::ostream &logd = LOGGER ( DEBUG );
+        logd.precision ( 16 );
+        logd.setf ( std::ios::fixed,std::ios::floatfield );
     }
 
     /***************** VERIFICATION DES PARAMETRES FOURNIS *********************/

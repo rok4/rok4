@@ -64,12 +64,12 @@
 Level::Level ( TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth,
                int tilesPerHeight, uint32_t maxTileRow, uint32_t minTileRow,
                uint32_t maxTileCol, uint32_t minTileCol, int pathDepth,
-               Format::eformat_data format, std::string noDataFile ) :
+               Rok4Format::eformat_data format, std::string noDataFile ) :
     tm ( tm ), channels ( channels ), baseDir ( baseDir ),
     tilesPerWidth ( tilesPerWidth ), tilesPerHeight ( tilesPerHeight ),
     maxTileRow ( maxTileRow ), minTileRow ( minTileRow ), maxTileCol ( maxTileCol ),
     minTileCol ( minTileCol ), pathDepth ( pathDepth ), format ( format ),noDataFile ( noDataFile ), noDataSource ( NULL ) {
-    noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Format::toMimeType ( format ) );
+    noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), Rok4Format::toEncoding ( format ) );
     noDataSourceProxy = noDataTileSource;
 }
 
@@ -83,7 +83,7 @@ Level::~Level() {
 
 void Level::setNoData ( const std::string& file ) {
     noDataFile=file;
-    DataSource* tmpDataSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Format::toMimeType ( format ) );
+    DataSource* tmpDataSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), Rok4Format::toEncoding ( format ) );
     if ( noDataTileSource ) {
         delete noDataTileSource;
     }
@@ -102,7 +102,7 @@ void Level::setNoData ( const std::string& file ) {
 void Level::setNoDataSource ( DataSource* source ) {
     if ( noDataSource ) {
         delete noDataSourceProxy;
-        noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Format::toMimeType ( format ) );
+        noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), Rok4Format::toEncoding ( format ) );
     }
     noDataSource=source;
     noDataSourceProxy = new DataSourceProxy ( noDataTileSource, *noDataSource );
@@ -360,22 +360,22 @@ DataSource* Level::getEncodedTile ( int x, int y ) {
     uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
     std::string path=getFilePath ( x, y );
     LOGGER_DEBUG ( path );
-    return new FileDataSource ( path.c_str(),posoff,possize,Format::toMimeType ( format ) );
+    return new FileDataSource ( path.c_str(),posoff,possize,Rok4Format::toMimeType ( format ), Rok4Format::toEncoding( format ) );
 }
 
 DataSource* Level::getDecodedTile ( int x, int y ) {
     DataSource* encData = new DataSourceProxy ( getEncodedTile ( x, y ),*getEncodedNoDataTile() );
-    if ( format==Format::TIFF_RAW_INT8 || format==Format::TIFF_RAW_FLOAT32 )
+    if ( format==Rok4Format::TIFF_RAW_INT8 || format==Rok4Format::TIFF_RAW_FLOAT32 )
         return encData;
-    else if ( format==Format::TIFF_JPG_INT8 )
+    else if ( format==Rok4Format::TIFF_JPG_INT8 )
         return new DataSourceDecoder<JpegDecoder> ( encData );
-    else if ( format==Format::TIFF_PNG_INT8 )
+    else if ( format==Rok4Format::TIFF_PNG_INT8 )
         return new DataSourceDecoder<PngDecoder> ( encData );
-    else if ( format==Format::TIFF_LZW_INT8 || format == Format::TIFF_LZW_FLOAT32 )
+    else if ( format==Rok4Format::TIFF_LZW_INT8 || format == Rok4Format::TIFF_LZW_FLOAT32 )
         return new DataSourceDecoder<LzwDecoder> ( encData );
-    else if ( format==Format::TIFF_ZIP_INT8 || format == Format::TIFF_ZIP_FLOAT32 )
+    else if ( format==Rok4Format::TIFF_ZIP_INT8 || format == Rok4Format::TIFF_ZIP_FLOAT32 )
         return new DataSourceDecoder<DeflateDecoder> ( encData );
-    else if ( format==Format::TIFF_PKB_INT8 || format == Format::TIFF_PKB_FLOAT32 )
+    else if ( format==Rok4Format::TIFF_PKB_INT8 || format == Rok4Format::TIFF_PKB_FLOAT32 )
         return new DataSourceDecoder<PackBitsDecoder> ( encData );
     LOGGER_ERROR ( _ ( "Type d'encodage inconnu : " ) <<format );
     return 0;
@@ -383,17 +383,17 @@ DataSource* Level::getDecodedTile ( int x, int y ) {
 
 DataSource* Level::getDecodedNoDataTile() {
     DataSource* encData = new DataSourceProxy ( new FileDataSource ( "",0,0,"" ),*getEncodedNoDataTile() );
-    if ( format==Format::TIFF_RAW_INT8 || format==Format::TIFF_RAW_FLOAT32 )
+    if ( format==Rok4Format::TIFF_RAW_INT8 || format==Rok4Format::TIFF_RAW_FLOAT32 )
         return encData;
-    else if ( format==Format::TIFF_JPG_INT8 )
+    else if ( format==Rok4Format::TIFF_JPG_INT8 )
         return new DataSourceDecoder<JpegDecoder> ( encData );
-    else if ( format==Format::TIFF_PNG_INT8 )
+    else if ( format==Rok4Format::TIFF_PNG_INT8 )
         return new DataSourceDecoder<PngDecoder> ( encData );
-    else if ( format==Format::TIFF_LZW_INT8 || format == Format::TIFF_LZW_FLOAT32 )
+    else if ( format==Rok4Format::TIFF_LZW_INT8 || format == Rok4Format::TIFF_LZW_FLOAT32 )
         return new DataSourceDecoder<LzwDecoder> ( encData );
-    else if ( format==Format::TIFF_ZIP_INT8 || format == Format::TIFF_ZIP_FLOAT32 )
+    else if ( format==Rok4Format::TIFF_ZIP_INT8 || format == Rok4Format::TIFF_ZIP_FLOAT32 )
         return new DataSourceDecoder<DeflateDecoder> ( encData );
-    else if ( format==Format::TIFF_PKB_INT8 || format == Format::TIFF_PKB_FLOAT32 )
+    else if ( format==Rok4Format::TIFF_PKB_INT8 || format == Rok4Format::TIFF_PKB_FLOAT32 )
         return new DataSourceDecoder<PackBitsDecoder> ( encData );
     LOGGER_ERROR ( _ ( "Type d'encodage inconnu : " ) <<format );
     return 0;
@@ -409,7 +409,7 @@ DataSource* Level::getTile ( int x, int y , DataSource* errorDataSource ) {
     DataSource* ndSource = ( errorDataSource?errorDataSource:noDataSourceProxy );
     size_t size;
 
-    if ( ( format==Format::TIFF_RAW_INT8 || format == Format::TIFF_LZW_INT8 || format==Format::TIFF_LZW_FLOAT32 || format==Format::TIFF_ZIP_INT8 || format == Format::TIFF_ZIP_FLOAT32 || format==Format::TIFF_PKB_FLOAT32 || format==Format::TIFF_PKB_INT8 ) && source!=0 && source->getData ( size ) !=0 ) {
+    if ( ( format==Rok4Format::TIFF_RAW_INT8 || format == Rok4Format::TIFF_LZW_INT8 || format==Rok4Format::TIFF_LZW_FLOAT32 || format==Rok4Format::TIFF_ZIP_INT8 || format == Rok4Format::TIFF_ZIP_FLOAT32 || format==Rok4Format::TIFF_PKB_FLOAT32 || format==Rok4Format::TIFF_PKB_INT8 ) && source!=0 && source->getData ( size ) !=0 ) {
         LOGGER_DEBUG ( _ ( "GetTile Tiff" ) );
         TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource ( source,format,channels,tm.getTileW(), tm.getTileH() );
         return new DataSourceProxy ( fullTiffDS,*ndSource );
@@ -421,7 +421,7 @@ DataSource* Level::getTile ( int x, int y , DataSource* errorDataSource ) {
 Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom ) {
     int pixel_size=1;
     LOGGER_DEBUG ( _ ( "GetTile Image" ) );
-    if ( format==Format::TIFF_RAW_FLOAT32 || format == Format::TIFF_LZW_FLOAT32 || format == Format::TIFF_ZIP_FLOAT32 || format == Format::TIFF_PKB_FLOAT32 )
+    if ( format==Rok4Format::TIFF_RAW_FLOAT32 || format == Rok4Format::TIFF_LZW_FLOAT32 || format == Rok4Format::TIFF_ZIP_FLOAT32 || format == Rok4Format::TIFF_PKB_FLOAT32 )
         pixel_size=4;
     return new ImageDecoder ( getDecodedTile ( x,y ), tm.getTileW(), tm.getTileH(), channels,
                               BoundingBox<double> ( tm.getX0() + x * tm.getTileW() * tm.getRes(),
@@ -434,7 +434,7 @@ Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom )
 Image* Level::getNoDataTile ( BoundingBox<double> bbox ) {
     int pixel_size=1;
     LOGGER_DEBUG ( _ ( "GetTile Image" ) );
-    if ( format==Format::TIFF_RAW_FLOAT32 || format == Format::TIFF_LZW_FLOAT32 || format == Format::TIFF_ZIP_FLOAT32 || format == Format::TIFF_PKB_FLOAT32 )
+    if ( format==Rok4Format::TIFF_RAW_FLOAT32 || format == Rok4Format::TIFF_LZW_FLOAT32 || format == Rok4Format::TIFF_ZIP_FLOAT32 || format == Rok4Format::TIFF_PKB_FLOAT32 )
         pixel_size=4;
     return new ImageDecoder ( getDecodedNoDataTile() , tm.getTileW(), tm.getTileH(), channels,
                               bbox, 0, 0, 0, 0, pixel_size );
@@ -446,7 +446,7 @@ int* Level::getNoDataValue ( int* nodatavalue ) {
     size_t size;
     const uint8_t * buffer = nd->getData ( size );
     if ( buffer ) {
-        if ( format == Format::TIFF_RAW_FLOAT32 || format == Format::TIFF_LZW_FLOAT32 || format == Format::TIFF_ZIP_FLOAT32 || format == Format::TIFF_PKB_FLOAT32 ) {
+        if ( format == Rok4Format::TIFF_RAW_FLOAT32 || format == Rok4Format::TIFF_LZW_FLOAT32 || format == Rok4Format::TIFF_ZIP_FLOAT32 || format == Rok4Format::TIFF_PKB_FLOAT32 ) {
             const float* fbuf = ( const float* ) buffer;
             for ( int pixel = 0; pixel < this->channels; pixel++ ) {
                 * ( nodatavalue + pixel )  = ( int ) * ( fbuf + pixel );

@@ -73,23 +73,6 @@ static Photometric::ePhotometric toROK4Photometric ( png_byte ph ) {
     }
 }
 
-static int photometricToChannel ( png_byte ph ) {
-    switch ( ph ) {
-    case PNG_COLOR_TYPE_GRAY :
-        return 1;
-    case PNG_COLOR_TYPE_GRAY_ALPHA :
-        return 2;
-    case PNG_COLOR_TYPE_RGB :
-        return 3;
-    case PNG_COLOR_TYPE_PALETTE :
-        return 3;
-    case PNG_COLOR_TYPE_RGB_ALPHA :
-        return 4;
-    default :
-        return 0;
-    }
-}
-
 
 /* ------------------------------------------------------------------------------------------------ */
 /* -------------------------------------------- USINES -------------------------------------------- */
@@ -98,20 +81,20 @@ static int photometricToChannel ( png_byte ph ) {
 LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, BoundingBox< double > bbox, double resx, double resy ) {
 
 
-    png_structp png_ptr;
-    png_infop info_ptr;
-    int number_of_passes;
-    png_bytep * row_pointers;
+    png_structp pngStruct;
+    png_infop pngInfo;
+    png_bytep * pngRows;
 
     png_byte header[8];    // 8 is the maximum size that can be checked
 
-    /* open file and test for it being a png */
+    // Ouverture du fichier bianire en lecture
     FILE *file = fopen ( filename, "rb" );
     if ( !file ) {
-        LOGGER_ERROR ( "Unable to open PNG (to read) " << filename );
+        LOGGER_ERROR ( "Unable to open the file (to read) " << filename );
         return NULL;
     }
     
+    // Vérification de l'en-tête (8 octets), signature du PNG
     size_t size = fread ( header, 1, 8, file );
     if ( png_sig_cmp ( header, 0, 8 ) ) {
         LOGGER_ERROR ( "Provided file is not recognized as a PNG file" << filename );
@@ -119,27 +102,28 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
     }
 
     /* initialize stuff */
-    png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    pngStruct = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 
-    if (!png_ptr) {
-        LOGGER_ERROR ("[read_png_file] png_create_read_struct failed");
+    if (!pngStruct) {
+        LOGGER_ERROR ("Cannot create the PNG reading structure for image " << filename);
         return NULL;
     }
 
-    info_ptr = png_create_info_struct(png_ptr);
-    if (!info_ptr) {
-        LOGGER_ERROR ("[read_png_file] png_create_info_struct failed");
+    pngInfo = png_create_info_struct(pngStruct);
+    if (!pngInfo) {
+        LOGGER_ERROR ("Cannot create the PNG informations structure for image " << filename);
         return NULL;
     }
 
-    if (setjmp(png_jmpbuf(png_ptr))) {
-        LOGGER_ERROR ("[read_png_file] Error during init_io");
+    if (setjmp(png_jmpbuf(pngStruct))) {
+        LOGGER_ERROR ("Error during PNG image initialization " << filename);
         return NULL;
     }
 
-    png_init_io(png_ptr, file);
-    png_set_sig_bytes(png_ptr, 8);
-    png_read_info(png_ptr, info_ptr);
+    // Initialisation des strcutures de lecture du PNG
+    png_init_io(pngStruct, file);
+    png_set_sig_bytes(pngStruct, 8);
+    png_read_info(pngStruct, pngInfo);
 
     /************** RECUPERATION DES INFORMATIONS **************/
 
@@ -147,34 +131,83 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
     SampleFormat::eSampleFormat sf = SampleFormat::UINT;
     png_byte color_type, bit_depth;
 
-    width = png_get_image_width(png_ptr, info_ptr);
-    height = png_get_image_height(png_ptr, info_ptr);
-    color_type = png_get_color_type(png_ptr, info_ptr);
-    channels = photometricToChannel(color_type);
-    bit_depth = png_get_bit_depth(png_ptr, info_ptr);
+    width = png_get_image_width(pngStruct, pngInfo);
+    height = png_get_image_height(pngStruct, pngInfo);
+    color_type = png_get_color_type(pngStruct, pngInfo);
+    bit_depth = png_get_bit_depth(pngStruct, pngInfo);
     bitspersample = int(bit_depth);
+    
+    // Passage dans un format utilisable par la libimage
 
-    number_of_passes = png_set_interlace_handling(png_ptr);
-    png_read_update_info(png_ptr, info_ptr);
+    switch ( int(color_type) ) {
+        case PNG_COLOR_TYPE_GRAY :
+        {
+            LOGGER_DEBUG("Initial PNG color type PNG_COLOR_TYPE_GRAY");
+            channels = 1;
+            
+            if (bit_depth < 8) {
+                png_set_expand_gray_1_2_4_to_8 (pngStruct);
+                bitspersample = 8;
+            }
+            break;
+        }
+        case PNG_COLOR_TYPE_GRAY_ALPHA :
+        {
+            LOGGER_DEBUG("Initial PNG color type PNG_COLOR_TYPE_GRAY_ALPHA");
+            channels = 2;
+            break;            
+        }
+        case PNG_COLOR_TYPE_RGB :
+        {
+            LOGGER_DEBUG("Initial PNG color type PNG_COLOR_TYPE_RGB");
+            channels = 3;
+            break;
+        }
+        case PNG_COLOR_TYPE_PALETTE :
+        {
+            LOGGER_DEBUG("Initial PNG color type PNG_COLOR_TYPE_PALETTE");
+            channels = 3;
+            png_set_palette_to_rgb (pngStruct);
+            break;
+        }
+        case PNG_COLOR_TYPE_RGB_ALPHA :
+        {
+            LOGGER_DEBUG("Initial PNG color type PNG_COLOR_TYPE_RGB_ALPHA");
+            channels = 4;
+            break;
+        }
+        default :
+        {
+            LOGGER_ERROR("Cannot determine the color type (" << int(color_type) << ") for the PNG image " << filename);
+            return NULL;
+        }
+    }
+    
+    if (png_get_valid(pngStruct, pngInfo, PNG_INFO_tRNS)) {
+        LOGGER_DEBUG("Convert tRNS to alpha sample for PNG image");        
+        png_set_tRNS_to_alpha(pngStruct);
+        channels+=1;
+    }
+    
+    png_read_update_info (pngStruct, pngInfo);
 
     /************** LECTURE DE L'IMAGE EN ENTIER ***************/
 
-    if (setjmp(png_jmpbuf(png_ptr))) {
-        LOGGER_ERROR ("[read_png_file] Error during read_image");
+    if (setjmp(png_jmpbuf(pngStruct))) {
+        LOGGER_ERROR ("Error during read PNG image " << filename);
         return NULL;
     }
 
-    row_pointers = (png_bytep*) malloc(sizeof(png_bytep) * height);
+    pngRows = (png_bytep*) malloc(sizeof(png_bytep) * height);
+    int rowbytes = png_get_rowbytes(pngStruct,pngInfo);
     for (int y = 0; y < height; y++) {
-        int rowbytes = png_get_rowbytes(png_ptr,info_ptr);
-        //LOGGER_INFO ( "ligne " << y << ", " << rowbytes << " octets");
-        row_pointers[y] = (png_byte*) malloc(rowbytes);
+        pngRows[y] = (png_byte*) malloc(rowbytes);
     }
 
-    png_read_image(png_ptr, row_pointers);
+    png_read_image(pngStruct, pngRows);
 
     fclose ( file );
-    png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
+    png_destroy_read_struct(&pngStruct, &pngInfo, (png_infopp)NULL);
 
     /********************** CONTROLES **************************/
 
@@ -199,12 +232,15 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
         resx = 1.;
         resy = 1.;
     }
+    
+    // Création de l'objet LibpngImage
 
     return new LibpngImage (
         width, height, resx, resy, channels, bbox, filename,
         sf, bitspersample, toROK4Photometric ( color_type ), Compression::PNG,
-        row_pointers
+        pngRows
     );
+    
 }
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -213,28 +249,23 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
 LibpngImage::LibpngImage (
     int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
-    png_bytep* row_pointers ) :
+    png_bytep* pngRows ) :
 
     FileImage ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression ),
 
-    row_pointers(row_pointers) {
+    pngRowsPointers(pngRows) {
         
 }
 
 /* ------------------------------------------------------------------------------------------------ */
 /* ------------------------------------------- LECTURE -------------------------------------------- */
 
-template<typename T>
-int LibpngImage::_getline ( T* buffer, int line ) {
+int LibpngImage::getline ( uint8_t* buffer, int line ) {
     
     for (int x = 0;  x < width * channels; x++) {
-        buffer[x] = (uint8_t) row_pointers[line][x];
+        buffer[x] = (uint8_t) pngRowsPointers[line][x];
     }
     return width*channels;
-}
-
-int LibpngImage::getline ( uint8_t* buffer, int line ) {
-    return _getline ( buffer,line );
 }
 
 int LibpngImage::getline ( float* buffer, int line ) {
@@ -247,5 +278,6 @@ int LibpngImage::getline ( float* buffer, int line ) {
     return width*channels;
     
 }
+
 
 

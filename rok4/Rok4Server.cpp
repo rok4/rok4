@@ -303,7 +303,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
             }
         }
 
-        Format::eformat_data pyrType = layers.at ( i )->getDataPyramid()->getFormat();
+        Rok4Format::eformat_data pyrType = layers.at ( i )->getDataPyramid()->getFormat();
 
         if ( servicesConf.isFullStyleCapable() ) {
             if ( styles.at ( i )->isEstompage() ) {
@@ -311,17 +311,17 @@ DataStream* Rok4Server::getMap ( Request* request ) {
                 curImage = new EstompageImage ( curImage,styles.at ( i )->getAngle(),styles.at ( i )->getExaggeration(), styles.at ( i )->getCenter() );
                 switch ( pyrType ) {
                     //Only use int8 output whith estompage
-                case Format::TIFF_RAW_FLOAT32 :
-                    pyrType = Format::TIFF_RAW_INT8;
+                case Rok4Format::TIFF_RAW_FLOAT32 :
+                    pyrType = Rok4Format::TIFF_RAW_INT8;
                     break;
-                case Format::TIFF_ZIP_FLOAT32 :
-                    pyrType = Format::TIFF_ZIP_INT8;
+                case Rok4Format::TIFF_ZIP_FLOAT32 :
+                    pyrType = Rok4Format::TIFF_ZIP_INT8;
                     break;
-                case Format::TIFF_LZW_FLOAT32 :
-                    pyrType = Format::TIFF_LZW_INT8;
+                case Rok4Format::TIFF_LZW_FLOAT32 :
+                    pyrType = Rok4Format::TIFF_LZW_INT8;
                     break;
-                case Format::TIFF_PKB_FLOAT32 :
-                    pyrType = Format::TIFF_PKB_INT8;
+                case Rok4Format::TIFF_PKB_FLOAT32 :
+                    pyrType = Rok4Format::TIFF_PKB_INT8;
                     break;
                 default:
                     break;
@@ -332,10 +332,10 @@ DataStream* Rok4Server::getMap ( Request* request ) {
                 if ( format == "image/png" && layers.size() == 1 ) {
                     switch ( pyrType ) {
 
-                    case Format::TIFF_RAW_FLOAT32 :
-                    case Format::TIFF_ZIP_FLOAT32 :
-                    case Format::TIFF_LZW_FLOAT32 :
-                    case Format::TIFF_PKB_FLOAT32 :
+                    case Rok4Format::TIFF_RAW_FLOAT32 :
+                    case Rok4Format::TIFF_ZIP_FLOAT32 :
+                    case Rok4Format::TIFF_LZW_FLOAT32 :
+                    case Rok4Format::TIFF_PKB_FLOAT32 :
                         curImage = new StyledImage ( curImage, 4, styles.at ( i )->getPalette() );
                     default:
                         break;
@@ -351,23 +351,23 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     }
 
     //Use background image format.
-    Format::eformat_data pyrType = layers.at ( 0 )->getDataPyramid()->getFormat();
+    Rok4Format::eformat_data pyrType = layers.at ( 0 )->getDataPyramid()->getFormat();
     image = images.at ( 0 );
     if ( images.size() > 1 ) {
 
         switch ( pyrType ) {
             //Only use int8 output with estompage
-        case Format::TIFF_RAW_FLOAT32 :
-            pyrType = Format::TIFF_RAW_INT8;
+        case Rok4Format::TIFF_RAW_FLOAT32 :
+            pyrType = Rok4Format::TIFF_RAW_INT8;
             break;
-        case Format::TIFF_ZIP_FLOAT32 :
-            pyrType = Format::TIFF_ZIP_INT8;
+        case Rok4Format::TIFF_ZIP_FLOAT32 :
+            pyrType = Rok4Format::TIFF_ZIP_INT8;
             break;
-        case Format::TIFF_LZW_FLOAT32 :
-            pyrType = Format::TIFF_LZW_INT8;
+        case Rok4Format::TIFF_LZW_FLOAT32 :
+            pyrType = Rok4Format::TIFF_LZW_INT8;
             break;
-        case Format::TIFF_PKB_FLOAT32 :
-            pyrType = Format::TIFF_PKB_INT8;
+        case Rok4Format::TIFF_PKB_FLOAT32 :
+            pyrType = Rok4Format::TIFF_PKB_INT8;
             break;
         default:
             break;
@@ -383,6 +383,9 @@ DataStream* Rok4Server::getMap ( Request* request ) {
             return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wms" ) );
         }
     }
+    
+    image->setCRS(crs);
+    image->setBbox(bbox);
 
     if ( format=="image/png" ) {
         if ( layers.size() == 1 ) {
@@ -391,54 +394,56 @@ DataStream* Rok4Server::getMap ( Request* request ) {
             return new PNGEncoder ( image,NULL );
         }
 
-    } else if ( format == "image/tiff" ) { // Handle compression option
+    } else if ( format == "image/tiff" || format == "image/geotiff" ) { // Handle compression option
+	bool isGeoTiff = (format == "image/geotiff");
+
         switch ( pyrType ) {
 
-        case Format::TIFF_RAW_FLOAT32 :
-        case Format::TIFF_ZIP_FLOAT32 :
-        case Format::TIFF_LZW_FLOAT32 :
-        case Format::TIFF_PKB_FLOAT32 :
+        case Rok4Format::TIFF_RAW_FLOAT32 :
+        case Rok4Format::TIFF_ZIP_FLOAT32 :
+        case Rok4Format::TIFF_LZW_FLOAT32 :
+        case Rok4Format::TIFF_PKB_FLOAT32 :
             if ( getParam ( format_option,"compression" ).compare ( "lzw" ) ==0 ) {
-                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_LZW_FLOAT32 );
+                return TiffEncoder::getTiffEncoder ( image, Rok4Format::TIFF_LZW_FLOAT32, isGeoTiff );
             }
             if ( getParam ( format_option,"compression" ).compare ( "deflate" ) ==0 ) {
-                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_ZIP_FLOAT32 );
+                return TiffEncoder::getTiffEncoder ( image, Rok4Format::TIFF_ZIP_FLOAT32, isGeoTiff );
             }
             if ( getParam ( format_option,"compression" ).compare ( "raw" ) ==0 ) {
-                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_RAW_FLOAT32 );
+                return TiffEncoder::getTiffEncoder ( image, Rok4Format::TIFF_RAW_FLOAT32, isGeoTiff );
             }
             if ( getParam ( format_option,"compression" ).compare ( "packbits" ) ==0 ) {
-                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_PKB_FLOAT32 );
+                return TiffEncoder::getTiffEncoder ( image, Rok4Format::TIFF_PKB_FLOAT32, isGeoTiff );
             }
-            return TiffEncoder::getTiffEncoder ( image, pyrType );
-        case Format::TIFF_RAW_INT8 :
-        case Format::TIFF_ZIP_INT8 :
-        case Format::TIFF_LZW_INT8 :
-        case Format::TIFF_PKB_INT8 :
+            return TiffEncoder::getTiffEncoder ( image, pyrType, isGeoTiff );
+        case Rok4Format::TIFF_RAW_INT8 :
+        case Rok4Format::TIFF_ZIP_INT8 :
+        case Rok4Format::TIFF_LZW_INT8 :
+        case Rok4Format::TIFF_PKB_INT8 :
             if ( getParam ( format_option,"compression" ).compare ( "lzw" ) ==0 ) {
-                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_LZW_INT8 );
+                return TiffEncoder::getTiffEncoder ( image, Rok4Format::TIFF_LZW_INT8, isGeoTiff );
             }
             if ( getParam ( format_option,"compression" ).compare ( "deflate" ) ==0 ) {
-                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_ZIP_INT8 );
+                return TiffEncoder::getTiffEncoder ( image, Rok4Format::TIFF_ZIP_INT8, isGeoTiff );
             }
             if ( getParam ( format_option,"compression" ).compare ( "raw" ) ==0 ) {
-                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_RAW_INT8 );
+                return TiffEncoder::getTiffEncoder ( image, Rok4Format::TIFF_RAW_INT8, isGeoTiff );
             }
             if ( getParam ( format_option,"compression" ).compare ( "packbits" ) ==0 ) {
-                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_PKB_INT8 );
+                return TiffEncoder::getTiffEncoder ( image, Rok4Format::TIFF_PKB_INT8, isGeoTiff );
             }
-            return TiffEncoder::getTiffEncoder ( image, pyrType );
+            return TiffEncoder::getTiffEncoder ( image, pyrType, isGeoTiff );
         default:
             if ( getParam ( format_option,"compression" ).compare ( "lzw" ) ==0 ) {
-                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_LZW_INT8 );
+                return TiffEncoder::getTiffEncoder ( image, Rok4Format::TIFF_LZW_INT8, isGeoTiff );
             }
             if ( getParam ( format_option,"compression" ).compare ( "deflate" ) ==0 ) {
-                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_ZIP_INT8 );
+                return TiffEncoder::getTiffEncoder ( image, Rok4Format::TIFF_ZIP_INT8, isGeoTiff );
             }
             if ( getParam ( format_option,"compression" ).compare ( "packbits" ) ==0 ) {
-                return TiffEncoder::getTiffEncoder ( image, Format::TIFF_PKB_INT8 );
+                return TiffEncoder::getTiffEncoder ( image, Rok4Format::TIFF_PKB_INT8, isGeoTiff );
             }
-            return TiffEncoder::getTiffEncoder ( image, Format::TIFF_RAW_INT8 );
+            return TiffEncoder::getTiffEncoder ( image, Rok4Format::TIFF_RAW_INT8, isGeoTiff );
         }
     } else if ( format == "image/jpeg" ) {
         return new JPEGEncoder ( image );

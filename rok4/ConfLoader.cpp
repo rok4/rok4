@@ -533,7 +533,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
     TileMatrixSet *tms;
     std::string formatStr="";
-    Format::eformat_data format;
+    Rok4Format::eformat_data format;
     int channels;
     std::map<std::string, Level *> levels;
 
@@ -587,7 +587,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                 return NULL;
     }*/
 
-    format = Format::fromString ( formatStr );
+    format = Rok4Format::fromString ( formatStr );
     if ( ! ( format ) ) {
         LOGGER_ERROR ( fileName << _ ( "Le format [" ) << formatStr <<_ ( "] n'est pas gere." ) );
         return NULL;
@@ -1056,7 +1056,7 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
                     }
                 // Test if the current layer bounding box is compatible with the current CRS
                 if ( inspire && !crs.validateBBoxGeographic ( geographicBoundingBox.minx,geographicBoundingBox.miny,geographicBoundingBox.maxx,geographicBoundingBox.maxy ) ) {
-                    BoundingBox<double> cropBBox = crs.cropBBox ( geographicBoundingBox.minx,geographicBoundingBox.miny,geographicBoundingBox.maxx,geographicBoundingBox.maxy );
+                    BoundingBox<double> cropBBox = crs.cropBBoxGeographic ( geographicBoundingBox.minx,geographicBoundingBox.miny,geographicBoundingBox.maxx,geographicBoundingBox.maxy );
                     // Test if the remaining bbox contain useful data
                     if ( cropBBox.xmax - cropBBox.xmin <= 0 || cropBBox.ymax - cropBBox.ymin <= 0 ) {
                         LOGGER_WARN ( _ ( "Le CRS " ) <<str_crs<<_ ( " n est pas compatible avec l'emprise de la couche" ) );
@@ -1588,6 +1588,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
         if ( format != "image/jpeg" &&
                 format != "image/png"  &&
                 format != "image/tiff" &&
+                format != "image/geotiff" &&
                 format != "image/x-bil;bits=32" &&
                 format != "image/gif" ) {
             LOGGER_ERROR ( servicesConfigFile << _ ( "le format d'image [" ) << format << _ ( "] n'est pas un type MIME" ) );
