@@ -306,7 +306,7 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
     tileRef->height=level->getTm().getTileH();
     tileRef->channels=level->getChannels();
 
-    format = Format::toString ( layer->getDataPyramid()->getFormat() );
+    format = Rok4Format::toString ( layer->getDataPyramid()->getFormat() );
     tileRef->format= new char[format.length() +1];
     strcpy ( tileRef->format, format.c_str() );
 
@@ -319,7 +319,7 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
         palette->data = NULL;
     }
     
-    encoding = Format::toEncoding( level->getFormat() );
+    encoding = Rok4Format::toEncoding( level->getFormat() );
     tileRef->encoding = new char[encoding.length() +1];
     strcpy( tileRef->encoding, encoding.c_str() );
     delete request;
@@ -386,7 +386,7 @@ HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char*
     tileRef->type=new char[format.length() +1];
     strcpy ( tileRef->type,format.c_str() );
     
-    encoding = Format::toEncoding( level->getFormat() );
+    encoding = Rok4Format::toEncoding( level->getFormat() );
     tileRef->encoding = new char[encoding.length() +1];
     strcpy( tileRef->encoding, encoding.c_str() );
 
@@ -416,7 +416,7 @@ HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char*
 TiffHeader* rok4GetTiffHeader ( int width, int height, int channels ) {
     TiffHeader* header = new TiffHeader;
     RawImage* rawImage=new RawImage ( width,height,channels,0 );
-    DataStream* tiffStream = TiffEncoder::getTiffEncoder ( rawImage, Format::TIFF_RAW_INT8 );
+    DataStream* tiffStream = TiffEncoder::getTiffEncoder ( rawImage, Rok4Format::TIFF_RAW_INT8 );
     tiffStream->read ( header->data,128 );
     delete tiffStream;
     return header;
@@ -430,7 +430,7 @@ TiffHeader* rok4GetTiffHeaderFormat ( int width, int height, int channels, char*
     TiffHeader* header = new TiffHeader;
     size_t tiffHeaderSize;
     const uint8_t* tiffHeader;
-    TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource ( 0,Format::fromString ( format ),channels,width,height,possize );
+    TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource ( 0,Rok4Format::fromString ( format ),channels,width,height,possize );
     tiffHeader = fullTiffDS->getData ( tiffHeaderSize );
     header->size = tiffHeaderSize;
     header->data = ( uint8_t* ) malloc ( tiffHeaderSize+1 );

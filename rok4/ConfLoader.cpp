@@ -533,7 +533,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
     TileMatrixSet *tms;
     std::string formatStr="";
-    Format::eformat_data format;
+    Rok4Format::eformat_data format;
     int channels;
     std::map<std::string, Level *> levels;
 
@@ -587,7 +587,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                 return NULL;
     }*/
 
-    format = Format::fromString ( formatStr );
+    format = Rok4Format::fromString ( formatStr );
     if ( ! ( format ) ) {
         LOGGER_ERROR ( fileName << _ ( "Le format [" ) << formatStr <<_ ( "] n'est pas gere." ) );
         return NULL;

@@ -62,6 +62,17 @@
  * \author Institut national de l'information géographique et forestière
  * \~french
  * \brief Manipulation d'une image associée à un fichier
+ * \details Cette classe abstraite permet d'ajouter des drivers (formats d'images possibles gérés par la libimage), sans avoir à modifier le reste de la librairie : c'est une couche d'abstraction du format de l'image lue ou écrite.
+ * 
+ * Formats gérés :
+ * 
+ * <TABLE>
+ * <TR><TH>Format</TH><TH>Classe</TH><TH>Extensions détectées</TH><TH>En lecture</TH><TH>En écriture</TH><TH>Librairie utilisée</TH></TR>
+ * <TR><TD>TIFF</TD><TD>LibtiffImage</TD><TD>.tif, .tiff, .TIF, .TIFF</TD><TD>Oui</TD><TD>Oui</TD><TD>Libtiff 3.8.2</TD></TR>
+ * <TR><TD>PNG</TD><TD>LibpngImage</TD><TD>.png, .PNG</TD><TD>Oui</TD><TD>Non</TD><TD>Libpng 1.6.2</TD></TR>
+ * <TR><TD>ROK4</TD><TD>Rok4Image</TD><TD>non filtré sur l'extension</TD><TD>Oui</TD><TD>Oui</TD><TD>Libtiff 3.8.2. Format TIFF particulier, propre au projet ROK4</TD></TR>
+ * </TABLE>
+ * 
  */
 class FileImage : public Image {
 
@@ -272,6 +283,7 @@ public:
      * \brief File image description output
      */
     void print() {
+        Image::print();
         LOGGER_INFO ( "\t- File name : " << filename );
         LOGGER_INFO ( "\t- Compression : " << Compression::toString ( compression ) );
         LOGGER_INFO ( "\t- Photometric : " << Photometric::toString ( photometric ) );

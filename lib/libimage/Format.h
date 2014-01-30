@@ -286,7 +286,7 @@ std::string toString ( eExtraSample es );
  * \~french \brief Gestion des informations liées au format des données
  * \~english \brief Manage informations in connection with data format
  */
-namespace Format {
+namespace Rok4Format {
 
 /**
  * \~french \brief Énumération des formats d'images disponibles

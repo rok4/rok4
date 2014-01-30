@@ -589,8 +589,8 @@ public:
     /**
      * \~french
      * \brief Retourne une ligne en entier 8 bits.
-     * Les canaux sont entrelacés. ATTENTION : si les données ne sont pas intrinsèquement codées sur des entiers 8 bits, il n'y a pas de conversion.
-     * \param[in,out] buffer Tableau contenant au moins width*channels uint8
+     * Les canaux sont entrelacés. ATTENTION : si les données ne sont pas intrinsèquement codées sur des entiers 8 bits, il n'y a pas de conversion (une valeur sur 32 bits occupera 4 "cases" sur 8 bits).
+     * \param[in,out] buffer Tableau contenant au moins 'width * channels * sizeof(sample)' entier sur 8 bits
      * \param[in] line Indice de la ligne à retourner (0 <= line < height)
      * \return taille utile du buffer, 0 si erreur
      */
@@ -599,9 +599,8 @@ public:
     /**
      * \~french
      * \brief Retourne une ligne en flottant 32 bits.
-     * Les canaux sont entrelacés. Si les données ne sont pas intrinsèquement codées sur des flottants 32 bits
-     * une conversion est effectuée.
-     * \param[in,out] buffer Tableau contenant au moins width*channels float32
+     * Les canaux sont entrelacés. Si les données ne sont pas intrinsèquement codées sur des flottants 32 bits, une conversion est effectuée.
+     * \param[in,out] buffer Tableau contenant au moins 'width * channels' flottant sur 32 bits
      * \param[in] line Indice de la ligne à retourner (0 <= line < height)
      * \return taille utile du buffer, 0 si erreur
      */

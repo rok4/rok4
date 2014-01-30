@@ -121,6 +121,7 @@ bool debugLogger=false;
  * Usage: composeNtiff <DIRECTORY> -c <VAL> -g <VAL> <VAL> <OUTPUT FILE>
  *
  * Parameters:
+ *      -s sources directory. All file into  have to be images. If too much images are present, first are used.
  *      -c output compression : default value : none
  *              raw     no compression
  *              none    no compression
@@ -140,9 +141,10 @@ void usage() {
 
                   "Monte N TIFF image, forming a regular grid\n\n" <<
 
-                  "Usage: composeNtiff <DIRECTORY> -g <VAL> <VAL> <OUTPUT FILE>\n\n" <<
+                  "Usage: composeNtiff -s <DIRECTORY> -g <VAL> <VAL> -c <VAL> <OUTPUT FILE>\n\n" <<
 
                   "Parameters:\n" <<
+                  "     -s source directory. All file into have to be images. If too much images are present, first are used.\n" <<
                   "     -c output compression : default value : none\n" <<
                   "             raw     no compression\n" <<
                   "             none    no compression\n" <<
@@ -154,7 +156,7 @@ void usage() {
                   "     -d debug logger activation\n\n" <<
  
                   "Example\n" <<
-                  "     composeNtiff -d /home/ign/sources -g 10 10 -c zip output.tif\n\n" );
+                  "     composeNtiff -s /home/ign/sources -g 10 10 -c zip output.tif\n\n" );
 }
 
 /**
@@ -179,8 +181,7 @@ void error ( std::string message, int errorCode ) {
  * \return code de retour, 0 si réussi, -1 sinon
  */
 int parseCommandLine ( int argc, char** argv ) {
-
-
+    
     for ( int i = 1; i < argc; i++ ) {
         if ( argv[i][0] == '-' ) {
             switch ( argv[i][1] ) {
@@ -192,10 +193,10 @@ int parseCommandLine ( int argc, char** argv ) {
                 break;
             case 's': // Input directory
                 if ( i++ >= argc ) {
-                    LOGGER_ERROR ( "Error id -d option" );
+                    LOGGER_ERROR ( "Error id -s option" );
                     return -1;
                 }
-                strcpy ( inputDir,argv[i] );
+                inputDir = argv[i];
                 break;
             case 'c': // compression
                 if ( ++i == argc ) {
@@ -219,35 +220,34 @@ int parseCommandLine ( int argc, char** argv ) {
                 break;
             case 'g':
                 if ( i+2 >= argc ) {
-                    LOGGER_ERROR ( "Error in -t option" );
+                    LOGGER_ERROR ( "Error in -g option" );
                     return -1;
                 }
                 widthwiseImage = atoi ( argv[++i] );
                 heightwiseImage = atoi ( argv[++i] );
                 break;
             default:
-                LOGGER_ERROR ( "Unknown option : -" << argv[i][1] );
+                LOGGER_ERROR ( "Unknown option : " << argv[i] );
                 return -1;
             }
         } else {
-            if ( inputDir == 0 ) inputDir = argv[i];
-            else if ( outputImage == 0 ) outputImage = argv[i];
+            if ( outputImage == 0 ) outputImage = argv[i];
             else {
-                LOGGER_ERROR( "Argument must specify ONE input directory and ONE output file" );
+                LOGGER_ERROR( "Argument must specify just ONE output file" );
                 return -1;
             }
         }
     }
 
     // Input directory control
-    if ( strlen ( inputDir ) == 0 ) {
-        LOGGER_ERROR ( "We need to have a source images directory" );
+    if ( inputDir == 0 ) {
+        LOGGER_ERROR ( "We need to have a source images' directory (option -s)" );
         return -1;
     }
 
     // Output file control
-    if ( strlen ( outputImage ) == 0 ) {
-        LOGGER_ERROR ( "We need to have an output file (option -d)" );
+    if ( outputImage == 0 ) {
+        LOGGER_ERROR ( "We need to have an output file" );
         return -1;
     }
 
@@ -421,7 +421,6 @@ int main ( int argc, char **argv ) {
     logw.precision ( 16 );
     logw.setf ( std::ios::fixed,std::ios::floatfield );
 
-    LOGGER_DEBUG ( "Read parameters" );
     // Lecture des parametres de la ligne de commande
     if ( parseCommandLine ( argc,argv ) < 0 ) {
         error ( "Cannot parse command line",-1 );

@@ -1,5 +1,6 @@
 #Défini le nom du projet 
 project(Rok4)
+
 #définit la version du projet
 #Lecture de la version de ROK4 dans le fichier du projet
 FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/README version_line REGEX "ROK4.*[0-9]+\\.[0-9]+\\.[0-9]+(-SNAPSHOT)?")
@@ -74,6 +75,11 @@ if(RPM_PACKAGE)
 else(RPM_PACKAGE)
   set(CPACK_GENERATOR "TGZ")
 endif(RPM_PACKAGE)
+
+
+if(NOT DEFINED USE_SYSTEM_LIB)
+  set(USE_SYSTEM_LIB FALSE)
+endif(NOT DEFINED USE_SYSTEM_LIB)
 
 ##################################################################################
 # optional external dependencies for JPEG2000

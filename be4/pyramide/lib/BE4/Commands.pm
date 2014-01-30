@@ -167,7 +167,7 @@ Wms2work () {
     fi
 
     if [ "$nbTiles" != "1 1" ] ; then
-        composeNtiff -geometry $nbTiles $dir/ $dir.$fmt
+        composeNtiff -g $nbTiles -s $dir/ -c zip $dir.tif
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     else
         mv $dir/img00001.$fmt $dir.$fmt
@@ -432,6 +432,10 @@ sub wms2work {
         width => $imgSize[0],
         height => $imgSize[1]
     });
+    
+    if (! defined $cmd) {
+        return (undef, WGET_W);
+    }
 
     $node->setWorkExtension($format);
     

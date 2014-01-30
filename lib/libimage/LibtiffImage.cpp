@@ -157,6 +157,8 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
     int width=0, height=0, channels=0, planarconfig=0, bitspersample=0, sampleformat=0, photometric=0, compression=0, rowsperstrip=0;
     TIFF* tif = TIFFOpen ( filename, "r" );
     bool associatedAlpha = false;
+    
+    /************** RECUPERATION DES INFORMATIONS **************/
 
     if ( tif == NULL ) {
         LOGGER_ERROR ( "Unable to open TIFF (to read) " << filename );
@@ -204,6 +206,11 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
             LOGGER_ERROR ( "Unable to read photometric for file " << filename );
             return NULL;
         }
+        
+        if (toROK4Photometric ( photometric ) == 0) {
+            LOGGER_ERROR ( "Not handled photometric (PALETTE ?) for file " << filename );
+            return NULL;            
+        }
 
         if ( TIFFGetField ( tif, TIFFTAG_COMPRESSION,&compression ) < 1 ) {
             LOGGER_ERROR ( "Unable to read compression for file " << filename );
@@ -231,6 +238,8 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
         LOGGER_ERROR ( "Planar configuration have to be 'PLANARCONFIG_CONTIG' for file " << filename );
         return NULL;
     }
+    
+    /********************** CONTROLES **************************/
 
     SampleFormat::eSampleFormat sf = toROK4SampleFormat ( sampleformat );
 
@@ -263,7 +272,9 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
     );
 }
 
+
 /* ----- Pour l'écriture ----- */
+
 LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
     char* filename, BoundingBox<double> bbox, double resx, double resy, int width, int height, int channels,
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
@@ -392,18 +403,20 @@ int LibtiffImage::unassociateAlpha ( uint8_t* buffer ) {
     uint8_t* pix = buffer;
     int alphaInd = channels - 1;
     for (int i = 0; i < width; i++, pix += channels) {
+        int alpha = *(pix + alphaInd);
         
-        if (pix[alphaInd] == 255) {
+        if (alpha == 255) {
             // Opacité pleine
             continue;
         }
-        if (pix[alphaInd] == 0) {
+        if (alpha == 0) {
             // Transperence complète
             memset(pix, 0, channels);
             continue;
         }
-        for (int c = 0; c < channels - 1; c++) {
-            pix[c] = pix[c] * 255 / pix[alphaInd];
+        
+        for (int c = 0; c < alphaInd; c++) {
+            pix[c] = int(pix[c]) * 255 / alpha;
         }
     }
 }
@@ -416,14 +429,14 @@ int LibtiffImage::_getline ( T* buffer, int line ) {
     if ( compression == Compression::NONE || ( compression != Compression::NONE && rowsperstrip == 1 ) ) {
         // Cas Non compresse ou (compresse et 1 ligne/bande)
         if ( TIFFReadScanline ( tif,buffer,line,0 ) < 0 ) {
-            LOGGER_DEBUG ( "Cannot read file " << TIFFFileName ( tif ) << ", line " << line );
+            LOGGER_DEBUG ( "Cannot read file " << filename << ", line " << line );
         }
     } else {
         // Cas compresse et > 1 ligne /bande
         if ( line / rowsperstrip != current_strip ) {
             current_strip = line / rowsperstrip;
             if ( TIFFReadEncodedStrip ( tif,current_strip,strip_buffer,strip_size ) < 0 ) {
-                LOGGER_DEBUG ( "Cannot read file " << TIFFFileName ( tif ) << ", line " << line );
+                LOGGER_DEBUG ( "Cannot read file " << filename << ", line " << line );
             }
         }
         memcpy ( buffer,&strip_buffer[ ( line%rowsperstrip ) *width*channels],width*channels*sizeof ( uint8_t ) );
@@ -447,11 +460,13 @@ int LibtiffImage::getline ( uint8_t* buffer, int line ) {
 }
 
 int LibtiffImage::getline ( float* buffer, int line ) {
+    
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
         // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers
         uint8_t* buffer_t = new uint8_t[width*channels];
+        
+        // Ne pas appeler directement _getline pour bien faire la conversion de l'alpha (unassociateAlpha) si nécessaire
         getline ( buffer_t,line );
-        if (associatedalpha) unassociateAlpha ( buffer_t );
         convert ( buffer,buffer_t,width*channels );
         delete [] buffer_t;
         return width*channels;
@@ -475,7 +490,6 @@ int LibtiffImage::writeImage ( Image* pIn ) {
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
         uint8_t* buf_u = ( unsigned char* ) _TIFFmalloc ( width * channels * getBitsPerSample() / 8 );
         for ( int line = 0; line < height; line++ ) {
-            //LOGGER_INFO("line " << line);
             pIn->getline ( buf_u,line );
             if ( TIFFWriteScanline ( tif, buf_u, line, 0 ) < 0 ) {
                 LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );

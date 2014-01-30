@@ -67,30 +67,30 @@ TiffEncoder::~TiffEncoder() {
       delete[] header;
 }
 
-DataStream* TiffEncoder::getTiffEncoder ( Image* image, Format::eformat_data format, bool isGeoTiff ) {
+DataStream* TiffEncoder::getTiffEncoder ( Image* image, Rok4Format::eformat_data format, bool isGeoTiff ) {
     switch ( format ) {
-    case Format::TIFF_RAW_INT8 :
+    case Rok4Format::TIFF_RAW_INT8 :
         return new TiffRawEncoder<uint8_t> ( image, isGeoTiff );
-    case Format::TIFF_LZW_INT8 :
+    case Rok4Format::TIFF_LZW_INT8 :
         return new TiffLZWEncoder<uint8_t> ( image, isGeoTiff );
-    case Format::TIFF_ZIP_INT8 :
+    case Rok4Format::TIFF_ZIP_INT8 :
         return new TiffDeflateEncoder<uint8_t> ( image, isGeoTiff );
-    case Format::TIFF_PKB_INT8 :
+    case Rok4Format::TIFF_PKB_INT8 :
         return new TiffPackBitsEncoder<uint8_t> ( image, isGeoTiff );
-    case Format::TIFF_RAW_FLOAT32 :
+    case Rok4Format::TIFF_RAW_FLOAT32 :
         return new TiffRawEncoder<float> ( image, isGeoTiff );
-    case Format::TIFF_LZW_FLOAT32 :
+    case Rok4Format::TIFF_LZW_FLOAT32 :
         return new TiffLZWEncoder<float> ( image, isGeoTiff );
-    case Format::TIFF_ZIP_FLOAT32 :
+    case Rok4Format::TIFF_ZIP_FLOAT32 :
         return new TiffDeflateEncoder<float> ( image, isGeoTiff );
-    case Format::TIFF_PKB_FLOAT32 :
+    case Rok4Format::TIFF_PKB_FLOAT32 :
         return new TiffPackBitsEncoder<float> ( image, isGeoTiff );
     default:
         return NULL;
     }
 }
 
-DataStream* TiffEncoder::getTiffEncoder ( Image* image, Format::eformat_data format ) {
+DataStream* TiffEncoder::getTiffEncoder ( Image* image, Rok4Format::eformat_data format ) {
     return getTiffEncoder( image, format, false );
 }
 
