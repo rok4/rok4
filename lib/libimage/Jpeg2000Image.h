@@ -36,21 +36,21 @@
  */
 
 /**
- * \file Libjp2Image.h
+ * \file Jpeg2000Image.h
  ** \~french
- * \brief Définition des classes Libjp2Image et Libjp2ImageFactory
+ * \brief Définition des classes Jpeg2000Image et Jpeg2000ImageFactory
  * \details
- * \li Libjp2Image : gestion d'une image au format JP2, en lecture, utilisant la librairie libJP2
- * \li Libjp2ImageFactory : usine de création d'objet Libjp2Image
+ * \li Jpeg2000Image : gestion d'une image au format JPEG2000, en lecture, faisant abstraction de la librairie utilisée
+ * \li Jpeg2000ImageFactory : usine de création d'objet Jpeg2000Image
  ** \~english
- * \brief Define classes Libjp2Image and Libjp2ImageFactory
+ * \brief Define classes Jpeg2000Image and Jpeg2000ImageFactory
  * \details
- * \li Libjp2Image : manage a JP2 format image, reading, using the library libJP2
- * \li Libjp2ImageFactory : factory to create Libjp2Image object
+ * \li Jpeg2000Image : manage a JPEG2000 format image, reading, making transparent the used library
+ * \li Jpeg2000ImageFactory : factory to create Jpeg2000Image object
  */
 
-#ifndef LIBJP2_IMAGE_H
-#define LIBJP2_IMAGE_H
+#ifndef JPEG2000_IMAGE_H
+#define JPEG2000_IMAGE_H
 
 #include "Image.h"
 #include <unistd.h>
@@ -63,40 +63,24 @@
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
- * \brief Manipulation d'une image JP2
- * \details Une image JP2 est une vraie image dans ce sens où elle est rattachée à un fichier, pour la lecture de données au format JP2.
+ * \brief Manipulation d'une image JPEG2000
+ * \details Une image JPEG2000 est une vraie image dans ce sens où elle est rattachée à un fichier, pour la lecture de données au format JPEG2000.
  *
- * Cette classe va utiliser la librairie libJP2 afin de lire les données et de récupérer les informations sur les images.
- *
- * Si l'image gère la transparence, l'alpha est forcément non-associé aux autres canaux (spécifications JP2). Il n'y a donc pas besoin de préciser #associatedalpha
+ * Cette classe va faire abstraction de la librairie utilisée pour réellement manipuler le fichier.
  * 
- * \todo Lire au fur et à mesure l'image JP2 et ne pas la charger intégralement en mémoire lors de la création de l'objet Libjp2Image.
+ * <TR><TH>Librairie</TH><TH>Classe</TH><TH>En lecture</TH><TH>En écriture</TH><TH>Commentaires</TH></TR>
+ * <TR><TD>OpenJpeg</TD><TD>LibopenjpegImage</TD><TD>Oui</TD><TD>Non</TD><TD>Librarie open source, intégrée statiquement dans le projet</TD></TR>
+ * <TR><TD>Kakadu</TD><TD>LibkakduImage</TD><TD>Oui</TD><TD>Non</TD><TD>Librairie propriétaire, dépendance dynamique</TD></TR>
+ *
+ * Si l'image gère la transparence, l'alpha est forcément non-associé aux autres canaux (spécifications JPEG2000). Il n'y a donc pas besoin de préciser #associatedalpha.
+ * 
  */
-class Libjp2Image : public FileImage {
+class Jpeg2000Image : public FileImage {
 
-    friend class Libjp2ImageFactory;
-
-private:
-
-    /**
-     * \~french \brief Stockage de l'image entière, décompressée
-     * \~english \brief Full uncompressed image storage
-     */
-    uint8_t * m_data;
-
+protected:
     /** \~french
-     * \brief Retourne une ligne, flottante ou entière
-     * \param[out] buffer Tableau contenant au moins width*channels valeurs
-     * \param[in] line Indice de la ligne à retourner (0 <= line < height)
-     * \return taille utile du buffer, 0 si erreur
-     */
-    template<typename T>
-    int _getline ( T* buffer, int line );
-
-public:
-    /** \~french
-     * \brief Crée un objet Libjp2Image à partir de tous ses éléments constitutifs
-     * \details Ce constructeur est protégé afin de n'être appelé que par l'usine Libjp2ImageFactory, qui fera différents tests et calculs.
+     * \brief Crée un objet Jpeg2000Image à partir de tous ses éléments constitutifs
+     * \details Ce constructeur est protégé afin de n'être appelé que par l'usine Jpeg2000ImageFactory, qui fera différents tests et calculs.
      * \param[in] width largeur de l'image en pixel
      * \param[in] height hauteur de l'image en pixel
      * \param[in] resx résolution dans le sens des X
@@ -108,9 +92,8 @@ public:
      * \param[in] bitspersample nombre de bits par canal
      * \param[in] photometric photométrie des données
      * \param[in] compression compression des données
-     * \param[in] data image complète, dans un tableau
      ** \~english
-     * \brief Create a Libjp2Image object, from all attributes
+     * \brief Create a Jpeg2000Image object, from all attributes
      * \param[in] width image width, in pixel
      * \param[in] height image height, in pixel
      * \param[in] resx X wise resolution
@@ -122,117 +105,99 @@ public:
      * \param[in] bitspersample number of bits per sample
      * \param[in] photometric data photometric
      * \param[in] compression data compression
-     * \param[in] data complete image, in an array
      */
-    Libjp2Image (
+    Jpeg2000Image (
         int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name,
-        SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
-        uint8_t * data
+        SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression
     );
 
 public:
 
-    int getline ( uint8_t* buffer, int line );
-    int getline ( float* buffer, int line );
+    virtual int getline ( uint8_t* buffer, int line ) = 0;
+    virtual int getline ( float* buffer, int line ) = 0;
 
     /**
      * \~french
-     * \brief Ecrit une image JP2, à partir d'une image source
-     * \warning Pas d'implémentation de l'écriture au format JP2, retourne systématiquement une erreur
+     * \brief Ecrit une image JPEG2000, à partir d'une image source
+     * \warning Pas d'implémentation de l'écriture au format JPEG2000, retourne systématiquement une erreur
      * \param[in] pIn source des donnée de l'image à écrire
      * \return 0 en cas de succes, -1 sinon
      */
     int writeImage ( Image* pIn ) {
-        LOGGER_ERROR ( "Cannot write JP2 image" );
+        LOGGER_ERROR ( "Cannot write JPEG2000 image" );
         return -1;
     }
 
     /**
      * \~french
-     * \brief Ecrit une image JP2, à partir d'un buffer d'entiers
-     * \warning Pas d'implémentation de l'écriture au format JP2, retourne systématiquement une erreur
+     * \brief Ecrit une image JPEG2000, à partir d'un buffer d'entiers
+     * \warning Pas d'implémentation de l'écriture au format JPEG2000, retourne systématiquement une erreur
      * \param[in] buffer source des donnée de l'image à écrire
      * \return 0 en cas de succes, -1 sinon
      */
     int writeImage ( uint8_t* buffer ) {
-        LOGGER_ERROR ( "Cannot write JP2 image" );
+        LOGGER_ERROR ( "Cannot write JPEG2000 image" );
         return -1;
     }
 
     /**
      * \~french
-     * \brief Ecrit une image JP2, à partir d'un buffer de flottants
-     * \warning Pas d'implémentation de l'écriture au format JP2, retourne systématiquement une erreur
+     * \brief Ecrit une image JPEG2000, à partir d'un buffer de flottants
+     * \warning Pas d'implémentation de l'écriture au format JPEG2000, retourne systématiquement une erreur
      * \param[in] buffer source des donnée de l'image à écrire
      * \return 0 en cas de succes, -1 sinon
      */
     int writeImage ( float* buffer)  {
-        LOGGER_ERROR ( "Cannot write JP2 image" );
+        LOGGER_ERROR ( "Cannot write JPEG2000 image" );
         return -1;
     }
 
     /**
      * \~french
-     * \brief Ecrit une ligne d'image JP2, à partir d'un buffer d'entiers
-     * \warning Pas d'implémentation de l'écriture au format JP2, retourne systématiquement une erreur
+     * \brief Ecrit une ligne d'image JPEG2000, à partir d'un buffer d'entiers
+     * \warning Pas d'implémentation de l'écriture au format JPEG2000, retourne systématiquement une erreur
      * \param[in] buffer source des donnée de l'image à écrire
      * \param[in] line ligne de l'image à écrire
      * \return 0 en cas de succes, -1 sinon
      */
     int writeLine ( uint8_t* buffer, int line ) {
-        LOGGER_ERROR ( "Cannot write JP2 image" );
+        LOGGER_ERROR ( "Cannot write JPEG2000 image" );
         return -1;
     }
 
     /**
      * \~french
-     * \brief Ecrit une ligne d'image JP2, à partir d'un buffer de flottants
-     * \warning Pas d'implémentation de l'écriture au format JP2, retourne systématiquement une erreur
+     * \brief Ecrit une ligne d'image JPEG2000, à partir d'un buffer de flottants
+     * \warning Pas d'implémentation de l'écriture au format JPEG2000, retourne systématiquement une erreur
      * \param[in] buffer source des donnée de l'image à écrire
      * \param[in] line ligne de l'image à écrire
      * \return 0 en cas de succes, -1 sinon
      */
     int writeLine ( float* buffer, int line) {
-        LOGGER_ERROR ( "Cannot write JP2 image" );
+        LOGGER_ERROR ( "Cannot write JPEG2000 image" );
         return -1;
     }
 
-    
-    /**
-     * \~french
-     * \brief Destructeur par défaut
-     * \details Suppression du buffer de lecture #data
-     * \~english
-     * \brief Default destructor
-     * \details We remove read buffer #data
-     */
-    ~Libjp2Image() {
-        /* cleanup heap allocation */
-        free(m_data);
-    }
-
     /** \~french
-     * \brief Sortie des informations sur l'image JP2
+     * \brief Sortie des informations sur l'image JPEG2000
      ** \~english
-     * \brief JP2 image description output
+     * \brief JPEG2000 image description output
      */
     void print() {
-        LOGGER_INFO ( "" );
-        LOGGER_INFO ( "---------- Libjp2Image ------------" );
         FileImage::print();
     }
 };
 
 /** \~ \author Institut national de l'information géographique et forestière
  ** \~french
- * \brief Usine de création d'une image JP2
- * \details Il est nécessaire de passer par cette classe pour créer des objets de la classe Libjp2Image. Cela permet de réaliser quelques tests en amont de l'appel au constructeur de Libjp2Image et de sortir en erreur en cas de problème. Dans le cas d'une image JP2 pour la lecture, on récupère dans le fichier toutes les méta-informations sur l'image.
+ * \brief Usine de création d'une image JPEG2000
+ * \details Il est nécessaire de passer par cette classe pour créer des objets de la classe Jpeg2000Image. Cela permet de réaliser quelques tests en amont de l'appel au constructeur de Jpeg2000Image et de sortir en erreur en cas de problème. Dans le cas d'une image JPEG2000 pour la lecture, on récupère dans le fichier toutes les méta-informations sur l'image.
  */
-class Libjp2ImageFactory {
+class Jpeg2000ImageFactory {
 public:
     /** \~french
-     * \brief Crée un objet Libjp2Image, pour la lecture
-     * \details On considère que les informations d'emprise et de résolutions ne sont pas présentes dans le JP2, on les précise donc à l'usine. Tout le reste sera lu dans les en-têtes JP2. On vérifiera aussi la cohérence entre les emprise et résolutions fournies et les dimensions récupérées dans le fichier JP2.
+     * \brief Crée un objet Jpeg2000Image, pour la lecture
+     * \details On considère que les informations d'emprise et de résolutions ne sont pas présentes dans le JPEG2000, on les précise donc à l'usine. Tout le reste sera lu dans les en-têtes JPEG2000. On vérifiera aussi la cohérence entre les emprise et résolutions fournies et les dimensions récupérées dans le fichier JPEG2000.
      *
      * Si les résolutions fournies sont négatives, cela signifie que l'on doit calculer un géoréférencement. Dans ce cas, on prend des résolutions égales à 1 et une bounding box à (0,0,width,height).
      *
@@ -240,19 +205,19 @@ public:
      * \param[in] bbox emprise rectangulaire de l'image
      * \param[in] resx résolution dans le sens des X.
      * \param[in] resy résolution dans le sens des Y.
-     * \return un pointeur d'objet Libjp2Image, NULL en cas d'erreur
+     * \return un pointeur d'objet Jpeg2000Image, NULL en cas d'erreur
      ** \~english
-     * \brief Create an Libjp2Image object, for reading
-     * \details Bbox and resolutions are not present in the JP2 file, so we precise them. All other informations are extracted from JP2 header. We have to check consistency between provided bbox and resolutions and read image's dimensions.
+     * \brief Create an Jpeg2000Image object, for reading
+     * \details Bbox and resolutions are not present in the JPEG2000 file, so we precise them. All other informations are extracted from JPEG2000 header. We have to check consistency between provided bbox and resolutions and read image's dimensions.
      *
      * Negative resolutions leads to georeferencement calculation. Both resolutions will be equals to 1 and the bounding box will be (0,0,width,height).
      * \param[in] filename path to image file
      * \param[in] bbox bounding box
      * \param[in] resx X wise resolution.
      * \param[in] resy Y wise resolution.
-     * \return a Libjp2Image object pointer, NULL if error
+     * \return a Jpeg2000Image object pointer, NULL if error
      */
-    Libjp2Image* createLibjp2ImageToRead ( char* filename, BoundingBox<double> bbox, double resx, double resy );
+    Jpeg2000Image* createJpeg2000ImageToRead ( char* filename, BoundingBox<double> bbox, double resx, double resy );
 
 };
 

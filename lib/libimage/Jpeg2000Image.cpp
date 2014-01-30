@@ -36,115 +36,82 @@
  */
 
 /**
- * \file Libjp2Image.cpp
+ * \file Jpeg2000Image.cpp
  ** \~french
- * \brief Implémentation des classes Libjp2Image et Libjp2ImageFactory
+ * \brief Implémentation des classes Jpeg2000Image et Jpeg2000ImageFactory
  * \details
- * \li Libjp2Image : image physique, attaché à un fichier
- * \li Libjp2ImageFactory : usine de création d'objet Libjp2Image
+ * \li Jpeg2000Image : gestion d'une image au format JPEG2000, en lecture, faisant abstraction de la librairie utilisée
+ * \li Jpeg2000ImageFactory : usine de création d'objet Jpeg2000Image
  ** \~english
- * \brief Implement classes Libjp2Image and Libjp2ImageFactory
+ * \brief Implement classes Jpeg2000Image and Jpeg2000ImageFactory
  * \details
- * \li Libjp2Image : physical image, linked to a file
- * \li Libjp2ImageFactory : factory to create Libjp2Image object
+ * \li Jpeg2000Image : manage a JPEG2000 format image, reading, making transparent the used library
+ * \li Jpeg2000ImageFactory : factory to create Jpeg2000Image object
  */
 
-#include "image_config.h"
-
-#include "Libjp2Image.h"
+#include "Jpeg2000Image.h"
 #include "Logger.h"
 #include "Utils.h"
 
 #ifdef HAVE_OPENJPEG
-#include "Jp2DriverOpenJpeg.h"
+#include "LibopenjpegImage.h"
 #endif
 
 #ifdef HAVE_KAKADU
-#include "Jp2DriverKakadu.h"
+#include "LibkakaduImage.h"
 #endif
 
 #ifdef HAVE_JASPER
-#include "Jp2DriverJasper.h"
+#include "LibjasperImage.h"
 #endif
-
-/* ------------------------------------------------------------------------------------------------ */
-/* ------------------------------------------ CONVERSIONS ----------------------------------------- */
 
 /* ------------------------------------------------------------------------------------------------ */
 /* -------------------------------------------- USINES -------------------------------------------- */
 
 /* ----- Pour la lecture ----- */
-Libjp2Image* Libjp2ImageFactory::createLibjp2ImageToRead ( char* filename, BoundingBox< double > bbox, double resx, double resy ) {
-	
+Jpeg2000Image* Jpeg2000ImageFactory::createJpeg2000ImageToRead ( char* filename, BoundingBox< double > bbox, double resx, double resy ) {
+
     LOGGER_DEBUG("Utilisation du driver JPEG2000.");
 
-	#ifdef HAVE_OPENJPEG
+#ifdef HAVE_OPENJPEG
 
     LOGGER_DEBUG("Driver JPEG2000 : OPENJPEG.");
 
     Jp2DriverOpenJpeg DRVOJ;
-    return DRVOJ.createLibjp2ImageToRead(filename, bbox, resx, resy);
-	
-	#endif
+    return DRVOJ.createJpeg2000ImageToRead(filename, bbox, resx, resy);
 
-	#ifdef HAVE_KAKADU
+#endif
+
+#ifdef HAVE_KAKADU
 
     LOGGER_DEBUG("Driver JPEG2000 : KAKADU.");
 
     Jp2DriverKakadu DRVKDU;
-    return DRVKDU.createLibjp2ImageToRead(filename, bbox, resx, resy);
-	
-	#endif
+    return DRVKDU.createJpeg2000ImageToRead(filename, bbox, resx, resy);
 
-	#ifdef HAVE_JASPER
+#endif
+
+#ifdef HAVE_JASPER
 
     LOGGER_DEBUG("Driver JPEG2000 : JASPER.");
 
     Jp2DriverJasper DRVJSP;
-    return DRVJSP.createLibjp2ImageToRead(filename, bbox, resx, resy);
-	
-	#endif
-	
+    return DRVJSP.createJpeg2000ImageToRead(filename, bbox, resx, resy);
+
+#endif
+    
 }
 
 /* ------------------------------------------------------------------------------------------------ */
 /* ----------------------------------------- CONSTRUCTEUR ----------------------------------------- */
 
-Libjp2Image::Libjp2Image (
+Jpeg2000Image::Jpeg2000Image (
     int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
-    SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
-    uint8_t * data ) :
+    SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression) :
 
-    FileImage ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression ),
+    FileImage ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression, false )
 
-    m_data(data) {
+{
         
 }
 
-/* ------------------------------------------------------------------------------------------------ */
-/* ------------------------------------------- LECTURE -------------------------------------------- */
-
-template<typename T>
-int Libjp2Image::_getline ( T* buffer, int line ) {
-    
-    int pos = channels * width * line;
-    for (int x = 0;  x < width * channels; x++) {
-        buffer[x] = m_data[pos + x];
-    }
-    return width*channels;
-}
-
-int Libjp2Image::getline ( uint8_t* buffer, int line ) {
-    return _getline ( buffer,line );
-}
-
-int Libjp2Image::getline ( float* buffer, int line ) {
-    
-    // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers (forcément pour du PNG)
-    uint8_t* buffer_t = new uint8_t[width*channels];
-    getline ( buffer_t,line );
-    convert ( buffer,buffer_t,width*channels );
-    delete [] buffer_t;
-    return width*channels;
-    
-}

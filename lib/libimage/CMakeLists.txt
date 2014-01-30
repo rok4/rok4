@@ -42,7 +42,7 @@ CONFIGURE_FILE(image_config.h.in image_config.h ESCAPE_QUOTES @ONLY)
 
 SET(
     libimage_SRCS Palette.cpp Data.cpp Decoder.cpp
-    FileImage.cpp LibtiffImage.cpp LibpngImage.cpp Rok4Image.cpp
+    FileImage.cpp Jpeg2000Image.cpp LibtiffImage.cpp LibpngImage.cpp Rok4Image.cpp
     ReprojectedImage.cpp ResampledImage.cpp Kernel.cpp Interpolation.cpp
     MirrorImage.cpp StyledImage.cpp EstompageImage.cpp
     ExtendedCompoundImage.cpp CompoundImage.cpp MergeImage.cpp
@@ -53,20 +53,18 @@ SET(
 
 # OPTION : 'sources' JASPER
 IF(HAVE_JASPER)
-  SET(optional_libimage_SRCS Libjp2Image.cpp Jp2DriverJasper.cpp)
+  SET(libimage_SRCS libimage_SRCS LibjasperImage.cpp)
 ENDIF(HAVE_JASPER)
 
 # OPTION : 'sources' KDU
 IF(HAVE_KAKADU)
-  SET(optional_libimage_SRCS Libjp2Image.cpp Jp2DriverKakadu.cpp)
+  SET(libimage_SRCS libimage_SRCS LibkakaduImage.cpp)
 ENDIF(HAVE_KAKADU)
 
 # OPTION : 'sources' OPENJPEG
 IF(HAVE_OPENJPEG)
-  SET(optional_libimage_SRCS Libjp2Image.cpp Jp2DriverOpenJpeg.cpp)
+  SET(libimage_SRCS libimage_SRCS LibopenjpegImage.cpp)
 ENDIF(HAVE_OPENJPEG)
-
-ADD_LIBRARY(image STATIC ${libimage_SRCS} ${optional_libimage_SRCS})
 
 ########################################
 # Définition des dépendances.
@@ -77,42 +75,32 @@ SET(DEP_INCLUDE_DIR ${JPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR
 
 # OPTION : 'include' JASPER
 IF(HAVE_JASPER)
-  SET(OPTIONAL_INCLUDE_DIR ${JASPER_INCLUDE_DIR})
+  SET(DEP_INCLUDE_DIR DEP_INCLUDE_DIR ${JASPER_INCLUDE_DIR})
 ENDIF(HAVE_JASPER)
-
-# OPTION : 'include' KDU
-IF(HAVE_KAKADU)
-  SET(OPTIONAL_INCLUDE_DIR ${KAKADU_INCLUDE_DIR})
-ENDIF(HAVE_KAKADU)
 
 # OPTION : 'include' OPENJPEG
 IF(HAVE_OPENJPEG)
-  SET(OPTIONAL_INCLUDE_DIR ${OPENJPEG_INCLUDE_DIR})
+  SET(DEP_INCLUDE_DIR DEP_INCLUDE_DIR ${OPENJPEG_INCLUDE_DIR})
 ENDIF(HAVE_OPENJPEG)
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${DEP_INCLUDE_DIR} ${OPTIONAL_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${DEP_INCLUDE_DIR})
 
 ########################################
 # Listes des bibliothèques à liées avec l'éxecutable
 SET(DEP_LIBRARY logger proj jpeg zlib tiff lzw pkb png)
 
+
 # OPTION : 'lib' JASPER
 IF(HAVE_JASPER)
-  SET(OPTIONAL_LIBRARY jasper)
+  SET(DEP_LIBRARY DEP_LIBRARY jasper)
 ENDIF(HAVE_JASPER)
-
-# OPTION : 'lib' KDU
-IF(HAVE_KAKADU)
-  SET(OPTIONAL_LIBRARY kdu)
-ENDIF(HAVE_KAKADU)
 
 # OPTION : 'lib' OPENJPEG
 IF(HAVE_OPENJPEG)
-  # FIXME : openjm2 ?
-  SET(OPTIONAL_LIBRARY openjp2)
+  SET(DEP_LIBRARY DEP_LIBRARY openjp2)
 ENDIF(HAVE_OPENJPEG)
 
-TARGET_LINK_LIBRARIES(image ${DEP_LIBRARY} ${OPTIONAL_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+TARGET_LINK_LIBRARIES(image ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 
 ########################################
 # Gestion des tests unitaires (CPPUnit)

@@ -40,12 +40,12 @@
  ** \~french
  * \brief Implémentation des classes LibpngImage et LibpngImageFactory
  * \details
- * \li LibpngImage : image physique, attaché à un fichier
+ * \li LibpngImage : gestion d'une image au format PNG, en lecture, utilisant la librairie libpng
  * \li LibpngImageFactory : usine de création d'objet LibpngImage
  ** \~english
  * \brief Implement classes LibpngImage and LibpngImageFactory
  * \details
- * \li LibpngImage : physical image, linked to a file
+ * \li LibpngImage : manage a PNG format image, reading, using the library libpng
  * \li LibpngImageFactory : factory to create LibpngImage object
  */
 
@@ -251,7 +251,7 @@ LibpngImage::LibpngImage (
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
     png_bytep* pngRows ) :
 
-    FileImage ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression ),
+    FileImage ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression, false ),
 
     pngRowsPointers(pngRows) {
         

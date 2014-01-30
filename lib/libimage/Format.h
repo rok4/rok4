@@ -151,14 +151,15 @@ enum eCompression {
     JPEG = 3,
     PNG = 4,
     LZW = 5,
-    PACKBITS = 6
+    PACKBITS = 6,
+    JPEG2000 = 7
 };
 
 /**
  * \~french \brief Nombre de compressions disponibles
  * \~english \brief Number of available compressions
  */
-const int compression_size = 6;
+const int compression_size = 7;
 
 /**
  * \~french \brief Conversion d'une chaîne de caractères vers une compression de l'énumération

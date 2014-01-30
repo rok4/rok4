@@ -35,23 +35,38 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file LibopenjpegImage.cpp
+ ** \~french
+ * \brief Implémentation des classes LibopenjpegImage et LibopenjpegImageFactory
+ * \details
+ * \li LibopenjpegImage : gestion d'une image au format JPEG2000, en lecture, utilisant la librairie openjpeg
+ * \li LibopenjpegImageFactory : usine de création d'objet LibopenjpegImage
+ ** \~english
+ * \brief Implement classes LibopenjpegImage and LibopenjpegImageFactory
+ * \details
+ * \li LibopenjpegImage : manage a JPEG2000 format image, reading, using the library openjpeg
+ * \li LibopenjpegImageFactory : factory to create LibopenjpegImage object
+ */
+
 #include <string.h>
 #include <cstring>
 #include <ctype.h>
 
-#include "Jp2DriverOpenJpeg.h"
-
+#include "openjpeg.h"
+#include "LibopenjpegImage.h"
 #include "Logger.h"
 #include "Utils.h"
-#include "Format.h"
-
-#include "openjpeg.h"
 
 #define JP2_RFC3745_MAGIC    "\x00\x00\x00\x0c\x6a\x50\x20\x20\x0d\x0a\x87\x0a"
 #define JP2_MAGIC            "\x0d\x0a\x87\x0a"
 #define J2K_CODESTREAM_MAGIC "\xff\x4f\xff\x51"
 
-Libjp2Image *Jp2DriverOpenJpeg::createLibjp2ImageToRead(char *filename, BoundingBox< double > bbox, double resx, double resy)
+/* ------------------------------------------------------------------------------------------------ */
+/* -------------------------------------------- USINES -------------------------------------------- */
+
+/* ----- Pour la lecture ----- */
+LibopenjpegImage* LibopenjpegImageFactory::createLibpngImageToRead ( char* filename, BoundingBox< double > bbox, double resx, double resy )
 {
     int     width,
             height,
@@ -296,11 +311,44 @@ Libjp2Image *Jp2DriverOpenJpeg::createLibjp2ImageToRead(char *filename, Bounding
     // Close
     fclose(fsrc);
 
-    return new Libjp2Image (
+    return new LibopenjpegImage (
             width, height, resx, resy, channels, bbox, filename,
             SampleFormat::UINT, bitspersample, Photometric::RGB, Compression::NONE,
             data);
 
 }
 
+/* ------------------------------------------------------------------------------------------------ */
+/* ----------------------------------------- CONSTRUCTEUR ----------------------------------------- */
+
+LibopenjpegImage::LibopenjpegImage (
+    int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
+    SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
+    uint8_t* data ) :
+
+    Jpeg2000Image ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression ),
+
+    m_data(data) {
+        
+}
+
+/* ------------------------------------------------------------------------------------------------ */
+/* ------------------------------------------- LECTURE -------------------------------------------- */
+
+int LibopenjpegImage::getline ( uint8_t* buffer, int line ) {
+    
+    memcpy(buffer, m_data+width*channels*line, width*channels);
+    return width*channels;
+}
+
+int LibopenjpegImage::getline ( float* buffer, int line ) {
+    
+    // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers (forcément pour du JPEG2000)
+    uint8_t* buffer_t = new uint8_t[width*channels];
+    getline ( buffer_t,line );
+    convert ( buffer,buffer_t,width*channels );
+    delete [] buffer_t;
+    return width*channels;
+    
+}
 

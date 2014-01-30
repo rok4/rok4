@@ -1,3 +1,5 @@
+#Défini le nom du projet 
+project(openjp2)
 # Main CMakeLists.txt to build the OpenJPEG project using CMake (www.cmake.org)
 # Written by Mathieu Malaterre
 
