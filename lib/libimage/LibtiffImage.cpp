@@ -259,10 +259,6 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
             LOGGER_ERROR ( "Width is " << width << " and calculation give " << calcWidth );
             return NULL;
         }
-    } else {
-        bbox = BoundingBox<double> ( 0, 0, ( double ) width, ( double ) height );
-        resx = 1.;
-        resy = 1.;
     }
 
     return new LibtiffImage (
@@ -290,6 +286,7 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
         LOGGER_ERROR ( "One dimension is not valid for the output image " << filename << " : " << width << ", " << height );
         return NULL;
     }
+    
     if ( channels <= 0 ) {
         LOGGER_ERROR ( "Number of samples per pixel is not valid for the output image " << filename << " : " << channels );
         return NULL;
@@ -298,6 +295,19 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
     if ( ! SampleFormat::isHandledSampleType ( sampleformat, bitspersample ) ) {
         LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( sampleformat ) << " and " << bitspersample << " bits per sample" );
         return NULL;
+    }
+    
+    if ( resx > 0 && resy > 0 ) {
+        // Vérification de la cohérence entre les résolutions et bbox fournies et les dimensions (en pixel) de l'image
+        // Arrondi a la valeur entiere la plus proche
+        int calcWidth = lround ( ( bbox.xmax - bbox.xmin ) / ( resx ) );
+        int calcHeight = lround ( ( bbox.ymax - bbox.ymin ) / ( resy ) );
+        if ( calcWidth != width || calcHeight != height ) {
+            LOGGER_ERROR ( "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" );
+            LOGGER_ERROR ( "Height is " << height << " and calculation give " << calcHeight );
+            LOGGER_ERROR ( "Width is " << width << " and calculation give " << calcWidth );
+            return NULL;
+        }
     }
 
     TIFF* tif = TIFFOpen ( filename, "w" );
@@ -355,7 +365,7 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
         return NULL;
     }
 
-    if ( TIFFSetField ( tif, TIFFTAG_ROWSPERSTRIP,1 ) < 1 ) {
+    if ( TIFFSetField ( tif, TIFFTAG_ROWSPERSTRIP,rowsperstrip ) < 1 ) {
         LOGGER_ERROR ( "Unable to write number of rows per strip for file " << filename );
         return NULL;
     }
@@ -363,12 +373,6 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
     if ( TIFFSetField ( tif, TIFFTAG_RESOLUTIONUNIT, RESUNIT_NONE ) < 1 ) {
         LOGGER_ERROR ( "Unable to write pixel resolution unit for file " << filename );
         return NULL;
-    }
-
-    if ( resx < 0 || resy < 0 ) {
-        bbox = BoundingBox<double> ( 0, 0, ( double ) width, ( double ) height );
-        resx = 1.;
-        resy = 1.;
     }
 
     return new LibtiffImage (

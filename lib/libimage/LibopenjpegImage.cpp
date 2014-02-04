@@ -53,268 +53,255 @@
 #include <cstring>
 #include <ctype.h>
 
-#include "openjpeg.h"
 #include "LibopenjpegImage.h"
 #include "Logger.h"
 #include "Utils.h"
 
-#define JP2_RFC3745_MAGIC    "\x00\x00\x00\x0c\x6a\x50\x20\x20\x0d\x0a\x87\x0a"
-#define JP2_MAGIC            "\x0d\x0a\x87\x0a"
-#define J2K_CODESTREAM_MAGIC "\xff\x4f\xff\x51"
+/* ------------------------------------------------------------------------------------------------ */
+/* ------------------------------------------ CONVERSIONS ----------------------------------------- */
+
+static Photometric::ePhotometric toROK4Photometric ( OPJ_COLOR_SPACE ph ) {
+    switch ( ph ) {
+    case OPJ_CLRSPC_SRGB :
+        return Photometric::RGB;
+    case OPJ_CLRSPC_GRAY :
+        return Photometric::GRAY;
+    default :
+        return Photometric::UNKNOWN;
+    }
+}
+
+/* ------------------------------------------------------------------------------------------------ */
+/* -------------------------------------- LOGGERS DE OPENJPEG ------------------------------------- */
+
+static void error_callback ( const char *msg, void *client_data ) {
+    ( void ) client_data;
+    LOGGER_ERROR ( msg );
+}
+
+static void warning_callback ( const char *msg, void *client_data ) {
+    ( void ) client_data;
+    LOGGER_WARN ( msg );
+}
+
+static void info_callback ( const char *msg, void *client_data ) {
+    ( void ) client_data;
+    LOGGER_DEBUG ( msg );
+}
 
 /* ------------------------------------------------------------------------------------------------ */
 /* -------------------------------------------- USINES -------------------------------------------- */
 
 /* ----- Pour la lecture ----- */
-LibopenjpegImage* LibopenjpegImageFactory::createLibpngImageToRead ( char* filename, BoundingBox< double > bbox, double resx, double resy )
-{
-    int     width,
-            height,
-            channels,
-            bitspersample;
-
-    int has_alpha = 0;
-
-    uint8_t * data;
-
-    /* ---------------------------------------- */
-    /* Read the input file and put it in memory */
-    /* ---------------------------------------- */
+LibopenjpegImage* LibopenjpegImageFactory::createLibopenjpegImageToRead ( char* filename, BoundingBox< double > bbox, double resx, double resy ) {
 
     // Set decoding parameters to default values
-    opj_dparameters_t parameters;
-    opj_set_default_decoder_parameters(&parameters);
+    opj_dparameters_t parameters;                   /* decompression parameters */
+    opj_image_t* image = NULL;
+    opj_stream_t *l_stream = NULL;                          /* Stream */
+    opj_codec_t* l_codec = NULL;                            /* Handle to a decompressor */
+    opj_codestream_index_t* cstr_index = NULL;
 
-    // Codestream
-    opj_stream_t *stream = NULL;
+    opj_set_default_decoder_parameters ( &parameters );
+    strncpy ( parameters.infile, filename, IMAGE_MAX_FILENAME_LENGTH * sizeof ( char ) );
 
-    // File
-    strncpy(parameters.infile, filename, 4096 * sizeof(char));
+    /************** INITIALISATION DES OBJETS OPENJPEG *********/
 
-    // Open
-    FILE *fsrc = NULL;
-    fsrc = fopen(parameters.infile, "rb");
+    // Ouverture du fichier bianire en lecture
+    FILE *file = NULL;
+    file = std::fopen ( filename , "rb" );
 
-    if (!fsrc) {
-        LOGGER_ERROR ("failed to open jp2 for reading !");
+    if ( !file ) {
+        LOGGER_ERROR ( "Unable to open the JPEG2000 file (to read) " << filename );
         return NULL;
     }
 
-    // Taille
-    fseek(fsrc, 0, SEEK_END);
-    int file_length = ftell(fsrc);
-    fseek(fsrc, 0, SEEK_SET);
-
-    LOGGER_DEBUG("File Size : " << file_length << " octets.");
-
-    // Read MAGIC Code
-    unsigned char * magic_code = (unsigned char *) malloc(12);
-
-    if (fread(magic_code, 1, 12, fsrc) != 12) {
-         free(magic_code);
-         fclose(fsrc);
-         LOGGER_ERROR ("failed to read magic code format !");
-         return NULL;
+    l_stream = opj_stream_create_default_file_stream ( file,1 );
+    if ( !l_stream ) {
+        std::fclose ( file );
+        LOGGER_ERROR ( "Unable to create the stream (to read) for the JPEG2000 file " << filename );
+        return NULL;
     }
+
+    // Récupération du format du JPEG2000 (magic code) pour savoir quel codec utiliser pour la décompression
+    unsigned char * magic_code = ( unsigned char * ) malloc ( 12 );
+
+    if ( std::fread ( magic_code, 1, 12, file ) != 12 ) {
+        free ( magic_code );
+        std::fclose ( file );
+        LOGGER_ERROR ( "Unable to read the magic code for the JPEG2000 file " << filename );
+        return NULL;
+    }
+    // On remet le pointeur du fichier source au début
+    std::fseek ( file, 0, SEEK_SET );
 
     // Format MAGIC Code
-    if (memcmp(magic_code, JP2_RFC3745_MAGIC, 12) == 0 ||
-        memcmp(magic_code, JP2_MAGIC, 4) == 0) {
-        LOGGER_DEBUG ("Ok, use format JP2 !");
-    }
-    else if (memcmp(magic_code, J2K_CODESTREAM_MAGIC, 4) == 0) {
-        LOGGER_ERROR ("The format J2K has not been yet implemented !");
-        free(magic_code);
-        fclose(fsrc);
-        return NULL;
-    }
-    else {
-        LOGGER_ERROR ("Unknown format, only format JP2 has been implemented !");
-        free(magic_code);
-        fclose(fsrc);
+    if ( memcmp ( magic_code, JP2_RFC3745_MAGIC, 12 ) == 0 || memcmp ( magic_code, JP2_MAGIC, 4 ) == 0 ) {
+        l_codec = opj_create_decompress ( OPJ_CODEC_JP2 );
+        LOGGER_DEBUG ( "Ok, use format JP2 !" );
+    } else if ( memcmp ( magic_code, J2K_CODESTREAM_MAGIC, 4 ) == 0 ) {
+        l_codec = opj_create_decompress ( OPJ_CODEC_J2K );
+        LOGGER_DEBUG ( "Ok, use format J2K !" );
+    } else {
+        LOGGER_ERROR ( "Unhandled format for the JPEG2000 file " << filename );
+        std::fclose ( file );
+        free ( magic_code );
+        opj_stream_destroy ( l_stream );
         return NULL;
     }
 
     // Nettoyage
-    free(magic_code);
+    free ( magic_code );
 
-    // On repart du debut...
-    fseek(fsrc, 0, SEEK_SET);
+    /* catch events using our callbacks and give a local context */
+    opj_set_info_handler ( l_codec, info_callback,00 );
+    opj_set_warning_handler ( l_codec, warning_callback,00 );
+    opj_set_error_handler ( l_codec, error_callback,00 );
 
-    // Read All...
-    stream = opj_stream_create_default_file_stream(fsrc, 1);
-
-    if (! stream) {
-        LOGGER_ERROR ("failed to create the stream from the file !");
-        fclose(fsrc);
+    /* Setup the decoder decoding parameters using user parameters */
+    if ( !opj_setup_decoder ( l_codec, &parameters ) ) {
+        LOGGER_ERROR ( "Unable to setup the decoder for the JPEG2000 file " << filename );
+        opj_stream_destroy ( l_stream );
+        std::fclose ( file );
+        opj_destroy_codec ( l_codec );
         return NULL;
     }
 
-    /* ---------------------- */
-    /* Decode the code-stream */
-    /* ---------------------- */
 
-    opj_image_t  *image  = NULL;        // Defines image data and characteristics
-    opj_codec_t  *codec  = NULL;        // Handle to a decompressor
-
-    // Creates a J2K/JPT/JP2 decompression structure
-    codec = opj_create_decompress(OPJ_CODEC_JP2);
-
-    // Setup the decoder decoding parameters using the current image and user parameters
-    if (! opj_setup_decoder(codec, &parameters)) {
-        LOGGER_ERROR ("failed to setup the decoder !");
-        opj_stream_destroy(stream);
-        opj_destroy_codec(codec);
-        fclose(fsrc);
+    /* Read the main header of the codestream and if necessary the JP2 boxes*/
+    if ( ! opj_read_header ( l_stream, l_codec, &image ) ) {
+        LOGGER_ERROR ( "Unable to read the header for the JPEG2000 file " << filename );
+        opj_stream_destroy ( l_stream );
+        std::fclose ( file );
+        opj_destroy_codec ( l_codec );
+        opj_image_destroy ( image );
         return NULL;
     }
 
-    // FIXME :
-    // Catch events using our callbacks and give a local context
-    // opj_set_info_handler(codec, info_callback, 00);
-    // opj_set_warning_handler(codec, warning_callback, 00);
-    // opj_set_error_handler(codec, error_callback, 00);
-
-    // Read the main header of the codestream and if necessary the JP2 boxes
-    if(! opj_read_header(stream, codec, &image)){
-        LOGGER_ERROR ("failed to read the header !");
-        opj_stream_destroy(stream);
-        opj_destroy_codec(codec);
-        opj_image_destroy(image);
-        fclose(fsrc);
+    /* Get the decoded image */
+    if ( ! ( opj_decode ( l_codec, l_stream, image ) && opj_end_decompress ( l_codec, l_stream ) ) ) {
+        LOGGER_ERROR ( "Unable to decode JPEG2000 file " << filename );
+        opj_destroy_codec ( l_codec );
+        opj_stream_destroy ( l_stream );
+        opj_image_destroy ( image );
+        fclose ( file );
         return NULL;
     }
 
-    // Get the decoded image
-    if (!(opj_decode(codec, stream, image) && opj_end_decompress(codec, stream))) {
-        LOGGER_ERROR ("failed to decode image !");
-        opj_destroy_codec(codec);
-        opj_stream_destroy(stream);
-        opj_image_destroy(image);
-        fclose(fsrc);
-        return NULL;
-    }
+    opj_stream_destroy ( l_stream );
+    fclose ( file );
+
+    /************** RECUPERATION DES INFORMATIONS **************/
 
     // BitsPerSample
-    bitspersample = image->comps[0].prec;
-    if (bitspersample != 8) {
-        LOGGER_ERROR ("Only 8 bits has been implemented !");
+    int bitspersample = image->comps[0].prec;
+    int width = image->comps[0].w;
+    int height = image->comps[0].h;
+    int channels = image->numcomps;
+    SampleFormat::eSampleFormat sf = SampleFormat::UINT;
+    Photometric::ePhotometric ph = toROK4Photometric ( image->color_space );
+    if ( ph == Photometric::UNKNOWN ) {
+        LOGGER_ERROR ( "Unhandled color space (" << image->color_space << ") in the JPEG2000 image " << filename );
         return NULL;
     }
 
-    // Photometric
-    // COLOR_SPACE::OPJ_CLRSPC_SRGB = 1
-    if (image->color_space != 1) {
-        LOGGER_ERROR ("Only RGB(A) has been implemented !");
-        return NULL;
-    }
-
-    // Channels
-    if(image->numcomps == 1 /* GRAY */) {
-
-        LOGGER_ERROR ("Gray has not been yet implemented !");
-        return NULL;
-    }
-
-    if(image->numcomps == 2 /* GRAY_ALPHA */
-        && image->comps[0].dx == image->comps[1].dx
-        && image->comps[0].dy == image->comps[1].dy
-        && image->comps[0].prec == image->comps[1].prec) {
-
-        LOGGER_ERROR ("Gray (A) has not been yet implemented !");
-        return NULL;
-    }
-
-    if(image->numcomps >= 3 /* RGB_ALPHA */
-        && image->comps[0].dx == image->comps[1].dx
-        && image->comps[1].dx == image->comps[2].dx
-        && image->comps[0].dy == image->comps[1].dy
-        && image->comps[1].dy == image->comps[2].dy
-        && image->comps[0].prec == image->comps[1].prec
-        && image->comps[1].prec == image->comps[2].prec) {
-
-            width     = image->comps[0].w;
-            height    = image->comps[0].h;
-            channels  = image->numcomps;
-            has_alpha = (image->numcomps == 4);
-
-            if (has_alpha) {
-                LOGGER_INFO ("There's an alpha component !");
-            }
+    // On vérifie que toutes les composantes ont bien les mêmes carctéristiques
+    for ( int i = 1; i < channels; i++ ) {
+        if ( bitspersample != image->comps[i].prec || width != image->comps[i].w || height != image->comps[i].h ) {
+            LOGGER_ERROR ( "All components have to be the same in the JPEG image " << filename );
+            return NULL;
+        }
     }
 
     /* ---------------------- */
     /* Encode the new stream  */
     /* ---------------------- */
 
-    // Data
-    int imgsize = width * height;       // taille de l'image en pixels pour une couche
-    int step    = 3 + has_alpha;        // 3 ou 4 couches ( = channels)
-    int sgnd    = image->comps[0].sgnd; // signe
-    int adjust  = sgnd ? 1 << (image->comps[0].prec - 1) : 0; // 1: signed 0: unsigned !
+//     // Data
+//     int imgsize = width * height;       // taille de l'image en pixels pour une couche
+//     int step    = 3 + has_alpha;        // 3 ou 4 couches ( = channels)
+//     int sgnd    = image->comps[0].sgnd; // signe
+//     int adjust  = sgnd ? 1 << (image->comps[0].prec - 1) : 0; // 1: signed 0: unsigned !
+//
+//     // Allocation memoire
+// 	data = (unsigned char *) malloc(imgsize*step);
+//
+//     int i;
+//     int index = 0;
+//
+//     for(i=0; i < imgsize * step; i += step) {
+//         int r, g, b, a = 0;
+//
+//         // index = nb de pixels d'une couche
+//         if(index < imgsize) {
+//
+//             // recuperation d'un pixel r,g,b (a)
+//             r = image->comps[0].data[index];
+//             g = image->comps[1].data[index];
+//             b = image->comps[2].data[index];
+//             if(has_alpha) a = image->comps[3].data[index];
+//
+//             index++;
+//
+//             // ajout du signe
+//             if(sgnd) {
+//                 r += adjust;
+//                 g += adjust;
+//                 b += adjust;
+//
+//                 if(has_alpha) a += adjust;
+//             }
+//
+//             // copie d'un pixel : r,g,b (a)
+//             data[i+0] = r ;
+//             data[i+1] = g ;
+//             data[i+2] = b ;
+//             if(has_alpha) data[i+3] = a;
+//
+//         }
+//         else {
+//             LOGGER_DEBUG("nb de pixels d'une couche trop important !");
+//         }
+//     }
 
-    // Allocation memoire
-	data = (unsigned char *) malloc(imgsize*step);
-	
-    int i;
-    int index = 0;
+//     // Free remaining structures
+//     if (codec) {
+//         opj_destroy_codec(codec);
+//         codec = NULL;
+//     }
+//
+//     // Free codestream information structure
+//     opj_stream_destroy(stream);
+//     stream = NULL;
+//
+//     // Free image data structure
+//     opj_image_destroy(image);
+//     image = NULL;
 
-    for(i=0; i < imgsize * step; i += step) {
-        int r, g, b, a = 0;
+    /********************** CONTROLES **************************/
 
-        // index = nb de pixels d'une couche
-        if(index < imgsize) {
-
-            // recuperation d'un pixel r,g,b (a)
-            r = image->comps[0].data[index];
-            g = image->comps[1].data[index];
-            b = image->comps[2].data[index];
-            if(has_alpha) a = image->comps[3].data[index];
-
-            index++;
-
-            // ajout du signe
-            if(sgnd) {
-                r += adjust;
-                g += adjust;
-                b += adjust;
-
-                if(has_alpha) a += adjust;
-            }
-
-            // copie d'un pixel : r,g,b (a)
-            data[i+0] = r ;
-            data[i+1] = g ;
-            data[i+2] = b ;
-            if(has_alpha) data[i+3] = a;
-
-        }
-        else {
-            LOGGER_DEBUG("nb de pixels d'une couche trop important !");
-        }
+    if ( ! SampleFormat::isHandledSampleType ( sf, bitspersample ) ) {
+        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( sf ) << " and " << bitspersample << " bits per sample" );
+        return NULL;
     }
 
-    // Free remaining structures
-    if (codec) {
-        opj_destroy_codec(codec);
-        codec = NULL;
+    if ( resx > 0 && resy > 0 ) {
+        // Vérification de la cohérence entre les résolutions et bbox fournies et les dimensions (en pixel) de l'image
+        // Arrondi a la valeur entiere la plus proche
+        int calcWidth = lround ( ( bbox.xmax - bbox.xmin ) / ( resx ) );
+        int calcHeight = lround ( ( bbox.ymax - bbox.ymin ) / ( resy ) );
+        if ( calcWidth != width || calcHeight != height ) {
+            LOGGER_ERROR ( "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" );
+            LOGGER_ERROR ( "Height is " << height << " and calculation give " << calcHeight );
+            LOGGER_ERROR ( "Width is " << width << " and calculation give " << calcWidth );
+            return NULL;
+        }
     }
-
-    // Free codestream information structure
-    opj_stream_destroy(stream);
-    stream = NULL;
-
-    // Free image data structure
-    opj_image_destroy(image);
-    image = NULL;
-
-    // Close
-    fclose(fsrc);
 
     return new LibopenjpegImage (
-            width, height, resx, resy, channels, bbox, filename,
-            SampleFormat::UINT, bitspersample, Photometric::RGB, Compression::NONE,
-            data);
+               width, height, resx, resy, channels, bbox, filename,
+               sf, bitspersample, ph, Compression::JPEG2000,
+               image );
 
 }
 
@@ -324,31 +311,35 @@ LibopenjpegImage* LibopenjpegImageFactory::createLibpngImageToRead ( char* filen
 LibopenjpegImage::LibopenjpegImage (
     int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
-    uint8_t* data ) :
+    opj_image_t *jp2ptr ) :
 
     Jpeg2000Image ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression ),
 
-    m_data(data) {
-        
+    jp2image ( jp2ptr ) {
+
 }
 
 /* ------------------------------------------------------------------------------------------------ */
 /* ------------------------------------------- LECTURE -------------------------------------------- */
 
 int LibopenjpegImage::getline ( uint8_t* buffer, int line ) {
+    for (int i = 0; i < width; i++) {
+        int index = width * line + i;
+        for (int j = 0; j < channels; j++) {
+            buffer[i*channels + j] = jp2image->comps[j].data[index];
+        }
+    }
     
-    memcpy(buffer, m_data+width*channels*line, width*channels);
     return width*channels;
 }
 
 int LibopenjpegImage::getline ( float* buffer, int line ) {
-    
+
     // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers (forcément pour du JPEG2000)
     uint8_t* buffer_t = new uint8_t[width*channels];
     getline ( buffer_t,line );
     convert ( buffer,buffer_t,width*channels );
     delete [] buffer_t;
     return width*channels;
-    
 }
 

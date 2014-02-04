@@ -85,33 +85,21 @@ endif(NOT DEFINED USE_SYSTEM_LIB)
 # optional external dependencies for JPEG2000
 
 # try to configure and build JPEG2000 support
-SET(WITH_OPENJPEG FALSE CACHE BOOL "[OPENJPEG] Determines whether OPENJPEG support should be built")
+SET(WITH_OPENJPEG TRUE CACHE BOOL "[OPENJPEG] Determines whether OPENJPEG support should be built")
 SET(WITH_KAKADU   FALSE CACHE BOOL "[KAKADU] Determines whether KAKADU support should be built")
-SET(WITH_JASPER   FALSE CACHE BOOL "[JASPER] Determines whether JASPER support should be built")
 
-IF(WITH_OPENJPEG OR WITH_KAKADU OR WITH_JASPER)
-  SET(USE_DRIVERJPEG2000 TRUE)
-ENDIF(WITH_OPENJPEG OR WITH_KAKADU OR WITH_JASPER)
+IF(WITH_OPENJPEG)
+  SET(OPENJPEG_PREFIX "" CACHE PATH "[OPENJPEG] Path to base directory")
+  SET(HAVE_OPENJPEG TRUE)
+  MESSAGE(STATUS "[OPENJPEG] USE INTERN LIBRARY")
+ENDIF(WITH_OPENJPEG)
 
-IF(USE_DRIVERJPEG2000)
-    IF(WITH_OPENJPEG)
-      SET(OPENJPEG_PREFIX "" CACHE PATH "[OPENJPEG] Path to base directory")
-      SET(HAVE_OPENJPEG TRUE)
-      MESSAGE(STATUS "[OPENJPEG] Search external package system or with a custom path...")
-    ENDIF(WITH_OPENJPEG)
-
-    IF(WITH_KAKADU)
-      SET(KAKADU_PREFIX "" CACHE PATH "[KAKADU] Path to base directory")
-      SET(HAVE_KAKADU TRUE)
-      MESSAGE(STATUS "[KAKADU] Search external package system or with a custom path...")
-    ENDIF(WITH_KAKADU)
-
-    IF(WITH_JASPER)
-      SET(JASPER_PREFIX "" CACHE PATH "[JASPER] Path to base directory")
-      SET(HAVE_JASPER TRUE)
-      MESSAGE(STATUS "[JASPER] Search external package system or with a custom path...")
-    ENDIF(WITH_JASPER)
-ENDIF(USE_DRIVERJPEG2000)
+IF(WITH_KAKADU)
+  SET(KAKADU_PREFIX "" CACHE PATH "[KAKADU] Path to base directory")
+  SET(HAVE_KAKADU TRUE)
+  MESSAGE(STATUS "[KAKADU] Search external package system or with a custom path...")
+ENDIF(WITH_KAKADU)
+    
 ##################################################################################
 
 include(${Rok4_SOURCE_DIR}/cmake/Modules/ROK4Dependencies.cmake)

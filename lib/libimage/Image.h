@@ -514,19 +514,23 @@ public:
      * \param[in] resy Y wise resolution
      * \param[in] bbox bounding box
      */
-    Image ( int width, int height, int channels, double resx, double resy,  BoundingBox<double> bbox ) :
-        width ( width ), height ( height ), channels ( channels ), resx ( resx ), resy ( resy ), bbox ( bbox ), mask ( NULL ), isMask(false) {
+    Image ( int _width, int _height, int _channels, double _resx, double _resy,  BoundingBox<double> _bbox ) :
+        width ( _width ), height ( _height ), channels ( _channels ), resx ( _resx ), resy ( _resy ), bbox ( _bbox ), mask ( NULL ), isMask(false) {
 
-            if ( resx > 0 && resy > 0 ) {
+            if ( _resx > 0 && _resy > 0 ) {
                 // Vérification de la cohérence entre les résolutions et bbox fournies et les dimensions (en pixel) de l'image
                 // Arrondi a la valeur entiere la plus proche
-                int calcWidth = lround ( ( bbox.xmax - bbox.xmin ) / ( resx ) );
-                int calcHeight = lround ( ( bbox.ymax - bbox.ymin ) / ( resy ) );
-                if ( calcWidth != width || calcHeight != height ) {
-                    LOGGER_ERROR ( "Resolutions, bounding box and pixels dimensions are not consistent" );
-                    LOGGER_ERROR ( "Height is " << height << " and calculation give " << calcHeight );
-                    LOGGER_ERROR ( "Width is " << width << " and calculation give " << calcWidth );
+                int calcWidth = lround ( ( _bbox.xmax - _bbox.xmin ) / ( _resx ) );
+                int calcHeight = lround ( ( _bbox.ymax - _bbox.ymin ) / ( _resy ) );
+                if ( calcWidth != _width || calcHeight != _height ) {
+                    LOGGER_WARN ( "Resolutions, bounding box and pixels dimensions are not consistent" );
+                    LOGGER_WARN ( "Height is " << _height << " and calculation give " << calcHeight );
+                    LOGGER_WARN ( "Width is " << _width << " and calculation give " << calcWidth );
                 }
+            } else {
+                bbox = BoundingBox<double> ( 0, 0, ( double ) _width, ( double ) _height );
+                resx = 1.;
+                resy = 1.;
             }
         }
 

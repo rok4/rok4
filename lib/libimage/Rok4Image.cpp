@@ -309,10 +309,6 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( char* filename, BoundingBox
             LOGGER_ERROR ( "Width is " << width << " and calculation give " << calcWidth );
             return NULL;
         }
-    } else {
-        bbox = BoundingBox<double> ( 0, 0, ( double ) width, ( double ) height );
-        resx = 1.;
-        resy = 1.;
     }
 
     return new Rok4Image (
@@ -590,7 +586,10 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
         for ( int y = 0; y < tileHeightwise; y++ ) {
             // On récupère toutes les lignes pour cette ligne de tuiles
             for (int lig = 0; lig < tileHeight; lig++) {
-                pIn->getline(lines + lig*imageLineSize, y*tileHeight + lig);
+                if (pIn->getline(lines + lig*imageLineSize, y*tileHeight + lig) < 0) {
+                    LOGGER_ERROR("Error reading the source image's line " << y*tileHeight + lig);
+                    return -1;                    
+                }
             }
             for ( int x = 0; x < tileWidthwise; x++ ) {
                 // On constitue la tuile

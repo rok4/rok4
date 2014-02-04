@@ -1,291 +1,108 @@
 #Défini le nom du projet 
 project(openjp2)
-# Main CMakeLists.txt to build the OpenJPEG project using CMake (www.cmake.org)
-# Written by Mathieu Malaterre
 
-# This CMake project will by default create a library called openjpeg
-# But if you want to use this project within your own (CMake) project
-# you will eventually like to prefix the library to avoid linking confusion
-# For this purpose you can define a CMake var: OPENJPEG_NAMESPACE to whatever you like
-# e.g.:
-# set(OPENJPEG_NAMESPACE "GDCMOPENJPEG")
-cmake_minimum_required(VERSION 2.8.2)
+#définit la version du projet : 2.0.0 MAJOR.MINOR.PATCH
+list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_MAJOR)
+list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MINOR)
+list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_PATCH)
 
-if(COMMAND CMAKE_POLICY)
-  cmake_policy(SET CMP0003 NEW)
-endif()
+########################################
 
-if(NOT OPENJPEG_NAMESPACE)
-  set(OPENJPEG_NAMESPACE "OPENJPEG")
-  set(OPENJPEG_STANDALONE 1)
-endif()
-# In all cases:
-#string(TOLOWER ${OPENJPEG_NAMESPACE} OPENJPEG_LIBRARY_NAME)
-set(OPENJPEG_LIBRARY_NAME openjp2)
+#Attention aux chemins
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/Modules ${CMAKE_MODULE_PATH})
 
-project(${OPENJPEG_NAMESPACE} C)
+if(NOT DEFINED DEP_PATH)
+  set(DEP_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../target)
+endif(NOT DEFINED DEP_PATH)
 
-# Do full dependency headers.
-include_regular_expression("^.*$")
+if(NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
+  set(OPENJPEG_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
+endif(NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
 
-#-----------------------------------------------------------------------------
-# OPENJPEG version number, useful for packaging and doxygen doc:
-set(OPENJPEG_VERSION_MAJOR 2)
-set(OPENJPEG_VERSION_MINOR 0)
-set(OPENJPEG_VERSION_BUILD 0)
-set(OPENJPEG_VERSION
-  "${OPENJPEG_VERSION_MAJOR}.${OPENJPEG_VERSION_MINOR}.${OPENJPEG_VERSION_BUILD}")
-set(PACKAGE_VERSION
-  "${OPENJPEG_VERSION_MAJOR}.${OPENJPEG_VERSION_MINOR}.${OPENJPEG_VERSION_BUILD}")
+if(NOT DEFINED ROK4LIBSDIR)
+  set(ROK4LIBSDIR ${CMAKE_CURRENT_SOURCE_DIR}/../../lib)
+endif(NOT DEFINED ROK4LIBSDIR)
 
-# Because autotools does not support X.Y notation for SOVERSION, we have to use
-# two numbering, one for the openjpeg version and one for openjpeg soversion
-# version | soversion
-#   1.0   |  0
-#   1.1   |  1
-#   1.2   |  2
-#   1.3   |  3
-#   1.4   |  4
-#   1.5   |  5
-#   1.5.1 |  5
-#   2.0   |  6
-# above is the recommendation by the OPJ team. If you really need to override this default,
-# you can specify your own OPENJPEG_SOVERSION at cmake configuration time:
-# cmake -DOPENJPEG_SOVERSION:STRING=42 /path/to/openjpeg
-if(NOT OPENJPEG_SOVERSION)
-  SET(OPENJPEG_SOVERSION 6)
-endif(NOT OPENJPEG_SOVERSION)
-set(OPENJPEG_LIBRARY_PROPERTIES
-  VERSION   "${OPENJPEG_VERSION_MAJOR}.${OPENJPEG_VERSION_MINOR}.${OPENJPEG_VERSION_BUILD}"
-  SOVERSION "${OPENJPEG_SOVERSION}"
+set(BUILD_SHARED_LIBS OFF)
+
+#Build Type si les build types par défaut de CMake ne conviennent pas
+if(DEBUG_BUILD)
+  set(CMAKE_BUILD_TYPE debugbuild)
+  set(CMAKE_CXX_FLAGS_DEBUGBUILD "-g -O0 -msse -msse2 -msse3")
+  set(CMAKE_C_FLAGS_DEBUGBUILD "-g -std=c99")
+else(DEBUG_BUILD)
+  set(CMAKE_BUILD_TYPE specificbuild)
+  set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3 -msse -msse2 -msse3")
+  set(CMAKE_C_FLAGS_SPECIFICBUILD "-std=c99")
+endif(DEBUG_BUILD)
+
+########################################
+# Définition des fichiers sources
+
+# SET(
+#     libopenjpeg_SRCS
+#     bio.c cio.c dwt.c event.c image.c invert.c j2k.c jp2.c mct.c
+#     mqc.c openjpeg.c opj_clock.c pi.c raw.c t1.c t2.c tcd.c tgt.c function_list.c
+# )
+
+SET(
+    libopenjpeg_SRCS
+    bio.c           dwt.c            image.c   jp2.c  openjpeg.c      pi.c            t1.c                tcd.c           tpix_manager.c
+    cidx_manager.c  event.c          invert.c  mct.c  opj_clock.c     ppix_manager.c  t1_generate_luts.c  tgt.c
+    cio.c           function_list.c  j2k.c     mqc.c  phix_manager.c  raw.c           t2.c                thix_manager.c
 )
 
-# --------------------------------------------------------------------------
-# Path to additional CMake modules
-set(CMAKE_MODULE_PATH
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake
-    ${CMAKE_MODULE_PATH})
 
-# --------------------------------------------------------------------------
-# On Visual Studio 8 MS deprecated C. This removes all 1.276E1265 security
-# warnings
-if(WIN32)
-  if(NOT BORLAND)
-    if(NOT CYGWIN)
-      if(NOT MINGW)
-        if(NOT ITK_ENABLE_VISUAL_STUDIO_DEPRECATED_C_WARNINGS)
-          add_definitions(
-            -D_CRT_FAR_MAPPINGS_NO_DEPRECATE
-            -D_CRT_IS_WCTYPE_NO_DEPRECATE
-            -D_CRT_MANAGED_FP_NO_DEPRECATE
-            -D_CRT_NONSTDC_NO_DEPRECATE
-            -D_CRT_SECURE_NO_DEPRECATE
-            -D_CRT_SECURE_NO_DEPRECATE_GLOBALS
-            -D_CRT_SETERRORMODE_BEEP_SLEEP_NO_DEPRECATE
-            -D_CRT_TIME_FUNCTIONS_NO_DEPRECATE
-            -D_CRT_VCCLRIT_NO_DEPRECATE
-            -D_SCL_SECURE_NO_DEPRECATE
-            )
-        endif()
-      endif()
-    endif()
-  endif()
-endif()
+ADD_LIBRARY(openjp2 STATIC ${libopenjpeg_SRCS})
 
 
-# --------------------------------------------------------------------------
-# Install directories
+########################################
 
-string(TOLOWER ${PROJECT_NAME} projectname)
-set(OPENJPEG_INSTALL_SUBDIR "${projectname}-${OPENJPEG_VERSION_MAJOR}.${OPENJPEG_VERSION_MINOR}")
+include(ROK4Dependencies)
 
-if(NOT OPENJPEG_INSTALL_BIN_DIR)
-  set(OPENJPEG_INSTALL_BIN_DIR "bin")
-endif()
+#set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${JPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${LZW_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
 
-if(NOT OPENJPEG_INSTALL_LIB_DIR)
-  set(OPENJPEG_INSTALL_LIB_DIR "lib")
-endif()
+#Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
+#set(DEP_LIBRARY fcgi tinyxml logger image proj jpeg zlib tiff lzw)
 
-if(NOT OPENJPEG_INSTALL_SHARE_DIR)
-  set(OPENJPEG_INSTALL_SHARE_DIR "share")
-endif()
+include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
-if(NOT OPENJPEG_INSTALL_DATA_DIR)
-  set(OPENJPEG_INSTALL_DATA_DIR "${OPENJPEG_INSTALL_SHARE_DIR}/${OPENJPEG_INSTALL_SUBDIR}")
-endif()
+target_link_libraries(${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 
-if(NOT OPENJPEG_INSTALL_INCLUDE_DIR)
-  set(OPENJPEG_INSTALL_INCLUDE_DIR "include/${OPENJPEG_INSTALL_SUBDIR}")
-endif()
+########################################
+#Documentation Doxygen
+#Utilisation du fichier 
+# if(BUILD_DOC)
+#     include(DoxygenConfig)
+# endif(BUILD_DOC)
+# 
+INSTALL(FILES AUTHORS CHANGES LICENSE NEWS README THANKS DESTINATION doc/${PROJECT_NAME})
 
-if(NOT OPENJPEG_INSTALL_MAN_DIR)
-  set(OPENJPEG_INSTALL_MAN_DIR "share/man/")
-endif()
+########################################
+#Installation dans les répertoires par défauts
+#Pour installer dans le répertoire /opt/projet :
+#cmake -DCMAKE_INSTALL_PREFIX=/opt/projet 
 
-if(NOT OPENJPEG_INSTALL_DOC_DIR)
-  set(OPENJPEG_INSTALL_DOC_DIR "share/doc/${OPENJPEG_INSTALL_SUBDIR}")
-endif()
-
-if(NOT OPENJPEG_INSTALL_JNI_DIR)
-  if(WIN32)
-    set(OPENJPEG_INSTALL_JNI_DIR ${OPENJPEG_INSTALL_BIN_DIR})
-  else()
-    set(OPENJPEG_INSTALL_JNI_DIR ${OPENJPEG_INSTALL_LIB_DIR})
-  endif()
-endif()
-
-if(NOT OPENJPEG_INSTALL_PACKAGE_DIR)
-  # We could install *.cmake files in share/ however those files contains
-  # hardcoded path to libraries on a multi-arch system (fedora/debian) those
-  # path will be different (lib/i386-linux-gnu vs lib/x86_64-linux-gnu)
-  set(OPENJPEG_INSTALL_PACKAGE_DIR "${OPENJPEG_INSTALL_LIB_DIR}/${OPENJPEG_INSTALL_SUBDIR}")
-endif()
-
-#-----------------------------------------------------------------------------
-# Big endian test:
-include (${CMAKE_ROOT}/Modules/TestBigEndian.cmake)
-TEST_BIG_ENDIAN(OPJ_BIG_ENDIAN)
-
-#-----------------------------------------------------------------------------
-# Setup file for setting custom ctest vars
-configure_file(
-  ${CMAKE_SOURCE_DIR}/cmake/CTestCustom.cmake.in
-  ${CMAKE_BINARY_DIR}/CTestCustom.cmake
-  @ONLY
-  )
-
-#-----------------------------------------------------------------------------
-# OpenJPEG build configuration options.
-option(BUILD_SHARED_LIBS "Build OpenJPEG shared library and link executables against it." ON)
-set (EXECUTABLE_OUTPUT_PATH ${OPENJPEG_BINARY_DIR}/bin CACHE PATH "Single output directory for building all executables.")
-set (LIBRARY_OUTPUT_PATH ${OPENJPEG_BINARY_DIR}/bin CACHE PATH "Single output directory for building all libraries.")
-mark_as_advanced(LIBRARY_OUTPUT_PATH EXECUTABLE_OUTPUT_PATH)
-
-#-----------------------------------------------------------------------------
-# configure name mangling to allow multiple libraries to coexist
-# peacefully
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/openjpeg_mangle.h.in)
-set(MANGLE_PREFIX ${OPENJPEG_LIBRARY_NAME})
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/openjpeg_mangle.h.in
-               ${CMAKE_CURRENT_BINARY_DIR}/openjpeg_mangle.h
-               @ONLY)
-endif()
-
-#-----------------------------------------------------------------------------
-# Compiler specific flags:
-if(CMAKE_COMPILER_IS_GNUCC)
-  # For all builds, make sure openjpeg is std99 compliant:
-  # set(CMAKE_C_FLAGS "-Wall -std=c99 ${CMAKE_C_FLAGS}") # FIXME: this setting prevented us from setting a coverage build.
-  # Do not use ffast-math for all build, it would produce incorrect results, only set for release:
-  set(CMAKE_C_FLAGS_RELEASE "-ffast-math ${CMAKE_C_FLAGS_RELEASE}")
-endif()
-
-#-----------------------------------------------------------------------------
-# opj_config.h generation (1/2)
-include (${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)
-CHECK_INCLUDE_FILE("strings.h"      HAVE_STRINGS_H)
-CHECK_INCLUDE_FILE("inttypes.h"     HAVE_INTTYPES_H)
-CHECK_INCLUDE_FILE("memory.h"       HAVE_MEMORY_H)
-CHECK_INCLUDE_FILE("stdint.h"       HAVE_STDINT_H)
-CHECK_INCLUDE_FILE("stdlib.h"       HAVE_STDLIB_H)
-CHECK_INCLUDE_FILE("string.h"       HAVE_STRING_H)
-CHECK_INCLUDE_FILE("sys/stat.h"     HAVE_SYS_STAT_H)
-CHECK_INCLUDE_FILE("sys/types.h"    HAVE_SYS_TYPES_H)
-CHECK_INCLUDE_FILE("unistd.h"       HAVE_UNISTD_H)
-# ssize_t
-include(CheckTypeSize)
-CHECK_TYPE_SIZE(ssize_t     SSIZE_T)
-
-# Enable Large file support
-include(TestLargeFiles)
-OPJ_TEST_LARGE_FILES(OPJ_HAVE_LARGEFILES)
-
-#-----------------------------------------------------------------------------
-# Build Library
-add_subdirectory(src)
-
-#-----------------------------------------------------------------------------
-# Build Applications
-option(BUILD_CODEC "Build the CODEC executables" ON)
-option(BUILD_MJ2 "Build the MJ2 executables." OFF)
-option(BUILD_JPWL "Build the JPWL library and executables" OFF)
-option(BUILD_JPIP "Build the JPIP library and executables." OFF)
-if(BUILD_JPIP)
-  option(BUILD_JPIP_SERVER "Build the JPIP server." OFF)
-endif()
-option(BUILD_VIEWER "Build the OPJViewer executable (C++)" OFF)
-option(BUILD_JAVA "Build the openjpeg jar (Java)" OFF)
-option(BUILD_JP3D "Build the JP3D comp" OFF)
-mark_as_advanced(BUILD_VIEWER)
-mark_as_advanced(BUILD_JAVA)
-mark_as_advanced(BUILD_JP3D)
-
-if(BUILD_CODEC OR BUILD_MJ2)
-  # OFF: It will only build 3rd party libs if they are not found on the system
-  # ON: 3rd party libs will ALWAYS be build, and used
-  option(BUILD_THIRDPARTY "Build the thirdparty executables if it is needed" OFF)
-  add_subdirectory(thirdparty)
-  add_subdirectory(src/bin)
-endif ()
-add_subdirectory(wrapping)
-
-#-----------------------------------------------------------------------------
-# opj_config.h generation (2/2)
-configure_file(
- ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/openjp2/opj_config.h.cmake.in
- ${CMAKE_CURRENT_BINARY_DIR}/src/lib/openjp2/opj_config.h
- @ONLY
- )
-
-#-----------------------------------------------------------------------------
-# Build DOCUMENTATION (not in ALL target and only if Doxygen is found)
-option(BUILD_DOC "Build the HTML documentation (with doxygen if available)." OFF)
-if(BUILD_DOC)
-  add_subdirectory(doc)
-endif()
-
-#-----------------------------------------------------------------------------
-# Buld Testing
-option(BUILD_TESTING "Build the tests." OFF)
-if(BUILD_TESTING)
-  if(BUILD_CODEC)
-    enable_testing()
-    include(CTest)
-
-    # Search openjpeg data needed for the tests
-    # They could be found via svn on the OpenJPEG google code project
-    # svn checkout http://openjpeg.googlecode.com/svn/data (about 70 Mo)
-    find_path(OPJ_DATA_ROOT README-OPJ-Data
-      PATHS
-      $ENV{OPJ_DATA_ROOT}
-      ${CMAKE_SOURCE_DIR}/../data
-      )
-
-    # Add repository where to find tests
-    add_subdirectory(tests)
-
-  else()
-    message(FATAL_ERROR "You need build codec to run the tests")
-  endif()
-endif()
-
-#-----------------------------------------------------------------------------
-# install all targets referenced as OPENJPEGTargets
-install(EXPORT OpenJPEGTargets DESTINATION ${OPENJPEG_INSTALL_PACKAGE_DIR})
-configure_file( ${OPENJPEG_SOURCE_DIR}/cmake/OpenJPEGConfig.cmake.in
-  ${OPENJPEG_BINARY_DIR}/OpenJPEGConfig.cmake
-  @ONLY
-)
-install( FILES ${OPENJPEG_BINARY_DIR}/OpenJPEGConfig.cmake
-  DESTINATION ${OPENJPEG_INSTALL_PACKAGE_DIR}
+#Installe les différentes sortie du projet (projet, projetcore ou UnitTester)
+# ici uniquement "projet"
+INSTALL(TARGETS openjp2 
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
 )
 
-#-----------------------------------------------------------------------------
-# install CHANGES and LICENSE
-if(EXISTS ${OPENJPEG_SOURCE_DIR}/CHANGES)
-  install(FILES CHANGES DESTINATION ${OPENJPEG_INSTALL_DOC_DIR})
-endif()
-install(FILES LICENSE DESTINATION ${OPENJPEG_INSTALL_DOC_DIR})
+#Installe les différents headers nécessaires
+FILE(GLOB headers-${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/*.hxx" "${CMAKE_CURRENT_SOURCE_DIR}/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp")
+INSTALL(FILES ${headers-${PROJECT_NAME}} DESTINATION include)
 
-include (cmake/OpenJPEGCPack.cmake)
+########################################
+# Paramétrage de la gestion de package CPack
+# Génère un fichier PROJET-VERSION-OS-32/64bit.tar.gz 
+
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+  SET(BUILD_ARCHITECTURE "64bit")
+else()
+  SET(BUILD_ARCHITECTURE "32bit")
+endif()
+SET(CPACK_SYSTEM_NAME "${CMAKE_SYSTEM_NAME}-${BUILD_ARCHITECTURE}")
+INCLUDE(CPack)

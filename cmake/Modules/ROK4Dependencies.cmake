@@ -175,63 +175,21 @@ else(PNG_FOUND)
 endif(PNG_FOUND)
 endif(NOT TARGET png)
 
-##################################################################################
-# optional internal dependencies for JPEG2000
+IF(HAVE_OPENJPEG)
+    if(NOT TARGET openjp2)
+    find_package(OPENJPEG)
+    if(OPENJPEG_FOUND)
+      add_library(openjp2 STATIC IMPORTED)
+      set_property(TARGET openjp2 PROPERTY IMPORTED_LOCATION ${OPENJPEG_LIBRARY})
+    else(OPENJPEG_FOUND)
+      if(BUILD_DEPENDENCIES)
+        message(STATUS "Building libOPENJPEG")
+        add_subdirectory(${ROK4LIBSDIR}/libopenjpeg)
+      endif(BUILD_DEPENDENCIES)  
+    endif(OPENJPEG_FOUND)
+    endif(NOT TARGET openjp2)
+ENDIF(HAVE_OPENJPEG)
 
-IF(USE_DRIVERJPEG2000)
-
-  IF(HAVE_OPENJPEG)
-
-    FIND_PACKAGE(OPENJPEG)
-    IF(OPENJPEG_FOUND)
-      # target
-      # FIXME : a t on besoin de cette lib. ?
-      ADD_LIBRARY(openjp2 STATIC IMPORTED)
-      #   ADD_LIBRARY(openmj2 STATIC IMPORTED)
-      # FIXME : a t on besoin de cette lib. ?
-      SET_PROPERTY(TARGET openjp2 PROPERTY IMPORTED_LOCATION ${OPENJPEG_LIBRARY})
-      #   SET_PROPERTY(TARGET openmj2 PROPERTY IMPORTED_LOCATION ${OPENJPEG_LIBRARY})
-    ELSE(OPENJPEG_FOUND)
-      MESSAGE(STATUS "[OPENJPEG] unable to found an external package !")
-      IF(BUILD_DEPENDENCIES)
-        MESSAGE(WARNING "[OPENJPEG] so try to build it with an internal package !")
-        MESSAGE(WARNING "Building libOpenJpeg (EXPERIMENTAL)")
-        ADD_SUBDIRECTORY(${ROK4LIBSDIR}/libopenjpeg)
-      ENDIF(BUILD_DEPENDENCIES)
-    ENDIF(OPENJPEG_FOUND)
-  ENDIF(HAVE_OPENJPEG)
-
-  IF(HAVE_KAKADU)
-
-    FIND_PACKAGE(KAKADU)
-    IF(KAKADU_FOUND)
-      # target
-      ADD_LIBRARY(kdu STATIC IMPORTED)
-      SET_PROPERTY(TARGET kdu PROPERTY IMPORTED_LOCATION ${KDU_LIBRARY})
-    ELSE(KAKADU_FOUND)
-      MESSAGE(FATAL_ERROR "[KAKADU] unable to found an external or internal (not implemented) package !")
-    ENDIF(KAKADU_FOUND)
-  ENDIF(HAVE_KAKADU)
-
-  IF(HAVE_JASPER)
-
-    FIND_PACKAGE(JASPER)
-    IF(JASPER_FOUND)
-      # target
-      ADD_LIBRARY(jasper STATIC IMPORTED)
-      SET_PROPERTY(TARGET jasper PROPERTY IMPORTED_LOCATION ${JASPER_LIBRARY})
-    ELSE(JASPER_FOUND)
-      MESSAGE(STATUS "[JASPER] unable to found an external package !")
-      IF(BUILD_DEPENDENCIES)
-        MESSAGE(WARNING "[JASPER] so try to build it with an internal package !")
-        MESSAGE(WARNING "Building libJasper (EXPERIMENTAL)")
-        ADD_SUBDIRECTORY(${ROK4LIBSDIR}/libjasper)
-      ENDIF(BUILD_DEPENDENCIES)
-    ENDIF(JASPER_FOUND)
-  ENDIF(HAVE_JASPER)
-
-ENDIF(USE_DRIVERJPEG2000)
-##################################################################################
 
 if(NOT TARGET image)
 find_package(Image)

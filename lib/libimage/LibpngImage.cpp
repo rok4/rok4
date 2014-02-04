@@ -97,7 +97,7 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
     // Vérification de l'en-tête (8 octets), signature du PNG
     size_t size = fread ( header, 1, 8, file );
     if ( png_sig_cmp ( header, 0, 8 ) ) {
-        LOGGER_ERROR ( "Provided file is not recognized as a PNG file" << filename );
+        LOGGER_ERROR ( "Provided file is not recognized as a PNG file " << filename );
         return NULL;
     }
 
@@ -227,14 +227,9 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
             LOGGER_ERROR ( "Width is " << width << " and calculation give " << calcWidth );
             return NULL;
         }
-    } else {
-        bbox = BoundingBox<double> ( 0, 0, ( double ) width, ( double ) height );
-        resx = 1.;
-        resy = 1.;
     }
     
     // Création de l'objet LibpngImage
-
     return new LibpngImage (
         width, height, resx, resy, channels, bbox, filename,
         sf, bitspersample, toROK4Photometric ( color_type ), Compression::PNG,

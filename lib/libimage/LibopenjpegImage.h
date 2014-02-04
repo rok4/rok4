@@ -56,6 +56,11 @@
 #include "Jpeg2000Image.h"
 #include "FileImage.h"
 #include "Image.h"
+#include "opj_includes.h"
+
+#define JP2_RFC3745_MAGIC    "\x00\x00\x00\x0c\x6a\x50\x20\x20\x0d\x0a\x87\x0a"
+#define JP2_MAGIC            "\x0d\x0a\x87\x0a"
+#define J2K_CODESTREAM_MAGIC "\xff\x4f\xff\x51"
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -67,13 +72,15 @@
  */
 class LibopenjpegImage : public Jpeg2000Image {
     
+friend class LibopenjpegImageFactory;
+    
 private:
 
     /**
      * \~french \brief Stockage de l'image entière, décompressée
      * \~english \brief Full uncompressed image storage
      */
-    uint8_t* m_data;
+    opj_image_t* jp2image;
 
     /** \~french
      * \brief Retourne une ligne, flottante ou entière
@@ -85,8 +92,7 @@ private:
     int _getline ( T* buffer, int line );
 
 protected:
-    
-    protected:
+   
     /** \~french
      * \brief Crée un objet LibopenjpegImage à partir de tous ses éléments constitutifs
      * \details Ce constructeur est protégé afin de n'être appelé que par l'usine LibopenjpegImageFactory, qui fera différents tests et calculs.
@@ -101,7 +107,7 @@ protected:
      * \param[in] bitspersample nombre de bits par canal
      * \param[in] photometric photométrie des données
      * \param[in] compression compression des données
-     * \param[in] data image complète, dans un tableau
+     * \param[in] jp2ptr pointeur vers l'image JPEG2000
      ** \~english
      * \brief Create a LibopenjpegImage object, from all attributes
      * \param[in] width image width, in pixel
@@ -115,15 +121,15 @@ protected:
      * \param[in] bitspersample number of bits per sample
      * \param[in] photometric data photometric
      * \param[in] compression data compression
-     * \param[in] data whole image, in an array
+     * \param[in] jp2ptr JPEG2000 image's pointer
      */
     LibopenjpegImage (
         int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name,
         SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
-        uint8_t* data
+        opj_image_t* jp2ptr
     );
-    
-public:
+
+public:     
 
     int getline ( uint8_t* buffer, int line );
     int getline ( float* buffer, int line );
@@ -136,9 +142,8 @@ public:
      * \brief Default destructor
      * \details We remove read buffer #m_data
      */
-    ~Jpeg2000Image() {
-        /* cleanup heap allocation */
-        free(m_data);
+    ~LibopenjpegImage() {
+        opj_image_destroy(jp2image);
     }
 
     /** \~french
@@ -155,6 +160,7 @@ public:
     }
 
 };
+
 
 /** \~ \author Institut national de l'information géographique et forestière
  ** \~french
