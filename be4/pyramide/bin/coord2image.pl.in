@@ -43,14 +43,14 @@ Section: COORD2IMAGE tool
 
 Synopsis:
     (start code)
-    perl coord2image.pl --tms=file --coord=X,Y --level=ID [--tilesPerImage=widthwisexheightwise]
+    perl coord2image.pl --tms=file --coord=X,Y --level=ID [--tilesPerImage=widthwisexheightwise] [--verbose]
     (end code)
 
 Tool allowing to know the file in a ROK4 pyramid, which contains a terrain point (coordinates are in the TMS' system).
 
 Example:
     (start code)
-    ./coord2image.pl --tms=TILEMATRIXSETS/PM.tms --coord=644555,5311519 --level=11 --tilesPerImage=16,16
+    ./coord2image.pl --tms=TILEMATRIXSETS/PM.tms --coord=644555,5311519 --level=11 --tilesPerImage=16,16 --verbose
     
     COORD2IMAGE : version [0.0.0]
     BEGIN
@@ -103,6 +103,7 @@ Contains create-layer call options :
     coord - To precise where to write the XML layer file
     level - To precise the level in the TMS of the wanted image
     tilesPerImage - To precise the number of tile in a pyramid's image (widthwise and heightwise)
+    verbose - To log out many informations
 =cut
 my %options =
 (
@@ -115,6 +116,7 @@ my %options =
     "coord" => undef,
     "level"  => undef,
     "tilesPerImage" => undef,
+    "verbose" => FALSE,
 );
 
 ####################################################################################################
@@ -130,7 +132,6 @@ See Also:
     <init>, <doIt>
 =cut
 sub main {
-    printf("COORD2IMAGE : version [%s]\n",$VERSION);
 
     print STDOUT "BEGIN\n";
 
@@ -139,6 +140,8 @@ sub main {
         print STDERR "ERROR INITIALIZATION !\n";
         exit 1;
     }
+    
+    printf("COORD2IMAGE : version [%s]\n",$VERSION) if ($options{verbose});
 
     # execution
     if (! main::doIt()) {
@@ -152,7 +155,7 @@ sub main {
 =begin nd
 Function: init
 
-Checks and stores options, initializes the default logger. Checks TMS directory and the pyramid's descriptor file.
+Checks and stores options, initializes the default logger.
 =cut
 sub init {
 
@@ -182,6 +185,9 @@ sub init {
         },
         
         "tms=s" => \$options{tms},
+        "verbose" => sub {
+            $options{verbose} = TRUE,
+        },
         "coord=s" => \$options{coord},
         "level=s" => \$options{level},
         "tilesPerImage=s" => \$options{"tilesPerImage"},
@@ -227,7 +233,7 @@ sub init {
         return FALSE;
     }
     
-    $options{coord} = [Math::BigFloat->new($xy[0]), Math::BigFloat->new($xy[0])];
+    $options{coord} = [Math::BigFloat->new($xy[0]), Math::BigFloat->new($xy[1])];
     
     ############# level
     if (! defined $options{level} || $options{level} eq "") {
@@ -238,12 +244,12 @@ sub init {
     ############# tilesPerImage : optionnal
 
     if (defined $options{tilesPerImage} && $options{tilesPerImage} ne "") {
-        my @wh = split(/,/,$options{coord},-1);
+        my @wh = split(/,/,$options{tilesPerImage},-1);
         if (scalar @wh != 2) {
             ERROR("Option 'tilesPerImage', if defined, have to precise 2 number of tiles in a pyramid's image, widthwise and heightwise, seperated by a comma");
             return FALSE;
         }
-        $options{tilesPerImage} = [int($wh[0]), int($wh[0])];
+        $options{tilesPerImage} = [int($wh[0]), int($wh[1])];
     } else {
         $options{tilesPerImage} = [16, 16];
     }
@@ -275,12 +281,14 @@ sub doIt {
     
     my $X_Origin_TMS = $tm->getTopLeftCornerX();
     my $Y_Origin_TMS = $tm->getTopLeftCornerY();
+    if ($options{verbose}) {ALWAYS(sprintf "Coordinates : %s, %s", $options{coord}[0], $options{coord}[1])};
     my $x_indice = int(($options{coord}[0] - $X_Origin_TMS)/($X_PixelSize * $taille_dalle_X)) ;
     my $y_indice = int(($options{coord}[1] - $Y_Origin_TMS)/($Y_PixelSize * $taille_dalle_Y)) ;
+    if ($options{verbose}) {ALWAYS(sprintf "Indices : %s, %s", $x_indice, $y_indice)};
 
     my $image_path = BE4::Base36::indicesToB36Path($x_indice, $y_indice, 3);
 
-    ALWAYS(sprintf "Result : %s/%s.tif", $options{level}, $image_path);  
+    ALWAYS(sprintf "Result : %s/%s.tif", $options{level}, $image_path);
 }
 
 ################################################################################
@@ -316,5 +324,7 @@ Group: Command's options
     --level - Level containing the wanted image
     
     --tilesPerImage - Numbers of tiles in the pyramid's images, widthwise and heightwise, seperated by a comma. Optionnal, 16 both wise by default.
+    
+    --verbose - To log out many informations. Optionnal. No verbose by default
 
 =cut
