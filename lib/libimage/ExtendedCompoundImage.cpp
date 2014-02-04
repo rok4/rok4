@@ -315,9 +315,11 @@ ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage
 
     int w = ( int ) ( ( xmax-xmin ) / ( *images.begin() )->getResX() +0.5 );
     int h = ( int ) ( ( ymax-ymin ) / ( *images.begin() )->getResY() +0.5 );
+    
+    ExtendedCompoundImage* pECI = new ExtendedCompoundImage ( w, h, images.at ( 0 )->channels, BoundingBox<double> ( xmin,ymin,xmax,ymax ), images, nodata, mirrors );
+    pECI->setCRS ( images.at ( 0 )->getCRS() );
 
-    return new ExtendedCompoundImage ( w,h,images.at ( 0 )->channels,BoundingBox<double> ( xmin,ymin,xmax,ymax ),
-                                       images,nodata,mirrors );
+    return pECI;
 }
 
 ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage (
