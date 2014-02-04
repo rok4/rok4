@@ -53,6 +53,16 @@
         <enabled>true</enabled>
       </snapshots>
       <releases>
+        <enabled>false</enabled>
+      </releases>
+    </repository>
+    <repository>
+      <id>kazan-repo-public</id>
+      <url>https://geoportail.forge.ign.fr/nexus/content/groups/public</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
         <enabled>true</enabled>
       </releases>
     </repository>
