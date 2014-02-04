@@ -435,7 +435,7 @@ Example:
     # 11271098.442818944,-2504688.54284865024,11897270.57853110784,-1878516.4071364864
     # 11897270.57853110784,-2504688.54284865024,12523442.71424327168,-1878516.4071364864"
     #
-    # Wms2work "path/image_several_requests" "png" "1024x1024" "4x4" "250000" "http://localhost/wms-vector?LAYERS=BDD_WLD_WM&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/png&CRS=EPSG:3857&WIDTH=1024&HEIGHT=1024&STYLES=line&BGCOLOR=0x80BBDA&TRANSPARENT=0X80BBDA" $BBOXES
+    # Wms2work "path/image_several_requests" "png" "4 4" "250000" "http://localhost/wms-vector?LAYERS=BDD_WLD_WM&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/png&CRS=EPSG:3857&WIDTH=1024&HEIGHT=1024&STYLES=line&BGCOLOR=0x80BBDA&TRANSPARENT=0X80BBDA" $BBOXES
     (end code)
 =cut
 sub getCommandWms2work {
@@ -492,8 +492,8 @@ sub getCommandWms2work {
                     $self->getURL, $self->getLayers, $self->getVersion, $self->getRequest, $self->getFormat,
                     $srs, $max_width, $max_height, $self->getOptions);
     my $BBoxesAsString = "\"";
-    for (my $i = 0; $i < $imagePerWidth; $i++) {
-        for (my $j = 0; $j < $imagePerHeight; $j++) {
+    for (my $i = 0; $i < $imagePerHeight; $i++) {
+        for (my $j = 0; $j < $imagePerWidth; $j++) {
             if ($inversion) {
                 $BBoxesAsString .= sprintf "%s,%s,%s,%s\n",
                     $ymax-($i+1)*$groundHeight, $xmin+$j*$groundWidth,
@@ -515,13 +515,17 @@ sub getCommandWms2work {
     my $format = undef;
     if ($self->getFormat eq "image/png") {
         $format = "png";
+        $cmd .= " \"$format\"";
     } else {
         $format = "tif";
+        $cmd .= " \"$format\"";
     }
-    $cmd .= " \"$format\"";
     
-    $cmd .= sprintf " \"%sx%s\"",$max_width,$max_height;
-    $cmd .= sprintf " \"%sx%s\"",$imagePerWidth,$imagePerHeight;
+    $cmd .= sprintf " \"%s %s\"",$imagePerWidth,$imagePerHeight;
+    if ($imagePerWidth != 1 || $imagePerHeight != 1) {
+        # composeNtiff will be used to merge images; final image's format will be "tif"
+        $format = "tif";
+    }
 
     $cmd .= sprintf " \"%s\"",$self->{min_size};
 

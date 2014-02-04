@@ -533,7 +533,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
     TileMatrixSet *tms;
     std::string formatStr="";
-    Format::eformat_data format;
+    Rok4Format::eformat_data format;
     int channels;
     std::map<std::string, Level *> levels;
 
@@ -587,7 +587,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                 return NULL;
     }*/
 
-    format = Format::fromString ( formatStr );
+    format = Rok4Format::fromString ( formatStr );
     if ( ! ( format ) ) {
         LOGGER_ERROR ( fileName << _ ( "Le format [" ) << formatStr <<_ ( "] n'est pas gere." ) );
         return NULL;
@@ -1056,16 +1056,59 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
                     }
                 // Test if the current layer bounding box is compatible with the current CRS
                 if ( inspire && !crs.validateBBoxGeographic ( geographicBoundingBox.minx,geographicBoundingBox.miny,geographicBoundingBox.maxx,geographicBoundingBox.maxy ) ) {
-                    BoundingBox<double> cropBBox = crs.cropBBox ( geographicBoundingBox.minx,geographicBoundingBox.miny,geographicBoundingBox.maxx,geographicBoundingBox.maxy );
+                    BoundingBox<double> cropBBox = crs.cropBBoxGeographic ( geographicBoundingBox.minx,geographicBoundingBox.miny,geographicBoundingBox.maxx,geographicBoundingBox.maxy );
                     // Test if the remaining bbox contain useful data
                     if ( cropBBox.xmax - cropBBox.xmin <= 0 || cropBBox.ymax - cropBBox.ymin <= 0 ) {
-                        LOGGER_WARN ( _ ( "Le CRS " ) <<str_crs<<_ ( " n est pas compatible avec l'emprise de la couche" ) );
+                        LOGGER_WARN ( _ ( "         Le CRS " ) <<str_crs<<_ ( " n est pas compatible avec l'emprise de la couche" ) );
                         crsOk = false;
                     }
                 }
+                
+                if ( crsOk ){
+                    bool allowedCRS = true;
+                    std::vector<CRS> tmpEquilist;
+                    if (servicesConf->getAddEqualsCRS()){
+                        tmpEquilist = getEqualsCRS(servicesConf->getListOfEqualsCRS(), str_crs );
+                    }
+                    if ( servicesConf->getDoWeRestrictCRSList() ){
+                        allowedCRS = isCRSAllowed(servicesConf->getRestrictedCRSList(), str_crs, tmpEquilist);
+                    }
+                    if (!allowedCRS){
+                        LOGGER_WARN ( _ ( "         Forbiden CRS " ) << str_crs  );
+                        crsOk = false;
+                    }
+                }
+                
                 if ( crsOk ) {
-                    LOGGER_INFO ( _ ( "         Adding CRS " ) <<str_crs );
-                    WMSCRSList.push_back ( crs );
+                    bool found = false;
+                    for ( int i = 0; i<WMSCRSList.size() ; i++ ){
+                        if ( WMSCRSList.at( i ) == crs ){
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found){
+                        LOGGER_INFO ( _ ( "         Adding CRS " ) <<str_crs );
+                        WMSCRSList.push_back ( crs );
+                    } else {
+                        LOGGER_WARN ( _ ( "         Already present CRS " ) << str_crs  );
+                    }
+                    std::vector<CRS> tmpEquilist = getEqualsCRS(servicesConf->getListOfEqualsCRS() , str_crs );
+                    for (unsigned int l = 0; l< tmpEquilist.size();l++){
+                        found = false;
+                        for ( int i = 0; i<WMSCRSList.size() ; i++ ){
+                            if ( WMSCRSList.at( i ) == tmpEquilist.at( l ) ){
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found){
+                            WMSCRSList.push_back( tmpEquilist.at( l ) );
+                            LOGGER_INFO ( _ ( "         Adding Equivalent CRS " ) << tmpEquilist.at( l ).getRequestCode() );
+                        } else {
+                            LOGGER_WARN ( _ ( "         Already present CRS " ) << tmpEquilist.at( l ).getRequestCode()  );
+                        }
+                    }
                 }
             }
         }
@@ -1450,8 +1493,10 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
     std::string metadataMediaTypeWMTS;
     // CRS
     bool doweuselistofequalsCRS = false; // Option to avoid reprojecting data in equivalent CRS
+    bool addEqualsCRS = false; // Option to take in count equivalents CRS of a CRS
+    bool dowerestrictCRSList = false; // limits proj4 CRS list
     std::vector<std::string> listofequalsCRS; // If the option is true, load the list of equals CRS
-
+    std::vector<std::string> restrictedCRSList;
 
     pElem=hRoot.FirstChild ( "name" ).Element();
     if ( pElem && pElem->GetText() ) name = pElem->GetTextStr();
@@ -1596,6 +1641,41 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
             formatList.push_back ( format );
         }
     }
+    
+    pElem=hRoot.FirstChild ( "avoidEqualsCRSReprojection" ).Element();
+    if ( pElem && pElem->GetText() ) {
+        std::string doweuselistofequalsCRSstr = pElem->GetTextStr();
+        if ( doweuselistofequalsCRSstr.compare ( "true" ) ==0 || doweuselistofequalsCRSstr.compare ( "1" ) ==0 ) {
+            LOGGER_INFO ( _ ( "Pas de reprojection pour les CRS equivalents" ) );
+            doweuselistofequalsCRS = true;
+            listofequalsCRS=loadListEqualsCRS();
+        }
+    }
+    
+    pElem=hRoot.FirstChild ( "addEqualsCRS" ).Element();
+    if ( pElem && pElem->GetText() ) {
+        std::string addEqualsCRSstr = pElem->GetTextStr();
+        if ( addEqualsCRSstr.compare ( "true" ) ==0 || addEqualsCRSstr.compare ( "1" ) ==0 ) {
+            LOGGER_INFO ( _ ( "Ajout automatique des CRS equivalents" ) );
+            addEqualsCRS = true;
+            if (!doweuselistofequalsCRS){
+                listofequalsCRS=loadListEqualsCRS();
+            }
+            
+        }
+    }
+    
+    pElem=hRoot.FirstChild ( "restrictedCRSList" ).Element();
+    if ( pElem && pElem->GetText() ) {
+        std::string restritedCRSListfile = pElem->GetTextStr();
+        if ( restritedCRSListfile.compare ( "" ) != 0 )  {
+            LOGGER_INFO ( _ ( "Liste restreinte de CRS à partir du fichier " ) << restritedCRSListfile );
+            dowerestrictCRSList = true;
+            restrictedCRSList = loadStringVectorFromFile(restritedCRSListfile);
+            
+        }
+        
+    }
 
     //Global CRS List
     for ( pElem=hRoot.FirstChild ( "globalCRSList" ).FirstChild ( "crs" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "crs" ) ) {
@@ -1606,7 +1686,46 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
         if ( !crs.isProj4Compatible() ) {
             LOGGER_ERROR ( servicesConfigFile << _ ( "The CRS [" ) << crsStr << _ ( "] is not present in Proj4" ) );
         } else {
-            globalCRSList.push_back ( crs );
+            std::vector<CRS> tmpEquilist;
+            if (addEqualsCRS){
+               tmpEquilist = getEqualsCRS(listofequalsCRS, crsStr );
+            }
+            bool allowedCRS = true;
+            if ( dowerestrictCRSList ){
+                allowedCRS = isCRSAllowed(restrictedCRSList, crsStr, tmpEquilist);
+            }
+            if (allowedCRS) {
+                bool found = false;
+                for ( int i = 0; i<globalCRSList.size() ; i++ ){
+                    if (globalCRSList.at( i ) == crs ){
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found){
+                    globalCRSList.push_back ( crs );
+                    LOGGER_INFO ( _ ( "Adding global CRS " ) << crsStr  );
+                } else {
+                    LOGGER_WARN ( _ ( "Already present in global CRS list " ) << crsStr  );
+                }
+                for (unsigned int l = 0; l< tmpEquilist.size();l++){
+                    found = false;
+                    for ( int i = 0; i<globalCRSList.size() ; i++ ){
+                        if ( globalCRSList.at( i ) == tmpEquilist.at( l ) ){
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found){
+                        globalCRSList.push_back( tmpEquilist.at( l ) );
+                        LOGGER_INFO ( _ ( "Adding equivalent global CRS [" ) << tmpEquilist.at( l ).getRequestCode() << _ ( "] of [" ) << crsStr << "]" );
+                    } else {
+                        LOGGER_WARN ( _ ( "Already present in global CRS list " ) << tmpEquilist.at( l ).getRequestCode()  );   
+                    }
+                }
+            } else {
+                LOGGER_WARN ( _ ( "Forbiden global CRS " ) << crsStr  );
+            }
         }
     }
 
@@ -1620,7 +1739,13 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
             }
         }
         if ( !crs84Found ) {
+            LOGGER_INFO ( _ ( "CRS:84 not found -> adding global CRS CRS:84" )  );
             globalCRSList.push_back ( CRS ( "CRS:84" ) );
+            std::vector<CRS> tmpEquilist = getEqualsCRS(listofequalsCRS, "CRS:84" );
+            for (unsigned int l = 0; l< tmpEquilist.size();l++){
+                globalCRSList.push_back( tmpEquilist.at( l ) );
+                LOGGER_INFO ( _ ( "Adding equivalent global CRS [" ) << tmpEquilist.at( l ).getRequestCode() << _ ( "] of [CRS:84]") );
+            }
         }
     }
 
@@ -1700,38 +1825,9 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
         }
     }
 
-    pElem=hRoot.FirstChild ( "avoidEqualsCRSReprojection" ).Element();
-    if ( pElem && pElem->GetText() ) {
-        std::string doweuselistofequalsCRSstr = pElem->GetTextStr();
-        if ( doweuselistofequalsCRSstr.compare ( "true" ) ==0 || doweuselistofequalsCRSstr.compare ( "1" ) ==0 ) {
-            LOGGER_INFO ( _ ( "Utilisation du fichier qui liste les CRS equivalents d apres services.conf" ) );
-            doweuselistofequalsCRS = true;
-        }
-    }
+    
 
-    // Build the list (vector of string) of equals CRS from a file given in parameter
-    char * fileCRS = "/listofequalscrs.txt";
-    char * dirCRS = getenv ( "PROJ_LIB" ); // Get path from config
-    char namebuffer[100];
-    strcpy(namebuffer, dirCRS);
-    strcat(namebuffer, fileCRS);
-    if ( doweuselistofequalsCRS == true ) {
-        LOGGER_INFO ( _ ( "Construction de la liste des CRS equivalents depuis " ) << namebuffer );
-        std::vector<std::string> buildinglistofequalsCRS;
-        std::ifstream input ( namebuffer );
-        // We test if the stream is empty
-        //   This can happen when the file can't be loaded or when the file is empty
-        if ( input.peek() == std::ifstream::traits_type::eof() ) {
-            LOGGER_ERROR ( _ ("Ne peut pas charger le fichier ") << namebuffer << _ (" ou fichier vide")  );
-        }
-        for( std::string line; getline(input, line); ) {
-            buildinglistofequalsCRS.push_back( line );
-        }
-        listofequalsCRS = buildinglistofequalsCRS;
-    } else {
-        LOGGER_INFO ( _ ( "Pas de construction demandee de la liste des CRS equivalents depuis " ) << namebuffer );
-        listofequalsCRS.push_back( "empty" );
-    }
+    
 
     MetadataURL mtdMWS = MetadataURL ( "simple",metadataUrlWMS,metadataMediaTypeWMS );
     MetadataURL mtdWMTS = MetadataURL ( "simple",metadataUrlWMTS,metadataMediaTypeWMTS );
@@ -1740,9 +1836,110 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
                                       accessConstraint, layerLimit, maxWidth, maxHeight, maxTileX, maxTileY, formatList, globalCRSList , serviceType, serviceTypeVersion,
                                       providerSite, individualName, individualPosition, voice, facsimile,
                                       addressType, deliveryPoint, city, administrativeArea, postCode, country,
-                                      electronicMailAddress, mtdMWS, mtdWMTS, listofequalsCRS, postMode, fullStyling, inspire, doweuselistofequalsCRS );
+                                      electronicMailAddress, mtdMWS, mtdWMTS, listofequalsCRS, restrictedCRSList, postMode, fullStyling, inspire, doweuselistofequalsCRS, addEqualsCRS, dowerestrictCRSList);
     return servicesConf;
 }
+
+std::vector<std::string> ConfLoader::loadListEqualsCRS(){
+    // Build the list (vector of string) of equals CRS from a file given in parameter
+    char * fileCRS = "/listofequalscrs.txt";
+    char * dirCRS = getenv ( "PROJ_LIB" ); // Get path from config
+    char namebuffer[100];
+    strcpy(namebuffer, dirCRS);
+    strcat(namebuffer, fileCRS);
+    LOGGER_INFO ( _ ( "Construction de la liste des CRS equivalents depuis " ) << namebuffer );
+    return loadStringVectorFromFile(std::string(namebuffer));
+}
+
+
+std::vector<std::string> ConfLoader::loadStringVectorFromFile(std::string file){
+    std::vector<std::string> strVector;
+    std::ifstream input ( file.c_str() );
+    // We test if the stream is empty
+    //   This can happen when the file can't be loaded or when the file is empty
+    if ( input.peek() == std::ifstream::traits_type::eof() ) {
+        LOGGER_ERROR ( _ ("Ne peut pas charger le fichier ") << file << _ (" ou fichier vide")  );
+    }
+    for( std::string line; getline(input, line); ) {
+        strVector.push_back( line );
+    }
+    return strVector;
+}
+
+std::vector<CRS> ConfLoader::getEqualsCRS(std::vector<std::string> listofequalsCRS, std::string basecrs)
+{
+    std::vector<CRS> returnCRS;
+    for ( unsigned int l=0; l<listofequalsCRS.size(); l++ ){
+        std::string workingbasecrs(basecrs);
+        workingbasecrs.append(" ");
+        size_t found = listofequalsCRS.at( l ).find ( workingbasecrs );
+        if (found == std::string::npos){
+            size_t found = listofequalsCRS.at( l ).find ( basecrs );
+            if ( found != ( listofequalsCRS.at( l ).size() - basecrs.size()) ){
+                found = std::string::npos;
+            }
+        }
+        if (found != std::string::npos) {
+            //Global CRS found !
+            std::string line = listofequalsCRS.at( l );
+            std::string crsstr = "";
+            //split
+            size_t start_index = 0;
+            size_t len = 0;
+            size_t found_space = 0;
+            while ( found_space != std::string::npos ){
+                found_space = line.find(" ", start_index );
+                if ( found_space == std::string::npos ) {
+                    len = line.size() - start_index -1 ; //-1 pour le retour chariot
+                } else {
+                    len = found_space - start_index;
+                }
+                crsstr = line.substr( start_index, len );
+                
+                if ( crsstr.compare(basecrs) != 0 ){
+                    //is the new CRS compatible with Proj4 ?
+                    CRS crs ( crsstr );
+                    if ( !crs.isProj4Compatible() ) {
+                        LOGGER_DEBUG ( _ ( "The Equivalent CRS [" ) << crsstr << _ ( "] of [" ) << basecrs << _ ( "] is not present in Proj4" ) );
+                    } else {
+                        returnCRS.push_back( crs );
+                    }
+                }
+                start_index = found_space + 1;
+            }
+        }
+    }
+    return returnCRS;
+}
+
+bool ConfLoader::isCRSAllowed(std::vector<std::string> restrictedCRSList, std::string crs, std::vector<CRS> equiCRSList){
+    bool allowedCRS = false;
+    //Is the CRS allowed ?
+    for (unsigned int l = 0 ; l<restrictedCRSList.size() ; l++){
+        if ( crs.compare( restrictedCRSList.at( l ) ) == 0 ){
+            allowedCRS = true;
+            break;
+        }
+    }
+    if (allowedCRS){
+        return true;
+    }
+    //Is an equivalent of this CRS allowed ?
+    for (unsigned int k = 0 ; k < equiCRSList.size(); k++ ){
+        std::string equicrsstr = equiCRSList.at( k ).getRequestCode();
+        for (unsigned int l = 0 ; l<restrictedCRSList.size() ; l++){
+            if ( equicrsstr.compare( restrictedCRSList.at( l ) ) == 0 ){
+                allowedCRS = true;
+                break;
+            }
+        }
+        if (allowedCRS){
+            break;
+        }
+    }
+    return allowedCRS;
+}
+
 
 bool ConfLoader::getTechnicalParam ( std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix,
                                      int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS,

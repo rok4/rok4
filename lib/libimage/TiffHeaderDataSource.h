@@ -10,7 +10,7 @@ private:
     size_t tileSize;
     size_t dataSize;
     uint8_t* data;
-    Format::eformat_data format;
+    Rok4Format::eformat_data format;
     int channel;
     int width;
     int height;
@@ -24,7 +24,7 @@ public:
      * @param height hauteur de l'image
      * @param tileSize taille de la tuile à définir si dataSource est nulle
      */
-    TiffHeaderDataSource ( DataSource* dataSource, Format::eformat_data format,
+    TiffHeaderDataSource ( DataSource* dataSource, Rok4Format::eformat_data format,
                            int channel, int width, int height, size_t tileSize=0 );
 
     inline bool releaseData()                   {

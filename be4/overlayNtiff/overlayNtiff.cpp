@@ -38,16 +38,15 @@
 /**
  * \file overlayNtiff.cpp
  * \author Institut national de l'information géographique et forestière
- * \~french \brief Fusion de N images TIFF aux mêmes dimensions, selon différentes méthodes
- * \~english \brief Merge N TIFF images with same dimensions, according to different merge methods
+ * \~french \brief Fusion de N images aux mêmes dimensions, selon différentes méthodes
+ * \~english \brief Merge N images with same dimensions, according to different merge methods
  *
- * \details Ce programme est destine à être utilisé dans la chaîne de génération de cache joinCache. Il est appele pour calculer les dalles avec plusieurs sources.
+ * \details Ce programme est destine à être utilisé dans la chaîne de génération de cache joinCache. Il est appele pour calculer les dalles avec plusieurs sources. Les formats des images gérés, en lecture ou en écriture sont détaillé dans la documentation de FileImage.
  *
  * Les images en entrée et celle en sortie peuvent :
  * \li avoir des nombres de canaux différents
  *
  * Les images en entrée et celle en sortie doivent avoir les même composantes suivantes :
- * \li image TIFF
  * \li hauteur et largeur en pixels
  * \li format des canaux
  *
@@ -62,7 +61,7 @@
  * \~ \code{.txt}
  * IMAGE.tif MASK.tif
  * IMG sources/image1.tif  sources/mask1.tif
- * IMG sources/image2.tif
+ * IMG sources/image2.png
  * \endcode
  * \~french
  * \li La compression de l'image de sortie
@@ -129,10 +128,10 @@ bool debugLogger=false;
  * \~ \code
  * overlayNtiff version X.X.X
  *
- * Create one TIFF image, from several TIFF images with same dimensions, with different available merge methods.
+ * Create one TIFF image, from several images with same dimensions, with different available merge methods.
  * Sources and output image can have different numbers of samples per pixel. The sample type have to be the same for all sources and will be the output one
  *
- * Usage: overlayNtiff -f <FILE> -m <VAL> -c <VAL> -s <VAL> -p <VAL [-n <VAL>] -b <VAL>
+ * Usage: overlayNtiff -f <FILE> -m <VAL> -c <VAL> -s <VAL> -p <VAL [-t <VAL>] -b <VAL>
  * Parameters:
  *     -f configuration file : list of output and source images and masks
  *     -c output compression :
@@ -156,7 +155,7 @@ bool debugLogger=false;
  *
  * Examples
  *     - for gray orthophotography, with transparency (white is transparent)
- *     overlayNtiff -f conf.txt -m ALPHATOP -s 1 -c zip -p gray -n 255,255,255 -b 0
+ *     overlayNtiff -f conf.txt -m ALPHATOP -s 1 -c zip -p gray -t 255,255,255 -b 0
  *     - for DTM, considering masks only
  *     overlayNtiff -f conf.txt -m TOP -s 1 -c zip -p gray -b -99999
  * \endcode
@@ -164,7 +163,7 @@ bool debugLogger=false;
 void usage() {
     LOGGER_INFO ( "\noverlayNtiff version " << BE4_VERSION << "\n\n" <<
 
-                  "Create one TIFF image, from several TIFF images with same dimensions, with different available merge methods.\n" <<
+                  "Create one TIFF image, from several images with same dimensions, with different available merge methods.\n" <<
                   "Sources and output image can have different numbers of samples per pixel. The sample type have to be the same for all sources and will be the output one\n\n" <<
 
                   "Usage: overlayNtiff -f <FILE> -m <VAL> -c <VAL> -s <VAL> -p <VAL [-n <VAL>] -b <VAL>\n" <<
@@ -425,7 +424,7 @@ int readFileLine ( std::ifstream& file, char* imageFileName, bool* hasMask, char
  * \param[out] pImageIn ensemble des images en entrée
  * \return code de retour, 0 si réussi, -1 sinon
  */
-int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage** ppMergeIn ) {
+int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, MergeImage** ppMergeIn ) {
     char inputImagePath[IMAGE_MAX_FILENAME_LENGTH];
     char inputMaskPath[IMAGE_MAX_FILENAME_LENGTH];
 
@@ -438,7 +437,7 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage
     int width, height;
 
     bool hasMask, hasOutMask;
-    LibtiffImageFactory LIF;
+    FileImageFactory FIF;
     MergeImageFactory MIF;
 
     // Ouverture du fichier texte listant les images
@@ -462,9 +461,9 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage
     int inputNb = 0;
     int out = 0;
     while ( ( out = readFileLine ( file,inputImagePath,&hasMask,inputMaskPath ) ) == 0 ) {
-        LibtiffImage* pImage = LIF.createLibtiffImageToRead ( inputImagePath, fakeBbox, -1., -1. );
+        FileImage* pImage = FIF.createImageToRead ( inputImagePath );
         if ( pImage == NULL ) {
-            LOGGER_ERROR ( "Cannot create a LibtiffImage from the file " << inputImagePath );
+            LOGGER_ERROR ( "Cannot create a FileImage from the file " << inputImagePath );
             return -1;
         }
 
@@ -490,9 +489,9 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage
              *          - même dimensions que l'image
              *          - 1 seul canal (entier)
              */
-            LibtiffImage* pMask = LIF.createLibtiffImageToRead ( inputMaskPath, fakeBbox, -1., -1. );
+            FileImage* pMask = FIF.createImageToRead ( inputMaskPath );
             if ( pMask == NULL ) {
-                LOGGER_ERROR ( "Cannot create a LibtiffImage (mask) from the file " << inputMaskPath );
+                LOGGER_ERROR ( "Cannot create a FileImage (mask) from the file " << inputMaskPath );
                 return -1;
             }
 
@@ -532,8 +531,8 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage
     }
 
     // Création des sorties
-    *ppImageOut = LIF.createLibtiffImageToWrite ( outputImagePath, fakeBbox, -1., -1., width, height, samplesperpixel,
-                  sampleformat, bitspersample, photometric,compression,16 );
+    *ppImageOut = FIF.createImageToWrite ( outputImagePath, fakeBbox, -1., -1., width, height, samplesperpixel,
+                  sampleformat, bitspersample, photometric,compression );
 
     if ( *ppImageOut == NULL ) {
         LOGGER_ERROR ( "Impossible de creer l'image " << outputImagePath );
@@ -541,8 +540,8 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage
     }
 
     if ( hasOutMask ) {
-        *ppMaskOut = LIF.createLibtiffImageToWrite ( outputMaskPath, fakeBbox, -1., -1., width, height, 1,
-                     SampleFormat::UINT, 8, Photometric::MASK, Compression::DEFLATE,16 );
+        *ppMaskOut = FIF.createImageToWrite ( outputMaskPath, fakeBbox, -1., -1., width, height, 1,
+                     SampleFormat::UINT, 8, Photometric::MASK, Compression::DEFLATE );
 
         if ( *ppMaskOut == NULL ) {
             LOGGER_ERROR ( "Impossible de creer le masque " << outputMaskPath );
@@ -567,8 +566,8 @@ int loadImages ( LibtiffImage** ppImageOut, LibtiffImage** ppMaskOut, MergeImage
  */
 int main ( int argc, char **argv ) {
 
-    LibtiffImage* pImageOut ;
-    LibtiffImage* pMaskOut = NULL;
+    FileImage* pImageOut ;
+    FileImage* pMaskOut = NULL;
     MergeImage* pMergeIn;
 
     /* Initialisation des Loggers */
