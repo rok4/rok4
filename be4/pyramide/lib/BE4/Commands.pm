@@ -161,7 +161,11 @@ Wms2work () {
     done
     
     if [ "$size" -le "$min_size" ] ; then
-        RM_IMGS["$dir.$fmt"]="1"
+        if [ "$nbTiles" == "1 1" ] ; then
+            RM_IMGS["$dir.$fmt"]="1"
+        else
+            RM_IMGS["$dir.tif"]="1"
+        fi
         rm -rf $dir
         return
     fi
