@@ -13,37 +13,6 @@
   <artifactId>rok4</artifactId>
   <version>0.17.0</version><!--TAG_VERSION-->
   <packaging>pom</packaging>
-  
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>com.google.code.maven-replacer-plugin</groupId>
-        <artifactId>maven-replacer-plugin</artifactId>
-        <version>1.4.0</version>
-        <executions>
-          <execution>
-            <phase>process-sources</phase>
-            <goals>
-              <goal>replace</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <file>README</file>
-          <replacements>
-            <replacement>
-              <token>ROK4 Version : 0.0.0</token>
-              <value>ROK4 Version : ${project.version}</value>
-            </replacement>
-            <replacement>
-              <token>BE4 Version :  0.0.0</token>
-              <value>BE4 Version :  ${project.version}</value>
-            </replacement>
-          </replacements>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 
   <repositories>
     <repository>
@@ -53,19 +22,20 @@
         <enabled>true</enabled>
       </snapshots>
       <releases>
-        <enabled>false</enabled>
-      </releases>
-    </repository>
-    <repository>
-      <id>kazan-repo-public</id>
-      <url>https://geoportail.forge.ign.fr/nexus/content/groups/public</url>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-      <releases>
         <enabled>true</enabled>
       </releases>
     </repository>
   </repositories>
+
+  <distributionManagement>
+    <repository>
+      <id>kazan-repo-public</id>
+      <url>https://geoportail.forge.ign.fr/nexus/content/groups/public</url>
+    </repository>
+    <snapshotRepository>
+      <id>kazan-repo</id>
+      <url>https://geoportail.forge.ign.fr/nexus/content/groups/kazan</url>
+    </snapshotRepository>
+  </distributionManagement>
 
 </project>
