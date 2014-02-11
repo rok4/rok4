@@ -175,7 +175,7 @@ else(PNG_FOUND)
 endif(PNG_FOUND)
 endif(NOT TARGET png)
 
-IF(HAVE_OPENJPEG)
+IF(NOT HAVE_KAKADU)
     if(NOT TARGET openjp2)
     find_package(OPENJPEG)
     if(OPENJPEG_FOUND)
@@ -188,8 +188,7 @@ IF(HAVE_OPENJPEG)
       endif(BUILD_DEPENDENCIES)  
     endif(OPENJPEG_FOUND)
     endif(NOT TARGET openjp2)
-ENDIF(HAVE_OPENJPEG)
-
+ENDIF(NOT HAVE_KAKADU)
 
 if(NOT TARGET image)
 find_package(Image)

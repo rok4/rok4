@@ -52,14 +52,12 @@
 #include "Jpeg2000Image.h"
 #include "Logger.h"
 #include "Utils.h"
-#include "image_config.h"
-
-#ifdef HAVE_OPENJPEG
-#include "LibopenjpegImage.h"
-#endif
+#include "Jpeg2000_library_config.h"
 
 #ifdef HAVE_KAKADU
 #include "LibkakaduImage.h"
+#else
+#include "LibopenjpegImage.h"
 #endif
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -67,25 +65,23 @@
 
 /* ----- Pour la lecture ----- */
 Jpeg2000Image* Jpeg2000ImageFactory::createJpeg2000ImageToRead ( char* filename, BoundingBox< double > bbox, double resx, double resy ) {
+    
+#ifdef HAVE_KAKADU
 
-#ifdef HAVE_OPENJPEG
+    LOGGER_DEBUG("Driver le JPEG2000 : KAKADU");
+
+    LibkakaduImageFactory DRVKDU;
+    return DRVKDU.createLibkakaduImageToRead(filename, bbox, resx, resy);
+
+#else
 
     LOGGER_DEBUG("Driver le JPEG2000 : OPENJPEG");
 
     LibopenjpegImageFactory DRVOJ;
     return DRVOJ.createLibopenjpegImageToRead(filename, bbox, resx, resy);
-
-#endif
-
-#ifdef HAVE_KAKADU
-
-    LOGGER_DEBUG("Driver le JPEG2000 : KAKADU");
-
-    Jp2DriverKakadu DRVKDU;
-    return DRVKDU.createJpeg2000ImageToRead(filename, bbox, resx, resy);
-
-#endif
     
+#endif
+
 }
 
 /* ------------------------------------------------------------------------------------------------ */

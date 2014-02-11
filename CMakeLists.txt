@@ -85,20 +85,8 @@ endif(NOT DEFINED USE_SYSTEM_LIB)
 # optional external dependencies for JPEG2000
 
 # try to configure and build JPEG2000 support
-SET(WITH_OPENJPEG TRUE CACHE BOOL "[OPENJPEG] Determines whether OPENJPEG support should be built")
-SET(WITH_KAKADU   FALSE CACHE BOOL "[KAKADU] Determines whether KAKADU support should be built")
-
-IF(WITH_OPENJPEG)
-  SET(OPENJPEG_PREFIX "" CACHE PATH "[OPENJPEG] Path to base directory")
-  SET(HAVE_OPENJPEG TRUE)
-  MESSAGE(STATUS "[OPENJPEG] USE INTERN LIBRARY")
-ENDIF(WITH_OPENJPEG)
-
-IF(WITH_KAKADU)
-  SET(KAKADU_PREFIX "" CACHE PATH "[KAKADU] Path to base directory")
-  SET(HAVE_KAKADU TRUE)
-  MESSAGE(STATUS "[KAKADU] Search external package system or with a custom path...")
-ENDIF(WITH_KAKADU)
+#SET(HAVE_KAKADU FALSE CACHE BOOL "[KAKADU] Determines whether KAKADU support should be built")
+SET(HAVE_KAKADU TRUE CACHE BOOL "[KAKADU] Determines whether KAKADU support should be built")
     
 ##################################################################################
 

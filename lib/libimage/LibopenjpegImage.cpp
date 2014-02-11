@@ -188,6 +188,7 @@ LibopenjpegImage* LibopenjpegImageFactory::createLibopenjpegImageToRead ( char* 
         return NULL;
     }
 
+    opj_destroy_codec ( l_codec );
     opj_stream_destroy ( l_stream );
     fclose ( file );
 
@@ -213,71 +214,6 @@ LibopenjpegImage* LibopenjpegImageFactory::createLibopenjpegImageToRead ( char* 
         }
     }
 
-    /* ---------------------- */
-    /* Encode the new stream  */
-    /* ---------------------- */
-
-//     // Data
-//     int imgsize = width * height;       // taille de l'image en pixels pour une couche
-//     int step    = 3 + has_alpha;        // 3 ou 4 couches ( = channels)
-//     int sgnd    = image->comps[0].sgnd; // signe
-//     int adjust  = sgnd ? 1 << (image->comps[0].prec - 1) : 0; // 1: signed 0: unsigned !
-//
-//     // Allocation memoire
-// 	data = (unsigned char *) malloc(imgsize*step);
-//
-//     int i;
-//     int index = 0;
-//
-//     for(i=0; i < imgsize * step; i += step) {
-//         int r, g, b, a = 0;
-//
-//         // index = nb de pixels d'une couche
-//         if(index < imgsize) {
-//
-//             // recuperation d'un pixel r,g,b (a)
-//             r = image->comps[0].data[index];
-//             g = image->comps[1].data[index];
-//             b = image->comps[2].data[index];
-//             if(has_alpha) a = image->comps[3].data[index];
-//
-//             index++;
-//
-//             // ajout du signe
-//             if(sgnd) {
-//                 r += adjust;
-//                 g += adjust;
-//                 b += adjust;
-//
-//                 if(has_alpha) a += adjust;
-//             }
-//
-//             // copie d'un pixel : r,g,b (a)
-//             data[i+0] = r ;
-//             data[i+1] = g ;
-//             data[i+2] = b ;
-//             if(has_alpha) data[i+3] = a;
-//
-//         }
-//         else {
-//             LOGGER_DEBUG("nb de pixels d'une couche trop important !");
-//         }
-//     }
-
-//     // Free remaining structures
-//     if (codec) {
-//         opj_destroy_codec(codec);
-//         codec = NULL;
-//     }
-//
-//     // Free codestream information structure
-//     opj_stream_destroy(stream);
-//     stream = NULL;
-//
-//     // Free image data structure
-//     opj_image_destroy(image);
-//     image = NULL;
-
     /********************** CONTROLES **************************/
 
     if ( ! SampleFormat::isHandledSampleType ( sf, bitspersample ) ) {
@@ -299,9 +235,10 @@ LibopenjpegImage* LibopenjpegImageFactory::createLibopenjpegImageToRead ( char* 
     }
 
     return new LibopenjpegImage (
-               width, height, resx, resy, channels, bbox, filename,
-               sf, bitspersample, ph, Compression::JPEG2000,
-               image );
+        width, height, resx, resy, channels, bbox, filename,
+        sf, bitspersample, ph, Compression::JPEG2000,
+        image
+    );
 
 }
 
