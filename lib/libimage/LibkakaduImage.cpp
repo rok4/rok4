@@ -54,8 +54,9 @@
 #include "Logger.h"
 #include "Utils.h"
 #include <jp2.h>
-#include <kdu_file_io.h>
+#include <jpx.h>
 #include <kdu_compressed.h>
+#include <kdu_file_io.h>
 
 /* ------------------------------------------------------------------------------------------------ */
 /* -------------------------------------------- USINES -------------------------------------------- */
@@ -121,8 +122,7 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
 
 LibkakaduImage::LibkakaduImage (
     int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
-    SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
-    opj_image_t *jp2ptr ) :
+    SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression) :
 
     Jpeg2000Image ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression )/*,
 

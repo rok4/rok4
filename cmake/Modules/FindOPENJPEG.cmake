@@ -1,7 +1,7 @@
 
-# CMake module to search for Png library
+# CMake module to search for OpenJpeg library
 #
-# If it's found it sets PNG_FOUND to TRUE
+# If it's found it sets OPENJPEG_FOUND to TRUE
 # and following variables are set:
 #    OPENJPEG_INCLUDE_DIR
 #    OPENJPEG_LIBRARY
