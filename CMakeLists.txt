@@ -86,7 +86,7 @@ endif(NOT DEFINED USE_SYSTEM_LIB)
 
 # try to configure and build JPEG2000 support
 #SET(HAVE_KAKADU FALSE CACHE BOOL "[KAKADU] Determines whether KAKADU support should be built")
-SET(HAVE_KAKADU TRUE CACHE BOOL "[KAKADU] Determines whether KAKADU support should be built")
+SET(HAVE_KAKADU FALSE CACHE BOOL "[KAKADU] Determines whether KAKADU support should be built")
     
 ##################################################################################
 

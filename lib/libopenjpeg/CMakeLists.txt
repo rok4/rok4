@@ -1,10 +1,10 @@
 #Défini le nom du projet 
-project(openjp2)
+project(openjpeg)
 
 #définit la version du projet : 2.0.0 MAJOR.MINOR.PATCH
-list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_MAJOR)
-list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MINOR)
-list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_PATCH)
+SET(CPACK_PACKAGE_VERSION_MAJOR "2")
+SET(CPACK_PACKAGE_VERSION_MINOR "0")
+SET(CPACK_PACKAGE_VERSION_PATCH "0")
 
 ########################################
 
@@ -16,7 +16,7 @@ if(NOT DEFINED DEP_PATH)
 endif(NOT DEFINED DEP_PATH)
 
 if(NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
-  set(OPENJPEG_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
+  set(JPEG2000_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
 endif(NOT ${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
 
 if(NOT DEFINED ROK4LIBSDIR)
@@ -53,7 +53,7 @@ SET(
 )
 
 
-ADD_LIBRARY(openjp2 STATIC ${libopenjpeg_SRCS})
+ADD_LIBRARY(jpeg2000 STATIC ${libopenjpeg_SRCS})
 
 
 ########################################
@@ -67,7 +67,7 @@ include(ROK4Dependencies)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
-target_link_libraries(${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(jpeg2000 ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 
 ########################################
 #Documentation Doxygen
@@ -85,7 +85,7 @@ INSTALL(FILES AUTHORS CHANGES LICENSE NEWS README THANKS DESTINATION doc/${PROJE
 
 #Installe les différentes sortie du projet (projet, projetcore ou UnitTester)
 # ici uniquement "projet"
-INSTALL(TARGETS openjp2 
+INSTALL(TARGETS jpeg2000 
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
