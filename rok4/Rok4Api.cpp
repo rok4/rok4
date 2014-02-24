@@ -414,6 +414,10 @@ HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char*
     tileRef->width=level->getTm().getTileW();
     tileRef->height=level->getTm().getTileH();
     tileRef->channels=level->getChannels();
+    
+    format = Rok4Format::toString ( layer->getDataPyramid()->getFormat() );
+    tileRef->format= new char[format.length() +1];
+    strcpy ( tileRef->format, format.c_str() );
 
 //Palette uniquement PNG pour le moment
     if ( format == "image/png" ) {

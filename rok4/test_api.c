@@ -196,7 +196,7 @@ void* processThread ( void* arg ) {
                     rok4DeletePngPaletteHeader ( header );
                 }
 
-                rok4FlushTileRef ( &tileRef );
+                rok4FlushTileRef ( tileRef );
             }
             //free ( error );
 
