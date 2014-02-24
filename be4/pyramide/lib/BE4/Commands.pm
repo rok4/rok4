@@ -197,12 +197,14 @@ Work2cache () {
     local workMskName=$5
     local mskName=$6
     
-    local dir=`dirname ${PYR_DIR}/$imgName`
-    
-    if [ -r $workDir/$workImgName ] ; then rm -f ${PYR_DIR}/$imgName ; fi
-    if [ ! -d $dir ] ; then mkdir -p $dir ; fi
     
     if [[ ! ${RM_IMGS[$workDir/$workImgName]} ]] ; then
+        
+        local dir=`dirname ${PYR_DIR}/$imgName`
+    
+        if [ -r $workDir/$workImgName ] ; then rm -f ${PYR_DIR}/$imgName ; fi
+        if [ ! -d $dir ] ; then mkdir -p $dir ; fi
+            
         tiff2tile $workDir/$workImgName __t2tI__ ${PYR_DIR}/$imgName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
