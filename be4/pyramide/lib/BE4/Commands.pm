@@ -166,6 +166,7 @@ Wms2work () {
         else
             RM_IMGS["$dir.tif"]="1"
         fi
+
         rm -rf $dir
         return
     fi

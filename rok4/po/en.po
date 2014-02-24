@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2014-01-29 09:20+0100\n"
+"POT-Creation-Date: 2014-02-24 17:07+0100\n"
 "PO-Revision-Date: 2013-02-18 17:49+0100\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -1043,7 +1043,7 @@ msgid "Rechargement de la configuration"
 msgstr "Reloading configuration"
 
 #: main.cpp:248 Rok4Api.cpp:136 Rok4Api.cpp:144 Rok4Api.cpp:152
-#: Rok4Api.cpp:161 Rok4Api.cpp:540
+#: Rok4Api.cpp:161 Rok4Api.cpp:580
 msgid "Extinction du serveur ROK4"
 msgstr "Shutdown the ROK4 server"
 
@@ -1403,11 +1403,11 @@ msgstr ""
 msgid "Parametre STYLES incomplet."
 msgstr ""
 
-#: Request.cpp:1063 Request.cpp:1109 Rok4Server.cpp:524
+#: Request.cpp:1063 Request.cpp:1109 Rok4Api.cpp:225 Rok4Server.cpp:530
 msgid "Le service "
 msgstr ""
 
-#: Request.cpp:1063 Request.cpp:1109 Rok4Server.cpp:524
+#: Request.cpp:1063 Request.cpp:1109 Rok4Api.cpp:225 Rok4Server.cpp:530
 msgid " est inconnu pour ce serveur."
 msgstr ""
 
@@ -1485,17 +1485,29 @@ msgstr ""
 msgid "Impossible de charger la conf des Layers/pyramides"
 msgstr ""
 
-#: Rok4Api.cpp:279 Rok4Api.cpp:354 Rok4Server.cpp:470
-msgid "Probleme dans les parametres de la requete getTile"
+#: Rok4Api.cpp:214
+msgid "Le parametre REQUEST n'est pas renseigné."
 msgstr ""
 
-#: Rok4Api.cpp:466 Rok4Server.cpp:501
+#: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:499
+#: Rok4Server.cpp:503 Rok4Server.cpp:513 Rok4Server.cpp:517
+msgid " n'est pas prise en charge par ce serveur."
+msgstr ""
+
+#: Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:503
 msgid "L'operation "
 msgstr ""
 
-#: Rok4Api.cpp:466 Rok4Server.cpp:499 Rok4Server.cpp:501 Rok4Server.cpp:511
-#: Rok4Server.cpp:513
-msgid " n'est pas prise en charge par ce serveur."
+#: Rok4Api.cpp:223
+msgid "Le parametre SERVICE n'est pas renseigné."
+msgstr ""
+
+#: Rok4Api.cpp:299 Rok4Api.cpp:375 Rok4Server.cpp:470
+msgid "Probleme dans les parametres de la requete getTile"
+msgstr ""
+
+#: Rok4Api.cpp:503 Rok4Server.cpp:476
+msgid "No data found"
 msgstr ""
 
 #: Rok4Server.cpp:81
@@ -1560,10 +1572,6 @@ msgstr "Estompage"
 
 #: Rok4Server.cpp:456
 msgid " ne peut etre traite"
-msgstr ""
-
-#: Rok4Server.cpp:476
-msgid "No data found"
 msgstr ""
 
 #: Style.cpp:54

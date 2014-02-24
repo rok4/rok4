@@ -43,6 +43,7 @@ Link: BE4 is an integral part of the ROK4 project  (http://www.rok4.org)
 Group: Tools  {
 
    File: BE4  (no auto-title, bin/be4.pl)
+   File: COORD2IMAGE  (no auto-title, bin/coord2image.pl)
    File: CREATE-LAYER  (no auto-title, bin/create-layer.pl)
    File: JOINCACHE  (no auto-title, bin/joinCache.pl)
    }  # Group: Tools

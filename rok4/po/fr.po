@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2014-01-29 09:20+0100\n"
+"POT-Creation-Date: 2014-02-24 17:07+0100\n"
 "PO-Revision-Date: 2014-01-28 09:36+0100\n"
 "Last-Translator: \n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -1041,7 +1041,7 @@ msgid "Rechargement de la configuration"
 msgstr "Rechargement de la configuration"
 
 #: main.cpp:248 Rok4Api.cpp:136 Rok4Api.cpp:144 Rok4Api.cpp:152
-#: Rok4Api.cpp:161 Rok4Api.cpp:540
+#: Rok4Api.cpp:161 Rok4Api.cpp:580
 msgid "Extinction du serveur ROK4"
 msgstr "Extinction du serveur ROK4"
 
@@ -1407,11 +1407,11 @@ msgstr "Nombre de styles demandés = "
 msgid "Parametre STYLES incomplet."
 msgstr "Paramètre STYLES incomplet."
 
-#: Request.cpp:1063 Request.cpp:1109 Rok4Server.cpp:524
+#: Request.cpp:1063 Request.cpp:1109 Rok4Api.cpp:225 Rok4Server.cpp:530
 msgid "Le service "
 msgstr "Le service "
 
-#: Request.cpp:1063 Request.cpp:1109 Rok4Server.cpp:524
+#: Request.cpp:1063 Request.cpp:1109 Rok4Api.cpp:225 Rok4Server.cpp:530
 msgid " est inconnu pour ce serveur."
 msgstr " est inconnu pour ce serveur."
 
@@ -1491,18 +1491,32 @@ msgstr "Impossible de charger la configuration des Styles"
 msgid "Impossible de charger la conf des Layers/pyramides"
 msgstr "Impossible de charger la configuration des couches/pyramides"
 
-#: Rok4Api.cpp:279 Rok4Api.cpp:354 Rok4Server.cpp:470
-msgid "Probleme dans les parametres de la requete getTile"
-msgstr "Probleme dans les paramètres de la requête getTile"
+#: Rok4Api.cpp:214
+#, fuzzy
+msgid "Le parametre REQUEST n'est pas renseigné."
+msgstr "La valeur du paramètre HEIGHT n'est pas une valeur entière."
 
-#: Rok4Api.cpp:466 Rok4Server.cpp:501
+#: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:499
+#: Rok4Server.cpp:503 Rok4Server.cpp:513 Rok4Server.cpp:517
+msgid " n'est pas prise en charge par ce serveur."
+msgstr " n'est pas prise en charge par ce serveur."
+
+#: Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:503
 msgid "L'operation "
 msgstr "L'opération "
 
-#: Rok4Api.cpp:466 Rok4Server.cpp:499 Rok4Server.cpp:501 Rok4Server.cpp:511
-#: Rok4Server.cpp:513
-msgid " n'est pas prise en charge par ce serveur."
-msgstr " n'est pas prise en charge par ce serveur."
+#: Rok4Api.cpp:223
+#, fuzzy
+msgid "Le parametre SERVICE n'est pas renseigné."
+msgstr "La valeur du paramètre HEIGHT n'est pas une valeur entière."
+
+#: Rok4Api.cpp:299 Rok4Api.cpp:375 Rok4Server.cpp:470
+msgid "Probleme dans les parametres de la requete getTile"
+msgstr "Probleme dans les paramètres de la requête getTile"
+
+#: Rok4Api.cpp:503 Rok4Server.cpp:476
+msgid "No data found"
+msgstr "Aucune donnée"
 
 #: Rok4Server.cpp:81
 msgid "Le listener FCGI ne peut etre initialise"
@@ -1567,10 +1581,6 @@ msgstr "Estompage"
 #: Rok4Server.cpp:456
 msgid " ne peut etre traite"
 msgstr " ne peut être traité"
-
-#: Rok4Server.cpp:476
-msgid "No data found"
-msgstr "Aucune donnée"
 
 #: Style.cpp:54
 msgid "Nouveau Style : "
