@@ -497,6 +497,8 @@ void Rok4Server::processWMTS ( Request* request, FCGX_Request&  fcgxRequest ) {
         S.sendresponse ( getTile ( request ), &fcgxRequest );
     } else if ( request->request == "getversion" ) {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wmts" ) ),&fcgxRequest );
+    } else if ( request->request == "" ) {
+        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, ( "Le parametre REQUEST n'est pas renseigne." ) ,"wmts" ) ),&fcgxRequest );
     } else {
         S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ),"wmts" ) ),&fcgxRequest );
     }
@@ -509,6 +511,8 @@ void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
         S.sendresponse ( getMap ( request ), &fcgxRequest );
     } else if ( request->request == "getversion" ) {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wms" ) ),&fcgxRequest );
+    } else if ( request->request == "" ) {
+        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, ( "Le parametre REQUEST n'est pas renseigne." ) ,"wms" ) ),&fcgxRequest );
     } else {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ),"wms" ) ),&fcgxRequest );
     }
@@ -520,6 +524,8 @@ void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest 
         //Service is not mandatory in GetMap request in WMS 1.3.0 and GetFeatureInfo
     } else if ( supportWMS && ( request->service=="wms" || request->request == "getmap" ) ) {
         processWMS ( request, fcgxRequest );
+    } else if ( request->service == "" ) {
+        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, ( "Le parametre SERVICE n'est pas renseigne." ) ,"xxx" ) ),&fcgxRequest );
     } else {
         S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le service " ) +request->service+_ ( " est inconnu pour ce serveur." ),"wmts" ) ),&fcgxRequest );
     }

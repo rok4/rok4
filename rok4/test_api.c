@@ -139,7 +139,7 @@ void* processThread ( void* arg ) {
 //              pthread_mutex_unlock(&mutex_rok4);
         fprintf ( stdout,"\nRequete n°%d : %s\t%s\t%s\n",c,host,script,query );
         c++;
-        HttpRequest* request=rok4InitRequest ( query,host, script, "" );
+        HttpRequest* request=rok4InitRequest ( query,host, script, "" , server);
 
 
 
@@ -160,28 +160,35 @@ void* processThread ( void* arg ) {
         // GetTile
         else if ( strcmp ( request->operationType,"gettile" ) ==0 ) {
             // TileReferences
-            TileRef tileRef;
+            TileRef* tileRef = malloc(sizeof(TileRef));
+            tileRef->filename = 0;
+            tileRef->posoff = 0;
+            tileRef->possize = 0;
+            tileRef->type = 0;
+            tileRef->encoding = 0;
+            tileRef->format = 0;
             TilePalette tilePalette;
-            HttpResponse* error=rok4GetTileReferences ( query, "localhost", "/target/bin/rok4","", server, &tileRef, &tilePalette );
+            HttpResponse* error=rok4GetTileReferences ( query, "localhost", "/target/bin/rok4","", server, tileRef, &tilePalette );
             if ( error ) {
                 fprintf ( stdout,"\tStatut=%d\n",error->status );
                 fprintf ( stdout,"\ttype=%s\n",error->type );
                 fprintf ( stdout,"\terror content=%s\n",error->content );
+                rok4FlushTileRef(tileRef);
                 rok4DeleteResponse ( error );
             } else {
-                fprintf ( stdout,"\tfilename : %s\noff=%d\nsize=%d\ntype=%s\n",tileRef.filename,tileRef.posoff,tileRef.possize,tileRef.type );
-                if ( strcmp ( tileRef.type,"image/tiff" ) ==0 ) {
-                    TiffHeader* header=rok4GetTiffHeader ( tileRef.width,tileRef.height,tileRef.channels );
-                    fprintf ( stdout,"\tw=%d h=%d c=%d\n\theader=",tileRef.width,tileRef.height,tileRef.channels );
+                fprintf ( stdout,"\tfilename : %s\noff=%d\nsize=%d\ntype=%s\n",tileRef->filename,tileRef->posoff,tileRef->possize,tileRef->type );
+                if ( strcmp ( tileRef->type,"image/tiff" ) ==0 ) {
+                    TiffHeader* header=rok4GetTiffHeader ( tileRef->width,tileRef->height,tileRef->channels );
+                    fprintf ( stdout,"\tw=%d h=%d c=%d\n\theader=",tileRef->width,tileRef->height,tileRef->channels );
                     int i;
                     for ( i=0; i<128; i++ )
                         fprintf ( stdout,"%c",header->data[i] );
                     fprintf ( stdout,"\n" );
                     rok4DeleteTiffHeader ( header );
                 }
-                if ( strcmp ( tileRef.type,"image/png" ) ==0 && tileRef.channels==1 && tilePalette.size!=0 ) {
-                    PngPaletteHeader* header = rok4GetPngPaletteHeader ( tileRef.width,tileRef.height,&tilePalette );
-                    fprintf ( stdout,"\tw=%d h=%d ps=%d\n\theader=",tileRef.width,tileRef.height,tilePalette.size );
+                if ( strcmp ( tileRef->type,"image/png" ) ==0 && tileRef->channels==1 && tilePalette.size!=0 ) {
+                    PngPaletteHeader* header = rok4GetPngPaletteHeader ( tileRef->width,tileRef->height,&tilePalette );
+                    fprintf ( stdout,"\tw=%d h=%d ps=%d\n\theader=",tileRef->width,tileRef->height,tilePalette.size );
                     int i;
                     for ( i=0; i<header->size; i++ )
                         fprintf ( stdout,"%c",header->data[i] );
@@ -191,7 +198,7 @@ void* processThread ( void* arg ) {
 
                 rok4FlushTileRef ( &tileRef );
             }
-            free ( error );
+            //free ( error );
 
 
             // Tile

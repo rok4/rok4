@@ -185,7 +185,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
 * \arg \b operationType =  "gettile" \~french (en minuscules) \~english (lowercase)
 */
 
-HttpRequest* rok4InitRequest ( const char* queryString, const char* hostName, const char* scriptName, const char* https ) {
+HttpRequest* rok4InitRequest ( const char* queryString, const char* hostName, const char* scriptName, const char* https , Rok4Server* server) {
     std::string strQuery=queryString;
     HttpRequest* request=new HttpRequest;
     request->queryString=new char[strQuery.length() +1];
@@ -199,13 +199,33 @@ HttpRequest* rok4InitRequest ( const char* queryString, const char* hostName, co
     strcpy ( request->service,rok4Request->service.c_str() );
     request->operationType=new char[rok4Request->request.length() +1];
     strcpy ( request->operationType,rok4Request->request.c_str() );
-
+    request->error_response = 0;
+    
     std::map<std::string, std::string>::iterator it = rok4Request->params.find ( "nodataashttpstatus" );
     if ( it == rok4Request->params.end() ) {
         request->noDataAsHttpStatus = 0;
     } else {
         request->noDataAsHttpStatus = 1;
     }
+    
+    //Vérification des erreurs et ecriture dans error_response
+    if ( rok4Request->service == "wmts" ) {
+        if ( rok4Request->request == "") {
+            request->error_response = initResponseFromSource( new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Le parametre REQUEST n'est pas renseigné." ),"wmts" ) ));
+        } else if ( rok4Request->request == "getcapabilities" || rok4Request->request == "gettile") {
+            //No error for the moment
+        } else if ( rok4Request->request == "getversion" ) {
+            request->error_response = initResponseFromSource( new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +rok4Request->request+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wmts" ) ));
+        } else {
+            request->error_response = initResponseFromSource( new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "L'operation " ) +rok4Request->request+_ ( " n'est pas prise en charge par ce serveur." ),"wmts" ) ));
+        }
+    } else if (rok4Request->service == ""){
+        request->error_response = initResponseFromSource( new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Le parametre SERVICE n'est pas renseigné." ),"wmts" ) ));
+    } else {
+        request->error_response = initResponseFromSource( new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le service " ) +rok4Request->service+_ ( " est inconnu pour ce serveur." ),"wmts" ) ));
+    }
+        
+        
 
     delete rok4Request;
     return request;
@@ -278,6 +298,7 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
     if ( errorResp ) {
         LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getTile" ) );
         HttpResponse* error=initResponseFromSource ( errorResp );
+        delete request;
         delete errorResp;
         return error;
     }
@@ -471,6 +492,17 @@ HttpResponse* rok4GetOperationNotSupportedException ( const char* queryString, c
 }
 
 /**
+ * \brief Renvoi l'exception No data found
+ */
+HttpResponse* rok4GetNoDataFoundException () {
+
+    DataSource* source=new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "wmts" ) );
+    HttpResponse* response=initResponseFromSource ( source );
+    delete source;
+    return response;
+}
+
+/**
 * \brief Suppression d'une requete
 */
 
@@ -480,6 +512,10 @@ void rok4DeleteRequest ( HttpRequest* request ) {
     delete[] request->scriptName;
     delete[] request->service;
     delete[] request->operationType;
+    if (request->error_response != 0){
+        rok4DeleteResponse(request->error_response);
+        delete request->error_response;
+    }
     delete request;
 }
 
