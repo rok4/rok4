@@ -450,8 +450,8 @@ uint8_t* Rok4Image::memorizeRawTile ( size_t& size, int tile )
         }
 
         const uint8_t* data = decData->getData(tmpSize);
-
-        if (tmpSize == 0) {
+        
+        if (! data || tmpSize == 0) {
             LOGGER_ERROR("Unable to decompress tile " << tile);
             return NULL;
         } else if (tmpSize != rawTileSize) {
