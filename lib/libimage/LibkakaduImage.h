@@ -57,6 +57,8 @@
 #include "FileImage.h"
 #include "Image.h"
 
+#include "jpx.h"
+
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
@@ -71,6 +73,7 @@ friend class LibkakaduImageFactory;
     
 private:
 
+    kdu_byte *data;
 
     /** \~french
      * \brief Retourne une ligne, flottante ou entière
@@ -97,6 +100,7 @@ protected:
      * \param[in] bitspersample nombre de bits par canal
      * \param[in] photometric photométrie des données
      * \param[in] compression compression des données
+     * \param[in] kduData image complète, dans un tableau
      ** \~english
      * \brief Create a LibkakaduImage object, from all attributes
      * \param[in] width image width, in pixel
@@ -110,10 +114,12 @@ protected:
      * \param[in] bitspersample number of bits per sample
      * \param[in] photometric data photometric
      * \param[in] compression data compression
+     * \param[in] kduData whole image, in an array
      */
     LibkakaduImage (
         int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name,
-        SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression
+        SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
+        kdu_byte* kduData
     );
 
 public:     
@@ -130,6 +136,7 @@ public:
      * \details We remove read buffer #m_data
      */
     ~LibkakaduImage() {
+        delete[] data;
     }
 
     /** \~french

@@ -1,1 +1,0 @@
- mergeNtiff -d -f confs/19_398_3134.txt -r result/ -c zip -i bicubic -s 3 -b 8 -p rgb -a uint -n 255,255,255

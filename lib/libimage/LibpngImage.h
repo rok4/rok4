@@ -83,7 +83,7 @@ private:
      * \~french \brief Stockage de l'image entière, décompressée
      * \~english \brief Full uncompressed image storage
      */
-    png_bytep * pngRowsPointers;
+    png_bytep * data;
 
 protected:
     /** \~french
@@ -100,7 +100,7 @@ protected:
      * \param[in] bitspersample nombre de bits par canal
      * \param[in] photometric photométrie des données
      * \param[in] compression compression des données
-     * \param[in] pngRows image complète, dans un tableau
+     * \param[in] pngData image complète, dans un tableau
      ** \~english
      * \brief Create a LibpngImage object, from all attributes
      * \param[in] width image width, in pixel
@@ -114,12 +114,12 @@ protected:
      * \param[in] bitspersample number of bits per sample
      * \param[in] photometric data photometric
      * \param[in] compression data compression
-     * \param[in] pngRows whole image, in an array
+     * \param[in] pngData whole image, in an array
      */
     LibpngImage (
         int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name,
         SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
-        png_bytep* pngRows
+        png_bytep* pngData
     );
 
 public:
@@ -201,8 +201,8 @@ public:
     ~LibpngImage() {
         /* cleanup heap allocation */
         for (int y = 0; y < height; y++)
-            free(pngRowsPointers[y]);
-        free(pngRowsPointers);
+            free(data[y]);
+        free(data);
     }
 
     /** \~french

@@ -83,7 +83,7 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
 
     png_structp pngStruct;
     png_infop pngInfo;
-    png_bytep * pngRows;
+    png_bytep * pngData;
 
     png_byte header[8];    // 8 is the maximum size that can be checked
 
@@ -198,13 +198,13 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
         return NULL;
     }
 
-    pngRows = (png_bytep*) malloc(sizeof(png_bytep) * height);
+    pngData = (png_bytep*) malloc(sizeof(png_bytep) * height);
     int rowbytes = png_get_rowbytes(pngStruct,pngInfo);
     for (int y = 0; y < height; y++) {
-        pngRows[y] = (png_byte*) malloc(rowbytes);
+        pngData[y] = (png_byte*) malloc(rowbytes);
     }
 
-    png_read_image(pngStruct, pngRows);
+    png_read_image(pngStruct, pngData);
 
     fclose ( file );
     png_destroy_read_struct(&pngStruct, &pngInfo, (png_infopp)NULL);
@@ -233,7 +233,7 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
     return new LibpngImage (
         width, height, resx, resy, channels, bbox, filename,
         sf, bitspersample, toROK4Photometric ( color_type ), Compression::PNG,
-        pngRows
+        pngData
     );
     
 }
@@ -244,11 +244,11 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
 LibpngImage::LibpngImage (
     int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
-    png_bytep* pngRows ) :
+    png_bytep* pngData ) :
 
     FileImage ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression, false ),
 
-    pngRowsPointers(pngRows) {
+    data(pngData) {
         
 }
 
@@ -258,7 +258,7 @@ LibpngImage::LibpngImage (
 int LibpngImage::getline ( uint8_t* buffer, int line ) {
     
     for (int x = 0;  x < width * channels; x++) {
-        buffer[x] = (uint8_t) pngRowsPointers[line][x];
+        buffer[x] = (uint8_t) data[line][x];
     }
     return width*channels;
 }
