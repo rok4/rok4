@@ -642,9 +642,7 @@ sub mergeNtiff {
     foreach my $nodesource ( @{$node->getNodeSources()} ) {
         my $imagePath = File::Spec->catfile($nodesource->getScript->getTempDir, $nodesource->getWorkName("I"));
         my $maskPath = undef;
-        INFO("là");
         if ($self->{useMasks}) {
-            INFO("node avec masque");
             $maskPath = File::Spec->catfile($nodesource->getScript->getTempDir, $nodesource->getWorkName("M"));
         }
         printf CFGF "%s", $nodesource->exportForMntConf($imagePath, $maskPath);
