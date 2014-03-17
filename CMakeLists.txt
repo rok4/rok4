@@ -42,16 +42,30 @@ set(ROK4LIBSDIR ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 if(NOT DEFINED BUILD_DEPENDENCIES)
   set(BUILD_DEPENDENCIES TRUE CACHE BOOL "Build dependencies")
 endif(NOT DEFINED BUILD_DEPENDENCIES)
+
 if(NOT DEFINED BUILD_ROK4)
   set(BUILD_ROK4 TRUE CACHE BOOL "Build Rok4")
 endif(NOT DEFINED BUILD_ROK4)
+
 if(NOT DEFINED BUILD_BE4)
   set(BUILD_BE4 TRUE CACHE BOOL "Build BE4")
 endif(NOT DEFINED BUILD_BE4)
+
+if(NOT DEFINED USE_KAKADU)
+  set(USE_KAKADU FALSE CACHE BOOL "Build libimage using kakadu (to read JPEG 2000)")
+endif(NOT DEFINED USE_KAKADU)
+
+if(USE_KAKADU)
+  if(NOT DEFINED KAKADU_LIBRARY_PATH)
+    set(KAKADU_LIBRARY_PATH "/usr/kakadu-6.4" CACHE STRING "Path to kakadu library directory (to read JPEG 2000), containing libkdu.a and libkdu_aux.a")
+  endif(NOT DEFINED KAKADU_LIBRARY_PATH)
+endif(USE_KAKADU)
+
 if(NOT DEFINED BUILD_DOC)
   set(BUILD_DOC TRUE CACHE BOOL "Build Documentation")
   set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
 endif(NOT DEFINED BUILD_DOC)
+
 if(NOT DEFINED DEBUG_BUILD)
   set(DEBUG_BUILD FALSE CACHE BOOL "Mode debug ")
 endif(NOT DEFINED DEBUG_BUILD)
@@ -80,13 +94,6 @@ endif(RPM_PACKAGE)
 if(NOT DEFINED USE_SYSTEM_LIB)
   set(USE_SYSTEM_LIB FALSE)
 endif(NOT DEFINED USE_SYSTEM_LIB)
-
-##################################################################################
-# optional external dependencies for JPEG2000
-
-# try to configure and build JPEG2000 support
-#SET(HAVE_KAKADU FALSE CACHE BOOL "[KAKADU] Determines whether KAKADU support should be built")
-SET(HAVE_KAKADU FALSE CACHE BOOL "[KAKADU] Determines whether KAKADU support should be built")
     
 ##################################################################################
 

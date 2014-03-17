@@ -54,7 +54,7 @@
 #include "Utils.h"
 #include "Jpeg2000_library_config.h"
 
-#ifdef HAVE_KAKADU
+#ifdef USE_KAKADU
 #include "LibkakaduImage.h"
 #else
 #include "LibopenjpegImage.h"
@@ -66,7 +66,7 @@
 /* ----- Pour la lecture ----- */
 Jpeg2000Image* Jpeg2000ImageFactory::createJpeg2000ImageToRead ( char* filename, BoundingBox< double > bbox, double resx, double resy ) {
     
-#ifdef HAVE_KAKADU
+#ifdef USE_KAKADU
 
     LOGGER_DEBUG("Driver le JPEG2000 : KAKADU");
 

@@ -89,6 +89,16 @@ BUILD_DOC :
   This option creates the "doc" target (to be used before make install or make package) : make doc
   Default Value : TRUE  
 
+USE_KAKADU : 
+  Kakadu library use (BOOL)
+  This option allowed to build libimage with kakadu (closed-source library), to read JPEG2000 images. If not present, the open library openjpeg will be used
+  Default Value : FALSE  
+
+KAKADU_LIBRARY_PATH : 
+  Kakadu library location (STRING)
+  If kakadu is used, we can provide the path to the kakadu library (libkdu.a and libkdu_aux.a). Headers are included in the project (lib/likakadu)
+  Default Value : /usr/kakadu-6.4
+
 UNITTEST : 
   Units tests compilation (BOOL)
   This option creates the "test" target (to be used before make install or make package) :  make test 

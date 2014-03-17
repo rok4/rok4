@@ -52,13 +52,13 @@ SET(
 )
 
 # OPTION : 'sources' JPEG2000
-IF(HAVE_KAKADU)
+IF(USE_KAKADU)
   # OPTION : 'sources' KAKADU
   SET(libimage_SRCS ${libimage_SRCS} LibkakaduImage.cpp)
-ELSE(HAVE_KAKADU)
+ELSE(USE_KAKADU)
   # OPTION : 'sources' OPENJPEG
   SET(libimage_SRCS ${libimage_SRCS} LibopenjpegImage.cpp)
-ENDIF(HAVE_KAKADU)
+ENDIF(USE_KAKADU)
 
 ADD_LIBRARY(image STATIC ${libimage_SRCS})
 
@@ -75,9 +75,9 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${DE
 # Listes des bibliothèques à liées avec l'éxecutable
 SET(DEP_LIBRARY logger proj jpeg zlib tiff lzw pkb png jpeg2000)
 
-IF(HAVE_KAKADU)
+IF(USE_KAKADU)
     SET(DEP_LIBRARY ${DEP_LIBRARY} jpeg2000_plus)
-ENDIF(HAVE_KAKADU)
+ENDIF(USE_KAKADU)
 
 TARGET_LINK_LIBRARIES(image ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 

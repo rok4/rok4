@@ -1,6 +1,6 @@
 #ifndef JPEG2000_LIBRARY_CONFIG_H
 #define JPEG2000_LIBRARY_CONFIG_H
 
-#cmakedefine HAVE_KAKADU
+#cmakedefine USE_KAKADU
 
 #endif
