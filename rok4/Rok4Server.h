@@ -366,6 +366,14 @@ public:
     void setFCGISocket ( int sockFCGI ) {
         sock = sockFCGI;
     }
+    
+     /**
+     * \~french
+     * \brief Demande l'arrêt du serveur
+     * \~english
+     * \brief Ask for server shutdown
+     */
+    void terminate();
 
     /**
      * \~french
@@ -378,13 +386,26 @@ public:
     bool isRunning() {
         return running ;
     }
+    
     /**
      * \~french
-     * \brief Demande l'arrêt du serveur
+     * \brief Pour savoir si le server honore les requêtes WMTS
      * \~english
-     * \brief Ask for server shutdown
+     * \brief to know if the server responde to WMTS request
      */
-    void terminate();
+    bool isWMTSSupported(){
+            return supportWMTS ;
+    }
+    
+    /**
+     * \~french
+     * \brief Pour savoir si le server honore les requêtes WMS
+     * \~english
+     * \brief to know if the server responde to WMS request
+     */
+    bool isWMSSupported(){
+            return supportWMS ;
+    }
 
     /**
      * \brief Construction du serveur

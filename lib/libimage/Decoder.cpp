@@ -314,7 +314,6 @@ const uint8_t* LzwDecoder::decode ( DataSource* source, size_t& size ) {
 
 /**
  * Decodage de donnee DEFLATE
- * \warning la taille des données décodées fait 256 octets de plus que la taille théorique. Ne considérer que la taille théorique dans les données retournées fonctionne (les 256 DERNIERS octets ne semblent pas servir).
  */
 const uint8_t* DeflateDecoder::decode ( DataSource* source, size_t &size ) {
 

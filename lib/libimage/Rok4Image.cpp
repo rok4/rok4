@@ -446,14 +446,12 @@ uint8_t* Rok4Image::memorizeRawTile ( size_t& size, int tile )
         }
 
         const uint8_t* data = decData->getData(tmpSize);
-
-        if (tmpSize == 0) {
+        
+        if (! data || tmpSize == 0) {
             LOGGER_ERROR("Unable to decompress tile " << tile);
             return NULL;
         } else if (tmpSize != rawTileSize) {
-            /* Pour la compression deflate, la taille fait systématiquement 256 de plus que la taille théorique,
-             * on ne gardera donc pas les 256 DERNIERS octets de data */
-            // LOGGER_WARN("Raw tile size should have been " << rawTileSize << ", and not " << size);
+            LOGGER_WARN("Raw tile size should have been " << rawTileSize << ", and not " << tmpSize);
         }
 
         if ( ! memorizedTiles[index] ) memorizedTiles[index] = new uint8_t[rawTileSize];
@@ -746,7 +744,7 @@ bool Rok4Image::prepare()
 
     //  z compression initalization
     if ( compression == Compression::PNG || compression == Compression::DEFLATE ) {
-        zip_buffer = new uint8_t[rawTileSize + tileHeight];
+        zip_buffer = new uint8_t[rawTileSize];
         zstream.zalloc = Z_NULL;
         zstream.zfree  = Z_NULL;
         zstream.opaque = Z_NULL;
@@ -923,7 +921,7 @@ size_t Rok4Image::computePngTile ( uint8_t *buffer, uint8_t *data ) {
     zstream.next_out  = buffer + sizeof ( PNG_HEADER ) + 8;
     zstream.avail_out = 2*rawTileSize - 12 - sizeof ( PNG_HEADER ) - sizeof ( PNG_IEND );
     zstream.next_in   = zip_buffer;
-    zstream.avail_in  = rawTileSize + tileHeight;
+    zstream.avail_in  = rawTileSize;
 
     if ( deflateReset ( &zstream ) != Z_OK ) return -1;
     if ( deflate ( &zstream, Z_FINISH ) != Z_STREAM_END ) return -1;
@@ -951,11 +949,11 @@ size_t Rok4Image::computeDeflateTile ( uint8_t *buffer, uint8_t *data ) {
     zstream.next_out  = buffer;
     zstream.avail_out = 2*rawTileSize;
     zstream.next_in   = zip_buffer;
-    zstream.avail_in  = rawTileSize + tileHeight;
+    zstream.avail_in  = rawTileSize;
 
     if ( deflateReset ( &zstream ) != Z_OK ) return -1;
     if ( deflate ( &zstream, Z_FINISH ) != Z_STREAM_END ) return -1;
-
+    
     return zstream.total_out;
 }
 

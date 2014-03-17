@@ -123,8 +123,20 @@ FileImage* FileImageFactory::createImageToWrite (
     memcpy ( extension, pch + 1, 3 );
 
     /********************* TIFF *********************/
-    if ( strncmp ( extension, "tif", 3 ) == 0 ) {
+    if ( strncmp ( extension, "tif", 3 ) == 0 || strncmp ( extension, "TIF", 3 ) == 0 ) {
         LOGGER_DEBUG ( "TIFF image to write : " << name );
+
+        LibtiffImageFactory LTIF;
+        return LTIF.createLibtiffImageToWrite (
+            name, bbox, resx, resy, width, height, channels,
+            sampleformat, bitspersample, photometric, compression, 16
+        );
+    }
+    
+    // Les masques
+    else if ( strncmp ( extension, "msk", 3 ) == 0 || strncmp ( extension, "MSK", 3 ) == 0 ) {
+        /** \~french \warning Les masques sources (fichiers avec l'extension .msk) seront écris comme des images TIFF. */
+        LOGGER_DEBUG ( "TIFF mask to write : " << name );
 
         LibtiffImageFactory LTIF;
         return LTIF.createLibtiffImageToWrite (

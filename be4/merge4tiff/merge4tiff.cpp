@@ -373,8 +373,6 @@ int parseCommandLine ( int argc, char* argv[] ) {
  * \return code de retour, 0 si réussi, -1 sinon
  */
 int checkComponents ( FileImage* image, FileImage* mask) {
-    uint32_t _width,_height;
-    uint16_t _bitspersample,_samplesperpixel,_sampleformat,_photometric,_planarconfig;
 
     if ( width == 0 ) { // read the parameters of the first input file
         width = image->getWidth();
@@ -393,15 +391,14 @@ int checkComponents ( FileImage* image, FileImage* mask) {
             LOGGER_ERROR ( "Unknown sample type (sample format + bits per sample)" );
             return -1;
         }
+    } else {
 
-        return 0;
-    }
+        if ( ! ( image->getWidth() == width && image->getHeight() == height && image->getBitsPerSample() == bitspersample &&
+                image->getSampleFormat() == sampleformat && image->getPhotometric() == photometric && image->channels == samplesperpixel ) ) {
 
-    if ( ! ( image->getWidth() == width && image->getHeight() == height && image->getBitsPerSample() == bitspersample &&
-            image->getSampleFormat() == sampleformat && image->getPhotometric() == photometric && image->channels == samplesperpixel ) ) {
-
-        LOGGER_ERROR ( "Error : all input image must have the same parameters (width, height, etc...) : " << image->getFilename());
-        return -1;
+            LOGGER_ERROR ( "Error : all input image must have the same parameters (width, height, etc...) : " << image->getFilename());
+            return -1;
+        }
     }
 
     if (mask != NULL) {

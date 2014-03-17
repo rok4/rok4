@@ -19,9 +19,16 @@
                 <exclude>target/</exclude> <!-- Maven stuff -->
                 <exclude>pom.xml</exclude> <!-- Maven stuff -->
                 <exclude>src/</exclude> <!-- Maven stuff -->
+		<exclude>README</exclude> <!-- Maven stuff -->
             </excludes>
             <outputDirectory>/rok4-${project.version}/</outputDirectory>
             <fileMode>0755</fileMode>
+        </fileSet>
+        <fileSet>
+            <directory>${main.config.directory}/filtered</directory>
+            <outputDirectory>/rok4-${project.version}/</outputDirectory>
+            <filtered>true</filtered>
+	    <fileMode>0755</fileMode>
         </fileSet>
     </fileSets>
 </assembly>

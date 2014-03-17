@@ -106,7 +106,10 @@ protected:
     std::string metadataUrlWMTS;
     std::string metadataMediaTypeWMTS;
     bool doweuselistofequalsCRS;
+    bool addEqualsCRS;
+    bool dowerestrictCRSList;
     std::vector<std::string> listofequalsCRS;
+    std::vector<std::string> restrictedCRSList;
     ServicesConf * services_conf;
 
 public:
@@ -162,7 +165,7 @@ void CppUnitRequest::setUp() {
                                        accessConstraint, layerLimit, maxWidth, maxHeight, maxTileX, maxTileY, formatList, globalCRSList , serviceType, serviceTypeVersion,
                                        providerSite, individualName, individualPosition, voice, facsimile,
                                        addressType, deliveryPoint, city, administrativeArea, postCode, country,
-                                      electronicMailAddress, mtdMWS, mtdWMTS, listofequalsCRS, postMode, fullStyling, inspire, doweuselistofequalsCRS );
+                                      electronicMailAddress, mtdMWS, mtdWMTS, listofequalsCRS, restrictedCRSList, postMode, fullStyling, inspire, doweuselistofequalsCRS, addEqualsCRS, dowerestrictCRSList );
 }
 
 void CppUnitRequest::testhex2int() {

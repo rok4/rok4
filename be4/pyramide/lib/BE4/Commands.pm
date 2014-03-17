@@ -161,7 +161,12 @@ Wms2work () {
     done
     
     if [ "$size" -le "$min_size" ] ; then
-        RM_IMGS["$dir.$fmt"]="1"
+        if [ "$nbTiles" == "1 1" ] ; then
+            RM_IMGS["$dir.$fmt"]="1"
+        else
+            RM_IMGS["$dir.tif"]="1"
+        fi
+
         rm -rf $dir
         return
     fi
@@ -192,12 +197,14 @@ Work2cache () {
     local workMskName=$5
     local mskName=$6
     
-    local dir=`dirname ${PYR_DIR}/$imgName`
-    
-    if [ -r $workDir/$workImgName ] ; then rm -f ${PYR_DIR}/$imgName ; fi
-    if [ ! -d $dir ] ; then mkdir -p $dir ; fi
     
     if [[ ! ${RM_IMGS[$workDir/$workImgName]} ]] ; then
+        
+        local dir=`dirname ${PYR_DIR}/$imgName`
+    
+        if [ -r $workDir/$workImgName ] ; then rm -f ${PYR_DIR}/$imgName ; fi
+        if [ ! -d $dir ] ; then mkdir -p $dir ; fi
+            
         tiff2tile $workDir/$workImgName __t2tI__ ${PYR_DIR}/$imgName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
@@ -635,9 +642,7 @@ sub mergeNtiff {
     foreach my $nodesource ( @{$node->getNodeSources()} ) {
         my $imagePath = File::Spec->catfile($nodesource->getScript->getTempDir, $nodesource->getWorkName("I"));
         my $maskPath = undef;
-        INFO("là");
         if ($self->{useMasks}) {
-            INFO("node avec masque");
             $maskPath = File::Spec->catfile($nodesource->getScript->getTempDir, $nodesource->getWorkName("M"));
         }
         printf CFGF "%s", $nodesource->exportForMntConf($imagePath, $maskPath);
