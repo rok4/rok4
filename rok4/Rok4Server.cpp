@@ -336,12 +336,12 @@ DataStream* Rok4Server::getMap ( Request* request ) {
                     case Rok4Format::TIFF_ZIP_FLOAT32 :
                     case Rok4Format::TIFF_LZW_FLOAT32 :
                     case Rok4Format::TIFF_PKB_FLOAT32 :
-                        curImage = new StyledImage ( curImage, 4, styles.at ( i )->getPalette() );
+                        curImage = new StyledImage ( curImage, styles.at ( i )->getPalette()->isNoAlpha()?3:4 , styles.at ( i )->getPalette() );
                     default:
                         break;
                     }
                 } else {
-                    curImage = new StyledImage ( curImage, 4, styles.at ( i )->getPalette() );
+                    curImage = new StyledImage ( curImage, styles.at ( i )->getPalette()->isNoAlpha()?3:4, styles.at ( i )->getPalette() );
                 }
             }
 

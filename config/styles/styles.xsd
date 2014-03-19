@@ -37,6 +37,7 @@
                                         <xs:attribute name="maxValue" type="xs:decimal" use="required"/>
                                         <xs:attribute name="rgbContinuous" type="xs:boolean" default="false"/>
                                         <xs:attribute name="alphaContinuous" type="xs:boolean" default="false"/>
+                                        <xs:attribute name="noAlpha" type="xs:boolean" default="false"/>
                                         <xs:sequence>
                                                 <!-- Couleur à appliquer pour les pixel de valeur "value" jusqu'au pixel de valeur "value"-1 de la couleur suivante -->
                                                 <xs:element name="colour" minOccurs="1" maxOccurs="unbounded">

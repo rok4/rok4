@@ -65,6 +65,7 @@ private:
     std::map<double,Colour> coloursMap;
     bool rgbContinuous;
     bool alphaContinuous;
+    bool noAlpha;
 
 public:
     /**
@@ -78,6 +79,7 @@ public:
     //Palette(const std::vector< Colour >& mcolours);
 
     Palette ( const std::map< double, Colour >& coloursMap, bool rgbContinuous, bool alphaContinuous );
+    Palette ( const std::map< double, Colour >& coloursMap, bool rgbContinuous, bool alphaContinuous, bool noAlpha );
 
     Palette & operator= ( const Palette& pal );
     bool operator== ( const Palette& other ) const;
@@ -96,6 +98,9 @@ public:
     }
     bool isAlphaContinuous() {
         return alphaContinuous;
+    }
+    bool isNoAlpha() {
+        return noAlpha;
     }
     Colour getColour ( double index );
 

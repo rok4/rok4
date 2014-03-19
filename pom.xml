@@ -11,7 +11,7 @@
 
   <groupId>fr.geoportail.services</groupId>
   <artifactId>rok4</artifactId>
-  <version>0.17.5</version><!--TAG_VERSION-->
+  <version>0.17.6</version><!--TAG_VERSION-->
   <packaging>pom</packaging>
 
   <repositories>
@@ -26,5 +26,16 @@
       </releases>
     </repository>
   </repositories>
+
+  <distributionManagement>
+    <repository>
+      <id>kazan-repo-public</id>
+      <url>https://geoportail.forge.ign.fr/nexus/content/groups/public</url>
+    </repository>
+    <snapshotRepository>
+      <id>kazan-repo</id>
+      <url>https://geoportail.forge.ign.fr/nexus/content/groups/kazan</url>
+    </snapshotRepository>
+  </distributionManagement>
 
 </project>
