@@ -68,12 +68,12 @@ bool Colour::operator!= ( const Colour& other ) const {
 
 
 
-Palette::Palette() : pngPaletteInitialised ( false ), rgbContinuous ( false ), alphaContinuous ( false ) {
+Palette::Palette() : pngPaletteInitialised ( false ), rgbContinuous ( false ), alphaContinuous ( false ), noAlpha( false ) {
     pngPaletteSize = 0;
     pngPalette = NULL;
 }
 
-Palette::Palette ( size_t pngPaletteSize, uint8_t* pngPaletteData )  : pngPaletteSize ( pngPaletteSize ) ,pngPaletteInitialised ( true ), rgbContinuous ( false ), alphaContinuous ( false ) {
+Palette::Palette ( size_t pngPaletteSize, uint8_t* pngPaletteData )  : pngPaletteSize ( pngPaletteSize ) ,pngPaletteInitialised ( true ), rgbContinuous ( false ), alphaContinuous ( false ), noAlpha( false ) {
     pngPalette = new uint8_t[pngPaletteSize];
     memcpy ( pngPalette,pngPaletteData,pngPaletteSize );
     LOGGER_DEBUG ( "Constructor ColourMapSize " << coloursMap.size() );
@@ -88,6 +88,7 @@ Palette::Palette ( const Palette& pal ) : pngPaletteSize ( 0 ) {
     rgbContinuous = pal.rgbContinuous;
     alphaContinuous = pal.alphaContinuous;
     coloursMap = pal.coloursMap;
+    noAlpha = pal.noAlpha;
     if ( pngPaletteSize !=0 ) {
         pngPalette = new uint8_t[pngPaletteSize];
         memcpy ( pngPalette,pal.pngPalette,pngPaletteSize );
@@ -101,7 +102,7 @@ Palette::Palette ( const Palette& pal ) : pngPaletteSize ( 0 ) {
 /**
  *
  */
-Palette::Palette ( const std::map< double, Colour >& coloursMap, bool rgbContinuous, bool alphaContinuous ) : rgbContinuous ( rgbContinuous ), alphaContinuous ( alphaContinuous ), pngPaletteSize ( 0 ) ,pngPalette ( NULL ) ,pngPaletteInitialised ( false ) ,coloursMap ( coloursMap ) {
+Palette::Palette ( const std::map< double, Colour >& coloursMap, bool rgbContinuous, bool alphaContinuous, bool noAlpha ) : rgbContinuous ( rgbContinuous ), alphaContinuous ( alphaContinuous ), pngPaletteSize ( 0 ) ,pngPalette ( NULL ) ,pngPaletteInitialised ( false ) ,coloursMap ( coloursMap ), noAlpha( noAlpha ) {
     LOGGER_DEBUG ( "Constructor ColourMapSize " << coloursMap.size() );
 }
 
@@ -117,7 +118,10 @@ void Palette::buildPalettePNG() {
         int numberColor = colours.size();
 
 
-        pngPaletteSize = numberColor* 3 + 12 +numberColor +12; // Palette(Nombre de couleur* nombre de canaux + header) + Transparence(Nombre de couleur + header)
+        pngPaletteSize = numberColor* 3 + 12; // Palette(Nombre de couleur* nombre de canaux + header) 
+        if (!noAlpha){
+            pngPaletteSize += numberColor +12; //Palette =+ Transparence(Nombre de couleur + header)
+        }
         pngPalette = new uint8_t[pngPaletteSize];
         memset ( pngPalette,0,pngPaletteSize );
         // Définition de la taille de la palette
@@ -132,14 +136,16 @@ void Palette::buildPalettePNG() {
         pngPalette[6] = 'T';
         pngPalette[7] = 'E';
 
-        pngPalette[paletteLenght+12] = 0;
-        pngPalette[paletteLenght+12+1] = 0;
-        pngPalette[paletteLenght+12+2] = 3;
-        pngPalette[paletteLenght+12+3] = 0;
-        pngPalette[paletteLenght+12+4] = 't';
-        pngPalette[paletteLenght+12+5] = 'R';
-        pngPalette[paletteLenght+12+6] = 'N';
-        pngPalette[paletteLenght+12+7] = 'S';
+        if (!noAlpha){
+            pngPalette[paletteLenght+12] = 0;
+            pngPalette[paletteLenght+12+1] = 0;
+            pngPalette[paletteLenght+12+2] = 3;
+            pngPalette[paletteLenght+12+3] = 0;
+            pngPalette[paletteLenght+12+4] = 't';
+            pngPalette[paletteLenght+12+5] = 'R';
+            pngPalette[paletteLenght+12+6] = 'N';
+            pngPalette[paletteLenght+12+7] = 'S';
+        }
 
         Colour tmp;
         for ( int i =0; i < numberColor; i++ ) {
@@ -152,7 +158,9 @@ void Palette::buildPalettePNG() {
             pngPalette[3*i+8]  = tmp.r;
             pngPalette[3*i+9]  = tmp.g;
             pngPalette[3*i+10] = tmp.b;
-            pngPalette[paletteLenght+12+i+8] = tmp.a;
+            if (!noAlpha){
+                pngPalette[paletteLenght+12+i+8] = tmp.a;
+            }
 
 
             /*pngPalette[3*i+8]  = i + ((255 - i)*currentColour.r + 127) / 255;
@@ -164,11 +172,13 @@ void Palette::buildPalettePNG() {
         crcPLTE = crc32 ( crcPLTE, pngPalette + 4, paletteLenght+4 );
         * ( ( uint32_t* ) ( pngPalette + paletteLenght + 8 ) ) = bswap_32 ( crcPLTE );
 
-        uint32_t crctRNS = crc32 ( 0, Z_NULL, 0 );
-        crctRNS = crc32 ( crctRNS, pngPalette+ paletteLenght+12 + 4, 4 + numberColor );
-        * ( ( uint32_t* ) ( pngPalette + paletteLenght+ 12 + 8 + numberColor ) ) = bswap_32 ( crctRNS );
-        uint32_t trnsLenght = numberColor;
-        * ( ( uint32_t* ) ( pngPalette+paletteLenght+12 ) ) = bswap_32 ( trnsLenght );
+        if (!noAlpha){
+            uint32_t crctRNS = crc32 ( 0, Z_NULL, 0 );
+            crctRNS = crc32 ( crctRNS, pngPalette+ paletteLenght+12 + 4, 4 + numberColor );
+            * ( ( uint32_t* ) ( pngPalette + paletteLenght+ 12 + 8 + numberColor ) ) = bswap_32 ( crctRNS );
+            uint32_t trnsLenght = numberColor;
+            * ( ( uint32_t* ) ( pngPalette+paletteLenght+12 ) ) = bswap_32 ( trnsLenght );
+        }
     } else {
         pngPaletteSize=0;
         pngPalette=NULL;
@@ -196,6 +206,7 @@ Palette& Palette::operator= ( const Palette& pal ) {
         this->rgbContinuous = pal.rgbContinuous;
         this->alphaContinuous = pal.alphaContinuous;
         this->coloursMap = pal.coloursMap;
+        this->noAlpha = pal.noAlpha;
 
         if ( this->pngPaletteSize !=0 ) {
             this->pngPalette = new uint8_t[pngPaletteSize];
