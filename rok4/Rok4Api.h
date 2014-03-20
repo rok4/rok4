@@ -58,14 +58,6 @@ typedef void Rok4Server;
 
 #endif
 
-    typedef struct {
-        char* queryString;
-        char* hostName;
-        char* scriptName;
-        char* service;
-        char* operationType;
-        int  noDataAsHttpStatus;
-    } HttpRequest;
 
     typedef struct {
         int status;
@@ -74,6 +66,16 @@ typedef void Rok4Server;
         uint8_t* content;
         size_t contentSize;
     } HttpResponse;
+    
+    typedef struct {
+        char* queryString;
+        char* hostName;
+        char* scriptName;
+        char* service;
+        char* operationType;
+        int  noDataAsHttpStatus;
+        HttpResponse* error_response;
+    } HttpRequest;
 
     typedef struct {
         char* filename;
@@ -105,7 +107,7 @@ typedef void Rok4Server;
 // Functions
 
     Rok4Server* rok4InitServer ( const char* serverConfigFile );
-    HttpRequest* rok4InitRequest ( const char* queryString, const char* hostName, const char* scriptName, const char* https );
+    HttpRequest* rok4InitRequest ( const char* queryString, const char* hostName, const char* scriptName, const char* https, Rok4Server* server );
     HttpResponse* rok4GetWMTSCapabilities ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server );
 
     HttpResponse* rok4GetTile ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server );
@@ -118,6 +120,8 @@ typedef void Rok4Server;
     TiffHeader* rok4GetTiffHeaderFormat ( int width, int height, int channels, char* format, uint32_t possize );
     PngPaletteHeader* rok4GetPngPaletteHeader ( int width, int height, TilePalette* palette );
     HttpResponse* rok4GetOperationNotSupportedException ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server );
+    HttpResponse* rok4GetNoDataFoundException ( );
+   
     void rok4DeleteRequest ( HttpRequest* request );
     void rok4DeleteResponse ( HttpResponse* response );
     void rok4FlushTileRef ( TileRef* tileRef );

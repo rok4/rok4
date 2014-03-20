@@ -370,11 +370,6 @@ int loadImages ( FileImage** ppImageOut, CompoundImage** ppCompoundIn ) {
         
     }
 
-    if ( ! SampleFormat::isHandledSampleType ( sampleformat, bitspersample ) ) {
-        LOGGER_ERROR ( "Unknown sample type (sample format + bits per sample)" );
-        return -1;
-    }
-
     *ppCompoundIn = new CompoundImage(imagesIn);
 
     // Création de l'image de sortie

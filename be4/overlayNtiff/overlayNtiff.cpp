@@ -513,11 +513,6 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, MergeImage** ppM
     // Fermeture du fichier
     file.close();
 
-    if ( ! SampleFormat::isHandledSampleType ( sampleformat, bitspersample ) ) {
-        LOGGER_ERROR ( "Unknown sample type (sample format + bits per sample)" );
-        return -1;
-    }
-
     // On crée notre MergeImage, qui s'occupera des calculs de fusion des pixels
 
     *ppMergeIn = MIF.createMergeImage ( ImageIn, samplesperpixel, background, transparent, mergeMethod );

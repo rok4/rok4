@@ -140,6 +140,38 @@ protected:
     }
 
 public:
+    
+    /**
+     * \~french
+     * \brief Vérifie la cohérence des dimensions d'image fournies
+     * \param[in] resolution_x Resolution de l'image, dans le sens des X
+     * \param[in] resolution_y Resolution de l'image, dans le sens des Y
+     * \param[in] w Largeur de l'image en pixel
+     * \param[in] h Hauteur de l'image en pixel
+     * \param[in] bounding_box Emprise rectangulaire au sol de l'image
+     * \~english
+     * \brief Check provided dimensions' consistency
+     * \param[in] resolution_x Image's resolution, X wise
+     * \param[in] resolution_y Image's resolution, Y wise
+     * \param[in] w Image's width, in pixel
+     * \param[in] h Image's height, in pixel
+     * \param[in] bounding_box Image's bounding box
+     */
+    static bool dimensionsAreConsistent(double resolution_x, double resolution_y, int w, int h, BoundingBox<double> bounding_box) {
+        // Vérification de la cohérence entre les résolutions et bbox fournies et les dimensions (en pixel) de l'image
+        // Arrondi a la valeur entiere la plus proche
+        if (resolution_x == 0 || resolution_y == 0) return false;
+        
+        int calcWidth = lround ( ( bounding_box.xmax - bounding_box.xmin ) / ( resolution_x ) );
+        int calcHeight = lround ( ( bounding_box.ymax - bounding_box.ymin ) / ( resolution_y ) );
+        if ( calcWidth != w || calcHeight != h ) {
+            LOGGER_ERROR ( "Height is " << h << " and calculation give " << calcHeight );
+            LOGGER_ERROR ( "Width is " << w << " and calculation give " << calcWidth );
+            return false;
+        }
+        
+        return true;
+    }
 
     /**
      * \~french
@@ -515,20 +547,10 @@ public:
      * \param[in] bbox bounding box
      */
     Image ( int width, int height, int channels, double resx, double resy,  BoundingBox<double> bbox ) :
-        width ( width ), height ( height ), channels ( channels ), resx ( resx ), resy ( resy ), bbox ( bbox ), mask ( NULL ), isMask(false) {
-
-            if ( resx > 0 && resy > 0 ) {
-                // Vérification de la cohérence entre les résolutions et bbox fournies et les dimensions (en pixel) de l'image
-                // Arrondi a la valeur entiere la plus proche
-                int calcWidth = lround ( ( bbox.xmax - bbox.xmin ) / ( resx ) );
-                int calcHeight = lround ( ( bbox.ymax - bbox.ymin ) / ( resy ) );
-                if ( calcWidth != width || calcHeight != height ) {
-                    LOGGER_ERROR ( "Resolutions, bounding box and pixels dimensions are not consistent" );
-                    LOGGER_ERROR ( "Height is " << height << " and calculation give " << calcHeight );
-                    LOGGER_ERROR ( "Width is " << width << " and calculation give " << calcWidth );
-                }
-            }
-        }
+        width ( width ), height ( height ), channels ( channels ), resx ( resx ), resy ( resy ), bbox ( bbox ), mask ( NULL ), isMask(false)
+    {
+        dimensionsAreConsistent(resx, resy, width, height, bbox);
+    }
 
     /**
      * \~french
@@ -561,7 +583,8 @@ public:
      * \param[in] bbox bounding box
      */
     Image ( int width, int height, int channels,  BoundingBox<double> bbox ) :
-        width ( width ), height ( height ), channels ( channels ), bbox ( bbox ), mask ( NULL ), isMask ( false ) {
+        width ( width ), height ( height ), channels ( channels ), bbox ( bbox ), mask ( NULL ), isMask ( false )
+    {
         computeResolutions();
     }
 

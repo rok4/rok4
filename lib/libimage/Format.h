@@ -92,40 +92,17 @@ const int sampleformat_size = 2;
  * \param[in] strComp string to convert
  * \return the binding sample format, UNKNOWN (0) if string is not recognized
  */
-eSampleFormat fromString ( std::string strPh );
+eSampleFormat fromString ( std::string strSf );
 
 /**
  * \~french \brief Conversion d'une format du canal vers une chaîne de caractères
- * \param[in] comp format du canal à convertir
+ * \param[in] sf format du canal à convertir
  * \return la chaîne de caractère nommant la format du canal
  * \~english \brief Convert a sample format to a string
- * \param[in] comp sample format to convert
+ * \param[in] sf sample format to convert
  * \return string namming the sample format
  */
-std::string toString ( eSampleFormat ph );
-
-/**
- * \~french
- * \brief Précise si le type des canaux (nombre de bits et format) est géré
- * \details Sont gérés :
- * \li les entiers non-signés sur 8 bits
- * \li les flottants sur 32 bits
- *
- * \param[in] sf format du canal
- * \param[in] bps nombre de bits par canal
- *
- * \~english
- * \brief Precises if sample type (bits per sample and format) is supported
- * \details Are supported :
- * \li 8-bit unsigned integer
- * \li 32-bit float
- *
- * \param[in] sf sample foramt
- * \param[in] bps number of bits per sample
- */
-static bool isHandledSampleType ( eSampleFormat sf, int bps ) {
-    return ( ( bps == 32 && sf == FLOAT ) || ( bps == 8 && sf == UINT ) );
-}
+std::string toString ( eSampleFormat sf );
 
 }
 

@@ -289,6 +289,7 @@ public:
         LOGGER_INFO ( "\t- Photometric : " << Photometric::toString ( photometric ) );
         LOGGER_INFO ( "\t- Bits per sample : " << bitspersample );
         LOGGER_INFO ( "\t- Sample format : " << SampleFormat::toString ( sampleformat ) );
+        if (associatedalpha) LOGGER_INFO ( "\t- Alpha have to be unassociated");
         LOGGER_INFO ( "" );
     }
 };

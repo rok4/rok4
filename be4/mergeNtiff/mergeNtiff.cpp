@@ -385,11 +385,6 @@ int parseCommandLine ( int argc, char** argv ) {
 
     LOGGER_DEBUG ( "mergeNtiff -f " << imageListFilename );
 
-    if ( ! SampleFormat::isHandledSampleType ( sampleformat, bitspersample ) ) {
-        LOGGER_ERROR ( "Unknown sample type (sample format + bits per sample) for the output image" );
-        return -1;
-    }
-
     return 0;
 }
 

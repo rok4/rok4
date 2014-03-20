@@ -252,18 +252,10 @@ bool ExtendedCompoundImage::extendBbox ( BoundingBox< double > otherbbox, int mo
         newBbox.xmax += morePix * resx;
         newBbox.ymax += morePix * resy;
     }
-
-    if ( resx > 0 && resy > 0 ) {
-        // Vérification de la cohérence entre les résolutions, la nouvelle bbox et les nouvelles dimensions (en pixel) de l'image
-        // Arrondi a la valeur entiere la plus proche
-        int calcWidth = lround ( ( newBbox.xmax - newBbox.xmin ) / ( resx ) );
-        int calcHeight = lround ( ( newBbox.ymax - newBbox.ymin ) / ( resy ) );
-        if ( calcWidth != width || calcHeight != height ) {
-            LOGGER_ERROR ( "Resolutions, new bounding box and new pixels dimensions of the enlarged ExtendedCompoundImage are not consistent" );
-            LOGGER_ERROR ( "Height is " << height << " and calculation give " << calcHeight );
-            LOGGER_ERROR ( "Width is " << width << " and calculation give " << calcWidth );
-            return false;
-        }
+    
+    if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {
+        LOGGER_ERROR ( "Resolutions, new bounding box and new pixels dimensions of the enlarged ExtendedCompoundImage are not consistent" );
+        return false;
     }
 
     /*********************** mise à jour des attributs ********************/

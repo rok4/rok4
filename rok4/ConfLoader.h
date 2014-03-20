@@ -349,6 +349,38 @@ private:
      * \return pointer to the newly created ServicesConf, NULL if something went wrong
      */
     static ServicesConf * parseServicesConf ( TiXmlDocument* doc,std::string servicesConfigFile );
+    
+    /**
+     * \~french
+     * \brief Chargement de la liste des CRS équivalents à partir du fichier listofequalscrs.txt dans le dossier Proj
+     * \~english
+     * \brief Load equivalents CRS list from listofequalscrs.txt file in Proj directory
+     */
+    static std::vector<std::string> loadListEqualsCRS();
+    
+    /**
+     * \~french
+     * \brief Chargement d'une liste à partir d'un fichier
+     * \~english
+     * \brief Load strings list form file
+     */
+    static std::vector<std::string> loadStringVectorFromFile(std::string file);
+    
+     /**
+     * \~french
+     * \brief Vérifie que le CRS ou un équivalent se trouve dans la liste des CRS autorisés
+     * \~english
+     * \brief Check if the CRS or an equivalent is in the allowed CRS list
+     */
+    static bool isCRSAllowed(std::vector<std::string> restrictedCRSList, std::string crs, std::vector<CRS> equiCRSList);
+    
+     /**
+     * \~french
+     * \brief Retourne la liste des CRS équivalents et valable dans proj4
+     * \~english
+     * \brief Return the list of the equivalents CRS who are Proj4 compatible
+     */
+    static std::vector<CRS> getEqualsCRS(std::vector<std::string> listofequalsCRS, std::string crs);
 };
 
 #endif /* CONFLOADER_H_ */

@@ -211,20 +211,15 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
 
     /********************** CONTROLES **************************/
 
-    if ( ! SampleFormat::isHandledSampleType ( sf, bitspersample ) ) {
+    if ( ! LibpngImage::canRead ( bitspersample, sf ) ) {
         LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( sf ) << " and " << bitspersample << " bits per sample" );
+        LOGGER_ERROR ( "\t for the image to read : " << filename );
         return NULL;
     }
 
     if ( resx > 0 && resy > 0 ) {
-        // Vérification de la cohérence entre les résolutions et bbox fournies et les dimensions (en pixel) de l'image
-        // Arrondi a la valeur entiere la plus proche
-        int calcWidth = lround ( ( bbox.xmax - bbox.xmin ) / ( resx ) );
-        int calcHeight = lround ( ( bbox.ymax - bbox.ymin ) / ( resy ) );
-        if ( calcWidth != width || calcHeight != height ) {
+        if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {
             LOGGER_ERROR ( "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" );
-            LOGGER_ERROR ( "Height is " << height << " and calculation give " << calcHeight );
-            LOGGER_ERROR ( "Width is " << width << " and calculation give " << calcWidth );
             return NULL;
         }
     } else {

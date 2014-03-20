@@ -32,8 +32,4 @@
         <serverPort></serverPort>
         <!-- Configuration de la socket FCGI, DOC : backlog is the listen queue depth used in the listen() call -->
         <serverBackLog>0</serverBackLog>
-	<!-- Support du WMS. Si true alors ROK4 expose une interface WMS fonctionnelle -->
-	<WMSSupport>true</WMSSupport>
-         <!-- Support du WMTS. Si true alors ROK4 expose une interface WMTS fonctionnelle -->
-        <WMTSSupport>true</WMTSSupport>
 </serverConf>
