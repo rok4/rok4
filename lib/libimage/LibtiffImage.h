@@ -128,8 +128,6 @@ private:
     template<typename T>
     int _getline ( T* buffer, int line );
 
-    int unassociateAlpha ( uint8_t* buffer );
-
 protected:
     /** \~french
      * \brief Crée un objet LibtiffImage à partir de tous ses éléments constitutifs

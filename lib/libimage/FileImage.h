@@ -154,6 +154,14 @@ protected:
 
 public:
 
+    /**
+     * \~french
+     * \brief Désassocie le canal alpha
+     * \details Le canal alpha peut être prémultiplié aux autres canaux dans les images lues. La libimage travaille toujours en alpha non-associé. Si associatedalpha est à vrai, on convertit alors à la lecture le canal alpha
+     * \param[in,out] buffer source des donnée, dont l'alpha doit être désassocié
+     */
+    void unassociateAlpha ( uint8_t* buffer );
+
     virtual int getline ( uint8_t *buffer, int line ) = 0;
     virtual int getline ( float *buffer, int line ) = 0;
 
