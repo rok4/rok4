@@ -137,6 +137,12 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
     bit_depth = png_get_bit_depth(pngStruct, pngInfo);
     bitspersample = int(bit_depth);
     
+    if ( ! LibpngImage::canRead ( bitspersample, sf ) ) {
+        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( sf ) << " and " << bitspersample << " bits per sample" );
+        LOGGER_ERROR ( "\t for the image to read : " << filename );
+        return NULL;
+    }
+    
     // Passage dans un format utilisable par la libimage
 
     switch ( int(color_type) ) {
@@ -178,7 +184,7 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
         }
         default :
         {
-            LOGGER_ERROR("Cannot determine the color type (" << int(color_type) << ") for the PNG image " << filename);
+            LOGGER_ERROR("Cannot interpret the color type (" << int(color_type) << ") for the PNG image " << filename);
             return NULL;
         }
     }
@@ -210,12 +216,6 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
     png_destroy_read_struct(&pngStruct, &pngInfo, (png_infopp)NULL);
 
     /********************** CONTROLES **************************/
-
-    if ( ! LibpngImage::canRead ( bitspersample, sf ) ) {
-        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( sf ) << " and " << bitspersample << " bits per sample" );
-        LOGGER_ERROR ( "\t for the image to read : " << filename );
-        return NULL;
-    }
 
     if ( resx > 0 && resy > 0 ) {
         if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {

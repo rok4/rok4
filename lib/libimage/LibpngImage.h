@@ -126,6 +126,9 @@ public:
     
     static bool canRead ( int bps, SampleFormat::eSampleFormat sf) {
         return ( 
+            ( bps == 1 && sf == SampleFormat::UINT ) ||
+            ( bps == 2 && sf == SampleFormat::UINT ) ||
+            ( bps == 4 && sf == SampleFormat::UINT ) ||
             ( bps == 8 && sf == SampleFormat::UINT )
         );
     }
