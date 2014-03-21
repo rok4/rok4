@@ -129,7 +129,17 @@ protected:
         opj_image_t* jp2ptr
     );
 
-public:     
+public:
+    
+    static bool canRead ( int bps, SampleFormat::eSampleFormat sf) {
+        return (
+            ( bps == 8 && sf == SampleFormat::UINT )
+        );
+    }
+    
+    static bool canWrite ( int bps, SampleFormat::eSampleFormat sf) {
+        return false;
+    }
 
     int getline ( uint8_t* buffer, int line );
     int getline ( float* buffer, int line );

@@ -87,6 +87,7 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     Photometric::ePhotometric ph = Photometric::UNKNOWN;
     
     /************** INITIALISATION DES OBJETS KAKADU *********/
+    
     // Custom messaging services
     kdu_customize_warnings(&pretty_cout);
     kdu_customize_errors(&pretty_cerr);
@@ -105,6 +106,8 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     kdu_coords layer_size;
     jp2_channels ch;
     jp2_ultimate_src.open(filename);
+    
+    /************** RECUPERATION DES INFORMATIONS **************/
     
     if (jpx_in.open(&jp2_ultimate_src,true) < 0)
     { // Not compatible with JP2 or JPX.  Try opening as a raw code-stream.
@@ -151,6 +154,27 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     
     codestream.apply_input_restrictions(0,channels,0,0,NULL);
     
+    /********************** CONTROLES **************************/
+
+    if ( ! LibkakaduImage::canRead ( bitspersample, sf ) ) {
+        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( sf ) << " and " << bitspersample << " bits per sample" );
+        LOGGER_ERROR ( "\t for the image to read : " << filename );
+        return NULL;
+    }
+
+    if ( resx > 0 && resy > 0 ) {
+        if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {
+            LOGGER_ERROR ( "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" );
+            return NULL;
+        }
+    } else {
+        bbox = BoundingBox<double> ( 0, 0, ( double ) width, ( double ) height );
+        resx = 1.;
+        resy = 1.;
+    }
+    
+    /************** LECTURE DE L'IMAGE EN ENTIER ***************/
+    
     // Now decompress the image in one hit, using `kdu_stripe_decompressor'
     kdu_byte *kduData = new kdu_byte[(int) dims.area()*channels];
     kdu_stripe_decompressor decompressor;
@@ -167,26 +191,8 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     // Write image buffer to file and clean up
     codestream.destroy();
     input->close(); // Not really necessary here.
-
-    /********************** CONTROLES **************************/
-
-    if ( ! SampleFormat::isHandledSampleType ( sf, bitspersample ) ) {
-        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( sf ) << " and " << bitspersample << " bits per sample" );
-        return NULL;
-    }
-
-    if ( resx > 0 && resy > 0 ) {
-        // Vérification de la cohérence entre les résolutions et bbox fournies et les dimensions (en pixel) de l'image
-        // Arrondi a la valeur entiere la plus proche
-        int calcWidth = lround ( ( bbox.xmax - bbox.xmin ) / ( resx ) );
-        int calcHeight = lround ( ( bbox.ymax - bbox.ymin ) / ( resy ) );
-        if ( calcWidth != width || calcHeight != height ) {
-            LOGGER_ERROR ( "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" );
-            LOGGER_ERROR ( "Height is " << height << " and calculation give " << calcHeight );
-            LOGGER_ERROR ( "Width is " << width << " and calculation give " << calcWidth );
-            return NULL;
-        }
-    }
+    
+    /******************** CRÉATION DE L'OBJET ******************/
 
     return new LibkakaduImage (
         width, height, resx, resy, channels, bbox, filename,

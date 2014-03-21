@@ -68,14 +68,14 @@ Jpeg2000Image* Jpeg2000ImageFactory::createJpeg2000ImageToRead ( char* filename,
     
 #ifdef USE_KAKADU
 
-    LOGGER_DEBUG("Driver le JPEG2000 : KAKADU");
+    LOGGER_DEBUG("Driver JPEG2000 : KAKADU");
 
     LibkakaduImageFactory DRVKDU;
     return DRVKDU.createLibkakaduImageToRead(filename, bbox, resx, resy);
 
 #else
 
-    LOGGER_DEBUG("Driver le JPEG2000 : OPENJPEG");
+    LOGGER_DEBUG("Driver JPEG2000 : OPENJPEG");
 
     LibopenjpegImageFactory DRVOJ;
     return DRVOJ.createLibopenjpegImageToRead(filename, bbox, resx, resy);

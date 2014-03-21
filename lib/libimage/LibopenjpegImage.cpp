@@ -177,21 +177,7 @@ LibopenjpegImage* LibopenjpegImageFactory::createLibopenjpegImageToRead ( char* 
         opj_image_destroy ( image );
         return NULL;
     }
-
-    /* Get the decoded image */
-    if ( ! ( opj_decode ( l_codec, l_stream, image ) && opj_end_decompress ( l_codec, l_stream ) ) ) {
-        LOGGER_ERROR ( "Unable to decode JPEG2000 file " << filename );
-        opj_destroy_codec ( l_codec );
-        opj_stream_destroy ( l_stream );
-        opj_image_destroy ( image );
-        fclose ( file );
-        return NULL;
-    }
-
-    opj_destroy_codec ( l_codec );
-    opj_stream_destroy ( l_stream );
-    fclose ( file );
-
+    
     /************** RECUPERATION DES INFORMATIONS **************/
 
     // BitsPerSample
@@ -216,23 +202,40 @@ LibopenjpegImage* LibopenjpegImageFactory::createLibopenjpegImageToRead ( char* 
 
     /********************** CONTROLES **************************/
 
-    if ( ! SampleFormat::isHandledSampleType ( sf, bitspersample ) ) {
+    if ( ! LibopenjpegImage::canRead ( bitspersample, sf ) ) {
         LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( sf ) << " and " << bitspersample << " bits per sample" );
+        LOGGER_ERROR ( "\t for the image to read : " << filename );
+        return NULL;
+    }
+    
+    if ( resx > 0 && resy > 0 ) {
+        if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {
+            LOGGER_ERROR ( "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" );
+            return NULL;
+        }
+    } else {
+        bbox = BoundingBox<double> ( 0, 0, ( double ) width, ( double ) height );
+        resx = 1.;
+        resy = 1.;
+    }
+    
+    /************** LECTURE DE L'IMAGE EN ENTIER ***************/
+
+    /* Get the decoded image */
+    if ( ! ( opj_decode ( l_codec, l_stream, image ) && opj_end_decompress ( l_codec, l_stream ) ) ) {
+        LOGGER_ERROR ( "Unable to decode JPEG2000 file " << filename );
+        opj_destroy_codec ( l_codec );
+        opj_stream_destroy ( l_stream );
+        opj_image_destroy ( image );
+        fclose ( file );
         return NULL;
     }
 
-    if ( resx > 0 && resy > 0 ) {
-        // Vérification de la cohérence entre les résolutions et bbox fournies et les dimensions (en pixel) de l'image
-        // Arrondi a la valeur entiere la plus proche
-        int calcWidth = lround ( ( bbox.xmax - bbox.xmin ) / ( resx ) );
-        int calcHeight = lround ( ( bbox.ymax - bbox.ymin ) / ( resy ) );
-        if ( calcWidth != width || calcHeight != height ) {
-            LOGGER_ERROR ( "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" );
-            LOGGER_ERROR ( "Height is " << height << " and calculation give " << calcHeight );
-            LOGGER_ERROR ( "Width is " << width << " and calculation give " << calcWidth );
-            return NULL;
-        }
-    }
+    opj_destroy_codec ( l_codec );
+    opj_stream_destroy ( l_stream );
+    fclose ( file );
+
+    /******************** CRÉATION DE L'OBJET ******************/
 
     return new LibopenjpegImage (
         width, height, resx, resy, channels, bbox, filename,

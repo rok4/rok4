@@ -169,3 +169,28 @@ FileImage::FileImage (
     pixelSize = bitspersample * channels / 8;
 }
 
+/* ------------------------------------------------------------------------------------------------ */
+/* ----------------------------------------- CONVERTISSEUR ---------------------------------------- */
+
+void FileImage::unassociateAlpha ( uint8_t* buffer ) {
+    uint8_t* pix = buffer;
+    int alphaInd = channels - 1;
+    for (int i = 0; i < width; i++, pix += channels) {
+        int alpha = *(pix + alphaInd);
+        
+        if (alpha == 255) {
+            // Opacité pleine
+            continue;
+        }
+        if (alpha == 0) {
+            // Transperence complète
+            memset(pix, 0, channels);
+            continue;
+        }
+        
+        for (int c = 0; c < alphaInd; c++) {
+            pix[c] = int(pix[c]) * 255 / alpha;
+        }
+    }
+}
+
