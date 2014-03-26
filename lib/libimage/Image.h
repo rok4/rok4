@@ -523,9 +523,9 @@ public:
                 int calcWidth = lround ( ( bbox.xmax - bbox.xmin ) / ( resx ) );
                 int calcHeight = lround ( ( bbox.ymax - bbox.ymin ) / ( resy ) );
                 if ( calcWidth != width || calcHeight != height ) {
-                    LOGGER_ERROR ( "Resolutions, bounding box and pixels dimensions are not consistent" );
-                    LOGGER_ERROR ( "Height is " << height << " and calculation give " << calcHeight );
-                    LOGGER_ERROR ( "Width is " << width << " and calculation give " << calcWidth );
+                    LOGGER_DEBUG ( "Warning: resolutions, bounding box and pixels dimensions are not consistent" );
+                    LOGGER_DEBUG ( "Warning: height is " << height << " and calculation give " << calcHeight );
+                    LOGGER_DEBUG ( "Warning: width is " << width << " and calculation give " << calcWidth );
                 }
             }
         }
