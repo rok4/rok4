@@ -803,19 +803,20 @@ int main ( int argc, char* argv[] ) {
     }
 
     // Cas MNT
-    if ( bitspersample == 32 && sampleformat == SAMPLEFORMAT_IEEEFP ) {
+    if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
         LOGGER_DEBUG ( "Merge images (float)" );
         float nodata[samplesperpixel];
         for ( int i = 0; i < samplesperpixel; i++ ) nodata[i] = ( float ) nodataInt[i];
-
         if ( merge<float> ( BGI, INPUTI, OUTPUTI, OUTPUTM, nodata ) < 0 ) error ( "Unable to merge float images",-1 );
     }
     // Cas images
-    else if ( bitspersample == 8 && sampleformat == SAMPLEFORMAT_UINT ) {
+    else if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
         LOGGER_DEBUG ( "Merge images (uint8_t)" );
         uint8_t nodata[samplesperpixel];
         for ( int i = 0; i < samplesperpixel; i++ ) nodata[i] = ( uint8_t ) nodataInt[i];
         if ( merge ( BGI, INPUTI, OUTPUTI, OUTPUTM, nodata ) < 0 ) error ( "Unable to merge integer images",-1 );
+    } else {
+        error ( "Unhandled sample's format",-1 );
     }
 
 
