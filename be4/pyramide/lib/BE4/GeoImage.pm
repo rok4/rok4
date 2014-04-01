@@ -221,7 +221,7 @@ sub computeInfo {
     my $code   = $driver->{ShortName};
     # FIXME : type of driver ?
     DEBUG (sprintf "use driver '%s'.", $code);
-    if ($code !~ /(GTiff|GeoTIFF|JPEG2000)/) {
+    if ($code !~ /(GTiff|GeoTIFF|JPEG2000|JP2KAK)/) {
         ERROR (sprintf "This driver '%s' is not implemented ('%s') !", $code, $image);
         return ();
     }

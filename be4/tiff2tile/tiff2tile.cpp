@@ -272,8 +272,6 @@ int main ( int argc, char **argv ) {
     if (sourceImage == NULL) {
         error("Cannot read the source image", -1);
     }
-    
-    sourceImage->print();
 
     Rok4ImageFactory R4IF;
     Rok4Image* rok4Image = R4IF.createRok4ImageToWrite(
