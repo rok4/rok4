@@ -69,8 +69,8 @@
  * Cette classe va faire abstraction de la librairie utilisée pour réellement manipuler le fichier.
  * 
  * <TR><TH>Librairie</TH><TH>Classe</TH><TH>En lecture</TH><TH>En écriture</TH><TH>Commentaires</TH></TR>
- * <TR><TD>OpenJpeg</TD><TD>LibopenjpegImage</TD><TD>Oui</TD><TD>Non</TD><TD>Librarie open source, intégrée statiquement dans le projet</TD></TR>
- * <TR><TD>Kakadu</TD><TD>LibkakduImage</TD><TD>Oui</TD><TD>Non</TD><TD>Librairie propriétaire, dépendance dynamique</TD></TR>
+ * <TR><TD>OpenJpeg</TD><TD>LibopenjpegImage</TD><TD>Oui</TD><TD>Non</TD><TD>Librarie open source, leir statiquement, intégrée dans le projet</TD></TR>
+ * <TR><TD>Kakadu</TD><TD>LibkakduImage</TD><TD>Oui</TD><TD>Non</TD><TD>Librairie propriétaire, dépendance statique, emplacement de la librarie à fournir</TD></TR>
  *
  * Si l'image gère la transparence, l'alpha est forcément non-associé aux autres canaux (spécifications JPEG2000). Il n'y a donc pas besoin de préciser #associatedalpha.
  * 

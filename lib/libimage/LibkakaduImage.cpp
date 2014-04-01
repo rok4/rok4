@@ -50,13 +50,11 @@
  */
 
 
+#include "Jpeg2000_library_config.h"
 #include "LibkakaduImage.h"
 #include "Logger.h"
 #include "Utils.h"
-//#include "jp2.h"
-#include "jpx.h"
 #include "kdu_stripe_decompressor.h"
-#include "kdu_file_io.h"
 
 /* ------------------------------------------------------------------------------------------------ */
 /* -------------------------------------- LOGGERS DE KAKADU --------------------------------------- */
@@ -83,7 +81,7 @@ static kdu_message_formatter pretty_cerr(&cerr_message);
 LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filename, BoundingBox< double > bbox, double resx, double resy ) {
     
     int width = 0, height = 0, bitspersample = 0, channels = 0;
-    SampleFormat::eSampleFormat sf = SampleFormat::UNKNOWN;
+    SampleFormat::eSampleFormat sf = SampleFormat::UINT;
     Photometric::ePhotometric ph = Photometric::UNKNOWN;
     
     /************** INITIALISATION DES OBJETS KAKADU *********/
@@ -92,67 +90,87 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     kdu_customize_warnings(&pretty_cout);
     kdu_customize_errors(&pretty_cerr);
 
-    // Construct code-stream object
-    
-    kdu_compressed_source *input = NULL;
-    kdu_simple_file_source file_in;
-    jpx_codestream_source jpx_stream;
-    jpx_layer_source jpx_layer;
-    jpx_source jpx_in;
-    jp2_resolution resolution;
-    jp2_colour colour;
-    jp2_family_src jp2_ultimate_src;
-    jp2_palette palette;
-    kdu_coords layer_size;
-    jp2_channels ch;
-    jp2_ultimate_src.open(filename);
-    
     /************** RECUPERATION DES INFORMATIONS **************/
     
-    if (jpx_in.open(&jp2_ultimate_src,true) < 0)
-    { // Not compatible with JP2 or JPX.  Try opening as a raw code-stream.
-        /*jp2_ultimate_src.close();
-        file_in.open(filename);
-        input = &file_in;*/
-        LOGGER_ERROR ("Not compatible with JP2 or JPX : JPEG2000 file " << filename);
-        return NULL;
-    } else {
-        jpx_layer = jpx_in.access_layer(0);
-        if (!jpx_layer) { 
-            LOGGER_ERROR ("Cannot access to the first layer in the JPEG2000 file " << filename);
+    // Create appropriate output file
+    kdu_compressed_source *input = NULL;
+    kdu_simple_file_source file_in;
+    jp2_family_src jp2_src;
+    jp2_source jp2_in;
+    
+    jp2_input_box box;
+    jp2_src.open(filename);
+  
+    if (box.open(&jp2_src) && (box.get_box_type() == jp2_signature_4cc) ) {
+        input = &jp2_in;
+        if (! jp2_in.open(&jp2_src)) {
+            LOGGER_ERROR("Unable to open with Kakadu the JPEG2000 image " << filename);
             return NULL;
         }
-        
-        ch = jpx_layer.access_channels();
-        resolution = jpx_layer.access_resolution();
-        colour = jpx_layer.access_colour(0);
-        layer_size = jpx_layer.get_layer_size();
-        
-        channels = ch.get_num_colours();
-        width = layer_size.get_x();
-        height = layer_size.get_y();
-        sf = SampleFormat::UINT;
-        ph = Photometric::RGB;
-        bitspersample = 8;
-        
-        int cmp, plt, stream_id;
-        ch.get_colour_mapping(0,cmp,plt,stream_id);
-        jpx_stream = jpx_in.access_codestream(stream_id);
-        
-        palette = jpx_stream.access_palette();
-        
-        input = jpx_stream.open_stream();
+        jp2_in.read_header();
+    } else {
+        // Try opening as a raw code-stream.
+        input = &file_in;
+        file_in.open(filename);
     }
     
     kdu_codestream codestream;
     codestream.create(input);
     
-    codestream.set_fussy(); // Set the parsing error tolerance.
-    
+    // On récupère les information de la première composante, puis on vérifiera que toutes les composantes ont bien les mêmes
+    channels = codestream.get_num_components(true);
+    bitspersample = codestream.get_bit_depth(0);
     kdu_dims dims;
-    codestream.get_dims(0,dims);
+    codestream.get_dims(0,dims,true);
+    width = dims.size.get_x();
+    height = dims.size.get_y();
     
-    codestream.apply_input_restrictions(0,channels,0,0,NULL);
+    for (int i = 0; i < channels; i++) {
+        codestream.get_dims(i,dims,true);
+        if (dims.size.get_x() != width || dims.size.get_y() != height) {
+            LOGGER_ERROR("All components don't own the same dimensions in JPEG2000 file");
+                LOGGER_ERROR("file : " << filename);
+            return NULL;
+        }
+        if (codestream.get_bit_depth(i) != bitspersample) {
+            LOGGER_ERROR("All components don't own the same bit depth in JPEG2000 file ");
+            LOGGER_ERROR("file : " << filename);
+            return NULL;
+        }
+    }
+    
+    if (jp2_in.access_palette().get_num_entries() != 0) {
+        LOGGER_ERROR("JPEG2000 image with palette not handled");
+        LOGGER_ERROR("file : " << filename);
+        return NULL;
+    }
+    
+    if (jp2_in.access_channels().get_num_colours() != channels) {
+        LOGGER_DEBUG("num_colours != channels");
+        LOGGER_DEBUG(jp2_in.access_channels().get_num_colours() << " != " << channels);
+        LOGGER_DEBUG("file : " << filename);
+    }
+    
+    switch(channels) {
+        case 1:
+            ph = Photometric::GRAY;
+            break;
+        case 2:
+            ph = Photometric::GRAY;
+            break;
+        case 3:
+            ph = Photometric::RGB;
+            break;
+        case 4:
+            ph = Photometric::RGB;
+            break;
+        default:
+            LOGGER_ERROR("Cannot determine photometric from the number of samples " << channels);
+            LOGGER_ERROR("file : " << filename);
+            return NULL;
+    }
+    
+    codestream.set_fussy(); // Set the parsing error tolerance.
     
     /********************** CONTROLES **************************/
 
@@ -174,12 +192,34 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     }
     
     /************** LECTURE DE L'IMAGE EN ENTIER ***************/
+    codestream.apply_input_restrictions(0, channels, 0, 0, NULL);
+    
+    int num_threads = atoi(KDU_THREADING);
+    
+    kdu_thread_env env, *env_ref=NULL;
+    if (num_threads > 0) {
+        env.create();
+        for (int nt=1; nt < num_threads; nt++) {
+            if (!env.add_thread()) {
+                LOGGER_WARN("Unable to create all the wanted threads. Number of threads reduced from " << num_threads << " to " << nt);
+                num_threads = nt; // Unable to create all the threads requested
+            }
+        }
+        env_ref = &env;
+    }
+    
     
     // Now decompress the image in one hit, using `kdu_stripe_decompressor'
+    //kdu_byte *kduData = new kdu_byte[(int) dims.area()*channels];
     kdu_byte *kduData = new kdu_byte[(int) dims.area()*channels];
     kdu_stripe_decompressor decompressor;
-    decompressor.start(codestream);
-    int stripe_heights[3] = {dims.size.y,dims.size.y,dims.size.y};
+    decompressor.start(codestream, false, false, env_ref);
+
+    int stripe_heights[channels];
+    for (int i = 0; i < channels; i++) {
+        stripe_heights[i] = dims.size.y;
+    }
+    
     decompressor.pull_stripe(kduData,stripe_heights);
     decompressor.finish();
     // As an alternative to the above, you can decompress the image samples in
@@ -206,13 +246,14 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
 /* ----------------------------------------- CONSTRUCTEUR ----------------------------------------- */
 
 LibkakaduImage::LibkakaduImage (
-    int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
+    int width, int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
     kdu_byte* kduData ) :
 
     Jpeg2000Image ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression ),
 
-    data ( kduData ) {
+    data ( kduData )
+{
 
 }
 

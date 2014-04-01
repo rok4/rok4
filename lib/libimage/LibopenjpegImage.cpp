@@ -60,12 +60,26 @@
 /* ------------------------------------------------------------------------------------------------ */
 /* ------------------------------------------ CONVERSIONS ----------------------------------------- */
 
-static Photometric::ePhotometric toROK4Photometric ( OPJ_COLOR_SPACE ph ) {
+static Photometric::ePhotometric toROK4Photometric ( OPJ_COLOR_SPACE ph, int channels ) {
     switch ( ph ) {
     case OPJ_CLRSPC_SRGB :
         return Photometric::RGB;
     case OPJ_CLRSPC_GRAY :
         return Photometric::GRAY;
+    case OPJ_CLRSPC_UNSPECIFIED :
+        switch(channels) {
+            case 1:
+                return Photometric::GRAY;
+            case 2:
+                return Photometric::GRAY;
+            case 3:
+                return Photometric::RGB;
+            case 4:
+                return Photometric::RGB;
+            default:
+                return Photometric::UNKNOWN;
+        }
+        
     default :
         return Photometric::UNKNOWN;
     }
@@ -186,7 +200,7 @@ LibopenjpegImage* LibopenjpegImageFactory::createLibopenjpegImageToRead ( char* 
     int height = image->comps[0].h;
     int channels = image->numcomps;
     SampleFormat::eSampleFormat sf = SampleFormat::UINT;
-    Photometric::ePhotometric ph = toROK4Photometric ( image->color_space );
+    Photometric::ePhotometric ph = toROK4Photometric ( image->color_space , channels);
     if ( ph == Photometric::UNKNOWN ) {
         LOGGER_ERROR ( "Unhandled color space (" << image->color_space << ") in the JPEG2000 image " << filename );
         return NULL;

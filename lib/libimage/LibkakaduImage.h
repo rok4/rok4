@@ -56,8 +56,9 @@
 #include "Jpeg2000Image.h"
 #include "FileImage.h"
 #include "Image.h"
-
+#include "jp2.h"
 #include "jpx.h"
+#include "kdu_file_io.h"
 
 /**
  * \author Institut national de l'information géographique et forestière

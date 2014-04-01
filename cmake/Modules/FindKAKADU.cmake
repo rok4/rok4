@@ -19,7 +19,7 @@ FIND_PATH(JPEG2000_INCLUDE_DIR kdu_utils.h
 )
 
 FIND_LIBRARY(KAKADU_LIBRARY_1 NAME libkdu_aux.a PATHS 
-    ${KAKADU_LIBRARY_PATH}
+    ${KDU_LIBRARY_PATH}
     /usr/local/lib 
     /usr/lib 
     c:/msys/local/lib
@@ -27,12 +27,14 @@ FIND_LIBRARY(KAKADU_LIBRARY_1 NAME libkdu_aux.a PATHS
 )
 
 FIND_LIBRARY(KAKADU_LIBRARY_2 NAME libkdu.a PATHS 
-    ${KAKADU_LIBRARY_PATH}
+    ${KDU_LIBRARY_PATH}
     /usr/local/lib 
     /usr/lib 
     c:/msys/local/lib
     C:/dev/cpp/libkakadu/src
 )
+
+MESSAGE(STATUS ${KDU_LIBRARY_PATH})
 
 INCLUDE( "FindPackageHandleStandardArgs" )
 FIND_PACKAGE_HANDLE_STANDARD_ARGS( "Kakadu" DEFAULT_MSG JPEG2000_INCLUDE_DIR KAKADU_LIBRARY_1 KAKADU_LIBRARY_2 )

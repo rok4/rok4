@@ -165,8 +165,8 @@ public:
         int calcWidth = lround ( ( bounding_box.xmax - bounding_box.xmin ) / ( resolution_x ) );
         int calcHeight = lround ( ( bounding_box.ymax - bounding_box.ymin ) / ( resolution_y ) );
         if ( calcWidth != w || calcHeight != h ) {
-            LOGGER_ERROR ( "Height is " << h << " and calculation give " << calcHeight );
-            LOGGER_ERROR ( "Width is " << w << " and calculation give " << calcWidth );
+            LOGGER_DEBUG ( "Warning: height is " << h << " and calculation give " << calcHeight );
+            LOGGER_DEBUG ( "Warning: width is " << w << " and calculation give " << calcWidth );
             return false;
         }
         
@@ -546,7 +546,7 @@ public:
      * \param[in] resy Y wise resolution
      * \param[in] bbox bounding box
      */
-    Image ( int _width, int _height, int _channels, double _resx, double _resy,  BoundingBox<double> _bbox ) :
+    Image ( int width, int height, int channels, double resx, double resy,  BoundingBox<double> bbox ) :
         width ( width ), height ( height ), channels ( channels ), resx ( resx ), resy ( resy ), bbox ( bbox ), mask ( NULL ), isMask(false)
     {
         dimensionsAreConsistent(resx, resy, width, height, bbox);
