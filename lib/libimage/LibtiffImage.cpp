@@ -169,7 +169,6 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
         return NULL;
     }
     
-    /**************** DIMENSIONS GLOBALES ****************/
     if ( TIFFGetField ( tif, TIFFTAG_IMAGEWIDTH, &width ) < 1 ) {
         LOGGER_ERROR ( "Unable to read pixel width for file " << filename );
         return NULL;
@@ -180,7 +179,6 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
         return NULL;
     }
 
-    /************ FORMAT DES PIXELS ET CANAUX ************/
     if ( TIFFGetField ( tif, TIFFTAG_SAMPLESPERPIXEL,&channels ) < 1 ) {
         LOGGER_ERROR ( "Unable to read number of samples per pixel for file " << filename );
         return NULL;
@@ -263,6 +261,8 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
         resx = 1.;
         resy = 1.;
     }
+    
+    /******************** CRÉATION DE L'OBJET ******************/
 
     return new LibtiffImage (
         width, height, resx, resy, channels, bbox, filename,
@@ -289,6 +289,7 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
         LOGGER_ERROR ( "One dimension is not valid for the output image " << filename << " : " << width << ", " << height );
         return NULL;
     }
+    
     if ( channels <= 0 ) {
         LOGGER_ERROR ( "Number of samples per pixel is not valid for the output image " << filename << " : " << channels );
         return NULL;
@@ -298,6 +299,19 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
         LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( sampleformat ) << " and " << bitspersample << " bits per sample" );
         LOGGER_ERROR ( "\t for the image to write : " << filename );
         return NULL;
+    }
+    
+    if ( resx > 0 && resy > 0 ) {
+        // Vérification de la cohérence entre les résolutions et bbox fournies et les dimensions (en pixel) de l'image
+        // Arrondi a la valeur entiere la plus proche
+        int calcWidth = lround ( ( bbox.xmax - bbox.xmin ) / ( resx ) );
+        int calcHeight = lround ( ( bbox.ymax - bbox.ymin ) / ( resy ) );
+        if ( calcWidth != width || calcHeight != height ) {
+            LOGGER_ERROR ( "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" );
+            LOGGER_ERROR ( "Height is " << height << " and calculation give " << calcHeight );
+            LOGGER_ERROR ( "Width is " << width << " and calculation give " << calcWidth );
+            return NULL;
+        }
     }
 
     TIFF* tif = TIFFOpen ( filename, "w" );
@@ -355,7 +369,7 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
         return NULL;
     }
 
-    if ( TIFFSetField ( tif, TIFFTAG_ROWSPERSTRIP,1 ) < 1 ) {
+    if ( TIFFSetField ( tif, TIFFTAG_ROWSPERSTRIP,rowsperstrip ) < 1 ) {
         LOGGER_ERROR ( "Unable to write number of rows per strip for file " << filename );
         return NULL;
     }

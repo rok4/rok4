@@ -220,7 +220,8 @@ sub computeInfo {
     my $driver = $dataset->GetDriver();
     my $code   = $driver->{ShortName};
     # FIXME : type of driver ?
-    if ($code !~ /(GTiff|GeoTIFF)/) {
+    DEBUG (sprintf "use driver '%s'.", $code);
+    if ($code !~ /(GTiff|GeoTIFF|JPEG2000)/) {
         ERROR (sprintf "This driver '%s' is not implemented ('%s') !", $code, $image);
         return ();
     }

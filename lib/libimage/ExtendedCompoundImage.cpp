@@ -77,8 +77,6 @@ int ExtendedCompoundImage::_getline ( T* buffer, int line ) {
 
     double y = l2y ( line );
 
-    //LOGGER_INFO("ECI y " << y);
-
     for ( i=0; i < ( int ) sourceImages.size(); i++ ) {
         // On ecarte les images qui ne se trouvent pas sur la ligne
         // On evite de comparer des coordonnees terrain (comparaison de flottants)
@@ -280,6 +278,7 @@ bool ExtendedCompoundImage::extendBbox ( BoundingBox< double > otherbbox, int mo
 ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage (
     std::vector<Image*>& images, int* nodata, uint mirrors ) {
 
+    // On doit forcément avoir une image en entrée, car les dimensions de l'ExtendedCompoundImage sont calculée à partir des sources
     if ( images.size() == 0 ) {
         LOGGER_ERROR ( "No source images to define compounded image" );
         return NULL;
@@ -308,7 +307,10 @@ ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage
     int w = ( int ) ( ( xmax-xmin ) / ( *images.begin() )->getResX() +0.5 );
     int h = ( int ) ( ( ymax-ymin ) / ( *images.begin() )->getResY() +0.5 );
     
-    ExtendedCompoundImage* pECI = new ExtendedCompoundImage ( w, h, images.at ( 0 )->channels, BoundingBox<double> ( xmin,ymin,xmax,ymax ), images, nodata, mirrors );
+    ExtendedCompoundImage* pECI = new ExtendedCompoundImage (
+        w, h, images.at ( 0 )->channels, ( *images.begin() )->getResX(), ( *images.begin() )->getResY(), BoundingBox<double> ( xmin,ymin,xmax,ymax ),
+        images, nodata, mirrors
+    );
     pECI->setCRS ( images.at ( 0 )->getCRS() );
 
     return pECI;
@@ -317,24 +319,37 @@ ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage
 ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage (
     int width, int height, int channels, BoundingBox<double> bbox,
     std::vector<Image*>& images, int* nodata, uint mirrors ) {
+    
+    double resx = -1, resy = -1;
 
     if ( images.size() == 0 ) {
-        LOGGER_WARN ( "No source images to define compounded image" );
-        images.push_back ( new EmptyImage ( width, height, channels, nodata ) );
-    }
+        // On peut ne pas avoir d'image en entrée, l'ExtendedCompoundImage sera alors pleine de nodata, et le masque sera vide (que des 0)
+        LOGGER_INFO ( "No source images to compose the ExtendedCompoundImage (=> only nodata)" );
+        resx = (bbox.xmax - bbox.xmin) / (double) width;
+        resy = (bbox.ymax - bbox.ymin) / (double) height;
+    } else {
 
-    for ( int i=0; i<images.size()-1; i++ ) {
-        if ( ! images[i]->isCompatibleWith ( images[i+1] ) ) {
-            LOGGER_ERROR ( "Source images are not consistent" );
-            LOGGER_ERROR ( "Image " << i );
-            images[i]->print();
-            LOGGER_ERROR ( "Image " << i+1 );
-            images[i+1]->print();
+        for ( int i=0; i<images.size()-1; i++ ) {
+            if ( ! images[i]->isCompatibleWith ( images[i+1] ) ) {
+                LOGGER_ERROR ( "Source images are not consistent" );
+                LOGGER_ERROR ( "Image " << i );
+                images[i]->print();
+                LOGGER_ERROR ( "Image " << i+1 );
+                images[i+1]->print();
+                return NULL;
+            }
+        }
+        
+        resx = images.at(0)->getResX();
+        resy = images.at(0)->getResY();
+        
+        if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {
+            LOGGER_ERROR ( "Resolutions, bounding box and dimensions for ExtendedCompoundImage are not consistent" );
             return NULL;
         }
     }
 
-    return new ExtendedCompoundImage ( width,height,channels,bbox,images,nodata,mirrors );
+    return new ExtendedCompoundImage ( width,height,channels, resx, resy, bbox,images,nodata,mirrors );
 }
 
 /********************************************** ExtendedCompoundMask *************************************************/

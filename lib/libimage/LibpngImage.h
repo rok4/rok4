@@ -52,7 +52,6 @@
 #ifndef LIBPNG_IMAGE_H
 #define LIBPNG_IMAGE_H
 
-#include "Image.h"
 #include <png.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -60,6 +59,7 @@
 #include <string.h>
 #include "Format.h"
 #include "FileImage.h"
+#include "Image.h"
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -69,7 +69,7 @@
  *
  * Cette classe va utiliser la librairie libpng afin de lire les données et de récupérer les informations sur les images. L'utilisation de la librairie permet de lire des PNG ayant une palette, ayant un canal (gris) sur 1, 2 ou 4 bits. La conversion sera faite à la volée au moment de la lecture, afin de récupérer une ligne dans un format lisible par la libimage (entier sur 8 bits, gris ou rgb, avec ou sans alpha non associé).
  *
- * Si l'image gère la transparence, l'alpha est forcément non-associé aux autres canaux (spécifications PNG). Il n'y a donc pas besoin de préciser #associatedalpha
+ * Si l'image gère la transparence, l'alpha est forcément non-associé aux autres canaux (spécifications PNG). Il n'y a donc pas besoin de préciser #associatedalpha.
  * 
  * \todo Lire au fur et à mesure l'image PNG et ne pas la charger intégralement en mémoire lors de la création de l'objet LibpngImage.
  */
@@ -83,7 +83,7 @@ private:
      * \~french \brief Stockage de l'image entière, décompressée
      * \~english \brief Full uncompressed image storage
      */
-    png_bytep * pngRowsPointers;
+    png_bytep * data;
 
 protected:
     /** \~french
@@ -100,7 +100,7 @@ protected:
      * \param[in] bitspersample nombre de bits par canal
      * \param[in] photometric photométrie des données
      * \param[in] compression compression des données
-     * \param[in] pngRows image complète, dans un tableau
+     * \param[in] pngData image complète, dans un tableau
      ** \~english
      * \brief Create a LibpngImage object, from all attributes
      * \param[in] width image width, in pixel
@@ -114,12 +114,12 @@ protected:
      * \param[in] bitspersample number of bits per sample
      * \param[in] photometric data photometric
      * \param[in] compression data compression
-     * \param[in] pngRows whole image, in an array
+     * \param[in] pngData whole image, in an array
      */
     LibpngImage (
         int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name,
         SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
-        png_bytep* pngRows
+        png_bytep* pngData
     );
 
 public:
@@ -214,8 +214,8 @@ public:
     ~LibpngImage() {
         /* cleanup heap allocation */
         for (int y = 0; y < height; y++)
-            free(pngRowsPointers[y]);
-        free(pngRowsPointers);
+            free(data[y]);
+        free(data);
     }
 
     /** \~french

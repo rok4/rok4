@@ -54,6 +54,7 @@
 #include "Utils.h"
 #include "LibtiffImage.h"
 #include "LibpngImage.h"
+#include "Jpeg2000Image.h"
 
 /* ------------------------------------------------------------------------------------------------ */
 /* -------------------------------------------- USINES -------------------------------------------- */
@@ -95,8 +96,10 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
 
     /******************* JPEG 2000 ******************/
     else if ( strncmp ( extension, "jp2", 3 ) == 0 || strncmp ( extension, "JP2", 3 ) == 0 ) {
-        LOGGER_ERROR ( "JPEG2000 image to read : NOT YET IMPLEMENTED" );
-        return NULL;
+        LOGGER_DEBUG ( "JPEG2000 image to read : " << name );
+        
+        Jpeg2000ImageFactory J2KIF;
+        return J2KIF.createJpeg2000ImageToRead ( name, bbox, resx, resy );
     }
 
     /* /!\ Format inconnu en lecture /!\ */

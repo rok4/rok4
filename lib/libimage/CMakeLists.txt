@@ -35,14 +35,14 @@ else(DEBUG_BUILD)
   set(CMAKE_C_FLAGS_SPECIFICBUILD "-std=c99")
 endif(DEBUG_BUILD)
 
-
-
 ########################################
-#définition des fichiers sources
+# Définition des fichiers sources
 
-set(
+CONFIGURE_FILE(Jpeg2000_library_config.h.in Jpeg2000_library_config.h ESCAPE_QUOTES @ONLY)
+
+SET(
     libimage_SRCS Palette.cpp Data.cpp Decoder.cpp
-    FileImage.cpp LibtiffImage.cpp LibpngImage.cpp Rok4Image.cpp
+    FileImage.cpp Jpeg2000Image.cpp LibtiffImage.cpp LibpngImage.cpp Rok4Image.cpp
     ReprojectedImage.cpp ResampledImage.cpp Kernel.cpp Interpolation.cpp
     MirrorImage.cpp StyledImage.cpp EstompageImage.cpp
     ExtendedCompoundImage.cpp CompoundImage.cpp MergeImage.cpp
@@ -51,19 +51,35 @@ set(
     Format.cpp TiffHeaderDataSource.cpp
 )
 
-add_library(image STATIC ${libimage_SRCS})
+# OPTION : 'sources' JPEG2000
+IF(KDU_USE)
+  # OPTION : 'sources' KAKADU
+  SET(libimage_SRCS ${libimage_SRCS} LibkakaduImage.cpp)
+ELSE(KDU_USE)
+  # OPTION : 'sources' OPENJPEG
+  SET(libimage_SRCS ${libimage_SRCS} LibopenjpegImage.cpp)
+ENDIF(KDU_USE)
+
+ADD_LIBRARY(image STATIC ${libimage_SRCS})
 
 ########################################
-#Définition des dépendances.
-include(ROK4Dependencies)
+# Définition des dépendances.
 
-set(DEP_INCLUDE_DIR ${JPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${LZW_INCLUDE_DIR}  ${PNG_INCLUDE_DIR} ${PKB_INCLUDE_DIR} )
+INCLUDE(ROK4Dependencies)
 
-include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${DEP_INCLUDE_DIR})
+SET(DEP_INCLUDE_DIR ${JPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${LZW_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${PKB_INCLUDE_DIR} ${JPEG2000_INCLUDE_DIR})
 
-#Listes des bibliothèques à liées avec l'éxecutable
-set(DEP_LIBRARY logger proj jpeg zlib tiff lzw pkb png)
-target_link_libraries(image ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${DEP_INCLUDE_DIR})
+
+########################################
+# Listes des bibliothèques à liées avec l'éxecutable
+SET(DEP_LIBRARY logger proj jpeg zlib tiff lzw pkb png jpeg2000)
+
+IF(KDU_USE)
+    SET(DEP_LIBRARY ${DEP_LIBRARY} jpeg2000_plus)
+ENDIF(KDU_USE)
+
+TARGET_LINK_LIBRARIES(image ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 
 ########################################
 # Gestion des tests unitaires (CPPUnit)

@@ -89,6 +89,21 @@ BUILD_DOC :
   This option creates the "doc" target (to be used before make install or make package) : make doc
   Default Value : TRUE  
 
+KDU_USE : 
+  Kakadu library use (BOOL)
+  This option allowed to build libimage with kakadu (closed-source library), to read JPEG2000 images. If not present, the open library openjpeg will be used
+  Default Value : FALSE  
+
+KDU_LIBRARY_PATH : 
+  Kakadu library location (STRING)
+  If kakadu is used, we can provide the path to the kakadu library (libkdu.a and libkdu_aux.a). Headers are included in the project (lib/likakadu)
+  Default Value : /usr/kakadu-6.4
+  
+KDU_THREADING : 
+  Number of threads when using Kakadu (STRING)
+  If kakadu is used, we can provide the number of used thread by kakadu. 0 is no thread, 1 is mono thread, 2 and more is multi-thread
+  Default Value : "0"
+
 UNITTEST : 
   Units tests compilation (BOOL)
   This option creates the "test" target (to be used before make install or make package) :  make test 
@@ -109,3 +124,22 @@ DEB_PACKAGE : (EXPERIMENTAL)
 USE_SYSTEM_LIB : (EXPERIMENTAL)
   In order to compile against the system libraries
   Default value : FALSE 
+
+CMake Build Optional Dependencies (External)
+---------------------------------
+
+Options are fed to CMake using the following syntax : -DOPTION
+
+WITH_JASPER   : (NOT YET IMPLEMENTED)
+
+WITH_KAKADU   : (NOT YET IMPLEMENTED)
+
+WITH_OPENJPEG :
+  Use Driver JPEG2000 (BOOL)
+  Default Value : FALSE
+
+OPENJPEG_PREFIX : (OPTIONAL)
+  Custom Installation Folder (PATH)
+  Default : /usr/local/
+    Search 'lib'     in '/usr/local/lib', '/usr/lib', or internal
+    Search 'include' in '/usr/local/include/openjpeg-2.0', '/usr/include/openjpeg-2.0', or internal

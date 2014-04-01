@@ -46,7 +46,6 @@ endif(DEBUG_BUILD)
 #définition des fichiers sources
 
 set(${PROJECT_NAME}_SRCS tiff2tile.cpp )
-#set(lib${PROJECT_NAME}_SRCS TiffReader.cpp TiledTiffWriter.cpp)
 
 add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRCS})
 

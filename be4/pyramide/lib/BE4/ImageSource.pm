@@ -337,8 +337,8 @@ sub getListImages {
             push @{$search->{images}}, $_  foreach(@{$newsearch->{images}});
         }
 
-        # Si le fichier n'a pas l'extension TIFF ou PNG, on ne le traite pas
-        next if ( $entry !~ /.*\.(tif|TIF|tiff|TIFF)$/ && $entry !~ /.*\.(png|PNG)$/);
+        # Si le fichier n'a pas l'extension TIFF, JP2 ou PNG, on ne le traite pas
+        next if ( $entry !~ /.*\.(tif|TIF|tiff|TIFF)$/ && $entry !~ /.*\.(png|PNG)$/ && $entry !~ /.*\.(jp2|JP2)$/);
 
         # On a à faire à un fichier avec l'extension TIFF, on l'ajoute au tableau
         push @{$search->{images}}, File::Spec->catfile($directory, $entry);

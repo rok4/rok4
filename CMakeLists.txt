@@ -38,22 +38,43 @@ if(NOT DEFINED DEP_PATH)
 endif(NOT DEFINED DEP_PATH)
 
 set(ROK4LIBSDIR ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+
 if(NOT DEFINED BUILD_DEPENDENCIES)
-  set(BUILD_DEPENDENCIES TRUE)
+  set(BUILD_DEPENDENCIES TRUE CACHE BOOL "Build dependencies")
 endif(NOT DEFINED BUILD_DEPENDENCIES)
+
 if(NOT DEFINED BUILD_ROK4)
-  set(BUILD_ROK4 TRUE)
+  set(BUILD_ROK4 TRUE CACHE BOOL "Build Rok4")
 endif(NOT DEFINED BUILD_ROK4)
+
 if(NOT DEFINED BUILD_BE4)
-  set(BUILD_BE4 TRUE)
+  set(BUILD_BE4 TRUE CACHE BOOL "Build BE4")
 endif(NOT DEFINED BUILD_BE4)
+
+if(NOT DEFINED KDU_USE)
+  set(KDU_USE FALSE CACHE BOOL "Build libimage using kakadu (to read JPEG 2000)")
+endif(NOT DEFINED KDU_USE)
+
+if(KDU_USE)
+  if(NOT DEFINED KDU_LIBRARY_PATH)
+    set(KDU_LIBRARY_PATH "/usr/kakadu-6.4" CACHE STRING "Path to kakadu library directory (to read JPEG 2000), containing libkdu.a and libkdu_aux.a. Not necessary if kakadu path is in the environment variable PATH")
+  endif(NOT DEFINED KDU_LIBRARY_PATH)
+  
+  if(NOT DEFINED KDU_THREADING)
+    set(KDU_THREADING "0" CACHE STRING "Number of threads when using Kakadu")
+  endif(NOT DEFINED KDU_THREADING)
+endif(KDU_USE)
+
 if(NOT DEFINED BUILD_DOC)
-  set(BUILD_DOC TRUE)
+  set(BUILD_DOC TRUE CACHE BOOL "Build Documentation")
   set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
 endif(NOT DEFINED BUILD_DOC)
+
 if(NOT DEFINED DEBUG_BUILD)
-  set(DEBUG_BUILD FALSE)
+  set(DEBUG_BUILD FALSE CACHE BOOL "Mode debug ")
 endif(NOT DEFINED DEBUG_BUILD)
+
+set(UNITTEST FALSE CACHE BOOL "Build Test")
 if(UNITTEST)
   enable_testing()
   set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
@@ -77,7 +98,8 @@ endif(RPM_PACKAGE)
 if(NOT DEFINED USE_SYSTEM_LIB)
   set(USE_SYSTEM_LIB FALSE)
 endif(NOT DEFINED USE_SYSTEM_LIB)
-
+    
+##################################################################################
 
 include(${Rok4_SOURCE_DIR}/cmake/Modules/ROK4Dependencies.cmake)
 
