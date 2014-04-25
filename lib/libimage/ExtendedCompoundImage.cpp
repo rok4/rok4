@@ -251,7 +251,7 @@ bool ExtendedCompoundImage::extendBbox ( BoundingBox< double > otherbbox, int mo
         newBbox.ymax += morePix * resy;
     }
     
-    if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {
+    if (! Image::dimensionsAreConsistent(resx, resy, width, height, newBbox)) {
         LOGGER_ERROR ( "Resolutions, new bounding box and new pixels dimensions of the enlarged ExtendedCompoundImage are not consistent" );
         return false;
     }

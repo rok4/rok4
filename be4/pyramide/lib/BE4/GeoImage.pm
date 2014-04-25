@@ -180,10 +180,10 @@ sub _init {
     $self->{filename} = File::Basename::basename($completePath);
     
     my $maskPath = $completePath;
-    $maskPath =~ s/\.[a-zA-Z]+$/\.msk/;
+    $maskPath =~ s/\.[a-zA-Z0-9]+$/\.msk/;
     
     if (-f $maskPath) {
-        INFO(sprintf "We have a mask associated to the image '%s' :\n\t%s",$completePath,$maskPath);
+        INFO(sprintf "We have a mask associated to the image '%s' :\t%s",$completePath,$maskPath);
         $self->{maskCompletePath} = $maskPath;
     }
     
