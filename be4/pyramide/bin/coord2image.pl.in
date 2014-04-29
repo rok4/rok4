@@ -52,9 +52,12 @@ Example:
     (start code)
     ./coord2image.pl --tms=TILEMATRIXSETS/PM.tms --coord=644555,5311519 --level=11 --tilesPerImage=16,16 --verbose
     
-    COORD2IMAGE : version [0.0.0]
     BEGIN
-      OFF : Result : 11/00/11/UP.tif (main::doIt) 
+    COORD2IMAGE : version [0.17.6]
+      OFF : Coordinates : 644555, 5311519 (main::doIt) 
+      OFF : Tile's indices : 1056, 752 (main::doIt) 
+      OFF : Image's indices : 66, 47 (main::doIt) 
+      OFF : Result : 11/00/11/UB.tif (main::doIt) 
     END
     (end code)
 
@@ -276,15 +279,18 @@ sub doIt {
     my $X_PixelSize = $resolution;
     my $Y_PixelSize = -1 * $resolution;
     
-    my $taille_dalle_X = $tm->getTileWidth() * $options{tilesPerImage}[0];
-    my $taille_dalle_Y = $tm->getTileHeight() * $options{tilesPerImage}[1];
-    
     my $X_Origin_TMS = $tm->getTopLeftCornerX();
     my $Y_Origin_TMS = $tm->getTopLeftCornerY();
     if ($options{verbose}) {ALWAYS(sprintf "Coordinates : %s, %s", $options{coord}[0], $options{coord}[1])};
-    my $x_indice = int(($options{coord}[0] - $X_Origin_TMS)/($X_PixelSize * $taille_dalle_X)) ;
-    my $y_indice = int(($options{coord}[1] - $Y_Origin_TMS)/($Y_PixelSize * $taille_dalle_Y)) ;
-    if ($options{verbose}) {ALWAYS(sprintf "Indices : %s, %s", $x_indice, $y_indice)};
+
+    my $x_tile_indice = int(($options{coord}[0] - $X_Origin_TMS)/($X_PixelSize*$tm->getTileWidth())) ;
+    my $y_tile_indice = int(($options{coord}[1] - $Y_Origin_TMS)/($Y_PixelSize*$tm->getTileHeight())) ;
+
+    if ($options{verbose}) {ALWAYS(sprintf "Tile's indices : %s, %s", $x_tile_indice, $y_tile_indice)};
+
+    my $x_indice = int($x_tile_indice / $options{tilesPerImage}[0]);
+    my $y_indice = int($y_tile_indice / $options{tilesPerImage}[1]);
+    if ($options{verbose}) {ALWAYS(sprintf "Image's indices : %s, %s", $x_indice, $y_indice)};
 
     my $image_path = BE4::Base36::indicesToB36Path($x_indice, $y_indice, 3);
 
