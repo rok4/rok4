@@ -353,7 +353,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     //Use background image format.
     Rok4Format::eformat_data pyrType = layers.at ( 0 )->getDataPyramid()->getFormat();
     image = images.at ( 0 );
-    if ( images.size() > 1 ) {
+    if ( images.size() > 1  || (styles.at( 0 ) && (styles.at( 0 )->isEstompage() || !styles.at( 0 )->getPalette()->getColoursMap()->empty()) ) ) {
 
         switch ( pyrType ) {
             //Only use int8 output with estompage
@@ -372,6 +372,8 @@ DataStream* Rok4Server::getMap ( Request* request ) {
         default:
             break;
         }
+    }
+    if (images.size() > 1 ){
 
         MergeImageFactory MIF;
 

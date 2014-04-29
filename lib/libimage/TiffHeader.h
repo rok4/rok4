@@ -111,7 +111,7 @@ static const uint8_t TIFF_HEADER_RAW_INT8_RGB[146]  = {
 
 static const uint8_t TIFF_HEADER_RAW_INT8_RGBA[162]  = {
     73,73,  42,0,   8 ,0,   0, 0,                  // 0  | tiff header 'II' (Little endian) + magick number (42) + offset de la IFD (16)
-    14, 0,                                         // 8  | nombre de tags sur 16 bits (10)
+    11, 0,                                         // 8  | nombre de tags sur 16 bits (10)
     // ..                                                | TIFFTAG              | DATA TYPE | NUMBER | VALUE
     0, 1,   4, 0,   1, 0, 0, 0,   0, 1, 0, 0,      // 10 | IMAGEWIDTH      (256)| LONG  (4) | 1      | 256
     1, 1,   4, 0,   1, 0, 0, 0,   0, 1, 0, 0,      // 22 | IMAGELENGTH     (257)| LONG  (4) | 1      | 256
