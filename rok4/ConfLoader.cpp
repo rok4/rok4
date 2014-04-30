@@ -1857,7 +1857,42 @@ std::vector<std::string> ConfLoader::loadListEqualsCRS(){
     strcpy(namebuffer, dirCRS);
     strcat(namebuffer, fileCRS);
     LOGGER_INFO ( _ ( "Construction de la liste des CRS equivalents depuis " ) << namebuffer );
-    return loadStringVectorFromFile(std::string(namebuffer));
+    std::vector<std::string> rawStrVector = loadStringVectorFromFile(std::string(namebuffer));
+    std::vector<std::string> strVector;
+    // rawStrVector can cointains some unknowned CRS => filtering using Proj4
+    for ( unsigned int l=0; l<rawStrVector.size(); l++ ){
+        std::string line = rawStrVector.at( l );
+        std::string crsstr = "";
+        std::string targetLine;
+        //split
+        size_t start_index = 0;
+        size_t len = 0;
+        size_t found_space = 0;
+        while ( found_space != std::string::npos ){
+            found_space = line.find(" ", start_index );
+            if ( found_space == std::string::npos ) {
+                len = line.size() - start_index -1 ; //-1 pour le retour chariot
+            } else {
+                len = found_space - start_index;
+            }
+            crsstr = line.substr( start_index, len );
+            
+            //is the new CRS compatible with Proj4 ?
+            CRS crs ( crsstr );
+            if ( !crs.isProj4Compatible() ) {
+                LOGGER_WARN ( _ ( "The Equivalent CRS [" ) << crsstr << _ ( "] is not present in Proj4" ) );
+            } else {
+                targetLine.append( crsstr );
+                targetLine.append( " " );
+            }
+            
+            start_index = found_space + 1;
+        }
+        if (targetLine.length() != 0) {
+           strVector.push_back( targetLine.substr(0, targetLine.length()-1) );
+        }
+    }
+    return strVector;
 }
 
 
@@ -1869,8 +1904,11 @@ std::vector<std::string> ConfLoader::loadStringVectorFromFile(std::string file){
     if ( input.peek() == std::ifstream::traits_type::eof() ) {
         LOGGER_ERROR ( _ ("Ne peut pas charger le fichier ") << file << _ (" ou fichier vide")  );
     }
+    
     for( std::string line; getline(input, line); ) {
-        strVector.push_back( line );
+        if (line[0] != '#' ){
+            strVector.push_back( line );
+        }
     }
     return strVector;
 }
