@@ -271,11 +271,11 @@ sub computeImageSource {
             }
         }
 
-        if ($objGeoImage->getXmin() == 0  && $objGeoImage->getYmax == 0){
+        if ($objGeoImage->getXmin() == 0  && $objGeoImage->getYmax == 0) {
             $badRefCtrl++;
-        }
-        if ($badRefCtrl>1){
-            WARN ("More than one image are at 0,0 position. Probably lost of georef file (tfw,...)");
+            if ($badRefCtrl>1){
+                WARN (sprintf "More than one image are at 0,0 position. Probably lost of georef file (tfw,...) for file : %s", $filepath);
+            }
         }
 
         my $xRes = $objGeoImage->getXres();

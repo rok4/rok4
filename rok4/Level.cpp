@@ -424,10 +424,10 @@ Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom )
     if ( format==Rok4Format::TIFF_RAW_FLOAT32 || format == Rok4Format::TIFF_LZW_FLOAT32 || format == Rok4Format::TIFF_ZIP_FLOAT32 || format == Rok4Format::TIFF_PKB_FLOAT32 )
         pixel_size=4;
     return new ImageDecoder ( getDecodedTile ( x,y ), tm.getTileW(), tm.getTileH(), channels,
-                              BoundingBox<double> ( tm.getX0() + x * tm.getTileW() * tm.getRes(),
-                                      tm.getY0() - ( y+1 ) * tm.getTileH() * tm.getRes(),
-                                      tm.getX0() + ( x+1 ) * tm.getTileW() * tm.getRes(),
-                                      tm.getY0() - y * tm.getTileH() * tm.getRes() ),
+                              BoundingBox<double> ( tm.getX0() + x * tm.getTileW() * tm.getRes() + left * tm.getRes(),
+                                      tm.getY0() - ( y+1 ) * tm.getTileH() * tm.getRes() + bottom * tm.getRes(),
+                                      tm.getX0() + ( x+1 ) * tm.getTileW() * tm.getRes() - right * tm.getRes(),
+                                      tm.getY0() - y * tm.getTileH() * tm.getRes() - top * tm.getRes() ),
                               left, top, right, bottom, pixel_size );
 }
 

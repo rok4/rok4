@@ -308,7 +308,7 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
     if ( itLevel==layer->getDataPyramid()->getLevels().end() ) {
         //Should not occurs.
         delete request;
-        return 0;
+        return rok4GetNoDataFoundException();
     }
     Level* level=layer->getDataPyramid()->getLevels().find ( tmId )->second;
     int n= ( y%level->getTilesPerHeight() ) *level->getTilesPerWidth() + ( x%level->getTilesPerWidth() );

@@ -77,6 +77,7 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
     std::map<double, Colour> colourMap;
     bool rgbContinuous = false;
     bool alphaContinuous = false;
+    bool noAlpha = false;
     int angle =-1;
     float exaggeration=1;
     int center=0;
@@ -218,6 +219,14 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
             if ( continuousStr.compare ( "true" ) ==0 )
                 alphaContinuous=true;
         }
+        
+        errorCode = pElem->QueryStringAttribute ( "noAlpha",&continuousStr );
+        if ( errorCode != TIXML_SUCCESS ) {
+            LOGGER_DEBUG ( _ ( "L'attribut noAlpha n'a pas ete trouve dans la palette du Style " ) << id <<_ ( " : Faux par defaut" ) );
+        } else {
+            if ( continuousStr.compare ( "true" ) ==0 )
+                noAlpha=true;
+        }
 
         errorCode = pElem->QueryDoubleAttribute ( "maxValue",&maxValue );
         if ( errorCode != TIXML_SUCCESS ) {
@@ -301,7 +310,7 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
 
         }
     }
-    Palette pal ( colourMap, rgbContinuous, alphaContinuous );
+    Palette pal ( colourMap, rgbContinuous, alphaContinuous, noAlpha );
 
     pElem = hRoot.FirstChild ( "estompage" ).Element();
     if ( pElem ) {
