@@ -40,8 +40,6 @@
 #include "Format.h"
 #include "Image.h"
 
-
-
 namespace TiffHeader {
 
 static const size_t headerSize ( int channel ) {

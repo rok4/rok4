@@ -54,6 +54,7 @@
 #include "Utils.h"
 #include "LibtiffImage.h"
 #include "LibpngImage.h"
+#include "Jpeg2000Image.h"
 
 /* ------------------------------------------------------------------------------------------------ */
 /* -------------------------------------------- USINES -------------------------------------------- */
@@ -95,8 +96,10 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
 
     /******************* JPEG 2000 ******************/
     else if ( strncmp ( extension, "jp2", 3 ) == 0 || strncmp ( extension, "JP2", 3 ) == 0 ) {
-        LOGGER_ERROR ( "JPEG2000 image to read : NOT YET IMPLEMENTED" );
-        return NULL;
+        LOGGER_DEBUG ( "JPEG2000 image to read : " << name );
+        
+        Jpeg2000ImageFactory J2KIF;
+        return J2KIF.createJpeg2000ImageToRead ( name, bbox, resx, resy );
     }
 
     /* /!\ Format inconnu en lecture /!\ */
@@ -164,5 +167,30 @@ FileImage::FileImage (
     filename = new char[IMAGE_MAX_FILENAME_LENGTH];
     strcpy ( filename,name );
     pixelSize = bitspersample * channels / 8;
+}
+
+/* ------------------------------------------------------------------------------------------------ */
+/* ----------------------------------------- CONVERTISSEUR ---------------------------------------- */
+
+void FileImage::unassociateAlpha ( uint8_t* buffer ) {
+    uint8_t* pix = buffer;
+    int alphaInd = channels - 1;
+    for (int i = 0; i < width; i++, pix += channels) {
+        int alpha = *(pix + alphaInd);
+        
+        if (alpha == 255) {
+            // Opacité pleine
+            continue;
+        }
+        if (alpha == 0) {
+            // Transperence complète
+            memset(pix, 0, channels);
+            continue;
+        }
+        
+        for (int c = 0; c < alphaInd; c++) {
+            pix[c] = int(pix[c]) * 255 / alpha;
+        }
+    }
 }
 

@@ -63,9 +63,12 @@ Attributes:
     pixel - <Pixel> - Pixel components of all images, have to be same for each one.
 
 Limitations:
-    Constraint on the input format of images :
-        TIFF (extensions .tif, .TIF, .tiff and .TIFF)
-        PNG (extensions .png, .PNG)
+
+Constraint on the input format of images :
+    TIFF (extensions .tif, .TIF, .tiff and .TIFF)
+    PNG (extensions .png, .PNG)
+    JPEG2000 (extensions .jp2, .JP2)
+    
 =cut
 
 ################################################################################
@@ -195,7 +198,7 @@ sub _init {
 =begin nd
 Function: computeImageSource
 
-Detects all TIFF files in *PATHIMG* and subdirectories and creates a corresponding <GeoImage> object. Determines data's components and check them.
+Detects all handled files in *PATHIMG* and subdirectories and creates a corresponding <GeoImage> object. Determines data's components and check them.
 
 See also:
     <getListImages>, <GeoImage::computeInfo>
@@ -303,7 +306,7 @@ sub computeImageSource {
 =begin nd
 Function: getListImages
 
-Recursive method to browse a directory and list all TIFF file. Returns an hash containing the TIFF file path's array.
+Recursive method to browse a directory and list all handled file. Returns an hash containing the image file path's array.
 | {
 |     images => [...],
 | };
@@ -337,10 +340,10 @@ sub getListImages {
             push @{$search->{images}}, $_  foreach(@{$newsearch->{images}});
         }
 
-        # Si le fichier n'a pas l'extension TIFF ou PNG, on ne le traite pas
-        next if ( $entry !~ /.*\.(tif|TIF|tiff|TIFF)$/ && $entry !~ /.*\.(png|PNG)$/);
+        # Si le fichier n'a pas l'extension TIFF, JP2 ou PNG, on ne le traite pas
+        next if ( $entry !~ /.*\.(tif|TIF|tiff|TIFF)$/ && $entry !~ /.*\.(png|PNG)$/ && $entry !~ /.*\.(jp2|JP2)$/);
 
-        # On a à faire à un fichier avec l'extension TIFF, on l'ajoute au tableau
+        # On a à faire à un fichier avec l'extension TIFF/PNG/JPEG2000, on l'ajoute au tableau
         push @{$search->{images}}, File::Spec->catfile($directory, $entry);
     }
 

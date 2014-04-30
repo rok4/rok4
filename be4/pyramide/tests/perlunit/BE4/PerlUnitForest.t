@@ -37,6 +37,14 @@ use strict;
 use warnings;
 
 use Test::More;
+
+use Log::Log4perl qw(:easy);
+# logger by default for unit tests
+Log::Log4perl->easy_init({
+    level => $WARN,
+    layout => '%5p : %m (%M) %n'
+});
+
 use FindBin qw($Bin); # absolute path of the present testfile in $Bin
 
 # My tested class

@@ -71,6 +71,7 @@
  * <TR><TD>TIFF</TD><TD>LibtiffImage</TD><TD>.tif, .tiff, .TIF, .TIFF</TD><TD>Oui</TD><TD>Oui</TD><TD>Libtiff 3.8.2</TD></TR>
  * <TR><TD>PNG</TD><TD>LibpngImage</TD><TD>.png, .PNG</TD><TD>Oui</TD><TD>Non</TD><TD>Libpng 1.6.2</TD></TR>
  * <TR><TD>ROK4</TD><TD>Rok4Image</TD><TD>non filtré sur l'extension</TD><TD>Oui</TD><TD>Oui</TD><TD>Libtiff 3.8.2. Format TIFF particulier, propre au projet ROK4</TD></TR>
+ * <TR><TD>JPEG2000</TD><TD>Jpeg2000Image</TD><TD>.jp2, .JP2</TD><TD>Oui</TD><TD>Non</TD><TD>Openjpeg 2.0.0 ou Kakadu</TD></TR>
  * </TABLE>
  * 
  */
@@ -153,6 +154,14 @@ protected:
     );
 
 public:
+
+    /**
+     * \~french
+     * \brief Désassocie le canal alpha
+     * \details Le canal alpha peut être prémultiplié aux autres canaux dans les images lues. La libimage travaille toujours en alpha non-associé. Si associatedalpha est à vrai, on convertit alors à la lecture le canal alpha
+     * \param[in,out] buffer source des donnée, dont l'alpha doit être désassocié
+     */
+    void unassociateAlpha ( uint8_t* buffer );
 
     virtual int getline ( uint8_t *buffer, int line ) = 0;
     virtual int getline ( float *buffer, int line ) = 0;
@@ -289,6 +298,7 @@ public:
         LOGGER_INFO ( "\t- Photometric : " << Photometric::toString ( photometric ) );
         LOGGER_INFO ( "\t- Bits per sample : " << bitspersample );
         LOGGER_INFO ( "\t- Sample format : " << SampleFormat::toString ( sampleformat ) );
+        if (associatedalpha) LOGGER_INFO ( "\t- Alpha have to be unassociated");
         LOGGER_INFO ( "" );
     }
 };

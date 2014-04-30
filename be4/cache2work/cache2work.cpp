@@ -172,7 +172,7 @@ int main ( int argc, char **argv )
                 } else if ( strncmp ( argv[i], "pkb",3 ) == 0 ) {
                     compression = Compression::PACKBITS;
                 } else {
-                    error ( "Unknown compression : " + argv[i][1], -1 );
+                    error ( "Unknown compression : " + std::string(argv[i]), -1 );
                 }
                 break;
             default:

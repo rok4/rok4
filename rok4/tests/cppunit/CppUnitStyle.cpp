@@ -127,7 +127,7 @@ void CppUnitStyle::setUp() {
     for ( int i = 0 ; i < 255; ++i ) {
         colours.insert ( std::pair<double,Colour> ( i,Colour ( 256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ) ) ) );
     }
-    palette1 = new Palette ( colours,false,false );
+    palette1 = new Palette ( colours,false,false,false );
     palette1->buildPalettePNG();
 
 }

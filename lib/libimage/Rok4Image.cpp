@@ -208,7 +208,7 @@ static uint16_t fromROK4Compression ( Compression::eCompression comp ) {
 
 Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( char* filename, BoundingBox< double > bbox, double resx, double resy ) {
 
-    int width=0, height=0, channels=0, planarconfig=0, bitspersample=0, sampleformat=0, photometric=0, compression=0;
+    int width=0, height=0, channels=0, planarconfig=0, bitspersample=0, sf=0, ph=0, comp=0;
     int tileWidth=0, tileHeight=0;
     
     TIFF* tif = TIFFOpen ( filename, "r" );
@@ -216,71 +216,71 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( char* filename, BoundingBox
     if ( tif == NULL ) {
         LOGGER_ERROR ( "Unable to open ROK4 TIFF image (to read) " << filename );
         return NULL;
-    } else {
-        /**************** DIMENSIONS GLOBALES ****************/
-        if ( TIFFGetField ( tif, TIFFTAG_IMAGEWIDTH, &width ) < 1 ) {
-            LOGGER_ERROR ( "Unable to read pixel width for file " << filename );
-            return NULL;
-        }
+    }
+    
+    /**************** DIMENSIONS GLOBALES ****************/
+    if ( TIFFGetField ( tif, TIFFTAG_IMAGEWIDTH, &width ) < 1 ) {
+        LOGGER_ERROR ( "Unable to read pixel width for file " << filename );
+        return NULL;
+    }
 
-        if ( TIFFGetField ( tif, TIFFTAG_IMAGELENGTH, &height ) < 1 ) {
-            LOGGER_ERROR ( "Unable to read pixel height for file " << filename );
-            return NULL;
-        }
+    if ( TIFFGetField ( tif, TIFFTAG_IMAGELENGTH, &height ) < 1 ) {
+        LOGGER_ERROR ( "Unable to read pixel height for file " << filename );
+        return NULL;
+    }
 
-        /********************** TUILAGE **********************/
-        if (! TIFFIsTiled ( tif ) ) {
-            LOGGER_ERROR ( "Handled only tiled TIFF images" );
-            return NULL;
-        }
-        if ( TIFFGetField ( tif, TIFFTAG_TILEWIDTH, &tileWidth ) < 1 ) {
-            LOGGER_ERROR ( "Unable to read tile's width for file " << filename );
-            return NULL;
-        }
-        if ( TIFFGetField ( tif, TIFFTAG_TILELENGTH, &tileHeight ) < 1 ) {
-            LOGGER_ERROR ( "Unable to read tile's height for file " << filename );
-            return NULL;
-        }
+    /********************** TUILAGE **********************/
+    if (! TIFFIsTiled ( tif ) ) {
+        LOGGER_ERROR ( "Handled only tiled TIFF images" );
+        return NULL;
+    }
+    if ( TIFFGetField ( tif, TIFFTAG_TILEWIDTH, &tileWidth ) < 1 ) {
+        LOGGER_ERROR ( "Unable to read tile's width for file " << filename );
+        return NULL;
+    }
+    if ( TIFFGetField ( tif, TIFFTAG_TILELENGTH, &tileHeight ) < 1 ) {
+        LOGGER_ERROR ( "Unable to read tile's height for file " << filename );
+        return NULL;
+    }
 
-        /************ FORMAT DES PIXELS ET CANAUX ************/
-        if ( TIFFGetField ( tif, TIFFTAG_SAMPLESPERPIXEL,&channels ) < 1 ) {
-            LOGGER_ERROR ( "Unable to read number of samples per pixel for file " << filename );
-            return NULL;
-        }
+    /************ FORMAT DES PIXELS ET CANAUX ************/
+    if ( TIFFGetField ( tif, TIFFTAG_SAMPLESPERPIXEL,&channels ) < 1 ) {
+        LOGGER_ERROR ( "Unable to read number of samples per pixel for file " << filename );
+        return NULL;
+    }
 
-        if ( TIFFGetField ( tif, TIFFTAG_PLANARCONFIG,&planarconfig ) < 1 ) {
-            LOGGER_ERROR ( "Unable to read planar configuration for file " << filename );
-            return NULL;
-        }
+    if ( TIFFGetField ( tif, TIFFTAG_PLANARCONFIG,&planarconfig ) < 1 ) {
+        LOGGER_ERROR ( "Unable to read planar configuration for file " << filename );
+        return NULL;
+    }
 
-        if ( TIFFGetField ( tif, TIFFTAG_BITSPERSAMPLE,&bitspersample ) < 1 ) {
-            LOGGER_ERROR ( "Unable to read number of bits per sample for file " << filename );
-            return NULL;
-        }
+    if ( TIFFGetField ( tif, TIFFTAG_BITSPERSAMPLE,&bitspersample ) < 1 ) {
+        LOGGER_ERROR ( "Unable to read number of bits per sample for file " << filename );
+        return NULL;
+    }
 
-        if ( TIFFGetField ( tif, TIFFTAG_SAMPLEFORMAT,&sampleformat ) < 1 ) {
-            LOGGER_ERROR ( "Unable to read sample format for file " << filename );
-            return NULL;
-        }
+    if ( TIFFGetField ( tif, TIFFTAG_SAMPLEFORMAT,&sf ) < 1 ) {
+        LOGGER_ERROR ( "Unable to read sample format for file " << filename );
+        return NULL;
+    }
 
-        if ( TIFFGetField ( tif, TIFFTAG_PHOTOMETRIC,&photometric ) < 1 ) {
-            LOGGER_ERROR ( "Unable to read photometric for file " << filename );
-            return NULL;
-        }
+    if ( TIFFGetField ( tif, TIFFTAG_PHOTOMETRIC,&ph ) < 1 ) {
+        LOGGER_ERROR ( "Unable to read photometric for file " << filename );
+        return NULL;
+    }
 
-        if ( TIFFGetField ( tif, TIFFTAG_COMPRESSION,&compression ) < 1 ) {
-            LOGGER_ERROR ( "Unable to read compression for file " << filename );
-            return NULL;
-        }
+    if ( TIFFGetField ( tif, TIFFTAG_COMPRESSION,&comp ) < 1 ) {
+        LOGGER_ERROR ( "Unable to read compression for file " << filename );
+        return NULL;
+    }
 
-        uint16_t extrasamplesCount;
-        uint16_t* extrasamples;
-        if ( TIFFGetField ( tif, TIFFTAG_EXTRASAMPLES, &extrasamplesCount, &extrasamples ) > 0 ) {
-            // On a des canaux en plus, si c'est de l'alpha, il ne doit pas être associé 
-            if ( extrasamples[0] == EXTRASAMPLE_ASSOCALPHA ) {
-                LOGGER_ERROR ( "Alpha sample should be unassociated for the rok4 image " << filename );
-                return NULL;
-            }
+    uint16_t extrasamplesCount;
+    uint16_t* extrasamples;
+    if ( TIFFGetField ( tif, TIFFTAG_EXTRASAMPLES, &extrasamplesCount, &extrasamples ) > 0 ) {
+        // On a des canaux en plus, si c'est de l'alpha, il ne doit pas être associé 
+        if ( extrasamples[0] == EXTRASAMPLE_ASSOCALPHA ) {
+            LOGGER_ERROR ( "Alpha sample should be unassociated for the rok4 image " << filename );
+            return NULL;
         }
     }
 
@@ -290,34 +290,25 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( char* filename, BoundingBox
     }
 
     TIFFClose ( tif );
+    
+    /********************** CONTROLES **************************/
 
-    SampleFormat::eSampleFormat sf = toROK4SampleFormat ( sampleformat );
-
-    if ( ! SampleFormat::isHandledSampleType ( sf, bitspersample ) ) {
-        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( sf ) << " and " << bitspersample << " bits per sample" );
+    if ( ! Rok4Image::canRead ( bitspersample, toROK4SampleFormat ( sf ) ) ) {
+        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( toROK4SampleFormat ( sf ) ) << " and " << bitspersample << " bits per sample" );
+        LOGGER_ERROR ( "\t for the image to read : " << filename );
         return NULL;
     }
 
     if ( resx > 0 && resy > 0 ) {
-        // Vérification de la cohérence entre les résolutions et bbox fournies et les dimensions (en pixel) de l'image
-        // Arrondi a la valeur entiere la plus proche
-        int calcWidth = lround ( ( bbox.xmax - bbox.xmin ) / ( resx ) );
-        int calcHeight = lround ( ( bbox.ymax - bbox.ymin ) / ( resy ) );
-        if ( calcWidth != width || calcHeight != height ) {
+        if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {
             LOGGER_ERROR ( "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" );
-            LOGGER_ERROR ( "Height is " << height << " and calculation give " << calcHeight );
-            LOGGER_ERROR ( "Width is " << width << " and calculation give " << calcWidth );
             return NULL;
         }
-    } else {
-        bbox = BoundingBox<double> ( 0, 0, ( double ) width, ( double ) height );
-        resx = 1.;
-        resy = 1.;
     }
 
     return new Rok4Image (
         width, height, resx, resy, channels, bbox, filename,
-        sf, bitspersample, toROK4Photometric ( photometric ), toROK4Compression ( compression ),
+        toROK4SampleFormat( sf ), bitspersample, toROK4Photometric ( ph ), toROK4Compression ( comp ),
         tileWidth, tileHeight
     );
 }
@@ -355,6 +346,23 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToWrite (
             LOGGER_ERROR("PNG compression just handle 8-bits integer samples");
             return NULL;
         }
+    }
+    
+    if ( ! Rok4Image::canWrite ( bitspersample, sampleformat ) ) {
+        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( sampleformat ) << " and " << bitspersample << " bits per sample" );
+        LOGGER_ERROR ( "\t for the image to write : " << filename );
+        return NULL;
+    }
+    
+    if ( resx > 0 && resy > 0 ) {
+        if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {
+            LOGGER_ERROR ( "Resolutions, bounding box and dimensions for the ROK4 image (to write)'" << filename << "' are not consistent" );
+            return NULL;
+        }
+    } else {
+        bbox = BoundingBox<double> ( 0, 0, ( double ) width, ( double ) height );
+        resx = 1.;
+        resy = 1.;
     }
 
     return new Rok4Image (
@@ -588,7 +596,10 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
         for ( int y = 0; y < tileHeightwise; y++ ) {
             // On récupère toutes les lignes pour cette ligne de tuiles
             for (int lig = 0; lig < tileHeight; lig++) {
-                pIn->getline(lines + lig*imageLineSize, y*tileHeight + lig);
+                if (pIn->getline(lines + lig*imageLineSize, y*tileHeight + lig) == 0) {
+                    LOGGER_ERROR("Error reading the source image's line " << y*tileHeight + lig);
+                    return -1;                    
+                }
             }
             for ( int x = 0; x < tileWidthwise; x++ ) {
                 // On constitue la tuile
@@ -611,7 +622,10 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
         for ( int y = 0; y < tileHeightwise; y++ ) {
             // On récupère toutes les lignes pour cette ligne de tuiles
             for (int lig = 0; lig < tileHeight; lig++) {
-                pIn->getline(lines + lig*imageLineSize, y*tileHeight + lig);
+                if (pIn->getline(lines + lig*imageLineSize, y*tileHeight + lig) == 0) {
+                    LOGGER_ERROR("Error reading the source image's line " << y*tileHeight + lig);
+                    return -1;                    
+                }
             }
             for ( int x = 0; x < tileWidthwise; x++ ) {
                 // On constitue la tuile
