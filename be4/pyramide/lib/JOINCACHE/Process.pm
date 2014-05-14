@@ -247,7 +247,7 @@ sub new {
 
     ######### Use masks ? #########
     my $useMasks = $processParams->{use_masks};
-    if ( $pyr->ownMasks() || (defined $useMasks && uc($useMasks) eq "TRUE") || $self->{mergeMethod} eq "TOP" ) {
+    if ( $pyr->ownMasks() || (defined $useMasks && uc($useMasks) eq "TRUE")) {
         DEBUG("Masks will be used");
         $self->{useMasks} = TRUE;
     }
@@ -591,7 +591,7 @@ sub configureFunctions {
     
     my $conf_oNt = "-c zip -m $mm -s $spp -p $ph -b $nd ";
 
-    if ($mm eq "TRANSPARENCY") {
+    if ($mm eq "ALPHATOP") {
         $conf_oNt .= "-t 255,255,255 ";
     }
 
@@ -644,7 +644,7 @@ sub useMasks {
 =begin nd
 Function: isMergeMethod
 
-Check merge method value. Possible values: 'replace','transparency','multiply'.
+Check merge method value. Possible values: 'REPLACE','ALPHATOP','MULTIPLY','TOP'.
 
 Parameters (list):
     mergeMethod - string - Merge method value
