@@ -42,7 +42,7 @@ CONFIGURE_FILE(Jpeg2000_library_config.h.in Jpeg2000_library_config.h ESCAPE_QUO
 
 SET(
     libimage_SRCS Palette.cpp Data.cpp Decoder.cpp
-    FileImage.cpp Jpeg2000Image.cpp LibtiffImage.cpp LibpngImage.cpp Rok4Image.cpp
+    FileImage.cpp Jpeg2000Image.cpp LibtiffImage.cpp LibpngImage.cpp Rok4Image.cpp BilzImage.cpp
     ReprojectedImage.cpp ResampledImage.cpp Kernel.cpp Interpolation.cpp
     MirrorImage.cpp StyledImage.cpp EstompageImage.cpp
     ExtendedCompoundImage.cpp CompoundImage.cpp MergeImage.cpp
