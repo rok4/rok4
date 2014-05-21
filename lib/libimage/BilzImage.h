@@ -59,14 +59,15 @@
 #include "Format.h"
 #include "FileImage.h"
 #include "Image.h"
+#include "zlib.h"
 
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
  * \brief Manipulation d'une image PNG
- * \details Une image (Z)bil est une vraie image dans ce sens où elle est rattachée à un fichier, pour la lecture de données au format bil, potentiellement compressé.
+ * \details Une image (Z)bil est une vraie image dans ce sens où elle est rattachée à un fichier, pour la lecture de données au format bil, potentiellement compressées.
  * 
- * Lors de la lecture des données, si celle ci sont moins volumineuse qu'elles ne devraient l'être, on estime alors qu'elles sont compressées en deflate (zip). La décompression est alors automatiquement essayées.
+ * Lors de la lecture des données, si celles ci sont moins volumineuses qu'elles ne devraient l'être, on estime alors qu'elles sont compressées en deflate (zip). La décompression est alors automatiquement essayée.
  * 
  * \todo Lire au fur et à mesure l'image BIL et ne pas la charger intégralement en mémoire lors de la création de l'objet BilzImage.
  */
@@ -81,6 +82,23 @@ private:
      * \~english \brief Full uncompressed image storage
      */
     uint8_t* data;
+    
+    /**
+     * \~french \brief Buffer temporaire, utilisé pour entrelacé les canaux
+     * \~english \brief Temporary buffer, used to interleaved channels
+     */
+    uint8_t* tmpbuffer;
+    
+    /** \~french
+     * \brief Calcule la ligne entrelacée
+     * \details Au format BIL, les différents canaux sont regroupés, par ligne. On doit donc convertir pour renvoyer une ligne aux canaux entralés.
+     * 
+     * [Schéma](http://help.arcgis.com/fr/arcgisdesktop/10.0/help/index.html#/na/009t00000011000000/)
+     * 
+     * \param[in] width buffer de sortie, doit être alloué
+     * \param[in] line ligne à calculer
+     */
+    int _getline ( uint8_t* buffer, int line );
 
 protected:
     /** \~french
@@ -255,6 +273,127 @@ public:
     BilzImage* createBilzImageToRead ( char* filename, BoundingBox<double> bbox, double resx, double resy );
 
 };
+
+/* ------------------------------------------------------------------------------------------------ */
+/* --------------------------------------- LECTEUR DE HEADER -------------------------------------- */
+
+/**
+ * \~french
+ * \brief Extrait les informations du header associé à l'image (Z)BIL
+ * \details Le chemin fourni est celui de l'image. Un fichier dont seule l'extension diffère (hdr ou HDR) est cherché (erreur si aucun des deux n'existe). Ce dernier est lu (simple fichier texte) et les lignes suivantes sont interprétées :
+ * \li NCOLS    <INTEGER>
+ * \li NROWS    <INTEGER>
+ * \li NBITS    <INTEGER>
+ * \li NBANDS   <INTEGER>
+ * \param[in] imagefilename image (Z)BIL dont le header doit être lu
+ * \param[out] width largeur de l'image (Z)BIL
+ * \param[out] height hauteur de l'image (Z)BIL
+ * \param[out] samplesperpixel nombre de canaux de l'image (Z)BIL
+ * \param[out] bitspersample taille en bit d'un canal de l'image (Z)BIL
+ * \return TRUE en cas de succes, FALSE sinon
+ */
+static bool readHeaderFile(char* imagefilename, int* width, int* height, int* samplesperpixel, int* bitspersample) {
+    
+    char * pch;
+    pch = strrchr ( imagefilename,'.' );
+    int basenamelength = pch - imagefilename;
+    
+    char headerfilename[IMAGE_MAX_FILENAME_LENGTH];
+    memset(headerfilename, 0, IMAGE_MAX_FILENAME_LENGTH);
+    memmove(headerfilename, imagefilename, basenamelength);
+    
+    memcpy(headerfilename+basenamelength, ".hdr", 4);
+    
+    std::ifstream header;
+
+    // Tentative d'ouverture du fichier header, avec l'extension en minuscule ou en majuscule
+    header.open ( headerfilename );
+    if ( !header ) {
+        memcpy(headerfilename+basenamelength, ".HDR", 4);
+        header.open ( headerfilename );
+        if ( !header ) {
+            LOGGER_ERROR ( "No found header, with extension .hdr or .HDR" );
+            return NULL;
+        }
+    }
+    
+    std::string str;
+    char key[20];
+    int value = 0;
+    while (! header.eof() ) {
+        std::getline ( header,str );
+        
+        if ( std::sscanf ( str.c_str(),"%s %d", key, &value) != 2 ) continue;
+        
+        if (strncmp(key, "NCOLS", 5) == 0 || strncmp(key, "ncols", 5) == 0) *width = value;
+        if (strncmp(key, "NROWS", 5) == 0 || strncmp(key, "nrows", 5) == 0) *height = value;
+        if (strncmp(key, "NBITS", 5) == 0 || strncmp(key, "nbits", 5) == 0) *bitspersample = value;
+        if (strncmp(key, "NBANDS", 6) == 0 || strncmp(key, "nbands", 5) == 0) *samplesperpixel = value;
+    }
+}
+
+
+/* ------------------------------------------------------------------------------------------------ */
+/* --------------------------------------- DÉCOMPRESSEUR ZIP -------------------------------------- */
+
+/**
+ * \~french
+ * \brief Décompresse les données
+ * \details La compression des données sources fournies doit forcément être le deflate (zip). Le buffer des données décompressées doit déjà être alloué.
+ * \param[in] compresseddata pointeur vers les données à décompresser
+ * \param[in] compresseddatasize taille des données à décompresser
+ * \param[out] rawdata pointeur vers les données décompressées
+ * \param[in] rawdatasize taille théorique des données décompressées
+ * \return TRUE en cas de succes, FALSE sinon
+ */
+static bool uncompressedData(uint8_t* compresseddata, int compresseddatasize, uint8_t* rawdata, int rawdatasize) {
+    
+    // Initialisation du flux
+    z_stream zstream;
+    zstream.zalloc = Z_NULL;
+    zstream.zfree = Z_NULL;
+    zstream.opaque = Z_NULL;
+    zstream.data_type = Z_BINARY;
+    int zinit;
+    if ( ( zinit=inflateInit ( &zstream ) ) != Z_OK ) {
+        if ( zinit==Z_MEM_ERROR ) LOGGER_ERROR ( "Decompression DEFLATE : pas assez de memoire" );
+        else if ( zinit==Z_VERSION_ERROR ) LOGGER_ERROR ( "Decompression DEFLATE : versions de zlib incompatibles" );
+        else if ( zinit==Z_STREAM_ERROR ) LOGGER_ERROR ( "Decompression DEFLATE : parametres invalides" );
+        else LOGGER_ERROR ( "Decompression DEFLATE : echec" );
+        return false;
+    }
+
+    zstream.next_in = compresseddata;
+    zstream.avail_in = compresseddatasize;
+    zstream.next_out = rawdata;
+    zstream.avail_out = rawdatasize;
+    // Decompression du flux
+    while ( zstream.avail_in != 0 ) {
+        if ( int err = inflate ( &zstream, Z_SYNC_FLUSH ) ) {
+            if ( err == Z_STREAM_END && zstream.avail_in == 0 ) break; // fin du fichier OK.
+            if ( zstream.avail_out == 0 ) {
+                LOGGER_ERROR ( "Decompression DEFLATE : le buffer de sortie ne devrait pas être trop petit");
+                return false;
+            }
+            LOGGER_ERROR ( "Decompression DEFLATE : probleme deflate decompression " << err );
+            return false;
+        }
+    }
+
+    // Destruction du flux
+    if ( inflateEnd ( &zstream ) != Z_OK ) {
+        LOGGER_ERROR ( "Decompression DEFLATE : probleme de liberation du flux" );
+        return false;
+    }
+
+    if (zstream.avail_out != 0) {
+        LOGGER_ERROR ( "Decompression DEFLATE : la taille des données décompressée n'est pas celle attendue" );
+        LOGGER_ERROR ( "Il manque " << zstream.avail_out << "octets" );
+        return false;
+    }
+
+    return true;
+}
 
 
 #endif
