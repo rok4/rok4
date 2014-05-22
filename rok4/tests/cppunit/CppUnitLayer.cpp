@@ -120,7 +120,7 @@ void CppUnitLayer::setUp() {
     for ( int i = 0 ; i < 255; ++i ) {
         colours.insert ( std::pair<double,Colour> ( i,Colour ( 256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ) ) ) );
     }
-    palette0 = new Palette ( colours,false,false );
+    palette0 = new Palette ( colours,false,false,false );
     palette0->buildPalettePNG();
     style = new Style ( id0,titles0,abstracts0,keyWords,legendURLs0,*palette0 );
     styleslayer.push_back(style);
