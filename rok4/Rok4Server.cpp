@@ -376,9 +376,29 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     if (images.size() > 1 ){
 
         MergeImageFactory MIF;
+        int spp = images.at ( 0 )->channels;
 
-        int white[4] = {255,255,255,255};
-        image = MIF.createMergeImage ( images, images.at ( 0 )->channels, white, white, Merge::ALPHATOP );
+        int bg[spp];
+        
+        switch(spp) {
+            case 1:
+                bg[0] = 255;
+                break;
+            case 2:
+                bg[0] = 255; bg[1] = 0;
+                break;
+            case 3:
+                bg[0] = 255; bg[1] = 255; bg[2] = 255;
+                break;
+            case 4:
+                bg[0] = 255; bg[1] = 255; bg[2] = 255; bg[4] = 0;
+                break;
+            default:
+                memset(bg, 0, sizeof(int) * spp);
+                break;                
+        }
+        
+        image = MIF.createMergeImage ( images, spp, bg, NULL, Merge::ALPHATOP );
 
         if ( image == NULL ) {
             LOGGER_ERROR ( "Impossible de fusionner les images des differentes couches" );
