@@ -132,12 +132,23 @@ inline void convert ( float* to, const uint8_t* from, int length ) {
  * @param to   Tableau de flottants de source
  * @param from Tableau d'entiers 8 bits destination
  * @param length Nombre d'éléments à convertir
+ * 
+ * \warning Tant que la version SSE2 ne sature pas lors de l'arrondi (5.999 donne 5 et pas 6), on l'inhibe (version non SSE2 dans tous les cas
  */
 
 #ifdef __SSE2__
 
 inline void convert ( uint8_t* to, const float* from, int length ) {
-    //_MM_SET_ROUNDING_MODE(_MM_ROUND_NEAREST);
+    for ( int i = 0; i < length; i++ ) {
+        int t = ( int ) ( from[i] + 0.5 );
+        if ( t < 0 ) to[i] = 0;
+        else if ( t > 255 ) to[i] = 255;
+        else to[i] = t;
+    }
+}
+/*
+inline void convert ( uint8_t* to, const float* from, int length ) {
+    // _MM_SET_ROUNDING_MODE(_MM_ROUND_NEAREST);
     //
     // On avance sur les premiers éléments jusqu'à alignement de to sur 128bits
     while ( ( intptr_t ) from & 0x0f && length ) {
@@ -181,8 +192,8 @@ inline void convert ( uint8_t* to, const float* from, int length ) {
             m1 = _mm_packus_epi16 ( m1, m3 );
             _mm_store_si128 ( T + i, m1 );
         }
-}
-#else // Version non SSE 
+}*/
+#else // Version non SSE
 
 inline void convert ( uint8_t* to, const float* from, int length ) {
     for ( int i = 0; i < length; i++ ) {
