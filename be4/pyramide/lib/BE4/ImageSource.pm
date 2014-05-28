@@ -246,11 +246,6 @@ sub computeImageSource {
 
         if (! defined $pixel) {
             # we have read the first image, components are empty. This first image will be the reference.
-            if ($imageInfo[0] == 1) {
-                WARN ("Bitspersample value is 1 ! This data have not to be used for generations (only to calculate data limits)");
-                # Pixel class wouldn't accept bitspersample = 1. we change artificially value for 8
-                $imageInfo[0] = 8;
-            }
             $pixel = BE4::Pixel->new({
                 bitspersample => $imageInfo[0],
                 photometric => $imageInfo[1],
@@ -262,10 +257,6 @@ sub computeImageSource {
                 return FALSE;
             }
         } else {
-            if ($imageInfo[0] == 1) {
-                # bitspersample in the Pixel object is 1. we change artificially current value for 8
-                $imageInfo[0] = 8;
-            }
             # we have already values. We must have the same components for all images
             if (! ($pixel->getBitsPerSample eq $imageInfo[0] && $pixel->getPhotometric eq $imageInfo[1] &&
                     $pixel->getSampleFormat eq $imageInfo[2] && $pixel->getSamplesPerPixel eq $imageInfo[3])) {

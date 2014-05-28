@@ -135,7 +135,16 @@ protected:
             for ( int i = 0; i < l; i++ ) CPPUNIT_ASSERT_EQUAL ( ( int ) FROM8[i1 + i], ( int ) FLOAT[i2+i] );
             for ( int i = 0; i < l; i++ ) CPPUNIT_ASSERT_EQUAL ( ( int ) FROM8[i1 + i], ( int ) TO8[i3 + i] );
         }
+        
+        // Test de l'arrondi
+        float  FLOAT_1_TO_2[101]   __attribute__ ( ( aligned ( 32 ) ) );;
+        uint8_t UINT8_1_OR_2[101]   __attribute__ ( ( aligned ( 32 ) ) );;
+        for ( int i = 0; i < 101; i++ ) FLOAT_1_TO_2[i] = 1 + 0.01 * i;
+        convert ( UINT8_1_OR_2, FLOAT_1_TO_2, 101 );
+        for ( int i = 0; i < 50; i++ ) CPPUNIT_ASSERT_EQUAL ( 1, (int) UINT8_1_OR_2[i] );
+        for ( int i = 50; i < 101; i++ ) CPPUNIT_ASSERT_EQUAL ( 2, (int) UINT8_1_OR_2[i] );
     }
+    
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION ( CppUnitConvert );

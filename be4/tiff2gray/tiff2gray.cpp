@@ -62,7 +62,6 @@ void tiff_copy ( TIFF *input, TIFF *output, bool minIsWhite ) {
     int nb_strip = TIFFNumberOfStrips ( input );
     for ( int n = 0; n < nb_strip; n++ ) {
         int size = TIFFReadEncodedStrip ( input, n, buffer_in, -1 );
-        cerr << "read size = " << size << std::endl;
         if ( size == -1 ) error ( "Error reading data" );
         if (minIsWhite) {
             OneBitConverter::minwhiteToGray ( buffer_out, buffer_in, size );

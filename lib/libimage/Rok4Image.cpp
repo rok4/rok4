@@ -759,7 +759,12 @@ bool Rok4Image::prepare()
 
     //  z compression initalization
     if ( compression == Compression::PNG || compression == Compression::DEFLATE ) {
-        zip_buffer = new uint8_t[rawTileSize];
+        if ( compression == Compression::PNG ) {
+            // Pour la compression PNG, on a besoin d'un peu plus : pourquoi ????
+            zip_buffer = new uint8_t[rawTileSize + tileHeight];
+        } else {
+            zip_buffer = new uint8_t[rawTileSize];            
+        }
         zstream.zalloc = Z_NULL;
         zstream.zfree  = Z_NULL;
         zstream.opaque = Z_NULL;
@@ -936,7 +941,7 @@ size_t Rok4Image::computePngTile ( uint8_t *buffer, uint8_t *data ) {
     zstream.next_out  = buffer + sizeof ( PNG_HEADER ) + 8;
     zstream.avail_out = 2*rawTileSize - 12 - sizeof ( PNG_HEADER ) - sizeof ( PNG_IEND );
     zstream.next_in   = zip_buffer;
-    zstream.avail_in  = rawTileSize;
+    zstream.avail_in  = rawTileSize + tileHeight;
 
     if ( deflateReset ( &zstream ) != Z_OK ) return -1;
     if ( deflate ( &zstream, Z_FINISH ) != Z_STREAM_END ) return -1;
