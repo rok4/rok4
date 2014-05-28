@@ -589,7 +589,16 @@ sub configureFunctions {
 
     ######## congigure overlayNtiff ########
     
-    my $conf_oNt = "-c zip -m $mm -s $spp -p $ph -b $nd ";
+    my $conf_oNt = "-c zip -s $spp -p $ph -b $nd ";
+    
+    if ($mm eq "REPLACE") {
+        # Dans le cas REPLACE, overlayNtiff est utilisé uniquement pour modifier les caractéristiques
+        # d'une image (passer en noir et blanc par exemple)
+        # overlayNtiff sera appelé sur une image unique, qu'on "fusionne" en mode TOP
+        $conf_oNt .= "-m TOP ";
+    } else {
+        $conf_oNt .= "-m $mm ";        
+    }
 
     if ($mm eq "TRANSPARENCY") {
         $conf_oNt .= "-t 255,255,255 ";
