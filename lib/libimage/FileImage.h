@@ -72,6 +72,7 @@
  * <TR><TD>PNG</TD><TD>LibpngImage</TD><TD>.png, .PNG</TD><TD>Oui</TD><TD>Non</TD><TD>Libpng 1.6.2</TD></TR>
  * <TR><TD>ROK4</TD><TD>Rok4Image</TD><TD>non filtré sur l'extension</TD><TD>Oui</TD><TD>Oui</TD><TD>Libtiff 3.8.2. Format TIFF particulier, propre au projet ROK4</TD></TR>
  * <TR><TD>JPEG2000</TD><TD>Jpeg2000Image</TD><TD>.jp2, .JP2</TD><TD>Oui</TD><TD>Non</TD><TD>Openjpeg 2.0.0 ou Kakadu</TD></TR>
+ * <TR><TD>BIL</TD><TD>BilzImage</TD><TD>.bil, .BIL, .zbil, .ZBIL</TD><TD>Oui</TD><TD>Non</TD><TD>Sans librairie</TD></TR>
  * </TABLE>
  * 
  */

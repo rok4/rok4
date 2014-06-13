@@ -68,6 +68,7 @@ Constraint on the input format of images :
     TIFF (extensions .tif, .TIF, .tiff and .TIFF)
     PNG (extensions .png, .PNG)
     JPEG2000 (extensions .jp2, .JP2)
+    BIL (extensions .bil, .BIL, .zbil, .ZBIL)
     
 =cut
 
@@ -332,9 +333,9 @@ sub getListImages {
         }
 
         # Si le fichier n'a pas l'extension TIFF, JP2 ou PNG, on ne le traite pas
-        next if ( $entry !~ /.*\.(tif|TIF|tiff|TIFF)$/ && $entry !~ /.*\.(png|PNG)$/ && $entry !~ /.*\.(jp2|JP2)$/);
+        next if ( $entry !~ /.*\.(tif|TIF|tiff|TIFF)$/ && $entry !~ /.*\.(png|PNG)$/ && $entry !~ /.*\.(jp2|JP2)$/ && $entry !~ /.*\.(bil|BIL|zbil|ZBIL)$/);
 
-        # On a à faire à un fichier avec l'extension TIFF/PNG/JPEG2000, on l'ajoute au tableau
+        # On a à faire à un fichier avec l'extension TIFF/PNG/JPEG2000/BIL, on l'ajoute au tableau
         push @{$search->{images}}, File::Spec->catfile($directory, $entry);
     }
 
