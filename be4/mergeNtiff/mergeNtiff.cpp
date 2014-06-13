@@ -617,7 +617,7 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
         crs.setRequestCode ( stringCRS );
 
         if ( ! crs.validateBBox ( bbox ) ) {
-            LOGGER_WARN("The input image's (" << imageFileName << ") bbox (" << bbox.toString() << ") is not included in the srs (" << stringCRS << ") definition extent");
+            LOGGER_DEBUG("Warning : the input image's (" << imageFileName << ") bbox (" << bbox.toString() << ") is not included in the srs (" << stringCRS << ") definition extent");
         }
 
         FileImage* pImage=factory.createImageToRead ( imageFileName, bbox, resx, resy );

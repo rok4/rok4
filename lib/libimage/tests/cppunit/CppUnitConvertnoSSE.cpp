@@ -141,7 +141,7 @@ protected:
             for ( int i = 0; i < l; i++ ) CPPUNIT_ASSERT_EQUAL ( ( int ) FROM8[i1 + i], ( int ) FLOAT[i2+i] );
             for ( int i = 0; i < l; i++ ) CPPUNIT_ASSERT_EQUAL ( ( int ) FROM8[i1 + i], ( int ) TO8[i3 + i] );
         }
-            
+        
         // Test de l'arrondi
         float  FLOAT_1_TO_2[101];
         uint8_t UINT8_1_OR_2[101];
