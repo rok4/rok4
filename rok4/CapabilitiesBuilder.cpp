@@ -355,6 +355,18 @@ void Rok4Server::buildWMSCapabilities() {
                     } else {
                         bbox = childLayer->getWMSCRSList() [i].boundingBoxFromGeographic ( childLayer->getWMSCRSList() [i].cropBBoxGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy ) );
                     }
+                    CRS crs = childLayer->getWMSCRSList() [i];
+                    LOGGER_DEBUG ("check inverse for "<< crs.getProj4Code());
+                    //Switch lon lat for EPSG longlat CRS
+                    if ( ( crs.getAuthority() =="EPSG" || crs.getAuthority() =="epsg" ) && crs.isLongLat() ) {
+                        double doubletmp;
+                        doubletmp = bbox.xmin;
+                        bbox.xmin = bbox.ymin;
+                        bbox.ymin = doubletmp;
+                        doubletmp = bbox.xmax;
+                        bbox.xmax = bbox.ymax;
+                        bbox.ymax = doubletmp;
+                    }
 
                     TiXmlElement * bbEl = new TiXmlElement ( "BoundingBox" );
                     bbEl->SetAttribute ( "CRS",childLayer->getWMSCRSList() [i].getRequestCode() );
@@ -386,6 +398,18 @@ void Rok4Server::buildWMSCapabilities() {
                         bbox = servicesConf.getGlobalCRSList()->at ( i ).boundingBoxFromGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy );
                     } else {
                         bbox = servicesConf.getGlobalCRSList()->at ( i ).boundingBoxFromGeographic ( servicesConf.getGlobalCRSList()->at ( i ).cropBBoxGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy ) );
+                    }
+                    CRS crs = servicesConf.getGlobalCRSList()->at ( i );
+                    //Switch lon lat for EPSG longlat CRS
+                    LOGGER_DEBUG ("check inverse for "<< crs.getProj4Code());
+                    if ( ( crs.getAuthority() =="EPSG" || crs.getAuthority() =="epsg" ) && crs.isLongLat() ) {
+                        double doubletmp;
+                        doubletmp = bbox.xmin;
+                        bbox.xmin = bbox.ymin;
+                        bbox.ymin = doubletmp;
+                        doubletmp = bbox.xmax;
+                        bbox.xmax = bbox.ymax;
+                        bbox.ymax = doubletmp;
                     }
 
                     TiXmlElement * bbEl = new TiXmlElement ( "BoundingBox" );

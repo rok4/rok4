@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2014-05-28 15:03+0200\n"
+"POT-Creation-Date: 2014-06-16 10:07+0200\n"
 "PO-Revision-Date: 2013-02-18 17:49+0100\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -22,39 +22,39 @@ msgstr ""
 msgid "Liste de layers vide"
 msgstr "Layer list empty"
 
-#: CapabilitiesBuilder.cpp:440
+#: CapabilitiesBuilder.cpp:464
 msgid "Nombre de styles : "
 msgstr "Number of styles:"
 
-#: CapabilitiesBuilder.cpp:454
+#: CapabilitiesBuilder.cpp:478
 msgid "LegendURL"
 msgstr "LegendURL"
 
-#: CapabilitiesBuilder.cpp:469
+#: CapabilitiesBuilder.cpp:493
 msgid "LegendURL OK"
 msgstr "LegendURL OK"
 
-#: CapabilitiesBuilder.cpp:472
+#: CapabilitiesBuilder.cpp:496
 msgid "Style fini : "
 msgstr "Style completed:"
 
-#: CapabilitiesBuilder.cpp:493
+#: CapabilitiesBuilder.cpp:517
 msgid "Layer Fini"
 msgstr "Layer completed:"
 
-#: CapabilitiesBuilder.cpp:497
+#: CapabilitiesBuilder.cpp:521
 msgid "Layers Fini"
 msgstr "Layers completed"
 
-#: CapabilitiesBuilder.cpp:524
+#: CapabilitiesBuilder.cpp:548
 msgid "WMSfini"
 msgstr "WMS Capabilities complete."
 
-#: CapabilitiesBuilder.cpp:785
+#: CapabilitiesBuilder.cpp:809
 msgid "Title : "
 msgstr "Title: "
 
-#: CapabilitiesBuilder.cpp:789
+#: CapabilitiesBuilder.cpp:813
 msgid "Abstract : "
 msgstr "Abstract: "
 
@@ -1031,23 +1031,23 @@ msgstr "GetTile Tiff"
 msgid "GetTile Image"
 msgstr "GetTile Image"
 
-#: main.cpp:99
+#: main.cpp:100
 msgid "Usage : rok4 [-f server_config_file]"
 msgstr "Use : rok4 [-f server_config_file]"
 
-#: main.cpp:208
+#: main.cpp:209
 msgid "Erreur sur l'option -f"
 msgstr "Error on -f parameter"
 
-#: main.cpp:224
+#: main.cpp:225
 msgid "Lancement du serveur rok4"
 msgstr "Starting ROK4 server"
 
-#: main.cpp:245
+#: main.cpp:254
 msgid "Rechargement de la configuration"
 msgstr "Reloading configuration"
 
-#: main.cpp:248 Rok4Api.cpp:136 Rok4Api.cpp:144 Rok4Api.cpp:152
+#: main.cpp:257 Rok4Api.cpp:136 Rok4Api.cpp:144 Rok4Api.cpp:152
 #: Rok4Api.cpp:161 Rok4Api.cpp:580
 msgid "Extinction du serveur ROK4"
 msgstr "Shutdown the ROK4 server"
