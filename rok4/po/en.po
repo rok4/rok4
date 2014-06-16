@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2014-06-16 10:07+0200\n"
+"POT-Creation-Date: 2014-06-16 14:38+0200\n"
 "PO-Revision-Date: 2013-02-18 17:49+0100\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -1031,23 +1031,38 @@ msgstr "GetTile Tiff"
 msgid "GetTile Image"
 msgstr "GetTile Image"
 
-#: main.cpp:100
+#: main.cpp:102
 msgid "Usage : rok4 [-f server_config_file]"
 msgstr "Use : rok4 [-f server_config_file]"
 
-#: main.cpp:209
+#: main.cpp:126
+#, fuzzy
+msgid "Rechargement du serveur rok4"
+msgstr "Starting ROK4 server"
+
+#: main.cpp:129
+#, fuzzy
+msgid "Erreur lors du rechargement du serveur rok4"
+msgstr "Starting ROK4 server"
+
+#: main.cpp:217
 msgid "Erreur sur l'option -f"
 msgstr "Error on -f parameter"
 
-#: main.cpp:225
+#: main.cpp:233
 msgid "Lancement du serveur rok4"
 msgstr "Starting ROK4 server"
 
-#: main.cpp:254
+#: main.cpp:243
+#, fuzzy
+msgid "Mise a jour de la configuration"
+msgstr "Reloading configuration"
+
+#: main.cpp:260
 msgid "Rechargement de la configuration"
 msgstr "Reloading configuration"
 
-#: main.cpp:257 Rok4Api.cpp:136 Rok4Api.cpp:144 Rok4Api.cpp:152
+#: main.cpp:263 Rok4Api.cpp:136 Rok4Api.cpp:144 Rok4Api.cpp:152
 #: Rok4Api.cpp:161 Rok4Api.cpp:580
 msgid "Extinction du serveur ROK4"
 msgstr "Shutdown the ROK4 server"
