@@ -67,7 +67,8 @@ const char *compression_name[] = {
     "JPEG",
     "PNG",
     "LZW",
-    "PACKBITS"
+    "PACKBITS",
+    "JPEG2000"
 };
 
 eCompression fromString ( std::string strComp ) {

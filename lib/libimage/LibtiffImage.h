@@ -82,38 +82,51 @@ private:
     TIFF* tif;
 
     /**
-     * \~french \brief Taille de la bufferisation de l'image, en nombre de ligne
-     * \~english \brief Image buffering size, in line number
+     * \~french \brief Nombre de ligne dans un strip
+     * \~english \brief Number of line in one strip
      */
     uint16_t rowsperstrip;
 
-    /**
-     * \~french \brief Taille de la bufferisation de l'image, en nombre de canal
-     * \~english \brief Image buffering size, in sample number
-     */
-    size_t strip_size;
     /**
      * \~french \brief Buffer de lecture, de taille strip_size
      * \~english \brief Read buffer, strip_size long
      */
     uint8_t* strip_buffer;
     /**
-     * \~french \brief Buffer de lecture, de taille strip_size
-     * \~english \brief Read buffer, strip_size long
+     * \~french \brief Indice du strip en mémoire dans strip_buffer
+     * \~english \brief Memorized strip indice, in strip_buffer
      */
     uint16_t current_strip;
+    
+    /**
+     * \~french \brief Doit convertor les canaux de 1 à 8 bits
+     * \details
+     * \li 0 = pas de conversion
+     * \li 1 = conversion nécessaire, et 0 est blanc (min-is-white)
+     * \li 2 = conversion nécessaire, et 0 est noir (min-is-black)
+     * \~english \brief Have we to convert samples from 1 to 8 bits
+     * \details
+     * \li 0 = no conversion
+     * \li 1 = conversion, and 0 is white (min-is-white)
+     * \li 2 = conversion, and 0 is black (min-is-black)
+     */
+    int oneTo8bits;
+    
+    /**
+     * \~french \brief Buffer de conversion de 1 à 8 bits
+     * \~english \brief Converting buffer, from 1 to 8 bits
+     */
+    uint8_t* oneTo8bits_buffer;
 
     /** \~french
      * \brief Retourne une ligne, flottante ou entière
-     * \details Lorsque l'on veut récupérer une ligne d'une image TIFF, On fait appel à la fonction de la librairie TIFF TIFFReadScanline
+     * \details Lorsque l'on veut récupérer une ligne d'une image TIFF, On fait appel à la fonction de la librairie TIFF TIFFReadEncodedStrip
      * \param[out] buffer Tableau contenant au moins width*channels valeurs
      * \param[in] line Indice de la ligne à retourner (0 <= line < height)
      * \return taille utile du buffer, 0 si erreur
      */
     template<typename T>
     int _getline ( T* buffer, int line );
-
-    int unassociateAlpha ( uint8_t* buffer );
 
 protected:
     /** \~french
@@ -155,8 +168,64 @@ protected:
         SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
         Compression::eCompression compression, TIFF* tif, int rowsperstrip, bool associatedalpha = false
     );
+    
+    /** \~french
+     * \brief Crée un objet LibtiffImage à partir de tous ses éléments constitutifs
+     * \details Ce constructeur est protégé afin de n'être appelé que par l'usine LibtiffImageFactory, qui fera différents tests et calculs.
+     * Les informations sur l'image sont passée au format TIFF (entiers), et sont convertis au format de la libimage (utilisant les enumérations SampleFormat, Compression et Photometric) par le constructeur. Cela permet de détecter le besoin de convertir à la volée les canaux sur 1 bit en 8 bits.
+     * \param[in] width largeur de l'image en pixel
+     * \param[in] height hauteur de l'image en pixel
+     * \param[in] resx résolution dans le sens des X
+     * \param[in] resy résolution dans le sens des Y
+     * \param[in] channel nombre de canaux par pixel
+     * \param[in] bbox emprise rectangulaire de l'image
+     * \param[in] name chemin du fichier image
+     * \param[in] sf format des canaux
+     * \param[in] bps nombre de bits par canal
+     * \param[in] ph photométrie des données
+     * \param[in] comp compression des données
+     * \param[in] tiff interface de la librairie TIFF entre le fichier et l'objet
+     * \param[in] rowsperstrip taille de la bufferisation des données, en nombre de lignes
+     * \param[in] associatedalpha le canal d'alpha (le 2ème ou le 4ème) est-il prémultiplié dans les données ?
+     ** \~english
+     * \brief Create a LibtiffImage object, from all attributes
+     * \param[in] width image width, in pixel
+     * \param[in] height image height, in pixel
+     * \param[in] resx X wise resolution
+     * \param[in] resy Y wise resolution
+     * \param[in] channel number of samples per pixel
+     * \param[in] bbox bounding box
+     * \param[in] name path to image file
+     * \param[in] sf samples' format
+     * \param[in] bps number of bits per sample
+     * \param[in] ph data photometric
+     * \param[in] comp data compression
+     * \param[in] tiff interface between file and object
+     * \param[in] rowsperstrip data buffering size, in line number
+     * \param[in] associatedalpha alpha sample (the second or the fourth sample) is associated (premutliplied) ?
+     */
+    LibtiffImage (
+        int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
+        int sf, int bps, int ph,
+        int comp, TIFF* tif, int rowsperstrip, bool associatedalpha
+    );
 
 public:
+    
+    static bool canRead ( int bps, SampleFormat::eSampleFormat sf) {
+        return ( 
+            ( bps == 32 && sf == SampleFormat::FLOAT ) || 
+            ( bps == 8 && sf == SampleFormat::UINT ) ||
+            ( bps == 1 && sf == SampleFormat::UINT )
+        );
+    }
+    
+    static bool canWrite ( int bps, SampleFormat::eSampleFormat sf) {
+        return ( 
+            ( bps == 32 && sf == SampleFormat::FLOAT ) || 
+            ( bps == 8 && sf == SampleFormat::UINT )
+        );
+    }
 
     int getline ( uint8_t* buffer, int line );
     int getline ( float* buffer, int line );
@@ -214,6 +283,7 @@ public:
      */
     ~LibtiffImage() {
         delete [] strip_buffer;
+        if (oneTo8bits) delete [] oneTo8bits_buffer;
         TIFFClose ( tif );
     }
 
@@ -227,6 +297,8 @@ public:
         LOGGER_INFO ( "---------- LibtiffImage ------------" );
         FileImage::print();
         LOGGER_INFO ( "\t- Rows per strip : " << rowsperstrip );
+        if (oneTo8bits == 1) LOGGER_INFO ( "\t- We have to convert samples to 8 bits (min is white)");
+        if (oneTo8bits == 2) LOGGER_INFO ( "\t- We have to convert samples to 8 bits (min is black)");
         LOGGER_INFO ( "" );
     }
 };
@@ -306,7 +378,6 @@ public:
         Compression::eCompression compression, uint16_t rowsperstrip = 16
     );
 };
-
 
 #endif
 

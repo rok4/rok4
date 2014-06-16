@@ -40,12 +40,12 @@
  ** \~french
  * \brief Implémentation des classes LibpngImage et LibpngImageFactory
  * \details
- * \li LibpngImage : image physique, attaché à un fichier
+ * \li LibpngImage : gestion d'une image au format PNG, en lecture, utilisant la librairie libpng
  * \li LibpngImageFactory : usine de création d'objet LibpngImage
  ** \~english
  * \brief Implement classes LibpngImage and LibpngImageFactory
  * \details
- * \li LibpngImage : physical image, linked to a file
+ * \li LibpngImage : manage a PNG format image, reading, using the library libpng
  * \li LibpngImageFactory : factory to create LibpngImage object
  */
 
@@ -83,7 +83,7 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
 
     png_structp pngStruct;
     png_infop pngInfo;
-    png_bytep * pngRows;
+    png_bytep * pngData;
 
     png_byte header[8];    // 8 is the maximum size that can be checked
 
@@ -97,7 +97,7 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
     // Vérification de l'en-tête (8 octets), signature du PNG
     size_t size = fread ( header, 1, 8, file );
     if ( png_sig_cmp ( header, 0, 8 ) ) {
-        LOGGER_ERROR ( "Provided file is not recognized as a PNG file" << filename );
+        LOGGER_ERROR ( "Provided file is not recognized as a PNG file " << filename );
         return NULL;
     }
 
@@ -136,6 +136,25 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
     color_type = png_get_color_type(pngStruct, pngInfo);
     bit_depth = png_get_bit_depth(pngStruct, pngInfo);
     bitspersample = int(bit_depth);
+    
+    /********************** CONTROLES **************************/
+    
+    if ( ! LibpngImage::canRead ( bitspersample, sf ) ) {
+        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( sf ) << " and " << bitspersample << " bits per sample" );
+        LOGGER_ERROR ( "\t for the image to read : " << filename );
+        return NULL;
+    }
+
+    if ( resx > 0 && resy > 0 ) {
+        if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {
+            LOGGER_ERROR ( "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" );
+            return NULL;
+        }
+    } else {
+        bbox = BoundingBox<double> ( 0, 0, ( double ) width, ( double ) height );
+        resx = 1.;
+        resy = 1.;
+    }
     
     // Passage dans un format utilisable par la libimage
 
@@ -178,7 +197,7 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
         }
         default :
         {
-            LOGGER_ERROR("Cannot determine the color type (" << int(color_type) << ") for the PNG image " << filename);
+            LOGGER_ERROR("Cannot interpret the color type (" << int(color_type) << ") for the PNG image " << filename);
             return NULL;
         }
     }
@@ -194,51 +213,27 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
     /************** LECTURE DE L'IMAGE EN ENTIER ***************/
 
     if (setjmp(png_jmpbuf(pngStruct))) {
-        LOGGER_ERROR ("Error during read PNG image " << filename);
+        LOGGER_ERROR ("Error reading PNG image " << filename);
         return NULL;
     }
 
-    pngRows = (png_bytep*) malloc(sizeof(png_bytep) * height);
+    pngData = (png_bytep*) malloc(sizeof(png_bytep) * height);
     int rowbytes = png_get_rowbytes(pngStruct,pngInfo);
     for (int y = 0; y < height; y++) {
-        pngRows[y] = (png_byte*) malloc(rowbytes);
+        pngData[y] = (png_byte*) malloc(rowbytes);
     }
 
-    png_read_image(pngStruct, pngRows);
+    png_read_image(pngStruct, pngData);
 
     fclose ( file );
     png_destroy_read_struct(&pngStruct, &pngInfo, (png_infopp)NULL);
-
-    /********************** CONTROLES **************************/
-
-    if ( ! SampleFormat::isHandledSampleType ( sf, bitspersample ) ) {
-        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( sf ) << " and " << bitspersample << " bits per sample" );
-        return NULL;
-    }
-
-    if ( resx > 0 && resy > 0 ) {
-        // Vérification de la cohérence entre les résolutions et bbox fournies et les dimensions (en pixel) de l'image
-        // Arrondi a la valeur entiere la plus proche
-        int calcWidth = lround ( ( bbox.xmax - bbox.xmin ) / ( resx ) );
-        int calcHeight = lround ( ( bbox.ymax - bbox.ymin ) / ( resy ) );
-        if ( calcWidth != width || calcHeight != height ) {
-            LOGGER_ERROR ( "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" );
-            LOGGER_ERROR ( "Height is " << height << " and calculation give " << calcHeight );
-            LOGGER_ERROR ( "Width is " << width << " and calculation give " << calcWidth );
-            return NULL;
-        }
-    } else {
-        bbox = BoundingBox<double> ( 0, 0, ( double ) width, ( double ) height );
-        resx = 1.;
-        resy = 1.;
-    }
     
-    // Création de l'objet LibpngImage
-
+    /******************** CRÉATION DE L'OBJET ******************/
+    
     return new LibpngImage (
         width, height, resx, resy, channels, bbox, filename,
         sf, bitspersample, toROK4Photometric ( color_type ), Compression::PNG,
-        pngRows
+        pngData
     );
     
 }
@@ -249,11 +244,11 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
 LibpngImage::LibpngImage (
     int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
-    png_bytep* pngRows ) :
+    png_bytep* pngData ) :
 
-    FileImage ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression ),
+    FileImage ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression, false ),
 
-    pngRowsPointers(pngRows) {
+    data(pngData) {
         
 }
 
@@ -263,7 +258,7 @@ LibpngImage::LibpngImage (
 int LibpngImage::getline ( uint8_t* buffer, int line ) {
     
     for (int x = 0;  x < width * channels; x++) {
-        buffer[x] = (uint8_t) pngRowsPointers[line][x];
+        buffer[x] = (uint8_t) data[line][x];
     }
     return width*channels;
 }

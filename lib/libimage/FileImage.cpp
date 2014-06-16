@@ -54,6 +54,8 @@
 #include "Utils.h"
 #include "LibtiffImage.h"
 #include "LibpngImage.h"
+#include "Jpeg2000Image.h"
+#include "BilzImage.h"
 
 /* ------------------------------------------------------------------------------------------------ */
 /* -------------------------------------------- USINES -------------------------------------------- */
@@ -63,13 +65,10 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
 
     // Récupération de l'extension du fichier
     char * pch;
-    char extension[3];
     pch = strrchr ( name,'.' );
 
-    memcpy ( extension, pch + 1, 3 );
-
     /********************* TIFF *********************/
-    if ( strncmp ( extension, "tif", 3 ) == 0 || strncmp ( extension, "TIF", 3 ) == 0 ) {
+    if ( strncmp ( pch+1, "tif", 3 ) == 0 || strncmp ( pch+1, "TIF", 3 ) == 0 ) {
         LOGGER_DEBUG ( "TIFF image to read : " << name );
 
         LibtiffImageFactory LTIF;
@@ -77,16 +76,31 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
     }
 
     // Les masques
-    else if ( strncmp ( extension, "msk", 3 ) == 0 || strncmp ( extension, "MSK", 3 ) == 0 ) {
+    else if ( strncmp ( pch+1, "msk", 3 ) == 0 || strncmp ( pch+1, "MSK", 3 ) == 0 ) {
         /** \~french \warning Les masques sources (fichiers avec l'extension .msk) seront lus comme des images TIFF. */
         LOGGER_DEBUG ( "TIFF mask to read : " << name );
 
         LibtiffImageFactory LTIF;
         return LTIF.createLibtiffImageToRead ( name, bbox, resx, resy );
     }
+    
+    /******************** (Z)BIL ********************/
+    else if ( strncmp ( pch+1, "bil", 3 ) == 0 || strncmp ( pch+1, "BIL", 3 ) == 0) {
+        LOGGER_DEBUG ( "(Z)BIL image to read : " << name );
+
+        BilzImageFactory BZIF;
+        return BZIF.createBilzImageToRead ( name, bbox, resx, resy );
+    }
+    
+    else if ( strncmp ( pch+1, "zbil", 4 ) == 0 || strncmp ( pch+1, "ZBIL", 4 ) == 0 ) {
+        LOGGER_DEBUG ( "(Z)BIL image to read : " << name );
+
+        BilzImageFactory BZIF;
+        return BZIF.createBilzImageToRead ( name, bbox, resx, resy );
+    }
 
     /********************* PNG **********************/
-    else if ( strncmp ( extension, "png", 3 ) == 0 || strncmp ( extension, "PNG", 3 ) == 0 ) {
+    else if ( strncmp ( pch+1, "png", 3 ) == 0 || strncmp ( pch+1, "PNG", 3 ) == 0 ) {
         LOGGER_DEBUG ( "PNG image to read : " << name );
 
         LibpngImageFactory LPIF;
@@ -94,14 +108,16 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
     }
 
     /******************* JPEG 2000 ******************/
-    else if ( strncmp ( extension, "jp2", 3 ) == 0 || strncmp ( extension, "JP2", 3 ) == 0 ) {
-        LOGGER_ERROR ( "JPEG2000 image to read : NOT YET IMPLEMENTED" );
-        return NULL;
+    else if ( strncmp ( pch+1, "jp2", 3 ) == 0 || strncmp ( pch+1, "JP2", 3 ) == 0 ) {
+        LOGGER_DEBUG ( "JPEG2000 image to read : " << name );
+        
+        Jpeg2000ImageFactory J2KIF;
+        return J2KIF.createJpeg2000ImageToRead ( name, bbox, resx, resy );
     }
 
     /* /!\ Format inconnu en lecture /!\ */
     else {
-        LOGGER_ERROR ( "Unhandled image's extension (" << extension << "), in the file to read : " << name );
+        LOGGER_ERROR ( "Unhandled image's extension (" << pch+1 << "), in the file to read : " << name );
         return NULL;
     }
 
@@ -114,13 +130,10 @@ FileImage* FileImageFactory::createImageToWrite (
 
     // Récupération de l'extension du fichier
     char * pch;
-    char extension[3];
     pch = strrchr ( name,'.' );
 
-    memcpy ( extension, pch + 1, 3 );
-
     /********************* TIFF *********************/
-    if ( strncmp ( extension, "tif", 3 ) == 0 || strncmp ( extension, "TIF", 3 ) == 0 ) {
+    if ( strncmp ( pch+1, "tif", 3 ) == 0 || strncmp ( pch+1, "TIF", 3 ) == 0 ) {
         LOGGER_DEBUG ( "TIFF image to write : " << name );
 
         LibtiffImageFactory LTIF;
@@ -131,7 +144,7 @@ FileImage* FileImageFactory::createImageToWrite (
     }
     
     // Les masques
-    else if ( strncmp ( extension, "msk", 3 ) == 0 || strncmp ( extension, "MSK", 3 ) == 0 ) {
+    else if ( strncmp ( pch+1, "msk", 3 ) == 0 || strncmp ( pch+1, "MSK", 3 ) == 0 ) {
         /** \~french \warning Les masques sources (fichiers avec l'extension .msk) seront écris comme des images TIFF. */
         LOGGER_DEBUG ( "TIFF mask to write : " << name );
 
@@ -144,7 +157,7 @@ FileImage* FileImageFactory::createImageToWrite (
 
     /* /!\ Format inconnu en écriture /!\ */
     else {
-        LOGGER_ERROR ( "Unhandled image's extension (" << extension << "), in the file to write : " << name );
+        LOGGER_ERROR ( "Unhandled image's extension (" << pch+1 << "), in the file to write : " << name );
         return NULL;
     }
 
@@ -164,5 +177,30 @@ FileImage::FileImage (
     filename = new char[IMAGE_MAX_FILENAME_LENGTH];
     strcpy ( filename,name );
     pixelSize = bitspersample * channels / 8;
+}
+
+/* ------------------------------------------------------------------------------------------------ */
+/* ----------------------------------------- CONVERTISSEUR ---------------------------------------- */
+
+void FileImage::unassociateAlpha ( uint8_t* buffer ) {
+    uint8_t* pix = buffer;
+    int alphaInd = channels - 1;
+    for (int i = 0; i < width; i++, pix += channels) {
+        int alpha = *(pix + alphaInd);
+        
+        if (alpha == 255) {
+            // Opacité pleine
+            continue;
+        }
+        if (alpha == 0) {
+            // Transperence complète
+            memset(pix, 0, channels);
+            continue;
+        }
+        
+        for (int c = 0; c < alphaInd; c++) {
+            pix[c] = int(pix[c]) * 255 / alpha;
+        }
+    }
 }
 

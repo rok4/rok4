@@ -133,6 +133,8 @@ protected:
      * \param[in] width largeur de l'image en pixel
      * \param[in] height hauteur de l'image en pixel
      * \param[in] channel nombre de canaux par pixel
+     * \param[in] resx résolution dans le sens des X
+     * \param[in] resy résolution dans le sens des Y
      * \param[in] bbox emprise rectangulaire de l'image
      * \param[in] images images sources
      * \param[in] nd valeur de non-donnée
@@ -142,14 +144,16 @@ protected:
      * \param[in] width image width, in pixel
      * \param[in] height image height, in pixel
      * \param[in] channel number of samples per pixel
+     * \param[in] resx X wise resolution
+     * \param[in] resy Y wise resolution
      * \param[in] bbox bounding box
      * \param[in] images source images
      * \param[in] nd nodata value
      * \param[in] mirrors mirror images' number in source images (put in front)
      */
-    ExtendedCompoundImage ( int width, int height, int channels, BoundingBox<double> bbox,
+    ExtendedCompoundImage ( int width, int height, int channels, double resx, double resy, BoundingBox<double> bbox,
                             std::vector<Image*>& images, int* nd, uint mirrors ) :
-        Image ( width, height,channels,images.at ( 0 )->getResX(),images.at ( 0 )->getResY(),bbox ),
+        Image ( width, height, channels, resx, resy, bbox ),
         sourceImages ( images ),
         mirrorsNumber ( mirrors ) {
 

@@ -98,10 +98,10 @@ my %DEFAULT;
 BEGIN {}
 INIT {
     %PIXEL = (
-        bitspersample     => [8,32],
+        bitspersample     => [1,8,32],
         sampleformat      => ['uint','float'],
         photometric       => ['rgb','gray','mask'],
-        samplesperpixel   => [1,3,4],
+        samplesperpixel   => [1,2,3,4],
     );
 
     %DEFAULT = (

@@ -38,6 +38,13 @@ use warnings;
 
 use Test::More;
 
+use Log::Log4perl qw(:easy);
+# logger by default for unit tests
+Log::Log4perl->easy_init({
+    level => $WARN,
+    layout => '%5p : %m (%M) %n'
+});
+
 # My tested class
 use BE4::Level;
 

@@ -78,7 +78,7 @@ public:
     Palette ( const Palette& pal );
     //Palette(const std::vector< Colour >& mcolours);
 
-    Palette ( const std::map< double, Colour >& coloursMap, bool rgbContinuous, bool alphaContinuous );
+    //Palette ( const std::map< double, Colour >& coloursMap, bool rgbContinuous, bool alphaContinuous ); PLUS DEFINI !!
     Palette ( const std::map< double, Colour >& coloursMap, bool rgbContinuous, bool alphaContinuous, bool noAlpha );
 
     Palette & operator= ( const Palette& pal );

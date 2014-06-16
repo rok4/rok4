@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2014-05-28 15:03+0200\n"
+"POT-Creation-Date: 2014-06-16 14:38+0200\n"
 "PO-Revision-Date: 2013-02-18 17:49+0100\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -22,39 +22,39 @@ msgstr ""
 msgid "Liste de layers vide"
 msgstr "Layer list empty"
 
-#: CapabilitiesBuilder.cpp:440
+#: CapabilitiesBuilder.cpp:464
 msgid "Nombre de styles : "
 msgstr "Number of styles:"
 
-#: CapabilitiesBuilder.cpp:454
+#: CapabilitiesBuilder.cpp:478
 msgid "LegendURL"
 msgstr "LegendURL"
 
-#: CapabilitiesBuilder.cpp:469
+#: CapabilitiesBuilder.cpp:493
 msgid "LegendURL OK"
 msgstr "LegendURL OK"
 
-#: CapabilitiesBuilder.cpp:472
+#: CapabilitiesBuilder.cpp:496
 msgid "Style fini : "
 msgstr "Style completed:"
 
-#: CapabilitiesBuilder.cpp:493
+#: CapabilitiesBuilder.cpp:517
 msgid "Layer Fini"
 msgstr "Layer completed:"
 
-#: CapabilitiesBuilder.cpp:497
+#: CapabilitiesBuilder.cpp:521
 msgid "Layers Fini"
 msgstr "Layers completed"
 
-#: CapabilitiesBuilder.cpp:524
+#: CapabilitiesBuilder.cpp:548
 msgid "WMSfini"
 msgstr "WMS Capabilities complete."
 
-#: CapabilitiesBuilder.cpp:785
+#: CapabilitiesBuilder.cpp:809
 msgid "Title : "
 msgstr "Title: "
 
-#: CapabilitiesBuilder.cpp:789
+#: CapabilitiesBuilder.cpp:813
 msgid "Abstract : "
 msgstr "Abstract: "
 
@@ -1031,23 +1031,38 @@ msgstr "GetTile Tiff"
 msgid "GetTile Image"
 msgstr "GetTile Image"
 
-#: main.cpp:99
+#: main.cpp:102
 msgid "Usage : rok4 [-f server_config_file]"
 msgstr "Use : rok4 [-f server_config_file]"
 
-#: main.cpp:208
+#: main.cpp:126
+#, fuzzy
+msgid "Rechargement du serveur rok4"
+msgstr "Starting ROK4 server"
+
+#: main.cpp:129
+#, fuzzy
+msgid "Erreur lors du rechargement du serveur rok4"
+msgstr "Starting ROK4 server"
+
+#: main.cpp:217
 msgid "Erreur sur l'option -f"
 msgstr "Error on -f parameter"
 
-#: main.cpp:224
+#: main.cpp:233
 msgid "Lancement du serveur rok4"
 msgstr "Starting ROK4 server"
 
-#: main.cpp:245
+#: main.cpp:243
+#, fuzzy
+msgid "Mise a jour de la configuration"
+msgstr "Reloading configuration"
+
+#: main.cpp:260
 msgid "Rechargement de la configuration"
 msgstr "Reloading configuration"
 
-#: main.cpp:248 Rok4Api.cpp:136 Rok4Api.cpp:144 Rok4Api.cpp:152
+#: main.cpp:263 Rok4Api.cpp:136 Rok4Api.cpp:144 Rok4Api.cpp:152
 #: Rok4Api.cpp:161 Rok4Api.cpp:580
 msgid "Extinction du serveur ROK4"
 msgstr "Shutdown the ROK4 server"
@@ -1284,7 +1299,7 @@ msgstr ""
 msgid "Parametre FORMAT absent."
 msgstr ""
 
-#: Request.cpp:798 Rok4Server.cpp:458
+#: Request.cpp:798 Rok4Server.cpp:478
 msgid "Le format "
 msgstr ""
 
@@ -1408,11 +1423,11 @@ msgstr ""
 msgid "Parametre STYLES incomplet."
 msgstr ""
 
-#: Request.cpp:1063 Request.cpp:1109 Rok4Api.cpp:225 Rok4Server.cpp:532
+#: Request.cpp:1063 Request.cpp:1109 Rok4Api.cpp:225 Rok4Server.cpp:552
 msgid "Le service "
 msgstr ""
 
-#: Request.cpp:1063 Request.cpp:1109 Rok4Api.cpp:225 Rok4Server.cpp:532
+#: Request.cpp:1063 Request.cpp:1109 Rok4Api.cpp:225 Rok4Server.cpp:552
 msgid " est inconnu pour ce serveur."
 msgstr ""
 
@@ -1494,12 +1509,12 @@ msgstr ""
 msgid "Le parametre REQUEST n'est pas renseigné."
 msgstr ""
 
-#: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:501
-#: Rok4Server.cpp:505 Rok4Server.cpp:515 Rok4Server.cpp:519
+#: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:521
+#: Rok4Server.cpp:525 Rok4Server.cpp:535 Rok4Server.cpp:539
 msgid " n'est pas prise en charge par ce serveur."
 msgstr ""
 
-#: Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:505
+#: Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:525
 msgid "L'operation "
 msgstr ""
 
@@ -1507,11 +1522,11 @@ msgstr ""
 msgid "Le parametre SERVICE n'est pas renseigné."
 msgstr ""
 
-#: Rok4Api.cpp:299 Rok4Api.cpp:375 Rok4Server.cpp:472
+#: Rok4Api.cpp:299 Rok4Api.cpp:375 Rok4Server.cpp:492
 msgid "Probleme dans les parametres de la requete getTile"
 msgstr ""
 
-#: Rok4Api.cpp:503 Rok4Server.cpp:478
+#: Rok4Api.cpp:503 Rok4Server.cpp:498
 msgid "No data found"
 msgstr ""
 
@@ -1567,7 +1582,7 @@ msgstr ""
 msgid "bbox trop grande"
 msgstr ""
 
-#: Rok4Server.cpp:301 Rok4Server.cpp:385
+#: Rok4Server.cpp:301 Rok4Server.cpp:405
 msgid "Impossible de repondre a la requete"
 msgstr ""
 
@@ -1575,7 +1590,7 @@ msgstr ""
 msgid "Estompage"
 msgstr "Estompage"
 
-#: Rok4Server.cpp:458
+#: Rok4Server.cpp:478
 msgid " ne peut etre traite"
 msgstr ""
 

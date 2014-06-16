@@ -390,6 +390,20 @@ protected:
     );
 
 public:
+    
+    static bool canRead ( int bps, SampleFormat::eSampleFormat sf) {
+        return ( 
+            ( bps == 32 && sf == SampleFormat::FLOAT ) || 
+            ( bps == 8 && sf == SampleFormat::UINT )
+        );
+    }
+    
+    static bool canWrite ( int bps, SampleFormat::eSampleFormat sf) {
+        return ( 
+            ( bps == 32 && sf == SampleFormat::FLOAT ) || 
+            ( bps == 8 && sf == SampleFormat::UINT )
+        );
+    }
 
     /**
      * \~french

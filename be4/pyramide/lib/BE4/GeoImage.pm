@@ -180,10 +180,10 @@ sub _init {
     $self->{filename} = File::Basename::basename($completePath);
     
     my $maskPath = $completePath;
-    $maskPath =~ s/\.[a-zA-Z]+$/\.msk/;
+    $maskPath =~ s/\.[a-zA-Z0-9]+$/\.msk/;
     
     if (-f $maskPath) {
-        INFO(sprintf "We have a mask associated to the image '%s' :\n\t%s",$completePath,$maskPath);
+        INFO(sprintf "We have a mask associated to the image '%s' :\t%s",$completePath,$maskPath);
         $self->{maskCompletePath} = $maskPath;
     }
     
@@ -201,7 +201,8 @@ Extracts and calculates all GeoImage attributes' values, using GDAL library (see
 
 Image parameters are checked (sample per pixel, bits per sample...) and returned by the function. <ImageSource> can verify if all images own same components and the compatibility with be4's configuration.
 
-Returns a list : (bitspersample,photometric,sampleformat,samplesperpixel), an empty list if error.
+Returns
+    a list : (bitspersample,photometric,sampleformat,samplesperpixel), an empty list if error.
 =cut
 sub computeInfo {
     my $self = shift;
@@ -220,10 +221,7 @@ sub computeInfo {
     my $driver = $dataset->GetDriver();
     my $code   = $driver->{ShortName};
     # FIXME : type of driver ?
-    if ($code !~ /(GTiff|GeoTIFF)/) {
-        ERROR (sprintf "This driver '%s' is not implemented ('%s') !", $code, $image);
-        return ();
-    }
+    DEBUG (sprintf "use driver '%s'.", $code);
 
     my $i = 0;
 

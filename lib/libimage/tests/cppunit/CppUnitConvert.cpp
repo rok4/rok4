@@ -144,6 +144,7 @@ protected:
         for ( int i = 0; i < 50; i++ ) CPPUNIT_ASSERT_EQUAL ( 1, (int) UINT8_1_OR_2[i] );
         for ( int i = 50; i < 101; i++ ) CPPUNIT_ASSERT_EQUAL ( 2, (int) UINT8_1_OR_2[i] );
     }
+    
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION ( CppUnitConvert );

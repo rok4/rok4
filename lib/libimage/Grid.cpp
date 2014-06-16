@@ -244,6 +244,8 @@ bool Grid::reproject ( std::string from_srs, std::string to_srs ) {
 
     LOGGER_DEBUG ( "Avant (centre du pixel en haut à gauche) "<< gridX[0] << " " << gridY[0] );
     LOGGER_DEBUG ( "Avant (centre du pixel en haut à droite) "<< gridX[nbx-1] << " " << gridY[nbx-1] );
+    LOGGER_DEBUG ( "Avant (centre du pixel en bas à gauche) "<< gridX[nbx*(nby-1)] << " " << gridY[nbx*(nby-1)] );
+    LOGGER_DEBUG ( "Avant (centre du pixel en bas à droite) "<< gridX[nbx*nby-1] << " " << gridY[nbx*nby-1] );
 
     // Note that geographic locations need to be passed in radians, not decimal degrees,
     // and will be returned similarly
@@ -286,6 +288,8 @@ bool Grid::reproject ( std::string from_srs, std::string to_srs ) {
 
     LOGGER_DEBUG ( "Apres (centre du pixel en haut à gauche) "<<gridX[0]<<" "<<gridY[0] );
     LOGGER_DEBUG ( "Apres (centre du pixel en haut à droite) "<<gridX[nbx-1]<<" "<<gridY[nbx-1] );
+    LOGGER_DEBUG ( "Apres (centre du pixel en bas à gauche) "<<gridX[nbx*(nby-1)]<<" "<<gridY[nbx*(nby-1)] );
+    LOGGER_DEBUG ( "Apres (centre du pixel en bas à droite) "<<gridX[nbx*nby-1]<<" "<<gridY[nbx*nby-1] );
 
     /****************** Mise à jour de la bbox *********************
      * On n'utilise pas les coordonnées présentent dans les tableaux X et Y car celles ci correspondent

@@ -272,6 +272,10 @@ int main ( int argc, char **argv ) {
     if (sourceImage == NULL) {
         error("Cannot read the source image", -1);
     }
+    
+    if (debugLogger) {
+        sourceImage->print();
+    }
 
     Rok4ImageFactory R4IF;
     Rok4Image* rok4Image = R4IF.createRok4ImageToWrite(
@@ -279,6 +283,10 @@ int main ( int argc, char **argv ) {
         sourceImage->getSampleFormat(), sourceImage->getBitsPerSample(), sourceImage->getPhotometric(), compression,
         tileWidth, tileHeight
     );
+    
+    if (rok4Image == NULL) {
+        error("Cannot create the ROK4 image to write", -1);
+    }
 
     LOGGER_DEBUG ( "Write" );
     if (rok4Image->writeImage(sourceImage, crop) < 0) {

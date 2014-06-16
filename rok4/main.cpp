@@ -78,7 +78,10 @@
 /* Usage de la ligne de commande */
 
 Rok4Server* W;
+Rok4Server* Wtmp;
 bool reload;
+
+std::string serverConfigFile;
 
 // Minimum time between two signal to be defered.
 // Earlier signal would be ignored.
@@ -120,12 +123,18 @@ void reloadConfig ( int signum ) {
         signal_timestamp.tv_sec = begin.tv_sec;
         signal_timestamp.tv_usec = begin.tv_usec;
         reload = true;
+        std::cout<< _ ( "Rechargement du serveur rok4" ) << "["<< getpid() <<"]" <<std::endl;
+        Wtmp=rok4InitServer ( serverConfigFile.c_str() );
+        if ( !Wtmp ){
+            std::cout<< _ ( "Erreur lors du rechargement du serveur rok4" ) << "["<< getpid() <<"]" <<std::endl;
+            return;
+        }
         W->terminate();
     }
 }
 /**
  * \~french
- * \brief Force le servgeur à s'éteindre
+ * \brief Force le serveur à s'éteindre
  * \~english
  * \brief Force server shutdown
  */
@@ -199,7 +208,7 @@ int main ( int argc, char** argv ) {
     }
 
     // Lecture des arguments de la ligne de commande
-    std::string serverConfigFile=DEFAULT_SERVER_CONF_PATH;
+    serverConfigFile=DEFAULT_SERVER_CONF_PATH;
     for ( int i = 1; i < argc; i++ ) {
         if ( argv[i][0] == '-' ) {
             switch ( argv[i][1] ) {
@@ -222,14 +231,20 @@ int main ( int argc, char** argv ) {
     while ( reload ) {
         reload = false;
         std::cout<< _ ( "Lancement du serveur rok4" ) << "["<< getpid() <<"]" <<std::endl;
-        W=rok4InitServer ( serverConfigFile.c_str() );
-        if ( !W ) {
-            return 1;
-        }
+       
         if ( firstStart ) {
+             W=rok4InitServer ( serverConfigFile.c_str() );
+            if ( !W ) {
+                return 1;
+            }
             W->initFCGI();
             firstStart = false;
         } else {
+            std::cout<< _ ( "Mise a jour de la configuration" ) << "["<< getpid() <<"]" <<std::endl;
+            if ( Wtmp ){
+                W = Wtmp;
+                Wtmp = 0;
+            }
             W->setFCGISocket ( sock );
         }
 
@@ -248,10 +263,10 @@ int main ( int argc, char** argv ) {
             LOGGER_INFO ( _ ( "Extinction du serveur ROK4" ) );
             W->killFCGI();
         }
-
         rok4KillServer ( W );
         rok4ReloadLogger();
     }
+
     rok4KillLogger();
     return 0;
 }
