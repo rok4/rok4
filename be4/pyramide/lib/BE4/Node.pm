@@ -63,7 +63,13 @@ Using:
 Attributes:
     i - integer - Column, according to the TMS grid.
     j - integer - Row, according to the TMS grid.
+    
     pyramidName - string - relative path of this node in the pyramid (generated from i,j). Example : level16/00/12/L5.tif
+    bgImageBasename - string - 
+    bgMaskBasename - string -
+    workImageBasename - string - 
+    workMaskBasename - string - 
+    
     workExtension - string - extension of the temporary work image, lower case. Default value : tif.
     tm - <TileMatrix> - Tile matrix associated to the level which the node belong to.
     graph - <Graph> or <QTree> - Graph which contains the node.
@@ -136,7 +142,13 @@ sub new {
         i => undef,
         j => undef,
         pyramidName => undef,
-        workExtension => "tif",
+        
+        bgImageBasename => undef,
+        bgMaskBasename => undef,
+        workImageBasename => undef,
+        workMaskBasename => undef,
+        workExtension => "tif", # for images, masks are always tif
+        
         tm => undef,
         graph => undef,
         w => 0,
@@ -176,19 +188,19 @@ sub _init {
     
     # mandatory parameters !
     if (! defined $params->{i}) {
-        ERROR("Node Coord i is undef !");
+        ERROR("Node's column is undef !");
         return FALSE;
     }
     if (! defined $params->{j}) {
-        ERROR("Node Coord j is undef !");
+        ERROR("Node's row is undef !");
         return FALSE;
     }
     if (! defined $params->{tm}) {
-        ERROR("Node tmid is undef !");
+        ERROR("Node's tile matrix is undef !");
         return FALSE;
     }
     if (! defined $params->{graph}) {
-        ERROR("Tree Node is undef !");
+        ERROR("Node's graph is undef !");
         return FALSE;
     }
     
@@ -203,43 +215,12 @@ sub _init {
     
     my $base36path = BE4::Base36::indicesToB36Path($params->{i}, $params->{j}, $self->getGraph->getPyramid->getDirDepth()+1);
     
-    $self->{pyramidName} = File::Spec->catfile($self->getLevel, $base36path.".tif");;
+    $self->{pyramidName} = File::Spec->catfile($self->getLevel, $base36path.".tif");
+    $self->{workImageBasename} = sprintf "%s_%s_%s_I", $self->getLevel, $params->{i}, $params->{j};
     
     return TRUE;
 }
 
-=begin nd
-Constructor: clone
-
-Clone Node. Bless an instance with same attributes.
-
-See also:
-    <_init>
-=cut
-sub clone {
-    my $this = shift;
-
-    my $class= ref($this) || $this;
-    # IMPORTANT : if modification, think to update natural documentation (just above)
-    my $clone = {
-        i => $this->{i},
-        j => $this->{j},
-        pyramidName => $this->{pyramidName},
-        workExtension => $this->{workExtension},
-        tm => $this->{tm},
-        graph => $this->{graph},
-        w => $this->{w},
-        W => $this->{W},
-        code => $this->{code},
-        script => $this->{script},
-        nodeSources => $this->{nodeSources},
-        geoImages => $this->{geoImages},
-    };
-
-    bless($clone, $class);    
-
-    return $clone;
-}
 
 ####################################################################################################
 #                                Group: Geographic tools                                           #
@@ -352,6 +333,8 @@ sub getPyramidName {
     return $self->{pyramidName};
 }
 
+########## work files
+
 # Function: setWorkExtension
 sub setWorkExtension {
     my $self = shift;
@@ -360,41 +343,75 @@ sub setWorkExtension {
     $self->{workExtension} = lc($ext);
 }
 
+# Function: addBgImage
+sub addWorkMask {
+    my $self = shift;
+    $self->{workMaskBasename} = sprintf "%s_%s_%s_M", $self->getLevel, $params->{i}, $params->{j};
+}
+
+# Function: getWorkImageName
+sub getWorkImageName {
+    my $self = shift;
+    my $withExtension = shift;
+    
+    return $self->{workImageBasename}.$self->{workExtension} if ($withExtension);
+    return $self->{workImageBasename};
+}
+
+# Function: getWorkMaskName
+sub getWorkMaskName {
+    my $self = shift;
+    my $withExtension = shift;
+    
+    return $self->{workMaskBasename}.".tif" if ($withExtension);
+    return $self->{workMaskBasename};
+}
+
 =begin nd
 Function: getWorkBaseName
 
-Returns the work image base name (no extension) : "level_col_row", or "level_col_row_suffix" if defined.
-
-Parameters (list):
-    prefix - string - Optionnal, suffix to add to the work name
+Returns the work image base name (no extension) : "level_col_row"
 =cut
 sub getWorkBaseName {
     my $self = shift;
-    my $suffix = shift;
-    
-    # si un prefixe est précisé
-    return (sprintf "%s_%s_%s_%s", $self->getLevel, $self->{i}, $self->{j}, $suffix) if (defined $suffix);
-    # si pas de prefixe
     return (sprintf "%s_%s_%s", $self->getLevel, $self->{i}, $self->{j});
 }
 
-=begin nd
-Function: getWorkName
+########## background files
 
-Returns the work image name : "level_col_row.workExtension", or "level_col_row_suffix.workExtension" if defined.
-
-Parameters (list):
-    prefix - string - Optionnal, suffix to add to the work name
-=cut
-sub getWorkName {
+# Function: addBgImage
+sub addBgImage {
     my $self = shift;
-    my $suffix = shift;
-    
-    # si un prefixe est précisé
-    return (sprintf "%s_%s_%s_%s.%s", $self->getLevel, $self->{i}, $self->{j}, $suffix, $self->{workExtension}) if (defined $suffix);
-    # si pas de prefixe
-    return (sprintf "%s_%s_%s.%s", $self->getLevel, $self->{i}, $self->{j}, $self->{workExtension});
+    $self->{bgImageBasename} = sprintf "%s_%s_%s_BgI", $self->getLevel, $params->{i}, $params->{j};
 }
+
+# Function: getBgImageName
+sub getBgImageName {
+    my $self = shift;
+    my $withExtension = shift;
+    
+    return $self->{bgImageBasename}.".tif" if ($withExtension);
+    return $self->{bgImageBasename};
+}
+
+# Function: addBgMask
+sub addBgMask {
+    my $self = shift;
+    $self->{bgMaskBasename} = sprintf "%s_%s_%s_BgM", $self->getLevel, $params->{i}, $params->{j};
+}
+
+# Function: getBgMaskName
+sub getBgMaskName {
+    my $self = shift;
+    my $withExtension = shift;
+    
+    return $self->{getBgMaskBasename}.".tif" if ($withExtension);
+    return $self->{getBgMaskBasename};
+}
+
+
+
+
 
 # Function: getLevel
 sub getLevel {
@@ -558,42 +575,81 @@ Function: exportForMntConf
 
 Export attributes of the Node for mergeNtiff configuration file. Provided paths will be written as is, so can be relative or absolute (or use environment variables).
 
+Masks and backgrounds are always TIFF images.
+
 Parameters (list):
-    imagePath - string - Path to the image, have to be defined
-    maskPath - string - Path to the associated mask, can be undefined
-    perfix - string - Path to the associated maskString to add before paths, can be undefined
+    prefix - string - String to add before paths, can be undefined.
 =cut
 sub exportForMntConf {
     my $self = shift;
-    my $imagePath = shift;
-    my $maskPath = shift;
     my $prefix = shift;
+    
+    $prefix = "" if (! defined $prefix);
 
     TRACE;
 
     my @Bbox = $self->getBBox;
     my $output = "";
 
-    if (defined $prefix) {
-        $output = sprintf "IMG %s%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-            $prefix, $imagePath,
+    $output = sprintf "IMG %s%s.%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+        $prefix, $self->{workImageBasename}, $self->{workExtension},
+        $self->{tm}->getSRS(),
+        $Bbox[0], $Bbox[3], $Bbox[2], $Bbox[1],
+        $self->getTM()->getResolution(), $self->getTM()->getResolution();
+
+    if (defined $self->{workMaskBasename}) {
+        $output .= sprintf "MSK %s%s.tif\n", $prefix,  $self->{workMaskBasename};
+    }
+    
+    if (defined $self->{bgImageBasename}) {
+        $output .= sprintf "IMG %s%s.tif\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+            $prefix, $self->{bgImageBasename},
             $self->{tm}->getSRS(),
             $Bbox[0], $Bbox[3], $Bbox[2], $Bbox[1],
             $self->getTM()->getResolution(), $self->getTM()->getResolution();
-    } else {
-        $output = sprintf "IMG %s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-            $imagePath,
-            $self->{tm}->getSRS(),
-            $Bbox[0], $Bbox[3], $Bbox[2], $Bbox[1],
-            $self->getTM()->getResolution(), $self->getTM()->getResolution();
+            
+        if (defined $self->{bgMaskBasename}) {
+            $output .= sprintf "MSK %s%s.tif\n", $prefix, $self->{bgMaskBasename};
+        }        
     }
 
-    if (defined $maskPath) {
-        if (defined $prefix) {
-            $output .= sprintf "MSK %s%s\n", $prefix, $maskPath;
+    return $output;
+}
+
+=begin nd
+Function: exportForM4tConf
+
+Export work files (output) and eventually background (input) of the Node for the Merge4tiff call line.
+
+Parameters (list):
+    exportBg - boolean - Export background files (image + mask) if presents.
+=cut
+sub exportForM4tConf {
+    my $self = shift;
+    my $exportBg = shift;
+
+    my $output = sprintf "%s.%s", $self->{workImageBasename}, $self->{workExtension};
+
+    if (defined $self->{workMaskBasename}) {
+        $output .= sprintf " %s.tif\n", $self->{workMaskBasename};
+    } else {
+        $output .= " 0"
+    }
+    
+    if ($exportBg) {
+    
+        if (defined $self->{bgImageBasename}) {
+            $output .= sprintf " %s.tif", $self->{bgImageBasename};
+            
+            if (defined $self->{bgMaskBasename}) {
+                $output .= sprintf "MSK %s%s.tif\n", $prefix, $self->{bgMaskBasename};
+            } else {
+                $output .= " 0"
+            }
         } else {
-            $output .= sprintf "MSK %s\n", $maskPath;
+            $output .= " 0 0"
         }
+        
     }
 
     return $output;
