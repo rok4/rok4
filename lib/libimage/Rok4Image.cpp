@@ -760,7 +760,7 @@ bool Rok4Image::prepare()
     //  z compression initalization
     if ( compression == Compression::PNG || compression == Compression::DEFLATE ) {
         if ( compression == Compression::PNG ) {
-            // Pour la compression PNG, on a besoin d'un peu plus : pourquoi ????
+            // Pour la compression PNG, on a besoin d'un octet par ligne ne plus : un 0 est ajouté au début de chaque ligne, avant la compression
             zip_buffer = new uint8_t[rawTileSize + tileHeight];
         } else {
             zip_buffer = new uint8_t[rawTileSize];            

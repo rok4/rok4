@@ -112,7 +112,7 @@ sub encodeB10toB36 {
 =begin nd
 Function: indicesToB36Path
 
-Convert base-10 indices into a base-36 path (string). If the base-36 indices are (ABC,123), the base-36 path is "A1/B2/C3".
+Convert base-10 indices into a base-36 path (string). If the base-36 indices are (ABCD,1234), the base-36 path (length 3) is "A1B2/C3/D4".
 
 Parameters (list):
     i,j - integers - The base-10 indices to convert into a path.
@@ -192,7 +192,7 @@ sub encodeB36toB10 {
 =begin nd
 Function: b36PathToIndices
 
-Converts a base-36 path into base-10 indices (x,y). If the base-36 indices are (ABC,123), the base-36 path is "A1/B2/C3".
+Converts a base-36 path into base-10 indices (x,y). If the base-36 path is "A1/B2/C3", the base-36 indices are (ABC,123).
 
 Parameters (list):
     path - string - The base-36 path to convert into 2 base-10 indices
