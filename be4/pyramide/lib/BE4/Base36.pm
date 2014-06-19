@@ -60,6 +60,7 @@ use strict;
 use warnings;
 
 use Data::Dumper;
+use List::Util qw(min max);
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -74,6 +75,7 @@ our @EXPORT      = qw();
 # Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
+use constant B36STRING => "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 ####################################################################################################
 #                               Group: B36 returning functions                                     #
@@ -86,39 +88,25 @@ Convert a base-10 number into base-36 (string).
 
 Parameters (list):
     number - integer - The base-10 integer to convert.
-    length - integer - Optionnal, to force the minimum number of character.
     
 Examples:
     - BE4::Base36::encodeB10toB36(32674) returns "P7M".
-    - BE4::Base36::encodeB10toB36(156,4) returns "004C".
-    - BE4::Base36::encodeB10toB36(156,1) returns "4C".
+    - BE4::Base36::encodeB10toB36(156) returns "4C".
+    - BE4::Base36::encodeB10toB36(0) returns "0".
 =cut
 sub encodeB10toB36 {
     my $number = shift; # in base 10 !
-    my $length = shift;
+    
+    return "0" if ($number == 0);
     
     my $b36 = ""; # in base 36 !
-    
     while ( $number ) {
         my $v = $number % 36;
-        if($v <= 9) {
-            $b36 .= $v;
-        } else {
-            $b36 .= chr(55 + $v); # Assume that 'A' is 65
-        }
+        $b36 .= substr(B36STRING, $v, 1);
         $number = int $number / 36;
     }
-    
-    $b36 = reverse($b36);
-    
-    # fill with 0 !
-    if (defined $length && $length > length $b36) {
-        $b36 = "0"x($length - length $b36).$b36;
-    }
 
-    $b36 = "0" if ($b36 eq "");
-    
-    return $b36;
+    return reverse($b36);
 }
 
 =begin nd
@@ -141,28 +129,32 @@ sub indicesToB36Path {
     my $j = shift ;
     my $pathlength = shift ;
     
-    my $xb36 = BE4::Base36::encodeB10toB36($i,$pathlength);
-    my $yb36 = BE4::Base36::encodeB10toB36($j,$pathlength);
+    my $xb36 = BE4::Base36::encodeB10toB36($i);
+    my $yb36 = BE4::Base36::encodeB10toB36($j);
     
-    if (length ($xb36) > length ($yb36)) {
-        $yb36 = "0"x(length ($xb36) - length ($yb36)).$yb36;
+    my $maxLength = max($pathlength, length($xb36), length($yb36));
+    
+    if (length ($yb36) < $maxLength) {
+        $yb36 = "0"x($maxLength - length ($yb36)).$yb36;
     }
     
-    if (length ($xb36) < length ($yb36)) {
-        $xb36 = "0"x(length ($yb36) - length ($xb36)).$xb36;
+    if (length ($xb36) < $maxLength) {
+        $xb36 = "0"x($maxLength - length ($xb36)).$xb36;
     }
     
     my $B36Path = "";
+    my $nbSlash = $pathlength - 1;
     
-    for(my $i=1; $i < $pathlength; $i++) {
+    # coordinates are interlaced and (pathlength - 1) "/" are added : X1X2..Xn and Y1Y2..Yn -> X1Y1X2Y2/../XnYn
+    while(length ($xb36) > 0) {
         $B36Path = chop($yb36).$B36Path;
         $B36Path = chop($xb36).$B36Path;
-        $B36Path = '/'.$B36Path;
+        
+        if ($nbSlash > 0) {        
+            $B36Path = '/'.$B36Path;
+            $nbSlash--;
+        }
     }
-    
-    # We add what are left
-    $B36Path = $yb36.$B36Path;
-    $B36Path = $xb36.$B36Path;
         
     return $B36Path ;
 }
@@ -185,11 +177,13 @@ Example:
 sub encodeB36toB10 {
     my $b36  = shift; # idx in base 36 !
     
+    $b36 = reverse(uc($b36));
+    
     my $number = 0;
-    my $i = 0;
-    foreach(split //, reverse uc $b36) {
-        $_ = ord($_) - 55 unless /\d/; # Assume that 'A' is 65
-        $number += $_ * (36 ** $i++);
+    
+    for (my $i = 0; $i < length($b36); $i++) {
+        my $c = index(B36STRING, substr($b36, $i, 1));
+        $number += $c * (36 ** $i);
     }
     
     return $number;
@@ -218,11 +212,13 @@ sub b36PathToIndices {
     my $xB36 = "";
     my $yB36 = "";
     
-    my @dirs = split(/\//,$path);
-    for (my $i = 0; $i < scalar @dirs; $i++) {
-        my $part = $dirs[$i];
-        $xB36 .= substr($part,0,length($part)/2);
-        $yB36 .= substr($part,length($part)/2);
+    # We remove slashes
+    $path =~ s/\///g;
+    
+    # Coordinates are interlaced, we separate them : X1Y1X2Y2..XnYn -> X1X2..Xn and Y1Y2..Yn
+    while (length($path) > 0) {
+        $yB36 = chop($path).$yB36;
+        $xB36 = chop($path).$xB36;
     }
     
     my $x = BE4::Base36::encodeB36toB10($xB36);
