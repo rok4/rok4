@@ -346,7 +346,7 @@ sub setWorkExtension {
 # Function: addBgImage
 sub addWorkMask {
     my $self = shift;
-    $self->{workMaskBasename} = sprintf "%s_%s_%s_M", $self->getLevel, $params->{i}, $params->{j};
+    $self->{workMaskBasename} = sprintf "%s_%s_%s_M", $self->getLevel, $self->{i}, $self->{j};
 }
 
 # Function: getWorkImageName
@@ -354,7 +354,7 @@ sub getWorkImageName {
     my $self = shift;
     my $withExtension = shift;
     
-    return $self->{workImageBasename}.$self->{workExtension} if ($withExtension);
+    return $self->{workImageBasename}.".".$self->{workExtension} if ($withExtension);
     return $self->{workImageBasename};
 }
 
@@ -382,7 +382,7 @@ sub getWorkBaseName {
 # Function: addBgImage
 sub addBgImage {
     my $self = shift;
-    $self->{bgImageBasename} = sprintf "%s_%s_%s_BgI", $self->getLevel, $params->{i}, $params->{j};
+    $self->{bgImageBasename} = sprintf "%s_%s_%s_BgI", $self->getLevel, $self->{i}, $self->{j};
 }
 
 # Function: getBgImageName
@@ -397,7 +397,7 @@ sub getBgImageName {
 # Function: addBgMask
 sub addBgMask {
     my $self = shift;
-    $self->{bgMaskBasename} = sprintf "%s_%s_%s_BgM", $self->getLevel, $params->{i}, $params->{j};
+    $self->{bgMaskBasename} = sprintf "%s_%s_%s_BgM", $self->getLevel, $self->{i}, $self->{j};
 }
 
 # Function: getBgMaskName
@@ -405,8 +405,8 @@ sub getBgMaskName {
     my $self = shift;
     my $withExtension = shift;
     
-    return $self->{getBgMaskBasename}.".tif" if ($withExtension);
-    return $self->{getBgMaskBasename};
+    return $self->{bgMaskBasename}.".tif" if ($withExtension);
+    return $self->{bgMaskBasename};
 }
 
 
@@ -578,10 +578,12 @@ Export attributes of the Node for mergeNtiff configuration file. Provided paths 
 Masks and backgrounds are always TIFF images.
 
 Parameters (list):
+    exportBg - boolean - Export background files (image + mask) if presents.
     prefix - string - String to add before paths, can be undefined.
 =cut
 sub exportForMntConf {
     my $self = shift;
+    my $exportBg = shift;
     my $prefix = shift;
     
     $prefix = "" if (! defined $prefix);
@@ -601,16 +603,18 @@ sub exportForMntConf {
         $output .= sprintf "MSK %s%s.tif\n", $prefix,  $self->{workMaskBasename};
     }
     
-    if (defined $self->{bgImageBasename}) {
-        $output .= sprintf "IMG %s%s.tif\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-            $prefix, $self->{bgImageBasename},
-            $self->{tm}->getSRS(),
-            $Bbox[0], $Bbox[3], $Bbox[2], $Bbox[1],
-            $self->getTM()->getResolution(), $self->getTM()->getResolution();
-            
-        if (defined $self->{bgMaskBasename}) {
-            $output .= sprintf "MSK %s%s.tif\n", $prefix, $self->{bgMaskBasename};
-        }        
+    if ($exportBg) {
+        if (defined $self->{bgImageBasename}) {
+            $output .= sprintf "IMG %s%s.tif\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+                $prefix, $self->{bgImageBasename},
+                $self->{tm}->getSRS(),
+                $Bbox[0], $Bbox[3], $Bbox[2], $Bbox[1],
+                $self->getTM()->getResolution(), $self->getTM()->getResolution();
+                
+            if (defined $self->{bgMaskBasename}) {
+                $output .= sprintf "MSK %s%s.tif\n", $prefix, $self->{bgMaskBasename};
+            }        
+        }
     }
 
     return $output;
@@ -628,10 +632,10 @@ sub exportForM4tConf {
     my $self = shift;
     my $exportBg = shift;
 
-    my $output = sprintf "%s.%s", $self->{workImageBasename}, $self->{workExtension};
+    my $output = sprintf " %s.%s", $self->{workImageBasename}, $self->{workExtension};
 
     if (defined $self->{workMaskBasename}) {
-        $output .= sprintf " %s.tif\n", $self->{workMaskBasename};
+        $output .= sprintf " %s.tif", $self->{workMaskBasename};
     } else {
         $output .= " 0"
     }
@@ -642,7 +646,7 @@ sub exportForM4tConf {
             $output .= sprintf " %s.tif", $self->{bgImageBasename};
             
             if (defined $self->{bgMaskBasename}) {
-                $output .= sprintf "MSK %s%s.tif\n", $prefix, $self->{bgMaskBasename};
+                $output .= sprintf " %s.tif", $self->{bgMaskBasename};
             } else {
                 $output .= " 0"
             }

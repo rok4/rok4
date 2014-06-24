@@ -198,7 +198,7 @@ Work2cache () {
     if [[ ! ${RM_IMGS[$workDir/$workImgName]} ]] ; then
         
         local dir=`dirname ${PYR_DIR}/$imgName`
-    
+        
         if [ -r $workDir/$workImgName ] ; then rm -f ${PYR_DIR}/$imgName ; fi
         if [ ! -d $dir ] ; then mkdir -p $dir ; fi
             
@@ -215,18 +215,18 @@ Work2cache () {
         fi
         
         if [ $workMskName ] ; then
-
+            
             if [ $mskName ] ; then
-
+                
                 dir=`dirname ${PYR_DIR}/$mskName`
-
+                
                 if [ -r $workDir/$workMskName ] ; then rm -f ${PYR_DIR}/$mskName ; fi
                 if [ ! -d $dir ] ; then mkdir -p $dir ; fi
-
+                    
                 tiff2tile $workDir/$workMskName __t2tM__ ${PYR_DIR}/$mskName
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
                 echo "0/$mskName" >> ${TMP_LIST_FILE}
-
+                
             fi
             
             if [ "$level" == "$TOP_LEVEL" ] ; then
@@ -293,7 +293,7 @@ Merge4tiff () {
     for i in `seq 1 4`;
     do
         if [ ${imgIn[$i]} != '0' ] ; then
-            if [[ ! ${RM_IMGS[${imgIn[$i]}]} ]] ; then
+            if [[ ! -f ${tempDir}/${imgIn[$i]} ]] ; then
                 forRM="$forRM ${tempDir}/${imgIn[$i]}"
                 inM4T=`printf "$inM4T -i%.1d ${tempDir}/${imgIn[$i]}" $i`
                 
@@ -479,9 +479,9 @@ sub cache2work {
     
     #### Rappatriement du masque de donnée (si présent) ####
     
-    if ( defined $node->getBgMaskBasename() ) {
+    if ( defined $node->getBgMaskName() ) {
         # Un masque est associé à l'image que l'on va utiliser, on doit le mettre également au format de travail
-        $fileName = File::Spec->catfile($self->{pyramid}->getDirMaks(),$node->getPyramidName);
+        $fileName = File::Spec->catfile($self->{pyramid}->getDirMask(),$node->getPyramidName);
         
         $cmd .= sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $fileName , $node->getBgMaskName());
         $weight += CACHE2WORK_W;
@@ -525,14 +525,16 @@ sub work2cache {
     #### Export du masque, si présent
 
     if ($node->getWorkMaskName()) {
+        # On a un masque de travail : on le précise pour qu'il soit potentiellement déplacé dans le temporaire commun ou supprimé
         $cmd .= sprintf (" %s", $node->getWorkMaskName(TRUE));
-    }
-    
-    if ( $self->{pyramid}->ownMasks() ) {
-        $pyrName = File::Spec->catfile($self->{pyramid}->getDirMask(),$node->getPyramidName());
         
-        $cmd .= sprintf (" %s", $pyrName);
-        $weight += TIFF2TILE_W;
+        # En plus, on veut exporter les masques dans la pyramide, on en précise donc l'emplacement final
+        if ( $self->{pyramid}->ownMasks() ) {
+            $pyrName = File::Spec->catfile($self->{pyramid}->getDirMask(),$node->getPyramidName());
+            
+            $cmd .= sprintf (" %s", $pyrName);
+            $weight += TIFF2TILE_W;
+        }        
     }
     
     $cmd .= "\n";
@@ -602,7 +604,7 @@ sub mergeNtiff {
     # La premiere ligne correspond à la dalle résultat: La version de travail de la dalle à calculer.
     # Les points d'interrogation permettent de gérer le dossier où écrire les images grâce à une variable
     # Cet export va également ajouter les fonds (si présents) comme premières sources
-    printf CFGF $node->exportForMntConf("?");
+    printf CFGF $node->exportForMntConf(TRUE, "?");
 
     #   - Les images sources (QTree)
     my $listGeoImg = $node->getGeoImages;
@@ -612,7 +614,7 @@ sub mergeNtiff {
     
     #   - Les noeuds sources (NNGraph)
     foreach my $nodesource ( @{$node->getNodeSources()} ) {
-        printf CFGF "%s", $nodesource->exportForMntConf($nodesource->getScript()->getTempDir()."/");
+        printf CFGF "%s", $nodesource->exportForMntConf(FALSE, $nodesource->getScript()->getTempDir()."/");
     }
     
     close CFGF;
@@ -697,7 +699,7 @@ sub merge4tiff {
     foreach my $childNode ($node->getPossibleChildren()) {
             
         if (defined $childNode) {
-            $childNode->exportForM4tConf(FALSE);
+            $code .= $childNode->exportForM4tConf(FALSE);
         } else {
             $code .= " 0 0";
         }
