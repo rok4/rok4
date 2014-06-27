@@ -99,6 +99,8 @@ use constant FALSE => 0;
 use constant MERGE4TIFF_W => 1;
 # Constant: MERGENTIFF_W
 use constant MERGENTIFF_W => 4;
+# Constant: MERGENTIFF_W
+use constant DECIMATENTIFF_W => 3;
 # Constant: CACHE2WORK_W
 use constant CACHE2WORK_W => 1;
 # Constant: WGET_W
@@ -114,6 +116,7 @@ Define bash functions, used to factorize and reduce scripts :
     - Work2cache
     - MergeNtiff
     - Merge4tiff
+    - DecimateNtiff
 =cut
 my $BASHFUNCTIONS   = <<'FUNCTIONS';
 
@@ -250,6 +253,25 @@ MergeNtiff () {
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     
     rm -f ${MNT_CONF_DIR}/$config
+    
+    if [ $bgI ] ; then
+        rm -f ${TMP_DIR}/$bgI
+    fi
+    
+    if [ $bgM ] ; then
+        rm -f ${TMP_DIR}/$bgM
+    fi
+}
+
+DecimateNtiff () {
+    local config=$1
+    local bgI=$2
+    local bgM=$3
+    
+    decimateNtiff -f ${DNT_CONF_DIR}/$config -r ${TMP_DIR}/ __dNt__
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    
+    rm -f ${DNT_CONF_DIR}/$config
     
     if [ $bgI ] ; then
         rm -f ${TMP_DIR}/$bgI
@@ -564,7 +586,7 @@ Parameters (list):
     node - <Node> - Node to generate thanks to a 'mergeNtiff' command.
     
 Example:
-|    MergeNtiff ${MNT_CONF_DIR}/mergeNtiffConfig_19_397_3134.txt
+|    MergeNtiff mergeNtiffConfig_19_397_3134.txt
 
 Returns:
     An array (code, weight), ("",-1) if error.
@@ -577,6 +599,111 @@ sub mergeNtiff {
     
     my ($c, $w);
     my ($code, $weight) = ("",MERGENTIFF_W);
+    
+    my $workBgI = undef;
+    my $workBgM = undef;
+
+    # Si elle existe, on copie la dalle de la pyramide de base dans le repertoire de travail 
+    # en la convertissant du format cache au format de travail: c'est notre image de fond.
+    # Si la dalle de la pyramide de base existe, on a créé un lien, donc il existe un fichier
+    # correspondant dans la nouvelle pyramide.
+    # On fait de même avec le masque de donnée associé, s'il existe.
+    my $imgPath = File::Spec->catfile($self->{pyramid}->getRootPerType("data",TRUE),$node->getPyramidName);
+    
+    if ( -f $imgPath ) {
+        my $clonedNodeBg = $node->clone();
+        
+        my $maskPath = File::Spec->catfile($self->{pyramid}->getRootPerType("mask",TRUE),$clonedNodeBg->getPyramidName);
+        
+        if ( $self->{useMasks} && -f $maskPath ) {
+            # On a en plus un masque associé à l'image de fond
+            ($c,$w) = $self->cache2work($clonedNodeBg,TRUE);
+            $code .= $c;
+            $weight += $w;
+            
+            $workBgM = $clonedNodeBg->getWorkName("BgM");
+        } else {
+            ($c,$w) = $self->cache2work($clonedNodeBg,FALSE);
+            $code .= $c;
+            $weight += $w;
+        }
+        
+        $workBgI = $clonedNodeBg->getWorkName("BgI");
+
+        undef $clonedNodeBg;
+    }
+    
+    my $workImgPath = $node->getWorkName("I");
+    my $workMskPath = undef;
+    if ($self->{useMasks}) {
+        $workMskPath = $node->getWorkName("M");
+    }
+    
+    my $mNtConfFilename = $node->getWorkBaseName.".txt";
+    my $mNtConfFile = File::Spec->catfile($self->{mntConfDir}, $mNtConfFilename);
+    
+    if (! open CFGF, ">", $mNtConfFile ) {
+        ERROR(sprintf "Impossible de creer le fichier $mNtConfFile.");
+        return ("",-1);
+    }
+    
+    # La premiere ligne correspond à la dalle résultat: La version de travail de la dalle à calculer.
+    # Les points d'interrogation permettent de gérer le dossier où écrire les images grâce à une variable
+    printf CFGF $node->exportForMntConf($workImgPath, $workMskPath, "?");
+
+    # Maintenant les dalles en entrée:
+    #   - L'éventuelle image de fond (avec l'eventuel masque associé)
+    printf CFGF "%s", $node->exportForMntConf($workBgI, $workBgM, "?") if (defined $workBgI);
+
+    #   - Les images source (QTree)
+    my $listGeoImg = $node->getGeoImages;
+    foreach my $img (@{$listGeoImg}) {
+        printf CFGF "%s", $img->exportForMntConf($self->{useMasks});
+    }
+    #   - Les noeuds source (Graph)
+    foreach my $nodesource ( @{$node->getNodeSources()} ) {
+        my $imagePath = File::Spec->catfile($nodesource->getScript->getTempDir, $nodesource->getWorkName("I"));
+        my $maskPath = undef;
+        if ($self->{useMasks}) {
+            $maskPath = File::Spec->catfile($nodesource->getScript->getTempDir, $nodesource->getWorkName("M"));
+        }
+        printf CFGF "%s", $nodesource->exportForMntConf($imagePath, $maskPath);
+    }
+    
+    close CFGF;
+    
+    $code .= "MergeNtiff $mNtConfFilename";
+    $code .= " $workBgI" if (defined $workBgI); # pour supprimer l'image de fond si elle existe
+    $code .= " $workBgM" if (defined $workBgM); # pour supprimer le masque de fond si il existe
+    $code .= "\n";
+
+    return ($code,$weight);
+}
+
+=begin nd
+Function: decimateNtiff
+
+Use the 'decimateNtiff' bash function. Write a configuration file, with sources.
+
+(see decimateNtiff.png)
+
+Parameters (list):
+    node - <Node> - Node to generate thanks to a 'decimateNtiff' command.
+    
+Example:
+|    DecimateNtiff decimateNtiffConfig_12_26_17.txt
+
+Returns:
+    An array (code, weight), ("",-1) if error.
+=cut
+sub decimateNtiff {
+    my $self = shift;
+    my $node = shift;
+
+    TRACE;
+    
+    my ($c, $w);
+    my ($code, $weight) = ("",DECIMATENTIFF_W);
     
     my $workBgI = undef;
     my $workBgM = undef;
@@ -820,6 +947,14 @@ sub configureFunctions {
     $conf_mNt .= "-n $nd ";
 
     $configuredFunc =~ s/__mNt__/$conf_mNt/;
+    
+    ######## decimateNtiff ########
+    # work compression : deflate
+    my $conf_dNt = "-c zip ";
+
+    $conf_dNt .= "-n $nd ";
+
+    $configuredFunc =~ s/__dNt__/$conf_dNt/;
     
     ######## merge4tiff ########
     # work compression : deflate

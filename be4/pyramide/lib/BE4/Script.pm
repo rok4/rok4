@@ -62,6 +62,7 @@ Attributes:
     tempDir - string - Directory used to write temporary images.
     commonTempDir - string - Directory used to write temporary images which have to be shared between different scripts.
     mntConfDir - string - Directory used to write mergeNtiff configuration files. *mntConfDir* is a subdirectory of *commonTempDir*.
+    dntConfDir - string - Directory used to write decimateNtiff configuration files (used by <NNGraph> generation). *dntConfDir* is a subdirectory of *commonTempDir*.
     weight - integer - Weight of the script, according to its content.
     stream - stream - Stream to the script file, to write in.
 =cut
@@ -127,6 +128,7 @@ sub new {
         tempDir => undef,
         commonTempDir => undef,
         mntConfDir => undef,
+        dntConfDir => undef,
         weight => 0,
         stream => undef,
     };
@@ -210,6 +212,17 @@ sub new {
         }
     }
     
+    # DecimateNtiff configurations directory
+    if (! -d $self->{dntConfDir}) {
+        DEBUG (sprintf "Create the DecimateNtiff configurations directory '%s' !", $self->{dntConfDir});
+        eval { mkpath([$self->{dntConfDir}]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the DecimateNtiff configurations directory '%s' : %s !",
+                $self->{dntConfDir}, $@);
+            return undef;
+        }
+    }
+    
     # Script's directory
     if (! -d $params->{scriptDir}) {
         DEBUG (sprintf "Create the script directory '%s' !", $params->{scriptDir});
@@ -261,6 +274,14 @@ sub getMntConfDir {
     my $self = shift;
     return $self->{mntConfDir};
 }
+
+# Function: getDntConfDir
+# Returns the decimateNtiff configuration's directory
+sub getDntConfDir {
+    my $self = shift;
+    return $self->{dntConfDir};
+}
+
 
 # Function: getWeight
 # Returns the script's weight
@@ -319,6 +340,7 @@ Example:
     ROOT_TMP_DIR="/tmp/ORTHO/"
     TMP_DIR="/tmp/ORTHO/SCRIPT_1"
     MNT_CONF_DIR="/home/ign/TMP/ORTHO/SCRIPT_1/mergeNtiff"
+    DNT_CONF_DIR="/home/ign/TMP/ORTHO/SCRIPT_1/decimateNtiff"
     PYR_DIR="/home/ign/PYR/ORTHO"
     LIST_FILE="/home/ign/PYR/ORTHO.list"
 
@@ -358,6 +380,7 @@ sub prepare {
     $code   .= sprintf ("ROOT_TMP_DIR=\"%s\"\n", dirname($self->{tempDir}));
     $code   .= sprintf ("TMP_DIR=\"%s\"\n", $self->{tempDir});
     $code   .= sprintf ("MNT_CONF_DIR=\"%s\"\n", $self->{mntConfDir});
+    $code   .= sprintf ("DNT_CONF_DIR=\"%s\"\n", $self->{dntConfDir});
     $code   .= sprintf ("PYR_DIR=\"%s\"\n", $pyrDir);
     $code   .= sprintf ("LIST_FILE=\"%s\"\n", $listFile);
 
@@ -435,6 +458,7 @@ Example:
         Temporary directory : /home/IGN/TEMP/SCRIPT_2
         Common temporary directory : /home/IGN/TEMP/COMMON
         MergeNtiff configuration directory : /home/IGN/TEMP/COMMON/mergeNtiff
+        DecimateNtiff configuration directory : /home/IGN/TEMP/COMMON/decimateNtiff
         Weight : 59
     (end code)
 =cut
@@ -453,6 +477,7 @@ sub exportForDebug {
     $export .= sprintf "\t Temporary directory : %s\n", $self->{tempDir};
     $export .= sprintf "\t Common temporary directory : %s\n", $self->{commonTempDir};
     $export .= sprintf "\t MergeNtiff configuration directory : %s\n", $self->{mntConfDir};
+    $export .= sprintf "\t DecimateNtiff configuration directory : %s\n", $self->{dntConfDir};
     $export .= sprintf "\t Weight : %s\n", $self->{weight};
 
     return $export;

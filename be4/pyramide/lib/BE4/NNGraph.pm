@@ -500,27 +500,27 @@ sub identifyAboveNodes {
                 
                 for (my $i = $iMin; $i < $iMax + 1; $i++){
                     for (my $j = $jMin ; $j < $jMax +1 ; $j++) {
-                        
-                      my $idxkey = sprintf "%s_%s",$i,$j;
-                      my $newnode = undef;
-                      if (! defined $self->{nodes}->{$targetTm->getID}->{$idxkey}) {
-                        $newnode = new BE4::Node({
-                          i => $i,
-                          j => $j,
-                          tm => $targetTm,
-                          graph => $self,
-                        });
-                        ## intersection avec la bbox des données initiales
-                        if ( $newnode->isBboxIntersectingNodeBbox($self->getBbox())) {
-                          $self->{nodes}->{$targetTm->getID()}->{$idxkey} = $newnode ;
-                          $newnode->addNodeSources($node); 
-                        }
-                      } else {
-                        $newnode = $self->{nodes}->{$targetTm->getID()}->{$idxkey};
-                        $newnode->addNodeSources($node); 
-                      }             
-                   }
-               }
+
+                        my $idxkey = sprintf "%s_%s",$i,$j;
+                        my $newnode = undef;
+                        if (! defined $self->{nodes}->{$targetTm->getID}->{$idxkey}) {
+                            $newnode = new BE4::Node({
+                                i => $i,
+                                j => $j,
+                                tm => $targetTm,
+                                graph => $self,
+                            });
+                            ## intersection avec la bbox des données initiales
+                            if ( $newnode->isBboxIntersectingNodeBbox($self->getBbox())) {
+                                $self->{nodes}->{$targetTm->getID()}->{$idxkey} = $newnode ;
+                                $newnode->addNodeSources($node); 
+                            }
+                        } else {
+                            $newnode = $self->{nodes}->{$targetTm->getID()}->{$idxkey};
+                            $newnode->addNodeSources($node); 
+                        }             
+                    }
+                }
 
             }
         }

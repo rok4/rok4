@@ -300,7 +300,7 @@ public:
         LOGGER_INFO ( "------ ExtendedCompoundImage -------" );
         Image::print();
         LOGGER_INFO ( "\t- Number of images = " << sourceImages.size() << ", whose " << mirrorsNumber << " mirrors" );
-        LOGGER_INFO ( "\t- Nodata value " << nodata << "\n" );
+        LOGGER_INFO ( "" );
     }
 };
 
@@ -397,7 +397,7 @@ public:
      */
     ExtendedCompoundMask ( ExtendedCompoundImage* ECI ) :
         Image ( ECI->getWidth(), ECI->getHeight(), 1, ECI->getResX(), ECI->getResY(),ECI->getBbox() ),
-        ECI ( ECI ) {}
+        ECI ( ECI ) {isMask = true;}
 
     int getline ( uint8_t* buffer, int line );
     int getline ( float* buffer, int line );
