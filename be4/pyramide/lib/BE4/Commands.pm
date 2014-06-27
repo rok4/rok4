@@ -124,11 +124,12 @@ declare -A RM_IMGS
 
 Wms2work () {
     local dir=$1
-    local fmt=$2
-    local nbTiles=$3
-    local min_size=$4
-    local url=$5
-    shift 5
+    local harvest_ext=$2
+    local final_ext=$3
+    local nbTiles=$4
+    local min_size=$5
+    local url=$6
+    shift 6
 
     local size=0
 
@@ -136,7 +137,7 @@ Wms2work () {
 
     for i in `seq 1 $#`;
     do
-        nameImg=`printf "$dir/img%.5d.$fmt" $i`
+        nameImg=`printf "$dir/img%.5d.$harvest_ext" $i`
         local count=0; local wait_delay=1
         while :
         do
@@ -144,7 +145,7 @@ Wms2work () {
             wget --no-verbose -O $nameImg "$url&BBOX=$1"
 
             if [ $? == 0 ] ; then
-                if [ "$fmt" == "png" ] ; then
+                if [ "$harvest_ext" == "png" ] ; then
                     if pngcheck $nameImg 1>/dev/null ; then break ; fi
                 else
                     if tiffck $nameImg 1>/dev/null ; then break ; fi
@@ -164,21 +165,17 @@ Wms2work () {
     done
     
     if [ "$size" -le "$min_size" ] ; then
-        if [ "$nbTiles" == "1 1" ] ; then
-            RM_IMGS["$dir.$fmt"]="1"
-        else
-            RM_IMGS["$dir.tif"]="1"
-        fi
+        RM_IMGS["$dir.$final_ext"]="1"
 
         rm -rf $dir
         return
     fi
 
     if [ "$nbTiles" != "1 1" ] ; then
-        composeNtiff -g $nbTiles -s $dir/ -c zip $dir.tif
+        composeNtiff -g $nbTiles -s $dir/ -c zip $dir.$final_ext
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     else
-        mv $dir/img00001.$fmt $dir.$fmt
+        mv $dir/img00001.$harvest_ext $dir.$final_ext
     fi
 
     rm -rf $dir
@@ -186,9 +183,9 @@ Wms2work () {
 
 Cache2work () {
     local imgSrc=$1
-    local workName=$2
+    local workBaseName=$2
 
-    cache2work __c2w__ $imgSrc $workName.tif
+    cache2work __c2w__ $imgSrc $workBaseName.tif
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 
@@ -204,7 +201,7 @@ Work2cache () {
     if [[ ! ${RM_IMGS[$workDir/$workImgName]} ]] ; then
         
         local dir=`dirname ${PYR_DIR}/$imgName`
-    
+        
         if [ -r $workDir/$workImgName ] ; then rm -f ${PYR_DIR}/$imgName ; fi
         if [ ! -d $dir ] ; then mkdir -p $dir ; fi
             
@@ -221,18 +218,18 @@ Work2cache () {
         fi
         
         if [ $workMskName ] ; then
-
+            
             if [ $mskName ] ; then
-
+                
                 dir=`dirname ${PYR_DIR}/$mskName`
-
+                
                 if [ -r $workDir/$workMskName ] ; then rm -f ${PYR_DIR}/$mskName ; fi
                 if [ ! -d $dir ] ; then mkdir -p $dir ; fi
-
+                    
                 tiff2tile $workDir/$workMskName __t2tM__ ${PYR_DIR}/$mskName
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
                 echo "0/$mskName" >> ${TMP_LIST_FILE}
-
+                
             fi
             
             if [ "$level" == "$TOP_LEVEL" ] ; then
@@ -286,12 +283,13 @@ Merge4tiff () {
     local imgOut=$1
     local mskOut=$2
     shift 2
+    local imgBg=$1
+    local mskBg=$2
+    shift 2
     local levelIn=$1
     local imgIn=( 0 $2 $4 $6 $8 )
     local mskIn=( 0 $3 $5 $7 $9 )
     shift 9
-    local imgBg=$1
-    local mskBg=$2
 
     local forRM=''
 
@@ -304,10 +302,10 @@ Merge4tiff () {
     
     local inM4T=''
     
-    if [ $imgBg ] ; then
+    if [ $imgBg != '0'  ] ; then
         forRM="$forRM ${TMP_DIR}/$imgBg"
         inM4T="$inM4T -ib ${TMP_DIR}/$imgBg"
-        if [ $mskBg ] ; then
+        if [ $mskBg != '0'  ] ; then
             forRM="$forRM ${TMP_DIR}/$mskBg"
             inM4T="$inM4T -mb ${TMP_DIR}/$mskBg"
         fi
@@ -317,7 +315,7 @@ Merge4tiff () {
     for i in `seq 1 4`;
     do
         if [ ${imgIn[$i]} != '0' ] ; then
-            if [[ ! ${RM_IMGS[${imgIn[$i]}]} ]] ; then
+            if [[ ! -f ${tempDir}/${imgIn[$i]} ]] ; then
                 forRM="$forRM ${tempDir}/${imgIn[$i]}"
                 inM4T=`printf "$inM4T -i%.1d ${tempDir}/${imgIn[$i]}" $i`
                 
@@ -430,30 +428,29 @@ Example:
     11271098.442818944,-2504688.54284865024,11897270.57853110784,-1878516.4071364864
     11897270.57853110784,-2504688.54284865024,12523442.71424327168,-1878516.4071364864"
     #
-    Wms2work "path/image_several_requests" "png" "4 4" "250000" "http://localhost/wms-vector?LAYERS=BDD_WLD_WM&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/png&CRS=EPSG:3857&WIDTH=1024&HEIGHT=1024&STYLES=line&BGCOLOR=0x80BBDA&TRANSPARENT=0X80BBDA" $BBOXES
+    Wms2work "path/image_several_requests" "png" "tif" "4 4" "250000" "http://localhost/wms-vector?LAYERS=BDD_WLD_WM&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/png&CRS=EPSG:3857&WIDTH=1024&HEIGHT=1024&STYLES=line&BGCOLOR=0x80BBDA&TRANSPARENT=0X80BBDA" $BBOXES
     (end code)
 
 Parameters (list):
     node - <Node> - Node whose image have to be harvested.
     harvesting - <Harvesting> - To use to harvest image.
-    suffix - string - Optionnal, suffix to add after the node's name ('BgI' for example), seperated with an underscore.
 
 Returns:
     An array (code, weight), (undef,WGET_W) if error.
 =cut
 sub wms2work {
-    my ($self, $node, $harvesting, $suffix) = @_;
+    my ($self, $node, $harvesting) = @_;
     
     TRACE;
     
     my @imgSize = $self->{pyramid}->getCacheImageSize($node->getLevel); # ie size tile image in pixel !
     my $tms     = $self->{pyramid}->getTileMatrixSet;
     
-    my $nodeName = $node->getWorkBaseName($suffix);
+    my $nodeName = $node->getWorkImageName();
     
-    my ($xMin, $yMin, $xMax, $yMax) = $node->getBBox;
+    my ($xMin, $yMin, $xMax, $yMax) = $node->getBBox();
     
-    my ($cmd, $format) = $harvesting->getCommandWms2work({
+    my ($cmd, $finalExtension) = $harvesting->getCommandWms2work({
         inversion => $tms->getInversion,
         dir => "\${TMP_DIR}/".$nodeName,
         srs => $tms->getSRS,
@@ -466,9 +463,9 @@ sub wms2work {
         return (undef, WGET_W);
     }
 
-    $node->setWorkExtension($format);
+    $node->setWorkExtension($finalExtension);
     
-    return ($cmd,WGET_W);
+    return ($cmd, WGET_W);
 }
 
 =begin nd
@@ -486,37 +483,29 @@ Examples:
     
 Parameters (list):
     node - <Node> - Node whose image have to be transfered in the work directory.
-    ownMask - boolean - Specify if mask is combined with this node and have to be imported.
 
 Returns:
     An array (code, weight), ("",-1) if error.
 =cut
 sub cache2work {
-    my ($self, $node, $ownMask) = @_;
+    my ($self, $node) = @_;
     
     #### Rappatriement de l'image de donnée ####
-
-    # On va chercher dans la pyramide l'image, pour s'en servir de fond, d'où le Bg.
-    # C'est une image, d'où le I => suffixe BgI
-    my $workBaseName = $node->getWorkBaseName("BgI");
-    my $fileName = File::Spec->catfile($self->{pyramid}->getRootPerType("data",FALSE),$node->getPyramidName);
-    
-    my @imgSize   = $self->{pyramid}->getCacheImageSize($node->getLevel); # image size in pixel (4096)
+    my $fileName = File::Spec->catfile($self->{pyramid}->getDirImage(),$node->getPyramidName);
     
     my $cmd = "";
     my $weight = 0;
     
-    $cmd = sprintf "Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $fileName, $workBaseName;
+    $cmd = sprintf "Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $fileName, $node->getBgImageName();
     $weight = CACHE2WORK_W;
     
     #### Rappatriement du masque de donnée (si présent) ####
     
-    if ( $ownMask ) {
+    if ( defined $node->getBgMaskName() ) {
         # Un masque est associé à l'image que l'on va utiliser, on doit le mettre également au format de travail
-        $fileName = File::Spec->catfile($self->{pyramid}->getRootPerType("mask",FALSE),$node->getPyramidName);
-        $workBaseName = $node->getWorkBaseName("BgM");
+        $fileName = File::Spec->catfile($self->{pyramid}->getDirMask(),$node->getPyramidName);
         
-        $cmd .= sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $fileName , $workBaseName);
+        $cmd .= sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $fileName , $node->getBgMaskName());
         $weight += CACHE2WORK_W;
     }
     
@@ -550,24 +539,24 @@ sub work2cache {
     
     #### Export de l'image
     
-    my $workName  = $node->getWorkName("I");
-    my $pyrName = File::Spec->catfile($self->{pyramid}->getRootPerType("data",FALSE),$node->getPyramidName);
+    my $pyrName = File::Spec->catfile($self->{pyramid}->getDirImage(),$node->getPyramidName());
     
-    $cmd .= sprintf ("Work2cache %s %s %s %s", $node->getLevel, $workDir, $workName, $pyrName);
+    $cmd .= sprintf ("Work2cache %s %s %s %s", $node->getLevel, $workDir, $node->getWorkImageName(TRUE), $pyrName);
     $weight += TIFF2TILE_W;
     
-    #### Export du masque, si voulu
+    #### Export du masque, si présent
 
-    if ($self->{useMasks}) {
-        $workName  = $node->getWorkName("M");
-        $cmd .= sprintf (" %s", $workName);
-    }
-    
-    if ( $self->{pyramid}->ownMasks() ) {
-        $pyrName = File::Spec->catfile($self->{pyramid}->getRootPerType("mask",FALSE),$node->getPyramidName);
+    if ($node->getWorkMaskName()) {
+        # On a un masque de travail : on le précise pour qu'il soit potentiellement déplacé dans le temporaire commun ou supprimé
+        $cmd .= sprintf (" %s", $node->getWorkMaskName(TRUE));
         
-        $cmd .= sprintf (" %s", $pyrName);
-        $weight += TIFF2TILE_W;
+        # En plus, on veut exporter les masques dans la pyramide, on en précise donc l'emplacement final
+        if ( $self->{pyramid}->ownMasks() ) {
+            $pyrName = File::Spec->catfile($self->{pyramid}->getDirMask(),$node->getPyramidName());
+            
+            $cmd .= sprintf (" %s", $pyrName);
+            $weight += TIFF2TILE_W;
+        }        
     }
     
     $cmd .= "\n";
@@ -599,44 +588,31 @@ sub mergeNtiff {
     
     my ($c, $w);
     my ($code, $weight) = ("",MERGENTIFF_W);
-    
-    my $workBgI = undef;
-    my $workBgM = undef;
 
     # Si elle existe, on copie la dalle de la pyramide de base dans le repertoire de travail 
     # en la convertissant du format cache au format de travail: c'est notre image de fond.
     # Si la dalle de la pyramide de base existe, on a créé un lien, donc il existe un fichier
     # correspondant dans la nouvelle pyramide.
     # On fait de même avec le masque de donnée associé, s'il existe.
-    my $imgPath = File::Spec->catfile($self->{pyramid}->getRootPerType("data",TRUE),$node->getPyramidName);
+    my $imgPath = File::Spec->catfile($self->{pyramid}->getDirImage(TRUE),$node->getPyramidName());
     
     if ( -f $imgPath ) {
-        my $clonedNodeBg = $node->clone();
+        $node->addBgImage();
         
-        my $maskPath = File::Spec->catfile($self->{pyramid}->getRootPerType("mask",TRUE),$clonedNodeBg->getPyramidName);
+        my $maskPath = File::Spec->catfile($self->{pyramid}->getDirMask(TRUE),$node->getPyramidName());
         
         if ( $self->{useMasks} && -f $maskPath ) {
             # On a en plus un masque associé à l'image de fond
-            ($c,$w) = $self->cache2work($clonedNodeBg,TRUE);
-            $code .= $c;
-            $weight += $w;
-            
-            $workBgM = $clonedNodeBg->getWorkName("BgM");
-        } else {
-            ($c,$w) = $self->cache2work($clonedNodeBg,FALSE);
-            $code .= $c;
-            $weight += $w;
+            $node->addBgMask();
         }
         
-        $workBgI = $clonedNodeBg->getWorkName("BgI");
-
-        undef $clonedNodeBg;
+        ($c,$w) = $self->cache2work($node);
+        $code .= $c;
+        $weight += $w;
     }
     
-    my $workImgPath = $node->getWorkName("I");
-    my $workMskPath = undef;
     if ($self->{useMasks}) {
-        $workMskPath = $node->getWorkName("M");
+        $node->addWorkMask();
     }
     
     my $mNtConfFilename = $node->getWorkBaseName.".txt";
@@ -649,32 +625,25 @@ sub mergeNtiff {
     
     # La premiere ligne correspond à la dalle résultat: La version de travail de la dalle à calculer.
     # Les points d'interrogation permettent de gérer le dossier où écrire les images grâce à une variable
-    printf CFGF $node->exportForMntConf($workImgPath, $workMskPath, "?");
+    # Cet export va également ajouter les fonds (si présents) comme premières sources
+    printf CFGF $node->exportForMntConf(TRUE, "?");
 
-    # Maintenant les dalles en entrée:
-    #   - L'éventuelle image de fond (avec l'eventuel masque associé)
-    printf CFGF "%s", $node->exportForMntConf($workBgI, $workBgM, "?") if (defined $workBgI);
-
-    #   - Les images source (QTree)
+    #   - Les images sources (QTree)
     my $listGeoImg = $node->getGeoImages;
     foreach my $img (@{$listGeoImg}) {
         printf CFGF "%s", $img->exportForMntConf($self->{useMasks});
     }
-    #   - Les noeuds source (Graph)
+    
+    #   - Les noeuds sources (NNGraph)
     foreach my $nodesource ( @{$node->getNodeSources()} ) {
-        my $imagePath = File::Spec->catfile($nodesource->getScript->getTempDir, $nodesource->getWorkName("I"));
-        my $maskPath = undef;
-        if ($self->{useMasks}) {
-            $maskPath = File::Spec->catfile($nodesource->getScript->getTempDir, $nodesource->getWorkName("M"));
-        }
-        printf CFGF "%s", $nodesource->exportForMntConf($imagePath, $maskPath);
+        printf CFGF "%s", $nodesource->exportForMntConf(FALSE, $nodesource->getScript()->getTempDir()."/");
     }
     
     close CFGF;
     
     $code .= "MergeNtiff $mNtConfFilename";
-    $code .= " $workBgI" if (defined $workBgI); # pour supprimer l'image de fond si elle existe
-    $code .= " $workBgM" if (defined $workBgM); # pour supprimer le masque de fond si il existe
+    $code .= sprintf " %s", $node->getBgImageName(TRUE) if (defined $node->getBgImageName()); # pour supprimer l'image de fond si elle existe
+    $code .= sprintf " %s", $node->getBgMaskName(TRUE) if (defined $node->getBgMaskName()); # pour supprimer le masque de fond si il existe
     $code .= "\n";
 
     return ($code,$weight);
@@ -788,7 +757,7 @@ sub decimateNtiff {
 =begin nd
 Function: merge4tiff
 
-Compose the 'merge4tiff' command. If we have not 4 children or if children contain nodata, we have to supply a background, a color or an image if exists.
+Use the 'Merge4tiff' bash function.
 
 |                   i1  i2
 | backGround    +              =  resultImg
@@ -798,12 +767,9 @@ Compose the 'merge4tiff' command. If we have not 4 children or if children conta
 
 Parameters (list):
     node - <Node> - Node to generate thanks to a 'merge4tiff' command.
-    harvesting - <Harvesting> - To use to harvest background if necessary. Can be undefined.
 
 Example:
-    (start code)
-    merge4tiff -g 1 -n FFFFFF  -i1 19_396_3134.tif -i2 19_397_3134.tif -i3 19_396_3135.tif -i4 19_397_3135.tif 18_198_1567.tif
-    (end code)
+|    
 
 Returns:
     An array (code, weight), ("",-1) if error.
@@ -811,7 +777,6 @@ Returns:
 sub merge4tiff {
     my $self = shift;
     my $node = shift;
-    my $harvesting = shift;
   
     TRACE;
     
@@ -826,90 +791,47 @@ sub merge4tiff {
     my @childList = $node->getChildren;
 
     # Gestion du fond : faut-il le récupérer, et si oui, comment ?
-    my $imgPath = File::Spec->catfile($self->{pyramid}->getRootPerType("data",TRUE),$node->getPyramidName);
-    my $maskPath = File::Spec->catfile($self->{pyramid}->getRootPerType("mask",TRUE),$node->getPyramidName);
+    my $imgPath = File::Spec->catfile($self->{pyramid}->getDirImage(TRUE),$node->getPyramidName);
+    
     if ( -f $imgPath && ($self->{useMasks} || scalar @childList != 4) ) {
-        my $clonedNodeBg = $node->clone();
-        
         # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
+        # On détuile l'image de fond (et éventuellement le masque), pour pouvoir travailler avec.
         
-        if (defined $harvesting) {
-            # On a un service WMS pour moissonner le fond, donc on l'utilise
-            # Pour cela, on va récupérer le nombre de tuiles (en largeur et en hauteur) du niveau, et
-            # le comparer avec le nombre de tuile dans une image (qui est potentiellement demandée à
-            # rok4, qui n'aime pas). Si l'image contient plus de tuile que le niveau, on ne demande plus
-            # (c'est qu'on a déjà tout ce qu'il faut avec les niveaux inférieurs).
+        $node->addBgImage();
+        
+        my $maskPath = File::Spec->catfile($self->{pyramid}->getDirMask(TRUE),$node->getPyramidName);
 
-            my $tm = $self->{pyramid}->getTileMatrixSet->getTileMatrix($clonedNodeBg->getLevel);
-
-            my $tooWide = ($tm->getMatrixWidth() < $self->{pyramid}->getTilesPerWidth);
-            my $tooHigh = ($tm->getMatrixHeight() < $self->{pyramid}->getTilesPerHeight);
-
-            if (! $tooWide && ! $tooHigh) {
-                ($c,$w) = $self->wms2work($clonedNodeBg,$harvesting,"BgI");
-                if (! defined $c) {
-                    ERROR(sprintf "Cannot harvest the back ground image %s",$clonedNodeBg->getWorkBaseName("BgI"));
-                    return ("",-1);
-                }
-
-                $code .= $c;
-                $weight += $w;
-                $workBgI = $clonedNodeBg->getWorkName("BgI");
-            }
-
-        } else {
-            # On détuile l'image de fond (et éventuellement le masque), pour pouvoir travailler avec.
-            $workBgI = $clonedNodeBg->getWorkName("BgI");
-
-            if ( $self->{useMasks} && -f $maskPath ) {
-                # On a en plus un masque associé à l'image de fond
-                ($c,$w) = $self->cache2work($clonedNodeBg,TRUE);
-                $code .= $c;
-                $weight += $w;
-                $workBgM = $clonedNodeBg->getWorkName("BgM");
-            } else {
-                ($c,$w) = $self->cache2work($clonedNodeBg,FALSE);
-                $code .= $c;
-                $weight += $w;
-            }
+        if ( $self->{useMasks} && -f $maskPath ) {
+            # On a en plus un masque associé à l'image de fond
+            $node->addBgMask();
         }
-
-        undef $clonedNodeBg;
+        
+        ($c,$w) = $self->cache2work($node);
+        $code .= $c;
+        $weight += $w;
+    }
+    
+    if ($self->{useMasks}) {
+        $node->addWorkMask();
     }
     
     # We compose the 'Merge4tiff' call
-    #   - the ouput
-    $code .= sprintf "Merge4tiff %s", $node->getWorkName("I");
-    if ($self->{useMasks}) {
-        $code .= sprintf " %s", $node->getWorkName("M");
-    } else {
-        $code .= " 0";
-    }
-    #   - the inputs
+    #   - the ouput + background
+    $code .= sprintf "Merge4tiff %s", $node->exportForM4tConf(TRUE);
+    
+    #   - the children inputs
     my $inputsLevel = $self->{pyramid}->getTileMatrixSet()->getBelowLevelID($node->getLevel());
+    
     $code .= sprintf " %s", $inputsLevel;
-    foreach my $childNode ($node->getPossibleChildren) {
+    foreach my $childNode ($node->getPossibleChildren()) {
             
-        if (defined $childNode){
-            
-            $code .= sprintf " %s", $childNode->getWorkName("I");
-            
-            if ($self->{useMasks}){
-                $code .= sprintf " %s", $childNode->getWorkName("M");
-            } else {
-                $code .= " 0";
-            }
+        if (defined $childNode) {
+            $code .= $childNode->exportForM4tConf(FALSE);
         } else {
             $code .= " 0 0";
         }
     }
-    #   - the background (if it exists)
-    if ( defined $workBgI ){
-        $code.= " $workBgI";
-        if ( defined $workBgM ){
-            $code.= " $workBgM";
-        }
-    }
+    
     $code .= "\n";
 
     return ($code,$weight);
@@ -1001,7 +923,7 @@ sub configureFunctions {
 # Function: getNodata
 sub getNodata {
     my $self = shift;
-    return $self->{pyramid}->getNodata; 
+    return $self->{pyramid}->getNodata();
 }
 
 # Function: getPyramid
