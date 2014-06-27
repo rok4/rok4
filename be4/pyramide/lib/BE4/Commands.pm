@@ -60,6 +60,7 @@ Using:
 Attributes:
     pyramid - <Pyramid> - Allowed to know output format specifications and configure commands.
     mntConfDir - string - Directory, where to write mergeNtiff configuration files.
+    dntConfDir - string - Directory, where to write decimateNtiff configuration files.
     useMasks - boolean - If TRUE, all generating tools (mergeNtiff, merge4tiff...) use masks if present and generate a resulting mask. This processing is longer, that's why default behaviour is without mask.
 =cut
 
@@ -265,7 +266,7 @@ DecimateNtiff () {
     local bgI=$2
     local bgM=$3
     
-    decimateNtiff -f ${DNT_CONF_DIR}/$config -r ${TMP_DIR}/ __dNt__
+    decimateNtiff -f ${DNT_CONF_DIR}/$config __dNt__
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     
     rm -f ${DNT_CONF_DIR}/$config
@@ -381,6 +382,7 @@ sub new {
     my $self = {
         pyramid => undef,
         mntConfDir => undef,
+        dntConfDir => undef,
         useMasks => FALSE,
     };
     bless($self, $class);
@@ -575,7 +577,7 @@ Parameters (list):
     node - <Node> - Node to generate thanks to a 'mergeNtiff' command.
     
 Example:
-|    MergeNtiff mergeNtiffConfig_19_397_3134.txt
+|    MergeNtiff 19_397_3134.txt
 
 Returns:
     An array (code, weight), ("",-1) if error.
@@ -634,11 +636,6 @@ sub mergeNtiff {
         printf CFGF "%s", $img->exportForMntConf($self->{useMasks});
     }
     
-    #   - Les noeuds sources (NNGraph)
-    foreach my $nodesource ( @{$node->getNodeSources()} ) {
-        printf CFGF "%s", $nodesource->exportForMntConf(FALSE, $nodesource->getScript()->getTempDir()."/");
-    }
-    
     close CFGF;
     
     $code .= "MergeNtiff $mNtConfFilename";
@@ -660,7 +657,7 @@ Parameters (list):
     node - <Node> - Node to generate thanks to a 'decimateNtiff' command.
     
 Example:
-|    DecimateNtiff decimateNtiffConfig_12_26_17.txt
+|    DecimateNtiff 12_26_17.txt
 
 Returns:
     An array (code, weight), ("",-1) if error.
@@ -673,82 +670,55 @@ sub decimateNtiff {
     
     my ($c, $w);
     my ($code, $weight) = ("",DECIMATENTIFF_W);
-    
-    my $workBgI = undef;
-    my $workBgM = undef;
 
     # Si elle existe, on copie la dalle de la pyramide de base dans le repertoire de travail 
     # en la convertissant du format cache au format de travail: c'est notre image de fond.
-    # Si la dalle de la pyramide de base existe, on a créé un lien, donc il existe un fichier
+    # Si la dalle de la pyramide ancêtre existe, on a créé un lien, donc il existe un fichier
     # correspondant dans la nouvelle pyramide.
     # On fait de même avec le masque de donnée associé, s'il existe.
-    my $imgPath = File::Spec->catfile($self->{pyramid}->getRootPerType("data",TRUE),$node->getPyramidName);
+    my $imgPath = File::Spec->catfile($self->{pyramid}->getDirImage(TRUE),$node->getPyramidName());
     
     if ( -f $imgPath ) {
-        my $clonedNodeBg = $node->clone();
+        $node->addBgImage();
         
-        my $maskPath = File::Spec->catfile($self->{pyramid}->getRootPerType("mask",TRUE),$clonedNodeBg->getPyramidName);
+        my $maskPath = File::Spec->catfile($self->{pyramid}->getDirMask(TRUE),$node->getPyramidName());
         
         if ( $self->{useMasks} && -f $maskPath ) {
             # On a en plus un masque associé à l'image de fond
-            ($c,$w) = $self->cache2work($clonedNodeBg,TRUE);
-            $code .= $c;
-            $weight += $w;
-            
-            $workBgM = $clonedNodeBg->getWorkName("BgM");
-        } else {
-            ($c,$w) = $self->cache2work($clonedNodeBg,FALSE);
-            $code .= $c;
-            $weight += $w;
+            $node->addBgMask();
         }
         
-        $workBgI = $clonedNodeBg->getWorkName("BgI");
-
-        undef $clonedNodeBg;
+        ($c,$w) = $self->cache2work($node);
+        $code .= $c;
+        $weight += $w;
     }
     
-    my $workImgPath = $node->getWorkName("I");
-    my $workMskPath = undef;
     if ($self->{useMasks}) {
-        $workMskPath = $node->getWorkName("M");
+        $node->addWorkMask();
     }
     
-    my $mNtConfFilename = $node->getWorkBaseName.".txt";
-    my $mNtConfFile = File::Spec->catfile($self->{mntConfDir}, $mNtConfFilename);
+    my $dNtConfFilename = $node->getWorkBaseName.".txt";
+    my $dNtConfFile = File::Spec->catfile($self->{dntConfDir}, $dNtConfFilename);
     
-    if (! open CFGF, ">", $mNtConfFile ) {
-        ERROR(sprintf "Impossible de creer le fichier $mNtConfFile.");
+    if (! open CFGF, ">", $dNtConfFile ) {
+        ERROR(sprintf "Impossible de creer le fichier $dNtConfFile.");
         return ("",-1);
     }
     
     # La premiere ligne correspond à la dalle résultat: La version de travail de la dalle à calculer.
-    # Les points d'interrogation permettent de gérer le dossier où écrire les images grâce à une variable
-    printf CFGF $node->exportForMntConf($workImgPath, $workMskPath, "?");
-
-    # Maintenant les dalles en entrée:
-    #   - L'éventuelle image de fond (avec l'eventuel masque associé)
-    printf CFGF "%s", $node->exportForMntConf($workBgI, $workBgM, "?") if (defined $workBgI);
-
-    #   - Les images source (QTree)
-    my $listGeoImg = $node->getGeoImages;
-    foreach my $img (@{$listGeoImg}) {
-        printf CFGF "%s", $img->exportForMntConf($self->{useMasks});
-    }
-    #   - Les noeuds source (Graph)
+    # Cet export va également ajouter les fonds (si présents) comme premières sources
+    printf CFGF $node->exportForDntConf(TRUE, $node->getScript()->getTempDir()."/");
+    
+    #   - Les noeuds sources (NNGraph)
     foreach my $nodesource ( @{$node->getNodeSources()} ) {
-        my $imagePath = File::Spec->catfile($nodesource->getScript->getTempDir, $nodesource->getWorkName("I"));
-        my $maskPath = undef;
-        if ($self->{useMasks}) {
-            $maskPath = File::Spec->catfile($nodesource->getScript->getTempDir, $nodesource->getWorkName("M"));
-        }
-        printf CFGF "%s", $nodesource->exportForMntConf($imagePath, $maskPath);
+        printf CFGF "%s", $nodesource->exportForDntConf(FALSE, $nodesource->getScript()->getTempDir()."/");
     }
     
     close CFGF;
     
-    $code .= "MergeNtiff $mNtConfFilename";
-    $code .= " $workBgI" if (defined $workBgI); # pour supprimer l'image de fond si elle existe
-    $code .= " $workBgM" if (defined $workBgM); # pour supprimer le masque de fond si il existe
+    $code .= "DecimateNtiff $dNtConfFilename";
+    $code .= sprintf " %s", $node->getBgImageName(TRUE) if (defined $node->getBgImageName()); # pour supprimer l'image de fond si elle existe
+    $code .= sprintf " %s", $node->getBgMaskName(TRUE) if (defined $node->getBgMaskName()); # pour supprimer le masque de fond si il existe
     $code .= "\n";
 
     return ($code,$weight);
@@ -935,16 +905,19 @@ sub getPyramid {
 =begin nd
 Function: setConfDir
 
-Store the directory for mergeNtiff configuration files.
+Store the directory for mergeNtiff and decimateNtiff configuration files.
 
 Parameters (list):
-    mntConfDir - string - Image pyramid to generate
+    mntConfDir - string - mergeNtiff configurations' directory
+    dntConfDir - string - decimateNtiff configurations' directory
 =cut
 sub setConfDir {
     my $self = shift;
     my $mntConfDir = shift;
+    my $dntConfDir = shift;
 
     $self->{mntConfDir} = $mntConfDir;
+    $self->{dntConfDir} = $dntConfDir;
 }
 
 ####################################################################################################

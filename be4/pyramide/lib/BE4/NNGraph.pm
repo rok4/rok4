@@ -565,18 +565,28 @@ sub computeYourself {
            # on détermine le script à ecrire
            my ($c,$w) ;
            if ($self->getDataSource->hasHarvesting) {
-               # Datasource has a WMS service : we have to use it
-               ($c,$w) = $self->{commands}->wms2work($node,$self->getDataSource->getHarvesting,"I");
-               if (! defined $c) {
-                   ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName("I"));
-                   return FALSE;
-               }
+                # Datasource has a WMS service : we have to use it
+                ($c,$w) = $self->{commands}->wms2work($node,$self->getDataSource->getHarvesting);
+                if (! defined $c) {
+                    ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName());
+                    return FALSE;
+                }
            } else {
-               ($c,$w) = $self->{commands}->mergeNtiff($node);
-               if ($w == -1) {
-                   ERROR(sprintf "Cannot compose mergeNtiff command for the node %s.",$node->getWorkBaseName);
-                   return FALSE;
-               }
+                if ($i == $src->getBottomOrder) {
+                    # on utilise mergeNtiff pour le niveau du bas (à partir des images sources)
+                    ($c,$w) = $self->{commands}->mergeNtiff($node);
+                    if ($w == -1) {
+                        ERROR(sprintf "Cannot compose mergeNtiff command for the node %s.",$node->getWorkBaseName());
+                        return FALSE;
+                    }
+                } else {
+                    # on utilise decimateNtiff pour les niveaux supérieurs, par décimation d'un niveau inférieur
+                    ($c,$w) = $self->{commands}->decimateNtiff($node);
+                    if ($w == -1) {
+                        ERROR(sprintf "Cannot compose decimateNtiff command for the node %s.",$node->getWorkBaseName());
+                        return FALSE;
+                    }                    
+                }
            }
            # on met à jour les poids
            $script->addWeight($w);

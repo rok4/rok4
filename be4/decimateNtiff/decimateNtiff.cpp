@@ -330,7 +330,7 @@ int readFileLine ( std::ifstream& file, char* imageFileName, bool* hasMask, char
         pos = file.tellg();
     } else {
         LOGGER_ERROR ( "We have to read 8 values, we have " << nb );
-        LOGGER_ERROR ( "\t line : " << str );
+        LOGGER_ERROR ( "line : " << str );
         return 1;
     }
 
@@ -463,11 +463,11 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
         LOGGER_ERROR ( "Impossible de creer l'image de sortie " << imageFileName );
         return -1;
     }
+    
 
     if ( hasMask ) {
-
         *ppMaskOut = factory.createImageToWrite (
-            maskFileName, outputBbox,resx, resy, outputWidth, outputHeight,
+            outputMaskFileName, outputBbox, outputResx, outputResy, outputWidth, outputHeight,
             1, SampleFormat::UINT, 8, Photometric::MASK, Compression::DEFLATE
         );
 
@@ -623,7 +623,8 @@ int mergeTabImages ( FileImage* pImageOut, // Sortie
         return -1;
     }
     
-    DecimatedImage* pDIM = DIF.createDecimatedImage(pECMI, pImageOut->getBbox(), pImageOut->getResX(), pImageOut->getResY(), nodata);
+    int nodata_mask[1] = {0};
+    DecimatedImage* pDIM = DIF.createDecimatedImage(pECMI, pImageOut->getBbox(), pImageOut->getResX(), pImageOut->getResY(), nodata_mask);
     if ( pDIM == NULL ) {
         LOGGER_ERROR ( "Impossible de créer la DecimatedImage (mask)" );
         return -1;

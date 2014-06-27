@@ -621,6 +621,54 @@ sub exportForMntConf {
 }
 
 =begin nd
+Function: exportForDntConf
+
+Export attributes of the Node for decimateNtiff configuration file. Provided paths will be written as is, so can be relative or absolute.
+
+Masks and backgrounds are always TIFF images.
+
+Parameters (list):
+    exportBg - boolean - Export background files (image + mask) if presents.
+    prefix - string - String to add before paths, can be undefined.
+=cut
+sub exportForDntConf {
+    my $self = shift;
+    my $exportBg = shift;
+    my $prefix = shift;
+    
+    $prefix = "" if (! defined $prefix);
+
+    TRACE;
+
+    my @Bbox = $self->getBBox();
+    my $output = "";
+
+    $output = sprintf "IMG %s%s.%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+        $prefix, $self->{workImageBasename}, $self->{workExtension},
+        $Bbox[0], $Bbox[3], $Bbox[2], $Bbox[1],
+        $self->getTM()->getResolution(), $self->getTM()->getResolution();
+
+    if (defined $self->{workMaskBasename}) {
+        $output .= sprintf "MSK %s%s.tif\n", $prefix,  $self->{workMaskBasename};
+    }
+    
+    if ($exportBg) {
+        if (defined $self->{bgImageBasename}) {
+            $output .= sprintf "IMG %s%s.tif\t%s\t%s\t%s\t%s\t%s\t%s\n",
+                $prefix, $self->{bgImageBasename},
+                $Bbox[0], $Bbox[3], $Bbox[2], $Bbox[1],
+                $self->getTM()->getResolution(), $self->getTM()->getResolution();
+                
+            if (defined $self->{bgMaskBasename}) {
+                $output .= sprintf "MSK %s%s.tif\n", $prefix, $self->{bgMaskBasename};
+            }        
+        }
+    }
+
+    return $output;
+}
+
+=begin nd
 Function: exportForM4tConf
 
 Export work files (output) and eventually background (input) of the Node for the Merge4tiff call line.

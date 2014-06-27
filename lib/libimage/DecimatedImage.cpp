@@ -92,10 +92,29 @@ int DecimatedImage::_getline ( T* buffer, int line ) {
     
     T* pix_src = buffer_t + sourceOffsetX * sourceImage->channels;
     T* pix_dst = buffer + imageOffsetX * channels;
-    for (int i = 0; i < numberX; i++) {
-        memcpy(pix_dst, pix_src, channels*sizeof ( T ));
-        pix_src += ratioX * sourceImage->channels;
-        pix_dst += channels;
+    
+    if ( sourceImage->getMask() == NULL ) {
+        for (int i = 0; i < numberX; i++) {
+            memcpy(pix_dst, pix_src, channels*sizeof ( T ));
+            pix_src += ratioX * sourceImage->channels;
+            pix_dst += channels;
+        }
+    } else {
+
+        uint8_t* buffer_m = new uint8_t[sourceImage->getMask()->getWidth()];
+        sourceImage->getMask()->getline ( buffer_m, src_ligne );
+        
+        uint8_t* pix_src_mask = buffer_m + sourceOffsetX;
+        for (int i = 0; i < numberX; i++) {
+            if (*pix_src_mask) {
+                memcpy(pix_dst, pix_src, channels*sizeof ( T ));
+            }
+            pix_src += ratioX * sourceImage->channels;
+            pix_src_mask += ratioX;
+            pix_dst += channels;
+        }
+
+        delete [] buffer_m;
     }
     
     delete [] buffer_t;

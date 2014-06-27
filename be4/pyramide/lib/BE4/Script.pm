@@ -178,6 +178,10 @@ sub new {
     ########## Dossier des configurations des mergeNtiff pour ce script
     
     $self->{mntConfDir} = File::Spec->catfile($self->{commonTempDir},"mergeNtiff");
+    
+    ########## Dossier des configurations des decimateNtiff pour ce script
+    
+    $self->{dntConfDir} = File::Spec->catfile($self->{commonTempDir},"decimateNtiff");
 
     ########## Tests et création de l'ensemble des dossiers
     
