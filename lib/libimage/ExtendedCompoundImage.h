@@ -397,7 +397,7 @@ public:
      */
     ExtendedCompoundMask ( ExtendedCompoundImage* ECI ) :
         Image ( ECI->getWidth(), ECI->getHeight(), 1, ECI->getResX(), ECI->getResY(),ECI->getBbox() ),
-        ECI ( ECI ) {isMask = true;}
+        ECI ( ECI ) {}
 
     int getline ( uint8_t* buffer, int line );
     int getline ( float* buffer, int line );

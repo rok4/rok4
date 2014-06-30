@@ -55,12 +55,6 @@
 #include "Logger.h"
 #include "Utils.h"
 
-#ifndef __max
-#define __max(a, b)   ( ((a) > (b)) ? (a) : (b) )
-#endif
-#ifndef __min
-#define __min(a, b)   ( ((a) < (b)) ? (a) : (b) )
-#endif
 
 /********************************************** DecimatedImage ************************************************/
 
@@ -74,7 +68,7 @@ int DecimatedImage::_getline ( T* buffer, int line ) {
     
     if ( numberX == 0 ) {
         // On est à gauche ou à droite de l'image source
-        return width*channels*sizeof ( T );
+        return width*channels;
     }
     
     // Ordonnée du centre de la ligne demandée
@@ -84,7 +78,7 @@ int DecimatedImage::_getline ( T* buffer, int line ) {
 
     if ( src_ligne < 0 || src_ligne >= sourceImage->getHeight() ) {
         // On est au dessus ou en dessous de l'image source
-        return width*channels*sizeof ( T );
+        return width*channels;
     }
     
     T* buffer_t = new T[sourceImage->getWidth() * sourceImage->channels];
@@ -119,7 +113,7 @@ int DecimatedImage::_getline ( T* buffer, int line ) {
     
     delete [] buffer_t;
     
-    return width*channels*sizeof ( T );
+    return width*channels;
 }
 
 
