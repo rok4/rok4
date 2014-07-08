@@ -564,85 +564,6 @@ int checkImages ( std::vector<FileImage*>& ImagesIn ) {
     return 0;
 }
 
-/**
- * \~french
- * \brief Modifie le rectangle englobant pour le rendre en phase avec l'image
- * \details Les 4 valeurs du rectangle englobant seront modifiée (au minimum) afin d'avoir les mêmes phases que celles de l'image fournie. Cependant, l'étendue finale sera incluse dans celle initiale (pas d'agrandissement de la bounding box).
- *
- * \param[in] pImage image avec laquelle la bounding box doit être mise en phase
- * \param[in,out] bbox rectangle englobant à mettre en phase
- */
-void makePhase ( Image* pImage, BoundingBox<double> *bbox ) {
-    double resx_dst = pImage->getResX(), resy_dst = pImage->getResY();
-
-    double intpart;
-    double phi = 0;
-    double phaseDiff = 0;
-
-    double phaseX = pImage->getPhaseX();
-    double phaseY = pImage->getPhaseY();
-
-    LOGGER_DEBUG ( "\t Bbox avant rephasage : " << bbox->toString() );
-
-    // Mise en phase de xmin (sans que celui ci puisse être plus petit)
-    phi = modf ( bbox->xmin/resx_dst, &intpart );
-    if ( phi < 0. ) {
-        phi += 1.0;
-    }
-
-    if ( fabs ( phi-phaseX ) > 0.01 && fabs ( phi-phaseX ) < 0.99 ) {
-        phaseDiff = phaseX - phi;
-        if ( phaseDiff > 0. ) {
-            phaseDiff -= 1.0;
-        }
-        bbox->xmin += phaseDiff*resx_dst;
-    }
-
-    // Mise en phase de xmax (sans que celui ci puisse être plus grand)
-    phi = modf ( bbox->xmax/resx_dst, &intpart );
-    if ( phi < 0. ) {
-        phi += 1.0;
-    }
-
-    if ( fabs ( phi-phaseX ) > 0.01 && fabs ( phi-phaseX ) < 0.99 ) {
-        phaseDiff = phaseX - phi;
-        if ( phaseDiff < 0. ) {
-            phaseDiff += 1.0;
-        }
-        bbox->xmax += phaseDiff*resx_dst;
-    }
-
-    // Mise en phase de ymin (sans que celui ci puisse être plus petit)
-    phi = modf ( bbox->ymin/resy_dst, &intpart );
-    if ( phi < 0. ) {
-        phi += 1.0;
-    }
-
-    if ( fabs ( phi-phaseY ) > 0.01 && fabs ( phi-phaseY ) < 0.99 ) {
-        phaseDiff = phaseY - phi;
-        if ( phaseDiff > 0. ) {
-            phaseDiff -= 1.0;
-        }
-        bbox->ymin += phaseDiff*resy_dst;
-    }
-
-    // Mise en phase de ymax (sans que celui ci puisse être plus grand)
-    phi = modf ( bbox->ymax/resy_dst, &intpart );
-    if ( phi < 0. ) {
-        phi += 1.0;
-    }
-
-    if ( fabs ( phi-phaseY ) > 0.01 && fabs ( phi-phaseY ) < 0.99 ) {
-        phaseDiff = phaseY - phi;
-        if ( phaseDiff < 0. ) {
-            phaseDiff += 1.0;
-        }
-        bbox->ymax += phaseDiff*resy_dst;
-    }
-
-    LOGGER_DEBUG ( "\t Bbox après rephasage : " << bbox->toString() );
-}
-
 
 /**
  * \~french \brief Traite chaque paquet d'images en entrée
@@ -687,16 +608,7 @@ int mergeTabImages ( FileImage* pImageOut, // Sortie
         return -1;
     }
     
-    // On calcule la bbox de l'image décimée : intersection entre l'image de sortie et les images en entrée, mise en phase avec la sortie
-    double xmin = __max (pECI->getBbox().xmin , pImageOut->getBbox().xmin);
-    double ymin = __max (pECI->getBbox().ymin , pImageOut->getBbox().ymin);
-    double xmax = __min (pECI->getBbox().xmax , pImageOut->getBbox().xmax);
-    double ymax = __min (pECI->getBbox().ymax , pImageOut->getBbox().ymax);
-    BoundingBox<double> decimatedBbox(xmin, ymin, xmax, ymax);
-    makePhase(pImageOut, &decimatedBbox);
-    
-    
-    DecimatedImage* pDII = DIF.createDecimatedImage(pECI, decimatedBbox, pImageOut->getResX(), pImageOut->getResY(), nodata);
+    DecimatedImage* pDII = DIF.createDecimatedImage(pECI, pImageOut->getBbox(), pImageOut->getResX(), pImageOut->getResY(), nodata);
     if ( pDII == NULL ) {
         LOGGER_ERROR ( "Impossible de créer la DecimatedImage (image)" );
         return -1;
@@ -710,7 +622,7 @@ int mergeTabImages ( FileImage* pImageOut, // Sortie
     }
     
     int nodata_mask[1] = {0};
-    DecimatedImage* pDIM = DIF.createDecimatedImage(pECMI, decimatedBbox, pImageOut->getResX(), pImageOut->getResY(), nodata_mask);
+    DecimatedImage* pDIM = DIF.createDecimatedImage(pECMI, pImageOut->getBbox(), pImageOut->getResX(), pImageOut->getResY(), nodata_mask);
     if ( pDIM == NULL ) {
         LOGGER_ERROR ( "Impossible de créer la DecimatedImage (mask)" );
         return -1;

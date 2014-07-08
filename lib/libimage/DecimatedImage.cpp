@@ -140,6 +140,7 @@ DecimatedImage::DecimatedImage ( int width, int height, int channels, double res
     
     // Centre X de la première colonne de pixels de l'image décimée
     double x1_centre = bbox.xmin + 0.5 * resx;
+    LOGGER_DEBUG("x1centre = " << x1_centre);
     
     // Centre X de la dernière colonne de pixels de l'image décimée
     double xd_centre = bbox.xmax - 0.5 * resx;
@@ -159,9 +160,11 @@ DecimatedImage::DecimatedImage ( int width, int height, int channels, double res
         double x_cur = x1_centre;
         imageOffsetX = 0;
         while (x_cur < image->getBbox().xmin) {
+        LOGGER_DEBUG("x1centre = " << x_cur);
             imageOffsetX++;
             x_cur += resx;
         }
+        LOGGER_DEBUG("x1centre = " << x_cur);
         sourceOffsetX = image->x2c ( x_cur );
         
         // On va chercher le nombre de pixels à piocher dans l'image source pour constituer une ligne
@@ -172,7 +175,7 @@ DecimatedImage::DecimatedImage ( int width, int height, int channels, double res
         
         xd_src = image->x2c ( x_cur );
         
-        numberX = (xd_src - sourceOffsetX) / ratioX;
+        numberX = (xd_src - sourceOffsetX) / ratioX + 1;
         
         // TEST
         if ((xd_src - sourceOffsetX) % ratioX != 0) {

@@ -316,7 +316,7 @@ Merge4tiff () {
     for i in `seq 1 4`;
     do
         if [ ${imgIn[$i]} != '0' ] ; then
-            if [[ ! -f ${tempDir}/${imgIn[$i]} ]] ; then
+            if [[ -f ${tempDir}/${imgIn[$i]} ]] ; then
                 forRM="$forRM ${tempDir}/${imgIn[$i]}"
                 inM4T=`printf "$inM4T -i%.1d ${tempDir}/${imgIn[$i]}" $i`
                 
@@ -344,7 +344,7 @@ Merge4tiff () {
         merge4tiff __m4t__ $inM4T $outM4T
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     else
-        RM_IMGS[${imgOut}]="1"
+        RM_IMGS[${TMP_DIR}/${imgOut}]="1"
     fi
     
     # Suppressions
