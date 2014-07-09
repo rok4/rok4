@@ -176,9 +176,9 @@ is (scalar keys %{$updatePyr->getLevels()}, 20, "Levels fetched from the old pyr
 
 ######################################################
 
-is ($updatePyr->getRootPerType("data", 1, "level12"),
-    $Bin."/../../pyramid/updatePyramid/IMG/level12",
-    "Compose path of image");
+is ($updatePyr->getDirImage(), "IMG", "Compose path of image");
+is ($updatePyr->getDirImage(FALSE), "IMG", "Compose path of image");
+is ($updatePyr->getDirImage(TRUE), $Bin."/../../pyramid/updatePyramid/IMG", "Compose path of image");
 
 ######################################################
 

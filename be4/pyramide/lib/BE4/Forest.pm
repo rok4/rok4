@@ -349,7 +349,7 @@ sub _load {
     
     ######## PROCESS (suite) #########
 
-    $commands->setConfDir($self->{scripts}[0]->getMntConfDir());
+    $commands->setConfDir($self->{scripts}[0]->getMntConfDir(), $self->{scripts}[0]->getDntConfDir());
     
     ############# GRAPHS #############
 
