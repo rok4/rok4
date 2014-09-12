@@ -60,7 +60,7 @@ Attributes:
     id - string - Level identifiant, present in the TMS.
     dir_image - string - Absolute images' directory path for this level.
     dir_mask - string - Optionnal (if masks are present in the source pyramid). Absolute masks' directory path for this level.
-    limits - integer array - Level's extrem _tiles_ : [iMin, jMin, iMax, jMax]
+    limits - integer array - Level's extrem _tiles_ : [colMin, rowMin, colMax, rowMax]
 
 Limitations:
 
@@ -233,10 +233,10 @@ sub exportForDebug {
     $export .= sprintf "\t\t- Masks : %s\n",$self->{dir_mask} if (defined $self->{dir_mask});
     
     $export .= "\t Tile limits : \n";
-    $export .= sprintf "\t\t- Column min : %s\n",$self->{limits}[2];
-    $export .= sprintf "\t\t- Column max : %s\n",$self->{limits}[3];
-    $export .= sprintf "\t\t- Row min : %s\n",$self->{limits}[0];
-    $export .= sprintf "\t\t- Row max : %s\n",$self->{limits}[1];
+    $export .= sprintf "\t\t- Column min : %s\n",$self->{limits}[0];
+    $export .= sprintf "\t\t- Column max : %s\n",$self->{limits}[2];
+    $export .= sprintf "\t\t- Row min : %s\n",$self->{limits}[1];
+    $export .= sprintf "\t\t- Row max : %s\n",$self->{limits}[3];
     
     return $export;
 }
