@@ -393,13 +393,14 @@ struct projParams {
 };
 
 static const projParams LCC_1SP = {     9,
-                                        5,
+                                        6,
                                         {
                                             {"lon_0", 3080},
                                             {"lat_1", 3081},
                                             {"x_0", 3082},
                                             {"y_0", 3083},
-                                            {"k_0", 3092}
+                                            {"k_0", 3092},
+                                            {"k", 3092},
                                         }
                                     };
                                     
@@ -416,12 +417,13 @@ static const projParams LCC_2SP = {     8,
                                     };
                                     
 static const projParams MERC_1SP = {    7,
-                                        4,
+                                        5,
                                         {
                                             {"lon_0", 3080},
                                             {"x_0", 3082},
                                             {"y_0", 3083},
-                                            {"k_0", 3092}
+                                            {"k_0", 3092},
+                                            {"k", 3092}
                                         }
                                     };
 static const projParams AEA = {         11,
@@ -488,13 +490,14 @@ static const projParams EQC = {         17,
                                         }
                                     };
 static const projParams TMERC = {       1,
-                                        5,
+                                        6,
                                         {
                                             {"x_0", 3082},
                                             {"y_0", 3083},
                                             {"lon_0", 3080},
                                             {"lat_0", 3081},
-                                            {"k", 3092}
+                                            {"k", 3092},
+                                            {"k_0", 3092}
                                         }
                                     };
 static const projParams GNOM = {        19,
@@ -508,13 +511,14 @@ static const projParams GNOM = {        19,
                                     };
                                     
 static const projParams OMERC = {       3,
-                                        6,
+                                        7,
                                         {
                                             {"x_0", 3082},
                                             {"y_0", 3083},
                                             {"lonc", 3088},
                                             {"lat_0", 3089},
                                             {"k_0", 3093},
+                                            {"k", 3093},
                                             {"alpha", 3094}
                                         }
                                     };
@@ -541,13 +545,14 @@ static const projParams MILL = {        20,
                                     };
                                     
 static const projParams STEREA = {      16,
-                                        5,
+                                        6,
                                         {
                                             {"x_0", 3082},
                                             {"y_0", 3083},
                                             {"lon_0", 3080},
                                             {"lat_0", 3081},
-                                            {"k_0", 3092}
+                                            {"k_0", 3092},
+                                            {"k", 3092}
                                         }
                                     };
 
@@ -734,7 +739,7 @@ static uint8_t* insertGeoTags ( Image* image, uint8_t* header, size_t* sizeHeade
       
     }
     //End of Geographic CS Parameter Keys
-  
+    LOGGER_DEBUG("Ajout de la projection "+projName);
     if ( projName != "longlat" ) {
         //GeographicTypeGeoKey
         const projParams * myProjParams = NULL;
@@ -802,6 +807,7 @@ static uint8_t* insertGeoTags ( Image* image, uint8_t* header, size_t* sizeHeade
                 if ( sscanf ( crs.getProj4Param(myProjParams->listparam[i].proj).c_str(),"%lf",&doubletmp ) !=1 ) {
                     LOGGER_ERROR("Impossible de parser le parametre " + myProjParams->listparam[i].proj + " de la definition proj4");
                 } else {
+		    LOGGER_DEBUG("Ajout du parametre "+myProjParams->listparam[i].proj+" avec la valeur "+crs.getProj4Param(myProjParams->listparam[i].proj).c_str());
                     appendToGeoKeyDirectory(GeoKeyDirectory,&GeoKeyDirectorySize,myProjParams->listparam[i].geotifftag ,34736,1,GeoDoubleParamsSize);
                     appendToGeoDoubleParams(GeoDoubleParams,&GeoDoubleParamsSize, doubletmp);
                 }

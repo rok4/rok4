@@ -358,7 +358,7 @@ std::string CRS::getProj4Def() {
    char * pjdef = pj_get_def( pj, 666 );
    std::string def( pjdef ); //666 option is to specify that we want all parameters (include towgs84 since we already have +nadgrids)
    pj_dalloc(pjdef);
-   LOGGER_DEBUG("Définition de " << getProj4Code() << " : " << def );
+   //LOGGER_DEBUG("Définition de " << getProj4Code() << " : " << def );
    pj_free ( pj );
    pj_ctx_free ( ctx );
    
@@ -373,7 +373,7 @@ std::string CRS::getProj4Param ( std::string paramName ) {
     }
     find_equal = toLowerCase( getProj4Def() ).find( "=", pos );
     find = toLowerCase( getProj4Def() ).find( " ", pos );
-    LOGGER_DEBUG("Valeur du paramètre " + paramName + " : [" + toLowerCase( getProj4Def() ).substr(find_equal+1, find - find_equal -1) + "]" );
+    //LOGGER_DEBUG("Valeur du paramètre " + paramName + " : [" + toLowerCase( getProj4Def() ).substr(find_equal+1, find - find_equal -1) + "]" );
     return toLowerCase( getProj4Def() ).substr(find_equal+1, find - find_equal -1);
 }
 
