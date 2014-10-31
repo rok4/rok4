@@ -137,7 +137,7 @@ protected:
     
     virtual void prepareBuffer(){
 	LOGGER_DEBUG("TiffDeflateEncoder : preparation du buffer d'image");
-	tmpBufferSize = image->getWidth() * image->channels * image->getHeight() * 2 ;
+	tmpBufferSize = image->getWidth() * image->channels * image->getHeight() * 2 * sizeof(T) ;
 	tmpBuffer = new uint8_t[tmpBufferSize];
 	while ( !encode() ) {
 	    tmpBufferSize *= 2;
