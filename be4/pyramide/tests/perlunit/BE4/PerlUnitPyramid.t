@@ -52,6 +52,9 @@ use BE4::Pyramid;
 
 ######################################################
 
+use constant TRUE  => 1;
+use constant FALSE => 0;
+
 # Pyramid creation
 
 my $newPyr = BE4::Pyramid->new({
