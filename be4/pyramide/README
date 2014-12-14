@@ -1,0 +1,147 @@
+
+* Installation :
+
+cf. INSTALL
+
+
+* Executions :
+
+ be4.pl --properties='filepath' --environment='filepath'
+  ou 
+ be4.pl --properties='filepath' 
+   si on utilise par defaut le fichier d'environement ./installation/conf/be4.properties
+   ou si la variable BE4_ENV est fixée sur le repertoire d'installation.
+
+
+* Documentations BE4 :
+
+tous les types de documentations mises en place :
+- man des classes (par defaut)
+- man des scripts (par defaut)
+- html des man (via commande makefile)
+- naturaldoc (via commande makefile)
+
+Les man (+ html) representent la doc. utilisation des classes, une breve description, le synoptique ainsi 
+que les limitations (TODO / FIXME)
+
+Le naturaldoc represente la doc. programmeur avec toutes les methodes.
+La doc. naturaldoc est brute de pomme ! sans trop d'explication, c'est une liste exaustive des methodes et variables des
+classes.
+
+Les schemas de modelisations des classes (UML) sont à intégrer dans le naturaldoc...
+
+
+* Configurations (properties) :
+
+ Le fichier de configuration 'environment' permet de parametrer les options communes à toutes les pyramides.
+ Par contre, la configuration 'properties' est le parametrage propre à une pyramide.
+ La gestion du fichier d'environment permet de soulager les parametres de la pyramide.
+
+ Selon les cas d'utilisations, les parametres du fichier de configuration seront differents.
+ Cf. le repertoire ./conf/Samples/ pour des exemples de configurations pour les differents cas d'utilisations.
+
+* Les differents cas d'utilisations :
+
+ Les differents cas prevus dans BE4 sont 
+ 
+	- creation d'une pyramide vide 
+		Nous creons uniquement la structure des repertoires de cache ainsi
+		que le descripteur de la pyramide (le fichier .pyr).
+	- creation d'une nouvelle pyramide à partir d'une existante
+		Nous dupliquons donc le cache de la pyramide existante dans la nouvelle, les tuiles sont
+		'linkées', et le descripteur de pyramide est complété à partir de l'autre descripteur.
+	- ... 
+
+
+* La structure du cache pyramide :
+
+ - Pour un cache vide :
+
+ DIR_ROOT              -> chemin de tous les caches pyramides
+  |_ PYR_NAME          -> repertoire du nouveau cache
+      |_ IMAGE         -> repertoire des tuiles du cache image
+          |_ LEVEL_ID  -> repertoire des tuiles du cache pour un niveau (Id)
+
+ La liste des niveaux (Levels) est obtenu à la lecture du TMS.
+ Les tuiles sont calculées et ecrites dans les differents niveaux, à partir du niveau 
+ nominal (base) de la resolution des données sources jusqu'au niveau maximum de la pyramide.
+
+ Le niveau de base n'est pas forcement le premier niveau de la pyramide, par exemple la resolution 
+ des données sources est du 2m, et la resolution minimum du TMS commence à 50cm...
+
+ - Pour un cache existant :
+
+ DIR_ROOT                -> chemin de tous les caches pyramides
+  |_ PYR_NAME            -> repertoire du nouveau cache
+      |_ IMAGE           -> repertoire des tuiles du cache image
+          |_ LEVEL_ID    -> repertoire des tuiles du cache pour un niveau (Id)
+             |_ DIRS     -> sous repertoire d'identification des dalles caches (old pyramid)
+                |_ TILES -> liens des dalles caches (link from old pyramid)
+
+ La liste des niveaux est obtenu à partir de la pyramide existante, qui elle même etait issu du TMS. 
+ La sous arborescence des niveaux est dupliquée de l'ancienne pyramide.
+
+ Les tuiles (dalle cache) sont linkées dans la nouvelle pyramide.
+ On determine pour chaque tuile si elle est deja linkée à partir d'une autre pyramide afin de linker 
+ directement la source de la dalle cache, par contre, si la tuile est une image, on la linke dans 
+ la nouvelle pyramide.
+
+ Pour calculer les nouvelles dalles du cache, il est probable que ces dernieres recouvrent certaines 
+ anciennes dalles (linkées), partiellement (departements limitrophes) ou completement (mise à jour du
+ departement). 
+ De plus, Les nouvelles dalles caches doivent être enregistrées dans les repertoires de cache.
+
+
+* Changement de projection :
+
+ Le changement de projection est determinée à partir du SRS des sources ainsi que du SRS du TMS.
+ S' ils sont differents, il y'a donc reprojection !
+
+ Le SRS du TMS est récuperé à la configuration par l'objet TileMatrixSet.
+ Et le SRS des sources par l'objet DataSource.
+
+ Le changement de projection implique un moissonnage WMS des tuiles via Rok4.
+ 
+
+* Changement de compression :
+
+ Le changement de compression s'appuie toujours sur une pyramide native (raw) extistante !
+ Donc les nouvelles pyramides (nouveau produit) ne sont pas concernées par la compression, 
+ qui est du RAW par defaut !
+
+ Sur une pyramide existante, on peut determiner la compression RAW (none), JPG ou PNG, avec l'information du fichier
+ de la pyramide (.pyr). Ce parametre est la balise <format> d'un niveau (level).
+ Mais, nous ne savons pas traiter les changements de compressions de JPG->PNG ou PNG->JPG ou vers du RAW !
+ Donc on s'appuie toujours sur une pyramide native (raw) pour les changements de RAW->JPG ou RAW->PNG !
+
+ Le changement de mode de compression implique un moissonnage WMS des tuiles via Rok4.
+
+
+* Le fichier de description du cache pyramide :
+
+ cf. exemple de descripteur dans ./t/data/pyramid/ORTHO_RAW_IGNF_LAMB93_2008_75-BIS
+ (avec schema)
+
+
+* Les log :
+
+ Les sorties de log peuvent être sur la sortie standard (STDOUT) ou dans un fichier de log.
+ cf. exemple de log dans ./t/log/ORTHO_RAW_IGNF_LAMB93_2008_75-BIS
+
+
+* Les scripts (bash) :
+
+ Le nom des scripts n'est pas encore fixé mais ils se composent ainsi :
+ - autant de scripts que de jobs definis dans le parametres 'job_number'
+ - chaque scripts vont se charger d'executer le bas de la pyramide (above level) jusqu'au 'cut level'.
+ - un dernier script qui se charge de finir le traitement du 'cut level' jusqu'en haut de la pyramide (top level)...
+ 
+ cf. exemple de generation de script dans ./t/data/WORK/ORTHO_RAW_IGNF_LAMB93_2008_75-BIS
+
+ L'execution des scripts seront à la charge de l'orchestrateur Jenkins.
+
+ Les programmes suivants doivent être installés (disponible sur le projet Rok4) :
+  merg4tiff, mergeNtiff, tiff2tile, tiff2gray, tiffcp, ...
+
+ De plus, un service WMS doit être installé pour les cas de moissonnage.
+

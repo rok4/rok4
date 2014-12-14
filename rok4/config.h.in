@@ -1,0 +1,88 @@
+/*
+ * Copyright © (2011-2013) Institut national de l'information
+ *                    géographique et forestière
+ *
+ * Géoportail SAV <geop_services@geoportail.fr>
+ *
+ * This software is a computer program whose purpose is to publish geographic
+ * data using OGC WMS and WMTS protocol.
+ *
+ * This software is governed by the CeCILL-C license under French law and
+ * abiding by the rules of distribution of free software.  You can  use,
+ * modify and/ or redistribute the software under the terms of the CeCILL-C
+ * license as circulated by CEA, CNRS and INRIA at the following URL
+ * "http://www.cecill.info".
+ *
+ * As a counterpart to the access to the source code and  rights to copy,
+ * modify and redistribute granted by the license, users are provided only
+ * with a limited warranty  and the software's author,  the holder of the
+ * economic rights,  and the successive licensors  have only  limited
+ * liability.
+ *
+ * In this respect, the user's attention is drawn to the risks associated
+ * with loading,  using,  modifying and/or developing or reproducing the
+ * software by the user in light of its specific status of free software,
+ * that may mean  that it is complicated to manipulate,  and  that  also
+ * therefore means  that it is reserved for developers  and  experienced
+ * professionals having in-depth computer knowledge. Users are therefore
+ * encouraged to load and test the software's suitability as regards their
+ * requirements in conditions enabling the security of their systems and/or
+ * data to be ensured and,  more generally, to use and operate it in the
+ * same conditions as regards security.
+ *
+ * The fact that you are presently reading this means that you have had
+ *
+ * knowledge of the CeCILL-C license and that you accept its terms.
+ */
+
+#ifndef _CONFIG_
+#define _CONFIG_
+
+#include <unistd.h>
+#include <stdint.h>
+#include <cstring>
+#include <cstdlib>
+#include <algorithm>
+
+//#include "intl.h"
+
+#include <cassert>
+// Pour déactiver tous les assert, décommenter la ligne suivante
+// #define NDEBUG
+
+#include <iostream>
+#include "Logger.h"
+
+#define ROK4_VERSION "@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@"
+#define ROK4_INFO "ROK4-@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@"
+#define MAX_IMAGE_WIDTH  65536
+#define MAX_IMAGE_HEIGHT 65536
+
+//Correct value for a 2 factor between TMS resolution and a max image size output of 5000pixels
+#define MAX_TILE_X 40
+#define MAX_TILE_Y 40
+
+#define DEFAULT_SERVER_CONF_PATH   "../config/server.conf"
+#define DEFAULT_SERVICES_CONF_PATH "../config/services.conf"
+
+#define DEFAULT_LOG_OUTPUT ROLLING_FILE
+#define DEFAULT_LOG_FILE_PREFIX "/var/tmp/rok4"
+#define DEFAULT_LOG_FILE_PERIOD 3600
+#define DEFAULT_LOG_LEVEL  ERROR
+#define DEFAULT_NB_THREAD  1
+#define DEFAULT_LAYER_DIR  "../config/layers/"
+#define DEFAULT_TMS_DIR    "../config/tileMatrixSet"
+#define DEFAULT_STYLE_DIR  "../config/styles"
+#define DEFAULT_PROJ_DIR   "../config/proj"
+#define DEFAULT_STYLE      "normal"   //FIXME: nom du fichier de style par défaut
+#define DEFAULT_STYLE_INSPIRE     "inspire"//FIXME nom du fichier de style inspire par défaut "inspire_common:DEFAULT"
+#define DEFAULT_STYLE_INSPIRE_ID  "inspire_common:DEFAULT"
+#define DEFAULT_OPAQUE     true
+#define DEFAULT_RESAMPLING "lanczos_2"
+#define DEFAULT_CHANNELS   3
+#define DEFAULT_LAYER_LIMIT  1
+
+// Configuration de l'acces au parametrage de PROJ4
+#define PROJ_LIB_PATH      "../config/proj/";
+
+#endif

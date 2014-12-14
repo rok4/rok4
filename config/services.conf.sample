@@ -1,0 +1,69 @@
+<servicesConf>
+    <!-- Paramètres communs WMS et WMTS -->
+    <title>Service de visualisation WMS/WMTS</title>
+    <abstract>Ce service permet la visulation de couches de données raster IGN au travers d'un flux WMS ou WMTS</abstract>
+    <serviceProvider>IGN</serviceProvider>
+    <providerSite>http://www.ign.fr</providerSite>
+    <keywordList>
+        <keyword>WMS/WMTS</keyword>
+    </keywordList>
+    <postMode>false</postMode>
+    <!-- Toujours mettre la valeur none pour les 2 champs suivants -->
+    <fee>none</fee>
+    <accessConstraint>none</accessConstraint>
+    
+    <!--Contact Information-->
+    <individualName>Géoportail SAV</individualName>
+    <individualPosition>custodian</individualPosition>
+    <voice></voice>
+    <facsimile></facsimile>
+    <addressType></addressType>
+    <deliveryPoint>73 avenue de Paris</deliveryPoint>
+    <city>Saint Mandé</city>
+    <administrativeArea></administrativeArea>
+    <postCode>94160</postCode>
+    <country>France</country>
+    <electronicMailAddress>geop_services@geoportail.fr</electronicMailAddress>
+
+    <!-- Paramètres spécifiques WMS -->
+    <name>WMS</name>
+    <maxWidth>10000</maxWidth>
+    <maxHeight>10000</maxHeight>
+    <layerLimit>1</layerLimit>
+    <maxTileX>256</maxTileX>
+    <maxTileY>256</maxTileY>
+    <formatList>
+        <format>image/jpeg</format>
+        <format>image/png</format>
+        <format>image/tiff</format>
+        <format>image/x-bil;bits=32</format>
+    </formatList>
+
+    <globalCRSList>
+        <crs>CRS:84</crs>
+	<crs>EPSG:3857</crs>
+    </globalCRSList>
+    <fullStylingCapability>false</fullStylingCapability>
+    <!-- Paramètres spécifiques WMTS -->
+    <serviceType>OGC WMTS</serviceType>
+    <serviceTypeVersion>1.0.0</serviceTypeVersion>
+
+    <!-- Paramètre INSPIRE -->
+    <inspire>false</inspire>
+    <metadataWMS>
+        <url>http://www.geocatalogue.fr/api-public/servicesRest?SERVICE=CSW&amp;VERSION=2.0.2&amp;REQUEST=GetRecordById&outputSchema=http://www.isotc211.org/2005/gmd&amp;elementSetName=full&amp;Id=IGNF_INSPIRE_WMS.xml</url>
+        <mediaType>application/vnd.ogc.csw.GetRecordByIdResponse_xml</mediaType>
+    </metadataWMS>
+    <metadataWMTS>
+        <url>http://www.geocatalogue.fr/api-public/servicesRest?SERVICE=CSW&amp;VERSION=2.0.2&amp;REQUEST=GetRecordById&outputSchema=http://www.isotc211.org/2005/gmd&amp;elementSetName=full&amp;Id=IGNF_INSPIRE_WMTS.xml</url>
+        <mediaType>application/vnd.ogc.csw.GetRecordByIdResponse_xml</mediaType>
+    </metadataWMTS>
+
+    <!-- CRS et WMS -->
+    <!-- pour ne pas effectuer de reprojection pour 2 CRS égaux (ex : IGNF:LAMB93 et EPSG:2154) -->
+    <avoidEqualsCRSReprojection>true</avoidEqualsCRSReprojection>
+    <!-- ajoute automatiquement les CRS équivalents à la liste des CRS globale et aux listes des CRS par layer -->
+    <addEqualsCRS>true</addEqualsCRS>
+    <!-- Fichier contenant la liste des seuls CRS autorisés (si addEqualsCRS est à true ou 1, les CRS équivalents sont aussi autorisés) -->
+    <restrictedCRSList>../config/restrictedCRSList.txt.sample</restrictedCRSList>
+</servicesConf>

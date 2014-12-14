@@ -1,0 +1,42 @@
+<?xml version='1.0' encoding='US-ASCII'?>
+<Pyramid>
+	<tileMatrixSet>LAMB93_50cm_TEST</tileMatrixSet>
+	<level>
+		<tileMatrix>18</tileMatrix>
+		<baseDir>../config/pyramids/PARCELLAIRE_PNG_TEST/512</baseDir>
+		<format>TIFF_PNG_INT8</format>
+		<metadata type='INT32_DB_LZW'>
+			<baseDir>../config/pyramids/PARCELLAIRE_PNG_TEST/512</baseDir>
+			<format>TIFF_PNG_INT8</format>
+		</metadata>
+		<channels>1</channels>
+		<tilesPerWidth>4</tilesPerWidth>
+		<tilesPerHeight>4</tilesPerHeight>
+		<pathDepth>2</pathDepth>
+		<TMSLimits>
+			<minTileRow>1</minTileRow>
+			<maxTileRow>1000000</maxTileRow>
+			<minTileCol>1</minTileCol>
+			<maxTileCol>1000000</maxTileCol>
+		</TMSLimits>
+	</level>
+	<level>
+		<tileMatrix>17</tileMatrix>
+		<baseDir>../config/pyramids/PARCELLAIRE_PNG_TEST/1024</baseDir>
+		<format>TIFF_PNG_INT8</format>
+		<metadata type='INT32_DB_LZW'>
+			<baseDir>../config/pyramids/PARCELLAIRE_PNG_TEST/1024</baseDir>
+			<format>TIFF_PNG_INT8</format>
+		</metadata>
+		<channels>1</channels>
+		<tilesPerWidth>4</tilesPerWidth>
+		<tilesPerHeight>4</tilesPerHeight>
+		<pathDepth>2</pathDepth>
+		<TMSLimits>
+			<minTileRow>1</minTileRow>
+			<maxTileRow>1000000</maxTileRow>
+			<minTileCol>1</minTileCol>
+			<maxTileCol>1000000</maxTileCol>
+		</TMSLimits>
+	</level>
+</Pyramid>

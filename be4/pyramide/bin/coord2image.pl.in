@@ -1,0 +1,336 @@
+#!/usr/bin/env perl
+# Copyright © (2011) Institut national de l'information
+#                    géographique et forestière
+#
+# Géoportail SAV <geop_services@geoportail.fr>
+#
+# This software is a computer program whose purpose is to publish geographic
+# data using OGC WMS and WMTS protocol.
+#
+# This software is governed by the CeCILL-C license under French law and
+# abiding by the rules of distribution of free software.  You can  use,
+# modify and/ or redistribute the software under the terms of the CeCILL-C
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "http://www.cecill.info".
+#
+# As a counterpart to the access to the source code and  rights to copy,
+# modify and redistribute granted by the license, users are provided only
+# with a limited warranty  and the software's author,  the holder of the
+# economic rights,  and the successive licensors  have only  limited
+# liability.
+#
+# In this respect, the user's attention is drawn to the risks associated
+# with loading,  using,  modifying and/or developing or reproducing the
+# software by the user in light of its specific status of free software,
+# that may mean  that it is complicated to manipulate,  and  that  also
+# therefore means  that it is reserved for developers  and  experienced
+# professionals having in-depth computer knowledge. Users are therefore
+# encouraged to load and test the software's suitability as regards their
+# requirements in conditions enabling the security of their systems and/or
+# data to be ensured and,  more generally, to use and operate it in the
+# same conditions as regards security.
+#
+# The fact that you are presently reading this means that you have had
+#
+# knowledge of the CeCILL-C license and that you accept its terms.
+
+################################################################################
+
+=begin nd
+File: coord2image.pl
+
+Section: COORD2IMAGE tool
+
+Synopsis:
+    (start code)
+    perl coord2image.pl --tms=file --coord=X,Y --level=ID [--tilesPerImage=widthwisexheightwise] [--verbose]
+    (end code)
+
+Tool allowing to know the file in a ROK4 pyramid, which contains a terrain point (coordinates are in the TMS' system).
+
+Example:
+    (start code)
+    ./coord2image.pl --tms=TILEMATRIXSETS/PM.tms --coord=644555,5311519 --level=11 --tilesPerImage=16,16 --verbose
+    
+    BEGIN
+    COORD2IMAGE : version [0.17.6]
+      OFF : Coordinates : 644555, 5311519 (main::doIt) 
+      OFF : Tile's indices : 1056, 752 (main::doIt) 
+      OFF : Image's indices : 66, 47 (main::doIt) 
+      OFF : Result : 11/00/11/UB.tif (main::doIt) 
+    END
+    (end code)
+
+=cut
+
+################################################################################
+
+use warnings;
+use strict;
+
+use POSIX qw(locale_h);
+
+# Module
+use Log::Log4perl qw(:easy);
+use Getopt::Long;
+use File::Basename;
+use Cwd;
+
+# My search module
+use FindBin qw($Bin);
+use lib "$Bin/../lib/perl5";
+
+# My module
+use BE4::TileMatrixSet;
+use BE4::Base36;
+
+################################################################################
+# Constantes
+use constant TRUE  => 1;
+use constant FALSE => 0;
+
+################################################################################
+# Version
+my $VERSION = '@VERSION_TEXT@';
+
+=begin nd
+Variable: options
+
+Contains create-layer call options :
+
+    version - To obtain the command's version
+    help - To obtain the command's help
+    usage - To obtain the command's usage
+    
+    tms - To precise the use TMS file
+    coord - To precise where to write the XML layer file
+    level - To precise the level in the TMS of the wanted image
+    tilesPerImage - To precise the number of tile in a pyramid's image (widthwise and heightwise)
+    verbose - To log out many informations
+=cut
+my %options =
+(
+    "version"    => 0,
+    "help"       => 0,
+    "usage"      => 0,
+
+    # Mandatory
+    "tms"  => undef,
+    "coord" => undef,
+    "level"  => undef,
+    "tilesPerImage" => undef,
+    "verbose" => FALSE,
+);
+
+####################################################################################################
+#                                         Group: Functions                                         #
+####################################################################################################
+
+=begin nd
+Function: main
+
+Main method.
+
+See Also:
+    <init>, <doIt>
+=cut
+sub main {
+
+    print STDOUT "BEGIN\n";
+
+    # initialization
+    if (! main::init()) {
+        print STDERR "ERROR INITIALIZATION !\n";
+        exit 1;
+    }
+    
+    printf("COORD2IMAGE : version [%s]\n",$VERSION) if ($options{verbose});
+
+    # execution
+    if (! main::doIt()) {
+        print STDERR "ERROR EXECUTION !\n";
+        exit 5;
+    }
+
+    print STDOUT "END\n";
+}
+
+=begin nd
+Function: init
+
+Checks and stores options, initializes the default logger.
+=cut
+sub init {
+
+    # init Getopt
+    local $ENV{POSIXLY_CORRECT} = 1;
+
+    Getopt::Long::config qw(
+        default
+        no_autoabbrev
+        no_getopt_compat
+        require_order
+        bundling
+        no_ignorecase
+        permute
+    );
+
+    # init Options
+    GetOptions(
+        "help|h" => sub {
+            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/coord2image-pl.html\n" ;
+            exit 0;
+        },
+        "version|v" => sub { exit 0; },
+        "usage" => sub {
+            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/coord2image-pl.html\n" ;
+            exit 0;
+        },
+        
+        "tms=s" => \$options{tms},
+        "verbose" => sub {
+            $options{verbose} = TRUE,
+        },
+        "coord=s" => \$options{coord},
+        "level=s" => \$options{level},
+        "tilesPerImage=s" => \$options{"tilesPerImage"},
+    ) or do {
+        printf "Unappropriate usage\n";
+        printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/coord2image-pl.html\n";
+        exit -1;
+    };
+    
+    # logger by default at runtime
+    Log::Log4perl->easy_init({
+        level => $WARN,
+        layout => '%5p : %m (%M) %n'
+    });
+
+    ############# tms
+    if (! defined $options{tms} || $options{tms} eq "") {
+        ERROR("Option 'tms' not defined !");
+        return FALSE;
+    }
+
+    my $tmsFile = File::Spec->rel2abs($options{tms});
+
+    if (! -f $tmsFile) {
+        ERROR(sprintf "TMS file does not exist : %s", $tmsFile);
+        return FALSE;
+    }
+    $options{tms} = BE4::TileMatrixSet->new($tmsFile);
+    if (! defined $options{tms}) {
+        ERROR(sprintf "Cannot create the TMS perl object from file %s", $tmsFile);
+        return FALSE;
+    }
+    
+    ############# coord
+    if (! defined $options{coord} || $options{coord} eq "") {
+        ERROR("Option 'coord' not defined !");
+        return FALSE;
+    }
+    
+    my @xy = split(/,/,$options{coord},-1);
+    if (scalar @xy != 2) {
+        ERROR("Option 'coord' have to define 2 coordinates, X and Y, seperated by a comma");
+        return FALSE;
+    }
+    
+    $options{coord} = [Math::BigFloat->new($xy[0]), Math::BigFloat->new($xy[1])];
+    
+    ############# level
+    if (! defined $options{level} || $options{level} eq "") {
+        ERROR("Option 'level' not defined !");
+        return FALSE;
+    }
+
+    ############# tilesPerImage : optionnal
+
+    if (defined $options{tilesPerImage} && $options{tilesPerImage} ne "") {
+        my @wh = split(/,/,$options{tilesPerImage},-1);
+        if (scalar @wh != 2) {
+            ERROR("Option 'tilesPerImage', if defined, have to precise 2 number of tiles in a pyramid's image, widthwise and heightwise, seperated by a comma");
+            return FALSE;
+        }
+        $options{tilesPerImage} = [int($wh[0]), int($wh[1])];
+    } else {
+        $options{tilesPerImage} = [16, 16];
+    }
+
+    return TRUE;
+}
+
+####################################################################################################
+#                                 Group: Process methods                                           #
+####################################################################################################
+
+=begin nd
+Function: doIt
+
+We calculate the image path from provided coordinates, thanks to the TMS, the level and the image's dimensions
+
+Use classes :
+    - <BE4::TileMatrixSet>
+    - <BE4::Base36>
+=cut
+sub doIt {
+    my $tm = $options{tms}->getTileMatrix($options{level});
+    my $resolution = $tm->getResolution();
+    my $X_PixelSize = $resolution;
+    my $Y_PixelSize = -1 * $resolution;
+    
+    my $X_Origin_TMS = $tm->getTopLeftCornerX();
+    my $Y_Origin_TMS = $tm->getTopLeftCornerY();
+    if ($options{verbose}) {ALWAYS(sprintf "Coordinates : %s, %s", $options{coord}[0], $options{coord}[1])};
+
+    my $x_tile_indice = int(($options{coord}[0] - $X_Origin_TMS)/($X_PixelSize*$tm->getTileWidth())) ;
+    my $y_tile_indice = int(($options{coord}[1] - $Y_Origin_TMS)/($Y_PixelSize*$tm->getTileHeight())) ;
+
+    if ($options{verbose}) {ALWAYS(sprintf "Tile's indices : %s, %s", $x_tile_indice, $y_tile_indice)};
+
+    my $x_indice = int($x_tile_indice / $options{tilesPerImage}[0]);
+    my $y_indice = int($y_tile_indice / $options{tilesPerImage}[1]);
+    if ($options{verbose}) {ALWAYS(sprintf "Image's indices : %s, %s", $x_indice, $y_indice)};
+
+    my $image_path = BE4::Base36::indicesToB36Path($x_indice, $y_indice, 3);
+
+    ALWAYS(sprintf "Result : %s/%s.tif", $options{level}, $image_path);
+}
+
+################################################################################
+
+BEGIN {}
+INIT {}
+
+main;
+exit 0;
+
+END {}
+
+################################################################################
+
+1;
+__END__
+
+=begin nd
+Section: Details
+
+Group: Command's options
+
+    --help - Display the link to the technic documentation.
+
+    --usage - Display the link to the technic documentation.
+
+    --version - Display the tool version.
+
+    --tms - TMS file. Mandatory.
+
+    --coord - Coordinates, whose image path we want. In the TMS' system, X and Y are seperated by a comma
+    
+    --level - Level containing the wanted image
+    
+    --tilesPerImage - Numbers of tiles in the pyramid's images, widthwise and heightwise, seperated by a comma. Optionnal, 16 both wise by default.
+    
+    --verbose - To log out many informations. Optionnal. No verbose by default
+
+=cut

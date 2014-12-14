@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:element name="tileMatrixSet">
+		<xs:complexType>
+			<xs:sequence>
+			<!-- CRS communs à l'ensemble des TM -->
+			<xs:element name="crs"      type="xs:string"/>
+			<!-- Un nom plus explicite que celui du fichier. -->
+			<xs:element name="title"    type="xs:string"/>
+			<!-- Une description -->
+			<xs:element name="abstract" type="xs:string"/>
+			<!-- Liste des mots clefs -->
+			<xs:element name="keywordList">
+                            <xs:complexType>
+				<xs:sequence>
+                                    <xs:element name="Keyword" minOccurs="0" maxOccurs="unbounded">
+                                        <xs:complexType>
+                                            <xs:simpleContent>
+                                                <xs:extension base="xs:string">
+                                                    <xs:anyAttribute/>
+                                                </xs:extension>
+                                            </xs:simpleContent>
+                                        </xs:complexType>
+                                    </xs:element>
+				</xs:sequence>
+                            </xs:complexType>
+			</xs:element>
+
+			<!-- Liste des tileMatrix -->
+			<xs:element name="tileMatrix" minOccurs="1" maxOccurs="unbounded">
+				<xs:complexType>
+				<xs:sequence>
+					<!-- id du tilMatrix -->
+					<xs:element name="id"             type="xs:string"/>
+					<!-- resolution des tuiles -->
+					<xs:element name="resolution"     type="xs:double"/>
+					<!-- abscisse du pt en haut à gauche dans le CRS du TMS -->
+					<xs:element name="topLeftCornerX" type="xs:double"/>
+					<!-- ordonnée du pt en haut à gauche dans le CRS du TMS -->
+					<xs:element name="topLeftCornerY" type="xs:double"/>
+					<!-- largeur des tuiles -->
+					<xs:element name="tileWidth"      type="xs:positiveInteger"/>
+					<!-- hauteur des tuiles -->
+					<xs:element name="tileHeight"     type="xs:positiveInteger"/>
+					<!-- nombre de tuiles en largeur -->
+					<xs:element name="matrixWidth"    type="xs:positiveInteger"/>
+					<!-- nombre de tuiles en hauteur -->
+					<xs:element name="matrixHeight"   type="xs:positiveInteger"/>
+				</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+</xs:schema>

@@ -1,0 +1,15 @@
+<tileMatrixSet>
+	<crs>EPSG:4326</crs>
+
+        <tileMatrix>
+                <id>1</id>
+                <resolution>104857.6</resolution>
+                <topLeftCornerX> 0 </topLeftCornerX>
+                <topLeftCornerY> 12000000 </topLeftCornerY>
+                <tileWidth>256</tileWidth>
+                <tileHeight>256</tileHeight>
+                <matrixWidth>1</matrixWidth>
+                <matrixHeight>2</matrixHeight>
+        </tileMatrix>
+
+</tileMatrixSet>
