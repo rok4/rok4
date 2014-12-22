@@ -198,6 +198,16 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
                 double ratio_y = ( cropBBox.ymax - cropBBox.ymin ) / ( bbox.ymax - bbox.ymin ) ;
                 int newWidth = lround(width * ratio_x);
                 int newHeigth = lround(height * ratio_y);
+
+                double delta_h = double (newHeigth) - double(height) * ratio_y ;
+                double res_y = ( cropBBox.ymax - cropBBox.ymin ) / double(height * ratio_y) ;
+                double delta_y = res_y * delta_h ;
+
+                cropBBox.ymax += delta_y +res_y;
+                cropBBox.ymin -= res_y;
+
+                newHeigth += 2;
+
                 LOGGER_DEBUG ( _ ( "New Width = " ) << newWidth << " " << _ ( "New Height = " ) << newHeigth );
                 LOGGER_DEBUG ( _ ( "ratio_x = " ) << ratio_x << " " << _ ( "ratio_y = " ) << ratio_y );
                 Image* tmp = 0;

@@ -160,10 +160,28 @@ public:
     static bool dimensionsAreConsistent(double resolution_x, double resolution_y, int w, int h, BoundingBox<double> bounding_box) {
         // Vérification de la cohérence entre les résolutions et bbox fournies et les dimensions (en pixel) de l'image
         // Arrondi a la valeur entiere la plus proche
+
+        double epsilon_h;
+        double epsilon_w;
+
         if (resolution_x == 0 || resolution_y == 0) return false;
-        
-        int calcWidth = lround ( ( bounding_box.xmax - bounding_box.xmin ) / ( resolution_x ) );
-        int calcHeight = lround ( ( bounding_box.ymax - bounding_box.ymin ) / ( resolution_y ) );
+
+        /*int calcWidth = lround ( ( bounding_box.xmax - bounding_box.xmin ) / ( resolution_x ) );
+        int calcHeight = lround ( ( bounding_box.ymax - bounding_box.ymin ) / ( resolution_y ) );*/
+
+        double calcHeight_d = ( bounding_box.ymax - bounding_box.ymin ) / ( resolution_y );
+        double calcWidth_d = ( bounding_box.xmax - bounding_box.xmin ) / ( resolution_x );
+
+        epsilon_h = fabs(calcHeight_d - h);
+        epsilon_w = fabs(calcWidth_d - w);
+
+        std::cout << epsilon_h << " " << epsilon_w << std::endl;
+
+        int calcHeight = lround(calcHeight_d);
+        int calcWidth = lround(calcWidth_d);
+
+        std::cout << calcHeight << " " << calcWidth << std::endl;
+
         if ( calcWidth != w || calcHeight != h ) {
             LOGGER_DEBUG ( "Warning: height is " << h << " and calculation give " << calcHeight );
             LOGGER_DEBUG ( "Warning: width is " << w << " and calculation give " << calcWidth );
