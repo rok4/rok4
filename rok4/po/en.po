@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2014-12-22 15:41+0100\n"
+"POT-Creation-Date: 2014-12-29 14:10+0100\n"
 "PO-Revision-Date: 2013-02-18 17:49+0100\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -1087,27 +1087,27 @@ msgstr ""
 msgid "BBox en dehors de la definition du CRS"
 msgstr ""
 
-#: Pyramid.cpp:194 Pyramid.cpp:216
+#: Pyramid.cpp:194 Pyramid.cpp:227
 msgid "BBox decoupe incorrect"
 msgstr ""
 
-#: Pyramid.cpp:211
+#: Pyramid.cpp:220
 msgid "New Width = "
 msgstr ""
 
-#: Pyramid.cpp:211
+#: Pyramid.cpp:220
 msgid "New Height = "
 msgstr ""
 
-#: Pyramid.cpp:212
+#: Pyramid.cpp:221
 msgid "ratio_x = "
 msgstr ""
 
-#: Pyramid.cpp:212
+#: Pyramid.cpp:221
 msgid "ratio_y = "
 msgstr ""
 
-#: Pyramid.cpp:222
+#: Pyramid.cpp:233
 msgid "Image decoupe valide"
 msgstr ""
 
