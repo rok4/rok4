@@ -199,6 +199,11 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
                 int newWidth = lround(width * ratio_x);
                 int newHeigth = lround(height * ratio_y);
 
+		
+		//Avec lround, taille en pixel et cropBBox ne sont plus cohérents.
+		//On ajoute la différence de l'arrondi dans la cropBBox et on ajoute un pixel en plus tout autour.
+		
+		//Calcul de l'erreur d'arrondi converti en coordonnées
                 double delta_h = double (newHeigth) - double(height) * ratio_y ;
                 double delta_w = double (newWidth) - double(width) * ratio_x ;
 
@@ -208,6 +213,7 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
                 double delta_y = res_y * delta_h ;
                 double delta_x = res_x * delta_w ;
 
+		//Ajout de l'erreur d'arrondi et le pixel en plus
                 cropBBox.ymax += delta_y +res_y;
                 cropBBox.ymin -= res_y;
 
