@@ -164,7 +164,7 @@ int MirrorImage::_getline ( T* buffer, int line ) {
 
     delete [] buf0;
 
-    return width*channels*sizeof ( T );
+    return width*channels;
 }
 
 /* Implementation de getline pour les uint8_t */

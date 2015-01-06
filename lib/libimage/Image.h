@@ -160,10 +160,12 @@ public:
     static bool dimensionsAreConsistent(double resolution_x, double resolution_y, int w, int h, BoundingBox<double> bounding_box) {
         // Vérification de la cohérence entre les résolutions et bbox fournies et les dimensions (en pixel) de l'image
         // Arrondi a la valeur entiere la plus proche
+
         if (resolution_x == 0 || resolution_y == 0) return false;
-        
+
         int calcWidth = lround ( ( bounding_box.xmax - bounding_box.xmin ) / ( resolution_x ) );
         int calcHeight = lround ( ( bounding_box.ymax - bounding_box.ymin ) / ( resolution_y ) );
+
         if ( calcWidth != w || calcHeight != h ) {
             LOGGER_DEBUG ( "Warning: height is " << h << " and calculation give " << calcHeight );
             LOGGER_DEBUG ( "Warning: width is " << w << " and calculation give " << calcWidth );
@@ -398,7 +400,7 @@ public:
      * \return column
      */
     int inline x2c ( double x ) {
-        return lround ( ( x-bbox.xmin ) /resx );
+        return (int) ( ( x-bbox.xmin ) /resx );
     }
     /**
      * \~french
@@ -411,34 +413,34 @@ public:
      * \return line
      */
     int inline y2l ( double y ) {
-        return lround ( ( bbox.ymax-y ) /resy );
+        return (int) ( ( bbox.ymax-y ) /resy );
     }
 
     /**
      * \~french
-     * \brief Conversion de l'indice de colonne dans l'image vers l'abscisse terrain
+     * \brief Conversion de l'indice de colonne dans l'image vers l'abscisse terrain du centre du pixel
      * \param[in] c colonne
      * \return abscisse terrain
      * \~english
-     * \brief Conversion from image column indice to terrain coordinate X
+     * \brief Conversion from image column indice to terrain coordinate X (pixel's center)
      * \param[in] c column
      * \return terrain coordinate X
      */
     double inline c2x ( int c ) {
-        return ( bbox.xmin+c*resx );
+        return ( bbox.xmin + (0.5 + c) * resx );
     }
     /**
      * \~french
-     * \brief Conversion de l'indice de ligne dans l'image vers l'ordonnée terrain
+     * \brief Conversion de l'indice de ligne dans l'image vers l'ordonnée terrain du centre du pixel
      * \param[in] l ligne
      * \return ordonnée terrain
      * \~english
-     * \brief Conversion from image line indice to terrain coordinate X
+     * \brief Conversion from image line indice to terrain coordinate X (pixel's center)
      * \param[in] l line
      * \return terrain coordinate Y
      */
     double inline l2y ( int l ) {
-        return ( bbox.ymax-l*resy );
+        return ( bbox.ymax - (0.5 + l) * resy );
     }
 
     /**

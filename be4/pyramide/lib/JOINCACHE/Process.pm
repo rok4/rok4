@@ -356,13 +356,11 @@ sub treatImage {
 
     my $path = $node->getPyramidName();
 
-    my $imageDir = $self->{pyramid}->getRootPerType("data", TRUE, $node->getLevel());
-    my $finalImage = File::Spec->catfile($imageDir,$path);
+    my $finalImage = File::Spec->catfile($self->{pyramid}->getDirImage(TRUE), $node->getLevel(),$path);
 
     my $finalMask = undef;
     if ($self->{pyramid}->ownMasks()) {
-        my $maskDir = $self->{pyramid}->getRootPerType("mask", TRUE, $node->getLevel());
-        $finalMask = File::Spec->catfile($maskDir,$path);
+        $finalMask = File::Spec->catfile($self->{pyramid}->getDirMask(TRUE), $node->getLevel(),$path);
     }
 
     # On affecte le script courant au noeud. Le script courant n'est pas incrémenté dans le cas d'un lien, car rien n'est écrit dans le script.
@@ -546,14 +544,14 @@ sub mergeImages {
     $code .= "OverlayNtiff $oNtConfFilename $inTemplate\n";
 
     # Final location writting
-    my $imgCacheName = File::Spec->catfile($self->{pyramid}->getRootPerType('data', FALSE, $node->getLevel()), $node->getPyramidName());
+    my $imgCacheName = File::Spec->catfile($self->{pyramid}->getDirImage(), $node->getLevel(), $node->getPyramidName());
     $code .= sprintf ("Work2cache $outImgName $imgCacheName");
     printf ($LIST "0/%s\n", $imgCacheName);
     
     # Pas de masque à tuiler si on a juste une image : le masque a été lié symboliquement
     if (defined $outMskPath && $inNumber != 1) {
         my $outMskName = $node->getWorkName("M");
-        my $mskCacheName = File::Spec->catfile($self->{pyramid}->getRootPerType('mask', FALSE, $node->getLevel()), $node->getPyramidName());
+        my $mskCacheName = File::Spec->catfile($self->{pyramid}->getDirMask(), $node->getLevel(), $node->getPyramidName());
         $code .= sprintf (" $outMskName $mskCacheName");
         printf ($LIST "0/%s\n", $mskCacheName);
     }

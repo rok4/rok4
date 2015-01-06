@@ -57,22 +57,16 @@ my @array = (65,465,8,462,165,32,45,123,354);
 # Test on encodeB10toB36
 
 my $b36 = BE4::Base36::encodeB10toB36(132348);
-is ($b36, "2U4C", "Conversion base 10 -> base 36 : no length");
+is ($b36, "2U4C", "Conversion base 10 -> base 36 : 132348");
 
-$b36 = BE4::Base36::encodeB10toB36(16549465,3);
-is ($b36, "9UPND", "Conversion base 10 -> base 36 : length too small");
+$b36 = BE4::Base36::encodeB10toB36(16549465);
+is ($b36, "9UPND", "Conversion base 10 -> base 36 : 16549465");
 
-$b36 = BE4::Base36::encodeB10toB36(1254,4);
-is ($b36, "00YU", "Conversion base 10 -> base 36 : length bigger than needed");
-
-$b36 = BE4::Base36::encodeB10toB36(0,4);
-is ($b36, "0000", "Conversion base 10 -> base 36 : 0 with length");
+$b36 = BE4::Base36::encodeB10toB36(1254);
+is ($b36, "YU", "Conversion base 10 -> base 36 : 1254");
 
 $b36 = BE4::Base36::encodeB10toB36(0);
-is ($b36, "0", "Conversion base 10 -> base 36 : 0 without length");
-
-$b36 = BE4::Base36::encodeB10toB36(0,-1);
-is ($b36, "0", "Conversion base 10 -> base 36 : ignore negative length");
+is ($b36, "0", "Conversion base 10 -> base 36 : 0");
 
 ######################################################
 
@@ -93,14 +87,14 @@ is ($b10, 0, "Conversion base 36 -> base 10 : just zeros");
 
 my $b36path = "0FG8/00/MA";
 my ($i,$j) = BE4::Base36::b36PathToIndices($b36path);
-is_deeply ([$i,$j], [19462,756874], "Conversion base 36 path -> indices");
+is_deeply ([$i,$j], [20758,710218], "Conversion base 36 path -> indices");
 
 ######################################################
 
 # Test on indicesToB36Path
 
 my $b10path = BE4::Base36::indicesToB36Path(15247,75846,3);
-is ($b10path, "0B1M/RI/JU", "Conversion indices -> base 36 path");
+is ($b10path, "01BM/RI/JU", "Conversion indices -> base 36 path");
 
 is (BE4::Base36::indicesToB36Path(4032, 18217, 3), "3E/42/01", "Conversion indices -> base 36 path");
 

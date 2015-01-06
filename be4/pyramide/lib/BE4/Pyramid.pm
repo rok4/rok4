@@ -1555,30 +1555,69 @@ sub getTileMatrixSet {
     return $self->{tms};
 }
 
-############## Directories names #############
+############## Directories #############
 
-# Function: getDirImage
+=begin nd
+Function: getDirImage
+
+Returns image directory, just ethe name or the complete path
+
+Examples:
+    - $objPyr->getDirImage() returns "IMAGE"
+    - $objPyr->getDirImage(FALSE) returns "IMAGE"
+    - $objPyr->getDirImage(TRUE) returns "/home/ign/PYRAMID/IMAGE"
+
+Parameters (list):
+    absolute - boolean - If we want complete directory path. Optionnal, FALSE by default.
+=cut
 sub getDirImage {
     my $self = shift;
-    return $self->{dir_image};
+    my $complete = shift;
+    
+    return $self->{dir_image} if (! defined $complete || ! $complete);
+    return File::Spec->catfile($self->getNewDataDir, $self->{dir_image});
 }
 
-# Function: getDirNodata
+=begin nd
+Function: getDirMask
+
+Returns mask directory, just the name or the complete path
+
+Examples:
+    - $objPyr->getDirMask() returns "MASK"
+    - $objPyr->getDirMask(FALSE) returns "MASK"
+    - $objPyr->getDirMask(TRUE) returns "/home/ign/PYRAMID/MASK"
+
+Parameters (list):
+    absolute - boolean - If we want complete directory path. Optionnal, FALSE by default.
+=cut
+sub getDirMask {
+    my $self = shift;
+    my $complete = shift;
+    
+    return $self->{dir_mask} if (! defined $complete || ! $complete);
+    return File::Spec->catfile($self->getNewDataDir, $self->{dir_mask});
+}
+
+=begin nd
+Function: getDirNodata
+
+Returns nodata directory, just the name or the complete path
+
+Examples:
+    - $objPyr->getDirNodata() returns "NODATA"
+    - $objPyr->getDirNodata(FALSE) returns "NODATA"
+    - $objPyr->getDirNodata(TRUE) returns "/home/ign/PYRAMID/NODATA"
+
+Parameters (list):
+    absolute - boolean - If we want complete directory path. Optionnal, FALSE by default.
+=cut
 sub getDirNodata {
     my $self = shift;
-    return $self->{dir_nodata};
-}
-
-# Function: getDirMask
-sub getDirMask{
-    my $self = shift;
-    return $self->{dir_mask};
-}
-
-# Function: getDirMetadata
-sub getDirMetadata {
-    my $self = shift;
-    return $self->{dir_metadata};
+    my $complete = shift;
+    
+    return $self->{dir_nodata} if (! defined $complete || ! $complete);
+    return File::Spec->catfile($self->getNewDataDir, $self->{dir_nodata});
 }
 
 # Function: getDirDepth
@@ -1813,48 +1852,6 @@ sub getTilesPerWidth {
 sub getTilesPerHeight {
     my $self = shift;
     return $self->{image_height};
-}
-
-=begin nd
-Function: getRootPerType
-
-Returns the pyramid root for the provided type.
-
-Examples:
-    - $objPyr->getRootPerType("data",TRUE) returns "/home/ign/PYRAMID/IMAGE"
-    - $objPyr->getRootPerType("mask",FALSE) returns "MASK"
-    
-Parameters (list):
-    type - string - Tile type : "data", "metadata", "nodata", "mask". Otherwise, use "data".
-    absolute - boolean - If we want complete directory path.
-    level - string - Level ID, if we want it in the path. Optionnal.
-=cut
-sub getRootPerType {
-    my $self = shift;
-    my $type = shift;
-    my $absolute = shift;
-    my $level = shift;
-    
-    my $dir;
-    if ($type eq "metadata"){
-        $dir = $self->getDirMetadata;
-    } elsif ($type eq "mask") {
-        $dir = $self->getDirMask;
-    } elsif ($type eq "nodata") {
-        $dir = $self->getDirNodata;
-    } else {
-        $dir = $self->getDirImage;
-    }
-    
-    if (! defined $absolute || $absolute) {
-        $dir = File::Spec->catfile($self->getNewDataDir, $dir);   
-    }
-
-    if (defined $level) {
-        $dir = File::Spec->catfile($dir, $level);
-    }
-
-    return $dir;
 }
 
 ####################################################################################################
