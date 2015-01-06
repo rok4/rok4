@@ -198,8 +198,35 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
                 double ratio_y = ( cropBBox.ymax - cropBBox.ymin ) / ( bbox.ymax - bbox.ymin ) ;
                 int newWidth = lround(width * ratio_x);
                 int newHeigth = lround(height * ratio_y);
+
+		
+		//Avec lround, taille en pixel et cropBBox ne sont plus cohérents.
+		//On ajoute la différence de l'arrondi dans la cropBBox et on ajoute un pixel en plus tout autour.
+		
+		//Calcul de l'erreur d'arrondi converti en coordonnées
+                double delta_h = double (newHeigth) - double(height) * ratio_y ;
+                double delta_w = double (newWidth) - double(width) * ratio_x ;
+
+                double res_y = ( cropBBox.ymax - cropBBox.ymin ) / double(height * ratio_y) ;
+                double res_x = ( cropBBox.xmax - cropBBox.xmin ) / double(width * ratio_x) ;
+
+                double delta_y = res_y * delta_h ;
+                double delta_x = res_x * delta_w ;
+
+		//Ajout de l'erreur d'arrondi et le pixel en plus
+                cropBBox.ymax += delta_y +res_y;
+                cropBBox.ymin -= res_y;
+
+                cropBBox.xmax += delta_x +res_x;
+                cropBBox.xmin -= res_x;
+
+                newHeigth += 2;
+                newWidth += 2;
+
                 LOGGER_DEBUG ( _ ( "New Width = " ) << newWidth << " " << _ ( "New Height = " ) << newHeigth );
                 LOGGER_DEBUG ( _ ( "ratio_x = " ) << ratio_x << " " << _ ( "ratio_y = " ) << ratio_y );
+
+
                 Image* tmp = 0;
                 int cropError = 0;
                 if ( (1/ratio_x > 5 && newWidth < 3) || (newHeigth < 3 && 1/ratio_y > 5) ){ //Too small BBox

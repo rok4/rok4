@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2014-06-16 14:38+0200\n"
+"POT-Creation-Date: 2015-01-03 14:06+0100\n"
 "PO-Revision-Date: 2014-01-28 09:36+0100\n"
 "Last-Translator: \n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -1085,27 +1085,27 @@ msgstr " resolution de la requête="
 msgid "BBox en dehors de la definition du CRS"
 msgstr "Emprise demandée en dehors de la zone de définition du CRS"
 
-#: Pyramid.cpp:194 Pyramid.cpp:206
+#: Pyramid.cpp:194 Pyramid.cpp:233
 msgid "BBox decoupe incorrect"
 msgstr "Emprise découpée incorrecte"
 
-#: Pyramid.cpp:201
+#: Pyramid.cpp:226
 msgid "New Width = "
 msgstr " Nouvelle largeur = "
 
-#: Pyramid.cpp:201
+#: Pyramid.cpp:226
 msgid "New Height = "
 msgstr "Nouvelle hauteur = "
 
-#: Pyramid.cpp:202
+#: Pyramid.cpp:227
 msgid "ratio_x = "
 msgstr "Ratio en X = "
 
-#: Pyramid.cpp:202
+#: Pyramid.cpp:227
 msgid "ratio_y = "
 msgstr "Ratio en Y ="
 
-#: Pyramid.cpp:212
+#: Pyramid.cpp:239
 msgid "Image decoupe valide"
 msgstr "Image découpée invalide !"
 
