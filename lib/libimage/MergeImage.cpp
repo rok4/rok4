@@ -128,7 +128,7 @@ int MergeImage::_getline ( T* buffer, int line ) {
     delete [] imageLine;
     delete [] maskLine;
 
-    return width*channels*sizeof ( T );
+    return width*channels;
 }
 
 /* Implementation de getline pour les uint8_t */
@@ -169,8 +169,8 @@ MergeImage* MergeImageFactory::createMergeImage ( std::vector< Image* >& images,
 }
 
 
-int MergeMask::_getline ( uint8_t* buffer, int line ) {
-
+/* Implementation de getline pour les uint8_t */
+int MergeMask::getline ( uint8_t* buffer, int line ) {
     memset ( buffer,0,width );
 
     uint8_t* buffer_m = new uint8_t[width];
@@ -199,18 +199,13 @@ int MergeMask::_getline ( uint8_t* buffer, int line ) {
     return width;
 }
 
-/* Implementation de getline pour les uint8_t */
-int MergeMask::getline ( uint8_t* buffer, int line ) {
-    return _getline ( buffer, line );
-}
-
 /* Implementation de getline pour les float */
 int MergeMask::getline ( float* buffer, int line ) {
     uint8_t* buffer_t = new uint8_t[width*channels];
-    getline ( buffer_t,line );
+    int retour = getline ( buffer_t,line );
     convert ( buffer,buffer_t,width*channels );
     delete [] buffer_t;
-    return width*channels;
+    return retour;
 }
 
 namespace Merge {

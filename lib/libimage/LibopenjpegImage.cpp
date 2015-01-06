@@ -291,9 +291,9 @@ int LibopenjpegImage::getline ( float* buffer, int line ) {
 
     // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers (forcément pour du JPEG2000)
     uint8_t* buffer_t = new uint8_t[width*channels];
-    getline ( buffer_t,line );
+    int retour = getline ( buffer_t,line );
     convert ( buffer,buffer_t,width*channels );
     delete [] buffer_t;
-    return width*channels;
+    return retour;
 }
 
