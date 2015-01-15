@@ -75,7 +75,6 @@ public:
      */
     BoundingBox ( T xmin, T ymin, T xmax, T ymax ) :
         xmin ( xmin ), ymin ( ymin ), xmax ( xmax ), ymax ( ymax ) {}
-
     /** \~french \brief Crée un objet BoundingBox par copie et conversion
      * \param[in] bbox rectangle englobant à copier et éventuellement convertir
      ** \~english \brief Create a BoundingBox object, copying and converting

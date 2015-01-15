@@ -850,6 +850,8 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
     GeographicBoundingBoxWMS geographicBoundingBox;
     BoundingBoxWMS boundingBox;
     std::vector<MetadataURL> metadataURLs;
+    bool WMSauth = true;
+    bool WMTSauth = true;
 
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
@@ -887,6 +889,16 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
     pElem=hRoot.FirstChild ( "abstract" ).Element();
     if ( pElem && pElem->GetText() ) {
         abstract= pElem->GetTextStr();
+    }
+
+    pElem=hRoot.FirstChild ( "WMSAuthorized" ).Element();
+    if ( pElem && pElem->GetText() && pElem->GetTextStr()=="false") {
+        WMSauth= false;
+    }
+
+    pElem=hRoot.FirstChild ( "WMTSAuthorized" ).Element();
+    if ( pElem && pElem->GetText() && pElem->GetTextStr()=="false") {
+        WMTSauth= false;
     }
 
 
@@ -1214,7 +1226,7 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
 
     Layer *layer;
 
-    layer = new Layer ( id, title, abstract, keyWords, pyramid, styles, minRes, maxRes,
+    layer = new Layer ( id, title, abstract, WMSauth, WMTSauth,keyWords, pyramid, styles, minRes, maxRes,
                         WMSCRSList, opaque, authority, resampling,geographicBoundingBox,boundingBox,metadataURLs );
 
     return layer;

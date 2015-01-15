@@ -284,70 +284,76 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     int error;
     Image* image;
     for ( int i = 0 ; i < layers.size(); i ++ ) {
-        Image* curImage = layers.at ( i )->getbbox ( servicesConf, bbox, width, height, crs, error );
+        //
+        if (layers.at ( i )->getWMSAuthorized()) {
+            Image* curImage = layers.at ( i )->getbbox ( servicesConf, bbox, width, height, crs, error );
 
-        LOGGER_DEBUG ( _ ( "GetMap de Style : " ) << styles.at ( i )->getId() << _ ( " pal size : " ) <<styles.at ( i )->getPalette()->getPalettePNGSize() );
+            LOGGER_DEBUG ( _ ( "GetMap de Style : " ) << styles.at ( i )->getId() << _ ( " pal size : " ) <<styles.at ( i )->getPalette()->getPalettePNGSize() );
 
-        if ( curImage == 0 ) {
-            switch ( error ) {
+            if ( curImage == 0 ) {
+                switch ( error ) {
 
-            case 1: {
-                return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "bbox invalide" ),"wms" ) );
-            }
-            case 2: {
-                return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "bbox trop grande" ),"wms" ) );
-            }
-            default : {
-                return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wms" ) );
-            }
-            }
-        }
-
-        Rok4Format::eformat_data pyrType = layers.at ( i )->getDataPyramid()->getFormat();
-
-        if ( servicesConf.isFullStyleCapable() ) {
-            if ( styles.at ( i )->isEstompage() ) {
-                LOGGER_DEBUG ( _ ( "Estompage" ) );
-                curImage = new EstompageImage ( curImage,styles.at ( i )->getAngle(),styles.at ( i )->getExaggeration(), styles.at ( i )->getCenter() );
-                switch ( pyrType ) {
-                    //Only use int8 output whith estompage
-                case Rok4Format::TIFF_RAW_FLOAT32 :
-                    pyrType = Rok4Format::TIFF_RAW_INT8;
-                    break;
-                case Rok4Format::TIFF_ZIP_FLOAT32 :
-                    pyrType = Rok4Format::TIFF_ZIP_INT8;
-                    break;
-                case Rok4Format::TIFF_LZW_FLOAT32 :
-                    pyrType = Rok4Format::TIFF_LZW_INT8;
-                    break;
-                case Rok4Format::TIFF_PKB_FLOAT32 :
-                    pyrType = Rok4Format::TIFF_PKB_INT8;
-                    break;
-                default:
-                    break;
+                case 1: {
+                    return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "bbox invalide" ),"wms" ) );
+                }
+                case 2: {
+                    return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "bbox trop grande" ),"wms" ) );
+                }
+                default : {
+                    return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wms" ) );
+                }
                 }
             }
 
-            if ( styles.at ( i ) && curImage->channels == 1 && ! ( styles.at ( i )->getPalette()->getColoursMap()->empty() ) ) {
-                if ( format == "image/png" && layers.size() == 1 ) {
-                    switch ( pyrType ) {
+            Rok4Format::eformat_data pyrType = layers.at ( i )->getDataPyramid()->getFormat();
 
+            if ( servicesConf.isFullStyleCapable() ) {
+                if ( styles.at ( i )->isEstompage() ) {
+                    LOGGER_DEBUG ( _ ( "Estompage" ) );
+                    curImage = new EstompageImage ( curImage,styles.at ( i )->getAngle(),styles.at ( i )->getExaggeration(), styles.at ( i )->getCenter() );
+                    switch ( pyrType ) {
+                        //Only use int8 output whith estompage
                     case Rok4Format::TIFF_RAW_FLOAT32 :
+                        pyrType = Rok4Format::TIFF_RAW_INT8;
+                        break;
                     case Rok4Format::TIFF_ZIP_FLOAT32 :
+                        pyrType = Rok4Format::TIFF_ZIP_INT8;
+                        break;
                     case Rok4Format::TIFF_LZW_FLOAT32 :
+                        pyrType = Rok4Format::TIFF_LZW_INT8;
+                        break;
                     case Rok4Format::TIFF_PKB_FLOAT32 :
-                        curImage = new StyledImage ( curImage, styles.at ( i )->getPalette()->isNoAlpha()?3:4 , styles.at ( i )->getPalette() );
+                        pyrType = Rok4Format::TIFF_PKB_INT8;
+                        break;
                     default:
                         break;
                     }
-                } else {
-                    curImage = new StyledImage ( curImage, styles.at ( i )->getPalette()->isNoAlpha()?3:4, styles.at ( i )->getPalette() );
                 }
+
+                if ( styles.at ( i ) && curImage->channels == 1 && ! ( styles.at ( i )->getPalette()->getColoursMap()->empty() ) ) {
+                    if ( format == "image/png" && layers.size() == 1 ) {
+                        switch ( pyrType ) {
+
+                        case Rok4Format::TIFF_RAW_FLOAT32 :
+                        case Rok4Format::TIFF_ZIP_FLOAT32 :
+                        case Rok4Format::TIFF_LZW_FLOAT32 :
+                        case Rok4Format::TIFF_PKB_FLOAT32 :
+                            curImage = new StyledImage ( curImage, styles.at ( i )->getPalette()->isNoAlpha()?3:4 , styles.at ( i )->getPalette() );
+                        default:
+                            break;
+                        }
+                    } else {
+                        curImage = new StyledImage ( curImage, styles.at ( i )->getPalette()->isNoAlpha()?3:4, styles.at ( i )->getPalette() );
+                    }
+                }
+
             }
 
+            images.push_back ( curImage );
+        } else {
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le service " ) +request->service+_ ( " est inconnu pour le layer " ) +layers.at ( i )->getTitle(),"wms" ) );
         }
-
-        images.push_back ( curImage );
+        //
     }
 
     //Use background image format.
@@ -500,6 +506,11 @@ DataSource* Rok4Server::getTile ( Request* request ) {
         errorResp = notFoundError;
     }
 
+    if (!(L->getWMTSAuthorized())) {
+        delete L;
+        delete style;
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le service " ) +request->service+_ ( " est inconnu pour ce layer." ),"wmts" ) );
+    }
     DataSource* tileSource;
     // Avoid using unnecessary palette
     if ( format == "image/png" ) {
@@ -540,7 +551,7 @@ void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
     }
 }
 
-void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest ) {
+void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest ) {   
     if ( supportWMTS && request->service == "wmts" ) {
         processWMTS ( request, fcgxRequest );
         //Service is not mandatory in GetMap request in WMS 1.3.0 and GetFeatureInfo

@@ -212,7 +212,6 @@ private:
      * \return parameter value or "" if not availlable
      */
     std::string getParam ( std::map<std::string, std::string>& option, std::string paramName );
-
     /**
      * \~french
      * \brief Traitement d'une requête GetMap

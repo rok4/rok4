@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2015-01-03 14:06+0100\n"
+"POT-Creation-Date: 2015-01-14 17:31+0100\n"
 "PO-Revision-Date: 2013-02-18 17:49+0100\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -22,39 +22,39 @@ msgstr ""
 msgid "Liste de layers vide"
 msgstr "Layer list empty"
 
-#: CapabilitiesBuilder.cpp:464
+#: CapabilitiesBuilder.cpp:466
 msgid "Nombre de styles : "
 msgstr "Number of styles:"
 
-#: CapabilitiesBuilder.cpp:478
+#: CapabilitiesBuilder.cpp:480
 msgid "LegendURL"
 msgstr "LegendURL"
 
-#: CapabilitiesBuilder.cpp:493
+#: CapabilitiesBuilder.cpp:495
 msgid "LegendURL OK"
 msgstr "LegendURL OK"
 
-#: CapabilitiesBuilder.cpp:496
+#: CapabilitiesBuilder.cpp:498
 msgid "Style fini : "
 msgstr "Style completed:"
 
-#: CapabilitiesBuilder.cpp:517
+#: CapabilitiesBuilder.cpp:519
 msgid "Layer Fini"
 msgstr "Layer completed:"
 
-#: CapabilitiesBuilder.cpp:521
+#: CapabilitiesBuilder.cpp:524
 msgid "Layers Fini"
 msgstr "Layers completed"
 
-#: CapabilitiesBuilder.cpp:548
+#: CapabilitiesBuilder.cpp:551
 msgid "WMSfini"
 msgstr "WMS Capabilities complete."
 
-#: CapabilitiesBuilder.cpp:809
+#: CapabilitiesBuilder.cpp:814
 msgid "Title : "
 msgstr "Title: "
 
-#: CapabilitiesBuilder.cpp:813
+#: CapabilitiesBuilder.cpp:818
 msgid "Abstract : "
 msgstr "Abstract: "
 
@@ -70,7 +70,7 @@ msgstr "            Root element not availlable."
 msgid "            La racine n'est pas un style."
 msgstr "            The root element is not a Style."
 
-#: ConfLoader.cpp:108 ConfLoader.cpp:914 ConfLoader.cpp:931
+#: ConfLoader.cpp:108 ConfLoader.cpp:926 ConfLoader.cpp:943
 msgid "Style "
 msgstr "Style "
 
@@ -301,8 +301,8 @@ msgstr "             Adding pyramid : "
 msgid "           BaseDir Relative to : "
 msgstr "           BaseDir Relative to : "
 
-#: ConfLoader.cpp:555 ConfLoader.cpp:860 ConfLoader.cpp:1240
-#: ConfLoader.cpp:1454
+#: ConfLoader.cpp:555 ConfLoader.cpp:862 ConfLoader.cpp:1252
+#: ConfLoader.cpp:1466
 msgid " impossible de recuperer la racine."
 msgstr "Root element not availlable."
 
@@ -349,7 +349,7 @@ msgstr "] : channels=["
 
 #: ConfLoader.cpp:612 ConfLoader.cpp:666 ConfLoader.cpp:676 ConfLoader.cpp:686
 #: ConfLoader.cpp:705 ConfLoader.cpp:720 ConfLoader.cpp:736 ConfLoader.cpp:751
-#: ConfLoader.cpp:1306
+#: ConfLoader.cpp:1318
 msgid "] is not an integer."
 msgstr "] is not an integer."
 
@@ -469,8 +469,8 @@ msgstr " specifying a NoData tile without path"
 msgid "Aucun level n'a pu etre charge pour la pyramide "
 msgstr "No level was loaded from the pyramid "
 
-#: ConfLoader.cpp:815 ConfLoader.cpp:1226 ConfLoader.cpp:1905
-#: ConfLoader.cpp:1998 ConfLoader.cpp:2153
+#: ConfLoader.cpp:815 ConfLoader.cpp:1238 ConfLoader.cpp:1917
+#: ConfLoader.cpp:2010 ConfLoader.cpp:2165
 msgid "Ne peut pas charger le fichier "
 msgstr "Can't load the file"
 
@@ -478,519 +478,519 @@ msgstr "Can't load the file"
 msgid "     Ajout du layer "
 msgstr "     Adding layer "
 
-#: ConfLoader.cpp:864
+#: ConfLoader.cpp:866
 msgid " La racine n'est pas un layer."
 msgstr " the root element is not a layer."
 
-#: ConfLoader.cpp:907
+#: ConfLoader.cpp:919
 msgid "Pas de style => style = "
 msgstr "No style. Default value : style = "
 
-#: ConfLoader.cpp:914 ConfLoader.cpp:931
+#: ConfLoader.cpp:926 ConfLoader.cpp:943
 msgid "non defini"
 msgstr "undefined"
 
-#: ConfLoader.cpp:936
+#: ConfLoader.cpp:948
 msgid "Pas de Style defini, Layer non valide"
 msgstr "No Style defined, invalid layer"
 
-#: ConfLoader.cpp:944
+#: ConfLoader.cpp:956
 msgid "La resolution min est inexploitable:["
 msgstr "The min resolution is unusable :["
 
-#: ConfLoader.cpp:952
+#: ConfLoader.cpp:964
 msgid "La resolution max est inexploitable:["
 msgstr "The max resolution is unusable :["
 
-#: ConfLoader.cpp:958
+#: ConfLoader.cpp:970
 msgid "Pas de geographicBoundingBox = "
 msgstr "No geographicBoundingBox = "
 
-#: ConfLoader.cpp:964
+#: ConfLoader.cpp:976
 msgid "Pas de westBoundLongitude"
 msgstr "No westBoundLongitude"
 
-#: ConfLoader.cpp:968
+#: ConfLoader.cpp:980
 msgid "Le westBoundLongitude est inexploitable:["
 msgstr "The westBoundLongitude is unusable :["
 
-#: ConfLoader.cpp:974
+#: ConfLoader.cpp:986
 msgid "Pas de southBoundLatitude"
 msgstr "No southBoundLatitude"
 
-#: ConfLoader.cpp:978
+#: ConfLoader.cpp:990
 msgid "Le southBoundLatitude est inexploitable:["
 msgstr "The southBoundLatitude is unusable :["
 
-#: ConfLoader.cpp:984
+#: ConfLoader.cpp:996
 msgid "Pas de eastBoundLongitude"
 msgstr "No eastBoundLongitude"
 
-#: ConfLoader.cpp:988
+#: ConfLoader.cpp:1000
 msgid "Le eastBoundLongitude est inexploitable:["
 msgstr "The eastBoundLongitude is unusable :["
 
-#: ConfLoader.cpp:994
+#: ConfLoader.cpp:1006
 msgid "Pas de northBoundLatitude"
 msgstr "No northBoundLatitude"
 
-#: ConfLoader.cpp:998
+#: ConfLoader.cpp:1010
 msgid "Le northBoundLatitude est inexploitable:["
 msgstr "The northBoundLatitude is unusable :["
 
-#: ConfLoader.cpp:1005
+#: ConfLoader.cpp:1017
 msgid "Pas de BoundingBox"
 msgstr "No BoundingBox"
 
-#: ConfLoader.cpp:1008
+#: ConfLoader.cpp:1020
 msgid "Le CRS est inexploitable:["
 msgstr "The CRS is unusable :["
 
-#: ConfLoader.cpp:1013
+#: ConfLoader.cpp:1025
 msgid "minx attribute is missing"
 msgstr "minx attribute is missing"
 
-#: ConfLoader.cpp:1017
+#: ConfLoader.cpp:1029
 msgid "Le minx est inexploitable:["
 msgstr "The minx is unusable :["
 
-#: ConfLoader.cpp:1021
+#: ConfLoader.cpp:1033
 msgid "miny attribute is missing"
 msgstr "miny attribute is missing"
 
-#: ConfLoader.cpp:1025
+#: ConfLoader.cpp:1037
 msgid "Le miny est inexploitable:["
 msgstr "The miny is unusable :["
 
-#: ConfLoader.cpp:1029
+#: ConfLoader.cpp:1041
 msgid "maxx attribute is missing"
 msgstr "maxx attribute is missing"
 
-#: ConfLoader.cpp:1033
+#: ConfLoader.cpp:1045
 msgid "Le maxx est inexploitable:["
 msgstr "The maxx is unusable :["
 
-#: ConfLoader.cpp:1037
+#: ConfLoader.cpp:1049
 msgid "maxy attribute is missing"
 msgstr "maxy attribute is missing"
 
-#: ConfLoader.cpp:1041
+#: ConfLoader.cpp:1053
 msgid "Le maxy est inexploitable:["
 msgstr "The maxy is unusable :["
 
-#: ConfLoader.cpp:1055
+#: ConfLoader.cpp:1067
 msgid "Le CRS "
 msgstr "The CRS"
 
-#: ConfLoader.cpp:1055
+#: ConfLoader.cpp:1067
 msgid ""
 " n est pas reconnu par Proj4 et n est donc par ajoute aux CRS de la couche"
 msgstr ""
 "isn't recognised by Proj, it would not be added to the layer supported CRS "
 "list."
 
-#: ConfLoader.cpp:1063
+#: ConfLoader.cpp:1075
 msgid "         CRS "
 msgstr "         CRS "
 
-#: ConfLoader.cpp:1063
+#: ConfLoader.cpp:1075
 msgid " already present in global CRS list"
 msgstr " already present in global CRS list"
 
-#: ConfLoader.cpp:1071
+#: ConfLoader.cpp:1083
 #, fuzzy
 msgid "         Le CRS "
 msgstr "         CRS "
 
-#: ConfLoader.cpp:1071
+#: ConfLoader.cpp:1083
 msgid " n est pas compatible avec l'emprise de la couche"
 msgstr " is not compatible with the layer definition boundingbox"
 
-#: ConfLoader.cpp:1086
+#: ConfLoader.cpp:1098
 #, fuzzy
 msgid "         Forbiden CRS "
 msgstr "         Adding CRS "
 
-#: ConfLoader.cpp:1100
+#: ConfLoader.cpp:1112
 msgid "         Adding CRS "
 msgstr "         Adding CRS "
 
-#: ConfLoader.cpp:1103 ConfLoader.cpp:1118
+#: ConfLoader.cpp:1115 ConfLoader.cpp:1130
 #, fuzzy
 msgid "         Already present CRS "
 msgstr "         Adding CRS "
 
-#: ConfLoader.cpp:1116
+#: ConfLoader.cpp:1128
 #, fuzzy
 msgid "         Adding Equivalent CRS "
 msgstr "         Adding CRS "
 
-#: ConfLoader.cpp:1126
+#: ConfLoader.cpp:1138
 msgid ": Aucun CRS specifique autorise pour la couche"
 msgstr ": No specific CRS autorised for the layer"
 
-#: ConfLoader.cpp:1132
+#: ConfLoader.cpp:1144
 msgid "Pas de opaque => opaque = "
 msgstr "No opaque => opaque = "
 
-#: ConfLoader.cpp:1141
+#: ConfLoader.cpp:1153
 msgid "le param opaque n'est pas exploitable:["
 msgstr ""
 
-#: ConfLoader.cpp:1153
+#: ConfLoader.cpp:1165
 msgid "Pas de resampling => resampling = "
 msgstr ""
 
-#: ConfLoader.cpp:1174
+#: ConfLoader.cpp:1186
 msgid "La pyramide "
 msgstr ""
 
-#: ConfLoader.cpp:1174
+#: ConfLoader.cpp:1186
 msgid " ne peut etre chargee"
 msgstr ""
 
-#: ConfLoader.cpp:1179
+#: ConfLoader.cpp:1191
 msgid "Aucune pyramide associee au layer "
 msgstr ""
 
-#: ConfLoader.cpp:1190
+#: ConfLoader.cpp:1202
 msgid "MetadataURL type missing"
 msgstr ""
 
-#: ConfLoader.cpp:1197
+#: ConfLoader.cpp:1209
 msgid "MetadataURL Format missing"
 msgstr ""
 
-#: ConfLoader.cpp:1203
+#: ConfLoader.cpp:1215
 msgid "MetadataURL HRef missing"
 msgstr ""
 
-#: ConfLoader.cpp:1211
+#: ConfLoader.cpp:1223
 msgid "No MetadataURL found in the layer "
 msgstr ""
 
-#: ConfLoader.cpp:1211
+#: ConfLoader.cpp:1223
 msgid " : not compatible with INSPIRE!!"
 msgstr ""
 
-#: ConfLoader.cpp:1244
+#: ConfLoader.cpp:1256
 msgid " La racine n'est pas un serverConf."
 msgstr ""
 
-#: ConfLoader.cpp:1251
+#: ConfLoader.cpp:1263
 msgid "Pas de logOutput => logOutput = "
 msgstr ""
 
-#: ConfLoader.cpp:1262
+#: ConfLoader.cpp:1274
 msgid "Le logOutput ["
 msgstr ""
 
-#: ConfLoader.cpp:1262 ConfLoader.cpp:1296
+#: ConfLoader.cpp:1274 ConfLoader.cpp:1308
 msgid "]  est inconnu."
 msgstr ""
 
-#: ConfLoader.cpp:1269
+#: ConfLoader.cpp:1281
 msgid "Pas de logFilePrefix => logFilePrefix = "
 msgstr ""
 
-#: ConfLoader.cpp:1276
+#: ConfLoader.cpp:1288
 msgid "Pas de logFilePeriod => logFilePeriod = "
 msgstr ""
 
-#: ConfLoader.cpp:1279 ConfLoader.cpp:1439
+#: ConfLoader.cpp:1291 ConfLoader.cpp:1451
 msgid "Le logFilePeriod ["
 msgstr ""
 
-#: ConfLoader.cpp:1279 ConfLoader.cpp:1439
+#: ConfLoader.cpp:1291 ConfLoader.cpp:1451
 msgid "]  is not an integer."
 msgstr ""
 
-#: ConfLoader.cpp:1286
+#: ConfLoader.cpp:1298
 msgid "Pas de logLevel => logLevel = "
 msgstr ""
 
-#: ConfLoader.cpp:1296
+#: ConfLoader.cpp:1308
 msgid "Le logLevel ["
 msgstr ""
 
-#: ConfLoader.cpp:1303
+#: ConfLoader.cpp:1315
 msgid "Pas de nbThread => nbThread = "
 msgstr ""
 
-#: ConfLoader.cpp:1306
+#: ConfLoader.cpp:1318
 msgid "Le nbThread ["
 msgstr ""
 
-#: ConfLoader.cpp:1312
+#: ConfLoader.cpp:1324
 msgid "Pas de WMTSSupport => supportWMTS = true"
 msgstr ""
 
-#: ConfLoader.cpp:1319
+#: ConfLoader.cpp:1331
 msgid "Le WMTSSupport ["
 msgstr ""
 
-#: ConfLoader.cpp:1319 ConfLoader.cpp:1333 ConfLoader.cpp:1353
+#: ConfLoader.cpp:1331 ConfLoader.cpp:1345 ConfLoader.cpp:1365
 msgid "] n'est pas un booleen."
 msgstr ""
 
-#: ConfLoader.cpp:1326
+#: ConfLoader.cpp:1338
 msgid "Pas de WMSSupport => supportWMS = true"
 msgstr ""
 
-#: ConfLoader.cpp:1333
+#: ConfLoader.cpp:1345
 msgid "Le WMSSupport ["
 msgstr ""
 
-#: ConfLoader.cpp:1339
+#: ConfLoader.cpp:1351
 msgid "WMTS et WMS desactives, extinction du serveur"
 msgstr ""
 
-#: ConfLoader.cpp:1346
+#: ConfLoader.cpp:1358
 msgid "Pas de reprojectionCapability => reprojectionCapability = true"
 msgstr ""
 
-#: ConfLoader.cpp:1353
+#: ConfLoader.cpp:1365
 msgid "Le reprojectionCapability ["
 msgstr ""
 
-#: ConfLoader.cpp:1363
+#: ConfLoader.cpp:1375
 msgid "Pas de servicesConfigFile => servicesConfigFile = "
 msgstr ""
 
-#: ConfLoader.cpp:1371
+#: ConfLoader.cpp:1383
 msgid "Pas de layerDir => layerDir = "
 msgstr ""
 
-#: ConfLoader.cpp:1379
+#: ConfLoader.cpp:1391
 msgid "Pas de tileMatrixSetDir => tileMatrixSetDir = "
 msgstr ""
 
-#: ConfLoader.cpp:1387
+#: ConfLoader.cpp:1399
 msgid "Pas de styleDir => styleDir = "
 msgstr ""
 
-#: ConfLoader.cpp:1398
+#: ConfLoader.cpp:1410
 msgid "Pas de projConfigDir => projConfigDir = "
 msgstr ""
 
-#: ConfLoader.cpp:1419
+#: ConfLoader.cpp:1431
 msgid "ERREUR FATALE : Impossible de definir le chemin pour proj "
 msgstr ""
 
-#: ConfLoader.cpp:1422
+#: ConfLoader.cpp:1434
 msgid "Env : PROJ_LIB = "
 msgstr ""
 
-#: ConfLoader.cpp:1427
+#: ConfLoader.cpp:1439
 msgid "Pas d'element <serverPort> fonctionnement autonome impossible"
 msgstr ""
 
-#: ConfLoader.cpp:1430
+#: ConfLoader.cpp:1442
 msgid ""
 "Element <serverPort> : Lancement interne impossible (Apache, spawn-fcgi)"
 msgstr ""
 
-#: ConfLoader.cpp:1436
+#: ConfLoader.cpp:1448
 msgid "Pas d'element <serverBackLog> valeur par defaut : 0"
 msgstr ""
 
-#: ConfLoader.cpp:1458
+#: ConfLoader.cpp:1470
 msgid " La racine n'est pas un servicesConf."
 msgstr ""
 
-#: ConfLoader.cpp:1536
+#: ConfLoader.cpp:1548
 msgid "Requete POST autorisee"
 msgstr ""
 
-#: ConfLoader.cpp:1602
+#: ConfLoader.cpp:1614
 msgid "Le layerLimit est inexploitable:["
 msgstr ""
 
-#: ConfLoader.cpp:1610
+#: ConfLoader.cpp:1622
 msgid "Le maxWidth est inexploitable:["
 msgstr ""
 
-#: ConfLoader.cpp:1618
+#: ConfLoader.cpp:1630
 msgid "Le maxHeight est inexploitable:["
 msgstr ""
 
-#: ConfLoader.cpp:1626
+#: ConfLoader.cpp:1638
 msgid "Le maxTileX est inexploitable:["
 msgstr ""
 
-#: ConfLoader.cpp:1634
+#: ConfLoader.cpp:1646
 msgid "Le maxTileY est inexploitable:["
 msgstr ""
 
-#: ConfLoader.cpp:1648
+#: ConfLoader.cpp:1660
 msgid "le format d'image ["
 msgstr ""
 
-#: ConfLoader.cpp:1648
+#: ConfLoader.cpp:1660
 msgid "] n'est pas un type MIME"
 msgstr ""
 
-#: ConfLoader.cpp:1658
+#: ConfLoader.cpp:1670
 msgid "Pas de reprojection pour les CRS equivalents"
 msgstr ""
 
-#: ConfLoader.cpp:1668
+#: ConfLoader.cpp:1680
 msgid "Ajout automatique des CRS equivalents"
 msgstr ""
 
-#: ConfLoader.cpp:1681
+#: ConfLoader.cpp:1693
 msgid "Liste restreinte de CRS à partir du fichier "
 msgstr ""
 
-#: ConfLoader.cpp:1696
+#: ConfLoader.cpp:1708
 msgid "The CRS ["
 msgstr ""
 
-#: ConfLoader.cpp:1696 ConfLoader.cpp:1883 ConfLoader.cpp:1950
+#: ConfLoader.cpp:1708 ConfLoader.cpp:1895 ConfLoader.cpp:1962
 msgid "] is not present in Proj4"
 msgstr ""
 
-#: ConfLoader.cpp:1716
+#: ConfLoader.cpp:1728
 msgid "Adding global CRS "
 msgstr ""
 
-#: ConfLoader.cpp:1718 ConfLoader.cpp:1732
+#: ConfLoader.cpp:1730 ConfLoader.cpp:1744
 #, fuzzy
 msgid "Already present in global CRS list "
 msgstr " already present in global CRS list"
 
-#: ConfLoader.cpp:1730 ConfLoader.cpp:1756
+#: ConfLoader.cpp:1742 ConfLoader.cpp:1768
 msgid "Adding equivalent global CRS ["
 msgstr ""
 
-#: ConfLoader.cpp:1730 ConfLoader.cpp:1950
+#: ConfLoader.cpp:1742 ConfLoader.cpp:1962
 msgid "] of ["
 msgstr ""
 
-#: ConfLoader.cpp:1736
+#: ConfLoader.cpp:1748
 msgid "Forbiden global CRS "
 msgstr ""
 
-#: ConfLoader.cpp:1751
+#: ConfLoader.cpp:1763
 msgid "CRS:84 not found -> adding global CRS CRS:84"
 msgstr ""
 
-#: ConfLoader.cpp:1756
+#: ConfLoader.cpp:1768
 msgid "] of [CRS:84]"
 msgstr ""
 
-#: ConfLoader.cpp:1765
+#: ConfLoader.cpp:1777
 msgid "Utilisation des styles pour tous les formats"
 msgstr ""
 
-#: ConfLoader.cpp:1780
+#: ConfLoader.cpp:1792
 msgid "Utilisation du mode Inspire"
 msgstr ""
 
-#: ConfLoader.cpp:1793 ConfLoader.cpp:1796 ConfLoader.cpp:1803
-#: ConfLoader.cpp:1806 ConfLoader.cpp:1819 ConfLoader.cpp:1822
-#: ConfLoader.cpp:1829 ConfLoader.cpp:1832
+#: ConfLoader.cpp:1805 ConfLoader.cpp:1808 ConfLoader.cpp:1815
+#: ConfLoader.cpp:1818 ConfLoader.cpp:1831 ConfLoader.cpp:1834
+#: ConfLoader.cpp:1841 ConfLoader.cpp:1844
 msgid "Metadata element incorrect"
 msgstr ""
 
-#: ConfLoader.cpp:1859
+#: ConfLoader.cpp:1871
 msgid "Construction de la liste des CRS equivalents depuis "
 msgstr ""
 
-#: ConfLoader.cpp:1883 ConfLoader.cpp:1950
+#: ConfLoader.cpp:1895 ConfLoader.cpp:1962
 #, fuzzy
 msgid "The Equivalent CRS ["
 msgstr "         Adding CRS "
 
-#: ConfLoader.cpp:1905
+#: ConfLoader.cpp:1917
 msgid " ou fichier vide"
 msgstr ""
 
-#: ConfLoader.cpp:1995
+#: ConfLoader.cpp:2007
 msgid "Chargement des parametres techniques depuis "
 msgstr ""
 
-#: ConfLoader.cpp:2005
+#: ConfLoader.cpp:2017
 msgid "CHARGEMENT DES STYLES"
 msgstr "LOADING STYLES"
 
-#: ConfLoader.cpp:2014
+#: ConfLoader.cpp:2026
 msgid "Le repertoire des Styles "
 msgstr ""
 
-#: ConfLoader.cpp:2014 ConfLoader.cpp:2063 ConfLoader.cpp:2112
+#: ConfLoader.cpp:2026 ConfLoader.cpp:2075 ConfLoader.cpp:2124
 msgid " n'est pas accessible."
 msgstr ""
 
-#: ConfLoader.cpp:2029
+#: ConfLoader.cpp:2041
 msgid "Aucun fichier *.stl dans le repertoire "
 msgstr ""
 
-#: ConfLoader.cpp:2040
+#: ConfLoader.cpp:2052
 msgid "Ne peut charger le style: "
 msgstr ""
 
-#: ConfLoader.cpp:2045
+#: ConfLoader.cpp:2057
 msgid "Aucun Style n'a pu etre charge!"
 msgstr ""
 
-#: ConfLoader.cpp:2049
+#: ConfLoader.cpp:2061
 msgid "NOMBRE DE STYLES CHARGES : "
 msgstr "NUMBER OF LOADED STYLES: "
 
-#: ConfLoader.cpp:2055
+#: ConfLoader.cpp:2067
 msgid "CHARGEMENT DES TMS"
 msgstr "LOADING TMS"
 
-#: ConfLoader.cpp:2063
+#: ConfLoader.cpp:2075
 msgid "Le repertoire des TMS "
 msgstr ""
 
-#: ConfLoader.cpp:2079
+#: ConfLoader.cpp:2091
 msgid "Aucun fichier *.tms dans le repertoire "
 msgstr ""
 
-#: ConfLoader.cpp:2090
+#: ConfLoader.cpp:2102
 msgid "Ne peut charger le tms: "
 msgstr ""
 
-#: ConfLoader.cpp:2095
+#: ConfLoader.cpp:2107
 msgid "Aucun TMS n'a pu etre charge!"
 msgstr ""
 
-#: ConfLoader.cpp:2099
+#: ConfLoader.cpp:2111
 msgid "NOMBRE DE TMS CHARGES : "
 msgstr "NUMBER OF LOADED TMS: "
 
-#: ConfLoader.cpp:2105
+#: ConfLoader.cpp:2117
 msgid "CHARGEMENT DES LAYERS"
 msgstr "LOADING LAYERS"
 
-#: ConfLoader.cpp:2112
+#: ConfLoader.cpp:2124
 msgid "Le repertoire "
 msgstr ""
 
-#: ConfLoader.cpp:2124
+#: ConfLoader.cpp:2136
 msgid "Aucun fichier *.lay dans le repertoire "
 msgstr ""
 
-#: ConfLoader.cpp:2125
+#: ConfLoader.cpp:2137
 msgid "Le serveur n'a aucune donnees à servir. Dommage..."
 msgstr ""
 
-#: ConfLoader.cpp:2136
+#: ConfLoader.cpp:2148
 msgid "Ne peut charger le layer: "
 msgstr ""
 
-#: ConfLoader.cpp:2141
+#: ConfLoader.cpp:2153
 msgid "Aucun layer n'a pu etre charge!"
 msgstr ""
 
-#: ConfLoader.cpp:2145
+#: ConfLoader.cpp:2157
 msgid "NOMBRE DE LAYERS CHARGES : "
 msgstr "NUMBER OF LOADED LAYERS: "
 
-#: ConfLoader.cpp:2150
+#: ConfLoader.cpp:2162
 msgid "Construction de la configuration des services depuis "
 msgstr ""
 
@@ -1299,7 +1299,7 @@ msgstr ""
 msgid "Parametre FORMAT absent."
 msgstr ""
 
-#: Request.cpp:798 Rok4Server.cpp:478
+#: Request.cpp:798 Rok4Server.cpp:484
 msgid "Le format "
 msgstr ""
 
@@ -1423,11 +1423,12 @@ msgstr ""
 msgid "Parametre STYLES incomplet."
 msgstr ""
 
-#: Request.cpp:1063 Request.cpp:1109 Rok4Api.cpp:225 Rok4Server.cpp:552
+#: Request.cpp:1063 Request.cpp:1109 Rok4Api.cpp:225 Rok4Server.cpp:354
+#: Rok4Server.cpp:512 Rok4Server.cpp:563
 msgid "Le service "
 msgstr ""
 
-#: Request.cpp:1063 Request.cpp:1109 Rok4Api.cpp:225 Rok4Server.cpp:552
+#: Request.cpp:1063 Request.cpp:1109 Rok4Api.cpp:225 Rok4Server.cpp:563
 msgid " est inconnu pour ce serveur."
 msgstr ""
 
@@ -1509,12 +1510,12 @@ msgstr ""
 msgid "Le parametre REQUEST n'est pas renseigné."
 msgstr ""
 
-#: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:521
-#: Rok4Server.cpp:525 Rok4Server.cpp:535 Rok4Server.cpp:539
+#: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:532
+#: Rok4Server.cpp:536 Rok4Server.cpp:546 Rok4Server.cpp:550
 msgid " n'est pas prise en charge par ce serveur."
 msgstr ""
 
-#: Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:525
+#: Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:536
 msgid "L'operation "
 msgstr ""
 
@@ -1522,11 +1523,11 @@ msgstr ""
 msgid "Le parametre SERVICE n'est pas renseigné."
 msgstr ""
 
-#: Rok4Api.cpp:299 Rok4Api.cpp:375 Rok4Server.cpp:492
+#: Rok4Api.cpp:299 Rok4Api.cpp:375 Rok4Server.cpp:498
 msgid "Probleme dans les parametres de la requete getTile"
 msgstr ""
 
-#: Rok4Api.cpp:503 Rok4Server.cpp:498
+#: Rok4Api.cpp:503 Rok4Server.cpp:504
 msgid "No data found"
 msgstr ""
 
@@ -1566,32 +1567,40 @@ msgstr ""
 msgid "Probleme dans les parametres de la requete getMap"
 msgstr ""
 
-#: Rok4Server.cpp:289
+#: Rok4Server.cpp:291
 msgid "GetMap de Style : "
 msgstr ""
 
-#: Rok4Server.cpp:289
+#: Rok4Server.cpp:291
 msgid " pal size : "
 msgstr " pal size : "
 
-#: Rok4Server.cpp:295
+#: Rok4Server.cpp:297
 msgid "bbox invalide"
 msgstr ""
 
-#: Rok4Server.cpp:298
+#: Rok4Server.cpp:300
 msgid "bbox trop grande"
 msgstr ""
 
-#: Rok4Server.cpp:301 Rok4Server.cpp:405
+#: Rok4Server.cpp:303 Rok4Server.cpp:411
 msgid "Impossible de repondre a la requete"
 msgstr ""
 
-#: Rok4Server.cpp:310
+#: Rok4Server.cpp:312
 msgid "Estompage"
 msgstr "Estompage"
 
-#: Rok4Server.cpp:478
+#: Rok4Server.cpp:354
+msgid " est inconnu pour le layer "
+msgstr ""
+
+#: Rok4Server.cpp:484
 msgid " ne peut etre traite"
+msgstr ""
+
+#: Rok4Server.cpp:512
+msgid " est inconnu pour ce layer."
 msgstr ""
 
 #: Style.cpp:54

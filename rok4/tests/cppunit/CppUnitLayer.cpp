@@ -64,6 +64,8 @@ protected:
     std::string id0;
     std::vector<std::string> titles0;
     std::vector<std::string> abstracts0;
+    bool WMSAuthorized = true;
+    bool WMTSAuthorized = true;
     LegendURL* legendURL0;
     std::vector<LegendURL> legendURLs0;
     std::map<double, Colour> colours;
@@ -96,6 +98,8 @@ protected:
     void getId();
     void getTitle();
     void getAbstract();
+    void getWMSAuthorized();
+    void getWMTSAuthorized();
     void getKeyWords();
     void getStyles();
     void getMinRes();
@@ -131,7 +135,7 @@ void CppUnitLayer::setUp() {
     maxReslayer = 209715.2;
     opaquelayer = true;
     authoritylayer = "IGNF";
-    layer = new Layer ( idlayer, titlelayer, abstractlayer, keyWords, dataPyramidlayer, styleslayer, minReslayer, maxReslayer, WMSCRSListlayer, opaquelayer, authoritylayer, resamplinglayer, geographicBoundingBoxlayer, boundingBoxlayer, metadataURLslayer );
+    layer = new Layer ( idlayer, titlelayer, abstractlayer, WMSAuthorized, WMTSAuthorized,keyWords, dataPyramidlayer, styleslayer, minReslayer, maxReslayer, WMSCRSListlayer, opaquelayer, authoritylayer, resamplinglayer, geographicBoundingBoxlayer, boundingBoxlayer, metadataURLslayer );
 }
 
 void CppUnitLayer::getId() {
@@ -140,6 +144,14 @@ void CppUnitLayer::getId() {
 
 void CppUnitLayer::getTitle() {
     CPPUNIT_ASSERT_MESSAGE ( "layer getTitle:\n", layer->getTitle() == "Title of the layer" ) ;
+}
+
+void CppUnitLayer::getWMSAuthorized() {
+    CPPUNIT_ASSERT_MESSAGE ( "layer getWMSAuthorized:\n", layer->getWMSAuthorized()== "Title of the layer" ) ;
+}
+
+void CppUnitLayer::getWMTSAuthorized() {
+    CPPUNIT_ASSERT_MESSAGE ( "layer getWMTSAuthorized:\n", layer->getWMTSAuthorized() == "Title of the layer" ) ;
 }
 
 void CppUnitLayer::getAbstract() {
