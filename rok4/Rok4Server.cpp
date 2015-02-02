@@ -284,10 +284,12 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     int error;
     Image* image;
     for ( int i = 0 ; i < layers.size(); i ++ ) {
-        //
-        if (layers.at ( i )->getWMSAuthorized()) {
-            Image* curImage = layers.at ( i )->getbbox ( servicesConf, bbox, width, height, crs, error );
 
+        if (layers.at(i)->getWMSAuthorized()) {
+
+            Image* curImage = layers.at ( i )->getbbox ( servicesConf, bbox, width, height, crs, error );
+            Rok4Format::eformat_data pyrType = layers.at ( i )->getDataPyramid()->getFormat();
+            Style* style = styles.at(i);
             LOGGER_DEBUG ( _ ( "GetMap de Style : " ) << styles.at ( i )->getId() << _ ( " pal size : " ) <<styles.at ( i )->getPalette()->getPalettePNGSize() );
 
             if ( curImage == 0 ) {
@@ -305,61 +307,86 @@ DataStream* Rok4Server::getMap ( Request* request ) {
                 }
             }
 
-            Rok4Format::eformat_data pyrType = layers.at ( i )->getDataPyramid()->getFormat();
+            Image *image = styleImage(curImage, pyrType, style, format, layers.size());
 
-            if ( servicesConf.isFullStyleCapable() ) {
-                if ( styles.at ( i )->isEstompage() ) {
-                    LOGGER_DEBUG ( _ ( "Estompage" ) );
-                    curImage = new EstompageImage ( curImage,styles.at ( i )->getAngle(),styles.at ( i )->getExaggeration(), styles.at ( i )->getCenter() );
-                    switch ( pyrType ) {
-                        //Only use int8 output whith estompage
-                    case Rok4Format::TIFF_RAW_FLOAT32 :
-                        pyrType = Rok4Format::TIFF_RAW_INT8;
-                        break;
-                    case Rok4Format::TIFF_ZIP_FLOAT32 :
-                        pyrType = Rok4Format::TIFF_ZIP_INT8;
-                        break;
-                    case Rok4Format::TIFF_LZW_FLOAT32 :
-                        pyrType = Rok4Format::TIFF_LZW_INT8;
-                        break;
-                    case Rok4Format::TIFF_PKB_FLOAT32 :
-                        pyrType = Rok4Format::TIFF_PKB_INT8;
-                        break;
-                    default:
-                        break;
-                    }
-                }
-
-                if ( styles.at ( i ) && curImage->channels == 1 && ! ( styles.at ( i )->getPalette()->getColoursMap()->empty() ) ) {
-                    if ( format == "image/png" && layers.size() == 1 ) {
-                        switch ( pyrType ) {
-
-                        case Rok4Format::TIFF_RAW_FLOAT32 :
-                        case Rok4Format::TIFF_ZIP_FLOAT32 :
-                        case Rok4Format::TIFF_LZW_FLOAT32 :
-                        case Rok4Format::TIFF_PKB_FLOAT32 :
-                            curImage = new StyledImage ( curImage, styles.at ( i )->getPalette()->isNoAlpha()?3:4 , styles.at ( i )->getPalette() );
-                        default:
-                            break;
-                        }
-                    } else {
-                        curImage = new StyledImage ( curImage, styles.at ( i )->getPalette()->isNoAlpha()?3:4, styles.at ( i )->getPalette() );
-                    }
-                }
-
-            }
-
-            images.push_back ( curImage );
+            images.push_back ( image );
         } else {
-            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le service " ) +request->service+_ ( " est inconnu pour le layer " ) +layers.at ( i )->getTitle(),"wms" ) );
+
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +layers.at(i)->getTitle()+_ ( " unknown " ),"wms" ) );
+
         }
-        //
     }
+
 
     //Use background image format.
     Rok4Format::eformat_data pyrType = layers.at ( 0 )->getDataPyramid()->getFormat();
-    image = images.at ( 0 );
-    if ( images.size() > 1  || (styles.at( 0 ) && (styles.at( 0 )->isEstompage() || !styles.at( 0 )->getPalette()->getColoursMap()->empty()) ) ) {
+    Style* style = styles.at(0);
+
+    image = mergeImages(images, pyrType, style, crs, bbox);
+
+    DataStream * stream = formatImage(image, format, pyrType, format_option, layers.size(), style);
+
+    return stream;
+}
+
+Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
+                            Style *style, std::string format, int size) {
+
+
+
+    if ( servicesConf.isFullStyleCapable() ) {
+        if ( style->isEstompage() ) {
+            LOGGER_DEBUG ( _ ( "Estompage" ) );
+            curImage = new EstompageImage ( curImage,style->getAngle(),style->getExaggeration(), style->getCenter() );
+            switch ( pyrType ) {
+                //Only use int8 output whith estompage
+            case Rok4Format::TIFF_RAW_FLOAT32 :
+                pyrType = Rok4Format::TIFF_RAW_INT8;
+                break;
+            case Rok4Format::TIFF_ZIP_FLOAT32 :
+                pyrType = Rok4Format::TIFF_ZIP_INT8;
+                break;
+            case Rok4Format::TIFF_LZW_FLOAT32 :
+                pyrType = Rok4Format::TIFF_LZW_INT8;
+                break;
+            case Rok4Format::TIFF_PKB_FLOAT32 :
+                pyrType = Rok4Format::TIFF_PKB_INT8;
+                break;
+            default:
+                break;
+            }
+        }
+
+        if ( style && curImage->channels == 1 && ! ( style->getPalette()->getColoursMap()->empty() ) ) {
+            if ( format == "image/png" && size == 1 ) {
+                switch ( pyrType ) {
+
+                case Rok4Format::TIFF_RAW_FLOAT32 :
+                case Rok4Format::TIFF_ZIP_FLOAT32 :
+                case Rok4Format::TIFF_LZW_FLOAT32 :
+                case Rok4Format::TIFF_PKB_FLOAT32 :
+                    curImage = new StyledImage ( curImage, style->getPalette()->isNoAlpha()?3:4 , style->getPalette() );
+                default:
+                    break;
+                }
+            } else {
+                curImage = new StyledImage ( curImage, style->getPalette()->isNoAlpha()?3:4, style->getPalette() );
+            }
+        }
+
+    }
+
+    return curImage;
+
+}
+
+Image * Rok4Server::mergeImages(std::vector<Image*> images, Rok4Format::eformat_data &pyrType,
+                                Style *style, CRS crs, BoundingBox<double> bbox) {
+
+
+    Image *image = images.at ( 0 );
+
+    if ( images.size() > 1  || (style && (style->isEstompage() || !style->getPalette()->getColoursMap()->empty()) ) ) {
 
         switch ( pyrType ) {
             //Only use int8 output with estompage
@@ -385,7 +412,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
         int spp = images.at ( 0 )->channels;
 
         int bg[spp];
-        
+
         switch(spp) {
             case 1:
                 bg[0] = 255;
@@ -401,29 +428,37 @@ DataStream* Rok4Server::getMap ( Request* request ) {
                 break;
             default:
                 memset(bg, 0, sizeof(int) * spp);
-                break;                
+                break;
         }
-        
+
         image = MIF.createMergeImage ( images, spp, bg, NULL, Merge::ALPHATOP );
 
         if ( image == NULL ) {
             LOGGER_ERROR ( "Impossible de fusionner les images des differentes couches" );
-            return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wms" ) );
+            return NULL;
         }
     }
-    
+
     image->setCRS(crs);
     image->setBbox(bbox);
 
+    return image;
+
+}
+
+DataStream * Rok4Server::formatImage(Image *image, std::string format, Rok4Format::eformat_data pyrType,
+                                     std::map <std::string, std::string > format_option,
+                                     int size, Style *style) {
+
     if ( format=="image/png" ) {
-        if ( layers.size() == 1 ) {
-            return new PNGEncoder ( image,styles.at ( 0 )->getPalette() );
+        if ( size == 1 ) {
+            return new PNGEncoder ( image,style->getPalette() );
         } else {
             return new PNGEncoder ( image,NULL );
         }
 
     } else if ( format == "image/tiff" || format == "image/geotiff" ) { // Handle compression option
-	bool isGeoTiff = (format == "image/geotiff");
+    bool isGeoTiff = (format == "image/geotiff");
 
         switch ( pyrType ) {
 
@@ -482,6 +517,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     LOGGER_ERROR ( "Le format "<<format<<" ne peut etre traite" );
 
     return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Le format " ) +format+_ ( " ne peut etre traite" ),"wms" ) );
+
 }
 
 DataSource* Rok4Server::getTile ( Request* request ) {
@@ -507,10 +543,33 @@ DataSource* Rok4Server::getTile ( Request* request ) {
     }
 
     if (!(L->getWMTSAuthorized())) {
+        std::string Title = L->getId();
         delete L;
+        L = NULL;
         delete style;
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le service " ) +request->service+_ ( " est inconnu pour ce layer." ),"wmts" ) );
+        style = NULL;
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +Title+_ ( " unknown " ),"wmts" ) );
     }
+    DataSource* tileSource;
+
+    if (L->getDataPyramid()->getOnDemand()) {
+        DataStream* tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
+        if (tile != NULL) {
+            tileSource = new BufferedDataSource(*tile);
+        } else {
+            return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
+        }
+
+    } else {
+        tileSource = getTileUsual(L, format, tileCol, tileRow, tileMatrix, errorResp, style) ;
+    }
+
+    return tileSource;
+
+}
+
+DataSource *Rok4Server::getTileUsual(Layer* L,std::string format, int tileCol, int tileRow, std::string tileMatrix, DataSource *errorResp, Style *style) {
+
     DataSource* tileSource;
     // Avoid using unnecessary palette
     if ( format == "image/png" ) {
@@ -518,16 +577,119 @@ DataSource* Rok4Server::getTile ( Request* request ) {
     } else {
         tileSource= L->gettile ( tileCol, tileRow, tileMatrix , errorResp );
     }
+    return tileSource;
 
+}
+
+DataStream *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format) {
+    //On va créer la tuile
+
+    //Variables
+    DataStream* tileSource;
+    std::vector<Image*> images;
+    Image* curImage, *image;
+    std::string bLevel;
+    double Col, Row, xmin, ymin, xmax, ymax, xo, yo, resolution;
+    int tileH, tileW, width, height, error;
+    Rok4Format::eformat_data pyrType;
+    Style * bStyle;
+    std::map <std::string, std::string > format_option;
+
+
+    //Calcul des paramètres nécessaires
+    Pyramid * pyr = L->getDataPyramid();
+
+    std::vector<Pyramid*> bPyr = L->getDataPyramid()->getBPyramids();
+
+    CRS dst_crs = pyr->getTms().getCrs();
+
+    width = 256;
+    height = 256;
+    error = 0;
+
+    //la correspondance est assurée par les vérifications qui ont eu lieu dans getTile()
+    std::string level = tileMatrix;
+
+    Row = double(tileRow);
+    Col = double(tileCol);
+
+    Interpolation::KernelType interpolation = L->getResampling();
+
+    //bbox
+    //Récupération du TileMatrix demandé
+    std::map<std::string, TileMatrix>* pList=pyr->getTms().getTmList();
+    std::map<std::string, TileMatrix>::iterator tm = pList->find ( tileMatrix );
+
+    //Récupération des paramètres associés
+    resolution = tm->second.getRes();
+    xo = tm->second.getX0();
+    yo = tm->second.getY0();
+    tileH = tm->second.getTileH();
+    tileW = tm->second.getTileW();
+
+
+    //calcul de la bbox
+    xmin = Col * double(tileW) * resolution + xo;
+    ymax = yo - Row * double(tileH) * resolution;
+    xmax = xmin + double(tileW) * resolution;
+    ymin = ymax - double(tileH) * resolution;
+
+    BoundingBox<double> bbox(xmin,ymin,xmax,ymax) ;
+
+    std::map<std::string, std::map<std::string, std::string> > aLevels = pyr->getALevel();
+
+
+    //Création de la tuile
+
+    //pour chaque pyramide de base, on récupère une image
+    for (int i = 0; i < bPyr.size(); i++) {
+
+        std::ostringstream oss;
+        oss << i;
+        pyrType = bPyr.at(i)->getFormat();
+        bStyle = bPyr.at(i)->getStyle();
+
+        //on récupère le bLevel associé à level
+        std::map<std::string,std::string> aLevel = aLevels.find(level)->second;
+        bLevel = aLevel.find(oss.str())->second;
+
+        //on récupère l'image
+        curImage = bPyr.at(i)->createReprojectedImage(bLevel, bbox, dst_crs, servicesConf, width, height, interpolation, error);
+
+        if (curImage != NULL) {
+            image = styleImage(curImage, pyrType, bStyle, format, bPyr.size());
+            images.push_back ( image );
+        } else {
+            LOGGER_ERROR("Impossible de générer la tuile car l'une des basedPyramid du layer"+L->getTitle()+" ne renvoit pas de tuile");
+            return NULL;
+        }
+    }
+
+    pyrType = bPyr.at ( 0 )->getFormat();
+
+    image = mergeImages(images, pyrType, style, dst_crs, bbox);
+
+    if (image == NULL) {
+        LOGGER_ERROR("Impossible de générer la tuile car l'opération de merge n'a pas fonctionné");
+        return NULL;
+    }
+
+    tileSource = formatImage(curImage, format, pyrType, format_option, bPyr.size(), style);
+
+    if (tileSource == NULL) {
+        LOGGER_ERROR("Impossible de générer la tuile car l'opération de formattage n'a pas fonctionné");
+        return NULL;
+    }
 
     return tileSource;
+
 }
 
 void Rok4Server::processWMTS ( Request* request, FCGX_Request&  fcgxRequest ) {
     if ( request->request == "getcapabilities" ) {
         S.sendresponse ( WMTSGetCapabilities ( request ),&fcgxRequest );
     } else if ( request->request == "gettile" ) {
-        S.sendresponse ( getTile ( request ), &fcgxRequest );
+        S.sendresponse ( getTile ( request ),&fcgxRequest );
     } else if ( request->request == "getversion" ) {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wmts" ) ),&fcgxRequest );
     } else if ( request->request == "" ) {

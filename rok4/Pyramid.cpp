@@ -55,7 +55,11 @@
 #include "config.h"
 #include "EmptyImage.h"
 
-Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format, int channels ) : levels ( levels ), tms ( tms ), format ( format ), channels ( channels ) {
+Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format,
+                   int channels, bool onDemand, bool transparent, Style *style)
+    : levels ( levels ), tms ( tms ), format ( format ), channels ( channels ),
+      onDemand ( onDemand ), transparent ( transparent ), style ( style ) {
+
     std::map<std::string, Level*>::iterator itLevel;
     double minRes= DBL_MAX;
     double maxRes= DBL_MIN;
@@ -81,6 +85,8 @@ Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok
             LOGGER_ERROR ( "Format non pris en charge : "<< Rok4Format::toString ( format ) );
         }
         itLevel->second->setNoDataSource ( noDataSource );
+        delete noDataSource;
+        noDataSource = NULL;
 
         //Determine Higher and Lower Levels
         double d = itLevel->second->getRes();
@@ -119,7 +125,9 @@ DataSource* Pyramid::getTile ( int x, int y, std::string tmId, DataSource* error
         }
         return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( noDataSource ) );
     }
+
     return itLevel->second->getTile ( x, y, errorDataSource );
+
 }
 
 std::string Pyramid::best_level ( double resolution_x, double resolution_y ) {
@@ -177,84 +185,92 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
         resolution_y = ( grid->bbox.ymax - grid->bbox.ymin ) / height;
         delete grid;
     }
+
     std::string l = best_level ( resolution_x, resolution_y );
     LOGGER_DEBUG ( _ ( "best_level=" ) << l << _ ( " resolution requete=" ) << resolution_x << " " << resolution_y );
+
     if ( (tms.getCrs() == dst_crs) || (are_the_two_CRS_equal( tms.getCrs().getProj4Code(), dst_crs.getProj4Code(), servicesConf.getListOfEqualsCRS() ) ) ) {
         return levels[l]->getbbox ( servicesConf, bbox, width, height, interpolation, error );
     } else {
-        if ( dst_crs.validateBBox ( bbox ) ) {
-            return levels[l]->getbbox ( servicesConf, bbox, width, height, tms.getCrs(), dst_crs, interpolation, error );
+        return createReprojectedImage(l, bbox, dst_crs, servicesConf, width, height, interpolation, error);
+    }
+
+}
+
+Image * Pyramid::createReprojectedImage(std::string l, BoundingBox<double> bbox, CRS dst_crs, ServicesConf& servicesConf, int width, int height, Interpolation::KernelType interpolation, int error) {
+
+    if ( dst_crs.validateBBox ( bbox ) ) {
+        return levels[l]->getbbox ( servicesConf, bbox, width, height, tms.getCrs(), dst_crs, interpolation, error );
+    } else {
+        ExtendedCompoundImageFactory facto;
+        std::vector<Image*> images;
+        LOGGER_DEBUG ( _ ( "BBox en dehors de la definition du CRS" ) );
+        BoundingBox<double> cropBBox = dst_crs.cropBBox ( bbox );
+
+        if ( cropBBox.xmin == cropBBox.xmax || cropBBox.ymin == cropBBox.ymax ) { // BBox out of CRS definition area Only NoData
+            LOGGER_DEBUG ( _ ( "BBox decoupe incorrect" ) );
         } else {
-            ExtendedCompoundImageFactory facto;
-            std::vector<Image*> images;
-            LOGGER_DEBUG ( _ ( "BBox en dehors de la definition du CRS" ) );
-            BoundingBox<double> cropBBox = dst_crs.cropBBox ( bbox );
 
-            if ( cropBBox.xmin == cropBBox.xmax || cropBBox.ymin == cropBBox.ymax ) { // BBox out of CRS definition area Only NoData
+            double ratio_x = ( cropBBox.xmax - cropBBox.xmin ) / ( bbox.xmax - bbox.xmin );
+            double ratio_y = ( cropBBox.ymax - cropBBox.ymin ) / ( bbox.ymax - bbox.ymin ) ;
+            int newWidth = lround(width * ratio_x);
+            int newHeigth = lround(height * ratio_y);
+
+
+    //Avec lround, taille en pixel et cropBBox ne sont plus cohérents.
+    //On ajoute la différence de l'arrondi dans la cropBBox et on ajoute un pixel en plus tout autour.
+
+    //Calcul de l'erreur d'arrondi converti en coordonnées
+            double delta_h = double (newHeigth) - double(height) * ratio_y ;
+            double delta_w = double (newWidth) - double(width) * ratio_x ;
+
+            double res_y = ( cropBBox.ymax - cropBBox.ymin ) / double(height * ratio_y) ;
+            double res_x = ( cropBBox.xmax - cropBBox.xmin ) / double(width * ratio_x) ;
+
+            double delta_y = res_y * delta_h ;
+            double delta_x = res_x * delta_w ;
+
+    //Ajout de l'erreur d'arrondi et le pixel en plus
+            cropBBox.ymax += delta_y +res_y;
+            cropBBox.ymin -= res_y;
+
+            cropBBox.xmax += delta_x +res_x;
+            cropBBox.xmin -= res_x;
+
+            newHeigth += 2;
+            newWidth += 2;
+
+            LOGGER_DEBUG ( _ ( "New Width = " ) << newWidth << " " << _ ( "New Height = " ) << newHeigth );
+            LOGGER_DEBUG ( _ ( "ratio_x = " ) << ratio_x << " " << _ ( "ratio_y = " ) << ratio_y );
+
+
+            Image* tmp = 0;
+            int cropError = 0;
+            if ( (1/ratio_x > 5 && newWidth < 3) || (newHeigth < 3 && 1/ratio_y > 5) ){ //Too small BBox
                 LOGGER_DEBUG ( _ ( "BBox decoupe incorrect" ) );
-            } else {
-
-                double ratio_x = ( cropBBox.xmax - cropBBox.xmin ) / ( bbox.xmax - bbox.xmin );
-                double ratio_y = ( cropBBox.ymax - cropBBox.ymin ) / ( bbox.ymax - bbox.ymin ) ;
-                int newWidth = lround(width * ratio_x);
-                int newHeigth = lround(height * ratio_y);
-
-		
-		//Avec lround, taille en pixel et cropBBox ne sont plus cohérents.
-		//On ajoute la différence de l'arrondi dans la cropBBox et on ajoute un pixel en plus tout autour.
-		
-		//Calcul de l'erreur d'arrondi converti en coordonnées
-                double delta_h = double (newHeigth) - double(height) * ratio_y ;
-                double delta_w = double (newWidth) - double(width) * ratio_x ;
-
-                double res_y = ( cropBBox.ymax - cropBBox.ymin ) / double(height * ratio_y) ;
-                double res_x = ( cropBBox.xmax - cropBBox.xmin ) / double(width * ratio_x) ;
-
-                double delta_y = res_y * delta_h ;
-                double delta_x = res_x * delta_w ;
-
-		//Ajout de l'erreur d'arrondi et le pixel en plus
-                cropBBox.ymax += delta_y +res_y;
-                cropBBox.ymin -= res_y;
-
-                cropBBox.xmax += delta_x +res_x;
-                cropBBox.xmin -= res_x;
-
-                newHeigth += 2;
-                newWidth += 2;
-
-                LOGGER_DEBUG ( _ ( "New Width = " ) << newWidth << " " << _ ( "New Height = " ) << newHeigth );
-                LOGGER_DEBUG ( _ ( "ratio_x = " ) << ratio_x << " " << _ ( "ratio_y = " ) << ratio_y );
-
-
-                Image* tmp = 0;
-                int cropError = 0;
-                if ( (1/ratio_x > 5 && newWidth < 3) || (newHeigth < 3 && 1/ratio_y > 5) ){ //Too small BBox
-                    LOGGER_DEBUG ( _ ( "BBox decoupe incorrect" ) );
-                    tmp = 0;
-                } else if ( newWidth > 0 && newHeigth > 0 ) {
-                    tmp = levels[l]->getbbox ( servicesConf, cropBBox, newWidth, newHeigth, tms.getCrs(), dst_crs, interpolation, cropError );
-                }
-                if ( tmp != 0 ) {
-                    LOGGER_DEBUG ( _ ( "Image decoupe valide" ) );
-                    images.push_back ( tmp );
-                }
+                tmp = 0;
+            } else if ( newWidth > 0 && newHeigth > 0 ) {
+                tmp = levels[l]->getbbox ( servicesConf, cropBBox, newWidth, newHeigth, tms.getCrs(), dst_crs, interpolation, cropError );
             }
-            
-            int ndvalue[this->channels];
-            memset(ndvalue,0,this->channels*sizeof(int));
-            levels[l]->getNoDataValue(ndvalue);
-            
-            if ( images.empty() ) {
-                EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
-                fond->setBbox(bbox);
-                return fond;
+            if ( tmp != 0 ) {
+                LOGGER_DEBUG ( _ ( "Image decoupe valide" ) );
+                images.push_back ( tmp );
             }
-            
-            return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,ndvalue,0 );
         }
 
+        int ndvalue[this->channels];
+        memset(ndvalue,0,this->channels*sizeof(int));
+        levels[l]->getNoDataValue(ndvalue);
+
+        if ( images.empty() ) {
+            EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
+            fond->setBbox(bbox);
+            return fond;
+        }
+
+        return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,ndvalue,0 );
     }
+
 }
 
 Pyramid::~Pyramid() {
@@ -265,6 +281,16 @@ Pyramid::~Pyramid() {
     std::map<std::string, Level*>::iterator iLevel;
     for ( iLevel=levels.begin(); iLevel!=levels.end(); iLevel++ )
         delete ( *iLevel ).second;
+
+    //If it is a pyramid on demand
+    //So we need to delete pointers to other pyramids
+    if (onDemand) {
+        for (int i=0;i<basedPyramids.size();i++) {
+            basedPyramids.at(i)->~Pyramid();
+            delete basedPyramids.at(i);
+            basedPyramids.at(i) = NULL;
+        }
+    }
 }
 
 // Check if two CRS are equivalent

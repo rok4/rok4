@@ -225,6 +225,61 @@ private:
     DataStream* getMap ( Request* request );
     /**
      * \~french
+     * \brief Applique un style à une image
+     * \param[in] image
+     * \return image demandé et stylisé
+     * \~english
+     * \brief Apply a style to an image
+     * \param[in] image
+     * \return requested and styled image
+     */
+    Image *styleImage(Image *curImage, Rok4Format::eformat_data pyrType, Style *style, std::string format, int size);
+    /**
+     * \~french
+     * \brief Fond un groupe d'image en une seule
+     * \param[in] groupe d'images
+     * \return image demandée ou un message d'erreur
+     * \~english
+     * \brief Merge a vector of images
+     * \param[in] vector of images
+     * \return requested image or an error message
+     */
+    Image *mergeImages(std::vector<Image*> images, Rok4Format::eformat_data &pyrType, Style *style, CRS crs, BoundingBox<double> bbox);
+    /**
+     * \~french
+     * \brief Convertie une image dans un format donné
+     * \param[in] image
+     * \return image demandé ou un message d'erreur
+     * \~english
+     * \brief Apply a format to an image
+     * \param[in] image
+     * \return requested image or an error message
+     */
+    DataStream *formatImage(Image *image, std::string format, Rok4Format::eformat_data pyrType, std::map<std::string, std::string> format_option, int size, Style *style);
+    /**
+     * \~french
+     * \brief Renvoit une tuile déjà pré-calculée
+     * \param[in] image
+     * \return image demandé ou un message d'erreur
+     * \~english
+     * \brief Give a tile computed before
+     * \param[in] image
+     * \return requested tile
+     */
+    DataSource *getTileUsual(Layer* L, std::string format, int tileCol, int tileRow, std::string tileMatrix, DataSource *errorResp, Style *style);
+    /**
+     * \~french
+     * \brief Renvoit une tuile qi vient d'être calculée
+     * \param[in] image
+     * \return Tuile demandée
+     * \~english
+     * \brief Give a tile compute for the request
+     * \param[in] image
+     * \return requested tile
+     */
+    DataStream *getTileOnDemand(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format);
+    /**
+     * \~french
      * \brief Traitement d'une requête GetCapabilities WMS
      * \param[in] request représentation de la requête
      * \return flux de la réponse
@@ -305,7 +360,7 @@ public:
      * \param[in] request request representation
      * \return requested image or an error message
      */
-    DataSource* getTile ( Request* request );
+    DataSource *getTile(Request* request );
     /**
      * \~french
      * \brief Traitement d'une requête GetCapabilities WMTS

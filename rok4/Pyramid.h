@@ -43,10 +43,12 @@
 #include "TileMatrixSet.h"
 #include "CRS.h"
 #include "Format.h"
+#include "Style.h"
 #include "ServicesConf.h"
 #include <Interpolation.h>
 
 //std::string getMimeType(std::string format);
+
 
 /**
 * @class Pyramid
@@ -55,17 +57,40 @@
 */
 
 class Pyramid {
+
 private:
+
     std::map<std::string, Level*> levels;
+
     const TileMatrixSet tms;
+
 //    std::map<std::string, DataSource*> noDataSources;
-    std::string best_level ( double resolution_x, double resolution_y );
+
     const Rok4Format::eformat_data format; //format d'image des tuiles
+
     const int     channels;
+
 //    DataStream* nodatastream;
+
     Level* highestLevel;
+
     Level* lowestLevel;
+
+    bool onDemand;
+
+    std::vector<Pyramid*> basedPyramids;
+
+    bool transparent;
+
+    Style *style;
+
+    //C'est un tableau à double entrée qui contient une association des levels de
+    //la pyramide vers les levels des autres pyramides de bases
+    std::map<std::string, std::map<std::string, std::string> > aLevel;
+
     bool are_the_two_CRS_equal( std::string crs1, std::string crs2, std::vector<std::string> listofequalsCRS );
+
+
 public:
 
     Level* getFirstLevel();
@@ -87,11 +112,49 @@ public:
         return channels;
     }
 
+    bool getOnDemand(){
+        return onDemand;
+    }
+    void setOnDemand (bool od) {
+        onDemand = od;
+    }
+    bool getTransparent(){
+        return transparent;
+    }
+    void setTransparent (bool tr) {
+        transparent = tr;
+    }
+    Style *getStyle(){
+        return style;
+    }
+    void setStyle (Style * st) {
+        style = st;
+    }
+    std::vector<Pyramid*> getBPyramids(){
+        return basedPyramids;
+    }
+    void setBPyramids (std::vector<Pyramid*> bp) {
+        basedPyramids = bp;
+    }
+    std::map<std::string, std::map<std::string, std::string> > getALevel(){
+        return aLevel;
+    }
+    void setALevel (std::map<std::string, std::map<std::string, std::string> > aL) {
+        aLevel = aL;
+    }
+    std::string best_level ( double resolution_x, double resolution_y );
+
     DataSource* getTile ( int x, int y, std::string tmId, DataSource* errorDataSource = NULL );
     Image* getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error );
 
-    Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format, int channels );
+    Image *createReprojectedImage(std::string l, BoundingBox<double> bbox, CRS dst_crs, ServicesConf& servicesConf, int width, int height, Interpolation::KernelType interpolation, int error);
+
+
+    Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format, int channels, bool onDemand, bool transparent, Style *style);
+
     ~Pyramid();
 };
+
+
 
 #endif

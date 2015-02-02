@@ -528,7 +528,7 @@ TileMatrixSet* ConfLoader::buildTileMatrixSet ( std::string fileName ) {
 }//buildTileMatrixSet(std::string fileName)
 
 // Load a pyramid
-Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList ) {
+Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times, std::map<std::string,Style*> stylesList ) {
     LOGGER_INFO ( _ ( "             Ajout de la pyramide : " ) << fileName );
     // Relative file Path
     char * fileNameChar = ( char * ) malloc ( strlen ( fileName.c_str() ) + 1 );
@@ -545,10 +545,21 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     Rok4Format::eformat_data format;
     int channels;
     std::map<std::string, Level *> levels;
+    bool onDemand = false;
+    std::vector<Pyramid*> bPyramids;
+    Pyramid* basedPyramid = NULL;
+    std::string str_transparent;
+    bool transparent = false;
+    Style *style=NULL;
+    std::string str_style = "";
+    int nbPyramids;
+
 
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
+    std::string basedPyramidFilePath;
+    std::map<std::string, std::map<std::string, std::string> > aLevel;
 
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
     if ( !pElem ) {
@@ -613,210 +624,489 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         return NULL;
     }
 
-    for ( pElem=hRoot.FirstChild ( "level" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "level" ) ) {
-        TileMatrix *tm;
-        //std::string id;
-        //std::string baseDir;
-        int32_t minTileRow=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
-        int32_t maxTileRow=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
-        int32_t minTileCol=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
-        int32_t maxTileCol=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
-        int tilesPerWidth;
-        int tilesPerHeight;
-        int pathDepth;
-        std::string noDataFilePath="";
+    //Si c'est la première fois qu'on parse une pyramide
+    if (times) {
 
-        TiXmlHandle hLvl ( pElem );
-        TiXmlElement* pElemLvl = hLvl.FirstChild ( "tileMatrix" ).Element();
-        if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
-            LOGGER_ERROR ( fileName <<_ ( " level " ) <<_ ( "id" ) <<_ ( " sans tileMatrix!!" ) );
+
+        //Si on se base sur d'autres pyramides pour faire la nouvelle pyramide
+        pElem=hRoot.FirstChild ( "basedPyramids" ).Element();
+        if ( pElem ) {
+
+
+            times = false;
+
+            nbPyramids = 0;
+
+            TiXmlElement* pPyr = hRoot.FirstChild( "basedPyramids" ).FirstChild("basedPyramid").Element();
+
+            if (pPyr) {
+
+                for ( pPyr; pPyr; pPyr=pPyr->NextSiblingElement() ) {
+
+
+                    TiXmlElement* pFile = pPyr->FirstChildElement("file");
+                    TiXmlElement* pTransparent = pPyr->FirstChildElement("transparent");
+                    TiXmlElement* pStyle = pPyr->FirstChildElement("style");
+
+                    if (pFile && pTransparent && pStyle && pFile->GetText() && pTransparent->GetText() && pStyle->GetText()) {
+
+                        str_transparent = pTransparent->GetTextStr();
+                        str_style = pStyle->GetTextStr();
+
+                        basedPyramidFilePath = pFile->GetTextStr() ;
+                        //Relative Path
+                        if ( basedPyramidFilePath.compare ( 0,2,"./" ) ==0 ) {
+                            basedPyramidFilePath.replace ( 0,1,parentDir );
+                        } else if ( basedPyramidFilePath.compare ( 0,1,"/" ) !=0 ) {
+                            basedPyramidFilePath.insert ( 0,"/" );
+                            basedPyramidFilePath.insert ( 0,parentDir );
+                        }
+
+                        basedPyramid = buildPyramid ( basedPyramidFilePath, tmsList, times, stylesList );
+
+                        if ( !basedPyramid) {
+                            LOGGER_ERROR ( _ ( "La pyramide " ) << basedPyramidFilePath << _ ( " ne peut etre chargee" ) );
+                            return NULL;
+                        } else {
+
+                            if (str_transparent == "true") {
+                                transparent = true;
+                                basedPyramid->setTransparent(transparent);
+                                transparent = false;
+                            } else {
+                                basedPyramid->setTransparent(transparent);
+                            }
+
+                            std::map<std::string, Style*>::iterator styleIt= stylesList.find ( str_style );
+                            if ( styleIt == stylesList.end() ) {
+                                LOGGER_ERROR ( _ ( "Style " ) << str_style << _ ( "non defini" ) );
+                                style = NULL;
+                            } else {
+                                style = styleIt->second;
+                            }
+
+                            basedPyramid->setStyle(style);
+                            style = NULL;
+                            str_style = "";
+
+                        }
+
+                        bPyramids.push_back( basedPyramid ) ;
+                        nbPyramids++;
+
+                    } else {
+                        //Il manque un des trois elements necessaires pour initialiser une
+                        //nouvelle pyramide de base
+                        LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't be loaded" ) );
+                        return NULL;
+
+                    }
+
+                }
+
+            } else {
+                //basedPyramids est indiqué mais pas de basedPyramid
+                LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't be loaded" ) );
+                return NULL;
+            }
+
+            //Aucune basedPyramid n'a pu être chargée
+            if ( nbPyramids == 0 ) {
+                LOGGER_ERROR ( _ ("No pyramid found for basedPyramids, ") << fileName );
+                return NULL;
+            } else {
+                onDemand = true;
+            }
+
+        }
+
+
+    } else {
+    //Si c'est la deuxième fois qu'on parse une pyramide
+
+        if (hRoot.FirstChild ( "basedPyramids" ).Element()) {
+            LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't depend on other pyramids" ) );
             return NULL;
         }
-        std::string tmName ( pElemLvl->GetText() );
-        std::string id ( tmName );
-        std::map<std::string, TileMatrix>* tmList = tms->getTmList();
-        std::map<std::string, TileMatrix>::iterator it = tmList->find ( tmName );
 
-        if ( it == tmList->end() ) {
-            LOGGER_ERROR ( fileName <<_ ( " Le level " ) << id <<_ ( " ref. Le TM [" ) << tmName << _ ( "] qui n'appartient pas au TMS [" ) << tmsName << "]" );
-            return NULL;
-        }
-        tm = & ( it->second );
+    }
 
-        pElemLvl = hLvl.FirstChild ( "baseDir" ).Element();
-        if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
-            LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( " sans baseDir!!" ) );
-            return NULL;
-        }
-        std::string baseDir ( pElemLvl->GetText() );
-        //Relative Path
-        if ( baseDir.compare ( 0,2,"./" ) ==0 ) {
-            baseDir.replace ( 0,1,parentDir );
-        } else if ( baseDir.compare ( 0,1,"/" ) !=0 ) {
-            baseDir.insert ( 0,"/" );
-            baseDir.insert ( 0,parentDir );
-        }
+    //on va vérifier que les levels sont spécifiés
+    //si c'est une pyramide à la demande, ce n'est pas obligatoire
+    if (hRoot.FirstChild ( "level" ).Element()) {
 
-        pElemLvl = hLvl.FirstChild ( "tilesPerWidth" ).Element();
-        if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
-            LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": Pas de tilesPerWidth !!" ) );
-            return NULL;
-        }
-        if ( !sscanf ( pElemLvl->GetText(),"%d",&tilesPerWidth ) ) {
-            LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": tilesPerWidth=[" ) << pElemLvl->GetText() <<_ ( "] is not an integer." ) );
-            return NULL;
-        }
+        for ( pElem=hRoot.FirstChild ( "level" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "level" ) ) {
+            TileMatrix *tm;
+            //std::string id;
+            //std::string baseDir;
+            int32_t minTileRow=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
+            int32_t maxTileRow=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
+            int32_t minTileCol=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
+            int32_t maxTileCol=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
+            int tilesPerWidth;
+            int tilesPerHeight;
+            int pathDepth;
+            std::string noDataFilePath="";
 
-        pElemLvl = hLvl.FirstChild ( "tilesPerHeight" ).Element();
-        if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
-            LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": Pas de tilesPerHeight !!" ) );
-            return NULL;
-        }
-        if ( !sscanf ( pElemLvl->GetText(),"%d",&tilesPerHeight ) ) {
-            LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": tilesPerHeight=[" ) << pElemLvl->GetText() <<_ ( "] is not an integer." ) );
-            return NULL;
-        }
-
-        pElemLvl = hLvl.FirstChild ( "pathDepth" ).Element();
-        if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
-            LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": Pas de pathDepth !!" ) );
-            return NULL;
-        }
-        if ( !sscanf ( pElemLvl->GetText(),"%d",&pathDepth ) ) {
-            LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": pathDepth=[" ) << pElemLvl->GetText() <<_ ( "] is not an integer." ) );
-            return NULL;
-        }
-
-        TiXmlElement *pElemLvlTMS =hLvl.FirstChild ( "TMSLimits" ).Element();
-        if ( pElemLvlTMS ) { // le bloc TMSLimits n'est pas obligatoire, mais s'il est là, il doit y avoir tous les champs.
-
-            TiXmlHandle hTMSL ( pElemLvlTMS );
-            TiXmlElement* pElemTMSL = hTMSL.FirstChild ( "minTileRow" ).Element();
-            long int intBuff = -1;
-            if ( !pElemTMSL ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": no minTileRow in TMSLimits element !!" ) );
+            TiXmlHandle hLvl ( pElem );
+            TiXmlElement* pElemLvl = hLvl.FirstChild ( "tileMatrix" ).Element();
+            if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
+                LOGGER_ERROR ( fileName <<_ ( " level " ) <<_ ( "id" ) <<_ ( " sans tileMatrix!!" ) );
                 return NULL;
             }
-            if ( !pElemTMSL->GetText() ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": minTileRow is empty !!" ) );
-                return NULL;
-            }
-            if ( !sscanf ( pElemTMSL->GetText(),"%ld",&intBuff ) ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": minTileRow=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) );
-                return NULL;
-            }
-            minTileRow = intBuff;
-            intBuff = -1;
-            pElemTMSL = hTMSL.FirstChild ( "maxTileRow" ).Element();
-            if ( !pElemTMSL ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": no maxTileRow in TMSLimits element !!" ) );
-                return NULL;
-            }
-            if ( !pElemTMSL->GetText() ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": maxTileRow is empty !!" ) );
-                return NULL;
-            }
-            if ( !sscanf ( pElemTMSL->GetText(),"%ld",&intBuff ) ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": maxTileRow=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) );
-                return NULL;
-            }
-            maxTileRow = intBuff;
-            intBuff = -1;
-            pElemTMSL = hTMSL.FirstChild ( "minTileCol" ).Element();
-            if ( !pElemTMSL ) {
-                LOGGER_ERROR ( _ ( " Level " ) << id << _ ( ": no minTileCol in TMSLimits element !!" ) );
-                return NULL;
-            }
-            if ( !pElemTMSL->GetText() ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": minTileCol is empty !!" ) );
-                return NULL;
-            }
+            std::string tmName ( pElemLvl->GetText() );
+            std::string id ( tmName );
+            std::map<std::string, TileMatrix>* tmList = tms->getTmList();
+            std::map<std::string, TileMatrix>::iterator it = tmList->find ( tmName );
 
-            if ( !sscanf ( pElemTMSL->GetText(),"%ld",&intBuff ) ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": minTileCol=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) );
+            if ( it == tmList->end() ) {
+                LOGGER_ERROR ( fileName <<_ ( " Le level " ) << id <<_ ( " ref. Le TM [" ) << tmName << _ ( "] qui n'appartient pas au TMS [" ) << tmsName << "]" );
                 return NULL;
             }
-            minTileCol = intBuff;
-            intBuff = -1;
-            pElemTMSL = hTMSL.FirstChild ( "maxTileCol" ).Element();
-            if ( !pElemTMSL ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": no maxTileCol in TMSLimits element !!" ) );
+            tm = & ( it->second );
+
+            pElemLvl = hLvl.FirstChild ( "baseDir" ).Element();
+            if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
+                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( " sans baseDir!!" ) );
                 return NULL;
             }
-            if ( !pElemTMSL->GetText() ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": maxTileCol is empty !!" ) );
-                return NULL;
-            }
-            if ( !sscanf ( pElemTMSL->GetText(),"%ld",&intBuff ) ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": maxTileCol=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) );
-                return NULL;
-            }
-            maxTileCol = intBuff;
-
-        }
-
-        if ( minTileCol <0 )
-            minTileCol = 0;
-        if ( minTileRow <0 )
-            minTileRow = 0;
-        if ( maxTileCol > tm->getMatrixW() || maxTileCol < 0 )
-            maxTileCol = tm->getMatrixW();
-        if ( maxTileRow > tm->getMatrixH() || maxTileRow < 0 )
-            maxTileRow = tm->getMatrixH();
-
-        // Would be Mandatory in future release
-        TiXmlElement* pElemNoData=hLvl.FirstChild ( "nodata" ).Element();
-
-        if ( pElemNoData ) {    // FilePath must be specified if nodata tag exist
-
-            TiXmlElement* pElemNoDataPath;
-            pElemNoDataPath = hLvl.FirstChild ( "nodata" ).FirstChild ( "filePath" ).Element();
-            if ( !pElemNoDataPath  || ! ( pElemNoDataPath->GetText() ) ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( " specifiant une tuile NoData sans chemin" ) );
-                return NULL;
-            }
-
-            noDataFilePath=pElemNoDataPath->GetText();
+            std::string baseDir ( pElemLvl->GetText() );
             //Relative Path
-            if ( noDataFilePath.compare ( 0,2,"./" ) ==0 ) {
-                noDataFilePath.replace ( 0,1,parentDir );
-            } else if ( noDataFilePath.compare ( 0,1,"/" ) !=0 ) {
-                noDataFilePath.insert ( 0,"/" );
-                noDataFilePath.insert ( 0,parentDir );
+            if ( baseDir.compare ( 0,2,"./" ) ==0 ) {
+                baseDir.replace ( 0,1,parentDir );
+            } else if ( baseDir.compare ( 0,1,"/" ) !=0 ) {
+                baseDir.insert ( 0,"/" );
+                baseDir.insert ( 0,parentDir );
             }
 
-            /*if (noDataFilePath.empty()){
-                if (!pElemNoDataPath){
-                                    LOGGER_ERROR(fileName <<" Level "<< id <<" specifiant une tuile NoData sans chemin");
-                                    return NULL;
-                                }
-            }*/
+            pElemLvl = hLvl.FirstChild ( "tilesPerWidth" ).Element();
+            if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
+                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": Pas de tilesPerWidth !!" ) );
+                return NULL;
+            }
+            if ( !sscanf ( pElemLvl->GetText(),"%d",&tilesPerWidth ) ) {
+                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": tilesPerWidth=[" ) << pElemLvl->GetText() <<_ ( "] is not an integer." ) );
+                return NULL;
+            }
+
+            pElemLvl = hLvl.FirstChild ( "tilesPerHeight" ).Element();
+            if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
+                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": Pas de tilesPerHeight !!" ) );
+                return NULL;
+            }
+            if ( !sscanf ( pElemLvl->GetText(),"%d",&tilesPerHeight ) ) {
+                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": tilesPerHeight=[" ) << pElemLvl->GetText() <<_ ( "] is not an integer." ) );
+                return NULL;
+            }
+
+            pElemLvl = hLvl.FirstChild ( "pathDepth" ).Element();
+            if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
+                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": Pas de pathDepth !!" ) );
+                return NULL;
+            }
+            if ( !sscanf ( pElemLvl->GetText(),"%d",&pathDepth ) ) {
+                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": pathDepth=[" ) << pElemLvl->GetText() <<_ ( "] is not an integer." ) );
+                return NULL;
+            }
+
+            TiXmlElement *pElemLvlTMS =hLvl.FirstChild ( "TMSLimits" ).Element();
+            if ( pElemLvlTMS ) { // le bloc TMSLimits n'est pas obligatoire, mais s'il est là, il doit y avoir tous les champs.
+
+                TiXmlHandle hTMSL ( pElemLvlTMS );
+                TiXmlElement* pElemTMSL = hTMSL.FirstChild ( "minTileRow" ).Element();
+                long int intBuff = -1;
+                if ( !pElemTMSL ) {
+                    LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": no minTileRow in TMSLimits element !!" ) );
+                    return NULL;
+                }
+                if ( !pElemTMSL->GetText() ) {
+                    LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": minTileRow is empty !!" ) );
+                    return NULL;
+                }
+                if ( !sscanf ( pElemTMSL->GetText(),"%ld",&intBuff ) ) {
+                    LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": minTileRow=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) );
+                    return NULL;
+                }
+                minTileRow = intBuff;
+                intBuff = -1;
+                pElemTMSL = hTMSL.FirstChild ( "maxTileRow" ).Element();
+                if ( !pElemTMSL ) {
+                    LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": no maxTileRow in TMSLimits element !!" ) );
+                    return NULL;
+                }
+                if ( !pElemTMSL->GetText() ) {
+                    LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": maxTileRow is empty !!" ) );
+                    return NULL;
+                }
+                if ( !sscanf ( pElemTMSL->GetText(),"%ld",&intBuff ) ) {
+                    LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": maxTileRow=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) );
+                    return NULL;
+                }
+                maxTileRow = intBuff;
+                intBuff = -1;
+                pElemTMSL = hTMSL.FirstChild ( "minTileCol" ).Element();
+                if ( !pElemTMSL ) {
+                    LOGGER_ERROR ( _ ( " Level " ) << id << _ ( ": no minTileCol in TMSLimits element !!" ) );
+                    return NULL;
+                }
+                if ( !pElemTMSL->GetText() ) {
+                    LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": minTileCol is empty !!" ) );
+                    return NULL;
+                }
+
+                if ( !sscanf ( pElemTMSL->GetText(),"%ld",&intBuff ) ) {
+                    LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": minTileCol=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) );
+                    return NULL;
+                }
+                minTileCol = intBuff;
+                intBuff = -1;
+                pElemTMSL = hTMSL.FirstChild ( "maxTileCol" ).Element();
+                if ( !pElemTMSL ) {
+                    LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": no maxTileCol in TMSLimits element !!" ) );
+                    return NULL;
+                }
+                if ( !pElemTMSL->GetText() ) {
+                    LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": maxTileCol is empty !!" ) );
+                    return NULL;
+                }
+                if ( !sscanf ( pElemTMSL->GetText(),"%ld",&intBuff ) ) {
+                    LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": maxTileCol=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) );
+                    return NULL;
+                }
+                maxTileCol = intBuff;
+
+            }
+
+            if ( minTileCol <0 )
+                minTileCol = 0;
+            if ( minTileRow <0 )
+                minTileRow = 0;
+            if ( maxTileCol > tm->getMatrixW() || maxTileCol < 0 )
+                maxTileCol = tm->getMatrixW();
+            if ( maxTileRow > tm->getMatrixH() || maxTileRow < 0 )
+                maxTileRow = tm->getMatrixH();
+
+            // Would be Mandatory in future release
+            TiXmlElement* pElemNoData=hLvl.FirstChild ( "nodata" ).Element();
+
+            if ( pElemNoData ) {    // FilePath must be specified if nodata tag exist
+
+                TiXmlElement* pElemNoDataPath;
+                pElemNoDataPath = hLvl.FirstChild ( "nodata" ).FirstChild ( "filePath" ).Element();
+                if ( !pElemNoDataPath  || ! ( pElemNoDataPath->GetText() ) ) {
+                    LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( " specifiant une tuile NoData sans chemin" ) );
+                    return NULL;
+                }
+
+                noDataFilePath=pElemNoDataPath->GetText();
+                //Relative Path
+                if ( noDataFilePath.compare ( 0,2,"./" ) ==0 ) {
+                    noDataFilePath.replace ( 0,1,parentDir );
+                } else if ( noDataFilePath.compare ( 0,1,"/" ) !=0 ) {
+                    noDataFilePath.insert ( 0,"/" );
+                    noDataFilePath.insert ( 0,parentDir );
+                }
+
+                /*if (noDataFilePath.empty()){
+                    if (!pElemNoDataPath){
+                                        LOGGER_ERROR(fileName <<" Level "<< id <<" specifiant une tuile NoData sans chemin");
+                                        return NULL;
+                                    }
+                }*/
+            }
+
+            Level *TL = new Level ( *tm, channels, baseDir, tilesPerWidth, tilesPerHeight,
+                                    maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth, format, noDataFilePath );
+
+            //Si la pyramide est à la demande et que l'on a spécifié des levels
+            //il faut vérifier qu'ils sont disponibles dans l'une des pyramides de bases
+            if (onDemand) {
+
+                //variables
+                double Res, ratioX, ratioY, resX, resY;
+                std::string  best_h, id;
+                bool foundLevel;
+                std::map<std::string, std::string> baPyr;
+
+                Res = TL->getRes();
+
+
+                //New bbox
+                BoundingBox<double> nBbox = tms->getCrs().getCrsDefintionArea();
+
+                //Pour chaque tm de tms, on doit trouver un équivalent dans chaque basedPyramid
+                for (int ip = 0; ip < bPyramids.size(); ip++) {
+
+                    std::ostringstream oss;
+                    foundLevel = true;
+
+                    BoundingBox<double> cBbox = bPyramids.at(ip)->getTms().getCrs().cropBBoxGeographic(nBbox);
+
+                    cBbox = tms->getCrs().cropBBoxGeographic(cBbox);
+                    BoundingBox<double> cBboxOld = cBbox;
+                    BoundingBox<double> cBboxNew = cBbox;
+                    //TODO: si la reprojection n'est pas possible
+                    cBboxNew.reproject("epsg:4326",tms->getCrs().getProj4Code());
+                    cBboxOld.reproject("epsg:4326",bPyramids.at(ip)->getTms().getCrs().getProj4Code());
+
+                    ratioX = (cBboxOld.xmax - cBboxOld.xmin) / (cBboxNew.xmax - cBboxNew.xmin);
+                    ratioY = (cBboxOld.ymax - cBboxOld.ymin) / (cBboxNew.ymax - cBboxNew.ymin);
+
+                    resX = Res * ratioX;
+                    resY = Res * ratioY;
+
+                    //On recupère le best level de la basedPyramid en cours pour le tm en cours
+                    best_h = bPyramids.at(ip)->best_level(resX,resY);
+
+                    oss << ip;
+
+                    if (best_h == ""){
+                        foundLevel = false;
+                        break;
+                    } else {
+                        baPyr.insert(std::pair< std::string, std::string> ( oss.str(), best_h));
+                    }
+
+                }
+
+                //On crée le level et on l'insert à la liste des levels de la pyramide
+                //seulement si on a trouvé un niveau correspondant dans une des pyramides de base
+                if (foundLevel) {
+                    levels.insert ( std::pair<std::string, Level *> ( id, TL ) );
+                    aLevel.insert(std::pair<std::string,std::map<std::string, std::string> > (id,baPyr));
+                }
+
+            } else {
+
+                levels.insert ( std::pair<std::string, Level *> ( id, TL ) );
+
+            }
+        }// boucle sur les levels
+
+
+
+    } else {
+        //pas de level spécifié donc pyramide à la demande
+
+        if (onDemand) {
+        //se basant sur d'autres pyramides
+        //dont on va créer le level
+
+            //variables
+            std::map<std::string, TileMatrix>::iterator itm;
+            double Res, ratioX, ratioY, resX, resY;
+            long double Meter;
+            std::string  best_h, id, baseDirectory, baseDir, noDataDirectory, noDataFilePath;
+            int tilesPerWidth, tilesPerHeight, maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth;
+            bool foundLevel;
+
+            itm = tms->getTmList()->begin();
+            Meter = tms->getCrs().getMetersPerUnit();
+            //TODO: si le nom de fichier est plus complexe
+            baseDirectory = fileName.substr(fileName.find_last_of("/")+1);
+            baseDirectory = baseDirectory.erase(baseDirectory.find(".pyr"))+"/IMAGE/";
+            noDataDirectory = baseDirectory.erase(baseDirectory.find("/IMAGE/"))+"/NODATA/";
+            tilesPerWidth = 16;
+            tilesPerHeight = 16;
+            pathDepth = 2;
+
+
+            //Pour chaque tm de tms, on doit créer un level
+            for (itm; itm != tms->getTmList()->end(); itm++) {
+
+                std::map<std::string, std::string> baPyr;
+
+                id = itm->first;
+
+                baseDir = baseDirectory+id;
+                noDataFilePath = noDataDirectory+id+"/nd.tif";
+                maxTileCol = itm->second.getMatrixW();
+                maxTileRow = itm->second.getMatrixH();
+                minTileCol = 0;
+                minTileRow = 0;
+
+                //Résolution du TM
+                Res = itm->second.getRes();
+
+
+                //New bbox
+                BoundingBox<double> nBbox = tms->getCrs().getCrsDefintionArea();
+
+                //Pour chaque tm de tms, on doit trouver un équivalent dans chaque basedPyramid
+                for (int ip = 0; ip < bPyramids.size(); ip++) {
+
+                    std::ostringstream oss;
+                    foundLevel = true;
+
+                    BoundingBox<double> cBbox = bPyramids.at(ip)->getTms().getCrs().cropBBoxGeographic(nBbox);
+
+                    cBbox = tms->getCrs().cropBBoxGeographic(cBbox);
+                    BoundingBox<double> cBboxOld = cBbox;
+                    BoundingBox<double> cBboxNew = cBbox;
+                    //TODO: si la reprojection n'est pas possible
+                    cBboxNew.reproject("epsg:4326",tms->getCrs().getProj4Code());
+                    cBboxOld.reproject("epsg:4326",bPyramids.at(ip)->getTms().getCrs().getProj4Code());
+
+                    ratioX = (cBboxOld.xmax - cBboxOld.xmin) / (cBboxNew.xmax - cBboxNew.xmin);
+                    ratioY = (cBboxOld.ymax - cBboxOld.ymin) / (cBboxNew.ymax - cBboxNew.ymin);
+
+                    resX = Res * ratioX;
+                    resY = Res * ratioY;
+
+                    //On recupère le best level de la basedPyramid en cours pour le tm en cours
+                    best_h = bPyramids.at(ip)->best_level(resX,resY);
+
+                    oss << ip;
+
+                    if (best_h == ""){
+                        foundLevel = false;
+                        break;
+                    } else {
+                        baPyr.insert(std::pair< std::string, std::string> ( oss.str(), best_h));
+                    }
+
+                }
+
+                //On crée le level et on l'insert à la liste des levels de la pyramide
+                //seulement si on a trouvé un niveau correspondant dans une des pyramides de base
+                if (foundLevel) {
+                    Level *TL = new Level (itm->second, channels, baseDir, tilesPerWidth, tilesPerHeight, maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth, format, noDataFilePath );
+                    levels.insert ( std::pair<std::string, Level *> ( id, TL ) );
+                    aLevel.insert(std::pair<std::string,std::map<std::string, std::string> > (id,baPyr));
+                }
+
+            }
+
         }
 
-        Level *TL = new Level ( *tm, channels, baseDir, tilesPerWidth, tilesPerHeight,
-                                maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth, format, noDataFilePath );
-
-        levels.insert ( std::pair<std::string, Level *> ( id, TL ) );
-    }// boucle sur les levels
+    }
 
     if ( levels.size() ==0 ) {
         LOGGER_ERROR ( _ ( "Aucun level n'a pu etre charge pour la pyramide " ) << fileName );
         return NULL;
     }
 
-    Pyramid *pyr = new Pyramid ( levels, *tms, format, channels );
+    Pyramid *pyr = new Pyramid ( levels, *tms, format, channels, onDemand, transparent, style );
+
+    if (onDemand && levels.size() != 0 && aLevel.size() != 0) {
+        pyr->setALevel(aLevel);
+        pyr->setBPyramids(bPyramids);
+    }
+
     return pyr;
 
 }// buildPyramid()
 
-Pyramid* ConfLoader::buildPyramid ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList ) {
+
+Pyramid* ConfLoader::buildPyramid ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times, std::map<std::string,Style*> stylesList ) {
     TiXmlDocument doc ( fileName.c_str() );
     if ( !doc.LoadFile() ) {
         LOGGER_ERROR ( _ ( "Ne peut pas charger le fichier " ) << fileName );
         return NULL;
     }
-    return parsePyramid ( &doc,fileName,tmsList );
+    return parsePyramid ( &doc,fileName,tmsList, times, stylesList );
 }
+
 
 //TODO avoid opening a pyramid file directly
 Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability, ServicesConf* servicesConf ) {
@@ -852,6 +1142,7 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
     std::vector<MetadataURL> metadataURLs;
     bool WMSauth = true;
     bool WMTSauth = true;
+    bool times = true;
 
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
@@ -1181,7 +1472,7 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
             pyramidFilePath.insert ( 0,"/" );
             pyramidFilePath.insert ( 0,parentDir );
         }
-        pyramid = buildPyramid ( pyramidFilePath, tmsList );
+        pyramid = buildPyramid ( pyramidFilePath, tmsList, times, stylesList );
         if ( !pyramid ) {
             LOGGER_ERROR ( _ ( "La pyramide " ) << pyramidFilePath << _ ( " ne peut etre chargee" ) );
             return NULL;
@@ -1228,6 +1519,11 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
 
     layer = new Layer ( id, title, abstract, WMSauth, WMTSauth,keyWords, pyramid, styles, minRes, maxRes,
                         WMSCRSList, opaque, authority, resampling,geographicBoundingBox,boundingBox,metadataURLs );
+
+    //Si une pyramide est à la demande, on n'authorize pas le WMS car c'est un cas non gérer dans les processus de reponse du serveur
+    if (layer->getDataPyramid()->getOnDemand()) {
+        layer->setWMSAuthorized(false);
+    }
 
     return layer;
 }//buildLayer

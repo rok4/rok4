@@ -241,7 +241,7 @@ private:
      * \param[in] tmsList known TileMatrixSets
      * \return pointer to the newly created Pyramid, NULL if something went wrong
      */
-    static Pyramid* parsePyramid ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList );
+    static Pyramid* parsePyramid (TiXmlDocument* doc, std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times , std::map<std::string, Style *> stylesList);
     /**
      * \~french
      * \brief Création d'une Pyramide à partir d'un fichier
@@ -254,7 +254,7 @@ private:
      * \param[in] tmsList known TileMatrixSets
      * \return pointer to the newly created Pyramid, NULL if something went wrong
      */
-    static Pyramid* buildPyramid ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList );
+    static Pyramid* buildPyramid (std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times , std::map<std::string, Style *> stylesList);
     /**
      * \~french
      * \brief Création d'un Layer à partir de sa représentation XML

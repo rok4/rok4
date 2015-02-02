@@ -173,6 +173,18 @@ public:
     bool isLongLat();
     /**
      * \~french
+     * \brief Test si le CRS est géographique
+     * \return vrai si géographique
+     * \~english
+     * \brief Test whether the CRS is geographic
+     * \return true if geographic
+     */
+    BoundingBox<double> getCrsDefintionArea() {
+        return definitionArea;
+    }
+        ;
+    /**
+     * \~french
      * \brief Le nombre de mètre par unité du CRS
      * \return rapport entre le mètre et l'unité du CRS
      * \todo Supporter les CRS autres qu'en degré et en mètre
