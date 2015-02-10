@@ -353,7 +353,8 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     //Use background image format.
     Rok4Format::eformat_data pyrType = layers.at ( 0 )->getDataPyramid()->getFormat();
     image = images.at ( 0 );
-    if ( images.size() > 1  || (styles.at( 0 ) && (styles.at( 0 )->isEstompage() || !styles.at( 0 )->getPalette()->getColoursMap()->empty()) ) ) {
+    //if ( images.size() > 1  || (styles.at( 0 ) && (styles.at( 0 )->isEstompage() || !styles.at( 0 )->getPalette()->getColoursMap()->empty()) ) ) {
+    if ( (styles.at( 0 ) && (styles.at( 0 )->isEstompage() || !styles.at( 0 )->getPalette()->getColoursMap()->empty()) ) ) {
 
         switch ( pyrType ) {
             //Only use int8 output with estompage
@@ -377,28 +378,61 @@ DataStream* Rok4Server::getMap ( Request* request ) {
 
         MergeImageFactory MIF;
         int spp = images.at ( 0 )->channels;
-
-        int bg[spp];
+	uint8_t bg[spp];
+	float bgf[spp];
+	
+	switch (pyrType) {
+	  case Rok4Format::TIFF_RAW_FLOAT32 :
+	  case Rok4Format::TIFF_ZIP_FLOAT32 :
+	  case Rok4Format::TIFF_LZW_FLOAT32 :
+	  case Rok4Format::TIFF_PKB_FLOAT32 :
+	    switch(spp) {
+	      case 1:
+		  bgf[0] = -99999.0;
+		  break;
+	      case 2:
+		  bgf[0] = -99999.0; bgf[1] = 0;
+		  break;
+	      case 3:
+		  bgf[0] = -99999.0; bgf[1] = -99999.0; bgf[2] = -99999.0;
+		  break;
+	      case 4:
+		  bgf[0] = -99999.0; bgf[1] = -99999.0; bgf[2] = -99999.0; bgf[4] = 0;
+		  break;
+	      default:
+		  memset(bgf, 0, sizeof(float) * spp);
+		  break;                
+	    }
+	    LOGGER_DEBUG ( "Create float MergeImage" );
+	    image = MIF.createMergeImage<float>(images,spp,bgf,bgf,Merge::ALPHATOP);
+	    break;
+	  case Rok4Format::TIFF_RAW_INT8 :
+	  case Rok4Format::TIFF_ZIP_INT8 :
+	  case Rok4Format::TIFF_LZW_INT8 :
+	  case Rok4Format::TIFF_PKB_INT8 :
+	  default :
+	    switch(spp) {
+	      case 1:
+		  bg[0] = 255;
+		  break;
+	      case 2:
+		  bg[0] = 255; bg[1] = 0;
+		  break;
+	      case 3:
+		  bg[0] = 255; bg[1] = 255; bg[2] = 255;
+		  break;
+	      case 4:
+		  bg[0] = 255; bg[1] = 255; bg[2] = 255; bg[4] = 0;
+		  break;
+	      default:
+		  memset(bg, 0, sizeof(uint8_t) * spp);
+		  break;                
+	    }
+	    LOGGER_DEBUG ( "Create uint8_t MergeImage" );
+	    image = MIF.createMergeImage<uint8_t>(images,spp,bg,NULL,Merge::ALPHATOP);
+	    break;
+	}
         
-        switch(spp) {
-            case 1:
-                bg[0] = 255;
-                break;
-            case 2:
-                bg[0] = 255; bg[1] = 0;
-                break;
-            case 3:
-                bg[0] = 255; bg[1] = 255; bg[2] = 255;
-                break;
-            case 4:
-                bg[0] = 255; bg[1] = 255; bg[2] = 255; bg[4] = 0;
-                break;
-            default:
-                memset(bg, 0, sizeof(int) * spp);
-                break;                
-        }
-        
-        image = MIF.createMergeImage ( images, spp, bg, NULL, Merge::ALPHATOP );
 
         if ( image == NULL ) {
             LOGGER_ERROR ( "Impossible de fusionner les images des differentes couches" );
