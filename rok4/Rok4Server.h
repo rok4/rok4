@@ -227,54 +227,102 @@ private:
      * \~french
      * \brief Applique un style à une image
      * \param[in] image
-     * \return image demandé et stylisé
+     * \param[in] pyrType format des tuiles de la pyramide
+     * \param[in] style style demandé par le client
+     * \param[in] format demandé par le client
+     * \param[in] size nombre d'images concerné par le processus global où est appelé cette fonction
+     * \return image stylisée
      * \~english
      * \brief Apply a style to an image
      * \param[in] image
+     * \param[in] pyrType tile format of the pyramid
+     * \param[in] style asked style by the client
+     * \param[in] format asked format by the client
+     * \param[in] size number of images used in the global process where this function is called
      * \return requested and styled image
      */
     Image *styleImage(Image *curImage, Rok4Format::eformat_data pyrType, Style *style, std::string format, int size);
     /**
      * \~french
      * \brief Fond un groupe d'image en une seule
-     * \param[in] groupe d'images
+     * \param[in] images groupe d'images
+     * \param[in] pyrType format des tuiles de la pyramide
+     * \param[in] style style demandé par le client
+     * \param[in] crs crs de la projection finale demandée par le client
+     * \param[in] bbox bbox de l'image demandé par le client
      * \return image demandée ou un message d'erreur
      * \~english
      * \brief Merge a vector of images
-     * \param[in] vector of images
+     * \param[in] images vector of images
+     * \param[in] pyrType tile format of the pyramid
+     * \param[in] style asked style by the client
+     * \param[in] crs crs of the final projection asked by the client
+     * \param[in] bbox bbox of the image asked by the client
      * \return requested image or an error message
      */
     Image *mergeImages(std::vector<Image*> images, Rok4Format::eformat_data &pyrType, Style *style, CRS crs, BoundingBox<double> bbox);
     /**
      * \~french
      * \brief Convertie une image dans un format donné
-     * \param[in] image
-     * \return image demandé ou un message d'erreur
+     * \param[in] image image à formater
+     * \param[in] format demandé par le client
+     * \param[in] pyrType format des tuiles de la pyramide
+     * \param[in] format_option contient des spécifications sur le format
+     * \param[in] size nombre d'images concerné par le processus global où est appelé cette fonction
+     * \param[in] style style demandé par le client
+     * \return image demandé ou un message d'erreur sous forme de stream
      * \~english
      * \brief Apply a format to an image
-     * \param[in] image
-     * \return requested image or an error message
+     * \param[in] image image to format
+     * \param[in] format asked format by the client
+     * \param[in] pyrType tile format of the pyramid
+     * \param[in] format_option contain specifications on the format
+     * \param[in] size number of images used in the global process where this function is called
+     * \param[in] style asked style by the client
+     * \return requested image or an error message by a stream
      */
     DataStream *formatImage(Image *image, std::string format, Rok4Format::eformat_data pyrType, std::map<std::string, std::string> format_option, int size, Style *style);
     /**
      * \~french
      * \brief Renvoit une tuile déjà pré-calculée
-     * \param[in] image
+     * \param[in] L couche de la requête
+     * \param[in] format format de la requête
+     * \param[in] tileCol indice de colonne de la requête
+     * \param[in] tileRow indice de ligne de la requete
+     * \param[in] tileMatrix tilematrix de la requête
+     * \param[in] errorResp paramètre d'erreur
+     * \param[in] style style de la requête
      * \return image demandé ou un message d'erreur
      * \~english
      * \brief Give a tile computed before
-     * \param[in] image
+     * \param[in] L layer of the request
+     * \param[in] format format of the request
+     * \param[in] tileCol column index of the request
+     * \param[in] tileRow row index of the request
+     * \param[in] tileMatrix tilematrix of the request
+     * \param[in] errorResp error parameter
+     * \param[in] style style of the resquest
      * \return requested tile
      */
     DataSource *getTileUsual(Layer* L, std::string format, int tileCol, int tileRow, std::string tileMatrix, DataSource *errorResp, Style *style);
     /**
      * \~french
-     * \brief Renvoit une tuile qi vient d'être calculée
-     * \param[in] image
+     * \brief Renvoit une tuile qui vient d'être calculée
+     * \param[in] L couche de la requête
+     * \param[in] tileMatrix tilematrix de la requête
+     * \param[in] tileCol indice de colonne de la requête
+     * \param[in] tileRow indice de ligne de la requete
+     * \param[in] style style de la requête
+     * \param[in] format format de la requête
      * \return Tuile demandée
      * \~english
      * \brief Give a tile compute for the request
-     * \param[in] image
+     * \param[in] L layer of the request
+     * \param[in] tileMatrix tilematrix of the request
+     * \param[in] tileCol column index of the request
+     * \param[in] tileRow row index of the request
+     * \param[in] style style of the resquest
+     * \param[in] format format of the request
      * \return requested tile
      */
     DataStream *getTileOnDemand(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format);

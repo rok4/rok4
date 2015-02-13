@@ -179,7 +179,7 @@ public:
      * \brief Test whether the CRS is geographic
      * \return true if geographic
      */
-    BoundingBox<double> getCrsDefintionArea() {
+    BoundingBox<double> getCrsDefinitionArea() {
         return definitionArea;
     }
         ;

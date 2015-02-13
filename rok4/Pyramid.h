@@ -60,54 +60,99 @@ class Pyramid {
 
 private:
 
+    //Liste des différents niveaux de la pyramide
     std::map<std::string, Level*> levels;
 
+    //TileMatrixSet des données
     const TileMatrixSet tms;
 
-//    std::map<std::string, DataSource*> noDataSources;
+    //Format des tuiles
+    const Rok4Format::eformat_data format;
 
-    const Rok4Format::eformat_data format; //format d'image des tuiles
+    //Nombre de canaux pour les tuiles
+    const int channels;
 
-    const int     channels;
-
-//    DataStream* nodatastream;
-
+    //Référence au niveau le plus haut
     Level* highestLevel;
 
+    //Référence au niveau le plus bas
     Level* lowestLevel;
 
+    //Indique si la pyramide contient des tuiles déjà pré-calculées (false)
+    //  ou si elle est à la demande, donc calcule des tuiles sur demande (true)
     bool onDemand;
 
+    //Si une pyramide est à la demande,
+    //  alors elle doit pouvoir tirer ses informations d'une autre pyramide
+    //  Cet attribut contient donc la liste des pyramides de base utilisées
+    //  pour générer la vraie pyramide
+    //  Sachant qu'une pyramide de base ne peut pas en contenir à son tour
     std::vector<Pyramid*> basedPyramids;
 
+    //Indique si la pyramide peut avoir de la transparence
+    //  utilisé seulement pour une pyramide de base
+    //  ne posséde pour le moment aucun intérêt pour une pyramide normale
+    //  ou une pyramide à la demande
     bool transparent;
 
+    //Indique si la pyramide a un style
+    //  utilisé seulement pour une pyramide de base
+    //  ne posséde pour le moment aucun intérêt pour une pyramide normale
+    //  ou une pyramide à la demande
     Style *style;
 
     //C'est un tableau à double entrée qui contient une association des levels de
-    //la pyramide vers les levels des autres pyramides de bases
+    //  la pyramide vers les levels des autres pyramides de bases
+    //
+    //  Un exemple: Si la pyramide Pyr contient trois niveaux 1, 2 et 3; et deux pyramides de base bPyr1 et bPyr2
+    //
+    //      On veut représenter le tableau suivant:
+    //  Level Pyr   Level bPyr1     Level bPyr2
+    //      1           2               2
+    //      2           2               3
+    //      3           4               5
+    //
+    //  Ce tableau nous dit que pour le level 1 de Pyr, le level associé est 2 pour bPyr1 et 2 poyr bPyr2
+    //  Pour le représenter, on va faire une liste de (indice_level_Pyr,liste)
+    //
+    //      Où  indice_level représente un niveau de Pyr
+    //          liste est une liste de (indice_bPyr, indice_level_bPyr)
+    //
+    //          Où  indice_bPyr représente une basedPyramid
+    //              indice_level_bPyr représente le level associé
+    //
+    //  On trouvera une utilisation de cet attribut dans    ConfLoader.cpp -> parsePyramid() = initialisation
+    //                                                      Rok4Server.cpp -> GetTileOnDemand() = lecture
     std::map<std::string, std::map<std::string, std::string> > aLevel;
 
-    bool are_the_two_CRS_equal( std::string crs1, std::string crs2, std::vector<std::string> listofequalsCRS );
+    //    DataStream* nodatastream;
 
+    //    std::map<std::string, DataSource*> noDataSources;
+
+    bool are_the_two_CRS_equal( std::string crs1, std::string crs2, std::vector<std::string> listofequalsCRS );
 
 public:
 
     Level* getFirstLevel();
+
     Level* getHighestLevel() {
         return highestLevel;
     }
+
     Level* getLowestLevel() {
         return lowestLevel;
     }
 
     TileMatrixSet getTms();
+
     std::map<std::string, Level*>& getLevels() {
         return levels;
     }
+
     Rok4Format::eformat_data getFormat() {
         return format;
     }
+
     int getChannels() {
         return channels;
     }
@@ -115,44 +160,57 @@ public:
     bool getOnDemand(){
         return onDemand;
     }
+
     void setOnDemand (bool od) {
         onDemand = od;
     }
+
     bool getTransparent(){
         return transparent;
     }
+
     void setTransparent (bool tr) {
         transparent = tr;
     }
+
     Style *getStyle(){
         return style;
     }
+
     void setStyle (Style * st) {
         style = st;
     }
+
     std::vector<Pyramid*> getBPyramids(){
         return basedPyramids;
     }
+
     void setBPyramids (std::vector<Pyramid*> bp) {
         basedPyramids = bp;
     }
+
     std::map<std::string, std::map<std::string, std::string> > getALevel(){
         return aLevel;
     }
+
     void setALevel (std::map<std::string, std::map<std::string, std::string> > aL) {
         aLevel = aL;
     }
+
     std::string best_level ( double resolution_x, double resolution_y );
 
     DataSource* getTile ( int x, int y, std::string tmId, DataSource* errorDataSource = NULL );
+
     Image* getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error );
 
     Image *createReprojectedImage(std::string l, BoundingBox<double> bbox, CRS dst_crs, ServicesConf& servicesConf, int width, int height, Interpolation::KernelType interpolation, int error);
 
+    Image *NoDataOnDemand(std::string bLevel, BoundingBox<double> bbox);
 
     Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format, int channels, bool onDemand, bool transparent, Style *style);
 
     ~Pyramid();
+
 };
 
 

@@ -295,6 +295,8 @@ public:
      * \param[in] geographicBoundingBox emprise des données en coordonnées géographique (WGS84)
      * \param[in] boundingBox emprise des données dans le système de coordonnées natif
      * \param[in] metadataURLs liste des métadonnées associées
+     * \param[in] WMSAuthorized autorise le WMS
+     * \param[in] WMTSAuthorized autorise le WMTS
      * \~english
      * \brief Create a Layer
      * \param[in] id identifier
@@ -312,6 +314,8 @@ public:
      * \param[in] geographicBoundingBox data bounding box in geographic coordinates (WGS84)
      * \param[in] boundingBox data bounding box in native coordinates system
      * \param[in] metadataURLs linked metadata list
+     * \param[in] WMSAuthorized authorize WMS
+     * \param[in] WMTSAuthorized authorize WMTS
      */
     Layer ( std::string id, std::string title, std::string abstract,bool WMSAuthorized, bool WMTSAuthorized,
             std::vector<Keyword> & keyWords, Pyramid*& dataPyramid,

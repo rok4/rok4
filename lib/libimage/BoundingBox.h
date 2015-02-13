@@ -237,6 +237,14 @@ public:
     bool contains ( BoundingBox<T> bbox ) {
         return ( xmin < bbox.xmin && bbox.xmax < xmax && ymin < bbox.ymin && bbox.ymax < ymax );
     }
+    /** \~french \brief Détermine une bounding box contient l'autre ou touche intérieurement
+     * \param[in] bbox rectangle englobant dont on veut savoir s'il est contenu dans l'autre
+     ** \~english \brief Determine if a bounding box contains the other or touch inside
+     * \param[in] bbox bounding box : is it contained by the other ?
+     */
+    bool containsInside ( BoundingBox<T> bbox ) {
+        return ( xmin <= bbox.xmin && bbox.xmax <= xmax && ymin <= bbox.ymin && bbox.ymax <= ymax );
+    }
 
 };
 #endif

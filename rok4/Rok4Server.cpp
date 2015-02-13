@@ -542,6 +542,8 @@ DataSource* Rok4Server::getTile ( Request* request ) {
         errorResp = notFoundError;
     }
 
+
+    //Si le WMTS n'est pas authorisé pour ce layer, on renvoit une erreur
     if (!(L->getWMTSAuthorized())) {
         std::string Title = L->getId();
         delete L;
@@ -550,17 +552,22 @@ DataSource* Rok4Server::getTile ( Request* request ) {
         style = NULL;
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +Title+_ ( " unknown " ),"wmts" ) );
     }
+
+
     DataSource* tileSource;
 
     if (L->getDataPyramid()->getOnDemand()) {
+        //Si la pyramide est à la demande, on doit créer la tuile
         DataStream* tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
         if (tile != NULL) {
+            //Conversion du stream en source
             tileSource = new BufferedDataSource(*tile);
         } else {
             return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
         }
 
     } else {
+        //GetTile normal, on renvoit la tuile
         tileSource = getTileUsual(L, format, tileCol, tileRow, tileMatrix, errorResp, style) ;
     }
 
@@ -582,12 +589,13 @@ DataSource *Rok4Server::getTileUsual(Layer* L,std::string format, int tileCol, i
 }
 
 DataStream *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format) {
-    //On va créer la tuile
+    //On va créer la tuile sur demande
 
     //Variables
-    DataStream* tileSource;
     std::vector<Image*> images;
-    Image* curImage, *image;
+    Image* curImage;
+    Image *image;
+    Image *mergeImage;
     std::string bLevel;
     double Col, Row, xmin, ymin, xmax, ymax, xo, yo, resolution;
     int tileH, tileW, width, height, error;
@@ -610,71 +618,130 @@ DataStream *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
     //la correspondance est assurée par les vérifications qui ont eu lieu dans getTile()
     std::string level = tileMatrix;
 
-    Row = double(tileRow);
-    Col = double(tileCol);
-
     Interpolation::KernelType interpolation = L->getResampling();
 
     //bbox
     //Récupération du TileMatrix demandé
-    std::map<std::string, TileMatrix>* pList=pyr->getTms().getTmList();
-    std::map<std::string, TileMatrix>::iterator tm = pList->find ( tileMatrix );
+    std::map<std::string, Level*>::iterator lv = pyr->getLevels().find(level);
+    TileMatrix tm = lv->second->getTm();
 
     //Récupération des paramètres associés
-    resolution = tm->second.getRes();
-    xo = tm->second.getX0();
-    yo = tm->second.getY0();
-    tileH = tm->second.getTileH();
-    tileW = tm->second.getTileW();
+    resolution = tm.getRes();
+    xo = tm.getX0();
+    yo = tm.getY0();
+    tileH = tm.getTileH();
+    tileW = tm.getTileW();
+
+    Row = double(tileRow);
+    Col = double(tileCol);
+
+    if (tileRow >= lv->second->getMinTileRow() && tileRow <= lv->second->getMaxTileRow()
+            && tileCol >= lv->second->getMinTileCol() && tileCol <= lv->second->getMaxTileCol()) {
+
+        //calcul de la bbox
+        xmin = Col * double(tileW) * resolution + xo;
+        ymax = yo - Row * double(tileH) * resolution;
+        xmax = xmin + double(tileW) * resolution;
+        ymin = ymax - double(tileH) * resolution;
+
+        BoundingBox<double> bbox(xmin,ymin,xmax,ymax) ;
+
+        //Récupérationd du tableau à double entrée représentant les associations de levels
+        std::map<std::string, std::map<std::string, std::string> > aLevels = pyr->getALevel();
 
 
-    //calcul de la bbox
-    xmin = Col * double(tileW) * resolution + xo;
-    ymax = yo - Row * double(tileH) * resolution;
-    xmax = xmin + double(tileW) * resolution;
-    ymin = ymax - double(tileH) * resolution;
+        //pour chaque pyramide de base, on récupère une image
+        for (int i = 0; i < bPyr.size(); i++) {
 
-    BoundingBox<double> bbox(xmin,ymin,xmax,ymax) ;
+            std::ostringstream oss;
+            oss << i;
+            pyrType = bPyr.at(i)->getFormat();
+            bStyle = bPyr.at(i)->getStyle();
 
-    std::map<std::string, std::map<std::string, std::string> > aLevels = pyr->getALevel();
+            //on récupère le bLevel associé à level
+            std::map<std::string,std::string> aLevel = aLevels.find(level)->second;
+            bLevel = aLevel.find(oss.str())->second;
+
+            //on transforme la bbox
+            BoundingBox<double> motherBbox = bbox;
+            BoundingBox<double> childBBox = bPyr.at(i)->getTms().getCrs().getCrsDefinitionArea();
+            if (motherBbox.reproject(pyr->getTms().getCrs().getProj4Code(),bPyr.at(i)->getTms().getCrs().getProj4Code()) ==0 &&
+            childBBox.reproject("epsg:4326",bPyr.at(i)->getTms().getCrs().getProj4Code()) == 0) {
+                //on récupère l'image si on a pu reprojeter les bbox
+                //  cela a un double objectif:
+                //      on peut voir s'il y a de la donnée
+                //      et si on ne peut pas reprojeter,on ne pourra pas le faire plus tard non plus
+                //          donc il sera impossible de créer une image
+
+                if (childBBox.containsInside(motherBbox) || motherBbox.containsInside(childBBox) || motherBbox.intersects(childBBox)) {
+
+                    curImage = bPyr.at(i)->createReprojectedImage(bLevel, bbox, dst_crs, servicesConf, width, height, interpolation, error);
+
+                    if (curImage != NULL) {
+                        //On applique un style à l'image
+                        image = styleImage(curImage, pyrType, bStyle, format, bPyr.size());
+                        images.push_back ( image );
+                    } else {
+                        LOGGER_ERROR("Impossible de générer la tuile car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile");
+                        return NULL;
+                    }
+
+                } else {
+
+                    LOGGER_DEBUG("Incohérence des bbox: Impossible de générer une tuile issue d'une basedPyramid du layer "+L->getTitle());
+
+                }
+
+            } else {
+                //on n'a pas pu reprojeter les bbox
+
+                LOGGER_DEBUG("Reprojection impossible: Impossible de générer une tuile issue d'une basedPyramid du layer "+L->getTitle());
+
+            }
 
 
-    //Création de la tuile
+        }
 
-    //pour chaque pyramide de base, on récupère une image
-    for (int i = 0; i < bPyr.size(); i++) {
+        pyrType = bPyr.at ( 0 )->getFormat();
 
-        std::ostringstream oss;
-        oss << i;
-        pyrType = bPyr.at(i)->getFormat();
-        bStyle = bPyr.at(i)->getStyle();
 
-        //on récupère le bLevel associé à level
-        std::map<std::string,std::string> aLevel = aLevels.find(level)->second;
-        bLevel = aLevel.find(oss.str())->second;
+        //On merge les images récupérés dans chacune des basedPyramid
+        if (images.size() != 0) {
 
-        //on récupère l'image
-        curImage = bPyr.at(i)->createReprojectedImage(bLevel, bbox, dst_crs, servicesConf, width, height, interpolation, error);
+            mergeImage = mergeImages(images, pyrType, style, dst_crs, bbox);
 
-        if (curImage != NULL) {
-            image = styleImage(curImage, pyrType, bStyle, format, bPyr.size());
-            images.push_back ( image );
+            if (mergeImage == NULL) {
+                LOGGER_ERROR("Impossible de générer la tuile car l'opération de merge n'a pas fonctionné");
+                return NULL;
+            }
+
         } else {
-            LOGGER_ERROR("Impossible de générer la tuile car l'une des basedPyramid du layer"+L->getTitle()+" ne renvoit pas de tuile");
+
+            LOGGER_ERROR("Aucune image n'a été récupérée");
+
+            mergeImage = pyr->NoDataOnDemand(pyr->getFirstLevel()->getId(), BoundingBox<double>( 0.,0.,0.,0. ));
+
+            if (mergeImage == NULL) {
+                LOGGER_ERROR("Impossible de répondre car la tuile de noData n'a pas été récupérée");
+                return NULL;
+            }
+
+        }
+
+
+    } else {
+
+        mergeImage = pyr->NoDataOnDemand(pyr->getFirstLevel()->getId(), BoundingBox<double>( 0.,0.,0.,0. ));
+
+        if (mergeImage == NULL) {
+            LOGGER_ERROR("Impossible de répondre car la tuile de noData n'a pas été récupérée");
             return NULL;
         }
+
     }
 
-    pyrType = bPyr.at ( 0 )->getFormat();
-
-    image = mergeImages(images, pyrType, style, dst_crs, bbox);
-
-    if (image == NULL) {
-        LOGGER_ERROR("Impossible de générer la tuile car l'opération de merge n'a pas fonctionné");
-        return NULL;
-    }
-
-    tileSource = formatImage(curImage, format, pyrType, format_option, bPyr.size(), style);
+    //De cette image mergée, on lui applique un format pour la renvoyer au client
+    DataStream *tileSource = formatImage(mergeImage, format, pyrType, format_option, bPyr.size(), style);
 
     if (tileSource == NULL) {
         LOGGER_ERROR("Impossible de générer la tuile car l'opération de formattage n'a pas fonctionné");

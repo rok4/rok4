@@ -624,7 +624,8 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         return NULL;
     }
 
-    //Si c'est la première fois qu'on parse une pyramide
+    //Si c'est la première fois qu'on parse une pyramide, times est true
+    //  Cette pyramide peut être construite à partir d'une autre
     if (times) {
 
 
@@ -886,7 +887,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             if ( maxTileRow > tm->getMatrixH() || maxTileRow < 0 )
                 maxTileRow = tm->getMatrixH();
 
-            // Would be Mandatory in future release
+            // Mandatory
             TiXmlElement* pElemNoData=hLvl.FirstChild ( "nodata" ).Element();
 
             if ( pElemNoData ) {    // FilePath must be specified if nodata tag exist
@@ -907,12 +908,9 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                     noDataFilePath.insert ( 0,parentDir );
                 }
 
-                /*if (noDataFilePath.empty()){
-                    if (!pElemNoDataPath){
-                                        LOGGER_ERROR(fileName <<" Level "<< id <<" specifiant une tuile NoData sans chemin");
-                                        return NULL;
-                                    }
-                }*/
+            } else {
+                LOGGER_ERROR("NoDataTile must be specified !");
+                return NULL;
             }
 
             Level *TL = new Level ( *tm, channels, baseDir, tilesPerWidth, tilesPerHeight,
@@ -932,7 +930,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
 
                 //New bbox
-                BoundingBox<double> nBbox = tms->getCrs().getCrsDefintionArea();
+                BoundingBox<double> nBbox = tms->getCrs().getCrsDefinitionArea();
 
                 //Pour chaque tm de tms, on doit trouver un équivalent dans chaque basedPyramid
                 for (int ip = 0; ip < bPyramids.size(); ip++) {
@@ -945,20 +943,27 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                     cBbox = tms->getCrs().cropBBoxGeographic(cBbox);
                     BoundingBox<double> cBboxOld = cBbox;
                     BoundingBox<double> cBboxNew = cBbox;
-                    //TODO: si la reprojection n'est pas possible
-                    cBboxNew.reproject("epsg:4326",tms->getCrs().getProj4Code());
-                    cBboxOld.reproject("epsg:4326",bPyramids.at(ip)->getTms().getCrs().getProj4Code());
 
-                    ratioX = (cBboxOld.xmax - cBboxOld.xmin) / (cBboxNew.xmax - cBboxNew.xmin);
-                    ratioY = (cBboxOld.ymax - cBboxOld.ymin) / (cBboxNew.ymax - cBboxNew.ymin);
+                    if (cBboxNew.reproject("epsg:4326",tms->getCrs().getProj4Code())==0 &&
+                        cBboxOld.reproject("epsg:4326",bPyramids.at(ip)->getTms().getCrs().getProj4Code())==0)
+                    {
 
-                    resX = Res * ratioX;
-                    resY = Res * ratioY;
+                        ratioX = (cBboxOld.xmax - cBboxOld.xmin) / (cBboxNew.xmax - cBboxNew.xmin);
+                        ratioY = (cBboxOld.ymax - cBboxOld.ymin) / (cBboxNew.ymax - cBboxNew.ymin);
 
-                    //On recupère le best level de la basedPyramid en cours pour le tm en cours
-                    best_h = bPyramids.at(ip)->best_level(resX,resY);
+                        resX = Res * ratioX;
+                        resY = Res * ratioY;
 
-                    oss << ip;
+                        //On recupère le best level de la basedPyramid en cours pour le tm en cours
+                        best_h = bPyramids.at(ip)->best_level(resX,resY);
+
+                        oss << ip;
+
+                    } else {
+
+                        best_h = "";
+
+                    }
 
                     if (best_h == ""){
                         foundLevel = false;
@@ -996,7 +1001,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             std::map<std::string, TileMatrix>::iterator itm;
             double Res, ratioX, ratioY, resX, resY;
             long double Meter;
-            std::string  best_h, id, baseDirectory, baseDir, noDataDirectory, noDataFilePath;
+            std::string  best_h, id, baseDirectory, baseDir, noDataFilePath;
             int tilesPerWidth, tilesPerHeight, maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth;
             bool foundLevel;
 
@@ -1004,8 +1009,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             Meter = tms->getCrs().getMetersPerUnit();
             //TODO: si le nom de fichier est plus complexe
             baseDirectory = fileName.substr(fileName.find_last_of("/")+1);
-            baseDirectory = baseDirectory.erase(baseDirectory.find(".pyr"))+"/IMAGE/";
-            noDataDirectory = baseDirectory.erase(baseDirectory.find("/IMAGE/"))+"/NODATA/";
+            baseDirectory = baseDirectory.erase(baseDirectory.find(".pyr"))+"/IMAGE/";          
             tilesPerWidth = 16;
             tilesPerHeight = 16;
             pathDepth = 2;
@@ -1019,60 +1023,185 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                 id = itm->first;
 
                 baseDir = baseDirectory+id;
-                noDataFilePath = noDataDirectory+id+"/nd.tif";
+
+                //Min et Max pris sur l'ensemble de définition du CRS
                 maxTileCol = itm->second.getMatrixW();
                 maxTileRow = itm->second.getMatrixH();
                 minTileCol = 0;
                 minTileRow = 0;
 
+
                 //Résolution du TM
                 Res = itm->second.getRes();
+                foundLevel = true;
 
 
                 //New bbox
-                BoundingBox<double> nBbox = tms->getCrs().getCrsDefintionArea();
+                BoundingBox<double> nBbox = tms->getCrs().getCrsDefinitionArea();
 
                 //Pour chaque tm de tms, on doit trouver un équivalent dans chaque basedPyramid
                 for (int ip = 0; ip < bPyramids.size(); ip++) {
 
                     std::ostringstream oss;
-                    foundLevel = true;
+
 
                     BoundingBox<double> cBbox = bPyramids.at(ip)->getTms().getCrs().cropBBoxGeographic(nBbox);
 
                     cBbox = tms->getCrs().cropBBoxGeographic(cBbox);
                     BoundingBox<double> cBboxOld = cBbox;
                     BoundingBox<double> cBboxNew = cBbox;
-                    //TODO: si la reprojection n'est pas possible
-                    cBboxNew.reproject("epsg:4326",tms->getCrs().getProj4Code());
-                    cBboxOld.reproject("epsg:4326",bPyramids.at(ip)->getTms().getCrs().getProj4Code());
 
-                    ratioX = (cBboxOld.xmax - cBboxOld.xmin) / (cBboxNew.xmax - cBboxNew.xmin);
-                    ratioY = (cBboxOld.ymax - cBboxOld.ymin) / (cBboxNew.ymax - cBboxNew.ymin);
+                    if (cBboxNew.reproject("epsg:4326",tms->getCrs().getProj4Code())==0 &&
+                        cBboxOld.reproject("epsg:4326",bPyramids.at(ip)->getTms().getCrs().getProj4Code())==0)
+                    {
 
-                    resX = Res * ratioX;
-                    resY = Res * ratioY;
+                        ratioX = (cBboxOld.xmax - cBboxOld.xmin) / (cBboxNew.xmax - cBboxNew.xmin);
+                        ratioY = (cBboxOld.ymax - cBboxOld.ymin) / (cBboxNew.ymax - cBboxNew.ymin);
 
-                    //On recupère le best level de la basedPyramid en cours pour le tm en cours
-                    best_h = bPyramids.at(ip)->best_level(resX,resY);
+                        resX = Res * ratioX;
+                        resY = Res * ratioY;
 
-                    oss << ip;
+                        //On recupère le best level de la basedPyramid en cours pour le tm en cours
+                        best_h = bPyramids.at(ip)->best_level(resX,resY);
+
+                        oss << ip;
+
+                    } else {
+                        //Si une des reprojections n'a pas marché
+
+                        best_h = "";
+
+                    }
 
                     if (best_h == ""){
                         foundLevel = false;
                         break;
                     } else {
-                        baPyr.insert(std::pair< std::string, std::string> ( oss.str(), best_h));
+                        //On insert le correspondance du level trouvé
+                        baPyr.insert(std::pair< std::string, std::string> ( oss.str(), best_h));           
                     }
 
                 }
 
                 //On crée le level et on l'insert à la liste des levels de la pyramide
-                //seulement si on a trouvé un niveau correspondant dans une des pyramides de base
+                //seulement si on a trouvé un niveau correspondant dans chaque pyramide de base
                 if (foundLevel) {
+
+                    noDataFilePath = bPyramids.at(bPyramids.size()-1)->getHighestLevel()->getNoDataFilePath();
+
+                    if (noDataFilePath == "") {
+                        LOGGER_ERROR("Tuile de NoData non récupérable dans la basedPyramid");
+                        return NULL;
+                    }
+
+                    aLevel.insert(std::pair<std::string,std::map<std::string, std::string> > (id,baPyr));
+
+
+                    //On met à jour les Min et Max Tiles une fois que l'on a trouvé un équivalent dans chaque basedPyramid
+                    // pour le level créé
+
+                    int curMinCol, curMaxCol, curMinRow, curMaxRow, bPMinCol, bPMaxCol, bPMinRow, bPMaxRow, minCol, minRow, maxCol, maxRow;
+                    double xo, yo, res, tileW, tileH, xmin, xmax, ymin, ymax;
+
+                    int time = 1;
+
+                    for (int ip = 0; ip < bPyramids.size(); ip++) {
+
+
+
+                        //On récupére les Min et Max de la basedPyramid
+                        std::ostringstream oss;
+                        oss << ip;
+                        std::map<std::string,std::string> aL = aLevel.find(itm->first)->second;
+                        std::string bLevel = aL.find(oss.str())->second;
+                        Level *lv = bPyramids.at(ip)->getLevels().at(bLevel);
+
+                        bPMinCol = lv->getMinTileCol();
+                        bPMaxCol = lv->getMaxTileCol();
+                        bPMinRow = lv->getMinTileRow();
+                        bPMaxRow = lv->getMaxTileRow();
+
+                        //On récupère d'autres informations sur le TM
+                        xo = lv->getTm().getX0();
+                        yo = lv->getTm().getY0();
+                        res = lv->getTm().getRes();
+                        tileW = lv->getTm().getTileW();
+                        tileH = lv->getTm().getTileH();
+
+                        //On transforme en bbox
+                        xmin = bPMinCol * tileW * res + xo;
+                        ymax = yo - bPMinRow * tileH * res;
+                        xmax = xo + (bPMaxCol+1) * tileW * res;
+                        ymin = ymax - (bPMaxRow - bPMinRow + 1) * tileH * res;
+
+                        BoundingBox<double> MMbbox(xmin,ymin,xmax,ymax);
+
+
+                        //On reprojette la bbox
+                        MMbbox.reproject(bPyramids.at(ip)->getTms().getCrs().getProj4Code(), tms->getCrs().getProj4Code());
+
+                        //On récupère les Min et Max de Pyr pour ce level dans la nouvelle projection
+                        xo = itm->second.getX0();
+                        yo = itm->second.getY0();
+                        res = itm->second.getRes();
+                        tileW = itm->second.getTileW();
+                        tileH = itm->second.getTileH();
+
+                        curMinRow = floor((yo - MMbbox.ymax) / (tileW * res));
+                        curMinCol = floor((MMbbox.xmin - xo) / (tileH * res));
+                        curMaxRow = floor((yo - MMbbox.ymin) / (tileW * res));
+                        curMaxCol = floor((MMbbox.xmax - xo) / (tileH * res));
+
+                        if (time == 1) {
+                            minCol = curMinCol;
+                            maxCol = curMaxCol;
+                            minRow = curMinRow;
+                            maxRow = curMaxRow;
+                        }
+
+                        //On teste pour récupèrer la plus grande zone à l'intérieur du TMS
+                        if (curMinCol >= minTileCol && curMinCol >= 0 && curMinCol <= curMaxCol && curMinCol <= maxTileCol) {
+                            if (curMinCol <= minCol) {
+                                minCol = curMinCol;
+                            }
+                        }
+                        if (curMinRow >= minTileRow && curMinRow >= 0 && curMinRow <= curMaxRow && curMinRow <= maxTileRow) {
+                            if (curMinRow <= minRow) {
+                                minRow = curMinRow;
+                            }
+                        }
+                        if (curMaxCol <= maxTileCol && curMaxCol >= 0 && curMaxCol >= curMinCol && curMaxCol >= minTileCol) {
+                            if (curMaxCol >= maxCol) {
+                                maxCol = curMaxCol;
+                            }
+                        }
+                        if (curMaxRow <= maxTileRow && curMaxRow >= 0 && curMaxRow >= curMinRow && curMaxRow >= minTileRow) {
+                            if (curMaxRow >= maxRow) {
+                                maxRow = curMaxRow;
+                            }
+                        }
+
+                        time++;
+
+                    }
+
+                    if (minCol > minTileCol ) {
+                        minTileCol = minCol;
+                    }
+                    if (minRow > minTileRow ) {
+                        minTileRow = minRow;
+                    }
+                    if (maxCol < maxTileCol ) {
+                        maxTileCol = maxCol;
+                    }
+                    if (maxRow < maxTileRow ) {
+                        maxTileRow = maxRow;
+                    }
+
                     Level *TL = new Level (itm->second, channels, baseDir, tilesPerWidth, tilesPerHeight, maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth, format, noDataFilePath );
                     levels.insert ( std::pair<std::string, Level *> ( id, TL ) );
-                    aLevel.insert(std::pair<std::string,std::map<std::string, std::string> > (id,baPyr));
+
+
                 }
 
             }
@@ -1088,9 +1217,16 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
     Pyramid *pyr = new Pyramid ( levels, *tms, format, channels, onDemand, transparent, style );
 
-    if (onDemand && levels.size() != 0 && aLevel.size() != 0) {
-        pyr->setALevel(aLevel);
-        pyr->setBPyramids(bPyramids);
+    if (onDemand) {
+        if (levels.size() != 0 && aLevel.size() != 0) {
+            pyr->setALevel(aLevel);
+            pyr->setBPyramids(bPyramids);
+        } else {
+            LOGGER_ERROR ( _ ("Erreur lors du chargement des levels de la pyramide à la demande ") << fileName );
+            return NULL;
+        }
+    } else {
+
     }
 
     return pyr;
