@@ -955,7 +955,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                         resY = Res * ratioY;
 
                         //On recupère le best level de la basedPyramid en cours pour le tm en cours
-                        best_h = bPyramids.at(ip)->best_level(resX,resY);
+                        best_h = bPyramids.at(ip)->best_level(resX,resY,true);
 
                         oss << ip;
 
@@ -1062,7 +1062,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                         resY = Res * ratioY;
 
                         //On recupère le best level de la basedPyramid en cours pour le tm en cours
-                        best_h = bPyramids.at(ip)->best_level(resX,resY);
+                        best_h = bPyramids.at(ip)->best_level(resX,resY,true);
 
                         oss << ip;
 

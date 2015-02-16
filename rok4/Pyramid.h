@@ -197,7 +197,7 @@ public:
         aLevel = aL;
     }
 
-    std::string best_level ( double resolution_x, double resolution_y );
+    std::string best_level ( double resolution_x, double resolution_y, bool onDemand );
 
     DataSource* getTile ( int x, int y, std::string tmId, DataSource* errorDataSource = NULL );
 

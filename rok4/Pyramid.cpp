@@ -130,7 +130,7 @@ DataSource* Pyramid::getTile ( int x, int y, std::string tmId, DataSource* error
 
 }
 
-std::string Pyramid::best_level ( double resolution_x, double resolution_y ) {
+std::string Pyramid::best_level ( double resolution_x, double resolution_y, bool onDemand ) {
 
     // TODO: A REFAIRE !!!!
     // res_level/resx ou resy ne doit pas exceder une certaine valeur
@@ -148,7 +148,19 @@ std::string Pyramid::best_level ( double resolution_x, double resolution_y ) {
             best_h = it->first;
         }
     }
-    return best_h;
+
+    if (onDemand) {
+
+        if (best <= 1.8 && best >= 0.8) {
+            return best_h;
+        } else {
+            return "";
+        }
+
+    } else {
+        return best_h;
+    }
+
 }
 
 
@@ -189,7 +201,7 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
         delete grid;
     }
 
-    std::string l = best_level ( resolution_x, resolution_y );
+    std::string l = best_level ( resolution_x, resolution_y, false );
     LOGGER_DEBUG ( _ ( "best_level=" ) << l << _ ( " resolution requete=" ) << resolution_x << " " << resolution_y );
 
     if ( (tms.getCrs() == dst_crs) || (are_the_two_CRS_equal( tms.getCrs().getProj4Code(), dst_crs.getProj4Code(), servicesConf.getListOfEqualsCRS() ) ) ) {
