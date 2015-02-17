@@ -562,6 +562,7 @@ DataSource* Rok4Server::getTile ( Request* request ) {
         if (tile != NULL) {
             //Conversion du stream en source
             tileSource = new BufferedDataSource(*tile);
+            delete tile;
         } else {
             return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
         }
@@ -593,7 +594,7 @@ DataStream *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
 
     //Variables
     std::vector<Image*> images;
-    Image* curImage;
+    Image *curImage;
     Image *image;
     Image *mergeImage;
     std::string bLevel;
@@ -726,6 +727,8 @@ DataStream *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
                 return NULL;
             }
 
+            pyrType = pyr->getFormat();
+
         }
 
 
@@ -737,6 +740,8 @@ DataStream *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
             LOGGER_ERROR("Impossible de répondre car la tuile de noData n'a pas été récupérée");
             return NULL;
         }
+
+        pyrType = pyr->getFormat();
 
     }
 
