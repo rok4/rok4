@@ -462,7 +462,6 @@ Calculate all nodes in above levels. We generate a above level node if one or mo
 sub identifyAboveNodes {
     my $self = shift;
     
-    
     # initialisation pratique:
     my $tms = $self->{pyramid}->getTileMatrixSet;
     my $src = $self->{datasource};
@@ -542,7 +541,7 @@ sub computeYourself {
     # en tenant compte du fait qu'ils peuvent déjà contenir du travail, du fait
     # de la pluralité des arbres à traiter.
     
-    $self->shareNodesOnJobs;
+    $self->shareNodesOnJobs();
 
     if (! defined $self->{cutLevelID}) {
         ERROR("Impssible to determine the cut level !");
@@ -648,9 +647,9 @@ sub computeBottomImage {
     
     if ($self->getDataSource->hasHarvesting) {
         # Datasource has a WMS service : we have to use it
-        ($c,$w) = $self->{commands}->wms2work($node,$self->getDataSource->getHarvesting,"I");
+        ($c,$w) = $self->{commands}->wms2work($node,$self->getDataSource->getHarvesting);
         if (! defined $c) {
-            ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName("I"));
+            ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName());
             return FALSE;
         }
         
@@ -659,14 +658,14 @@ sub computeBottomImage {
     } else {    
         ($c,$w) = $self->{commands}->mergeNtiff($node);
         if ($w == -1) {
-            ERROR(sprintf "Cannot compose mergeNtiff command for the node %s.",$node->getWorkBaseName);
+            ERROR(sprintf "Cannot compose mergeNtiff command for the node %s.",$node->getWorkBaseName());
             return FALSE;
         }
         $code .= $c;
         $weight += $w;
     }
 
-    ($c,$w) = $self->{commands}->work2cache($node,"\${TMP_DIR}");
+    ($c,$w) = $self->{commands}->work2cache($node, "\${TMP_DIR}");
     $code .= $c;
     $weight += $w;
 
@@ -703,7 +702,7 @@ sub computeAboveImage {
     my $code  = "\n";
     
     # Maintenant on constitue la liste des images à passer à merge4tiff.
-    ($c,$w) = $self->{commands}->merge4tiff($node,$self->getDataSource->getHarvesting);
+    ($c,$w) = $self->{commands}->merge4tiff($node);
     if ($w == -1) {
         ERROR(sprintf "Cannot compose merge4tiff command for the node %s.",$node->getWorkBaseName);
         return FALSE;

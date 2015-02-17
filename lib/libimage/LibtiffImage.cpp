@@ -496,7 +496,7 @@ int LibtiffImage::getline ( uint8_t* buffer, int line ) {
         return r;
     } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) { // float
         /* On ne convertit pas les nombres flottants en entier sur 8 bits (aucun intérêt)
-         * On va copier le buffer flottant sur le buffer entier, de même taille*/
+         * On va copier le buffer flottant sur le buffer entier, de même taille en octet (4 fois plus grand en "nombre de cases")*/
         float floatline[width * channels];
         _getline ( floatline, line );
         memcpy ( buffer, floatline, width*channels*sizeof(float) );
@@ -509,7 +509,7 @@ int LibtiffImage::getline ( float* buffer, int line ) {
         // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers
         uint8_t* buffer_t = new uint8_t[width*channels];
         
-        // Ne pas appeler directement _getline pour bien faire les potetielles conversions (alpha ou 1 bit)
+        // Ne pas appeler directement _getline pour bien faire les potentielles conversions (alpha ou 1 bit)
         getline ( buffer_t,line );
         convert ( buffer,buffer_t,width*channels );
         delete [] buffer_t;
