@@ -152,6 +152,7 @@ use File::Spec::Link;
 use File::Basename;
 use File::Spec;
 use File::Path;
+use File::Copy;
 use Tie::File;
 
 use Data::Dumper;
@@ -266,8 +267,8 @@ sub new {
             desc_path     => undef,
             data_path     => undef,
             content_path  => undef,
+            reference_mode  => undef,
         },
-        reference_mode  => undef,
         #
         dir_depth    => undef,
         dir_image    => undef,
@@ -363,8 +364,15 @@ sub _init {
             $params->{pyr_data_path_old} = $params->{pyr_data_path};
         }
         $self->{old_pyramid}->{data_path} = $params->{pyr_data_path_old};
-        #
-        if (! exists $params->{reference_mode} || ! defined p
+        # checking the way to reference the ancestor's cache
+        if (! exists $params->{reference_mode} || ! defined $params->{reference_mode}) {
+            INFO (sprintf "Parameter 'reference_mode' has not been set. Default value ('%s') is used.",$DEFAULT->{reference_mode});
+            $params->{reference_mode} = $DEFAULT->{reference_mode};
+        } else if ( ! isReferenceMode($params->{reference_mode}) ) {
+            ERROR (sprintf "'%s' is not a valid value for parameter 'reference_mode'.",$params->{reference_mode});
+            return FALSE;
+        }
+        $self->{old_pyramid}->{reference_mode} = $params->{reference_mode};
     } else {
         # For a new pyramid, are mandatory (and controlled in this class):
         #   - image_width, image_height
@@ -772,7 +780,7 @@ sub readCachePyramid {
     if (! -d dirname($listpyramid)) {
         eval { mkpath([dirname($listpyramid)]); };
         if ($@) {
-            ERROR(sprintf "Can not create the old cache list directory '%s' : %s !",dirname($listpyramid), $@);
+            ERROR(sprintf "Can not create the old cache list directory '%s' : %s !",dirname($listpyra0mid), $@);
             return FALSE;
         }
     }
@@ -927,14 +935,14 @@ sub findImages {
 }
 
 =begin nd
-Function: isReferenceMethod
+Function: isReferenceMode
 
 Tests if the value for parameter 'reference_mode' is allowed.
 
 Parameters (list):
     referenceModeValue - string - chosen value for the mode of reference to the old pyrammid cache files
 =cut
-sub isReferenceMethod {
+sub isReferenceMode {
     my $self = shift;
     my $referenceModeValue = shift;
 
@@ -1366,9 +1374,26 @@ sub writeListPyramid {
             
             my $reloldtile = File::Spec->abs2rel($oldtile, $dir);
 
-            my $result = eval { symlink ($reloldtile, $newtile); };
-            if (! $result) {
-                ERROR (sprintf "The tile '%s' can not be linked to '%s' (%s)",$reloldtile,$newtile,$!);
+            if ($self->{old_pyramid}->{reference_mode} eq 'slink') {
+                my $result = eval { symlink ($reloldtile, $newtile); };
+                if (! $result) {
+                    ERROR (sprintf "The tile '%s' can not be soft linked to '%s' (%s)",$reloldtile,$newtile,$!);
+                    return FALSE;
+                }
+            } elseif ($self->{old_pyramid}->{reference_mode} eq 'hlink') {
+                my $result = eval { link ($reloldtile, $newtile); };
+                if (! $result) {
+                    ERROR (sprintf "The tile '%s' can not be hard linked to '%s' (%s)",$reloldtile,$newtile,$!);
+                    return FALSE;
+                }
+            } elseif ($self->{old_pyramid}->{reference_mode} eq 'copy') {
+                my $result = eval { copy($reloldtile, $newtile); };
+                if (! $result) {
+                    ERROR (sprintf "The tile '%s' can not be copied to '%s' (%s)",$reloldtile,$newtile,$!);
+                    return FALSE;
+                }
+            } else {
+                ERROR (sprintf "Unknown reference mode : '%s'",$self->{old_pyramid}->{reference_mode});
                 return FALSE;
             }
         }
