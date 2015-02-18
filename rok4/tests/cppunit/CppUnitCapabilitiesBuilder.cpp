@@ -76,6 +76,8 @@ protected:
     std::string name;
     std::string title;
     std::string abstract;
+    bool WMSAuthorized;
+    bool WMTSAuthorized;
     std::vector<Keyword> keyWords;
     std::string serviceProvider;
     std::string fee;
@@ -198,10 +200,13 @@ void CppUnitCapabilitiesBuilder::setUp() {
     id0 = "zero";
     titles0.push_back("title0");
     abstracts0.push_back("abstracts0");
+    WMSAuthorized = true;
+    WMTSAuthorized = true;
     keyWords.push_back( Keyword ("Lambert93", std::map<std::string, std::string>()));
     keyWords.push_back( Keyword ("10cm", std::map<std::string, std::string>()));
     legendURL0 = new LegendURL ("image/jpeg", "http://ign.fr", 400, 400, 25000, 100000);
     legendURLs0.push_back(*legendURL0);
+
     srand ( time ( NULL ) );
     for ( int i = 0 ; i < 255; ++i ) {
         colours.insert ( std::pair<double,Colour> ( i,Colour ( 256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ) ) ) );
@@ -210,7 +215,7 @@ void CppUnitCapabilitiesBuilder::setUp() {
     palette0->buildPalettePNG();
     style = new Style ( id0,titles0,abstracts0,keyWords,legendURLs0,*palette0 );
     styleslayer.push_back(style);
-    layer = new Layer ( idlayer, titlelayer, abstractlayer, keyWords, dataPyramidlayer, styleslayer, minReslayer, maxReslayer, WMSCRSListlayer, opaquelayer, authoritylayer, resamplinglayer, geographicBoundingBoxlayer, boundingBoxlayer, metadataURLslayer );
+    layer = new Layer ( idlayer, titlelayer, abstractlayer, WMSAuthorized, WMTSAuthorized, keyWords, dataPyramidlayer, styleslayer, minReslayer, maxReslayer, WMSCRSListlayer, opaquelayer, authoritylayer, resamplinglayer, geographicBoundingBoxlayer, boundingBoxlayer, metadataURLslayer );
     layerlist.insert(std::pair<std::string, Layer*> (layer->getId(), layer) );
 
     // Load TimeMatrixSet - Rok4Server 4th argument

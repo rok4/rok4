@@ -146,14 +146,6 @@ void CppUnitLayer::getTitle() {
     CPPUNIT_ASSERT_MESSAGE ( "layer getTitle:\n", layer->getTitle() == "Title of the layer" ) ;
 }
 
-void CppUnitLayer::getWMSAuthorized() {
-    CPPUNIT_ASSERT_MESSAGE ( "layer getWMSAuthorized:\n", layer->getWMSAuthorized()== "Title of the layer" ) ;
-}
-
-void CppUnitLayer::getWMTSAuthorized() {
-    CPPUNIT_ASSERT_MESSAGE ( "layer getWMTSAuthorized:\n", layer->getWMTSAuthorized() == "Title of the layer" ) ;
-}
-
 void CppUnitLayer::getAbstract() {
     CPPUNIT_ASSERT_MESSAGE ( "layer getAbstract\n", layer->getAbstract() == "This is the abstract of the layer" ) ;
 }
@@ -177,6 +169,14 @@ void CppUnitLayer::getMaxRes() {
 
 void CppUnitLayer::getOpaque() {
     CPPUNIT_ASSERT_MESSAGE ( "layer getOpaque:\n", layer->getOpaque() == true ) ;
+}
+
+void CppUnitLayer::getWMSAuthorized() {
+    CPPUNIT_ASSERT_MESSAGE ( "layer getWMSAuthorized:\n", layer->getWMSAuthorized() == true ) ;
+}
+
+void CppUnitLayer::getWMTSAuthorized() {
+    CPPUNIT_ASSERT_MESSAGE ( "layer getWMTSAuthorized:\n", layer->getWMTSAuthorized() == true ) ;
 }
 
 void CppUnitLayer::getAuthority() {
