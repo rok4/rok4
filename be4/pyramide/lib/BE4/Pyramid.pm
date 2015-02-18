@@ -93,6 +93,8 @@ Using:
         pyr_name_new        => "ORTHO_RAW_LAMB93_D075-E",
         pyr_desc_path       => "/home/ign/DATA",
         pyr_data_path       => "/home/ign/DATA",
+        #
+        reference_mode      => "SLINK"
     };
 
     my $objPyr = BE4::Pyramid->new($params_options,"/home/ign/TMP");
@@ -196,7 +198,7 @@ TPYR
 my %DEFAULT;
 
 # Constant: UPDATE_MODES
-# Defines possibles values for the 'update_mode' parameter.
+# Defines possibles values for the 'reference_mode' parameter.
 my %UPDATE_MODES;
 
 ################################################################################
@@ -209,12 +211,12 @@ INIT {
         dir_nodata => 'NODATA',
         dir_mask => 'MASK',
         dir_metadata => 'METADATA',
-        update_mode => 'SLINK'
+        reference_mode => 'slink'
     );
-    @UPDATE_MODES = (
-        'SLINK', # symbolic link to ancestor's images
-        'HLINK', # hard link to ancestor's images
-        'COPY'   # real copy of ancestor's images
+    @REFERENCE_MODES = (
+        'slink', # symbolic link to ancestor's images
+        'hlink', # hard link to ancestor's images.
+        'copy'   # real copy of ancestor's images
     );
 }
 
@@ -265,6 +267,7 @@ sub new {
             data_path     => undef,
             content_path  => undef,
         },
+        reference_mode  => undef,
         #
         dir_depth    => undef,
         dir_image    => undef,
@@ -360,6 +363,8 @@ sub _init {
             $params->{pyr_data_path_old} = $params->{pyr_data_path};
         }
         $self->{old_pyramid}->{data_path} = $params->{pyr_data_path_old};
+        #
+        if (! exists $params->{reference_mode} || ! defined p
     } else {
         # For a new pyramid, are mandatory (and controlled in this class):
         #   - image_width, image_height
@@ -922,23 +927,23 @@ sub findImages {
 }
 
 =begin nd
-Function: isUpdateMethod
+Function: isReferenceMethod
 
-Tests if the value for parameter 'update_mode' is allowed.
+Tests if the value for parameter 'reference_mode' is allowed.
 
 Parameters (list):
-    updateModeValue - string - chosen value for the pyramid update mode
+    referenceModeValue - string - chosen value for the mode of reference to the old pyrammid cache files
 =cut
-sub isUpdateMethod {
+sub isReferenceMethod {
     my $self = shift;
-    my $updateModeValue = shift;
+    my $referenceModeValue = shift;
 
     TRACE;
 
-    return FALSE if (! defined $updateModeValue);
+    return FALSE if (! defined $referenceModeValue);
 
-    foreach (@UPDATE_MODES) {
-        return TRUE if ($updateModeValue eq $_);
+    foreach (@REFERENCE_MODES) {
+        return TRUE if ($referenceModeValue eq $_);
     }
     return FALSE;
 }
