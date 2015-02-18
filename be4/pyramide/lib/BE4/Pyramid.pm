@@ -195,6 +195,10 @@ TPYR
 # Define default values for directories' names.
 my %DEFAULT;
 
+# Constant: UPDATE_MODES
+# Defines possibles values for the 'update_mode' parameter.
+my %UPDATE_MODES;
+
 ################################################################################
 
 BEGIN {}
@@ -204,7 +208,13 @@ INIT {
         dir_image => 'IMAGE',
         dir_nodata => 'NODATA',
         dir_mask => 'MASK',
-        dir_metadata => 'METADATA'
+        dir_metadata => 'METADATA',
+        update_mode => 'SLINK'
+    );
+    @UPDATE_MODES = (
+        'SLINK', # symbolic link to ancestor's images
+        'HLINK', # hard link to ancestor's images
+        'COPY'   # real copy of ancestor's images
     );
 }
 
@@ -909,6 +919,28 @@ sub findImages {
     }
     
     return TRUE;
+}
+
+=begin nd
+Function: isUpdateMethod
+
+Tests if the value for parameter 'update_mode' is allowed.
+
+Parameters (list):
+    updateModeValue - string - chosen value for the pyramid update mode
+=cut
+sub isUpdateMethod {
+    my $self = shift;
+    my $updateModeValue = shift;
+
+    TRACE;
+
+    return FALSE if (! defined $updateModeValue);
+
+    foreach (@UPDATE_MODES) {
+        return TRUE if ($updateModeValue eq $_);
+    }
+    return FALSE;
 }
 
 ####################################################################################################
