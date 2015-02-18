@@ -39,6 +39,7 @@
 
 #include <string>
 #include "CRS.h"
+#include "BoundingBox.h"
 
 class CppUnitCRS : public CPPUNIT_NS::TestFixture {
 
@@ -64,6 +65,13 @@ protected:
     CRS* crs4;
     CRS* crs5;
     CRS* crs6;
+
+    BoundingBox<double> bbox1 = (0.,0.,0.,0.);
+    BoundingBox<double> bbox2 = (0.,0.,0.,0.);
+    BoundingBox<double> bbox3 = (0.,0.,0.,0.);
+    BoundingBox<double> bbox4 = (0.,0.,0.,0.);
+    BoundingBox<double> bbox5 = (0.,0.,0.,0.);
+    BoundingBox<double> bbox6 = (0.,0.,0.,0.);
 
 public:
     void setUp();
@@ -92,6 +100,14 @@ void CppUnitCRS::setUp() {
     crs4 = new CRS ( crs_code4 );
     crs5 = new CRS ( crs_code5 );
     crs6 = new CRS ( crs_code6 );
+
+    bbox1 = (-180.,-90.,180.,90.);
+    bbox2 = (-180.,-85.,180.,85.);
+    bbox3 = (-180.,-85.,180.,85.);
+    bbox4 = (-180.,-90.,180.,90.);
+    bbox5 = (-180.,-85.,180.,85.);
+    bbox6 = (-180.,-85.,180.,85.);
+
 }
 
 void CppUnitCRS::constructors() {
@@ -145,6 +161,37 @@ void CppUnitCRS::getters() {
     CPPUNIT_ASSERT_MESSAGE ( "CRS getIdentifier",crs4->getIdentifier().compare ( "WGS84G" ) ==0 );
     CPPUNIT_ASSERT_MESSAGE ( "CRS getIdentifier",crs5->getIdentifier().compare ( "3857" ) ==0 );
     CPPUNIT_ASSERT_MESSAGE ( "CRS getIdentifier",crs6->getIdentifier().compare ( "3857" ) ==0 );
+
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs1->getCrsDefinitionArea().xmin.compare(bbox1.xmin)==0 );
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs1->getCrsDefinitionArea().xmax.compare(bbox1.xmax)==0 );
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs1->getCrsDefinitionArea().ymin.compare(bbox1.ymin)==0 );
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs1->getCrsDefinitionArea().ymax.compare(bbox1.ymax)==0 );
+
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs2->getCrsDefinitionArea().xmin.compare(bbox2.xmin)==0 );
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs2->getCrsDefinitionArea().xmax.compare(bbox2.xmax)==0 );
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs2->getCrsDefinitionArea().ymin.compare(bbox2.ymin)==0 );
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs2->getCrsDefinitionArea().ymax.compare(bbox2.ymax)==0 );
+
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs3->getCrsDefinitionArea().xmin.compare(bbox3.xmin)==0 );
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs3->getCrsDefinitionArea().xmax.compare(bbox3.xmax)==0 );
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs3->getCrsDefinitionArea().ymin.compare(bbox3.ymin)==0 );
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs3->getCrsDefinitionArea().ymax.compare(bbox3.ymax)==0 );
+
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs4->getCrsDefinitionArea().xmin.compare(bbox4.xmin)==0 );
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs4->getCrsDefinitionArea().xmax.compare(bbox4.xmax)==0 );
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs4->getCrsDefinitionArea().ymin.compare(bbox4.ymin)==0 );
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs4->getCrsDefinitionArea().ymax.compare(bbox4.ymax)==0 );
+
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs5->getCrsDefinitionArea().xmin.compare(bbox5.xmin)==0 );
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs5->getCrsDefinitionArea().xmax.compare(bbox5.xmax)==0 );
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs5->getCrsDefinitionArea().ymin.compare(bbox5.ymin)==0 );
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs5->getCrsDefinitionArea().ymax.compare(bbox5.ymax)==0 );
+
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs6->getCrsDefinitionArea().xmin.compare(bbox6.xmin)==0 );
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs6->getCrsDefinitionArea().xmax.compare(bbox6.xmax)==0 );
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs6->getCrsDefinitionArea().ymin.compare(bbox6.ymin)==0 );
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs6->getCrsDefinitionArea().ymax.compare(bbox6.ymax)==0 );
+
 }
 
 void CppUnitCRS::setters() {
