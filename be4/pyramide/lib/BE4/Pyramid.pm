@@ -202,7 +202,7 @@ my %DEFAULT;
 
 # Constant: UPDATE_MODES
 # Defines possibles values for the 'reference_mode' parameter.
-my %UPDATE_MODES;
+my @REFERENCE_MODES;
 
 ################################################################################
 
@@ -368,9 +368,9 @@ sub _init {
         $self->{old_pyramid}->{data_path} = $params->{pyr_data_path_old};
         # checking the way to reference the ancestor's cache
         if (! exists $params->{reference_mode} || ! defined $params->{reference_mode}) {
-            INFO (sprintf "Parameter 'reference_mode' has not been set. Default value ('%s') is used.",$DEFAULT->{reference_mode});
-            $params->{reference_mode} = $DEFAULT->{reference_mode};
-        } else if ( ! isReferenceMode($params->{reference_mode}) ) {
+            INFO (sprintf "Parameter 'reference_mode' has not been set. Default value ('%s') is used.",$DEFAULT{reference_mode});
+            $params->{reference_mode} = $DEFAULT{reference_mode};
+        } elsif ( ! isReferenceMode($params->{reference_mode}) ) {
             ERROR (sprintf "'%s' is not a valid value for parameter 'reference_mode'.",$params->{reference_mode});
             return FALSE;
         }
@@ -782,7 +782,7 @@ sub readCachePyramid {
     if (! -d dirname($listpyramid)) {
         eval { mkpath([dirname($listpyramid)]); };
         if ($@) {
-            ERROR(sprintf "Can not create the old cache list directory '%s' : %s !",dirname($listpyra0mid), $@);
+            ERROR(sprintf "Can not create the old cache list directory '%s' : %s !",dirname($listpyramid), $@);
             return FALSE;
         }
     }
@@ -1382,13 +1382,13 @@ sub writeListPyramid {
                     ERROR (sprintf "The tile '%s' can not be soft linked to '%s' (%s)",$reloldtile,$newtile,$!);
                     return FALSE;
                 }
-            } elseif ($self->{old_pyramid}->{reference_mode} eq 'hlink') {
+            } elsif ($self->{old_pyramid}->{reference_mode} eq 'hlink') {
                 my $result = eval { link ($reloldtile, $newtile); };
                 if (! $result) {
                     ERROR (sprintf "The tile '%s' can not be hard linked to '%s' (%s)",$reloldtile,$newtile,$!);
                     return FALSE;
                 }
-            } elseif ($self->{old_pyramid}->{reference_mode} eq 'copy') {
+            } elsif ($self->{old_pyramid}->{reference_mode} eq 'copy') {
                 my $result = eval { copy($reloldtile, $newtile); };
                 if (! $result) {
                     ERROR (sprintf "The tile '%s' can not be copied to '%s' (%s)",$reloldtile,$newtile,$!);
