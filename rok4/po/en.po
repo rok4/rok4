@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2015-02-09 08:22+0100\n"
+"POT-Creation-Date: 2015-02-19 11:39+0100\n"
 "PO-Revision-Date: 2013-02-18 17:49+0100\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -1299,7 +1299,7 @@ msgstr ""
 msgid "Parametre FORMAT absent."
 msgstr ""
 
-#: Request.cpp:798 Rok4Server.cpp:512
+#: Request.cpp:798 Rok4Server.cpp:510
 msgid "Le format "
 msgstr ""
 
@@ -1423,11 +1423,11 @@ msgstr ""
 msgid "Parametre STYLES incomplet."
 msgstr ""
 
-#: Request.cpp:1063 Request.cpp:1109 Rok4Api.cpp:225 Rok4Server.cpp:586
+#: Request.cpp:1063 Request.cpp:1109 Rok4Api.cpp:225 Rok4Server.cpp:584
 msgid "Le service "
 msgstr ""
 
-#: Request.cpp:1063 Request.cpp:1109 Rok4Api.cpp:225 Rok4Server.cpp:586
+#: Request.cpp:1063 Request.cpp:1109 Rok4Api.cpp:225 Rok4Server.cpp:584
 msgid " est inconnu pour ce serveur."
 msgstr ""
 
@@ -1509,12 +1509,12 @@ msgstr ""
 msgid "Le parametre REQUEST n'est pas renseigné."
 msgstr ""
 
-#: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:555
-#: Rok4Server.cpp:559 Rok4Server.cpp:569 Rok4Server.cpp:573
+#: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:553
+#: Rok4Server.cpp:557 Rok4Server.cpp:567 Rok4Server.cpp:571
 msgid " n'est pas prise en charge par ce serveur."
 msgstr ""
 
-#: Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:559
+#: Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:557
 msgid "L'operation "
 msgstr ""
 
@@ -1522,11 +1522,11 @@ msgstr ""
 msgid "Le parametre SERVICE n'est pas renseigné."
 msgstr ""
 
-#: Rok4Api.cpp:299 Rok4Api.cpp:375 Rok4Server.cpp:526
+#: Rok4Api.cpp:299 Rok4Api.cpp:375 Rok4Server.cpp:524
 msgid "Probleme dans les parametres de la requete getTile"
 msgstr ""
 
-#: Rok4Api.cpp:503 Rok4Server.cpp:532
+#: Rok4Api.cpp:503 Rok4Server.cpp:530
 msgid "No data found"
 msgstr ""
 
@@ -1582,7 +1582,7 @@ msgstr ""
 msgid "bbox trop grande"
 msgstr ""
 
-#: Rok4Server.cpp:301 Rok4Server.cpp:439
+#: Rok4Server.cpp:301 Rok4Server.cpp:437
 msgid "Impossible de repondre a la requete"
 msgstr ""
 
@@ -1590,7 +1590,7 @@ msgstr ""
 msgid "Estompage"
 msgstr "Estompage"
 
-#: Rok4Server.cpp:512
+#: Rok4Server.cpp:510
 msgid " ne peut etre traite"
 msgstr ""
 
