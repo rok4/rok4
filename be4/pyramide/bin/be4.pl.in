@@ -672,7 +672,8 @@ For more informations about properties, see <BE4::Pyramid>.
 
     pyr_name_old - If existing pyramid, its name. If this parameter is present, generation is an update.
     pyr_data_path_old - If existing pyramid, directory path where to find the cache. Default : pyr_data_path value.
-    pyr_desc_path_old - If existing pyramid, directory path where to find the descriptor. Default : pyr_desc_path value.     
+    pyr_desc_path_old - If existing pyramid, directory path where to find the descriptor. Default : pyr_desc_path value.
+    reference_mode - Possible values : slink, hlink, copy. If existing pyramid, the way the new cache will reference the ancestor's cache. Default : slink.     
 
     compression - Possible values : raw, jpg, zip, lzw, png, pkb. PNG compression is not an official compression for tiff format (just readable by rok4). Default : raw.
 
