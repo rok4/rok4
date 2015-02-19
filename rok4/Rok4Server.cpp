@@ -378,8 +378,8 @@ DataStream* Rok4Server::getMap ( Request* request ) {
 
         MergeImageFactory MIF;
         int spp = images.at ( 0 )->channels;
-	uint8_t bg[spp];
-	float bgf[spp];
+	int bg[spp];
+	int transparentColor[spp];
 	
 	switch (pyrType) {
 	  case Rok4Format::TIFF_RAW_FLOAT32 :
@@ -388,23 +388,22 @@ DataStream* Rok4Server::getMap ( Request* request ) {
 	  case Rok4Format::TIFF_PKB_FLOAT32 :
 	    switch(spp) {
 	      case 1:
-		  bgf[0] = -99999.0;
+		  bg[0] = -99999.0;
 		  break;
 	      case 2:
-		  bgf[0] = -99999.0; bgf[1] = 0;
+		  bg[0] = -99999.0; bg[1] = 0;
 		  break;
 	      case 3:
-		  bgf[0] = -99999.0; bgf[1] = -99999.0; bgf[2] = -99999.0;
+		  bg[0] = -99999.0; bg[1] = -99999.0; bg[2] = -99999.0;
 		  break;
 	      case 4:
-		  bgf[0] = -99999.0; bgf[1] = -99999.0; bgf[2] = -99999.0; bgf[4] = 0;
+		  bg[0] = -99999.0; bg[1] = -99999.0; bg[2] = -99999.0; bg[4] = 0;
 		  break;
 	      default:
-		  memset(bgf, 0, sizeof(float) * spp);
+		  memset(bg, 0, sizeof(int) * spp);
 		  break;                
 	    }
-	    LOGGER_DEBUG ( "Create float MergeImage" );
-	    image = MIF.createMergeImage<float>(images,spp,bgf,bgf,Merge::ALPHATOP);
+	    memccpy(transparentColor, bg, spp, sizeof(int));
 	    break;
 	  case Rok4Format::TIFF_RAW_INT8 :
 	  case Rok4Format::TIFF_ZIP_INT8 :
@@ -428,11 +427,10 @@ DataStream* Rok4Server::getMap ( Request* request ) {
 		  memset(bg, 0, sizeof(uint8_t) * spp);
 		  break;                
 	    }
-	    LOGGER_DEBUG ( "Create uint8_t MergeImage" );
-	    image = MIF.createMergeImage<uint8_t>(images,spp,bg,NULL,Merge::ALPHATOP);
 	    break;
 	}
-        
+	
+	image = MIF.createMergeImage(images,spp,bg,transparentColor,Merge::ALPHATOP);
 
         if ( image == NULL ) {
             LOGGER_ERROR ( "Impossible de fusionner les images des differentes couches" );
