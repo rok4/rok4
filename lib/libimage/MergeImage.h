@@ -59,7 +59,6 @@
 #include "Image.h"
 #include <string.h>
 #include "Format.h"
-#include "Line.h"
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -122,7 +121,6 @@ std::string toString ( eMergeType mergeMethod );
  * \li TOP
  * \li NORMAL
  */
-template <typename T>
 class MergeImage : public Image {
 
     friend class MergeImageFactory;
@@ -148,14 +146,14 @@ private:
      * \details On a une valeur entière par canal. Tous les pixels de l'image fusionnée seront initialisés avec cette valeur.
      * \~english \brief Background value
      */
-    T* bgValue;
+    int* bgValue;
 
     /**
      * \~french \brief Valeur de transparence
      * \details On a 3 valeurs entières. Tous les pixels de cette valeur seront considérés comme transparent (en mode TRANSPARENCY)
      * \~english \brief Transparent value
      */
-    T* transparentValue;
+    int* transparentValue;
 
     /** \~french
      * \brief Retourne une ligne, flottante ou entière
@@ -185,17 +183,17 @@ protected:
      * \param[in] composition merge method to use
      */
     MergeImage ( std::vector< Image* >& images, int channels,
-                 T* bg, T* transparent, Merge::eMergeType composition = Merge::NORMAL ) :
+                 int* bg, int* transparent, Merge::eMergeType composition = Merge::NORMAL ) :
         Image ( images.at ( 0 )->getWidth(),images.at ( 0 )->getHeight(), channels, images.at ( 0 )->getResX(),images.at ( 0 )->getResY(), images.at ( 0 )->getBbox() ),
         images ( images ), composition ( composition ), bgValue ( bg ), transparentValue ( transparent ) {
 
         if ( transparentValue != NULL ) {
-            transparentValue = new T[3];
-            memcpy ( transparentValue, transparent, 3*sizeof ( T ) );
+            transparentValue = new int[3];
+            memcpy ( transparentValue, transparent, 3*sizeof ( int ) );
         }
 
-        bgValue = new T[channels];
-        memcpy ( bgValue, bg, channels*sizeof ( T ) );
+        bgValue = new int[channels];
+        memcpy ( bgValue, bg, channels*sizeof ( int ) );
     }
 
 
@@ -262,91 +260,6 @@ public:
     }
 };
 
-template <typename T> template <typename tBuf>
-int MergeImage<T>::_getline ( tBuf* buffer, int line ) {
-    Line aboveLine ( width, sizeof(T) );
-    T* imageLine = new T[width*4];
-    uint8_t* maskLine = new uint8_t[width];
-    memset ( maskLine, 0, width );
-
-    T bg[channels*width];
-    for ( int i = 0; i < channels*width; i++ ) {
-        bg[i] = ( T ) bgValue[i%channels];
-    }
-    Line workLine ( bg, maskLine, channels, width );
-
-    T* transparent;
-    if ( transparentValue != NULL ) {
-        transparent = new T[3];
-        for ( int i = 0; i < 3; i++ ) {
-            transparent[i] = ( T ) transparentValue[i];
-        }
-    }
-
-    for ( int i = 0; i < images.size(); i++ ) {
-
-        int srcSpp = images[i]->channels;
-        images[i]->getline ( imageLine,line );
-
-        if ( images[i]->getMask() == NULL ) {
-            memset ( maskLine, 255, width );
-        } else {
-            images[i]->getMask()->getline ( maskLine,line );
-        }
-
-        if ( transparentValue == NULL ) {
-            aboveLine.store ( imageLine, maskLine, srcSpp );
-        } else {
-            aboveLine.store ( imageLine, maskLine, srcSpp, transparent );
-        }
-
-        switch ( composition ) {
-        case Merge::NORMAL:
-            workLine.useMask ( &aboveLine );
-            break;
-        case Merge::TOP:
-            workLine.useMask ( &aboveLine );
-            break;
-        case Merge::MULTIPLY:
-            workLine.multiply ( &aboveLine );
-            break;
-        case Merge::ALPHATOP:
-            workLine.alphaBlending ( &aboveLine );
-            break;
-            //case Merge::LIGHTEN:
-            //case Merge::DARKEN:
-        default:
-            workLine.useMask ( &aboveLine );
-            break;
-        }
-
-    }
-
-    // On repasse la ligne sur le nombre de canaux voulu
-    workLine.write ( buffer, channels );
-
-    if ( transparentValue != NULL ) {
-        delete [] transparent;
-    }
-    delete [] imageLine;
-    delete [] maskLine;
-
-    return width*channels;
-}
-
-
-
- /* Implementation de getline pour les uint8_t */
-template <typename T>
-int MergeImage<T>::getline ( uint8_t* buffer, int line ) {
-    return _getline( buffer, line );
-}
-
-/* Implementation de getline pour les float */
-template <typename T>
-int MergeImage<T>::getline ( float* buffer, int line ) {
-    return _getline ( buffer, line );
-}
 
 
 
@@ -375,38 +288,9 @@ public:
      * \param[in] transparentValue pixel's value to consider as transparent, 3 integers
      * \param[in] composition merge method to use
      */
-    template <typename T>
-    MergeImage<T>* createMergeImage ( std::vector< Image* >& images, int channels,
-                                   T* bgValue, T* transparentValue, Merge::eMergeType composition = Merge::NORMAL );
+    MergeImage* createMergeImage ( std::vector< Image* >& images, int channels,
+                                   int* bgValue, int* transparentValue, Merge::eMergeType composition = Merge::NORMAL );
 };
-
-template <typename T>
-MergeImage<T>* MergeImageFactory::createMergeImage ( std::vector< Image* >& images, int channels,
-        T* bgValue, T* transparentValue, Merge::eMergeType composition ) {
-    if ( images.size() == 0 ) {
-        LOGGER_ERROR ( "No source images to defined merged image" );
-        return NULL;
-    }
-
-    int width = images.at ( 0 )->getWidth();
-    int height = images.at ( 0 )->getHeight();
-
-    for ( int i = 1; i < images.size(); i++ ) {
-        if ( images.at ( i )->getWidth() != width || images.at ( i )->getHeight() != height ) {
-            LOGGER_ERROR ( "All images must have same dimensions" );
-            images.at ( 0 )->print();
-            images.at ( i )->print();
-            return NULL;
-        }
-    }
-
-    if ( bgValue == NULL ) {
-        LOGGER_ERROR ( "We have to precise a value used as background in the MergeImage" );
-        return NULL;
-    }
-
-    return new MergeImage<T> ( images, channels, bgValue, transparentValue, composition );
-}
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -420,7 +304,7 @@ private:
      * \~french \brief Image fusionnée, à laquelle le masque fusionné est associé
      * \~english \brief Merged images, with which merged mask is associated
      */
-    MergeImage<uint8_t>* MI;
+    MergeImage* MI;
 
 public:
     /** \~french
@@ -432,7 +316,7 @@ public:
      * \details Mask's components are extracted from the merged image.
      * \param[in] MI Compounded image
      */
-    MergeMask ( MergeImage<uint8_t>*& MI ) :
+    MergeMask ( MergeImage*& MI ) :
         Image ( MI->getWidth(), MI->getHeight(), 1,MI->getResX(), MI->getResY(),MI->getBbox() ),
         MI ( MI ) {}
 
