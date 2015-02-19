@@ -115,6 +115,8 @@ Attributes:
 |               name - string - Pyramid's name
 |               desc_path - string - Directory in which we write the pyramid's descriptor
 |               data_path - string - Directory in which we write the pyramid's data
+|               reference_mode - string - type of linking to the old pyramid's files.
+|                   |   Possible values are : 'slink' (soft link - default), 'hlink' (hard link) and 'copy' (hard copy). 
 |               content_path - string - Path to the content's list
 
     dir_depth - integer - Number of subdirectories from the level root to the image : depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif
@@ -2108,6 +2110,7 @@ For a new pyramid, the directory structure is empty, only the level directory fo
     (end code)
 
 For an existing pyramid, the directory structure is duplicated to the new pyramid with all file linked, thanks to the old cache list.
+The kind of linking can be chosen between symbolic link (default), hard link and hard copy.
     (start code)
     pyr_data_path/
             |__pyr_name_new/
