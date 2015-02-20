@@ -1,19 +1,21 @@
 language: cpp
 compiler:
-  - gcc
+- gcc
 before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -y gettext nasm
-  - chmod -R 777 *
+- sudo apt-get update -qq
+- sudo apt-get install -y gettext nasm
+- chmod -R 777 *
 script:
-  - mkdir build target
-  - cd build
-  - cmake .. -DCMAKE_INSTALL_PREFIX=../target -DBUILD_ROK4=TRUE -DBUILD_BE4=FALSE -DBUILD_DOC=FALSE -DUNITTEST=false -DDEBUG_BUILD=FALSE
-  - make package
+- mkdir build target
+- cd build
+- cmake .. -DCMAKE_INSTALL_PREFIX=../target -DBUILD_ROK4=TRUE -DBUILD_BE4=FALSE -DBUILD_DOC=FALSE
+  -DUNITTEST=false -DDEBUG_BUILD=FALSE
+- make package
 deploy:
   provider: releases
-  api-key: "GITHUB OAUTH TOKEN"
+  api_key:
+    secure: oDPJD/tkC1gEaVAhTJEAcCtIZp0dVoRgptWwzeyKRxMMdedHI19ktJpOnYba1eKP7NXiWIu9wqfk9BMRAIKuxhKOl0Y/Yt9XRO0igludj5dMoBDUyyl7aHyIiq87gVEzBw8q/Nsf3D7rAHail4/FyrqjPrSZ2rq898CxzSl9J1I=
   file: "Rok4*"
-  skip_cleanup: true
   on:
+    repo: rok4/rok4
     tags: true
