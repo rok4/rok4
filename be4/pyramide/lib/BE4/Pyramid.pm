@@ -945,15 +945,21 @@ Parameters (list):
     referenceModeValue - string - chosen value for the mode of reference to the old pyrammid cache files
 =cut
 sub isReferenceMode {
-    my $self = shift;
     my $referenceModeValue = shift;
 
     TRACE;
+    
+    if (! defined $referenceModeValue) {
+        ERROR(sprintf "Checking the validity of reference_value : the value is not defined inside the test !");
+        return FALSE;
+    }
 
-    return FALSE if (! defined $referenceModeValue);
-
-    foreach (@REFERENCE_MODES) {
-        return TRUE if ($referenceModeValue eq $_);
+    foreach (@{REFERENCE_MODES}) {
+        DEBUG(sprintf "Comparing reference_mode's set value '%s' to possible value '%s'.", $referenceModeValue, $_);
+        if ($referenceModeValue eq $_) {
+            INFO(sprintf "'%s' value has been set as a referencing mode.", $referenceModeValue);
+            return TRUE;
+        }
     }
     return FALSE;
 }
@@ -1383,15 +1389,15 @@ sub writeListPyramid {
                     return FALSE;
                 }
             } elsif ($self->{old_pyramid}->{reference_mode} eq 'hlink') {
-                my $result = eval { link ($reloldtile, $newtile); };
+                my $result = eval { link ($oldtile, $newtile); };
                 if (! $result) {
-                    ERROR (sprintf "The tile '%s' can not be hard linked to '%s' (%s)",$reloldtile,$newtile,$!);
+                    ERROR (sprintf "The tile '%s' can not be hard linked to '%s' (%s)",$oldtile,$newtile,$!);
                     return FALSE;
                 }
             } elsif ($self->{old_pyramid}->{reference_mode} eq 'copy') {
-                my $result = eval { copy($reloldtile, $newtile); };
+                my $result = eval { copy($oldtile, $newtile); };
                 if (! $result) {
-                    ERROR (sprintf "The tile '%s' can not be copied to '%s' (%s)",$reloldtile,$newtile,$!);
+                    ERROR (sprintf "The tile '%s' can not be copied to '%s' (%s)",$oldtile,$newtile,$!);
                     return FALSE;
                 }
             } else {
