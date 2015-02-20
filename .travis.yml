@@ -4,6 +4,7 @@ compiler:
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -y gettext nasm
+  - chmod -R 777 *
 script:
   - mkdir build target
   - cd build
