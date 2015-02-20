@@ -69,26 +69,7 @@ protected:
     double bbox1ymin;
     double bbox1xmax;
     double bbox1ymax;
-    double bbox2xmin;
-    double bbox2ymin;
-    double bbox2xmax;
-    double bbox2ymax;
-    double bbox3xmin;
-    double bbox3ymin;
-    double bbox3xmax;
-    double bbox3ymax;
-    double bbox4xmin;
-    double bbox4ymin;
-    double bbox4xmax;
-    double bbox4ymax;
-    double bbox5xmin;
-    double bbox5ymin;
-    double bbox5xmax;
-    double bbox5ymax;
-    double bbox6xmin;
-    double bbox6ymin;
-    double bbox6xmax;
-    double bbox6ymax;
+
 
 
 public:
