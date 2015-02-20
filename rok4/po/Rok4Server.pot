@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2015-02-17 13:35+0100\n"
+"POT-Creation-Date: 2015-02-20 11:29+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1253,7 +1253,7 @@ msgstr ""
 msgid "Parametre LAYER absent."
 msgstr ""
 
-#: Request.cpp:757 Request.cpp:871 Rok4Server.cpp:315 Rok4Server.cpp:553
+#: Request.cpp:757 Request.cpp:871 Rok4Server.cpp:315 Rok4Server.cpp:584
 msgid "Layer "
 msgstr ""
 
@@ -1311,7 +1311,7 @@ msgstr ""
 msgid "Parametre FORMAT absent."
 msgstr ""
 
-#: Request.cpp:801 Rok4Server.cpp:519
+#: Request.cpp:801 Rok4Server.cpp:550
 msgid "Le format "
 msgstr ""
 
@@ -1435,11 +1435,11 @@ msgstr ""
 msgid "Parametre STYLES incomplet."
 msgstr ""
 
-#: Request.cpp:1066 Request.cpp:1112 Rok4Api.cpp:225 Rok4Server.cpp:797
+#: Request.cpp:1066 Request.cpp:1112 Rok4Api.cpp:225 Rok4Server.cpp:828
 msgid "Le service "
 msgstr ""
 
-#: Request.cpp:1066 Request.cpp:1112 Rok4Api.cpp:225 Rok4Server.cpp:797
+#: Request.cpp:1066 Request.cpp:1112 Rok4Api.cpp:225 Rok4Server.cpp:828
 msgid " est inconnu pour ce serveur."
 msgstr ""
 
@@ -1521,12 +1521,12 @@ msgstr ""
 msgid "Le parametre REQUEST n'est pas renseigné."
 msgstr ""
 
-#: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:766
-#: Rok4Server.cpp:770 Rok4Server.cpp:780 Rok4Server.cpp:784
+#: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:797
+#: Rok4Server.cpp:801 Rok4Server.cpp:811 Rok4Server.cpp:815
 msgid " n'est pas prise en charge par ce serveur."
 msgstr ""
 
-#: Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:770
+#: Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:801
 msgid "L'operation "
 msgstr ""
 
@@ -1534,11 +1534,11 @@ msgstr ""
 msgid "Le parametre SERVICE n'est pas renseigné."
 msgstr ""
 
-#: Rok4Api.cpp:299 Rok4Api.cpp:375 Rok4Server.cpp:534
+#: Rok4Api.cpp:299 Rok4Api.cpp:375 Rok4Server.cpp:565
 msgid "Probleme dans les parametres de la requete getTile"
 msgstr ""
 
-#: Rok4Api.cpp:503 Rok4Server.cpp:540
+#: Rok4Api.cpp:503 Rok4Server.cpp:571
 msgid "No data found"
 msgstr ""
 
@@ -1594,11 +1594,11 @@ msgstr ""
 msgid "bbox trop grande"
 msgstr ""
 
-#: Rok4Server.cpp:305 Rok4Server.cpp:567
+#: Rok4Server.cpp:305 Rok4Server.cpp:598
 msgid "Impossible de repondre a la requete"
 msgstr ""
 
-#: Rok4Server.cpp:315 Rok4Server.cpp:553
+#: Rok4Server.cpp:315 Rok4Server.cpp:584
 msgid " unknown "
 msgstr ""
 
@@ -1606,7 +1606,7 @@ msgstr ""
 msgid "Estompage"
 msgstr ""
 
-#: Rok4Server.cpp:519
+#: Rok4Server.cpp:550
 msgid " ne peut etre traite"
 msgstr ""
 

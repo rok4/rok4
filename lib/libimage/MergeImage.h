@@ -161,8 +161,8 @@ private:
      * \param[in] line Indice de la ligne à retourner (0 <= line < height)
      * \return taille utile du buffer, 0 si erreur
      */
-    template<typename T>
-    int _getline ( T* buffer, int line );
+    template <typename tBuf>
+    int _getline ( tBuf* buffer, int line );
 
 protected:
 
@@ -199,8 +199,8 @@ protected:
 
 public:
 
-    virtual int getline ( float* buffer, int line );
     virtual int getline ( uint8_t* buffer, int line );
+    virtual int getline ( float* buffer, int line );
 
     /**
      * \~french
@@ -259,6 +259,9 @@ public:
         LOGGER_INFO ( "\t- Background value : " << bgValue << "\n" );
     }
 };
+
+
+
 
 /** \~ \author Institut national de l'information géographique et forestière
  ** \~french
