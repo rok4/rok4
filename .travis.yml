@@ -18,4 +18,3 @@ deploy:
   file: "Rok4*"
   on:
     repo: rok4/rok4
-    tags: true
