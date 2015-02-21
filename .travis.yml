@@ -15,7 +15,7 @@ deploy:
   provider: releases
   api_key:
     secure: iBvpbuyzyk/ReIli72fki1cvUTffXc/kgu3zcg8rlYk00BNWe1Maf9ziNo/0SWRu5vHQnKyipd6/dQaXgBF+sjBg2yTTSMumOHUnMY3/Mu7m2Id/iqAM+MuprQH+EQjFuOMUUdcXWPnm0RkHQmXF624ckt+zmol/pwjB1ag1tK8=
-  file: Rok4*
+  file: build/Rok4*
   on:
     repo: rok4/rok4
     tags: true
