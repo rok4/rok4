@@ -2,7 +2,7 @@ rok4
 ====
 
 Rok4 est un serveur WMS/WMTS open source développé par l'IGN France.
-
+[![Build Status](https://travis-ci.org/rok4/rok4.svg?branch=master)](https://travis-ci.org/rok4/rok4)
 
 # A propos
 
