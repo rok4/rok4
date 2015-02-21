@@ -11,11 +11,12 @@ script:
 - cmake .. -DCMAKE_INSTALL_PREFIX=../target -DBUILD_ROK4=TRUE -DBUILD_BE4=FALSE -DBUILD_DOC=FALSE
   -DUNITTEST=false -DDEBUG_BUILD=FALSE
 - make package
+- export FILE_TOUPLOAD=$(find ./ -maxdepth 1 -name "Rok4*.tar.gz")
 deploy:
   provider: releases
   api_key:
     secure: iBvpbuyzyk/ReIli72fki1cvUTffXc/kgu3zcg8rlYk00BNWe1Maf9ziNo/0SWRu5vHQnKyipd6/dQaXgBF+sjBg2yTTSMumOHUnMY3/Mu7m2Id/iqAM+MuprQH+EQjFuOMUUdcXWPnm0RkHQmXF624ckt+zmol/pwjB1ag1tK8=
-  file: build/Rok4*
+  file: $FILE_TOUPLOAD
   on:
     repo: rok4/rok4
     tags: true
