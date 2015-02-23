@@ -435,7 +435,7 @@ Example:
     # 11271098.442818944,-2504688.54284865024,11897270.57853110784,-1878516.4071364864
     # 11897270.57853110784,-2504688.54284865024,12523442.71424327168,-1878516.4071364864"
     #
-    # Wms2work "path/image_several_requests" "png" "4 4" "250000" "http://localhost/wms-vector?LAYERS=BDD_WLD_WM&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/png&CRS=EPSG:3857&WIDTH=1024&HEIGHT=1024&STYLES=line&BGCOLOR=0x80BBDA&TRANSPARENT=0X80BBDA" $BBOXES
+    # Wms2work "path/image_several_requests" "png" "tif" "4 4" "250000" "http://localhost/wms-vector?LAYERS=BDD_WLD_WM&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/png&CRS=EPSG:3857&WIDTH=1024&HEIGHT=1024&STYLES=line&BGCOLOR=0x80BBDA&TRANSPARENT=0X80BBDA" $BBOXES
     (end code)
 =cut
 sub getCommandWms2work {
@@ -513,20 +513,28 @@ sub getCommandWms2work {
     $cmd .= " \"$dir\"";
     
     my $format = undef;
+    
+    # Extension des images moissonnées
     if ($self->getFormat eq "image/png") {
         $format = "png";
-        $cmd .= " \"$format\"";
+        $cmd .= " \"png\"";
     } else {
         $format = "tif";
+        $cmd .= " \"tif\"";
+    }
+    
+    # Extension de l'image finale
+    if ($imagePerWidth == 1 || $imagePerHeight == 1) {
+        # On moissonne en une seule fois : l'image finale a l'extension de celle moissonnée
         $cmd .= " \"$format\"";
+    } else {
+        # On moissonne en plusieurs fois, on va donc utiliser composeNtiff pour ré-assempbler les images
+        # L'image finale sera alors en TIFF
+        $format = "tif";
+        $cmd .= " \"tif\"";
     }
     
     $cmd .= sprintf " \"%s %s\"",$imagePerWidth,$imagePerHeight;
-    if ($imagePerWidth != 1 || $imagePerHeight != 1) {
-        # composeNtiff will be used to merge images; final image's format will be "tif"
-        $format = "tif";
-    }
-
     $cmd .= sprintf " \"%s\"",$self->{min_size};
 
     $cmd .= " \"$URL\"";

@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2014-06-16 14:38+0200\n"
+"POT-Creation-Date: 2015-02-19 11:39+0100\n"
 "PO-Revision-Date: 2014-01-28 09:36+0100\n"
 "Last-Translator: \n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -1085,27 +1085,27 @@ msgstr " resolution de la requête="
 msgid "BBox en dehors de la definition du CRS"
 msgstr "Emprise demandée en dehors de la zone de définition du CRS"
 
-#: Pyramid.cpp:194 Pyramid.cpp:206
+#: Pyramid.cpp:194 Pyramid.cpp:233
 msgid "BBox decoupe incorrect"
 msgstr "Emprise découpée incorrecte"
 
-#: Pyramid.cpp:201
+#: Pyramid.cpp:226
 msgid "New Width = "
 msgstr " Nouvelle largeur = "
 
-#: Pyramid.cpp:201
+#: Pyramid.cpp:226
 msgid "New Height = "
 msgstr "Nouvelle hauteur = "
 
-#: Pyramid.cpp:202
+#: Pyramid.cpp:227
 msgid "ratio_x = "
 msgstr "Ratio en X = "
 
-#: Pyramid.cpp:202
+#: Pyramid.cpp:227
 msgid "ratio_y = "
 msgstr "Ratio en Y ="
 
-#: Pyramid.cpp:212
+#: Pyramid.cpp:239
 msgid "Image decoupe valide"
 msgstr "Image découpée invalide !"
 
@@ -1297,7 +1297,7 @@ msgstr " format pyramide : "
 msgid "Parametre FORMAT absent."
 msgstr "Paramètre FORMAT absent."
 
-#: Request.cpp:798 Rok4Server.cpp:478
+#: Request.cpp:798 Rok4Server.cpp:510
 msgid "Le format "
 msgstr "Le format ["
 
@@ -1427,11 +1427,11 @@ msgstr "Nombre de styles demandés = "
 msgid "Parametre STYLES incomplet."
 msgstr "Paramètre STYLES incomplet."
 
-#: Request.cpp:1063 Request.cpp:1109 Rok4Api.cpp:225 Rok4Server.cpp:552
+#: Request.cpp:1063 Request.cpp:1109 Rok4Api.cpp:225 Rok4Server.cpp:584
 msgid "Le service "
 msgstr "Le service "
 
-#: Request.cpp:1063 Request.cpp:1109 Rok4Api.cpp:225 Rok4Server.cpp:552
+#: Request.cpp:1063 Request.cpp:1109 Rok4Api.cpp:225 Rok4Server.cpp:584
 msgid " est inconnu pour ce serveur."
 msgstr " est inconnu pour ce serveur."
 
@@ -1516,12 +1516,12 @@ msgstr "Impossible de charger la configuration des couches/pyramides"
 msgid "Le parametre REQUEST n'est pas renseigné."
 msgstr "La valeur du paramètre HEIGHT n'est pas une valeur entière."
 
-#: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:521
-#: Rok4Server.cpp:525 Rok4Server.cpp:535 Rok4Server.cpp:539
+#: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:553
+#: Rok4Server.cpp:557 Rok4Server.cpp:567 Rok4Server.cpp:571
 msgid " n'est pas prise en charge par ce serveur."
 msgstr " n'est pas prise en charge par ce serveur."
 
-#: Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:525
+#: Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:557
 msgid "L'operation "
 msgstr "L'opération "
 
@@ -1530,11 +1530,11 @@ msgstr "L'opération "
 msgid "Le parametre SERVICE n'est pas renseigné."
 msgstr "La valeur du paramètre HEIGHT n'est pas une valeur entière."
 
-#: Rok4Api.cpp:299 Rok4Api.cpp:375 Rok4Server.cpp:492
+#: Rok4Api.cpp:299 Rok4Api.cpp:375 Rok4Server.cpp:524
 msgid "Probleme dans les parametres de la requete getTile"
 msgstr "Probleme dans les paramètres de la requête getTile"
 
-#: Rok4Api.cpp:503 Rok4Server.cpp:498
+#: Rok4Api.cpp:503 Rok4Server.cpp:530
 msgid "No data found"
 msgstr "Aucune donnée"
 
@@ -1590,7 +1590,7 @@ msgstr "La BoundingBox demandée est invalide"
 msgid "bbox trop grande"
 msgstr "La BoundingBox demandée est trop grande"
 
-#: Rok4Server.cpp:301 Rok4Server.cpp:405
+#: Rok4Server.cpp:301 Rok4Server.cpp:437
 msgid "Impossible de repondre a la requete"
 msgstr "Impossible de répondre a la requête"
 
@@ -1598,7 +1598,7 @@ msgstr "Impossible de répondre a la requête"
 msgid "Estompage"
 msgstr "Estompage"
 
-#: Rok4Server.cpp:478
+#: Rok4Server.cpp:510
 msgid " ne peut etre traite"
 msgstr " ne peut être traité"
 

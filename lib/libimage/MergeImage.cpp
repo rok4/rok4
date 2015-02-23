@@ -54,29 +54,30 @@
  */
 
 #include "MergeImage.h"
-#include "Line.h"
+
 #include "Utils.h"
 #include "Logger.h"
 #include <cstring>
+#include "Line.h"
 
-template <typename T>
-int MergeImage::_getline ( T* buffer, int line ) {
-    Line aboveLine ( width, sizeof(T) );
-    T* imageLine = new T[width*4];
+template <typename tBuf>
+int MergeImage::_getline ( tBuf* buffer, int line ) {
+    Line aboveLine ( width, sizeof(tBuf) );
+    tBuf* imageLine = new tBuf[width*4];
     uint8_t* maskLine = new uint8_t[width];
     memset ( maskLine, 0, width );
 
-    T bg[channels*width];
+    tBuf bg[channels*width];
     for ( int i = 0; i < channels*width; i++ ) {
-        bg[i] = ( T ) bgValue[i%channels];
+        bg[i] = ( tBuf ) bgValue[i%channels];
     }
     Line workLine ( bg, maskLine, channels, width );
 
-    T* transparent;
+    tBuf* transparent;
     if ( transparentValue != NULL ) {
-        transparent = new T[3];
+        transparent = new tBuf[3];
         for ( int i = 0; i < 3; i++ ) {
-            transparent[i] = ( T ) transparentValue[i];
+            transparent[i] = ( tBuf ) transparentValue[i];
         }
     }
 
@@ -128,7 +129,7 @@ int MergeImage::_getline ( T* buffer, int line ) {
     delete [] imageLine;
     delete [] maskLine;
 
-    return width*channels*sizeof ( T );
+    return width*channels*sizeof( tBuf );
 }
 
 /* Implementation de getline pour les uint8_t */
@@ -168,9 +169,8 @@ MergeImage* MergeImageFactory::createMergeImage ( std::vector< Image* >& images,
     return new MergeImage ( images, channels, bgValue, transparentValue, composition );
 }
 
-
-int MergeMask::_getline ( uint8_t* buffer, int line ) {
-
+/* Implementation de getline pour les uint8_t */
+int MergeMask::getline ( uint8_t* buffer, int line ) {
     memset ( buffer,0,width );
 
     uint8_t* buffer_m = new uint8_t[width];
@@ -199,18 +199,15 @@ int MergeMask::_getline ( uint8_t* buffer, int line ) {
     return width;
 }
 
-/* Implementation de getline pour les uint8_t */
-int MergeMask::getline ( uint8_t* buffer, int line ) {
-    return _getline ( buffer, line );
-}
+
 
 /* Implementation de getline pour les float */
 int MergeMask::getline ( float* buffer, int line ) {
     uint8_t* buffer_t = new uint8_t[width*channels];
-    getline ( buffer_t,line );
+    int retour = getline ( buffer_t,line );
     convert ( buffer,buffer_t,width*channels );
     delete [] buffer_t;
-    return width*channels;
+    return retour;
 }
 
 namespace Merge {

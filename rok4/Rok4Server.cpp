@@ -353,7 +353,8 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     //Use background image format.
     Rok4Format::eformat_data pyrType = layers.at ( 0 )->getDataPyramid()->getFormat();
     image = images.at ( 0 );
-    if ( images.size() > 1  || (styles.at( 0 ) && (styles.at( 0 )->isEstompage() || !styles.at( 0 )->getPalette()->getColoursMap()->empty()) ) ) {
+    //if ( images.size() > 1  || (styles.at( 0 ) && (styles.at( 0 )->isEstompage() || !styles.at( 0 )->getPalette()->getColoursMap()->empty()) ) ) {
+    if ( (styles.at( 0 ) && (styles.at( 0 )->isEstompage() || !styles.at( 0 )->getPalette()->getColoursMap()->empty()) ) ) {
 
         switch ( pyrType ) {
             //Only use int8 output with estompage
@@ -377,28 +378,59 @@ DataStream* Rok4Server::getMap ( Request* request ) {
 
         MergeImageFactory MIF;
         int spp = images.at ( 0 )->channels;
-
-        int bg[spp];
-        
-        switch(spp) {
-            case 1:
-                bg[0] = 255;
-                break;
-            case 2:
-                bg[0] = 255; bg[1] = 0;
-                break;
-            case 3:
-                bg[0] = 255; bg[1] = 255; bg[2] = 255;
-                break;
-            case 4:
-                bg[0] = 255; bg[1] = 255; bg[2] = 255; bg[4] = 0;
-                break;
-            default:
-                memset(bg, 0, sizeof(int) * spp);
-                break;                
-        }
-        
-        image = MIF.createMergeImage ( images, spp, bg, NULL, Merge::ALPHATOP );
+	int bg[spp];
+	int transparentColor[spp];
+	
+	switch (pyrType) {
+	  case Rok4Format::TIFF_RAW_FLOAT32 :
+	  case Rok4Format::TIFF_ZIP_FLOAT32 :
+	  case Rok4Format::TIFF_LZW_FLOAT32 :
+	  case Rok4Format::TIFF_PKB_FLOAT32 :
+	    switch(spp) {
+	      case 1:
+		  bg[0] = -99999.0;
+		  break;
+	      case 2:
+		  bg[0] = -99999.0; bg[1] = 0;
+		  break;
+	      case 3:
+		  bg[0] = -99999.0; bg[1] = -99999.0; bg[2] = -99999.0;
+		  break;
+	      case 4:
+		  bg[0] = -99999.0; bg[1] = -99999.0; bg[2] = -99999.0; bg[4] = 0;
+		  break;
+	      default:
+		  memset(bg, 0, sizeof(int) * spp);
+		  break;                
+	    }
+	    memccpy(transparentColor, bg, spp, sizeof(int));
+	    break;
+	  case Rok4Format::TIFF_RAW_INT8 :
+	  case Rok4Format::TIFF_ZIP_INT8 :
+	  case Rok4Format::TIFF_LZW_INT8 :
+	  case Rok4Format::TIFF_PKB_INT8 :
+	  default :
+	    switch(spp) {
+	      case 1:
+		  bg[0] = 255;
+		  break;
+	      case 2:
+		  bg[0] = 255; bg[1] = 0;
+		  break;
+	      case 3:
+		  bg[0] = 255; bg[1] = 255; bg[2] = 255;
+		  break;
+	      case 4:
+		  bg[0] = 255; bg[1] = 255; bg[2] = 255; bg[4] = 0;
+		  break;
+	      default:
+		  memset(bg, 0, sizeof(uint8_t) * spp);
+		  break;                
+	    }
+	    break;
+	}
+	
+	image = MIF.createMergeImage(images,spp,bg,transparentColor,Merge::ALPHATOP);
 
         if ( image == NULL ) {
             LOGGER_ERROR ( "Impossible de fusionner les images des differentes couches" );

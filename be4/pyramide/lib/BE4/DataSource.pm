@@ -462,12 +462,6 @@ sub hasHarvesting {
     return (defined $self->{harvesting});
 }
 
-# Function: removeHarvesting
-sub removeHarvesting {
-    my $self = shift;
-    $self->{harvesting} = undef;
-}
-
 # Function: getBottomID
 sub getBottomID {
     my $self = shift;

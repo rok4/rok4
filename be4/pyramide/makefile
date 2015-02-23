@@ -36,19 +36,11 @@ buildbin: \
         done)
 	
 
-install: builddir.inst buildconf.inst buildinstall.inst
+install: builddir.inst buildinstall.inst
 
 %.inst: %
 	@ echo "> Ok, Install $* !" ;
 
-buildconf: \
-./conf/params.properties \
-./conf/be4.properties
-	@(for p in $^ ; do \
-	        if [ `echo $$p|grep -E 'properties'` ] ; then \
-	                cp $$p $(BE4_CONF) ;\
-	        fi; \
-	done)
 
 builddir:
 	@(if [ ! -d $(BE4_ENV) ] ; then \

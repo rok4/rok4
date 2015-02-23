@@ -161,8 +161,8 @@ private:
      * \param[in] line Indice de la ligne à retourner (0 <= line < height)
      * \return taille utile du buffer, 0 si erreur
      */
-    template<typename T>
-    int _getline ( T* buffer, int line );
+    template <typename tBuf>
+    int _getline ( tBuf* buffer, int line );
 
 protected:
 
@@ -199,8 +199,8 @@ protected:
 
 public:
 
-    virtual int getline ( float* buffer, int line );
     virtual int getline ( uint8_t* buffer, int line );
+    virtual int getline ( float* buffer, int line );
 
     /**
      * \~french
@@ -260,6 +260,9 @@ public:
     }
 };
 
+
+
+
 /** \~ \author Institut national de l'information géographique et forestière
  ** \~french
  * \brief Usine de création d'une image fusionnée
@@ -302,15 +305,6 @@ private:
      * \~english \brief Merged images, with which merged mask is associated
      */
     MergeImage* MI;
-
-    /** \~french
-     * \brief Retourne une ligne entière
-     * \details Lors ce que l'on veut récupérer une ligne d'un masque fusionné, on va se reporter sur tous les masques des images source de l'image fusionnée associée. Si une des images sources n'a pas de masque, on considère que celle-ci est pleine (ne contient pas de non-donnée).
-     * \param[out] buffer Tableau contenant au moins width*channels valeurs
-     * \param[in] line Indice de la ligne à retourner (0 <= line < height)
-     * \return taille utile du buffer, 0 si erreur
-     */
-    int _getline ( uint8_t* buffer, int line );
 
 public:
     /** \~french
