@@ -207,7 +207,7 @@ public:
 
     Image *NoDataOnDemand(std::string bLevel, BoundingBox<double> bbox);
 
-    Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format, int channels, bool onDemand, bool transparent, Style *style);
+    Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format, int channels, bool onDemand);
 
     ~Pyramid();
 

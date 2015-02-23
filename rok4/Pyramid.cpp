@@ -56,9 +56,9 @@
 #include "EmptyImage.h"
 
 Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format,
-                   int channels, bool onDemand, bool transparent, Style *style)
+                   int channels, bool onDemand)
     : levels ( levels ), tms ( tms ), format ( format ), channels ( channels ),
-      onDemand ( onDemand ), transparent ( transparent ), style ( style ) {
+      onDemand ( onDemand ) {
 
     std::map<std::string, Level*>::iterator itLevel;
     double minRes= DBL_MAX;

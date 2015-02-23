@@ -1215,7 +1215,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         return NULL;
     }
 
-    Pyramid *pyr = new Pyramid ( levels, *tms, format, channels, onDemand, transparent, style );
+    Pyramid *pyr = new Pyramid ( levels, *tms, format, channels, onDemand );
 
     if (onDemand) {
         if (levels.size() != 0 && aLevel.size() != 0) {
