@@ -1280,6 +1280,7 @@ sub writeListPyramid {
     
     # Hash to bind ID and root directory
     my %newCacheRoots;
+    
     # Hash to count root's uses (to remove useless roots)
     my %newCacheRootsUse;
     
@@ -1287,7 +1288,7 @@ sub writeListPyramid {
     if (! $self->isNewPyramid) {
         
         my $OLDLIST;
-
+        
         if (! open $OLDLIST, "<", $self->getOldListFile) {
             ERROR(sprintf "Cannot open old pyramid list file : %s",$self->getOldListFile);
             return FALSE;
@@ -1315,14 +1316,14 @@ sub writeListPyramid {
         
         while( defined( my $oldtile = <$OLDLIST> ) ) {
             chomp $oldtile;
-            
+                        
             # old tile path is split. Afterwards, only array will be used to compose paths
             my @directories = File::Spec->splitdir($oldtile);
             # @directories = [ RootID, dir_name, levelID, ..., XY.tif]
             #                    0        1        2      3  ... n
             
             # ID 0 is kept for the new pyramid root, ID is incremented
-            $directories[0]++;
+                $directories[0]++;
             
             my ($level,$x,$y);
 
@@ -1347,7 +1348,11 @@ sub writeListPyramid {
             if (! $forest->containsNode($level,$x,$y)) {
                 # This image is not in the forest, it won't be modified by this generation.
                 # We add it now to the list (real file path)
-                printf $NEWLIST "%s\n", File::Spec->catdir(@directories);
+                my $newTileFileName = File::Spec->catdir(@directories);
+                if ($self->{old_pyramid}->{reference_mode} eq 'hlink' || $self->{old_pyramid}->{reference_mode} eq 'copy') {
+                    $newTileFileName =~ s/^[0-9]*\//0\//;
+                }
+                printf $NEWLIST "%s\n", $newTileFileName;
                 # Root is used : we incremente its counter
                 $newCacheRootsUse{$directories[0]}++;
             }
@@ -1417,12 +1422,17 @@ sub writeListPyramid {
         return FALSE;
     }
     
-    while( my ($rootID,$root) = each(%newCacheRoots) ) {
-        if ($newCacheRootsUse{$rootID} > 0) {
-            # Used roots are written in the header
-            unshift @NEWLIST,(sprintf "%s=%s",$rootID,$root);
-        } else {
-            INFO (sprintf "The old pyramid '%s' is no longer used.", $root)
+    if ($self->{old_pyramid}->{reference_mode} eq 'slink') {
+        while( my ($rootID,$root) = each(%newCacheRoots) ) {
+            if ($newCacheRootsUse{$rootID} > 0) {
+                # Used roots are written in the header
+                
+                INFO (sprintf "%s is used %d times", $root, $newCacheRootsUse{$rootID});
+                
+                unshift @NEWLIST,(sprintf "%s=%s",$rootID,$root);
+            } else {
+                INFO (sprintf "The old pyramid '%s' is no longer used.", $root)
+            }
         }
     }
     
