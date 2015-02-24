@@ -1388,18 +1388,21 @@ sub writeListPyramid {
             my $reloldtile = File::Spec->abs2rel($oldtile, $dir);
 
             if ($self->{old_pyramid}->{reference_mode} eq 'slink') {
+                DEBUG(sprintf "Creating symbolic link from %s to %s", $oldtile, $newtile);
                 my $result = eval { symlink ($reloldtile, $newtile); };
                 if (! $result) {
                     ERROR (sprintf "The tile '%s' can not be soft linked to '%s' (%s)",$reloldtile,$newtile,$!);
                     return FALSE;
                 }
             } elsif ($self->{old_pyramid}->{reference_mode} eq 'hlink') {
+                DEBUG(sprintf "Creating hard link from %s to %s", $oldtile, $newtile);
                 my $result = eval { link ($oldtile, $newtile); };
                 if (! $result) {
                     ERROR (sprintf "The tile '%s' can not be hard linked to '%s' (%s)",$oldtile,$newtile,$!);
                     return FALSE;
                 }
             } elsif ($self->{old_pyramid}->{reference_mode} eq 'copy') {
+                DEBUG(sprintf "Copying tile from %s to %s", $newtile, $oldtile);
                 my $result = eval { copy($oldtile, $newtile); };
                 if (! $result) {
                     ERROR (sprintf "The tile '%s' can not be copied to '%s' (%s)",$oldtile,$newtile,$!);
