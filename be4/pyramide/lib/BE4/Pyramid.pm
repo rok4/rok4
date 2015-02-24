@@ -2072,7 +2072,7 @@ And details about each level.
 
 For a new pyramid, all level between top and bottom are saved into.
 
-For an update, all level of the existing pyramid are duplicated and we add new levels (between otp and bottom levels). For levels which are present in the old and the new pyramids, we update TMS limits.
+For an update, all level of the existing pyramid are duplicated and we add new levels (between top and bottom levels). For levels which are present in the old and the new pyramids, we update TMS limits.
 
 Cache's List:
 
@@ -2129,7 +2129,8 @@ For a new pyramid, the directory structure is empty, only the level directory fo
     (end code)
 
 For an existing pyramid, the directory structure is duplicated to the new pyramid with all file linked, thanks to the old cache list.
-The kind of linking can be chosen between symbolic link (default), hard link and hard copy.
+The kind of linking can be chosen between symbolic link (default), hard link (does not work if the new pyramid and the old one are stored in different file systems)
+ and hard copy.
     (start code)
     pyr_data_path/
             |__pyr_name_new/
