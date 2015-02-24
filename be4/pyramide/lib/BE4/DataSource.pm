@@ -258,11 +258,7 @@ sub _load {
     # ImageSource is optionnal
     my $imagesource = undef;
     if (exists $params->{path_image}) {
-        $imagesource = BE4::ImageSource->new({
-            srs => $self->{srs},
-            path_image => $params->{path_image},
-            path_metadata => $params->{path_metadata},
-        });
+        $imagesource = BE4::ImageSource->new($params);
         if (! defined $imagesource) {
             ERROR("Cannot create the ImageSource object");
             return FALSE;
@@ -273,19 +269,7 @@ sub _load {
     # Harvesting is optionnal, but if we have 'wms_layer' parameter, we suppose that we have others
     my $harvesting = undef;
     if (exists $params->{wms_layer}) {
-        $harvesting = BE4::Harvesting->new({
-            wms_layer   => $params->{wms_layer},
-            wms_url     => $params->{wms_url},
-            wms_version => $params->{wms_version},
-            wms_request => $params->{wms_request},
-            wms_format  => $params->{wms_format},
-            wms_style => $params->{wms_style},
-            wms_bgcolor => $params->{wms_bgcolor},
-            wms_transparent  => $params->{wms_transparent},
-            min_size  => $params->{min_size},
-            max_width  => $params->{max_width},
-            max_height  => $params->{max_height}
-        });
+        $harvesting = BE4::Harvesting->new($params);
         if (! defined $harvesting) {
             ERROR("Cannot create the Harvesting object");
             return FALSE;

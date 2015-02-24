@@ -393,6 +393,8 @@ sub checkParams {
     if (! defined $datasource) {
         ERROR("Parameters Datasource can not be null !");
         return FALSE;
+    } elsif (defined $datasource->{preprocess_command} && !defined $datasource->{preprocess_tmp_dir}) {
+        ERROR("When a preprocessing command is specified, parameter preprocess_tmp_dir cannot be null.");
     }
     
     # process
@@ -655,6 +657,13 @@ Example:
 Topic: datasource
 
     filepath_conf - Complete file path to configuration file for data sources (*/home/ign/SOURCE/sources.txt*)
+    preprocess_command - String (optionnal) - call to a program to preprocess input images (absent if no preprocessing)
+    preprocess_opt_beg - String (optionnal) - options for the command call. These will be placed before the filenames
+    preprocess_opt_mid - String (optionnal) - options for the command call. These will be placed between the input filename and the output filename
+    preprocess_opt_end - String (optionnal) - options for the command call. These will be placed after the filenames
+    preprocess_tmp_dir - String (mandatory if preprocess_command is present) - The path where preprocessed images will be written
+    Example : the function call (if present) will be 
+        |     preprocess_command [preprocess_opt_beg] datasource.dir/input-image.tif [preprocess_opt_mid] preprocess_tmp_dir/input-image.tif [preprocess_opt_end]
 
 Example:
     (start code)
