@@ -188,7 +188,7 @@ sub _init {
     return FALSE if (! defined $datasource);
     
     if (exists($datasource->{path_image})) {
-        WARN("Old method is using to define a datasource (without datasource configuration file), convert it.");
+        WARN("Old method is used to define a datasource (without datasource configuration file), convert it.");
         return TRUE;
     }
     

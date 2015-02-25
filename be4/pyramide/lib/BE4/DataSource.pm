@@ -182,7 +182,7 @@ sub new {
         # Image source
         imageSource => undef,
         # Harvesting
-        harvesting => undef
+        harvesting => undef,
     };
 
     bless($self, $class);

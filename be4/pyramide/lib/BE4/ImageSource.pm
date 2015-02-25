@@ -137,6 +137,10 @@ sub new {
         bestResY => undef,
         #
         pixel => undef,
+        
+        # Preprocessing
+        preprocess_command => [],
+        preprocess_tmp_dir => undef,
     };
 
     bless($self, $class);
@@ -177,6 +181,31 @@ sub _init {
     $self->{PATHIMG} = $params->{path_image} if (exists($params->{path_image})); 
     $self->{PATHMTD} = $params->{path_metadata} if (exists($params->{path_metadata}));
     $self->{srs} = $params->{srs};
+    if (exists($params->{preprocess_command})) {
+        if (exists($params->{preprocess_tmp_dir})) {
+            $self->{preprocess_tmp_dir} = $params->{preprocess_tmp_dir};
+        } else {
+            ERROR ("If a preprocessing command is provided, a temporary directory to store preprocessed images must be provided as well.");
+            return FALSE;
+        }
+        $self->{preprocess_command}[0] = $params->{preprocess_command};
+        if (exists($params->{preprocess_opt_beg}) && defined ($params->{preprocess_opt_beg})){
+            $self->{preprocess_command}[1] = ' '.$params->{preprocess_opt_beg};
+        } else {
+            $self->{preprocess_command}[1] = ' ';
+        }
+        if (exists($params->{preprocess_opt_mid}) && defined ($params->{preprocess_opt_mid})){
+            $self->{preprocess_command}[2] = ' '.$params->{preprocess_opt_mid};
+        } else {
+            $self->{preprocess_command}[2] = ' ';
+        }
+        if (exists($params->{preprocess_opt_end}) && defined ($params->{preprocess_opt_end})){
+            $self->{preprocess_command}[3] = ' '.$params->{preprocess_opt_end};
+        } else {
+            $self->{preprocess_command}[3] = '';
+        }
+        # command = $self->{preprocess_command}[0].$self->{preprocess_command}[1].' '.$self->{PATHIMG}."imageName.ext".$self->{preprocess_command}[2].' '.$self->{preprocess_tmp_dir}."imageName.ext".$self->{preprocess_command}[3];
+    }
     
     if (! defined ($self->{PATHIMG}) || ! -d $self->{PATHIMG}) {
         ERROR (sprintf "Directory image ('%s') doesn't exist !",$self->{PATHIMG});
@@ -187,6 +216,8 @@ sub _init {
         ERROR ("Directory metadata doesn't exist !");
         return FALSE;
     }
+    
+    
 
     return TRUE;
 
