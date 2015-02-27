@@ -510,7 +510,7 @@ sub setImagePath {
   my $imagePath = shift;
 
   if (! defined $imagePath) {
-    ERROR("Cannot set image path to 'undef'.")
+    ERROR("Cannot set image path to 'undef'.");
     return FALSE; 
   }
 

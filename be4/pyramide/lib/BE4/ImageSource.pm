@@ -82,6 +82,8 @@ use warnings;
 use Log::Log4perl qw(:easy);
 use List::Util qw(min max);
 
+use File::Path;
+
 use BE4::GeoImage;
 use BE4::Pixel;
 
@@ -265,6 +267,10 @@ sub computeImageSource {
     if (defined $self->{preprocess_tmp_dir}) {
         $ppsPath = $self->{preprocess_tmp_dir};
         $isPreProcessed = TRUE;
+        if (! make_path($ppsPath)){
+                ERROR("Unable to create directory '$ppsPath'.");
+                return FALSE;
+            }
     }
     
     foreach my $filepath (@listGeoImagePath) {
@@ -291,6 +297,12 @@ sub computeImageSource {
             $prePsFilePath =~ s/$imgPath/$ppsPath/;
             INFO(sprintf "Preprocessing image '%s'.", $filepath);
             my $commandCall = $self->{preprocess_command}[0].$self->{preprocess_command}[1].' '.$filepath.$self->{preprocess_command}[2].' '.$prePsFilePath.$self->{preprocess_command}[3];
+            
+            if (! make_path($prePsFilePath)){
+                ERROR("Unable to create directory '$prePsFilePath'.");
+                return FALSE;
+            }
+
             DEBUG("Calling command :\n$commandCall");
             if (! system($commandCall) == 0) {
                 ERROR (sprintf "Unable to preprocess image '%s'.\nFailed command : %s\nStack trace : %s", $filepath, $commandCall, $?);
