@@ -258,10 +258,20 @@ sub computeImageSource {
     my $pixel = undef;
     my $bestResX = undef;
     my $bestResY = undef;
+    my $ppsPath = undef;
+    my $isPreProcessed = FALSE;
 
+    my $imgPath = $self->{PATHIMG};
+    if (defined $self->{preprocess_tmp_dir}) {
+        $ppsPath = $self->{preprocess_tmp_dir};
+        $isPreProcessed = TRUE;
+    }
+    
     foreach my $filepath (@listGeoImagePath) {
 
-        my $objGeoImage = BE4::GeoImage->new($filepath);
+        my $prePsFilePath = undef;
+
+                my $objGeoImage = BE4::GeoImage->new($filepath);
 
         if (! defined $objGeoImage) {
             ERROR ("Can not load image source ('$filepath') !");
@@ -274,6 +284,22 @@ sub computeImageSource {
         if (! @imageInfo) {
             ERROR ("Can not read image info ('$filepath') !");
             return FALSE;
+        }
+
+        if ($isPreProcessed == TRUE) {
+            $prePsFilePath = $filepath;
+            $prePsFilePath =~ s/$imgPath/$ppsPath/;
+            INFO(sprintf "Preprocessing image '%s'.", $filepath);
+            my $commandCall = $self->{preprocess_command}[0].$self->{preprocess_command}[1].' '.$filepath.$self->{preprocess_command}[2].' '.$prePsFilePath.$self->{preprocess_command}[3];
+            DEBUG("Calling command :\n$commandCall");
+            if (! system($commandCall) == 0) {
+                ERROR (sprintf "Unable to preprocess image '%s'.\nFailed command : %s\nStack trace : %s", $filepath, $commandCall, $?);
+                return FALSE;
+            }
+            if(! $objGeoImage->setImagePath($prePsFilePath)){
+                ERROR(sprintf "Could not change image path '%s' to preprocessed image path '%s'.", $imgPath, $prePsFilePath);
+                return FALSE;
+            }
         }
 
         if (! defined $pixel) {
