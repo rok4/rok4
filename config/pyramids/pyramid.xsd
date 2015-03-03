@@ -11,7 +11,24 @@
                 <xs:element name="nodataValue" type="xs:string" minOccurs="0"/>
                 <xs:element name="interpolation" type="imageInterpolation" minOccurs="0"/>
                 <xs:element name="photometric" type="imagePhotometric" minOccurs="0"/>
-                
+                <xs:element name="basedPyramids">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="basedPyramid" minOccurs="1" maxOccurs="unbounded">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <!-- fichier de descripteur de la pyramide ciblée -->
+                                        <xs:element name="file"     type="xs:string"/>
+                                        <!-- style que l'on veut appliquer -->
+                                        <xs:element name="style"     type="xs:string"/>
+                                        <!-- transparence -->
+                                        <xs:element name="transparent"     type="xs:boolean"/>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
                 <xs:element name="level" minOccurs="1" maxOccurs="unbounded">
                     <xs:complexType>
                         <xs:sequence>
