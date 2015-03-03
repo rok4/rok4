@@ -267,10 +267,7 @@ sub computeImageSource {
     if (defined $self->{preprocess_tmp_dir}) {
         $ppsPath = $self->{preprocess_tmp_dir};
         $isPreProcessed = TRUE;
-        if (! make_path($ppsPath)){
-                ERROR("Unable to create directory '$ppsPath'.");
-                return FALSE;
-            }
+        make_path($ppsPath);
     }
     
     foreach my $filepath (@listGeoImagePath) {
@@ -298,10 +295,7 @@ sub computeImageSource {
             INFO(sprintf "Preprocessing image '%s'.", $filepath);
             my $commandCall = $self->{preprocess_command}[0].$self->{preprocess_command}[1].' '.$filepath.$self->{preprocess_command}[2].' '.$prePsFilePath.$self->{preprocess_command}[3];
             
-            if (! make_path($prePsFilePath)){
-                ERROR("Unable to create directory '$prePsFilePath'.");
-                return FALSE;
-            }
+            make_path(File::Basename::dirname($prePsFilePath));
 
             DEBUG("Calling command :\n$commandCall");
             if (! system($commandCall) == 0) {
