@@ -82,7 +82,7 @@ use warnings;
 use Log::Log4perl qw(:easy);
 use List::Util qw(min max);
 
-use File::Path;
+use File::Path qw(make_path);
 
 use BE4::GeoImage;
 use BE4::Pixel;
