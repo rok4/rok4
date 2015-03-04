@@ -226,11 +226,11 @@ private:
     /**
      * \~french
      * \brief Applique un style à une image
-     * \param[in] image
+     * \param[in] image à styliser
      * \param[in] pyrType format des tuiles de la pyramide
      * \param[in] style style demandé par le client
      * \param[in] format demandé par le client
-     * \param[in] size nombre d'images concerné par le processus global où est appelé cette fonction
+     * \param[in] size nombre d'images concernées par le processus global où est appelé cette fonction
      * \return image stylisée
      * \~english
      * \brief Apply a style to an image

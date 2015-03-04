@@ -233,12 +233,16 @@ private:
      * \param[in] doc Racine du document XML
      * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
      * \param[in] tmsList liste des TileMatrixSets connus
+     * \param[in] times vrai si premier appel, faux sinon
+     * \param[in] stylesList liste des styles disponibles
      * \return un pointeur vers la Pyramid nouvellement instanciée, NULL en cas d'erreur
      * \~english
      * \brief Create a new Pyramid from its XML representation
      * \param[in] doc XML root
      * \param[in] fileName original filename, used as identifier
      * \param[in] tmsList known TileMatrixSets
+     * \param[in] times true if first call, false in other cases
+     * \param[in] stylesList available style list
      * \return pointer to the newly created Pyramid, NULL if something went wrong
      */
     static Pyramid* parsePyramid (TiXmlDocument* doc, std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times , std::map<std::string, Style *> stylesList);
@@ -247,11 +251,15 @@ private:
      * \brief Création d'une Pyramide à partir d'un fichier
      * \param[in] fileName Nom du fichier, utilisé comme identifiant
      * \param[in] tmsList liste des TileMatrixSet connus
+     * \param[in] tmsList liste des TileMatrixSets connus
+     * \param[in] times vrai si premier appel, faux sinon
      * \return un pointeur vers la Pyramid nouvellement instanciée, NULL en cas d'erreur
      * \~english
      * \brief Create a new Pyramid from a file
      * \param[in] fileName filename, used as identifier
      * \param[in] tmsList known TileMatrixSets
+     * \param[in] times true if first call, false in other cases
+     * \param[in] stylesList available style list
      * \return pointer to the newly created Pyramid, NULL if something went wrong
      */
     static Pyramid* buildPyramid (std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times , std::map<std::string, Style *> stylesList);

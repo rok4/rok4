@@ -60,45 +60,83 @@ class Pyramid {
 
 private:
 
-    //Liste des différents niveaux de la pyramide
+    /**
+     * \~french \brief Liste des différents niveaux de la pyramide
+     * \~english \brief List of the different level
+     */
     std::map<std::string, Level*> levels;
 
-    //TileMatrixSet des données
+    /**
+     * \~french \brief TileMatrixSet des données
+     * \~english \brief TileMatrixSet of the data
+     */
     const TileMatrixSet tms;
 
-    //Format des tuiles
+    /**
+     * \~french \brief Format des tuiles
+     * \~english \brief Format of the tiles
+     */
     const Rok4Format::eformat_data format;
 
-    //Nombre de canaux pour les tuiles
+    /**
+     * \~french \brief Nombre de canaux pour les tuiles
+     * \~english \brief Number of channels for the tiles
+     */
     const int channels;
 
-    //Référence au niveau le plus haut
+    /**
+     * \~french \brief Référence au niveau le plus haut
+     * \~english \brief Reference to the highest level
+     */
     Level* highestLevel;
 
-    //Référence au niveau le plus bas
+    /**
+     * \~french \brief Référence au niveau le plus bas
+     * \~english \brief Reference to the lowest level
+     */
     Level* lowestLevel;
 
-    //Indique si la pyramide contient des tuiles déjà pré-calculées (false)
-    //  ou si elle est à la demande, donc calcule des tuiles sur demande (true)
+    /**
+     * \~french \brief Indique si la pyramide contient des tuiles déjà pré-calculées (false)
+     * ou si elle est à la demande, donc calcule des tuiles sur demande (true)
+     * \~english \brief Indicate if the pyramid has tiles (false)
+     * or if tiles are generated on demand (true)
+     */
     bool onDemand;
 
-    //Si une pyramide est à la demande,
-    //  alors elle doit pouvoir tirer ses informations d'une autre pyramide
-    //  Cet attribut contient donc la liste des pyramides de base utilisées
-    //  pour générer la vraie pyramide
-    //  Sachant qu'une pyramide de base ne peut pas en contenir à son tour
+    /**
+     * \~french \brief Si une pyramide est à la demande,
+     * alors elle doit pouvoir tirer ses informations d'une autre pyramide
+     * Cet attribut contient donc la liste des pyramides de base utilisées
+     * pour générer la vraie pyramide
+     * Sachant qu'une pyramide de base ne peut pas en contenir à son tour
+     * \~english \brief If a pyramid is onDemand
+     * it must contain a reference to other pyramids which have data
+     * This is the list of those pyramids
+     * They can't be onDemand
+     */
     std::vector<Pyramid*> basedPyramids;
 
-    //Indique si la pyramide peut avoir de la transparence
-    //  utilisé seulement pour une pyramide de base
-    //  ne posséde pour le moment aucun intérêt pour une pyramide normale
-    //  ou une pyramide à la demande
+    /**
+     * \~french \brief Indique si la pyramide peut avoir de la transparence
+     * utilisé seulement pour une pyramide de base
+     * ne posséde pour le moment aucun intérêt pour une pyramide normale
+     * ou une pyramide à la demande
+     * \~english \brief Indicate if a pyramid can have transparency
+     * It is used only for based pyramid
+     * There are no use for a normal pyramid or a OnDemand pyramid
+     */
     bool transparent;
 
-    //Indique si la pyramide a un style
-    //  utilisé seulement pour une pyramide de base
-    //  ne posséde pour le moment aucun intérêt pour une pyramide normale
-    //  ou une pyramide à la demande
+    /**
+     * \~french \brief Indique si la pyramide a un style
+     * utilisé seulement pour une pyramide de base
+     * ne posséde pour le moment aucun intérêt pour une pyramide normale
+     * ou une pyramide à la demande
+     * \~english \brief Indicate if a pyramid have a style
+     * It is used only for based pyramid
+     * There are no use for a normal pyramid or a OnDemand pyramid
+     */
     Style *style;
 
     //C'est un tableau à double entrée qui contient une association des levels de
@@ -123,92 +161,263 @@ private:
     //
     //  On trouvera une utilisation de cet attribut dans    ConfLoader.cpp -> parsePyramid() = initialisation
     //                                                      Rok4Server.cpp -> GetTileOnDemand() = lecture
+    /**
+     * \~french \brief Si une pyramide est à la demande
+     * Ce tableau a double entrée fait l'association entre les niveaux
+     * théoriques de la pyramide et ceux des pyramides de bases associées
+     * Cela ne posséde pour le moment aucun intérêt pour une pyramide normale
+     * ou une pyramide à la demande
+     * \~english \brief If a pyramid is onDemand
+     * This table contain the association between the levels of this pyramid
+     * and the level of the basedPyramids
+     */
     std::map<std::string, std::map<std::string, std::string> > aLevel;
 
-    //    DataStream* nodatastream;
-
-    //    std::map<std::string, DataSource*> noDataSources;
-
+    /**
+     * \~french \brief Teste si deux CRS sont équivalent
+     * \param[in] CRS1
+     * \param[in] CRS2
+     * \param[in] listofequalsCRS liste des CRS équivalents
+     * \~english \brief Test if two CRS are equal
+     * \param[in] CRS1
+     * \param[in] CRS2
+     * \param[in] listofequalsCRS
+     */
     bool are_the_two_CRS_equal( std::string crs1, std::string crs2, std::vector<std::string> listofequalsCRS );
 
 public:
 
+    /**
+     * \~french \brief Récupère le premier niveau
+     * \return level premier niveau
+     * \~english \brief Get the first level
+     * \return level first level
+     */
     Level* getFirstLevel();
 
+    /**
+     * \~french \brief Récupère le plus haut niveau
+     * \return level plus haut niveau
+     * \~english \brief Get the highest level
+     * \return level highest level
+     */
     Level* getHighestLevel() {
         return highestLevel;
     }
 
+    /**
+     * \~french \brief Récupère le plus bas niveau
+     * \return level plus bas niveau
+     * \~english \brief Get the lowest level
+     * \return level lowest level
+     */
     Level* getLowestLevel() {
         return lowestLevel;
     }
 
+    /**
+     * \~french \brief Récupère le TMS
+     * \return TileMatrixSet
+     * \~english \brief Get the TMS
+     * \return TileMatrixSet
+     */
     TileMatrixSet getTms();
 
+    /**
+     * \~french \brief Récupère les niveaux
+     * \return Liste de level
+     * \~english \brief Get the levels
+     * \return List of level
+     */
     std::map<std::string, Level*>& getLevels() {
         return levels;
     }
 
+    /**
+     * \~french \brief Récupère le format
+     * \return format
+     * \~english \brief Get the format
+     * \return format
+     */
     Rok4Format::eformat_data getFormat() {
         return format;
     }
 
+    /**
+     * \~french \brief Récupère le nombre de canaux d'une tuile
+     * \return nombre de canaux
+     * \~english \brief Get the number of channels of a tile
+     * \return number of channels
+     */
     int getChannels() {
         return channels;
     }
 
+    /**
+     * \~french \brief Indique si la pyramide est à la demande
+     * \return onDemand
+     * \~english \brief Indicate if the pyramid is onDemand
+     * \return onDemand
+     */
     bool getOnDemand(){
         return onDemand;
     }
 
+    /**
+     * \~french \brief Modifie le paramètre onDemand
+     * \param[in] booleen
+     * \~english \brief Modify onDemand
+     * \param[in] boolean
+     */
     void setOnDemand (bool od) {
         onDemand = od;
     }
 
+    /**
+     * \~french \brief Récupère la transparence
+     * \return booleen
+     * \~english \brief Get the transparency
+     * \return boolean
+     */
     bool getTransparent(){
         return transparent;
     }
-
+    /**
+     * \~french \brief Modifie la transparence
+     * \param[in] booleen
+     * \~english \brief Set the transparency
+     * \param[in] boolean
+     */
     void setTransparent (bool tr) {
         transparent = tr;
     }
 
+    /**
+     * \~french \brief Récupère le style
+     * \return style
+     * \~english \brief Get the style
+     * \return style
+     */
     Style *getStyle(){
         return style;
     }
 
+    /**
+     * \~french \brief Modifie le style
+     * \param[in] style
+     * \~english \brief Set the style
+     * \param[in] style
+     */
     void setStyle (Style * st) {
         style = st;
     }
 
+    /**
+     * \~french \brief Récupère la liste des pyramides de base
+     * \return Liste de pyramides de base
+     * \~english \brief Get the based pyramids list
+     * \return List of based pyramids
+     */
     std::vector<Pyramid*> getBPyramids(){
         return basedPyramids;
     }
 
+    /**
+     * \~french \brief Modifie la liste des pyramides de base
+     * \param[in] Liste de pyramides de base
+     * \~english \brief Set the list of based pyramids
+     * \param[in] List of based pyramids
+     */
     void setBPyramids (std::vector<Pyramid*> bp) {
         basedPyramids = bp;
     }
 
+    /**
+     * \~french \brief Récupère les niveaux associés
+     * \return Liste des niveaux associés
+     * \~english \brief Get the associated levels
+     * \return List of associated levels
+     */
     std::map<std::string, std::map<std::string, std::string> > getALevel(){
         return aLevel;
     }
 
+    /**
+     * \~french \brief Modifie la liste des niveaux associés
+     * \param[in] Liste des niveaux associés
+     * \~english \brief Set the associated levels
+     * \param[in] List of associated levels
+     */
     void setALevel (std::map<std::string, std::map<std::string, std::string> > aL) {
         aLevel = aL;
     }
 
+    /**
+     * \~french \brief Récupère le meilleur niveau pour une résolution donnée
+     * \param[in] résolution en x
+     * \param[in] résolution en y
+     * \param[in] onDemand
+     * \~english \brief Get the best level for the given resolution
+     * \param[in] resolution in x
+     * \param[in] resolution in y
+     * \param[in] onDemand
+     */
     std::string best_level ( double resolution_x, double resolution_y, bool onDemand );
 
+    /**
+     * \~french \brief Récupère une tuile déjà calculée
+     * \param[in] x
+     * \param[in] y
+     * \param[in] ID du TileMatrix
+     * \~english \brief Get a tile
+     * \param[in] x
+     * \param[in] y
+     * \param[in] ID of the TileMatrix
+     */
     DataSource* getTile ( int x, int y, std::string tmId, DataSource* errorDataSource = NULL );
 
+    /**
+     * \~french \brief Récupère une image
+     * \~english \brief Get an image
+     */
     Image* getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error );
 
+    /**
+     * \~french \brief Créé une image reprojetée
+     * \~english \brief Create a reprojected image
+     */
     Image *createReprojectedImage(std::string l, BoundingBox<double> bbox, CRS dst_crs, ServicesConf& servicesConf, int width, int height, Interpolation::KernelType interpolation, int error);
 
+    /**
+     * \~french \brief Renvoit une image de noData
+     * \param[in] id du level de base concerné
+     * \param[in] bbox de la requête
+     * \~english \brief Get a noData image
+     * \param[in] id of the based level
+     * \param[in] bbox of the request
+     */
     Image *NoDataOnDemand(std::string bLevel, BoundingBox<double> bbox);
 
+    /**
+     * \~french \brief Constructeur
+     * \param[in] levels de la pyramide
+     * \param[in] tms
+     * \param[in] format des tuiles
+     * \param[in] nombre de canaux des tuiles
+     * \param[in] onDemand
+     * \~english \brief Constructor
+     * \param[in] levels of the pyramid
+     * \param[in] tms
+     * \param[in] format of the tiles
+     * \param[in] number of channels
+     * \param[in] onDemand
+     */
     Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format, int channels, bool onDemand);
 
+    /**
+     * \~french \brief Destructeur
+     * \~english \brief Destructor
+     */
     ~Pyramid();
 
 };

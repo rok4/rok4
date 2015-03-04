@@ -173,11 +173,11 @@ public:
     bool isLongLat();
     /**
      * \~french
-     * \brief Test si le CRS est géographique
-     * \return vrai si géographique
+     * \brief Renvoit le zone de définition du CRS
+     * \return BoundingBox représentant la zone en EPSG:4326
      * \~english
-     * \brief Test whether the CRS is geographic
-     * \return true if geographic
+     * \brief Return the definition area of the CRS
+     * \return BoundingBox representing the zone in EPSG:4326
      */
     BoundingBox<double> getCrsDefinitionArea() {
         return definitionArea;
