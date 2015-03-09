@@ -212,7 +212,13 @@ Parameters (list):
             srs - string
 
             # image source part
-            path_image - string
+            path_image          - string
+            path_metadata       - string
+            preprocess_command  - string
+            preprocess_opt_beg  - string
+            preprocess_opt_mid  - string
+            preprocess_opt_end  - string
+            preprocess_tmp_dir  - string
 
             # harvesting part
             wms_layer - string
@@ -227,7 +233,7 @@ Parameters (list):
             max_width - string
             max_height - string
     (end code)
-    Image source part is directly relayed to <ImageSource::new> and harvesting part is directly relayed to <Harvesting::new> (see parameters' meaning).
+    This hash is directly and entirely relayed to <ImageSource::new> (even though only common and harvesting parts will be used) and harvesting part is directly relayed to <Harvesting::new> (see parameters' meaning).
 =cut
 sub _load {
     my $self   = shift;

@@ -61,6 +61,13 @@ Attributes:
     bestResX - double - Best X resolution among all images.
     bestResY - double - Best Y resolution among all images.
     pixel - <Pixel> - Pixel components of all images, have to be same for each one.
+    preprocess_command - string[] - elements forming an eventual call to a preprocessing command (optionnal):
+        |_ [0] the command itself
+        |_ [1] command arguments placed between the command and the source file (optionnal even with a command specified)
+        |_ [2] command arguments placed between the source file and the target file (optionnal even with a command specified)
+        |_ [3] command arguments placed after the target file (optionnal even with a command specified)
+    preprocess_tmp_dir - string   - directory in which preprocessed images will be created. Mandatory if a preprocessing command is given.
+     |_ command call structure : command[0] [command[1]] PATHIMG/img.ext [command[2]] preprocess_tmp_dir/img.ext [command[3]]
 
 Limitations:
 
@@ -163,8 +170,15 @@ Function: _init
 Checks and stores informations.
 
 Parameters (hash):
-    path_image - string - Path to images' directory, to analyze.
-    srs - string - SRS of the georeferenced images
+    path_image          - string - Path to images' directory, to analyze.
+    path_metadata       - string - Path to metadata's directory, to analyze.
+    srs                 - string - SRS of the georeferenced images
+    preprocess_command  - string - command to call to preprocess source images (optionnal)
+    preprocess_opt_beg  - string - command arguments placed between the command and the source file (optionnal even with a command specified)
+    preprocess_opt_mid  - string - command arguments placed between the source file and the target file (optionnal even with a command specified)
+    preprocess_opt_end  - string - command arguments placed after the target file (optionnal even with a command specified)
+    preprocess_tmp_dir  - string - directory in which preprocessed images will be created. Mandatory if a preprocessing command is given.
+    
 =cut
 sub _init {
 
@@ -192,12 +206,12 @@ sub _init {
         }
         $self->{preprocess_command}[0] = $params->{preprocess_command};
         if (exists($params->{preprocess_opt_beg}) && defined ($params->{preprocess_opt_beg})){
-            $self->{preprocess_command}[1] = ' '.$params->{preprocess_opt_beg};
+            $self->{preprocess_command}[1] = ' '.$params->{preprocess_opt_beg}.' ';
         } else {
             $self->{preprocess_command}[1] = ' ';
         }
         if (exists($params->{preprocess_opt_mid}) && defined ($params->{preprocess_opt_mid})){
-            $self->{preprocess_command}[2] = ' '.$params->{preprocess_opt_mid};
+            $self->{preprocess_command}[2] = ' '.$params->{preprocess_opt_mid}.' ';
         } else {
             $self->{preprocess_command}[2] = ' ';
         }
@@ -206,7 +220,7 @@ sub _init {
         } else {
             $self->{preprocess_command}[3] = '';
         }
-        # command = $self->{preprocess_command}[0].$self->{preprocess_command}[1].' '.$self->{PATHIMG}."imageName.ext".$self->{preprocess_command}[2].' '.$self->{preprocess_tmp_dir}."imageName.ext".$self->{preprocess_command}[3];
+        # command = $self->{preprocess_command}[0].$self->{preprocess_command}[1].$self->{PATHIMG}."imageName.ext".$self->{preprocess_command}[2].$self->{preprocess_tmp_dir}."imageName.ext".$self->{preprocess_command}[3];
     }
     
     if (! defined ($self->{PATHIMG}) || ! -d $self->{PATHIMG}) {
@@ -293,13 +307,13 @@ sub computeImageSource {
             $prePsFilePath = $filepath;
             $prePsFilePath =~ s/$imgPath/$ppsPath/;
             INFO(sprintf "Preprocessing image '%s'.", $filepath);
-            my $commandCall = $self->{preprocess_command}[0].$self->{preprocess_command}[1].' '.$filepath.$self->{preprocess_command}[2].' '.$prePsFilePath.$self->{preprocess_command}[3];
+            my $commandCall = $self->{preprocess_command}[0].$self->{preprocess_command}[1].$filepath.$self->{preprocess_command}[2].$prePsFilePath.$self->{preprocess_command}[3];
             
             make_path(File::Basename::dirname($prePsFilePath));
 
             DEBUG("Calling command :\n$commandCall");
             if (! system($commandCall) == 0) {
-                ERROR (sprintf "Unable to preprocess image '%s'.\nFailed command : %s\nStack trace : %s", $filepath, $commandCall, $?);
+                ERROR (sprintf "Unable to preprocess image '%s'.\nFailed command : %s\nDid you call an existing executable ? Stack trace : %s", $filepath, $commandCall, $?);
                 return FALSE;
             }
             if(! $objGeoImage->setImagePath($prePsFilePath)){
