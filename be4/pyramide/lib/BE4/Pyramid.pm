@@ -93,8 +93,6 @@ Using:
         pyr_name_new        => "ORTHO_RAW_LAMB93_D075-E",
         pyr_desc_path       => "/home/ign/DATA",
         pyr_data_path       => "/home/ign/DATA",
-        #
-        reference_mode      => "SLINK"
     };
 
     my $objPyr = BE4::Pyramid->new($params_options,"/home/ign/TMP");
@@ -115,8 +113,6 @@ Attributes:
 |               name - string - Pyramid's name
 |               desc_path - string - Directory in which we write the pyramid's descriptor
 |               data_path - string - Directory in which we write the pyramid's data
-|               reference_mode - string - type of linking to the old pyramid's files.
-|                   |   Possible values are : 'slink' (soft link - default), 'hlink' (hard link) and 'copy' (hard copy). 
 |               content_path - string - Path to the content's list
 
     dir_depth - integer - Number of subdirectories from the level root to the image : depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif
@@ -154,7 +150,6 @@ use File::Spec::Link;
 use File::Basename;
 use File::Spec;
 use File::Path;
-use File::Copy;
 use Tie::File;
 
 use Data::Dumper;
@@ -200,10 +195,6 @@ TPYR
 # Define default values for directories' names.
 my %DEFAULT;
 
-# Constant: UPDATE_MODES
-# Defines possibles values for the 'reference_mode' parameter.
-my @REFERENCE_MODES;
-
 ################################################################################
 
 BEGIN {}
@@ -213,13 +204,7 @@ INIT {
         dir_image => 'IMAGE',
         dir_nodata => 'NODATA',
         dir_mask => 'MASK',
-        dir_metadata => 'METADATA',
-        reference_mode => 'slink'
-    );
-    @REFERENCE_MODES = (
-        'slink', # symbolic link to ancestor's images
-        'hlink', # hard link to ancestor's images.
-        'copy'   # real copy of ancestor's images
+        dir_metadata => 'METADATA'
     );
 }
 
@@ -269,7 +254,6 @@ sub new {
             desc_path     => undef,
             data_path     => undef,
             content_path  => undef,
-            reference_mode  => undef,
         },
         #
         dir_depth    => undef,
@@ -366,15 +350,6 @@ sub _init {
             $params->{pyr_data_path_old} = $params->{pyr_data_path};
         }
         $self->{old_pyramid}->{data_path} = $params->{pyr_data_path_old};
-        # checking the way to reference the ancestor's cache
-        if (! exists $params->{reference_mode} || ! defined $params->{reference_mode}) {
-            INFO (sprintf "Parameter 'reference_mode' has not been set. Default value ('%s') is used.",$DEFAULT{reference_mode});
-            $params->{reference_mode} = $DEFAULT{reference_mode};
-        } elsif ( ! isReferenceMode($params->{reference_mode}) ) {
-            ERROR (sprintf "'%s' is not a valid value for parameter 'reference_mode'.",$params->{reference_mode});
-            return FALSE;
-        }
-        $self->{old_pyramid}->{reference_mode} = $params->{reference_mode};
     } else {
         # For a new pyramid, are mandatory (and controlled in this class):
         #   - image_width, image_height
@@ -936,34 +911,6 @@ sub findImages {
     return TRUE;
 }
 
-=begin nd
-Function: isReferenceMode
-
-Tests if the value for parameter 'reference_mode' is allowed.
-
-Parameters (list):
-    referenceModeValue - string - chosen value for the mode of reference to the old pyrammid cache files
-=cut
-sub isReferenceMode {
-    my $referenceModeValue = shift;
-
-    TRACE;
-    
-    if (! defined $referenceModeValue) {
-        ERROR(sprintf "Checking the validity of reference_value : the value is not defined inside the test !");
-        return FALSE;
-    }
-
-    foreach (@{REFERENCE_MODES}) {
-        DEBUG(sprintf "Comparing reference_mode's set value '%s' to possible value '%s'.", $referenceModeValue, $_);
-        if ($referenceModeValue eq $_) {
-            INFO(sprintf "'%s' value has been set as a referencing mode.", $referenceModeValue);
-            return TRUE;
-        }
-    }
-    return FALSE;
-}
-
 ####################################################################################################
 #                              Group: Level and limits methods                                     #
 ####################################################################################################
@@ -1280,7 +1227,6 @@ sub writeListPyramid {
     
     # Hash to bind ID and root directory
     my %newCacheRoots;
-    
     # Hash to count root's uses (to remove useless roots)
     my %newCacheRootsUse;
     
@@ -1288,7 +1234,7 @@ sub writeListPyramid {
     if (! $self->isNewPyramid) {
         
         my $OLDLIST;
-        
+
         if (! open $OLDLIST, "<", $self->getOldListFile) {
             ERROR(sprintf "Cannot open old pyramid list file : %s",$self->getOldListFile);
             return FALSE;
@@ -1316,14 +1262,14 @@ sub writeListPyramid {
         
         while( defined( my $oldtile = <$OLDLIST> ) ) {
             chomp $oldtile;
-                        
+            
             # old tile path is split. Afterwards, only array will be used to compose paths
             my @directories = File::Spec->splitdir($oldtile);
             # @directories = [ RootID, dir_name, levelID, ..., XY.tif]
             #                    0        1        2      3  ... n
             
             # ID 0 is kept for the new pyramid root, ID is incremented
-                $directories[0]++;
+            $directories[0]++;
             
             my ($level,$x,$y);
 
@@ -1348,11 +1294,7 @@ sub writeListPyramid {
             if (! $forest->containsNode($level,$x,$y)) {
                 # This image is not in the forest, it won't be modified by this generation.
                 # We add it now to the list (real file path)
-                my $newTileFileName = File::Spec->catdir(@directories);
-                if ($self->{old_pyramid}->{reference_mode} eq 'hlink' || $self->{old_pyramid}->{reference_mode} eq 'copy') {
-                    $newTileFileName =~ s/^[0-9]*\//0\//;
-                }
-                printf $NEWLIST "%s\n", $newTileFileName;
+                printf $NEWLIST "%s\n", File::Spec->catdir(@directories);
                 # Root is used : we incremente its counter
                 $newCacheRootsUse{$directories[0]}++;
             }
@@ -1387,29 +1329,9 @@ sub writeListPyramid {
             
             my $reloldtile = File::Spec->abs2rel($oldtile, $dir);
 
-            if ($self->{old_pyramid}->{reference_mode} eq 'slink') {
-                DEBUG(sprintf "Creating symbolic link from %s to %s", $oldtile, $newtile);
-                my $result = eval { symlink ($reloldtile, $newtile); };
-                if (! $result) {
-                    ERROR (sprintf "The tile '%s' can not be soft linked to '%s' (%s)",$reloldtile,$newtile,$!);
-                    return FALSE;
-                }
-            } elsif ($self->{old_pyramid}->{reference_mode} eq 'hlink') {
-                DEBUG(sprintf "Creating hard link from %s to %s", $oldtile, $newtile);
-                my $result = eval { link ($oldtile, $newtile); };
-                if (! $result) {
-                    ERROR (sprintf "The tile '%s' can not be hard linked to '%s' (%s)",$oldtile,$newtile,$!);
-                    return FALSE;
-                }
-            } elsif ($self->{old_pyramid}->{reference_mode} eq 'copy') {
-                DEBUG(sprintf "Copying tile from %s to %s", $newtile, $oldtile);
-                my $result = eval { copy($oldtile, $newtile); };
-                if (! $result) {
-                    ERROR (sprintf "The tile '%s' can not be copied to '%s' (%s)",$oldtile,$newtile,$!);
-                    return FALSE;
-                }
-            } else {
-                ERROR (sprintf "Unknown reference mode : '%s'",$self->{old_pyramid}->{reference_mode});
+            my $result = eval { symlink ($reloldtile, $newtile); };
+            if (! $result) {
+                ERROR (sprintf "The tile '%s' can not be linked to '%s' (%s)",$reloldtile,$newtile,$!);
                 return FALSE;
             }
         }
@@ -1425,17 +1347,12 @@ sub writeListPyramid {
         return FALSE;
     }
     
-    if ($self->{old_pyramid}->{reference_mode} eq 'slink') {
-        while( my ($rootID,$root) = each(%newCacheRoots) ) {
-            if ($newCacheRootsUse{$rootID} > 0) {
-                # Used roots are written in the header
-                
-                INFO (sprintf "%s is used %d times", $root, $newCacheRootsUse{$rootID});
-                
-                unshift @NEWLIST,(sprintf "%s=%s",$rootID,$root);
-            } else {
-                INFO (sprintf "The old pyramid '%s' is no longer used.", $root)
-            }
+    while( my ($rootID,$root) = each(%newCacheRoots) ) {
+        if ($newCacheRootsUse{$rootID} > 0) {
+            # Used roots are written in the header
+            unshift @NEWLIST,(sprintf "%s=%s",$rootID,$root);
+        } else {
+            INFO (sprintf "The old pyramid '%s' is no longer used.", $root)
         }
     }
     
@@ -2072,7 +1989,7 @@ And details about each level.
 
 For a new pyramid, all level between top and bottom are saved into.
 
-For an update, all level of the existing pyramid are duplicated and we add new levels (between top and bottom levels). For levels which are present in the old and the new pyramids, we update TMS limits.
+For an update, all level of the existing pyramid are duplicated and we add new levels (between otp and bottom levels). For levels which are present in the old and the new pyramids, we update TMS limits.
 
 Cache's List:
 
@@ -2129,8 +2046,6 @@ For a new pyramid, the directory structure is empty, only the level directory fo
     (end code)
 
 For an existing pyramid, the directory structure is duplicated to the new pyramid with all file linked, thanks to the old cache list.
-The kind of linking can be chosen between symbolic link (default), hard link (does not work if the new pyramid and the old one are stored in different file systems)
- and hard copy.
     (start code)
     pyr_data_path/
             |__pyr_name_new/
