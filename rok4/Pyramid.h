@@ -173,6 +173,15 @@ private:
      */
     std::map<std::string, std::map<std::string, std::string> > aLevel;
 
+
+    /**
+     * \~french \brief Indique si la pyramide doit être générée à la volée
+     * Dans ce cas, elle doit nécessairement être à la demande
+     * \~english \brief Indicate if the pyramid must be generated on the fly
+     * In this case, it must be onDemand
+     */
+    bool onFly;
+
     /**
      * \~french \brief Teste si deux CRS sont équivalent
      * \param[in] CRS1
@@ -353,6 +362,35 @@ public:
     }
 
     /**
+     * \~french \brief Indique si la pyramide est à la volée
+     * \return onFly
+     * \~english \brief Indicate if the pyramid is onFly
+     * \return onFly
+     */
+    bool getOnFly(){
+        return onFly;
+    }
+
+    /**
+     * \~french \brief Modifie le paramètre onFly
+     * \param[in] booleen
+     * \~english \brief Modify onFly
+     * \param[in] boolean
+     */
+    void setOnFly (bool of) {
+        if (of) {
+            if (onDemand) {
+                onFly = of;
+            }
+        } else {
+            if (!onDemand) {
+                onFly = of;
+            }
+        }
+
+    }
+
+    /**
      * \~french \brief Récupère le meilleur niveau pour une résolution donnée
      * \param[in] résolution en x
      * \param[in] résolution en y
@@ -405,14 +443,16 @@ public:
      * \param[in] format des tuiles
      * \param[in] nombre de canaux des tuiles
      * \param[in] onDemand
+     * \param[in] onFly
      * \~english \brief Constructor
      * \param[in] levels of the pyramid
      * \param[in] tms
      * \param[in] format of the tiles
      * \param[in] number of channels
      * \param[in] onDemand
+     * \param[in] onFly
      */
-    Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format, int channels, bool onDemand);
+    Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format, int channels, bool onDemand, bool onFly);
 
     /**
      * \~french \brief Destructeur

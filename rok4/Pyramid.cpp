@@ -55,10 +55,10 @@
 #include "config.h"
 #include "EmptyImage.h"
 
-Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format,
-                   int channels, bool onDemand)
+Pyramid::Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format,
+                   int channels, bool onDemand, bool onFly)
     : levels ( levels ), tms ( tms ), format ( format ), channels ( channels ),
-      onDemand ( onDemand ) {
+      onDemand ( onDemand ), onFly (onFly) {
 
     std::map<std::string, Level*>::iterator itLevel;
     double minRes= DBL_MAX;

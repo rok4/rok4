@@ -265,6 +265,31 @@ private:
     static Pyramid* buildPyramid (std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times , std::map<std::string, Style *> stylesList);
     /**
      * \~french
+     * \brief Mise à jour des TileMatrixLimits pour un level
+     * \param[in] levelId
+     * \param[in] minCol
+     * \param[in] maxCol
+     * \param[in] minRow
+     * \param[in] maxRow
+     * \param[in] TileMatrix
+     * \param[in] TileMatrixSet
+     * \param[in] bPyramids
+     * \param[in] aLevel
+     * \~english
+     * \brief Update TileMatrixLimits
+     * \param[in] levelId
+     * \param[in] minCol
+     * \param[in] maxCol
+     * \param[in] minRow
+     * \param[in] maxRow
+     * \param[in] TileMatrix
+     * \param[in] TileMatrixSet
+     * \param[in] bPyramids
+     * \param[in] aLevel
+     */
+    static void updateTileLimits (std::string levelId, uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Pyramid*> bPyramids, std::map<std::string, std::map<std::string, std::string> > aLevel);
+    /**
+     * \~french
      * \brief Création d'un Layer à partir de sa représentation XML
      * \param[in] doc Racine du document XML
      * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
