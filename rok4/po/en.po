@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2015-02-19 11:39+0100\n"
+"POT-Creation-Date: 2015-03-17 08:55+0100\n"
 "PO-Revision-Date: 2013-02-18 17:49+0100\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -1035,34 +1035,34 @@ msgstr "GetTile Image"
 msgid "Usage : rok4 [-f server_config_file]"
 msgstr "Use : rok4 [-f server_config_file]"
 
-#: main.cpp:126
+#: main.cpp:127
 #, fuzzy
 msgid "Rechargement du serveur rok4"
 msgstr "Starting ROK4 server"
 
-#: main.cpp:129
+#: main.cpp:130
 #, fuzzy
 msgid "Erreur lors du rechargement du serveur rok4"
 msgstr "Starting ROK4 server"
 
-#: main.cpp:217
+#: main.cpp:218
 msgid "Erreur sur l'option -f"
 msgstr "Error on -f parameter"
 
-#: main.cpp:233
+#: main.cpp:234
 msgid "Lancement du serveur rok4"
 msgstr "Starting ROK4 server"
 
-#: main.cpp:243
+#: main.cpp:244
 #, fuzzy
 msgid "Mise a jour de la configuration"
 msgstr "Reloading configuration"
 
-#: main.cpp:260
+#: main.cpp:259
 msgid "Rechargement de la configuration"
 msgstr "Reloading configuration"
 
-#: main.cpp:263 Rok4Api.cpp:136 Rok4Api.cpp:144 Rok4Api.cpp:152
+#: main.cpp:262 Rok4Api.cpp:136 Rok4Api.cpp:144 Rok4Api.cpp:152
 #: Rok4Api.cpp:161 Rok4Api.cpp:580
 msgid "Extinction du serveur ROK4"
 msgstr "Shutdown the ROK4 server"
@@ -1299,7 +1299,7 @@ msgstr ""
 msgid "Parametre FORMAT absent."
 msgstr ""
 
-#: Request.cpp:798 Rok4Server.cpp:510
+#: Request.cpp:798 Rok4Server.cpp:515
 msgid "Le format "
 msgstr ""
 
@@ -1423,11 +1423,11 @@ msgstr ""
 msgid "Parametre STYLES incomplet."
 msgstr ""
 
-#: Request.cpp:1063 Request.cpp:1109 Rok4Api.cpp:225 Rok4Server.cpp:584
+#: Request.cpp:1063 Request.cpp:1109 Rok4Api.cpp:225 Rok4Server.cpp:589
 msgid "Le service "
 msgstr ""
 
-#: Request.cpp:1063 Request.cpp:1109 Rok4Api.cpp:225 Rok4Server.cpp:584
+#: Request.cpp:1063 Request.cpp:1109 Rok4Api.cpp:225 Rok4Server.cpp:589
 msgid " est inconnu pour ce serveur."
 msgstr ""
 
@@ -1509,12 +1509,12 @@ msgstr ""
 msgid "Le parametre REQUEST n'est pas renseigné."
 msgstr ""
 
-#: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:553
-#: Rok4Server.cpp:557 Rok4Server.cpp:567 Rok4Server.cpp:571
+#: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:558
+#: Rok4Server.cpp:562 Rok4Server.cpp:572 Rok4Server.cpp:576
 msgid " n'est pas prise en charge par ce serveur."
 msgstr ""
 
-#: Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:557
+#: Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:562
 msgid "L'operation "
 msgstr ""
 
@@ -1522,11 +1522,11 @@ msgstr ""
 msgid "Le parametre SERVICE n'est pas renseigné."
 msgstr ""
 
-#: Rok4Api.cpp:299 Rok4Api.cpp:375 Rok4Server.cpp:524
+#: Rok4Api.cpp:299 Rok4Api.cpp:375 Rok4Server.cpp:529
 msgid "Probleme dans les parametres de la requete getTile"
 msgstr ""
 
-#: Rok4Api.cpp:503 Rok4Server.cpp:530
+#: Rok4Api.cpp:503 Rok4Server.cpp:535
 msgid "No data found"
 msgstr ""
 
@@ -1558,39 +1558,39 @@ msgstr "Build WMTS Capabilities"
 msgid "Listening on "
 msgstr "Listening on "
 
-#: Rok4Server.cpp:228 Rok4Server.cpp:251
+#: Rok4Server.cpp:233 Rok4Server.cpp:256
 msgid "Probleme dans les parametres de la requete getCapabilities"
 msgstr ""
 
-#: Rok4Server.cpp:280
+#: Rok4Server.cpp:285
 msgid "Probleme dans les parametres de la requete getMap"
 msgstr ""
 
-#: Rok4Server.cpp:289
+#: Rok4Server.cpp:294
 msgid "GetMap de Style : "
 msgstr ""
 
-#: Rok4Server.cpp:289
+#: Rok4Server.cpp:294
 msgid " pal size : "
 msgstr " pal size : "
 
-#: Rok4Server.cpp:295
+#: Rok4Server.cpp:300
 msgid "bbox invalide"
 msgstr ""
 
-#: Rok4Server.cpp:298
+#: Rok4Server.cpp:303
 msgid "bbox trop grande"
 msgstr ""
 
-#: Rok4Server.cpp:301 Rok4Server.cpp:437
+#: Rok4Server.cpp:306 Rok4Server.cpp:442
 msgid "Impossible de repondre a la requete"
 msgstr ""
 
-#: Rok4Server.cpp:310
+#: Rok4Server.cpp:315
 msgid "Estompage"
 msgstr "Estompage"
 
-#: Rok4Server.cpp:510
+#: Rok4Server.cpp:515
 msgid " ne peut etre traite"
 msgstr ""
 
