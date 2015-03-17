@@ -181,12 +181,17 @@ void Rok4Server::killFCGI() {
     FCGX_Close();
 }
 
-void Rok4Server::run() {
+void Rok4Server::run(sig_atomic_t signal_pending) {
     running = true;
 
     for ( int i = 0; i < threads.size(); i++ ) {
         pthread_create ( & ( threads[i] ), NULL, Rok4Server::thread_loop, ( void* ) this );
     }
+    
+    if (signal_pending != 0 ) {
+	raise( signal_pending );
+    }
+    
     for ( int i = 0; i < threads.size(); i++ )
         pthread_join ( threads[i], NULL );
 }
