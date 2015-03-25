@@ -118,7 +118,8 @@ const uint8_t* FileDataSource::getData ( size_t &tile_size ) {
 * @return true en cas de succes
 */
 bool FileDataSource::releaseData() {
-    delete[] data;
+    if (data)
+      delete[] data;
     data = 0;
     return true;
 }
