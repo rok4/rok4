@@ -1057,34 +1057,34 @@ msgstr "GetTile Image"
 msgid "Usage : rok4 [-f server_config_file]"
 msgstr "Usage : rok4 [-f server_config_file]"
 
-#: main.cpp:126
+#: main.cpp:127
 #, fuzzy
 msgid "Rechargement du serveur rok4"
 msgstr "Lancement du serveur ROK4"
 
-#: main.cpp:129
+#: main.cpp:130
 #, fuzzy
 msgid "Erreur lors du rechargement du serveur rok4"
 msgstr "Lancement du serveur ROK4"
 
-#: main.cpp:217
+#: main.cpp:218
 msgid "Erreur sur l'option -f"
 msgstr "Erreur sur l'option -f"
 
-#: main.cpp:233
+#: main.cpp:234
 msgid "Lancement du serveur rok4"
 msgstr "Lancement du serveur ROK4"
 
-#: main.cpp:243
+#: main.cpp:244
 #, fuzzy
 msgid "Mise a jour de la configuration"
 msgstr "Rechargement de la configuration"
 
-#: main.cpp:260
+#: main.cpp:259
 msgid "Rechargement de la configuration"
 msgstr "Rechargement de la configuration"
 
-#: main.cpp:263 Rok4Api.cpp:136 Rok4Api.cpp:144 Rok4Api.cpp:152
+#: main.cpp:262 Rok4Api.cpp:136 Rok4Api.cpp:144 Rok4Api.cpp:152
 #: Rok4Api.cpp:161 Rok4Api.cpp:580
 msgid "Extinction du serveur ROK4"
 msgstr "Extinction du serveur ROK4"
@@ -1596,11 +1596,11 @@ msgstr "Génération du Capabilities WMTS"
 msgid "Listening on "
 msgstr "Écoute sur "
 
-#: Rok4Server.cpp:228 Rok4Server.cpp:251
+#: Rok4Server.cpp:233 Rok4Server.cpp:256
 msgid "Probleme dans les parametres de la requete getCapabilities"
 msgstr "Problème dans les parametres de la requête getCapabilities"
 
-#: Rok4Server.cpp:280
+#: Rok4Server.cpp:285
 msgid "Probleme dans les parametres de la requete getMap"
 msgstr "Problème dans les paramètres de la requête getMap"
 

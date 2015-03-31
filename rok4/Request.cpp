@@ -944,6 +944,9 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
     for ( int i = 0; i < 4; i++ ) {
         if ( sscanf ( coords[i].c_str(),"%lf",&bb[i] ) !=1 )
             return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Parametre BBOX incorrect." ),"wms" ) );
+	//Test NaN values
+	if (bb[i]!=bb[i])
+	  return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Parametre BBOX incorrect." ),"wms" ) );
     }
     if ( bb[0]>=bb[2] || bb[1]>=bb[3] )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Parametre BBOX incorrect." ),"wms" ) );

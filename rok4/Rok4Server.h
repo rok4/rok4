@@ -57,6 +57,7 @@
 #include "Layer.h"
 #include "TileMatrixSet.h"
 #include "fcgiapp.h"
+#include <csignal>
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -427,7 +428,7 @@ public:
      * \~english
      * \brief Start server's thread
      */
-    void run();
+    void run(sig_atomic_t signal_pending = 0);
     /**
      * \~french
      * \brief Initialise le socket FastCGI
