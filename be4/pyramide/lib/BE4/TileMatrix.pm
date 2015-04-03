@@ -385,7 +385,7 @@ sub indicesToBBox {
 =begin nd
 Function: bboxToIndices
 
-Returns the extrem indices from a bbox in a list : (colMin,rowMin,colMax,rowMax).
+Returns the extrem indices from a bbox in a list : (iMin,jMin,iMax,jMax).
 
 Parameters (list):
     xMin,yMin,xMax,yMax - bounding box

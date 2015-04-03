@@ -62,6 +62,9 @@ BoundingBox<double> CompoundImage::computeBbox ( std::vector<std::vector<Image*>
 template<typename T>
 inline int CompoundImage::_getline ( T* buffer, int line ) {
     // doit-on changer de tuile ?
+    if (line >= height) {
+        return 0;
+    }
     while ( top + images[y][0]->getHeight() <= line ) top += images[y++][0]->getHeight();
     while ( top > line ) top -= images[--y][0]->getHeight();
     // on calcule l'indice de la ligne dans la sous tuile
