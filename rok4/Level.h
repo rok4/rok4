@@ -177,7 +177,7 @@ public:
     int* getNoDataValue ( int* nodatavalue );
 
     void setNoData ( const std::string& file ) ;
-    void setNoDataSource ( DataSource* source );
+    void setNoDataSource (DataSource *source );
 
     /** D */
     Level ( TileMatrix tm, int channels, std::string baseDir,

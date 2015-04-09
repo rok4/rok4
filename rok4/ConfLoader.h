@@ -263,6 +263,9 @@ private:
      * \return pointer to the newly created Pyramid, NULL if something went wrong
      */
     static Pyramid* buildPyramid (std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times , std::map<std::string, Style *> stylesList);
+
+    static int updatePyrLevel(Pyramid* pyr, TileMatrix *tm, TileMatrixSet *tms);
+
     /**
      * \~french
      * \brief Mise à jour des TileMatrixLimits pour un level

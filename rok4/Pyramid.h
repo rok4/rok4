@@ -105,17 +105,31 @@ private:
     bool onDemand;
 
     /**
-     * \~french \brief Si une pyramide est à la demande,
+     * \~french \brief Si une pyramide est à la demande pour l'ensemble des niveaux,
      * alors elle doit pouvoir tirer ses informations d'une autre pyramide
      * Cet attribut contient donc la liste des pyramides de base utilisées
      * pour générer la vraie pyramide
      * Sachant qu'une pyramide de base ne peut pas en contenir à son tour
-     * \~english \brief If a pyramid is onDemand
+     * \~english \brief If a pyramid is onDemand for all levels
      * it must contain a reference to other pyramids which have data
      * This is the list of those pyramids
      * They can't be onDemand
      */
     std::vector<Pyramid*> basedPyramids;
+
+    /**
+     * \~french \brief Si une pyramide est à la demande par niveau,
+     * alors elle doit pouvoir tirer ses informations d'une autre pyramide
+     * Cet attribut contient donc la liste des pyramides de base utilisées
+     * pour générer la vraie pyramide
+     * Sachant qu'une pyramide specifique ne peut pas en contenir à son tour
+     * et ne contient qu'un niveau en mémoire
+     * \~english \brief If a pyramid is onDemand by level
+     * it must contain a reference to other pyramids which have data
+     * This is the list of those pyramids
+     * They can't be onDemand and have only one level in memory
+     */
+    std::map<std::string,std::vector<Pyramid*> > specificPyramids;
 
     /**
      * \~french \brief Indique si la pyramide peut avoir de la transparence
@@ -241,7 +255,13 @@ public:
     std::map<std::string, Level*>& getLevels() {
         return levels;
     }
-
+    /**
+     * \~french \brief Attribue les niveaux
+     * \~english \brief Set the levels
+     */
+    void setLevels(std::map<std::string, Level*>& lv) {
+        levels = lv;
+    }
     /**
      * \~french \brief Récupère le format
      * \return format
@@ -359,6 +379,26 @@ public:
      */
     void setALevel (std::map<std::string, std::map<std::string, std::string> > aL) {
         aLevel = aL;
+    }
+
+    /**
+     * \~french \brief Récupère les niveaux associés
+     * \return Liste des niveaux associés
+     * \~english \brief Get the associated levels
+     * \return List of associated levels
+     */
+    std::map<std::string,std::vector<Pyramid*> >  getSPyramids(){
+        return specificPyramids;
+    }
+
+    /**
+     * \~french \brief Modifie la liste des niveaux associés
+     * \param[in] Liste des niveaux associés
+     * \~english \brief Set the associated levels
+     * \param[in] List of associated levels
+     */
+    void setSPyramids (std::map<std::string,std::vector<Pyramid*> >  sP) {
+        specificPyramids = sP;
     }
 
     /**

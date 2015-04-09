@@ -85,8 +85,7 @@ Pyramid::Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4
             LOGGER_ERROR ( "Format non pris en charge : "<< Rok4Format::toString ( format ) );
         }
         itLevel->second->setNoDataSource ( noDataSource );
-        delete noDataSource;
-        noDataSource = NULL;
+
 
         //Determine Higher and Lower Levels
         double d = itLevel->second->getRes();
@@ -99,6 +98,7 @@ Pyramid::Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4
             highestLevel = itLevel->second;
         }
     }
+    int i = 0;
 
 }
 

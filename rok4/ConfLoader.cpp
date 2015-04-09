@@ -528,7 +528,7 @@ TileMatrixSet* ConfLoader::buildTileMatrixSet ( std::string fileName ) {
 }//buildTileMatrixSet(std::string fileName)
 
 // Load a pyramid
-Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times, std::map<std::string,Style*> stylesList ) {
+Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times, std::map<std::string,Style*> stylesList) {
     LOGGER_INFO ( _ ( "             Ajout de la pyramide : " ) << fileName );
     // Relative file Path
     char * fileNameChar = ( char * ) malloc ( strlen ( fileName.c_str() ) + 1 );
@@ -546,6 +546,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     int channels;
     std::map<std::string, Level *> levels;
     bool onDemand = false;
+    bool onDemandSpecific = false;
     std::vector<Pyramid*> bPyramids;
     Pyramid* basedPyramid = NULL;
     std::string str_transparent;
@@ -555,7 +556,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     int nbPyramids;
     bool onFly = false;
     bool testOnFly = true;
-
+    std::map<std::string,std::vector<Pyramid*> > specificPyramids;
 
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
@@ -636,7 +637,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         if ( pElem ) {
 
 
-            times = false;
+            bool timesGlobal = false;
 
             nbPyramids = 0;
 
@@ -665,7 +666,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                             basedPyramidFilePath.insert ( 0,parentDir );
                         }
 
-                        basedPyramid = buildPyramid ( basedPyramidFilePath, tmsList, times, stylesList );
+                        basedPyramid = buildPyramid ( basedPyramidFilePath, tmsList, timesGlobal, stylesList );
 
                         if ( !basedPyramid) {
                             LOGGER_ERROR ( _ ( "La pyramide " ) << basedPyramidFilePath << _ ( " ne peut etre chargee" ) );
@@ -750,6 +751,8 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             int tilesPerHeight;
             int pathDepth;
             std::string noDataFilePath="";
+            std::vector<Pyramid*> sPyramids;
+            int nsPyramids;
 
             TiXmlHandle hLvl ( pElem );
             TiXmlElement* pElemLvl = hLvl.FirstChild ( "tileMatrix" ).Element();
@@ -760,13 +763,13 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             std::string tmName ( pElemLvl->GetText() );
             std::string id ( tmName );
             std::map<std::string, TileMatrix>* tmList = tms->getTmList();
-            std::map<std::string, TileMatrix>::iterator it = tmList->find ( tmName );
+            std::map<std::string, TileMatrix>::iterator itTM = tmList->find ( tmName );
 
-            if ( it == tmList->end() ) {
+            if ( itTM == tmList->end() ) {
                 LOGGER_ERROR ( fileName <<_ ( " Le level " ) << id <<_ ( " ref. Le TM [" ) << tmName << _ ( "] qui n'appartient pas au TMS [" ) << tmsName << "]" );
                 return NULL;
             }
-            tm = & ( it->second );
+            tm = & ( itTM->second );
 
             pElemLvl = hLvl.FirstChild ( "baseDir" ).Element();
             std::string baseDir;
@@ -800,6 +803,119 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                          baseDir.insert ( 0,parentDir );
                      }
                  }
+
+            }
+
+            //Si c'est la première fois qu'on parse une pyramide, times est true
+            //  Cette pyramide peut être construite à partir d'une autre
+            if (times) {
+
+
+                //Si on se base sur d'autres pyramides pour faire la nouvelle pyramide
+                TiXmlElement* pElemSP=hLvl.FirstChild ( "basedPyramids" ).Element();
+                if ( pElemSP ) {
+
+                    TiXmlHandle hbdP ( pElemSP );
+                    bool timesSpecific = false;
+
+                    nsPyramids = 0;
+
+                    TiXmlElement* sPyr = hbdP.FirstChild("basedPyramid").Element();
+
+                    if (sPyr) {
+
+                        for ( sPyr; sPyr; sPyr=sPyr->NextSiblingElement() ) {
+
+
+                            TiXmlElement* sFile = sPyr->FirstChildElement("file");
+                            TiXmlElement* sTransparent = sPyr->FirstChildElement("transparent");
+                            TiXmlElement* sStyle = sPyr->FirstChildElement("style");
+
+                            if (sFile && sTransparent && sStyle && sFile->GetText() && sTransparent->GetText() && sStyle->GetText()) {
+
+                                str_transparent = sTransparent->GetTextStr();
+                                str_style = sStyle->GetTextStr();
+
+                                basedPyramidFilePath = sFile->GetTextStr() ;
+                                //Relative Path
+                                if ( basedPyramidFilePath.compare ( 0,2,"./" ) ==0 ) {
+                                    basedPyramidFilePath.replace ( 0,1,parentDir );
+                                } else if ( basedPyramidFilePath.compare ( 0,1,"/" ) !=0 ) {
+                                    basedPyramidFilePath.insert ( 0,"/" );
+                                    basedPyramidFilePath.insert ( 0,parentDir );
+                                }
+
+                                basedPyramid = buildPyramid ( basedPyramidFilePath, tmsList, timesSpecific, stylesList );
+
+                                if ( !basedPyramid) {
+                                    LOGGER_ERROR ( _ ( "La pyramide " ) << basedPyramidFilePath << _ ( " ne peut etre chargee" ) );
+                                    return NULL;
+                                } else {
+
+                                    if (str_transparent == "true") {
+                                        transparent = true;
+                                        basedPyramid->setTransparent(transparent);
+                                        transparent = false;
+                                    } else {
+                                        basedPyramid->setTransparent(transparent);
+                                    }
+
+                                    std::map<std::string, Style*>::iterator styleIt= stylesList.find ( str_style );
+                                    if ( styleIt == stylesList.end() ) {
+                                        LOGGER_ERROR ( _ ( "Style " ) << str_style << _ ( "non defini" ) );
+                                        style = NULL;
+                                    } else {
+                                        style = styleIt->second;
+                                    }
+
+                                    basedPyramid->setStyle(style);
+                                    style = NULL;
+                                    str_style = "";
+
+                                }
+
+                                int up = updatePyrLevel(basedPyramid, tm, tms);
+                                if (up != 0 ) {
+                                    sPyramids.push_back( basedPyramid ) ;
+                                    nsPyramids++;
+                                }
+
+
+                            } else {
+                                //Il manque un des trois elements necessaires pour initialiser une
+                                //nouvelle pyramide de base
+                                LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't be loaded" ) );
+                                return NULL;
+
+                            }
+
+                        }
+
+                    } else {
+                        //basedPyramids est indiqué mais pas de basedPyramid
+                        LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't be loaded" ) );
+                        return NULL;
+                    }
+
+                    //Aucune basedPyramid n'a pu être chargée
+                    if ( nsPyramids == 0 ) {
+                        LOGGER_ERROR ( _ ("No pyramid found for basedPyramids, ") << fileName );
+                        return NULL;
+                    } else {
+                        onDemandSpecific = true;
+                        specificPyramids.insert(std::pair< std::string, std::vector<Pyramid*> > ( id, sPyramids));
+                    }
+
+                }
+
+
+            } else {
+            //Si c'est la deuxième fois qu'on parse une pyramide
+
+                if (hRoot.FirstChild ( "basedPyramids" ).Element()) {
+                    LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't depend on other pyramids" ) );
+                    return NULL;
+                }
 
             }
 
@@ -1161,10 +1277,65 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     } else {
 
     }
-
+    if (onDemandSpecific) {
+        pyr->setSPyramids(specificPyramids);
+    }
     return pyr;
 
 }// buildPyramid()
+
+int ConfLoader::updatePyrLevel(Pyramid* pyr, TileMatrix *tm, TileMatrixSet *tms) {
+
+    double Res, ratioX, ratioY, resX, resY;
+    std::string best_h;
+
+    Res = tm->getRes();
+
+    BoundingBox<double> nBbox = tms->getCrs().getCrsDefinitionArea();
+
+    BoundingBox<double> cBbox = pyr->getTms().getCrs().cropBBoxGeographic(nBbox);
+
+    cBbox = tms->getCrs().cropBBoxGeographic(cBbox);
+    BoundingBox<double> cBboxOld = cBbox;
+    BoundingBox<double> cBboxNew = cBbox;
+
+    if (cBboxNew.reproject("epsg:4326",tms->getCrs().getProj4Code())==0 &&
+        cBboxOld.reproject("epsg:4326",pyr->getTms().getCrs().getProj4Code())==0)
+    {
+
+        ratioX = (cBboxOld.xmax - cBboxOld.xmin) / (cBboxNew.xmax - cBboxNew.xmin);
+        ratioY = (cBboxOld.ymax - cBboxOld.ymin) / (cBboxNew.ymax - cBboxNew.ymin);
+
+        resX = Res * ratioX;
+        resY = Res * ratioY;
+
+        //On recupère le best level de la basedPyramid en cours pour le tm en cours
+        best_h = pyr->best_level(resX,resY,true);
+
+    } else {
+        //Si une des reprojections n'a pas marché
+
+        best_h = "";
+
+    }
+
+    if (best_h != "") {
+
+        for ( std::map<std::string, Level*>::iterator lv = pyr->getLevels().begin(); lv != pyr->getLevels().end(); lv++ ) {
+            if (lv->second->getId() != best_h) {
+                delete lv->second;
+                lv->second = NULL;
+                pyr->getLevels().erase(lv);
+            }
+        }
+
+        return 1;
+
+    } else {
+        return 0;
+    }
+
+}
 
 void ConfLoader::updateTileLimits(std::string levelId, uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Pyramid *> bPyramids, std::map<std::string, std::map<std::string, std::string> > aLevel) {
 
@@ -1273,13 +1444,13 @@ void ConfLoader::updateTileLimits(std::string levelId, uint32_t &minTileCol, uin
 }
 
 
-Pyramid* ConfLoader::buildPyramid ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times, std::map<std::string,Style*> stylesList ) {
+Pyramid* ConfLoader::buildPyramid ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times, std::map<std::string,Style*> stylesList) {
     TiXmlDocument doc ( fileName.c_str() );
     if ( !doc.LoadFile() ) {
         LOGGER_ERROR ( _ ( "Ne peut pas charger le fichier " ) << fileName );
         return NULL;
     }
-    return parsePyramid ( &doc,fileName,tmsList, times, stylesList );
+    return parsePyramid ( &doc,fileName,tmsList, times, stylesList);
 }
 
 
@@ -1647,7 +1818,7 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
             pyramidFilePath.insert ( 0,"/" );
             pyramidFilePath.insert ( 0,parentDir );
         }
-        pyramid = buildPyramid ( pyramidFilePath, tmsList, times, stylesList );
+        pyramid = buildPyramid ( pyramidFilePath, tmsList, times, stylesList);
         if ( !pyramid ) {
             LOGGER_ERROR ( _ ( "La pyramide " ) << pyramidFilePath << _ ( " ne peut etre chargee" ) );
             return NULL;

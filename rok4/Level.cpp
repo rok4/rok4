@@ -75,9 +75,28 @@ Level::Level ( TileMatrix tm, int channels, std::string baseDir, int tilesPerWid
 
 Level::~Level() {
 
+//    if (&noDataSourceProxy != NULL) {
+//        if (noDataSourceProxy->_vptr) {
+//            delete noDataSourceProxy;
+//            noDataSourceProxy->_vptr = NULL;
+//            noDataSourceProxy = NULL;
+//        } else {
+//            noDataSourceProxy = NULL;
+//        }
+//    }
+//    if (&noDataSource != NULL) {
+//        if (noDataSource->_vptr) {
+//            noDataSource->_vptr = NULL;
+//            noDataSource = NULL;
+//        } else {
+//            noDataSource = NULL;
+//        }
+
+//    }
+
     delete noDataSourceProxy;
-    if ( noDataSource )
-        delete noDataSource;
+    delete noDataSource;
+    noDataSource = NULL;
 
 }
 
@@ -99,7 +118,7 @@ void Level::setNoData ( const std::string& file ) {
 }
 
 
-void Level::setNoDataSource ( DataSource* source ) {
+void Level::setNoDataSource ( DataSource *source ) {
     if ( noDataSource ) {
         delete noDataSourceProxy;
         noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), Rok4Format::toEncoding ( format ) );
