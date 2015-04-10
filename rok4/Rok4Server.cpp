@@ -639,12 +639,29 @@ DataStream *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
     Rok4Format::eformat_data pyrType;
     Style * bStyle;
     std::map <std::string, std::string > format_option;
+    std::vector<Pyramid*> bPyr;
+    bool specific = false;
 
+    //la correspondance est assurée par les vérifications qui ont eu lieu dans getTile()
+    std::string level = tileMatrix;
 
     //Calcul des paramètres nécessaires
     Pyramid * pyr = L->getDataPyramid();
 
-    std::vector<Pyramid*> bPyr = L->getDataPyramid()->getBPyramids();
+    //on regarde si le level demandé est spécifique ou pas
+    if (L->getDataPyramid()->getSPyramids().size() !=0) {
+        std::map<std::string,std::vector<Pyramid*> > spyr = L->getDataPyramid()->getSPyramids();
+        std::map<std::string,std::vector<Pyramid*> >::iterator sp = spyr.find(level);
+        if (sp != spyr.end()) {
+            specific = true;
+        }
+    }
+
+    if (!specific) {
+      bPyr = L->getDataPyramid()->getBPyramids();
+    } else {
+        bPyr = L->getDataPyramid()->getSPyramids().find(level)->second;
+    }
 
     CRS dst_crs = pyr->getTms().getCrs();
 
@@ -652,8 +669,6 @@ DataStream *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
     height = 256;
     error = 0;
 
-    //la correspondance est assurée par les vérifications qui ont eu lieu dans getTile()
-    std::string level = tileMatrix;
 
     Interpolation::KernelType interpolation = L->getResampling();
 
@@ -690,14 +705,20 @@ DataStream *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
         //pour chaque pyramide de base, on récupère une image
         for (int i = 0; i < bPyr.size(); i++) {
 
-            std::ostringstream oss;
-            oss << i;
+
             pyrType = bPyr.at(i)->getFormat();
             bStyle = bPyr.at(i)->getStyle();
 
-            //on récupère le bLevel associé à level
-            std::map<std::string,std::string> aLevel = aLevels.find(level)->second;
-            bLevel = aLevel.find(oss.str())->second;
+            if (specific) {
+                bLevel = bPyr.at(i)->getLevels().begin()->second->getId();
+            } else {
+                //on récupère le bLevel associé à level
+                std::ostringstream oss;
+                oss << i;
+                std::map<std::string,std::string> aLevel = aLevels.find(level)->second;
+                bLevel = aLevel.find(oss.str())->second;
+            }
+
 
             //on transforme la bbox
             BoundingBox<double> motherBbox = bbox;

@@ -75,26 +75,8 @@ Level::Level ( TileMatrix tm, int channels, std::string baseDir, int tilesPerWid
 
 Level::~Level() {
 
-//    if (&noDataSourceProxy != NULL) {
-//        if (noDataSourceProxy->_vptr) {
-//            delete noDataSourceProxy;
-//            noDataSourceProxy->_vptr = NULL;
-//            noDataSourceProxy = NULL;
-//        } else {
-//            noDataSourceProxy = NULL;
-//        }
-//    }
-//    if (&noDataSource != NULL) {
-//        if (noDataSource->_vptr) {
-//            noDataSource->_vptr = NULL;
-//            noDataSource = NULL;
-//        } else {
-//            noDataSource = NULL;
-//        }
-
-//    }
-
     delete noDataSourceProxy;
+    noDataSourceProxy = NULL;
     delete noDataSource;
     noDataSource = NULL;
 
