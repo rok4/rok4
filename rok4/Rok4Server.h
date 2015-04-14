@@ -326,7 +326,7 @@ private:
      * \param[in] format format of the request
      * \return requested tile
      */
-    DataStream *getTileOnDemand(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format);
+    DataSource *getTileOnDemand(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format);
     /**
      * \~french
      * \brief Traitement d'une requête GetCapabilities WMS
