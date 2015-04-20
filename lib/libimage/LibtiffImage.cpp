@@ -189,7 +189,7 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
         return NULL;
     }
 
-    if ( planarconfig != PLANARCONFIG_CONTIG ) {
+    if ( planarconfig != PLANARCONFIG_CONTIG && channels != 1 ) {
         LOGGER_ERROR ( "Planar configuration have to be 'PLANARCONFIG_CONTIG' for file " << filename );
         return NULL;
     }
