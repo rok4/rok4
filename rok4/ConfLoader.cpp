@@ -1113,6 +1113,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
                     if (best_h == ""){
                         foundLevel = false;
+                        delete TL;
                         break;
                     } else {
                         baPyr.insert(std::pair< std::string, std::string> ( oss.str(), best_h));
