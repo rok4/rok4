@@ -530,7 +530,7 @@ sub doIt {
     
     ALWAYS(">>> Write the pyramid's list ...");
 
-    if (! $objPyramid->writeListPyramid($objForest)) {
+    if (! $objPyramid->writeListPyramid($objForest, $params->{process}->{path_temp})) {
         ERROR("Can not write Pyramid list !");
         return FALSE;
     }
@@ -672,7 +672,11 @@ For more informations about properties, see <BE4::Pyramid>.
 
     pyr_name_old - If existing pyramid, its name. If this parameter is present, generation is an update.
     pyr_data_path_old - If existing pyramid, directory path where to find the cache. Default : pyr_data_path value.
-    pyr_desc_path_old - If existing pyramid, directory path where to find the descriptor. Default : pyr_desc_path value.     
+    pyr_desc_path_old - If existing pyramid, directory path where to find the descriptor. Default : pyr_desc_path value.
+    reference_mode - Possible values :
+        slink, hlink, copy : existing pyramid, the way the new cache will reference the ancestor's cache.
+        inject : no new pyramid. The old one is updated. CAUTION : old pyramid is irreversibly modified
+        Default : slink.
 
     compression - Possible values : raw, jpg, zip, lzw, png, pkb. PNG compression is not an official compression for tiff format (just readable by rok4). Default : raw.
 
@@ -782,6 +786,11 @@ Topic: For an image source
 For more informations about properties, see <BE4::ImageSource>.
     
     path_image - Directory path, where to find georeferenced images to use to generate the cache. Subdirectory are authorized and browsed.
+    preprocess_command  - string - command to call to preprocess source images (optionnal)
+    preprocess_opt_beg  - string - command arguments placed between the command and the source file (optionnal even with a command specified)
+    preprocess_opt_mid  - string - command arguments placed between the source file and the target file (optionnal even with a command specified)
+    preprocess_opt_end  - string - command arguments placed after the target file (optionnal even with a command specified)
+    preprocess_tmp_dir  - string - directory in which preprocessed images will be created. Mandatory if a preprocessing command is given.
 
 Topic: For a WMS source
 
@@ -811,6 +820,7 @@ For more informations about properties, see <BE4::Harvesting>.
 
 Examples:
     (start code)
+    
     [ 14 ]
     ; We use a WMS service and we have to know extent to harvest. Georeferenced images are used to define this extent.
     path_image          = /home/IGN/DATA/ORTHO_LAMB93
@@ -838,10 +848,19 @@ Examples:
     max_width = 2048
     max_height = 1024
 
-    [ 19 ]
+    [ 18 ]
     ; Georeferenced images
     srs = EPSG:3857
     path_image = /home/IGN/DATA/ORTHO_PM
+    (end code)
+    
+    [ 19 ]
+    ; Georeferenced images with preprocessing command
+    srs = EPSG:3857
+    path_image = /home/IGN/DATA/ORTHO_PM
+    preprocess_command = composite
+    preprocess_opt_beg = -watermark 50x50 -gravity center
+    preprocess_opt_mid = grayscale_watermark_img.ext
     (end code)
 
 Group: Old way to provide ONE datasource

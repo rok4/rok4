@@ -1340,13 +1340,20 @@ int ConfLoader::updatePyrLevel(Pyramid* pyr, TileMatrix *tm, TileMatrixSet *tms)
 
     if (best_h != "") {
 
-        for ( std::map<std::string, Level*>::iterator lv = pyr->getLevels().begin(); lv != pyr->getLevels().end(); lv++) {
+        std::vector<std::string> to_delete;
+        std::map<std::string, Level*>::iterator lv = pyr->getLevels().begin();
 
+        for ( ; lv != pyr->getLevels().end(); lv++) {
             if (lv->second->getId() != best_h) {
-                delete lv->second;
-                lv->second = NULL;
-                pyr->getLevels().erase(lv);
+                to_delete.push_back(lv->second->getId());
             }
+        }
+
+        for (std::vector<int>::size_type i = 0; i != to_delete.size(); i++) {
+            lv = pyr->getLevels().find(to_delete[i]);
+            delete lv->second;
+            lv->second = NULL;
+            pyr->getLevels().erase(lv);
         }
 
         return 1;
