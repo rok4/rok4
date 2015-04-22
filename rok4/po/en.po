@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2015-04-21 12:15+0200\n"
+"POT-Creation-Date: 2015-04-22 12:20+0200\n"
 "PO-Revision-Date: 2013-02-18 17:49+0100\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -378,7 +378,7 @@ msgid " can't be loaded"
 msgstr ""
 
 #: ConfLoader.cpp:721 ConfLoader.cpp:871
-msgid "No pyramid found for basedPyramids, "
+msgid "No pyramid found for sources, "
 msgstr ""
 
 #: ConfLoader.cpp:734 ConfLoader.cpp:887

@@ -635,7 +635,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
 
         //Si on se base sur d'autres pyramides pour faire la nouvelle pyramide
-        pElem=hRoot.FirstChild ( "basedPyramids" ).Element();
+        pElem=hRoot.FirstChild ( "sources" ).Element();
         if ( pElem ) {
 
 
@@ -643,7 +643,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
             nbPyramids = 0;
 
-            TiXmlElement* pPyr = hRoot.FirstChild( "basedPyramids" ).FirstChild("basedPyramid").Element();
+            TiXmlElement* pPyr = hRoot.FirstChild( "sources" ).FirstChild("basedPyramid").Element();
 
             if (pPyr) {
 
@@ -711,14 +711,14 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                 }
 
             } else {
-                //basedPyramids est indiqué mais pas de basedPyramid
+                //sources est indiqué mais pas de basedPyramid
                 LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't be loaded" ) );
                 return NULL;
             }
 
             //Aucune basedPyramid n'a pu être chargée
             if ( nbPyramids == 0 ) {
-                LOGGER_ERROR ( _ ("No pyramid found for basedPyramids, ") << fileName );
+                LOGGER_ERROR ( _ ("No pyramid found for sources, ") << fileName );
                 return NULL;
             } else {
                 onDemandGeneral = true;
@@ -730,7 +730,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     } else {
     //Si c'est la deuxième fois qu'on parse une pyramide
 
-        if (hRoot.FirstChild ( "basedPyramids" ).Element()) {
+        if (hRoot.FirstChild ( "sources" ).Element()) {
             LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't depend on other pyramids" ) );
             return NULL;
         }
@@ -781,7 +781,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
 
                 //Si on se base sur d'autres pyramides pour faire la nouvelle pyramide
-                TiXmlElement* pElemSP=hLvl.FirstChild ( "basedPyramids" ).Element();
+                TiXmlElement* pElemSP=hLvl.FirstChild ( "sources" ).Element();
                 if ( pElemSP ) {
 
                     TiXmlHandle hbdP ( pElemSP );
@@ -861,14 +861,14 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                         }
 
                     } else {
-                        //basedPyramids est indiqué mais pas de basedPyramid
+                        //sources est indiqué mais pas de basedPyramid
                         LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't be loaded" ) );
                         return NULL;
                     }
 
                     //Aucune basedPyramid n'a pu être chargée
                     if ( nsPyramids == 0 ) {
-                        LOGGER_ERROR ( _ ("No pyramid found for basedPyramids, ") << fileName );
+                        LOGGER_ERROR ( _ ("No pyramid found for sources, ") << fileName );
                         return NULL;
                     } else {
                         onDemandSpecific = true;
@@ -883,7 +883,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             } else {
             //Si c'est la deuxième fois qu'on parse une pyramide
 
-                if (hRoot.FirstChild ( "basedPyramids" ).Element()) {
+                if (hRoot.FirstChild ( "sources" ).Element()) {
                     LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't depend on other pyramids" ) );
                     return NULL;
                 }
