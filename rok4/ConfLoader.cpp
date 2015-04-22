@@ -1145,7 +1145,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
         }// boucle sur les levels
 
-        if (onDemandGeneral && testOnFly) {
+        if ((onDemandGeneral || onDemandSpecific) && testOnFly) {
             onFly = true;
         }
 
