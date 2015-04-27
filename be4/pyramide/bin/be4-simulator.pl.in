@@ -1,0 +1,364 @@
+#!/usr/bin/env perl
+# Copyright © (2011) Institut national de l'information
+#                    géographique et forestière
+#
+# Géoportail SAV <geop_services@geoportail.fr>
+#
+# This software is a computer program whose purpose is to publish geographic
+# data using OGC WMS and WMTS protocol.
+#
+# This software is governed by the CeCILL-C license under French law and
+# abiding by the rules of distribution of free software.  You can  use,
+# modify and/ or redistribute the software under the terms of the CeCILL-C
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "http://www.cecill.info".
+#
+# As a counterpart to the access to the source code and  rights to copy,
+# modify and redistribute granted by the license, users are provided only
+# with a limited warranty  and the software's author,  the holder of the
+# economic rights,  and the successive licensors  have only  limited
+# liability.
+#
+# In this respect, the user's attention is drawn to the risks associated
+# with loading,  using,  modifying and/or developing or reproducing the
+# software by the user in light of its specific status of free software,
+# that may mean  that it is complicated to manipulate,  and  that  also
+# therefore means  that it is reserved for developers  and  experienced
+# professionals having in-depth computer knowledge. Users are therefore
+# encouraged to load and test the software's suitability as regards their
+# requirements in conditions enabling the security of their systems and/or
+# data to be ensured and,  more generally, to use and operate it in the
+# same conditions as regards security.
+#
+# The fact that you are presently reading this means that you have had
+#
+# knowledge of the CeCILL-C license and that you accept its terms.
+
+################################################################################
+
+=begin nd
+File: be4-simulator.pl
+
+Section: BE4-SIMULATOR tool
+
+Synopsis:
+    (start code)
+    perl be4-simulator.pl --tms=file --wkt=file --dims=NxM,N'xM' --levels=I,J,K
+    (end code)
+=cut
+
+################################################################################
+
+use warnings;
+use strict;
+
+use POSIX qw(locale_h);
+
+# Module
+use Log::Log4perl qw(:easy);
+use Getopt::Long;
+use File::Basename;
+use Geo::OSR;
+use Geo::GDAL;
+use Cwd;
+
+# My search module
+use FindBin qw($Bin);
+use lib "$Bin/../lib/perl5";
+
+# My module
+use BE4::TileMatrixSet;
+
+################################################################################
+# Constantes
+use constant TRUE  => 1;
+use constant FALSE => 0;
+
+################################################################################
+# Version
+my $VERSION = '@VERSION_TEXT@';
+
+=begin nd
+Variable: options
+
+Contains be4-simulator call options :
+
+    version - To obtain the command's version
+    help - To obtain the command's help
+    usage - To obtain the command's usage
+    
+    tms - To precise the TMS file
+    wkt - To precise the WKT file
+    levels - To precise calculated levels 
+    dims - To precise dimensions of image to compare
+    
+=cut
+my %options =
+(
+    "version"    => 0,
+    "help"       => 0,
+    "usage"      => 0,
+
+    # Mandatory
+    "tms"  => undef,
+    "wkt" => undef,
+    "levels" => undef,
+    "dims" => undef
+);
+
+####################################################################################################
+#                                         Group: Functions                                         #
+####################################################################################################
+
+=begin nd
+Function: main
+
+Main method.
+
+See Also:
+    <init>, <doIt>
+=cut
+sub main {
+    printf("BE4-SIMULATOR : version [%s]\n",$VERSION);
+
+    print STDOUT "BEGIN\n";
+
+    # initialization
+    ALWAYS("> Initialization");
+    if (! main::init()) {
+        print STDERR "ERROR INITIALIZATION !\n";
+        exit 1;
+    }
+
+    # execution
+    ALWAYS("> Execution");
+    if (! main::doIt()) {
+        print STDERR "ERROR EXECUTION !\n";
+        exit 5;
+    }
+
+    print STDOUT "END\n";
+}
+
+=begin nd
+Function: init
+
+Checks and stores options, initializes the default logger. Checks TMS directory and the pyramid's descriptor file.
+=cut
+sub init {
+
+    # init Getopt
+    local $ENV{POSIXLY_CORRECT} = 1;
+
+    Getopt::Long::config qw(
+        default
+        no_autoabbrev
+        no_getopt_compat
+        require_order
+        bundling
+        no_ignorecase
+        permute
+    );
+
+    # init Options
+    GetOptions(
+        "help|h" => sub {
+            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-simulator-pl.html\n" ;
+            exit 0;
+        },
+        "version|v" => sub { exit 0; },
+        "usage" => sub {
+            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-simulator-pl.html\n" ;
+            exit 0;
+        },
+        
+        "tms=s" => \$options{tms},
+        "wkt=s" => \$options{wkt},
+        "levels=s" => \$options{levels},
+        "dims=s" => \$options{dims}
+    ) or do {
+        printf "Unappropriate usage\n";
+        printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-simulator-pl.html\n";
+        exit -1;
+    };
+    
+    # logger by default at runtime
+    Log::Log4perl->easy_init({
+        level => "INFO",
+        layout => '%5p : %m (%M) %n'
+    });
+
+    ############# TMS
+    if (! defined $options{tms} || $options{tms} eq "") {
+        ERROR("Option 'tms' not defined !");
+        return FALSE;
+    }
+
+    my $tmsFile = File::Spec->rel2abs($options{tms});
+
+    if (! -f $tmsFile) {
+        ERROR(sprintf "TMS file does not exist : %s", $tmsFile);
+        return FALSE;
+    }
+    $options{tms} = $tmsFile;
+    
+    ############# WKT
+    if (! defined $options{wkt} || $options{wkt} eq "") {
+        ERROR("Option 'wkt' not defined !");
+        return FALSE;
+    }
+
+    my $wktFile = File::Spec->rel2abs($options{wkt});
+
+    if (! -f $wktFile) {
+        ERROR(sprintf "WKT file does not exist : %s", $wktFile);
+        return FALSE;
+    }
+    $options{wkt} = $wktFile;
+
+    return TRUE;
+}
+
+####################################################################################################
+#                                 Group: Process methods                                           #
+####################################################################################################
+
+=begin nd
+Function: doIt
+
+Use classes :
+    - <BE4::TileMatrixSet>
+    - <BE4::TileMatrix>
+    - <Geo::OGR::Geometry>
+=cut
+sub doIt {
+    
+    my $objTMS  = BE4::TileMatrixSet->new($options{tms});
+    if (! defined $objTMS) {
+        ERROR (sprintf "Can not create object TileMatrixSet from this path : %s ", $options{tms});
+        return FALSE;
+    }
+    
+    if (! open SHAPE, "<", $options{wkt} ){
+        ERROR(sprintf "Cannot open the WKT file %s.",$options{wkt});
+        return FALSE;
+    }
+
+    my $wktShape = '';
+    while( defined( my $line = <SHAPE> ) ) {
+        $wktShape .= $line;
+    }
+    close(SHAPE);
+    
+    my $ogrShape;
+    eval { $ogrShape = Geo::OGR::Geometry->create(WKT=>$wktShape); };
+    if ($@) {
+        ERROR(sprintf "WKT geometry (%s) is not valid : %s",$wktShape,$@);
+        return FALSE;
+    }
+
+    if (! defined $ogrShape) {
+        ERROR(sprintf "Cannot create a Geometry from the string : %s.",$wktShape);
+        return FALSE;
+    }
+
+    my $bboxref = $ogrShape->GetEnvelope();
+    my ($xmin,$xmax,$ymin,$ymax) = ($bboxref->[0],$bboxref->[1],$bboxref->[2],$bboxref->[3]);
+    
+    if (! defined $xmin) {
+        ERROR("Cannot calculate bbox from the WKT Geometry");
+        return FALSE;
+    }
+    
+    
+    ALWAYS(sprintf ">>> Simulation for wkt '%s' ", $options{wkt});
+    
+    my @dimensions = split(/,/, $options{dims});
+    my @levels = split(/,/, $options{levels});
+    
+    foreach my $dims (@dimensions) {
+        
+        my ($width, $height) = split(/x/, $dims);
+        
+        INFO("For tile dimensions $width x $height");
+            
+        foreach my $level (@levels) {
+            
+            my $tm = $objTMS->getTileMatrix($level);
+            if (! defined $tm) {
+                ERROR("Impossible de récupérer le niveau $level dans le TMS");
+                return FALSE;
+            };
+            
+            my $imageWidth = $tm->getTileWidth() * $width;
+            my $imageHeight = $tm->getTileHeight() * $height;
+            
+            if (! defined $width || ! defined $height) {
+                ERROR("Dimensions not valid $dims");
+                return FALSE;
+            }
+            
+            my $nbImages = 0;
+            
+            my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices($xmin,$ymin,$xmax,$ymax,$width,$height);
+            
+            for (my $i = $iMin; $i <= $iMax; $i++) {
+                for (my $j = $jMin; $j <= $jMax; $j++) {
+                    my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBBox($i,$j,$width,$height);
+
+                    my $WKTtile = sprintf "POLYGON((%s %s,%s %s,%s %s,%s %s,%s %s))",
+                        $xmin,$ymin,
+                        $xmin,$ymax,
+                        $xmax,$ymax,
+                        $xmax,$ymin,
+                        $xmin,$ymin;
+
+                    my $OGRtile = Geo::OGR::Geometry->create(WKT=>$WKTtile);
+                    if ($OGRtile->Intersect($ogrShape)){
+                        $nbImages++
+                    }
+                }
+            }
+            
+            INFO("\t Level $level : $nbImages (pixel dimension of an image $imageWidth x $imageHeight)");
+        }
+    }
+    
+    return TRUE;
+}
+
+################################################################################
+
+BEGIN {}
+INIT {}
+
+main;
+exit 0;
+
+END {}
+
+################################################################################
+
+1;
+__END__
+
+=begin nd
+Section: Details
+
+Group: Command's options
+
+    --help - Display the link to the technic documentation.
+
+    --usage - Display the link to the technic documentation.
+
+    --version - Display the tool version.
+
+    --tms - TMS file. Mandatory.
+    
+    --wkt - WKT file. Mandatory.
+    
+    --dims - Image tile dimensions. Mandatory.
+    
+    --levels - Levels. Mandatory.
+
+=cut
