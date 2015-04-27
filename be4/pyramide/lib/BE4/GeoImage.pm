@@ -174,11 +174,7 @@ sub _init {
     
     # init. params    
     $self->{completePath} = $completePath;
-    
-    #
-    $self->{filepath} = File::Basename::dirname($completePath);
-    $self->{filename} = File::Basename::basename($completePath);
-    
+        
     my $maskPath = $completePath;
     $maskPath =~ s/\.[a-zA-Z0-9]+$/\.msk/;
     
@@ -187,6 +183,10 @@ sub _init {
         $self->{maskCompletePath} = $maskPath;
     }
     
+    #
+    $self->{filepath} = File::Basename::dirname($completePath);
+    $self->{filename} = File::Basename::basename($completePath);
+
     return TRUE;
 }
 
@@ -503,6 +503,24 @@ sub setImageSource {
         $self->{imgSrc} = $imgSrc;
     }
 }
+
+# Function: setImagePath
+sub setImagePath {
+  my $self = shift;
+  my $imagePath = shift;
+
+  if (! defined $imagePath) {
+    ERROR("Cannot set image path to 'undef'.");
+    return FALSE; 
+  }
+
+  $self->{completePath} = $imagePath;
+  $self->{filepath} = File::Basename::dirname($imagePath);
+  $self->{filename} = File::Basename::basename($imagePath);
+
+  return TRUE;
+}
+
 
 # Function: getXmin
 sub getXmin {

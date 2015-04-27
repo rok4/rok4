@@ -93,6 +93,8 @@ Using:
         pyr_name_new        => "ORTHO_RAW_LAMB93_D075-E",
         pyr_desc_path       => "/home/ign/DATA",
         pyr_data_path       => "/home/ign/DATA",
+        #
+        update_mode      => "SLINK"
     };
 
     my $objPyr = BE4::Pyramid->new($params_options,"/home/ign/TMP");
@@ -113,6 +115,8 @@ Attributes:
 |               name - string - Pyramid's name
 |               desc_path - string - Directory in which we write the pyramid's descriptor
 |               data_path - string - Directory in which we write the pyramid's data
+|               update_mode - string - type of updating the old pyramid.
+|                   |   Possible values are : 'slink' (soft link - default), 'hlink' (hard link), 'copy' (hard copy), 'inject' (no new pyramid, we update the old pyramid directly). 
 |               content_path - string - Path to the content's list
 
     dir_depth - integer - Number of subdirectories from the level root to the image : depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif
@@ -150,6 +154,7 @@ use File::Spec::Link;
 use File::Basename;
 use File::Spec;
 use File::Path;
+use File::Copy;
 use Tie::File;
 
 use Data::Dumper;
@@ -195,6 +200,10 @@ TPYR
 # Define default values for directories' names.
 my %DEFAULT;
 
+# Constant: UPDATE_MODES
+# Defines possibles values for the 'update_mode' parameter.
+my @UPDATE_MODES;
+
 ################################################################################
 
 BEGIN {}
@@ -204,7 +213,14 @@ INIT {
         dir_image => 'IMAGE',
         dir_nodata => 'NODATA',
         dir_mask => 'MASK',
-        dir_metadata => 'METADATA'
+        dir_metadata => 'METADATA',
+        update_mode => 'slink'
+    );
+    @UPDATE_MODES = (
+        'slink', # symbolic link to ancestor's images
+        'hlink', # hard link to ancestor's images.
+        'copy',   # real copy of ancestor's images.
+        'inject' # no new pyramid : we update the old pyramid
     );
 }
 
@@ -238,6 +254,8 @@ sub new {
         # 2 options possible with parameters :
         #   - a new pyramid configuration
         #   - a existing pyramid configuration
+        #        - update (copy, slink, hlink)
+        #        - inject (inject)
         # > in a HASH entry only (no ref) !
         # the choice is on the parameter 'pyr_name_old'
         #   1) if param is null, it's a new pyramid only !
@@ -254,6 +272,7 @@ sub new {
             desc_path     => undef,
             data_path     => undef,
             content_path  => undef,
+            update_mode  => undef,
         },
         #
         dir_depth    => undef,
@@ -350,6 +369,26 @@ sub _init {
             $params->{pyr_data_path_old} = $params->{pyr_data_path};
         }
         $self->{old_pyramid}->{data_path} = $params->{pyr_data_path_old};
+        
+        # checking the way to reference the ancestor's cache
+        if (! exists $params->{update_mode} || ! defined $params->{update_mode}) {
+            INFO (sprintf "Parameter 'update_mode' has not been set. Default value ('%s') is used.",$DEFAULT{update_mode});
+            $params->{update_mode} = $DEFAULT{update_mode};
+        } elsif ( ! isUpdateMode($params->{update_mode}) ) {
+            ERROR (sprintf "'%s' is not a valid value for parameter 'update_mode'.",$params->{update_mode});
+            return FALSE;
+        }
+        $self->{old_pyramid}->{update_mode} = $params->{update_mode};
+        
+        if ($self->getUpdateMode() eq "inject") {
+            INFO("CAUTION : You use update mode 'inject' at your own risk : old pyramid will be modified irreversibly. If an error occured, no rollback will be done.");
+            # La nouvelle pyramide est en fait l'ancienne
+            $self->{new_pyramid}->{data_path} = $self->{old_pyramid}->{data_path};
+            $self->{new_pyramid}->{desc_path} = $self->{old_pyramid}->{desc_path};
+            $self->{new_pyramid}->{name} = $self->{old_pyramid}->{name};
+            $self->{new_pyramid}->{content_path} = $self->{old_pyramid}->{content_path};
+        }
+        
     } else {
         # For a new pyramid, are mandatory (and controlled in this class):
         #   - image_width, image_height
@@ -901,7 +940,7 @@ sub findImages {
         if (exists $cacheroots->{$root}) {
             $rootID = $cacheroots->{$root};
         } else {
-            $rootID = scalar (keys %$cacheroots);
+            $rootID = scalar (keys %{$cacheroots});
             $cacheroots->{$root} = $rootID;
         }
 
@@ -909,6 +948,32 @@ sub findImages {
     }
     
     return TRUE;
+}
+
+=begin nd
+Function: isUpdateMode
+
+Tests if the value for parameter 'update_mode' is allowed.
+
+Parameters (list):
+    referenceModeValue - string - chosen value for the mode of reference to the old pyrammid cache files
+=cut
+sub isUpdateMode {
+    my $referenceModeValue = shift;
+
+    TRACE;
+    
+    if (! defined $referenceModeValue) {
+        ERROR(sprintf "Checking the validity of reference_value : the value is not defined inside the test !");
+        return FALSE;
+    }
+
+    foreach (@{UPDATE_MODES}) {
+        if ($referenceModeValue eq $_) {
+            return TRUE;
+        }
+    }
+    return FALSE;
 }
 
 ####################################################################################################
@@ -1146,9 +1211,11 @@ sub writeConfPyramid {
     
     $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n//;
     $strpyrtmplt =~ s/^$//g;
-    $strpyrtmplt =~ s/^\n$//g;  
-
-    if (-f $descriptorFile) {
+    $strpyrtmplt =~ s/^\n$//g;
+    
+    if ($self->getUpdateMode() eq "inject") {
+        INFO("File Pyramid ('$descriptorFile') is (over)write : injection mode !");
+    } elsif (-f $descriptorFile) {
         ERROR(sprintf "File Pyramid ('%s') exist, can not overwrite it ! ", $descriptorFile);
         return FALSE;
     }
@@ -1162,15 +1229,14 @@ sub writeConfPyramid {
         }
     }
     
-    my $PYRAMID;
-    if (! open $PYRAMID, ">", $descriptorFile) {
-        ERROR("");
+    if ( ! open(PYRAMID, ">", $descriptorFile) ) {
+        ERROR("Cannot open $descriptorFile to write it : $!");
         return FALSE;
     }
     #
-    printf $PYRAMID "%s", $strpyrtmplt;
+    print PYRAMID $strpyrtmplt;
     #
-    close $PYRAMID;
+    close(PYRAMID);
 
     return TRUE;
 }
@@ -1195,13 +1261,16 @@ Parameters (list):
 sub writeListPyramid {
     my $self = shift;
     my $forest = shift;
+    my $path_temp = shift;
 
     TRACE;
 
     my $newcachepyramid = $self->getNewDataDir;
     
+    my $newcachelisttmp = File::Spec->catfile($path_temp,$self->getNewName(),$self->getNewName()."_tmp.list");;
+    
     my $newcachelist = $self->getNewListFile;
-    if (-f $newcachelist) {
+    if (-f $newcachelist && $self->getUpdateMode() ne "inject") {
         ERROR(sprintf "New pyramid list ('%s') exist, can not overwrite it ! ", $newcachelist);
         return FALSE;
     }
@@ -1216,17 +1285,28 @@ sub writeListPyramid {
         }
     }
     
-    my $NEWLIST;
+    my $dirtmp = dirname($newcachelisttmp);
+    if (! -d $dir) {
+        DEBUG (sprintf "Create the temporary pyramid list directory '%s' !", $dirtmp);
+        eval { mkpath([$dirtmp]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the temporary pyramid list directory '%s' : %s !", $dirtmp , $@);
+            return FALSE;
+        }
+    }
+    
+    my $NEWLISTTMP;
 
-    if (! open $NEWLIST, ">", $newcachelist) {
-        ERROR(sprintf "Cannot open new pyramid list file : %s",$newcachelist);
+    if (! open $NEWLISTTMP, ">", $newcachelisttmp) {
+        ERROR(sprintf "Cannot open temporary new pyramid list file : %s",$newcachelisttmp);
         return FALSE;
     }
     
-    printf $NEWLIST "#\n";
+    printf $NEWLISTTMP "#\n";
     
     # Hash to bind ID and root directory
     my %newCacheRoots;
+    
     # Hash to count root's uses (to remove useless roots)
     my %newCacheRootsUse;
     
@@ -1234,13 +1314,13 @@ sub writeListPyramid {
     if (! $self->isNewPyramid) {
         
         my $OLDLIST;
-
+        
         if (! open $OLDLIST, "<", $self->getOldListFile) {
             ERROR(sprintf "Cannot open old pyramid list file : %s",$self->getOldListFile);
             return FALSE;
         }
         
-        while( defined( my $cacheRoot = <$OLDLIST> ) ) {
+        while( my $cacheRoot = <$OLDLIST> ) {
             chomp $cacheRoot;
             if ($cacheRoot eq "#") {
                 # separator between caches' roots and images
@@ -1260,9 +1340,9 @@ sub writeListPyramid {
             $newCacheRootsUse{$Root[0]+1} = 0;
         }
         
-        while( defined( my $oldtile = <$OLDLIST> ) ) {
+        while( my $oldtile = <$OLDLIST> ) {
             chomp $oldtile;
-            
+                        
             # old tile path is split. Afterwards, only array will be used to compose paths
             my @directories = File::Spec->splitdir($oldtile);
             # @directories = [ RootID, dir_name, levelID, ..., XY.tif]
@@ -1294,72 +1374,115 @@ sub writeListPyramid {
             if (! $forest->containsNode($level,$x,$y)) {
                 # This image is not in the forest, it won't be modified by this generation.
                 # We add it now to the list (real file path)
-                printf $NEWLIST "%s\n", File::Spec->catdir(@directories);
+                my $newTileFileName = File::Spec->catdir(@directories);
+                if ($self->getUpdateMode() eq 'hlink' || $self->getUpdateMode() eq 'copy' || $self->getUpdateMode() eq 'inject') {
+                    $newTileFileName =~ s/^[0-9]+\//0\//;
+                }
+                printf $NEWLISTTMP "%s\n", $newTileFileName;
                 # Root is used : we incremente its counter
                 $newCacheRootsUse{$directories[0]}++;
             }
             
-            # We replace root ID with the root path, to obtain a real path.
-            if (! exists $newCacheRoots{$directories[0]}) {
-                ERROR(sprintf "Old pyramid list uses an undefined root ID : %s",$directories[0]);
-                return FALSE;
-            }
-            $directories[0] = $newCacheRoots{$directories[0]};
-            $oldtile = File::Spec->catdir(@directories);
+            if ($self->getUpdateMode() ne 'inject') {
+                # In injection case, we don't create a new pyramid version : no link, no copy, nothing to do
             
-            # We remove the root to replace it by the new pyramid root
-            shift @directories;
-            my $newtile = File::Spec->catdir($newcachepyramid,@directories);
+                # We replace root ID with the root path, to obtain a real path.
+                if (! exists $newCacheRoots{$directories[0]}) {
+                    ERROR(sprintf "Old pyramid list uses an undefined root ID : %s",$directories[0]);
+                    return FALSE;
+                }
+                $directories[0] = $newCacheRoots{$directories[0]};
+                $oldtile = File::Spec->catdir(@directories);
+                
+                # We remove the root to replace it by the new pyramid root
+                shift @directories;
+                my $newtile = File::Spec->catdir($newcachepyramid,@directories);
 
-            #create folders
-            my $dir = dirname($newtile);
-            
-            if (! -d $dir) {
-                eval { mkpath([$dir]); };
-                if ($@) {
-                    ERROR(sprintf "Can not create the pyramid directory '%s' : %s !",$dir, $@);
+                #create folders
+                my $dir = dirname($newtile);
+                
+                if (! -d $dir) {
+                    eval { mkpath([$dir]); };
+                    if ($@) {
+                        ERROR(sprintf "Can not create the pyramid directory '%s' : %s !",$dir, $@);
+                        return FALSE;
+                    }
+                }
+
+                if (! -f $oldtile || -l $oldtile) {
+                    ERROR(sprintf "File path in the pyramid list does not exist or is a link : %s",$oldtile);
+                    return FALSE;
+                }
+                
+                my $reloldtile = File::Spec->abs2rel($oldtile, $dir);
+
+                if ($self->getUpdateMode() eq 'slink') {
+                    DEBUG(sprintf "Creating symbolic link from %s to %s", $oldtile, $newtile);
+                    my $result = eval { symlink ($reloldtile, $newtile); };
+                    if (! $result) {
+                        ERROR (sprintf "The tile '%s' can not be soft linked to '%s' (%s)",$reloldtile,$newtile,$!);
+                        return FALSE;
+                    }
+                } elsif ($self->getUpdateMode() eq 'hlink') {
+                    DEBUG(sprintf "Creating hard link from %s to %s", $oldtile, $newtile);
+                    my $result = eval { link ($oldtile, $newtile); };
+                    if (! $result) {
+                        ERROR (sprintf "The tile '%s' can not be hard linked to '%s' (%s)",$oldtile,$newtile,$!);
+                        return FALSE;
+                    }
+                } elsif ($self->getUpdateMode() eq 'copy') {
+                    DEBUG(sprintf "Copying tile from %s to %s", $newtile, $oldtile);
+                    my $result = eval { copy($oldtile, $newtile); };
+                    if (! $result) {
+                        ERROR (sprintf "The tile '%s' can not be copied to '%s' (%s)",$oldtile,$newtile,$!);
+                        return FALSE;
+                    }
+                } else {
+                    ERROR (sprintf "Unknown update mode : '%s'",$self->getUpdateMode());
                     return FALSE;
                 }
             }
-
-            if (! -f $oldtile || -l $oldtile) {
-                ERROR(sprintf "File path in the pyramid list does not exist or is a link : %s",$oldtile);
-                return FALSE;
-            }
             
-            my $reloldtile = File::Spec->abs2rel($oldtile, $dir);
-
-            my $result = eval { symlink ($reloldtile, $newtile); };
-            if (! $result) {
-                ERROR (sprintf "The tile '%s' can not be linked to '%s' (%s)",$reloldtile,$newtile,$!);
-                return FALSE;
-            }
         }
+        
+        close $OLDLIST;
     }
     
-    close $NEWLIST;
+    close $NEWLISTTMP;
     
     # Now, we can write binding between ID and root, testing counter.
     # We write at the top of the list file, caches' roots, using Tie library
-    my @NEWLIST;
-    if (! tie @NEWLIST, 'Tie::File', $newcachelist) {
-        ERROR(sprintf "Cannot write the header of new pyramid list file : %s",$newcachelist);
+    my @NEWLISTTMP;
+    if (! tie @NEWLISTTMP, 'Tie::File', $newcachelisttmp) {
+        ERROR(sprintf "Cannot write the header of temporary new pyramid list file : %s",$newcachelisttmp);
         return FALSE;
     }
     
-    while( my ($rootID,$root) = each(%newCacheRoots) ) {
-        if ($newCacheRootsUse{$rootID} > 0) {
-            # Used roots are written in the header
-            unshift @NEWLIST,(sprintf "%s=%s",$rootID,$root);
-        } else {
-            INFO (sprintf "The old pyramid '%s' is no longer used.", $root)
+    if ($self->getUpdateMode() eq 'slink') {
+        while( my ($rootID,$root) = each(%newCacheRoots) ) {
+            if ($newCacheRootsUse{$rootID} > 0) {
+                # Used roots are written in the header
+                
+                INFO (sprintf "%s is used %d times", $root, $newCacheRootsUse{$rootID});
+                
+                unshift @NEWLISTTMP,(sprintf "%s=%s",$rootID,$root);
+            } else {
+                INFO (sprintf "The old pyramid '%s' is no longer used.", $root)
+            }
         }
     }
     
     # Root of the new pyramid (first position)
-    unshift @NEWLIST,"0=$newcachepyramid\n";
+    unshift @NEWLISTTMP,"0=$newcachepyramid\n";
     
-    untie @NEWLIST;
+    untie @NEWLISTTMP;
+    
+    # On copie notre descripteur de pyramide temporaire au bon endroit
+    my $return = `mv $newcachelisttmp $newcachelist`;
+    if ($? != 0) {
+        ERROR("Cannot move $newcachelisttmp -> $newcachelist : $!");
+        return FALSE;
+    }    
 
     return TRUE;
 }
@@ -1429,8 +1552,7 @@ sub writeCachePyramid {
                 return FALSE;
             }
             
-            printf $NEWLIST "%s\n", File::Spec->catdir(
-                "0",$self->getDirNodata,$objLevel->getID,$self->{nodata}->getNodataFilename);
+            printf $NEWLIST "%s\n", File::Spec->catdir("0",$self->getDirNodata,$objLevel->getID,$self->{nodata}->getNodataFilename);
         }
     }
     
@@ -1533,6 +1655,12 @@ sub getOldListFile {
 sub getOldDataDir {
     my $self = shift;
     return File::Spec->catfile($self->{old_pyramid}->{data_path}, $self->{old_pyramid}->{name});
+}
+
+# Function: getUpdateMode
+sub getUpdateMode {
+    my $self = shift;    
+    return $self->{old_pyramid}->{update_mode};
 }
 
 #################### TMS ####################
@@ -1989,7 +2117,7 @@ And details about each level.
 
 For a new pyramid, all level between top and bottom are saved into.
 
-For an update, all level of the existing pyramid are duplicated and we add new levels (between otp and bottom levels). For levels which are present in the old and the new pyramids, we update TMS limits.
+For an update, all level of the existing pyramid are duplicated and we add new levels (between top and bottom levels). For levels which are present in the old and the new pyramids, we update TMS limits.
 
 Cache's List:
 
@@ -2046,6 +2174,8 @@ For a new pyramid, the directory structure is empty, only the level directory fo
     (end code)
 
 For an existing pyramid, the directory structure is duplicated to the new pyramid with all file linked, thanks to the old cache list.
+The kind of linking can be chosen between symbolic link (default), hard link (does not work if the new pyramid and the old one are stored in different file systems)
+ and hard copy.
     (start code)
     pyr_data_path/
             |__pyr_name_new/
