@@ -755,7 +755,9 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             std::string noDataFilePath="";
             std::vector<Pyramid*> sPyramids;
             int nsPyramids;
+            int ntPyramids;
             bool specificLevel = false;
+            bool alreadyLoad = false;
 
             TiXmlHandle hLvl ( pElem );
             TiXmlElement* pElemLvl = hLvl.FirstChild ( "tileMatrix" ).Element();
@@ -765,6 +767,19 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             }
             std::string tmName ( pElemLvl->GetText() );
             std::string id ( tmName );
+            //on va vérifier que le level qu'on veut charger n'a pas déjà été chargé
+            if (levels.size() != 0) {
+                for (std::map<std::string, Level *>::iterator lv = levels.begin(); lv != levels.end(); lv++) {
+                    if (lv->second->getId() == id) {
+                        LOGGER_ERROR ( _ ( "Level: " ) << id << _ ( " has already been loaded" ) );
+                        alreadyLoad = true;
+                        break;
+                    }
+                }
+            }
+            if (alreadyLoad) {
+                continue;
+            }
             std::map<std::string, TileMatrix>* tmList = tms->getTmList();
             std::map<std::string, TileMatrix>::iterator itTM = tmList->find ( tmName );
 
@@ -788,6 +803,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                     bool timesSpecific = false;
 
                     nsPyramids = 0;
+                    ntPyramids = 0;
 
                     TiXmlElement* sPyr = hbdP.FirstChild("basedPyramid").Element();
 
@@ -818,6 +834,40 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
                                 if ( !basedPyramid) {
                                     LOGGER_ERROR ( _ ( "La pyramide " ) << basedPyramidFilePath << _ ( " ne peut etre chargee" ) );
+                                    if (bPyramids.size() != 0) {
+                                        for ( std::vector<int>::size_type i = 0; i != bPyramids.size(); i++) {
+                                            delete bPyramids[i];
+                                            bPyramids[i] = NULL;
+                                        }
+                                        bPyramids.clear();
+                                    }
+                                    if (sPyramids.size() != 0) {
+                                        for ( std::vector<int>::size_type i = 0; i != sPyramids.size(); i++) {
+                                            delete sPyramids[i];
+                                            sPyramids[i] = NULL;
+                                        }
+                                        sPyramids.clear();
+                                    }
+                                    if (specificPyramids.size() != 0) {
+                                        for ( std::map<std::string,std::vector<Pyramid*> >::iterator lv = specificPyramids.begin(); lv != specificPyramids.end(); lv++) {
+
+                                            if (lv->second.size() != 0) {
+                                                for ( std::vector<int>::size_type i = 0; i != lv->second.size(); i++) {
+                                                    delete lv->second[i];
+                                                    lv->second[i] = NULL;
+                                                }
+                                                lv->second.clear();
+                                            }
+                                        }
+                                        specificPyramids.clear();
+                                    }
+                                    if (levels.size() != 0) {
+                                        for ( std::map<std::string,Level*>::iterator lv = levels.begin(); lv != levels.end(); lv++) {
+                                            delete lv->second;
+                                            lv->second = NULL;
+                                        }
+                                        levels.clear();
+                                    }
                                     return NULL;
                                 } else {
 
@@ -844,16 +894,53 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                                 }
 
                                 int up = updatePyrLevel(basedPyramid, tm, tms);
+                                ntPyramids++;
                                 if (up != 0 ) {
                                     sPyramids.push_back( basedPyramid ) ;
                                     nsPyramids++;
+                                } else {
+                                    LOGGER_ERROR ( _ ( "No equivalent level found in " ) << basedPyramidFilePath << _ ( " for level " ) << id);
                                 }
 
 
                             } else {
                                 //Il manque un des trois elements necessaires pour initialiser une
                                 //nouvelle pyramide de base
-                                LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't be loaded" ) );
+                                LOGGER_ERROR ( _ ( "Pyramid: " ) << basedPyramidFilePath << _ ( " can't be loaded because information are missing" ) );
+                                if (bPyramids.size() != 0) {
+                                    for ( std::vector<int>::size_type i = 0; i != bPyramids.size(); i++) {
+                                        delete bPyramids[i];
+                                        bPyramids[i] = NULL;
+                                    }
+                                    bPyramids.clear();
+                                }
+                                if (sPyramids.size() != 0) {
+                                    for ( std::vector<int>::size_type i = 0; i != sPyramids.size(); i++) {
+                                        delete sPyramids[i];
+                                        sPyramids[i] = NULL;
+                                    }
+                                    sPyramids.clear();
+                                }
+                                if (specificPyramids.size() != 0) {
+                                    for ( std::map<std::string,std::vector<Pyramid*> >::iterator lv = specificPyramids.begin(); lv != specificPyramids.end(); lv++) {
+
+                                        if (lv->second.size() != 0) {
+                                            for ( std::vector<int>::size_type i = 0; i != lv->second.size(); i++) {
+                                                delete lv->second[i];
+                                                lv->second[i] = NULL;
+                                            }
+                                            lv->second.clear();
+                                        }
+                                    }
+                                    specificPyramids.clear();
+                                }
+                                if (levels.size() != 0) {
+                                    for ( std::map<std::string,Level*>::iterator lv = levels.begin(); lv != levels.end(); lv++) {
+                                        delete lv->second;
+                                        lv->second = NULL;
+                                    }
+                                    levels.clear();
+                                }
                                 return NULL;
 
                             }
@@ -862,13 +949,83 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
                     } else {
                         //sources est indiqué mais pas de basedPyramid
-                        LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't be loaded" ) );
+                        LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't be loaded bacause no basedPyramid are specified" ) );
+                        if (bPyramids.size() != 0) {
+                            for ( std::vector<int>::size_type i = 0; i != bPyramids.size(); i++) {
+                                delete bPyramids[i];
+                                bPyramids[i] = NULL;
+                            }
+                            bPyramids.clear();
+                        }
+                        if (sPyramids.size() != 0) {
+                            for ( std::vector<int>::size_type i = 0; i != sPyramids.size(); i++) {
+                                delete sPyramids[i];
+                                sPyramids[i] = NULL;
+                            }
+                            sPyramids.clear();
+                        }
+                        if (specificPyramids.size() != 0) {
+                            for ( std::map<std::string,std::vector<Pyramid*> >::iterator lv = specificPyramids.begin(); lv != specificPyramids.end(); lv++) {
+
+                                if (lv->second.size() != 0) {
+                                    for ( std::vector<int>::size_type i = 0; i != lv->second.size(); i++) {
+                                        delete lv->second[i];
+                                        lv->second[i] = NULL;
+                                    }
+                                    lv->second.clear();
+                                }
+                            }
+                            specificPyramids.clear();
+                        }
+                        if (levels.size() != 0) {
+                            for ( std::map<std::string,Level*>::iterator lv = levels.begin(); lv != levels.end(); lv++) {
+                                delete lv->second;
+                                lv->second = NULL;
+                            }
+                            levels.clear();
+                        }
                         return NULL;
                     }
 
-                    //Aucune basedPyramid n'a pu être chargée
-                    if ( nsPyramids == 0 ) {
-                        LOGGER_ERROR ( _ ("No pyramid found for sources, ") << fileName );
+                    //Aucune basedPyramid n'a pu être chargée pour ce level
+                    if ( nsPyramids !=  ntPyramids) {
+                        LOGGER_ERROR ( nsPyramids << _ (" equivalent level found for level ") << id << _ ( " but " ) << ntPyramids << _ ( " should be found" ) );
+                        if (bPyramids.size() != 0) {
+                            for ( std::vector<int>::size_type i = 0; i != bPyramids.size(); i++) {
+                                delete bPyramids[i];
+                                bPyramids[i] = NULL;
+                            }
+                            bPyramids.clear();
+                        }
+                        if (sPyramids.size() != 0) {
+                            for ( std::vector<int>::size_type i = 0; i != sPyramids.size(); i++) {
+                                delete sPyramids[i];
+                                sPyramids[i] = NULL;
+                            }
+                            sPyramids.clear();
+                        }
+                        if (specificPyramids.size() != 0) {
+                            for ( std::map<std::string,std::vector<Pyramid*> >::iterator lv = specificPyramids.begin(); lv != specificPyramids.end(); lv++) {
+
+                                if (lv->second.size() != 0) {
+                                    for ( std::vector<int>::size_type i = 0; i != lv->second.size(); i++) {
+                                        delete lv->second[i];
+                                        lv->second[i] = NULL;
+                                    }
+                                    lv->second.clear();
+                                }
+                            }
+                            specificPyramids.clear();
+                        }
+                        if (levels.size() != 0) {
+                            for ( std::map<std::string,Level*>::iterator lv = levels.begin(); lv != levels.end(); lv++) {
+                                delete lv->second;
+                                lv->second = NULL;
+                            }
+                            levels.clear();
+                        }
+                        delete basedPyramid;
+                        basedPyramid = NULL;
                         return NULL;
                     } else {
                         onDemandSpecific = true;
@@ -885,6 +1042,40 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
                 if (hRoot.FirstChild ( "sources" ).Element()) {
                     LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't depend on other pyramids" ) );
+                    if (bPyramids.size() != 0) {
+                        for ( std::vector<int>::size_type i = 0; i != bPyramids.size(); i++) {
+                            delete bPyramids[i];
+                            bPyramids[i] = NULL;
+                        }
+                        bPyramids.clear();
+                    }
+                    if (sPyramids.size() != 0) {
+                        for ( std::vector<int>::size_type i = 0; i != sPyramids.size(); i++) {
+                            delete sPyramids[i];
+                            sPyramids[i] = NULL;
+                        }
+                        sPyramids.clear();
+                    }
+                    if (specificPyramids.size() != 0) {
+                        for ( std::map<std::string,std::vector<Pyramid*> >::iterator lv = specificPyramids.begin(); lv != specificPyramids.end(); lv++) {
+
+                            if (lv->second.size() != 0) {
+                                for ( std::vector<int>::size_type i = 0; i != lv->second.size(); i++) {
+                                    delete lv->second[i];
+                                    lv->second[i] = NULL;
+                                }
+                                lv->second.clear();
+                            }
+                        }
+                        specificPyramids.clear();
+                    }
+                    if (levels.size() != 0) {
+                        for ( std::map<std::string,Level*>::iterator lv = levels.begin(); lv != levels.end(); lv++) {
+                            delete lv->second;
+                            lv->second = NULL;
+                        }
+                        levels.clear();
+                    }
                     return NULL;
                 }
 
@@ -1064,7 +1255,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
             //Si la pyramide est à la demande et que l'on a spécifié des levels
             //il faut vérifier qu'ils sont disponibles dans l'une des pyramides de bases
-            if (onDemandGeneral) {
+            if (onDemandGeneral && !specificLevel) {
 
                 //variables
                 double Res, ratioX, ratioY, resX, resY;
@@ -1129,6 +1320,43 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                     if ( !pElemLvlTMS ) {
                         updateTileLimits(TL->getId(),*TL->getrefMinTileCol(),*TL->getrefMaxTileCol(),*TL->getrefMinTileRow(),*TL->getrefMaxTileRow(),TL->getTm(),tms,bPyramids,aLevel,false);
                     }
+                } else {
+                    LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": can't be loaded because no equivalent level found in its basedPyramids" ) );
+                    if (bPyramids.size() != 0) {
+                        for ( std::vector<int>::size_type i = 0; i != bPyramids.size(); i++) {
+                            delete bPyramids[i];
+                            bPyramids[i] = NULL;
+                        }
+                        bPyramids.clear();
+                    }
+                    if (sPyramids.size() != 0) {
+                        for ( std::vector<int>::size_type i = 0; i != sPyramids.size(); i++) {
+                            delete sPyramids[i];
+                            sPyramids[i] = NULL;
+                        }
+                        sPyramids.clear();
+                    }
+                    if (specificPyramids.size() != 0) {
+                        for ( std::map<std::string,std::vector<Pyramid*> >::iterator lv = specificPyramids.begin(); lv != specificPyramids.end(); lv++) {
+
+                            if (lv->second.size() != 0) {
+                                for ( std::vector<int>::size_type i = 0; i != lv->second.size(); i++) {
+                                    delete lv->second[i];
+                                    lv->second[i] = NULL;
+                                }
+                                lv->second.clear();
+                            }
+                        }
+                        specificPyramids.clear();
+                    }
+                    if (levels.size() != 0) {
+                        for ( std::map<std::string,Level*>::iterator lv = levels.begin(); lv != levels.end(); lv++) {
+                            delete lv->second;
+                            lv->second = NULL;
+                        }
+                        levels.clear();
+                    }
+                    return NULL;
                 }
 
             } else {
