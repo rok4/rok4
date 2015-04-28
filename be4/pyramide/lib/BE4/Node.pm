@@ -295,7 +295,7 @@ sub writeInScript {
     my $text = $self->{code};
     $text .= $additionnalText if (defined $additionnalText);
     
-    $self->{script}->write($text);
+    $self->{script}->write($text, $self->getOwnWeight());
 }
 
 =begin nd

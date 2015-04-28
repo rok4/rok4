@@ -1213,7 +1213,7 @@ sub writeConfPyramid {
     $strpyrtmplt =~ s/^$//g;
     $strpyrtmplt =~ s/^\n$//g;
     
-    if ($self->getUpdateMode() eq "inject") {
+    if (! $self->isNewPyramid && $self->getUpdateMode() eq "inject") {
         INFO("File Pyramid ('$descriptorFile') is (over)write : injection mode !");
     } elsif (-f $descriptorFile) {
         ERROR(sprintf "File Pyramid ('%s') exist, can not overwrite it ! ", $descriptorFile);
@@ -1270,7 +1270,7 @@ sub writeListPyramid {
     my $newcachelisttmp = File::Spec->catfile($path_temp,$self->getNewName(),$self->getNewName()."_tmp.list");;
     
     my $newcachelist = $self->getNewListFile;
-    if (-f $newcachelist && $self->getUpdateMode() ne "inject") {
+    if (-f $newcachelist && ($self->isNewPyramid() || $self->getUpdateMode() ne "inject")) {
         ERROR(sprintf "New pyramid list ('%s') exist, can not overwrite it ! ", $newcachelist);
         return FALSE;
     }
@@ -1458,7 +1458,7 @@ sub writeListPyramid {
         return FALSE;
     }
     
-    if ($self->getUpdateMode() eq 'slink') {
+    if (! $self->isNewPyramid && $self->getUpdateMode() eq 'slink') {
         while( my ($rootID,$root) = each(%newCacheRoots) ) {
             if ($newCacheRootsUse{$rootID} > 0) {
                 # Used roots are written in the header
