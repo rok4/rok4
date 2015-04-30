@@ -1519,6 +1519,30 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             pyr->setBPyramids(bPyramids);
         } else {
             LOGGER_ERROR ( _ ("Erreur lors du chargement des levels de la pyramide à la demande ") << fileName );
+
+            if (bPyramids.size() != 0) {
+                for ( std::vector<int>::size_type i = 0; i != bPyramids.size(); i++) {
+                    delete bPyramids[i];
+                    bPyramids[i] = NULL;
+                }
+                bPyramids.clear();
+            }
+            if (specificPyramids.size() != 0) {
+                for ( std::map<std::string,std::vector<Pyramid*> >::iterator lv = specificPyramids.begin(); lv != specificPyramids.end(); lv++) {
+
+                    if (lv->second.size() != 0) {
+                        for ( std::vector<int>::size_type i = 0; i != lv->second.size(); i++) {
+                            delete lv->second[i];
+                            lv->second[i] = NULL;
+                        }
+                        lv->second.clear();
+                    }
+                }
+                specificPyramids.clear();
+            }
+            delete pyr;
+            pyr = NULL;
+
             return NULL;
         }
     } else {
