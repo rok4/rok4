@@ -213,7 +213,8 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     //kdu_byte *kduData = new kdu_byte[(int) dims.area()*channels];
     kdu_byte *kduData = new kdu_byte[(int) dims.area()*channels];
     kdu_stripe_decompressor decompressor;
-    decompressor.start(codestream, false, false, env_ref);
+    //TODO Remove this part
+    /*decompressor.start(codestream, false, false, env_ref);
 
     int stripe_heights[channels];
     for (int i = 0; i < channels; i++) {
@@ -221,7 +222,7 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     }
     
     decompressor.pull_stripe(kduData,stripe_heights);
-    decompressor.finish();
+    decompressor.finish();*/
     // As an alternative to the above, you can decompress the image samples in
     // smaller stripes, writing the stripes to disk as they are produced by
     // each call to `decompressor.pull_stripe'.  For a much richer
@@ -234,6 +235,12 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     
     /******************** CRÉATION DE L'OBJET ******************/
 
+    //TODO modifier le constructeur pour accepter decompressor en entree
+    /* L'objet LibkakaduImage devra pouvoir se charger lui-meme de charger les bandes.
+     * Pour cela un controle devra determiner si la bande que l'on cherche a traiter est la bande active ou pas
+     * Si necessaire on devra donc charger une bande de 16 lignes.
+     * Il faut penser a generer les tableaux de type stripe_heights[channels]
+     */
     return new LibkakaduImage (
         width, height, resx, resy, channels, bbox, filename,
         sf, bitspersample, ph, Compression::JPEG2000,

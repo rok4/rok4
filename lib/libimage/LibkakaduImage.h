@@ -59,6 +59,7 @@
 #include "jp2.h"
 #include "jpx.h"
 #include "kdu_file_io.h"
+#include "kdu_stripe_decompressor.h"
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -75,6 +76,12 @@ friend class LibkakaduImageFactory;
 private:
 
     kdu_byte *data;
+    //TODO Implementer correctement ces attributs en me servant de LibTiffImage (penser a la doc)
+     kdu_stripe_decompressor decompressor;
+     uint8_t* strip_buffer;
+     uint16_t rowsperstrip;
+     uint16_t current_strip;
+     
 
     /** \~french
      * \brief Retourne une ligne, flottante ou entière
