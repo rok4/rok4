@@ -63,7 +63,8 @@ Attributes:
     commonTempDir - string - Directory used to write temporary images which have to be shared between different scripts.
     mntConfDir - string - Directory used to write mergeNtiff configuration files. *mntConfDir* is a subdirectory of *commonTempDir*.
     dntConfDir - string - Directory used to write decimateNtiff configuration files (used by <NNGraph> generation). *dntConfDir* is a subdirectory of *commonTempDir*.
-    weight - integer - Weight of the script, according to its content.
+    currentweight - integer - Current weight of the script (already written in the file)
+    weight - integer - Total weight of the script, according to its content.
     stream - stream - Stream to the script file, to write in.
 =cut
 
@@ -130,6 +131,7 @@ sub new {
         mntConfDir => undef,
         dntConfDir => undef,
         weight => 0,
+        currentweight => 0,
         stream => undef,
     };
 
@@ -414,9 +416,19 @@ Parameters (list):
 sub write {
     my $self = shift;
     my $text = shift;
+    my $w = shift;
     
     my $stream = $self->{stream};
     printf $stream "%s", $text;
+    
+    if ($self->{weight} != 0 && defined $w) {
+        my $oldpercent = int($self->{currentweight}/$self->{weight}*100);
+        $self->{currentweight} += $w;
+        my $newpercent = int($self->{currentweight}/$self->{weight}*100);
+        if ($oldpercent != $newpercent) {
+            print $stream "echo \"------------- Progression : $newpercent%\"\n";
+        }
+    }
 }
 
 # Function: close
@@ -428,6 +440,7 @@ sub close {
     if ($self->{weight} == 0) {
         printf $stream "\necho \"No image to generate (null weight)\"\n";
     } else {
+        print $stream "echo \"------------- Progression : COMPLETE\"\n";
         printf $stream "\necho \"Theorical weight was : %s\"\n", $self->{weight};
     }
 
