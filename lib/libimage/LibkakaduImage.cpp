@@ -80,7 +80,7 @@ static kdu_message_formatter pretty_cerr(&cerr_message);
 /* ----- Pour la lecture ----- */
 LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filename, BoundingBox< double > bbox, double resx, double resy ) {
     
-    int width = 0, height = 0, bitspersample = 0, channels = 0;
+    int width = 0, height = 0, bitspersample = 0, channels = 0, rowsperstrip = 16;
     SampleFormat::eSampleFormat sf = SampleFormat::UINT;
     Photometric::ePhotometric ph = Photometric::UNKNOWN;
     
@@ -194,7 +194,8 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     /************** LECTURE DE L'IMAGE EN ENTIER ***************/
     codestream.apply_input_restrictions(0, channels, 0, 0, NULL);
     
-    int num_threads = atoi(KDU_THREADING);
+    //TODO Remove this part
+    /*int num_threads = atoi(KDU_THREADING);
     
     kdu_thread_env env, *env_ref=NULL;
     if (num_threads > 0) {
@@ -206,23 +207,25 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
             }
         }
         env_ref = &env;
-    }
+    }*/
     
     
     // Now decompress the image in one hit, using `kdu_stripe_decompressor'
     //kdu_byte *kduData = new kdu_byte[(int) dims.area()*channels];
-    kdu_byte *kduData = new kdu_byte[(int) dims.area()*channels];
-    kdu_stripe_decompressor decompressor;
     //TODO Remove this part
-    /*decompressor.start(codestream, false, false, env_ref);
-
-    int stripe_heights[channels];
-    for (int i = 0; i < channels; i++) {
-        stripe_heights[i] = dims.size.y;
-    }
-    
-    decompressor.pull_stripe(kduData,stripe_heights);
-    decompressor.finish();*/
+    /* kdu_byte *kduData = new kdu_byte[(int) dims.area()*channels];
+     * kdu_stripe_decompressor decompressor;
+     *      
+     * decompressor.start(codestream, false, false, env_ref);
+     * 
+     * int stripe_heights[channels];
+     * for (int i = 0; i < channels; i++) {
+     *     stripe_heights[i] = dims.size.y;
+     * }
+     * 
+     * decompressor.pull_stripe(kduData,stripe_heights);
+     * decompressor.finish();
+     */
     // As an alternative to the above, you can decompress the image samples in
     // smaller stripes, writing the stripes to disk as they are produced by
     // each call to `decompressor.pull_stripe'.  For a much richer
@@ -232,10 +235,11 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     // Write image buffer to file and clean up
     codestream.destroy();
     input->close(); // Not really necessary here.
+    box.close();
     
     /******************** CRÉATION DE L'OBJET ******************/
 
-    //TODO modifier le constructeur pour accepter decompressor en entree
+    //TODO modifier le constructeur pour accepter decompressor en entree - Fait
     /* L'objet LibkakaduImage devra pouvoir se charger lui-meme de charger les bandes.
      * Pour cela un controle devra determiner si la bande que l'on cherche a traiter est la bande active ou pas
      * Si necessaire on devra donc charger une bande de 16 lignes.
@@ -244,7 +248,7 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     return new LibkakaduImage (
         width, height, resx, resy, channels, bbox, filename,
         sf, bitspersample, ph, Compression::JPEG2000,
-        kduData
+        rowsperstrip
     );
 
 }
@@ -255,13 +259,88 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
 LibkakaduImage::LibkakaduImage (
     int width, int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
-    kdu_byte* kduData ) :
+    int rowsperstrip ) :
 
     Jpeg2000Image ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression ),
 
-    data ( kduData )
+    rowsperstrip( rowsperstrip )
 {
-
+  
+  
+  /************** INITIALISATION DES OBJETS KAKADU *********/
+  
+  // Custom messaging services
+  kdu_customize_warnings(&pretty_cout);
+  kdu_customize_errors(&pretty_cerr);
+  
+  /************** RECUPERATION DES INFORMATIONS **************/
+  
+  // Create appropriate output file
+  kdu_compressed_source *input = NULL;
+  kdu_simple_file_source file_in;
+  jp2_family_src jp2_src;
+  jp2_source jp2_in;
+  
+  jp2_input_box box;
+  jp2_src.open(name);
+  
+  if (box.open(&jp2_src) && (box.get_box_type() == jp2_signature_4cc) ) {
+    
+    input = &jp2_in;
+    if (! jp2_in.open(&jp2_src)) {
+      LOGGER_ERROR("Unable to open with Kakadu the JPEG2000 image " << filename);
+    }
+    jp2_in.read_header();
+    
+  } else {
+    
+    // Try opening as a raw code-stream.
+    input = &file_in;
+    file_in.open(name);
+    
+  }
+  
+  
+  m_codestream.create(input);
+  
+  kdu_dims dims;
+  m_codestream.get_dims(0,dims,true);  
+  m_codestream.set_fussy(); // Set the parsing error tolerance.
+  m_codestream.apply_input_restrictions(0, channels, 0, 0, NULL);
+      
+  int num_threads = atoi(KDU_THREADING);
+  
+  kdu_thread_env env, *env_ref=NULL;
+  if (num_threads > 0) {
+    env.create();
+    for (int nt=1; nt < num_threads; nt++) {
+      if (!env.add_thread()) {
+        LOGGER_WARN("Unable to create all the wanted threads. Number of threads reduced from " << num_threads << " to " << nt);
+        num_threads = nt; // Unable to create all the threads requested
+      }
+    }
+    env_ref = &env;
+  }
+  data = new kdu_byte[(int) dims.area()*channels];
+  kdu_stripe_decompressor decompressor;
+  decompressor.start(m_codestream, false, false, env_ref);
+  
+  int stripe_heights[channels];
+  
+  for (int i = 0; i < channels; i++) {
+      stripe_heights[i] = dims.size.y;
+  }
+  
+  //std::cout << "test : avant 'decompressor.pull_stripe'" << std::endl;
+  
+  decompressor.pull_stripe(data,stripe_heights);
+  
+  //std::cout << "test : après 'decompressor.pull_stripe'" << std::endl;
+  
+  decompressor.finish();
+  
+  std::cout << "test : après 'decompressor.finish()'" << std::endl;
+  
 }
 
 /* ------------------------------------------------------------------------------------------------ */

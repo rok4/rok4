@@ -77,10 +77,24 @@ private:
 
     kdu_byte *data;
     //TODO Implementer correctement ces attributs en me servant de LibTiffImage (penser a la doc)
-     kdu_stripe_decompressor decompressor;
-     uint8_t* strip_buffer;
-     uint16_t rowsperstrip;
-     uint16_t current_strip;
+    kdu_codestream m_codestream;
+    kdu_stripe_decompressor m_decompressor;
+     
+    /**
+     * \~french \brief Nombre de ligne dans un strip
+     * \~english \brief Number of line in one strip
+     */
+    uint16_t rowsperstrip;
+    /**
+     * \~french \brief Buffer de lecture, de taille strip_size
+     * \~english \brief Read buffer, strip_size long
+     */
+    uint8_t* strip_buffer;
+     /**
+     * \~french \brief Indice du strip en mémoire dans strip_buffer
+     * \~english \brief Memorized strip indice, in strip_buffer
+     */
+    uint16_t current_strip;
      
 
     /** \~french
@@ -109,6 +123,8 @@ protected:
      * \param[in] photometric photométrie des données
      * \param[in] compression compression des données
      * \param[in] kduData image complète, dans un tableau
+     * \param[in] decompressor décompresseur de bandes de kakadu, pour charger l'image par bandes
+     * \param[in] rowsperstrip taille de la bufferisation des données, en nombre de lignes
      ** \~english
      * \brief Create a LibkakaduImage object, from all attributes
      * \param[in] width image width, in pixel
@@ -123,11 +139,13 @@ protected:
      * \param[in] photometric data photometric
      * \param[in] compression data compression
      * \param[in] kduData whole image, in an array
+     * \param[in] decompressor kakadu stripe decompressor, to load image stripe by stripe
+     * \param[in] rowsperstrip data buffering size, in line number
      */
     LibkakaduImage (
         int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name,
         SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
-        kdu_byte* kduData
+        int rowsperstrip 
     );
 
 public:     
@@ -154,7 +172,9 @@ public:
      * \details We remove read buffer #m_data
      */
     ~LibkakaduImage() {
+        std::cout << "entrée dans le destructeur" << std::endl;
         delete[] data;
+        m_codestream.destroy();
     }
 
     /** \~french
