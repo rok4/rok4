@@ -91,7 +91,7 @@ private:
      * \~english \brief Read buffer, strip_size long
      */
     uint8_t* strip_buffer;
-     /**
+    /**
      * \~french \brief Indice du strip en mémoire dans strip_buffer
      * \~english \brief Memorized strip indice, in strip_buffer
      */
@@ -103,6 +103,11 @@ private:
      * \param[out] buffer Tableau contenant au moins width*channels valeurs
      * \param[in] line Indice de la ligne à retourner (0 <= line < height)
      * \return taille utile du buffer, 0 si erreur
+     ** \~english
+     * \brief Returns a line. Values can be floating point numbers or integers
+     * \param[out] buffer Array containing at least width*channels values
+     * \param[in] line Index of the line to return (0 <= line < height)
+     * \return buffer effective size, 0 if error 
      */
     template<typename T>
     int _getline ( T* buffer, int line );

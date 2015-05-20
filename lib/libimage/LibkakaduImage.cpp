@@ -306,19 +306,6 @@ LibkakaduImage::LibkakaduImage (
   m_codestream.set_fussy(); // Set the parsing error tolerance.
   m_codestream.apply_input_restrictions(0, channels, 0, 0, NULL);
       
-  /*int num_threads = atoi(KDU_THREADING);
-  
-  kdu_thread_env env, *env_ref=NULL;
-  if (num_threads > 0) {
-    env.create();
-    for (int nt=1; nt < num_threads; nt++) {
-      if (!env.add_thread()) {
-        LOGGER_WARN("Unable to create all the wanted threads. Number of threads reduced from " << num_threads << " to " << nt);
-        num_threads = nt; // Unable to create all the threads requested
-      }
-    }
-    env_ref = &env;
-  }*/
   data = new kdu_byte[(int) dims.area()*channels];
   kdu_stripe_decompressor decompressor;
   decompressor.start(m_codestream, false, false, m_kdu_env_ref);
