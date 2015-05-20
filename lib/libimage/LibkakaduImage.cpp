@@ -195,7 +195,7 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     codestream.apply_input_restrictions(0, channels, 0, 0, NULL);
     
     //TODO Remove this part
-    /*int num_threads = atoi(KDU_THREADING);
+    int num_threads = atoi(KDU_THREADING);
     
     kdu_thread_env env, *env_ref=NULL;
     if (num_threads > 0) {
@@ -207,7 +207,7 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
             }
         }
         env_ref = &env;
-    }*/
+    }
     
     
     // Now decompress the image in one hit, using `kdu_stripe_decompressor'
@@ -248,7 +248,7 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     return new LibkakaduImage (
         width, height, resx, resy, channels, bbox, filename,
         sf, bitspersample, ph, Compression::JPEG2000,
-        rowsperstrip
+        env_ref
     );
 
 }
@@ -259,11 +259,10 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
 LibkakaduImage::LibkakaduImage (
     int width, int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
-    int rowsperstrip ) :
+    kdu_thread_env* thread_env_ref ) :
 
     Jpeg2000Image ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression ),
-
-    rowsperstrip( rowsperstrip )
+    m_kdu_env_ref (thread_env_ref)
 {
   
   
@@ -282,7 +281,7 @@ LibkakaduImage::LibkakaduImage (
   jp2_source jp2_in;
   
   jp2_input_box box;
-  jp2_src.open(name);
+  jp2_src.open(filename);
   
   if (box.open(&jp2_src) && (box.get_box_type() == jp2_signature_4cc) ) {
     
@@ -296,11 +295,10 @@ LibkakaduImage::LibkakaduImage (
     
     // Try opening as a raw code-stream.
     input = &file_in;
-    file_in.open(name);
+    file_in.open(filename);
     
   }
-  
-  
+   
   m_codestream.create(input);
   
   kdu_dims dims;
@@ -308,7 +306,7 @@ LibkakaduImage::LibkakaduImage (
   m_codestream.set_fussy(); // Set the parsing error tolerance.
   m_codestream.apply_input_restrictions(0, channels, 0, 0, NULL);
       
-  int num_threads = atoi(KDU_THREADING);
+  /*int num_threads = atoi(KDU_THREADING);
   
   kdu_thread_env env, *env_ref=NULL;
   if (num_threads > 0) {
@@ -320,10 +318,10 @@ LibkakaduImage::LibkakaduImage (
       }
     }
     env_ref = &env;
-  }
+  }*/
   data = new kdu_byte[(int) dims.area()*channels];
   kdu_stripe_decompressor decompressor;
-  decompressor.start(m_codestream, false, false, env_ref);
+  decompressor.start(m_codestream, false, false, m_kdu_env_ref);
   
   int stripe_heights[channels];
   
@@ -339,20 +337,52 @@ LibkakaduImage::LibkakaduImage (
   
   decompressor.finish();
   
-  std::cout << "test : après 'decompressor.finish()'" << std::endl;
+  std::cout << "test : sortie du constructeur'" << std::endl;
   
 }
 
 /* ------------------------------------------------------------------------------------------------ */
 /* ------------------------------------------- LECTURE -------------------------------------------- */
 
+template<typename T>
+int LibkakaduImage::_getline ( T* buffer, int line ) {
+  // buffer doit déjà être alloué, et assez grand
+  
+  if ( line / rowsperstrip != current_strip ) {
+    
+    // Les données n'ont pas encore été lue depuis l'image (strip pas en mémoire).
+    current_strip = line / rowsperstrip;
+    //int size = TIFFReadEncodedStrip ( tif, current_strip, strip_buffer, -1 ); remplacer par équivalent kakadu
+    /*if ( size < 0 ) {
+      LOGGER_ERROR ( "Cannot read strip number " << current_strip << " of image " << filename );
+      return 0;
+    }*/
+   /* nécessaire ?
+    if (oneTo8bits == 1) {
+      OneBitConverter::minwhiteToGray(oneTo8bits_buffer, strip_buffer, size);
+    } else if (oneTo8bits == 2) {
+      OneBitConverter::minblackToGray(oneTo8bits_buffer, strip_buffer, size);
+    }*/
+  }
+  
+  // utiliser kdu_stripe_decompressor en adaptant.
+  /*if (oneTo8bits) {
+    memcpy ( buffer, oneTo8bits_buffer + ( line%rowsperstrip ) * width * pixelSize, width * pixelSize ); 
+  } else {
+    memcpy ( buffer, strip_buffer + ( line%rowsperstrip ) * width * pixelSize, width * pixelSize );
+  }*/
+  
+  return width*channels;
+}
+
 int LibkakaduImage::getline ( uint8_t* buffer, int line ) {
+  std::cout << "test : entrée dans getline ( uint8_t* buffer, int line ) avec line = " << line << std::endl;
     memcpy(buffer, (uint8_t*) data + line * width * channels , width * channels );
     return width*channels;
 }
 
 int LibkakaduImage::getline ( float* buffer, int line ) {
-
+  std::cout << "test : entrée dans getline ( float* buffer, int line ) avec line = " << line << std::endl;
     // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers (forcément pour du JPEG2000)
     uint8_t* buffer_t = new uint8_t[width*channels];
     int retour = getline ( buffer_t,line );

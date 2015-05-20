@@ -77,6 +77,7 @@ private:
 
     kdu_byte *data;
     //TODO Implementer correctement ces attributs en me servant de LibTiffImage (penser a la doc)
+    kdu_thread_env* m_kdu_env_ref;
     kdu_codestream m_codestream;
     kdu_stripe_decompressor m_decompressor;
      
@@ -84,7 +85,7 @@ private:
      * \~french \brief Nombre de ligne dans un strip
      * \~english \brief Number of line in one strip
      */
-    uint16_t rowsperstrip;
+    uint16_t rowsperstrip = 16;
     /**
      * \~french \brief Buffer de lecture, de taille strip_size
      * \~english \brief Read buffer, strip_size long
@@ -145,7 +146,7 @@ protected:
     LibkakaduImage (
         int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name,
         SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
-        int rowsperstrip 
+        kdu_thread_env* thread_env_ref
     );
 
 public:     
