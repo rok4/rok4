@@ -8,10 +8,10 @@
 			<xs:element name="title"    type="xs:string"/>
 			<!-- Une description -->
 			<xs:element name="abstract" type="xs:string"/>
-			<!-- Autorisé le WMS -->
-			<xs:element name="WMSAuthorized" type="xs:boolean"/>
-			<!-- Autorisé le WMTS -->
-			<xs:element name="WMTSAuthorized" type="xs:boolean"/>
+			<!-- Autoriser le WMS -->
+			<xs:element name="WMSAuthorized" type="xs:boolean" minOccurs="0" maxOccurs="1"/>
+			<!-- Autoriser le WMTS -->
+			<xs:element name="WMTSAuthorized" type="xs:boolean" minOccurs="0" maxOccurs="1"/>
 			<!-- Liste des mots clefs -->
 			<xs:element name="keywordList">
                 <xs:complexType>

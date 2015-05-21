@@ -78,6 +78,7 @@
 #include "PaletteDataSource.h"
 #include "EstompageImage.h"
 #include "MergeImage.h"
+#include "ProcessFactory.h"
 
 void* Rok4Server::thread_loop ( void* arg ) {
     Rok4Server* server = ( Rok4Server* ) ( arg );
@@ -143,6 +144,8 @@ void* Rok4Server::thread_loop ( void* arg ) {
 
         FCGX_Finish_r ( &fcgxRequest );
         FCGX_Free ( &fcgxRequest,1 );
+
+        server->parallelProcess->checkAllPid();
     }
     LOGGER_DEBUG ( _ ( "Extinction du thread" ) );
     Logger::stopLogger();
@@ -164,6 +167,8 @@ Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std:
         LOGGER_DEBUG ( _ ( "Build WMTS Capabilities" ) );
         buildWMTSCapabilities();
     }
+    //initialize processFactory
+    parallelProcess = new ProcessFactory(4);
 }
 
 Rok4Server::~Rok4Server() {
@@ -171,6 +176,8 @@ Rok4Server::~Rok4Server() {
         delete notFoundError;
         notFoundError = NULL;
     }
+    delete parallelProcess;
+    parallelProcess = NULL;
 }
 
 void Rok4Server::initFCGI() {
@@ -859,7 +866,24 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                     LOGGER_INFO("Fichier temporaire créé");
 
                     //on cree un processus qui va creer la dalle en parallele
-                    tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
+                    if (parallelProcess->createProcess()) {
+                        if (parallelProcess->getLastPid() == 0) {
+                            //processus fils, on va générer la dalle et supprimer le fichier tmp
+                            sleep(20);
+                            file = remove(SpathTmp.c_str());
+                            if (file != 0) {
+                                LOGGER_ERROR("Impossible de supprimer le fichier temporaire");
+                            }
+                            exit(0);
+
+                        } else {
+                            //processus père, on va répondre a la requête
+                            tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
+                        }
+                    } else {
+                        LOGGER_WARN("Impossible de créer un processus parallele donc pas de génération de dalle");
+                        tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
+                    }
 
                 } else {
                     LOGGER_ERROR("Impossible de créer un fichier temporaire donc pas de génération de dalle");

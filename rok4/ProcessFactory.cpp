@@ -91,9 +91,11 @@ bool ProcessFactory::createProcess() {
 
 
 void ProcessFactory::checkAllPid() {
+    int status;
 
-    for(std::vector<pid_t>::size_type i = 0; i != listCurrentPid.size(); i++) {
-        //for each current pid, check if it is still running
+    for(unsigned i = 0; i < listCurrentPid.size(); i++) {
+        //for each current pid, check if it is still running or zombie
+        waitpid(listCurrentPid[i],&status,WNOHANG);
         if (kill(listCurrentPid[i],0) == -1) {
             //process doesn't run any more
             listCurrentPid.erase(listCurrentPid.begin()+i);
@@ -106,10 +108,11 @@ void ProcessFactory::checkAllPid() {
 
 
 void ProcessFactory::killAllPid() {
+    int status;
 
-
-    for(std::vector<pid_t>::size_type i = 0; i != listCurrentPid.size(); i++) {
-        //for each current pid, kill it
+    for(unsigned i = 0; i < listCurrentPid.size(); i++) {
+        //for each current pid, clean zombie and kill it
+        waitpid(listCurrentPid[i],&status,WNOHANG);
         kill(listCurrentPid[i],SIGKILL);
         //process doesn't run any more
         listCurrentPid.erase(listCurrentPid.begin()+i);

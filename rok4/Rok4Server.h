@@ -57,6 +57,7 @@
 #include "Layer.h"
 #include "TileMatrixSet.h"
 #include "fcgiapp.h"
+#include "ProcessFactory.h"
 #include <csignal>
 
 /**
@@ -148,6 +149,11 @@ private:
      * \~english \brief Error response in case data tiel is not found (http 404)
      */
     DataSource* notFoundError;
+    /**
+     * \~french \brief Gestion des processus créés
+     * \~english \brief Management of created process
+     */
+    ProcessFactory *parallelProcess;
 
     /**
      * \~french

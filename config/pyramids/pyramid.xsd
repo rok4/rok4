@@ -12,8 +12,8 @@
                 <xs:element name="interpolation" type="imageInterpolation" minOccurs="0"/>
                 <xs:element name="photometric" type="imagePhotometric" minOccurs="0"/>
                 <!-- sources des données pour une pyramide à la demande -->
-                <!-- si spécifié ici, ces sources vont concernés chaque level -->
-                <!-- à moins qu'un level n'est ces propres sources -->
+                <!-- si spécifiées ici, ces sources vont concerner chaque level -->
+                <!-- à moins qu'un level n'est ses propres sources -->
                 <xs:element name="sources" minOccurs="0" maxOccurs="1">
                     <xs:complexType>
                         <xs:sequence>
@@ -42,7 +42,7 @@
                             <!-- mais doit être omis si pyramide à la demande sans génération -->
                             <xs:element name="baseDir"        type="xs:string" minOccurs="0" maxOccurs="1"/>
                             <!-- sources des données pour une pyramide à la demande -->
-                            <!-- si spécifié ici, ces sources ne concernent que ce level -->
+                            <!-- si spécifiées ici, ces sources ne concernent que ce level -->
                             <!-- ainsi, si on en met un, il faut en mettre pour chaque level -->
                             <!-- à moins qu'il y ait des sources au niveau global -->
                             <xs:element name="sources" minOccurs="0" maxOccurs="1">

@@ -182,7 +182,6 @@ int main ( int argc, char** argv ) {
     int sock = 0;
     reload = true;
     defer_signal = 1;
-
     /* install Signal Handler for Conf Reloadind and Server Shutdown*/
     struct sigaction sa;
     sigemptyset ( &sa.sa_mask );
