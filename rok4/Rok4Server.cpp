@@ -55,6 +55,11 @@
 #include <cstring>
 #include <proj_api.h>
 #include <csignal>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <fcntl.h>
 
 #include "config.h"
 #include "intl.h"
@@ -594,7 +599,11 @@ DataSource* Rok4Server::getTile ( Request* request ) {
 
     if (L->getDataPyramid()->getOnDemand()) {
         //Si la pyramide est à la demande, on doit créer la tuile
-        tileSource = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
+        if (L->getDataPyramid()->getOnFly()) {
+            tileSource = getTileOnFly(L, tileMatrix, tileCol, tileRow, style, format, errorResp);
+        } else {
+            tileSource = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
+        }
 
     } else {
         //GetTile normal, on renvoit la tuile
@@ -803,6 +812,63 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
     } else {
         tile = new BufferedDataSource(*tileSource);
         delete tileSource;
+
+    }
+
+    return tile;
+
+}
+
+DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format, DataSource *errorResp) {
+    //On va créer la tuile sur demande et stocker la dalle qui la contient
+
+    //variables
+    std::string Spath, SpathTmp;
+    DataSource *tile;
+    Pyramid * pyr = L->getDataPyramid();
+    struct stat bufferS;
+    struct stat bufferT;
+
+    //on récupère l'emplacement théorique de la dalle
+    std::map<std::string, Level*>::iterator lv = pyr->getLevels().find(tileMatrix);
+    if (lv == pyr->getLevels().end()) {
+        return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( pyr->getLowestLevel()->getEncodedNoDataTile() ) );
+    } else {
+
+        Spath = lv->second->getFilePath(tileCol,tileRow);
+        SpathTmp = Spath + ".tmp";
+
+        if (stat (Spath.c_str(), &bufferS) == 0 && stat (SpathTmp.c_str(), &bufferT) == -1) {
+            //la dalle existe donc on fait une requete normale
+            tile = getTileUsual(L, format, tileCol, tileRow, tileMatrix, errorResp, style);
+        } else {
+            //la dalle n'existe pas
+
+            if (stat (SpathTmp.c_str(), &bufferT) == 0) {
+                //la dalle est en cours de creation
+                tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
+
+            } else {
+                //la dalle n'est pas en cours de creation
+                LOGGER_INFO("Dalle inexistante. Tentative de génération");
+                //on cree un fichier temporaire pour indiquer que la dalle va etre creer
+                int file = open(SpathTmp.c_str(),O_CREAT|O_EXCL);
+                if (file != -1) {
+                    //on a pu creer un fichier temporaire
+                    close(file);
+                    LOGGER_INFO("Fichier temporaire créé");
+
+                    //on cree un processus qui va creer la dalle en parallele
+                    tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
+
+                } else {
+                    LOGGER_ERROR("Impossible de créer un fichier temporaire donc pas de génération de dalle");
+                    tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
+                }
+
+            }
+
+        }
 
     }
 

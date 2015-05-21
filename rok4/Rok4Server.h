@@ -329,6 +329,29 @@ private:
     DataSource *getTileOnDemand(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format);
     /**
      * \~french
+     * \brief Renvoit une tuile qui vient d'être calculée
+     * \param[in] L couche de la requête
+     * \param[in] tileMatrix tilematrix de la requête
+     * \param[in] tileCol indice de colonne de la requête
+     * \param[in] tileRow indice de ligne de la requete
+     * \param[in] style style de la requête
+     * \param[in] format format de la requête
+     * \param[in] errorResp erreur
+     * \return Tuile demandée
+     * \~english
+     * \brief Give a tile compute for the request
+     * \param[in] L layer of the request
+     * \param[in] tileMatrix tilematrix of the request
+     * \param[in] tileCol column index of the request
+     * \param[in] tileRow row index of the request
+     * \param[in] style style of the resquest
+     * \param[in] format format of the request
+     * \param[in] errorResp error
+     * \return requested tile
+     */
+    DataSource *getTileOnFly(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format, DataSource *errorResp);
+    /**
+     * \~french
      * \brief Traitement d'une requête GetCapabilities WMS
      * \param[in] request représentation de la requête
      * \return flux de la réponse
