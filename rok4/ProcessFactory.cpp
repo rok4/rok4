@@ -96,7 +96,7 @@ void ProcessFactory::checkAllPid() {
         //for each current pid, check if it is still running
         if (kill(listCurrentPid[i],0) == -1) {
             //process doesn't run any more
-            listCurrentPid.erase(i);
+            listCurrentPid.erase(listCurrentPid.begin()+i);
             nbCurrentPid--;
         }
     }
@@ -112,7 +112,7 @@ void ProcessFactory::killAllPid() {
         //for each current pid, kill it
         kill(listCurrentPid[i],SIGKILL);
         //process doesn't run any more
-        listCurrentPid.erase(i);
+        listCurrentPid.erase(listCurrentPid.begin()+i);
         nbCurrentPid--;
 
     }
