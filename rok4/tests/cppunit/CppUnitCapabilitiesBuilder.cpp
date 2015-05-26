@@ -168,6 +168,7 @@ protected:
 
     std::string socket;
     int nbThread;
+    int nbProcess;
     int backlog;
     bool supportWMS;
     bool supportWMTS;
@@ -243,7 +244,8 @@ void CppUnitCapabilitiesBuilder::setUp() {
     backlog = 0; // 7th arg
     supportWMS = true; // 9th arg
     supportWMTS = false; // If true -> seg fault for the test 8th arg
-    myrok4server = new Rok4Server(nbThread, *services_conf, layerlist, mytilematrixset, stylelist, socket, backlog, supportWMTS, supportWMS);
+    nbProcess = 1;
+    myrok4server = new Rok4Server(nbThread, *services_conf, layerlist, mytilematrixset, stylelist, socket, backlog, supportWMTS, supportWMS, nbProcess);
 
 }
 

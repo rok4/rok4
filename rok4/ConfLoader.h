@@ -91,6 +91,7 @@ public:
      * \param[out] styleDir chemin du répertoire contenant les fichiers de Style
      * \param[out] socket adresse et port d'écoute du serveur, vide si définit par un appel FCGI
      * \param[out] backlog profondeur de la file d'attente
+     * \param[out] nombre de processus executable en parallele par le serveur
      * \return faux en cas d'erreur
      * \~english
      * \brief Load server parameter from a file
@@ -109,9 +110,10 @@ public:
      * \param[out] styleDir path to Style directory
      * \param[out] socket listening address and port, empty if defined by a FCGI call
      * \param[out] backlog listen queue depth
+     * \param[out] number of process in parallel
      * \return false if something went wrong
      */
-    static bool getTechnicalParam ( std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int &nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog );
+    static bool getTechnicalParam (std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int &nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog , int &nbProcess);
     /**
      * \~french
      * \brief Charges les différents Styles présent dans le répertoire styleDir
@@ -352,6 +354,7 @@ private:
      * \param[out] styleDir chemin du répertoire contenant les fichiers de Style
      * \param[out] socket adresse et port d'écoute du serveur, vide si définit par un appel FCGI
      * \param[out] backlog profondeur de la file d'attente
+     * \param[out] nombre de processus executable en parallele par le serveur
      * \return faux en cas d'erreur
      * \~english
      * \brief Load server parameter from its XML representation
@@ -371,9 +374,10 @@ private:
      * \param[out] styleDir path to Style directory
      * \param[out] socket listening address and port, empty if defined by a FCGI call
      * \param[out] backlog listen queue depth
+     * \param[out] number of process in parallel
      * \return false if something went wrong
      */
-    static bool parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog );
+    static bool parseTechnicalParam (TiXmlDocument* doc, std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog , int &nbProcess);
     /**
      * \~french
      * \brief Chargement des paramètres des services à partir de leur représentation XML

@@ -49,7 +49,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <vector>
+#include <list>
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -91,7 +91,7 @@ private:
      * \~french \brief Liste des pid de processus en cours
      * \~english \brief Pid list en current process
      */
-    std::vector<pid_t> listCurrentPid;
+    std::list<pid_t> listCurrentPid;
 
 public:
     /**
@@ -192,7 +192,7 @@ public:
      * \brief Set listCurrentPid
      * \param[in] listCurrentPid
      */
-    void setListCurrentPid(std::vector<pid_t> list) {
+    void setListCurrentPid(std::list<pid_t> list) {
         listCurrentPid = list;
     }
 
@@ -204,7 +204,7 @@ public:
      * \brief Get listCurrentPid
      * \return listCurrentPid
      */
-    std::vector<pid_t> getListCurrentPid() {
+    std::list<pid_t> getListCurrentPid() {
         return listCurrentPid;
     }
 

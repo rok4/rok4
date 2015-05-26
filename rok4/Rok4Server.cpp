@@ -154,7 +154,7 @@ void* Rok4Server::thread_loop ( void* arg ) {
 
 Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
                          std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList,
-                         std::string socket, int backlog, bool supportWMTS, bool supportWMS ) :
+                         std::string socket, int backlog, bool supportWMTS, bool supportWMS, int nbProcess ) :
     sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ),
     styleList ( styleList ), threads ( nbThread ), socket ( socket ), backlog ( backlog ),
     running ( false ), notFoundError ( NULL ), supportWMTS ( supportWMTS ), supportWMS ( supportWMS ) {
@@ -168,7 +168,13 @@ Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std:
         buildWMTSCapabilities();
     }
     //initialize processFactory
-    parallelProcess = new ProcessFactory(4);
+    if (nbProcess > MAX_NB_PROCESS) {
+        nbProcess = MAX_NB_PROCESS;
+    }
+    if (nbProcess < 0) {
+        nbProcess = DEFAULT_NB_PROCESS;
+    }
+    parallelProcess = new ProcessFactory(nbProcess);
 }
 
 Rok4Server::~Rok4Server() {
@@ -858,35 +864,40 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
             } else {
                 //la dalle n'est pas en cours de creation
                 LOGGER_INFO("Dalle inexistante. Tentative de génération");
-                //on cree un fichier temporaire pour indiquer que la dalle va etre creer
-                int file = open(SpathTmp.c_str(),O_CREAT|O_EXCL);
-                if (file != -1) {
-                    //on a pu creer un fichier temporaire
-                    close(file);
-                    LOGGER_INFO("Fichier temporaire créé");
 
-                    //on cree un processus qui va creer la dalle en parallele
-                    if (parallelProcess->createProcess()) {
-                        if (parallelProcess->getLastPid() == 0) {
-                            //processus fils, on va générer la dalle et supprimer le fichier tmp
-                            sleep(20);
-                            file = remove(SpathTmp.c_str());
-                            if (file != 0) {
-                                LOGGER_ERROR("Impossible de supprimer le fichier temporaire");
-                            }
-                            exit(0);
-
+                //on cree un processus qui va creer la dalle en parallele
+                if (parallelProcess->createProcess()) {
+                    if (parallelProcess->getLastPid() == 0) {
+                        //processus fils, on va générer créer un fichier tmp, générer la dalle et supprimer le fichier tmp
+                        //on cree un fichier temporaire pour indiquer que la dalle va etre creer
+                        int file = open(SpathTmp.c_str(),O_CREAT|O_EXCL);
+                        parallelProcess->checkAllPid();
+                        if (file != -1) {
+                            //on a pu creer un fichier temporaire
+                            close(file);
+                            LOGGER_INFO("Fichier temporaire créé");
                         } else {
-                            //processus père, on va répondre a la requête
-                            tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
+                            LOGGER_ERROR("Impossible de créer un fichier temporaire donc pas de génération de dalle");
+                            Logger::stopLogger();
+                            terminate();
+                            exit(0);
                         }
+                        sleep(10);
+                        file = remove(SpathTmp.c_str());
+                        if (file != 0) {
+                            LOGGER_ERROR("Impossible de supprimer le fichier temporaire");
+                        }
+                        //extinction des loggers et du server
+                        Logger::stopLogger();
+                        terminate();
+                        exit(0);
+
                     } else {
-                        LOGGER_WARN("Impossible de créer un processus parallele donc pas de génération de dalle");
+                        //processus père, on va répondre a la requête
                         tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
                     }
-
                 } else {
-                    LOGGER_ERROR("Impossible de créer un fichier temporaire donc pas de génération de dalle");
+                    LOGGER_WARN("Impossible de créer un processus parallele donc pas de génération de dalle");
                     tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
                 }
 

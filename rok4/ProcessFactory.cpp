@@ -46,7 +46,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <vector>
+#include <list>
 
 #include "ProcessFactory.h"
 
@@ -92,13 +92,13 @@ bool ProcessFactory::createProcess() {
 
 void ProcessFactory::checkAllPid() {
     int status;
+    std::list<pid_t> tmpList = listCurrentPid;
 
-    for(unsigned i = 0; i < listCurrentPid.size(); i++) {
-        //for each current pid, check if it is still running or zombie
-        waitpid(listCurrentPid[i],&status,WNOHANG);
-        if (kill(listCurrentPid[i],0) == -1) {
+    for(std::list<int>::iterator it = tmpList.begin(); it != tmpList.end(); it++) {
+        waitpid(*it,&status,WNOHANG);
+        if (kill(*it,0) == -1) {
             //process doesn't run any more
-            listCurrentPid.erase(listCurrentPid.begin()+i);
+            listCurrentPid.remove(*it);
             nbCurrentPid--;
         }
     }
@@ -109,13 +109,13 @@ void ProcessFactory::checkAllPid() {
 
 void ProcessFactory::killAllPid() {
     int status;
+    std::list<pid_t> tmpList = listCurrentPid;
 
-    for(unsigned i = 0; i < listCurrentPid.size(); i++) {
-        //for each current pid, clean zombie and kill it
-        waitpid(listCurrentPid[i],&status,WNOHANG);
-        kill(listCurrentPid[i],SIGKILL);
+    for(std::list<int>::iterator it = tmpList.begin(); it != tmpList.end(); it++) {
+        kill(*it,SIGKILL);
+        waitpid(*it,&status,WNOHANG);
         //process doesn't run any more
-        listCurrentPid.erase(listCurrentPid.begin()+i);
+        listCurrentPid.remove(*it);
         nbCurrentPid--;
 
     }
