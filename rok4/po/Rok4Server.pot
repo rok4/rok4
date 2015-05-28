@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2015-05-26 15:39+0200\n"
+"POT-Creation-Date: 2015-05-28 15:15+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1090,10 +1090,6 @@ msgstr ""
 msgid "Type d'encodage inconnu : "
 msgstr ""
 
-#: Level.cpp:404
-msgid "Tile : "
-msgstr ""
-
 #: Level.cpp:414
 msgid "GetTile Tiff"
 msgstr ""
@@ -1497,11 +1493,11 @@ msgstr ""
 msgid "Parametre STYLES incomplet."
 msgstr ""
 
-#: Request.cpp:1069 Request.cpp:1115 Rok4Api.cpp:225 Rok4Server.cpp:952
+#: Request.cpp:1069 Request.cpp:1115 Rok4Api.cpp:225 Rok4Server.cpp:954
 msgid "Le service "
 msgstr ""
 
-#: Request.cpp:1069 Request.cpp:1115 Rok4Api.cpp:225 Rok4Server.cpp:952
+#: Request.cpp:1069 Request.cpp:1115 Rok4Api.cpp:225 Rok4Server.cpp:954
 msgid " est inconnu pour ce serveur."
 msgstr ""
 
@@ -1583,12 +1579,12 @@ msgstr ""
 msgid "Le parametre REQUEST n'est pas renseigné."
 msgstr ""
 
-#: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:921
-#: Rok4Server.cpp:925 Rok4Server.cpp:935 Rok4Server.cpp:939
+#: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:923
+#: Rok4Server.cpp:927 Rok4Server.cpp:937 Rok4Server.cpp:941
 msgid " n'est pas prise en charge par ce serveur."
 msgstr ""
 
-#: Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:925
+#: Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:927
 msgid "L'operation "
 msgstr ""
 

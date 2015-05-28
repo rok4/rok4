@@ -875,9 +875,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                         if (file != -1) {
                             //on a pu creer un fichier temporaire
                             close(file);
-                            LOGGER_INFO("Fichier temporaire créé");
                         } else {
-                            LOGGER_ERROR("Impossible de créer un fichier temporaire donc pas de génération de dalle");
                             Logger::stopLogger();
                             terminate();
                             exit(0);
@@ -885,7 +883,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                         sleep(10);
                         file = remove(SpathTmp.c_str());
                         if (file != 0) {
-                            LOGGER_ERROR("Impossible de supprimer le fichier temporaire");
+                            //Impossible de supprimer le fichier temporaire
                         }
                         //extinction des loggers et du server
                         Logger::stopLogger();
