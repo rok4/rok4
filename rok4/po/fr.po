@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2015-05-28 15:15+0200\n"
+"POT-Creation-Date: 2015-05-29 13:53+0200\n"
 "PO-Revision-Date: 2014-01-28 09:36+0100\n"
 "Last-Translator: \n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -1107,6 +1107,10 @@ msgstr "Indice de tuile négatif"
 msgid "Type d'encodage inconnu : "
 msgstr "Type d'encodage inconnu : "
 
+#: Level.cpp:404
+msgid "Tile : "
+msgstr "Tuile : "
+
 #: Level.cpp:414
 msgid "GetTile Tiff"
 msgstr "GetTile Tiff"
@@ -1519,11 +1523,11 @@ msgstr "Nombre de styles demandés = "
 msgid "Parametre STYLES incomplet."
 msgstr "Paramètre STYLES incomplet."
 
-#: Request.cpp:1069 Request.cpp:1115 Rok4Api.cpp:225 Rok4Server.cpp:954
+#: Request.cpp:1069 Request.cpp:1115 Rok4Api.cpp:225 Rok4Server.cpp:956
 msgid "Le service "
 msgstr "Le service "
 
-#: Request.cpp:1069 Request.cpp:1115 Rok4Api.cpp:225 Rok4Server.cpp:954
+#: Request.cpp:1069 Request.cpp:1115 Rok4Api.cpp:225 Rok4Server.cpp:956
 msgid " est inconnu pour ce serveur."
 msgstr " est inconnu pour ce serveur."
 
@@ -1608,12 +1612,12 @@ msgstr "Impossible de charger la configuration des couches/pyramides"
 msgid "Le parametre REQUEST n'est pas renseigné."
 msgstr "La valeur du paramètre HEIGHT n'est pas une valeur entière."
 
-#: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:923
-#: Rok4Server.cpp:927 Rok4Server.cpp:937 Rok4Server.cpp:941
+#: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:925
+#: Rok4Server.cpp:929 Rok4Server.cpp:939 Rok4Server.cpp:943
 msgid " n'est pas prise en charge par ce serveur."
 msgstr " n'est pas prise en charge par ce serveur."
 
-#: Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:927
+#: Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:929
 msgid "L'operation "
 msgstr "L'opération "
 
@@ -1701,9 +1705,6 @@ msgstr " ne peut être traité"
 #: Style.cpp:54
 msgid "Nouveau Style : "
 msgstr "Nouveau Style : "
-
-#~ msgid "Tile : "
-#~ msgstr "Tuile : "
 
 #, fuzzy
 #~ msgid " ne peut dépendre d'autres couches"

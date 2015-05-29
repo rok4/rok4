@@ -863,8 +863,6 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
 
             } else {
                 //la dalle n'est pas en cours de creation
-                LOGGER_INFO("Dalle inexistante. Tentative de génération");
-
                 //on cree un processus qui va creer la dalle en parallele
                 if (parallelProcess->createProcess()) {
                     if (parallelProcess->getLastPid() == 0) {
@@ -876,18 +874,13 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                             //on a pu creer un fichier temporaire
                             close(file);
                         } else {
-                            Logger::stopLogger();
-                            terminate();
                             exit(0);
                         }
-                        sleep(10);
+                        sleep(5);
                         file = remove(SpathTmp.c_str());
                         if (file != 0) {
                             //Impossible de supprimer le fichier temporaire
                         }
-                        //extinction des loggers et du server
-                        Logger::stopLogger();
-                        terminate();
                         exit(0);
 
                     } else {
