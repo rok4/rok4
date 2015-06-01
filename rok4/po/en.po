@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2015-05-29 13:53+0200\n"
+"POT-Creation-Date: 2015-06-01 16:10+0200\n"
 "PO-Revision-Date: 2013-02-18 17:49+0100\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -1335,7 +1335,7 @@ msgstr ""
 msgid "Parametre LAYER absent."
 msgstr ""
 
-#: Request.cpp:757 Request.cpp:871 Rok4Server.cpp:338 Rok4Server.cpp:607
+#: Request.cpp:757 Request.cpp:871 Rok4Server.cpp:339 Rok4Server.cpp:608
 msgid "Layer "
 msgstr "Layer "
 
@@ -1393,7 +1393,7 @@ msgstr ""
 msgid "Parametre FORMAT absent."
 msgstr ""
 
-#: Request.cpp:801 Rok4Server.cpp:573
+#: Request.cpp:801 Rok4Server.cpp:574
 msgid "Le format "
 msgstr ""
 
@@ -1517,11 +1517,11 @@ msgstr ""
 msgid "Parametre STYLES incomplet."
 msgstr ""
 
-#: Request.cpp:1069 Request.cpp:1115 Rok4Api.cpp:225 Rok4Server.cpp:956
+#: Request.cpp:1069 Request.cpp:1115 Rok4Api.cpp:225 Rok4Server.cpp:946
 msgid "Le service "
 msgstr ""
 
-#: Request.cpp:1069 Request.cpp:1115 Rok4Api.cpp:225 Rok4Server.cpp:956
+#: Request.cpp:1069 Request.cpp:1115 Rok4Api.cpp:225 Rok4Server.cpp:946
 msgid " est inconnu pour ce serveur."
 msgstr ""
 
@@ -1603,12 +1603,12 @@ msgstr ""
 msgid "Le parametre REQUEST n'est pas renseigné."
 msgstr ""
 
-#: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:925
-#: Rok4Server.cpp:929 Rok4Server.cpp:939 Rok4Server.cpp:943
+#: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:915
+#: Rok4Server.cpp:919 Rok4Server.cpp:929 Rok4Server.cpp:933
 msgid " n'est pas prise en charge par ce serveur."
 msgstr ""
 
-#: Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:929
+#: Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:919
 msgid "L'operation "
 msgstr ""
 
@@ -1616,79 +1616,79 @@ msgstr ""
 msgid "Le parametre SERVICE n'est pas renseigné."
 msgstr ""
 
-#: Rok4Api.cpp:299 Rok4Api.cpp:375 Rok4Server.cpp:588
+#: Rok4Api.cpp:299 Rok4Api.cpp:375 Rok4Server.cpp:589
 msgid "Probleme dans les parametres de la requete getTile"
 msgstr ""
 
-#: Rok4Api.cpp:503 Rok4Server.cpp:594
+#: Rok4Api.cpp:503 Rok4Server.cpp:595
 msgid "No data found"
 msgstr ""
 
-#: Rok4Server.cpp:87
+#: Rok4Server.cpp:88
 msgid "Le listener FCGI ne peut etre initialise"
 msgstr ""
 
-#: Rok4Server.cpp:97
+#: Rok4Server.cpp:98
 msgid "FCGX_InitRequest renvoie le code d'erreur"
 msgstr ""
 
-#: Rok4Server.cpp:121
+#: Rok4Server.cpp:122
 msgid "Request Content :"
 msgstr "Request Content :"
 
-#: Rok4Server.cpp:150
+#: Rok4Server.cpp:151
 msgid "Extinction du thread"
 msgstr "Thread shutdown"
 
-#: Rok4Server.cpp:163
+#: Rok4Server.cpp:164
 msgid "Build WMS Capabilities"
 msgstr "Build WMS Capabilities"
 
-#: Rok4Server.cpp:167
+#: Rok4Server.cpp:168
 msgid "Build WMTS Capabilities"
 msgstr "Build WMTS Capabilities"
 
-#: Rok4Server.cpp:192
+#: Rok4Server.cpp:193
 msgid "Listening on "
 msgstr "Listening on "
 
-#: Rok4Server.cpp:251 Rok4Server.cpp:274
+#: Rok4Server.cpp:252 Rok4Server.cpp:275
 msgid "Probleme dans les parametres de la requete getCapabilities"
 msgstr ""
 
-#: Rok4Server.cpp:303
+#: Rok4Server.cpp:304
 msgid "Probleme dans les parametres de la requete getMap"
 msgstr ""
 
-#: Rok4Server.cpp:316
+#: Rok4Server.cpp:317
 msgid "GetMap de Style : "
 msgstr ""
 
-#: Rok4Server.cpp:316
+#: Rok4Server.cpp:317
 msgid " pal size : "
 msgstr " pal size : "
 
-#: Rok4Server.cpp:322
+#: Rok4Server.cpp:323
 msgid "bbox invalide"
 msgstr ""
 
-#: Rok4Server.cpp:325
+#: Rok4Server.cpp:326
 msgid "bbox trop grande"
 msgstr ""
 
-#: Rok4Server.cpp:328 Rok4Server.cpp:770 Rok4Server.cpp:799 Rok4Server.cpp:824
+#: Rok4Server.cpp:329 Rok4Server.cpp:771 Rok4Server.cpp:800 Rok4Server.cpp:825
 msgid "Impossible de repondre a la requete"
 msgstr ""
 
-#: Rok4Server.cpp:338 Rok4Server.cpp:607
+#: Rok4Server.cpp:339 Rok4Server.cpp:608
 msgid " unknown "
 msgstr ""
 
-#: Rok4Server.cpp:362
+#: Rok4Server.cpp:363
 msgid "Estompage"
 msgstr "Estompage"
 
-#: Rok4Server.cpp:573
+#: Rok4Server.cpp:574
 msgid " ne peut etre traite"
 msgstr ""
 
