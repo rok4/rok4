@@ -400,7 +400,7 @@ public:
      * \return column
      */
     int inline x2c ( double x ) {
-        return (int) ( ( x-bbox.xmin ) /resx );
+        return floor ( ( x-bbox.xmin ) /resx );
     }
     /**
      * \~french
@@ -413,7 +413,7 @@ public:
      * \return line
      */
     int inline y2l ( double y ) {
-        return (int) ( ( bbox.ymax-y ) /resy );
+        return floor ( ( bbox.ymax-y ) /resy );
     }
 
     /**
@@ -663,6 +663,16 @@ public:
         } else {
             LOGGER_INFO ( "\t- No mask\n" );
         }
+    }
+    
+    /**
+     * \~french
+     * \brief Sortie du tfw de l'image
+     * \~english
+     * \brief Image TFW output
+     */
+    virtual void printTFW() {
+        LOGGER_INFO ( "TFW : \n" << resx << "\n-" << resy << "\n0\n0\n" << bbox.xmin+0.5*resx << "\n" << bbox.ymax - 0.5*resy );
     }
 };
 
