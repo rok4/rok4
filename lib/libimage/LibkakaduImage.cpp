@@ -54,7 +54,8 @@
 #include "LibkakaduImage.h"
 #include "Logger.h"
 #include "Utils.h"
-#include "kdu_stripe_decompressor.h"
+#include "kdu_region_decompressor.h"
+#include <../../../culture3d/src/interface/interface.h>
 
 /* ------------------------------------------------------------------------------------------------ */
 /* -------------------------------------- LOGGERS DE KAKADU --------------------------------------- */
@@ -307,23 +308,7 @@ LibkakaduImage::LibkakaduImage (
   m_codestream.apply_input_restrictions(0, channels, 0, 0, NULL);
       
   data = new kdu_byte[(int) dims.area()*channels];
-  kdu_stripe_decompressor decompressor;
-  decompressor.start(m_codestream, false, false, m_kdu_env_ref);
-  
-  int stripe_heights[channels];
-  
-  for (int i = 0; i < channels; i++) {
-      stripe_heights[i] = dims.size.y;
-  }
-  
-  //std::cout << "test : avant 'decompressor.pull_stripe'" << std::endl;
-  
-  decompressor.pull_stripe(data,stripe_heights);
-  
-  //std::cout << "test : après 'decompressor.pull_stripe'" << std::endl;
-  
-  decompressor.finish();
-  
+
   std::cout << "test : sortie du constructeur'" << std::endl;
   
 }
@@ -335,46 +320,116 @@ template<typename T>
 int LibkakaduImage::_getline ( T* buffer, int line ) {
   // buffer doit déjà être alloué, et assez grand
   
-  if ( line / rowsperstrip != current_strip ) {
+  if ( line / rowsperstripe != current_stripe ) {
     
     // Les données n'ont pas encore été lue depuis l'image (strip pas en mémoire).
-    current_strip = line / rowsperstrip;
-    //int size = TIFFReadEncodedStrip ( tif, current_strip, strip_buffer, -1 ); remplacer par équivalent kakadu
-    /*if ( size < 0 ) {
-      LOGGER_ERROR ( "Cannot read strip number " << current_strip << " of image " << filename );
+    current_stripe = line / rowsperstripe;
+    kdu_dims stripeDims, mappedStripeDims;
+    stripeDims.pos = kdu_coords(0,line);
+    stripeDims.size = kdu_coords(width,rowsperstripe);
+    std::cout << "KAKADU == stripeDims.pos : " << stripeDims.pos.x << " " << stripeDims.pos.y << std::endl;
+    std::cout << "         stripeDims.size : " << stripeDims.size.x << " " << stripeDims.size.y << std::endl;
+    m_codestream.map_region(0,stripeDims,mappedStripeDims);
+    std::cout << "KAKADU == mappedStripeDims.pos : " << mappedStripeDims.pos.x << " " << mappedStripeDims.pos.y << std::endl;
+    std::cout << "         mappedStripeDims.size : " << mappedStripeDims.size.x << " " << mappedStripeDims.size.y << std::endl;
+    kdu_dims * componentsDims[channels];
+    for (int chan = 0; chan < channels; chan++) {
+      m_codestream.get_dims(chan, componentsDims[chan], true);
+    }
+    kdu_channel_mapping chan_mapping;
+    chan_mapping.configure(m_codestream);
+    kdu_dims stripeRegion = mappedStripeDims;
+    std::cout << "KAKADU == avant decompressor.start" << std::endl;
+    m_decompressor.start(m_codestream, &chan_mapping,
+                         0 /* single_component=0 : not a single component case */,
+                         0 /* discard_level=0 : we work with the highest resolution image */,
+                         1 /* max_layer=1 : we work ONLY with the highest resolution image */,
+                         stripeRegion, kdu_coords(1,1), kdu_coords(1,1), true, KDU_WANT_OUTPUT_COMPONENTS,
+                         false, m_kdu_env_ref, nullptr);
+    std::cout << "KAKADU == après decompressor.start" << std::endl;                    
+    
+    kdu_dims new_region, incomplete_region=stripeRegion;
+    int* channel_offsets[channels];
+    int pixel_gap, row_gap, suggested_increment, max_region_pixels, precision_bits=8, expand_monochrome=0, fill_alpha=0;
+    kdu_coords buffer_origin;
+    bool measure_row_gap_in_pixels=false;
+    
+    for (int channel_offset=0; channel_offset<channels; channel_offset++) {
+      channel_offsets[channel_offsets]=channel_offset;
+    }
+    pixel_gap = channels-1;
+    buffer_origin.x = stripeRegion.pos.x;
+    buffer_origin.y = stripeRegion.pos.y;
+    row_gap = 0;
+    suggested_increment = 0;
+    max_region_pixels = width*channels;
+      
+    std::cout << "KAKADU == avant decompressor.process" << std::endl;
+    while(m_decompressor.process(
+      stripe_buffer,
+      channel_offsets,
+      pixel_gap,
+      buffer_origin,
+      row_gap,
+      suggested_increment,
+      max_region_pixels,
+      incomplete_region,
+      new_region,
+      precision_bits,
+      measure_row_gap_in_pixels,
+      expand_monochrome,
+      fill_alpha
+    ) && !incomplete_region.is_empty()) {
+      std::cout << "KAKADU == decompressor.process en cours" << std::endl;
+      std::cout << "KAKADU == nouvelle region :" << std::endl;
+      std::cout << "                            pos" << new_region.pos.x << " " << new_region.pos.y << std::endl;
+      std::cout << "                            size" << new_region.size.x << " " << new_region.size.y << std::endl;
+    }
+    std::cout << "KAKADU == après decompressor.process" << std::endl;
+    std::cout << "KAKADU == avant decompressor.finish" << std::endl;
+    bool readSuccess;
+    readSuccess = m_decompressor.finish();
+    std::cout << "KAKADU == après decompressor.finish" << std::endl;
+    //int size = TIFFReadEncodedStrip ( tif, current_stripe, stripe_buffer, -1 );
+    if (!readSuccess) {
+      LOGGER_ERROR ( "Cannot read stripe number " << current_stripe << " of image " << filename );
       return 0;
-    }*/
-   /* nécessaire ?
-    if (oneTo8bits == 1) {
-      OneBitConverter::minwhiteToGray(oneTo8bits_buffer, strip_buffer, size);
-    } else if (oneTo8bits == 2) {
-      OneBitConverter::minblackToGray(oneTo8bits_buffer, strip_buffer, size);
-    }*/
+    }
+    
   }
-  
-  // utiliser kdu_stripe_decompressor en adaptant.
-  /*if (oneTo8bits) {
-    memcpy ( buffer, oneTo8bits_buffer + ( line%rowsperstrip ) * width * pixelSize, width * pixelSize ); 
-  } else {
-    memcpy ( buffer, strip_buffer + ( line%rowsperstrip ) * width * pixelSize, width * pixelSize );
-  }*/
-  
+    
+  memcpy ( buffer, stripe_buffer + ( line%rowsperstripe ) * width * pixelSize, width * pixelSize );
   return width*channels;
+ 
 }
 
 int LibkakaduImage::getline ( uint8_t* buffer, int line ) {
-  std::cout << "test : entrée dans getline ( uint8_t* buffer, int line ) avec line = " << line << std::endl;
-    memcpy(buffer, (uint8_t*) data + line * width * channels , width * channels );
-    return width*channels;
+  if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
+    int r = _getline ( buffer,line );
+    if (associatedalpha) unassociateAlpha ( buffer );
+    return r;
+  } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) { // float
+    /* On ne convertit pas les nombres flottants en entier sur 8 bits (aucun intérêt)
+     * On va copier le buffer flottant sur le buffer entier, de même taille en octet (4 fois plus grand en "nombre de cases")*/
+    float floatline[width * channels];
+    _getline ( floatline, line );
+    memcpy ( buffer, floatline, width*channels*sizeof(float) );
+    return width*channels*sizeof(float);
+  }
 }
 
 int LibkakaduImage::getline ( float* buffer, int line ) {
-  std::cout << "test : entrée dans getline ( float* buffer, int line ) avec line = " << line << std::endl;
-    // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers (forcément pour du JPEG2000)
+  if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
+    // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers
     uint8_t* buffer_t = new uint8_t[width*channels];
-    int retour = getline ( buffer_t,line );
+    
+    // Ne pas appeler directement _getline pour bien faire les potentielles conversions (alpha ou 1 bit)
+    getline ( buffer_t,line );
     convert ( buffer,buffer_t,width*channels );
     delete [] buffer_t;
-    return retour;
+    return width*channels;
+  } else { // float
+    return _getline ( buffer, line );
+  }
 }
 

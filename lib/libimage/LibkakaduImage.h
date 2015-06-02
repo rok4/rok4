@@ -59,7 +59,7 @@
 #include "jp2.h"
 #include "jpx.h"
 #include "kdu_file_io.h"
-#include "kdu_stripe_decompressor.h"
+#include "kdu_region_decompressor.h"
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -79,23 +79,23 @@ private:
     //TODO Implementer correctement ces attributs en me servant de LibTiffImage (penser a la doc)
     kdu_thread_env* m_kdu_env_ref;
     kdu_codestream m_codestream;
-    kdu_stripe_decompressor m_decompressor;
+    kdu_region_decompressor m_decompressor;
      
     /**
      * \~french \brief Nombre de ligne dans un strip
      * \~english \brief Number of line in one strip
      */
-    uint16_t rowsperstrip = 16;
+    uint16_t rowsperstripe = 16;
     /**
      * \~french \brief Buffer de lecture, de taille strip_size
      * \~english \brief Read buffer, strip_size long
      */
-    uint8_t* strip_buffer;
+    kdu_byte* stripe_buffer;
     /**
      * \~french \brief Indice du strip en mémoire dans strip_buffer
      * \~english \brief Memorized strip indice, in strip_buffer
      */
-    uint16_t current_strip;
+    uint16_t current_stripe;
      
 
     /** \~french
