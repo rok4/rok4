@@ -65,6 +65,13 @@
 #include "Image.h"
 #include "MirrorImage.h"
 
+#ifndef __max
+#define __max(a, b)   ( ((a) > (b)) ? (a) : (b) )
+#endif
+#ifndef __min
+#define __min(a, b)   ( ((a) < (b)) ? (a) : (b) )
+#endif
+
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
@@ -95,6 +102,34 @@ private:
      * \details First image is the bottom one
      */
     std::vector<Image*> sourceImages;
+    
+    /**
+     * \~french \brief Offset sur les lignes
+     * \details Numéro de la ligne dans l'ExtendedCompoundImage correspondant à la première ligne de l'image source
+     * \~english \brief Row's offset
+     */
+    std::vector<int> rowsOffsets;
+    
+    /**
+     * \~french \brief Offset sur les colonnes
+     * \details Numéro de la colonne dans l'ExtendedCompoundImage correspondant à la première colonne de l'image source, ou 0 si c'est négatif
+     * \~english \brief Columns's offset
+     */
+    std::vector<int> c0s;
+    
+    /**
+     * \~french \brief Offset sur les colonnes
+     * \details Numéro de la colonne dans l'ExtendedCompoundImage correspondant à la dernière colonne de l'image source, ou width - 1 si c'est supérieur
+     * \~english \brief Columns's offset
+     */
+    std::vector<int> c1s;
+    
+    /**
+     * \~french \brief Offset sur les colonnes
+     * \details Numéro de la colonne dans l'image source correspondant à la première colonne de ExtendedCompoundImage, ou 0 si c'est négatif
+     * \~english \brief Columns's offset
+     */
+    std::vector<int> c2s;
 
     /**
      * \~french \brief Nombre de miroirs dans les images sources
@@ -159,6 +194,21 @@ protected:
 
         nodata = new int[channels];
         memcpy ( nodata,nd,channels*sizeof ( int ) );
+        
+        
+        // Calcul des offsets
+        
+        
+        for ( int i = 0; i < ( int ) sourceImages.size(); i++ ) {
+            
+            double y = sourceImages[i]->l2y ( 0 );
+            
+            rowsOffsets.push_back(y2l ( y ));
+            c0s.push_back(__max ( 0,x2c ( sourceImages[i]->getXmin() + 0.5*sourceImages[i]->getResX() ) ));
+            c1s.push_back(__min ( width - 1,x2c ( sourceImages[i]->getXmax() - 0.5*sourceImages[i]->getResX() ) ));
+            c2s.push_back(__max ( 0, sourceImages[i]->x2c ( bbox.xmin + 0.5*resx ) ) );
+        }
+
     }
 
 public:
@@ -172,6 +222,21 @@ public:
      */
     std::vector<Image*>* getImages() {
         return &sourceImages;
+    }
+    
+    /**
+     * \~french
+     * \brief Retourne les différents offsets pour l'image demandée, pour les lignes et les colonnes
+     * \return offsets
+     * \~english
+     * \brief Return asked image's offsets, for columns and lines
+     * \return offsets
+     */
+    void getOffsets(int i, int* ol, int* c0, int* c1, int* c2) {
+        *ol = rowsOffsets[i];
+        *c0 = c0s[i];
+        *c1 = c1s[i];
+        *c2 = c0s[i];
     }
 
     /**
@@ -300,6 +365,12 @@ public:
         LOGGER_INFO ( "------ ExtendedCompoundImage -------" );
         Image::print();
         LOGGER_INFO ( "\t- Number of images = " << sourceImages.size() << ", whose " << mirrorsNumber << " mirrors" );
+        
+        LOGGER_INFO ( "\t\t- offsets : line, c0, c1, c2");
+        for ( int i = 0; i < ( int ) sourceImages.size(); i++ ) {
+            LOGGER_INFO ( "\t\t- image " << i << " : " << rowsOffsets[i] << ", " << c0s[i] << ", " << c1s[i] << ", " << c2s[i]);
+            sourceImages[i]->print(); 
+        }
         LOGGER_INFO ( "" );
     }
 };
