@@ -264,7 +264,7 @@ LibkakaduImage::LibkakaduImage (
     Jpeg2000Image ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression ),
     m_kdu_env_ref (thread_env_ref)
 {
-  
+  rowsperstripe = 16;
   
   /************** INITIALISATION DES OBJETS KAKADU *********/
   
@@ -331,8 +331,9 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
     m_codestream.map_region(0,stripeDims,mappedStripeDims);
     std::cout << "KAKADU == mappedStripeDims.pos : " << mappedStripeDims.pos.x << " " << mappedStripeDims.pos.y << std::endl;
     std::cout << "         mappedStripeDims.size : " << mappedStripeDims.size.x << " " << mappedStripeDims.size.y << std::endl;
-    kdu_dims * componentsDims[channels];
-    for (int chan = 0; chan < channels; chan++) {
+    kdu_dims componentsDims[channels];
+    int chan;
+    for (chan = 0; chan < channels; chan++) {
       m_codestream.get_dims(chan, componentsDims[chan], true);
     }
     kdu_channel_mapping chan_mapping;
@@ -344,17 +345,17 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
                          0 /* discard_level=0 : we work with the highest resolution image */,
                          1 /* max_layer=1 : we work ONLY with the highest resolution image */,
                          stripeRegion, kdu_coords(1,1), kdu_coords(1,1), true, KDU_WANT_OUTPUT_COMPONENTS,
-                         false, m_kdu_env_ref, nullptr);
+                         false, m_kdu_env_ref, NULL);
     std::cout << "KAKADU == après decompressor.start" << std::endl;                    
     
     kdu_dims new_region, incomplete_region=stripeRegion;
-    int* channel_offsets[channels];
+    int channel_offsets[channels];
     int pixel_gap, row_gap, suggested_increment, max_region_pixels, precision_bits=8, expand_monochrome=0, fill_alpha=0;
     kdu_coords buffer_origin;
     bool measure_row_gap_in_pixels=false;
     
     for (int channel_offset=0; channel_offset<channels; channel_offset++) {
-      channel_offsets[channel_offsets]=channel_offset;
+      channel_offsets[channel_offset]=channel_offset;
     }
     pixel_gap = channels-1;
     buffer_origin.x = stripeRegion.pos.x;

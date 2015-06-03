@@ -85,7 +85,7 @@ private:
      * \~french \brief Nombre de ligne dans un strip
      * \~english \brief Number of line in one strip
      */
-    uint16_t rowsperstripe = 16;
+    uint16_t rowsperstripe;
     /**
      * \~french \brief Buffer de lecture, de taille strip_size
      * \~english \brief Read buffer, strip_size long
