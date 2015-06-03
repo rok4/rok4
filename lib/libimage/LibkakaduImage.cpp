@@ -55,7 +55,6 @@
 #include "Logger.h"
 #include "Utils.h"
 #include "kdu_region_decompressor.h"
-#include <../../../culture3d/src/interface/interface.h>
 
 /* ------------------------------------------------------------------------------------------------ */
 /* -------------------------------------- LOGGERS DE KAKADU --------------------------------------- */
