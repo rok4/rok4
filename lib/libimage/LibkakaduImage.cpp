@@ -242,7 +242,7 @@ LibkakaduImage::LibkakaduImage (
     Jpeg2000Image ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression ),
     m_kdu_env_ref (thread_env_ref)
 {
-  rowsperstripe = 16;
+  rowsperstrip = 16;
   
   /************** INITIALISATION DES OBJETS KAKADU *********/
   
@@ -295,14 +295,15 @@ LibkakaduImage::LibkakaduImage (
 template<typename T>
 int LibkakaduImage::_getline ( T* buffer, int line ) {
   // buffer doit déjà être alloué, et assez grand
+  LOGGER_DEBUG("Entrée dans _getline(buffer, line) avec :" << std::endl << "line = " << line << std::endl << "buffer = " << buffer << std::endl);
   
-  if ( line / rowsperstripe != current_stripe ) {
+  if ( line / rowsperstrip != current_strip ) {
     
     // Les données n'ont pas encore été lue depuis l'image (strip pas en mémoire).
-    current_stripe = line / rowsperstripe;
+    current_strip = line / rowsperstrip;
     kdu_dims stripeDims, mappedStripeDims;
     stripeDims.pos = kdu_coords(0,line);
-    stripeDims.size = kdu_coords(width,rowsperstripe);
+    stripeDims.size = kdu_coords(width,rowsperstrip);
     m_codestream.map_region(0,stripeDims,mappedStripeDims);
     kdu_dims componentsDims[channels];
     int chan;
@@ -336,7 +337,7 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
     max_region_pixels = width*channels;
     
     while(m_decompressor.process(
-      stripe_buffer,
+      strip_buffer,
       channel_offsets,
       pixel_gap,
       buffer_origin,
@@ -355,20 +356,22 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
     bool readSuccess;
     readSuccess = m_decompressor.finish();
     
-    //int size = TIFFReadEncodedStrip ( tif, current_stripe, stripe_buffer, -1 );
+    //int size = TIFFReadEncodedStrip ( tif, current_strip, strip_buffer, -1 );
     if (!readSuccess) {
-      LOGGER_ERROR ( "Cannot read stripe number " << current_stripe << " of image " << filename );
+      LOGGER_ERROR ( "Cannot read stripe number " << current_strip << " of image " << filename );
       return 0;
     }
     
   }
     
-  memcpy ( buffer, stripe_buffer + ( line%rowsperstripe ) * width * pixelSize, width * pixelSize );
+  memcpy ( buffer, strip_buffer + ( line%rowsperstrip ) * width * pixelSize, width * pixelSize );
   return width*channels;
  
 }
 
 int LibkakaduImage::getline ( uint8_t* buffer, int line ) {
+  
+  LOGGER_DEBUG("Entrée dans getline(uint8_t* buffer, int line) avec :" << std::endl << "line = " << line << std::endl << "buffer = " << buffer << std::endl);
   if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
     int r = _getline ( buffer,line );
     if (associatedalpha) unassociateAlpha ( buffer );
@@ -384,6 +387,7 @@ int LibkakaduImage::getline ( uint8_t* buffer, int line ) {
 }
 
 int LibkakaduImage::getline ( float* buffer, int line ) {
+  LOGGER_DEBUG("Entrée dans getline(float* buffer, int line) avec :" << std::endl << "line = " << line << std::endl << "buffer = " << buffer << std::endl);
   if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
     // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers
     uint8_t* buffer_t = new uint8_t[width*channels];

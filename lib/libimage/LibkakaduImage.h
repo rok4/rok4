@@ -85,17 +85,17 @@ private:
      * \~french \brief Nombre de ligne dans un strip
      * \~english \brief Number of line in one strip
      */
-    uint16_t rowsperstripe;
+    uint16_t rowsperstrip;
     /**
      * \~french \brief Buffer de lecture, de taille strip_size
      * \~english \brief Read buffer, strip_size long
      */
-    kdu_byte* stripe_buffer;
+    kdu_byte* strip_buffer;
     /**
      * \~french \brief Indice du strip en mémoire dans strip_buffer
      * \~english \brief Memorized strip indice, in strip_buffer
      */
-    uint16_t current_stripe;
+    uint16_t current_strip;
      
 
     /** \~french
