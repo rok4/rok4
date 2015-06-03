@@ -178,7 +178,6 @@ public:
      * \details We remove read buffer #m_data
      */
     ~LibkakaduImage() {
-        std::cout << "entrée dans le destructeur" << std::endl;
         delete[] data;
         m_codestream.destroy();
     }

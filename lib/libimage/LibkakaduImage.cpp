@@ -208,29 +208,7 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
         }
         env_ref = &env;
     }
-    
-    
-    // Now decompress the image in one hit, using `kdu_stripe_decompressor'
-    //kdu_byte *kduData = new kdu_byte[(int) dims.area()*channels];
-    //TODO Remove this part
-    /* kdu_byte *kduData = new kdu_byte[(int) dims.area()*channels];
-     * kdu_stripe_decompressor decompressor;
-     *      
-     * decompressor.start(codestream, false, false, env_ref);
-     * 
-     * int stripe_heights[channels];
-     * for (int i = 0; i < channels; i++) {
-     *     stripe_heights[i] = dims.size.y;
-     * }
-     * 
-     * decompressor.pull_stripe(kduData,stripe_heights);
-     * decompressor.finish();
-     */
-    // As an alternative to the above, you can decompress the image samples in
-    // smaller stripes, writing the stripes to disk as they are produced by
-    // each call to `decompressor.pull_stripe'.  For a much richer
-    // demonstration of the use of `kdu_stripe_decompressor', take a look at
-    // the "kdu_buffered_expand" application.
+   
 
     // Write image buffer to file and clean up
     codestream.destroy();
@@ -308,7 +286,6 @@ LibkakaduImage::LibkakaduImage (
       
   data = new kdu_byte[(int) dims.area()*channels];
 
-  std::cout << "test : sortie du constructeur'" << std::endl;
   
 }
 
@@ -326,11 +303,7 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
     kdu_dims stripeDims, mappedStripeDims;
     stripeDims.pos = kdu_coords(0,line);
     stripeDims.size = kdu_coords(width,rowsperstripe);
-    std::cout << "KAKADU == stripeDims.pos : " << stripeDims.pos.x << " " << stripeDims.pos.y << std::endl;
-    std::cout << "         stripeDims.size : " << stripeDims.size.x << " " << stripeDims.size.y << std::endl;
     m_codestream.map_region(0,stripeDims,mappedStripeDims);
-    std::cout << "KAKADU == mappedStripeDims.pos : " << mappedStripeDims.pos.x << " " << mappedStripeDims.pos.y << std::endl;
-    std::cout << "         mappedStripeDims.size : " << mappedStripeDims.size.x << " " << mappedStripeDims.size.y << std::endl;
     kdu_dims componentsDims[channels];
     int chan;
     for (chan = 0; chan < channels; chan++) {
@@ -339,14 +312,12 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
     kdu_channel_mapping chan_mapping;
     chan_mapping.configure(m_codestream);
     kdu_dims stripeRegion = mappedStripeDims;
-    std::cout << "KAKADU == avant decompressor.start" << std::endl;
     m_decompressor.start(m_codestream, &chan_mapping,
                          0 /* single_component=0 : not a single component case */,
                          0 /* discard_level=0 : we work with the highest resolution image */,
                          1 /* max_layer=1 : we work ONLY with the highest resolution image */,
                          stripeRegion, kdu_coords(1,1), kdu_coords(1,1), true, KDU_WANT_OUTPUT_COMPONENTS,
-                         false, m_kdu_env_ref, NULL);
-    std::cout << "KAKADU == après decompressor.start" << std::endl;                    
+                         false, m_kdu_env_ref, NULL);                   
     
     kdu_dims new_region, incomplete_region=stripeRegion;
     int channel_offsets[channels];
@@ -363,8 +334,7 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
     row_gap = 0;
     suggested_increment = 0;
     max_region_pixels = width*channels;
-      
-    std::cout << "KAKADU == avant decompressor.process" << std::endl;
+    
     while(m_decompressor.process(
       stripe_buffer,
       channel_offsets,
@@ -380,16 +350,11 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
       expand_monochrome,
       fill_alpha
     ) && !incomplete_region.is_empty()) {
-      std::cout << "KAKADU == decompressor.process en cours" << std::endl;
-      std::cout << "KAKADU == nouvelle region :" << std::endl;
-      std::cout << "                            pos" << new_region.pos.x << " " << new_region.pos.y << std::endl;
-      std::cout << "                            size" << new_region.size.x << " " << new_region.size.y << std::endl;
     }
-    std::cout << "KAKADU == après decompressor.process" << std::endl;
-    std::cout << "KAKADU == avant decompressor.finish" << std::endl;
+  
     bool readSuccess;
     readSuccess = m_decompressor.finish();
-    std::cout << "KAKADU == après decompressor.finish" << std::endl;
+    
     //int size = TIFFReadEncodedStrip ( tif, current_stripe, stripe_buffer, -1 );
     if (!readSuccess) {
       LOGGER_ERROR ( "Cannot read stripe number " << current_stripe << " of image " << filename );
