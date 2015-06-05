@@ -215,9 +215,12 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     input->close(); // Not really necessary here.
     box.close();
     
+    int rowsperstripe = 16;
+    kdu_byte stripe_buffer[rowsperstrip*width*channels];
+    
+    
     /******************** CRÉATION DE L'OBJET ******************/
 
-    //TODO modifier le constructeur pour accepter decompressor en entree - Fait
     /* L'objet LibkakaduImage devra pouvoir se charger lui-meme de charger les bandes.
      * Pour cela un controle devra determiner si la bande que l'on cherche a traiter est la bande active ou pas
      * Si necessaire on devra donc charger une bande de 16 lignes.
@@ -226,7 +229,7 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     return new LibkakaduImage (
         width, height, resx, resy, channels, bbox, filename,
         sf, bitspersample, ph, Compression::JPEG2000,
-        env_ref
+        env_ref, rowsperstripe, stripe_buffer
     );
 
 }
@@ -237,12 +240,11 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
 LibkakaduImage::LibkakaduImage (
     int width, int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
-    kdu_thread_env* thread_env_ref ) :
+    kdu_thread_env* thread_env_ref, int rowsperstripe, kdu_byte * stripe_buffer ) :
 
     Jpeg2000Image ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression ),
-    m_kdu_env_ref (thread_env_ref)
+    m_kdu_env_ref (thread_env_ref), rowsperstrip(rowsperstripe), strip_buffer(stripe_buffer)
 {
-  rowsperstrip = 16;
   
   /************** INITIALISATION DES OBJETS KAKADU *********/
   
@@ -336,22 +338,36 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
     suggested_increment = 0;
     max_region_pixels = width*channels;
     
-    while(m_decompressor.process(
-      strip_buffer,
-      channel_offsets,
-      pixel_gap,
-      buffer_origin,
-      row_gap,
-      suggested_increment,
-      max_region_pixels,
-      incomplete_region,
-      new_region,
-      precision_bits,
-      measure_row_gap_in_pixels,
-      expand_monochrome,
-      fill_alpha
-    ) && !incomplete_region.is_empty()) {
-    }
+    LOGGER_DEBUG( "m_decompressor = " << &m_decompressor );
+    LOGGER_DEBUG( "strip_buffer = " << strip_buffer );
+    LOGGER_DEBUG( "channel_offsets = " << channel_offsets );
+    LOGGER_DEBUG( "pixel_gap = " << pixel_gap );
+    LOGGER_DEBUG( "buffer_origin = " << buffer_origin.x << buffer_origin.y );
+    LOGGER_DEBUG( "row_gap = " << row_gap );
+    LOGGER_DEBUG( "suggested_increment = " << suggested_increment );
+    LOGGER_DEBUG( "max_region_pixels = " << max_region_pixels );
+    LOGGER_DEBUG( "incomplete_region = " << incomplete_region.pos.x << incomplete_region.pos.y << incomplete_region.size.x << incomplete_region.size.y );
+    LOGGER_DEBUG( "new_region = " << new_region.pos.x << new_region.pos.y << new_region.size.x << new_region.size.y );
+    LOGGER_DEBUG( "precision_bits = " << precision_bits );
+    LOGGER_DEBUG( "measure_row_gap_in_pixels = " << measure_row_gap_in_pixels );
+    LOGGER_DEBUG( "expand_monochrome = " << expand_monochrome );
+    LOGGER_DEBUG( "fill_alpha = " << fill_alpha );
+    LOGGER_DEBUG( "while(m_decompressor.process(stripe_buffer, channel_offsets, pixel_gap, buffer_origin, row_gap, suggested_increment, max_region_pixels, incomplete_region, new_region, precision_bits, measure_row_gap_in_pixels, expand_monochrome, fill_alpha ) && !incomplete_region.is_empty())" );
+    int dbgIncrement =0;
+    bool processInProgress = true;
+    if (incomplete_region.is_empty()) {
+      LOGGER_ERROR("Kakadu region decompressor's incomplete region is empty before processing. This should not happen.");
+    } else {
+      while( processInProgress && !incomplete_region.is_empty()) {
+      
+        LOGGER_DEBUG("Boucle decompressor.process, itération n°" << dbgIncrement );
+        processInProgress = m_decompressor.process( strip_buffer, channel_offsets, pixel_gap,
+         buffer_origin, row_gap, suggested_increment, max_region_pixels, incomplete_region,
+         new_region, precision_bits, measure_row_gap_in_pixels, expand_monochrome, fill_alpha ); //segfault ici
+        dbgIncrement++;
+        LOGGER_DEBUG("Fin de l'itération.");
+      }
+    }    
   
     bool readSuccess;
     readSuccess = m_decompressor.finish();
