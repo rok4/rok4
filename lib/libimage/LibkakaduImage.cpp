@@ -361,9 +361,17 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
       while( processInProgress && !incomplete_region.is_empty()) {
       
         LOGGER_DEBUG("Boucle decompressor.process, itération n°" << dbgIncrement );
-        processInProgress = m_decompressor.process( strip_buffer, channel_offsets, pixel_gap,
+        try {
+         processInProgress = m_decompressor.process( strip_buffer, channel_offsets, pixel_gap,
          buffer_origin, row_gap, suggested_increment, max_region_pixels, incomplete_region,
          new_region, precision_bits, measure_row_gap_in_pixels, expand_monochrome, fill_alpha ); //segfault ici
+        } catch (int e) {
+          LOGGER_ERROR("An exception occured. Exception's number : " << e);
+        } catch (char e) {
+          LOGGER_ERROR("An exception occured. Exception's name : " << e);
+        } catch (...) {
+          LOGGER_ERROR("A default type exception occured.");
+        }
         dbgIncrement++;
         LOGGER_DEBUG("Fin de l'itération.");
       }
