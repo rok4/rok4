@@ -216,8 +216,14 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     box.close();
     
     int rowsperstripe = 16;
-    kdu_byte stripe_buffer[rowsperstrip*width*channels];
-    
+    try {
+      LOGGER_DEBUG("kdu_byte stripe_buffer = new kdu_byte["<<rowsperstrip<<"*"<<width<<"*"<<channels<<"]");
+      kdu_byte stripe_buffer = new kdu_byte[rowsperstrip*width*channels];
+    } catch (std::exception e) {
+      if (e == std::bad_alloc) {
+        LOGGER_ERROR("Error while allocating memory for kdu_byte stripe_buffer = new kdu_byte["<<rowsperstrip<<"*"<<width<<"*"<<channels<<"]");
+      }
+    }
     
     /******************** CRÉATION DE L'OBJET ******************/
 
@@ -361,6 +367,9 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
       while( processInProgress && !incomplete_region.is_empty()) {
       
         LOGGER_DEBUG("Boucle decompressor.process, itération n°" << dbgIncrement );
+        LOGGER_DEBUG("sizeof(buffer) = " << sizeof(*buffer));
+        LOGGER_DEBUG("sizeof(strip_buffer) = " << sizeof(*strip_buffer));
+        LOGGER_DEBUG("sizeof(strip_buffer)/sizeof(buffer) = " << (sizeof(*strip_buffer)/sizeof(*buffer)));
         try {
          processInProgress = m_decompressor.process( strip_buffer, channel_offsets, pixel_gap,
          buffer_origin, row_gap, suggested_increment, max_region_pixels, incomplete_region,
@@ -368,7 +377,7 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
         } catch (int e) {
           LOGGER_ERROR("An exception occured. Exception's number : " << e);
         } catch (char e) {
-          LOGGER_ERROR("An exception occured. Exception's name : " << e);
+          LOGGER_ERROR("An exception occured. Exception's hg name : " << e);
         } catch (...) {
           LOGGER_ERROR("A default type exception occured.");
         }
