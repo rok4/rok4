@@ -216,13 +216,19 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     box.close();
     
     int rowsperstripe = 16;
+    kdu_byte * stripe_buffer;
     try {
       LOGGER_DEBUG("kdu_byte stripe_buffer = new kdu_byte["<<rowsperstrip<<"*"<<width<<"*"<<channels<<"]");
-      kdu_byte stripe_buffer = new kdu_byte[rowsperstrip*width*channels];
+      stripe_buffer = new kdu_byte[rowsperstrip*width*channels];
+      LOGGER_DEBUG("sizeof(stripe_buffer) = " << sizeof(stripe_buffer));
+      LOGGER_DEBUG("sizeof(kdu_byte[rowsperstrip*width*channels]) = " << sizeof(kdu_byte[rowsperstrip*width*channels]));
+      LOGGER_DEBUG("sizeof(kdu_byte[1*width*channels]) = " << sizeof(kdu_byte[width*channels]));
+    } catch (std::bad_alloc e) {
+      stripe_buffer = NULL;
+      LOGGER_ERROR("Error (bad allocation) while allocating memory for kdu_byte stripe_buffer = new kdu_byte["<<rowsperstrip<<"*"<<width<<"*"<<channels<<"]");     
     } catch (std::exception e) {
-      if (e == std::bad_alloc) {
-        LOGGER_ERROR("Error while allocating memory for kdu_byte stripe_buffer = new kdu_byte["<<rowsperstrip<<"*"<<width<<"*"<<channels<<"]");
-      }
+      stripe_buffer = NULL;
+      LOGGER_ERROR("An exception occured while creating stripe buffer: " << e.what());
     }
     
     /******************** CRÉATION DE L'OBJET ******************/
@@ -367,19 +373,19 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
       while( processInProgress && !incomplete_region.is_empty()) {
       
         LOGGER_DEBUG("Boucle decompressor.process, itération n°" << dbgIncrement );
-        LOGGER_DEBUG("sizeof(buffer) = " << sizeof(*buffer));
-        LOGGER_DEBUG("sizeof(strip_buffer) = " << sizeof(*strip_buffer));
-        LOGGER_DEBUG("sizeof(strip_buffer)/sizeof(buffer) = " << (sizeof(*strip_buffer)/sizeof(*buffer)));
+        LOGGER_DEBUG("sizeof(buffer) = " << sizeof(buffer));
+        LOGGER_DEBUG("sizeof(strip_buffer) = " << sizeof(strip_buffer));
+        LOGGER_DEBUG("sizeof(strip_buffer)/sizeof(buffer) = " << (sizeof(strip_buffer)/sizeof(buffer)));
         try {
          processInProgress = m_decompressor.process( strip_buffer, channel_offsets, pixel_gap,
          buffer_origin, row_gap, suggested_increment, max_region_pixels, incomplete_region,
          new_region, precision_bits, measure_row_gap_in_pixels, expand_monochrome, fill_alpha ); //segfault ici
-        } catch (int e) {
-          LOGGER_ERROR("An exception occured. Exception's number : " << e);
-        } catch (char e) {
-          LOGGER_ERROR("An exception occured. Exception's hg name : " << e);
+        } catch (std::exception e) {
+          LOGGER_ERROR("An exception occured: " << e.what());
+        } catch (kdu_exception e) {
+          LOGGER_ERROR("A kakadu exception occured: " << e);
         } catch (...) {
-          LOGGER_ERROR("A default type exception occured.");
+          LOGGER_ERROR("An unidentified default exception occured.");
         }
         dbgIncrement++;
         LOGGER_DEBUG("Fin de l'itération.");

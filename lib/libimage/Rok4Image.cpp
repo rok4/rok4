@@ -592,10 +592,14 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
     // Ecriture de l'image
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
         uint8_t* lines = new uint8_t[tileHeight*imageLineSize];
+        LOGGER_DEBUG("sizeof(uint8_t[tileHeight*imageLineSize]) = " << sizeof(uint8_t[tileHeight*imageLineSize]));
+        LOGGER_DEBUG("sizeof(uint8_t[imageLineSize]) = " << sizeof(uint8_t[imageLineSize]));
+        LOGGER_DEBUG("sizeof(&lines) = " << sizeof(&lines));
 
         for ( int y = 0; y < tileHeightwise; y++ ) {
             // On récupère toutes les lignes pour cette ligne de tuiles
-            for (int lig = 0; lig < tileHeight; lig++) {
+          for (int lig = 0; lig < tileHeight; lig++) {
+            LOGGER_DEBUG("lig*imageLineSize = " << lig*imageLineSize);
                 if (pIn->getline(lines + lig*imageLineSize, y*tileHeight + lig) == 0) {
                     LOGGER_ERROR("Error reading the source image's line " << y*tileHeight + lig);
                     return -1;                    
@@ -618,7 +622,7 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
         delete [] lines;
     } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
         float* lines = new float[tileHeight*imageLineSize];
-
+        
         for ( int y = 0; y < tileHeightwise; y++ ) {
             // On récupère toutes les lignes pour cette ligne de tuiles
             for (int lig = 0; lig < tileHeight; lig++) {
