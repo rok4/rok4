@@ -872,10 +872,11 @@ bool resampleImages ( FileImage* pImageOut, ExtendedCompoundImage* pECI, Resampl
     // On réechantillonne le masque : TOUJOURS EN PPV, sans utilisation de masque pour l'interpolation
     ResampledImage* pRMask = new ResampledImage ( pECI->Image::getMask(), width_dst, height_dst, resx_dst, resy_dst, bbox_dst,
             Interpolation::NEAREST_NEIGHBOUR, false );
-
+    
     // Reechantillonnage
     *ppRImage = new ResampledImage ( pECI, width_dst, height_dst, resx_dst, resy_dst, bbox_dst,
                                      interpolation, pECI->useMasks() );
+    
 
     if ( ! ( *ppRImage )->setMask ( pRMask ) ) {
         LOGGER_ERROR ( "Cannot add mask to the ResampledImage" );
