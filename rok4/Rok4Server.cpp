@@ -574,7 +574,8 @@ void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
     //le capabilities est présent pour une compatibilité avec le WMS 1.1.1
     if ( request->request == "getcapabilities" || request->request == "capabilities") {
         S.sendresponse ( WMSGetCapabilities ( request ),&fcgxRequest );
-    } else if ( request->request == "getmap" ) {
+        //le map est présent pour une compatibilité avec le WMS 1.1.1
+    } else if ( request->request == "getmap" || request->request == "map") {
         S.sendresponse ( getMap ( request ), &fcgxRequest );
     } else if ( request->request == "getversion" ) {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wms" ) ),&fcgxRequest );
@@ -589,7 +590,8 @@ void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest 
     if ( supportWMTS && request->service == "wmts" ) {
         processWMTS ( request, fcgxRequest );
         //Service is not mandatory in GetMap request in WMS 1.3.0 and GetFeatureInfo
-    } else if ( supportWMS && ( request->service=="wms" || request->request == "getmap" ) ) {
+        //le map est présent pour une compatibilité avec le WMS 1.1.1
+    } else if ( supportWMS && ( request->service=="wms" || request->request == "getmap" || request->request == "map") ) {
         processWMS ( request, fcgxRequest );
     } else if ( request->service == "" ) {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, ( "Le parametre SERVICE n'est pas renseigne." ) ,"xxx" ) ),&fcgxRequest );

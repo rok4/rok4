@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2015-03-24 15:05+0100\n"
+"POT-Creation-Date: 2015-06-10 14:54+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1225,7 +1225,7 @@ msgstr ""
 msgid "Cannot retrieve XML root element"
 msgstr ""
 
-#: Request.cpp:748 Request.cpp:851
+#: Request.cpp:748 Request.cpp:855
 msgid "Parametre VERSION absent."
 msgstr ""
 
@@ -1241,11 +1241,11 @@ msgstr ""
 msgid "Parametre LAYER absent."
 msgstr ""
 
-#: Request.cpp:757 Request.cpp:868
+#: Request.cpp:757 Request.cpp:875
 msgid "Layer "
 msgstr ""
 
-#: Request.cpp:757 Request.cpp:765 Request.cpp:868
+#: Request.cpp:757 Request.cpp:765 Request.cpp:875
 msgid " inconnu."
 msgstr ""
 
@@ -1289,7 +1289,7 @@ msgstr ""
 msgid " format pyramide : "
 msgstr ""
 
-#: Request.cpp:795 Request.cpp:923
+#: Request.cpp:795 Request.cpp:937
 msgid "Parametre FORMAT absent."
 msgstr ""
 
@@ -1297,7 +1297,7 @@ msgstr ""
 msgid "Le format "
 msgstr ""
 
-#: Request.cpp:798 Request.cpp:811 Request.cpp:1038
+#: Request.cpp:798 Request.cpp:811 Request.cpp:1052
 msgid " n'est pas gere pour la couche "
 msgstr ""
 
@@ -1305,132 +1305,128 @@ msgstr ""
 msgid "Parametre STYLE absent."
 msgstr ""
 
-#: Request.cpp:811 Request.cpp:1038
+#: Request.cpp:811 Request.cpp:1052
 msgid "Le style "
 msgstr ""
 
-#: Request.cpp:853
-msgid "Valeur du parametre VERSION invalide (1.3.0 disponible seulement))"
+#: Request.cpp:860 Request.cpp:1124
+msgid ""
+"Valeur du parametre VERSION invalide (1.1.1 et 1.3.0 disponibles seulement))"
 msgstr ""
 
-#: Request.cpp:857
+#: Request.cpp:864
 msgid "Parametre LAYERS absent."
 msgstr ""
 
-#: Request.cpp:860
+#: Request.cpp:867
 msgid "Nombre de couches demandees ="
 msgstr ""
 
-#: Request.cpp:862
+#: Request.cpp:869
 msgid "Le nombre de couche demande excede la valeur du LayerLimit."
 msgstr ""
 
-#: Request.cpp:871
+#: Request.cpp:878
 msgid "Nombre de couches ="
 msgstr ""
 
-#: Request.cpp:875
+#: Request.cpp:882
 msgid "Parametre WIDTH absent."
 msgstr ""
 
-#: Request.cpp:878
+#: Request.cpp:885
 msgid "La valeur du parametre WIDTH n'est pas une valeur entiere."
 msgstr ""
 
-#: Request.cpp:880
+#: Request.cpp:887
 msgid "La valeur du parametre WIDTH est negative."
 msgstr ""
 
-#: Request.cpp:882
+#: Request.cpp:889
 msgid ""
 "La valeur du parametre WIDTH est superieure a la valeur maximum autorisee "
 "par le service."
 msgstr ""
 
-#: Request.cpp:886
+#: Request.cpp:893
 msgid "Parametre HEIGHT absent."
 msgstr ""
 
-#: Request.cpp:889
+#: Request.cpp:896
 msgid "La valeur du parametre HEIGHT n'est pas une valeur entiere."
 msgstr ""
 
-#: Request.cpp:891
+#: Request.cpp:898
 msgid "La valeur du parametre HEIGHT est negative."
 msgstr ""
 
-#: Request.cpp:893
+#: Request.cpp:900
 msgid ""
 "La valeur du parametre HEIGHT est superieure a la valeur maximum autorisee "
 "par le service."
 msgstr ""
 
-#: Request.cpp:897
+#: Request.cpp:911
 msgid "Parametre CRS absent."
 msgstr ""
 
-#: Request.cpp:915
+#: Request.cpp:929
 msgid "CRS "
 msgstr ""
 
-#: Request.cpp:915
+#: Request.cpp:929
 msgid " (equivalent PROJ4 "
 msgstr ""
 
-#: Request.cpp:915
+#: Request.cpp:929
 msgid " ) inconnu pour le layer "
 msgstr ""
 
-#: Request.cpp:930
+#: Request.cpp:944
 msgid "Format "
 msgstr ""
 
-#: Request.cpp:930
+#: Request.cpp:944
 msgid " non gere par le service."
 msgstr ""
 
-#: Request.cpp:935
+#: Request.cpp:949
 msgid "Parametre BBOX absent."
 msgstr ""
 
-#: Request.cpp:939 Request.cpp:943 Request.cpp:946 Request.cpp:949
+#: Request.cpp:953 Request.cpp:957 Request.cpp:960 Request.cpp:963
 msgid "Parametre BBOX incorrect."
 msgstr ""
 
-#: Request.cpp:1006
+#: Request.cpp:1020
 msgid "Format d'exception "
 msgstr ""
 
-#: Request.cpp:1006
+#: Request.cpp:1020
 msgid " non pris en charge"
 msgstr ""
 
-#: Request.cpp:1010
+#: Request.cpp:1024
 msgid "Parametre STYLES absent."
 msgstr ""
 
-#: Request.cpp:1020
+#: Request.cpp:1034
 msgid "Nombre de styles demandes ="
 msgstr ""
 
-#: Request.cpp:1022
+#: Request.cpp:1036
 msgid "Parametre STYLES incomplet."
 msgstr ""
 
-#: Request.cpp:1066 Request.cpp:1117 Rok4Api.cpp:225 Rok4Server.cpp:597
+#: Request.cpp:1080 Request.cpp:1131 Rok4Api.cpp:225 Rok4Server.cpp:599
 msgid "Le service "
 msgstr ""
 
-#: Request.cpp:1066 Request.cpp:1117 Rok4Api.cpp:225 Rok4Server.cpp:597
+#: Request.cpp:1080 Request.cpp:1131 Rok4Api.cpp:225 Rok4Server.cpp:599
 msgid " est inconnu pour ce serveur."
 msgstr ""
 
-#: Request.cpp:1110
-msgid ""
-"Valeur du parametre VERSION invalide (1.1.1 et 1.3.0 disponibles seulement))"
-msgstr ""
-
-#: Request.cpp:1125
+#: Request.cpp:1139
 msgid "Valeur du parametre VERSION invalide (1.0.0 disponible seulement)"
 msgstr ""
 
@@ -1509,7 +1505,7 @@ msgid "Le parametre REQUEST n'est pas renseigné."
 msgstr ""
 
 #: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:565
-#: Rok4Server.cpp:569 Rok4Server.cpp:580 Rok4Server.cpp:584
+#: Rok4Server.cpp:569 Rok4Server.cpp:581 Rok4Server.cpp:585
 msgid " n'est pas prise en charge par ce serveur."
 msgstr ""
 

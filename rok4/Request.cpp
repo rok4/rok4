@@ -847,10 +847,17 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
                                    std::vector<Style*>& styles, std::map< std::string, std::string >& format_option ) {
     // VERSION
     std::string version=getParam ( "version" );
-    if ( version=="" )
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre VERSION absent." ),"wms" ) );
-    if ( version!="1.3.0" )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Valeur du parametre VERSION invalide (1.3.0 disponible seulement))" ),"wms" ) );
+    if ( version=="" ) {
+        //---- WMS 1.1.1
+        //le parametre version est prioritaire sur wmtver
+        version = getParam("wmtver");
+        if ( version=="") {
+            return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre VERSION absent." ),"wms" ) );
+        }
+        //----
+    }
+    if ( version!="1.3.0" && version!="1.1.1")
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Valeur du parametre VERSION invalide (1.1.1 et 1.3.0 disponibles seulement))" ),"wms" ) );
     // LAYER
     std::string str_layer=getParam ( "layers" );
     if ( str_layer == "" )
@@ -892,7 +899,14 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
     if ( height>servicesConf.getMaxHeight() )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre HEIGHT est superieure a la valeur maximum autorisee par le service." ),"wms" ) );
     // CRS
-    std::string str_crs=getParam ( "crs" );
+    std::string str_crs;
+    if (version == "1.3.0") {
+        str_crs=getParam ( "crs" );
+    } else {
+        //---- WMS 1.1.1
+        str_crs=getParam ( "srs" );
+        //----
+    }
     if ( str_crs == "" )
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre CRS absent." ),"wms" ) );
     // Existence du CRS dans la liste de CRS des layers
