@@ -351,7 +351,8 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
     max_region_pixels = width*channels;
     
     LOGGER_DEBUG( "m_decompressor = " << &m_decompressor );
-    LOGGER_DEBUG( "strip_buffer = " << strip_buffer );
+    LOGGER_DEBUG( "strip_buffer = " << strip_buffer << " ou " << &strip_buffer);
+    LOGGER_DEBUG( "buffer = " << buffer << " ou " << &buffer);
     LOGGER_DEBUG( "channel_offsets = " << channel_offsets );
     LOGGER_DEBUG( "pixel_gap = " << pixel_gap );
     LOGGER_DEBUG( "buffer_origin = " << buffer_origin.x << buffer_origin.y );
