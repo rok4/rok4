@@ -159,6 +159,26 @@ private:
      */
     template<typename T>
     int _getline ( T* buffer, int line );
+    
+    /** \~french
+     * \brief Calcule les offsets pour chaque image source
+     * \details Les offsets à caculer sont :
+     * \li #rowsOffsets
+     * \li #c0s
+     * \li #c1s
+     * \li #c2s
+     */
+    void calculateOffsets() {
+        for ( int i = 0; i < ( int ) sourceImages.size(); i++ ) {
+            
+            double y = sourceImages[i]->l2y ( 0 );
+            
+            rowsOffsets.push_back(y2l ( y ));
+            c0s.push_back(__max ( 0,x2c ( sourceImages[i]->getXmin() + 0.5*sourceImages[i]->getResX() ) ));
+            c1s.push_back(__min ( width - 1,x2c ( sourceImages[i]->getXmax() - 0.5*sourceImages[i]->getResX() ) ));
+            c2s.push_back(__max ( 0, sourceImages[i]->x2c ( bbox.xmin + 0.5*resx ) ) );
+        }
+    }
 
 protected:
 
@@ -195,20 +215,7 @@ protected:
         nodata = new int[channels];
         memcpy ( nodata,nd,channels*sizeof ( int ) );
         
-        
-        // Calcul des offsets
-        
-        
-        for ( int i = 0; i < ( int ) sourceImages.size(); i++ ) {
-            
-            double y = sourceImages[i]->l2y ( 0 );
-            
-            rowsOffsets.push_back(y2l ( y ));
-            c0s.push_back(__max ( 0,x2c ( sourceImages[i]->getXmin() + 0.5*sourceImages[i]->getResX() ) ));
-            c1s.push_back(__min ( width - 1,x2c ( sourceImages[i]->getXmax() - 0.5*sourceImages[i]->getResX() ) ));
-            c2s.push_back(__max ( 0, sourceImages[i]->x2c ( bbox.xmin + 0.5*resx ) ) );
-        }
-
+        calculateOffsets();
     }
 
 public:
