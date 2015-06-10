@@ -187,6 +187,8 @@ bool ExtendedCompoundImage::addMirrors ( int mirrorSize ) {
             return false;
         }
     }
+    
+    calculateOffsets();
 
     return true;
 }
@@ -261,6 +263,8 @@ bool ExtendedCompoundImage::extendBbox ( BoundingBox< double > otherbbox, int mo
             return false;
         }
     }
+    
+    calculateOffsets();
 
     return true;
 }
