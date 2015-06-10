@@ -152,8 +152,12 @@ Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std:
     running ( false ), notFoundError ( NULL ), supportWMTS ( supportWMTS ), supportWMS ( supportWMS ) {
 
     if ( supportWMS ) {
-        LOGGER_DEBUG ( _ ( "Build WMS Capabilities" ) );
-        buildWMSCapabilities();
+        LOGGER_DEBUG ( _ ( "Build WMS Capabilities 1.3.0" ) );
+        buildWMS130Capabilities();
+        //---- WMS 1.1.1
+        LOGGER_DEBUG ( _ ( "Build WMS Capabilities 1.1.1" ) );
+        buildWMS111Capabilities();
+        //----
     }
     if ( supportWMTS ) {
         LOGGER_DEBUG ( _ ( "Build WMTS Capabilities" ) );
@@ -236,12 +240,15 @@ DataStream* Rok4Server::WMSGetCapabilities ( Request* request ) {
 
     /* concaténation des fragments invariant de capabilities en intercalant les
      * parties variables dépendantes de la requête */
-
-    std::string capa = wmsCapaFrag[0] + request->scheme + request->hostName;
-    for ( int i=1; i < wmsCapaFrag.size()-1; i++ ) {
-        capa = capa + wmsCapaFrag[i] + request->scheme + request->hostName + request->path + "?";
+    std::string capa;
+    std::vector<std::string> capaFrag;
+    std::map<std::string,std::vector<std::string> >::iterator it = wmsCapaFrag.find(version);
+    capaFrag = it->second;
+    capa = capaFrag[0] + request->scheme + request->hostName;
+    for ( int i=1; i < capaFrag.size()-1; i++ ) {
+        capa = capa + capaFrag[i] + request->scheme + request->hostName + request->path + "?";
     }
-    capa = capa + wmsCapaFrag.back();
+    capa = capa + capaFrag.back();
 
     return new MessageDataStream ( capa,"text/xml" );
 }
@@ -564,7 +571,8 @@ void Rok4Server::processWMTS ( Request* request, FCGX_Request&  fcgxRequest ) {
 }
 
 void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
-    if ( request->request == "getcapabilities" ) {
+    //le capabilities est présent pour une compatibilité avec le WMS 1.1.1
+    if ( request->request == "getcapabilities" || request->request == "capabilities") {
         S.sendresponse ( WMSGetCapabilities ( request ),&fcgxRequest );
     } else if ( request->request == "getmap" ) {
         S.sendresponse ( getMap ( request ), &fcgxRequest );
