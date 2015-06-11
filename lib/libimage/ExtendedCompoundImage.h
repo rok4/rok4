@@ -248,7 +248,7 @@ public:
         *ol = rowsOffsets[i];
         *c0 = c0s[i];
         *c1 = c1s[i];
-        *c2 = c0s[i];
+        *c2 = c2s[i];
     }
 
     /**
