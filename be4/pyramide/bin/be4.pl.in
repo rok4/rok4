@@ -673,7 +673,7 @@ For more informations about properties, see <BE4::Pyramid>.
     pyr_name_old - If existing pyramid, its name. If this parameter is present, generation is an update.
     pyr_data_path_old - If existing pyramid, directory path where to find the cache. Default : pyr_data_path value.
     pyr_desc_path_old - If existing pyramid, directory path where to find the descriptor. Default : pyr_desc_path value.
-    reference_mode - Possible values :
+    update_mode - Possible values :
         slink, hlink, copy : existing pyramid, the way the new cache will reference the ancestor's cache.
         inject : no new pyramid. The old one is updated. CAUTION : old pyramid is irreversibly modified
         Default : slink.

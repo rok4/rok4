@@ -267,7 +267,6 @@ sub _load {
                 return FALSE;
             }
         }
-        $src->getExtent->AssignSpatialReference($srsini);
         
         my $srsfin= new Geo::OSR::SpatialReference;
         eval { $srsfin->ImportFromProj4('+init='.$tms->getSRS().' +wktext'); };
@@ -320,7 +319,7 @@ sub identifyBottomNodes {
     TRACE();
     
     my $bottomID = $self->{bottomID};
-    my $tm = $self->getPyramid()->getTileMatrixSet()->getTileMatrix($bottomID);
+    my $tm = $self->{pyramid}->getTileMatrixSet->getTileMatrix($bottomID);
     if (! defined $tm) {
         ERROR(sprintf "Impossible de récupérer le TM à partir de %s (bottomID) et du TMS : %s.",$bottomID,$self->getPyramid()->getTileMatrixSet()->exportForDebug());
         return FALSE;
@@ -393,7 +392,7 @@ sub identifyBottomNodes {
                 }
             }
         }
-    } else {
+    } elsif (defined $datasource->getExtent) {
         # We have just a WMS service as source. We use extent to determine bottom tiles
         my $convertExtent = $datasource->getExtent->Clone();
         if (defined $ct) {
@@ -407,7 +406,7 @@ sub identifyBottomNodes {
         my $bboxref = $convertExtent->GetEnvelope(); #bboxref = [xmin,xmax,ymin,ymax]
         
         $self->updateBBox($bboxref->[0],$bboxref->[2],$bboxref->[1],$bboxref->[3]);
-        if (! defined $tm) {print "\n test : ".$bboxref->[0].",".$bboxref->[2].",".$bboxref->[1].",".$bboxref->[3].",".$TPW.",".$TPH."\n";};
+        
         my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices(
             $bboxref->[0],$bboxref->[2],$bboxref->[1],$bboxref->[3],$TPW,$TPH);
         
@@ -433,16 +432,55 @@ sub identifyBottomNodes {
                         graph => $self,
                     });
                     if (! defined $node) { 
-                        ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.",
-                              $self->{bottomID}, $i, $j);
+                        ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $self->{bottomID}, $i, $j);
                         return FALSE;
                     }
                     $self->{nodes}->{$bottomID}->{$nodeKey} = $node;
                 }
             }
         }
-    }
+    } else {
+        # On a un fichier qui liste les indices des dalles à générer
+        my $listfile = $datasource->getList();
+        
+        open(LISTIN, "<$listfile") or do {
+            ERROR(sprintf "Cannot open the file containing the list of image for the bottom level ($listfile)");
+            return FALSE;            
+        };
+        
+        while (my $line = <LISTIN>) {
+            chomp($line);
+            
+            my ($i, $j) = split(/,/, $line);
+            
+            my $nodeKey = sprintf "%s_%s", $i, $j;
+            
+            if (exists $self->{nodes}->{$bottomID}->{$nodeKey}) {
+                # This Node already exists
+                next;
+            }
+            
+            my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBBox($i,$j,$TPW,$TPH);
 
+            $self->updateBBox($xmin,$ymin,$xmax,$ymax);
+            
+            # Create a new Node
+            my $node = BE4::Node->new({
+                i => $i,
+                j => $j,
+                tm => $tm,
+                graph => $self,
+            });
+            if (! defined $node) { 
+                ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $self->{bottomID}, $i, $j);
+                return FALSE;
+            }
+            $self->{nodes}->{$bottomID}->{$nodeKey} = $node;
+        }
+        
+        close(LISTIN);        
+    }
+  
     return TRUE;  
 }
 
