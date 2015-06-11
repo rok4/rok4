@@ -169,6 +169,11 @@ private:
      * \li #c2s
      */
     void calculateOffsets() {
+        rowsOffsets.clear();
+        c0s.clear();
+        c1s.clear();
+        c2s.clear();
+        
         for ( int i = 0; i < ( int ) sourceImages.size(); i++ ) {
             
             double y = sourceImages[i]->l2y ( 0 );
