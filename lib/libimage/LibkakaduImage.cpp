@@ -327,13 +327,15 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
     kdu_channel_mapping chan_mapping;
     chan_mapping.configure(m_codestream);
     kdu_dims stripeRegion = mappedStripeDims;
-    m_decompressor.start(m_codestream, &chan_mapping,
+    LOGGER_DEBUG("Appel à m_decompressor.start(m_codestream, &chan_mapping, 0, 0, 1, stripeRegion, kdu_coords(1,1), kdu_coords(1,1), true, KDU_WANT_OUTPUT_COMPONENTS, false, m_kdu_env_ref, NULL);");
+    bool decompressorStartTest;
+    decompressorStartTest = m_decompressor.start(m_codestream, &chan_mapping,
                          0 /* single_component=0 : not a single component case */,
                          0 /* discard_level=0 : we work with the highest resolution image */,
                          1 /* max_layer=1 : we work ONLY with the highest resolution image */,
                          stripeRegion, kdu_coords(1,1), kdu_coords(1,1), true, KDU_WANT_OUTPUT_COMPONENTS,
                          false, m_kdu_env_ref, NULL);                   
-    
+    LOGGER_DEBUG("Sortie de decompressor::start. Retour : " << decompressorStartTest);
     kdu_dims new_region, incomplete_region=stripeRegion;
     int channel_offsets[channels];
     int pixel_gap, row_gap, suggested_increment, max_region_pixels, precision_bits=8, expand_monochrome=0, fill_alpha=0;
@@ -374,9 +376,9 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
       while( processInProgress && !incomplete_region.is_empty()) {
       
         LOGGER_DEBUG("Boucle decompressor.process, itération n°" << dbgIncrement );
-        LOGGER_DEBUG("sizeof(buffer) = " << sizeof(buffer));
-        LOGGER_DEBUG("sizeof(strip_buffer) = " << sizeof(strip_buffer));
-        LOGGER_DEBUG("sizeof(strip_buffer)/sizeof(buffer) = " << (sizeof(strip_buffer)/sizeof(buffer)));
+        //LOGGER_DEBUG("sizeof(buffer) = " << sizeof(buffer));
+        //LOGGER_DEBUG("sizeof(strip_buffer) = " << sizeof(strip_buffer));
+        //LOGGER_DEBUG("sizeof(strip_buffer)/sizeof(buffer) = " << (sizeof(strip_buffer)/sizeof(buffer)));
         try {
          processInProgress = m_decompressor.process( strip_buffer, channel_offsets, pixel_gap,
          buffer_origin, row_gap, suggested_increment, max_region_pixels, incomplete_region,
