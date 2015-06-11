@@ -817,6 +817,8 @@ For more informations about properties, see <BE4::Harvesting>.
     wms_bgcolor - Format : 0xFFFFFF. Optionnal.
 
     extent - Area where we have to harvest. It can be a bbox "xmin,ymin,xmax,ymax" or the path of a file which contains a geometry in WKT format. Mandatory if no georeferenced image to define extent (path_image is not present).
+    
+    list - Pathy to a file, containing a list of images' indices (I,J) to harvest. It could replace an extent.
 
 Examples:
     (start code)

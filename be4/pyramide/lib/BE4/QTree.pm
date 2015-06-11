@@ -313,7 +313,7 @@ sub _load {
 =begin nd
 Function: identifyBottomNodes
 
-Calculate all nodes in bottom level concerned by the datasource (tiles which touch the data source extent).
+Calculate all nodes in bottom level concerned by the datasource (tiles which touch the data source extent or provided in a file).
 
 Parameters (list):
     ct - <Geo::OSR::CoordinateTransformation> - To convert data extent or images' bbox.
