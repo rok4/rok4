@@ -138,7 +138,7 @@ private:
      * \~french \brief Liste des fragments invariants de capabilities prets à être concaténés avec les infos de la requête.
      * \~english \brief Invariant GetCapabilities fragments ready to be concatained with request informations
      */
-    std::vector<std::string> wmsCapaFrag;
+    std::map<std::string,std::vector<std::string> > wmsCapaFrag;
     /**
      * \~french \brief Liste des fragments invariants de capabilities prets à être concaténés avec les infos de la requête.
      * \~english \brief Invariant GetCapabilities fragments ready to be concatained with request informations
@@ -177,14 +177,22 @@ private:
      * \return int value
      */
     int GetDecimalPlaces ( double number );
-
+    //---- WMS 1.1.1
+    /**
+     * \~french
+     * \brief Construit les fragments invariants du getCapabilities WMS 1.1.1
+     * \~english
+     * \brief Build the invariant fragments of the WMS GetCapabilities 1.1.1
+     */
+    void buildWMS111Capabilities();
+    //----
     /**
      * \~french
      * \brief Construit les fragments invariants du getCapabilities WMS
      * \~english
      * \brief Build the invariant fragments of the WMS GetCapabilities
      */
-    void buildWMSCapabilities();
+    void buildWMS130Capabilities();
     /**
      * \~french
      * \brief Construit les fragments invariants du getCapabilities WMS
@@ -417,7 +425,7 @@ public:
      * \~french Retourne les fragments du GetCapabilities WMS
      * \~english Return WMS GetCapabilities fragments
      */
-    std::vector<std::string>& getWmsCapaFrag() {
+    std::map<std::string,std::vector<std::string> >& getWmsCapaFrag() {
         return wmsCapaFrag;
     }
     /**

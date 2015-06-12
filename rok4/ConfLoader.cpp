@@ -65,6 +65,7 @@
 #include "intl.h"
 #include "config.h"
 #include "Keyword.h"
+#include <fcntl.h>
 
 // Load style
 Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool inspire ) {
@@ -1243,6 +1244,13 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                 } else if ( noDataFilePath.compare ( 0,1,"/" ) !=0 ) {
                     noDataFilePath.insert ( 0,"/" );
                     noDataFilePath.insert ( 0,parentDir );
+                }
+                int file = open(noDataFilePath.c_str(),O_RDONLY);
+                if (file < 0) {
+                    LOGGER_ERROR(fileName <<_ ( " Level " ) << id <<_ ( " specifiant une tuile NoData impossible a ouvrir" ));
+                    return NULL;
+                } else {
+                    close(file);
                 }
 
             } else {
