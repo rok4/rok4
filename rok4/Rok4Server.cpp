@@ -688,10 +688,6 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
     }
 
     CRS dst_crs = pyr->getTms().getCrs();
-
-    TileMatrix tm = pyr->getTms().getTmList()->find(level)->second;
-    width = tm.getTileW();
-    height = tm.getTileH();
     error = 0;
 
 
@@ -713,6 +709,8 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
         yo = tm.getY0();
         tileH = tm.getTileH();
         tileW = tm.getTileW();
+        width = tileW;
+        height = tileH;
 
         Row = double(tileRow);
         Col = double(tileCol);
