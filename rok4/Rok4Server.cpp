@@ -689,8 +689,9 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
 
     CRS dst_crs = pyr->getTms().getCrs();
 
-    width = 256;
-    height = 256;
+    TileMatrix tm = pyr->getTms().getTmList()->find(level)->second;
+    width = tm.getTileW();
+    height = tm.getTileH();
     error = 0;
 
 
