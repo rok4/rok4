@@ -218,11 +218,7 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     int rowsperstripe = 16;
     kdu_byte * stripe_buffer;
     try {
-      LOGGER_DEBUG("kdu_byte stripe_buffer = new kdu_byte["<<rowsperstrip<<"*"<<width<<"*"<<channels<<"]");
       stripe_buffer = new kdu_byte[rowsperstrip*width*channels];
-      LOGGER_DEBUG("sizeof(stripe_buffer) = " << sizeof(stripe_buffer));
-      LOGGER_DEBUG("sizeof(kdu_byte[rowsperstrip*width*channels]) = " << sizeof(kdu_byte[rowsperstrip*width*channels]));
-      LOGGER_DEBUG("sizeof(kdu_byte[1*width*channels]) = " << sizeof(kdu_byte[width*channels]));
     } catch (std::bad_alloc e) {
       stripe_buffer = NULL;
       LOGGER_ERROR("Error (bad allocation) while allocating memory for kdu_byte stripe_buffer = new kdu_byte["<<rowsperstrip<<"*"<<width<<"*"<<channels<<"]");     
@@ -311,13 +307,13 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
   // buffer doit déjà être alloué, et assez grand
   LOGGER_DEBUG("Entrée dans _getline(buffer, line) avec :" << std::endl << "line = " << line << std::endl << "buffer = " << buffer << std::endl);
   
-  if ( line / rowsperstrip != current_strip ) {
+  if ( ( static_cast<int>( floor((static_cast<double>(line)) / (static_cast<double>(rowsperstrip)) )) + 1 ) != current_strip ) {
     
     // Les données n'ont pas encore été lue depuis l'image (strip pas en mémoire).
-    current_strip = line / rowsperstrip;
+    current_strip = static_cast<int>( floor( (static_cast<double>(line)) / (static_cast<double>(rowsperstrip)) ) ) + 1;
     kdu_dims stripeDims, mappedStripeDims;
-    stripeDims.pos = kdu_coords(0,line);
-    stripeDims.size = kdu_coords(width,rowsperstrip);
+    stripeDims.pos = kdu_coords(0,(current_strip-1)*rowsperstrip);
+    stripeDims.size = kdu_coords(width-1,((current_strip)*rowsperstrip)-1);
     m_codestream.map_region(0,stripeDims,mappedStripeDims);
     kdu_dims componentsDims[channels];
     int chan;
@@ -327,7 +323,7 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
     kdu_channel_mapping chan_mapping;
     chan_mapping.configure(m_codestream);
     kdu_dims stripeRegion = mappedStripeDims;
-    LOGGER_DEBUG("Appel à m_decompressor.start(m_codestream, &chan_mapping, 0, 0, 1, stripeRegion, kdu_coords(1,1), kdu_coords(1,1), true, KDU_WANT_OUTPUT_COMPONENTS, false, m_kdu_env_ref, NULL);");
+    
     bool decompressorStartTest;
     decompressorStartTest = m_decompressor.start(m_codestream, &chan_mapping,
                          0 /* single_component=0 : not a single component case */,
@@ -335,7 +331,7 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
                          1 /* max_layer=1 : we work ONLY with the highest resolution image */,
                          stripeRegion, kdu_coords(1,1), kdu_coords(1,1), true, KDU_WANT_OUTPUT_COMPONENTS,
                          false, m_kdu_env_ref, NULL);                   
-    LOGGER_DEBUG("Sortie de decompressor::start. Retour : " << decompressorStartTest);
+    
     kdu_dims new_region, incomplete_region=stripeRegion;
     int channel_offsets[channels];
     int pixel_gap, row_gap, suggested_increment, max_region_pixels, precision_bits=8, expand_monochrome=0, fill_alpha=0;
@@ -352,22 +348,6 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
     suggested_increment = 0;
     max_region_pixels = width*channels;
     
-    LOGGER_DEBUG( "m_decompressor = " << &m_decompressor );
-    LOGGER_DEBUG( "strip_buffer = " << strip_buffer << " ou " << &strip_buffer);
-    LOGGER_DEBUG( "buffer = " << buffer << " ou " << &buffer);
-    LOGGER_DEBUG( "channel_offsets = " << channel_offsets );
-    LOGGER_DEBUG( "pixel_gap = " << pixel_gap );
-    LOGGER_DEBUG( "buffer_origin = " << buffer_origin.x << buffer_origin.y );
-    LOGGER_DEBUG( "row_gap = " << row_gap );
-    LOGGER_DEBUG( "suggested_increment = " << suggested_increment );
-    LOGGER_DEBUG( "max_region_pixels = " << max_region_pixels );
-    LOGGER_DEBUG( "incomplete_region = " << incomplete_region.pos.x << incomplete_region.pos.y << incomplete_region.size.x << incomplete_region.size.y );
-    LOGGER_DEBUG( "new_region = " << new_region.pos.x << new_region.pos.y << new_region.size.x << new_region.size.y );
-    LOGGER_DEBUG( "precision_bits = " << precision_bits );
-    LOGGER_DEBUG( "measure_row_gap_in_pixels = " << measure_row_gap_in_pixels );
-    LOGGER_DEBUG( "expand_monochrome = " << expand_monochrome );
-    LOGGER_DEBUG( "fill_alpha = " << fill_alpha );
-    LOGGER_DEBUG( "while(m_decompressor.process(stripe_buffer, channel_offsets, pixel_gap, buffer_origin, row_gap, suggested_increment, max_region_pixels, incomplete_region, new_region, precision_bits, measure_row_gap_in_pixels, expand_monochrome, fill_alpha ) && !incomplete_region.is_empty())" );
     int dbgIncrement =0;
     bool processInProgress = true;
     if (incomplete_region.is_empty()) {
@@ -376,9 +356,6 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
       while( processInProgress && !incomplete_region.is_empty()) {
       
         LOGGER_DEBUG("Boucle decompressor.process, itération n°" << dbgIncrement );
-        //LOGGER_DEBUG("sizeof(buffer) = " << sizeof(buffer));
-        //LOGGER_DEBUG("sizeof(strip_buffer) = " << sizeof(strip_buffer));
-        //LOGGER_DEBUG("sizeof(strip_buffer)/sizeof(buffer) = " << (sizeof(strip_buffer)/sizeof(buffer)));
         try {
          processInProgress = m_decompressor.process( strip_buffer, channel_offsets, pixel_gap,
          buffer_origin, row_gap, suggested_increment, max_region_pixels, incomplete_region,
@@ -413,7 +390,6 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
 
 int LibkakaduImage::getline ( uint8_t* buffer, int line ) {
   
-  LOGGER_DEBUG("Entrée dans getline(uint8_t* buffer, int line) avec :" << std::endl << "line = " << line << std::endl << "buffer = " << buffer << std::endl);
   if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
     int r = _getline ( buffer,line );
     if (associatedalpha) unassociateAlpha ( buffer );
@@ -429,7 +405,6 @@ int LibkakaduImage::getline ( uint8_t* buffer, int line ) {
 }
 
 int LibkakaduImage::getline ( float* buffer, int line ) {
-  LOGGER_DEBUG("Entrée dans getline(float* buffer, int line) avec :" << std::endl << "line = " << line << std::endl << "buffer = " << buffer << std::endl);
   if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
     // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers
     uint8_t* buffer_t = new uint8_t[width*channels];
