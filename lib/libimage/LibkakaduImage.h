@@ -151,7 +151,7 @@ protected:
     LibkakaduImage (
         int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name,
         SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
-        kdu_thread_env* thread_env_ref, int rowsperstripe, kdu_byte * stripe_buffer
+        kdu_thread_env* thread_env_ref, uint16_t rowsperstripe, kdu_byte * stripe_buffer
     );
 
 public:     

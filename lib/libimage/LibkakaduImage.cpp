@@ -55,6 +55,8 @@
 #include "Logger.h"
 #include "Utils.h"
 #include "kdu_region_decompressor.h"
+#include <stdlib.h>
+#include <stdio.h>
 
 /* ------------------------------------------------------------------------------------------------ */
 /* -------------------------------------- LOGGERS DE KAKADU --------------------------------------- */
@@ -215,10 +217,10 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     input->close(); // Not really necessary here.
     box.close();
     
-    int rowsperstripe = 16;
+    uint16_t rowsperstripe = 16;
     kdu_byte * stripe_buffer;
     try {
-      stripe_buffer = new kdu_byte[rowsperstrip*width*channels];
+      stripe_buffer = new kdu_byte[rowsperstripe*width*channels];
     } catch (std::bad_alloc e) {
       stripe_buffer = NULL;
       LOGGER_ERROR("Error (bad allocation) while allocating memory for kdu_byte stripe_buffer = new kdu_byte["<<rowsperstrip<<"*"<<width<<"*"<<channels<<"]");     
@@ -226,7 +228,6 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
       stripe_buffer = NULL;
       LOGGER_ERROR("An exception occured while creating stripe buffer: " << e.what());
     }
-    
     /******************** CRÉATION DE L'OBJET ******************/
 
     /* L'objet LibkakaduImage devra pouvoir se charger lui-meme de charger les bandes.
@@ -248,7 +249,7 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
 LibkakaduImage::LibkakaduImage (
     int width, int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
-    kdu_thread_env* thread_env_ref, int rowsperstripe, kdu_byte * stripe_buffer ) :
+    kdu_thread_env* thread_env_ref, uint16_t rowsperstripe, kdu_byte * stripe_buffer ) :
 
     Jpeg2000Image ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression ),
     m_kdu_env_ref (thread_env_ref), rowsperstrip(rowsperstripe), strip_buffer(stripe_buffer)
@@ -332,21 +333,21 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
                          stripeRegion, kdu_coords(1,1), kdu_coords(1,1), true, KDU_WANT_OUTPUT_COMPONENTS,
                          false, m_kdu_env_ref, NULL);                   
     
-    kdu_dims new_region, incomplete_region=stripeRegion;
+    kdu_dims new_region, incomplete_region = stripeRegion;
     int channel_offsets[channels];
-    int pixel_gap, row_gap, suggested_increment, max_region_pixels, precision_bits=8, expand_monochrome=0, fill_alpha=0;
+    int pixel_gap, row_gap, suggested_increment, max_region_pixels, precision_bits = 8, expand_monochrome = 0, fill_alpha = 0;
     kdu_coords buffer_origin;
-    bool measure_row_gap_in_pixels=false;
+    bool measure_row_gap_in_pixels = true;
     
     for (int channel_offset=0; channel_offset<channels; channel_offset++) {
       channel_offsets[channel_offset]=channel_offset;
     }
-    pixel_gap = channels-1;
+    pixel_gap = channels;
     buffer_origin.x = stripeRegion.pos.x;
     buffer_origin.y = stripeRegion.pos.y;
-    row_gap = 0;
-    suggested_increment = 0;
-    max_region_pixels = width*channels;
+    row_gap = width;
+    suggested_increment = width*channels;
+    max_region_pixels = 16*width;
     
     int dbgIncrement =0;
     bool processInProgress = true;
@@ -364,6 +365,8 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
           LOGGER_ERROR("An exception occured: " << e.what());
         } catch (kdu_exception e) {
           LOGGER_ERROR("A kakadu exception occured: " << e);
+        } catch (kdu_error e) {
+          LOGGER_ERROR("A kakadu error occured.");
         } catch (...) {
           LOGGER_ERROR("An unidentified default exception occured.");
         }

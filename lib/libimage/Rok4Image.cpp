@@ -592,9 +592,6 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
     // Ecriture de l'image
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
         uint8_t* lines = new uint8_t[tileHeight*imageLineSize];
-        LOGGER_DEBUG("sizeof(uint8_t[tileHeight*imageLineSize]) = " << sizeof(uint8_t[tileHeight*imageLineSize]));
-        LOGGER_DEBUG("sizeof(uint8_t[imageLineSize]) = " << sizeof(uint8_t[imageLineSize]));
-        LOGGER_DEBUG("sizeof(&lines) = " << sizeof(&lines));
 
         for ( int y = 0; y < tileHeightwise; y++ ) {
             // On récupère toutes les lignes pour cette ligne de tuiles
