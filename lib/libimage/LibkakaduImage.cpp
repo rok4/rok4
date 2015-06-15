@@ -55,8 +55,6 @@
 #include "Logger.h"
 #include "Utils.h"
 #include "kdu_region_decompressor.h"
-#include <stdlib.h>
-#include <stdio.h>
 
 /* ------------------------------------------------------------------------------------------------ */
 /* -------------------------------------- LOGGERS DE KAKADU --------------------------------------- */
