@@ -80,6 +80,7 @@
 #include "MergeImage.h"
 #include "ProcessFactory.h"
 #include "Rok4Image.h"
+#include "LoggerSpecific.h"
 
 void* Rok4Server::thread_loop ( void* arg ) {
     Rok4Server* server = ( Rok4Server* ) ( arg );
@@ -843,11 +844,12 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
     //On va créer la tuile sur demande et stocker la dalle qui la contient
 
     //variables
-    std::string Spath, SpathTmp;
+    std::string Spath, SpathTmp, SpathErr;
     DataSource *tile;
     Pyramid * pyr = L->getDataPyramid();
     struct stat bufferS;
     struct stat bufferT;
+    struct stat bufferE;
 
     //on récupère l'emplacement théorique de la dalle
     std::map<std::string, Level*>::iterator lv = pyr->getLevels().find(tileMatrix);
@@ -857,6 +859,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
 
         Spath = lv->second->getFilePath(tileCol,tileRow);
         SpathTmp = Spath + ".tmp";
+        SpathErr = Spath + ".err";
 
         if (stat (Spath.c_str(), &bufferS) == 0 && stat (SpathTmp.c_str(), &bufferT) == -1) {
             //la dalle existe donc on fait une requete normale
@@ -864,36 +867,68 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
         } else {
             //la dalle n'existe pas
 
-            if (stat (SpathTmp.c_str(), &bufferT) == 0) {
-                //la dalle est en cours de creation
+            if (stat (SpathTmp.c_str(), &bufferT) == 0 || stat (SpathErr.c_str(), &bufferE) == 0) {
+                //la dalle est en cours de creation ou on a deja essaye de la creer et ça n'a pas marché
+                //donc on a un fichier d'erreur
                 tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
 
             } else {
+
                 //la dalle n'est pas en cours de creation
                 //on cree un processus qui va creer la dalle en parallele
                 if (parallelProcess->createProcess()) {
+
+                    //---------------------------------------------------------------------------------------------------
+
                     if (parallelProcess->getLastPid() == 0) {
-                        //processus fils, on va créer un fichier tmp, générer la dalle et supprimer le fichier tmp
+                        //PROCESSUS FILS
+                        // on va créer un fichier tmp, générer la dalle et supprimer le fichier tmp
+
                         //on cree un fichier temporaire pour indiquer que la dalle va etre creer
-                        int file = open(SpathTmp.c_str(),O_CREAT|O_EXCL);
-                        parallelProcess->checkAllPid();
-                        if (file != -1) {
+                        int fileTmp = open(SpathTmp.c_str(),O_CREAT|O_EXCL);
+                        if (fileTmp != -1) {
                             //on a pu creer un fichier temporaire
-                            close(file);
+                            close(fileTmp);
                         } else {
+                            //impossible de creer un fichier temporaire
                             exit(0);
                         }
-                        createSlabOnFly(L, tileMatrix, tileCol, tileRow, style, format, Spath);
-                        file = remove(SpathTmp.c_str());
-                        if (file != 0) {
+
+                        //on cree un logger qui ne rapporte que les erreurs
+                        // il sera écrit dans SpathErr et supprimé si la dalle a été généré
+                        LoggerSpecific *logErr = new LoggerSpecific(STATIC_FILE_SYNC,ERROR_SYNC,SpathErr,std::cerr);
+
+                        //on cree la dalle
+                        int state = createSlabOnFly(L, tileMatrix, tileCol, tileRow, style, format, Spath, logErr);
+                        if (!state) {
+                            //la generation s'est bien déroulé
+                            //on supprime le logger qui ne contient en théorie pas ou peu
+                            //d'erreurs. Du moins, aucune ayant empéchée la génération
+                            int fileErr = remove(SpathErr.c_str());
+                            if (fileErr != 0) {
+                                //Impossible de supprimer le fichier erreur
+                            }
+                        }
+
+                        //on nettoie
+                        fileTmp = remove(SpathTmp.c_str());
+                        if (fileTmp != 0) {
                             //Impossible de supprimer le fichier temporaire
                         }
+                        delete logErr;
+
+                        //on arrete le processus
                         exit(0);
 
                     } else {
-                        //processus père, on va répondre a la requête
+                        //PROCESSUS PERE
+                        //on va répondre a la requête
                         tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
                     }
+
+                    //-------------------------------------------------------------------------------------------------
+
+
                 } else {
                     LOGGER_WARN("Impossible de créer un processus parallele donc pas de génération de dalle");
                     tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
@@ -909,7 +944,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
 
 }
 
-void Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format, std::string path) {
+int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format, std::string path, LoggerSpecific *logErr) {
 
     //Variables utilisees
     std::vector<Image*> images;
@@ -923,6 +958,8 @@ void Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, 
     Style * bStyle;
     std::vector<Pyramid*> bPyr;
     bool specific = false;
+
+    int state = 0;
 
     //On cree la dalle sous forme d'image
 
@@ -1065,6 +1102,8 @@ void Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, 
             //error("Cannot write ROK4 image", -1);
         }
     }
+
+    return state;
 
 }
 

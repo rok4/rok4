@@ -59,6 +59,7 @@
 #include "fcgiapp.h"
 #include "ProcessFactory.h"
 #include <csignal>
+#include "LoggerSpecific.h"
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -351,7 +352,8 @@ private:
      * \param[in] style style de la requête
      * \param[in] format format de la requete
      * \param[in] path chemin pour sauvegarder la dalle
-     * \return Tuile demandée
+     * \param[in] logErr est le logger utilisé
+     * \return 0 si ok, 1 sinon
      * \~english
      * \brief Create a slab concerned by the tile compute for the request
      * \param[in] L layer of the request
@@ -361,9 +363,10 @@ private:
      * \param[in] style style of the resquest
      * \param[in] format format of the request
      * \param[in] path path to save the slab
-     * \return requested tile
+     * \param[in] logErr is a log used
+     * \return 0 if ok, else 1
      */
-    void createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format, std::string path);
+    int createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format, std::string path, LoggerSpecific *logErr);
     /**
      * \~french
      * \brief Renvoit une tuile qui vient d'être calculée
