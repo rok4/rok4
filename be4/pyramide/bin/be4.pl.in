@@ -673,7 +673,7 @@ For more informations about properties, see <BE4::Pyramid>.
     pyr_name_old - If existing pyramid, its name. If this parameter is present, generation is an update.
     pyr_data_path_old - If existing pyramid, directory path where to find the cache. Default : pyr_data_path value.
     pyr_desc_path_old - If existing pyramid, directory path where to find the descriptor. Default : pyr_desc_path value.
-    reference_mode - Possible values :
+    update_mode - Possible values :
         slink, hlink, copy : existing pyramid, the way the new cache will reference the ancestor's cache.
         inject : no new pyramid. The old one is updated. CAUTION : old pyramid is irreversibly modified
         Default : slink.
@@ -817,6 +817,8 @@ For more informations about properties, see <BE4::Harvesting>.
     wms_bgcolor - Format : 0xFFFFFF. Optionnal.
 
     extent - Area where we have to harvest. It can be a bbox "xmin,ymin,xmax,ymax" or the path of a file which contains a geometry in WKT format. Mandatory if no georeferenced image to define extent (path_image is not present).
+    
+    list - Pathy to a file, containing a list of images' indices (I,J) to harvest. It could replace an extent.
 
 Examples:
     (start code)
