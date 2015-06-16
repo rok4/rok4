@@ -218,7 +218,7 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     uint16_t rowsperstripe = 16;
     kdu_byte * stripe_buffer;
     try {
-      stripe_buffer = new kdu_byte[rowsperstripe*width*channels];
+      stripe_buffer = new kdu_byte[(int)rowsperstripe*width*channels];
     } catch (std::bad_alloc e) {
       stripe_buffer = NULL;
       LOGGER_ERROR("Error (bad allocation) while allocating memory for kdu_byte stripe_buffer = new kdu_byte["<<rowsperstrip<<"*"<<width<<"*"<<channels<<"]");     
@@ -312,7 +312,7 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
     current_strip = static_cast<int>( floor( (static_cast<double>(line)) / (static_cast<double>(rowsperstrip)) ) ) + 1;
     kdu_dims stripeDims, mappedStripeDims;
     stripeDims.pos = kdu_coords(0,(current_strip-1)*rowsperstrip);
-    stripeDims.size = kdu_coords(width-1,((current_strip)*rowsperstrip)-1);
+    stripeDims.size = kdu_coords(width,rowsperstrip);
     m_codestream.map_region(0,stripeDims,mappedStripeDims);
     kdu_dims componentsDims[channels];
     int chan;
@@ -384,7 +384,7 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
     
   }
     
-  memcpy ( buffer, strip_buffer + ( line%rowsperstrip ) * width * pixelSize, width * pixelSize );
+    memcpy ( buffer, (uint8_t*)strip_buffer + ( line%rowsperstrip ) * width * pixelSize, width * pixelSize );
   return width*channels;
  
 }
