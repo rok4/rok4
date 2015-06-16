@@ -343,6 +343,29 @@ private:
     DataSource *getTileOnDemand(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format);
     /**
      * \~french
+     * \brief Creation d'une dalle concernée par la tuile qui vient d'être calculée
+     * \param[in] L couche de la requête
+     * \param[in] tileMatrix tilematrix de la requête
+     * \param[in] tileCol indice de colonne de la requête
+     * \param[in] tileRow indice de ligne de la requete
+     * \param[in] style style de la requête
+     * \param[in] format format de la requete
+     * \param[in] path chemin pour sauvegarder la dalle
+     * \return Tuile demandée
+     * \~english
+     * \brief Create a slab concerned by the tile compute for the request
+     * \param[in] L layer of the request
+     * \param[in] tileMatrix tilematrix of the request
+     * \param[in] tileCol column index of the request
+     * \param[in] tileRow row index of the request
+     * \param[in] style style of the resquest
+     * \param[in] format format of the request
+     * \param[in] path path to save the slab
+     * \return requested tile
+     */
+    void createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format, std::string path);
+    /**
+     * \~french
      * \brief Renvoit une tuile qui vient d'être calculée
      * \param[in] L couche de la requête
      * \param[in] tileMatrix tilematrix de la requête

@@ -336,3 +336,67 @@ bool Pyramid::are_the_two_CRS_equal( std::string crs1, std::string crs2, std::ve
     return false; // The 2 CRS were not found on the same line inside the list
 }
 
+Compression::eCompression Pyramid::getSampleCompression() {
+    Compression::eCompression cpn = Compression::UNKNOWN;
+    if (format == Rok4Format::UNKNOWN) {
+        cpn = Compression::UNKNOWN;
+    }
+    if (format == Rok4Format::TIFF_RAW_INT8 || format == Rok4Format::TIFF_RAW_FLOAT32) {
+        cpn = Compression::NONE;
+    }
+    if (format == Rok4Format::TIFF_ZIP_INT8 || format == Rok4Format::TIFF_ZIP_FLOAT32) {
+        cpn = Compression::DEFLATE;
+    }
+    if (format == Rok4Format::TIFF_JPG_INT8) {
+        cpn = Compression::JPEG;
+    }
+    if (format == Rok4Format::TIFF_PNG_INT8) {
+        cpn = Compression::PNG;
+    }
+    if (format == Rok4Format::TIFF_LZW_INT8 || format == Rok4Format::TIFF_LZW_FLOAT32) {
+        cpn = Compression::LZW;
+    }
+    if (format == Rok4Format::TIFF_PKB_INT8 || format == Rok4Format::TIFF_PKB_FLOAT32) {
+        cpn = Compression::PACKBITS;
+    }
+    return cpn;
+}
+
+SampleFormat::eSampleFormat Pyramid::getSampleFormat() {
+    SampleFormat::eSampleFormat sft = SampleFormat::UNKNOWN;
+    if (format == Rok4Format::UNKNOWN) {
+        sft = SampleFormat::UNKNOWN;
+    }
+    if (format == Rok4Format::TIFF_RAW_INT8 || format == Rok4Format::TIFF_JPG_INT8
+            || format == Rok4Format::TIFF_PNG_INT8 || format == Rok4Format::TIFF_LZW_INT8
+            || format == Rok4Format::TIFF_ZIP_INT8 || format == Rok4Format::TIFF_PKB_INT8) {
+        sft = SampleFormat::UINT;
+    }
+    if (format == Rok4Format::TIFF_RAW_FLOAT32 || format == Rok4Format::TIFF_LZW_FLOAT32
+            || format == Rok4Format::TIFF_ZIP_FLOAT32 || format == Rok4Format::TIFF_PKB_FLOAT32) {
+        sft = SampleFormat::FLOAT;
+    }
+
+    return sft;
+
+}
+
+int Pyramid::getBitsPerSample() {
+    int bits = 8;
+    if (format == Rok4Format::UNKNOWN) {
+        bits = 8;
+    }
+    if (format == Rok4Format::TIFF_RAW_INT8 || format == Rok4Format::TIFF_JPG_INT8
+            || format == Rok4Format::TIFF_PNG_INT8 || format == Rok4Format::TIFF_LZW_INT8
+            || format == Rok4Format::TIFF_ZIP_INT8 || format == Rok4Format::TIFF_PKB_INT8) {
+        bits = 8;
+    }
+    if (format == Rok4Format::TIFF_RAW_FLOAT32 || format == Rok4Format::TIFF_LZW_FLOAT32
+            || format == Rok4Format::TIFF_ZIP_FLOAT32 || format == Rok4Format::TIFF_PKB_FLOAT32) {
+        bits = 32;
+    }
+
+    return bits;
+
+}
+

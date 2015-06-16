@@ -79,6 +79,7 @@
 #include "EstompageImage.h"
 #include "MergeImage.h"
 #include "ProcessFactory.h"
+#include "Rok4Image.h"
 
 void* Rok4Server::thread_loop ( void* arg ) {
     Rok4Server* server = ( Rok4Server* ) ( arg );
@@ -872,7 +873,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                 //on cree un processus qui va creer la dalle en parallele
                 if (parallelProcess->createProcess()) {
                     if (parallelProcess->getLastPid() == 0) {
-                        //processus fils, on va générer créer un fichier tmp, générer la dalle et supprimer le fichier tmp
+                        //processus fils, on va créer un fichier tmp, générer la dalle et supprimer le fichier tmp
                         //on cree un fichier temporaire pour indiquer que la dalle va etre creer
                         int file = open(SpathTmp.c_str(),O_CREAT|O_EXCL);
                         parallelProcess->checkAllPid();
@@ -882,7 +883,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                         } else {
                             exit(0);
                         }
-                        sleep(5);
+                        createSlabOnFly(L, tileMatrix, tileCol, tileRow, style, format, Spath);
                         file = remove(SpathTmp.c_str());
                         if (file != 0) {
                             //Impossible de supprimer le fichier temporaire
@@ -908,6 +909,164 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
 
 }
 
+void Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format, std::string path) {
+
+    //Variables utilisees
+    std::vector<Image*> images;
+    Image *curImage;
+    Image *image;
+    Image *mergeImage;
+    std::string bLevel;
+    double Col, Row, xmin, ymin, xmax, ymax, xo, yo, resolution;
+    int tileH, tileW, width, height, error, TilePerWidth, TilePerHeight;
+    Rok4Format::eformat_data pyrType;
+    Style * bStyle;
+    std::vector<Pyramid*> bPyr;
+    bool specific = false;
+
+    //On cree la dalle sous forme d'image
+
+    //la correspondance est assurée par les vérifications qui ont eu lieu dans getTile()
+    std::string level = tileMatrix;
+
+    //Calcul des paramètres nécessaires
+    Pyramid * pyr = L->getDataPyramid();
+
+    //on regarde si le level demandé est spécifique ou pas
+    if (L->getDataPyramid()->getSPyramids().size() !=0) {
+        std::map<std::string,std::vector<Pyramid*> > spyr = L->getDataPyramid()->getSPyramids();
+        std::map<std::string,std::vector<Pyramid*> >::iterator sp = spyr.find(level);
+        if (sp != spyr.end()) {
+            specific = true;
+        }
+    }
+
+    if (!specific) {
+      bPyr = L->getDataPyramid()->getBPyramids();
+    } else {
+        bPyr = L->getDataPyramid()->getSPyramids().find(level)->second;
+    }
+
+    CRS dst_crs = pyr->getTms().getCrs();
+    error = 0;
+
+
+    Interpolation::KernelType interpolation = L->getResampling();
+
+    //bbox
+    //Récupération du TileMatrix demandé
+    std::map<std::string, Level*>::iterator lv = pyr->getLevels().find(level);
+    TileMatrix tm = lv->second->getTm();
+
+    //Récupération des paramètres associés
+    resolution = tm.getRes();
+    xo = tm.getX0();
+    yo = tm.getY0();
+    tileH = tm.getTileH();
+    tileW = tm.getTileW();
+    TilePerWidth = lv->second->getTilesPerWidth();
+    TilePerHeight = lv->second->getTilesPerHeight();
+
+    //width and height of a slab, not a tile
+    width = tileW * TilePerWidth;
+    height = tileH * TilePerHeight;
+
+    Row = floor(double(tileRow) / TilePerHeight ) * TilePerHeight;
+    Col = floor(double(tileCol) / TilePerWidth) * TilePerWidth;
+
+
+    //calcul de la bbox de la dalle et non de la tuile
+    xmin = Col * double(tileW) * resolution  * TilePerWidth + xo;
+    ymax = yo - Row * double(tileH) * resolution * TilePerHeight;
+    xmax = xmin + double(tileW) * resolution * TilePerWidth;
+    ymin = ymax - double(tileH) * resolution * TilePerHeight;
+
+    if (pyr->getTms().getCrs().getMetersPerUnit() != 1) {
+        xmin = (int)xmin % 360;
+        xmax = (int)xmax % 360;
+        ymin = (int)ymin % 360;
+        ymax = (int)ymax % 360;
+    }
+
+    BoundingBox<double> bbox(xmin,ymin,xmax,ymax) ;
+
+    //Récupérationd du tableau à double entrée représentant les associations de levels
+    std::map<std::string, std::map<std::string, std::string> > aLevels;
+    if (!specific) {
+        aLevels = pyr->getALevel();
+    }
+
+    //pour chaque pyramide de base, on récupère une image
+    for (int i = 0; i < bPyr.size(); i++) {
+
+        pyrType = bPyr.at(i)->getFormat();
+        bStyle = bPyr.at(i)->getStyle();
+
+        if (specific) {
+            bLevel = bPyr.at(i)->getLevels().begin()->second->getId();
+        } else {
+            //on récupère le bLevel associé à level
+            std::ostringstream oss;
+            oss << i;
+            std::map<std::string,std::string> aLevel = aLevels.find(level)->second;
+            bLevel = aLevel.find(oss.str())->second;
+        }
+
+        curImage = bPyr.at(i)->createReprojectedImage(bLevel, bbox, dst_crs, servicesConf, width, height, interpolation, error);
+
+        if (curImage != NULL) {
+            //On applique un style à l'image
+            image = styleImage(curImage, pyrType, bStyle, format, bPyr.size());
+            images.push_back ( image );
+        } else {
+            //LOGGER_ERROR("Impossible de générer la tuile car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile");
+            //return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
+        }
+
+    }
+
+    pyrType = bPyr.at ( 0 )->getFormat();
+
+
+    //On merge les images récupérés dans chacune des basedPyramid
+    if (images.size() != 0) {
+
+        mergeImage = mergeImages(images, pyrType, style, dst_crs, bbox);
+
+        if (mergeImage == NULL) {
+//            LOGGER_ERROR("Impossible de générer la tuile car l'opération de merge n'a pas fonctionné");
+//            return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
+        }
+
+    } else {
+
+//        LOGGER_ERROR("Aucune image n'a été récupérée");
+//        return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( pyr->getLowestLevel()->getEncodedNoDataTile() ) );
+
+    }
+
+
+    //on transforme la dalle en image Rok4 que l'on stocke
+
+    Rok4ImageFactory R4IF;
+    //à cause d'un problème de typage...
+    char * pathToWrite = (char *)path.c_str();
+
+    Rok4Image * finalImage = R4IF.createRok4ImageToWrite(pathToWrite,bbox,mergeImage->getResX(),mergeImage->getResY(),
+                                                         mergeImage->getWidth(),mergeImage->getHeight(),pyr->getChannels(),
+                                                         pyr->getSampleFormat(),pyr->getBitsPerSample(),
+                                                         pyr->getPhotometry(),pyr->getSampleCompression(),tm.getTileW(),
+                                                         tm.getTileH());
+
+    if (finalImage != NULL) {
+        //error("Cannot create the ROK4 image to write", -1);
+        //LOGGER_DEBUG ( "Write" );
+        if (finalImage->writeImage(mergeImage) < 0) {
+            //error("Cannot write ROK4 image", -1);
+        }
+    }
+
+}
 
 void Rok4Server::processWMTS ( Request* request, FCGX_Request&  fcgxRequest ) {
     if ( request->request == "getcapabilities" ) {

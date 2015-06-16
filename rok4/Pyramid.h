@@ -197,6 +197,14 @@ private:
     bool onFly;
 
     /**
+     * \~french \brief Donne la photométrie des images de la pyramide
+     * Non Obligatoire sauf pour les pyramides avec stockage
+     * \~english \brief Give the photometry of images
+     * Not Mandatory, only used for pyramid onFly
+     */
+    Photometric::ePhotometric photo;
+
+    /**
      * \~french \brief Teste si deux CRS sont équivalent
      * \param[in] CRS1
      * \param[in] CRS2
@@ -271,6 +279,30 @@ public:
     Rok4Format::eformat_data getFormat() {
         return format;
     }
+
+    /**
+     * \~french \brief Récupère le sample
+     * \return format
+     * \~english \brief Get the sample
+     * \return format
+     */
+    SampleFormat::eSampleFormat getSampleFormat();
+
+    /**
+     * \~french \brief Récupère la compression
+     * \return format
+     * \~english \brief Get the compression
+     * \return format
+     */
+    Compression::eCompression getSampleCompression();
+
+    /**
+     * \~french \brief Récupère le nombre de bits par sample
+     * \return format
+     * \~english \brief Get the number of bits per sample
+     * \return format
+     */
+    int getBitsPerSample();
 
     /**
      * \~french \brief Récupère le nombre de canaux d'une tuile
@@ -428,6 +460,26 @@ public:
             }
         }
 
+    }
+
+    /**
+     * \~french \brief Indique la photometrie de la pyramide
+     * \return photo
+     * \~english \brief Indicate the photometry of the pyramid
+     * \return photo
+     */
+    Photometric::ePhotometric getPhotometry(){
+        return photo;
+    }
+
+    /**
+     * \~french \brief Modifie le paramètre onDemand
+     * \param[in] booleen
+     * \~english \brief Modify onDemand
+     * \param[in] boolean
+     */
+    void setPhotometry (Photometric::ePhotometric ph) {
+       photo = ph;
     }
 
     /**

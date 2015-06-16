@@ -466,4 +466,3 @@ int* Level::getNoDataValue ( int* nodatavalue ) {
     return nodatavalue;
 }
 
-

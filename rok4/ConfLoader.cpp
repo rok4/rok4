@@ -566,6 +566,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     TiXmlHandle hRoot ( 0 );
     std::string basedPyramidFilePath;
     std::map<std::string, std::map<std::string, std::string> > aLevel;
+    std::string photometricStr;
 
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
     if ( !pElem ) {
@@ -598,6 +599,17 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         return NULL;
     }
     formatStr= pElem->GetTextStr();
+
+    //on lit l'élément photometric, il n'est pas obligatoire pour
+    //une pyramide normale mais il le devient si la pyramide
+    //est à la volée
+    pElem=hRoot.FirstChild ( "photometric" ).Element();
+    if ( pElem && pElem->GetText() ) {
+        photometricStr = pElem->GetTextStr();
+    } else {
+        photometricStr = "unknown";
+    }
+
 
 //  to remove when TIFF_RAW_INT8 et TIFF_RAW_FLOAT32 only will be used
     if ( formatStr.compare ( "TIFF_INT8" ) ==0 ) formatStr = "TIFF_RAW_INT8";
@@ -1558,6 +1570,9 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     }
     if (onDemandSpecific) {
         pyr->setSPyramids(specificPyramids);
+    }
+    if (onFly) {
+        pyr->setPhotometry(Photometric::fromString(photometricStr));
     }
     return pyr;
 
