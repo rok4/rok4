@@ -75,17 +75,18 @@ friend class LibkakaduImageFactory;
     
 private:
 
-    kdu_byte *data;
     //TODO Implementer correctement ces attributs en me servant de LibTiffImage (penser a la doc)
     kdu_thread_env* m_kdu_env_ref;
+    
     kdu_codestream m_codestream;
+    
     kdu_region_decompressor m_decompressor;
      
     /**
      * \~french \brief Nombre de ligne dans un strip
      * \~english \brief Number of line in one strip
      */
-    uint16_t rowsperstrip;
+    int rowsperstrip;
     /**
      * \~french \brief Buffer de lecture, de taille strip_size
      * \~english \brief Read buffer, strip_size long
@@ -95,7 +96,7 @@ private:
      * \~french \brief Indice du strip en mémoire dans strip_buffer
      * \~english \brief Memorized strip indice, in strip_buffer
      */
-    uint16_t current_strip;
+    int current_strip;
      
 
     /** \~french
@@ -149,9 +150,7 @@ protected:
      * \param[in] rowsperstrip data buffering size, in line number
      */
     LibkakaduImage (
-        int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name,
-        SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
-        kdu_thread_env* thread_env_ref, uint16_t rowsperstripe, kdu_byte * stripe_buffer
+        int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name, SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression, int rps
     );
 
 public:     
@@ -178,7 +177,8 @@ public:
      * \details We remove read buffer #m_data
      */
     ~LibkakaduImage() {
-        delete[] data;
+        delete[] strip_buffer;
+        m_kdu_env_ref->destroy();
         m_codestream.destroy();
     }
 
