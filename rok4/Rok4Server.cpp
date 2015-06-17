@@ -858,85 +858,92 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
         return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( pyr->getLowestLevel()->getEncodedNoDataTile() ) );
     } else {
 
-        Spath = lv->second->getFilePath(tileCol,tileRow);
-        SpathTmp = Spath + ".tmp";
-        SpathErr = Spath + ".err";
+        if (tileRow >= lv->second->getMinTileRow() && tileRow <= lv->second->getMaxTileRow()
+                && tileCol >= lv->second->getMinTileCol() && tileCol <= lv->second->getMaxTileCol()) {
 
-        if (stat (Spath.c_str(), &bufferS) == 0 && stat (SpathTmp.c_str(), &bufferT) == -1) {
-            //la dalle existe donc on fait une requete normale
-            tile = getTileUsual(L, format, tileCol, tileRow, tileMatrix, errorResp, style);
-        } else {
-            //la dalle n'existe pas
+            Spath = lv->second->getFilePath(tileCol,tileRow);
+            SpathTmp = Spath + ".tmp";
+            SpathErr = Spath + ".err";
 
-            if (stat (SpathTmp.c_str(), &bufferT) == 0 || stat (SpathErr.c_str(), &bufferE) == 0) {
-                //la dalle est en cours de creation ou on a deja essaye de la creer et ça n'a pas marché
-                //donc on a un fichier d'erreur
-                tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
-
+            if (stat (Spath.c_str(), &bufferS) == 0 && stat (SpathTmp.c_str(), &bufferT) == -1) {
+                //la dalle existe donc on fait une requete normale
+                tile = getTileUsual(L, format, tileCol, tileRow, tileMatrix, errorResp, style);
             } else {
+                //la dalle n'existe pas
 
-                //la dalle n'est pas en cours de creation
-                //on cree un processus qui va creer la dalle en parallele
-                if (parallelProcess->createProcess()) {
+                if (stat (SpathTmp.c_str(), &bufferT) == 0 || stat (SpathErr.c_str(), &bufferE) == 0) {
+                    //la dalle est en cours de creation ou on a deja essaye de la creer et ça n'a pas marché
+                    //donc on a un fichier d'erreur
+                    tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
 
-                    //---------------------------------------------------------------------------------------------------
+                } else {
 
-                    if (parallelProcess->getLastPid() == 0) {
-                        //PROCESSUS FILS
-                        // on va créer un fichier tmp, générer la dalle et supprimer le fichier tmp
+                    //la dalle n'est pas en cours de creation
+                    //on cree un processus qui va creer la dalle en parallele
+                    if (parallelProcess->createProcess()) {
 
-                        //on cree un fichier temporaire pour indiquer que la dalle va etre creer
-                        int fileTmp = open(SpathTmp.c_str(),O_CREAT|O_EXCL);
-                        if (fileTmp != -1) {
-                            //on a pu creer un fichier temporaire
-                            close(fileTmp);
-                        } else {
-                            //impossible de creer un fichier temporaire
-                            exit(0);
-                        }
+                        //---------------------------------------------------------------------------------------------------
 
-                        //on cree un logger qui ne rapporte que les erreurs
-                        // il sera écrit dans SpathErr et supprimé si la dalle a été généré
-                        LoggerSpecific *logErr = new LoggerSpecific(STATIC_FILE_SYNC,ERROR_SYNC,SpathErr,std::cerr);
+                        if (parallelProcess->getLastPid() == 0) {
+                            //PROCESSUS FILS
+                            // on va créer un fichier tmp, générer la dalle et supprimer le fichier tmp
 
-                        //on cree la dalle
-                        int state = createSlabOnFly(L, tileMatrix, tileCol, tileRow, style, format, Spath, logErr);
-                        if (!state) {
-                            //la generation s'est bien déroulé
-                            //on supprime le logger qui ne contient en théorie pas ou peu
-                            //d'erreurs. Du moins, aucune ayant empéchée la génération
-                            int fileErr = remove(SpathErr.c_str());
-                            if (fileErr != 0) {
-                                //Impossible de supprimer le fichier erreur
+                            //on cree un fichier temporaire pour indiquer que la dalle va etre creer
+                            int fileTmp = open(SpathTmp.c_str(),O_CREAT|O_EXCL);
+                            if (fileTmp != -1) {
+                                //on a pu creer un fichier temporaire
+                                close(fileTmp);
+                            } else {
+                                //impossible de creer un fichier temporaire
+                                exit(0);
                             }
+
+                            //on cree un logger qui ne rapporte que les erreurs
+                            // il sera écrit dans SpathErr et supprimé si la dalle a été généré
+                            LoggerSpecific *logErr = new LoggerSpecific(STATIC_FILE_SYNC,ERROR_SYNC,SpathErr,std::cerr);
+
+                            //on cree la dalle
+                            int state = createSlabOnFly(L, tileMatrix, tileCol, tileRow, style, format, Spath, logErr);
+                            if (!state) {
+                                //la generation s'est bien déroulé
+                                //on supprime le logger qui ne contient en théorie pas ou peu
+                                //d'erreurs. Du moins, aucune ayant empéchée la génération
+                                int fileErr = remove(SpathErr.c_str());
+                                if (fileErr != 0) {
+                                    //Impossible de supprimer le fichier erreur
+                                }
+                            }
+
+                            //on nettoie
+                            fileTmp = remove(SpathTmp.c_str());
+                            if (fileTmp != 0) {
+                                //Impossible de supprimer le fichier temporaire
+                            }
+                            delete logErr;
+
+                            //on arrete le processus
+                            exit(0);
+
+                        } else {
+                            //PROCESSUS PERE
+                            //on va répondre a la requête
+                            tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
                         }
 
-                        //on nettoie
-                        fileTmp = remove(SpathTmp.c_str());
-                        if (fileTmp != 0) {
-                            //Impossible de supprimer le fichier temporaire
-                        }
-                        delete logErr;
+                        //-------------------------------------------------------------------------------------------------
 
-                        //on arrete le processus
-                        exit(0);
 
                     } else {
-                        //PROCESSUS PERE
-                        //on va répondre a la requête
+                        LOGGER_WARN("Impossible de créer un processus parallele donc pas de génération de dalle");
                         tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
                     }
 
-                    //-------------------------------------------------------------------------------------------------
-
-
-                } else {
-                    LOGGER_WARN("Impossible de créer un processus parallele donc pas de génération de dalle");
-                    tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
                 }
 
             }
 
+        } else {
+            return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( pyr->getLowestLevel()->getEncodedNoDataTile() ) );
         }
 
     }
