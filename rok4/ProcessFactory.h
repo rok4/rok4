@@ -50,6 +50,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <list>
+#include <iostream>
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -89,20 +90,42 @@ private:
 
     /**
      * \~french \brief Liste des pid de processus en cours
-     * \~english \brief Pid list en current process
+     * \~english \brief Pid list of current process
      */
     std::list<pid_t> listCurrentPid;
+
+    /**
+     * \~french \brief Fichier contenant la liste des pid de processus en cours
+     * utilisé pour la persistance des données si un serveur tombe
+     * \~english \brief File containing the pid list of current process
+     * used for persistency of data if a server fails
+     */
+    std::string file;
+
+    /**
+     * \~french \brief Liste des pid de processus en cours, lancés par une instance ultérieur de Rok4
+     * On les garde en mémoire si leur nombre dépasse nbMaxPid mais reste inférieur à MAX_NB_PROCESS
+     * Et on vérifiera régulièrement s'ils sont terminés
+     * \~english \brief Pid list of current process, set by a previous instance of Rok4
+     * We save them if they are more than nbMaxPid but less than MAX_NB_PROCESS
+     * And we will check if they are finished
+     */
+    std::list<pid_t> listPreviousPid;
 
 public:
     /**
      * \~french
      * \brief Constructeur
      * \param[in] Nombre max de processus que l'on peut créer
+     * \param[in] fichier dans lequel on écrire les processus en cours
+     * On peut mettre un nom vide pour ne pas créer et maintenir de fichier
      * \~english
      * \brief Constructor
      * \param[in] Max number of process
+     * \param[in] file used to write current pid
+     * We can use a null name to avoid this file
      */
-    ProcessFactory(int max);
+    ProcessFactory(int max, std::string f);
 
     /**
      * \~french
@@ -210,6 +233,54 @@ public:
 
     /**
      * \~french
+     * \brief Modifie la valeur file
+     * \param[in] file
+     * \~english
+     * \brief Set file
+     * \param[in] file
+     */
+    void setFile(std::string f) {
+        file = f;
+    }
+
+    /**
+     * \~french
+     * \brief Récupère la valeur file
+     * \return file
+     * \~english
+     * \brief Get file
+     * \return file
+     */
+    std::string getFile() {
+        return file;
+    }
+
+    /**
+     * \~french
+     * \brief Modifie la liste listPreviousPid
+     * \param[in] listPreviousPid
+     * \~english
+     * \brief Set listPreviousPid
+     * \param[in] listPreviousPid
+     */
+    void setListPreviousPid(std::list<pid_t> list) {
+        listPreviousPid = list;
+    }
+
+    /**
+     * \~french
+     * \brief Récupère la liste listPreviousPid
+     * \return listPreviousPid
+     * \~english
+     * \brief Get listPreviousPid
+     * \return listPreviousPid
+     */
+    std::list<pid_t> getListPreviousPid() {
+        return listPreviousPid;
+    }
+
+    /**
+     * \~french
      * \brief Crée un processus fils
      * \return true si ok et false sinon
      * \~english
@@ -221,10 +292,40 @@ public:
     /**
      * \~french
      * \brief Vérifie si des processus fils sont terminé et met à jour la liste des processus courants
+     * Il va également vérifier les processus issus de l'instance précédente et écrire
+     * l'ensemble des processus encore courant dans un fichier de sauvegarde
+     * \~english
+     * \brief Check if all child process are finished and update current list of process
+     * Check pid of previous instance et write all running process in a file
+     */
+    void checkAndSaveAllPid();
+
+    /**
+     * \~french
+     * \brief Vérifie si des processus fils sont terminé et met à jour la liste des processus courants
      * \~english
      * \brief Check if all child process are finished and update current list of process
      */
-    void checkAllPid();
+    void checkCurrentPid();
+
+    /**
+     * \~french
+     * \brief Vérifie si des processus fils ont été laissé par une ancienne instance
+     *  si oui, s'ils sont terminés ou pas, on met à jour la liste des processus courants
+     * \~english
+     * \brief Check if all child process have been forgotten by previous instance of rok4
+     * if yes, if there are finished or not, we update current list of process
+     */
+    void updatePreviousProcess();
+
+    /**
+     * \~french
+     * \brief Ecris un fichier contenant les pid des processus courant et courants d'une
+     * ancienne instance
+     * \~english
+     * \brief Write a file with the current pid and current previous pid
+     */
+    void writeFile();
 
     /**
      * \~french

@@ -47,13 +47,28 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <list>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <iostream>
+#include <fstream>
 
+#include "config.h"
 #include "ProcessFactory.h"
 
-ProcessFactory::ProcessFactory(int max)
+ProcessFactory::ProcessFactory(int max, std::string f)
 {
     nbMaxPid = max;
     nbCurrentPid = 0;
+    file = f;
+
+    if (file != "") {
+        //on réucpère les anciens processus
+        updatePreviousProcess();
+
+    }
+
+
+
 }
 
 ProcessFactory::~ProcessFactory()
@@ -90,7 +105,7 @@ bool ProcessFactory::createProcess() {
 }
 
 
-void ProcessFactory::checkAllPid() {
+void ProcessFactory::checkCurrentPid() {
     int status;
     std::list<pid_t> tmpList = listCurrentPid;
 
@@ -106,10 +121,42 @@ void ProcessFactory::checkAllPid() {
 
 }
 
+void ProcessFactory::checkAndSaveAllPid() {
+    int status;
+    std::list<pid_t> tmpList = listCurrentPid;
+
+    for(std::list<int>::iterator it = tmpList.begin(); it != tmpList.end(); it++) {
+        waitpid(*it,&status,WNOHANG);
+        if (kill(*it,0) == -1) {
+            //process doesn't run any more
+            listCurrentPid.remove(*it);
+            nbCurrentPid--;
+        }
+    }
+
+    if (file != "") {
+
+        if (listPreviousPid.size() != 0) {
+            tmpList = listPreviousPid;
+            for(std::list<int>::iterator it = tmpList.begin(); it != tmpList.end(); it++) {
+                waitpid(*it,&status,WNOHANG);
+                if (kill(*it,0) == -1) {
+                    //process doesn't run any more
+                    listPreviousPid.remove(*it);
+                }
+            }
+        }
+
+        writeFile();
+    }
+
+}
+
 
 void ProcessFactory::killAllPid() {
     int status;
     std::list<pid_t> tmpList = listCurrentPid;
+    int rfile;
 
     for(std::list<int>::iterator it = tmpList.begin(); it != tmpList.end(); it++) {
         kill(*it,SIGKILL);
@@ -120,5 +167,105 @@ void ProcessFactory::killAllPid() {
 
     }
 
+    if (file != "") {
 
+        if (listPreviousPid.size() != 0) {
+            tmpList = listPreviousPid;
+            for(std::list<int>::iterator it = tmpList.begin(); it != tmpList.end(); it++) {
+                waitpid(*it,&status,WNOHANG);
+                if (kill(*it,0) == -1) {
+                    //process doesn't run any more
+                    listPreviousPid.remove(*it);
+                }
+            }
+        }
+
+        //delete file
+
+        if (nbCurrentPid == 0 && listPreviousPid.size() == 0) {
+            rfile = remove(file.c_str());
+        } else {
+            writeFile();
+        }
+    }
+
+}
+
+void ProcessFactory::updatePreviousProcess() {
+
+
+    //on va voir si des precedents rok4 ont laissé des
+    //processus zombies
+    struct stat bufferF;
+    int pFile;
+    std::string line;
+    pid_t pid;
+    int status;
+    int nbReadLine = 0;
+
+    if (file != "") {
+        if (stat (file.c_str(),&bufferF) == 0) {
+            //le fichier existe donc on le lit
+            std::ifstream ifile (file.c_str());
+            if (ifile.is_open()) {
+                //on lit
+                while ( getline (ifile,line) && nbReadLine < MAX_NB_PROCESS) {
+
+                    if (sscanf ( line.c_str(),"%d",&pid)) {
+                        //on lit bien un entier donc un pid
+                        waitpid(pid,&status,WNOHANG);
+                        if (kill(pid,0) == -1) {
+                            //process doesn't run any more
+                        } else {
+                            //process is still running
+                            if (nbCurrentPid < nbMaxPid) {
+                                nbCurrentPid++;
+                                listCurrentPid.push_back(pid);
+                                lastPid = pid;
+                            } else {
+                                listPreviousPid.push_back(pid);
+                            }
+                        }
+                    }
+                    nbReadLine++;
+                }
+                ifile.close();
+
+                //on réécrit le fichier avec les pid encore actifs
+                writeFile();
+
+            } else {
+                //impossible de lire le fichier
+            }
+
+        } else {
+            //le fichier n'existe pas donc on le cree
+            pFile = open(file.c_str(),O_EXCL|O_CREAT);
+            close(pFile);
+        }
+    }
+
+}
+
+
+void ProcessFactory::writeFile() {
+
+    if (file != "") {
+
+
+        std::ofstream ofile;
+        ofile.open (file.c_str(), std::ofstream::out | std::ofstream::trunc);
+        if (ofile.is_open()) {
+            for(std::list<int>::iterator it = listCurrentPid.begin(); it != listCurrentPid.end(); it++) {
+                ofile << *it << std::endl;
+            }
+            for(std::list<int>::iterator it = listPreviousPid.begin(); it != listPreviousPid.end(); it++) {
+                ofile << *it << std::endl;
+            }
+            ofile.close();
+        } else {
+            //impossible d'écrire dans le fichier
+        }
+
+    }
 }

@@ -147,7 +147,8 @@ void* Rok4Server::thread_loop ( void* arg ) {
         FCGX_Finish_r ( &fcgxRequest );
         FCGX_Free ( &fcgxRequest,1 );
 
-        server->parallelProcess->checkAllPid();
+        server->parallelProcess->checkCurrentPid();
+
     }
     LOGGER_DEBUG ( _ ( "Extinction du thread" ) );
     Logger::stopLogger();
@@ -180,7 +181,7 @@ Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std:
     if (nbProcess < 0) {
         nbProcess = DEFAULT_NB_PROCESS;
     }
-    parallelProcess = new ProcessFactory(nbProcess);
+    parallelProcess = new ProcessFactory(nbProcess,"");
 }
 
 Rok4Server::~Rok4Server() {
