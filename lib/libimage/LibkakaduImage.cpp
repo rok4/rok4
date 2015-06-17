@@ -194,11 +194,21 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
      * Si necessaire on devra donc charger une bande de 16 lignes.
      * Il faut penser a generer les tableaux de type stripe_heights[channels]
      */
-    return new LibkakaduImage (
+    LibkakaduImage* o_LibkakaduImage = new LibkakaduImage (
         width, height, resx, resy, channels, bbox, filename,
         sf, bitspersample, ph, Compression::JPEG2000,
         rowsperstrip
     );
+    
+    /******************** INITIALISATION **********************/
+    bool isInitComplete;
+    isInitComplete = o_LibkakaduImage->init();
+    if (!isInitComplete) {
+        LOGGER_ERROR("LibkakaduImage object didn't initialise.");
+        return NULL;
+    }
+    
+    return o_LibkakaduImage;
 
 }
 
@@ -214,64 +224,103 @@ LibkakaduImage::LibkakaduImage (
     rowsperstrip(rps)
     
 {    
-    // Create appropriate output file
-    kdu_compressed_source *input = NULL;
-    kdu_simple_file_source file_in;
-    jp2_family_src jp2_src;
-    jp2_source jp2_in;
     
-    jp2_input_box box;
-    jp2_src.open(filename);
-  
-    if (box.open(&jp2_src) && (box.get_box_type() == jp2_signature_4cc) ) {
-        input = &jp2_in;
-        jp2_in.open(&jp2_src);
-        jp2_in.read_header();
-    } else {
-        input = &file_in;
-        file_in.open(filename);
-    }
-    
-    m_codestream.create(input);
-    m_codestream.set_fussy(); // Set the parsing error tolerance.
-    m_codestream.apply_input_restrictions(0, channels, 0, 0, NULL);
-    
-    int num_threads = atoi(KDU_THREADING);
-    
-    kdu_thread_env env;
-    m_kdu_env_ref = NULL;
-    if (num_threads > 0) {
-        env.create();
-        for (int nt=1; nt < num_threads; nt++) {
-            if (!env.add_thread()) {
-                LOGGER_WARN("Unable to create all the wanted threads. Number of threads reduced from " << num_threads << " to " << nt);
-                num_threads = nt; // Unable to create all the threads requested
-            }
-        }
-        m_kdu_env_ref = &env;
-    } else {
-      LOGGER_WARN("Null or negative number of threads... Leaving kdu_thread_env object uninitialised.");
-    }
-  
-    /************** INITIALISATION DES OBJETS KAKADU *********/
-
-    // Custom messaging services
-    kdu_customize_warnings(&pretty_cout);
-    kdu_customize_errors(&pretty_cerr);
-  
-    strip_buffer = new kdu_byte[rowsperstrip * width * channels];
-
-    current_strip = -1;
 }
+
+/* -------------------------------- POST-CONSTRUCT INITIALISATION --------------------------------- */
+/* ------------------------------- INITIALISATION POST-CONTRUCTION -------------------------------- */
+bool LibkakaduImage::init() {
+  
+  /********************* m_codestream ********************/
+ 
+  kdu_compressed_source *input = NULL;
+  kdu_simple_file_source file_in;
+  jp2_family_src jp2_src;
+  jp2_source jp2_in;
+  
+  jp2_input_box box;
+  jp2_src.open(filename);
+  
+  if (box.open(&jp2_src) && (box.get_box_type() == jp2_signature_4cc) ) {
+    input = &jp2_in;
+    if (!jp2_in.open(&jp2_src)) {
+        LOGGER_ERROR("Unable to open with Kakadu the JPEG2000 image " << filename);
+        return false;
+    }
+    jp2_in.read_header();
+  } else {
+    input = &file_in;
+    file_in.open(filename);
+  }
+  
+  m_codestream.create(input);
+  m_codestream.set_fussy(); // Set the parsing error tolerance.
+  m_codestream.apply_input_restrictions(0, channels, 0, 0, NULL);
+  
+  /************** Custom messaging services *************/
+  
+  // Custom messaging services
+  kdu_customize_warnings(&pretty_cout);
+  kdu_customize_errors(&pretty_cerr);
+  
+  /************* strip_buffer & current_strip ***********/
+  
+  try {
+      strip_buffer = new kdu_byte[rowsperstrip * width * channels];
+  } catch (std::bad_alloc e) {
+      LOGGER_ERROR("Memory allocation error while creating strip buffer.");
+      return false;
+  }  
+  current_strip = -1;
+  
+  /******************* m_kdu_thread_env *****************/
+  
+  int num_threads = atoi(KDU_THREADING);
+  
+  kdu_thread_env env;
+  int num_added_threads = 0;
+  if (num_threads > 0) {
+    env.create();
+    for (int nt=1; nt < num_threads; nt++) {
+      if (!env.add_thread()) {
+        LOGGER_WARN("Unable to create all the wanted threads. Number of threads reduced from " << num_threads << " to " << nt);
+        num_threads = nt; // Unable to create all the threads requested
+      }
+      num_added_threads = env.get_num_threads();
+    }
+    m_kdu_env_ref = &env;
+    LOGGER_DEBUG("Wanted number of threads : " << num_threads <<
+    ";    Number of threads added to threading environnement : " << num_added_threads
+    );
+  } else {
+    LOGGER_ERROR("Null or negative number of threads... Leaving kdu_thread_env object uninitialised.");
+    m_kdu_env_ref = NULL;
+    return false;
+  }
+  if(!m_kdu_env_ref->exists()) {
+    LOGGER_ERROR("Kakadu threading environment still doesn't exist. It should have been created and initialised.");
+    return false;
+  }
+  
+  return true;
+}
+
 
 /* ------------------------------------------------------------------------------------------------ */
 /* ------------------------------------------- LECTURE -------------------------------------------- */
 
 template<typename T>
 int LibkakaduImage::_getline ( T* buffer, int line ) {
-    if (m_kdu_env_ref == NULL || !m_kdu_env_ref->exists() || m_kdu_env_ref->get_num_threads() < 1) {
-      LOGGER_ERROR("Threading environment isn't initialised !");
-      return 0;
+  if (m_kdu_env_ref == NULL || !m_kdu_env_ref->exists() || m_kdu_env_ref->get_num_threads() < 1) {
+        LOGGER_ERROR("Threading environment isn't initialised !");
+        if (m_kdu_env_ref == NULL) {
+          LOGGER_ERROR("(kdu_env_ref*) == NULL");
+        } else if (!m_kdu_env_ref->exists()) {
+          LOGGER_ERROR("!(kdu_env_ref*)->exists()");
+        } else {
+          LOGGER_ERROR("(kdu_env_ref*)->get_num_threads() < 1");
+        }
+        return 0;
     }
     if (buffer == NULL) {
       LOGGER_ERROR("Image line output buffer isn't initialised !");
@@ -299,7 +348,7 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
             0 /* discard_level=0 : we work with the highest resolution image */,
             1 /* max_layer=1 : we work ONLY with the highest resolution image */,
             mappedStripeDims, kdu_coords(1,1), kdu_coords(1,1), true, KDU_WANT_OUTPUT_COMPONENTS,
-            false, m_kdu_env_ref, NULL
+            false, this->m_kdu_env_ref, NULL
         );                   
 
         kdu_dims new_region, incomplete_region = mappedStripeDims;
