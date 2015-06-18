@@ -966,6 +966,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     Style * bStyle;
     std::vector<Pyramid*> bPyr;
     bool specific = false;
+    bool crop = false;
 
     int state = 0;
 
@@ -1016,22 +1017,14 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     width = tileW * TilePerWidth;
     height = tileH * TilePerHeight;
 
-    Row = floor(double(tileRow) / TilePerHeight ) * TilePerHeight;
-    Col = floor(double(tileCol) / TilePerWidth) * TilePerWidth;
-
+    Row = floor(double(tileRow) / double(TilePerHeight) ) * double(TilePerHeight);
+    Col = floor(double(tileCol) / double(TilePerWidth) ) * double(TilePerWidth);
 
     //calcul de la bbox de la dalle et non de la tuile
-    xmin = Col * double(tileW) * resolution  * TilePerWidth + xo;
-    ymax = yo - Row * double(tileH) * resolution * TilePerHeight;
+    xmin = Col * double(tileW) * resolution  + xo;
+    ymax = yo - Row * double(tileH) * resolution;
     xmax = xmin + double(tileW) * resolution * TilePerWidth;
     ymin = ymax - double(tileH) * resolution * TilePerHeight;
-
-    if (pyr->getTms().getCrs().getMetersPerUnit() != 1) {
-        xmin = (int)xmin % 360;
-        xmax = (int)xmax % 360;
-        ymin = (int)ymin % 360;
-        ymax = (int)ymax % 360;
-    }
 
     BoundingBox<double> bbox(xmin,ymin,xmax,ymax) ;
 
@@ -1104,12 +1097,15 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
                                                          tm.getTileH());
 
     if (finalImage != NULL) {
-        //error("Cannot create the ROK4 image to write", -1);
         //LOGGER_DEBUG ( "Write" );
-        if (finalImage->writeImage(mergeImage) < 0) {
+        if (pyr->getSampleCompression() == Compression::JPEG) {
+            crop = true;
+        }
+        if (finalImage->writeImage(curImage,crop) < 0) {
             //error("Cannot write ROK4 image", -1);
         }
     }
+    delete finalImage;
 
     return state;
 
