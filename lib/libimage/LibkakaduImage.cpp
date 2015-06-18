@@ -195,12 +195,13 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
      * Si necessaire on devra donc charger une bande de 16 lignes.
      * Il faut penser a generer les tableaux de type stripe_heights[channels]
      */
-    return new LibkakaduImage (
+     LibkakaduImage* o_LibkakaduImage = new LibkakaduImage (
         width, height, resx, resy, channels, bbox, filename,
         sf, bitspersample, ph, Compression::JPEG2000,
         rowsperstrip
     );
-
+     o_LibkakaduImage->init();
+     return o_LibkakaduImage;
 }
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -215,19 +216,46 @@ LibkakaduImage::LibkakaduImage (
     rowsperstrip(rps)
     
 {    
-    
-    /************** INITIALISATION DES OBJETS KAKADU *********/
-
-    // Custom messaging services
-    kdu_customize_warnings(&pretty_cout);
-    kdu_customize_errors(&pretty_cerr);
-  
-
-  
-    strip_buffer = new kdu_byte[rowsperstrip * width * channels];
-
-    current_strip = -1;
+ 
 }
+
+/* ------------------------------------------------------------------------------------------------ */
+/* ---------------------------------------- INITIALISATION ---------------------------------------- */
+
+bool LibkakaduImage::init() {
+  /******************** miscellaneous *******************/
+  
+
+  
+  /******************** m_codestream ********************/
+  
+  
+  
+  /************** Custom messaging services *************/
+  
+  // Custom messaging services
+  kdu_customize_warnings(&pretty_cout);
+  kdu_customize_errors(&pretty_cerr);
+  
+  /************* strip_buffer & current_strip ***********/
+  
+  try {
+    strip_buffer = new kdu_byte[rowsperstrip * width * channels];
+  } catch (std::bad_alloc e) {
+    LOGGER_ERROR("Memory allocation error while creating strip buffer.");
+    return false;
+  }  
+  current_strip = -1;
+  
+  /******************* m_kdu_thread_env *****************/
+  
+  
+}
+
+
+
+
+
 
 /* ------------------------------------------------------------------------------------------------ */
 /* ------------------------------------------- LECTURE -------------------------------------------- */
@@ -236,7 +264,6 @@ bool LibkakaduImage::_loadstrip() {
 
     int C0 = 0;
     int L0 = rowsperstrip * current_strip;
-    int deZoom = 1;
     void *buffer = strip_buffer;
     int nPixelSpace = pixelSize;
     int nLineSpace = pixelSize * width;
@@ -253,23 +280,14 @@ bool LibkakaduImage::_loadstrip() {
     m_Source.read_header();
     kdu_codestream codestream;
     codestream.create(&m_Source);
-        
-    int dz = deZoom;
+    
     int max_layers = 0;
     int discard_levels = 0;
-    while(((1 << discard_levels) & deZoom)==0) ++discard_levels;
     int minDwtLevels = codestream.get_min_dwt_levels();
     int reDeZoom = 0;
-    if (discard_levels>minDwtLevels)
-    {
-            reDeZoom = (1<<(discard_levels-minDwtLevels));
-            discard_levels=minDwtLevels;
-            dz = (1 << discard_levels);
-    }
     
     int * precisions = new int[channels];
     bool *is_signed = new bool[channels];
-    // ToDo tenir compte du bufferType      
     for(size_t i=0;i<(size_t)channels;++i) 
     {
             precisions[i]=8;
@@ -307,41 +325,25 @@ bool LibkakaduImage::_loadstrip() {
     kdu_channel_mapping kchannels;
     kchannels.configure(codestream);
     int single_component=0;//ignore sauf sur mapping est nul
-    
-    kdu_dims region=decompressor.get_rendered_image_dims(codestream,&kchannels,single_component,discard_levels,kdu_coords(1,1),kdu_coords(1,1),KDU_WANT_OUTPUT_COMPONENTS);
-    
-    
-    //if (reDeZoom==0)
-    {
-            region.pos.x=C0/deZoom;
-            region.pos.y=L0/deZoom;
-            region.size.x=width/deZoom;
-            region.size.y=NLines/deZoom;
-    }
-    
+      
     decompressor.start(
         codestream,&kchannels,single_component, discard_levels,
-        0, region, kdu_coords(1,1),kdu_coords(1,1),true,KDU_WANT_OUTPUT_COMPONENTS,false,env_ref,0
+        0, mdims, kdu_coords(1,1),kdu_coords(1,1),true,KDU_WANT_OUTPUT_COMPONENTS,false,env_ref,0
     );        
     
-    kdu_dims new_region, incomplete_region=region;
+    kdu_dims new_region, incomplete_region=mdims;
     
     char ** channel_bufs=new char*[num_components];
     int row_gap = 0;
     int suggested_increment = 0;
-    if (reDeZoom==0)
-    {
-            for(n=0;n<num_components;++n)
-            {
-                    channel_bufs[n] = (char*)buffer + n*nBandSpace;
-            }
-            //row_gap = nLineSpace*ImageIO::TypeSize(bufferType);
-            //suggested_increment = comp_dims[0].size.x*comp_dims[0].size.y;
-            row_gap = comp_dims[0].size.x;
-            suggested_increment = comp_dims[0].size.x*comp_dims[0].size.y;
-            
-    }
     
+    for(n=0;n<num_components;++n)
+    {
+            channel_bufs[n] = (char*)buffer + n*nBandSpace;
+    }
+    row_gap = comp_dims[0].size.x;
+    suggested_increment = comp_dims[0].size.x*comp_dims[0].size.y;
+       
     kdu_coords buffer_origin;
     buffer_origin.x = incomplete_region.pos.x;
     buffer_origin.y = incomplete_region.pos.y;

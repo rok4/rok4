@@ -90,6 +90,7 @@ private:
      * \~english \brief Memorized strip indice, in strip_buffer
      */
     int current_strip;
+    
      
 
     /** \~french
@@ -106,8 +107,9 @@ private:
     template<typename T>
     int _getline ( T* buffer, int line );
     
-    
     bool _loadstrip ( );
+    
+    
 
 protected:
    
