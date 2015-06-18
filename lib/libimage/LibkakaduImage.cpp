@@ -236,9 +236,6 @@ bool LibkakaduImage::_loadstrip() {
 
     int C0 = 0;
     int L0 = rowsperstrip * current_strip;
-    int Band0 = 0;
-    int NRows = width;
-    int NBands = channels;
     int deZoom = 1;
     void *buffer = strip_buffer;
     int nPixelSpace = pixelSize;
@@ -257,123 +254,122 @@ bool LibkakaduImage::_loadstrip() {
     kdu_codestream codestream;
     codestream.create(&m_Source);
         
-        int dz = deZoom;
-        int max_layers = 0;
-        int discard_levels = 0;
-        while(((1 << discard_levels) & deZoom)==0) ++discard_levels;
-        int minDwtLevels = codestream.get_min_dwt_levels();
-        int reDeZoom = 0;
-        if (discard_levels>minDwtLevels)
-        {
-                reDeZoom = (1<<(discard_levels-minDwtLevels));
-                discard_levels=minDwtLevels;
-                dz = (1 << discard_levels);
-        }
-        
-        int * precisions = new int[channels];
-        bool *is_signed = new bool[channels];
-        // ToDo tenir compte du bufferType      
-        for(size_t i=0;i<(size_t)channels;++i) 
-        {
-                precisions[i]=8;
-                is_signed[i]=false;
-        }
-        
-        kdu_dims dims,mdims;
-        // Position de l'origine en coord fichier (cad pleine resolution)
-        dims.pos=kdu_coords(C0, L0);
-        // Taille de la zone en coord fichier (cad pleine resolution)
-        dims.size=kdu_coords(NRows,NLines);
-        codestream.map_region(0,dims,mdims);
-        
-        codestream.apply_input_restrictions(0,NBands,discard_levels,max_layers,&mdims,KDU_WANT_OUTPUT_COMPONENTS);
-        
-        kdu_thread_env env, *env_ref=NULL;
-        
-        int num_threads = atoi(KDU_THREADING);
-        
-        if (num_threads > 0)
-        {
-                env.create();
-                for (int nt=1; nt < num_threads; nt++)
-                    if (!env.add_thread())
-                        num_threads = nt; // Unable to create all the threads requested
-                env_ref = &env;
-        }
-        
-        int n, num_components = codestream.get_num_components(true);
-        kdu_dims *comp_dims = new kdu_dims[num_components];
-        for (n=0; n < num_components; n++)
-                codestream.get_dims(n,comp_dims[n],true);
-        
-        kdu_region_decompressor decompressor;
-        kdu_channel_mapping kchannels;
-        kchannels.configure(codestream);
-        int single_component=0;//ignore sauf sur mapping est nul
-        
-        kdu_dims region=decompressor.get_rendered_image_dims(codestream,&kchannels,single_component,discard_levels,kdu_coords(1,1),kdu_coords(1,1),KDU_WANT_OUTPUT_COMPONENTS);
-        
-        
-        //if (reDeZoom==0)
-        {
-                region.pos.x=C0/deZoom;
-                region.pos.y=L0/deZoom;
-                region.size.x=NRows/deZoom;
-                region.size.y=NLines/deZoom;
-        }
-        
-        decompressor.start(
-            codestream,&kchannels,single_component, discard_levels,
-            0, region, kdu_coords(1,1),kdu_coords(1,1),true,KDU_WANT_OUTPUT_COMPONENTS,false,env_ref,0
-        );        
-        
-        kdu_dims new_region, incomplete_region=region;
-        
-        char ** channel_bufs=new char*[num_components];
-        int row_gap = 0;
-        int suggested_increment = 0;
-        if (reDeZoom==0)
-        {
-                for(n=0;n<num_components;++n)
-                {
-                        channel_bufs[n] = (char*)buffer + n*nBandSpace;
-                }
-                //row_gap = nLineSpace*ImageIO::TypeSize(bufferType);
-                //suggested_increment = comp_dims[0].size.x*comp_dims[0].size.y;
-                row_gap = comp_dims[0].size.x;
-                suggested_increment = comp_dims[0].size.x*comp_dims[0].size.y;
-                
-        }
-        
-        kdu_coords buffer_origin;
-        buffer_origin.x = incomplete_region.pos.x;
-        buffer_origin.y = incomplete_region.pos.y;
-        
-        while(decompressor.process(
-                                    (kdu_byte**)channel_bufs, false, nPixelSpace,
-                                    buffer_origin, row_gap, suggested_increment, suggested_increment,
-                                    incomplete_region, new_region, 8, true
-                                  ) && ! incomplete_region.is_empty())
-        {
-            
-        }
-        
-        delete[] channel_bufs;
-        decompressor.finish();
-        
-        if (env.exists())
-                env.destroy();
-        
-        if (env.exists())
-                env.destroy();
-        
-        delete[] precisions;
-        delete[] is_signed;
-        delete[] comp_dims;
-        
-        codestream.destroy();
-        m_Source.close();       
+    int dz = deZoom;
+    int max_layers = 0;
+    int discard_levels = 0;
+    while(((1 << discard_levels) & deZoom)==0) ++discard_levels;
+    int minDwtLevels = codestream.get_min_dwt_levels();
+    int reDeZoom = 0;
+    if (discard_levels>minDwtLevels)
+    {
+            reDeZoom = (1<<(discard_levels-minDwtLevels));
+            discard_levels=minDwtLevels;
+            dz = (1 << discard_levels);
+    }
     
+    int * precisions = new int[channels];
+    bool *is_signed = new bool[channels];
+    // ToDo tenir compte du bufferType      
+    for(size_t i=0;i<(size_t)channels;++i) 
+    {
+            precisions[i]=8;
+            is_signed[i]=false;
+    }
+    
+    kdu_dims dims,mdims;
+    // Position de l'origine en coord fichier (cad pleine resolution)
+    dims.pos=kdu_coords(C0, L0);
+    // Taille de la zone en coord fichier (cad pleine resolution)
+    dims.size=kdu_coords(width,NLines);
+    codestream.map_region(0,dims,mdims);
+    
+    codestream.apply_input_restrictions(0,channels,discard_levels,max_layers,&mdims,KDU_WANT_OUTPUT_COMPONENTS);
+    
+    kdu_thread_env env, *env_ref=NULL;
+    
+    int num_threads = atoi(KDU_THREADING);
+    
+    if (num_threads > 0)
+    {
+            env.create();
+            for (int nt=1; nt < num_threads; nt++)
+                if (!env.add_thread())
+                    num_threads = nt; // Unable to create all the threads requested
+            env_ref = &env;
+    }
+    
+    int n, num_components = codestream.get_num_components(true);
+    kdu_dims *comp_dims = new kdu_dims[num_components];
+    for (n=0; n < num_components; n++)
+            codestream.get_dims(n,comp_dims[n],true);
+    
+    kdu_region_decompressor decompressor;
+    kdu_channel_mapping kchannels;
+    kchannels.configure(codestream);
+    int single_component=0;//ignore sauf sur mapping est nul
+    
+    kdu_dims region=decompressor.get_rendered_image_dims(codestream,&kchannels,single_component,discard_levels,kdu_coords(1,1),kdu_coords(1,1),KDU_WANT_OUTPUT_COMPONENTS);
+    
+    
+    //if (reDeZoom==0)
+    {
+            region.pos.x=C0/deZoom;
+            region.pos.y=L0/deZoom;
+            region.size.x=width/deZoom;
+            region.size.y=NLines/deZoom;
+    }
+    
+    decompressor.start(
+        codestream,&kchannels,single_component, discard_levels,
+        0, region, kdu_coords(1,1),kdu_coords(1,1),true,KDU_WANT_OUTPUT_COMPONENTS,false,env_ref,0
+    );        
+    
+    kdu_dims new_region, incomplete_region=region;
+    
+    char ** channel_bufs=new char*[num_components];
+    int row_gap = 0;
+    int suggested_increment = 0;
+    if (reDeZoom==0)
+    {
+            for(n=0;n<num_components;++n)
+            {
+                    channel_bufs[n] = (char*)buffer + n*nBandSpace;
+            }
+            //row_gap = nLineSpace*ImageIO::TypeSize(bufferType);
+            //suggested_increment = comp_dims[0].size.x*comp_dims[0].size.y;
+            row_gap = comp_dims[0].size.x;
+            suggested_increment = comp_dims[0].size.x*comp_dims[0].size.y;
+            
+    }
+    
+    kdu_coords buffer_origin;
+    buffer_origin.x = incomplete_region.pos.x;
+    buffer_origin.y = incomplete_region.pos.y;
+    
+    while(decompressor.process(
+                                (kdu_byte**)channel_bufs, false, nPixelSpace,
+                                buffer_origin, row_gap, suggested_increment, suggested_increment,
+                                incomplete_region, new_region, 8, true
+                              ) && ! incomplete_region.is_empty())
+    {
+        
+    }
+    
+    delete[] channel_bufs;
+    decompressor.finish();
+    
+    if (env.exists())
+            env.destroy();
+    
+    if (env.exists())
+            env.destroy();
+    
+    delete[] precisions;
+    delete[] is_signed;
+    delete[] comp_dims;
+    
+    codestream.destroy();
+    m_Source.close();           
 }
 
 template<typename T>

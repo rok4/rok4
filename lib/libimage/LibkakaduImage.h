@@ -74,13 +74,6 @@ class LibkakaduImage : public Jpeg2000Image {
 friend class LibkakaduImageFactory;
     
 private:
-
-    //TODO Implementer correctement ces attributs en me servant de LibTiffImage (penser a la doc)
-    kdu_thread_env* m_kdu_env_ref;
-    
-    kdu_codestream m_codestream;
-    
-    kdu_region_decompressor m_decompressor;
      
     /**
      * \~french \brief Nombre de ligne dans un strip
@@ -188,8 +181,6 @@ public:
      */
     ~LibkakaduImage() {
         delete[] strip_buffer;
-        m_kdu_env_ref->destroy();
-        m_codestream.destroy();
     }
 
     /** \~french
@@ -201,7 +192,6 @@ public:
         LOGGER_INFO ( "" );
         LOGGER_INFO ( "---------- LibkakaduImage ------------" );
         FileImage::print();
-        //LOGGER_INFO ( "\t- info sup : " << info sup );
         LOGGER_INFO ( "" );
     }
 
