@@ -155,6 +155,13 @@ protected:
     LibkakaduImage (
         int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name, SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression, int rps
     );
+    
+    /** \~french
+     * \brief Initialise certains objets hors contructeur, notemment les objets kakadu. 'Vrai' si réussite.
+     ** \~english
+     * \brief Initialises several member objects, mainly kakadu objects, while out of the constructor. 'True' if success.
+     */
+    bool init();
 
 public:     
     
@@ -181,6 +188,7 @@ public:
      */
     ~LibkakaduImage() {
         delete[] strip_buffer;
+        m_kdu_env_ref->destroy();
         m_codestream.destroy();
     }
 
