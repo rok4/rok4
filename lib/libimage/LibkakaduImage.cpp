@@ -56,6 +56,7 @@
 #include "Utils.h"
 #include "kdu_region_decompressor.h"
 
+
 /* ------------------------------------------------------------------------------------------------ */
 /* -------------------------------------- LOGGERS DE KAKADU --------------------------------------- */
 
@@ -80,15 +81,9 @@ static kdu_message_formatter pretty_cerr(&cerr_message);
 /* ----- Pour la lecture ----- */
 LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filename, BoundingBox< double > bbox, double resx, double resy ) {
     
-    int width = 0, height = 0, bitspersample = 0, channels = 0, rowsperstrip = 16;
+    int width = 0, height = 0, bitspersample = 0, channels = 0, rowsperstrip = 200;
     SampleFormat::eSampleFormat sf = SampleFormat::UINT;
     Photometric::ePhotometric ph = Photometric::UNKNOWN;
-    
-    /************** INITIALISATION DES OBJETS KAKADU *********/
-    
-    // Custom messaging services
-    kdu_customize_warnings(&pretty_cout);
-    kdu_customize_errors(&pretty_cerr);
 
     /************** RECUPERATION DES INFORMATIONS **************/
     
@@ -170,8 +165,6 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
             return NULL;
     }
     
-    codestream.set_fussy(); // Set the parsing error tolerance.
-    
     /********************** CONTROLES **************************/
 
     if ( ! LibkakaduImage::canRead ( bitspersample, sf ) ) {
@@ -190,42 +183,11 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
         resx = 1.;
         resy = 1.;
     }
-    
-    /************** LECTURE DE L'IMAGE EN ENTIER ***************/
-    codestream.apply_input_restrictions(0, channels, 0, 0, NULL);
-    
-    //TODO Remove this part
-    int num_threads = atoi(KDU_THREADING);
-    
-    kdu_thread_env env, *env_ref=NULL;
-    if (num_threads > 0) {
-        env.create();
-        for (int nt=1; nt < num_threads; nt++) {
-            if (!env.add_thread()) {
-                LOGGER_WARN("Unable to create all the wanted threads. Number of threads reduced from " << num_threads << " to " << nt);
-                num_threads = nt; // Unable to create all the threads requested
-            }
-        }
-        env_ref = &env;
-    }
    
-
-    // Write image buffer to file and clean up
     codestream.destroy();
     input->close(); // Not really necessary here.
     box.close();
-    
-    uint16_t rowsperstripe = 16;
-    kdu_byte * stripe_buffer;
-    try {
-      stripe_buffer = new kdu_byte[(int)rowsperstripe*width*channels];
-    } catch (std::bad_alloc e) {
-      stripe_buffer = NULL;
-      LOGGER_ERROR("Error (bad allocation) while allocating memory for kdu_byte stripe_buffer = new kdu_byte["<<rowsperstrip<<"*"<<width<<"*"<<channels<<"]");     
-    } catch (std::exception e) {
-      stripe_buffer = NULL;
-      LOGGER_ERROR("An exception occured while creating stripe buffer: " << e.what());
-    }
+
     /******************** CRÉATION DE L'OBJET ******************/
 
     /* L'objet LibkakaduImage devra pouvoir se charger lui-meme de charger les bandes.
@@ -236,7 +198,7 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     return new LibkakaduImage (
         width, height, resx, resy, channels, bbox, filename,
         sf, bitspersample, ph, Compression::JPEG2000,
-        env_ref, rowsperstripe, stripe_buffer
+        rowsperstrip
     );
 
 }
@@ -247,153 +209,194 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
 LibkakaduImage::LibkakaduImage (
     int width, int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
-    kdu_thread_env* thread_env_ref, uint16_t rowsperstripe, kdu_byte * stripe_buffer ) :
+    int rps ) :
 
     Jpeg2000Image ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression ),
-    m_kdu_env_ref (thread_env_ref), rowsperstrip(rowsperstripe), strip_buffer(stripe_buffer)
-{
-  
-  /************** INITIALISATION DES OBJETS KAKADU *********/
-  
-  // Custom messaging services
-  kdu_customize_warnings(&pretty_cout);
-  kdu_customize_errors(&pretty_cerr);
-  
-  /************** RECUPERATION DES INFORMATIONS **************/
-  
-  // Create appropriate output file
-  kdu_compressed_source *input = NULL;
-  kdu_simple_file_source file_in;
-  jp2_family_src jp2_src;
-  jp2_source jp2_in;
-  
-  jp2_input_box box;
-  jp2_src.open(filename);
-  
-  if (box.open(&jp2_src) && (box.get_box_type() == jp2_signature_4cc) ) {
+    rowsperstrip(rps)
     
-    input = &jp2_in;
-    if (! jp2_in.open(&jp2_src)) {
-      LOGGER_ERROR("Unable to open with Kakadu the JPEG2000 image " << filename);
-    }
-    jp2_in.read_header();
+{    
     
-  } else {
-    
-    // Try opening as a raw code-stream.
-    input = &file_in;
-    file_in.open(filename);
-    
-  }
-   
-  m_codestream.create(input);
+    /************** INITIALISATION DES OBJETS KAKADU *********/
+
+    // Custom messaging services
+    kdu_customize_warnings(&pretty_cout);
+    kdu_customize_errors(&pretty_cerr);
   
-  kdu_dims dims;
-  m_codestream.get_dims(0,dims,true);  
-  m_codestream.set_fussy(); // Set the parsing error tolerance.
-  m_codestream.apply_input_restrictions(0, channels, 0, 0, NULL);
-      
-  data = new kdu_byte[(int) dims.area()*channels];
 
   
+    strip_buffer = new kdu_byte[rowsperstrip * width * channels];
+
+    current_strip = -1;
 }
 
 /* ------------------------------------------------------------------------------------------------ */
 /* ------------------------------------------- LECTURE -------------------------------------------- */
 
+bool LibkakaduImage::_loadstrip() {
+
+    int C0 = 0;
+    int L0 = rowsperstrip * current_strip;
+    int Band0 = 0;
+    int NRows = width;
+    int NBands = channels;
+    int deZoom = 1;
+    void *buffer = strip_buffer;
+    int nPixelSpace = pixelSize;
+    int nLineSpace = pixelSize * width;
+    int nBandSpace = 1;
+    int NLines = __min(rowsperstrip, height - rowsperstrip * current_strip);
+    
+    jp2_source m_Source;
+    jp2_family_src jp2_ultimate_src;
+    jp2_ultimate_src.open(filename);
+        
+    if (!m_Source.open(&jp2_ultimate_src))
+    {
+    }
+    m_Source.read_header();
+    kdu_codestream codestream;
+    codestream.create(&m_Source);
+        
+        int dz = deZoom;
+        int max_layers = 0;
+        int discard_levels = 0;
+        while(((1 << discard_levels) & deZoom)==0) ++discard_levels;
+        int minDwtLevels = codestream.get_min_dwt_levels();
+        int reDeZoom = 0;
+        if (discard_levels>minDwtLevels)
+        {
+                reDeZoom = (1<<(discard_levels-minDwtLevels));
+                discard_levels=minDwtLevels;
+                dz = (1 << discard_levels);
+        }
+        
+        int * precisions = new int[channels];
+        bool *is_signed = new bool[channels];
+        // ToDo tenir compte du bufferType      
+        for(size_t i=0;i<(size_t)channels;++i) 
+        {
+                precisions[i]=8;
+                is_signed[i]=false;
+        }
+        
+        kdu_dims dims,mdims;
+        // Position de l'origine en coord fichier (cad pleine resolution)
+        dims.pos=kdu_coords(C0, L0);
+        // Taille de la zone en coord fichier (cad pleine resolution)
+        dims.size=kdu_coords(NRows,NLines);
+        codestream.map_region(0,dims,mdims);
+        
+        codestream.apply_input_restrictions(0,NBands,discard_levels,max_layers,&mdims,KDU_WANT_OUTPUT_COMPONENTS);
+        
+        kdu_thread_env env, *env_ref=NULL;
+        
+        int num_threads = atoi(KDU_THREADING);
+        
+        if (num_threads > 0)
+        {
+                env.create();
+                for (int nt=1; nt < num_threads; nt++)
+                    if (!env.add_thread())
+                        num_threads = nt; // Unable to create all the threads requested
+                env_ref = &env;
+        }
+        
+        int n, num_components = codestream.get_num_components(true);
+        kdu_dims *comp_dims = new kdu_dims[num_components];
+        for (n=0; n < num_components; n++)
+                codestream.get_dims(n,comp_dims[n],true);
+        
+        kdu_region_decompressor decompressor;
+        kdu_channel_mapping kchannels;
+        kchannels.configure(codestream);
+        int single_component=0;//ignore sauf sur mapping est nul
+        
+        kdu_dims region=decompressor.get_rendered_image_dims(codestream,&kchannels,single_component,discard_levels,kdu_coords(1,1),kdu_coords(1,1),KDU_WANT_OUTPUT_COMPONENTS);
+        
+        
+        //if (reDeZoom==0)
+        {
+                region.pos.x=C0/deZoom;
+                region.pos.y=L0/deZoom;
+                region.size.x=NRows/deZoom;
+                region.size.y=NLines/deZoom;
+        }
+        
+        decompressor.start(
+            codestream,&kchannels,single_component, discard_levels,
+            0, region, kdu_coords(1,1),kdu_coords(1,1),true,KDU_WANT_OUTPUT_COMPONENTS,false,env_ref,0
+        );        
+        
+        kdu_dims new_region, incomplete_region=region;
+        
+        char ** channel_bufs=new char*[num_components];
+        int row_gap = 0;
+        int suggested_increment = 0;
+        if (reDeZoom==0)
+        {
+                for(n=0;n<num_components;++n)
+                {
+                        channel_bufs[n] = (char*)buffer + n*nBandSpace;
+                }
+                //row_gap = nLineSpace*ImageIO::TypeSize(bufferType);
+                //suggested_increment = comp_dims[0].size.x*comp_dims[0].size.y;
+                row_gap = comp_dims[0].size.x;
+                suggested_increment = comp_dims[0].size.x*comp_dims[0].size.y;
+                
+        }
+        
+        kdu_coords buffer_origin;
+        buffer_origin.x = incomplete_region.pos.x;
+        buffer_origin.y = incomplete_region.pos.y;
+        
+        while(decompressor.process(
+                                    (kdu_byte**)channel_bufs, false, nPixelSpace,
+                                    buffer_origin, row_gap, suggested_increment, suggested_increment,
+                                    incomplete_region, new_region, 8, true
+                                  ) && ! incomplete_region.is_empty())
+        {
+            
+        }
+        
+        delete[] channel_bufs;
+        decompressor.finish();
+        
+        if (env.exists())
+                env.destroy();
+        
+        if (env.exists())
+                env.destroy();
+        
+        delete[] precisions;
+        delete[] is_signed;
+        delete[] comp_dims;
+        
+        codestream.destroy();
+        m_Source.close();       
+    
+}
+
 template<typename T>
 int LibkakaduImage::_getline ( T* buffer, int line ) {
-  // buffer doit déjà être alloué, et assez grand
-  LOGGER_DEBUG("Entrée dans _getline(buffer, line) avec :" << std::endl << "line = " << line << std::endl << "buffer = " << buffer << std::endl);
-  
-  if ( ( static_cast<int>( floor((static_cast<double>(line)) / (static_cast<double>(rowsperstrip)) )) + 1 ) != current_strip ) {
     
-    // Les données n'ont pas encore été lue depuis l'image (strip pas en mémoire).
-    current_strip = static_cast<int>( floor( (static_cast<double>(line)) / (static_cast<double>(rowsperstrip)) ) ) + 1;
-    kdu_dims stripeDims, mappedStripeDims;
-    stripeDims.pos = kdu_coords(0,(current_strip-1)*rowsperstrip);
-    stripeDims.size = kdu_coords(width,rowsperstrip);
-    m_codestream.map_region(0,stripeDims,mappedStripeDims);
-    kdu_dims componentsDims[channels];
-    int chan;
-    for (chan = 0; chan < channels; chan++) {
-      m_codestream.get_dims(chan, componentsDims[chan], true);
-    }
-    kdu_channel_mapping chan_mapping;
-    chan_mapping.configure(m_codestream);
-    kdu_dims stripeRegion = mappedStripeDims;
-    
-    bool decompressorStartTest;
-    decompressorStartTest = m_decompressor.start(m_codestream, &chan_mapping,
-                         0 /* single_component=0 : not a single component case */,
-                         0 /* discard_level=0 : we work with the highest resolution image */,
-                         1 /* max_layer=1 : we work ONLY with the highest resolution image */,
-                         stripeRegion, kdu_coords(1,1), kdu_coords(1,1), true, KDU_WANT_OUTPUT_COMPONENTS,
-                         false, m_kdu_env_ref, NULL);                   
-    
-    kdu_dims new_region, incomplete_region = stripeRegion;
-    int channel_offsets[channels];
-    int pixel_gap, row_gap, suggested_increment, max_region_pixels, precision_bits = 8, expand_monochrome = 0, fill_alpha = 0;
-    kdu_coords buffer_origin;
-    bool measure_row_gap_in_pixels = true;
-    
-    for (int channel_offset=0; channel_offset<channels; channel_offset++) {
-      channel_offsets[channel_offset]=channel_offset;
-    }
-    pixel_gap = channels;
-    buffer_origin.x = stripeRegion.pos.x;
-    buffer_origin.y = stripeRegion.pos.y;
-    row_gap = width;
-    suggested_increment = width*channels;
-    max_region_pixels = 16*width;
-    
-    int dbgIncrement =0;
-    bool processInProgress = true;
-    if (incomplete_region.is_empty()) {
-      LOGGER_ERROR("Kakadu region decompressor's incomplete region is empty before processing. This should not happen.");
-    } else {
-      while( processInProgress && !incomplete_region.is_empty()) {
-      
-        LOGGER_DEBUG("Boucle decompressor.process, itération n°" << dbgIncrement );
-        try {
-         processInProgress = m_decompressor.process( strip_buffer, channel_offsets, pixel_gap,
-         buffer_origin, row_gap, suggested_increment, max_region_pixels, incomplete_region,
-         new_region, precision_bits, measure_row_gap_in_pixels, expand_monochrome, fill_alpha ); //segfault ici
-        } catch (std::exception e) {
-          LOGGER_ERROR("An exception occured: " << e.what());
-        } catch (kdu_exception e) {
-          LOGGER_ERROR("A kakadu exception occured: " << e);
-        } catch (kdu_error e) {
-          LOGGER_ERROR("A kakadu error occured.");
-        } catch (...) {
-          LOGGER_ERROR("An unidentified default exception occured.");
-        }
-        dbgIncrement++;
-        LOGGER_DEBUG("Fin de l'itération.");
-      }
-    }    
-  
-    bool readSuccess;
-    readSuccess = m_decompressor.finish();
-    
-    //int size = TIFFReadEncodedStrip ( tif, current_strip, strip_buffer, -1 );
-    if (!readSuccess) {
-      LOGGER_ERROR ( "Cannot read stripe number " << current_strip << " of image " << filename );
-      return 0;
-    }
-    
-  }
-    
-    memcpy ( buffer, (uint8_t*)strip_buffer + ( line%rowsperstrip ) * width * pixelSize, width * pixelSize );
-  return width*channels;
  
+    if ( line / rowsperstrip != current_strip ) {
+    
+        // Les données n'ont pas encore été lue depuis l'image (strip pas en mémoire).
+        current_strip = line / rowsperstrip;
+        
+        _loadstrip();    
+    }
+    
+    memcpy ( buffer, (uint8_t*) strip_buffer + ( line%rowsperstrip ) * width * pixelSize, width * pixelSize );
+    
+    return width*channels;
 }
 
 int LibkakaduImage::getline ( uint8_t* buffer, int line ) {
   
   if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
     int r = _getline ( buffer,line );
-    if (associatedalpha) unassociateAlpha ( buffer );
     return r;
   } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) { // float
     /* On ne convertit pas les nombres flottants en entier sur 8 bits (aucun intérêt)
