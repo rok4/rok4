@@ -65,13 +65,6 @@
 #include "Image.h"
 #include "MirrorImage.h"
 
-#ifndef __max
-#define __max(a, b)   ( ((a) > (b)) ? (a) : (b) )
-#endif
-#ifndef __min
-#define __min(a, b)   ( ((a) < (b)) ? (a) : (b) )
-#endif
-
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french

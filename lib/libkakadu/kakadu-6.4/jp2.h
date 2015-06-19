@@ -1016,11 +1016,11 @@ class jp2_input_box : public kdu_compressed_source {
   // --------------------------------------------------------------------------
   private: // Helper functions
     void reset_header_reading_state()
-      {
-        box_type = 0; rubber_length = is_open = false;
-        original_box_length=original_header_length=original_pos_offset = 0;
-        next_box_offset = 0; codestream_min=codestream_lim=codestream_id = -1;
-      }
+    {
+      box_type = 0; rubber_length = passed_rubber_subbox = is_open = false;
+      original_box_length=original_header_length=original_pos_offset = 0;
+      next_box_offset = 0; codestream_min=codestream_lim=codestream_id = -1;
+    }
       /* Called at the start of `read_box_header' or at any point in the
          midst of box header reading, at which the reading process fails.
          Resetting these variables ensures that a fresh attempt to read the
@@ -1064,6 +1064,8 @@ class jp2_input_box : public kdu_compressed_source {
     kdu_int32 bin_class;
     bool can_dereference_contents; // If contents belong to orig box in file
     bool rubber_length; // If box length is unbounded
+    bool passed_rubber_subbox; // If `pos' lies beyond the start of a
+    // (necessarily final) rubber-length sub-box.
   protected: // Current state
     bool is_open;
     bool is_locked; // False if we have the read focus
