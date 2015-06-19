@@ -847,17 +847,10 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
                                    std::vector<Style*>& styles, std::map< std::string, std::string >& format_option ) {
     // VERSION
     std::string version=getParam ( "version" );
-    if ( version=="" ) {
-        //---- WMS 1.1.1
-        //le parametre version est prioritaire sur wmtver
-        version = getParam("wmtver");
-        if ( version=="") {
-            return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre VERSION absent." ),"wms" ) );
-        }
-        //----
-    }
-    if ( version!="1.3.0" && version!="1.1.1")
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Valeur du parametre VERSION invalide (1.1.1 et 1.3.0 disponibles seulement))" ),"wms" ) );
+    if ( version=="" )
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre VERSION absent." ),"wms" ) );
+    if ( version!="1.3.0" )
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Valeur du parametre VERSION invalide (1.3.0 disponible seulement))" ),"wms" ) );
     // LAYER
     std::string str_layer=getParam ( "layers" );
     if ( str_layer == "" )
@@ -899,14 +892,7 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
     if ( height>servicesConf.getMaxHeight() )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre HEIGHT est superieure a la valeur maximum autorisee par le service." ),"wms" ) );
     // CRS
-    std::string str_crs;
-    if (version == "1.3.0") {
-        str_crs=getParam ( "crs" );
-    } else {
-        //---- WMS 1.1.1
-        str_crs=getParam ( "srs" );
-        //----
-    }
+    std::string str_crs=getParam ( "crs" );
     if ( str_crs == "" )
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre CRS absent." ),"wms" ) );
     // Existence du CRS dans la liste de CRS des layers
@@ -1079,16 +1065,11 @@ DataStream* Request::getCapWMSParam ( ServicesConf& servicesConf, std::string& v
     if ( service.compare ( "wms" ) !=0 ) {
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le service " ) +service+_ ( " est inconnu pour ce serveur." ),"wms" ) );
     }
+
     version=getParam ( "version" );
     if ( version=="" ) {
-        //---- WMS 1.1.1
-        //le parametre version est prioritaire sur wmtver
-        version = getParam("wmtver");
-        if ( version=="") {
-            version = "1.3.0";
-            return NULL;
-        }
-        //----
+        version = "1.3.0";
+        return NULL;
     }
     // Version number negotiation for WMS (should not be done for WMTS)
     // Ref: http://cite.opengeospatial.org/OGCTestData/wms/1.1.1/spec/wms1.1.1.html#basic_elements.version.negotiation
@@ -1100,7 +1081,7 @@ DataStream* Request::getCapWMSParam ( ServicesConf& servicesConf, std::string& v
     int high_version_l = high_version[0]-48; //-48 is because of ASCII table, numbers start at position 48
     int high_version_m = high_version[2]-48;
     int high_version_r = high_version[4]-48;
-    std::string low_version = "1.1.1";
+    std::string low_version = "1.3.0"; // Currently high_version == low_version, ready to be changed later
     int low_version_l = low_version[0]-48;
     int low_version_m = low_version[2]-48;
     int low_version_r = low_version[4]-48;
@@ -1120,8 +1101,8 @@ DataStream* Request::getCapWMSParam ( ServicesConf& servicesConf, std::string& v
         return NULL;
     }
 
-    if ( version!="1.3.0" && version!="1.1.1")
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Valeur du parametre VERSION invalide (1.1.1 et 1.3.0 disponibles seulement))" ),"wms" ) );
+    if ( version!="1.3.0" )
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Valeur du parametre VERSION invalide (1.3.0 disponible seulement))" ),"wms" ) );
     return NULL;
 }
 
