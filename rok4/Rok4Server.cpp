@@ -857,11 +857,11 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
 
                     //la dalle n'est pas en cours de creation
                     //on cree un processus qui va creer la dalle en parallele
-//                    if (parallelProcess->createProcess()) {
+                    if (parallelProcess->createProcess()) {
 
                         //---------------------------------------------------------------------------------------------------
 
-//                        if (parallelProcess->getLastPid() == 0) {
+                        if (parallelProcess->getLastPid() == 0) {
                             //PROCESSUS FILS
                             // on va créer un fichier tmp, générer la dalle et supprimer le fichier tmp
 
@@ -899,21 +899,21 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                             delete logErr;
 
                             //on arrete le processus
-//                            exit(0);
+                            exit(0);
 
-//                        } else {
+                        } else {
                             //PROCESSUS PERE
                             //on va répondre a la requête
                             tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
-//                        }
+                        }
 
                         //-------------------------------------------------------------------------------------------------
 
 
-//                    } else {
-//                        LOGGER_WARN("Impossible de créer un processus parallele donc pas de génération de dalle");
-//                        tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
-//                    }
+                    } else {
+                        LOGGER_WARN("Impossible de créer un processus parallele donc pas de génération de dalle");
+                        tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
+                    }
 
                 }
 
@@ -945,8 +945,9 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     int state = 0;
 
     //On cree la dalle sous forme d'image
-
+    logErr->write(ERROR_SYNC,"Create Slab on Fly");
     //Calcul des paramètres nécessaires
+    logErr->write(ERROR_SYNC,"Compute parameters");
     //la correspondance est assurée par les vérifications qui ont eu lieu dans getTile()
     std::string level = tileMatrix;
     Pyramid * pyr = L->getDataPyramid();
@@ -961,15 +962,18 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
 
 
     //---- on va créer la bbox associée à la dalle
+    logErr->write(ERROR_SYNC,"Compute BBOX");
     std::map<std::string, Level*>::iterator lv = pyr->getLevels().find(level);
     BoundingBox<double> bbox = lv->second->tileIndicesToSlabBbox(tileCol,tileRow) ;
     //---- bbox creee
 
     //width and height
+    logErr->write(ERROR_SYNC,"Compute width and height");
     width = lv->second->getSlabWidth();
     height = lv->second->getSlabHeight();
     tileW = lv->second->getTm().getTileW();
     tileH = lv->second->getTm().getTileH();
+
 
     //Récupération du tableau à double entrée représentant les associations de levels
     std::map<std::string, std::map<std::string, std::string> > aLevels;
@@ -979,9 +983,10 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
 
     //--------------------------------------------------------------------------------------------------------
     //CREATION DE L'IMAGE
+    logErr->write(ERROR_SYNC,"Create Image");
     //pour chaque pyramide de base, on récupère une image
     for (int i = 0; i < bPyr.size(); i++) {
-
+        logErr->write(ERROR_SYNC,"bPyr => "+i);
         pyrType = bPyr.at(i)->getFormat();
         bStyle = bPyr.at(i)->getStyle();
 
@@ -994,12 +999,13 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
             std::map<std::string,std::string> aLevel = aLevels.find(level)->second;
             bLevel = aLevel.find(oss.str())->second;
         }
-
+        logErr->write(ERROR_SYNC,"Create reprojected image");
         curImage = bPyr.at(i)->createReprojectedImage(bLevel, bbox, dst_crs, servicesConf, width, height, interpolation, error);
-
+        logErr->write(ERROR_SYNC,"Created");
         if (curImage != NULL) {
             //On applique un style à l'image
             image = styleImage(curImage, pyrType, bStyle, format, bPyr.size());
+            logErr->write(ERROR_SYNC,"style");
             images.push_back ( image );
         } else {
             //LOGGER_ERROR("Impossible de générer la tuile car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile");
@@ -1015,7 +1021,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     if (images.size() != 0) {
 
         mergeImage = mergeImages(images, pyrType, style, dst_crs, bbox);
-
+        logErr->write(ERROR_SYNC,"Merged");
         if (mergeImage == NULL) {
 //            LOGGER_ERROR("Impossible de générer la tuile car l'opération de merge n'a pas fonctionné");
 //            return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
@@ -1038,19 +1044,22 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     Rok4ImageFactory R4IF;
     //à cause d'un problème de typage...
     char * pathToWrite = (char *)path.c_str();
-
+    logErr->write(ERROR_SYNC,"Create Rok4Image");
     Rok4Image * finalImage = R4IF.createRok4ImageToWrite(pathToWrite,bbox,mergeImage->getResX(),mergeImage->getResY(),
                                                          mergeImage->getWidth(),mergeImage->getHeight(),pyr->getChannels(),
                                                          pyr->getSampleFormat(),pyr->getBitsPerSample(),
                                                          pyr->getPhotometry(),pyr->getSampleCompression(),tileW,
                                                          tileH);
+    logErr->write(ERROR_SYNC,"Created");
 
     if (finalImage != NULL) {
         //LOGGER_DEBUG ( "Write" );
+        logErr->write(ERROR_SYNC,"Write Slab");
         if (finalImage->writeImage(mergeImage) < 0) {
             //error("Cannot write ROK4 image", -1);
         }
     }
+    logErr->write(ERROR_SYNC,"Written");
     delete finalImage;
 
     //IMAGE ECRITE
