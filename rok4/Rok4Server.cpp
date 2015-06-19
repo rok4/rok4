@@ -661,81 +661,68 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
     Image *image;
     Image *mergeImage;
     std::string bLevel;
-    double Col, Row, xmin, ymin, xmax, ymax, xo, yo, resolution;
-    int tileH, tileW, width, height, error;
+    int width, height, error;
     Rok4Format::eformat_data pyrType;
     Style * bStyle;
     std::map <std::string, std::string > format_option;
     std::vector<Pyramid*> bPyr;
     bool specific = false;
 
-    //la correspondance est assurée par les vérifications qui ont eu lieu dans getTile()
-    std::string level = tileMatrix;
-
     //Calcul des paramètres nécessaires
+    std::string level = tileMatrix;
     Pyramid * pyr = L->getDataPyramid();
-
-    //on regarde si le level demandé est spécifique ou pas
-    if (L->getDataPyramid()->getSPyramids().size() !=0) {
-        std::map<std::string,std::vector<Pyramid*> > spyr = L->getDataPyramid()->getSPyramids();
-        std::map<std::string,std::vector<Pyramid*> >::iterator sp = spyr.find(level);
-        if (sp != spyr.end()) {
-            specific = true;
-        }
-    }
-
-    if (!specific) {
-      bPyr = L->getDataPyramid()->getBPyramids();
-    } else {
-        bPyr = L->getDataPyramid()->getSPyramids().find(level)->second;
-    }
-
     CRS dst_crs = pyr->getTms().getCrs();
     error = 0;
-
-
     Interpolation::KernelType interpolation = L->getResampling();
 
-    //bbox
-    //Récupération du TileMatrix demandé
+
+    //---- on verifie certains paramètres pour ne pas effectuer des calculs inutiles
+
     std::map<std::string, Level*>::iterator lv = pyr->getLevels().find(level);
 
     if (lv == pyr->getLevels().end()) {
+        //le level demandé n'existe pas
         return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( pyr->getLowestLevel()->getEncodedNoDataTile() ) );
     } else {
-
-        TileMatrix tm = lv->second->getTm();
-
-        //Récupération des paramètres associés
-        resolution = tm.getRes();
-        xo = tm.getX0();
-        yo = tm.getY0();
-        tileH = tm.getTileH();
-        tileW = tm.getTileW();
-        width = tileW;
-        height = tileH;
-
-        Row = double(tileRow);
-        Col = double(tileCol);
 
         if (tileRow >= lv->second->getMinTileRow() && tileRow <= lv->second->getMaxTileRow()
                 && tileCol >= lv->second->getMinTileCol() && tileCol <= lv->second->getMaxTileCol()) {
 
-            //calcul de la bbox
-            xmin = Col * double(tileW) * resolution + xo;
-            ymax = yo - Row * double(tileH) * resolution;
-            xmax = xmin + double(tileW) * resolution;
-            ymin = ymax - double(tileH) * resolution;
+            //--------------------------------------------------------------------------------------------------------
+            //Suite du calcul des paramètres nécessaires
 
-            BoundingBox<double> bbox(xmin,ymin,xmax,ymax) ;
+            //----on regarde si le level demandé est spécifique ou pas
+            if (L->getDataPyramid()->getSPyramids().size() !=0) {
+                std::map<std::string,std::vector<Pyramid*> > spyr = L->getDataPyramid()->getSPyramids();
+                std::map<std::string,std::vector<Pyramid*> >::iterator sp = spyr.find(level);
+                if (sp != spyr.end()) {
+                    specific = true;
+                }
+            }
+
+            if (!specific) {
+              bPyr = L->getDataPyramid()->getBPyramids();
+            } else {
+                bPyr = L->getDataPyramid()->getSPyramids().find(level)->second;
+            }
+            //---- level specifique identifie
+
+            //calcul de la bbox
+            BoundingBox<double> bbox = lv->second->tileIndicesToTileBbox(tileCol,tileRow) ;
+
+            //width and height
+            width = lv->second->getTm().getTileW();
+            height = lv->second->getTm().getTileH();
 
             //Récupérationd du tableau à double entrée représentant les associations de levels
             std::map<std::string, std::map<std::string, std::string> > aLevels;
             if (!specific) {
                 aLevels = pyr->getALevel();
             }
+            //--------------------------------------------------------------------------------------------------------
 
-
+            //--------------------------------------------------------------------------------------------------------
+            //CREATION DE L'IMAGE
 
             //pour chaque pyramide de base, on récupère une image
             for (int i = 0; i < bPyr.size(); i++) {
@@ -795,9 +782,9 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
 
             }
 
+
+            //re-initialisation du pyrType pour le merge
             pyrType = bPyr.at ( 0 )->getFormat();
-
-
             //On merge les images récupérés dans chacune des basedPyramid
             if (images.size() != 0) {
 
@@ -817,6 +804,7 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
 
 
         } else {
+            //on est en dehors des TMLimits
             return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( pyr->getLowestLevel()->getEncodedNoDataTile() ) );
         }
 
@@ -960,25 +948,25 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     Image *image;
     Image *mergeImage;
     std::string bLevel;
-    double Col, Row, xmin, ymin, xmax, ymax, xo, yo, resolution;
-    int tileH, tileW, width, height, error, TilePerWidth, TilePerHeight;
+    int width, height, error, tileH,tileW;
     Rok4Format::eformat_data pyrType;
     Style * bStyle;
     std::vector<Pyramid*> bPyr;
     bool specific = false;
     bool crop = false;
-
     int state = 0;
 
     //On cree la dalle sous forme d'image
 
+    //Calcul des paramètres nécessaires
     //la correspondance est assurée par les vérifications qui ont eu lieu dans getTile()
     std::string level = tileMatrix;
-
-    //Calcul des paramètres nécessaires
     Pyramid * pyr = L->getDataPyramid();
+    CRS dst_crs = pyr->getTms().getCrs();
+    error = 0;
+    Interpolation::KernelType interpolation = L->getResampling();
 
-    //on regarde si le level demandé est spécifique ou pas
+    //----on regarde si le level demandé est spécifique ou pas
     if (L->getDataPyramid()->getSPyramids().size() !=0) {
         std::map<std::string,std::vector<Pyramid*> > spyr = L->getDataPyramid()->getSPyramids();
         std::map<std::string,std::vector<Pyramid*> >::iterator sp = spyr.find(level);
@@ -992,48 +980,28 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     } else {
         bPyr = L->getDataPyramid()->getSPyramids().find(level)->second;
     }
-
-    CRS dst_crs = pyr->getTms().getCrs();
-    error = 0;
+    //---- level specifique identifie
 
 
-    Interpolation::KernelType interpolation = L->getResampling();
-
-    //bbox
-    //Récupération du TileMatrix demandé
+    //---- on va créer la bbox associée à la dalle
     std::map<std::string, Level*>::iterator lv = pyr->getLevels().find(level);
-    TileMatrix tm = lv->second->getTm();
+    BoundingBox<double> bbox = lv->second->tileIndicesToSlabBbox(tileCol,tileRow) ;
+    //---- bbox creee
 
-    //Récupération des paramètres associés
-    resolution = tm.getRes();
-    xo = tm.getX0();
-    yo = tm.getY0();
-    tileH = tm.getTileH();
-    tileW = tm.getTileW();
-    TilePerWidth = lv->second->getTilesPerWidth();
-    TilePerHeight = lv->second->getTilesPerHeight();
+    //width and height
+    width = lv->second->getSlabWidth();
+    height = lv->second->getSlabHeight();
+    tileW = lv->second->getTm().getTileW();
+    tileH = lv->second->getTm().getTileH();
 
-    //width and height of a slab, not a tile
-    width = tileW * TilePerWidth;
-    height = tileH * TilePerHeight;
-
-    Row = floor(double(tileRow) / double(TilePerHeight) ) * double(TilePerHeight);
-    Col = floor(double(tileCol) / double(TilePerWidth) ) * double(TilePerWidth);
-
-    //calcul de la bbox de la dalle et non de la tuile
-    xmin = Col * double(tileW) * resolution  + xo;
-    ymax = yo - Row * double(tileH) * resolution;
-    xmax = xmin + double(tileW) * resolution * TilePerWidth;
-    ymin = ymax - double(tileH) * resolution * TilePerHeight;
-
-    BoundingBox<double> bbox(xmin,ymin,xmax,ymax) ;
-
-    //Récupérationd du tableau à double entrée représentant les associations de levels
+    //Récupération du tableau à double entrée représentant les associations de levels
     std::map<std::string, std::map<std::string, std::string> > aLevels;
     if (!specific) {
         aLevels = pyr->getALevel();
     }
 
+    //--------------------------------------------------------------------------------------------------------
+    //CREATION DE L'IMAGE
     //pour chaque pyramide de base, on récupère une image
     for (int i = 0; i < bPyr.size(); i++) {
 
@@ -1083,7 +1051,11 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
 
     }
 
+    //IMAGE CREEE
+    //-------------------------------------------------------------------------------------------------------
 
+    //-------------------------------------------------------------------------------------------------------
+    //ECRITURE DE L'IMAGE
     //on transforme la dalle en image Rok4 que l'on stocke
 
     Rok4ImageFactory R4IF;
@@ -1093,8 +1065,8 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     Rok4Image * finalImage = R4IF.createRok4ImageToWrite(pathToWrite,bbox,mergeImage->getResX(),mergeImage->getResY(),
                                                          mergeImage->getWidth(),mergeImage->getHeight(),pyr->getChannels(),
                                                          pyr->getSampleFormat(),pyr->getBitsPerSample(),
-                                                         pyr->getPhotometry(),pyr->getSampleCompression(),tm.getTileW(),
-                                                         tm.getTileH());
+                                                         pyr->getPhotometry(),pyr->getSampleCompression(),tileW,
+                                                         tileH);
 
     if (finalImage != NULL) {
         //LOGGER_DEBUG ( "Write" );
@@ -1106,6 +1078,9 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
         }
     }
     delete finalImage;
+
+    //IMAGE ECRITE
+    //------------------------------------------------------------------------------------------------------
 
     return state;
 

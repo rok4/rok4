@@ -466,3 +466,82 @@ int* Level::getNoDataValue ( int* nodatavalue ) {
     return nodatavalue;
 }
 
+BoundingBox<double> Level::tileIndicesToSlabBbox(int tileCol, int tileRow) {
+
+    //Variables utilisees
+    double Col, Row, xmin, ymin, xmax, ymax, xo, yo, resolution;
+    int tileH, tileW,TilePerWidth, TilePerHeight;
+
+    //Récupération du TileMatrix demandé
+    TileMatrix tm = getTm();
+
+    //Récupération des paramètres associés
+    resolution = tm.getRes();
+    xo = tm.getX0();
+    yo = tm.getY0();
+    tileH = tm.getTileH();
+    tileW = tm.getTileW();
+    TilePerWidth = getTilesPerWidth();
+    TilePerHeight = getTilesPerHeight();
+
+    Row = floor(double(tileRow) / double(TilePerHeight) ) * double(TilePerHeight);
+    Col = floor(double(tileCol) / double(TilePerWidth) ) * double(TilePerWidth);
+
+    //calcul de la bbox de la dalle et non de la tuile
+    xmin = Col * double(tileW) * resolution  + xo;
+    ymax = yo - Row * double(tileH) * resolution;
+    xmax = xmin + double(tileW) * resolution * TilePerWidth;
+    ymin = ymax - double(tileH) * resolution * TilePerHeight;
+
+    BoundingBox<double> bbox(xmin,ymin,xmax,ymax) ;
+    return bbox;
+
+}
+
+BoundingBox<double> Level::tileIndicesToTileBbox(int tileCol, int tileRow) {
+
+    //Variables utilisees
+    double Col, Row, xmin, ymin, xmax, ymax, xo, yo, resolution;
+    int tileH, tileW;
+
+    //calcul de la bbox
+    TileMatrix tm = getTm();
+
+    //Récupération des paramètres associés
+    resolution = tm.getRes();
+    xo = tm.getX0();
+    yo = tm.getY0();
+    tileH = tm.getTileH();
+    tileW = tm.getTileW();
+
+    Row = double(tileRow);
+    Col = double(tileCol);
+    xmin = Col * double(tileW) * resolution + xo;
+    ymax = yo - Row * double(tileH) * resolution;
+    xmax = xmin + double(tileW) * resolution;
+    ymin = ymax - double(tileH) * resolution;
+
+    BoundingBox<double> bbox(xmin,ymin,xmax,ymax) ;
+    return bbox;
+
+}
+
+int Level::getSlabWidth() {
+
+    int TilePerWidth = getTilesPerWidth();
+    TileMatrix tm = getTm();
+    int width = tm.getTileW();
+
+    return width*TilePerWidth;
+
+}
+
+int Level::getSlabHeight() {
+
+    int TilePerHeight = getTilesPerHeight();
+    TileMatrix tm = getTm();
+    int height = tm.getTileH();
+
+    return height*TilePerHeight;
+
+}

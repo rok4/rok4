@@ -179,6 +179,10 @@ public:
     void setNoData ( const std::string& file ) ;
     void setNoDataSource (DataSource *source );
 
+    BoundingBox<double> tileIndicesToSlabBbox(int tileCol, int tileRow);
+    BoundingBox<double> tileIndicesToTileBbox(int tileCol, int tileRow);
+    int getSlabHeight();
+    int getSlabWidth();
     /** D */
     Level ( TileMatrix tm, int channels, std::string baseDir,
             int tilesPerWidth, int tilesPerHeight,
