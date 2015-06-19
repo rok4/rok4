@@ -692,19 +692,8 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
             //Suite du calcul des paramètres nécessaires
 
             //----on regarde si le level demandé est spécifique ou pas
-            if (L->getDataPyramid()->getSPyramids().size() !=0) {
-                std::map<std::string,std::vector<Pyramid*> > spyr = L->getDataPyramid()->getSPyramids();
-                std::map<std::string,std::vector<Pyramid*> >::iterator sp = spyr.find(level);
-                if (sp != spyr.end()) {
-                    specific = true;
-                }
-            }
-
-            if (!specific) {
-              bPyr = L->getDataPyramid()->getBPyramids();
-            } else {
-                bPyr = L->getDataPyramid()->getSPyramids().find(level)->second;
-            }
+            specific = pyr->isThisLevelSpecific(level);
+            bPyr = pyr->getSourcePyramid(level,specific);
             //---- level specifique identifie
 
             //calcul de la bbox
@@ -967,19 +956,8 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     Interpolation::KernelType interpolation = L->getResampling();
 
     //----on regarde si le level demandé est spécifique ou pas
-    if (L->getDataPyramid()->getSPyramids().size() !=0) {
-        std::map<std::string,std::vector<Pyramid*> > spyr = L->getDataPyramid()->getSPyramids();
-        std::map<std::string,std::vector<Pyramid*> >::iterator sp = spyr.find(level);
-        if (sp != spyr.end()) {
-            specific = true;
-        }
-    }
-
-    if (!specific) {
-      bPyr = L->getDataPyramid()->getBPyramids();
-    } else {
-        bPyr = L->getDataPyramid()->getSPyramids().find(level)->second;
-    }
+    specific = pyr->isThisLevelSpecific(level);
+    bPyr = pyr->getSourcePyramid(level,specific);
     //---- level specifique identifie
 
 

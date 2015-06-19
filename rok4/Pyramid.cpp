@@ -400,3 +400,33 @@ int Pyramid::getBitsPerSample() {
 
 }
 
+bool Pyramid::isThisLevelSpecific(std::string lv) {
+
+    bool specific = false;
+
+    if (getSPyramids().size() !=0) {
+        std::map<std::string,std::vector<Pyramid*> > spyr = getSPyramids();
+        std::map<std::string,std::vector<Pyramid*> >::iterator sp = spyr.find(lv);
+        if (sp != spyr.end()) {
+            specific = true;
+        }
+    }
+
+    return specific;
+
+
+}
+
+std::vector<Pyramid*> Pyramid::getSourcePyramid ( std::string lv,bool sp ) {
+
+    std::vector<Pyramid*> bPyr;
+
+    if (!sp) {
+      bPyr = getBPyramids();
+    } else {
+        bPyr = getSPyramids().find(lv)->second;
+    }
+
+    return bPyr;
+}
+

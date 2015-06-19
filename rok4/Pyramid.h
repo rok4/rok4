@@ -495,6 +495,28 @@ public:
     std::string best_level ( double resolution_x, double resolution_y, bool onDemand );
 
     /**
+     * \~french \brief Informe sur la spécificité d'un level
+     * \param[in] level id
+     * \return true si spécifique
+     * \~english \brief Tell if a level is specific
+     * \param[in] level id
+     * \return true if specific
+     */
+    bool isThisLevelSpecific ( std::string lv );
+
+    /**
+     * \~french \brief Récupère la pyramide source pour un level donné
+     * \param[in] level id
+     * \param[in] specific
+     * \return pyramide source
+     * \~english \brief Get the source pyramid for a given level
+     * \param[in] level id
+     * \param[in] specific
+     * \return source pyramid
+     */
+    std::vector<Pyramid*> getSourcePyramid ( std::string lv,bool sp );
+
+    /**
      * \~french \brief Récupère une tuile déjà calculée
      * \param[in] x
      * \param[in] y

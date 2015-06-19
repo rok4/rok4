@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2015-06-19 11:07+0200\n"
+"POT-Creation-Date: 2015-06-19 12:36+0200\n"
 "PO-Revision-Date: 2013-02-18 17:49+0100\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -1528,11 +1528,11 @@ msgstr ""
 msgid "Parametre STYLES incomplet."
 msgstr ""
 
-#: Request.cpp:1083 Request.cpp:1134 Rok4Api.cpp:225 Rok4Server.cpp:1129
+#: Request.cpp:1083 Request.cpp:1134 Rok4Api.cpp:225 Rok4Server.cpp:1107
 msgid "Le service "
 msgstr ""
 
-#: Request.cpp:1083 Request.cpp:1134 Rok4Api.cpp:225 Rok4Server.cpp:1129
+#: Request.cpp:1083 Request.cpp:1134 Rok4Api.cpp:225 Rok4Server.cpp:1107
 msgid " est inconnu pour ce serveur."
 msgstr ""
 
@@ -1614,12 +1614,12 @@ msgstr ""
 msgid "Le parametre REQUEST n'est pas renseigné."
 msgstr ""
 
-#: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:1095
-#: Rok4Server.cpp:1099 Rok4Server.cpp:1111 Rok4Server.cpp:1115
+#: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:1073
+#: Rok4Server.cpp:1077 Rok4Server.cpp:1089 Rok4Server.cpp:1093
 msgid " n'est pas prise en charge par ce serveur."
 msgstr ""
 
-#: Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:1099
+#: Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:1077
 msgid "L'operation "
 msgstr ""
 
@@ -1693,7 +1693,7 @@ msgstr ""
 msgid "bbox trop grande"
 msgstr ""
 
-#: Rok4Server.cpp:338 Rok4Server.cpp:766 Rok4Server.cpp:795 Rok4Server.cpp:821
+#: Rok4Server.cpp:338 Rok4Server.cpp:755 Rok4Server.cpp:784 Rok4Server.cpp:810
 msgid "Impossible de repondre a la requete"
 msgstr ""
 
