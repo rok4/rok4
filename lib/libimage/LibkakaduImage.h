@@ -91,6 +91,13 @@ private:
      */
     int current_strip;
     
+    /****** Kakadu *******/
+    kdu_thread_env m_env, *m_env_ref;
+    jp2_source m_Source;
+    
+    kdu_codestream m_codestream;
+    jp2_family_src jp2_ultimate_src;
+    
      
 
     /** \~french
@@ -183,6 +190,10 @@ public:
      */
     ~LibkakaduImage() {
         delete[] strip_buffer;
+        m_codestream.destroy();
+        m_Source.close();  
+        if (m_env.exists())
+            m_env.destroy();
     }
 
     /** \~french
