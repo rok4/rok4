@@ -430,3 +430,14 @@ std::vector<Pyramid*> Pyramid::getSourcePyramid ( std::string lv,bool sp ) {
     return bPyr;
 }
 
+Photometric::ePhotometric Pyramid::getPhotometry(){
+    if (photo == Photometric::UNKNOWN) {
+        if (getChannels() == 1) {
+            return Photometric::GRAY;
+        } else {
+            return Photometric::RGB;
+        }
+    }
+
+    return photo;
+}

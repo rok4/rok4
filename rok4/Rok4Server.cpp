@@ -857,11 +857,11 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
 
                     //la dalle n'est pas en cours de creation
                     //on cree un processus qui va creer la dalle en parallele
-                    if (parallelProcess->createProcess()) {
+//                    if (parallelProcess->createProcess()) {
 
                         //---------------------------------------------------------------------------------------------------
 
-                        if (parallelProcess->getLastPid() == 0) {
+//                        if (parallelProcess->getLastPid() == 0) {
                             //PROCESSUS FILS
                             // on va créer un fichier tmp, générer la dalle et supprimer le fichier tmp
 
@@ -899,21 +899,21 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                             delete logErr;
 
                             //on arrete le processus
-                            exit(0);
+//                            exit(0);
 
-                        } else {
+//                        } else {
                             //PROCESSUS PERE
                             //on va répondre a la requête
                             tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
-                        }
+//                        }
 
                         //-------------------------------------------------------------------------------------------------
 
 
-                    } else {
-                        LOGGER_WARN("Impossible de créer un processus parallele donc pas de génération de dalle");
-                        tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
-                    }
+//                    } else {
+//                        LOGGER_WARN("Impossible de créer un processus parallele donc pas de génération de dalle");
+//                        tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
+//                    }
 
                 }
 
@@ -942,7 +942,6 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     Style * bStyle;
     std::vector<Pyramid*> bPyr;
     bool specific = false;
-    bool crop = false;
     int state = 0;
 
     //On cree la dalle sous forme d'image
@@ -1048,10 +1047,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
 
     if (finalImage != NULL) {
         //LOGGER_DEBUG ( "Write" );
-        if (pyr->getSampleCompression() == Compression::JPEG) {
-            crop = true;
-        }
-        if (finalImage->writeImage(curImage,crop) < 0) {
+        if (finalImage->writeImage(mergeImage) < 0) {
             //error("Cannot write ROK4 image", -1);
         }
     }

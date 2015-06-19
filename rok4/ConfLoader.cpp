@@ -607,7 +607,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     if ( pElem && pElem->GetText() ) {
         photometricStr = pElem->GetTextStr();
     } else {
-        photometricStr = "unknown";
+        photometricStr = "UNKNOWN";
     }
 
 

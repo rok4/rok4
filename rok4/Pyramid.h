@@ -468,9 +468,7 @@ public:
      * \~english \brief Indicate the photometry of the pyramid
      * \return photo
      */
-    Photometric::ePhotometric getPhotometry(){
-        return photo;
-    }
+    Photometric::ePhotometric getPhotometry();
 
     /**
      * \~french \brief Modifie le paramètre onDemand
