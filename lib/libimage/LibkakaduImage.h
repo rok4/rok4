@@ -92,11 +92,31 @@ private:
     int current_strip;
     
     /****** Kakadu *******/
-    kdu_thread_env m_env, *m_env_ref;
-    jp2_source m_Source;
-    
-    kdu_codestream m_codestream;
+    /**
+    * \~french \brief Environnement de gestion des processus de Kakadu
+    * \~english \brief Kakadu threading environment
+    */
+    kdu_thread_env m_env;
+    /**
+     * \~french \brief Environnement de gestion des processus de Kakadu (pointeur)
+     * \~english \brief Kakadu threading environment (pointer)
+     */
+    kdu_thread_env *m_env_ref;
+    /**
+     * \~french \brief Interface Kakadu pour le flux brut de lecture de l'image source
+     * \~english \brief Kakadu interface to the raw reading stream from the input image
+     */
     jp2_family_src jp2_ultimate_src;
+    /**
+     * \~french \brief Interface Kakadu pour le flux brut de lecture de l'image source
+     * \~english \brief Kakadu interface to the raw reading stream from the input image
+     */
+    jp2_source m_Source;
+    /**
+     * \~french \brief Flux image formatté de kakadu
+     * \~english \brief Kakadu formatted image stream
+     */
+    kdu_codestream m_codestream;
     
      
 
@@ -114,7 +134,12 @@ private:
     template<typename T>
     int _getline ( T* buffer, int line );
     
-    bool _loadstrip ( );
+    /** \~french
+     * \brief Précharge une bande de l'image d'entrée en tampon pour pouvoir y lire des lignes
+     ** \~english
+     * \brief Preloads a stripe from the source image to a buffer to ease access to lines data
+     */
+    void _loadstrip ( );
     
     
 
@@ -159,9 +184,11 @@ protected:
     );
     
     /** \~french
-     * \brief Initialise certains objets hors contructeur, notemment les objets kakadu. 'Vrai' si réussite.
+     * \brief Initialise certains objets hors contructeur, notemment les objets kakadu.
+     * \return 'vrai' si réussite, 'faux' si l'initialisation a échoué.
      ** \~english
-     * \brief Initialises several member objects, mainly kakadu objects, while out of the constructor. 'True' if success.
+     * \brief Initialises several member objects, mainly kakadu objects, while out of the constructor.
+     * \return 'true' if success, 'false' if an error occured.
      */
     bool init();
 

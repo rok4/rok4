@@ -200,9 +200,14 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
         sf, bitspersample, ph, Compression::JPEG2000,
         rowsperstrip
     );
-    o_LibkakaduImage->init();
+    if(!o_LibkakaduImage->init()){
+        LOGGER_ERROR("Failed to itialise kakadu image object.");
+        return NULL;
+    }
     return o_LibkakaduImage;
 }
+
+
 
 /* ------------------------------------------------------------------------------------------------ */
 /* ----------------------------------------- CONSTRUCTEUR ----------------------------------------- */
@@ -218,6 +223,8 @@ LibkakaduImage::LibkakaduImage (
 {    
 
 }
+
+
 
 /* ------------------------------------------------------------------------------------------------ */
 /* ---------------------------------------- INITIALISATION ---------------------------------------- */
@@ -245,6 +252,15 @@ bool LibkakaduImage::init() {
 
     if (!m_Source.open(&jp2_ultimate_src))
     {
+        LOGGER_ERROR("Failed to open image source file.");
+        if (m_codestream.exists())
+            m_codestream.destroy();
+        if (m_Source.exists())
+            m_Source.close();  
+        if (m_env.exists())
+            m_env.destroy();       
+        delete[] strip_buffer;
+        return false;
     }
     m_Source.read_header();
     m_codestream.create(&m_Source, m_env_ref);
@@ -263,42 +279,43 @@ bool LibkakaduImage::init() {
         strip_buffer = new kdu_byte[rowsperstrip * width * channels];
     } catch (std::bad_alloc e) {
         LOGGER_ERROR("Memory allocation error while creating strip buffer.");
+        if (m_codestream.exists())
+            m_codestream.destroy();
+        if (m_Source.exists())
+            m_Source.close();  
+        if (m_env.exists())
+            m_env.destroy();
+        delete[] strip_buffer;
         return false;
     }  
     current_strip = -1;
 
+    return true;
 }
-
-
-
 
 
 
 /* ------------------------------------------------------------------------------------------------ */
 /* ------------------------------------------- LECTURE -------------------------------------------- */
 
-bool LibkakaduImage::_loadstrip() {
+void LibkakaduImage::_loadstrip() {
 
     int C0 = 0;
     int L0 = rowsperstrip * current_strip;
     int nBandSpace = 1;
     int NLines = __min(rowsperstrip, height - rowsperstrip * current_strip);
     
-    
     int max_layers = 0;
     int discard_levels = 0;
-   
     
     kdu_dims dims,mdims;
     // Position de l'origine en coord fichier (cad pleine resolution)
     dims.pos=kdu_coords(C0, L0);
     // Taille de la zone en coord fichier (cad pleine resolution)
     dims.size=kdu_coords(width,NLines);
+    
     m_codestream.map_region(0,dims,mdims);
-    
     m_codestream.apply_input_restrictions(0,channels,discard_levels,max_layers,&mdims,KDU_WANT_OUTPUT_COMPONENTS);
-    
-    
     
     int n, num_components = m_codestream.get_num_components(true);
     kdu_dims *comp_dims = new kdu_dims[num_components];
@@ -332,14 +349,13 @@ bool LibkakaduImage::_loadstrip() {
     buffer_origin.x = incomplete_region.pos.x;
     buffer_origin.y = incomplete_region.pos.y;
     
-    while(decompressor.process(
-    channel_bufs, false, pixelSize,
-                                buffer_origin, row_gap, suggested_increment, suggested_increment,
-                                incomplete_region, new_region, 8, true
-                            ) && ! incomplete_region.is_empty())
-    {
-        
-    }
+    while(
+            decompressor.process(
+                                channel_bufs, false, pixelSize, buffer_origin, row_gap, suggested_increment, 
+                               /*max_region_pixels*/suggested_increment, incomplete_region, new_region, 8, true
+                                ) 
+            && ! incomplete_region.is_empty()
+         ) { }
     
     delete[] channel_bufs;
     decompressor.finish();
