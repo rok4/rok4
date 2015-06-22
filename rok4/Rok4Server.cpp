@@ -986,7 +986,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     logErr->write(ERROR_SYNC,"Create Image");
     //pour chaque pyramide de base, on récupère une image
     for (int i = 0; i < bPyr.size(); i++) {
-        logErr->write(ERROR_SYNC,"bPyr => "+i);
+        logErr->write(ERROR_SYNC,"basedPyramid");
         pyrType = bPyr.at(i)->getFormat();
         bStyle = bPyr.at(i)->getStyle();
 
@@ -1005,11 +1005,12 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
         if (curImage != NULL) {
             //On applique un style à l'image
             image = styleImage(curImage, pyrType, bStyle, format, bPyr.size());
-            logErr->write(ERROR_SYNC,"style");
+            logErr->write(ERROR_SYNC,"Apply style");
             images.push_back ( image );
         } else {
-            //LOGGER_ERROR("Impossible de générer la tuile car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile");
-            //return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
+            logErr->write(ERROR_SYNC,"Impossible de générer la dalle car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile");
+            state = 1;
+            return state;
         }
 
     }
@@ -1021,17 +1022,17 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     if (images.size() != 0) {
 
         mergeImage = mergeImages(images, pyrType, style, dst_crs, bbox);
-        logErr->write(ERROR_SYNC,"Merged");
+        logErr->write(ERROR_SYNC,"Merged differents basedImages");
         if (mergeImage == NULL) {
-//            LOGGER_ERROR("Impossible de générer la tuile car l'opération de merge n'a pas fonctionné");
-//            return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
+            logErr->write(ERROR_SYNC,"Impossible de générer la dalle car l'opération de merge n'a pas fonctionné");
+            state = 1;
+            return state;
         }
 
     } else {
-
-//        LOGGER_ERROR("Aucune image n'a été récupérée");
-//        return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( pyr->getLowestLevel()->getEncodedNoDataTile() ) );
-
+        logErr->write(ERROR_SYNC,"Impossible de générer la dalle car aucune image n'a été récupérée");
+        state = 1;
+        return state;
     }
 
     //IMAGE CREEE
@@ -1056,10 +1057,20 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
         //LOGGER_DEBUG ( "Write" );
         logErr->write(ERROR_SYNC,"Write Slab");
         if (finalImage->writeImage(mergeImage) < 0) {
-            //error("Cannot write ROK4 image", -1);
+            logErr->write(ERROR_SYNC,"Impossible de générer la dalle car son écriture en mémoire a échoué");
+            state = 1;
+            delete finalImage;
+            return state;
+        } else {
+            logErr->write(ERROR_SYNC,"Written");
         }
+    } else {
+        logErr->write(ERROR_SYNC,"Impossible de générer la dalle car la création d'une Rok4Image ne marche pas");
+        state = 1;
+        delete finalImage;
+        return state;
     }
-    logErr->write(ERROR_SYNC,"Written");
+
     delete finalImage;
 
     //IMAGE ECRITE
