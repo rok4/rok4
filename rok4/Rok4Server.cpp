@@ -668,6 +668,8 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
     std::vector<Pyramid*> bPyr;
     bool specific = false;
 
+    LOGGER_INFO("GetTileOnDemand");
+
     //Calcul des paramètres nécessaires
     std::string level = tileMatrix;
     Pyramid * pyr = L->getDataPyramid();
@@ -829,9 +831,12 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
     struct stat bufferT;
     struct stat bufferE;
 
+    LOGGER_INFO("GetTileOnFly");
+
     //on récupère l'emplacement théorique de la dalle
     std::map<std::string, Level*>::iterator lv = pyr->getLevels().find(tileMatrix);
     if (lv == pyr->getLevels().end()) {
+        LOGGER_WARN("Level demandé invalide");
         return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( pyr->getLowestLevel()->getEncodedNoDataTile() ) );
     } else {
 
@@ -844,6 +849,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
 
             if (stat (Spath.c_str(), &bufferS) == 0 && stat (SpathTmp.c_str(), &bufferT) == -1) {
                 //la dalle existe donc on fait une requete normale
+                LOGGER_INFO("Dalle déjà existante");
                 tile = getTileUsual(L, format, tileCol, tileRow, tileMatrix, errorResp, style);
             } else {
                 //la dalle n'existe pas
@@ -851,6 +857,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                 if (stat (SpathTmp.c_str(), &bufferT) == 0 || stat (SpathErr.c_str(), &bufferE) == 0) {
                     //la dalle est en cours de creation ou on a deja essaye de la creer et ça n'a pas marché
                     //donc on a un fichier d'erreur
+                    LOGGER_INFO("Dalle inexistante, en cours de création ou non réalisable");
                     tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
 
                 } else {
@@ -895,6 +902,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                                 int fileErr = remove(SpathErr.c_str());
                                 if (fileErr != 0) {
                                     //Impossible de supprimer le fichier erreur
+                                    LOGGER_ERROR("Impossible de supprimer le fichier de log");
                                 }
                             }
 
@@ -902,6 +910,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                             fileTmp = remove(SpathTmp.c_str());
                             if (fileTmp != 0) {
                                 //Impossible de supprimer le fichier temporaire
+                                std::cerr << "Impossible de supprimer le fichier de temporaire " << SpathTmp.c_str() << std::endl;
                             }
                             delete acc;
 
@@ -911,6 +920,8 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                         } else {
                             //PROCESSUS PERE
                             //on va répondre a la requête
+                            LOGGER_DEBUG("Création de la dalle "+Spath);
+                            LOGGER_DEBUG("Log dans le fichier "+SpathErr);
                             tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
                         }
 
