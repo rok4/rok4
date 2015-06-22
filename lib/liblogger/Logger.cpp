@@ -95,6 +95,11 @@ void Logger::setAccumulator(LogLevel level, Accumulator* A) {
     if (prev && last) delete prev;
 }
 
+void Logger::setCurrentAccumulator(LogLevel level, Accumulator* A) {
+
+    accumulator[level] = A;
+
+}
 
 
 std::ostream& Logger::getLogger(LogLevel level) {

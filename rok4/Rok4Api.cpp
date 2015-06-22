@@ -612,6 +612,8 @@ void rok4KillLogger() {
         }
     Logger::stopLogger();
     if ( acc ) {
+        acc->stop();
+        acc->destroy();
         delete acc;
     }
 
