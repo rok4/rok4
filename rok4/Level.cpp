@@ -160,6 +160,7 @@ Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, 
 
     if ( ! ( grid->reproject ( dst_crs.getProj4Code(), src_crs.getProj4Code() ) ) ) {
         error = 1; // BBox invalid
+        delete grid;
         return 0;
     }
 

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2015-06-22 17:17+0200\n"
+"POT-Creation-Date: 2015-06-23 14:20+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1075,39 +1075,39 @@ msgstr ""
 msgid "Construction de la configuration des services depuis "
 msgstr ""
 
-#: Level.cpp:144 Level.cpp:187 Level.cpp:238
+#: Level.cpp:144 Level.cpp:188 Level.cpp:239
 msgid "Image invalid !"
 msgstr ""
 
-#: Level.cpp:245
+#: Level.cpp:246
 msgid "Dimensions invalid !"
 msgstr ""
 
-#: Level.cpp:270
+#: Level.cpp:271
 msgid "Too Much Tile on X axis"
 msgstr ""
 
-#: Level.cpp:278
+#: Level.cpp:279
 msgid "Too Much Tile on Y axis"
 msgstr ""
 
-#: Level.cpp:318
+#: Level.cpp:319
 msgid "Indice de tuile negatif"
 msgstr ""
 
-#: Level.cpp:381 Level.cpp:399
+#: Level.cpp:382 Level.cpp:400
 msgid "Type d'encodage inconnu : "
 msgstr ""
 
-#: Level.cpp:404
+#: Level.cpp:405
 msgid "Tile : "
 msgstr ""
 
-#: Level.cpp:414
+#: Level.cpp:415
 msgid "GetTile Tiff"
 msgstr ""
 
-#: Level.cpp:424 Level.cpp:437
+#: Level.cpp:425 Level.cpp:438
 msgid "GetTile Image"
 msgstr ""
 
