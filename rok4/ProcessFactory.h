@@ -329,6 +329,28 @@ public:
 
     /**
      * \~french
+     * \brief Initialise un logger pour ce processus
+     * En effet, il est impossible de logger dans le logger du processus parent
+     * Pour le moment, on ne log que en static file
+     * \param[in] fichier utilisé pour logger
+     * \~english
+     * \brief Initialize a logger for this processus
+     * It is impossible to log in the parent process
+     * Log for a static file only
+     * \param[in] file used to log
+     */
+    void initializeLogger(std::string file);
+
+    /**
+     * \~french
+     * \brief Détruit le logger initialisé
+     * \~english
+     * \brief Destroy initialized logger
+     */
+    void destroyLogger();
+
+    /**
+     * \~french
      * \brief Tue tout les processus fils en cours
      * \~english
      * \brief Kill all current child process

@@ -886,14 +886,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
 
                             //on cree un logger et supprime l'ancien pour ne pas mélanger les sorties
                             // il sera écrit dans SpathErr et supprimé si la dalle a été généré correctement
-                            Accumulator *oldAcc = Logger::getAccumulator(DEBUG);
-                            Accumulator *acc = new StaticFileAccumulator ( SpathErr );
-                            for ( int i=0; i<=nbLogLevel; i++ ) {
-                                if (Logger::getAccumulator(( LogLevel ) i)) {
-                                     Logger::setCurrentAccumulator(( LogLevel ) i,acc);
-                                }
-                            }
-                            delete oldAcc;
+                            parallelProcess->initializeLogger(SpathErr);
 
                             //on cree la dalle
                             int state = createSlabOnFly(L, tileMatrix, tileCol, tileRow, style, format, Spath);
@@ -914,7 +907,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                                 //Impossible de supprimer le fichier temporaire
                                 std::cerr << "Impossible de supprimer le fichier de temporaire " << SpathTmp.c_str() << std::endl;
                             }
-                            delete acc;
+                            parallelProcess->destroyLogger();
 
                             //on arrete le processus
                             exit(0);

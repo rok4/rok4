@@ -269,3 +269,34 @@ void ProcessFactory::writeFile() {
 
     }
 }
+
+void ProcessFactory::initializeLogger(std::string file) {
+
+    Accumulator *oldAcc = 0;
+    for ( int i=0; i<=nbLogLevel; i++ ) {
+        if (Logger::getAccumulator(( LogLevel ) i)) {
+             oldAcc = Logger::getAccumulator(( LogLevel ) i);
+             break;
+        }
+    }
+    Accumulator *acc = new StaticFileAccumulator ( file );
+    for ( int i=0; i<=nbLogLevel; i++ ) {
+        if (Logger::getAccumulator(( LogLevel ) i)) {
+             Logger::setCurrentAccumulator(( LogLevel ) i,acc);
+        }
+    }
+    delete oldAcc;
+
+
+}
+
+void ProcessFactory::destroyLogger() {
+    Accumulator *acc = 0;
+    for ( int i=0; i<=nbLogLevel; i++ ) {
+        if (Logger::getAccumulator(( LogLevel ) i)) {
+             acc = Logger::getAccumulator(( LogLevel ) i);
+             break;
+        }
+    }
+    delete acc;
+}
