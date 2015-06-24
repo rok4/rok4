@@ -59,6 +59,7 @@
 #include "jp2.h"
 #include "jpx.h"
 #include "kdu_file_io.h"
+#include "kdu_region_decompressor.h"
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -73,17 +74,74 @@ class LibkakaduImage : public Jpeg2000Image {
 friend class LibkakaduImageFactory;
     
 private:
-
-    kdu_byte *data;
+     
+    /**
+     * \~french \brief Nombre de ligne dans un strip
+     * \~english \brief Number of line in one strip
+     */
+    int rowsperstrip;
+    /**
+     * \~french \brief Buffer de lecture, de taille strip_size
+     * \~english \brief Read buffer, strip_size long
+     */
+    kdu_byte* strip_buffer;
+    /**
+     * \~french \brief Indice du strip en mémoire dans strip_buffer
+     * \~english \brief Memorized strip indice, in strip_buffer
+     */
+    int current_strip;
+    
+    /****** Kakadu *******/
+    /**
+    * \~french \brief Environnement de gestion des processus de Kakadu
+    * \~english \brief Kakadu threading environment
+    */
+    kdu_thread_env m_env;
+    /**
+     * \~french \brief Environnement de gestion des processus de Kakadu (pointeur)
+     * \~english \brief Kakadu threading environment (pointer)
+     */
+    kdu_thread_env *m_env_ref;
+    /**
+     * \~french \brief Interface Kakadu pour le flux brut de lecture de l'image source
+     * \~english \brief Kakadu interface to the raw reading stream from the input image
+     */
+    jp2_family_src jp2_ultimate_src;
+    /**
+     * \~french \brief Interface Kakadu pour le flux brut de lecture de l'image source
+     * \~english \brief Kakadu interface to the raw reading stream from the input image
+     */
+    jp2_source m_Source;
+    /**
+     * \~french \brief Flux image formatté de kakadu
+     * \~english \brief Kakadu formatted image stream
+     */
+    kdu_codestream m_codestream;
+    
+     
 
     /** \~french
      * \brief Retourne une ligne, flottante ou entière
      * \param[out] buffer Tableau contenant au moins width*channels valeurs
      * \param[in] line Indice de la ligne à retourner (0 <= line < height)
      * \return taille utile du buffer, 0 si erreur
+     ** \~english
+     * \brief Returns a line. Values can be floating point numbers or integers
+     * \param[out] buffer Array containing at least width*channels values
+     * \param[in] line Index of the line to return (0 <= line < height)
+     * \return buffer effective size, 0 if error 
      */
     template<typename T>
     int _getline ( T* buffer, int line );
+    
+    /** \~french
+     * \brief Précharge une bande de l'image d'entrée en tampon pour pouvoir y lire des lignes
+     ** \~english
+     * \brief Preloads a stripe from the source image to a buffer to ease access to lines data
+     */
+    void _loadstrip ( );
+    
+    
 
 protected:
    
@@ -102,6 +160,8 @@ protected:
      * \param[in] photometric photométrie des données
      * \param[in] compression compression des données
      * \param[in] kduData image complète, dans un tableau
+     * \param[in] decompressor décompresseur de bandes de kakadu, pour charger l'image par bandes
+     * \param[in] rowsperstrip taille de la bufferisation des données, en nombre de lignes
      ** \~english
      * \brief Create a LibkakaduImage object, from all attributes
      * \param[in] width image width, in pixel
@@ -116,12 +176,21 @@ protected:
      * \param[in] photometric data photometric
      * \param[in] compression data compression
      * \param[in] kduData whole image, in an array
+     * \param[in] decompressor kakadu stripe decompressor, to load image stripe by stripe
+     * \param[in] rowsperstrip data buffering size, in line number
      */
     LibkakaduImage (
-        int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name,
-        SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
-        kdu_byte* kduData
+        int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name, SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression, int rps
     );
+    
+    /** \~french
+     * \brief Initialise certains objets hors contructeur, notemment les objets kakadu.
+     * \return 'vrai' si réussite, 'faux' si l'initialisation a échoué.
+     ** \~english
+     * \brief Initialises several member objects, mainly kakadu objects, while out of the constructor.
+     * \return 'true' if success, 'false' if an error occured.
+     */
+    bool init();
 
 public:     
     
@@ -147,7 +216,11 @@ public:
      * \details We remove read buffer #m_data
      */
     ~LibkakaduImage() {
-        delete[] data;
+        delete[] strip_buffer;
+        m_codestream.destroy();
+        m_Source.close();  
+        if (m_env.exists())
+            m_env.destroy();
     }
 
     /** \~french
@@ -159,7 +232,6 @@ public:
         LOGGER_INFO ( "" );
         LOGGER_INFO ( "---------- LibkakaduImage ------------" );
         FileImage::print();
-        //LOGGER_INFO ( "\t- info sup : " << info sup );
         LOGGER_INFO ( "" );
     }
 

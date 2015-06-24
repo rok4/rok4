@@ -65,13 +65,6 @@
 #include "Image.h"
 #include "MirrorImage.h"
 
-#ifndef __max
-#define __max(a, b)   ( ((a) > (b)) ? (a) : (b) )
-#endif
-#ifndef __min
-#define __min(a, b)   ( ((a) < (b)) ? (a) : (b) )
-#endif
-
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
@@ -169,6 +162,11 @@ private:
      * \li #c2s
      */
     void calculateOffsets() {
+        rowsOffsets.clear();
+        c0s.clear();
+        c1s.clear();
+        c2s.clear();
+        
         for ( int i = 0; i < ( int ) sourceImages.size(); i++ ) {
             
             double y = sourceImages[i]->l2y ( 0 );
@@ -243,7 +241,7 @@ public:
         *ol = rowsOffsets[i];
         *c0 = c0s[i];
         *c1 = c1s[i];
-        *c2 = c0s[i];
+        *c2 = c2s[i];
     }
 
     /**

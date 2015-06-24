@@ -47,13 +47,8 @@ msgid "Layers Fini"
 msgstr "Élément Layers terminé"
 
 #: CapabilitiesBuilder.cpp:553
-#, fuzzy
-msgid "WMS 1.3.0 fini"
-msgstr "Élément WMS terminé"
-
+msgid "WMSfini"
 #: CapabilitiesBuilder.cpp:1018
-#, fuzzy
-msgid "WMS 1.1.1 fini"
 msgstr "Élément WMS terminé"
 
 #: CapabilitiesBuilder.cpp:1281
@@ -1420,9 +1415,7 @@ msgid "Le style "
 msgstr "Le style "
 
 #: Request.cpp:863 Request.cpp:1127
-#, fuzzy
-msgid ""
-"Valeur du parametre VERSION invalide (1.1.1 et 1.3.0 disponibles seulement))"
+msgid "Valeur du parametre VERSION invalide (1.3.0 disponible seulement))"
 msgstr "Valeur du paramètre VERSION invalide (1.3.0 disponible seulement))"
 
 #: Request.cpp:867
@@ -1663,13 +1656,8 @@ msgid "Extinction du thread"
 msgstr "Extinction du processus de traitement"
 
 #: Rok4Server.cpp:166
-#, fuzzy
-msgid "Build WMS Capabilities 1.3.0"
-msgstr "Génération du Capabilities WMS"
-
+msgid "Build WMS Capabilities"
 #: Rok4Server.cpp:169
-#, fuzzy
-msgid "Build WMS Capabilities 1.1.1"
 msgstr "Génération du Capabilities WMS"
 
 #: Rok4Server.cpp:174
@@ -1723,15 +1711,6 @@ msgstr " ne peut être traité"
 #: Style.cpp:54
 msgid "Nouveau Style : "
 msgstr "Nouveau Style : "
-
-#~ msgid "Valeur du parametre VERSION invalide (1.3.0 disponible seulement))"
-#~ msgstr "Valeur du paramètre VERSION invalide (1.3.0 disponible seulement))"
-
-#~ msgid "WMSfini"
-#~ msgstr "Élément WMS terminé"
-
-#~ msgid "Build WMS Capabilities"
-#~ msgstr "Génération du Capabilities WMS"
 
 #, fuzzy
 #~ msgid " ne peut dépendre d'autres couches"

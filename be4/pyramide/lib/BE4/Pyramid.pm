@@ -94,7 +94,7 @@ Using:
         pyr_desc_path       => "/home/ign/DATA",
         pyr_data_path       => "/home/ign/DATA",
         #
-        update_mode      => "SLINK"
+        update_mode      => "slink"
     };
 
     my $objPyr = BE4::Pyramid->new($params_options,"/home/ign/TMP");
@@ -956,20 +956,20 @@ Function: isUpdateMode
 Tests if the value for parameter 'update_mode' is allowed.
 
 Parameters (list):
-    referenceModeValue - string - chosen value for the mode of reference to the old pyrammid cache files
+    updateModeValue - string - chosen value for the mode of reference to the old pyrammid cache files
 =cut
 sub isUpdateMode {
-    my $referenceModeValue = shift;
+    my $updateModeValue = shift;
 
     TRACE;
     
-    if (! defined $referenceModeValue) {
-        ERROR(sprintf "Checking the validity of reference_value : the value is not defined inside the test !");
+    if (! defined $updateModeValue) {
+        ERROR(sprintf "Checking the validity of update_mode value : the value is not defined inside the test !");
         return FALSE;
     }
 
     foreach (@{UPDATE_MODES}) {
-        if ($referenceModeValue eq $_) {
+        if ($updateModeValue eq $_) {
             return TRUE;
         }
     }
