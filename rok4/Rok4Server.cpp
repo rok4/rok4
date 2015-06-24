@@ -879,6 +879,8 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                                 close(fileTmp);
                             } else {
                                 //impossible de creer un fichier temporaire
+                                std::cerr << "Impossible de creer le fichier de temporaire " << SpathTmp.c_str() << std::endl;
+                                std::cerr << "Pas de generation de dalles " << std::endl;
                                 exit(0);
                             }
 
