@@ -68,13 +68,14 @@
  * 
  * <TABLE>
  * <TR><TH>Format</TH><TH>Classe</TH><TH>Extensions détectées</TH><TH>En lecture</TH><TH>En écriture</TH><TH>Librairie utilisée</TH></TR>
- * <TR><TD>TIFF</TD><TD>LibtiffImage</TD><TD>.tif, .tiff, .TIF, .TIFF</TD><TD>Oui</TD><TD>Oui</TD><TD>Libtiff 3.8.2</TD></TR>
- * <TR><TD>PNG</TD><TD>LibpngImage</TD><TD>.png, .PNG</TD><TD>Oui</TD><TD>Non</TD><TD>Libpng 1.6.2</TD></TR>
- * <TR><TD>ROK4</TD><TD>Rok4Image</TD><TD>non filtré sur l'extension</TD><TD>Oui</TD><TD>Oui</TD><TD>Libtiff 3.8.2. Format TIFF particulier, propre au projet ROK4</TD></TR>
- * <TR><TD>JPEG2000</TD><TD>Jpeg2000Image</TD><TD>.jp2, .JP2</TD><TD>Oui</TD><TD>Non</TD><TD>Openjpeg 2.0.0 ou Kakadu</TD></TR>
- * <TR><TD>BIL</TD><TD>BilzImage</TD><TD>.bil, .BIL, .zbil, .ZBIL</TD><TD>Oui</TD><TD>Non</TD><TD>Sans librairie</TD></TR>
+ * <TR><TD>TIFF</TD><TD>LibtiffImage</TD><TD>.tif, .tiff, .TIF, .TIFF</TD><TD>Format de canal : entiers 8 bits, 16 bits et floattant 32 bits</TD><TD>Format de canal : entiers 8 bits, 16 bits et floattant 32 bits</TD><TD>Libtiff 3.8.2</TD></TR>
+ * <TR><TD>PNG</TD><TD>LibpngImage</TD><TD>.png, .PNG</TD><TD>Format de canal : entiers 1,2,4 et 8 bits</TD><TD>Non</TD><TD>Libpng 1.6.2</TD></TR>
+ * <TR><TD>ROK4</TD><TD>Rok4Image</TD><TD>non filtré sur l'extension</TD><TD>Format de canal : entiers 8 bits, 16 bits et floattant 32 bits</TD><TD>Format de canal : entiers 8 bits, 16 bits et floattant 32 bits</TD><TD>Libtiff 3.8.2. Format TIFF particulier, propre au projet ROK4</TD></TR>
+ * <TR><TD>JPEG2000</TD><TD>Jpeg2000Image</TD><TD>.jp2, .JP2</TD><TD>Format de canal : selon la librairie</TD><TD>Non</TD><TD>Openjpeg 2.0.0 ou Kakadu 6.4.1</TD></TR>
+ * <TR><TD>BIL</TD><TD>BilzImage</TD><TD>.bil, .BIL, .zbil, .ZBIL</TD><TD>Format de canal : entiers 8 bits, 16 bits et floattant 32 bits</TD><TD>Non</TD><TD>Zlib 1.2.5 pour la décompression</TD></TR>
  * </TABLE>
  * 
+ * Tous les canaux doivent evoir le même format.
  */
 class FileImage : public Image {
 
@@ -166,6 +167,7 @@ public:
 
     virtual int getline ( uint8_t *buffer, int line ) = 0;
     virtual int getline ( float *buffer, int line ) = 0;
+    virtual int getline ( uint16_t *buffer, int line ) = 0;
 
     /**
      * \~french
@@ -178,11 +180,19 @@ public:
 
     /**
      * \~french
-     * \brief Ecrit une image, à partir d'un buffer d'entiers
+     * \brief Ecrit une image, à partir d'un buffer d'entiers sur 8 bits
      * \param[in] buffer source des donnée de l'image à écrire
      * \return 0 en cas de succes, -1 sinon
      */
     virtual int writeImage ( uint8_t* buffer ) = 0;
+    
+    /**
+     * \~french
+     * \brief Ecrit une image, à partir d'un buffer d'entiers sur 16 bits
+     * \param[in] buffer source des donnée de l'image à écrire
+     * \return 0 en cas de succes, -1 sinon
+     */
+    virtual int writeImage ( uint16_t* buffer ) = 0;
 
     /**
      * \~french
@@ -194,12 +204,21 @@ public:
 
     /**
      * \~french
-     * \brief Ecrit une ligne de l'image, à partir d'un buffer d'entiers
+     * \brief Ecrit une ligne de l'image, à partir d'un buffer d'entiers sur 8 bits
      * \param[in] buffer source des donnée de l'image à écrire
      * \param[in] line ligne de l'image à écrire
      * \return 0 en cas de succes, -1 sinon
      */
     virtual int writeLine ( uint8_t* buffer, int line ) = 0;
+    
+    /**
+     * \~french
+     * \brief Ecrit une ligne de l'image, à partir d'un buffer d'entiers sur 16 bits
+     * \param[in] buffer source des donnée de l'image à écrire
+     * \param[in] line ligne de l'image à écrire
+     * \return 0 en cas de succes, -1 sinon
+     */
+    virtual int writeLine ( uint16_t* buffer, int line ) = 0;
 
     /**
      * \~french

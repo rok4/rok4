@@ -391,14 +391,26 @@ int ImageDecoder::getDataline ( uint8_t* buffer, int line ) {
     return width * channels;
 }
 
-int ImageDecoder::getDataline ( float* buffer, int line ) {
-    // Cas typique : chargement d'une ligne d'une image avec des pixels de type uint8_t pour interpolation
-    // Conversion des uint8_t en float
+int ImageDecoder::getDataline ( uint16_t* buffer, int line ) {
     if ( pixel_size==1 )
+        // Conversion uint8 -> uintt16
         convert ( buffer, rawData + ( ( margin_top + line ) * source_width + margin_left ) * channels, width * channels );
-    // Cas typique : chargement d'une ligne d'une image avec des pixels de type float
-    // Pas de conversion des floats
+    else if ( pixel_size==2 )
+        // Donnée demandée dans le format d'origine
+        memcpy ( buffer,rawData + ( ( margin_top + line ) * source_width + margin_left ) * channels*sizeof ( uint16_t ),width * channels*sizeof ( uint16_t ) );
+
+    return width * channels;
+}
+
+int ImageDecoder::getDataline ( float* buffer, int line ) {
+    if ( pixel_size==1 )
+        // Conversion uint8 -> float
+        convert ( buffer, rawData + ( ( margin_top + line ) * source_width + margin_left ) * channels, width * channels );
+    else if ( pixel_size==2 )
+        // Conversion uint16 -> float
+        convert ( buffer, rawData + ( ( margin_top + line ) * source_width + margin_left ) * channels*sizeof ( uint16_t ), width * channels );
     else if ( pixel_size==4 )
+        // Donnée demandée dans le format d'origine
         memcpy ( buffer,rawData + ( ( margin_top + line ) * source_width + margin_left ) * channels*sizeof ( float ),width * channels*sizeof ( float ) );
 
     return width * channels;

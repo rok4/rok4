@@ -80,6 +80,11 @@ int CompoundImage::getline ( uint8_t* buffer, int line ) {
 }
 
 /** D */
+int CompoundImage::getline ( uint16_t* buffer, int line ) {
+    return _getline ( buffer, line );
+}
+
+/** D */
 int CompoundImage::getline ( float* buffer, int line ) {
     return _getline ( buffer, line );
 }

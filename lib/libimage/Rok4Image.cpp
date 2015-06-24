@@ -522,47 +522,71 @@ int Rok4Image::getEncodedTile ( uint8_t* buf, int tile )
     return tileSize;
 }
 
-int Rok4Image::getline ( uint8_t* buffer, int line ) {
+template <typename T>
+int Rok4Image::_getline ( T* buffer, int line ) {
     int tileRow = line / tileHeight;
     int tileLine = line % tileHeight;
     size_t tileSize;
 
     // le buffer est déjà alloue
+    
+    // Taille d'une ligne de tuile en nombre de case de type T
+    int typetTileLineSize = tileWidth * pixelSize / sizeof(T);
 
     // On mémorise toutes les tuiles qui seront nécessaires pour constituer la ligne
     for ( int tileCol = 0; tileCol < tileWidthwise; tileCol++ ) {
         uint8_t* mem = memorizeRawTile ( tileSize, tileRow * tileWidthwise + tileCol);
-        memcpy ( buffer + tileCol * tileWidth * channels, mem + tileLine * rawTileLineSize, rawTileLineSize );
+        memcpy ( buffer + tileCol * typetTileLineSize, mem + tileLine * rawTileLineSize, rawTileLineSize );
     }
 
-    return width * pixelSize;
+    return tileWidthwise * typetTileLineSize;
+}
+
+int Rok4Image::getline ( uint8_t* buffer, int line ) {
+    return _getline(buffer, line);
+}
+
+int Rok4Image::getline ( uint16_t* buffer, int line ) {
+    
+    if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
+        // On veut la ligne en entiers 16 bits mais l'image lue est sur des entiers 8 bits
+        // On convertit
+        uint8_t* buffer_t = new uint8_t[width*channels];
+        _getline(buffer_t, line);
+        convert ( buffer,buffer_t,width*channels );
+        delete [] buffer_t;
+        return width*channels;
+    } else if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) {
+        return _getline(buffer, line);   
+    } else { // float
+        // La donnée est en float mais on la veut sur des entiers 16 bits : on met donc un float sur deux entiers 16 bits
+        _getline( buffer, line);
+        return width*channels*2;
+    }
+
+    return width * channels;
 }
 
 int Rok4Image::getline ( float* buffer, int line ) {
-    int tileRow = line / tileHeight;
-    int tileLine = line % tileHeight;
-
-    // le buffer est déjà alloue
 
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
-        // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers
+        // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers sur 8 bits
         // On convertit
         uint8_t* buffer_t = new uint8_t[width*channels];
-        getline ( buffer_t,line );
+        _getline(buffer_t, line);
         convert ( buffer,buffer_t,width*channels );
         delete [] buffer_t;
-        
+        return width*channels;
+    } else if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) {
+        // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers sur 16 bits
+        // On convertit
+        uint16_t* buffer_t = new uint16_t[width*channels];
+        _getline(buffer_t, line);
+        convert ( buffer,buffer_t,width*channels );
+        delete [] buffer_t;
+        return width*channels;
     } else { // float
-        // On mémorise toutes les tuiles qui seront nécessaires pour constituer la ligne
-        size_t tileSize;
-        for ( int tileCol = 0; tileCol < tileWidthwise; tileCol++ ) {
-            uint8_t* mem = memorizeRawTile ( tileSize, tileRow * tileWidthwise + tileCol);
-            if (mem == NULL) {
-                LOGGER_ERROR ( "Cannot read raw tile " << tilesNumber );
-                return 0;
-            }
-            memcpy ( buffer + tileCol * tileWidth * channels, mem + tileLine * rawTileLineSize, rawTileLineSize );
-        }
+        return _getline(buffer, line);  
     }
 
     return width * channels;
@@ -587,7 +611,7 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
 
     int imageLineSize = width * channels;
     int tileLineSize = tileWidth * channels;
-    uint8_t tile[tileHeight*rawTileLineSize];
+    uint8_t* tile = new uint8_t[tileHeight*rawTileLineSize];
 
     // Ecriture de l'image
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
@@ -616,7 +640,34 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
         }
         
         delete [] lines;
+    } else if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) {
+        uint16_t* lines = new uint16_t[tileHeight*imageLineSize];
+        
+        for ( int y = 0; y < tileHeightwise; y++ ) {
+            // On récupère toutes les lignes pour cette ligne de tuiles
+            for (int lig = 0; lig < tileHeight; lig++) {
+                if (pIn->getline(lines + lig*imageLineSize, y*tileHeight + lig) == 0) {
+                    LOGGER_ERROR("Error reading the source image's line " << y*tileHeight + lig);
+                    return -1;                    
+                }
+            }
+            for ( int x = 0; x < tileWidthwise; x++ ) {
+                // On constitue la tuile
+                for (int lig = 0; lig < tileHeight; lig++) {
+                    memcpy(tile + lig*rawTileLineSize, lines + lig*imageLineSize + x*tileLineSize, rawTileLineSize);
+                }
+
+                int tileInd = y*tileWidthwise + x;
+
+                if (! writeTile(tileInd, tile, crop)) {
+                    LOGGER_ERROR("Error writting tile " << tileInd << " for ROK4 image " << filename);
+                    return -1;
+                }
+            }
+        }
+        delete [] lines;
     } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
+                LOGGER_ERROR("Récupération de la ligne 1");
         float* lines = new float[tileHeight*imageLineSize];
         
         for ( int y = 0; y < tileHeightwise; y++ ) {
@@ -643,6 +694,8 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
         }
         delete [] lines;
     }
+    
+    delete[] tile;
 
     if (! close()) {
         LOGGER_ERROR("Cannot close the ROK4 images (write index and clean) for " << filename);

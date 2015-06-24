@@ -196,7 +196,8 @@ public:
     
     static bool canRead ( int bps, SampleFormat::eSampleFormat sf) {
         return (
-            ( bps == 8 && sf == SampleFormat::UINT )
+            ( bps == 8 && sf == SampleFormat::UINT ) ||
+            ( bps == 16 && sf == SampleFormat::UINT )
         );
     }
     
@@ -205,6 +206,7 @@ public:
     }
 
     int getline ( uint8_t* buffer, int line );
+    int getline ( uint16_t* buffer, int line );
     int getline ( float* buffer, int line );
     
     /**

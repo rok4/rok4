@@ -82,9 +82,13 @@ BilzImage* BilzImageFactory::createBilzImageToRead ( char* filename, BoundingBox
         case 32 :
             sf = SampleFormat::FLOAT;
             break;
+        case 16 :
         case 8 :
             sf = SampleFormat::UINT;
             break;
+        default :
+            LOGGER_ERROR ( "Unhandled number of bits per sample (" << bitspersample << ") for image " << filename );
+            return NULL;
     }
     
     switch (channels) {
@@ -194,7 +198,7 @@ int BilzImage::_getline ( uint8_t* buffer, int line ) {
     int samplesize = bitspersample / 8;
     
     for (int s = 0; s < channels; s++) {
-        uint8_t* deb = data + line * width * getPixelSize();
+        uint8_t* deb = data + line * width * pixelSize;
         for (int p = 0; p < width; p++) {
             memcpy(buffer + p * pixelSize + s * samplesize, deb + p * samplesize, samplesize );
         }
@@ -215,12 +219,31 @@ int BilzImage::getline ( float* buffer, int line ) {
     _getline(buffer_t, line);
     
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
-        // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers
+        // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers 8 bits
         convert ( buffer, buffer_t, width * channels );
+    } else if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) {
+        // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers 8 bits
+        uint16_t* buffer_2 = new uint16_t[width * channels];
+        memcpy(buffer_2, buffer_t, width * pixelSize);
+        convert ( buffer, buffer_2, width * channels );
+        delete [] buffer_2;
     } else { // float
         memcpy(buffer, buffer_t, width * pixelSize);
     }
     
+    delete [] buffer_t;
+    
+    return width * channels;
+}
+
+int BilzImage::getline ( uint16_t* buffer, int line ) {
+    
+    // On commence par récupérer la ligne entrelacée
+    uint8_t* buffer_t = new uint8_t[width * pixelSize];
+    _getline(buffer_t, line);
+    // Peu importe le format des canaux, on ne convertit pas, on met juste la ligne dans le buffer entier 16 bits
+    memcpy(buffer, buffer_t, width * pixelSize);
+
     delete [] buffer_t;
     
     return width * channels;

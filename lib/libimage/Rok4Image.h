@@ -349,6 +349,9 @@ private:
      * \return data' size in buffer, 0 if failure
      */
     size_t computeDeflateTile ( uint8_t *buffer, uint8_t *data );
+    
+    template<typename T>
+    int _getline ( T* buffer, int line );
 
 protected:
     /** \~french
@@ -394,6 +397,7 @@ public:
     static bool canRead ( int bps, SampleFormat::eSampleFormat sf) {
         return ( 
             ( bps == 32 && sf == SampleFormat::FLOAT ) || 
+            ( bps == 16 && sf == SampleFormat::UINT ) || 
             ( bps == 8 && sf == SampleFormat::UINT )
         );
     }
@@ -401,6 +405,7 @@ public:
     static bool canWrite ( int bps, SampleFormat::eSampleFormat sf) {
         return ( 
             ( bps == 32 && sf == SampleFormat::FLOAT ) || 
+            ( bps == 16 && sf == SampleFormat::UINT ) || 
             ( bps == 8 && sf == SampleFormat::UINT )
         );
     }
@@ -451,6 +456,7 @@ public:
     int getEncodedTile ( uint8_t* buf, int tile );
     
     int getline ( uint8_t* buffer, int line );
+    int getline ( uint16_t* buffer, int line );
     int getline ( float* buffer, int line );
 
     /**************************** Pour l'écriture ****************************/
@@ -488,6 +494,18 @@ public:
 
     /**
      * \~french
+     * \brief Ecrit une image ROK4, à partir d'un buffer d'entiers 16 bits
+     * \warning Pas d'implémentation de l'écriture par buffer au format ROK4, retourne systématiquement une erreur
+     * \param[in] buffer source des donnée de l'image à écrire
+     * \return 0 en cas de succes, -1 sinon
+     */
+    int writeImage ( uint16_t* buffer ) {
+        LOGGER_ERROR ( "Cannot write ROK4 image from a buffer" );
+        return -1;
+    }
+
+    /**
+     * \~french
      * \brief Ecrit une image ROK4, à partir d'un buffer de flottants
      * \warning Pas d'implémentation de l'écriture par buffer au format ROK4, retourne systématiquement une erreur
      * \param[in] buffer source des donnée de l'image à écrire
@@ -507,6 +525,19 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeLine ( uint8_t* buffer, int line ) {
+        LOGGER_ERROR ( "Cannot write ROK4 image line by line" );
+        return -1;
+    }
+
+    /**
+     * \~french
+     * \brief Ecrit une ligne d'image ROK4, à partir d'un buffer d'entiers 16 bits
+     * \warning Pas d'implémentation de l'écriture par ligne au format ROK4, retourne systématiquement une erreur
+     * \param[in] buffer source des donnée de l'image à écrire
+     * \param[in] line ligne de l'image à écrire
+     * \return 0 en cas de succes, -1 sinon
+     */
+    int writeLine ( uint16_t* buffer, int line) {
         LOGGER_ERROR ( "Cannot write ROK4 image line by line" );
         return -1;
     }

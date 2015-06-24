@@ -215,6 +215,7 @@ public:
     static bool canRead ( int bps, SampleFormat::eSampleFormat sf) {
         return ( 
             ( bps == 32 && sf == SampleFormat::FLOAT ) || 
+            ( bps == 16 && sf == SampleFormat::UINT ) ||
             ( bps == 8 && sf == SampleFormat::UINT ) ||
             ( bps == 1 && sf == SampleFormat::UINT )
         );
@@ -223,11 +224,13 @@ public:
     static bool canWrite ( int bps, SampleFormat::eSampleFormat sf) {
         return ( 
             ( bps == 32 && sf == SampleFormat::FLOAT ) || 
-            ( bps == 8 && sf == SampleFormat::UINT )
+            ( bps == 8 && sf == SampleFormat::UINT ) || 
+            ( bps == 16 && sf == SampleFormat::UINT )
         );
     }
 
     int getline ( uint8_t* buffer, int line );
+    int getline ( uint16_t *buffer, int line );
     int getline ( float* buffer, int line );
 
     /**
@@ -249,6 +252,14 @@ public:
 
     /**
      * \~french
+     * \brief Ecrit une image TIFF, à partir d'un buffer d'entiers 16 bits
+     * \param[in] buffer source des donnée de l'image à écrire
+     * \return 0 en cas de succes, -1 sinon
+     */
+    int writeImage ( uint16_t* buffer );
+
+    /**
+     * \~french
      * \brief Ecrit une image TIFF, à partir d'un buffer de flottants
      * \param[in] buffer source des donnée de l'image à écrire
      * \return 0 en cas de succes, -1 sinon
@@ -263,6 +274,15 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeLine ( uint8_t* buffer, int line );
+
+    /**
+     * \~french
+     * \brief Ecrit une ligne d'image TIFF, à partir d'un buffer d'entiers
+     * \param[in] buffer source des donnée de l'image à écrire
+     * \param[in] line ligne de l'image à écrire
+     * \return 0 en cas de succes, -1 sinon
+     */
+    int writeLine ( uint16_t* buffer, int line );
 
     /**
      * \~french

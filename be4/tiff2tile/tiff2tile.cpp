@@ -287,6 +287,10 @@ int main ( int argc, char **argv ) {
     if (rok4Image == NULL) {
         error("Cannot create the ROK4 image to write", -1);
     }
+    
+    if (debugLogger) {
+        rok4Image->print();
+    }
 
     LOGGER_DEBUG ( "Write" );
     if (rok4Image->writeImage(sourceImage, crop) < 0) {

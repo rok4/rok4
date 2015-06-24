@@ -276,7 +276,7 @@ bool LibkakaduImage::init() {
     /************* strip_buffer & current_strip ***********/
 
     try {
-        strip_buffer = new kdu_byte[rowsperstrip * width * channels];
+        strip_buffer = new kdu_byte[rowsperstrip * width * pixelSize];
     } catch (std::bad_alloc e) {
         LOGGER_ERROR("Memory allocation error while creating strip buffer.");
         if (m_codestream.exists())
@@ -302,7 +302,7 @@ void LibkakaduImage::_loadstrip() {
 
     int C0 = 0;
     int L0 = rowsperstrip * current_strip;
-    int nBandSpace = 1;
+    int nBandSpace = pixelSize / channels; // taille en octet d'un canal
     int NLines = __min(rowsperstrip, height - rowsperstrip * current_strip);
     
     int max_layers = 0;
@@ -349,13 +349,13 @@ void LibkakaduImage::_loadstrip() {
     buffer_origin.x = incomplete_region.pos.x;
     buffer_origin.y = incomplete_region.pos.y;
     
-    while(
-            decompressor.process(
-                                channel_bufs, false, pixelSize, buffer_origin, row_gap, suggested_increment, 
-                               /*max_region_pixels*/suggested_increment, incomplete_region, new_region, 8, true
-                                ) 
-            && ! incomplete_region.is_empty()
-         ) { }
+    bool nochEinmal = true;
+    while(nochEinmal && ! incomplete_region.is_empty()) {
+        nochEinmal = decompressor.process(
+            channel_bufs, false, pixelSize, buffer_origin, row_gap, suggested_increment, 
+            suggested_increment, incomplete_region, new_region, 8, true
+        );
+    }
     
     delete[] channel_bufs;
     decompressor.finish();
@@ -383,8 +383,14 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
 int LibkakaduImage::getline ( uint8_t* buffer, int line ) {
 
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
-        int r = _getline ( buffer,line );
-        return r;
+        return _getline ( buffer,line );
+    } else if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) {
+        /* On ne convertit pas les nombres 16 bits en entier sur 8 bits (aucun intérêt)
+        * On va copier le buffer 16 bits sur le buffer entier, de même taille en octet (2 fois plus grand en "nombre de cases")*/
+        uint16_t int16line[width * channels];
+        _getline ( int16line, line );
+        memcpy ( buffer, int16line, width*pixelSize );
+        return width*pixelSize;
     } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) { // float
         /* On ne convertit pas les nombres flottants en entier sur 8 bits (aucun intérêt)
         * On va copier le buffer flottant sur le buffer entier, de même taille en octet (4 fois plus grand en "nombre de cases")*/
@@ -395,16 +401,42 @@ int LibkakaduImage::getline ( uint8_t* buffer, int line ) {
     }
 }
 
+int LibkakaduImage::getline ( uint16_t* buffer, int line ) {
+
+    if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
+        // On veut la ligne en entier 16 bits mais l'image lue est sur 8 bits : on convertit
+        uint8_t* buffer_t = new uint8_t[width*channels];
+        _getline ( buffer_t,line );
+        convert ( buffer,buffer_t,width*channels);
+        delete [] buffer_t;
+        return width*channels;
+    } else if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) {
+        return _getline ( buffer,line );        
+    } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) { // float
+        /* On ne convertit pas les nombres flottants en entier sur 16 bits (aucun intérêt)
+        * On va copier le buffer flottant sur le buffer entier 16 bits, de même taille en octet (2 fois plus grand en "nombre de cases")*/
+        float floatline[width * channels];
+        _getline ( floatline, line );
+        memcpy ( buffer, floatline, width*pixelSize );
+        return width*pixelSize;
+    }
+}
+
 int LibkakaduImage::getline ( float* buffer, int line ) {
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
         // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers
         uint8_t* buffer_t = new uint8_t[width*channels];
-        
-        // Ne pas appeler directement _getline pour bien faire les potentielles conversions (alpha ou 1 bit)
         getline ( buffer_t,line );
         convert ( buffer,buffer_t,width*channels );
         delete [] buffer_t;
         return width*channels;
+    } else if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) {
+        // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers
+        uint16_t* buffer_t = new uint16_t[width*channels];
+        _getline ( buffer_t,line );
+        convert ( buffer,buffer_t,width*channels );
+        delete [] buffer_t;
+        return width*channels;     
     } else { // float
         return _getline ( buffer, line );
     }
