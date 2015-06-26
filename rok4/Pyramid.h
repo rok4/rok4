@@ -539,6 +539,20 @@ public:
     Image *createReprojectedImage(std::string l, BoundingBox<double> bbox, CRS dst_crs, ServicesConf& servicesConf, int width, int height, Interpolation::KernelType interpolation, int error);
 
     /**
+     * \~french \brief Créé une image reprojetée mais complétée par du nodata
+     * Les données sont prises dans cropBbox mais complété par du nodata sur bbox
+     * \~english \brief Create a reprojected image but completed by nodata
+     * Used data on cropBBox but completed by nodata on bbox
+     */
+    Image *createExtendedCompoundImage(std::string l, BoundingBox<double> bbox, BoundingBox<double> cropBBox,CRS dst_crs, ServicesConf& servicesConf, int width, int height, Interpolation::KernelType interpolation, int error);
+
+    /**
+     * \~french \brief Créé une dalle
+     * \~english \brief Create a slab
+     */
+    Image *createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst_crs, ServicesConf& servicesConf, int width, int height, Interpolation::KernelType interpolation, int error);
+
+    /**
      * \~french \brief Renvoit une image de noData
      * \param[in] id du level de base concerné
      * \param[in] bbox de la requête

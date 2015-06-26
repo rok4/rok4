@@ -246,6 +246,66 @@ public:
         return ( xmin <= bbox.xmin && bbox.xmax <= xmax && ymin <= bbox.ymin && bbox.ymax <= ymax );
     }
 
+    /** \~french \brief Récupère la partie qui intersecte la bbox donnée en paramètre
+     * \param[in] bbox rectangle
+     ** \~english \brief Get the part intersected the bbox given in parameter
+     * \param[in] bbox bounding box
+     */
+    BoundingBox<T> cutIntersectionWith ( BoundingBox<T> bbox ) {
+
+        if (this->xmin > bbox.xmin && this->xmax < bbox.xmax && this->ymin < bbox.ymin && this->ymax > bbox.ymax) {
+            return BoundingBox<T> (this->xmin,bbox.ymin,this->xmax,bbox.ymax);
+        }
+        if (this->xmin < bbox.xmin && this->xmax > bbox.xmax && this->ymin > bbox.ymin && this->ymax < bbox.ymax) {
+            return BoundingBox<T> (bbox.xmin,this->ymin,bbox.xmax,this->ymax);
+        }
+
+        if (this->xmin > bbox.xmin && this->xmax > bbox.xmax && this->ymin > bbox.ymin && this->ymax < bbox.ymax) {
+            return BoundingBox<T> (this->xmin,this->ymin,bbox.xmax,this->ymax);
+        }
+        if (this->xmin < bbox.xmin && this->xmax < bbox.xmax && this->ymin > bbox.ymin && this->ymax < bbox.ymax) {
+            return BoundingBox<T> (bbox.xmin,this->ymin,this->xmax,this->ymax);
+        }
+        if (this->xmin > bbox.xmin && this->xmax < bbox.xmax && this->ymin > bbox.ymin && this->ymax > bbox.ymax) {
+            return BoundingBox<T> (this->xmin,this->ymin,this->xmax,bbox.ymax);
+        }
+        if (this->xmin > bbox.xmin && this->xmax < bbox.xmax && this->ymin < bbox.ymin && this->ymax < bbox.ymax) {
+            return BoundingBox<T> (this->xmin,bbox.ymin,this->xmax,this->ymax);
+        }
+
+        if (this->xmin < bbox.xmin && this->xmax > bbox.xmax && this->ymin > bbox.ymin && this->ymax > bbox.ymax) {
+            return BoundingBox<T> (bbox.xmin,this->ymin,bbox.xmax,bbox.ymax);
+        }
+        if (this->xmin < bbox.xmin && this->xmax < bbox.xmax && this->ymin < bbox.ymin && this->ymax > bbox.ymax) {
+            return BoundingBox<T> (bbox.xmin,bbox.ymin,this->xmax,bbox.ymax);
+        }
+        if (this->xmin < bbox.xmin && this->xmax > bbox.xmax && this->ymin < bbox.ymin && this->ymax < bbox.ymax) {
+            return BoundingBox<T> (bbox.xmin,bbox.ymin,bbox.xmax,this->ymax);
+        }
+        if (this->xmin > bbox.xmin && this->xmax > bbox.xmax && this->ymin < bbox.ymin && this->ymax > bbox.ymax) {
+            return BoundingBox<T> (this->xmin,bbox.ymin,bbox.xmax,bbox.ymax);
+        }
+
+        if (this->xmin < bbox.xmin && this->xmax < bbox.xmax && this->ymin > bbox.ymin && this->ymax > bbox.ymax) {
+            return BoundingBox<T> (bbox.xmin,this->ymin,this->xmax,bbox.ymax);
+        }
+        if (this->xmin < bbox.xmin && this->xmax < bbox.xmax && this->ymin < bbox.ymin && this->ymax < bbox.ymax) {
+            return BoundingBox<T> (bbox.xmin,bbox.ymin,this->xmax,this->ymax);
+        }
+        if (this->xmin > bbox.xmin && this->xmax > bbox.xmax && this->ymin < bbox.ymin && this->ymax < bbox.ymax) {
+            return BoundingBox<T> (this->xmin,bbox.ymin,bbox.xmax,this->ymax);
+        }
+        if (this->xmin > bbox.xmin && this->xmax > bbox.xmax && this->ymin > bbox.ymin && this->ymax > bbox.ymax) {
+            return BoundingBox<T> (this->xmin,this->ymin,bbox.xmax,bbox.ymax);
+        }
+
+    }
+
+
+
+
+
+
 };
 #endif
 

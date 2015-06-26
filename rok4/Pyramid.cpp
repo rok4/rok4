@@ -217,76 +217,147 @@ Image * Pyramid::createReprojectedImage(std::string l, BoundingBox<double> bbox,
     if ( dst_crs.validateBBox ( bbox ) ) {
         return levels[l]->getbbox ( servicesConf, bbox, width, height, tms.getCrs(), dst_crs, interpolation, error );
     } else {
-        ExtendedCompoundImageFactory facto;
-        std::vector<Image*> images;
-        LOGGER_DEBUG ( _ ( "BBox en dehors de la definition du CRS" ) );
         BoundingBox<double> cropBBox = dst_crs.cropBBox ( bbox );
-
-        if ( cropBBox.xmin == cropBBox.xmax || cropBBox.ymin == cropBBox.ymax ) { // BBox out of CRS definition area Only NoData
-            LOGGER_DEBUG ( _ ( "BBox decoupe incorrect" ) );
-        } else {
-
-            double ratio_x = ( cropBBox.xmax - cropBBox.xmin ) / ( bbox.xmax - bbox.xmin );
-            double ratio_y = ( cropBBox.ymax - cropBBox.ymin ) / ( bbox.ymax - bbox.ymin ) ;
-            int newWidth = lround(width * ratio_x);
-            int newHeigth = lround(height * ratio_y);
-
-
-    //Avec lround, taille en pixel et cropBBox ne sont plus cohérents.
-    //On ajoute la différence de l'arrondi dans la cropBBox et on ajoute un pixel en plus tout autour.
-
-    //Calcul de l'erreur d'arrondi converti en coordonnées
-            double delta_h = double (newHeigth) - double(height) * ratio_y ;
-            double delta_w = double (newWidth) - double(width) * ratio_x ;
-
-            double res_y = ( cropBBox.ymax - cropBBox.ymin ) / double(height * ratio_y) ;
-            double res_x = ( cropBBox.xmax - cropBBox.xmin ) / double(width * ratio_x) ;
-
-            double delta_y = res_y * delta_h ;
-            double delta_x = res_x * delta_w ;
-
-    //Ajout de l'erreur d'arrondi et le pixel en plus
-            cropBBox.ymax += delta_y +res_y;
-            cropBBox.ymin -= res_y;
-
-            cropBBox.xmax += delta_x +res_x;
-            cropBBox.xmin -= res_x;
-
-            newHeigth += 2;
-            newWidth += 2;
-
-            LOGGER_DEBUG ( _ ( "New Width = " ) << newWidth << " " << _ ( "New Height = " ) << newHeigth );
-            LOGGER_DEBUG ( _ ( "ratio_x = " ) << ratio_x << " " << _ ( "ratio_y = " ) << ratio_y );
-
-
-            Image* tmp = 0;
-            int cropError = 0;
-            if ( (1/ratio_x > 5 && newWidth < 3) || (newHeigth < 3 && 1/ratio_y > 5) ){ //Too small BBox
-                LOGGER_DEBUG ( _ ( "BBox decoupe incorrect" ) );
-                tmp = 0;
-            } else if ( newWidth > 0 && newHeigth > 0 ) {
-                tmp = levels[l]->getbbox ( servicesConf, cropBBox, newWidth, newHeigth, tms.getCrs(), dst_crs, interpolation, cropError );
-            }
-            if ( tmp != 0 ) {
-                LOGGER_DEBUG ( _ ( "Image decoupe valide" ) );
-                images.push_back ( tmp );
-            }
-        }
-
-        int ndvalue[this->channels];
-        memset(ndvalue,0,this->channels*sizeof(int));
-        levels[l]->getNoDataValue(ndvalue);
-
-        if ( images.empty() ) {
-            EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
-            fond->setBbox(bbox);
-            return fond;
-        }
-
-        return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,ndvalue,0 );
+        return createExtendedCompoundImage(l,bbox,cropBBox,dst_crs,servicesConf,width,height,interpolation,error);
     }
 
 }
+
+Image *Pyramid::createExtendedCompoundImage(std::string l, BoundingBox<double> bbox, BoundingBox<double> cropBBox,CRS dst_crs, ServicesConf& servicesConf, int width, int height, Interpolation::KernelType interpolation, int error){
+
+    ExtendedCompoundImageFactory facto;
+    std::vector<Image*> images;
+    LOGGER_DEBUG ( _ ( "BBox en dehors de la definition du CRS" ) );
+
+
+    if ( cropBBox.xmin == cropBBox.xmax || cropBBox.ymin == cropBBox.ymax ) { // BBox out of CRS definition area Only NoData
+        LOGGER_DEBUG ( _ ( "BBox decoupe incorrect" ) );
+    } else {
+
+        double ratio_x = ( cropBBox.xmax - cropBBox.xmin ) / ( bbox.xmax - bbox.xmin );
+        double ratio_y = ( cropBBox.ymax - cropBBox.ymin ) / ( bbox.ymax - bbox.ymin ) ;
+        int newWidth = lround(width * ratio_x);
+        int newHeigth = lround(height * ratio_y);
+
+
+//Avec lround, taille en pixel et cropBBox ne sont plus cohérents.
+//On ajoute la différence de l'arrondi dans la cropBBox et on ajoute un pixel en plus tout autour.
+
+//Calcul de l'erreur d'arrondi converti en coordonnées
+        double delta_h = double (newHeigth) - double(height) * ratio_y ;
+        double delta_w = double (newWidth) - double(width) * ratio_x ;
+
+        double res_y = ( cropBBox.ymax - cropBBox.ymin ) / double(height * ratio_y) ;
+        double res_x = ( cropBBox.xmax - cropBBox.xmin ) / double(width * ratio_x) ;
+
+        double delta_y = res_y * delta_h ;
+        double delta_x = res_x * delta_w ;
+
+//Ajout de l'erreur d'arrondi et le pixel en plus
+        cropBBox.ymax += delta_y +res_y;
+        cropBBox.ymin -= res_y;
+
+        cropBBox.xmax += delta_x +res_x;
+        cropBBox.xmin -= res_x;
+
+        newHeigth += 2;
+        newWidth += 2;
+
+        LOGGER_DEBUG ( _ ( "New Width = " ) << newWidth << " " << _ ( "New Height = " ) << newHeigth );
+        LOGGER_DEBUG ( _ ( "ratio_x = " ) << ratio_x << " " << _ ( "ratio_y = " ) << ratio_y );
+
+
+        Image* tmp = 0;
+        int cropError = 0;
+        if ( (1/ratio_x > 5 && newWidth < 3) || (newHeigth < 3 && 1/ratio_y > 5) ){ //Too small BBox
+            LOGGER_DEBUG ( _ ( "BBox decoupe incorrect" ) );
+            tmp = 0;
+        } else if ( newWidth > 0 && newHeigth > 0 ) {
+            tmp = levels[l]->getbbox ( servicesConf, cropBBox, newWidth, newHeigth, tms.getCrs(), dst_crs, interpolation, cropError );
+        }
+        if ( tmp != 0 ) {
+            LOGGER_DEBUG ( _ ( "Image decoupe valide" ) );
+            images.push_back ( tmp );
+        }
+    }
+
+    int ndvalue[this->channels];
+    memset(ndvalue,0,this->channels*sizeof(int));
+    levels[l]->getNoDataValue(ndvalue);
+
+    if ( images.empty() ) {
+        EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
+        fond->setBbox(bbox);
+        return fond;
+    }
+
+    return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,ndvalue,0 );
+
+}
+
+Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst_crs, ServicesConf& servicesConf, int width, int height, Interpolation::KernelType interpolation, int error){
+
+    //variables
+    BoundingBox<double> askBbox = bbox;
+    BoundingBox<double> dataBbox = getTms().getCrs().getCrsDefinitionArea();
+
+
+    //on met les deux bbox dans le même système de projection
+    if ((are_the_two_CRS_equal( tms.getCrs().getProj4Code(), dst_crs.getProj4Code(), servicesConf.getListOfEqualsCRS() ) ) ) {
+        //alors askBbox est déjà en EPSG:4326
+
+    } else {
+        askBbox.reproject(dst_crs.getProj4Code(),"epsg:4326");
+        //dataBbox est déjà en EPSG:4326
+    }
+
+    //on compare les deux bbox
+    if (tms.getCrs() == dst_crs) {
+        //elles sont identiques
+        return createReprojectedImage(l, bbox, dst_crs, servicesConf, width, height, interpolation, error);
+    } else {
+        if (askBbox.containsInside(dataBbox)) {
+            //les données sont a l'intérieur de la bbox demandée
+
+            dataBbox.reproject("epsg:4326",dst_crs.getProj4Code());
+            return createExtendedCompoundImage(l,bbox,dataBbox,dst_crs,servicesConf,width,height,interpolation,error);
+
+        } else {
+
+            if (dataBbox.containsInside(askBbox)) {
+                //la bbox demandée est plus petite que les données disponibles
+                return createReprojectedImage(l, bbox, dst_crs, servicesConf, width, height, interpolation, error);
+
+            } else {
+
+                if (!dataBbox.intersects(askBbox)) {
+                    //les deux ne s'intersectent pas donc on renvoit une image de nodata
+
+                    int ndvalue[this->channels];
+                    memset(ndvalue,0,this->channels*sizeof(int));
+                    levels[l]->getNoDataValue(ndvalue);
+
+                    EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
+                    fond->setBbox(bbox);
+                    return fond;
+
+                } else {
+                    //les deux s'intersectent
+                    BoundingBox<double> partBbox = askBbox.cutIntersectionWith(dataBbox);
+                    partBbox.reproject("epsg:4326",dst_crs.getProj4Code());
+                    return createExtendedCompoundImage(l,bbox,partBbox,dst_crs,servicesConf,width,height,interpolation,error);
+                }
+
+            }
+
+        }
+
+    }
+
+
+
+}
+
 
 Image *Pyramid::NoDataOnDemand(std::string bLevel, BoundingBox<double> bbox) {
 

@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2015-06-24 15:08+0200\n"
+"POT-Creation-Date: 2015-06-25 15:31+0200\n"
 "PO-Revision-Date: 2014-01-28 09:36+0100\n"
 "Last-Translator: \n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -18,49 +18,49 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Generator: Lokalize 1.5\n"
 
-#: CapabilitiesBuilder.cpp:287 CapabilitiesBuilder.cpp:751
+#: CapabilitiesBuilder.cpp:287 CapabilitiesBuilder.cpp:750
 msgid "Liste de layers vide"
 msgstr "La liste des layers est vide"
 
-#: CapabilitiesBuilder.cpp:467 CapabilitiesBuilder.cpp:929
+#: CapabilitiesBuilder.cpp:467 CapabilitiesBuilder.cpp:928
 msgid "Nombre de styles : "
 msgstr "Nombre de styles chargé : "
 
-#: CapabilitiesBuilder.cpp:481 CapabilitiesBuilder.cpp:943
+#: CapabilitiesBuilder.cpp:481 CapabilitiesBuilder.cpp:942
 msgid "LegendURL"
 msgstr "Création de l'élément LegendURL"
 
-#: CapabilitiesBuilder.cpp:496 CapabilitiesBuilder.cpp:958
+#: CapabilitiesBuilder.cpp:496 CapabilitiesBuilder.cpp:957
 msgid "LegendURL OK"
 msgstr "Élément LegendURl terminé"
 
-#: CapabilitiesBuilder.cpp:499 CapabilitiesBuilder.cpp:961
+#: CapabilitiesBuilder.cpp:499 CapabilitiesBuilder.cpp:960
 msgid "Style fini : "
 msgstr "Élément Style terminé"
 
-#: CapabilitiesBuilder.cpp:520 CapabilitiesBuilder.cpp:986
+#: CapabilitiesBuilder.cpp:520 CapabilitiesBuilder.cpp:985
 msgid "Layer Fini"
 msgstr "Élément Layer terminé"
 
-#: CapabilitiesBuilder.cpp:525 CapabilitiesBuilder.cpp:990
+#: CapabilitiesBuilder.cpp:525 CapabilitiesBuilder.cpp:989
 msgid "Layers Fini"
 msgstr "Élément Layers terminé"
 
 #: CapabilitiesBuilder.cpp:553
 #, fuzzy
-#: CapabilitiesBuilder.cpp:1018
+msgid "WMS 1.3.0 fini"
 msgstr "Élément WMS terminé"
 
-#: CapabilitiesBuilder.cpp:1281
+#: CapabilitiesBuilder.cpp:1017
 #, fuzzy
 msgid "WMS 1.1.1 fini"
 msgstr "Élément WMS terminé"
 
-#: CapabilitiesBuilder.cpp:1275
+#: CapabilitiesBuilder.cpp:1280
 msgid "Title : "
 msgstr "Titre : "
 
-#: CapabilitiesBuilder.cpp:1285
+#: CapabilitiesBuilder.cpp:1284
 msgid "Abstract : "
 msgstr "Résumé :"
 
@@ -390,9 +390,8 @@ msgid "No pyramid found for sources, "
 msgstr ""
 
 #: ConfLoader.cpp:747 ConfLoader.cpp:1057
-#, fuzzy
 msgid " can't depend on other pyramids"
-msgstr " ne peut être traité"
+msgstr ""
 
 #: ConfLoader.cpp:778
 msgid " level "
@@ -432,6 +431,7 @@ msgid "No equivalent level found in "
 msgstr ""
 
 #: ConfLoader.cpp:915
+#, fuzzy
 msgid " for level "
 msgstr " level "
 
@@ -561,6 +561,7 @@ msgid "Aucun level n'a pu etre charge pour la pyramide "
 msgstr "Aucun niveau (<level>) n'a pu être chargé pour la pyramide "
 
 #: ConfLoader.cpp:1541
+#, fuzzy
 msgid "Erreur lors du chargement des levels de la pyramide à la demande "
 msgstr "Lancement du serveur ROK4"
 
@@ -1181,31 +1182,31 @@ msgstr "Meilleur niveau :"
 msgid " resolution requete="
 msgstr " resolution de la requête="
 
-#: Pyramid.cpp:222
+#: Pyramid.cpp:230
 msgid "BBox en dehors de la definition du CRS"
 msgstr "Emprise demandée en dehors de la zone de définition du CRS"
 
-#: Pyramid.cpp:226 Pyramid.cpp:265
+#: Pyramid.cpp:234 Pyramid.cpp:273
 msgid "BBox decoupe incorrect"
 msgstr "Emprise découpée incorrecte"
 
-#: Pyramid.cpp:258
+#: Pyramid.cpp:266
 msgid "New Width = "
 msgstr " Nouvelle largeur = "
 
-#: Pyramid.cpp:258
+#: Pyramid.cpp:266
 msgid "New Height = "
 msgstr "Nouvelle hauteur = "
 
-#: Pyramid.cpp:259
+#: Pyramid.cpp:267
 msgid "ratio_x = "
 msgstr "Ratio en X = "
 
-#: Pyramid.cpp:259
+#: Pyramid.cpp:267
 msgid "ratio_y = "
 msgstr "Ratio en Y ="
 
-#: Pyramid.cpp:271
+#: Pyramid.cpp:279
 msgid "Image decoupe valide"
 msgstr "Image découpée invalide !"
 
@@ -1664,15 +1665,15 @@ msgstr "Extinction du processus de traitement"
 
 #: Rok4Server.cpp:166
 #, fuzzy
-#: Rok4Server.cpp:169
+msgid "Build WMS Capabilities 1.3.0"
 msgstr "Génération du Capabilities WMS"
 
-#: Rok4Server.cpp:174
+#: Rok4Server.cpp:169
 #, fuzzy
 msgid "Build WMS Capabilities 1.1.1"
 msgstr "Génération du Capabilities WMS"
 
-#: Rok4Server.cpp:163
+#: Rok4Server.cpp:174
 msgid "Build WMTS Capabilities"
 msgstr "Génération du Capabilities WMTS"
 
@@ -1723,26 +1724,6 @@ msgstr " ne peut être traité"
 #: Style.cpp:54
 msgid "Nouveau Style : "
 msgstr "Nouveau Style : "
-
-#, fuzzy
-#~ msgid " ne peut dépendre d'autres couches"
-#~ msgstr " ne peut être traité"
-
-#, fuzzy
-#~ msgid "No layer for "
-#~ msgstr "Pas de Couche"
-
-#, fuzzy
-#~ msgid " inconnu "
-#~ msgstr " inconnu."
-
-#, fuzzy
-#~ msgid " est inconnu pour ce layer."
-#~ msgstr " est inconnu pour ce serveur."
-
-#, fuzzy
-#~ msgid " est inconnu pour le layer "
-#~ msgstr " est inconnu pour ce serveur."
 
 #~ msgid "Forbiden CRS "
 #~ msgstr "CRS interdit "

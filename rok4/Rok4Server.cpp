@@ -1013,7 +1013,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
             bLevel = aLevel.find(oss.str())->second;
         }
         LOGGER_DEBUG("Create reprojected image");
-        curImage = bPyr.at(i)->createReprojectedImage(bLevel, bbox, dst_crs, servicesConf, width, height, interpolation, error);
+        curImage = bPyr.at(i)->createBasedSlab(bLevel, bbox, dst_crs, servicesConf, width, height, interpolation, error);
         LOGGER_DEBUG("Created");
         if (curImage != NULL) {
             //On applique un style à l'image
