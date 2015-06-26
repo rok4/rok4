@@ -302,11 +302,16 @@ Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst
     BoundingBox<double> askBbox = bbox;
     BoundingBox<double> dataBbox = getTms().getCrs().getCrsDefinitionArea();
 
+    //on regarde si elle n'est pas en dehors de la defintion de son CRS
+    if (!dst_crs.validateBBox ( bbox )) {
+        LOGGER_DEBUG ( "Bbox plus grande que sa definition dans le CRS, croppe à la taille maximale du CRS " );
+        askBbox = dst_crs.cropBBox ( bbox );
+    }
 
     //on met les deux bbox dans le même système de projection
     if ((are_the_two_CRS_equal( tms.getCrs().getProj4Code(), dst_crs.getProj4Code(), servicesConf.getListOfEqualsCRS() ) ) ) {
         //alors askBbox est déjà en EPSG:4326
-        LOGGER_DEBUG ( "Les deux CRS sont dans la même projection " );
+        LOGGER_DEBUG ( "Les deux CRS sont équivalents " );
     } else {
         LOGGER_DEBUG ( "Conversion de la bbox demandée en EPSG:4326 " );
         askBbox.reproject(dst_crs.getProj4Code(),"epsg:4326");
