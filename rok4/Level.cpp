@@ -546,3 +546,31 @@ int Level::getSlabHeight() {
     return height*TilePerHeight;
 
 }
+
+BoundingBox<double> Level::TMLimitsToBbox() {
+
+    int bPMinCol,bPMaxCol,bPMinRow,bPMaxRow;
+    double xo,yo,res,tileW,tileH,xmin,xmax,ymin,ymax;
+
+    bPMinCol = getMinTileCol();
+    bPMaxCol = getMaxTileCol();
+    bPMinRow = getMinTileRow();
+    bPMaxRow = getMaxTileRow();
+
+    //On récupère d'autres informations sur le TM
+    xo = getTm().getX0();
+    yo = getTm().getY0();
+    res = getTm().getRes();
+    tileW = getTm().getTileW();
+    tileH = getTm().getTileH();
+
+    //On transforme en bbox
+    xmin = bPMinCol * tileW * res + xo;
+    ymax = yo - bPMinRow * tileH * res;
+    xmax = xo + (bPMaxCol+1) * tileW * res;
+    ymin = ymax - (bPMaxRow - bPMinRow + 1) * tileH * res;
+
+    return BoundingBox<double> (xmin,ymin,xmax,ymax);
+
+
+}

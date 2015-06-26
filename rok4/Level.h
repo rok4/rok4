@@ -181,6 +181,7 @@ public:
 
     BoundingBox<double> tileIndicesToSlabBbox(int tileCol, int tileRow);
     BoundingBox<double> tileIndicesToTileBbox(int tileCol, int tileRow);
+    BoundingBox<double> TMLimitsToBbox();
     int getSlabHeight();
     int getSlabWidth();
     /** D */

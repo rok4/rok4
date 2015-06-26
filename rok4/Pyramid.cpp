@@ -300,7 +300,7 @@ Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst
     LOGGER_INFO ( "Create Based Slab " );
     //variables
     BoundingBox<double> askBbox = bbox;
-    BoundingBox<double> dataBbox = getTms().getCrs().getCrsDefinitionArea();
+    BoundingBox<double> dataBbox = levels[l]->TMLimitsToBbox();
 
     //on regarde si elle n'est pas en dehors de la defintion de son CRS
     if (!dst_crs.validateBBox ( bbox )) {
@@ -310,12 +310,11 @@ Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst
 
     //on met les deux bbox dans le même système de projection
     if ((are_the_two_CRS_equal( tms.getCrs().getProj4Code(), dst_crs.getProj4Code(), servicesConf.getListOfEqualsCRS() ) ) ) {
-        //alors askBbox est déjà en EPSG:4326
         LOGGER_DEBUG ( "Les deux CRS sont équivalents " );
     } else {
-        LOGGER_DEBUG ( "Conversion de la bbox demandée en EPSG:4326 " );
+        LOGGER_DEBUG ( "Conversion de la bbox demandee et de la bbox des donnees en EPSG:4326 " );
         askBbox.reproject(dst_crs.getProj4Code(),"epsg:4326");
-        //dataBbox est déjà en EPSG:4326
+        dataBbox.reproject(tms.getCrs().getProj4Code(),"epsg:4326");
     }
 
     //on compare les deux bbox
