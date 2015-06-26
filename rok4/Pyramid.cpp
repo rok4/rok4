@@ -297,6 +297,7 @@ Image *Pyramid::createExtendedCompoundImage(std::string l, BoundingBox<double> b
 
 Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst_crs, ServicesConf& servicesConf, int width, int height, Interpolation::KernelType interpolation, int error){
 
+    LOGGER_INFO ( "Create Based Slab " );
     //variables
     BoundingBox<double> askBbox = bbox;
     BoundingBox<double> dataBbox = getTms().getCrs().getCrsDefinitionArea();
@@ -305,8 +306,9 @@ Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst
     //on met les deux bbox dans le même système de projection
     if ((are_the_two_CRS_equal( tms.getCrs().getProj4Code(), dst_crs.getProj4Code(), servicesConf.getListOfEqualsCRS() ) ) ) {
         //alors askBbox est déjà en EPSG:4326
-
+        LOGGER_DEBUG ( "Les deux CRS sont dans la même projection " );
     } else {
+        LOGGER_DEBUG ( "Conversion de la bbox demandée en EPSG:4326 " );
         askBbox.reproject(dst_crs.getProj4Code(),"epsg:4326");
         //dataBbox est déjà en EPSG:4326
     }
@@ -314,11 +316,12 @@ Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst
     //on compare les deux bbox
     if (tms.getCrs() == dst_crs) {
         //elles sont identiques
+        LOGGER_DEBUG ( "Les deux bbox sont identiques " );
         return createReprojectedImage(l, bbox, dst_crs, servicesConf, width, height, interpolation, error);
     } else {
         if (askBbox.containsInside(dataBbox)) {
             //les données sont a l'intérieur de la bbox demandée
-
+            LOGGER_DEBUG ( "les données sont a l'intérieur de la bbox demandée " );
             dataBbox.reproject("epsg:4326",dst_crs.getProj4Code());
             return createExtendedCompoundImage(l,bbox,dataBbox,dst_crs,servicesConf,width,height,interpolation,error);
 
@@ -326,13 +329,14 @@ Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst
 
             if (dataBbox.containsInside(askBbox)) {
                 //la bbox demandée est plus petite que les données disponibles
+                LOGGER_DEBUG ("la bbox demandée est plus petite que les données disponibles");
                 return createReprojectedImage(l, bbox, dst_crs, servicesConf, width, height, interpolation, error);
 
             } else {
 
                 if (!dataBbox.intersects(askBbox)) {
                     //les deux ne s'intersectent pas donc on renvoit une image de nodata
-
+                    LOGGER_DEBUG ("les deux ne s'intersectent pas donc on renvoit une image de nodata");
                     int ndvalue[this->channels];
                     memset(ndvalue,0,this->channels*sizeof(int));
                     levels[l]->getNoDataValue(ndvalue);
@@ -343,6 +347,7 @@ Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst
 
                 } else {
                     //les deux s'intersectent
+                    LOGGER_DEBUG ("les deux bbox s'intersectent");
                     BoundingBox<double> partBbox = askBbox.cutIntersectionWith(dataBbox);
                     partBbox.reproject("epsg:4326",dst_crs.getProj4Code());
                     return createExtendedCompoundImage(l,bbox,partBbox,dst_crs,servicesConf,width,height,interpolation,error);
