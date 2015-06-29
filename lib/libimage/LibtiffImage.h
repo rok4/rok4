@@ -145,7 +145,7 @@ protected:
      * \param[in] compression compression des données
      * \param[in] tiff interface de la librairie TIFF entre le fichier et l'objet
      * \param[in] rowsperstrip taille de la bufferisation des données, en nombre de lignes
-     * \param[in] associatedalpha le canal d'alpha (le 2ème ou le 4ème) est-il prémultiplié dans les données ?
+     * \param[in] esType type du canal supplémentaire, si présent.
      ** \~english
      * \brief Create a LibtiffImage object, from all attributes
      * \param[in] width image width, in pixel
@@ -161,12 +161,12 @@ protected:
      * \param[in] compression data compression
      * \param[in] tiff interface between file and object
      * \param[in] rowsperstrip data buffering size, in line number
-     * \param[in] associatedalpha alpha sample (the second or the fourth sample) is associated (premutliplied) ?
+     * \param[in] esType extra sample type
      */
     LibtiffImage (
         int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name,
         SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
-        Compression::eCompression compression, TIFF* tif, int rowsperstrip, bool associatedalpha = false
+        Compression::eCompression compression, TIFF* tif, int rowsperstrip, ExtraSample::eExtraSample esType = ExtraSample::ALPHA_UNASSOC
     );
     
     /** \~french
@@ -186,7 +186,7 @@ protected:
      * \param[in] comp compression des données
      * \param[in] tiff interface de la librairie TIFF entre le fichier et l'objet
      * \param[in] rowsperstrip taille de la bufferisation des données, en nombre de lignes
-     * \param[in] associatedalpha le canal d'alpha (le 2ème ou le 4ème) est-il prémultiplié dans les données ?
+     * \param[in] esType type du canal supplémentaire, si présent.
      ** \~english
      * \brief Create a LibtiffImage object, from all attributes
      * \param[in] width image width, in pixel
@@ -202,12 +202,12 @@ protected:
      * \param[in] comp data compression
      * \param[in] tiff interface between file and object
      * \param[in] rowsperstrip data buffering size, in line number
-     * \param[in] associatedalpha alpha sample (the second or the fourth sample) is associated (premutliplied) ?
+     * \param[in] esType extra sample type
      */
     LibtiffImage (
         int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
         int sf, int bps, int ph,
-        int comp, TIFF* tif, int rowsperstrip, bool associatedalpha
+        int comp, TIFF* tif, int rowsperstrip, ExtraSample::eExtraSample esType = ExtraSample::ALPHA_UNASSOC
     );
 
 public:

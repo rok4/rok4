@@ -202,6 +202,28 @@ static uint16_t fromROK4Compression ( Compression::eCompression comp ) {
     }
 }
 
+static ExtraSample::eExtraSample toROK4ExtraSample ( uint16_t es ) {
+    switch ( es ) {
+    case EXTRASAMPLE_ASSOCALPHA :
+        return ExtraSample::ALPHA_ASSOC;
+    case EXTRASAMPLE_UNASSALPHA :
+        return ExtraSample::ALPHA_UNASSOC;
+    default :
+        return ExtraSample::UNKNOWN;
+    }
+}
+
+static uint16_t fromROK4ExtraSample ( ExtraSample::eExtraSample es ) {
+    switch ( es ) {
+    case ExtraSample::ALPHA_ASSOC :
+        return EXTRASAMPLE_ASSOCALPHA;
+    case ExtraSample::ALPHA_UNASSOC :
+        return EXTRASAMPLE_UNASSALPHA;
+    case ExtraSample::UNKNOWN :
+        return EXTRASAMPLE_UNSPECIFIED;
+    }
+}
+
 
 /* ------------------------------------------------------------------------------------------------ */
 /* -------------------------------------------- USINES -------------------------------------------- */
@@ -274,11 +296,15 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( char* filename, BoundingBox
         return NULL;
     }
 
+    
+    ExtraSample::eExtraSample es = ExtraSample::UNKNOWN;
     uint16_t extrasamplesCount;
     uint16_t* extrasamples;
     if ( TIFFGetField ( tif, TIFFTAG_EXTRASAMPLES, &extrasamplesCount, &extrasamples ) > 0 ) {
-        // On a des canaux en plus, si c'est de l'alpha, il ne doit pas être associé 
-        if ( extrasamples[0] == EXTRASAMPLE_ASSOCALPHA ) {
+        // On a des canaux en plus, si c'est de l'alpha (le premier extra), et qu'il est associé,
+        // on le précise pour convertir à la volée lors de la lecture des lignes
+        es = toROK4ExtraSample(extrasamples[0]);
+        if ( es == ExtraSample::ALPHA_ASSOC ) {
             LOGGER_ERROR ( "Alpha sample should be unassociated for the rok4 image " << filename );
             return NULL;
         }
@@ -308,7 +334,7 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( char* filename, BoundingBox
 
     return new Rok4Image (
         width, height, resx, resy, channels, bbox, filename,
-        toROK4SampleFormat( sf ), bitspersample, toROK4Photometric ( ph ), toROK4Compression ( comp ),
+        toROK4SampleFormat( sf ), bitspersample, toROK4Photometric ( ph ), toROK4Compression ( comp ), es,
         tileWidth, tileHeight
     );
 }
@@ -367,7 +393,7 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToWrite (
 
     return new Rok4Image (
         width, height, resx, resy, channels, bbox, filename,
-        sampleformat, bitspersample, photometric, compression, tileWidth, tileHeight
+        sampleformat, bitspersample, photometric, compression, ExtraSample::ALPHA_UNASSOC, tileWidth, tileHeight
     );
 }
 
@@ -378,9 +404,9 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToWrite (
 Rok4Image::Rok4Image (
     int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
-    Compression::eCompression compression, int tileWidth, int tileHeight ) :
+    Compression::eCompression compression, ExtraSample::eExtraSample es, int tileWidth, int tileHeight ) :
 
-    FileImage ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression ), 
+    FileImage ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression, es ), 
     tileWidth (tileWidth), tileHeight(tileHeight)
 {
     tileWidthwise = width/tileWidth;
@@ -780,7 +806,7 @@ bool Rok4Image::prepare()
     writeTIFFTAG(&p, TIFFTAG_TILEBYTECOUNTS, TIFF_LONG, tilesNumber, ROK4_IMAGE_HEADER_SIZE + 4 * tilesNumber);
     
     if ( channels == 4 || channels == 2 ) {
-        writeTIFFTAG(&p, TIFFTAG_EXTRASAMPLES, TIFF_SHORT, 1, EXTRASAMPLE_UNASSALPHA);
+        writeTIFFTAG(&p, TIFFTAG_EXTRASAMPLES, TIFF_SHORT, 1, fromROK4ExtraSample(esType));
     }
     
     writeTIFFTAG(&p, TIFFTAG_SAMPLEFORMAT, TIFF_SHORT, 1, fromROK4SampleFormat(sampleformat));
@@ -848,7 +874,6 @@ bool Rok4Image::prepare()
 
 bool Rok4Image::writeTile( int tileInd, uint8_t* data, bool crop )
 {
-    LOGGER_DEBUG("Ecriture de la tuile " << tileInd);
     
     if ( tileInd > tilesNumber || tileInd < 0 ) {
         LOGGER_ERROR ( "Unvalid tile's indice to write (" << tileInd << "). Have to be between 0 and " << tilesNumber-1 );

@@ -151,6 +151,28 @@ static uint16_t fromROK4Compression ( Compression::eCompression comp ) {
     }
 }
 
+static ExtraSample::eExtraSample toROK4ExtraSample ( uint16_t es ) {
+    switch ( es ) {
+    case EXTRASAMPLE_ASSOCALPHA :
+        return ExtraSample::ALPHA_ASSOC;
+    case EXTRASAMPLE_UNASSALPHA :
+        return ExtraSample::ALPHA_UNASSOC;
+    default :
+        return ExtraSample::UNKNOWN;
+    }
+}
+
+static uint16_t fromROK4ExtraSample ( ExtraSample::eExtraSample es ) {
+    switch ( es ) {
+    case ExtraSample::ALPHA_ASSOC :
+        return EXTRASAMPLE_ASSOCALPHA;
+    case ExtraSample::ALPHA_UNASSOC :
+        return EXTRASAMPLE_UNASSALPHA;
+    case ExtraSample::UNKNOWN :
+        return EXTRASAMPLE_UNSPECIFIED;
+    }
+}
+
 
 /* ------------------------------------------------------------------------------------------------ */
 /* -------------------------------------------- USINES -------------------------------------------- */
@@ -160,7 +182,7 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
 
     int width=0, height=0, channels=0, planarconfig=0, bitspersample=0, sf=0, ph=0, comp=0, rowsperstrip=0;
     TIFF* tif = TIFFOpen ( filename, "r" );
-    bool associatedAlpha = false;
+    
     
     /************** RECUPERATION DES INFORMATIONS **************/
 
@@ -234,14 +256,15 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
         return NULL;
     }
 
+    ExtraSample::eExtraSample es = ExtraSample::UNKNOWN;
     uint16_t extrasamplesCount;
     uint16_t* extrasamples;
     if ( TIFFGetField ( tif, TIFFTAG_EXTRASAMPLES, &extrasamplesCount, &extrasamples ) > 0 ) {
         // On a des canaux en plus, si c'est de l'alpha (le premier extra), et qu'il est associé,
         // on le précise pour convertir à la volée lors de la lecture des lignes
-        if ( extrasamples[0] == EXTRASAMPLE_ASSOCALPHA ) {
+        es = toROK4ExtraSample(extrasamples[0]);
+        if ( es == ExtraSample::ALPHA_ASSOC ) {
             LOGGER_INFO ( "Alpha sample is associated for the file " << filename << ". We will convert for reading");
-            associatedAlpha = true;
         }
     }
     
@@ -269,7 +292,7 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToRead ( char* filename, Bo
     return new LibtiffImage (
         width, height, resx, resy, channels, bbox, filename,
         sf, bitspersample, ph, comp,
-        tif, rowsperstrip, associatedAlpha
+        tif, rowsperstrip, es
     );
 }
 
@@ -395,7 +418,7 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
     return new LibtiffImage (
         width, height, resx, resy, channels, bbox, filename,
         sampleformat, bitspersample, photometric, compression,
-        tif, rowsperstrip, false
+        tif, rowsperstrip, ExtraSample::ALPHA_UNASSOC
     );
 }
 
@@ -405,10 +428,10 @@ LibtiffImage* LibtiffImageFactory::createLibtiffImageToWrite (
 LibtiffImage::LibtiffImage (
     int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
     int sf, int bps, int ph,
-    int comp, TIFF* tif, int rowsperstrip, bool associatedalpha) :
+    int comp, TIFF* tif, int rowsperstrip, ExtraSample::eExtraSample esType) :
 
     FileImage ( width, height, resx, resy, channels, bbox, name, toROK4SampleFormat( sf ),
-                bps, toROK4Photometric( ph ), toROK4Compression( comp ), associatedalpha
+                bps, toROK4Photometric( ph ), toROK4Compression( comp ), esType
               ),
 
     tif ( tif ), rowsperstrip ( rowsperstrip ) {
@@ -445,9 +468,9 @@ LibtiffImage::LibtiffImage (
 LibtiffImage::LibtiffImage (
     int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
-    Compression::eCompression compression, TIFF* tif, int rowsperstrip, bool associatedalpha) :
+    Compression::eCompression compression, TIFF* tif, int rowsperstrip, ExtraSample::eExtraSample esType) :
 
-    FileImage ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression, associatedalpha ),
+    FileImage ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression, esType ),
 
     tif ( tif ), rowsperstrip ( rowsperstrip ) {
         
@@ -494,7 +517,7 @@ int LibtiffImage::_getline ( T* buffer, int line ) {
 int LibtiffImage::getline ( uint8_t* buffer, int line ) {
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
         int r = _getline ( buffer,line );
-        if (associatedalpha) unassociateAlpha ( buffer );
+        if (esType == ExtraSample::ALPHA_ASSOC) unassociateAlpha ( buffer );
         return r;
     } else if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) { // uint16
         /* On ne convertit pas les entiers 16 bits en entier sur 8 bits (aucun intérêt)

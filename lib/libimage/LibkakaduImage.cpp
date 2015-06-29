@@ -276,7 +276,7 @@ bool LibkakaduImage::init() {
     /************* strip_buffer & current_strip ***********/
 
     try {
-        strip_buffer = new kdu_byte[rowsperstrip * width * pixelSize];
+        strip_buffer = new uint8_t[rowsperstrip * width * pixelSize];
     } catch (std::bad_alloc e) {
         LOGGER_ERROR("Memory allocation error while creating strip buffer.");
         if (m_codestream.exists())
@@ -298,6 +298,7 @@ bool LibkakaduImage::init() {
 /* ------------------------------------------------------------------------------------------------ */
 /* ------------------------------------------- LECTURE -------------------------------------------- */
 
+template<typename T>
 void LibkakaduImage::_loadstrip() {
 
     int C0 = 0;
@@ -308,19 +309,20 @@ void LibkakaduImage::_loadstrip() {
     int max_layers = 0;
     int discard_levels = 0;
     
-    kdu_dims dims,mdims;
+    kdu_dims dims, mdims;
     // Position de l'origine en coord fichier (cad pleine resolution)
     dims.pos=kdu_coords(C0, L0);
     // Taille de la zone en coord fichier (cad pleine resolution)
     dims.size=kdu_coords(width,NLines);
     
     m_codestream.map_region(0,dims,mdims);
+    
     m_codestream.apply_input_restrictions(0,channels,discard_levels,max_layers,&mdims,KDU_WANT_OUTPUT_COMPONENTS);
     
-    int n, num_components = m_codestream.get_num_components(true);
-    kdu_dims *comp_dims = new kdu_dims[num_components];
-    for (n=0; n < num_components; n++)
+    kdu_dims *comp_dims = new kdu_dims[channels];
+    for (int n = 0; n < channels; n++) {
         m_codestream.get_dims(n,comp_dims[n],true);
+    }
     
     kdu_region_decompressor decompressor;
     kdu_channel_mapping kchannels;
@@ -329,21 +331,18 @@ void LibkakaduImage::_loadstrip() {
     
     decompressor.start(
         m_codestream,&kchannels,single_component, discard_levels,
-        0, mdims, kdu_coords(1,1),kdu_coords(1,1),true,KDU_WANT_OUTPUT_COMPONENTS,false,m_env_ref,0
-    );        
+        0, mdims, kdu_coords(1,1), kdu_coords(1,1), true, KDU_WANT_OUTPUT_COMPONENTS, false, m_env_ref, 0
+    );
     
-    kdu_dims new_region, incomplete_region=mdims;
+    kdu_dims new_region, incomplete_region = mdims;
     
-    kdu_byte ** channel_bufs=new kdu_byte*[num_components];
-    int row_gap = 0;
-    int suggested_increment = 0;
+    T** channel_bufs = new T*[channels];
     
-    for(n=0;n<num_components;++n)
-    {
-        channel_bufs[n] = strip_buffer + n*nBandSpace;
+    T* strip_tmp = new T[rowsperstrip * width * channels];
+    
+    for(int n = 0; n<channels; ++n) {
+        channel_bufs[n] = strip_tmp + n;
     }
-    row_gap = comp_dims[0].size.x;
-    suggested_increment = comp_dims[0].size.x*comp_dims[0].size.y;
     
     kdu_coords buffer_origin;
     buffer_origin.x = incomplete_region.pos.x;
@@ -352,15 +351,18 @@ void LibkakaduImage::_loadstrip() {
     bool nochEinmal = true;
     while(nochEinmal && ! incomplete_region.is_empty()) {
         nochEinmal = decompressor.process(
-            channel_bufs, false, pixelSize, buffer_origin, row_gap, suggested_increment, 
-            suggested_increment, incomplete_region, new_region, 8, true
+            channel_bufs, false, channels, buffer_origin, width*channels, 1, 
+            width * rowsperstrip, incomplete_region, new_region, bitspersample, false
         );
     }
     
-    delete[] channel_bufs;
+    memcpy(strip_buffer, strip_tmp, rowsperstrip * width * pixelSize);
+    
     decompressor.finish();
     
-    delete[] comp_dims;         
+    delete[] strip_tmp;
+    delete[] channel_bufs;
+    delete[] comp_dims;
 }
 
 template<typename T>
@@ -368,14 +370,21 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
     
 
     if ( line / rowsperstrip != current_strip ) {
-    
-        // Les données n'ont pas encore été lue depuis l'image (strip pas en mémoire).
         current_strip = line / rowsperstrip;
-        
-        _loadstrip();    
+        // Les données n'ont pas encore été lue depuis l'image (strip pas en mémoire).
+        if (sizeof(T) == 1) {
+            // Mettre les données sur des uint8_t -> lire le jpeg2000 en kdu_byte            
+            _loadstrip<kdu_byte>();
+        } else if (sizeof(T) == 2) {
+            // Mettre les données sur des uint16_t -> lire le jpeg2000 en kdu_uint16            
+            _loadstrip<kdu_uint16>();
+        } else if (sizeof(T) == 1) {
+            // Mettre les données sur des float -> lire le jpeg2000 en float            
+            _loadstrip<float>();
+        }
     }
     
-    memcpy ( buffer, (uint8_t*) strip_buffer + ( line%rowsperstrip ) * width * pixelSize, width * pixelSize );
+    memcpy ( buffer, strip_buffer + ( line%rowsperstrip ) * width * pixelSize, width * pixelSize );
     
     return width*channels;
 }

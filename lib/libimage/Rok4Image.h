@@ -368,6 +368,7 @@ protected:
      * \param[in] bitspersample nombre de bits par canal
      * \param[in] photometric photométrie des données
      * \param[in] compression compression des données
+     * \param[in] esType type du canal supplémentaire, si présent.
      * \param[in] tileWidth largeur en pixel de la tuile
      * \param[in] tileHeight hauteur en pixel de la tuile
      ** \~english
@@ -383,13 +384,12 @@ protected:
      * \param[in] bitspersample number of bits per sample
      * \param[in] photometric data photometric
      * \param[in] compression data compression
+     * \param[in] esType extra sample type
      * \param[in] tileWidth tile's pixel width
      * \param[in] tileHeight tile's pixel height
      */
     Rok4Image (
-        int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name,
-        SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
-        Compression::eCompression compression, int tileWidth, int tileHeight
+        int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name, SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression, ExtraSample::eExtraSample es, int tileWidth, int tileHeight
     );
 
 public:

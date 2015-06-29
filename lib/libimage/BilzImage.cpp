@@ -176,7 +176,7 @@ BilzImage::BilzImage (
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
     uint8_t* bilData ) :
 
-    FileImage ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression, false ),
+    FileImage ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression ),
 
     data(bilData) {
         

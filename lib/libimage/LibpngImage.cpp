@@ -246,7 +246,7 @@ LibpngImage::LibpngImage (
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
     png_bytep* pngData ) :
 
-    FileImage ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression, false ),
+    FileImage ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression, ExtraSample::ALPHA_UNASSOC ),
 
     data(pngData) {
         

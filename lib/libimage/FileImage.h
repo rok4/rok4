@@ -91,12 +91,12 @@ protected:
      */
     Photometric::ePhotometric photometric;
     /**
-     * \~french \brief le canal d'alpha (le 2ème ou le 4ème) est-il prémultiplié dans les données ?
-     * \details En écriture ou dans les traitement, on considère que les canaux ne sont pas prémultipliés par la valeur d'alpha.
+     * \~french \brief type de l'éventuel canal supplémentaire
+     * \details En écriture ou dans les traitements, on considère que les canaux ne sont pas prémultipliés par la valeur d'alpha.
      * En lecture, on accepte des images pour lesquelles l'alpha est associé. On doit donc mémoriser cette information et convertir à la volée lors de la lecture des données.
-     * \~english \brief Alpha sample (the second or the fourth sample) is associated (premutliplied) ?
+     * \~english \brief extra sample type (if exists)
      */
-    bool associatedalpha;
+    ExtraSample::eExtraSample esType;
     /**
      * \~french \brief Compression des données (jpeg, packbits...)
      * \~english \brief Data compression (jpeg, packbits...)
@@ -133,7 +133,7 @@ protected:
      * \param[in] bitspersample nombre de bits par canal
      * \param[in] photometric photométrie des données
      * \param[in] compression compression des données
-     * \param[in] associatedalpha le canal d'alpha (le 2ème ou le 4ème) est-il prémultiplié dans les données ?
+     * \param[in] esType type du canal supplémentaire, si présent.
      ** \~english
      * \brief Create a FileImage object, from all attributes
      * \param[in] width image width, in pixel
@@ -147,12 +147,12 @@ protected:
      * \param[in] bitspersample number of bits per sample
      * \param[in] photometric data photometric
      * \param[in] compression data compression
-     * \param[in] associatedalpha alpha sample (the second or the fourth sample) is associated (premutliplied) ?
+     * \param[in] esType extra sample type
      */
     FileImage (
         int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name,
         SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
-        bool associatedalpha = false
+        ExtraSample::eExtraSample esType = ExtraSample::ALPHA_UNASSOC
     );
 
 public:
@@ -262,6 +262,28 @@ public:
     inline Photometric::ePhotometric getPhotometric() {
         return photometric;
     }
+    
+    /**
+     * \~french
+     * \brief Retourne le type du canal supplémentaire
+     * \return esType
+     * \~english
+     * \brief Return extra sample type
+     * \return esType
+     */
+    inline ExtraSample::eExtraSample getExtraSample() {
+        return esType;
+    }
+    
+    /**
+     * \~french
+     * \brief Modifie le type du canal supplémentaire
+     * \~english
+     * \brief Modify extra sample type
+     */
+    inline void setExtraSample(ExtraSample::eExtraSample es) {
+        esType = es;
+    }
     /**
      * \~french
      * \brief Retourne la compression des données
@@ -318,7 +340,7 @@ public:
         LOGGER_INFO ( "\t- Photometric : " << Photometric::toString ( photometric ) );
         LOGGER_INFO ( "\t- Bits per sample : " << bitspersample );
         LOGGER_INFO ( "\t- Sample format : " << SampleFormat::toString ( sampleformat ) );
-        if (associatedalpha) LOGGER_INFO ( "\t- Alpha have to be unassociated");
+        if (esType == ExtraSample::ALPHA_ASSOC) LOGGER_INFO ( "\t- Alpha have to be unassociated");
         LOGGER_INFO ( "" );
     }
 };
