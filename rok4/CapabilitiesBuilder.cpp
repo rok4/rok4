@@ -762,229 +762,231 @@ void Rok4Server::buildWMS111Capabilities() {
         // Child layers
         std::map<std::string, Layer*>::iterator it;
         for ( it=layerList.begin(); it!=layerList.end(); it++ ) {
-            TiXmlElement * childLayerEl = new TiXmlElement ( "Layer" );
-            Layer* childLayer = it->second;
-            // Name
-            childLayerEl->LinkEndChild ( buildTextNode ( "Name", childLayer->getId() ) );
-            // Title
-            childLayerEl->LinkEndChild ( buildTextNode ( "Title", childLayer->getTitle() ) );
-            // Abstract
-            childLayerEl->LinkEndChild ( buildTextNode ( "Abstract", childLayer->getAbstract() ) );
-            // KeywordList
-            if ( childLayer->getKeyWords()->size() != 0 ) {
-                TiXmlElement * kwlEl = new TiXmlElement ( "KeywordList" );
+            //Look if the layer is published in WMS
+            if (it->second->getWMSAuthorized()) {
+                TiXmlElement * childLayerEl = new TiXmlElement ( "Layer" );
+                Layer* childLayer = it->second;
+                // Name
+                childLayerEl->LinkEndChild ( buildTextNode ( "Name", childLayer->getId() ) );
+                // Title
+                childLayerEl->LinkEndChild ( buildTextNode ( "Title", childLayer->getTitle() ) );
+                // Abstract
+                childLayerEl->LinkEndChild ( buildTextNode ( "Abstract", childLayer->getAbstract() ) );
+                // KeywordList
+                if ( childLayer->getKeyWords()->size() != 0 ) {
+                    TiXmlElement * kwlEl = new TiXmlElement ( "KeywordList" );
 
-                TiXmlElement * kwEl;
-                for ( unsigned int i=0; i < childLayer->getKeyWords()->size(); i++ ) {
-                    kwEl = new TiXmlElement ( "Keyword" );
-                    kwEl->LinkEndChild ( new TiXmlText ( childLayer->getKeyWords()->at ( i ).getContent() ) );
-                    const std::map<std::string,std::string>* attributes = childLayer->getKeyWords()->at ( i ).getAttributes();
-                    for ( std::map<std::string,std::string>::const_iterator it = attributes->begin(); it !=attributes->end(); it++ ) {
-                        kwEl->SetAttribute ( ( *it ).first, ( *it ).second );
+                    TiXmlElement * kwEl;
+                    for ( unsigned int i=0; i < childLayer->getKeyWords()->size(); i++ ) {
+                        kwEl = new TiXmlElement ( "Keyword" );
+                        kwEl->LinkEndChild ( new TiXmlText ( childLayer->getKeyWords()->at ( i ).getContent() ) );
+                        const std::map<std::string,std::string>* attributes = childLayer->getKeyWords()->at ( i ).getAttributes();
+                        for ( std::map<std::string,std::string>::const_iterator it = attributes->begin(); it !=attributes->end(); it++ ) {
+                            kwEl->SetAttribute ( ( *it ).first, ( *it ).second );
+                        }
+
+                        kwlEl->LinkEndChild ( kwEl );
                     }
-
-                    kwlEl->LinkEndChild ( kwEl );
+                    childLayerEl->LinkEndChild ( kwlEl );
                 }
-                childLayerEl->LinkEndChild ( kwlEl );
-            }
-            // CRS
-            for ( unsigned int i=0; i < childLayer->getWMSCRSList().size(); i++ ) {
-                childLayerEl->LinkEndChild ( buildTextNode ( "SRS", childLayer->getWMSCRSList() [i].getRequestCode() ) );
-            }
-            // GeographicBoundingBox
-            TiXmlElement * gbbEl = new TiXmlElement ( "LatLonBoundingBox" );
-
-            os.str ( "" );
-            os<<childLayer->getGeographicBoundingBox().minx;
-            gbbEl->SetAttribute ( "minx",os.str() );
-            os.str ( "" );
-            os<<childLayer->getGeographicBoundingBox().miny;
-            gbbEl->SetAttribute ( "miny",os.str() );
-            os.str ( "" );
-            os<<childLayer->getGeographicBoundingBox().maxx;
-            gbbEl->SetAttribute ( "maxx",os.str() );
-            os.str ( "" );
-            os<<childLayer->getGeographicBoundingBox().maxy;
-            gbbEl->SetAttribute ( "maxy",os.str() );
-            os.str ( "" );
-            childLayerEl->LinkEndChild ( gbbEl );
-
-
-            // BoundingBox
-            if ( servicesConf.isInspire() ) {
+                // CRS
                 for ( unsigned int i=0; i < childLayer->getWMSCRSList().size(); i++ ) {
-                    BoundingBox<double> bbox ( 0,0,0,0 );
-                    if ( childLayer->getWMSCRSList() [i].validateBBoxGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy ) ) {
-                        bbox = childLayer->getWMSCRSList() [i].boundingBoxFromGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy );
-                    } else {
-                        bbox = childLayer->getWMSCRSList() [i].boundingBoxFromGeographic ( childLayer->getWMSCRSList() [i].cropBBoxGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy ) );
-                    }
-                    CRS crs = childLayer->getWMSCRSList() [i];
-                    LOGGER_DEBUG ("check inverse for "<< crs.getProj4Code());
-                    //Switch lon lat for EPSG longlat CRS
-                    if ( ( crs.getAuthority() =="EPSG" || crs.getAuthority() =="epsg" ) && crs.isLongLat() ) {
-                        double doubletmp;
-                        doubletmp = bbox.xmin;
-                        bbox.xmin = bbox.ymin;
-                        bbox.ymin = doubletmp;
-                        doubletmp = bbox.xmax;
-                        bbox.xmax = bbox.ymax;
-                        bbox.ymax = doubletmp;
-                    }
+                    childLayerEl->LinkEndChild ( buildTextNode ( "SRS", childLayer->getWMSCRSList() [i].getRequestCode() ) );
+                }
+                // GeographicBoundingBox
+                TiXmlElement * gbbEl = new TiXmlElement ( "LatLonBoundingBox" );
 
+                os.str ( "" );
+                os<<childLayer->getGeographicBoundingBox().minx;
+                gbbEl->SetAttribute ( "minx",os.str() );
+                os.str ( "" );
+                os<<childLayer->getGeographicBoundingBox().miny;
+                gbbEl->SetAttribute ( "miny",os.str() );
+                os.str ( "" );
+                os<<childLayer->getGeographicBoundingBox().maxx;
+                gbbEl->SetAttribute ( "maxx",os.str() );
+                os.str ( "" );
+                os<<childLayer->getGeographicBoundingBox().maxy;
+                gbbEl->SetAttribute ( "maxy",os.str() );
+                os.str ( "" );
+                childLayerEl->LinkEndChild ( gbbEl );
+
+
+                // BoundingBox
+                if ( servicesConf.isInspire() ) {
+                    for ( unsigned int i=0; i < childLayer->getWMSCRSList().size(); i++ ) {
+                        BoundingBox<double> bbox ( 0,0,0,0 );
+                        if ( childLayer->getWMSCRSList() [i].validateBBoxGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy ) ) {
+                            bbox = childLayer->getWMSCRSList() [i].boundingBoxFromGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy );
+                        } else {
+                            bbox = childLayer->getWMSCRSList() [i].boundingBoxFromGeographic ( childLayer->getWMSCRSList() [i].cropBBoxGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy ) );
+                        }
+                        CRS crs = childLayer->getWMSCRSList() [i];
+                        LOGGER_DEBUG ("check inverse for "<< crs.getProj4Code());
+                        //Switch lon lat for EPSG longlat CRS
+                        if ( ( crs.getAuthority() =="EPSG" || crs.getAuthority() =="epsg" ) && crs.isLongLat() ) {
+                            double doubletmp;
+                            doubletmp = bbox.xmin;
+                            bbox.xmin = bbox.ymin;
+                            bbox.ymin = doubletmp;
+                            doubletmp = bbox.xmax;
+                            bbox.xmax = bbox.ymax;
+                            bbox.ymax = doubletmp;
+                        }
+
+                        TiXmlElement * bbEl = new TiXmlElement ( "BoundingBox" );
+                        bbEl->SetAttribute ( "SRS",childLayer->getWMSCRSList() [i].getRequestCode() );
+                        int floatprecision = GetDecimalPlaces ( bbox.xmin );
+                        floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.xmax ) );
+                        floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.ymin ) );
+                        floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.ymax ) );
+                        floatprecision = std::min ( floatprecision,9 ); //FIXME gestion du nombre maximal de décimal.
+
+                        os.str ( "" );
+                        os<< std::fixed << std::setprecision ( floatprecision );
+                        os<<bbox.xmin;
+                        bbEl->SetAttribute ( "minx",os.str() );
+                        os.str ( "" );
+                        os<<bbox.ymin;
+                        bbEl->SetAttribute ( "miny",os.str() );
+                        os.str ( "" );
+                        os<<bbox.xmax;
+                        bbEl->SetAttribute ( "maxx",os.str() );
+                        os.str ( "" );
+                        os<<bbox.ymax;
+                        bbEl->SetAttribute ( "maxy",os.str() );
+                        os.str ( "" );
+                        childLayerEl->LinkEndChild ( bbEl );
+                    }
+                    for ( unsigned int i=0; i < servicesConf.getGlobalCRSList()->size(); i++ ) {
+                        BoundingBox<double> bbox ( 0,0,0,0 );
+                        if ( servicesConf.getGlobalCRSList()->at ( i ).validateBBoxGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy ) ) {
+                            bbox = servicesConf.getGlobalCRSList()->at ( i ).boundingBoxFromGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy );
+                        } else {
+                            bbox = servicesConf.getGlobalCRSList()->at ( i ).boundingBoxFromGeographic ( servicesConf.getGlobalCRSList()->at ( i ).cropBBoxGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy ) );
+                        }
+                        CRS crs = servicesConf.getGlobalCRSList()->at ( i );
+                        //Switch lon lat for EPSG longlat CRS
+                        LOGGER_DEBUG ("check inverse for "<< crs.getProj4Code());
+                        if ( ( crs.getAuthority() =="EPSG" || crs.getAuthority() =="epsg" ) && crs.isLongLat() ) {
+                            double doubletmp;
+                            doubletmp = bbox.xmin;
+                            bbox.xmin = bbox.ymin;
+                            bbox.ymin = doubletmp;
+                            doubletmp = bbox.xmax;
+                            bbox.xmax = bbox.ymax;
+                            bbox.ymax = doubletmp;
+                        }
+
+                        TiXmlElement * bbEl = new TiXmlElement ( "BoundingBox" );
+                        bbEl->SetAttribute ( "SRS",servicesConf.getGlobalCRSList()->at ( i ).getRequestCode() );
+                        int floatprecision = GetDecimalPlaces ( bbox.xmin );
+                        floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.xmax ) );
+                        floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.ymin ) );
+                        floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.ymax ) );
+                        floatprecision = std::min ( floatprecision,9 ); //FIXME gestion du nombre maximal de décimal.
+                        os.str ( "" );
+                        os<< std::fixed << std::setprecision ( floatprecision );
+                        os<<bbox.xmin;
+                        bbEl->SetAttribute ( "minx",os.str() );
+                        os.str ( "" );
+                        os<<bbox.ymin;
+                        bbEl->SetAttribute ( "miny",os.str() );
+                        os.str ( "" );
+                        os<<bbox.xmax;
+                        bbEl->SetAttribute ( "maxx",os.str() );
+                        os.str ( "" );
+                        os<<bbox.ymax;
+                        bbEl->SetAttribute ( "maxy",os.str() );
+                        os.str ( "" );
+                        childLayerEl->LinkEndChild ( bbEl );
+                    }
+                } else {
                     TiXmlElement * bbEl = new TiXmlElement ( "BoundingBox" );
-                    bbEl->SetAttribute ( "SRS",childLayer->getWMSCRSList() [i].getRequestCode() );
-                    int floatprecision = GetDecimalPlaces ( bbox.xmin );
-                    floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.xmax ) );
-                    floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.ymin ) );
-                    floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.ymax ) );
-                    floatprecision = std::min ( floatprecision,9 ); //FIXME gestion du nombre maximal de décimal.
-
-                    os.str ( "" );
-                    os<< std::fixed << std::setprecision ( floatprecision );
-                    os<<bbox.xmin;
-                    bbEl->SetAttribute ( "minx",os.str() );
-                    os.str ( "" );
-                    os<<bbox.ymin;
-                    bbEl->SetAttribute ( "miny",os.str() );
-                    os.str ( "" );
-                    os<<bbox.xmax;
-                    bbEl->SetAttribute ( "maxx",os.str() );
-                    os.str ( "" );
-                    os<<bbox.ymax;
-                    bbEl->SetAttribute ( "maxy",os.str() );
-                    os.str ( "" );
+                    bbEl->SetAttribute ( "SRS",childLayer->getBoundingBox().srs );
+                    bbEl->SetAttribute ( "minx",childLayer->getBoundingBox().minx );
+                    bbEl->SetAttribute ( "miny",childLayer->getBoundingBox().miny );
+                    bbEl->SetAttribute ( "maxx",childLayer->getBoundingBox().maxx );
+                    bbEl->SetAttribute ( "maxy",childLayer->getBoundingBox().maxy );
                     childLayerEl->LinkEndChild ( bbEl );
                 }
-                for ( unsigned int i=0; i < servicesConf.getGlobalCRSList()->size(); i++ ) {
-                    BoundingBox<double> bbox ( 0,0,0,0 );
-                    if ( servicesConf.getGlobalCRSList()->at ( i ).validateBBoxGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy ) ) {
-                        bbox = servicesConf.getGlobalCRSList()->at ( i ).boundingBoxFromGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy );
-                    } else {
-                        bbox = servicesConf.getGlobalCRSList()->at ( i ).boundingBoxFromGeographic ( servicesConf.getGlobalCRSList()->at ( i ).cropBBoxGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy ) );
-                    }
-                    CRS crs = servicesConf.getGlobalCRSList()->at ( i );
-                    //Switch lon lat for EPSG longlat CRS
-                    LOGGER_DEBUG ("check inverse for "<< crs.getProj4Code());
-                    if ( ( crs.getAuthority() =="EPSG" || crs.getAuthority() =="epsg" ) && crs.isLongLat() ) {
-                        double doubletmp;
-                        doubletmp = bbox.xmin;
-                        bbox.xmin = bbox.ymin;
-                        bbox.ymin = doubletmp;
-                        doubletmp = bbox.xmax;
-                        bbox.xmax = bbox.ymax;
-                        bbox.ymax = doubletmp;
-                    }
-
-                    TiXmlElement * bbEl = new TiXmlElement ( "BoundingBox" );
-                    bbEl->SetAttribute ( "SRS",servicesConf.getGlobalCRSList()->at ( i ).getRequestCode() );
-                    int floatprecision = GetDecimalPlaces ( bbox.xmin );
-                    floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.xmax ) );
-                    floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.ymin ) );
-                    floatprecision = std::max ( floatprecision,GetDecimalPlaces ( bbox.ymax ) );
-                    floatprecision = std::min ( floatprecision,9 ); //FIXME gestion du nombre maximal de décimal.
-                    os.str ( "" );
-                    os<< std::fixed << std::setprecision ( floatprecision );
-                    os<<bbox.xmin;
-                    bbEl->SetAttribute ( "minx",os.str() );
-                    os.str ( "" );
-                    os<<bbox.ymin;
-                    bbEl->SetAttribute ( "miny",os.str() );
-                    os.str ( "" );
-                    os<<bbox.xmax;
-                    bbEl->SetAttribute ( "maxx",os.str() );
-                    os.str ( "" );
-                    os<<bbox.ymax;
-                    bbEl->SetAttribute ( "maxy",os.str() );
-                    os.str ( "" );
-                    childLayerEl->LinkEndChild ( bbEl );
-                }
-            } else {
-                TiXmlElement * bbEl = new TiXmlElement ( "BoundingBox" );
-                bbEl->SetAttribute ( "SRS",childLayer->getBoundingBox().srs );
-                bbEl->SetAttribute ( "minx",childLayer->getBoundingBox().minx );
-                bbEl->SetAttribute ( "miny",childLayer->getBoundingBox().miny );
-                bbEl->SetAttribute ( "maxx",childLayer->getBoundingBox().maxx );
-                bbEl->SetAttribute ( "maxy",childLayer->getBoundingBox().maxy );
-                childLayerEl->LinkEndChild ( bbEl );
-            }
-            //MetadataURL
-            if ( childLayer->getMetadataURLs().size() != 0 ) {
-                for ( unsigned int i=0; i < childLayer->getMetadataURLs().size(); ++i ) {
-                    TiXmlElement * mtdURLEl = new TiXmlElement ( "MetadataURL" );
-                    MetadataURL mtdUrl = childLayer->getMetadataURLs().at ( i );
-                    mtdURLEl->SetAttribute ( "type", mtdUrl.getType() );
-                    mtdURLEl->LinkEndChild ( buildTextNode ( "Format",mtdUrl.getFormat() ) );
-
-                    TiXmlElement* onlineResourceEl = new TiXmlElement ( "OnlineResource" );
-                    onlineResourceEl->SetAttribute ( "xlink:type","simple" );
-                    onlineResourceEl->SetAttribute ( "xlink:href", mtdUrl.getHRef() );
-                    mtdURLEl->LinkEndChild ( onlineResourceEl );
-                    childLayerEl->LinkEndChild ( mtdURLEl );
-                }
-            }
-
-            // Style
-            LOGGER_DEBUG ( _ ( "Nombre de styles : " ) <<childLayer->getStyles().size() );
-            if ( childLayer->getStyles().size() != 0 ) {
-                for ( unsigned int i=0; i < childLayer->getStyles().size(); i++ ) {
-                    TiXmlElement * styleEl= new TiXmlElement ( "Style" );
-                    Style* style = childLayer->getStyles() [i];
-                    styleEl->LinkEndChild ( buildTextNode ( "Name", style->getId().c_str() ) );
-                    int j;
-                    for ( j=0 ; j < style->getTitles().size(); ++j ) {
-                        styleEl->LinkEndChild ( buildTextNode ( "Title", style->getTitles() [j].c_str() ) );
-                    }
-                    for ( j=0 ; j < style->getAbstracts().size(); ++j ) {
-                        styleEl->LinkEndChild ( buildTextNode ( "Abstract", style->getAbstracts() [j].c_str() ) );
-                    }
-                    for ( j=0 ; j < style->getLegendURLs().size(); ++j ) {
-                        LOGGER_DEBUG ( _ ( "LegendURL" ) << style->getId() );
-                        LegendURL legendURL = style->getLegendURLs() [j];
-                        TiXmlElement* legendURLEl = new TiXmlElement ( "LegendURL" );
+                //MetadataURL
+                if ( childLayer->getMetadataURLs().size() != 0 ) {
+                    for ( unsigned int i=0; i < childLayer->getMetadataURLs().size(); ++i ) {
+                        TiXmlElement * mtdURLEl = new TiXmlElement ( "MetadataURL" );
+                        MetadataURL mtdUrl = childLayer->getMetadataURLs().at ( i );
+                        mtdURLEl->SetAttribute ( "type", mtdUrl.getType() );
+                        mtdURLEl->LinkEndChild ( buildTextNode ( "Format",mtdUrl.getFormat() ) );
 
                         TiXmlElement* onlineResourceEl = new TiXmlElement ( "OnlineResource" );
                         onlineResourceEl->SetAttribute ( "xlink:type","simple" );
-                        onlineResourceEl->SetAttribute ( "xlink:href", legendURL.getHRef() );
-                        legendURLEl->LinkEndChild ( buildTextNode ( "Format", legendURL.getFormat() ) );
-                        legendURLEl->LinkEndChild ( onlineResourceEl );
-
-                        if ( legendURL.getWidth() !=0 )
-                            legendURLEl->SetAttribute ( "width", legendURL.getWidth() );
-                        if ( legendURL.getHeight() !=0 )
-                            legendURLEl->SetAttribute ( "height", legendURL.getHeight() );
-                        styleEl->LinkEndChild ( legendURLEl );
-                        LOGGER_DEBUG ( _ ( "LegendURL OK" ) << style->getId() );
+                        onlineResourceEl->SetAttribute ( "xlink:href", mtdUrl.getHRef() );
+                        mtdURLEl->LinkEndChild ( onlineResourceEl );
+                        childLayerEl->LinkEndChild ( mtdURLEl );
                     }
-
-                    LOGGER_DEBUG ( _ ( "Style fini : " ) << style->getId() );
-                    childLayerEl->LinkEndChild ( styleEl );
                 }
+
+                // Style
+                LOGGER_DEBUG ( _ ( "Nombre de styles : " ) <<childLayer->getStyles().size() );
+                if ( childLayer->getStyles().size() != 0 ) {
+                    for ( unsigned int i=0; i < childLayer->getStyles().size(); i++ ) {
+                        TiXmlElement * styleEl= new TiXmlElement ( "Style" );
+                        Style* style = childLayer->getStyles() [i];
+                        styleEl->LinkEndChild ( buildTextNode ( "Name", style->getId().c_str() ) );
+                        int j;
+                        for ( j=0 ; j < style->getTitles().size(); ++j ) {
+                            styleEl->LinkEndChild ( buildTextNode ( "Title", style->getTitles() [j].c_str() ) );
+                        }
+                        for ( j=0 ; j < style->getAbstracts().size(); ++j ) {
+                            styleEl->LinkEndChild ( buildTextNode ( "Abstract", style->getAbstracts() [j].c_str() ) );
+                        }
+                        for ( j=0 ; j < style->getLegendURLs().size(); ++j ) {
+                            LOGGER_DEBUG ( _ ( "LegendURL" ) << style->getId() );
+                            LegendURL legendURL = style->getLegendURLs() [j];
+                            TiXmlElement* legendURLEl = new TiXmlElement ( "LegendURL" );
+
+                            TiXmlElement* onlineResourceEl = new TiXmlElement ( "OnlineResource" );
+                            onlineResourceEl->SetAttribute ( "xlink:type","simple" );
+                            onlineResourceEl->SetAttribute ( "xlink:href", legendURL.getHRef() );
+                            legendURLEl->LinkEndChild ( buildTextNode ( "Format", legendURL.getFormat() ) );
+                            legendURLEl->LinkEndChild ( onlineResourceEl );
+
+                            if ( legendURL.getWidth() !=0 )
+                                legendURLEl->SetAttribute ( "width", legendURL.getWidth() );
+                            if ( legendURL.getHeight() !=0 )
+                                legendURLEl->SetAttribute ( "height", legendURL.getHeight() );
+                            styleEl->LinkEndChild ( legendURLEl );
+                            LOGGER_DEBUG ( _ ( "LegendURL OK" ) << style->getId() );
+                        }
+
+                        LOGGER_DEBUG ( _ ( "Style fini : " ) << style->getId() );
+                        childLayerEl->LinkEndChild ( styleEl );
+                    }
+                }
+
+                // Scale denominators
+                TiXmlElement * siEl = new TiXmlElement ( "ScaleInt" );
+
+                os.str ( "" );
+                os<<childLayer->getMaxRes() *1000/0.28;
+                siEl->SetAttribute ( "max",os.str() );
+                os.str ( "" );
+                os<<childLayer->getMinRes() *1000/0.28;
+                siEl->SetAttribute ( "min",os.str() );
+                os.str ( "" );
+                childLayerEl->LinkEndChild ( siEl );
+
+                // TODO : gerer le cas des CRS avec des unites en degres
+
+                /* TODO:
+                 *
+                 layer->getAuthority();
+                 layer->getOpaque();
+
+                */
+                LOGGER_DEBUG ( _ ( "Layer Fini" ) );
+                parentLayerEl->LinkEndChild ( childLayerEl );
             }
-
-            // Scale denominators
-            TiXmlElement * siEl = new TiXmlElement ( "ScaleInt" );
-
-            os.str ( "" );
-            os<<childLayer->getMaxRes() *1000/0.28;
-            siEl->SetAttribute ( "max",os.str() );
-            os.str ( "" );
-            os<<childLayer->getMinRes() *1000/0.28;
-            siEl->SetAttribute ( "min",os.str() );
-            os.str ( "" );
-            childLayerEl->LinkEndChild ( siEl );
-
-            // TODO : gerer le cas des CRS avec des unites en degres
-
-            /* TODO:
-             *
-             layer->getAuthority();
-             layer->getOpaque();
-
-            */
-            LOGGER_DEBUG ( _ ( "Layer Fini" ) );
-            parentLayerEl->LinkEndChild ( childLayerEl );
-
         }// for layer
         LOGGER_DEBUG ( _ ( "Layers Fini" ) );
         capabilityEl->LinkEndChild ( parentLayerEl );
