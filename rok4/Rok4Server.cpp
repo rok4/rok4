@@ -824,7 +824,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
     //On va créer la tuile sur demande et stocker la dalle qui la contient
 
     //variables
-    std::string Spath, SpathTmp, SpathErr;
+    std::string Spath, SpathTmp, SpathErr, SpathDir;
     DataSource *tile;
     Pyramid * pyr = L->getDataPyramid();
     struct stat bufferS;
@@ -844,6 +844,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                 && tileCol >= lv->second->getMinTileCol() && tileCol <= lv->second->getMaxTileCol()) {
 
             Spath = lv->second->getFilePath(tileCol,tileRow);
+            SpathDir = lv->second->getDirPath(tileCol,tileRow);
             SpathTmp = Spath + ".tmp";
             SpathErr = Spath + ".err";
 
@@ -879,9 +880,21 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                                 close(fileTmp);
                             } else {
                                 //impossible de creer un fichier temporaire
-                                std::cerr << "Impossible de creer le fichier de temporaire " << SpathTmp.c_str() << std::endl;
-                                std::cerr << "Pas de generation de dalles " << std::endl;
-                                exit(0);
+                                int directory = lv->second->createDirPath(SpathDir.c_str());
+                                if (directory != -1) {
+                                    //on a pu creer le dossier donc on reessaye de creer le fichier tmp
+                                    fileTmp = open(SpathTmp.c_str(),O_CREAT|O_EXCL);
+                                    if (fileTmp != -1) {
+                                        //on a pu creer un fichier temporaire
+                                        close(fileTmp);
+                                    }
+                                } else {
+                                    std::cerr << "Impossible de creer le dossier contenant la dalle " << SpathDir.c_str() << std::endl;
+                                    std::cerr << "Impossible de creer le fichier de temporaire " << SpathTmp.c_str() << std::endl;
+                                    std::cerr << "Pas de generation de dalles " << std::endl;
+                                    exit(0);
+                                }
+
                             }
 
                             //on cree un logger et supprime l'ancien pour ne pas mélanger les sorties

@@ -54,6 +54,8 @@
 #include "Format.h"
 #include "intl.h"
 #include "config.h"
+#include <cstddef>
+#include <sys/stat.h>
 
 
 #define EPS 1./256. // FIXME: La valeur 256 est liée au nombre de niveau de valeur d'un canal
@@ -348,6 +350,42 @@ std::string Level::getFilePath ( int tilex, int tiley ) {
     path[pos] = '/';
 
     return baseDir + ( path + pos );
+}
+
+/*
+ * Recuperation du dossier contenant de la dalle du cache en fonction de son indice
+ */
+std::string Level::getDirPath ( int tilex, int tiley ) {
+
+    std::string file = getFilePath(tilex,tiley);
+
+    return file.substr(0,file.find_last_of("/"));
+
+}
+
+/*
+ * Creation du dossier contenant de la dalle du cache en fonction de son indice
+ */
+int Level::createDirPath(std::string path) {
+
+    int success = -1;
+    int curDirCreated;
+    std::size_t found = path.find_first_of("/");
+    std::string currentDir = path.substr(0,found)+"/";
+    std::string endOfPath = path.substr(found+1);
+
+    while (found!=std::string::npos) {
+        found = endOfPath.find_first_of("/");
+        currentDir += endOfPath.substr(0,found)+"/";
+        endOfPath = endOfPath.substr(found+1);
+        curDirCreated = mkdir(currentDir.c_str(),ACCESSPERMS);
+        if (curDirCreated) {
+            success = 0;
+        }
+    }
+
+    return success;
+
 }
 
 /*

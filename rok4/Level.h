@@ -145,6 +145,8 @@ public:
 
 
     std::string getFilePath ( int tilex, int tiley );
+    std::string getDirPath ( int tilex, int tiley );
+    int createDirPath ( std::string path );
     std::string getNoDataFilePath() {
         return noDataFile;
     }
