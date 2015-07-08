@@ -364,7 +364,7 @@ std::string Level::getDirPath ( int tilex, int tiley ) {
 }
 
 /*
- * Creation du dossier contenant de la dalle du cache en fonction de son indice
+ * Creation du dossier indiqué par path
  */
 int Level::createDirPath(std::string path) {
 

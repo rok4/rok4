@@ -66,6 +66,8 @@
 #include "config.h"
 #include "Keyword.h"
 #include <fcntl.h>
+#include <cstddef>
+#include <string>
 
 // Load style
 Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool inspire ) {
@@ -567,6 +569,8 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     std::string basedPyramidFilePath;
     std::map<std::string, std::map<std::string, std::string> > aLevel;
     std::string photometricStr;
+    std::string ndValuesStr;
+    std::vector<int> noDataValues;
 
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
     if ( !pElem ) {
@@ -608,6 +612,28 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         photometricStr = pElem->GetTextStr();
     } else {
         photometricStr = "UNKNOWN";
+    }
+
+    //on lit l'élément nodatavalues, il n'est pas obligatoire pour
+    //une pyramide normale mais il le devient si la pyramide
+    //est à la volée
+    pElem=hRoot.FirstChild ( "nodataValue" ).Element();
+    if ( pElem && pElem->GetText() ) {
+        ndValuesStr = pElem->GetTextStr();
+
+        //conversion string->vector
+        std::size_t found = ndValuesStr.find_first_of(",");
+        std::string currentValue = ndValuesStr.substr(0,found);
+        std::string endOfValues = ndValuesStr.substr(found+1);
+        int curVal = atoi(currentValue.c_str());
+        noDataValues.push_back(curVal);
+        while (found!=std::string::npos) {
+            found = endOfValues.find_first_of(",");
+            currentValue = endOfValues.substr(0,found);
+            endOfValues = endOfValues.substr(found+1);
+            curVal = atoi(currentValue.c_str());
+            noDataValues.push_back(curVal);
+        }
     }
 
 
@@ -1260,14 +1286,18 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                 int file = open(noDataFilePath.c_str(),O_RDONLY);
                 if (file < 0) {
                     LOGGER_ERROR(fileName <<_ ( " Level " ) << id <<_ ( " specifiant une tuile NoData impossible a ouvrir" ));
-                    return NULL;
+                    if (!onDemandGeneral && !specificLevel) {
+                        return NULL;
+                    }
                 } else {
                     close(file);
                 }
 
             } else {
                 LOGGER_ERROR("NoDataTile must be specified !");
-                return NULL;
+                if (!onDemandGeneral && !specificLevel) {
+                    return NULL;
+                }
             }
 
             Level *TL = new Level ( *tm, channels, baseDir, tilesPerWidth, tilesPerHeight,
@@ -1573,6 +1603,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     }
     if (onFly) {
         pyr->setPhotometry(Photometric::fromString(photometricStr));
+        pyr->setNdValues(noDataValues);
     }
     return pyr;
 

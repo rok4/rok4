@@ -205,6 +205,14 @@ private:
     Photometric::ePhotometric photo;
 
     /**
+     * \~french \brief Donne les valeurs des noData pour la pyramide
+     * Non Obligatoire sauf pour les pyramides avec stockage
+     * \~english \brief Give the noData value
+     * Not Mandatory, only used for pyramid onFly
+     */
+    std::vector<int> ndValues;
+
+    /**
      * \~french \brief Teste si deux CRS sont équivalent
      * \param[in] CRS1
      * \param[in] CRS2
@@ -478,6 +486,26 @@ public:
      */
     void setPhotometry (Photometric::ePhotometric ph) {
        photo = ph;
+    }
+
+    /**
+     * \~french \brief Indique les valeurs de noData
+     * \return ndValues
+     * \~english \brief Indicate the noData values
+     * \return ndValues
+     */
+    std::vector<int> getNdValues() {
+        return ndValues;
+    }
+
+    /**
+     * \~french \brief Modifie le paramètre onDemand
+     * \param[in] booleen
+     * \~english \brief Modify onDemand
+     * \param[in] boolean
+     */
+    void setNdValues (std::vector<int> ndv) {
+       ndValues = ndv;
     }
 
     /**

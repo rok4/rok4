@@ -80,6 +80,7 @@
 #include "MergeImage.h"
 #include "ProcessFactory.h"
 #include "Rok4Image.h"
+#include "EmptyImage.h"
 #include "LoggerSpecific.h"
 
 void* Rok4Server::thread_loop ( void* arg ) {
@@ -969,6 +970,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     std::vector<Pyramid*> bPyr;
     bool specific = false;
     int state = 0;
+    struct stat buffer;
 
     //On cree la dalle sous forme d'image
     LOGGER_INFO("Create Slab on Fly");
@@ -1109,6 +1111,75 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     delete finalImage;
 
     //IMAGE ECRITE
+    //------------------------------------------------------------------------------------------------------
+
+    //------------------------------------------------------------------------------------------------------
+    //NODATATILE
+    //on va voir si la tuile de noData existe deja pour la creer dans le cas negatif
+    LOGGER_INFO("Create NoDataTile");
+
+    std::string noDataFile = lv->second->getNoDataFilePath();
+
+    if (stat (noDataFile.c_str(), &buffer) != 0) {
+        //la tuile de noData n'existe pas
+        LOGGER_DEBUG("La tuile de noData n'existe pas");
+
+        //on cree le dossier
+        std::string noDataDir = noDataFile.substr(0,noDataFile.find_last_of("/"));
+        int directory = lv->second->createDirPath(noDataDir);
+        if (directory == -1) {
+            //le repertoire n'a pas ete cree
+            LOGGER_ERROR("Impossible de creer le repertoire contenant les tuiles de noData");
+            state = 1;
+            return state;
+        }
+
+        //recuperation des parametres necessaires pour creer la tuile
+        int channels = pyr->getChannels();
+        int *NDValues = new int[channels];
+        std::vector<int> ndval = pyr->getNdValues();
+        if (channels == ndval.size()) {
+            for ( int c = 0; c < channels; c++ ) {
+                NDValues[c] = ndval[c];
+            }
+        } else {
+            LOGGER_ERROR("Incoherence du nombre de canaux et des valeurs de noData fournies");
+            LOGGER_ERROR("Cannot write noData tile");
+            state = 1;
+            delete NDValues;
+            return state;
+        }
+
+
+        //creation de la tuile
+        EmptyImage* nodataImage = new EmptyImage(tileW, tileH, channels, NDValues);
+        //à cause d'un problème de typage...
+        char * pathToNoData = (char *)noDataFile.c_str();
+
+        Rok4Image* nodataTile = R4IF.createRok4ImageToWrite(
+            pathToNoData, BoundingBox<double>(0.,0.,0.,0.), 0., 0., tileW, tileH, channels,
+            pyr->getSampleFormat(), pyr->getBitsPerSample(), pyr->getPhotometry(), pyr->getSampleCompression(),
+            tileW, tileH);
+
+        LOGGER_DEBUG ( "Write noDataTile" );
+        if (nodataTile->writeImage(nodataImage) < 0) {
+            LOGGER_ERROR("Cannot write noData tile");
+            state = 1;
+            delete nodataTile;
+            delete nodataImage;
+            delete NDValues;
+            return state;
+        }
+
+        delete nodataTile;
+        delete nodataImage;
+        delete NDValues;
+
+    } else {
+        LOGGER_DEBUG("La tuile de noData existe deja");
+    }
+
+    //NODATATILE
     //------------------------------------------------------------------------------------------------------
 
     return state;
