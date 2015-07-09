@@ -81,7 +81,7 @@ static kdu_message_formatter pretty_cerr(&cerr_message);
 /* ----- Pour la lecture ----- */
 LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filename, BoundingBox< double > bbox, double resx, double resy ) {
     
-    int width = 0, height = 0, bitspersample = 0, channels = 0, rowsperstrip = 200;
+    int width = 0, height = 0, bitspersample = 0, channels = 0, rowsperstrip = 0;
     SampleFormat::eSampleFormat sf = SampleFormat::UINT;
     Photometric::ePhotometric ph = Photometric::UNKNOWN;
 
@@ -163,6 +163,16 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
             LOGGER_ERROR("Cannot determine photometric from the number of samples " << channels);
             LOGGER_ERROR("file : " << filename);
             return NULL;
+    }
+    
+    /******************* RPS INTELLIGENT ***********************/
+    
+    if (width <= 10000) {
+        rowsperstrip = 256;
+    } else if (width <= 20000) {
+        rowsperstrip = 192;
+    } else {
+        rowsperstrip = 128;
     }
     
     /********************** CONTROLES **************************/
