@@ -383,15 +383,16 @@ Pyramid::~Pyramid() {
     for ( iLevel=levels.begin(); iLevel!=levels.end(); iLevel++ )
         delete ( *iLevel ).second;
 
-    //If it is a pyramid on demand
-    //So we need to delete pointers to other pyramids
-    if (onDemand) {
-        for (int i=0;i<basedPyramids.size();i++) {
-            basedPyramids.at(i)->~Pyramid();
-            delete basedPyramids.at(i);
-            basedPyramids.at(i) = NULL;
-        }
+}
+
+PyramidOnDemand::~PyramidOnDemand() {
+
+    for (int i=0;i<basedPyramids.size();i++) {
+        basedPyramids.at(i)->~Pyramid();
+        delete basedPyramids.at(i);
+        basedPyramids.at(i) = NULL;
     }
+
 }
 
 // Check if two CRS are equivalent
@@ -480,7 +481,7 @@ int Pyramid::getBitsPerSample() {
 
 }
 
-bool Pyramid::isThisLevelSpecific(std::string lv) {
+bool PyramidOnDemand::isThisLevelSpecific(std::string lv) {
 
     bool specific = false;
 
@@ -497,7 +498,7 @@ bool Pyramid::isThisLevelSpecific(std::string lv) {
 
 }
 
-std::vector<Pyramid*> Pyramid::getSourcePyramid ( std::string lv,bool sp ) {
+std::vector<Pyramid *> PyramidOnDemand::getSourcePyramid( std::string lv,bool sp ) {
 
     std::vector<Pyramid*> bPyr;
 
@@ -510,7 +511,7 @@ std::vector<Pyramid*> Pyramid::getSourcePyramid ( std::string lv,bool sp ) {
     return bPyr;
 }
 
-Photometric::ePhotometric Pyramid::getPhotometry(){
+Photometric::ePhotometric PyramidOnFly::getPhotometry(){
     if (photo == Photometric::UNKNOWN) {
         if (getChannels() == 1) {
             return Photometric::GRAY;

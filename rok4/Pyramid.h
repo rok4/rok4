@@ -97,41 +97,6 @@ private:
     Level* lowestLevel;
 
     /**
-     * \~french \brief Indique si la pyramide contient des tuiles déjà pré-calculées (false)
-     * ou si elle est à la demande, donc calcule des tuiles sur demande (true)
-     * \~english \brief Indicate if the pyramid has tiles (false)
-     * or if tiles are generated on demand (true)
-     */
-    bool onDemand;
-
-    /**
-     * \~french \brief Si une pyramide est à la demande pour l'ensemble des niveaux,
-     * alors elle doit pouvoir tirer ses informations d'une autre pyramide
-     * Cet attribut contient donc la liste des pyramides de base utilisées
-     * pour générer la vraie pyramide
-     * Sachant qu'une pyramide de base ne peut pas en contenir à son tour
-     * \~english \brief If a pyramid is onDemand for all levels
-     * it must contain a reference to other pyramids which have data
-     * This is the list of those pyramids
-     * They can't be onDemand
-     */
-    std::vector<Pyramid*> basedPyramids;
-
-    /**
-     * \~french \brief Si une pyramide est à la demande par niveau,
-     * alors elle doit pouvoir tirer ses informations d'une autre pyramide
-     * Cet attribut contient donc la liste des pyramides de base utilisées
-     * pour générer la vraie pyramide
-     * Sachant qu'une pyramide specifique ne peut pas en contenir à son tour
-     * et ne contient qu'un niveau en mémoire
-     * \~english \brief If a pyramid is onDemand by level
-     * it must contain a reference to other pyramids which have data
-     * This is the list of those pyramids
-     * They can't be onDemand and have only one level in memory
-     */
-    std::map<std::string,std::vector<Pyramid*> > specificPyramids;
-
-    /**
      * \~french \brief Indique si la pyramide peut avoir de la transparence
      * utilisé seulement pour une pyramide de base
      * ne posséde pour le moment aucun intérêt pour une pyramide normale
@@ -153,40 +118,13 @@ private:
      */
     Style *style;
 
-    //C'est un tableau à double entrée qui contient une association des levels de
-    //  la pyramide vers les levels des autres pyramides de bases
-    //
-    //  Un exemple: Si la pyramide Pyr contient trois niveaux 1, 2 et 3; et deux pyramides de base bPyr1 et bPyr2
-    //
-    //      On veut représenter le tableau suivant:
-    //  Level Pyr   Level bPyr1     Level bPyr2
-    //      1           2               2
-    //      2           2               3
-    //      3           4               5
-    //
-    //  Ce tableau nous dit que pour le level 1 de Pyr, le level associé est 2 pour bPyr1 et 2 poyr bPyr2
-    //  Pour le représenter, on va faire une liste de (indice_level_Pyr,liste)
-    //
-    //      Où  indice_level représente un niveau de Pyr
-    //          liste est une liste de (indice_bPyr, indice_level_bPyr)
-    //
-    //          Où  indice_bPyr représente une basedPyramid
-    //              indice_level_bPyr représente le level associé
-    //
-    //  On trouvera une utilisation de cet attribut dans    ConfLoader.cpp -> parsePyramid() = initialisation
-    //                                                      Rok4Server.cpp -> GetTileOnDemand() = lecture
     /**
-     * \~french \brief Si une pyramide est à la demande
-     * Ce tableau a double entrée fait l'association entre les niveaux
-     * théoriques de la pyramide et ceux des pyramides de bases associées
-     * Cela ne posséde pour le moment aucun intérêt pour une pyramide normale
-     * ou une pyramide à la demande
-     * \~english \brief If a pyramid is onDemand
-     * This table contain the association between the levels of this pyramid
-     * and the level of the basedPyramids
+     * \~french \brief Indique si la pyramide contient des tuiles déjà pré-calculées (false)
+     * ou si elle est à la demande, donc calcule des tuiles sur demande (true)
+     * \~english \brief Indicate if the pyramid has tiles (false)
+     * or if tiles are generated on demand (true)
      */
-    std::map<std::string, std::map<std::string, std::string> > aLevel;
-
+    bool onDemand;
 
     /**
      * \~french \brief Indique si la pyramide doit être générée à la volée
@@ -195,22 +133,6 @@ private:
      * In this case, it must be onDemand
      */
     bool onFly;
-
-    /**
-     * \~french \brief Donne la photométrie des images de la pyramide
-     * Non Obligatoire sauf pour les pyramides avec stockage
-     * \~english \brief Give the photometry of images
-     * Not Mandatory, only used for pyramid onFly
-     */
-    Photometric::ePhotometric photo;
-
-    /**
-     * \~french \brief Donne les valeurs des noData pour la pyramide
-     * Non Obligatoire sauf pour les pyramides avec stockage
-     * \~english \brief Give the noData value
-     * Not Mandatory, only used for pyramid onFly
-     */
-    std::vector<int> ndValues;
 
     /**
      * \~french \brief Teste si deux CRS sont équivalent
@@ -342,6 +264,36 @@ public:
         onDemand = od;
     }
 
+
+    /**
+     * \~french \brief Indique si la pyramide est à la volée
+     * \return onFly
+     * \~english \brief Indicate if the pyramid is onFly
+     * \return onFly
+     */
+    bool getOnFly(){
+        return onFly;
+    }
+
+    /**
+     * \~french \brief Modifie le paramètre onFly
+     * \param[in] booleen
+     * \~english \brief Modify onFly
+     * \param[in] boolean
+     */
+    void setOnFly (bool of) {
+        if (of) {
+            if (onDemand) {
+                onFly = of;
+            }
+        } else {
+            if (!onDemand) {
+                onFly = of;
+            }
+        }
+
+    }
+
     /**
      * \~french \brief Récupère la transparence
      * \return booleen
@@ -381,132 +333,6 @@ public:
         style = st;
     }
 
-    /**
-     * \~french \brief Récupère la liste des pyramides de base
-     * \return Liste de pyramides de base
-     * \~english \brief Get the based pyramids list
-     * \return List of based pyramids
-     */
-    std::vector<Pyramid*> getBPyramids(){
-        return basedPyramids;
-    }
-
-    /**
-     * \~french \brief Modifie la liste des pyramides de base
-     * \param[in] Liste de pyramides de base
-     * \~english \brief Set the list of based pyramids
-     * \param[in] List of based pyramids
-     */
-    void setBPyramids (std::vector<Pyramid*> bp) {
-        basedPyramids = bp;
-    }
-
-    /**
-     * \~french \brief Récupère les niveaux associés
-     * \return Liste des niveaux associés
-     * \~english \brief Get the associated levels
-     * \return List of associated levels
-     */
-    std::map<std::string, std::map<std::string, std::string> > getALevel(){
-        return aLevel;
-    }
-
-    /**
-     * \~french \brief Modifie la liste des niveaux associés
-     * \param[in] Liste des niveaux associés
-     * \~english \brief Set the associated levels
-     * \param[in] List of associated levels
-     */
-    void setALevel (std::map<std::string, std::map<std::string, std::string> > aL) {
-        aLevel = aL;
-    }
-
-    /**
-     * \~french \brief Récupère les niveaux associés
-     * \return Liste des niveaux associés
-     * \~english \brief Get the associated levels
-     * \return List of associated levels
-     */
-    std::map<std::string,std::vector<Pyramid*> >  getSPyramids(){
-        return specificPyramids;
-    }
-
-    /**
-     * \~french \brief Modifie la liste des niveaux associés
-     * \param[in] Liste des niveaux associés
-     * \~english \brief Set the associated levels
-     * \param[in] List of associated levels
-     */
-    void setSPyramids (std::map<std::string,std::vector<Pyramid*> >  sP) {
-        specificPyramids = sP;
-    }
-
-    /**
-     * \~french \brief Indique si la pyramide est à la volée
-     * \return onFly
-     * \~english \brief Indicate if the pyramid is onFly
-     * \return onFly
-     */
-    bool getOnFly(){
-        return onFly;
-    }
-
-    /**
-     * \~french \brief Modifie le paramètre onFly
-     * \param[in] booleen
-     * \~english \brief Modify onFly
-     * \param[in] boolean
-     */
-    void setOnFly (bool of) {
-        if (of) {
-            if (onDemand) {
-                onFly = of;
-            }
-        } else {
-            if (!onDemand) {
-                onFly = of;
-            }
-        }
-
-    }
-
-    /**
-     * \~french \brief Indique la photometrie de la pyramide
-     * \return photo
-     * \~english \brief Indicate the photometry of the pyramid
-     * \return photo
-     */
-    Photometric::ePhotometric getPhotometry();
-
-    /**
-     * \~french \brief Modifie le paramètre onDemand
-     * \param[in] booleen
-     * \~english \brief Modify onDemand
-     * \param[in] boolean
-     */
-    void setPhotometry (Photometric::ePhotometric ph) {
-       photo = ph;
-    }
-
-    /**
-     * \~french \brief Indique les valeurs de noData
-     * \return ndValues
-     * \~english \brief Indicate the noData values
-     * \return ndValues
-     */
-    std::vector<int> getNdValues() {
-        return ndValues;
-    }
-
-    /**
-     * \~french \brief Modifie le paramètre onDemand
-     * \param[in] booleen
-     * \~english \brief Modify onDemand
-     * \param[in] boolean
-     */
-    void setNdValues (std::vector<int> ndv) {
-       ndValues = ndv;
-    }
 
     /**
      * \~french \brief Récupère le meilleur niveau pour une résolution donnée
@@ -520,27 +346,7 @@ public:
      */
     std::string best_level ( double resolution_x, double resolution_y, bool onDemand );
 
-    /**
-     * \~french \brief Informe sur la spécificité d'un level
-     * \param[in] level id
-     * \return true si spécifique
-     * \~english \brief Tell if a level is specific
-     * \param[in] level id
-     * \return true if specific
-     */
-    bool isThisLevelSpecific ( std::string lv );
 
-    /**
-     * \~french \brief Récupère la pyramide source pour un level donné
-     * \param[in] level id
-     * \param[in] specific
-     * \return pyramide source
-     * \~english \brief Get the source pyramid for a given level
-     * \param[in] level id
-     * \param[in] specific
-     * \return source pyramid
-     */
-    std::vector<Pyramid*> getSourcePyramid ( std::string lv,bool sp );
 
     /**
      * \~french \brief Récupère une tuile déjà calculée
@@ -612,10 +418,311 @@ public:
      * \~french \brief Destructeur
      * \~english \brief Destructor
      */
-    ~Pyramid();
+    virtual ~Pyramid();
+
+//    virtual bool isThisLevelSpecific(std::string lv);
+//    virtual std::map<std::string, std::map<std::string, std::string> > getALevel();
+//    virtual std::vector<Pyramid *> getSourcePyramid( std::string lv,bool sp );
+//    virtual std::vector<int> getNdValues();
+//    virtual Photometric::ePhotometric getPhotometry();
+
+
 
 };
 
 
+
+class PyramidOnDemand : public Pyramid {
+
+private:
+
+    /**
+     * \~french \brief Si une pyramide est à la demande pour l'ensemble des niveaux,
+     * alors elle doit pouvoir tirer ses informations d'une autre pyramide
+     * Cet attribut contient donc la liste des pyramides de base utilisées
+     * pour générer la vraie pyramide
+     * Sachant qu'une pyramide de base ne peut pas en contenir à son tour
+     * \~english \brief If a pyramid is onDemand for all levels
+     * it must contain a reference to other pyramids which have data
+     * This is the list of those pyramids
+     * They can't be onDemand
+     */
+    std::vector<Pyramid*> basedPyramids;
+
+    /**
+     * \~french \brief Si une pyramide est à la demande par niveau,
+     * alors elle doit pouvoir tirer ses informations d'une autre pyramide
+     * Cet attribut contient donc la liste des pyramides de base utilisées
+     * pour générer la vraie pyramide
+     * Sachant qu'une pyramide specifique ne peut pas en contenir à son tour
+     * et ne contient qu'un niveau en mémoire
+     * \~english \brief If a pyramid is onDemand by level
+     * it must contain a reference to other pyramids which have data
+     * This is the list of those pyramids
+     * They can't be onDemand and have only one level in memory
+     */
+    std::map<std::string,std::vector<Pyramid*> > specificPyramids;
+
+
+    //C'est un tableau à double entrée qui contient une association des levels de
+    //  la pyramide vers les levels des autres pyramides de bases
+    //
+    //  Un exemple: Si la pyramide Pyr contient trois niveaux 1, 2 et 3; et deux pyramides de base bPyr1 et bPyr2
+    //
+    //      On veut représenter le tableau suivant:
+    //  Level Pyr   Level bPyr1     Level bPyr2
+    //      1           2               2
+    //      2           2               3
+    //      3           4               5
+    //
+    //  Ce tableau nous dit que pour le level 1 de Pyr, le level associé est 2 pour bPyr1 et 2 poyr bPyr2
+    //  Pour le représenter, on va faire une liste de (indice_level_Pyr,liste)
+    //
+    //      Où  indice_level représente un niveau de Pyr
+    //          liste est une liste de (indice_bPyr, indice_level_bPyr)
+    //
+    //          Où  indice_bPyr représente une basedPyramid
+    //              indice_level_bPyr représente le level associé
+    //
+    //  On trouvera une utilisation de cet attribut dans    ConfLoader.cpp -> parsePyramid() = initialisation
+    //                                                      Rok4Server.cpp -> GetTileOnDemand() = lecture
+    /**
+     * \~french \brief Si une pyramide est à la demande
+     * Ce tableau a double entrée fait l'association entre les niveaux
+     * théoriques de la pyramide et ceux des pyramides de bases associées
+     * Cela ne posséde pour le moment aucun intérêt pour une pyramide normale
+     * ou une pyramide à la demande
+     * \~english \brief If a pyramid is onDemand
+     * This table contain the association between the levels of this pyramid
+     * and the level of the basedPyramids
+     */
+    std::map<std::string, std::map<std::string, std::string> > aLevel;
+
+public:
+
+    /**
+     * \~french \brief Constructeur
+     * \param[in] levels de la pyramide
+     * \param[in] tms
+     * \param[in] format des tuiles
+     * \param[in] nombre de canaux des tuiles
+     * \param[in] onDemand
+     * \param[in] onFly
+     * \param[in] basedPyramids
+     * \param[in] specificPyramids
+     * \param[in] aLevels
+     * \~english \brief Constructor
+     * \param[in] levels of the pyramid
+     * \param[in] tms
+     * \param[in] format of the tiles
+     * \param[in] number of channels
+     * \param[in] onDemand
+     * \param[in] onFly
+     * \param[in] basedPyramids
+     * \param[in] specificPyramids
+     * \param[in] aLevels
+     */
+    PyramidOnDemand(std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format,
+                    int channels, bool onDemand, bool onFly, std::vector<Pyramid*> bPyramids,
+                    std::map<std::string,std::vector<Pyramid*> > sPyramids,
+                    std::map<std::string, std::map<std::string, std::string> > aL) :
+        Pyramid(levels,tms,format,channels,onDemand,onFly),
+        basedPyramids (bPyramids),
+        specificPyramids (sPyramids),
+        aLevel (aL) {}
+
+
+
+    /**
+     * \~french \brief Destructeur
+     * \~english \brief Destructor
+     */
+    ~PyramidOnDemand();
+
+    /**
+     * \~french \brief Récupère la liste des pyramides de base
+     * \return Liste de pyramides de base
+     * \~english \brief Get the based pyramids list
+     * \return List of based pyramids
+     */
+    std::vector<Pyramid*> getBPyramids(){
+        return basedPyramids;
+    }
+
+    /**
+     * \~french \brief Modifie la liste des pyramides de base
+     * \param[in] Liste de pyramides de base
+     * \~english \brief Set the list of based pyramids
+     * \param[in] List of based pyramids
+     */
+    void setBPyramids (std::vector<Pyramid*> bp) {
+        basedPyramids = bp;
+    }
+
+    /**
+     * \~french \brief Récupère les niveaux associés
+     * \return Liste des niveaux associés
+     * \~english \brief Get the associated levels
+     * \return List of associated levels
+     */
+    std::map<std::string, std::map<std::string, std::string> > getALevel(){
+        return aLevel;
+    }
+
+    /**
+     * \~french \brief Modifie la liste des niveaux associés
+     * \param[in] Liste des niveaux associés
+     * \~english \brief Set the associated levels
+     * \param[in] List of associated levels
+     */
+    void setALevel (std::map<std::string, std::map<std::string, std::string> > aL) {
+        aLevel = aL;
+    }
+
+    /**
+     * \~french \brief Récupère les niveaux associés
+     * \return Liste des niveaux associés
+     * \~english \brief Get the associated levels
+     * \return List of associated levels
+     */
+    std::map<std::string,std::vector<Pyramid*> >  getSPyramids(){
+        return specificPyramids;
+    }
+
+    /**
+     * \~french \brief Modifie la liste des niveaux associés
+     * \param[in] Liste des niveaux associés
+     * \~english \brief Set the associated levels
+     * \param[in] List of associated levels
+     */
+    void setSPyramids (std::map<std::string,std::vector<Pyramid*> >  sP) {
+        specificPyramids = sP;
+    }
+
+    /**
+     * \~french \brief Informe sur la spécificité d'un level
+     * \param[in] level id
+     * \return true si spécifique
+     * \~english \brief Tell if a level is specific
+     * \param[in] level id
+     * \return true if specific
+     */
+    bool isThisLevelSpecific ( std::string lv );
+
+    /**
+     * \~french \brief Récupère la pyramide source pour un level donné
+     * \param[in] level id
+     * \param[in] specific
+     * \return pyramide source
+     * \~english \brief Get the source pyramid for a given level
+     * \param[in] level id
+     * \param[in] specific
+     * \return source pyramid
+     */
+    std::vector<Pyramid *> getSourcePyramid( std::string lv,bool sp );
+
+};
+
+
+
+class PyramidOnFly : public PyramidOnDemand {
+
+private:
+
+    /**
+     * \~french \brief Donne la photométrie des images de la pyramide
+     * Non Obligatoire sauf pour les pyramides avec stockage
+     * \~english \brief Give the photometry of images
+     * Not Mandatory, only used for pyramid onFly
+     */
+    Photometric::ePhotometric photo;
+
+    /**
+     * \~french \brief Donne les valeurs des noData pour la pyramide
+     * Non Obligatoire sauf pour les pyramides avec stockage
+     * \~english \brief Give the noData value
+     * Not Mandatory, only used for pyramid onFly
+     */
+    std::vector<int> ndValues;
+
+public:
+
+    /**
+     * \~french \brief Constructeur
+     * \param[in] levels de la pyramide
+     * \param[in] tms
+     * \param[in] format des tuiles
+     * \param[in] nombre de canaux des tuiles
+     * \param[in] onDemand
+     * \param[in] onFly
+     * \param[in] transparence
+     * \param[in] style
+     * \~english \brief Constructor
+     * \param[in] levels of the pyramid
+     * \param[in] tms
+     * \param[in] format of the tiles
+     * \param[in] number of channels
+     * \param[in] onDemand
+     * \param[in] onFly
+     * \param[in] transparence
+     * \param[in] style
+     */
+    PyramidOnFly(std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format,
+                 int channels, bool onDemand, bool onFly, Photometric::ePhotometric ph, std::vector<int> ndv,
+                 std::vector<Pyramid*> bPyramids,
+                 std::map<std::string,std::vector<Pyramid*> > sPyramids,
+                 std::map<std::string, std::map<std::string, std::string> > aL) :
+        PyramidOnDemand(levels,tms,format,channels,onDemand,onFly,bPyramids,sPyramids,aL),
+        photo (ph),
+        ndValues (ndv) {}
+
+
+    /**
+     * \~french \brief Destructeur
+     * \~english \brief Destructor
+     */
+    ~PyramidOnFly() {
+    }
+
+    /**
+     * \~french \brief Indique la photometrie de la pyramide
+     * \return photo
+     * \~english \brief Indicate the photometry of the pyramid
+     * \return photo
+     */
+    Photometric::ePhotometric getPhotometry();
+
+    /**
+     * \~french \brief Modifie le paramètre onDemand
+     * \param[in] booleen
+     * \~english \brief Modify onDemand
+     * \param[in] boolean
+     */
+    void setPhotometry (Photometric::ePhotometric ph) {
+       photo = ph;
+    }
+
+    /**
+     * \~french \brief Indique les valeurs de noData
+     * \return ndValues
+     * \~english \brief Indicate the noData values
+     * \return ndValues
+     */
+    std::vector<int> getNdValues() {
+        return ndValues;
+    }
+
+    /**
+     * \~french \brief Modifie le paramètre onDemand
+     * \param[in] booleen
+     * \~english \brief Modify onDemand
+     * \param[in] boolean
+     */
+    void setNdValues (std::vector<int> ndv) {
+       ndValues = ndv;
+    }
+
+
+};
 
 #endif

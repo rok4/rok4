@@ -294,7 +294,7 @@ private:
      * \param[in] aLevel
      * \param[in] specific
      */
-    static void updateTileLimits (std::string levelId, uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Pyramid*> bPyramids, std::map<std::string, std::map<std::string, std::string> > aLevel, bool specific);
+    static void updateTileLimits (std::string levelId, uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Pyramid *> bPyramids, std::map<std::string, std::map<std::string, std::string> > aLevel, bool specific);
     /**
      * \~french
      * \brief Création d'un Layer à partir de sa représentation XML

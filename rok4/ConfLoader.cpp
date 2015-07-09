@@ -714,6 +714,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                             return NULL;
                         } else {
 
+
                             if (str_transparent == "true") {
                                 transparent = true;
                                 basedPyramid->setTransparent(transparent);
@@ -909,6 +910,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                                     }
                                     return NULL;
                                 } else {
+
 
                                     if (str_transparent == "true") {
                                         transparent = true;
@@ -1561,12 +1563,21 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         onDemand = true;
     }
 
-    Pyramid *pyr = new Pyramid ( levels, *tms, format, channels, onDemand, onFly );
+    Pyramid* pyr;
+
+    if (onFly) {
+        pyr = new PyramidOnFly(levels, *tms, format, channels, onDemand, onFly,Photometric::fromString(photometricStr),noDataValues,bPyramids,specificPyramids,aLevel);
+    } else {
+        if (onDemand) {
+            pyr = new PyramidOnDemand(levels, *tms, format, channels, onDemand, onFly,bPyramids,specificPyramids,aLevel);
+        } else {
+            pyr = new Pyramid ( levels, *tms, format, channels, onDemand, onFly );
+        }
+    }
 
     if (onDemandGeneral) {
         if (levels.size() != 0 && aLevel.size() != 0) {
-            pyr->setALevel(aLevel);
-            pyr->setBPyramids(bPyramids);
+
         } else {
             LOGGER_ERROR ( _ ("Erreur lors du chargement des levels de la pyramide à la demande ") << fileName );
 
@@ -1597,13 +1608,6 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         }
     } else {
 
-    }
-    if (onDemandSpecific) {
-        pyr->setSPyramids(specificPyramids);
-    }
-    if (onFly) {
-        pyr->setPhotometry(Photometric::fromString(photometricStr));
-        pyr->setNdValues(noDataValues);
     }
     return pyr;
 
@@ -1670,7 +1674,7 @@ int ConfLoader::updatePyrLevel(Pyramid* pyr, TileMatrix *tm, TileMatrixSet *tms)
 
 }
 
-void ConfLoader::updateTileLimits(std::string levelId, uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Pyramid *> bPyramids, std::map<std::string, std::map<std::string, std::string> > aLevel,bool specific) {
+void ConfLoader::updateTileLimits(std::string levelId, uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Pyramid *> bPyramids, std::map<std::string, std::map<std::string, std::string> > aLevel, bool specific) {
 
     //On met à jour les Min et Max Tiles une fois que l'on a trouvé un équivalent dans chaque basedPyramid
     // pour le level créé

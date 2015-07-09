@@ -673,7 +673,7 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
 
     //Calcul des paramètres nécessaires
     std::string level = tileMatrix;
-    Pyramid * pyr = L->getDataPyramid();
+    PyramidOnDemand * pyr = reinterpret_cast<PyramidOnDemand*>(L->getDataPyramid());
     CRS dst_crs = pyr->getTms().getCrs();
     error = 0;
     Interpolation::KernelType interpolation = L->getResampling();
@@ -827,7 +827,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
     //variables
     std::string Spath, SpathTmp, SpathErr, SpathDir;
     DataSource *tile;
-    Pyramid * pyr = L->getDataPyramid();
+    PyramidOnFly * pyr = reinterpret_cast<PyramidOnFly*>(L->getDataPyramid());
     struct stat bufferS;
     struct stat bufferT;
     struct stat bufferE;
@@ -978,7 +978,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     LOGGER_DEBUG("Compute parameters");
     //la correspondance est assurée par les vérifications qui ont eu lieu dans getTile()
     std::string level = tileMatrix;
-    Pyramid * pyr = L->getDataPyramid();
+    PyramidOnFly * pyr = reinterpret_cast<PyramidOnFly*>(L->getDataPyramid());
     CRS dst_crs = pyr->getTms().getCrs();
     error = 0;
     Interpolation::KernelType interpolation = L->getResampling();
@@ -1138,10 +1138,12 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
         int channels = pyr->getChannels();
         int *NDValues = new int[channels];
         std::vector<int> ndval = pyr->getNdValues();
+
         if (channels == ndval.size()) {
             for ( int c = 0; c < channels; c++ ) {
                 NDValues[c] = ndval[c];
             }
+
         } else {
             LOGGER_ERROR("Incoherence du nombre de canaux et des valeurs de noData fournies");
             LOGGER_ERROR("Cannot write noData tile");
