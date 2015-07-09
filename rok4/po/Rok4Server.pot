@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2015-07-08 15:28+0200\n"
+"POT-Creation-Date: 2015-07-09 09:19+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -452,7 +452,7 @@ msgstr ""
 #: ConfLoader.cpp:1204 ConfLoader.cpp:1211 ConfLoader.cpp:1215
 #: ConfLoader.cpp:1219 ConfLoader.cpp:1226 ConfLoader.cpp:1230
 #: ConfLoader.cpp:1235 ConfLoader.cpp:1242 ConfLoader.cpp:1246
-#: ConfLoader.cpp:1250 ConfLoader.cpp:1274 ConfLoader.cpp:1288
+#: ConfLoader.cpp:1250 ConfLoader.cpp:1274 ConfLoader.cpp:1289
 #: ConfLoader.cpp:1374
 msgid " Level "
 msgstr ""
@@ -537,7 +537,7 @@ msgstr ""
 msgid " specifiant une tuile NoData sans chemin"
 msgstr ""
 
-#: ConfLoader.cpp:1288
+#: ConfLoader.cpp:1289
 msgid " specifiant une tuile NoData impossible a ouvrir"
 msgstr ""
 

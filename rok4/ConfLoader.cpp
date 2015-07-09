@@ -1263,7 +1263,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             if ( maxTileRow > tm->getMatrixH() || maxTileRow < 0 )
                 maxTileRow = tm->getMatrixH();
 
-            // Mandatory
+            // Mandatory only for onDemand and onFly Pyramid
             TiXmlElement* pElemNoData=hLvl.FirstChild ( "nodata" ).Element();
 
             if ( pElemNoData ) {    // FilePath must be specified if nodata tag exist
@@ -1285,8 +1285,8 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                 }
                 int file = open(noDataFilePath.c_str(),O_RDONLY);
                 if (file < 0) {
-                    LOGGER_ERROR(fileName <<_ ( " Level " ) << id <<_ ( " specifiant une tuile NoData impossible a ouvrir" ));
                     if (!onDemandGeneral && !specificLevel) {
+                        LOGGER_ERROR(fileName <<_ ( " Level " ) << id <<_ ( " specifiant une tuile NoData impossible a ouvrir" ));
                         return NULL;
                     }
                 } else {
@@ -1294,8 +1294,8 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                 }
 
             } else {
-                LOGGER_ERROR("NoDataTile must be specified !");
-                if (!onDemandGeneral && !specificLevel) {
+                if (onDemandGeneral || specificLevel) {
+                    LOGGER_ERROR("NoDataTile must be specified for OnDemand Pyramid");
                     return NULL;
                 }
             }
