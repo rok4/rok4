@@ -135,12 +135,14 @@ private:
     int margin_top;
     int margin_left;
 
-    int pixel_size; // type des images source : 1=uint8_t       4=float
+    int pixel_size; // type des images source : 1=uint8_t   2=uint16_t    4=float
 
     // La donnee brute (source) est de type uint8_t
     const uint8_t* rawData;
 
     int getDataline ( uint8_t* buffer, int line );
+
+    int getDataline ( uint16_t* buffer, int line );
 
     int getDataline ( float* buffer, int line );
 
@@ -184,6 +186,9 @@ public:
 
     /* Implémentation de l'interface Image */
     inline int getline ( uint8_t* buffer, int line ) {
+        return _getline ( buffer, line );
+    }
+    inline int getline ( uint16_t* buffer, int line ) {
         return _getline ( buffer, line );
     }
     inline int getline ( float* buffer, int line )   {

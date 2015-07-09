@@ -52,6 +52,13 @@ int EstompageImage::getline ( float* buffer, int line ) {
     return _getline ( buffer, line );
 }
 
+int EstompageImage::getline ( uint16_t* buffer, int line ) {
+    if ( !estompage ) {
+        generate();
+    }
+    return _getline ( buffer, line );
+}
+
 int EstompageImage::getline ( uint8_t* buffer, int line ) {
     if ( !estompage ) {
         generate();
@@ -117,7 +124,13 @@ EstompageImage::~EstompageImage() {
     if ( estompage ) delete[] estompage;
 }
 
+
 int EstompageImage::_getline ( float* buffer, int line ) {
+    convert ( buffer, estompage + line * width, width );
+    return width;
+}
+
+int EstompageImage::_getline ( uint16_t* buffer, int line ) {
     convert ( buffer, estompage + line * width, width );
     return width;
 }
@@ -127,26 +140,25 @@ int EstompageImage::_getline ( uint8_t* buffer, int line ) {
     return width;
 }
 
+
 int EstompageImage::getOrigLine ( uint8_t* buffer, int line ) {
+    return origImage->getline ( buffer,line );
+}
+
+int EstompageImage::getOrigLine ( uint16_t* buffer, int line ) {
     return origImage->getline ( buffer,line );
 }
 
 int EstompageImage::getOrigLine ( float* buffer, int line ) {
     return origImage->getline ( buffer,line );
-//     int size = origImage->getline(buffer,line);
-//     float ndval = -99999.0;
-//     for (int pos = 0; pos < size ; pos++) {
-//         *(buffer+pos) = (*(buffer+pos) == ndval?0:*(buffer+pos));
-//     }
-//     return size;
 }
 
 
 void EstompageImage::generate() {
     estompage = new uint8_t[origImage->getWidth() * origImage->getHeight()];
-    buffer = new float[origImage->getWidth() * 3];
+    bufferTmp = new float[origImage->getWidth() * 3];
     float* lineBuffer[3];
-    lineBuffer[0]= buffer;
+    lineBuffer[0]= bufferTmp;
     lineBuffer[1]= lineBuffer[0]+origImage->getWidth();
     lineBuffer[2]= lineBuffer[1]+origImage->getWidth();
 
@@ -163,7 +175,7 @@ void EstompageImage::generate() {
         nextBuffer = ( nextBuffer+1 ) %3;
     }
     generateLine ( line,lineBuffer[nextBuffer], lineBuffer[ ( nextBuffer+1 ) %3],lineBuffer[ ( nextBuffer+1 ) %3] );
-    delete[] buffer;
+    delete[] bufferTmp;
 }
 
 void EstompageImage::generateLine ( int line, float* line1, float* line2, float* line3 ) {

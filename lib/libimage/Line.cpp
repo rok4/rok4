@@ -178,6 +178,88 @@ void Line::store ( uint8_t* imageIn, uint8_t* maskIn, int srcSpp ) {
     }
 }
 
+// -------------- UINT16
+
+template <>
+void Line::store ( uint16_t* imageIn, uint8_t* maskIn, int srcSpp, uint16_t* transparent ) {
+    memcpy ( mask, maskIn, width );
+    switch ( srcSpp ) {
+    case 1:
+        for ( int i = 0; i < width; i++ ) {
+            if ( imageIn[i] == transparent[0] && imageIn[i] == transparent[1] && imageIn[i] == transparent[2] ) {
+                alpha[i] = 0.0;
+            } else {
+                alpha[i] = 1.0;
+            }
+            samples[3*i] = samples[3*i+1] = samples[3*i+2] = (float) imageIn[i];
+        }
+        break;
+    case 2:
+        for ( int i = 0; i < width; i++ ) {
+            if ( imageIn[2*i] == transparent[0] && imageIn[2*i] == transparent[1] && imageIn[2*i] == transparent[2] ) {
+                alpha[i] = 0.0;
+            } else {
+                alpha[i] = ( float ) imageIn[2*i+1] / 65535.;
+            }
+            samples[3*i] = samples[3*i+1] = samples[3*i+2] = (float) imageIn[2*i];
+        }
+        break;
+    case 3:
+        convert( samples, imageIn, 3*width );
+        for ( int i = 0; i < width; i++ ) {
+            if ( ! memcmp ( imageIn+3*i, transparent, 3*sizeof(uint16_t) ) ) {
+                alpha[i] = 0.0;
+            } else {
+                alpha[i] = 1.0;
+            }
+        }
+        break;
+    case 4:
+        for ( int i = 0; i < width; i++ ) {
+            convert( samples+i*3, imageIn+i*4, 3 );
+            if ( ! memcmp ( imageIn+4*i, transparent, 3*sizeof(uint16_t) ) ) {
+                alpha[i] = 0.0;
+            } else {
+                alpha[i] = ( float ) imageIn[i*4+3] / 65535.;
+            }
+        }
+        break;
+    }
+}
+
+
+template <>
+void Line::store ( uint16_t* imageIn, uint8_t* maskIn, int srcSpp ) {
+    memcpy ( mask, maskIn, width );
+    switch ( srcSpp ) {
+    case 1:
+        for ( int i = 0; i < width; i++ ) {
+            alpha[i] = 1.0;
+            samples[3*i] = samples[3*i+1] = samples[3*i+2] = (float) imageIn[i];
+        }
+        break;
+    case 2:
+        for ( int i = 0; i < width; i++ ) {
+            alpha[i] = ( float ) imageIn[2*i+1] / 65535.;
+            samples[3*i] = samples[3*i+1] = samples[3*i+2] = (float) imageIn[2*i];
+        }
+        break;
+    case 3:
+        convert( samples, imageIn, 3*width );
+        for ( int i = 0; i < width; i++ ) {
+            alpha[i] = 1.0;
+        }
+        break;
+    case 4:
+        for ( int i = 0; i < width; i++ ) {
+            convert( samples+i*3, imageIn+i*4, 3 );
+            alpha[i] = ( float ) imageIn[i*4+3] / 65535.;
+        }
+        break;
+    }
+}
+
+
 // -------------- FLOAT
 
 template <>

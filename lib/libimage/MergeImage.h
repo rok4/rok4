@@ -200,6 +200,7 @@ protected:
 public:
 
     virtual int getline ( uint8_t* buffer, int line );
+    virtual int getline ( uint16_t* buffer, int line );
     virtual int getline ( float* buffer, int line );
 
     /**
@@ -321,6 +322,7 @@ public:
         MI ( MI ) {}
 
     int getline ( uint8_t* buffer, int line );
+    int getline ( uint16_t* buffer, int line );
     int getline ( float* buffer, int line );
 
     /**
