@@ -587,7 +587,7 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
 
     int imageLineSize = width * channels;
     int tileLineSize = tileWidth * channels;
-    uint8_t tile[tileHeight*rawTileLineSize];
+    uint8_t* tile = new uint8_t[tileHeight*rawTileLineSize];
 
     // Ecriture de l'image
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
@@ -643,6 +643,8 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
         }
         delete [] lines;
     }
+    
+    delete [] tile;
 
     if (! close()) {
         LOGGER_ERROR("Cannot close the ROK4 images (write index and clean) for " << filename);
