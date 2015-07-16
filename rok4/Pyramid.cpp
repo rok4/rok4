@@ -387,11 +387,10 @@ Pyramid::~Pyramid() {
 
 PyramidOnDemand::~PyramidOnDemand() {
 
-    for (int i=0;i<basedPyramids.size();i++) {
-        basedPyramids.at(i)->~Pyramid();
-        delete basedPyramids.at(i);
-        basedPyramids.at(i) = NULL;
-    }
+//    for (int i=0;i<basedPyramids.size();i++) {
+//        delete basedPyramids.at(i);
+//        basedPyramids.at(i) = NULL;
+//    }
 
 }
 

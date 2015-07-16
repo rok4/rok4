@@ -83,6 +83,8 @@
 #define DEFAULT_RESAMPLING "lanczos_2"
 #define DEFAULT_CHANNELS   3
 #define DEFAULT_LAYER_LIMIT  1
+#define DEFAULT_PATHDEPTH 2
+#define DEFAULT_TILEPERWIDTHANDHEIGHT 16
 
 // Configuration de l'acces au parametrage de PROJ4
 #define PROJ_LIB_PATH      "../config/proj/";
