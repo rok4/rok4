@@ -790,14 +790,14 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
             } else {
 
                 LOGGER_ERROR("Aucune image n'a été récupérée");
-                return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( pyr->getLowestLevel()->getEncodedNoDataTile() ) );
+                return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( lv->second->getEncodedNoDataTile() ) );
 
             }
 
 
         } else {
             //on est en dehors des TMLimits
-            return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( pyr->getLowestLevel()->getEncodedNoDataTile() ) );
+            return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( lv->second->getEncodedNoDataTile() ) );
         }
 
     }
@@ -947,7 +947,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
             }
 
         } else {
-            return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( pyr->getLowestLevel()->getEncodedNoDataTile() ) );
+            return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( lv->second->getEncodedNoDataTile() ) );
         }
 
     }

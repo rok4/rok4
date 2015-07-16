@@ -647,6 +647,19 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     }
     //----
 
+
+    //----CHANNELS
+    pElem=hRoot.FirstChild ( "channels" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        LOGGER_ERROR ( _ ( "La pyramide [" ) << fileName <<_ ( "] Pas de channels => channels = " ) << DEFAULT_CHANNELS );
+        channels=DEFAULT_CHANNELS;
+        return NULL;
+    } else if ( !sscanf ( pElem->GetText(),"%d",&channels ) ) {
+        LOGGER_ERROR ( _ ( "La pyramide [" ) << fileName <<_ ( "] : channels=[" ) << pElem->GetTextStr() <<_ ( "] is not an integer." ) );
+        return NULL;
+    }
+    //----
+
     //----NODATAVALUE
     //on lit l'élément nodatavalues, il n'est pas obligatoire pour
     //une pyramide normale mais il le devient si la pyramide
@@ -660,26 +673,31 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         std::string currentValue = ndValuesStr.substr(0,found);
         std::string endOfValues = ndValuesStr.substr(found+1);
         int curVal = atoi(currentValue.c_str());
+        if (currentValue == "") {
+            curVal = DEFAULT_NODATAVALUE;
+        }
         noDataValues.push_back(curVal);
         while (found!=std::string::npos) {
             found = endOfValues.find_first_of(",");
             currentValue = endOfValues.substr(0,found);
             endOfValues = endOfValues.substr(found+1);
             curVal = atoi(currentValue.c_str());
+            if (currentValue == "") {
+                curVal = DEFAULT_NODATAVALUE;
+            }
             noDataValues.push_back(curVal);
         }
-    }
-    //----
-
-    //----CHANNELS
-    pElem=hRoot.FirstChild ( "channels" ).Element();
-    if ( !pElem || ! ( pElem->GetText() ) ) {
-        LOGGER_ERROR ( _ ( "La pyramide [" ) << fileName <<_ ( "] Pas de channels => channels = " ) << DEFAULT_CHANNELS );
-        channels=DEFAULT_CHANNELS;
-        return NULL;
-    } else if ( !sscanf ( pElem->GetText(),"%d",&channels ) ) {
-        LOGGER_ERROR ( _ ( "La pyramide [" ) << fileName <<_ ( "] : channels=[" ) << pElem->GetTextStr() <<_ ( "] is not an integer." ) );
-        return NULL;
+        if (noDataValues.size() < channels) {
+            LOGGER_ERROR("Le nombre de channels indique est different du nombre de noDataValue donne");
+            int min = noDataValues.size();
+            for (int i=min;i<channels;i++) {
+                noDataValues.push_back(DEFAULT_NODATAVALUE);
+            }
+        }
+    } else {
+        for (int i=0;i<channels;i++) {
+            noDataValues.push_back(DEFAULT_NODATAVALUE);
+        }
     }
     //----
 
