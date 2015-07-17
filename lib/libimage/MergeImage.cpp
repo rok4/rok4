@@ -137,6 +137,11 @@ int MergeImage::getline ( uint8_t* buffer, int line ) {
     return _getline ( buffer, line );
 }
 
+/* Implementation de getline pour les uint8_t */
+int MergeImage::getline ( uint16_t* buffer, int line ) {
+    return _getline ( buffer, line );
+}
+
 /* Implementation de getline pour les float */
 int MergeImage::getline ( float* buffer, int line ) {
     return _getline ( buffer, line );
@@ -199,7 +204,14 @@ int MergeMask::getline ( uint8_t* buffer, int line ) {
     return width;
 }
 
-
+/* Implementation de getline pour les uint16 */
+int MergeMask::getline ( uint16_t* buffer, int line ) {
+    uint8_t* buffer_t = new uint8_t[width*channels];
+    int retour = getline ( buffer_t,line );
+    convert ( buffer,buffer_t,width*channels );
+    delete [] buffer_t;
+    return retour;
+}
 
 /* Implementation de getline pour les float */
 int MergeMask::getline ( float* buffer, int line ) {

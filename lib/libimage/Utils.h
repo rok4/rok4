@@ -35,6 +35,15 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file Utils.h
+ ** \~french
+ * \brief Définition de fonctions de conversion et calculs sur des tableaux. Chaque fonctions est définie avec et sans instructions SSE2.
+ * \details
+ * \li Conversions disponibles
+ * \image html conversions.png
+ */
+
 #ifndef UTILS_H
 #define UTILS_H
 
@@ -48,7 +57,7 @@
 
 
 /**
- * Conversion qui n'est qu'une copie.
+ * \brief Conversion qui n'est qu'une copie.
  * @param to     Tableau destination
  * @param from   Tableau source
  * @param length Nombre d'éléments à convertir
@@ -60,13 +69,13 @@ inline void convert ( T* to, const T* from, size_t length ) {
 
 
 /**
- * Conversion uint8 -> float
- * @param to     Tableau d'entiers 8 bits source
- * @param from   Tableau de flottants de destination
+ * \brief Conversion uint8 -> float
+ * \warning Maximum value : 254
+ * @param to Tableau de flottants de destination
+ * @param from Tableau d'entiers 8 bits source
  * @param length Nombre d'éléments à convertir
  */
 #ifdef __SSE2__
-// Maximum value : 254
 inline void convert ( float* to, const uint8_t* from, int length ) {
     while ( ( intptr_t ) to & 0x0f && length ) {
         --length;
@@ -126,14 +135,47 @@ inline void convert ( float* to, const uint8_t* from, int length ) {
 #endif
 
 /**
- * Conversion float -> uint8
- * Les valeurs sont arrondies au plus proche avec saturation
+ * \brief Conversion uint16 -> float
+ * @param to Tableau de flottants de destination
+ * @param from Tableau d'entiers 16 bits source
+ * @param length Nombre d'éléments à convertir
+ */
+#ifdef __SSE2__
+inline void convert ( float* to, const uint16_t* from, int length ) {
+    for ( int i = 0; i < length; ++i ) to[i] = ( float ) from[i];
+}
+#else // Version non SSE 
+inline void convert ( float* to, const uint16_t* from, int length ) {
+    for ( int i = 0; i < length; ++i ) to[i] = ( float ) from[i];
+}
+#endif
+
+/**
+ * \brief Conversion uint8 -> uint16
+ * @param to Tableau d'entiers 16 bits destination
+ * @param from   Tableau d'entiers 8 bits source
+ * @param length Nombre d'éléments à convertir
+ */
+#ifdef __SSE2__
+inline void convert ( uint16_t* to, const uint8_t* from, int length ) {
+    for ( int i = 0; i < length; ++i ) to[i] = ( uint16_t ) from[i];
+}
+#else // Version non SSE 
+inline void convert ( uint16_t* to, const uint8_t* from, int length ) {
+    for ( int i = 0; i < length; ++i ) to[i] = ( uint16_t ) from[i];
+}
+#endif
+
+
+/**
+ * \brief Conversion float -> uint8
+ * \details Les valeurs sont arrondies au plus proche avec saturation
  *
- * @param to   Tableau de flottants de source
- * @param from Tableau d'entiers 8 bits destination
+ * @param to Tableau d'entiers 8 bits destination
+ * @param from Tableau de flottants de source
  * @param length Nombre d'éléments à convertir
  * 
- * \warning Tant que la version SSE2 ne sature pas lors de l'arrondi (5.999 donne 5 et pas 6), on l'inhibe (version non SSE2 dans tous les cas
+ * \warning Tant que la version SSE2 ne sature pas lors de l'arrondi (5.999 donne 5 et pas 6), on l'inhibe (version non SSE2 dans tous les cas)
  */
 
 #ifdef __SSE2__
@@ -207,7 +249,41 @@ inline void convert ( uint8_t* to, const float* from, int length ) {
 
 
 /**
- * Multiplie un tableau de float from par w et sauvegarde dans to
+ * \brief Conversion float -> uint16
+ * \details Les valeurs sont arrondies au plus proche avec saturation
+ *
+ * @param to   Tableau de flottants de source
+ * @param from Tableau d'entiers 16 bits destination
+ * @param length Nombre d'éléments à convertir
+ */
+
+#ifdef __SSE2__
+
+inline void convert ( uint16_t* to, const float* from, int length ) {
+    for ( int i = 0; i < length; i++ ) {
+        int t = ( int ) ( from[i] + 0.5 );
+        if ( t < 0 ) to[i] = 0;
+        else if ( t > 65535 ) to[i] = 65535;
+        else to[i] = t;
+    }
+}
+#else // Version non SSE
+
+inline void convert ( uint16_t* to, const float* from, int length ) {
+    for ( int i = 0; i < length; i++ ) {
+        int t = ( int ) ( from[i] + 0.5 );
+        if ( t < 0 ) to[i] = 0;
+        else if ( t > 65535 ) to[i] = 65535;
+        else to[i] = t;
+    }
+}
+#endif
+
+
+
+
+/**
+ * \brief Multiplie un tableau de float from par w et sauvegarde dans to
  * @param to   Tableau de flottants de source
  * @param from Tableau de flottants de destination
  * @param length Nombre d'éléments dans le tableau
@@ -278,7 +354,7 @@ inline void mult ( float* outImg,float* weightSum, const float* inImg, const flo
 
 
 /**
- * Ajoute au tableau to le produit des élements de from par w
+ * \brief Ajoute au tableau to le produit des élements de from par w
  * @param to   Tableau de flottants de source
  * @param from Tableau de flottants de destination
  * @param length Nombre d'éléments dans le tableau
@@ -367,7 +443,7 @@ inline void normalize ( float* toNormalize, const float* coefficients, const flo
 
 
 /**
- * Mutiplexe 4 tableaux d'entrée en 1 tableau
+ * \brief Mutiplexe 4 tableaux d'entrée en 1 tableau
  *
  * @param F1 Tableau source : A1 A2 A3 ...
  * @param F2 Tableau source : B1 B2 B3 ...
@@ -423,7 +499,7 @@ inline void multiplex ( float* T, const float* F1, const float* F2, const float*
 
 
 /**
- * Démutiplexe 1 tableau en 4 tableaux de sortie
+ * \brief Démutiplexe 1 tableau en 4 tableaux de sortie
  *
  * @param F Tableau source : A1 B1 C1 D1 A2 B2 C2 D2 A3 B3 C3 D3 ...
  * @param T1 Tableau de sortie : A1 A2 A3 ...

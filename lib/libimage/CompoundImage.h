@@ -65,6 +65,9 @@ public:
     int getline ( uint8_t* buffer, int line );
 
     /** D */
+    int getline ( uint16_t* buffer, int line );
+    
+    /** D */
     int getline ( float* buffer, int line );
 
     /** D */
@@ -72,9 +75,12 @@ public:
 
     /** D */
     ~CompoundImage() {
-        for ( int y = 0; y < images.size(); y++ )
-            for ( int x = 0; x < images[y].size(); x++ )
-                delete images[y][x];
+        
+        if ( ! isMask ) {
+            for ( int y = 0; y < images.size(); y++ )
+                for ( int x = 0; x < images[y].size(); x++ )
+                    delete images[y][x];
+        }
     }
 
     /** \~french

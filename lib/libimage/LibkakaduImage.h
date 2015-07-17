@@ -84,7 +84,7 @@ private:
      * \~french \brief Buffer de lecture, de taille strip_size
      * \~english \brief Read buffer, strip_size long
      */
-    kdu_byte* strip_buffer;
+    uint8_t* strip_buffer;
     /**
      * \~french \brief Indice du strip en mémoire dans strip_buffer
      * \~english \brief Memorized strip indice, in strip_buffer
@@ -139,6 +139,7 @@ private:
      ** \~english
      * \brief Preloads a stripe from the source image to a buffer to ease access to lines data
      */
+    template<typename T>
     void _loadstrip ( );
     
     
@@ -196,7 +197,8 @@ public:
     
     static bool canRead ( int bps, SampleFormat::eSampleFormat sf) {
         return (
-            ( bps == 8 && sf == SampleFormat::UINT )
+            ( bps == 8 && sf == SampleFormat::UINT ) ||
+            ( bps == 16 && sf == SampleFormat::UINT )
         );
     }
     
@@ -205,6 +207,7 @@ public:
     }
 
     int getline ( uint8_t* buffer, int line );
+    int getline ( uint16_t* buffer, int line );
     int getline ( float* buffer, int line );
     
     /**

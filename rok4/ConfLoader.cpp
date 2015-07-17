@@ -1143,9 +1143,9 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
             }
 
-            if ( minTileCol <0 )
+        if ( minTileCol > tm->getMatrixW() || minTileCol < 0 )
                 minTileCol = 0;
-            if ( minTileRow <0 )
+        if ( minTileRow > tm->getMatrixH() || minTileRow < 0 )
                 minTileRow = 0;
             if ( maxTileCol > tm->getMatrixW() || maxTileCol < 0 )
                 maxTileCol = tm->getMatrixW();
