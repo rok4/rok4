@@ -721,6 +721,8 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
         delete [] lines;
     }
     
+    delete [] tile;
+    
     delete[] tile;
 
     if (! close()) {

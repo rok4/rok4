@@ -43,7 +43,7 @@ Section: BE4-SIMULATOR tool
 
 Synopsis:
     (start code)
-    perl be4-simulator.pl --tms=file --wkt=file --dims=NxM,N'xM' --levels=I,J,K
+    perl be4-simulator.pl --tms=file --wkt=file --dims=NxM,N'xM' --levels=I,J,K [--lists=directory]
     (end code)
 =cut
 
@@ -58,6 +58,8 @@ use POSIX qw(locale_h);
 use Log::Log4perl qw(:easy);
 use Getopt::Long;
 use File::Basename;
+use File::Spec;
+use File::Path;
 use Geo::OSR;
 use Geo::GDAL;
 use Cwd;
@@ -91,6 +93,7 @@ Contains be4-simulator call options :
     wkt - To precise the WKT file
     levels - To precise calculated levels 
     dims - To precise dimensions of image to compare
+    lists - To precise the directory to write images' lists
     
 =cut
 my %options =
@@ -103,6 +106,7 @@ my %options =
     "tms"  => undef,
     "wkt" => undef,
     "levels" => undef,
+    "lists" => undef,
     "dims" => undef
 );
 
@@ -175,6 +179,7 @@ sub init {
         "tms=s" => \$options{tms},
         "wkt=s" => \$options{wkt},
         "levels=s" => \$options{levels},
+        "lists=s" => \$options{lists},
         "dims=s" => \$options{dims}
     ) or do {
         printf "Unappropriate usage\n";
@@ -215,6 +220,17 @@ sub init {
         return FALSE;
     }
     $options{wkt} = $wktFile;
+    
+    ############# LISTS
+    if (defined $options{lists} && $options{lists} ne "") {
+        my $dir = File::Spec->rel2abs($options{lists});
+        if (! -d $dir) {
+            `mkdir -p $dir`;
+        }
+        $options{lists} = $dir;
+    } else {
+        $options{lists} = undef;
+    }
 
     return TRUE;
 }
@@ -284,6 +300,17 @@ sub doIt {
             
         foreach my $level (@levels) {
             
+            if (defined $options{lists}) {
+                my $fileOutName = basename($options{wkt});
+                $fileOutName =~ s/\.[^\.]+$//;
+                $fileOutName .= sprintf "_%s_%s-%s_$level.list", $objTMS->getName(), $width, $height;
+                my $filepath = File::Spec->catdir($options{lists}, $fileOutName);
+                if (! open(OUT, ">$filepath")) {
+                    ERROR("Impossible d'ouvrir le fichier $filepath");
+                    return FALSE;
+                }
+            }
+            
             my $tm = $objTMS->getTileMatrix($level);
             if (! defined $tm) {
                 ERROR("Impossible de récupérer le niveau $level dans le TMS");
@@ -315,12 +342,19 @@ sub doIt {
 
                     my $OGRtile = Geo::OGR::Geometry->create(WKT=>$WKTtile);
                     if ($OGRtile->Intersect($ogrShape)){
-                        $nbImages++
+                        $nbImages++;
+                        if (defined $options{lists}) {
+                            print OUT "$i,$j\n";
+                        }
                     }
                 }
             }
             
             INFO("\t Level $level : $nbImages (pixel dimension of an image $imageWidth x $imageHeight)");
+            
+            if (defined $options{lists}) {
+                close(OUT);
+            }
         }
     }
     
@@ -360,5 +394,7 @@ Group: Command's options
     --dims - Image tile dimensions. Mandatory.
     
     --levels - Levels. Mandatory.
+    
+    --lists - Directory to write images' lists. Optionnal
 
 =cut
