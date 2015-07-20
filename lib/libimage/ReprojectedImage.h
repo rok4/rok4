@@ -352,8 +352,8 @@ public:
     void initialize();
 
     int getline ( float* buffer, int line );
-
     int getline ( uint8_t* buffer, int line );
+    int getline ( uint16_t* buffer, int line );
 
     /**
      * \~french \brief Destructeur par défaut

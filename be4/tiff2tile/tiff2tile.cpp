@@ -284,8 +284,14 @@ int main ( int argc, char **argv ) {
         tileWidth, tileHeight
     );
     
+    rok4Image->setExtraSample(sourceImage->getExtraSample());
+    
     if (rok4Image == NULL) {
         error("Cannot create the ROK4 image to write", -1);
+    }
+    
+    if (debugLogger) {
+        rok4Image->print();
     }
 
     LOGGER_DEBUG ( "Write" );

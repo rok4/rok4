@@ -158,6 +158,7 @@ protected:
 public:
 
     int getline ( uint8_t* buffer, int line );
+    int getline ( uint16_t* buffer, int line );
     int getline ( float* buffer, int line );
 
     /**

@@ -38,16 +38,14 @@
 /**
  * \file DecimatedImage.h
  ** \~french
- * \brief Définition des classes DecimatedImage, DecimatedMask et DecimatedImageFactory
+ * \brief Définition des classes DecimatedImage et DecimatedImageFactory
  * \details
- * \li DecimatedImage : image composée d'images compatibles, superposables
- * \li DecimatedMask : masque composé, associé à une image composée
+ * \li DecimatedImage : image résultant de la décimation d'une image source
  * \li DecimatedImageFactory : usine de création d'objet DecimatedImage
  ** \~english
- * \brief Define classes DecimatedImage, DecimatedMask and DecimatedImageFactory
+ * \brief Define classes DecimatedImage and DecimatedImageFactory
  * \details
- * \li DecimatedImage : image compounded with superimpose images
- * \li DecimatedMask : compounded mask, associated with a compounded image
+ * \li DecimatedImage : image built by source image's decimation
  * \li DecimatedImageFactory : factory to create DecimatedImage object
  */
 
@@ -66,19 +64,7 @@
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
- * \brief Manipulation d'un paquet d'images compatibles
- * \details On va manipuler un paquet d'images superposables comme si elles n'en étaient qu'une seule. On parle d'images superposables lorsqu'elles ont :
- * \li le même système spatial
- * \li la même résolution en X
- * \li la même résolution en Y
- * \li la même phase en X
- * \li la même phase en Y
- *
- * Les tests d'égalité acceptent un epsilon qui est le suivant :
- * \li 1% de la résolution la plus petite pour les résolutions
- * \li 1% pour les phases
- *
- * \~ \image html eci.png
+ * \brief Décimation d'une image, c'est à dire qu'on ne garde qu'un seul pixel tous les N pixels
  */
 class DecimatedImage : public Image {
 
@@ -87,10 +73,8 @@ class DecimatedImage : public Image {
 private:
 
     /**
-     * \~french \brief Images sources, toutes superposables, utilisée pour assembler l'image composée
-     * \details La première image est celle du dessous
-     * \~english \brief Source images, consistent , to make the compounded image
-     * \details First image is the bottom one
+     * \~french \brief Image source à décimer
+     * \~english \brief Source image, to decimate
      */
     Image* sourceImage;
 
@@ -101,19 +85,36 @@ private:
      */
     int* nodata;
 
-    int ratioX;    
+    /**
+     * \~french \brief Pas de la décimation dans le sens des X
+     * \~english \brief Decimation's step, widthwise
+     */
+    int ratioX; 
+    /**
+     * \~french \brief Pas de la décimation dans le sens des Y
+     * \~english \brief Decimation's step, heightwise
+     */
     int ratioY;
+    /**
+     * \~french \brief Colonne du premier pixel de l'image source à être dans l'image décimée
+     * \~english \brief First source pixel column to be in the decimated image
+     */
     int sourceOffsetX;
+    /**
+     * \~french \brief Nombre de pixel à prendre dans l'image source pour composer l'image décimée
+     * \details Peut être égal à zéro, auquel cas l'image source n'est pas lue et l'image décimée et pleine de #nodata
+     * \~english \brief Pixel number to read in the source image, to build decimated image
+     */
     int numberX;
+    /**
+     * \~french \brief Colonne du premier pixel de l'image décimée à provenir de l'image source
+     * \~english \brief First decimated pixel column to come from the source image
+     */
     int imageOffsetX;
 
     /** \~french
      * \brief Retourne une ligne, flottante ou entière
-     * \details Lorsque l'on veut récupérer une ligne d'une image composée, on va se reporter sur toutes les images source.
-     *
-     * \image html eci_getline.png
-     *
-     * On lit en parallèle de chaque image source l'éventuel masque qui lui est associé. Ainsi, si un pixel n'est pas réellement de la donnée, on évite d'écraser les données du dessous. Si il n'y a pas de masque, on considère l'image source comme pleine (ne contient pas de non-donnée).
+     * \details Lorsque l'on veut récupérer une ligne d'une image décimée, on ne garde que un pixel tous les #ratioX de l'image source
      *
      * \param[in] buffer Tableau contenant au moins width*channels valeurs
      * \param[in] line Indice de la ligne à retourner (0 <= line < height)
@@ -143,7 +144,7 @@ protected:
      * \param[in] resx X wise resolution
      * \param[in] resy Y wise resolution
      * \param[in] bbox bounding box
-     * \param[in] images source image
+     * \param[in] image source image
      * \param[in] nd nodata value
      */
     DecimatedImage ( int width, int height, int channels, double resx, double resy, BoundingBox<double> bbox,
@@ -156,7 +157,7 @@ public:
      * \brief Retourne le masque de l'image source
      * \return masque
      * \~english
-     * \brief Return the mask of source images
+     * \brief Return the mask of source image
      * \return mask
      */
     Image* getMask () {
@@ -187,6 +188,7 @@ public:
     }
 
     int getline ( uint8_t* buffer, int line );
+    int getline ( uint16_t* buffer, int line );
     int getline ( float* buffer, int line );
 
     /**

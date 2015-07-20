@@ -69,8 +69,8 @@
  * Cette classe va faire abstraction de la librairie utilisée pour réellement manipuler le fichier.
  * 
  * <TR><TH>Librairie</TH><TH>Classe</TH><TH>En lecture</TH><TH>En écriture</TH><TH>Commentaires</TH></TR>
- * <TR><TD>OpenJpeg</TD><TD>LibopenjpegImage</TD><TD>Oui</TD><TD>Non</TD><TD>Librarie open source, leir statiquement, intégrée dans le projet</TD></TR>
- * <TR><TD>Kakadu</TD><TD>LibkakduImage</TD><TD>Oui</TD><TD>Non</TD><TD>Librairie propriétaire, dépendance statique, emplacement de la librarie à fournir</TD></TR>
+ * <TR><TD>OpenJpeg</TD><TD>LibopenjpegImage</TD><TD>Format de canal : entiers 8 bits</TD><TD>Non</TD><TD>Librarie open source, liée statiquement, intégrée dans le projet</TD></TR>
+ * <TR><TD>Kakadu</TD><TD>LibkakduImage</TD><TD>Format de canal : entiers 8 bits, 16 bits</TD><TD>Non</TD><TD>Librairie propriétaire, dépendance statique, emplacement de la librarie à fournir</TD></TR>
  *
  * Si l'image gère la transparence, l'alpha est forcément non-associé aux autres canaux (spécifications JPEG2000). Il n'y a donc pas besoin de préciser #associatedalpha.
  * 
@@ -114,6 +114,7 @@ protected:
 public:
 
     virtual int getline ( uint8_t* buffer, int line ) = 0;
+    virtual int getline ( uint16_t* buffer, int line ) = 0;
     virtual int getline ( float* buffer, int line ) = 0;
 
     /**
@@ -142,6 +143,18 @@ public:
 
     /**
      * \~french
+     * \brief Ecrit une image JPEG2000, à partir d'un buffer d'entiers
+     * \warning Pas d'implémentation de l'écriture au format JPEG2000, retourne systématiquement une erreur
+     * \param[in] buffer source des donnée de l'image à écrire
+     * \return 0 en cas de succes, -1 sinon
+     */
+    int writeImage ( uint16_t* buffer ) {
+        LOGGER_ERROR ( "Cannot write JPEG2000 image" );
+        return -1;
+    }
+
+    /**
+     * \~french
      * \brief Ecrit une image JPEG2000, à partir d'un buffer de flottants
      * \warning Pas d'implémentation de l'écriture au format JPEG2000, retourne systématiquement une erreur
      * \param[in] buffer source des donnée de l'image à écrire
@@ -161,6 +174,19 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeLine ( uint8_t* buffer, int line ) {
+        LOGGER_ERROR ( "Cannot write JPEG2000 image" );
+        return -1;
+    }
+
+    /**
+     * \~french
+     * \brief Ecrit une ligne d'image JPEG2000, à partir d'un buffer d'entiers
+     * \warning Pas d'implémentation de l'écriture au format JPEG2000, retourne systématiquement une erreur
+     * \param[in] buffer source des donnée de l'image à écrire
+     * \param[in] line ligne de l'image à écrire
+     * \return 0 en cas de succes, -1 sinon
+     */
+    int writeLine ( uint16_t* buffer, int line ) {
         LOGGER_ERROR ( "Cannot write JPEG2000 image" );
         return -1;
     }

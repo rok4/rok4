@@ -122,6 +122,11 @@ int ExtendedCompoundImage::getline ( uint8_t* buffer, int line ) {
 }
 
 /* Implementation de getline pour les float */
+int ExtendedCompoundImage::getline ( uint16_t* buffer, int line ) {
+    return _getline ( buffer, line );
+}
+
+/* Implementation de getline pour les float */
 int ExtendedCompoundImage::getline ( float* buffer, int line ) {
     return _getline ( buffer, line );
 }
@@ -395,6 +400,15 @@ int ExtendedCompoundMask::_getline ( uint8_t* buffer, int line ) {
 /* Implementation de getline pour les uint8_t */
 int ExtendedCompoundMask::getline ( uint8_t* buffer, int line ) {
     return _getline ( buffer, line );
+}
+
+/* Implementation de getline pour les float */
+int ExtendedCompoundMask::getline ( uint16_t* buffer, int line ) {
+    uint8_t* buffer_t = new uint8_t[width*channels];
+    getline ( buffer_t,line );
+    convert ( buffer,buffer_t,width*channels );
+    delete [] buffer_t;
+    return width*channels;
 }
 
 /* Implementation de getline pour les float */

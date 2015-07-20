@@ -286,7 +286,7 @@ bool LibkakaduImage::init() {
     /************* strip_buffer & current_strip ***********/
 
     try {
-        strip_buffer = new kdu_byte[rowsperstrip * width * channels];
+        strip_buffer = new uint8_t[rowsperstrip * width * pixelSize];
     } catch (std::bad_alloc e) {
         LOGGER_ERROR("Memory allocation error while creating strip buffer.");
         if (m_codestream.exists())
@@ -308,29 +308,31 @@ bool LibkakaduImage::init() {
 /* ------------------------------------------------------------------------------------------------ */
 /* ------------------------------------------- LECTURE -------------------------------------------- */
 
+template<typename T>
 void LibkakaduImage::_loadstrip() {
 
     int C0 = 0;
     int L0 = rowsperstrip * current_strip;
-    int nBandSpace = 1;
+    int nBandSpace = pixelSize / channels; // taille en octet d'un canal
     int NLines = __min(rowsperstrip, height - rowsperstrip * current_strip);
     
     int max_layers = 0;
     int discard_levels = 0;
     
-    kdu_dims dims,mdims;
+    kdu_dims dims, mdims;
     // Position de l'origine en coord fichier (cad pleine resolution)
     dims.pos=kdu_coords(C0, L0);
     // Taille de la zone en coord fichier (cad pleine resolution)
     dims.size=kdu_coords(width,NLines);
     
     m_codestream.map_region(0,dims,mdims);
+    
     m_codestream.apply_input_restrictions(0,channels,discard_levels,max_layers,&mdims,KDU_WANT_OUTPUT_COMPONENTS);
     
-    int n, num_components = m_codestream.get_num_components(true);
-    kdu_dims *comp_dims = new kdu_dims[num_components];
-    for (n=0; n < num_components; n++)
+    kdu_dims *comp_dims = new kdu_dims[channels];
+    for (int n = 0; n < channels; n++) {
         m_codestream.get_dims(n,comp_dims[n],true);
+    }
     
     kdu_region_decompressor decompressor;
     kdu_channel_mapping kchannels;
@@ -339,38 +341,38 @@ void LibkakaduImage::_loadstrip() {
     
     decompressor.start(
         m_codestream,&kchannels,single_component, discard_levels,
-        0, mdims, kdu_coords(1,1),kdu_coords(1,1),true,KDU_WANT_OUTPUT_COMPONENTS,false,m_env_ref,0
-    );        
+        0, mdims, kdu_coords(1,1), kdu_coords(1,1), true, KDU_WANT_OUTPUT_COMPONENTS, false, m_env_ref, 0
+    );
     
-    kdu_dims new_region, incomplete_region=mdims;
+    kdu_dims new_region, incomplete_region = mdims;
     
-    kdu_byte ** channel_bufs=new kdu_byte*[num_components];
-    int row_gap = 0;
-    int suggested_increment = 0;
+    T** channel_bufs = new T*[channels];
     
-    for(n=0;n<num_components;++n)
-    {
-        channel_bufs[n] = strip_buffer + n*nBandSpace;
+    T* strip_tmp = new T[rowsperstrip * width * channels];
+    
+    for(int n = 0; n<channels; ++n) {
+        channel_bufs[n] = strip_tmp + n;
     }
-    row_gap = comp_dims[0].size.x;
-    suggested_increment = comp_dims[0].size.x*comp_dims[0].size.y;
     
     kdu_coords buffer_origin;
     buffer_origin.x = incomplete_region.pos.x;
     buffer_origin.y = incomplete_region.pos.y;
     
-    while(
-            decompressor.process(
-                                channel_bufs, false, pixelSize, buffer_origin, row_gap, suggested_increment, 
-                               /*max_region_pixels*/suggested_increment, incomplete_region, new_region, 8, true
-                                ) 
-            && ! incomplete_region.is_empty()
-         ) { }
+    bool nochEinmal = true;
+    while(nochEinmal && ! incomplete_region.is_empty()) {
+        nochEinmal = decompressor.process(
+            channel_bufs, false, channels, buffer_origin, width*channels, 1, 
+            width * rowsperstrip, incomplete_region, new_region, bitspersample, false
+        );
+    }
     
-    delete[] channel_bufs;
+    memcpy(strip_buffer, strip_tmp, rowsperstrip * width * pixelSize);
+    
     decompressor.finish();
     
-    delete[] comp_dims;         
+    delete[] strip_tmp;
+    delete[] channel_bufs;
+    delete[] comp_dims;
 }
 
 template<typename T>
@@ -378,14 +380,21 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
     
 
     if ( line / rowsperstrip != current_strip ) {
-    
-        // Les données n'ont pas encore été lue depuis l'image (strip pas en mémoire).
         current_strip = line / rowsperstrip;
-        
-        _loadstrip();    
+        // Les données n'ont pas encore été lue depuis l'image (strip pas en mémoire).
+        if (sizeof(T) == 1) {
+            // Mettre les données sur des uint8_t -> lire le jpeg2000 en kdu_byte            
+            _loadstrip<kdu_byte>();
+        } else if (sizeof(T) == 2) {
+            // Mettre les données sur des uint16_t -> lire le jpeg2000 en kdu_uint16            
+            _loadstrip<kdu_uint16>();
+        } else if (sizeof(T) == 1) {
+            // Mettre les données sur des float -> lire le jpeg2000 en float            
+            _loadstrip<float>();
+        }
     }
     
-    memcpy ( buffer, (uint8_t*) strip_buffer + ( line%rowsperstrip ) * width * pixelSize, width * pixelSize );
+    memcpy ( buffer, strip_buffer + ( line%rowsperstrip ) * width * pixelSize, width * pixelSize );
     
     return width*channels;
 }
@@ -393,8 +402,14 @@ int LibkakaduImage::_getline ( T* buffer, int line ) {
 int LibkakaduImage::getline ( uint8_t* buffer, int line ) {
 
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
-        int r = _getline ( buffer,line );
-        return r;
+        return _getline ( buffer,line );
+    } else if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) {
+        /* On ne convertit pas les nombres 16 bits en entier sur 8 bits (aucun intérêt)
+        * On va copier le buffer 16 bits sur le buffer entier, de même taille en octet (2 fois plus grand en "nombre de cases")*/
+        uint16_t int16line[width * channels];
+        _getline ( int16line, line );
+        memcpy ( buffer, int16line, width*pixelSize );
+        return width*pixelSize;
     } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) { // float
         /* On ne convertit pas les nombres flottants en entier sur 8 bits (aucun intérêt)
         * On va copier le buffer flottant sur le buffer entier, de même taille en octet (4 fois plus grand en "nombre de cases")*/
@@ -405,16 +420,42 @@ int LibkakaduImage::getline ( uint8_t* buffer, int line ) {
     }
 }
 
+int LibkakaduImage::getline ( uint16_t* buffer, int line ) {
+
+    if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
+        // On veut la ligne en entier 16 bits mais l'image lue est sur 8 bits : on convertit
+        uint8_t* buffer_t = new uint8_t[width*channels];
+        _getline ( buffer_t,line );
+        convert ( buffer,buffer_t,width*channels);
+        delete [] buffer_t;
+        return width*channels;
+    } else if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) {
+        return _getline ( buffer,line );        
+    } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) { // float
+        /* On ne convertit pas les nombres flottants en entier sur 16 bits (aucun intérêt)
+        * On va copier le buffer flottant sur le buffer entier 16 bits, de même taille en octet (2 fois plus grand en "nombre de cases")*/
+        float floatline[width * channels];
+        _getline ( floatline, line );
+        memcpy ( buffer, floatline, width*pixelSize );
+        return width*pixelSize;
+    }
+}
+
 int LibkakaduImage::getline ( float* buffer, int line ) {
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
         // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers
         uint8_t* buffer_t = new uint8_t[width*channels];
-        
-        // Ne pas appeler directement _getline pour bien faire les potentielles conversions (alpha ou 1 bit)
         getline ( buffer_t,line );
         convert ( buffer,buffer_t,width*channels );
         delete [] buffer_t;
         return width*channels;
+    } else if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) {
+        // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers
+        uint16_t* buffer_t = new uint16_t[width*channels];
+        _getline ( buffer_t,line );
+        convert ( buffer,buffer_t,width*channels );
+        delete [] buffer_t;
+        return width*channels;     
     } else { // float
         return _getline ( buffer, line );
     }

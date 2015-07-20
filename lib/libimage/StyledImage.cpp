@@ -44,6 +44,11 @@ int StyledImage::getline ( float* buffer, int line ) {
     return origImage->getline ( buffer, line );
 }
 
+int StyledImage::getline ( uint16_t* buffer, int line ) {
+    //Styled image do not translate to uint16_t
+    return origImage->getline ( buffer, line );
+}
+
 int StyledImage::getline ( uint8_t* buffer, int line ) {
     if ( origImage->channels==1 && palette->getColoursMap() && !palette->getColoursMap()->empty() ) {
         return _getline ( buffer, line );

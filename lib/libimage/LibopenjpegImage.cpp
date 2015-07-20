@@ -287,9 +287,22 @@ int LibopenjpegImage::getline ( uint8_t* buffer, int line ) {
     return width*channels;
 }
 
+int LibopenjpegImage::getline ( uint16_t* buffer, int line ) {
+
+    // On doit implémenter le getline 16 bits pour respecter la classe mère Image
+    // L'image lue est sur des entiers 8 bits (forcément pour du JPEG2000 avec openjpeg)
+    // On convertit les entiers 8 bits en 16 bits
+    
+    uint8_t* buffer_t = new uint8_t[width*channels];
+    int retour = getline ( buffer_t,line );
+    convert ( buffer, buffer_t, width*channels );
+    delete [] buffer_t;
+    return retour;
+}
+
 int LibopenjpegImage::getline ( float* buffer, int line ) {
 
-    // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers (forcément pour du JPEG2000)
+    // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers 8 bits (forcément pour du JPEG2000 avec openjpeg)
     uint8_t* buffer_t = new uint8_t[width*channels];
     int retour = getline ( buffer_t,line );
     convert ( buffer,buffer_t,width*channels );
