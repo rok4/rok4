@@ -993,6 +993,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     LOGGER_DEBUG("Compute BBOX");
     std::map<std::string, Level*>::iterator lv = pyr->getLevels().find(level);
     BoundingBox<double> bbox = lv->second->tileIndicesToSlabBbox(tileCol,tileRow) ;
+    bbox.print();
     //---- bbox creee
 
     //width and height
