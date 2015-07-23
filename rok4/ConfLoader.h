@@ -448,6 +448,16 @@ private:
      * \brief Return the list of the equivalents CRS who are Proj4 compatible
      */
     static std::vector<CRS> getEqualsCRS(std::vector<std::string> listofequalsCRS, std::string crs);
+
+    /**
+    * \~french
+    * \brief Retourne un WebService en fonction des paramètres lus dans la configuration
+    * \~english
+    * \brief Return a WebService from the configuration
+    */
+   static WebService *parseWebService(TiXmlElement* sWeb);
+
+
 };
 
 #endif /* CONFLOADER_H_ */

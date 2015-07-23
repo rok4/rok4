@@ -68,6 +68,8 @@
 #include <fcntl.h>
 #include <cstddef>
 #include <string>
+#include "WebService.h"
+
 
 // Load style
 Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool inspire ) {
@@ -557,6 +559,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     int nbSpecificLevel = 0;
     std::vector<Pyramid*> bPyramids;
     Pyramid* basedPyramid = NULL;
+    WebService *ws = NULL;
     std::string str_transparent;
     bool transparent = false;
     Style *style=NULL;
@@ -565,6 +568,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     bool onFly = false;
     bool testOnFly = true;
     std::map<std::string,std::vector<Pyramid*> > specificPyramids;
+    std::map<std::string,std::vector<WebService*> > specificWebServices;
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
@@ -832,8 +836,11 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             int pathDepth;
             std::string noDataFilePath="";
             std::vector<Pyramid*> sPyramids;
+            std::vector<WebService*> sWebServices;
             int nsPyramids;
             int ntPyramids;
+            int nsWebServices;
+            int ntWebServices;
             bool specificLevel = false;
             bool alreadyLoad = false;
             //----
@@ -886,12 +893,14 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
                     nsPyramids = 0;
                     ntPyramids = 0;
+                    nsWebServices = 0;
+                    ntWebServices = 0;
 
                     TiXmlElement* sPyr = hbdP.FirstChild("basedPyramid").Element();
 
                     if (sPyr) {
 
-                        for ( sPyr; sPyr; sPyr=sPyr->NextSiblingElement() ) {
+                        for ( sPyr; sPyr; sPyr=sPyr->NextSiblingElement("basedPyramid") ) {
 
 
                             TiXmlElement* sFile = sPyr->FirstChildElement("file");
@@ -964,26 +973,59 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
                         }
 
+                        //Aucune basedPyramid n'a pu être chargée pour ce level
+                        if ( nsPyramids !=  ntPyramids) {
+                            LOGGER_ERROR ( nsPyramids << _ (" equivalent level found for level ") << id << _ ( " but " ) << ntPyramids << _ ( " should be found" ) );
+                            cleanParsePyramid(bPyramids,specificPyramids,sPyramids,levels);
+                            delete basedPyramid;
+                            basedPyramid = NULL;
+                            return NULL;
+                        } else {
+                            onDemandSpecific = true;
+                            specificLevel = true;
+                            nbSpecificLevel++;
+                            specificPyramids.insert(std::pair< std::string, std::vector<Pyramid*> > ( id, sPyramids));
+                        }
+
                     } else {
                         //sources est indiqué mais pas de basedPyramid
-                        LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't be loaded bacause no basedPyramid are specified" ) );
-                        cleanParsePyramid(bPyramids,specificPyramids,sPyramids,levels);
-                        return NULL;
+                        TiXmlElement* sWeb = hbdP.FirstChild("WebService").Element();
+                        if (sWeb) {
+
+                            for ( sWeb; sWeb; sWeb=sWeb->NextSiblingElement("WebService") ) {
+
+                                ws = parseWebService(sWeb);
+                                ntWebServices++;
+                                if (ws) {
+                                    sWebServices.push_back(ws);
+                                    nsWebServices++;
+                                } else {
+                                    LOGGER_ERROR("Impossible de charger le level " << id << " car impossible de charger le WebService");
+                                    return NULL;
+                                }
+
+                            }
+
+                            if (ntWebServices != nsWebServices) {
+                                LOGGER_ERROR ( nsWebServices << _ (" WebServices have been found for level ") << id << _ ( " but " ) << ntWebServices << _ ( " should be found" ) );
+                                return NULL;
+                            } else {
+                                onDemandSpecific = true;
+                                specificLevel = true;
+                                nbSpecificLevel++;
+                                specificWebServices.insert(std::pair< std::string, std::vector<WebService*> > ( id, sWebServices));
+                            }
+
+                        } else {
+                            //sources est indiqué mais pas de basedPyramid, ni de WebService
+                            LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't be loaded bacause no basedPyramid or WebServices are specified" ) );
+                            cleanParsePyramid(bPyramids,specificPyramids,sPyramids,levels);
+                            return NULL;
+                        }
+
+
                     }
 
-                    //Aucune basedPyramid n'a pu être chargée pour ce level
-                    if ( nsPyramids !=  ntPyramids) {
-                        LOGGER_ERROR ( nsPyramids << _ (" equivalent level found for level ") << id << _ ( " but " ) << ntPyramids << _ ( " should be found" ) );
-                        cleanParsePyramid(bPyramids,specificPyramids,sPyramids,levels);
-                        delete basedPyramid;
-                        basedPyramid = NULL;
-                        return NULL;
-                    } else {
-                        onDemandSpecific = true;
-                        specificLevel = true;
-                        nbSpecificLevel++;
-                        specificPyramids.insert(std::pair< std::string, std::vector<Pyramid*> > ( id, sPyramids));
-                    }
 
                 }
 
@@ -1325,10 +1367,10 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     Pyramid* pyr;
 
     if (onFly) {
-        pyr = new PyramidOnFly(levels, *tms, format, channels, onDemand, onFly,Photometric::fromString(photometricStr),noDataValues,bPyramids,specificPyramids,aLevel);
+        pyr = new PyramidOnFly(levels, *tms, format, channels, onDemand, onFly,Photometric::fromString(photometricStr),noDataValues,bPyramids,specificPyramids,aLevel,specificWebServices);
     } else {
         if (onDemand) {
-            pyr = new PyramidOnDemand(levels, *tms, format, channels, onDemand, onFly,bPyramids,specificPyramids,aLevel);
+            pyr = new PyramidOnDemand(levels, *tms, format, channels, onDemand, onFly,bPyramids,specificPyramids,aLevel,specificWebServices);
         } else {
             pyr = new Pyramid ( levels, *tms, format, channels, onDemand, onFly );
         }
@@ -1717,6 +1759,151 @@ void ConfLoader::updateTileLimits(std::string levelId, uint32_t &minTileCol, uin
         maxTileRow = maxRow;
     }
 
+
+}
+
+WebService *ConfLoader::parseWebService(TiXmlElement* sWeb) {
+
+    WebService * ws = NULL;
+    std::string url, proxy, user, pwd, referer, userAgent, version, layers, styles, format, crs;
+    std::map<std::string,std::string> options;
+    int timeout, retry, interval;
+    std::string name;
+    std::string value;
+
+    TiXmlElement* sUrl = sWeb->FirstChildElement("url");
+    if (sUrl && sUrl->GetText()) {
+        url = sUrl->GetTextStr();
+    } else {
+        LOGGER_ERROR("Une URL doit etre specifiee pour un WebService");
+        return NULL;
+    }
+
+    TiXmlElement* sProxy = sWeb->FirstChildElement("proxy");
+    if (sProxy && sProxy->GetText()) {
+        proxy = sProxy->GetTextStr();
+    } else {
+        proxy = "";
+    }
+
+    TiXmlElement* sTimeOut = sWeb->FirstChildElement("timeout");
+    if (sTimeOut && sTimeOut->GetText()) {
+        timeout = atoi(sTimeOut->GetText());
+    } else {
+        timeout = DEFAULT_TIMEOUT;
+    }
+
+    TiXmlElement* sRetry = sWeb->FirstChildElement("retry");
+    if (sRetry && sRetry->GetText()) {
+        retry = atoi(sRetry->GetText());
+    } else {
+        retry = DEFAULT_RETRY;
+    }
+
+    TiXmlElement* sInterval = sWeb->FirstChildElement("interval");
+    if (sInterval && sInterval->GetText()) {
+        interval = atoi(sInterval->GetText());
+    } else {
+        interval = DEFAULT_INTERVAL;
+    }
+
+    TiXmlElement* sUser = sWeb->FirstChildElement("user");
+    if (sUser && sUser->GetText()) {
+        user = sUser->GetTextStr();
+    } else {
+        user = "";
+    }
+
+    TiXmlElement* sPwd = sWeb->FirstChildElement("password");
+    if (sPwd && sPwd->GetText()) {
+        pwd = sPwd->GetTextStr();
+    } else {
+        pwd = "";
+    }
+
+    TiXmlElement* sReferer = sWeb->FirstChildElement("referer");
+    if (sReferer && sReferer->GetText()) {
+        referer = sReferer->GetTextStr();
+    } else {
+        referer = "";
+    }
+
+    TiXmlElement* sUserAgent = sWeb->FirstChildElement("userAgent");
+    if (sUserAgent && sUserAgent->GetText()) {
+        userAgent = sUserAgent->GetTextStr();
+    } else {
+        userAgent = "";
+    }
+
+
+    TiXmlElement* sWMS = sWeb->FirstChildElement("wms");
+    if (sWMS) {
+
+        TiXmlElement* sVersion = sWMS->FirstChildElement("version");
+        if (sVersion && sVersion->GetText()) {
+            version = sVersion->GetTextStr();
+        } else {
+            LOGGER_ERROR("Un WMS doit contenir une version");
+            return NULL;
+        }
+
+        TiXmlElement* sLayers= sWMS->FirstChildElement("layers");
+        if (sLayers && sLayers->GetText()) {
+            layers = sLayers->GetTextStr();
+        } else {
+            LOGGER_ERROR("Un WMS doit contenir un ou des layers séparés par des virgules");
+            return NULL;
+        }
+
+        TiXmlElement* sStyles = sWMS->FirstChildElement("styles");
+        if (sStyles && sStyles->GetText()) {
+            styles = sStyles->GetTextStr();
+        } else {
+            LOGGER_ERROR("Un WMS doit contenir un ou des styles séparés par des virgules");
+            return NULL;
+        }
+
+        TiXmlElement* sFormat = sWMS->FirstChildElement("format");
+        if (sFormat && sFormat->GetText()) {
+            format = sFormat->GetTextStr();
+        } else {
+            LOGGER_ERROR("Un WMS doit contenir un format");
+            return NULL;
+        }
+
+        TiXmlElement* sCrs = sWMS->FirstChildElement("crs");
+        if (sCrs && sCrs->GetText()) {
+            crs = sCrs->GetTextStr();
+        } else {
+            LOGGER_ERROR("Un WMS doit contenir un crs");
+            return NULL;
+        }
+
+        TiXmlElement* sOpt = sWMS->FirstChildElement("option");
+        if (sOpt) {
+
+            for ( sOpt; sOpt; sOpt=sOpt->NextSiblingElement() ) {
+
+                name = sOpt->Attribute("name");
+                value = sOpt->Attribute("value");
+
+                if (name != "" && value != "") {
+                    options.insert(std::pair<std::string,std::string> ( name, value));
+                }
+
+            }
+
+        }
+
+        ws = new WebMapService(url, proxy, retry, interval, timeout, version, layers, styles, format, crs, options);
+
+    } else {
+        //On retourne une erreur car le WMS est le seul WebService disponible pour le moment
+        LOGGER_ERROR("Un WebService doit contenir un WMS pour être utilisé");
+        return NULL;
+    }
+
+    return ws;
 
 }
 

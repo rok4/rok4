@@ -86,6 +86,9 @@
 #define DEFAULT_LAYER_LIMIT  1
 #define DEFAULT_PATHDEPTH 2
 #define DEFAULT_TILEPERWIDTHANDHEIGHT 16
+#define DEFAULT_RETRY 0
+#define DEFAULT_TIMEOUT 300
+#define DEFAULT_INTERVAL 5
 
 // Configuration de l'acces au parametrage de PROJ4
 #define PROJ_LIB_PATH      "../config/proj/";

@@ -46,6 +46,7 @@
 #include "Style.h"
 #include "ServicesConf.h"
 #include <Interpolation.h>
+#include "WebService.h"
 
 //std::string getMimeType(std::string format);
 
@@ -498,6 +499,18 @@ private:
      */
     std::map<std::string, std::map<std::string, std::string> > aLevel;
 
+    /**
+     * \~french \brief Si une pyramide est à la demande par niveau,
+     * alors elle doit pouvoir tirer ses informations d'une autre pyramide
+     * ou d'un service web, voir plusieurs
+     * Cet attribut contient donc la liste des services web requêtés
+     * \~english \brief If a pyramid is onDemand by level
+     * it must contain a reference to other pyramids which have data
+     * or web services
+     * This is the list of those web services
+     */
+    std::map<std::string,std::vector<WebService*> > specificWebServices;
+
 public:
 
     /**
@@ -525,11 +538,12 @@ public:
     PyramidOnDemand(std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format,
                     int channels, bool onDemand, bool onFly, std::vector<Pyramid*> bPyramids,
                     std::map<std::string,std::vector<Pyramid*> > sPyramids,
-                    std::map<std::string, std::map<std::string, std::string> > aL) :
+                    std::map<std::string, std::map<std::string, std::string> > aL,
+                    std::map<std::string,std::vector<WebService*> > specificWebServices) :
         Pyramid(levels,tms,format,channels,onDemand,onFly),
         basedPyramids (bPyramids),
         specificPyramids (sPyramids),
-        aLevel (aL) {}
+        aLevel (aL), specificWebServices (specificWebServices) {}
 
 
 
@@ -671,8 +685,9 @@ public:
                  int channels, bool onDemand, bool onFly, Photometric::ePhotometric ph, std::vector<int> ndv,
                  std::vector<Pyramid*> bPyramids,
                  std::map<std::string,std::vector<Pyramid*> > sPyramids,
-                 std::map<std::string, std::map<std::string, std::string> > aL) :
-        PyramidOnDemand(levels,tms,format,channels,onDemand,onFly,bPyramids,sPyramids,aL),
+                 std::map<std::string, std::map<std::string, std::string> > aL,
+                 std::map<std::string,std::vector<WebService*> > specificWebServices) :
+        PyramidOnDemand(levels,tms,format,channels,onDemand,onFly,bPyramids,sPyramids,aL,specificWebServices),
         photo (ph),
         ndValues (ndv) {}
 
