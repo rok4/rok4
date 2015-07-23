@@ -843,6 +843,8 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             int ntWebServices;
             bool specificLevel = false;
             bool alreadyLoad = false;
+            bool specificWebService = false;
+            bool specificPyr = false;
             //----
 
             //----TM
@@ -890,6 +892,8 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
                     TiXmlHandle hbdP ( pElemSP );
                     bool timesSpecific = false;
+                    specificWebService = false;
+                    specificPyr = false;
 
                     nsPyramids = 0;
                     ntPyramids = 0;
@@ -983,48 +987,54 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                         } else {
                             onDemandSpecific = true;
                             specificLevel = true;
+                            specificPyr = true;
                             nbSpecificLevel++;
                             specificPyramids.insert(std::pair< std::string, std::vector<Pyramid*> > ( id, sPyramids));
                         }
 
-                    } else {
-                        //sources est indiqué mais pas de basedPyramid
-                        TiXmlElement* sWeb = hbdP.FirstChild("WebService").Element();
-                        if (sWeb) {
+                    }
 
-                            for ( sWeb; sWeb; sWeb=sWeb->NextSiblingElement("WebService") ) {
 
-                                ws = parseWebService(sWeb);
-                                ntWebServices++;
-                                if (ws) {
-                                    sWebServices.push_back(ws);
-                                    nsWebServices++;
-                                } else {
-                                    LOGGER_ERROR("Impossible de charger le level " << id << " car impossible de charger le WebService");
-                                    return NULL;
-                                }
+                    TiXmlElement* sWeb = hbdP.FirstChild("WebService").Element();
+                    if (sWeb) {
 
-                            }
+                        for ( sWeb; sWeb; sWeb=sWeb->NextSiblingElement("WebService") ) {
 
-                            if (ntWebServices != nsWebServices) {
-                                LOGGER_ERROR ( nsWebServices << _ (" WebServices have been found for level ") << id << _ ( " but " ) << ntWebServices << _ ( " should be found" ) );
-                                return NULL;
+                            ws = parseWebService(sWeb);
+                            ntWebServices++;
+                            if (ws) {
+                                sWebServices.push_back(ws);
+                                nsWebServices++;
+                                specificWebService = true;
                             } else {
-                                onDemandSpecific = true;
-                                specificLevel = true;
-                                nbSpecificLevel++;
-                                specificWebServices.insert(std::pair< std::string, std::vector<WebService*> > ( id, sWebServices));
+                                LOGGER_ERROR("Impossible de charger le level " << id << " car impossible de charger le WebService");
+                                return NULL;
                             }
 
-                        } else {
-                            //sources est indiqué mais pas de basedPyramid, ni de WebService
-                            LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't be loaded bacause no basedPyramid or WebServices are specified" ) );
-                            cleanParsePyramid(bPyramids,specificPyramids,sPyramids,levels);
-                            return NULL;
                         }
 
+                        if (ntWebServices != nsWebServices) {
+                            LOGGER_ERROR ( nsWebServices << _ (" WebServices have been found for level ") << id << _ ( " but " ) << ntWebServices << _ ( " should be found" ) );
+                            return NULL;
+                        } else {
+                            onDemandSpecific = true;
+                            specificLevel = true;
+                            nbSpecificLevel++;
+                            specificWebServices.insert(std::pair< std::string, std::vector<WebService*> > ( id, sWebServices));
+                        }
 
                     }
+
+
+                    if (ntWebServices == 0 && ntPyramids == 0) {
+                        //sources est indiqué mais pas de basedPyramid, ni de WebService
+                        LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't be loaded bacause no basedPyramid or WebServices are specified" ) );
+                        cleanParsePyramid(bPyramids,specificPyramids,sPyramids,levels);
+                        return NULL;
+                    }
+
+
+
 
 
                 }
@@ -1185,14 +1195,19 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
             }
 
-        if ( minTileCol > tm->getMatrixW() || minTileCol < 0 )
+            if ( minTileCol > tm->getMatrixW() || minTileCol < 0 ) {
                 minTileCol = 0;
-        if ( minTileRow > tm->getMatrixH() || minTileRow < 0 )
+            }
+            if ( minTileRow > tm->getMatrixH() || minTileRow < 0 ) {
                 minTileRow = 0;
-            if ( maxTileCol > tm->getMatrixW() || maxTileCol < 0 )
+            }
+            if ( maxTileCol > tm->getMatrixW() || maxTileCol < 0 ) {
                 maxTileCol = tm->getMatrixW();
-            if ( maxTileRow > tm->getMatrixH() || maxTileRow < 0 )
+            }
+            if ( maxTileRow > tm->getMatrixH() || maxTileRow < 0 ) {
                 maxTileRow = tm->getMatrixH();
+            }
+
             //----
 
             //----NODATA
@@ -1314,7 +1329,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                 levels.insert ( std::pair<std::string, Level *> ( id, TL ) );
             }
 
-            if (onDemandSpecific && specificLevel) {
+            if (onDemandSpecific && specificLevel && specificPyr) {
                 if ( !pElemLvlTMS ) {
                     updateTileLimits(TL->getId(),*TL->getrefMinTileCol(),*TL->getrefMaxTileCol(),*TL->getrefMinTileRow(),*TL->getrefMaxTileRow(),TL->getTm(),tms,sPyramids,aLevel,true);
                 }
