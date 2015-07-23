@@ -555,25 +555,21 @@ void Rok4Server::buildWMS111Capabilities() {
     std::vector <std::string> wms111CapaFrag;
     std::string hostNameTag="]HOSTNAME[";   ///Tag a remplacer par le nom du serveur
     std::string pathTag="]HOSTNAME/PATH[";  ///Tag à remplacer par le chemin complet avant le ?.
+    std::string dtdTag="]DTD[";  ///Tag à remplacer par la déclaration de DTD, tinyXMl ne gère pas les DTD. #HackDeLaMortQuiTue par Thibbo
+    
     TiXmlDocument doc;
     TiXmlDeclaration * decl = new TiXmlDeclaration ( "1.0", "UTF-8", "" );
     doc.LinkEndChild ( decl );
+    
+
+    
+    TiXmlComment * dtdEl = new TiXmlComment ( dtdTag.c_str() );
+    doc.LinkEndChild ( dtdEl );
+    
     std::ostringstream os;
 
-    TiXmlElement * capabilitiesEl = new TiXmlElement ( "WMS_Capabilities" );
+    TiXmlElement * capabilitiesEl = new TiXmlElement ( "WMT_MS_Capabilities" );
     capabilitiesEl->SetAttribute ( "version","1.1.1" );
-    capabilitiesEl->SetAttribute ( "xmlns","http://www.opengis.net/wms" );
-    capabilitiesEl->SetAttribute ( "xmlns:xlink","http://www.w3.org/1999/xlink" );
-    capabilitiesEl->SetAttribute ( "xmlns:xsi","http://www.w3.org/2001/XMLSchema-instance" );
-    capabilitiesEl->SetAttribute ( "xsi:schemaLocation","http://www.opengis.net/wms http://schemas.opengis.net/wms/1.1.1/capabilities_1_1_1.xml" );
-
-    // Pour Inspire. Cf. remarque plus bas.
-    if ( servicesConf.isInspire() ) {
-        capabilitiesEl->SetAttribute ( "xmlns:inspire_vs","http://inspire.ec.europa.eu/schemas/inspire_vs/1.0" );
-        capabilitiesEl->SetAttribute ( "xmlns:inspire_common","http://inspire.ec.europa.eu/schemas/common/1.0" );
-        capabilitiesEl->SetAttribute ( "xsi:schemaLocation","http://www.opengis.net/wms http://schemas.opengis.net/wms/1.1.1/capabilities_1_1_1.xml  http://inspire.ec.europa.eu/schemas/inspire_vs/1.0 http://inspire.ec.europa.eu/schemas/inspire_vs/1.0/inspire_vs.xsd http://inspire.ec.europa.eu/schemas/common/1.0 http://inspire.ec.europa.eu/schemas/common/1.0/common.xsd" );
-    }
-
 
 
     // Traitement de la partie service
@@ -601,7 +597,9 @@ void Rok4Server::buildWMS111Capabilities() {
     //OnlineResource
     TiXmlElement * onlineResourceEl = new TiXmlElement ( "OnlineResource" );
     onlineResourceEl->SetAttribute ( "xmlns:xlink","http://www.w3.org/1999/xlink" );
+    onlineResourceEl->SetAttribute ( "xlink:type","simple" );
     onlineResourceEl->SetAttribute ( "xlink:href",hostNameTag );
+    
     serviceEl->LinkEndChild ( onlineResourceEl );
     // ContactInformation
     TiXmlElement * contactInformationEl = new TiXmlElement ( "ContactInformation" );
@@ -634,12 +632,6 @@ void Rok4Server::buildWMS111Capabilities() {
 
     serviceEl->LinkEndChild ( buildTextNode ( "Fees",servicesConf.getFee() ) );
     serviceEl->LinkEndChild ( buildTextNode ( "AccessConstraints",servicesConf.getAccessConstraint() ) );
-
-    os << servicesConf.getLayerLimit();
-    serviceEl->LinkEndChild ( buildTextNode ( "LayerLimit",os.str() ) );
-    os.str ( "" );
-    serviceEl->LinkEndChild ( buildTextNode ( "MaxWidth",numToStr ( servicesConf.getMaxWidth() ) ) );
-    serviceEl->LinkEndChild ( buildTextNode ( "MaxHeight",numToStr ( servicesConf.getMaxHeight() ) ) );
 
     capabilitiesEl->LinkEndChild ( serviceEl );
 
@@ -715,33 +707,6 @@ void Rok4Server::buildWMS111Capabilities() {
     exceptionEl->LinkEndChild ( buildTextNode ( "Format","XML" ) );
     capabilityEl->LinkEndChild ( exceptionEl );
 
-    // Inspire (extended Capability)
-    if ( servicesConf.isInspire() ) {
-        // TODO : en dur. A mettre dans la configuration du service (prevoir differents profils d'application possibles)
-        TiXmlElement * extendedCapabilititesEl = new TiXmlElement ( "inspire_vs:ExtendedCapabilities" );
-
-        // MetadataURL
-        TiXmlElement * metadataUrlEl = new TiXmlElement ( "inspire_common:MetadataUrl" );
-        metadataUrlEl->LinkEndChild ( buildTextNode ( "inspire_common:URL", servicesConf.getWMSMetadataURL()->getHRef() ) );
-        metadataUrlEl->LinkEndChild ( buildTextNode ( "inspire_common:MediaType", servicesConf.getWMSMetadataURL()->getType() ) );
-        extendedCapabilititesEl->LinkEndChild ( metadataUrlEl );
-
-        // Languages
-        TiXmlElement * supportedLanguagesEl = new TiXmlElement ( "inspire_common:SupportedLanguages" );
-        TiXmlElement * defaultLanguageEl = new TiXmlElement ( "inspire_common:DefaultLanguage" );
-        TiXmlElement * languageEl = new TiXmlElement ( "inspire_common:Language" );
-        TiXmlText * lfre = new TiXmlText ( "fre" );
-        languageEl->LinkEndChild ( lfre );
-        defaultLanguageEl->LinkEndChild ( languageEl );
-        supportedLanguagesEl->LinkEndChild ( defaultLanguageEl );
-        extendedCapabilititesEl->LinkEndChild ( supportedLanguagesEl );
-        // Responselanguage
-        TiXmlElement * responseLanguageEl = new TiXmlElement ( "inspire_common:ResponseLanguage" );
-        responseLanguageEl->LinkEndChild ( buildTextNode ( "inspire_common:Language","fre" ) );
-        extendedCapabilititesEl->LinkEndChild ( responseLanguageEl );
-
-        capabilityEl->LinkEndChild ( extendedCapabilititesEl );
-    }
     // Layer
     if ( layerList.empty() ) {
         LOGGER_ERROR ( _ ( "Liste de layers vide" ) );
@@ -816,18 +781,6 @@ void Rok4Server::buildWMS111Capabilities() {
                     } else {
                         bbox = childLayer->getWMSCRSList() [i].boundingBoxFromGeographic ( childLayer->getWMSCRSList() [i].cropBBoxGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy ) );
                     }
-                    CRS crs = childLayer->getWMSCRSList() [i];
-                    LOGGER_DEBUG ("check inverse for "<< crs.getProj4Code());
-                    //Switch lon lat for EPSG longlat CRS
-                    if ( ( crs.getAuthority() =="EPSG" || crs.getAuthority() =="epsg" ) && crs.isLongLat() ) {
-                        double doubletmp;
-                        doubletmp = bbox.xmin;
-                        bbox.xmin = bbox.ymin;
-                        bbox.ymin = doubletmp;
-                        doubletmp = bbox.xmax;
-                        bbox.xmax = bbox.ymax;
-                        bbox.ymax = doubletmp;
-                    }
 
                     TiXmlElement * bbEl = new TiXmlElement ( "BoundingBox" );
                     bbEl->SetAttribute ( "SRS",childLayer->getWMSCRSList() [i].getRequestCode() );
@@ -860,19 +813,7 @@ void Rok4Server::buildWMS111Capabilities() {
                     } else {
                         bbox = servicesConf.getGlobalCRSList()->at ( i ).boundingBoxFromGeographic ( servicesConf.getGlobalCRSList()->at ( i ).cropBBoxGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy ) );
                     }
-                    CRS crs = servicesConf.getGlobalCRSList()->at ( i );
-                    //Switch lon lat for EPSG longlat CRS
-                    LOGGER_DEBUG ("check inverse for "<< crs.getProj4Code());
-                    if ( ( crs.getAuthority() =="EPSG" || crs.getAuthority() =="epsg" ) && crs.isLongLat() ) {
-                        double doubletmp;
-                        doubletmp = bbox.xmin;
-                        bbox.xmin = bbox.ymin;
-                        bbox.ymin = doubletmp;
-                        doubletmp = bbox.xmax;
-                        bbox.xmax = bbox.ymax;
-                        bbox.ymax = doubletmp;
-                    }
-
+                    
                     TiXmlElement * bbEl = new TiXmlElement ( "BoundingBox" );
                     bbEl->SetAttribute ( "SRS",servicesConf.getGlobalCRSList()->at ( i ).getRequestCode() );
                     int floatprecision = GetDecimalPlaces ( bbox.xmin );
@@ -914,6 +855,7 @@ void Rok4Server::buildWMS111Capabilities() {
                     mtdURLEl->LinkEndChild ( buildTextNode ( "Format",mtdUrl.getFormat() ) );
 
                     TiXmlElement* onlineResourceEl = new TiXmlElement ( "OnlineResource" );
+		    onlineResourceEl->SetAttribute ( "xmlns:xlink","http://www.w3.org/1999/xlink" );
                     onlineResourceEl->SetAttribute ( "xlink:type","simple" );
                     onlineResourceEl->SetAttribute ( "xlink:href", mtdUrl.getHRef() );
                     mtdURLEl->LinkEndChild ( onlineResourceEl );
@@ -941,6 +883,7 @@ void Rok4Server::buildWMS111Capabilities() {
                         TiXmlElement* legendURLEl = new TiXmlElement ( "LegendURL" );
 
                         TiXmlElement* onlineResourceEl = new TiXmlElement ( "OnlineResource" );
+			onlineResourceEl->SetAttribute ( "xmlns:xlink","http://www.w3.org/1999/xlink" );
                         onlineResourceEl->SetAttribute ( "xlink:type","simple" );
                         onlineResourceEl->SetAttribute ( "xlink:href", legendURL.getHRef() );
                         legendURLEl->LinkEndChild ( buildTextNode ( "Format", legendURL.getFormat() ) );
@@ -995,7 +938,11 @@ void Rok4Server::buildWMS111Capabilities() {
     std::string wmsCapaTemplate;
     wmsCapaTemplate << doc;  // ecriture non formatée dans un std::string
     doc.Clear();
+    
 
+    // Suite du hack, on remplace le commentaire
+    wmsCapaTemplate.replace ( wmsCapaTemplate.find("<!--" + dtdTag + "-->") ,dtdTag.length()+7 , "<!DOCTYPE WMT_MS_Capabilities SYSTEM \"http://schemas.opengis.net/wms/1.1.1/WMS_MS_Capabilities.dtd\">" );
+    
     // Découpage en fragments constants.
     size_t beginPos;
     size_t endPos;

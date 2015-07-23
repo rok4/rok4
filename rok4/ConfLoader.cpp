@@ -1714,7 +1714,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
             if (allowedCRS) {
                 bool found = false;
                 for ( int i = 0; i<globalCRSList.size() ; i++ ){
-                    if (globalCRSList.at( i ) == crs ){
+                    if (globalCRSList.at( i ).getRequestCode().compare( crs.getRequestCode() ) == 0 ){
                         found = true;
                         break;
                     }
