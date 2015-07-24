@@ -83,16 +83,14 @@ endif(UNITTEST)
 if(DEB_PACKAGE)
   set(USE_SYSTEM_LIB TRUE)
   include(Debian)
+elseif(RPM_PACKAGE)
+  set(USE_SYSTEM_LIB FALSE)
+  include(RPM)
 else(DEB_PACKAGE)
   set(CPACK_GENERATOR "TGZ")
 endif(DEB_PACKAGE)
 
-if(RPM_PACKAGE)
-  set(USE_SYSTEM_LIB FALSE)
-  include(RPM)
-else(RPM_PACKAGE)
-  set(CPACK_GENERATOR "TGZ")
-endif(RPM_PACKAGE)
+
 
 
 if(NOT DEFINED USE_SYSTEM_LIB)
