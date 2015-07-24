@@ -491,6 +491,47 @@ bool PyramidOnDemand::isThisLevelSpecific(std::string lv) {
             specific = true;
         }
     }
+    if (getSWebServices().size() !=0) {
+        std::map<std::string,std::vector<WebService*> > spyr = getSWebServices();
+        std::map<std::string,std::vector<WebService*> >::iterator sp = spyr.find(lv);
+        if (sp != spyr.end()) {
+            specific = true;
+        }
+    }
+
+    return specific;
+
+
+}
+
+bool PyramidOnDemand::isThisLevelSpecificFromPyramids(std::string lv) {
+
+    bool specific = false;
+
+    if (getSPyramids().size() !=0) {
+        std::map<std::string,std::vector<Pyramid*> > spyr = getSPyramids();
+        std::map<std::string,std::vector<Pyramid*> >::iterator sp = spyr.find(lv);
+        if (sp != spyr.end()) {
+            specific = true;
+        }
+    }
+
+    return specific;
+
+
+}
+
+bool PyramidOnDemand::isThisLevelSpecificFromWebServices(std::string lv) {
+
+    bool specific = false;
+
+    if (getSWebServices().size() !=0) {
+        std::map<std::string,std::vector<WebService*> > spyr = getSWebServices();
+        std::map<std::string,std::vector<WebService*> >::iterator sp = spyr.find(lv);
+        if (sp != spyr.end()) {
+            specific = true;
+        }
+    }
 
     return specific;
 

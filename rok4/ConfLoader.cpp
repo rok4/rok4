@@ -1382,10 +1382,10 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     Pyramid* pyr;
 
     if (onFly) {
-        pyr = new PyramidOnFly(levels, *tms, format, channels, onDemand, onFly,Photometric::fromString(photometricStr),noDataValues,bPyramids,specificPyramids,aLevel,specificWebServices);
+        pyr = new PyramidOnFly(levels, *tms, format, channels, onDemand, onFly, Photometric::fromString(photometricStr),noDataValues,bPyramids,specificPyramids,aLevel,specificWebServices);
     } else {
         if (onDemand) {
-            pyr = new PyramidOnDemand(levels, *tms, format, channels, onDemand, onFly,bPyramids,specificPyramids,aLevel,specificWebServices);
+            pyr = new PyramidOnDemand(levels, *tms, format, channels, onDemand, onFly, bPyramids,specificPyramids,aLevel,specificWebServices);
         } else {
             pyr = new Pyramid ( levels, *tms, format, channels, onDemand, onFly );
         }

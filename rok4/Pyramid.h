@@ -431,8 +431,6 @@ public:
 
 };
 
-
-
 class PyramidOnDemand : public Pyramid {
 
 private:
@@ -594,23 +592,43 @@ public:
     }
 
     /**
-     * \~french \brief Récupère les niveaux associés
-     * \return Liste des niveaux associés
-     * \~english \brief Get the associated levels
-     * \return List of associated levels
+     * \~french \brief Récupère les pyramides specifiques
+     * \return Liste des pyramides specifiques
+     * \~english \brief Get the specific pyramids
+     * \return List of specific pyramids
      */
     std::map<std::string,std::vector<Pyramid*> >  getSPyramids(){
         return specificPyramids;
     }
 
     /**
-     * \~french \brief Modifie la liste des niveaux associés
-     * \param[in] Liste des niveaux associés
-     * \~english \brief Set the associated levels
-     * \param[in] List of associated levels
+     * \~french \brief Modifie la liste des pyramides specifiques
+     * \param[in] Liste des pyramides specifiques
+     * \~english \brief Set the specific pyramids
+     * \param[in] List of specific pyramids
      */
     void setSPyramids (std::map<std::string,std::vector<Pyramid*> >  sP) {
         specificPyramids = sP;
+    }
+
+    /**
+     * \~french \brief Récupère les webservices
+     * \return Liste des webservices
+     * \~english \brief Get the webservices
+     * \return List of webservices
+     */
+    std::map<std::string,std::vector<WebService*> >  getSWebServices(){
+        return specificWebServices;
+    }
+
+    /**
+     * \~french \brief Modifie la liste des webservices
+     * \param[in] Liste des webservices
+     * \~english \brief Set the webservices
+     * \param[in] List of webservices
+     */
+    void setSWebSerices (std::map<std::string,std::vector<WebService*> >  sP) {
+        specificWebServices = sP;
     }
 
     /**
@@ -622,6 +640,26 @@ public:
      * \return true if specific
      */
     bool isThisLevelSpecific ( std::string lv );
+
+    /**
+     * \~french \brief Informe sur la spécificité d'un level
+     * \param[in] level id
+     * \return true si spécifique
+     * \~english \brief Tell if a level is specific
+     * \param[in] level id
+     * \return true if specific
+     */
+    bool isThisLevelSpecificFromPyramids ( std::string lv );
+
+    /**
+     * \~french \brief Informe sur la spécificité d'un level
+     * \param[in] level id
+     * \return true si spécifique
+     * \~english \brief Tell if a level is specific
+     * \param[in] level id
+     * \return true if specific
+     */
+    bool isThisLevelSpecificFromWebServices ( std::string lv );
 
     /**
      * \~french \brief Récupère la pyramide source pour un level donné

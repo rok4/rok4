@@ -668,21 +668,20 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
     std::map <std::string, std::string > format_option;
     std::vector<Pyramid*> bPyr;
     bool specific = false;
+    int bSize = 0;
 
     LOGGER_INFO("GetTileOnDemand");
 
     //Calcul des paramètres nécessaires
+    LOGGER_DEBUG("Compute parameters");
     std::string level = tileMatrix;
     PyramidOnDemand * pyr = reinterpret_cast<PyramidOnDemand*>(L->getDataPyramid());
     CRS dst_crs = pyr->getTms().getCrs();
     error = 0;
     Interpolation::KernelType interpolation = L->getResampling();
-
-
-    //---- on verifie certains paramètres pour ne pas effectuer des calculs inutiles
-
     std::map<std::string, Level*>::iterator lv = pyr->getLevels().find(level);
 
+    //---- on verifie certains paramètres pour ne pas effectuer des calculs inutiles
     if (lv == pyr->getLevels().end()) {
         //le level demandé n'existe pas
         return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( pyr->getLowestLevel()->getEncodedNoDataTile() ) );
@@ -693,93 +692,107 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
 
             //--------------------------------------------------------------------------------------------------------
             //Suite du calcul des paramètres nécessaires
-
-            //----on regarde si le level demandé est spécifique ou pas
-            specific = pyr->isThisLevelSpecific(level);
-            bPyr = pyr->getSourcePyramid(level,specific);
-            //---- level specifique identifie
-
             //calcul de la bbox
+            LOGGER_DEBUG("Compute BBOX");
             BoundingBox<double> bbox = lv->second->tileIndicesToTileBbox(tileCol,tileRow) ;
-
+            bbox.print();
             //width and height
             width = lv->second->getTm().getTileW();
             height = lv->second->getTm().getTileH();
 
-            //Récupérationd du tableau à double entrée représentant les associations de levels
-            std::map<std::string, std::map<std::string, std::string> > aLevels;
-            if (!specific) {
-                aLevels = pyr->getALevel();
-            }
             //--------------------------------------------------------------------------------------------------------
 
             //--------------------------------------------------------------------------------------------------------
             //CREATION DE L'IMAGE
+            LOGGER_DEBUG("Create Image");
 
-            //pour chaque pyramide de base, on récupère une image
-            for (int i = 0; i < bPyr.size(); i++) {
+            if (pyr->isThisLevelSpecificFromWebServices(level)) {
+                LOGGER_DEBUG("From Web Services");
 
+            }
 
-                pyrType = bPyr.at(i)->getFormat();
-                bStyle = bPyr.at(i)->getStyle();
+            if (pyr->isThisLevelSpecificFromPyramids(level)) {
+                LOGGER_DEBUG("From Pyramids");
 
-                if (specific) {
-                    bLevel = bPyr.at(i)->getLevels().begin()->second->getId();
-                } else {
-                    //on récupère le bLevel associé à level
-                    std::ostringstream oss;
-                    oss << i;
-                    std::map<std::string,std::string> aLevel = aLevels.find(level)->second;
-                    bLevel = aLevel.find(oss.str())->second;
+                //----on regarde si le level demandé est spécifique ou pas
+                specific = pyr->isThisLevelSpecificFromPyramids(level);
+                bPyr = pyr->getSourcePyramid(level,specific);
+                //---- level specifique identifie
+                //Récupérationd du tableau à double entrée représentant les associations de levels
+                std::map<std::string, std::map<std::string, std::string> > aLevels;
+                if (!specific) {
+                    aLevels = pyr->getALevel();
                 }
+                bSize += bPyr.size();
+
+                //pour chaque pyramide de base, on récupère une image
+                for (int i = 0; i < bPyr.size(); i++) {
+
+                    pyrType = bPyr.at(i)->getFormat();
+                    bStyle = bPyr.at(i)->getStyle();
+
+                    if (specific) {
+                        bLevel = bPyr.at(i)->getLevels().begin()->second->getId();
+                    } else {
+                        //on récupère le bLevel associé à level
+                        std::ostringstream oss;
+                        oss << i;
+                        std::map<std::string,std::string> aLevel = aLevels.find(level)->second;
+                        bLevel = aLevel.find(oss.str())->second;
+                    }
 
 
-                //on transforme la bbox
-                BoundingBox<double> motherBbox = bbox;
-                BoundingBox<double> childBBox = bPyr.at(i)->getTms().getCrs().getCrsDefinitionArea();
-                if (motherBbox.reproject(pyr->getTms().getCrs().getProj4Code(),bPyr.at(i)->getTms().getCrs().getProj4Code()) ==0 &&
-                childBBox.reproject("epsg:4326",bPyr.at(i)->getTms().getCrs().getProj4Code()) == 0) {
-                    //on récupère l'image si on a pu reprojeter les bbox
-                    //  cela a un double objectif:
-                    //      on peut voir s'il y a de la donnée
-                    //      et si on ne peut pas reprojeter,on ne pourra pas le faire plus tard non plus
-                    //          donc il sera impossible de créer une image
+                    //on transforme la bbox
+                    BoundingBox<double> motherBbox = bbox;
+                    BoundingBox<double> childBBox = bPyr.at(i)->getTms().getCrs().getCrsDefinitionArea();
+                    if (motherBbox.reproject(pyr->getTms().getCrs().getProj4Code(),bPyr.at(i)->getTms().getCrs().getProj4Code()) ==0 &&
+                    childBBox.reproject("epsg:4326",bPyr.at(i)->getTms().getCrs().getProj4Code()) == 0) {
+                        //on récupère l'image si on a pu reprojeter les bbox
+                        //  cela a un double objectif:
+                        //      on peut voir s'il y a de la donnée
+                        //      et si on ne peut pas reprojeter,on ne pourra pas le faire plus tard non plus
+                        //          donc il sera impossible de créer une image
 
-                    if (childBBox.containsInside(motherBbox) || motherBbox.containsInside(childBBox) || motherBbox.intersects(childBBox)) {
+                        if (childBBox.containsInside(motherBbox) || motherBbox.containsInside(childBBox) || motherBbox.intersects(childBBox)) {
 
-                        curImage = bPyr.at(i)->createReprojectedImage(bLevel, bbox, dst_crs, servicesConf, width, height, interpolation, error);
+                            curImage = bPyr.at(i)->createReprojectedImage(bLevel, bbox, dst_crs, servicesConf, width, height, interpolation, error);
 
-                        if (curImage != NULL) {
-                            //On applique un style à l'image
-                            image = styleImage(curImage, pyrType, bStyle, format, bPyr.size());
-                            images.push_back ( image );
+                            if (curImage != NULL) {
+                                //On applique un style à l'image
+                                image = styleImage(curImage, pyrType, bStyle, format, bPyr.size());
+                                images.push_back ( image );
+                            } else {
+                                LOGGER_ERROR("Impossible de générer la tuile car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile");
+                                return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
+                            }
+
                         } else {
-                            LOGGER_ERROR("Impossible de générer la tuile car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile");
-                            return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
+
+                            LOGGER_DEBUG("Incohérence des bbox: Impossible de générer une tuile issue d'une basedPyramid du layer "+L->getTitle());
+
                         }
 
                     } else {
+                        //on n'a pas pu reprojeter les bbox
 
-                        LOGGER_DEBUG("Incohérence des bbox: Impossible de générer une tuile issue d'une basedPyramid du layer "+L->getTitle());
+                        LOGGER_DEBUG("Reprojection impossible: Impossible de générer une tuile issue d'une basedPyramid du layer "+L->getTitle());
 
                     }
 
-                } else {
-                    //on n'a pas pu reprojeter les bbox
-
-                    LOGGER_DEBUG("Reprojection impossible: Impossible de générer une tuile issue d'une basedPyramid du layer "+L->getTitle());
 
                 }
 
+                //re-initialisation du pyrType pour le merge
+                pyrType = bPyr.at ( 0 )->getFormat();
 
             }
 
 
-            //re-initialisation du pyrType pour le merge
-            pyrType = bPyr.at ( 0 )->getFormat();
-            //On merge les images récupérés dans chacune des basedPyramid
-            if (images.size() != 0) {
 
+
+            //On merge les images récupérés dans chacune des basedPyramid ou/et des WebServices
+            if (images.size() != 0) {
+                //FIXME: trouver une solution pour le pyrType...
                 mergeImage = mergeImages(images, pyrType, style, dst_crs, bbox);
 
                 if (mergeImage == NULL) {
@@ -805,7 +818,9 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
 
 
     //De cette image mergée, on lui applique un format pour la renvoyer au client
-    DataStream *tileSource = formatImage(mergeImage, format, pyrType, format_option, bPyr.size(), style);
+    //FIXME: changer bPyr.size par la taille cumulee de bPyr et bWebService
+    //trouver une solution pour le pyrType...
+    DataStream *tileSource = formatImage(mergeImage, format, pyrType, format_option, bSize, style);
     DataSource *tile;
 
     if (tileSource == NULL) {
@@ -971,6 +986,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     bool specific = false;
     int state = 0;
     struct stat buffer;
+    std::map<std::string, std::map<std::string, std::string> > aLevels;
 
     //On cree la dalle sous forme d'image
     LOGGER_INFO("Create Slab on Fly");
@@ -982,11 +998,6 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     CRS dst_crs = pyr->getTms().getCrs();
     error = 0;
     Interpolation::KernelType interpolation = L->getResampling();
-
-    //----on regarde si le level demandé est spécifique ou pas
-    specific = pyr->isThisLevelSpecific(level);
-    bPyr = pyr->getSourcePyramid(level,specific);
-    //---- level specifique identifie
 
 
     //---- on va créer la bbox associée à la dalle
@@ -1004,53 +1015,69 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     tileH = lv->second->getTm().getTileH();
 
 
-    //Récupération du tableau à double entrée représentant les associations de levels
-    std::map<std::string, std::map<std::string, std::string> > aLevels;
-    if (!specific) {
-        aLevels = pyr->getALevel();
-    }
-
     //--------------------------------------------------------------------------------------------------------
     //CREATION DE L'IMAGE
     LOGGER_DEBUG("Create Image");
-    //pour chaque pyramide de base, on récupère une image
-    for (int i = 0; i < bPyr.size(); i++) {
-        LOGGER_DEBUG("basedPyramid");
-        pyrType = bPyr.at(i)->getFormat();
-        bStyle = bPyr.at(i)->getStyle();
 
-        if (specific) {
-            bLevel = bPyr.at(i)->getLevels().begin()->second->getId();
-        } else {
-            //on récupère le bLevel associé à level
-            std::ostringstream oss;
-            oss << i;
-            std::map<std::string,std::string> aLevel = aLevels.find(level)->second;
-            bLevel = aLevel.find(oss.str())->second;
-        }
-        LOGGER_DEBUG("Create reprojected image");
-        curImage = bPyr.at(i)->createBasedSlab(bLevel, bbox, dst_crs, servicesConf, width, height, interpolation, error);
-        LOGGER_DEBUG("Created");
-        if (curImage != NULL) {
-            //On applique un style à l'image
-            image = styleImage(curImage, pyrType, bStyle, format, bPyr.size());
-            LOGGER_DEBUG("Apply style");
-            images.push_back ( image );
-        } else {
-            LOGGER_ERROR("Impossible de générer la dalle car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile");
-            state = 1;
-            delete bStyle;
-            return state;
-        }
+    if (pyr->isThisLevelSpecificFromWebServices(level)) {
+        LOGGER_DEBUG("From Web Services");
 
     }
 
-    pyrType = bPyr.at ( 0 )->getFormat();
+    if (pyr->isThisLevelSpecificFromPyramids(level)) {
+        LOGGER_DEBUG("From Pyramids");
+
+        //----on regarde si le level demandé est spécifique ou pas
+        specific = pyr->isThisLevelSpecificFromPyramids(level);
+        bPyr = pyr->getSourcePyramid(level,specific);
+        //---- level specifique identifie
+        //Récupération du tableau à double entrée représentant les associations de levels
+        if (!specific) {
+            LOGGER_DEBUG("Level asked is not specific");
+            aLevels = pyr->getALevel();
+        }
+
+        //pour chaque pyramide de base, on récupère une image
+        for (int i = 0; i < bPyr.size(); i++) {
+            LOGGER_DEBUG("basedPyramid");
+            pyrType = bPyr.at(i)->getFormat();
+            bStyle = bPyr.at(i)->getStyle();
+
+            if (specific) {
+                bLevel = bPyr.at(i)->getLevels().begin()->second->getId();
+            } else {
+                //on récupère le bLevel associé à level
+                std::ostringstream oss;
+                oss << i;
+                std::map<std::string,std::string> aLevel = aLevels.find(level)->second;
+                bLevel = aLevel.find(oss.str())->second;
+            }
+            LOGGER_DEBUG("Create reprojected image");
+            curImage = bPyr.at(i)->createBasedSlab(bLevel, bbox, dst_crs, servicesConf, width, height, interpolation, error);
+            LOGGER_DEBUG("Created");
+            if (curImage != NULL) {
+                //On applique un style à l'image
+                image = styleImage(curImage, pyrType, bStyle, format, bPyr.size());
+                LOGGER_DEBUG("Apply style");
+                images.push_back ( image );
+            } else {
+                LOGGER_ERROR("Impossible de générer la dalle car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile");
+                state = 1;
+                delete bStyle;
+                return state;
+            }
+
+        }
+
+        pyrType = bPyr.at ( 0 )->getFormat();
+
+    }
 
 
-    //On merge les images récupérés dans chacune des basedPyramid
+    //On merge les images récupérés dans chacune des basedPyramid et chaque WebServices
     if (images.size() != 0) {
-
+        //FIXME:
+        //trouver une solution pour le pyrType...
         mergeImage = mergeImages(images, pyrType, style, dst_crs, bbox);
         LOGGER_DEBUG("Merged differents basedImages");
         if (mergeImage == NULL) {
@@ -1066,6 +1093,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
         delete bStyle;
         return state;
     }
+
 
     //IMAGE CREEE
     //-------------------------------------------------------------------------------------------------------
