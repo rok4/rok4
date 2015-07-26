@@ -1,2 +1,0 @@
-/usr/bin/ar cr libfcgi.a  CMakeFiles/fcgi.dir/fcgiapp.c.o CMakeFiles/fcgi.dir/os_unix.c.o
-/usr/bin/ranlib libfcgi.a

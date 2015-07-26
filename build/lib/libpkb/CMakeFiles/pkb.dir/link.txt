@@ -1,2 +1,0 @@
-/usr/bin/ar cr libpkb.a  CMakeFiles/pkb.dir/pkbDecoder.cpp.o CMakeFiles/pkb.dir/pkbEncoder.cpp.o
-/usr/bin/ranlib libpkb.a
