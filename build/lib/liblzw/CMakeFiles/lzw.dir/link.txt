@@ -1,0 +1,2 @@
+/usr/bin/ar cr liblzw.a  CMakeFiles/lzw.dir/lzwDecoder.cpp.o CMakeFiles/lzw.dir/lzwEncoder.cpp.o
+/usr/bin/ranlib liblzw.a

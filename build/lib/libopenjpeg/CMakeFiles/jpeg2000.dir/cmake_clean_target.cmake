@@ -1,0 +1,3 @@
+FILE(REMOVE_RECURSE
+  "libjpeg2000.a"
+)

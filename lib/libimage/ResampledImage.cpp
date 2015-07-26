@@ -302,3 +302,9 @@ int ResampledImage::getline ( uint8_t* buffer, int line ) {
     convert ( buffer, dst_image_buffer, nb );
     return nb;
 }
+
+int ResampledImage::getline ( uint16_t* buffer, int line ) {
+    int nb = getline ( dst_image_buffer, line );
+    convert ( buffer, dst_image_buffer, nb );
+    return nb;
+}

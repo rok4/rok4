@@ -246,7 +246,7 @@ LibpngImage::LibpngImage (
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression,
     png_bytep* pngData ) :
 
-    FileImage ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression, false ),
+    FileImage ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression, ExtraSample::ALPHA_UNASSOC ),
 
     data(pngData) {
         
@@ -263,9 +263,22 @@ int LibpngImage::getline ( uint8_t* buffer, int line ) {
     return width*channels;
 }
 
+int LibpngImage::getline ( uint16_t* buffer, int line ) {
+
+    // On doit implémenter le getline 16 bits pour respecter la classe mère Image
+    // L'image lue est sur des entiers 8 bits (forcément pour du PNG)
+    // On convertit les entiers 8 bits en 16 bits
+    
+    uint8_t* buffer_t = new uint8_t[width*channels];
+    int retour = getline ( buffer_t,line );
+    convert ( buffer, buffer_t, width*channels );
+    delete [] buffer_t;
+    return retour;
+}
+
 int LibpngImage::getline ( float* buffer, int line ) {
     
-    // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers (forcément pour du PNG)
+    // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers 8bits (forcément pour du PNG)
     uint8_t* buffer_t = new uint8_t[width*channels];
     int retour = getline ( buffer_t,line );
     convert ( buffer,buffer_t,width*channels );

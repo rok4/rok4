@@ -1,0 +1,11 @@
+prefix=/rok4
+exec_prefix=/rok4
+libdir=/rok4/lib
+includedir=/rok4/include/libpng16
+
+Name: libpng
+Description: Loads and saves PNG files
+Version: 1.6.2
+Libs: -L${libdir} -lpng16
+Libs.private: -lz -lm
+Cflags: -I${includedir}

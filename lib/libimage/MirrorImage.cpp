@@ -172,6 +172,11 @@ int MirrorImage::getline ( uint8_t* buffer, int line ) {
     return _getline ( buffer, line );
 }
 
+/* Implementation de getline pour les uint16_t */
+int MirrorImage::getline ( uint16_t* buffer, int line ) {
+    return _getline ( buffer, line );
+}
+
 /* Implementation de getline pour les float */
 int MirrorImage::getline ( float* buffer, int line ) {
     return _getline ( buffer, line );

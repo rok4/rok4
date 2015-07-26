@@ -65,6 +65,7 @@
 #include "intl.h"
 #include "config.h"
 #include "Keyword.h"
+#include <fcntl.h>
 
 // Load style
 Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool inspire ) {
@@ -755,9 +756,9 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
         }
 
-        if ( minTileCol <0 )
+        if ( minTileCol > tm->getMatrixW() || minTileCol < 0 )
             minTileCol = 0;
-        if ( minTileRow <0 )
+        if ( minTileRow > tm->getMatrixH() || minTileRow < 0 )
             minTileRow = 0;
         if ( maxTileCol > tm->getMatrixW() || maxTileCol < 0 )
             maxTileCol = tm->getMatrixW();
@@ -783,6 +784,13 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             } else if ( noDataFilePath.compare ( 0,1,"/" ) !=0 ) {
                 noDataFilePath.insert ( 0,"/" );
                 noDataFilePath.insert ( 0,parentDir );
+            }
+            int file = open(noDataFilePath.c_str(),O_RDONLY);
+            if (file < 0) {
+                LOGGER_ERROR(fileName <<_ ( " Level " ) << id <<_ ( " specifiant une tuile NoData impossible a ouvrir" ));
+                return NULL;
+            } else {
+                close(file);
             }
 
             /*if (noDataFilePath.empty()){
@@ -1706,7 +1714,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
             if (allowedCRS) {
                 bool found = false;
                 for ( int i = 0; i<globalCRSList.size() ; i++ ){
-                    if (globalCRSList.at( i ) == crs ){
+                    if (globalCRSList.at( i ).getRequestCode().compare( crs.getRequestCode() ) == 0 ){
                         found = true;
                         break;
                     }

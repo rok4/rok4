@@ -168,11 +168,11 @@ FileImage* FileImageFactory::createImageToWrite (
 
 FileImage::FileImage (
     int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
-    SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression, bool associatedalpha ) :
+    SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression, ExtraSample::eExtraSample esType ) :
 
     Image ( width,height,channels,resx,resy,bbox ),
     sampleformat ( sampleformat ), bitspersample ( bitspersample ), photometric ( photometric ), compression ( compression ),
-    associatedalpha(associatedalpha) {
+    esType(esType) {
 
     filename = new char[IMAGE_MAX_FILENAME_LENGTH];
     strcpy ( filename,name );
@@ -203,4 +203,3 @@ void FileImage::unassociateAlpha ( uint8_t* buffer ) {
         }
     }
 }
-

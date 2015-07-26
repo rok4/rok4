@@ -152,8 +152,12 @@ Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std:
     running ( false ), notFoundError ( NULL ), supportWMTS ( supportWMTS ), supportWMS ( supportWMS ) {
 
     if ( supportWMS ) {
-        LOGGER_DEBUG ( _ ( "Build WMS Capabilities" ) );
-        buildWMSCapabilities();
+        LOGGER_DEBUG ( _ ( "Build WMS Capabilities 1.3.0" ) );
+        buildWMS130Capabilities();
+        //---- WMS 1.1.1
+        LOGGER_DEBUG ( _ ( "Build WMS Capabilities 1.1.1" ) );
+        buildWMS111Capabilities();
+        //----
     }
     if ( supportWMTS ) {
         LOGGER_DEBUG ( _ ( "Build WMTS Capabilities" ) );
@@ -181,12 +185,17 @@ void Rok4Server::killFCGI() {
     FCGX_Close();
 }
 
-void Rok4Server::run() {
+void Rok4Server::run(sig_atomic_t signal_pending) {
     running = true;
 
     for ( int i = 0; i < threads.size(); i++ ) {
         pthread_create ( & ( threads[i] ), NULL, Rok4Server::thread_loop, ( void* ) this );
     }
+    
+    if (signal_pending != 0 ) {
+	raise( signal_pending );
+    }
+    
     for ( int i = 0; i < threads.size(); i++ )
         pthread_join ( threads[i], NULL );
 }
@@ -231,12 +240,15 @@ DataStream* Rok4Server::WMSGetCapabilities ( Request* request ) {
 
     /* concaténation des fragments invariant de capabilities en intercalant les
      * parties variables dépendantes de la requête */
-
-    std::string capa = wmsCapaFrag[0] + request->scheme + request->hostName;
-    for ( int i=1; i < wmsCapaFrag.size()-1; i++ ) {
-        capa = capa + wmsCapaFrag[i] + request->scheme + request->hostName + request->path + "?";
+    std::string capa;
+    std::vector<std::string> capaFrag;
+    std::map<std::string,std::vector<std::string> >::iterator it = wmsCapaFrag.find(version);
+    capaFrag = it->second;
+    capa = capaFrag[0] + request->scheme + request->hostName;
+    for ( int i=1; i < capaFrag.size()-1; i++ ) {
+        capa = capa + capaFrag[i] + request->scheme + request->hostName + request->path + "?";
     }
-    capa = capa + wmsCapaFrag.back();
+    capa = capa + capaFrag.back();
 
     return new MessageDataStream ( capa,"text/xml" );
 }
@@ -353,7 +365,8 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     //Use background image format.
     Rok4Format::eformat_data pyrType = layers.at ( 0 )->getDataPyramid()->getFormat();
     image = images.at ( 0 );
-    if ( images.size() > 1  || (styles.at( 0 ) && (styles.at( 0 )->isEstompage() || !styles.at( 0 )->getPalette()->getColoursMap()->empty()) ) ) {
+    //if ( images.size() > 1  || (styles.at( 0 ) && (styles.at( 0 )->isEstompage() || !styles.at( 0 )->getPalette()->getColoursMap()->empty()) ) ) {
+    if ( (styles.at( 0 ) && (styles.at( 0 )->isEstompage() || !styles.at( 0 )->getPalette()->getColoursMap()->empty()) ) ) {
 
         switch ( pyrType ) {
             //Only use int8 output with estompage
@@ -377,28 +390,59 @@ DataStream* Rok4Server::getMap ( Request* request ) {
 
         MergeImageFactory MIF;
         int spp = images.at ( 0 )->channels;
-
-        int bg[spp];
-        
-        switch(spp) {
-            case 1:
-                bg[0] = 255;
-                break;
-            case 2:
-                bg[0] = 255; bg[1] = 0;
-                break;
-            case 3:
-                bg[0] = 255; bg[1] = 255; bg[2] = 255;
-                break;
-            case 4:
-                bg[0] = 255; bg[1] = 255; bg[2] = 255; bg[4] = 0;
-                break;
-            default:
-                memset(bg, 0, sizeof(int) * spp);
-                break;                
-        }
-        
-        image = MIF.createMergeImage ( images, spp, bg, NULL, Merge::ALPHATOP );
+	int bg[spp];
+	int transparentColor[spp];
+	
+	switch (pyrType) {
+	  case Rok4Format::TIFF_RAW_FLOAT32 :
+	  case Rok4Format::TIFF_ZIP_FLOAT32 :
+	  case Rok4Format::TIFF_LZW_FLOAT32 :
+	  case Rok4Format::TIFF_PKB_FLOAT32 :
+	    switch(spp) {
+	      case 1:
+		  bg[0] = -99999.0;
+		  break;
+	      case 2:
+		  bg[0] = -99999.0; bg[1] = 0;
+		  break;
+	      case 3:
+		  bg[0] = -99999.0; bg[1] = -99999.0; bg[2] = -99999.0;
+		  break;
+	      case 4:
+		  bg[0] = -99999.0; bg[1] = -99999.0; bg[2] = -99999.0; bg[4] = 0;
+		  break;
+	      default:
+		  memset(bg, 0, sizeof(int) * spp);
+		  break;                
+	    }
+	    memccpy(transparentColor, bg, spp, sizeof(int));
+	    break;
+	  case Rok4Format::TIFF_RAW_INT8 :
+	  case Rok4Format::TIFF_ZIP_INT8 :
+	  case Rok4Format::TIFF_LZW_INT8 :
+	  case Rok4Format::TIFF_PKB_INT8 :
+	  default :
+	    switch(spp) {
+	      case 1:
+		  bg[0] = 255;
+		  break;
+	      case 2:
+		  bg[0] = 255; bg[1] = 0;
+		  break;
+	      case 3:
+		  bg[0] = 255; bg[1] = 255; bg[2] = 255;
+		  break;
+	      case 4:
+		  bg[0] = 255; bg[1] = 255; bg[2] = 255; bg[4] = 0;
+		  break;
+	      default:
+		  memset(bg, 0, sizeof(uint8_t) * spp);
+		  break;                
+	    }
+	    break;
+	}
+	
+	image = MIF.createMergeImage(images,spp,bg,transparentColor,Merge::ALPHATOP);
 
         if ( image == NULL ) {
             LOGGER_ERROR ( "Impossible de fusionner les images des differentes couches" );
@@ -527,9 +571,11 @@ void Rok4Server::processWMTS ( Request* request, FCGX_Request&  fcgxRequest ) {
 }
 
 void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
-    if ( request->request == "getcapabilities" ) {
+    //le capabilities est présent pour une compatibilité avec le WMS 1.1.1
+    if ( request->request == "getcapabilities" || request->request == "capabilities") {
         S.sendresponse ( WMSGetCapabilities ( request ),&fcgxRequest );
-    } else if ( request->request == "getmap" ) {
+        //le map est présent pour une compatibilité avec le WMS 1.1.1
+    } else if ( request->request == "getmap" || request->request == "map") {
         S.sendresponse ( getMap ( request ), &fcgxRequest );
     } else if ( request->request == "getversion" ) {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wms" ) ),&fcgxRequest );
@@ -544,7 +590,8 @@ void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest 
     if ( supportWMTS && request->service == "wmts" ) {
         processWMTS ( request, fcgxRequest );
         //Service is not mandatory in GetMap request in WMS 1.3.0 and GetFeatureInfo
-    } else if ( supportWMS && ( request->service=="wms" || request->request == "getmap" ) ) {
+        //le map est présent pour une compatibilité avec le WMS 1.1.1
+    } else if ( supportWMS && ( request->service=="wms" || request->request == "getmap" || request->request == "map") ) {
         processWMS ( request, fcgxRequest );
     } else if ( request->service == "" ) {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, ( "Le parametre SERVICE n'est pas renseigne." ) ,"xxx" ) ),&fcgxRequest );

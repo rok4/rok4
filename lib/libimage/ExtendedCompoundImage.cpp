@@ -56,13 +56,6 @@
 #include "Utils.h"
 #include "EmptyImage.h"
 
-#ifndef __max
-#define __max(a, b)   ( ((a) > (b)) ? (a) : (b) )
-#endif
-#ifndef __min
-#define __min(a, b)   ( ((a) < (b)) ? (a) : (b) )
-#endif
-
 /********************************************** ExtendedCompoundImage ************************************************/
 
 template <typename T>
@@ -75,14 +68,15 @@ int ExtendedCompoundImage::_getline ( T* buffer, int line ) {
         buffer[i]= ( T ) nodata[i%channels];
     }
 
-    double y = l2y ( line );
-
-    for ( i=0; i < ( int ) sourceImages.size(); i++ ) {
+    for ( i = 0; i < ( int ) sourceImages.size(); i++ ) {
+        
+        int lineInSource = line - rowsOffsets[i];
+        
         // On ecarte les images qui ne se trouvent pas sur la ligne
         // On evite de comparer des coordonnees terrain (comparaison de flottants)
         // Les coordonnees image sont obtenues en arrondissant au pixel le plus proche
 
-        if ( y2l ( sourceImages[i]->getYmin() ) <= line || y2l ( sourceImages[i]->getYmax() ) > line ) {
+        if ( lineInSource < 0 || lineInSource >= sourceImages[i]->getHeight() ) {
             continue;
         }
         if ( sourceImages[i]->getXmin() >= getXmax() || sourceImages[i]->getXmax() <= getXmin() ) {
@@ -90,29 +84,27 @@ int ExtendedCompoundImage::_getline ( T* buffer, int line ) {
         }
 
         // c0 : indice de la 1ere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
-        int c0=__max ( 0,x2c ( sourceImages[i]->getXmin() ) );
-        // c1-1 : indice de la derniere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
-        int c1=__min ( width,x2c ( sourceImages[i]->getXmax() ) );
+        int c0 = c0s[i];
+        // c1 : indice de la derniere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
+        int c1 = c1s[i];
 
         // c2 : indice de de la 1ere colonne de l'ExtendedCompoundImage dans l'image courante
-        int c2=- ( __min ( 0,x2c ( sourceImages[i]->getXmin() ) ) );
+        int c2 = c2s[i];
 
         T* buffer_t = new T[sourceImages[i]->getWidth() *sourceImages[i]->channels];
 
-        //LOGGER_INFO("       ECI source " << i << " getline " << sourceImages[i]->y2l ( y ));
-        sourceImages[i]->getline ( buffer_t,sourceImages[i]->y2l ( y ) );
-        //LOGGER_INFO("       je l'ai !!");
+        sourceImages[i]->getline ( buffer_t,lineInSource );
 
         if ( getMask ( i ) == NULL ) {
-            memcpy ( &buffer[c0*channels], &buffer_t[c2*channels], ( c1-c0 ) *channels*sizeof ( T ) );
+            memcpy ( &buffer[c0*channels], &buffer_t[c2*channels], ( c1 + 1 - c0) *channels*sizeof ( T ) );
         } else {
 
             uint8_t* buffer_m = new uint8_t[getMask ( i )->getWidth()];
-            getMask ( i )->getline ( buffer_m,getMask ( i )->y2l ( y ) );
+            getMask ( i )->getline ( buffer_m,lineInSource );
 
-            for ( int j=0; j < c1-c0; j++ ) {
+            for ( int j=0; j < c1 - c0 + 1; j++ ) {
                 if ( buffer_m[c2+j] ) {
-                    memcpy ( &buffer[ ( c0+j ) *channels],&buffer_t[ ( c2+j ) *channels],sizeof ( T ) *channels );
+                    memcpy ( &buffer[ ( c0 + j ) *channels],&buffer_t[ ( c2+j ) *channels],sizeof ( T ) *channels );
                 }
             }
 
@@ -126,6 +118,11 @@ int ExtendedCompoundImage::_getline ( T* buffer, int line ) {
 
 /* Implementation de getline pour les uint8_t */
 int ExtendedCompoundImage::getline ( uint8_t* buffer, int line ) {
+    return _getline ( buffer, line );
+}
+
+/* Implementation de getline pour les float */
+int ExtendedCompoundImage::getline ( uint16_t* buffer, int line ) {
     return _getline ( buffer, line );
 }
 
@@ -195,6 +192,8 @@ bool ExtendedCompoundImage::addMirrors ( int mirrorSize ) {
             return false;
         }
     }
+    
+    calculateOffsets();
 
     return true;
 }
@@ -269,6 +268,8 @@ bool ExtendedCompoundImage::extendBbox ( BoundingBox< double > otherbbox, int mo
             return false;
         }
     }
+    
+    calculateOffsets();
 
     return true;
 }
@@ -359,33 +360,32 @@ int ExtendedCompoundMask::_getline ( uint8_t* buffer, int line ) {
     memset ( buffer,0,width );
 
     for ( uint i = ECI->getMirrorsNumber(); i < ECI->getImages()->size(); i++ ) {
+        
+        int ol, c0, c1, c2;
+        
+        ECI->getOffsets(i, &ol, &c0, &c1, &c2);
+        
+        int lineInSource = line - ol;
+        
         /* On ecarte les images qui ne se trouvent pas sur la ligne
          * On evite de comparer des coordonnees terrain (comparaison de flottants)
          * Les coordonnees image sont obtenues en arrondissant au pixel le plus proche
          */
-        if ( y2l ( ECI->getImages()->at ( i )->getYmin() ) <= line || y2l ( ECI->getImages()->at ( i )->getYmax() ) > line ) {
+        if ( lineInSource < 0 || lineInSource >=  ECI->getImages()->at ( i )->getHeight() ) {
             continue;
         }
         if ( ECI->getImages()->at ( i )->getXmin() >= getXmax() || ECI->getImages()->at ( i )->getXmax() <= getXmin() ) {
             continue;
         }
-
-        // c0 : indice de la 1ere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
-        int c0=__max ( 0,x2c ( ECI->getImages()->at ( i )->getXmin() ) );
-        // c1-1 : indice de la derniere colonne dans l'ExtendedCompoundImage de son intersection avec l'image courante
-        int c1=__min ( width,x2c ( ECI->getImages()->at ( i )->getXmax() ) );
-
-        // c2 : indice de de la 1ere colonne de l'ExtendedCompoundImage dans l'image courante
-        int c2=- ( __min ( 0,x2c ( ECI->getImages()->at ( i )->getXmin() ) ) );
-
+ 
         if ( ECI->getMask ( i ) == NULL ) {
-            memset ( &buffer[c0], 255, c1-c0 );
+            memset ( &buffer[c0], 255, c1 - c0 + 1 );
         } else {
             // Récupération du masque de l'image courante de l'ECI.
             uint8_t* buffer_m = new uint8_t[ECI->getMask ( i )->getWidth()];
-            ECI->getMask ( i )->getline ( buffer_m,ECI->getMask ( i )->y2l ( l2y ( line ) ) );
+            ECI->getMask ( i )->getline ( buffer_m,lineInSource );
             // On ajoute au masque actuel (on écrase si la valeur est différente de 0)
-            for ( int j = 0; j < c1-c0; j++ ) {
+            for ( int j = 0; j < c1 - c0 + 1; j++ ) {
                 if ( buffer_m[c2+j] ) {
                     memcpy ( &buffer[c0+j],&buffer_m[c2+j],1 );
                 }
@@ -400,6 +400,15 @@ int ExtendedCompoundMask::_getline ( uint8_t* buffer, int line ) {
 /* Implementation de getline pour les uint8_t */
 int ExtendedCompoundMask::getline ( uint8_t* buffer, int line ) {
     return _getline ( buffer, line );
+}
+
+/* Implementation de getline pour les float */
+int ExtendedCompoundMask::getline ( uint16_t* buffer, int line ) {
+    uint8_t* buffer_t = new uint8_t[width*channels];
+    getline ( buffer_t,line );
+    convert ( buffer,buffer_t,width*channels );
+    delete [] buffer_t;
+    return width*channels;
 }
 
 /* Implementation de getline pour les float */

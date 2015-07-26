@@ -88,7 +88,7 @@ std::string serverConfigFile;
 // in microseconds
 static const double signal_defering_min_time = 1000000LL;
 
-volatile sig_atomic_t signal_pending;
+volatile sig_atomic_t signal_pending = 0;
 volatile sig_atomic_t defer_signal;
 volatile timeval signal_timestamp;
 
@@ -118,6 +118,7 @@ void reloadConfig ( int signum ) {
         }
     } else {
         defer_signal++;
+	signal_pending = 0;
         timeval begin;
         gettimeofday ( &begin, NULL );
         signal_timestamp.tv_sec = begin.tv_sec;
@@ -250,10 +251,8 @@ int main ( int argc, char** argv ) {
 
         // Remove Event Lock
         defer_signal--;
-
-        if ( defer_signal == 0 && signal_pending != 0 )
-            raise ( signal_pending );
-        W->run();
+        
+        W->run(signal_pending);
 
         // Extinction du serveur
         if ( reload ) {
