@@ -554,17 +554,14 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     int channels;
     std::map<std::string, Level *> levels;
     bool onDemand = false;
-    bool onDemandGeneral = false;
     bool onDemandSpecific = false;
     int nbSpecificLevel = 0;
-    std::vector<Pyramid*> bPyramids;
     Pyramid* basedPyramid = NULL;
     WebService *ws = NULL;
     std::string str_transparent;
     bool transparent = false;
     Style *style=NULL;
     std::string str_style = "";
-    int nbPyramids;
     bool onFly = false;
     bool testOnFly = true;
     std::map<std::string,std::vector<Pyramid*> > specificPyramids;
@@ -573,7 +570,6 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
     std::string basedPyramidFilePath;
-    std::map<std::string, std::map<std::string, std::string> > aLevel;
     std::string photometricStr;
     std::string ndValuesStr;
     std::vector<int> noDataValues;
@@ -705,118 +701,6 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     }
     //----
 
-
-    //----ONDEMAND AND ONFLY SECTION------------------------------------
-    //Si c'est la première fois qu'on parse une pyramide, times est true
-    //  Cette pyramide peut être construite à partir d'une autre
-    if (times) {
-
-
-        //Si on se base sur d'autres pyramides pour faire la nouvelle pyramide
-        pElem=hRoot.FirstChild ( "sources" ).Element();
-        if ( pElem ) {
-
-
-            bool timesGlobal = false;
-
-            nbPyramids = 0;
-
-            TiXmlElement* pPyr = hRoot.FirstChild( "sources" ).FirstChild("basedPyramid").Element();
-
-            if (pPyr) {
-
-                for ( pPyr; pPyr; pPyr=pPyr->NextSiblingElement() ) {
-
-
-                    TiXmlElement* pFile = pPyr->FirstChildElement("file");
-                    TiXmlElement* pTransparent = pPyr->FirstChildElement("transparent");
-                    TiXmlElement* pStyle = pPyr->FirstChildElement("style");
-
-                    if (pFile && pTransparent && pStyle && pFile->GetText() && pTransparent->GetText() && pStyle->GetText()) {
-
-                        str_transparent = pTransparent->GetTextStr();
-                        str_style = pStyle->GetTextStr();
-
-                        basedPyramidFilePath = pFile->GetTextStr() ;
-                        //Relative Path
-                        if ( basedPyramidFilePath.compare ( 0,2,"./" ) ==0 ) {
-                            basedPyramidFilePath.replace ( 0,1,parentDir );
-                        } else if ( basedPyramidFilePath.compare ( 0,1,"/" ) !=0 ) {
-                            basedPyramidFilePath.insert ( 0,"/" );
-                            basedPyramidFilePath.insert ( 0,parentDir );
-                        }
-
-                        basedPyramid = buildPyramid ( basedPyramidFilePath, tmsList, timesGlobal, stylesList );
-
-                        if ( !basedPyramid) {
-                            LOGGER_ERROR ( _ ( "La pyramide " ) << basedPyramidFilePath << _ ( " ne peut etre chargee" ) );
-                            return NULL;
-                        } else {
-
-
-                            if (str_transparent == "true") {
-                                transparent = true;
-                                basedPyramid->setTransparent(transparent);
-                                transparent = false;
-                            } else {
-                                basedPyramid->setTransparent(transparent);
-                            }
-
-                            std::map<std::string, Style*>::iterator styleIt= stylesList.find ( str_style );
-                            if ( styleIt == stylesList.end() ) {
-                                LOGGER_ERROR ( _ ( "Style " ) << str_style << _ ( "non defini" ) );
-                                style = NULL;
-                            } else {
-                                style = styleIt->second;
-                            }
-
-                            basedPyramid->setStyle(style);
-                            style = NULL;
-                            str_style = "";
-
-                        }
-
-                        bPyramids.push_back( basedPyramid ) ;
-                        nbPyramids++;
-
-                    } else {
-                        //Il manque un des trois elements necessaires pour initialiser une
-                        //nouvelle pyramide de base
-                        LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't be loaded" ) );
-                        return NULL;
-
-                    }
-
-                }
-
-            } else {
-                //sources est indiqué mais pas de basedPyramid
-                LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't be loaded" ) );
-                return NULL;
-            }
-
-            //Aucune basedPyramid n'a pu être chargée
-            if ( nbPyramids == 0 ) {
-                LOGGER_ERROR ( _ ("No pyramid found for sources, ") << fileName );
-                return NULL;
-            } else {
-                onDemandGeneral = true;
-            }
-
-        }
-
-
-    } else {
-    //Si c'est la deuxième fois qu'on parse une pyramide
-
-        if (hRoot.FirstChild ( "sources" ).Element()) {
-            LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't depend on other pyramids" ) );
-            return NULL;
-        }
-
-    }
-    //----END OF ONDEMAND AND ONFLY SECTION------------------------------------
-
     //----LEVELS SECTION------------------------------------------------
 
     //on va vérifier que les levels sont spécifiés
@@ -929,7 +813,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
                                 if ( !basedPyramid) {
                                     LOGGER_ERROR ( _ ( "La pyramide " ) << basedPyramidFilePath << _ ( " ne peut etre chargee" ) );
-                                    cleanParsePyramid(bPyramids,specificPyramids,sPyramids,levels);
+                                    cleanParsePyramid(specificPyramids,sPyramids,specificWebServices,sWebServices,levels);
                                     return NULL;
                                 } else {
 
@@ -970,7 +854,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                                 //Il manque un des trois elements necessaires pour initialiser une
                                 //nouvelle pyramide de base
                                 LOGGER_ERROR ( _ ( "Pyramid: " ) << basedPyramidFilePath << _ ( " can't be loaded because information are missing" ) );
-                                cleanParsePyramid(bPyramids,specificPyramids,sPyramids,levels);
+                                cleanParsePyramid(specificPyramids,sPyramids,specificWebServices,sWebServices,levels);
                                 return NULL;
 
                             }
@@ -980,7 +864,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                         //Aucune basedPyramid n'a pu être chargée pour ce level
                         if ( nsPyramids !=  ntPyramids) {
                             LOGGER_ERROR ( nsPyramids << _ (" equivalent level found for level ") << id << _ ( " but " ) << ntPyramids << _ ( " should be found" ) );
-                            cleanParsePyramid(bPyramids,specificPyramids,sPyramids,levels);
+                            cleanParsePyramid(specificPyramids,sPyramids,specificWebServices,sWebServices,levels);
                             delete basedPyramid;
                             basedPyramid = NULL;
                             return NULL;
@@ -1029,7 +913,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                     if (ntWebServices == 0 && ntPyramids == 0) {
                         //sources est indiqué mais pas de basedPyramid, ni de WebService
                         LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't be loaded bacause no basedPyramid or WebServices are specified" ) );
-                        cleanParsePyramid(bPyramids,specificPyramids,sPyramids,levels);
+                        cleanParsePyramid(specificPyramids,sPyramids,specificWebServices,sWebServices,levels);
                         return NULL;
                     }
 
@@ -1045,7 +929,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
                 if (hRoot.FirstChild ( "sources" ).Element()) {
                     LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't depend on other pyramids" ) );
-                    cleanParsePyramid(bPyramids,specificPyramids,sPyramids,levels);
+                    cleanParsePyramid(specificPyramids,sPyramids,specificWebServices,sWebServices,levels);
                     return NULL;
                 }
 
@@ -1057,7 +941,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             pElemLvl = hLvl.FirstChild ( "baseDir" ).Element();
             std::string baseDir;
 
-            if (!onDemandGeneral && !onDemandSpecific) {
+            if (!onDemandSpecific) {
                 if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
                     LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( " sans baseDir!!" ) );
                     return NULL;
@@ -1233,8 +1117,9 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                 }
                 int file = open(noDataFilePath.c_str(),O_RDONLY);
                 if (file < 0) {
-                    if (!onDemandGeneral && !specificLevel) {
+                    if (!specificLevel) {
                         LOGGER_ERROR(fileName <<_ ( " Level " ) << id <<_ ( " specifiant une tuile NoData impossible a ouvrir" ));
+                        cleanParsePyramid(specificPyramids,sPyramids,specificWebServices,sWebServices,levels);
                         return NULL;
                     }
                 } else {
@@ -1242,8 +1127,9 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                 }
 
             } else {
-                if (onDemandGeneral || specificLevel) {
+                if (specificLevel) {
                     LOGGER_ERROR("NoDataTile must be specified for OnDemand Pyramid");
+                    cleanParsePyramid(specificPyramids,sPyramids,specificWebServices,sWebServices,levels);
                     return NULL;
                 }
             }
@@ -1252,113 +1138,19 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             Level *TL = new Level ( *tm, channels, baseDir, tilesPerWidth, tilesPerHeight,
                                     maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth, format, noDataFilePath );
 
-            //----ONDEMAND AND ONFLY SECTION------------------------------------
+            levels.insert(std::pair<std::string,Level*> (id,TL));
 
-            //Si la pyramide est à la demande et que l'on a spécifié des levels
-            //il faut vérifier qu'ils sont disponibles dans chacune des pyramides de bases
-            if (onDemandGeneral && !specificLevel) {
-
-                //variables
-                double Res, ratioX, ratioY, resX, resY;
-                std::string  best_h;
-                bool foundLevel;
-                std::map<std::string, std::string> baPyr;
-
-                Res = TL->getRes();
-
-
-                //New bbox
-                BoundingBox<double> nBbox = tms->getCrs().getCrsDefinitionArea();
-
-                //Pour chaque tm de tms, on doit trouver un équivalent dans chaque basedPyramid
-                for (int ip = 0; ip < bPyramids.size(); ip++) {
-
-                    std::ostringstream oss;
-                    foundLevel = true;
-
-                    BoundingBox<double> cBbox = bPyramids.at(ip)->getTms().getCrs().cropBBoxGeographic(nBbox);
-
-                    cBbox = tms->getCrs().cropBBoxGeographic(cBbox);
-                    BoundingBox<double> cBboxOld = cBbox;
-                    BoundingBox<double> cBboxNew = cBbox;
-
-                    if (cBboxNew.reproject("epsg:4326",tms->getCrs().getProj4Code())==0 &&
-                        cBboxOld.reproject("epsg:4326",bPyramids.at(ip)->getTms().getCrs().getProj4Code())==0)
-                    {
-
-                        ratioX = (cBboxOld.xmax - cBboxOld.xmin) / (cBboxNew.xmax - cBboxNew.xmin);
-                        ratioY = (cBboxOld.ymax - cBboxOld.ymin) / (cBboxNew.ymax - cBboxNew.ymin);
-
-                        resX = Res * ratioX;
-                        resY = Res * ratioY;
-
-                        //On recupère le best level de la basedPyramid en cours pour le tm en cours
-                        best_h = bPyramids.at(ip)->best_level(resX,resY,true);
-
-                        oss << ip;
-
-                    } else {
-                        best_h = "";
-                    }
-
-                    if (best_h == ""){
-                        foundLevel = false;
-                        delete TL;
-                        break;
-                    } else {
-                        baPyr.insert(std::pair< std::string, std::string> ( oss.str(), best_h));
-                    }
-
-                }
-
-                //On crée le level et on l'insert à la liste des levels de la pyramide
-                //seulement si on a trouvé un niveau correspondant dans une des pyramides de base
-                if (foundLevel) {
-                    levels.insert ( std::pair<std::string, Level *> ( id, TL ) );
-                    aLevel.insert(std::pair<std::string,std::map<std::string, std::string> > (id,baPyr));
-                    if ( !pElemLvlTMS ) {
-                        updateTileLimits(TL->getId(),*TL->getrefMinTileCol(),*TL->getrefMaxTileCol(),*TL->getrefMinTileRow(),*TL->getrefMaxTileRow(),TL->getTm(),tms,bPyramids,aLevel,false);
-                    }
-                } else {
-                    LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": can't be loaded because no equivalent level found in its basedPyramids" ) );
-                    cleanParsePyramid(bPyramids,specificPyramids,sPyramids,levels);
-                    return NULL;
-                }
-
-            } else {
-                levels.insert ( std::pair<std::string, Level *> ( id, TL ) );
-            }
-
-            if (onDemandSpecific && specificLevel && specificPyr) {
+            if (specificLevel) {
                 if ( !pElemLvlTMS ) {
-                    updateTileLimits(TL->getId(),*TL->getrefMinTileCol(),*TL->getrefMaxTileCol(),*TL->getrefMinTileRow(),*TL->getrefMaxTileRow(),TL->getTm(),tms,sPyramids,aLevel,true);
+                    updateTileLimits(*TL->getrefMinTileCol(),*TL->getrefMaxTileCol(),*TL->getrefMinTileRow(),*TL->getrefMaxTileRow(),TL->getTm(),tms,sPyramids);
                 }
             }
-
-            //----END OF ONDEMAND AND ONFLY SECTION------------------------------------
 
         }// boucle sur les levels
 
-        if ((onDemandGeneral || onDemandSpecific) && testOnFly) {
+        if (onDemandSpecific && testOnFly) {
             onFly = true;
         }
-
-
-    } else {
-
-        //----ONDEMAND AND ONFLY SECTION------------------------------------
-        //pas de level spécifié donc pyramide à la demande en théorie
-
-        if (onDemandGeneral) {
-        //se basant sur d'autres pyramides
-        //dont on va créer le level
-            int levelCreated = createLevels(levels,aLevel,bPyramids,tms,fileName,channels,format);
-            if (levelCreated == -1) {
-                LOGGER_ERROR("Impossible de créer les levels pour la pyramide");
-                return NULL;
-            }
-        }
-        //----END OF ONDEMAND AND ONFLY SECTION------------------------------------
 
     } //if level
 
@@ -1373,39 +1165,11 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         return NULL;
     }
 
-    if ( (onDemandGeneral && !onDemandSpecific) || (onDemandSpecific && nbSpecificLevel == levels.size()) || (onDemandGeneral && onDemandSpecific) ) {
-        onDemand = true;
-    }
-
-    //----PYRAMID
-
-    Pyramid* pyr;
-
-    if (onFly) {
-        pyr = new PyramidOnFly(levels, *tms, format, channels, onDemand, onFly, Photometric::fromString(photometricStr),noDataValues,bPyramids,specificPyramids,aLevel,specificWebServices);
-    } else {
-        if (onDemand) {
-            pyr = new PyramidOnDemand(levels, *tms, format, channels, onDemand, onFly, bPyramids,specificPyramids,aLevel,specificWebServices);
+    if ( onDemandSpecific ) {
+        if (nbSpecificLevel == levels.size() ) {
+             onDemand = true;
         } else {
-            pyr = new Pyramid ( levels, *tms, format, channels, onDemand, onFly );
-        }
-    }
-
-    //----
-
-    if (onDemandGeneral) {
-        if (levels.size() != 0 && aLevel.size() != 0) {
-
-        } else {
-            LOGGER_ERROR ( _ ("Erreur lors du chargement des levels de la pyramide à la demande ") << fileName );
-
-            if (bPyramids.size() != 0) {
-                for ( std::vector<int>::size_type i = 0; i != bPyramids.size(); i++) {
-                    delete bPyramids[i];
-                    bPyramids[i] = NULL;
-                }
-                bPyramids.clear();
-            }
+            LOGGER_ERROR("Probleme lors du chargement de la pyramide => " << nbSpecificLevel << " trouvés pour " << levels.size() << " chargés");
             if (specificPyramids.size() != 0) {
                 for ( std::map<std::string,std::vector<Pyramid*> >::iterator lv = specificPyramids.begin(); lv != specificPyramids.end(); lv++) {
 
@@ -1419,26 +1183,40 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                 }
                 specificPyramids.clear();
             }
-            delete pyr;
-            pyr = NULL;
-
+            if (levels.size() != 0) {
+                for ( std::map<std::string,Level*>::iterator lv = levels.begin(); lv != levels.end(); lv++) {
+                    delete lv->second;
+                    lv->second = NULL;
+                }
+                levels.clear();
+            }
             return NULL;
         }
+
     }
+
+    //----PYRAMID
+
+    Pyramid* pyr;
+
+    if (onFly) {
+        pyr = new PyramidOnFly(levels, *tms, format, channels, onDemand, onFly, Photometric::fromString(photometricStr),noDataValues,specificPyramids,specificWebServices);
+    } else {
+        if (onDemand) {
+            pyr = new PyramidOnDemand(levels, *tms, format, channels, onDemand, onFly,specificPyramids,specificWebServices);
+        } else {
+            pyr = new Pyramid ( levels, *tms, format, channels, onDemand, onFly );
+        }
+    }
+
+    //----
 
     return pyr;
 
 }// buildPyramid()
 
-void ConfLoader::cleanParsePyramid(std::vector<Pyramid*> &bPyramids,std::map<std::string,std::vector<Pyramid*> > &specificPyramids, std::vector<Pyramid*> &sPyramids,std::map<std::string, Level *> &levels) {
+void ConfLoader::cleanParsePyramid(std::map<std::string,std::vector<Pyramid*> > &specificPyramids, std::vector<Pyramid*> &sPyramids,std::map<std::string,std::vector<WebService*> > &specificWebServices, std::vector<WebService*> &sWebService,std::map<std::string, Level *> &levels) {
 
-    if (bPyramids.size() != 0) {
-        for ( std::vector<int>::size_type i = 0; i != bPyramids.size(); i++) {
-            delete bPyramids[i];
-            bPyramids[i] = NULL;
-        }
-        bPyramids.clear();
-    }
     if (sPyramids.size() != 0) {
         for ( std::vector<int>::size_type i = 0; i != sPyramids.size(); i++) {
             delete sPyramids[i];
@@ -1459,6 +1237,26 @@ void ConfLoader::cleanParsePyramid(std::vector<Pyramid*> &bPyramids,std::map<std
         }
         specificPyramids.clear();
     }
+    if (sWebService.size() != 0) {
+        for ( std::vector<int>::size_type i = 0; i != sWebService.size(); i++) {
+            delete sWebService[i];
+            sWebService[i] = NULL;
+        }
+        sWebService.clear();
+    }
+    if (specificWebServices.size() != 0) {
+        for ( std::map<std::string,std::vector<WebService*> >::iterator lv = specificWebServices.begin(); lv != specificWebServices.end(); lv++) {
+
+            if (lv->second.size() != 0) {
+                for ( std::vector<int>::size_type i = 0; i != lv->second.size(); i++) {
+                    delete lv->second[i];
+                    lv->second[i] = NULL;
+                }
+                lv->second.clear();
+            }
+        }
+        specificWebServices.clear();
+    }
     if (levels.size() != 0) {
         for ( std::map<std::string,Level*>::iterator lv = levels.begin(); lv != levels.end(); lv++) {
             delete lv->second;
@@ -1469,129 +1267,6 @@ void ConfLoader::cleanParsePyramid(std::vector<Pyramid*> &bPyramids,std::map<std
 
 }
 
-
-int ConfLoader::createLevels(std::map<std::string, Level *> &levels, std::map<std::string, std::map<std::string, std::string> > &aLevel,std::vector<Pyramid*> bPyramids,TileMatrixSet *tms,std::string fileName, int channels,Rok4Format::eformat_data format) {
-
-
-    //variables
-    int success = 0;
-    std::map<std::string, TileMatrix>::iterator itm;
-    double Res, ratioX, ratioY, resX, resY;
-    long double Meter;
-    std::string  best_h, id, baseDirectory, baseDir, noDataFilePath;
-    int tilesPerWidth, tilesPerHeight, pathDepth;
-    uint32_t maxTileRow,  minTileRow, maxTileCol, minTileCol;
-    bool foundLevel;
-
-    itm = tms->getTmList()->begin();
-    Meter = tms->getCrs().getMetersPerUnit();
-    //TODO: si le nom de fichier est plus complexe
-    baseDirectory = fileName.substr(fileName.find_last_of("/")+1);
-    baseDirectory = baseDirectory.erase(baseDirectory.find(".pyr"))+"/IMAGE/";
-    tilesPerWidth = DEFAULT_TILEPERWIDTHANDHEIGHT;
-    tilesPerHeight = DEFAULT_TILEPERWIDTHANDHEIGHT;
-    pathDepth = DEFAULT_PATHDEPTH;
-
-
-    //Pour chaque tm de tms, on doit créer un level
-    for (itm; itm != tms->getTmList()->end(); itm++) {
-
-        std::map<std::string, std::string> baPyr;
-
-        id = itm->first;
-
-        baseDir = baseDirectory+id;
-
-        //Min et Max pris sur l'ensemble de définition du CRS
-        maxTileCol = itm->second.getMatrixW();
-        maxTileRow = itm->second.getMatrixH();
-        minTileCol = 0;
-        minTileRow = 0;
-
-
-        //Résolution du TM
-        Res = itm->second.getRes();
-        foundLevel = true;
-
-
-        //New bbox
-        BoundingBox<double> nBbox = tms->getCrs().getCrsDefinitionArea();
-
-        //Pour chaque tm de tms, on doit trouver un équivalent dans chaque basedPyramid
-        for (int ip = 0; ip < bPyramids.size(); ip++) {
-
-            std::ostringstream oss;
-
-
-            BoundingBox<double> cBbox = bPyramids.at(ip)->getTms().getCrs().cropBBoxGeographic(nBbox);
-
-            cBbox = tms->getCrs().cropBBoxGeographic(cBbox);
-            BoundingBox<double> cBboxOld = cBbox;
-            BoundingBox<double> cBboxNew = cBbox;
-
-            if (cBboxNew.reproject("epsg:4326",tms->getCrs().getProj4Code())==0 &&
-                cBboxOld.reproject("epsg:4326",bPyramids.at(ip)->getTms().getCrs().getProj4Code())==0)
-            {
-
-                ratioX = (cBboxOld.xmax - cBboxOld.xmin) / (cBboxNew.xmax - cBboxNew.xmin);
-                ratioY = (cBboxOld.ymax - cBboxOld.ymin) / (cBboxNew.ymax - cBboxNew.ymin);
-
-                resX = Res * ratioX;
-                resY = Res * ratioY;
-
-                //On recupère le best level de la basedPyramid en cours pour le tm en cours
-                best_h = bPyramids.at(ip)->best_level(resX,resY,true);
-
-                oss << ip;
-
-            } else {
-                //Si une des reprojections n'a pas marché
-
-                best_h = "";
-
-            }
-
-            if (best_h == ""){
-                foundLevel = false;
-                break;
-            } else {
-                //On insert le correspondance du level trouvé
-                baPyr.insert(std::pair< std::string, std::string> ( oss.str(), best_h));
-            }
-
-        }
-
-        //On crée le level et on l'insert à la liste des levels de la pyramide
-        //seulement si on a trouvé un niveau correspondant dans chaque pyramide de base
-        if (foundLevel) {
-
-            noDataFilePath = bPyramids.at(bPyramids.size()-1)->getHighestLevel()->getNoDataFilePath();
-
-            if (noDataFilePath == "") {
-                LOGGER_ERROR("Tuile de NoData non récupérable dans la basedPyramid");
-                return -1;
-            }
-
-            aLevel.insert(std::pair<std::string,std::map<std::string, std::string> > (id,baPyr));
-
-
-            //On met à jour les Min et Max Tiles une fois que l'on a trouvé un équivalent dans chaque basedPyramid
-            // pour le level créé
-            updateTileLimits(id,minTileCol,maxTileCol,minTileRow,maxTileRow,itm->second,tms,bPyramids,aLevel,false);
-
-            Level *TL = new Level (itm->second, channels, baseDir, tilesPerWidth, tilesPerHeight, maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth, format, noDataFilePath );
-            levels.insert ( std::pair<std::string, Level *> ( id, TL ) );
-
-
-        }
-
-    }
-
-    return success;
-
-
-
-}
 
 int ConfLoader::updatePyrLevel(Pyramid* pyr, TileMatrix *tm, TileMatrixSet *tms) {
 
@@ -1654,7 +1329,7 @@ int ConfLoader::updatePyrLevel(Pyramid* pyr, TileMatrix *tm, TileMatrixSet *tms)
 
 }
 
-void ConfLoader::updateTileLimits(std::string levelId, uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Pyramid *> bPyramids, std::map<std::string, std::map<std::string, std::string> > aLevel, bool specific) {
+void ConfLoader::updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Pyramid *> bPyramids) {
 
     //On met à jour les Min et Max Tiles une fois que l'on a trouvé un équivalent dans chaque basedPyramid
     // pour le level créé
@@ -1668,15 +1343,7 @@ void ConfLoader::updateTileLimits(std::string levelId, uint32_t &minTileCol, uin
         Level *lv;
 
         //On récupére les Min et Max de la basedPyramid
-        if (specific) {
-            lv = bPyramids.at(ip)->getLevels().begin()->second;
-        } else {
-            std::ostringstream oss;
-            oss << ip;
-            std::map<std::string,std::string> aL = aLevel.find(levelId)->second;
-            std::string bLevel = aL.find(oss.str())->second;
-            lv = bPyramids.at(ip)->getLevels().at(bLevel);
-        }
+        lv = bPyramids.at(ip)->getLevels().begin()->second;
 
 
         bPMinCol = lv->getMinTileCol();

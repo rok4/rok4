@@ -436,19 +436,6 @@ class PyramidOnDemand : public Pyramid {
 private:
 
     /**
-     * \~french \brief Si une pyramide est à la demande pour l'ensemble des niveaux,
-     * alors elle doit pouvoir tirer ses informations d'une autre pyramide
-     * Cet attribut contient donc la liste des pyramides de base utilisées
-     * pour générer la vraie pyramide
-     * Sachant qu'une pyramide de base ne peut pas en contenir à son tour
-     * \~english \brief If a pyramid is onDemand for all levels
-     * it must contain a reference to other pyramids which have data
-     * This is the list of those pyramids
-     * They can't be onDemand
-     */
-    std::vector<Pyramid*> basedPyramids;
-
-    /**
      * \~french \brief Si une pyramide est à la demande par niveau,
      * alors elle doit pouvoir tirer ses informations d'une autre pyramide
      * Cet attribut contient donc la liste des pyramides de base utilisées
@@ -461,41 +448,6 @@ private:
      * They can't be onDemand and have only one level in memory
      */
     std::map<std::string,std::vector<Pyramid*> > specificPyramids;
-
-
-    //C'est un tableau à double entrée qui contient une association des levels de
-    //  la pyramide vers les levels des autres pyramides de bases
-    //
-    //  Un exemple: Si la pyramide Pyr contient trois niveaux 1, 2 et 3; et deux pyramides de base bPyr1 et bPyr2
-    //
-    //      On veut représenter le tableau suivant:
-    //  Level Pyr   Level bPyr1     Level bPyr2
-    //      1           2               2
-    //      2           2               3
-    //      3           4               5
-    //
-    //  Ce tableau nous dit que pour le level 1 de Pyr, le level associé est 2 pour bPyr1 et 2 poyr bPyr2
-    //  Pour le représenter, on va faire une liste de (indice_level_Pyr,liste)
-    //
-    //      Où  indice_level représente un niveau de Pyr
-    //          liste est une liste de (indice_bPyr, indice_level_bPyr)
-    //
-    //          Où  indice_bPyr représente une basedPyramid
-    //              indice_level_bPyr représente le level associé
-    //
-    //  On trouvera une utilisation de cet attribut dans    ConfLoader.cpp -> parsePyramid() = initialisation
-    //                                                      Rok4Server.cpp -> GetTileOnDemand() = lecture
-    /**
-     * \~french \brief Si une pyramide est à la demande
-     * Ce tableau a double entrée fait l'association entre les niveaux
-     * théoriques de la pyramide et ceux des pyramides de bases associées
-     * Cela ne posséde pour le moment aucun intérêt pour une pyramide normale
-     * ou une pyramide à la demande
-     * \~english \brief If a pyramid is onDemand
-     * This table contain the association between the levels of this pyramid
-     * and the level of the basedPyramids
-     */
-    std::map<std::string, std::map<std::string, std::string> > aLevel;
 
     /**
      * \~french \brief Si une pyramide est à la demande par niveau,
@@ -519,9 +471,8 @@ public:
      * \param[in] nombre de canaux des tuiles
      * \param[in] onDemand
      * \param[in] onFly
-     * \param[in] basedPyramids
      * \param[in] specificPyramids
-     * \param[in] aLevels
+     * \param[in] specificWebServices
      * \~english \brief Constructor
      * \param[in] levels of the pyramid
      * \param[in] tms
@@ -529,19 +480,15 @@ public:
      * \param[in] number of channels
      * \param[in] onDemand
      * \param[in] onFly
-     * \param[in] basedPyramids
      * \param[in] specificPyramids
-     * \param[in] aLevels
+     * \param[in] specificWebServices
      */
     PyramidOnDemand(std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format,
-                    int channels, bool onDemand, bool onFly, std::vector<Pyramid*> bPyramids,
+                    int channels, bool onDemand, bool onFly,
                     std::map<std::string,std::vector<Pyramid*> > sPyramids,
-                    std::map<std::string, std::map<std::string, std::string> > aL,
                     std::map<std::string,std::vector<WebService*> > specificWebServices) :
         Pyramid(levels,tms,format,channels,onDemand,onFly),
-        basedPyramids (bPyramids),
-        specificPyramids (sPyramids),
-        aLevel (aL), specificWebServices (specificWebServices) {}
+        specificPyramids (sPyramids), specificWebServices (specificWebServices) {}
 
 
 
@@ -550,46 +497,6 @@ public:
      * \~english \brief Destructor
      */
     ~PyramidOnDemand();
-
-    /**
-     * \~french \brief Récupère la liste des pyramides de base
-     * \return Liste de pyramides de base
-     * \~english \brief Get the based pyramids list
-     * \return List of based pyramids
-     */
-    std::vector<Pyramid*> getBPyramids(){
-        return basedPyramids;
-    }
-
-    /**
-     * \~french \brief Modifie la liste des pyramides de base
-     * \param[in] Liste de pyramides de base
-     * \~english \brief Set the list of based pyramids
-     * \param[in] List of based pyramids
-     */
-    void setBPyramids (std::vector<Pyramid*> bp) {
-        basedPyramids = bp;
-    }
-
-    /**
-     * \~french \brief Récupère les niveaux associés
-     * \return Liste des niveaux associés
-     * \~english \brief Get the associated levels
-     * \return List of associated levels
-     */
-    std::map<std::string, std::map<std::string, std::string> > getALevel(){
-        return aLevel;
-    }
-
-    /**
-     * \~french \brief Modifie la liste des niveaux associés
-     * \param[in] Liste des niveaux associés
-     * \~english \brief Set the associated levels
-     * \param[in] List of associated levels
-     */
-    void setALevel (std::map<std::string, std::map<std::string, std::string> > aL) {
-        aLevel = aL;
-    }
 
     /**
      * \~french \brief Récupère les pyramides specifiques
@@ -662,16 +569,14 @@ public:
     bool isThisLevelSpecificFromWebServices ( std::string lv );
 
     /**
-     * \~french \brief Récupère la pyramide source pour un level donné
+     * \~french \brief Renvoit la liste des pyramides de base
      * \param[in] level id
-     * \param[in] specific
-     * \return pyramide source
-     * \~english \brief Get the source pyramid for a given level
+     * \return pyramids
+     * \~english \brief Return the list of based pyramids
      * \param[in] level id
-     * \param[in] specific
-     * \return source pyramid
+     * \return pyramids
      */
-    std::vector<Pyramid *> getSourcePyramid( std::string lv,bool sp );
+    std::vector<Pyramid *> getSourcePyramid( std::string lv);
 
 };
 
@@ -721,11 +626,9 @@ public:
      */
     PyramidOnFly(std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format,
                  int channels, bool onDemand, bool onFly, Photometric::ePhotometric ph, std::vector<int> ndv,
-                 std::vector<Pyramid*> bPyramids,
                  std::map<std::string,std::vector<Pyramid*> > sPyramids,
-                 std::map<std::string, std::map<std::string, std::string> > aL,
                  std::map<std::string,std::vector<WebService*> > specificWebServices) :
-        PyramidOnDemand(levels,tms,format,channels,onDemand,onFly,bPyramids,sPyramids,aL,specificWebServices),
+        PyramidOnDemand(levels,tms,format,channels,onDemand,onFly,sPyramids,specificWebServices),
         photo (ph),
         ndValues (ndv) {}
 

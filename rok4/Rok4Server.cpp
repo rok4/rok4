@@ -667,7 +667,6 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
     Style * bStyle;
     std::map <std::string, std::string > format_option;
     std::vector<Pyramid*> bPyr;
-    bool specific = false;
     int bSize = 0;
 
     LOGGER_INFO("GetTileOnDemand");
@@ -715,14 +714,8 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
                 LOGGER_DEBUG("From Pyramids");
 
                 //----on regarde si le level demandé est spécifique ou pas
-                specific = pyr->isThisLevelSpecificFromPyramids(level);
-                bPyr = pyr->getSourcePyramid(level,specific);
+                bPyr = pyr->getSourcePyramid(level);
                 //---- level specifique identifie
-                //Récupérationd du tableau à double entrée représentant les associations de levels
-                std::map<std::string, std::map<std::string, std::string> > aLevels;
-                if (!specific) {
-                    aLevels = pyr->getALevel();
-                }
                 bSize += bPyr.size();
 
                 //pour chaque pyramide de base, on récupère une image
@@ -730,17 +723,7 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
 
                     pyrType = bPyr.at(i)->getFormat();
                     bStyle = bPyr.at(i)->getStyle();
-
-                    if (specific) {
-                        bLevel = bPyr.at(i)->getLevels().begin()->second->getId();
-                    } else {
-                        //on récupère le bLevel associé à level
-                        std::ostringstream oss;
-                        oss << i;
-                        std::map<std::string,std::string> aLevel = aLevels.find(level)->second;
-                        bLevel = aLevel.find(oss.str())->second;
-                    }
-
+                    bLevel = bPyr.at(i)->getLevels().begin()->second->getId();
 
                     //on transforme la bbox
                     BoundingBox<double> motherBbox = bbox;
@@ -983,10 +966,8 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     Rok4Format::eformat_data pyrType;
     Style * bStyle;
     std::vector<Pyramid*> bPyr;
-    bool specific = false;
     int state = 0;
     struct stat buffer;
-    std::map<std::string, std::map<std::string, std::string> > aLevels;
 
     //On cree la dalle sous forme d'image
     LOGGER_INFO("Create Slab on Fly");
@@ -1027,31 +1008,17 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     if (pyr->isThisLevelSpecificFromPyramids(level)) {
         LOGGER_DEBUG("From Pyramids");
 
-        //----on regarde si le level demandé est spécifique ou pas
-        specific = pyr->isThisLevelSpecificFromPyramids(level);
-        bPyr = pyr->getSourcePyramid(level,specific);
+        //----on récupère les pyramides de base
+        bPyr = pyr->getSourcePyramid(level);
         //---- level specifique identifie
-        //Récupération du tableau à double entrée représentant les associations de levels
-        if (!specific) {
-            LOGGER_DEBUG("Level asked is not specific");
-            aLevels = pyr->getALevel();
-        }
 
         //pour chaque pyramide de base, on récupère une image
         for (int i = 0; i < bPyr.size(); i++) {
             LOGGER_DEBUG("basedPyramid");
             pyrType = bPyr.at(i)->getFormat();
             bStyle = bPyr.at(i)->getStyle();
+            bLevel = bPyr.at(i)->getLevels().begin()->second->getId();
 
-            if (specific) {
-                bLevel = bPyr.at(i)->getLevels().begin()->second->getId();
-            } else {
-                //on récupère le bLevel associé à level
-                std::ostringstream oss;
-                oss << i;
-                std::map<std::string,std::string> aLevel = aLevels.find(level)->second;
-                bLevel = aLevel.find(oss.str())->second;
-            }
             LOGGER_DEBUG("Create reprojected image");
             curImage = bPyr.at(i)->createBasedSlab(bLevel, bbox, dst_crs, servicesConf, width, height, interpolation, error);
             LOGGER_DEBUG("Created");

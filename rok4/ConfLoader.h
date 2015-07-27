@@ -294,31 +294,10 @@ private:
      * \param[in] aLevel
      * \param[in] specific
      */
-    static void updateTileLimits (std::string levelId, uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Pyramid *> bPyramids, std::map<std::string, std::map<std::string, std::string> > aLevel, bool specific);
+    static void updateTileLimits (uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Pyramid *> bPyramids);
 
-    /**
-     * \~french
-     * \brief Créer des levels à partir des pyramides de bases
-     * \param[in/out] levels
-     * \param[in/out] aLevel
-     * \param[in] bPyramids
-     * \param[in] tms
-     * \param[in] fileName
-     * \param[in] channels
-     * \param[in] format
-     * \~english
-     * \brief Create levels from based pyramids
-     * \param[in/out] levels
-     * \param[in/out] aLevel
-     * \param[in] bPyramids
-     * \param[in] tms
-     * \param[in] fileName
-     * \param[in] channels
-     * \param[in] format
-     */
-    static int createLevels(std::map<std::string, Level *> &levels, std::map<std::string, std::map<std::string, std::string> > &aLevel, std::vector<Pyramid*> bPyramids, TileMatrixSet *tms, std::string fileName, int channels, Rok4Format::eformat_data format);
 
-    static void cleanParsePyramid(std::vector<Pyramid*> &bPyramids,std::map<std::string,std::vector<Pyramid*> > &specificPyramids, std::vector<Pyramid*> &sPyramids,std::map<std::string, Level *> &levels);
+    static void cleanParsePyramid(std::map<std::string,std::vector<Pyramid*> > &specificPyramids, std::vector<Pyramid*> &sPyramids, std::map<std::string, std::vector<WebService *> > &specificWebServices, std::vector<WebService *> &sWebService, std::map<std::string, Level *> &levels);
 
     /**
      * \~french

@@ -538,15 +538,11 @@ bool PyramidOnDemand::isThisLevelSpecificFromWebServices(std::string lv) {
 
 }
 
-std::vector<Pyramid *> PyramidOnDemand::getSourcePyramid( std::string lv,bool sp ) {
+std::vector<Pyramid *> PyramidOnDemand::getSourcePyramid( std::string lv) {
 
     std::vector<Pyramid*> bPyr;
 
-    if (!sp) {
-      bPyr = getBPyramids();
-    } else {
-        bPyr = getSPyramids().find(lv)->second;
-    }
+    bPyr = getSPyramids().find(lv)->second;
 
     return bPyr;
 }
