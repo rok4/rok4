@@ -266,6 +266,20 @@ private:
      */
     static Pyramid* buildPyramid (std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times , std::map<std::string, Style *> stylesList);
 
+    /**
+     * \~french
+     * \brief Suppresion des levels d'une pyramide pour ne garder que celui qui est utile
+     * \param[in] pyramid
+     * \param[in] tileMatrix
+     * \param[in] tileMatrixSet
+     * \return 1 si tout s'est bien passé, 0 sinon
+     * \~english
+     * \brief Delete levels of a pyramid to save the only one which will be used
+     * \param[in] pyramid
+     * \param[in] tileMatrix
+     * \param[in] tileMatrixSet
+     * \return 1 if eveything is ok, 0 else
+     */
     static int updatePyrLevel(Pyramid* pyr, TileMatrix *tm, TileMatrixSet *tms);
 
     /**
@@ -296,7 +310,22 @@ private:
      */
     static void updateTileLimits (uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Pyramid *> bPyramids);
 
-
+    /**
+     * \~french
+     * \brief Nettoyage des pointeurs
+     * \param[in] specificPyramids
+     * \param[in] sPyramids
+     * \param[in] specificWebServices
+     * \param[in] sWebServices
+     * \param[in] levels
+     * \~english
+     * \brief Clean pointers
+     * \param[in] specificPyramids
+     * \param[in] sPyramids
+     * \param[in] specificWebServices
+     * \param[in] sWebServices
+     * \param[in] levels
+     */
     static void cleanParsePyramid(std::map<std::string,std::vector<Pyramid*> > &specificPyramids, std::vector<Pyramid*> &sPyramids, std::map<std::string, std::vector<WebService *> > &specificWebServices, std::vector<WebService *> &sWebService, std::map<std::string, Level *> &levels);
 
     /**
