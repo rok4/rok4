@@ -558,10 +558,6 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     int nbSpecificLevel = 0;
     Pyramid* basedPyramid = NULL;
     WebService *ws = NULL;
-    std::string str_transparent;
-    bool transparent = false;
-    Style *style=NULL;
-    std::string str_style = "";
     bool onFly = false;
     bool testOnFly = true;
     std::map<std::string,std::vector<Pyramid*> > specificPyramids;
@@ -569,7 +565,6 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
-    std::string basedPyramidFilePath;
     std::string photometricStr;
     std::string ndValuesStr;
     std::vector<int> noDataValues;
@@ -727,8 +722,6 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             int ntWebServices;
             bool specificLevel = false;
             bool alreadyLoad = false;
-            bool specificWebService = false;
-            bool specificPyr = false;
             //----
 
             //----TM
@@ -776,8 +769,6 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
                     TiXmlHandle hbdP ( pElemSP );
                     bool timesSpecific = false;
-                    specificWebService = false;
-                    specificPyr = false;
 
                     nsPyramids = 0;
                     ntPyramids = 0;
@@ -790,55 +781,9 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
                         for ( sPyr; sPyr; sPyr=sPyr->NextSiblingElement("basedPyramid") ) {
 
+                            basedPyramid = parseBasedPyramid(sPyr,tmsList,timesSpecific,stylesList,parentDir);
 
-                            TiXmlElement* sFile = sPyr->FirstChildElement("file");
-                            TiXmlElement* sTransparent = sPyr->FirstChildElement("transparent");
-                            TiXmlElement* sStyle = sPyr->FirstChildElement("style");
-
-                            if (sFile && sTransparent && sStyle && sFile->GetText() && sTransparent->GetText() && sStyle->GetText()) {
-
-                                str_transparent = sTransparent->GetTextStr();
-                                str_style = sStyle->GetTextStr();
-
-                                basedPyramidFilePath = sFile->GetTextStr() ;
-                                //Relative Path
-                                if ( basedPyramidFilePath.compare ( 0,2,"./" ) ==0 ) {
-                                    basedPyramidFilePath.replace ( 0,1,parentDir );
-                                } else if ( basedPyramidFilePath.compare ( 0,1,"/" ) !=0 ) {
-                                    basedPyramidFilePath.insert ( 0,"/" );
-                                    basedPyramidFilePath.insert ( 0,parentDir );
-                                }
-
-                                basedPyramid = buildPyramid ( basedPyramidFilePath, tmsList, timesSpecific, stylesList );
-
-                                if ( !basedPyramid) {
-                                    LOGGER_ERROR ( _ ( "La pyramide " ) << basedPyramidFilePath << _ ( " ne peut etre chargee" ) );
-                                    cleanParsePyramid(specificPyramids,sPyramids,specificWebServices,sWebServices,levels);
-                                    return NULL;
-                                } else {
-
-
-                                    if (str_transparent == "true") {
-                                        transparent = true;
-                                        basedPyramid->setTransparent(transparent);
-                                        transparent = false;
-                                    } else {
-                                        basedPyramid->setTransparent(transparent);
-                                    }
-
-                                    std::map<std::string, Style*>::iterator styleIt= stylesList.find ( str_style );
-                                    if ( styleIt == stylesList.end() ) {
-                                        LOGGER_ERROR ( _ ( "Style " ) << str_style << _ ( "non defini" ) );
-                                        style = NULL;
-                                    } else {
-                                        style = styleIt->second;
-                                    }
-
-                                    basedPyramid->setStyle(style);
-                                    style = NULL;
-                                    str_style = "";
-
-                                }
+                            if (basedPyramid) {
 
                                 int up = updatePyrLevel(basedPyramid, tm, tms);
                                 ntPyramids++;
@@ -846,17 +791,13 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                                     sPyramids.push_back( basedPyramid ) ;
                                     nsPyramids++;
                                 } else {
-                                    LOGGER_ERROR ( _ ( "No equivalent level found in " ) << basedPyramidFilePath << _ ( " for level " ) << id);
+                                    LOGGER_ERROR("Impossible de supprimer les levels en trop dans la basedPyramid ");
                                 }
 
-
                             } else {
-                                //Il manque un des trois elements necessaires pour initialiser une
-                                //nouvelle pyramide de base
-                                LOGGER_ERROR ( _ ( "Pyramid: " ) << basedPyramidFilePath << _ ( " can't be loaded because information are missing" ) );
+                                LOGGER_ERROR ("Impossible de charger une basedPyramid indique");
                                 cleanParsePyramid(specificPyramids,sPyramids,specificWebServices,sWebServices,levels);
                                 return NULL;
-
                             }
 
                         }
@@ -870,9 +811,10 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                             return NULL;
                         } else {
                             onDemandSpecific = true;
-                            specificLevel = true;
-                            specificPyr = true;
-                            nbSpecificLevel++;
+                            if (!specificLevel) {
+                                specificLevel = true;
+                                nbSpecificLevel++;
+                            }
                             specificPyramids.insert(std::pair< std::string, std::vector<Pyramid*> > ( id, sPyramids));
                         }
 
@@ -889,9 +831,8 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                             if (ws) {
                                 sWebServices.push_back(ws);
                                 nsWebServices++;
-                                specificWebService = true;
                             } else {
-                                LOGGER_ERROR("Impossible de charger le level " << id << " car impossible de charger le WebService");
+                                LOGGER_ERROR("Impossible de charger le WebService indique");
                                 return NULL;
                             }
 
@@ -901,9 +842,11 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                             LOGGER_ERROR ( nsWebServices << _ (" WebServices have been found for level ") << id << _ ( " but " ) << ntWebServices << _ ( " should be found" ) );
                             return NULL;
                         } else {
+                            if (!specificLevel) {
+                                specificLevel = true;
+                                nbSpecificLevel++;
+                            }
                             onDemandSpecific = true;
-                            specificLevel = true;
-                            nbSpecificLevel++;
                             specificWebServices.insert(std::pair< std::string, std::vector<WebService*> > ( id, sWebServices));
                         }
 
@@ -1140,7 +1083,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
             levels.insert(std::pair<std::string,Level*> (id,TL));
 
-            if (specificLevel) {
+            if (specificLevel && sPyramids.size() != 0 && sWebServices.size() == 0) {
                 if ( !pElemLvlTMS ) {
                     updateTileLimits(*TL->getrefMinTileCol(),*TL->getrefMaxTileCol(),*TL->getrefMinTileRow(),*TL->getrefMaxTileRow(),TL->getTm(),tms,sPyramids);
                 }
@@ -1586,6 +1529,74 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb) {
     }
 
     return ws;
+
+}
+
+Pyramid *ConfLoader::parseBasedPyramid(TiXmlElement* sPyr, std::map<std::string, TileMatrixSet*> &tmsList, bool timesSpecific, std::map<std::string,Style*> stylesList, std::string parentDir) {
+
+    Pyramid *basedPyramid;
+
+    TiXmlElement* sFile = sPyr->FirstChildElement("file");
+    TiXmlElement* sTransparent = sPyr->FirstChildElement("transparent");
+    TiXmlElement* sStyle = sPyr->FirstChildElement("style");
+
+    bool transparent = false;
+    std::string str_transparent,basedPyramidFilePath;
+    std::string str_style = "";
+    Style *style = NULL;
+
+    if (sFile && sTransparent && sStyle && sFile->GetText() && sTransparent->GetText() && sStyle->GetText()) {
+
+        str_transparent = sTransparent->GetTextStr();
+        str_style = sStyle->GetTextStr();
+
+        basedPyramidFilePath = sFile->GetTextStr() ;
+        //Relative Path
+        if ( basedPyramidFilePath.compare ( 0,2,"./" ) ==0 ) {
+            basedPyramidFilePath.replace ( 0,1,parentDir );
+        } else if ( basedPyramidFilePath.compare ( 0,1,"/" ) !=0 ) {
+            basedPyramidFilePath.insert ( 0,"/" );
+            basedPyramidFilePath.insert ( 0,parentDir );
+        }
+
+        basedPyramid = buildPyramid ( basedPyramidFilePath, tmsList, timesSpecific, stylesList );
+
+        if ( !basedPyramid) {
+            LOGGER_ERROR ( _ ( "La pyramide " ) << basedPyramidFilePath << _ ( " ne peut etre chargee" ) );
+            return NULL;
+        } else {
+
+
+            if (str_transparent == "true") {
+                transparent = true;
+                basedPyramid->setTransparent(transparent);
+            } else {
+                basedPyramid->setTransparent(transparent);
+            }
+
+            std::map<std::string, Style*>::iterator styleIt= stylesList.find ( str_style );
+            if ( styleIt == stylesList.end() ) {
+                LOGGER_ERROR ( _ ( "Style " ) << str_style << _ ( "non defini" ) );
+                styleIt= stylesList.find ( "normal" );
+                if (styleIt != stylesList.end()) {
+                    style = styleIt->second;
+                }
+            } else {
+                style = styleIt->second;
+            }
+
+            basedPyramid->setStyle(style);
+
+        }
+
+    } else {
+        //Il manque un des trois elements necessaires pour initialiser une
+        //nouvelle pyramide de base
+        LOGGER_ERROR ( _ ( "Pyramid: " ) << basedPyramidFilePath << _ ( " can't be loaded because information are missing" ) );
+        return NULL;
+    }
+
+    return basedPyramid;
 
 }
 

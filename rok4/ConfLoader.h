@@ -465,6 +465,14 @@ private:
     */
    static WebService *parseWebService(TiXmlElement* sWeb);
 
+   /**
+   * \~french
+   * \brief Retourne une pyramide en fonction des paramètres lus dans la configuration
+   * \~english
+   * \brief Return a Pyramid from the configuration
+   */
+  static Pyramid *parseBasedPyramid(TiXmlElement* sPyr,std::map<std::string, TileMatrixSet*> &tmsList,bool timesSpecific,std::map<std::string,Style*> stylesList, std::string parentDir);
+
 
 };
 
