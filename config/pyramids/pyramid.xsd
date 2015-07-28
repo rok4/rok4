@@ -40,6 +40,48 @@
 			                                    </xs:sequence>
 			                                </xs:complexType>
 			                            </xs:element>
+			                            <xs:element name="WebService" minOccurs="1" maxOccurs="unbounded">
+			                                <xs:complexType>
+			                                    <xs:sequence>
+			                                        <!-- url du serveur -->
+			                                        <xs:element name="url" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			                                        <!-- proxy -->
+			                                        <xs:element name="proxy" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			                                        <!-- temps d'attente de la requete -->
+			                                        <xs:element name="timeout" type="xs:positiveInteger" minOccurs="0" maxOccurs="1"/>
+			                                        <!-- nombre d'essais -->
+			                                        <xs:element name="retry" type="xs:positiveInteger" minOccurs="0" maxOccurs="1"/>
+			                                        <!-- temps entre chaque essais -->
+			                                        <xs:element name="interval" type="xs:positiveInteger" minOccurs="0" maxOccurs="1"/>
+			                                        <!-- user -->
+			                                        <xs:element name="user" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			                                        <!-- password -->
+			                                        <xs:element name="password" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			                                        <!-- referer -->
+			                                        <xs:element name="referer" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			                                        <!-- user agent -->
+			                                        <xs:element name="userAgent" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			                                        <xs:element name="wms" minOccurs="1" maxOccurs="1">
+			                                        	<xs:complexType>
+			                        						<xs:sequence>
+			                        							<!-- version -->
+			                                        			<xs:element name="version" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			                                        			<!-- liste des layers séparés par une virgule -->
+			                                        			<xs:element name="layers" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			                                        			<!-- liste des styles séparés par une virgule -->
+			                                        			<xs:element name="styles" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			                                        			<!-- crs -->
+			                                        			<xs:element name="crs" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			                                        			<!-- format -->
+			                                        			<xs:element name="format" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			                                        			<!-- format -->
+			                                        			<xs:element name="option" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+			                        						</xs:sequence>
+			                    						</xs:complexType>
+			                                        </xs:element>
+			                                    </xs:sequence>
+			                                </xs:complexType>
+			                            </xs:element>
 			                        </xs:sequence>
 			                    </xs:complexType>
 			                </xs:element>
