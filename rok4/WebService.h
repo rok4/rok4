@@ -39,6 +39,7 @@
 #define WEBSERVICE_H
 #include <string>
 #include <map>
+#include "BoundingBox.h"
 
 /**
 * @class WebService
@@ -50,7 +51,7 @@
 
 class WebService {
 
-private:
+protected:
 
     /**
      * \~french \brief URL du serveur
@@ -480,6 +481,18 @@ public:
      * \param[in] option name
      */
     std::string getOption ( std::string paramName );
+
+    /**
+     * \~french \brief Récupère une option
+     * \param[in] bbox
+     * \param[in] width
+     * \param[in] height
+     * \~english \brief Get one option
+     * \param[in] bbox
+     * \param[in] width
+     * \param[in] height
+     */
+    std::string createWMSGetMapRequest (BoundingBox<double> bbox, int width, int height );
 
     /**
      * \~french \brief Constructeur

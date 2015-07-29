@@ -63,7 +63,37 @@ std::string WebMapService::getOption ( std::string paramName ) {
     return it->second;
 }
 
+std::string WebMapService::createWMSGetMapRequest ( BoundingBox<double> bbox, int width, int height ) {
 
+    std::string request = "";
+    std::ostringstream str_w,str_h;
+    str_w << width;
+    str_h << height;
+
+    if (version == "1.3.0") {
+        request = url+"VERSION="+version
+                +"&REQUEST=GetMap"
+                +"&SERVICE=WMS"
+                +"&LAYERS="+layers
+                +"&STYLES="+styles
+                +"&FORMAT="+format
+                +"&CRS="+crs
+                +"&BBOX="+bbox.toString()
+                +"&WIDTH="+str_w.str()
+                +"&HEIGHT="+str_h.str();
+
+        if (options.size() != 0) {
+            for ( std::map<std::string,std::string>::iterator lv = options.begin(); lv != options.end(); lv++) {
+                request += "&"+lv->first+"="+lv->second;
+            }
+        }
+
+    }
+
+    return request;
+
+
+}
 
 WebMapService::~WebMapService() {}
 

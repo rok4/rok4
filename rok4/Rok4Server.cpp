@@ -61,6 +61,7 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 
+
 #include "config.h"
 #include "intl.h"
 #include "TiffEncoder.h"
@@ -668,6 +669,9 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
     std::map <std::string, std::string > format_option;
     std::vector<Pyramid*> bPyr;
     int bSize = 0;
+    std::vector <WebService*> bWebServices;
+    std::string request;
+
 
     LOGGER_INFO("GetTileOnDemand");
 
@@ -708,12 +712,33 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
             if (pyr->isThisLevelSpecificFromWebServices(level)) {
                 LOGGER_DEBUG("From Web Services");
 
+                //----on recupere les WS sources
+                bWebServices = pyr->getSourceWebServices(level);
+                bSize += bWebServices.size();
+                //----
+
+                //pour chaque WS de base, on récupère une image
+                for (int i = 0; i < bWebServices.size(); i++) {
+                    WebMapService *wms = reinterpret_cast<WebMapService*>(bWebServices.at(i));
+                    //----creation de la requete
+                    request = wms->createWMSGetMapRequest(bbox,width,height);
+                    LOGGER_DEBUG("Request => " << request);
+                    //----
+
+                    //----traitement de la requete
+
+
+                    //----
+
+                }
+
+
             }
 
             if (pyr->isThisLevelSpecificFromPyramids(level)) {
                 LOGGER_DEBUG("From Pyramids");
 
-                //----on regarde si le level demandé est spécifique ou pas
+                //----on récupère les pyramides sources
                 bPyr = pyr->getSourcePyramid(level);
                 //---- level specifique identifie
                 bSize += bPyr.size();

@@ -547,6 +547,16 @@ std::vector<Pyramid *> PyramidOnDemand::getSourcePyramid( std::string lv) {
     return bPyr;
 }
 
+std::vector<WebService *> PyramidOnDemand::getSourceWebServices( std::string lv) {
+
+    std::vector <WebService*> bWS;
+
+    bWS = getSWebServices().find(lv)->second;
+
+    return bWS;
+
+}
+
 Photometric::ePhotometric PyramidOnFly::getPhotometry(){
     if (photo == Photometric::UNKNOWN) {
         if (getChannels() == 1) {

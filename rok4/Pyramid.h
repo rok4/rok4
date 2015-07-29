@@ -570,13 +570,27 @@ public:
 
     /**
      * \~french \brief Renvoit la liste des pyramides de base
+     * ATTENTION: ne doit être utilisé que si on est sur qu'il existe
      * \param[in] level id
      * \return pyramids
      * \~english \brief Return the list of based pyramids
+     * WARNING: should be used only if it exists
      * \param[in] level id
      * \return pyramids
      */
     std::vector<Pyramid *> getSourcePyramid( std::string lv);
+
+    /**
+     * \~french \brief Renvoit la liste des webservices de base
+     * ATTENTION: ne doit être utilisé que si on est sur qu'il existe
+     * \param[in] level id
+     * \return WebServices
+     * \~english \brief Return the list of based webservices
+     * WARNING: should be used only if it exists
+     * \param[in] level id
+     * \return WebServices
+     */
+    std::vector<WebService *> getSourceWebServices( std::string lv);
 
 };
 
