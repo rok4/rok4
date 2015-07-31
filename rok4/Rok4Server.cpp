@@ -60,6 +60,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <fcntl.h>
+#include "curl/curl.h"
 
 
 #include "config.h"
@@ -671,7 +672,8 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
     int bSize = 0;
     std::vector <WebService*> bWebServices;
     std::string request;
-
+    CURL *curl;
+    CURLcode res;
 
     LOGGER_INFO("GetTileOnDemand");
 
@@ -726,7 +728,24 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
                     //----
 
                     //----traitement de la requete
+                    curl = curl_easy_init();
+                    if(curl) {
+                        curl_easy_setopt(curl, CURLOPT_URL, request.c_str());
+                        /* example.com is redirected, so we tell libcurl to follow redirection */
+                        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 
+                        /* Perform the request, res will get the return code */
+                        res = curl_easy_perform(curl);
+                        /* Check for errors */
+                        if(res != CURLE_OK) {
+                            LOGGER_ERROR("curl_easy_perform() failed: " << curl_easy_strerror(res));
+                        }
+
+                        /* always cleanup */
+                        curl_easy_cleanup(curl);
+                    } else {
+                      LOGGER_ERROR("Impossible d'initialiser Curl");
+                    }
 
                     //----
 

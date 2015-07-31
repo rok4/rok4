@@ -24,11 +24,11 @@ set(BUILD_SHARED_LIBS OFF)
 #Build Type si les build types par défaut de CMake ne conviennent pas
 if(DEBUG_BUILD)
   set(CMAKE_BUILD_TYPE debugbuild)
-  set(CMAKE_CXX_FLAGS_DEBUGBUILD "-g -O0 -msse -msse2 -msse3")
+  set(CMAKE_CXX_FLAGS_DEBUGBUILD "-g -O0 -msse -msse2 -msse3 -lrt")
   set(CMAKE_C_FLAGS_DEBUGBUILD "-g -std=c99")
 else(DEBUG_BUILD)
   set(CMAKE_BUILD_TYPE specificbuild)
-  set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3 -msse -msse2 -msse3")
+  set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3 -msse -msse2 -msse3 -lrt")
   set(CMAKE_C_FLAGS_SPECIFICBUILD "-std=c99")
 endif(DEBUG_BUILD)
 
@@ -54,12 +54,12 @@ add_executable(test_api ${rok4apitest_SRCS})
 #Définition des dépendances.
 include(ROK4Dependencies)
 
-set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${JPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${PNG_INCLUDE_DIR})
+set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${JPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${CURL_INCLUDE_DIR})
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
 #Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
-set(DEP_LIBRARY fcgi tinyxml logger image proj jpeg zlib tiff png)
+set(DEP_LIBRARY fcgi tinyxml logger image proj jpeg zlib tiff png curl)
 
 target_link_libraries(rok4core ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(rok4 rok4core)
