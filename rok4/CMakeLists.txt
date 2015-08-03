@@ -25,11 +25,11 @@ set(BUILD_SHARED_LIBS OFF)
 if(DEBUG_BUILD)
   set(CMAKE_BUILD_TYPE debugbuild)
   set(CMAKE_CXX_FLAGS_DEBUGBUILD "-g -O0 -msse -msse2 -msse3 -lrt")
-  set(CMAKE_C_FLAGS_DEBUGBUILD "-g -std=c99")
+  set(CMAKE_C_FLAGS_DEBUGBUILD "-g -std=c99 -lrt")
 else(DEBUG_BUILD)
   set(CMAKE_BUILD_TYPE specificbuild)
   set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3 -msse -msse2 -msse3 -lrt")
-  set(CMAKE_C_FLAGS_SPECIFICBUILD "-std=c99")
+  set(CMAKE_C_FLAGS_SPECIFICBUILD "-std=c99 -lrt")
 endif(DEBUG_BUILD)
 
 
