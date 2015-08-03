@@ -240,7 +240,7 @@ void ProcessFactory::updatePreviousProcess() {
 
         } else {
             //le fichier n'existe pas donc on le cree
-            pFile = open(file.c_str(),O_EXCL|O_CREAT);
+            pFile = open(file.c_str(),O_EXCL|O_CREAT,S_IWRITE);
             close(pFile);
         }
     }

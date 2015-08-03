@@ -917,7 +917,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                             // on va créer un fichier tmp, générer la dalle et supprimer le fichier tmp
 
                             //on cree un fichier temporaire pour indiquer que la dalle va etre creer
-                            int fileTmp = open(SpathTmp.c_str(),O_CREAT|O_EXCL);
+                            int fileTmp = open(SpathTmp.c_str(),O_CREAT|O_EXCL,S_IWRITE);
                             if (fileTmp != -1) {
                                 //on a pu creer un fichier temporaire
                                 close(fileTmp);
@@ -926,7 +926,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                                 int directory = lv->second->createDirPath(SpathDir.c_str());
                                 if (directory != -1) {
                                     //on a pu creer le dossier donc on reessaye de creer le fichier tmp
-                                    fileTmp = open(SpathTmp.c_str(),O_CREAT|O_EXCL);
+                                    fileTmp = open(SpathTmp.c_str(),O_CREAT|O_EXCL,S_IWRITE);
                                     if (fileTmp != -1) {
                                         //on a pu creer un fichier temporaire
                                         close(fileTmp);
