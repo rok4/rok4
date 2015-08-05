@@ -722,8 +722,6 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
     }
     
     delete [] tile;
-    
-    delete[] tile;
 
     if (! close()) {
         LOGGER_ERROR("Cannot close the ROK4 images (write index and clean) for " << filename);
