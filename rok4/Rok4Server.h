@@ -573,6 +573,14 @@ public:
     }
 
     /**
+     * \~french
+     * \brief Creation d'une image à partir d'une URL
+     * \~english
+     * \brief tCreate an Image from an URL
+     */
+    Image * createImageFromRequest(std::string request);
+
+    /**
      * \brief Construction du serveur
      */
     Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
