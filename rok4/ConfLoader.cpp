@@ -821,10 +821,10 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                     }
 
 
-                    TiXmlElement* sWeb = hbdP.FirstChild("WebService").Element();
+                    TiXmlElement* sWeb = hbdP.FirstChild("webService").Element();
                     if (sWeb) {
 
-                        for ( sWeb; sWeb; sWeb=sWeb->NextSiblingElement("WebService") ) {
+                        for ( sWeb; sWeb; sWeb=sWeb->NextSiblingElement("webService") ) {
 
                             ws = parseWebService(sWeb);
                             ntWebServices++;

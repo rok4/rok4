@@ -726,7 +726,14 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
                     //----
 
                     //----traitement de la requete
+                    image = wms->createImageFromRequest(request);
 
+                    if (image) {
+                        images.push_back(image);
+                    } else {
+                        LOGGER_ERROR("Impossible de generer la tuile car l'un des WebServices du layer "+L->getTitle()+" ne renvoit pas de tuile");
+                        return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
+                    }
 
                     //----
 
@@ -841,35 +848,6 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
     }
 
     return tile;
-
-}
-
-Image * Rok4Server::createImageFromRequest(std::string request) {
-
-    CURL *curl;
-    CURLcode res;
-    Image*img;
-
-    curl = curl_easy_init();
-    if(curl) {
-        curl_easy_setopt(curl, CURLOPT_URL, request.c_str());
-        /* example.com is redirected, so we tell libcurl to follow redirection */
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-
-        /* Perform the request, res will get the return code */
-        res = curl_easy_perform(curl);
-        /* Check for errors */
-        if(res != CURLE_OK) {
-            LOGGER_ERROR("curl_easy_perform() failed: " << curl_easy_strerror(res));
-        }
-
-        /* always cleanup */
-        curl_easy_cleanup(curl);
-    } else {
-      LOGGER_ERROR("Impossible d'initialiser Curl");
-    }
-
-    return img;
 
 }
 

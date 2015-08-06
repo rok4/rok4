@@ -38,12 +38,110 @@
 
 #include "WebService.h"
 #include "config.h"
+#include "Image.h"
+
 
 WebService::WebService(std::string url,std::string proxy="",int retry=DEFAULT_RETRY,int interval=DEFAULT_INTERVAL,
                        int timeout=DEFAULT_TIMEOUT):url (url),proxy (proxy),retry (retry), interval (interval), timeout (timeout) {}
 
 
 WebService::~WebService() {
+
+}
+
+Image * WebService::createImageFromRequest(std::string request) {
+
+    CURL *curl;
+    CURLcode res, resC, resT;
+    Image* img = NULL;
+    long responseCode = 0;
+    char* responseType;
+    struct MemoryStruct chunk;
+    bool errors = false;
+
+    chunk.memory = (char*)malloc(1);  /* will be grown as needed by the realloc above */
+    chunk.size = 0;    /* no data at this point */
+
+    LOGGER_INFO("Create an image from a request");
+
+    LOGGER_DEBUG("Initiation of Curl Handle");
+    //it is one handle - just one per thread
+    curl = curl_easy_init();
+    if(curl) {
+        LOGGER_DEBUG("Setting options of Curl");
+        curl_easy_setopt(curl, CURLOPT_URL, request.c_str());
+        /* example.com is redirected, so we tell libcurl to follow redirection */
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        /* Switch on full protocol/debug output while testing, set to 0L to disable */
+        curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
+        /* disable progress meter, set to 0L to enable and disable debug output */
+        curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
+        curl_easy_setopt(curl, CURLOPT_HEADER, 0L);
+        curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+        curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "deflate");
+        /* send all data to this function  */
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteInMemoryCallback);
+        /* we pass our 'chunk' struct to the callback function */
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
+
+
+        LOGGER_DEBUG("Perform the request");
+        /* Perform the request, res will get the return code */
+        res = curl_easy_perform(curl);
+
+        LOGGER_DEBUG("Checking for errors");
+        /* Check for errors */
+        if(res == CURLE_OK) {
+
+            resC = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &responseCode);
+            resT = curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &responseType);
+            if ((resC == CURLE_OK) && responseCode) {
+
+                if (responseCode != 200) {
+                    LOGGER_ERROR("The request returned a " << responseCode << " code");
+                    errors = true;
+                }
+
+            } else {
+                LOGGER_ERROR("curl_easy_getinfo() on response code failed: " << curl_easy_strerror(res));
+                errors = true;
+            }
+
+            if ((resT == CURLE_OK) && responseType) {
+                LOGGER_ERROR("The request returned with a " << responseType << " content type");
+                std::string text = "text/";
+                std::string rType(responseType);
+                if (rType.find(text) != std::string::npos) {
+                    LOGGER_ERROR("Content of the answer: " << chunk.memory);
+                    errors = true;
+                }
+            } else {
+                LOGGER_ERROR("curl_easy_getinfo() on response type failed: " << curl_easy_strerror(res));
+                errors = true;
+            }
+
+
+
+        } else {
+            LOGGER_ERROR("curl_easy_perform() failed: " << curl_easy_strerror(res));
+            errors = true;
+        }
+
+        /* always cleanup */
+        curl_easy_cleanup(curl);
+    } else {
+      LOGGER_ERROR("Impossible d'initialiser Curl");
+      errors = true;
+    }
+
+    /* Convert chunk into an image readable by rok4 */
+    if (!errors) {
+
+    }
+
+    free(chunk.memory);
+
+    return img;
 
 }
 

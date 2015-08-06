@@ -40,7 +40,7 @@
 			                                    </xs:sequence>
 			                                </xs:complexType>
 			                            </xs:element>
-			                            <xs:element name="WebService" minOccurs="1" maxOccurs="unbounded">
+			                            <xs:element name="webService" minOccurs="1" maxOccurs="unbounded">
 			                                <xs:complexType>
 			                                    <xs:sequence>
 			                                        <!-- url du serveur -->

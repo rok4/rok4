@@ -40,6 +40,33 @@
 #include <string>
 #include <map>
 #include "BoundingBox.h"
+#include "curl/curl.h"
+#include "Image.h"
+
+struct MemoryStruct {
+  char *memory;
+  size_t size;
+};
+
+
+static size_t WriteInMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
+{
+  size_t realsize = size * nmemb;
+  struct MemoryStruct *mem = (struct MemoryStruct *)userp;
+
+  mem->memory = (char*)realloc(mem->memory, mem->size + realsize + 1);
+  if(mem->memory == NULL) {
+    /* out of memory! */
+    LOGGER_ERROR("not enough memory (realloc returned NULL)\n");
+    return 0;
+  }
+
+  memcpy(&(mem->memory[mem->size]), contents, realsize);
+  mem->size += realsize;
+  mem->memory[mem->size] = 0;
+
+  return realsize;
+}
 
 /**
 * @class WebService
@@ -288,6 +315,13 @@ public:
     void setInterval (int u) {
         interval = u;
     }
+    /**
+     * \~french
+     * \brief Creation d'une image à partir d'une URL
+     * \~english
+     * \brief tCreate an Image from an URL
+     */
+    Image * createImageFromRequest(std::string request);
 
 
     /**

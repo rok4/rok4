@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2015-08-05 11:46+0200\n"
+"POT-Creation-Date: 2015-08-05 15:32+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1085,35 +1085,35 @@ msgstr ""
 msgid "GetTile Image"
 msgstr ""
 
-#: main.cpp:102
+#: main.cpp:103
 msgid "Usage : rok4 [-f server_config_file]"
 msgstr ""
 
-#: main.cpp:127
+#: main.cpp:128
 msgid "Rechargement du serveur rok4"
 msgstr ""
 
-#: main.cpp:130
+#: main.cpp:131
 msgid "Erreur lors du rechargement du serveur rok4"
 msgstr ""
 
-#: main.cpp:217
+#: main.cpp:220
 msgid "Erreur sur l'option -f"
 msgstr ""
 
-#: main.cpp:233
+#: main.cpp:236
 msgid "Lancement du serveur rok4"
 msgstr ""
 
-#: main.cpp:243
+#: main.cpp:246
 msgid "Mise a jour de la configuration"
 msgstr ""
 
-#: main.cpp:258
+#: main.cpp:261
 msgid "Rechargement de la configuration"
 msgstr ""
 
-#: main.cpp:261 Rok4Api.cpp:136 Rok4Api.cpp:144 Rok4Api.cpp:152
+#: main.cpp:264 Rok4Api.cpp:136 Rok4Api.cpp:144 Rok4Api.cpp:152
 #: Rok4Api.cpp:161 Rok4Api.cpp:580
 msgid "Extinction du serveur ROK4"
 msgstr ""
@@ -1481,11 +1481,11 @@ msgstr ""
 msgid "Parametre STYLES incomplet."
 msgstr ""
 
-#: Request.cpp:1083 Request.cpp:1138 Rok4Api.cpp:225 Rok4Server.cpp:1281
+#: Request.cpp:1083 Request.cpp:1138 Rok4Api.cpp:225 Rok4Server.cpp:1259
 msgid "Le service "
 msgstr ""
 
-#: Request.cpp:1083 Request.cpp:1138 Rok4Api.cpp:225 Rok4Server.cpp:1281
+#: Request.cpp:1083 Request.cpp:1138 Rok4Api.cpp:225 Rok4Server.cpp:1259
 msgid " est inconnu pour ce serveur."
 msgstr ""
 
@@ -1567,12 +1567,12 @@ msgstr ""
 msgid "Le parametre REQUEST n'est pas renseigné."
 msgstr ""
 
-#: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:1247
-#: Rok4Server.cpp:1251 Rok4Server.cpp:1263 Rok4Server.cpp:1267
+#: Rok4Api.cpp:218 Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:1225
+#: Rok4Server.cpp:1229 Rok4Server.cpp:1241 Rok4Server.cpp:1245
 msgid " n'est pas prise en charge par ce serveur."
 msgstr ""
 
-#: Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:1251
+#: Rok4Api.cpp:220 Rok4Api.cpp:491 Rok4Server.cpp:1229
 msgid "L'operation "
 msgstr ""
 
@@ -1644,7 +1644,8 @@ msgstr ""
 msgid "bbox trop grande"
 msgstr ""
 
-#: Rok4Server.cpp:341 Rok4Server.cpp:774 Rok4Server.cpp:808 Rok4Server.cpp:836
+#: Rok4Server.cpp:341 Rok4Server.cpp:735 Rok4Server.cpp:781 Rok4Server.cpp:815
+#: Rok4Server.cpp:843
 msgid "Impossible de repondre a la requete"
 msgstr ""
 
