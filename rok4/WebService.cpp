@@ -78,7 +78,7 @@ Image * WebService::createImageFromRequest(std::string request) {
         curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
         curl_easy_setopt(curl, CURLOPT_HEADER, 0L);
         curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
-        curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "deflate");
+        curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "identity");
         /* send all data to this function  */
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteInMemoryCallback);
         /* we pass our 'chunk' struct to the callback function */
@@ -103,20 +103,23 @@ Image * WebService::createImageFromRequest(std::string request) {
                 }
 
             } else {
-                LOGGER_ERROR("curl_easy_getinfo() on response code failed: " << curl_easy_strerror(res));
+                LOGGER_ERROR("curl_easy_getinfo() on response code failed: " << curl_easy_strerror(resC));
                 errors = true;
             }
 
             if ((resT == CURLE_OK) && responseType) {
-                LOGGER_ERROR("The request returned with a " << responseType << " content type");
-                std::string text = "text/";
-                std::string rType(responseType);
-                if (rType.find(text) != std::string::npos) {
-                    LOGGER_ERROR("Content of the answer: " << chunk.memory);
-                    errors = true;
+                if (errors) {
+                    LOGGER_ERROR("The request returned with a " << responseType << " content type");
+                    std::string text = "text/";
+                    std::string rType(responseType);
+                    if (rType.find(text) != std::string::npos) {
+                        LOGGER_ERROR("Content of the answer: " << chunk.memory);
+                    } else {
+                        LOGGER_ERROR("Impossible to read the answer...");
+                    }
                 }
             } else {
-                LOGGER_ERROR("curl_easy_getinfo() on response type failed: " << curl_easy_strerror(res));
+                LOGGER_ERROR("curl_easy_getinfo() on response type failed: " << curl_easy_strerror(resT));
                 errors = true;
             }
 

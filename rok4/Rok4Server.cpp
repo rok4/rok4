@@ -840,7 +840,6 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
 
 
     //De cette image mergée, on lui applique un format pour la renvoyer au client
-    //FIXME: changer bPyr.size par la taille cumulee de bPyr et bWebService
     //trouver une solution pour le pyrType...
     DataStream *tileSource = formatImage(mergeImage, format, pyrType, format_option, bSize, style);
     DataSource *tile;
