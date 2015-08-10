@@ -41,6 +41,7 @@
 #include <stdint.h>// pour uint8_t
 #include <cstddef> // pour size_t
 #include <string>  // pour std::string
+#include <cstring> // pour memcpy
 
 #include "Logger.h"
 
@@ -254,7 +255,60 @@ public:
     }
 };
 
+/**
+ * Classe de données brutes.
+ */
+class RawDataSource : public DataSource {
+private:
+    size_t dataSize;
+    uint8_t* data;
+public:
+    /**
+     * Constructeur.
+     */
+    RawDataSource ( uint8_t *dat, size_t dataS){
+        dataSize = dataS;
+        data = new uint8_t[dataSize];
+        memcpy ( data, dat, dataSize );
+    }
 
+    /** Destructeur **/
+    virtual ~RawDataSource() {
+        delete[] data;
+    }
+
+    /** Implémentation de l'interface DataSource **/
+    const uint8_t* getData ( size_t &size ) {
+        size = dataSize;
+        return data;
+    }
+
+    /**
+     * Le buffer ne peut pas être libéré car on n'a pas de moyen de le reremplir pour un éventuel futur getData
+     * @return false
+     */
+    bool releaseData() {
+        if (data)
+          delete[] data;
+        data = 0;
+        return true;
+    }
+
+    /** @return le type du dataStream */
+    std::string getType() {
+        return "";
+    }
+
+    /** @return le status du dataStream */
+    int getHttpStatus() {
+        return 200;
+    }
+
+     /** @return l'encodage du dataStream */
+    std::string getEncoding() {
+        return "";
+    }
+};
 
 /**
  * Classe Transformant un DataSource en DataStream

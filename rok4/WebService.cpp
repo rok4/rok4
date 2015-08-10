@@ -39,6 +39,8 @@
 #include "WebService.h"
 #include "config.h"
 #include "Image.h"
+#include "Data.h"
+#include "RawImage.h"
 
 
 WebService::WebService(std::string url,std::string proxy="",int retry=DEFAULT_RETRY,int interval=DEFAULT_INTERVAL,
@@ -49,17 +51,17 @@ WebService::~WebService() {
 
 }
 
-Image * WebService::createImageFromRequest(std::string request) {
+RawDataSource * WebService::performRequest(std::string request) {
 
     CURL *curl;
     CURLcode res, resC, resT;
-    Image* img = NULL;
     long responseCode = 0;
     char* responseType;
     struct MemoryStruct chunk;
     bool errors = false;
+    RawDataSource *rawData = NULL;
 
-    chunk.memory = (char*)malloc(1);  /* will be grown as needed by the realloc above */
+    chunk.memory = (uint8_t*)malloc(1);  /* will be grown as needed by the realloc above */
     chunk.size = 0;    /* no data at this point */
 
     LOGGER_INFO("Create an image from a request");
@@ -139,13 +141,25 @@ Image * WebService::createImageFromRequest(std::string request) {
 
     /* Convert chunk into an image readable by rok4 */
     if (!errors) {
-
+        rawData = new RawDataSource(chunk.memory, chunk.size);
     }
 
     free(chunk.memory);
 
-    return img;
+    return rawData;
 
+}
+
+Image * WebService::createImageFromRequest(std::string request, int width, int height, int channels) {
+
+    Image *img = NULL;
+
+    RawDataSource *rawData = performRequest(request);
+    if (rawData) {
+        img = new RawImage(width,height,channels,rawData);
+    }
+
+    return img;
 }
 
 bool WebMapService::hasOption ( std::string paramName ) {

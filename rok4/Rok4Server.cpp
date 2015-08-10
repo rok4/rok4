@@ -665,7 +665,7 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
     Image *mergeImage;
     std::string bLevel;
     int width, height, error;
-    Rok4Format::eformat_data pyrType;
+    Rok4Format::eformat_data pyrType = Rok4Format::UNKNOWN;
     Style * bStyle;
     std::map <std::string, std::string > format_option;
     std::vector<Pyramid*> bPyr;
@@ -699,9 +699,10 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
             LOGGER_DEBUG("Compute BBOX");
             BoundingBox<double> bbox = lv->second->tileIndicesToTileBbox(tileCol,tileRow) ;
             bbox.print();
-            //width and height
+            //width and height and channels
             width = lv->second->getTm().getTileW();
             height = lv->second->getTm().getTileH();
+
 
             //--------------------------------------------------------------------------------------------------------
 
@@ -733,7 +734,7 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
                     //----
 
                     //----traitement de la requete
-                    image = wms->createImageFromRequest(request);
+                    image = wms->createImageFromRequest(request,width,height,wms->getChannels());
 
                     if (image) {
                         images.push_back(image);
@@ -814,7 +815,6 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
 
             //On merge les images récupérés dans chacune des basedPyramid ou/et des WebServices
             if (images.size() != 0) {
-                //FIXME: trouver une solution pour le pyrType...
                 mergeImage = mergeImages(images, pyrType, style, dst_crs, bbox);
 
                 if (mergeImage == NULL) {
@@ -840,7 +840,6 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
 
 
     //De cette image mergée, on lui applique un format pour la renvoyer au client
-    //trouver une solution pour le pyrType...
     DataStream *tileSource = formatImage(mergeImage, format, pyrType, format_option, bSize, style);
     DataSource *tile;
 
@@ -1001,7 +1000,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     Image *mergeImage;
     std::string bLevel;
     int width, height, error, tileH,tileW;
-    Rok4Format::eformat_data pyrType;
+    Rok4Format::eformat_data pyrType = Rok4Format::UNKNOWN;
     Style * bStyle;
     std::vector<Pyramid*> bPyr;
     int state = 0;
@@ -1081,8 +1080,6 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
 
     //On merge les images récupérés dans chacune des basedPyramid et chaque WebServices
     if (images.size() != 0) {
-        //FIXME:
-        //trouver une solution pour le pyrType...
         mergeImage = mergeImages(images, pyrType, style, dst_crs, bbox);
         LOGGER_DEBUG("Merged differents basedImages");
         if (mergeImage == NULL) {

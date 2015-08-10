@@ -1392,7 +1392,7 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb) {
     WebService * ws = NULL;
     std::string url, proxy, user, pwd, referer, userAgent, version, layers, styles, format, crs;
     std::map<std::string,std::string> options;
-    int timeout, retry, interval;
+    int timeout, retry, interval, channels;
     std::string name;
     std::string value;
 
@@ -1504,6 +1504,14 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb) {
             return NULL;
         }
 
+        TiXmlElement* sChannels = sWMS->FirstChildElement("channels");
+        if (sChannels && sChannels->GetText()) {
+            channels = atoi(sChannels->GetTextStr().c_str());
+        } else {
+            LOGGER_ERROR("Un WMS doit contenir un channels");
+            return NULL;
+        }
+
         TiXmlElement* sOpt = sWMS->FirstChildElement("option");
         if (sOpt) {
 
@@ -1520,7 +1528,7 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb) {
 
         }
 
-        ws = new WebMapService(url, proxy, retry, interval, timeout, version, layers, styles, format, crs, options);
+        ws = new WebMapService(url, proxy, retry, interval, timeout, version, layers, styles, format, channels, crs, options);
 
     } else {
         //On retourne une erreur car le WMS est le seul WebService disponible pour le moment

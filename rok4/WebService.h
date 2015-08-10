@@ -42,9 +42,10 @@
 #include "BoundingBox.h"
 #include "curl/curl.h"
 #include "Image.h"
+#include "Data.h"
 
 struct MemoryStruct {
-  char *memory;
+  uint8_t *memory;
   size_t size;
 };
 
@@ -54,7 +55,7 @@ static size_t WriteInMemoryCallback(void *contents, size_t size, size_t nmemb, v
   size_t realsize = size * nmemb;
   struct MemoryStruct *mem = (struct MemoryStruct *)userp;
 
-  mem->memory = (char*)realloc(mem->memory, mem->size + realsize + 1);
+  mem->memory = (uint8_t*)realloc(mem->memory, mem->size + realsize + 1);
   if(mem->memory == NULL) {
     /* out of memory! */
     LOGGER_ERROR("not enough memory (realloc returned NULL)\n");
@@ -317,11 +318,19 @@ public:
     }
     /**
      * \~french
+     * \brief Récupération des données à partir d'une URL
+     * \~english
+     * \brief Taking Data from an URL
+     */
+    RawDataSource * performRequest(std::string request);
+
+    /**
+     * \~french
      * \brief Creation d'une image à partir d'une URL
      * \~english
      * \brief tCreate an Image from an URL
      */
-    Image * createImageFromRequest(std::string request);
+    Image * createImageFromRequest(std::string request, int width, int height, int channels);
 
 
     /**
@@ -373,6 +382,12 @@ private:
     std::string crs;
 
     /**
+     * \~french \brief nombre de canaux d'une image accessible par le wms
+     * \~english \brief channels of images accessible by the wms
+     */
+    int channels;
+
+    /**
      * \~french \brief options à ajouter dans la requête
      * \~english \brief options to add in the request
      */
@@ -400,6 +415,26 @@ public:
         version = u;
     }
 
+
+    /**
+     * \~french \brief Récupère channels
+     * \return channels
+     * \~english \brief Get the channels
+     * \return channels
+     */
+    int getChannels(){
+        return channels;
+    }
+
+    /**
+     * \~french \brief Modifie channels
+     * \param[in] channels
+     * \~english \brief Set the channels
+     * \param[in] channels
+     */
+    void setChannels (int u) {
+        channels = u;
+    }
     /**
      * \~french \brief Récupère le layers
      * \return layers
@@ -532,10 +567,9 @@ public:
      * \~french \brief Constructeur
      * \~english \brief Constructor
      */
-    //WebMapService(std::string url, std::string proxy, int retry, int interval, int timeout, std::string version, std::string layers, std::string styles, std::string format, std::string crs, std::map<std::string,std::string> options);
-    WebMapService(std::string url, std::string proxy, int retry, int interval, int timeout, std::string version,std::string layers, std::string styles,std::string format,
+    WebMapService(std::string url, std::string proxy, int retry, int interval, int timeout, std::string version,std::string layers, std::string styles,std::string format, int channels,
                                  std::string crs, std::map<std::string,std::string> options) : WebService(url,proxy,retry,interval,timeout),
-        version (version), layers (layers), styles (styles), format (format), crs (crs), options (options) {}
+        version (version), layers (layers), styles (styles), format (format), crs (crs), channels (channels), options (options) {}
     /**
      * \~french \brief Destructeur
      * \~english \brief Destructor
