@@ -826,7 +826,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
                         for ( sWeb; sWeb; sWeb=sWeb->NextSiblingElement("webService") ) {
 
-                            ws = parseWebService(sWeb,tms->getCrs());
+                            ws = parseWebService(sWeb,tms->getCrs(),format);
                             ntWebServices++;
                             if (ws) {
                                 sWebServices.push_back(ws);
@@ -1387,7 +1387,7 @@ void ConfLoader::updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, ui
 
 }
 
-WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS) {
+WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Format::eformat_data pyrFormat) {
 
     WebService * ws = NULL;
     std::string url, proxy, user, pwd, referer, userAgent, version, layers, styles, format, crs;
@@ -1492,8 +1492,8 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS) {
         if (sFormat && sFormat->GetText()) {
             format = sFormat->GetTextStr();
         } else {
-            LOGGER_ERROR("Un WMS doit contenir un format");
-            return NULL;
+            format = Rok4Format::toString(pyrFormat);
+            LOGGER_ERROR("Un WMS doit contenir un format. Par défaut => " << format);
         }
 
         TiXmlElement* sCrs = sWMS->FirstChildElement("crs");
@@ -1508,8 +1508,8 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS) {
             }
 
         } else {
-            LOGGER_ERROR("Un WMS doit contenir un crs");
-            return NULL;
+            crs = pyrCRS.getProj4Code();
+            LOGGER_ERROR("Un WMS doit contenir un crs. Par défaut => " << crs);
         }
 
         TiXmlElement* sChannels = sWMS->FirstChildElement("channels");

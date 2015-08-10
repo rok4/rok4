@@ -71,10 +71,12 @@
 			                                        			<!-- liste des styles séparés par une virgule -->
 			                                        			<xs:element name="styles" type="xs:string" minOccurs="1" maxOccurs="1"/>
 			                                        			<!-- crs -->
-			                                        			<xs:element name="crs" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			                                        			<xs:element name="crs" type="xs:string" minOccurs="0" maxOccurs="1"/>
 			                                        			<!-- format -->
-			                                        			<xs:element name="format" type="xs:string" minOccurs="1" maxOccurs="1"/>
-			                                        			<!-- format -->
+			                                        			<xs:element name="format" type="xs:string" minOccurs="0" maxOccurs="1"/>
+											<!-- nombre de canaux des images -->
+			                                        			<xs:element name="channels" type="xs:positiveInteger" minOccurs="1" maxOccurs="1"/>
+			                                        			<!-- option -->
 			                                        			<xs:element name="option" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
 			                        						</xs:sequence>
 			                    						</xs:complexType>
