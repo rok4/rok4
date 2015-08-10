@@ -330,7 +330,7 @@ public:
      * \~english
      * \brief tCreate an Image from an URL
      */
-    Image * createImageFromRequest(std::string request, int width, int height, int channels);
+    Image * createImageFromRequest(std::string request, int width, int height, int channels, BoundingBox<double> bbox);
 
 
     /**

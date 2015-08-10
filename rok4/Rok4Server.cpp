@@ -734,7 +734,7 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
                     //----
 
                     //----traitement de la requete
-                    image = wms->createImageFromRequest(request,width,height,wms->getChannels());
+                    image = wms->createImageFromRequest(request,width,height,wms->getChannels(),bboxForRequest);
 
                     if (image) {
                         images.push_back(image);

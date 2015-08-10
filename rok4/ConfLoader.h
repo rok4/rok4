@@ -463,7 +463,7 @@ private:
     * \~english
     * \brief Return a WebService from the configuration
     */
-   static WebService *parseWebService(TiXmlElement* sWeb);
+   static WebService *parseWebService(TiXmlElement* sWeb, CRS pyrCRS);
 
    /**
    * \~french

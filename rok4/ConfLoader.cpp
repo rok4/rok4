@@ -826,7 +826,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
                         for ( sWeb; sWeb; sWeb=sWeb->NextSiblingElement("webService") ) {
 
-                            ws = parseWebService(sWeb);
+                            ws = parseWebService(sWeb,tms->getCrs());
                             ntWebServices++;
                             if (ws) {
                                 sWebServices.push_back(ws);
@@ -1387,7 +1387,7 @@ void ConfLoader::updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, ui
 
 }
 
-WebService *ConfLoader::parseWebService(TiXmlElement* sWeb) {
+WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS) {
 
     WebService * ws = NULL;
     std::string url, proxy, user, pwd, referer, userAgent, version, layers, styles, format, crs;
@@ -1499,6 +1499,14 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb) {
         TiXmlElement* sCrs = sWMS->FirstChildElement("crs");
         if (sCrs && sCrs->GetText()) {
             crs = sCrs->GetTextStr();
+
+            //le crs demandé et le crs de la pyramide en construction doivent être le même
+            CRS askedCRS = CRS(crs);
+            if (askedCRS != pyrCRS) {
+                LOGGER_ERROR("Un WMS doit contenir un crs équivalent à celui de la pyramide en construction");
+                return NULL;
+            }
+
         } else {
             LOGGER_ERROR("Un WMS doit contenir un crs");
             return NULL;

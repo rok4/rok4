@@ -150,13 +150,14 @@ RawDataSource * WebService::performRequest(std::string request) {
 
 }
 
-Image * WebService::createImageFromRequest(std::string request, int width, int height, int channels) {
+Image * WebService::createImageFromRequest(std::string request, int width, int height, int channels, BoundingBox<double> bbox) {
 
     Image *img = NULL;
 
     RawDataSource *rawData = performRequest(request);
     if (rawData) {
         img = new RawImage(width,height,channels,rawData);
+        img->setBbox(bbox);
     }
 
     return img;
