@@ -324,14 +324,6 @@ public:
      */
     RawDataSource * performRequest(std::string request);
 
-    /**
-     * \~french
-     * \brief Creation d'une image à partir d'une URL
-     * \~english
-     * \brief tCreate an Image from an URL
-     */
-    Image * createImageFromRequest(std::string request, int width, int height, int channels, BoundingBox<double> bbox);
-
 
     /**
      * \~french \brief Constructeur
@@ -562,6 +554,14 @@ public:
      * \param[in] height
      */
     std::string createWMSGetMapRequest (BoundingBox<double> bbox, int width, int height );
+
+    /**
+     * \~french
+     * \brief Creation d'une image à partir d'une URL
+     * \~english
+     * \brief tCreate an Image from an URL
+     */
+    Image * createImageFromRequest(std::string request, int width, int height, int channels, BoundingBox<double> bbox);
 
     /**
      * \~french \brief Constructeur

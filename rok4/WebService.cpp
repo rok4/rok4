@@ -41,6 +41,8 @@
 #include "Image.h"
 #include "Data.h"
 #include "RawImage.h"
+#include "Format.h"
+#include "Decoder.h"
 
 
 WebService::WebService(std::string url,std::string proxy="",int retry=DEFAULT_RETRY,int interval=DEFAULT_INTERVAL,
@@ -151,20 +153,45 @@ RawDataSource * WebService::performRequest(std::string request) {
 
 }
 
-Image * WebService::createImageFromRequest(std::string request, int width, int height, int channels, BoundingBox<double> bbox) {
+Image * WebMapService::createImageFromRequest(std::string request, int width, int height, int channels, BoundingBox<double> bbox) {
 
     Image *img = NULL;
+    DataSource *decData = NULL;
+    int pix = 1;
 
     LOGGER_INFO("Create an image from a request");
 
-    //on récupère la donnée
+    //----on récupère la donnée brute
     RawDataSource *rawData = performRequest(request);
+    //----
 
-    //on la transforme en image
+    //----on la transforme en image
     if (rawData) {
-        img = new RawImage(width,height,channels,rawData);
-        img->setBbox(bbox);
+
+        LOGGER_DEBUG("Decode Data");
+        //on la décode
+        Rok4Format::eformat_data fmt = Rok4Format::fromMimeType(format);
+        if ( fmt==Rok4Format::TIFF_RAW_INT8 || fmt==Rok4Format::TIFF_RAW_FLOAT32 )
+            decData = rawData;
+        else if ( fmt == Rok4Format::TIFF_JPG_INT8 )
+            decData = new DataSourceDecoder<JpegDecoder> ( rawData );
+        else if ( fmt == Rok4Format::TIFF_PNG_INT8 )
+            decData = new DataSourceDecoder<PngDecoder> ( rawData );
+        else if ( fmt == Rok4Format::TIFF_LZW_INT8 || fmt == Rok4Format::TIFF_LZW_FLOAT32 )
+            decData = new DataSourceDecoder<LzwDecoder> ( rawData );
+        else if ( fmt == Rok4Format::TIFF_ZIP_INT8 || fmt == Rok4Format::TIFF_ZIP_FLOAT32 )
+            decData = new DataSourceDecoder<DeflateDecoder> ( rawData );
+        else if ( fmt == Rok4Format::TIFF_PKB_INT8 || fmt == Rok4Format::TIFF_PKB_FLOAT32 )
+            decData = new DataSourceDecoder<PackBitsDecoder> ( rawData );
+
+        LOGGER_DEBUG("Create Image");
+        //on en fait une image
+        pix = Rok4Format::getPixelSize(fmt);
+        img = new ImageDecoder(decData,width,height,channels,bbox,0,0,0,0,pix);
+        img->setCRS(CRS(crs));
+
     }
+    //----
 
     return img;
 }

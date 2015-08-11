@@ -1491,6 +1491,11 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
         TiXmlElement* sFormat = sWMS->FirstChildElement("format");
         if (sFormat && sFormat->GetText()) {
             format = sFormat->GetTextStr();
+            Rok4Format::eformat_data fmt = Rok4Format::fromMimeType(format);
+            if (fmt == Rok4Format::UNKNOWN) {
+                LOGGER_ERROR("Un WMS doit contenir un format lisible par rok4");
+                return NULL;
+            }
         } else {
             format = Rok4Format::toString(pyrFormat);
             LOGGER_ERROR("Un WMS doit contenir un format. Par défaut => " << format);
