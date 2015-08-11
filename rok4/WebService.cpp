@@ -64,7 +64,7 @@ RawDataSource * WebService::performRequest(std::string request) {
     chunk.memory = (uint8_t*)malloc(1);  /* will be grown as needed by the realloc above */
     chunk.size = 0;    /* no data at this point */
 
-    LOGGER_INFO("Create an image from a request");
+    LOGGER_INFO("Perform a request");
 
     LOGGER_DEBUG("Initiation of Curl Handle");
     //it is one handle - just one per thread
@@ -139,8 +139,9 @@ RawDataSource * WebService::performRequest(std::string request) {
       errors = true;
     }
 
-    /* Convert chunk into an image readable by rok4 */
+    /* Convert chunk into a DataSource readable by rok4 */
     if (!errors) {
+        LOGGER_DEBUG("Sauvegarde de la donnee");
         rawData = new RawDataSource(chunk.memory, chunk.size);
     }
 
@@ -154,7 +155,12 @@ Image * WebService::createImageFromRequest(std::string request, int width, int h
 
     Image *img = NULL;
 
+    LOGGER_INFO("Create an image from a request");
+
+    //on récupère la donnée
     RawDataSource *rawData = performRequest(request);
+
+    //on la transforme en image
     if (rawData) {
         img = new RawImage(width,height,channels,rawData);
         img->setBbox(bbox);

@@ -720,21 +720,17 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
 
                 //pour chaque WS de base, on récupère une image
                 for (int i = 0; i < bWebServices.size(); i++) {
+
+                    //----on recupère le WebService Source
                     WebMapService *wms = reinterpret_cast<WebMapService*>(bWebServices.at(i));
                     //----creation de la requete
-                    //on reprojette la bbox dans le CRS du WebService
-                    BoundingBox<double> bboxForRequest = bbox;
-                    if (bboxForRequest.reproject(pyr->getTms().getCrs().getProj4Code(),wms->getCrs()) != 0 ) {
-                        LOGGER_ERROR("Impossible de generer la tuile car l'un des WebServices du layer "+L->getTitle()+" ne peut etre reprojete");
-                        return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
-                    }
                     //on cree la requete
-                    request = wms->createWMSGetMapRequest(bboxForRequest,width,height);
+                    request = wms->createWMSGetMapRequest(bbox,width,height);
                     LOGGER_DEBUG("Request => " << request);
                     //----
 
                     //----traitement de la requete
-                    image = wms->createImageFromRequest(request,width,height,wms->getChannels(),bboxForRequest);
+                    image = wms->createImageFromRequest(request,width,height,wms->getChannels(),bbox);
 
                     if (image) {
                         images.push_back(image);
