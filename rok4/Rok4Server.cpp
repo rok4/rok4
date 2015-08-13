@@ -1051,7 +1051,6 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
             } else {
                 LOGGER_ERROR("Impossible de generer la tuile car l'un des WebServices du layer "+L->getTitle()+" ne renvoit pas de tuile");
                 state = 1;
-                delete bStyle;
                 return state;
             }
 
@@ -1094,6 +1093,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
         }
 
         pyrType = bPyr.at ( 0 )->getFormat();
+        delete bStyle;
 
     }
 
@@ -1105,14 +1105,12 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
         if (mergeImage == NULL) {
             LOGGER_ERROR("Impossible de générer la dalle car l'opération de merge n'a pas fonctionné");
             state = 1;
-            delete bStyle;
             return state;
         }
 
     } else {
         LOGGER_ERROR("Impossible de générer la dalle car aucune image n'a été récupérée");
         state = 1;
-        delete bStyle;
         return state;
     }
 
@@ -1142,7 +1140,6 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
             LOGGER_ERROR("Impossible de générer la dalle car son écriture en mémoire a échoué");
             state = 1;
             delete mergeImage;
-            delete bStyle;
             delete finalImage;
             return state;
         } else {
@@ -1152,13 +1149,11 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
         LOGGER_ERROR("Impossible de générer la dalle car la création d'une Rok4Image ne marche pas");
         state = 1;
         delete mergeImage;
-        delete bStyle;
         delete finalImage;
         return state;
     }
 
     delete mergeImage;
-    delete bStyle;
     delete finalImage;
 
     //IMAGE ECRITE
