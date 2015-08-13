@@ -723,14 +723,9 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
 
                     //----on recupère le WebService Source
                     WebMapService *wms = reinterpret_cast<WebMapService*>(bWebServices.at(i));
-                    //----creation de la requete
-                    //on cree la requete
-                    request = wms->createWMSGetMapRequest(bbox,width,height);
-                    LOGGER_DEBUG("Request => " << request);
-                    //----
 
                     //----traitement de la requete
-                    image = wms->createImageFromRequest(request,width,height,wms->getChannels(),bbox);
+                    image = wms->createImageFromRequest(width,height,bbox);
 
                     if (image) {
                         images.push_back(image);

@@ -683,10 +683,10 @@ public:
     }
 
     /**
-     * \~french \brief Modifie le paramètre onDemand
-     * \param[in] booleen
-     * \~english \brief Modify onDemand
-     * \param[in] boolean
+     * \~french \brief Modifie le paramètre noData
+     * \param[in] noData
+     * \~english \brief Modify noData
+     * \param[in] noData
      */
     void setNdValues (std::vector<int> ndv) {
        ndValues = ndv;

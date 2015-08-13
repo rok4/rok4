@@ -43,6 +43,8 @@
 #include "RawImage.h"
 #include "Format.h"
 #include "Decoder.h"
+#include "ExtendedCompoundImage.h"
+#include "EmptyImage.h"
 
 
 WebService::WebService(std::string url,std::string proxy="",int retry=DEFAULT_RETRY,int interval=DEFAULT_INTERVAL,
@@ -153,13 +155,97 @@ RawDataSource * WebService::performRequest(std::string request) {
 
 }
 
-Image * WebMapService::createImageFromRequest(std::string request, int width, int height, int channels, BoundingBox<double> bbox) {
+Image * WebMapService::createImageFromRequest(int width, int height, BoundingBox<double> askBbox) {
 
     Image *img = NULL;
     DataSource *decData = NULL;
     int pix = 1;
+    std::string request;
+    int requestWidth,requestHeight;
+    ExtendedCompoundImageFactory facto;
+    std::vector<Image*> images;
+    Image *finalImage = NULL;
+
+    //----Récupération du NDValues
+    int *ndvalue = new int[channels];
+    std::vector<int> ndval = getNdValues();
+    for ( int c = 0; c < channels; c++ ) {
+        ndvalue[c] = ndval[c];
+    }
+    //----
+
 
     LOGGER_INFO("Create an image from a request");
+
+    //----creation de la requete
+    //on adapte la bbox de la future requete aux données
+    BoundingBox<double> requestBbox = askBbox.adaptTo(bbox);
+
+    //on cree la requete en fonction de la nouvelle bbox
+    if (requestBbox.isNull()) {
+        LOGGER_DEBUG ("New Bbox is null");
+        EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
+        fond->setBbox(bbox);
+        return fond;
+    }
+    if (askBbox.isEqual(requestBbox)) {
+        //les deux bbox sont égales
+        requestWidth = width;
+        requestHeight = height;
+        request = createWMSGetMapRequest(requestBbox,requestWidth,requestHeight);
+    } else {
+        //requestBbox est plus petite à cause de la fonction adaptTo(bbox)
+        //donc il faut recalculer width et height
+
+        double ratio_x = ( requestBbox.xmax - requestBbox.xmin ) / ( askBbox.xmax - askBbox.xmin );
+        double ratio_y = ( requestBbox.ymax - requestBbox.ymin ) / ( askBbox.ymax - askBbox.ymin ) ;
+        int newWidth = lround(width * ratio_x);
+        int newHeight = lround(height * ratio_y);
+
+
+        //Avec lround, taille en pixel et cropBBox ne sont plus cohérents.
+        //On ajoute la différence de l'arrondi dans la cropBBox et on ajoute un pixel en plus tout autour.
+
+        //Calcul de l'erreur d'arrondi converti en coordonnées
+        double delta_h = double (newHeight) - double(height) * ratio_y ;
+        double delta_w = double (newWidth) - double(width) * ratio_x ;
+
+        double res_y = ( requestBbox.ymax - requestBbox.ymin ) / double(height * ratio_y) ;
+        double res_x = ( requestBbox.xmax - requestBbox.xmin ) / double(width * ratio_x) ;
+
+        double delta_y = res_y * delta_h ;
+        double delta_x = res_x * delta_w ;
+
+        //Ajout de l'erreur d'arrondi et le pixel en plus
+        requestBbox.ymax += delta_y +res_y;
+        requestBbox.ymin -= res_y;
+
+        requestBbox.xmax += delta_x +res_x;
+        requestBbox.xmin -= res_x;
+
+        newHeight += 2;
+        newWidth += 2;
+
+        LOGGER_DEBUG ( "New Width = " << newWidth << " " <<  "New Height = " << newHeight );
+        LOGGER_DEBUG (  "ratio_x = "  << ratio_x << " " <<  "ratio_y = " << ratio_y );
+
+        if ( (1/ratio_x > 5 && newWidth < 3) || (newHeight < 3 && 1/ratio_y > 5) || (newWidth <= 0 && newHeight <= 0)){
+            //Too small BBox
+            LOGGER_DEBUG ("New Bbox's size too small. Can't hope to have an image");
+            EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
+            fond->setBbox(bbox);
+            return fond;
+        } else {
+            requestWidth = newWidth;
+            requestHeight = newHeight;
+            request = createWMSGetMapRequest(requestBbox,requestWidth,requestHeight);
+        }
+
+
+    }
+
+    LOGGER_DEBUG("Request => " << request);
+    //----
 
     //----on récupère la donnée brute
     RawDataSource *rawData = performRequest(request);
@@ -187,13 +273,25 @@ Image * WebMapService::createImageFromRequest(std::string request, int width, in
         LOGGER_DEBUG("Create Image");
         //on en fait une image
         pix = Rok4Format::getPixelSize(fmt);
-        img = new ImageDecoder(decData,width,height,channels,bbox,0,0,0,0,pix);
+        img = new ImageDecoder(decData,requestWidth,requestHeight,channels,requestBbox,0,0,0,0,pix);
         img->setCRS(CRS(crs));
+
 
     }
     //----
 
-    return img;
+    //----on complete l'image avec du noData si nécessaire
+    if (!(askBbox.isEqual(requestBbox)) && rawData) {
+
+        images.push_back(img);
+        finalImage = facto.createExtendedCompoundImage ( width,height,channels,askBbox,images,ndvalue,0 );
+
+    } else {
+        finalImage = img;
+    }
+    //----
+
+    return finalImage;
 }
 
 bool WebMapService::hasOption ( std::string paramName ) {

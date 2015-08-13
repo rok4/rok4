@@ -1393,8 +1393,9 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
     std::string url, proxy, user, pwd, referer, userAgent, version, layers, styles, format, crs;
     std::map<std::string,std::string> options;
     int timeout, retry, interval, channels;
-    std::string name;
-    std::string value;
+    std::string name,ndValuesStr,value;
+    BoundingBox<double> bbox = BoundingBox<double> (0.,0.,0.,0.);
+    std::vector<int> noDataValues;
 
     TiXmlElement* sUrl = sWeb->FirstChildElement("url");
     if (sUrl && sUrl->GetText()) {
@@ -1541,7 +1542,80 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
 
         }
 
-        ws = new WebMapService(url, proxy, retry, interval, timeout, version, layers, styles, format, channels, crs, options);
+        TiXmlElement* sBbox = sWMS->FirstChildElement("bbox");
+        if (sBbox) {
+            if ( ! ( sBbox->Attribute ( "minx" ) ) ) {
+                LOGGER_ERROR ( "minx attribute is missing" );
+                return NULL;
+            }
+            if ( !sscanf ( sBbox->Attribute ( "minx" ),"%lf",&bbox.xmin) ) {
+                LOGGER_ERROR ( "Le minx est inexploitable:[" << sBbox->Attribute ( "minx" ) << "]" );
+                return NULL;
+            }
+            if ( ! ( sBbox->Attribute ( "miny" ) ) ) {
+                LOGGER_ERROR ( "miny attribute is missing" );
+                return NULL;
+            }
+            if ( !sscanf ( sBbox->Attribute ( "miny" ),"%lf",&bbox.ymin ) ) {
+                LOGGER_ERROR ("Le miny est inexploitable:[" << sBbox->Attribute ( "miny" ) << "]" );
+                return NULL;
+            }
+            if ( ! ( sBbox->Attribute ( "maxx" ) ) ) {
+                LOGGER_ERROR (  "maxx attribute is missing"  );
+                return NULL;
+            }
+            if ( !sscanf ( sBbox->Attribute ( "maxx" ),"%lf",&bbox.xmax ) ) {
+                LOGGER_ERROR (  "Le maxx est inexploitable:["  << sBbox->Attribute ( "maxx" ) << "]" );
+                return NULL;
+            }
+            if ( ! ( sBbox->Attribute ( "maxy" ) ) ) {
+                LOGGER_ERROR (  "maxy attribute is missing" );
+                return NULL;
+            }
+            if ( !sscanf ( sBbox->Attribute ( "maxy" ),"%lf",&bbox.ymax ) ) {
+                LOGGER_ERROR (  "Le maxy est inexploitable:["  << sBbox->Attribute ( "maxy" ) << "]" );
+                return NULL;
+            }
+
+        } else {
+            LOGGER_ERROR("Un WMS doit contenir une bbox");
+            return NULL;
+        }
+
+        TiXmlElement* pND=sWMS->FirstChildElement ( "noDataValue" );
+        if ( pND && pND->GetText() ) {
+            ndValuesStr = pND->GetTextStr();
+
+            //conversion string->vector
+            std::size_t found = ndValuesStr.find_first_of(",");
+            std::string currentValue = ndValuesStr.substr(0,found);
+            std::string endOfValues = ndValuesStr.substr(found+1);
+            int curVal = atoi(currentValue.c_str());
+            if (currentValue == "") {
+                curVal = DEFAULT_NODATAVALUE;
+            }
+            noDataValues.push_back(curVal);
+            while (found!=std::string::npos) {
+                found = endOfValues.find_first_of(",");
+                currentValue = endOfValues.substr(0,found);
+                endOfValues = endOfValues.substr(found+1);
+                curVal = atoi(currentValue.c_str());
+                if (currentValue == "") {
+                    curVal = DEFAULT_NODATAVALUE;
+                }
+                noDataValues.push_back(curVal);
+            }
+            if (noDataValues.size() < channels) {
+                LOGGER_ERROR("Le nombre de channels indique est different du nombre de noDataValue donne");
+                return NULL;
+            }
+        } else {
+            for (int i=0;i<channels;i++) {
+                noDataValues.push_back(DEFAULT_NODATAVALUE);
+            }
+        }
+
+        ws = new WebMapService(url, proxy, retry, interval, timeout, version, layers, styles, format, channels, crs, bbox, noDataValues,options);
 
     } else {
         //On retourne une erreur car le WMS est le seul WebService disponible pour le moment

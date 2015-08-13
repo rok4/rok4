@@ -380,6 +380,18 @@ private:
     int channels;
 
     /**
+     * \~french \brief emprise des données
+     * \~english \brief data bbox
+     */
+    BoundingBox<double> bbox;
+
+    /**
+     * \~french \brief Donne les valeurs des noData pour le WebMapService
+     * \~english \brief Give the noData value
+     */
+    std::vector<int> ndValues;
+
+    /**
      * \~french \brief options à ajouter dans la requête
      * \~english \brief options to add in the request
      */
@@ -407,7 +419,45 @@ public:
         version = u;
     }
 
+    /**
+     * \~french \brief Récupère la bbox
+     * \return bbox
+     * \~english \brief Get the bbox
+     * \return bbox
+     */
+    BoundingBox<double> getBbox(){
+        return bbox;
+    }
 
+    /**
+     * \~french \brief Modifie la bbox
+     * \param[in] bbox
+     * \~english \brief Set the bbox
+     * \param[in] bbox
+     */
+    void setBbox (BoundingBox<double> u) {
+        bbox = u;
+    }
+
+    /**
+     * \~french \brief Indique les valeurs de noData
+     * \return ndValues
+     * \~english \brief Indicate the noData values
+     * \return ndValues
+     */
+    std::vector<int> getNdValues() {
+        return ndValues;
+    }
+
+    /**
+     * \~french \brief Modifie le paramètre noData
+     * \param[in] noData
+     * \~english \brief Modify noData
+     * \param[in] noData
+     */
+    void setNdValues (std::vector<int> ndv) {
+       ndValues = ndv;
+    }
     /**
      * \~french \brief Récupère channels
      * \return channels
@@ -561,15 +611,17 @@ public:
      * \~english
      * \brief tCreate an Image from an URL
      */
-    Image * createImageFromRequest(std::string request, int width, int height, int channels, BoundingBox<double> bbox);
+    Image * createImageFromRequest(int width, int height, BoundingBox<double> askBbox);
 
     /**
      * \~french \brief Constructeur
      * \~english \brief Constructor
      */
     WebMapService(std::string url, std::string proxy, int retry, int interval, int timeout, std::string version,std::string layers, std::string styles,std::string format, int channels,
-                                 std::string crs, std::map<std::string,std::string> options) : WebService(url,proxy,retry,interval,timeout),
-        version (version), layers (layers), styles (styles), format (format), crs (crs), channels (channels), options (options) {}
+                                 std::string crs, BoundingBox<double> bbox, std::vector<int> ndValues,
+                                 std::map<std::string,std::string> options) : WebService(url,proxy,retry,interval,timeout),
+        version (version), layers (layers), styles (styles), format (format),
+        crs (crs), channels (channels), bbox (bbox), ndValues (ndValues),options (options) {}
     /**
      * \~french \brief Destructeur
      * \~english \brief Destructor
