@@ -671,7 +671,6 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
     std::vector<Pyramid*> bPyr;
     int bSize = 0;
     std::vector <WebService*> bWebServices;
-    std::string request;
 
     LOGGER_INFO("GetTileOnDemand");
 
@@ -996,6 +995,8 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     std::vector<Pyramid*> bPyr;
     int state = 0;
     struct stat buffer;
+    int bSize = 0;
+    std::vector <WebService*> bWebServices;
 
     //On cree la dalle sous forme d'image
     LOGGER_INFO("Create Slab on Fly");
@@ -1031,6 +1032,33 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     if (pyr->isThisLevelSpecificFromWebServices(level)) {
         LOGGER_DEBUG("From Web Services");
 
+        //----on recupere les WS sources
+        bWebServices = pyr->getSourceWebServices(level);
+        bSize += bWebServices.size();
+        //----
+
+        //pour chaque WS de base, on récupère une image
+        for (int i = 0; i < bWebServices.size(); i++) {
+
+            //----on recupère le WebService Source
+            WebMapService *wms = reinterpret_cast<WebMapService*>(bWebServices.at(i));
+
+            //----traitement de la requete
+            image = wms->createImageFromRequest(width,height,bbox);
+
+            if (image) {
+                images.push_back(image);
+            } else {
+                LOGGER_ERROR("Impossible de generer la tuile car l'un des WebServices du layer "+L->getTitle()+" ne renvoit pas de tuile");
+                state = 1;
+                delete bStyle;
+                return state;
+            }
+
+            //----
+
+        }
+
     }
 
     if (pyr->isThisLevelSpecificFromPyramids(level)) {
@@ -1038,6 +1066,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
 
         //----on récupère les pyramides de base
         bPyr = pyr->getSourcePyramid(level);
+        bSize += bPyr.size();
         //---- level specifique identifie
 
         //pour chaque pyramide de base, on récupère une image

@@ -186,6 +186,7 @@ Image * WebMapService::createImageFromRequest(int width, int height, BoundingBox
         LOGGER_DEBUG ("New Bbox is null");
         EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
         fond->setBbox(bbox);
+        delete[] ndvalue;
         return fond;
     }
     if (askBbox.isEqual(requestBbox)) {
@@ -234,6 +235,7 @@ Image * WebMapService::createImageFromRequest(int width, int height, BoundingBox
             LOGGER_DEBUG ("New Bbox's size too small. Can't hope to have an image");
             EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
             fond->setBbox(bbox);
+            delete[] ndvalue;
             return fond;
         } else {
             requestWidth = newWidth;
@@ -290,6 +292,7 @@ Image * WebMapService::createImageFromRequest(int width, int height, BoundingBox
         finalImage = img;
     }
     //----
+    delete[] ndvalue;
 
     return finalImage;
 }
