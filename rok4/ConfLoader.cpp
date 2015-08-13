@@ -1083,9 +1083,9 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
             levels.insert(std::pair<std::string,Level*> (id,TL));
 
-            if (specificLevel && sPyramids.size() != 0 && sWebServices.size() == 0) {
+            if (specificLevel && (sPyramids.size() != 0 || sWebServices.size() != 0)) {
                 if ( !pElemLvlTMS ) {
-                    updateTileLimits(*TL->getrefMinTileCol(),*TL->getrefMaxTileCol(),*TL->getrefMinTileRow(),*TL->getrefMaxTileRow(),TL->getTm(),tms,sPyramids);
+                    updateTileLimits(*TL->getrefMinTileCol(),*TL->getrefMaxTileCol(),*TL->getrefMinTileRow(),*TL->getrefMaxTileRow(),TL->getTm(),tms,sPyramids,sWebServices);
                 }
             }
 
@@ -1272,7 +1272,7 @@ int ConfLoader::updatePyrLevel(Pyramid* pyr, TileMatrix *tm, TileMatrixSet *tms)
 
 }
 
-void ConfLoader::updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Pyramid *> bPyramids) {
+void ConfLoader::updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Pyramid *> bPyramids,std::vector<WebService *> bWebServices) {
 
     //On met à jour les Min et Max Tiles une fois que l'on a trouvé un équivalent dans chaque basedPyramid
     // pour le level créé
@@ -1282,93 +1282,162 @@ void ConfLoader::updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, ui
 
     int time = 1;
 
-    for (int ip = 0; ip < bPyramids.size(); ip++) {
-        Level *lv;
+    if (bPyramids.size() != 0) {
 
-        //On récupére les Min et Max de la basedPyramid
-        lv = bPyramids.at(ip)->getLevels().begin()->second;
+        for (int ip = 0; ip < bPyramids.size(); ip++) {
+            Level *lv;
 
-
-        bPMinCol = lv->getMinTileCol();
-        bPMaxCol = lv->getMaxTileCol();
-        bPMinRow = lv->getMinTileRow();
-        bPMaxRow = lv->getMaxTileRow();
-
-        //On récupère d'autres informations sur le TM
-        xo = lv->getTm().getX0();
-        yo = lv->getTm().getY0();
-        res = lv->getTm().getRes();
-        tileW = lv->getTm().getTileW();
-        tileH = lv->getTm().getTileH();
-
-        //On transforme en bbox
-        xmin = bPMinCol * tileW * res + xo;
-        ymax = yo - bPMinRow * tileH * res;
-        xmax = xo + (bPMaxCol+1) * tileW * res;
-        ymin = ymax - (bPMaxRow - bPMinRow + 1) * tileH * res;
-
-        BoundingBox<double> MMbbox(xmin,ymin,xmax,ymax);
+            //On récupére les Min et Max de la basedPyramid
+            lv = bPyramids.at(ip)->getLevels().begin()->second;
 
 
-        //On reprojette la bbox
-        MMbbox.reproject(bPyramids.at(ip)->getTms().getCrs().getProj4Code(), tms->getCrs().getProj4Code());
+            bPMinCol = lv->getMinTileCol();
+            bPMaxCol = lv->getMaxTileCol();
+            bPMinRow = lv->getMinTileRow();
+            bPMaxRow = lv->getMaxTileRow();
 
-        //On récupère les Min et Max de Pyr pour ce level dans la nouvelle projection
-        xo = tm.getX0();
-        yo = tm.getY0();
-        res = tm.getRes();
-        tileW = tm.getTileW();
-        tileH = tm.getTileH();
+            //On récupère d'autres informations sur le TM
+            xo = lv->getTm().getX0();
+            yo = lv->getTm().getY0();
+            res = lv->getTm().getRes();
+            tileW = lv->getTm().getTileW();
+            tileH = lv->getTm().getTileH();
 
-        curMinRow = floor((yo - MMbbox.ymax) / (tileW * res));
-        curMinCol = floor((MMbbox.xmin - xo) / (tileH * res));
-        curMaxRow = floor((yo - MMbbox.ymin) / (tileW * res));
-        curMaxCol = floor((MMbbox.xmax - xo) / (tileH * res));
+            //On transforme en bbox
+            xmin = bPMinCol * tileW * res + xo;
+            ymax = yo - bPMinRow * tileH * res;
+            xmax = xo + (bPMaxCol+1) * tileW * res;
+            ymin = ymax - (bPMaxRow - bPMinRow + 1) * tileH * res;
 
-        if (curMinRow < 0) {
-            curMinRow = 0;
-        }
-        if (curMinCol < 0) {
-            curMinCol = 0;
-        }
-        if (curMaxRow < 0) {
-            curMaxRow = 0;
-        }
-        if (curMaxCol < 0) {
-            curMaxCol = 0;
-        }
+            BoundingBox<double> MMbbox(xmin,ymin,xmax,ymax);
 
-        if (time == 1) {
-            minCol = curMinCol;
-            maxCol = curMaxCol;
-            minRow = curMinRow;
-            maxRow = curMaxRow;
-        }
 
-        //On teste pour récupèrer la plus grande zone à l'intérieur du TMS
-        if (curMinCol >= minTileCol && curMinCol >= 0 && curMinCol <= curMaxCol && curMinCol <= maxTileCol) {
-            if (curMinCol <= minCol) {
+            //On reprojette la bbox
+            MMbbox.reproject(bPyramids.at(ip)->getTms().getCrs().getProj4Code(), tms->getCrs().getProj4Code());
+
+            //On récupère les Min et Max de Pyr pour ce level dans la nouvelle projection
+            xo = tm.getX0();
+            yo = tm.getY0();
+            res = tm.getRes();
+            tileW = tm.getTileW();
+            tileH = tm.getTileH();
+
+            curMinRow = floor((yo - MMbbox.ymax) / (tileW * res));
+            curMinCol = floor((MMbbox.xmin - xo) / (tileH * res));
+            curMaxRow = floor((yo - MMbbox.ymin) / (tileW * res));
+            curMaxCol = floor((MMbbox.xmax - xo) / (tileH * res));
+
+            if (curMinRow < 0) {
+                curMinRow = 0;
+            }
+            if (curMinCol < 0) {
+                curMinCol = 0;
+            }
+            if (curMaxRow < 0) {
+                curMaxRow = 0;
+            }
+            if (curMaxCol < 0) {
+                curMaxCol = 0;
+            }
+
+            if (time == 1) {
                 minCol = curMinCol;
-            }
-        }
-        if (curMinRow >= minTileRow && curMinRow >= 0 && curMinRow <= curMaxRow && curMinRow <= maxTileRow) {
-            if (curMinRow <= minRow) {
-                minRow = curMinRow;
-            }
-        }
-        if (curMaxCol <= maxTileCol && curMaxCol >= 0 && curMaxCol >= curMinCol && curMaxCol >= minTileCol) {
-            if (curMaxCol >= maxCol) {
                 maxCol = curMaxCol;
-            }
-        }
-        if (curMaxRow <= maxTileRow && curMaxRow >= 0 && curMaxRow >= curMinRow && curMaxRow >= minTileRow) {
-            if (curMaxRow >= maxRow) {
+                minRow = curMinRow;
                 maxRow = curMaxRow;
             }
+
+            //On teste pour récupèrer la plus grande zone à l'intérieur du TMS
+            if (curMinCol >= minTileCol && curMinCol >= 0 && curMinCol <= curMaxCol && curMinCol <= maxTileCol) {
+                if (curMinCol <= minCol) {
+                    minCol = curMinCol;
+                }
+            }
+            if (curMinRow >= minTileRow && curMinRow >= 0 && curMinRow <= curMaxRow && curMinRow <= maxTileRow) {
+                if (curMinRow <= minRow) {
+                    minRow = curMinRow;
+                }
+            }
+            if (curMaxCol <= maxTileCol && curMaxCol >= 0 && curMaxCol >= curMinCol && curMaxCol >= minTileCol) {
+                if (curMaxCol >= maxCol) {
+                    maxCol = curMaxCol;
+                }
+            }
+            if (curMaxRow <= maxTileRow && curMaxRow >= 0 && curMaxRow >= curMinRow && curMaxRow >= minTileRow) {
+                if (curMaxRow >= maxRow) {
+                    maxRow = curMaxRow;
+                }
+            }
+
+            time++;
+
         }
+    }
 
-        time++;
+    if (bWebServices.size() != 0) {
 
+        for (int ip = 0; ip < bWebServices.size(); ip++) {
+            WebMapService *wms = reinterpret_cast<WebMapService*>(bWebServices.at(ip));
+
+            BoundingBox<double> MMbbox = wms->getBbox();
+
+            //On récupère les Min et Max de Pyr pour ce level dans la nouvelle projection
+            xo = tm.getX0();
+            yo = tm.getY0();
+            res = tm.getRes();
+            tileW = tm.getTileW();
+            tileH = tm.getTileH();
+
+            curMinRow = floor((yo - MMbbox.ymax) / (tileW * res));
+            curMinCol = floor((MMbbox.xmin - xo) / (tileH * res));
+            curMaxRow = floor((yo - MMbbox.ymin) / (tileW * res));
+            curMaxCol = floor((MMbbox.xmax - xo) / (tileH * res));
+
+            if (curMinRow < 0) {
+                curMinRow = 0;
+            }
+            if (curMinCol < 0) {
+                curMinCol = 0;
+            }
+            if (curMaxRow < 0) {
+                curMaxRow = 0;
+            }
+            if (curMaxCol < 0) {
+                curMaxCol = 0;
+            }
+
+            if (time == 1) {
+                minCol = curMinCol;
+                maxCol = curMaxCol;
+                minRow = curMinRow;
+                maxRow = curMaxRow;
+            }
+
+            //On teste pour récupèrer la plus grande zone à l'intérieur du TMS
+            if (curMinCol >= minTileCol && curMinCol >= 0 && curMinCol <= curMaxCol && curMinCol <= maxTileCol) {
+                if (curMinCol <= minCol) {
+                    minCol = curMinCol;
+                }
+            }
+            if (curMinRow >= minTileRow && curMinRow >= 0 && curMinRow <= curMaxRow && curMinRow <= maxTileRow) {
+                if (curMinRow <= minRow) {
+                    minRow = curMinRow;
+                }
+            }
+            if (curMaxCol <= maxTileCol && curMaxCol >= 0 && curMaxCol >= curMinCol && curMaxCol >= minTileCol) {
+                if (curMaxCol >= maxCol) {
+                    maxCol = curMaxCol;
+                }
+            }
+            if (curMaxRow <= maxTileRow && curMaxRow >= 0 && curMaxRow >= curMinRow && curMaxRow >= minTileRow) {
+                if (curMaxRow >= maxRow) {
+                    maxRow = curMaxRow;
+                }
+            }
+
+            time++;
+
+        }
     }
 
     if (minCol > minTileCol ) {
