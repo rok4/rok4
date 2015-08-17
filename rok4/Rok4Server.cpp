@@ -83,7 +83,6 @@
 #include "ProcessFactory.h"
 #include "Rok4Image.h"
 #include "EmptyImage.h"
-#include "LoggerSpecific.h"
 
 void* Rok4Server::thread_loop ( void* arg ) {
     Rok4Server* server = ( Rok4Server* ) ( arg );
@@ -1044,7 +1043,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
             WebMapService *wms = reinterpret_cast<WebMapService*>(bWebServices.at(i));
 
             //----traitement de la requete
-            image = wms->createImageFromRequest(width,height,bbox);
+            image = wms->createSlabFromRequest(width,height,bbox);
 
             if (image) {
                 images.push_back(image);

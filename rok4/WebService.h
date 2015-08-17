@@ -614,6 +614,16 @@ public:
     Image * createImageFromRequest(int width, int height, BoundingBox<double> askBbox);
 
     /**
+     * \~french
+     * \brief Creation d'une image à partir d'une URL
+     * Pour les dalles
+     * \~english
+     * \brief tCreate an Image from an URL
+     * Used for slab
+     */
+    Image * createSlabFromRequest(int width, int height, BoundingBox<double> askBbox);
+
+    /**
      * \~french \brief Constructeur
      * \~english \brief Constructor
      */

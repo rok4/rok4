@@ -45,6 +45,7 @@
 #include "Decoder.h"
 #include "ExtendedCompoundImage.h"
 #include "EmptyImage.h"
+#include "CompoundImage.h"
 
 
 WebService::WebService(std::string url,std::string proxy="",int retry=DEFAULT_RETRY,int interval=DEFAULT_INTERVAL,
@@ -290,6 +291,197 @@ Image * WebMapService::createImageFromRequest(int width, int height, BoundingBox
 
     } else {
         finalImage = img;
+    }
+    //----
+    delete[] ndvalue;
+
+    return finalImage;
+}
+
+Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<double> askBbox) {
+
+    DataSource *decData = NULL;
+    int pix = 1;
+    std::string request;
+    int dataWidth,dataHeight;
+    ExtendedCompoundImageFactory facto;
+    std::vector<Image*> images;
+    Image *finalImage = NULL;
+    int nbRequestH = 1;
+    int newHeight,newWidth;
+    int nbRequestW = 1;
+    std::vector<std::vector<Image*> > composeImg;
+
+    //----Récupération du NDValues
+    int *ndvalue = new int[channels];
+    std::vector<int> ndval = getNdValues();
+    for ( int c = 0; c < channels; c++ ) {
+        ndvalue[c] = ndval[c];
+    }
+    //----
+
+
+    LOGGER_INFO("Create an image from a request");
+
+    //----creation de la requete
+    //on adapte la bbox de la future requete aux données
+    BoundingBox<double> dataBbox = askBbox.adaptTo(bbox);
+
+    //on cree la requete en fonction de la nouvelle bbox
+    if (dataBbox.isNull()) {
+        LOGGER_DEBUG ("New Bbox is null");
+        EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
+        fond->setBbox(bbox);
+        delete[] ndvalue;
+        return fond;
+    }
+    if (askBbox.isEqual(dataBbox)) {
+        //les deux bbox sont égales
+        dataWidth = width;
+        dataHeight = height;
+
+    } else {
+        //requestBbox est plus petite à cause de la fonction adaptTo(bbox)
+        //donc il faut recalculer width et height
+
+        double ratio_x = ( dataBbox.xmax - dataBbox.xmin ) / ( askBbox.xmax - askBbox.xmin );
+        double ratio_y = ( dataBbox.ymax - dataBbox.ymin ) / ( askBbox.ymax - askBbox.ymin ) ;
+        int newWidth = lround(width * ratio_x);
+        int newHeight = lround(height * ratio_y);
+
+
+        //Avec lround, taille en pixel et cropBBox ne sont plus cohérents.
+        //On ajoute la différence de l'arrondi dans la cropBBox et on ajoute un pixel en plus tout autour.
+
+        //Calcul de l'erreur d'arrondi converti en coordonnées
+        double delta_h = double (newHeight) - double(height) * ratio_y ;
+        double delta_w = double (newWidth) - double(width) * ratio_x ;
+
+        double res_y = ( dataBbox.ymax - dataBbox.ymin ) / double(height * ratio_y) ;
+        double res_x = ( dataBbox.xmax - dataBbox.xmin ) / double(width * ratio_x) ;
+
+        double delta_y = res_y * delta_h ;
+        double delta_x = res_x * delta_w ;
+
+        //Ajout de l'erreur d'arrondi et le pixel en plus
+        dataBbox.ymax += delta_y +res_y;
+        dataBbox.ymin -= res_y;
+
+        dataBbox.xmax += delta_x +res_x;
+        dataBbox.xmin -= res_x;
+
+        newHeight += 2;
+        newWidth += 2;
+
+        LOGGER_DEBUG ( "New Width = " << newWidth << " " <<  "New Height = " << newHeight );
+        LOGGER_DEBUG (  "ratio_x = "  << ratio_x << " " <<  "ratio_y = " << ratio_y );
+
+        if ( (1/ratio_x > 5 && newWidth < 3) || (newHeight < 3 && 1/ratio_y > 5) || (newWidth <= 0 && newHeight <= 0)){
+            //Too small BBox
+            LOGGER_DEBUG ("New Bbox's size too small. Can't hope to have an image");
+            EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
+            fond->setBbox(bbox);
+            delete[] ndvalue;
+            return fond;
+        } else {
+            dataWidth = newWidth;
+            dataHeight = newHeight;
+        }
+
+
+    }
+
+    //----Check image width and height to make multiple requests if necessary
+
+    if (dataWidth >= 2000) {
+        for (int k = 2; k <= 25; k++) {
+            if ((dataWidth % k) == 0) {
+                nbRequestW = k;
+                newWidth = dataWidth / k;
+            }
+        }
+    }
+
+    if (dataHeight >= 2000) {
+        for (int k = 2; k <= 25; k++) {
+            if ((dataHeight % k) == 0) {
+                nbRequestH = k;
+                newHeight = dataHeight / k;
+            }
+        }
+    }
+
+    if (nbRequestH > 1 || nbRequestW > 1) {
+        LOGGER_DEBUG("Multiple request will be performed to compute the image");
+    }
+
+    //----
+
+    for (int i = 0; i < nbRequestH; i++) {
+        for (int j = 0; j < nbRequestW; j++) {
+
+            BoundingBox<double> requestBbox = BoundingBox<double>(dataBbox.xmin + j*newWidth,
+                                                              dataBbox.ymin + i*newHeight,
+                                                              dataBbox.xmin + (j+1)*newWidth,
+                                                              dataBbox.ymin + (i+1)*newHeight);
+
+            request = createWMSGetMapRequest(requestBbox,newWidth,newHeight);
+
+            LOGGER_DEBUG("Request => " << request);
+            //----
+
+            //----on récupère la donnée brute
+            RawDataSource *rawData = performRequest(request);
+            //----
+
+            //----on la transforme en image
+            if (rawData) {
+
+                LOGGER_DEBUG("Decode Data");
+                //on la décode
+                Rok4Format::eformat_data fmt = Rok4Format::fromMimeType(format);
+                if ( fmt==Rok4Format::TIFF_RAW_INT8 || fmt==Rok4Format::TIFF_RAW_FLOAT32 )
+                    decData = rawData;
+                else if ( fmt == Rok4Format::TIFF_JPG_INT8 )
+                    decData = new DataSourceDecoder<JpegDecoder> ( rawData );
+                else if ( fmt == Rok4Format::TIFF_PNG_INT8 )
+                    decData = new DataSourceDecoder<PngDecoder> ( rawData );
+                else if ( fmt == Rok4Format::TIFF_LZW_INT8 || fmt == Rok4Format::TIFF_LZW_FLOAT32 )
+                    decData = new DataSourceDecoder<LzwDecoder> ( rawData );
+                else if ( fmt == Rok4Format::TIFF_ZIP_INT8 || fmt == Rok4Format::TIFF_ZIP_FLOAT32 )
+                    decData = new DataSourceDecoder<DeflateDecoder> ( rawData );
+                else if ( fmt == Rok4Format::TIFF_PKB_INT8 || fmt == Rok4Format::TIFF_PKB_FLOAT32 )
+                    decData = new DataSourceDecoder<PackBitsDecoder> ( rawData );
+
+                LOGGER_DEBUG("Create Image");
+                //on en fait une image
+                pix = Rok4Format::getPixelSize(fmt);
+                Image *img = new ImageDecoder(decData,newWidth,newHeight,channels,requestBbox,0,0,0,0,pix);
+                img->setCRS(CRS(crs));
+                composeImg[i][j] = img;
+
+
+            } else {
+                LOGGER_ERROR("No Raw Data...");
+                delete[] ndvalue;
+                return finalImage;
+            }
+            //----
+
+        }
+    }
+
+    CompoundImage *cmImg = new CompoundImage(composeImg);
+
+
+    //----on complete l'image avec du noData si nécessaire
+    if (!(askBbox.isEqual(dataBbox))) {
+
+        images.push_back(cmImg);
+        finalImage = facto.createExtendedCompoundImage ( width,height,channels,askBbox,images,ndvalue,0 );
+
+    } else {
+        finalImage = cmImg;
     }
     //----
     delete[] ndvalue;
