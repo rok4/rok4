@@ -309,6 +309,7 @@ Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<
     Image *finalImage = NULL;
     int nbRequestH = 1;
     int newHeight,newWidth;
+    double newWidthLand,newHeightLand;
     int nbRequestW = 1;
     std::vector<std::vector<Image*> > composeImg;
 
@@ -319,7 +320,6 @@ Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<
         ndvalue[c] = ndval[c];
     }
     //----
-
 
     LOGGER_INFO("Create an image from a request");
 
@@ -398,6 +398,7 @@ Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<
             if ((dataWidth % k) == 0) {
                 nbRequestW = k;
                 newWidth = dataWidth / k;
+                newWidthLand = (dataBbox.xmax - dataBbox.xmin) / k;
             }
         }
     }
@@ -407,6 +408,7 @@ Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<
             if ((dataHeight % k) == 0) {
                 nbRequestH = k;
                 newHeight = dataHeight / k;
+                newHeightLand = (dataBbox.ymax - dataBbox.ymin) / k;
             }
         }
     }
@@ -415,15 +417,23 @@ Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<
         LOGGER_DEBUG("Multiple request will be performed to compute the image");
     }
 
+
+    //----
+
+    //----Dimensionnement de composeImg
+    composeImg.resize(nbRequestH);
+    for (int row = 0; row < nbRequestH; row++) {
+        composeImg.at(row).resize(nbRequestW);
+    }
     //----
 
     for (int i = 0; i < nbRequestH; i++) {
         for (int j = 0; j < nbRequestW; j++) {
 
-            BoundingBox<double> requestBbox = BoundingBox<double>(dataBbox.xmin + j*newWidth,
-                                                              dataBbox.ymin + i*newHeight,
-                                                              dataBbox.xmin + (j+1)*newWidth,
-                                                              dataBbox.ymin + (i+1)*newHeight);
+            BoundingBox<double> requestBbox = BoundingBox<double>(dataBbox.xmin + j*newWidthLand,
+                                                              dataBbox.ymin + i*newHeightLand,
+                                                              dataBbox.xmin + (j+1)*newWidthLand,
+                                                              dataBbox.ymin + (i+1)*newHeightLand);
 
             request = createWMSGetMapRequest(requestBbox,newWidth,newHeight);
 
@@ -458,7 +468,7 @@ Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<
                 pix = Rok4Format::getPixelSize(fmt);
                 Image *img = new ImageDecoder(decData,newWidth,newHeight,channels,requestBbox,0,0,0,0,pix);
                 img->setCRS(CRS(crs));
-                composeImg[i][j] = img;
+                composeImg[nbRequestH - (i+1)][j] = img;
 
 
             } else {
