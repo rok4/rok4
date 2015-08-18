@@ -89,6 +89,8 @@
 #define DEFAULT_RETRY 0
 #define DEFAULT_TIMEOUT 300
 #define DEFAULT_INTERVAL 5
+#define DEFAULT_MAX_SIZE_BEFORE_CUT 2000
+#define DEFAULT_MAX_NB_CUT 25
 
 // Configuration de l'acces au parametrage de PROJ4
 #define PROJ_LIB_PATH      "../config/proj/";

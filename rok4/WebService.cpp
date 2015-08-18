@@ -37,7 +37,7 @@
 
 
 #include "WebService.h"
-#include "config.h"
+#include "config.h.in"
 #include "Image.h"
 #include "Data.h"
 #include "RawImage.h"
@@ -393,8 +393,8 @@ Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<
 
     //----Check image width and height to make multiple requests if necessary
 
-    if (dataWidth >= 2000) {
-        for (int k = 2; k <= 25; k++) {
+    if (dataWidth >= DEFAULT_MAX_SIZE_BEFORE_CUT) {
+        for (int k = 2; k <= DEFAULT_MAX_NB_CUT; k++) {
             if ((dataWidth % k) == 0) {
                 nbRequestW = k;
                 newWidth = dataWidth / k;
@@ -403,8 +403,8 @@ Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<
         }
     }
 
-    if (dataHeight >= 2000) {
-        for (int k = 2; k <= 25; k++) {
+    if (dataHeight >= DEFAULT_MAX_SIZE_BEFORE_CUT) {
+        for (int k = 2; k <= DEFAULT_MAX_NB_CUT; k++) {
             if ((dataHeight % k) == 0) {
                 nbRequestH = k;
                 newHeight = dataHeight / k;
