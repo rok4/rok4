@@ -231,7 +231,7 @@ Image * WebMapService::createImageFromRequest(int width, int height, BoundingBox
         LOGGER_DEBUG ( "New Width = " << newWidth << " " <<  "New Height = " << newHeight );
         LOGGER_DEBUG (  "ratio_x = "  << ratio_x << " " <<  "ratio_y = " << ratio_y );
 
-        if ( (1/ratio_x > 5 && newWidth < 3) || (newHeight < 3 && 1/ratio_y > 5) || (newWidth <= 0 && newHeight <= 0)){
+        if ( (1/ratio_x > 5 && newWidth < 3) || (newHeight < 3 && 1/ratio_y > 5) || (newWidth <= 0 || newHeight <= 0)){
             //Too small BBox
             LOGGER_DEBUG ("New Bbox's size too small. Can't hope to have an image");
             EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
@@ -376,7 +376,7 @@ Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<
         LOGGER_DEBUG ( "New Width = " << newWidth << " " <<  "New Height = " << newHeight );
         LOGGER_DEBUG (  "ratio_x = "  << ratio_x << " " <<  "ratio_y = " << ratio_y );
 
-        if ( (1/ratio_x > 5 && newWidth < 3) || (newHeight < 3 && 1/ratio_y > 5) || (newWidth <= 0 && newHeight <= 0)){
+        if ( (1/ratio_x > 5 && newWidth < 3) || (newHeight < 3 && 1/ratio_y > 5) || (newWidth <= 0 || newHeight <= 0)){
             //Too small BBox
             LOGGER_DEBUG ("New Bbox's size too small. Can't hope to have an image");
             EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
@@ -401,6 +401,9 @@ Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<
                 newWidthLand = (dataBbox.xmax - dataBbox.xmin) / k;
             }
         }
+    } else {
+        newWidth = dataWidth;
+        newWidthLand = (dataBbox.xmax - dataBbox.xmin);
     }
 
     if (dataHeight >= DEFAULT_MAX_SIZE_BEFORE_CUT) {
@@ -411,6 +414,9 @@ Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<
                 newHeightLand = (dataBbox.ymax - dataBbox.ymin) / k;
             }
         }
+    } else {
+        newHeight = dataHeight;
+        newHeightLand = (dataBbox.ymax - dataBbox.ymin);
     }
 
     if (nbRequestH > 1 || nbRequestW > 1) {
