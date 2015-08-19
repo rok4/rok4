@@ -98,7 +98,15 @@ RawDataSource * WebService::performRequest(std::string request) {
                 curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
                 curl_easy_setopt(curl, CURLOPT_HEADER, 0L);
                 curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+                /* time to connect - not to receive answer */
+                curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, long(timeout));
                 curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "identity");
+                if (proxy != "") {
+                    curl_easy_setopt(curl, CURLOPT_PROXY, proxy.c_str());
+                }
+                if (userAgent != "") {
+                    curl_easy_setopt(curl, CURLOPT_USERAGENT, userAgent.c_str());
+                }
                 /* send all data to this function  */
                 curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteInMemoryCallback);
                 /* we pass our 'chunk' struct to the callback function */
