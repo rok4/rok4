@@ -58,6 +58,7 @@ WebService::~WebService() {
 
 RawDataSource * WebService::performRequest(std::string request) {
 
+    //----variables
     CURL *curl;
     CURLcode res, resC, resT;
     long responseCode = 0;
@@ -65,16 +66,21 @@ RawDataSource * WebService::performRequest(std::string request) {
     struct MemoryStruct chunk;
     bool errors = false;
     RawDataSource *rawData = NULL;
+    int nbPerformed = 0;
 
     chunk.memory = (uint8_t*)malloc(1);  /* will be grown as needed by the realloc above */
     chunk.size = 0;    /* no data at this point */
+    //----
 
     LOGGER_INFO("Perform a request");
 
     LOGGER_DEBUG("Initiation of Curl Handle");
     //it is one handle - just one per thread
     curl = curl_easy_init();
+
     if(curl) {
+
+        //----Set options
         LOGGER_DEBUG("Setting options of Curl");
         curl_easy_setopt(curl, CURLOPT_URL, request.c_str());
         /* example.com is redirected, so we tell libcurl to follow redirection */
@@ -90,55 +96,70 @@ RawDataSource * WebService::performRequest(std::string request) {
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteInMemoryCallback);
         /* we pass our 'chunk' struct to the callback function */
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
+        //----
 
+        //----Perform request
+        while (nbPerformed <= retry) {
 
-        LOGGER_DEBUG("Perform the request");
-        /* Perform the request, res will get the return code */
-        res = curl_easy_perform(curl);
+            nbPerformed++;
 
-        LOGGER_DEBUG("Checking for errors");
-        /* Check for errors */
-        if(res == CURLE_OK) {
+            LOGGER_DEBUG("Perform the request - " << nbPerformed << "/" << retry+1 << " time");
+            /* Perform the request, res will get the return code */
+            res = curl_easy_perform(curl);
 
-            resC = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &responseCode);
-            resT = curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &responseType);
-            if ((resC == CURLE_OK) && responseCode) {
+            LOGGER_DEBUG("Checking for errors");
+            /* Check for errors */
+            if(res == CURLE_OK) {
 
-                if (responseCode != 200) {
-                    LOGGER_ERROR("The request returned a " << responseCode << " code");
+                resC = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &responseCode);
+                resT = curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &responseType);
+                if ((resC == CURLE_OK) && responseCode) {
+
+                    if (responseCode != 200) {
+                        LOGGER_ERROR("The request returned a " << responseCode << " code");
+                        errors = true;
+                    } else {
+                        errors = false;
+                        /* always cleanup */
+                        curl_easy_cleanup(curl);
+                        break;
+                    }
+
+                } else {
+                    LOGGER_ERROR("curl_easy_getinfo() on response code failed: " << curl_easy_strerror(resC));
                     errors = true;
                 }
 
-            } else {
-                LOGGER_ERROR("curl_easy_getinfo() on response code failed: " << curl_easy_strerror(resC));
-                errors = true;
-            }
-
-            if ((resT == CURLE_OK) && responseType) {
-                if (errors) {
-                    LOGGER_ERROR("The request returned with a " << responseType << " content type");
-                    std::string text = "text/";
-                    std::string rType(responseType);
-                    if (rType.find(text) != std::string::npos) {
-                        LOGGER_ERROR("Content of the answer: " << chunk.memory);
-                    } else {
-                        LOGGER_ERROR("Impossible to read the answer...");
+                if ((resT == CURLE_OK) && responseType) {
+                    if (errors) {
+                        LOGGER_ERROR("The request returned with a " << responseType << " content type");
+                        std::string text = "text/";
+                        std::string rType(responseType);
+                        if (rType.find(text) != std::string::npos) {
+                            LOGGER_ERROR("Content of the answer: " << chunk.memory);
+                        } else {
+                            LOGGER_ERROR("Impossible to read the answer...");
+                        }
                     }
+                } else {
+                    LOGGER_ERROR("curl_easy_getinfo() on response type failed: " << curl_easy_strerror(resT));
+                    errors = true;
                 }
+
+
+
             } else {
-                LOGGER_ERROR("curl_easy_getinfo() on response type failed: " << curl_easy_strerror(resT));
+                LOGGER_ERROR("curl_easy_perform() failed: " << curl_easy_strerror(res));
                 errors = true;
             }
 
+            /* always cleanup */
+            curl_easy_cleanup(curl);
 
-
-        } else {
-            LOGGER_ERROR("curl_easy_perform() failed: " << curl_easy_strerror(res));
-            errors = true;
         }
+        //----
 
-        /* always cleanup */
-        curl_easy_cleanup(curl);
+
     } else {
       LOGGER_ERROR("Impossible d'initialiser Curl");
       errors = true;
