@@ -344,9 +344,11 @@ Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<
     std::vector<Image*> images;
     Image *finalImage = NULL;
     int nbRequestH = 1;
+    int nbRequestHPrev = 1;
     int newHeight,newWidth;
     double newWidthLand,newHeightLand;
     int nbRequestW = 1;
+    int nbRequestWPrev = 1;
     std::vector<std::vector<Image*> > composeImg;
 
     //----Récupération du NDValues
@@ -432,11 +434,13 @@ Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<
     if (dataWidth >= DEFAULT_MAX_SIZE_BEFORE_CUT) {
         for (int k = 2; k <= DEFAULT_MAX_NB_CUT; k++) {
             if ((dataWidth % k) == 0) {
+                nbRequestWPrev = nbRequestW;
                 nbRequestW = k;
-                newWidth = dataWidth / k;
-                newWidthLand = (dataBbox.xmax - dataBbox.xmin) / k;
             }
         }
+        nbRequestW = nbRequestWPrev;
+        newWidth = dataWidth / nbRequestW;
+        newWidthLand = (dataBbox.xmax - dataBbox.xmin) / nbRequestW;
     } else {
         newWidth = dataWidth;
         newWidthLand = (dataBbox.xmax - dataBbox.xmin);
@@ -445,11 +449,13 @@ Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<
     if (dataHeight >= DEFAULT_MAX_SIZE_BEFORE_CUT) {
         for (int k = 2; k <= DEFAULT_MAX_NB_CUT; k++) {
             if ((dataHeight % k) == 0) {
+                nbRequestHPrev = nbRequestH;
                 nbRequestH = k;
-                newHeight = dataHeight / k;
-                newHeightLand = (dataBbox.ymax - dataBbox.ymin) / k;
             }
         }
+        nbRequestH = nbRequestHPrev;
+        newHeight = dataHeight / nbRequestH;
+        newHeightLand = (dataBbox.ymax - dataBbox.ymin) / nbRequestH;
     } else {
         newHeight = dataHeight;
         newHeightLand = (dataBbox.ymax - dataBbox.ymin);
