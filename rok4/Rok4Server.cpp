@@ -1233,6 +1233,34 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
 
 }
 
+//Greg
+
+DataStream* Rok4Server::getFeatureInfo ( Request* request ) {
+    std::vector<Layer*> layers;
+    std::vector<Layer*> query_layers;
+    BoundingBox<double> bbox ( 0.0, 0.0, 0.0, 0.0 );
+    int width, height;
+    int X, Y;
+    CRS crs;
+    std::string format;
+    std::string info_format;
+    int feature_count;
+    std::vector<Style*> styles;
+    std::string version;
+    //exception ?
+
+    DataStream* errorResp = request->getFeatureInfoParam (servicesConf, layerList, layers, query_layers, bbox, width, height, crs, format, styles, info_format, X, Y, feature_count);
+    if ( errorResp ) {
+        LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getFeatureInfo" ) );
+        return errorResp;
+    }
+
+
+    return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Vérif des params OK." ),"wms" ) );
+}
+
+//
+
 void Rok4Server::processWMTS ( Request* request, FCGX_Request&  fcgxRequest ) {
     if ( request->request == "getcapabilities" ) {
         S.sendresponse ( WMTSGetCapabilities ( request ),&fcgxRequest );
@@ -1254,6 +1282,8 @@ void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
         //le map est présent pour une compatibilité avec le WMS 1.1.1
     } else if ( request->request == "getmap" || request->request == "map") {
         S.sendresponse ( getMap ( request ), &fcgxRequest );
+    } else if ( request->request == "getfeatureinfo") {
+        S.sendresponse ( getFeatureInfo ( request ), &fcgxRequest );
     } else if ( request->request == "getversion" ) {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wms" ) ),&fcgxRequest );
     } else if ( request->request == "" ) {

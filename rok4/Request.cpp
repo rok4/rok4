@@ -1146,3 +1146,243 @@ DataStream* Request::getCapWMTSParam ( ServicesConf& servicesConf, std::string& 
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Valeur du parametre VERSION invalide (1.0.0 disponible seulement)" ),"wmts" ) );
     return NULL;
 }
+
+//GREG
+DataStream* Request::getFeatureInfoParam (ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers,
+                                          std::vector<Layer*>& query_layers,
+                                          BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format,
+                                          std::vector<Style*>& styles, std::string& info_format, int& X, int& Y, int& feature_count){
+
+    // VERSION
+    std::string version=getParam ( "version" );
+    if ( version=="" ) {
+        //---- WMS 1.1.1
+        //le parametre version est prioritaire sur wmtver
+        version = getParam("wmtver");
+        if ( version=="") {
+            return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre VERSION absent." ),"wms" ) );
+        }
+        //----
+    }
+    if ( version!="1.3.0" && version!="1.1.1")
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Valeur du parametre VERSION invalide (1.1.1 et 1.3.0 disponibles seulement))" ),"wms" ) );
+
+    // LAYERS
+    std::string str_layer=getParam ( "layers" );
+    if ( str_layer == "" )
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre LAYERS absent." ),"wms" ) );
+    //Split layer Element
+    std::vector<std::string> layersString = split ( str_layer,',' );
+    LOGGER_DEBUG ( _ ( "Nombre de couches demandees =" ) << layersString.size() );
+    if ( layersString.size() > servicesConf.getLayerLimit() ) {
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le nombre de couche demande excede la valeur du LayerLimit." ),"wms" ) );
+    }
+    std::vector<std::string>::iterator itLayer = layersString.begin();
+    for ( ; itLayer != layersString.end(); itLayer++ ) {
+        std::map<std::string, Layer*>::iterator it = layerList.find ( *itLayer );
+        if ( it == layerList.end() )
+            return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_DEFINED,_ ( "Layer " ) +*itLayer+_ ( " inconnu." ),"wms" ) );
+        layers.push_back ( it->second );
+    }
+    LOGGER_DEBUG ( _ ( "Nombre de couches =" ) << layers.size() );
+
+    // QUERY_LAYERS
+    std::string str_query_layer=getParam ( "query_layers" );
+    if ( str_layer == "" )
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre QUERY_LAYERS absent." ),"wms" ) );
+    //Split layer Element
+    std::vector<std::string> queryLayersString = split ( str_query_layer,',' );
+    LOGGER_DEBUG ( _ ( "Nombre de couches demandees =" ) << layersString.size() );
+    if ( queryLayersString.size() > servicesConf.getLayerLimit() ) {
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le nombre de couche demande excede la valeur du LayerLimit." ),"wms" ) );
+    }
+    std::vector<std::string>::iterator itQueryLayer = queryLayersString.begin();
+    for ( ; itQueryLayer != queryLayersString.end(); itQueryLayer++ ) {
+        std::map<std::string, Layer*>::iterator it = layerList.find ( *itQueryLayer );
+        if ( it == layerList.end() )
+            return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_DEFINED,_ ( "Query_Layer " ) +*itQueryLayer+_ ( " inconnu." ),"wms" ) );
+        query_layers.push_back ( it->second );
+    }
+    LOGGER_DEBUG ( _ ( "Nombre de couches requetées =" ) << query_layers.size() );
+
+    // WIDTH
+    std::string strWidth=getParam ( "width" );
+    if ( strWidth == "" )
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre WIDTH absent." ),"wms" ) );
+    width=atoi ( strWidth.c_str() );
+    if ( width == 0 || width == INT_MAX || width == INT_MIN )
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre WIDTH n'est pas une valeur entiere." ),"wms" ) );
+    if ( width<0 )
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre WIDTH est negative." ),"wms" ) );
+    if ( width>servicesConf.getMaxWidth() )
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre WIDTH est superieure a la valeur maximum autorisee par le service." ),"wms" ) );
+
+    // HEIGHT
+    std::string strHeight=getParam ( "height" );
+    if ( strHeight == "" )
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre HEIGHT absent." ),"wms" ) );
+    height=atoi ( strHeight.c_str() );
+    if ( height == 0 || height == INT_MAX || height == INT_MIN )
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre HEIGHT n'est pas une valeur entiere." ),"wms" ) ) ;
+    if ( height<0 )
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre HEIGHT est negative." ),"wms" ) );
+    if ( height>servicesConf.getMaxHeight() )
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre HEIGHT est superieure a la valeur maximum autorisee par le service." ),"wms" ) );
+
+    // FEATURE_COUNT
+    std::string strFeatureCount=getParam ( "feature_count" );
+    if ( strFeatureCount == "" )
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre FEATURE_COUNT absent." ),"wms" ) );
+    feature_count=atoi ( strFeatureCount.c_str() );
+    if ( feature_count == 0 || feature_count == INT_MAX || feature_count == INT_MIN )
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre FEATURE_COUNT n'est pas une valeur entiere." ),"wms" ) ) ;
+    if ( feature_count<0 )
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre FEATURE_COUNT est negative." ),"wms" ) );
+
+    /*
+    // X
+    std::string strX=getParam ( "x" );
+    if ( strX == "" )
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre X absent." ),"wms" ) );
+    X=atoi ( strX.c_str() );
+    if ( X == 0 || X == INT_MAX || X == INT_MIN )
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre X n'est pas une valeur entiere." ),"wms" ) );
+    if ( X<0 )
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre X est negative." ),"wms" ) );
+    if ( X>width )
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre X est superieure a la largeur fournie (width)." ),"wms" ) );
+
+    // Y
+    std::string strY=getParam ( "Y" );
+    if ( strY == "" )
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre Y absent." ),"wms" ) );
+    Y=atoi ( strY.c_str() );
+    if ( Y == 0 || Y == INT_MAX || Y == INT_MIN )
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre Y n'est pas une valeur entiere." ),"wms" ) );
+    if ( Y<0 )
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre Y est negative." ),"wms" ) );
+    if ( Y>height )
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre Y est superieure a la hauteur fournie (height)." ),"wms" ) );
+    */
+
+    // CRS
+    std::string str_crs;
+    if (version == "1.3.0") {
+        str_crs=getParam ( "crs" );
+    } else {
+        //---- WMS 1.1.1
+        str_crs=getParam ( "srs" );
+        //----
+    }
+    if ( str_crs == "" )
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre CRS absent." ),"wms" ) );
+    // Existence du CRS dans la liste de CRS des layers
+    crs.setRequestCode ( str_crs );
+    bool crsNotFound = true;
+    unsigned int k;
+    for ( k=0; k<servicesConf.getGlobalCRSList()->size(); k++ )
+        if ( crs.cmpRequestCode ( servicesConf.getGlobalCRSList()->at ( k ).getRequestCode() ) ) {
+            crsNotFound = false;
+            break;
+        }
+    if ( crsNotFound ) {
+        for ( unsigned int j = 0; j < layers.size() ; j++ ) {
+            for ( k=0; k<layers.at ( j )->getWMSCRSList().size(); k++ )
+                if ( crs.cmpRequestCode ( layers.at ( j )->getWMSCRSList().at ( k ).getRequestCode() ) ) {
+                    crsNotFound = false;
+                    break;
+                }
+            if ( crsNotFound )
+                return new SERDataStream ( new ServiceException ( "",WMS_INVALID_CRS,_ ( "CRS " ) +str_crs+_ ( " (equivalent PROJ4 " ) +crs.getProj4Code() +_ ( " ) inconnu pour le layer " ) +layersString.at ( j ) +".","wms" ) );
+        }
+
+    }
+
+    // FORMAT
+    format=getParam ( "format" );
+    if ( format == "" )
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre FORMAT absent." ),"wms" ) );
+
+    for ( k=0; k<servicesConf.getFormatList()->size(); k++ ) {
+        if ( servicesConf.getFormatList()->at ( k ) ==format )
+            break;
+    }
+    if ( k==servicesConf.getFormatList()->size() )
+        return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Format " ) +format+_ ( " non gere par le service." ),"wms" ) );
+
+    // INFO_FORMAT
+    info_format=getParam ( "info_format" );
+    /* ??? */
+
+    // BBOX
+    std::string strBbox=getParam ( "bbox" );
+    if ( strBbox == "" )
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre BBOX absent." ),"wms" ) );
+    std::vector<std::string> coords = split ( strBbox,',' );
+
+    if ( coords.size() !=4 )
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Parametre BBOX incorrect." ),"wms" ) );
+    double bb[4];
+    for ( int i = 0; i < 4; i++ ) {
+        if ( sscanf ( coords[i].c_str(),"%lf",&bb[i] ) !=1 )
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Parametre BBOX incorrect." ),"wms" ) );
+    //Test NaN values
+    if (bb[i]!=bb[i])
+      return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Parametre BBOX incorrect." ),"wms" ) );
+    }
+    if ( bb[0]>=bb[2] || bb[1]>=bb[3] )
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Parametre BBOX incorrect." ),"wms" ) );
+    bbox.xmin=bb[0];
+    bbox.ymin=bb[1];
+    bbox.xmax=bb[2];
+    bbox.ymax=bb[3];
+
+    // Data are stored in Long/Lat, Geographical system need to be inverted in EPSG registry
+    if ( ( crs.getAuthority() =="EPSG" || crs.getAuthority() =="epsg" ) && crs.isLongLat() && version == "1.3.0" ) {
+        bbox.xmin=bb[1];
+        bbox.ymin=bb[0];
+        bbox.xmax=bb[3];
+        bbox.ymax=bb[2];
+    }
+
+    // EXCEPTION
+    std::string str_exception=getParam ( "exception" );
+    if ( str_exception!=""&&str_exception!="XML" )
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Format d'exception " ) +str_exception+_ ( " non pris en charge" ),"wms" ) );
+
+    //STYLES
+    if ( ! ( hasParam ( "styles" ) ) )
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre STYLES absent." ),"wms" ) );
+    std::string str_styles=getParam ( "styles" );
+    if ( str_styles == "" ) {
+        str_styles.append ( layers.at ( 0 )->getDefaultStyle() );
+        for ( int i = 1;  i < layers.size(); i++ ) {
+            str_styles.append ( "," );
+            str_styles.append ( layers.at ( i )->getDefaultStyle() );
+        }
+    }
+    std::vector<std::string> stylesString = split ( str_styles,',' );
+    LOGGER_DEBUG ( _ ( "Nombre de styles demandes =" ) << layers.size() );
+    if ( stylesString.size() != layersString.size() ) {
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre STYLES incomplet." ),"wms" ) );
+    }
+    for ( int k = 0 ; k  < stylesString.size(); k++ ) {
+
+        if ( layers.at ( k )->getStyles().size() != 0 ) {
+            for ( unsigned int i=0; i < layers.at ( k )->getStyles().size(); i++ ) {
+                if ( stylesString.at ( k ) == "" ) {
+                    stylesString.at ( k ).append ( layers.at ( k )->getDefaultStyle() );
+                }
+                if ( stylesString.at ( k ) == layers.at ( k )->getStyles() [i]->getId() ) {
+                    styles.push_back ( layers.at ( k )->getStyles() [i] );
+                }
+            }
+        }
+
+        if ( styles.size() < k+1 )
+            return new SERDataStream ( new ServiceException ( "",WMS_STYLE_NOT_DEFINED,_ ( "Le style " ) +stylesString.at ( k ) +_ ( " n'est pas gere pour la couche " ) +layersString.at ( k ),"wms" ) );
+    }
+
+    return NULL;
+};
+//

@@ -389,6 +389,11 @@ private:
      * \return requested tile
      */
     DataSource *getTileOnFly(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format, DataSource *errorResp);
+
+    //GREG
+    DataStream* getFeatureInfo ( Request* request );
+    //
+
     /**
      * \~french
      * \brief Traitement d'une requête GetCapabilities WMS
