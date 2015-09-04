@@ -1229,17 +1229,18 @@ DataStream* Request::getFeatureInfoParam (ServicesConf& servicesConf, std::map< 
     if ( height>servicesConf.getMaxHeight() )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre HEIGHT est superieure a la valeur maximum autorisee par le service." ),"wms" ) );
 
-    // FEATURE_COUNT
+    // FEATURE_COUNT (facultative)
     std::string strFeatureCount=getParam ( "feature_count" );
-    if ( strFeatureCount == "" )
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre FEATURE_COUNT absent." ),"wms" ) );
-    feature_count=atoi ( strFeatureCount.c_str() );
-    if ( feature_count == 0 || feature_count == INT_MAX || feature_count == INT_MIN )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre FEATURE_COUNT n'est pas une valeur entiere." ),"wms" ) ) ;
-    if ( feature_count<0 )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre FEATURE_COUNT est negative." ),"wms" ) );
+    if ( strFeatureCount == "" ){
+    }else{
+        feature_count=atoi ( strFeatureCount.c_str() );
+        if ( feature_count == 0 || feature_count == INT_MAX || feature_count == INT_MIN )
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre FEATURE_COUNT n'est pas une valeur entiere." ),"wms" ) ) ;
+        if ( feature_count<0 )
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre FEATURE_COUNT est negative." ),"wms" ) );
+    }
 
-    /*
+
     // X
     std::string strX=getParam ( "x" );
     if ( strX == "" )
@@ -1263,7 +1264,7 @@ DataStream* Request::getFeatureInfoParam (ServicesConf& servicesConf, std::map< 
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre Y est negative." ),"wms" ) );
     if ( Y>height )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre Y est superieure a la hauteur fournie (height)." ),"wms" ) );
-    */
+
 
     // CRS
     std::string str_crs;
@@ -1310,7 +1311,7 @@ DataStream* Request::getFeatureInfoParam (ServicesConf& servicesConf, std::map< 
     if ( k==servicesConf.getFormatList()->size() )
         return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Format " ) +format+_ ( " non gere par le service." ),"wms" ) );
 
-    // INFO_FORMAT
+    // INFO_FORMAT (facultative)
     info_format=getParam ( "info_format" );
     /* ??? */
 

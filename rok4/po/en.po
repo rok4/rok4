@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2015-09-02 16:51+0200\n"
+"POT-Creation-Date: 2015-09-04 16:33+0200\n"
 "PO-Revision-Date: 2013-02-18 17:49+0100\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -1375,7 +1375,7 @@ msgstr ""
 msgid " format pyramide : "
 msgstr ""
 
-#: Request.cpp:798 Request.cpp:940 Request.cpp:1304
+#: Request.cpp:798 Request.cpp:940 Request.cpp:1305
 msgid "Parametre FORMAT absent."
 msgstr ""
 
@@ -1383,7 +1383,7 @@ msgstr ""
 msgid "Le format "
 msgstr ""
 
-#: Request.cpp:801 Request.cpp:814 Request.cpp:1055 Request.cpp:1383
+#: Request.cpp:801 Request.cpp:814 Request.cpp:1055 Request.cpp:1384
 msgid " n'est pas gere pour la couche "
 msgstr ""
 
@@ -1391,7 +1391,7 @@ msgstr ""
 msgid "Parametre STYLE absent."
 msgstr ""
 
-#: Request.cpp:814 Request.cpp:1055 Request.cpp:1383
+#: Request.cpp:814 Request.cpp:1055 Request.cpp:1384
 msgid "Le style "
 msgstr ""
 
@@ -1452,56 +1452,56 @@ msgid ""
 "par le service."
 msgstr ""
 
-#: Request.cpp:914 Request.cpp:1278
+#: Request.cpp:914 Request.cpp:1279
 msgid "Parametre CRS absent."
 msgstr ""
 
-#: Request.cpp:932 Request.cpp:1296
+#: Request.cpp:932 Request.cpp:1297
 msgid "CRS "
 msgstr ""
 
-#: Request.cpp:932 Request.cpp:1296
+#: Request.cpp:932 Request.cpp:1297
 msgid " (equivalent PROJ4 "
 msgstr ""
 
-#: Request.cpp:932 Request.cpp:1296
+#: Request.cpp:932 Request.cpp:1297
 msgid " ) inconnu pour le layer "
 msgstr ""
 
-#: Request.cpp:947 Request.cpp:1311
+#: Request.cpp:947 Request.cpp:1312
 msgid "Format "
 msgstr ""
 
-#: Request.cpp:947 Request.cpp:1311
+#: Request.cpp:947 Request.cpp:1312
 msgid " non gere par le service."
 msgstr ""
 
-#: Request.cpp:952 Request.cpp:1320
+#: Request.cpp:952 Request.cpp:1321
 msgid "Parametre BBOX absent."
 msgstr ""
 
 #: Request.cpp:956 Request.cpp:960 Request.cpp:963 Request.cpp:966
-#: Request.cpp:1324 Request.cpp:1328 Request.cpp:1331 Request.cpp:1334
+#: Request.cpp:1325 Request.cpp:1329 Request.cpp:1332 Request.cpp:1335
 msgid "Parametre BBOX incorrect."
 msgstr ""
 
-#: Request.cpp:1023 Request.cpp:1351
+#: Request.cpp:1023 Request.cpp:1352
 msgid "Format d'exception "
 msgstr ""
 
-#: Request.cpp:1023 Request.cpp:1351
+#: Request.cpp:1023 Request.cpp:1352
 msgid " non pris en charge"
 msgstr ""
 
-#: Request.cpp:1027 Request.cpp:1355
+#: Request.cpp:1027 Request.cpp:1356
 msgid "Parametre STYLES absent."
 msgstr ""
 
-#: Request.cpp:1037 Request.cpp:1365
+#: Request.cpp:1037 Request.cpp:1366
 msgid "Nombre de styles demandes ="
 msgstr ""
 
-#: Request.cpp:1039 Request.cpp:1367
+#: Request.cpp:1039 Request.cpp:1368
 msgid "Parametre STYLES incomplet."
 msgstr ""
 
@@ -1531,16 +1531,44 @@ msgstr "Layer "
 msgid "Nombre de couches requetées ="
 msgstr "Number of styles:"
 
-#: Request.cpp:1235
-msgid "Parametre FEATURE_COUNT absent."
-msgstr ""
-
 #: Request.cpp:1238
 msgid "La valeur du parametre FEATURE_COUNT n'est pas une valeur entiere."
 msgstr ""
 
 #: Request.cpp:1240
 msgid "La valeur du parametre FEATURE_COUNT est negative."
+msgstr ""
+
+#: Request.cpp:1247
+msgid "Parametre X absent."
+msgstr ""
+
+#: Request.cpp:1250
+msgid "La valeur du parametre X n'est pas une valeur entiere."
+msgstr ""
+
+#: Request.cpp:1252
+msgid "La valeur du parametre X est negative."
+msgstr ""
+
+#: Request.cpp:1254
+msgid "La valeur du parametre X est superieure a la largeur fournie (width)."
+msgstr ""
+
+#: Request.cpp:1259
+msgid "Parametre Y absent."
+msgstr ""
+
+#: Request.cpp:1262
+msgid "La valeur du parametre Y n'est pas une valeur entiere."
+msgstr ""
+
+#: Request.cpp:1264
+msgid "La valeur du parametre Y est negative."
+msgstr ""
+
+#: Request.cpp:1266
+msgid "La valeur du parametre Y est superieure a la hauteur fournie (height)."
 msgstr ""
 
 #: ResponseSender.cpp:110

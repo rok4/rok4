@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2015-09-02 16:51+0200\n"
+"POT-Creation-Date: 2015-09-04 16:33+0200\n"
 "PO-Revision-Date: 2014-01-28 09:36+0100\n"
 "Last-Translator: \n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -1374,7 +1374,7 @@ msgstr "format requête : "
 msgid " format pyramide : "
 msgstr " format pyramide : "
 
-#: Request.cpp:798 Request.cpp:940 Request.cpp:1304
+#: Request.cpp:798 Request.cpp:940 Request.cpp:1305
 msgid "Parametre FORMAT absent."
 msgstr "Paramètre FORMAT absent."
 
@@ -1382,7 +1382,7 @@ msgstr "Paramètre FORMAT absent."
 msgid "Le format "
 msgstr "Le format ["
 
-#: Request.cpp:801 Request.cpp:814 Request.cpp:1055 Request.cpp:1383
+#: Request.cpp:801 Request.cpp:814 Request.cpp:1055 Request.cpp:1384
 msgid " n'est pas gere pour la couche "
 msgstr " n'est pas géré pour la couche "
 
@@ -1390,7 +1390,7 @@ msgstr " n'est pas géré pour la couche "
 msgid "Parametre STYLE absent."
 msgstr "Paramètre STYLE absent."
 
-#: Request.cpp:814 Request.cpp:1055 Request.cpp:1383
+#: Request.cpp:814 Request.cpp:1055 Request.cpp:1384
 msgid "Le style "
 msgstr "Le style "
 
@@ -1458,56 +1458,56 @@ msgstr ""
 "La valeur du paramètre HEIGHT est supérieure a la valeur maximum autorisée "
 "par le service."
 
-#: Request.cpp:914 Request.cpp:1278
+#: Request.cpp:914 Request.cpp:1279
 msgid "Parametre CRS absent."
 msgstr "Paramtre CRS absent."
 
-#: Request.cpp:932 Request.cpp:1296
+#: Request.cpp:932 Request.cpp:1297
 msgid "CRS "
 msgstr "CRS "
 
-#: Request.cpp:932 Request.cpp:1296
+#: Request.cpp:932 Request.cpp:1297
 msgid " (equivalent PROJ4 "
 msgstr " (équivalent PROJ4 "
 
-#: Request.cpp:932 Request.cpp:1296
+#: Request.cpp:932 Request.cpp:1297
 msgid " ) inconnu pour le layer "
 msgstr " ) inconnu pour la couche"
 
-#: Request.cpp:947 Request.cpp:1311
+#: Request.cpp:947 Request.cpp:1312
 msgid "Format "
 msgstr "Format "
 
-#: Request.cpp:947 Request.cpp:1311
+#: Request.cpp:947 Request.cpp:1312
 msgid " non gere par le service."
 msgstr " non géré par le service."
 
-#: Request.cpp:952 Request.cpp:1320
+#: Request.cpp:952 Request.cpp:1321
 msgid "Parametre BBOX absent."
 msgstr "Paramètre BBOX absent."
 
 #: Request.cpp:956 Request.cpp:960 Request.cpp:963 Request.cpp:966
-#: Request.cpp:1324 Request.cpp:1328 Request.cpp:1331 Request.cpp:1334
+#: Request.cpp:1325 Request.cpp:1329 Request.cpp:1332 Request.cpp:1335
 msgid "Parametre BBOX incorrect."
 msgstr "Paramètre BBOX incorrect."
 
-#: Request.cpp:1023 Request.cpp:1351
+#: Request.cpp:1023 Request.cpp:1352
 msgid "Format d'exception "
 msgstr "Format d'exception "
 
-#: Request.cpp:1023 Request.cpp:1351
+#: Request.cpp:1023 Request.cpp:1352
 msgid " non pris en charge"
 msgstr " non pris en charge"
 
-#: Request.cpp:1027 Request.cpp:1355
+#: Request.cpp:1027 Request.cpp:1356
 msgid "Parametre STYLES absent."
 msgstr "Paramètre STYLES absent."
 
-#: Request.cpp:1037 Request.cpp:1365
+#: Request.cpp:1037 Request.cpp:1366
 msgid "Nombre de styles demandes ="
 msgstr "Nombre de styles demandés = "
 
-#: Request.cpp:1039 Request.cpp:1367
+#: Request.cpp:1039 Request.cpp:1368
 msgid "Parametre STYLES incomplet."
 msgstr "Paramètre STYLES incomplet."
 
@@ -1538,11 +1538,6 @@ msgstr "Layer "
 msgid "Nombre de couches requetées ="
 msgstr "Nombre de couches demandées = "
 
-#: Request.cpp:1235
-#, fuzzy
-msgid "Parametre FEATURE_COUNT absent."
-msgstr "Paramètre VERSION absent."
-
 #: Request.cpp:1238
 #, fuzzy
 msgid "La valeur du parametre FEATURE_COUNT n'est pas une valeur entiere."
@@ -1552,6 +1547,50 @@ msgstr "La valeur du paramètre WIDTH n'est pas une valeur entière."
 #, fuzzy
 msgid "La valeur du parametre FEATURE_COUNT est negative."
 msgstr "La valeur du paramètre WIDTH est négative."
+
+#: Request.cpp:1247
+#, fuzzy
+msgid "Parametre X absent."
+msgstr "Paramètre BBOX absent."
+
+#: Request.cpp:1250
+#, fuzzy
+msgid "La valeur du parametre X n'est pas une valeur entiere."
+msgstr "La valeur du paramètre WIDTH n'est pas une valeur entière."
+
+#: Request.cpp:1252
+#, fuzzy
+msgid "La valeur du parametre X est negative."
+msgstr "La valeur du paramètre WIDTH est négative."
+
+#: Request.cpp:1254
+#, fuzzy
+msgid "La valeur du parametre X est superieure a la largeur fournie (width)."
+msgstr ""
+"La valeur du paramètre WIDTH est supérieure a la valeur maximum autorisée "
+"par le service."
+
+#: Request.cpp:1259
+#, fuzzy
+msgid "Parametre Y absent."
+msgstr "Paramètre LAYER absent."
+
+#: Request.cpp:1262
+#, fuzzy
+msgid "La valeur du parametre Y n'est pas une valeur entiere."
+msgstr "La valeur du paramètre WIDTH n'est pas une valeur entière."
+
+#: Request.cpp:1264
+#, fuzzy
+msgid "La valeur du parametre Y est negative."
+msgstr "La valeur du paramètre WIDTH est négative."
+
+#: Request.cpp:1266
+#, fuzzy
+msgid "La valeur du parametre Y est superieure a la hauteur fournie (height)."
+msgstr ""
+"La valeur du paramètre WIDTH est supérieure a la valeur maximum autorisée "
+"par le service."
 
 #: ResponseSender.cpp:110
 msgid "Code erreur : "
@@ -1741,38 +1780,12 @@ msgid "Nouveau Style : "
 msgstr "Nouveau Style : "
 
 #, fuzzy
-#~ msgid "Parametre X absent."
-#~ msgstr "Paramètre BBOX absent."
-
-#, fuzzy
-#~ msgid ""
-#~ "La valeur du parametre X est superieure a la largeur fournie (width)."
-#~ msgstr ""
-#~ "La valeur du paramètre WIDTH est supérieure a la valeur maximum autorisée "
-#~ "par le service."
+#~ msgid "Parametre FEATURE_COUNT absent."
+#~ msgstr "Paramètre VERSION absent."
 
 #, fuzzy
 #~ msgid "Parametre LAYERS absent 22."
 #~ msgstr "Parametre LAYERS absent."
-
-#, fuzzy
-#~ msgid "Parametre Y absent."
-#~ msgstr "Paramètre LAYER absent."
-
-#, fuzzy
-#~ msgid "La valeur du parametre Y n'est pas une valeur entiere."
-#~ msgstr "La valeur du paramètre WIDTH n'est pas une valeur entière."
-
-#, fuzzy
-#~ msgid "La valeur du parametre Y est negative."
-#~ msgstr "La valeur du paramètre WIDTH est négative."
-
-#, fuzzy
-#~ msgid ""
-#~ "La valeur du parametre Y est superieure a la hauteur fournie (height)."
-#~ msgstr ""
-#~ "La valeur du paramètre WIDTH est supérieure a la valeur maximum autorisée "
-#~ "par le service."
 
 #, fuzzy
 #~ msgid "Parametre INFO_FORMAT absent."
