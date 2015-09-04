@@ -1254,7 +1254,7 @@ DataStream* Request::getFeatureInfoParam (ServicesConf& servicesConf, std::map< 
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre X est superieure a la largeur fournie (width)." ),"wms" ) );
 
     // Y
-    std::string strY=getParam ( "Y" );
+    std::string strY=getParam ( "y" );
     if ( strY == "" )
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre Y absent." ),"wms" ) );
     Y=atoi ( strY.c_str() );
