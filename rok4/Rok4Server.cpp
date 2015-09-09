@@ -61,6 +61,7 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include "curl/curl.h"
+#include "WebService.h"
 
 
 #include "config.h"
@@ -1235,7 +1236,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
 
 //Greg
 
-DataStream* Rok4Server::getFeatureInfo ( Request* request ) {
+DataSource* Rok4Server::getFeatureInfo ( Request* request ) {
     std::vector<Layer*> layers;
     std::vector<Layer*> query_layers;
     BoundingBox<double> bbox ( 0.0, 0.0, 0.0, 0.0 );
@@ -1249,14 +1250,38 @@ DataStream* Rok4Server::getFeatureInfo ( Request* request ) {
     std::string version;
     //exception ?
 
-    DataStream* errorResp = request->getFeatureInfoParam (servicesConf, layerList, layers, query_layers, bbox, width, height, crs, format, styles, info_format, X, Y, feature_count);
+    DataSource* errorResp = request->getFeatureInfoParam (servicesConf, layerList, layers, query_layers, bbox, width, height, crs, format, styles, info_format, X, Y, feature_count);
     if ( errorResp ) {
         LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getFeatureInfo" ) );
         return errorResp;
     }
 
+    // Les params sont ok : on passe maintenant a la recup de l'info
 
-    return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Vérif des params OK." ),"wms" ) );
+    // Comment connaitre le cas ? => modifier les confs
+    // Donnee image elle-meme
+
+    // reponse d'un WMS-V
+    // GetFeatureInfo sur la couche vecteur en (X,Y)
+    WebService* myWMSV = new WebService("http://wxs.ign.fr/geoportail/v/wms?","",10,10,60);
+    //RawDataSource* response = myWMSV->performRequest ("http://wxs-i.ign.fr/q5r6gad0dipemuyezz8ma324/geoportail/v/wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=PERIMETRES-INTERVENTION_BDD_WLD_WM&QUERY_LAYERS=PERIMETRES-INTERVENTION_BDD_WLD_WM&I=256&J=512");
+    std::stringstream vectorRequest;
+    vectorRequest << "http://wxs-i.ign.fr/q5r6gad0dipemuyezz8ma324/geoportail/v/wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo"
+            << "&CRS=EPSG:3857"
+            << "&WIDTH=" << width
+            << "&HEIGHT=" << height
+            << "&BBOX=-91688.15363532146,6115433.732117598,-51444.05824280692,6150556.546614959" // << bbox.xmin << "," << bbox.ymin << "," << bbox.xmax << "," << bbox.ymax
+            << "&INFO_FORMAT=text/html"
+            << "&I= " << I
+            << "&J=" << J
+            << "&BUFFER=15&QUERY_LAYERS=COMMUNES.CANTONS&LAYERS=COMMUNES.CANTONS";
+    RawDataSource* response = myWMSV->performRequest (vectorRequest.str());
+
+    // SQL
+    // SQL en base en (X,Y)
+
+    return response;
+    //return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Vérif des params OK." ),"wms" ) );
 }
 
 //

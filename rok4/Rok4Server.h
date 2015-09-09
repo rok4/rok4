@@ -391,7 +391,7 @@ private:
     DataSource *getTileOnFly(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format, DataSource *errorResp);
 
     //GREG
-    DataStream* getFeatureInfo ( Request* request );
+    DataSource* getFeatureInfo ( Request* request );
     //
 
     /**
