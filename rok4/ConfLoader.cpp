@@ -1815,6 +1815,9 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
 
+    bool getFeatureInfo = true;
+    std::string getFeatureInfoType = "";
+
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
     if ( !pElem ) {
         LOGGER_ERROR ( fileName << _ ( " impossible de recuperer la racine." ) );
@@ -1859,6 +1862,31 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
         WMTSauth= false;
     }
 
+    // GREG
+    pElem=hDoc.FirstChild("getFeatureInfo").Element();
+    if ( pElem && pElem->GetText() && pElem->GetTextStr()=="false") {
+        getFeatureInfo= false;
+    }
+
+    /*if(getFeatureInfo){
+        pElem=hDoc.FirstChild("getfeatureinfotype").Element();
+        if ( pElem && pElem->GetText()) {
+            getFeatureInfoType = pElem->GetTextStr();
+        }
+
+        // en fonction du type : pas le meme schema xml
+        if(getFeatureInfoType.compare("PYRAMID")){
+            // Donnee elle-meme
+        }else if(getFeatureInfoType.compare("EXTERNALWMS")){
+            // WMS
+        }else if(getFeatureInfoType.compare("SQL")){
+            // SQL
+        }else{
+            // ERROR
+        }
+    }*/
+
+    //
 
     for ( pElem=hRoot.FirstChild ( "keywordList" ).FirstChild ( "keyword" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "keyword" ) ) {
         if ( ! ( pElem->GetText() ) )
@@ -2182,10 +2210,14 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
         return NULL;
     }
 
+
+
     Layer *layer;
 
     layer = new Layer ( id, title, abstract, WMSauth, WMTSauth,keyWords, pyramid, styles, minRes, maxRes,
-                        WMSCRSList, opaque, authority, resampling,geographicBoundingBox,boundingBox,metadataURLs );
+                        WMSCRSList, opaque, authority, resampling,geographicBoundingBox,boundingBox,metadataURLs,
+                        // GREG
+                        getFeatureInfo, getFeatureInfoType);
 
     //Si une pyramide est à la demande, on n'authorize pas le WMS car c'est un cas non gérer dans les processus de reponse du serveur
     if (layer->getDataPyramid()->getOnDemand()) {

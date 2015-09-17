@@ -276,6 +276,11 @@ private:
      */
     std::vector<MetadataURL> metadataURLs;
 
+    // GREG
+    std::string getFeatureInfoType;
+    bool getFeatureInfoAvailable;
+    //
+
 public:
     /**
      * \~french
@@ -322,13 +327,17 @@ public:
             std::vector<Style*> & styles, double minRes, double maxRes,
             std::vector<CRS> & WMSCRSList, bool opaque, std::string authority,
             Interpolation::KernelType resampling, GeographicBoundingBoxWMS geographicBoundingBox,
-            BoundingBoxWMS boundingBox, std::vector<MetadataURL>& metadataURLs )
+            BoundingBoxWMS boundingBox, std::vector<MetadataURL>& metadataURLs,
+            //GREG
+            bool getFeatureInfo, std::string getFeatureInfoType)
         :id ( id ), title ( title ), abstract ( abstract ), WMSAuthorized (WMSAuthorized), WMTSAuthorized (WMTSAuthorized),keyWords ( keyWords ),
          dataPyramid ( dataPyramid ), styles ( styles ), minRes ( minRes ),
          maxRes ( maxRes ), WMSCRSList ( WMSCRSList ), opaque ( opaque ),
          authority ( authority ),resampling ( resampling ),
          geographicBoundingBox ( geographicBoundingBox ),
-         boundingBox ( boundingBox ), metadataURLs ( metadataURLs ), defaultStyle ( styles.at ( 0 )->getId() ) {
+         boundingBox ( boundingBox ), metadataURLs ( metadataURLs ), defaultStyle ( styles.at ( 0 )->getId() ),
+         //GREG
+         getFeatureInfoAvailable ( getFeatureInfoAvailable ), getFeatureInfoType ( getFeatureInfoType )   {
     }
 
     /**
@@ -596,6 +605,14 @@ public:
     std::vector<MetadataURL> getMetadataURLs() const {
         return metadataURLs;
     }
+
+    //GREG
+    bool isGetFeatureInfoAvailable(){
+        return getFeatureInfoAvailable;
+    }
+
+    //
+
     /**
      * \~french
      * \brief Destructeur par défaut

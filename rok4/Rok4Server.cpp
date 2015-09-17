@@ -1258,8 +1258,16 @@ DataSource* Rok4Server::getFeatureInfo ( Request* request ) {
 
     // Les params sont ok : on passe maintenant a la recup de l'info
 
+    // Il faut s'assurer que l'on peut faire un GFI
+        if(!layers.at(0)->isGetFeatureInfo()){
+            LOGGER_ERROR ( _ ( "GetFeatureInfo non autorisé" ) );
+            return new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "GetFeatureInfo non autorisé." ),"wms" ) );
+        }else{
+
+/*
     // Comment connaitre le cas ? => modifier les confs
     // Donnee image elle-meme
+    // Je ne comprends pas bien ce cas ?
 
     // reponse d'un WMS-V
     // GetFeatureInfo sur la couche vecteur en (X,Y)
@@ -1272,16 +1280,18 @@ DataSource* Rok4Server::getFeatureInfo ( Request* request ) {
             << "&HEIGHT=" << height
             << "&BBOX=-91688.15363532146,6115433.732117598,-51444.05824280692,6150556.546614959" // << bbox.xmin << "," << bbox.ymin << "," << bbox.xmax << "," << bbox.ymax
             << "&INFO_FORMAT=text/html"
-            << "&I= " << I
-            << "&J=" << J
+            << "&I= " << X
+            << "&J=" << Y
             << "&BUFFER=15&QUERY_LAYERS=COMMUNES.CANTONS&LAYERS=COMMUNES.CANTONS";
     RawDataSource* response = myWMSV->performRequest (vectorRequest.str());
 
     // SQL
     // SQL en base en (X,Y)
+    // = se connecter a une bdd et executer une requete sur la position en question.
+    // Non géré pour le moment.
 
-    return response;
-    //return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Vérif des params OK." ),"wms" ) );
+    return response;*/
+    return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Vérif des params OK." ),"wms" ) );}
 }
 
 //
