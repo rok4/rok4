@@ -117,3 +117,6 @@ INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/config/"
 #Installe les fichiers de données
 INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/data/"
   DESTINATION /var/rok4/data)
+#Installe les fichiers de service
+INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/service/"
+  DESTINATION /etc/init.d)
