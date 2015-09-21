@@ -113,4 +113,7 @@ endif(BUILD_BE4)
 
 #Installe les fichiers de configurations
 INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/config/"
-  DESTINATION config)
+  DESTINATION /etc/rok4/config)
+#Installe les fichiers de données
+INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/data/"
+  DESTINATION /var/rok4/data)
