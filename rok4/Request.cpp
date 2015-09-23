@@ -1147,7 +1147,7 @@ DataStream* Request::getCapWMTSParam ( ServicesConf& servicesConf, std::string& 
     return NULL;
 }
 
-//GREG
+// Parameters for WMS GetFeatureInfo
 DataSource* Request::getFeatureInfoParam (ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers,
                                           std::vector<Layer*>& query_layers,
                                           BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format,

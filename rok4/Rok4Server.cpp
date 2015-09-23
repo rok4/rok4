@@ -1234,8 +1234,6 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
 
 }
 
-//Greg
-
 DataSource* Rok4Server::getFeatureInfo ( Request* request ) {
     std::vector<Layer*> layers;
     std::vector<Layer*> query_layers;
@@ -1304,8 +1302,6 @@ DataSource* Rok4Server::getFeatureInfo ( Request* request ) {
             return new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "GetFeatureInfo non autorisé." ),"wms" ) );
         }
 }
-
-//
 
 void Rok4Server::processWMTS ( Request* request, FCGX_Request&  fcgxRequest ) {
     if ( request->request == "getcapabilities" ) {

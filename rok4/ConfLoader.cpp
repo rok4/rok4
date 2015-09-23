@@ -1867,7 +1867,6 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
         WMTSauth= false;
     }
 
-    // GREG
     pElem=hRoot.FirstChild("getFeatureInfoAvailability").Element();
     if ( pElem && pElem->GetText() && pElem->GetTextStr()=="false") {
         getFeatureInfoAvailability= false;
@@ -1909,7 +1908,8 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
         }else if(getFeatureInfoType.compare("SQL") == 0){
             // SQL
         }else{
-            // ERROR
+            LOGGER_ERROR ( fileName << _ ( "La source du GetFeatureInfo n'est pas autorisée." ) );
+            return NULL;
         }
     }
 
@@ -2243,9 +2243,7 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
 
     layer = new Layer ( id, title, abstract, WMSauth, WMTSauth,keyWords, pyramid, styles, minRes, maxRes,
                         WMSCRSList, opaque, authority, resampling,geographicBoundingBox,boundingBox,metadataURLs,
-                        // GREG
-                        getFeatureInfoAvailability, getFeatureInfoType,
-                        getFeatureInfoBaseURL, GFIVersion,
+                        getFeatureInfoAvailability, getFeatureInfoType, getFeatureInfoBaseURL, GFIVersion,
                         GFIService, GFIQueryLayers, GFILayers);
 
     //Si une pyramide est à la demande, on n'authorize pas le WMS car c'est un cas non gérer dans les processus de reponse du serveur
