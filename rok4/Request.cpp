@@ -1325,10 +1325,12 @@ DataSource* Request::getFeatureInfoParam (ServicesConf& servicesConf, std::map< 
             return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Parametre BBOX incorrect." ),"wms" ) );
     //Test NaN values
     if (bb[i]!=bb[i])
-      return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Parametre BBOX incorrect." ),"wms" ) );
+      return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Parametre BBOX incorrect : présence de NaN." ),"wms" ) );
     }
-    if ( bb[0]>=bb[2] || bb[1]>=bb[3] )
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Parametre BBOX incorrect." ),"wms" ) );
+    if ( bb[0]>=bb[2] )
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Parametre BBOX incorrect : Xmin >= Xmax." ),"wms" ) );
+    if ( bb[1]>=bb[3] )
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Parametre BBOX incorrect : Ymin >= Ymax." ),"wms" ) );
     bbox.xmin=bb[0];
     bbox.ymin=bb[1];
     bbox.xmax=bb[2];

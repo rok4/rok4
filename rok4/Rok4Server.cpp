@@ -1247,7 +1247,6 @@ DataSource* Rok4Server::getFeatureInfo ( Request* request ) {
     std::string info_format;
     int feature_count;
     std::vector<Style*> styles;
-    std::string version;
     //exception ?
 
     DataSource* errorResp = request->getFeatureInfoParam (servicesConf, layerList, layers, query_layers, bbox, width, height, crs, format, styles, info_format, X, Y, feature_count);
@@ -1259,39 +1258,51 @@ DataSource* Rok4Server::getFeatureInfo ( Request* request ) {
     // Les params sont ok : on passe maintenant a la recup de l'info
 
     // Il faut s'assurer que l'on peut faire un GFI
-        if(!layers.at(0)->isGetFeatureInfo()){
-            LOGGER_ERROR ( _ ( "GetFeatureInfo non autorisé" ) );
-            return new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "GetFeatureInfo non autorisé." ),"wms" ) );
+        if(layers.at(0)->isGetFeatureInfoAvailable()){
+            // Comment connaitre le cas ? => modifier les confs
+            std::string getFeatureInfoType = layers.at(0)->getGFIType();
+            if(getFeatureInfoType.compare( "PYRAMID" ) == 0){
+                // Donnee image elle-meme
+                // Je ne comprends pas bien ce cas ?
+                return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "GFI depuis la donnée brute non géré." ),"wms" ) );
+            }else if(getFeatureInfoType.compare( "EXTERNALWMS" ) == 0){
+                // reponse d'un WMS-V
+                // GetFeatureInfo sur la couche vecteur en (X,Y)
+                WebService* myWMSV = new WebService(layers.at(0)->getGFIBaseUrl(),"",10,10,60);
+                std::stringstream vectorRequest;
+                vectorRequest << layers.at(0)->getGFIBaseUrl()
+                        << "REQUEST=GetFeatureInfo"
+                        << "&SERVICE=" << layers.at(0)->getGFIService()
+                        << "&VERSION=" << layers.at(0)->getGFIVersion()
+                        << "&LAYERS=" << layers.at(0)->getGFILayers()
+                        << "&QUERY_LAYERS=" << layers.at(0)->getGFIQueryLayers()
+                        << "&INFO_FORMAT=" << info_format
+                        << "&FORMAT=" << format
+                        << "&FEAUTURE_COUNT=" << feature_count
+                        << "&CRS=" << crs.getRequestCode()
+                        << "&BBOX=" << bbox.xmin << "," << bbox.ymin << "," << bbox.xmax << "," << bbox.ymax
+                        << "&WIDTH=" << width
+                        << "&HEIGHT=" << height
+                        << "&I= " << X
+                        << "&J=" << Y;
+
+                RawDataSource* response = myWMSV->performRequest (vectorRequest.str());
+                return response;
+            }else if(getFeatureInfoType.compare( "SQL" ) == 0){
+                // SQL
+                // SQL en base en (X,Y)
+                // = se connecter a une bdd et executer une requete sur la position en question.
+                // Non géré pour le moment. (nouvelle lib a integrer)
+                return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "GFI depuis un SQL non géré." ),"wms" ) );
+            }else{
+                // ERROR (deja geree normalement)
+                return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "ERRORRRRRR !" ),"wms" ) );
+            }
         }else{
 
-/*
-    // Comment connaitre le cas ? => modifier les confs
-    // Donnee image elle-meme
-    // Je ne comprends pas bien ce cas ?
-
-    // reponse d'un WMS-V
-    // GetFeatureInfo sur la couche vecteur en (X,Y)
-    WebService* myWMSV = new WebService("http://wxs.ign.fr/geoportail/v/wms?","",10,10,60);
-    //RawDataSource* response = myWMSV->performRequest ("http://wxs-i.ign.fr/q5r6gad0dipemuyezz8ma324/geoportail/v/wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=PERIMETRES-INTERVENTION_BDD_WLD_WM&QUERY_LAYERS=PERIMETRES-INTERVENTION_BDD_WLD_WM&I=256&J=512");
-    std::stringstream vectorRequest;
-    vectorRequest << "http://wxs-i.ign.fr/q5r6gad0dipemuyezz8ma324/geoportail/v/wms?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo"
-            << "&CRS=EPSG:3857"
-            << "&WIDTH=" << width
-            << "&HEIGHT=" << height
-            << "&BBOX=-91688.15363532146,6115433.732117598,-51444.05824280692,6150556.546614959" // << bbox.xmin << "," << bbox.ymin << "," << bbox.xmax << "," << bbox.ymax
-            << "&INFO_FORMAT=text/html"
-            << "&I= " << X
-            << "&J=" << Y
-            << "&BUFFER=15&QUERY_LAYERS=COMMUNES.CANTONS&LAYERS=COMMUNES.CANTONS";
-    RawDataSource* response = myWMSV->performRequest (vectorRequest.str());
-
-    // SQL
-    // SQL en base en (X,Y)
-    // = se connecter a une bdd et executer une requete sur la position en question.
-    // Non géré pour le moment.
-
-    return response;*/
-    return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Vérif des params OK." ),"wms" ) );}
+            LOGGER_ERROR ( _ ( "GetFeatureInfo non autorisé" ) );
+            return new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "GetFeatureInfo non autorisé." ),"wms" ) );
+        }
 }
 
 //

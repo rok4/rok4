@@ -278,7 +278,12 @@ private:
 
     // GREG
     std::string getFeatureInfoType;
-    bool getFeatureInfoAvailable;
+    bool getFeatureInfoAvailability;
+    std::string getFeatureInfoBaseURL;
+    std::string GFIService;
+    std::string GFIVersion;
+    std::string GFIQueryLayers;
+    std::string GFILayers;
     //
 
 public:
@@ -329,7 +334,9 @@ public:
             Interpolation::KernelType resampling, GeographicBoundingBoxWMS geographicBoundingBox,
             BoundingBoxWMS boundingBox, std::vector<MetadataURL>& metadataURLs,
             //GREG
-            bool getFeatureInfo, std::string getFeatureInfoType)
+            bool getFeatureInfoAvailability, std::string getFeatureInfoType,
+            std::string getFeatureInfoBaseURL, std::string GFIVersion,
+            std::string GFIService, std::string GFIQueryLayers, std::string GFILayers)
         :id ( id ), title ( title ), abstract ( abstract ), WMSAuthorized (WMSAuthorized), WMTSAuthorized (WMTSAuthorized),keyWords ( keyWords ),
          dataPyramid ( dataPyramid ), styles ( styles ), minRes ( minRes ),
          maxRes ( maxRes ), WMSCRSList ( WMSCRSList ), opaque ( opaque ),
@@ -337,7 +344,10 @@ public:
          geographicBoundingBox ( geographicBoundingBox ),
          boundingBox ( boundingBox ), metadataURLs ( metadataURLs ), defaultStyle ( styles.at ( 0 )->getId() ),
          //GREG
-         getFeatureInfoAvailable ( getFeatureInfoAvailable ), getFeatureInfoType ( getFeatureInfoType )   {
+         getFeatureInfoAvailability ( getFeatureInfoAvailability ), getFeatureInfoType ( getFeatureInfoType ),
+         getFeatureInfoBaseURL ( getFeatureInfoBaseURL ), GFIVersion( GFIVersion ), GFIService( GFIService ),
+         GFIQueryLayers ( GFIQueryLayers ), GFILayers ( GFILayers ){
+
     }
 
     /**
@@ -607,10 +617,33 @@ public:
     }
 
     //GREG
-    bool isGetFeatureInfoAvailable(){
-        return getFeatureInfoAvailable;
+    bool isGetFeatureInfoAvailable() const {
+        return getFeatureInfoAvailability;
     }
 
+    std::string getGFIType() const {
+        return getFeatureInfoType;
+    }
+
+    std::string getGFIBaseUrl() const {
+        return getFeatureInfoBaseURL;
+    }
+
+    std::string getGFILayers() const {
+        return GFILayers;
+    }
+
+    std::string getGFIQueryLayers() const {
+        return GFIQueryLayers;
+    }
+
+    std::string getGFIService() const {
+        return GFIService;
+    }
+
+    std::string getGFIVersion() const {
+        return GFIVersion;
+    }
     //
 
     /**
