@@ -30,6 +30,8 @@
  */
 #include "tif_config.h"
 
+#include <errno.h>
+
 #ifdef HAVE_SYS_TYPES_H
 # include <sys/types.h>
 #endif
@@ -91,6 +93,8 @@ _tiffSizeProc(thandle_t fd)
 
 #ifdef HAVE_MMAP
 #include <sys/mman.h>
+
+extern int    errno;
 
 static int
 _tiffMapProc(thandle_t fd, tdata_t* pbase, toff_t* psize)
