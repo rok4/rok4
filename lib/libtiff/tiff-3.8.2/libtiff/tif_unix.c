@@ -31,6 +31,7 @@
 #include "tif_config.h"
 
 #include <errno.h>
+#include <string.h>
 
 #ifdef HAVE_SYS_TYPES_H
 # include <sys/types.h>
@@ -175,7 +176,7 @@ TIFFOpen(const char* name, const char* mode)
 	fd = open(name, m, 0666);
 #endif
 	if (fd < 0) {
-		TIFFErrorExt(0, module, "%s: Cannot open. errno is %d and fd is %d", name, errno, fd);
+		TIFFErrorExt(0, module, "%s: Cannot open. errno is %s and fd is %d", name, strerror( errno ), fd);
 		return ((TIFF *)0);
 	}
 
