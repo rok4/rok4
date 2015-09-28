@@ -1148,7 +1148,7 @@ DataStream* Request::getCapWMTSParam ( ServicesConf& servicesConf, std::string& 
 }
 
 // Parameters for WMS GetFeatureInfo
-DataSource* Request::getFeatureInfoParam (ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers,
+DataSource* Request::WMSGetFeatureInfoParam (ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers,
                                           std::vector<Layer*>& query_layers,
                                           BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format,
                                           std::vector<Style*>& styles, std::string& info_format, int& X, int& Y, int& feature_count){
@@ -1383,5 +1383,88 @@ DataSource* Request::getFeatureInfoParam (ServicesConf& servicesConf, std::map< 
     }
 
     return NULL;
-};
+}
+
+DataSource* Request::WMTSGetFeatureInfoParam (ServicesConf& servicesConf,  std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList,
+                                     Layer*& layer, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, Style* &style,
+                                     bool& noDataError, std::string& info_format, int& X, int& Y) {
+
+    // VERSION
+    std::string version=getParam ( "version" );
+    if ( version=="" )
+        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre VERSION absent." ),"wmts" ) );
+    if ( version.find ( servicesConf.getServiceTypeVersion() ) ==std::string::npos )
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Valeur du parametre VERSION invalide (doit contenir " ) +servicesConf.getServiceTypeVersion() +_ ( ")" ),"wmts" ) );
+    // LAYER
+    std::string str_layer=getParam ( "layer" );
+    if ( str_layer == "" )
+        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre LAYER absent." ),"wmts" ) );
+    std::map<std::string, Layer*>::iterator it = layerList.find ( str_layer );
+    if ( it == layerList.end() )
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +str_layer+_ ( " inconnu." ),"wmts" ) );
+    layer = it->second;
+    // TILEMATRIXSET
+    std::string str_tms=getParam ( "tilematrixset" );
+    if ( str_tms == "" )
+        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre TILEMATRIXSET absent." ),"wmts" ) );
+    std::map<std::string, TileMatrixSet*>::iterator tms = tmsList.find ( str_tms );
+    if ( tms == tmsList.end() )
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "TileMatrixSet " ) +str_tms+_ ( " inconnu." ),"wmts" ) );
+    std::string tmsLayer = layer->getDataPyramid()->getTms().getCrs().getProj4Code();
+    if ( tms->second->getCrs().getProj4Code() != tmsLayer )
+        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre TILEMATRIXSET différent de celui de la couche demandée. TILEMATRIXSET devrait être " ) +tmsLayer,"wmts" ) );
+    layer = it->second;
+    // TILEMATRIX
+    tileMatrix=getParam ( "tilematrix" );
+    if ( tileMatrix == "" )
+        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre TILEMATRIX absent." ),"wmts" ) );
+
+    std::map<std::string, TileMatrix>* pList=tms->second->getTmList();
+    std::map<std::string, TileMatrix>::iterator tm = pList->find ( tileMatrix );
+    if ( tm==pList->end() )
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "TileMatrix " ) +tileMatrix+_ ( " inconnu pour le TileMatrixSet " ) +str_tms,"wmts" ) );
+
+    // TILEROW
+    std::string strTileRow=getParam ( "tilerow" );
+    if ( strTileRow == "" )
+        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre TILEROW absent." ),"wmts" ) );
+    if ( sscanf ( strTileRow.c_str(),"%d",&tileRow ) !=1 )
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre TILEROW est incorrecte." ),"wmts" ) );
+    // TILECOL
+    std::string strTileCol=getParam ( "tilecol" );
+    if ( strTileCol == "" )
+        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre TILECOL absent." ),"wmts" ) );
+    if ( sscanf ( strTileCol.c_str(),"%d",&tileCol ) !=1 )
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre TILECOL est incorrecte." ),"wmts" ) );
+    // FORMAT
+
+    format=getParam ( "format" );
+
+    LOGGER_DEBUG ( _ ( "format requete : " ) << format << _ ( " format pyramide : " ) << Rok4Format::toMimeType ( ( layer->getDataPyramid()->getFormat() ) ) );
+    if ( format == "" )
+        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre FORMAT absent." ),"wmts" ) );
+    // TODO : la norme exige la presence du parametre format. Elle ne precise pas que le format peut differer de la tuile, ce que ce service ne gere pas
+    if ( format.compare ( Rok4Format::toMimeType ( ( layer->getDataPyramid()->getFormat() ) ) ) !=0 )
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le format " ) +format+_ ( " n'est pas gere pour la couche " ) +str_layer,"wmts" ) );
+    //Style
+    std::string styleName=getParam ( "style" );
+    if ( styleName == "" )
+        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre STYLE absent." ),"wmts" ) );
+    // TODO : Nom de style : inspire_common:DEFAULT en mode Inspire sinon default
+    if ( layer->getStyles().size() != 0 ) {
+        for ( unsigned int i=0; i < layer->getStyles().size(); i++ ) {
+            if ( styleName == layer->getStyles() [i]->getId() )
+                style=layer->getStyles() [i];
+        }
+    }
+    if ( ! ( style ) )
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le style " ) +styleName+_ ( " n'est pas gere pour la couche " ) +str_layer,"wmts" ) );
+    //Nodata Error
+    noDataError = hasParam ( "nodataashttpstatus" );
+
+    // INFO_FORMAT (facultative)
+    info_format=getParam ( "info_format" );
+
+    return NULL;
+}
 //

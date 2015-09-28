@@ -1234,7 +1234,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
 
 }
 
-DataSource* Rok4Server::getFeatureInfo ( Request* request ) {
+DataSource* Rok4Server::WMSGetFeatureInfo ( Request* request ) {
     std::vector<Layer*> layers;
     std::vector<Layer*> query_layers;
     BoundingBox<double> bbox ( 0.0, 0.0, 0.0, 0.0 );
@@ -1247,7 +1247,7 @@ DataSource* Rok4Server::getFeatureInfo ( Request* request ) {
     std::vector<Style*> styles;
     //exception ?
 
-    DataSource* errorResp = request->getFeatureInfoParam (servicesConf, layerList, layers, query_layers, bbox, width, height, crs, format, styles, info_format, X, Y, feature_count);
+    DataSource* errorResp = request->WMSGetFeatureInfoParam (servicesConf, layerList, layers, query_layers, bbox, width, height, crs, format, styles, info_format, X, Y, feature_count);
     if ( errorResp ) {
         LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getFeatureInfo" ) );
         return errorResp;
@@ -1303,11 +1303,89 @@ DataSource* Rok4Server::getFeatureInfo ( Request* request ) {
         }
 }
 
+DataSource* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
+    Layer* layer;
+    std::string tileMatrix,format;
+    int tileCol,tileRow;
+    bool noDataError;
+    Style* style=0;
+    int X, Y;
+    std::string info_format;
+
+    DataSource* errorResp = request->WMTSGetFeatureInfoParam (servicesConf, tmsList, layerList, layer, tileMatrix, tileCol, tileRow, format,
+                                                              style, noDataError, info_format, X, Y);
+    if ( errorResp ) {
+        LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getFeatureInfo" ) );
+        return errorResp;
+    }
+
+    //Si le WMTS n'est pas authorisé pour ce layer, on renvoit une erreur
+    if (!(layer->getWMTSAuthorized())) {
+        std::string Title = layer->getId();
+        delete layer;
+        layer = NULL;
+        delete style;
+        style = NULL;
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +Title+_ ( " unknown " ),"wmts" ) );
+    }
+
+    // Les params sont ok : on passe maintenant a la recup de l'info
+
+    // Il faut s'assurer que l'on peut faire un GFI
+        if(layer->isGetFeatureInfoAvailable()){
+            // Comment connaitre le cas ? => modifier les confs
+            std::string getFeatureInfoType = layer->getGFIType();
+            if(getFeatureInfoType.compare( "PYRAMID" ) == 0){
+                // Donnee image elle-meme
+                // Je ne comprends pas bien ce cas ?
+                return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "GFI depuis la donnée brute non géré." ),"wmts" ) );
+            }else if(getFeatureInfoType.compare( "EXTERNALWMS" ) == 0){
+                // reponse d'un WMS-V
+                // GetFeatureInfo sur la couche vecteur en (X,Y)
+                WebService* myWMSV = new WebService(layer->getGFIBaseUrl(),"",10,10,60);
+                std::stringstream vectorRequest;
+                vectorRequest << layer->getGFIBaseUrl()
+                        << "REQUEST=GetFeatureInfo"
+                        << "&SERVICE=" << layer->getGFIService()
+                        << "&VERSION=" << layer->getGFIVersion()
+                        << "&LAYERS=" << layer->getGFILayers()
+                        << "&QUERY_LAYERS=" << layer->getGFIQueryLayers()
+                        << "&INFO_FORMAT=" << info_format
+                        << "&FORMAT=" << format
+                //        << "&FEAUTURE_COUNT=" << feature_count
+                //        << "&CRS=" << crs.getRequestCode()
+                //        << "&BBOX=" << bbox.xmin << "," << bbox.ymin << "," << bbox.xmax << "," << bbox.ymax
+                        << "&WIDTH=" << 256
+                        << "&HEIGHT=" << 256
+                        << "&I= " << X
+                        << "&J=" << Y;
+
+                RawDataSource* response = myWMSV->performRequest (vectorRequest.str());
+                return response;
+            }else if(getFeatureInfoType.compare( "SQL" ) == 0){
+                // SQL
+                // SQL en base en (X,Y)
+                // = se connecter a une bdd et executer une requete sur la position en question.
+                // Non géré pour le moment. (nouvelle lib a integrer)
+                return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "GFI depuis un SQL non géré." ),"wmts" ) );
+            }else{
+                // ERROR (deja geree normalement)
+                return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "ERRORRRRRR !" ),"wmts" ) );
+            }
+        }else{
+
+            LOGGER_ERROR ( _ ( "GetFeatureInfo non autorisé" ) );
+            return new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "GetFeatureInfo non autorisé." ),"wmts" ) );
+        }
+}
+
 void Rok4Server::processWMTS ( Request* request, FCGX_Request&  fcgxRequest ) {
     if ( request->request == "getcapabilities" ) {
         S.sendresponse ( WMTSGetCapabilities ( request ),&fcgxRequest );
     } else if ( request->request == "gettile" ) {
         S.sendresponse ( getTile ( request ),&fcgxRequest );
+    } else if ( request->request == "getfeatureinfo") {
+        S.sendresponse ( WMTSGetFeatureInfo ( request ), &fcgxRequest );
     } else if ( request->request == "getversion" ) {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wmts" ) ),&fcgxRequest );
     } else if ( request->request == "" ) {
@@ -1325,7 +1403,7 @@ void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
     } else if ( request->request == "getmap" || request->request == "map") {
         S.sendresponse ( getMap ( request ), &fcgxRequest );
     } else if ( request->request == "getfeatureinfo") {
-        S.sendresponse ( getFeatureInfo ( request ), &fcgxRequest );
+        S.sendresponse ( WMSGetFeatureInfo ( request ), &fcgxRequest );
     } else if ( request->request == "getversion" ) {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wms" ) ),&fcgxRequest );
     } else if ( request->request == "" ) {
