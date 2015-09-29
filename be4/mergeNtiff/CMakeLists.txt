@@ -97,7 +97,7 @@ endif(UNITTEST)
 ########################################
 #Documentation
 
-INSTALL(FILES LICENCE README DESTINATION doc/${PARENT_PROJECT_NAME}/${PROJECT_NAME})
+INSTALL(FILES LICENCE README DESTINATION share/doc/${PARENT_PROJECT_NAME}/${PROJECT_NAME})
 
 ########################################
 #Installation dans les répertoires par défauts

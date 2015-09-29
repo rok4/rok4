@@ -83,16 +83,14 @@ endif(UNITTEST)
 if(DEB_PACKAGE)
   set(USE_SYSTEM_LIB TRUE)
   include(Debian)
+elseif(RPM_PACKAGE)
+  set(USE_SYSTEM_LIB FALSE)
+  include(RPM)
 else(DEB_PACKAGE)
   set(CPACK_GENERATOR "TGZ")
 endif(DEB_PACKAGE)
 
-if(RPM_PACKAGE)
-  set(USE_SYSTEM_LIB FALSE)
-  include(RPM)
-else(RPM_PACKAGE)
-  set(CPACK_GENERATOR "TGZ")
-endif(RPM_PACKAGE)
+
 
 
 if(NOT DEFINED USE_SYSTEM_LIB)
@@ -115,4 +113,10 @@ endif(BUILD_BE4)
 
 #Installe les fichiers de configurations
 INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/config/"
-  DESTINATION config)
+  DESTINATION /etc/rok4/config)
+#Installe les fichiers de données
+INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/data/"
+  DESTINATION /var/rok4/data)
+#Installe les fichiers de service
+FILE(COPY "${CMAKE_CURRENT_SOURCE_DIR}/service/rok4"
+  DESTINATION /etc/init.d)
