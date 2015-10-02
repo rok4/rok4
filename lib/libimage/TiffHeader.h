@@ -763,6 +763,8 @@ static uint8_t* insertGeoTags ( Image* image, uint8_t* header, size_t* sizeHeade
             myProjParams = &EQC;
         } else if ( projName == "tmerc" ) {
             myProjParams = &TMERC;
+        } else if ( projName == "utm" ) {
+            myProjParams = &TMERC;
         } else if ( projName == "gnom" ) {
             myProjParams = &GNOM;
         } else if ( projName == "omerc" ) {
@@ -802,17 +804,56 @@ static uint8_t* insertGeoTags ( Image* image, uint8_t* header, size_t* sizeHeade
         //ProjLinearUnitsGeoKey meter(9001)
         appendToGeoKeyDirectory(GeoKeyDirectory,&GeoKeyDirectorySize,3076,0,1,9001);
         
-        for (size_t i = 0; i < myProjParams->nbparam; i ++) {
-            if (crs.getProj4Param(myProjParams->listparam[i].proj) != ""){
-                if ( sscanf ( crs.getProj4Param(myProjParams->listparam[i].proj).c_str(),"%lf",&doubletmp ) !=1 ) {
-                    LOGGER_ERROR("Impossible de parser le parametre " + myProjParams->listparam[i].proj + " de la definition proj4");
+        if (projName == "utm") {
+            //cas particulier: il faut calculer certains paramètres non présents le fichier proj4
+            //Lambda0
+            appendToGeoKeyDirectory(GeoKeyDirectory,&GeoKeyDirectorySize,3081 ,34736,1,GeoDoubleParamsSize);
+            appendToGeoDoubleParams(GeoDoubleParams,&GeoDoubleParamsSize, 0.0);
+            //Phi0
+            if (crs.getProj4Param("zone") != ""){
+                if ( sscanf ( crs.getProj4Param("zone").c_str(),"%lf",&doubletmp ) !=1 ) {
+                    LOGGER_ERROR("Impossible de parser le parametre zone de la definition proj4");
                 } else {
-		    LOGGER_DEBUG("Ajout du parametre "+myProjParams->listparam[i].proj+" avec la valeur "+crs.getProj4Param(myProjParams->listparam[i].proj).c_str());
-                    appendToGeoKeyDirectory(GeoKeyDirectory,&GeoKeyDirectorySize,myProjParams->listparam[i].geotifftag ,34736,1,GeoDoubleParamsSize);
+                    LOGGER_DEBUG("Ajout du parametre zone avec la valeur "+crs.getProj4Param("zone"));
+                    doubletmp = doubletmp * 6 - 183;
+                    appendToGeoKeyDirectory(GeoKeyDirectory,&GeoKeyDirectorySize,3080 ,34736,1,GeoDoubleParamsSize);
                     appendToGeoDoubleParams(GeoDoubleParams,&GeoDoubleParamsSize, doubletmp);
                 }
             }
+            //X0
+            appendToGeoKeyDirectory(GeoKeyDirectory,&GeoKeyDirectorySize,3082 ,34736,1,GeoDoubleParamsSize);
+            appendToGeoDoubleParams(GeoDoubleParams,&GeoDoubleParamsSize, 500000.0);
+            //Y0
+            if (crs.testProj4Param("south")) {
+                appendToGeoKeyDirectory(GeoKeyDirectory,&GeoKeyDirectorySize,3083 ,34736,1,GeoDoubleParamsSize);
+                appendToGeoDoubleParams(GeoDoubleParams,&GeoDoubleParamsSize, 1000000.0);
+            } else {
+                if (crs.testProj4Param("north")) {
+                    appendToGeoKeyDirectory(GeoKeyDirectory,&GeoKeyDirectorySize,3083 ,34736,1,GeoDoubleParamsSize);
+                    appendToGeoDoubleParams(GeoDoubleParams,&GeoDoubleParamsSize, 0.0);
+                } else {
+                    LOGGER_ERROR("Impossible de parser le parametre south/north donc Y0 de la definition proj4");
+                }
+            }
+            //k
+            appendToGeoKeyDirectory(GeoKeyDirectory,&GeoKeyDirectorySize,3092 ,34736,1,GeoDoubleParamsSize);
+            appendToGeoDoubleParams(GeoDoubleParams,&GeoDoubleParamsSize, 0.9996);
+
+        } else {
+            for (size_t i = 0; i < myProjParams->nbparam; i ++) {
+                if (crs.getProj4Param(myProjParams->listparam[i].proj) != ""){
+                    if ( sscanf ( crs.getProj4Param(myProjParams->listparam[i].proj).c_str(),"%lf",&doubletmp ) !=1 ) {
+                        LOGGER_ERROR("Impossible de parser le parametre " + myProjParams->listparam[i].proj + " de la definition proj4");
+                    } else {
+                LOGGER_DEBUG("Ajout du parametre "+myProjParams->listparam[i].proj+" avec la valeur "+crs.getProj4Param(myProjParams->listparam[i].proj).c_str());
+                        appendToGeoKeyDirectory(GeoKeyDirectory,&GeoKeyDirectorySize,myProjParams->listparam[i].geotifftag ,34736,1,GeoDoubleParamsSize);
+                        appendToGeoDoubleParams(GeoDoubleParams,&GeoDoubleParamsSize, doubletmp);
+                    }
+                }
+            }
         }
+
+
     }
     
     //End of Geographic CS Parameter Keys
