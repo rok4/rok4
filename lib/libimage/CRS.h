@@ -451,6 +451,18 @@ public:
      * \return parameter value
      */
     std::string getProj4Param( std::string paramName );
+
+    /**
+     * \~french
+     * \brief Dis si un paramètre existe
+     * \param[in] param le nom du paramètre
+     * \return bool
+     * \~english
+     * \brief Return true if a parameter exists
+     * \param[in] param parameter name
+     * \return bool
+     */
+    bool testProj4Param( std::string paramName );
     
     /**
      * \~french
