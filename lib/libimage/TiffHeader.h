@@ -826,7 +826,7 @@ static uint8_t* insertGeoTags ( Image* image, uint8_t* header, size_t* sizeHeade
             //Y0
             if (crs.testProj4Param("south")) {
                 appendToGeoKeyDirectory(GeoKeyDirectory,&GeoKeyDirectorySize,3083 ,34736,1,GeoDoubleParamsSize);
-                appendToGeoDoubleParams(GeoDoubleParams,&GeoDoubleParamsSize, 1000000.0);
+                appendToGeoDoubleParams(GeoDoubleParams,&GeoDoubleParamsSize, 10000000.0);
             } else {
                 if (crs.testProj4Param("north")) {
                     appendToGeoKeyDirectory(GeoKeyDirectory,&GeoKeyDirectorySize,3083 ,34736,1,GeoDoubleParamsSize);
