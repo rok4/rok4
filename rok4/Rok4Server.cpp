@@ -1264,11 +1264,11 @@ void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
 }
 
 void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest ) {   
-    if ( supportWMTS && request->service == "wmts" ) {
+    if ( supportWMTS && request->service == "wmts" && (request->doesPathFinishWith("wmts") || !request->doesPathFinishWith("wms"))) {
         processWMTS ( request, fcgxRequest );
         //Service is not mandatory in GetMap request in WMS 1.3.0 and GetFeatureInfo
         //le map est présent pour une compatibilité avec le WMS 1.1.1
-    } else if ( supportWMS && ( request->service=="wms" || request->request == "getmap" || request->request == "map") ) {
+    } else if ( supportWMS && ( request->service=="wms" || request->request == "getmap" || request->request == "map") && (request->doesPathFinishWith("wms") || !request->doesPathFinishWith("wmts"))) {
         processWMS ( request, fcgxRequest );
     } else if ( request->service == "" ) {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, ( "Le parametre SERVICE n'est pas renseigne." ) ,"xxx" ) ),&fcgxRequest );
