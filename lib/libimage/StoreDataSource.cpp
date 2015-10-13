@@ -35,25 +35,22 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#ifndef _FILEDATASOURCE_
-#define _FILEDATASOURCE_
-
-#include "Data.h"
 #include "StoreDataSource.h"
+#include <fcntl.h>
+#include "Logger.h"
+#include <cstdio>
+#include <errno.h>
 
-/*
- * Classe qui lit les tuiles d'un fichier tuilé.
- */
+StoreDataSource::StoreDataSource ( const char* name, const uint32_t posoff, const uint32_t possize, std::string type, std::string encoding ) :
+    name ( name ), posoff ( posoff ), possize ( possize ), type ( type ) , encoding( encoding ){
+    data=0;
+    size=0;
+}
+StoreDataSource::StoreDataSource ( const char* name, const uint32_t posoff, const uint32_t possize, std::string type ) :
+    name ( name ), posoff ( posoff ), possize ( possize ), type ( type ) , encoding( "" ){
+    data=0;
+    size=0;
+}
 
-class FileDataSource : public StoreDataSource {
 
-public:
-    FileDataSource ( const char* filename, const uint32_t posoff, const uint32_t possize, std::string type );
-    FileDataSource ( const char* filename, const uint32_t posoff, const uint32_t possize, std::string type , std::string encoding );
-    const uint8_t* getData ( size_t &tile_size );
 
-    ~FileDataSource();
-
-};
-
-#endif

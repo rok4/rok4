@@ -35,25 +35,64 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#ifndef _FILEDATASOURCE_
-#define _FILEDATASOURCE_
+#ifndef STOREDATASOURCE_H
+#define STOREDATASOURCE_H
 
 #include "Data.h"
-#include "StoreDataSource.h"
 
 /*
- * Classe qui lit les tuiles d'un fichier tuilé.
+ * Classe qui fait office de proxy pour lire sur fichier ou sur Ceph (stockage objet)
  */
 
-class FileDataSource : public StoreDataSource {
+class StoreDataSource :public DataSource {
+
+protected:
+
+    std::string name;
+    const uint32_t posoff;		// Position dans le fichier des 4 octets indiquant la position de la tuile dans le fichier
+    const uint32_t possize;		// Position dans le fichier des 4 octets indiquant la taille de la tuile dans le fichier
+    uint8_t* data;
+    size_t size;
+    std::string type;
+    std::string encoding;
 
 public:
-    FileDataSource ( const char* filename, const uint32_t posoff, const uint32_t possize, std::string type );
-    FileDataSource ( const char* filename, const uint32_t posoff, const uint32_t possize, std::string type , std::string encoding );
-    const uint8_t* getData ( size_t &tile_size );
 
-    ~FileDataSource();
+    StoreDataSource ( const char* name, const uint32_t posoff, const uint32_t possize, std::string type );
+    StoreDataSource ( const char* name, const uint32_t posoff, const uint32_t possize, std::string type , std::string encoding );
+    virtual const uint8_t* getData ( size_t &tile_size ) {}
+
+    /*
+     * @ return le type MIME de la source de donnees
+     */
+    std::string getType() {
+        return type;
+    }
+
+    /*
+    * Liberation du buffer
+    * @return true en cas de succes
+    */
+    bool releaseData() {
+        if (data)
+          delete[] data;
+        data = 0;
+        return true;
+    }
+
+    ~StoreDataSource(){
+             releaseData();
+    }
+
+    int getHttpStatus() {
+        return 200;
+    }
+
+    std::string getEncoding() {
+        return encoding;
+    }
+
 
 };
 
-#endif
+#endif // STOREDATASOURCE_H

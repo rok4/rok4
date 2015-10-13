@@ -44,11 +44,13 @@
 // Taille maximum d'une tuile WMTS
 #define MAX_TILE_SIZE 1048576
 
-FileDataSource::FileDataSource ( const char* filename, const uint32_t posoff, const uint32_t possize, std::string type, std::string encoding ) : filename ( filename ), posoff ( posoff ), possize ( possize ), type ( type ) , encoding( encoding ){    data=0;
-    size=0;
+FileDataSource::FileDataSource ( const char* filename, const uint32_t posoff, const uint32_t possize, std::string type, std::string encoding ) :
+    StoreDataSource(filename,posoff,possize,type,encoding) {
+
 }
-FileDataSource::FileDataSource ( const char* filename, const uint32_t posoff, const uint32_t possize, std::string type ) : filename ( filename ), posoff ( posoff ), possize ( possize ), type ( type ) , encoding( "" ){    data=0;
-    size=0;
+FileDataSource::FileDataSource ( const char* filename, const uint32_t posoff, const uint32_t possize, std::string type ) :
+    StoreDataSource(filename,posoff,possize,type){
+
 }
 
 /*
@@ -63,16 +65,16 @@ const uint8_t* FileDataSource::getData ( size_t &tile_size ) {
     }
 
     // Ouverture du fichier
-    int fildes = open ( filename.c_str(), O_RDONLY );
+    int fildes = open ( name.c_str(), O_RDONLY );
     if ( fildes < 0 ) {
-        LOGGER_DEBUG ( "Can't open file " << filename );
+        LOGGER_DEBUG ( "Can't open file " << name );
         return 0;
     }
     // Lecture de la position de la tuile dans le fichier
     uint32_t pos;
     size_t read_size;
     if ( read_size=pread ( fildes, &pos, sizeof ( uint32_t ), posoff ) != 4 ) {
-        LOGGER_ERROR ( "Erreur lors de la lecture de la position de la tuile dans le fichier " << filename );
+        LOGGER_ERROR ( "Erreur lors de la lecture de la position de la tuile dans le fichier " << name );
         if ( read_size<0 )
             LOGGER_ERROR ( "Code erreur="<<errno );
         close ( fildes );
@@ -82,7 +84,7 @@ const uint8_t* FileDataSource::getData ( size_t &tile_size ) {
     // Ne lire que 4 octets (la taille de tile_size est plateforme-dependante)
     uint32_t tmp;
     if ( read_size=pread ( fildes, &tmp, sizeof ( uint32_t ), possize ) != 4 ) {
-        LOGGER_ERROR ( "Erreur lors de la lecture de la taille de la tuile dans le fichier " << filename );
+        LOGGER_ERROR ( "Erreur lors de la lecture de la taille de la tuile dans le fichier " << name );
         if ( read_size<0 )
             LOGGER_ERROR ( "Code erreur="<<errno );
         close ( fildes );
@@ -93,7 +95,7 @@ const uint8_t* FileDataSource::getData ( size_t &tile_size ) {
     // Objectif : gerer le cas de fichiers TIFF non conformes aux specs du cache
     // (et qui pourraient indiquer des tailles de tuiles excessives)
     if ( tile_size > MAX_TILE_SIZE ) {
-        LOGGER_ERROR ( "Tuile trop volumineuse dans le fichier " << filename ) ;
+        LOGGER_ERROR ( "Tuile trop volumineuse dans le fichier " << name ) ;
         close ( fildes );
         return 0;
     }
@@ -101,7 +103,7 @@ const uint8_t* FileDataSource::getData ( size_t &tile_size ) {
     data = new uint8_t[tile_size];
     read_size=pread ( fildes, data, tile_size, pos );
     if ( read_size!=tile_size ) {
-        LOGGER_ERROR ( "Impossible de lire la tuile dans le fichier " << filename );
+        LOGGER_ERROR ( "Impossible de lire la tuile dans le fichier " << name );
         if ( read_size<0 )
             LOGGER_ERROR ( "Code erreur="<<errno );
         delete[] data;
@@ -113,13 +115,7 @@ const uint8_t* FileDataSource::getData ( size_t &tile_size ) {
     return data;
 }
 
-/*
-* Liberation du buffer
-* @return true en cas de succes
-*/
-bool FileDataSource::releaseData() {
-    if (data)
-      delete[] data;
-    data = 0;
-    return true;
+
+FileDataSource::~FileDataSource() {
+
 }
