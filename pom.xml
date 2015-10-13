@@ -11,7 +11,7 @@
 
   <groupId>fr.geoportail.services</groupId>
   <artifactId>rok4</artifactId>
-  <version>0.25.5</version><!--TAG_VERSION-->
+  <version>0.25.5-ceph</version><!--TAG_VERSION-->
   <packaging>pom</packaging>
 
   <repositories>
