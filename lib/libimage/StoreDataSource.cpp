@@ -36,6 +36,7 @@
  */
 
 #include "StoreDataSource.h"
+#include "FileDataSource.h"
 #include <fcntl.h>
 #include "Logger.h"
 #include <cstdio>
@@ -53,4 +54,10 @@ StoreDataSource::StoreDataSource ( const char* name, const uint32_t posoff, cons
 }
 
 
+StoreDataSource * StoreDataSourceFactory::createStoreDataSource (const char* name, const uint32_t posoff, const uint32_t possize, std::string type ) {
+    return new FileDataSource(name,posoff,possize,type);
+}
 
+StoreDataSource * StoreDataSourceFactory::createStoreDataSource (const char* name, const uint32_t posoff, const uint32_t possize, std::string type , std::string encoding) {
+    return new FileDataSource(name,posoff,possize,type,encoding);
+}

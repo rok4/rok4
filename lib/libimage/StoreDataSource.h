@@ -56,10 +56,12 @@ protected:
     std::string type;
     std::string encoding;
 
-public:
-
     StoreDataSource ( const char* name, const uint32_t posoff, const uint32_t possize, std::string type );
     StoreDataSource ( const char* name, const uint32_t posoff, const uint32_t possize, std::string type , std::string encoding );
+
+public:
+
+
     virtual const uint8_t* getData ( size_t &tile_size ) {}
 
     /*
@@ -93,6 +95,13 @@ public:
     }
 
 
+};
+
+class StoreDataSourceFactory {
+
+public:
+    StoreDataSource * createStoreDataSource (const char* name, const uint32_t posoff, const uint32_t possize, std::string type );
+    StoreDataSource * createStoreDataSource (const char* name, const uint32_t posoff, const uint32_t possize, std::string type , std::string encoding);
 };
 
 #endif // STOREDATASOURCE_H

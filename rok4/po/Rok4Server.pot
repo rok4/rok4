@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2015-10-13 14:53+0200\n"
+"POT-Creation-Date: 2015-10-13 15:32+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -992,39 +992,39 @@ msgstr ""
 msgid "Construction de la configuration des services depuis "
 msgstr ""
 
-#: Level.cpp:143 Level.cpp:186 Level.cpp:237
+#: Level.cpp:146 Level.cpp:189 Level.cpp:240
 msgid "Image invalid !"
 msgstr ""
 
-#: Level.cpp:244
+#: Level.cpp:247
 msgid "Dimensions invalid !"
 msgstr ""
 
-#: Level.cpp:269
+#: Level.cpp:272
 msgid "Too Much Tile on X axis"
 msgstr ""
 
-#: Level.cpp:277
+#: Level.cpp:280
 msgid "Too Much Tile on Y axis"
 msgstr ""
 
-#: Level.cpp:317
+#: Level.cpp:320
 msgid "Indice de tuile negatif"
 msgstr ""
 
-#: Level.cpp:380 Level.cpp:398
+#: Level.cpp:384 Level.cpp:403
 msgid "Type d'encodage inconnu : "
 msgstr ""
 
-#: Level.cpp:403
+#: Level.cpp:408
 msgid "Tile : "
 msgstr ""
 
-#: Level.cpp:413
+#: Level.cpp:418
 msgid "GetTile Tiff"
 msgstr ""
 
-#: Level.cpp:423 Level.cpp:436
+#: Level.cpp:428 Level.cpp:441
 msgid "GetTile Image"
 msgstr ""
 
@@ -1061,47 +1061,47 @@ msgstr ""
 msgid "Extinction du serveur ROK4"
 msgstr ""
 
-#: Pyramid.cpp:168
+#: Pyramid.cpp:170
 msgid "debut pyramide"
 msgstr ""
 
-#: Pyramid.cpp:174
+#: Pyramid.cpp:176
 msgid "fin pyramide"
 msgstr ""
 
-#: Pyramid.cpp:181
+#: Pyramid.cpp:183
 msgid "best_level="
 msgstr ""
 
-#: Pyramid.cpp:181
+#: Pyramid.cpp:183
 msgid " resolution requete="
 msgstr ""
 
-#: Pyramid.cpp:190
+#: Pyramid.cpp:192
 msgid "BBox en dehors de la definition du CRS"
 msgstr ""
 
-#: Pyramid.cpp:194 Pyramid.cpp:233
+#: Pyramid.cpp:196 Pyramid.cpp:235
 msgid "BBox decoupe incorrect"
 msgstr ""
 
-#: Pyramid.cpp:226
+#: Pyramid.cpp:228
 msgid "New Width = "
 msgstr ""
 
-#: Pyramid.cpp:226
+#: Pyramid.cpp:228
 msgid "New Height = "
 msgstr ""
 
-#: Pyramid.cpp:227
+#: Pyramid.cpp:229
 msgid "ratio_x = "
 msgstr ""
 
-#: Pyramid.cpp:227
+#: Pyramid.cpp:229
 msgid "ratio_y = "
 msgstr ""
 
-#: Pyramid.cpp:239
+#: Pyramid.cpp:241
 msgid "Image decoupe valide"
 msgstr ""
 

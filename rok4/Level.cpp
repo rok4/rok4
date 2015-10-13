@@ -69,7 +69,8 @@ Level::Level ( TileMatrix tm, int channels, std::string baseDir, int tilesPerWid
     tilesPerWidth ( tilesPerWidth ), tilesPerHeight ( tilesPerHeight ),
     maxTileRow ( maxTileRow ), minTileRow ( minTileRow ), maxTileCol ( maxTileCol ),
     minTileCol ( minTileCol ), pathDepth ( pathDepth ), format ( format ),noDataFile ( noDataFile ), noDataSource ( NULL ) {
-    noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), Rok4Format::toEncoding ( format ) );
+    StoreDataSourceFactory SDSF;
+    noDataTileSource = SDSF.createStoreDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), Rok4Format::toEncoding ( format ) );
     noDataSourceProxy = noDataTileSource;
 }
 
@@ -83,7 +84,8 @@ Level::~Level() {
 
 void Level::setNoData ( const std::string& file ) {
     noDataFile=file;
-    DataSource* tmpDataSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), Rok4Format::toEncoding ( format ) );
+    StoreDataSourceFactory SDSF;
+    DataSource* tmpDataSource = SDSF.createStoreDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), Rok4Format::toEncoding ( format ) );
     if ( noDataTileSource ) {
         delete noDataTileSource;
     }
@@ -102,7 +104,8 @@ void Level::setNoData ( const std::string& file ) {
 void Level::setNoDataSource ( DataSource* source ) {
     if ( noDataSource ) {
         delete noDataSourceProxy;
-        noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), Rok4Format::toEncoding ( format ) );
+        StoreDataSourceFactory SDSF;
+        noDataTileSource = SDSF.createStoreDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), Rok4Format::toEncoding ( format ) );
     }
     noDataSource=source;
     noDataSourceProxy = new DataSourceProxy ( noDataTileSource, *noDataSource );
@@ -360,7 +363,8 @@ DataSource* Level::getEncodedTile ( int x, int y ) {
     uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
     std::string path=getFilePath ( x, y );
     LOGGER_DEBUG ( path );
-    return new FileDataSource ( path.c_str(),posoff,possize,Rok4Format::toMimeType ( format ), Rok4Format::toEncoding( format ) );
+    StoreDataSourceFactory SDSF;
+    return SDSF.createStoreDataSource( path.c_str(),posoff,possize,Rok4Format::toMimeType ( format ), Rok4Format::toEncoding( format ) );
 }
 
 DataSource* Level::getDecodedTile ( int x, int y ) {
@@ -382,7 +386,8 @@ DataSource* Level::getDecodedTile ( int x, int y ) {
 }
 
 DataSource* Level::getDecodedNoDataTile() {
-    DataSource* encData = new DataSourceProxy ( new FileDataSource ( "",0,0,"" ),*getEncodedNoDataTile() );
+    StoreDataSourceFactory SDSF;
+    DataSource* encData = new DataSourceProxy ( SDSF.createStoreDataSource ( "",0,0,"" ),*getEncodedNoDataTile() );
     if ( format==Rok4Format::TIFF_RAW_INT8 || format==Rok4Format::TIFF_RAW_FLOAT32 )
         return encData;
     else if ( format==Rok4Format::TIFF_JPG_INT8 )

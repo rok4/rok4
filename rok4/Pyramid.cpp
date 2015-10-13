@@ -101,7 +101,8 @@ DataSource* Pyramid::getTile ( int x, int y, std::string tmId, DataSource* error
     std::map<std::string, Level*>::const_iterator itLevel=levels.find ( tmId );
     if ( itLevel==levels.end() ) {
         if ( errorDataSource ) { // NoData Error
-            return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * errorDataSource );
+            StoreDataSourceFactory SDSF;
+            return new DataSourceProxy ( SDSF.createStoreDataSource ( "",0,0,"" ), * errorDataSource );
         }
         DataSource * noDataSource;
 
@@ -117,7 +118,8 @@ DataSource* Pyramid::getTile ( int x, int y, std::string tmId, DataSource* error
             askedRes = itTM->second.getRes();
             noDataSource = ( askedRes > getLowestLevel()->getRes() ? getHighestLevel()->getEncodedNoDataTile() : getLowestLevel()->getEncodedNoDataTile() );
         }
-        return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( noDataSource ) );
+        StoreDataSourceFactory SDSF;
+        return new DataSourceProxy ( SDSF.createStoreDataSource ( "",0,0,"" ), * ( noDataSource ) );
     }
     return itLevel->second->getTile ( x, y, errorDataSource );
 }
