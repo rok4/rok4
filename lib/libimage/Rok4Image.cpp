@@ -57,6 +57,7 @@
 #include "Decoder.h"
 #include "Logger.h"
 #include "Utils.h"
+#include <fcntl.h>
 #include <iostream>
 #include <algorithm>
 
@@ -233,89 +234,74 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( char* filename, BoundingBox
     int width=0, height=0, channels=0, planarconfig=0, bitspersample=0, sf=0, ph=0, comp=0;
     int tileWidth=0, tileHeight=0;
     
-    TIFF* tif = TIFFOpen ( filename, "r" );
-
-    if ( tif == NULL ) {
-        LOGGER_ERROR ( "Unable to open ROK4 TIFF image (to read) " << filename );
+    // On va lire toutes les informations de l'en-tête TIFF à la main, sans passer par la libtiff pour être libre quand au type de stockage de la donnée
+    
+    
+    // Ouverture du fichier
+    int fildes = open ( filename, O_RDONLY );
+    if ( fildes < 0 ) {
+        LOGGER_DEBUG ( "Can't open file " << filename );
+        return 0;
+    }    
+    
+    
+    uint8_t hdr[ROK4_IMAGE_HEADER_SIZE];
+    size_t read_size;
+    if ( read_size=pread ( fildes, hdr, ROK4_IMAGE_HEADER_SIZE, 0 ) != ROK4_IMAGE_HEADER_SIZE ) {
+        LOGGER_ERROR ( "Unable to read 2k (Rok4)TIFF header of " << filename );
         return NULL;
     }
+    close ( fildes );
+    
+    uint8_t* p;
     
     /**************** DIMENSIONS GLOBALES ****************/
-    if ( TIFFGetField ( tif, TIFFTAG_IMAGEWIDTH, &width ) < 1 ) {
-        LOGGER_ERROR ( "Unable to read pixel width for file " << filename );
-        return NULL;
-    }
+    p = hdr+26;
+    width = *((uint32_t*) p);
 
-    if ( TIFFGetField ( tif, TIFFTAG_IMAGELENGTH, &height ) < 1 ) {
-        LOGGER_ERROR ( "Unable to read pixel height for file " << filename );
-        return NULL;
-    }
+    p = hdr+38;
+    height = *((uint32_t*) p);
 
     /********************** TUILAGE **********************/
-    if (! TIFFIsTiled ( tif ) ) {
-        LOGGER_ERROR ( "Handled only tiled TIFF images" );
-        return NULL;
-    }
-    if ( TIFFGetField ( tif, TIFFTAG_TILEWIDTH, &tileWidth ) < 1 ) {
-        LOGGER_ERROR ( "Unable to read tile's width for file " << filename );
-        return NULL;
-    }
-    if ( TIFFGetField ( tif, TIFFTAG_TILELENGTH, &tileHeight ) < 1 ) {
-        LOGGER_ERROR ( "Unable to read tile's height for file " << filename );
-        return NULL;
-    }
+
+    p = hdr+98;
+    tileWidth = *((uint32_t*) p);
+
+    p = hdr+110;
+    tileHeight = *((uint32_t*) p);
 
     /************ FORMAT DES PIXELS ET CANAUX ************/
-    if ( TIFFGetField ( tif, TIFFTAG_SAMPLESPERPIXEL,&channels ) < 1 ) {
-        LOGGER_ERROR ( "Unable to read number of samples per pixel for file " << filename );
-        return NULL;
-    }
+    p = hdr+86;
+    channels = *((uint32_t*) p);
 
-    if ( TIFFGetField ( tif, TIFFTAG_PLANARCONFIG,&planarconfig ) < 1 ) {
-        LOGGER_ERROR ( "Unable to read planar configuration for file " << filename );
-        return NULL;
-    }
+    p = hdr+8;
+    bitspersample = *((uint16_t*) p);
 
-    if ( TIFFGetField ( tif, TIFFTAG_BITSPERSAMPLE,&bitspersample ) < 1 ) {
-        LOGGER_ERROR ( "Unable to read number of bits per sample for file " << filename );
-        return NULL;
-    }
+    p = hdr+74;
+    ph = *((uint16_t*) p);
 
-    if ( TIFFGetField ( tif, TIFFTAG_SAMPLEFORMAT,&sf ) < 1 ) {
-        LOGGER_ERROR ( "Unable to read sample format for file " << filename );
-        return NULL;
-    }
-
-    if ( TIFFGetField ( tif, TIFFTAG_PHOTOMETRIC,&ph ) < 1 ) {
-        LOGGER_ERROR ( "Unable to read photometric for file " << filename );
-        return NULL;
-    }
-
-    if ( TIFFGetField ( tif, TIFFTAG_COMPRESSION,&comp ) < 1 ) {
-        LOGGER_ERROR ( "Unable to read compression for file " << filename );
-        return NULL;
-    }
-
+    p = hdr+62;
+    comp = *((uint32_t*) p);
+    
+    // extrasample : facultatif
+    p = hdr+138;
+    uint16_t tagEs = *((uint16_t*) p);
     
     ExtraSample::eExtraSample es = ExtraSample::UNKNOWN;
-    uint16_t extrasamplesCount;
-    uint16_t* extrasamples;
-    if ( TIFFGetField ( tif, TIFFTAG_EXTRASAMPLES, &extrasamplesCount, &extrasamples ) > 0 ) {
-        // On a des canaux en plus, si c'est de l'alpha (le premier extra), et qu'il est associé,
-        // on le précise pour convertir à la volée lors de la lecture des lignes
-        es = toROK4ExtraSample(extrasamples[0]);
-        if ( es == ExtraSample::ALPHA_ASSOC ) {
-            LOGGER_ERROR ( "Alpha sample should be unassociated for the rok4 image " << filename );
-            return NULL;
-        }
-    }
-
-    if ( planarconfig != PLANARCONFIG_CONTIG ) {
-        LOGGER_ERROR ( "Planar configuration have to be 'PLANARCONFIG_CONTIG' for file " << filename );
+    if (tagEs == TIFFTAG_EXTRASAMPLES) {
+        p = hdr+146;
+        es = toROK4ExtraSample(*((uint32_t*) p));
+        
+        p = hdr+158;
+        sf = *((uint32_t*) p);
+    } else if (tagEs == TIFFTAG_SAMPLEFORMAT) {
+        p = hdr+146;
+        sf = *((uint32_t*) p);        
+    } else {
+        LOGGER_ERROR ( "Inconsistent TIFF tag " << tagEs );
+        LOGGER_ERROR ( "Unable to read sample format or extra samples for file " << filename );
         return NULL;
     }
-
-    TIFFClose ( tif );
     
     /********************** CONTROLES **************************/
 
