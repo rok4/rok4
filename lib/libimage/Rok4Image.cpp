@@ -233,28 +233,6 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( char* filename, BoundingBox
     int width=0, height=0, channels=0, planarconfig=0, bitspersample=0, sf=0, ph=0, comp=0;
     int tileWidth=0, tileHeight=0;
     
-    // On va lire toutes les informations de l'en-tête TIFF à la main, sans passer par la libtiff pour être libre quand au type de stockage de la donnée
-    
-    
-    // Ouverture du fichier
-    int fildes = open ( filename.c_str(), O_RDONLY );
-    if ( fildes < 0 ) {
-        LOGGER_DEBUG ( "Can't open file " << filename );
-        return 0;
-    }
-    
-    
-    uint8_t pos[ROK4_IMAGE_HEADER_SIZE];
-    size_t read_size;
-    if ( read_size=pread ( fildes, pos, ROK4_IMAGE_HEADER_SIZE, 0 ) != ROK4_IMAGE_HEADER_SIZE ) {
-        LOGGER_ERROR ( "Unable to read 2k (Rok4)TIFF header of " << filename );
-        if ( read_size<0 )
-            LOGGER_ERROR ( "Code erreur="<<errno );
-        close ( fildes );
-        return 0;
-    }
-    
-    
     TIFF* tif = TIFFOpen ( filename, "r" );
 
     if ( tif == NULL ) {
