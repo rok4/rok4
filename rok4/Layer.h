@@ -310,6 +310,11 @@ private:
      * \~english \brief Parameter layers for the service
      */
     std::string GFILayers;
+    /**
+     * \~french \brief Modification des EPSG autorisé (pour Geoserver)
+     * \~english \brief Modification of EPSG is authorized (for Geoserver)
+     */
+    bool GFIForceEPSG;
 
 public:
     /**
@@ -339,6 +344,7 @@ public:
      * \param[in] GFIService type de service WMS-V pour le GetfeatureInfo
      * \param[in] GFIQueryLayers
      * \param[in] GFILayers
+     * \param[in] GFIForceEPSG
      * \~english
      * \brief Create a Layer
      * \param[in] id identifier
@@ -365,6 +371,7 @@ public:
      * \param[in] GFIService type of WMS-V service used by GetfeatureInfo
      * \param[in] GFIQueryLayers
      * \param[in] GFILayers
+     * \param[in] GFIForceEPSG
      */
     Layer ( std::string id, std::string title, std::string abstract,bool WMSAuthorized, bool WMTSAuthorized,
             std::vector<Keyword> & keyWords, Pyramid*& dataPyramid,
@@ -374,7 +381,7 @@ public:
             BoundingBoxWMS boundingBox, std::vector<MetadataURL>& metadataURLs,
             bool getFeatureInfoAvailability, std::string getFeatureInfoType,
             std::string getFeatureInfoBaseURL, std::string GFIVersion,
-            std::string GFIService, std::string GFIQueryLayers, std::string GFILayers)
+            std::string GFIService, std::string GFIQueryLayers, std::string GFILayers, bool GFIForceEPSG)
         :id ( id ), title ( title ), abstract ( abstract ), WMSAuthorized (WMSAuthorized), WMTSAuthorized (WMTSAuthorized),keyWords ( keyWords ),
          dataPyramid ( dataPyramid ), styles ( styles ), minRes ( minRes ),
          maxRes ( maxRes ), WMSCRSList ( WMSCRSList ), opaque ( opaque ),
@@ -383,7 +390,7 @@ public:
          boundingBox ( boundingBox ), metadataURLs ( metadataURLs ), defaultStyle ( styles.at ( 0 )->getId() ),
          getFeatureInfoAvailability ( getFeatureInfoAvailability ), getFeatureInfoType ( getFeatureInfoType ),
          getFeatureInfoBaseURL ( getFeatureInfoBaseURL ), GFIVersion( GFIVersion ), GFIService( GFIService ),
-         GFIQueryLayers ( GFIQueryLayers ), GFILayers ( GFILayers ){
+         GFIQueryLayers ( GFIQueryLayers ), GFILayers ( GFILayers ), GFIForceEPSG ( GFIForceEPSG ){
 
     }
 
@@ -728,6 +735,17 @@ public:
      */
     std::string getGFIVersion() const {
         return GFIVersion;
+    }
+    /**
+     * \~french
+     * \brief
+     * \return
+     * \~english
+     * \brief
+     * \return
+     */
+    bool getGFIForceEPSG() const {
+        return GFIForceEPSG;
     }
     /**
      * \~french

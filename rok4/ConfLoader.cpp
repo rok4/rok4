@@ -1822,6 +1822,7 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
     std::string GFIVersion = "";
     std::string GFIQueryLayers = "";
     std::string GFILayers = "";
+    bool GFIForceEPSG = true;
 
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
     if ( !pElem ) {
@@ -1904,7 +1905,10 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
             if ( pElem && pElem->GetText()) {
                 GFIService = pElem->GetTextStr();
             }
-            pElem=hDoc.FirstChild("infoFormat").Element();
+            pElem=hDoc.FirstChild("forceEPSG").Element();
+            if ( pElem && pElem->GetText()=="false") {
+                GFIForceEPSG = false;
+            }
         }else if(getFeatureInfoType.compare("SQL") == 0){
             // SQL
         }else{
@@ -2244,7 +2248,7 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
     layer = new Layer ( id, title, abstract, WMSauth, WMTSauth,keyWords, pyramid, styles, minRes, maxRes,
                         WMSCRSList, opaque, authority, resampling,geographicBoundingBox,boundingBox,metadataURLs,
                         getFeatureInfoAvailability, getFeatureInfoType, getFeatureInfoBaseURL, GFIVersion,
-                        GFIService, GFIQueryLayers, GFILayers);
+                        GFIService, GFIQueryLayers, GFILayers, GFIForceEPSG);
 
     //Si une pyramide est à la demande, on n'authorize pas le WMS car c'est un cas non gérer dans les processus de reponse du serveur
     if (layer->getDataPyramid()->getOnDemand()) {

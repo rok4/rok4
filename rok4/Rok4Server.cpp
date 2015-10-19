@@ -1254,6 +1254,23 @@ DataSource* Rok4Server::WMSGetFeatureInfo ( Request* request ) {
     }
 
     // Les params sont ok : on passe maintenant a la recup de l'info
+    char xmin[64];
+    sprintf(xmin, "%-.*G", 16, bbox.xmin);
+    char xmax[64];
+    sprintf(xmax, "%-.*G", 16, bbox.xmax);
+    char ymin[64];
+    sprintf(ymin, "%-.*G", 16, bbox.ymin);
+    char ymax[64];
+    sprintf(ymax, "%-.*G", 16, bbox.ymax);
+
+    std::string crsstring;
+    if(layer->getGFIForceEPSG()){
+        if(crsstring=="IGNF:LAMB93"){
+           crsstring = "EPSG:2154";
+        }
+    }else{
+        crsstring = crs.getRequestCode();
+    }
 
     // Il faut s'assurer que l'on peut faire un GFI
         if(layers.at(0)->isGetFeatureInfoAvailable()){
@@ -1261,7 +1278,10 @@ DataSource* Rok4Server::WMSGetFeatureInfo ( Request* request ) {
             std::string getFeatureInfoType = layers.at(0)->getGFIType();
             if(getFeatureInfoType.compare( "PYRAMID" ) == 0){
                 // Donnee image elle-meme
-                // Je ne comprends pas bien ce cas ?
+                // Recup pixel
+
+                //getValueOnPixel(X,Y);
+
                 return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "GFI depuis la donnée brute non géré." ),"wms" ) );
             }else if(getFeatureInfoType.compare( "EXTERNALWMS" ) == 0){
                 // reponse d'un WMS-V
@@ -1277,14 +1297,15 @@ DataSource* Rok4Server::WMSGetFeatureInfo ( Request* request ) {
                         << "&INFO_FORMAT=" << info_format
                         << "&FORMAT=" << format
                         << "&FEAUTURE_COUNT=" << feature_count
-                        << "&CRS=" << crs.getRequestCode()
-                        << "&BBOX=" << bbox.xmin << "," << bbox.ymin << "," << bbox.xmax << "," << bbox.ymax
+                        << "&CRS=" << crsstring
+                        << "&BBOX=" << xmin << "," << ymin << "," << xmax << "," << ymax
                         << "&WIDTH=" << width
                         << "&HEIGHT=" << height
-                        << "&I= " << X
+                        << "&I=" << X
                         << "&J=" << Y;
 
                 RawDataSource* response = myWMSV->performRequest (vectorRequest.str());
+                //return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,vectorRequest.str(),"wms"));
                 return response;
             }else if(getFeatureInfoType.compare( "SQL" ) == 0){
                 // SQL
@@ -1302,6 +1323,7 @@ DataSource* Rok4Server::WMSGetFeatureInfo ( Request* request ) {
             return new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "GetFeatureInfo non autorisé." ),"wms" ) );
         }
 }
+
 
 DataSource* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
     Layer* layer;
@@ -1330,6 +1352,31 @@ DataSource* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
     }
 
     // Les params sont ok : on passe maintenant a la recup de l'info
+    Pyramid* pyr = layer->getDataPyramid();
+
+    std::map<std::string, Level*>::iterator lv = pyr->getLevels().find(tileMatrix);
+    BoundingBox<double> bbox = lv->second->tileIndicesToTileBbox(tileCol,tileRow) ;
+    char xmin[64];
+    sprintf(xmin, "%-.*G", 16, bbox.xmin);
+    char xmax[64];
+    sprintf(xmax, "%-.*G", 16, bbox.xmax);
+    char ymin[64];
+    sprintf(ymin, "%-.*G", 16, bbox.ymin);
+    char ymax[64];
+    sprintf(ymax, "%-.*G", 16, bbox.ymax);
+
+    //width and height of tile
+    int tileW = lv->second->getTm().getTileW();
+    int tileH = lv->second->getTm().getTileH();
+
+    std::string crs;
+    if(layer->getGFIForceEPSG()){
+        if(crs=="IGNF:LAMB93"){
+           crs = "EPSG:2154";
+        }
+    }else{
+        crs = pyr->getTms().getCrs().getRequestCode();
+    }
 
     // Il faut s'assurer que l'on peut faire un GFI
         if(layer->isGetFeatureInfoAvailable()){
@@ -1337,7 +1384,10 @@ DataSource* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
             std::string getFeatureInfoType = layer->getGFIType();
             if(getFeatureInfoType.compare( "PYRAMID" ) == 0){
                 // Donnee image elle-meme
-                // Je ne comprends pas bien ce cas ?
+                // Recup pixel
+
+                //getValueOnPixel(X,Y);
+
                 return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "GFI depuis la donnée brute non géré." ),"wmts" ) );
             }else if(getFeatureInfoType.compare( "EXTERNALWMS" ) == 0){
                 // reponse d'un WMS-V
@@ -1352,15 +1402,16 @@ DataSource* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
                         << "&QUERY_LAYERS=" << layer->getGFIQueryLayers()
                         << "&INFO_FORMAT=" << info_format
                         << "&FORMAT=" << format
-                //        << "&FEAUTURE_COUNT=" << feature_count
-                //        << "&CRS=" << crs.getRequestCode()
-                //        << "&BBOX=" << bbox.xmin << "," << bbox.ymin << "," << bbox.xmax << "," << bbox.ymax
-                        << "&WIDTH=" << 256
-                        << "&HEIGHT=" << 256
-                        << "&I= " << X
+                        //<< "&FEAUTURE_COUNT=" << feature_count
+                        << "&CRS=" << crs
+                        << "&BBOX=" << xmin << "," << ymin << "," << xmax << "," << ymax
+                        << "&WIDTH=" << tileW
+                        << "&HEIGHT=" << tileH
+                        << "&I=" << X
                         << "&J=" << Y;
 
                 RawDataSource* response = myWMSV->performRequest (vectorRequest.str());
+                //return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,vectorRequest.str(),"wmts"));
                 return response;
             }else if(getFeatureInfoType.compare( "SQL" ) == 0){
                 // SQL

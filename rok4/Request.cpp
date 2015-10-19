@@ -1465,6 +1465,28 @@ DataSource* Request::WMTSGetFeatureInfoParam (ServicesConf& servicesConf,  std::
     // INFO_FORMAT (facultative)
     info_format=getParam ( "info_format" );
 
+    // X
+    std::string strX=getParam ( "x" );
+    if ( strX == "" )
+        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre X absent." ),"wmts" ) );
+    X=atoi ( strX.c_str() );
+    if ( X<0 )
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre X est negative." ),"wmts" ) );
+    /*if ( X>width )
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre X est superieure a la largeur fournie (width)." ),"wmts" ) );
+    */
+
+    // Y
+    std::string strY=getParam ( "y" );
+    if ( strY == "" )
+        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre Y absent." ),"wmts" ) );
+    Y=atoi ( strY.c_str() );
+    if ( Y<0 )
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre Y est negative." ),"wmts" ) );
+    /*if ( Y>height )
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre Y est superieure a la hauteur fournie (height)." ),"wmts" ) );
+        */
+
     return NULL;
 }
 //
