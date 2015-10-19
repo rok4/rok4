@@ -209,6 +209,12 @@ ELSE(KDU_USE)
     endif(NOT TARGET jpeg2000)
 ENDIF(KDU_USE)
 
+if(NOT TARGET rados)
+  add_library(rados STATIC IMPORTED)
+  set_property(TARGET rados PROPERTY IMPORTED_LOCATION "-lrados")
+  SET(CMAKE_RADOS_LIBS_INIT "-lrados")
+endif(NOT TARGET rados)
+
 if(NOT TARGET image)
 find_package(Image)
 if(IMAGE_FOUND)

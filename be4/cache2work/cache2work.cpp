@@ -47,10 +47,10 @@
 #include <cstdlib>
 #include <iostream>
 #include <string.h>
-#include "tiffio.h"
 #include "Format.h"
 #include "Logger.h"
 #include "Rok4Image.h"
+#include "CephContext.h"
 #include "FileImage.h"
 #include "../be4version.h"
 
@@ -73,6 +73,7 @@
  *              lzw     Lempel-Ziv & Welch encoding
  *              pkb     PackBits encoding
  *              zip     Deflate encoding
+ *     -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object
  *     -d debug logger activation
  * 
  * Example
@@ -85,7 +86,7 @@ void usage() {
 
                   "Convert a ROK4 pyramid's TIFF image to untiled TIFF image\n\n" <<
 
-                  "Usage: cache2work <INPUT FILE> [-c <VAL>] <OUTPUT FILE>\n\n" <<
+                  "Usage: cache2work <INPUT FILE> [-c <VAL>] <OUTPUT FILE> [-pool <VAL>]\n\n" <<
 
                   "Parameters:\n" <<
                   "     -c output compression : default value : none\n" <<
@@ -95,6 +96,7 @@ void usage() {
                   "             lzw     Lempel-Ziv & Welch encoding\n" <<
                   "             pkb     PackBits encoding\n" <<
                   "             zip     Deflate encoding\n" <<
+                  "    -pool Ceph pool where data is. Then INPUT FILE is interpreted as a Ceph object\n" <<
                   "    -d debug logger activation\n\n" <<
 
                   "Example\n" <<
@@ -130,7 +132,7 @@ void error ( std::string message, int errorCode ) {
  */
 int main ( int argc, char **argv )
 {
-    char* input = 0, *output = 0;
+    char* input = 0, *output = 0, *pool = 0;
     Compression::eCompression compression = Compression::NONE;
     bool debugLogger=false;
 
@@ -148,6 +150,13 @@ int main ( int argc, char **argv )
     logw.setf ( std::ios::fixed,std::ios::floatfield );
 
     for ( int i = 1; i < argc; i++ ) {
+        if ( !strcmp ( argv[i],"-pool" ) ) {
+            if ( ++i == argc ) {
+                error("Error in -pool option", -1);
+            }
+            pool = argv[i];
+            continue;
+        }
         if ( argv[i][0] == '-' ) {
             switch ( argv[i][1] ) {
             case 'h': // help
@@ -198,13 +207,24 @@ int main ( int argc, char **argv )
     if ( input == 0 || output == 0 ) {
         error ("Argument must specify one input file and one output file", -1);
     }
+    
+    CephContext* cc = 0;
+    if ( pool != 0 ) {
+        LOGGER_DEBUG( std::string("File is an object in the Ceph pool ") + pool);
+        cc = new CephContext(pool);
+        if (! cc->connection()) {
+            error(std::string("Unable to connect to Ceph pool ") + pool, -1);
+        }
+    }
 
     Rok4ImageFactory R4IF;
-    Rok4Image* rok4image = R4IF.createRok4ImageToRead(input, BoundingBox<double>(0.,0.,0.,0.), 0., 0.);
+    Rok4Image* rok4image = R4IF.createRok4ImageToRead(input, BoundingBox<double>(0.,0.,0.,0.), 0., 0., cc);
     if (rok4image == NULL) {
         delete acc;
         error (std::string("Cannot create ROK4 image to read ") + input, -1);
     }
+    
+    rok4image->print();
 
     FileImageFactory FIF;
     FileImage* outputImage = FIF.createImageToWrite(
@@ -229,6 +249,7 @@ int main ( int argc, char **argv )
     delete rok4image;
     delete outputImage;
     delete acc;
+    delete cc;
 
     return 0;
 }

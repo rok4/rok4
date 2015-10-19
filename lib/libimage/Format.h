@@ -60,7 +60,6 @@
 
 #include <string>
 #include <stdint.h>
-#include "tiff.h"
 
 /**
  * \author Institut national de l'information géographique et forestière

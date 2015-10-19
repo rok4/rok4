@@ -35,34 +35,29 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+#ifndef _CEPHDATASOURCE_
+#define _CEPHDATASOURCE_
+
+#include "Data.h"
 #include "StoreDataSource.h"
-#include "FileDataSource.h"
-#include "CephDataSource.h"
-#include <fcntl.h>
-#include "Logger.h"
-#include <cstdio>
-#include <errno.h>
+#include "CephContext.h"
 
-StoreDataSource::StoreDataSource ( const char* name, const uint32_t posoff, const uint32_t possize, std::string type, std::string encoding ) :
-    name ( name ), posoff ( posoff ), possize ( possize ), type ( type ) , encoding( encoding ){
-    data=0;
-    size=0;
-}
-StoreDataSource::StoreDataSource ( const char* name, const uint32_t posoff, const uint32_t possize, std::string type ) :
-    name ( name ), posoff ( posoff ), possize ( possize ), type ( type ) , encoding( "" ){
-    data=0;
-    size=0;
-}
+/*
+ * Classe qui lit les tuiles d'un fichier tuilé sur Ceph.
+ */
 
+class CephDataSource : public StoreDataSource {
+    
+private:
+    CephContext* cephContext;
 
-StoreDataSource * StoreDataSourceFactory::createStoreDataSource (const char* name, const uint32_t posoff, const uint32_t possize, std::string type , CephContext* cc  ) {
-    if (cc) {
-        return new CephDataSource(name,posoff,possize,type, cc);
-    } else {
-        return new FileDataSource(name,posoff,possize,type);
-    }
-}
+public:
+    CephDataSource ( const char* filename, const uint32_t posoff, const uint32_t possize, std::string type, CephContext* cc );
+    const uint8_t* getData ( size_t &tile_size );
+    uint8_t* getThisData ( const uint32_t offset, const uint32_t size );
 
-StoreDataSource * StoreDataSourceFactory::createStoreDataSource (const char* name, const uint32_t posoff, const uint32_t possize, std::string type , std::string encoding) {
-    return new FileDataSource(name,posoff,possize,type,encoding);
-}
+    ~CephDataSource();
+
+};
+
+#endif

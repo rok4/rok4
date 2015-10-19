@@ -39,6 +39,7 @@
 #define STOREDATASOURCE_H
 
 #include "Data.h"
+#include "CephContext.h"
 
 /*
  * Classe qui fait office de proxy pour lire sur fichier ou sur Ceph (stockage objet)
@@ -56,13 +57,15 @@ protected:
     std::string type;
     std::string encoding;
 
-    StoreDataSource ( const char* name, const uint32_t posoff, const uint32_t possize, std::string type );
+    StoreDataSource ( const char* name, const uint32_t posoff, const uint32_t possize, std::string type);
     StoreDataSource ( const char* name, const uint32_t posoff, const uint32_t possize, std::string type , std::string encoding );
 
 public:
 
 
-    virtual const uint8_t* getData ( size_t &tile_size ) {}
+    virtual const uint8_t* getData ( size_t &tile_size ) = 0;
+    
+    virtual uint8_t* getThisData ( const uint32_t offset, const uint32_t size ) = 0;
 
     /*
      * @ return le type MIME de la source de donnees
@@ -77,13 +80,13 @@ public:
     */
     bool releaseData() {
         if (data)
-          delete[] data;
+            delete[] data;
         data = 0;
         return true;
     }
 
     ~StoreDataSource(){
-             releaseData();
+        releaseData();
     }
 
     int getHttpStatus() {
@@ -100,7 +103,7 @@ public:
 class StoreDataSourceFactory {
 
 public:
-    StoreDataSource * createStoreDataSource (const char* name, const uint32_t posoff, const uint32_t possize, std::string type );
+    StoreDataSource * createStoreDataSource (const char* name, const uint32_t posoff, const uint32_t possize, std::string type , CephContext* cc = NULL );
     StoreDataSource * createStoreDataSource (const char* name, const uint32_t posoff, const uint32_t possize, std::string type , std::string encoding);
 };
 

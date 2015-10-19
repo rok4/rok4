@@ -35,21 +35,16 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#include "FileDataSource.h"
+#include "CephDataSource.h"
 #include <fcntl.h>
 #include "Logger.h"
 #include <cstdio>
-#include <errno.h>
 
 // Taille maximum d'une tuile WMTS
 #define MAX_TILE_SIZE 1048576
 
-FileDataSource::FileDataSource ( const char* filename, const uint32_t posoff, const uint32_t possize, std::string type, std::string encoding ) :
-    StoreDataSource(filename,posoff,possize,type,encoding) {
-
-}
-FileDataSource::FileDataSource ( const char* filename, const uint32_t posoff, const uint32_t possize, std::string type ) :
-    StoreDataSource(filename,posoff,possize,type){
+CephDataSource::CephDataSource ( const char* filename, const uint32_t posoff, const uint32_t possize, std::string type, CephContext* cc ) :
+    StoreDataSource(filename,posoff,possize,type), cephContext(cc){
 
 }
 
@@ -58,82 +53,59 @@ FileDataSource::FileDataSource ( const char* filename, const uint32_t posoff, co
  * Le fichier ne doit etre lu qu une seule fois
  * Indique la taille de la tuile (inconnue a priori)
  */
-const uint8_t* FileDataSource::getData ( size_t &tile_size ) {
+const uint8_t* CephDataSource::getData ( size_t &tile_size ) {
     if ( data ) {
         tile_size=size;
         return data;
     }
-
-    // Ouverture du fichier
-    int fildes = open ( name.c_str(), O_RDONLY );
-    if ( fildes < 0 ) {
-        LOGGER_DEBUG ( "Can't open file " << name );
-        return 0;
-    }
+    
     // Lecture de la position de la tuile dans le fichier
-    uint32_t pos;
-    size_t read_size;
-    if ( read_size=pread ( fildes, &pos, sizeof ( uint32_t ), posoff ) != 4 ) {
-        LOGGER_ERROR ( "Erreur lors de la lecture de la position de la tuile dans le fichier " << name );
-        if ( read_size<0 )
-            LOGGER_ERROR ( "Code erreur="<<errno );
-        close ( fildes );
+    uint8_t* uint32tab = new uint8_t[sizeof( uint32_t )];
+    
+    if (! cephContext->readFromCephObject(uint32tab, posoff, 4, name)) {
+        LOGGER_ERROR ( "Erreur lors de la lecture de la position de la tuile dans l'objet " << name );
         return 0;
-    }
+    }    
+    uint32_t tileOffset = *((uint32_t*) uint32tab);
+    
     // Lecture de la taille de la tuile dans le fichier
     // Ne lire que 4 octets (la taille de tile_size est plateforme-dependante)
-    uint32_t tmp;
-    if ( read_size=pread ( fildes, &tmp, sizeof ( uint32_t ), possize ) != 4 ) {
-        LOGGER_ERROR ( "Erreur lors de la lecture de la taille de la tuile dans le fichier " << name );
-        if ( read_size<0 )
-            LOGGER_ERROR ( "Code erreur="<<errno );
-        close ( fildes );
+    // Lecture de la position de la tuile dans le fichier    
+    if (! cephContext->readFromCephObject(uint32tab, possize, 4, name)) {
+        LOGGER_ERROR ( "Erreur lors de la lecture de la taille de la tuile dans l'objet " << name );
         return 0;
-    }
-    tile_size=tmp;
+    }    
+    uint32_t tileSize = *((uint32_t*) uint32tab);
+    tile_size = tileSize;
+    
     // La taille de la tuile ne doit pas exceder un seuil
     // Objectif : gerer le cas de fichiers TIFF non conformes aux specs du cache
     // (et qui pourraient indiquer des tailles de tuiles excessives)
     if ( tile_size > MAX_TILE_SIZE ) {
         LOGGER_ERROR ( "Tuile trop volumineuse dans le fichier " << name ) ;
-        close ( fildes );
         return 0;
     }
+    
     // Lecture de la tuile
     data = new uint8_t[tile_size];
-    read_size=pread ( fildes, data, tile_size, pos );
-    if ( read_size!=tile_size ) {
-        LOGGER_ERROR ( "Impossible de lire la tuile dans le fichier " << name );
-        if ( read_size<0 )
-            LOGGER_ERROR ( "Code erreur="<<errno );
-        delete[] data;
-        close ( fildes );
+    if (! cephContext->readFromCephObject(data, tileOffset, tile_size, name)) {
+        LOGGER_ERROR ( "Erreur lors de la lecture de la tuile dans l'objet " << name );
         return 0;
     }
-    size=tile_size;
-    close ( fildes );
+
     return data;
 }
 
-uint8_t* FileDataSource::getThisData ( const uint32_t offset, const uint32_t size ) {
-
-    // Ouverture du fichier
-    int fildes = open ( name.c_str(), O_RDONLY );
-    if ( fildes < 0 ) {
-        LOGGER_ERROR ( "Can't open file " << name );
-        return 0;
-    }    
+uint8_t* CephDataSource::getThisData ( const uint32_t offset, const uint32_t size ) {
     
     uint8_t* wanteddata = new uint8_t[size];
-    size_t read_size;
-    if ( read_size=pread ( fildes, wanteddata, size, offset ) != size ) {
-        LOGGER_ERROR ( "Unable to read " << size << " bytes (from the " << offset << " one) in the file " << name );
+    if ( ! cephContext->readFromCephObject(wanteddata, offset, size, name) ) {
+        LOGGER_ERROR ( "Unable to read " << size << " bytes (from the " << offset << " one) in the object " << name );
         return 0;
     }
-    close ( fildes );
     
     return wanteddata;
 }
 
-FileDataSource::~FileDataSource() {
+CephDataSource::~CephDataSource() {
 }

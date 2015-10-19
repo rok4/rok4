@@ -35,34 +35,70 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#include "StoreDataSource.h"
-#include "FileDataSource.h"
-#include "CephDataSource.h"
-#include <fcntl.h>
-#include "Logger.h"
-#include <cstdio>
-#include <errno.h>
+/**
+ * \file CephContext.h
+ ** \~french
+ * \brief Définition de la classe CephContext
+ * \details
+ * \li CephContext : connexion à un pool de données Ceph
+ ** \~english
+ * \brief Define classe CephContext
+ * \details
+ * \li CephContext : Ceph data pool connection
+ */
 
-StoreDataSource::StoreDataSource ( const char* name, const uint32_t posoff, const uint32_t possize, std::string type, std::string encoding ) :
-    name ( name ), posoff ( posoff ), possize ( possize ), type ( type ) , encoding( encoding ){
-    data=0;
-    size=0;
-}
-StoreDataSource::StoreDataSource ( const char* name, const uint32_t posoff, const uint32_t possize, std::string type ) :
-    name ( name ), posoff ( posoff ), possize ( possize ), type ( type ) , encoding( "" ){
-    data=0;
-    size=0;
-}
+#ifndef CEPH_CONTEXT_H
+#define CEPH_CONTEXT_H
 
+#include <rados/librados.hpp>
 
-StoreDataSource * StoreDataSourceFactory::createStoreDataSource (const char* name, const uint32_t posoff, const uint32_t possize, std::string type , CephContext* cc  ) {
-    if (cc) {
-        return new CephDataSource(name,posoff,possize,type, cc);
-    } else {
-        return new FileDataSource(name,posoff,possize,type);
+/**
+ * \author Institut national de l'information géographique et forestière
+ * \~french
+ * \brief Création d'un contexte Ceph (connexion à un cluster + pool particulier), pour pouvoir récupérer des données stockées sous forme d'objets
+ */
+class CephContext {
+    
+private:
+    
+    char* cluster_name;
+    
+    char* user_name;
+    
+    char* conf_file;
+    
+    char* pool_name;
+    
+    librados::Rados cluster;
+    librados::IoCtx io_ctx;
+
+public:
+
+    /** Constructeurs */
+    CephContext (char* pool);
+    
+    librados::IoCtx getContext () {
+        return io_ctx;
     }
-}
+    
+    char* getPoolName () {
+        return pool_name;
+    }
+    
+    bool readFromCephObject(uint8_t* data, int offset, int size, std::string name);
+    bool writeToCephObject(uint8_t* data, int offset, int size, std::string name);
+    
+    bool connection();
+    
+    virtual ~CephContext() {
+        io_ctx.close();
+        cluster.shutdown();
+        
+        delete[] cluster_name;
+        delete[] user_name;
+        delete[] conf_file;
+        delete[] pool_name;
+    };
+};
 
-StoreDataSource * StoreDataSourceFactory::createStoreDataSource (const char* name, const uint32_t posoff, const uint32_t possize, std::string type , std::string encoding) {
-    return new FileDataSource(name,posoff,possize,type,encoding);
-}
+#endif

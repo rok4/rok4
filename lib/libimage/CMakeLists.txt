@@ -39,6 +39,7 @@ endif(DEBUG_BUILD)
 # Définition des fichiers sources
 
 CONFIGURE_FILE(Jpeg2000_library_config.h.in Jpeg2000_library_config.h ESCAPE_QUOTES @ONLY)
+CONFIGURE_FILE(Ceph_library_config.h.in Ceph_library_config.h ESCAPE_QUOTES @ONLY)
 
 SET(
     libimage_SRCS Palette.cpp Data.cpp Decoder.cpp
@@ -47,7 +48,7 @@ SET(
     MirrorImage.cpp StyledImage.cpp EstompageImage.cpp
     ExtendedCompoundImage.cpp CompoundImage.cpp Line.cpp MergeImage.cpp
     Grid.cpp CRS.cpp TiffEncoder.cpp
-    BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp FileDataSource.cpp PaletteConfig.cpp PaletteDataSource.cpp
+    BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp FileDataSource.cpp CephDataSource.cpp CephContext.cpp PaletteConfig.cpp PaletteDataSource.cpp
     Format.cpp TiffHeaderDataSource.cpp StoreDataSource.cpp
 )
 
@@ -79,7 +80,7 @@ IF(KDU_USE)
     SET(DEP_LIBRARY ${DEP_LIBRARY} jpeg2000_plus)
 ENDIF(KDU_USE)
 
-TARGET_LINK_LIBRARIES(image ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+TARGET_LINK_LIBRARIES(image ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_RADOS_LIBS_INIT} )
 
 ########################################
 # Gestion des tests unitaires (CPPUnit)
@@ -98,7 +99,7 @@ if(UNITTEST)
     FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "tests/cppunit/CppUnit*.cpp" )
     ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} tests/cppunit/main.cpp ${UnitTests_SRCS} tests/cppunit/TimedTestListener.cpp tests/cppunit/XmlTimedTestOutputterHook.cpp )
     #Bibliothèque à lier (ajouter la cible (executable/library) du projet
-    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit image ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
+    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit image ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_RADOS_LIBS_INIT}  ${CMAKE_DL_LIBS})
     FOREACH(test ${UnitTests_SRCS})
           MESSAGE("  - adding test ${test}")
           GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)

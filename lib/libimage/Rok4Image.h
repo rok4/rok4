@@ -59,6 +59,8 @@
 #include "zlib.h"
 #include <jpeglib.h>
 #include "FileImage.h"
+#include "CephContext.h"
+#include "StoreDataSource.h"
 
 #define ROK4_IMAGE_HEADER_SIZE 2048
 #define JPEG_BLOC_SIZE 16
@@ -125,8 +127,11 @@ private:
      * \~english \brief Raw byte size of a tile
      */
     int rawTileSize;
+    
+    CephContext* cephContext;
 
     /**************************** Pour la lecture ****************************/
+    
     /**
      * \~french \brief Nombre de tuiles mémorisées
      * \~english \brief Number of memorized tiles
@@ -389,7 +394,7 @@ protected:
      * \param[in] tileHeight tile's pixel height
      */
     Rok4Image (
-        int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name, SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression, ExtraSample::eExtraSample es, int tileWidth, int tileHeight
+        int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name, SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression, ExtraSample::eExtraSample es, int tileWidth, int tileHeight, CephContext* cc
     );
 
 public:
@@ -434,6 +439,9 @@ public:
         LOGGER_INFO ( "---------- Rok4Image ------------" );
         FileImage::print();
         LOGGER_INFO ( "\t- tile width = " << tileWidth << ", tile height = " << tileHeight );
+        if (cephContext) {
+            LOGGER_INFO ( "\t- Ceph pool's name = " << cephContext->getPoolName() );
+        }
         LOGGER_INFO ( "" );
     }
 
@@ -446,14 +454,6 @@ public:
      * \return taille utile du buffer, 0 si erreur
      */
     int getRawTile ( uint8_t* buf, int tile );
-    /**
-     * \~french
-     * \brief Retourne une tuile compressée
-     * \param[out] buf buffer contenant la tuile. Doit être alloué.
-     * \param[in] line Indice de la tuile à retourner (0 <= tile < tilesNumber)
-     * \return taille utile du buffer, 0 si erreur
-     */
-    int getEncodedTile ( uint8_t* buf, int tile );
     
     int getline ( uint8_t* buffer, int line );
     int getline ( uint16_t* buffer, int line );
@@ -588,7 +588,7 @@ public:
      * \param[in] resy Y wise resolution.
      * \return a Rok4Image object pointer, NULL if error
      */
-    Rok4Image* createRok4ImageToRead ( char* filename, BoundingBox<double> bbox, double resx, double resy );
+    Rok4Image* createRok4ImageToRead ( char* filename, BoundingBox<double> bbox, double resx, double resy, CephContext* cc = 0 );
 
     /** \~french
      * \brief Crée un objet Rok4Image, pour l'écriture
@@ -634,7 +634,7 @@ public:
     Rok4Image* createRok4ImageToWrite (
         char* filename, BoundingBox<double> bbox, double resx, double resy, int width, int height, int channels,
         SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
-        Compression::eCompression compression, int tileWidth, int tileHeight
+        Compression::eCompression compression, int tileWidth, int tileHeight, CephContext* cc = 0 
     );
 };
 

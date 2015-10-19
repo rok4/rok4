@@ -1,0 +1,8 @@
+#ifndef CEPH_CONFIG_H
+#define CEPH_CONFIG_H
+
+#define CEPH_CLUSTER_NAME "@CEPH_CLUSTER_NAME@"
+#define CEPH_USER_NAME "@CEPH_USER_NAME@"
+#define CEPH_CONF_FILE "@CEPH_CONF_FILE@"
+
+#endif

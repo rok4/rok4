@@ -64,6 +64,7 @@
 #include "tiffio.h"
 #include "Format.h"
 #include "Logger.h"
+#include "CephContext.h"
 #include "FileImage.h"
 #include "Rok4Image.h"
 #include "TiffNodataManager.h"
@@ -95,6 +96,7 @@ int white[4] = {255,255,255,255};
  *              zip     Deflate encoding
  *              png     Non-official TIFF compression, each tile is an independant PNG image (with PNG header)
  *      -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size
+ *      -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object
  *      -crop : blocks (used by JPEG compression) wich contain a white pixel are filled with white
  *      -d debug logger activation
  * 
@@ -123,6 +125,7 @@ void usage() {
                   "             zip     Deflate encoding\n" <<
                   "             png     Non-official TIFF compression, each tile is an independant PNG image (with PNG header)\n" <<
                   "     -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size\n" <<
+                  "     -pool Ceph pool where data is. Then INPUT FILE is interpreted as a Ceph object\n" <<
                   "     -crop : blocks (used by JPEG compression) wich contain a white pixel are filled with white\n" <<
                   "     -d : debug logger activation\n\n" <<
 
@@ -162,7 +165,7 @@ void error ( std::string message, int errorCode ) {
  */
 int main ( int argc, char **argv ) {
 
-    char* input = 0, *output = 0;
+    char* input = 0, *output = 0, *pool = 0;
     int tileWidth = 256, tileHeight = 256;
     Compression::eCompression compression = Compression::NONE;
     bool crop = false;
@@ -185,6 +188,13 @@ int main ( int argc, char **argv ) {
     for ( int i = 1; i < argc; i++ ) {
         if ( !strcmp ( argv[i],"-crop" ) ) {
             crop = true;
+            continue;
+        }
+        if ( !strcmp ( argv[i],"-pool" ) ) {
+            if ( ++i == argc ) {
+                error("Error in -pool option", -1);
+            }
+            pool = argv[i];
             continue;
         }
         if ( argv[i][0] == '-' ) {
@@ -239,6 +249,15 @@ int main ( int argc, char **argv ) {
     if ( input == 0 || output == 0 ) {
         error ("Argument must specify one input file and one output file", -1);
     }
+    
+    CephContext* cc = 0;
+    if ( pool != 0 ) {
+        LOGGER_DEBUG( std::string("File is an object in the Ceph pool ") + pool);
+        cc = new CephContext(pool);
+        if (! cc->connection()) {
+            error(std::string("Unable to connect to Ceph pool ") + pool, -1);
+        }
+    }
 
     FileImageFactory FIF;
 
@@ -281,7 +300,7 @@ int main ( int argc, char **argv ) {
     Rok4Image* rok4Image = R4IF.createRok4ImageToWrite(
         output, BoundingBox<double>(0.,0.,0.,0.), -1, -1, sourceImage->getWidth(), sourceImage->getHeight(), sourceImage->channels,
         sourceImage->getSampleFormat(), sourceImage->getBitsPerSample(), sourceImage->getPhotometric(), compression,
-        tileWidth, tileHeight
+        tileWidth, tileHeight, cc
     );
     
     rok4Image->setExtraSample(sourceImage->getExtraSample());
@@ -302,6 +321,7 @@ int main ( int argc, char **argv ) {
     LOGGER_DEBUG ( "Clean" );
     // Nettoyage
     delete acc;
+    delete cc;
     delete sourceImage;
     delete rok4Image;
 

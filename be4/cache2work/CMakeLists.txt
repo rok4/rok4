@@ -66,14 +66,14 @@ add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRCS})
 #Définition des dépendances.
 include(ROK4Dependencies)
 
-set(DEP_INCLUDE_DIR ${JPEG_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${LZW_INCLUDE_DIR})
+set(DEP_INCLUDE_DIR ${LOGGER_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${TIFF_INCLUDE_DIR})
 
 #Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
-set(DEP_LIBRARY logger tiff zlib jpeg image proj lzw)
+set(DEP_LIBRARY logger image tiff)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
-target_link_libraries(${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_RADOS_LIBS_INIT} )
 
 ########################################
 # Gestion des tests unitaires (CPPUnit)
@@ -94,7 +94,7 @@ if(UNITTEST)
   "tests/cppunit/CppUnit*.cpp" )
     ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} tests/cppunit/main.cpp ${UnitTests_SRCS} )
     #Bibliothèque à lier (ajouter la cible (executable/library) du projet
-    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit lib${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
+    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit lib${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_RADOS_LIBS_INIT}  ${CMAKE_DL_LIBS})
     FOREACH(test ${UnitTests_SRCS})
           MESSAGE("  - adding test ${test}")
           GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
