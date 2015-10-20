@@ -868,6 +868,7 @@ bool Rok4Image::writeTile( int tileInd, uint8_t* data, bool crop )
             uint8_t* uint32tab = new uint8_t[sizeof( uint32_t )];
             *((uint32_t*) uint32tab) = ( uint32_t ) size;
             cephContext->writeToCephObject(uint32tab, 134, 4, std::string(filename));
+            delete uint32tab;
         } else {
             // On écrit la taille de la tuile unique directemet dans l'en-tête, après le tag TIFFTAG_TILEBYTECOUNTS
             output.seekp ( 134 );

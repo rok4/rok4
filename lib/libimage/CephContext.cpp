@@ -49,7 +49,6 @@
 
 #include "CephContext.h"
 #include "Ceph_library_config.h"
-#include "Logger.h"
 
 
 
@@ -63,6 +62,8 @@ CephContext::CephContext (char* pool) {
     strcpy ( user_name,CEPH_USER_NAME );
     strcpy ( conf_file,CEPH_CONF_FILE );
     strcpy ( pool_name,pool );
+    writting_in_progress = false;
+    write_completion = librados::Rados::aio_create_completion();
 }
 
 bool CephContext::connection() {
@@ -118,9 +119,33 @@ bool CephContext::writeToCephObject(uint8_t* data, int offset, int size, std::st
     librados::bufferlist bl;
     bl.append((char*) data, size);
     
-    int ret = io_ctx.write(name, bl, size, offset);
+    if (writting_in_progress) {
+        write_completion->wait_for_complete();
+        int ret = write_completion->get_return_value();
+        if (ret < 0) {
+            LOGGER_ERROR ( "Unable to complete previous writting" );
+            return false;
+        }
+    }
+    
+    int ret = io_ctx.aio_write(name, write_completion, bl, size, offset);
+    writting_in_progress = true;
     if (ret < 0) {
-        LOGGER_ERROR ( "Unable to write " << size << " bytes (from the " << offset << " one) in the object " << name );
+        LOGGER_ERROR ( "Unable to start to write " << size << " bytes (from the " << offset << " one) in the object " << name );
+        return false;
+    }
+    
+    return true;
+}
+
+bool CephContext::writeFullToCephObject(uint8_t* data, int size, std::string name) {
+    LOGGER_DEBUG("Ceph write : " << size << " bytes (one shot) in the object " << name);
+    librados::bufferlist bl;
+    bl.append((char*) data, size);
+    
+    int ret = io_ctx.write_full(name, bl);
+    if (ret < 0) {
+        LOGGER_ERROR ( "Unable to write " << size << " bytes (one shot) in the object " << name );
         return false;
     }
     

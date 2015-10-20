@@ -51,6 +51,7 @@
 #define CEPH_CONTEXT_H
 
 #include <rados/librados.hpp>
+#include "Logger.h"
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -71,6 +72,8 @@ private:
     
     librados::Rados cluster;
     librados::IoCtx io_ctx;
+    librados::AioCompletion* write_completion;
+    bool writting_in_progress;
 
 public:
 
@@ -87,10 +90,21 @@ public:
     
     bool readFromCephObject(uint8_t* data, int offset, int size, std::string name);
     bool writeToCephObject(uint8_t* data, int offset, int size, std::string name);
+    bool writeFullToCephObject(uint8_t* data, int size, std::string name);
     
     bool connection();
     
     virtual ~CephContext() {
+        if (writting_in_progress) {
+            writting_in_progress = false;
+            write_completion->wait_for_complete();
+            int ret = write_completion->get_return_value();
+            if (ret < 0) {
+                LOGGER_ERROR ( "Unable to complete last writting" );
+            }
+        }
+        write_completion->release();
+        
         io_ctx.close();
         cluster.shutdown();
         
