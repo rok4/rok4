@@ -1263,13 +1263,11 @@ DataSource* Rok4Server::WMSGetFeatureInfo ( Request* request ) {
     char ymax[64];
     sprintf(ymax, "%-.*G", 16, bbox.ymax);
 
-    std::string crsstring;
-    if(layer->getGFIForceEPSG()){
+    std::string crsstring = crs.getRequestCode();
+    if(layers.at(0)->getGFIForceEPSG()){
         if(crsstring=="IGNF:LAMB93"){
            crsstring = "EPSG:2154";
         }
-    }else{
-        crsstring = crs.getRequestCode();
     }
 
     // Il faut s'assurer que l'on peut faire un GFI
@@ -1312,7 +1310,7 @@ DataSource* Rok4Server::WMSGetFeatureInfo ( Request* request ) {
                 // SQL en base en (X,Y)
                 // = se connecter a une bdd et executer une requete sur la position en question.
                 // Non géré pour le moment. (nouvelle lib a integrer)
-                return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "GFI depuis un SQL non géré." ),"wms" ) );
+                return new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "GFI depuis un SQL non géré." ),"wms" ) );
             }else{
                 // ERROR (deja geree normalement)
                 return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "ERRORRRRRR !" ),"wms" ) );
@@ -1369,13 +1367,11 @@ DataSource* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
     int tileW = lv->second->getTm().getTileW();
     int tileH = lv->second->getTm().getTileH();
 
-    std::string crs;
+    std::string crs = pyr->getTms().getCrs().getRequestCode();
     if(layer->getGFIForceEPSG()){
         if(crs=="IGNF:LAMB93"){
            crs = "EPSG:2154";
         }
-    }else{
-        crs = pyr->getTms().getCrs().getRequestCode();
     }
 
     // Il faut s'assurer que l'on peut faire un GFI
@@ -1418,7 +1414,7 @@ DataSource* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
                 // SQL en base en (X,Y)
                 // = se connecter a une bdd et executer une requete sur la position en question.
                 // Non géré pour le moment. (nouvelle lib a integrer)
-                return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "GFI depuis un SQL non géré." ),"wmts" ) );
+                return new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "GFI depuis un SQL non géré." ),"wmts" ) );
             }else{
                 // ERROR (deja geree normalement)
                 return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "ERRORRRRRR !" ),"wmts" ) );
