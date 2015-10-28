@@ -1305,6 +1305,7 @@ DataSource* Rok4Server::WMSGetFeatureInfo ( Request* request ) {
                 RawDataSource* response = myWMSV->performRequest (vectorRequest.str());
                 //return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,vectorRequest.str(),"wms"));
                 return response;
+                //return new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "GFI depuis un SQL non géré." ),"wms" ) );
             }else if(getFeatureInfoType.compare( "SQL" ) == 0){
                 // SQL
                 // SQL en base en (X,Y)
@@ -1381,10 +1382,20 @@ DataSource* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
             if(getFeatureInfoType.compare( "PYRAMID" ) == 0){
                 // Donnee image elle-meme
                 // Recup pixel
+                DataSource* ds = lv->second->getTile(tileCol,tileRow);
+                //Image* ds2 = lv->second->getTile(tileCol,tileRow, 0/*left*/, 0/*top*/, 0/*right*/, 0/*bottom*/);
+                /*double coordx = ds2->c2x(X);
+                double coordy = ds2->l2y(Y);*/
 
-                //getValueOnPixel(X,Y);
+                DataSource* ds3 = lv->second->getEncodedTilePixel(tileCol,tileRow,X,Y);
 
-                return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "GFI depuis la donnée brute non géré." ),"wmts" ) );
+                //lv->second->getPixel(tileCol, tileRow, X, Y)
+
+                /*std::stringstream vectorRequest;
+                vectorRequest << "getValueOnPixel(" << X << "," << Y << ")" << " = getValueOn(" << coordx << "," << coordy << ")";*/
+                //return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, ( vectorRequest.str() ),"wmts" ) );
+                //return ds;
+                return ds3;
             }else if(getFeatureInfoType.compare( "EXTERNALWMS" ) == 0){
                 // reponse d'un WMS-V
                 // GetFeatureInfo sur la couche vecteur en (X,Y)

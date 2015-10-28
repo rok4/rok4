@@ -1472,9 +1472,9 @@ DataSource* Request::WMTSGetFeatureInfoParam (ServicesConf& servicesConf,  std::
     X=atoi ( strX.c_str() );
     if ( X<0 )
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre X est negative." ),"wmts" ) );
-    /*if ( X>width )
+    if ( X> layer->getDataPyramid()->getLevels().find(tileMatrix)->second->getTm().getTileW())
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre X est superieure a la largeur fournie (width)." ),"wmts" ) );
-    */
+
 
     // Y
     std::string strY=getParam ( "y" );
@@ -1483,9 +1483,9 @@ DataSource* Request::WMTSGetFeatureInfoParam (ServicesConf& servicesConf,  std::
     Y=atoi ( strY.c_str() );
     if ( Y<0 )
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre Y est negative." ),"wmts" ) );
-    /*if ( Y>height )
+    if ( Y> layer->getDataPyramid()->getLevels().find(tileMatrix)->second->getTm().getTileH() )
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre Y est superieure a la hauteur fournie (height)." ),"wmts" ) );
-        */
+
 
     return NULL;
 }

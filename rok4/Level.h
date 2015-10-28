@@ -85,6 +85,10 @@ protected:
     Image* getwindow ( ServicesConf& servicesConf, BoundingBox<int64_t> src_bbox, int& error );
 
 public:
+    // GREG : a mettre en privé ensuite
+    DataSource* getEncodedTilePixel ( int x, int y , int i, int j);
+    // GREg
+
     TileMatrix getTm() {
         return tm;
     }

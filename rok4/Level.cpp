@@ -57,6 +57,10 @@
 #include <cstddef>
 #include <sys/stat.h>
 
+// GREG
+#include "Message.h"
+// GREG
+
 
 #define EPS 1./256. // FIXME: La valeur 256 est liée au nombre de niveau de valeur d'un canal
 //        Il faudra la changer lorsqu'on aura des images non 8bits.
@@ -387,6 +391,32 @@ int Level::createDirPath(std::string path) {
     return success;
 
 }
+
+// GREG
+
+DataSource* Level::getEncodedTilePixel ( int x, int y , int i, int j) {
+    // TODO: return 0 sur des cas d'erreur..
+    // Index de la tuile (cf. ordre de rangement des tuiles)
+    int n= ( y%tilesPerHeight ) *tilesPerWidth + ( x%tilesPerWidth );
+    // Les index sont stockés à partir de l'octet 2048
+    uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
+    std::string path=getFilePath ( x, y );
+    LOGGER_DEBUG ( path );
+
+    FileDataSource* tileDataSource = new FileDataSource ( path.c_str(),posoff,possize,Rok4Format::toMimeType ( format ), Rok4Format::toEncoding( format ) );
+    size_t tile_size;
+    const uint8_t* a = tileDataSource->getData(tile_size);
+
+    std::stringstream ss;
+    ss << "data size : " << tile_size << " / value of i+j*255 : " << unsigned(a[i+j*255]) << " / posoff : " << unsigned(posoff) << " / possize : " << unsigned(possize);
+
+    std::string sService = ss2.str();
+
+    return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, ( sService ),"wmts" ) );
+    //return new FileDataSource ( path.c_str(),posoff,possize,Rok4Format::toMimeType ( format ), Rok4Format::toEncoding( format ) );
+}
+
+// GREG
 
 /*
  * @return la tuile d'indice (x,y) du niveau
