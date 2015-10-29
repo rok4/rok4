@@ -1253,6 +1253,10 @@ DataSource* Rok4Server::WMSGetFeatureInfo ( Request* request ) {
         return errorResp;
     }
 
+    if (!layers.at(0)->getWMSAuthorized()) {
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +layers.at(0)->getTitle()+_ ( " unknown " ),"wms" ) );
+    }
+
     // Les params sont ok : on passe maintenant a la recup de l'info
     char xmin[64];
     sprintf(xmin, "%-.*G", 16, bbox.xmin);
@@ -1278,9 +1282,71 @@ DataSource* Rok4Server::WMSGetFeatureInfo ( Request* request ) {
                 // Donnee image elle-meme
                 // Recup pixel
 
-                //getValueOnPixel(X,Y);
+                std::vector<Image*> images;
+                int error;
+                Image* image;
+                for ( int i = 0 ; i < layers.size(); i ++ ) {
 
-                return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "GFI depuis la donnée brute non géré." ),"wms" ) );
+                    if (layers.at(i)->getWMSAuthorized()) {
+
+                        Image* curImage = layers.at ( i )->getbbox ( servicesConf, bbox, width, height, crs, error );
+                        Rok4Format::eformat_data pyrType = layers.at ( i )->getDataPyramid()->getFormat();
+                        Style* style = styles.at(i);
+                        LOGGER_DEBUG ( _ ( "GetMap de Style : " ) << styles.at ( i )->getId() << _ ( " pal size : " ) <<styles.at ( i )->getPalette()->getPalettePNGSize() );
+
+                        if ( curImage == 0 ) {
+                            switch ( error ) {
+
+                            case 1: {
+                                return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "bbox invalide" ),"wms" ) );
+                            }
+                            case 2: {
+                                return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "bbox trop grande" ),"wms" ) );
+                            }
+                            default : {
+                                return new SERDataSource ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wms" ) );
+                            }
+                            }
+                        }
+
+                        Image *image = styleImage(curImage, pyrType, style, format, layers.size());
+
+                        images.push_back ( image );
+                    } else {
+
+                        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +layers.at(i)->getTitle()+_ ( " unknown " ),"wms" ) );
+
+                    }
+                }
+
+
+                //Use background image format.
+                Rok4Format::eformat_data pyrType = layers.at ( 0 )->getDataPyramid()->getFormat();
+                Style* style = styles.at(0);
+
+                MergeImage* img = mergeImages(images, pyrType, style, crs, bbox);
+
+                std::map <std::string, std::string > format_option;
+                DataStream * stream = formatImage(img, format, pyrType, format_option, layers.size(), style);
+
+
+                u_int8_t* buffer;
+                int a = 0;
+                a = img->getline(buffer,X);
+
+                /*size_t size;
+                stream->read(buffer, size);*/
+
+
+                //DataStream * stream = formatImage(image, format, pyrType, format_option, layers.size(), style);
+
+                //return stream;
+                //return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "GFI depuis la donnée brute non géré." ),"wms" ) );
+
+                std::stringstream ss;
+                int index = Y;
+                ss << "value " << size;//unsigned(buffer[index]) << " " << unsigned(buffer[index+1]) << " " << unsigned(buffer[index+2]);
+                return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, ( ss.str() ),"wms" ) );
             }else if(getFeatureInfoType.compare( "EXTERNALWMS" ) == 0){
                 // reponse d'un WMS-V
                 // GetFeatureInfo sur la couche vecteur en (X,Y)
@@ -1364,10 +1430,6 @@ DataSource* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
     char ymax[64];
     sprintf(ymax, "%-.*G", 16, bbox.ymax);
 
-    //width and height of tile
-    int tileW = lv->second->getTm().getTileW();
-    int tileH = lv->second->getTm().getTileH();
-
     std::string crs = pyr->getTms().getCrs().getRequestCode();
     if(layer->getGFIForceEPSG()){
         if(crs=="IGNF:LAMB93"){
@@ -1382,20 +1444,7 @@ DataSource* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
             if(getFeatureInfoType.compare( "PYRAMID" ) == 0){
                 // Donnee image elle-meme
                 // Recup pixel
-                DataSource* ds = lv->second->getTile(tileCol,tileRow);
-                //Image* ds2 = lv->second->getTile(tileCol,tileRow, 0/*left*/, 0/*top*/, 0/*right*/, 0/*bottom*/);
-                /*double coordx = ds2->c2x(X);
-                double coordy = ds2->l2y(Y);*/
-
-                DataSource* ds3 = lv->second->getEncodedTilePixel(tileCol,tileRow,X,Y);
-
-                //lv->second->getPixel(tileCol, tileRow, X, Y)
-
-                /*std::stringstream vectorRequest;
-                vectorRequest << "getValueOnPixel(" << X << "," << Y << ")" << " = getValueOn(" << coordx << "," << coordy << ")";*/
-                //return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, ( vectorRequest.str() ),"wmts" ) );
-                //return ds;
-                return ds3;
+                return lv->second->getTilePixel(tileCol,tileRow,X,Y);
             }else if(getFeatureInfoType.compare( "EXTERNALWMS" ) == 0){
                 // reponse d'un WMS-V
                 // GetFeatureInfo sur la couche vecteur en (X,Y)
@@ -1412,8 +1461,8 @@ DataSource* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
                         //<< "&FEAUTURE_COUNT=" << feature_count
                         << "&CRS=" << crs
                         << "&BBOX=" << xmin << "," << ymin << "," << xmax << "," << ymax
-                        << "&WIDTH=" << tileW
-                        << "&HEIGHT=" << tileH
+                        << "&WIDTH=" << lv->second->getTm().getTileW()
+                        << "&HEIGHT=" << lv->second->getTm().getTileH()
                         << "&I=" << X
                         << "&J=" << Y;
 

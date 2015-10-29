@@ -86,7 +86,7 @@ protected:
 
 public:
     // GREG : a mettre en privé ensuite
-    DataSource* getEncodedTilePixel ( int x, int y , int i, int j);
+    DataSource* getTilePixel ( int x, int y , int i, int j );
     // GREg
 
     TileMatrix getTm() {

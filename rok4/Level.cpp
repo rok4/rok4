@@ -394,27 +394,17 @@ int Level::createDirPath(std::string path) {
 
 // GREG
 
-DataSource* Level::getEncodedTilePixel ( int x, int y , int i, int j) {
-    // TODO: return 0 sur des cas d'erreur..
-    // Index de la tuile (cf. ordre de rangement des tuiles)
-    int n= ( y%tilesPerHeight ) *tilesPerWidth + ( x%tilesPerWidth );
-    // Les index sont stockés à partir de l'octet 2048
-    uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
-    std::string path=getFilePath ( x, y );
-    LOGGER_DEBUG ( path );
+DataSource* Level::getTilePixel ( int x, int y, int i, int j ) {
+        DataSource* source=getDecodedTile( x, y );
 
-    FileDataSource* tileDataSource = new FileDataSource ( path.c_str(),posoff,possize,Rok4Format::toMimeType ( format ), Rok4Format::toEncoding( format ) );
-    size_t tile_size;
-    const uint8_t* a = tileDataSource->getData(tile_size);
+        size_t tile_size;
+        const uint8_t* a = source->getData(tile_size);
+        int index = (i+j*getTm().getTileW())*channels;
 
-    std::stringstream ss;
-    ss << "data size : " << tile_size << " / value of i+j*255 : " << unsigned(a[i+j*255]) << " / posoff : " << unsigned(posoff) << " / possize : " << unsigned(possize);
-
-    std::string sService = ss2.str();
-
-    return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, ( sService ),"wmts" ) );
-    //return new FileDataSource ( path.c_str(),posoff,possize,Rok4Format::toMimeType ( format ), Rok4Format::toEncoding( format ) );
-}
+        std::stringstream ss;
+        ss << "value " << unsigned(a[index]) << " " << unsigned(a[index+1]) << " " << unsigned(a[index+2]);
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, ( ss.str() ),"wmts" ) );
+    }
 
 // GREG
 
