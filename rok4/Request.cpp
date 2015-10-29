@@ -763,6 +763,9 @@ DataSource* Request::getTileParam ( ServicesConf& servicesConf, std::map< std::s
     std::map<std::string, TileMatrixSet*>::iterator tms = tmsList.find ( str_tms );
     if ( tms == tmsList.end() )
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "TileMatrixSet " ) +str_tms+_ ( " inconnu." ),"wmts" ) );
+    std::string tmsLayer = layer->getDataPyramid()->getTms().getCrs().getProj4Code();
+    if ( tms->second->getCrs().getProj4Code() != tmsLayer )
+        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre TILEMATRIXSET différent de celui de la couche demandée. TILEMATRIXSET devrait être " ) +tmsLayer,"wmts" ) );
     layer = it->second;
     // TILEMATRIX
     tileMatrix=getParam ( "tilematrix" );
@@ -1142,4 +1145,28 @@ DataStream* Request::getCapWMTSParam ( ServicesConf& servicesConf, std::string& 
     if ( version.compare ( servicesConf.getServiceTypeVersion() ) !=0 )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Valeur du parametre VERSION invalide (1.0.0 disponible seulement)" ),"wmts" ) );
     return NULL;
+}
+
+bool Request::doesPathContain(std::string word) {
+    std::size_t found = path.find(word);
+    if (found!=std::string::npos) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool Request::doesPathFinishWith(std::string word) {
+    std::size_t found = path.find_last_of("/");
+    if (found!=std::string::npos) {
+        if (path.substr(found+1) == word)
+        {
+            return true;
+        } else {
+            return false;
+        }
+
+    } else {
+        return false;
+    }
 }

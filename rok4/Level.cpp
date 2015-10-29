@@ -54,6 +54,8 @@
 #include "Format.h"
 #include "intl.h"
 #include "config.h"
+#include <cstddef>
+#include <sys/stat.h>
 
 
 #define EPS 1./256. // FIXME: La valeur 256 est liée au nombre de niveau de valeur d'un canal
@@ -76,8 +78,9 @@ Level::Level ( TileMatrix tm, int channels, std::string baseDir, int tilesPerWid
 Level::~Level() {
 
     delete noDataSourceProxy;
-    if ( noDataSource )
-        delete noDataSource;
+    noDataSourceProxy = NULL;
+    delete noDataSource;
+    noDataSource = NULL;
 
 }
 
@@ -99,7 +102,7 @@ void Level::setNoData ( const std::string& file ) {
 }
 
 
-void Level::setNoDataSource ( DataSource* source ) {
+void Level::setNoDataSource ( DataSource *source ) {
     if ( noDataSource ) {
         delete noDataSourceProxy;
         noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), Rok4Format::toEncoding ( format ) );
@@ -159,6 +162,7 @@ Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, 
 
     if ( ! ( grid->reproject ( dst_crs.getProj4Code(), src_crs.getProj4Code() ) ) ) {
         error = 1; // BBox invalid
+        delete grid;
         return 0;
     }
 
@@ -349,6 +353,42 @@ std::string Level::getFilePath ( int tilex, int tiley ) {
 }
 
 /*
+ * Recuperation du dossier contenant de la dalle du cache en fonction de son indice
+ */
+std::string Level::getDirPath ( int tilex, int tiley ) {
+
+    std::string file = getFilePath(tilex,tiley);
+
+    return file.substr(0,file.find_last_of("/"));
+
+}
+
+/*
+ * Creation du dossier indiqué par path
+ */
+int Level::createDirPath(std::string path) {
+
+    int success = -1;
+    int curDirCreated;
+    std::size_t found = path.find_first_of("/");
+    std::string currentDir = path.substr(0,found)+"/";
+    std::string endOfPath = path.substr(found+1);
+
+    while (found!=std::string::npos) {
+        found = endOfPath.find_first_of("/");
+        currentDir += endOfPath.substr(0,found)+"/";
+        endOfPath = endOfPath.substr(found+1);
+        curDirCreated = mkdir(currentDir.c_str(),ACCESSPERMS);
+        if (curDirCreated) {
+            success = 0;
+        }
+    }
+
+    return success;
+
+}
+
+/*
  * @return la tuile d'indice (x,y) du niveau
  */
 
@@ -465,4 +505,110 @@ int* Level::getNoDataValue ( int* nodatavalue ) {
     return nodatavalue;
 }
 
+BoundingBox<double> Level::tileIndicesToSlabBbox(int tileCol, int tileRow) {
 
+    //Variables utilisees
+    double Col, Row, xmin, ymin, xmax, ymax, xo, yo, resolution;
+    int tileH, tileW,TilePerWidth, TilePerHeight;
+
+    //Récupération du TileMatrix demandé
+    TileMatrix tm = getTm();
+
+    //Récupération des paramètres associés
+    resolution = tm.getRes();
+    xo = tm.getX0();
+    yo = tm.getY0();
+    tileH = tm.getTileH();
+    tileW = tm.getTileW();
+    TilePerWidth = getTilesPerWidth();
+    TilePerHeight = getTilesPerHeight();
+
+    Row = floor(double(tileRow) / double(TilePerHeight) ) * double(TilePerHeight);
+    Col = floor(double(tileCol) / double(TilePerWidth) ) * double(TilePerWidth);
+
+    //calcul de la bbox de la dalle et non de la tuile
+    xmin = Col * double(tileW) * resolution  + xo;
+    ymax = yo - Row * double(tileH) * resolution;
+    xmax = xmin + double(tileW) * resolution * TilePerWidth;
+    ymin = ymax - double(tileH) * resolution * TilePerHeight;
+
+    BoundingBox<double> bbox(xmin,ymin,xmax,ymax) ;
+    return bbox;
+
+}
+
+BoundingBox<double> Level::tileIndicesToTileBbox(int tileCol, int tileRow) {
+
+    //Variables utilisees
+    double Col, Row, xmin, ymin, xmax, ymax, xo, yo, resolution;
+    int tileH, tileW;
+
+    //calcul de la bbox
+    TileMatrix tm = getTm();
+
+    //Récupération des paramètres associés
+    resolution = tm.getRes();
+    xo = tm.getX0();
+    yo = tm.getY0();
+    tileH = tm.getTileH();
+    tileW = tm.getTileW();
+
+    Row = double(tileRow);
+    Col = double(tileCol);
+    xmin = Col * double(tileW) * resolution + xo;
+    ymax = yo - Row * double(tileH) * resolution;
+    xmax = xmin + double(tileW) * resolution;
+    ymin = ymax - double(tileH) * resolution;
+
+    BoundingBox<double> bbox(xmin,ymin,xmax,ymax) ;
+    return bbox;
+
+}
+
+int Level::getSlabWidth() {
+
+    int TilePerWidth = getTilesPerWidth();
+    TileMatrix tm = getTm();
+    int width = tm.getTileW();
+
+    return width*TilePerWidth;
+
+}
+
+int Level::getSlabHeight() {
+
+    int TilePerHeight = getTilesPerHeight();
+    TileMatrix tm = getTm();
+    int height = tm.getTileH();
+
+    return height*TilePerHeight;
+
+}
+
+BoundingBox<double> Level::TMLimitsToBbox() {
+
+    int bPMinCol,bPMaxCol,bPMinRow,bPMaxRow;
+    double xo,yo,res,tileW,tileH,xmin,xmax,ymin,ymax;
+
+    bPMinCol = getMinTileCol();
+    bPMaxCol = getMaxTileCol();
+    bPMinRow = getMinTileRow();
+    bPMaxRow = getMaxTileRow();
+
+    //On récupère d'autres informations sur le TM
+    xo = getTm().getX0();
+    yo = getTm().getY0();
+    res = getTm().getRes();
+    tileW = getTm().getTileW();
+    tileH = getTm().getTileH();
+
+    //On transforme en bbox
+    xmin = bPMinCol * tileW * res + xo;
+    ymax = yo - bPMinRow * tileH * res;
+    xmax = xo + (bPMaxCol+1) * tileW * res;
+    ymin = ymax - (bPMaxRow - bPMinRow + 1) * tileH * res;
+
+    return BoundingBox<double> (xmin,ymin,xmax,ymax);
+
+
+}

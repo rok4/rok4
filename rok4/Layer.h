@@ -199,6 +199,16 @@ private:
      */
     std::string abstract;
     /**
+     * \~french \brief Autorisé le WMS pour ce layer
+     * \~english \brief Authorized WMS for this layer
+     */
+    bool WMSAuthorized;
+    /**
+     * \~french \brief Autorisé le WMTS pour ce layer
+     * \~english \brief Authorized WMTS for this layer
+     */
+    bool WMTSAuthorized;
+    /**
      * \~french \brief Liste des mots-clés
      * \~english \brief List of keywords
      */
@@ -285,6 +295,8 @@ public:
      * \param[in] geographicBoundingBox emprise des données en coordonnées géographique (WGS84)
      * \param[in] boundingBox emprise des données dans le système de coordonnées natif
      * \param[in] metadataURLs liste des métadonnées associées
+     * \param[in] WMSAuthorized autorise le WMS
+     * \param[in] WMTSAuthorized autorise le WMTS
      * \~english
      * \brief Create a Layer
      * \param[in] id identifier
@@ -302,14 +314,16 @@ public:
      * \param[in] geographicBoundingBox data bounding box in geographic coordinates (WGS84)
      * \param[in] boundingBox data bounding box in native coordinates system
      * \param[in] metadataURLs linked metadata list
+     * \param[in] WMSAuthorized authorize WMS
+     * \param[in] WMTSAuthorized authorize WMTS
      */
-    Layer ( std::string id, std::string title, std::string abstract,
+    Layer ( std::string id, std::string title, std::string abstract,bool WMSAuthorized, bool WMTSAuthorized,
             std::vector<Keyword> & keyWords, Pyramid*& dataPyramid,
             std::vector<Style*> & styles, double minRes, double maxRes,
             std::vector<CRS> & WMSCRSList, bool opaque, std::string authority,
             Interpolation::KernelType resampling, GeographicBoundingBoxWMS geographicBoundingBox,
             BoundingBoxWMS boundingBox, std::vector<MetadataURL>& metadataURLs )
-        :id ( id ), title ( title ), abstract ( abstract ), keyWords ( keyWords ),
+        :id ( id ), title ( title ), abstract ( abstract ), WMSAuthorized (WMSAuthorized), WMTSAuthorized (WMTSAuthorized),keyWords ( keyWords ),
          dataPyramid ( dataPyramid ), styles ( styles ), minRes ( minRes ),
          maxRes ( maxRes ), WMSCRSList ( WMSCRSList ), opaque ( opaque ),
          authority ( authority ),resampling ( resampling ),
@@ -386,6 +400,46 @@ public:
     */
     std::string              getAbstract()   const {
         return abstract;
+    }
+    /**
+     * \~french
+     * \brief Retourne le droit d'utiliser un service WMS
+     * \return WMSAuthorized
+     * \~english
+     * \brief Return the right to use WMS
+     * \return WMSAuthorized
+     */
+    bool getWMSAuthorized() {
+        return WMSAuthorized;
+    }
+    /**
+     * \~french
+     * \brief Modifie le droit d'utiliser un service WMS
+     * \~english
+     * \brief Modify the right to use WMS
+     */
+    void setWMSAuthorized(bool wmsA) {
+        WMSAuthorized = wmsA;
+    }
+    /**
+     * \~french
+     * \brief Retourne le droit d'utiliser un service WMTS
+     * \return WMTSAuthorized
+     * \~english
+     * \brief Return the right to use WMTS
+     * \return WMTSAuthorized
+     */
+    bool getWMTSAuthorized() {
+        return WMTSAuthorized;
+    }
+    /**
+     * \~french
+     * \brief Modifie le droit d'utiliser un service WMTS
+     * \~english
+     * \brief Modify the right to use WMTS
+     */
+    void setWMTSAuthorized(bool wmtsA) {
+        WMTSAuthorized = wmtsA;
     }
     /**
      * \~french
