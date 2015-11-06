@@ -1897,7 +1897,7 @@ std::vector<std::string> ConfLoader::loadListEqualsCRS(){
             start_index = found_space + 1;
         }
         if (targetLine.length() != 0) {
-           strVector.push_back( targetLine.substr(0, targetLine.length()-1) );
+           strVector.push_back( targetLine.substr(0, targetLine.length()) );
         }
     }
     return strVector;
