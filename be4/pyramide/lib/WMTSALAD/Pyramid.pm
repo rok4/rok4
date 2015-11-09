@@ -1399,14 +1399,6 @@ sub exportForDebug {
     $export .= sprintf "\t\t- Name : %s\n", $self->{od_pyramid}->{name};
     $export .= sprintf "\t\t- Descriptor path : %s\n", $self->{od_pyramid}->{desc_path};
     $export .= sprintf "\t\t- Data path : %s\n", $self->{od_pyramid}->{data_path};
-    
-    if (defined $self->{old_pyramid}->{name}) {
-        $export .= "\t This pyramid is an update\n";
-        $export .= "\t Old cache : \n";
-        $export .= sprintf "\t\t- Name : %s\n", $self->{old_pyramid}->{name};
-        $export .= sprintf "\t\t- Descriptor path : %s\n", $self->{old_pyramid}->{desc_path};
-        $export .= sprintf "\t\t- Data path : %s\n", $self->{old_pyramid}->{data_path};
-    }
 
     $export .= sprintf "\t Directories' name (depth = %s): \n", $self->{dir_depth};
     $export .= sprintf "\t\t- Data : %s\n", $self->{dir_image};
