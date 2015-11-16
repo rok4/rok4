@@ -401,6 +401,8 @@ bool Pyramid::are_the_two_CRS_equal( std::string crs1, std::string crs2, std::ve
     // Could have issues with lowercase name -> we put the CRS in upercase
     transform(crs1.begin(), crs1.end(), crs1.begin(), toupper);
     transform(crs2.begin(), crs2.end(), crs2.begin(), toupper);
+    crs1.append(" ");
+    crs2.append(" ");
     for (int line_number = 0 ; line_number < listofequalsCRS.size() ; line_number++) {
         std::string line = listofequalsCRS.at(line_number);
         // We check if the two CRS are on the same line inside the file. If yes then they are equivalent.
