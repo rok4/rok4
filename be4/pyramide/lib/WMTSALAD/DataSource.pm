@@ -80,15 +80,13 @@ Attributes:
     topOrder - integer - Level order, to which data source is used. It is calculated in relation to other datasource.
 
     srs - string - SRS of the bottom extent (and ImageSource objects if exists).
-    extent - <OGR::Geometry> - Precise extent, in the previous SRS (can be a bbox). It is calculated from the <ImageSource> or supplied in configuration file. 'extent' is mandatory (a bbox or a file which contains a WKT geometry) if there are no images. We have to know area to harvest. If images, extent is calculated thanks data.
+    extent - <OGR::Geometry> - Precise extent, in the previous SRS (can be a bbox). It is calculated from the <ImageSource> or supplied in configuration file. 'extent' is mandatory (a bbox or a file which contains a WKT geometry) if there are no images. We have to know area to harvest. If images, extent is calculated thanks to the data.
     list - string - File path, containing a list of image indices (I,J) to harvest.
     bbox - double array - Data source bounding box, in the previous SRS : [xmin,ymin,xmax,ymax].
 
-    imageSource - <ImageSource> - Georeferenced images' source.
-    harvesting - <Harvesting> - WMS server. If it is useless, it will be removed.
+    pyramidSource - <ImageSource> - Georeferenced images' source.
+    harvestSource - <Harvesting> - WMS server. If it is useless, it will be removed.
 
-Limitations:
-    Metadata managing not yet implemented.
 =cut
 
 ################################################################################
@@ -164,7 +162,7 @@ sub new {
         # Image source
         imageSource => undef,
         # Harvesting
-        harvesting => undef,
+        harvestSource => undef,
     };
 
     bless($self, $class);
