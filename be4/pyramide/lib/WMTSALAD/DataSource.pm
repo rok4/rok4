@@ -81,11 +81,10 @@ Attributes:
 
     srs - string - SRS of the bottom extent (and ImageSource objects if exists).
     extent - <OGR::Geometry> - Precise extent, in the previous SRS (can be a bbox). It is calculated from the <ImageSource> or supplied in configuration file. 'extent' is mandatory (a bbox or a file which contains a WKT geometry) if there are no images. We have to know area to harvest. If images, extent is calculated thanks to the data.
-    list - string - File path, containing a list of image indices (I,J) to harvest.
     bbox - double array - Data source bounding box, in the previous SRS : [xmin,ymin,xmax,ymax].
 
-    pyramidSource - <ImageSource> - Georeferenced images' source.
-    harvestSource - <Harvesting> - WMS server. If it is useless, it will be removed.
+    pyramidSource - <JOINCACHE::SourcePyramid> - Existing pyramid used as source.
+    harvestSource - <BE4::Harvesting> - WMS server. If it is useless, it will be removed.
 
 =cut
 
@@ -103,7 +102,7 @@ use List::Util qw(min max);
 use Geo::GDAL;
 
 # My module
-use BE4::ImageSource;
+use JOINCACHE::SourcePyramid;
 use BE4::Harvesting;
 
 require Exporter;
@@ -156,11 +155,10 @@ sub new {
         topID => undef,
         topOrder => undef,
         bbox => undef,
-        list => undef,
         extent => undef,
         srs => undef,
-        # Image source
-        imageSource => undef,
+        # Pyramid source
+        pyramidSource => undef,
         # Harvesting
         harvestSource => undef,
     };
@@ -175,4 +173,95 @@ sub new {
     return undef if (! $self->computeGlobalInfo());
 
     return $self;
+}
+
+
+=begin nd
+Function: _load
+
+Sorts parameters, relays to concerned constructors and stores results.
+
+(see datasource.png)
+
+Parameters (list):
+    level - string - Base level (bottom) for this data source.
+    params - hash - Data source parameters :
+    (start code)
+            # common part
+            srs - string
+
+            # Pyramid source part
+            pyramidDescriptor - string
+
+            # harvesting part
+            wms_layer - string
+            wms_url - string
+            wms_version - string
+            wms_request - string
+            wms_format - string
+            wms_bgcolor - string
+            wms_transparent - string
+            wms_style - string
+            min_size - string
+            max_width - string
+            max_height - string
+    (end code)
+=cut
+sub _load {
+    my $self   = shift;
+    my $level = shift;
+    my $params = shift;
+
+    TRACE;
+    
+    return FALSE if (! defined $params);
+
+    if (! defined $level || $level eq "") {
+        ERROR("A data source have to be defined with a level !");
+        return FALSE;
+    }
+    $self->{bottomID} = $level;
+
+    if (! exists $params->{srs} || ! defined $params->{srs}) {
+        ERROR("A data source have to be defined with the 'srs' parameter !");
+        return FALSE;
+    }
+    $self->{srs} = $params->{srs};
+
+    # Extent is mandatory
+    if (exists $params->{extent} && defined $params->{extent}) {
+        $self->{extent} = $params->{extent};
+    } else {
+        ERROR("A data source must have a corresponding extent");
+        return false;
+    }
+
+    # ImageSource is optionnal
+    my $tempPyramidSource = undef;
+    if (exists $params->{path_image}) {
+        $tempPyramidSource = JOINCACHE::SourcePyramid->new($params);
+        if (! defined $tempPyramidSource) {
+            ERROR("Cannot create the ImageSource object");
+            return FALSE;
+        }
+    }
+    $self->{pyramidSource} = $tempPyramidSource;
+
+    # Harvesting is optionnal, but if we have 'wms_layer' parameter, we suppose that we have others
+    my $harvesting = undef;
+    if (exists $params->{wms_layer}) {
+        $harvesting = BE4::Harvesting->new($params);
+        if (! defined $harvesting) {
+            ERROR("Cannot create the Harvesting object");
+            return FALSE;
+        }
+    }
+    $self->{harvesting} = $harvesting;
+    
+    if (! defined $harvesting && ! defined $imagesource) {
+        ERROR("A data source must have a ImageSource OR a Harvesting !");
+        return FALSE;
+    }
+    
+    return TRUE;
 }
