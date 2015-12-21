@@ -236,12 +236,12 @@ sub _load {
         return false;
     }
 
-    # ImageSource is optionnal
+    # SourcePyramid is optionnal
     my $tempPyramidSource = undef;
-    if (exists $params->{path_image}) {
-        $tempPyramidSource = JOINCACHE::SourcePyramid->new($params);
+    if (exists $params->{pyr_desc_file}) {
+        $tempPyramidSource = JOINCACHE::SourcePyramid->new($params->{pyr_desc_file});
         if (! defined $tempPyramidSource) {
-            ERROR("Cannot create the ImageSource object");
+            ERROR("Cannot create the SourcePyramid object");
             return FALSE;
         }
     }
