@@ -1,10 +1,9 @@
 rok4
 ====
 
-[![Join the chat at https://gitter.im/rok4/rok4](https://badges.gitter.im/rok4/rok4.svg)](https://gitter.im/rok4/rok4?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
 Rok4 est un serveur WMS/WMTS open source développé par l'IGN France.
 [![Build Status](https://travis-ci.org/rok4/rok4.svg?branch=master)](https://travis-ci.org/rok4/rok4)
+[![Join the chat at https://gitter.im/rok4/rok4](https://badges.gitter.im/rok4/rok4.svg)](https://gitter.im/rok4/rok4?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 # A propos
 
