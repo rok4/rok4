@@ -96,9 +96,12 @@ END {}
 
 sub new {
 	my $this = shift;
+	my %parms = @_;
+
+
     my $class= ref($this) || $this;
 
-	my $self = $class->SUPER::new();
+	my $self = $class->SUPER::new(%parms);
 
 	bless($self, $class);
 
