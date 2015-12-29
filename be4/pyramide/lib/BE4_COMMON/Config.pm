@@ -59,21 +59,27 @@ package BE4_COMMON::Config;
 use strict;
 use warnings;
 
+use vars qw($VERSION);
+
+my $VERSION = '0.1';
+
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
 use List::Util qw(min max);
 
 # My module
 
-require Exporter;
 require Config::IniFiles;
-use AutoLoader qw(AUTOLOAD);
 
-our @ISA = qw(Exporter);
+  # inheritance
+our @ISA;
+use parent 'Config::IniFiles';
 
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
+
+
 
 ################################################################################
 # Constantes
@@ -87,3 +93,22 @@ INIT {}
 END {}
 
 ################################################################################
+
+sub new {
+	my $this = shift;
+    my $class= ref($this) || $this;
+
+	my $self = $class->SUPER::new();
+
+	bless($self, $class);
+
+	if ($self->ReadConfig) {
+        return $self;
+    } else {
+        return undef;
+    }
+}
+
+
+
+1;
