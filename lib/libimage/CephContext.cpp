@@ -57,7 +57,7 @@ CephContext::CephContext (char* pool) {
     user_name = new char[255];
     conf_file = new char[255];
     pool_name = new char[255];
-    
+
     strcpy ( cluster_name,CEPH_CLUSTER_NAME );
     strcpy ( user_name,CEPH_USER_NAME );
     strcpy ( conf_file,CEPH_CONF_FILE );
@@ -76,27 +76,27 @@ bool CephContext::connection() {
         LOGGER_ERROR( "Cluster name : " << cluster_name );
         return false;
     }
-    
+
     ret = cluster.conf_read_file(conf_file);
     if (ret < 0) {
         LOGGER_ERROR( "Couldn't read the Ceph configuration file! error " << ret );
         LOGGER_ERROR( "Configuration file : " << conf_file );
         return false;
     }
-    
+
     ret = cluster.connect();
     if (ret < 0) {
         LOGGER_ERROR( "Couldn't connect to cluster! error " << ret );
         return false;
     }
-    
+
     ret = cluster.ioctx_create(pool_name, io_ctx);
     if (ret < 0) {
         LOGGER_ERROR( "Couldn't set up ioctx! error " << ret );
         LOGGER_ERROR( "Pool : " << pool_name );
         return false;
     }
-    
+
     return true;
 }
 
@@ -108,8 +108,7 @@ bool CephContext::readFromCephObject(uint8_t* data, int offset, int size, std::s
         LOGGER_ERROR ( "Unable to read " << size << " bytes (from the " << offset << " one) in the object " << name );
         return false;
     }
-    memcpy(data, bl.get_contiguous(0, bl.length()), bl.length());
-    
+    memcpy(data, bl.c_str(), bl.length());
     return true;
 }
 
@@ -118,7 +117,7 @@ bool CephContext::writeToCephObject(uint8_t* data, int offset, int size, std::st
     LOGGER_DEBUG("Ceph write : " << size << " bytes (from the " << offset << " one) in the object " << name);
     librados::bufferlist bl;
     bl.append((char*) data, size);
-    
+
     if (writting_in_progress) {
         write_completion->wait_for_complete();
         int ret = write_completion->get_return_value();
@@ -127,14 +126,14 @@ bool CephContext::writeToCephObject(uint8_t* data, int offset, int size, std::st
             return false;
         }
     }
-    
+
     int ret = io_ctx.aio_write(name, write_completion, bl, size, offset);
     writting_in_progress = true;
     if (ret < 0) {
         LOGGER_ERROR ( "Unable to start to write " << size << " bytes (from the " << offset << " one) in the object " << name );
         return false;
     }
-    
+
     return true;
 }
 
@@ -142,12 +141,12 @@ bool CephContext::writeFullToCephObject(uint8_t* data, int size, std::string nam
     LOGGER_DEBUG("Ceph write : " << size << " bytes (one shot) in the object " << name);
     librados::bufferlist bl;
     bl.append((char*) data, size);
-    
+
     int ret = io_ctx.write_full(name, bl);
     if (ret < 0) {
         LOGGER_ERROR ( "Unable to write " << size << " bytes (one shot) in the object " << name );
         return false;
     }
-    
+
     return true;
 }

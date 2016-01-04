@@ -1006,40 +1006,40 @@ msgstr "NUMBER OF LOADED LAYERS: "
 msgid "Construction de la configuration des services depuis "
 msgstr ""
 
-#: Level.cpp:146 Level.cpp:189 Level.cpp:240
+#: Level.cpp:143 Level.cpp:186 Level.cpp:237
 msgid "Image invalid !"
 msgstr "Image invalid !"
 
-#: Level.cpp:247
+#: Level.cpp:244
 #, fuzzy
 msgid "Dimensions invalid !"
 msgstr "Image invalid !"
 
-#: Level.cpp:272
+#: Level.cpp:269
 msgid "Too Much Tile on X axis"
 msgstr "Too Much Tile on X axis"
 
-#: Level.cpp:280
+#: Level.cpp:277
 msgid "Too Much Tile on Y axis"
 msgstr "Too Much Tile on Y axis"
 
-#: Level.cpp:320
+#: Level.cpp:317
 msgid "Indice de tuile negatif"
 msgstr ""
 
-#: Level.cpp:384 Level.cpp:403
+#: Level.cpp:380 Level.cpp:398
 msgid "Type d'encodage inconnu : "
 msgstr ""
 
-#: Level.cpp:408
+#: Level.cpp:403
 msgid "Tile : "
 msgstr "Tile : "
 
-#: Level.cpp:418
+#: Level.cpp:413
 msgid "GetTile Tiff"
 msgstr "GetTile Tiff"
 
-#: Level.cpp:428 Level.cpp:441
+#: Level.cpp:423 Level.cpp:436
 msgid "GetTile Image"
 msgstr "GetTile Image"
 
@@ -1079,47 +1079,47 @@ msgstr "Reloading configuration"
 msgid "Extinction du serveur ROK4"
 msgstr "Shutdown the ROK4 server"
 
-#: Pyramid.cpp:170
+#: Pyramid.cpp:168
 msgid "debut pyramide"
 msgstr ""
 
-#: Pyramid.cpp:176
+#: Pyramid.cpp:174
 msgid "fin pyramide"
 msgstr ""
 
-#: Pyramid.cpp:183
+#: Pyramid.cpp:181
 msgid "best_level="
 msgstr ""
 
-#: Pyramid.cpp:183
+#: Pyramid.cpp:181
 msgid " resolution requete="
 msgstr ""
 
-#: Pyramid.cpp:192
+#: Pyramid.cpp:190
 msgid "BBox en dehors de la definition du CRS"
 msgstr ""
 
-#: Pyramid.cpp:196 Pyramid.cpp:235
+#: Pyramid.cpp:194 Pyramid.cpp:233
 msgid "BBox decoupe incorrect"
 msgstr ""
 
-#: Pyramid.cpp:228
+#: Pyramid.cpp:226
 msgid "New Width = "
 msgstr ""
 
-#: Pyramid.cpp:228
+#: Pyramid.cpp:226
 msgid "New Height = "
 msgstr ""
 
-#: Pyramid.cpp:229
+#: Pyramid.cpp:227
 msgid "ratio_x = "
 msgstr ""
 
-#: Pyramid.cpp:229
+#: Pyramid.cpp:227
 msgid "ratio_y = "
 msgstr ""
 
-#: Pyramid.cpp:241
+#: Pyramid.cpp:239
 msgid "Image decoupe valide"
 msgstr ""
 
