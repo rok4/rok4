@@ -1147,6 +1147,29 @@ DataStream* Request::getCapWMTSParam ( ServicesConf& servicesConf, std::string& 
     return NULL;
 }
 
+bool Request::doesPathContain(std::string word) {
+    std::size_t found = path.find(word);
+    if (found!=std::string::npos) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool Request::doesPathFinishWith(std::string word) {
+    std::size_t found = path.find_last_of("/");
+    if (found!=std::string::npos) {
+        if (path.substr(found+1) == word)
+        {
+            return true;
+        } else {
+            return false;
+        }
+
+    } else {
+        return false;
+    }
+}
 // Parameters for WMS GetFeatureInfo
 DataSource* Request::WMSGetFeatureInfoParam (ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers,
                                           std::vector<Layer*>& query_layers,

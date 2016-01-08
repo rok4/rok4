@@ -645,7 +645,7 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
 
         for ( int y = 0; y < tileHeightwise; y++ ) {
             // On récupère toutes les lignes pour cette ligne de tuiles
-          for (int lig = 0; lig < tileHeight; lig++) {
+            for (int lig = 0; lig < tileHeight; lig++) {
                 if (pIn->getline(lines + lig*imageLineSize, y*tileHeight + lig) == 0) {
                     LOGGER_ERROR("Error reading the source image's line " << y*tileHeight + lig);
                     return -1;                    

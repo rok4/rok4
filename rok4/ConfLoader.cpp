@@ -2924,7 +2924,7 @@ std::vector<std::string> ConfLoader::loadListEqualsCRS(){
         while ( found_space != std::string::npos ){
             found_space = line.find(" ", start_index );
             if ( found_space == std::string::npos ) {
-                len = line.size() - start_index -1 ; //-1 pour le retour chariot
+                len = line.size() - start_index ; //-1 pour le retour chariot
             } else {
                 len = found_space - start_index;
             }
@@ -2942,7 +2942,7 @@ std::vector<std::string> ConfLoader::loadListEqualsCRS(){
             start_index = found_space + 1;
         }
         if (targetLine.length() != 0) {
-           strVector.push_back( targetLine.substr(0, targetLine.length()-1) );
+           strVector.push_back( targetLine.substr(0, targetLine.length()) );
         }
     }
     return strVector;
@@ -2990,7 +2990,7 @@ std::vector<CRS> ConfLoader::getEqualsCRS(std::vector<std::string> listofequalsC
             while ( found_space != std::string::npos ){
                 found_space = line.find(" ", start_index );
                 if ( found_space == std::string::npos ) {
-                    len = line.size() - start_index -1 ; //-1 pour le retour chariot
+                    len = line.size() - start_index ; //-1 pour le retour chariot
                 } else {
                     len = found_space - start_index;
                 }

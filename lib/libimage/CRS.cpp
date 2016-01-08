@@ -377,6 +377,15 @@ std::string CRS::getProj4Param ( std::string paramName ) {
     return toLowerCase( getProj4Def() ).substr(find_equal+1, find - find_equal -1);
 }
 
+bool CRS::testProj4Param ( std::string paramName ) {
+    std::size_t pos = 0;
+    pos = toLowerCase( getProj4Def() ).find( "+" + toLowerCase( paramName ));
+    if ( pos <0 || pos >getProj4Def().size() ) {
+      return false;
+    }
+    return true;
+}
+
 
 
 CRS::~CRS() {

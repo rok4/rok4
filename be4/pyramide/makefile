@@ -6,8 +6,8 @@
 BE4_BIN=$(BE4_ENV)/bin
 BE4_LIB=$(BE4_ENV)/lib
 BE4_CONF=$(BE4_ENV)/config/be4
-BE4_HTML=$(BE4_ENV)/html
-BE4_DOC=$(BE4_ENV)/doc
+BE4_HTML=$(BE4_ENV)/share/doc/Be4/html
+BE4_DOC=$(BE4_ENV)/share/doc/Be4
 BE4_MAN=$(BE4_ENV)/man
 BE4_SHARE=$(BE4_ENV)/share
 
