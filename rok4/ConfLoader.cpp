@@ -1815,6 +1815,15 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
 
+    bool getFeatureInfoAvailability = true;
+    std::string getFeatureInfoType = "";
+    std::string getFeatureInfoBaseURL = "";
+    std::string GFIService = "";
+    std::string GFIVersion = "";
+    std::string GFIQueryLayers = "";
+    std::string GFILayers = "";
+    bool GFIForceEPSG = true;
+
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
     if ( !pElem ) {
         LOGGER_ERROR ( fileName << _ ( " impossible de recuperer la racine." ) );
@@ -1859,6 +1868,56 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
         WMTSauth= false;
     }
 
+    pElem=hRoot.FirstChild("getFeatureInfoAvailability").Element();
+    if ( pElem && pElem->GetText() && pElem->GetTextStr()=="false") {
+        getFeatureInfoAvailability= false;
+    }
+
+    if(getFeatureInfoAvailability){
+        pElem=hRoot.FirstChild("getFeatureInfoType").Element();
+        if ( pElem && pElem->GetText()) {
+            getFeatureInfoType = pElem->GetTextStr();
+        }
+
+        // en fonction du type : pas le meme schema xml
+        if(getFeatureInfoType.compare("PYRAMID") == 0){
+            // Donnee elle-meme
+        }else if(getFeatureInfoType.compare("EXTERNALWMS") == 0){
+            // WMS
+            hDoc=hRoot.FirstChild("getFeatureInfoUrl");
+            pElem=hDoc.FirstChild("getFeatureInfoBaseURL").Element();
+            if ( pElem && pElem->GetText()) {
+                getFeatureInfoBaseURL = pElem->GetTextStr();
+            }
+            pElem=hDoc.FirstChild("layers").Element();
+            if ( pElem && pElem->GetText()) {
+                GFILayers = pElem->GetTextStr();
+            }
+            pElem=hDoc.FirstChild("queryLayers").Element();
+            if ( pElem && pElem->GetText()) {
+                GFIQueryLayers = pElem->GetTextStr();
+            }
+            pElem=hDoc.FirstChild("version").Element();
+            if ( pElem && pElem->GetText()) {
+                GFIVersion = pElem->GetTextStr();
+            }
+            pElem=hDoc.FirstChild("service").Element();
+            if ( pElem && pElem->GetText()) {
+                GFIService = pElem->GetTextStr();
+            }
+            pElem=hDoc.FirstChild("forceEPSG").Element();
+            if ( pElem && pElem->GetText()=="false") {
+                GFIForceEPSG = false;
+            }
+        }else if(getFeatureInfoType.compare("SQL") == 0){
+            // SQL
+        }else{
+            LOGGER_ERROR ( fileName << _ ( "La source du GetFeatureInfo n'est pas autorisée." ) );
+            return NULL;
+        }
+    }
+
+    //
 
     for ( pElem=hRoot.FirstChild ( "keywordList" ).FirstChild ( "keyword" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "keyword" ) ) {
         if ( ! ( pElem->GetText() ) )
@@ -2182,10 +2241,14 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
         return NULL;
     }
 
+
+
     Layer *layer;
 
     layer = new Layer ( id, title, abstract, WMSauth, WMTSauth,keyWords, pyramid, styles, minRes, maxRes,
-                        WMSCRSList, opaque, authority, resampling,geographicBoundingBox,boundingBox,metadataURLs );
+                        WMSCRSList, opaque, authority, resampling,geographicBoundingBox,boundingBox,metadataURLs,
+                        getFeatureInfoAvailability, getFeatureInfoType, getFeatureInfoBaseURL, GFIVersion,
+                        GFIService, GFIQueryLayers, GFILayers, GFIForceEPSG);
 
     //Si une pyramide est à la demande, on n'authorize pas le WMS car c'est un cas non gérer dans les processus de reponse du serveur
     if (layer->getDataPyramid()->getOnDemand()) {
