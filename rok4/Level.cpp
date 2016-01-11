@@ -398,7 +398,7 @@ DataSource* Level::getTilePixel ( int x, int y, int i, int j ) {
         DataSource* source=getDecodedTile( x, y );
 
         size_t tile_size;
-        const uint8_t* a = source->getData(tile_size);        
+        const uint8_t* buffer = source->getData(tile_size);        
 
         std::stringstream ss;
         int index = (i+j*getTm().getTileW())*channels;
