@@ -1815,7 +1815,7 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
 
-    bool getFeatureInfoAvailability = true;
+    bool getFeatureInfoAvailability = false;
     std::string getFeatureInfoType = "";
     std::string getFeatureInfoBaseURL = "";
     std::string GFIService = "";
@@ -1869,11 +1869,9 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
     }
 
     pElem=hRoot.FirstChild("getFeatureInfoAvailability").Element();
-    if ( pElem && pElem->GetText() && pElem->GetTextStr()=="false") {
-        getFeatureInfoAvailability= false;
-    }
+    if ( pElem && pElem->GetText() && pElem->GetTextStr()=="true") {
+        getFeatureInfoAvailability= true;
 
-    if(getFeatureInfoAvailability){
         pElem=hRoot.FirstChild("getFeatureInfoType").Element();
         if ( pElem && pElem->GetText()) {
             getFeatureInfoType = pElem->GetTextStr();
