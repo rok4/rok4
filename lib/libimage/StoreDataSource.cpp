@@ -38,31 +38,33 @@
 #include "StoreDataSource.h"
 #include "FileDataSource.h"
 #include "CephDataSource.h"
+#include "SwiftDataSource.h"
 #include <fcntl.h>
 #include "Logger.h"
 #include <cstdio>
 #include <errno.h>
 
 StoreDataSource::StoreDataSource ( const char* name, const uint32_t posoff, const uint32_t possize, std::string type, std::string encoding ) :
-    name ( name ), posoff ( posoff ), possize ( possize ), type ( type ) , encoding( encoding ){
-    data=0;
-    size=0;
-}
-StoreDataSource::StoreDataSource ( const char* name, const uint32_t posoff, const uint32_t possize, std::string type ) :
-    name ( name ), posoff ( posoff ), possize ( possize ), type ( type ) , encoding( "" ){
+    name ( name ), posoff ( posoff ), possize ( possize ) , type (type), encoding( encoding )
+{
     data=0;
     size=0;
 }
 
 
-StoreDataSource * StoreDataSourceFactory::createStoreDataSource (const char* name, const uint32_t posoff, const uint32_t possize, std::string type , CephContext* cc  ) {
-    if (cc) {
-        return new CephDataSource(name,posoff,possize,type, cc);
+StoreDataSource * StoreDataSourceFactory::createStoreDataSource (
+    const char* name, const uint32_t posoff, const uint32_t possize, std::string type ,
+    Context* c, std::string encoding
+) {
+
+    if (dynamic_cast<CephContext*>( c ) ) {
+        return new CephDataSource(name,posoff,possize, type, dynamic_cast<CephContext*>( c ), encoding);
+    } else if (dynamic_cast<SwiftContext*>( c ) ) {
+        return new SwiftDataSource(name,posoff,possize, type, dynamic_cast<SwiftContext*>( c ), encoding);
+    } else if (dynamic_cast<FileContext*>( c ) ) {
+        return new FileDataSource(name,posoff,possize, type, dynamic_cast<FileContext*>( c ), encoding);
     } else {
-        return new FileDataSource(name,posoff,possize,type);
+        LOGGER_ERROR("Context type unknown");
+        return NULL;
     }
-}
-
-StoreDataSource * StoreDataSourceFactory::createStoreDataSource (const char* name, const uint32_t posoff, const uint32_t possize, std::string type , std::string encoding) {
-    return new FileDataSource(name,posoff,possize,type,encoding);
 }

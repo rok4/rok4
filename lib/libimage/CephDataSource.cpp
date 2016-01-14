@@ -43,8 +43,8 @@
 // Taille maximum d'une tuile WMTS
 #define MAX_TILE_SIZE 1048576
 
-CephDataSource::CephDataSource ( const char* filename, const uint32_t posoff, const uint32_t possize, std::string type, CephContext* cc ) :
-    StoreDataSource(filename,posoff,possize,type), cephContext(cc){
+CephDataSource::CephDataSource ( const char* name, const uint32_t posoff, const uint32_t possize, std::string type , CephContext* cc, std::string encoding) :
+    StoreDataSource(name,posoff, possize,type,encoding), cephContext(cc) {
 
 }
 
@@ -62,7 +62,7 @@ const uint8_t* CephDataSource::getData ( size_t &tile_size ) {
     // Lecture de la position de la tuile dans le fichier
     uint8_t* uint32tab = new uint8_t[sizeof( uint32_t )];
     
-    if (! cephContext->readFromCephObject(uint32tab, posoff, 4, name)) {
+    if (! cephContext->read(uint32tab, posoff, 4, name)) {
         LOGGER_ERROR ( "Erreur lors de la lecture de la position de la tuile dans l'objet " << name );
         return 0;
     }    
@@ -71,7 +71,7 @@ const uint8_t* CephDataSource::getData ( size_t &tile_size ) {
     // Lecture de la taille de la tuile dans le fichier
     // Ne lire que 4 octets (la taille de tile_size est plateforme-dependante)
     // Lecture de la position de la tuile dans le fichier    
-    if (! cephContext->readFromCephObject(uint32tab, possize, 4, name)) {
+    if (! cephContext->read(uint32tab, possize, 4, name)) {
         LOGGER_ERROR ( "Erreur lors de la lecture de la taille de la tuile dans l'objet " << name );
         return 0;
     }    
@@ -88,7 +88,7 @@ const uint8_t* CephDataSource::getData ( size_t &tile_size ) {
     
     // Lecture de la tuile
     data = new uint8_t[tile_size];
-    if (! cephContext->readFromCephObject(data, tileOffset, tile_size, name)) {
+    if (! cephContext->read(data, tileOffset, tile_size, name)) {
         LOGGER_ERROR ( "Erreur lors de la lecture de la tuile dans l'objet " << name );
         return 0;
     }
@@ -99,7 +99,7 @@ const uint8_t* CephDataSource::getData ( size_t &tile_size ) {
 uint8_t* CephDataSource::getThisData ( const uint32_t offset, const uint32_t size ) {
     
     uint8_t* wanteddata = new uint8_t[size];
-    if ( ! cephContext->readFromCephObject(wanteddata, offset, size, name) ) {
+    if ( ! cephContext->read(wanteddata, offset, size, name) ) {
         LOGGER_ERROR ( "Unable to read " << size << " bytes (from the " << offset << " one) in the object " << name );
         return 0;
     }

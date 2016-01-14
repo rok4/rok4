@@ -35,63 +35,43 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#include "SwiftDataSource.h"
-#include <fcntl.h>
-#include "Logger.h"
-#include <cstdio>
-
-// Taille maximum d'une tuile WMTS
-#define MAX_TILE_SIZE 1048576
-
-SwiftDataSource::SwiftDataSource ( const char* name, const uint32_t posoff, const uint32_t possize, std::string type , SwiftContext* sc, std::string encoding) :
-    StoreDataSource(name,posoff,possize,type, encoding), swiftContext(sc){
-
-}
-
-/*
- * Fonction retournant les données de la tuile
- * Le fichier ne doit etre lu qu une seule fois
- * Indique la taille de la tuile (inconnue a priori)
+/**
+ * \file SwiftContext.cpp
+ ** \~french
+ * \brief Implémentation de la classe SwiftContext
+ * \details
+ * \li SwiftContext : connexion à un container Swift
+ ** \~english
+ * \brief Implement classe SwiftContext
+ * \details
+ * \li SwiftContext : Swift container connection
  */
-const uint8_t* SwiftDataSource::getData ( size_t &tile_size ) {
-    if ( data ) {
-        tile_size=size;
-        return data;
-    }
-    
-    uint8_t* uint32tab = new uint8_t[sizeof( uint32_t )];
 
-    // Lecture de la position de la tuile dans le fichier
+#include "SwiftContext.h"
 
-    uint32_t tileOffset = *((uint32_t*) uint32tab);
-    
-    // Lecture de la taille de la tuile dans le fichier
-    // Ne lire que 4 octets (la taille de tile_size est plateforme-dependante)
- 
-    uint32_t tileSize = *((uint32_t*) uint32tab);
-    tile_size = tileSize;
-    
-    // La taille de la tuile ne doit pas exceder un seuil
-    // Objectif : gerer le cas de fichiers TIFF non conformes aux specs du cache
-    // (et qui pourraient indiquer des tailles de tuiles excessives)
-    if ( tile_size > MAX_TILE_SIZE ) {
-        LOGGER_ERROR ( "Tuile trop volumineuse dans le fichier " << name ) ;
-        return 0;
-    }
-    
-    // Lecture de la tuile
-    data = new uint8_t[tile_size];
-
-
-    return data;
+SwiftContext::SwiftContext (std::string auth, std::string account, std::string user, std::string passwd, std::string container) :
+    Context(),
+    auth_url(auth),user_name(user), user_account(account), user_passwd(passwd), container_name(container)
+{
 }
 
-uint8_t* SwiftDataSource::getThisData ( const uint32_t offset, const uint32_t size ) {
-    
-    uint8_t* wanteddata = new uint8_t[size];
-    
-    return wanteddata;
+bool SwiftContext::connection() {
+    connected = true;
+    return true;
 }
 
-SwiftDataSource::~SwiftDataSource() {
+bool SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
+    LOGGER_DEBUG("Swift read : " << size << " bytes (from the " << offset << " one) in the object " << name);
+    return true;
+}
+
+
+bool SwiftContext::write(uint8_t* data, int offset, int size, std::string name) {
+    LOGGER_DEBUG("Swift write : " << size << " bytes (from the " << offset << " one) in the object " << name);
+    return true;
+}
+
+bool SwiftContext::writeFull(uint8_t* data, int size, std::string name) {
+    LOGGER_DEBUG("Swift write : " << size << " bytes (one shot) in the object " << name);
+    return true;
 }

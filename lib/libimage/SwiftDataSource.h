@@ -48,10 +48,10 @@
 class SwiftDataSource : public StoreDataSource {
     
 private:
-    CephContext* cephContext;
+    SwiftContext* swiftContext;
 
 public:
-    SwiftDataSource ( const char* filename, const uint32_t posoff, const uint32_t possize, std::string type);
+    SwiftDataSource (const char* name, const uint32_t posoff, const uint32_t possize, std::string type , SwiftContext* sc, std::string encoding);
     const uint8_t* getData ( size_t &tile_size );
     uint8_t* getThisData ( const uint32_t offset, const uint32_t size );
 

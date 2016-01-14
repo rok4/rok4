@@ -39,40 +39,35 @@
 #define STOREDATASOURCE_H
 
 #include "Data.h"
+#include "Context.h"
 #include "CephContext.h"
+#include "FileContext.h"
+#include "SwiftContext.h"
 
 /*
  * Classe qui fait office de proxy pour lire sur fichier ou sur Ceph (stockage objet)
  */
 
-class StoreDataSource :public DataSource {
+class StoreDataSource : public DataSource {
 
 protected:
 
     std::string name;
-    const uint32_t posoff;		// Position dans le fichier des 4 octets indiquant la position de la tuile dans le fichier
-    const uint32_t possize;		// Position dans le fichier des 4 octets indiquant la taille de la tuile dans le fichier
+    const uint32_t posoff;
+    const uint32_t possize;
     uint8_t* data;
     size_t size;
-    std::string type;
     std::string encoding;
+    std::string type;
 
-    StoreDataSource ( const char* name, const uint32_t posoff, const uint32_t possize, std::string type);
-    StoreDataSource ( const char* name, const uint32_t posoff, const uint32_t possize, std::string type , std::string encoding );
+    StoreDataSource ( const char* name, const uint32_t posoff, const uint32_t possize, std::string type, std::string encoding);
 
 public:
 
 
     virtual const uint8_t* getData ( size_t &tile_size ) = 0;
-    
     virtual uint8_t* getThisData ( const uint32_t offset, const uint32_t size ) = 0;
 
-    /*
-     * @ return le type MIME de la source de donnees
-     */
-    std::string getType() {
-        return type;
-    }
 
     /*
     * Liberation du buffer
@@ -97,14 +92,22 @@ public:
         return encoding;
     }
 
+    /*
+     * @ return le type MIME de la source de donnees
+     */
+    std::string getType() {
+        return type;
+    }
 
 };
 
 class StoreDataSourceFactory {
 
 public:
-    StoreDataSource * createStoreDataSource (const char* name, const uint32_t posoff, const uint32_t possize, std::string type , CephContext* cc = NULL );
-    StoreDataSource * createStoreDataSource (const char* name, const uint32_t posoff, const uint32_t possize, std::string type , std::string encoding);
+    StoreDataSource * createStoreDataSource (
+        const char* name, const uint32_t posoff, const uint32_t possize, std::string type ,
+        Context* c, std::string encoding = ""
+    );
 };
 
 #endif // STOREDATASOURCE_H

@@ -59,7 +59,7 @@
 #include "zlib.h"
 #include <jpeglib.h>
 #include "FileImage.h"
-#include "CephContext.h"
+#include "Context.h"
 #include "StoreDataSource.h"
 
 #define ROK4_IMAGE_HEADER_SIZE 2048
@@ -82,11 +82,50 @@
  *
  * Toutes les spécifications sont disponible à [cette adresse](http://www.rok4.org/documentation/specifications-pyramides-dimage).
  */
-class Rok4Image : public FileImage {
+class Rok4Image : public Image {
 
     friend class Rok4ImageFactory;
 
 private:
+
+    /**
+     * \~french \brief Nom de l'image
+     * \~english \brief image's name
+     */
+    char* name;
+    /**
+     * \~french \brief Photométrie des données (rgb, gray...)
+     * \~english \brief Data photometric (rgb, gray...)
+     */
+    Photometric::ePhotometric photometric;
+    /**
+     * \~french \brief type de l'éventuel canal supplémentaire
+     * \details En écriture ou dans les traitements, on considère que les canaux ne sont pas prémultipliés par la valeur d'alpha.
+     * En lecture, on accepte des images pour lesquelles l'alpha est associé. On doit donc mémoriser cette information et convertir à la volée lors de la lecture des données.
+     * \~english \brief extra sample type (if exists)
+     */
+    ExtraSample::eExtraSample esType;
+    /**
+     * \~french \brief Compression des données (jpeg, packbits...)
+     * \~english \brief Data compression (jpeg, packbits...)
+     */
+    Compression::eCompression compression;
+    /**
+     * \~french \brief Format des canaux
+     * \~english \brief Sample format
+     */
+    SampleFormat::eSampleFormat sampleformat;
+    /**
+     * \~french \brief Nombre de bits par canal
+     * \~english \brief Number of bits per sample
+     */
+    int bitspersample;
+    
+    /**
+     * \~french \brief Taille d'un pixel en octet
+     * \~english \brief Byte pixel's size
+     */
+    int pixelSize;
 
     /**************************** Pour la lecture ****************************/
 
@@ -128,7 +167,12 @@ private:
      */
     int rawTileSize;
     
-    CephContext* cephContext;
+
+    /**
+     * \~french \brief Contexte de stockage de l'image ROK4
+     * \~english \brief Image's storage context
+     */    
+    Context* context;
 
     /**************************** Pour la lecture ****************************/
     
@@ -185,12 +229,6 @@ private:
      * \~english \brief Tile's size, in the file
      */
     uint32_t *tilesByteCounts;
-
-    /**
-     * \~french \brief Flux d'écriture de l'image ROK4
-     * \~english \brief Stream used to write the ROK4 image
-     */
-    std::ofstream output;
 
     /**
      * \~french \brief Taille du buffer #Buffer temporaire contenant la tuile à écrire (dans writeTile), compressée
@@ -394,7 +432,10 @@ protected:
      * \param[in] tileHeight tile's pixel height
      */
     Rok4Image (
-        int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name, SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression, ExtraSample::eExtraSample es, int tileWidth, int tileHeight, CephContext* cc
+        int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name,
+        SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression, ExtraSample::eExtraSample es,
+        int tileWidth, int tileHeight,
+        Context* context
     );
 
 public:
@@ -413,6 +454,16 @@ public:
             ( bps == 16 && sf == SampleFormat::UINT ) || 
             ( bps == 8 && sf == SampleFormat::UINT )
         );
+    }
+
+    /**
+     * \~french
+     * \brief Modifie le type du canal supplémentaire
+     * \~english
+     * \brief Modify extra sample type
+     */
+    inline void setExtraSample(ExtraSample::eExtraSample es) {
+        esType = es;
     }
 
     /**
@@ -437,11 +488,13 @@ public:
     void print() {
         LOGGER_INFO ( "" );
         LOGGER_INFO ( "---------- Rok4Image ------------" );
-        FileImage::print();
+        Image::print();
+        LOGGER_INFO ( "\t- Image name : " << name );
+        LOGGER_INFO ( "\t- Compression : " << Compression::toString ( compression ) );
+        LOGGER_INFO ( "\t- Photometric : " << Photometric::toString ( photometric ) );
+        LOGGER_INFO ( "\t- Bits per sample : " << bitspersample );
+        LOGGER_INFO ( "\t- Sample format : " << SampleFormat::toString ( sampleformat ) );
         LOGGER_INFO ( "\t- tile width = " << tileWidth << ", tile height = " << tileHeight );
-        if (cephContext) {
-            LOGGER_INFO ( "\t- Ceph pool's name = " << cephContext->getPoolName() );
-        }
         LOGGER_INFO ( "" );
     }
 
@@ -575,6 +628,7 @@ public:
      * \param[in] bbox emprise rectangulaire de l'image
      * \param[in] resx résolution dans le sens des X.
      * \param[in] resy résolution dans le sens des Y.
+     * \param[in] contexte de stockage (fichier, objet ceph ou objet swift)
      * \return un pointeur d'objet Rok4Image, NULL en cas d'erreur
      ** \~english
      * \brief Create an Rok4Image object, for reading
@@ -586,9 +640,10 @@ public:
      * \param[in] bbox bounding box
      * \param[in] resx X wise resolution.
      * \param[in] resy Y wise resolution.
+     * \param[in] context storage context (file, ceph object or swift object)
      * \return a Rok4Image object pointer, NULL if error
      */
-    Rok4Image* createRok4ImageToRead ( char* filename, BoundingBox<double> bbox, double resx, double resy, CephContext* cc = 0 );
+    Rok4Image* createRok4ImageToRead ( char* filename, BoundingBox<double> bbox, double resx, double resy, Context* context );
 
     /** \~french
      * \brief Crée un objet Rok4Image, pour l'écriture
@@ -609,6 +664,7 @@ public:
      * \param[in] compression compression des données
      * \param[in] tileWidth largeur en pixel de la tuile
      * \param[in] tileHeight hauteur en pixel de la tuile
+     * \param[in] contexte de stockage (fichier, objet ceph ou objet swift)
      * \return un pointeur d'objet Rok4Image, NULL en cas d'erreur
      ** \~english
      * \brief Create a Rok4Image object, for writting
@@ -629,12 +685,13 @@ public:
      * \param[in] compression data compression
      * \param[in] tileWidth tile's pixel width
      * \param[in] tileHeight tile's pixel height
+     * \param[in] context storage context (file, ceph object or swift object)
      * \return a Rok4Image object pointer, NULL if error
      */
     Rok4Image* createRok4ImageToWrite (
         char* filename, BoundingBox<double> bbox, double resx, double resy, int width, int height, int channels,
         SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
-        Compression::eCompression compression, int tileWidth, int tileHeight, CephContext* cc = 0 
+        Compression::eCompression compression, int tileWidth, int tileHeight, Context* context
     );
 };
 

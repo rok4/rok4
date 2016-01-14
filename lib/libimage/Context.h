@@ -36,79 +36,47 @@
  */
 
 /**
- * \file CephContext.h
+ * \file Context.h
  ** \~french
- * \brief Définition de la classe CephContext
+ * \brief Définition de la classe Context
  * \details
- * \li CephContext : connexion à un pool de données Ceph
+ * \li Context : classe d'abstraction du contexte de stockage (fichier, ceph ou swift)
  ** \~english
- * \brief Define classe CephContext
+ * \brief Define classe Context
  * \details
- * \li CephContext : Ceph data pool connection
+ * \li Context : storage context abstraction
  */
 
-#ifndef CEPH_CONTEXT_H
-#define CEPH_CONTEXT_H
+#ifndef CONTEXT_H
+#define CONTEXT_H
 
-#include <rados/librados.hpp>
+#include <stdint.h>// pour uint8_t
 #include "Logger.h"
-#include "Context.h"
+#include <string.h>
 
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
- * \brief Création d'un contexte Ceph (connexion à un cluster + pool particulier), pour pouvoir récupérer des données stockées sous forme d'objets
+ * \brief Création d'un contexte de stockage abstrait 
  */
-class CephContext : public Context {
-    
-private:
-    
-    std::string cluster_name;
-    
-    std::string user_name;
-    
-    std::string conf_file;
-    
-    std::string pool_name;
+class Context {  
 
-    librados::Rados cluster;
-    librados::IoCtx io_ctx;
-    librados::AioCompletion* write_completion;
-    bool writting_in_progress;
+protected:
+
+	bool connected;
+
+    /** Constructeurs */
+    Context () : connected(false) {};
 
 public:
 
-    /** Constructeurs */
-    CephContext (std::string cluster, std::string user, std::string conf, std::string pool);
+    virtual bool connection() = 0;
+
+    virtual bool read(uint8_t* data, int offset, int size, std::string name) = 0;
+    virtual bool write(uint8_t* data, int offset, int size, std::string name) = 0;
+    virtual bool writeFull(uint8_t* data, int size, std::string name) = 0;
     
-    librados::IoCtx getContext () {
-        return io_ctx;
-    }
-    
-    std::string getPoolName () {
-        return pool_name;
-    }
-    
-    bool read(uint8_t* data, int offset, int size, std::string name);
-    bool write(uint8_t* data, int offset, int size, std::string name);
-    bool writeFull(uint8_t* data, int size, std::string name);
-    
-    bool connection();
-    
-    virtual ~CephContext() {
-        if (writting_in_progress) {
-            writting_in_progress = false;
-            write_completion->wait_for_complete();
-            int ret = write_completion->get_return_value();
-            if (ret < 0) {
-                LOGGER_ERROR ( "Unable to complete last writting" );
-            }
-        }
-        write_completion->release();
-        
-        io_ctx.close();
-        cluster.shutdown();
-    };
+    virtual ~Context() { };
 };
 
 #endif

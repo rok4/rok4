@@ -229,7 +229,7 @@ static uint16_t fromROK4ExtraSample ( ExtraSample::eExtraSample es ) {
 /* ------------------------------------------------------------------------------------------------ */
 /* -------------------------------------------- USINES -------------------------------------------- */
 
-Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( char* filename, BoundingBox< double > bbox, double resx, double resy, CephContext* cc ) {
+Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( char* name, BoundingBox< double > bbox, double resx, double resy, Context* c ) {
 
     int width=0, height=0, channels=0, planarconfig=0, bitspersample=0, sf=0, ph=0, comp=0;
     int tileWidth=0, tileHeight=0;
@@ -237,9 +237,10 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( char* filename, BoundingBox
     // On va lire toutes les informations de l'en-tête TIFF à la main, sans passer par la libtiff pour être libre quant au type de stockage de la donnée
     
     StoreDataSourceFactory sdsf;
-    StoreDataSource* sds = sdsf.createStoreDataSource(filename, 0, 0, "", cc);
+    StoreDataSource* sds = sdsf.createStoreDataSource(name, 0, 0, "", c);
 
-    uint8_t* hdr = sds->getThisData(0, ROK4_IMAGE_HEADER_SIZE);
+    size_t tmpSize;
+    uint8_t* hdr = sds->getThisData(0,ROK4_IMAGE_HEADER_SIZE);
     
     uint8_t* p;
     
@@ -287,7 +288,7 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( char* filename, BoundingBox
         sf = *((uint32_t*) p);        
     } else {
         LOGGER_ERROR ( "Inconsistent TIFF tag " << tagEs );
-        LOGGER_ERROR ( "Unable to read sample format or extra samples for file " << filename );
+        LOGGER_ERROR ( "Unable to read sample format or extra samples for file " << name );
         return NULL;
     }
     
@@ -298,28 +299,28 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( char* filename, BoundingBox
 
     if ( ! Rok4Image::canRead ( bitspersample, toROK4SampleFormat ( sf ) ) ) {
         LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( toROK4SampleFormat ( sf ) ) << " and " << bitspersample << " bits per sample" );
-        LOGGER_ERROR ( "\t for the image to read : " << filename );
+        LOGGER_ERROR ( "\t for the image to read : " << name );
         return NULL;
     }
 
     if ( resx > 0 && resy > 0 ) {
         if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {
-            LOGGER_ERROR ( "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" );
+            LOGGER_ERROR ( "Resolutions, bounding box and real dimensions for image '" << name << "' are not consistent" );
             return NULL;
         }
     }
 
     return new Rok4Image (
-        width, height, resx, resy, channels, bbox, filename,
+        width, height, resx, resy, channels, bbox, name,
         toROK4SampleFormat( sf ), bitspersample, toROK4Photometric ( ph ), toROK4Compression ( comp ), es,
-        tileWidth, tileHeight, cc
+        tileWidth, tileHeight, c
     );
 }
 
 Rok4Image* Rok4ImageFactory::createRok4ImageToWrite (
-    char* filename, BoundingBox<double> bbox, double resx, double resy, int width, int height, int channels,
+    char* name, BoundingBox<double> bbox, double resx, double resy, int width, int height, int channels,
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
-    Compression::eCompression compression, int tileWidth, int tileHeight, CephContext* cc  ) {
+    Compression::eCompression compression, int tileWidth, int tileHeight, Context* c  ) {
 
     if (width % tileWidth != 0 || height % tileHeight != 0) {
         LOGGER_ERROR("Image's dimensions have to be a multiple of tile's dimensions");
@@ -353,13 +354,13 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToWrite (
     
     if ( ! Rok4Image::canWrite ( bitspersample, sampleformat ) ) {
         LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( sampleformat ) << " and " << bitspersample << " bits per sample" );
-        LOGGER_ERROR ( "\t for the image to write : " << filename );
+        LOGGER_ERROR ( "\t for the image to write : " << name );
         return NULL;
     }
     
     if ( resx > 0 && resy > 0 ) {
         if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {
-            LOGGER_ERROR ( "Resolutions, bounding box and dimensions for the ROK4 image (to write)'" << filename << "' are not consistent" );
+            LOGGER_ERROR ( "Resolutions, bounding box and dimensions for the ROK4 image (to write)'" << name << "' are not consistent" );
             return NULL;
         }
     } else {
@@ -369,8 +370,8 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToWrite (
     }
 
     return new Rok4Image (
-        width, height, resx, resy, channels, bbox, filename,
-        sampleformat, bitspersample, photometric, compression, ExtraSample::ALPHA_UNASSOC, tileWidth, tileHeight, cc
+        width, height, resx, resy, channels, bbox, name,
+        sampleformat, bitspersample, photometric, compression, ExtraSample::ALPHA_UNASSOC, tileWidth, tileHeight, c
     );
 }
 
@@ -381,10 +382,11 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToWrite (
 Rok4Image::Rok4Image (
     int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
-    Compression::eCompression compression, ExtraSample::eExtraSample es, int tileWidth, int tileHeight, CephContext* cc ) :
+    Compression::eCompression compression, ExtraSample::eExtraSample es, int tileWidth, int tileHeight, Context* c ) :
 
-    FileImage ( width, height, resx, resy, channels, bbox, name, sampleformat, bitspersample, photometric, compression, es ), 
-    tileWidth (tileWidth), tileHeight(tileHeight), cephContext(cc)
+    Image ( width, height, resx, resy, channels, bbox),
+    sampleformat ( sampleformat ), bitspersample ( bitspersample ), photometric ( photometric ), compression ( compression ), esType(esType), 
+    tileWidth (tileWidth), tileHeight(tileHeight), context(c)
 {
     tileWidthwise = width/tileWidth;
     tileHeightwise = height/tileHeight;
@@ -426,7 +428,7 @@ uint8_t* Rok4Image::memorizeRawTile ( size_t& size, int tile )
         LOGGER_DEBUG ( "Not memorized tile (" << tile << "). We read, decompress, and memorize it");
 
         StoreDataSourceFactory sdsf;
-        StoreDataSource* encData = sdsf.createStoreDataSource(filename, ROK4_IMAGE_HEADER_SIZE + tile*4, ROK4_IMAGE_HEADER_SIZE + tilesNumber*4 + tile*4, "", cephContext);
+        StoreDataSource* encData = sdsf.createStoreDataSource(name, ROK4_IMAGE_HEADER_SIZE + tile*4, ROK4_IMAGE_HEADER_SIZE + tilesNumber*4 + tile*4, "", context);
 
         DataSource* decData;
         size_t tmpSize;
@@ -584,7 +586,7 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
     }
     
     if (! prepare()) {
-        LOGGER_ERROR("Cannot write the ROK4 images header for " << filename);
+        LOGGER_ERROR("Cannot write the ROK4 images header for " << name);
         return -1;
     }
 
@@ -612,7 +614,7 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
                 int tileInd = y*tileWidthwise + x;
 
                 if (! writeTile(tileInd, tile, crop)) {
-                    LOGGER_ERROR("Error writting tile " << tileInd << " for ROK4 image " << filename);
+                    LOGGER_ERROR("Error writting tile " << tileInd << " for ROK4 image " << name);
                     return -1;
                 }
             }
@@ -639,7 +641,7 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
                 int tileInd = y*tileWidthwise + x;
 
                 if (! writeTile(tileInd, tile, crop)) {
-                    LOGGER_ERROR("Error writting tile " << tileInd << " for ROK4 image " << filename);
+                    LOGGER_ERROR("Error writting tile " << tileInd << " for ROK4 image " << name);
                     return -1;
                 }
             }
@@ -665,7 +667,7 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
                 int tileInd = y*tileWidthwise + x;
 
                 if (! writeTile(tileInd, tile, crop)) {
-                    LOGGER_ERROR("Error writting tile " << tileInd << " for ROK4 image " << filename);
+                    LOGGER_ERROR("Error writting tile " << tileInd << " for ROK4 image " << name);
                     return -1;
                 }
             }
@@ -676,7 +678,7 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
     delete [] tile;
 
     if (! close()) {
-        LOGGER_ERROR("Cannot close the ROK4 images (write index and clean) for " << filename);
+        LOGGER_ERROR("Cannot close the ROK4 images (write index and clean) for " << name);
         return -1;
     }
     
@@ -690,10 +692,6 @@ int Rok4Image::writeImage ( Image* pIn )
 
 bool Rok4Image::prepare()
 {
-    if (! cephContext) {
-        output.open ( filename, std::ios_base::trunc | std::ios::binary );
-        if ( !output ) LOGGER_ERROR("Unable to open output file " << filename);
-    }
 
     int quality = 0;
     if ( compression == Compression::PNG) quality = 5;
@@ -777,13 +775,9 @@ bool Rok4Image::prepare()
     // end of IFD
     * ( ( uint32_t* ) ( p ) ) = 0; 
     p += 4;
-    
-    if (cephContext) {
-        cephContext->writeToCephObject((uint8_t*) header, 0, ROK4_IMAGE_HEADER_SIZE, std::string(filename));
-    } else {
-        output.write ( header, ROK4_IMAGE_HEADER_SIZE );
-    }
-    
+
+    context->write((uint8_t*) header, 0, ROK4_IMAGE_HEADER_SIZE, std::string(name));
+        
     // variables initalizations
     tilesOffset = new uint32_t[tilesNumber];
     tilesByteCounts = new uint32_t[tilesNumber];
@@ -863,46 +857,26 @@ bool Rok4Image::writeTile( int tileInd, uint8_t* data, bool crop )
     if ( size == 0 ) return false;
 
     if ( tilesNumber == 1 ) {
-        if (cephContext) {
-            uint8_t* uint32tab = new uint8_t[sizeof( uint32_t )];
-            *((uint32_t*) uint32tab) = ( uint32_t ) size;
-            cephContext->writeToCephObject(uint32tab, 134, 4, std::string(filename));
-            delete uint32tab;
-        } else {
-            // On écrit la taille de la tuile unique directemet dans l'en-tête, après le tag TIFFTAG_TILEBYTECOUNTS
-            output.seekp ( 134 );
-            uint32_t Size[1];
-            Size[0] = ( uint32_t ) size;
-            output.write ( ( char* ) Size,4 );
-        }
+
+        uint8_t* uint32tab = new uint8_t[sizeof( uint32_t )];
+        *((uint32_t*) uint32tab) = ( uint32_t ) size;
+        context->write(uint32tab, 134, 4, std::string(name));
+        delete uint32tab;
+
     }
 
     tilesOffset[tileInd] = position;
     tilesByteCounts[tileInd] = size;
-    
-    if (cephContext) {
-        cephContext->writeToCephObject(Buffer, position, size, std::string(filename));
-    } else {
-        output.seekp ( position );
-        output.write ( ( char* ) Buffer, size );
-        if ( output.fail() ) return false;
-    }
+
+    context->write(Buffer, position, size, std::string(name));
     position = ( position + size + 15 ) & ~15; // Align the next position on 16byte
 
     return true;
 }
 
 bool Rok4Image::close() {
-    if (cephContext) {
-        cephContext->writeToCephObject((uint8_t*) tilesOffset, ROK4_IMAGE_HEADER_SIZE, 4 * tilesNumber, std::string(filename));
-        cephContext->writeToCephObject((uint8_t*) tilesByteCounts, ROK4_IMAGE_HEADER_SIZE + 4 * tilesNumber, 4 * tilesNumber, std::string(filename));
-    } else {
-        output.seekp ( ROK4_IMAGE_HEADER_SIZE );
-        output.write ( ( char* ) tilesOffset, 4 * tilesNumber );
-        output.write ( ( char* ) tilesByteCounts, 4 * tilesNumber );
-        output.close();
-        if ( output.fail() ) return false;
-    }
+    context->write((uint8_t*) tilesOffset, ROK4_IMAGE_HEADER_SIZE, 4 * tilesNumber, std::string(name));
+    context->write((uint8_t*) tilesByteCounts, ROK4_IMAGE_HEADER_SIZE + 4 * tilesNumber, 4 * tilesNumber, std::string(name));
 
     // Nettoyage des attributs propres à l'écriture
     delete[] tilesOffset;

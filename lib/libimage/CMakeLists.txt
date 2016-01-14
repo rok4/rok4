@@ -39,7 +39,6 @@ endif(DEBUG_BUILD)
 # Définition des fichiers sources
 
 CONFIGURE_FILE(Jpeg2000_library_config.h.in Jpeg2000_library_config.h ESCAPE_QUOTES @ONLY)
-CONFIGURE_FILE(Ceph_library_config.h.in Ceph_library_config.h ESCAPE_QUOTES @ONLY)
 
 SET(
     libimage_SRCS Palette.cpp Data.cpp Decoder.cpp
@@ -48,7 +47,7 @@ SET(
     MirrorImage.cpp StyledImage.cpp EstompageImage.cpp
     ExtendedCompoundImage.cpp CompoundImage.cpp Line.cpp MergeImage.cpp
     Grid.cpp CRS.cpp TiffEncoder.cpp
-    BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp FileDataSource.cpp CephDataSource.cpp CephContext.cpp PaletteConfig.cpp PaletteDataSource.cpp
+    BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp FileDataSource.cpp CephDataSource.cpp SwiftDataSource.cpp CephContext.cpp SwiftContext.cpp FileContext.cpp PaletteConfig.cpp PaletteDataSource.cpp
     Format.cpp TiffHeaderDataSource.cpp StoreDataSource.cpp
 )
 

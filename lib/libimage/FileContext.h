@@ -36,57 +36,48 @@
  */
 
 /**
- * \file CephContext.h
+ * \file FileContext.h
  ** \~french
- * \brief Définition de la classe CephContext
+ * \brief Définition de la classe FileContext
  * \details
- * \li CephContext : connexion à un pool de données Ceph
+ * \li FileContext : utilisation d'un système de fichier
  ** \~english
- * \brief Define classe CephContext
+ * \brief Define classe FileContext
  * \details
- * \li CephContext : Ceph data pool connection
+ * \li FileContext : file system use
  */
 
-#ifndef CEPH_CONTEXT_H
-#define CEPH_CONTEXT_H
+#ifndef FILE_CONTEXT_H
+#define FILE_CONTEXT_H
 
-#include <rados/librados.hpp>
 #include "Logger.h"
 #include "Context.h"
+#include <iostream>
 
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
- * \brief Création d'un contexte Ceph (connexion à un cluster + pool particulier), pour pouvoir récupérer des données stockées sous forme d'objets
+ * \brief Création d'un contexte File (dossier racine), pour pouvoir récupérer des données stockées sous forme de fichiers
  */
-class CephContext : public Context {
+class FileContext : public Context {
     
 private:
     
-    std::string cluster_name;
-    
-    std::string user_name;
-    
-    std::string conf_file;
-    
-    std::string pool_name;
+    std::string root_dir;
 
-    librados::Rados cluster;
-    librados::IoCtx io_ctx;
-    librados::AioCompletion* write_completion;
-    bool writting_in_progress;
+    /**
+     * \~french \brief Flux d'écriture de l'image ROK4
+     * \~english \brief Stream used to write the ROK4 image
+     */
+    std::ofstream output;    
 
 public:
 
     /** Constructeurs */
-    CephContext (std::string cluster, std::string user, std::string conf, std::string pool);
-    
-    librados::IoCtx getContext () {
-        return io_ctx;
-    }
-    
-    std::string getPoolName () {
-        return pool_name;
+    FileContext (std::string root);
+        
+    std::string getRootDir () {
+        return root_dir;
     }
     
     bool read(uint8_t* data, int offset, int size, std::string name);
@@ -95,19 +86,7 @@ public:
     
     bool connection();
     
-    virtual ~CephContext() {
-        if (writting_in_progress) {
-            writting_in_progress = false;
-            write_completion->wait_for_complete();
-            int ret = write_completion->get_return_value();
-            if (ret < 0) {
-                LOGGER_ERROR ( "Unable to complete last writting" );
-            }
-        }
-        write_completion->release();
-        
-        io_ctx.close();
-        cluster.shutdown();
+    virtual ~FileContext() {
     };
 };
 

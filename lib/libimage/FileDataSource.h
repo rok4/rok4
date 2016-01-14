@@ -47,9 +47,11 @@
 
 class FileDataSource : public StoreDataSource {
 
+private:
+	FileContext* fileContext;
+
 public:
-    FileDataSource ( const char* filename, const uint32_t posoff, const uint32_t possize, std::string type );
-    FileDataSource ( const char* filename, const uint32_t posoff, const uint32_t possize, std::string type , std::string encoding );
+    FileDataSource (const char* name, const uint32_t posoff, const uint32_t possize, std::string type , FileContext* fc, std::string encoding);
     const uint8_t* getData ( size_t &tile_size );
     uint8_t* getThisData ( const uint32_t offset, const uint32_t size );
 

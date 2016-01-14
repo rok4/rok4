@@ -65,18 +65,6 @@ if(KDU_USE)
   endif(NOT DEFINED KDU_THREADING)
 endif(KDU_USE)
 
-if(NOT DEFINED CEPH_CLUSTER_NAME)
-  set(CEPH_CLUSTER_NAME "ceph" CACHE STRING "Ceph cluster's name")
-endif(NOT DEFINED CEPH_CLUSTER_NAME)
-
-if(NOT DEFINED CEPH_USER_NAME)
-  set(CEPH_USER_NAME "client.admin" CACHE STRING "Ceph user's name")
-endif(NOT DEFINED CEPH_USER_NAME)
-
-if(NOT DEFINED CEPH_CONF_FILE)
-  set(CEPH_CONF_FILE "/etc/ceph/ceph.conf" CACHE STRING "Ceph configuration's file")
-endif(NOT DEFINED CEPH_CONF_FILE)
-
 
 if(NOT DEFINED BUILD_DOC)
   set(BUILD_DOC TRUE CACHE BOOL "Build Documentation")

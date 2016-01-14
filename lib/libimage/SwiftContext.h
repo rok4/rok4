@@ -36,57 +36,48 @@
  */
 
 /**
- * \file CephContext.h
+ * \file SwiftContext.h
  ** \~french
- * \brief Définition de la classe CephContext
+ * \brief Définition de la classe SwiftContext
  * \details
- * \li CephContext : connexion à un pool de données Ceph
+ * \li SwiftContext : connexion à un container Swift
  ** \~english
- * \brief Define classe CephContext
+ * \brief Define classe SwiftContext
  * \details
- * \li CephContext : Ceph data pool connection
+ * \li SwiftContext : Swift container connection
  */
 
-#ifndef CEPH_CONTEXT_H
-#define CEPH_CONTEXT_H
+#ifndef SWIFT_CONTEXT_H
+#define SWIFT_CONTEXT_H
 
-#include <rados/librados.hpp>
+#include <curl/curl.h>
 #include "Logger.h"
 #include "Context.h"
 
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
- * \brief Création d'un contexte Ceph (connexion à un cluster + pool particulier), pour pouvoir récupérer des données stockées sous forme d'objets
+ * \brief Création d'un contexte Swift (connexion à un cluster + pool particulier), pour pouvoir récupérer des données stockées sous forme d'objets
  */
-class CephContext : public Context {
+class SwiftContext : public Context{
     
 private:
     
-    std::string cluster_name;
-    
+    std::string auth_url;
+    std::string public_url;
+    std::string user_account;
     std::string user_name;
+    std::string user_passwd;
+    std::string container_name;
     
-    std::string conf_file;
-    
-    std::string pool_name;
-
-    librados::Rados cluster;
-    librados::IoCtx io_ctx;
-    librados::AioCompletion* write_completion;
-    bool writting_in_progress;
 
 public:
 
     /** Constructeurs */
-    CephContext (std::string cluster, std::string user, std::string conf, std::string pool);
-    
-    librados::IoCtx getContext () {
-        return io_ctx;
-    }
-    
-    std::string getPoolName () {
-        return pool_name;
+    SwiftContext (std::string auth, std::string account, std::string user, std::string passwd, std::string container);
+        
+    std::string getContainerName () {
+        return container_name;
     }
     
     bool read(uint8_t* data, int offset, int size, std::string name);
@@ -95,19 +86,8 @@ public:
     
     bool connection();
     
-    virtual ~CephContext() {
-        if (writting_in_progress) {
-            writting_in_progress = false;
-            write_completion->wait_for_complete();
-            int ret = write_completion->get_return_value();
-            if (ret < 0) {
-                LOGGER_ERROR ( "Unable to complete last writting" );
-            }
-        }
-        write_completion->release();
-        
-        io_ctx.close();
-        cluster.shutdown();
+    virtual ~SwiftContext() {
+
     };
 };
 

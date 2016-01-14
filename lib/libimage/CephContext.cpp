@@ -48,20 +48,8 @@
  */
 
 #include "CephContext.h"
-#include "Ceph_library_config.h"
 
-
-
-CephContext::CephContext (char* pool) {
-    cluster_name = new char[255];
-    user_name = new char[255];
-    conf_file = new char[255];
-    pool_name = new char[255];
-
-    strcpy ( cluster_name,CEPH_CLUSTER_NAME );
-    strcpy ( user_name,CEPH_USER_NAME );
-    strcpy ( conf_file,CEPH_CONF_FILE );
-    strcpy ( pool_name,pool );
+CephContext::CephContext (std::string cluster, std::string user, std::string conf, std::string pool) : Context(), cluster_name(cluster), user_name(user), conf_file(conf), pool_name(pool) {
     writting_in_progress = false;
     write_completion = librados::Rados::aio_create_completion();
 }
@@ -69,7 +57,7 @@ CephContext::CephContext (char* pool) {
 bool CephContext::connection() {
     uint64_t flags;
     int ret = 0;
-    ret = cluster.init2(user_name, cluster_name, flags);
+    ret = cluster.init2(user_name.c_str(), cluster_name.c_str(), flags);
     if (ret < 0) {
         LOGGER_ERROR("Couldn't initialize the cluster handle! error " << ret);
         LOGGER_ERROR( "User name : " << user_name );
@@ -77,7 +65,7 @@ bool CephContext::connection() {
         return false;
     }
 
-    ret = cluster.conf_read_file(conf_file);
+    ret = cluster.conf_read_file(conf_file.c_str());
     if (ret < 0) {
         LOGGER_ERROR( "Couldn't read the Ceph configuration file! error " << ret );
         LOGGER_ERROR( "Configuration file : " << conf_file );
@@ -90,20 +78,21 @@ bool CephContext::connection() {
         return false;
     }
 
-    ret = cluster.ioctx_create(pool_name, io_ctx);
+    ret = cluster.ioctx_create(pool_name.c_str(), io_ctx);
     if (ret < 0) {
         LOGGER_ERROR( "Couldn't set up ioctx! error " << ret );
         LOGGER_ERROR( "Pool : " << pool_name );
         return false;
     }
 
+    connected = true;
     return true;
 }
 
-bool CephContext::readFromCephObject(uint8_t* data, int offset, int size, std::string name) {
+bool CephContext::read(uint8_t* data, int offset, int size, std::string name) {
     LOGGER_DEBUG("Ceph read : " << size << " bytes (from the " << offset << " one) in the object " << name);
     librados::bufferlist bl;
-    int ret = io_ctx.read(name, bl, size, offset);
+    int ret = io_ctx.read(name.c_str(), bl, size, offset);
     if (ret < 0) {
         LOGGER_ERROR ( "Unable to read " << size << " bytes (from the " << offset << " one) in the object " << name );
         return false;
@@ -113,7 +102,7 @@ bool CephContext::readFromCephObject(uint8_t* data, int offset, int size, std::s
 }
 
 
-bool CephContext::writeToCephObject(uint8_t* data, int offset, int size, std::string name) {
+bool CephContext::write(uint8_t* data, int offset, int size, std::string name) {
     LOGGER_DEBUG("Ceph write : " << size << " bytes (from the " << offset << " one) in the object " << name);
     librados::bufferlist bl;
     bl.append((char*) data, size);
@@ -127,7 +116,7 @@ bool CephContext::writeToCephObject(uint8_t* data, int offset, int size, std::st
         }
     }
 
-    int ret = io_ctx.aio_write(name, write_completion, bl, size, offset);
+    int ret = io_ctx.aio_write(name.c_str(), write_completion, bl, size, offset);
     writting_in_progress = true;
     if (ret < 0) {
         LOGGER_ERROR ( "Unable to start to write " << size << " bytes (from the " << offset << " one) in the object " << name );
@@ -137,12 +126,12 @@ bool CephContext::writeToCephObject(uint8_t* data, int offset, int size, std::st
     return true;
 }
 
-bool CephContext::writeFullToCephObject(uint8_t* data, int size, std::string name) {
+bool CephContext::writeFull(uint8_t* data, int size, std::string name) {
     LOGGER_DEBUG("Ceph write : " << size << " bytes (one shot) in the object " << name);
     librados::bufferlist bl;
     bl.append((char*) data, size);
 
-    int ret = io_ctx.write_full(name, bl);
+    int ret = io_ctx.write_full(name.c_str(), bl);
     if (ret < 0) {
         LOGGER_ERROR ( "Unable to write " << size << " bytes (one shot) in the object " << name );
         return false;
