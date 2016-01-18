@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2015-10-13 15:32+0200\n"
+"POT-Creation-Date: 2016-01-15 17:05+0100\n"
 "PO-Revision-Date: 2014-01-28 09:36+0100\n"
 "Last-Translator: \n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -1005,39 +1005,39 @@ msgstr "NOMBRE DE COUCHES CHARGÉES : "
 msgid "Construction de la configuration des services depuis "
 msgstr "Construction de la configuration des services depuis "
 
-#: Level.cpp:143 Level.cpp:186 Level.cpp:237
+#: Level.cpp:149 Level.cpp:192 Level.cpp:243
 msgid "Image invalid !"
 msgstr "Image invalide !"
 
-#: Level.cpp:244
+#: Level.cpp:250
 msgid "Dimensions invalid !"
 msgstr "Dimensions invalides !"
 
-#: Level.cpp:269
+#: Level.cpp:275
 msgid "Too Much Tile on X axis"
 msgstr "Trop de tuile sur l'axe X"
 
-#: Level.cpp:277
+#: Level.cpp:283
 msgid "Too Much Tile on Y axis"
 msgstr "Trop de tuile sur l'axe Y"
 
-#: Level.cpp:317
+#: Level.cpp:323
 msgid "Indice de tuile negatif"
 msgstr "Indice de tuile négatif"
 
-#: Level.cpp:380 Level.cpp:398
+#: Level.cpp:388 Level.cpp:408
 msgid "Type d'encodage inconnu : "
 msgstr "Type d'encodage inconnu : "
 
-#: Level.cpp:403
+#: Level.cpp:413
 msgid "Tile : "
 msgstr "Tuile : "
 
-#: Level.cpp:413
+#: Level.cpp:423
 msgid "GetTile Tiff"
 msgstr "GetTile Tiff"
 
-#: Level.cpp:423 Level.cpp:436
+#: Level.cpp:433 Level.cpp:446
 msgid "GetTile Image"
 msgstr "GetTile Image"
 
@@ -1077,47 +1077,47 @@ msgstr "Rechargement de la configuration"
 msgid "Extinction du serveur ROK4"
 msgstr "Extinction du serveur ROK4"
 
-#: Pyramid.cpp:168
+#: Pyramid.cpp:172
 msgid "debut pyramide"
 msgstr "début pyramide"
 
-#: Pyramid.cpp:174
+#: Pyramid.cpp:178
 msgid "fin pyramide"
 msgstr "fin pyramide"
 
-#: Pyramid.cpp:181
+#: Pyramid.cpp:185
 msgid "best_level="
 msgstr "Meilleur niveau :"
 
-#: Pyramid.cpp:181
+#: Pyramid.cpp:185
 msgid " resolution requete="
 msgstr " resolution de la requête="
 
-#: Pyramid.cpp:190
+#: Pyramid.cpp:194
 msgid "BBox en dehors de la definition du CRS"
 msgstr "Emprise demandée en dehors de la zone de définition du CRS"
 
-#: Pyramid.cpp:194 Pyramid.cpp:233
+#: Pyramid.cpp:198 Pyramid.cpp:237
 msgid "BBox decoupe incorrect"
 msgstr "Emprise découpée incorrecte"
 
-#: Pyramid.cpp:226
+#: Pyramid.cpp:230
 msgid "New Width = "
 msgstr " Nouvelle largeur = "
 
-#: Pyramid.cpp:226
+#: Pyramid.cpp:230
 msgid "New Height = "
 msgstr "Nouvelle hauteur = "
 
-#: Pyramid.cpp:227
+#: Pyramid.cpp:231
 msgid "ratio_x = "
 msgstr "Ratio en X = "
 
-#: Pyramid.cpp:227
+#: Pyramid.cpp:231
 msgid "ratio_y = "
 msgstr "Ratio en Y ="
 
-#: Pyramid.cpp:239
+#: Pyramid.cpp:243
 msgid "Image decoupe valide"
 msgstr "Image découpée invalide !"
 
