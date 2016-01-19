@@ -61,22 +61,21 @@
 
 
 
-Level::Level ( TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth,
+Level::Level (TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth,
                int tilesPerHeight, uint32_t maxTileRow, uint32_t minTileRow,
                uint32_t maxTileCol, uint32_t minTileCol, int pathDepth,
-               Rok4Format::eformat_data format, std::string noDataFile ) :
+               Rok4Format::eformat_data format, std::string noDataFile , Context *&context) :
     tm ( tm ), channels ( channels ), baseDir ( baseDir ),
     tilesPerWidth ( tilesPerWidth ), tilesPerHeight ( tilesPerHeight ),
     maxTileRow ( maxTileRow ), minTileRow ( minTileRow ), maxTileCol ( maxTileCol ),
-    minTileCol ( minTileCol ), pathDepth ( pathDepth ), format ( format ),noDataFile ( noDataFile ), noDataSource ( NULL ) {
+    minTileCol ( minTileCol ), pathDepth ( pathDepth ), format ( format ),noDataFile ( noDataFile ), noDataSource ( NULL ), context (context) {
     StoreDataSourceFactory SDSF;
-    //Context* cont = new FileContext("");
-    noDataTileSource = SDSF.createStoreDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), new FileContext(""), Rok4Format::toEncoding ( format ) );
+    noDataTileSource = SDSF.createStoreDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding ( format ) );
     noDataSourceProxy = noDataTileSource;
 }
 
 Level::~Level() {
-
+    delete context;
     delete noDataSourceProxy;
     if ( noDataSource )
         delete noDataSource;
@@ -86,8 +85,7 @@ Level::~Level() {
 void Level::setNoData ( const std::string& file ) {
     noDataFile=file;
     StoreDataSourceFactory SDSF;
-    //Context* cont = new FileContext("");
-    DataSource* tmpDataSource = SDSF.createStoreDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), new FileContext(""), Rok4Format::toEncoding ( format ) );
+    DataSource* tmpDataSource = SDSF.createStoreDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding ( format ) );
     if ( noDataTileSource ) {
         delete noDataTileSource;
     }
@@ -107,8 +105,7 @@ void Level::setNoDataSource ( DataSource* source ) {
     if ( noDataSource ) {
         delete noDataSourceProxy;
         StoreDataSourceFactory SDSF;
-        //Context* cont = new FileContext("");
-        noDataTileSource = SDSF.createStoreDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), new FileContext(""), Rok4Format::toEncoding ( format ) );
+        noDataTileSource = SDSF.createStoreDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding ( format ) );
     }
     noDataSource=source;
     noDataSourceProxy = new DataSourceProxy ( noDataTileSource, *noDataSource );
@@ -367,8 +364,7 @@ DataSource* Level::getEncodedTile ( int x, int y ) {
     std::string path=getFilePath ( x, y );
     LOGGER_DEBUG ( path );
     StoreDataSourceFactory SDSF;
-    //Context* cont = new FileContext("");
-    return SDSF.createStoreDataSource( path.c_str(),posoff,possize,Rok4Format::toMimeType ( format ), new FileContext(""), Rok4Format::toEncoding( format ) );
+    return SDSF.createStoreDataSource( path.c_str(),posoff,possize,Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );
 }
 
 DataSource* Level::getDecodedTile ( int x, int y ) {
@@ -391,8 +387,7 @@ DataSource* Level::getDecodedTile ( int x, int y ) {
 
 DataSource* Level::getDecodedNoDataTile() {
     StoreDataSourceFactory SDSF;
-    //Context* cont = new FileContext("");
-    DataSource* encData = new DataSourceProxy ( SDSF.createStoreDataSource ( "",0,0,"",new FileContext("") ),*getEncodedNoDataTile() );
+    DataSource* encData = new DataSourceProxy ( SDSF.createStoreDataSource ( "",0,0,"",context ),*getEncodedNoDataTile() );
     if ( format==Rok4Format::TIFF_RAW_INT8 || format==Rok4Format::TIFF_RAW_FLOAT32 )
         return encData;
     else if ( format==Rok4Format::TIFF_JPG_INT8 )

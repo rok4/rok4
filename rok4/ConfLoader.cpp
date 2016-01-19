@@ -550,6 +550,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
+    Context *context;
 
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
     if ( !pElem ) {
@@ -657,6 +658,8 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             baseDir.insert ( 0,"/" );
             baseDir.insert ( 0,parentDir );
         }
+
+        context = new FileContext(baseDir+id);
 
         pElemLvl = hLvl.FirstChild ( "tilesPerWidth" ).Element();
         if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
@@ -802,7 +805,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         }
 
         Level *TL = new Level ( *tm, channels, baseDir, tilesPerWidth, tilesPerHeight,
-                                maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth, format, noDataFilePath );
+                                maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth, format, noDataFilePath, context );
 
         levels.insert ( std::pair<std::string, Level *> ( id, TL ) );
     }// boucle sur les levels
