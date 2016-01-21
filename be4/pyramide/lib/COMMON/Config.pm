@@ -38,7 +38,7 @@
 =begin nd
 File: Config.pm
 
-Class: BE4_COMMON::Config
+Class: COMMON::Config
 
 
 Using:
@@ -54,7 +54,7 @@ Limitations:
 
 ################################################################################
 
-package BE4_COMMON::Config;
+package COMMON::Config;
 
 use strict;
 use warnings;
@@ -67,13 +67,9 @@ use Log::Log4perl qw(:easy);
 use Data::Dumper;
 use List::Util qw(min max);
 
-# My module
-
-require Config::IniFiles;
-
   # inheritance
 our @ISA;
-use parent 'Config::IniFiles';
+use parent 'Exporter';
 
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
@@ -96,20 +92,20 @@ END {}
 
 sub new {
 	my $this = shift;
-	my %parms = @_;
+	my $parms = shift; # TODO : -filepath parameter and -format parameter
+    # default format would be INI-like (but with subsections), but later on, if
+    # needed, JSON might be added, or something similar.
 
 
     my $class= ref($this) || $this;
 
-	my $self = $class->SUPER::new(%parms);
+	my $self = {
+
+    };
 
 	bless($self, $class);
 
-	if ($self->ReadConfig) {
-        return $self;
-    } else {
-        return undef;
-    }
+    return $self;
 }
 
 
