@@ -60,18 +60,19 @@ bool FileContext::connection() {
 }
 
 bool FileContext::read(uint8_t* data, int offset, int size, std::string name) {
-    LOGGER_DEBUG("File read : " << size << " bytes (from the " << offset << " one) in the file " << name);
+    std::string fullName = root_dir + name;
+    LOGGER_DEBUG("File read : " << size << " bytes (from the " << offset << " one) in the file " << fullName);
 
     // Ouverture du fichier
-    int fildes = open ( name.c_str(), O_RDONLY );
+    int fildes = open ( fullName.c_str(), O_RDONLY );
     if ( fildes < 0 ) {
-        LOGGER_DEBUG ( "Can't open file " << name );
+        LOGGER_DEBUG ( "Can't open file " << fullName );
         return false;
     }
 
     size_t read_size=pread ( fildes, data, size, offset );
     if ( read_size != size ) {
-        LOGGER_ERROR ( "Impossible de lire la tuile dans le fichier " << name );
+        LOGGER_ERROR ( "Impossible de lire la tuile dans le fichier " << fullName );
         if ( read_size<0 ) LOGGER_ERROR ( "Code erreur="<<errno );
         close ( fildes );
         return false;
@@ -83,11 +84,11 @@ bool FileContext::read(uint8_t* data, int offset, int size, std::string name) {
 
 
 bool FileContext::write(uint8_t* data, int offset, int size, std::string name) {
-    LOGGER_DEBUG("File write : " << size << " bytes (from the " << offset << " one) in the file " << name);
-
-    output.open ( name.c_str(), std::ios_base::trunc | std::ios::binary );
+    std::string fullName = root_dir + name;
+    LOGGER_DEBUG("File write : " << size << " bytes (from the " << offset << " one) in the file " << fullName);
+    output.open ( fullName.c_str(), std::ios_base::trunc | std::ios::binary );
     if ( !output ) {
-        LOGGER_ERROR("Unable to open output file " << name);
+        LOGGER_ERROR("Unable to open output file " << fullName);
         return false;
     }
 
@@ -100,11 +101,12 @@ bool FileContext::write(uint8_t* data, int offset, int size, std::string name) {
 }
 
 bool FileContext::writeFull(uint8_t* data, int size, std::string name) {
-    LOGGER_DEBUG("File write : " << size << " bytes (one shot) in the file " << name);
+    std::string fullName = root_dir + name;
+    LOGGER_DEBUG("File write : " << size << " bytes (one shot) in the file " << fullName);
 
-    output.open ( name.c_str(), std::ios_base::trunc | std::ios::binary );
+    output.open ( fullName.c_str(), std::ios_base::trunc | std::ios::binary );
     if ( !output ) {
-        LOGGER_ERROR("Unable to open output file " << name);
+        LOGGER_ERROR("Unable to open output file " << fullName);
         return false;
     }
 

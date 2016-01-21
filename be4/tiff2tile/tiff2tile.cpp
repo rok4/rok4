@@ -65,6 +65,8 @@
 #include "Format.h"
 #include "Logger.h"
 #include "CephContext.h"
+#include "FileContext.h"
+#include "SwiftContext.h"
 #include "FileImage.h"
 #include "Rok4Image.h"
 #include "TiffNodataManager.h"
@@ -81,11 +83,11 @@ int white[4] = {255,255,255,255};
  * \details L'affichage se fait dans le niveau de logger INFO
  * \~ \code
  * tiff2tile version X.Y.Z
- * 
+ *
  * Make image tiled and compressed, in TIFF format, respecting ROK4 specifications.
- * 
+ *
  * Usage: tiff2tile -c <VAL> -t <VAL> <VAL> <INPUT FILE> <OUTPUT FILE> [-crop]
- * 
+ *
  * Parameters:
  *      -c output compression :
  *              raw     no compression
@@ -98,14 +100,15 @@ int white[4] = {255,255,255,255};
  *      -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size
  *      -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object
  *      -crop : blocks (used by JPEG compression) wich contain a white pixel are filled with white
+ *      -container Swift container where data is. Then INPUT FILE is interpreted as a Swift object name
  *      -d debug logger activation
- * 
+ *
  * Examples
  *      - for orthophotography
  *      tiff2tile input.tif -c png -t 256 256 output.tif
  *      - for DTM
  *      tiff2tile input.tif -c zip -t 256 256 output.tif
- * 
+ *
  * \endcode
  */
 void usage() {
@@ -257,7 +260,7 @@ int main ( int argc, char **argv ) {
     if ( input == 0 || output == 0 ) {
         error ("Argument must specify one input file and one output file/object", -1);
     }
-    
+
     Context* context;
     if ( pool != 0 ) {
         LOGGER_DEBUG( std::string("Output is an object in the Ceph pool ") + pool);
@@ -311,7 +314,7 @@ int main ( int argc, char **argv ) {
     if (sourceImage == NULL) {
         error("Cannot read the source image", -1);
     }
-    
+
     if (debugLogger) {
         sourceImage->print();
     }
@@ -322,13 +325,13 @@ int main ( int argc, char **argv ) {
         sourceImage->getSampleFormat(), sourceImage->getBitsPerSample(), sourceImage->getPhotometric(), compression,
         tileWidth, tileHeight, context
     );
-    
+
     rok4Image->setExtraSample(sourceImage->getExtraSample());
-    
+
     if (rok4Image == NULL) {
         error("Cannot create the ROK4 image to write", -1);
     }
-    
+
     if (debugLogger) {
         rok4Image->print();
     }
@@ -337,7 +340,7 @@ int main ( int argc, char **argv ) {
     if (rok4Image->writeImage(sourceImage, crop) < 0) {
         error("Cannot write ROK4 image", -1);
     }
-    
+
     LOGGER_DEBUG ( "Clean" );
     // Nettoyage
     delete acc;

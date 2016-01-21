@@ -468,6 +468,42 @@ public:
 
     /**
      * \~french
+     * \brief Retourne le format des canaux (entier, flottant)
+     * \return format des canaux
+     * \~english
+     * \brief Return sample format (integer, float)
+     * \return sample format
+     */
+    inline SampleFormat::eSampleFormat getSampleFormat() {
+        return sampleformat;
+    }
+
+    /**
+     * \~french
+     * \brief Retourne le nombre de bits par canal
+     * \return nombre de bits par canal
+     * \~english
+     * \brief Return number of bits per sample
+     * \return number of bits per sample
+     */
+    inline int getBitsPerSample() {
+        return bitspersample;
+    }
+    
+    /**
+     * \~french
+     * \brief Retourne la photométrie des données image (rgb, gray...)
+     * \return photométrie
+     * \~english
+     * \brief Return data photometric (rgb, gray...)
+     * \return photometric
+     */
+    inline Photometric::ePhotometric getPhotometric() {
+        return photometric;
+    }
+
+    /**
+     * \~french
      * \brief Destructeur par défaut
      * \details Suppression des buffer de lecture et de l'interface TIFF
      * \~english

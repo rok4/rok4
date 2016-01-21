@@ -51,6 +51,8 @@
 #include "Logger.h"
 #include "Rok4Image.h"
 #include "CephContext.h"
+#include "FileContext.h"
+#include "SwiftContext.h"
 #include "FileImage.h"
 #include "../be4version.h"
 
@@ -60,11 +62,11 @@
  * \details L'affichage se fait dans la sortie d'erreur
  * \~ \code
  * cache2work version X.X.X
- * 
+ *
  * Convert a ROK4 pyramid's TIFF image to untiled TIFF image
- * 
+ *
  * Usage: cache2work <INPUT FILE> [-c <VAL>] <OUTPUT FILE>
- * 
+ *
  * Parameters:
  *      -c output compression : default value : none
  *              raw     no compression
@@ -74,8 +76,9 @@
  *              pkb     PackBits encoding
  *              zip     Deflate encoding
  *     -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object
+ *     -container Swift container where data is. Then INPUT FILE is interpreted as a Swift object name
  *     -d debug logger activation
- * 
+ *
  * Example
  *      createNodata JpegTiled.tif -c zip ZipUntiled.tif
  * \endcode
@@ -97,6 +100,7 @@ void usage() {
                   "             pkb     PackBits encoding\n" <<
                   "             zip     Deflate encoding\n" <<
                   "    -pool Ceph pool where data is. Then INPUT FILE is interpreted as a Ceph object\n" <<
+                  "    -container Swift container where data is. Then INPUT FILE is interpreted as a Swift object name\n" <<
                   "    -d debug logger activation\n\n" <<
 
                   "Example\n" <<
@@ -132,7 +136,7 @@ void error ( std::string message, int errorCode ) {
  */
 int main ( int argc, char **argv )
 {
-    char* input = 0, *output = 0, *pool = 0;
+    char* input = 0, *output = 0, *pool = 0, *container = 0;
     Compression::eCompression compression = Compression::NONE;
     bool debugLogger=false;
 
@@ -155,6 +159,13 @@ int main ( int argc, char **argv )
                 error("Error in -pool option", -1);
             }
             pool = argv[i];
+            continue;
+        }
+        if ( !strcmp ( argv[i],"-container" ) ) {
+            if ( ++i == argc ) {
+                error("Error in -container option", -1);
+            }
+            container = argv[i];
             continue;
         }
         if ( argv[i][0] == '-' ) {
@@ -191,7 +202,7 @@ int main ( int argc, char **argv )
             if ( input == 0 ) input = argv[i];
             else if ( output == 0 ) output = argv[i];
             else {
-                error ("Argument must specify ONE input file and ONE output file", -1);
+                error ("Argument must specify ONE input file and ONE output file/object", -1);
             }
         }
     }
@@ -205,25 +216,37 @@ int main ( int argc, char **argv )
     }
 
     if ( input == 0 || output == 0 ) {
-        error ("Argument must specify one input file and one output file", -1);
+        error ("Argument must specify one input file and one output file/object", -1);
     }
-    
-    CephContext* cc = 0;
+
+    Context* context;
     if ( pool != 0 ) {
-        LOGGER_DEBUG( std::string("File is an object in the Ceph pool ") + pool);
-        cc = new CephContext(pool);
-        if (! cc->connection()) {
+        LOGGER_DEBUG( std::string("Output is an object in the Ceph pool ") + pool);
+        context = new CephContext("ceph", "client.admin", "/etc/ceph/ceph.conf", pool);
+        if (! context->connection()) {
             error(std::string("Unable to connect to Ceph pool ") + pool, -1);
+        }
+    } else if (container != 0) {
+        LOGGER_DEBUG( std::string("Output is an object in the Swift container ") + container);
+        context = new SwiftContext("http://192.168.56.200:8080/auth/v1.0", "test", "tester", "testing", container);
+        if (! context->connection()) {
+            error(std::string("Unable to connect to Swift container ") + container, -1);
+        }
+    } else {
+        LOGGER_DEBUG("Output is a file in a file system");
+        context = new FileContext("");
+        if (! context->connection()) {
+            error("Unable to connect to File System", -1);
         }
     }
 
     Rok4ImageFactory R4IF;
-    Rok4Image* rok4image = R4IF.createRok4ImageToRead(input, BoundingBox<double>(0.,0.,0.,0.), 0., 0., cc);
+    Rok4Image* rok4image = R4IF.createRok4ImageToRead(input, BoundingBox<double>(0.,0.,0.,0.), 0., 0., context);
     if (rok4image == NULL) {
         delete acc;
         error (std::string("Cannot create ROK4 image to read ") + input, -1);
     }
-    
+
     rok4image->print();
 
     FileImageFactory FIF;
@@ -235,21 +258,23 @@ int main ( int argc, char **argv )
     if (outputImage == NULL) {
         delete rok4image;
         delete acc;
+        delete context;
         error (std::string("Cannot create image to write ") + output, -1);
     }
-    
+
     LOGGER_DEBUG ( "Write" );
     if (outputImage->writeImage(rok4image) < 0) {
         delete rok4image;
         delete outputImage;
         delete acc;
+        delete context;
         error("Cannot write image", -1);
     }
 
     delete rok4image;
     delete outputImage;
     delete acc;
-    delete cc;
+    delete context;
 
     return 0;
 }

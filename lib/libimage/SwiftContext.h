@@ -53,6 +53,7 @@
 #include <curl/curl.h>
 #include "Logger.h"
 #include "Context.h"
+#include "LibcurlStruct.h"
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -70,6 +71,8 @@ private:
     std::string user_passwd;
     std::string container_name;
     
+    CURL *curl;
+    HeaderStruct authHdr;
 
 public:
 

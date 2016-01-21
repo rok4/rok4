@@ -48,6 +48,7 @@
  */
 
 #include "SwiftContext.h"
+#include <curl/curl.h>
 
 SwiftContext::SwiftContext (std::string auth, std::string account, std::string user, std::string passwd, std::string container) :
     Context(),
@@ -56,6 +57,46 @@ SwiftContext::SwiftContext (std::string auth, std::string account, std::string u
 }
 
 bool SwiftContext::connection() {
+    LOGGER_DEBUG("Swift authentication\n");
+
+    CURLcode res;
+    struct curl_slist *list = NULL;
+
+    curl = curl_easy_init();
+    curl_easy_setopt(curl, CURLOPT_URL, auth_url);
+    curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
+    curl_easy_setopt(curl, CURLOPT_NOPROXY, "*");
+
+    // On constitue le header et le moyen de récupération des informations (avec les structures de LibcurlStruct)
+
+    char xUser[256];
+    strcpy(xUser, "X-Storage-User: ");
+    strcat(xUser, user_account.c_str());
+    strcat(xUser, ":");
+    strcat(xUser, user_name.c_str());
+
+    char xPass[256];
+    strcpy(xUser, "X-Storage-Pass: ");
+    strcat(xUser, user_passwd.c_str());
+
+    list = curl_slist_append(list, xUser);
+    list = curl_slist_append(list, xPass);
+
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
+    curl_easy_setopt(curl, CURLOPT_HEADERDATA, (void*) &authHdr);
+    curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, header_callback);
+
+    res = curl_easy_perform(curl);
+    if( CURLE_OK != res) {
+        LOGGER_ERROR("Cannot authenticate to Swift");
+        LOGGER_ERROR(curl_easy_strerror(res));
+        curl_slist_free_all(list);
+        curl_easy_cleanup(curl);
+        false;
+    }
+
+    curl_slist_free_all(list);
+    curl_easy_cleanup(curl);
     connected = true;
     return true;
 }
