@@ -99,8 +99,8 @@ int white[4] = {255,255,255,255};
  *              png     Non-official TIFF compression, each tile is an independant PNG image (with PNG header)
  *      -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size
  *      -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object
+ *      -container Swift container where data is. Then OUTPUT FILE is interpreted as a Swift object name
  *      -crop : blocks (used by JPEG compression) wich contain a white pixel are filled with white
- *      -container Swift container where data is. Then INPUT FILE is interpreted as a Swift object name
  *      -d debug logger activation
  *
  * Examples
@@ -128,8 +128,8 @@ void usage() {
                   "             zip     Deflate encoding\n" <<
                   "             png     Non-official TIFF compression, each tile is an independant PNG image (with PNG header)\n" <<
                   "     -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size\n" <<
-                  "     -pool Ceph pool where data is. Then INPUT FILE is interpreted as a Ceph object ID\n" <<
-                  "     -container Swift container where data is. Then INPUT FILE is interpreted as a Swift object name\n" <<
+                  "     -pool Ceph pool where data is. Then OUTPUT FILE is interpreted as a Ceph object ID\n" <<
+                  "     -container Swift container where data is. Then OUTPUT FILE is interpreted as a Swift object name\n" <<
                   "     -crop : blocks (used by JPEG compression) wich contain a white pixel are filled with white\n" <<
                   "     -d : debug logger activation\n\n" <<
 

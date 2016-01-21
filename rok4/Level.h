@@ -47,6 +47,7 @@
 #include "Format.h"
 #include "ServicesConf.h"
 #include "Interpolation.h"
+#include "Context.h"
 
 /**
  */
@@ -55,6 +56,7 @@ class Level {
 private:
 
     std::string   baseDir;
+    Context*       context;
     int           pathDepth;
     TileMatrix    tm;         // FIXME j'ai des problème de compil que je ne comprends pas si je mets un const ?!
     const Rok4Format::eformat_data format; //format d'image des tuiles
@@ -123,6 +125,9 @@ public:
     std::string getNoDataFilePath() {
         return noDataFile;
     }
+    Context* getContext() {
+        return context;
+    }
 
     DataSource* getEncodedNoDataTile();
     DataSource* getDecodedNoDataTile();
@@ -155,10 +160,10 @@ public:
     void setNoDataSource ( DataSource* source );
 
     /** D */
-    Level ( TileMatrix tm, int channels, std::string baseDir,
+    Level (TileMatrix tm, int channels, std::string baseDir,
             int tilesPerWidth, int tilesPerHeight,
             uint32_t maxTileRow, uint32_t minTileRow, uint32_t maxTileCol, uint32_t minTileCol,
-            int pathDepth, Rok4Format::eformat_data format, std::string noDataFile );
+            int pathDepth, Rok4Format::eformat_data format, std::string noDataFile, Context*& context );
 
     /*
      * Destructeur

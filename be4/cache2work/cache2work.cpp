@@ -202,7 +202,7 @@ int main ( int argc, char **argv )
             if ( input == 0 ) input = argv[i];
             else if ( output == 0 ) output = argv[i];
             else {
-                error ("Argument must specify ONE input file and ONE output file/object", -1);
+                error ("Argument must specify ONE input file/object and ONE output file", -1);
             }
         }
     }
@@ -216,24 +216,24 @@ int main ( int argc, char **argv )
     }
 
     if ( input == 0 || output == 0 ) {
-        error ("Argument must specify one input file and one output file/object", -1);
+        error ("Argument must specify one input file/object and one output file", -1);
     }
 
     Context* context;
     if ( pool != 0 ) {
-        LOGGER_DEBUG( std::string("Output is an object in the Ceph pool ") + pool);
+        LOGGER_DEBUG( std::string("Input is an object in the Ceph pool ") + pool);
         context = new CephContext("ceph", "client.admin", "/etc/ceph/ceph.conf", pool);
         if (! context->connection()) {
             error(std::string("Unable to connect to Ceph pool ") + pool, -1);
         }
     } else if (container != 0) {
-        LOGGER_DEBUG( std::string("Output is an object in the Swift container ") + container);
+        LOGGER_DEBUG( std::string("Input is an object in the Swift container ") + container);
         context = new SwiftContext("http://192.168.56.200:8080/auth/v1.0", "test", "tester", "testing", container);
         if (! context->connection()) {
             error(std::string("Unable to connect to Swift container ") + container, -1);
         }
     } else {
-        LOGGER_DEBUG("Output is a file in a file system");
+        LOGGER_DEBUG("Input is a file in a file system");
         context = new FileContext("");
         if (! context->connection()) {
             error("Unable to connect to File System", -1);

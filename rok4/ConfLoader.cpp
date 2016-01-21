@@ -550,6 +550,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
+    Context *context;
 
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
     if ( !pElem ) {
@@ -656,6 +657,111 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         } else if ( baseDir.compare ( 0,1,"/" ) !=0 ) {
             baseDir.insert ( 0,"/" );
             baseDir.insert ( 0,parentDir );
+        }
+
+        context = new FileContext("");
+
+        pElemLvl = hLvl.FirstChild ( "cephContext" ).Element();
+        if ( pElemLvl ) {
+
+            std::string clusterName,userName,confFile,poolName;
+
+            TiXmlElement* pElemCephContext;
+
+            pElemCephContext = hLvl.FirstChild ( "cephContext" ).FirstChild ( "clusterName" ).Element();
+            if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
+                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un clusterName" );
+                return NULL;
+            } else {
+                clusterName = pElemCephContext->GetText();
+            }
+
+            pElemCephContext = hLvl.FirstChild ( "cephContext" ).FirstChild ( "userName" ).Element();
+            if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
+                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un userName" );
+                return NULL;
+            } else {
+                userName = pElemCephContext->GetText();
+            }
+
+            pElemCephContext = hLvl.FirstChild ( "cephContext" ).FirstChild ( "confFile" ).Element();
+            if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
+                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un confFile" );
+                return NULL;
+            } else {
+                confFile = pElemCephContext->GetText();
+                if ( confFile.compare ( 0,2,"./" ) ==0 ) {
+                    confFile.replace ( 0,1,parentDir );
+                } else if ( confFile.compare ( 0,1,"/" ) !=0 ) {
+                    confFile.insert ( 0,"/" );
+                    confFile.insert ( 0,parentDir );
+                }
+            }
+
+            pElemCephContext = hLvl.FirstChild ( "cephContext" ).FirstChild ( "poolName" ).Element();
+            if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
+                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un poolName" );
+                return NULL;
+            } else {
+                poolName = pElemCephContext->GetText();
+            }
+            delete context;
+            context = NULL;
+            context = new CephContext(clusterName,userName,confFile,poolName);
+
+        }
+
+        pElemLvl = hLvl.FirstChild ( "swiftContext" ).Element();
+        if ( pElemLvl ) {
+
+            std::string authUrl,userAccount,userName,userPassword,container;
+
+            TiXmlElement* pElemSwiftContext;
+
+            pElemSwiftContext = hLvl.FirstChild ( "swiftContext" ).FirstChild ( "authUrl" ).Element();
+            if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
+                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un authUrl" );
+                return NULL;
+            } else {
+                authUrl = pElemSwiftContext->GetText();
+            }
+
+            pElemSwiftContext = hLvl.FirstChild ( "swiftContext" ).FirstChild ( "userName" ).Element();
+            if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
+                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un userName" );
+                return NULL;
+            } else {
+                userName = pElemSwiftContext->GetText();
+            }
+
+            pElemSwiftContext = hLvl.FirstChild ( "swiftContext" ).FirstChild ( "userAccount" ).Element();
+            if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
+                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un userAccount" );
+                return NULL;
+            } else {
+                userAccount = pElemSwiftContext->GetText();
+            }
+
+            pElemSwiftContext = hLvl.FirstChild ( "swiftContext" ).FirstChild ( "userPassword" ).Element();
+            if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
+                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un userPassword" );
+                return NULL;
+            } else {
+                userPassword = pElemSwiftContext->GetText();
+            }
+
+            pElemSwiftContext = hLvl.FirstChild ( "swiftContext" ).FirstChild ( "container" ).Element();
+            if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
+                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un container" );
+                return NULL;
+            } else {
+                container = pElemSwiftContext->GetText();
+            }
+
+            delete context;
+            context = NULL;
+            context = new SwiftContext(authUrl,userAccount,userName,userPassword,container);
+
         }
 
         pElemLvl = hLvl.FirstChild ( "tilesPerWidth" ).Element();
@@ -802,7 +908,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         }
 
         Level *TL = new Level ( *tm, channels, baseDir, tilesPerWidth, tilesPerHeight,
-                                maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth, format, noDataFilePath );
+                                maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth, format, noDataFilePath, context );
 
         levels.insert ( std::pair<std::string, Level *> ( id, TL ) );
     }// boucle sur les levels

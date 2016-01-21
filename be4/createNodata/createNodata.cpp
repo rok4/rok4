@@ -45,6 +45,9 @@
  */
 
 #include "Rok4Image.h"
+#include "CephContext.h"
+#include "FileContext.h"
+#include "SwiftContext.h"
 #include "Logger.h"
 #include "EmptyImage.h"
 #include "Image.h"
@@ -84,6 +87,8 @@
  *      -s samples per pixel : 1, 3 or 4
  *      -b bits per sample : 8 (for unsigned 8-bit integer) or 32 (for 32-bit float)
  *      -d debug logger activation
+ *      -pool Ceph pool where data is. OUTPUT FILE is interpreted as a Ceph object
+ *      -container Swift container where data is. Then OUTPUT FILE is interpreted as a Swift object name
  *
  * Examples
  *      - for orthophotography
@@ -157,7 +162,7 @@ void error ( std::string message, int errorCode ) {
  */
 int main ( int argc, char* argv[] ) {
     // Valeurs obligatoires
-    char* output = 0;
+    char* output = 0, *pool = 0, *container = 0;
     char* strnodata = 0;
 
     bool debugLogger=false;
@@ -189,6 +194,22 @@ int main ( int argc, char* argv[] ) {
     logw.setf ( std::ios::fixed,std::ios::floatfield );
 
     for ( int i = 1; i < argc; i++ ) {
+
+        if ( !strcmp ( argv[i],"-pool" ) ) {
+            if ( ++i == argc ) {
+                error("Error in -pool option", -1);
+            }
+            pool = argv[i];
+            continue;
+        }
+        if ( !strcmp ( argv[i],"-container" ) ) {
+            if ( ++i == argc ) {
+                error("Error in -container option", -1);
+            }
+            container = argv[i];
+            continue;
+        }
+
         if ( argv[i][0] == '-' ) {
             switch ( argv[i][1] ) {
             case 'h': // help
@@ -244,7 +265,7 @@ int main ( int argc, char* argv[] ) {
         } else {
             if ( output == 0 ) output = argv[i];
             else error (
-                "We have to specify only one output file path (which is " + std::string (output) + "). What is " + std::string ( argv[i] ), -1);
+                "We have to specify only one output file path / object name (which is " + std::string (output) + "). What is " + std::string ( argv[i] ), -1);
         }
     }
 
@@ -281,11 +302,32 @@ int main ( int argc, char* argv[] ) {
 
     EmptyImage* nodataImage = new EmptyImage(width, height, samplesperpixel, nodata);
 
+    Context* context;
+    if ( pool != 0 ) {
+        LOGGER_DEBUG( std::string("Output is an object in the Ceph pool ") + pool);
+        context = new CephContext("ceph", "client.admin", "/etc/ceph/ceph.conf", pool);
+        if (! context->connection()) {
+            error(std::string("Unable to connect to Ceph pool ") + pool, -1);
+        }
+    } else if (container != 0) {
+        LOGGER_DEBUG( std::string("Output is an object in the Swift container ") + container);
+        context = new SwiftContext("http://192.168.56.200:8080/auth/v1.0", "test", "tester", "testing", container);
+        if (! context->connection()) {
+            error(std::string("Unable to connect to Swift container ") + container, -1);
+        }
+    } else {
+        LOGGER_DEBUG("Output is a file in a file system");
+        context = new FileContext("");
+        if (! context->connection()) {
+            error("Unable to connect to File System", -1);
+        }
+    }
+
     Rok4ImageFactory R4IF;
     Rok4Image* nodataTile = R4IF.createRok4ImageToWrite(
         output, BoundingBox<double>(0.,0.,0.,0.), 0., 0., width, height, samplesperpixel,
         sampleformat, bitspersample, photometric, compression,
-        width, height
+        width, height, context
     );
 
     LOGGER_DEBUG ( "Write" );
@@ -297,6 +339,7 @@ int main ( int argc, char* argv[] ) {
     delete acc;
     delete nodataTile;
     delete nodataImage;
+    delete context;
 
     return 0;
 }
