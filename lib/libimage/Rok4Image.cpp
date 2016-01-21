@@ -693,7 +693,6 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
         }
         delete [] lines;
     } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
-                LOGGER_ERROR("Récupération de la ligne 1");
         float* lines = new float[tileHeight*imageLineSize];
         
         for ( int y = 0; y < tileHeightwise; y++ ) {
