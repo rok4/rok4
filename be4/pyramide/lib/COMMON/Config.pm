@@ -96,7 +96,6 @@ sub new {
     # default format would be INI-like (but with subsections), but later on, if
     # needed, JSON might be added, or something similar.
 
-
     my $class= ref($this) || $this;
 
 	my $self = {
@@ -108,6 +107,81 @@ sub new {
     return $self;
 }
 
+=begin nd
+Function: _load
+
+Read line by line (order is important), no library is used.
+
+Parameters (list):
+    filepath - string - Configuration file path, to read
+
+See Also:
+    <isConfSection>, <readCompositionLine>
+=cut
+sub _load {
+    my $self = shift;
+    my $filepath = shift;
+
+    if (! open CFGF, "<", $filepath ){
+        ERROR(sprintf "Cannot open configurations' file %s.",$filepath);
+        return FALSE;
+    }
+
+    my $currentSection = undef;
+    my $currentSubSection = undef;
+
+    while( defined( my $l = <CFGF> ) ) {
+        chomp $l;
+        $l =~ s/\s+//g; # we remove all spaces
+        $l =~ s/;\S*//; # we remove comments
+
+        next if ($l eq '');
+
+        if ($l =~ m/^\[(\w*)\]$/) {
+            $l =~ s/[\[\]]//g;
+
+            $currentSection = $l;
+            $currentSubSection = undef;
+            next;
+        }
+
+        if ($l =~ m/^\[\[(\w*)\]\]$/) {
+            $l =~ s/[\[\]]//g;
+
+            $currentSubSection = $l;
+            next;
+        }
+
+        if (! defined $currentSection) {
+            ERROR (sprintf "A property must always be in a section (%s)",$l);
+            return FALSE;
+        }
+
+        my @prop = split(/=/,$l,-1);
+        if (scalar @prop != 2 || $prop[0] eq '' || $prop[1] eq '') {
+            ERROR (sprintf "A line is invalid (%s). Must be prop = val",$l);
+            return FALSE;
+        }
+
+        if ($currentSection ne 'composition') {
+            if (exists $self->{$currentSection}->{$prop[0]}) {
+                ERROR (sprintf "A property is defined twice in the configuration : section %s, parameter %s", $currentSection,$prop[0]);
+                return FALSE;
+            }
+            $self->{$currentSection}->{$prop[0]} = $prop[1];
+        } else {
+            if (! $self->readCompositionLine($prop[0],$prop[1])) {
+                ERROR (sprintf "Cannot read a composition line !");
+                return FALSE;
+            }
+        }
+
+    }
+
+    close CFGF;
+
+    return TRUE;
+}
 
 
 1;
