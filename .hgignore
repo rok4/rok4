@@ -2,7 +2,7 @@ syntax: glob
 .project
 build
 build*
-*.komodoproject
+*.user
 *.kate-swp
 .kdev_include_paths
 .DS_Store
