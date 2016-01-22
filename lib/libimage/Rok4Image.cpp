@@ -308,6 +308,10 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( char* name, BoundingBox< do
             LOGGER_ERROR ( "Resolutions, bounding box and real dimensions for image '" << name << "' are not consistent" );
             return NULL;
         }
+    } else {
+        bbox = BoundingBox<double> ( 0, 0, ( double ) width, ( double ) height );
+        resx = 1.;
+        resy = 1.;
     }
 
     return new Rok4Image (
@@ -380,14 +384,19 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToWrite (
 /* ------------------------------------------------------------------------------------------------ */
 
 Rok4Image::Rok4Image (
-    int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* name,
+    int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* n,
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
     Compression::eCompression compression, ExtraSample::eExtraSample es, int tileWidth, int tileHeight, Context* c ) :
 
-    Image ( width, height, resx, resy, channels, bbox),
-    sampleformat ( sampleformat ), bitspersample ( bitspersample ), photometric ( photometric ), compression ( compression ), esType(esType), 
+    Image ( width, height, channels, resx, resy, bbox),
+    sampleformat ( sampleformat ), bitspersample ( bitspersample ), photometric ( photometric ), compression ( compression ), esType(es),
     tileWidth (tileWidth), tileHeight(tileHeight), context(c)
 {
+
+    name = new char[IMAGE_MAX_FILENAME_LENGTH];
+    strcpy ( name,n );
+    pixelSize = bitspersample * channels / 8;
+
     tileWidthwise = width/tileWidth;
     tileHeightwise = height/tileHeight;
     tilesNumber = tileWidthwise * tileHeightwise;

@@ -47,6 +47,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <string.h>
+#include <curl/curl.h>
 #include "Format.h"
 #include "Logger.h"
 #include "Rok4Image.h"
@@ -223,21 +224,16 @@ int main ( int argc, char **argv )
     if ( pool != 0 ) {
         LOGGER_DEBUG( std::string("Input is an object in the Ceph pool ") + pool);
         context = new CephContext("ceph", "client.admin", "/etc/ceph/ceph.conf", pool);
-        if (! context->connection()) {
-            error(std::string("Unable to connect to Ceph pool ") + pool, -1);
-        }
     } else if (container != 0) {
         LOGGER_DEBUG( std::string("Input is an object in the Swift container ") + container);
+        curl_global_init(CURL_GLOBAL_ALL);
         context = new SwiftContext("http://192.168.56.200:8080/auth/v1.0", "test", "tester", "testing", container);
-        if (! context->connection()) {
-            error(std::string("Unable to connect to Swift container ") + container, -1);
-        }
     } else {
         LOGGER_DEBUG("Input is a file in a file system");
         context = new FileContext("");
-        if (! context->connection()) {
-            error("Unable to connect to File System", -1);
-        }
+    }
+    if (! context->connection()) {
+        error("Unable to connect context", -1);
     }
 
     Rok4ImageFactory R4IF;
@@ -275,6 +271,9 @@ int main ( int argc, char **argv )
     delete outputImage;
     delete acc;
     delete context;
+    if (container != 0) {
+        curl_global_cleanup();
+    }
 
     return 0;
 }

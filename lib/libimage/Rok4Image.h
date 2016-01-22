@@ -525,12 +525,12 @@ public:
         LOGGER_INFO ( "" );
         LOGGER_INFO ( "---------- Rok4Image ------------" );
         Image::print();
-        LOGGER_INFO ( "\t- Image name : " << name );
         LOGGER_INFO ( "\t- Compression : " << Compression::toString ( compression ) );
         LOGGER_INFO ( "\t- Photometric : " << Photometric::toString ( photometric ) );
         LOGGER_INFO ( "\t- Bits per sample : " << bitspersample );
         LOGGER_INFO ( "\t- Sample format : " << SampleFormat::toString ( sampleformat ) );
         LOGGER_INFO ( "\t- tile width = " << tileWidth << ", tile height = " << tileHeight );
+        LOGGER_INFO ( "\t- Image name : " << name );
         LOGGER_INFO ( "" );
     }
 

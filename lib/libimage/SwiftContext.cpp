@@ -48,6 +48,7 @@
  */
 
 #include "SwiftContext.h"
+#include "LibcurlStruct.h"
 #include <curl/curl.h>
 
 SwiftContext::SwiftContext (std::string auth, std::string account, std::string user, std::string passwd, std::string container) :
@@ -57,14 +58,14 @@ SwiftContext::SwiftContext (std::string auth, std::string account, std::string u
 }
 
 bool SwiftContext::connection() {
-    LOGGER_DEBUG("Swift authentication\n");
+    LOGGER_DEBUG("Swift authentication");
 
     CURLcode res;
     struct curl_slist *list = NULL;
 
     curl = curl_easy_init();
-    curl_easy_setopt(curl, CURLOPT_URL, auth_url);
-    curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
+    curl_easy_setopt(curl, CURLOPT_URL, auth_url.c_str());
+    //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
     curl_easy_setopt(curl, CURLOPT_NOPROXY, "*");
 
     // On constitue le header et le moyen de récupération des informations (avec les structures de LibcurlStruct)
@@ -76,8 +77,8 @@ bool SwiftContext::connection() {
     strcat(xUser, user_name.c_str());
 
     char xPass[256];
-    strcpy(xUser, "X-Storage-Pass: ");
-    strcat(xUser, user_passwd.c_str());
+    strcpy(xPass, "X-Storage-Pass: ");
+    strcat(xPass, user_passwd.c_str());
 
     list = curl_slist_append(list, xUser);
     list = curl_slist_append(list, xPass);
@@ -92,7 +93,7 @@ bool SwiftContext::connection() {
         LOGGER_ERROR(curl_easy_strerror(res));
         curl_slist_free_all(list);
         curl_easy_cleanup(curl);
-        false;
+        return false;
     }
 
     curl_slist_free_all(list);
@@ -102,7 +103,53 @@ bool SwiftContext::connection() {
 }
 
 bool SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
-    LOGGER_DEBUG("Swift read : " << size << " bytes (from the " << offset << " one) in the object " << name);
+    //LOGGER_DEBUG("Swift read : " << size << " bytes (from the " << offset << " one) in the object " << name);
+
+    CURLcode res;
+    struct curl_slist *list = NULL;
+    DataStruct chunk;
+    chunk.nbPassage = 0;
+    chunk.data = (char*) malloc(1);
+    chunk.size = 0;
+
+    int lastBytes = offset + size - 1;
+
+    curl = curl_easy_init();
+    //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+
+    // On constitue le header et le moyen de récupération des informations (avec les structures de LibcurlStruct)
+
+    char fullUrl[256];
+    strcpy(fullUrl, authHdr.url);
+    strcat(fullUrl, "/");
+    strcat(fullUrl, container_name.c_str());
+    strcat(fullUrl, "/");
+    strcat(fullUrl, name.c_str());
+
+    char range[50];
+    sprintf(range, "Range: bytes=%d-%d", offset, lastBytes);
+
+    list = curl_slist_append(list, authHdr.token);
+    list = curl_slist_append(list, range);
+
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
+    curl_easy_setopt(curl, CURLOPT_URL, fullUrl);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, data_callback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &chunk);
+
+    res = curl_easy_perform(curl);
+    curl_slist_free_all(list);
+    curl_easy_cleanup(curl);
+
+
+    if( CURLE_OK != res) {
+        LOGGER_ERROR("Cannot read data from Swift : " << size << " bytes (from the " << offset << " one) in the object " << name);
+        LOGGER_ERROR(curl_easy_strerror(res));
+        return false;
+    }
+
+    memcpy(data, chunk.data, chunk.size);
+
     return true;
 }
 

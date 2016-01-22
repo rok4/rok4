@@ -37,7 +37,7 @@
 
 #include "Level.h"
 #include "Interpolation.h"
-#include "FileDataSource.h"
+#include "StoreDataSource.h"
 #include "CompoundImage.h"
 #include "ResampledImage.h"
 #include "ReprojectedImage.h"

@@ -40,15 +40,14 @@
 
 #include "Data.h"
 #include "Context.h"
-#include "CephContext.h"
-#include "FileContext.h"
-#include "SwiftContext.h"
 
 /*
  * Classe qui fait office de proxy pour lire sur fichier ou sur Ceph (stockage objet)
  */
 
 class StoreDataSource : public DataSource {
+
+friend class StoreDataSourceFactory;
 
 protected:
 
@@ -60,13 +59,15 @@ protected:
     std::string encoding;
     std::string type;
 
-    StoreDataSource ( const char* name, const uint32_t posoff, const uint32_t possize, std::string type, std::string encoding);
+    Context* context;
+
+    StoreDataSource ( const char* name, const uint32_t posoff, const uint32_t possize, std::string type, Context* c, std::string encoding);
 
 public:
 
 
-    virtual const uint8_t* getData ( size_t &tile_size ) = 0;
-    virtual uint8_t* getThisData ( const uint32_t offset, const uint32_t size ) = 0;
+    virtual const uint8_t* getData ( size_t &tile_size );
+    virtual uint8_t* getThisData ( const uint32_t offset, const uint32_t size );
 
 
     /*

@@ -42,7 +42,7 @@
 #include "BoundingBox.h"
 #include "TileMatrix.h"
 #include "Data.h"
-#include "FileDataSource.h"
+#include "StoreDataSource.h"
 #include "CRS.h"
 #include "Format.h"
 #include "ServicesConf.h"

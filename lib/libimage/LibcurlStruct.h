@@ -78,15 +78,15 @@ static size_t header_callback(char *buffer, size_t nitems, size_t size, void *us
     struct HeaderStruct* hdr = (HeaderStruct*) userp;
 
     if (! strncmp ( buffer,"X-Storage-Url: ", 15)) {
-        /*hdr->url = (char*) malloc(realsize - 15);
+        hdr->url = (char*) malloc(realsize - 15);
         strncpy(hdr->url, buffer + 15, realsize - 15 - 2);
-        hdr->url[realsize - 15 - 2] = '\0';*/
+        hdr->url[realsize - 15 - 2] = '\0';
     }
 
     else if (! strncmp ( buffer,"X-Auth-Token: ", 14)) {
-        /*hdr->token = (char*) malloc(realsize);
+        hdr->token = (char*) malloc(realsize);
         strncpy(hdr->token, buffer, realsize - 2);
-        hdr->token[realsize - 2] = '\0';*/
+        hdr->token[realsize - 2] = '\0';
     }
 
     return realsize;
@@ -97,13 +97,11 @@ static size_t data_callback(void *contents, size_t size, size_t nmemb, void *use
 
     struct DataStruct *mem = (struct DataStruct *)userp;
     mem->nbPassage = mem->nbPassage + 1;
-    printf("-------> passage : %d \n", mem->nbPassage);
 
     mem->data = (char*)realloc(mem->data, mem->size + realsize + 1);
-    printf("-------> realloc : %d \n", 1 + mem->size + realsize );
     if(mem->data == NULL) {
-    /* out of memory! */
-        printf("not enough memory (realloc returned NULL)\n");
+        /* out of memory! */
+        LOGGER_ERROR("not enough memory (realloc returned NULL)");
         return 0;
     }
 
