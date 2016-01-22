@@ -99,7 +99,8 @@ sub new {
     my $class= ref($this) || $this;
 
 	my $self = {
-
+        filePath => undef;
+        filePathFormat => undef;
     };
 
 	bless($self, $class);
@@ -247,6 +248,88 @@ sub readCompositionLine {
     }
 
     return TRUE;
+}
+
+sub getSection {
+    my $self = shift;
+    my $section = shift;
+
+    if (! defined $self->{$section}) {
+        ERROR(sprintf "Section '%s' isn't defined in the configuration file %s.", $section, $self->{filePath});
+        return undef;
+    }
+
+    DEBUG(sprintf "Content of section %s : %s", $section, Dumper($self->{$section}));
+
+    return $self->{$section};
+}
+
+sub getSubSection {
+    my $self = shift;
+    my @address = shift;
+
+    if (2 != scalar @address) {
+        ERROR(sprintf "Syntax : COMMON::Config::getSubSection(section, subsection); There must be exacly 2 arguments.");
+        return undef;
+    }
+
+    my $section = $address[0];
+    my $subSection = $address[1];
+
+    if (! defined $self->{$section}) {
+        ERROR(sprintf "Section '%s' isn't defined in the configuration file %s.", $section, $self->{filePath});
+        return undef;
+    } elsif (! defined $self->{$section}->{$subSection}) {
+        ERROR(sprintf "Subsection '%s' isn't defined in section '%s' of the configuration file %s.", $subSection, $section, $self->{filePath});
+        return undef;
+    }
+
+    DEBUG(sprintf "Content of section %s, subsection %s : %s", $section, $subSection, Dumper($self->{$section}->{$subSection}));
+
+    return $self->{$section}->{$subSection};
+}
+
+sub getProperty {
+    my $self = shift;
+    my @address = shift;
+
+    if ((2 != scalar @address) && (3 != scalar @address)) {
+        ERROR(sprintf "Syntax : COMMON::Config::getSubSection(section, [subsection,] property); There must be either 2 or 3 arguments.");
+        return undef;
+    }
+
+    my $section = $address[0];
+    my $subSection = undef;
+    my $property = undef;
+
+    if (2 == scalar @address) {
+        $property = $address[1];
+    } else {
+        $subSection = $address[1];
+        $property = $address[2];
+    }
+
+    if (! defined $self->{$section}) {
+        ERROR(sprintf "Section '%s' isn't defined in the configuration file %s.", $section, $self->{filePath});
+        return undef;
+    } elsif ((defined $subSection) && (! defined $self->{$section}->{$subSection})) {
+        ERROR(sprintf "Subsection '%s' isn't defined in section '%s' of the configuration file %s.", $subSection, $section, $self->{filePath});
+        return undef;
+    } elsif ((! defined $subSection) && (! defined $self->{$section}->{$property})) {
+        ERROR(sprintf "Property '%s' isn't defined in section '%s' of the configuration file %s.", $property, $section, $self->{filePath});
+        return undef;
+    } elsif ((defined $subSection) && (! defined $self->{$section}->{$subSection}->{$property})) {
+        ERROR(sprintf "Property '%s' isn't defined in section '%s', subsection '%s' of the configuration file %s.", $property, $section, $subSection, $self->{filePath});
+        return undef;
+    }
+
+    if (2 == scalar @address) {
+        DEBUG(sprintf "Value of property '%s' in section %s : %s", $property, $section, Dumper($self->{$section}->{$property}));
+        return $self->{$section}->{$property};
+    } else {
+        DEBUG(sprintf "Value of property '%s' in section %s, subsection %s : %s", $property, $section, $subSection, Dumper($self->{$section}->{$subSection}->{$property}));
+        return $self->{$section}->{$subSection}->{$property};
+    }
 }
 
 
