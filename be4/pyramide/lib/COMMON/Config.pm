@@ -141,7 +141,7 @@ sub _load {
             $l =~ s/[\[\]]//g;
 
             $currentSection = $l;
-            $currentSubSection = undef;
+            $currentSubSection = undef; # Resetting subsection when section changes
             next;
         }
 
@@ -164,17 +164,25 @@ sub _load {
         }
 
         if ($currentSection ne 'composition') {
-            if (exists $self->{$currentSection}->{$prop[0]}) {
-                ERROR (sprintf "A property is defined twice in the configuration : section %s, parameter %s", $currentSection,$prop[0]);
-                return FALSE;
+            if (! defined $currentSubSection) {
+                if (exists $self->{$currentSection}->{$prop[0]}) {
+                    ERROR (sprintf "A property is defined twice in the configuration : section %s, parameter %s", $currentSection, $prop[0]);
+                    return FALSE;
+                }            
+                $self->{$currentSection}->{$prop[0]} = $prop[1];                
+            } else {
+                if (exists $self->{$currentSection}->$currentSubSection}->{$prop[0]}) {
+                    ERROR (sprintf "A property is defined twice in the configuration : section %s, subsection %s parameter %s", $currentSection, $currentSubSection, $prop[0]);
+                    return FALSE;
+                }            
+                $self->{$currentSection}->{$currentSubSection}->{$prop[0]} = $prop[1];
             }
-            $self->{$currentSection}->{$prop[0]} = $prop[1];
         } else {
             if (! $self->readCompositionLine($prop[0],$prop[1])) {
                 ERROR (sprintf "Cannot read a composition line !");
                 return FALSE;
             }
-        }
+        } 
 
     }
 
@@ -183,5 +191,64 @@ sub _load {
     return TRUE;
 }
 
+=begin nd
+Function: readCompositionLine
+
+Reads a *composition* section line. Determine sources by level and calculate priorities.
+
+Parameters (list):
+    prop - string - Composition's name: levelId.bboxId
+    val - string - Composition's value: pyrPath1,pyrPath2,pyrPath3
+=cut
+sub readCompositionLine {
+    my $self = shift;
+    my $prop = shift;
+    my $val = shift;
+
+    TRACE;
+
+    my ($levelId,$bboxId) = split(/\./,$prop,-1);
+
+    if ($levelId eq '' || $bboxId eq '') {
+        ERROR (sprintf "Cannot define a level id and a bbox id (%s). Must be levelId.bboxId",$prop);
+        return FALSE;
+    }
+
+    my @pyrs = split(/,/,$val,-1);
+
+    foreach my $pyr (@pyrs) {
+        if ($pyr eq '') {
+            ERROR (sprintf "Invalid list of pyramids (%s). Must be /path/pyr1.pyr,/path/pyr2.pyr",$val);
+            return FALSE;
+        }
+        if (! -f $pyr) {
+            ERROR (sprintf "A referenced pyramid's file doesn't exist : %s",$pyr);
+            return FALSE;
+        }
+
+        my $priority = 1;
+        if (exists $self->{sourceByLevel}->{$levelId}) {
+            $self->{sourceByLevel}->{$levelId} += 1;
+            $priority = $self->{sourceByLevel}->{$levelId};
+        } else {
+            $self->{sourceByLevel}->{$levelId} = 1;
+        }
+
+        $self->{composition}->{$levelId}->{$priority} = {
+            bbox => $bboxId,
+            pyr => $pyr,
+        };
+
+        if (! exists $self->{sourcePyramids}->{$pyr}) {
+            # we have a new source pyramid, but not yet information about
+            $self->{sourcePyramids}->{$pyr} = undef;
+        }
+
+    }
+
+    return TRUE;
+}
+
 
 1;
+__END__
