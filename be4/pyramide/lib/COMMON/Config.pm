@@ -78,9 +78,10 @@ our @EXPORT      = qw();
 
 
 ################################################################################
-# Constantes
+# Constants
 use constant TRUE  => 1;
 use constant FALSE => 0;
+use constant FILE_FORMATS => qw(INI);
 
 ################################################################################
 
@@ -88,38 +89,75 @@ BEGIN {}
 INIT {}
 END {}
 
+
+################################################################################
+#                             Group: Constructors                              #
 ################################################################################
 
 sub new {
 	my $this = shift;
-	my $parms = shift; # TODO : -filepath parameter and -format parameter
+	my %parms = @_; # TODO : -filepath parameter and -format parameter
     # default format would be INI-like (but with subsections), but later on, if
     # needed, JSON might be added, or something similar.
 
     my $class= ref($this) || $this;
 
 	my $self = {
-        filePath => undef;
-        filePathFormat => undef;
+        filePath => undef,
+        fileFormat => undef,
+        content => {},
     };
 
 	bless($self, $class);
 
-    return $self;
+    my ($key, $value);
+
+    # Read the mandatory configuration file's path parameter 
+    if (defined ($value = delete $parms{'-filepath'})) {
+        $self->{filePath} = $value;
+    } else {
+        ERROR("Cannot use COMMON::Config->new whithout a valid '-filepath' parameter.");
+        return undef;
+    }
+    ($key, $value) = (undef, undef);
+
+    # Check the format in which the configuration file is written
+    $value = delete $parms{'-format'}
+    if ((defined $value) && _isKnownFormat($value)) {
+        $self->{fileFormat} = uc($value);
+    } elsif ( ! defined $value) {
+        INFO("No format defined for the configuration file. Switching to default INI-like format ('INI').");
+        $self->{fileFormat} = "INI";
+    } else {
+        return undef;
+    }
+    ($key, $value) = (undef, undef);
+
+    my $loaded = FALSE;
+    if ($self->{fileFormat} eq "INI") {
+        $loaded = _loadINI($self->{fileFormat});
+    }
+
+    if ($loaded) {
+        return $self;
+    } else {
+        ERROR("Configuration file wasn't properly loaded.");
+        return undef;
+    }
 }
 
 =begin nd
-Function: _load
+Function: _loadINI
 
 Read line by line (order is important), no library is used.
 
 Parameters (list):
-    filepath - string - Configuration file path, to read
+    filepath - string - INI-like configuration file path, to read
 
 See Also:
-    <isConfSection>, <readCompositionLine>
+    <readCompositionLine>
 =cut
-sub _load {
+sub _loadINI {
     my $self = shift;
     my $filepath = shift;
 
@@ -142,7 +180,7 @@ sub _load {
             $l =~ s/[\[\]]//g;
 
             $currentSection = $l;
-            $currentSubSection = undef; # Resetting subsection when section changes
+            $currentSubSection = undef; # Resetting subsection as section changes
             next;
         }
 
@@ -166,17 +204,17 @@ sub _load {
 
         if ($currentSection ne 'composition') {
             if (! defined $currentSubSection) {
-                if (exists $self->{$currentSection}->{$prop[0]}) {
+                if (exists $self->{content}->{$currentSection}->{$prop[0]}) {
                     ERROR (sprintf "A property is defined twice in the configuration : section %s, parameter %s", $currentSection, $prop[0]);
                     return FALSE;
                 }            
-                $self->{$currentSection}->{$prop[0]} = $prop[1];                
+                $self->{content}->{$currentSection}->{$prop[0]} = $prop[1];                
             } else {
-                if (exists $self->{$currentSection}->$currentSubSection}->{$prop[0]}) {
+                if (exists $self->{content}->{$currentSection}->$currentSubSection}->{$prop[0]}) {
                     ERROR (sprintf "A property is defined twice in the configuration : section %s, subsection %s parameter %s", $currentSection, $currentSubSection, $prop[0]);
                     return FALSE;
                 }            
-                $self->{$currentSection}->{$currentSubSection}->{$prop[0]} = $prop[1];
+                $self->{content}->{$currentSection}->{$currentSubSection}->{$prop[0]} = $prop[1];
             }
         } else {
             if (! $self->readCompositionLine($prop[0],$prop[1])) {
@@ -228,21 +266,21 @@ sub readCompositionLine {
         }
 
         my $priority = 1;
-        if (exists $self->{sourceByLevel}->{$levelId}) {
-            $self->{sourceByLevel}->{$levelId} += 1;
-            $priority = $self->{sourceByLevel}->{$levelId};
+        if (exists $self->{content}->{sourceByLevel}->{$levelId}) {
+            $self->{content}->{sourceByLevel}->{$levelId} += 1;
+            $priority = $self->{content}->{sourceByLevel}->{$levelId};
         } else {
-            $self->{sourceByLevel}->{$levelId} = 1;
+            $self->{content}->{sourceByLevel}->{$levelId} = 1;
         }
 
-        $self->{composition}->{$levelId}->{$priority} = {
+        $self->{content}->{composition}->{$levelId}->{$priority} = {
             bbox => $bboxId,
             pyr => $pyr,
         };
 
-        if (! exists $self->{sourcePyramids}->{$pyr}) {
+        if (! exists $self->{content}->{sourcePyramids}->{$pyr}) {
             # we have a new source pyramid, but not yet information about
-            $self->{sourcePyramids}->{$pyr} = undef;
+            $self->{content}->{sourcePyramids}->{$pyr} = undef;
         }
 
     }
@@ -250,18 +288,56 @@ sub readCompositionLine {
     return TRUE;
 }
 
+
+################################################################################
+#                                Group: Tester                                 #
+################################################################################
+
+=begin nd
+Function: _isKnownFormat
+
+Check configuration file's format. Possible values: 'INI'.
+
+Parameters (list):
+    format - string - format's name
+=cut
+sub _isKnownFormat {
+    my $self = shift;
+    my $format = shift;
+
+    TRACE;
+
+    return FALSE if (! defined $format);
+
+    my $allowedFormats = "(";
+    my $count = 0;
+    foreach (FILE_FORMATS) {
+        return TRUE if (uc($format) eq $_);
+        $count++;
+        $allowedFormats .= ($count < scalar FILE_FORMATS) ? "$_, " : "$_)";
+    }
+
+    ERROR (sprintf "COMMON::Config cannot read Configuration file format (%s)."
+       ." The implemented file formats are : %s", uc($format), $allowedFormats);
+    return FALSE;
+}
+
+################################################################################
+#                           Group: Getters - Setters                           #
+################################################################################
+
 sub getSection {
     my $self = shift;
     my $section = shift;
 
-    if (! defined $self->{$section}) {
+    if (! defined $self->{content}->{$section}) {
         ERROR(sprintf "Section '%s' isn't defined in the configuration file %s.", $section, $self->{filePath});
         return undef;
     }
 
-    DEBUG(sprintf "Content of section %s : %s", $section, Dumper($self->{$section}));
+    DEBUG(sprintf "Content of section %s : %s", $section, Dumper($self->{content}->{$section}));
 
-    return $self->{$section};
+    return $self->{content}->{$section};
 }
 
 sub getSubSection {
@@ -269,24 +345,24 @@ sub getSubSection {
     my @address = shift;
 
     if (2 != scalar @address) {
-        ERROR(sprintf "Syntax : COMMON::Config::getSubSection(section, subsection); There must be exacly 2 arguments.");
+        ERROR("Syntax : COMMON::Config::getSubSection(section, subsection); There must be exacly 2 arguments.");
         return undef;
     }
 
     my $section = $address[0];
     my $subSection = $address[1];
 
-    if (! defined $self->{$section}) {
+    if (! defined $self->{content}->{$section}) {
         ERROR(sprintf "Section '%s' isn't defined in the configuration file %s.", $section, $self->{filePath});
         return undef;
-    } elsif (! defined $self->{$section}->{$subSection}) {
+    } elsif (! defined $self->{content}->{$section}->{$subSection}) {
         ERROR(sprintf "Subsection '%s' isn't defined in section '%s' of the configuration file %s.", $subSection, $section, $self->{filePath});
         return undef;
     }
 
-    DEBUG(sprintf "Content of section %s, subsection %s : %s", $section, $subSection, Dumper($self->{$section}->{$subSection}));
+    DEBUG(sprintf "Content of section %s, subsection %s : %s", $section, $subSection, Dumper($self->{content}->{$section}->{$subSection}));
 
-    return $self->{$section}->{$subSection};
+    return $self->{content}->{$section}->{$subSection};
 }
 
 sub getProperty {
@@ -294,7 +370,7 @@ sub getProperty {
     my @address = shift;
 
     if ((2 != scalar @address) && (3 != scalar @address)) {
-        ERROR(sprintf "Syntax : COMMON::Config::getSubSection(section, [subsection,] property); There must be either 2 or 3 arguments.");
+        ERROR("Syntax : COMMON::Config::getSubSection(section, [subsection,] property); There must be either 2 or 3 arguments.");
         return undef;
     }
 
@@ -309,26 +385,26 @@ sub getProperty {
         $property = $address[2];
     }
 
-    if (! defined $self->{$section}) {
+    if (! defined $self->{content}->{$section}) {
         ERROR(sprintf "Section '%s' isn't defined in the configuration file %s.", $section, $self->{filePath});
         return undef;
-    } elsif ((defined $subSection) && (! defined $self->{$section}->{$subSection})) {
+    } elsif ((defined $subSection) && (! defined $self->{content}->{$section}->{$subSection})) {
         ERROR(sprintf "Subsection '%s' isn't defined in section '%s' of the configuration file %s.", $subSection, $section, $self->{filePath});
         return undef;
-    } elsif ((! defined $subSection) && (! defined $self->{$section}->{$property})) {
+    } elsif ((! defined $subSection) && (! defined $self->{content}->{$section}->{$property})) {
         ERROR(sprintf "Property '%s' isn't defined in section '%s' of the configuration file %s.", $property, $section, $self->{filePath});
         return undef;
-    } elsif ((defined $subSection) && (! defined $self->{$section}->{$subSection}->{$property})) {
+    } elsif ((defined $subSection) && (! defined $self->{content}->{$section}->{$subSection}->{$property})) {
         ERROR(sprintf "Property '%s' isn't defined in section '%s', subsection '%s' of the configuration file %s.", $property, $section, $subSection, $self->{filePath});
         return undef;
     }
 
     if (2 == scalar @address) {
-        DEBUG(sprintf "Value of property '%s' in section %s : %s", $property, $section, Dumper($self->{$section}->{$property}));
-        return $self->{$section}->{$property};
+        DEBUG(sprintf "Value of property '%s' in section %s : %s", $property, $section, Dumper($self->{content}->{$section}->{$property}));
+        return $self->{content}->{$section}->{$property};
     } else {
-        DEBUG(sprintf "Value of property '%s' in section %s, subsection %s : %s", $property, $section, $subSection, Dumper($self->{$section}->{$subSection}->{$property}));
-        return $self->{$section}->{$subSection}->{$property};
+        DEBUG(sprintf "Value of property '%s' in section %s, subsection %s : %s", $property, $section, $subSection, Dumper($self->{content}->{$section}->{$subSection}->{$property}));
+        return $self->{content}->{$section}->{$subSection}->{$property};
     }
 }
 
