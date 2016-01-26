@@ -89,7 +89,7 @@ use warnings;
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
 
-use BE4_COMMON::Config;
+use Config::IniFiles;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -184,7 +184,7 @@ sub LoadProperties {
   TRACE;
 
   # load properties 
-  my $cfg = BE4_COMMON::Config->new(
+  my $cfg = Config::IniFiles->new(
                         -file       => $fileconf,
                         -allowempty => 0,
                         -handle_trailing_comment=>1,
