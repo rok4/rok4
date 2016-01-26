@@ -340,19 +340,24 @@ sub getSection {
     my $self = shift;
     my $section = shift;
 
-    if (! defined $self->{configuration}->{$section}) {
-        ERROR(sprintf "Section '%s' isn't defined in the configuration file %s.", $section, $self->{filePath});
+    if(! defined $section) {
+        ERROR("Wrong argument number : syntax = getSection('section_name')");
         return undef;
     }
 
-    DEBUG(sprintf "Content of section %s : %s", $section, Dumper($self->{configuration}->{$section}));
+    if (! defined $self->{configuration}->{$section}) {
+        ERROR(sprintf "Section '%s' isn't defined in the configuration file '%s'.", $section, $self->{filePath});
+        return undef;
+    }
+
+    DEBUG(sprintf "Content of section '%s' : %s", $section, Dumper($self->{configuration}->{$section}));
 
     return $self->{configuration}->{$section};
 }
 
 sub getSubSection {
     my $self = shift;
-    my @address = shift;
+    my @address = @_;
 
     if (2 != scalar @address) {
         ERROR("Syntax : COMMON::Config::getSubSection(section, subsection); There must be exacly 2 arguments.");
@@ -363,21 +368,21 @@ sub getSubSection {
     my $subSection = $address[1];
 
     if (! defined $self->{configuration}->{$section}) {
-        ERROR(sprintf "Section '%s' isn't defined in the configuration file %s.", $section, $self->{filePath});
+        ERROR(sprintf "Section '%s' isn't defined in the configuration file '%s'.", $section, $self->{filePath});
         return undef;
     } elsif (! defined $self->{configuration}->{$section}->{$subSection}) {
         ERROR(sprintf "Subsection '%s' isn't defined in section '%s' of the configuration file %s.", $subSection, $section, $self->{filePath});
         return undef;
     }
 
-    DEBUG(sprintf "Content of section %s, subsection %s : %s", $section, $subSection, Dumper($self->{configuration}->{$section}->{$subSection}));
+    DEBUG(sprintf "Content of section '%s', subsection '%s' : %s", $section, $subSection, Dumper($self->{configuration}->{$section}->{$subSection}));
 
     return $self->{configuration}->{$section}->{$subSection};
 }
 
 sub getProperty {
     my $self = shift;
-    my @address = shift;
+    my @address = @_;
 
     if ((2 != scalar @address) && (3 != scalar @address)) {
         ERROR("Syntax : COMMON::Config::getSubSection(section, [subsection,] property); There must be either 2 or 3 arguments.");
@@ -396,24 +401,24 @@ sub getProperty {
     }
 
     if (! defined $self->{configuration}->{$section}) {
-        ERROR(sprintf "Section '%s' isn't defined in the configuration file %s.", $section, $self->{filePath});
+        ERROR(sprintf "Section '%s' isn't defined in the configuration file '%s'.", $section, $self->{filePath});
         return undef;
     } elsif ((defined $subSection) && (! defined $self->{configuration}->{$section}->{$subSection})) {
-        ERROR(sprintf "Subsection '%s' isn't defined in section '%s' of the configuration file %s.", $subSection, $section, $self->{filePath});
+        ERROR(sprintf "Subsection '%s' isn't defined in section '%s' of the configuration file '%s'.", $subSection, $section, $self->{filePath});
         return undef;
     } elsif ((! defined $subSection) && (! defined $self->{configuration}->{$section}->{$property})) {
-        ERROR(sprintf "Property '%s' isn't defined in section '%s' of the configuration file %s.", $property, $section, $self->{filePath});
+        ERROR(sprintf "Property '%s' isn't defined in section '%s' of the configuration file '%s'.", $property, $section, $self->{filePath});
         return undef;
     } elsif ((defined $subSection) && (! defined $self->{configuration}->{$section}->{$subSection}->{$property})) {
-        ERROR(sprintf "Property '%s' isn't defined in section '%s', subsection '%s' of the configuration file %s.", $property, $section, $subSection, $self->{filePath});
+        ERROR(sprintf "Property '%s' isn't defined in section '%s', subsection '%s' of the configuration file '%s'.", $property, $section, $subSection, $self->{filePath});
         return undef;
     }
 
     if (2 == scalar @address) {
-        DEBUG(sprintf "Value of property '%s' in section %s : %s", $property, $section, Dumper($self->{configuration}->{$section}->{$property}));
+        DEBUG(sprintf "Value of property '%s' in section '%s' : '%s'", $property, $section, $self->{configuration}->{$section}->{$property});
         return $self->{configuration}->{$section}->{$property};
     } else {
-        DEBUG(sprintf "Value of property '%s' in section %s, subsection %s : %s", $property, $section, $subSection, Dumper($self->{configuration}->{$section}->{$subSection}->{$property}));
+        DEBUG(sprintf "Value of property '%s' in section '%s', subsection '%s' : '%s'", $property, $section, $subSection, $self->{configuration}->{$section}->{$subSection}->{$property});
         return $self->{configuration}->{$section}->{$subSection}->{$property};
     }
 }
