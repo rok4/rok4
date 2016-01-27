@@ -66,6 +66,7 @@ my $VERSION = '0.1';
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
 use List::Util qw(min max);
+use Scalar::Util qw/reftype/;
 
   # inheritance
 our @ISA;
@@ -101,9 +102,9 @@ sub new {
     my $class= ref($this) || $this;
 
 	my $self = {
-        filePath => undef,
-        fileFormat => undef,
-        configuration => {},
+        "filePath" => undef,
+        "fileFormat" => undef,
+        "configuration" => {},
     };
 
 	bless($self, $class);
@@ -118,7 +119,7 @@ sub new {
     my $value = undef;
 
     # Read the mandatory configuration file's path parameter 
-    if (defined ($value = delete $parms->{-filepath})) {
+    if (defined ($value = delete $parms->{'-filepath'})) {
         DEBUG(sprintf "Given configuration file's path : '%s'", $value);
         $self->{"filePath"} = $value;
     } else {
@@ -275,21 +276,21 @@ sub readCompositionLine {
         }
 
         my $priority = 1;
-        if (exists $self->{configuration}->{sourceByLevel}->{$levelId}) {
-            $self->{configuration}->{sourceByLevel}->{$levelId} += 1;
-            $priority = $self->{configuration}->{sourceByLevel}->{$levelId};
+        if (exists $self->{"configuration"}->{"sourceByLevel"}->{$levelId}) {
+            $self->{"configuration"}->{"sourceByLevel"}->{$levelId} += 1;
+            $priority = $self->{"configuration"}->{"sourceByLevel"}->{$levelId};
         } else {
-            $self->{configuration}->{sourceByLevel}->{$levelId} = 1;
+            $self->{"configuration"}->{"sourceByLevel"}->{$levelId} = 1;
         }
 
-        $self->{configuration}->{composition}->{$levelId}->{$priority} = {
-            bbox => $bboxId,
-            pyr => $pyr,
+        $self->{"configuration"}->{"composition"}->{$levelId}->{$priority} = {
+            "bbox" => $bboxId,
+            "pyr" => $pyr,
         };
 
-        if (! exists $self->{configuration}->{sourcePyramids}->{$pyr}) {
+        if (! exists $self->{"configuration"}->{"sourcePyramids"}->{$pyr}) {
             # we have a new source pyramid, but not yet information about
-            $self->{configuration}->{sourcePyramids}->{$pyr} = undef;
+            $self->{"configuration"}->{"sourcePyramids"}->{$pyr} = undef;
         }
 
     }
@@ -305,7 +306,9 @@ sub readCompositionLine {
 =begin nd
 Function: _isKnownFormat
 
-Check configuration file's format. Possible values: 'INI'.
+Checks configuration file's format. Possible values: 'INI'.
+
+Syntax: _isKnownFormat( format )
 
 Parameters (list):
     format - string - format's name
@@ -332,10 +335,101 @@ sub _isKnownFormat {
     return FALSE;
 }
 
+
+=begin_nd
+Function: isSection
+
+Checks if the given name really matches a section.
+Returns a boolean answer.
+
+Syntax: isSection ( sectionName [, errorMessage] )
+
+Parameters (list):
+    sectionName - string - hypothetical section's name
+    messageType - string - log output's level (default: debug; case insensitive allowed values : debug, info, error, none)
+=cut
+sub isSection {
+    my $self = shift;
+    my $sectionName = shift;
+    my $messageType = shift;
+
+    my $message;
+
+    if ( (! defined ($messageType)) || ($messageType == '') ) {
+        $messageType = 'debug';
+    }
+
+    if ( ! exists $self->{'configuration'}->{$sectionName} ) {
+        $message = sprintf( "No section named '%s' exists in configuration file '%s'.", $sectionName, $self->{'filePath'} );
+        if ( lc($$messageType) eq 'error' ) {
+            ERROR($message);
+        } elsif ( lc($$messageType) eq 'debug' ) {
+            DEBUG($message);
+        } elsif ( lc($$messageType) eq 'info' ) {
+            INFO($message);
+        } elsif ( lc($$messageType) eq 'none' ) {
+        } else {
+            DEBUG(sprintf ("Unrecognized message type : '%s'. Switching to default ('debug').", $messageType));
+            DEBUG($message);
+        }
+        return FALSE;
+    } elsif ( ! defined $self->{'configuration'}->{$sectionName} ) {
+        $message = sprintf( "Item named '%s' exists in root of configuration file '%s', but is undefined.", $sectionName, $self->{'filePath'} );
+        if ( lc($$messageType) eq 'error' ) {
+            ERROR($message);
+        } elsif ( lc($$messageType) eq 'debug' ) {
+            DEBUG($message);
+        } elsif ( lc($$messageType) eq 'info' ) {
+            INFO($message);
+        } elsif ( lc($$messageType) eq 'none' ) {
+        } else {
+            DEBUG(sprintf ("Unrecognized message type : '%s'. Switching to default ('debug').", $messageType));
+            DEBUG($message);
+        }
+        return FALSE;
+    } elsif ( ! reftype($self->{'configuration'}->{$sectionName}) eq 'HASH' ) {
+        $message = sprintf( "Item named '%s' exists in root of configuration file '%s', but is not a section.", $sectionName, $self->{'filePath'} );
+        if ( lc($$messageType) eq 'error' ) {
+            ERROR($message);
+        } elsif ( lc($$messageType) eq 'debug' ) {
+            DEBUG($message);
+        } elsif ( lc($$messageType) eq 'info' ) {
+            INFO($message);
+        } elsif ( lc($$messageType) eq 'none' ) {
+        } else {
+            DEBUG(sprintf ("Unrecognized message type : '%s'. Switching to default ('debug').", $messageType));
+            DEBUG($message);
+        }
+        return FALSE;
+    }
+
+    $message = sprintf( "Item '%s' is a section in configuration file '%s'.", $sectionName, $self->{'filePath'} );
+    if ( (lc($$messageType) eq 'error') || (lc($$messageType) eq 'none') ) {
+    } elsif ( lc($$messageType) eq 'debug' ) {
+        DEBUG($message);
+    } elsif ( lc($$messageType) eq 'info' ) {
+        INFO($message);
+    } else {
+        DEBUG(sprintf ("Unrecognized message type : '%s'. Switching to default ('debug').", $messageType));
+        DEBUG($message);
+    }
+    return TRUE;
+}
+
 ################################################################################
 #                           Group: Getters - Setters                           #
 ################################################################################
 
+=begin nd
+Function: getSection
+
+Returns the hash slice contained in a specific section.
+
+Syntax: getSection( section )
+
+Parameters (list):
+    section - string - section's name
+=cut
 sub getSection {
     my $self = shift;
     my $section = shift;
@@ -345,16 +439,27 @@ sub getSection {
         return undef;
     }
 
-    if (! defined $self->{configuration}->{$section}) {
-        ERROR(sprintf "Section '%s' isn't defined in the configuration file '%s'.", $section, $self->{filePath});
+    if (! defined $self->{"configuration"}->{$section}) {
+        ERROR(sprintf "Section '%s' isn't defined in the configuration file '%s'.", $section, $self->{"filePath"});
         return undef;
     }
 
-    DEBUG(sprintf "Content of section '%s' : %s", $section, Dumper($self->{configuration}->{$section}));
+    DEBUG(sprintf "Content of section '%s' : %s", $section, Dumper($self->{"configuration"}->{$section}));
 
-    return $self->{configuration}->{$section};
+    return $self->{"configuration"}->{$section};
 }
 
+=begin nd
+Function: getSubSection
+
+Returns the hash slice contained in a specific section-subsection pair.
+
+Syntax: getSubSection( section, subsection )
+
+Parameters (list):
+    section - string - section's name
+    subsection - string - subsection's name
+=cut
 sub getSubSection {
     my $self = shift;
     my @address = @_;
@@ -367,19 +472,34 @@ sub getSubSection {
     my $section = $address[0];
     my $subSection = $address[1];
 
-    if (! defined $self->{configuration}->{$section}) {
-        ERROR(sprintf "Section '%s' isn't defined in the configuration file '%s'.", $section, $self->{filePath});
+    if (! defined $self->{"configuration"}->{$section}) {
+        ERROR(sprintf "Section '%s' isn't defined in the configuration file '%s'.", $section, $self->{"filePath"});
         return undef;
-    } elsif (! defined $self->{configuration}->{$section}->{$subSection}) {
-        ERROR(sprintf "Subsection '%s' isn't defined in section '%s' of the configuration file %s.", $subSection, $section, $self->{filePath});
+    } elsif (! defined $self->{"configuration"}->{$section}->{$subSection}) {
+        ERROR(sprintf "Subsection '%s' isn't defined in section '%s' of the configuration file %s.", $subSection, $section, $self->{"filePath"});
+        return undef;
+    } elsif (! reftype ($self->{"configuration"}->{$section}->{$subSection}) ne 'HASH') {
+        ERROR(sprintf "In section '%s', an item named '%s' exists, but is not a subsection. It is probably a property.", $section, $subSection);
         return undef;
     }
 
-    DEBUG(sprintf "Content of section '%s', subsection '%s' : %s", $section, $subSection, Dumper($self->{configuration}->{$section}->{$subSection}));
+    DEBUG(sprintf "Content of section '%s', subsection '%s' : %s", $section, $subSection, Dumper($self->{"configuration"}->{$section}->{$subSection}));
 
-    return $self->{configuration}->{$section}->{$subSection};
+    return $self->{"configuration"}->{$section}->{$subSection};
 }
 
+=begin nd
+Function: getProperty
+
+Returns the value of a property in a section or a section-subsection pair.
+
+Syntax: getProperty( section, [subsection,] property )
+
+Parameters (list):
+    section - string - section's name
+    subsection - string - subsection's name (optionnal)
+    property - string - property's name
+=cut
 sub getProperty {
     my $self = shift;
     my @address = @_;
@@ -400,27 +520,103 @@ sub getProperty {
         $property = $address[2];
     }
 
-    if (! defined $self->{configuration}->{$section}) {
-        ERROR(sprintf "Section '%s' isn't defined in the configuration file '%s'.", $section, $self->{filePath});
+    if (! defined $self->{"configuration"}->{$section}) {
+        ERROR(sprintf "Section '%s' isn't defined in the configuration file '%s'.", $section, $self->{"filePath"});
         return undef;
-    } elsif ((defined $subSection) && (! defined $self->{configuration}->{$section}->{$subSection})) {
-        ERROR(sprintf "Subsection '%s' isn't defined in section '%s' of the configuration file '%s'.", $subSection, $section, $self->{filePath});
+    } elsif ((defined $subSection) && (! defined $self->{"configuration"}->{$section}->{$subSection})) {
+        ERROR(sprintf "Subsection '%s' isn't defined in section '%s' of the configuration file '%s'.", $subSection, $section, $self->{"filePath"});
         return undef;
-    } elsif ((! defined $subSection) && (! defined $self->{configuration}->{$section}->{$property})) {
-        ERROR(sprintf "Property '%s' isn't defined in section '%s' of the configuration file '%s'.", $property, $section, $self->{filePath});
+    } elsif ((defined $subSection) && (! reftype ($self->{"configuration"}->{$section}->{$subSection}) ne 'HASH')) {
+        ERROR(sprintf "In section '%s', an item named '%s' exists, but is not a subsection. It is probably a property.", $section, $subSection);
         return undef;
-    } elsif ((defined $subSection) && (! defined $self->{configuration}->{$section}->{$subSection}->{$property})) {
-        ERROR(sprintf "Property '%s' isn't defined in section '%s', subsection '%s' of the configuration file '%s'.", $property, $section, $subSection, $self->{filePath});
+    } elsif ((! defined $subSection) && (! defined $self->{"configuration"}->{$section}->{$property})) {
+        ERROR(sprintf "Property '%s' isn't defined in section '%s' of the configuration file '%s'.", $property, $section, $self->{"filePath"});
+        return undef;
+    } elsif ((! defined $subSection) && (! reftype ($self->{"configuration"}->{$section}->{$property}) eq 'HASH')) {
+        ERROR(sprintf "In section '%s', an item named '%s' exists, but is not a property. It is probably a subsection.", $section, $property);
+        return undef;
+    } elsif ((defined $subSection) && (! defined $self->{"configuration"}->{$section}->{$subSection}->{$property})) {
+        ERROR(sprintf "Property '%s' isn't defined in section '%s', subsection '%s' of the configuration file '%s'.", $property, $section, $subSection, $self->{"filePath"});
         return undef;
     }
 
     if (2 == scalar @address) {
-        DEBUG(sprintf "Value of property '%s' in section '%s' : '%s'", $property, $section, $self->{configuration}->{$section}->{$property});
-        return $self->{configuration}->{$section}->{$property};
+        DEBUG(sprintf "Value of property '%s' in section '%s' : '%s'", $property, $section, $self->{"configuration"}->{$section}->{$property});
+        return $self->{"configuration"}->{$section}->{$property};
     } else {
-        DEBUG(sprintf "Value of property '%s' in section '%s', subsection '%s' : '%s'", $property, $section, $subSection, $self->{configuration}->{$section}->{$subSection}->{$property});
-        return $self->{configuration}->{$section}->{$subSection}->{$property};
+        DEBUG(sprintf "Value of property '%s' in section '%s', subsection '%s' : '%s'", $property, $section, $subSection, $self->{"configuration"}->{$section}->{$subSection}->{$property});
+        return $self->{"configuration"}->{$section}->{$subSection}->{$property};
     }
+}
+
+=begin nd
+Function: getProperty
+
+Returns the list of existing sections.
+
+Syntax: getSections()
+
+Parameters (list):    
+=cut
+sub getSections {
+    my $self = shift;
+
+    my @sections = keys $self->{"configuration"};
+    return @sections;
+}
+
+=begin nd
+Function: getSubSections
+
+Returns the list of existing sub-sections in a section.
+
+Syntax: getSubSections( section )
+
+Parameters (list):  
+    section - string - section's name  
+=cut
+sub getSubSections {
+    my $self = shift;
+    my $section = shift;
+
+    my @subSections;
+    if (! defined $self->{"configuration"}->{$section}) {
+        ERROR(sprintf "Section '%s' isn't defined in the configuration file '%s'.", $section, $self->{"filePath"});
+        return undef;
+    } 
+    foreach my $item (keys $self->{"configuration"}->{$section}) {
+        if ( reftype($self->{"configuration"}->{$section}->{$item}) eq 'HASH' ) {
+            push (@subSections, $item);
+        }
+    }
+
+    return @subSections;
+}
+
+=begin nd
+Function: getProperties
+
+Returns the list of existing properties in a section or a subsection.
+
+Syntax: getProperties( section, [subsection] )
+
+Parameters (list): 
+    section - string - section's name
+    subsection - string - subsection's name (optionnal)   
+=cut
+sub getProperties {
+    my $self = shift;
+    my @address = @_;
+
+    my @properties;
+
+    if ( scalar @_ == 1 ) {
+        if (! defined $self->{"configuration"}->{$address[0]}) {
+            ERROR(sprintf "Section '%s' is not defined in ")
+        }
+    }
+
+    return @properties;
 }
 
 
