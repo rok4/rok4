@@ -656,8 +656,7 @@ sub getSection {
         return undef;
     }
 
-    if (! defined $self->{"configuration"}->{$section}) {
-        ERROR(sprintf "Section '%s' isn't defined in the configuration file '%s'.", $section, $self->{"filePath"});
+    if (! $self->isSection($section, 'error') {
         return undef;
     }
 
@@ -689,14 +688,7 @@ sub getSubSection {
     my $section = $address[0];
     my $subSection = $address[1];
 
-    if (! defined $self->{"configuration"}->{$section}) {
-        ERROR(sprintf "Section '%s' isn't defined in the configuration file '%s'.", $section, $self->{"filePath"});
-        return undef;
-    } elsif (! defined $self->{"configuration"}->{$section}->{$subSection}) {
-        ERROR(sprintf "Subsection '%s' isn't defined in section '%s' of the configuration file %s.", $subSection, $section, $self->{"filePath"});
-        return undef;
-    } elsif (! reftype ($self->{"configuration"}->{$section}->{$subSection}) ne 'HASH') {
-        ERROR(sprintf "In section '%s', an item named '%s' exists, but is not a subsection. It is probably a property.", $section, $subSection);
+    if (! $self->isSubSection($section, $subsection, 'error')) {
         return undef;
     }
 
@@ -737,23 +729,9 @@ sub getProperty {
         $property = $address[2];
     }
 
-    if (! defined $self->{"configuration"}->{$section}) {
-        ERROR(sprintf "Section '%s' isn't defined in the configuration file '%s'.", $section, $self->{"filePath"});
+    if ((defined $subSection) && (! $self->isProperty({'section' => $section, 'subsection' => $subSection, 'target' => $property, 'log_level' => 'error'}))) {
         return undef;
-    } elsif ((defined $subSection) && (! defined $self->{"configuration"}->{$section}->{$subSection})) {
-        ERROR(sprintf "Subsection '%s' isn't defined in section '%s' of the configuration file '%s'.", $subSection, $section, $self->{"filePath"});
-        return undef;
-    } elsif ((defined $subSection) && (! reftype ($self->{"configuration"}->{$section}->{$subSection}) ne 'HASH')) {
-        ERROR(sprintf "In section '%s', an item named '%s' exists, but is not a subsection. It is probably a property.", $section, $subSection);
-        return undef;
-    } elsif ((! defined $subSection) && (! defined $self->{"configuration"}->{$section}->{$property})) {
-        ERROR(sprintf "Property '%s' isn't defined in section '%s' of the configuration file '%s'.", $property, $section, $self->{"filePath"});
-        return undef;
-    } elsif ((! defined $subSection) && (! reftype ($self->{"configuration"}->{$section}->{$property}) eq 'HASH')) {
-        ERROR(sprintf "In section '%s', an item named '%s' exists, but is not a property. It is probably a subsection.", $section, $property);
-        return undef;
-    } elsif ((defined $subSection) && (! defined $self->{"configuration"}->{$section}->{$subSection}->{$property})) {
-        ERROR(sprintf "Property '%s' isn't defined in section '%s', subsection '%s' of the configuration file '%s'.", $property, $section, $subSection, $self->{"filePath"});
+    } elsif ((!defined $subSection) && (! $self->isProperty({'section' => $section, 'target' => $property, 'log_level' => 'error'}))) {
         return undef;
     }
 
@@ -778,7 +756,12 @@ Parameters (list):
 sub getSections {
     my $self = shift;
 
-    my @sections = keys $self->{"configuration"};
+    my @sections;
+    foreach my $item (keys $self->{"configuration"}) {
+        if ( $self->isSection($item, 'none') ) {
+            push (@sections, $item);
+        }
+    }
     return @sections;
 }
 
@@ -797,12 +780,11 @@ sub getSubSections {
     my $section = shift;
 
     my @subSections;
-    if (! defined $self->{"configuration"}->{$section}) {
-        ERROR(sprintf "Section '%s' isn't defined in the configuration file '%s'.", $section, $self->{"filePath"});
+    if (! $self->isSection($section, 'error')) {
         return undef;
     } 
     foreach my $item (keys $self->{"configuration"}->{$section}) {
-        if ( reftype($self->{"configuration"}->{$section}->{$item}) eq 'HASH' ) {
+        if ( $self->isSubSection($section, $item, 'none') ) {
             push (@subSections, $item);
         }
     }
@@ -826,10 +808,27 @@ sub getProperties {
     my @address = @_;
 
     my @properties;
+    if ((scalar @address != 1) && (scalar @address != 2)) {
+        ERROR("Syntax : COMMON::Config::getProperties(section [, subsection] ); There must be either 1 or 2 arguments.");
+        return undef;
+    } elsif (! $self->isSection($address[0], 'error')) {
+        return undef;
+    } 
 
-    if ( scalar @_ == 1 ) {
-        if (! defined $self->{"configuration"}->{$address[0]}) {
-            ERROR(sprintf "Section '%s' is not defined in ")
+    if ( scalar @address == 1 ) {
+        foreach my $item (keys $self->{"configuration"}->{$address[0]}) {
+            if ( $self->isProperty('section' => $address[0], 'target' => $item, 'none') ) {
+                push (@properties, $item);
+            }
+        }
+    } elsif ( scalar @address == 2 ) {
+        if (! $self->isSubSection($address[0], $address[1], 'error')) {
+            return undef;
+        }
+        foreach my $item (keys $self->{"configuration"}->{$address[0]}) {
+            if ( $self->isProperty('section' => $address[0], 'subsection' => $address[1], 'target' => $item, 'none') ) {
+                push (@properties, $item);
+            }
         }
     }
 
