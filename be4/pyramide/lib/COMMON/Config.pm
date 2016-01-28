@@ -416,6 +416,93 @@ sub isSection {
     return TRUE;
 }
 
+
+=begin_nd
+Function: isSubSection
+
+Checks if the given name really matches a subsection.
+Returns a boolean answer.
+
+Syntax: isSubSection ( sectionName, subSectionName [, errorMessage] )
+
+Parameters (list):
+    sectionName - string - section's name
+    subSectionName - string - hypothetical subsection's name
+    messageType - string - log output's level (default: debug; case insensitive allowed values : debug, info, error, none)
+=cut
+sub isSubSection {
+    my $self = shift;
+    my $sectionName = shift;
+    my $subSectionName = shift;
+    my $messageType = shift;
+
+    my $message;
+
+    if ( (! defined ($messageType)) || ($messageType eq '') ) {
+        $messageType = 'debug';
+    }
+
+    if (! $self->isSection($sectionName, 'error')) {
+        return FALSE;
+    }
+
+    if ( ! exists $self->{'configuration'}->{$sectionName}->{$subSectionName} ) {
+        $message = sprintf( "No subsection named '%s' exists in in section '%s' of configuration file '%s'.", $subSectionName, $sectionName, $self->{'filePath'} );
+        if ( lc($messageType) eq 'error' ) {
+            ERROR($message);
+        } elsif ( lc($messageType) eq 'debug' ) {
+            DEBUG($message);
+        } elsif ( lc($messageType) eq 'info' ) {
+            INFO($message);
+        } elsif ( lc($messageType) eq 'none' ) {
+        } else {
+            DEBUG(sprintf ("Unrecognized message type : '%s'. Switching to default ('debug').", $messageType));
+            DEBUG($message);
+        }
+        return FALSE;
+    } elsif ( ! defined $self->{'configuration'}->{$sectionName}->{$subSectionName} ) {
+        $message = sprintf( "Item named '%s' exists in section '%s' of configuration file '%s', but is undefined.", $subSectionName, $sectionName, $self->{'filePath'} );
+        if ( lc($messageType) eq 'error' ) {
+            ERROR($message);
+        } elsif ( lc($messageType) eq 'debug' ) {
+            DEBUG($message);
+        } elsif ( lc($messageType) eq 'info' ) {
+            INFO($message);
+        } elsif ( lc($messageType) eq 'none' ) {
+        } else {
+            DEBUG(sprintf ("Unrecognized message type : '%s'. Switching to default ('debug').", $messageType));
+            DEBUG($message);
+        }
+        return FALSE;
+    } elsif ( (! defined reftype($self->{'configuration'}->{$sectionName}->{$subSectionName})) || (! reftype($self->{'configuration'}->{$sectionName}->{$subSectionName}) eq 'HASH') ) {
+        $message = sprintf( "Item named '%s' exists in section '%s' of configuration file '%s', but is not a section.", $subSectionName, $sectionName, $self->{'filePath'} );
+        if ( lc($messageType) eq 'error' ) {
+            ERROR($message);
+        } elsif ( lc($messageType) eq 'debug' ) {
+            DEBUG($message);
+        } elsif ( lc($messageType) eq 'info' ) {
+            INFO($message);
+        } elsif ( lc($messageType) eq 'none' ) {
+        } else {
+            DEBUG(sprintf ("Unrecognized message type : '%s'. Switching to default ('debug').", $messageType));
+            DEBUG($message);
+        }
+        return FALSE;
+    }
+
+    $message = sprintf( "Item '%s' is a subsection in section '%s' in configuration file '%s'.", $subSectionName, $sectionName, $self->{'filePath'} );
+    if ( (lc($messageType) eq 'error') || (lc($messageType) eq 'none') ) {
+    } elsif ( lc($messageType) eq 'debug' ) {
+        DEBUG($message);
+    } elsif ( lc($messageType) eq 'info' ) {
+        INFO($message);
+    } else {
+        DEBUG(sprintf ("Unrecognized message type : '%s'. Switching to default ('debug').", $messageType));
+        DEBUG($message);
+    }
+    return TRUE;
+}
+
 ################################################################################
 #                           Group: Getters - Setters                           #
 ################################################################################
