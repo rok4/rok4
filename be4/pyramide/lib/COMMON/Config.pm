@@ -240,63 +240,6 @@ sub _loadINI {
     return TRUE;
 }
 
-=begin nd
-Function: readCompositionLine
-
-Reads a *composition* section line. Determine sources by level and calculate priorities.
-
-Parameters (list):
-    prop - string - Composition's name: levelId.bboxId
-    val - string - Composition's value: pyrPath1,pyrPath2,pyrPath3
-=cut
-sub readCompositionLine {
-    my $self = shift;
-    my $prop = shift;
-    my $val = shift;
-
-    TRACE;
-
-    my ($levelId,$bboxId) = split(/\./,$prop,-1);
-
-    if ($levelId eq '' || $bboxId eq '') {
-        ERROR (sprintf "Cannot define a level id and a bbox id (%s). Must be levelId.bboxId",$prop);
-        return FALSE;
-    }
-
-    my @pyrs = split(/,/,$val,-1);
-
-    foreach my $pyr (@pyrs) {
-        if ($pyr eq '') {
-            ERROR (sprintf "Invalid list of pyramids (%s). Must be /path/pyr1.pyr,/path/pyr2.pyr",$val);
-            return FALSE;
-        }
-        if (! -f $pyr) {
-            ERROR (sprintf "A referenced pyramid's file doesn't exist : %s",$pyr);
-            return FALSE;
-        }
-
-        my $priority = 1;
-        if (exists $self->{"configuration"}->{"sourceByLevel"}->{$levelId}) {
-            $self->{"configuration"}->{"sourceByLevel"}->{$levelId} += 1;
-            $priority = $self->{"configuration"}->{"sourceByLevel"}->{$levelId};
-        } else {
-            $self->{"configuration"}->{"sourceByLevel"}->{$levelId} = 1;
-        }
-
-        $self->{"configuration"}->{"composition"}->{$levelId}->{$priority} = {
-            "bbox" => $bboxId,
-            "pyr" => $pyr,
-        };
-
-        if (! exists $self->{"configuration"}->{"sourcePyramids"}->{$pyr}) {
-            # we have a new source pyramid, but not yet information about
-            $self->{"configuration"}->{"sourcePyramids"}->{$pyr} = undef;
-        }
-
-    }
-
-    return TRUE;
-}
 
 
 ################################################################################
