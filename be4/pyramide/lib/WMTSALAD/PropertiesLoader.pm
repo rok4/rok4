@@ -81,7 +81,7 @@ Attributes:
 
 ################################################################################
 
-package BE4::PropertiesLoader;
+package WMTSALAD::PropertiesLoader;
 
 use strict;
 use warnings;
