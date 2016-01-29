@@ -748,16 +748,14 @@ sub getProperties {
         return undef;
     } elsif (! $self->isSection($address[0], 'error')) {
         return undef;
-    } elsif ((scalar @address !== 2) && (! $self->isSubSection($address[0], $address[1], 'error'))) {
+    } elsif ((scalar @address == 2) && (! $self->isSubSection($address[0], $address[1], 'error'))) {
         return undef;
     }
 
-    $self->{"configuration"}->{$currentSection}->{$currentSubSection}->{'_props'}
-
     if ( scalar @address == 1 ) {
-        @properties = $self->{"configuration"}->{$currentSection}->{'_props'};
+        @properties = $self->{"configuration"}->{$address[0]}->{'_props'};
     } elsif ( scalar @address == 2 ) {
-        @properties = $self->{"configuration"}->{$currentSection}->{$currentSubSection}->{'_props'};
+        @properties = $self->{"configuration"}->{$address[0]}->{$address[1]}->{'_props'};
     }
 
     return @properties;
