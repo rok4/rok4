@@ -656,7 +656,7 @@ sub getSection {
         return undef;
     }
 
-    if (! $self->isSection($section, 'error') {
+    if (! $self->isSection($section, 'error')) {
         return undef;
     }
 
@@ -688,7 +688,7 @@ sub getSubSection {
     my $section = $address[0];
     my $subSection = $address[1];
 
-    if (! $self->isSubSection($section, $subsection, 'error')) {
+    if (! $self->isSubSection($section, $subSection, 'error')) {
         return undef;
     }
 
@@ -750,8 +750,7 @@ Function: getProperty
 Returns the list of existing sections.
 
 Syntax: getSections()
-
-Parameters (list):    
+  
 =cut
 sub getSections {
     my $self = shift;
@@ -833,6 +832,19 @@ sub getProperties {
     }
 
     return @properties;
+}
+
+=begin nd
+Function: getConfig
+
+Returns a reference to the the part of the COMMON::Config object that actually contains the configuration.
+
+Syntax: getConfig()
+ 
+=cut
+sub getConfig {
+    my $self = shift;
+    return $self->{'configuration'};
 }
 
 
