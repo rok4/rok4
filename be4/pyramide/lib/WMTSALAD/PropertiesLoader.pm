@@ -231,14 +231,9 @@ sub getPropertiesBySection {
 
 # Function: getSections
 sub getSections {
-  my $self = shift;
-  
-  my @sections;
-  my $param = $self->{CFGPARAMS};
-  foreach (keys %$param) {
-    push @sections, $_;
-  }
-  return @sections;
+  my $self = shift; 
+
+  return $self->{HDLFILE}->getSections();
 }
 
 # Function: getKeyParameters
