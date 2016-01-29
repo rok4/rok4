@@ -191,13 +191,15 @@ sub _loadINI {
 
             $currentSection = $l;
             $currentSubSection = undef; # Resetting subsection as section changes
+            $self->{"configuration"}->{$currentSection}->{'_props'} = []; # Array of properties name, to index their order
             next;
         }
 
         if ($l =~ m/^\[\[(\w*)\]\]$/) {
             $l =~ s/[\[\]]//g;
 
-            $currentSubSection = $l;
+            $currentSubSection = $l;            
+            $self->{"configuration"}->{$currentSection}->{$currentSubSection}->{'_props'} = []; # Array of properties name, to index their order
             next;
         }
 
@@ -218,13 +220,15 @@ sub _loadINI {
                 ERROR (sprintf "A property is defined twice in the configuration : section %s, parameter %s", $currentSection, $prop[0]);
                 return FALSE;
             }            
-            $self->{"configuration"}->{$currentSection}->{$prop[0]} = $prop[1];                
+            $self->{"configuration"}->{$currentSection}->{$prop[0]} = $prop[1]; 
+            push ($self->{"configuration"}->{$currentSection}->{'_props'}, $prop[0]);
         } else {
             if (defined $self->{"configuration"}->{$currentSection}->{$currentSubSection}->{$prop[0]}) {
                 ERROR (sprintf "A property is defined twice in the configuration : section %s, subsection %s parameter %s", $currentSection, $currentSubSection, $prop[0]);
                 return FALSE;
             }            
             $self->{"configuration"}->{$currentSection}->{$currentSubSection}->{$prop[0]} = $prop[1];
+            push ($self->{"configuration"}->{$currentSection}->{$currentSubSection}->{'_props'}, $prop[0]);
         }
         
 
@@ -744,23 +748,16 @@ sub getProperties {
         return undef;
     } elsif (! $self->isSection($address[0], 'error')) {
         return undef;
-    } 
+    } elsif ((scalar @address !== 2) && (! $self->isSubSection($address[0], $address[1], 'error'))) {
+        return undef;
+    }
+
+    $self->{"configuration"}->{$currentSection}->{$currentSubSection}->{'_props'}
 
     if ( scalar @address == 1 ) {
-        foreach my $item (keys $self->{"configuration"}->{$address[0]}) {
-            if ( $self->isProperty('section' => $address[0], 'target' => $item, 'none') ) {
-                push (@properties, $item);
-            }
-        }
+        @properties = $self->{"configuration"}->{$currentSection}->{'_props'};
     } elsif ( scalar @address == 2 ) {
-        if (! $self->isSubSection($address[0], $address[1], 'error')) {
-            return undef;
-        }
-        foreach my $item (keys $self->{"configuration"}->{$address[0]}) {
-            if ( $self->isProperty('section' => $address[0], 'subsection' => $address[1], 'target' => $item, 'none') ) {
-                push (@properties, $item);
-            }
-        }
+        @properties = $self->{"configuration"}->{$currentSection}->{$currentSubSection}->{'_props'};
     }
 
     return @properties;
