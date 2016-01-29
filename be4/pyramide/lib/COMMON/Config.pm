@@ -731,6 +731,7 @@ sub getSubSections {
 Function: getProperties
 
 Returns the list of existing properties in a section or a subsection.
+The properties listing order is the same than in the original configuration file.
 
 Syntax: getProperties( section, [subsection] )
 
