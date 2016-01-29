@@ -117,25 +117,26 @@ END {}
 
 # Function: new
 sub new {
-  my $this = shift;
+    my $this = shift;
+    my $file = shift;
+    my $fileType = shift;
 
-  my $class= ref($this) || $this;
-  # IMPORTANT : if modification, think to update natural documentation (just above)
-  my $self = {
-    CFGFILE   => undef,
-    HDLFILE   => undef,
-    CFGPARAMS => {},
-  };
+    my $class= ref($this) || $this;
+    # IMPORTANT : if modification, think to update natural documentation (just above)
+    my $self = {
+      CFGFILE   => undef,
+      CFGOBJ => undef,
+    };
 
-  bless($self, $class);
-  
-  TRACE;
-  
-  # init. class
-  return undef if (! $self->_initParams(@_));
-  return undef if (! $self->_initCfg());
-  
-  return $self;
+    bless($self, $class);
+    
+    TRACE;
+    
+    # init. class
+    return undef if (! $self->_initParams($file));
+    return undef if (! $self->LoadProperties($file, $fileType));
+    
+    return $self;
 }
 
 # Function: _initParams
@@ -160,16 +161,6 @@ sub _initParams {
     return TRUE;
 }
 
-# Function: _initCfg
-sub _initCfg {
-  my $self = shift;
-
-  TRACE;
-  
-  return FALSE if (! $self->LoadProperties($self->{CFGFILE}));
-  
-  return TRUE;
-}
 
 ####################################################################################################
 #                                      Group: Loader                                               #
@@ -180,30 +171,23 @@ sub LoadProperties {
   
   my $self     = shift;
   my $fileconf = shift;
+  my $fileType = shift;
 
   TRACE;
 
   # load properties 
   my $cfg = COMMON::Config->new( {
                         -filepath => $fileconf,
-                        -format => 'INI',
+                        -format => $fileType,
                         } );
     
   if (! defined $cfg) {
     ERROR ("Can not load properties !");
     return FALSE;
   }
-  
-  # save params
-  my $params = $self->{CFGPARAMS};
-  
-  foreach my $section ($cfg->getSections()) {
-    TRACE ("section > $section");
-    $params->{$section} = $cfg->getSection($section);
-  }
     
-  # save handler
-  $self->{HDLFILE} = $cfg;
+  # save properties (COMMON::Config object)
+  $self->{CFGOBJ} = $cfg;
   
   return TRUE;
 }
@@ -214,60 +198,58 @@ sub LoadProperties {
 
 # Function: getAllProperties
 sub getAllProperties {
-  my $self = shift;
-  return $self->{CFGPARAMS};
+    my $self = shift;
+    return $self->{CFGOBJ}->getConfig();
 }
 
+
+## TODO : subsections !
 # Function: getPropertiesBySection
 sub getPropertiesBySection {
-  my $self = shift;
-  my $section = shift;
-  
-  return undef if (! defined $section);
-  return undef if (! exists($self->{CFGPARAMS}->{$section}));
-  
-  return $self->{CFGPARAMS}->{$section};
+    my $self = shift;
+    my $section = shift;
+    
+    return $self->{CFGOBJ}->getSection($section);
 }
 
 # Function: getSections
 sub getSections {
-  my $self = shift; 
+    my $self = shift; 
 
-  return $self->{HDLFILE}->getSections();
+    return $self->{CFGOBJ}->getSections();
 }
 
 # Function: getKeyParameters
 sub getKeyParameters {
-  my $self = shift;
-  my $section = shift;
-  
-  return undef if (! defined $section);
-  return undef if (! exists($self->{CFGPARAMS}->{$section}));
-  
-  my @params;
-  my $param = $self->{CFGPARAMS}->{$section};
-  foreach (keys %$param) {
-    push @params, $_;
-  }
-  
-  return @params;
+    my $self = shift;
+    my $section = shift;
+    my $subsection = shift;
+
+    if (defined $subsection) {
+        return $self->{CFGOBJ}->getProperties($section, $subsection);
+    } else {
+        return $self->{CFGOBJ}->getProperties($section);
+    }
 }
 
+
+## TODO : use COMMON::Config
 # Function: getValueParameters
 sub getValueParameters {
-  my $self = shift;
-  my $section = shift;
-  
-  return undef if (! defined $section);
-  return undef if (! exists($self->{CFGPARAMS}->{$section}));
-  
-  my @params;
-  my $param = $self->{CFGPARAMS}->{$section};
-  foreach (values %$param) {
-    push @params, $_;
-  }
-  
-  return @params;
+    my $self = shift;
+    my $section = shift;
+    my $subsection = shift;
+    
+    return undef if (! defined $section);
+    return undef if (! exists($self->{CFGPARAMS}->{$section}));
+    
+    my @params;
+    my $param = $self->{CFGPARAMS}->{$section};
+    foreach (values %$param) {
+        push @params, $_;
+    }
+    
+    return @params;
 }
 
 1;
