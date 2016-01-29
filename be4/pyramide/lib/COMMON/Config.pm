@@ -750,8 +750,7 @@ Function: getProperty
 Returns the list of existing sections.
 
 Syntax: getSections()
-
-Parameters (list):    
+  
 =cut
 sub getSections {
     my $self = shift;
@@ -833,6 +832,19 @@ sub getProperties {
     }
 
     return @properties;
+}
+
+=begin nd
+Function: getConfig
+
+Returns a reference to the the part of the COMMON::Config object that actually contains the configuration.
+
+Syntax: getConfig()
+ 
+=cut
+sub getConfig {
+    my $self = shift;
+    return $self->{'configuration'};
 }
 
 
