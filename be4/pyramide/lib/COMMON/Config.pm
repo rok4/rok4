@@ -212,26 +212,21 @@ sub _loadINI {
             return FALSE;
         }
 
-        if ($currentSection ne 'composition') {
-            if (! defined $currentSubSection) {
-                if (exists $self->{"configuration"}->{$currentSection}->{$prop[0]}) {
-                    ERROR (sprintf "A property is defined twice in the configuration : section %s, parameter %s", $currentSection, $prop[0]);
-                    return FALSE;
-                }            
-                $self->{"configuration"}->{$currentSection}->{$prop[0]} = $prop[1];                
-            } else {
-                if (defined $self->{"configuration"}->{$currentSection}->{$currentSubSection}->{$prop[0]}) {
-                    ERROR (sprintf "A property is defined twice in the configuration : section %s, subsection %s parameter %s", $currentSection, $currentSubSection, $prop[0]);
-                    return FALSE;
-                }            
-                $self->{"configuration"}->{$currentSection}->{$currentSubSection}->{$prop[0]} = $prop[1];
-            }
-        } else {
-            if (! $self->readCompositionLine($prop[0],$prop[1])) {
-                ERROR (sprintf "Cannot read a composition line !");
+
+        if (! defined $currentSubSection) {
+            if (exists $self->{"configuration"}->{$currentSection}->{$prop[0]}) {
+                ERROR (sprintf "A property is defined twice in the configuration : section %s, parameter %s", $currentSection, $prop[0]);
                 return FALSE;
-            }
-        } 
+            }            
+            $self->{"configuration"}->{$currentSection}->{$prop[0]} = $prop[1];                
+        } else {
+            if (defined $self->{"configuration"}->{$currentSection}->{$currentSubSection}->{$prop[0]}) {
+                ERROR (sprintf "A property is defined twice in the configuration : section %s, subsection %s parameter %s", $currentSection, $currentSubSection, $prop[0]);
+                return FALSE;
+            }            
+            $self->{"configuration"}->{$currentSection}->{$currentSubSection}->{$prop[0]} = $prop[1];
+        }
+        
 
     }
 
