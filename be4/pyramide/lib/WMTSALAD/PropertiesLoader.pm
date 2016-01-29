@@ -146,13 +146,13 @@ sub _initParams {
     TRACE;
     
     if (! defined $file || $file eq "") {
-        ERROR ("Parameter : properties ?");
+        ERROR ("A configuration file path must be passed as parameter.");
         return FALSE;
     }
     
     # init. params
     if (! -f $file) {
-        ERROR (sprintf "File properties '%s' doesn't exist !?", $file);
+        ERROR (sprintf "Properties file '%s' doesn't exist !", $file);
         return FALSE;
     }
     $self->{CFGFILE} = $file;
@@ -197,21 +197,9 @@ sub LoadProperties {
   # save params
   my $params = $self->{CFGPARAMS};
   
-  foreach my $section ($cfg->Sections()) {
+  foreach my $section ($cfg->getSections()) {
     TRACE ("section > $section");
-    foreach my $param ($cfg->Parameters($section)) {
-      if (! defined $param) {
-        $params->{$section} = undef;
-        next;
-      }
-      my $value = $cfg->val( $section, $param);
-      TRACE ("param > $param = $value");
-      if (! defined $value || $value eq "") {
-        $params->{$section}{$param} = undef;
-        next;
-      }
-      $params->{$section}{$param} = $value;
-    }
+    $params->{$section} = $cfg->getSection($section);
   }
     
   # save handler
