@@ -656,7 +656,7 @@ sub getSection {
         return undef;
     }
 
-    if (! $self->isSection($section, 'error') {
+    if (! $self->isSection($section, 'error')) {
         return undef;
     }
 
@@ -688,7 +688,7 @@ sub getSubSection {
     my $section = $address[0];
     my $subSection = $address[1];
 
-    if (! $self->isSubSection($section, $subsection, 'error')) {
+    if (! $self->isSubSection($section, $subSection, 'error')) {
         return undef;
     }
 
