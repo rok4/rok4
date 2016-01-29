@@ -660,8 +660,6 @@ sub getSection {
         return undef;
     }
 
-    DEBUG(sprintf "Content of section '%s' : %s", $section, Dumper($self->{"configuration"}->{$section}));
-
     return $self->{"configuration"}->{$section};
 }
 
@@ -691,8 +689,6 @@ sub getSubSection {
     if (! $self->isSubSection($section, $subSection, 'error')) {
         return undef;
     }
-
-    DEBUG(sprintf "Content of section '%s', subsection '%s' : %s", $section, $subSection, Dumper($self->{"configuration"}->{$section}->{$subSection}));
 
     return $self->{"configuration"}->{$section}->{$subSection};
 }
@@ -736,10 +732,8 @@ sub getProperty {
     }
 
     if (2 == scalar @address) {
-        DEBUG(sprintf "Value of property '%s' in section '%s' : '%s'", $property, $section, $self->{"configuration"}->{$section}->{$property});
         return $self->{"configuration"}->{$section}->{$property};
     } else {
-        DEBUG(sprintf "Value of property '%s' in section '%s', subsection '%s' : '%s'", $property, $section, $subSection, $self->{"configuration"}->{$section}->{$subSection}->{$property});
         return $self->{"configuration"}->{$section}->{$subSection}->{$property};
     }
 }
