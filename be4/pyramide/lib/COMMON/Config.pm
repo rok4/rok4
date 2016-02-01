@@ -582,7 +582,7 @@ sub isProperty {
 =begin nd
 Function: getSection
 
-Returns the hash slice contained in a specific section.
+Returns a copy of the hash slice contained in a specific section.
 
 Syntax: getSection( section )
 
@@ -602,13 +602,17 @@ sub getSection {
         return undef;
     }
 
-    return $self->{"configuration"}->{$section};
+    my $refSectionHash = $self->{"configuration"}->{$section};
+    my %sectionHash = %{$refSectionHash};
+
+    return %sectionHash;
 }
+
 
 =begin nd
 Function: getSubSection
 
-Returns the hash slice contained in a specific section-subsection pair.
+Returns a copy of the hash slice contained in a specific section-subsection pair.
 
 Syntax: getSubSection( section, subsection )
 
@@ -632,8 +636,12 @@ sub getSubSection {
         return undef;
     }
 
-    return $self->{"configuration"}->{$section}->{$subSection};
+    my $refSubSectionHash = $self->{"configuration"}->{$section}->{$subSection};
+    my %subSectionHash = %{$refSubSectionHash};
+
+    return %subSectionHash;
 }
+
 
 =begin nd
 Function: getProperty
@@ -744,6 +752,8 @@ sub getProperties {
     my @address = @_;
 
     my @properties;
+    my $refProperties;
+
     if ((scalar @address != 1) && (scalar @address != 2)) {
         ERROR("Syntax : COMMON::Config::getProperties(section [, subsection] ); There must be either 1 or 2 arguments.");
         return undef;
@@ -754,10 +764,11 @@ sub getProperties {
     }
 
     if ( scalar @address == 1 ) {
-        @properties = $self->{"configuration"}->{$address[0]}->{'_props'};
+        $refProperties = $self->{"configuration"}->{$address[0]}->{'_props'};
     } elsif ( scalar @address == 2 ) {
-        @properties = $self->{"configuration"}->{$address[0]}->{$address[1]}->{'_props'};
+        $refProperties = $self->{"configuration"}->{$address[0]}->{$address[1]}->{'_props'};
     }
+    @properties = @{$refProperties};
 
     return @properties;
 }
@@ -765,14 +776,17 @@ sub getProperties {
 =begin nd
 Function: getConfig
 
-Returns a reference to the the part of the COMMON::Config object that actually contains the configuration.
+Returns a hash copy of the the part of the COMMON::Config object that actually contains the configuration.
 
 Syntax: getConfig()
  
 =cut
 sub getConfig {
     my $self = shift;
-    return $self->{'configuration'};
+
+    my $refConfig = $self->{'configuration'};
+    my %hashConfig = %{$refConfig};
+    return $refConfig;
 }
 
 
