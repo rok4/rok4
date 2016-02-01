@@ -88,6 +88,7 @@ use warnings;
 
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
+use Scalar::Util qw/reftype/;
 
 use COMMON::Config;
 
@@ -203,7 +204,6 @@ sub getAllProperties {
 }
 
 
-## TODO : subsections !
 # Function: getPropertiesBySection
 sub getPropertiesBySection {
     my $self = shift;
@@ -212,12 +212,30 @@ sub getPropertiesBySection {
     return $self->{CFGOBJ}->getSection($section);
 }
 
+# Function: getPropertiesBySubSection
+sub getPropertiesBySubSection {
+    my $self = shift;
+    my $section = shift;
+    my $subsection = shift;
+    
+    return $self->{CFGOBJ}->getSubSection($section, $subsection);
+}
+
 # Function: getSections
 sub getSections {
     my $self = shift; 
 
     return $self->{CFGOBJ}->getSections();
 }
+
+# Function: getSubSections
+sub getSubSections {
+    my $self = shift; 
+    my $section = shift;
+
+    return $self->{CFGOBJ}->getSubSections($section);
+}
+
 
 # Function: getKeyParameters
 sub getKeyParameters {
@@ -233,23 +251,29 @@ sub getKeyParameters {
 }
 
 
-## TODO : use COMMON::Config
 # Function: getValueParameters
 sub getValueParameters {
     my $self = shift;
     my $section = shift;
     my $subsection = shift;
     
-    return undef if (! defined $section);
-    return undef if (! exists($self->{CFGPARAMS}->{$section}));
-    
-    my @params;
-    my $param = $self->{CFGPARAMS}->{$section};
-    foreach (values %$param) {
-        push @params, $_;
+    my @parmKeys = $self->getKeyParameters($section, $subsection);
+    my @parmVals;
+
+    if (! @parmKeys) {
+        return undef
+    }
+    if (defined $subsection) {
+        foreach my $parmKey (@parmKeys) {
+            push (@parmVals, $self->{CFGOBJ}->getProperty($section, $subsection, $parmKey));
+        }
+    } else {
+        foreach my $parmKey (@parmKeys) {
+            push (@parmVals, $self->{CFGOBJ}->getProperty($section, $parmKey));
+        }
     }
     
-    return @params;
+    return @parmVals;
 }
 
 1;
