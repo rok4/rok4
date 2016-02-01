@@ -786,7 +786,7 @@ sub getConfig {
 
     my $refConfig = $self->{'configuration'};
     my %hashConfig = %{$refConfig};
-    return $refConfig;
+    return %hashConfig;
 }
 
 
