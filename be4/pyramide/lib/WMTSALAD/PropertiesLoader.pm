@@ -197,14 +197,30 @@ sub LoadProperties {
 #                                Group: Getters - Setters                                          #
 ####################################################################################################
 
-# Function: getAllProperties
+=begin nd
+Function: getAllProperties
+
+Returns a hash describing the content of the configuration file.
+
+Syntax: getAllProperties()
+ 
+=cut
 sub getAllProperties {
     my $self = shift;
     return $self->{CFGOBJ}->getConfig();
 }
 
+=begin nd
+Function: getPropertiesBySection
 
-# Function: getPropertiesBySection
+Returns a hash describing a section from the configuration file.
+
+Syntax: getPropertiesBySection(section)
+
+Parameters (list):
+    section - string - the requested configuration section
+ 
+=cut
 sub getPropertiesBySection {
     my $self = shift;
     my $section = shift;
@@ -212,7 +228,18 @@ sub getPropertiesBySection {
     return $self->{CFGOBJ}->getSection($section);
 }
 
-# Function: getPropertiesBySubSection
+=begin nd
+Function: getPropertiesBySubSection
+
+Returns a hash describing a sub-section from the configuration file.
+
+Syntax: getPropertiesBySubSection(section)
+
+Parameters (list):
+    section - string - the requested configuration section
+    subsection - string - the desired subsection of the given section
+ 
+=cut
 sub getPropertiesBySubSection {
     my $self = shift;
     my $section = shift;
@@ -221,14 +248,31 @@ sub getPropertiesBySubSection {
     return $self->{CFGOBJ}->getSubSection($section, $subsection);
 }
 
-# Function: getSections
+=begin nd
+Function: getSections
+
+Returns an array listing the configuration file's sections.
+
+Syntax: getSections()
+ 
+=cut
 sub getSections {
     my $self = shift; 
 
     return $self->{CFGOBJ}->getSections();
 }
 
-# Function: getSubSections
+=begin nd
+Function: getSections
+
+Returns an array listing the subsections found in a given configuration file's section.
+
+Syntax: getSections(section)
+
+Parameters (list):
+    section - string - the configuration file's section
+ 
+=cut
 sub getSubSections {
     my $self = shift; 
     my $section = shift;
@@ -237,7 +281,19 @@ sub getSubSections {
 }
 
 
-# Function: getKeyParameters
+=begin nd
+Function: getKeyParameters
+
+Returns an array listing the parameters keys (=names) found in a given (sub)section, 
+in the same order as in the configuration file.
+
+Syntax: getKeyParameters(section [, subsection])
+
+Parameters (list):
+    section - string - the configuration file's section
+    subsection - string - the configuration file's subsection (optionnal)
+ 
+=cut
 sub getKeyParameters {
     my $self = shift;
     my $section = shift;
@@ -251,7 +307,19 @@ sub getKeyParameters {
 }
 
 
-# Function: getValueParameters
+=begin nd
+Function: getValueParameters
+
+Returns an array listing the parameters values found in a given (sub)section, 
+in the same order as in the configuration file (matching getKeyParameters()).
+
+Syntax: getValueParameters(section [, subsection])
+
+Parameters (list):
+    section - string - the configuration file's section
+    subsection - string - the configuration file's subsection (optionnal)
+ 
+=cut
 sub getValueParameters {
     my $self = shift;
     my $section = shift;
