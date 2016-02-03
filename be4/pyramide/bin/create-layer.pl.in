@@ -72,7 +72,6 @@ use Log::Log4perl qw(:easy);
 use Getopt::Long;
 use File::Basename;
 use Pod::Usage;
-use Geo::OSR;
 use Cwd;
 
 # My search module
@@ -403,31 +402,19 @@ sub doIt {
     my $minres=$bottomTM->getResolution();
     my $maxres=$objTMS->getTileMatrix($topID)->getResolution();
 
-    my $srsini= new Geo::OSR::SpatialReference;
-    eval { $srsini->ImportFromProj4('+init='.$srs.' +wktext'); };
-
-    if ($@) {
-        eval { $srsini->ImportFromProj4('+init='.lc($srs).' +wktext'); };
-        if ($@) {
-            ERROR(sprintf "Erreur de chargement de la projection initiale (%s) : %s !", $srs, $@);
-            return FALSE;
-        }
+    my $ct = BE4::ProxyGDAL::coordinateTransformationFromSpatialReference($src->getSRS(), $tms->getSRS());
+    if (! defined $ct) {
+        ERROR(sprintf "Cannot instanciate the coordinate transformation object %s->%s", $src->getSRS(), $tms->getSRS());
+        return FALSE;
     }
 
-    my $srsfin= new Geo::OSR::SpatialReference;
-    eval { $srsfin->ImportFromProj4('+init=IGNF:WGS84G +wktext'); };
-
-    if ($@) {
-      ERROR(sprintf "Erreur de chargement de la projection finale (%s) : %s !", $srs, $@);
-      return FALSE;
-    }
-
-    my $ct = new Geo::OSR::CoordinateTransformation($srsini, $srsfin);
+    my ($bgx, $bgy) = BE4::ProxyGDAL::transformPoint($xmin,$ymin, $ct);
+    my ($hdx, $hdy) = BE4::ProxyGDAL::transformPoint($xmax,$ymax, $ct);
 
     my $bg= $ct->TransformPoint($xmin,$ymin);
     my $hd= $ct->TransformPoint($xmax,$ymax);
 
-    ALWAYS(sprintf "BBOX (IGNF:WGS84G) : xmin %s xmax %s ymin %s ymax %s", $bg->[0], $hd->[0], $bg->[1], $hd->[1]);
+    ALWAYS(sprintf "BBOX (IGNF:WGS84G) : xmin %s xmax %s ymin %s ymax %s", $bgx, $hdx, $bgy, $hdy);
 
     my $pyrName = File::Basename::basename($options{pyramid});
     $pyrName =~ s/\.(pyr|PYR)$//;
@@ -443,7 +430,7 @@ sub doIt {
         authority        => $auth,
         srslist          => \@lstsrs,
         resampling       => $options{resampling},
-        geo_bbox         => [$bg->[0],$bg->[1],$hd->[0],$hd->[1]],
+        geo_bbox         => [$bgx,$bgy,$hdx,$hdy],
         proj             => $srs,
         proj_bbox        => [$xmin,$ymin,$xmax,$ymax],
         pyramid          => $options{pyramid},
