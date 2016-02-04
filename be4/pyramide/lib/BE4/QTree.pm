@@ -380,12 +380,13 @@ sub identifyBottomNodes {
     } elsif (defined $datasource->getExtent) {
         # We have just a WMS service as source. We use extent to determine bottom tiles
         my $convertExtent = BE4::ProxyGDAL::getConvertedGeometry($datasource->getExtent(), $ct);
-        if (defined $convertExtent) {
-            ERROR(sprintf "Cannot convert extent for the datasource : %s",$@);
+        if (! defined $convertExtent) {
+            ERROR(sprintf "Cannot convert extent for the datasource");
             return FALSE;
         }
 
-        my @convBbox = BE4::ProxyGDAL::getBbox($self->{extent}); # (xmin,xmax,ymin,ymax)
+        my @convBbox = BE4::ProxyGDAL::getBbox($convertExtent); # (xmin,xmax,ymin,ymax)
+        DEBUG("BBox convertie de l'extent de datasource @convBbox");
         
         $self->updateBBox($convBbox[0],$convBbox[2],$convBbox[1],$convBbox[3]);
         

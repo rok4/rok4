@@ -279,7 +279,7 @@ sub _load {
     }
 
     my $authority = (split(":",$self->{srs}))[0];
-    if (BE4::ProxyGDAL::IsGeographic($sr) && uc($authority) eq "EPSG") {
+    if (BE4::ProxyGDAL::isGeographic($sr) && uc($authority) eq "EPSG") {
         INFO(sprintf "Coordinates will be reversed in requests (SRS : %s)",$self->{srs});
         $self->{coordinatesInversion} = TRUE;
     } else {

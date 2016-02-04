@@ -106,10 +106,10 @@ sub geometryFromWKT {
 
     if ($gdalVersion =~ /^2/) {
         #version 2.x
-        eval { $geom = Geo::OGR::Geometry->new(WKT=>"POLYGON((0 0,2 0,1 1,0 1,0 0))"); };
+        eval { $geom = Geo::OGR::Geometry->new(WKT=>$wkt); };
     } elsif ($gdalVersion =~ /^1/) {
         #version 1.x
-        eval { $geom = Geo::OGR::Geometry->create(WKT=>"POLYGON((0 0,2 0,1 1,0 1,0 0))"); };
+        eval { $geom = Geo::OGR::Geometry->create(WKT=>$wkt); };
     }
 
     if ($@) {

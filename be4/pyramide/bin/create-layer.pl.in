@@ -402,9 +402,9 @@ sub doIt {
     my $minres=$bottomTM->getResolution();
     my $maxres=$objTMS->getTileMatrix($topID)->getResolution();
 
-    my $ct = BE4::ProxyGDAL::coordinateTransformationFromSpatialReference($src->getSRS(), $tms->getSRS());
+    my $ct = BE4::ProxyGDAL::coordinateTransformationFromSpatialReference($srs, "IGNF:WGS84G");
     if (! defined $ct) {
-        ERROR(sprintf "Cannot instanciate the coordinate transformation object %s->%s", $src->getSRS(), $tms->getSRS());
+        ERROR(sprintf "Cannot instanciate the coordinate transformation object %s->%s", $srs, "IGNF:WGS84G");
         return FALSE;
     }
 
