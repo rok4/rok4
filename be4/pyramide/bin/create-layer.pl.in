@@ -398,6 +398,7 @@ sub doIt {
     push @lstsrs, "IGNF:WGS84G";
     push @lstsrs, "EPSG:3857";
     push @lstsrs, "EPSG:4258";
+    push @lstsrs, "EPSG:4326";
 
     # TODO informatif...
     my $minres=$bottomTM->getResolution();

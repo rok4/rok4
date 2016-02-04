@@ -514,6 +514,7 @@ public:
         for ( int i = 0; i < memorySize; i++ ) if ( memorizedTiles[i] ) delete[] memorizedTiles[i];
         delete[] memorizedTiles;
         delete[] memorizedIndex;
+        delete[] name;
     }
 
     /** \~french

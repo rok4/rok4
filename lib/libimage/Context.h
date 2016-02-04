@@ -63,10 +63,10 @@ class Context {
 
 protected:
 
-	bool connected;
+    bool connected;
 
     /** Constructeurs */
-    Context () : connected(false) {};
+    Context () : connected(false) {}
 
 public:
 
@@ -75,8 +75,19 @@ public:
     virtual bool read(uint8_t* data, int offset, int size, std::string name) = 0;
     virtual bool write(uint8_t* data, int offset, int size, std::string name) = 0;
     virtual bool writeFull(uint8_t* data, int size, std::string name) = 0;
+
+    virtual bool openToWrite(std::string name) = 0;
+    virtual bool closeToWrite(std::string name) = 0;
+
+    /**
+     * \~french
+     * \brief Sortie des informations sur le contexte
+     * \~english
+     * \brief Context description output
+     */
+    virtual void print() = 0;
     
-    virtual ~Context() { };
+    virtual ~Context() {}
 };
 
 #endif

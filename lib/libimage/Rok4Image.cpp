@@ -701,6 +701,10 @@ int Rok4Image::writeImage ( Image* pIn )
 
 bool Rok4Image::prepare()
 {
+    if (! context->openToWrite(std::string(name))) {
+        LOGGER_ERROR("Unable to open output truc " << name);
+        return false;
+    }
 
     int quality = 0;
     if ( compression == Compression::PNG) quality = 5;
@@ -877,7 +881,12 @@ bool Rok4Image::writeTile( int tileInd, uint8_t* data, bool crop )
     tilesOffset[tileInd] = position;
     tilesByteCounts[tileInd] = size;
 
-    context->write(Buffer, position, size, std::string(name));
+    boolean ret = context->write(Buffer, position, size, std::string(name));
+
+    if (! ret) {
+        LOGGER_ERROR("Impossible to write the tile " << tileInd);
+        return false;
+    }
     position = ( position + size + 15 ) & ~15; // Align the next position on 16byte
 
     return true;
@@ -886,6 +895,11 @@ bool Rok4Image::writeTile( int tileInd, uint8_t* data, bool crop )
 bool Rok4Image::close() {
     context->write((uint8_t*) tilesOffset, ROK4_IMAGE_HEADER_SIZE, 4 * tilesNumber, std::string(name));
     context->write((uint8_t*) tilesByteCounts, ROK4_IMAGE_HEADER_SIZE + 4 * tilesNumber, 4 * tilesNumber, std::string(name));
+
+    if (! context->closeToWrite(std::string(name))) {
+        LOGGER_ERROR("Unable to close output truc " << name);
+        return false;
+    }
 
     // Nettoyage des attributs propres à l'écriture
     delete[] tilesOffset;

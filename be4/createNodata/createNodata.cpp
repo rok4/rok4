@@ -45,7 +45,7 @@
  */
 
 #include "Rok4Image.h"
-#include "CephContext.h"
+#include "CephPoolContext.h"
 #include "FileContext.h"
 #include "SwiftContext.h"
 #include "Logger.h"
@@ -305,7 +305,7 @@ int main ( int argc, char* argv[] ) {
     Context* context;
     if ( pool != 0 ) {
         LOGGER_DEBUG( std::string("Output is an object in the Ceph pool ") + pool);
-        context = new CephContext("ceph", "client.admin", "/etc/ceph/ceph.conf", pool);
+        context = new CephPoolContext("ceph", "client.admin", "/etc/ceph/ceph.conf", pool);
         if (! context->connection()) {
             error(std::string("Unable to connect to Ceph pool ") + pool, -1);
         }

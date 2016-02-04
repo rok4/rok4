@@ -69,7 +69,7 @@ private:
      * \~french \brief Flux d'écriture de l'image ROK4
      * \~english \brief Stream used to write the ROK4 image
      */
-    std::ofstream output;    
+    std::ofstream output;
 
 public:
 
@@ -83,11 +83,40 @@ public:
     bool read(uint8_t* data, int offset, int size, std::string name);
     bool write(uint8_t* data, int offset, int size, std::string name);
     bool writeFull(uint8_t* data, int size, std::string name);
+
+    virtual bool openToWrite(std::string name) {
+        std::string fullName = root_dir + name;
+        output.open ( fullName.c_str(), std::ios_base::trunc | std::ios::binary );
+        if (output.fail()) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+    virtual bool closeToWrite(std::string name) {
+        output.close();
+        if (output.fail()) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    /**
+     * \~french
+     * \brief Sortie des informations sur le contexte Fichier
+     * \~english
+     * \brief File context description output
+     */
+    virtual void print() {
+        LOGGER_INFO ( "------ File Context -------" );
+        LOGGER_INFO ( "\t- root directory = " << root_dir );
+    }
     
     bool connection();
     
     virtual ~FileContext() {
-    };
+    }
 };
 
 #endif

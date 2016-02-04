@@ -36,103 +36,135 @@
  */
 
 /**
- * \file CephContext.cpp
+ * \file CephPoolContext.cpp
  ** \~french
- * \brief Implémentation de la classe CephContext
+ * \brief Implémentation de la classe CephPoolContext
  * \details
- * \li CephContext : connexion à un pool de données Ceph
+ * \li CephPoolContext : connexion à un pool de données Ceph
  ** \~english
- * \brief Implement classe CephContext
+ * \brief Implement classe CephPoolContext
  * \details
- * \li CephContext : Ceph data pool connection
+ * \li CephPoolContext : Ceph data pool connection
  */
 
-#include "CephContext.h"
+#include "CephPoolContext.h"
+#include <stdlib.h>
 
-CephContext::CephContext (std::string cluster, std::string user, std::string conf, std::string pool) : Context(), cluster_name(cluster), user_name(user), conf_file(conf), pool_name(pool) {
+CephPoolContext::CephPoolContext (std::string cluster, std::string user, std::string conf, std::string pool) : Context(), cluster_name(cluster), user_name(user), conf_file(conf), pool_name(pool) {
+
     writting_in_progress = false;
-    write_completion = librados::Rados::aio_create_completion();
 }
 
-bool CephContext::connection() {
+CephPoolContext::CephPoolContext (std::string pool) : Context(), pool_name(pool) {
+
+    char* cluster = getenv ("ROK4_CEPH_CLUSTERNAME");
+    if (cluster == NULL) {
+        cluster_name.assign("ceph");
+    } else {
+        cluster_name.assign(cluster);
+    }
+
+    char* user = getenv ("ROK4_CEPH_USERNAME");
+    if (user == NULL) {
+        user_name.assign("client.admin");
+    } else {
+        user_name.assign(user);
+    }
+
+    char* conf = getenv ("ROK4_CEPH_CONFFILE");
+    if (conf == NULL) {
+        conf_file.assign("/etc/ceph/ceph.conf");
+    } else {
+        conf_file.assign(conf);
+    }
+
+    writting_in_progress = false;
+}
+
+bool CephPoolContext::connection() {
     uint64_t flags;
     int ret = 0;
-    ret = cluster.init2(user_name.c_str(), cluster_name.c_str(), flags);
+
+    rados_t cluster;
+    rados_ioctx_t io_ctx;
+
+    ret = rados_create2(&cluster, cluster_name.c_str(), user_name.c_str(), flags);
     if (ret < 0) {
         LOGGER_ERROR("Couldn't initialize the cluster handle! error " << ret);
-        LOGGER_ERROR( "User name : " << user_name );
-        LOGGER_ERROR( "Cluster name : " << cluster_name );
         return false;
     }
 
-    ret = cluster.conf_read_file(conf_file.c_str());
+    ret = rados_conf_read_file(cluster, conf_file.c_str());
     if (ret < 0) {
         LOGGER_ERROR( "Couldn't read the Ceph configuration file! error " << ret );
         LOGGER_ERROR( "Configuration file : " << conf_file );
         return false;
     }
 
-    ret = cluster.connect();
+    ret = rados_connect(cluster);
     if (ret < 0) {
         LOGGER_ERROR( "Couldn't connect to cluster! error " << ret );
         return false;
     }
 
-    ret = cluster.ioctx_create(pool_name.c_str(), io_ctx);
+    ret = rados_ioctx_create(cluster, pool_name.c_str(), &io_ctx);
     if (ret < 0) {
         LOGGER_ERROR( "Couldn't set up ioctx! error " << ret );
         LOGGER_ERROR( "Pool : " << pool_name );
         return false;
     }
+/*
+    ret = rados_aio_create_completion(NULL, NULL, NULL, &completion);
+    if (ret < 0) {
+        LOGGER_ERROR( "Couldn't create completion object. Error: " << ret );
+        return false;
+    }*/
 
     connected = true;
+
+
+    rados_ioctx_destroy(io_ctx);
+    rados_shutdown(cluster);
+
     return true;
 }
 
-bool CephContext::read(uint8_t* data, int offset, int size, std::string name) {
+bool CephPoolContext::read(uint8_t* data, int offset, int size, std::string name) {
     LOGGER_DEBUG("Ceph read : " << size << " bytes (from the " << offset << " one) in the object " << name);
-    librados::bufferlist bl;
-    int ret = io_ctx.read(name.c_str(), bl, size, offset);
-    if (ret < 0) {
+
+    int err = rados_read(io_ctx, name.c_str(), (char*) data, size, offset);
+
+    if (err < 0) {
         LOGGER_ERROR ( "Unable to read " << size << " bytes (from the " << offset << " one) in the object " << name );
         return false;
     }
-    memcpy(data, bl.c_str(), bl.length());
+
     return true;
 }
 
 
-bool CephContext::write(uint8_t* data, int offset, int size, std::string name) {
+bool CephPoolContext::write(uint8_t* data, int offset, int size, std::string name) {
     LOGGER_DEBUG("Ceph write : " << size << " bytes (from the " << offset << " one) in the object " << name);
-    librados::bufferlist bl;
-    bl.append((char*) data, size);
-
+/*
     if (writting_in_progress) {
-        write_completion->wait_for_complete();
-        int ret = write_completion->get_return_value();
-        if (ret < 0) {
-            LOGGER_ERROR ( "Unable to complete previous writting" );
-            return false;
-        }
+        rados_aio_wait_for_complete(completion);
     }
 
-    int ret = io_ctx.aio_write(name.c_str(), write_completion, bl, size, offset);
+    int err = rados_aio_write(io_ctx, name.c_str(), completion, (char*) data, size, offset);
     writting_in_progress = true;
-    if (ret < 0) {
+    if (err < 0) {
         LOGGER_ERROR ( "Unable to start to write " << size << " bytes (from the " << offset << " one) in the object " << name );
         return false;
-    }
+    }*/
 
     return true;
 }
 
-bool CephContext::writeFull(uint8_t* data, int size, std::string name) {
+bool CephPoolContext::writeFull(uint8_t* data, int size, std::string name) {
     LOGGER_DEBUG("Ceph write : " << size << " bytes (one shot) in the object " << name);
-    librados::bufferlist bl;
-    bl.append((char*) data, size);
 
-    int ret = io_ctx.write_full(name.c_str(), bl);
-    if (ret < 0) {
+    int err = rados_write_full(io_ctx,name.c_str(), (char*) data, size);
+    if (err < 0) {
         LOGGER_ERROR ( "Unable to write " << size << " bytes (one shot) in the object " << name );
         return false;
     }

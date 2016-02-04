@@ -47,11 +47,11 @@
 #include <cstdlib>
 #include <iostream>
 #include <string.h>
+#include "Logger.h"
 #include <curl/curl.h>
 #include "Format.h"
-#include "Logger.h"
 #include "Rok4Image.h"
-#include "CephContext.h"
+#include "CephPoolContext.h"
 #include "FileContext.h"
 #include "SwiftContext.h"
 #include "FileImage.h"
@@ -137,6 +137,7 @@ void error ( std::string message, int errorCode ) {
  */
 int main ( int argc, char **argv )
 {
+
     char* input = 0, *output = 0, *pool = 0, *container = 0;
     Compression::eCompression compression = Compression::NONE;
     bool debugLogger=false;
@@ -153,6 +154,7 @@ int main ( int argc, char **argv )
     std::ostream &logw = LOGGER ( WARN );
     logw.precision ( 16 );
     logw.setf ( std::ios::fixed,std::ios::floatfield );
+
 
     for ( int i = 1; i < argc; i++ ) {
         if ( !strcmp ( argv[i],"-pool" ) ) {
@@ -223,7 +225,7 @@ int main ( int argc, char **argv )
     Context* context;
     if ( pool != 0 ) {
         LOGGER_DEBUG( std::string("Input is an object in the Ceph pool ") + pool);
-        context = new CephContext("ceph", "client.admin", "/etc/ceph/ceph.conf", pool);
+        context = new CephPoolContext(pool);
     } else if (container != 0) {
         LOGGER_DEBUG( std::string("Input is an object in the Swift container ") + container);
         curl_global_init(CURL_GLOBAL_ALL);
@@ -232,6 +234,8 @@ int main ( int argc, char **argv )
         LOGGER_DEBUG("Input is a file in a file system");
         context = new FileContext("");
     }
+
+    context->print();
     if (! context->connection()) {
         error("Unable to connect context", -1);
     }
@@ -267,9 +271,12 @@ int main ( int argc, char **argv )
         error("Cannot write image", -1);
     }
 
+    LOGGER_DEBUG ( "Clean" );
+    // Nettoyage
     delete rok4image;
     delete outputImage;
     delete acc;
+    delete context;
     delete context;
     if (container != 0) {
         curl_global_cleanup();

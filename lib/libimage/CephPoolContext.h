@@ -36,21 +36,21 @@
  */
 
 /**
- * \file CephContext.h
+ * \file CephPoolContext.h
  ** \~french
- * \brief Définition de la classe CephContext
+ * \brief Définition de la classe CephPoolContext
  * \details
- * \li CephContext : connexion à un pool de données Ceph
+ * \li CephPoolContext : connexion à un pool de données Ceph
  ** \~english
- * \brief Define classe CephContext
+ * \brief Define classe CephPoolContext
  * \details
- * \li CephContext : Ceph data pool connection
+ * \li CephPoolContext : Ceph data pool connection
  */
 
-#ifndef CEPH_CONTEXT_H
-#define CEPH_CONTEXT_H
+#ifndef CEPH_POOL_CONTEXT_H
+#define CEPH_POOL_CONTEXT_H
 
-#include <rados/librados.hpp>
+#include <rados/librados.h>
 #include "Logger.h"
 #include "Context.h"
 
@@ -59,7 +59,7 @@
  * \~french
  * \brief Création d'un contexte Ceph (connexion à un cluster + pool particulier), pour pouvoir récupérer des données stockées sous forme d'objets
  */
-class CephContext : public Context {
+class CephPoolContext : public Context {
     
 private:
     
@@ -71,20 +71,17 @@ private:
     
     std::string pool_name;
 
-    librados::Rados cluster;
-    librados::IoCtx io_ctx;
-    librados::AioCompletion* write_completion;
+    rados_t cluster;
+    rados_ioctx_t io_ctx;
+    //rados_completion_t completion;
     bool writting_in_progress;
 
 public:
 
     /** Constructeurs */
-    CephContext (std::string cluster, std::string user, std::string conf, std::string pool);
-    
-    librados::IoCtx getContext () {
-        return io_ctx;
-    }
-    
+    CephPoolContext (std::string cluster, std::string user, std::string conf, std::string pool);
+    CephPoolContext (std::string pool);
+
     std::string getPoolName () {
         return pool_name;
     }
@@ -92,23 +89,37 @@ public:
     bool read(uint8_t* data, int offset, int size, std::string name);
     bool write(uint8_t* data, int offset, int size, std::string name);
     bool writeFull(uint8_t* data, int size, std::string name);
+
+    virtual bool openToWrite(std::string name) {return true;}
+    virtual bool closeToWrite(std::string name) {return true;}
     
     bool connection();
+
+    /**
+     * \~french
+     * \brief Sortie des informations sur le contexte Ceph
+     * \~english
+     * \brief Ceph context description output
+     */
+    virtual void print() {
+        LOGGER_INFO ( "------ Ceph Context -------" );
+        LOGGER_INFO ( "\t- cluster name = " << cluster_name );
+        LOGGER_INFO ( "\t- user name = " << user_name );
+        LOGGER_INFO ( "\t- configuration file = " << conf_file );
+        LOGGER_INFO ( "\t- pool name = " << pool_name );
+    }
     
-    virtual ~CephContext() {
+    virtual ~CephPoolContext() {
+/*
         if (writting_in_progress) {
-            writting_in_progress = false;
-            write_completion->wait_for_complete();
-            int ret = write_completion->get_return_value();
-            if (ret < 0) {
-                LOGGER_ERROR ( "Unable to complete last writting" );
-            }
+            rados_aio_wait_for_complete(completion);
         }
-        write_completion->release();
-        
-        io_ctx.close();
-        cluster.shutdown();
-    };
+
+        rados_aio_release(completion);*/
+        rados_aio_flush(io_ctx);
+        rados_ioctx_destroy(io_ctx);
+        rados_shutdown(cluster);
+    }
 };
 
 #endif

@@ -105,6 +105,8 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
         return 0;
     }
 
+    delete[] uint32tab;
+
     return data;
 }
 

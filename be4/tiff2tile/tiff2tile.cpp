@@ -64,7 +64,7 @@
 #include "tiffio.h"
 #include "Format.h"
 #include "Logger.h"
-#include "CephContext.h"
+#include "CephPoolContext.h"
 #include "FileContext.h"
 #include "SwiftContext.h"
 #include "FileImage.h"
@@ -264,22 +264,18 @@ int main ( int argc, char **argv ) {
     Context* context;
     if ( pool != 0 ) {
         LOGGER_DEBUG( std::string("Output is an object in the Ceph pool ") + pool);
-        context = new CephContext("ceph", "client.admin", "/etc/ceph/ceph.conf", pool);
-        if (! context->connection()) {
-            error(std::string("Unable to connect to Ceph pool ") + pool, -1);
-        }
+        context = new CephPoolContext(pool);
     } else if (container != 0) {
         LOGGER_DEBUG( std::string("Output is an object in the Swift container ") + container);
         context = new SwiftContext("http://192.168.56.200:8080/auth/v1.0", "test", "tester", "testing", container);
-        if (! context->connection()) {
-            error(std::string("Unable to connect to Swift container ") + container, -1);
-        }
     } else {
         LOGGER_DEBUG("Output is a file in a file system");
         context = new FileContext("");
-        if (! context->connection()) {
-            error("Unable to connect to File System", -1);
-        }
+    }
+
+    context->print();
+    if (! context->connection()) {
+        error("Unable to connect context", -1);
     }
 
     FileImageFactory FIF;
@@ -344,9 +340,9 @@ int main ( int argc, char **argv ) {
     LOGGER_DEBUG ( "Clean" );
     // Nettoyage
     delete acc;
-    delete context;
     delete sourceImage;
     delete rok4Image;
+    delete context;
 
     return 0;
 }

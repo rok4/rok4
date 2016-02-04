@@ -86,12 +86,28 @@ public:
     bool read(uint8_t* data, int offset, int size, std::string name);
     bool write(uint8_t* data, int offset, int size, std::string name);
     bool writeFull(uint8_t* data, int size, std::string name);
+
+    virtual bool openToWrite(std::string name) {return true;}
+    virtual bool closeToWrite(std::string name) {return true;}
+
+    /**
+     * \~french
+     * \brief Sortie des informations sur le contexte Swift
+     * \~english
+     * \brief Swift context description output
+     */
+    virtual void print() {
+        LOGGER_INFO ( "------ Swift Context -------" );
+        LOGGER_INFO ( "\t- user account = " << user_account );
+        LOGGER_INFO ( "\t- user name = " << user_name );
+        LOGGER_INFO ( "\t- container name = " << container_name );
+    }
     
     bool connection();
     
     virtual ~SwiftContext() {
 
-    };
+    }
 };
 
 #endif

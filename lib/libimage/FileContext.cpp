@@ -52,6 +52,8 @@
 #include <cstdio>
 #include <errno.h>
 
+using namespace std;
+
 FileContext::FileContext (std::string root) : Context(), root_dir(root) {}
 
 bool FileContext::connection() {
@@ -64,7 +66,7 @@ bool FileContext::read(uint8_t* data, int offset, int size, std::string name) {
     LOGGER_DEBUG("File read : " << size << " bytes (from the " << offset << " one) in the file " << fullName);
 
     // Ouverture du fichier
-    int fildes = open ( fullName.c_str(), O_RDONLY );
+    int fildes = open( fullName.c_str(), O_RDONLY );
     if ( fildes < 0 ) {
         LOGGER_DEBUG ( "Can't open file " << fullName );
         return false;
@@ -86,15 +88,15 @@ bool FileContext::read(uint8_t* data, int offset, int size, std::string name) {
 bool FileContext::write(uint8_t* data, int offset, int size, std::string name) {
     std::string fullName = root_dir + name;
     LOGGER_DEBUG("File write : " << size << " bytes (from the " << offset << " one) in the file " << fullName);
-    output.open ( fullName.c_str(), std::ios_base::trunc | std::ios::binary );
+
     if ( !output ) {
-        LOGGER_ERROR("Unable to open output file " << fullName);
+        LOGGER_ERROR("Not open output file " << fullName);
         return false;
     }
 
     output.seekp ( offset );
+    if ( output.fail() ) return false;
     output.write ( ( char* ) data, size );
-    output.close();
     if ( output.fail() ) return false;
 
     return true;
@@ -104,15 +106,12 @@ bool FileContext::writeFull(uint8_t* data, int size, std::string name) {
     std::string fullName = root_dir + name;
     LOGGER_DEBUG("File write : " << size << " bytes (one shot) in the file " << fullName);
 
-    output.open ( fullName.c_str(), std::ios_base::trunc | std::ios::binary );
     if ( !output ) {
-        LOGGER_ERROR("Unable to open output file " << fullName);
+        LOGGER_ERROR("Not open output file " << fullName);
         return false;
     }
 
     output.write ( ( char* ) data, size );
-    output.close();
-    if ( output.fail() ) return false;
 
     return true;
 }

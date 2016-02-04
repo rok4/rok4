@@ -55,7 +55,7 @@
 #include "tinyxml.h"
 #include "tinystr.h"
 #include "config.h"
-#include "CephContext.h"
+#include "CephPoolContext.h"
 #include "SwiftContext.h"
 #include "FileContext.h"
 #include "Format.h"
@@ -710,7 +710,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             }
             delete context;
             context = NULL;
-            context = new CephContext(clusterName,userName,confFile,poolName);
+            context = new CephPoolContext(clusterName,userName,confFile,poolName);
 
         }
 
