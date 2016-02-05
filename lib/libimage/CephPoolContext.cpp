@@ -52,7 +52,6 @@
 
 CephPoolContext::CephPoolContext (std::string cluster, std::string user, std::string conf, std::string pool) : Context(), cluster_name(cluster), user_name(user), conf_file(conf), pool_name(pool) {
 
-    writting_in_progress = false;
 }
 
 CephPoolContext::CephPoolContext (std::string pool) : Context(), pool_name(pool) {
@@ -77,16 +76,11 @@ CephPoolContext::CephPoolContext (std::string pool) : Context(), pool_name(pool)
     } else {
         conf_file.assign(conf);
     }
-
-    writting_in_progress = false;
 }
 
 bool CephPoolContext::connection() {
     uint64_t flags;
     int ret = 0;
-
-    rados_t cluster;
-    rados_ioctx_t io_ctx;
 
     ret = rados_create2(&cluster, cluster_name.c_str(), user_name.c_str(), flags);
     if (ret < 0) {
@@ -113,25 +107,14 @@ bool CephPoolContext::connection() {
         LOGGER_ERROR( "Pool : " << pool_name );
         return false;
     }
-/*
-    ret = rados_aio_create_completion(NULL, NULL, NULL, &completion);
-    if (ret < 0) {
-        LOGGER_ERROR( "Couldn't create completion object. Error: " << ret );
-        return false;
-    }*/
 
     connected = true;
-
-
-    rados_ioctx_destroy(io_ctx);
-    rados_shutdown(cluster);
 
     return true;
 }
 
 bool CephPoolContext::read(uint8_t* data, int offset, int size, std::string name) {
     LOGGER_DEBUG("Ceph read : " << size << " bytes (from the " << offset << " one) in the object " << name);
-
     int err = rados_read(io_ctx, name.c_str(), (char*) data, size, offset);
 
     if (err < 0) {
@@ -145,17 +128,13 @@ bool CephPoolContext::read(uint8_t* data, int offset, int size, std::string name
 
 bool CephPoolContext::write(uint8_t* data, int offset, int size, std::string name) {
     LOGGER_DEBUG("Ceph write : " << size << " bytes (from the " << offset << " one) in the object " << name);
-/*
-    if (writting_in_progress) {
-        rados_aio_wait_for_complete(completion);
-    }
 
-    int err = rados_aio_write(io_ctx, name.c_str(), completion, (char*) data, size, offset);
-    writting_in_progress = true;
+    int err = rados_write(io_ctx, name.c_str(), (char*) data, size, offset);
+
     if (err < 0) {
         LOGGER_ERROR ( "Unable to start to write " << size << " bytes (from the " << offset << " one) in the object " << name );
         return false;
-    }*/
+    }
 
     return true;
 }

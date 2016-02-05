@@ -277,7 +277,6 @@ int main ( int argc, char **argv )
     delete outputImage;
     delete acc;
     delete context;
-    delete context;
     if (container != 0) {
         curl_global_cleanup();
     }

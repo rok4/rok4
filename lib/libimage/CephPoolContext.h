@@ -73,8 +73,6 @@ private:
 
     rados_t cluster;
     rados_ioctx_t io_ctx;
-    //rados_completion_t completion;
-    bool writting_in_progress;
 
 public:
 
@@ -110,12 +108,6 @@ public:
     }
     
     virtual ~CephPoolContext() {
-/*
-        if (writting_in_progress) {
-            rados_aio_wait_for_complete(completion);
-        }
-
-        rados_aio_release(completion);*/
         rados_aio_flush(io_ctx);
         rados_ioctx_destroy(io_ctx);
         rados_shutdown(cluster);
