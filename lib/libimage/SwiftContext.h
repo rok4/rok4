@@ -78,14 +78,23 @@ public:
 
     /** Constructeurs */
     SwiftContext (std::string auth, std::string account, std::string user, std::string passwd, std::string container);
+    SwiftContext (std::string container);
         
     std::string getContainerName () {
         return container_name;
     }
     
     bool read(uint8_t* data, int offset, int size, std::string name);
-    bool write(uint8_t* data, int offset, int size, std::string name);
-    bool writeFull(uint8_t* data, int size, std::string name);
+    bool write(uint8_t* data, int offset, int size, std::string name) {
+        LOGGER_ERROR("Can't write a Swift object from buffer");
+        return false;
+    }
+    bool writeFull(uint8_t* data, int size, std::string name) {
+        LOGGER_ERROR("Can't write a Swift object from buffer");
+        return false;
+    }
+
+    bool writeFromFile(std::string fileName, std::string objectName);
 
     virtual bool openToWrite(std::string name) {return true;}
     virtual bool closeToWrite(std::string name) {return true;}

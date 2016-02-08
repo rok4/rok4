@@ -53,6 +53,8 @@
  * On va également définir la taille des tuiles, qui doit être cohérente avec la taille de l'image entière (on veut un nombre de tuiles entier).
  *
  * Vision libimage : FileImage -> Rok4Image
+ *
+ * Dans le cas d'un stockage sur Swift, on va commencer par écrire l'image ROK4 finale dans un fichier pour la téléverser en une fois après.
  * \~ \code
  * tiff2tile input.tif -c zip -p rgb -t 100 100 -b 8 -a uint -s 3 output.tif
  * \endcode
@@ -174,6 +176,7 @@ int main ( int argc, char **argv ) {
     Compression::eCompression compression = Compression::NONE;
     bool crop = false;
     bool debugLogger=false;
+    bool onSwift = false;
 
     /* Initialisation des Loggers */
     Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
@@ -206,6 +209,7 @@ int main ( int argc, char **argv ) {
                 error("Error in -container option", -1);
             }
             container = argv[i];
+            onSwift = true;
             continue;
         }
         if ( argv[i][0] == '-' ) {
@@ -262,18 +266,39 @@ int main ( int argc, char **argv ) {
     }
 
     Context* context;
+
+    // Dans le cas d'un stockage sur Swift, on a tout de même besoin d'un contexte fichier pour écrire l'image au format final
+    // et pouvoir la téléverser en une fois
+    // Pour cela ,on utilise deux contexte, et un nom de fichier temporaire = input.swift
+    SwiftContext* contextSwift;
+    char swiftName[256];
+
     if ( pool != 0 ) {
         LOGGER_DEBUG( std::string("Output is an object in the Ceph pool ") + pool);
         context = new CephPoolContext(pool);
     } else if (container != 0) {
+
+        curl_global_init(CURL_GLOBAL_ALL);
+
         LOGGER_DEBUG( std::string("Output is an object in the Swift container ") + container);
-        context = new SwiftContext("http://192.168.56.200:8080/auth/v1.0", "test", "tester", "testing", container);
+        contextSwift = new SwiftContext(container);
+        if (! contextSwift->connection()) {
+            error("Unable to connect Swift context", -1);
+        }
+        context = new FileContext("");
+
+        // On sauvegarde le nom final de l'objet Swift à créer
+        strcpy ( swiftName, output );
+        // output devient le nom du fichier temporaire à écrire
+        strcpy(output, input);
+        strcat(output, ".swift");
+
+        LOGGER_DEBUG("Temporary file path for Swift storage : " << string(output));
     } else {
         LOGGER_DEBUG("Output is a file in a file system");
         context = new FileContext("");
     }
 
-    context->print();
     if (! context->connection()) {
         error("Unable to connect context", -1);
     }
@@ -337,12 +362,28 @@ int main ( int argc, char **argv ) {
         error("Cannot write ROK4 image", -1);
     }
 
+    if (onSwift) {
+        LOGGER_DEBUG("Swift upload");
+        if (! contextSwift->writeFromFile(string(output), string(swiftName))) {
+            error("Cannot upload ROK4 image into Swift", -1);
+        }
+    }
+
     LOGGER_DEBUG ( "Clean" );
     // Nettoyage
     delete acc;
     delete sourceImage;
     delete rok4Image;
     delete context;
+    if (onSwift) {
+        if ( remove( output ) != 0 ) {
+            LOGGER_WARN("Cannot remove temporary file (for Swift upload) " << output);
+        } else {
+            LOGGER_DEBUG(output << "removed");
+        }
+        curl_global_cleanup();
+        delete contextSwift;
+    }
 
     return 0;
 }

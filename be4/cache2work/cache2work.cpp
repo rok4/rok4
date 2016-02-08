@@ -229,7 +229,7 @@ int main ( int argc, char **argv )
     } else if (container != 0) {
         LOGGER_DEBUG( std::string("Input is an object in the Swift container ") + container);
         curl_global_init(CURL_GLOBAL_ALL);
-        context = new SwiftContext("http://192.168.56.200:8080/auth/v1.0", "test", "tester", "testing", container);
+        context = new SwiftContext(container);
     } else {
         LOGGER_DEBUG("Input is a file in a file system");
         context = new FileContext("");

@@ -50,11 +50,43 @@
 #include "SwiftContext.h"
 #include "LibcurlStruct.h"
 #include <curl/curl.h>
+#include <sys/stat.h>
 
 SwiftContext::SwiftContext (std::string auth, std::string account, std::string user, std::string passwd, std::string container) :
     Context(),
     auth_url(auth),user_name(user), user_account(account), user_passwd(passwd), container_name(container)
 {
+}
+
+SwiftContext::SwiftContext (std::string container) : Context(), container_name(container) {
+
+    char* auth = getenv ("ROK4_SWIFT_AUTHURL");
+    if (auth == NULL) {
+        auth_url.assign("http://localhost:8080/auth/v1.0");
+    } else {
+        auth_url.assign(auth);
+    }
+
+    char* account = getenv ("ROK4_SWIFT_ACCOUNT");
+    if (account == NULL) {
+        user_account.assign("test");
+    } else {
+        user_account.assign(account);
+    }
+
+    char* user = getenv ("ROK4_SWIFT_USER");
+    if (user == NULL) {
+        user_name.assign("tester");
+    } else {
+        user_name.assign(user);
+    }
+
+    char* passwd = getenv ("ROK4_SWIFT_PASSWD");
+    if (passwd == NULL) {
+        user_passwd.assign("password");
+    } else {
+        user_passwd.assign(passwd);
+    }
 }
 
 bool SwiftContext::connection() {
@@ -96,6 +128,16 @@ bool SwiftContext::connection() {
         return false;
     }
 
+    long http_code = 0;
+    curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
+    if (http_code < 200 || http_code > 299) {
+        LOGGER_ERROR("Cannot authenticate to Swift");
+        LOGGER_ERROR("Response HTTP code : " << http_code);
+        curl_slist_free_all(list);
+        curl_easy_cleanup(curl);
+        return false;
+    }
+
     curl_slist_free_all(list);
     curl_easy_cleanup(curl);
     connected = true;
@@ -103,7 +145,7 @@ bool SwiftContext::connection() {
 }
 
 bool SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
-    //LOGGER_DEBUG("Swift read : " << size << " bytes (from the " << offset << " one) in the object " << name);
+    LOGGER_DEBUG("Swift read : " << size << " bytes (from the " << offset << " one) in the object " << name);
 
     CURLcode res;
     struct curl_slist *list = NULL;
@@ -148,18 +190,85 @@ bool SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
         return false;
     }
 
+    long http_code = 0;
+    curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
+    if (http_code < 200 || http_code > 299) {
+        LOGGER_ERROR("Cannot read data from Swift : " << size << " bytes (from the " << offset << " one) in the object " << name);
+        LOGGER_ERROR("Response HTTP code : " << http_code);
+        return false;
+    }
+
     memcpy(data, chunk.data, chunk.size);
 
     return true;
 }
 
+bool SwiftContext::writeFromFile(std::string fileName, std::string objectName) {
+    LOGGER_DEBUG("Write file '" << fileName << "' as a Swift object '" << objectName << "'");
 
-bool SwiftContext::write(uint8_t* data, int offset, int size, std::string name) {
-    LOGGER_DEBUG("Swift write : " << size << " bytes (from the " << offset << " one) in the object " << name);
-    return true;
-}
+    struct stat file_info;
+    FILE *fileToUpload;
+    fileToUpload = fopen(fileName.c_str(), "rb");
 
-bool SwiftContext::writeFull(uint8_t* data, int size, std::string name) {
-    LOGGER_DEBUG("Swift write : " << size << " bytes (one shot) in the object " << name);
+    if(! fileToUpload) {
+        LOGGER_ERROR("Cannot open the file to upload " << fileName);
+        return false;
+    }
+
+    if(fstat(fileno(fileToUpload), &file_info) != 0) {
+        LOGGER_ERROR("Cannot obtain the file's size' to upload " << fileName);
+        return false;
+    }
+    LOGGER_DEBUG("Size to upload " << file_info.st_size);
+
+
+    CURLcode res;
+    struct curl_slist *list = NULL;
+    curl = curl_easy_init();
+    //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+
+    // On constitue le header
+
+    char fullUrl[256];
+    strcpy(fullUrl, authHdr.url);
+    strcat(fullUrl, "/");
+    strcat(fullUrl, container_name.c_str());
+    strcat(fullUrl, "/");
+    strcat(fullUrl, objectName.c_str());
+
+    list = curl_slist_append(list, authHdr.token);
+
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
+    curl_easy_setopt(curl, CURLOPT_URL, fullUrl);
+    curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
+    curl_easy_setopt(curl, CURLOPT_READDATA, fileToUpload);
+    curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE, (curl_off_t)file_info.st_size);
+
+    res = curl_easy_perform(curl);
+
+
+    if( CURLE_OK != res) {
+        LOGGER_ERROR("Cannot upload the file " << fileName);
+        LOGGER_ERROR(curl_easy_strerror(res));
+        curl_slist_free_all(list);
+        curl_easy_cleanup(curl);
+        return false;
+    }
+
+    long http_code = 0;
+    curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
+    if (http_code < 200 || http_code > 299) {
+        LOGGER_ERROR("Cannot upload the file " << fileName);
+        LOGGER_ERROR("Response HTTP code : " << http_code);
+        curl_slist_free_all(list);
+        curl_easy_cleanup(curl);
+        return false;
+    }
+
+    curl_slist_free_all(list);
+    curl_easy_cleanup(curl);
+
+    fclose(fileToUpload);
+
     return true;
 }
