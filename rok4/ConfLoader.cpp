@@ -554,6 +554,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
     Context *context;
+    std::string prefix = "";
 
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
     if ( !pElem ) {
@@ -712,6 +713,13 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             context = NULL;
             context = new CephPoolContext(clusterName,userName,confFile,poolName);
 
+            pElemLvl = hLvl.FirstChild ( "imagePrefix" ).Element();
+            if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
+                LOGGER_ERROR ( "imagePrefix absent pour le level " << id << " qui est stocke sur du Ceph");
+                return NULL;
+            }
+            prefix = pElemLvl->GetText() ;
+
         }
 
         pElemLvl = hLvl.FirstChild ( "swiftContext" ).Element();
@@ -764,6 +772,13 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             delete context;
             context = NULL;
             context = new SwiftContext(authUrl,userAccount,userName,userPassword,container);
+
+            pElemLvl = hLvl.FirstChild ( "imagePrefix" ).Element();
+            if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
+                LOGGER_ERROR ( "imagePrefix absent pour le level " << id << " qui est stocke sur du Swift");
+                return NULL;
+            }
+            prefix = pElemLvl->GetText() ;
 
         }
 
@@ -911,7 +926,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         }
 
         Level *TL = new Level ( *tm, channels, baseDir, tilesPerWidth, tilesPerHeight,
-                                maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth, format, noDataFilePath, context );
+                                maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth, format, noDataFilePath, context, prefix );
 
         levels.insert ( std::pair<std::string, Level *> ( id, TL ) );
     }// boucle sur les levels

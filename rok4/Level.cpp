@@ -64,11 +64,11 @@
 Level::Level (TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth,
                int tilesPerHeight, uint32_t maxTileRow, uint32_t minTileRow,
                uint32_t maxTileCol, uint32_t minTileCol, int pathDepth,
-               Rok4Format::eformat_data format, std::string noDataFile , Context *&context) :
+               Rok4Format::eformat_data format, std::string noDataFile , Context *&context, std::string prefix) :
     tm ( tm ), channels ( channels ), baseDir ( baseDir ),
     tilesPerWidth ( tilesPerWidth ), tilesPerHeight ( tilesPerHeight ),
     maxTileRow ( maxTileRow ), minTileRow ( minTileRow ), maxTileCol ( maxTileCol ),
-    minTileCol ( minTileCol ), pathDepth ( pathDepth ), format ( format ),noDataFile ( noDataFile ), noDataSource ( NULL ), context (context) {
+    minTileCol ( minTileCol ), pathDepth ( pathDepth ), format ( format ),noDataFile ( noDataFile ), noDataSource ( NULL ), context (context), prefix (prefix){
     StoreDataSourceFactory SDSF;
     noDataTileSource = SDSF.createStoreDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding ( format ) );
     noDataSourceProxy = noDataTileSource;
