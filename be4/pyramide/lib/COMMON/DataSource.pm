@@ -38,18 +38,18 @@
 =begin nd
 File: DataSource.pm
 
-Class: BE4::DataSource
+Class: COMMON::DataSource
 
 Manage a data source, physical (image files) or virtual (WMS server) or both.
 
 Using:
     (start code)
-    use BE4::DataSource;
+    use COMMON::DataSource;
 
     # DataSource object creation : 3 cases
 
     # Real Data and no harvesting : native SRS and lossless compression
-    my $objDataSource = BE4::DataSource->new(
+    my $objDataSource = COMMON::DataSource->new(
         "19",
         {
             srs => "IGNF:LAMB93",
@@ -58,7 +58,7 @@ Using:
     );
 
     # No Data, just harvesting (here for a WMS vector) 
-    my $objDataSource = BE4::DataSource->new(
+    my $objDataSource = COMMON::DataSource->new(
         "19",
         {
             srs => IGNF:WGS84G,
@@ -79,7 +79,7 @@ Using:
     );
     
     # No Data, just harvesting provided images
-    my $objDataSource = BE4::DataSource->new(
+    my $objDataSource = COMMON::DataSource->new(
         "19",
         {
             srs => IGNF:WGS84G,
@@ -100,7 +100,7 @@ Using:
     );
 
     # Real Data and harvesting : reprojection or lossy compression
-    my $objDataSource = BE4::DataSource->new(
+    my $objDataSource = COMMON::DataSource->new(
         "19",
         {
             srs => "IGNF:LAMB93",
@@ -125,7 +125,7 @@ Attributes:
     list - string - File path, containing a list of image indices (I,J) to harvest.
     bbox - double array - Data source bounding box, in the previous SRS : [xmin,ymin,xmax,ymax].
 
-    imageSource - <BE4::ImageSource> - Georeferenced images' source.
+    imageSource - <COMMON::ImageSource> - Georeferenced images' source.
     harvesting - <Harvesting> - WMS server. If it is useless, it will be remove.
 
 Limitations:
@@ -134,7 +134,7 @@ Limitations:
 
 ################################################################################
 
-package BE4::DataSource;
+package COMMON::DataSource;
 
 use strict;
 use warnings;
@@ -146,8 +146,8 @@ use List::Util qw(min max);
 use Geo::GDAL;
 
 # My module
-use BE4::ImageSource;
-use BE4::Harvesting;
+use COMMON::ImageSource;
+use COMMON::Harvesting;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -291,7 +291,7 @@ sub _load {
     # ImageSource is optionnal
     my $imagesource = undef;
     if (exists $params->{path_image}) {
-        $imagesource = BE4::ImageSource->new($params);
+        $imagesource = COMMON::ImageSource->new($params);
         if (! defined $imagesource) {
             ERROR("Cannot create the ImageSource object");
             return FALSE;
@@ -302,7 +302,7 @@ sub _load {
     # Harvesting is optionnal, but if we have 'wms_layer' parameter, we suppose that we have others
     my $harvesting = undef;
     if (exists $params->{wms_layer}) {
-        $harvesting = BE4::Harvesting->new($params);
+        $harvesting = COMMON::Harvesting->new($params);
         if (! defined $harvesting) {
             ERROR("Cannot create the Harvesting object");
             return FALSE;
@@ -575,7 +575,7 @@ sub exportForDebug {
     
     my $export = "";
     
-    $export .= sprintf "\n Object BE4::DataSource :\n";
+    $export .= sprintf "\n Object COMMON::DataSource :\n";
     $export .= sprintf "\t Extent: %s\n",$self->{extent};
     $export .= sprintf "\t Levels ID (order):\n";
     $export .= sprintf "\t\t- bottom : %s (%s)\n",$self->{bottomID},$self->{bottomOrder};

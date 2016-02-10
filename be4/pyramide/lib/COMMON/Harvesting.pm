@@ -38,18 +38,18 @@
 =begin nd
 File: Harvesting.pm
 
-Class: BE4::Harvesting
+Class: COMMON::Harvesting
 
 Stores parameters and builds WMS request.
 
 Using:
     (start code)
-    use BE4::Harvesting;
+    use COMMON::Harvesting;
 
     # Image width and height not defined
 
     # Harvesting object creation
-    my $objHarvesting = BE4::Harvesting->new({
+    my $objHarvesting = COMMON::Harvesting->new({
         wms_layer   => "ORTHO_RAW_LAMB93_PARIS_OUEST",
         wms_url     => "http://localhost/wmts/rok4",
         wms_version => "1.3.0",
@@ -62,7 +62,7 @@ Using:
     # Image width and height defined, style, transparent and background color (for a WMS vector)
 
     # Harvesting object creation
-    my $objHarvesting = BE4::Harvesting->new({
+    my $objHarvesting = COMMON::Harvesting->new({
         wms_layer   => "BDD_WLD_WM",
         wms_url     => "http://localhost/wmts/rok4",
         wms_version => "1.3.0",
@@ -92,7 +92,7 @@ If *max_width* and *max_height* are not defined, images will be harvested all-in
 
 ################################################################################
 
-package BE4::Harvesting;
+package COMMON::Harvesting;
 
 use strict;
 use warnings;
@@ -628,7 +628,7 @@ sub exportForDebug {
     
     my $export = "";
     
-    $export .= "\nObject BE4::Harvesting :\n";
+    $export .= "\nObject COMMON::Harvesting :\n";
     $export .= sprintf "\t URL : %s\n",$self->{URL};
     $export .= sprintf "\t VERSION : %s\n",$self->{VERSION};
     $export .= sprintf "\t REQUEST : %s\n",$self->{REQUEST};

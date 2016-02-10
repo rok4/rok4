@@ -48,7 +48,7 @@ Log::Log4perl->easy_init({
 });
 
 # My tested class
-use BE4::DataSourceLoader;
+use COMMON::DataSourceLoader;
 
 # Other used class
 use COMMON::TileMatrixSet;
@@ -57,13 +57,13 @@ use COMMON::TileMatrixSet;
 
 # GeoImage creation
 
-my $newDSL = BE4::DataSourceLoader->new({
+my $newDSL = COMMON::DataSourceLoader->new({
     filepath_conf => $Bin."/../../sources/sources.txt"
 });
 ok (defined $newDSL, "DataSourceLoader created");
 is ($newDSL->getNumberDataSources(), 4, "All expected data sources are created");
 
-my $oldDSL = BE4::DataSourceLoader->new({
+my $oldDSL = COMMON::DataSourceLoader->new({
         path_image => $Bin."/../../images/BDORTHO",
         srs => "IGNF:LAMB93",
     },{

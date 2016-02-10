@@ -116,7 +116,7 @@ use Geo::OSR;
 use Geo::OGR;
 use Data::Dumper;
 
-use BE4::DataSource;
+use COMMON::DataSource;
 use BE4::Node;
 use COMMON::Array;
 
@@ -217,7 +217,7 @@ sub _init {
         ERROR("Can not load Forest !");
         return FALSE;
     }
-    if (! defined $objSrc || ref ($objSrc) ne "BE4::DataSource") {
+    if (! defined $objSrc || ref ($objSrc) ne "COMMON::DataSource") {
         ERROR("Can not load DataSource !");
         return FALSE;
     }

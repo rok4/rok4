@@ -55,7 +55,7 @@ Using:
 
     my $Forest = BE4::Forest->new(
         $objPyramid, # a BE4::Pyramid object
-        $objDSL, # a BE4::DataSourceLoader object
+        $objDSL, # a COMMON::DataSourceLoader object
         $param_process, # a hash with following keys : job_number, path_temp, path_temp_common and path_shell
     );
     (end code)
@@ -88,8 +88,8 @@ use BE4::NNGraph;
 use BE4::Commands;
 use BE4::Pyramid;
 use BE4::Script;
-use BE4::DataSourceLoader;
-use BE4::DataSource;
+use COMMON::DataSourceLoader;
+use COMMON::DataSource;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -188,7 +188,7 @@ sub _init {
     $self->{pyramid} = $pyr;
     
     # it's an object and it's mandatory !
-    if (! defined $DSL || ref ($DSL) ne "BE4::DataSourceLoader") {
+    if (! defined $DSL || ref ($DSL) ne "COMMON::DataSourceLoader") {
         ERROR("Can not load data sources !");
         return FALSE;
     }
@@ -222,8 +222,6 @@ Parameters (list):
 =cut
 sub _load {
     my ($self, $pyr, $DSL, $params_process) = @_;
-
-    TRACE;
 
     my $dataSources = $DSL->getDataSources;
     my $TMS = $pyr->getTileMatrixSet;
@@ -309,7 +307,7 @@ sub _load {
         # On continue avec les autres scripts, par level
         for (my $i = $pyr->getBottomOrder - 1; $i <= $pyr->getTopOrder; $i++) {
             for (my $j = 1; $j <= $self->getSplitNumber; $j++) {
-                my $scriptID ;
+                my $scriptID;
                 if ($i == $pyr->getBottomOrder - 1) {
                     $scriptID = sprintf "SCRIPT_FINISHER_%s", $j;
                 } else {

@@ -76,7 +76,7 @@ use File::Basename;
 use File::Path;
 use Data::Dumper;
 
-use BE4::Harvesting;
+use COMMON::Harvesting;
 use BE4::Level;
 use BE4::Script;
 

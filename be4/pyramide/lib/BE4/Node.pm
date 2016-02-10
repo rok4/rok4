@@ -410,9 +410,6 @@ sub getBgMaskName {
 }
 
 
-
-
-
 # Function: getLevel
 sub getLevel {
     my $self = shift;

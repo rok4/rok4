@@ -89,7 +89,7 @@ use lib "$Bin/../lib/perl5";
 # My module
 use BE4::PropertiesLoader;
 use BE4::Pyramid;
-use BE4::DataSourceLoader;
+use COMMON::DataSourceLoader;
 use BE4::Forest;
 
 ################################################################################
@@ -453,7 +453,7 @@ Function: doIt
 
 Steps in order, using parameters :
     - create the Pyramid object : <BE4::Pyramid::new>
-    - load data sources : <BE4::DataSourceLoader::new>
+    - load data sources : <COMMON::DataSourceLoader::new>
     - update levels for this Pyramid object : <BE4::Pyramid::updateLevels>
     - create the Forest object : <BE4::Forest::new>
     - write (initialization) the pyramid's directories tree and its list : <BE4::Pyramid::writeCachePyramid> and <BE4::Pyramid::writeListPyramid>
@@ -489,7 +489,7 @@ sub doIt {
     
     ALWAYS(">>> Load Data Source ...");
 
-    $objDSL = BE4::DataSourceLoader->new($params->{datasource},$params->{harvesting},$params->{pyramid}->{pyr_level_bottom});
+    $objDSL = COMMON::DataSourceLoader->new($params->{datasource},$params->{harvesting},$params->{pyramid}->{pyr_level_bottom});
     if (! defined $objDSL) {
         ERROR("Cannot load data sources !");
         return FALSE;
@@ -775,7 +775,7 @@ Group: Paths in brief
 
 Group: DataSource configuration
 
-For more informations about datasource properties loading, see <BE4::DataSourceLoader> and <BE4::DataSource>.
+For more informations about datasource properties loading, see <COMMON::DataSourceLoader> and <COMMON::DataSource>.
 
 Topic: For all types
 
@@ -783,7 +783,7 @@ Topic: For all types
 
 Topic: For an image source
 
-For more informations about properties, see <BE4::ImageSource>.
+For more informations about properties, see <COMMON::ImageSource>.
     
     path_image - Directory path, where to find georeferenced images to use to generate the cache. Subdirectory are authorized and browsed.
     preprocess_command  - string - command to call to preprocess source images (optionnal)
@@ -794,7 +794,7 @@ For more informations about properties, see <BE4::ImageSource>.
 
 Topic: For a WMS source
 
-For more informations about properties, see <BE4::Harvesting>.
+For more informations about properties, see <COMMON::Harvesting>.
     
     wms_layer - Resource to harvest.
 

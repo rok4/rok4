@@ -38,21 +38,21 @@
 =begin nd
 File: DataSourceLoader.pm
 
-Class: BE4::DataSourceLoader
+Class: COMMON::DataSourceLoader
 
 Loads, validates and manages data sources. Data sources informations are read from a specific configuration file or directly in an hash (old working).
 
 Using:
     (start code)
-    use BE4::DataSourceLoader
+    use COMMON::DataSourceLoader
 
     # DataSourceLoader object creation
-    my $objDataSourceLoader = BE4::DataSourceLoader->new({
+    my $objDataSourceLoader = COMMON::DataSourceLoader->new({
         filepath_conf => "/home/IGN/CONF/source.txt",
     });
 
     # DataSourceLoader object creation for old configuration (just one data source)
-    my $objDataSourceLoader = BE4::DataSourceLoader->new(
+    my $objDataSourceLoader = COMMON::DataSourceLoader->new(
         { # datasource section
             SRS         => "IGNF:LAMB93",
             path_image  => "/home/IGN/DATA/IMAGES/",
@@ -78,7 +78,7 @@ Limitations:
 
 ################################################################################
 
-package BE4::DataSourceLoader;
+package COMMON::DataSourceLoader;
 
 use strict;
 use warnings;
@@ -90,7 +90,7 @@ use List::Util qw(min max);
 use Geo::GDAL;
 
 # My module
-use BE4::DataSource;
+use COMMON::DataSource;
 use BE4::PropertiesLoader;
 
 require Exporter;
@@ -233,7 +233,7 @@ sub _load {
     my $nbSources = 0;
 
     while( my ($level,$params) = each(%$sourcesProperties) ) {
-        my $datasource = BE4::DataSource->new($level,$params);
+        my $datasource = COMMON::DataSource->new($level,$params);
         if (! defined $datasource) {
             ERROR(sprintf "Cannot create a DataSource object for the base level %s",$level);
             return FALSE;
@@ -282,7 +282,7 @@ sub _loadOld {
 
     my $sources = $self->{dataSources};
 
-    my $objDataSource = BE4::DataSource->new($bottomId,$params);
+    my $objDataSource = COMMON::DataSource->new($bottomId,$params);
     if (! defined $objDataSource) {
         ERROR(sprintf "Cannot create the DataSource object for the base level %s (old method)",$bottomId);
         return FALSE;
@@ -437,7 +437,7 @@ sub exportForDebug {
     
     my $export = "";
     
-    $export .= sprintf "\n Object BE4::DataSourceLoader :\n";
+    $export .= sprintf "\n Object COMMON::DataSourceLoader :\n";
     $export .= sprintf "\t Configuration file :\n", $self->{FILEPATH_DATACONF};
     $export .= sprintf "\t Sources number : %s\n", scalar @{$self->{dataSources}};
     

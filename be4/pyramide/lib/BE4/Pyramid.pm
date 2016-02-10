@@ -162,7 +162,7 @@ use Data::Dumper;
 use COMMON::TileMatrixSet;
 use BE4::Level;
 use COMMON::NoData;
-use BE4::PyrImageSpec;
+use COMMON::PyrImageSpec;
 use COMMON::Pixel;
 use BE4::Forest;
 use COMMON::Base36;
@@ -486,7 +486,7 @@ sub _load {
     }
 
     ##### create PyrImageSpec !
-    my $pyrImgSpec = BE4::PyrImageSpec->new({
+    my $pyrImgSpec = COMMON::PyrImageSpec->new({
         formatCode => $params->{formatCode},
         bitspersample => $params->{bitspersample},
         sampleformat => $params->{sampleformat},
@@ -2006,7 +2006,7 @@ Example:
                 - width : 16
                 - height : 16
          Image components :
-    Object BE4::PyrImageSpec :
+    Object COMMON::PyrImageSpec :
          Global information :
                 - Compression : raw
                 - Compression option : none

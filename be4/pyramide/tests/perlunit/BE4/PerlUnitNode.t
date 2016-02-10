@@ -53,8 +53,8 @@ use BE4::Node;
 #Other Used Class
 use BE4::Pyramid;
 use COMMON::TileMatrix;
-use BE4::DataSource;
-use BE4::DataSourceLoader;
+use COMMON::DataSource;
+use COMMON::DataSourceLoader;
 use BE4::Commands;
 
 ######################################################
@@ -91,7 +91,7 @@ my $pyramid = BE4::Pyramid->new({
 });
 ok (defined $pyramid,"pyramid ok.");
 
-my $DSL = BE4::DataSourceLoader->new({ filepath_conf => $Bin."/../../sources/sources.txt" });
+my $DSL = COMMON::DataSourceLoader->new({ filepath_conf => $Bin."/../../sources/sources.txt" });
 ok (defined $DSL,"DSL ok.");
 
 my $commands = BE4::Commands->new($pyramid);

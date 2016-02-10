@@ -51,7 +51,7 @@ use FindBin qw($Bin); # absolute path of the present testfile in $Bin
 use BE4::Forest;
 
 #Other Used Class
-use BE4::DataSourceLoader;
+use COMMON::DataSourceLoader;
 use BE4::Pyramid;
 
 
@@ -88,7 +88,7 @@ my $pyramid = BE4::Pyramid->new({
     color => "255,255,255"
 });
 
-my $DSL = BE4::DataSourceLoader->new({ filepath_conf => $Bin."/../../sources/sources_Forest.txt" });
+my $DSL = COMMON::DataSourceLoader->new({ filepath_conf => $Bin."/../../sources/sources_Forest.txt" });
 
 ok ($pyramid->updateLevels($DSL,undef),"DataSourcesLoader updated and QTree Pyramid's levels created");
 
@@ -105,7 +105,7 @@ is (scalar @{$forest->getGraphs}, 2, "QTree Forest contains 2 graphs");
 
 # Forest Object Creation (with Graph)
 
-$DSL = BE4::DataSourceLoader->new({ filepath_conf => $Bin."/../../sources/sources_Forest.txt" });
+$DSL = COMMON::DataSourceLoader->new({ filepath_conf => $Bin."/../../sources/sources_Forest.txt" });
 $pyramid = BE4::Pyramid->new({
 
     tms_path => $Bin."/../../tms",
