@@ -38,23 +38,23 @@
 =begin nd
 File: NoData.pm
 
-Class: BE4::NoData
+Class: COMMON::NoData
 
 Define Nodata informations and tools.
 
 Using:
     (start code)
-    use BE4::NoData;
+    use COMMON::NoData;
 
     # NoData object creation
-    my $objNodata = BE4::NoData->new({
+    my $objNodata = COMMON::NoData->new({
         pixel   => $objPixel,
         value   => "255,255,255"
     });
     (end code)
 
 Attributes:
-    pixel - <Pixel> - Components of a nodata pixel.
+    pixel - <COMMON::Pixel> - Components of a nodata pixel.
 
     value - string - Contains one integer value per sample, in decimal format, seperated by comma. For 8 bits unsigned integer, value must be between 0 and 255. For 32 bits float, an integer is expected too, but can be negative.
     Example : "255,255,255" (white) for images whithout alpha sample, "-99999" for a DTM.
@@ -62,7 +62,7 @@ Attributes:
 
 ################################################################################
 
-package BE4::NoData;
+package COMMON::NoData;
 
 use strict;
 use warnings;
@@ -73,7 +73,7 @@ use File::Basename;
 use File::Spec;
 use File::Path;
 
-use BE4::Pixel;
+use COMMON::Pixel;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -398,7 +398,7 @@ sub exportForDebug {
     
     my $export = "";
     
-    $export .= "\nObject BE4::NoData :\n";
+    $export .= "\nObject COMMON::NoData :\n";
     $export .= sprintf "\t Value : %s\n", $self->{value};
     
     return $export;

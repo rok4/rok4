@@ -43,6 +43,7 @@ Link: BE4 is an integral part of the ROK4 project  (http://www.rok4.org)
 Group: Tools  {
 
    File: BE4  (no auto-title, bin/be4.pl)
+   File: BE4CEPH  (no auto-title, bin/be4ceph.pl)
    File: COORD2IMAGE  (no auto-title, bin/coord2image.pl)
    File: CREATE-LAYER  (no auto-title, bin/create-layer.pl)
    File: JOINCACHE  (no auto-title, bin/joinCache.pl)
@@ -77,22 +78,30 @@ Group: Classes  {
 
          File: Level  (no auto-title, lib/BE4/Level.pm)
          File: NoData  (no auto-title, lib/BE4/NoData.pm)
-         File: Pixel  (no auto-title, lib/BE4/Pixel.pm)
          File: Pyramid  (no auto-title, lib/BE4/Pyramid.pm)
          File: PyrImageSpec  (no auto-title, lib/BE4/PyrImageSpec.pm)
          File: TileMatrix  (no auto-title, lib/BE4/TileMatrix.pm)
          File: TileMatrixSet  (no auto-title, lib/BE4/TileMatrixSet.pm)
          }  # Group: About pyramid
 
-      Group: Utils  {
-
-         File: Array  (no auto-title, lib/BE4/Array.pm)
-         File: Base36  (no auto-title, lib/BE4/Base36.pm)
+      Group: Configuration  {
          File: PropertiesLoader  (no auto-title, lib/BE4/PropertiesLoader.pm)
-         File: Layer  (no auto-title, lib/BE4/Layer.pm)
-         }  # Group: Utils
+         }  # Group: Configuration
 
       }  # Group: BE4
+
+   Group: BE4CEPH  {
+
+      #File: Global  (no auto-title, lib/BE4CEPH.txt)
+
+      Group: About pyramid  {
+
+         File: Pyramid  (no auto-title, lib/BE4CEPH/Pyramid.pm)
+         }  # Group: About pyramid
+
+      }  # Group: BE4CEPH
+
+   }  # Group: Classes
 
    Group: JOINCACHE  {
 
@@ -117,6 +126,28 @@ Group: Classes  {
          }  # Group: Utils
 
       }  # Group: JOINCACHE
+
+   Group: COMMON  {
+
+      #File: Global  (no auto-title, lib/COMMON.txt)
+
+      Group: Configuration  {
+
+         File: Config  (no auto-title, lib/COMMON/Config.pm)
+         }  # Group: Configuration
+
+      Group: About images  {         
+         File: Pixel  (no auto-title, lib/BE4/Pixel.pm)
+         }  # Group: About images         
+
+      Group: Utils  {
+
+         File: Array  (no auto-title, lib/COMMON/Array.pm)
+         File: Base36  (no auto-title, lib/COMMON/Base36.pm)
+         File: Layer  (no auto-title, lib/COMMON/Layer.pm)
+         }  # Group: Utils
+
+      }  # Group: COMMON
 
    }  # Group: Classes
 

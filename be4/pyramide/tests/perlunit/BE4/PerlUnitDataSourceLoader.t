@@ -51,7 +51,7 @@ Log::Log4perl->easy_init({
 use BE4::DataSourceLoader;
 
 # Other used class
-use BE4::TileMatrixSet;
+use COMMON::TileMatrixSet;
 
 ######################################################
 
@@ -78,7 +78,7 @@ ok (defined $oldDSL, "DataSourceLoader created with old configuration");
 
 ######################################################
 
-my $TMS = BE4::TileMatrixSet->new($Bin."/../../tms/LAMB93_10cm.tms");
+my $TMS = COMMON::TileMatrixSet->new($Bin."/../../tms/LAMB93_10cm.tms");
 
 my ($bottomOrder,$topOrder) = $newDSL->updateDataSources($TMS);
 is_deeply([$bottomOrder,$topOrder],[10,21],

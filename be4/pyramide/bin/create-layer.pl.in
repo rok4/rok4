@@ -80,8 +80,8 @@ use FindBin qw($Bin);
 use lib "$Bin/../lib/perl5";
 
 # My module
-use BE4::TileMatrixSet;
-use BE4::Layer;
+use COMMON::TileMatrixSet;
+use COMMON::Layer;
 
 ################################################################################
 # Constantes
@@ -266,8 +266,8 @@ Function: doIt
 We extract all needed informations from the pyramid's descriptor, and write them into the XML layer file.
 
 Use classes :
-    - <BE4::TileMatrixSet>
-    - <BE4::Layer>
+    - <COMMON::TileMatrixSet>
+    - <COMMON::Layer>
 =cut
 sub doIt {
     
@@ -294,7 +294,7 @@ sub doIt {
     }
 
     my $tmsFilePath = File::Spec->catfile($options{"tms-path"},$tmsname.".tms");
-    my $objTMS  = BE4::TileMatrixSet->new($tmsFilePath);
+    my $objTMS  = COMMON::TileMatrixSet->new($tmsFilePath);
     if (! defined $objTMS) {
         ERROR (sprintf "Can not create object TileMatrixSet from this path : %s ",$tmsFilePath);
         return FALSE;
@@ -450,7 +450,7 @@ sub doIt {
         pyramid          => $options{pyramid},
     };
 
-    my $objLayer = BE4::Layer->new($params);
+    my $objLayer = COMMON::Layer->new($params);
 
     if (! defined $objLayer){
         ERROR("Erreur de configuration du layer !");

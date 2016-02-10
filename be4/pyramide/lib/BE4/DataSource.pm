@@ -125,7 +125,7 @@ Attributes:
     list - string - File path, containing a list of image indices (I,J) to harvest.
     bbox - double array - Data source bounding box, in the previous SRS : [xmin,ymin,xmax,ymax].
 
-    imageSource - <ImageSource> - Georeferenced images' source.
+    imageSource - <BE4::ImageSource> - Georeferenced images' source.
     harvesting - <Harvesting> - WMS server. If it is useless, it will be remove.
 
 Limitations:

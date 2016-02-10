@@ -596,7 +596,7 @@ sub computeYourself {
            # on détermine dans quel script on l'écrit en se basant sur les poids
            my @ScriptsOfLevel = $self->getScriptsOfLevel($levelID);
            my @WeightsOfLevel = map {$_->getWeight();} @ScriptsOfLevel ;
-           my $script_index = BE4::Array::minArrayIndex(0,@WeightsOfLevel);
+           my $script_index = COMMON::Array::minArrayIndex(0,@WeightsOfLevel);
            my $script = $ScriptsOfLevel[$script_index];
            # on stocke l'information dans l'objet node
            $node->setScript($script);

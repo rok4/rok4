@@ -46,7 +46,7 @@ Log::Log4perl->easy_init({
 });
 
 # My tested class
-use BE4::Pixel;
+use COMMON::Pixel;
 
 ######################################################
 
@@ -57,7 +57,7 @@ my $params = {
     sampleformat => "float",
     photometric => "gray"
 };
-my $pixel = BE4::Pixel->new($params);
+my $pixel = COMMON::Pixel->new($params);
 
 ok (defined $pixel, "Float32 Pixel created");
 undef $pixel;
@@ -69,7 +69,7 @@ $params = {
     sampleformat => "uint",
     photometric => "rgb"
 };
-$pixel = BE4::Pixel->new($params);
+$pixel = COMMON::Pixel->new($params);
 
 ok (defined $pixel, "UInt8 Pixel created");
 undef $pixel;
@@ -78,7 +78,7 @@ undef $pixel;
 
 # Test on parameter 'samplesperpixel'
 $params->{samplesperpixel} = 14;
-$pixel = BE4::Pixel->new($params);
+$pixel = COMMON::Pixel->new($params);
 
 ok (! defined $pixel, "Incorrect value detected for 'samplesperpixel'");
 undef $pixel;
@@ -86,7 +86,7 @@ undef $pixel;
 # Test on parameter 'photometric'
 $params->{samplesperpixel} = 3;
 $params->{photometric} = "??";
-$pixel = BE4::Pixel->new($params);
+$pixel = COMMON::Pixel->new($params);
 
 ok (! defined $pixel, "Incorrect value detected for 'photometric'");
 undef $pixel;
@@ -94,7 +94,7 @@ undef $pixel;
 # Test on parameter 'bitspersample'
 $params->{bitspersample} = 17;
 $params->{photometric} = "rgb";
-$pixel = BE4::Pixel->new($params);
+$pixel = COMMON::Pixel->new($params);
 
 ok (! defined $pixel, "Incorrect value detected for 'bitspersample'");
 undef $pixel;
@@ -102,7 +102,7 @@ undef $pixel;
 # Test on parameter 'sampleformat'
 $params->{bitspersample} = 8;
 $params->{sampleformat} = "??";
-$pixel = BE4::Pixel->new($params);
+$pixel = COMMON::Pixel->new($params);
 
 ok (! defined $pixel, "Incorrect value detected for 'sampleformat'");
 undef $pixel;

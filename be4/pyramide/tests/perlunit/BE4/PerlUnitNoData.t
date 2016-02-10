@@ -46,14 +46,14 @@ Log::Log4perl->easy_init({
 });
 
 # My tested class
-use BE4::NoData;
-use BE4::Pixel;
+use COMMON::NoData;
+use COMMON::Pixel;
 
 ######################################################
 
 # Pixel objects creations
 
-my $pixelFloat32 = BE4::Pixel->new({
+my $pixelFloat32 = COMMON::Pixel->new({
     samplesperpixel => 1,
     bitspersample => 32,
     sampleformat => "float",
@@ -62,7 +62,7 @@ my $pixelFloat32 = BE4::Pixel->new({
 
 ok (defined $pixelFloat32, "Float32 Pixel created");
 
-my $pixelUInt8 = BE4::Pixel->new({
+my $pixelUInt8 = COMMON::Pixel->new({
     samplesperpixel => 3,
     bitspersample => 8,
     sampleformat => "uint",
@@ -73,14 +73,14 @@ ok (defined $pixelUInt8, "UInt8 Pixel created");
 
 ######################################################
 
-my $nodataFloat32 = BE4::NoData->new({
+my $nodataFloat32 = COMMON::NoData->new({
     pixel => $pixelFloat32,
     value => "-99999",
 });
 
 ok (defined $nodataFloat32, "Float32 NoData created");
 
-my $nodataUInt8 = BE4::NoData->new({
+my $nodataUInt8 = COMMON::NoData->new({
     pixel => $pixelUInt8,
     value => "255,23,48",
 });
@@ -90,7 +90,7 @@ ok (defined $nodataUInt8, "UInt8 NoData created");
 ######################################################
 
 # Test on parameter 'value'
-my $nodata = BE4::NoData->new({
+my $nodata = COMMON::NoData->new({
     pixel => $pixelUInt8,
     value => "255,63",
 });
@@ -98,7 +98,7 @@ my $nodata = BE4::NoData->new({
 ok (! defined $nodata, "Incorrect value detected for 'value' : UInt8 Pixel, 3 samples per pixel <=> '255,63'");
 undef $nodata;
 
-$nodata = BE4::NoData->new({
+$nodata = COMMON::NoData->new({
     pixel => $pixelUInt8,
     value => "201,63,-4",
 });
@@ -106,7 +106,7 @@ $nodata = BE4::NoData->new({
 ok (! defined $nodata, "Incorrect value detected for 'value' : UInt8 Pixel, 3 samples per pixel <=> '201,63,-4'");
 undef $nodata;
 
-$nodata = BE4::NoData->new({
+$nodata = COMMON::NoData->new({
     pixel => $pixelFloat32,
     value => "FFFF",
 });
@@ -114,7 +114,7 @@ $nodata = BE4::NoData->new({
 ok (! defined $nodata, "Incorrect value detected for 'value' : UInt8 Pixel, 3 samples per pixel <=> 'FFFF'");
 undef $nodata;
 
-$nodata = BE4::NoData->new({
+$nodata = COMMON::NoData->new({
     pixel => $pixelFloat32,
     value => "FFFFFF",
 });
@@ -126,7 +126,7 @@ undef $nodata;
 
 # Value conversion tests
 
-$nodata = BE4::NoData->new({
+$nodata = COMMON::NoData->new({
     pixel => $pixelUInt8,
     value => "FF8F12",
 });

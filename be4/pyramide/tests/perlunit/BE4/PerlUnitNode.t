@@ -52,7 +52,7 @@ use BE4::Node;
 
 #Other Used Class
 use BE4::Pyramid;
-use BE4::TileMatrix;
+use COMMON::TileMatrix;
 use BE4::DataSource;
 use BE4::DataSourceLoader;
 use BE4::Commands;
@@ -112,7 +112,7 @@ ok (defined $forest,"forest ok.");
 my $qtree = BE4::QTree->new($forest,$datasource,$pyramid,$commands);
 ok (defined $qtree,"qtree ok.");
 
-my $tm = BE4::TileMatrix->new({
+my $tm = COMMON::TileMatrix->new({
     id             => "level_4",
     resolution     => 0.324,
     topLeftCornerX => 0,

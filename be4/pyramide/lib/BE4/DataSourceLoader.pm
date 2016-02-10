@@ -325,7 +325,7 @@ sub updateDataSources {
 
     TRACE();
     
-    if (! defined $TMS || ref ($TMS) ne "BE4::TileMatrixSet") {
+    if (! defined $TMS || ref ($TMS) ne "COMMON::TileMatrixSet") {
         ERROR("We need a TileMatrixSet object to update data sources");
         return (-1, -1);
     }

@@ -92,7 +92,7 @@ use List::Util qw(min max);
 use File::Path qw(make_path);
 
 use BE4::GeoImage;
-use BE4::Pixel;
+use COMMON::Pixel;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -324,7 +324,7 @@ sub computeImageSource {
 
         if (! defined $pixel) {
             # we have read the first image, components are empty. This first image will be the reference.
-            $pixel = BE4::Pixel->new({
+            $pixel = COMMON::Pixel->new({
                 bitspersample => $imageInfo[0],
                 photometric => $imageInfo[1],
                 sampleformat => $imageInfo[2],

@@ -26,6 +26,7 @@ buildbin: \
 ./bin/joinCache.pl \
 ./bin/coord2image.pl \
 ./bin/be4-simulator.pl \
+./bin/be4ceph.pl \
 ./bin/create-layer.pl
 	@(for p in $^ ; do \
                 if [ `echo $$p|egrep -c '\.pl'` -ne 0 ] ; then \

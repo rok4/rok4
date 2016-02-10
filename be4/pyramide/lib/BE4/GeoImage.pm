@@ -201,7 +201,7 @@ Extracts and calculates all GeoImage attributes' values, using GDAL library (see
 
 Image parameters are checked (sample per pixel, bits per sample...) and returned by the function. <ImageSource> can verify if all images own same components and the compatibility with be4's configuration.
 
-Returns
+Returns:
     a list : (bitspersample,photometric,sampleformat,samplesperpixel), an empty list if error.
 =cut
 sub computeInfo {

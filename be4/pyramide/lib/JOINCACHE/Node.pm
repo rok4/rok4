@@ -73,7 +73,7 @@ use Log::Log4perl qw(:easy);
 
 use File::Spec ;
 use Data::Dumper ;
-use BE4::Base36 ;
+use COMMON::Base36 ;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -183,7 +183,7 @@ sub _init {
     $self->{level} = $level;
     $self->{code} = '';
     
-    $self->{pyramidName} = BE4::Base36::indicesToB36Path( $i, $j, $dirDepth+1).".tif";
+    $self->{pyramidName} = COMMON::Base36::indicesToB36Path( $i, $j, $dirDepth+1).".tif";
     
     return TRUE;
 }

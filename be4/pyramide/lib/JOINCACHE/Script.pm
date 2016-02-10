@@ -126,7 +126,7 @@ sub new {
         tempDir => undef,
         commonTempDir => undef,
         ontConfDir => undef,
-        stream => undef,
+        stream => undef
     };
 
     bless($self, $class);

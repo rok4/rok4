@@ -38,16 +38,16 @@
 =begin nd
 File: Layer.pm
 
-Class: BE4::Layer
+Class: COMMON::Layer
 
 Describe a layer for a ROK4 server.
 
 Using:
     (start code)
-    use BE4::Layer;
+    use COMMON::Layer;
 
     # Layer object creation
-    my $objLayer = new BE4::Layer({
+    my $objLayer = new COMMON::Layer({
         title            => "Ortho IGN en RAW",
         abstract         => "Projection native",
         keywordlist      => ["key","word"],
@@ -86,7 +86,7 @@ Attributes:
 
 ################################################################################
 
-package BE4::Layer;
+package COMMON::Layer;
 
 use strict;
 use warnings;

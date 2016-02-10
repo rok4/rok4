@@ -81,7 +81,7 @@ use FindBin qw($Bin);
 use lib "$Bin/../lib/perl5";
 
 # My module
-use BE4::TileMatrixSet;
+use COMMON::TileMatrixSet;
 use BE4::Base36;
 
 ################################################################################
@@ -218,7 +218,7 @@ sub init {
         ERROR(sprintf "TMS file does not exist : %s", $tmsFile);
         return FALSE;
     }
-    $options{tms} = BE4::TileMatrixSet->new($tmsFile);
+    $options{tms} = COMMON::TileMatrixSet->new($tmsFile);
     if (! defined $options{tms}) {
         ERROR(sprintf "Cannot create the TMS perl object from file %s", $tmsFile);
         return FALSE;
@@ -270,7 +270,7 @@ Function: doIt
 We calculate the image path from provided coordinates, thanks to the TMS, the level and the image's dimensions
 
 Use classes :
-    - <BE4::TileMatrixSet>
+    - <COMMON::TileMatrixSet>
     - <BE4::Base36>
 =cut
 sub doIt {

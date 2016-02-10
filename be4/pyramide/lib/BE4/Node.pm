@@ -46,7 +46,7 @@ Using:
     (start code)
     use BE4::Node
 
-    my $tm = BE4::TileMatrix->new(...)
+    my $tm = COMMON::TileMatrix->new(...)
     
     my $graph = BE4::Qtree->new(...)
     #or
@@ -92,7 +92,7 @@ use Log::Log4perl qw(:easy);
 
 use File::Spec ;
 use Data::Dumper ;
-use BE4::Base36 ;
+use COMMON::Base36 ;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -213,7 +213,7 @@ sub _init {
     $self->{W} = 0;
     $self->{code} = '';
     
-    my $base36path = BE4::Base36::indicesToB36Path($params->{i}, $params->{j}, $self->getGraph->getPyramid->getDirDepth()+1);
+    my $base36path = COMMON::Base36::indicesToB36Path($params->{i}, $params->{j}, $self->getGraph->getPyramid->getDirDepth()+1);
     
     $self->{pyramidName} = File::Spec->catfile($self->getLevel, $base36path.".tif");
     $self->{workImageBasename} = sprintf "%s_%s_%s_I", $self->getLevel, $params->{i}, $params->{j};

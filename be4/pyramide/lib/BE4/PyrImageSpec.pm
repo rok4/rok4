@@ -91,7 +91,7 @@ use Log::Log4perl qw(:easy);
 use Data::Dumper;
 
 # My module
-use BE4::Pixel;
+use COMMON::Pixel;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -255,7 +255,7 @@ sub _init {
     }
 
     ### Pixel object
-    my $objPixel = BE4::Pixel->new({
+    my $objPixel = COMMON::Pixel->new({
         photometric => $params->{photometric},
         sampleformat => $params->{sampleformat},
         bitspersample => $params->{bitspersample},
@@ -526,7 +526,7 @@ Example:
                 - Gamma : 1
                 - Format code : TIFF_RAW_INT8
          Pixel components :
-    Object BE4::Pixel :
+    Object COMMON::Pixel :
          Bits per sample : 8
          Photometric : rgb
          Sample format : uint

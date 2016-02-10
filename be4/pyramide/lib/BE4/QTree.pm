@@ -118,7 +118,7 @@ use Data::Dumper;
 
 use BE4::DataSource;
 use BE4::Node;
-use BE4::Array;
+use COMMON::Array;
 
 use Log::Log4perl qw(:easy);
 
@@ -853,7 +853,7 @@ sub shareNodesOnJobs {
         my $finisherWeight = $wholeTreeWeight;
         
         for (my $j = 0; $j < scalar @levelNodeList; $j++) {
-            my $scriptInd = BE4::Array::minArrayIndex(1,@TMP_WEIGHTS);
+            my $scriptInd = COMMON::Array::minArrayIndex(1,@TMP_WEIGHTS);
             my $nodeWeight = $levelNodeList[$j]->getAccumulatedWeight;
             $TMP_WEIGHTS[$scriptInd] += $nodeWeight;
             $finisherWeight -= $nodeWeight;
@@ -863,7 +863,7 @@ sub shareNodesOnJobs {
         # on additionne le poids du job le plus "lourd" et le poids du finisher pour quantifier le
         # pire temps d'exécution
         $TMP_WEIGHTS[0] += $finisherWeight;
-        my $worstWeight = BE4::Array::maxArrayValue(1,@TMP_WEIGHTS) + $finisherWeight;
+        my $worstWeight = COMMON::Array::maxArrayValue(1,@TMP_WEIGHTS) + $finisherWeight;
         
         DEBUG(sprintf "For the level $levelID, the worst weight is $worstWeight.");
 

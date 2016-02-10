@@ -123,7 +123,9 @@ void usage() {
                   "     -a sample format : uint (unsigned integer) or float\n" <<
                   "     -s samples per pixel : 1, 3 or 4\n" <<
                   "     -b bits per sample : 8 (for unsigned 8-bit integer) or 32 (for 32-bit float)\n" <<
-                  "     -d debug logger activation\n\n" <<
+                  "     -d debug logger activation\n" <<
+                  "     -pool Ceph pool where data is. OUTPUT FILE is interpreted as a Ceph object\n" <<
+                  "     -container Swift container where data is. Then OUTPUT FILE is interpreted as a Swift object name\n\n" <<
 
                   "Examples\n" <<
                   "     - for orthophotography\n" <<
@@ -305,22 +307,19 @@ int main ( int argc, char* argv[] ) {
     Context* context;
     if ( pool != 0 ) {
         LOGGER_DEBUG( std::string("Output is an object in the Ceph pool ") + pool);
-        context = new CephPoolContext("ceph", "client.admin", "/etc/ceph/ceph.conf", pool);
-        if (! context->connection()) {
-            error(std::string("Unable to connect to Ceph pool ") + pool, -1);
-        }
+        context = new CephPoolContext(pool);
     } else if (container != 0) {
         LOGGER_DEBUG( std::string("Output is an object in the Swift container ") + container);
-        context = new SwiftContext("http://192.168.56.200:8080/auth/v1.0", "test", "tester", "testing", container);
-        if (! context->connection()) {
-            error(std::string("Unable to connect to Swift container ") + container, -1);
-        }
+        context = new SwiftContext(container);
     } else {
         LOGGER_DEBUG("Output is a file in a file system");
         context = new FileContext("");
-        if (! context->connection()) {
-            error("Unable to connect to File System", -1);
-        }
+    }
+
+    context->print();
+
+    if (! context->connection()) {
+        error("Unable to connect to context", -1);
     }
 
     Rok4ImageFactory R4IF;
