@@ -553,8 +553,6 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
-    Context *context = NULL;
-    std::string prefix = "";
 
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
     if ( !pElem ) {
@@ -632,6 +630,8 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         int pathDepth;
         std::string noDataFilePath="";
         std::string baseDir;
+        Context *context = NULL;
+        std::string prefix = "";
 
         TiXmlHandle hLvl ( pElem );
         TiXmlElement* pElemLvl = hLvl.FirstChild ( "tileMatrix" ).Element();
@@ -668,7 +668,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
 
         pElemLvl = hLvl.FirstChild ( "cephContext" ).Element();
-        if ( pElemLvl ) {
+        if ( pElemLvl && !context) {
 
             std::string clusterName,userName,confFile,poolName;
 
@@ -711,10 +711,6 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             } else {
                 poolName = pElemCephContext->GetText();
             }
-            if (context) {
-                delete context;
-                context = NULL;
-            }
 
             context = new CephPoolContext(clusterName,userName,confFile,poolName);
 
@@ -728,7 +724,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         }
 
         pElemLvl = hLvl.FirstChild ( "swiftContext" ).Element();
-        if ( pElemLvl ) {
+        if ( pElemLvl && !context) {
 
             std::string authUrl,userAccount,userName,userPassword,container;
 
@@ -774,10 +770,6 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                 container = pElemSwiftContext->GetText();
             }
 
-            if (context) {
-                delete context;
-                context = NULL;
-            }
             context = new SwiftContext(authUrl,userAccount,userName,userPassword,container);
 
             pElemLvl = hLvl.FirstChild ( "imagePrefix" ).Element();
@@ -789,9 +781,14 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
         }
 
-        if (!context) {
+        if (context == NULL) {
             LOGGER_ERROR("Level " << id << " sans indication de stockage. Precisez un baseDir ou un cephContext ou un swiftContext");
             return NULL;
+        } else {
+            if (!context->connection()) {
+                LOGGER_ERROR("Level " << id << " => Impossible de se connecter aux donnees.");
+                return NULL;
+            }
         }
 
         pElemLvl = hLvl.FirstChild ( "tilesPerWidth" ).Element();
