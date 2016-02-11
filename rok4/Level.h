@@ -122,7 +122,7 @@ public:
         return tilesPerHeight;
     }
 
-    std::string getFilePath ( int tilex, int tiley );
+    std::string getPath ( int tilex, int tiley );
     std::string getNoDataFilePath() {
         return noDataFile;
     }

@@ -553,7 +553,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
-    Context *context;
+    Context *context = NULL;
     std::string prefix = "";
 
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
@@ -631,6 +631,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         int tilesPerHeight;
         int pathDepth;
         std::string noDataFilePath="";
+        std::string baseDir;
 
         TiXmlHandle hLvl ( pElem );
         TiXmlElement* pElemLvl = hLvl.FirstChild ( "tileMatrix" ).Element();
@@ -650,20 +651,21 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         tm = & ( it->second );
 
         pElemLvl = hLvl.FirstChild ( "baseDir" ).Element();
-        if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
-            LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( " sans baseDir!!" ) );
-            return NULL;
-        }
-        std::string baseDir ( pElemLvl->GetText() );
-        //Relative Path
-        if ( baseDir.compare ( 0,2,"./" ) ==0 ) {
-            baseDir.replace ( 0,1,parentDir );
-        } else if ( baseDir.compare ( 0,1,"/" ) !=0 ) {
-            baseDir.insert ( 0,"/" );
-            baseDir.insert ( 0,parentDir );
+        if ( pElemLvl && pElemLvl->GetText()) {
+
+            baseDir = pElemLvl->GetText() ;
+            //Relative Path
+            if ( baseDir.compare ( 0,2,"./" ) ==0 ) {
+                baseDir.replace ( 0,1,parentDir );
+            } else if ( baseDir.compare ( 0,1,"/" ) !=0 ) {
+                baseDir.insert ( 0,"/" );
+                baseDir.insert ( 0,parentDir );
+            }
+
+            context = new FileContext("");
+
         }
 
-        context = new FileContext("");
 
         pElemLvl = hLvl.FirstChild ( "cephContext" ).Element();
         if ( pElemLvl ) {
@@ -709,8 +711,11 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             } else {
                 poolName = pElemCephContext->GetText();
             }
-            delete context;
-            context = NULL;
+            if (context) {
+                delete context;
+                context = NULL;
+            }
+
             context = new CephPoolContext(clusterName,userName,confFile,poolName);
 
             pElemLvl = hLvl.FirstChild ( "imagePrefix" ).Element();
@@ -769,8 +774,10 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                 container = pElemSwiftContext->GetText();
             }
 
-            delete context;
-            context = NULL;
+            if (context) {
+                delete context;
+                context = NULL;
+            }
             context = new SwiftContext(authUrl,userAccount,userName,userPassword,container);
 
             pElemLvl = hLvl.FirstChild ( "imagePrefix" ).Element();
@@ -780,6 +787,11 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             }
             prefix = pElemLvl->GetText() ;
 
+        }
+
+        if (!context) {
+            LOGGER_ERROR("Level " << id << " sans indication de stockage. Precisez un baseDir ou un cephContext ou un swiftContext");
+            return NULL;
         }
 
         pElemLvl = hLvl.FirstChild ( "tilesPerWidth" ).Element();

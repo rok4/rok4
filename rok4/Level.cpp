@@ -314,41 +314,63 @@ static const char* Base36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 /*
  * Recuperation du nom de fichier de la dalle du cache en fonction de son indice
  */
-std::string Level::getFilePath ( int tilex, int tiley ) {
+std::string Level::getPath ( int tilex, int tiley ) {
     // Cas normalement filtré en amont (exception WMS/WMTS)
     if ( tilex < 0 || tiley < 0 ) {
         LOGGER_ERROR ( _ ( "Indice de tuile negatif" ) );
         return "";
     }
 
-    int x = tilex / tilesPerWidth;
-    int y = tiley / tilesPerHeight;
+    std::ostringstream convert;
+    int x,y,pos;
 
-    char path[32];
-    path[sizeof ( path ) - 5] = '.';
-    path[sizeof ( path ) - 4] = 't';
-    path[sizeof ( path ) - 3] = 'i';
-    path[sizeof ( path ) - 2] = 'f';
-    path[sizeof ( path ) - 1] = 0;
-    int pos = sizeof ( path ) - 6;
+    x = tilex / tilesPerWidth;
+    y = tiley / tilesPerHeight;
 
-    for ( int d = 0; d < pathDepth; d++ ) {
-        ;
-        path[pos--] = Base36[y % 36];
-        path[pos--] = Base36[x % 36];
-        path[pos--] = '/';
-        x = x / 36;
-        y = y / 36;
+    switch (context->getType()) {
+        case FILECONTEXT:
+
+            char path[32];
+            path[sizeof ( path ) - 5] = '.';
+            path[sizeof ( path ) - 4] = 't';
+            path[sizeof ( path ) - 3] = 'i';
+            path[sizeof ( path ) - 2] = 'f';
+            path[sizeof ( path ) - 1] = 0;
+            pos = sizeof ( path ) - 6;
+
+            for ( int d = 0; d < pathDepth; d++ ) {
+                ;
+                path[pos--] = Base36[y % 36];
+                path[pos--] = Base36[x % 36];
+                path[pos--] = '/';
+                x = x / 36;
+                y = y / 36;
+            }
+            do {
+                path[pos--] = Base36[y % 36];
+                path[pos--] = Base36[x % 36];
+                x = x / 36;
+                y = y / 36;
+            } while ( x || y );
+            path[pos] = '/';
+
+            return baseDir + ( path + pos );
+            break;
+        case CEPHCONTEXT:
+            convert << "_" << x << "_" << y;
+            return prefix + convert.str();
+            break;
+        case SWIFTCONTEXT:
+            convert << "_" << x << "_" << y;
+            return prefix + convert.str();
+            break;
+        default:
+            return "";
+
     }
-    do {
-        path[pos--] = Base36[y % 36];
-        path[pos--] = Base36[x % 36];
-        x = x / 36;
-        y = y / 36;
-    } while ( x || y );
-    path[pos] = '/';
 
-    return baseDir + ( path + pos );
+
+
 }
 
 /*
@@ -361,7 +383,7 @@ DataSource* Level::getEncodedTile ( int x, int y ) {
     int n= ( y%tilesPerHeight ) *tilesPerWidth + ( x%tilesPerWidth );
     // Les index sont stockés à partir de l'octet 2048
     uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
-    std::string path=getFilePath ( x, y );
+    std::string path=getPath ( x, y );
     LOGGER_DEBUG ( path );
     StoreDataSourceFactory SDSF;
     return SDSF.createStoreDataSource( path.c_str(),posoff,possize,Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );

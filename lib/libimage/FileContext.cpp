@@ -115,3 +115,7 @@ bool FileContext::writeFull(uint8_t* data, int size, std::string name) {
 
     return true;
 }
+
+eContextType FileContext::getType() {
+    return FILECONTEXT;
+}

@@ -79,6 +79,7 @@ public:
     /** Constructeurs */
     CephPoolContext (std::string cluster, std::string user, std::string conf, std::string pool);
     CephPoolContext (std::string pool);
+    eContextType getType();
 
     std::string getPoolName () {
         return pool_name;

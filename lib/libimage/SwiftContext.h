@@ -79,6 +79,7 @@ public:
     /** Constructeurs */
     SwiftContext (std::string auth, std::string account, std::string user, std::string passwd, std::string container);
     SwiftContext (std::string container);
+    eContextType getType();
         
     std::string getContainerName () {
         return container_name;
