@@ -351,11 +351,11 @@ sub getValueParameters {
     }
     if (defined $subsection) {
         foreach my $parmKey (@parmKeys) {
-            push (@parmVals, $self->{CFGOBJ}->getProperty($section, $subsection, $parmKey));
+            push (@parmVals, $self->{CFGOBJ}->getProperty({section => $section, subsection => $subsection, property => $parmKey}));
         }
     } else {
         foreach my $parmKey (@parmKeys) {
-            push (@parmVals, $self->{CFGOBJ}->getProperty($section, $parmKey));
+            push (@parmVals, $self->{CFGOBJ}->getProperty({section => $section, property => $parmKey}));
         }
     }
     
