@@ -905,33 +905,53 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
             TiXmlElement* pElemNoDataPath;
             pElemNoDataPath = hLvl.FirstChild ( "nodata" ).FirstChild ( "filePath" ).Element();
-            if ( !pElemNoDataPath  || ! ( pElemNoDataPath->GetText() ) ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( " specifiant une tuile NoData sans chemin" ) );
+            if ( pElemNoDataPath && context->getType() == FILECONTEXT) {
+                if (pElemNoDataPath->GetText()) {
+
+                    noDataFilePath=pElemNoDataPath->GetText();
+                    //Relative Path
+                    if ( noDataFilePath.compare ( 0,2,"./" ) ==0 ) {
+                        noDataFilePath.replace ( 0,1,parentDir );
+                    } else if ( noDataFilePath.compare ( 0,1,"/" ) !=0 ) {
+                        noDataFilePath.insert ( 0,"/" );
+                        noDataFilePath.insert ( 0,parentDir );
+                    }
+                    int file = open(noDataFilePath.c_str(),O_RDONLY);
+                    if (file < 0) {
+                        LOGGER_ERROR(fileName <<_ ( " Level " ) << id <<_ ( " specifiant une tuile NoData impossible a ouvrir" ));
+                        return NULL;
+                    } else {
+                        close(file);
+                    }
+
+                } else {
+
+                    LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( " specifiant une tuile NoData sans chemin" ) );
+                    return NULL;
+
+                }
+
+            }
+
+            pElemNoDataPath = hLvl.FirstChild ( "nodata" ).FirstChild ( "objectName" ).Element();
+            if ( pElemNoDataPath && (context->getType() == CEPHCONTEXT || context->getType() == SWIFTCONTEXT)) {
+                if (pElemNoDataPath->GetText()) {
+                    noDataFilePath=pElemNoDataPath->GetText();
+                    //TODO: verifier que la tuile existe, comme pour les fichiers
+                } else {
+                    LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( " specifiant une tuile NoData sans nom" ) );
+                    return NULL;
+                }
+            }
+
+            if (noDataFilePath == "") {
+                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( " sans indication de stockage pour la tuile de noData" ) );
                 return NULL;
             }
 
-            noDataFilePath=pElemNoDataPath->GetText();
-            //Relative Path
-            if ( noDataFilePath.compare ( 0,2,"./" ) ==0 ) {
-                noDataFilePath.replace ( 0,1,parentDir );
-            } else if ( noDataFilePath.compare ( 0,1,"/" ) !=0 ) {
-                noDataFilePath.insert ( 0,"/" );
-                noDataFilePath.insert ( 0,parentDir );
-            }
-            int file = open(noDataFilePath.c_str(),O_RDONLY);
-            if (file < 0) {
-                LOGGER_ERROR(fileName <<_ ( " Level " ) << id <<_ ( " specifiant une tuile NoData impossible a ouvrir" ));
-                return NULL;
-            } else {
-                close(file);
-            }
-
-            /*if (noDataFilePath.empty()){
-                if (!pElemNoDataPath){
-                                    LOGGER_ERROR(fileName <<" Level "<< id <<" specifiant une tuile NoData sans chemin");
-                                    return NULL;
-                                }
-            }*/
+        } else {
+            LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( " sans indication de stockage pour la tuile de noData - Utilisez la balise <nodata>" ) );
+            return NULL;
         }
 
         Level *TL = new Level ( *tm, channels, baseDir, tilesPerWidth, tilesPerHeight,
