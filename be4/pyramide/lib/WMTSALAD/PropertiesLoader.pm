@@ -116,7 +116,25 @@ END {}
 #                                        Group: Constructors                                       #
 ####################################################################################################
 
-# Function: new
+=begin_nd
+
+Constructor: new
+
+<WMTSALAD::PropertiesLoader's> contructor.
+
+Using:
+    (start code)
+    new(file [, filetype])
+    (end code)
+
+Parameters:
+    file - string - Path to the configuration file
+    filetype - string - The type of configuration file (optionnal, default to INI-like)  
+
+Returns:
+    The newly created PropertiesLoader object. 'undef' in case of failure.
+    
+=cut
 sub new {
     my $this = shift;
     my $file = shift;
