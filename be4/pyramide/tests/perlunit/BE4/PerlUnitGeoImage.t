@@ -48,22 +48,22 @@ Log::Log4perl->easy_init({
 });
 
 # My tested class
-use BE4::GeoImage;
+use COMMON::GeoImage;
 
 ######################################################
 
 # GeoImage creation
 
-my $BDP = BE4::GeoImage->new($Bin."/../../images/BDPARCELLAIRE/BDPARCELLAIRE.tif");
+my $BDP = COMMON::GeoImage->new($Bin."/../../images/BDPARCELLAIRE/BDPARCELLAIRE.tif");
 ok (defined $BDP, "BDPARCELLAIRE GeoImage created");
 
-my $BDA = BE4::GeoImage->new($Bin."/../../images/BDALTI/BDALTI.tif");
+my $BDA = COMMON::GeoImage->new($Bin."/../../images/BDALTI/BDALTI.tif");
 ok (defined $BDA, "BDALTI GeoImage created");
 
-my $BDO = BE4::GeoImage->new($Bin."/../../images/BDORTHO/BDORTHO.tif");
+my $BDO = COMMON::GeoImage->new($Bin."/../../images/BDORTHO/BDORTHO.tif");
 ok (defined $BDO, "BDO GeoImage created (with associated mask)");
 
-my $error = BE4::GeoImage->new($Bin."/../../fake/path.tif");
+my $error = COMMON::GeoImage->new($Bin."/../../fake/path.tif");
 ok (! defined $error, "Wrong path detected");
 
 ######################################################

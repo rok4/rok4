@@ -38,18 +38,18 @@
 =begin nd
 File: PyrImageSpec.pm
 
-Class: BE4::PyrImageSpec
+Class: COMMON::PyrImageSpec
 
 Store all image's components.
 
 Using:
     (start code)
-    use BE4::PyrImageSpec;
+    use COMMON::PyrImageSpec;
 
     # PyrImageSpec object creation
 
     # Basic constructor
-    my $objPIS = BE4::PyrImageSpec->new({
+    my $objPIS = COMMON::PyrImageSpec->new({
         compression => "raw",
         sampleformat => "uint",
         bitspersample => 8,
@@ -61,7 +61,7 @@ Using:
     });
 
     # From a code
-    my $objPIS = BE4::PyrImageSpec->new({
+    my $objPIS = COMMON::PyrImageSpec->new({
         formatCode => "TIFF_RAW_INT8",
         samplesperpixel => 3,
         photometric => "rgb",
@@ -82,7 +82,7 @@ Attributes:
 
 ################################################################################
 
-package BE4::PyrImageSpec;
+package COMMON::PyrImageSpec;
 
 use strict;
 use warnings;
@@ -518,7 +518,7 @@ Returns all image's components. Useful for debug.
 
 Example:
     (start code)
-    Object BE4::PyrImageSpec :
+    Object COMMON::PyrImageSpec :
          Global information :
                 - Compression : raw
                 - Compression option : none
@@ -538,7 +538,7 @@ sub exportForDebug {
     
     my $export = "";
     
-    $export .= "\nObject BE4::PyrImageSpec :\n";
+    $export .= "\nObject COMMON::PyrImageSpec :\n";
     $export .= "\t Global information : \n";
     $export .= sprintf "\t\t- Compression : %s\n", $self->{compression};
     $export .= sprintf "\t\t- Compression option : %s\n", $self->{compressionoption};

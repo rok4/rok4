@@ -121,7 +121,7 @@ use Data::Dumper;
 use COMMON::TileMatrixSet;
 use BE4CEPH::Level;
 use COMMON::NoData;
-use BE4::PyrImageSpec;
+use COMMON::PyrImageSpec;
 use COMMON::Pixel;
 use BE4::Forest;
 use COMMON::Commands;
@@ -391,8 +391,6 @@ Function: createLevels
 
 Create all objects Level between the global top and the bottom levels (from data sources) for the new pyramid.
 
-If there are an old pyramid, some levels already exist. We don't create twice the same level.
-
 Parameters (list):
     bottomOrder - integer - Bottom level order
     topOrder - integer - Top level order
@@ -601,7 +599,6 @@ Parameters (list):
 sub writeListPyramid {
     my $self = shift;
     my $forest = shift;
-    my $path_temp = shift;
 
     my $newcachepyramid = $self->getNewDataDir;
     

@@ -48,19 +48,19 @@ Log::Log4perl->easy_init({
 });
 
 # My tested class
-use BE4::ImageSource;
+use COMMON::ImageSource;
 
 ######################################################
 
 # ImageSource creation
 
-my $IS = BE4::ImageSource->new({
+my $IS = COMMON::ImageSource->new({
     path_image => $Bin."/../../images/BDORTHO/",
     srs => "SRS"
 });
 ok (defined $IS, "ImageSource created");
 
-my $error = BE4::ImageSource->new({
+my $error = COMMON::ImageSource->new({
     path_image => $Bin."/../../wrong/path/",
     srs => "SRS"
 });
@@ -68,14 +68,14 @@ ok (! defined $error, "Wrong path detected");
 
 undef $error;
 
-my $error = BE4::ImageSource->new({
+my $error = COMMON::ImageSource->new({
     path_image => $Bin."/../../wrong/path/"
 });
 ok (! defined $error, "Missing SRS detected");
 
 undef $error;
 
-$error = BE4::ImageSource->new({
+$error = COMMON::ImageSource->new({
     path_image => $Bin."/../../images/",
     srs => "SRS"
 });

@@ -110,7 +110,7 @@ use File::Path;
 use Data::Dumper;
 
 # My Module
-use BE4::DataSource;
+use COMMON::DataSource;
 use BE4::Node;
 
 use Log::Log4perl qw(:easy);
@@ -209,7 +209,7 @@ sub _init {
         ERROR("Can not load Forest !");
         return FALSE;
     }
-    if (! defined $objSrc || ref ($objSrc) ne "BE4::DataSource") {
+    if (! defined $objSrc || ref ($objSrc) ne "COMMON::DataSource") {
         ERROR("Can not load DataSource !");
         return FALSE;
     }

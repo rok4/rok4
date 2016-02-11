@@ -48,13 +48,13 @@ Log::Log4perl->easy_init({
 });
 
 # My tested class
-use BE4::Harvesting;
+use COMMON::Harvesting;
 
 ######################################################
 
 # Harvesting creation
 
-my $objHarvesting = BE4::Harvesting->new({
+my $objHarvesting = COMMON::Harvesting->new({
     wms_layer   => "BDD_WLD_WM",
     wms_url     => "http://localhost/wmts/rok4",
     wms_version => "1.3.0",
@@ -100,7 +100,7 @@ is ($request, "http://localhost/wmts/rok4?LAYERS=BDD_WLD_WM&SERVICE=WMS&VERSION=
 
 # Bad parameters
 
-my $objBadHarvesting = BE4::Harvesting->new({
+my $objBadHarvesting = COMMON::Harvesting->new({
     wms_layer   => "BDD_WLD_WM",
     wms_url     => "http://localhost/wmts/rok4",
     wms_version => "1.3.0",
@@ -116,7 +116,7 @@ my $objBadHarvesting = BE4::Harvesting->new({
 ok (! defined $objBadHarvesting, "Wrong 'wms_bgcolor' detected");
 undef $objBadHarvesting;
 
-$objBadHarvesting = BE4::Harvesting->new({
+$objBadHarvesting = COMMON::Harvesting->new({
     wms_layer   => "BDD_WLD_WM",
     wms_url     => "http://localhost/wmts/rok4",
     wms_version => "1.3.0",
@@ -132,7 +132,7 @@ $objBadHarvesting = BE4::Harvesting->new({
 ok (! defined $objBadHarvesting, "Wrong 'wms_format' detected");
 undef $objBadHarvesting;
 
-$objBadHarvesting = BE4::Harvesting->new({
+$objBadHarvesting = COMMON::Harvesting->new({
     wms_layer   => "BDD_WLD_WM",
     wms_url     => "http://localhost/wmts/rok4",
     wms_version => "1.3.0",
@@ -144,7 +144,7 @@ $objBadHarvesting = BE4::Harvesting->new({
 ok (! defined $objBadHarvesting, "Wrong maximum pixel sizes (height AND width) detected");
 undef $objBadHarvesting;
 
-$objBadHarvesting = BE4::Harvesting->new({
+$objBadHarvesting = COMMON::Harvesting->new({
     wms_layer   => "BDD_WLD_WM",
     wms_url     => "http://localhost/wmts/rok4",
     wms_version => "1.3.0",
