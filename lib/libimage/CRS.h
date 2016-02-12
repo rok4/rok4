@@ -173,6 +173,18 @@ public:
     bool isLongLat();
     /**
      * \~french
+     * \brief Renvoit le zone de définition du CRS
+     * \return BoundingBox représentant la zone en EPSG:4326
+     * \~english
+     * \brief Return the definition area of the CRS
+     * \return BoundingBox representing the zone in EPSG:4326
+     */
+    BoundingBox<double> getCrsDefinitionArea() {
+        return definitionArea;
+    }
+        ;
+    /**
+     * \~french
      * \brief Le nombre de mètre par unité du CRS
      * \return rapport entre le mètre et l'unité du CRS
      * \todo Supporter les CRS autres qu'en degré et en mètre

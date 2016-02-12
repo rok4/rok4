@@ -65,6 +65,13 @@ protected:
     CRS* crs5;
     CRS* crs6;
 
+    double bbox1xmin;
+    double bbox1ymin;
+    double bbox1xmax;
+    double bbox1ymax;
+
+
+
 public:
     void setUp();
     void constructors();
@@ -92,6 +99,14 @@ void CppUnitCRS::setUp() {
     crs4 = new CRS ( crs_code4 );
     crs5 = new CRS ( crs_code5 );
     crs6 = new CRS ( crs_code6 );
+
+    bbox1xmin = -180;
+    bbox1ymin = -90;
+    bbox1xmax = 180;
+    bbox1ymax = 90;
+
+
+
 }
 
 void CppUnitCRS::constructors() {
@@ -145,6 +160,13 @@ void CppUnitCRS::getters() {
     CPPUNIT_ASSERT_MESSAGE ( "CRS getIdentifier",crs4->getIdentifier().compare ( "WGS84G" ) ==0 );
     CPPUNIT_ASSERT_MESSAGE ( "CRS getIdentifier",crs5->getIdentifier().compare ( "3857" ) ==0 );
     CPPUNIT_ASSERT_MESSAGE ( "CRS getIdentifier",crs6->getIdentifier().compare ( "3857" ) ==0 );
+
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs1->getCrsDefinitionArea().xmin == bbox1xmin );
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs1->getCrsDefinitionArea().xmax == bbox1xmax );
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs1->getCrsDefinitionArea().ymin == bbox1ymin );
+    CPPUNIT_ASSERT_MESSAGE ( "CRS getCRSDefinitionArea",crs1->getCrsDefinitionArea().ymax == bbox1ymax );
+
+
 }
 
 void CppUnitCRS::setters() {

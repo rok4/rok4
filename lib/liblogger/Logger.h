@@ -76,7 +76,7 @@ class Logger {
         }
 
         /**
-         * Définit la sortie d'un niveau de log.
+         * Définit la sortie d'un niveau de log avant l'execution.
          *
          * Pour désactiver un niveau de log, utiliser un pointeur nul
          * Le même accumulateur peut être utilisé par plusieurs niveau de log.
@@ -87,6 +87,19 @@ class Logger {
          * par un unique thread.
          */
         static void setAccumulator(LogLevel level, Accumulator *A);
+
+        /**
+         * Définit la sortie d'un niveau de log durant l'execution.
+         *
+         * Pour désactiver un niveau de log, utiliser un pointeur nul
+         * Le même accumulateur peut être utilisé par plusieurs niveau de log.
+         *
+         * La classe Logger se charge de détruire les Accumulateurs non utilisés.
+         *
+         * Attention cette fonction n'est pas threadsafe et ne doit être utilisée que
+         * par un unique thread.
+         */
+        static void setCurrentAccumulator(LogLevel level, Accumulator *A);
 
         /**
          * utilisation : Logger(DEBUG) << message

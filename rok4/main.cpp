@@ -75,6 +75,7 @@
 #include "intl.h"
 #include <limits>
 #include "config.h"
+#include "curl/curl.h"
 /* Usage de la ligne de commande */
 
 Rok4Server* W;
@@ -182,7 +183,6 @@ int main ( int argc, char** argv ) {
     int sock = 0;
     reload = true;
     defer_signal = 1;
-
     /* install Signal Handler for Conf Reloadind and Server Shutdown*/
     struct sigaction sa;
     sigemptyset ( &sa.sa_mask );
@@ -201,6 +201,8 @@ int main ( int argc, char** argv ) {
     //  textdomain("Rok4Server");
     bindtextdomain ( DOMAINNAME, getlocalepath().c_str() );
 
+    //CURL initialization - one time for the whole program
+    curl_global_init(CURL_GLOBAL_ALL);
 
     /* the following loop is for fcgi debugging purpose */
     int stopSleep = 0;
@@ -265,6 +267,9 @@ int main ( int argc, char** argv ) {
         rok4KillServer ( W );
         rok4ReloadLogger();
     }
+
+    //CURL clean - one time for the whole program
+    curl_global_cleanup();
 
     rok4KillLogger();
     return 0;
