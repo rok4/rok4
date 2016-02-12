@@ -627,7 +627,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         int32_t maxTileCol=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
         int tilesPerWidth;
         int tilesPerHeight;
-        int pathDepth;
+        int pathDepth = -1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
         std::string noDataFilePath="";
         std::string baseDir;
         Context *context = NULL;
@@ -660,6 +660,16 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             } else if ( baseDir.compare ( 0,1,"/" ) !=0 ) {
                 baseDir.insert ( 0,"/" );
                 baseDir.insert ( 0,parentDir );
+            }
+
+            pElemLvl = hLvl.FirstChild ( "pathDepth" ).Element();
+            if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
+                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": Pas de pathDepth !!" ) );
+                return NULL;
+            }
+            if ( !sscanf ( pElemLvl->GetText(),"%d",&pathDepth ) ) {
+                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": pathDepth=[" ) << pElemLvl->GetText() <<_ ( "] is not an integer." ) );
+                return NULL;
             }
 
             context = new FileContext("");
@@ -808,16 +818,6 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         }
         if ( !sscanf ( pElemLvl->GetText(),"%d",&tilesPerHeight ) ) {
             LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": tilesPerHeight=[" ) << pElemLvl->GetText() <<_ ( "] is not an integer." ) );
-            return NULL;
-        }
-
-        pElemLvl = hLvl.FirstChild ( "pathDepth" ).Element();
-        if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
-            LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": Pas de pathDepth !!" ) );
-            return NULL;
-        }
-        if ( !sscanf ( pElemLvl->GetText(),"%d",&pathDepth ) ) {
-            LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": pathDepth=[" ) << pElemLvl->GetText() <<_ ( "] is not an integer." ) );
             return NULL;
         }
 
