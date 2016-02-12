@@ -57,7 +57,8 @@ private:
 
     std::string   baseDir;
     Context*       context;
-    int           pathDepth;
+    int           pathDepth;        //used only for file context
+    std::string prefix;     //used only for ceph and swift context
     TileMatrix    tm;         // FIXME j'ai des problème de compil que je ne comprends pas si je mets un const ?!
     const Rok4Format::eformat_data format; //format d'image des tuiles
     const int     channels;
@@ -121,7 +122,7 @@ public:
         return tilesPerHeight;
     }
 
-    std::string getFilePath ( int tilex, int tiley );
+    std::string getPath ( int tilex, int tiley );
     std::string getNoDataFilePath() {
         return noDataFile;
     }
@@ -163,7 +164,7 @@ public:
     Level (TileMatrix tm, int channels, std::string baseDir,
             int tilesPerWidth, int tilesPerHeight,
             uint32_t maxTileRow, uint32_t minTileRow, uint32_t maxTileCol, uint32_t minTileCol,
-            int pathDepth, Rok4Format::eformat_data format, std::string noDataFile, Context*& context );
+            int pathDepth, Rok4Format::eformat_data format, std::string noDataFile, Context*& context, std::string prefix );
 
     /*
      * Destructeur

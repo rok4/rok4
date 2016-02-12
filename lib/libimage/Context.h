@@ -55,6 +55,16 @@
 #include <string.h>
 
 /**
+ * \~french \brief Énumération des types de contextes
+ * \~english \brief Available context type
+ */
+enum eContextType {
+    FILECONTEXT,
+    CEPHCONTEXT,
+    SWIFTCONTEXT
+};
+
+/**
  * \author Institut national de l'information géographique et forestière
  * \~french
  * \brief Création d'un contexte de stockage abstrait 
@@ -78,6 +88,7 @@ public:
 
     virtual bool openToWrite(std::string name) = 0;
     virtual bool closeToWrite(std::string name) = 0;
+    virtual eContextType getType() = 0;
 
     /**
      * \~french

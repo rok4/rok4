@@ -89,7 +89,7 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
     }
     uint32_t tileSize = *((uint32_t*) uint32tab);
     tile_size = tileSize;
-    size = tileSize;
+    size = tile_size;
 
     // La taille de la tuile ne doit pas exceder un seuil
     // Objectif : gerer le cas de fichiers TIFF non conformes aux specs du cache

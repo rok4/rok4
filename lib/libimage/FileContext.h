@@ -83,6 +83,7 @@ public:
     bool read(uint8_t* data, int offset, int size, std::string name);
     bool write(uint8_t* data, int offset, int size, std::string name);
     bool writeFull(uint8_t* data, int size, std::string name);
+    eContextType getType();
 
     virtual bool openToWrite(std::string name) {
         std::string fullName = root_dir + name;
