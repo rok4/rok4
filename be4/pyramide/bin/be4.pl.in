@@ -90,7 +90,7 @@ use lib "$Bin/../lib/perl5";
 use BE4::PropertiesLoader;
 use BE4::Pyramid;
 use COMMON::DataSourceLoader;
-use BE4::Forest;
+use COMMON::Forest;
 
 ################################################################################
 # Constantes
@@ -455,10 +455,10 @@ Steps in order, using parameters :
     - create the Pyramid object : <BE4::Pyramid::new>
     - load data sources : <COMMON::DataSourceLoader::new>
     - update levels for this Pyramid object : <BE4::Pyramid::updateLevels>
-    - create the Forest object : <BE4::Forest::new>
+    - create the Forest object : <COMMON::Forest::new>
     - write (initialization) the pyramid's directories tree and its list : <BE4::Pyramid::writeCachePyramid> and <BE4::Pyramid::writeListPyramid>
     - write the pyramid's descriptor : <BE4::Pyramid::writeConfPyramid>
-    - compute trees (write scripts) : <BE4::Forest::computeGraphs>
+    - compute trees (write scripts) : <COMMON::Forest::computeGraphs>
 =cut
 sub doIt {
 
@@ -514,10 +514,11 @@ sub doIt {
     
     ALWAYS(">>> Load Forest ...");
   
-    $objForest = BE4::Forest->new(
+    $objForest = COMMON::Forest->new(
         $objPyramid,
         $objDSL,
-        $params->{process}
+        $params->{process},
+        'FS'
     );
   
     if (! defined $objForest) {
@@ -742,9 +743,9 @@ Examples:
 
 Topic: process
 
-For more informations about properties, see <BE4::Forest> and <BE4::Commands>.
+For more informations about properties, see <COMMON::Forest> and <BE4::Commands>.
 
-    job_number - Level of parallelization for scripts. Distribution details are different according to the kind of graph (see <BE4::QTree> and <BE4::Graph>). Mandatory.
+    job_number - Level of parallelization for scripts. Distribution details are different according to the kind of graph (see <COMMON::QTree> and <BE4::Graph>). Mandatory.
 
     path_temp - Temporary directory path proper to each script : temporary files are written in *path_temp/pyr_name_new/SCRIPT_ID*.
 

@@ -48,7 +48,7 @@ Log::Log4perl->easy_init({
 use FindBin qw($Bin); # absolute path of the present testfile in $Bin
 
 # My tested class
-use BE4::Forest;
+use COMMON::Forest;
 
 #Other Used Class
 use COMMON::DataSourceLoader;
@@ -92,7 +92,7 @@ my $DSL = COMMON::DataSourceLoader->new({ filepath_conf => $Bin."/../../sources/
 
 ok ($pyramid->updateLevels($DSL,undef),"DataSourcesLoader updated and QTree Pyramid's levels created");
 
-my $forest = BE4::Forest->new($pyramid,$DSL,{
+my $forest = COMMON::Forest->new($pyramid,$DSL,{
     job_number => 16,
     path_temp => $Bin."/../../temp/",
     path_temp_common => $Bin."/../../temp/",
@@ -137,7 +137,7 @@ $pyramid = BE4::Pyramid->new({
 
 ok ($pyramid->updateLevels($DSL,undef),"DataSourcesLoader updated and Graph Pyramid's levels created");
 
-$forest = BE4::Forest->new($pyramid,$DSL,{
+$forest = COMMON::Forest->new($pyramid,$DSL,{
     job_number => 16,
     path_temp => $Bin."/../../temp/",
     path_temp_common => $Bin."/../../temp/",

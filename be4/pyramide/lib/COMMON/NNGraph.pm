@@ -38,7 +38,7 @@
 =begin nd
 File: NNGraph.pm
 
-Class: BE4::NNGraph
+Class: COMMON::NNGraph
 
 Representation of a "nearest neighbour" pyramid : pyramid's image = <Node>.
 
@@ -58,10 +58,10 @@ Link between a node and his children or his father is not trivial. It is calcula
 
 Using:
     (start code)
-    use BE4::NNGraph;
+    use COMMON::NNGraph;
 
     # NNGraph object creation
-    my $objNNGraph = BE4::QTree->new($objForest, $objDataSource, $objPyramid, $objCommands);
+    my $objNNGraph = COMMON::QTree->new($objForest, $objDataSource, $objPyramid, $objCommands);
 
     ...
 
@@ -88,7 +88,7 @@ Attributes:
 
         cX : node's column
         rX : node's row
-        nX : BE4::Node
+        nX : COMMON::GraphNode
         (end code)
         
     bottomID - string - Bottom level identifiant
@@ -97,9 +97,7 @@ Attributes:
 
 ################################################################################
 
-package BE4::NNGraph;
-
-use Geo::OSR;
+package COMMON::NNGraph;
 
 use strict;
 use warnings;
@@ -111,7 +109,8 @@ use Data::Dumper;
 
 # My Module
 use COMMON::DataSource;
-use BE4::Node;
+use COMMON::GraphNode;
+use COMMON::ProxyGDAL;
 
 use Log::Log4perl qw(:easy);
 
@@ -205,7 +204,7 @@ sub _init {
     TRACE;
 
     # mandatory parameters !
-    if (! defined $objForest || ref ($objForest) ne "BE4::Forest") {
+    if (! defined $objForest || ref ($objForest) ne "COMMON::Forest") {
         ERROR("Can not load Forest !");
         return FALSE;
     }
@@ -255,31 +254,12 @@ sub _load {
     # le srs de la pyramide. Si les srs sont identiques on laisse undef.
     my $ct = undef;
     
-    my $srsini= new Geo::OSR::SpatialReference;
     if ($tms->getSRS() ne $src->getSRS()){
-        eval { $srsini->ImportFromProj4('+init='.$src->getSRS().' +wktext'); };
-        if ($@) { 
-            eval { $srsini->ImportFromProj4('+init='.lc($src->getSRS()).' +wktext'); };
-            if ($@) { 
-                ERROR($@);
-                ERROR(sprintf "Impossible to initialize the initial spatial coordinate system (%s) !",
-                      $src->getSRS());
-                return FALSE;
-            }
+        $ct = COMMON::ProxyGDAL::coordinateTransformationFromSpatialReference($src->getSRS(), $tms->getSRS());
+        if (! defined $ct) {
+            ERROR(sprintf "Cannot instanciate the coordinate transformation object %s->%s", $src->getSRS(), $tms->getSRS());
+            return FALSE;
         }
-        
-        my $srsfin= new Geo::OSR::SpatialReference;
-        eval { $srsfin->ImportFromProj4('+init='.$tms->getSRS().' +wktext'); };
-        if ($@) {
-            eval { $srsfin->ImportFromProj4('+init='.lc($tms->getSRS()).' +wktext'); };
-            if ($@) {
-                ERROR($@);
-                ERROR(sprintf "Impossible to initialize the destination spatial coordinate system (%s) !",
-                      $tms->getSRS());
-                return FALSE;
-            }
-        }
-        $ct = new Geo::OSR::CoordinateTransformation($srsini, $srsfin);
     }
 
     # identifier les noeuds du niveau de base à mettre à jour et les associer aux images sources:
@@ -354,11 +334,12 @@ sub identifyBottomNodes {
                             next;
                         }
                         # Create a new Node
-                        my $node = BE4::Node->new({
+                        my $node = COMMON::GraphNode->new({
                             i => $i,
                             j => $j,
                             tm => $tm,
                             graph => $self,
+                            type => $self->{forest}->getStorageType()
                         });
                         if (! defined $node) { 
                             ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.",
@@ -375,11 +356,12 @@ sub identifyBottomNodes {
                             next;
                         }
                         # Create a new Node
-                        my $node = BE4::Node->new({
+                        my $node = COMMON::GraphNode->new({
                             i => $i,
                             j => $j,
                             tm => $tm,
                             graph => $self,
+                            type => $self->{forest}->getStorageType()
                         });
                         if (! defined $node) { 
                             ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.",
@@ -394,21 +376,18 @@ sub identifyBottomNodes {
         }
     } elsif (defined $datasource->getExtent) {
         # We have just a WMS service as source. We use extent to determine bottom tiles
-        my $convertExtent = $datasource->getExtent->Clone();
-        if (defined $ct) {
-            eval { $convertExtent->Transform($ct); };
-            if ($@) { 
-                ERROR(sprintf "Cannot convert extent for the datasource : %s",$@);
-                return FALSE;
-            }
+        my $convertExtent = COMMON::ProxyGDAL::getConvertedGeometry($datasource->getExtent(), $ct);
+        if (! defined $convertExtent) {
+            ERROR(sprintf "Cannot convert extent for the datasource");
+            return FALSE;
         }
+
+        my @convBbox = COMMON::ProxyGDAL::getBbox($convertExtent); # (xmin,xmax,ymin,ymax)
+        DEBUG("BBox convertie de l'extent de datasource @convBbox");
         
-        my $bboxref = $convertExtent->GetEnvelope(); #bboxref = [xmin,xmax,ymin,ymax]
+        $self->updateBBox($convBbox[0],$convBbox[2],$convBbox[1],$convBbox[3]);
         
-        $self->updateBBox($bboxref->[0],$bboxref->[2],$bboxref->[1],$bboxref->[3]);
-        
-        my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices(
-            $bboxref->[0],$bboxref->[2],$bboxref->[1],$bboxref->[3],$TPW,$TPH);
+        my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices($convBbox[0],$convBbox[2],$convBbox[1],$convBbox[3],$TPW,$TPH);
         
         for (my $i = $iMin; $i <= $iMax; $i++) {
             for (my $j = $jMin; $j <= $jMax; $j++) {
@@ -421,15 +400,17 @@ sub identifyBottomNodes {
                     $xmax,$ymin,
                     $xmin,$ymin;
 
-                my $OGRtile = Geo::OGR::Geometry->create(WKT=>$WKTtile);
-                if ($OGRtile->Intersect($convertExtent)){
+                my $OGRtile = COMMON::ProxyGDAL::geometryFromWKT($WKTtile);
+
+                if (COMMON::ProxyGDAL::isIntersected($OGRtile, $convertExtent)) {
                     my $nodeKey = sprintf "%s_%s", $i, $j;
                     # Create a new Node
-                    my $node = BE4::Node->new({
+                    my $node = COMMON::GraphNode->new({
                         i => $i,
                         j => $j,
                         tm => $tm,
                         graph => $self,
+                        type => $self->{forest}->getStorageType()
                     });
                     if (! defined $node) { 
                         ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $self->{bottomID}, $i, $j);
@@ -465,11 +446,12 @@ sub identifyBottomNodes {
             $self->updateBBox($xmin,$ymin,$xmax,$ymax);
             
             # Create a new Node
-            my $node = BE4::Node->new({
+            my $node = COMMON::GraphNode->new({
                 i => $i,
                 j => $j,
                 tm => $tm,
                 graph => $self,
+                type => $self->{forest}->getStorageType()
             });
             if (! defined $node) { 
                 ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $self->{bottomID}, $i, $j);
@@ -542,11 +524,12 @@ sub identifyAboveNodes {
                         my $idxkey = sprintf "%s_%s",$i,$j;
                         my $newnode = undef;
                         if (! defined $self->{nodes}->{$targetTm->getID}->{$idxkey}) {
-                            $newnode = new BE4::Node({
+                            $newnode = new COMMON::GraphNode({
                                 i => $i,
                                 j => $j,
                                 tm => $targetTm,
                                 graph => $self,
+                                type => $self->{forest}->getStorageType()
                             });
                             ## intersection avec la bbox des données initiales
                             if ( $newnode->isBboxIntersectingNodeBbox($self->getBbox())) {
@@ -586,30 +569,30 @@ sub computeYourself {
     my $src = $self->{datasource};
     my $tms = $self->getPyramid()->getTileMatrixSet();
   
-   #Initialisation
-   my $Finisher_Index = 0;
-   # boucle sur tous les niveaux en partant de ceux du bas
-   for(my $i = $src->getBottomOrder; $i <= $src->getTopOrder; $i++) {
-       # boucle sur tous les noeuds du niveau
-       my $levelID = $tms->getIDfromOrder($i);
-       foreach my $node ($self->getNodesOfLevel($levelID)) {
-           # on détermine dans quel script on l'écrit en se basant sur les poids
-           my @ScriptsOfLevel = $self->getScriptsOfLevel($levelID);
-           my @WeightsOfLevel = map {$_->getWeight();} @ScriptsOfLevel ;
-           my $script_index = COMMON::Array::minArrayIndex(0,@WeightsOfLevel);
-           my $script = $ScriptsOfLevel[$script_index];
-           # on stocke l'information dans l'objet node
-           $node->setScript($script);
-           # on détermine le script à ecrire
-           my ($c,$w) ;
-           if ($self->getDataSource->hasHarvesting) {
+    #Initialisation
+    my $Finisher_Index = 0;
+    # boucle sur tous les niveaux en partant de ceux du bas
+    for(my $i = $src->getBottomOrder; $i <= $src->getTopOrder; $i++) {
+        # boucle sur tous les noeuds du niveau
+        my $levelID = $tms->getIDfromOrder($i);
+        foreach my $node ($self->getNodesOfLevel($levelID)) {
+            # on détermine dans quel script on l'écrit en se basant sur les poids
+            my @ScriptsOfLevel = $self->getScriptsOfLevel($levelID);
+            my @WeightsOfLevel = map {$_->getWeight();} @ScriptsOfLevel ;
+            my $script_index = COMMON::Array::minArrayIndex(0,@WeightsOfLevel);
+            my $script = $ScriptsOfLevel[$script_index];
+            # on stocke l'information dans l'objet node
+            $node->setScript($script);
+            # on détermine le script à ecrire
+            my ($c,$w) ;
+            if ($self->getDataSource->hasHarvesting) {
                 # Datasource has a WMS service : we have to use it
-                ($c,$w) = $self->{commands}->wms2work($node,$self->getDataSource->getHarvesting);
+                ($c,$w) = COMMON::Commands::wms2work($node,$self->getDataSource->getHarvesting);
                 if (! defined $c) {
                     ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName());
                     return FALSE;
                 }
-           } else {
+            } else {
                 if ($i == $src->getBottomOrder) {
                     # on utilise mergeNtiff pour le niveau du bas (à partir des images sources)
                     ($c,$w) = $self->{commands}->mergeNtiff($node);
@@ -623,31 +606,29 @@ sub computeYourself {
                     if ($w == -1) {
                         ERROR(sprintf "Cannot compose decimateNtiff command for the node %s.",$node->getWorkBaseName());
                         return FALSE;
-                    }                    
+                    }
                 }
-           }
-           # on met à jour les poids
-           $script->addWeight($w);
-           # on ecrit la commande dans le fichier
-           $script->write($c);
-                   
-           # final script with all tiff2tile commands
-           # on ecrit dans chacun des scripts de manière tournante
-           my $finisher = $self->getForest()->getScript($Finisher_Index);
-           ($c,$w) = $self->{commands}->work2cache($node,"\${ROOT_TMP_DIR}/".$node->getScript()->getID());
-           # on ecrit la commande dans le fichier
-           $finisher->write($c);
-           #on met à jour l'index
-           if ($Finisher_Index == $self->getForest()->getSplitNumber() - 1) {
-               $Finisher_Index = 0;
-           } else {
-               $Finisher_Index ++;
-           }
+            }
+            # on met à jour les poids
+            $script->addWeight($w);
+            # on ecrit la commande dans le fichier
+            $script->write($c);
 
-       }
-   }
-    
-    TRACE;
+            # final script with all tiff2tile commands
+            # on ecrit dans chacun des scripts de manière tournante
+            my $finisher = $self->getForest()->getScript($Finisher_Index);
+            ($c,$w) = $self->{commands}->work2cache($node,"\${ROOT_TMP_DIR}/".$node->getScript()->getID());
+            # on ecrit la commande dans le fichier
+            $finisher->write($c);
+            #on met à jour l'index
+            if ($Finisher_Index == $self->getForest()->getSplitNumber() - 1) {
+                $Finisher_Index = 0;
+            } else {
+                $Finisher_Index ++;
+            }
+
+        }
+    }
     
     return TRUE;
 };

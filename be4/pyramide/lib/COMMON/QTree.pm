@@ -38,7 +38,7 @@
 =begin nd
 File: QTree.pm
 
-Class: BE4::QTree
+Class: COMMON::QTree
 
 Representation of a quad tree image pyramid : pyramid's image = <Node>
 
@@ -66,10 +66,10 @@ Link between a node and his children or his father is trivial, and needn't to be
 
 Using:
     (start code)
-    use BE4::QTree;
+    use COMMON::QTree;
 
     # QTree object creation
-    my $objQTree = BE4::QTree->new($objForest, $objDataSource, $objPyramid, $objCommands);
+    my $objQTree = COMMON::QTree->new($objForest, $objDataSource, $objPyramid, $objCommands);
 
     ...
 
@@ -96,7 +96,7 @@ Attributes:
 
         cX : node's column
         rX : node's row
-        nX : BE4::Node
+        nX : COMMON::GraphNode
         (end code)
 
     cutLevelID - string - Cut level identifiant. To parallelize work, split scripts will generate cache from the bottom to this level. Script finisher will be generate from this above, to top.
@@ -106,18 +106,16 @@ Attributes:
 
 ################################################################################
 
-package BE4::QTree;
+package COMMON::QTree;
 
 use strict;
 use warnings;
 
 use Math::BigFloat;
-use Geo::OSR;
-use Geo::OGR;
 use Data::Dumper;
 
 use COMMON::DataSource;
-use BE4::Node;
+use COMMON::GraphNode;
 use COMMON::Array;
 
 use Log::Log4perl qw(:easy);
@@ -213,20 +211,20 @@ sub _init {
     TRACE;
 
     # mandatory parameters !
-    if (! defined $objForest || ref ($objForest) ne "BE4::Forest") {
-        ERROR("Can not load Forest !");
+    if (! defined $objForest || ref ($objForest) ne "COMMON::Forest") {
+        ERROR("Cannot load Forest !");
         return FALSE;
     }
     if (! defined $objSrc || ref ($objSrc) ne "COMMON::DataSource") {
-        ERROR("Can not load DataSource !");
+        ERROR("Cannot load DataSource !");
         return FALSE;
     }
-    if (! defined $objPyr || ref ($objPyr) ne "BE4::Pyramid") {
-        ERROR("Can not load Pyramid !");
+    if (! defined $objPyr || (ref ($objPyr) ne "BE4::Pyramid" && ref ($objPyr) ne "BE4CEPH::Pyramid")) {
+        ERROR("Cannot load Pyramid !");
         return FALSE;
     }
-    if (! defined $objCommands || ref ($objCommands) ne "BE4::Commands") {
-        ERROR("Can not load Commands !");
+    if (! defined $objCommands || (ref ($objCommands) ne "BE4::Commands" && ref ($objCommands) ne "BE4CEPH::Commands")) {
+        ERROR("Cannot load Commands !");
         return FALSE;
     }
 
@@ -261,31 +259,12 @@ sub _load {
     # le srs de la pyramide. Si les srs sont identiques on laisse undef.
     my $ct = undef;
     
-    my $srsini= new Geo::OSR::SpatialReference;
     if ($tms->getSRS() ne $src->getSRS()){
-        eval { $srsini->ImportFromProj4('+init='.$src->getSRS().' +wktext'); };
-        if ($@) { 
-            eval { $srsini->ImportFromProj4('+init='.lc($src->getSRS()).' +wktext'); };
-            if ($@) { 
-                ERROR($@);
-                ERROR(sprintf "Impossible to initialize the initial spatial coordinate system (%s) !",
-                      $src->getSRS());
-                return FALSE;
-            }
+        $ct = COMMON::ProxyGDAL::coordinateTransformationFromSpatialReference($src->getSRS(), $tms->getSRS());
+        if (! defined $ct) {
+            ERROR(sprintf "Cannot instanciate the coordinate transformation object %s->%s", $src->getSRS(), $tms->getSRS());
+            return FALSE;
         }
-        
-        my $srsfin= new Geo::OSR::SpatialReference;
-        eval { $srsfin->ImportFromProj4('+init='.$tms->getSRS().' +wktext'); };
-        if ($@) {
-            eval { $srsfin->ImportFromProj4('+init='.lc($tms->getSRS()).' +wktext'); };
-            if ($@) {
-                ERROR($@);
-                ERROR(sprintf "Impossible to initialize the destination spatial coordinate system (%s) !",
-                      $tms->getSRS());
-                return FALSE;
-            }
-        }
-        $ct = new Geo::OSR::CoordinateTransformation($srsini, $srsfin);
     }
 
     # identifier les noeuds du niveau de base à mettre à jour et les associer aux images sources:
@@ -321,8 +300,6 @@ Parameters (list):
 sub identifyBottomNodes {
     my $self = shift;
     my $ct = shift;
-    
-    TRACE();
     
     my $bottomID = $self->{bottomID};
     my $tm = $self->{pyramid}->getTileMatrixSet->getTileMatrix($bottomID);
@@ -360,11 +337,12 @@ sub identifyBottomNodes {
                             next;
                         }
                         # Create a new Node
-                        my $node = BE4::Node->new({
+                        my $node = COMMON::GraphNode->new({
                             i => $i,
                             j => $j,
                             tm => $tm,
                             graph => $self,
+                            type => $self->{forest}->getStorageType()
                         });
                         if (! defined $node) { 
                             ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.",
@@ -381,11 +359,12 @@ sub identifyBottomNodes {
                             next;
                         }
                         # Create a new Node
-                        my $node = BE4::Node->new({
+                        my $node = COMMON::GraphNode->new({
                             i => $i,
                             j => $j,
                             tm => $tm,
                             graph => $self,
+                            type => $self->{forest}->getStorageType()
                         });
                         if (! defined $node) { 
                             ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.",
@@ -400,21 +379,18 @@ sub identifyBottomNodes {
         }
     } elsif (defined $datasource->getExtent) {
         # We have just a WMS service as source. We use extent to determine bottom tiles
-        my $convertExtent = $datasource->getExtent->Clone();
-        if (defined $ct) {
-            eval { $convertExtent->Transform($ct); };
-            if ($@) { 
-                ERROR(sprintf "Cannot convert extent for the datasource : %s",$@);
-                return FALSE;
-            }
+        my $convertExtent = COMMON::ProxyGDAL::getConvertedGeometry($datasource->getExtent(), $ct);
+        if (! defined $convertExtent) {
+            ERROR(sprintf "Cannot convert extent for the datasource");
+            return FALSE;
         }
+
+        my @convBbox = COMMON::ProxyGDAL::getBbox($convertExtent); # (xmin,xmax,ymin,ymax)
+        DEBUG("BBox convertie de l'extent de datasource @convBbox");
         
-        my $bboxref = $convertExtent->GetEnvelope(); #bboxref = [xmin,xmax,ymin,ymax]
+        $self->updateBBox($convBbox[0],$convBbox[2],$convBbox[1],$convBbox[3]);
         
-        $self->updateBBox($bboxref->[0],$bboxref->[2],$bboxref->[1],$bboxref->[3]);
-        
-        my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices(
-            $bboxref->[0],$bboxref->[2],$bboxref->[1],$bboxref->[3],$TPW,$TPH);
+        my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices($convBbox[0],$convBbox[2],$convBbox[1],$convBbox[3],$TPW,$TPH);
         
         for (my $i = $iMin; $i <= $iMax; $i++) {
             for (my $j = $jMin; $j <= $jMax; $j++) {
@@ -427,15 +403,17 @@ sub identifyBottomNodes {
                     $xmax,$ymin,
                     $xmin,$ymin;
 
-                my $OGRtile = Geo::OGR::Geometry->create(WKT=>$WKTtile);
-                if ($OGRtile->Intersect($convertExtent)){
+                my $OGRtile = COMMON::ProxyGDAL::geometryFromWKT($WKTtile);
+
+                if (COMMON::ProxyGDAL::isIntersected($OGRtile, $convertExtent)) {
                     my $nodeKey = sprintf "%s_%s", $i, $j;
                     # Create a new Node
-                    my $node = BE4::Node->new({
+                    my $node = COMMON::GraphNode->new({
                         i => $i,
                         j => $j,
                         tm => $tm,
                         graph => $self,
+                        type => $self->{forest}->getStorageType()
                     });
                     if (! defined $node) { 
                         ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $self->{bottomID}, $i, $j);
@@ -471,11 +449,12 @@ sub identifyBottomNodes {
             $self->updateBBox($xmin,$ymin,$xmax,$ymax);
             
             # Create a new Node
-            my $node = BE4::Node->new({
+            my $node = COMMON::GraphNode->new({
                 i => $i,
                 j => $j,
                 tm => $tm,
-                graph => $self
+                graph => $self,
+                type => $self->{forest}->getStorageType()
             });
             if (! defined $node) { 
                 ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $self->{bottomID}, $i, $j);
@@ -521,11 +500,12 @@ sub identifyAboveNodes {
                     next;
                 }
                 # Create a new Node
-                my $node = BE4::Node->new({
+                my $node = COMMON::GraphNode->new({
                     i => int($node->getCol/2),
                     j => int($node->getRow/2),
                     tm => $tms->getTileMatrix($aboveLevelID),
                     graph => $self,
+                    type => $self->{forest}->getStorageType()
                 });
                 if (! defined $node) { 
                     ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.",
@@ -560,8 +540,6 @@ Three steps:
 =cut
 sub computeYourself {
     my $self = shift;
-
-    TRACE;
     
     my @topLevelNodes = $self->getNodesOfTopLevel;
     
@@ -616,7 +594,7 @@ Recursive method, which allow to browse tree downward.
     - the node does not belong to the bottom level -> <computeBranch> on each child, then <computeAboveImage>
 
 Parameters (list):
-    node - <Node> - Node to compute.
+    node - <COMMON::GraphNode> - Node to compute.
 =cut
 sub computeBranch {
     
@@ -624,8 +602,6 @@ sub computeBranch {
     my $node = shift;
 
     my $weight = 0;
-
-    TRACE;
     
     my $res = '';
     my @childList = $self->getChildren($node);
@@ -661,10 +637,10 @@ Function: computeBottomImage
 Treats a bottom node : determine code or weight.
 
 2 cases:
-    - lossless compression and images as data -> <Commands::mergeNtiff>
-    - reprojection or lossy compression or just a WMS service as data -> <Commands::wms2work>
+    - from georeferenced images -> <Commands::mergeNtiff>
+    - from a WMS service -> <COMMON::Commands::wms2work>
 
-Then the work image is formatted and move to the final place thanks to <Commands::work2cache>.
+Then the work image is formatted and move to the final place thanks to <COMMON::Commands::work2cache>.
 
 Parameters (list):
     node - <Node> - Bottom level's node, to treat.
@@ -674,8 +650,6 @@ sub computeBottomImage {
     
     my $self = shift;
     my $node = shift;
-
-    TRACE;
     
     # Temporary weight and code
     my ($c,$w);
@@ -685,7 +659,7 @@ sub computeBottomImage {
     
     if ($self->getDataSource->hasHarvesting) {
         # Datasource has a WMS service : we have to use it
-        ($c,$w) = $self->{commands}->wms2work($node,$self->getDataSource->getHarvesting);
+        ($c,$w) = COMMON::Commands::wms2work($node,$self->getDataSource->getHarvesting);
         if (! defined $c) {
             ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName());
             return FALSE;
@@ -1111,7 +1085,7 @@ sub exportForDebug {
     
     my $export = "";
     
-    $export .= sprintf "\nObject BE4::QTree :\n";
+    $export .= sprintf "\nObject COMMON::QTree :\n";
     $export .= sprintf "\t Levels ID:\n";
     $export .= sprintf "\t\t- bottom : %s\n",$self->{bottomID};
     $export .= sprintf "\t\t- cut : %s\n",$self->{cutLevelID};

@@ -148,8 +148,6 @@ use warnings;
 use Log::Log4perl qw(:easy);
 use XML::LibXML;
 
-use Geo::OSR;
-
 use File::Spec::Link;
 use File::Basename;
 use File::Spec;
@@ -164,7 +162,7 @@ use BE4::Level;
 use COMMON::NoData;
 use COMMON::PyrImageSpec;
 use COMMON::Pixel;
-use BE4::Forest;
+use COMMON::Forest;
 use COMMON::Base36;
 
 require Exporter;

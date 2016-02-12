@@ -38,7 +38,7 @@
 =begin nd
 File: Commands.pm
 
-Class: BE4::Commands
+Class: BE4CEPH::Commands
 
 Configure and assemble commands used to generate pyramid's images.
 
@@ -48,17 +48,17 @@ All schemes in this page respect this legend :
 
 Using:
     (start code)
-    use BE4::Commands;
+    use BE4CEPH::Commands;
 
     # Commands object creation
-    my $objCommands = BE4::Commands->new(
+    my $objCommands = BE4CEPH::Commands->new(
         $objPyramid, # BE4::Pyramid object
         TRUE, # useMasks
     );
     (end code)
 
 Attributes:
-    pyramid - <Pyramid> - Allowed to know output format specifications and configure commands.
+    pyramid - <BE4CEPH::Pyramid> - Allowed to know output format specifications and configure commands.
     mntConfDir - string - Directory, where to write mergeNtiff configuration files.
     dntConfDir - string - Directory, where to write decimateNtiff configuration files.
     useMasks - boolean - If TRUE, all generating tools (mergeNtiff, merge4tiff...) use masks if present and generate a resulting mask. This processing is longer, that's why default behaviour is without mask.
@@ -66,7 +66,7 @@ Attributes:
 
 ################################################################################
 
-package BE4::Commands;
+package BE4CEPH::Commands;
 
 use strict;
 use warnings;
@@ -77,8 +77,9 @@ use File::Path;
 use Data::Dumper;
 
 use COMMON::Harvesting;
-use BE4::Level;
-use BE4::Script;
+use BE4CEPH::Level;
+use COMMON::GraphScript;
+use COMMON::GraphNode;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -102,8 +103,6 @@ use constant MERGE4TIFF_W => 1;
 use constant MERGENTIFF_W => 4;
 # Constant: MERGENTIFF_W
 use constant DECIMATENTIFF_W => 3;
-# Constant: CACHE2WORK_W
-use constant CACHE2WORK_W => 1;
 # Constant: WGET_W
 use constant WGET_W => 35;
 # Constant: TIFF2TILE_W
@@ -113,7 +112,6 @@ use constant TIFF2TILE_W => 1;
 Constant: BASHFUNCTIONS
 Define bash functions, used to factorize and reduce scripts :
     - Wms2work
-    - Cache2work
     - Work2cache
     - MergeNtiff
     - Merge4tiff
@@ -122,73 +120,6 @@ Define bash functions, used to factorize and reduce scripts :
 my $BASHFUNCTIONS   = <<'FUNCTIONS';
 
 declare -A RM_IMGS
-
-Wms2work () {
-    local dir=$1
-    local harvest_ext=$2
-    local final_ext=$3
-    local nbTiles=$4
-    local min_size=$5
-    local url=$6
-    shift 6
-
-    local size=0
-
-    mkdir $dir
-
-    for i in `seq 1 $#`;
-    do
-        nameImg=`printf "$dir/img%.5d.$harvest_ext" $i`
-        local count=0; local wait_delay=1
-        while :
-        do
-            let count=count+1
-            wget --no-verbose -O $nameImg "$url&BBOX=$1"
-
-            if [ $? == 0 ] ; then
-                if [ "$harvest_ext" == "png" ] ; then
-                    if pngcheck $nameImg 1>/dev/null ; then break ; fi
-                else
-                    if tiffck $nameImg 1>/dev/null ; then break ; fi
-                fi
-            fi
-            
-            echo "Failure $count : wait for $wait_delay s"
-            sleep $wait_delay
-            let wait_delay=wait_delay*2
-            if [ 3600 -lt $wait_delay ] ; then 
-                let wait_delay=3600
-            fi
-        done
-        let size=`stat -c "%s" $nameImg`+$size
-
-        shift
-    done
-    
-    if [ "$size" -le "$min_size" ] ; then
-        RM_IMGS["$dir.$final_ext"]="1"
-
-        rm -rf $dir
-        return
-    fi
-
-    if [ "$nbTiles" != "1 1" ] ; then
-        composeNtiff -g $nbTiles -s $dir/ -c zip $dir.$final_ext
-        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-    else
-        mv $dir/img00001.$harvest_ext $dir.$final_ext
-    fi
-
-    rm -rf $dir
-}
-
-Cache2work () {
-    local imgSrc=$1
-    local workBaseName=$2
-
-    cache2work __c2w__ $imgSrc $workBaseName.tif
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-}
 
 Work2cache () {
     local level=$1
@@ -200,16 +131,11 @@ Work2cache () {
     
     
     if [[ ! ${RM_IMGS[$workDir/$workImgName]} ]] ; then
-        
-        local dir=`dirname ${PYR_DIR}/$imgName`
-        
-        if [ -r $workDir/$workImgName ] ; then rm -f ${PYR_DIR}/$imgName ; fi
-        if [ ! -d $dir ] ; then mkdir -p $dir ; fi
-            
-        tiff2tile $workDir/$workImgName __t2tI__ ${PYR_DIR}/$imgName
+             
+        tiff2tile $workDir/$workImgName __t2tI__ -pool ${PYR_POOL} $imgName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
-        echo "0/$imgName" >> ${TMP_LIST_FILE}
+        echo "$imgName" >> ${TMP_LIST_FILE}
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
         if [ "$level" == "$TOP_LEVEL" ] ; then
@@ -221,15 +147,10 @@ Work2cache () {
         if [ $workMskName ] ; then
             
             if [ $mskName ] ; then
-                
-                dir=`dirname ${PYR_DIR}/$mskName`
-                
-                if [ -r $workDir/$workMskName ] ; then rm -f ${PYR_DIR}/$mskName ; fi
-                if [ ! -d $dir ] ; then mkdir -p $dir ; fi
                     
-                tiff2tile $workDir/$workMskName __t2tM__ ${PYR_DIR}/$mskName
+                tiff2tile $workDir/$workMskName __t2tM__ -pool ${PYR_POOL} $mskName
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-                echo "0/$mskName" >> ${TMP_LIST_FILE}
+                echo "$mskName" >> ${TMP_LIST_FILE}
                 
             fi
             
@@ -244,48 +165,25 @@ Work2cache () {
 
 MergeNtiff () {
     local config=$1
-    local bgI=$2
-    local bgM=$3
     
     mergeNtiff -f ${MNT_CONF_DIR}/$config -r ${TMP_DIR}/ __mNt__
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     
     rm -f ${MNT_CONF_DIR}/$config
-    
-    if [ $bgI ] ; then
-        rm -f ${TMP_DIR}/$bgI
-    fi
-    
-    if [ $bgM ] ; then
-        rm -f ${TMP_DIR}/$bgM
-    fi
 }
 
 DecimateNtiff () {
     local config=$1
-    local bgI=$2
-    local bgM=$3
     
     decimateNtiff -f ${DNT_CONF_DIR}/$config __dNt__
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     
     rm -f ${DNT_CONF_DIR}/$config
-    
-    if [ $bgI ] ; then
-        rm -f ${TMP_DIR}/$bgI
-    fi
-    
-    if [ $bgM ] ; then
-        rm -f ${TMP_DIR}/$bgM
-    fi
 }
 
 Merge4tiff () {
     local imgOut=$1
     local mskOut=$2
-    shift 2
-    local imgBg=$1
-    local mskBg=$2
     shift 2
     local levelIn=$1
     local imgIn=( 0 $2 $4 $6 $8 )
@@ -302,15 +200,6 @@ Merge4tiff () {
     fi
     
     local inM4T=''
-    
-    if [ $imgBg != '0'  ] ; then
-        forRM="$forRM ${TMP_DIR}/$imgBg"
-        inM4T="$inM4T -ib ${TMP_DIR}/$imgBg"
-        if [ $mskBg != '0'  ] ; then
-            forRM="$forRM ${TMP_DIR}/$mskBg"
-            inM4T="$inM4T -mb ${TMP_DIR}/$mskBg"
-        fi
-    fi
     
     local nbImgs=0
     for i in `seq 1 4`;
@@ -369,7 +258,7 @@ Constructor: new
 Commands constructor. Bless an instance.
 
 Parameters (list):
-    pyr - <Pyramid> - Image pyramid to generate
+    pyr - <BE4CEPH::Pyramid> - Image pyramid to generate
     useMasks - string - Do we want use masks to generate images ?
 =cut
 sub new {
@@ -385,11 +274,10 @@ sub new {
         dntConfDir => undef,
         useMasks => FALSE,
     };
+
     bless($self, $class);
 
-    TRACE;
-
-    if (! defined $pyr || ref ($pyr) ne "BE4::Pyramid") {
+    if (! defined $pyr || ref ($pyr) ne "BE4CEPH::Pyramid") {
         ERROR("Can not load Pyramid !");
         return undef;
     }
@@ -406,113 +294,6 @@ sub new {
 #                               Group: Commands methods                                            #
 ####################################################################################################
 
-=begin nd
-Function: wms2work
-
-Fetch image corresponding to the node thanks to 'wget', in one or more steps at a time. WMS service is described in the current graph's datasource. Use the 'Wms2work' bash function.
-
-Example:
-    (start code)
-    BBOXES="10018754.17139461632,-626172.13571215872,10644926.30710678016,0.00000000512
-    10644926.30710678016,-626172.13571215872,11271098.442818944,0.00000000512
-    11271098.442818944,-626172.13571215872,11897270.57853110784,0.00000000512
-    11897270.57853110784,-626172.13571215872,12523442.71424327168,0.00000000512
-    10018754.17139461632,-1252344.27142432256,10644926.30710678016,-626172.13571215872
-    10644926.30710678016,-1252344.27142432256,11271098.442818944,-626172.13571215872
-    11271098.442818944,-1252344.27142432256,11897270.57853110784,-626172.13571215872
-    11897270.57853110784,-1252344.27142432256,12523442.71424327168,-626172.13571215872
-    10018754.17139461632,-1878516.4071364864,10644926.30710678016,-1252344.27142432256
-    10644926.30710678016,-1878516.4071364864,11271098.442818944,-1252344.27142432256
-    11271098.442818944,-1878516.4071364864,11897270.57853110784,-1252344.27142432256
-    11897270.57853110784,-1878516.4071364864,12523442.71424327168,-1252344.27142432256
-    10018754.17139461632,-2504688.54284865024,10644926.30710678016,-1878516.4071364864
-    10644926.30710678016,-2504688.54284865024,11271098.442818944,-1878516.4071364864
-    11271098.442818944,-2504688.54284865024,11897270.57853110784,-1878516.4071364864
-    11897270.57853110784,-2504688.54284865024,12523442.71424327168,-1878516.4071364864"
-    #
-    Wms2work "path/image_several_requests" "png" "tif" "4 4" "250000" "http://localhost/wms-vector?LAYERS=BDD_WLD_WM&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/png&CRS=EPSG:3857&WIDTH=1024&HEIGHT=1024&STYLES=line&BGCOLOR=0x80BBDA&TRANSPARENT=0X80BBDA" $BBOXES
-    (end code)
-
-Parameters (list):
-    node - <Node> - Node whose image have to be harvested.
-    harvesting - <Harvesting> - To use to harvest image.
-
-Returns:
-    An array (code, weight), (undef,WGET_W) if error.
-=cut
-sub wms2work {
-    my ($self, $node, $harvesting) = @_;
-    
-    TRACE;
-    
-    my @imgSize = $self->{pyramid}->getCacheImageSize($node->getLevel); # ie size tile image in pixel !
-    my $tms     = $self->{pyramid}->getTileMatrixSet;
-    
-    my $nodeName = $node->getWorkImageName();
-    
-    my ($xMin, $yMin, $xMax, $yMax) = $node->getBBox();
-    
-    my ($cmd, $finalExtension) = $harvesting->getCommandWms2work({
-        inversion => $tms->getInversion,
-        dir => "\${TMP_DIR}/".$nodeName,
-        srs => $tms->getSRS,
-        bbox => [$xMin, $yMin, $xMax, $yMax],
-        width => $imgSize[0],
-        height => $imgSize[1]
-    });
-    
-    if (! defined $cmd) {
-        return (undef, WGET_W);
-    }
-
-    $node->setWorkExtension($finalExtension);
-    
-    return ($cmd, WGET_W);
-}
-
-=begin nd
-Function: cache2work
-
-Copy image from cache to work directory and transform (work format : untiled, zip-compression). Use the 'Cache2work' bash function.
-
-(see cache2work.png)
-    
-Examples:
-    (start code)
-    Cache2work ${PYR_DIR}/IMAGE/19/02/BF/24.tif ${TMP_DIR}/19_398_3136_BgI
-    Cache2work ${PYR_DIR}/IMAGE/19/02/BF/24.tif ${TMP_DIR}/19_398_3136_BgM
-    (end code)
-    
-Parameters (list):
-    node - <Node> - Node whose image have to be transfered in the work directory.
-
-Returns:
-    An array (code, weight), ("",-1) if error.
-=cut
-sub cache2work {
-    my ($self, $node) = @_;
-    
-    #### Rappatriement de l'image de donnée ####
-    my $fileName = File::Spec->catfile($self->{pyramid}->getDirImage(),$node->getPyramidName);
-    
-    my $cmd = "";
-    my $weight = 0;
-    
-    $cmd = sprintf "Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $fileName, $node->getBgImageName();
-    $weight = CACHE2WORK_W;
-    
-    #### Rappatriement du masque de donnée (si présent) ####
-    
-    if ( defined $node->getBgMaskName() ) {
-        # Un masque est associé à l'image que l'on va utiliser, on doit le mettre également au format de travail
-        $fileName = File::Spec->catfile($self->{pyramid}->getDirMask(),$node->getPyramidName);
-        
-        $cmd .= sprintf ("Cache2work \${PYR_DIR}/%s \${TMP_DIR}/%s\n", $fileName , $node->getBgMaskName());
-        $weight += CACHE2WORK_W;
-    }
-    
-    return ($cmd,$weight);
-}
 
 =begin nd
 Function: work2cache
@@ -541,7 +322,7 @@ sub work2cache {
     
     #### Export de l'image
     
-    my $pyrName = File::Spec->catfile($self->{pyramid}->getDirImage(),$node->getPyramidName());
+    my $pyrName = sprintf "%s_IMG_%s", $self->{pyramid}->getNewName(), $node->getPyramidName();
     
     $cmd .= sprintf ("Work2cache %s %s %s %s", $node->getLevel, $workDir, $node->getWorkImageName(TRUE), $pyrName);
     $weight += TIFF2TILE_W;
@@ -554,7 +335,7 @@ sub work2cache {
         
         # En plus, on veut exporter les masques dans la pyramide, on en précise donc l'emplacement final
         if ( $self->{pyramid}->ownMasks() ) {
-            $pyrName = File::Spec->catfile($self->{pyramid}->getDirMask(),$node->getPyramidName());
+            $pyrName = sprintf "%s_MSK_%s", $self->{pyramid}->getNewName(), $node->getPyramidName();
             
             $cmd .= sprintf (" %s", $pyrName);
             $weight += TIFF2TILE_W;
@@ -564,6 +345,60 @@ sub work2cache {
     $cmd .= "\n";
     
     return ($cmd,$weight);
+}
+
+=begin nd
+Function: mergeNtiff
+
+Use the 'MergeNtiff' bash function. Write a configuration file, with sources.
+
+(see mergeNtiff.png)
+
+Parameters (list):
+    node - <Node> - Node to generate thanks to a 'mergeNtiff' command.
+    
+Example:
+|    MergeNtiff 19_397_3134.txt
+
+Returns:
+    An array (code, weight), ("",-1) if error.
+=cut
+sub mergeNtiff {
+    my $self = shift;
+    my $node = shift;
+    
+    my ($c, $w);
+    my ($code, $weight) = ("",MERGENTIFF_W);
+    
+    if ($self->{useMasks}) {
+        $node->addWorkMask();
+    }
+    
+    my $mNtConfFilename = $node->getWorkBaseName.".txt";
+    my $mNtConfFile = File::Spec->catfile($self->{mntConfDir}, $mNtConfFilename);
+    
+    if (! open CFGF, ">", $mNtConfFile ) {
+        ERROR(sprintf "Impossible de creer le fichier $mNtConfFile.");
+        return ("",-1);
+    }
+    
+    # La premiere ligne correspond à la dalle résultat: La version de travail de la dalle à calculer.
+    # Les points d'interrogation permettent de gérer le dossier où écrire les images grâce à une variable
+    # Cet export va également ajouter les fonds (si présents) comme premières sources
+    printf CFGF $node->exportForMntConf(TRUE, "?");
+
+    #   - Les images sources (QTree)
+    my $listGeoImg = $node->getGeoImages;
+    foreach my $img (@{$listGeoImg}) {
+        printf CFGF "%s", $img->exportForMntConf($self->{useMasks});
+    }
+    
+    close CFGF;
+    
+    $code .= "MergeNtiff $mNtConfFilename";
+    $code .= "\n";
+
+    return ($code,$weight);
 }
 
 =begin nd
@@ -585,33 +420,9 @@ Returns:
 sub decimateNtiff {
     my $self = shift;
     my $node = shift;
-
-    TRACE;
     
     my ($c, $w);
     my ($code, $weight) = ("",DECIMATENTIFF_W);
-
-    # Si elle existe, on copie la dalle de la pyramide de base dans le repertoire de travail 
-    # en la convertissant du format cache au format de travail: c'est notre image de fond.
-    # Si la dalle de la pyramide ancêtre existe, on a créé un lien, donc il existe un fichier
-    # correspondant dans la nouvelle pyramide.
-    # On fait de même avec le masque de donnée associé, s'il existe.
-    my $imgPath = File::Spec->catfile($self->{pyramid}->getDirImage(TRUE),$node->getPyramidName());
-    
-    if ( -f $imgPath ) {
-        $node->addBgImage();
-        
-        my $maskPath = File::Spec->catfile($self->{pyramid}->getDirMask(TRUE),$node->getPyramidName());
-        
-        if ( $self->{useMasks} && -f $maskPath ) {
-            # On a en plus un masque associé à l'image de fond
-            $node->addBgMask();
-        }
-        
-        ($c,$w) = $self->cache2work($node);
-        $code .= $c;
-        $weight += $w;
-    }
     
     if ($self->{useMasks}) {
         $node->addWorkMask();
@@ -637,8 +448,6 @@ sub decimateNtiff {
     close CFGF;
     
     $code .= "DecimateNtiff $dNtConfFilename";
-    $code .= sprintf " %s", $node->getBgImageName(TRUE) if (defined $node->getBgImageName()); # pour supprimer l'image de fond si elle existe
-    $code .= sprintf " %s", $node->getBgMaskName(TRUE) if (defined $node->getBgMaskName()); # pour supprimer le masque de fond si il existe
     $code .= "\n";
 
     return ($code,$weight);
@@ -649,17 +458,14 @@ Function: merge4tiff
 
 Use the 'Merge4tiff' bash function.
 
-|                   i1  i2
-| backGround    +              =  resultImg
-|                   i3  i4
+|     i1  i2
+|              =  resultImg
+|     i3  i4
 
 (see merge4tiff.png)
 
 Parameters (list):
-    node - <Node> - Node to generate thanks to a 'merge4tiff' command.
-
-Example:
-|    
+    node - <COMMON::GraphNode> - Node to generate thanks to a 'merge4tiff' command.
 
 Returns:
     An array (code, weight), ("",-1) if error.
@@ -667,39 +473,11 @@ Returns:
 sub merge4tiff {
     my $self = shift;
     my $node = shift;
-  
-    TRACE;
     
     my ($c, $w);
     my ($code, $weight) = ("",MERGE4TIFF_W);
-
-    # On renseigne dans tous les cas la couleur de nodata, et on donne un fond s'il existe, même s'il y a 4 images,
-    # si on utilise les masques
-    my $workBgI = undef;
-    my $workBgM = undef;
     
     my @childList = $node->getChildren;
-
-    # Gestion du fond : faut-il le récupérer, et si oui, comment ?
-    my $imgPath = File::Spec->catfile($self->{pyramid}->getDirImage(TRUE),$node->getPyramidName);
-    
-    if ( -f $imgPath && ($self->{useMasks} || scalar @childList != 4) ) {
-        # Il y a dans la pyramide une dalle pour faire image de fond de notre nouvelle dalle.
-        # On détuile l'image de fond (et éventuellement le masque), pour pouvoir travailler avec.
-        
-        $node->addBgImage();
-        
-        my $maskPath = File::Spec->catfile($self->{pyramid}->getDirMask(TRUE),$node->getPyramidName);
-
-        if ( $self->{useMasks} && -f $maskPath ) {
-            # On a en plus un masque associé à l'image de fond
-            $node->addBgMask();
-        }
-        
-        ($c,$w) = $self->cache2work($node);
-        $code .= $c;
-        $weight += $w;
-    }
     
     if ($self->{useMasks}) {
         $node->addWorkMask();
@@ -734,8 +512,6 @@ Configure bash functions to write in scripts' header thanks to pyramid's compone
 =cut
 sub configureFunctions {
     my $self = shift;
-
-    TRACE;
 
     my $pyr = $self->{pyramid};
     my $configuredFunc = $BASHFUNCTIONS;
@@ -777,11 +553,6 @@ sub configureFunctions {
     $conf_m4t .= "-n $nd ";
 
     $configuredFunc =~ s/__m4t__/$conf_m4t/;
-
-    ######## cache2work ########
-    
-    my $conf_c2w = "-c zip";
-    $configuredFunc =~ s/__c2w__/$conf_c2w/;
     
     ######## tiff2tile ########
     my $conf_t2t = "";
@@ -794,13 +565,14 @@ sub configureFunctions {
         $conf_t2t .= "-crop ";
     }
 
-    $conf_t2t .= sprintf "-t %s %s ",$pyr->getTileMatrixSet->getTileWidth,$pyr->getTileMatrixSet->getTileHeight;
+
+    $conf_t2t .= sprintf "-t %s %s ", $pyr->getTileMatrixSet->getTileWidth,$pyr->getTileMatrixSet->getTileHeight;
 
     $configuredFunc =~ s/__t2tI__/$conf_t2t/;
     
     # pour les masques
     $conf_t2t = sprintf "-c zip -t %s %s",
-        $pyr->getTileMatrixSet->getTileWidth,$pyr->getTileMatrixSet->getTileHeight;
+        $pyr->getTileMatrixSet->getTileWidth, $pyr->getTileMatrixSet->getTileHeight;
     $configuredFunc =~ s/__t2tM__/$conf_t2t/;
     
     return $configuredFunc;
@@ -858,7 +630,7 @@ sub exportForDebug {
 
     my $export = "";
 
-    $export .= "\nObject BE4::Commands :\n";
+    $export .= "\nObject BE4CEPH::Commands :\n";
     $export .= "\t Use masks\n" if $self->{useMasks};
     $export .= "\t Doesn't use masks\n" if (! $self->{useMasks});
     $export .= "\t Export masks\n" if $self->{pyramid}->ownMasks();

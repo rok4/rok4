@@ -243,7 +243,7 @@ sub _init {
     $self->{size}           = $params->{size};
     $self->{limits}         = $params->{limits};
 
-    if (exists $params->{hasMask} && defined $params->{hasMask} && uc($params->{hasMask}) eq 'TRUE' ) {
+    if (exists $params->{hasMask} && defined $params->{hasMask} && $params->{hasMask} ) {
         $self->{prefix_mask} = sprintf "%s_MSK_%s", $params->{prefix}, $params->{id};
     }
     
@@ -309,7 +309,10 @@ Insert Level's attributes in the XML template, write in the pyramid's descriptor
 Returns a string to XML format.
 
 Parameter (list):
-    descriptorDir - string - Pyramid's descriptor directory, to make relative data's paths.
+    cluster_name - string - Ceph cluster name, where images are stored
+    user_name - string - User to use to read images on the ceph cluster
+    conf_file - string - Configuration file to use to read images on the ceph cluster
+    pool_name - string - Pool's name where images are stored
 
 Example:
     (start code)
@@ -318,15 +321,15 @@ Example:
 sub exportToXML {
     my $self = shift;
 
+    my $cluster_name = shift;
+    my $user_name = shift;
+    my $conf_file = shift;
+    my $pool_name = shift;
+
     my $levelXML = $STRLEVELTMPLT;
 
     my $id       = $self->{id};
     $levelXML =~ s/__ID__/$id/;
-
-            # <clusterName>__CLUSTER__</clusterName>
-            # <userName>__USER__</userName>
-            # <confFile>__CONF__</confFile>
-            # <poolName>__POOL__</poolName>
 
     my $prefix = $self->{prefix_image};
     $levelXML =~ s/__IMGPREFIX__/$prefix/;
@@ -347,6 +350,12 @@ sub exportToXML {
     $levelXML =~ s/__MINCOL__/$mincol/;
     my $maxcol   =  $self->{limits}[3];
     $levelXML =~ s/__MAXCOL__/$maxcol/;
+
+    # Ceph informations
+    $levelXML =~ s/__CLUSTER__/$cluster_name/;
+    $levelXML =~ s/__CONF__/$conf_file/;
+    $levelXML =~ s/__POOL__/$pool_name/;
+    $levelXML =~ s/__USER__/$user_name/;
 
     # mask
     if (defined $self->{prefix_mask}) {

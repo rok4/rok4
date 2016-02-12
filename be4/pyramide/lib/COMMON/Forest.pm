@@ -38,7 +38,7 @@
 =begin nd
 File: Forest.pm
 
-Class: BE4::Forest
+Class: COMMON::Forest
 
 Creates and manages all graphs, <NNGraph> and <QTree>.
 
@@ -51,12 +51,13 @@ We have several kinds of graphs and their using have to be transparent for the f
 
 Using:
     (start code)
-    use BE4::Forest
+    use COMMON::Forest
 
-    my $Forest = BE4::Forest->new(
+    my $Forest = COMMON::Forest->new(
         $objPyramid, # a BE4::Pyramid object
         $objDSL, # a COMMON::DataSourceLoader object
         $param_process, # a hash with following keys : job_number, path_temp, path_temp_common and path_shell
+        $storageType, # final storage : FS, CEPH or SWIFT
     );
     (end code)
 
@@ -66,12 +67,13 @@ Attributes:
     graphs - <QTree> or <NNGraph> array - Graphs composing the forest, one per data source.
     scripts - <Script> array - Scripts, whose execution generate the images' pyramid.
     splitNumber - integer - Number of script used for work parallelization.
+    storageType - string - Pyramid final storage type : FS, CEPH or SWIFT
 
 =cut
 
 ################################################################################
 
-package BE4::Forest;
+package COMMON::Forest;
 
 use strict;
 use warnings;
@@ -83,11 +85,13 @@ use List::Util qw(min max);
 use Geo::GDAL;
 
 # My module
-use BE4::QTree;
-use BE4::NNGraph;
+use COMMON::QTree;
+use COMMON::NNGraph;
 use BE4::Commands;
+use BE4CEPH::Commands;
 use BE4::Pyramid;
-use BE4::Script;
+use BE4CEPH::Pyramid;
+use COMMON::GraphScript;
 use COMMON::DataSourceLoader;
 use COMMON::DataSource;
 
@@ -121,13 +125,14 @@ Constructor: new
 Forest constructor. Bless an instance.
 
 Parameters (list):
-    pyr - <Pyramid> - Contains output format specifications, needed by generations command's.
+    pyr - <BE4::Pyramid> or <BE4CEPH::Pyramid> - Contains output format specifications, needed by generations command's.
     DSL - <DataSourceLoader> - Contains one or several data sources
     params_process - hash - Informations for scripts
 |               job_number - integer - Parallelization level
 |               path_temp - string - Temporary directory
 |               path_temp_common - string - Common temporary directory
 |               path_shell - string - Script directory
+    storageType - string - Pyramid final storage type : FS, CEPH or SWIFT
 
 See also:
     <_init>, <_load>
@@ -143,11 +148,10 @@ sub new {
         graphs      => [],
         scripts     => [],
         splitNumber => undef,
+        storageType => undef
     };
 
     bless($self, $class);
-
-    TRACE;
 
     # init. class
     return undef if (! $self->_init(@_));
@@ -166,22 +170,25 @@ Function: _init
 Checks parameters and stores the pyramid.
 
 Parameters (list):
-    pyr - <Pyramid> - Contains output format specifications, needed by generations command's.
-    DSL - <DataSourceLoader> - Contains one or several data sources
+    pyr - <BE4::Pyramid> or <BE4CEPH::Pyramid> - Contains output format specifications, needed by generations command's.
+    DSL - <COMMON::DataSourceLoader> - Contains one or several data sources
     params_process - hash - Informations for scipts, where to write them, temporary directory to use...
 |               job_number - integer - Parallelization level
 |               path_temp - string - Temporary directory
 |               path_temp_common - string - Common temporary directory
 |               path_shell - string - Script directory
+    storageType - string - Pyramid final storage type : FS, CEPH or SWIFT
 
 =cut
 sub _init {
-    my ($self, $pyr, $DSL, $params_process) = @_;
-
-    TRACE;
+    my $self = shift;
+    my $pyr = shift;
+    my $DSL = shift;
+    my $params_process = shift;
+    my $storageType = shift;
 
     # it's an object and it's mandatory !
-    if (! defined $pyr || ref ($pyr) ne "BE4::Pyramid") {
+    if (! defined $pyr || (ref ($pyr) ne "BE4::Pyramid" && ref ($pyr) ne "BE4CEPH::Pyramid")) {
         ERROR("Can not load Pyramid !");
         return FALSE;
     }
@@ -197,6 +204,12 @@ sub _init {
         ERROR("We need process' parameters !");
         return FALSE;
     }
+
+    if (! defined $storageType || "|FS|SWIFT|CEPH|" !~ m/\|$storageType\|/) {
+        ERROR("Forest's storage type is undef or not valid !");
+        return FALSE;
+    }
+    $self->{storageType} = $storageType;
     
     return TRUE;
 }
@@ -218,10 +231,15 @@ Parameters (list):
 |               path_temp - string - Temporary directory
 |               path_temp_common - string - Common temporary directory
 |               path_shell - string - Script directory
+    storageType - string - Pyramid final storage type : FS, CEPH or SWIFT
 
 =cut
 sub _load {
-    my ($self, $pyr, $DSL, $params_process) = @_;
+    my $self = shift;
+    my $pyr = shift;
+    my $DSL = shift;
+    my $params_process = shift;
+    my $storageType = shift;
 
     my $dataSources = $DSL->getDataSources;
     my $TMS = $pyr->getTileMatrixSet;
@@ -261,18 +279,31 @@ sub _load {
 
     ############# PROCESS #############
 
-    my $commands = BE4::Commands->new($pyr,$params_process->{use_masks});
+    my $commands;
+
+    if ($storageType eq 'FS') {
+        $commands = BE4::Commands->new($pyr,$params_process->{use_masks});
+    }
+    elsif ($storageType eq 'CEPH') {
+        $commands = BE4CEPH::Commands->new($pyr,$params_process->{use_masks});
+    }
+    elsif ($storageType eq 'SWIFT') {
+        ERROR("Swift storage not yet implemented");
+        return FALSE;
+    }
 
     if (! defined $commands) {
         ERROR ("Can not load Commands !");
         return FALSE;
     }
     $self->{commands} = $commands;
+    DEBUG(sprintf "COMMANDS (debug export) = %s", $commands->exportForDebug);
     
     ############# SCRIPTS #############
     # We create BE4::Script objects and initialize them (header)
 
-    my $functions = $commands->configureFunctions;
+    my $functions = $commands->configureFunctions();
+    $functions .= COMMON::Commands::configureFunctions();
 
     if ($isQTree) {
         #### QTREE CASE
@@ -286,7 +317,7 @@ sub _load {
                 $executedAlone = TRUE;
             }
 
-            my $script = BE4::Script->new({
+            my $script = COMMON::GraphScript->new({
                 id => $scriptID,
                 tempDir => $tempDir,
                 commonTempDir => $commonTempDir,
@@ -295,9 +326,9 @@ sub _load {
             });
 
             my $listFile = $self->{pyramid}->getNewListFile;
-            $script->prepare($self->{pyramid}->getNewDataDir,$listFile,$functions);
+            $script->prepare($self->{pyramid},$listFile,$functions);
 
-            push @{$self->{scripts}},$script;
+            push @{$self->{scripts}}, $script;
         }
     } else {
         #### GRAPH CASE
@@ -315,7 +346,7 @@ sub _load {
                     $scriptID = sprintf "LEVEL_%s_SCRIPT_%s", $levelID, $j;
                 }
 
-                my $script = BE4::Script->new({
+                my $script = COMMON::GraphScript->new({
                     id => $scriptID,
                     tempDir => $tempDir,
                     commonTempDir => $commonTempDir,
@@ -324,14 +355,14 @@ sub _load {
                 });
 
                 my $listFile = $self->{pyramid}->getNewListFile;
-                $script->prepare($self->{pyramid}->getNewDataDir,$listFile,$functions);
+                $script->prepare($self,$listFile,$functions);
 
                 push @{$self->{scripts}},$script;
             }
         }
 
         # Le SUPER finisher
-        my $script = BE4::Script->new({
+        my $script = COMMON::GraphScript->new({
             id => "SCRIPT_FINISHER",
             tempDir => $tempDir,
             commonTempDir => $commonTempDir,
@@ -358,9 +389,9 @@ sub _load {
         # Creation of QTree or NNGraph object
         my $graph = undef;
         if ($isQTree) {
-            $graph = BE4::QTree->new($self, $datasource, $self->{pyramid}, $self->{commands});
+            $graph = COMMON::QTree->new($self, $datasource, $self->{pyramid}, $self->{commands});
         } else {
-            $graph = BE4::NNGraph->new($self,$datasource, $self->{pyramid}, $self->{commands});
+            $graph = COMMON::NNGraph->new($self,$datasource, $self->{pyramid}, $self->{commands});
         };
                 
         if (! defined $graph) {
@@ -447,6 +478,12 @@ sub getGraphs {
     return $self->{graphs}; 
 }
 
+# Function: getStorageType
+sub getStorageType {
+    my $self = shift;
+    return $self->{storageType}; 
+}
+
 # Function: getPyramid
 sub getPyramid {
     my $self = shift;
@@ -524,7 +561,7 @@ sub exportForDebug {
     
     my $export = "";
     
-    $export .= sprintf "\n Object BE4::Forest :\n";
+    $export .= sprintf "\n Object COMMON::Forest :\n";
 
     $export .= "\t Graph :\n";
     $export .= sprintf "\t Number of graphs in the forest : %s\n", scalar @{$self->{graphs}};

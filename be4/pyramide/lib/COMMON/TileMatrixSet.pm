@@ -100,9 +100,9 @@ use Log::Log4perl qw(:easy);
 use XML::LibXML;
 
 use Data::Dumper;
-use Geo::OSR;
 
 use COMMON::TileMatrix;
+use COMMON::ProxyGDAL;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -272,19 +272,14 @@ sub _load {
     $self->{srs} = uc($crs); # srs is cast in uppercase in order to ease comparisons
     
     # Have coodinates to be reversed ?
-    my $sr= new Geo::OSR::SpatialReference;
-    eval { $sr->ImportFromProj4('+init='.$self->{srs}.' +wktext'); };
-    if ($@) {
-        eval { $sr->ImportFromProj4('+init='.lc($self->{srs}).' +wktext'); };
-        if ($@) {
-            ERROR("$@");
-            ERROR (sprintf "Impossible to initialize the final spatial coordinate system (%s) to know if coordinates have to be reversed !\n",$self->{srs});
-            return FALSE;
-        }
+    my $sr = COMMON::ProxyGDAL::spatialReferenceFromSRS($self->{srs});
+    if (! defined $sr) {
+        ERROR (sprintf "Impossible to initialize the final spatial coordinate system (%s) to know if coordinates have to be reversed !\n",$self->{srs});
+        return FALSE;
     }
 
     my $authority = (split(":",$self->{srs}))[0];
-    if ($sr->IsGeographic() && uc($authority) eq "EPSG") {
+    if (COMMON::ProxyGDAL::isGeographic($sr) && uc($authority) eq "EPSG") {
         INFO(sprintf "Coordinates will be reversed in requests (SRS : %s)",$self->{srs});
         $self->{coordinatesInversion} = TRUE;
     } else {
@@ -643,7 +638,7 @@ Returns all informations about the tile matrix set. Useful for debug.
 
 Example:
     (start code)
-    Object COMMON::TileMatrixSet :
+    Object BE4::TileMatrixSet :
          TMS file complete path : /home/ign/TMS/LAMB93_10cm.tms
          Top level identifiant : 0
          Top level resolution : 209715.2

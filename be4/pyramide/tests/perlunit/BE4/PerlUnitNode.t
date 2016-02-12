@@ -101,7 +101,7 @@ ok ($pyramid->updateLevels($DSL,undef),"DataSourcesLoader updated and Graph Pyra
 my $datasource = ${$DSL->getDataSources()}[0];
 ok (defined $datasource,"datasource ok.");
 
-my $forest = BE4::Forest->new($pyramid,$DSL,{
+my $forest = COMMON::Forest->new($pyramid,$DSL,{
 	job_number => 16,
 	path_temp => $Bin."/../../temp/",
         path_temp_common => $Bin."/../../temp/",
@@ -109,7 +109,7 @@ my $forest = BE4::Forest->new($pyramid,$DSL,{
 });
 ok (defined $forest,"forest ok.");
 
-my $qtree = BE4::QTree->new($forest,$datasource,$pyramid,$commands);
+my $qtree = COMMON::QTree->new($forest,$datasource,$pyramid,$commands);
 ok (defined $qtree,"qtree ok.");
 
 my $tm = COMMON::TileMatrix->new({

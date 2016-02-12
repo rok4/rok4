@@ -266,6 +266,12 @@ sub getValue {
     return $self->{value};
 }
 
+# Function: getPixel
+sub getPixel {
+    my $self = shift;
+    return $self->{pixel};
+}
+
 =begin nd
 Function: getNodataFilename
 

@@ -125,7 +125,7 @@ Attributes:
     list - string - File path, containing a list of image indices (I,J) to harvest.
     bbox - double array - Data source bounding box, in the previous SRS : [xmin,ymin,xmax,ymax].
 
-    imageSource - <COMMON::ImageSource> - Georeferenced images' source.
+    imageSource - <ImageSource> - Georeferenced images' source.
     harvesting - <Harvesting> - WMS server. If it is useless, it will be remove.
 
 Limitations:
@@ -143,11 +143,10 @@ use Log::Log4perl qw(:easy);
 use Data::Dumper;
 use List::Util qw(min max);
 
-use Geo::GDAL;
-
 # My module
 use COMMON::ImageSource;
 use COMMON::Harvesting;
+use COMMON::ProxyGDAL;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -413,24 +412,22 @@ sub computeGlobalInfo {
         # We use extent to define a WKT string, Now, we store in this attribute the equivalent OGR Geometry
         $self->{extent} = undef;
 
-        eval { $self->{extent} = Geo::OGR::Geometry->create(WKT=>$WKTextent); };
-        if ($@) {
-            ERROR(sprintf "WKT geometry (%s) is not valid : %s",$WKTextent,$@);
-            return FALSE;
-        }
+        $self->{extent} = COMMON::ProxyGDAL::geometryFromWKT($WKTextent);
 
         if (! defined $self->{extent}) {
-            ERROR(sprintf "Cannot create a Geometry from the string : %s.",$WKTextent);
+            ERROR(sprintf "Cannot create a Geometry from the WKT string : %s.",$WKTextent);
             return FALSE;
         }
 
-        my $bboxref = $self->{extent}->GetEnvelope();
-        my ($xmin,$xmax,$ymin,$ymax) = ($bboxref->[0],$bboxref->[1],$bboxref->[2],$bboxref->[3]);
+        my ($xmin,$xmax,$ymin,$ymax) = COMMON::ProxyGDAL::getBbox($self->{extent});
+
         if (! defined $xmin) {
             ERROR("Cannot calculate bbox from the OGR Geometry");
             return FALSE;
         }
+
         $self->{bbox} = [$xmin,$ymin,$xmax,$ymax];
+        
     } elsif (defined $self->{list}) {
         # On a fourni un fichier contenant la liste des images (I et J) à générer
         

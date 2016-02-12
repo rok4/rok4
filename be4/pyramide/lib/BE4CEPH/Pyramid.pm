@@ -52,7 +52,7 @@ Using:
         #
         pyr_name_new => "ORTHO_RAW_LAMB93_D075-O",
         pyr_desc_path => "/home/ign/DESC",
-        pyr_data_pool => "existing-ceph-pool-name",
+        pyr_data_pool_name => "existing-ceph-pool-name",
         #
         tms_name     => "LAMB93_10cm.tms",
         tms_path     => "/home/ign/TMS",
@@ -70,7 +70,7 @@ Using:
         interpolation       => "bicubic",
     };
 
-    my $objPyr = BE4CEPH::Pyramid->new($params_options,$path_temp);
+    my $objPyr = BE4CEPH::Pyramid->new($params_options);
 
     $objPyr->writeConfPyramid(); # write pyramid's descriptor in /home/ign/ORTHO_RAW_LAMB93_D075-O.pyr
 
@@ -87,9 +87,9 @@ Attributes:
     image_width - integer - Number of tile in an pyramid's image, widthwise.
     image_height - integer - Number of tile in an pyramid's image, heightwise.
 
-    pyrImgSpec - <PyrImageSpec> - New pyramid's image's components
-    tms - <TileMatrixSet> - Pyramid's images will be cutted according to this TMS grid.
-    nodata - <NoData> - Informations about nodata
+    pyrImgSpec - <COMMON::PyrImageSpec> - New pyramid's image's components
+    tms - <COMMON::TileMatrixSet> - Pyramid's images will be cutted according to this TMS grid.
+    nodata - <COMMON::NoData> - Informations about nodata
     levels - <BE4CEPH::Level> hash - Key is the level ID, the value is the <BE4CEPH::Level> object. Define levels present in this new ceph stored pyramid.
 
 Limitations:
@@ -123,7 +123,7 @@ use BE4CEPH::Level;
 use COMMON::NoData;
 use COMMON::PyrImageSpec;
 use COMMON::Pixel;
-use BE4::Forest;
+use COMMON::Forest;
 use COMMON::Commands;
 use COMMON::Base36;
 
@@ -237,7 +237,7 @@ sub _init {
     }
     
     # Always mandatory :
-    #   - pyr_name_new, pyr_desc_path, pyr_data_path
+    #   - pyr_name_new, pyr_desc_path
     #   - tms_path
     if (! exists $params->{pyr_name_new} || ! defined $params->{pyr_name_new}) {
         ERROR ("The parameter 'pyr_name_new' is required!");
@@ -251,12 +251,34 @@ sub _init {
         return FALSE;
     }
     $self->{new_pyramid}->{desc_path} = $params->{pyr_desc_path};
+
+    # Ceph pool informations
     
-    if (! exists $params->{pyr_data_pool} || ! defined $params->{pyr_data_pool}) {
-        ERROR ("The parameter 'pyr_data_pool' is required!");
+    if (! exists $params->{pyr_data_pool_name} || ! defined $params->{pyr_data_pool_name}) {
+        ERROR ("The parameter 'pyr_data_pool_name' is required!");
         return FALSE;
     }
-    $self->{new_pyramid}->{data_pool} = $params->{pyr_data_pool};
+    $self->{new_pyramid}->{data_pool} = $params->{pyr_data_pool_name};
+    
+    if (! exists $params->{pyr_data_cluster_name} || ! defined $params->{pyr_data_cluster_name}) {
+        ERROR ("The parameter 'pyr_data_cluster_name' is required!");
+        return FALSE;
+    }
+    $self->{new_pyramid}->{cluster_name} = $params->{pyr_data_cluster_name};
+    
+    if (! exists $params->{pyr_data_user_name} || ! defined $params->{pyr_data_user_name}) {
+        ERROR ("The parameter 'pyr_data_user_name' is required!");
+        return FALSE;
+    }
+    $self->{new_pyramid}->{user_name} = $params->{pyr_data_user_name};
+    
+    if (! exists $params->{pyr_data_conf_file} || ! defined $params->{pyr_data_conf_file}) {
+        ERROR ("The parameter 'pyr_data_conf_file' is required!");
+        return FALSE;
+    }
+    $self->{new_pyramid}->{conf_file} = $params->{pyr_data_conf_file};
+
+    # TMS informations
     
     if (! exists $params->{tms_path} || ! defined $params->{tms_path}) {
         ERROR ("The parameter 'tms_path' is required!");
@@ -303,7 +325,7 @@ sub _load {
     my $params = shift;
 
     ##### create TileMatrixSet !
-    my $objTMS = BE4CEPH::TileMatrixSet->new(File::Spec->catfile($params->{tms_path},$params->{tms_name}));
+    my $objTMS = COMMON::TileMatrixSet->new(File::Spec->catfile($params->{tms_path},$params->{tms_name}));
 
     if (! defined $objTMS) {
         ERROR ("Can not load TMS !");
@@ -314,7 +336,7 @@ sub _load {
     DEBUG (sprintf "TMS = %s", $objTMS->exportForDebug);
 
     ##### create PyrImageSpec !
-    my $pyrImgSpec = BE4CEPH::PyrImageSpec->new({
+    my $pyrImgSpec = COMMON::PyrImageSpec->new({
         formatCode => $params->{formatCode},
         bitspersample => $params->{bitspersample},
         sampleformat => $params->{sampleformat},
@@ -335,7 +357,7 @@ sub _load {
     DEBUG(sprintf "PYRIMAGESSPEC (debug export) = %s", $pyrImgSpec->exportForDebug());
 
     ##### create NoData !
-    my $objNodata = BE4CEPH::NoData->new({
+    my $objNodata = COMMON::NoData->new({
         pixel   => $self->getPixel(),
         value   => $params->{color},
     });
@@ -426,6 +448,7 @@ sub createLevels {
             order => $order,
             prefix => $self->{new_pyramid}->{name},
             size => [$tilesperwidth, $tilesperheight],
+            hasMask => $self->{own_masks}
         };
         my $objLevel = BE4CEPH::Level->new($params);
 
@@ -554,7 +577,12 @@ sub writeConfPyramid {
 
     for (my $i = scalar @levels -1; $i >= 0; $i--) {
         # we write levels in pyramid's descriptor from the top to the bottom
-        my $levelXML = $levels[$i]->exportToXML($descriptorDir);
+        my $levelXML = $levels[$i]->exportToXML(
+            $self->{new_pyramid}->{cluster_name},
+            $self->{new_pyramid}->{user_name},
+            $self->{new_pyramid}->{conf_file},
+            $self->{new_pyramid}->{data_pool}
+        );
         $strpyrtmplt =~ s/<!-- __LEVELS__ -->\n/$levelXML/;
     }
     
@@ -599,8 +627,6 @@ Parameters (list):
 sub writeListPyramid {
     my $self = shift;
     my $forest = shift;
-
-    my $newcachepyramid = $self->getNewDataDir;
     
     my $newcachelist = $self->getNewListFile;
     if (-f $newcachelist ) {
@@ -663,10 +689,10 @@ sub writeCachePyramid {
         my $width = $self->getTileMatrixSet->getTileWidth($objLevel->getID);
         my $height = $self->getTileMatrixSet->getTileHeight($objLevel->getID);
 
-        my $ok = COMMON::BE4->createNodataCeph(
+        my $ok = COMMON::Commands::createNodataCeph(
             $self->{new_pyramid}->{data_pool},
             $objLevel->getNodataObjectName(),
-            $self->{nodata}->{data_pool},
+            $self->{nodata},
             $width,$height,
             $self->getCompression()
         );
@@ -734,6 +760,24 @@ sub getNewListFile {
 sub getNewDataPool {
     my $self = shift;    
     return $self->{new_pyramid}->{data_pool};
+}
+
+# Function: getClusterName
+sub getClusterName {
+    my $self = shift;    
+    return $self->{new_pyramid}->{cluster_name};
+}
+
+# Function: getUserName
+sub getUserName {
+    my $self = shift;    
+    return $self->{new_pyramid}->{user_name};
+}
+
+# Function: getConfFile
+sub getConfFile {
+    my $self = shift;    
+    return $self->{new_pyramid}->{conf_file};
 }
 
 #################### TMS ####################
