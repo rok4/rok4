@@ -105,8 +105,7 @@ DataSource* Pyramid::getTile ( int x, int y, std::string tmId, DataSource* error
     if ( itLevel==levels.end() ) {
         if ( errorDataSource ) { // NoData Error
             StoreDataSourceFactory SDSF;
-            Context* cont = new FileContext("");
-            return new DataSourceProxy ( SDSF.createStoreDataSource ( "",0,0,"",cont ), * errorDataSource );
+            return new DataSourceProxy ( SDSF.createStoreDataSource ( "",0,0,"",getLowestLevel()->getContext() ), * errorDataSource );
         }
         DataSource * noDataSource;
 
@@ -123,8 +122,7 @@ DataSource* Pyramid::getTile ( int x, int y, std::string tmId, DataSource* error
             noDataSource = ( askedRes > getLowestLevel()->getRes() ? getHighestLevel()->getEncodedNoDataTile() : getLowestLevel()->getEncodedNoDataTile() );
         }
         StoreDataSourceFactory SDSF;
-        Context* cont = new FileContext("");
-        return new DataSourceProxy ( SDSF.createStoreDataSource ( "",0,0,"", cont ), * ( noDataSource ) );
+        return new DataSourceProxy ( SDSF.createStoreDataSource ( "",0,0,"", getLowestLevel()->getContext() ), * ( noDataSource ) );
     }
     return itLevel->second->getTile ( x, y, errorDataSource );
 }
