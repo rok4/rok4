@@ -236,30 +236,32 @@ sub _load {
         return false;
     }
 
-    # SourcePyramid is optionnal
+    # Datasource is either an old pyramid OR a WMS stream
     my $tempPyramidSource = undef;
-    if (exists $params->{pyr_desc_file}) {
+    my $harvesting = undef;
+
+    if (exists $params->{pyr_desc_file} && exists $params->{wms_layer}) {
+        ERROR("A single datasource is either an old pyramid OR a WMS stream, not both.");
+        return FALSE;
+    } elsif (exists $params->{pyr_desc_file}) {
         $tempPyramidSource = JOINCACHE::SourcePyramid->new($params->{pyr_desc_file});
         if (! defined $tempPyramidSource) {
             ERROR("Cannot create the SourcePyramid object");
             return FALSE;
         }
-    }
-    $self->{pyramidSource} = $tempPyramidSource;
-
-    # Harvesting is optionnal, but if we have 'wms_layer' parameter, we suppose that we have others
-    my $harvesting = undef;
-    if (exists $params->{wms_layer}) {
+        $self->{pyramidSource} = $tempPyramidSource;
+    } elsif (exists $params->{wms_layer}) {
+        # if we have 'wms_layer' parameter, we suppose that we have other WMS related parameters.
         $harvesting = BE4::Harvesting->new($params);
         if (! defined $harvesting) {
             ERROR("Cannot create the Harvesting object");
             return FALSE;
         }
+        $self->{harvesting} = $harvesting;
     }
-    $self->{harvesting} = $harvesting;
     
     if (! defined $harvesting && ! defined $imagesource) {
-        ERROR("A data source must have a ImageSource OR a Harvesting !");
+        ERROR("DataSource creation failed : neither a pyramid nor a WMS stream.");
         return FALSE;
     }
     
