@@ -686,24 +686,39 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
             pElemCephContext = hLvl.FirstChild ( "cephContext" ).FirstChild ( "clusterName" ).Element();
             if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
-                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un clusterName" );
-                return NULL;
+                char* cluster = getenv ("ROK4_CEPH_CLUSTERNAME");
+                if (cluster == NULL) {
+                    LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un clusterName" );
+                    return NULL;
+                } else {
+                    clusterName.assign(cluster);
+                }
             } else {
                 clusterName = pElemCephContext->GetText();
             }
 
             pElemCephContext = hLvl.FirstChild ( "cephContext" ).FirstChild ( "userName" ).Element();
             if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
-                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un userName" );
-                return NULL;
+                char* user = getenv ("ROK4_CEPH_USERNAME");
+                if (user == NULL) {
+                    LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un userName" );
+                    return NULL;
+                } else {
+                    userName.assign(user);
+                }
             } else {
                 userName = pElemCephContext->GetText();
             }
 
             pElemCephContext = hLvl.FirstChild ( "cephContext" ).FirstChild ( "confFile" ).Element();
             if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
-                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un confFile" );
-                return NULL;
+                char* conf = getenv ("ROK4_CEPH_CONFFILE");
+                if (conf == NULL) {
+                    LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un confFile" );
+                    return NULL;
+                } else {
+                    confFile.assign(conf);
+                }
             } else {
                 confFile = pElemCephContext->GetText();
                 if ( confFile.compare ( 0,2,"./" ) ==0 ) {
@@ -742,32 +757,52 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
             pElemSwiftContext = hLvl.FirstChild ( "swiftContext" ).FirstChild ( "authUrl" ).Element();
             if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
-                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un authUrl" );
-                return NULL;
+                char* auth = getenv ("ROK4_SWIFT_AUTHURL");
+                if (auth == NULL) {
+                    LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un authUrl" );
+                    return NULL;
+                } else {
+                    authUrl.assign(auth);
+                }
             } else {
                 authUrl = pElemSwiftContext->GetText();
             }
 
             pElemSwiftContext = hLvl.FirstChild ( "swiftContext" ).FirstChild ( "userName" ).Element();
             if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
-                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un userName" );
-                return NULL;
+                char* user = getenv ("ROK4_SWIFT_USER");
+                if (user == NULL) {
+                    LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un userName" );
+                    return NULL;
+                } else {
+                    userName.assign(user);
+                }
             } else {
                 userName = pElemSwiftContext->GetText();
             }
 
             pElemSwiftContext = hLvl.FirstChild ( "swiftContext" ).FirstChild ( "userAccount" ).Element();
             if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
-                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un userAccount" );
-                return NULL;
+                char* account = getenv ("ROK4_SWIFT_ACCOUNT");
+                if (account == NULL) {
+                    LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un userAccount" );
+                    return NULL;
+                } else {
+                    userAccount.assign(account);
+                }
             } else {
                 userAccount = pElemSwiftContext->GetText();
             }
 
             pElemSwiftContext = hLvl.FirstChild ( "swiftContext" ).FirstChild ( "userPassword" ).Element();
             if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
-                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un userPassword" );
-                return NULL;
+                char* passwd = getenv ("ROK4_SWIFT_PASSWD");
+                if (passwd == NULL) {
+                    LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un userPassword" );
+                    return NULL;
+                } else {
+                    userPassword.assign(passwd);
+                }
             } else {
                 userPassword = pElemSwiftContext->GetText();
             }
