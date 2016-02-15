@@ -165,6 +165,15 @@ protected:
 
     // A list of styles
     std::map<std::string, Style*> stylelist;
+    
+    bool getFeatureInfoAvailability;
+    std::string getFeatureInfoType;
+    std::string getFeatureInfoBaseURL;
+    std::string GFIVersion;
+    std::string GFIService;
+    std::string GFIQueryLayers;
+    std::string GFILayers;
+    bool GFIForceEPSG;
 
     std::string socket;
     int nbThread;
@@ -216,7 +225,17 @@ void CppUnitCapabilitiesBuilder::setUp() {
     palette0->buildPalettePNG();
     style = new Style ( id0,titles0,abstracts0,keyWords,legendURLs0,*palette0 );
     styleslayer.push_back(style);
-    layer = new Layer ( idlayer, titlelayer, abstractlayer, WMSAuthorized, WMTSAuthorized, keyWords, dataPyramidlayer, styleslayer, minReslayer, maxReslayer, WMSCRSListlayer, opaquelayer, authoritylayer, resamplinglayer, geographicBoundingBoxlayer, boundingBoxlayer, metadataURLslayer );
+    
+    getFeatureInfoAvailability = false;
+    getFeatureInfoType = "";
+    getFeatureInfoBaseURL = "";
+    GFIVersion = "";
+    GFIService = "";
+    GFIQueryLayers = "";
+    GFILayers = "";
+    GFIForceEPSG = true;
+    
+    layer = new Layer ( idlayer, titlelayer, abstractlayer, WMSAuthorized, WMTSAuthorized, keyWords, dataPyramidlayer, styleslayer, minReslayer, maxReslayer, WMSCRSListlayer, opaquelayer, authoritylayer, resamplinglayer, geographicBoundingBoxlayer, boundingBoxlayer, metadataURLslayer, getFeatureInfoAvailability, getFeatureInfoType, getFeatureInfoBaseURL, GFIVersion, GFIService, GFIQueryLayers, GFILayers, GFIForceEPSG );
     layerlist.insert(std::pair<std::string, Layer*> (layer->getId(), layer) );
 
     // Load TimeMatrixSet - Rok4Server 4th argument
