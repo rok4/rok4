@@ -36,15 +36,15 @@
 ################################################################################
 
 =begin nd
-File: PyrSource.pm
+File: WmsSource.pm
 
-Class: WMTSALAD::PyrSource
+Class: WMTSALAD::WmsSource
 
 
 
 Using:
     (start code)
-    use WMTSALAD::PyrSource;
+    use WMTSALAD::WmsSource;
 
     
     (end code)
@@ -55,7 +55,7 @@ Attributes:
 
 ################################################################################
 
-package WMTSALAD::PyrSource;
+package WMTSALAD::WmsSource;
 
 use strict;
 use warnings;
@@ -92,27 +92,29 @@ END {}
 
 Constructor: new
 
-<WMTSALAD::PyrSource's> constructor.
+<WMTSALAD::WmsSource's> constructor.
 
 Using:
     (start code)
-    new( { 
-        file => $file,
-        [style => $style,]
-        [transparent => $transparent,] 
+    new( {
+        wms_url     => 
+        wms_version => 
+        wms_layers  => 
+        wms_styles  =>
+        wms_format  =>
+        wms_crs     =>
+        wms_channels =>
     } )
     (end code)
 
 Parameters:
     params - hash reference, containing the following properties :
         {
-            file - string - Path to the source pyramid's descriptor file
-            style - string - The style to apply to source images when streaming them (optionnal)
-            transparent - boolean - Another style parameter, whose name is explicit (optionnal)
+            
         }
 
 Returns:
-    The newly created PyrSource object. 'undef' in case of failure.
+    The newly created WmsSource object. 'undef' in case of failure.
     
 =cut
 sub new() {
@@ -122,10 +124,9 @@ sub new() {
     my $class= ref($this) || $this;
 
     # IMPORTANT : if modification, think to update natural documentation (just above)
+    # see config/pyramids/pyramid.xsd to get the list of parameters.
+    # TODO : write it
     my $self = {
-        file => undef;
-        style => undef;
-        transparent => undef;
     };
 
     bless($self, $class);
@@ -146,24 +147,20 @@ sub new() {
 
 Function: _load
 
-<WMTSALAD::PyrSource's> constructor's annex. Checks parameters passed to 'new', 
-then load them in the new PyrSource object.
+<WMTSALAD::WmsSource's> constructor's annex. Checks parameters passed to 'new', 
+then load them in the new WmsSource object.
 
 Using:
     (start code)
-    _load( { 
-        file => $file,
-        [style => $style,]
-        [transparent => $transparent,] 
+    _load( {
+        
     } )
     (end code)
 
 Parameters:
     params - hash reference, containing the following properties :
         {
-            file - string - Path to the source pyramid's descriptor file
-            style - string - The style to apply to source images when streaming them (optionnal)
-            transparent - boolean - Another style parameter, whose name is explicit (optionnal)
+            
         }
 
 Returns:
