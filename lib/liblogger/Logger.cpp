@@ -120,7 +120,7 @@ std::ostream& Logger::getLogger(LogLevel level) {
 
 void Logger::stopLogger()
 {
-    for ( int i = 0 ; i <= nbLogLevel ; i++ ) {
+    for ( int i = 0 ; i < nbLogLevel ; i++ ) {
         std::ostream *L = (std::ostream*) pthread_getspecific(logger_key[( LogLevel ) i]);
         if (L != 0) {
             delete (logbuffer*) L->rdbuf(); // Delete the logbuffer associated with the outputstream

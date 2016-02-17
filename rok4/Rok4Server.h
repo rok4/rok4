@@ -59,7 +59,6 @@
 #include "fcgiapp.h"
 #include "ProcessFactory.h"
 #include <csignal>
-#include "LoggerSpecific.h"
 
 /**
  * \author Institut national de l'information géographique et forestière

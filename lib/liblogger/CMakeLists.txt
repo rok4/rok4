@@ -46,7 +46,7 @@ endif(DEBUG_BUILD)
 ########################################
 #définition des fichiers sources
 
-set(${PROJECT_NAME}_SRCS Accumulator.cpp Logger.cpp LoggerSpecific.cpp)
+set(${PROJECT_NAME}_SRCS Accumulator.cpp Logger.cpp)
 
 
 add_library(${PROJECT_NAME} STATIC ${${PROJECT_NAME}_SRCS})
