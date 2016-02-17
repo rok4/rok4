@@ -96,7 +96,7 @@ Constructor: new
 
 Using:
     (start code)
-    new( { 
+    my pyrSource = WMTSALAD::PyrSource->new( { 
         file => $file,
         [style => $style,]
         [transparent => $transparent,] 
@@ -107,8 +107,8 @@ Parameters:
     params - hash reference, containing the following properties :
         {
             file - string - Path to the source pyramid's descriptor file
-            style - string - The style to apply to source images when streaming them (optionnal)
-            transparent - boolean - Another style parameter, whose name is explicit (optionnal)
+            style - string - The style to apply to source images when streaming them (default : normal)
+            transparent - boolean - Another style parameter, whose name is explicit (default : false)
         }
 
 Returns:
@@ -151,7 +151,7 @@ then load them in the new PyrSource object.
 
 Using:
     (start code)
-    _load( { 
+    my loadSucces = pyrSource->_load( { 
         file => $file,
         [style => $style,]
         [transparent => $transparent,] 
@@ -162,8 +162,8 @@ Parameters:
     params - hash reference, containing the following properties :
         {
             file - string - Path to the source pyramid's descriptor file
-            style - string - The style to apply to source images when streaming them (optionnal)
-            transparent - boolean - Another style parameter, whose name is explicit (optionnal)
+            style - string - The style to apply to source images when streaming them (default : normal)
+            transparent - boolean - Another style parameter, whose name is explicit (default : false)
         }
 
 Returns:
@@ -182,8 +182,10 @@ sub _load() {
     $self->{file} = $params->{file};
     if (exists $params->{style} && defined $params->{style} && $params->{{style}} ne '') {
         $self->{style} = $params->{style};
+    } else {
+        $self->{style} = "normal";
     }
-    if (exists $params->{transparent} && defined $params->{transparent}) {
+    if (exists $params->{transparent} && defined $params->{transparent} && $params->{transparent} ne '') {
         if (lc $params->{transparent} eq "true" || $params->{transparent} == TRUE ) {
             $self->{transparent} = "true";
         } elsif (lc $params->{transparent} eq "false" || $params->{transparent} == FALSE ) {
@@ -191,6 +193,8 @@ sub _load() {
         } else {
             WARN(sprintf "Unhandled value for 'transparent' attribute : %s. Ignoring it.", $params->{transparent});
         }
+    } else {
+        $self->{transparent} = "false";
     }
 
     return TRUE;
