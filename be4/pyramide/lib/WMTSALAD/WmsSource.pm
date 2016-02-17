@@ -96,21 +96,42 @@ Constructor: new
 
 Using:
     (start code)
-    new( {
-        wms_url     => 
-        wms_version => 
-        wms_layers  => 
-        wms_styles  =>
-        wms_format  =>
-        wms_crs     =>
-        wms_channels =>
+    my wmsSource = WMTSALAD::WmsSource->new( {
+        wms_url         =>  "http://target.server.net/wms"
+        timeout         =>  60
+        retry           =>  10
+        wms_version     =>  "1.3.0"
+        layers          =>  "LAYER_1,LAYER_2,LAYER_3"
+        styles          =>  "STYLE_FOR_LAYER_1,STYLE_FOR_LAYER_2,STYLE_FOR_LAYER_3"
+        format          =>  "image/png"
+        crs             =>  "EPSG:2154"
+        extent          =>  "634500,6855000,636800,6857700"
+        channels        =>  3
+        nodata          =>  "0xFFA2FA"
     } )
     (end code)
 
 Parameters:
     params - hash reference, containing the following properties :
         {
-            
+            wms_url - string - WMS server's URL
+            proxy - string - proxy's URL (opt)
+            timeout - int - waiting time before timeout (opt)
+            retry - int - max number of tries (opt)
+            interval - int - time interval between tries (opt)
+            user - string - authentification username on the WMS server (opt)
+            password - string - authentification password (opt)
+            referer - string - authentification referer (opt)
+            userAgent - string - authentifcation user agent (opt)
+            wms_version - string - version number
+            layers - string - comma separated layers list
+            styles - string - comma separated styles list, matching the layers list
+            crs - string - coordinate reference system (opt)
+            format - string - output image format (opt)
+            channels - int - outpu image channels number
+            nodata - string - value of the no_data / background color
+            extent - string - data bounding box, in the following format : minx,miny,maxx,maxxy
+            option - string - WMS request options (opt)
         }
 
 Returns:
