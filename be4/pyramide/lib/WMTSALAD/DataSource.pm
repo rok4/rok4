@@ -119,7 +119,9 @@ sub new() {
 
     # IMPORTANT : if modification, think to update natural documentation (just above)
     my $self = {
-        
+        type => undef;
+        level => undef;
+        order => undef;
     };
 
     bless($self, $class);
