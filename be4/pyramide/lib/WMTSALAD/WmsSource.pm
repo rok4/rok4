@@ -85,10 +85,7 @@ INIT {
         format => ['image/png','image/tiff','image/x-bil;bits=32','image/tiff&format_options=compression:deflate','image/tiff&format_options=compression:lzw','image/tiff&format_options=compression:packbits','image/tiff&format_options=compression:raw'],
         version => ['1.1.1', '1.3.0'],
     );
-
-    %DEFAULT = (
-        min_size => 0,
-    );}
+}
 END {}
 
 ####################################################################################################
@@ -397,17 +394,6 @@ sub _load() {
     if (exists $params->{wms_option} && defined $params->{wms_option} && $params->{wms_option} ne '') {
         $self->{option} = $params->{wms_option};
     }
-
-
-
-
-
-
-
-
-
-
-
 
     return TRUE;
 }
