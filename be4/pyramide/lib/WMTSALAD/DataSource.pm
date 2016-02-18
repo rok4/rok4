@@ -97,18 +97,14 @@ Constructor: new
 Using:
     (start code)
     my dataSource = WMTSALAD::DataSource->new( { 
-        file => $file,
-        [style => $style,]
-        [transparent => $transparent,] 
+        f
     } )
     (end code)
 
 Parameters:
     params - hash reference, containing the following properties :
         {
-            file - string - Path to the source pyramid's descriptor file
-            style - string - The style to apply to source images when streaming them (default : normal)
-            transparent - boolean - Another style parameter, whose name is explicit (default : false)
+            
         }
 
 Returns:
@@ -123,19 +119,14 @@ sub new() {
 
     # IMPORTANT : if modification, think to update natural documentation (just above)
     my $self = {
-        file => undef;
-        style => undef;
-        transparent => undef;
+        
     };
 
     bless($self, $class);
 
-    if (!defined $file) {
-        return undef;
-    }
 
     if (!$self->_load($params)) {
-        ERROR("Could not load pyramid source.");
+        ERROR("Could not load data source.");
         return undef;
     }
 
@@ -152,18 +143,14 @@ then load them in the new DataSource object.
 Using:
     (start code)
     my loadSucces = dataSource->_load( { 
-        file => $file,
-        [style => $style,]
-        [transparent => $transparent,] 
+       
     } )
     (end code)
 
 Parameters:
     params - hash reference, containing the following properties :
         {
-            file - string - Path to the source pyramid's descriptor file
-            style - string - The style to apply to source images when streaming them (default : normal)
-            transparent - boolean - Another style parameter, whose name is explicit (default : false)
+            
         }
 
 Returns:
@@ -174,28 +161,7 @@ sub _load() {
     my $self = shift;
     my $params = shift;
 
-    if (!exists $params->{file} || !defined $params->{file}) {
-        ERROR("A pyramid descriptor's file file must be passed to load a pryamid source.");
-        return FALSE;
-    }
-
-    $self->{file} = $params->{file};
-    if (exists $params->{style} && defined $params->{style} && $params->{{style}} ne '') {
-        $self->{style} = $params->{style};
-    } else {
-        $self->{style} = "normal";
-    }
-    if (exists $params->{transparent} && defined $params->{transparent} && $params->{transparent} ne '') {
-        if (lc $params->{transparent} eq "true" || $params->{transparent} == TRUE ) {
-            $self->{transparent} = "true";
-        } elsif (lc $params->{transparent} eq "false" || $params->{transparent} == FALSE ) {
-            $self->{transparent} = "false";
-        } else {
-            WARN(sprintf "Unhandled value for 'transparent' attribute : %s. Ignoring it.", $params->{transparent});
-        }
-    } else {
-        $self->{transparent} = "false";
-    }
+   
 
     return TRUE;
 }
