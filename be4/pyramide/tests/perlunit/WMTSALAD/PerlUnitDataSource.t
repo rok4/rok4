@@ -32,6 +32,7 @@
 # The fact that you are presently reading this means that you have had
 #
 # knowledge of the CeCILL-C license and that you accept its terms.
+################################################################################
 
 use strict;
 use warnings;
@@ -85,6 +86,16 @@ undef $error;
 
 $error = $errDSrc->_init(    
     {
+        type => undef,
+        level => 7,
+        order => 0,
+    }
+);
+ok (! $error, "Undef source type");
+undef $error;
+
+$error = $errDSrc->_init(    
+    {
         type => "WMS",
         level => -12,
         order => 0,
@@ -96,11 +107,31 @@ undef $error;
 $error = $errDSrc->_init(    
     {
         type => "WMS",
+        level => undef,
+        order => 0,
+    }
+);
+ok (! $error, "Level is undef.");
+undef $error;
+
+$error = $errDSrc->_init(    
+    {
+        type => "WMS",
         level => 7,
         order => 0.05,
     }
 );
 ok (! $error, "Order is not a positive integer");
+undef $error;
+
+$error = $errDSrc->_init(    
+    {
+        type => "WMS",
+        level => 7,
+        order => undef,
+    }
+);
+ok (! $error, "Order is undef");
 undef $error;
 
 ######################################################
