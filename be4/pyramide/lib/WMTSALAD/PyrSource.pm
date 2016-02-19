@@ -40,16 +40,32 @@ File: PyrSource.pm
 
 Class: WMTSALAD::PyrSource
 
-
-
 Using:
     (start code)
     use WMTSALAD::PyrSource;
 
-    
+    my $pyrSource = WMTSALAD::PyrSource->new( { 
+        type => "WMS",
+        level => 7,
+        order => 0,
+        file => "/path/to/source_pyramid.pyr",
+        style => "normal",
+        transparent => "true",
+    } );
+
+    $pyrSource->write();    
     (end code)
 
 Attributes:
+    type - string - the type of datasource, to more easily identify it (inherited from <WMTSALAD::DataSource>)
+    level - positive integer (including 0) - the level ID for this source in the tile matrix sytem (TMS) (inherited from <WMTSALAD::DataSource>
+    order - positive integer (starts at 0) - the priority order for this source at this level (inherited from <WMTSALAD::DataSource>
+    file - string - Path to the source pyramid's descriptor file
+    style - string - The style to apply to source images when streaming them (default : normal)
+    transparent - boolean - Another style parameter, whose name is explicit (default : false)
+
+Related:
+    <WMTSALAD::DataSource> - Mother class
     
 =cut
 
@@ -63,9 +79,7 @@ use warnings;
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
 
-use AutoLoader qw(AUTOLOAD);
-
-use parent qw(WMTSALAD:DataSource Exporter);
+use parent qw(WMTSALAD::DataSource Exporter);
 
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
@@ -95,14 +109,14 @@ Constructor: new
 
 Using:
     (start code)
-    my pyrSource = WMTSALAD::PyrSource->new( { 
+    my $pyrSource = WMTSALAD::PyrSource->new( { 
         type => "WMS",
         level => 7,
         order => 0,
-        file => /path/to/source_pyramid.pyr,
-        [style => "normal",]
-        [transparent => "true",] 
-    } )
+        file => "/path/to/source_pyramid.pyr",
+        style => "normal",
+        transparent => "true",
+    } );
     (end code)
 
 Parameters:
@@ -135,6 +149,7 @@ sub new() {
     bless($self, $class);
 
     if (!defined $params->{file}) {
+        ERROR("Missing descriptor file's path.");
         return undef;
     }
 
@@ -159,9 +174,9 @@ Using:
         type => "WMS",
         level => 7,
         order => 0,
-        file => $file,
-        [style => $style,]
-        [transparent => $transparent,] 
+        file => "/path/to/source_pyramid.pyr",
+        style => "normal",
+        transparent => true,
     } )
     (end code)
 
@@ -184,7 +199,7 @@ sub _init() {
     my $self = shift;
     my $params = shift;
 
-    $self->SUPER::_init($params);
+    return FALSE if(!$self->SUPER::_init($params));
 
     if (!exists $params->{file} || !defined $params->{file}) {
         ERROR("A pyramid descriptor's file file must be passed to load a pryamid source.");
@@ -192,7 +207,7 @@ sub _init() {
     }
 
     $self->{file} = $params->{file};
-    if (exists $params->{style} && defined $params->{style} && $params->{{style}} ne '') {
+    if (exists $params->{style} && defined $params->{style} && $params->{style} ne '') {
         $self->{style} = $params->{style};
     } else {
         $self->{style} = "normal";
@@ -225,3 +240,6 @@ Function: write
 sub write() {
     return TRUE;
 }
+
+
+1;
