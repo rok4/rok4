@@ -40,16 +40,32 @@ File: DataSource.pm
 
 Class: WMTSALAD::DataSource
 
-
+Abstract class. Describes a data source and its priority at a given level of the output tile matrix set.
 
 Using:
     (start code)
-    use WMTSALAD::DataSource;
+    use parent qw(WMTSALAD::DataSource);
 
-    
+    new {
+        ...
+        $class->SUPER->new();
+        ....
+    }
+
+    _init {
+        ...
+        $self->SUPER->_init( {type => "WMS", level => 7, order => 0});
+        ...
+    }    
     (end code)
 
 Attributes:
+    type - string - the type of datasource, to more easily identify it
+    level - positive integer (including 0) - the level ID for this source in the tile matrix sytem (TMS)
+    order - positive integer (starts at 0) - the priority order for this source at this level
+
+Related:
+    <WMTSALAD:WmsSource>, <WMTSALAD::PyrSource>
     
 =cut
 
@@ -64,7 +80,6 @@ use Log::Log4perl qw(:easy);
 use Data::Dumper;
 
 require Exporter;
-use AutoLoader qw(AUTOLOAD);
 
 our @ISA = qw(Exporter);
 
@@ -77,10 +92,15 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
+# Constant: SRC_TYPE
+# Define allowed values for attribute "type".
+my @SRC_TYPE = ("WMS", "pyr");
+
 ################################################################################
 
 BEGIN {}
-INIT {}
+INIT {
+}
 END {}
 
 ####################################################################################################
@@ -96,19 +116,14 @@ Constructor: new
 
 Using:
     (start code)
-    my dataSource = WMTSALAD::DataSource->new( { 
-        f
-    } )
+    my dataSource = WMTSALAD::DataSource->new();
     (end code)
 
 Parameters:
-    params - hash reference, containing the following properties :
-        {
-            
-        }
+    none
 
 Returns:
-    The newly created DataSource object. 'undef' in case of failure.
+    The newly created DataSource object, with undefined parameters.
     
 =cut
 sub new() {
@@ -119,54 +134,136 @@ sub new() {
 
     # IMPORTANT : if modification, think to update natural documentation (just above)
     my $self = {
-        type => undef;
-        level => undef;
-        order => undef;
+        type => undef,
+        level => undef,
+        order => undef,
     };
 
     bless($self, $class);
-
-
-    if (!$self->_load($params)) {
-        ERROR("Could not load data source.");
-        return undef;
-    }
 
     return $self;
 }
 
 =begin nd
 
-Function: _load
+Function: _init
 
-<WMTSALAD::DataSource's> constructor's annex. Checks parameters passed to 'new', 
-then load them in the new DataSource object.
+<WMTSALAD::DataSource's> intializer.
 
 Using:
     (start code)
-    my loadSucces = dataSource->_load( { 
-       
+    my initSuccess = dataSource->_init( { 
+        type => "WMS",
+        level => 7,
+        order => 0,
     } )
     (end code)
 
 Parameters:
     params - hash reference, containing the following properties :
         {
-            
+            type - string - the type of datasource, to more easily identify it
+            level - positive integer (including 0) - the level ID for this source in the tile matrix sytem (TMS)
+            order - positive integer (starts at 0) - the priority order for this source at this level          
         }
 
 Returns:
     TRUE in case of success, FALSE in case of failure.
     
 =cut
-sub _load() {
+sub _init() {
     my $self = shift;
     my $params = shift;
 
-   
+    # Tests type
+    if (!exists $params->{type} || !defined $params->{type}) {
+        ERROR("Data source's type is undefined.");
+        return FALSE;
+    } elsif (!$self->isKnownType($params->{type})) {
+        ERROR(sprintf "Unrecognized data source's type : %s.", $params->{type});
+        return FALSE;
+    }
+    # Tests level
+    if (!exists $params->{level} || !defined $params->{level}) {
+        ERROR("Data source's level is undefined.");
+        return FALSE;
+    } elsif (!$self->isPositiveInt($params->{level})) {
+        ERROR(sprintf "Data source's level isn't a positive integer: %s.", $params->{level});
+        return FALSE;
+    }
+    # Tests order
+    if (!exists $params->{order} || !defined $params->{order}) {
+        ERROR("Data source's priority order is undefined.");
+        return FALSE;
+    } elsif (!$self->isPositiveInt($params->{order})) {
+        ERROR(sprintf "Data source's priority order isn't a positive integer: %s.", $params->{order});
+        return FALSE;
+    }
+
+    # Initializes
+    $self->{type} = $params->{type};
+    $self->{level} = $params->{level};
+    $self->{order} = $params->{order};
 
     return TRUE;
 }
+
+
+####################################################################################################
+#                                        Group: Tests                                              #
+####################################################################################################
+
+=begin nd
+
+Function: isKnownType
+
+Tests if the given type is recognized.
+
+Using:
+    (start code)
+    my answer = dataSource->isKnownType( $type );
+    (end code)
+
+Parameter:
+    type - string - the type to test
+
+=cut
+sub isKnownType {
+    my $self = shift;
+    my $type = shift;
+
+    return FALSE if (!defined $type);
+
+    foreach (@SRC_TYPE) {
+        return TRUE if ($type eq $_);
+    }
+
+    return FALSE;
+}
+
+=begin nd
+Function: isPositiveInt
+
+Tests if the item is a positive integer (decimal base).
+Source : http://www.perlmonks.org/?node_id=614452
+
+Parameters:
+    item - number/string - the item to test
+
+Returns:
+    The boolean answer to the question.
+=cut
+sub isPositiveInt {
+    my $self = shift;
+    my $item = shift;
+
+    if ($item =~ m/\A\+?[0-9]*[0-9][0-9]*\z/) {
+        return TRUE;
+    }
+    return FALSE;
+}
+
+
 
 
 ####################################################################################################
@@ -177,7 +274,13 @@ sub _load() {
 
 Function: write
 
+Abstract function. See child classes for implemented counteparts.
+
 =cut
 sub write() {
-    return TRUE;
+    1;
 }
+
+
+
+1;
