@@ -235,7 +235,7 @@ sub isKnownType {
     return FALSE if (!defined $type);
 
     foreach (@SRC_TYPE) {
-        return TRUE if ($type eq $_);
+        return TRUE if ((lc $type) eq (lc $_));
     }
 
     return FALSE;

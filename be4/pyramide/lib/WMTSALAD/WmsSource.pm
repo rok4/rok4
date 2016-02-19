@@ -482,7 +482,7 @@ Parameters:
 Returns:
     The boolean answer to the question.
 =cut
-sub isPositiveInt {
+sub isNumber {
     my $self = shift;
     my $item = shift;
 
