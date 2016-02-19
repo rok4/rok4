@@ -63,10 +63,9 @@ use warnings;
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
 
-require Exporter;
 use AutoLoader qw(AUTOLOAD);
 
-our @ISA = qw(Exporter);
+use parent qw(WMTSALAD:DataSource Exporter);
 
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
@@ -97,15 +96,21 @@ Constructor: new
 Using:
     (start code)
     my pyrSource = WMTSALAD::PyrSource->new( { 
-        file => $file,
-        [style => $style,]
-        [transparent => $transparent,] 
+        type => "WMS",
+        level => 7,
+        order => 0,
+        file => /path/to/source_pyramid.pyr,
+        [style => "normal",]
+        [transparent => "true",] 
     } )
     (end code)
 
 Parameters:
     params - hash reference, containing the following properties :
         {
+            type - string - the type of datasource, to more easily identify it
+            level - positive integer (including 0) - the level ID for this source in the tile matrix sytem (TMS)
+            order - positive integer (starts at 0) - the priority order for this source at this level 
             file - string - Path to the source pyramid's descriptor file
             style - string - The style to apply to source images when streaming them (default : normal)
             transparent - boolean - Another style parameter, whose name is explicit (default : false)
@@ -122,19 +127,18 @@ sub new() {
     my $class= ref($this) || $this;
 
     # IMPORTANT : if modification, think to update natural documentation (just above)
-    my $self = {
-        file => undef;
-        style => undef;
-        transparent => undef;
-    };
+    my $self = $class->SUPER::new($params);
+    $self->{file} = undef;
+    $self->{style} = undef;
+    $self->{transparent} = undef;
 
     bless($self, $class);
 
-    if (!defined $file) {
+    if (!defined $params->{file}) {
         return undef;
     }
 
-    if (!$self->_load($params)) {
+    if (!$self->_init($params)) {
         ERROR("Could not load pyramid source.");
         return undef;
     }
@@ -144,14 +148,17 @@ sub new() {
 
 =begin nd
 
-Function: _load
+Function: _init
 
-<WMTSALAD::PyrSource's> constructor's annex. Checks parameters passed to 'new', 
+<WMTSALAD::PyrSource's> initializer. Checks parameters passed to 'new', 
 then load them in the new PyrSource object.
 
 Using:
     (start code)
-    my loadSucces = pyrSource->_load( { 
+    my loadSucces = pyrSource->_init( { 
+        type => "WMS",
+        level => 7,
+        order => 0,
         file => $file,
         [style => $style,]
         [transparent => $transparent,] 
@@ -161,6 +168,9 @@ Using:
 Parameters:
     params - hash reference, containing the following properties :
         {
+            type - string - the type of datasource, to more easily identify it
+            level - positive integer (including 0) - the level ID for this source in the tile matrix sytem (TMS)
+            order - positive integer (starts at 0) - the priority order for this source at this level 
             file - string - Path to the source pyramid's descriptor file
             style - string - The style to apply to source images when streaming them (default : normal)
             transparent - boolean - Another style parameter, whose name is explicit (default : false)
@@ -170,9 +180,11 @@ Returns:
     TRUE in case of success, FALSE in case of failure.
     
 =cut
-sub _load() {
+sub _init() {
     my $self = shift;
     my $params = shift;
+
+    $self->SUPER::_init($params);
 
     if (!exists $params->{file} || !defined $params->{file}) {
         ERROR("A pyramid descriptor's file file must be passed to load a pryamid source.");
