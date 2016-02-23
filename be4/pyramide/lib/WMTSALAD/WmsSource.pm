@@ -298,8 +298,8 @@ sub _init() {
     if (!exists $params->{wms_channels} || !defined $params->{wms_channels} || $params->{wms_channels} eq '') {
         ERROR("Undefined images' number of channels.");
         return FALSE;
-    } elsif (! $self->isPositiveInt($params->{wms_channels})) {
-        ERROR("Channels number must be a positive integer.");
+    } elsif ( (! $self->isPositiveInt($params->{wms_channels})) || ($params->{wms_channels} == 0) ) {
+        ERROR("Channels number must be a strict positive integer.");
         return FALSE;
     }
     $self->{channels} = $params->{wms_channels};
@@ -321,11 +321,16 @@ sub _init() {
         ERROR("Wrong coordinates count in extent. Extent should be 'min_x,min_y,max_x,max_y'");
         return FALSE;
     }
-    foreach my $coord (split (',',$params->{wms_extent})) {
+    my @coords = split (',',$params->{wms_extent});
+    foreach my $coord (@coords) {
         if (! $self->isNumber($coord)) {
             ERROR("Extent coordinates should be decimal numbers.");
             return FALSE;
         }
+    }
+    if (($coords[0] >= $coords[2]) || ($coords[1] >= $coords[3])) {
+        ERROR("Wrong coordinates order in extent. Extent should be 'min_x,min_y,max_x,max_y'");
+        return FALSE;
     }
     $self->{extent} = $params->{wms_extent};
 
@@ -430,7 +435,7 @@ sub isWmsFormat {
     foreach (@{$WMS{format}}) {
         return TRUE if ($wmsformat eq $_);
     }
-    ERROR (sprintf "Unknown 'wms_format' (%s) !",$wmsformat);
+    ERROR (sprintf "Unknown 'wms_format' (%s).",$wmsformat);
     return FALSE;
 }
 
@@ -457,7 +462,7 @@ sub isWmsVersion {
     foreach (@{$WMS{version}}) {
         return TRUE if ($wmsversion eq $_);
     }
-    ERROR (sprintf "Unknown or unsupported 'wms_version' (%s) !",$wmsversion);
+    ERROR (sprintf "Unknown or unsupported 'wms_version' (%s).",$wmsversion);
     return FALSE;
 }
 
