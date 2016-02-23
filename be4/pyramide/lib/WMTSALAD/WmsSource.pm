@@ -40,16 +40,55 @@ File: WmsSource.pm
 
 Class: WMTSALAD::WmsSource
 
-
-
 Using:
     (start code)
     use WMTSALAD::WmsSource;
 
-    
+    my wmsSource = WMTSALAD::WmsSource->new( {
+        type                =>  "WMS",
+        level               =>  7,
+        order               =>  0,
+        wms_url             =>  "http://target.server.net/wms"
+        wms_timeout         =>  60
+        wms_retry           =>  10
+        wms_version         =>  "1.3.0"
+        wms_layers          =>  "LAYER_1,LAYER_2,LAYER_3"
+        wms_styles          =>  "STYLE_FOR_LAYER_1,STYLE_FOR_LAYER_2,STYLE_FOR_LAYER_3"
+        wms_format          =>  "image/png"
+        wms_crs             =>  "EPSG:2154"
+        wms_extent          =>  "634500,6855000,636800,6857700"
+        wms_channels        =>  3
+        wms_nodata          =>  "0xFFA2FA"
+    } );
+
+    $wmsSource->write();    
     (end code)
 
 Attributes:
+    type - string - the type of datasource, to more easily identify it (inherited from <WMTSALAD::DataSource>)
+    level - positive integer (including 0) - the level ID for this source in the tile matrix sytem (TMS) (inherited from <WMTSALAD::DataSource>
+    order - positive integer (starts at 0) - the priority order for this source at this level (inherited from <WMTSALAD::DataSource>
+    wms_url - string - WMS server's URL
+    wms_proxy - string - proxy's URL (opt)
+    wms_timeout - int - waiting time before timeout, in seconds (opt)
+    wms_retry - int - max number of tries (opt)
+    wms_interval - int - time interval between tries, in seconds  (opt)
+    wms_user - string - authentification username on the WMS server (opt)
+    wms_password - string - authentification password (opt)
+    wms_referer - string - authentification referer (opt)
+    wms_userAgent - string - authentifcation user agent (opt)
+    wms_version - string - version number
+    wms_layers - string - comma separated layers list
+    wms_styles - string - comma separated styles list, matching the layers list
+    wms_crs - string - coordinate reference system (opt)
+    wms_format - string - output image format (opt)
+    wms_channels - int - output image channels number
+    wms_nodata - string - value of the no_data / background color
+    wms_extent - string - data bounding box, in the following format : minx,miny,maxx,maxxy
+    wms_option - string - WMS request options (opt)
+
+Related:
+    <WMTSALAD::DataSource> - Mother class
     
 =cut
 
@@ -298,7 +337,7 @@ sub _init() {
     if (!exists $params->{wms_channels} || !defined $params->{wms_channels} || $params->{wms_channels} eq '') {
         ERROR("Undefined images' number of channels.");
         return FALSE;
-    } elsif ( (! $self->isPositiveInt($params->{wms_channels})) || ($params->{wms_channels} == 0) ) {
+    } elsif ( (! $self->SUPER::isPositiveInt($params->{wms_channels})) || ($params->{wms_channels} == 0) ) {
         ERROR("Channels number must be a strict positive integer.");
         return FALSE;
     }
@@ -345,7 +384,7 @@ sub _init() {
 
     ## wms_timeout - (opt)
     if (exists $params->{wms_timeout} && defined $params->{wms_timeout} && $params->{wms_timeout} ne '') {
-        if (! $self->isPositiveInt($params->{wms_timeout})) {
+        if (! $self->SUPER::isPositiveInt($params->{wms_timeout})) {
             ERROR("Request timeout value must be a positive integer.");
             return FALSE;
         }
@@ -354,7 +393,7 @@ sub _init() {
 
     ## wms_retry - (opt)
     if (exists $params->{wms_retry} && defined $params->{wms_retry} && $params->{wms_retry} ne '') {
-        if (! $self->isPositiveInt($params->{wms_retry})) {
+        if (! $self->SUPER::isPositiveInt($params->{wms_retry})) {
             ERROR("Request retry number must be a positive integer.");
             return FALSE;
         }
@@ -363,7 +402,7 @@ sub _init() {
 
     ## wms_interval - (opt)
     if (exists $params->{wms_interval} && defined $params->{wms_interval} && $params->{wms_interval} ne '') {
-        if (! $self->isPositiveInt($params->{wms_interval})) {
+        if (! $self->SUPER::isPositiveInt($params->{wms_interval})) {
             ERROR("Request retry interval delay must be a positive integer.");
             return FALSE;
         }
@@ -465,29 +504,6 @@ sub isWmsVersion {
     ERROR (sprintf "Unknown or unsupported 'wms_version' (%s).",$wmsversion);
     return FALSE;
 }
-
-=begin nd
-Function: isPositiveInt
-
-Tests if the item is a positive integer (decimal base).
-Source : http://www.perlmonks.org/?node_id=614452
-
-Parameters:
-    item - number/string - the item to test
-
-Returns:
-    The boolean answer to the question.
-=cut
-sub isPositiveInt {
-    my $self = shift;
-    my $item = shift;
-
-    if ($item =~ m/\A\+?[0-9]*[0-9][0-9]*\z/) {
-        return TRUE;
-    }
-    return FALSE;
-}
-
 
 =begin nd
 Function: isNumber
