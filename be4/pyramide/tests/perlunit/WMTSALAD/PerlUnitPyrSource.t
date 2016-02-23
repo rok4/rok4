@@ -55,7 +55,7 @@ use WMTSALAD::PyrSource;
 
 # PyrSource creation with all parameters defined
 my $pyrSource = WMTSALAD::PyrSource->new( { 
-        type => "WMS",
+        type => "pyr",
         level => 7,
         order => 0,
         file => "/path/to/source_pyramid.pyr",
@@ -68,7 +68,7 @@ undef $pyrSource;
 
 # PyrSource creation with only mandatory parameters defined
 $pyrSource = WMTSALAD::PyrSource->new( { 
-        type => "WMS",
+        type => "pyr",
         level => 7,
         order => 0,
         file => "/path/to/source_pyramid.pyr",
@@ -79,7 +79,7 @@ ok (defined $pyrSource, "PyrSource (mandatory parameters only) created");
 
 # Bad parameters
 my $error = WMTSALAD::PyrSource->new( { 
-        type => "WFS",
+        type => "FakeType",
         level => 7,
         order => 0,
         file => "/path/to/source_pyramid.pyr",
@@ -101,7 +101,7 @@ ok (!defined $error, "Undefined datasource type");
 undef $error;
 
 $error = WMTSALAD::PyrSource->new( { 
-        type => "WMS",
+        type => "pyr",
         level => -12,
         order => 0,
         file => "/path/to/source_pyramid.pyr",
@@ -112,7 +112,7 @@ ok (!defined $error, "Invalid level.");
 undef $error;
 
 $error = WMTSALAD::PyrSource->new( { 
-        type => "WMS",
+        type => "pyr",
         level => undef,
         order => 0,
         file => "/path/to/source_pyramid.pyr",
@@ -123,7 +123,7 @@ ok (!defined $error, "Undefined level.");
 undef $error;
 
 $error = WMTSALAD::PyrSource->new( { 
-        type => "WMS",
+        type => "pyr",
         level => 7,
         order => 0.05,
         file => "/path/to/source_pyramid.pyr",
@@ -134,7 +134,7 @@ ok (!defined $error, "Invalid order.");
 undef $error;
 
 $error = WMTSALAD::PyrSource->new( { 
-        type => "WMS",
+        type => "pyr",
         level => 7,
         order => undef,
         file => "/path/to/source_pyramid.pyr",
@@ -145,7 +145,7 @@ ok (!defined $error, "Undefined order.");
 undef $error;
 
 $error = WMTSALAD::PyrSource->new( { 
-        type => "WMS",
+        type => "pyr",
         level => 7,
         order => 0,
         file => undef,

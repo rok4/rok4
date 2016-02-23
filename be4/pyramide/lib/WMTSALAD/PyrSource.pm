@@ -45,7 +45,7 @@ Using:
     use WMTSALAD::PyrSource;
 
     my $pyrSource = WMTSALAD::PyrSource->new( { 
-        type => "WMS",
+        type => "pyr",
         level => 7,
         order => 0,
         file => "/path/to/source_pyramid.pyr",
@@ -110,7 +110,7 @@ Constructor: new
 Using:
     (start code)
     my $pyrSource = WMTSALAD::PyrSource->new( { 
-        type => "WMS",
+        type => "pyr",
         level => 7,
         order => 0,
         file => "/path/to/source_pyramid.pyr",
@@ -147,11 +147,6 @@ sub new() {
     $self->{transparent} = undef;
 
     bless($self, $class);
-
-    if (!defined $params->{file}) {
-        ERROR("Missing descriptor file's path.");
-        return undef;
-    }
 
     if (!$self->_init($params)) {
         ERROR("Could not load pyramid source.");

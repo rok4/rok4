@@ -64,9 +64,8 @@ use Log::Log4perl qw(:easy);
 use Data::Dumper;
 
 require Exporter;
-use AutoLoader qw(AUTOLOAD);
 
-our @ISA = qw(Exporter);
+use parent qw(WMTSALAD::DataSource Exporter);
 
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
@@ -76,6 +75,10 @@ our @EXPORT      = qw();
 # Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
+
+# Constant: WMS
+# Define allowed values for attributes wms_format and wms_version.
+my %WMS;
 
 ################################################################################
 
@@ -102,6 +105,9 @@ Constructor: new
 Using:
     (start code)
     my wmsSource = WMTSALAD::WmsSource->new( {
+        type                =>  "WMS",
+        level               =>  7,
+        order               =>  0,
         wms_url             =>  "http://target.server.net/wms"
         wms_timeout         =>  60
         wms_retry           =>  10
@@ -119,6 +125,9 @@ Using:
 Parameters:
     params - hash reference, containing the following properties :
         {
+            type - string - the type of datasource, to more easily identify it (inherited from <WMTSALAD::DataSource>)
+            level - positive integer (including 0) - the level ID for this source in the tile matrix sytem (TMS) (inherited from <WMTSALAD::DataSource>
+            order - positive integer (starts at 0) - the priority order for this source at this level (inherited from <WMTSALAD::DataSource>
             wms_url - string - WMS server's URL
             wms_proxy - string - proxy's URL (opt)
             wms_timeout - int - waiting time before timeout, in seconds (opt)
@@ -151,34 +160,29 @@ sub new() {
 
     # IMPORTANT : if modification, think to update natural documentation (just above)
     # see config/pyramids/pyramid.xsd to get the list of parameters, as used by Rok4.
-    my $self = {
-        url => undef,
-        proxy => undef,
-        timeout => undef,
-        retry => undef,
-        interval => undef,
-        user => undef,
-        password => undef,
-        referer => undef,
-        userAgent => undef,
-        version => undef,
-        layers => undef,
-        styles => undef,
-        crs => undef,
-        format => undef,
-        channels => undef,
-        nodata => undef,
-        extent => undef,
-        option => undef,
-    };
+    my $self = $class->SUPER::new($params);
+        $self->{url} = undef;
+        $self->{proxy} = undef;
+        $self->{timeout} = undef;
+        $self->{retry} = undef;
+        $self->{interval} = undef;
+        $self->{user} = undef;
+        $self->{password} = undef;
+        $self->{referer} = undef;
+        $self->{userAgent} = undef;
+        $self->{version} = undef;
+        $self->{layers} = undef;
+        $self->{styles} = undef;
+        $self->{crs} = undef;
+        $self->{format} = undef;
+        $self->{channels} = undef;
+        $self->{nodata} = undef;
+        $self->{extent} = undef;
+        $self->{option} = undef;
 
     bless($self, $class);
 
-    if (!defined $file) {
-        return undef;
-    }
-
-    if (!$self->_load($params)) {
+    if (!$self->_init($params)) {
         ERROR("Could not load pyramid source.");
         return undef;
     }
@@ -188,14 +192,17 @@ sub new() {
 
 =begin nd
 
-Function: _load
+Function: _init
 
 <WMTSALAD::WmsSource's> constructor's annex. Checks parameters passed to 'new', 
 then load them in the new WmsSource object.
 
 Using:
     (start code)
-    _load( {
+    _init( {
+        type                =>  "WMS",
+        level               =>  7,
+        order               =>  0,
         wms_url             =>  "http://target.server.net/wms"
         wms_timeout         =>  60
         wms_retry           =>  10
@@ -237,10 +244,11 @@ Returns:
     TRUE in case of success, FALSE in case of failure.
     
 =cut
-sub _load() {
+sub _init() {
     my $self = shift;
     my $params = shift;
 
+    return FALSE if(!$self->SUPER::_init($params));
 
     foreach my $key (keys $params) {
         chomp $params->{$key};
@@ -261,7 +269,7 @@ sub _load() {
     if (!exists $params->{wms_version} || !defined $params->{wms_version} || $params->{wms_version} eq '') {
         ERROR("Undefined WMS protocol version.");
         return FALSE;
-    } elsif (! isWmsVersion($params->{wms_version}; {
+    } elsif (! $self->isWmsVersion($params->{wms_version})) {
         return FALSE;
     }
     $self->{version} = $params->{wms_version};
@@ -290,7 +298,7 @@ sub _load() {
     if (!exists $params->{wms_channels} || !defined $params->{wms_channels} || $params->{wms_channels} eq '') {
         ERROR("Undefined images' number of channels.");
         return FALSE;
-    } elsif (! isPositiveInt($params->{wms_channels})) {
+    } elsif (! $self->isPositiveInt($params->{wms_channels})) {
         ERROR("Channels number must be a positive integer.");
         return FALSE;
     }
@@ -314,7 +322,7 @@ sub _load() {
         return FALSE;
     }
     foreach my $coord (split (',',$params->{wms_extent})) {
-        if (! isNumber($coord)) {
+        if (! $self->isNumber($coord)) {
             ERROR("Extent coordinates should be decimal numbers.");
             return FALSE;
         }
@@ -332,7 +340,7 @@ sub _load() {
 
     ## wms_timeout - (opt)
     if (exists $params->{wms_timeout} && defined $params->{wms_timeout} && $params->{wms_timeout} ne '') {
-        if (! isPositiveInt($params->{wms_timeout})) {
+        if (! $self->isPositiveInt($params->{wms_timeout})) {
             ERROR("Request timeout value must be a positive integer.");
             return FALSE;
         }
@@ -341,7 +349,7 @@ sub _load() {
 
     ## wms_retry - (opt)
     if (exists $params->{wms_retry} && defined $params->{wms_retry} && $params->{wms_retry} ne '') {
-        if (! isPositiveInt($params->{wms_retry})) {
+        if (! $self->isPositiveInt($params->{wms_retry})) {
             ERROR("Request retry number must be a positive integer.");
             return FALSE;
         }
@@ -350,7 +358,7 @@ sub _load() {
 
     ## wms_interval - (opt)
     if (exists $params->{wms_interval} && defined $params->{wms_interval} && $params->{wms_interval} ne '') {
-        if (! isPositiveInt($params->{wms_interval})) {
+        if (! $self->isPositiveInt($params->{wms_interval})) {
             ERROR("Request retry interval delay must be a positive integer.");
             return FALSE;
         }
@@ -384,7 +392,7 @@ sub _load() {
 
     ## wms_format - (opt)
     if (exists $params->{wms_format} && defined $params->{wms_format} && $params->{wms_format} ne '') {
-        if (! isWmsFormat($params->{wms_format})) {
+        if (! $self->isWmsFormat($params->{wms_format})) {
             return FALSE;
         }
         $self->{format} = $params->{wms_format};
@@ -394,6 +402,7 @@ sub _load() {
     if (exists $params->{wms_option} && defined $params->{wms_option} && $params->{wms_option} ne '') {
         $self->{option} = $params->{wms_option};
     }
+
 
     return TRUE;
 }
@@ -434,12 +443,16 @@ Parameters (list):
     wmsversion - string - Version value to test
 =cut
 sub isWmsVersion {
+
     my $self = shift;
     my $wmsversion = shift;
 
     TRACE;
 
-    return FALSE if (! defined $wmsversion);
+    if (! defined $wmsversion) {
+        ERROR("Undefined 'wms_version'.");
+        return FALSE;
+    }
 
     foreach (@{$WMS{version}}) {
         return TRUE if ($wmsversion eq $_);
@@ -506,3 +519,5 @@ Function: write
 sub write() {
     return TRUE;
 }
+
+1;
