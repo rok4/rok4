@@ -53,20 +53,29 @@ use WMTSALAD::Pyramid;
 
 ####################### Good ######################
 
-# WmsSource creation with all parameters defined
-my $wmsSource = WMTSALAD::Pyramid->new( { 
-    } );
-ok (defined $wmsSource, "Pyramid (all parameters) created");
-undef $wmsSource;
+# Pyramid creation with all parameters defined
+my $pyramid = WMTSALAD::Pyramid->new();
+ok (defined $pyramid, "Pyramid created");
+
+my $initSuccess = $pyramid->_init('/home/xavier/workspace/be4/WMTSalaD/tests/test_conf_valide.conf');
+ok ($initSuccess, "Pyramid initialised");
+
+undef $pyramid;
+undef $initSuccess;
 
 
-################# Bad Mandatory ################
+####################### Bad #######################
+
+# Pyramid creation with no properties configuration file
+my $errPyramid = WMTSALAD::Pyramid->new();
+$initSuccess = $errPyramid->_init();
+ok(!$initSuccess, "Pyramid with no properties configuration file");
+undef $errPyramid;
+undef $initSuccess;
 
 
-################## Bad Optionnal #################
 
-
-####################### End ######################
+####################### End #######################
 
 done_testing();
 

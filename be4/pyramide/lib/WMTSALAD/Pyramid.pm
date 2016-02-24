@@ -63,10 +63,13 @@ package WMTSALAD::Pyramid;
 use strict;
 use warnings;
 
+use File::Spec;
+
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
-
-require Exporter;
+use COMMON::Config;
+use BE4::TileMatrixSet;
+use BE4::TileMatrix;
 
 use parent qw(Exporter);
 
@@ -78,6 +81,21 @@ our @EXPORT      = qw();
 # Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
+
+my %IMAGE_SPECS = (
+        format => [
+            "TIFF_RAW_INT8",
+            "TIFF_JPG_INT8",
+            "TIFF_PNG_INT8",
+            "TIFF_LZW_INT8",
+            "TIFF_RAW_FLOAT32",
+            "TIFF_LZW_FLOAT32",
+            "TIFF_ZIP_INT8",
+            "TIFF_ZIP_FLOAT32",
+            "TIFF_PKB_INT8",
+            "TIFF_PKB_FLOAT32"
+        ],
+    );
 
 ################################################################################
 
@@ -113,21 +131,113 @@ Returns:
     The newly created Pyramid object. 'undef' in case of failure.
     
 =cut
-sub new() {
+sub new {
     my $this = shift;
-    my $params = shift;
+    my $propertiesFile = shift;
+    my $datasourcesFile = shift;
 
     my $class= ref($this) || $this;
 
     # IMPORTANT : if modification, think to update natural documentation (just above)
     # see config/pyramids/pyramid.xsd to get the list of parameters, as used by Rok4.
     my $self = {
+        tileMatrixSet => undef,
+        format => undef,
+        channels => undef,
+        noDataValue => undef,
+        interpolation => undef,
+        photometric => undef,
+        persistent => undef,
+        dir_depth => undef,
+        dir_image => undef,
+        dir_nodata => undef,
+        dir_mask => undef,
+        dir_metadata => undef,
+        pyr_name => undef,
+        pyr_data_path => undef,
+        pyr_desc_path => undef,
 
+        datasources => {},
     };
 
     bless($self, $class);
 
+    $self->_init($propertiesFile,$datasourcesFile);
+
     return $self;
+}
+
+sub _init {
+    my $self = shift;
+    my $propertiesFile = shift;
+    my $datasourcesFile = shift;
+
+    return FALSE if (!$self->_loadProperties($propertiesFile));
+    return FALSE if (!$self->_loadProperties($datasourcesFile));
+
+    return TRUE;
+}
+
+
+####################################################################################################
+#                              Group: Configuration files parsing                                  #
+####################################################################################################
+
+sub _loadProperties {
+    my $self = shift;
+    my $file = shift;
+
+    if ((!defined $file) || ($file eq '')) {
+        ERROR("Undefined properties configuration file.");
+        return FALSE;
+    } elsif ((! -e $file) || (! -r $file) || (-d $file)) {
+        ERROR(sprintf "The properties configuration file does not exist, is not readable, or is a directory : %s", $file);
+        return FALSE;
+    }
+
+
+    my $fileContent = COMMON::Config->new({
+        '-filepath' => $file,
+        '-format' => 'INI',
+        });
+
+    my $TMS = BE4::TileMatrixSet->new(File::Spec->catfile($fileContent->{pyramid}->{tms_path},$fileContent->{pyramid}->{tms_name});
+    $self->{tileMatrixSet} = $TMS ;
+
+    my $format = "TIFF_";
+    if ($fileContent->{pyramid}->{compression} =~ m/^jpg|png|lzw|zip|pkb$/i) {
+        $format.= uc($fileContent->{pyramid}->{compression})."_";
+     } else {
+        $format .= "RAW_";
+     };
+     $format .= uc($fileContent->{pyramid}->{sampleformat}).$fileContent->{pyramid}->{bitspersample} ;
+     if (!$self->isImageFormat($format)) {
+        ERROR("Unrecognized image format : $format.");
+        return FALSE;
+     }
+     $self->{format} = $format;
+
+     $self->{channels} =
+
+
+    return TRUE;
+}
+
+
+sub _loadDatasources {
+    my $self = shift;
+    my $file = shift;
+
+
+    if ((!defined $file) || ($file eq '')) {
+        ERROR("Undefined datasources configuration file.");
+        return FALSE;
+    } elsif ((! -e $file) || (! -r $file) || (-d $file)) {
+        ERROR(sprintf "The datasources configuration file does not exist, is not readable, or is a directory : %s", $file);
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 
@@ -135,6 +245,25 @@ sub new() {
 #                                        Group: Tests                                              #
 ####################################################################################################
 
+sub isImageFormat {
+    my $self = shift;
+    my $string = shift;
+
+    foreach my $imgFormat (@{$IMAGE_SPECS{format}}) {
+        return TRUE if ($imgFormat eq $string);
+    }
+
+    return FALSE;
+}
+
+
+sub _checkProperties {
+
+}
+
+sub _checkDatasources {
+
+}
 
 ####################################################################################################
 #                                        Group: Output                                             #
