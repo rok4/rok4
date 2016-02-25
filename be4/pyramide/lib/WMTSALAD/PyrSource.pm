@@ -86,7 +86,7 @@ our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
 ################################################################################
-# Constantes
+# Constants
 use constant TRUE  => 1;
 use constant FALSE => 0;
 

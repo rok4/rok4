@@ -78,6 +78,7 @@ use warnings;
 
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
+use COMMON::CheckUtils;
 
 require Exporter;
 
@@ -88,7 +89,7 @@ our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
 ################################################################################
-# Constantes
+# Constants
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
@@ -187,7 +188,7 @@ sub _init() {
     if (!exists $params->{level} || !defined $params->{level}) {
         ERROR("Data source's level is undefined.");
         return FALSE;
-    } elsif (!$self->isPositiveInt($params->{level})) {
+    } elsif (!COMMON::CheckUtils::isPositiveInt($params->{level})) {
         ERROR(sprintf "Data source's level isn't a positive integer: %s.", $params->{level});
         return FALSE;
     }
@@ -195,7 +196,7 @@ sub _init() {
     if (!exists $params->{order} || !defined $params->{order}) {
         ERROR("Data source's priority order is undefined.");
         return FALSE;
-    } elsif (!$self->isPositiveInt($params->{order})) {
+    } elsif (!COMMON::CheckUtils::isPositiveInt($params->{order})) {
         ERROR(sprintf "Data source's priority order isn't a positive integer: %s.", $params->{order});
         return FALSE;
     }
@@ -240,29 +241,6 @@ sub isKnownType {
 
     return FALSE;
 }
-
-=begin nd
-Function: isPositiveInt
-
-Tests if the item is a positive integer (decimal base).
-Source : http://www.perlmonks.org/?node_id=614452
-
-Parameters:
-    item - number/string - the item to test
-
-Returns:
-    The boolean answer to the question.
-=cut
-sub isPositiveInt {
-    my $self = shift;
-    my $item = shift;
-
-    if ($item =~ m/\A\+?[0-9]*[0-9][0-9]*\z/) {
-        return TRUE;
-    }
-    return FALSE;
-}
-
 
 
 

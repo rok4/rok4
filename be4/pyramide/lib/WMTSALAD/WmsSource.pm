@@ -101,6 +101,7 @@ use warnings;
 
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
+use COMMON::CheckUtils;
 
 require Exporter;
 
@@ -111,7 +112,7 @@ our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
 ################################################################################
-# Constantes
+# Constants
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
@@ -337,7 +338,7 @@ sub _init() {
     if (!exists $params->{wms_channels} || !defined $params->{wms_channels} || $params->{wms_channels} eq '') {
         ERROR("Undefined images' number of channels.");
         return FALSE;
-    } elsif ( (! $self->SUPER::isPositiveInt($params->{wms_channels})) || ($params->{wms_channels} == 0) ) {
+    } elsif ( ! COMMON::CheckUtils::isStrictPositiveInt($params->{wms_channels})) {
         ERROR("Channels number must be a strict positive integer.");
         return FALSE;
     }
@@ -362,7 +363,7 @@ sub _init() {
     }
     my @coords = split (',',$params->{wms_extent});
     foreach my $coord (@coords) {
-        if (! $self->isNumber($coord)) {
+        if (! COMMON::CheckUtils::isNumber($coord)) {
             ERROR("Extent coordinates should be decimal numbers.");
             return FALSE;
         }
@@ -384,7 +385,7 @@ sub _init() {
 
     ## wms_timeout - (opt)
     if (exists $params->{wms_timeout} && defined $params->{wms_timeout} && $params->{wms_timeout} ne '') {
-        if (! $self->SUPER::isPositiveInt($params->{wms_timeout})) {
+        if (! COMMON::CheckUtils::isPositiveInt($params->{wms_timeout})) {
             ERROR("Request timeout value must be a positive integer.");
             return FALSE;
         }
@@ -393,7 +394,7 @@ sub _init() {
 
     ## wms_retry - (opt)
     if (exists $params->{wms_retry} && defined $params->{wms_retry} && $params->{wms_retry} ne '') {
-        if (! $self->SUPER::isPositiveInt($params->{wms_retry})) {
+        if (! COMMON::CheckUtils::isPositiveInt($params->{wms_retry})) {
             ERROR("Request retry number must be a positive integer.");
             return FALSE;
         }
@@ -402,7 +403,7 @@ sub _init() {
 
     ## wms_interval - (opt)
     if (exists $params->{wms_interval} && defined $params->{wms_interval} && $params->{wms_interval} ne '') {
-        if (! $self->SUPER::isPositiveInt($params->{wms_interval})) {
+        if (! COMMON::CheckUtils::isPositiveInt($params->{wms_interval})) {
             ERROR("Request retry interval delay must be a positive integer.");
             return FALSE;
         }
@@ -504,28 +505,6 @@ sub isWmsVersion {
     ERROR (sprintf "Unknown or unsupported 'wms_version' (%s).",$wmsversion);
     return FALSE;
 }
-
-=begin nd
-Function: isNumber
-
-Tests if the item is a valid decimal number.
-
-Parameters:
-    item - number/string - the item to test
-
-Returns:
-    The boolean answer to the question.
-=cut
-sub isNumber {
-    my $self = shift;
-    my $item = shift;
-
-    if ($item =~ m/\A[+-]?[0-9]*[0-9][0-9]*[.]?[0-9]*\z/) {
-        return TRUE;
-    }
-    return FALSE;
-}
-
 
 
 ####################################################################################################
