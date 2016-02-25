@@ -68,6 +68,8 @@ use File::Spec;
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
 use COMMON::Config;
+use COMMON::CheckUtils;
+use WMTSALAD::DataSource;
 use BE4::TileMatrixSet;
 use BE4::TileMatrix;
 
@@ -162,7 +164,10 @@ sub new {
 
     bless($self, $class);
 
-    $self->_init($propertiesFile,$datasourcesFile);
+    if (!$self->_init($propertiesFile,$datasourcesFile)) {
+        ERROR(sprintf "Pyramid initialization failed.");
+        return undef;
+    }
 
     return $self;
 }
@@ -196,28 +201,38 @@ sub _loadProperties {
     }
 
 
-    my $fileContent = COMMON::Config->new({
+    my $cfg = COMMON::Config->new({
         '-filepath' => $file,
         '-format' => 'INI',
         });
+    my %fileContent = $cfg->getConfig();
+    my $refFileContent = \%fileContent;
 
-    my $TMS = BE4::TileMatrixSet->new(File::Spec->catfile($fileContent->{pyramid}->{tms_path},$fileContent->{pyramid}->{tms_name});
+    ALWAYS(sprintf "Contenu = : %s", Dumper($refFileContent));
+    ALWAYS(sprintf "my \$TMS = BE4::TileMatrixSet->new(%s);", File::Spec->catfile($refFileContent->{pyramid}->{tms_path},$refFileContent->{pyramid}->{tms_name}));
+    my $TMS = BE4::TileMatrixSet->new(File::Spec->catfile($refFileContent->{pyramid}->{tms_path},$refFileContent->{pyramid}->{tms_name}));
     $self->{tileMatrixSet} = $TMS ;
 
     my $format = "TIFF_";
-    if ($fileContent->{pyramid}->{compression} =~ m/^jpg|png|lzw|zip|pkb$/i) {
-        $format.= uc($fileContent->{pyramid}->{compression})."_";
-     } else {
+    if ($refFileContent->{pyramid}->{compression} =~ m/^jpg|png|lzw|zip|pkb$/i) {
+        $format.= uc($refFileContent->{pyramid}->{compression})."_";
+    } else {
         $format .= "RAW_";
-     };
-     $format .= uc($fileContent->{pyramid}->{sampleformat}).$fileContent->{pyramid}->{bitspersample} ;
-     if (!$self->isImageFormat($format)) {
-        ERROR("Unrecognized image format : $format.");
+    };
+    $format .= uc($refFileContent->{pyramid}->{sampleformat}).$refFileContent->{pyramid}->{bitspersample} ;
+    if ($self->isImageFormat($format)) {
+        $self->{format} = $format;
+    } else {
+        ERROR(sprintf "Unrecognized image format : %s.", $format);
         return FALSE;
-     }
-     $self->{format} = $format;
+    }
 
-     $self->{channels} =
+    if (COMMON::CheckUtils::isStrictPositiveInt($refFileContent->{pyramid}->{samplesperpixel})) {
+        $self->{channels} = $refFileContent->{pyramid}->{samplesperpixel};
+    } else {
+        ERROR(sprintf "Samples per pixel value must be a strictly positive integer : %s.", $refFileContent->{pyramid}->{samplesperpixel});
+        return FALSE;
+    }
 
 
     return TRUE;
@@ -264,6 +279,8 @@ sub _checkProperties {
 sub _checkDatasources {
 
 }
+
+
 
 ####################################################################################################
 #                                        Group: Output                                             #

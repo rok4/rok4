@@ -54,24 +54,19 @@ use WMTSALAD::Pyramid;
 ####################### Good ######################
 
 # Pyramid creation with all parameters defined
-my $pyramid = WMTSALAD::Pyramid->new();
+my $pyramid = WMTSALAD::Pyramid->new('/home/xavier/workspace/be4/WMTSalaD/tests/test_conf_valide.conf', '/home/xavier/workspace/be4/WMTSalaD/tests/test_dsrc_valide.txt');
 ok (defined $pyramid, "Pyramid created");
 
-my $initSuccess = $pyramid->_init('/home/xavier/workspace/be4/WMTSalaD/tests/test_conf_valide.conf');
-ok ($initSuccess, "Pyramid initialised");
 
 undef $pyramid;
-undef $initSuccess;
 
 
 ####################### Bad #######################
 
 # Pyramid creation with no properties configuration file
 my $errPyramid = WMTSALAD::Pyramid->new();
-$initSuccess = $errPyramid->_init();
-ok(!$initSuccess, "Pyramid with no properties configuration file");
+ok(! defined $errPyramid, "Pyramid with no properties configuration file");
 undef $errPyramid;
-undef $initSuccess;
 
 
 
