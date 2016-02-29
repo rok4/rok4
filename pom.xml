@@ -11,7 +11,7 @@
 
   <groupId>fr.geoportail.services</groupId>
   <artifactId>rok4</artifactId>
-  <version>1.0.0-GFI-RC2</version><!--TAG_VERSION-->
+  <version>1.0.0-GFI-RC4</version><!--TAG_VERSION-->
   <packaging>pom</packaging>
 
   <repositories>
