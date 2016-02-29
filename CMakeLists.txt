@@ -78,7 +78,12 @@ set(UNITTEST FALSE CACHE BOOL "Build Test")
 if(UNITTEST)
   enable_testing()
   set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
+  set(PACKAGE_LIB TRUE)
 endif(UNITTEST)
+
+if(NOT DEFINED PACKAGE_LIB)
+  set(PACKAGE_LIB FALSE CACHE BOOL "Do no include lib in final package")
+endif(NOT DEFINED PACKAGE_LIB)
 
 if(DEB_PACKAGE)
   set(USE_SYSTEM_LIB TRUE)
