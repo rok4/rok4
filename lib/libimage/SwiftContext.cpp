@@ -144,7 +144,7 @@ bool SwiftContext::connection() {
     return true;
 }
 
-bool SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
+int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
     LOGGER_DEBUG("Swift read : " << size << " bytes (from the " << offset << " one) in the object " << name);
 
     CURLcode res;
@@ -187,7 +187,7 @@ bool SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
     if( CURLE_OK != res) {
         LOGGER_ERROR("Cannot read data from Swift : " << size << " bytes (from the " << offset << " one) in the object " << name);
         LOGGER_ERROR(curl_easy_strerror(res));
-        return false;
+        return -1;
     }
 
     long http_code = 0;
@@ -195,12 +195,12 @@ bool SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
     if (http_code < 200 || http_code > 299) {
         LOGGER_ERROR("Cannot read data from Swift : " << size << " bytes (from the " << offset << " one) in the object " << name);
         LOGGER_ERROR("Response HTTP code : " << http_code);
-        return false;
+        return -1;
     }
 
     memcpy(data, chunk.data, chunk.size);
 
-    return true;
+    return chunk.size;
 }
 
 bool SwiftContext::writeFromFile(std::string fileName, std::string objectName) {

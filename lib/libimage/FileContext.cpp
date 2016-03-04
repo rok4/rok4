@@ -61,7 +61,7 @@ bool FileContext::connection() {
     return true;
 }
 
-bool FileContext::read(uint8_t* data, int offset, int size, std::string name) {
+int FileContext::read(uint8_t* data, int offset, int size, std::string name) {
     std::string fullName = root_dir + name;
     LOGGER_DEBUG("File read : " << size << " bytes (from the " << offset << " one) in the file " << fullName);
 
@@ -69,19 +69,19 @@ bool FileContext::read(uint8_t* data, int offset, int size, std::string name) {
     int fildes = open( fullName.c_str(), O_RDONLY );
     if ( fildes < 0 ) {
         LOGGER_DEBUG ( "Can't open file " << fullName );
-        return false;
+        return -1;
     }
 
-    size_t read_size=pread ( fildes, data, size, offset );
+    size_t read_size = pread ( fildes, data, size, offset );
     if ( read_size != size ) {
         LOGGER_ERROR ( "Impossible de lire la tuile dans le fichier " << fullName );
         if ( read_size<0 ) LOGGER_ERROR ( "Code erreur="<<errno );
         close ( fildes );
-        return false;
+        return -1;
     }
     close ( fildes );
 
-    return true;
+    return read_size;
 }
 
 

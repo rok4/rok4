@@ -82,7 +82,7 @@ public:
 
     virtual bool connection() = 0;
 
-    virtual bool read(uint8_t* data, int offset, int size, std::string name) = 0;
+    virtual int read(uint8_t* data, int offset, int size, std::string name) = 0;
     virtual bool write(uint8_t* data, int offset, int size, std::string name) = 0;
     virtual bool writeFull(uint8_t* data, int size, std::string name) = 0;
 

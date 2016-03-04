@@ -45,10 +45,19 @@
 #define MAX_TILE_SIZE 1048576
 
 StoreDataSource::StoreDataSource (const char* name, const uint32_t posoff, const uint32_t possize, std::string type, Context* c, std::string encoding ) :
-    name ( name ), posoff ( posoff ), possize ( possize ) , type (type), encoding( encoding ), context(c)
+    name ( name ), posoff ( posoff ), possize ( possize ) , maxsize(0), type (type), encoding( encoding ), context(c)
 {
-    data=0;
-    size=0;
+    data = 0;
+    size = 0;
+    readFull = false;
+}
+
+StoreDataSource::StoreDataSource (const char* name, const uint32_t maxsize, std::string type, Context* c, std::string encoding ) :
+    name ( name ), posoff ( 0 ), possize ( 0 ), maxsize(maxsize), type (type), encoding( encoding ), context(c)
+{
+    data = 0;
+    size = 0;
+    readFull = true;
 }
 
 
@@ -60,9 +69,14 @@ StoreDataSource * StoreDataSourceFactory::createStoreDataSource (
     return new StoreDataSource(name,posoff,possize, type, c, encoding);
 }
 
+StoreDataSource * StoreDataSourceFactory::createStoreDataSource ( const char* name, const uint32_t maxsize, std::string type , Context* c, std::string encoding ) {
+
+    return new StoreDataSource(name, maxsize, type, c, encoding);
+}
+
 /*
  * Fonction retournant les données de la tuile
- * Le fichier ne doit etre lu qu une seule fois
+ * Le fichier/objet ne doit etre lu qu une seule fois
  * Indique la taille de la tuile (inconnue a priori)
  */
 const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
@@ -71,42 +85,58 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
         return data;
     }
 
-    // Lecture de la position de la tuile dans le fichier
-    uint8_t* uint32tab = new uint8_t[sizeof( uint32_t )];
+    if (readFull) {
+        // On retourne tout l'objet
+        data = new uint8_t[maxsize];
+        int tileSize = context->read(data, 0, maxsize, name);
+        if (tile_size < 0) {
+            LOGGER_ERROR ( "Erreur lors de la lecture de la tuile = objet " << name );
+            return 0;
+        }
+        tile_size = tileSize;
+        size = tileSize;
 
-    if (! context->read(uint32tab, posoff, 4, name)) {
-        LOGGER_ERROR ( "Erreur lors de la lecture de la position de la tuile dans l'objet " << name );
-        return 0;
+    } else {
+
+        // On ne lit pas tout l'objet, juste une partie, que l'on connaît grâce à l'index
+
+        // Lecture de la position de la tuile dans le fichier
+        uint8_t* uint32tab = new uint8_t[sizeof( uint32_t )];
+
+        if ( context->read(uint32tab, posoff, 4, name) < 0) {
+            LOGGER_ERROR ( "Erreur lors de la lecture de la position de la tuile dans l'objet " << name );
+            return 0;
+        }
+        uint32_t tileOffset = *((uint32_t*) uint32tab);
+
+        // Lecture de la taille de la tuile dans le fichier
+        // Ne lire que 4 octets (la taille de tile_size est plateforme-dependante)
+        // Lecture de la position de la tuile dans le fichier
+        if (context->read(uint32tab, possize, 4, name) < 0) {
+            LOGGER_ERROR ( "Erreur lors de la lecture de la taille de la tuile dans l'objet " << name );
+            return 0;
+        }
+        uint32_t tileSize = *((uint32_t*) uint32tab);
+        tile_size = tileSize;
+        size = tile_size;
+
+        // La taille de la tuile ne doit pas exceder un seuil
+        // Objectif : gerer le cas de fichiers TIFF non conformes aux specs du cache
+        // (et qui pourraient indiquer des tailles de tuiles excessives)
+        if ( tile_size > MAX_TILE_SIZE ) {
+            LOGGER_ERROR ( "Tuile trop volumineuse dans le fichier/objet " << name ) ;
+            return 0;
+        }
+
+        // Lecture de la tuile
+        data = new uint8_t[tile_size];
+        if (context->read(data, tileOffset, tile_size, name) < 0) {
+            LOGGER_ERROR ( "Erreur lors de la lecture de la tuile dans l'objet " << name );
+            return 0;
+        }
+
+        delete[] uint32tab;
     }
-    uint32_t tileOffset = *((uint32_t*) uint32tab);
-
-    // Lecture de la taille de la tuile dans le fichier
-    // Ne lire que 4 octets (la taille de tile_size est plateforme-dependante)
-    // Lecture de la position de la tuile dans le fichier
-    if (! context->read(uint32tab, possize, 4, name)) {
-        LOGGER_ERROR ( "Erreur lors de la lecture de la taille de la tuile dans l'objet " << name );
-        return 0;
-    }
-    uint32_t tileSize = *((uint32_t*) uint32tab);
-    tile_size = tileSize;
-    size = tile_size;
-
-    // La taille de la tuile ne doit pas exceder un seuil
-    // Objectif : gerer le cas de fichiers TIFF non conformes aux specs du cache
-    // (et qui pourraient indiquer des tailles de tuiles excessives)
-    if ( tile_size > MAX_TILE_SIZE ) {
-        LOGGER_ERROR ( "Tuile trop volumineuse dans le fichier/objet " << name ) ;
-        return 0;
-    }
-
-    // Lecture de la tuile
-    data = new uint8_t[tile_size];
-    if (! context->read(data, tileOffset, tile_size, name)) {
-        LOGGER_ERROR ( "Erreur lors de la lecture de la tuile dans l'objet " << name );
-        return 0;
-    }
-
-    delete[] uint32tab;
 
     return data;
 }
@@ -114,7 +144,7 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
 uint8_t* StoreDataSource::getThisData ( const uint32_t offset, const uint32_t size ) {
 
     uint8_t* wanteddata = new uint8_t[size];
-    if ( ! context->read(wanteddata, offset, size, name) ) {
+    if ( context->read(wanteddata, offset, size, name) < 0) {
         LOGGER_ERROR ( "Unable to read " << size << " bytes (from the " << offset << " one) in the object " << name );
         return 0;
     }

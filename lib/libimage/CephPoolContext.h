@@ -85,7 +85,7 @@ public:
         return pool_name;
     }
     
-    bool read(uint8_t* data, int offset, int size, std::string name);
+    int read(uint8_t* data, int offset, int size, std::string name);
     bool write(uint8_t* data, int offset, int size, std::string name);
     bool writeFull(uint8_t* data, int size, std::string name);
 

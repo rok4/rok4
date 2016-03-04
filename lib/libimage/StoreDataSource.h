@@ -52,6 +52,10 @@ friend class StoreDataSourceFactory;
 protected:
 
     std::string name;
+
+    bool readFull;
+    const uint32_t maxsize;
+
     const uint32_t posoff;
     const uint32_t possize;
     uint8_t* data;
@@ -62,6 +66,7 @@ protected:
     Context* context;
 
     StoreDataSource ( const char* name, const uint32_t posoff, const uint32_t possize, std::string type, Context* c, std::string encoding);
+    StoreDataSource ( const char* name, const uint32_t maxsize, std::string type, Context* c, std::string encoding);
 
 public:
 
@@ -108,6 +113,9 @@ public:
     StoreDataSource * createStoreDataSource (
         const char* name, const uint32_t posoff, const uint32_t possize, std::string type ,
         Context* c, std::string encoding = ""
+    );
+    StoreDataSource * createStoreDataSource (
+        const char* name, const uint32_t maxsize, std::string type , Context* c, std::string encoding = ""
     );
 };
 
