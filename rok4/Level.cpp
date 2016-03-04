@@ -72,6 +72,7 @@ Level::Level (TileMatrix tm, int channels, std::string baseDir, int tilesPerWidt
     StoreDataSourceFactory SDSF;
     noDataTileSource = SDSF.createStoreDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding ( format ) );
     noDataSourceProxy = noDataTileSource;
+    maxTileSize = tm.getTileH() * tm.getTileW() * channels * Rok4Format::toSizePerChannel(format) * 2;
 }
 
 Level::~Level() {
@@ -314,7 +315,7 @@ static const char* Base36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 /*
  * Recuperation du nom de fichier de la dalle du cache en fonction de son indice
  */
-std::string Level::getPath ( int tilex, int tiley ) {
+std::string Level::getPath ( int tilex, int tiley, int tilesPerW, int tilesPerH ) {
     // Cas normalement filtré en amont (exception WMS/WMTS)
     if ( tilex < 0 || tiley < 0 ) {
         LOGGER_ERROR ( _ ( "Indice de tuile negatif" ) );
@@ -324,8 +325,9 @@ std::string Level::getPath ( int tilex, int tiley ) {
     std::ostringstream convert;
     int x,y,pos;
 
-    x = tilex / tilesPerWidth;
-    y = tiley / tilesPerHeight;
+    x = tilex / tilesPerW;
+    y = tiley / tilesPerH;
+
 
     switch (context->getType()) {
         case FILECONTEXT:
@@ -379,14 +381,28 @@ std::string Level::getPath ( int tilex, int tiley ) {
 
 DataSource* Level::getEncodedTile ( int x, int y ) {
     // TODO: return 0 sur des cas d'erreur..
-    // Index de la tuile (cf. ordre de rangement des tuiles)
-    int n= ( y%tilesPerHeight ) *tilesPerWidth + ( x%tilesPerWidth );
-    // Les index sont stockés à partir de l'octet 2048
-    uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
-    std::string path=getPath ( x, y );
-    LOGGER_DEBUG ( path );
-    StoreDataSourceFactory SDSF;
-    return SDSF.createStoreDataSource( path.c_str(),posoff,possize,Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );
+    if (tilesPerWidth == 0 && tilesPerHeight == 0) {
+
+        //on stocke une tuile et non une dalle
+        std::string path=getPath ( x, y, 1, 1 );
+        LOGGER_DEBUG ( path );
+        StoreDataSourceFactory SDSF;
+        return SDSF.createStoreDataSource( path.c_str(),maxTileSize,Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );
+
+    } else {
+
+        //on stocke une dalle
+        // Index de la tuile (cf. ordre de rangement des tuiles)
+        int n= ( y%tilesPerHeight ) *tilesPerWidth + ( x%tilesPerWidth );
+        // Les index sont stockés à partir de l'octet 2048
+        uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
+        std::string path=getPath ( x, y, tilesPerWidth, tilesPerHeight);
+        LOGGER_DEBUG ( path );
+        StoreDataSourceFactory SDSF;
+        return SDSF.createStoreDataSource( path.c_str(),posoff,possize,Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );
+
+    }
+
 }
 
 DataSource* Level::getDecodedTile ( int x, int y ) {
