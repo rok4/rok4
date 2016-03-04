@@ -60,6 +60,11 @@
 #include "ProcessFactory.h"
 #include <csignal>
 
+struct Proxy {
+    std::string proxyName;
+    std::string noProxy;
+};
+
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
@@ -154,6 +159,11 @@ private:
      * \~english \brief Management of created process
      */
     ProcessFactory *parallelProcess;
+    /**
+     * \~french \brief Proxy utilisé par défaut pour des requêtes WMS
+     * \~english \brief Default proxy used for WMS requests
+     */
+    Proxy proxy;
 
     /**
      * \~french
@@ -596,12 +606,31 @@ public:
     bool isWMSSupported(){
             return supportWMS ;
     }
+    /**
+     * \~french
+     * \brief Pour savoir si le server honore les requêtes WMTS
+     * \~english
+     * \brief to know if the server responde to WMTS request
+     */
+    void setProxy(Proxy pr){
+            proxy = pr ;
+    }
+
+    /**
+     * \~french
+     * \brief Retourne le proxy par defaut
+     * \~english
+     * \brief Return default proxy
+     */
+    Proxy getProxy(){
+            return proxy ;
+    }
 
     /**
      * \brief Construction du serveur
      */
     Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
-                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, std::string socket, int backlog, bool supportWMTS = true, bool supportWMS = true, int nbProcess =1 );
+                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, std::string socket, int backlog, Proxy proxy,bool supportWMTS = true, bool supportWMS = true, int nbProcess =1);
     /**
      * \~french
      * \brief Destructeur par défaut

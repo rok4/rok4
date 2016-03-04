@@ -158,12 +158,12 @@ void* Rok4Server::thread_loop ( void* arg ) {
     return 0;
 }
 
-Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
+Rok4Server::Rok4Server (int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
                          std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList,
-                         std::string socket, int backlog, bool supportWMTS, bool supportWMS, int nbProcess ) :
+                         std::string socket, int backlog, Proxy proxy, bool supportWMTS, bool supportWMS, int nbProcess) :
     sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ),
     styleList ( styleList ), threads ( nbThread ), socket ( socket ), backlog ( backlog ),
-    running ( false ), notFoundError ( NULL ), supportWMTS ( supportWMTS ), supportWMS ( supportWMS ) {
+    running ( false ), notFoundError ( NULL ), supportWMTS ( supportWMTS ), supportWMS ( supportWMS ), proxy (proxy) {
 
     if ( supportWMS ) {
         LOGGER_DEBUG ( _ ( "Build WMS Capabilities 1.3.0" ) );
@@ -1345,7 +1345,7 @@ DataSource* Rok4Server::WMSGetFeatureInfo ( Request* request ) {
             }else if(getFeatureInfoType.compare( "EXTERNALWMS" ) == 0){
                 // reponse d'un WMS-V
                 // GetFeatureInfo sur la couche vecteur en (X,Y)
-                WebService* myWMSV = new WebService(layers.at(0)->getGFIBaseUrl(),"",10,10,60);
+                WebService* myWMSV = new WebService(layers.at(0)->getGFIBaseUrl(),proxy.proxyName, proxy.noProxy,10,10,60);
                 std::stringstream vectorRequest;
                 vectorRequest << layers.at(0)->getGFIBaseUrl()
                         << "REQUEST=GetFeatureInfo"
@@ -1441,7 +1441,7 @@ DataSource* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
             }else if(getFeatureInfoType.compare( "EXTERNALWMS" ) == 0){
                 // reponse d'un WMS-V
                 // GetFeatureInfo sur la couche vecteur en (X,Y)
-                WebService* myWMSV = new WebService(layer->getGFIBaseUrl(),"",10,10,60);
+                WebService* myWMSV = new WebService(layer->getGFIBaseUrl(),proxy.proxyName,proxy.noProxy,10,10,60);
                 std::stringstream vectorRequest;
                 vectorRequest << layer->getGFIBaseUrl()
                         << "REQUEST=GetFeatureInfo"

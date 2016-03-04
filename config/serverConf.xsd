@@ -39,6 +39,8 @@
 			<xs:element name="reprojectionCapability"        	type="xs:boolean"/>
 			<!-- Fichier contenant les parametres de service -->
 			<xs:element name="servicesConf"         type="xs:string"/>
+			<!-- adresse du proxy, utilisable pour le WMTSOD et le GFI -->
+			<xs:element name="proxy"         type="xs:string"/>
 			<!-- Répertoire des configs des styles -->
 			<xs:element name="styleDir"         type="xs:string"/>
 			<!-- Répertoire des configs des layers -->

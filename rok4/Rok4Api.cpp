@@ -95,8 +95,9 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     int nbThread,logFilePeriod,backlog, nbProcess;
     LogLevel logLevel;
     bool supportWMTS,supportWMS,reprojectionCapability;
+    Proxy proxy;
     std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,strLayerDir,strTmsDir,strStyleDir,socket;
-    if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, supportWMTS, supportWMS, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, socket, backlog, nbProcess ) ) {
+    if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, supportWMTS, supportWMS, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, socket, backlog, nbProcess, proxy ) ) {
         std::cerr<<_ ( "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " ) <<strServerConfigFile<<std::endl;
         return NULL;
     }
@@ -156,7 +157,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
 
     // Chargement des layers
     std::map<std::string, Layer*> layerList;
-    if ( !ConfLoader::buildLayersList ( strLayerDir,tmsList, styleList,layerList,reprojectionCapability,sc ) ) {
+    if ( !ConfLoader::buildLayersList ( strLayerDir,tmsList, styleList,layerList,reprojectionCapability,sc,proxy ) ) {
         LOGGER_FATAL ( _ ( "Impossible de charger la conf des Layers/pyramides" ) );
         LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
@@ -165,7 +166,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
 
     // Instanciation du serveur
     Logger::stopLogger();
-    return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog, supportWMTS, supportWMS, nbProcess );
+    return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog, proxy, supportWMTS, supportWMS, nbProcess );
 }
 
 /**
