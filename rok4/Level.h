@@ -61,6 +61,7 @@ private:
     std::string prefix;     //used only for ceph and swift context
     TileMatrix    tm;         // FIXME j'ai des problème de compil que je ne comprends pas si je mets un const ?!
     const Rok4Format::eformat_data format; //format d'image des tuiles
+    int maxTileSize;
     const int     channels;
     const uint32_t maxTileRow;
     const uint32_t minTileRow;
@@ -122,7 +123,7 @@ public:
         return tilesPerHeight;
     }
 
-    std::string getPath ( int tilex, int tiley );
+    std::string getPath (int tilex, int tiley , int tilesPerW, int tilesPerH);
     std::string getNoDataFilePath() {
         return noDataFile;
     }

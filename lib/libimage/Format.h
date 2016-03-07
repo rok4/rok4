@@ -329,6 +329,8 @@ std::string toMimeType ( eformat_data format );
 
 std::string toEncoding ( eformat_data format );
 
+int toSizePerChannel( eformat_data format );
+
 }
 
 #endif //FORMAT_H

@@ -316,7 +316,7 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
     tileRef->posoff=2048+4*n;
     tileRef->possize=2048+4*n +level->getTilesPerWidth() *level->getTilesPerHeight() *4;
 
-    std::string imageFilePath=level->getPath ( x, y );
+    std::string imageFilePath=level->getPath ( x, y,level->getTilesPerWidth(), level->getTilesPerHeight());
     tileRef->filename=new char[imageFilePath.length() +1];
     strcpy ( tileRef->filename,imageFilePath.c_str() );
 

@@ -222,4 +222,12 @@ std::string toEncoding ( eformat_data format ) {
     return std::string ( eformat_encoding[format] );
 }
 
+int toSizePerChannel ( eformat_data format ) {
+    if (format >= 7) {
+        return 4;
+    } else {
+        return 1;
+    }
+}
+
 }
