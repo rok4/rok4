@@ -112,7 +112,8 @@ use constant TIFF2TILE_W => 1;
 Constant: BASHFUNCTIONS
 Define bash functions, used to factorize and reduce scripts :
     - Wms2work
-    - Work2cache
+    - StoreImage
+    - StoreTiles
     - MergeNtiff
     - Merge4tiff
     - DecimateNtiff
@@ -121,7 +122,7 @@ my $BASHFUNCTIONS   = <<'FUNCTIONS';
 
 declare -A RM_IMGS
 
-Work2cache () {
+StoreImage () {
     local level=$1
     local workDir=$2
     local workImgName=$3
@@ -149,6 +150,49 @@ Work2cache () {
             if [ $mskName ] ; then
                     
                 tiff2tile $workDir/$workMskName __t2tM__ -pool ${PYR_POOL} $mskName
+                if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+                echo "$mskName" >> ${TMP_LIST_FILE}
+                
+            fi
+            
+            if [ "$level" == "$TOP_LEVEL" ] ; then
+                rm $workDir/$workMskName
+            elif [ "$level" == "$CUT_LEVEL" ] ; then
+                mv $workDir/$workMskName ${COMMON_TMP_DIR}/
+            fi
+        fi
+    fi
+}
+StoreTiles () {
+    local level=$1
+    local workDir=$2
+    local workImgName=$3
+    local imgName=$4
+    local imgI=$5
+    local imgJ=$6
+    local workMskName=$7
+    local mskName=$8
+    
+    
+    if [[ ! ${RM_IMGS[$workDir/$workImgName]} ]] ; then
+             
+        tiff2tile $workDir/$workImgName __t2tI__ -ij $imgI $imgJ -pool ${PYR_POOL} $imgName
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        
+        echo "$imgName" >> ${TMP_LIST_FILE}
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        
+        if [ "$level" == "$TOP_LEVEL" ] ; then
+            rm $workDir/$workImgName
+        elif [ "$level" == "$CUT_LEVEL" ] ; then
+            mv $workDir/$workImgName ${COMMON_TMP_DIR}/
+        fi
+        
+        if [ $workMskName ] ; then
+            
+            if [ $mskName ] ; then
+                    
+                tiff2tile $workDir/$workMskName __t2tM__ -ij $imgI $imgJ -pool ${PYR_POOL} $mskName
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
                 echo "$mskName" >> ${TMP_LIST_FILE}
                 
@@ -321,29 +365,55 @@ sub work2cache {
     my $weight = 0;
     
     #### Export de l'image
-    
-    my $pyrName = sprintf "%s_IMG_%s", $self->{pyramid}->getNewName(), $node->getPyramidName();
-    
-    $cmd .= sprintf ("Work2cache %s %s %s %s", $node->getLevel, $workDir, $node->getWorkImageName(TRUE), $pyrName);
-    $weight += TIFF2TILE_W;
-    
-    #### Export du masque, si présent
 
-    if ($node->getWorkMaskName()) {
-        # On a un masque de travail : on le précise pour qu'il soit potentiellement déplacé dans le temporaire commun ou supprimé
-        $cmd .= sprintf (" %s", $node->getWorkMaskName(TRUE));
+    if ($self->{pyramid}->storeTiles()) {
+
+        my $pyrName = sprintf "%s_IMG_%s", $self->{pyramid}->getNewName(), $node->getLevel();
         
-        # En plus, on veut exporter les masques dans la pyramide, on en précise donc l'emplacement final
-        if ( $self->{pyramid}->ownMasks() ) {
-            $pyrName = sprintf "%s_MSK_%s", $self->{pyramid}->getNewName(), $node->getPyramidName();
+        $cmd .= sprintf "StoreTiles %s %s %s %s %s %s", $node->getLevel, $workDir, $node->getWorkImageName(TRUE), $pyrName, $node->getCol, $node->getRow;
+        $weight += TIFF2TILE_W;
+        
+        #### Export du masque, si présent
+
+        if ($node->getWorkMaskName()) {
+            # On a un masque de travail : on le précise pour qu'il soit potentiellement déplacé dans le temporaire commun ou supprimé
+            $cmd .= sprintf (" %s", $node->getWorkMaskName(TRUE));
             
-            $cmd .= sprintf (" %s", $pyrName);
-            $weight += TIFF2TILE_W;
-        }        
+            # En plus, on veut exporter les masques dans la pyramide, on en précise donc l'emplacement final
+            if ( $self->{pyramid}->ownMasks() ) {
+                $pyrName = sprintf "%s_MSK_%s", $self->{pyramid}->getNewName(), $node->getPyramidName();
+                
+                $cmd .= sprintf (" %s", $pyrName);
+                $weight += TIFF2TILE_W;
+            }        
+        }
+        
+        $cmd .= "\n";
+    } else {
+    
+        my $pyrName = sprintf "%s_IMG_%s", $self->{pyramid}->getNewName(), $node->getPyramidName();
+        
+        $cmd .= sprintf ("StoreImage %s %s %s %s", $node->getLevel, $workDir, $node->getWorkImageName(TRUE), $pyrName);
+        $weight += TIFF2TILE_W;
+        
+        #### Export du masque, si présent
+
+        if ($node->getWorkMaskName()) {
+            # On a un masque de travail : on le précise pour qu'il soit potentiellement déplacé dans le temporaire commun ou supprimé
+            $cmd .= sprintf (" %s", $node->getWorkMaskName(TRUE));
+            
+            # En plus, on veut exporter les masques dans la pyramide, on en précise donc l'emplacement final
+            if ( $self->{pyramid}->ownMasks() ) {
+                $pyrName = sprintf "%s_MSK_%s", $self->{pyramid}->getNewName(), $node->getPyramidName();
+                
+                $cmd .= sprintf (" %s", $pyrName);
+                $weight += TIFF2TILE_W;
+            }        
+        }
+        
+        $cmd .= "\n";
     }
-    
-    $cmd .= "\n";
-    
+
     return ($cmd,$weight);
 }
 
@@ -568,12 +638,12 @@ sub configureFunctions {
 
     $conf_t2t .= sprintf "-t %s %s ", $pyr->getTileMatrixSet->getTileWidth,$pyr->getTileMatrixSet->getTileHeight;
 
-    $configuredFunc =~ s/__t2tI__/$conf_t2t/;
+    $configuredFunc =~ s/__t2tI__/$conf_t2t/g;
     
     # pour les masques
     $conf_t2t = sprintf "-c zip -t %s %s",
         $pyr->getTileMatrixSet->getTileWidth, $pyr->getTileMatrixSet->getTileHeight;
-    $configuredFunc =~ s/__t2tM__/$conf_t2t/;
+    $configuredFunc =~ s/__t2tM__/$conf_t2t/g;
     
     return $configuredFunc;
 }

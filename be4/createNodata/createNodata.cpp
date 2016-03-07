@@ -316,8 +316,6 @@ int main ( int argc, char* argv[] ) {
         context = new FileContext("");
     }
 
-    context->print();
-
     if (! context->connection()) {
         error("Unable to connect to context", -1);
     }

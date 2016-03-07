@@ -101,6 +101,7 @@ int white[4] = {255,255,255,255};
  *              png     Non-official TIFF compression, each tile is an independant PNG image (with PNG header)
  *      -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size
  *      -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object
+ *      -ij image indices : for ceph, if we want to store one tile = one object, to know itle indices
  *      -container Swift container where data is. Then OUTPUT FILE is interpreted as a Swift object name
  *      -crop : blocks (used by JPEG compression) wich contain a white pixel are filled with white
  *      -d debug logger activation
@@ -131,6 +132,7 @@ void usage() {
                   "             png     Non-official TIFF compression, each tile is an independant PNG image (with PNG header)\n" <<
                   "     -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size\n" <<
                   "     -pool Ceph pool where data is. Then OUTPUT FILE is interpreted as a Ceph object ID\n" <<
+                  "     -ij image indices : for ceph, if we want to store one tile = one object, to know itle indices\n"
                   "     -container Swift container where data is. Then OUTPUT FILE is interpreted as a Swift object name\n" <<
                   "     -crop : blocks (used by JPEG compression) wich contain a white pixel are filled with white\n" <<
                   "     -d : debug logger activation\n\n" <<
@@ -173,10 +175,13 @@ int main ( int argc, char **argv ) {
 
     char* input = 0, *output = 0, *pool = 0, *container = 0;
     int tileWidth = 256, tileHeight = 256;
+    int imageI = -1;
+    int imageJ = -1;
     Compression::eCompression compression = Compression::NONE;
     bool crop = false;
     bool debugLogger=false;
     bool onSwift = false;
+    bool tilesOnCeph = false;
 
     /* Initialisation des Loggers */
     Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
@@ -202,6 +207,12 @@ int main ( int argc, char **argv ) {
                 error("Error in -pool option", -1);
             }
             pool = argv[i];
+            continue;
+        }
+        if ( !strcmp ( argv[i],"-ij" ) ) {
+            if ( i+2 >= argc ) { error("Error in -ij option", -1 ); }
+            imageI = atoi ( argv[++i] );
+            imageJ = atoi ( argv[++i] );
             continue;
         }
         if ( !strcmp ( argv[i],"-container" ) ) {
@@ -276,6 +287,10 @@ int main ( int argc, char **argv ) {
     if ( pool != 0 ) {
         LOGGER_DEBUG( std::string("Output is an object in the Ceph pool ") + pool);
         context = new CephPoolContext(pool);
+
+        if (imageI >= 0 && imageJ >= 0) {
+            tilesOnCeph = true;
+        }
     } else if (container != 0) {
 
         curl_global_init(CURL_GLOBAL_ALL);
@@ -358,8 +373,14 @@ int main ( int argc, char **argv ) {
     }
 
     LOGGER_DEBUG ( "Write" );
-    if (rok4Image->writeImage(sourceImage, crop) < 0) {
-        error("Cannot write ROK4 image", -1);
+    if (tilesOnCeph) {
+        if (rok4Image->writeTiles(sourceImage, imageI, imageJ, crop) < 0) {
+            error("Cannot write ROK4 tiles on ceph", -1);
+        }
+    } else {
+        if (rok4Image->writeImage(sourceImage, crop) < 0) {
+            error("Cannot write ROK4 image", -1);
+        }
     }
 
     if (onSwift) {

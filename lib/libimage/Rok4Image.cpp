@@ -59,6 +59,7 @@
 #include "Utils.h"
 #include <fcntl.h>
 #include <iostream>
+#include <string>
 #include <algorithm>
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -594,8 +595,13 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
         crop = false;
     }
     
-    if (! prepare()) {
+    if (! writeHeader()) {
         LOGGER_ERROR("Cannot write the ROK4 images header for " << name);
+        return -1;
+    }
+
+    if (! prepareBuffers()) {
+        LOGGER_ERROR("Cannot initialize buffers for " << name);
         return -1;
     }
 
@@ -686,30 +692,136 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
     
     delete [] tile;
 
-    if (! close()) {
-        LOGGER_ERROR("Cannot close the ROK4 images (write index and clean) for " << name);
+    if (! writeFinal()) {
+        LOGGER_ERROR("Cannot close the ROK4 images (write index) for " << name);
+        return -1;
+    }
+
+    if (! cleanBuffers()) {
+        LOGGER_ERROR("Cannot clean buffers for " << name);
         return -1;
     }
     
     return 0;
 }
 
-int Rok4Image::writeImage ( Image* pIn )
+int Rok4Image::writeTiles ( Image* pIn, int imageCol, int imageRow, bool crop )
 {
-    return writeImage(pIn, false);
+    if (compression != Compression::JPEG && crop) {
+        LOGGER_WARN("Crop option is reserved for JPEG compression");
+        crop = false;
+    }
+
+    if (context->getType() != CEPHCONTEXT) {
+        LOGGER_ERROR("Write tiles separatly is possible only with a ceph storage");
+        return -1;
+    }
+
+    if (! prepareBuffers()) {
+        LOGGER_ERROR("Cannot initialize buffers for " << name);
+        return -1;
+    }
+
+    int tileColUL = imageCol * tileWidthwise;
+    int tileRowUL = imageRow * tileHeightwise;
+
+
+    int imageLineSize = width * channels;
+    int tileLineSize = tileWidth * channels;
+    uint8_t* tile = new uint8_t[tileHeight*rawTileLineSize];
+
+    // Ecriture de l'image
+    if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
+        uint8_t* lines = new uint8_t[tileHeight*imageLineSize];
+
+        for ( int y = 0; y < tileHeightwise; y++ ) {
+            // On récupère toutes les lignes pour cette ligne de tuiles
+            for (int lig = 0; lig < tileHeight; lig++) {
+                if (pIn->getline(lines + lig*imageLineSize, y*tileHeight + lig) == 0) {
+                    LOGGER_ERROR("Error reading the source image's line " << y*tileHeight + lig);
+                    return -1;
+                }
+            }
+            for ( int x = 0; x < tileWidthwise; x++ ) {
+                // On constitue la tuile
+                for (int lig = 0; lig < tileHeight; lig++) {
+                    memcpy(tile + lig*rawTileLineSize, lines + lig*imageLineSize + x*tileLineSize, rawTileLineSize);
+                }
+
+                if (! writeTile(tileColUL + x, tileRowUL + y, tile, crop)) {
+                    LOGGER_ERROR("Error writting tile " << tileColUL + x << "," << tileRowUL + y);
+                    return -1;
+                }
+            }
+        }
+
+        delete [] lines;
+    } else if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) {
+        uint16_t* lines = new uint16_t[tileHeight*imageLineSize];
+
+        for ( int y = 0; y < tileHeightwise; y++ ) {
+            // On récupère toutes les lignes pour cette ligne de tuiles
+            for (int lig = 0; lig < tileHeight; lig++) {
+                if (pIn->getline(lines + lig*imageLineSize, y*tileHeight + lig) == 0) {
+                    LOGGER_ERROR("Error reading the source image's line " << y*tileHeight + lig);
+                    return -1;
+                }
+            }
+            for ( int x = 0; x < tileWidthwise; x++ ) {
+                // On constitue la tuile
+                for (int lig = 0; lig < tileHeight; lig++) {
+                    memcpy(tile + lig*rawTileLineSize, lines + lig*imageLineSize + x*tileLineSize, rawTileLineSize);
+                }
+
+                if (! writeTile(tileColUL + x, tileRowUL + y, tile, crop)) {
+                    LOGGER_ERROR("Error writting tile " << tileColUL + x << "," << tileRowUL + y);
+                    return -1;
+                }
+            }
+        }
+        delete [] lines;
+    } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
+        float* lines = new float[tileHeight*imageLineSize];
+
+        for ( int y = 0; y < tileHeightwise; y++ ) {
+            // On récupère toutes les lignes pour cette ligne de tuiles
+            for (int lig = 0; lig < tileHeight; lig++) {
+                if (pIn->getline(lines + lig*imageLineSize, y*tileHeight + lig) == 0) {
+                    LOGGER_ERROR("Error reading the source image's line " << y*tileHeight + lig);
+                    return -1;
+                }
+            }
+            for ( int x = 0; x < tileWidthwise; x++ ) {
+                // On constitue la tuile
+                for (int lig = 0; lig < tileHeight; lig++) {
+                    memcpy(tile + lig*rawTileLineSize, lines + lig*imageLineSize + x*tileLineSize, rawTileLineSize);
+                }
+
+                if (! writeTile(tileColUL + x, tileRowUL + y, tile, crop)) {
+                    LOGGER_ERROR("Error writting tile " << tileColUL + x << "," << tileRowUL + y);
+                    return -1;
+                }
+            }
+        }
+        delete [] lines;
+    }
+
+    delete [] tile;
+
+    if (! cleanBuffers()) {
+        LOGGER_ERROR("Cannot clean buffers for " << name);
+        return -1;
+    }
+
+    return 0;
 }
 
-bool Rok4Image::prepare()
+bool Rok4Image::writeHeader()
 {
     if (! context->openToWrite(std::string(name))) {
         LOGGER_ERROR("Unable to open output truc " << name);
         return false;
     }
-
-    int quality = 0;
-    if ( compression == Compression::PNG) quality = 5;
-    if ( compression == Compression::DEFLATE ) quality = 6;
-    if ( compression == Compression::JPEG ) quality = 75;
 
     char header[ROK4_IMAGE_HEADER_SIZE], *p = header;
     memset ( header, 0, sizeof ( header ) );
@@ -756,7 +868,7 @@ bool Rok4Image::prepare()
     writeTIFFTAG(&p, TIFFTAG_SAMPLESPERPIXEL, TIFF_SHORT, 1, channels);
     writeTIFFTAG(&p, TIFFTAG_TILEWIDTH, TIFF_LONG, 1, tileWidth);
     writeTIFFTAG(&p, TIFFTAG_TILELENGTH, TIFF_LONG, 1, tileHeight);
-    
+
     if ( tilesNumber == 1 ) {
         /* Dans le cas d'une tuile unique, le champs contient directement la valeur et pas l'adresse de la valeur.
          * Cependant, étant donnée le mode de foncionnement de Rok4, on doit laisser la valeur au début de l'image.
@@ -769,11 +881,11 @@ bool Rok4Image::prepare()
 
     // Dans le cas d'un tuile unique, on vidra écraser la valeur mise ici avec directement sa taille
     writeTIFFTAG(&p, TIFFTAG_TILEBYTECOUNTS, TIFF_LONG, tilesNumber, ROK4_IMAGE_HEADER_SIZE + 4 * tilesNumber);
-    
+
     if ( channels == 4 || channels == 2 ) {
         writeTIFFTAG(&p, TIFFTAG_EXTRASAMPLES, TIFF_SHORT, 1, fromROK4ExtraSample(esType));
     }
-    
+
     writeTIFFTAG(&p, TIFFTAG_SAMPLEFORMAT, TIFF_SHORT, 1, fromROK4SampleFormat(sampleformat));
 
     if ( photometric == Photometric::YCBCR ) {
@@ -786,11 +898,22 @@ bool Rok4Image::prepare()
     }
 
     // end of IFD
-    * ( ( uint32_t* ) ( p ) ) = 0; 
+    * ( ( uint32_t* ) ( p ) ) = 0;
     p += 4;
 
     context->write((uint8_t*) header, 0, ROK4_IMAGE_HEADER_SIZE, std::string(name));
-        
+
+    return true;
+}
+
+bool Rok4Image::prepareBuffers()
+{
+
+    int quality = 0;
+    if ( compression == Compression::PNG) quality = 5;
+    if ( compression == Compression::DEFLATE ) quality = 6;
+    if ( compression == Compression::JPEG ) quality = 75;
+
     // variables initalizations
     tilesOffset = new uint32_t[tilesNumber];
     tilesByteCounts = new uint32_t[tilesNumber];
@@ -832,6 +955,37 @@ bool Rok4Image::prepare()
 
         jpeg_set_defaults ( &cinfo );
         jpeg_set_quality ( &cinfo, quality, true );
+    }
+
+    return true;
+}
+
+
+bool Rok4Image::writeFinal() {
+    context->write((uint8_t*) tilesOffset, ROK4_IMAGE_HEADER_SIZE, 4 * tilesNumber, std::string(name));
+    context->write((uint8_t*) tilesByteCounts, ROK4_IMAGE_HEADER_SIZE + 4 * tilesNumber, 4 * tilesNumber, std::string(name));
+
+    if (! context->closeToWrite(std::string(name))) {
+        LOGGER_ERROR("Unable to close output truc " << name);
+        return false;
+    }
+
+    return true;
+}
+
+bool Rok4Image::cleanBuffers() {
+
+    // Nettoyage des attributs propres à l'écriture
+    delete[] tilesOffset;
+    delete[] tilesByteCounts;
+    delete[] Buffer;
+    if ( compression == Compression::PNG || compression == Compression::DEFLATE ) {
+        delete[] zip_buffer;
+        deflateEnd ( &zstream );
+    }
+    if ( compression == Compression::JPEG ) {
+        delete cinfo.dest;
+        jpeg_destroy_compress ( &cinfo );
     }
 
     return true;
@@ -892,28 +1046,53 @@ bool Rok4Image::writeTile( int tileInd, uint8_t* data, bool crop )
     return true;
 }
 
-bool Rok4Image::close() {
-    context->write((uint8_t*) tilesOffset, ROK4_IMAGE_HEADER_SIZE, 4 * tilesNumber, std::string(name));
-    context->write((uint8_t*) tilesByteCounts, ROK4_IMAGE_HEADER_SIZE + 4 * tilesNumber, 4 * tilesNumber, std::string(name));
+bool Rok4Image::writeTile( int tileCol, int tileRow, uint8_t* data, bool crop )
+{
 
-    if (! context->closeToWrite(std::string(name))) {
-        LOGGER_ERROR("Unable to close output truc " << name);
+    if ( tileCol < 0 ) {
+        LOGGER_ERROR ( "Unvalid tile's column to write (" << tileCol << "). Have to be positive" );
         return false;
     }
 
-    // Nettoyage des attributs propres à l'écriture
-    delete[] tilesOffset;
-    delete[] tilesByteCounts;
-    delete[] Buffer;
-    if ( compression == Compression::PNG || compression == Compression::DEFLATE ) {
-        delete[] zip_buffer;
-        deflateEnd ( &zstream );
+    if ( tileRow < 0 ) {
+        LOGGER_ERROR ( "Unvalid tile's row to write (" << tileCol << "). Have to be positive" );
+        return false;
     }
-    if ( compression == Compression::JPEG ) {
-        delete cinfo.dest;
-        jpeg_destroy_compress ( &cinfo );
+
+    size_t size;
+
+    switch ( compression ) {
+    case Compression::NONE:
+        size = computeRawTile ( Buffer, data );
+        break;
+    case Compression::LZW :
+        size = computeLzwTile ( Buffer, data );
+        break;
+    case Compression::JPEG:
+        size = computeJpegTile ( Buffer, data, crop );
+        break;
+    case Compression::PNG :
+        size = computePngTile ( Buffer, data );
+        break;
+    case Compression::PACKBITS :
+        size = computePackbitsTile ( Buffer, data );
+        break;
+    case Compression::DEFLATE :
+        size = computeDeflateTile ( Buffer, data );
+        break;
     }
-    
+
+    if ( size == 0 ) return false;
+
+    char tileName[256];
+    sprintf(tileName, "%s_%d_%d", name, tileCol, tileRow);
+    LOGGER_DEBUG("Write tile as ceph object " + std::string(tileName));
+
+    if (! context->writeFull(Buffer, size, std::string(tileName))) {
+        LOGGER_ERROR("Impossible to write the independent tile " << tileCol << "," << tileRow);
+        return false;
+    }
+
     return true;
 }
 
@@ -1087,4 +1266,5 @@ void Rok4Image::emptyWhiteBlock ( uint8_t *buffer, int l ) {
         b = false;
     }
 }
+
 

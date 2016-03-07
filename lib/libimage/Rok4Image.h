@@ -275,7 +275,31 @@ private:
      * \~english \brief Write the ROK4 image's TIFF header
      * \return TRUE if success, FALSE otherwise
      */
-    bool prepare();
+    bool writeHeader();
+    /**
+     * \~french \brief Finalise l'écriture de l'image ROK4
+     * \details Cela comprend l'écriture des index et tailles des tuiles
+     * \return VRAI en cas de succès, FAUX sinon
+     * \~english \brief End the ROK4 image's writting
+     * \return TRUE if success, FALSE otherwise
+     */
+    bool writeFinal();
+
+    /**
+     * \~french \brief Prépare les buffers pour les éventuelles compressions
+     * \return VRAI en cas de succès, FAUX sinon
+     * \~english \brief Prepare buffers for compressions
+     * \return TRUE if success, FALSE otherwise
+     */
+    bool prepareBuffers();
+    /**
+     * \~french \brief Nettoie les buffers de fonctionnement
+     * \return VRAI en cas de succès, FAUX sinon
+     * \~english \brief Clean temporary buffers
+     * \return TRUE if success, FALSE otherwise
+     */
+    bool cleanBuffers();
+
     /**
      * \~french \brief Écrit une tuile de l'image ROK4
      * \details L'écriture tiendra compte de la compression voulue #compression. Les tuiles doivent être écrites dans l'ordre (de gauche à droite, de haut en bas).
@@ -290,14 +314,24 @@ private:
      * \return TRUE if success, FALSE otherwise
      */
     bool writeTile ( int tileInd, uint8_t *data, bool crop = false );
+
     /**
-     * \~french \brief Finalise l'écriture de l'image ROK4
-     * \details Cela comprend l'écriture des index et tailles des tuiles, ainsi que le nettoyage des buffers utilisés
+     * \~french \brief Écrit une tuile indépendante en tant qu'objet Ceph
+     * \details Le nom de l'objet/tuile sera #name _ col _ row
+     * \param[in] tileCol colonne de la tuile à écrire
+     * \param[in] tileRow ligne de la tuile à écrire
+     * \param[in] data données brutes (sans compression) à écrire
+     * \param[in] crop option pour le jpeg (voir #emptyWhiteBlock)
      * \return VRAI en cas de succès, FAUX sinon
-     * \~english \brief End the ROK4 image's writting
+     * \~english \brief Write a ROK4 tile as a ceph object
+     * \param[in] tileCol tile column
+     * \param[in] tileRow tile row
+     * \param[in] data raw data (no compression) to write
+     * \param[in] crop jpeg option (see #emptyWhiteBlock)
      * \return TRUE if success, FALSE otherwise
      */
-    bool close();
+    bool writeTile( int tileCol, int tileRow, uint8_t* data, bool crop );
+
 
     /**
      * \~french \brief Compresse les données brutes en RAW
@@ -558,7 +592,9 @@ public:
      * \param[in] pIn source des donnée de l'image à écrire
      * \return 0 en cas de succes, -1 sinon
      */
-    int writeImage ( Image* pIn );
+    int writeImage ( Image* pIn ) {
+        return writeImage(pIn, false);
+    }
 
     /**
      * \~french
@@ -569,6 +605,8 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeImage ( Image* pIn, bool crop );
+
+    int writeTiles ( Image* pIn, int imageCol, int imageRow, bool crop );
 
     /**
      * \~french

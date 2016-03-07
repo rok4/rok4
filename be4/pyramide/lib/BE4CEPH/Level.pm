@@ -309,22 +309,41 @@ Insert Level's attributes in the XML template, write in the pyramid's descriptor
 Returns a string to XML format.
 
 Parameter (list):
-    cluster_name - string - Ceph cluster name, where images are stored
-    user_name - string - User to use to read images on the ceph cluster
-    conf_file - string - Configuration file to use to read images on the ceph cluster
-    pool_name - string - Pool's name where images are stored
+    pyramid - BE4CEPH::PYRAMID - Pyramid whose descriptor is written
 
 Example:
     (start code)
+    <level>
+        <tileMatrix>level_5</tileMatrix>
+        <cephContext>
+            <clusterName>ceph</clusterName>
+            <userName>client.admin</userName>
+            <confFile>/etc/ceph/ceph.conf</confFile>
+            <poolName>PYRAMIDS</poolName>
+        </cephContext>
+        <imagePrefix>BDORTHO_IMG_level_5</imagePrefix>
+        <tilesPerWidth>16</tilesPerWidth>
+        <tilesPerHeight>16</tilesPerHeight>
+        <nodata>
+            <objectName>BDORTHO_NDT_level_5</objectName>
+        </nodata>
+        <TMSLimits>
+            <minTileRow>365</minTileRow>
+            <maxTileRow>368</maxTileRow>
+            <minTileCol>1026</minTileCol>
+            <maxTileCol>1035</maxTileCol>
+        </TMSLimits>
+    </level>
     (end code)
 =cut
 sub exportToXML {
     my $self = shift;
+    my $pyramid = shift;
 
-    my $cluster_name = shift;
-    my $user_name = shift;
-    my $conf_file = shift;
-    my $pool_name = shift;
+    my $cluster_name = $pyramid->getClusterName;
+    my $user_name = $pyramid->getUserName;
+    my $conf_file = $pyramid->getConfFile;
+    my $pool_name = $pyramid->getNewDataPool;
 
     my $levelXML = $STRLEVELTMPLT;
 
@@ -337,10 +356,16 @@ sub exportToXML {
     my $ndName = $self->{objectname_nodata};
     $levelXML =~ s/__NODATAPATH__/$ndName/;
 
-    my $tilew    = $self->{size}[0];
-    $levelXML =~ s/__TILEW__/$tilew/;
-    my $tileh    = $self->{size}[1];
-    $levelXML =~ s/__TILEH__/$tileh/;
+
+    if ($pyramid->storeTiles) {
+        $levelXML =~ s/__TILEW__/0/;
+        $levelXML =~ s/__TILEH__/0/;
+    } else {
+        my $tilew    = $self->{size}[0];
+        $levelXML =~ s/__TILEW__/$tilew/;
+        my $tileh    = $self->{size}[1];
+        $levelXML =~ s/__TILEH__/$tileh/;
+    }
 
     my $minrow   =  $self->{limits}[0];
     $levelXML =~ s/__MINROW__/$minrow/;
