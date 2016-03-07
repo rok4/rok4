@@ -178,7 +178,7 @@ sub _init {
     my $datasourcesFile = shift;
 
     return FALSE if (!$self->_loadProperties($propertiesFile));
-    return FALSE if (!$self->_loadProperties($datasourcesFile));
+    return FALSE if (!$self->_loadDatasources($datasourcesFile));
 
     return TRUE;
 }
@@ -208,8 +208,6 @@ sub _loadProperties {
     my %fileContent = $cfg->getConfig();
     my $refFileContent = \%fileContent;
 
-    ALWAYS(sprintf "Contenu = : %s", Dumper($refFileContent));
-    ALWAYS(sprintf "my \$TMS = BE4::TileMatrixSet->new(%s);", File::Spec->catfile($refFileContent->{pyramid}->{tms_path},$refFileContent->{pyramid}->{tms_name}));
     my $TMS = BE4::TileMatrixSet->new(File::Spec->catfile($refFileContent->{pyramid}->{tms_path},$refFileContent->{pyramid}->{tms_name}));
     $self->{tileMatrixSet} = $TMS ;
 
