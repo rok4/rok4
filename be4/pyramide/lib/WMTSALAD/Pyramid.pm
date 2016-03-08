@@ -208,9 +208,11 @@ sub _loadProperties {
     my %fileContent = $cfg->getConfig();
     my $refFileContent = \%fileContent;
 
+    # Tile Matrix Set
     my $TMS = BE4::TileMatrixSet->new(File::Spec->catfile($refFileContent->{pyramid}->{tms_path},$refFileContent->{pyramid}->{tms_name}));
     $self->{tileMatrixSet} = $TMS ;
 
+    # Image format
     my $format = "TIFF_";
     if ($refFileContent->{pyramid}->{compression} =~ m/^jpg|png|lzw|zip|pkb$/i) {
         $format.= uc($refFileContent->{pyramid}->{compression})."_";
@@ -225,12 +227,39 @@ sub _loadProperties {
         return FALSE;
     }
 
+    # Channels number 
     if (COMMON::CheckUtils::isStrictPositiveInt($refFileContent->{pyramid}->{samplesperpixel})) {
         $self->{channels} = $refFileContent->{pyramid}->{samplesperpixel};
     } else {
         ERROR(sprintf "Samples per pixel value must be a strictly positive integer : %s.", $refFileContent->{pyramid}->{samplesperpixel});
         return FALSE;
     }
+
+    # Pyramid's name. Some people say it's useful to name the resulting .pyr file.
+
+    # Path depth
+
+    # Data path
+
+    # Masks directory
+
+    # Images directory
+
+    # Metadata directory
+
+    # Nodata Directory
+
+    # Descriptor's path
+
+    # Nodata value
+
+    # Interpolation
+
+    # Photometric
+
+    # Image dimensions
+
+
 
 
     return TRUE;
