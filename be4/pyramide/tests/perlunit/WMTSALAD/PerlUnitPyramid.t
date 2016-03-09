@@ -40,6 +40,7 @@ use warnings;
 use FindBin qw($Bin);
 
 use Test::More;
+use Data::Dumper;
 
 use Log::Log4perl qw(:easy);
 # logger by default for unit tests
@@ -57,6 +58,7 @@ use WMTSALAD::Pyramid;
 my $pyramid = WMTSALAD::Pyramid->new('/home/xavier/workspace/be4/WMTSalaD/tests/test_conf_valide.conf', '/home/xavier/workspace/be4/WMTSalaD/tests/test_dsrc_valide.txt');
 ok (defined $pyramid, "Pyramid created");
 
+print(sprintf "Pyramid object content : %s", Dumper($pyramid));
 
 undef $pyramid;
 

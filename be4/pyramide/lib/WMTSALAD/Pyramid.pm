@@ -236,14 +236,58 @@ sub _loadProperties {
     }
 
     # Pyramid's name. Some people say it's useful to name the resulting .pyr file.
+    if ((!exists $refFileContent->{pyramid}->{pyr_name}) || (!defined $refFileContent->{pyramid}->{pyr_name})) {
+        ERROR ("The parameter 'pyr_name' is required!");
+        return FALSE;
+    }
+    my $pyr_name = $refFileContent->{pyramid}->{pyr_name};
+    $pyr_name =~ s/\.(pyr|PYR)$//;
+    $self->{pyr_name} = $pyr_name;
+
+    # Persistence
+    if ((exists $refFileContent->{pyramid}->{persistent}) && (defined $refFileContent->{pyramid}->{persistent})) {
+        if ((uc $refFileContent->{pyramid}->{persistent} eq "TRUE") || (uc $refFileContent->{pyramid}->{persistent} eq "T") || ($refFileContent->{pyramid}->{persistent} == TRUE)) {
+            $self->{persistent} = TRUE;
+        } elsif ((uc $refFileContent->{pyramid}->{persistent} eq "FALSE") || (uc $refFileContent->{pyramid}->{persistent} eq "F") || ($refFileContent->{pyramid}->{persistent} == FALSE)) {
+            $self->{persistent} = FALSE;
+        } else {
+            ERROR("The 'persitent' parameter must be a boolean value (format : number, case insensitive letter, case insensitive word).");
+            return FALSE;
+        }
+    } else {
+        INFO ("The undefined 'persistent' parameter is now set to 'false'.");
+        $self->{persistent} = FALSE;
+    }
+
 
     # Path depth
+    if (COMMON::CheckUtils::isStrictPositiveInt($refFileContent->{pyramid}->{dir_depth})) {
+        $self->{dir_depth} = $refFileContent->{pyramid}->{dir_depth};
+    } else {
+        ERROR(sprintf "Directory path depth value must be a strictly positive integer : %s.", $refFileContent->{pyramid}->{dir_depth});
+        return FALSE;
+    }
 
-    # Data path
+    # Data paths
+    if ((exists $refFileContent->{pyramid}->{pyr_data_path}) && (defined $refFileContent->{pyramid}->{pyr_data_path})) {
+        $self->{pyr_data_path} = $refFileContent->{pyramid}->{pyr_data_path};
+    } else {
+        ERROR ("The parameter 'pyr_data_path' is required!");
+        return FALSE;
+    }
 
-    # Masks directory
+    # Masks directory (optionnal)
+    if ((exists $refFileContent->{pyramid}->{dir_mask}) && (defined $refFileContent->{pyramid}->{dir_mask})) {
+        $self->{dir_mask} = $refFileContent->{pyramid}->{dir_mask};
+    }
 
     # Images directory
+    if ((exists $refFileContent->{pyramid}->{dir_image}) && (defined $refFileContent->{pyramid}->{dir_image})) {
+        $self->{dir_image} = $refFileContent->{pyramid}->{dir_image};
+    } else {
+        ERROR ("The parameter 'dir_image' is required!");
+        return FALSE;
+    }
 
     # Metadata directory
 
