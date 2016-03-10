@@ -436,7 +436,7 @@ sub exportForDebug {
     my $export = "";
     
     $export .= sprintf "\n Object COMMON::DataSourceLoader :\n";
-    $export .= sprintf "\t Configuration file :\n", $self->{FILEPATH_DATACONF};
+    $export .= sprintf "\t Configuration file : %s\n", $self->{FILEPATH_DATACONF};
     $export .= sprintf "\t Sources number : %s\n", scalar @{$self->{dataSources}};
     
     return $export;

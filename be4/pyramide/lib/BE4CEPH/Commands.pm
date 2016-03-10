@@ -168,19 +168,35 @@ StoreTiles () {
     local workDir=$2
     local workImgName=$3
     local imgName=$4
-    local imgI=$5
-    local imgJ=$6
-    local workMskName=$7
-    local mskName=$8
+
+    shift 4
+
+    local imgI=$1
+    local imgJ=$2
+    local tilesW=$3
+    local tilesH=$4
+
+    shift 4
+
+    local workMskName=$1
+    local mskName=$2
     
+    let imin=$imgI*$tilesW
+    let imax=$imgI*$tilesW+$tilesW-1
+    let jmin=$imgJ*$tilesH
+    let jmax=$imgJ*$tilesH+$tilesH-1
     
     if [[ ! ${RM_IMGS[$workDir/$workImgName]} ]] ; then
              
         tiff2tile $workDir/$workImgName __t2tI__ -ij $imgI $imgJ -pool ${PYR_POOL} $imgName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
-        echo "$imgName" >> ${TMP_LIST_FILE}
-        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        for i in `seq $imin $imax` ; do 
+            for j in `seq $imin $imax` ; do 
+                echo "${imgName}_${i}_${j}" >> ${TMP_LIST_FILE}
+                if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+            done
+        done
         
         if [ "$level" == "$TOP_LEVEL" ] ; then
             rm $workDir/$workImgName
@@ -194,7 +210,12 @@ StoreTiles () {
                     
                 tiff2tile $workDir/$workMskName __t2tM__ -ij $imgI $imgJ -pool ${PYR_POOL} $mskName
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-                echo "$mskName" >> ${TMP_LIST_FILE}
+                for i in `seq $imin $imax` ; do 
+                    for j in `seq $imin $imax` ; do 
+                        echo "${mskName}_${i}_${j}" >> ${TMP_LIST_FILE}
+                        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+                    done
+                done
                 
             fi
             
@@ -370,7 +391,10 @@ sub work2cache {
 
         my $pyrName = sprintf "%s_IMG_%s", $self->{pyramid}->getNewName(), $node->getLevel();
         
-        $cmd .= sprintf "StoreTiles %s %s %s %s %s %s", $node->getLevel, $workDir, $node->getWorkImageName(TRUE), $pyrName, $node->getCol, $node->getRow;
+        $cmd .= sprintf "StoreTiles %s %s %s %s %s %s %s %s",
+            $node->getLevel, $workDir, $node->getWorkImageName(TRUE), $pyrName,
+            $node->getCol, $node->getRow, $self->{pyramid}->getTilesPerWidth, $self->{pyramid}->getTilesPerHeight;
+
         $weight += TIFF2TILE_W;
         
         #### Export du masque, si présent
