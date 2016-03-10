@@ -181,10 +181,10 @@ StoreTiles () {
     local workMskName=$1
     local mskName=$2
     
-    local imin=$imgI*$tilesW
-    local imax=$imgI*$tilesW+$tilesW-1
-    local jmin=$imgJ*$tilesH
-    local jmax=$imgJ*$tilesH+$tilesH-1
+    let imin=$imgI*$tilesW
+    let imax=$imgI*$tilesW+$tilesW-1
+    let jmin=$imgJ*$tilesH
+    let jmax=$imgJ*$tilesH+$tilesH-1
     
     if [[ ! ${RM_IMGS[$workDir/$workImgName]} ]] ; then
              
@@ -193,7 +193,7 @@ StoreTiles () {
         
         for i in `seq $imin $imax` ; do 
             for j in `seq $imin $imax` ; do 
-                echo "${imgName}_i_j" >> ${TMP_LIST_FILE}
+                echo "${imgName}_${i}_${j}" >> ${TMP_LIST_FILE}
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
             done
         done
@@ -212,7 +212,7 @@ StoreTiles () {
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
                 for i in `seq $imin $imax` ; do 
                     for j in `seq $imin $imax` ; do 
-                        echo "${mskName}_i_j" >> ${TMP_LIST_FILE}
+                        echo "${mskName}_${i}_${j}" >> ${TMP_LIST_FILE}
                         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
                     done
                 done
