@@ -146,10 +146,10 @@ void* Rok4Server::thread_loop ( void* arg ) {
 
 Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
                          std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList,
-                         std::string socket, int backlog, bool supportWMTS, bool supportWMS ) :
+                         std::string socket, int backlog, ContextBook *contextBook, bool supportWMTS, bool supportWMS ) :
     sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ),
     styleList ( styleList ), threads ( nbThread ), socket ( socket ), backlog ( backlog ),
-    running ( false ), notFoundError ( NULL ), supportWMTS ( supportWMTS ), supportWMS ( supportWMS ) {
+    running ( false ), notFoundError ( NULL ), supportWMTS ( supportWMTS ), supportWMS ( supportWMS ), contextBook (contextBook) {
 
     if ( supportWMS ) {
         LOGGER_DEBUG ( _ ( "Build WMS Capabilities 1.3.0" ) );
@@ -163,12 +163,17 @@ Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std:
         LOGGER_DEBUG ( _ ( "Build WMTS Capabilities" ) );
         buildWMTSCapabilities();
     }
+
 }
 
 Rok4Server::~Rok4Server() {
     if ( notFoundError ) {
         delete notFoundError;
         notFoundError = NULL;
+    }
+    if (contextBook) {
+        delete contextBook;
+        contextBook = NULL;
     }
 }
 

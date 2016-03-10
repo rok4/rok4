@@ -1426,7 +1426,12 @@ Layer * ConfLoader::buildLayer ( std::string fileName, std::map<std::string, Til
 }
 
 // Load the server configuration (default is server.conf file) during server initialization
-bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog ) {
+bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput,
+                                       std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread,
+                                       bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability,
+                                       std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir,
+                                       std::string &styleDir, std::string& socket, int& backlog,
+                                       std::string &cephName, std::string &cephUser, std::string &cephConf, std::string &cephPool ) {
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
@@ -1634,6 +1639,60 @@ bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConf
     } else if ( !sscanf ( pElem->GetText(),"%d",&backlog ) )  {
         std::cerr<<_ ( "Le logFilePeriod [" ) << pElem->GetTextStr() <<_ ( "]  is not an integer." ) <<std::endl;
         backlog = 0;
+    }
+
+    pElem = hRoot.FirstChild ( "cephContext" ).Element();
+    if ( pElem) {
+
+        TiXmlElement* pElemCephContext;
+
+        pElemCephContext = hRoot.FirstChild ( "cephContext" ).FirstChild ( "clusterName" ).Element();
+        if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
+            char* cluster = getenv ("ROK4_CEPH_CLUSTERNAME");
+            if (cluster == NULL) {
+                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un clusterName" );
+                return false;
+            } else {
+                cephName.assign(cluster);
+            }
+        } else {
+            cephName = pElemCephContext->GetText();
+        }
+
+        pElemCephContext = hRoot.FirstChild ( "cephContext" ).FirstChild ( "userName" ).Element();
+        if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
+            char* user = getenv ("ROK4_CEPH_USERNAME");
+            if (user == NULL) {
+                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un userName" );
+                return false;
+            } else {
+                cephUser.assign(user);
+            }
+        } else {
+            cephUser = pElemCephContext->GetText();
+        }
+
+        pElemCephContext = hRoot.FirstChild ( "cephContext" ).FirstChild ( "confFile" ).Element();
+        if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
+            char* conf = getenv ("ROK4_CEPH_CONFFILE");
+            if (conf == NULL) {
+                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un confFile" );
+                return false;
+            } else {
+                cephConf.assign(conf);
+            }
+        } else {
+            cephConf = pElemCephContext->GetText();
+        }
+
+        pElemCephContext = hRoot.FirstChild ( "cephContext" ).FirstChild ( "poolName" ).Element();
+        if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
+            LOGGER_INFO ("L'utilisation d'un cephContext necessitera de preciser un poolName au niveau de chaque level" );
+            cephPool = "";
+        } else {
+            cephPool = pElemCephContext->GetText();
+        }
+
     }
 
     return true;
@@ -2187,14 +2246,17 @@ bool ConfLoader::isCRSAllowed(std::vector<std::string> restrictedCRSList, std::s
 bool ConfLoader::getTechnicalParam ( std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix,
                                      int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS,
                                      bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir,
-                                     std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog ) {
+                                     std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog,
+                                     std::string &cephName, std::string &cephUser, std::string &cephConf, std::string &cephPool ) {
     std::cout<<_ ( "Chargement des parametres techniques depuis " ) <<serverConfigFile<<std::endl;
     TiXmlDocument doc ( serverConfigFile );
     if ( !doc.LoadFile() ) {
         std::cerr<<_ ( "Ne peut pas charger le fichier " ) << serverConfigFile<<std::endl;
         return false;
     }
-    return parseTechnicalParam ( &doc,serverConfigFile,logOutput,logFilePrefix,logFilePeriod,logLevel,nbThread,supportWMTS,supportWMS,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,styleDir, socket, backlog );
+    return parseTechnicalParam ( &doc,serverConfigFile,logOutput,logFilePrefix,logFilePeriod,logLevel,
+                                 nbThread,supportWMTS,supportWMS,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,
+                                 styleDir, socket, backlog, cephName, cephUser, cephConf, cephPool );
 }
 
 bool ConfLoader::buildStylesList ( std::string styleDir, std::map< std::string, Style* >& stylesList, bool inspire ) {

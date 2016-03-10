@@ -94,9 +94,14 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     LogOutput logOutput;
     int nbThread,logFilePeriod,backlog;
     LogLevel logLevel;
+    ContextBook *contextBook = NULL;
     bool supportWMTS,supportWMS,reprojectionCapability;
-    std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,strLayerDir,strTmsDir,strStyleDir,socket;
-    if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, supportWMTS, supportWMS, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, socket, backlog ) ) {
+    std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,
+            strLayerDir,strTmsDir,strStyleDir,socket,cephName,cephUser,cephConf,cephPool;
+    if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod,
+                                          logLevel, nbThread, supportWMTS, supportWMS, reprojectionCapability,
+                                          strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, socket, backlog,
+                                          cephName,cephUser,cephConf,cephPool ) ) {
         std::cerr<<_ ( "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " ) <<strServerConfigFile<<std::endl;
         return NULL;
     }
@@ -163,9 +168,13 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
         return NULL;
     }
 
+    if (cephName != "" && cephUser != "" && cephConf != "") {
+        contextBook = new ContextBook(cephName,cephUser,cephConf,cephPool);
+    }
+
     // Instanciation du serveur
     Logger::stopLogger();
-    return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog, supportWMTS, supportWMS );
+    return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog, contextBook, supportWMTS, supportWMS );
 }
 
 /**

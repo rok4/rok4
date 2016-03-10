@@ -58,6 +58,7 @@
 #include "TileMatrixSet.h"
 #include "fcgiapp.h"
 #include <csignal>
+#include "ContextBook.h"
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -148,6 +149,11 @@ private:
      * \~english \brief Error response in case data tiel is not found (http 404)
      */
     DataSource* notFoundError;
+    /**
+     * \~french \brief Annuaire des contextes
+     * \~english \brief Context Directory
+     */
+    ContextBook* contextBook;
 
     /**
      * \~french
@@ -421,7 +427,7 @@ public:
      * \brief Construction du serveur
      */
     Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
-                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, std::string socket, int backlog, bool supportWMTS = true, bool supportWMS = true );
+                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, std::string socket, int backlog, ContextBook *contextBook,bool supportWMTS = true, bool supportWMS = true );
     /**
      * \~french
      * \brief Destructeur par défaut
