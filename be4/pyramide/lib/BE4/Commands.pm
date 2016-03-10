@@ -567,6 +567,86 @@ sub work2cache {
 }
 
 =begin nd
+Function: mergeNtiff
+
+Use the 'MergeNtiff' bash function. Write a configuration file, with sources.
+
+(see mergeNtiff.png)
+
+Parameters (list):
+    node - <Node> - Node to generate thanks to a 'mergeNtiff' command.
+    
+Example:
+|    MergeNtiff 19_397_3134.txt
+
+Returns:
+    An array (code, weight), ("",-1) if error.
+=cut
+sub mergeNtiff {
+    my $self = shift;
+    my $node = shift;
+
+    TRACE;
+    
+    my ($c, $w);
+    my ($code, $weight) = ("",MERGENTIFF_W);
+
+    # Si elle existe, on copie la dalle de la pyramide de base dans le repertoire de travail 
+    # en la convertissant du format cache au format de travail: c'est notre image de fond.
+    # Si la dalle de la pyramide de base existe, on a créé un lien, donc il existe un fichier
+    # correspondant dans la nouvelle pyramide.
+    # On fait de même avec le masque de donnée associé, s'il existe.
+    my $imgPath = File::Spec->catfile($self->{pyramid}->getDirImage(TRUE),$node->getPyramidName());
+    
+    if ( -f $imgPath ) {
+        $node->addBgImage();
+        
+        my $maskPath = File::Spec->catfile($self->{pyramid}->getDirMask(TRUE),$node->getPyramidName());
+        
+        if ( $self->{useMasks} && -f $maskPath ) {
+            # On a en plus un masque associé à l'image de fond
+            $node->addBgMask();
+        }
+        
+        ($c,$w) = $self->cache2work($node);
+        $code .= $c;
+        $weight += $w;
+    }
+    
+    if ($self->{useMasks}) {
+        $node->addWorkMask();
+    }
+    
+    my $mNtConfFilename = $node->getWorkBaseName.".txt";
+    my $mNtConfFile = File::Spec->catfile($self->{mntConfDir}, $mNtConfFilename);
+    
+    if (! open CFGF, ">", $mNtConfFile ) {
+        ERROR(sprintf "Impossible de creer le fichier $mNtConfFile.");
+        return ("",-1);
+    }
+    
+    # La premiere ligne correspond à la dalle résultat: La version de travail de la dalle à calculer.
+    # Les points d'interrogation permettent de gérer le dossier où écrire les images grâce à une variable
+    # Cet export va également ajouter les fonds (si présents) comme premières sources
+    printf CFGF $node->exportForMntConf(TRUE, "?");
+
+    #   - Les images sources (QTree)
+    my $listGeoImg = $node->getGeoImages;
+    foreach my $img (@{$listGeoImg}) {
+        printf CFGF "%s", $img->exportForMntConf($self->{useMasks});
+    }
+    
+    close CFGF;
+    
+    $code .= "MergeNtiff $mNtConfFilename";
+    $code .= sprintf " %s", $node->getBgImageName(TRUE) if (defined $node->getBgImageName()); # pour supprimer l'image de fond si elle existe
+    $code .= sprintf " %s", $node->getBgMaskName(TRUE) if (defined $node->getBgMaskName()); # pour supprimer le masque de fond si il existe
+    $code .= "\n";
+
+    return ($code,$weight);
+}
+
+=begin nd
 Function: decimateNtiff
 
 Use the 'decimateNtiff' bash function. Write a configuration file, with sources.
