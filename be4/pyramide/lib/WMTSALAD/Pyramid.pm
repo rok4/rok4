@@ -99,6 +99,15 @@ my %IMAGE_SPECS = (
         ],
     );
 
+my %DEFAULT = (
+        noDataValue => {
+            1 => "255",
+            2 => "255,0",
+            3 => "255,255,255",
+            4 => "255,255,255,0",
+        },
+    );
+
 ################################################################################
 
 BEGIN {}
@@ -289,17 +298,38 @@ sub _loadProperties {
         return FALSE;
     }
 
-    # Metadata directory
+    # Metadata directory (optionnal)
+    if ((exists $refFileContent->{pyramid}->{dir_metadata}) && (defined $refFileContent->{pyramid}->{dir_metadata})) {
+        $self->{dir_metadata} = $refFileContent->{pyramid}->{dir_metadata};
+    }
 
     # Nodata Directory
+    if ((exists $refFileContent->{pyramid}->{dir_nodata}) && (defined $refFileContent->{pyramid}->{dir_nodata})) {
+        $self->{dir_nodata} = $refFileContent->{pyramid}->{dir_nodata};
+    } else {
+        ERROR ("The parameter 'dir_nodata' is required!");
+        return FALSE;
+    }
 
     # Descriptor's path
+    if ((exists $refFileContent->{pyramid}->{pyr_desc_path}) && (defined $refFileContent->{pyramid}->{pyr_desc_path})) {
+        $self->{pyr_desc_path} = $refFileContent->{pyramid}->{pyr_desc_path};
+    } else {
+        ERROR ("The parameter 'pyr_desc_path' is required to write the .pyr descriptor file.");
+        return FALSE;
+    }
 
     # Nodata value
+    if ((exists $refFileContent->{pyramid}->{color}) && (defined $refFileContent->{pyramid}->{color})) {
+        $self->{noDataValue} = $refFileContent->{pyramid}->{color};
+    } else {
+        my $chans = $self->{channels};
+        $self->{noDataValue} = $DEFAULT{noDataValue}->{$chans};
+    }
 
-    # Interpolation
+    # Interpolation (optionnal)
 
-    # Photometric
+    # Photometric (optionnal)
 
     # Image dimensions
 

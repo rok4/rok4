@@ -25,9 +25,11 @@
                             <!-- si spécifiées ici, ces sources ne concernent que ce level -->
                             <!-- ainsi, si on en met un, il faut en mettre pour chaque level -->
                             <!-- à moins qu'il y ait des sources au niveau global -->
+                            <!-- Si le baseDir n'est pas spécifié, l'élément <sources> doit être présent -->
                             <xs:element name="sources" minOccurs="0" maxOccurs="1">
 			                    <xs:complexType>
 			                        <xs:sequence>
+                                        <!-- Doit contenir au moins une source, qu'elle soit de type 'basedPyramid' ou de type 'webService' -->
 			                            <xs:element name="basedPyramid" minOccurs="1" maxOccurs="unbounded">
 			                                <xs:complexType>
 			                                    <xs:sequence>
