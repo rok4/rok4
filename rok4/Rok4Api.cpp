@@ -94,9 +94,14 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     LogOutput logOutput;
     int nbThread,logFilePeriod,backlog;
     LogLevel logLevel;
+    ContextBook *contextBook = NULL;
     bool supportWMTS,supportWMS,reprojectionCapability;
-    std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,strLayerDir,strTmsDir,strStyleDir,socket;
-    if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, supportWMTS, supportWMS, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, socket, backlog ) ) {
+    std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,
+            strLayerDir,strTmsDir,strStyleDir,socket,cephName,cephUser,cephConf,cephPool;
+    if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod,
+                                          logLevel, nbThread, supportWMTS, supportWMS, reprojectionCapability,
+                                          strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, socket, backlog,
+                                          cephName,cephUser,cephConf,cephPool ) ) {
         std::cerr<<_ ( "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " ) <<strServerConfigFile<<std::endl;
         return NULL;
     }
@@ -154,18 +159,24 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
         return NULL;
     }
 
+    if (cephName != "" && cephUser != "" && cephConf != "") {
+        contextBook = new ContextBook(cephName,cephUser,cephConf,cephPool);
+    }
+
     // Chargement des layers
     std::map<std::string, Layer*> layerList;
-    if ( !ConfLoader::buildLayersList ( strLayerDir,tmsList, styleList,layerList,reprojectionCapability,sc ) ) {
+    if ( !ConfLoader::buildLayersList ( strLayerDir,tmsList, styleList,layerList,reprojectionCapability,sc, contextBook ) ) {
         LOGGER_FATAL ( _ ( "Impossible de charger la conf des Layers/pyramides" ) );
         LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
         return NULL;
     }
 
+
+
     // Instanciation du serveur
     Logger::stopLogger();
-    return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog, supportWMTS, supportWMS );
+    return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog, contextBook, supportWMTS, supportWMS );
 }
 
 /**
@@ -271,6 +282,37 @@ HttpResponse* rok4GetTile ( const char* queryString, const char* hostName, const
 }
 
 /**
+* \brief Implementation de l'operation GetCephReferences
+* \brief Cela permet de transmettre les informations de connexion
+* \param[in] cephRef : cephRef
+* \param[in] server : serveur
+* \param[out] CephRef : reference de la connexion à Ceph
+* \return CephRef
+*/
+
+CephRef* rok4GetCephReferences (Rok4Server* server) {
+
+    CephRef* cr = NULL;
+    CephPoolContext* ctx = server->getContextBook()->getCephBaseContext();
+
+    if (ctx) {
+
+        cr->name=new char[ctx->getClusterName().length() +1];
+        strcpy ( cr->name,ctx->getClusterName().c_str() );
+
+        cr->user=new char[ctx->getPoolUser().length() +1];
+        strcpy ( cr->user,ctx->getPoolUser().c_str() );
+
+        cr->conf=new char[ctx->getPoolConf().length() +1];
+        strcpy ( cr->conf,ctx->getPoolConf().c_str() );
+
+    } else {
+        return cr;
+    }
+
+}
+
+/**
 * \brief Implementation de l'operation GetTile modifiee
 * \brief La tuile n'est pas lue, les elements recuperes sont les references de la tuile : le fichier dans lequel elle est stockee et les positions d'enregistrement (sur 4 octets) dans ce fichier de l'index du premier octet de la tuile et de sa taille
 * \param[in] queryString
@@ -288,7 +330,7 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
 
     Request* request=new Request ( ( char* ) strQuery.c_str(), ( char* ) hostName, ( char* ) scriptName, ( char* ) https );
     Layer* layer;
-    std::string tmId,mimeType,format,encoding;
+    std::string tmId,mimeType,format,encoding,imageFilePath;
     int x,y;
     Style* style =0;
     // Analyse de la requete
@@ -311,14 +353,32 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
         return rok4GetNoDataFoundException();
     }
     Level* level=layer->getDataPyramid()->getLevels().find ( tmId )->second;
-    int n= ( y%level->getTilesPerHeight() ) *level->getTilesPerWidth() + ( x%level->getTilesPerWidth() );
 
-    tileRef->posoff=2048+4*n;
-    tileRef->possize=2048+4*n +level->getTilesPerWidth() *level->getTilesPerHeight() *4;
+    if (level->getTilesPerHeight() == 0 && level->getTilesPerWidth() == 0) {
+        //on doit lire une tuile et non une dalle
+        imageFilePath=level->getPath ( x, y,1, 1);
+        tileRef->posoff = 0;
+        tileRef->possize = 0;
+    } else {
+        //on lit une dalle
+        int n= ( y%level->getTilesPerHeight() ) *level->getTilesPerWidth() + ( x%level->getTilesPerWidth() );
+        tileRef->posoff=2048+4*n;
+        tileRef->possize=2048+4*n +level->getTilesPerWidth() *level->getTilesPerHeight() *4;
+        imageFilePath=level->getPath ( x, y,level->getTilesPerWidth(), level->getTilesPerHeight());
+    }
 
-    std::string imageFilePath=level->getPath ( x, y,level->getTilesPerWidth(), level->getTilesPerHeight());
-    tileRef->filename=new char[imageFilePath.length() +1];
-    strcpy ( tileRef->filename,imageFilePath.c_str() );
+    tileRef->name=new char[imageFilePath.length() +1];
+    strcpy ( tileRef->name,imageFilePath.c_str() );
+
+    tileRef->maxsize = level->getMaxTileSize();
+
+    std::string ctxType = level->getContext()->getTypeStr();;
+    tileRef->contextType=new char[ctxType.length() +1];
+    strcpy ( tileRef->contextType,ctxType.c_str() );
+
+    std::string container = level->getContext()->getContainer();;
+    tileRef->pool=new char[container.length() +1];
+    strcpy ( tileRef->pool,container.c_str() );
 
     tileRef->type=new char[mimeType.length() +1];
     strcpy ( tileRef->type,mimeType.c_str() );
@@ -399,10 +459,19 @@ HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char*
 
     tileRef->posoff=2048;
     tileRef->possize=2048+4;
+    tileRef->maxsize = level->getMaxTileSize();
 
     std::string imageFilePath=level->getNoDataFilePath();
-    tileRef->filename=new char[imageFilePath.length() +1];
-    strcpy ( tileRef->filename,imageFilePath.c_str() );
+    tileRef->name=new char[imageFilePath.length() +1];
+    strcpy ( tileRef->name,imageFilePath.c_str() );
+
+    std::string ctxType = level->getContext()->getTypeStr();;
+    tileRef->contextType=new char[ctxType.length() +1];
+    strcpy ( tileRef->contextType,ctxType.c_str() );
+
+    std::string container = level->getContext()->getContainer();;
+    tileRef->pool=new char[container.length() +1];
+    strcpy ( tileRef->pool,container.c_str() );
 
     tileRef->type=new char[format.length() +1];
     strcpy ( tileRef->type,format.c_str() );
@@ -540,7 +609,9 @@ void rok4DeleteResponse ( HttpResponse* response ) {
 */
 
 void rok4FlushTileRef ( TileRef* tileRef ) {
-    delete[] tileRef->filename;
+    delete[] tileRef->name;
+    delete[] tileRef->pool;
+    delete[] tileRef->contextType;
     delete[] tileRef->type;
     delete[] tileRef->encoding;
     delete[] tileRef->format;

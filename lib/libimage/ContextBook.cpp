@@ -36,71 +36,62 @@
  */
 
 /**
- * \file Context.h
+ * \file ContextBook.cpp
  ** \~french
- * \brief Définition de la classe Context
+ * \brief Définition de la classe ContextBook
  * \details
- * \li Context : classe d'abstraction du contexte de stockage (fichier, ceph ou swift)
+ * \li ContextBook : annuaire de contextes
  ** \~english
- * \brief Define classe Context
+ * \brief Define classe ContextBook
  * \details
- * \li Context : storage context abstraction
+ * \li ContextBook : Directory of contexts
  */
 
-#ifndef CONTEXT_H
-#define CONTEXT_H
+#include "ContextBook.h"
 
-#include <stdint.h>// pour uint8_t
-#include "Logger.h"
-#include <string.h>
+ContextBook::ContextBook(std::string name, std::string user, std::string conf, std::string pool="")
+{
 
-/**
- * \~french \brief Énumération des types de contextes
- * \~english \brief Available context type
- */
-enum eContextType {
-    FILECONTEXT,
-    CEPHCONTEXT,
-    SWIFTCONTEXT
-};
+    baseContext = new CephPoolContext(name,user,conf,pool);
 
-/**
- * \author Institut national de l'information géographique et forestière
- * \~french
- * \brief Création d'un contexte de stockage abstrait 
- */
-class Context {  
 
-protected:
+}
 
-    bool connected;
+Context * ContextBook::addContext(std::string pool)
+{
 
-    /** Constructeurs */
-    Context () : connected(false) {}
+    std::map<std::string, Context*>::iterator it = book.find ( pool );
+    if ( it == book.end() ) {
+        //ce pool n'est pas encore connecté, on va créer la connexion
+        CephPoolContext * bctx = reinterpret_cast<CephPoolContext*>(baseContext);
+        CephPoolContext * ctx = new CephPoolContext(bctx->getClusterName(), bctx->getPoolUser(), bctx->getPoolConf(), pool);
+        //on se connecte
+        if (!ctx->connection()) {
+            LOGGER_ERROR("Impossible de se connecter aux donnees.");
+            return NULL;
+        }
+        //on ajoute au book
+        book.insert ( std::pair<std::string,Context*>(pool,ctx) );
 
-public:
+        return ctx;
+    } else {
+        //le pool est déjà existant et donc connecté
+        return it->second;
+    }
 
-    virtual bool connection() = 0;
+}
 
-    virtual int read(uint8_t* data, int offset, int size, std::string name) = 0;
-    virtual bool write(uint8_t* data, int offset, int size, std::string name) = 0;
-    virtual bool writeFull(uint8_t* data, int size, std::string name) = 0;
+ContextBook::~ContextBook()
+{
+    std::map<std::string,Context*>::iterator it;
+    for (it=book.begin(); it!=book.end(); ++it) {
+        delete it->second;
+        it->second = NULL;
+    }
+    if (baseContext) {
+        delete baseContext;
+        baseContext = NULL;
+    }
 
-    virtual bool openToWrite(std::string name) = 0;
-    virtual bool closeToWrite(std::string name) = 0;
-    virtual eContextType getType() = 0;
-    virtual std::string getTypeStr() = 0;
-    virtual std::string getContainer() = 0;
+}
 
-    /**
-     * \~french
-     * \brief Sortie des informations sur le contexte
-     * \~english
-     * \brief Context description output
-     */
-    virtual void print() = 0;
-    
-    virtual ~Context() {}
-};
-
-#endif

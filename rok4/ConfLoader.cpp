@@ -532,7 +532,7 @@ TileMatrixSet* ConfLoader::buildTileMatrixSet ( std::string fileName ) {
 }//buildTileMatrixSet(std::string fileName)
 
 // Load a pyramid
-Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList ) {
+Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, ContextBook *contextBook  ) {
     LOGGER_INFO ( _ ( "             Ajout de la pyramide : " ) << fileName );
     // Relative file Path
     char * fileNameChar = ( char * ) malloc ( strlen ( fileName.c_str() ) + 1 );
@@ -673,6 +673,10 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             }
 
             context = new FileContext("");
+            if (!context->connection()) {
+                LOGGER_ERROR("Impossible de se connecter aux donnees.");
+                return NULL;
+            }
 
         }
 
@@ -680,54 +684,9 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         pElemLvl = hLvl.FirstChild ( "cephContext" ).Element();
         if ( pElemLvl && !context) {
 
-            std::string clusterName,userName,confFile,poolName;
+            std::string poolName;
 
             TiXmlElement* pElemCephContext;
-
-            pElemCephContext = hLvl.FirstChild ( "cephContext" ).FirstChild ( "clusterName" ).Element();
-            if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
-                char* cluster = getenv ("ROK4_CEPH_CLUSTERNAME");
-                if (cluster == NULL) {
-                    LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un clusterName" );
-                    return NULL;
-                } else {
-                    clusterName.assign(cluster);
-                }
-            } else {
-                clusterName = pElemCephContext->GetText();
-            }
-
-            pElemCephContext = hLvl.FirstChild ( "cephContext" ).FirstChild ( "userName" ).Element();
-            if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
-                char* user = getenv ("ROK4_CEPH_USERNAME");
-                if (user == NULL) {
-                    LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un userName" );
-                    return NULL;
-                } else {
-                    userName.assign(user);
-                }
-            } else {
-                userName = pElemCephContext->GetText();
-            }
-
-            pElemCephContext = hLvl.FirstChild ( "cephContext" ).FirstChild ( "confFile" ).Element();
-            if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
-                char* conf = getenv ("ROK4_CEPH_CONFFILE");
-                if (conf == NULL) {
-                    LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un confFile" );
-                    return NULL;
-                } else {
-                    confFile.assign(conf);
-                }
-            } else {
-                confFile = pElemCephContext->GetText();
-                if ( confFile.compare ( 0,2,"./" ) ==0 ) {
-                    confFile.replace ( 0,1,parentDir );
-                } else if ( confFile.compare ( 0,1,"/" ) !=0 ) {
-                    confFile.insert ( 0,"/" );
-                    confFile.insert ( 0,parentDir );
-                }
-            }
 
             pElemCephContext = hLvl.FirstChild ( "cephContext" ).FirstChild ( "poolName" ).Element();
             if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
@@ -737,7 +696,12 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                 poolName = pElemCephContext->GetText();
             }
 
-            context = new CephPoolContext(clusterName,userName,confFile,poolName);
+            if (contextBook != NULL) {
+                context = contextBook->addContext(poolName);
+            } else {
+                LOGGER_ERROR ( "L'utilisation d'un cephContext necessite de preciser les informations de connexions dans le server.conf");
+                return NULL;
+            }
 
             pElemLvl = hLvl.FirstChild ( "imagePrefix" ).Element();
             if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
@@ -817,6 +781,11 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
             context = new SwiftContext(authUrl,userAccount,userName,userPassword,container);
 
+            if (!context->connection()) {
+                LOGGER_ERROR("Impossible de se connecter aux donnees.");
+                return NULL;
+            }
+
             pElemLvl = hLvl.FirstChild ( "imagePrefix" ).Element();
             if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
                 LOGGER_ERROR ( "imagePrefix absent pour le level " << id << " qui est stocke sur du Swift");
@@ -829,11 +798,6 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         if (context == NULL) {
             LOGGER_ERROR("Level " << id << " sans indication de stockage. Precisez un baseDir ou un cephContext ou un swiftContext");
             return NULL;
-        } else {
-            if (!context->connection()) {
-                LOGGER_ERROR("Level " << id << " => Impossible de se connecter aux donnees.");
-                return NULL;
-            }
         }
 
         pElemLvl = hLvl.FirstChild ( "tilesPerWidth" ).Element();
@@ -1005,17 +969,19 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
 }// buildPyramid()
 
-Pyramid* ConfLoader::buildPyramid ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList ) {
+Pyramid* ConfLoader::buildPyramid ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, ContextBook *contextBook ) {
     TiXmlDocument doc ( fileName.c_str() );
     if ( !doc.LoadFile() ) {
         LOGGER_ERROR ( _ ( "Ne peut pas charger le fichier " ) << fileName );
         return NULL;
     }
-    return parsePyramid ( &doc,fileName,tmsList );
+    return parsePyramid ( &doc,fileName,tmsList,contextBook );
 }
 
 //TODO avoid opening a pyramid file directly
-Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability, ServicesConf* servicesConf ) {
+Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,
+                                 std::map<std::string,Style*> stylesList , bool reprojectionCapability,
+                                 ServicesConf* servicesConf, ContextBook *contextBook ) {
     LOGGER_INFO ( _ ( "     Ajout du layer " ) << fileName );
     // Relative file Path
     char * fileNameChar = ( char * ) malloc ( strlen ( fileName.c_str() ) + 1 );
@@ -1365,7 +1331,7 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
             pyramidFilePath.insert ( 0,"/" );
             pyramidFilePath.insert ( 0,parentDir );
         }
-        pyramid = buildPyramid ( pyramidFilePath, tmsList );
+        pyramid = buildPyramid ( pyramidFilePath, tmsList, contextBook );
         if ( !pyramid ) {
             LOGGER_ERROR ( _ ( "La pyramide " ) << pyramidFilePath << _ ( " ne peut etre chargee" ) );
             return NULL;
@@ -1416,17 +1382,24 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
     return layer;
 }//buildLayer
 
-Layer * ConfLoader::buildLayer ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList, bool reprojectionCapability, ServicesConf* servicesConf ) {
+Layer * ConfLoader::buildLayer ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,
+                                 std::map<std::string,Style*> stylesList, bool reprojectionCapability,
+                                 ServicesConf* servicesConf, ContextBook *contextBook ) {
     TiXmlDocument doc ( fileName.c_str() );
     if ( !doc.LoadFile() ) {
         LOGGER_ERROR ( _ ( "Ne peut pas charger le fichier " ) << fileName );
         return NULL;
     }
-    return parseLayer ( &doc,fileName,tmsList,stylesList,reprojectionCapability,servicesConf );
+    return parseLayer ( &doc,fileName,tmsList,stylesList,reprojectionCapability,servicesConf, contextBook );
 }
 
 // Load the server configuration (default is server.conf file) during server initialization
-bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog ) {
+bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput,
+                                       std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread,
+                                       bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability,
+                                       std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir,
+                                       std::string &styleDir, std::string& socket, int& backlog,
+                                       std::string &cephName, std::string &cephUser, std::string &cephConf, std::string &cephPool ) {
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
@@ -1634,6 +1607,60 @@ bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConf
     } else if ( !sscanf ( pElem->GetText(),"%d",&backlog ) )  {
         std::cerr<<_ ( "Le logFilePeriod [" ) << pElem->GetTextStr() <<_ ( "]  is not an integer." ) <<std::endl;
         backlog = 0;
+    }
+
+    pElem = hRoot.FirstChild ( "cephContext" ).Element();
+    if ( pElem) {
+
+        TiXmlElement* pElemCephContext;
+
+        pElemCephContext = hRoot.FirstChild ( "cephContext" ).FirstChild ( "clusterName" ).Element();
+        if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
+            char* cluster = getenv ("ROK4_CEPH_CLUSTERNAME");
+            if (cluster == NULL) {
+                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un clusterName" );
+                return false;
+            } else {
+                cephName.assign(cluster);
+            }
+        } else {
+            cephName = pElemCephContext->GetText();
+        }
+
+        pElemCephContext = hRoot.FirstChild ( "cephContext" ).FirstChild ( "userName" ).Element();
+        if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
+            char* user = getenv ("ROK4_CEPH_USERNAME");
+            if (user == NULL) {
+                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un userName" );
+                return false;
+            } else {
+                cephUser.assign(user);
+            }
+        } else {
+            cephUser = pElemCephContext->GetText();
+        }
+
+        pElemCephContext = hRoot.FirstChild ( "cephContext" ).FirstChild ( "confFile" ).Element();
+        if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
+            char* conf = getenv ("ROK4_CEPH_CONFFILE");
+            if (conf == NULL) {
+                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un confFile" );
+                return false;
+            } else {
+                cephConf.assign(conf);
+            }
+        } else {
+            cephConf = pElemCephContext->GetText();
+        }
+
+        pElemCephContext = hRoot.FirstChild ( "cephContext" ).FirstChild ( "poolName" ).Element();
+        if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
+            LOGGER_INFO ("L'utilisation d'un cephContext necessitera de preciser un poolName au niveau de chaque level" );
+            cephPool = "";
+        } else {
+            cephPool = pElemCephContext->GetText();
+        }
+
     }
 
     return true;
@@ -2187,14 +2214,17 @@ bool ConfLoader::isCRSAllowed(std::vector<std::string> restrictedCRSList, std::s
 bool ConfLoader::getTechnicalParam ( std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix,
                                      int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS,
                                      bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir,
-                                     std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog ) {
+                                     std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog,
+                                     std::string &cephName, std::string &cephUser, std::string &cephConf, std::string &cephPool ) {
     std::cout<<_ ( "Chargement des parametres techniques depuis " ) <<serverConfigFile<<std::endl;
     TiXmlDocument doc ( serverConfigFile );
     if ( !doc.LoadFile() ) {
         std::cerr<<_ ( "Ne peut pas charger le fichier " ) << serverConfigFile<<std::endl;
         return false;
     }
-    return parseTechnicalParam ( &doc,serverConfigFile,logOutput,logFilePrefix,logFilePeriod,logLevel,nbThread,supportWMTS,supportWMS,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,styleDir, socket, backlog );
+    return parseTechnicalParam ( &doc,serverConfigFile,logOutput,logFilePrefix,logFilePeriod,logLevel,
+                                 nbThread,supportWMTS,supportWMS,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,
+                                 styleDir, socket, backlog, cephName, cephUser, cephConf, cephPool );
 }
 
 bool ConfLoader::buildStylesList ( std::string styleDir, std::map< std::string, Style* >& stylesList, bool inspire ) {
@@ -2297,7 +2327,9 @@ bool ConfLoader::buildTMSList ( std::string tmsDir,std::map<std::string, TileMat
     return true;
 }
 
-bool ConfLoader::buildLayersList ( std::string layerDir, std::map< std::string, TileMatrixSet* >& tmsList, std::map< std::string, Style* >& stylesList, std::map< std::string, Layer* >& layers, bool reprojectionCapability, ServicesConf* servicesConf ) {
+bool ConfLoader::buildLayersList ( std::string layerDir, std::map< std::string, TileMatrixSet* >& tmsList,
+                                   std::map< std::string, Style* >& stylesList, std::map< std::string, Layer* >& layers,
+                                   bool reprojectionCapability, ServicesConf* servicesConf, ContextBook *contextBook ) {
     LOGGER_INFO ( _ ( "CHARGEMENT DES LAYERS" ) );
     // lister les fichier du repertoire layerDir
     std::vector<std::string> layerFiles;
@@ -2325,7 +2357,7 @@ bool ConfLoader::buildLayersList ( std::string layerDir, std::map< std::string, 
     // generer les Layers decrits par les fichiers.
     for ( unsigned int i=0; i<layerFiles.size(); i++ ) {
         Layer * layer;
-        layer = buildLayer ( layerFiles[i], tmsList, stylesList , reprojectionCapability, servicesConf );
+        layer = buildLayer ( layerFiles[i], tmsList, stylesList , reprojectionCapability, servicesConf, contextBook );
         if ( layer ) {
             layers.insert ( std::pair<std::string, Layer *> ( layer->getId(), layer ) );
         } else {

@@ -36,71 +36,97 @@
  */
 
 /**
- * \file Context.h
+ * \file ContextBook.h
  ** \~french
- * \brief Définition de la classe Context
+ * \brief Définition de la classe ContextBook
  * \details
- * \li Context : classe d'abstraction du contexte de stockage (fichier, ceph ou swift)
+ * \li ContextBook : annuaire de contextes
  ** \~english
- * \brief Define classe Context
+ * \brief Define classe ContextBook
  * \details
- * \li Context : storage context abstraction
+ * \li ContextBook : Directory of contexts
  */
 
-#ifndef CONTEXT_H
-#define CONTEXT_H
+#ifndef CONTEXTBOOK_H
+#define CONTEXTBOOK_H
 
-#include <stdint.h>// pour uint8_t
+#include <rados/librados.h>
+#include <map>
 #include "Logger.h"
-#include <string.h>
+#include "Context.h"
+#include "CephPoolContext.h"
+#include "SwiftContext.h"
 
-/**
- * \~french \brief Énumération des types de contextes
- * \~english \brief Available context type
- */
-enum eContextType {
-    FILECONTEXT,
-    CEPHCONTEXT,
-    SWIFTCONTEXT
-};
+class ContextBook {
 
-/**
- * \author Institut national de l'information géographique et forestière
- * \~french
- * \brief Création d'un contexte de stockage abstrait 
- */
-class Context {  
+private:
 
-protected:
+    /**
+     * \~french \brief Contexte de base
+     * Issu de la lecture du server.conf
+     * Contient les infrmations utile pour se connecter à un cluster de données
+     * \~english \brief Base Context
+     */
+    Context* baseContext;
 
-    bool connected;
-
-    /** Constructeurs */
-    Context () : connected(false) {}
+    /**
+     * \~french \brief Annuaire de contextes utiles
+     * \~english \brief Directory of contexts
+     */
+    std::map<std::string, Context*> book;
 
 public:
 
-    virtual bool connection() = 0;
-
-    virtual int read(uint8_t* data, int offset, int size, std::string name) = 0;
-    virtual bool write(uint8_t* data, int offset, int size, std::string name) = 0;
-    virtual bool writeFull(uint8_t* data, int size, std::string name) = 0;
-
-    virtual bool openToWrite(std::string name) = 0;
-    virtual bool closeToWrite(std::string name) = 0;
-    virtual eContextType getType() = 0;
-    virtual std::string getTypeStr() = 0;
-    virtual std::string getContainer() = 0;
+    /**
+     * \~french
+     * \brief Constructeur pour un contexte Ceph
+     * \~english
+     * \brief Constructor for CephContext
+     */
+    ContextBook(std::string name, std::string user, std::string conf, std::string pool);
 
     /**
      * \~french
-     * \brief Sortie des informations sur le contexte
+     * \brief Retourne le baseContext
      * \~english
-     * \brief Context description output
+     * \brief Return baseContext
      */
-    virtual void print() = 0;
-    
-    virtual ~Context() {}
+    Context* getBaseContext() {
+        return baseContext;
+    }
+
+    /**
+     * \~french
+     * \brief Retourne le baseContext si c'est du Ceph
+     * \~english
+     * \brief Return baseContext if CEPHCONTEXT
+     */
+    CephPoolContext* getCephBaseContext() {
+        if (baseContext->getType() == CEPHCONTEXT) {
+            return reinterpret_cast<CephPoolContext*> (baseContext);
+        } else {
+            return NULL;
+        }
+    }
+
+    /**
+     * \~french
+     * \brief Verifie si un contexte existe et l'ajoute si non
+     * \~english
+     * \brief Check if a context exists and add it if it is not exist
+     */
+    Context * addContext(std::string pool);
+
+
+    /**
+     * \~french
+     * \brief Destructeur
+     * \~english
+     * \brief Destructor
+     */
+    ~ContextBook();
+
+
 };
 
-#endif
+#endif // CONTEXTBOOK_H

@@ -80,9 +80,23 @@ public:
     CephPoolContext (std::string cluster, std::string user, std::string conf, std::string pool);
     CephPoolContext (std::string pool);
     eContextType getType();
+    std::string getTypeStr();
+    std::string getContainer();
 
     std::string getPoolName () {
         return pool_name;
+    }
+
+    std::string getPoolUser () {
+        return user_name;
+    }
+
+    std::string getPoolConf () {
+        return conf_file;
+    }
+
+    std::string getClusterName () {
+        return cluster_name;
     }
     
     int read(uint8_t* data, int offset, int size, std::string name);

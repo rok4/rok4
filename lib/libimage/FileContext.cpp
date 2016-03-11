@@ -119,3 +119,11 @@ bool FileContext::writeFull(uint8_t* data, int size, std::string name) {
 eContextType FileContext::getType() {
     return FILECONTEXT;
 }
+
+std::string FileContext::getTypeStr() {
+    return "FILECONTEXT";
+}
+
+std::string FileContext::getContainer() {
+    return root_dir;
+}

@@ -78,9 +78,12 @@ typedef void Rok4Server;
     } HttpRequest;
 
     typedef struct {
-        char* filename;
+        char* name;
+        char* pool;
+        char* contextType;
         uint32_t posoff;
         uint32_t possize;
+        uint32_t maxsize;
         char* type;
         char* encoding;
         int width;
@@ -93,6 +96,12 @@ typedef void Rok4Server;
         size_t size;
         uint8_t* data;
     } TiffHeader;
+
+    typedef struct {
+        char* name;
+        char* user;
+        char* conf;
+    } CephRef;
 
     typedef struct {
         size_t size;
@@ -113,6 +122,7 @@ typedef void Rok4Server;
     HttpResponse* rok4GetTile ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server );
     HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server, TileRef* tileRef, TilePalette* palette );
     HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server, TileRef* tileRef, TilePalette* palette );
+    CephRef *rok4GetCephReferences(Rok4Server* server);
 
 // DEPRECATED
     TiffHeader* rok4GetTiffHeader ( int width, int height, int channels );
