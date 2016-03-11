@@ -87,6 +87,30 @@ public:
 
     /**
      * \~french
+     * \brief Retourne le baseContext
+     * \~english
+     * \brief Return baseContext
+     */
+    Context* getBaseContext() {
+        return baseContext;
+    }
+
+    /**
+     * \~french
+     * \brief Retourne le baseContext si c'est du Ceph
+     * \~english
+     * \brief Return baseContext if CEPHCONTEXT
+     */
+    CephPoolContext* getCephBaseContext() {
+        if (baseContext->getType() == CEPHCONTEXT) {
+            return reinterpret_cast<CephPoolContext*> (baseContext);
+        } else {
+            return NULL;
+        }
+    }
+
+    /**
+     * \~french
      * \brief Verifie si un contexte existe et l'ajoute si non
      * \~english
      * \brief Check if a context exists and add it if it is not exist

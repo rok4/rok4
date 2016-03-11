@@ -161,7 +161,7 @@ void* processThread ( void* arg ) {
         else if ( strcmp ( request->operationType,"gettile" ) ==0 ) {
             // TileReferences
             TileRef* tileRef = malloc(sizeof(TileRef));
-            tileRef->filename = 0;
+            tileRef->name = 0;
             tileRef->posoff = 0;
             tileRef->possize = 0;
             tileRef->type = 0;
@@ -176,7 +176,7 @@ void* processThread ( void* arg ) {
                 rok4FlushTileRef(tileRef);
                 rok4DeleteResponse ( error );
             } else {
-                fprintf ( stdout,"\tfilename : %s\noff=%d\nsize=%d\ntype=%s\n",tileRef->filename,tileRef->posoff,tileRef->possize,tileRef->type );
+                fprintf ( stdout,"\tfilename : %s\noff=%d\nsize=%d\ntype=%s\n",tileRef->name,tileRef->posoff,tileRef->possize,tileRef->type );
                 if ( strcmp ( tileRef->type,"image/tiff" ) ==0 ) {
                     TiffHeader* header=rok4GetTiffHeader ( tileRef->width,tileRef->height,tileRef->channels );
                     fprintf ( stdout,"\tw=%d h=%d c=%d\n\theader=",tileRef->width,tileRef->height,tileRef->channels );

@@ -311,6 +311,13 @@ public:
     std::vector<std::string>& getWmtsCapaFrag() {
         return wmtsCapaFrag;
     }
+    /**
+     * \~french Retourne l'annuaire de contextes
+     * \~english Return ContextBook
+     */
+    ContextBook* getContextBook() {
+        return contextBook;
+    }
 
     /**
      * \~french

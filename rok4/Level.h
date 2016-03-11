@@ -98,6 +98,9 @@ public:
     int     getChannels() {
         return channels;
     }
+    int     getMaxTileSize() {
+        return maxTileSize;
+    }
     uint32_t    getMaxTileRow() {
         return maxTileRow;
     }

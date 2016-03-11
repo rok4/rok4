@@ -89,6 +89,8 @@ public:
     virtual bool openToWrite(std::string name) = 0;
     virtual bool closeToWrite(std::string name) = 0;
     virtual eContextType getType() = 0;
+    virtual std::string getTypeStr() = 0;
+    virtual std::string getContainer() = 0;
 
     /**
      * \~french

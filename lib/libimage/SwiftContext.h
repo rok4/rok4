@@ -80,6 +80,8 @@ public:
     SwiftContext (std::string auth, std::string account, std::string user, std::string passwd, std::string container);
     SwiftContext (std::string container);
     eContextType getType();
+    std::string getTypeStr();
+    std::string getContainer();
         
     std::string getContainerName () {
         return container_name;

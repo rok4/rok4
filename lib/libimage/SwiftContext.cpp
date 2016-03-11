@@ -276,3 +276,11 @@ bool SwiftContext::writeFromFile(std::string fileName, std::string objectName) {
 eContextType SwiftContext::getType() {
     return SWIFTCONTEXT;
 }
+
+std::string SwiftContext::getTypeStr() {
+    return "SWIFTCONTEXT";
+}
+
+std::string SwiftContext::getContainer() {
+    return container_name;
+}
