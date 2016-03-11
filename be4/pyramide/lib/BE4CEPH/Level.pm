@@ -101,9 +101,6 @@ my $STRLEVELTMPLT = <<"TLEVEL";
     <level>
         <tileMatrix>__ID__</tileMatrix>
         <cephContext>
-            <clusterName>__CLUSTER__</clusterName>
-            <userName>__USER__</userName>
-            <confFile>__CONF__</confFile>
             <poolName>__POOL__</poolName>
         </cephContext>
         <imagePrefix>__IMGPREFIX__</imagePrefix>
@@ -316,9 +313,6 @@ Example:
     <level>
         <tileMatrix>level_5</tileMatrix>
         <cephContext>
-            <clusterName>ceph</clusterName>
-            <userName>client.admin</userName>
-            <confFile>/etc/ceph/ceph.conf</confFile>
             <poolName>PYRAMIDS</poolName>
         </cephContext>
         <imagePrefix>BDORTHO_IMG_level_5</imagePrefix>
@@ -340,9 +334,6 @@ sub exportToXML {
     my $self = shift;
     my $pyramid = shift;
 
-    my $cluster_name = $pyramid->getClusterName;
-    my $user_name = $pyramid->getUserName;
-    my $conf_file = $pyramid->getConfFile;
     my $pool_name = $pyramid->getNewDataPool;
 
     my $levelXML = $STRLEVELTMPLT;
@@ -377,10 +368,7 @@ sub exportToXML {
     $levelXML =~ s/__MAXCOL__/$maxcol/;
 
     # Ceph informations
-    $levelXML =~ s/__CLUSTER__/$cluster_name/;
-    $levelXML =~ s/__CONF__/$conf_file/;
     $levelXML =~ s/__POOL__/$pool_name/;
-    $levelXML =~ s/__USER__/$user_name/;
 
     # mask
     if (defined $self->{prefix_mask}) {
