@@ -159,18 +159,20 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
         return NULL;
     }
 
+    if (cephName != "" && cephUser != "" && cephConf != "") {
+        contextBook = new ContextBook(cephName,cephUser,cephConf,cephPool);
+    }
+
     // Chargement des layers
     std::map<std::string, Layer*> layerList;
-    if ( !ConfLoader::buildLayersList ( strLayerDir,tmsList, styleList,layerList,reprojectionCapability,sc ) ) {
+    if ( !ConfLoader::buildLayersList ( strLayerDir,tmsList, styleList,layerList,reprojectionCapability,sc, contextBook ) ) {
         LOGGER_FATAL ( _ ( "Impossible de charger la conf des Layers/pyramides" ) );
         LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
         return NULL;
     }
 
-    if (cephName != "" && cephUser != "" && cephConf != "") {
-        contextBook = new ContextBook(cephName,cephUser,cephConf,cephPool);
-    }
+
 
     // Instanciation du serveur
     Logger::stopLogger();

@@ -161,7 +161,7 @@ public:
      * \param[in] servicesConf global services configuration pointer
      * \return false if something went wrong
      */
-    static bool buildLayersList ( std::string layerDir,std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> &stylesList, std::map<std::string,Layer*> &layers, bool reprojectionCapability, ServicesConf* servicesConf );
+    static bool buildLayersList (std::string layerDir, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> &stylesList, std::map<std::string,Layer*> &layers, bool reprojectionCapability, ServicesConf* servicesConf , ContextBook *contextBook);
     /**
      * \~french
      * \brief Chargement des paramètres des services à partir d'un fichier
@@ -242,7 +242,7 @@ private:
      * \param[in] tmsList known TileMatrixSets
      * \return pointer to the newly created Pyramid, NULL if something went wrong
      */
-    static Pyramid* parsePyramid ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList );
+    static Pyramid* parsePyramid (TiXmlDocument* doc, std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList , ContextBook *contextBook);
     /**
      * \~french
      * \brief Création d'une Pyramide à partir d'un fichier
@@ -255,7 +255,7 @@ private:
      * \param[in] tmsList known TileMatrixSets
      * \return pointer to the newly created Pyramid, NULL if something went wrong
      */
-    static Pyramid* buildPyramid ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList );
+    static Pyramid* buildPyramid (std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList , ContextBook *contextBook);
     /**
      * \~french
      * \brief Création d'un Layer à partir de sa représentation XML
@@ -276,7 +276,7 @@ private:
      * \param[in] servicesConf global service configuration pointer
      * \return pointer to the newly created Layer, NULL if something went wrong
      */
-    static Layer * parseLayer ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability,ServicesConf* servicesConf );
+    static Layer * parseLayer (TiXmlDocument* doc, std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> stylesList , bool reprojectionCapability, ServicesConf* servicesConf , ContextBook *contextBook);
     /**
      * \~french
      * \brief Création d'un Layer à partir d'un fichier
@@ -295,7 +295,7 @@ private:
      * \param[in] servicesConf global service configuration pointer
      * \return pointer to the newly created Layer, NULL if something went wrong
      */
-    static Layer * buildLayer ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability,ServicesConf* servicesConf );
+    static Layer * buildLayer (std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> stylesList , bool reprojectionCapability, ServicesConf* servicesConf , ContextBook *contextBook);
     /**
      * \~french
      * \brief Chargement des paramètres du serveur à partir de sa représentation XML

@@ -57,16 +57,37 @@ ContextBook::ContextBook(std::string name, std::string user, std::string conf, s
 
 }
 
-ContextBook::ContextBook(std::string auth, std::string account, std::string user, std::string pwd, std::string container="")
+Context * ContextBook::addContext(std::string pool)
 {
 
-    baseContext = new SwiftContext(auth, account, user, pwd, container);
+    std::map<std::string, Context*>::iterator it = book.find ( pool );
+    if ( it == book.end() ) {
+        //ce pool n'est pas encore connecté, on va créer la connexion
+        CephPoolContext * bctx = reinterpret_cast<CephPoolContext*>(baseContext);
+        CephPoolContext * ctx = new CephPoolContext(bctx->getClusterName(), bctx->getPoolUser(), bctx->getPoolConf(), pool);
+        //on se connecte
+        if (!ctx->connection()) {
+            LOGGER_ERROR("Impossible de se connecter aux donnees.");
+            return NULL;
+        }
+        //on ajoute au book
+        book.insert ( std::pair<std::string,Context*>(pool,ctx) );
 
+        return ctx;
+    } else {
+        //le pool est déjà existant et donc connecté
+        return it->second;
+    }
 
 }
 
 ContextBook::~ContextBook()
 {
+    std::map<std::string,Context*>::iterator it;
+    for (it=book.begin(); it!=book.end(); ++it) {
+        delete it->second;
+        it->second = NULL;
+    }
     if (baseContext) {
         delete baseContext;
         baseContext = NULL;

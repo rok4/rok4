@@ -87,11 +87,11 @@ public:
 
     /**
      * \~french
-     * \brief Constructeur pour un contexte Swift
+     * \brief Verifie si un contexte existe et l'ajoute si non
      * \~english
-     * \brief Constructor for SwiftContext
+     * \brief Check if a context exists and add it if it is not exist
      */
-    ContextBook(std::string auth, std::string account, std::string user, std::string pwd, std::string container);
+    Context * addContext(std::string pool);
 
 
     /**
