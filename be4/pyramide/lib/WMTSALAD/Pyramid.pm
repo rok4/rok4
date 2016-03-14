@@ -168,6 +168,9 @@ sub new {
         pyr_data_path => undef,
         pyr_desc_path => undef,
 
+        img_width => undef,
+        img_height => undef,
+
         datasources => {},
     };
 
@@ -218,14 +221,21 @@ sub _loadProperties {
     my $refFileContent = \%fileContent;
 
     # Tile Matrix Set
-    my $TMS = BE4::TileMatrixSet->new(File::Spec->catfile($refFileContent->{pyramid}->{tms_path},$refFileContent->{pyramid}->{tms_name}));
-    $self->{tileMatrixSet} = $TMS ;
+    if ((exists $refFileContent->{pyramid}->{tms_path}) && (defined $refFileContent->{pyramid}->{tms_path})
+        && (exists $refFileContent->{pyramid}->{tms_name}) && (defined $refFileContent->{pyramid}->{tms_name})) {
+        my $TMS = BE4::TileMatrixSet->new(File::Spec->catfile($refFileContent->{pyramid}->{tms_path},$refFileContent->{pyramid}->{tms_name}));
+        $self->{tileMatrixSet} = $TMS ;
+    } else {
+        ERROR("Undefined tile matrix system path or name.");
+        return FALSE;
+    }
 
     # Image format
     my $format = "TIFF_";
     if ($refFileContent->{pyramid}->{compression} =~ m/^jpg|png|lzw|zip|pkb$/i) {
         $format.= uc($refFileContent->{pyramid}->{compression})."_";
     } else {
+        WARN(sprintf "Unrecognized compression type : %s. Setting to 'RAW'", $refFileContent->{pyramid}->{compression});
         $format .= "RAW_";
     };
     $format .= uc($refFileContent->{pyramid}->{sampleformat}).$refFileContent->{pyramid}->{bitspersample} ;
@@ -319,20 +329,46 @@ sub _loadProperties {
         return FALSE;
     }
 
-    # Nodata value
+    # Nodata value (optionnal)
     if ((exists $refFileContent->{pyramid}->{color}) && (defined $refFileContent->{pyramid}->{color})) {
         $self->{noDataValue} = $refFileContent->{pyramid}->{color};
-    } else {
-        my $chans = $self->{channels};
-        $self->{noDataValue} = $DEFAULT{noDataValue}->{$chans};
     }
+    #  else {
+    #     my $chans = $self->{channels};
+    #     $self->{noDataValue} = $DEFAULT{noDataValue}->{$chans};
+    # }
 
     # Interpolation (optionnal)
+    if ((exists $refFileContent->{pyramid}->{interpolation}) && (defined $refFileContent->{pyramid}->{interpolation})) {
+        $self->{interpolation} = $refFileContent->{pyramid}->{interpolation};
+    }
 
     # Photometric (optionnal)
+    if ((exists $refFileContent->{pyramid}->{photometric}) && (defined $refFileContent->{pyramid}->{photometric})) {
+        $self->{photometric} = $refFileContent->{pyramid}->{photometric};
+    }
 
     # Image dimensions
-
+    if ( (exists $refFileContent->{pyramid}->{img_width}) && 
+             (defined $refFileContent->{pyramid}->{img_width}) && 
+             (COMMON::CheckUtils::isStrictPositiveInt($refFileContent->{pyramid}->{img_width})) &&
+             (exists $refFileContent->{pyramid}->{img_height}) && 
+             (defined $refFileContent->{pyramid}->{img_height}) && 
+             (COMMON::CheckUtils::isStrictPositiveInt($refFileContent->{pyramid}->{img_height})) ) {
+        $self->{img_width} = $refFileContent->{pyramid}->{img_width};
+        $self->{img_height} = $refFileContent->{pyramid}->{img_height};
+    } elsif (
+             (!exists $refFileContent->{pyramid}->{img_width}) || 
+             (!defined $refFileContent->{pyramid}->{img_width}) || 
+             (!exists $refFileContent->{pyramid}->{img_height}) || 
+             (!defined $refFileContent->{pyramid}->{img_height}) ) {
+        ERROR("Undefined image dimensions.");
+        return FALSE;
+    } elsif ( (!COMMON::CheckUtils::isStrictPositiveInt($refFileContent->{pyramid}->{img_width})) || 
+             (!COMMON::CheckUtils::isStrictPositiveInt($refFileContent->{pyramid}->{img_height})) ) {
+        ERROR("Image dimensions must be strictly postive integers.");
+        return FALSE;
+    }
 
 
 
@@ -387,6 +423,31 @@ sub _checkDatasources {
 #                                        Group: Output                                             #
 ####################################################################################################
 
+sub dumpPyrHash {
+    my $self = shift;
+    
+    my $pyr_dump = "\n  pyr_name => ".$self->{pyr_name};
+    $pyr_dump .= "\n  pyr_desc_path => ".$self->{pyr_desc_path};
+    $pyr_dump .= "\n  pyr_data_path => ".$self->{pyr_data_path};
+    $pyr_dump .= "\n  dir_depth => ".$self->{dir_depth};
+    $pyr_dump .= "\n  dir_image => ".$self->{dir_image};
+    $pyr_dump .= "\n  dir_nodata => ".$self->{dir_nodata};
+    $pyr_dump .= "\n  dir_mask => ".$self->{dir_mask};
+    $pyr_dump .= "\n  dir_metadata => ".$self->{dir_metadata};
+    $pyr_dump .= "\n  persistent => ".$self->{persistent};
+    $pyr_dump .= "\n  img_width => ".$self->{img_width};
+    $pyr_dump .= "\n  img_height => ".$self->{img_height};
+    $pyr_dump .= "\n  format => ".$self->{format};
+    $pyr_dump .= "\n  channels => ".$self->{channels};
+    $pyr_dump .= "\n  photometric => ".$self->{photometric};
+    $pyr_dump .= "\n  noDataValue => ".$self->{noDataValue};
+    $pyr_dump .= "\n  interpolation => ".$self->{interpolation};
+    $pyr_dump .= "\n  tileMatrixSet->{PATHFILENAME} => ".$self->{tileMatrixSet}->{PATHFILENAME};
+    my $ds_dump = Dumper($self->{datasources});
+    $ds_dump =~ s/^\$VAR1 = //;
+    $pyr_dump .= "\n  datasources => ".$ds_dump;
 
+    return $pyr_dump;
+}
 
 1;
