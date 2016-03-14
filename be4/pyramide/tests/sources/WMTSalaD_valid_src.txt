@@ -1,0 +1,28 @@
+[ 19_10 ]
+lv_bottom = 19
+lv_top = 10
+
+[[ 1 ]]
+file = /path/to/pyramid1.pyr
+style = style1
+transparent = false
+
+[[ 2 ]]
+file = /path/to/pyramid2.pyr
+
+[ 9_6 ]
+lv_bottom = 9
+lv_top = 6
+
+[[ 0 ]]
+wms_url             =>  "http://target.server.net/wms"
+wms_timeout         =>  60
+wms_retry           =>  10
+wms_version         =>  "1.3.0"
+wms_layers          =>  "LAYER_1,LAYER_2,LAYER_3"
+wms_styles          =>  "STYLE_FOR_LAYER_1,STYLE_FOR_LAYER_2,STYLE_FOR_LAYER_3"
+wms_format          =>  "image/png"
+wms_crs             =>  "EPSG:2154"
+wms_extent          =>  "634500,6855000,636800,6857700"
+wms_channels        =>  3
+wms_nodata          =>  "0xFFA2FA"
