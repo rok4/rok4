@@ -111,6 +111,14 @@ public:
 
     /**
      * \~french
+     * \brief Retourne le context correspondant au pool demandé
+     * \~english
+     * \brief Return context of this pool
+     */
+    Context* getContext(std::string pool);
+
+    /**
+     * \~french
      * \brief Verifie si un contexte existe et l'ajoute si non
      * \~english
      * \brief Check if a context exists and add it if it is not exist

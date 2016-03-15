@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2016-03-15 11:34+0100\n"
+"POT-Creation-Date: 2016-03-15 17:59+0100\n"
 "PO-Revision-Date: 2013-02-18 17:49+0100\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -1086,7 +1086,7 @@ msgid "Rechargement de la configuration"
 msgstr "Reloading configuration"
 
 #: main.cpp:262 Rok4Api.cpp:141 Rok4Api.cpp:149 Rok4Api.cpp:157
-#: Rok4Api.cpp:170 Rok4Api.cpp:673
+#: Rok4Api.cpp:170 Rok4Api.cpp:702
 msgid "Extinction du serveur ROK4"
 msgstr "Shutdown the ROK4 server"
 
@@ -1533,12 +1533,12 @@ msgstr ""
 msgid "Le parametre REQUEST n'est pas renseigné."
 msgstr ""
 
-#: Rok4Api.cpp:229 Rok4Api.cpp:231 Rok4Api.cpp:570 Rok4Server.cpp:570
+#: Rok4Api.cpp:229 Rok4Api.cpp:231 Rok4Api.cpp:599 Rok4Server.cpp:570
 #: Rok4Server.cpp:574 Rok4Server.cpp:586 Rok4Server.cpp:590
 msgid " n'est pas prise en charge par ce serveur."
 msgstr ""
 
-#: Rok4Api.cpp:231 Rok4Api.cpp:570 Rok4Server.cpp:574
+#: Rok4Api.cpp:231 Rok4Api.cpp:599 Rok4Server.cpp:574
 msgid "L'operation "
 msgstr ""
 
@@ -1546,11 +1546,11 @@ msgstr ""
 msgid "Le parametre SERVICE n'est pas renseigné."
 msgstr ""
 
-#: Rok4Api.cpp:341 Rok4Api.cpp:445 Rok4Server.cpp:541
+#: Rok4Api.cpp:370 Rok4Api.cpp:474 Rok4Server.cpp:541
 msgid "Probleme dans les parametres de la requete getTile"
 msgstr ""
 
-#: Rok4Api.cpp:582 Rok4Server.cpp:547
+#: Rok4Api.cpp:611 Rok4Server.cpp:547
 msgid "No data found"
 msgstr ""
 

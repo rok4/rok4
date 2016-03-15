@@ -81,6 +81,20 @@ Context * ContextBook::addContext(std::string pool)
 
 }
 
+Context * ContextBook::getContext(std::string pool)
+{
+
+    std::map<std::string, Context*>::iterator it = book.find ( pool );
+    if ( it == book.end() ) {
+        LOGGER_ERROR("Le pool demandé n'a pas été trouvé dans l'annuaire.");
+        return NULL;
+    } else {
+        //le pool est déjà existant et donc connecté
+        return it->second;
+    }
+
+}
+
 ContextBook::~ContextBook()
 {
     std::map<std::string,Context*>::iterator it;

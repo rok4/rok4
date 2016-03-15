@@ -312,6 +312,35 @@ CephRef* rok4GetCephReferences (Rok4Server* server) {
 
 }
 
+
+/**
+* \brief Implementation de l'operation ReadInCeph
+* \brief Cela permet de transmettre une donnée issue de ceph
+* \param[in] server
+* \param[in] nom de l'objet
+* \param[in] pool contenant l'objet
+* \param[in] offset
+* \param[in] size
+* \param[in/out] data
+* \return int taille lue ou erreur
+*/
+
+
+int rok4ReadObjectCeph(Rok4Server* server, const char* name, const char* pool, int offset, int size, char* data) {
+
+    int err = -1;
+
+    Context * ctx = server->getContextBook()->getContext(pool);
+    if (ctx == NULL) {
+        return err;
+    }
+
+    err = ctx->read((uint8_t*)data, offset, size, (std::string)name);
+
+    return err;
+
+}
+
 /**
 * \brief Implementation de l'operation GetTile modifiee
 * \brief La tuile n'est pas lue, les elements recuperes sont les references de la tuile : le fichier dans lequel elle est stockee et les positions d'enregistrement (sur 4 octets) dans ce fichier de l'index du premier octet de la tuile et de sa taille
