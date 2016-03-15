@@ -85,7 +85,7 @@ use constant TRUE  => 1;
 use constant FALSE => 0;
 
 my %IMAGE_SPECS = (
-        format => [
+        image_format => [
             "TIFF_RAW_INT8",
             "TIFF_JPG_INT8",
             "TIFF_PNG_INT8",
@@ -97,6 +97,23 @@ my %IMAGE_SPECS = (
             "TIFF_PKB_INT8",
             "TIFF_PKB_FLOAT32"
         ],
+        mask_format => [
+            "TIFF_ZIP_INT8"
+        ],
+        metadata_type => [
+            "INT32_DB_LZW"
+        ],
+        interpolation => [
+            "lanczos",
+            "nn",
+            "bicubic",
+            "linear"
+        ],
+        photometric => [
+            "gray",
+            "rgb",
+            "mask"
+        ],
     );
 
 my %DEFAULT = (
@@ -106,6 +123,7 @@ my %DEFAULT = (
             3 => "255,255,255",
             4 => "255,255,255,0",
         },
+        compression => "RAW",
     );
 
 ################################################################################
@@ -168,8 +186,8 @@ sub new {
         pyr_data_path => undef,
         pyr_desc_path => undef,
 
-        img_width => undef,
-        img_height => undef,
+        image_width => undef,
+        image_height => undef,
 
         datasources => {},
     };
@@ -232,12 +250,17 @@ sub _loadProperties {
 
     # Image format
     my $format = "TIFF_";
-    if ($refFileContent->{pyramid}->{compression} =~ m/^jpg|png|lzw|zip|pkb$/i) {
-        $format.= uc($refFileContent->{pyramid}->{compression})."_";
+    if ((exists $refFileContent->{pyramid}->{compression}) && (defined $refFileContent->{pyramid}->{compression})) {
+        if ($refFileContent->{pyramid}->{compression} =~ m/^jpg|png|lzw|zip|pkb$/i) {
+            $format.= uc($refFileContent->{pyramid}->{compression})."_";
+        } else {
+            WARN(sprintf "Unrecognized compression type : %s. Setting to '%s'", $refFileContent->{pyramid}->{compression},$DEFAULT{compression});
+            $format .= $DEFAULT{compression}."_";
+        }
     } else {
-        WARN(sprintf "Unrecognized compression type : %s. Setting to 'RAW'", $refFileContent->{pyramid}->{compression});
-        $format .= "RAW_";
-    };
+        INFO(sprintf "Undefined compression type. Setting to '%s'",$DEFAULT{compression});
+            $format .= $DEFAULT{compression}."_";
+    }
     $format .= uc($refFileContent->{pyramid}->{sampleformat}).$refFileContent->{pyramid}->{bitspersample} ;
     if ($self->isImageFormat($format)) {
         $self->{format} = $format;
@@ -247,7 +270,10 @@ sub _loadProperties {
     }
 
     # Channels number 
-    if (COMMON::CheckUtils::isStrictPositiveInt($refFileContent->{pyramid}->{samplesperpixel})) {
+    if ((! exists $refFileContent->{pyramid}->{samplesperpixel}) || (!defined $refFileContent->{pyramid}->{samplesperpixel})) {
+        ERROR("Undefined samples per pixel value.");
+        return FALSE;
+    } elsif (COMMON::CheckUtils::isStrictPositiveInt($refFileContent->{pyramid}->{samplesperpixel})) {
         $self->{channels} = $refFileContent->{pyramid}->{samplesperpixel};
     } else {
         ERROR(sprintf "Samples per pixel value must be a strictly positive integer : %s.", $refFileContent->{pyramid}->{samplesperpixel});
@@ -263,14 +289,14 @@ sub _loadProperties {
     $pyr_name =~ s/\.(pyr|PYR)$//;
     $self->{pyr_name} = $pyr_name;
 
-    # Persistence
+    # Persistence (default value : FALSE)
     if ((exists $refFileContent->{pyramid}->{persistent}) && (defined $refFileContent->{pyramid}->{persistent})) {
-        if ((uc $refFileContent->{pyramid}->{persistent} eq "TRUE") || (uc $refFileContent->{pyramid}->{persistent} eq "T") || ($refFileContent->{pyramid}->{persistent} == TRUE)) {
+        if ((uc $refFileContent->{pyramid}->{persistent} eq "TRUE") || (uc $refFileContent->{pyramid}->{persistent} eq "T") || ((COMMON::CheckUtils::isNumber($refFileContent->{pyramid}->{persistent})) && ($refFileContent->{pyramid}->{persistent} == TRUE))) {
             $self->{persistent} = TRUE;
-        } elsif ((uc $refFileContent->{pyramid}->{persistent} eq "FALSE") || (uc $refFileContent->{pyramid}->{persistent} eq "F") || ($refFileContent->{pyramid}->{persistent} == FALSE)) {
+        } elsif ((uc $refFileContent->{pyramid}->{persistent} eq "FALSE") || (uc $refFileContent->{pyramid}->{persistent} eq "F") || ((COMMON::CheckUtils::isNumber($refFileContent->{pyramid}->{persistent})) && ($refFileContent->{pyramid}->{persistent} == FALSE))) {
             $self->{persistent} = FALSE;
         } else {
-            ERROR("The 'persitent' parameter must be a boolean value (format : number, case insensitive letter, case insensitive word).");
+            ERROR("The 'persistent' parameter must be a boolean value (format : number, case insensitive letter, case insensitive word).");
             return FALSE;
         }
     } else {
@@ -280,7 +306,10 @@ sub _loadProperties {
 
 
     # Path depth
-    if (COMMON::CheckUtils::isStrictPositiveInt($refFileContent->{pyramid}->{dir_depth})) {
+    if ((! exists $refFileContent->{pyramid}->{dir_depth}) || (!defined $refFileContent->{pyramid}->{dir_depth})) {
+        ERROR("Undefined directory path depth.");
+        return FALSE;
+    } elsif (COMMON::CheckUtils::isStrictPositiveInt($refFileContent->{pyramid}->{dir_depth})) {
         $self->{dir_depth} = $refFileContent->{pyramid}->{dir_depth};
     } else {
         ERROR(sprintf "Directory path depth value must be a strictly positive integer : %s.", $refFileContent->{pyramid}->{dir_depth});
@@ -329,44 +358,47 @@ sub _loadProperties {
         return FALSE;
     }
 
-    # Nodata value (optionnal)
+    # Nodata value (default value : white, transparent if alpha channel available)
     if ((exists $refFileContent->{pyramid}->{color}) && (defined $refFileContent->{pyramid}->{color})) {
         $self->{noDataValue} = $refFileContent->{pyramid}->{color};
+    } else {
+        my $chans = $self->{channels};
+        $self->{noDataValue} = $DEFAULT{noDataValue}->{$chans};
     }
-    #  else {
-    #     my $chans = $self->{channels};
-    #     $self->{noDataValue} = $DEFAULT{noDataValue}->{$chans};
-    # }
 
     # Interpolation (optionnal)
     if ((exists $refFileContent->{pyramid}->{interpolation}) && (defined $refFileContent->{pyramid}->{interpolation})) {
-        $self->{interpolation} = $refFileContent->{pyramid}->{interpolation};
+        if ($self->isInterpolation($refFileContent->{pyramid}->{interpolation})) {
+            $self->{interpolation} = $refFileContent->{pyramid}->{interpolation};
+        } else {
+            ERROR(sprintf "invalid interpolation value : '%s'. Allowed values are : %s",$refFileContent->{pyramid}->{interpolation},Dumper($IMAGE_SPECS{interpolation}));
+            return FALSE;
+        }
     }
 
     # Photometric (optionnal)
     if ((exists $refFileContent->{pyramid}->{photometric}) && (defined $refFileContent->{pyramid}->{photometric})) {
-        $self->{photometric} = $refFileContent->{pyramid}->{photometric};
+        if ($self->isPhotometric($refFileContent->{pyramid}->{photometric})) {
+            $self->{photometric} = $refFileContent->{pyramid}->{photometric};
+        } else {
+            ERROR(sprintf "invalid photometric value : '%s'. Allowed values are : %s",$refFileContent->{pyramid}->{photometric},Dumper($IMAGE_SPECS{photometric}));
+            return FALSE;
+        }
     }
 
-    # Image dimensions
-    if ( (exists $refFileContent->{pyramid}->{img_width}) && 
-             (defined $refFileContent->{pyramid}->{img_width}) && 
-             (COMMON::CheckUtils::isStrictPositiveInt($refFileContent->{pyramid}->{img_width})) &&
-             (exists $refFileContent->{pyramid}->{img_height}) && 
-             (defined $refFileContent->{pyramid}->{img_height}) && 
-             (COMMON::CheckUtils::isStrictPositiveInt($refFileContent->{pyramid}->{img_height})) ) {
-        $self->{img_width} = $refFileContent->{pyramid}->{img_width};
-        $self->{img_height} = $refFileContent->{pyramid}->{img_height};
-    } elsif (
-             (!exists $refFileContent->{pyramid}->{img_width}) || 
-             (!defined $refFileContent->{pyramid}->{img_width}) || 
-             (!exists $refFileContent->{pyramid}->{img_height}) || 
-             (!defined $refFileContent->{pyramid}->{img_height}) ) {
+    # Image dimensions (tilewise)
+    if (     (!exists $refFileContent->{pyramid}->{image_width}) || 
+             (!defined $refFileContent->{pyramid}->{image_width}) || 
+             (!exists $refFileContent->{pyramid}->{image_height}) || 
+             (!defined $refFileContent->{pyramid}->{image_height}) ) {
         ERROR("Undefined image dimensions.");
         return FALSE;
-    } elsif ( (!COMMON::CheckUtils::isStrictPositiveInt($refFileContent->{pyramid}->{img_width})) || 
-             (!COMMON::CheckUtils::isStrictPositiveInt($refFileContent->{pyramid}->{img_height})) ) {
-        ERROR("Image dimensions must be strictly postive integers.");
+    } elsif (    (COMMON::CheckUtils::isStrictPositiveInt($refFileContent->{pyramid}->{image_width}))
+              && (COMMON::CheckUtils::isStrictPositiveInt($refFileContent->{pyramid}->{image_height})) ) {
+        $self->{image_width} = $refFileContent->{pyramid}->{image_width};
+        $self->{image_height} = $refFileContent->{pyramid}->{image_height};
+    } else {
+        ERROR("Image dimensions (numbers of tiles) must be strictly positive integers.");
         return FALSE;
     }
 
@@ -401,8 +433,52 @@ sub isImageFormat {
     my $self = shift;
     my $string = shift;
 
-    foreach my $imgFormat (@{$IMAGE_SPECS{format}}) {
+    foreach my $imgFormat (@{$IMAGE_SPECS{image_format}}) {
         return TRUE if ($imgFormat eq $string);
+    }
+
+    return FALSE;
+}
+
+sub isMaskFormat {
+    my $self = shift;
+    my $string = shift;
+
+    foreach my $validString (@{$IMAGE_SPECS{mask_format}}) {
+        return TRUE if ($validString eq $string);
+    }
+
+    return FALSE;
+}
+
+sub isMetadataType {
+    my $self = shift;
+    my $string = shift;
+
+    foreach my $validString (@{$IMAGE_SPECS{metadata_type}}) {
+        return TRUE if ($validString eq $string);
+    }
+
+    return FALSE;
+}
+
+sub isInterpolation {
+    my $self = shift;
+    my $string = shift;
+
+    foreach my $validString (@{$IMAGE_SPECS{interpolation}}) {
+        return TRUE if ($validString eq $string);
+    }
+
+    return FALSE;
+}
+
+sub isPhotometric {
+    my $self = shift;
+    my $string = shift;
+
+    foreach my $validString (@{$IMAGE_SPECS{photometric}}) {
+        return TRUE if ($validString eq $string);
     }
 
     return FALSE;
@@ -432,16 +508,16 @@ sub dumpPyrHash {
     $pyr_dump .= "\n  dir_depth => ".$self->{dir_depth};
     $pyr_dump .= "\n  dir_image => ".$self->{dir_image};
     $pyr_dump .= "\n  dir_nodata => ".$self->{dir_nodata};
-    $pyr_dump .= "\n  dir_mask => ".$self->{dir_mask};
-    $pyr_dump .= "\n  dir_metadata => ".$self->{dir_metadata};
+    if (exists $self->{dir_mask} && defined $self->{dir_mask}) {$pyr_dump .= "\n  dir_mask => ".$self->{dir_mask};}
+    if (exists $self->{dir_metadata} && defined $self->{dir_metadata}) {$pyr_dump .= "\n  dir_metadata => ".$self->{dir_metadata};}
     $pyr_dump .= "\n  persistent => ".$self->{persistent};
-    $pyr_dump .= "\n  img_width => ".$self->{img_width};
-    $pyr_dump .= "\n  img_height => ".$self->{img_height};
+    $pyr_dump .= "\n  image_width => ".$self->{image_width};
+    $pyr_dump .= "\n  image_height => ".$self->{image_height};
     $pyr_dump .= "\n  format => ".$self->{format};
     $pyr_dump .= "\n  channels => ".$self->{channels};
-    $pyr_dump .= "\n  photometric => ".$self->{photometric};
-    $pyr_dump .= "\n  noDataValue => ".$self->{noDataValue};
-    $pyr_dump .= "\n  interpolation => ".$self->{interpolation};
+    if (exists $self->{photometric} && defined $self->{photometric}) {$pyr_dump .= "\n  photometric => ".$self->{photometric};}
+    if (exists $self->{noDataValue} && defined $self->{noDataValue}) {$pyr_dump .= "\n  noDataValue => ".$self->{noDataValue};}
+    if (exists $self->{interpolation} && defined $self->{interpolation}) {$pyr_dump .= "\n  interpolation => ".$self->{interpolation};}
     $pyr_dump .= "\n  tileMatrixSet->{PATHFILENAME} => ".$self->{tileMatrixSet}->{PATHFILENAME};
     my $ds_dump = Dumper($self->{datasources});
     $ds_dump =~ s/^\$VAR1 = //;
