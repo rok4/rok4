@@ -71,12 +71,24 @@ close ($prop_fh);
 
 # Pyramid creation with all parameters defined
 my $pyramid = WMTSALAD::Pyramid->new($valid_prop, $valid_src);
-ok (defined $pyramid, "Pyramid created");
-
 if (defined $pyramid) { print(sprintf "Pyramid object content : %s", $pyramid->dumpPyrHash()); }
-
+ok (defined $pyramid, "Pyramid created (exhaustive parameters)");
 undef $pyramid;
 
+# Pyramid creation with optionnal parameters undefined
+$prop_buffer =~ s/\n(persistent)/\n;$1/;
+$prop_buffer =~ s/\n(dir_mask)/\n;$1/;
+$prop_buffer =~ s/\n(dir_metadata)/\n;$1/;
+$prop_buffer =~ s/\n(compression)/\n;$1/;
+$prop_buffer =~ s/\n(photometric)/\n;$1/;
+$prop_buffer =~ s/\n(interpolation)/\n;$1/;
+$prop_buffer =~ s/\n(color)/\n;$1/;
+my $written = writeTemp($prop_buffer, $temp_prop_file);
+$prop_buffer =~ s/\n;/\n/g;
+$pyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
+if (defined $pyramid) { print(sprintf "Pyramid object content : %s", $pyramid->dumpPyrHash()); }
+ok (defined $pyramid, "Pyramid created (only mandatory parameters)");
+undef $pyramid;
 
 ####################### Bad #######################
 
@@ -85,6 +97,181 @@ my $errPyramid = WMTSALAD::Pyramid->new();
 ok(! defined $errPyramid, "Pyramid with no properties configuration file");
 undef $errPyramid;
 
+# Properties file error : invalid 'persistent' value
+$prop_buffer =~ s/(persistent =) true/$1 ThisIsNoBoolean/;
+$written = writeTemp($prop_buffer, $temp_prop_file);
+$prop_buffer =~ s/ThisIsNoBoolean/true/;
+$errPyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
+ok(! defined $errPyramid, "Properties file error : invalid 'persistent' value");
+undef $errPyramid;
+
+# Properties file error : unnamed pyramid
+$prop_buffer =~ s/\n(pyr_name)/\n;$1/;
+$written = writeTemp($prop_buffer, $temp_prop_file);
+$prop_buffer =~ s/\n;(pyr_name)/\n$1/;
+$errPyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
+ok(! defined $errPyramid, "Properties file error : unnamed pyramid");
+undef $errPyramid;
+
+# Properties file error : no data path
+$prop_buffer =~ s/\n(pyr_data_path)/\n;$1/;
+$written = writeTemp($prop_buffer, $temp_prop_file);
+$prop_buffer =~ s/\n;(pyr_data_path)/\n$1/;
+$errPyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
+ok(! defined $errPyramid, "Properties file error : no data path");
+undef $errPyramid;
+
+# Properties file error : no descriptor path
+$prop_buffer =~ s/\n(pyr_desc_path)/\n;$1/;
+$written = writeTemp($prop_buffer, $temp_prop_file);
+$prop_buffer =~ s/\n;(pyr_desc_path)/\n$1/;
+$errPyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
+ok(! defined $errPyramid, "Properties file error : no descriptor path");
+undef $errPyramid;
+
+# Properties file error : no TMS name
+$prop_buffer =~ s/\n(tms_name)/\n;$1/;
+$written = writeTemp($prop_buffer, $temp_prop_file);
+$prop_buffer =~ s/\n;(tms_name)/\n$1/;
+$errPyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
+ok(! defined $errPyramid, "Properties file error : no TMS name");
+undef $errPyramid;
+
+# Properties file error : no TMS path
+$prop_buffer =~ s/\n(tms_path)/\n;$1/;
+$written = writeTemp($prop_buffer, $temp_prop_file);
+$prop_buffer =~ s/\n;(tms_path)/\n$1/;
+$errPyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
+ok(! defined $errPyramid, "Properties file error : no TMS path");
+undef $errPyramid;
+
+# Properties file error : no image_width
+$prop_buffer =~ s/\n(image_width)/\n;$1/;
+$written = writeTemp($prop_buffer, $temp_prop_file);
+$prop_buffer =~ s/\n;(image_width)/\n$1/;
+$errPyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
+ok(! defined $errPyramid, "Properties file error : no image_width");
+undef $errPyramid;
+
+# Properties file error : no image_height
+$prop_buffer =~ s/\n(image_height)/\n;$1/;
+$written = writeTemp($prop_buffer, $temp_prop_file);
+$prop_buffer =~ s/\n;(image_height)/\n$1/;
+$errPyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
+ok(! defined $errPyramid, "Properties file error : no image_height");
+undef $errPyramid;
+
+# Properties file error : invalid image_height
+$prop_buffer =~ s/(image_height =) 16/$1 -0/;
+$written = writeTemp($prop_buffer, $temp_prop_file);
+$prop_buffer =~ s/(image_height =) -0/$1 16/;
+$errPyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
+ok(! defined $errPyramid, "Properties file error : invalid image_height");
+undef $errPyramid;
+
+# Properties file error : no dir_depth
+$prop_buffer =~ s/\n(dir_depth)/\n;$1/;
+$written = writeTemp($prop_buffer, $temp_prop_file);
+$prop_buffer =~ s/\n;(dir_depth)/\n$1/;
+$errPyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
+ok(! defined $errPyramid, "Properties file error : no dir_depth");
+undef $errPyramid;
+
+# Properties file error : invalid dir_depth
+$prop_buffer =~ s/(dir_depth =) 2/$1 -0/;
+$written = writeTemp($prop_buffer, $temp_prop_file);
+$prop_buffer =~ s/(dir_depth =) -0/$1 2/;
+$errPyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
+ok(! defined $errPyramid, "Properties file error : invalid dir_depth");
+undef $errPyramid;
+
+# Properties file error : no dir_image
+$prop_buffer =~ s/\n(dir_image)/\n;$1/;
+$written = writeTemp($prop_buffer, $temp_prop_file);
+$prop_buffer =~ s/\n;(dir_image)/\n$1/;
+$errPyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
+ok(! defined $errPyramid, "Properties file error : no dir_image");
+undef $errPyramid;
+
+# Properties file error : no dir_nodata
+$prop_buffer =~ s/\n(dir_nodata)/\n;$1/;
+$written = writeTemp($prop_buffer, $temp_prop_file);
+$prop_buffer =~ s/\n;(dir_nodata)/\n$1/;
+$errPyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
+ok(! defined $errPyramid, "Properties file error : no dir_nodata");
+undef $errPyramid;
+
+# Properties file error : no bitspersample
+$prop_buffer =~ s/\n(bitspersample)/\n;$1/;
+$written = writeTemp($prop_buffer, $temp_prop_file);
+$prop_buffer =~ s/\n;(bitspersample)/\n$1/;
+$errPyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
+ok(! defined $errPyramid, "Properties file error : no bitspersample");
+undef $errPyramid;
+
+# Properties file error : invalid bitspersample
+$prop_buffer =~ s/(bitspersample =) 8/$1 -0/;
+$written = writeTemp($prop_buffer, $temp_prop_file);
+$prop_buffer =~ s/(bitspersample =) -0/$1 8/;
+$errPyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
+ok(! defined $errPyramid, "Properties file error : invalid bitspersample");
+undef $errPyramid;
+
+# Properties file error : no sampleformat
+$prop_buffer =~ s/\n(sampleformat)/\n;$1/;
+$written = writeTemp($prop_buffer, $temp_prop_file);
+$prop_buffer =~ s/\n;(sampleformat)/\n$1/;
+$errPyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
+ok(! defined $errPyramid, "Properties file error : no sampleformat");
+undef $errPyramid;
+
+# Properties file error : invalid sampleformat
+$prop_buffer =~ s/(sampleformat =) int/$1 complex/;
+$written = writeTemp($prop_buffer, $temp_prop_file);
+$prop_buffer =~ s/(sampleformat =) complex/$1 int/;
+$errPyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
+ok(! defined $errPyramid, "Properties file error : invalid sampleformat");
+undef $errPyramid;
+
+# Properties file error : no samplesperpixel
+$prop_buffer =~ s/\n(samplesperpixel)/\n;$1/;
+$written = writeTemp($prop_buffer, $temp_prop_file);
+$prop_buffer =~ s/\n;(samplesperpixel)/\n$1/;
+$errPyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
+ok(! defined $errPyramid, "Properties file error : no samplesperpixel");
+undef $errPyramid;
+
+# Properties file error : invalid samplesperpixel
+$prop_buffer =~ s/(samplesperpixel =) 3/$1 -0/;
+$written = writeTemp($prop_buffer, $temp_prop_file);
+$prop_buffer =~ s/(samplesperpixel =) -0/$1 3/;
+$errPyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
+ok(! defined $errPyramid, "Properties file error : invalid samplesperpixel");
+undef $errPyramid;
+
+# Properties file error : invalid photometric
+$prop_buffer =~ s/(photometric =) rgb/$1 complex/;
+$written = writeTemp($prop_buffer, $temp_prop_file);
+$prop_buffer =~ s/(photometric =) complex/$1 rgb/;
+$errPyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
+ok(! defined $errPyramid, "Properties file error : invalid photometric");
+undef $errPyramid;
+
+# Properties file error : invalid interpolation
+$prop_buffer =~ s/(interpolation =) bicubic/$1 complex/;
+$written = writeTemp($prop_buffer, $temp_prop_file);
+$prop_buffer =~ s/(interpolation =) complex/$1 bicubic/;
+$errPyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
+ok(! defined $errPyramid, "Properties file error : invalid interpolation");
+undef $errPyramid;
+
+# Properties file error : invalid color
+$prop_buffer =~ s/(color =) 255,255,255/$1 256,0/;
+$written = writeTemp($prop_buffer, $temp_prop_file);
+$prop_buffer =~ s/(color =) 256,0/$1 255,255,255/;
+$errPyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
+ok(! defined $errPyramid, "Properties file error : invalid color");
+undef $errPyramid;
 
 
 ####################### End #######################
