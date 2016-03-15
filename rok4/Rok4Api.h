@@ -81,6 +81,7 @@ typedef void Rok4Server;
         char* name;
         char* pool;
         char* contextType;
+        char* storeType;
         uint32_t posoff;
         uint32_t possize;
         uint32_t maxsize;

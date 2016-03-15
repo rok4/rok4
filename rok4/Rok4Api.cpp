@@ -359,12 +359,22 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
         imageFilePath=level->getPath ( x, y,1, 1);
         tileRef->posoff = 0;
         tileRef->possize = 0;
+
+        std::string strType = "TILE";
+        tileRef->storeType=new char[strType.length() +1];
+        strcpy ( tileRef->storeType,strType.c_str() );
+
     } else {
         //on lit une dalle
         int n= ( y%level->getTilesPerHeight() ) *level->getTilesPerWidth() + ( x%level->getTilesPerWidth() );
         tileRef->posoff=2048+4*n;
         tileRef->possize=2048+4*n +level->getTilesPerWidth() *level->getTilesPerHeight() *4;
         imageFilePath=level->getPath ( x, y,level->getTilesPerWidth(), level->getTilesPerHeight());
+
+        std::string strType = "SLAB";
+        tileRef->storeType=new char[strType.length() +1];
+        strcpy ( tileRef->storeType,strType.c_str() );
+
     }
 
     tileRef->name=new char[imageFilePath.length() +1];
@@ -372,11 +382,11 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
 
     tileRef->maxsize = level->getMaxTileSize();
 
-    std::string ctxType = level->getContext()->getTypeStr();;
+    std::string ctxType = level->getContext()->getTypeStr();
     tileRef->contextType=new char[ctxType.length() +1];
     strcpy ( tileRef->contextType,ctxType.c_str() );
 
-    std::string container = level->getContext()->getContainer();;
+    std::string container = level->getContext()->getContainer();
     tileRef->pool=new char[container.length() +1];
     strcpy ( tileRef->pool,container.c_str() );
 
@@ -612,9 +622,21 @@ void rok4FlushTileRef ( TileRef* tileRef ) {
     delete[] tileRef->name;
     delete[] tileRef->pool;
     delete[] tileRef->contextType;
+    delete[] tileRef->storeType;
     delete[] tileRef->type;
     delete[] tileRef->encoding;
     delete[] tileRef->format;
+}
+
+/**
+* \brief Suppression des champs d'une reference de ceph
+* La reference n est pas supprimee
+*/
+
+void rok4FlushCephRef ( CephRef* cephRef ) {
+    delete[] cephRef->name;
+    delete[] cephRef->user;
+    delete[] cephRef->conf;
 }
 
 /**
