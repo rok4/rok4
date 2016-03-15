@@ -72,6 +72,8 @@ use COMMON::CheckUtils;
 use WMTSALAD::DataSource;
 use BE4::TileMatrixSet;
 use BE4::TileMatrix;
+use BE4::Pixel;
+use BE4::NoData;
 
 use parent qw(Exporter);
 
@@ -114,6 +116,11 @@ my %IMAGE_SPECS = (
             "rgb",
             "mask"
         ],
+        sampleformat => [
+            "int",
+            "uint",
+            "float"
+        ]
     );
 
 my %DEFAULT = (
@@ -174,6 +181,7 @@ sub new {
         format => undef,
         channels => undef,
         noDataValue => undef,
+        noData => undef,
         interpolation => undef,
         photometric => undef,
         persistent => undef,
@@ -237,6 +245,7 @@ sub _loadProperties {
         });
     my %fileContent = $cfg->getConfig();
     my $refFileContent = \%fileContent;
+    my $sampleformat; # Value to pass to BE4::Pixel
 
     # Tile Matrix Set
     if ((exists $refFileContent->{pyramid}->{tms_path}) && (defined $refFileContent->{pyramid}->{tms_path})
@@ -261,7 +270,23 @@ sub _loadProperties {
         INFO(sprintf "Undefined compression type. Setting to '%s'",$DEFAULT{compression});
             $format .= $DEFAULT{compression}."_";
     }
-    $format .= uc($refFileContent->{pyramid}->{sampleformat}).$refFileContent->{pyramid}->{bitspersample} ;
+    if ((!exists $refFileContent->{pyramid}->{sampleformat}) || (!defined $refFileContent->{pyramid}->{sampleformat})) {
+        ERROR(sprintf "Undefined sampleformat");
+        return FALSE;
+    } elsif ((!exists $refFileContent->{pyramid}->{bitspersample}) || (!defined $refFileContent->{pyramid}->{bitspersample})) {
+        ERROR(sprintf "Undefined bitspersample");
+        return FALSE;
+    } elsif ($self->isSampleFormat($refFileContent->{pyramid}->{sampleformat})) {
+        if ($refFileContent->{pyramid}->{sampleformat} eq "int") {
+            $sampleformat = "uint";
+        } else {
+            $sampleformat = $refFileContent->{pyramid}->{sampleformat};
+        }
+        $format .= uc($refFileContent->{pyramid}->{sampleformat}).$refFileContent->{pyramid}->{bitspersample} ;
+    } else {
+        ERROR(sprintf "Invalid sampleformat : '%s'. Valid formats are : %s", $refFileContent->{pyramid}->{sampleformat}, Dumper($IMAGE_SPECS{sampleformat}));
+        return FALSE;
+    }
     if ($self->isImageFormat($format)) {
         $self->{format} = $format;
     } else {
@@ -358,12 +383,35 @@ sub _loadProperties {
         return FALSE;
     }
 
+    # Photometric (optionnal)
+    if ((exists $refFileContent->{pyramid}->{photometric}) && (defined $refFileContent->{pyramid}->{photometric})) {
+        if ($self->isPhotometric($refFileContent->{pyramid}->{photometric})) {
+            $self->{photometric} = $refFileContent->{pyramid}->{photometric};
+        } else {
+            ERROR(sprintf "invalid photometric value : '%s'. Allowed values are : %s",$refFileContent->{pyramid}->{photometric},Dumper($IMAGE_SPECS{photometric}));
+            return FALSE;
+        }
+    }
+
+    # Nodata (default : white)
     # Nodata value (default value : white, transparent if alpha channel available)
+    my $pixel = BE4::Pixel->new({
+        photometric => $self->{photometric},
+        sampleformat => $sampleformat,
+        bitspersample => $refFileContent->{pyramid}->{bitspersample},
+        samplesperpixel => $self->{channels},
+    });
+    my $noDataValue;
     if ((exists $refFileContent->{pyramid}->{color}) && (defined $refFileContent->{pyramid}->{color})) {
-        $self->{noDataValue} = $refFileContent->{pyramid}->{color};
+        $noDataValue = $refFileContent->{pyramid}->{color};
     } else {
         my $chans = $self->{channels};
-        $self->{noDataValue} = $DEFAULT{noDataValue}->{$chans};
+        $noDataValue = $DEFAULT{noDataValue}->{$chans};
+    }
+    $self->{noData} = BE4::NoData->new({ pixel => $pixel, value => $noDataValue });
+    if (! defined $self->{noData}) {
+        ERROR("Failed NoData initialization. Check 'color' value.");
+        return FALSE;
     }
 
     # Interpolation (optionnal)
@@ -372,16 +420,6 @@ sub _loadProperties {
             $self->{interpolation} = $refFileContent->{pyramid}->{interpolation};
         } else {
             ERROR(sprintf "invalid interpolation value : '%s'. Allowed values are : %s",$refFileContent->{pyramid}->{interpolation},Dumper($IMAGE_SPECS{interpolation}));
-            return FALSE;
-        }
-    }
-
-    # Photometric (optionnal)
-    if ((exists $refFileContent->{pyramid}->{photometric}) && (defined $refFileContent->{pyramid}->{photometric})) {
-        if ($self->isPhotometric($refFileContent->{pyramid}->{photometric})) {
-            $self->{photometric} = $refFileContent->{pyramid}->{photometric};
-        } else {
-            ERROR(sprintf "invalid photometric value : '%s'. Allowed values are : %s",$refFileContent->{pyramid}->{photometric},Dumper($IMAGE_SPECS{photometric}));
             return FALSE;
         }
     }
@@ -484,6 +522,17 @@ sub isPhotometric {
     return FALSE;
 }
 
+sub isSampleFormat {
+    my $self = shift;
+    my $string = shift;
+
+    foreach my $validString (@{$IMAGE_SPECS{sampleformat}}) {
+        return TRUE if ($validString eq $string);
+    }
+
+    return FALSE;
+}
+
 
 sub _checkProperties {
 
@@ -516,7 +565,7 @@ sub dumpPyrHash {
     $pyr_dump .= "\n  format => ".$self->{format};
     $pyr_dump .= "\n  channels => ".$self->{channels};
     if (exists $self->{photometric} && defined $self->{photometric}) {$pyr_dump .= "\n  photometric => ".$self->{photometric};}
-    if (exists $self->{noDataValue} && defined $self->{noDataValue}) {$pyr_dump .= "\n  noDataValue => ".$self->{noDataValue};}
+    $pyr_dump .= "\n  noDataValue => ".$self->{noData}->getValue();
     if (exists $self->{interpolation} && defined $self->{interpolation}) {$pyr_dump .= "\n  interpolation => ".$self->{interpolation};}
     $pyr_dump .= "\n  tileMatrixSet->{PATHFILENAME} => ".$self->{tileMatrixSet}->{PATHFILENAME};
     my $ds_dump = Dumper($self->{datasources});
