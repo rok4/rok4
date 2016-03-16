@@ -192,7 +192,7 @@ StoreTiles () {
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
         for i in `seq $imin $imax` ; do 
-            for j in `seq $imin $imax` ; do 
+            for j in `seq $jmin $jmax` ; do 
                 echo "${imgName}_${i}_${j}" >> ${TMP_LIST_FILE}
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
             done
@@ -211,7 +211,7 @@ StoreTiles () {
                 tiff2tile $workDir/$workMskName __t2tM__ -ij $imgI $imgJ -pool ${PYR_POOL} $mskName
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
                 for i in `seq $imin $imax` ; do 
-                    for j in `seq $imin $imax` ; do 
+                    for j in `seq $jmin $jmax` ; do 
                         echo "${mskName}_${i}_${j}" >> ${TMP_LIST_FILE}
                         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
                     done
