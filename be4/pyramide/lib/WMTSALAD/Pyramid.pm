@@ -180,7 +180,6 @@ sub new {
         tileMatrixSet => undef,
         format => undef,
         channels => undef,
-        noDataValue => undef,
         noData => undef,
         interpolation => undef,
         photometric => undef,
@@ -419,7 +418,7 @@ sub _loadProperties {
         if ($self->isInterpolation($refFileContent->{pyramid}->{interpolation})) {
             $self->{interpolation} = $refFileContent->{pyramid}->{interpolation};
         } else {
-            ERROR(sprintf "invalid interpolation value : '%s'. Allowed values are : %s",$refFileContent->{pyramid}->{interpolation},Dumper($IMAGE_SPECS{interpolation}));
+            ERROR(sprintf "Invalid interpolation value : '%s'. Allowed values are : %s",$refFileContent->{pyramid}->{interpolation},Dumper($IMAGE_SPECS{interpolation}));
             return FALSE;
         }
     }
@@ -458,6 +457,15 @@ sub _loadDatasources {
         ERROR(sprintf "The datasources configuration file does not exist, is not readable, or is a directory : %s", $file);
         return FALSE;
     }
+
+    my $cfg = COMMON::Config->new({
+        '-filepath' => $file,
+        '-format' => 'INI',
+        });
+    my %fileContent = $cfg->getConfig();
+    my $refFileContent = \%fileContent;
+
+
 
     return TRUE;
 }
@@ -539,7 +547,24 @@ sub _checkProperties {
 }
 
 sub _checkDatasources {
+    my $self = shift;
+    my $srcFileContentRef = shift;
 
+    my %ranges;
+
+    foreach my $section ($srcFileContentRef->getSections()) {
+        $ranges{$srcFileContentRef->getProperty({section => $section, property => 'lv_bottom'})} = $srcFileContentRef->getProperty({section => $section, property => 'lv_top'});
+    }
+    my @bottomLevels = sort (keys %ranges);
+    for (my $i = 0; $i < ((scalar @bottomLevels)-1); $i++) {
+        if ($ranges{$bottomLevels[$i]} >= $bottomLevels[$i+1]) {
+            ERROR("Invalid datasources configuration : overlap of level ranges.");
+            return FALSE;
+        }
+    } 
+
+
+    return TRUE;
 }
 
 
