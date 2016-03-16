@@ -259,7 +259,7 @@ sub _loadProperties {
     # Image format
     my $format = "TIFF_";
     if ((exists $refFileContent->{pyramid}->{compression}) && (defined $refFileContent->{pyramid}->{compression})) {
-        if ($refFileContent->{pyramid}->{compression} =~ m/^jpg|png|lzw|zip|pkb$/i) {
+        if ($refFileContent->{pyramid}->{compression} =~ m/^(jpg|png|lzw|zip|pkb)$/i) {
             $format.= uc($refFileContent->{pyramid}->{compression})."_";
         } else {
             WARN(sprintf "Unrecognized compression type : %s. Setting to '%s'", $refFileContent->{pyramid}->{compression},$DEFAULT{compression});
@@ -315,9 +315,9 @@ sub _loadProperties {
 
     # Persistence (default value : FALSE)
     if ((exists $refFileContent->{pyramid}->{persistent}) && (defined $refFileContent->{pyramid}->{persistent})) {
-        if ((uc $refFileContent->{pyramid}->{persistent} eq "TRUE") || (uc $refFileContent->{pyramid}->{persistent} eq "T") || ((COMMON::CheckUtils::isNumber($refFileContent->{pyramid}->{persistent})) && ($refFileContent->{pyramid}->{persistent} == TRUE))) {
+        if ($refFileContent->{pyramid}->{persistent}=~ m/\A(1|T|true)\z/i) {
             $self->{persistent} = TRUE;
-        } elsif ((uc $refFileContent->{pyramid}->{persistent} eq "FALSE") || (uc $refFileContent->{pyramid}->{persistent} eq "F") || ((COMMON::CheckUtils::isNumber($refFileContent->{pyramid}->{persistent})) && ($refFileContent->{pyramid}->{persistent} == FALSE))) {
+        } elsif ($refFileContent->{pyramid}->{persistent} =~ m/\A(0|F|FALSE)\z/i) {
             $self->{persistent} = FALSE;
         } else {
             ERROR("The 'persistent' parameter must be a boolean value (format : number, case insensitive letter, case insensitive word).");
@@ -465,7 +465,11 @@ sub _loadDatasources {
     my %fileContent = $cfg->getConfig();
     my $refFileContent = \%fileContent;
 
+    if (!$self->_checkDatasources($cfg)) {
+        return FALSE;
+    }
 
+    $self->{datasources} = $refFileContent;
 
     return TRUE;
 }
@@ -548,20 +552,36 @@ sub _checkProperties {
 
 sub _checkDatasources {
     my $self = shift;
-    my $srcFileContentRef = shift;
+    my $srcCfg = shift;
 
     my %ranges;
 
-    foreach my $section ($srcFileContentRef->getSections()) {
-        $ranges{$srcFileContentRef->getProperty({section => $section, property => 'lv_bottom'})} = $srcFileContentRef->getProperty({section => $section, property => 'lv_top'});
+    foreach my $section ($srcCfg->getSections()) {
+        if ((!defined $srcCfg->getProperty({section => $section, property => 'lv_bottom'})) || (!defined $srcCfg->getProperty({section => $section, property => 'lv_top'}))) {
+            ERROR(sprintf "Levels range ('lv_bottom', 'lv_top') properties missing in section '%s'", $section);
+            return FALSE;
+        } elsif ((!COMMON::CheckUtils::isPositiveInt($srcCfg->getProperty({section => $section, property => 'lv_bottom'}))) || (!COMMON::CheckUtils::isPositiveInt($srcCfg->getProperty({section => $section, property => 'lv_top'})))) {
+            ERROR(sprintf "'lv_top' (%s) and 'lv_bottom' (%s) must be positive integers (section '%s').", $srcCfg->getProperty({section => $section, property => 'lv_top'}), $srcCfg->getProperty({section => $section, property => 'lv_bottom'}), $section);
+            return FALSE;
+        }
+        $ranges{$srcCfg->getProperty({section => $section, property => 'lv_bottom'})} = $srcCfg->getProperty({section => $section, property => 'lv_top'});
+
+        foreach my $subsection ($srcCfg->getSubSections($section)) {
+            if($srcCfg->isProperty({section => $section, subsection => $subsection, property => 'transparent'})
+             && (! ($srcCfg->getProperty({section => $section, subsection => $subsection, property => 'transparent'}) =~ m/\A([01TF]|TRUE|FALSE)\z/i))) {
+                ERROR(sprintf "Invalid value for 'transparent' property : '%s' (must be boolean)", $srcCfg->getProperty({section => $section, subsection => $subsection, property => 'transparent'}));
+                return FALSE;
+            }
+        }
     }
     my @bottomLevels = sort (keys %ranges);
     for (my $i = 0; $i < ((scalar @bottomLevels)-1); $i++) {
-        if ($ranges{$bottomLevels[$i]} >= $bottomLevels[$i+1]) {
+        if ($ranges{$bottomLevels[$i]} <= $bottomLevels[$i+1]) {
             ERROR("Invalid datasources configuration : overlap of level ranges.");
             return FALSE;
         }
-    } 
+    }
+
 
 
     return TRUE;
