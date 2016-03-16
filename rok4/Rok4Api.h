@@ -133,7 +133,8 @@ typedef void Rok4Server;
     HttpResponse* rok4GetOperationNotSupportedException ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server );
     HttpResponse* rok4GetNoDataFoundException ( );
     int rok4ReadObjectCeph(Rok4Server* server, const char* name, const char* pool, int offset, int size, char *data);
-   
+    int rok4ReadObjectSwift(Rok4Server* server, const char* name, const char* pool, int offset, int size, char *data);
+
     void rok4DeleteRequest ( HttpRequest* request );
     void rok4DeleteResponse ( HttpResponse* response );
     void rok4FlushTileRef ( TileRef* tileRef );
