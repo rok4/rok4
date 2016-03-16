@@ -190,6 +190,10 @@ sub _loadINI {
         if ($l =~ m/^\[(\w*)\]$/) {
             $l =~ s/[\[\]]//g;
 
+            if (exists $self->{"configuration"}->{$l}) {
+                ERROR (sprintf "A section is defined twice in the configuration : section '%s'", $l);
+                return FALSE;
+            }
             $currentSection = $l;
             $currentSubSection = undef; # Resetting subsection as section changes
             $self->{"configuration"}->{$currentSection}->{'_props'} = []; # Array of properties name, to index their order
@@ -199,6 +203,10 @@ sub _loadINI {
         if ($l =~ m/^\[\[(\w*)\]\]$/) {
             $l =~ s/[\[\]]//g;
 
+            if (exists $self->{"configuration"}->{$currentSection}->{$l}) {
+                ERROR (sprintf "A subsection is defined twice in the configuration : section '%s', subsection '%s'", $currentSection, $l);
+                return FALSE;
+            }
             $currentSubSection = $l;            
             $self->{"configuration"}->{$currentSection}->{$currentSubSection}->{'_props'} = []; # Array of properties name, to index their order
             next;
