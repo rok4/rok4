@@ -567,9 +567,18 @@ sub _checkDatasources {
         $ranges{$srcCfg->getProperty({section => $section, property => 'lv_bottom'})} = $srcCfg->getProperty({section => $section, property => 'lv_top'});
 
         foreach my $subsection ($srcCfg->getSubSections($section)) {
+            if (!COMMON::CheckUtils::isPositiveInt($subsection)) {
+                ERROR(sprintf "In section '%s', subsection name '%s' is not a positive integer. It cannot qualify to define the source order/priority.", $section, $subsection);
+                return FALSE;
+            }
             if($srcCfg->isProperty({section => $section, subsection => $subsection, property => 'transparent'})
              && (! ($srcCfg->getProperty({section => $section, subsection => $subsection, property => 'transparent'}) =~ m/\A([01TF]|TRUE|FALSE)\z/i))) {
                 ERROR(sprintf "Invalid value for 'transparent' property : '%s' (must be boolean)", $srcCfg->getProperty({section => $section, subsection => $subsection, property => 'transparent'}));
+                return FALSE;
+            }
+            if($srcCfg->isProperty({section => $section, subsection => $subsection, property => 'file'})
+             && (! -f $srcCfg->getProperty({section => $section, subsection => $subsection, property => 'file'}) )) {
+                ERROR(sprintf "Source pyramid descriptor does not exist : '%s'", $srcCfg->getProperty({section => $section, subsection => $subsection, property => 'file'}));
                 return FALSE;
             }
         }
@@ -581,8 +590,6 @@ sub _checkDatasources {
             return FALSE;
         }
     }
-
-
 
     return TRUE;
 }
