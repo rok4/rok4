@@ -3,18 +3,11 @@ lv_bottom = 19
 lv_top = 10
 
 [[ 1 ]]
-file = /path/to/pyramid1.pyr
+file = be4/pyramide/tests/pyramid/oldPyramid.pyr
 style = style1
 transparent = false
 
-[[ 2 ]]
-file = /path/to/pyramid2.pyr
-
-[ 9_6 ]
-lv_bottom = 9
-lv_top = 6
-
-[[ 0 ]]
+[[ 5 ]]
 wms_url             =>  "http://target.server.net/wms"
 wms_timeout         =>  60
 wms_retry           =>  10
@@ -26,3 +19,10 @@ wms_crs             =>  "EPSG:2154"
 wms_extent          =>  "634500,6855000,636800,6857700"
 wms_channels        =>  3
 wms_nodata          =>  "0xFFA2FA"
+
+[ 9_6 ]
+lv_bottom = 9
+lv_top = 6
+
+[[ 0 ]]
+file = be4/pyramide/tests/pyramid/oldPyramid.pyr
