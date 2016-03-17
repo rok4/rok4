@@ -246,46 +246,26 @@ sub _loadProperties {
     my $refFileContent = \%fileContent;
     my $sampleformat; # Value to pass to BE4::Pixel
 
-    # Tile Matrix Set
-    if ((exists $refFileContent->{pyramid}->{tms_path}) && (defined $refFileContent->{pyramid}->{tms_path})
-        && (exists $refFileContent->{pyramid}->{tms_name}) && (defined $refFileContent->{pyramid}->{tms_name})) {
-        my $TMS = BE4::TileMatrixSet->new(File::Spec->catfile($refFileContent->{pyramid}->{tms_path},$refFileContent->{pyramid}->{tms_name}));
-        $self->{tileMatrixSet} = $TMS ;
-    } else {
-        ERROR("Undefined tile matrix system path or name.");
-        return FALSE;
-    }
+    return FALSE if(! $self->_checkProperties($cfg));
+
+    # Tile Matrix Set    
+    my $TMS = BE4::TileMatrixSet->new(File::Spec->catfile($refFileContent->{pyramid}->{tms_path},$refFileContent->{pyramid}->{tms_name}));
+    $self->{tileMatrixSet} = $TMS ;
 
     # Image format
     my $format = "TIFF_";
-    if ((exists $refFileContent->{pyramid}->{compression}) && (defined $refFileContent->{pyramid}->{compression})) {
-        if ($refFileContent->{pyramid}->{compression} =~ m/^(jpg|png|lzw|zip|pkb)$/i) {
-            $format.= uc($refFileContent->{pyramid}->{compression})."_";
-        } else {
-            WARN(sprintf "Unrecognized compression type : %s. Setting to '%s'", $refFileContent->{pyramid}->{compression},$DEFAULT{compression});
-            $format .= $DEFAULT{compression}."_";
-        }
+    if (( $cfg->isProperty({section => 'pyramid', property => 'compression'})) && ($refFileContent->{pyramid}->{compression} =~ m/^(jpg|png|lzw|zip|pkb)$/i)) {
+        $format.= uc($refFileContent->{pyramid}->{compression})."_";
     } else {
-        INFO(sprintf "Undefined compression type. Setting to '%s'",$DEFAULT{compression});
-            $format .= $DEFAULT{compression}."_";
+        WARN(sprintf "Unrecognized or undefined compression type : '%s'. Setting to '%s'", $refFileContent->{pyramid}->{compression},$DEFAULT{compression});
+        $format .= $DEFAULT{compression}."_";
     }
-    if ((!exists $refFileContent->{pyramid}->{sampleformat}) || (!defined $refFileContent->{pyramid}->{sampleformat})) {
-        ERROR(sprintf "Undefined sampleformat");
-        return FALSE;
-    } elsif ((!exists $refFileContent->{pyramid}->{bitspersample}) || (!defined $refFileContent->{pyramid}->{bitspersample})) {
-        ERROR(sprintf "Undefined bitspersample");
-        return FALSE;
-    } elsif ($self->isSampleFormat($refFileContent->{pyramid}->{sampleformat})) {
-        if ($refFileContent->{pyramid}->{sampleformat} eq "int") {
-            $sampleformat = "uint";
-        } else {
-            $sampleformat = $refFileContent->{pyramid}->{sampleformat};
-        }
-        $format .= uc($refFileContent->{pyramid}->{sampleformat}).$refFileContent->{pyramid}->{bitspersample} ;
+    if ($refFileContent->{pyramid}->{sampleformat} eq "int") {
+        $sampleformat = "uint";
     } else {
-        ERROR(sprintf "Invalid sampleformat : '%s'. Valid formats are : %s", $refFileContent->{pyramid}->{sampleformat}, Dumper($IMAGE_SPECS{sampleformat}));
-        return FALSE;
+        $sampleformat = $refFileContent->{pyramid}->{sampleformat};
     }
+    $format .= uc($refFileContent->{pyramid}->{sampleformat}).$refFileContent->{pyramid}->{bitspersample} ;
     if ($self->isImageFormat($format)) {
         $self->{format} = $format;
     } else {
@@ -294,106 +274,57 @@ sub _loadProperties {
     }
 
     # Channels number 
-    if ((! exists $refFileContent->{pyramid}->{samplesperpixel}) || (!defined $refFileContent->{pyramid}->{samplesperpixel})) {
-        ERROR("Undefined samples per pixel value.");
-        return FALSE;
-    } elsif (COMMON::CheckUtils::isStrictPositiveInt($refFileContent->{pyramid}->{samplesperpixel})) {
-        $self->{channels} = $refFileContent->{pyramid}->{samplesperpixel};
-    } else {
-        ERROR(sprintf "Samples per pixel value must be a strictly positive integer : %s.", $refFileContent->{pyramid}->{samplesperpixel});
-        return FALSE;
-    }
+    $self->{channels} = $refFileContent->{pyramid}->{samplesperpixel};
 
     # Pyramid's name. Some people say it's useful to name the resulting .pyr file.
-    if ((!exists $refFileContent->{pyramid}->{pyr_name}) || (!defined $refFileContent->{pyramid}->{pyr_name})) {
-        ERROR ("The parameter 'pyr_name' is required!");
-        return FALSE;
-    }
     my $pyr_name = $refFileContent->{pyramid}->{pyr_name};
-    $pyr_name =~ s/\.(pyr|PYR)$//;
+    $pyr_name =~ s/\.(pyr)$//i;
     $self->{pyr_name} = $pyr_name;
 
     # Persistence (default value : FALSE)
-    if ((exists $refFileContent->{pyramid}->{persistent}) && (defined $refFileContent->{pyramid}->{persistent})) {
-        if ($refFileContent->{pyramid}->{persistent}=~ m/\A(1|T|true)\z/i) {
+    my $persistent = $refFileContent->{pyramid}->{persistent};
+    if (defined $persistent) {
+        if ($persistent=~ m/\A(1|t|true)\z/i) {
             $self->{persistent} = TRUE;
-        } elsif ($refFileContent->{pyramid}->{persistent} =~ m/\A(0|F|FALSE)\z/i) {
+        } elsif ($persistent =~ m/\A(0|f|false)\z/i) {
             $self->{persistent} = FALSE;
-        } else {
-            ERROR("The 'persistent' parameter must be a boolean value (format : number, case insensitive letter, case insensitive word).");
-            return FALSE;
         }
     } else {
         INFO ("The undefined 'persistent' parameter is now set to 'false'.");
         $self->{persistent} = FALSE;
     }
 
-
     # Path depth
-    if ((! exists $refFileContent->{pyramid}->{dir_depth}) || (!defined $refFileContent->{pyramid}->{dir_depth})) {
-        ERROR("Undefined directory path depth.");
-        return FALSE;
-    } elsif (COMMON::CheckUtils::isStrictPositiveInt($refFileContent->{pyramid}->{dir_depth})) {
-        $self->{dir_depth} = $refFileContent->{pyramid}->{dir_depth};
-    } else {
-        ERROR(sprintf "Directory path depth value must be a strictly positive integer : %s.", $refFileContent->{pyramid}->{dir_depth});
-        return FALSE;
-    }
+    $self->{dir_depth} = $refFileContent->{pyramid}->{dir_depth};
 
     # Data paths
-    if ((exists $refFileContent->{pyramid}->{pyr_data_path}) && (defined $refFileContent->{pyramid}->{pyr_data_path})) {
-        $self->{pyr_data_path} = $refFileContent->{pyramid}->{pyr_data_path};
-    } else {
-        ERROR ("The parameter 'pyr_data_path' is required!");
-        return FALSE;
-    }
+    $self->{pyr_data_path} = $refFileContent->{pyramid}->{pyr_data_path};
 
     # Masks directory (optionnal)
-    if ((exists $refFileContent->{pyramid}->{dir_mask}) && (defined $refFileContent->{pyramid}->{dir_mask})) {
+    if ($cfg->isProperty({section => 'pyramid', property => 'dir_mask'})) {
         $self->{dir_mask} = $refFileContent->{pyramid}->{dir_mask};
     }
 
     # Images directory
-    if ((exists $refFileContent->{pyramid}->{dir_image}) && (defined $refFileContent->{pyramid}->{dir_image})) {
-        $self->{dir_image} = $refFileContent->{pyramid}->{dir_image};
-    } else {
-        ERROR ("The parameter 'dir_image' is required!");
-        return FALSE;
-    }
+    $self->{dir_image} = $refFileContent->{pyramid}->{dir_image};
 
     # Metadata directory (optionnal)
-    if ((exists $refFileContent->{pyramid}->{dir_metadata}) && (defined $refFileContent->{pyramid}->{dir_metadata})) {
+    if ($cfg->isProperty({section => 'pyramid', property => 'dir_metadata'})) {
         $self->{dir_metadata} = $refFileContent->{pyramid}->{dir_metadata};
     }
 
     # Nodata Directory
-    if ((exists $refFileContent->{pyramid}->{dir_nodata}) && (defined $refFileContent->{pyramid}->{dir_nodata})) {
-        $self->{dir_nodata} = $refFileContent->{pyramid}->{dir_nodata};
-    } else {
-        ERROR ("The parameter 'dir_nodata' is required!");
-        return FALSE;
-    }
+    $self->{dir_nodata} = $refFileContent->{pyramid}->{dir_nodata};
 
     # Descriptor's path
-    if ((exists $refFileContent->{pyramid}->{pyr_desc_path}) && (defined $refFileContent->{pyramid}->{pyr_desc_path})) {
-        $self->{pyr_desc_path} = $refFileContent->{pyramid}->{pyr_desc_path};
-    } else {
-        ERROR ("The parameter 'pyr_desc_path' is required to write the .pyr descriptor file.");
-        return FALSE;
-    }
+    $self->{pyr_desc_path} = $refFileContent->{pyramid}->{pyr_desc_path};
 
     # Photometric (optionnal)
-    if ((exists $refFileContent->{pyramid}->{photometric}) && (defined $refFileContent->{pyramid}->{photometric})) {
-        if ($self->isPhotometric($refFileContent->{pyramid}->{photometric})) {
-            $self->{photometric} = $refFileContent->{pyramid}->{photometric};
-        } else {
-            ERROR(sprintf "invalid photometric value : '%s'. Allowed values are : %s",$refFileContent->{pyramid}->{photometric},Dumper($IMAGE_SPECS{photometric}));
-            return FALSE;
-        }
+    if ($cfg->isProperty({section => 'pyramid', property => 'photometric'})) {
+        $self->{photometric} = $refFileContent->{pyramid}->{photometric};
     }
 
-    # Nodata (default : white)
-    # Nodata value (default value : white, transparent if alpha channel available)
+    # Nodata (default value : white, transparent if alpha channel available)
     my $pixel = BE4::Pixel->new({
         photometric => $self->{photometric},
         sampleformat => $sampleformat,
@@ -401,7 +332,7 @@ sub _loadProperties {
         samplesperpixel => $self->{channels},
     });
     my $noDataValue;
-    if ((exists $refFileContent->{pyramid}->{color}) && (defined $refFileContent->{pyramid}->{color})) {
+    if ($cfg->isProperty({section => 'pyramid', property => 'color'})) {
         $noDataValue = $refFileContent->{pyramid}->{color};
     } else {
         my $chans = $self->{channels};
@@ -414,32 +345,13 @@ sub _loadProperties {
     }
 
     # Interpolation (optionnal)
-    if ((exists $refFileContent->{pyramid}->{interpolation}) && (defined $refFileContent->{pyramid}->{interpolation})) {
-        if ($self->isInterpolation($refFileContent->{pyramid}->{interpolation})) {
-            $self->{interpolation} = $refFileContent->{pyramid}->{interpolation};
-        } else {
-            ERROR(sprintf "Invalid interpolation value : '%s'. Allowed values are : %s",$refFileContent->{pyramid}->{interpolation},Dumper($IMAGE_SPECS{interpolation}));
-            return FALSE;
-        }
+    if ($cfg->isProperty({section => 'pyramid', property => 'interpolation'})) {
+        $self->{interpolation} = $refFileContent->{pyramid}->{interpolation};
     }
 
-    # Image dimensions (tilewise)
-    if (     (!exists $refFileContent->{pyramid}->{image_width}) || 
-             (!defined $refFileContent->{pyramid}->{image_width}) || 
-             (!exists $refFileContent->{pyramid}->{image_height}) || 
-             (!defined $refFileContent->{pyramid}->{image_height}) ) {
-        ERROR("Undefined image dimensions.");
-        return FALSE;
-    } elsif (    (COMMON::CheckUtils::isStrictPositiveInt($refFileContent->{pyramid}->{image_width}))
-              && (COMMON::CheckUtils::isStrictPositiveInt($refFileContent->{pyramid}->{image_height})) ) {
-        $self->{image_width} = $refFileContent->{pyramid}->{image_width};
-        $self->{image_height} = $refFileContent->{pyramid}->{image_height};
-    } else {
-        ERROR("Image dimensions (numbers of tiles) must be strictly positive integers.");
-        return FALSE;
-    }
-
-
+    # Image dimensions (number of tiles)
+    $self->{image_width} = $refFileContent->{pyramid}->{image_width};
+    $self->{image_height} = $refFileContent->{pyramid}->{image_height};
 
     return TRUE;
 }
@@ -465,9 +377,7 @@ sub _loadDatasources {
     my %fileContent = $cfg->getConfig();
     my $refFileContent = \%fileContent;
 
-    if (!$self->_checkDatasources($cfg)) {
-        return FALSE;
-    }
+    return FALSE if (!$self->_checkDatasources($cfg));
 
     $self->{datasources} = $refFileContent;
 
@@ -547,7 +457,126 @@ sub isSampleFormat {
 
 
 sub _checkProperties {
+    my $self = shift;
+    my $propCfg = shift;
 
+    if (!$propCfg->isSection('pyramid')) {
+        ERROR(sprintf "Section '[ pyramid ]' is absent from properties configuration file.");
+        return FALSE;
+    }
+
+    my $tms_path = $propCfg->getProperty({section => 'pyramid', property => 'tms_path'});
+    if (!defined $tms_path) {
+        ERROR("Undefined tile matrix system path.");
+        return FALSE;
+    }
+
+    my $tms_name = $propCfg->getProperty({section => 'pyramid', property => 'tms_name'});
+    if (!defined $tms_name) {
+        ERROR("Undefined tile matrix system name.");
+        return FALSE;
+    }
+
+    my $sampleformat = $propCfg->getProperty({section => 'pyramid', property => 'sampleformat'});
+    if (!defined $sampleformat) {
+        ERROR(sprintf "Undefined sampleformat");
+        return FALSE;
+    } elsif (!$self->isSampleFormat($sampleformat)) {
+        ERROR(sprintf "Invalid sampleformat : '%s'. Valid formats are : %s", $sampleformat, Dumper($IMAGE_SPECS{sampleformat}));
+        return FALSE;
+    }
+
+    my $bitspersample = $propCfg->getProperty({section => 'pyramid', property => 'bitspersample'});
+    if (!defined $bitspersample) {
+        ERROR(sprintf "Undefined bitspersample");
+        return FALSE;
+    }
+
+    my $samplesperpixel = $propCfg->getProperty({section => 'pyramid', property => 'samplesperpixel'});
+    if (!defined $samplesperpixel) {
+        ERROR(sprintf "Undefined samples per pixel value.");
+        return FALSE;
+    } elsif (!COMMON::CheckUtils::isStrictPositiveInt($samplesperpixel)) {
+        ERROR(sprintf "Samples per pixel value must be a strictly positive integer : %s.", $samplesperpixel);
+        return FALSE;
+    }
+
+    my $pyr_name = $propCfg->getProperty({section => 'pyramid', property => 'pyr_name'});
+    if (!defined $pyr_name) {
+        ERROR ("The parameter 'pyr_name' is required!");
+        return FALSE;
+    }
+
+    my $persistent = $propCfg->getProperty({section => 'pyramid', property => 'persistent'});
+    if ((defined $persistent) && (! ($persistent =~ m/\A([01tf]|true|false)\z/i)))  {
+        ERROR(sprintf "Invalid 'persistent' parameter value : '%s'. Must be a boolean value (format : number, case insensitive letter, case insensitive word).", $persistent);
+        return FALSE;
+    }
+
+    my $dir_depth = $propCfg->getProperty({section => 'pyramid', property => 'dir_depth'});
+    if (!defined $dir_depth) {
+        ERROR("Undefined directory path depth.");
+        return FALSE;
+    } elsif (! COMMON::CheckUtils::isStrictPositiveInt($dir_depth)) {
+        ERROR(sprintf "Directory path depth value must be a strictly positive integer : %s.", $dir_depth);
+        return FALSE;
+    }
+
+    my $pyr_data_path = $propCfg->getProperty({section => 'pyramid', property => 'pyr_data_path'});
+    if (! defined $pyr_data_path) {
+        ERROR ("The parameter 'pyr_data_path' is required!");
+        return FALSE;
+    }
+
+    my $dir_image = $propCfg->getProperty({section => 'pyramid', property => 'dir_image'});
+    if (! defined $dir_image) {
+        ERROR ("The parameter 'dir_image' is required!");
+        return FALSE;
+    }
+
+    my $dir_nodata = $propCfg->getProperty({section => 'pyramid', property => 'dir_nodata'});
+    if (! defined $dir_nodata) {
+        ERROR ("The parameter 'dir_nodata' is required!");
+        return FALSE;
+    }
+
+    my $pyr_desc_path = $propCfg->getProperty({section => 'pyramid', property => 'pyr_desc_path'});
+    if (! defined $pyr_desc_path) {
+        ERROR ("The parameter 'pyr_desc_path' is required!");
+        return FALSE;
+    }
+
+    my $photometric = $propCfg->getProperty({section => 'pyramid', property => 'photometric'});
+    if ((defined $photometric) && (! $self->isPhotometric($photometric))) {
+        ERROR(sprintf "invalid photometric value : '%s'. Allowed values are : %s",$photometric,Dumper($IMAGE_SPECS{photometric}));
+        return FALSE;
+    }
+
+    my $interpolation = $propCfg->getProperty({section => 'pyramid', property => 'interpolation'});
+    if ((defined $interpolation) && (! $self->isInterpolation($interpolation))) {
+        ERROR(sprintf "Invalid interpolation value : '%s'. Allowed values are : %s",$interpolation,Dumper($IMAGE_SPECS{interpolation}));
+        return FALSE;
+    }
+
+    my $image_width = $propCfg->getProperty({section => 'pyramid', property => 'image_width'});
+    if (!defined $image_width) {
+        ERROR("Undefined widthwise number of tiles ('image_width').");
+        return FALSE;
+    } elsif (! COMMON::CheckUtils::isStrictPositiveInt($image_width)) {
+        ERROR(sprintf "Widthwise number of tiles ('image_width') must be a strictly positive integer : %s.", $image_width);
+        return FALSE;
+    }
+
+    my $image_height = $propCfg->getProperty({section => 'pyramid', property => 'image_height'});
+    if (!defined $image_height) {
+        ERROR("Undefined heightwise number of tiles ('image_height').");
+        return FALSE;
+    } elsif (! COMMON::CheckUtils::isStrictPositiveInt($image_height)) {
+        ERROR(sprintf "Heightwise number of tiles ('image_height') must be a strictly positive integer : %s.", $image_height);
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 sub _checkDatasources {
