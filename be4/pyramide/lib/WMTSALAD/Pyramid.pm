@@ -120,7 +120,7 @@ my %IMAGE_SPECS = (
             "int",
             "uint",
             "float"
-        ]
+        ],
     );
 
 my %DEFAULT = (
@@ -269,7 +269,7 @@ sub _loadProperties {
     if ($self->isImageFormat($format)) {
         $self->{format} = $format;
     } else {
-        ERROR(sprintf "Unrecognized image format : %s.", $format);
+        ERROR(sprintf "Unrecognized image format : '%s'. Known image formats are : %s", $format, Dumper($IMAGE_SPECS{image_format}));
         return FALSE;
     }
 
