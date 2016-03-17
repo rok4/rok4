@@ -94,14 +94,17 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     LogOutput logOutput;
     int nbThread,logFilePeriod,backlog;
     LogLevel logLevel;
-    ContextBook *contextBook = NULL;
+    ContextBook *cephContextBook = NULL;
+    ContextBook *swiftContextBook = NULL;
+    std::map<eContextType,ContextBook*> contextBooks;
     bool supportWMTS,supportWMS,reprojectionCapability;
     std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,
-            strLayerDir,strTmsDir,strStyleDir,socket,cephName,cephUser,cephConf,cephPool;
+            strLayerDir,strTmsDir,strStyleDir,socket,cephName,cephUser,cephConf,cephPool,
+            swiftAuthUrl,swiftUserName,swiftUserAccount,swiftUserPassword,swiftContainer;
     if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod,
                                           logLevel, nbThread, supportWMTS, supportWMS, reprojectionCapability,
                                           strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, socket, backlog,
-                                          cephName,cephUser,cephConf,cephPool ) ) {
+                                          cephName,cephUser,cephConf,cephPool,swiftAuthUrl,swiftUserName,swiftUserAccount,swiftUserPassword,swiftContainer ) ) {
         std::cerr<<_ ( "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " ) <<strServerConfigFile<<std::endl;
         return NULL;
     }
@@ -160,12 +163,19 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     }
 
     if (cephName != "" && cephUser != "" && cephConf != "") {
-        contextBook = new ContextBook(cephName,cephUser,cephConf,cephPool);
+        cephContextBook = new ContextBook(cephName,cephUser,cephConf,cephPool);
+        contextBooks.insert(std::pair<eContextType,ContextBook*>(CEPHCONTEXT,cephContextBook));
     }
+
+    if (swiftAuthUrl != "" && swiftUserAccount != "" && swiftUserName != "" && swiftUserPassword != "") {
+        swiftContextBook = new ContextBook(swiftAuthUrl,swiftUserAccount,swiftUserName,swiftUserPassword,swiftContainer);
+        contextBooks.insert(std::pair<eContextType,ContextBook*>(SWIFTCONTEXT,swiftContextBook));
+    }
+
 
     // Chargement des layers
     std::map<std::string, Layer*> layerList;
-    if ( !ConfLoader::buildLayersList ( strLayerDir,tmsList, styleList,layerList,reprojectionCapability,sc, contextBook ) ) {
+    if ( !ConfLoader::buildLayersList ( strLayerDir,tmsList, styleList,layerList,reprojectionCapability,sc, contextBooks ) ) {
         LOGGER_FATAL ( _ ( "Impossible de charger la conf des Layers/pyramides" ) );
         LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
@@ -176,7 +186,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
 
     // Instanciation du serveur
     Logger::stopLogger();
-    return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog, contextBook, supportWMTS, supportWMS );
+    return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog, contextBooks, supportWMTS, supportWMS );
 }
 
 /**
@@ -293,22 +303,31 @@ HttpResponse* rok4GetTile ( const char* queryString, const char* hostName, const
 CephRef* rok4GetCephReferences (Rok4Server* server) {
 
     CephRef* cr = NULL;
-    CephPoolContext* ctx = server->getContextBook()->getCephBaseContext();
+    ContextBook * ctxb = server->getContextBook(CEPHCONTEXT);
 
-    if (ctx) {
+    if (ctxb != NULL) {
+        CephPoolContext* ctx = ctxb->getCephBaseContext();
 
-        cr->name=new char[ctx->getClusterName().length() +1];
-        strcpy ( cr->name,ctx->getClusterName().c_str() );
+        if (ctx) {
 
-        cr->user=new char[ctx->getPoolUser().length() +1];
-        strcpy ( cr->user,ctx->getPoolUser().c_str() );
+            cr->name=new char[ctx->getClusterName().length() +1];
+            strcpy ( cr->name,ctx->getClusterName().c_str() );
 
-        cr->conf=new char[ctx->getPoolConf().length() +1];
-        strcpy ( cr->conf,ctx->getPoolConf().c_str() );
+            cr->user=new char[ctx->getPoolUser().length() +1];
+            strcpy ( cr->user,ctx->getPoolUser().c_str() );
 
+            cr->conf=new char[ctx->getPoolConf().length() +1];
+            strcpy ( cr->conf,ctx->getPoolConf().c_str() );
+
+            return cr;
+
+        } else {
+            return cr;
+        }
     } else {
         return cr;
     }
+
 
 }
 
@@ -329,13 +348,22 @@ CephRef* rok4GetCephReferences (Rok4Server* server) {
 int rok4ReadObjectCeph(Rok4Server* server, const char* name, const char* pool, int offset, int size, char* data) {
 
     int err = -1;
+    LOGGER_INFO("rok4ReadObjectCeph");
 
-    Context * ctx = server->getContextBook()->getContext(pool);
-    if (ctx == NULL) {
-        return err;
+    ContextBook * ctxb = server->getContextBook(CEPHCONTEXT);
+
+    if (ctxb != NULL) {
+
+        Context * ctx = ctxb->getContext(pool);
+        if (ctx != NULL) {
+            err = ctx->read((uint8_t*)data, offset, size, (std::string)name);
+        } else {
+            LOGGER_ERROR("Pas de context trouvé pour le pool " << pool);
+        }
+
+    } else {
+        LOGGER_ERROR("Pas de contextBook CEPH");
     }
-
-    err = ctx->read((uint8_t*)data, offset, size, (std::string)name);
 
     return err;
 
@@ -357,13 +385,22 @@ int rok4ReadObjectCeph(Rok4Server* server, const char* name, const char* pool, i
 int rok4ReadObjectSwift(Rok4Server* server, const char* name, const char* pool, int offset, int size, char* data) {
 
     int err = -1;
+    LOGGER_INFO("rok4ReadObjectSwift");
 
-//    Context * ctx = server->getContextBook()->getContext(pool);
-//    if (ctx == NULL) {
-//        return err;
-//    }
+    ContextBook * ctxb = server->getContextBook(SWIFTCONTEXT);
 
-//    err = ctx->read((uint8_t*)data, offset, size, (std::string)name);
+    if (ctxb != NULL) {
+
+        Context * ctx = ctxb->getContext(pool);
+        if (ctx != NULL) {
+            err = ctx->read((uint8_t*)data, offset, size, (std::string)name);
+        } else {
+            LOGGER_ERROR("Pas de context trouvé pour le pool " << pool);
+        }
+
+    } else {
+        LOGGER_ERROR("Pas de contextBook SWIFT");
+    }
 
     return err;
 

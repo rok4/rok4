@@ -144,12 +144,12 @@ void* Rok4Server::thread_loop ( void* arg ) {
     return 0;
 }
 
-Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
+Rok4Server::Rok4Server (int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
                          std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList,
-                         std::string socket, int backlog, ContextBook *contextBook, bool supportWMTS, bool supportWMS ) :
+                         std::string socket, int backlog, std::map<eContextType, ContextBook *> contextBooks, bool supportWMTS, bool supportWMS ) :
     sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ),
     styleList ( styleList ), threads ( nbThread ), socket ( socket ), backlog ( backlog ),
-    running ( false ), notFoundError ( NULL ), supportWMTS ( supportWMTS ), supportWMS ( supportWMS ), contextBook (contextBook) {
+    running ( false ), notFoundError ( NULL ), supportWMTS ( supportWMTS ), supportWMS ( supportWMS ), contextBooks (contextBooks) {
 
     if ( supportWMS ) {
         LOGGER_DEBUG ( _ ( "Build WMS Capabilities 1.3.0" ) );
@@ -171,9 +171,12 @@ Rok4Server::~Rok4Server() {
         delete notFoundError;
         notFoundError = NULL;
     }
-    if (contextBook) {
-        delete contextBook;
-        contextBook = NULL;
+    if (contextBooks.size() != 0) {
+        std::map<eContextType,ContextBook*>::iterator it;
+        for(it=contextBooks.begin(); it!=contextBooks.end(); ++it) {
+            delete it->second;
+            it->second = NULL;
+        }
     }
 }
 

@@ -87,6 +87,14 @@ public:
 
     /**
      * \~french
+     * \brief Constructeur pour un contexte Swift
+     * \~english
+     * \brief Constructor for SwiftContext
+     */
+    ContextBook(std::string auth, std::string account, std::string user, std::string passwd, std::string container);
+
+    /**
+     * \~french
      * \brief Retourne le baseContext
      * \~english
      * \brief Return baseContext

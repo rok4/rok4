@@ -86,7 +86,18 @@ public:
     std::string getContainerName () {
         return container_name;
     }
-    
+    std::string getAuthUrl () {
+        return auth_url;
+    }
+    std::string getAccount () {
+        return user_account;
+    }
+    std::string getUserName () {
+        return user_name;
+    }
+    std::string getUserPwd () {
+        return user_passwd;
+    }
     int read(uint8_t* data, int offset, int size, std::string name);
     bool write(uint8_t* data, int offset, int size, std::string name) {
         LOGGER_ERROR("Can't write a Swift object from buffer");

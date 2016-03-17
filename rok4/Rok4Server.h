@@ -150,10 +150,10 @@ private:
      */
     DataSource* notFoundError;
     /**
-     * \~french \brief Annuaire des contextes
-     * \~english \brief Context Directory
+     * \~french \brief Liste des Annuaires des contextes
+     * \~english \brief List of Context Directories
      */
-    ContextBook* contextBook;
+    std::map<eContextType,ContextBook*> contextBooks;
 
     /**
      * \~french
@@ -315,8 +315,25 @@ public:
      * \~french Retourne l'annuaire de contextes
      * \~english Return ContextBook
      */
-    ContextBook* getContextBook() {
-        return contextBook;
+    std::map<eContextType,ContextBook*> getContextBooks() {
+        return contextBooks;
+    }
+
+    /**
+     * \~french Retourne l'annuaire de contextes
+     * \~english Return ContextBook
+     */
+    ContextBook* getContextBook(eContextType ct) {
+        if (contextBooks.size() != 0) {
+            std::map<eContextType,ContextBook*>::iterator it = contextBooks.find(ct);
+            if (it == contextBooks.end()) {
+                return NULL;
+            } else {
+                return it->second;
+            }
+        } else {
+            return NULL;
+        }
     }
 
     /**
@@ -434,7 +451,7 @@ public:
      * \brief Construction du serveur
      */
     Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
-                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, std::string socket, int backlog, ContextBook *contextBook,bool supportWMTS = true, bool supportWMS = true );
+                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, std::string socket, int backlog, std::map<eContextType,ContextBook*> contextBooks,bool supportWMTS = true, bool supportWMS = true );
     /**
      * \~french
      * \brief Destructeur par défaut

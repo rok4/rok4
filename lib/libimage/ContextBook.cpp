@@ -49,7 +49,7 @@
 
 #include "ContextBook.h"
 
-ContextBook::ContextBook(std::string name, std::string user, std::string conf, std::string pool="")
+ContextBook::ContextBook(std::string name, std::string user, std::string conf, std::string pool)
 {
 
     baseContext = new CephPoolContext(name,user,conf,pool);
@@ -57,14 +57,30 @@ ContextBook::ContextBook(std::string name, std::string user, std::string conf, s
 
 }
 
-Context * ContextBook::addContext(std::string pool)
+ContextBook::ContextBook(std::string auth, std::string account, std::string user, std::string passwd, std::string container)
 {
 
+    baseContext = new SwiftContext(auth,account,user,passwd,container);
+
+
+}
+
+Context * ContextBook::addContext(std::string pool)
+{
+    Context* ctx;
     std::map<std::string, Context*>::iterator it = book.find ( pool );
     if ( it == book.end() ) {
         //ce pool n'est pas encore connecté, on va créer la connexion
-        CephPoolContext * bctx = reinterpret_cast<CephPoolContext*>(baseContext);
-        CephPoolContext * ctx = new CephPoolContext(bctx->getClusterName(), bctx->getPoolUser(), bctx->getPoolConf(), pool);
+        if (baseContext->getType() == CEPHCONTEXT) {
+            CephPoolContext * bctx = reinterpret_cast<CephPoolContext*>(baseContext);
+            ctx = new CephPoolContext(bctx->getClusterName(), bctx->getPoolUser(), bctx->getPoolConf(), pool);
+        } else if (baseContext->getType() == SWIFTCONTEXT) {
+            SwiftContext * bctx = reinterpret_cast<SwiftContext*>(baseContext);
+            ctx = new SwiftContext(bctx->getAuthUrl(),bctx->getAccount(),bctx->getUserName(),bctx->getUserPwd(),pool);
+        } else {
+            return NULL;
+        }
+
         //on se connecte
         if (!ctx->connection()) {
             LOGGER_ERROR("Impossible de se connecter aux donnees.");

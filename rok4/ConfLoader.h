@@ -112,7 +112,7 @@ public:
      * \param[out] backlog listen queue depth
      * \return false if something went wrong
      */
-    static bool getTechnicalParam (std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int &nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog , std::string &cephName, std::string &cephUser, std::string &cephConf, std::string &cephPool);
+    static bool getTechnicalParam (std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int &nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog , std::string &cephName, std::string &cephUser, std::string &cephConf, std::string &cephPool, std::string &swiftAuthUrl, std::string &swiftUserName, std::string &swiftUserAccount, std::string &swiftUserPassword, std::string &swiftContainer);
     /**
      * \~french
      * \brief Charges les différents Styles présent dans le répertoire styleDir
@@ -161,7 +161,7 @@ public:
      * \param[in] servicesConf global services configuration pointer
      * \return false if something went wrong
      */
-    static bool buildLayersList (std::string layerDir, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> &stylesList, std::map<std::string,Layer*> &layers, bool reprojectionCapability, ServicesConf* servicesConf , ContextBook *contextBook);
+    static bool buildLayersList (std::string layerDir, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> &stylesList, std::map<std::string,Layer*> &layers, bool reprojectionCapability, ServicesConf* servicesConf , std::map<eContextType, ContextBook *> contextBooks);
     /**
      * \~french
      * \brief Chargement des paramètres des services à partir d'un fichier
@@ -242,7 +242,7 @@ private:
      * \param[in] tmsList known TileMatrixSets
      * \return pointer to the newly created Pyramid, NULL if something went wrong
      */
-    static Pyramid* parsePyramid (TiXmlDocument* doc, std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList , ContextBook *contextBook);
+    static Pyramid* parsePyramid (TiXmlDocument* doc, std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList , std::map<eContextType, ContextBook *> contextBooks);
     /**
      * \~french
      * \brief Création d'une Pyramide à partir d'un fichier
@@ -255,7 +255,7 @@ private:
      * \param[in] tmsList known TileMatrixSets
      * \return pointer to the newly created Pyramid, NULL if something went wrong
      */
-    static Pyramid* buildPyramid (std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList , ContextBook *contextBook);
+    static Pyramid* buildPyramid (std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList , std::map<eContextType, ContextBook *> contextBooks);
     /**
      * \~french
      * \brief Création d'un Layer à partir de sa représentation XML
@@ -276,7 +276,7 @@ private:
      * \param[in] servicesConf global service configuration pointer
      * \return pointer to the newly created Layer, NULL if something went wrong
      */
-    static Layer * parseLayer (TiXmlDocument* doc, std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> stylesList , bool reprojectionCapability, ServicesConf* servicesConf , ContextBook *contextBook);
+    static Layer * parseLayer (TiXmlDocument* doc, std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> stylesList , bool reprojectionCapability, ServicesConf* servicesConf , std::map<eContextType, ContextBook *> contextBooks);
     /**
      * \~french
      * \brief Création d'un Layer à partir d'un fichier
@@ -295,7 +295,7 @@ private:
      * \param[in] servicesConf global service configuration pointer
      * \return pointer to the newly created Layer, NULL if something went wrong
      */
-    static Layer * buildLayer (std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> stylesList , bool reprojectionCapability, ServicesConf* servicesConf , ContextBook *contextBook);
+    static Layer * buildLayer (std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> stylesList , bool reprojectionCapability, ServicesConf* servicesConf , std::map<eContextType,ContextBook*> contextBooks);
     /**
      * \~french
      * \brief Chargement des paramètres du serveur à partir de sa représentation XML
@@ -336,7 +336,7 @@ private:
      * \param[out] backlog listen queue depth
      * \return false if something went wrong
      */
-    static bool parseTechnicalParam (TiXmlDocument* doc, std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog , std::string &cephName, std::string &cephUser, std::string &cephConf, std::string &cephPool);
+    static bool parseTechnicalParam (TiXmlDocument* doc, std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog , std::string &cephName, std::string &cephUser, std::string &cephConf, std::string &cephPool, std::string &swiftAuthUrl, std::string &swiftUserName, std::string &swiftUserAccount, std::string &swiftUserPassword, std::string &swiftContainer);
     /**
      * \~french
      * \brief Chargement des paramètres des services à partir de leur représentation XML
