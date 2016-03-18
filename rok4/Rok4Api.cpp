@@ -213,7 +213,7 @@ HttpRequest* rok4InitRequest ( const char* queryString, const char* hostName, co
     if ( rok4Request->service == "wmts" ) {
         if ( rok4Request->request == "") {
             request->error_response = initResponseFromSource( new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Le parametre REQUEST n'est pas renseigné." ),"wmts" ) ));
-        } else if ( rok4Request->request == "getcapabilities" || rok4Request->request == "gettile") {
+        } else if ( rok4Request->request == "getcapabilities" || rok4Request->request == "gettile" || rok4Request->request == "getfeatureinfo") {
             //No error for the moment
         } else if ( rok4Request->request == "getversion" ) {
             request->error_response = initResponseFromSource( new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +rok4Request->request+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wmts" ) ));
@@ -248,6 +248,26 @@ HttpResponse* rok4GetWMTSCapabilities ( const char* queryString, const char* hos
     HttpResponse* response=initResponseFromSource ( /*new BufferedDataSource(*stream)*/source );
     delete request;
     delete stream;
+    delete source;
+    return response;
+}
+
+/**
+* \brief Implementation de l'operation GetFeatureInfo pour le WMTS
+* \param[in] hostName
+* \param[in] scriptName
+* \param[in] server : serveur
+* \return Reponse (allouee ici, doit etre desallouee ensuite)
+*/
+
+HttpResponse* rok4GetWMTSGetFeatureInfo ( const char* queryString, const char* hostName, const char* scriptName,const char* https ,Rok4Server* server ) {
+    std::string strQuery=queryString;
+    Request* request=new Request ( ( char* ) strQuery.c_str(), ( char* ) hostName, ( char* ) scriptName, ( char* ) https );
+
+    DataSource* source=server->WMTSGetFeatureInfo ( request );
+    HttpResponse* response=initResponseFromSource ( source );
+
+    delete request;
     delete source;
     return response;
 }

@@ -1392,6 +1392,10 @@ DataSource* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
     int X, Y;
     std::string info_format;
 
+    LOGGER_DEBUG("WMTSGetFeatureInfo");
+
+    LOGGER_DEBUG("Verification des parametres de la requete");
+
     DataSource* errorResp = request->WMTSGetFeatureInfoParam (servicesConf, tmsList, layerList, layer, tileMatrix, tileCol, tileRow, format,
                                                               style, noDataError, info_format, X, Y);
     if ( errorResp ) {
@@ -1401,6 +1405,7 @@ DataSource* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
 
     //Si le WMTS n'est pas authorisé pour ce layer, on renvoit une erreur
     if (!(layer->getWMTSAuthorized())) {
+        LOGGER_ERROR("WMTS non autorise pour cette couche");
         std::string Title = layer->getId();
         delete layer;
         layer = NULL;
@@ -1408,6 +1413,8 @@ DataSource* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
         style = NULL;
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +Title+_ ( " unknown " ),"wmts" ) );
     }
+
+    LOGGER_DEBUG("Recuperation des infos");
 
     // Les params sont ok : on passe maintenant a la recup de l'info
     Pyramid* pyr = layer->getDataPyramid();
@@ -1432,17 +1439,25 @@ DataSource* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
 
     // Il faut s'assurer que l'on peut faire un GFI
         if(layer->isGetFeatureInfoAvailable()){
+            LOGGER_DEBUG("GFI autorise pour cette couche");
+
             // Comment connaitre le cas ? => modifier les confs
             std::string getFeatureInfoType = layer->getGFIType();
             if(getFeatureInfoType.compare( "PYRAMID" ) == 0){
+
+                LOGGER_DEBUG("GFI sur pyramide");
                 // Donnee image elle-meme
                 // Recup pixel
                 return lv->second->getTilePixel(tileCol,tileRow,X,Y);
+
             }else if(getFeatureInfoType.compare( "EXTERNALWMS" ) == 0){
+
+                LOGGER_DEBUG("GFI sur WMS externe");
                 // reponse d'un WMS-V
                 // GetFeatureInfo sur la couche vecteur en (X,Y)
                 WebService* myWMSV = new WebService(layer->getGFIBaseUrl(),proxy.proxyName,proxy.noProxy,10,10,60);
                 std::stringstream vectorRequest;
+
                 vectorRequest << layer->getGFIBaseUrl()
                         << "REQUEST=GetFeatureInfo"
                         << "&SERVICE=" << layer->getGFIService()
@@ -1459,23 +1474,33 @@ DataSource* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
                         << "&I=" << X
                         << "&J=" << Y;
 
+                LOGGER_DEBUG("REQUETE = " << vectorRequest.str());
                 RawDataSource* response = myWMSV->performRequest (vectorRequest.str());
                 //return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,vectorRequest.str(),"wmts"));
                 return response;
+
             }else if(getFeatureInfoType.compare( "SQL" ) == 0){
+
+                LOGGER_DEBUG("GFI sur BDD SQL");
                 // SQL
                 // SQL en base en (X,Y)
                 // = se connecter a une bdd et executer une requete sur la position en question.
                 // Non géré pour le moment. (nouvelle lib a integrer)
                 return new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "GFI depuis un SQL non géré." ),"wmts" ) );
+
             }else{
+
+                LOGGER_DEBUG("GFI sur une donnee inconnue");
                 // ERROR (deja geree normalement)
                 return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "ERRORRRRRR !" ),"wmts" ) );
+
             }
+
         }else{
 
             LOGGER_ERROR ( _ ( "GetFeatureInfo non autorisé" ) );
             return new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "GetFeatureInfo non autorisé." ),"wmts" ) );
+
         }
 }
 
