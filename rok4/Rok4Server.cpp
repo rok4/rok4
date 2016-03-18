@@ -1345,7 +1345,7 @@ DataSource* Rok4Server::WMSGetFeatureInfo ( Request* request ) {
             }else if(getFeatureInfoType.compare( "EXTERNALWMS" ) == 0){
                 // reponse d'un WMS-V
                 // GetFeatureInfo sur la couche vecteur en (X,Y)
-                WebService* myWMSV = new WebService(layers.at(0)->getGFIBaseUrl(),proxy.proxyName, proxy.noProxy,10,10,60);
+                WebService* myWMSV = new WebService(layers.at(0)->getGFIBaseUrl(),proxy.proxyName, proxy.noProxy,1,5,60);
                 std::stringstream vectorRequest;
                 vectorRequest << layers.at(0)->getGFIBaseUrl()
                         << "REQUEST=GetFeatureInfo"
@@ -1364,6 +1364,9 @@ DataSource* Rok4Server::WMSGetFeatureInfo ( Request* request ) {
                         << "&J=" << Y;
 
                 RawDataSource* response = myWMSV->performRequest (vectorRequest.str());
+                if(response == NULL){
+                    return new SERDataSource ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Internal server error" ),"wms" ) );
+                }
                 return response;
             }else if(getFeatureInfoType.compare( "SQL" ) == 0){
                 // SQL
@@ -1441,7 +1444,7 @@ DataSource* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
             }else if(getFeatureInfoType.compare( "EXTERNALWMS" ) == 0){
                 // reponse d'un WMS-V
                 // GetFeatureInfo sur la couche vecteur en (X,Y)
-                WebService* myWMSV = new WebService(layer->getGFIBaseUrl(),proxy.proxyName,proxy.noProxy,10,10,60);
+                WebService* myWMSV = new WebService(layer->getGFIBaseUrl(),proxy.proxyName,proxy.noProxy,1,5,60);
                 std::stringstream vectorRequest;
                 vectorRequest << layer->getGFIBaseUrl()
                         << "REQUEST=GetFeatureInfo"
@@ -1460,7 +1463,9 @@ DataSource* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
                         << "&J=" << Y;
 
                 RawDataSource* response = myWMSV->performRequest (vectorRequest.str());
-                //return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,vectorRequest.str(),"wmts"));
+                if(response == NULL){
+                    return new SERDataSource ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Internal server error" ),"wms" ) );
+                }
                 return response;
             }else if(getFeatureInfoType.compare( "SQL" ) == 0){
                 // SQL
