@@ -1893,6 +1893,10 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
             pElem=hDoc.FirstChild("getFeatureInfoBaseURL").Element();
             if ( pElem && pElem->GetText()) {
                 getFeatureInfoBaseURL = pElem->GetTextStr();
+		std::string a = getFeatureInfoBaseURL.substr(getFeatureInfoBaseURL.length()-1, 1);
+		if ( a.compare("?") != 0 ) {
+			getFeatureInfoBaseURL = getFeatureInfoBaseURL + "?";
+		}
             }
             pElem=hDoc.FirstChild("layers").Element();
             if ( pElem && pElem->GetText()) {
