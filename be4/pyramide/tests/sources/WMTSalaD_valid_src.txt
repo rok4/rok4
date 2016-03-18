@@ -1,6 +1,6 @@
 [ 19_10 ]
 lv_bottom = 19
-lv_top = 10
+lv_top = 11
 
 [[ 1 ]]
 file = be4/pyramide/tests/pyramid/oldPyramid.pyr
@@ -8,17 +8,17 @@ style = style1
 transparent = false
 
 [[ 5 ]]
-wms_url             =>  "http://target.server.net/wms"
-wms_timeout         =>  60
-wms_retry           =>  10
-wms_version         =>  "1.3.0"
-wms_layers          =>  "LAYER_1,LAYER_2,LAYER_3"
-wms_styles          =>  "STYLE_FOR_LAYER_1,STYLE_FOR_LAYER_2,STYLE_FOR_LAYER_3"
-wms_format          =>  "image/png"
-wms_crs             =>  "EPSG:2154"
-wms_extent          =>  "634500,6855000,636800,6857700"
-wms_channels        =>  3
-wms_nodata          =>  "0xFFA2FA"
+wms_url             =  http://target.server.net/wms
+wms_timeout         =  60
+wms_retry           =  10
+wms_version         =  1.3.0
+wms_layers          =  LAYER_1,LAYER_2,LAYER_3
+wms_styles          =  STYLE_FOR_LAYER_1,STYLE_FOR_LAYER_2,STYLE_FOR_LAYER_3
+wms_format          =  image/png
+wms_crs             =  EPSG:2154
+wms_extent          =  634500,6855000,636800,6857700
+wms_channels        =  3
+wms_nodata          =  0xFFA2FA
 
 [ 9_6 ]
 lv_bottom = 9

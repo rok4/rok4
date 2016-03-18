@@ -70,6 +70,8 @@ use Data::Dumper;
 use COMMON::Config;
 use COMMON::CheckUtils;
 use WMTSALAD::DataSource;
+use WMTSALAD::PyrSource;
+use WMTSALAD::WmsSource;
 use BE4::TileMatrixSet;
 use BE4::TileMatrix;
 use BE4::Pixel;
@@ -374,12 +376,34 @@ sub _loadDatasources {
         '-filepath' => $file,
         '-format' => 'INI',
         });
-    my %fileContent = $cfg->getConfig();
-    my $refFileContent = \%fileContent;
 
     return FALSE if (!$self->_checkDatasources($cfg));
 
-    $self->{datasources} = $refFileContent;
+    foreach my $section ($cfg->getSections()) {
+        my @orders = sort {$a <=> $b} ($cfg->getSubSections($section));
+        for (my $lv = $cfg->getProperty({section => $section, property => 'lv_top'}); $lv <= $cfg->getProperty({section => $section, property => 'lv_bottom'}); $lv++) {
+            $self->{datasources}->{$lv} = [];
+
+            for (my $order = 0; $order < scalar (@orders); $order++) {
+                my $source = {
+                    level => $lv,
+                    order => $order,
+                };
+
+                foreach my $param ($cfg->getProperties($section, $orders[$order])) {
+                    $source->{$param} = $cfg->getProperty({section => $section, subsection => $orders[$order], property => $param});
+                }
+
+                if ($cfg->isProperty({section => $section, subsection => $orders[$order], property => 'file'})) {
+                    push $self->{datasources}->{$lv}, WMTSALAD::PyrSource->new($source);
+                } elsif ($cfg->isProperty({section => $section, subsection => $orders[$order], property => 'wms_url'})) {
+                    push $self->{datasources}->{$lv}, WMTSALAD::WmsSource->new($source);
+                }
+
+            }
+        }
+    }
+
 
     return TRUE;
 }

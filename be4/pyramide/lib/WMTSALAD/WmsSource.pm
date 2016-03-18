@@ -145,7 +145,6 @@ Constructor: new
 Using:
     (start code)
     my wmsSource = WMTSALAD::WmsSource->new( {
-        type                =>  "WMS",
         level               =>  7,
         order               =>  0,
         wms_url             =>  "http://target.server.net/wms"
@@ -165,7 +164,6 @@ Using:
 Parameters:
     params - hash reference, containing the following properties :
         {
-            type - string - the type of datasource, to more easily identify it (inherited from <WMTSALAD::DataSource>)
             level - positive integer (including 0) - the level ID for this source in the tile matrix sytem (TMS) (inherited from <WMTSALAD::DataSource>
             order - positive integer (starts at 0) - the priority order for this source at this level (inherited from <WMTSALAD::DataSource>
             wms_url - string - WMS server's URL
@@ -200,6 +198,9 @@ sub new() {
 
     # IMPORTANT : if modification, think to update natural documentation (just above)
     # see config/pyramids/pyramid.xsd to get the list of parameters, as used by Rok4.
+
+    $params->{type} = 'WMS';
+
     my $self = $class->SUPER::new($params);
         $self->{url} = undef;
         $self->{proxy} = undef;
@@ -240,7 +241,6 @@ then load them in the new WmsSource object.
 Using:
     (start code)
     _init( {
-        type                =>  "WMS",
         level               =>  7,
         order               =>  0,
         wms_url             =>  "http://target.server.net/wms"

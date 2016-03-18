@@ -110,7 +110,6 @@ Constructor: new
 Using:
     (start code)
     my $pyrSource = WMTSALAD::PyrSource->new( { 
-        type => "pyr",
         level => 7,
         order => 0,
         file => "/path/to/source_pyramid.pyr",
@@ -122,7 +121,6 @@ Using:
 Parameters:
     params - hash reference, containing the following properties :
         {
-            type - string - the type of datasource, to more easily identify it
             level - positive integer (including 0) - the level ID for this source in the tile matrix sytem (TMS)
             order - positive integer (starts at 0) - the priority order for this source at this level 
             file - string - Path to the source pyramid's descriptor file
@@ -139,6 +137,8 @@ sub new() {
     my $params = shift;
 
     my $class= ref($this) || $this;
+
+    $params->{type}='pyr';
 
     # IMPORTANT : if modification, think to update natural documentation (just above)
     my $self = $class->SUPER::new($params);
@@ -166,7 +166,6 @@ then load them in the new PyrSource object.
 Using:
     (start code)
     my loadSucces = pyrSource->_init( { 
-        type => "WMS",
         level => 7,
         order => 0,
         file => "/path/to/source_pyramid.pyr",
@@ -178,7 +177,6 @@ Using:
 Parameters:
     params - hash reference, containing the following properties :
         {
-            type - string - the type of datasource, to more easily identify it
             level - positive integer (including 0) - the level ID for this source in the tile matrix sytem (TMS)
             order - positive integer (starts at 0) - the priority order for this source at this level 
             file - string - Path to the source pyramid's descriptor file
@@ -208,9 +206,9 @@ sub _init() {
         $self->{style} = "normal";
     }
     if (exists $params->{transparent} && defined $params->{transparent} && $params->{transparent} ne '') {
-        if (lc $params->{transparent} eq "true" || $params->{transparent} == TRUE ) {
+        if ($params->{transparent} =~ m/\A(1|t|true)\z/i) {
             $self->{transparent} = "true";
-        } elsif (lc $params->{transparent} eq "false" || $params->{transparent} == FALSE ) {
+        } elsif ($params->{transparent} =~ m/\A(0|f|false)\z/i) {
             $self->{transparent} = "false";
         } else {
             WARN(sprintf "Unhandled value for 'transparent' attribute : %s. Ignoring it.", $params->{transparent});
