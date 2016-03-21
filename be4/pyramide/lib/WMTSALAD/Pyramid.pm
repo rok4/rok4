@@ -102,12 +102,7 @@ my %IMAGE_SPECS = (
             "TIFF_PKB_INT8",
             "TIFF_PKB_FLOAT32"
         ],
-        mask_format => [
-            "TIFF_ZIP_INT8"
-        ],
-        metadata_type => [
-            "INT32_DB_LZW"
-        ],
+        mask_format => "TIFF_ZIP_INT8",
         interpolation => [
             "lanczos",
             "nn",
@@ -191,7 +186,6 @@ sub new {
         dir_image => undef,
         dir_nodata => undef,
         dir_mask => undef,
-        dir_metadata => undef,
         pyr_name => undef,
         pyr_data_path => undef,
         pyr_desc_path => undef,
@@ -260,7 +254,11 @@ sub _loadProperties {
     if (( $cfg->isProperty({section => 'pyramid', property => 'compression'})) && ($refFileContent->{pyramid}->{compression} =~ m/^(jpg|png|lzw|zip|pkb)$/i)) {
         $format.= uc($refFileContent->{pyramid}->{compression})."_";
     } else {
-        WARN(sprintf "Unrecognized or undefined compression type : '%s'. Setting to '%s'", $refFileContent->{pyramid}->{compression},$DEFAULT{compression});
+        if (defined $refFileContent->{pyramid}->{compression}) {
+            WARN(sprintf "Unrecognized compression type : '%s'. Setting to '%s'", $refFileContent->{pyramid}->{compression},$DEFAULT{compression});
+        } else {
+            WARN(sprintf "Undefined compression type. Setting to '%s'",$DEFAULT{compression});
+        }
         $format .= $DEFAULT{compression}."_";
     }
     if ($refFileContent->{pyramid}->{sampleformat} eq "int") {
@@ -310,11 +308,6 @@ sub _loadProperties {
 
     # Images directory
     $self->{dir_image} = $refFileContent->{pyramid}->{dir_image};
-
-    # Metadata directory (optionnal)
-    if ($cfg->isProperty({section => 'pyramid', property => 'dir_metadata'})) {
-        $self->{dir_metadata} = $refFileContent->{pyramid}->{dir_metadata};
-    }
 
     # Nodata Directory
     $self->{dir_nodata} = $refFileContent->{pyramid}->{dir_nodata};
@@ -430,17 +423,6 @@ sub isMaskFormat {
     my $string = shift;
 
     foreach my $validString (@{$IMAGE_SPECS{mask_format}}) {
-        return TRUE if ($validString eq $string);
-    }
-
-    return FALSE;
-}
-
-sub isMetadataType {
-    my $self = shift;
-    my $string = shift;
-
-    foreach my $validString (@{$IMAGE_SPECS{metadata_type}}) {
         return TRUE if ($validString eq $string);
     }
 
@@ -664,7 +646,6 @@ sub exportForDebug {
     $pyr_dump .= "\n  dir_image => ".$self->{dir_image};
     $pyr_dump .= "\n  dir_nodata => ".$self->{dir_nodata};
     if (exists $self->{dir_mask} && defined $self->{dir_mask}) {$pyr_dump .= "\n  dir_mask => ".$self->{dir_mask};}
-    if (exists $self->{dir_metadata} && defined $self->{dir_metadata}) {$pyr_dump .= "\n  dir_metadata => ".$self->{dir_metadata};}
     $pyr_dump .= "\n  persistent => ".$self->{persistent};
     $pyr_dump .= "\n  image_width => ".$self->{image_width};
     $pyr_dump .= "\n  image_height => ".$self->{image_height};
@@ -699,15 +680,66 @@ sub writeDescFile {
     $descDoc->setURI($descPath);
 
     my $rootEl = $descDoc->createElement("Pyramid");
-
     $descDoc->setDocumentElement($rootEl);
 
+    $rootEl->appendTextChild("tileMatrixSet", $self->{tileMatrixSet}->{PATHFILENAME});
+    $rootEl->appendTextChild("channels", $self->{channels});
+    $rootEl->appendTextChild("nodataValue", $self->{noData}->getValue());
+    if (exists $self->{interpolation} && defined $self->{interpolation}) {
+        $rootEl->appendTextChild("interpolation", $self->{interpolation});
+    }
+    if (exists $self->{photometric} && defined $self->{photometric}) {
+        $rootEl->appendTextChild("photometric", $self->{photometric});
+    }
 
-    my $tmsEl = $descDoc->createAttribute("tileMatrixSet", $self->{tileMatrixSet}->{PATHFILENAME});
+    my @levels = sort {$a <=> $b} (keys %{$self->{datasources}});
+    foreach my $lvl (@levels) {
+        my $imageBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_image}, $lvl);
+
+        my $levelEl = $descDoc->createElement("level");
+        $rootEl->appendChild($levelEl);
+        $levelEl->appendTextChild("tileMatrix", $lvl);
+        if ($self->{persistent}) {
+            $levelEl->appendTextChild("baseDir", $imageBaseDir);
+        }
+        my $sourcesEl = $descDoc->createElement("sources");
+        $levelEl->appendChild($sourcesEl);
+        foreach my $source (@{$self->{datasources}->{$lvl}}) {
+            # $source->writeInXml($sourcesEl);
+        }
+        if (exists $self->{dir_mask} && defined $self->{dir_mask}) {
+            my $maskEl = $descDoc->createElement("mask");
+            $levelEl->appendChild($maskEl);
+            my $maskBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_mask}, $lvl);
+            $maskEl->appendTextChild("baseDir", $maskBaseDir);
+            $maskEl->appendTextChild("format", $IMAGE_SPECS{mask_format});
+        }
+
+        $levelEl->appendTextChild("tilesPerWidth", $self->{image_width});
+        $levelEl->appendTextChild("tilesPerHeight", $self->{image_height});
+        $levelEl->appendTextChild("pathDepth", $self->{dir_depth});
+        my $nodataEl = $descDoc->createElement("nodata");
+        $levelEl->appendChild($nodataEl);
+        my $nodataBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_nodata}, $lvl);
+        $nodataEl->appendTextChild("filePath", $nodataBaseDir);
+
+        # # TMSLimits : level extent in the TileMatrix
+        # my $TMSLimitsEl = $descDoc->createElement("TMSLimits");
+        # $levelEl->appendChild($TMSLimitsEl);
+
+        # my $TMSTopLeftX = $self->{tileMatrixSet}->getTileMatrix($lvl)->getTopLeftCornerX();
+        # my $TMSTopLeftY = $self->{tileMatrixSet}->getTileMatrix($lvl)->getTopLeftCornerY();
 
 
 
-    # $descDoc->validate;
+
+
+
+    }
+
+
+
+
 
     if ($descDoc->toFile($descPath, 1)) {        
         return TRUE;
