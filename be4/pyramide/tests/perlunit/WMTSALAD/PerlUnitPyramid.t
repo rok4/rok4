@@ -71,7 +71,10 @@ close ($prop_fh);
 
 # Pyramid creation with all parameters defined
 my $pyramid = WMTSALAD::Pyramid->new($valid_prop, $valid_src);
-if (defined $pyramid) { print(sprintf "Pyramid object content : %s", $pyramid->dumpPyrHash()); }
+if (defined $pyramid) { 
+    print(sprintf "Pyramid object content : %s", $pyramid->exportForDebug());
+    $pyramid->writeDescFile(); 
+}
 ok (defined $pyramid, "Pyramid created (exhaustive parameters)");
 undef $pyramid;
 
@@ -86,7 +89,7 @@ $prop_buffer =~ s/\n(color)/\n;$1/;
 my $written = writeTemp($prop_buffer, $temp_prop_file);
 $prop_buffer =~ s/\n;/\n/g;
 $pyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
-if (defined $pyramid) { print(sprintf "Pyramid object content : %s", $pyramid->dumpPyrHash()); }
+if (defined $pyramid) { print(sprintf "Pyramid object content : %s", $pyramid->exportForDebug()); }
 ok (defined $pyramid, "Pyramid created (only mandatory parameters)");
 undef $pyramid;
 

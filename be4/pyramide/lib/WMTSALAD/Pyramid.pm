@@ -64,6 +64,7 @@ use strict;
 use warnings;
 
 use File::Spec;
+use XML::LibXML;
 
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
@@ -653,7 +654,7 @@ sub _checkDatasources {
 #                                        Group: Output                                             #
 ####################################################################################################
 
-sub dumpPyrHash {
+sub exportForDebug {
     my $self = shift;
     
     my $pyr_dump = "\n  pyr_name => ".$self->{pyr_name};
@@ -678,6 +679,44 @@ sub dumpPyrHash {
     $pyr_dump .= "\n  datasources => ".$ds_dump;
 
     return $pyr_dump;
+}
+
+sub writeDescFile {
+    my $self = shift;
+
+    my $descPath = File::Spec->catfile($self->{pyr_desc_path},$self->{pyr_name}).".pyr";
+
+    if (! -e $self->{pyr_desc_path}) {
+        mkdir $self->{pyr_desc_path} or die (sprintf "Failed to create directory '%s'", $self->{pyr_desc_path});
+    } elsif (! -d $self->{pyr_desc_path}) {
+        ERROR(sprintf "Path '%s' exists, but is not a directory.", $self->{pyr_desc_path});
+        return FALSE;
+    }
+
+    my $descFH; # File handle to write the descriptor file
+
+    my $descDoc = XML::LibXML->createDocument( "1.0", "UTF-8");
+    $descDoc->setURI($descPath);
+
+    my $rootEl = $descDoc->createElement("Pyramid");
+
+    $descDoc->setDocumentElement($rootEl);
+
+
+    my $tmsEl = $descDoc->createAttribute("tileMatrixSet", $self->{tileMatrixSet}->{PATHFILENAME});
+
+
+
+    # $descDoc->validate;
+
+    if ($descDoc->toFile($descPath, 1)) {        
+        return TRUE;
+    } else {
+        ERROR("An error occured while writing the descriptor file '$descPath'");
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 1;
