@@ -377,12 +377,20 @@ sub _loadDatasources {
 
     foreach my $section ($cfg->getSections()) {
         my @orders = sort {$a <=> $b} ($cfg->getSubSections($section));
-        for (my $lv = $cfg->getProperty({section => $section, property => 'lv_top'}); $lv <= $cfg->getProperty({section => $section, property => 'lv_bottom'}); $lv++) {
+
+        my $bottomId =  $cfg->getProperty({section => $section, property => 'lv_bottom'});
+        my $topId =  $cfg->getProperty({section => $section, property => 'lv_top'});
+        my $bottomOrder = $self->{tileMatrixSet}->getOrderfromID($bottomId);
+        my $topOrder = $self->{tileMatrixSet}->getOrderfromID($topId);
+
+        my @levelOrderRanges = sort {$a <=> $b} ($bottomOrder, $topOrder);
+
+        for (my $lv = $levelOrderRanges[0]; $lv <= $levelOrderRanges[1]; $lv++) {
             $self->{datasources}->{$lv} = [];
 
             for (my $order = 0; $order < scalar (@orders); $order++) {
                 my $source = {
-                    level => $lv,
+                    level => $self->{tileMatrixSet}->getIDfromOrder($lv),
                     order => $order,
                 };
 
@@ -719,13 +727,13 @@ sub writeDescFile {
         $rootEl->appendTextChild("photometric", $self->{photometric});
     }
 
-    my @levels = sort {$a <=> $b} (keys %{$self->{datasources}});
+    my @levels = sort {$b <=> $a} (keys %{$self->{datasources}});
     foreach my $lvl (@levels) {
         my $imageBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_image}, $lvl);
 
         my $levelEl = $descDoc->createElement("level");
         $rootEl->appendChild($levelEl);
-        $levelEl->appendTextChild("tileMatrix", $lvl);
+        $levelEl->appendTextChild("tileMatrix", $self->{tileMatrixSet}->getIDfromOrder($lvl));
         if ($self->{persistent}) {
             $levelEl->appendTextChild("baseDir", $imageBaseDir);
         }

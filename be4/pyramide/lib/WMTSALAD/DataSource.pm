@@ -188,9 +188,6 @@ sub _init() {
     if (!exists $params->{level} || !defined $params->{level}) {
         ERROR("Data source's level is undefined.");
         return FALSE;
-    } elsif (!COMMON::CheckUtils::isPositiveInt($params->{level})) {
-        ERROR(sprintf "Data source's level isn't a positive integer: %s.", $params->{level});
-        return FALSE;
     }
     # Tests order
     if (!exists $params->{order} || !defined $params->{order}) {
