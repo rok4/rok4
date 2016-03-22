@@ -176,7 +176,6 @@ sub new {
     # see config/pyramids/pyramid.xsd to get the list of parameters, as used by Rok4.
     my $self = {
         tileMatrixSet => undef,
-        extent => undef,
 
         format => undef,
         channels => undef,
@@ -383,14 +382,38 @@ sub _loadDatasources {
         my $bottomOrder = $self->{tileMatrixSet}->getOrderfromID($bottomId);
         my $topOrder = $self->{tileMatrixSet}->getOrderfromID($topId);
 
+        my ($xMin, $yMin, $xMax, $yMax) = split(",", $cfg->getProperty({section => $section, property => 'extent'}));
+
         my @levelOrderRanges = sort {$a <=> $b} ($bottomOrder, $topOrder);
 
         for (my $lv = $levelOrderRanges[0]; $lv <= $levelOrderRanges[1]; $lv++) {
             $self->{datasources}->{$lv} = [];
 
+            my $id = $self->{tileMatrixSet}->getIDfromOrder($lv);
+            my @tileExtent = $self->{tileMatrixSet}->getTileMatrix($id)->bboxToIndices($xMin, $yMin, $xMax, $yMax, 1, 1);
+
+            my $TMWidth = $self->{tileMatrixSet}->getTileMatrix($id)->getMatrixWidth();
+            my $TMHeight = $self->{tileMatrixSet}->getTileMatrix($id)->getMatrixHeight();
+
+            if (($tileExtent[0] < 0) || ($tileExtent[0] > $TMWidth-1)) {
+                ERROR(sprintf "In section '%s', level '%s', extent's min abscissa outside of tile matrix boundaries : %s", $section, $id, $xMin);
+                return FALSE;
+            } elsif (($tileExtent[1] < 0) || ($tileExtent[1] > $TMHeight-1)) {
+                ERROR(sprintf "In section '%s', level '%s', extent's min ordinate outside of tile matrix boundaries : %s", $section, $id, $yMin);
+                return FALSE;
+            } elsif (($tileExtent[2] < 0) || ($tileExtent[2] > $TMWidth-1)) {
+                ERROR(sprintf "In section '%s', level '%s', extent's max abscissa outside of tile matrix boundaries : %s", $section, $id, $xMax);
+                return FALSE;
+            } elsif (($tileExtent[3] < 0) || ($tileExtent[3] > $TMHeight-1)) {
+                ERROR(sprintf "In section '%s', level '%s', extent's max ordinate outside of tile matrix boundaries : %s", $section, $id, $yMax);
+                return FALSE;
+            }
+
+            push $self->{datasources}->{$lv}, \@tileExtent;
+
             for (my $order = 0; $order < scalar (@orders); $order++) {
                 my $source = {
-                    level => $self->{tileMatrixSet}->getIDfromOrder($lv),
+                    level => $id,
                     order => $order,
                 };
 
@@ -472,11 +495,28 @@ sub isSampleFormat {
     return FALSE;
 }
 
+# Simple validity check for 'extent' bbox : are there 4 coordinates ? Are they numbers ? In the expected order ?
 sub isValidExtent {
     my $self = shift;
     my $string = shift;
 
-    my ($xMin, $yMin, $xMax, $yMax);
+    # @extent = (xMin, yMin, xMax, yMax), in the tile matrix set's SRS
+    my @extent = split(",", $string);
+    my $coordsNumber = scalar @extent;
+    if ( ! (scalar $coordsNumber == 4) ) {
+        ERROR(sprintf "Wrong number of coordinates for extent '%s'. There should only be 4.", $string);
+        return FALSE;
+    }
+    foreach my $coord (@extent) {
+        if (! (COMMON::CheckUtils::isNumber($coord))) {
+            ERROR("Extent coordinates must be numbers.");
+            return FALSE;
+        }
+    }
+    if ( ($extent[0] >= $extent[2]) || ($extent[1] >= $extent[3]) ) {
+        ERROR(sprintf "Wrong coordinates order for extent '%s'. Syntax : xMin,yMin,xMax,yMax");
+        return FALSE;
+    }
 
     return TRUE;
 }
@@ -636,6 +676,13 @@ sub _checkDatasources {
             $ranges{$topOrder} = $bottomOrder;
         }
 
+        if (!defined $srcCfg->getProperty({section => $section, property => 'extent'})) {
+            ERROR(sprintf "Undefined extent in section '%s'", $section);
+            return FALSE;
+        } elsif (! $self->isValidExtent($srcCfg->getProperty({section => $section, property => 'extent'}))) {
+            return FALSE;
+        }
+
         foreach my $subsection ($srcCfg->getSubSections($section)) {
             if (!COMMON::CheckUtils::isPositiveInt($subsection)) {
                 ERROR(sprintf "In section '%s', subsection name '%s' is not a positive integer. It cannot qualify to define the source order/priority.", $section, $subsection);
@@ -697,7 +744,7 @@ sub exportForDebug {
     return $pyr_dump;
 }
 
-sub writeDescFile {
+sub writeConfPyramid {
     my $self = shift;
 
     my $descPath = File::Spec->catfile($self->{pyr_desc_path},$self->{pyr_name}).".pyr";
@@ -739,7 +786,12 @@ sub writeDescFile {
         }
         my $sourcesEl = $descDoc->createElement("sources");
         $levelEl->appendChild($sourcesEl);
-        foreach my $source (@{$self->{datasources}->{$lvl}}) {
+
+        my $levelContentCount = scalar @{$self->{datasources}->{$lvl}};
+        my $extent = $self->{datasources}->{$lvl}->[0];
+        my @sources = @{$self->{datasources}->{$lvl}}[1..$levelContentCount];
+
+        foreach my $source (@sources) {
             # $source->writeInXml($sourcesEl);
         }
         if (exists $self->{dir_mask} && defined $self->{dir_mask}) {
@@ -758,17 +810,13 @@ sub writeDescFile {
         my $nodataBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_nodata}, $lvl);
         $nodataEl->appendTextChild("filePath", $nodataBaseDir);
 
-        # # TMSLimits : level extent in the TileMatrix
-        # my $TMSLimitsEl = $descDoc->createElement("TMSLimits");
-        # $levelEl->appendChild($TMSLimitsEl);
-
-        # my $TMSTopLeftX = $self->{tileMatrixSet}->getTileMatrix($lvl)->getTopLeftCornerX();
-        # my $TMSTopLeftY = $self->{tileMatrixSet}->getTileMatrix($lvl)->getTopLeftCornerY();
-
-
-
-
-
+        # TMSLimits : level extent in the TileMatrix
+        my $TMSLimitsEl = $descDoc->createElement("TMSLimits");
+        $levelEl->appendChild($TMSLimitsEl);
+        $TMSLimitsEl->appendTextChild("minTileRow",$extent->[1]);
+        $TMSLimitsEl->appendTextChild("maxTileRow",$extent->[3]);
+        $TMSLimitsEl->appendTextChild("minTileCol",$extent->[0]);
+        $TMSLimitsEl->appendTextChild("maxTileCol",$extent->[2]);
 
     }
 
