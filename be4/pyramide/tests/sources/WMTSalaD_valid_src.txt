@@ -1,6 +1,7 @@
-[ 19_10 ]
+[ level_range_19_11 ]
 lv_bottom = 19
 lv_top = 11
+extent = -770850,4929770,1279780,6783830
 
 [[ 1 ]]
 file = be4/pyramide/tests/pyramid/oldPyramid.pyr
@@ -20,9 +21,11 @@ wms_extent          =  634500,6855000,636800,6857700
 wms_channels        =  3
 wms_nodata          =  0xFFA2FA
 
-[ 9_6 ]
+[ level_range_9_6 ]
 lv_bottom = 9
 lv_top = 6
+extent = -770850,4929770,1279780,6783830
+
 
 [[ 0 ]]
 file = be4/pyramide/tests/pyramid/oldPyramid.pyr

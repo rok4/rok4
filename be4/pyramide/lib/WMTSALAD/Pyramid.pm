@@ -176,6 +176,8 @@ sub new {
     # see config/pyramids/pyramid.xsd to get the list of parameters, as used by Rok4.
     my $self = {
         tileMatrixSet => undef,
+        extent => undef,
+
         format => undef,
         channels => undef,
         noData => undef,
@@ -462,6 +464,15 @@ sub isSampleFormat {
     return FALSE;
 }
 
+sub isValidExtent {
+    my $self = shift;
+    my $string = shift;
+
+    my ($xMin, $yMin, $xMax, $yMax);
+
+    return TRUE;
+}
+
 
 sub _checkProperties {
     my $self = shift;
@@ -590,17 +601,32 @@ sub _checkDatasources {
     my $self = shift;
     my $srcCfg = shift;
 
-    my %ranges;
+    my %ranges; # hash {bottom_TM_order => top_TM_order} for each levels (=tile matrices) range. We use TM's order in the TMS, not TM's id, cause the latter has no meaning
 
     foreach my $section ($srcCfg->getSections()) {
         if ((!defined $srcCfg->getProperty({section => $section, property => 'lv_bottom'})) || (!defined $srcCfg->getProperty({section => $section, property => 'lv_top'}))) {
             ERROR(sprintf "Levels range ('lv_bottom', 'lv_top') properties missing in section '%s'", $section);
             return FALSE;
-        } elsif ((!COMMON::CheckUtils::isPositiveInt($srcCfg->getProperty({section => $section, property => 'lv_bottom'}))) || (!COMMON::CheckUtils::isPositiveInt($srcCfg->getProperty({section => $section, property => 'lv_top'})))) {
-            ERROR(sprintf "'lv_top' (%s) and 'lv_bottom' (%s) must be positive integers (section '%s').", $srcCfg->getProperty({section => $section, property => 'lv_top'}), $srcCfg->getProperty({section => $section, property => 'lv_bottom'}), $section);
+        } elsif (!defined $self->{tileMatrixSet}->getTileMatrix($srcCfg->getProperty({section => $section, property => 'lv_bottom'}))) {
+            ERROR(sprintf "No tile matrix with id '%s' exists in tile matrix set '%s'. (section '%s', field 'lv_bottom')", $srcCfg->getProperty({section => $section, property => 'lv_bottom'}), $self->{tileMatrixSet}->getName(), $section);
+            return FALSE;
+        } elsif (!defined $self->{tileMatrixSet}->getTileMatrix($srcCfg->getProperty({section => $section, property => 'lv_top'}))) {
+            ERROR(sprintf "No tile matrix with id '%s' exists in tile matrix set '%s'. (section '%s', field 'lv_top')", $srcCfg->getProperty({section => $section, property => 'lv_top'}), $self->{tileMatrixSet}->getName(), $section);
             return FALSE;
         }
-        $ranges{$srcCfg->getProperty({section => $section, property => 'lv_bottom'})} = $srcCfg->getProperty({section => $section, property => 'lv_top'});
+
+        my $bottomId =  $srcCfg->getProperty({section => $section, property => 'lv_bottom'});
+        my $topId =  $srcCfg->getProperty({section => $section, property => 'lv_top'});
+        my $bottomOrder = $self->{tileMatrixSet}->getOrderfromID($bottomId);
+        my $topOrder = $self->{tileMatrixSet}->getOrderfromID($topId);
+
+        if ($bottomOrder <= $topOrder) {
+            $ranges{$bottomOrder} = $topOrder;
+        } else {
+            WARN((sprintf "In section '%s', using TMS '%s', 'lv_bottom' ID '%s' corresponds to a higher level than 'lv_top' ID '%s'.", $section, $self->{tileMatrixSet}->getName(), $bottomId, $topId)
+                 .(sprintf "Their respective orders in the TMS are %d and %d. Those will be reversed.", $bottomOrder, $topOrder));
+            $ranges{$topOrder} = $bottomOrder;
+        }
 
         foreach my $subsection ($srcCfg->getSubSections($section)) {
             if (!COMMON::CheckUtils::isPositiveInt($subsection)) {
@@ -619,9 +645,10 @@ sub _checkDatasources {
             }
         }
     }
-    my @bottomLevels = sort (keys %ranges);
+
+    my @bottomLevels = sort {$a <=> $b} (keys %ranges);
     for (my $i = 0; $i < ((scalar @bottomLevels)-1); $i++) {
-        if ($ranges{$bottomLevels[$i]} <= $bottomLevels[$i+1]) {
+        if ($ranges{$bottomLevels[$i]} >= $bottomLevels[$i+1]) {
             ERROR("Invalid datasources configuration : overlap of level ranges.");
             return FALSE;
         }
@@ -654,7 +681,7 @@ sub exportForDebug {
     if (exists $self->{photometric} && defined $self->{photometric}) {$pyr_dump .= "\n  photometric => ".$self->{photometric};}
     $pyr_dump .= "\n  noDataValue => ".$self->{noData}->getValue();
     if (exists $self->{interpolation} && defined $self->{interpolation}) {$pyr_dump .= "\n  interpolation => ".$self->{interpolation};}
-    $pyr_dump .= "\n  tileMatrixSet->{PATHFILENAME} => ".$self->{tileMatrixSet}->{PATHFILENAME};
+    $pyr_dump .= "\n  tileMatrixSet->{PATHFILENAME} => ".$self->{tileMatrixSet}->getPathFilename();
     my $ds_dump = Dumper($self->{datasources});
     $ds_dump =~ s/^\$VAR1 = //;
     $pyr_dump .= "\n  datasources => ".$ds_dump;
@@ -682,7 +709,7 @@ sub writeDescFile {
     my $rootEl = $descDoc->createElement("Pyramid");
     $descDoc->setDocumentElement($rootEl);
 
-    $rootEl->appendTextChild("tileMatrixSet", $self->{tileMatrixSet}->{PATHFILENAME});
+    $rootEl->appendTextChild("tileMatrixSet", $self->{tileMatrixSet}->getPathFilename());
     $rootEl->appendTextChild("channels", $self->{channels});
     $rootEl->appendTextChild("nodataValue", $self->{noData}->getValue());
     if (exists $self->{interpolation} && defined $self->{interpolation}) {
