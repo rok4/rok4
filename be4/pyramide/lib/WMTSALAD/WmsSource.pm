@@ -101,6 +101,7 @@ use warnings;
 
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
+use XML::LibXML;
 use COMMON::CheckUtils;
 
 require Exporter;
@@ -516,7 +517,40 @@ sub isWmsVersion {
 Function: write
 
 =cut
-sub write() {
+sub writeInXml() {
+    my $self = shift;
+    my $xmlDoc = shift;
+    my $sourcesNode = shift;
+
+    my $webServiceEl = $xmlDoc->createElement("webService");
+    $sourcesNode->appendChild($webServiceEl);
+    $webServiceEl->appendTextChild("url", $self->{url});
+    if (defined $self->{proxy}) { $webServiceEl->appendTextChild("proxy", $self->{proxy}); }
+    if (defined $self->{timeout}) { $webServiceEl->appendTextChild("timeout", $self->{timeout}); }
+    if (defined $self->{retry}) { $webServiceEl->appendTextChild("retry", $self->{retry}); }
+    if (defined $self->{interval}) { $webServiceEl->appendTextChild("interval", $self->{interval}); }
+    if (defined $self->{user}) { $webServiceEl->appendTextChild("user", $self->{user}); }
+    if (defined $self->{password}) { $webServiceEl->appendTextChild("password", $self->{password}); }
+    if (defined $self->{referer}) { $webServiceEl->appendTextChild("referer", $self->{referer}); }
+    if (defined $self->{userAgent}) { $webServiceEl->appendTextChild("userAgent", $self->{userAgent}); }
+    my $wmsEl = $xmlDoc->createElement("wms");
+    $webServiceEl->appendChild($wmsEl);
+    $wmsEl->appendTextChild("version", $self->{version});
+    $wmsEl->appendTextChild("layers", $self->{layers});
+    $wmsEl->appendTextChild("styles", $self->{styles});
+    if (defined $self->{crs}) { $wmsEl->appendTextChild("crs", $self->{crs}); }
+    if (defined $self->{format}) { $wmsEl->appendTextChild("format", $self->{format}); }
+    $wmsEl->appendTextChild("channels", $self->{channels});
+    $wmsEl->appendTextChild("noDataValue", $self->{nodata});
+    my $boundingBoxEl = $xmlDoc->createElement("boundingBox");
+    $wmsEl->appendChild($boundingBoxEl);
+    my @boundingBox = split (",", $self->{extent});
+    $boundingBoxEl->appendTextChild("minx", $boundingBox[0]);
+    $boundingBoxEl->appendTextChild("miny", $boundingBox[1]);
+    $boundingBoxEl->appendTextChild("maxx", $boundingBox[2]);
+    $boundingBoxEl->appendTextChild("maxy", $boundingBox[3]);
+    if (defined $self->{option}) { $wmsEl->appendTextChild("option", $self->{option}); }
+
     return TRUE;
 }
 

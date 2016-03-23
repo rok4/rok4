@@ -252,7 +252,7 @@ Function: write
 Abstract function. See child classes for implemented counteparts.
 
 =cut
-sub write() {
+sub writeInXml() {
     1;
 }
 

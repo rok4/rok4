@@ -787,12 +787,12 @@ sub writeConfPyramid {
         my $sourcesEl = $descDoc->createElement("sources");
         $levelEl->appendChild($sourcesEl);
 
-        my $levelContentCount = scalar @{$self->{datasources}->{$lvl}};
+        my $maxIndex = (scalar @{$self->{datasources}->{$lvl}}) - 1;
         my $extent = $self->{datasources}->{$lvl}->[0];
-        my @sources = @{$self->{datasources}->{$lvl}}[1..$levelContentCount];
+        my @sources = @{$self->{datasources}->{$lvl}}[1..$maxIndex];
 
         foreach my $source (@sources) {
-            # $source->writeInXml($sourcesEl);
+            $source->writeInXml($descDoc, $sourcesEl);
         }
         if (exists $self->{dir_mask} && defined $self->{dir_mask}) {
             my $maskEl = $descDoc->createElement("mask");
@@ -819,10 +819,6 @@ sub writeConfPyramid {
         $TMSLimitsEl->appendTextChild("maxTileCol",$extent->[2]);
 
     }
-
-
-
-
 
     if ($descDoc->toFile($descPath, 1)) {        
         return TRUE;

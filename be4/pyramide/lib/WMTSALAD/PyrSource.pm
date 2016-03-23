@@ -78,6 +78,7 @@ use warnings;
 
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
+use XML::LibXML;
 
 use parent qw(WMTSALAD::DataSource Exporter);
 
@@ -230,7 +231,17 @@ sub _init() {
 Function: write
 
 =cut
-sub write() {
+sub writeInXml() {
+    my $self = shift;
+    my $xmlDoc = shift;
+    my $sourcesNode = shift;
+
+    my $basedPyramidEl = $xmlDoc->createElement("basedPyramid");
+    $sourcesNode->appendChild($basedPyramidEl);
+    $basedPyramidEl->appendTextChild("file", $self->{file});
+    $basedPyramidEl->appendTextChild("style", $self->{style});
+    $basedPyramidEl->appendTextChild("transparent", $self->{transparent});
+
     return TRUE;
 }
 
