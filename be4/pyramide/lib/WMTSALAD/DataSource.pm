@@ -149,7 +149,7 @@ sub new() {
 
 Function: _init
 
-<WMTSALAD::DataSource's> intializer.
+<WMTSALAD::DataSource's> initializer.
 
 Using:
     (start code)

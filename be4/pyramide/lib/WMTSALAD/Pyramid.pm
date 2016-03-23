@@ -64,6 +64,7 @@ use strict;
 use warnings;
 
 use File::Spec;
+use File::Path;
 use XML::LibXML;
 
 use Log::Log4perl qw(:easy);
@@ -178,6 +179,7 @@ sub new {
         tileMatrixSet => undef,
 
         format => undef,
+        compression => undef,
         channels => undef,
         noData => undef,
         interpolation => undef,
@@ -254,6 +256,7 @@ sub _loadProperties {
     my $format = "TIFF_";
     if (( $cfg->isProperty({section => 'pyramid', property => 'compression'})) && ($refFileContent->{pyramid}->{compression} =~ m/^(jpg|png|lzw|zip|pkb)$/i)) {
         $format.= uc($refFileContent->{pyramid}->{compression})."_";
+        $self->{compression} = lc($refFileContent->{pyramid}->{compression});
     } else {
         if (defined $refFileContent->{pyramid}->{compression}) {
             WARN(sprintf "Unrecognized compression type : '%s'. Setting to '%s'", $refFileContent->{pyramid}->{compression},$DEFAULT{compression});
@@ -261,6 +264,7 @@ sub _loadProperties {
             WARN(sprintf "Undefined compression type. Setting to '%s'",$DEFAULT{compression});
         }
         $format .= $DEFAULT{compression}."_";
+        $self->{compression} = lc $DEFAULT{compression};
     }
     if ($refFileContent->{pyramid}->{sampleformat} eq "int") {
         $sampleformat = "uint";
@@ -776,11 +780,12 @@ sub writeConfPyramid {
 
     my @levels = sort {$b <=> $a} (keys %{$self->{datasources}});
     foreach my $lvl (@levels) {
-        my $imageBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_image}, $lvl);
+        my $lvlId = $self->{tileMatrixSet}->getIDfromOrder($lvl);
+        my $imageBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_image}, $lvlId);
 
         my $levelEl = $descDoc->createElement("level");
         $rootEl->appendChild($levelEl);
-        $levelEl->appendTextChild("tileMatrix", $self->{tileMatrixSet}->getIDfromOrder($lvl));
+        $levelEl->appendTextChild("tileMatrix", $lvlId);
         if ($self->{persistent}) {
             $levelEl->appendTextChild("baseDir", $imageBaseDir);
         }
@@ -797,7 +802,7 @@ sub writeConfPyramid {
         if (exists $self->{dir_mask} && defined $self->{dir_mask}) {
             my $maskEl = $descDoc->createElement("mask");
             $levelEl->appendChild($maskEl);
-            my $maskBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_mask}, $lvl);
+            my $maskBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_mask}, $lvlId);
             $maskEl->appendTextChild("baseDir", $maskBaseDir);
             $maskEl->appendTextChild("format", $IMAGE_SPECS{mask_format});
         }
@@ -807,7 +812,7 @@ sub writeConfPyramid {
         $levelEl->appendTextChild("pathDepth", $self->{dir_depth});
         my $nodataEl = $descDoc->createElement("nodata");
         $levelEl->appendChild($nodataEl);
-        my $nodataBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_nodata}, $lvl);
+        my $nodataBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_nodata}, $lvlId);
         $nodataEl->appendTextChild("filePath", $nodataBaseDir);
 
         # TMSLimits : level extent in the TileMatrix
@@ -828,6 +833,70 @@ sub writeConfPyramid {
     }
 
     return TRUE;
+}
+
+=begin nd
+Function: writeCachePyramid
+
+Write the Cache Directory Structure (CDS).
+
+    - create an image directory for each level.
+    - create a mask directory for each level, if asked.
+    - create the nodata tile for each level, if not exists (add in the list).
+=cut
+sub writeCachePyramid {
+    my $self = shift;
+        
+    my @levels = sort {$b <=> $a} (keys %{$self->{datasources}});
+    foreach my $lvl (@levels) {
+        my $lvlId = $self->{tileMatrixSet}->getIDfromOrder($lvl);
+
+        # Create folders for data, mask and nodata if they don't exist
+
+        # Data and mask folers created only if the pyramid is defined as persistent
+        if ($self->{persistent} == TRUE) {
+            ### DATA
+            my $imageBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_image}, $lvlId);
+
+            if (! -d $imageBaseDir) {
+                eval { File::Path::make_path($imageBaseDir, {mode => 0755}); };
+                if ($@) {
+                    ERROR(sprintf "Can not create the data directory '%s' : %s !", $imageBaseDir , $@);
+                    return FALSE;
+                }
+            }
+        
+            ### MASK
+            if (exists $self->{dir_mask} && defined $self->{dir_mask}) {
+                my $maskBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_mask}, $lvlId);
+                if (! -d $maskBaseDir) {
+                    eval { File::Path::make_path($maskBaseDir, {mode => 0755}); };
+                    if ($@) {
+                        ERROR(sprintf "Can not create the mask directory '%s' : %s !", $maskBaseDir , $@);
+                        return FALSE;
+                    }
+                }
+            }
+        }
+
+        ### NODATA
+        my $nodataBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_nodata}, $lvlId);
+        my $nodataTilePath = File::Spec->catfile($nodataBaseDir, $self->{noData}->getNodataFilename);
+        if (! -e $nodataTilePath) {
+
+            my $width = $self->{tileMatrixSet}->getTileWidth($lvlId);
+            my $height = $self->{tileMatrixSet}->getTileHeight($lvlId);
+
+            if (! $self->{noData}->createNodata($nodataBaseDir,$width,$height,$self->{compression})) {
+                ERROR (sprintf "Impossible to create the nodata tile for the level %i !",$lvlId);
+                return FALSE;
+            }
+        }
+
+    }
+
+    return TRUE;
+  
 }
 
 1;

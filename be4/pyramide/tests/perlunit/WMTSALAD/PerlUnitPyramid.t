@@ -74,6 +74,7 @@ my $pyramid = WMTSALAD::Pyramid->new($valid_prop, $valid_src);
 if (defined $pyramid) { 
     print(sprintf "Pyramid object content : %s", $pyramid->exportForDebug());
     $pyramid->writeConfPyramid(); 
+    $pyramid->writeCachePyramid();
 }
 ok (defined $pyramid, "Pyramid created (exhaustive parameters)");
 undef $pyramid;
