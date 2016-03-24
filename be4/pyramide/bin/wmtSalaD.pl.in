@@ -335,5 +335,249 @@ END {}
 __END__
 
 
+=begin nd
+Section: Details
 
+Group: Command's options
+
+    --help - Display the link to the technic documentation.
+
+    --usage - Display the link to the technic documentation.
+
+    --version - Display the tool version.
+
+    --conf=path - Path to configuration file of the pyramid (aka. 'properties file'). This option is mandatory.
+
+    --dsrc=path - Path to configuration file for data sources (aka. 'datasources file'). This option is also mandatory.
+
+Group: Write a properties file
+
+A properties file can be composed of sections and parameters following :
+
+    (start code)
+    [ section ]
+    parameter = value
+    ;comments
+    (end code)
+
+Group: BE4 global configuration file
+
+Properties by section.
+
+Topic: logger
+
+    log_path - Directory path where to write log_file
+    
+    log_file - Path to print too output (in addition to STDOUT). Log file path : *log_path/log_file*
+
+    log_level - Define importance level from which we print messages. From less to more important : DEBUG - INFO - WARN - ERROR - ALWAYS (WARN by default).
+
+'log_path' and 'log_file' need each other. If one is omitted, the other is ignored. The section itself can be omitted (along with its parameters, of course).
+
+Example:
+    (start code)
+    [ logger ]
+    log_path = /var/log
+    log_file = be4_log_yyyy-mm-dd.txt
+    log_level = INFO
+    (end code)
+
+Topic: pyramid
+
+For more informations about properties, see <WMTSALAD::Pyramid>.
+
+    pyr_name - Name of the new pyramid, used to name the descriptor, and the data directory.
+    pyr_data_path - Directory path, where to write the cache. Mandatory.
+    pyr_desc_path - Directory path, where to write the descriptor. Mandatory.
+
+    color - The color is a string and contain on value per sample, in decimal format, seperated by comma. For 8 bits unsigned integer, value must be between 0 and 255. For 32 bits float, an integer is expected too, but can be negative.
+    Example : "255,255,255" (white) for images whithout alpha sample, "-99999" for a DTM.
+
+    image_width, image_height - Number a tile in the cache image, widthwise and heightwise. 16 * 16 for example. Mandatory.
+
+    compression - Possible values : raw, jpg, zip, lzw, png, pkb. PNG compression is not an official compression for tiff format (just readable by rok4). Default : raw.
+    bitspersample - Possible values : 8, 32. Have to be the same as source. Mandatory.
+    sampleformat - Possible values : uint, int (alias for 'uint'), float. Mandatory.
+
+    samplesperpixel - Possible values : 1, 2, 3, 4. Mandatory.
+
+    photometric - Possible values : gray, rgb. Have to be consistent with the samples per pixel. 1,2 -> gray and 3,4 -> rgb. Default : rgb.
+    interpolation - Possible values : nn, linear, bicubic, lanczos. Interpolation used to resampled images (in mergeNtiff). Nodata pixel are excluded by the interpolation if we use masks. Default : bicubic.
+
+    dir_depth - Image's depth from the level directory. depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif. Mandatory.
+
+    persistent -  boolean value. If false, only the descriptor and the nodata tiles will be created. Default : false.
+
+    dir_nodata - Name of the subdirectory for the nodata tiles, in *pyr_data_path/pyr_name/*. Mandatory
+    dir_image - Name of the subdirectory for the image data tiles, in *pyr_data_path/pyr_name/*. Required if 'persistent' is set to 'true', ignored if 'false'
+    dir_mask - Name of the subdirectory for the mask tiles, in *pyr_data_path/pyr_name/*. Optionnal, ignored if 'persistent'='false'
+
+    tms_name - TMS file name, with extension *.tms*. Mandatory.
+    tms_path - Directory, where to find the TMS file. Mandatory.
+
+Examples:
+    (start code)
+    [ pyramid ]
+    persistent = true
+
+    pyr_name = TEST-OD-PYR
+    pyr_data_path = be4/pyramide/tests/WMTSalaD/generated/
+    pyr_desc_path = be4/pyramide/tests/WMTSalaD/generated/
+
+    tms_name = PM.tms
+    tms_path = data/tileMatrixSet/
+
+    image_width = 16
+    image_height = 16
+
+    dir_depth = 2
+    dir_image = IMAGE
+    dir_nodata = NODATA
+    dir_mask = MASK
+
+    compression = jpg
+    bitspersample = 8
+    sampleformat = int
+    samplesperpixel = 3
+    photometric = rgb
+    interpolation = bicubic
+
+    color = 255,255,255
+    (end code)
+
+
+Group: Paths in brief
+
+    - Descriptor file : *pyr_desc_path/pyr_name.pyr*
+    - Cache directory: *pyr_data_path/pyr_name/*
+    -- Nodata drectory: *pyr_data_path/pyr_name/dir_nodata*
+    -- Images drectory: *pyr_data_path/pyr_name/dir_image*
+    -- Masks drectory: *pyr_data_path/pyr_name/dir_mask*
+    - TMS file: *tms_path/tms_name*
+
+
+Group: Write a datatasources file
+
+A datasources file is composed of sections, subsections and parameters following :
+
+    (start code)
+    [ section ]
+    parameter = value 
+    [[ subsection ]]
+    parameter = value    
+    ;comments
+    (end code)
+
+
+Group: Datasources configuration
+
+For more informations about datasources configuration loading, see <WMTSALAD::Pyramid> and <WMTSALAD::DataSource>.
+
+Topic: Level range sections
+
+Each section represents a level range. The sources for every level of this range will have the same configuration.
+Section's name must be unique and use only alphanumeric character (from the ascii set) and/or the underscore.
+The name '_props' is reserved. Aside from that, do what you want (it is however advised to use meaningful names to identify ranges)
+The structure is the following :
+    (start code)
+    [ section ]
+    lv_top = x
+    lv_bottom = y
+    [[ 0 ]]
+    ... Highest priority source description ...
+    [[ 1 ]]
+    ... Following source description ...
+    (end code)
+
+Subsections must be unique in the section, and must be positive integer. 
+They define the sources display priority : highest priorities will be placed above lower ones.
+Note that each subsection matches only one source.
+
+    - lv_top : ID, in the new pyramid's TMS, of the top level for this range
+    - lv_bottom : ID, in the new pyramid's TMS, of the bottom level for this range
+
+Next topics tell how to describe sources (meaning the content under the priority subsections)
+
+Topic: For pyramid descriptor source
+
+For more informations about properties, see <WMTSALAD::PyrSource>.
+    
+    file - Path to the source pyramid's descriptor file. Mandatory
+    style - the style to apply to the data to display it. Default : normal
+    transparent - Boolean. Wether this source's nodata will be displayed as transparent. Default : false
+
+Topic: For a WMS source
+
+For more informations about properties, see <WMTSALAD::WmsSource>.
+
+    wms_url - URL of the WMS server. Mandatory
+
+    wms_version - Version for the WMS protocol. Allowed values are '1.1.1' and '1.3.0'. Mandatory
+    
+    wms_layers - Resources to harvest. Layer names separated by commas. Mandatory
+    wms_styles - Styles associated to layers. Style names separated by comma. The order must match wms_layers's order. Mandatory 
+
+    wms_nodata - Background color. Format : 0xFFFFFF. Mandatory.
+    wms_channels - Number of samples per pixel. Mandatory
+
+    wms_extent - Coordinates for the bbox, separated by commas. Format : xMin,yMin,xMax,yMax. Mandatory
+    wms_crs - Coordinates system. Optionnal
+
+    wms_timeout - Positive integer. Waiting time before time out. Optionnal 
+    wms_retry - Positive integer. Number of tries after a first timeout. Optionnal
+    wms_interval - Positive integer. Interval between tries. Optionnal
+
+    wms_proxy - Optionnal
+    wms_user - Optionnal
+    wms_password - Optionnal
+    wms_referer - Optionnal
+    wms_userAgent - Optionnal
+
+    wms_format - Format of the harvested image. Optionnal
+
+    wms_option - List of options, as it will appear in the request. Optionnal
+
+Examples:
+    (start code)
+    [ level_range_19_11 ]
+    lv_bottom = 19
+    lv_top = 11
+    extent = -770850,4929770,1279780,6783830
+
+    [[ 0 ]]
+    file = be4/pyramide/tests/pyramid/oldPyramid.pyr
+    style = style1
+    transparent = false
+
+    [[ 1 ]]
+    wms_url             =  http://target.server.net/wms
+    wms_timeout         =  60
+    wms_retry           =  10
+    wms_version         =  1.3.0
+    wms_layers          =  LAYER_1,LAYER_2,LAYER_3
+    wms_styles          =  STYLE_FOR_LAYER_1,STYLE_FOR_LAYER_2,STYLE_FOR_LAYER_3
+    wms_format          =  image/png
+    wms_crs             =  EPSG:2154
+    wms_extent          =  634500,6855000,636800,6857700
+    wms_channels        =  3
+    wms_nodata          =  0xFFA2FA
+
+    [ level_range_9_6 ]
+    lv_bottom = 9
+    lv_top = 6
+    extent = -770850,4929770,1279780,6783830
+
+
+    [[ 0 ]]
+    file = be4/pyramide/tests/pyramid/oldPyramid.pyr
+    (end code)
+
+Group: Externals tools
+
+Scripts' execution needs following tools:
+
+    - pngcheck
+    - wget
+    
+=cut
 

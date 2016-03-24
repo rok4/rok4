@@ -175,7 +175,7 @@ Parameters:
             wms_user - string - authentification username on the WMS server (opt)
             wms_password - string - authentification password (opt)
             wms_referer - string - authentification referer (opt)
-            wms_userAgent - string - authentifcation user agent (opt)
+            wms_userAgent - string - authentification user agent (opt)
             wms_version - string - version number
             wms_layers - string - comma separated layers list
             wms_styles - string - comma separated styles list, matching the layers list
@@ -269,7 +269,7 @@ Parameters:
             wms_user - string - authentification username on the WMS server (opt)
             wms_password - string - authentification password (opt)
             wms_referer - string - authentification referer (opt)
-            wms_userAgent - string - authentifcation user agent (opt)
+            wms_userAgent - string - authentification user agent (opt)
             wms_version - string - version number
             wms_layers - string - comma separated layers list
             wms_styles - string - comma separated styles list, matching the layers list
