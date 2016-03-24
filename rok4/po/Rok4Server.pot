@@ -1118,7 +1118,7 @@ msgid "Rechargement de la configuration"
 msgstr ""
 
 #: main.cpp:264 Rok4Api.cpp:137 Rok4Api.cpp:145 Rok4Api.cpp:153
-#: Rok4Api.cpp:162 Rok4Api.cpp:601
+#: Rok4Api.cpp:162 Rok4Api.cpp:619
 msgid "Extinction du serveur ROK4"
 msgstr ""
 
@@ -1645,11 +1645,11 @@ msgstr ""
 msgid "Le parametre SERVICE n'est pas renseigné."
 msgstr ""
 
-#: Rok4Api.cpp:320 Rok4Api.cpp:396 Rok4Server.cpp:601
+#: Rok4Api.cpp:320 Rok4Api.cpp:413 Rok4Server.cpp:601
 msgid "Probleme dans les parametres de la requete getTile"
 msgstr ""
 
-#: Rok4Api.cpp:524 Rok4Server.cpp:607
+#: Rok4Api.cpp:541 Rok4Server.cpp:607
 msgid "No data found"
 msgstr ""
 
