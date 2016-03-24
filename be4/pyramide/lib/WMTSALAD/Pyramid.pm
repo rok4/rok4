@@ -312,7 +312,9 @@ sub _loadProperties {
     }
 
     # Images directory
-    $self->{dir_image} = $refFileContent->{pyramid}->{dir_image};
+    if ($self->{persistent} == TRUE) {
+        $self->{dir_image} = $refFileContent->{pyramid}->{dir_image};
+    }
 
     # Nodata Directory
     $self->{dir_nodata} = $refFileContent->{pyramid}->{dir_nodata};
@@ -577,7 +579,10 @@ sub _checkProperties {
         return FALSE;
     }
 
-    my $persistent = $propCfg->getProperty({section => 'pyramid', property => 'persistent'});
+    my $persistent = undef; 
+    if ($propCfg->isProperty({section => 'pyramid', property => 'persistent'})) {
+        $persistent = $propCfg->getProperty({section => 'pyramid', property => 'persistent'});
+    }
     if ((defined $persistent) && (! ($persistent =~ m/\A([01tf]|true|false)\z/i)))  {
         ERROR(sprintf "Invalid 'persistent' parameter value : '%s'. Must be a boolean value (format : number, case insensitive letter, case insensitive word).", $persistent);
         return FALSE;
@@ -598,10 +603,12 @@ sub _checkProperties {
         return FALSE;
     }
 
-    my $dir_image = $propCfg->getProperty({section => 'pyramid', property => 'dir_image'});
-    if (! defined $dir_image) {
-        ERROR ("The parameter 'dir_image' is required!");
-        return FALSE;
+    if ((defined $persistent) && ($persistent =~ m/\A(1|t|true)\z/i)) {
+        my $dir_image = $propCfg->getProperty({section => 'pyramid', property => 'dir_image'});
+        if (! defined $dir_image) {
+            ERROR ("The parameter 'dir_image' is required for a persistent pyramid!");
+            return FALSE;
+        }
     }
 
     my $dir_nodata = $propCfg->getProperty({section => 'pyramid', property => 'dir_nodata'});
@@ -729,9 +736,9 @@ sub exportForDebug {
     $pyr_dump .= "\n  pyr_desc_path => ".$self->{pyr_desc_path};
     $pyr_dump .= "\n  pyr_data_path => ".$self->{pyr_data_path};
     $pyr_dump .= "\n  dir_depth => ".$self->{dir_depth};
-    $pyr_dump .= "\n  dir_image => ".$self->{dir_image};
+    if ($self->{persistent}) {$pyr_dump .= "\n  dir_image => ".$self->{dir_image};}
     $pyr_dump .= "\n  dir_nodata => ".$self->{dir_nodata};
-    if (exists $self->{dir_mask} && defined $self->{dir_mask}) {$pyr_dump .= "\n  dir_mask => ".$self->{dir_mask};}
+    if (($self->{persistent}) && (exists $self->{dir_mask}) && (defined $self->{dir_mask})) {$pyr_dump .= "\n  dir_mask => ".$self->{dir_mask};}
     $pyr_dump .= "\n  persistent => ".$self->{persistent};
     $pyr_dump .= "\n  image_width => ".$self->{image_width};
     $pyr_dump .= "\n  image_height => ".$self->{image_height};
@@ -781,12 +788,12 @@ sub writeConfPyramid {
     my @levels = sort {$b <=> $a} (keys %{$self->{datasources}});
     foreach my $lvl (@levels) {
         my $lvlId = $self->{tileMatrixSet}->getIDfromOrder($lvl);
-        my $imageBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_image}, $lvlId);
 
         my $levelEl = $descDoc->createElement("level");
         $rootEl->appendChild($levelEl);
         $levelEl->appendTextChild("tileMatrix", $lvlId);
         if ($self->{persistent}) {
+            my $imageBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_image}, $lvlId);
             $levelEl->appendTextChild("baseDir", $imageBaseDir);
         }
         my $sourcesEl = $descDoc->createElement("sources");
@@ -799,7 +806,7 @@ sub writeConfPyramid {
         foreach my $source (@sources) {
             $source->writeInXml($descDoc, $sourcesEl);
         }
-        if (exists $self->{dir_mask} && defined $self->{dir_mask}) {
+        if (($self->{persistent}) && (exists $self->{dir_mask}) && (defined $self->{dir_mask})) {
             my $maskEl = $descDoc->createElement("mask");
             $levelEl->appendChild($maskEl);
             my $maskBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_mask}, $lvlId);
