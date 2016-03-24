@@ -309,7 +309,7 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
 
     Request* request=new Request ( ( char* ) strQuery.c_str(), ( char* ) hostName, ( char* ) scriptName, ( char* ) https );
     Layer* layer;
-    std::string tmId,mimeType,format,encoding;
+    std::string tmId,mimeType,format,encoding, wmtst;
     int x,y;
     Style* style =0;
     // Analyse de la requete
@@ -364,6 +364,23 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
     encoding = Rok4Format::toEncoding( level->getFormat() );
     tileRef->encoding = new char[encoding.length() +1];
     strcpy( tileRef->encoding, encoding.c_str() );
+
+    if (layer->getDataPyramid()->getOnFly()) {
+        wmtst = "ONFLY";
+        tileRef->wmtsType = new char[wmtst.length() +1];
+        strcpy( tileRef->wmtsType, wmtst.c_str() );
+    } else {
+        if (layer->getDataPyramid()->getOnDemand()) {
+            wmtst = "ONDEMAND";
+            tileRef->wmtsType = new char[wmtst.length() +1];
+            strcpy( tileRef->wmtsType, wmtst.c_str() );
+        } else {
+            wmtst = "NORMAL";
+            tileRef->wmtsType = new char[wmtst.length() +1];
+            strcpy( tileRef->wmtsType, wmtst.c_str() );
+        }
+    }
+
     delete request;
     return 0;
 }
@@ -565,6 +582,7 @@ void rok4FlushTileRef ( TileRef* tileRef ) {
     delete[] tileRef->type;
     delete[] tileRef->encoding;
     delete[] tileRef->format;
+    delete[] tileRef->wmtsType;
 }
 
 /**

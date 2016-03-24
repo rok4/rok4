@@ -87,6 +87,7 @@ typedef void Rok4Server;
         int height;
         int channels;
         char* format;
+        char* wmtsType;
     } TileRef;
 
     typedef struct {
