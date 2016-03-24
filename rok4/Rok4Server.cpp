@@ -1343,26 +1343,35 @@ DataSource* Rok4Server::WMSGetFeatureInfo ( Request* request ) {
                 }
                 return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, ( ss.str() ),"wms" ) );
             }else if(getFeatureInfoType.compare( "EXTERNALWMS" ) == 0){
+                LOGGER_DEBUG("GFI sur WMS externe");
                 // reponse d'un WMS-V
                 // GetFeatureInfo sur la couche vecteur en (X,Y)
-                WebService* myWMSV = new WebService(layers.at(0)->getGFIBaseUrl(),proxy.proxyName, proxy.noProxy,1,5,60);
+                Layer* layer = layers.at(0);
+                WebService* myWMSV = new WebService(layer->getGFIBaseUrl(),proxy.proxyName,proxy.noProxy,1,5,60);
                 std::stringstream vectorRequest;
-                vectorRequest << layers.at(0)->getGFIBaseUrl()
+
+                vectorRequest << layer->getGFIBaseUrl()
                         << "REQUEST=GetFeatureInfo"
-                        << "&SERVICE=" << layers.at(0)->getGFIService()
-                        << "&VERSION=" << layers.at(0)->getGFIVersion()
-                        << "&LAYERS=" << layers.at(0)->getGFILayers()
-                        << "&QUERY_LAYERS=" << layers.at(0)->getGFIQueryLayers()
+                        << "&SERVICE=" << layer->getGFIService()
+                        << "&VERSION=" << layer->getGFIVersion()
+                        << "&LAYERS=" << layer->getGFILayers()
+                        << "&QUERY_LAYERS=" << layer->getGFIQueryLayers()
                         << "&INFO_FORMAT=" << info_format
                         << "&FORMAT=" << format
-                        << "&FEAUTURE_COUNT=" << feature_count
+                        //<< "&FEAUTURE_COUNT=" << feature_count
                         << "&CRS=" << crsstring
-                        << "&BBOX=" << xmin << "," << ymin << "," << xmax << "," << ymax
                         << "&WIDTH=" << width
                         << "&HEIGHT=" << height
                         << "&I=" << X
                         << "&J=" << Y;
 
+                if ( ( crs.getAuthority() =="EPSG" || crs.getAuthority() =="epsg" ) && crs.isLongLat() && layer->getGFIVersion() == "1.3.0" ) {
+                    vectorRequest << "&BBOX=" << ymin << "," << xmin << "," << ymax << "," << xmax;
+                } else {
+                    vectorRequest << "&BBOX=" << xmin << "," << ymin << "," << xmax << "," << ymax;
+                }
+
+                LOGGER_DEBUG("REQUETE = " << vectorRequest.str());
                 RawDataSource* response = myWMSV->performRequest (vectorRequest.str());
                 if(response == NULL){
                     return new SERDataSource ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Internal server error" ),"wms" ) );
