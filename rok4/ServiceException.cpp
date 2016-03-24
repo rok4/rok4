@@ -85,6 +85,8 @@ std::string ServiceException::getCodeAsString ( ExceptionCode code ) {
         return "TileOutOfRange" ;
     case HTTP_NOT_FOUND:
         return "Not Found" ;
+    case GFI_PYRAMID_VALUES:
+        return "GFIPyramidValues";
     default:
         return "" ;
     }
@@ -113,6 +115,8 @@ int ServiceException::getCodeAsStatusCode ( ExceptionCode code ) {
         return 501 ;
     case HTTP_NOT_FOUND:
         return 404 ;
+    case GFI_PYRAMID_VALUES:
+        return 200 ;
     default:
         return 200 ;
     }

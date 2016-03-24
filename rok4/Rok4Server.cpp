@@ -1243,7 +1243,7 @@ DataSource* Rok4Server::WMSGetFeatureInfo ( Request* request ) {
     CRS crs;
     std::string format;
     std::string info_format;
-    int feature_count;
+    int feature_count = 1;
     std::vector<Style*> styles;
     //exception ?
 
@@ -1341,7 +1341,7 @@ DataSource* Rok4Server::WMSGetFeatureInfo ( Request* request ) {
                 for ( int i = 0 ; i < image->channels; i ++ ) {
                     ss << unsigned(buffer[index+i]) << " ";
                 }
-                return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, ( ss.str() ),"wms" ) );
+                return new SERDataSource ( new ServiceException ( "",GFI_PYRAMID_VALUES, ss.str(),"wms" ) );
             }else if(getFeatureInfoType.compare( "EXTERNALWMS" ) == 0){
                 LOGGER_DEBUG("GFI sur WMS externe");
                 // reponse d'un WMS-V
@@ -1358,7 +1358,7 @@ DataSource* Rok4Server::WMSGetFeatureInfo ( Request* request ) {
                         << "&QUERY_LAYERS=" << layer->getGFIQueryLayers()
                         << "&INFO_FORMAT=" << info_format
                         << "&FORMAT=" << format
-                        //<< "&FEAUTURE_COUNT=" << feature_count
+                        << "&FEAUTURE_COUNT=" << feature_count
                         << "&CRS=" << crsstring
                         << "&WIDTH=" << width
                         << "&HEIGHT=" << height
