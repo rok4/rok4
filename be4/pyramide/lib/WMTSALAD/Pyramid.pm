@@ -853,7 +853,7 @@ sub writeCachePyramid {
 
         # Create folders for data, mask and nodata if they don't exist
 
-        # Data and mask folers created only if the pyramid is defined as persistent
+        # Data and mask folders created only if the pyramid is defined as persistent
         if ($self->{persistent} == TRUE) {
             ### DATA
             my $imageBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_image}, $lvlId);

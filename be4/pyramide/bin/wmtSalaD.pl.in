@@ -61,8 +61,6 @@ use Pod::Usage;
 
 use Data::Dumper;
 use Math::BigFloat;
-use File::Spec::Link;
-use File::Basename;
 use File::Spec;
 use File::Path;
 use Cwd;
@@ -75,14 +73,8 @@ use FindBin qw($Bin);
 use lib "$Bin/../lib/perl5";
 
 # My module
-use BE4::TileMatrixSet;
-use BE4::TileMatrix;
-use BE4::Pyramid;
-use BE4::Base36;
-use JOINCACHE::PropertiesLoader;
-use JOINCACHE::Process;
-use JOINCACHE::SourcePyramid;
-use JOINCACHE::Node;
+use COMMON::Config;
+use WMTSALAD::Pyramid;
 
 ################################################################################
 # Constantes
@@ -92,3 +84,256 @@ use constant FALSE => 0;
 ################################################################################
 # Pas de bufferisation des sorties.
 $|=1;
+
+####################################################################################################
+#                                       Group: Variables                                           #
+####################################################################################################
+
+# Variable: version
+my $VERSION = '@VERSION_TEXT@';
+
+=begin nd
+Variable: options
+
+Contains be4 call options :
+
+    version - To obtain the command's version
+    help - To obtain the command's help
+    usage - To obtain the command's usage
+    properties - Configuration file
+    environment - Environment file
+=cut
+my %options =
+(
+    "version"    => 0,
+    "help"       => 0,
+    "usage"      => 0,
+    
+    # Configuration
+    "properties"  => undef, # file properties params (mandatory) !
+    "datasources" => undef, # file environment be4 params (optional) !
+    
+    # Only for maintenance !
+    "test" => 0,
+);
+
+
+####################################################################################################
+#                                         Group: Functions                                         #
+####################################################################################################
+
+=begin nd
+Function: main
+
+Main method.
+
+See Also:
+    <init>, <config>, <doIt>
+=cut
+sub main {
+    printf("BE4: version [%s]\n",$VERSION);
+    # message
+    my $message = undef;
+
+    # initialization
+    ALWAYS("> Initialization");
+    if (! main::init()) {
+        $message = "INITIALIZATION ERROR !";
+        printf STDERR "%s\n", $message;
+        exit 1;
+    }
+
+    # configuration
+    ALWAYS("> Configuration");
+    # logger configuration (if needed)
+    if (! main::loadLogger()) {
+        $message = "LOGGER CONFIGURATION ERROR !";
+        printf STDERR "%s\n", $message;
+        exit 1;
+    }
+
+    $message = "BEGIN";
+    printf STDOUT "%s\n", $message;
+    
+
+    # pyramid object creation    
+    my $objPyramid = WMTSALAD::Pyramid->new($options{properties}, $options{datasources});
+    if (! defined $objPyramid ) {
+        $message = "PYRAMID OBJECT CREATION ERROR !";
+        printf STDERR "%s\n", $message;
+        exit 1;        
+    }
+
+    # execution
+    ALWAYS("> Execution");
+    # Pyramid writing
+    if ((! $objPyramid->writeConfPyramid()) || (! $objPyramid->writeCachePyramid())) {
+        $message = "PYRAMID FILES CREATION ERROR !";
+        printf STDERR "%s\n", $message;
+        exit 1;                
+    }
+
+    $message = "END";
+    printf STDOUT "%s\n", $message;
+}
+
+
+=begin nd
+Function: init
+
+Checks options and initializes the default logger. Check environment file (optionnal) and properties file (mandatory).
+=cut
+sub init {
+  
+    # init Getopt
+    local $ENV{POSIXLY_CORRECT} = 1;
+    
+    Getopt::Long::config qw(
+        default
+        no_autoabbrev
+        no_getopt_compat
+        require_order
+        bundling
+        no_ignorecase
+        permute
+    );
+
+    # init Options
+    GetOptions(
+        "help|h" => sub {
+            # printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-pl.html\n" ;
+            printf ("Documentation coming soon.");
+            exit 0;
+        },
+        "version|v" => sub { exit 0; },
+        "usage" => sub {
+            # printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-pl.html\n" ;
+            printf ("Documentation coming soon.");
+            exit 0;
+        },
+        
+        "properties|conf=s" => \$options{properties},
+        "datasources|dsrc=s" => \$options{datasources},        
+    ) or do {
+        printf "Unappropriate usage\n";
+        # printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-pl.html\n";
+        printf ("Documentation coming soon.");
+        exit -1;
+    };
+  
+    # logger by default at runtime
+    Log::Log4perl->easy_init({
+        level => $WARN,
+        layout => '%5p : %m (%M) %n'
+    });
+
+    # We make path absolute
+
+    # properties : mandatory !
+    if ((! defined $options{properties}) || ($options{properties} eq "")) {
+        ERROR("Option 'properties' not defined !");
+        return FALSE;
+    }
+    my $fproperties = File::Spec->rel2abs($options{properties});
+    $options{properties} = $fproperties;
+    
+    # datasources : mandatory !
+    if ((!defined $options{datasources}) || ($options{datasources} eq "")) {
+        ERROR("Option 'datasources' not defined !");
+        return FALSE;
+    }
+    my $fdatasources = File::Spec->rel2abs($options{datasources});
+    $options{datasources} = $fdatasources;    
+    
+    return TRUE;
+}
+
+sub loadLogger {
+
+    my $propertiesCfg = COMMON::Config->new({'-filepath' => $options{properties}});
+
+    if ($propertiesCfg->isSection('logger')) {
+        my %logger = $propertiesCfg->getSection('logger');
+
+        # logger
+        
+        my @args;
+        my $out;
+        
+        my $layout= '%5p : %m (%M) %n';
+        my $level = $logger{log_level};
+        if (! main::IsEmpty($logger{log_path}) && ! main::IsEmpty($logger{log_file})) {
+            File::Path::make_path($logger{log_path}, {mode => 0755});
+            $out   = sprintf (">>%s", File::Spec->catfile($logger{log_path}, $logger{log_file}));
+        }
+        
+        $out   = "STDOUT" if (! defined $out);
+        $level = "WARN"   if (! defined $level);
+        
+        if ($level =~ /(ALL|DEBUG)/) {
+            $layout = '%5p : %m (%M) %n';
+        }
+        
+        # add the param logger by default (user settings !)
+        push @args, {
+            file   => $out,
+            level  => $level,
+            layout => $layout,
+        };
+        
+        if ($out ne "STDOUT") {
+            # add the param logger to the STDOUT
+            push @args, {
+                file   => "STDOUT",
+                level  => $level,
+                layout => $layout,
+            },
+        }
+        Log::Log4perl->easy_init(@args) or return FALSE; 
+    }
+
+    return TRUE;
+}
+
+
+
+
+=begin nd
+Function: IsEmpty
+
+Precises if an hash or a reference can be considered as empty.
+
+Parameters (list):
+    value - var - Variable to test
+=cut
+sub IsEmpty {
+
+  my $value = shift;
+  
+  return FALSE if (ref($value) eq "HASH");
+  return TRUE  if (! defined $value);
+  return TRUE  if ($value eq "");
+  return FALSE;
+}
+
+
+
+
+################################################################################
+
+BEGIN {}
+INIT {}
+
+main;
+exit 0;
+
+END {}
+
+################################################################################
+
+1;
+__END__
+
+
+
+
