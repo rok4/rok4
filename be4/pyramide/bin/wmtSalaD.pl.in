@@ -43,9 +43,22 @@ Section: WMTSALAD tool
 
 Synopsis:
 (start code)
-perl wmtSalaD.pl --conf=path
+perl wmtSalaD.pl --conf=path --dsrc=path
 (end code)
 
+Tool creating a pyramid descriptor specific to Rok4's 'WMTS on demand' service.
+It also creates the 'nodata' tiles, and may initiate the directories tree.
+
+(see be4_general.png)
+
+2 types of generation :
+    - only create the descriptor file and the nodata tiles (on demand pyramid without cache)
+    - creates the descriptor, the nodata tiles, and the directories trees for images and masks cache.
+
+2 data source type :
+    - existing Rok4 pyramids (normal ones, with its cache)
+    - WMS services
+There may be as many sources as needed, whatever their type. Different pyramid levels may have a different setting for sources.
 
 =cut
 
@@ -77,12 +90,12 @@ use COMMON::Config;
 use WMTSALAD::Pyramid;
 
 ################################################################################
-# Constantes
+# Constants
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
 ################################################################################
-# Pas de bufferisation des sorties.
+# No output buffering.
 $|=1;
 
 ####################################################################################################
@@ -128,7 +141,7 @@ Function: main
 Main method.
 
 See Also:
-    <init>, <config>, <doIt>
+    <init>, <loadLogger>
 =cut
 sub main {
     printf("BE4: version [%s]\n",$VERSION);
@@ -181,7 +194,7 @@ sub main {
 =begin nd
 Function: init
 
-Checks options and initializes the default logger. Check environment file (optionnal) and properties file (mandatory).
+Checks options and initializes the default logger.
 =cut
 sub init {
   
@@ -248,6 +261,11 @@ sub init {
     return TRUE;
 }
 
+=begin nd
+Function: loadLogger
+
+Configure the logger based on the [logger] section in the properties file.
+=cut
 sub loadLogger {
 
     my $propertiesCfg = COMMON::Config->new({'-filepath' => $options{properties}});
