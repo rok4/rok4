@@ -44,11 +44,10 @@ Using:
     (start code)
     use WMTSALAD::Pyramid;
 
-    my pyramid = WMTSALAD::Pyramid->new( {
-        
-    } );
+    my $pyramid = WMTSALAD::Pyramid->new(/path/to/properties.conf, /path/to/datasources.conf);
 
-    $pyramid->write();    
+    $pyramid->writeConfPyramid();   
+    $pyramid->writeCachePyramid();  
     (end code)
 
 Attributes:
@@ -123,12 +122,6 @@ my %IMAGE_SPECS = (
     );
 
 my %DEFAULT = (
-        noDataValue => {
-            1 => "255",
-            2 => "255,0",
-            3 => "255,255,255",
-            4 => "255,255,255,0",
-        },
         compression => "RAW",
     );
 
@@ -327,7 +320,7 @@ sub _loadProperties {
         $self->{photometric} = $refFileContent->{pyramid}->{photometric};
     }
 
-    # Nodata (default value : white, transparent if alpha channel available)
+    # Nodata (default value : white, transparent if alpha channel available), -9999 for float32
     my $pixel = BE4::Pixel->new({
         photometric => $self->{photometric},
         sampleformat => $sampleformat,
@@ -337,9 +330,6 @@ sub _loadProperties {
     my $noDataValue;
     if ($cfg->isProperty({section => 'pyramid', property => 'color'})) {
         $noDataValue = $refFileContent->{pyramid}->{color};
-    } else {
-        my $chans = $self->{channels};
-        $noDataValue = $DEFAULT{noDataValue}->{$chans};
     }
     $self->{noData} = BE4::NoData->new({ pixel => $pixel, value => $noDataValue });
     if (! defined $self->{noData}) {
