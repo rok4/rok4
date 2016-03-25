@@ -40,6 +40,9 @@ File: Pyramid.pm
 
 Class: WMTSALAD::Pyramid
 
+Stores all information about the pyramid to generate. Also write the descriptor file, the nodata tiles 
+and, if needed, initiates the directories tree for the cache.
+
 Using:
     (start code)
     use WMTSALAD::Pyramid;
@@ -51,7 +54,29 @@ Using:
     (end code)
 
 Attributes:
-    
+    tileMatrixSet - <BE4::TileMatrixSet> - Tile matrix set in which the pyramid is defined
+
+    format - string - image format. 
+    compression - string - image compression. default to 'raw'. accepted values : 'raw', 'jpg', 'png', 'lzw', 'zip', 'pkb'
+    channels - strict positive integer - number of channels / samples per pixel
+    noData - <BE4::NoData> - contains information for the nodata tiles.
+    interpolation - string - The interpolation method. values : "lanczos", "nn" (nearest neighbour), "bicubic", "linear"
+    photometric - string - image photometric. Values : "gray", "rgb", "mask". Default : rgb
+    image_width - strict positive integer - image width, in tiles
+    image_height - strict positive integer - image height, in tiles
+
+    persistent - boolean - Will the cache be initialized, or not. Default ; false
+
+    pyr_name - string - the new pyramid's name
+
+    pyr_desc_path - string - path to the new pyramid's descriptor file
+    pyr_data_path - string - path to the directory containing the caches' roots.
+    dir_nodata - string - path to the nodata tiles root (in pyr_data_path/)
+    dir_depth - non negative integer - depth of the cache tree path between the cache root and the files. (affect image cache and mask cache)
+    dir_image - string - cache root's path for images, if persistent
+    dir_mask - string - cache root's path for masks, if persistent (optionnal)
+
+    datasources - hash - ordered by level then priorities, the list of data sources used for this pyramid.
    
 =cut
 
@@ -897,3 +922,134 @@ sub writeCachePyramid {
 }
 
 1;
+
+=begin nd
+
+Group: Details
+
+Details about pyramid's working.
+
+Pyramid's Descriptor:
+
+Path template: pyr_desc_path/pyr_name.pyr
+
+The pyramid descriptor, written in pyr_desc_path, contains global informations about the cache.
+    (start code)
+    <?xml version='1.0' encoding='UTF-8'?>
+    <Pyramid>
+        <tileMatrixSet>LAMB93_10cm</tileMatrixSet>
+        <format>TIFF_RAW_INT8</format>
+        <channels>3</channels>
+        <nodataValue>FFFFFF</nodataValue>
+        <interpolation>bicubic</interpolation>
+        <photometric>rgb</photometric>
+            .
+        (levels)
+            .
+    </Pyramid>
+    (end code)
+
+And details about each level.
+    (start code)
+    <level>
+        <tileMatrix>level_5</tileMatrix>
+        <baseDir>./BDORTHO/IMAGE/level_5/</baseDir>
+        <mask>
+            <baseDir>./BDORTHO/MASK/level_5/</baseDir>
+        </mask>
+        <tilesPerWidth>16</tilesPerWidth>
+        <tilesPerHeight>16</tilesPerHeight>
+        <pathDepth>2</pathDepth>
+        <nodata>
+            <filePath>./BDORTHO/NODATA/level_5/nd.tif</filePath>
+        </nodata>
+        <TMSLimits>
+            <minTileRow>365</minTileRow>
+            <maxTileRow>368</maxTileRow>
+            <minTileCol>1026</minTileCol>
+            <maxTileCol>1035</maxTileCol>
+        </TMSLimits>
+    </level>
+    (end code)
+
+
+
+Cache Directory Structure:
+
+For a new pyramid, the directory structure is empty, only the level directory for images and directory and tile for nodata are written.
+    (start code)
+    pyr_data_path/
+            |_ pyr_name_new/
+                    |__dir_image/
+                            |_ ID_LEVEL0/
+                            |_ ID_LEVEL1/
+                            |_ ID_LEVEL2/
+                    |__dir_nodata/
+                            |_ ID_LEVEL0/
+                                    |_ nd.tif
+                            |_ ID_LEVEL1/
+                                    |_ nd.tif
+                            |_ ID_LEVEL2/
+                                    |_ nd.tif
+    (end code)
+
+For an existing pyramid, the directory structure is duplicated to the new pyramid with all file linked, thanks to the old cache list.
+The kind of linking can be chosen between symbolic link (default), hard link (does not work if the new pyramid and the old one are stored in different file systems)
+ and hard copy.
+    (start code)
+    pyr_data_path/
+            |__pyr_name_new/
+                    |__dir_image/
+                            |_ ID_LEVEL0/
+                                |_ 00/
+                                    |_ 7F/
+                                    |_ 7G/
+                                        |_ CV.tif
+                                |__ ...
+                            |__ ID_LEVEL1/
+                            |__ ID_LEVEL2/
+                            |__ ...
+                    |__dir_nodata/
+                            |_ ID_LEVEL0/
+                                    |_ nd.tif
+                            |__ ID_LEVEL1/
+                            |__ ID_LEVEL2/
+                            |__ ...
+
+    with
+        ls -l CV.tif
+        CV.tif -> /pyr_data_path_old/pyr_name_old/dir_image/ID_LEVEL0/7G/CV.tif
+    and
+        ls -l nd.tif
+        nd.tif -> /pyr_data_path_old/pyr_name_old/dir_nodata/ID_LEVEL0/nd.tif
+    (end code)
+
+So be careful when you create a new tile in an updated pyramid, you have to test if the link exists, to use image as a background.
+
+Rule Image/Directory Naming:
+
+We consider the upper left corner coordinates (X,Y). We know the ground size of a cache image (do not mistake for a tile) : it depends on the level (defined in the TMS).
+
+_For the level_
+    - Resolution (2 m)
+    - Tile pixel size: tileWidth and tileHeight (256 * 256)
+    - Origin (upper left corner): X0,Y0 (0,12000000)
+
+_For the cache_
+    - image tile size: image_width and image_height (16 * 16)
+
+GroundWidth = tileWidth * image_width * Resolution
+
+GroundHeight = tileHeight * image_height * Resolution
+
+Index X = int (X-X0)/GroundWidth
+
+Index Y = int (Y0-Y)/GroundHeight
+
+Index X base 36 (write with 3 number) = X2X1X0 (example: 0D4)
+
+Index Y base 36 (write with 3 number) = Y2Y1Y0 (example: 18Z)
+
+The image path, from the data root is : dir_image/levelID/X2Y2/X1Y1/X0Y0.tif (example: IMAGE/level_15/01/D8/4Z.tif)
+
+=cut
