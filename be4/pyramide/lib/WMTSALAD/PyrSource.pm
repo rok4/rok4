@@ -45,7 +45,6 @@ Using:
     use WMTSALAD::PyrSource;
 
     my $pyrSource = WMTSALAD::PyrSource->new( { 
-        type => "pyr",
         level => 7,
         order => 0,
         file => "/path/to/source_pyramid.pyr",
@@ -53,12 +52,11 @@ Using:
         transparent => "true",
     } );
 
-    $pyrSource->write();    
+    $pyrSource->writeInXml();    
     (end code)
 
 Attributes:
-    type - string - the type of datasource, to more easily identify it (inherited from <WMTSALAD::DataSource>)
-    level - positive integer (including 0) - the level ID for this source in the tile matrix sytem (TMS) (inherited from <WMTSALAD::DataSource>
+    level - string - the level ID for this source in the tile matrix sytem (TMS) (inherited from <WMTSALAD::DataSource>
     order - positive integer (starts at 0) - the priority order for this source at this level (inherited from <WMTSALAD::DataSource>
     file - string - Path to the source pyramid's descriptor file
     style - string - The style to apply to source images when streaming them (default : normal)
@@ -122,7 +120,7 @@ Using:
 Parameters:
     params - hash reference, containing the following properties :
         {
-            level - positive integer (including 0) - the level ID for this source in the tile matrix sytem (TMS)
+            level - string - the level ID for this source in the tile matrix sytem (TMS)
             order - positive integer (starts at 0) - the priority order for this source at this level 
             file - string - Path to the source pyramid's descriptor file
             style - string - The style to apply to source images when streaming them (default : normal)
@@ -178,7 +176,7 @@ Using:
 Parameters:
     params - hash reference, containing the following properties :
         {
-            level - positive integer (including 0) - the level ID for this source in the tile matrix sytem (TMS)
+            level - string - the level ID for this source in the tile matrix sytem (TMS)
             order - positive integer (starts at 0) - the priority order for this source at this level 
             file - string - Path to the source pyramid's descriptor file
             style - string - The style to apply to source images when streaming them (default : normal)
@@ -186,7 +184,7 @@ Parameters:
         }
 
 Returns:
-    TRUE in case of success, FALSE in case of failure.
+    1 (TRUE) in case of success, 0 (FALSE) in case of failure.
     
 =cut
 sub _init() {
@@ -196,7 +194,7 @@ sub _init() {
     return FALSE if(!$self->SUPER::_init($params));
 
     if (!exists $params->{file} || !defined $params->{file}) {
-        ERROR("A pyramid descriptor's file file must be passed to load a pryamid source.");
+        ERROR("A pyramid descriptor's file path must be passed to load a pyramid source.");
         return FALSE;
     }
 
@@ -228,7 +226,21 @@ sub _init() {
 
 =begin nd
 
-Function: write
+Function: writeInXml
+
+Writes the 'basedPyramid' element node in the pyramid descriptor file. This function needs to know where to write (see parameters).
+
+Using:
+    (start code)
+    $pyrSource->writeInXml(xmlDocument, parentNode);
+    (end code)
+
+Parameters:
+    xmlDocument - <XML::LibXML::Document> - The xml document where the 'basedPyramid' node will be written. (i.e. the interface for the descriptor file)
+    parentNode - <XML::LibXML::Element> - The parent node where the 'basedPyramid' element will be nested. (ex: the 'sources' element node)
+
+Returns:
+    1 (TRUE) if success. 0 (FALSE) if an error occured.
 
 =cut
 sub writeInXml() {

@@ -45,7 +45,6 @@ Using:
     use WMTSALAD::WmsSource;
 
     my wmsSource = WMTSALAD::WmsSource->new( {
-        type                =>  "WMS",
         level               =>  7,
         order               =>  0,
         wms_url             =>  "http://target.server.net/wms"
@@ -61,18 +60,17 @@ Using:
         wms_nodata          =>  "0xFFA2FA"
     } );
 
-    $wmsSource->write();    
+    $wmsSource->writeInXml();    
     (end code)
 
 Attributes:
-    type - string - the type of datasource, to more easily identify it (inherited from <WMTSALAD::DataSource>)
-    level - positive integer (including 0) - the level ID for this source in the tile matrix sytem (TMS) (inherited from <WMTSALAD::DataSource>
+    level - string - the level ID for this source in the tile matrix sytem (TMS) (inherited from <WMTSALAD::DataSource>
     order - positive integer (starts at 0) - the priority order for this source at this level (inherited from <WMTSALAD::DataSource>
     wms_url - string - WMS server's URL
     wms_proxy - string - proxy's URL (opt)
     wms_timeout - int - waiting time before timeout, in seconds (opt)
     wms_retry - int - max number of tries (opt)
-    wms_interval - int - time interval between tries, in seconds  (opt)
+    wms_interval - int - time interval between tries, in seconds (opt)
     wms_user - string - authentification username on the WMS server (opt)
     wms_password - string - authentification password (opt)
     wms_referer - string - authentification referer (opt)
@@ -165,7 +163,7 @@ Using:
 Parameters:
     params - hash reference, containing the following properties :
         {
-            level - positive integer (including 0) - the level ID for this source in the tile matrix sytem (TMS) (inherited from <WMTSALAD::DataSource>
+            level - string - the level ID for this source in the tile matrix sytem (TMS) (inherited from <WMTSALAD::DataSource>
             order - positive integer (starts at 0) - the priority order for this source at this level (inherited from <WMTSALAD::DataSource>
             wms_url - string - WMS server's URL
             wms_proxy - string - proxy's URL (opt)
@@ -261,6 +259,8 @@ Using:
 Parameters:
     params - hash reference, containing the following properties :
         {
+            level - string - the level ID for this source in the tile matrix sytem (TMS) (inherited from <WMTSALAD::DataSource>
+            order - positive integer (starts at 0) - the priority order for this source at this level (inherited from <WMTSALAD::DataSource>
             wms_url - string - WMS server's URL
             wms_proxy - string - proxy's URL (opt)
             wms_timeout - int - waiting time before timeout, in seconds (opt)
@@ -514,7 +514,21 @@ sub isWmsVersion {
 
 =begin nd
 
-Function: write
+Function: writeInXml
+
+Writes the 'webService' element node in the pyramid descriptor file. This function needs to know where to write (see parameters).
+
+Using:
+    (start code)
+    $wmsSource->writeInXml(xmlDocument, parentNode);
+    (end code)
+
+Parameters:
+    xmlDocument - <XML::LibXML::Document> - The xml document where the 'webService' node will be written. (i.e. the interface for the descriptor file)
+    parentNode - <XML::LibXML::Element> - The parent node where the 'webService' element will be nested. (ex: the 'sources' element node)
+
+Returns:
+    1 (TRUE) if success. 0 (FALSE) if an error occured.
 
 =cut
 sub writeInXml() {

@@ -61,7 +61,7 @@ Using:
 
 Attributes:
     type - string - the type of datasource, to more easily identify it
-    level - positive integer (including 0) - the level ID for this source in the tile matrix sytem (TMS)
+    level - string - the level ID for this source in the tile matrix sytem (TMS)
     order - positive integer (starts at 0) - the priority order for this source at this level
 
 Related:
@@ -117,11 +117,8 @@ Constructor: new
 
 Using:
     (start code)
-    my dataSource = WMTSALAD::DataSource->new();
+    my $dataSource = WMTSALAD::DataSource->new();
     (end code)
-
-Parameters:
-    none
 
 Returns:
     The newly created DataSource object, with undefined parameters.
@@ -153,7 +150,7 @@ Function: _init
 
 Using:
     (start code)
-    my initSuccess = dataSource->_init( { 
+    my $initSuccess = $dataSource->_init( { 
         type => "WMS",
         level => 7,
         order => 0,
@@ -164,12 +161,12 @@ Parameters:
     params - hash reference, containing the following properties :
         {
             type - string - the type of datasource, to more easily identify it
-            level - positive integer (including 0) - the level ID for this source in the tile matrix sytem (TMS)
+            level - string - the level ID for this source in the tile matrix sytem (TMS)
             order - positive integer (starts at 0) - the priority order for this source at this level          
         }
 
 Returns:
-    TRUE in case of success, FALSE in case of failure.
+    1 (TRUE) in case of success, 0 (FALSE) in case of failure.
     
 =cut
 sub _init() {
@@ -219,11 +216,14 @@ Tests if the given type is recognized.
 
 Using:
     (start code)
-    my answer = dataSource->isKnownType( $type );
+    my $answer = $dataSource->isKnownType( $type );
     (end code)
 
 Parameter:
     type - string - the type to test
+
+Returns:
+    1 (TRUE) if the type is recognized, 0 (FALSE) if not.
 
 =cut
 sub isKnownType {
@@ -247,7 +247,7 @@ sub isKnownType {
 
 =begin nd
 
-Function: write
+Function: writeInXml
 
 Abstract function. See child classes for implemented counteparts.
 
