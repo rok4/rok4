@@ -165,20 +165,16 @@ END {}
 
 Constructor: new
 
-<WMTSALAD::WmsSource's> constructor.
+<WMTSALAD::Pyramid's> constructor.
 
 Using:
     (start code)
-    my pyramid = WMTSALAD::Pyramid->new( {
-        
-    } )
+    my $pyramid = WMTSALAD::Pyramid->new( '/path/to/propertiesFile', '/path/to/datasourcesFile' );
     (end code)
 
 Parameters:
-    params - hash reference, containing the following properties :
-        {
-            
-        }
+    propertiesFile - string - path to the properties configuration file
+    datasourcesFile - string - path to the datasources configuration file
 
 Returns:
     The newly created Pyramid object. 'undef' in case of failure.
@@ -243,6 +239,24 @@ sub _init {
 #                              Group: Configuration files parsing                                  #
 ####################################################################################################
 
+=begin nd
+
+Function: _loadProperties
+
+Loads the pyramid properties (except data sources) from the properties configuration file to the <WMTSALAD::Pyramid> object.
+
+Using:
+    (start code)
+    $pyramid->_loadProperties( '/path/to/propertiesFile' );
+    (end code)
+
+Parameter:
+    propertiesFile - string - path to the properties configuration file
+
+Returns:
+    1 (TRUE) if everything went smoothly. 0 (FALSE) if something went wrong.
+    
+=cut
 sub _loadProperties {
     my $self = shift;
     my $file = shift;
@@ -374,7 +388,24 @@ sub _loadProperties {
     return TRUE;
 }
 
+=begin nd
 
+Function: _loadDatasources
+
+Loads the pyramid's data sources properties from the datasources configuration file to the <WMTSALAD::Pyramid> object.
+
+Using:
+    (start code)
+    $pyramid->_loadDatasources( '/path/to/datasourcesFile' );
+    (end code)
+
+Parameter:
+    datasourcesFile - string - path to the datasources configuration file
+
+Returns:
+    1 (TRUE) if everything went smoothly. 0 (FALSE) if something went wrong.
+    
+=cut
 sub _loadDatasources {
     my $self = shift;
     my $file = shift;
@@ -461,6 +492,24 @@ sub _loadDatasources {
 #                                        Group: Tests                                              #
 ####################################################################################################
 
+=begin nd
+
+Function: isImageFormat
+
+Checks if the given format is a recognized image format.
+
+Using:
+    (start code)
+    $pyramid->isImageFormat( format );
+    (end code)
+
+Parameter:
+    format - string - format to check
+
+Returns:
+    1 (TRUE) if true. 0 (FALSE) if false.
+
+=cut
 sub isImageFormat {
     my $self = shift;
     my $string = shift;
@@ -472,6 +521,24 @@ sub isImageFormat {
     return FALSE;
 }
 
+=begin nd
+
+Function: isMaskFormat
+
+Checks if the given format is a recognized mask format.
+
+Using:
+    (start code)
+    $pyramid->isMaskFormat( format );
+    (end code)
+
+Parameter:
+    format - string - format to check
+
+Returns:
+    1 (TRUE) if true. 0 (FALSE) if false.
+
+=cut
 sub isMaskFormat {
     my $self = shift;
     my $string = shift;
@@ -483,6 +550,24 @@ sub isMaskFormat {
     return FALSE;
 }
 
+=begin nd
+
+Function: isInterpolation
+
+Checks if the given interpolation value is allowed.
+
+Using:
+    (start code)
+    $pyramid->isInterpolation( interpolation );
+    (end code)
+
+Parameter:
+    interpolation - string - value to check
+
+Returns:
+    1 (TRUE) if true. 0 (FALSE) if false.
+
+=cut
 sub isInterpolation {
     my $self = shift;
     my $string = shift;
@@ -494,6 +579,24 @@ sub isInterpolation {
     return FALSE;
 }
 
+=begin nd
+
+Function: isPhotometric
+
+Checks if the given photometric value is allowed.
+
+Using:
+    (start code)
+    $pyramid->isPhotometric( photometric );
+    (end code)
+
+Parameter:
+    photometric - string - value to check
+
+Returns:
+    1 (TRUE) if true. 0 (FALSE) if false.
+
+=cut
 sub isPhotometric {
     my $self = shift;
     my $string = shift;
@@ -505,6 +608,24 @@ sub isPhotometric {
     return FALSE;
 }
 
+=begin nd
+
+Function: isSampleFormat
+
+Checks if the given sample format value is allowed.
+
+Using:
+    (start code)
+    $pyramid->isSampleFormat( format );
+    (end code)
+
+Parameter:
+    format - string - format to check
+
+Returns:
+    1 (TRUE) if true. 0 (FALSE) if false.
+
+=cut
 sub isSampleFormat {
     my $self = shift;
     my $string = shift;
@@ -516,7 +637,24 @@ sub isSampleFormat {
     return FALSE;
 }
 
-# Simple validity check for 'extent' bbox : are there 4 coordinates ? Are they numbers ? In the expected order ?
+=begin nd
+
+Function: isValidExtent
+
+Simple validity check for 'extent' bbox : are there 4 coordinates ? Are they numbers ? In the expected order ?
+
+Using:
+    (start code)
+    $pyramid->isValidExtent( extent );
+    (end code)
+
+Parameter:
+    extent - string - bbox to check
+
+Returns:
+    1 (TRUE) if true. 0 (FALSE) if false.
+
+=cut
 sub isValidExtent {
     my $self = shift;
     my $string = shift;
@@ -543,6 +681,24 @@ sub isValidExtent {
 }
 
 
+=begin nd
+
+Function: _checkProperties
+
+A series of simple checks on the content of the properties configuration file
+
+Using:
+    (start code)
+    $pyramid->_checkProperties( propertiesFile );
+    (end code)
+
+Parameter:
+    propertiesFile - string - properties configuration file to validate
+
+Returns:
+    1 (TRUE) if true. 0 (FALSE) if false.
+
+=cut
 sub _checkProperties {
     my $self = shift;
     my $propCfg = shift;
@@ -671,6 +827,24 @@ sub _checkProperties {
     return TRUE;
 }
 
+=begin nd
+
+Function: _checkDatasources
+
+A series of simple checks on the content of the datasources configuration file
+
+Using:
+    (start code)
+    $pyramid->_checkDatasources( datasourcesFile );
+    (end code)
+
+Parameter:
+    datasourcesFile - string - datasources configuration file to validate
+
+Returns:
+    1 (TRUE) if true. 0 (FALSE) if false.
+
+=cut
 sub _checkDatasources {
     my $self = shift;
     my $srcCfg = shift;
@@ -744,6 +918,21 @@ sub _checkDatasources {
 #                                        Group: Output                                             #
 ####################################################################################################
 
+=begin nd
+
+Function: exportForDebug
+
+Dumps the <WMTSALAD:Pyramid> object's properties to a formatted string.
+
+Using:
+    (start code)
+    my $dump = $pyramid->exportForDebug();
+    (end code)
+
+Returns:
+    dump - string - The formatted dump.
+
+=cut
 sub exportForDebug {
     my $self = shift;
     
@@ -770,6 +959,21 @@ sub exportForDebug {
     return $pyr_dump;
 }
 
+=begin nd
+
+Function: writeConfPyramid
+
+Writes the pyramid descriptor file.
+
+Using:
+    (start code)
+    $pyramid->writeConfPyramid();
+    (end code)
+
+Returns:
+    1 (TRUE) if success. 0 (FALSE) if an error occured.
+
+=cut
 sub writeConfPyramid {
     my $self = shift;
 
@@ -862,9 +1066,19 @@ Function: writeCachePyramid
 
 Write the Cache Directory Structure (CDS).
 
-    - create an image directory for each level.
-    - create a mask directory for each level, if asked.
-    - create the nodata tile for each level, if not exists (add in the list).
+    - creates the root cache directory for each level
+    - creates the nodata tiles for each level
+    - if the pyramid is persistent, creates an image directory for each level
+    - if the pyramid is persistent, and the mask directory is defined, creates it for each level.
+
+Using:
+    (start code)
+    $pyramid->writeCachePyramid();
+    (end code)
+
+Returns:
+    1 (TRUE) if success. 0 (FALSE) if an error occured.
+
 =cut
 sub writeCachePyramid {
     my $self = shift;
