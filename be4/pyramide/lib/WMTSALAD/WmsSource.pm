@@ -223,7 +223,7 @@ sub new() {
     bless($self, $class);
 
     if (!$self->_init($params)) {
-        ERROR("Could not load pyramid source.");
+        ERROR("Could not load WMS source.");
         return undef;
     }
 

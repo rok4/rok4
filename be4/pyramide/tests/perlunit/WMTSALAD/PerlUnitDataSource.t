@@ -97,16 +97,6 @@ undef $error;
 $error = $errDSrc->_init(    
     {
         type => "WMS",
-        level => -12,
-        order => 0,
-    }
-);
-ok (! $error, "Level is not a positive integer");
-undef $error;
-
-$error = $errDSrc->_init(    
-    {
-        type => "WMS",
         level => undef,
         order => 0,
     }

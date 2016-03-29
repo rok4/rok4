@@ -55,7 +55,6 @@ use WMTSALAD::WmsSource;
 
 # WmsSource creation with all parameters defined
 my $wmsSource = WMTSALAD::WmsSource->new( { 
-        type => "WMS",
         level => 7,
         order => 0,
         wms_url => "http://target.server.net/wms" ,
@@ -82,7 +81,6 @@ undef $wmsSource;
 
 # WmsSource creation without optionnal parameters
 $wmsSource = WMTSALAD::WmsSource->new( { 
-        type => "WMS",
         level => 7,
         order => 0,
         wms_url => "http://target.server.net/wms" ,
@@ -97,10 +95,34 @@ ok (defined $wmsSource, "WmsSource (mandatory parameters only) created");
 undef $wmsSource;
 
 ################# Bad Mandatory ################
+# WmsSource creation with a bad call to WMTSALAD::DataSource->new()
+my $errWmsSource = WMTSALAD::WmsSource->new( { 
+        level => "",
+        order => -5,
+        wms_url => "http://target.server.net/wms" ,
+        wms_proxy => "http://proxy.domaine.fr" ,
+        wms_timeout => 60 ,
+        wms_retry => 10 ,
+        wms_interval => 5 ,
+        wms_user => "user" ,
+        wms_password => "password" ,
+        wms_referer => "referer" ,
+        wms_userAgent => "UA" ,
+        wms_version => "1.3.0" ,
+        wms_layers => "LAYER_1,LAYER_2,LAYER_3" ,
+        wms_styles => "STYLE_FOR_LAYER_1,STYLE_FOR_LAYER_2,STYLE_FOR_LAYER_3" ,
+        wms_crs => "EPSG:2154" ,
+        wms_format => "image/png" ,
+        wms_channels => 3 ,
+        wms_nodata => "0xFFA2FA" ,
+        wms_extent => "634500,6855000,636800,6857700" ,
+        wms_option => "FAKE_OPTION" ,
+    } );
+ok (!defined $errWmsSource, " Bad call to parent WMTSALAD::DataSource->new()");
+undef $errWmsSource;
 
 # WmsSource creation without a 'wms_url'
-my $errWmsSource = WMTSALAD::WmsSource->new( { 
-        type => "WMS",
+$errWmsSource = WMTSALAD::WmsSource->new( { 
         level => 7,
         order => 0,
         wms_version => "1.3.0" ,
@@ -115,7 +137,6 @@ undef $errWmsSource;
 
 # WmsSource creation without a 'wms_version'
 $errWmsSource = WMTSALAD::WmsSource->new( { 
-        type => "WMS",
         level => 7,
         order => 0,
         wms_url => "http://target.server.net/wms" ,
@@ -130,7 +151,6 @@ undef $errWmsSource;
 
 # WmsSource creation with a bad 'wms_version'
 $errWmsSource = WMTSALAD::WmsSource->new( { 
-        type => "WMS",
         level => 7,
         order => 0,
         wms_url => "http://target.server.net/wms" ,
@@ -146,7 +166,6 @@ undef $errWmsSource;
 
 # WmsSource creation without a 'wms_layers'
 $errWmsSource = WMTSALAD::WmsSource->new( { 
-        type => "WMS",
         level => 7,
         order => 0,
         wms_url => "http://target.server.net/wms" ,
@@ -161,7 +180,6 @@ undef $errWmsSource;
 
 # WmsSource creation without a 'wms_styles'
 $errWmsSource = WMTSALAD::WmsSource->new( { 
-        type => "WMS",
         level => 7,
         order => 0,
         wms_url => "http://target.server.net/wms" ,
@@ -176,7 +194,6 @@ undef $errWmsSource;
 
 # WmsSource creation with an unmathcing number of 'wms_styles'
 $errWmsSource = WMTSALAD::WmsSource->new( { 
-        type => "WMS",
         level => 7,
         order => 0,
         wms_url => "http://target.server.net/wms" ,
@@ -188,7 +205,6 @@ $errWmsSource = WMTSALAD::WmsSource->new( {
         wms_extent => "634500,6855000,636800,6857700" ,
     } );
 my $errWmsSource2 = WMTSALAD::WmsSource->new( { 
-        type => "WMS",
         level => 7,
         order => 0,
         wms_url => "http://target.server.net/wms" ,
@@ -199,13 +215,12 @@ my $errWmsSource2 = WMTSALAD::WmsSource->new( {
         wms_nodata => "0xFFA2FA" ,
         wms_extent => "634500,6855000,636800,6857700" ,
     } );
-ok ((!defined $errWmsSource) && (!defined $errWmsSource2), "WmsSource->new with unmathcing number of 'wms_styles'.");
+ok ((!defined $errWmsSource) && (!defined $errWmsSource2), "WmsSource->new with unmatching number of 'wms_styles'.");
 undef $errWmsSource;
 undef $errWmsSource2;
 
 # WmsSource creation without a 'wms_channels'
 $errWmsSource = WMTSALAD::WmsSource->new( { 
-        type => "WMS",
         level => 7,
         order => 0,
         wms_url => "http://target.server.net/wms" ,
@@ -220,7 +235,6 @@ undef $errWmsSource;
 
 # WmsSource creation with a bad 'wms_channels'
 $errWmsSource = WMTSALAD::WmsSource->new( { 
-        type => "WMS",
         level => 7,
         order => 0,
         wms_url => "http://target.server.net/wms" ,
@@ -232,7 +246,6 @@ $errWmsSource = WMTSALAD::WmsSource->new( {
         wms_extent => "634500,6855000,636800,6857700" ,
     } );
 $errWmsSource2 = WMTSALAD::WmsSource->new( { 
-        type => "WMS",
         level => 7,
         order => 0,
         wms_url => "http://target.server.net/wms" ,
@@ -249,7 +262,6 @@ undef $errWmsSource2;
 
 # WmsSource creation without a 'wms_nodata'
 $errWmsSource = WMTSALAD::WmsSource->new( { 
-        type => "WMS",
         level => 7,
         order => 0,
         wms_url => "http://target.server.net/wms" ,
@@ -264,7 +276,6 @@ undef $errWmsSource;
 
 # WmsSource creation without a 'wms_extent'
 $errWmsSource = WMTSALAD::WmsSource->new( { 
-        type => "WMS",
         level => 7,
         order => 0,
         wms_url => "http://target.server.net/wms" ,
@@ -279,7 +290,6 @@ undef $errWmsSource;
 
 # WmsSource creation with wrong 'wms_extent' coordinates count.
 $errWmsSource = WMTSALAD::WmsSource->new( { 
-        type => "WMS",
         level => 7,
         order => 0,
         wms_url => "http://target.server.net/wms" ,
@@ -295,7 +305,6 @@ undef $errWmsSource;
 
 # WmsSource creation with wrong 'wms_extent' coordinates type.
 $errWmsSource = WMTSALAD::WmsSource->new( { 
-        type => "WMS",
         level => 7,
         order => 0,
         wms_url => "http://target.server.net/wms" ,
@@ -311,7 +320,6 @@ undef $errWmsSource;
 
 # WmsSource creation with wrong 'wms_extent' coordinates type.
 $errWmsSource = WMTSALAD::WmsSource->new( { 
-        type => "WMS",
         level => 7,
         order => 0,
         wms_url => "http://target.server.net/wms" ,
@@ -329,7 +337,6 @@ undef $errWmsSource;
 
 # WmsSource creation with a bad 'wms_timeout'
 $errWmsSource = WMTSALAD::WmsSource->new( { 
-        type => "WMS",
         level => 7,
         order => 0,
         wms_url => "http://target.server.net/wms" ,
@@ -346,7 +353,6 @@ undef $errWmsSource;
 
 # WmsSource creation with a bad 'wms_interval'
 $errWmsSource = WMTSALAD::WmsSource->new( { 
-        type => "WMS",
         level => 7,
         order => 0,
         wms_url => "http://target.server.net/wms" ,
@@ -363,7 +369,6 @@ undef $errWmsSource;
 
 # WmsSource creation with a bad 'wms_retry'
 $errWmsSource = WMTSALAD::WmsSource->new( { 
-        type => "WMS",
         level => 7,
         order => 0,
         wms_url => "http://target.server.net/wms" ,
@@ -380,7 +385,6 @@ undef $errWmsSource;
 
 # WmsSource creation with a bad 'wms_format'
 $errWmsSource = WMTSALAD::WmsSource->new( { 
-        type => "WMS",
         level => 7,
         order => 0,
         wms_url => "http://target.server.net/wms" ,

@@ -274,6 +274,10 @@ sub _loadProperties {
         '-filepath' => $file,
         '-format' => 'INI',
         });
+    if (!defined $cfg) {
+        ERROR(sprintf "An error occured while loading properties configuration file '%s'.", $file);
+        return FALSE;
+    }
     my %fileContent = $cfg->getConfig();
     my $refFileContent = \%fileContent;
     my $sampleformat; # Value to pass to BE4::Pixel
@@ -423,6 +427,10 @@ sub _loadDatasources {
         '-filepath' => $file,
         '-format' => 'INI',
         });
+    if (!defined $cfg) {
+        ERROR(sprintf "An error occured while loading datasources configuration file '%s'.", $file);
+        return FALSE;
+    }
 
     return FALSE if (!$self->_checkDatasources($cfg));
 
@@ -880,6 +888,11 @@ sub _checkDatasources {
             ERROR(sprintf "Undefined extent in section '%s'", $section);
             return FALSE;
         } elsif (! $self->isValidExtent($srcCfg->getProperty({section => $section, property => 'extent'}))) {
+            return FALSE;
+        }
+
+        if ((!$self->{persistent}) && ((scalar $srcCfg->getSubSections($section)) == 0)) {
+            ERROR(sprintf "Error in section '%s' : A non persistent pyramid cannot have a defined level without any data source.", $section);
             return FALSE;
         }
 
