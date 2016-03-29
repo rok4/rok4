@@ -187,7 +187,7 @@ sub _loadINI {
 
         next if ($l eq '');
 
-        if ($l =~ m/^\[(\w*)\]$/) {
+        if ($l =~ m/^\[([\w-]*)\]$/) {
             $l =~ s/[\[\]]//g;
 
             if (exists $self->{"configuration"}->{$l}) {
@@ -200,7 +200,7 @@ sub _loadINI {
             next;
         }
 
-        if ($l =~ m/^\[\[(\w*)\]\]$/) {
+        if ($l =~ m/^\[\[([\w-]*)\]\]$/) {
             $l =~ s/[\[\]]//g;
 
             if (exists $self->{"configuration"}->{$currentSection}->{$l}) {
