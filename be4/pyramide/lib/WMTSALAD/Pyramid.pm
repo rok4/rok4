@@ -1066,7 +1066,7 @@ Function: writeCachePyramid
 
 Write the Cache Directory Structure (CDS).
 
-    - creates the root cache directory for each level
+    - creates the root cache directory
     - creates the nodata tiles for each level
     - if the pyramid is persistent, creates an image directory for each level
     - if the pyramid is persistent, and the mask directory is defined, creates it for each level.
@@ -1149,12 +1149,11 @@ Path template: pyr_desc_path/pyr_name.pyr
 
 The pyramid descriptor, written in pyr_desc_path, contains global informations about the cache.
     (start code)
-    <?xml version='1.0' encoding='UTF-8'?>
+    <?xml version="1.0" encoding="UTF-8"?>
     <Pyramid>
-        <tileMatrixSet>LAMB93_10cm</tileMatrixSet>
-        <format>TIFF_RAW_INT8</format>
+        <tileMatrixSet>data/tileMatrixSet/PM.tms</tileMatrixSet>
         <channels>3</channels>
-        <nodataValue>FFFFFF</nodataValue>
+        <nodataValue>255,255,255</nodataValue>
         <interpolation>bicubic</interpolation>
         <photometric>rgb</photometric>
             .
@@ -1166,22 +1165,50 @@ The pyramid descriptor, written in pyr_desc_path, contains global informations a
 And details about each level.
     (start code)
     <level>
-        <tileMatrix>level_5</tileMatrix>
-        <baseDir>./BDORTHO/IMAGE/level_5/</baseDir>
+        <tileMatrix>15</tileMatrix>
+        <baseDir>be4/pyramide/tests/WMTSalaD/generated/TEST-OD-PYR/IMAGE/15</baseDir>
+        <sources>
+            <basedPyramid>
+                <file>be4/pyramide/tests/pyramid/oldPyramid.pyr</file>
+                <style>style1</style>
+                <transparent>false</transparent>
+            </basedPyramid>
+            <webService>
+                <url>target.server.net/wms</url>
+                <timeout>60</timeout>
+                <retry>10</retry>
+                <wms>
+                    <version>1.3.0</version>
+                    <layers>LAYER_1,LAYER_2,LAYER_3</layers>
+                    <styles>STYLE_FOR_LAYER_1,STYLE_FOR_LAYER_2,STYLE_FOR_LAYER_3</styles>
+                    <crs>EPSG:2154</crs>
+                    <format>image/png</format>
+                    <channels>3</channels>
+                    <noDataValue>0xFFA2FA</noDataValue>
+                    <boundingBox>
+                        <minx>634500</minx>
+                        <miny>6855000</miny>
+                        <maxx>636800</maxx>
+                        <maxy>6857700</maxy>
+                    </boundingBox>
+                </wms>
+            </webService>
+        </sources>
         <mask>
-            <baseDir>./BDORTHO/MASK/level_5/</baseDir>
+            <baseDir>be4/pyramide/tests/WMTSalaD/generated/TEST-OD-PYR/MASK/15</baseDir>
+            <format>TIFF_ZIP_INT8</format>
         </mask>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
         <nodata>
-            <filePath>./BDORTHO/NODATA/level_5/nd.tif</filePath>
+            <filePath>be4/pyramide/tests/WMTSalaD/generated/TEST-OD-PYR/NODATA/15</filePath>
         </nodata>
         <TMSLimits>
-            <minTileRow>365</minTileRow>
-            <maxTileRow>368</maxTileRow>
-            <minTileCol>1026</minTileCol>
-            <maxTileCol>1035</maxTileCol>
+            <minTileRow>10837</minTileRow>
+            <maxTileRow>12353</maxTileRow>
+            <minTileCol>15753</minTileCol>
+            <maxTileCol>17430</maxTileCol>
         </TMSLimits>
     </level>
     (end code)
@@ -1190,14 +1217,10 @@ And details about each level.
 
 Cache Directory Structure:
 
-For a new pyramid, the directory structure is empty, only the level directory for images and directory and tile for nodata are written.
+For a temporary pyramid, the directory structure is empty, and only the directory and tile for nodata are written.
     (start code)
     pyr_data_path/
-            |_ pyr_name_new/
-                    |__dir_image/
-                            |_ ID_LEVEL0/
-                            |_ ID_LEVEL1/
-                            |_ ID_LEVEL2/
+            |_ pyr_name/
                     |__dir_nodata/
                             |_ ID_LEVEL0/
                                     |_ nd.tif
@@ -1207,19 +1230,17 @@ For a new pyramid, the directory structure is empty, only the level directory fo
                                     |_ nd.tif
     (end code)
 
-For an existing pyramid, the directory structure is duplicated to the new pyramid with all file linked, thanks to the old cache list.
-The kind of linking can be chosen between symbolic link (default), hard link (does not work if the new pyramid and the old one are stored in different file systems)
- and hard copy.
+For a persistent pyramid, the directory structure is still empty, but this time even the directory for images is created, as is, if requested, the directory for masks.
     (start code)
     pyr_data_path/
-            |__pyr_name_new/
+            |__pyr_name/
                     |__dir_image/
                             |_ ID_LEVEL0/
-                                |_ 00/
-                                    |_ 7F/
-                                    |_ 7G/
-                                        |_ CV.tif
-                                |__ ...
+                            |__ ID_LEVEL1/
+                            |__ ID_LEVEL2/
+                            |__ ...
+                    |__dir_mask/
+                            |_ ID_LEVEL0/
                             |__ ID_LEVEL1/
                             |__ ID_LEVEL2/
                             |__ ...
@@ -1229,16 +1250,7 @@ The kind of linking can be chosen between symbolic link (default), hard link (do
                             |__ ID_LEVEL1/
                             |__ ID_LEVEL2/
                             |__ ...
-
-    with
-        ls -l CV.tif
-        CV.tif -> /pyr_data_path_old/pyr_name_old/dir_image/ID_LEVEL0/7G/CV.tif
-    and
-        ls -l nd.tif
-        nd.tif -> /pyr_data_path_old/pyr_name_old/dir_nodata/ID_LEVEL0/nd.tif
     (end code)
-
-So be careful when you create a new tile in an updated pyramid, you have to test if the link exists, to use image as a background.
 
 Rule Image/Directory Naming:
 
