@@ -938,6 +938,18 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                                     //Impossible de supprimer le fichier erreur
                                     LOGGER_ERROR("Impossible de supprimer le fichier de log");
                                 }
+                            } else {
+                                //la generation n'a pas fonctionne
+                                //on essaye de supprimer le fichier de dalle potentiellement existant
+                                //mais contenant des erreurs
+
+                                if (stat (Spath.c_str(), &bufferS) == 0) {
+                                    //le fichier existe mais il faut le supprimer
+                                    int file = remove(Spath.c_str());
+                                    if (file != 0) {
+                                        LOGGER_ERROR("Impossible de supprimer la dalle contenant des erreurs");
+                                    }
+                                }
                             }
 
                             //on nettoie
