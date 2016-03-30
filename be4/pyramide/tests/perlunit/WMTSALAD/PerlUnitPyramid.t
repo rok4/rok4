@@ -114,26 +114,6 @@ undef $pyramid;
 undef $testWriteConf;
 undef $testWriteCache;
 
-# Persistent pyramid creation without source
-my $src_empty_buffer = "[ level_range_19_11 ]\n";
-$src_empty_buffer .= "lv_bottom = 11\n";
-$src_empty_buffer .= "lv_top = 11\n";
-$src_empty_buffer .= "extent = -770850,4929770,1279780,6783830\n";
-$written = writeTemp($src_empty_buffer, $temp_src_file);
-$pyramid = WMTSALAD::Pyramid->new($valid_prop, $temp_src_file);
-if (defined $pyramid) { 
-    #print(sprintf "Pyramid object content : %s", $pyramid->exportForDebug());
-    $testWriteConf = $pyramid->writeConfPyramid(); 
-    $testWriteCache = $pyramid->writeCachePyramid();
-    # print (sprintf "find 'be4/pyramide/tests/WMTSalaD/generated/' -ls\n");
-    # print `find 'be4/pyramide/tests/WMTSalaD/generated/' -ls`;
-}
-ok ((defined $pyramid) && $testWriteConf && $testWriteCache, "Persistent pyramid creation without source");
-if (-e 'be4/pyramide/tests/WMTSalaD/generated') { File::Path::remove_tree('be4/pyramide/tests/WMTSalaD/generated');}
-undef $pyramid;
-undef $testWriteConf;
-undef $testWriteCache;
-
 ####################### Bad #######################
 
 ## Pyramid properties errors
@@ -358,13 +338,14 @@ $errPyramid = WMTSALAD::Pyramid->new($valid_prop, $temp_src_file);
 ok(! defined $errPyramid, "Datasources file error : COMMON::Config error");
 undef $errPyramid;
 
-# Datasources file error : Non persistent pyramid creation without source
-$prop_buffer =~ s/persistent = true/persistent = false/;
-$written = writeTemp($prop_buffer, $temp_prop_file);
-$prop_buffer =~ s/persistent = false/persistent = true/;
+# Datasources file error : pyramid creation without source
+my $src_empty_buffer = "[ level_range_19_11 ]\n";
+$src_empty_buffer .= "lv_bottom = 11\n";
+$src_empty_buffer .= "lv_top = 11\n";
+$src_empty_buffer .= "extent = -770850,4929770,1279780,6783830\n";
 $written = writeTemp($src_empty_buffer, $temp_src_file);
-$errPyramid = WMTSALAD::Pyramid->new($temp_prop_file, $temp_src_file);
-ok(! defined $errPyramid, "Datasources file error : Non persistent pyramid creation without source");
+$errPyramid = WMTSALAD::Pyramid->new($valid_prop, $temp_src_file);
+ok(! defined $errPyramid, "Datasources file error : Pyramid creation without source");
 undef $errPyramid;
 
 # Datasources file error : PyrSource => descriptor does not exist

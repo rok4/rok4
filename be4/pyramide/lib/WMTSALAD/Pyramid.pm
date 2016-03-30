@@ -891,8 +891,8 @@ sub _checkDatasources {
             return FALSE;
         }
 
-        if ((!$self->{persistent}) && ((scalar $srcCfg->getSubSections($section)) == 0)) {
-            ERROR(sprintf "Error in section '%s' : A non persistent pyramid cannot have a defined level without any data source.", $section);
+        if ((scalar $srcCfg->getSubSections($section)) == 0) {
+            ERROR(sprintf "Error in section '%s' : An on-demand pyramid cannot have a defined level without any data source.", $section);
             return FALSE;
         }
 
