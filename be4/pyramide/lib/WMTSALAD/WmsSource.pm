@@ -556,7 +556,7 @@ sub writeInXml() {
     if (defined $self->{format}) { $wmsEl->appendTextChild("format", $self->{format}); }
     $wmsEl->appendTextChild("channels", $self->{channels});
     $wmsEl->appendTextChild("noDataValue", $self->{nodata});
-    my $boundingBoxEl = $xmlDoc->createElement("boundingBox");
+    my $boundingBoxEl = $xmlDoc->createElement("bbox");
     $wmsEl->appendChild($boundingBoxEl);
     my @boundingBox = split (",", $self->{extent});
     $boundingBoxEl->setAttribute("minx", $boundingBox[0]);
