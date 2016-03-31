@@ -59,7 +59,7 @@ Attributes:
     sources - hash array - Source images from which this node is generated. One image source :
 |               img - string - Absolute path to the image
 |               msk - string - Absolute path to the associated mask (optionnal)
-|               sourcePyramid - <JOINCACHE::SourcePyramid> - Pyramid which image belong to
+|               sourcePyramid - <COMMON::SourcePyramid> - Pyramid which image belong to
 =cut
 
 ################################################################################
@@ -306,7 +306,7 @@ Returns
     A source image, as an hash :
 |               img - string - Absolute path to the image
 |               msk - string - Absolute path to the associated mask (optionnal)
-|               sourcePyramid - <JOINCACHE::SourcePyramid> - Pyramid which image belong to
+|               sourcePyramid - <COMMON::SourcePyramid> - Pyramid which image belong to
 =cut
 sub getSource {
     my $self = shift;
@@ -327,7 +327,7 @@ Parameters (list):
     image - hash reference - Source images to add
 |               img - string - Absolute path to the image
 |               msk - string - Absolute path to the associated mask (optionnal)
-|               sourcePyramid - <JOINCACHE::SourcePyramid> - Pyramid which image belong to
+|               sourcePyramid - <COMMON::SourcePyramid> - Pyramid which image belong to
 =cut
 sub addSource {
     my $self = shift;

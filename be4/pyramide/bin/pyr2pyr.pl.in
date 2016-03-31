@@ -1,0 +1,455 @@
+#!/usr/bin/env perl
+# Copyright © (2011) Institut national de l'information
+#                    géographique et forestière
+#
+# Géoportail SAV <geop_services@geoportail.fr>
+#
+# This software is a computer program whose purpose is to publish geographic
+# data using OGC WMS and WMTS protocol.
+#
+# This software is governed by the CeCILL-C license under French law and
+# abiding by the rules of distribution of free software.  You can  use,
+# modify and/ or redistribute the software under the terms of the CeCILL-C
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "http://www.cecill.info".
+#
+# As a counterpart to the access to the source code and  rights to copy,
+# modify and redistribute granted by the license, users are provided only
+# with a limited warranty  and the software's author,  the holder of the
+# economic rights,  and the successive licensors  have only  limited
+# liability.
+#
+# In this respect, the user's attention is drawn to the risks associated
+# with loading,  using,  modifying and/or developing or reproducing the
+# software by the user in light of its specific status of free software,
+# that may mean  that it is complicated to manipulate,  and  that  also
+# therefore means  that it is reserved for developers  and  experienced
+# professionals having in-depth computer knowledge. Users are therefore
+# encouraged to load and test the software's suitability as regards their
+# requirements in conditions enabling the security of their systems and/or
+# data to be ensured and,  more generally, to use and operate it in the
+# same conditions as regards security.
+#
+# The fact that you are presently reading this means that you have had
+#
+# knowledge of the CeCILL-C license and that you accept its terms.
+
+################################################################################
+
+=begin nd
+File: pyr2pyr.pl
+
+Section: pyr2pyr tool
+
+Synopsis:
+    (start code)
+    (end code)
+
+=cut
+
+################################################################################
+
+use warnings;
+use strict;
+
+use POSIX qw(locale_h);
+
+# Module
+use Log::Log4perl qw(:easy);
+use Getopt::Long;
+use File::Basename;
+use Cwd;
+use Data::Dumper;
+use COMMON::Base36;
+use XML::LibXML;
+use PYR2PYR::PropertiesLoader;
+
+# My search module
+use FindBin qw($Bin);
+use lib "$Bin/../lib/perl5";
+
+
+################################################################################
+# Constantes
+use constant TRUE  => 1;
+use constant FALSE => 0;
+
+################################################################################
+# Version
+my $VERSION = '@VERSION_TEXT@';
+
+
+my %options =
+(
+    "version"    => 0,
+    "help"       => 0,
+    "usage"      => 0,
+
+    # Mandatory
+    "conf"  => undef,
+);
+
+=begin nd
+Variable: this
+
+All parameters by section :
+
+=cut
+my %this =
+(
+    params => undef
+);
+################################################################################
+
+####################################################################################################
+#                                         Group: Functions                                         #
+####################################################################################################
+
+=begin nd
+Function: main
+
+Main method.
+
+See Also:
+    <init>, <doIt>
+=cut
+sub main {
+    print STDOUT "BEGIN\n";
+
+    # initialization
+    ALWAYS("> Initialization");
+    if (! main::init()) {
+        print STDERR "ERROR INITIALIZATION !\n";
+        exit 1;
+    }
+
+    # configuration
+    ALWAYS("> Configuration");
+    if (! main::config()) {
+        my $message = "ERROR CONFIGURATION !";
+        printf STDERR "%s\n", $message;
+        exit 2;
+    }
+
+
+    # execution
+    ALWAYS("> Execution");
+    if (! main::doIt()) {
+        print STDERR "ERROR EXECUTION !\n";
+        exit 5;
+    }
+
+    print STDOUT "END\n";
+}
+
+=begin nd
+Function: init
+
+Checks and stores options, initializes the default logger. Checks TMS directory and the pyramid's descriptor file.
+=cut
+sub init {
+
+    # init Getopt
+    local $ENV{POSIXLY_CORRECT} = 1;
+
+    Getopt::Long::config qw(
+        default
+        no_autoabbrev
+        no_getopt_compat
+        require_order
+        bundling
+        no_ignorecase
+        permute
+    );
+
+    # init Options
+    GetOptions(
+        "help|h" => sub {
+            printf "PyrToPyr.pl --conf=<conf_file>\n";
+            exit 0;
+        },
+        "usage" => sub {
+            printf "PyrToPyr.pl --conf=<conf_file>\n";
+            exit 0;
+        },
+        
+        "conf=s" => \$options{conf}
+
+    ) or do {
+        printf "Unappropriate usage\n";
+        printf "PyrToPyr.pl --conf=<conf_file>\n";
+        exit -1;
+    };
+    
+    # logger by default at runtime
+    Log::Log4perl->easy_init({
+        level => "DEBUG",
+        layout => '%5p : %m (%M) %n'
+    });
+
+    ############# conf
+    if (! defined $options{conf} || $options{conf} eq "") {
+        ERROR("Option 'conf' not defined !");
+        return FALSE;
+    }
+
+    my $confFile = File::Spec->rel2abs($options{conf});
+
+    if (! -f $confFile) {
+        ERROR(sprintf "configuration file does not exist : %s", $confFile);
+        return FALSE;
+    }
+    $options{conf} = $confFile;
+    
+
+
+    return TRUE;
+}
+
+####################################################################################################
+#                                 Group: Process methods                                           #
+####################################################################################################
+
+=begin nd
+Function: config
+
+Loads environment and properties files and merge parameters. Those in the properties file have priority over those in the environment file.
+
+See Also:
+    <checkParams>
+=cut
+sub config {
+
+    ###################
+    ALWAYS(">>> Load Properties ...");
+    
+    my $fprop = $options{conf};
+    my $objProp = PYR2PYR::PropertiesLoader->new($fprop);
+    
+    if (! defined $objProp) {
+        ERROR("Can not load properties !");
+        return FALSE;
+    }
+  
+    # save params properties
+    my %params = $objProp->getAllProperties();
+    $this{params} = \%params;
+
+    # logger
+    my $logger = $this{params}->{logger};
+    if (defined $logger) {
+    
+        my @args;
+        
+        my $layout= '%5p : %m (%M) %n';
+
+        my $level = $logger->{log_level};
+        $level = "WARN" if (! defined $level);
+
+        my $out;
+        my $logfile = $logger->{log_file};
+        if (defined $logfile) {
+            if (exists $logger->{log_path} && defined $logger->{log_path}) {
+                $logfile = File::Spec->catfile($logger->{log_path}, $logfile);
+            }
+            $out = ">>$logfile";
+        } else {
+            $out = "STDOUT";
+        }
+        
+        # add the param logger by default (user settings !)
+        push @args, {
+            file   => $out,
+            level  => $level,
+            layout => $layout,
+        };
+        
+        if ($out ne "STDOUT") {
+            # add the param logger to the STDOUT
+            push @args, {
+                file   => "STDOUT",
+                level  => $level,
+                layout => $layout,
+            },
+        }
+
+        Log::Log4perl->easy_init(@args);
+    }
+    
+    return TRUE;
+}
+
+#################
+
+sub addSubElm {
+    my ($doc, $node, $name, $body) = @_;
+    my $subElm = $node->addNewChild('', $name);
+    $subElm->addChild( $doc->createTextNode($body) );
+}
+
+#################
+
+
+
+sub doIt {
+
+
+    #######################
+    # link to parameters
+    my $params = $this{params};
+    my $follow_links = 1;
+
+    if ( exists $params->{from}->{follow_links} && defined $params->{from}->{follow_links} && uc($params->{from}->{follow_links}) eq "FALSE") {
+        $follow_links = 0;
+    }
+
+
+    ALWAYS(">>> Load SourcePyramid ...");
+    
+    my $pyrName = $params->{to}->{pyr_name};
+    my $poolName = $params->{to}->{pool_name};
+
+
+    my $parser = XML::LibXML->new;
+    my $doc    = $parser->parse_file($params->{from}->{pyr_desc_file}) or do {
+        ERROR(sprintf "Erreur d'ouverture du fichier pyr (%s) !", $params->{from}->{pyr_desc_file});
+        return FALSE;
+    };
+    my $root = $doc->documentElement();
+
+    my @levelsList = $doc->getElementsByTagName('level');
+    foreach my $level (@levelsList) {
+        my $id = ($level->findnodes("tileMatrix"))[0]->textContent;
+
+        my ($depthnode) = $level->findnodes("pathDepth");
+        $level->removeChild($depthnode);
+
+        my ($nodatanode) = $level->findnodes("nodata");
+        addSubElm($doc, $nodatanode, "objectName", "${pyrName}_NDT_$id");
+        my ($nodatafilenode) = $level->findnodes("nodata/filePath");
+        $nodatanode->removeChild($nodatafilenode);
+
+        my ($baseDir) = $level->findnodes("baseDir");
+        $level->removeChild($baseDir);
+
+        my ($masknode) = $level->findnodes("mask");
+        addSubElm($doc, $masknode, "maskPrefix", "${pyrName}_MSK_$id");
+        my ($maskfilenode) = $level->findnodes("mask/baseDir");
+        $masknode->removeChild($maskfilenode);
+
+        my $cephcontext = $level->addNewChild('', "cephContext");
+        addSubElm($doc, $cephcontext, "poolName", $params->{to}->{pool_name});
+
+        addSubElm($doc, $level, "imagePrefix", "${pyrName}_IMG_$id");
+
+        $level->normalize;
+
+    }
+
+    open (PYR_OUT, ">", $params->{to}->{pyr_desc_path} . "/$pyrName.pyr") or do {
+        ERROR(sprintf "Erreur d'ouverture du fichier desc (%s) : %s!", $params->{to}->{pyr_desc_path} . "/$pyrName.pyr", $!);
+        return FALSE;
+    };
+
+    print PYR_OUT $doc->toString(2);        # pretty print
+    close PYR_OUT;
+
+
+    open (FILE, "<", $params->{from}->{pyr_list_file}) or do {
+        ERROR(sprintf "Erreur d'ouverture du fichier list (%s) : %s!", $params->{from}->{pyr_list_file}, $!);
+        return FALSE;
+    };
+
+    open (LIST_OUT, ">", $params->{to}->{pyr_desc_path} . "/$pyrName.list") or do {
+        ERROR(sprintf "Erreur d'ouverture du fichier list (%s) : %s!", $params->{to}->{pyr_desc_path} . "/$pyrName.list", $!);
+        return FALSE;
+    };
+
+    print LIST_OUT "$poolName\n";
+    print LIST_OUT "#\n";
+
+    my %roots;
+    while (my $line = <FILE>) {
+
+        chomp $line;
+        if ($line eq "#") {
+            last;
+        }
+
+        my ($index,$root) = split('=',$line);
+        $roots{$index} = $root;
+    }
+
+    while (my $line = <FILE>) {
+
+        chomp $line;
+
+        my @path = split('/',$line);
+        if ( $path[0] ne "0" && $path[1] ne "NODATA" && ! $follow_links ) {
+            next;
+        }
+        $path[0] = $roots{$path[0]};
+        my $fullPath = File::Spec->catfile(@path);
+        my $level = $path[2];
+
+        my $objName;
+
+        if ($path[1] eq "NODATA") {
+            $objName = sprintf("%s_NDT_%s", $params->{to}->{pyr_name}, $level);
+        }
+
+        if ($path[1] eq "MASK") {
+            my $a = $path[3];
+            my $b = $path[4];
+            my $c = $path[5];
+            $c =~ s/\.tif//;
+
+            my ($col, $row) = COMMON::Base36::b36PathToIndices("$a/$b/$c");
+            $objName = sprintf("%s_MSK_%s_%s_%s", $params->{to}->{pyr_name}, $level, $col, $row);
+        }
+
+        if ($path[1] eq "IMAGE") {
+            my $a = $path[3];
+            my $b = $path[4];
+            my $c = $path[5];
+            $c =~ s/\.tif//;
+
+            my ($col, $row) = COMMON::Base36::b36PathToIndices("$a/$b/$c");
+            $objName = sprintf("%s_IMG_%s_%s_%s", $params->{to}->{pyr_name}, $level, $col, $row);
+        }
+
+        # my $cmd = sprintf("rados -p %s put %s %s", $params->{to}->{pool_name},$objName,$fullPath);
+        # INFO($cmd);
+        # my $return = `$cmd`;
+
+        # if ( $? ) {
+        #     ERROR(sprintf "Impossible de pousser le fichier (%s) dans le pool %s sous le nom %s : %s",$fullPath,$params->{to}->{pool_name},$objName, $return);
+        # }
+
+        print LIST_OUT "$objName\n";
+
+    }
+
+    close LIST_OUT;
+    close FILE;
+
+    return TRUE;
+
+}
+
+
+
+################################################################################
+
+BEGIN {}
+INIT {}
+
+main;
+exit 0;
+
+END {}
+
+################################################################################
+
+1;
+__END__

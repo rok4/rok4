@@ -38,20 +38,20 @@
 =begin nd
 File: SourcePyramid.pm
 
-Class: JOINCACHE::SourcePyramid
+Class: COMMON::SourcePyramid
 
 Store all informations about a pyramid.
 
 Using:
     (start code)
-    use JOINCACHE::SourcePyramid;
+    use COMMON::SourcePyramid;
 
-    my $objPyr = JOINCACHE::SourcePyramid->new("/home/IGN/descriptors/SOURCE1.pyr");
+    my $objPyr = COMMON::SourcePyramid->new("/home/IGN/descriptors/SOURCE1.pyr");
     (end code)
 
 Attributes:
     pyramidDescriptor - string - Absolute path to the source pyramid descriptor.
-    levels - <JOINCACHE::SourceLevel> hash - Used levels in the source pyramid. Key is level's ID.
+    levels - <COMMON::SourceLevel> hash - Used levels in the source pyramid. Key is level's ID.
     formatCode - string - Format code of the source pyramid.
     photometric  - string - Photometrc of the source pyramid.
     samplesperpixel - integer -  Number of samples per pixel of the source pyramid.
@@ -61,7 +61,7 @@ Attributes:
 
 ################################################################################
 
-package JOINCACHE::SourcePyramid;
+package COMMON::SourcePyramid;
 
 use strict;
 use warnings;
@@ -70,8 +70,7 @@ use Log::Log4perl qw(:easy);
 use XML::LibXML;
 use File::Basename;
 
-use BE4::Pyramid;
-use JOINCACHE::SourceLevel;
+use COMMON::SourceLevel;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -283,7 +282,7 @@ sub loadAndCheck {
             $v->findvalue('TMSLimits/maxTileRow'),
         ];
 
-        my $level = JOINCACHE::SourceLevel->new({
+        my $level = COMMON::SourceLevel->new({
             id => $levelId,
             dir_image => $imageDir,
             dir_mask => $maskDir,
@@ -333,7 +332,7 @@ sub hasLevel {
 =begin nd
 Function: getLevel
 
-Returns the <JOINCACHE::SourceLevel> object for the provided level ID.
+Returns the <COMMON::SourceLevel> object for the provided level ID.
 
 Parameters (list):
     levelID - string - Identifiant of the asked level
@@ -348,7 +347,7 @@ sub getLevel {
 =begin nd
 Function: getImageDirectory
 
-Returns the image directory for the provided level, using <JOINCACHE::SourceLevel::getDirImage>.
+Returns the image directory for the provided level, using <COMMON::SourceLevel::getDirImage>.
 
 Parameters (list):
     levelID - string - Identifiant of the asked level
@@ -363,7 +362,7 @@ sub getImageDirectory {
 =begin nd
 Function: getMaskDirectory
 
-Returns the mask directory for the provided level, using <JOINCACHE::SourceLevel::getDirMask>.
+Returns the mask directory for the provided level, using <COMMON::SourceLevel::getDirMask>.
 
 Parameters (list):
     levelID - string - Identifiant of the asked level
@@ -419,7 +418,7 @@ Returns all source pyramid's information. Useful for debug.
 
 Example:
     (start code)
-    Object JOINCACHE::SourcePyramid :
+    Object COMMON::SourcePyramid :
         Descriptor : /home/ign/desc/ORTHO_RAW_LAMB93_D075-O.pyr
         Image components :
             Format code : TIFF_RAW_INT8
@@ -434,7 +433,7 @@ sub exportForDebug {
     
     my $export = "";
     
-    $export .= "\nObject JOINCACHE::SourcePyramid :\n";
+    $export .= "\nObject COMMON::SourcePyramid :\n";
     $export .= sprintf "\t Descriptor : %s\n", $self->{pyramidDescriptor};
 
     $export .= sprintf "\t Image components :\n";
