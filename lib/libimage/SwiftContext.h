@@ -86,6 +86,19 @@ public:
     std::string getContainerName () {
         return container_name;
     }
+
+    std::string getAuthUrl () {
+        return auth_url;
+    }
+    std::string getAccount () {
+        return user_account;
+    }
+    std::string getUserName () {
+        return user_name;
+    }
+    std::string getUserPwd () {
+        return user_passwd;
+    }
     
     bool exists(std::string name) {
         // TODO : Implémenter l'existance d'un objet dans swift
@@ -117,16 +130,6 @@ public:
         LOGGER_INFO ( "\t- user account = " << user_account );
         LOGGER_INFO ( "\t- user name = " << user_name );
         LOGGER_INFO ( "\t- container name = " << container_name );
-    }
-
-    virtual std::string toString() {
-        std::ostringstream oss;
-        oss.setf ( std::ios::fixed,std::ios::floatfield );
-        oss << "------ Swift Context -------" << std::endl;
-        oss << "\t- user account = " << user_account << std::endl;
-        oss << "\t- user name = " << user_name << std::endl;
-        oss << "\t- container name = " << container_name << std::endl;
-        return oss.str() ;
     }
     
     bool connection();

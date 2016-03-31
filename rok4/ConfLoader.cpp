@@ -532,7 +532,7 @@ TileMatrixSet* ConfLoader::buildTileMatrixSet ( std::string fileName ) {
 }//buildTileMatrixSet(std::string fileName)
 
 // Load a pyramid
-Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, ContextBook *contextBook  ) {
+Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, std::map<eContextType,ContextBook*> contextBooks  ) {
     LOGGER_INFO ( _ ( "             Ajout de la pyramide : " ) << fileName );
     // Relative file Path
     char * fileNameChar = ( char * ) malloc ( strlen ( fileName.c_str() ) + 1 );
@@ -686,8 +686,16 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                 poolName = pElemCephContext->GetText();
             }
 
-            if (contextBook != NULL) {
-                context = contextBook->addContext(poolName);
+            if (contextBooks.size() != 0) {
+
+                std::map<eContextType,ContextBook*>::iterator it = contextBooks.find(CEPHCONTEXT);
+                if (it != contextBooks.end()) {
+                    context = it->second->addContext(poolName);
+                } else {
+                    LOGGER_ERROR ( "L'utilisation d'un cephContext necessite de preciser les informations de connexions dans le server.conf");
+                    return NULL;
+                }
+
             } else {
                 LOGGER_ERROR ( "L'utilisation d'un cephContext necessite de preciser les informations de connexions dans le server.conf");
                 return NULL;
@@ -705,61 +713,9 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         pElemLvl = hLvl.FirstChild ( "swiftContext" ).Element();
         if ( pElemLvl && !context) {
 
-            std::string authUrl,userAccount,userName,userPassword,container;
+            std::string container;
 
             TiXmlElement* pElemSwiftContext;
-
-            pElemSwiftContext = hLvl.FirstChild ( "swiftContext" ).FirstChild ( "authUrl" ).Element();
-            if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
-                char* auth = getenv ("ROK4_SWIFT_AUTHURL");
-                if (auth == NULL) {
-                    LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un authUrl" );
-                    return NULL;
-                } else {
-                    authUrl.assign(auth);
-                }
-            } else {
-                authUrl = pElemSwiftContext->GetText();
-            }
-
-            pElemSwiftContext = hLvl.FirstChild ( "swiftContext" ).FirstChild ( "userName" ).Element();
-            if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
-                char* user = getenv ("ROK4_SWIFT_USER");
-                if (user == NULL) {
-                    LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un userName" );
-                    return NULL;
-                } else {
-                    userName.assign(user);
-                }
-            } else {
-                userName = pElemSwiftContext->GetText();
-            }
-
-            pElemSwiftContext = hLvl.FirstChild ( "swiftContext" ).FirstChild ( "userAccount" ).Element();
-            if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
-                char* account = getenv ("ROK4_SWIFT_ACCOUNT");
-                if (account == NULL) {
-                    LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un userAccount" );
-                    return NULL;
-                } else {
-                    userAccount.assign(account);
-                }
-            } else {
-                userAccount = pElemSwiftContext->GetText();
-            }
-
-            pElemSwiftContext = hLvl.FirstChild ( "swiftContext" ).FirstChild ( "userPassword" ).Element();
-            if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
-                char* passwd = getenv ("ROK4_SWIFT_PASSWD");
-                if (passwd == NULL) {
-                    LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un userPassword" );
-                    return NULL;
-                } else {
-                    userPassword.assign(passwd);
-                }
-            } else {
-                userPassword = pElemSwiftContext->GetText();
-            }
 
             pElemSwiftContext = hLvl.FirstChild ( "swiftContext" ).FirstChild ( "container" ).Element();
             if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
@@ -769,10 +725,18 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                 container = pElemSwiftContext->GetText();
             }
 
-            context = new SwiftContext(authUrl,userAccount,userName,userPassword,container);
+            if (contextBooks.size() != 0) {
 
-            if (!context->connection()) {
-                LOGGER_ERROR("Impossible de se connecter aux donnees.");
+                std::map<eContextType,ContextBook*>::iterator it = contextBooks.find(SWIFTCONTEXT);
+                if (it != contextBooks.end()) {
+                    context = it->second->addContext(container);
+                } else {
+                    LOGGER_ERROR ( "L'utilisation d'un cephContext necessite de preciser les informations de connexions dans le server.conf");
+                    return NULL;
+                }
+
+            } else {
+                LOGGER_ERROR ( "L'utilisation d'un cephContext necessite de preciser les informations de connexions dans le server.conf");
                 return NULL;
             }
 
@@ -959,19 +923,19 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
 }// buildPyramid()
 
-Pyramid* ConfLoader::buildPyramid ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, ContextBook *contextBook ) {
+Pyramid* ConfLoader::buildPyramid ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, std::map<eContextType,ContextBook*> contextBooks ) {
     TiXmlDocument doc ( fileName.c_str() );
     if ( !doc.LoadFile() ) {
         LOGGER_ERROR ( _ ( "Ne peut pas charger le fichier " ) << fileName );
         return NULL;
     }
-    return parsePyramid ( &doc,fileName,tmsList,contextBook );
+    return parsePyramid ( &doc,fileName,tmsList,contextBooks );
 }
 
 //TODO avoid opening a pyramid file directly
 Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,
                                  std::map<std::string,Style*> stylesList , bool reprojectionCapability,
-                                 ServicesConf* servicesConf, ContextBook *contextBook ) {
+                                 ServicesConf* servicesConf, std::map<eContextType,ContextBook*> contextBooks ) {
     LOGGER_INFO ( _ ( "     Ajout du layer " ) << fileName );
     // Relative file Path
     char * fileNameChar = ( char * ) malloc ( strlen ( fileName.c_str() ) + 1 );
@@ -1321,7 +1285,7 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
             pyramidFilePath.insert ( 0,"/" );
             pyramidFilePath.insert ( 0,parentDir );
         }
-        pyramid = buildPyramid ( pyramidFilePath, tmsList, contextBook );
+        pyramid = buildPyramid ( pyramidFilePath, tmsList, contextBooks );
         if ( !pyramid ) {
             LOGGER_ERROR ( _ ( "La pyramide " ) << pyramidFilePath << _ ( " ne peut etre chargee" ) );
             return NULL;
@@ -1374,13 +1338,13 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
 
 Layer * ConfLoader::buildLayer ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,
                                  std::map<std::string,Style*> stylesList, bool reprojectionCapability,
-                                 ServicesConf* servicesConf, ContextBook *contextBook ) {
+                                 ServicesConf* servicesConf, std::map<eContextType,ContextBook*> contextBooks ) {
     TiXmlDocument doc ( fileName.c_str() );
     if ( !doc.LoadFile() ) {
         LOGGER_ERROR ( _ ( "Ne peut pas charger le fichier " ) << fileName );
         return NULL;
     }
-    return parseLayer ( &doc,fileName,tmsList,stylesList,reprojectionCapability,servicesConf, contextBook );
+    return parseLayer ( &doc,fileName,tmsList,stylesList,reprojectionCapability,servicesConf, contextBooks );
 }
 
 // Load the server configuration (default is server.conf file) during server initialization
@@ -1389,7 +1353,9 @@ bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConf
                                        bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability,
                                        std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir,
                                        std::string &styleDir, std::string& socket, int& backlog,
-                                       std::string &cephName, std::string &cephUser, std::string &cephConf, std::string &cephPool ) {
+                                       std::string &cephName, std::string &cephUser, std::string &cephConf, std::string &cephPool,
+                                       std::string &swiftAuthUrl,std::string &swiftUserName,std::string &swiftUserAccount,
+                                       std::string &swiftUserPassword,std::string &swiftContainer) {
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
@@ -1649,6 +1615,73 @@ bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConf
             cephPool = "";
         } else {
             cephPool = pElemCephContext->GetText();
+        }
+
+    }
+
+    pElem = hRoot.FirstChild ( "swiftContext" ).Element();
+    if ( pElem ) {
+
+        TiXmlElement* pElemSwiftContext;
+
+        pElemSwiftContext = hRoot.FirstChild ( "swiftContext" ).FirstChild ( "authUrl" ).Element();
+        if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
+            char* auth = getenv ("ROK4_SWIFT_AUTHURL");
+            if (auth == NULL) {
+                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un authUrl" );
+                return false;
+            } else {
+                swiftAuthUrl.assign(auth);
+            }
+        } else {
+            swiftAuthUrl = pElemSwiftContext->GetText();
+        }
+
+        pElemSwiftContext = hRoot.FirstChild ( "swiftContext" ).FirstChild ( "userName" ).Element();
+        if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
+            char* user = getenv ("ROK4_SWIFT_USER");
+            if (user == NULL) {
+                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un userName" );
+                return false;
+            } else {
+                swiftUserName.assign(user);
+            }
+        } else {
+            swiftUserName = pElemSwiftContext->GetText();
+        }
+
+        pElemSwiftContext = hRoot.FirstChild ( "swiftContext" ).FirstChild ( "userAccount" ).Element();
+        if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
+            char* account = getenv ("ROK4_SWIFT_ACCOUNT");
+            if (account == NULL) {
+                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un userAccount" );
+                return false;
+            } else {
+                swiftUserAccount.assign(account);
+            }
+        } else {
+            swiftUserAccount = pElemSwiftContext->GetText();
+        }
+
+        pElemSwiftContext = hRoot.FirstChild ( "swiftContext" ).FirstChild ( "userPassword" ).Element();
+        if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
+            char* passwd = getenv ("ROK4_SWIFT_PASSWD");
+            if (passwd == NULL) {
+                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un userPassword" );
+                return false;
+            } else {
+                swiftUserPassword.assign(passwd);
+            }
+        } else {
+            swiftUserPassword = pElemSwiftContext->GetText();
+        }
+
+        pElemSwiftContext = hRoot.FirstChild ( "swiftContext" ).FirstChild ( "container" ).Element();
+        if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
+            LOGGER_ERROR ("L'utilisation d'un swiftContext necessitera de preciser un container dans chaque level" );
+            swiftContainer = "";
+        } else {
+            swiftContainer = pElemSwiftContext->GetText();
         }
 
     }
@@ -2205,7 +2238,9 @@ bool ConfLoader::getTechnicalParam ( std::string serverConfigFile, LogOutput& lo
                                      int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS,
                                      bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir,
                                      std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog,
-                                     std::string &cephName, std::string &cephUser, std::string &cephConf, std::string &cephPool ) {
+                                     std::string &cephName, std::string &cephUser, std::string &cephConf, std::string &cephPool,
+                                     std::string &swiftAuthUrl,std::string &swiftUserName,std::string &swiftUserAccount,
+                                     std::string &swiftUserPassword,std::string &swiftContainer) {
     std::cout<<_ ( "Chargement des parametres techniques depuis " ) <<serverConfigFile<<std::endl;
     TiXmlDocument doc ( serverConfigFile );
     if ( !doc.LoadFile() ) {
@@ -2214,7 +2249,7 @@ bool ConfLoader::getTechnicalParam ( std::string serverConfigFile, LogOutput& lo
     }
     return parseTechnicalParam ( &doc,serverConfigFile,logOutput,logFilePrefix,logFilePeriod,logLevel,
                                  nbThread,supportWMTS,supportWMS,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,
-                                 styleDir, socket, backlog, cephName, cephUser, cephConf, cephPool );
+                                 styleDir, socket, backlog, cephName, cephUser, cephConf, cephPool,swiftAuthUrl, swiftUserName,swiftUserAccount,swiftUserPassword,swiftContainer );
 }
 
 bool ConfLoader::buildStylesList ( std::string styleDir, std::map< std::string, Style* >& stylesList, bool inspire ) {
@@ -2319,7 +2354,7 @@ bool ConfLoader::buildTMSList ( std::string tmsDir,std::map<std::string, TileMat
 
 bool ConfLoader::buildLayersList ( std::string layerDir, std::map< std::string, TileMatrixSet* >& tmsList,
                                    std::map< std::string, Style* >& stylesList, std::map< std::string, Layer* >& layers,
-                                   bool reprojectionCapability, ServicesConf* servicesConf, ContextBook *contextBook ) {
+                                   bool reprojectionCapability, ServicesConf* servicesConf, std::map<eContextType,ContextBook*> contextBooks ) {
     LOGGER_INFO ( _ ( "CHARGEMENT DES LAYERS" ) );
     // lister les fichier du repertoire layerDir
     std::vector<std::string> layerFiles;
@@ -2347,7 +2382,7 @@ bool ConfLoader::buildLayersList ( std::string layerDir, std::map< std::string, 
     // generer les Layers decrits par les fichiers.
     for ( unsigned int i=0; i<layerFiles.size(); i++ ) {
         Layer * layer;
-        layer = buildLayer ( layerFiles[i], tmsList, stylesList , reprojectionCapability, servicesConf, contextBook );
+        layer = buildLayer ( layerFiles[i], tmsList, stylesList , reprojectionCapability, servicesConf, contextBooks );
         if ( layer ) {
             layers.insert ( std::pair<std::string, Layer *> ( layer->getId(), layer ) );
         } else {
