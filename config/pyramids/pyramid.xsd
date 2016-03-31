@@ -78,7 +78,7 @@
 			                                        			<!-- valeurs du noData -->
 			                                        			<xs:element name="noDataValue" type="xs:string" minOccurs="1" maxOccurs="1"/>
 			                                        			<!-- Bbox des données -->
-			                                        			<xs:element name="boundingBox" minOccurs="1" maxOccurs="1">
+			                                        			<xs:element name="bbox" minOccurs="1" maxOccurs="1">
 																	<xs:complexType>
 																			<xs:attribute name="minx" type="xs:double"/>
 																			<xs:attribute name="miny" type="xs:double"/>
