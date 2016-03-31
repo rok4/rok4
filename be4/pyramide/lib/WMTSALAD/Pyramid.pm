@@ -1007,7 +1007,8 @@ sub writeConfPyramid {
     my $rootEl = $descDoc->createElement("Pyramid");
     $descDoc->setDocumentElement($rootEl);
 
-    $rootEl->appendTextChild("tileMatrixSet", $self->{tileMatrixSet}->getPathFilename());
+    $rootEl->appendTextChild("tileMatrixSet", $self->{tileMatrixSet}->getName());
+    $rootEl->appendTextChild("format", $self->{format});
     $rootEl->appendTextChild("channels", $self->{channels});
     $rootEl->appendTextChild("nodataValue", $self->{noData}->getValue());
     if (exists $self->{interpolation} && defined $self->{interpolation}) {
