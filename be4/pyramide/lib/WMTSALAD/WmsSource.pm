@@ -559,10 +559,10 @@ sub writeInXml() {
     my $boundingBoxEl = $xmlDoc->createElement("boundingBox");
     $wmsEl->appendChild($boundingBoxEl);
     my @boundingBox = split (",", $self->{extent});
-    $boundingBoxEl->appendTextChild("minx", $boundingBox[0]);
-    $boundingBoxEl->appendTextChild("miny", $boundingBox[1]);
-    $boundingBoxEl->appendTextChild("maxx", $boundingBox[2]);
-    $boundingBoxEl->appendTextChild("maxy", $boundingBox[3]);
+    $boundingBoxEl->setAttribute("minx", $boundingBox[0]);
+    $boundingBoxEl->setAttribute("miny", $boundingBox[1]);
+    $boundingBoxEl->setAttribute("maxx", $boundingBox[2]);
+    $boundingBoxEl->setAttribute("maxy", $boundingBox[3]);
     if (defined $self->{option}) { $wmsEl->appendTextChild("option", $self->{option}); }
 
     return TRUE;
