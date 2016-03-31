@@ -48,8 +48,8 @@
 #include "CompoundImage.h"
 
 
-WebService::WebService(std::string url,std::string proxy="",int retry=DEFAULT_RETRY,int interval=DEFAULT_INTERVAL,
-                       int timeout=DEFAULT_TIMEOUT):url (url),proxy (proxy),retry (retry), interval (interval), timeout (timeout) {}
+WebService::WebService(std::string url, std::string proxy="", std::string noProxy="",int retry=DEFAULT_RETRY, int interval=DEFAULT_INTERVAL,
+                       int timeout=DEFAULT_TIMEOUT):url (url),proxy (proxy),retry (retry), interval (interval), timeout (timeout), noProxy (noProxy) {}
 
 
 WebService::~WebService() {
@@ -103,6 +103,9 @@ RawDataSource * WebService::performRequest(std::string request) {
                 curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "identity");
                 if (proxy != "") {
                     curl_easy_setopt(curl, CURLOPT_PROXY, proxy.c_str());
+                }
+                if (noProxy != "") {
+                    curl_easy_setopt(curl, CURLOPT_NOPROXY, noProxy.c_str());
                 }
                 if (userAgent != "") {
                     curl_easy_setopt(curl, CURLOPT_USERAGENT, userAgent.c_str());

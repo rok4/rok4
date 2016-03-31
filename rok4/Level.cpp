@@ -57,6 +57,10 @@
 #include <cstddef>
 #include <sys/stat.h>
 
+// GREG
+#include "Message.h"
+// GREG
+
 
 #define EPS 1./256. // FIXME: La valeur 256 est liée au nombre de niveau de valeur d'un canal
 //        Il faudra la changer lorsqu'on aura des images non 8bits.
@@ -387,6 +391,25 @@ int Level::createDirPath(std::string path) {
     return success;
 
 }
+
+// GREG
+
+DataSource* Level::getTilePixel ( int x, int y, int i, int j ) {
+        DataSource* source=getDecodedTile( x, y );
+
+        size_t tile_size;
+        const uint8_t* buffer = source->getData(tile_size);        
+
+        std::stringstream ss;
+        int index = (i+j*getTm().getTileW())*channels;
+        ss << "value ";
+        for ( int k = 0 ; k < channels; k ++ ) {
+            ss << unsigned(buffer[index+k]) << " ";
+        }
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, ( ss.str() ),"wmts" ) );
+    }
+
+// GREG
 
 /*
  * @return la tuile d'indice (x,y) du niveau

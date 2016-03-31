@@ -59,7 +59,11 @@
 #include "fcgiapp.h"
 #include "ProcessFactory.h"
 #include <csignal>
-#include "LoggerSpecific.h"
+
+struct Proxy {
+    std::string proxyName;
+    std::string noProxy;
+};
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -155,6 +159,11 @@ private:
      * \~english \brief Management of created process
      */
     ProcessFactory *parallelProcess;
+    /**
+     * \~french \brief Proxy utilisé par défaut pour des requêtes WMS
+     * \~english \brief Default proxy used for WMS requests
+     */
+    Proxy proxy;
 
     /**
      * \~french
@@ -389,6 +398,7 @@ private:
      * \return requested tile
      */
     DataSource *getTileOnFly(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format, DataSource *errorResp);
+
     /**
      * \~french
      * \brief Traitement d'une requête GetCapabilities WMS
@@ -486,6 +496,29 @@ public:
 
     /**
      * \~french
+     * \brief Traitement d'une requête GetFeatureInfo WMS
+     * \param[in] request représentation de la requête
+     * \return flux de la réponse
+     * \~english
+     * \brief Process a GetFeatureInfo WMS request
+     * \param[in] request request representation
+     * \return response stream
+     */
+    DataSource* WMSGetFeatureInfo ( Request* request );
+    /**
+     * \~french
+     * \brief Traitement d'une requête GetFeatureInfo WMTS
+     * \param[in] request représentation de la requête
+     * \return flux de la réponse
+     * \~english
+     * \brief Process a GetFeatureInfo WMTS request
+     * \param[in] request request representation
+     * \return response stream
+     */
+    DataSource* WMTSGetFeatureInfo ( Request* request );
+
+    /**
+     * \~french
      * \brief Lancement des threads du serveur
      * \~english
      * \brief Start server's thread
@@ -571,12 +604,31 @@ public:
     bool isWMSSupported(){
             return supportWMS ;
     }
+    /**
+     * \~french
+     * \brief Pour savoir si le server honore les requêtes WMTS
+     * \~english
+     * \brief to know if the server responde to WMTS request
+     */
+    void setProxy(Proxy pr){
+            proxy = pr ;
+    }
+
+    /**
+     * \~french
+     * \brief Retourne le proxy par defaut
+     * \~english
+     * \brief Return default proxy
+     */
+    Proxy getProxy(){
+            return proxy ;
+    }
 
     /**
      * \brief Construction du serveur
      */
     Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
-                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, std::string socket, int backlog, bool supportWMTS = true, bool supportWMS = true, int nbProcess =1 );
+                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, std::string socket, int backlog, Proxy proxy,bool supportWMTS = true, bool supportWMS = true, int nbProcess =1);
     /**
      * \~french
      * \brief Destructeur par défaut

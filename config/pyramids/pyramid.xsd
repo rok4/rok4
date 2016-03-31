@@ -24,7 +24,6 @@
                             <!-- sources des données pour une pyramide à la demande -->
                             <!-- si spécifiées ici, ces sources ne concernent que ce level -->
                             <!-- ainsi, si on en met un, il faut en mettre pour chaque level -->
-                            <!-- à moins qu'il y ait des sources au niveau global -->
                             <!-- Si le baseDir n'est pas spécifié, l'élément <sources> doit être présent -->
                             <xs:element name="sources" minOccurs="0" maxOccurs="1">
 			                    <xs:complexType>
@@ -81,14 +80,12 @@
 			                                        			<!-- valeurs du noData -->
 			                                        			<xs:element name="noDataValue" type="xs:string" minOccurs="1" maxOccurs="1"/>
 			                                        			<!-- Bbox des données -->
-			                                        			<xs:element name="boundingBox">
+			                                        			<xs:element name="bbox" minOccurs="1" maxOccurs="1">
 																	<xs:complexType>
-																		<xs:sequence>
-																			<xs:element name="minx" type="xs:double" minOccurs="1" maxOccurs="1"/>
-																			<xs:element name="miny" type="xs:double" minOccurs="1" maxOccurs="1"/>
-																			<xs:element name="maxx" type="xs:double" minOccurs="1" maxOccurs="1"/>
-																			<xs:element name="maxy" type="xs:double" minOccurs="1" maxOccurs="1"/>
-																		</xs:sequence>
+																			<xs:attribute name="minx" type="xs:double"/>
+																			<xs:attribute name="miny" type="xs:double"/>
+																			<xs:attribute name="maxx" type="xs:double"/>
+																			<xs:attribute name="maxy" type="xs:double"/>
 																	</xs:complexType>
 																</xs:element>
 			                                        			<!-- option -->

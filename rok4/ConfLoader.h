@@ -53,6 +53,7 @@
 #include "Layer.h"
 #include "TileMatrixSet.h"
 #include "tinyxml.h"
+#include "Rok4Server.h"
 
 
 /**
@@ -92,6 +93,7 @@ public:
      * \param[out] socket adresse et port d'écoute du serveur, vide si définit par un appel FCGI
      * \param[out] backlog profondeur de la file d'attente
      * \param[out] nombre de processus executable en parallele par le serveur
+     * \param[out] proxy
      * \return faux en cas d'erreur
      * \~english
      * \brief Load server parameter from a file
@@ -111,9 +113,10 @@ public:
      * \param[out] socket listening address and port, empty if defined by a FCGI call
      * \param[out] backlog listen queue depth
      * \param[out] number of process in parallel
+     * \param[out] proxy
      * \return false if something went wrong
      */
-    static bool getTechnicalParam (std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int &nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog , int &nbProcess);
+    static bool getTechnicalParam (std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int &nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog , int &nbProcess, Proxy &proxy);
     /**
      * \~french
      * \brief Charges les différents Styles présent dans le répertoire styleDir
@@ -151,6 +154,7 @@ public:
      * \param[out] layers ensemble des Layers disponibles
      * \param[in] reprojectionCapability définit si le serveur est capable de reprojeter des données
      * \param[in] servicesConf pointeur vers les configurations globales des services
+     * \param[in] proxy
      * \return faux en cas d'erreur
      * \~english
      * \brief Load Styles from the styleDir directory
@@ -160,9 +164,10 @@ public:
      * \param[out] layers set of available Layers
      * \param[in] reprojectionCapability whether the server can handle reprojection
      * \param[in] servicesConf global services configuration pointer
+     * \param[in] proxy
      * \return false if something went wrong
      */
-    static bool buildLayersList ( std::string layerDir,std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> &stylesList, std::map<std::string,Layer*> &layers, bool reprojectionCapability, ServicesConf* servicesConf );
+    static bool buildLayersList (std::string layerDir, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> &stylesList, std::map<std::string,Layer*> &layers, bool reprojectionCapability, ServicesConf* servicesConf , Proxy proxy);
     /**
      * \~french
      * \brief Chargement des paramètres des services à partir d'un fichier
@@ -237,6 +242,7 @@ private:
      * \param[in] tmsList liste des TileMatrixSets connus
      * \param[in] times vrai si premier appel, faux sinon
      * \param[in] stylesList liste des styles disponibles
+     * \param[in] proxy
      * \return un pointeur vers la Pyramid nouvellement instanciée, NULL en cas d'erreur
      * \~english
      * \brief Create a new Pyramid from its XML representation
@@ -245,9 +251,10 @@ private:
      * \param[in] tmsList known TileMatrixSets
      * \param[in] times true if first call, false in other cases
      * \param[in] stylesList available style list
+     * \param[in] proxy
      * \return pointer to the newly created Pyramid, NULL if something went wrong
      */
-    static Pyramid* parsePyramid (TiXmlDocument* doc, std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times , std::map<std::string, Style *> stylesList);
+    static Pyramid* parsePyramid (TiXmlDocument* doc, std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times , std::map<std::string, Style *> stylesList, Proxy proxy);
     /**
      * \~french
      * \brief Création d'une Pyramide à partir d'un fichier
@@ -255,6 +262,7 @@ private:
      * \param[in] tmsList liste des TileMatrixSet connus
      * \param[in] tmsList liste des TileMatrixSets connus
      * \param[in] times vrai si premier appel, faux sinon
+     * \param[in] proxy
      * \return un pointeur vers la Pyramid nouvellement instanciée, NULL en cas d'erreur
      * \~english
      * \brief Create a new Pyramid from a file
@@ -262,9 +270,10 @@ private:
      * \param[in] tmsList known TileMatrixSets
      * \param[in] times true if first call, false in other cases
      * \param[in] stylesList available style list
+     * \param[in] proxy
      * \return pointer to the newly created Pyramid, NULL if something went wrong
      */
-    static Pyramid* buildPyramid (std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times , std::map<std::string, Style *> stylesList);
+    static Pyramid* buildPyramid (std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times , std::map<std::string, Style *> stylesList, Proxy proxy);
 
     /**
      * \~french
@@ -337,6 +346,7 @@ private:
      * \param[in] stylesList liste des Styles connus
      * \param[in] reprojectionCapability définit si le serveur est capable de reprojeter des données
      * \param[in] servicesConf pointeur vers les configurations globales du services
+     * \param[in] proxy
      * \return un pointeur vers le Layer nouvellement instancié, NULL en cas d'erreur
      * \~english
      * \brief Create a new Layer from its XML representation
@@ -346,9 +356,10 @@ private:
      * \param[in] stylesList known Styles
      * \param[in] reprojectionCapability whether the server can handle reprojection
      * \param[in] servicesConf global service configuration pointer
+     * \param[in] proxy
      * \return pointer to the newly created Layer, NULL if something went wrong
      */
-    static Layer * parseLayer ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability,ServicesConf* servicesConf );
+    static Layer * parseLayer (TiXmlDocument* doc, std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> stylesList , bool reprojectionCapability, ServicesConf* servicesConf , Proxy proxy);
     /**
      * \~french
      * \brief Création d'un Layer à partir d'un fichier
@@ -357,6 +368,7 @@ private:
      * \param[in] stylesList liste des Styles connus
      * \param[in] reprojectionCapability définit si le serveur est capable de reprojeter des données
      * \param[in] servicesConf pointeur vers les configurations globales du services
+     * \param[in] proxy
      * \return un pointeur vers le Layer nouvellement instancié, NULL en cas d'erreur
      * \~english
      * \brief Create a new Layer from a file
@@ -365,9 +377,10 @@ private:
      * \param[in] stylesList known Styles
      * \param[in] reprojectionCapability whether the server can handle reprojection
      * \param[in] servicesConf global service configuration pointer
+     * \param[in] proxy
      * \return pointer to the newly created Layer, NULL if something went wrong
      */
-    static Layer * buildLayer ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability,ServicesConf* servicesConf );
+    static Layer * buildLayer (std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> stylesList , bool reprojectionCapability, ServicesConf* servicesConf , Proxy proxy);
     /**
      * \~french
      * \brief Chargement des paramètres du serveur à partir de sa représentation XML
@@ -388,6 +401,7 @@ private:
      * \param[out] socket adresse et port d'écoute du serveur, vide si définit par un appel FCGI
      * \param[out] backlog profondeur de la file d'attente
      * \param[out] nombre de processus executable en parallele par le serveur
+     * \param[out] proxy
      * \return faux en cas d'erreur
      * \~english
      * \brief Load server parameter from its XML representation
@@ -408,9 +422,10 @@ private:
      * \param[out] socket listening address and port, empty if defined by a FCGI call
      * \param[out] backlog listen queue depth
      * \param[out] number of process in parallel
+     * \param[out] proxy
      * \return false if something went wrong
      */
-    static bool parseTechnicalParam (TiXmlDocument* doc, std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog , int &nbProcess);
+    static bool parseTechnicalParam (TiXmlDocument* doc, std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog , int &nbProcess, Proxy &proxy);
     /**
      * \~french
      * \brief Chargement des paramètres des services à partir de leur représentation XML
@@ -463,7 +478,7 @@ private:
     * \~english
     * \brief Return a WebService from the configuration
     */
-   static WebService *parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Format::eformat_data pyrFormat);
+   static WebService *parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Format::eformat_data pyrFormat, Proxy proxy_default);
 
    /**
    * \~french
@@ -471,7 +486,7 @@ private:
    * \~english
    * \brief Return a Pyramid from the configuration
    */
-  static Pyramid *parseBasedPyramid(TiXmlElement* sPyr,std::map<std::string, TileMatrixSet*> &tmsList,bool timesSpecific,std::map<std::string,Style*> stylesList, std::string parentDir);
+  static Pyramid *parseBasedPyramid(TiXmlElement* sPyr, std::map<std::string, TileMatrixSet*> &tmsList, bool timesSpecific, std::map<std::string,Style*> stylesList, std::string parentDir, Proxy proxy);
 
 
 };

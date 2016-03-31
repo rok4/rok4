@@ -94,6 +94,12 @@ protected:
     std::string proxy;
 
     /**
+     * \~french \brief noProxy utilisé
+     * \~english \brief noProxy used
+     */
+    std::string noProxy;
+
+    /**
      * \~french \brief Temps d'attente lors de l'envoi d'une requête
      * \~english \brief Waiting time for a request
      */
@@ -329,7 +335,7 @@ public:
      * \~french \brief Constructeur
      * \~english \brief Constructor
      */
-    WebService(std::string url, std::string proxy, int retry, int interval, int timeout);
+    WebService(std::string url, std::string proxy, std::string noProxy, int retry, int interval, int timeout);
 
     /**
      * \~french \brief Destructeur
@@ -627,9 +633,9 @@ public:
      * \~french \brief Constructeur
      * \~english \brief Constructor
      */
-    WebMapService(std::string url, std::string proxy, int retry, int interval, int timeout, std::string version,std::string layers, std::string styles,std::string format, int channels,
+    WebMapService(std::string url, std::string proxy, std::string noProxy,int retry, int interval, int timeout, std::string version,std::string layers, std::string styles,std::string format, int channels,
                                  std::string crs, BoundingBox<double> bbox, std::vector<int> ndValues,
-                                 std::map<std::string,std::string> options) : WebService(url,proxy,retry,interval,timeout),
+                                 std::map<std::string,std::string> options) : WebService(url,proxy,noProxy,retry,interval,timeout),
         version (version), layers (layers), styles (styles), format (format),
         crs (crs), channels (channels), bbox (bbox), ndValues (ndValues),options (options) {}
     /**

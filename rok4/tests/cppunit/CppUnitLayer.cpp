@@ -86,6 +86,15 @@ protected:
     std::vector<MetadataURL> metadataURLslayer;
     std::map<std::string, Layer*> layerlist;
 
+    bool getFeatureInfoAvailability;
+    std::string getFeatureInfoType;
+    std::string getFeatureInfoBaseURL;
+    std::string GFIVersion;
+    std::string GFIService;
+    std::string GFIQueryLayers;
+    std::string GFILayers;
+    bool GFIForceEPSG;
+    
     Palette* palette0;
     Style* style;
     Layer* layer;
@@ -135,7 +144,17 @@ void CppUnitLayer::setUp() {
     maxReslayer = 209715.2;
     opaquelayer = true;
     authoritylayer = "IGNF";
-    layer = new Layer ( idlayer, titlelayer, abstractlayer, WMSAuthorized, WMTSAuthorized,keyWords, dataPyramidlayer, styleslayer, minReslayer, maxReslayer, WMSCRSListlayer, opaquelayer, authoritylayer, resamplinglayer, geographicBoundingBoxlayer, boundingBoxlayer, metadataURLslayer );
+    
+    getFeatureInfoAvailability = false;
+    getFeatureInfoType = "";
+    getFeatureInfoBaseURL = "";
+    GFIVersion = "";
+    GFIService = "";
+    GFIQueryLayers = "";
+    GFILayers = "";
+    GFIForceEPSG = true;
+    
+    layer = new Layer ( idlayer, titlelayer, abstractlayer, WMSAuthorized, WMTSAuthorized,keyWords, dataPyramidlayer, styleslayer, minReslayer, maxReslayer, WMSCRSListlayer, opaquelayer, authoritylayer, resamplinglayer, geographicBoundingBoxlayer, boundingBoxlayer, metadataURLslayer, getFeatureInfoAvailability, getFeatureInfoType, getFeatureInfoBaseURL, GFIVersion, GFIService, GFIQueryLayers, GFILayers, GFIForceEPSG );
 }
 
 void CppUnitLayer::getId() {
