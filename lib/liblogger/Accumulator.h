@@ -122,14 +122,7 @@ protected:
     virtual std::ostream& getStream() = 0;
 
 
-    /**
-     * Rentre dans l'état "en cours de destruction" et attend que le thread encapsulé s'arrête proprement.
-     * Cette fonction doit être apellée par le destructeur de la classe fille.
-     * Question : pourquoi ne pas le faire dans le destructeur de Accumulator ?
-     * Réponse : parceque lorsqu'on rentre dans le destructeur de Accumulator, la classe fille a déjà été détruite
-     *           et l'on a plus accès à la fonction virtuelle getStream() pour écrire les messages en cours avant destruction.
-     */
-    void stop();
+
 
 public:
 
@@ -141,6 +134,29 @@ public:
      * @param message Le message à écrire, ne pas oublier de rajouter des retours à la ligne si l'on veut écrire des lignes
      */
     bool addMessage ( std::string message );
+
+    /**
+     * Rentre dans l'état "en cours de destruction" et attend que le thread encapsulé s'arrête proprement.
+     * Cette fonction doit être apellée par la classe fille.
+     * Question : pourquoi ne pas le faire dans le destructeur de Accumulator ?
+     * Réponse : parceque lorsqu'on rentre dans le destructeur de Accumulator, la classe fille a déjà été détruite
+     *           et l'on a plus accès à la fonction virtuelle getStream() pour écrire les messages en cours avant destruction.
+     * ATTENTION:
+     * Cette fonction n'est plus dans le destructeur mais appelée juste avant. Cela permet d'utiliser un accumulateur
+     * dans un autre processus parallel ayant son propre pool de thread. Il est donc important de laisser cette fonction en dehors.
+     *
+     */
+    void stop();
+
+    /**
+     * Détruit les objets de la classe liés aux mutex.
+     * ATTENTION:
+     * Cette fonction n'est pas dans le destructeur pour que l'on puisse utiliser,modifier et détruire
+     * un accumulateur dans un autre processus parallel ayant son propre pool de thread. Il est important de garder cette fonction
+     * en dehors du destructeur et de l'appeler seulement si on est certain que ça ne va pas bloquer
+     * le processus courant.
+     */
+    void destroy();
 
     /**
      * ferme les descripteur de fichier utilisé
@@ -179,12 +195,11 @@ public:
     void close(){}
     
     /**
-     * Destructeur apellant la fonction stop.
+     * Destructeur.
      * Le flux out n'est pas fermé, ceci est laissé du programmeur si nécessaire.
      * Raison : Il n'est pas toujours souhaitable de fermer le flux (par exemple std::cerr).
      */
     virtual ~StreamAccumulator() {
-        stop();
     }
 };
 
@@ -225,12 +240,11 @@ public:
     void close();
     
     /**
-     * Destructeur apellant la fonction stop.
+     * Destructeur.
      * Le flux ou n'est pas fermé, ceci est laissé du programmeur si nécessaire.
      * Raison : Il n'est pas toujours souhaitable de fermer le flux (par exemple std::cerr).
      */
     virtual ~RollingFileAccumulator() {
-        stop();
         out.close();
     }
 };
@@ -262,12 +276,11 @@ public:
     void close();
     
     /**
-     * Destructeur apellant la fonction stop.
+     * Destructeur.
      * Le flux ou n'est pas fermé, ceci est laissé du programmeur si nécessaire.
      * Raison : Il n'est pas toujours souhaitable de fermer le flux (par exemple std::cerr).
      */
     virtual ~StaticFileAccumulator() {
-        stop();
         out.close();
     }
 };

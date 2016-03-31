@@ -75,7 +75,6 @@ public:
      */
     BoundingBox ( T xmin, T ymin, T xmax, T ymax ) :
         xmin ( xmin ), ymin ( ymin ), xmax ( xmax ), ymax ( ymax ) {}
-
     /** \~french \brief Crée un objet BoundingBox par copie et conversion
      * \param[in] bbox rectangle englobant à copier et éventuellement convertir
      ** \~english \brief Create a BoundingBox object, copying and converting
@@ -238,6 +237,128 @@ public:
     bool contains ( BoundingBox<T> bbox ) {
         return ( xmin < bbox.xmin && bbox.xmax < xmax && ymin < bbox.ymin && bbox.ymax < ymax );
     }
+    /** \~french \brief Détermine une bounding box contient l'autre ou touche intérieurement
+     * \param[in] bbox rectangle englobant dont on veut savoir s'il est contenu dans l'autre
+     ** \~english \brief Determine if a bounding box contains the other or touch inside
+     * \param[in] bbox bounding box : is it contained by the other ?
+     */
+    bool containsInside ( BoundingBox<T> bbox ) {
+        return ( xmin <= bbox.xmin && bbox.xmax <= xmax && ymin <= bbox.ymin && bbox.ymax <= ymax );
+    }
+
+    /** \~french \brief Récupère la partie qui intersecte la bbox donnée en paramètre
+     * \param[in] bbox rectangle
+     ** \~english \brief Get the part intersected the bbox given in parameter
+     * \param[in] bbox bounding box
+     */
+    BoundingBox<T> cutIntersectionWith ( BoundingBox<T> bbox ) {
+
+        if (this->xmin > bbox.xmin && this->xmax < bbox.xmax && this->ymin < bbox.ymin && this->ymax > bbox.ymax) {
+            return BoundingBox<T> (this->xmin,bbox.ymin,this->xmax,bbox.ymax);
+        }
+        if (this->xmin < bbox.xmin && this->xmax > bbox.xmax && this->ymin > bbox.ymin && this->ymax < bbox.ymax) {
+            return BoundingBox<T> (bbox.xmin,this->ymin,bbox.xmax,this->ymax);
+        }
+
+        if (this->xmin > bbox.xmin && this->xmax > bbox.xmax && this->ymin > bbox.ymin && this->ymax < bbox.ymax) {
+            return BoundingBox<T> (this->xmin,this->ymin,bbox.xmax,this->ymax);
+        }
+        if (this->xmin < bbox.xmin && this->xmax < bbox.xmax && this->ymin > bbox.ymin && this->ymax < bbox.ymax) {
+            return BoundingBox<T> (bbox.xmin,this->ymin,this->xmax,this->ymax);
+        }
+        if (this->xmin > bbox.xmin && this->xmax < bbox.xmax && this->ymin > bbox.ymin && this->ymax > bbox.ymax) {
+            return BoundingBox<T> (this->xmin,this->ymin,this->xmax,bbox.ymax);
+        }
+        if (this->xmin > bbox.xmin && this->xmax < bbox.xmax && this->ymin < bbox.ymin && this->ymax < bbox.ymax) {
+            return BoundingBox<T> (this->xmin,bbox.ymin,this->xmax,this->ymax);
+        }
+
+        if (this->xmin < bbox.xmin && this->xmax > bbox.xmax && this->ymin > bbox.ymin && this->ymax > bbox.ymax) {
+            return BoundingBox<T> (bbox.xmin,this->ymin,bbox.xmax,bbox.ymax);
+        }
+        if (this->xmin < bbox.xmin && this->xmax < bbox.xmax && this->ymin < bbox.ymin && this->ymax > bbox.ymax) {
+            return BoundingBox<T> (bbox.xmin,bbox.ymin,this->xmax,bbox.ymax);
+        }
+        if (this->xmin < bbox.xmin && this->xmax > bbox.xmax && this->ymin < bbox.ymin && this->ymax < bbox.ymax) {
+            return BoundingBox<T> (bbox.xmin,bbox.ymin,bbox.xmax,this->ymax);
+        }
+        if (this->xmin > bbox.xmin && this->xmax > bbox.xmax && this->ymin < bbox.ymin && this->ymax > bbox.ymax) {
+            return BoundingBox<T> (this->xmin,bbox.ymin,bbox.xmax,bbox.ymax);
+        }
+
+        if (this->xmin < bbox.xmin && this->xmax < bbox.xmax && this->ymin > bbox.ymin && this->ymax > bbox.ymax) {
+            return BoundingBox<T> (bbox.xmin,this->ymin,this->xmax,bbox.ymax);
+        }
+        if (this->xmin < bbox.xmin && this->xmax < bbox.xmax && this->ymin < bbox.ymin && this->ymax < bbox.ymax) {
+            return BoundingBox<T> (bbox.xmin,bbox.ymin,this->xmax,this->ymax);
+        }
+        if (this->xmin > bbox.xmin && this->xmax > bbox.xmax && this->ymin < bbox.ymin && this->ymax < bbox.ymax) {
+            return BoundingBox<T> (this->xmin,bbox.ymin,bbox.xmax,this->ymax);
+        }
+        if (this->xmin > bbox.xmin && this->xmax > bbox.xmax && this->ymin > bbox.ymin && this->ymax > bbox.ymax) {
+            return BoundingBox<T> (this->xmin,this->ymin,bbox.xmax,bbox.ymax);
+        }
+
+    }
+
+    /** \~french \brief Récupère la partie utile de la bbox qui appelle la fonction, en fonction de la bbox en parametre
+     * ATTENTION: on part du principe que les bbox sont dans le même CRS
+     * \param[in] bbox
+     ** \~english \brief Get the useful part of the bbox which call the function, depending of the parameter bbox
+     ** WARNING: the two bbox must have the same CRS
+     * \param[in] bbox
+     */
+    BoundingBox<T> adaptTo ( BoundingBox<T> dataBbox ) {
+
+        BoundingBox<T> askBbox = BoundingBox<T>(this->xmin,this->ymin,this->xmax,this->ymax);
+
+        if (askBbox.containsInside(dataBbox)) {
+            //les données sont a l'intérieur de la bbox demandée
+            LOGGER_DEBUG ( "les données sont a l'intérieur de la bbox demandée " );
+            return dataBbox;
+
+        } else {
+
+            if (dataBbox.containsInside(askBbox)) {
+                //la bbox demandée est plus petite que les données disponibles
+                LOGGER_DEBUG ("la bbox demandée est plus petite que les données disponibles");
+                return askBbox;
+
+            } else {
+
+                if (!dataBbox.intersects(askBbox)) {
+                    //les deux ne s'intersectent pas donc on renvoit une image de nodata
+                    LOGGER_DEBUG ("les deux ne s'intersectent pas");
+                    return BoundingBox<T> (0,0,0,0);
+
+                } else {
+                    //les deux s'intersectent
+                    LOGGER_DEBUG ("les deux bbox s'intersectent");
+                    return askBbox.cutIntersectionWith(dataBbox);
+                }
+
+            }
+
+        }
+
+    }
+
+    /** \~french \brief Détermine si une boundingBox est égale à une autre
+     * \param[in] bbox
+     ** \~english \brief Determine if a bounding box is equal to an other
+     * \param[in] bbox
+     */
+    bool isEqual ( BoundingBox<T> bbox ) {
+        return ( xmin == bbox.xmin && bbox.xmax == xmax && ymin == bbox.ymin && bbox.ymax == ymax );
+    }
+
+    /** \~french \brief Détermine si une boundingBox est nulle
+     ** \~english \brief Determine if a bounding box is null
+     */
+    bool isNull ( ) {
+        return ( xmin == 0 && xmax == 0 && ymin == 0 && ymax == 0 );
+    }
+
 
 };
 #endif
