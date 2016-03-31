@@ -53,6 +53,7 @@
 #include <stdint.h>// pour uint8_t
 #include "Logger.h"
 #include <string.h>
+#include <sstream>
 
 /**
  * \~french \brief Énumération des types de contextes
@@ -82,6 +83,7 @@ public:
 
     virtual bool connection() = 0;
 
+    virtual bool exists(std::string name) = 0;
     virtual int read(uint8_t* data, int offset, int size, std::string name) = 0;
     virtual bool write(uint8_t* data, int offset, int size, std::string name) = 0;
     virtual bool writeFull(uint8_t* data, int size, std::string name) = 0;
@@ -99,6 +101,8 @@ public:
      * \brief Context description output
      */
     virtual void print() = 0;
+
+    virtual std::string toString() = 0;
     
     virtual ~Context() {}
 };

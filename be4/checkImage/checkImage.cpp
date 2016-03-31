@@ -61,7 +61,7 @@ int main ( int argc, char **argv ) {
         Logger::setAccumulator ( WARN , acc );
         Logger::setAccumulator ( ERROR, acc );
         Logger::setAccumulator ( FATAL, acc );
-        Logger::setAccumulator(DEBUG, acc);
+        Logger::setAccumulator ( DEBUG, acc );
 
         std::ostream &logw = LOGGER ( DEBUG );
         logw.precision ( 16 );

@@ -99,6 +99,14 @@ public:
         return cluster_name;
     }
     
+    bool exists(std::string name) {
+
+        std::cout << "Test existence " << pool_name << " / " << name << std::endl;
+
+        char data[1];
+        int readSize = rados_read(io_ctx, name.c_str(), data, 1, 0);
+        return (readSize == 1);
+    }
     int read(uint8_t* data, int offset, int size, std::string name);
     bool write(uint8_t* data, int offset, int size, std::string name);
     bool writeFull(uint8_t* data, int size, std::string name);
@@ -121,8 +129,27 @@ public:
         LOGGER_INFO ( "\t- configuration file = " << conf_file );
         LOGGER_INFO ( "\t- pool name = " << pool_name );
     }
+
+    virtual std::string toString() {
+        std::ostringstream oss;
+        oss.setf ( std::ios::fixed,std::ios::floatfield );
+        oss << "------ Ceph Context -------" << std::endl;
+        oss << "\t- cluster name = " << cluster_name << std::endl;
+        oss << "\t- user name = " << user_name << std::endl;
+        oss << "\t- configuration file = " << conf_file << std::endl;
+        oss << "\t- pool name = " << pool_name << std::endl;
+        if (connected) {
+            oss << "\t- CONNECTED !" << std::endl;
+        } else {
+            oss << "\t- NOT CONNECTED !" << std::endl;
+        }
+        return oss.str() ;
+    }
     
     virtual ~CephPoolContext() {
+
+        std::cout << "Fermeture du contexte Ceph de pool " << pool_name << std::endl;
+
         rados_aio_flush(io_ctx);
         rados_ioctx_destroy(io_ctx);
         rados_shutdown(cluster);

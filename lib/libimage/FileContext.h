@@ -53,6 +53,7 @@
 #include "Logger.h"
 #include "Context.h"
 #include <iostream>
+#include <sys/stat.h>
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -80,6 +81,11 @@ public:
         return root_dir;
     }
     
+    bool exists(std::string name) {
+        struct stat buf;
+        std::string fullName = root_dir + name;
+        return (stat(fullName.c_str(), &buf) == 0);
+    }
     int read(uint8_t* data, int offset, int size, std::string name);
     bool write(uint8_t* data, int offset, int size, std::string name);
     bool writeFull(uint8_t* data, int size, std::string name);
@@ -114,6 +120,14 @@ public:
     virtual void print() {
         LOGGER_INFO ( "------ File Context -------" );
         LOGGER_INFO ( "\t- root directory = " << root_dir );
+    }
+
+    virtual std::string toString() {
+        std::ostringstream oss;
+        oss.setf ( std::ios::fixed,std::ios::floatfield );
+        oss << "------ File Context -------" << std::endl;
+        oss << "\t- root directory = " << root_dir << std::endl;
+        return oss.str() ;
     }
     
     bool connection();

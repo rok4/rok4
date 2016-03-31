@@ -66,10 +66,11 @@ Context * ContextBook::addContext(std::string pool)
         CephPoolContext * bctx = reinterpret_cast<CephPoolContext*>(baseContext);
         CephPoolContext * ctx = new CephPoolContext(bctx->getClusterName(), bctx->getPoolUser(), bctx->getPoolConf(), pool);
         //on se connecte
-        if (!ctx->connection()) {
-            LOGGER_ERROR("Impossible de se connecter aux donnees.");
-            return NULL;
-        }
+//        std::cout << "addContext connection" << std::endl;
+//        if (!ctx->connection()) {
+//            LOGGER_ERROR("Impossible de se connecter aux donnees.");
+//            return NULL;
+//        }
         //on ajoute au book
         book.insert ( std::pair<std::string,Context*>(pool,ctx) );
 

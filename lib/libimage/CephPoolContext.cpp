@@ -79,16 +79,21 @@ CephPoolContext::CephPoolContext (std::string pool) : Context(), pool_name(pool)
 }
 
 bool CephPoolContext::connection() {
+
+    std::cout << "Connexion demandée : pool " << pool_name << std::endl;
+
     uint64_t flags;
     int ret = 0;
 
     ret = rados_create2(&cluster, cluster_name.c_str(), user_name.c_str(), flags);
+    std::cout << "rados_create2 OK" << std::endl;
     if (ret < 0) {
         LOGGER_ERROR("Couldn't initialize the cluster handle! error " << ret);
         return false;
     }
 
     ret = rados_conf_read_file(cluster, conf_file.c_str());
+    std::cout << "rados_conf_read_file OK" << std::endl;
     if (ret < 0) {
         LOGGER_ERROR( "Couldn't read the Ceph configuration file! error " << ret );
         LOGGER_ERROR( "Configuration file : " << conf_file );
@@ -96,12 +101,14 @@ bool CephPoolContext::connection() {
     }
 
     ret = rados_connect(cluster);
+    std::cout << "rados_connect OK" << std::endl;
     if (ret < 0) {
         LOGGER_ERROR( "Couldn't connect to cluster! error " << ret );
         return false;
     }
 
     ret = rados_ioctx_create(cluster, pool_name.c_str(), &io_ctx);
+    std::cout << "rados_ioctx_create OK" << std::endl;
     if (ret < 0) {
         LOGGER_ERROR( "Couldn't set up ioctx! error " << ret );
         LOGGER_ERROR( "Pool : " << pool_name );

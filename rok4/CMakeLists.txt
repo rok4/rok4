@@ -147,7 +147,7 @@ endif(BUILD_DOC)
 
 #Installe les différentes sortie du projet (projet, projetcore ou UnitTester-${PROJECT_NAME})
 # ici uniquement "projet"
-INSTALL(TARGETS rok4 rok4core 
+INSTALL(TARGETS rok4 rok4core test_api
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib

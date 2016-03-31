@@ -55,6 +55,7 @@
 #include <vector>
 #include "ServicesConf.h"
 #include "Layer.h"
+#include <stdio.h>
 #include "TileMatrixSet.h"
 #include "fcgiapp.h"
 #include <csignal>
@@ -201,6 +202,8 @@ private:
      * \brief Build the invariant fragments of the WMTS GetCapabilities
      */
     void buildWMTSCapabilities();
+
+
 
     /**
      * \~french

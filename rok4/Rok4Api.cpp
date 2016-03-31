@@ -105,6 +105,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
         std::cerr<<_ ( "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " ) <<strServerConfigFile<<std::endl;
         return NULL;
     }
+
     if ( !loggerInitialised ) {
         Logger::setOutput ( logOutput );
         // Initialisation du logger
@@ -172,11 +173,16 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
         return NULL;
     }
 
-
+    printf("Connexion de contextes...\n");
+    contextBook->connectContexts();
+    printf("Connexion de contextes OK\n");
 
     // Instanciation du serveur
-    Logger::stopLogger();
-    return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog, contextBook, supportWMTS, supportWMS );
+    //Logger::stopLogger();
+
+    Rok4Server* toto = new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog, contextBook, supportWMTS, supportWMS );
+
+    return toto;
 }
 
 /**
@@ -314,6 +320,27 @@ CephRef* rok4GetCephReferences (Rok4Server* server) {
 
 
 /**
+* \brief Implementation de l'operation ExistObjectCeph
+* \brief Cela permet de tester l'existance d'un objet sur Ceph
+* \param[in] server
+* \param[in] nom de l'objet
+* \param[in] pool contenant l'objet
+* \return int 1 si l'objet existe, 0 sinon
+*/
+
+
+int rok4ExistObjectCeph(Rok4Server* server, const char* name, const char* pool) {
+
+    Context * ctx = server->getContextBook()->getContext(pool);
+    if (ctx == NULL) {
+        return false;
+    }
+
+    return ctx->exists((std::string)name);
+
+}
+
+/**
 * \brief Implementation de l'operation ReadObjectCeph
 * \brief Cela permet de transmettre une donnée issue de ceph
 * \param[in] server
@@ -328,16 +355,49 @@ CephRef* rok4GetCephReferences (Rok4Server* server) {
 
 int rok4ReadObjectCeph(Rok4Server* server, const char* name, const char* pool, int offset, int size, char* data) {
 
-    int err = -1;
 
-    Context * ctx = server->getContextBook()->getContext(pool);
-    if (ctx == NULL) {
-        return err;
+    std::cout << "-------------------- Demande de lecture des " << size << " octets à partir de " << offset << " dans l'objet " << std::string(name) << std::endl;
+//    int err = -1;
+
+//    Context * ctx = server->getContextBook()->getContext(pool);
+//    if (ctx == NULL) {
+//        return err;
+//    }
+
+//    err = ctx->read((uint8_t*)data, offset, size, (std::string)name);
+
+//    return err;
+
+    if (size == 4) {
+        *((uint32_t*) data) = 15;
+    } else {
+        memset(data, 6, size);
     }
 
-    err = ctx->read((uint8_t*)data, offset, size, (std::string)name);
+    return size;
 
-    return err;
+}
+
+/**
+* \brief Implementation de l'operation ExistObjectSwift
+* \brief Cela permet de tester l'existance d'un objet sur Swift
+* \param[in] server
+* \param[in] nom de l'objet
+* \param[in] container contenant l'objet
+* \return int 1 si l'objet existe, 0 sinon
+*/
+
+
+int rok4ExistObjectSwift(Rok4Server* server, const char* name, const char* container) {
+
+
+    std::cout << "-------------------- Test de l'objet " << std::string(name) << std::endl;
+    Context * ctx = server->getContextBook()->getContext(container);
+    if (ctx == NULL) {
+        return false;
+    }
+
+    return ctx->exists((std::string)name);
 
 }
 
@@ -354,11 +414,11 @@ int rok4ReadObjectCeph(Rok4Server* server, const char* name, const char* pool, i
 */
 
 
-int rok4ReadObjectSwift(Rok4Server* server, const char* name, const char* pool, int offset, int size, char* data) {
+int rok4ReadObjectSwift(Rok4Server* server, const char* name, const char* container, int offset, int size, char* data) {
 
     int err = -1;
 
-//    Context * ctx = server->getContextBook()->getContext(pool);
+//    Context * ctx = server->getContextBook()->getContext(container);
 //    if (ctx == NULL) {
 //        return err;
 //    }
@@ -387,7 +447,7 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
 
     Request* request=new Request ( ( char* ) strQuery.c_str(), ( char* ) hostName, ( char* ) scriptName, ( char* ) https );
     Layer* layer;
-    std::string tmId,mimeType,format,encoding,imageFilePath;
+    std::string tmId,mimeType,format,encoding,imagePath;
     int x,y;
     Style* style =0;
     // Analyse de la requete
@@ -413,7 +473,7 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
 
     if (level->getTilesPerHeight() == 0 && level->getTilesPerWidth() == 0) {
         //on doit lire une tuile et non une dalle
-        imageFilePath=level->getPath ( x, y,1, 1);
+        imagePath=level->getPath ( x, y,1, 1);
         tileRef->posoff = 0;
         tileRef->possize = 0;
 
@@ -426,7 +486,7 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
         int n= ( y%level->getTilesPerHeight() ) *level->getTilesPerWidth() + ( x%level->getTilesPerWidth() );
         tileRef->posoff=2048+4*n;
         tileRef->possize=2048+4*n +level->getTilesPerWidth() *level->getTilesPerHeight() *4;
-        imageFilePath=level->getPath ( x, y,level->getTilesPerWidth(), level->getTilesPerHeight());
+        imagePath=level->getPath ( x, y,level->getTilesPerWidth(), level->getTilesPerHeight());
 
         std::string strType = "SLAB";
         tileRef->storeType=new char[strType.length() +1];
@@ -434,8 +494,8 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
 
     }
 
-    tileRef->name=new char[imageFilePath.length() +1];
-    strcpy ( tileRef->name,imageFilePath.c_str() );
+    tileRef->name=new char[imagePath.length() +1];
+    strcpy ( tileRef->name,imagePath.c_str() );
 
     tileRef->maxsize = level->getMaxTileSize();
 

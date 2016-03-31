@@ -43,10 +43,10 @@ add_subdirectory(overlayNtiff)
 add_subdirectory(pyramide)
 add_subdirectory(tiff2gray)
 add_subdirectory(tiff2tile)
-add_subdirectory(tiffck)
 #######################
 # utilitaire de test :
 add_subdirectory(checkImage)
+add_subdirectory(tiffck)
 ######################
 
 # Documentation Doxygen

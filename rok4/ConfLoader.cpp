@@ -590,16 +590,6 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     if ( formatStr.compare ( "TIFF_INT8" ) ==0 ) formatStr = "TIFF_RAW_INT8";
     if ( formatStr.compare ( "TIFF_FLOAT32" ) ==0 ) formatStr = "TIFF_RAW_FLOAT32";
 
-    /*if (formatStr.compare("TIFF_RAW_INT8")!=0
-         && formatStr.compare("TIFF_JPG_INT8")!=0
-         && formatStr.compare("TIFF_PNG_INT8")!=0
-         && formatStr.compare("TIFF_LZW_INT8")!=0
-         && formatStr.compare("TIFF_RAW_FLOAT32")!=0
-         && formatStr.compare("TIFF_LZW_FLOAT32")!=0){
-                LOGGER_ERROR(fileName << "Le format ["<< formatStr <<"] n'est pas gere.");
-                return NULL;
-    }*/
-
     format = Rok4Format::fromString ( formatStr );
     if ( ! ( format ) ) {
         LOGGER_ERROR ( fileName << _ ( "Le format [" ) << formatStr <<_ ( "] n'est pas gere." ) );

@@ -95,6 +95,18 @@ public:
         return baseContext;
     }
 
+    bool connectContexts() {
+        std::map<std::string, Context*>::iterator it = book.begin();
+        while (it != book.end()) {
+            if (! it->second->connection()) {
+                LOGGER_ERROR("Impossible de se connecter le contexte Ceph de pool " << it->first);
+                return false;
+            }
+            it++;
+        }
+        return true;
+    }
+
     /**
      * \~french
      * \brief Retourne le baseContext si c'est du Ceph
@@ -107,6 +119,22 @@ public:
         } else {
             return NULL;
         }
+    }
+
+    virtual std::string toString() {
+        std::ostringstream oss;
+        oss.setf ( std::ios::fixed,std::ios::floatfield );
+        oss << "------ Context book -------" << std::endl;
+        oss << "\t- context number = " << book.size() << std::endl;
+
+        std::map<std::string, Context*>::iterator it = book.begin();
+        while (it != book.end()) {
+            oss << "\t\t- pool = " << it->first << std::endl;
+            oss << it->second->toString() << std::endl;
+            it++;
+        }
+
+        return oss.str() ;
     }
 
     /**

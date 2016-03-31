@@ -114,20 +114,24 @@ bool parseCommandLine ( int argc, char* argv[], char* server_config_file, int* n
 * @param[in] arg : pointeur sur le fichier de configuration du serveur
 */
 
-void* processThread ( void* arg ) {
+void* processThread ( void* server ) {
     // Initialisation du serveur
 
-    pthread_mutex_lock ( &mutex_rok4 );
-    void* server=rok4InitServer ( ( char* ) arg );
-    pthread_mutex_unlock ( &mutex_rok4 );
-
-    if ( server==0 ) {
-        fprintf ( stdout,"Impossible d'initialiser le serveur\n" );
-        return 0;
+    printf("test des connexions CEPH via rok4server\n");
+    if (rok4ExistObjectCeph(server ,"toto", "PYRAMIDS") == 0) {
+        printf("PYRAMIDS / toto n'existe pas\n");
+    } else {
+        printf("PYRAMIDS / toto existe\n");
     }
-    fprintf ( stdout,"Serveur initialise\n" );
+    if (rok4ExistObjectCeph(server ,"CEPH_DALLE_IMG_10_65_43", "PYRAMIDS") == 0) {
+        printf("PYRAMIDS / CEPH_DALLE_IMG_10_65_43 n'existe pas\n");
+    } else {
+        printf("PYRAMIDS / CEPH_DALLE_IMG_10_65_43 existe\n");
+    }
+
 
     // Traitement des requetes
+    /*
     while ( !feof ( requestFile ) ) {
         char query[400],host[400],script[400];
         memset ( query,'\0',400 );
@@ -221,9 +225,8 @@ void* processThread ( void* arg ) {
         }
         rok4DeleteRequest ( request );
     }
+    */
 
-    // Extinction du serveur
-    rok4KillServer ( server );
 
     return 0;
 }
@@ -249,14 +252,28 @@ int main ( int argc, char* argv[] ) {
         return -1;
     }
 
+    void* server=rok4InitServer ( server_config_file );
+
+    if ( server==0 ) {
+        fprintf ( stdout,"Impossible d'initialiser le serveur\n" );
+        return 0;
+    }
+    fprintf ( stdout,"Serveur initialise\n" );
+
     pthread_t* threads= ( pthread_t* ) malloc ( nb_threads*sizeof ( pthread_t ) );
     int i;
     for ( i = 0; i < nb_threads; i++ ) {
-        pthread_create ( & ( threads[i] ), NULL, processThread, ( void* ) server_config_file );
+        pthread_create ( & ( threads[i] ), NULL, processThread, server );
     }
     for ( i = 0; i < nb_threads; i++ )
         pthread_join ( threads[i], NULL );
 
     free ( threads );
+
+
+    // Extinction du serveur
+    rok4KillServer ( server );
+
+
     return 0;
 }

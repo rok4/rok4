@@ -87,6 +87,10 @@ public:
         return container_name;
     }
     
+    bool exists(std::string name) {
+        // TODO : Implémenter l'existance d'un objet dans swift
+        return true;
+    }
     int read(uint8_t* data, int offset, int size, std::string name);
     bool write(uint8_t* data, int offset, int size, std::string name) {
         LOGGER_ERROR("Can't write a Swift object from buffer");
@@ -113,6 +117,16 @@ public:
         LOGGER_INFO ( "\t- user account = " << user_account );
         LOGGER_INFO ( "\t- user name = " << user_name );
         LOGGER_INFO ( "\t- container name = " << container_name );
+    }
+
+    virtual std::string toString() {
+        std::ostringstream oss;
+        oss.setf ( std::ios::fixed,std::ios::floatfield );
+        oss << "------ Swift Context -------" << std::endl;
+        oss << "\t- user account = " << user_account << std::endl;
+        oss << "\t- user name = " << user_name << std::endl;
+        oss << "\t- container name = " << container_name << std::endl;
+        return oss.str() ;
     }
     
     bool connection();

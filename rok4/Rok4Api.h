@@ -132,8 +132,10 @@ typedef void Rok4Server;
     PngPaletteHeader* rok4GetPngPaletteHeader ( int width, int height, TilePalette* palette );
     HttpResponse* rok4GetOperationNotSupportedException ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server );
     HttpResponse* rok4GetNoDataFoundException ( );
+    int rok4ExistObjectCeph(Rok4Server* server, const char* name, const char* pool);
     int rok4ReadObjectCeph(Rok4Server* server, const char* name, const char* pool, int offset, int size, char *data);
-    int rok4ReadObjectSwift(Rok4Server* server, const char* name, const char* pool, int offset, int size, char *data);
+    int rok4ExistObjectSwift(Rok4Server* server, const char* name, const char* container);
+    int rok4ReadObjectSwift(Rok4Server* server, const char* name, const char* container, int offset, int size, char *data);
 
     void rok4DeleteRequest ( HttpRequest* request );
     void rok4DeleteResponse ( HttpResponse* response );
