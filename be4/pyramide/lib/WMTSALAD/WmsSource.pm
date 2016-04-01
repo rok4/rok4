@@ -124,7 +124,7 @@ my %WMS;
 BEGIN {}
 INIT {
     %WMS = (
-        format => ['image/png','image/tiff','image/x-bil;bits=32','image/tiff&format_options=compression:deflate','image/tiff&format_options=compression:lzw','image/tiff&format_options=compression:packbits','image/tiff&format_options=compression:raw'],
+        format => ['image/png','image/jpeg','image/tiff','image/x-bil;bits=32','image/tiff&format_options=compression:deflate','image/tiff&format_options=compression:lzw','image/tiff&format_options=compression:packbits','image/tiff&format_options=compression:raw'],
         version => ['1.1.1', '1.3.0'],
     );
 }
