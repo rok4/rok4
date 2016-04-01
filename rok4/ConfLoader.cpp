@@ -1469,6 +1469,24 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
     TiXmlElement* sUrl = sWeb->FirstChildElement("url");
     if (sUrl && sUrl->GetText()) {
         url = sUrl->GetTextStr();
+
+        std::size_t found = url.find(" ");
+        if (found!=std::string::npos) {
+          LOGGER_ERROR("Une URL ne peut contenir des espaces");
+          return NULL;
+        }
+
+        found = url.find("?");
+        size_t size = url.size()-1;
+        if (found!=std::string::npos && found!=size) {
+            LOGGER_ERROR("Une URL ne peut contenir un ou des '?' hormis le dernier qui est un séparateur");
+            return NULL;
+        }
+
+        if (found==std::string::npos) {
+            url = url + "?";
+        }
+
     } else {
         LOGGER_ERROR("Une URL doit etre specifiee pour un WebService");
         return NULL;
