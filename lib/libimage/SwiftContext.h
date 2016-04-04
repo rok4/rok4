@@ -131,6 +131,21 @@ public:
         LOGGER_INFO ( "\t- user name = " << user_name );
         LOGGER_INFO ( "\t- container name = " << container_name );
     }
+
+    virtual std::string toString() {
+        std::ostringstream oss;
+        oss.setf ( std::ios::fixed,std::ios::floatfield );
+        oss << "------ Swift Context -------" << std::endl;
+        oss << "\t- user account = " << user_account << std::endl;
+        oss << "\t- user name = " << user_name << std::endl;
+        oss << "\t- container name = " << container_name << std::endl;
+        if (connected) {
+            oss << "\t- CONNECTED !" << std::endl;
+        } else {
+            oss << "\t- NOT CONNECTED !" << std::endl;
+        }
+        return oss.str() ;
+    }
     
     bool connection();
     

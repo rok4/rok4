@@ -490,6 +490,19 @@ public:
         );
     }
 
+    
+    /**
+     * \~french
+     * \brief Retourne le type du canal supplémentaire
+     * \return esType
+     * \~english
+     * \brief Return extra sample type
+     * \return esType
+     */
+    inline ExtraSample::eExtraSample getExtraSample() {
+        return esType;
+    }
+    
     /**
      * \~french
      * \brief Modifie le type du canal supplémentaire
@@ -498,6 +511,17 @@ public:
      */
     inline void setExtraSample(ExtraSample::eExtraSample es) {
         esType = es;
+    }
+    /**
+     * \~french
+     * \brief Retourne la compression des données
+     * \return compression
+     * \~english
+     * \brief Return data compression
+     * \return compression
+     */
+    inline Compression::eCompression getCompression() {
+        return compression;
     }
 
     /**
