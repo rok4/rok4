@@ -116,7 +116,7 @@ RawDataSource * WebService::performRequest(std::string request) {
                 curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
                 //----
 
-                LOGGER_DEBUG("Perform the request - " << nbPerformed << "/" << retry+1 << " time");
+                LOGGER_DEBUG("Perform the request => (" << nbPerformed << "/" << retry+1 << ") time");
                 /* Perform the request, res will get the return code */
                 res = curl_easy_perform(curl);
 
