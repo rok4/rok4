@@ -46,6 +46,7 @@ Group: Tools  {
    File: COORD2IMAGE  (no auto-title, bin/coord2image.pl)
    File: CREATE-LAYER  (no auto-title, bin/create-layer.pl)
    File: JOINCACHE  (no auto-title, bin/joinCache.pl)
+   File: WMTSALAD  (no auto-title, bin/wmtSalaD.pl)
    }  # Group: Tools
 
 Group: Classes  {
@@ -117,6 +118,34 @@ Group: Classes  {
          }  # Group: Utils
 
       }  # Group: JOINCACHE
+
+
+      Group: WMTSALAD  {
+
+      File: Global  (no auto-title, lib/BE4.txt)
+
+      Group: Sources  {
+
+         File: DataSource  (no auto-title, lib/WMTSALAD/DataSource.pm)
+         File: WmsSource  (no auto-title, lib/WMTSALAD/WmsSource.pm)
+         File: PyrSource  (no auto-title, lib/WMTSALAD/PyrSource.pm)
+         }  # Group: Sources
+
+      Group: About pyramid  {
+
+         File: NoData  (no auto-title, lib/BE4/NoData.pm)
+         File: Pixel  (no auto-title, lib/BE4/Pixel.pm)
+         File: Pyramid  (no auto-title, lib/WMTSALAD/Pyramid.pm)
+         File: TileMatrix  (no auto-title, lib/BE4/TileMatrix.pm)
+         File: TileMatrixSet  (no auto-title, lib/BE4/TileMatrixSet.pm)
+         }  # Group: About pyramid
+
+      Group: Utils  {
+
+         File: Config  (no auto-title, lib/COMMON/Config.pm)
+         }  # Group: Utils
+
+      }  # Group: WMTSALAD
 
    }  # Group: Classes
 

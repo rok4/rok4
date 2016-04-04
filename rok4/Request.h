@@ -228,6 +228,28 @@ public:
     bool doesPathFinishWith(std::string word);
     /**
      * \~french
+     * \brief Précise si le path contient un mot
+     * \param word
+     * \return bool
+     * \~english
+     * \brief Precise if the path contains a word
+     * \param word
+     * \return bool
+     */
+    bool doesPathContain(std::string word);
+    /**
+     * \~french
+     * \brief Précise si le path finit avec un mot précisé
+     * \param word
+     * \return bool
+     * \~english
+     * \brief Precise if the path finish with a word
+     * \param word
+     * \return bool
+     */
+    bool doesPathFinishWith(std::string word);
+    /**
+     * \~french
      * \brief Constructeur d'une requête de type GET
      * \param strquery chaîne de caractères représentant la requête
      * \param hostName nom de domaine déclaré dans la requête
