@@ -331,6 +331,14 @@ $errPyramid = WMTSALAD::Pyramid->new($valid_prop, $temp_src_file);
 ok(! defined $errPyramid, "Datasources file error : overlapping level ranges");
 undef $errPyramid;
 
+# Datasources file error : unknown level
+$src_buffer =~ s/lv_top = 11/lv_top = onze/;
+$written = writeTemp($src_buffer, $temp_src_file);
+$src_buffer =~ s/lv_top = onze/lv_top = 11/;
+$errPyramid = WMTSALAD::Pyramid->new($valid_prop, $temp_src_file);
+ok(! defined $errPyramid, "Datasources file error : unknown level");
+undef $errPyramid;
+
 # Datasources file error : COMMON::Config error
 my $src_buffer2 = "orphan = value\n";
 $written = writeTemp($src_buffer2, $temp_src_file);
@@ -348,12 +356,28 @@ $errPyramid = WMTSALAD::Pyramid->new($valid_prop, $temp_src_file);
 ok(! defined $errPyramid, "Datasources file error : Pyramid creation without source");
 undef $errPyramid;
 
+# Datasources file error : invalid extent
+$src_buffer =~ s/extent = -770850,4929770,1279780,6783830/extent = -770850,6783830,1279780,4929770/;
+$written = writeTemp($src_buffer, $temp_src_file);
+$src_buffer =~ s/extent = -770850,6783830,1279780,4929770/extent = -770850,4929770,1279780,6783830/;
+$errPyramid = WMTSALAD::Pyramid->new($valid_prop, $temp_src_file);
+ok(! defined $errPyramid, "Datasources file error : invalid extent");
+undef $errPyramid;
+
 # Datasources file error : PyrSource => descriptor does not exist
 $src_buffer =~ s/file = be4\/pyramide\/tests\/pyramid\/oldPyramid.pyr/file = does\/not\/exist.pyr/;
 $written = writeTemp($src_buffer, $temp_src_file);
 $src_buffer =~ s/file = does\/not\/exist.pyr/file = be4\/pyramide\/tests\/pyramid\/oldPyramid.pyr/;
 $errPyramid = WMTSALAD::Pyramid->new($valid_prop, $temp_src_file);
 ok(! defined $errPyramid, "Datasources file error : WMTSALAD::PyrSource error");
+undef $errPyramid;
+
+# Datasources file error : WmsSource => descriptor does not exist
+$src_buffer =~ s/wms_format          =  image\/png/wms_format          =  image\/painting/;
+$written = writeTemp($src_buffer, $temp_src_file);
+$src_buffer =~ s/wms_format          =  image\/painting/wms_format          =  image\/png/;
+$errPyramid = WMTSALAD::Pyramid->new($valid_prop, $temp_src_file);
+ok(! defined $errPyramid, "Datasources file error : WMTSALAD::WmsSource error");
 undef $errPyramid;
 
 

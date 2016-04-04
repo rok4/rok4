@@ -481,10 +481,18 @@ sub _loadDatasources {
                     $source->{$param} = $cfg->getProperty({section => $section, subsection => $orders[$order], property => $param});
                 }
 
+                my $sourceObject;
+
                 if ($cfg->isProperty({section => $section, subsection => $orders[$order], property => 'file'})) {
-                    push $self->{datasources}->{$lv}, WMTSALAD::PyrSource->new($source);
+                    $sourceObject = WMTSALAD::PyrSource->new($source);
+                    push $self->{datasources}->{$lv}, $sourceObject;
                 } elsif ($cfg->isProperty({section => $section, subsection => $orders[$order], property => 'wms_url'})) {
-                    push $self->{datasources}->{$lv}, WMTSALAD::WmsSource->new($source);
+                    $sourceObject = WMTSALAD::WmsSource->new($source);
+                    push $self->{datasources}->{$lv}, $sourceObject;
+                }
+                if (! defined $sourceObject) {
+                    ERROR("Could not load source.");
+                    return FALSE;
                 }
 
             }
@@ -681,7 +689,7 @@ sub isValidExtent {
         }
     }
     if ( ($extent[0] >= $extent[2]) || ($extent[1] >= $extent[3]) ) {
-        ERROR(sprintf "Wrong coordinates order for extent '%s'. Syntax : xMin,yMin,xMax,yMax");
+        ERROR(sprintf "Wrong coordinates order for extent '%s'. Syntax : xMin,yMin,xMax,yMax", $string);
         return FALSE;
     }
 
