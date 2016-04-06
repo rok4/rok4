@@ -185,6 +185,11 @@ sub main {
         printf STDERR "%s\n", $message;
         exit 1;                
     }
+    if (! $objPyramid->writeCachePyramid()) {
+        $message = "PYRAMID CACHE CREATION ERROR !";
+        printf STDERR "%s\n", $message;
+        exit 1;                
+    }
 
     $message = "END";
     printf STDOUT "%s\n", $message;
@@ -556,7 +561,7 @@ For more informations about properties, see <WMTSALAD::WmsSource>.
     wms_option - List of options, as it will appear in the request. Optionnal
 
     Note that you are strongly advised to use the same color (adapted to the image format and number of channels) for the WMS source's nodata and the output pyramid's nodata.
-
+    
 Examples:
     (start code)
     [ level_range_19_11 ]
