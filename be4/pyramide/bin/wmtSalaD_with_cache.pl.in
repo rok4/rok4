@@ -185,6 +185,11 @@ sub main {
         printf STDERR "%s\n", $message;
         exit 1;                
     }
+    if (! $objPyramid->writeCachePyramid()) {
+        $message = "PYRAMID CACHE CREATION ERROR !";
+        printf STDERR "%s\n", $message;
+        exit 1;                
+    }
 
     $message = "END";
     printf STDOUT "%s\n", $message;
