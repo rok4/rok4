@@ -1060,8 +1060,8 @@ sub writeConfPyramid {
         $levelEl->appendTextChild("pathDepth", $self->{dir_depth});
         my $nodataEl = $descDoc->createElement("nodata");
         $levelEl->appendChild($nodataEl);
-        my $nodataBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_nodata}, $lvlId);
-        $nodataEl->appendTextChild("filePath", $nodataBaseDir);
+        my $nodataBaseFilePath = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_nodata}, $lvlId, $self->{noData}->getNodataFilename());
+        $nodataEl->appendTextChild("filePath", $nodataBaseFilePath);
 
         # TMSLimits : level extent in the TileMatrix
         my $TMSLimitsEl = $descDoc->createElement("TMSLimits");
