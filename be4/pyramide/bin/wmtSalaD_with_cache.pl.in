@@ -499,8 +499,8 @@ For more informations about datasources configuration loading, see <WMTSALAD::Py
 Topic: Level range sections
 
 Each section represents a level range. The sources for every level of this range will have the same configuration.
-Section's name must be unique and use only alphanumeric character (from the ascii set) and/or the underscore.
-The name '_props' is reserved. Aside from that, do what you want (it is however advised to use meaningful names to identify ranges)
+Section's name must be unique and use only characters from the following class: [a-zA-Z0-9_-].
+The name '_props' is reserved. Aside from that, do what you want (you are however advised to use meaningful names to identify ranges)
 The structure is the following :
     (start code)
     [ section ]
@@ -560,6 +560,8 @@ For more informations about properties, see <WMTSALAD::WmsSource>.
 
     wms_option - List of options, as it will appear in the request. Optionnal
 
+    Note that you are strongly advised to use the same color (adapted to the image format and number of channels) for the WMS source's nodata and the output pyramid's nodata.
+    
 Examples:
     (start code)
     [ level_range_19_11 ]
