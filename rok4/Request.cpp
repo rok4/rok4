@@ -1357,6 +1357,16 @@ DataSource* Request::WMSGetFeatureInfoParam (ServicesConf& servicesConf, std::ma
 
     // INFO_FORMAT (facultative)
     info_format=getParam ( "info_format" );
+    if ( format == "" ){
+        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre INFO_FORMAT vide." ),"wms" ) );
+    }else{
+        for ( k=0; k<servicesConf.getFormatList()->size(); k++ ) {
+            if ( servicesConf.getFormatList()->at ( k ) ==format )
+                break;
+        }
+        if ( k==servicesConf.getFormatList()->size() )
+            return new SERDataSource ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Info_Format " ) +format+_ ( " non gere par le service." ),"wms" ) );
+    }
 
     // BBOX
     std::string strBbox=getParam ( "bbox" );
