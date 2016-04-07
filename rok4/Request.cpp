@@ -1171,29 +1171,6 @@ bool Request::doesPathFinishWith(std::string word) {
     }
 }
 
-bool Request::doesPathContain(std::string word) {
-    std::size_t found = path.find(word);
-    if (found!=std::string::npos) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-bool Request::doesPathFinishWith(std::string word) {
-    std::size_t found = path.find_last_of("/");
-    if (found!=std::string::npos) {
-        if (path.substr(found+1) == word)
-        {
-            return true;
-        } else {
-            return false;
-        }
-
-    } else {
-        return false;
-    }
-}
 // Parameters for WMS GetFeatureInfo
 DataSource* Request::WMSGetFeatureInfoParam (ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers,
                                           std::vector<Layer*>& query_layers,
@@ -1357,15 +1334,15 @@ DataSource* Request::WMSGetFeatureInfoParam (ServicesConf& servicesConf, std::ma
 
     // INFO_FORMAT (facultative)
     info_format=getParam ( "info_format" );
-    if ( format == "" ){
+    if ( info_format == "" ){
         return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre INFO_FORMAT vide." ),"wms" ) );
     }else{
         for ( k=0; k<servicesConf.getFormatList()->size(); k++ ) {
-            if ( servicesConf.getFormatList()->at ( k ) ==format )
+            if ( servicesConf.getFormatList()->at ( k ) ==info_format )
                 break;
         }
         if ( k==servicesConf.getFormatList()->size() )
-            return new SERDataSource ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Info_Format " ) +format+_ ( " non gere par le service." ),"wms" ) );
+            return new SERDataSource ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Info_Format " ) +info_format+_ ( " non gere par le service." ),"wms" ) );
     }
 
     // BBOX
@@ -1521,6 +1498,17 @@ DataSource* Request::WMTSGetFeatureInfoParam (ServicesConf& servicesConf,  std::
 
     // INFO_FORMAT (facultative)
     info_format=getParam ( "info_format" );
+    if ( info_format == "" ){
+        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre INFO_FORMAT vide." ),"wmts" ) );
+    }else{
+        unsigned int k;
+        for ( k=0; k<servicesConf.getFormatList()->size(); k++ ) {
+            if ( servicesConf.getFormatList()->at ( k ) ==info_format )
+                break;
+        }
+        if ( k==servicesConf.getFormatList()->size() )
+            return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Info_Format " ) +info_format+_ ( " non gere par le service." ),"wmts" ) );
+    }
 
     // X
     std::string strX=getParam ( "x" );

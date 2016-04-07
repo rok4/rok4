@@ -1038,7 +1038,8 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             //----
 
             //----NODATA
-            // Mandatory only for onDemand and onFly Pyramid
+            // Must exist for normal pyramid but could possibly not exist for onDemand and onFly Pyramid
+            // BUT the path must be written in conf file in these cases
             TiXmlElement* pElemNoData=hLvl.FirstChild ( "nodata" ).Element();
 
             if ( pElemNoData ) {    // FilePath must be specified if nodata tag exist
@@ -1588,7 +1589,14 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
             format = sFormat->GetTextStr();
             Rok4Format::eformat_data fmt = Rok4Format::fromMimeType(format);
             if (fmt == Rok4Format::UNKNOWN) {
-                LOGGER_ERROR("Un WMS doit contenir un format lisible par rok4");
+                LOGGER_ERROR("Un WMS doit être requete dans un format lisible par rok4");
+                return NULL;
+            }
+            //Pour le moment, on autorise que deux formats (jpeg et png)
+            //car les autres ne sont pas gérer correctement par les decodeurs de Rok4
+            //il faudrait notamment creer un decodeur pour le tiff (lecture de l'en-tête, puis decompression)
+            if (format != "image/jpeg" && format != "image/png") {
+                LOGGER_ERROR("Un WMS doit être requete en image/jpeg ou image/png");
                 return NULL;
             }
         } else {
