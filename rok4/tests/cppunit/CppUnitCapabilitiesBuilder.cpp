@@ -185,6 +185,7 @@ protected:
     Style* style;
     Layer* layer;
     TileMatrixSet* onematrixset;
+    Proxy proxy;
     Rok4Server* myrok4server;
 
 };
@@ -264,7 +265,9 @@ void CppUnitCapabilitiesBuilder::setUp() {
     supportWMS = true; // 9th arg
     supportWMTS = false; // If true -> seg fault for the test 8th arg
     nbProcess = 1;
-    myrok4server = new Rok4Server(nbThread, *services_conf, layerlist, mytilematrixset, stylelist, socket, backlog, supportWMTS, supportWMS, nbProcess);
+    proxy.proxyName = "";
+    proxy.noProxy = "";
+    myrok4server = new Rok4Server(nbThread, *services_conf, layerlist, mytilematrixset, stylelist, socket, backlog, proxy, supportWMTS, supportWMS, nbProcess);
 
 }
 
