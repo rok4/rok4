@@ -92,7 +92,6 @@ undef $testWriteCache;
 
 # Pyramid creation with optionnal parameters undefined
 $prop_buffer =~ s/\n(persistent)/\n;$1/;
-$prop_buffer =~ s/\n(dir_mask)/\n;$1/;
 $prop_buffer =~ s/\n(dir_metadata)/\n;$1/;
 $prop_buffer =~ s/\n(compression)/\n;$1/;
 $prop_buffer =~ s/\n(photometric)/\n;$1/;
