@@ -51,9 +51,6 @@
 #include <string>
 
 
-using namespace std;
-
-
 class Pente {
 
 public:
@@ -64,7 +61,7 @@ public:
      * \brief resolution : algo : slope calculation algorithm chosen by the user (value = "Z" for Zevenbergen&Thorne OR "H" for Horn)
      */
 
-    string algo;
+    std::string algo;
     bool isPente = false;
 
 public:
@@ -75,11 +72,11 @@ public:
         else {return true;}
         }
 
-    string setAlgo(n_algo){
-        algo=n_algo;
+    void setAlgo(std::string n_algo){
+        algo = n_algo;
         }
 
-    bool setPente(n_pente){
+    void setPente(bool n_pente){
         isPente=n_pente;
         }
 

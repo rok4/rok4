@@ -50,6 +50,7 @@
 #include "LegendURL.h"
 #include "Keyword.h"
 #include "Palette.h"
+#include "Pente.h"
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -128,11 +129,11 @@ private :
      * \~english \brief Lookup table (value -> colour)
      */
     Palette palette;
-	/**
+    /**
      * \~french \brief Définit si un calcul de pente doit être appliqué
      * \~english \brief Define wether the server must compute a slope with a threshold
      */
-	Pente pente;
+    Pente pente;
     /**
      * \~french \brief Définit si un estompage doit être appliqué
      * \~english \brief Define wether the server must compute a relief shadow
@@ -180,7 +181,7 @@ public:
       */
     Style ( const std::string& id,const std::vector<std::string>& titles,
             const std::vector<std::string>& abstracts,const  std::vector<Keyword>& keywords,
-            const std::vector<LegendURL>& legendURLs, Palette& palette ,int angle =-1, float exaggeration=1., uint8_t center=0 );
+            const std::vector<LegendURL>& legendURLs, Palette& palette ,  Pente& pente, int angle =-1, float exaggeration=1., uint8_t center=0 );
 
     /**
      * \~french

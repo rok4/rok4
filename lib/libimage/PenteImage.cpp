@@ -44,9 +44,6 @@
 #include <cmath>
 #define DEG_TO_RAD      .0174532925199432958
 #include <string>
-
- 
-using namespace std;
  
 
 
@@ -72,7 +69,7 @@ int PenteImage::getline ( uint8_t* buffer, int line ) {
 }
 
 //definition des variables
-PenteImage::PenteImage ( Image* image,  float resolution, string algo) :
+PenteImage::PenteImage ( Image* image,  float resolution, std::string algo) :
     Image ( image->getWidth(), image->getHeight(), 1, image->getBbox() ),
     origImage ( image ), pente ( NULL ), resolution (resolution), algo (algo)//, center ( center )
 	{
@@ -93,7 +90,7 @@ PenteImage::PenteImage ( Image* image,  float resolution, string algo) :
 		matrix[8] = 1 / (8.0*resolution) ;
 	}
 
-	else if (algo == NULL || algo =="Z"){//if no defined algo, algo = Z
+	else if (algo =="Z"){//if no defined algo, algo = Z
 		//   matrice de la PenteImage
 		matrix[0] = 0 ;
 		matrix[1] = -1 / (2.0*resolution) ;
@@ -169,7 +166,7 @@ void PenteImage::generate() {
     delete[] bufferTmp;
 }
 
-void PenteImage::generateLine ( int line, float* line1, float* line2, float* line3, std::string algo ) {
+void PenteImage::generateLine ( int line, float* line1, float* line2, float* line3) {
     uint8_t* currentLine =pente + line * width;
 	//on commence a la premiere colonne
     int column = 1;
@@ -178,16 +175,16 @@ void PenteImage::generateLine ( int line, float* line1, float* line2, float* lin
 
 		//calcul de la variable sur la premiere colonne
 	if(algo=="H")
-		{value = (matrix[2] * ( * ( line1+column+1 ) ) + matrix[5] * ( * ( line2+column+1 ) ) + matrix[8] * ( * ( line3+column+1 ) ) - matrix[0] * ( * ( line1+column ) ) - matrix[3] * ( * ( line2+column ) ) - matrix[6] * ( * ( line3+column ) ))^2
-		+ (matrix[0] * ( * ( line1+column ) ) + matrix[1] * ( * ( line1+column ) ) + matrix[2] * ( * ( line1+column+1 ) ) - matrix[6] * ( * ( line3+column ) ) - matrix[7] * ( * ( line3+column ) ) - matrix[7] * ( * ( line3+column+1 ) ))^2;
+		{value = pow((matrix[2] * ( * ( line1+column+1 ) ) + matrix[5] * ( * ( line2+column+1 ) ) + matrix[8] * ( * ( line3+column+1 ) ) - matrix[0] * ( * ( line1+column ) ) - matrix[3] * ( * ( line2+column ) ) - matrix[6] * ( * ( line3+column ) )),2.0)
+		+ pow((matrix[0] * ( * ( line1+column ) ) + matrix[1] * ( * ( line1+column ) ) + matrix[2] * ( * ( line1+column+1 ) ) - matrix[6] * ( * ( line3+column ) ) - matrix[7] * ( * ( line3+column ) ) - matrix[7] * ( * ( line3+column+1 ) )),2.0);
 
 		value = sqrt(value);}
 
 
-	else if (algo == NULL || algo =="Z")
-	{value = sqrt((matrix[1] * ( * ( line1+column ) ) - matrix[7] * ( * ( line3+column ) ))^2 + (matrix[3] * ( * ( line2+column ) ) - matrix[5] * ( * ( line2+column+1 ) ))^2);}
+	else if (algo.empty() || algo =="Z")
+	{value = sqrt(pow((matrix[1] * ( * ( line1+column ) ) - matrix[7] * ( * ( line3+column ) )),2.0) + pow((matrix[3] * ( * ( line2+column ) ) - matrix[5] * ( * ( line2+column+1 ) )),2.0));}
 
-	value = atan(value) * 180 / PI;
+	value = atan(value) * 180 / M_PI;
 	//verification valeur non superieure a 90
 	if (value>90){value = 180-value;}
 
@@ -196,15 +193,15 @@ void PenteImage::generateLine ( int line, float* line1, float* line2, float* lin
 	//calcul de la variable sur toutes les autres colonnes
     while ( column < width - 1 ) {
 		if (algo == "H"){
-			value = (matrix[2] * ( * ( line1+column+1 ) ) + matrix[5] * ( * ( line2+column+1 ) ) + matrix[8] * ( * ( line3+column+1 ) ) - matrix[0] * ( * ( line1+column-1 ) ) - matrix[3] * ( * ( line2+column-1 ) ) - matrix[6] * ( * ( line3+column-1 ) ))^2
-			+ (matrix[0] * ( * ( line1+column-1 ) ) + matrix[1] * ( * ( line1+column ) ) + matrix[2] * ( * ( line1+column+1 ) ) - matrix[6] * ( * ( line3+column-1 ) ) - matrix[7] * ( * ( line3+column ) ) - matrix[7] * ( * ( line3+column+1 ) ))^2;
+			value = pow((matrix[2] * ( * ( line1+column+1 ) ) + matrix[5] * ( * ( line2+column+1 ) ) + matrix[8] * ( * ( line3+column+1 ) ) - matrix[0] * ( * ( line1+column-1 ) ) - matrix[3] * ( * ( line2+column-1 ) ) - matrix[6] * ( * ( line3+column-1 ) )),2.0)
+			+ pow((matrix[0] * ( * ( line1+column-1 ) ) + matrix[1] * ( * ( line1+column ) ) + matrix[2] * ( * ( line1+column+1 ) ) - matrix[6] * ( * ( line3+column-1 ) ) - matrix[7] * ( * ( line3+column ) ) - matrix[7] * ( * ( line3+column+1 ) )),2.0);
 
 			value = sqrt(value);
 		}
-		else if (algo == NULL || algo =="Z")
-			{value = sqrt((matrix[1] * ( * ( line1+column ) ) - matrix[7] * ( * ( line3+column ) ))^2 + (matrix[3] * ( * ( line2+column-1 ) ) - matrix[5] * ( * ( line2+column+1 ) ))^2);}
+		else if (algo =="Z")
+			{value = sqrt(pow((matrix[1] * ( * ( line1+column ) ) - matrix[7] * ( * ( line3+column ) )),2.0) + pow((matrix[3] * ( * ( line2+column-1 ) ) - matrix[5] * ( * ( line2+column+1 ) )),2.0));}
 
-		value = atan(value) * 180 / PI;
+		value = atan(value) * 180 / M_PI;
 
         * ( currentLine+ ( column++ ) ) = ( int ) ( value );
 
@@ -213,14 +210,14 @@ void PenteImage::generateLine ( int line, float* line1, float* line2, float* lin
 
 	//calcul de la variable sur la dernière colonne
 		if (algo == "H")
-			{value = (matrix[2] * ( * ( line1+column ) ) + matrix[5] * ( * ( line2+column ) ) + matrix[8] * ( * ( line3+column ) ) - matrix[0] * ( * ( line1+column-1 ) ) - matrix[3] * ( * ( line2+column-1 ) ) - matrix[6] * ( * ( line3+column-1 ) ))^2
-			+ (matrix[0] * ( * ( line1+column-1 ) ) + matrix[1] * ( * ( line1+column ) ) + matrix[2] * ( * ( line1+column ) ) - matrix[6] * ( * ( line3+column-1 ) ) - matrix[7] * ( * ( line3+column ) ) - matrix[7] * ( * ( line3+column ) ))^2;
+			{value = pow((matrix[2] * ( * ( line1+column ) ) + matrix[5] * ( * ( line2+column ) ) + matrix[8] * ( * ( line3+column ) ) - matrix[0] * ( * ( line1+column-1 ) ) - matrix[3] * ( * ( line2+column-1 ) ) - matrix[6] * ( * ( line3+column-1 ) )),2.0)
+			+ pow((matrix[0] * ( * ( line1+column-1 ) ) + matrix[1] * ( * ( line1+column ) ) + matrix[2] * ( * ( line1+column ) ) - matrix[6] * ( * ( line3+column-1 ) ) - matrix[7] * ( * ( line3+column ) ) - matrix[7] * ( * ( line3+column ) )),2.0);
 
 			value = sqrt(value);
 			}
-		else if (algo == NULL || algo =="Z")
-			{value = sqrt((matrix[1] * ( * ( line1+column ) ) - matrix[7] * ( * ( line3+column ) ))^2 + (matrix[3] * ( * ( line2+column-1 ) ) - matrix[5] * ( * ( line2+column ) ))^2);}
-		value = atan(value) * 180 / PI;
+		else if (algo =="Z")
+			{value = sqrt(pow((matrix[1] * ( * ( line1+column ) ) - matrix[7] * ( * ( line3+column ) )),2.0) + pow((matrix[3] * ( * ( line2+column-1 ) ) - matrix[5] * ( * ( line2+column ) )),2.0));}
+		value = atan(value) * 180 / M_PI;
 		//verification valeur non superieure a 90
 		if (value>90){value = 180-value;}
 

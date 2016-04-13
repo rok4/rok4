@@ -41,10 +41,6 @@
 #include "Image.h"
 #include <string>
 
- 
-using namespace std;
- 
-
 
 class PenteImage : public Image {
 private:
@@ -52,8 +48,8 @@ private:
     uint8_t* pente;
     float* bufferTmp;
     float matrix[9];
-	float resolution;
-	string algo;
+    float resolution;
+    std::string algo;
     //uint8_t center;
     int _getline ( uint8_t* buffer, int line );
     int _getline ( uint16_t* buffer, int line );
@@ -62,13 +58,13 @@ private:
     int getOrigLine ( uint16_t* buffer, int line );
     int getOrigLine ( float* buffer, int line );
     void generate();
-    void generateLine ( int line, float* line1, float* line2 , float* line3, string algo );
+    void generateLine ( int line, float* line1, float* line2 , float* line3 );
 
 public:
     virtual int getline ( float* buffer, int line );
     virtual int getline ( uint8_t* buffer, int line );
     virtual int getline ( uint16_t* buffer, int line );
-    PenteImage ( Image* image, float resolution, string algo);
+    PenteImage ( Image* image, float resolution, std::string algo);
     virtual ~PenteImage();
 };
 

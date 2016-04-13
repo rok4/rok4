@@ -86,6 +86,7 @@
 #include "Rok4Image.h"
 #include "EmptyImage.h"
 #include "PenteImage.h"
+#include "Pente.h"
 
 
 
@@ -404,7 +405,7 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
             }
         }
 
-        if ( style && curImage->channels == 1 && ! (style->getPente()->empty() ) ){
+        if ( style && curImage->channels == 1 && ! (style->getPente()->is() ) ){
 			if ( format == "image/png" && size == 1 ) {
 				switch ( pyrType ) {
                 case Rok4Format::TIFF_RAW_FLOAT32 :

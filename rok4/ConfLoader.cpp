@@ -87,7 +87,7 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
     float exaggeration=1;
     int center=0;
     int errorCode;
-	char algo='Z';
+    std::string algo = "Z";
 
     /*TiXmlDocument doc(fileName.c_str());
     if (!doc.LoadFile()){
@@ -343,21 +343,22 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
 	
 	//recuperation des informations pour le calcul des pentes
 	pElem = hRoot.FirstChild ( "pente" ).Element();
-	Pente pente();
+	Pente pente ();
 	
 	if ( pElem ) {
+	      pente.
 		pente.setPente(true);
 		errorCode = pElem->QueryIntAttribute ( "algo", &algo );
-        if ( errorCode == TIXML_WRONG_TYPE ) {
-            LOGGER_ERROR ( _ ( "Un attribut algo invalide a ete trouve dans la pente du Style " ) << id <<_ ( " : il est invalide!!" ) );
-        } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
-            algo="Z";
-        }
+		if ( errorCode == TIXML_WRONG_TYPE ) {
+		  LOGGER_ERROR ( _ ( "Un attribut algo invalide a ete trouve dans la pente du Style " ) << id <<_ ( " : il est invalide!!" ) );
+		} else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
+		  algo = "Z";
+		}
 		pente.setAlgo(algo);
 	}
 	
 	
-    Style * style = new Style ( id,title,abstract,keyWords,legendURLs,pal,angle,exaggeration,center,pente);
+    Style * style = new Style ( id,title,abstract,keyWords,legendURLs,pal,pente,angle,exaggeration,center);
     LOGGER_DEBUG ( _ ( "Style Cree" ) );
     return style;
 
