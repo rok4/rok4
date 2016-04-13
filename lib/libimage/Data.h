@@ -275,6 +275,7 @@ public:
     /** Destructeur **/
     virtual ~RawDataSource() {
         delete[] data;
+        data = 0;
     }
 
     /** Implémentation de l'interface DataSource **/
@@ -308,6 +309,68 @@ public:
     std::string getEncoding() {
         return "";
     }
+
+    /** @return la taille du buffer */
+   size_t getSize() {
+       return dataSize;
+   }
+};
+
+/**
+ * Classe d'un flux de données brutes.
+ */
+class RawDataStream : public DataStream {
+private:
+    size_t dataSize;
+    uint8_t* data;
+    size_t pos;
+public:
+    /**
+     * Constructeur.
+     */
+    RawDataStream ( uint8_t *dat, size_t dataS){
+        dataSize = dataS;
+        data = new uint8_t[dataSize];
+        memcpy ( data, dat, dataSize );
+        pos = 0;
+    }
+
+    /** Destructeur **/
+    virtual ~RawDataStream() {
+        delete[] data;
+    }
+
+    /** Implémentation de l'interface DataSource **/
+    size_t read ( uint8_t *buffer, size_t size ) {
+        if ( size > dataSize - pos ) size = dataSize - pos;
+        memcpy ( buffer, ( uint8_t* ) ( data +pos ),size );
+        pos+=size;
+        return size;
+    }
+
+    bool eof() {
+        return ( pos==dataSize );
+    }
+
+    /** @return le type du dataStream */
+    std::string getType() {
+        return "";
+    }
+
+    /** @return le status du dataStream */
+    int getHttpStatus() {
+        return 200;
+    }
+
+     /** @return l'encodage du dataStream */
+    std::string getEncoding() {
+        return "";
+    }
+
+    /** @return la taille du buffer */
+   size_t getSize() {
+       return dataSize;
+   }
 };
 
 /**

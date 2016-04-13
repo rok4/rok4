@@ -46,6 +46,7 @@
 #include "ExtendedCompoundImage.h"
 #include "EmptyImage.h"
 #include "CompoundImage.h"
+#include "LibpngImage.h"
 
 
 WebService::WebService(std::string url, std::string proxy="", std::string noProxy="",int retry=DEFAULT_RETRY, int interval=DEFAULT_INTERVAL,
@@ -299,23 +300,40 @@ Image * WebMapService::createImageFromRequest(int width, int height, BoundingBox
         LOGGER_DEBUG("Decode Data");
         //on la décode
         Rok4Format::eformat_data fmt = Rok4Format::fromMimeType(format);
-        if ( fmt==Rok4Format::TIFF_RAW_INT8 || fmt==Rok4Format::TIFF_RAW_FLOAT32 )
-            decData = rawData;
-        else if ( fmt == Rok4Format::TIFF_JPG_INT8 )
-            decData = new DataSourceDecoder<JpegDecoder> ( rawData );
-        else if ( fmt == Rok4Format::TIFF_PNG_INT8 )
-            decData = new DataSourceDecoder<PngDecoder> ( rawData );
-        else if ( fmt == Rok4Format::TIFF_LZW_INT8 || fmt == Rok4Format::TIFF_LZW_FLOAT32 )
-            decData = new DataSourceDecoder<LzwDecoder> ( rawData );
-        else if ( fmt == Rok4Format::TIFF_ZIP_INT8 || fmt == Rok4Format::TIFF_ZIP_FLOAT32 )
-            decData = new DataSourceDecoder<DeflateDecoder> ( rawData );
-        else if ( fmt == Rok4Format::TIFF_PKB_INT8 || fmt == Rok4Format::TIFF_PKB_FLOAT32 )
-            decData = new DataSourceDecoder<PackBitsDecoder> ( rawData );
 
-        LOGGER_DEBUG("Create Image");
-        //on en fait une image
-        pix = Rok4Format::getPixelSize(fmt);
-        img = new ImageDecoder(decData,requestWidth,requestHeight,channels,requestBbox,0,0,0,0,pix);
+        if ( fmt == Rok4Format::TIFF_JPG_INT8 ) {
+
+            decData = new DataSourceDecoder<JpegDecoder> ( rawData );
+            pix = Rok4Format::getPixelSize(fmt);
+            img = new ImageDecoder(decData,requestWidth,requestHeight,channels,requestBbox,0,0,0,0,pix);
+
+        } else if ( fmt == Rok4Format::TIFF_PNG_INT8 ) {
+
+            double resx = (requestBbox.xmax - requestBbox.xmin) / double(requestWidth);
+            double resy = (requestBbox.ymax - requestBbox.ymin) / double(requestHeight);
+            LibpngImageFactory FIF;
+            size_t bufferSize = rawData->getSize();
+            const uint8_t* buffer = rawData->getData(bufferSize);
+            RawDataStream* rawStream = new RawDataStream((uint8_t*)buffer,bufferSize);
+            delete rawData;
+
+            if (rawStream) {
+                img = FIF.createLibpngImageToReadFromBuffer(rawStream,requestBbox,resx,resy);
+                delete rawStream;
+            } else {
+                LOGGER_ERROR("Impossible de transformer la donnee en flux");
+            }
+
+        }
+
+        if (img == NULL) {
+            LOGGER_ERROR("Impossible de decoder la donnee source");
+            EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
+            fond->setBbox(bbox);
+            delete[] ndvalue;
+            return fond;
+        }
+
         img->setCRS(CRS(crs));
 
 
@@ -353,6 +371,7 @@ Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<
     int nbRequestW = 1;
     int nbRequestWPrev = 1;
     std::vector<std::vector<Image*> > composeImg;
+    Image *img = NULL;
 
     //----Récupération du NDValues
     int *ndvalue = new int[channels];
@@ -501,23 +520,39 @@ Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<
                 LOGGER_DEBUG("Decode Data");
                 //on la décode
                 Rok4Format::eformat_data fmt = Rok4Format::fromMimeType(format);
-                if ( fmt==Rok4Format::TIFF_RAW_INT8 || fmt==Rok4Format::TIFF_RAW_FLOAT32 )
-                    decData = rawData;
-                else if ( fmt == Rok4Format::TIFF_JPG_INT8 )
-                    decData = new DataSourceDecoder<JpegDecoder> ( rawData );
-                else if ( fmt == Rok4Format::TIFF_PNG_INT8 )
-                    decData = new DataSourceDecoder<PngDecoder> ( rawData );
-                else if ( fmt == Rok4Format::TIFF_LZW_INT8 || fmt == Rok4Format::TIFF_LZW_FLOAT32 )
-                    decData = new DataSourceDecoder<LzwDecoder> ( rawData );
-                else if ( fmt == Rok4Format::TIFF_ZIP_INT8 || fmt == Rok4Format::TIFF_ZIP_FLOAT32 )
-                    decData = new DataSourceDecoder<DeflateDecoder> ( rawData );
-                else if ( fmt == Rok4Format::TIFF_PKB_INT8 || fmt == Rok4Format::TIFF_PKB_FLOAT32 )
-                    decData = new DataSourceDecoder<PackBitsDecoder> ( rawData );
+                if ( fmt == Rok4Format::TIFF_JPG_INT8 ) {
 
-                LOGGER_DEBUG("Create Image");
-                //on en fait une image
-                pix = Rok4Format::getPixelSize(fmt);
-                Image *img = new ImageDecoder(decData,newWidth,newHeight,channels,requestBbox,0,0,0,0,pix);
+                    decData = new DataSourceDecoder<JpegDecoder> ( rawData );
+                    pix = Rok4Format::getPixelSize(fmt);
+                    img = new ImageDecoder(decData,newWidth,newHeight,channels,requestBbox,0,0,0,0,pix);
+
+                } else if ( fmt == Rok4Format::TIFF_PNG_INT8 ) {
+
+                    double resx = (requestBbox.xmax - requestBbox.xmin) / double(newWidth);
+                    double resy = (requestBbox.ymax - requestBbox.ymin) / double(newHeight);
+                    LibpngImageFactory FIF;
+                    size_t bufferSize = rawData->getSize();
+                    const uint8_t* buffer = rawData->getData(bufferSize);
+                    RawDataStream* rawStream = new RawDataStream((uint8_t*)buffer,bufferSize);
+                    delete rawData;
+
+                    if (rawStream) {
+                        img = FIF.createLibpngImageToReadFromBuffer(rawStream,requestBbox,resx,resy);
+                        delete rawStream;
+                    } else {
+                        LOGGER_ERROR("Impossible de transformer la donnee en flux");
+                    }
+
+                }
+
+                if (img == NULL) {
+                    LOGGER_ERROR("Impossible de decoder la donnee source");
+                    EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
+                    fond->setBbox(bbox);
+                    delete[] ndvalue;
+                    return fond;
+                }
+
                 img->setCRS(CRS(crs));
                 composeImg[nbRequestH - (i+1)][j] = img;
 
