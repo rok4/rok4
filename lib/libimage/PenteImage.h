@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011-2013) Institut national de l'information
+ * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -35,36 +35,41 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-/**
- * \file Style.cpp
- * \~french
- * \brief Implémentation de la classe Style modélisant les styles.
- * \~english
- * \brief Implement the Style Class handling style definition
- */
+#ifndef PENTEIMAGE_H
+#define PENTEIMAGE_H
 
-#include "Style.h"
-#include "Logger.h"
-#include "intl.h"
-#include "config.h"
+#include "Image.h"
+#include <string>
 
-Style::Style ( const std::string& id,const std::vector<std::string>& titles,
-               const std::vector<std::string>& abstracts,const std::vector<Keyword>& keywords,
-               const std::vector<LegendURL>& legendURLs, Palette& palette, int angle, float exaggeration, uint8_t center, Pente& pente ) : estompage ( false ), angle ( angle ), exaggeration ( exaggeration ), center ( center ) {
-			   //: id(id), titles(titles),             abstracts(abstracts), keywords(keywords), legendURLs(legendURLs), palette(palette)
-    LOGGER_DEBUG ( _ ( "Nouveau Style : " ) << id );
-    this->id = id.c_str();
-    this->titles= titles;
-    this->abstracts = abstracts;
-    this->keywords = keywords;
-    this->legendURLs = legendURLs;
-    this->palette = palette;
-	this->pente = pente;
-    if ( angle >= 0 && angle < 360 ) {
-        estompage = true;
-    }
-}
+ 
+using namespace std;
+ 
 
-Style::~Style() {
 
-}
+class PenteImage : public Image {
+private:
+    Image* origImage;
+    uint8_t* pente;
+    float* bufferTmp;
+    float matrix[9];
+	float resolution;
+	string algo;
+    //uint8_t center;
+    int _getline ( uint8_t* buffer, int line );
+    int _getline ( uint16_t* buffer, int line );
+    int _getline ( float* buffer, int line );
+    int getOrigLine ( uint8_t* buffer, int line );
+    int getOrigLine ( uint16_t* buffer, int line );
+    int getOrigLine ( float* buffer, int line );
+    void generate();
+    void generateLine ( int line, float* line1, float* line2 , float* line3, string algo );
+
+public:
+    virtual int getline ( float* buffer, int line );
+    virtual int getline ( uint8_t* buffer, int line );
+    virtual int getline ( uint16_t* buffer, int line );
+    PenteImage ( Image* image, float resolution, string algo);
+    virtual ~PenteImage();
+};
+
+#endif // PENTEIMAGE_H

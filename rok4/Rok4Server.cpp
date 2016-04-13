@@ -62,6 +62,7 @@
 #include <fcntl.h>
 #include "curl/curl.h"
 #include "WebService.h"
+#include <cmath>
 
 
 #include "config.h"
@@ -84,6 +85,9 @@
 #include "ProcessFactory.h"
 #include "Rok4Image.h"
 #include "EmptyImage.h"
+#include "PenteImage.h"
+
+
 
 void* Rok4Server::thread_loop ( void* arg ) {
     Rok4Server* server = ( Rok4Server* ) ( arg );
@@ -215,11 +219,11 @@ void Rok4Server::run(sig_atomic_t signal_pending) {
     for ( int i = 0; i < threads.size(); i++ ) {
         pthread_create ( & ( threads[i] ), NULL, Rok4Server::thread_loop, ( void* ) this );
     }
-    
+
     if (signal_pending != 0 ) {
 	raise( signal_pending );
     }
-    
+
     for ( int i = 0; i < threads.size(); i++ )
         pthread_join ( threads[i], NULL );
 }
@@ -303,6 +307,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     std::vector<Layer*> layers;
     BoundingBox<double> bbox ( 0.0, 0.0, 0.0, 0.0 );
     int width, height;
+	float resolution;
     CRS crs;
     std::string format;
     std::vector<Style*> styles;
@@ -311,8 +316,14 @@ DataStream* Rok4Server::getMap ( Request* request ) {
 
 
     // Récupération des paramètres
-    DataStream* errorResp = request->getMapParam ( servicesConf, layerList, layers, bbox, width, height, crs, format ,styles, format_option );
-    if ( errorResp ) {
+    DataStream* errorResp = request->getMapParam ( servicesConf, layerList, layers, bbox, width, height, crs, format, styles, format_option );
+
+
+    //calcul de la resolution grace a la bbox et a la hauteur
+	//cette information est necessaire pour le calcul des penteImage
+	resolution = (bbox.xmax-bbox.xmin)/width*M_PI*6378137.0/180;
+
+	if ( errorResp ) {
         LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getMap" ) );
         return errorResp;
     }
@@ -343,7 +354,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
                 }
             }
 
-            Image *image = styleImage(curImage, pyrType, style, format, layers.size());
+            Image *image = styleImage(curImage, pyrType, style, format, layers.size(), resolution);
 
             images.push_back ( image );
         } else {
@@ -366,7 +377,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
 }
 
 Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
-                            Style *style, std::string format, int size) {
+                            Style *style, std::string format, int size, float resolution) {
 
 
 
@@ -393,6 +404,22 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
             }
         }
 
+        if ( style && curImage->channels == 1 && ! (style->getPente()->empty() ) ){
+			if ( format == "image/png" && size == 1 ) {
+				switch ( pyrType ) {
+                case Rok4Format::TIFF_RAW_FLOAT32 :
+                case Rok4Format::TIFF_ZIP_FLOAT32 :
+                case Rok4Format::TIFF_LZW_FLOAT32 :
+                case Rok4Format::TIFF_PKB_FLOAT32 :
+					curImage = new PenteImage ( curImage, resolution,  style->getAlgo());
+				default:
+					break;
+				}
+			} else {
+				curImage = new PenteImage ( curImage, resolution,  style->getAlgo());
+			}
+		}
+
         if ( style && curImage->channels == 1 && ! ( style->getPalette()->getColoursMap()->empty() ) ) {
             if ( format == "image/png" && size == 1 ) {
                 switch ( pyrType ) {
@@ -409,6 +436,7 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
                 curImage = new StyledImage ( curImage, style->getPalette()->isNoAlpha()?3:4, style->getPalette() );
             }
         }
+
 
     }
 
@@ -448,7 +476,7 @@ Image * Rok4Server::mergeImages(std::vector<Image*> images, Rok4Format::eformat_
         int spp = images.at ( 0 )->channels;
 	int bg[spp];
 	int transparentColor[spp];
-        
+
 	switch (pyrType) {
 	  case Rok4Format::TIFF_RAW_FLOAT32 :
 	  case Rok4Format::TIFF_ZIP_FLOAT32 :
@@ -469,7 +497,7 @@ Image * Rok4Server::mergeImages(std::vector<Image*> images, Rok4Format::eformat_
 		  break;
 	      default:
 		  memset(bg, 0, sizeof(int) * spp);
-		  break;                
+		  break;
 	    }
 	    memccpy(transparentColor, bg, spp, sizeof(int));
 	    break;
@@ -493,11 +521,11 @@ Image * Rok4Server::mergeImages(std::vector<Image*> images, Rok4Format::eformat_
 		  break;
 	      default:
 		  memset(bg, 0, sizeof(uint8_t) * spp);
-		  break;                
+		  break;
 	    }
 	    break;
 	}
-        
+
 	image = MIF.createMergeImage(images,spp,bg,transparentColor,Merge::ALPHATOP);
 
         if ( image == NULL ) {
@@ -1513,7 +1541,7 @@ void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
     }
 }
 
-void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest ) {   
+void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest ) {
     if ( supportWMTS && request->service == "wmts" && (request->doesPathFinishWith("wmts") || !request->doesPathFinishWith("wms"))) {
         processWMTS ( request, fcgxRequest );
         //Service is not mandatory in GetMap request in WMS 1.3.0 and GetFeatureInfo

@@ -128,6 +128,11 @@ private :
      * \~english \brief Lookup table (value -> colour)
      */
     Palette palette;
+	/**
+     * \~french \brief Définit si un calcul de pente doit être appliqué
+     * \~english \brief Define wether the server must compute a slope with a threshold
+     */
+	Pente pente;
     /**
      * \~french \brief Définit si un estompage doit être appliqué
      * \~english \brief Define wether the server must compute a relief shadow
@@ -296,6 +301,33 @@ public:
     inline uint8_t getCenter() {
         return center;
     }
+
+    /**
+     * \~french
+     * \brief Retourne instance de classe pente
+     * \return instance de la classe pente
+     * \~english
+     * \brief Return the lookup table
+     * \return lookup table
+     */
+    inline Pente* getPente() {
+        return &pente;
+    }
+	
+	
+	    /**
+     * \~french
+     * \brief Retourne l'algo de la pente
+     * \return algo de la pente
+     * \~english
+     * \brief Return the algorithm
+     * \return the algorithm
+     */
+    inline std::string getAlgo() {
+        return getPente()->algo;
+    }
+	
+	
     /**
      * \~french
      * \brief Destructeur par défaut

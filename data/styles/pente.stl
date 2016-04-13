@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<style>
+        <Identifier>estompage</Identifier>
+        <Title>Pente</Title> 
+        <Abstract>Pente methodeH</Abstract>
+        <Keywords>
+                <Keyword>MNT</Keyword>
+        </Keywords>
+        <LegendURL format="image/png" xlink:simpleLink="simple" xlink:href="http://ign.fr" height="100" width="100" minScaleDenominator="0" maxScaleDenominator="30"/>
+        <!-- Rok4-->
+        <palette maxValue="255" rgbContinuous="true" alphaContinuous="true">
+                <colour value="0">
+                        <red>255</red>
+                        <green>255</green>
+                        <blue>255</blue>
+                        <alpha>64</alpha>
+                </colour>
+                <colour value="90">
+                        <red>0</red>
+                        <green>0</green>
+                        <blue>0</blue>
+                        <alpha>64</alpha>
+                </colour>
+        </palette>
+        <pente algo="H"/>
+</style>

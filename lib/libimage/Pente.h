@@ -1,8 +1,8 @@
 /*
- * Copyright Â© (2011-2013) Institut national de l'information
- *                    gÃ©ographique et forestiÃ¨re
+ * Copyright © (2011) Institut national de l'information
+ *                    géographique et forestière
  *
- * GÃ©oportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <geop_services@geoportail.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -36,35 +36,53 @@
  */
 
 /**
- * \file Style.cpp
- * \~french
- * \brief ImplÃ©mentation de la classe Style modÃ©lisant les styles.
- * \~english
- * \brief Implement the Style Class handling style definition
+ * \file Pente.h
+ ** \~french
+ * \brief Définition de la classe Pente
+ ** \~english
+ * \brief Define class Pente
  */
 
-#include "Style.h"
+#ifndef PENTE_H
+#define PENTE_H
+
 #include "Logger.h"
-#include "intl.h"
-#include "config.h"
 
-Style::Style ( const std::string& id,const std::vector<std::string>& titles,
-               const std::vector<std::string>& abstracts,const std::vector<Keyword>& keywords,
-               const std::vector<LegendURL>& legendURLs, Palette& palette, int angle, float exaggeration, uint8_t center, Pente& pente ) : estompage ( false ), angle ( angle ), exaggeration ( exaggeration ), center ( center ) {
-			   //: id(id), titles(titles),             abstracts(abstracts), keywords(keywords), legendURLs(legendURLs), palette(palette)
-    LOGGER_DEBUG ( _ ( "Nouveau Style : " ) << id );
-    this->id = id.c_str();
-    this->titles= titles;
-    this->abstracts = abstracts;
-    this->keywords = keywords;
-    this->legendURLs = legendURLs;
-    this->palette = palette;
-	this->pente = pente;
-    if ( angle >= 0 && angle < 360 ) {
-        estompage = true;
-    }
-}
+#include <string>
 
-Style::~Style() {
 
-}
+using namespace std;
+
+
+class Pente {
+
+public:
+
+        /** \~french
+     * \brief resolution : algo : choix de l'algorithme de calcul de pentes par l'utilisateur (vaut "Z" pour Zevenbergen&Thorne, "H" pour Horn)
+     ** \~english
+     * \brief resolution : algo : slope calculation algorithm chosen by the user (value = "Z" for Zevenbergen&Thorne OR "H" for Horn)
+     */
+
+    string algo;
+    bool isPente = false;
+
+public:
+
+
+    bool empty(){
+        if (isPente) {return false;}
+        else {return true;}
+        }
+
+    string setAlgo(n_algo){
+        algo=n_algo;
+        }
+
+    bool setPente(n_pente){
+        isPente=n_pente;
+        }
+
+};
+#endif
+
