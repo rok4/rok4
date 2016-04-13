@@ -424,7 +424,7 @@ For more informations about properties, see <WMTSALAD::Pyramid>.
 
     samplesperpixel - Possible values : 1, 2, 3, 4. Mandatory.
 
-    photometric - Possible values : gray, rgb. Have to be consistent with the samples per pixel. 1,2 -> gray and 3,4 -> rgb. Default : rgb.
+    photometric - Possible values : gray, rgb. Have to be consistent with the samples per pixel. 1,2 -> gray and 3,4 -> rgb.
     interpolation - Possible values : nn, linear, bicubic, lanczos. Interpolation used to resampled images (in mergeNtiff). Nodata pixel are excluded by the interpolation if we use masks. Default : bicubic.
 
     dir_depth - Image's depth from the level directory. depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif. Mandatory.
@@ -433,7 +433,6 @@ For more informations about properties, see <WMTSALAD::Pyramid>.
 
     dir_nodata - Name of the subdirectory for the nodata tiles, in *pyr_data_path/pyr_name/*. Mandatory
     dir_image - Name of the subdirectory for the image data tiles, in *pyr_data_path/pyr_name/*. Required if 'persistent' is set to 'true', ignored if 'false'
-    dir_mask - Name of the subdirectory for the mask tiles, in *pyr_data_path/pyr_name/*. Optionnal, ignored if 'persistent'='false'
 
     tms_name - TMS file name, with extension *.tms*. Mandatory.
     tms_path - Directory, where to find the TMS file. Mandatory.
@@ -456,7 +455,6 @@ Examples:
     dir_depth = 2
     dir_image = IMAGE
     dir_nodata = NODATA
-    dir_mask = MASK
 
     compression = jpg
     bitspersample = 8
@@ -475,7 +473,6 @@ Group: Paths in brief
     - Cache directory: *pyr_data_path/pyr_name/*
     -- Nodata drectory: *pyr_data_path/pyr_name/dir_nodata*
     -- Images drectory: *pyr_data_path/pyr_name/dir_image*
-    -- Masks drectory: *pyr_data_path/pyr_name/dir_mask*
     - TMS file: *tms_path/tms_name*
 
 

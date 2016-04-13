@@ -61,7 +61,7 @@ Attributes:
     channels - strict positive integer - number of channels / samples per pixel
     noData - <BE4::NoData> - contains information for the nodata tiles.
     interpolation - string - The interpolation method. values : "lanczos", "nn" (nearest neighbour), "bicubic", "linear"
-    photometric - string - image photometric. Values : "gray", "rgb", "mask". Default : rgb
+    photometric - string - image photometric. Values : "gray", "rgb". Mandatory, and must match the number of channels.
     image_width - strict positive integer - image width, in tiles
     image_height - strict positive integer - image height, in tiles
 
@@ -72,9 +72,8 @@ Attributes:
     pyr_desc_path - string - path to the new pyramid's descriptor file
     pyr_data_path - string - path to the directory containing the caches' roots.
     dir_nodata - string - path to the nodata tiles root (in pyr_data_path/)
-    dir_depth - non negative integer - depth of the cache tree path between the cache root and the files. (affect image cache and mask cache)
+    dir_depth - non negative integer - depth of the cache tree path between the cache root and the files. (affect image cache)
     dir_image - string - cache root's path for images, if persistent
-    dir_mask - string - cache root's path for masks, if persistent (optionnal)
 
     datasources - hash - ordered by level then priorities, the list of data sources used for this pyramid.
    
@@ -127,7 +126,6 @@ my %IMAGE_SPECS = (
             "TIFF_PKB_INT8",
             "TIFF_PKB_FLOAT32"
         ],
-        mask_format => "TIFF_ZIP_INT8",
         interpolation => [
             "lanczos",
             "nn",
@@ -135,9 +133,8 @@ my %IMAGE_SPECS = (
             "linear"
         ],
         photometric => [
-            "gray",
-            "rgb",
-            "mask"
+            "GRAY",
+            "RGB",
         ],
         sampleformat => [
             "int",
@@ -202,7 +199,6 @@ sub new {
         dir_depth => undef,
         dir_image => undef,
         dir_nodata => undef,
-        dir_mask => undef,
         pyr_name => undef,
         pyr_data_path => undef,
         pyr_desc_path => undef,
@@ -342,11 +338,6 @@ sub _loadProperties {
     # Data paths
     $self->{pyr_data_path} = $refFileContent->{pyramid}->{pyr_data_path};
 
-    # Masks directory (optionnal)
-    if ($cfg->isProperty({section => 'pyramid', property => 'dir_mask'})) {
-        $self->{dir_mask} = $refFileContent->{pyramid}->{dir_mask};
-    }
-
     # Images directory
     if ($self->{persistent} == TRUE) {
         $self->{dir_image} = $refFileContent->{pyramid}->{dir_image};
@@ -358,10 +349,8 @@ sub _loadProperties {
     # Descriptor's path
     $self->{pyr_desc_path} = $refFileContent->{pyramid}->{pyr_desc_path};
 
-    # Photometric (optionnal)
-    if ($cfg->isProperty({section => 'pyramid', property => 'photometric'})) {
-        $self->{photometric} = $refFileContent->{pyramid}->{photometric};
-    }
+    # Photometric
+    $self->{photometric} = uc ($refFileContent->{pyramid}->{photometric});
 
     # Nodata (default value : white, transparent if alpha channel available), -9999 for float32
     my $pixel = BE4::Pixel->new({
@@ -539,35 +528,6 @@ sub isImageFormat {
 
 =begin nd
 
-Function: isMaskFormat
-
-Checks if the given format is a recognized mask format.
-
-Using:
-    (start code)
-    $pyramid->isMaskFormat( format );
-    (end code)
-
-Parameter:
-    format - string - format to check
-
-Returns:
-    1 (TRUE) if true. 0 (FALSE) if false.
-
-=cut
-sub isMaskFormat {
-    my $self = shift;
-    my $string = shift;
-
-    foreach my $validString (@{$IMAGE_SPECS{mask_format}}) {
-        return TRUE if ($validString eq $string);
-    }
-
-    return FALSE;
-}
-
-=begin nd
-
 Function: isInterpolation
 
 Checks if the given interpolation value is allowed.
@@ -618,7 +578,7 @@ sub isPhotometric {
     my $string = shift;
 
     foreach my $validString (@{$IMAGE_SPECS{photometric}}) {
-        return TRUE if ($validString eq $string);
+        return TRUE if (uc $validString eq uc $string);
     }
 
     return FALSE;
@@ -811,8 +771,17 @@ sub _checkProperties {
     }
 
     my $photometric = $propCfg->getProperty({section => 'pyramid', property => 'photometric'});
-    if ((defined $photometric) && (! $self->isPhotometric($photometric))) {
-        ERROR(sprintf "invalid photometric value : '%s'. Allowed values are : %s",$photometric,Dumper($IMAGE_SPECS{photometric}));
+    if (! defined $photometric) {
+        ERROR(sprintf "Undefined photometric value");
+        return FALSE;
+    } elsif (! $self->isPhotometric($photometric)) {
+        ERROR(sprintf "Invalid photometric value : '%s'. Allowed values are : %s",$photometric,Dumper($IMAGE_SPECS{photometric}));
+        return FALSE;
+    } elsif (
+             ((uc $photometric eq "GRAY") && (! $samplesperpixel =~ m/^(1|2)$/)) 
+             || ((uc $photometric eq "RGB") && (! $samplesperpixel =~ m/^(3|4)$/))
+             ) {
+        ERROR(sprintf "Invalid photometric value : '%s' for samplesperpixel = %i.",$photometric,$samplesperpixel);
         return FALSE;
     }
 
@@ -963,7 +932,6 @@ sub exportForDebug {
     $pyr_dump .= "\n  dir_depth => ".$self->{dir_depth};
     if ($self->{persistent}) {$pyr_dump .= "\n  dir_image => ".$self->{dir_image};}
     $pyr_dump .= "\n  dir_nodata => ".$self->{dir_nodata};
-    if (($self->{persistent}) && (exists $self->{dir_mask}) && (defined $self->{dir_mask})) {$pyr_dump .= "\n  dir_mask => ".$self->{dir_mask};}
     $pyr_dump .= "\n  persistent => ".$self->{persistent};
     $pyr_dump .= "\n  image_width => ".$self->{image_width};
     $pyr_dump .= "\n  image_height => ".$self->{image_height};
@@ -1047,13 +1015,6 @@ sub writeConfPyramid {
         foreach my $source (@sources) {
             $source->writeInXml($descDoc, $sourcesEl);
         }
-        if (($self->{persistent}) && (exists $self->{dir_mask}) && (defined $self->{dir_mask})) {
-            my $maskEl = $descDoc->createElement("mask");
-            $levelEl->appendChild($maskEl);
-            my $maskBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_mask}, $lvlId);
-            $maskEl->appendTextChild("baseDir", $maskBaseDir);
-            $maskEl->appendTextChild("format", $IMAGE_SPECS{mask_format});
-        }
 
         $levelEl->appendTextChild("tilesPerWidth", $self->{image_width});
         $levelEl->appendTextChild("tilesPerHeight", $self->{image_height});
@@ -1091,7 +1052,6 @@ Write the Cache Directory Structure (CDS).
     - creates the root cache directory
     - creates the nodata tiles for each level
     - if the pyramid is persistent, creates an image directory for each level
-    - if the pyramid is persistent, and the mask directory is defined, creates it for each level.
 
 Using:
     (start code)
@@ -1109,9 +1069,9 @@ sub writeCachePyramid {
     foreach my $lvl (@levels) {
         my $lvlId = $self->{tileMatrixSet}->getIDfromOrder($lvl);
 
-        # Create folders for data, mask and nodata if they don't exist
+        # Create folders for data, and nodata, if they don't exist
 
-        # Data and mask folders created only if the pyramid is defined as persistent
+        # Data folder created only if the pyramid is defined as persistent
         if ($self->{persistent} == TRUE) {
             ### DATA
             my $imageBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_image}, $lvlId);
@@ -1121,18 +1081,6 @@ sub writeCachePyramid {
                 if ($@) {
                     ERROR(sprintf "Can not create the data directory '%s' : %s !", $imageBaseDir , $@);
                     return FALSE;
-                }
-            }
-        
-            ### MASK
-            if (exists $self->{dir_mask} && defined $self->{dir_mask}) {
-                my $maskBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_mask}, $lvlId);
-                if (! -d $maskBaseDir) {
-                    eval { File::Path::make_path($maskBaseDir, {mode => 0755}); };
-                    if ($@) {
-                        ERROR(sprintf "Can not create the mask directory '%s' : %s !", $maskBaseDir , $@);
-                        return FALSE;
-                    }
                 }
             }
         }
@@ -1216,10 +1164,6 @@ And details about each level.
                 </wms>
             </webService>
         </sources>
-        <mask>
-            <baseDir>be4/pyramide/tests/WMTSalaD/generated/TEST-OD-PYR/MASK/15</baseDir>
-            <format>TIFF_ZIP_INT8</format>
-        </mask>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
@@ -1239,6 +1183,8 @@ And details about each level.
 
 Cache Directory Structure:
 
+Only if $pyramid->writeCachePyramid() is called (using ofr example wmtSalaD_with_cache.pl.
+
 For a temporary pyramid, the directory structure is empty, and only the directory and tile for nodata are written.
     (start code)
     pyr_data_path/
@@ -1252,16 +1198,11 @@ For a temporary pyramid, the directory structure is empty, and only the director
                                     |_ nd.tif
     (end code)
 
-For a persistent pyramid, the directory structure is still empty, but this time even the directory for images is created, as is, if requested, the directory for masks.
+For a persistent pyramid, the directory structure is still empty, but this time even the directory for images is created.
     (start code)
     pyr_data_path/
             |__pyr_name/
                     |__dir_image/
-                            |_ ID_LEVEL0/
-                            |__ ID_LEVEL1/
-                            |__ ID_LEVEL2/
-                            |__ ...
-                    |__dir_mask/
                             |_ ID_LEVEL0/
                             |__ ID_LEVEL1/
                             |__ ID_LEVEL2/
