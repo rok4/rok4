@@ -93,7 +93,7 @@ void usage() {
 "     -d : debug logger activation\n\n"<<
 
 "Examples\n"<<
-"     slab2tiles input.tif -pool test -ij 4 7 -t  16 16 output;\n");
+"     slab2tiles input.tif -pool test -ij 4 7 -t  16 16 output\n");
 }
 
 /**
