@@ -43,6 +43,7 @@
 #include "curl/curl.h"
 #include "Image.h"
 #include "Data.h"
+#include "Source.h"
 
 struct MemoryStruct {
   uint8_t *memory;
@@ -77,7 +78,7 @@ static size_t WriteInMemoryCallback(void *contents, size_t size, size_t nmemb, v
 * D'autres services pourront ainsi être ajouté.
 */
 
-class WebService {
+class WebService: public Source {
 
 protected:
 

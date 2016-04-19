@@ -50,7 +50,7 @@
 
 
 WebService::WebService(std::string url, std::string proxy="", std::string noProxy="",int retry=DEFAULT_RETRY, int interval=DEFAULT_INTERVAL,
-                       int timeout=DEFAULT_TIMEOUT):url (url),proxy (proxy),retry (retry), interval (interval), timeout (timeout), noProxy (noProxy) {}
+                       int timeout=DEFAULT_TIMEOUT):Source(WEBSERVICE), url (url),proxy (proxy),retry (retry), interval (interval), timeout (timeout), noProxy (noProxy) {}
 
 
 WebService::~WebService() {

@@ -668,9 +668,8 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
     Rok4Format::eformat_data pyrType = Rok4Format::UNKNOWN;
     Style * bStyle;
     std::map <std::string, std::string > format_option;
-    std::vector<Pyramid*> bPyr;
     int bSize = 0;
-    std::vector <WebService*> bWebServices;
+    std::vector <Source*> bSources;
 
     LOGGER_INFO("GetTileOnDemand");
 
@@ -709,57 +708,27 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
             //CREATION DE L'IMAGE
             LOGGER_DEBUG("Create Image");
 
-            if (pyr->isThisLevelSpecificFromWebServices(level)) {
-                LOGGER_DEBUG("From Web Services");
+            bSources = pyr->getSourcesOfLevel(lv->second->getId());
+            bSize = bSources.size();
 
-                //----on recupere les WS sources
-                bWebServices = pyr->getSourceWebServices(level);
-                bSize += bWebServices.size();
-                //----
+            for(int i = bSize-1; i >= 0; i-- ) {
 
-                //pour chaque WS de base, on récupère une image
-                for (int i = 0; i < bWebServices.size(); i++) {
+                eSourceType type = bSources.at(i)->getType();
 
-                    //----on recupère le WebService Source
-                    WebMapService *wms = reinterpret_cast<WebMapService*>(bWebServices.at(i));
+                if (type == PYRAMID) {
 
-                    //----traitement de la requete
-                    image = wms->createImageFromRequest(width,height,bbox);
+                    //----on recupère la Pyramide Source
+                    Pyramid *bPyr = reinterpret_cast<Pyramid*>(bSources.at(i));
 
-                    if (image) {
-                        images.push_back(image);
-                    } else {
-                        LOGGER_ERROR("Impossible de generer la tuile car l'un des WebServices du layer "+L->getTitle()+" ne renvoit pas de tuile");
-                        return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
-                    }
-
-                    //----
-
-                }
-
-
-            }
-
-            if (pyr->isThisLevelSpecificFromPyramids(level)) {
-                LOGGER_DEBUG("From Pyramids");
-
-                //----on récupère les pyramides sources
-                bPyr = pyr->getSourcePyramid(level);
-                //---- level specifique identifie
-                bSize += bPyr.size();
-
-                //pour chaque pyramide de base, on récupère une image
-                for (int i = 0; i < bPyr.size(); i++) {
-
-                    pyrType = bPyr.at(i)->getFormat();
-                    bStyle = bPyr.at(i)->getStyle();
-                    bLevel = bPyr.at(i)->getLevels().begin()->second->getId();
+                    pyrType = bPyr->getFormat();
+                    bStyle = bPyr->getStyle();
+                    bLevel = bPyr->getLevels().begin()->second->getId();
 
                     //on transforme la bbox
                     BoundingBox<double> motherBbox = bbox;
-                    BoundingBox<double> childBBox = bPyr.at(i)->getTms().getCrs().getCrsDefinitionArea();
-                    if (motherBbox.reproject(pyr->getTms().getCrs().getProj4Code(),bPyr.at(i)->getTms().getCrs().getProj4Code()) ==0 &&
-                    childBBox.reproject("epsg:4326",bPyr.at(i)->getTms().getCrs().getProj4Code()) == 0) {
+                    BoundingBox<double> childBBox = bPyr->getTms().getCrs().getCrsDefinitionArea();
+                    if (motherBbox.reproject(pyr->getTms().getCrs().getProj4Code(),bPyr->getTms().getCrs().getProj4Code()) ==0 &&
+                    childBBox.reproject("epsg:4326",bPyr->getTms().getCrs().getProj4Code()) == 0) {
                         //on récupère l'image si on a pu reprojeter les bbox
                         //  cela a un double objectif:
                         //      on peut voir s'il y a de la donnée
@@ -768,11 +737,11 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
 
                         if (childBBox.containsInside(motherBbox) || motherBbox.containsInside(childBBox) || motherBbox.intersects(childBBox)) {
 
-                            curImage = bPyr.at(i)->createReprojectedImage(bLevel, bbox, dst_crs, servicesConf, width, height, interpolation, error);
+                            curImage = bPyr->createReprojectedImage(bLevel, bbox, dst_crs, servicesConf, width, height, interpolation, error);
 
                             if (curImage != NULL) {
                                 //On applique un style à l'image
-                                image = styleImage(curImage, pyrType, bStyle, format, bPyr.size());
+                                image = styleImage(curImage, pyrType, bStyle, format, bSize);
                                 images.push_back ( image );
                             } else {
                                 LOGGER_ERROR("Impossible de générer la tuile car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile");
@@ -792,16 +761,32 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
 
                     }
 
+                } else {
+
+                    if (type == WEBSERVICE) {
+
+                        //----on recupère le WebService Source
+                        WebMapService *wms = reinterpret_cast<WebMapService*>(bSources.at(i));
+
+                        //----traitement de la requete
+                        image = wms->createImageFromRequest(width,height,bbox);
+
+                        if (image) {
+                            images.push_back(image);
+                        } else {
+                            LOGGER_ERROR("Impossible de generer la tuile car l'un des WebServices du layer "+L->getTitle()+" ne renvoit pas de tuile");
+                            return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
+                        }
+
+                    }
 
                 }
-
-                //re-initialisation du pyrType pour le merge
-                pyrType = bPyr.at ( 0 )->getFormat();
 
             }
 
 
-
+            //re-initialisation du pyrType pour le merge
+//            pyrType = bPyr.at ( 0 )->getFormat();
 
             //On merge les images récupérés dans chacune des basedPyramid ou/et des WebServices
             if (images.size() != 0) {
@@ -1004,11 +989,10 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     int width, height, error, tileH,tileW;
     Rok4Format::eformat_data pyrType = Rok4Format::UNKNOWN;
     Style * bStyle;
-    std::vector<Pyramid*> bPyr;
+    std::vector<Source*> bSources;
     int state = 0;
     struct stat buffer;
     int bSize = 0;
-    std::vector <WebService*> bWebServices;
 
     //On cree la dalle sous forme d'image
     LOGGER_INFO("Create Slab on Fly");
@@ -1041,58 +1025,29 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     //CREATION DE L'IMAGE
     LOGGER_DEBUG("Create Image");
 
-    if (pyr->isThisLevelSpecificFromWebServices(level)) {
-        LOGGER_DEBUG("From Web Services");
+    bSources = pyr->getSourcesOfLevel(lv->second->getId());
+    bSize = bSources.size();
 
-        //----on recupere les WS sources
-        bWebServices = pyr->getSourceWebServices(level);
-        bSize += bWebServices.size();
-        //----
+    for(int i = bSize-1; i >= 0; i-- ) {
 
-        //pour chaque WS de base, on récupère une image
-        for (int i = 0; i < bWebServices.size(); i++) {
+        eSourceType type = bSources.at(i)->getType();
 
-            //----on recupère le WebService Source
-            WebMapService *wms = reinterpret_cast<WebMapService*>(bWebServices.at(i));
+        if (type == PYRAMID) {
 
-            //----traitement de la requete
-            image = wms->createSlabFromRequest(width,height,bbox);
+            //----on recupère la Pyramide Source
+            Pyramid *bPyr = reinterpret_cast<Pyramid*>(bSources.at(i));
 
-            if (image) {
-                images.push_back(image);
-            } else {
-                LOGGER_ERROR("Impossible de generer la tuile car l'un des WebServices du layer "+L->getTitle()+" ne renvoit pas de tuile");
-                state = 1;
-                return state;
-            }
-
-            //----
-
-        }
-
-    }
-
-    if (pyr->isThisLevelSpecificFromPyramids(level)) {
-        LOGGER_DEBUG("From Pyramids");
-
-        //----on récupère les pyramides de base
-        bPyr = pyr->getSourcePyramid(level);
-        bSize += bPyr.size();
-        //---- level specifique identifie
-
-        //pour chaque pyramide de base, on récupère une image
-        for (int i = 0; i < bPyr.size(); i++) {
             LOGGER_DEBUG("basedPyramid");
-            pyrType = bPyr.at(i)->getFormat();
-            bStyle = bPyr.at(i)->getStyle();
-            bLevel = bPyr.at(i)->getLevels().begin()->second->getId();
+            pyrType = bPyr->getFormat();
+            bStyle = bPyr->getStyle();
+            bLevel = bPyr->getLevels().begin()->second->getId();
 
             LOGGER_DEBUG("Create reprojected image");
-            curImage = bPyr.at(i)->createBasedSlab(bLevel, bbox, dst_crs, servicesConf, width, height, interpolation, error);
+            curImage = bPyr->createBasedSlab(bLevel, bbox, dst_crs, servicesConf, width, height, interpolation, error);
             LOGGER_DEBUG("Created");
             if (curImage != NULL) {
                 //On applique un style à l'image
-                image = styleImage(curImage, pyrType, bStyle, format, bPyr.size());
+                image = styleImage(curImage, pyrType, bStyle, format, bSize);
                 LOGGER_DEBUG("Apply style");
                 images.push_back ( image );
             } else {
@@ -1102,10 +1057,29 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
                 return state;
             }
 
-        }
+            delete bStyle;
 
-        pyrType = bPyr.at ( 0 )->getFormat();
-        delete bStyle;
+        } else {
+
+            if (type == WEBSERVICE) {
+
+                //----on recupère le WebService Source
+                WebMapService *wms = reinterpret_cast<WebMapService*>(bSources.at(i));
+
+                //----traitement de la requete
+                image = wms->createSlabFromRequest(width,height,bbox);
+
+                if (image) {
+                    images.push_back(image);
+                } else {
+                    LOGGER_ERROR("Impossible de generer la tuile car l'un des WebServices du layer "+L->getTitle()+" ne renvoit pas de tuile");
+                    state = 1;
+                    return state;
+                }
+
+            }
+
+        }
 
     }
 
