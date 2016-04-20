@@ -268,7 +268,7 @@ Configure the logger based on the [logger] section in the properties file.
 =cut
 sub loadLogger {
 
-    my $propertiesCfg = COMMON::Config->new({'-filepath' => $options{properties}});
+    my $propertiesCfg = COMMON::Config->new({'filepath' => $options{properties}, 'format' => 'INI'});
 
     if ($propertiesCfg->isSection('logger')) {
         my %logger = $propertiesCfg->getSection('logger');
