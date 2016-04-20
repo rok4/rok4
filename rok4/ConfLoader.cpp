@@ -69,6 +69,7 @@
 #include <cstddef>
 #include <string>
 #include "WebService.h"
+#include "EmptyDataSource.h"
 
 
 // Load style
@@ -716,6 +717,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             std::vector<Source*> sSources;
             bool specificLevel = false;
             bool alreadyLoad = false;
+            bool noFile = false;
             //----
 
             //----TM
@@ -1029,6 +1031,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                 }
                 int file = open(noDataFilePath.c_str(),O_RDONLY);
                 if (file < 0) {
+                    noFile = true;
                     if (!specificLevel) {
                         LOGGER_ERROR(fileName <<_ ( " Level " ) << id <<_ ( " specifiant une tuile NoData impossible a ouvrir" ));
                         cleanParsePyramid(specificSources,sSources,levels);
@@ -1055,6 +1058,9 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             if (specificLevel && sSources.size() != 0) {
                 if ( !pElemLvlTMS ) {
                     updateTileLimits(*TL->getrefMinTileCol(),*TL->getrefMaxTileCol(),*TL->getrefMinTileRow(),*TL->getrefMaxTileRow(),TL->getTm(),tms,sSources);
+                }
+                if (onDemandSpecific && noFile) {
+                    TL->updateNoDataTile(noDataValues);
                 }
             }
 

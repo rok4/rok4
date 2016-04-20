@@ -184,6 +184,7 @@ public:
 
     void setNoData ( const std::string& file ) ;
     void setNoDataSource (DataSource *source );
+    void updateNoDataTile(std::vector<int> noDataValues);
 
     BoundingBox<double> tileIndicesToSlabBbox(int tileCol, int tileRow);
     BoundingBox<double> tileIndicesToTileBbox(int tileCol, int tileRow);
