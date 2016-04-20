@@ -101,7 +101,9 @@ RawDataSource * WebService::performRequest(std::string request) {
                 curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
                 /* time to connect - not to receive answer */
                 curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, long(timeout));
+		curl_easy_setopt(curl, CURLOPT_TIMEOUT, long(timeout));
                 curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "identity");
+		curl_easy_setopt(curl, CURLOPT_USERAGENT, ROK4_INFO);
                 if (proxy != "") {
                     curl_easy_setopt(curl, CURLOPT_PROXY, proxy.c_str());
                 }
@@ -148,8 +150,9 @@ RawDataSource * WebService::performRequest(std::string request) {
                         if (errors) {
                             LOGGER_ERROR("The request returned with a " << responseType << " content type");
                             std::string text = "text/";
+			    std::string application = "application/";
                             std::string rType(responseType);
-                            if (rType.find(text) != std::string::npos) {
+                            if (rType.find(text) != std::string::npos || rType.find(application) != std::string::npos) {
                                 LOGGER_ERROR("Content of the answer: " << chunk.memory);
                             } else {
                                 LOGGER_ERROR("Impossible to read the answer...");
@@ -195,6 +198,19 @@ RawDataSource * WebService::performRequest(std::string request) {
     return rawData;
 
 }
+
+RawDataStream * WebService::performRequestStream(std::string request) {
+  RawDataSource* rawData = this->performRequest(request);
+  if (rawData == NULL){
+      return NULL;
+  }
+  size_t bufferSize = rawData->getSize();
+  const uint8_t* buffer = rawData->getData(bufferSize);
+  RawDataStream* rawStream = new RawDataStream((uint8_t*)buffer,bufferSize);
+  delete rawData;
+  return rawStream;
+}
+ 
 
 Image * WebMapService::createImageFromRequest(int width, int height, BoundingBox<double> askBbox) {
 

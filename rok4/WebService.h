@@ -330,6 +330,14 @@ public:
      * \brief Taking Data from an URL
      */
     RawDataSource * performRequest(std::string request);
+    
+    /**
+     * \~french
+     * \brief Récupération des données à partir d'une URL
+     * \~english
+     * \brief Taking Data from an URL
+     */
+    RawDataStream * performRequestStream(std::string request);
 
 
     /**

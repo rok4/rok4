@@ -76,6 +76,7 @@ private:
     unsigned int maxTileX;
     unsigned int maxTileY;
     std::vector<std::string> formatList;
+    std::vector<std::string> infoFormatList;
     std::vector<CRS> globalCRSList;
     bool fullStyling;
     // WMTS
@@ -96,7 +97,7 @@ public:
 
     ServicesConf ( std::string name, std::string title, std::string abstract, std::vector<Keyword> keyWords,
                    std::string serviceProvider, std::string fee, std::string accessConstraint, unsigned int layerLimit,
-                   unsigned int maxWidth, unsigned int maxHeight, unsigned int maxTileX, unsigned int maxTileY, std::vector<std::string> formatList,std::vector<CRS> globalCRSList ,  std::string serviceType,
+                   unsigned int maxWidth, unsigned int maxHeight, unsigned int maxTileX, unsigned int maxTileY, std::vector<std::string> formatList,std::vector<std::string> infoFormatList,std::vector<CRS> globalCRSList ,  std::string serviceType,
                    std::string serviceTypeVersion, std::string providerSite, std::string individualName,
                    std::string individualPosition, std::string voice, std::string facsimile, std::string addressType,
                    std::string deliveryPoint, std::string city, std::string administrativeArea, std::string postCode,
@@ -105,7 +106,7 @@ public:
                    bool postMode=0,bool fullStyling=0, bool inspire=0, bool doweuselistofequalsCRS=0, bool addEqualsCRS=0, bool dowerestrictCRSList=0) :
         name ( name ), title ( title ), abstract ( abstract ), keyWords ( keyWords ),
         serviceProvider ( serviceProvider ), fee ( fee ), accessConstraint ( accessConstraint ), layerLimit ( layerLimit ),
-        maxWidth ( maxWidth ), maxHeight ( maxHeight ), maxTileX ( maxTileX ), maxTileY ( maxTileY ) , formatList ( formatList ), globalCRSList ( globalCRSList ), serviceType ( serviceType ),
+        maxWidth ( maxWidth ), maxHeight ( maxHeight ), maxTileX ( maxTileX ), maxTileY ( maxTileY ) , formatList ( formatList ), infoFormatList ( infoFormatList ), globalCRSList ( globalCRSList ), serviceType ( serviceType ),
         serviceTypeVersion ( serviceTypeVersion ) ,individualName ( individualName ),
         individualPosition ( individualPosition ), voice ( voice ), facsimile ( facsimile ), addressType ( addressType ),
         deliveryPoint ( deliveryPoint ), city ( city ), administrativeArea ( administrativeArea ), postCode ( postCode ),
@@ -192,6 +193,9 @@ public:
     }
     std::vector<std::string>* getFormatList() {
         return &formatList;
+    }
+    std::vector<std::string>* getInfoFormatList() {
+        return &infoFormatList;
     }
     std::vector<CRS>* getGlobalCRSList() {
         return &globalCRSList;

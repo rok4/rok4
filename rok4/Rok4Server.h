@@ -504,7 +504,7 @@ public:
      * \param[in] request request representation
      * \return response stream
      */
-    DataSource* WMSGetFeatureInfo ( Request* request );
+    DataStream* WMSGetFeatureInfo ( Request* request );
     /**
      * \~french
      * \brief Traitement d'une requête GetFeatureInfo WMTS
