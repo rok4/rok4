@@ -1225,6 +1225,38 @@ void Rok4Server::buildWMTSCapabilities() {
     opEl->LinkEndChild ( dcpEl );
 
     opMtdEl->LinkEndChild ( opEl );
+    
+    opEl = new TiXmlElement ( "ows:Operation" );
+    opEl->SetAttribute ( "name","GetFeatureInfo" );
+    dcpEl = new TiXmlElement ( "ows:DCP" );
+    httpEl = new TiXmlElement ( "ows:HTTP" );
+    getEl = new TiXmlElement ( "ows:Get" );
+    getEl->SetAttribute ( "xlink:href","]HOSTNAME/PATH[" );
+    constraintEl = new TiXmlElement ( "ows:Constraint" );
+    constraintEl->SetAttribute ( "name","GetEncoding" );
+    allowedValuesEl = new TiXmlElement ( "ows:AllowedValues" );
+    allowedValuesEl->LinkEndChild ( buildTextNode ( "ows:Value", "KVP" ) );
+    constraintEl->LinkEndChild ( allowedValuesEl );
+    getEl->LinkEndChild ( constraintEl );
+    httpEl->LinkEndChild ( getEl );
+
+    if ( servicesConf.isPostEnabled() ) {
+        TiXmlElement * postEl = new TiXmlElement ( "ows:Post" );
+        postEl->SetAttribute ( "xlink:href","]HOSTNAME/PATH[" );
+        constraintEl = new TiXmlElement ( "ows:Constraint" );
+        constraintEl->SetAttribute ( "name","PostEncoding" );
+        allowedValuesEl = new TiXmlElement ( "ows:AllowedValues" );
+        allowedValuesEl->LinkEndChild ( buildTextNode ( "ows:Value", "XML" ) );
+        //TODO Implement SOAP like request
+        //allowedValuesEl->LinkEndChild(buildTextNode("ows:Value", "SOAP"));
+        constraintEl->LinkEndChild ( allowedValuesEl );
+        postEl->LinkEndChild ( constraintEl );
+        httpEl->LinkEndChild ( postEl );
+    }
+    dcpEl->LinkEndChild ( httpEl );
+    opEl->LinkEndChild ( dcpEl );
+
+    opMtdEl->LinkEndChild ( opEl );
 
 
     // Inspire (extended Capability)
@@ -1363,6 +1395,9 @@ void Rok4Server::buildWMTSCapabilities() {
 
             // Contrainte : 1 layer = 1 pyramide = 1 format
             layerEl->LinkEndChild ( buildTextNode ( "Format",Rok4Format::toMimeType ( ( layer->getDataPyramid()->getFormat() ) ) ) );
+            for ( unsigned int i=0; i<servicesConf.getInfoFormatList()->size(); i++ ) {
+                layerEl->LinkEndChild ( buildTextNode ( "InfoFormat",servicesConf.getInfoFormatList()->at ( i ) ) );
+            }
 
             /* on suppose qu'on a qu'un TMS par layer parce que si on admet avoir un TMS par pyramide
              *  il faudra contrôler la cohérence entre le format, la projection et le TMS... */

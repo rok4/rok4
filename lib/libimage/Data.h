@@ -42,6 +42,7 @@
 #include <cstddef> // pour size_t
 #include <string>  // pour std::string
 #include <cstring> // pour memcpy
+#include <algorithm>
 
 #include "Logger.h"
 
@@ -381,7 +382,39 @@ public:
 /**
  * Classe Transformant un DataSource en DataStream
  */
-// TODO class StreamedDataSource : public DataStream {};
+class DataStreamFromDataSource : public DataStream {
+private:
+    DataSource* datasource;
+    size_t pos;
+    const uint8_t* data;
+    size_t data_size;
+public:
+    DataStreamFromDataSource ( DataSource* datasource ): datasource(datasource){
+       data = datasource->getData(data_size);
+       pos = 0;
+    };
+    ~DataStreamFromDataSource() {
+        delete datasource;
+    }
+    size_t read ( uint8_t *buffer, size_t size ){
+        size_t read = std::min<size_t>(data_size-pos, size);
+        memcpy((void*) buffer, (void*)(data + pos) , read);
+        pos += read;
+        return read;
+    };
+    bool eof(){
+        return data_size == pos;
+    };
+    std::string getType(){
+        return datasource->getType();
+    }
+    int getHttpStatus(){
+        return datasource->getHttpStatus();
+    }
+    std::string getEncoding(){
+        return datasource->getEncoding();
+    }
+};
 
 
 
