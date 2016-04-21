@@ -85,10 +85,6 @@ protected:
     Image* getwindow ( ServicesConf& servicesConf, BoundingBox<int64_t> src_bbox, int& error );
 
 public:
-    // GREG : a mettre en privé ensuite
-    DataSource* getTilePixel ( int x, int y , int i, int j );
-    // GREg
-
     TileMatrix getTm() {
         return tm;
     }
@@ -184,6 +180,7 @@ public:
 
     void setNoData ( const std::string& file ) ;
     void setNoDataSource (DataSource *source );
+    void updateNoDataTile(std::vector<int> noDataValues);
 
     BoundingBox<double> tileIndicesToSlabBbox(int tileCol, int tileRow);
     BoundingBox<double> tileIndicesToTileBbox(int tileCol, int tileRow);

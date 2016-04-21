@@ -317,7 +317,7 @@ private:
      * \param[in] aLevel
      * \param[in] specific
      */
-    static void updateTileLimits (uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Pyramid *> bPyramids, std::vector<WebService *> bWebServices);
+    static void updateTileLimits (uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Source *> sources);
 
     /**
      * \~french
@@ -335,7 +335,7 @@ private:
      * \param[in] sWebServices
      * \param[in] levels
      */
-    static void cleanParsePyramid(std::map<std::string,std::vector<Pyramid*> > &specificPyramids, std::vector<Pyramid*> &sPyramids, std::map<std::string, std::vector<WebService *> > &specificWebServices, std::vector<WebService *> &sWebService, std::map<std::string, Level *> &levels);
+    static void cleanParsePyramid(std::map<std::string, std::vector<Source *> > &specificSources, std::vector<Source *> &sSources, std::map<std::string, Level *> &levels);
 
     /**
      * \~french

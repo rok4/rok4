@@ -57,7 +57,7 @@
 
 Pyramid::Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format,
                    int channels, bool onDemand, bool onFly)
-    : levels ( levels ), tms ( tms ), format ( format ), channels ( channels ),
+    : Source(PYRAMID),levels ( levels ), tms ( tms ), format ( format ), channels ( channels ),
       onDemand ( onDemand ), onFly (onFly) {
 
     std::map<std::string, Level*>::iterator itLevel;
@@ -482,81 +482,13 @@ int Pyramid::getBitsPerSample() {
 
 }
 
-bool PyramidOnDemand::isThisLevelSpecific(std::string lv) {
+std::vector<Source *> PyramidOnDemand::getSourcesOfLevel( std::string lv) {
 
-    bool specific = false;
+    std::vector<Source*> bSrc;
 
-    if (getSPyramids().size() !=0) {
-        std::map<std::string,std::vector<Pyramid*> > spyr = getSPyramids();
-        std::map<std::string,std::vector<Pyramid*> >::iterator sp = spyr.find(lv);
-        if (sp != spyr.end()) {
-            specific = true;
-        }
-    }
-    if (getSWebServices().size() !=0) {
-        std::map<std::string,std::vector<WebService*> > spyr = getSWebServices();
-        std::map<std::string,std::vector<WebService*> >::iterator sp = spyr.find(lv);
-        if (sp != spyr.end()) {
-            specific = true;
-        }
-    }
+    bSrc = getSources().find(lv)->second;
 
-    return specific;
-
-
-}
-
-bool PyramidOnDemand::isThisLevelSpecificFromPyramids(std::string lv) {
-
-    bool specific = false;
-
-    if (getSPyramids().size() !=0) {
-        std::map<std::string,std::vector<Pyramid*> > spyr = getSPyramids();
-        std::map<std::string,std::vector<Pyramid*> >::iterator sp = spyr.find(lv);
-        if (sp != spyr.end()) {
-            specific = true;
-        }
-    }
-
-    return specific;
-
-
-}
-
-bool PyramidOnDemand::isThisLevelSpecificFromWebServices(std::string lv) {
-
-    bool specific = false;
-
-    if (getSWebServices().size() !=0) {
-        std::map<std::string,std::vector<WebService*> > spyr = getSWebServices();
-        std::map<std::string,std::vector<WebService*> >::iterator sp = spyr.find(lv);
-        if (sp != spyr.end()) {
-            specific = true;
-        }
-    }
-
-    return specific;
-
-
-}
-
-std::vector<Pyramid *> PyramidOnDemand::getSourcePyramid( std::string lv) {
-
-    std::vector<Pyramid*> bPyr;
-
-    bPyr = getSPyramids().find(lv)->second;
-
-    return bPyr;
-}
-
-std::vector<WebService *> PyramidOnDemand::getSourceWebServices( std::string lv) {
-
-    std::vector <WebService*> bWS;
-
-    bWS = getSWebServices().find(lv)->second;
-
-    return bWS;
-
+    return bSrc;
 }
 
 Photometric::ePhotometric PyramidOnFly::getPhotometry(){

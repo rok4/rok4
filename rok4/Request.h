@@ -187,10 +187,10 @@ public:
      * \brief Fetching and validating WMS GetFeatureInfoParam request parameters
      * \return NULL or an error message if something went wrong
      */
-    DataSource* WMSGetFeatureInfoParam (ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers,
+    DataStream* WMSGetFeatureInfoParam (ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers,
                                      std::vector<Layer*>& query_layers,
                                      BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format,
-                                     std::vector<Style*>& styles, std::string& info_format, int& X, int& Y, int& feature_count);
+                                     std::vector<Style*>& styles, std::string& info_format, int& X, int& Y, int& feature_count,std::map <std::string, std::string >& format_option);
     /**
      * \~french
      * \brief Récuperation et vérifications des paramètres d'une requête GetFeatureInfoParam WMTS
@@ -199,7 +199,7 @@ public:
      * \brief Fetching and validating WMTS GetFeatureInfoParam request parameters
      * \return NULL or an error message if something went wrong
      */
-    DataSource* WMTSGetFeatureInfoParam (ServicesConf& servicesConf,  std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList,
+    DataStream* WMTSGetFeatureInfoParam (ServicesConf& servicesConf,  std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList,
                                          Layer*& layer, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, Style* &style,
                                          bool& noDataError, std::string& info_format, int& X, int& Y);
     //

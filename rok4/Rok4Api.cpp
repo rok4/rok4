@@ -264,7 +264,8 @@ HttpResponse* rok4GetWMTSGetFeatureInfo ( const char* queryString, const char* h
     std::string strQuery=queryString;
     Request* request=new Request ( ( char* ) strQuery.c_str(), ( char* ) hostName, ( char* ) scriptName, ( char* ) https );
 
-    DataSource* source=server->WMTSGetFeatureInfo ( request );
+    DataStream* stream=server->WMTSGetFeatureInfo ( request );
+    DataSource* source= new BufferedDataSource ( *stream );
     HttpResponse* response=initResponseFromSource ( source );
 
     delete request;
