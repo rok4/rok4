@@ -45,6 +45,7 @@
 #include "Decoder.h"
 #include "TiffEncoder.h"
 #include "TiffHeaderDataSource.h"
+#include "EmptyDataSource.h"
 #include <cmath>
 #include "Logger.h"
 #include "Kernel.h"
@@ -633,5 +634,17 @@ BoundingBox<double> Level::TMLimitsToBbox() {
 
     return BoundingBox<double> (xmin,ymin,xmax,ymax);
 
+
+}
+
+void Level::updateNoDataTile(std::vector<int> noDataValues) {
+
+    if (noDataTileSource) {
+        delete noDataTileSource;
+        noDataTileSource = NULL;
+    }
+
+    noDataTileSource = new EmptyDataSource(channels,noDataValues,tm.getTileW(),tm.getTileH(),format);
+    noDataSourceProxy = noDataTileSource;
 
 }

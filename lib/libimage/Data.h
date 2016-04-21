@@ -253,6 +253,11 @@ public:
     std::string getEncoding() {
         return encoding;
     }
+
+    /** @return la taille du buffer */
+   size_t getSize() {
+       return dataSize;
+   }
 };
 
 /**

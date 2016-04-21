@@ -267,8 +267,8 @@ sub _loadProperties {
 
 
     my $cfg = COMMON::Config->new({
-        '-filepath' => $file,
-        '-format' => 'INI',
+        'filepath' => $file,
+        'format' => 'INI',
         });
     if (!defined $cfg) {
         ERROR(sprintf "An error occured while loading properties configuration file '%s'.", $file);
@@ -413,8 +413,8 @@ sub _loadDatasources {
     }
 
     my $cfg = COMMON::Config->new({
-        '-filepath' => $file,
-        '-format' => 'INI',
+        'filepath' => $file,
+        'format' => 'INI',
         });
     if (!defined $cfg) {
         ERROR(sprintf "An error occured while loading datasources configuration file '%s'.", $file);
