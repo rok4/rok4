@@ -718,6 +718,9 @@ sub _checkProperties {
     } elsif (!COMMON::CheckUtils::isStrictPositiveInt($samplesperpixel)) {
         ERROR(sprintf "Samples per pixel value must be a strictly positive integer : %s.", $samplesperpixel);
         return FALSE;
+    } elsif (($samplesperpixel == 4) && ($propCfg->getProperty({section => 'pyramid', property => 'compression}'}) =~ m/^jpg$/i)) {
+        ERROR(sprintf "Chuck Norris is able to craft 4 channels JPG, unlike this tool.");
+        return FALSE;
     }
 
     my $pyr_name = $propCfg->getProperty({section => 'pyramid', property => 'pyr_name'});
