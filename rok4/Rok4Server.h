@@ -59,6 +59,7 @@
 #include "fcgiapp.h"
 #include "ProcessFactory.h"
 #include <csignal>
+#include "GetFeatureInfoEncoder.h"
 
 struct Proxy {
     std::string proxyName;

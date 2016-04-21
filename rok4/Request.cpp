@@ -876,6 +876,10 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
         std::map<std::string, Layer*>::iterator it = layerList.find ( *itLayer );
         if ( it == layerList.end() )
             return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_DEFINED,_ ( "Layer " ) +*itLayer+_ ( " inconnu." ),"wms" ) );
+	Layer* lay = it->second;
+	if (lay->getWMSAuthorized() == false){
+	    return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +*itLayer+_ ( " unknown " ),"wms" ) );
+	}
         layers.push_back ( it->second );
     }
     LOGGER_DEBUG ( _ ( "Nombre de couches =" ) << layers.size() );
@@ -1202,14 +1206,31 @@ DataStream* Request::WMSGetFeatureInfoParam (ServicesConf& servicesConf, std::ma
     //Split layer Element
     std::vector<std::string> queryLayersString = split ( str_query_layer,',' );
     LOGGER_DEBUG ( _ ( "Nombre de couches demandees =" ) << queryLayersString.size() );
-    if ( queryLayersString.size() > servicesConf.getLayerLimit() ) {
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le nombre de couche demande excede la valeur du LayerLimit." ),"wms" ) );
+    if ( queryLayersString.size() > 1 ) {
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le nombre de couche interrogée est limité à 1." ),"wms" ) );
     }
     std::vector<std::string>::iterator itQueryLayer = queryLayersString.begin();
     for ( ; itQueryLayer != queryLayersString.end(); itQueryLayer++ ) {
         std::map<std::string, Layer*>::iterator it = layerList.find ( *itQueryLayer );
         if ( it == layerList.end() )
             return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_DEFINED,_ ( "Query_Layer " ) +*itQueryLayer+_ ( " inconnu." ),"wms" ) );
+	Layer* lay = it->second;
+	
+	bool querylay_is_in_layer = false;
+	std::vector<Layer*>::iterator itLay = layers.begin();
+	for ( ; itLay != layers.end(); itLay++ ){
+	    if (*itLay == lay){
+	      querylay_is_in_layer = true;
+	      break;
+	    }
+	}
+	if (querylay_is_in_layer == false){
+	  return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Query_Layer " ) +*itQueryLayer+_ ( " absent de layer." ),"wms" ) );
+	}
+	
+	if (lay->isGetFeatureInfoAvailable() == false){
+	  return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_QUERYABLE,_ ( "Query_Layer " ) +*itQueryLayer+_ ( " non interrogeable." ),"wms" ) );
+	}
         query_layers.push_back ( it->second );
     }
     LOGGER_DEBUG ( _ ( "Nombre de couches requetées =" ) << query_layers.size() );
