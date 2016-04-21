@@ -59,6 +59,7 @@
 #include "fcgiapp.h"
 #include "ProcessFactory.h"
 #include <csignal>
+#include "GetFeatureInfoEncoder.h"
 
 struct Proxy {
     std::string proxyName;
@@ -504,7 +505,7 @@ public:
      * \param[in] request request representation
      * \return response stream
      */
-    DataSource* WMSGetFeatureInfo ( Request* request );
+    DataStream* WMSGetFeatureInfo ( Request* request );
     /**
      * \~french
      * \brief Traitement d'une requête GetFeatureInfo WMTS

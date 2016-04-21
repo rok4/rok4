@@ -247,6 +247,36 @@ void Rok4Server::buildWMS130Capabilities() {
     getMapEl->LinkEndChild ( DCPTypeEl );
 
     requestEl->LinkEndChild ( getMapEl );
+    
+    
+    TiXmlElement * getFeatureInfoEl = new TiXmlElement ( "GetFeatureInfo" );
+    for ( unsigned int i=0; i<servicesConf.getInfoFormatList()->size(); i++ ) {
+        getFeatureInfoEl->LinkEndChild ( buildTextNode ( "Format",servicesConf.getInfoFormatList()->at ( i ) ) );
+    }
+    DCPTypeEl = new TiXmlElement ( "DCPType" );
+    HTTPEl = new TiXmlElement ( "HTTP" );
+    GetEl = new TiXmlElement ( "Get" );
+    onlineResourceEl = new TiXmlElement ( "OnlineResource" );
+    onlineResourceEl->SetAttribute ( "xmlns:xlink","http://www.w3.org/1999/xlink" );
+    onlineResourceEl->SetAttribute ( "xlink:href",pathTag );
+    onlineResourceEl->SetAttribute ( "xlink:type","simple" );
+    GetEl->LinkEndChild ( onlineResourceEl );
+    HTTPEl->LinkEndChild ( GetEl );
+
+    if ( servicesConf.isPostEnabled() ) {
+        TiXmlElement * PostEl = new TiXmlElement ( "Post" );
+        onlineResourceEl = new TiXmlElement ( "OnlineResource" );
+        onlineResourceEl->SetAttribute ( "xmlns:xlink","http://www.w3.org/1999/xlink" );
+        onlineResourceEl->SetAttribute ( "xlink:href",pathTag );
+        onlineResourceEl->SetAttribute ( "xlink:type","simple" );
+        PostEl->LinkEndChild ( onlineResourceEl );
+        HTTPEl->LinkEndChild ( PostEl );
+    }
+
+    DCPTypeEl->LinkEndChild ( HTTPEl );
+    getFeatureInfoEl->LinkEndChild ( DCPTypeEl );
+
+    requestEl->LinkEndChild ( getFeatureInfoEl );
 
     capabilityEl->LinkEndChild ( requestEl );
 
@@ -303,6 +333,10 @@ void Rok4Server::buildWMS130Capabilities() {
             if (it->second->getWMSAuthorized()) {
                 TiXmlElement * childLayerEl = new TiXmlElement ( "Layer" );
                 Layer* childLayer = it->second;
+		// queryable
+		if (childLayer->isGetFeatureInfoAvailable()){
+		 childLayerEl->SetAttribute ( "queryable","1" ); 
+		}
                 // Name
                 childLayerEl->LinkEndChild ( buildTextNode ( "Name", childLayer->getId() ) );
                 // Title
@@ -702,6 +736,35 @@ void Rok4Server::buildWMS111Capabilities() {
     getMapEl->LinkEndChild ( DCPTypeEl );
 
     requestEl->LinkEndChild ( getMapEl );
+    
+    TiXmlElement * getFeatureInfoEl = new TiXmlElement ( "GetFeatureInfo" );
+    for ( unsigned int i=0; i<servicesConf.getInfoFormatList()->size(); i++ ) {
+        getFeatureInfoEl->LinkEndChild ( buildTextNode ( "Format",servicesConf.getInfoFormatList()->at ( i ) ) );
+    }
+    DCPTypeEl = new TiXmlElement ( "DCPType" );
+    HTTPEl = new TiXmlElement ( "HTTP" );
+    GetEl = new TiXmlElement ( "Get" );
+    onlineResourceEl = new TiXmlElement ( "OnlineResource" );
+    onlineResourceEl->SetAttribute ( "xmlns:xlink","http://www.w3.org/1999/xlink" );
+    onlineResourceEl->SetAttribute ( "xlink:href",pathTag );
+    onlineResourceEl->SetAttribute ( "xlink:type","simple" );
+    GetEl->LinkEndChild ( onlineResourceEl );
+    HTTPEl->LinkEndChild ( GetEl );
+
+    if ( servicesConf.isPostEnabled() ) {
+        TiXmlElement * PostEl = new TiXmlElement ( "Post" );
+        onlineResourceEl = new TiXmlElement ( "OnlineResource" );
+        onlineResourceEl->SetAttribute ( "xmlns:xlink","http://www.w3.org/1999/xlink" );
+        onlineResourceEl->SetAttribute ( "xlink:href",pathTag );
+        onlineResourceEl->SetAttribute ( "xlink:type","simple" );
+        PostEl->LinkEndChild ( onlineResourceEl );
+        HTTPEl->LinkEndChild ( PostEl );
+    }
+
+    DCPTypeEl->LinkEndChild ( HTTPEl );
+    getFeatureInfoEl->LinkEndChild ( DCPTypeEl );
+
+    requestEl->LinkEndChild ( getFeatureInfoEl );
 
     capabilityEl->LinkEndChild ( requestEl );
 
@@ -731,6 +794,9 @@ void Rok4Server::buildWMS111Capabilities() {
             if (it->second->getWMSAuthorized()) {
                 TiXmlElement * childLayerEl = new TiXmlElement ( "Layer" );
                 Layer* childLayer = it->second;
+		if (childLayer->isGetFeatureInfoAvailable()){
+		 childLayerEl->SetAttribute ( "queryable","1" ); 
+		}
                 // Name
                 childLayerEl->LinkEndChild ( buildTextNode ( "Name", childLayer->getId() ) );
                 // Title
