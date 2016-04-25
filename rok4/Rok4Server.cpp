@@ -603,17 +603,6 @@ DataSource* Rok4Server::getTile ( Request* request ) {
     }
 
 
-    //Si le WMTS n'est pas authorisé pour ce layer, on renvoit une erreur
-    if (!(L->getWMTSAuthorized())) {
-        std::string Title = L->getId();
-        delete L;
-        L = NULL;
-        delete style;
-        style = NULL;
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +Title+_ ( " unknown " ),"wmts" ) );
-    }
-
-
     DataSource* tileSource;
 
     if (L->getDataPyramid()->getOnDemand()) {
@@ -1232,147 +1221,12 @@ DataStream* Rok4Server::WMSGetFeatureInfo ( Request* request ) {
         LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getFeatureInfo" ) );
         return errorResp;
     }
-
-
-    //On a limité le nombre de query layer à 1 dans WMSGetFeatureInfoParam
-    
-	      // Comment connaitre le cas ? => modifier les confs
-	      std::string getFeatureInfoType = query_layers.at(0)->getGFIType();
-	      if(getFeatureInfoType.compare( "PYRAMID" ) == 0){
-                // Donnee image elle-meme
-                // Recup pixel
-
-	      BoundingBox<double> pxBbox ( 0.0, 0.0, 0.0, 0.0 );
-	      pxBbox.xmin = (bbox.xmax-bbox.xmin)/double (width)*double (X) + bbox.xmin;
-	      pxBbox.xmax = (bbox.xmax-bbox.xmin)/double (width) + pxBbox.xmin;
-	      pxBbox.ymax = bbox.ymax - (bbox.ymax-bbox.ymin)/double (height)*double (Y);
-	      pxBbox.ymin = pxBbox.ymax - (bbox.ymax-bbox.ymin)/double (height);
-	      
-              int error;
-              Image* image;
-	      image = query_layers.at ( 0 )->getbbox ( servicesConf, pxBbox, 1, 1, crs, error );
-              Rok4Format::eformat_data pyrType = query_layers.at ( 0 )->getDataPyramid()->getFormat();
-
-               if ( image == 0 ) {
-		  switch ( error ) {
-		    case 1: {
-		      return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "bbox invalide" ),"wms" ) );
-		    }
-		    case 2: {
-		      return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "bbox trop grande" ),"wms" ) );
-		    }
-		    default : {
-		      return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wms" ) );
-		    }
-		  }
-               }
-
-		std::vector<std::string> strData;
-                int n = image->channels;
-		switch ( pyrType ) {
-		    case Rok4Format::TIFF_RAW_INT8 :
-		    case Rok4Format::TIFF_JPG_INT8 :
-		    case Rok4Format::TIFF_PNG_INT8 :
-		    case Rok4Format::TIFF_LZW_INT8 :
-		    case Rok4Format::TIFF_ZIP_INT8 :
-		    case Rok4Format::TIFF_PKB_INT8 : {
-			uint8_t* intbuffer = new uint8_t[n*sizeof(uint8_t)];
-			image->getline(intbuffer,0);
-			for ( int i = 0 ; i < n; i ++ ) {
-			  std::stringstream ss;
-			  ss << (int) intbuffer[i];
-			  strData.push_back( ss.str() );
-			}
-			break;
-		    }
-		    case Rok4Format::TIFF_RAW_FLOAT32 :
-		    case Rok4Format::TIFF_LZW_FLOAT32 :
-		    case Rok4Format::TIFF_ZIP_FLOAT32 :
-		    case Rok4Format::TIFF_PKB_FLOAT32 : {
-			float* floatbuffer = new float[n*sizeof(float)];
-			image->getline(floatbuffer,0);
-			for ( int i = 0 ; i < n; i ++ ) {
-			  std::stringstream ss;
-			  ss << (float) floatbuffer[i];
-			  strData.push_back( ss.str() );
-			}
-			break;
-		    }
-		    default:
-		      return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Erreur interne."),"wms" ) );
-		}
-		GetFeatureInfoEncoder gfiEncoder(strData, info_format);
-		DataStream* responseDS = gfiEncoder.getDataStream();
-		if (responseDS == NULL){
-		    return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Info_format non ") +info_format+ _( " supporté par la couche ") + query_layers.at(0)->getId() ,"wms" ) );
-		}
-		return responseDS;
-                //return new SERDataStream ( new ServiceException ( "",GFI_PYRAMID_VALUES, ss.str(),"wms" ) );
-            }else if(getFeatureInfoType.compare( "EXTERNALWMS" ) == 0){
-                LOGGER_DEBUG("GFI sur WMS externe");
-                // reponse d'un WMS-V
-                // GetFeatureInfo sur la couche vecteur en (X,Y)
-                Layer* layer = query_layers.at(0);
-                WebService* myWMSV = new WebService(layer->getGFIBaseUrl(),proxy.proxyName,proxy.noProxy,1,5,60);
-                std::stringstream vectorRequest;
-
-                vectorRequest << layer->getGFIBaseUrl()
-                        << "REQUEST=GetFeatureInfo"
-                        << "&SERVICE=" << layer->getGFIService()
-                        << "&VERSION=" << layer->getGFIVersion()
-                        << "&LAYERS=" << layer->getGFILayers()
-                        << "&QUERY_LAYERS=" << layer->getGFIQueryLayers()
-                        << "&INFO_FORMAT=" << info_format
-                        << "&FORMAT=" << format
-                        << "&FEATURE_COUNT=" << feature_count
-                        << "&CRS=" << crs.getRequestCode()
-                        << "&WIDTH=" << width
-                        << "&HEIGHT=" << height
-                        << "&I=" << X
-                        << "&J=" << Y
-                         // compatibilité 1.1.1
-                        << "&SRS=" << crs.getRequestCode()
-                        << "&X=" << X
-                        << "&Y=" << Y;
-			
-		
-		// Les params sont ok : on passe maintenant a la recup de l'info
-		char xmin[64];
-		sprintf(xmin, "%-.*G", 16, bbox.xmin);
-		char xmax[64];
-		sprintf(xmax, "%-.*G", 16, bbox.xmax);
-		char ymin[64];
-		sprintf(ymin, "%-.*G", 16, bbox.ymin);
-		char ymax[64];
-		sprintf(ymax, "%-.*G", 16, bbox.ymax);
-
-                if ( ( crs.getAuthority() =="EPSG" || crs.getAuthority() =="epsg" ) && crs.isLongLat() && layer->getGFIVersion() == "1.3.0" ) {
-                    vectorRequest << "&BBOX=" << ymin << "," << xmin << "," << ymax << "," << xmax;
-                } else {
-                    vectorRequest << "&BBOX=" << xmin << "," << ymin << "," << xmax << "," << ymax;
-                }
-
-                LOGGER_DEBUG("REQUETE = " << vectorRequest.str());
-                RawDataStream* response = myWMSV->performRequestStream (vectorRequest.str());
-                if(response == NULL){
-                    return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Internal server error" ),"wms" ) );
-                }
-                return response;
-            }else if(getFeatureInfoType.compare( "SQL" ) == 0){
-                // SQL
-                // SQL en base en (X,Y)
-                // = se connecter a une bdd et executer une requete sur la position en question.
-                // Non géré pour le moment. (nouvelle lib a integrer)
-                return new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "GFI depuis un SQL non géré." ),"wms" ) );
-            }else{
-                // ERROR (deja geree normalement)
-                return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "ERRORRRRRR !" ),"wms" ) );
-            }
+    return CommonGetFeatureInfo( "wms", query_layers.at(0), bbox, width, height, crs, info_format, X, Y, format, feature_count );
 
 }
 
 
-DataSource* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
+DataStream* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
     Layer* layer;
     std::string tileMatrix,format;
     int tileCol,tileRow;
@@ -1385,119 +1239,155 @@ DataSource* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
 
     LOGGER_DEBUG("Verification des parametres de la requete");
 
-    DataSource* errorResp = request->WMTSGetFeatureInfoParam (servicesConf, tmsList, layerList, layer, tileMatrix, tileCol, tileRow, format,
+    DataStream* errorResp = request->WMTSGetFeatureInfoParam (servicesConf, tmsList, layerList, layer, tileMatrix, tileCol, tileRow, format,
                                                               style, noDataError, info_format, X, Y);
     if ( errorResp ) {
         LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getFeatureInfo" ) );
         return errorResp;
     }
-
-    //Si le WMTS n'est pas authorisé pour ce layer, on renvoit une erreur
-    if (!(layer->getWMTSAuthorized())) {
-        LOGGER_ERROR("WMTS non autorise pour cette couche");
-        std::string Title = layer->getId();
-        delete layer;
-        layer = NULL;
-        delete style;
-        style = NULL;
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +Title+_ ( " unknown " ),"wmts" ) );
-    }
-
-    LOGGER_DEBUG("Recuperation des infos");
-
-    // Les params sont ok : on passe maintenant a la recup de l'info
     Pyramid* pyr = layer->getDataPyramid();
-
     std::map<std::string, Level*>::iterator lv = pyr->getLevels().find(tileMatrix);
-    BoundingBox<double> bbox = lv->second->tileIndicesToTileBbox(tileCol,tileRow) ;
-    char xmin[64];
-    sprintf(xmin, "%-.*G", 16, bbox.xmin);
-    char xmax[64];
-    sprintf(xmax, "%-.*G", 16, bbox.xmax);
-    char ymin[64];
-    sprintf(ymin, "%-.*G", 16, bbox.ymin);
-    char ymax[64];
-    sprintf(ymax, "%-.*G", 16, bbox.ymax);
-
-    std::string crs = pyr->getTms().getCrs().getRequestCode();
-    if(layer->getGFIForceEPSG()){
-        if(crs=="IGNF:LAMB93"){
-           crs = "EPSG:2154";
-        }
-    }
-
-    // Il faut s'assurer que l'on peut faire un GFI
-        if(layer->isGetFeatureInfoAvailable()){
-            LOGGER_DEBUG("GFI autorise pour cette couche");
-
-            // Comment connaitre le cas ? => modifier les confs
-            std::string getFeatureInfoType = layer->getGFIType();
-            if(getFeatureInfoType.compare( "PYRAMID" ) == 0){
-
-                LOGGER_DEBUG("GFI sur pyramide");
-                // Donnee image elle-meme
-                // Recup pixel
-                return lv->second->getTilePixel(tileCol,tileRow,X,Y);
-
-            }else if(getFeatureInfoType.compare( "EXTERNALWMS" ) == 0){
-
-                LOGGER_DEBUG("GFI sur WMS externe");
-                // reponse d'un WMS-V
-                // GetFeatureInfo sur la couche vecteur en (X,Y)
-                WebService* myWMSV = new WebService(layer->getGFIBaseUrl(),proxy.proxyName,proxy.noProxy,1,1,10);
-                std::stringstream vectorRequest;
-
-                vectorRequest << layer->getGFIBaseUrl()
-                        << "REQUEST=GetFeatureInfo"
-                        << "&SERVICE=" << layer->getGFIService()
-                        << "&VERSION=" << layer->getGFIVersion()
-                        << "&LAYERS=" << layer->getGFILayers()
-                        << "&QUERY_LAYERS=" << layer->getGFIQueryLayers()
-                        << "&INFO_FORMAT=" << info_format
-                        << "&FORMAT=" << format
-                        //<< "&FEAUTURE_COUNT=" << feature_count
-                        << "&CRS=" << crs
-                        << "&BBOX=" << xmin << "," << ymin << "," << xmax << "," << ymax
-                        << "&WIDTH=" << lv->second->getTm().getTileW()
-                        << "&HEIGHT=" << lv->second->getTm().getTileH()
-                        << "&I=" << X
-                        << "&J=" << Y
-                        // compatibilité 1.1.1
-                        << "&SRS=" << crs
-                        << "&X=" << X
-                        << "&Y=" << Y;
-
-                LOGGER_DEBUG("REQUETE = " << vectorRequest.str());
-                RawDataSource* response = myWMSV->performRequest (vectorRequest.str());
-                if(response == NULL){
-                    return new SERDataSource ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Internal server error" ),"wms" ) );
-                }
-                return response;
-
-            }else if(getFeatureInfoType.compare( "SQL" ) == 0){
-
-                LOGGER_DEBUG("GFI sur BDD SQL");
-                // SQL
-                // SQL en base en (X,Y)
-                // = se connecter a une bdd et executer une requete sur la position en question.
-                // Non géré pour le moment. (nouvelle lib a integrer)
-                return new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "GFI depuis un SQL non géré." ),"wmts" ) );
-
-            }else{
-
-                LOGGER_DEBUG("GFI sur une donnee inconnue");
-                // ERROR (deja geree normalement)
-                return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "ERRORRRRRR !" ),"wmts" ) );
-
-            }
-
-        }else{
-
-            LOGGER_ERROR ( _ ( "GetFeatureInfo non autorisé" ) );
-            return new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "GetFeatureInfo non autorisé." ),"wmts" ) );
-
-        }
+    Level* level = lv->second;
+    BoundingBox<double> bbox = level->tileIndicesToTileBbox(tileCol,tileRow) ;
+    int height = level->getTm().getTileH();
+    int width = level->getTm().getTileW();
+    CRS crs = pyr->getTms().getCrs();
+    return CommonGetFeatureInfo( "wmts", layer, bbox, width, height, crs, info_format, X, Y, format, 1 );
 }
+
+DataStream* Rok4Server::CommonGetFeatureInfo ( std::string service, Layer* layer, BoundingBox<double> bbox, int width, int height, CRS crs, std::string info_format , int X, int Y, std::string format, int feature_count){
+    std::string getFeatureInfoType = layer->getGFIType();
+    if ( getFeatureInfoType.compare( "PYRAMID" ) == 0 ) {
+        LOGGER_DEBUG("GFI sur pyramide");
+        
+        BoundingBox<double> pxBbox ( 0.0, 0.0, 0.0, 0.0 );
+        pxBbox.xmin = (bbox.xmax-bbox.xmin)/double (width)*double (X) + bbox.xmin;
+        pxBbox.xmax = (bbox.xmax-bbox.xmin)/double (width) + pxBbox.xmin;
+        pxBbox.ymax = bbox.ymax - (bbox.ymax-bbox.ymin)/double (height)*double (Y);
+        pxBbox.ymin = pxBbox.ymax - (bbox.ymax-bbox.ymin)/double (height);
+        
+        int error;
+        Image* image;
+        image = layer->getbbox ( servicesConf, pxBbox, 1, 1, crs, error );
+        if ( image == 0 ) {
+           switch ( error ) {
+             case 1: {
+               return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "bbox invalide" ), service ) );
+             }
+             case 2: {
+               return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "bbox trop grande" ), service ) );
+             }
+             default : {
+               return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ), service ) );
+             }
+           }
+        }
+
+        std::vector<std::string> strData;
+        Rok4Format::eformat_data pyrType = layer->getDataPyramid()->getFormat();
+        int n = image->channels;
+        switch ( pyrType ) {
+            case Rok4Format::TIFF_RAW_INT8 :
+            case Rok4Format::TIFF_JPG_INT8 :
+            case Rok4Format::TIFF_PNG_INT8 :
+            case Rok4Format::TIFF_LZW_INT8 :
+            case Rok4Format::TIFF_ZIP_INT8 :
+            case Rok4Format::TIFF_PKB_INT8 : {
+                uint8_t* intbuffer = new uint8_t[n*sizeof(uint8_t)];
+                image->getline(intbuffer,0);
+                for ( int i = 0 ; i < n; i ++ ) {
+                  std::stringstream ss;
+                  ss << (int) intbuffer[i];
+                  strData.push_back( ss.str() );
+                }
+                break;
+            }
+            case Rok4Format::TIFF_RAW_FLOAT32 :
+            case Rok4Format::TIFF_LZW_FLOAT32 :
+            case Rok4Format::TIFF_ZIP_FLOAT32 :
+            case Rok4Format::TIFF_PKB_FLOAT32 : {
+                float* floatbuffer = new float[n*sizeof(float)];
+                image->getline(floatbuffer,0);
+                for ( int i = 0 ; i < n; i ++ ) {
+                  std::stringstream ss;
+                  ss << (float) floatbuffer[i];
+                  strData.push_back( ss.str() );
+                }
+                break;
+            }
+            default:
+              return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Erreur interne."), service ) );
+        }
+        GetFeatureInfoEncoder gfiEncoder(strData, info_format);
+        DataStream* responseDS = gfiEncoder.getDataStream();
+        if (responseDS == NULL){
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Info_format non ") +info_format+ _( " supporté par la couche ") + layer->getId() , service ) );
+        }
+        return responseDS;
+        
+    } else if ( getFeatureInfoType.compare( "EXTERNALWMS" ) == 0 ) {
+        LOGGER_DEBUG("GFI sur WMS externe");
+        WebService* myWMSV = new WebService(layer->getGFIBaseUrl(),proxy.proxyName,proxy.noProxy,1,1,10);
+        std::stringstream vectorRequest;
+        std::string crsstring = crs.getRequestCode();
+        if(layer->getGFIForceEPSG()){
+            // FIXME
+            if(crsstring=="IGNF:LAMB93"){
+                crsstring = "EPSG:2154";
+            }
+        }
+
+        vectorRequest << layer->getGFIBaseUrl()
+                << "REQUEST=GetFeatureInfo"
+                << "&SERVICE=" << layer->getGFIService()
+                << "&VERSION=" << layer->getGFIVersion()
+                << "&LAYERS=" << layer->getGFILayers()
+                << "&QUERY_LAYERS=" << layer->getGFIQueryLayers()
+                << "&INFO_FORMAT=" << info_format
+                << "&FORMAT=" << format
+                << "&FEATURE_COUNT=" << feature_count
+                << "&CRS=" << crsstring
+                << "&WIDTH=" << width
+                << "&HEIGHT=" << height
+                << "&I=" << X
+                << "&J=" << Y
+                 // compatibilité 1.1.1
+                << "&SRS=" << crsstring
+                << "&X=" << X
+                << "&Y=" << Y;
+            
+        
+        // Les params sont ok : on passe maintenant a la recup de l'info
+        char xmin[64];
+        sprintf(xmin, "%-.*G", 16, bbox.xmin);
+        char xmax[64];
+        sprintf(xmax, "%-.*G", 16, bbox.xmax);
+        char ymin[64];
+        sprintf(ymin, "%-.*G", 16, bbox.ymin);
+        char ymax[64];
+        sprintf(ymax, "%-.*G", 16, bbox.ymax);
+
+        if ( ( crs.getAuthority() =="EPSG" || crs.getAuthority() =="epsg" || layer->getGFIForceEPSG() ) && crs.isLongLat() && layer->getGFIVersion() == "1.3.0" ) {
+            vectorRequest << "&BBOX=" << ymin << "," << xmin << "," << ymax << "," << xmax;
+        } else {
+            vectorRequest << "&BBOX=" << xmin << "," << ymin << "," << xmax << "," << ymax;
+        }
+
+        LOGGER_DEBUG("REQUETE = " << vectorRequest.str());
+        RawDataStream* response = myWMSV->performRequestStream (vectorRequest.str());
+        if(response == NULL){
+            return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Internal server error" ),"wms" ) );
+        }
+        return response;
+    } else if ( getFeatureInfoType.compare( "SQL" ) == 0 ) {
+        LOGGER_DEBUG("GFI sur SQL");
+        // Non géré pour le moment. (nouvelle lib a integrer)
+        return new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "GFI depuis un SQL non géré." ), service ) );
+    } else {
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "ERRORRRRRR !" ), service ) );
+    }
+}
+
 
 void Rok4Server::processWMTS ( Request* request, FCGX_Request&  fcgxRequest ) {
     if ( request->request == "getcapabilities" ) {

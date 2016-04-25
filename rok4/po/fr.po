@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2016-04-21 08:39+0000\n"
+"POT-Creation-Date: 2016-04-22 07:35+0000\n"
 "PO-Revision-Date: 2014-01-28 09:36+0100\n"
 "Last-Translator: \n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -56,11 +56,11 @@ msgstr "Élément WMS terminé"
 msgid "WMS 1.1.1 fini"
 msgstr "Élément WMS terminé"
 
-#: CapabilitiesBuilder.cpp:1319
+#: CapabilitiesBuilder.cpp:1351
 msgid "Title : "
 msgstr "Titre : "
 
-#: CapabilitiesBuilder.cpp:1323
+#: CapabilitiesBuilder.cpp:1355
 msgid "Abstract : "
 msgstr "Résumé :"
 
@@ -222,7 +222,7 @@ msgstr "            La racine n'est pas un tileMatrixSet."
 #: ConfLoader.cpp:455 ConfLoader.cpp:459 ConfLoader.cpp:465 ConfLoader.cpp:469
 #: ConfLoader.cpp:475 ConfLoader.cpp:479 ConfLoader.cpp:485 ConfLoader.cpp:489
 #: ConfLoader.cpp:495 ConfLoader.cpp:499 ConfLoader.cpp:505 ConfLoader.cpp:509
-#: Request.cpp:765 Request.cpp:1348
+#: Request.cpp:768
 msgid "TileMatrixSet "
 msgstr "TileMatrixSet "
 
@@ -1082,19 +1082,19 @@ msgstr "Trop de tuile sur l'axe Y"
 msgid "Indice de tuile negatif"
 msgstr "Indice de tuile négatif"
 
-#: Level.cpp:444 Level.cpp:462
+#: Level.cpp:426 Level.cpp:444
 msgid "Type d'encodage inconnu : "
 msgstr "Type d'encodage inconnu : "
 
-#: Level.cpp:467
+#: Level.cpp:449
 msgid "Tile : "
 msgstr "Tuile : "
 
-#: Level.cpp:477
+#: Level.cpp:459
 msgid "GetTile Tiff"
 msgstr "GetTile Tiff"
 
-#: Level.cpp:487 Level.cpp:500
+#: Level.cpp:469 Level.cpp:482
 msgid "GetTile Image"
 msgstr "GetTile Image"
 
@@ -1130,7 +1130,7 @@ msgid "Rechargement de la configuration"
 msgstr "Rechargement de la configuration"
 
 #: main.cpp:264 Rok4Api.cpp:137 Rok4Api.cpp:145 Rok4Api.cpp:153
-#: Rok4Api.cpp:162 Rok4Api.cpp:619
+#: Rok4Api.cpp:162 Rok4Api.cpp:620
 msgid "Extinction du serveur ROK4"
 msgstr "Extinction du serveur ROK4"
 
@@ -1298,140 +1298,142 @@ msgstr "requête POST avec du contenu invalide"
 msgid "Cannot retrieve XML root element"
 msgstr "Impossible de récupérer l'élément racine du XML"
 
-#: Request.cpp:748 Request.cpp:858 Request.cpp:1331
+#: Request.cpp:748 Request.cpp:861
 msgid "Parametre VERSION absent."
 msgstr "Paramètre VERSION absent."
 
-#: Request.cpp:750 Request.cpp:1333
+#: Request.cpp:750
 msgid "Valeur du parametre VERSION invalide (doit contenir "
 msgstr "Valeur du paramètre VERSION invalide (doit contenir "
 
-#: Request.cpp:750 Request.cpp:1333
+#: Request.cpp:750
 msgid ")"
 msgstr ")"
 
-#: Request.cpp:754 Request.cpp:1337
+#: Request.cpp:754
 msgid "Parametre LAYER absent."
 msgstr "Paramètre LAYER absent."
 
-#: Request.cpp:757 Request.cpp:878 Request.cpp:881 Request.cpp:1340
-#: Rok4Server.cpp:613 Rok4Server.cpp:1403
+#: Request.cpp:757 Request.cpp:760 Request.cpp:881 Request.cpp:884
 msgid "Layer "
 msgstr "Layer "
 
-#: Request.cpp:757 Request.cpp:765 Request.cpp:878 Request.cpp:1216
-#: Request.cpp:1340 Request.cpp:1348
+#: Request.cpp:757 Request.cpp:768 Request.cpp:881 Request.cpp:1219
 msgid " inconnu."
 msgstr " inconnu."
 
-#: Request.cpp:762 Request.cpp:1345
+#: Request.cpp:760
+#, fuzzy
+msgid " inconnu "
+msgstr " inconnu."
+
+#: Request.cpp:765
 msgid "Parametre TILEMATRIXSET absent."
 msgstr "Paramètre TILEMATRIXSET absent."
 
-#: Request.cpp:768 Request.cpp:1351
+#: Request.cpp:771
 msgid ""
 "Parametre TILEMATRIXSET différent de celui de la couche demandée. "
 "TILEMATRIXSET devrait être "
 msgstr ""
 
-#: Request.cpp:773 Request.cpp:1356
+#: Request.cpp:776
 msgid "Parametre TILEMATRIX absent."
 msgstr "Paramètre TILEMATRIX absent."
 
-#: Request.cpp:778 Request.cpp:1361
+#: Request.cpp:781
 msgid "TileMatrix "
 msgstr ", TileMatrix "
 
-#: Request.cpp:778 Request.cpp:1361
+#: Request.cpp:781
 msgid " inconnu pour le TileMatrixSet "
 msgstr " inconnu pour le TileMatrixSet "
 
-#: Request.cpp:783 Request.cpp:1366
+#: Request.cpp:786
 msgid "Parametre TILEROW absent."
 msgstr "Paramètre TILEROW absent."
 
-#: Request.cpp:785 Request.cpp:1368
+#: Request.cpp:788
 msgid "La valeur du parametre TILEROW est incorrecte."
 msgstr "La valeur du paramètre TILEROW est incorrecte."
 
-#: Request.cpp:789 Request.cpp:1372
+#: Request.cpp:792
 msgid "Parametre TILECOL absent."
 msgstr "Paramètre TILECOL absent."
 
-#: Request.cpp:791 Request.cpp:1374
+#: Request.cpp:794
 msgid "La valeur du parametre TILECOL est incorrecte."
 msgstr "La valeur du paramètre TILECOL est incorrecte."
 
-#: Request.cpp:796 Request.cpp:1379
+#: Request.cpp:799
 msgid "format requete : "
 msgstr "format requête : "
 
-#: Request.cpp:796 Request.cpp:1379
+#: Request.cpp:799
 msgid " format pyramide : "
 msgstr " format pyramide : "
 
-#: Request.cpp:798 Request.cpp:947 Request.cpp:1381
+#: Request.cpp:801 Request.cpp:950
 msgid "Parametre FORMAT absent."
 msgstr "Paramètre FORMAT absent."
 
-#: Request.cpp:801 Request.cpp:1384 Rok4Server.cpp:579
+#: Request.cpp:804 Rok4Server.cpp:579
 msgid "Le format "
 msgstr "Le format ["
 
-#: Request.cpp:801 Request.cpp:814 Request.cpp:1062 Request.cpp:1384
-#: Request.cpp:1397
+#: Request.cpp:804 Request.cpp:817 Request.cpp:1065
 msgid " n'est pas gere pour la couche "
 msgstr " n'est pas géré pour la couche "
 
-#: Request.cpp:805 Request.cpp:1388
+#: Request.cpp:808
 msgid "Parametre STYLE absent."
 msgstr "Paramètre STYLE absent."
 
-#: Request.cpp:814 Request.cpp:1062 Request.cpp:1397
+#: Request.cpp:817 Request.cpp:1065
 msgid "Le style "
 msgstr "Le style "
 
-#: Request.cpp:863 Request.cpp:1139
+#: Request.cpp:866 Request.cpp:1142
 #, fuzzy
 msgid ""
 "Valeur du parametre VERSION invalide (1.1.1 et 1.3.0 disponibles seulement))"
 msgstr "Valeur du paramètre VERSION invalide (1.3.0 disponible seulement))"
 
-#: Request.cpp:867
+#: Request.cpp:870
 msgid "Parametre LAYERS absent."
 msgstr "Parametre LAYERS absent."
 
-#: Request.cpp:870 Request.cpp:1208
+#: Request.cpp:873 Request.cpp:1211
 msgid "Nombre de couches demandees ="
 msgstr "Nombre de couches demandées = "
 
-#: Request.cpp:872
+#: Request.cpp:875
 msgid "Le nombre de couche demande excede la valeur du LayerLimit."
 msgstr ""
 "Le nombre de couche demandé  excède la valeur définit dans la configuration "
 "(LayerLimit)"
 
-#: Request.cpp:881 Rok4Server.cpp:613 Rok4Server.cpp:1403
+#: Request.cpp:884
 msgid " unknown "
 msgstr ""
 
-#: Request.cpp:885
+#: Request.cpp:888
 msgid "Nombre de couches ="
 msgstr "Nombre de couches =  "
 
-#: Request.cpp:889
+#: Request.cpp:892
 msgid "Parametre WIDTH absent."
 msgstr "Paramètre WIDTH absent."
 
-#: Request.cpp:892
+#: Request.cpp:895
 msgid "La valeur du parametre WIDTH n'est pas une valeur entiere."
 msgstr "La valeur du paramètre WIDTH n'est pas une valeur entière."
 
-#: Request.cpp:894
+#: Request.cpp:897
 msgid "La valeur du parametre WIDTH est negative."
 msgstr "La valeur du paramètre WIDTH est négative."
 
-#: Request.cpp:896
+#: Request.cpp:899
 msgid ""
 "La valeur du parametre WIDTH est superieure a la valeur maximum autorisee "
 "par le service."
@@ -1439,19 +1441,19 @@ msgstr ""
 "La valeur du paramètre WIDTH est supérieure a la valeur maximum autorisée "
 "par le service."
 
-#: Request.cpp:900
+#: Request.cpp:903
 msgid "Parametre HEIGHT absent."
 msgstr "Paramètre HEIGHT absent."
 
-#: Request.cpp:903
+#: Request.cpp:906
 msgid "La valeur du parametre HEIGHT n'est pas une valeur entiere."
 msgstr "La valeur du paramètre HEIGHT n'est pas une valeur entière."
 
-#: Request.cpp:905
+#: Request.cpp:908
 msgid "La valeur du parametre HEIGHT est negative."
 msgstr "La valeur du paramètre HEIGHT est négative."
 
-#: Request.cpp:907
+#: Request.cpp:910
 msgid ""
 "La valeur du parametre HEIGHT est superieure a la valeur maximum autorisee "
 "par le service."
@@ -1459,195 +1461,209 @@ msgstr ""
 "La valeur du paramètre HEIGHT est supérieure a la valeur maximum autorisée "
 "par le service."
 
-#: Request.cpp:913
+#: Request.cpp:916
 msgid "Parametre CRS absent."
 msgstr "Paramtre CRS absent."
 
-#: Request.cpp:918
+#: Request.cpp:921
 #, fuzzy
 msgid "Parametre SRS absent."
 msgstr "Paramtre CRS absent."
 
-#: Request.cpp:939
+#: Request.cpp:942
 msgid "CRS "
 msgstr "CRS "
 
-#: Request.cpp:939
+#: Request.cpp:942
 msgid " (equivalent PROJ4 "
 msgstr " (équivalent PROJ4 "
 
-#: Request.cpp:939
+#: Request.cpp:942
 msgid " ) inconnu pour le layer "
 msgstr " ) inconnu pour la couche"
 
-#: Request.cpp:954
+#: Request.cpp:957
 msgid "Format "
 msgstr "Format "
 
-#: Request.cpp:954 Request.cpp:1317 Request.cpp:1412
+#: Request.cpp:957 Request.cpp:1320 Request.cpp:1348
 msgid " non gere par le service."
 msgstr " non géré par le service."
 
-#: Request.cpp:959
+#: Request.cpp:962
 msgid "Parametre BBOX absent."
 msgstr "Paramètre BBOX absent."
 
-#: Request.cpp:963 Request.cpp:967 Request.cpp:970 Request.cpp:973
+#: Request.cpp:966 Request.cpp:970 Request.cpp:973 Request.cpp:976
 msgid "Parametre BBOX incorrect."
 msgstr "Paramètre BBOX incorrect."
 
-#: Request.cpp:1030
+#: Request.cpp:1033
 msgid "Format d'exception "
 msgstr "Format d'exception "
 
-#: Request.cpp:1030
+#: Request.cpp:1033
 msgid " non pris en charge"
 msgstr " non pris en charge"
 
-#: Request.cpp:1034
+#: Request.cpp:1037
 msgid "Parametre STYLES absent."
 msgstr "Paramètre STYLES absent."
 
-#: Request.cpp:1044
+#: Request.cpp:1047
 msgid "Nombre de styles demandes ="
 msgstr "Nombre de styles demandés = "
 
-#: Request.cpp:1046
+#: Request.cpp:1049
 msgid "Parametre STYLES incomplet."
 msgstr "Paramètre STYLES incomplet."
 
-#: Request.cpp:1090 Request.cpp:1145 Rok4Api.cpp:226 Rok4Server.cpp:1546
+#: Request.cpp:1093 Request.cpp:1148 Rok4Api.cpp:226 Rok4Server.cpp:1436
 msgid "Le service "
 msgstr "Le service "
 
-#: Request.cpp:1090 Request.cpp:1145 Rok4Api.cpp:226 Rok4Server.cpp:1546
+#: Request.cpp:1093 Request.cpp:1148 Rok4Api.cpp:226 Rok4Server.cpp:1436
 msgid " est inconnu pour ce serveur."
 msgstr " est inconnu pour ce serveur."
 
-#: Request.cpp:1153
+#: Request.cpp:1156
 msgid "Valeur du parametre VERSION invalide (1.0.0 disponible seulement)"
 msgstr "Valeur du paramètre VERSION invalide (1.0.0 disponible seulement)"
 
-#: Request.cpp:1205
+#: Request.cpp:1208
 #, fuzzy
 msgid "Parametre QUERY_LAYERS absent."
 msgstr "Parametre LAYERS absent."
 
-#: Request.cpp:1210
+#: Request.cpp:1213
 msgid "Le nombre de couche interrogée est limité à 1."
 msgstr ""
 
-#: Request.cpp:1216 Request.cpp:1228 Request.cpp:1232
+#: Request.cpp:1219 Request.cpp:1231 Request.cpp:1235
 #, fuzzy
 msgid "Query_Layer "
 msgstr "Layer "
 
-#: Request.cpp:1228
+#: Request.cpp:1231
 #, fuzzy
 msgid " absent de layer."
 msgstr " : absence de séparateur"
 
-#: Request.cpp:1232
+#: Request.cpp:1235
 #, fuzzy
 msgid " non interrogeable."
 msgstr "] n'est pas un entier."
 
-#: Request.cpp:1236
+#: Request.cpp:1239
 #, fuzzy
 msgid "Nombre de couches requetées ="
 msgstr "Nombre de couches demandées = "
 
-#: Request.cpp:1246
+#: Request.cpp:1249
 #, fuzzy
 msgid "La valeur du parametre FEATURE_COUNT n'est pas une valeur entiere."
 msgstr "La valeur du paramètre WIDTH n'est pas une valeur entière."
 
-#: Request.cpp:1248
+#: Request.cpp:1251
 #, fuzzy
 msgid "La valeur du parametre FEATURE_COUNT est negative."
 msgstr "La valeur du paramètre WIDTH est négative."
 
-#: Request.cpp:1257 Request.cpp:1418
+#: Request.cpp:1260
 #, fuzzy
 msgid "Parametre X absent."
 msgstr "Paramètre BBOX absent."
 
-#: Request.cpp:1261 Request.cpp:1421
+#: Request.cpp:1264
 #, fuzzy
 msgid "La valeur du parametre X est negative."
 msgstr "La valeur du paramètre WIDTH est négative."
 
-#: Request.cpp:1263 Request.cpp:1423
+#: Request.cpp:1266
 #, fuzzy
 msgid "La valeur du parametre X est superieure a la largeur fournie (width)."
 msgstr ""
 "La valeur du paramètre WIDTH est supérieure a la valeur maximum autorisée "
 "par le service."
 
-#: Request.cpp:1268
+#: Request.cpp:1271 Request.cpp:1354
 #, fuzzy
 msgid "Parametre I absent."
 msgstr "Paramètre BBOX absent."
 
-#: Request.cpp:1272
+#: Request.cpp:1275 Request.cpp:1357
 #, fuzzy
 msgid "La valeur du parametre I est negative."
 msgstr "La valeur du paramètre WIDTH est négative."
 
-#: Request.cpp:1274
+#: Request.cpp:1277
 #, fuzzy
 msgid "La valeur du parametre I est superieure a la largeur fournie (width)."
 msgstr ""
 "La valeur du paramètre WIDTH est supérieure a la valeur maximum autorisée "
 "par le service."
 
-#: Request.cpp:1285 Request.cpp:1429
+#: Request.cpp:1288
 #, fuzzy
 msgid "Parametre Y absent."
 msgstr "Paramètre LAYER absent."
 
-#: Request.cpp:1289 Request.cpp:1432
+#: Request.cpp:1292
 #, fuzzy
 msgid "La valeur du parametre Y est negative."
 msgstr "La valeur du paramètre WIDTH est négative."
 
-#: Request.cpp:1291
+#: Request.cpp:1294
 #, fuzzy
 msgid "La valeur du parametre Y est superieure a la largeur fournie (height)."
 msgstr ""
 "La valeur du paramètre WIDTH est supérieure a la valeur maximum autorisée "
 "par le service."
 
-#: Request.cpp:1296
+#: Request.cpp:1299 Request.cpp:1365
 #, fuzzy
 msgid "Parametre J absent."
 msgstr "Paramètre BBOX absent."
 
-#: Request.cpp:1300
+#: Request.cpp:1303 Request.cpp:1368
 #, fuzzy
 msgid "La valeur du parametre J est negative."
 msgstr "La valeur du paramètre WIDTH est négative."
 
-#: Request.cpp:1302
+#: Request.cpp:1305
 #, fuzzy
 msgid "La valeur du parametre J est superieure a la largeur fournie (height)."
 msgstr ""
 "La valeur du paramètre WIDTH est supérieure a la valeur maximum autorisée "
 "par le service."
 
-#: Request.cpp:1310 Request.cpp:1404
+#: Request.cpp:1313
 #, fuzzy
 msgid "Parametre INFO_FORMAT vide."
 msgstr "Paramètre FORMAT absent."
 
-#: Request.cpp:1317 Request.cpp:1412
+#: Request.cpp:1320 Request.cpp:1348
 #, fuzzy
 msgid "Info_Format "
 msgstr "Format "
 
-#: Request.cpp:1434
+#: Request.cpp:1340
 #, fuzzy
-msgid "La valeur du parametre Y est superieure a la hauteur fournie (height)."
+msgid "Parametre INFOFORMAT vide."
+msgstr "Paramètre FORMAT absent."
+
+#: Request.cpp:1359
+#, fuzzy
+msgid ""
+"La valeur du parametre I est superieure a la largeur de la tuile (width)."
+msgstr ""
+"La valeur du paramètre WIDTH est supérieure a la valeur maximum autorisée "
+"par le service."
+
+#: Request.cpp:1370
+#, fuzzy
+msgid ""
+"La valeur du parametre J est superieure a la hauteur de la tuile (height)."
 msgstr ""
 "La valeur du paramètre WIDTH est supérieure a la valeur maximum autorisée "
 "par le service."
@@ -1729,12 +1745,12 @@ msgstr "Impossible de charger la configuration des couches/pyramides"
 msgid "Le parametre REQUEST n'est pas renseigné."
 msgstr "La valeur du paramètre HEIGHT n'est pas une valeur entière."
 
-#: Rok4Api.cpp:219 Rok4Api.cpp:221 Rok4Api.cpp:529 Rok4Server.cpp:1510
-#: Rok4Server.cpp:1514 Rok4Server.cpp:1528 Rok4Server.cpp:1532
+#: Rok4Api.cpp:219 Rok4Api.cpp:221 Rok4Api.cpp:530 Rok4Server.cpp:1400
+#: Rok4Server.cpp:1404 Rok4Server.cpp:1418 Rok4Server.cpp:1422
 msgid " n'est pas prise en charge par ce serveur."
 msgstr " n'est pas prise en charge par ce serveur."
 
-#: Rok4Api.cpp:221 Rok4Api.cpp:529 Rok4Server.cpp:1514
+#: Rok4Api.cpp:221 Rok4Api.cpp:530 Rok4Server.cpp:1404
 msgid "L'operation "
 msgstr "L'opération "
 
@@ -1743,11 +1759,11 @@ msgstr "L'opération "
 msgid "Le parametre SERVICE n'est pas renseigné."
 msgstr "La valeur du paramètre HEIGHT n'est pas une valeur entière."
 
-#: Rok4Api.cpp:320 Rok4Api.cpp:413 Rok4Server.cpp:594
+#: Rok4Api.cpp:321 Rok4Api.cpp:414 Rok4Server.cpp:594
 msgid "Probleme dans les parametres de la requete getTile"
 msgstr "Probleme dans les paramètres de la requête getTile"
 
-#: Rok4Api.cpp:541 Rok4Server.cpp:600
+#: Rok4Api.cpp:542 Rok4Server.cpp:600
 msgid "No data found"
 msgstr "Aucune donnée"
 
@@ -1801,16 +1817,16 @@ msgstr "GetMap de Style : "
 msgid " pal size : "
 msgstr " pal size : "
 
-#: Rok4Server.cpp:333 Rok4Server.cpp:1259
+#: Rok4Server.cpp:333 Rok4Server.cpp:1275
 msgid "bbox invalide"
 msgstr "La BoundingBox demandée est invalide"
 
-#: Rok4Server.cpp:336 Rok4Server.cpp:1262
+#: Rok4Server.cpp:336 Rok4Server.cpp:1278
 msgid "bbox trop grande"
 msgstr "La BoundingBox demandée est trop grande"
 
-#: Rok4Server.cpp:339 Rok4Server.cpp:741 Rok4Server.cpp:771 Rok4Server.cpp:790
-#: Rok4Server.cpp:816 Rok4Server.cpp:1265
+#: Rok4Server.cpp:339 Rok4Server.cpp:730 Rok4Server.cpp:760 Rok4Server.cpp:779
+#: Rok4Server.cpp:805 Rok4Server.cpp:1281
 msgid "Impossible de repondre a la requete"
 msgstr "Impossible de répondre a la requête"
 
@@ -1822,44 +1838,36 @@ msgstr "Estompage"
 msgid " ne peut etre traite"
 msgstr " ne peut être traité"
 
-#: Rok4Server.cpp:1232 Rok4Server.cpp:1391
+#: Rok4Server.cpp:1221 Rok4Server.cpp:1245
 #, fuzzy
 msgid "Probleme dans les parametres de la requete getFeatureInfo"
 msgstr "Problème dans les paramètres de la requête getMap"
 
-#: Rok4Server.cpp:1302
+#: Rok4Server.cpp:1319
 #, fuzzy
 msgid "Erreur interne."
 msgstr "Erreur inconnue"
 
-#: Rok4Server.cpp:1307
+#: Rok4Server.cpp:1324
 #, fuzzy
 msgid "Info_format non "
 msgstr "Format "
 
-#: Rok4Server.cpp:1307
+#: Rok4Server.cpp:1324
 #, fuzzy
 msgid " supporté par la couche "
 msgstr " n'est pas géré pour la couche "
 
-#: Rok4Server.cpp:1358 Rok4Server.cpp:1473
+#: Rok4Server.cpp:1379
 msgid "Internal server error"
 msgstr ""
 
-#: Rok4Server.cpp:1366 Rok4Server.cpp:1484
+#: Rok4Server.cpp:1385
 msgid "GFI depuis un SQL non géré."
 msgstr ""
 
-#: Rok4Server.cpp:1369 Rok4Server.cpp:1490
+#: Rok4Server.cpp:1387
 msgid "ERRORRRRRR !"
-msgstr ""
-
-#: Rok4Server.cpp:1496
-msgid "GetFeatureInfo non autorisé"
-msgstr ""
-
-#: Rok4Server.cpp:1497
-msgid "GetFeatureInfo non autorisé."
 msgstr ""
 
 #: Style.cpp:54

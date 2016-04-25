@@ -199,7 +199,7 @@ public:
      * \brief Fetching and validating WMTS GetFeatureInfoParam request parameters
      * \return NULL or an error message if something went wrong
      */
-    DataSource* WMTSGetFeatureInfoParam (ServicesConf& servicesConf,  std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList,
+    DataStream* WMTSGetFeatureInfoParam (ServicesConf& servicesConf,  std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList,
                                          Layer*& layer, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, Style* &style,
                                          bool& noDataError, std::string& info_format, int& X, int& Y);
     //

@@ -427,6 +427,8 @@ private:
      * \~english Route WMS and WMTS request
      */
     void        processRequest ( Request *request, FCGX_Request&  fcgxRequest );
+    
+    DataStream* CommonGetFeatureInfo ( std::string service, Layer* layer, BoundingBox<double> bbox, int width, int height, CRS crs, std::string info_format , int X, int Y, std::string format, int feature_count);
 
 public:
     /**
@@ -516,7 +518,7 @@ public:
      * \param[in] request request representation
      * \return response stream
      */
-    DataSource* WMTSGetFeatureInfo ( Request* request );
+    DataStream* WMTSGetFeatureInfo ( Request* request );
 
     /**
      * \~french

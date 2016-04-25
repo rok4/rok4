@@ -393,24 +393,6 @@ int Level::createDirPath(std::string path) {
 
 }
 
-// GREG
-
-DataSource* Level::getTilePixel ( int x, int y, int i, int j ) {
-        DataSource* source=getDecodedTile( x, y );
-
-        size_t tile_size;
-        const uint8_t* buffer = source->getData(tile_size);        
-
-        std::stringstream ss;
-        int index = (i+j*getTm().getTileW())*channels;
-        ss << "value ";
-        for ( int k = 0 ; k < channels; k ++ ) {
-            ss << unsigned(buffer[index+k]) << " ";
-        }
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, ( ss.str() ),"wmts" ) );
-    }
-
-// GREG
 
 /*
  * @return la tuile d'indice (x,y) du niveau
