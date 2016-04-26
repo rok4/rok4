@@ -1395,8 +1395,10 @@ void Rok4Server::buildWMTSCapabilities() {
 
             // Contrainte : 1 layer = 1 pyramide = 1 format
             layerEl->LinkEndChild ( buildTextNode ( "Format",Rok4Format::toMimeType ( ( layer->getDataPyramid()->getFormat() ) ) ) );
-            for ( unsigned int i=0; i<servicesConf.getInfoFormatList()->size(); i++ ) {
-                layerEl->LinkEndChild ( buildTextNode ( "InfoFormat",servicesConf.getInfoFormatList()->at ( i ) ) );
+            if (layer->isGetFeatureInfoAvailable()){
+                for ( unsigned int i=0; i<servicesConf.getInfoFormatList()->size(); i++ ) {
+                    layerEl->LinkEndChild ( buildTextNode ( "InfoFormat",servicesConf.getInfoFormatList()->at ( i ) ) );
+                }
             }
 
             /* on suppose qu'on a qu'un TMS par layer parce que si on admet avoir un TMS par pyramide

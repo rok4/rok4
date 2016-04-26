@@ -1333,7 +1333,10 @@ DataStream* Request::WMTSGetFeatureInfoParam (ServicesConf& servicesConf,  std::
     if (getTileError) {
         return new DataStreamFromDataSource(getTileError);
     }
-
+    if (layer->isGetFeatureInfoAvailable() == false) {
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +layer->getId()+_ ( " non interrogeable." ),"wmts" ) );   
+    }
+    
     // INFO_FORMAT (facultative)
     info_format=getParam ( "infoformat" );
     if ( info_format == "" ){
