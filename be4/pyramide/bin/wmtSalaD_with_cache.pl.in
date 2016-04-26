@@ -286,7 +286,8 @@ sub loadLogger {
         my $layout= '%5p : %m (%M) %n';
         my $level = $logger{log_level};
         if (! main::IsEmpty($logger{log_path}) && ! main::IsEmpty($logger{log_file})) {
-            File::Path::make_path($logger{log_path}, {mode => 0755});
+            DEBUG(sprintf "Creating log path : File::Path::make_path(%s, %s) ", $logger{log_path}, {mode => 0755});
+            File::Path::make_path($logger{log_path}, {mode => 0755}) or ERROR(sprintf "Could not create path '%s'.", $logger{log_path});
             $out   = sprintf (">>%s", File::Spec->catfile($logger{log_path}, $logger{log_file}));
         }
         

@@ -84,6 +84,7 @@
 #include "ProcessFactory.h"
 #include "Rok4Image.h"
 #include "EmptyImage.h"
+#include "ConvertedChannelsImage.h"
 
 void* Rok4Server::thread_loop ( void* arg ) {
     Rok4Server* server = ( Rok4Server* ) ( arg );
@@ -967,6 +968,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     Image *curImage;
     Image *image;
     Image *mergeImage;
+    Image *lastImage;
     std::string bLevel;
     int width, height, error, tileH,tileW;
     Rok4Format::eformat_data pyrType = Rok4Format::UNKNOWN;
@@ -1068,12 +1070,19 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
 
     //On merge les images récupérés dans chacune des basedPyramid et chaque WebServices
     if (images.size() != 0) {
+
         mergeImage = mergeImages(images, pyrType, style, dst_crs, bbox);
         LOGGER_DEBUG("Merged differents basedImages");
         if (mergeImage == NULL) {
             LOGGER_ERROR("Impossible de générer la dalle car l'opération de merge n'a pas fonctionné");
             state = 1;
             return state;
+        }
+
+        if (images.size() == 1 && pyr->getChannels() != mergeImage->channels) {
+            lastImage = new ConvertedChannelsImage(pyr->getChannels(),mergeImage);
+        } else {
+            lastImage = mergeImage;
         }
 
     } else {
@@ -1094,8 +1103,8 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     //à cause d'un problème de typage...
     char * pathToWrite = (char *)path.c_str();
     LOGGER_DEBUG("Create Rok4Image");
-    Rok4Image * finalImage = R4IF.createRok4ImageToWrite(pathToWrite,bbox,mergeImage->getResX(),mergeImage->getResY(),
-                                                         mergeImage->getWidth(),mergeImage->getHeight(),pyr->getChannels(),
+    Rok4Image * finalImage = R4IF.createRok4ImageToWrite(pathToWrite,bbox,lastImage->getResX(),lastImage->getResY(),
+                                                         lastImage->getWidth(),lastImage->getHeight(),pyr->getChannels(),
                                                          pyr->getSampleFormat(),pyr->getBitsPerSample(),
                                                          pyr->getPhotometry(),pyr->getSampleCompression(),tileW,
                                                          tileH);
@@ -1104,10 +1113,10 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     if (finalImage != NULL) {
         //LOGGER_DEBUG ( "Write" );
         LOGGER_DEBUG("Write Slab");
-        if (finalImage->writeImage(mergeImage) < 0) {
+        if (finalImage->writeImage(lastImage) < 0) {
             LOGGER_ERROR("Impossible de générer la dalle car son écriture en mémoire a échoué");
             state = 1;
-            delete mergeImage;
+            delete lastImage;
             delete finalImage;
             return state;
         } else {
@@ -1116,12 +1125,12 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     } else {
         LOGGER_ERROR("Impossible de générer la dalle car la création d'une Rok4Image ne marche pas");
         state = 1;
-        delete mergeImage;
+        delete lastImage;
         delete finalImage;
         return state;
     }
 
-    delete mergeImage;
+    delete lastImage;
     delete finalImage;
 
     //IMAGE ECRITE
