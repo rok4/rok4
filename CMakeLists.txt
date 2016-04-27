@@ -78,7 +78,12 @@ set(UNITTEST FALSE CACHE BOOL "Build Test")
 if(UNITTEST)
   enable_testing()
   set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
+  set(PACKAGE_LIB TRUE)
 endif(UNITTEST)
+
+if(NOT DEFINED PACKAGE_LIB)
+  set(PACKAGE_LIB FALSE CACHE BOOL "Do no include lib in final package")
+endif(NOT DEFINED PACKAGE_LIB)
 
 if(DEB_PACKAGE)
   set(USE_SYSTEM_LIB TRUE)
@@ -96,6 +101,66 @@ endif(DEB_PACKAGE)
 if(NOT DEFINED USE_SYSTEM_LIB)
   set(USE_SYSTEM_LIB FALSE)
 endif(NOT DEFINED USE_SYSTEM_LIB)
+
+#Options passed to curl and used to compile it 
+# EX: --with-ssl[=PATH/TO/LIBSSL]
+if(NOT DEFINED CURL_OPTIONS)
+  set(CURL_OPTIONS "" CACHE STRING "NO CURL OPTIONS USED")
+endif(NOT DEFINED CURL_OPTIONS)
+
+#Path of libraries already installed on the computer
+#It concerns libraries used bu curl (like libssl)
+#But Rok4 need to know where find it
+#EX: PATH/TO/LIBSSL.a ou .so
+if(NOT DEFINED CURL_SUP_LIBRARIES_PATHS)
+  set(CURL_SUP_LIBRARIES_PATHS "" CACHE STRING "NO CURL PATHS USED")
+endif(NOT DEFINED CURL_SUP_LIBRARIES_PATHS)
+
+#Name of libraries already installed on the computer
+#It concerns libraries used bu curl (like libssl)
+#But Rok4 need to know where find it
+#EX: ssl
+if(NOT DEFINED CURL_SUP_LIBRARIES_NAMES)
+  set(CURL_SUP_LIBRARIES_NAMES "" CACHE STRING "NO CURL NAMES USED")
+endif(NOT DEFINED CURL_SUP_LIBRARIES_NAMES)
+
+#Include direectories of libraries already installed on the computer
+#It concerns libraries used bu curl (like libssl)
+#But Rok4 need to know where find it
+#EX: PATH/TO/INCLUDE/DIRECTORY
+if(NOT DEFINED CURL_SUP_LIBRARIES_INCLUDES)
+  set(CURL_SUP_LIBRARIES_INCLUDES "" CACHE STRING "NO CURL INCLUDES USED")
+endif(NOT DEFINED CURL_SUP_LIBRARIES_INCLUDES)
+
+#Options passed to curl and used to compile it 
+# EX: --with-ssl[=PATH/TO/LIBSSL]
+if(NOT DEFINED CURL_OPTIONS)
+  set(CURL_OPTIONS "" CACHE STRING "NO CURL OPTIONS USED")
+endif(NOT DEFINED CURL_OPTIONS)
+
+#Path of libraries already installed on the computer
+#It concerns libraries used bu curl (like libssl)
+#But Rok4 need to know where find it
+#EX: PATH/TO/LIBSSL.a ou .so
+if(NOT DEFINED CURL_SUP_LIBRARIES_PATHS)
+  set(CURL_SUP_LIBRARIES_PATHS "" CACHE STRING "NO CURL PATHS USED")
+endif(NOT DEFINED CURL_SUP_LIBRARIES_PATHS)
+
+#Name of libraries already installed on the computer
+#It concerns libraries used bu curl (like libssl)
+#But Rok4 need to know where find it
+#EX: ssl
+if(NOT DEFINED CURL_SUP_LIBRARIES_NAMES)
+  set(CURL_SUP_LIBRARIES_NAMES "" CACHE STRING "NO CURL NAMES USED")
+endif(NOT DEFINED CURL_SUP_LIBRARIES_NAMES)
+
+#Include direectories of libraries already installed on the computer
+#It concerns libraries used bu curl (like libssl)
+#But Rok4 need to know where find it
+#EX: PATH/TO/INCLUDE/DIRECTORY
+if(NOT DEFINED CURL_SUP_LIBRARIES_INCLUDES)
+  set(CURL_SUP_LIBRARIES_INCLUDES "" CACHE STRING "NO CURL INCLUDES USED")
+endif(NOT DEFINED CURL_SUP_LIBRARIES_INCLUDES)
     
 ##################################################################################
 

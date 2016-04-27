@@ -59,10 +59,10 @@ private:
     TileMatrix    tm;         // FIXME j'ai des problème de compil que je ne comprends pas si je mets un const ?!
     const Rok4Format::eformat_data format; //format d'image des tuiles
     const int     channels;
-    const uint32_t maxTileRow;
-    const uint32_t minTileRow;
-    const uint32_t maxTileCol;
-    const uint32_t minTileCol;
+    uint32_t maxTileRow;
+    uint32_t minTileRow;
+    uint32_t maxTileCol;
+    uint32_t minTileCol;
     uint32_t      tilesPerWidth;   //nombre de tuiles par dalle dans le sens de la largeur
     uint32_t      tilesPerHeight;  //nombre de tuiles par dalle dans le sens de la hauteur
     std::string noDataFile;
@@ -106,6 +106,30 @@ public:
     uint32_t    getMinTileCol() {
         return minTileCol;
     }
+    uint32_t *    getrefMaxTileRow() {
+        return &maxTileRow;
+    }
+    uint32_t *    getrefMinTileRow() {
+        return &minTileRow;
+    }
+    uint32_t *    getrefMaxTileCol() {
+        return &maxTileCol;
+    }
+    uint32_t *    getrefMinTileCol() {
+        return &minTileCol;
+    }
+    void    setMaxTileRow(uint32_t mm ) {
+        maxTileRow = mm;
+    }
+    void    setMinTileRow(uint32_t mm ) {
+        minTileRow = mm;
+    }
+    void    setMaxTileCol(uint32_t mm ) {
+        maxTileCol = mm;
+    }
+    void    setMinTileCol(uint32_t mm ) {
+        minTileCol = mm;
+    }
     double      getRes() {
         return tm.getRes();
     }
@@ -119,7 +143,10 @@ public:
         return tilesPerHeight;
     }
 
+
     std::string getFilePath ( int tilex, int tiley );
+    std::string getDirPath ( int tilex, int tiley );
+    int createDirPath ( std::string path );
     std::string getNoDataFilePath() {
         return noDataFile;
     }
@@ -152,8 +179,14 @@ public:
     int* getNoDataValue ( int* nodatavalue );
 
     void setNoData ( const std::string& file ) ;
-    void setNoDataSource ( DataSource* source );
+    void setNoDataSource (DataSource *source );
+    void updateNoDataTile(std::vector<int> noDataValues);
 
+    BoundingBox<double> tileIndicesToSlabBbox(int tileCol, int tileRow);
+    BoundingBox<double> tileIndicesToTileBbox(int tileCol, int tileRow);
+    BoundingBox<double> TMLimitsToBbox();
+    int getSlabHeight();
+    int getSlabWidth();
     /** D */
     Level ( TileMatrix tm, int channels, std::string baseDir,
             int tilesPerWidth, int tilesPerHeight,

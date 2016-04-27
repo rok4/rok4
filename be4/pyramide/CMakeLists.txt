@@ -52,6 +52,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/joinCache.pl.in ${CMAKE_CURRENT_B
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/create-layer.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/create-layer.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/coord2image.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/coord2image.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4-simulator.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/be4-simulator.pl @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/wmtSalaD.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/wmtSalaD.pl @ONLY)
 
 set(ENV{CFLAGS} "-O3")
 add_custom_command(OUTPUT src/makefile COMMAND mkdir -p src COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/* src)

@@ -199,6 +199,16 @@ private:
      */
     std::string abstract;
     /**
+     * \~french \brief Autorisé le WMS pour ce layer
+     * \~english \brief Authorized WMS for this layer
+     */
+    bool WMSAuthorized;
+    /**
+     * \~french \brief Autorisé le WMTS pour ce layer
+     * \~english \brief Authorized WMTS for this layer
+     */
+    bool WMTSAuthorized;
+    /**
      * \~french \brief Liste des mots-clés
      * \~english \brief List of keywords
      */
@@ -265,6 +275,46 @@ private:
      * \~english \brief Linked metadata list
      */
     std::vector<MetadataURL> metadataURLs;
+    /**
+     * \~french \brief GetFeatureInfo autorisé
+     * \~english \brief Authorized GetFeatureInfo
+     */
+    bool getFeatureInfoAvailability;
+    /**
+     * \~french \brief Source du GetFeatureInfo
+     * \~english \brief Source of GetFeatureInfo
+     */
+    std::string getFeatureInfoType;
+    /**
+     * \~french \brief URL du service WMS-V à utiliser pour le GetFeatureInfo
+     * \~english \brief WMS-V service URL to use for getFeatureInfo
+     */
+    std::string getFeatureInfoBaseURL;
+    /**
+     * \~french \brief Type de service (WMS ou WMTS)
+     * \~english \brief Type of service (WMS or WMTS)
+     */
+    std::string GFIService;
+    /**
+     * \~french \brief Version du service
+     * \~english \brief Version of service
+     */
+    std::string GFIVersion;
+    /**
+     * \~french \brief Paramètre query_layers à fournir au service
+     * \~english \brief Parameter query_layers for the service
+     */
+    std::string GFIQueryLayers;
+    /**
+     * \~french \brief Paramètre layers à fournir au service
+     * \~english \brief Parameter layers for the service
+     */
+    std::string GFILayers;
+    /**
+     * \~french \brief Modification des EPSG autorisé (pour Geoserver)
+     * \~english \brief Modification of EPSG is authorized (for Geoserver)
+     */
+    bool GFIForceEPSG;
 
 public:
     /**
@@ -285,6 +335,16 @@ public:
      * \param[in] geographicBoundingBox emprise des données en coordonnées géographique (WGS84)
      * \param[in] boundingBox emprise des données dans le système de coordonnées natif
      * \param[in] metadataURLs liste des métadonnées associées
+     * \param[in] WMSAuthorized autorise le WMS
+     * \param[in] WMTSAuthorized autorise le WMTS
+     * \param[in] getFeatureInfoAvailability autorise le GetfeatureInfo
+     * \param[in] getFeatureInfoType source du GetfeatureInfo
+     * \param[in] getFeatureInfoBaseURL URL du service WMS-V pour le GetfeatureInfo
+     * \param[in] GFIVersion version du service WMS-V pour le GetfeatureInfo
+     * \param[in] GFIService type de service WMS-V pour le GetfeatureInfo
+     * \param[in] GFIQueryLayers
+     * \param[in] GFILayers
+     * \param[in] GFIForceEPSG
      * \~english
      * \brief Create a Layer
      * \param[in] id identifier
@@ -302,19 +362,36 @@ public:
      * \param[in] geographicBoundingBox data bounding box in geographic coordinates (WGS84)
      * \param[in] boundingBox data bounding box in native coordinates system
      * \param[in] metadataURLs linked metadata list
+     * \param[in] WMSAuthorized authorize WMS
+     * \param[in] WMTSAuthorized authorize WMTS
+     * \param[in] getFeatureInfoAvailability authorize GetfeatureInfo operation
+     * \param[in] getFeatureInfoType source of GetfeatureInfo
+     * \param[in] getFeatureInfoBaseURL URL of WMS-V service used by GetfeatureInfo
+     * \param[in] GFIVersion version of WMS-V service used by GetfeatureInfo
+     * \param[in] GFIService type of WMS-V service used by GetfeatureInfo
+     * \param[in] GFIQueryLayers
+     * \param[in] GFILayers
+     * \param[in] GFIForceEPSG
      */
-    Layer ( std::string id, std::string title, std::string abstract,
+    Layer ( std::string id, std::string title, std::string abstract,bool WMSAuthorized, bool WMTSAuthorized,
             std::vector<Keyword> & keyWords, Pyramid*& dataPyramid,
             std::vector<Style*> & styles, double minRes, double maxRes,
             std::vector<CRS> & WMSCRSList, bool opaque, std::string authority,
             Interpolation::KernelType resampling, GeographicBoundingBoxWMS geographicBoundingBox,
-            BoundingBoxWMS boundingBox, std::vector<MetadataURL>& metadataURLs )
-        :id ( id ), title ( title ), abstract ( abstract ), keyWords ( keyWords ),
+            BoundingBoxWMS boundingBox, std::vector<MetadataURL>& metadataURLs,
+            bool getFeatureInfoAvailability, std::string getFeatureInfoType,
+            std::string getFeatureInfoBaseURL, std::string GFIVersion,
+            std::string GFIService, std::string GFIQueryLayers, std::string GFILayers, bool GFIForceEPSG)
+        :id ( id ), title ( title ), abstract ( abstract ), WMSAuthorized (WMSAuthorized), WMTSAuthorized (WMTSAuthorized),keyWords ( keyWords ),
          dataPyramid ( dataPyramid ), styles ( styles ), minRes ( minRes ),
          maxRes ( maxRes ), WMSCRSList ( WMSCRSList ), opaque ( opaque ),
          authority ( authority ),resampling ( resampling ),
          geographicBoundingBox ( geographicBoundingBox ),
-         boundingBox ( boundingBox ), metadataURLs ( metadataURLs ), defaultStyle ( styles.at ( 0 )->getId() ) {
+         boundingBox ( boundingBox ), metadataURLs ( metadataURLs ), defaultStyle ( styles.at ( 0 )->getId() ),
+         getFeatureInfoAvailability ( getFeatureInfoAvailability ), getFeatureInfoType ( getFeatureInfoType ),
+         getFeatureInfoBaseURL ( getFeatureInfoBaseURL ), GFIVersion( GFIVersion ), GFIService( GFIService ),
+         GFIQueryLayers ( GFIQueryLayers ), GFILayers ( GFILayers ), GFIForceEPSG ( GFIForceEPSG ){
+
     }
 
     /**
@@ -386,6 +463,46 @@ public:
     */
     std::string              getAbstract()   const {
         return abstract;
+    }
+    /**
+     * \~french
+     * \brief Retourne le droit d'utiliser un service WMS
+     * \return WMSAuthorized
+     * \~english
+     * \brief Return the right to use WMS
+     * \return WMSAuthorized
+     */
+    bool getWMSAuthorized() {
+        return WMSAuthorized;
+    }
+    /**
+     * \~french
+     * \brief Modifie le droit d'utiliser un service WMS
+     * \~english
+     * \brief Modify the right to use WMS
+     */
+    void setWMSAuthorized(bool wmsA) {
+        WMSAuthorized = wmsA;
+    }
+    /**
+     * \~french
+     * \brief Retourne le droit d'utiliser un service WMTS
+     * \return WMTSAuthorized
+     * \~english
+     * \brief Return the right to use WMTS
+     * \return WMTSAuthorized
+     */
+    bool getWMTSAuthorized() {
+        return WMTSAuthorized;
+    }
+    /**
+     * \~french
+     * \brief Modifie le droit d'utiliser un service WMTS
+     * \~english
+     * \brief Modify the right to use WMTS
+     */
+    void setWMTSAuthorized(bool wmtsA) {
+        WMTSAuthorized = wmtsA;
     }
     /**
      * \~french
@@ -541,6 +658,94 @@ public:
      */
     std::vector<MetadataURL> getMetadataURLs() const {
         return metadataURLs;
+    }
+    /**
+     * \~french
+     * \brief GFI est-il autorisé
+     * \return true si oui
+     * \~english
+     * \brief Is GFI authorized
+     * \return true if it is
+     */
+    bool isGetFeatureInfoAvailable() const {
+        return getFeatureInfoAvailability;
+    }
+    /**
+     * \~french
+     * \brief Retourne la source du GFI
+     * \return source du GFI
+     * \~english
+     * \brief Return the source used by GFI
+     * \return source used by GFI
+     */
+    std::string getGFIType() const {
+        return getFeatureInfoType;
+    }
+    /**
+     * \~french
+     * \brief Retourne l'URL du service de GFI
+     * \return URL de service
+     * \~english
+     * \brief Return the URL of the service used for GFI
+     * \return URL of the service
+     */
+    std::string getGFIBaseUrl() const {
+        return getFeatureInfoBaseURL;
+    }
+    /**
+     * \~french
+     * \brief Retourne le paramètre layers de la requête de GFI
+     * \return paramètre layers
+     * \~english
+     * \brief Return the parameter layers of GFI request
+     * \return parameter layers
+     */
+    std::string getGFILayers() const {
+        return GFILayers;
+    }
+    /**
+     * \~french
+     * \brief Retourne le paramètre query_layers de la requête de GFI
+     * \return paramètre query_layers
+     * \~english
+     * \brief Return the parameter query_layers of GFI request
+     * \return parameter query_layers
+     */
+    std::string getGFIQueryLayers() const {
+        return GFIQueryLayers;
+    }
+    /**
+     * \~french
+     * \brief Retourne le type du service de GFI
+     * \return type du service de GFI
+     * \~english
+     * \brief Return type of service used for GFI
+     * \return type of service used for GFI
+     */
+    std::string getGFIService() const {
+        return GFIService;
+    }
+    /**
+     * \~french
+     * \brief Retourne la version du service de GFI
+     * \return version du service de GFI
+     * \~english
+     * \brief Return version of service used for GFI
+     * \return version of service used for GFI
+     */
+    std::string getGFIVersion() const {
+        return GFIVersion;
+    }
+    /**
+     * \~french
+     * \brief
+     * \return
+     * \~english
+     * \brief
+     * \return
+     */
+    bool getGFIForceEPSG() const {
+        return GFIForceEPSG;
     }
     /**
      * \~french

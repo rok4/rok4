@@ -57,7 +57,14 @@
 #include "Layer.h"
 #include "TileMatrixSet.h"
 #include "fcgiapp.h"
+#include "ProcessFactory.h"
 #include <csignal>
+#include "GetFeatureInfoEncoder.h"
+
+struct Proxy {
+    std::string proxyName;
+    std::string noProxy;
+};
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -148,6 +155,16 @@ private:
      * \~english \brief Error response in case data tiel is not found (http 404)
      */
     DataSource* notFoundError;
+    /**
+     * \~french \brief Gestion des processus créés
+     * \~english \brief Management of created process
+     */
+    ProcessFactory *parallelProcess;
+    /**
+     * \~french \brief Proxy utilisé par défaut pour des requêtes WMS
+     * \~english \brief Default proxy used for WMS requests
+     */
+    Proxy proxy;
 
     /**
      * \~french
@@ -222,7 +239,6 @@ private:
      * \return parameter value or "" if not availlable
      */
     std::string getParam ( std::map<std::string, std::string>& option, std::string paramName );
-
     /**
      * \~french
      * \brief Traitement d'une requête GetMap
@@ -234,6 +250,156 @@ private:
      * \return requested image or an error message
      */
     DataStream* getMap ( Request* request );
+    /**
+     * \~french
+     * \brief Applique un style à une image
+     * \param[in] image à styliser
+     * \param[in] pyrType format des tuiles de la pyramide
+     * \param[in] style style demandé par le client
+     * \param[in] format demandé par le client
+     * \param[in] size nombre d'images concernées par le processus global où est appelé cette fonction
+     * \return image stylisée
+     * \~english
+     * \brief Apply a style to an image
+     * \param[in] image
+     * \param[in] pyrType tile format of the pyramid
+     * \param[in] style asked style by the client
+     * \param[in] format asked format by the client
+     * \param[in] size number of images used in the global process where this function is called
+     * \return requested and styled image
+     */
+    Image *styleImage(Image *curImage, Rok4Format::eformat_data pyrType, Style *style, std::string format, int size);
+    /**
+     * \~french
+     * \brief Fond un groupe d'image en une seule
+     * \param[in] images groupe d'images
+     * \param[in] pyrType format des tuiles de la pyramide
+     * \param[in] style style demandé par le client
+     * \param[in] crs crs de la projection finale demandée par le client
+     * \param[in] bbox bbox de l'image demandé par le client
+     * \return image demandée ou un message d'erreur
+     * \~english
+     * \brief Merge a vector of images
+     * \param[in] images vector of images
+     * \param[in] pyrType tile format of the pyramid
+     * \param[in] style asked style by the client
+     * \param[in] crs crs of the final projection asked by the client
+     * \param[in] bbox bbox of the image asked by the client
+     * \return requested image or an error message
+     */
+    Image *mergeImages(std::vector<Image*> images, Rok4Format::eformat_data &pyrType, Style *style, CRS crs, BoundingBox<double> bbox);
+    /**
+     * \~french
+     * \brief Convertie une image dans un format donné
+     * \param[in] image image à formater
+     * \param[in] format demandé par le client
+     * \param[in] pyrType format des tuiles de la pyramide
+     * \param[in] format_option contient des spécifications sur le format
+     * \param[in] size nombre d'images concerné par le processus global où est appelé cette fonction
+     * \param[in] style style demandé par le client
+     * \return image demandé ou un message d'erreur sous forme de stream
+     * \~english
+     * \brief Apply a format to an image
+     * \param[in] image image to format
+     * \param[in] format asked format by the client
+     * \param[in] pyrType tile format of the pyramid
+     * \param[in] format_option contain specifications on the format
+     * \param[in] size number of images used in the global process where this function is called
+     * \param[in] style asked style by the client
+     * \return requested image or an error message by a stream
+     */
+    DataStream *formatImage(Image *image, std::string format, Rok4Format::eformat_data pyrType, std::map<std::string, std::string> format_option, int size, Style *style);
+    /**
+     * \~french
+     * \brief Renvoit une tuile déjà pré-calculée
+     * \param[in] L couche de la requête
+     * \param[in] format format de la requête
+     * \param[in] tileCol indice de colonne de la requête
+     * \param[in] tileRow indice de ligne de la requete
+     * \param[in] tileMatrix tilematrix de la requête
+     * \param[in] errorResp paramètre d'erreur
+     * \param[in] style style de la requête
+     * \return image demandé ou un message d'erreur
+     * \~english
+     * \brief Give a tile computed before
+     * \param[in] L layer of the request
+     * \param[in] format format of the request
+     * \param[in] tileCol column index of the request
+     * \param[in] tileRow row index of the request
+     * \param[in] tileMatrix tilematrix of the request
+     * \param[in] errorResp error parameter
+     * \param[in] style style of the resquest
+     * \return requested tile
+     */
+    DataSource *getTileUsual(Layer* L, std::string format, int tileCol, int tileRow, std::string tileMatrix, DataSource *errorResp, Style *style);
+    /**
+     * \~french
+     * \brief Renvoit une tuile qui vient d'être calculée
+     * \param[in] L couche de la requête
+     * \param[in] tileMatrix tilematrix de la requête
+     * \param[in] tileCol indice de colonne de la requête
+     * \param[in] tileRow indice de ligne de la requete
+     * \param[in] style style de la requête
+     * \param[in] format format de la requête
+     * \return Tuile demandée
+     * \~english
+     * \brief Give a tile compute for the request
+     * \param[in] L layer of the request
+     * \param[in] tileMatrix tilematrix of the request
+     * \param[in] tileCol column index of the request
+     * \param[in] tileRow row index of the request
+     * \param[in] style style of the resquest
+     * \param[in] format format of the request
+     * \return requested tile
+     */
+    DataSource *getTileOnDemand(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format);
+    /**
+     * \~french
+     * \brief Creation d'une dalle concernée par la tuile qui vient d'être calculée
+     * \param[in] L couche de la requête
+     * \param[in] tileMatrix tilematrix de la requête
+     * \param[in] tileCol indice de colonne de la requête
+     * \param[in] tileRow indice de ligne de la requete
+     * \param[in] style style de la requête
+     * \param[in] format format de la requete
+     * \param[in] path chemin pour sauvegarder la dalle
+     * \return 0 si ok, 1 sinon
+     * \~english
+     * \brief Create a slab concerned by the tile compute for the request
+     * \param[in] L layer of the request
+     * \param[in] tileMatrix tilematrix of the request
+     * \param[in] tileCol column index of the request
+     * \param[in] tileRow row index of the request
+     * \param[in] style style of the resquest
+     * \param[in] format format of the request
+     * \param[in] path path to save the slab
+     * \return 0 if ok, else 1
+     */
+    int createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format, std::string path);
+    /**
+     * \~french
+     * \brief Renvoit une tuile qui vient d'être calculée
+     * \param[in] L couche de la requête
+     * \param[in] tileMatrix tilematrix de la requête
+     * \param[in] tileCol indice de colonne de la requête
+     * \param[in] tileRow indice de ligne de la requete
+     * \param[in] style style de la requête
+     * \param[in] format format de la requête
+     * \param[in] errorResp erreur
+     * \return Tuile demandée
+     * \~english
+     * \brief Give a tile compute for the request
+     * \param[in] L layer of the request
+     * \param[in] tileMatrix tilematrix of the request
+     * \param[in] tileCol column index of the request
+     * \param[in] tileRow row index of the request
+     * \param[in] style style of the resquest
+     * \param[in] format format of the request
+     * \param[in] errorResp error
+     * \return requested tile
+     */
+    DataSource *getTileOnFly(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format, DataSource *errorResp);
+
     /**
      * \~french
      * \brief Traitement d'une requête GetCapabilities WMS
@@ -261,6 +427,8 @@ private:
      * \~english Route WMS and WMTS request
      */
     void        processRequest ( Request *request, FCGX_Request&  fcgxRequest );
+    
+    DataStream* CommonGetFeatureInfo ( std::string service, Layer* layer, BoundingBox<double> bbox, int width, int height, CRS crs, std::string info_format , int X, int Y, std::string format, int feature_count);
 
 public:
     /**
@@ -316,7 +484,7 @@ public:
      * \param[in] request request representation
      * \return requested image or an error message
      */
-    DataSource* getTile ( Request* request );
+    DataSource *getTile(Request* request );
     /**
      * \~french
      * \brief Traitement d'une requête GetCapabilities WMTS
@@ -328,6 +496,29 @@ public:
      * \return response stream
      */
     DataStream* WMTSGetCapabilities ( Request* request );
+
+    /**
+     * \~french
+     * \brief Traitement d'une requête GetFeatureInfo WMS
+     * \param[in] request représentation de la requête
+     * \return flux de la réponse
+     * \~english
+     * \brief Process a GetFeatureInfo WMS request
+     * \param[in] request request representation
+     * \return response stream
+     */
+    DataStream* WMSGetFeatureInfo ( Request* request );
+    /**
+     * \~french
+     * \brief Traitement d'une requête GetFeatureInfo WMTS
+     * \param[in] request représentation de la requête
+     * \return flux de la réponse
+     * \~english
+     * \brief Process a GetFeatureInfo WMTS request
+     * \param[in] request request representation
+     * \return response stream
+     */
+    DataStream* WMTSGetFeatureInfo ( Request* request );
 
     /**
      * \~french
@@ -416,12 +607,31 @@ public:
     bool isWMSSupported(){
             return supportWMS ;
     }
+    /**
+     * \~french
+     * \brief Pour savoir si le server honore les requêtes WMTS
+     * \~english
+     * \brief to know if the server responde to WMTS request
+     */
+    void setProxy(Proxy pr){
+            proxy = pr ;
+    }
+
+    /**
+     * \~french
+     * \brief Retourne le proxy par defaut
+     * \~english
+     * \brief Return default proxy
+     */
+    Proxy getProxy(){
+            return proxy ;
+    }
 
     /**
      * \brief Construction du serveur
      */
     Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
-                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, std::string socket, int backlog, bool supportWMTS = true, bool supportWMS = true );
+                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, std::string socket, int backlog, Proxy proxy,bool supportWMTS = true, bool supportWMS = true, int nbProcess =1);
     /**
      * \~french
      * \brief Destructeur par défaut

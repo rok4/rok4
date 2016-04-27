@@ -86,7 +86,7 @@ void ReprojectedImage::initialize () {
     int kxSize = 4* ( ( Kx+3 ) /4 );
     int kySize = 4* ( ( Ky+3 ) /4 );
 
-    int globalSize = srcImgSize * memorizedLines * sizeof ( float ) // place pour "memorizedLines" lignes d'image source
+    int globalSize = srcImgSize * double(memorizedLines) * sizeof ( float ) // place pour "memorizedLines" lignes d'image source
                      + outImgSize * 8 * sizeof ( float ) // 4 lignes reprojetées, en multiplexées et en séparées => 8
                      + gridSize * 8 * sizeof ( float ) // 4 lignes de la grille, X et Y => 8
 

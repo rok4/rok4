@@ -93,6 +93,7 @@ protected:
     std::string electronicMailAddress;
     //WMS
     std::vector<std::string> formatList;
+    std::vector<std::string> infoFormatList;
     std::vector<CRS> globalCRSList;
     bool fullStyling;
     //WMTS
@@ -162,7 +163,7 @@ void CppUnitRequest::setUp() {
     MetadataURL mtdMWS = MetadataURL ( "simple", metadataUrlWMS,metadataMediaTypeWMS );
     MetadataURL mtdWMTS = MetadataURL ( "simple", metadataUrlWMTS,metadataMediaTypeWMTS );
     services_conf = new ServicesConf ( name, title, abstract, keyWords,serviceProvider, fee,
-                                       accessConstraint, layerLimit, maxWidth, maxHeight, maxTileX, maxTileY, formatList, globalCRSList , serviceType, serviceTypeVersion,
+                                       accessConstraint, layerLimit, maxWidth, maxHeight, maxTileX, maxTileY, formatList,infoFormatList, globalCRSList , serviceType, serviceTypeVersion,
                                        providerSite, individualName, individualPosition, voice, facsimile,
                                        addressType, deliveryPoint, city, administrativeArea, postCode, country,
                                       electronicMailAddress, mtdMWS, mtdWMTS, listofequalsCRS, restrictedCRSList, postMode, fullStyling, inspire, doweuselistofequalsCRS, addEqualsCRS, dowerestrictCRSList );
