@@ -11,7 +11,7 @@
 
   <groupId>fr.geoportail.services</groupId>
   <artifactId>rok4</artifactId>
-  <version>1.0.1-SNAPSHOT</version><!--TAG_VERSION-->
+  <version>1.1.0-BE4WOD-RC1</version><!--TAG_VERSION-->
   <packaging>pom</packaging>
 
   <repositories>
