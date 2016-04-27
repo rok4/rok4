@@ -133,8 +133,8 @@ my %IMAGE_SPECS = (
             "linear"
         ],
         photometric => [
-            "GRAY",
-            "RGB",
+            "gray",
+            "rgb",
         ],
         sampleformat => [
             "int",
@@ -350,7 +350,7 @@ sub _loadProperties {
     $self->{pyr_desc_path} = $refFileContent->{pyramid}->{pyr_desc_path};
 
     # Photometric
-    $self->{photometric} = uc ($refFileContent->{pyramid}->{photometric});
+    $self->{photometric} = lc ($refFileContent->{pyramid}->{photometric});
 
     # Nodata (default value : white, transparent if alpha channel available), -9999 for float32
     my $pixel = BE4::Pixel->new({
@@ -578,7 +578,7 @@ sub isPhotometric {
     my $string = shift;
 
     foreach my $validString (@{$IMAGE_SPECS{photometric}}) {
-        return TRUE if (uc $validString eq uc $string);
+        return TRUE if (lc $validString eq lc $string);
     }
 
     return FALSE;
@@ -972,7 +972,7 @@ sub writeConfPyramid {
     my $descPath = File::Spec->catfile($self->{pyr_desc_path},$self->{pyr_name}).".pyr";
 
     if (! -e $self->{pyr_desc_path}) {
-        mkdir $self->{pyr_desc_path} or die (sprintf "Failed to create directory '%s'", $self->{pyr_desc_path});
+        eval { File::Path::make_path($self->{pyr_desc_path}, {mode => 0755}); } or die (sprintf "Failed to create directory '%s' : %s", $self->{pyr_desc_path}, $@);
     } elsif (! -d $self->{pyr_desc_path}) {
         ERROR(sprintf "Path '%s' exists, but is not a directory.", $self->{pyr_desc_path});
         return FALSE;
