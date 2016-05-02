@@ -458,7 +458,7 @@ sub _loadDatasources {
                 return FALSE;
             }
 
-            push $self->{datasources}->{$lv}, \@tileExtent;
+            push @{$self->{datasources}->{$lv}}, \@tileExtent;
 
             for (my $order = 0; $order < scalar (@orders); $order++) {
                 my $source = {
@@ -474,10 +474,10 @@ sub _loadDatasources {
 
                 if ($cfg->isProperty({section => $section, subsection => $orders[$order], property => 'file'})) {
                     $sourceObject = WMTSALAD::PyrSource->new($source);
-                    push $self->{datasources}->{$lv}, $sourceObject;
+                    push @{$self->{datasources}->{$lv}}, $sourceObject;
                 } elsif ($cfg->isProperty({section => $section, subsection => $orders[$order], property => 'wms_url'})) {
                     $sourceObject = WMTSALAD::WmsSource->new($source);
-                    push $self->{datasources}->{$lv}, $sourceObject;
+                    push @{$self->{datasources}->{$lv}}, $sourceObject;
                 }
                 if (! defined $sourceObject) {
                     ERROR("Could not load source.");
