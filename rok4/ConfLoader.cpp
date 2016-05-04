@@ -343,18 +343,23 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
 	
 	//recuperation des informations pour le calcul des pentes
 	pElem = hRoot.FirstChild ( "pente" ).Element();
-	Pente pente ();
+    Pente pente;
 	
 	if ( pElem ) {
-	      pente.
-		pente.setPente(true);
-		errorCode = pElem->QueryIntAttribute ( "algo", &algo );
-		if ( errorCode == TIXML_WRONG_TYPE ) {
-		  LOGGER_ERROR ( _ ( "Un attribut algo invalide a ete trouve dans la pente du Style " ) << id <<_ ( " : il est invalide!!" ) );
-		} else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
-		  algo = "Z";
+
+        pente.setPente(true);
+        algo = pElem->Attribute("algo");
+
+        if ( algo != "" ) {
+            if (algo != "Z" && algo != "H") {
+                LOGGER_ERROR ("Un attribut algo invalide a ete trouve dans la pente du Style " ) << id << ( " : il est invalide!!");
+                return NULL;
+            }
+        } else {
+            LOGGER_INFO("Pas d'algo defini, H par defaut");
+            algo = "H";
 		}
-		pente.setAlgo(algo);
+        pente.setAlgo(algo);
 	}
 	
 	

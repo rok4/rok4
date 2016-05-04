@@ -62,10 +62,21 @@ public:
      */
 
     std::string algo;
-    bool isPente = false;
+    bool isPente;
 
 public:
 
+    Pente(): algo ("H"), isPente (false) {
+
+    }
+
+    Pente(std::string a,bool p = false): algo (a), isPente (p) {
+
+    }
+
+    ~Pente() {
+
+    }
 
     bool empty(){
         if (isPente) {return false;}

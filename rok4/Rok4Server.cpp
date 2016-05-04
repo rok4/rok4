@@ -405,7 +405,7 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
             }
         }
 
-        if ( style && curImage->channels == 1 && ! (style->getPente()->is() ) ){
+        if ( style && curImage->channels == 1 && ! (style->getPente()->empty() ) ){
 			if ( format == "image/png" && size == 1 ) {
 				switch ( pyrType ) {
                 case Rok4Format::TIFF_RAW_FLOAT32 :
@@ -801,7 +801,7 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
 
                             if (curImage != NULL) {
                                 //On applique un style à l'image
-                                image = styleImage(curImage, pyrType, bStyle, format, bPyr.size());
+                                image = styleImage(curImage, pyrType, bStyle, format, bPyr.size(),0);
                                 images.push_back ( image );
                             } else {
                                 LOGGER_ERROR("Impossible de générer la tuile car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile");
@@ -1109,7 +1109,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
             LOGGER_DEBUG("Created");
             if (curImage != NULL) {
                 //On applique un style à l'image
-                image = styleImage(curImage, pyrType, bStyle, format, bPyr.size());
+                image = styleImage(curImage, pyrType, bStyle, format, bPyr.size(),0);
                 LOGGER_DEBUG("Apply style");
                 images.push_back ( image );
             } else {
@@ -1339,7 +1339,7 @@ DataSource* Rok4Server::WMSGetFeatureInfo ( Request* request ) {
                             }
                         }
 
-                        Image *img = styleImage(curImage, pyrType, style, format, layers.size());
+                        Image *img = styleImage(curImage, pyrType, style, format, layers.size(),0);
 
                         images.push_back ( img );
                     } else {

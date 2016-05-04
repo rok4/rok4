@@ -176,7 +176,7 @@ void PenteImage::generateLine ( int line, float* line1, float* line2, float* lin
 		//calcul de la variable sur la premiere colonne
 	if(algo=="H")
 		{value = pow((matrix[2] * ( * ( line1+column+1 ) ) + matrix[5] * ( * ( line2+column+1 ) ) + matrix[8] * ( * ( line3+column+1 ) ) - matrix[0] * ( * ( line1+column ) ) - matrix[3] * ( * ( line2+column ) ) - matrix[6] * ( * ( line3+column ) )),2.0)
-		+ pow((matrix[0] * ( * ( line1+column ) ) + matrix[1] * ( * ( line1+column ) ) + matrix[2] * ( * ( line1+column+1 ) ) - matrix[6] * ( * ( line3+column ) ) - matrix[7] * ( * ( line3+column ) ) - matrix[7] * ( * ( line3+column+1 ) )),2.0);
+        + pow((matrix[0] * ( * ( line1+column ) ) + matrix[1] * ( * ( line1+column ) ) + matrix[2] * ( * ( line1+column+1 ) ) - matrix[6] * ( * ( line3+column ) ) - matrix[7] * ( * ( line3+column ) ) - matrix[8] * ( * ( line3+column+1 ) )),2.0);
 
 		value = sqrt(value);
 		value = atan(value) * 180 / M_PI;
@@ -199,7 +199,7 @@ void PenteImage::generateLine ( int line, float* line1, float* line2, float* lin
     while ( column < width - 1 ) {
 		if (algo == "H"){
 			value = pow((matrix[2] * ( * ( line1+column+1 ) ) + matrix[5] * ( * ( line2+column+1 ) ) + matrix[8] * ( * ( line3+column+1 ) ) - matrix[0] * ( * ( line1+column-1 ) ) - matrix[3] * ( * ( line2+column-1 ) ) - matrix[6] * ( * ( line3+column-1 ) )),2.0)
-			+ pow((matrix[0] * ( * ( line1+column-1 ) ) + matrix[1] * ( * ( line1+column ) ) + matrix[2] * ( * ( line1+column+1 ) ) - matrix[6] * ( * ( line3+column-1 ) ) - matrix[7] * ( * ( line3+column ) ) - matrix[7] * ( * ( line3+column+1 ) )),2.0);
+            + pow((matrix[0] * ( * ( line1+column-1 ) ) + matrix[1] * ( * ( line1+column ) ) + matrix[2] * ( * ( line1+column+1 ) ) - matrix[6] * ( * ( line3+column-1 ) ) - matrix[7] * ( * ( line3+column ) ) - matrix[8] * ( * ( line3+column+1 ) )),2.0);
 
 			value = sqrt(value);
 			value = atan(value) * 180 / M_PI;
@@ -225,7 +225,7 @@ void PenteImage::generateLine ( int line, float* line1, float* line2, float* lin
 	//calcul de la variable sur la dernière colonne
 		if (algo == "H")
 			{value = pow((matrix[2] * ( * ( line1+column ) ) + matrix[5] * ( * ( line2+column ) ) + matrix[8] * ( * ( line3+column ) ) - matrix[0] * ( * ( line1+column-1 ) ) - matrix[3] * ( * ( line2+column-1 ) ) - matrix[6] * ( * ( line3+column-1 ) )),2.0)
-			+ pow((matrix[0] * ( * ( line1+column-1 ) ) + matrix[1] * ( * ( line1+column ) ) + matrix[2] * ( * ( line1+column ) ) - matrix[6] * ( * ( line3+column-1 ) ) - matrix[7] * ( * ( line3+column ) ) - matrix[7] * ( * ( line3+column ) )),2.0);
+            + pow((matrix[0] * ( * ( line1+column-1 ) ) + matrix[1] * ( * ( line1+column ) ) + matrix[2] * ( * ( line1+column ) ) - matrix[6] * ( * ( line3+column-1 ) ) - matrix[7] * ( * ( line3+column ) ) - matrix[8] * ( * ( line3+column ) )),2.0);
 
 			value = sqrt(value);
 			value = atan(value) * 180 / M_PI;

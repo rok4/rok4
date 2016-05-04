@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <style>
-        <Identifier>estompage</Identifier>
+        <Identifier>pente</Identifier>
         <Title>Pente</Title> 
         <Abstract>Pente methodeH</Abstract>
         <Keywords>
@@ -8,7 +8,7 @@
         </Keywords>
         <LegendURL format="image/png" xlink:simpleLink="simple" xlink:href="http://ign.fr" height="100" width="100" minScaleDenominator="0" maxScaleDenominator="30"/>
         <!-- Rok4-->
-        <palette maxValue="255" rgbContinuous="true" alphaContinuous="true">
+        <palette maxValue="90" rgbContinuous="true" alphaContinuous="true">
                 <colour value="0">
                         <red>255</red>
                         <green>255</green>
