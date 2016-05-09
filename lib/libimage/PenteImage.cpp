@@ -173,6 +173,7 @@ void PenteImage::generateLine ( int line, float* line1, float* line2, float* lin
 	//creation de la variable sur laquelle on travaille pour trouver le seuil
     double value;
 
+
 		//calcul de la variable sur la premiere colonne
 	if(algo=="H")
 		{value = pow((matrix[2] * ( * ( line1+column+1 ) ) + matrix[5] * ( * ( line2+column+1 ) ) + matrix[8] * ( * ( line3+column+1 ) ) - matrix[0] * ( * ( line1+column ) ) - matrix[3] * ( * ( line2+column ) ) - matrix[6] * ( * ( line3+column ) )),2.0)
@@ -185,8 +186,8 @@ void PenteImage::generateLine ( int line, float* line1, float* line2, float* lin
 		}
 
 
-	else if (algo.empty() || algo =="Z")
-		{value = sqrt(pow((matrix[1] * ( * ( line1+column ) ) - matrix[7] * ( * ( line3+column ) )),2.0) + pow((matrix[3] * ( * ( line2+column ) ) - matrix[5] * ( * ( line2+column+1 ) )),2.0));
+    else if (algo.empty() || algo =="Z")
+        {value = sqrt(pow((matrix[1] * ( * ( line1+column ) ) + matrix[7] * ( * ( line3+column ) )),2.0) + pow((matrix[3] * ( * ( line2+column ) ) + matrix[5] * ( * ( line2+column+1 ) )),2.0));
 
 		value = atan(value) * 180 / M_PI;
 		//verification valeur non superieure a 90
@@ -197,23 +198,23 @@ void PenteImage::generateLine ( int line, float* line1, float* line2, float* lin
 
 	//calcul de la variable sur toutes les autres colonnes
     while ( column < width - 1 ) {
-		if (algo == "H"){
-			value = pow((matrix[2] * ( * ( line1+column+1 ) ) + matrix[5] * ( * ( line2+column+1 ) ) + matrix[8] * ( * ( line3+column+1 ) ) - matrix[0] * ( * ( line1+column-1 ) ) - matrix[3] * ( * ( line2+column-1 ) ) - matrix[6] * ( * ( line3+column-1 ) )),2.0)
+        if (algo == "H"){
+            value = pow((matrix[2] * ( * ( line1+column+1 ) ) + matrix[5] * ( * ( line2+column+1 ) ) + matrix[8] * ( * ( line3+column+1 ) ) - matrix[0] * ( * ( line1+column-1 ) ) - matrix[3] * ( * ( line2+column-1 ) ) - matrix[6] * ( * ( line3+column-1 ) )),2.0)
             + pow((matrix[0] * ( * ( line1+column-1 ) ) + matrix[1] * ( * ( line1+column ) ) + matrix[2] * ( * ( line1+column+1 ) ) - matrix[6] * ( * ( line3+column-1 ) ) - matrix[7] * ( * ( line3+column ) ) - matrix[8] * ( * ( line3+column+1 ) )),2.0);
 
-			value = sqrt(value);
-			value = atan(value) * 180 / M_PI;
+            value = sqrt(value);
+            value = atan(value) * 180 / M_PI;
 			//verification valeur non superieure a 90
-			if (value>90){value = 180-value;}	
-		}
+            if (value>90){value = 180-value;}
+        }
 		
-		else if (algo =="Z")
-			{value = sqrt(pow((matrix[1] * ( * ( line1+column ) ) - matrix[7] * ( * ( line3+column ) )),2.0) + pow((matrix[3] * ( * ( line2+column-1 ) ) - matrix[5] * ( * ( line2+column+1 ) )),2.0));
+        else if (algo =="Z")
+            {value = sqrt(pow((matrix[1] * ( * ( line1+column ) ) + matrix[7] * ( * ( line3+column ) )),2.0) + pow((matrix[3] * ( * ( line2+column-1 ) ) + matrix[5] * ( * ( line2+column+1 ) )),2.0));
 
-			value = atan(value) * 180 / M_PI;
+            value = atan(value) * 180 / M_PI;
 			//verification valeur non superieure a 90
-			if (value>90){value = 180-value;}
-		}
+            if (value>90){value = 180-value;}
+        }
 			
 		
 
@@ -233,8 +234,8 @@ void PenteImage::generateLine ( int line, float* line1, float* line2, float* lin
 			if (value>90){value = 180-value;}
 			}
 			
-		else if (algo =="Z")
-			{value = sqrt(pow((matrix[1] * ( * ( line1+column ) ) - matrix[7] * ( * ( line3+column ) )),2.0) + pow((matrix[3] * ( * ( line2+column-1 ) ) - matrix[5] * ( * ( line2+column ) )),2.0));
+        else if (algo =="Z")
+            {value = sqrt(pow((matrix[1] * ( * ( line1+column ) ) + matrix[7] * ( * ( line3+column ) )),2.0) + pow((matrix[3] * ( * ( line2+column-1 ) ) + matrix[5] * ( * ( line2+column ) )),2.0));
 			value = atan(value) * 180 / M_PI;
 			//verification valeur non superieure a 90
 			if (value>90){value = 180-value;}
