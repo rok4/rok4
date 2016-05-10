@@ -123,7 +123,6 @@ typedef void Rok4Server;
     HttpResponse* rok4GetTile ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server );
     HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server, TileRef* tileRef, TilePalette* palette );
     HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server, TileRef* tileRef, TilePalette* palette );
-    CephRef *rok4GetCephReferences(Rok4Server* server);
 
 // DEPRECATED
     TiffHeader* rok4GetTiffHeader ( int width, int height, int channels );

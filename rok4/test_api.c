@@ -117,7 +117,6 @@ bool parseCommandLine ( int argc, char* argv[], char* server_config_file, int* n
 void* processThread ( void* server ) {
     // Initialisation du serveur
 
-    printf("test des connexions CEPH via rok4server\n");
     if (rok4ExistObjectCeph(server ,"toto", "PYRAMIDS") == 0) {
         printf("PYRAMIDS / toto n'existe pas\n");
     } else {
@@ -129,6 +128,7 @@ void* processThread ( void* server ) {
         printf("PYRAMIDS / CEPH_DALLE_IMG_10_65_43 existe\n");
     }
 
+    printf("Tests finis");
 
     // Traitement des requetes
     /*
@@ -265,12 +265,17 @@ int main ( int argc, char* argv[] ) {
     for ( i = 0; i < nb_threads; i++ ) {
         pthread_create ( & ( threads[i] ), NULL, processThread, server );
     }
-    for ( i = 0; i < nb_threads; i++ )
+    printf("--------------- Threads créés\n");
+    for ( i = 0; i < nb_threads; i++ ) {
+        printf("--------------- Lancement thread %d\n", i);
         pthread_join ( threads[i], NULL );
+    }
 
+    printf("--------------- Threads nettoyés\n");
     free ( threads );
 
 
+    printf("--------------- Kill server\n");
     // Extinction du serveur
     rok4KillServer ( server );
 

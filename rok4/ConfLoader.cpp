@@ -532,7 +532,7 @@ TileMatrixSet* ConfLoader::buildTileMatrixSet ( std::string fileName ) {
 }//buildTileMatrixSet(std::string fileName)
 
 // Load a pyramid
-Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, std::map<eContextType,ContextBook*> contextBooks  ) {
+Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, ContextBook* cBook, ContextBook* sBook  ) {
     LOGGER_INFO ( _ ( "             Ajout de la pyramide : " ) << fileName );
     // Relative file Path
     char * fileNameChar = ( char * ) malloc ( strlen ( fileName.c_str() ) + 1 );
@@ -543,6 +543,9 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     fileNameChar=NULL;
     parentDirChar=NULL;
     LOGGER_INFO ( _ ( "           BaseDir Relative to : " ) << parentDir );
+
+
+    std::cout << "pyramide " << fileName << std::endl;
 
     TileMatrixSet *tms;
     std::string formatStr="";
@@ -625,6 +628,11 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
         TiXmlHandle hLvl ( pElem );
         TiXmlElement* pElemLvl = hLvl.FirstChild ( "tileMatrix" ).Element();
+
+
+
+        std::cout << "\t level " << pElemLvl->GetText() << std::endl;
+
         if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
             LOGGER_ERROR ( fileName <<_ ( " level " ) <<_ ( "id" ) <<_ ( " sans tileMatrix!!" ) );
             return NULL;
@@ -633,6 +641,8 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         std::string id ( tmName );
         std::map<std::string, TileMatrix>* tmList = tms->getTmList();
         std::map<std::string, TileMatrix>::iterator it = tmList->find ( tmName );
+
+
 
         if ( it == tmList->end() ) {
             LOGGER_ERROR ( fileName <<_ ( " Le level " ) << id <<_ ( " ref. Le TM [" ) << tmName << _ ( "] qui n'appartient pas au TMS [" ) << tmsName << "]" );
@@ -674,6 +684,8 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         pElemLvl = hLvl.FirstChild ( "cephContext" ).Element();
         if ( pElemLvl && !context) {
 
+            std::cout << "\t\t ceph context" << std::endl;
+
             std::string poolName;
 
             TiXmlElement* pElemCephContext;
@@ -686,15 +698,10 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                 poolName = pElemCephContext->GetText();
             }
 
-            if (contextBooks.size() != 0) {
+            if (cBook != NULL) {
 
-                std::map<eContextType,ContextBook*>::iterator it = contextBooks.find(CEPHCONTEXT);
-                if (it != contextBooks.end()) {
-                    context = it->second->addContext(poolName);
-                } else {
-                    LOGGER_ERROR ( "L'utilisation d'un cephContext necessite de preciser les informations de connexions dans le server.conf");
-                    return NULL;
-                }
+                std::cout << "\t\t add context " << poolName << std::endl;
+                context = cBook->addContext(poolName);
 
             } else {
                 LOGGER_ERROR ( "L'utilisation d'un cephContext necessite de preciser les informations de connexions dans le server.conf");
@@ -725,16 +732,8 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                 container = pElemSwiftContext->GetText();
             }
 
-            if (contextBooks.size() != 0) {
-
-                std::map<eContextType,ContextBook*>::iterator it = contextBooks.find(SWIFTCONTEXT);
-                if (it != contextBooks.end()) {
-                    context = it->second->addContext(container);
-                } else {
-                    LOGGER_ERROR ( "L'utilisation d'un cephContext necessite de preciser les informations de connexions dans le server.conf");
-                    return NULL;
-                }
-
+            if (sBook != NULL) {
+                context = sBook->addContext(container);
             } else {
                 LOGGER_ERROR ( "L'utilisation d'un cephContext necessite de preciser les informations de connexions dans le server.conf");
                 return NULL;
@@ -923,19 +922,19 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
 }// buildPyramid()
 
-Pyramid* ConfLoader::buildPyramid ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, std::map<eContextType,ContextBook*> contextBooks ) {
+Pyramid* ConfLoader::buildPyramid ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, ContextBook* cBook, ContextBook* sBook ) {
     TiXmlDocument doc ( fileName.c_str() );
     if ( !doc.LoadFile() ) {
         LOGGER_ERROR ( _ ( "Ne peut pas charger le fichier " ) << fileName );
         return NULL;
     }
-    return parsePyramid ( &doc,fileName,tmsList,contextBooks );
+    return parsePyramid ( &doc,fileName,tmsList,cBook, sBook );
 }
 
 //TODO avoid opening a pyramid file directly
 Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,
                                  std::map<std::string,Style*> stylesList , bool reprojectionCapability,
-                                 ServicesConf* servicesConf, std::map<eContextType,ContextBook*> contextBooks ) {
+                                 ServicesConf* servicesConf, ContextBook* cBook, ContextBook* sBook ) {
     LOGGER_INFO ( _ ( "     Ajout du layer " ) << fileName );
     // Relative file Path
     char * fileNameChar = ( char * ) malloc ( strlen ( fileName.c_str() ) + 1 );
@@ -1285,7 +1284,7 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
             pyramidFilePath.insert ( 0,"/" );
             pyramidFilePath.insert ( 0,parentDir );
         }
-        pyramid = buildPyramid ( pyramidFilePath, tmsList, contextBooks );
+        pyramid = buildPyramid ( pyramidFilePath, tmsList, cBook, sBook );
         if ( !pyramid ) {
             LOGGER_ERROR ( _ ( "La pyramide " ) << pyramidFilePath << _ ( " ne peut etre chargee" ) );
             return NULL;
@@ -1338,13 +1337,13 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
 
 Layer * ConfLoader::buildLayer ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,
                                  std::map<std::string,Style*> stylesList, bool reprojectionCapability,
-                                 ServicesConf* servicesConf, std::map<eContextType,ContextBook*> contextBooks ) {
+                                 ServicesConf* servicesConf, ContextBook* cBook, ContextBook* sBook) {
     TiXmlDocument doc ( fileName.c_str() );
     if ( !doc.LoadFile() ) {
         LOGGER_ERROR ( _ ( "Ne peut pas charger le fichier " ) << fileName );
         return NULL;
     }
-    return parseLayer ( &doc,fileName,tmsList,stylesList,reprojectionCapability,servicesConf, contextBooks );
+    return parseLayer ( &doc,fileName,tmsList,stylesList,reprojectionCapability,servicesConf, cBook, sBook );
 }
 
 // Load the server configuration (default is server.conf file) during server initialization
@@ -2354,7 +2353,7 @@ bool ConfLoader::buildTMSList ( std::string tmsDir,std::map<std::string, TileMat
 
 bool ConfLoader::buildLayersList ( std::string layerDir, std::map< std::string, TileMatrixSet* >& tmsList,
                                    std::map< std::string, Style* >& stylesList, std::map< std::string, Layer* >& layers,
-                                   bool reprojectionCapability, ServicesConf* servicesConf, std::map<eContextType,ContextBook*> contextBooks ) {
+                                   bool reprojectionCapability, ServicesConf* servicesConf, ContextBook* cBook, ContextBook* sBook ) {
     LOGGER_INFO ( _ ( "CHARGEMENT DES LAYERS" ) );
     // lister les fichier du repertoire layerDir
     std::vector<std::string> layerFiles;
@@ -2382,7 +2381,7 @@ bool ConfLoader::buildLayersList ( std::string layerDir, std::map< std::string, 
     // generer les Layers decrits par les fichiers.
     for ( unsigned int i=0; i<layerFiles.size(); i++ ) {
         Layer * layer;
-        layer = buildLayer ( layerFiles[i], tmsList, stylesList , reprojectionCapability, servicesConf, contextBooks );
+        layer = buildLayer ( layerFiles[i], tmsList, stylesList , reprojectionCapability, servicesConf, cBook, sBook );
         if ( layer ) {
             layers.insert ( std::pair<std::string, Layer *> ( layer->getId(), layer ) );
         } else {

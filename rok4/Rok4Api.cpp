@@ -57,6 +57,7 @@
 #include "TileMatrixSet.h"
 #include "TileMatrix.h"
 #include "intl.h"
+#include "Context.h"
 #include <cfloat>
 #include <libintl.h>
 
@@ -90,96 +91,102 @@ HttpResponse* initResponseFromSource ( DataSource* source ) {
 */
 
 Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
-    // // Initialisation des parametres techniques
-    // LogOutput logOutput;
-    // int nbThread,logFilePeriod,backlog;
-    // LogLevel logLevel;
-    // ContextBook *cephContextBook = NULL;
-    // ContextBook *swiftContextBook = NULL;
-    // std::map<eContextType,ContextBook*> contextBooks;
-    // bool supportWMTS,supportWMS,reprojectionCapability;
-    // std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,
-    //         strLayerDir,strTmsDir,strStyleDir,socket,cephName,cephUser,cephConf,cephPool,
-    //         swiftAuthUrl,swiftUserName,swiftUserAccount,swiftUserPassword,swiftContainer;
-    // if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod,
-    //                                       logLevel, nbThread, supportWMTS, supportWMS, reprojectionCapability,
-    //                                       strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, socket, backlog,
-    //                                       cephName,cephUser,cephConf,cephPool ) ) {
-    //     std::cerr<<_ ( "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " ) <<strServerConfigFile<<std::endl;
-    //     return NULL;
-    // }
-    // if ( !loggerInitialised ) {
-    //     Logger::setOutput ( logOutput );
-    //     // Initialisation du logger
-    //     Accumulator *acc=0;
-    //     switch ( logOutput ) {
-    //     case ROLLING_FILE :
-    //         acc = new RollingFileAccumulator ( strLogFileprefix,logFilePeriod );
-    //         break;
-    //     case STATIC_FILE :
-    //         acc = new StaticFileAccumulator ( strLogFileprefix );
-    //         break;
-    //     case STANDARD_OUTPUT_STREAM_FOR_ERRORS :
-    //         acc = new StreamAccumulator();
-    //         break;
-    //     }
-    //     // Attention : la fonction Logger::setAccumulator n'est pas threadsafe
-    //     for ( int i=0; i<=logLevel; i++ )
-    //         Logger::setAccumulator ( ( LogLevel ) i, acc );
-    //     std::ostream &log = LOGGER ( DEBUG );
-    //     log.precision ( 8 );
-    //     log.setf ( std::ios::fixed,std::ios::floatfield );
+     // Initialisation des parametres techniques
+     LogOutput logOutput;
+     int nbThread,logFilePeriod,backlog;
+     LogLevel logLevel;
+     ContextBook *cephContextBook = NULL;
+     ContextBook *swiftContextBook = NULL;
+     bool supportWMTS,supportWMS,reprojectionCapability;
+     std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,
+             strLayerDir,strTmsDir,strStyleDir,socket,cephName,cephUser,cephConf,cephPool,
+             swiftAuthUrl,swiftUserName,swiftUserAccount,swiftUserPassword,swiftContainer;
 
-    //     std::cout<< _ ( "Envoi des messages dans la sortie du logger" ) << std::endl;
-    //     LOGGER_INFO ( _ ( "*** DEBUT DU FONCTIONNEMENT DU LOGGER ***" ) );
-    //     loggerInitialised=true;
-    // } else {
-    //     LOGGER_INFO ( _ ( "*** NOUVEAU CLIENT DU LOGGER ***" ) );
-    // }
+     if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod,
+                                           logLevel, nbThread, supportWMTS, supportWMS, reprojectionCapability,
+                                           strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, socket, backlog,
+                                           cephName,cephUser,cephConf,cephPool,swiftAuthUrl,swiftUserName,swiftUserAccount,swiftUserPassword,swiftContainer ) ) {
 
-    // // Construction des parametres de service
-    // sc=ConfLoader::buildServicesConf ( strServicesConfigFile );
-    // if ( sc==NULL ) {
-    //     LOGGER_FATAL ( _ ( "Impossible d'interpreter le fichier de conf " ) <<strServicesConfigFile );
-    //     LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
-    //     sleep ( 1 );    // Pour laisser le temps au logger pour se vider
-    //     return NULL;
-    // }
-    // // Chargement des TMS
-    // std::map<std::string,TileMatrixSet*> tmsList;
-    // if ( !ConfLoader::buildTMSList ( strTmsDir,tmsList ) ) {
-    //     LOGGER_FATAL ( _ ( "Impossible de charger la conf des TileMatrix" ) );
-    //     LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
-    //     sleep ( 1 );    // Pour laisser le temps au logger pour se vider
-    //     return NULL;
-    // }
-    // //Chargement des styles
-    // std::map<std::string, Style*> styleList;
-    // if ( !ConfLoader::buildStylesList ( strStyleDir,styleList, sc->isInspire() ) ) {
-    //     LOGGER_FATAL ( _ ( "Impossible de charger la conf des Styles" ) );
-    //     LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
-    //     sleep ( 1 );    // Pour laisser le temps au logger pour se vider
-    //     return NULL;
-    // }
+         std::cerr<<_ ( "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " ) <<strServerConfigFile<<std::endl;
+         return NULL;
+     }
 
-    // if (cephName != "" && cephUser != "" && cephConf != "") {
-    //     contextBook = new ContextBook(cephName,cephUser,cephConf,cephPool);
-    // }
+     if ( !loggerInitialised ) {
+         Logger::setOutput ( logOutput );
+         // Initialisation du logger
+         Accumulator *acc=0;
+         switch ( logOutput ) {
+         case ROLLING_FILE :
+             acc = new RollingFileAccumulator ( strLogFileprefix,logFilePeriod );
+             break;
+         case STATIC_FILE :
+             acc = new StaticFileAccumulator ( strLogFileprefix );
+             break;
+         case STANDARD_OUTPUT_STREAM_FOR_ERRORS :
+             acc = new StreamAccumulator();
+             break;
+         }
+         // Attention : la fonction Logger::setAccumulator n'est pas threadsafe
+         for ( int i=0; i<=logLevel; i++ )
+             Logger::setAccumulator ( ( LogLevel ) i, acc );
+         std::ostream &log = LOGGER ( DEBUG );
+         log.precision ( 8 );
+         log.setf ( std::ios::fixed,std::ios::floatfield );
 
-    // // Chargement des layers
-    // std::map<std::string, Layer*> layerList;
-    // if ( !ConfLoader::buildLayersList ( strLayerDir,tmsList, styleList,layerList,reprojectionCapability,sc, contextBook ) ) {
-    //     LOGGER_FATAL ( _ ( "Impossible de charger la conf des Layers/pyramides" ) );
-    //     LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
-    //     sleep ( 1 );    // Pour laisser le temps au logger pour se vider
-    //     return NULL;
-    // }
+         std::cout<< _ ( "Envoi des messages dans la sortie du logger" ) << std::endl;
+         LOGGER_INFO ( _ ( "*** DEBUT DU FONCTIONNEMENT DU LOGGER ***" ) );
+         loggerInitialised=true;
+     } else {
+         LOGGER_INFO ( _ ( "*** NOUVEAU CLIENT DU LOGGER ***" ) );
+     }
+
+     // Construction des parametres de service
+     sc=ConfLoader::buildServicesConf ( strServicesConfigFile );
+     if ( sc==NULL ) {
+         LOGGER_FATAL ( _ ( "Impossible d'interpreter le fichier de conf " ) <<strServicesConfigFile );
+         LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
+         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
+         return NULL;
+     }
+     // Chargement des TMS
+     std::map<std::string,TileMatrixSet*> tmsList;
+     if ( !ConfLoader::buildTMSList ( strTmsDir,tmsList ) ) {
+         LOGGER_FATAL ( _ ( "Impossible de charger la conf des TileMatrix" ) );
+         LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
+         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
+         return NULL;
+     }
+     //Chargement des styles
+     std::map<std::string, Style*> styleList;
+     if ( !ConfLoader::buildStylesList ( strStyleDir,styleList, sc->isInspire() ) ) {
+         LOGGER_FATAL ( _ ( "Impossible de charger la conf des Styles" ) );
+         LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
+         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
+         return NULL;
+     }
+
+     if (cephName != "" && cephUser != "" && cephConf != "") {
+         cephContextBook = new ContextBook(cephName,cephUser,cephConf);
+     }
 
 
+     if (swiftAuthUrl != "" && swiftUserName != "" && swiftUserAccount != "" && swiftUserPassword != "") {
+         swiftContextBook = new ContextBook(swiftAuthUrl, swiftUserAccount, swiftUserName, swiftUserPassword);
+     }
 
-    // // Instanciation du serveur
-    // Logger::stopLogger();
-    // return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog, contextBook, supportWMTS, supportWMS );
+     // Chargement des layers
+     std::map<std::string, Layer*> layerList;
+     if ( !ConfLoader::buildLayersList ( strLayerDir,tmsList, styleList,layerList,reprojectionCapability,sc, cephContextBook, swiftContextBook ) ) {
+         LOGGER_FATAL ( _ ( "Impossible de charger la conf des Layers/pyramides" ) );
+         LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
+         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
+         return NULL;
+     }
+
+     // Instanciation du serveur
+     //Logger::stopLogger();
+
+     return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog, cephContextBook, swiftContextBook, supportWMTS, supportWMS );
 }
 
 /**
@@ -285,36 +292,36 @@ HttpResponse* rok4GetTile ( const char* queryString, const char* hostName, const
 }
 
 /**
-* \brief Implementation de l'operation GetCephReferences
-* \brief Cela permet de transmettre les informations de connexion
-* \param[in] cephRef : cephRef
-* \param[in] server : serveur
-* \param[out] CephRef : reference de la connexion à Ceph
-* \return CephRef
+* \brief Implementation de l'operation ExistObjectCeph
+* \brief Cela permet de tester l'existance d'un objet sur Ceph
+* \param[in] server
+* \param[in] nom de l'objet
+* \param[in] pool contenant l'objet
+* \return int 1 si l'objet existe, 0 sinon
 */
 
-CephRef* rok4GetCephReferences (Rok4Server* server) {
 
-    // CephRef* cr = NULL;
-    // CephPoolContext* ctx = server->getContextBook()->getCephBaseContext();
+int rok4ExistObjectCeph(Rok4Server* server, const char* name, const char* pool) {
+    LOGGER_INFO("Rok4Api : Test existence sur Ceph" << pool << " / " << name);
 
-    // if (ctx) {
+    ContextBook * cb = server->getCephBook();
+    if (cb == NULL) {
+        LOGGER_ERROR("Pas de ceph book");
+        return false;
+    }
 
-    //     cr->name=new char[ctx->getClusterName().length() +1];
-    //     strcpy ( cr->name,ctx->getClusterName().c_str() );
+    Context * ctx = cb->getContext(pool);
+    if (ctx == NULL) {
+        LOGGER_ERROR("Pas de context pour ce pool");
+        return false;
+    }
 
-    //     cr->user=new char[ctx->getPoolUser().length() +1];
-    //     strcpy ( cr->user,ctx->getPoolUser().c_str() );
+    uint8_t data[1];
+    int readSize = ctx->read(data, 0, 1, (std::string)name);
 
-    //     cr->conf=new char[ctx->getPoolConf().length() +1];
-    //     strcpy ( cr->conf,ctx->getPoolConf().c_str() );
-
-    // } else {
-    //     return cr;
-    // }
+    return (readSize == 1);
 
 }
-
 
 /**
 * \brief Implementation de l'operation ReadObjectCeph
@@ -327,20 +334,18 @@ CephRef* rok4GetCephReferences (Rok4Server* server) {
 * \param[in/out] data
 * \return int taille lue ou erreur
 */
-
-
 int rok4ReadObjectCeph(Rok4Server* server, const char* name, const char* pool, int offset, int size, char* data) {
 
-    // int err = -1;
+     int err = -1;
 
-    // Context * ctx = server->getContextBook()->getContext(pool);
-    // if (ctx == NULL) {
-    //     return err;
-    // }
+     Context * ctx = server->getCephBook()->getContext(pool);
+     if (ctx == NULL) {
+         return err;
+     }
 
-    // err = ctx->read((uint8_t*)data, offset, size, (std::string)name);
+     err = ctx->read((uint8_t*)data, offset, size, (std::string)name);
 
-    // return err;
+     return err;
 
 }
 
@@ -361,12 +366,12 @@ int rok4ReadObjectSwift(Rok4Server* server, const char* name, const char* pool, 
 
     int err = -1;
 
-//    Context * ctx = server->getContextBook()->getContext(pool);
-//    if (ctx == NULL) {
-//        return err;
-//    }
+    Context * ctx = server->getSwiftBook()->getContext(pool);
+    if (ctx == NULL) {
+        return err;
+    }
 
-//    err = ctx->read((uint8_t*)data, offset, size, (std::string)name);
+    err = ctx->read((uint8_t*)data, offset, size, (std::string)name);
 
     return err;
 

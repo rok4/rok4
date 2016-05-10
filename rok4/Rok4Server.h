@@ -150,11 +150,9 @@ private:
      * \~english \brief Error response in case data tiel is not found (http 404)
      */
     DataSource* notFoundError;
-    /**
-     * \~french \brief Liste des Annuaires des contextes
-     * \~english \brief List of Context Directories
-     */
-    std::map<eContextType,ContextBook*> contextBooks;
+
+    ContextBook* cephBook;
+    ContextBook* swiftBook;
 
     /**
      * \~french
@@ -314,30 +312,17 @@ public:
     std::vector<std::string>& getWmtsCapaFrag() {
         return wmtsCapaFrag;
     }
-    /**
-     * \~french Retourne l'annuaire de contextes
-     * \~english Return ContextBook
-     */
-    std::map<eContextType,ContextBook*> getContextBooks() {
-        return contextBooks;
-    }
 
     /**
-     * \~french Retourne l'annuaire de contextes
+     * \~french Retourne l'annuaire de contextes ceph
      * \~english Return ContextBook
      */
-    ContextBook* getContextBook(eContextType ct) {
-        if (contextBooks.size() != 0) {
-            std::map<eContextType,ContextBook*>::iterator it = contextBooks.find(ct);
-            if (it == contextBooks.end()) {
-                return NULL;
-            } else {
-                return it->second;
-            }
-        } else {
-            return NULL;
-        }
-    }
+    ContextBook* getCephBook() {return cephBook;}
+    /**
+     * \~french Retourne l'annuaire de contextes swift
+     * \~english Return ContextBook
+     */
+    ContextBook* getSwiftBook() {return swiftBook;}
 
     /**
      * \~french
@@ -454,7 +439,7 @@ public:
      * \brief Construction du serveur
      */
     Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
-                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, std::string socket, int backlog, std::map<eContextType,ContextBook*> contextBooks,bool supportWMTS = true, bool supportWMS = true );
+                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, std::string socket, int backlog, ContextBook* cBook, ContextBook* sBook, bool supportWMTS = true, bool supportWMS = true );
     /**
      * \~french
      * \brief Destructeur par défaut

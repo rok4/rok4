@@ -76,7 +76,6 @@ Level::Level (TileMatrix tm, int channels, std::string baseDir, int tilesPerWidt
 }
 
 Level::~Level() {
-    delete context;
     delete noDataSourceProxy;
     if ( noDataSource )
         delete noDataSource;

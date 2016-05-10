@@ -49,19 +49,26 @@
 
 #include "ContextBook.h"
 
-ContextBook::ContextBook(std::string name, std::string user, std::string conf, std::string pool)
+ContextBook::ContextBook(std::string name, std::string user, std::string conf)
 {
 
-    baseContext = new CephPoolContext(name,user,conf,pool);
-
+    bCeph = true;
+    bSwift = false;
+    ceph_name = name;
+    ceph_user = user;
+    ceph_conf = conf;
 
 }
 
-ContextBook::ContextBook(std::string auth, std::string account, std::string user, std::string passwd, std::string container)
+ContextBook::ContextBook(std::string auth, std::string account, std::string user, std::string passwd)
 {
 
-    baseContext = new SwiftContext(auth,account,user,passwd,container);
-
+    bSwift = true;
+    bCeph = false;
+    swift_auth = auth;
+    swift_account = account;
+    swift_user = user;
+    swift_passwd = passwd;
 
 }
 
@@ -69,31 +76,30 @@ Context * ContextBook::addContext(std::string pool)
 {
     Context* ctx;
     std::map<std::string, Context*>::iterator it = book.find ( pool );
-    if ( it == book.end() ) {
+    if ( it != book.end() ) {
+        //le pool est déjà existant et donc connecté
+        return it->second;
+
+    } else {
         //ce pool n'est pas encore connecté, on va créer la connexion
-        if (baseContext->getType() == CEPHCONTEXT) {
-            CephPoolContext * bctx = reinterpret_cast<CephPoolContext*>(baseContext);
-            ctx = new CephPoolContext(bctx->getClusterName(), bctx->getPoolUser(), bctx->getPoolConf(), pool);
-        } else if (baseContext->getType() == SWIFTCONTEXT) {
-            SwiftContext * bctx = reinterpret_cast<SwiftContext*>(baseContext);
-            ctx = new SwiftContext(bctx->getAuthUrl(),bctx->getAccount(),bctx->getUserName(),bctx->getUserPwd(),pool);
+        if (bCeph) {
+            ctx = new CephPoolContext(ceph_name, ceph_user, ceph_conf, pool);
+        } else if (bSwift) {
+            ctx = new SwiftContext(swift_auth,swift_account,swift_user,swift_passwd,pool);
         } else {
             return NULL;
         }
 
         //on se connecte
-//        std::cout << "addContext connection" << std::endl;
-//        if (!ctx->connection()) {
-//            LOGGER_ERROR("Impossible de se connecter aux donnees.");
-//            return NULL;
-//        }
+        std::cout << "addContext connection to '" << pool << "'" << std::endl;
+        if (!ctx->connection()) {
+            LOGGER_ERROR("Impossible de se connecter aux donnees.");
+            return NULL;
+        }
         //on ajoute au book
         book.insert ( std::pair<std::string,Context*>(pool,ctx) );
 
         return ctx;
-    } else {
-        //le pool est déjà existant et donc connecté
-        return it->second;
     }
 
 }
@@ -116,13 +122,13 @@ ContextBook::~ContextBook()
 {
     std::map<std::string,Context*>::iterator it;
     for (it=book.begin(); it!=book.end(); ++it) {
+        std::cout << "DELETE CEPHPOOL..." << std::endl;
         delete it->second;
+        std::cout << "NULL CEPHPOOL..." << std::endl;
         it->second = NULL;
-    }
-    if (baseContext) {
-        delete baseContext;
-        baseContext = NULL;
+        std::cout << "MOUAIS..." << std::endl;
     }
 
+    std::cout << "DELETE CEPHPOOLBOOK OK" << std::endl;
 }
 

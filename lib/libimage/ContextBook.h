@@ -75,23 +75,34 @@ private:
      */
     std::map<std::string, Context*> book;
 
+    bool bCeph;
+    std::string ceph_name;
+    std::string ceph_user;
+    std::string ceph_conf;
+
+    bool bSwift;
+    std::string swift_auth;
+    std::string swift_account;
+    std::string swift_user;
+    std::string swift_passwd;
+
 public:
 
     /**
      * \~french
-     * \brief Constructeur pour un contexte Ceph
+     * \brief Constructeur pour un annuaire de contexte Ceph
      * \~english
      * \brief Constructor for CephContext
      */
-    ContextBook(std::string name, std::string user, std::string conf, std::string pool);
+    ContextBook(std::string name, std::string user, std::string conf);
 
     /**
      * \~french
-     * \brief Constructeur pour un contexte Swift
+     * \brief Constructeur pour un annuaire de contexte Swift
      * \~english
      * \brief Constructor for SwiftContext
      */
-    ContextBook(std::string auth, std::string account, std::string user, std::string passwd, std::string container);
+    ContextBook(std::string auth, std::string account, std::string user, std::string passwd);
 
     /**
      * \~french
@@ -101,32 +112,6 @@ public:
      */
     Context* getBaseContext() {
         return baseContext;
-    }
-
-    bool connectContexts() {
-        std::map<std::string, Context*>::iterator it = book.begin();
-        while (it != book.end()) {
-            if (! it->second->connection()) {
-                LOGGER_ERROR("Impossible de se connecter le contexte Ceph de pool " << it->first);
-                return false;
-            }
-            it++;
-        }
-        return true;
-    }
-
-    /**
-     * \~french
-     * \brief Retourne le baseContext si c'est du Ceph
-     * \~english
-     * \brief Return baseContext if CEPHCONTEXT
-     */
-    CephPoolContext* getCephBaseContext() {
-        if (baseContext->getType() == CEPHCONTEXT) {
-            return reinterpret_cast<CephPoolContext*> (baseContext);
-        } else {
-            return NULL;
-        }
     }
 
     virtual std::string toString() {
@@ -169,7 +154,6 @@ public:
      * \brief Destructor
      */
     ~ContextBook();
-
 
 };
 
