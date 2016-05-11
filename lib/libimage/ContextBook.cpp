@@ -91,7 +91,6 @@ Context * ContextBook::addContext(std::string pool)
         }
 
         //on se connecte
-        std::cout << "addContext connection to '" << pool << "'" << std::endl;
         if (!ctx->connection()) {
             LOGGER_ERROR("Impossible de se connecter aux donnees.");
             return NULL;
@@ -122,13 +121,9 @@ ContextBook::~ContextBook()
 {
     std::map<std::string,Context*>::iterator it;
     for (it=book.begin(); it!=book.end(); ++it) {
-        std::cout << "DELETE CEPHPOOL..." << std::endl;
         delete it->second;
-        std::cout << "NULL CEPHPOOL..." << std::endl;
         it->second = NULL;
-        std::cout << "MOUAIS..." << std::endl;
     }
 
-    std::cout << "DELETE CEPHPOOLBOOK OK" << std::endl;
 }
 

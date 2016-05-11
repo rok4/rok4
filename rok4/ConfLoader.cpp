@@ -544,9 +544,6 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     parentDirChar=NULL;
     LOGGER_INFO ( _ ( "           BaseDir Relative to : " ) << parentDir );
 
-
-    std::cout << "pyramide " << fileName << std::endl;
-
     TileMatrixSet *tms;
     std::string formatStr="";
     Rok4Format::eformat_data format;
@@ -629,10 +626,6 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         TiXmlHandle hLvl ( pElem );
         TiXmlElement* pElemLvl = hLvl.FirstChild ( "tileMatrix" ).Element();
 
-
-
-        std::cout << "\t level " << pElemLvl->GetText() << std::endl;
-
         if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
             LOGGER_ERROR ( fileName <<_ ( " level " ) <<_ ( "id" ) <<_ ( " sans tileMatrix!!" ) );
             return NULL;
@@ -684,8 +677,6 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         pElemLvl = hLvl.FirstChild ( "cephContext" ).Element();
         if ( pElemLvl && !context) {
 
-            std::cout << "\t\t ceph context" << std::endl;
-
             std::string poolName;
 
             TiXmlElement* pElemCephContext;
@@ -699,8 +690,6 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             }
 
             if (cBook != NULL) {
-
-                std::cout << "\t\t add context " << poolName << std::endl;
                 context = cBook->addContext(poolName);
 
             } else {

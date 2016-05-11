@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2016-05-10 16:30+0200\n"
+"POT-Creation-Date: 2016-05-11 10:13+0200\n"
 "PO-Revision-Date: 2013-02-18 17:49+0100\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -76,7 +76,7 @@ msgstr "            Root element not availlable."
 msgid "            La racine n'est pas un style."
 msgstr "            The root element is not a Style."
 
-#: ConfLoader.cpp:112 ConfLoader.cpp:1029 ConfLoader.cpp:1046
+#: ConfLoader.cpp:112 ConfLoader.cpp:1018 ConfLoader.cpp:1035
 msgid "Style "
 msgstr "Style "
 
@@ -303,717 +303,717 @@ msgstr "No tileMatrix found in the TileMatrixSet"
 msgid "             Ajout de la pyramide : "
 msgstr "             Adding pyramid : "
 
-#: ConfLoader.cpp:545 ConfLoader.cpp:947
+#: ConfLoader.cpp:545 ConfLoader.cpp:936
 msgid "           BaseDir Relative to : "
 msgstr "           BaseDir Relative to : "
 
-#: ConfLoader.cpp:562 ConfLoader.cpp:975 ConfLoader.cpp:1364
-#: ConfLoader.cpp:1699
+#: ConfLoader.cpp:559 ConfLoader.cpp:964 ConfLoader.cpp:1353
+#: ConfLoader.cpp:1688
 msgid " impossible de recuperer la racine."
 msgstr "Root element not availlable."
 
-#: ConfLoader.cpp:566
+#: ConfLoader.cpp:563
 msgid " La racine n'est pas une Pyramid."
 msgstr "The root element is not a Pyramid"
 
-#: ConfLoader.cpp:573 ConfLoader.cpp:580 ConfLoader.cpp:587 ConfLoader.cpp:605
-#: ConfLoader.cpp:609
+#: ConfLoader.cpp:570 ConfLoader.cpp:577 ConfLoader.cpp:584 ConfLoader.cpp:602
+#: ConfLoader.cpp:606
 msgid "La pyramide ["
 msgstr "the pyramid ["
 
-#: ConfLoader.cpp:573
+#: ConfLoader.cpp:570
 msgid "] n'a pas de TMS. C'est un probleme."
 msgstr "] do not reference a TMS. Problem"
 
-#: ConfLoader.cpp:580
+#: ConfLoader.cpp:577
 msgid "] reference un TMS ["
 msgstr "] reference a TMS ["
 
-#: ConfLoader.cpp:580
+#: ConfLoader.cpp:577
 msgid "] qui n'existe pas."
 msgstr "] not availlable"
 
-#: ConfLoader.cpp:587
+#: ConfLoader.cpp:584
 msgid "] n'a pas de format."
 msgstr "] do not declare a format"
 
-#: ConfLoader.cpp:598
+#: ConfLoader.cpp:595
 msgid "Le format ["
 msgstr "The format ["
 
-#: ConfLoader.cpp:598
+#: ConfLoader.cpp:595
 msgid "] n'est pas gere."
 msgstr "] is not handled."
 
-#: ConfLoader.cpp:605
+#: ConfLoader.cpp:602
 msgid "] Pas de channels => channels = "
 msgstr "] No channels, using default value ="
 
-#: ConfLoader.cpp:609
+#: ConfLoader.cpp:606
 msgid "] : channels=["
 msgstr "] : channels=["
 
-#: ConfLoader.cpp:609 ConfLoader.cpp:671 ConfLoader.cpp:762 ConfLoader.cpp:772
-#: ConfLoader.cpp:791 ConfLoader.cpp:806 ConfLoader.cpp:822 ConfLoader.cpp:837
-#: ConfLoader.cpp:1430
+#: ConfLoader.cpp:606 ConfLoader.cpp:664 ConfLoader.cpp:751 ConfLoader.cpp:761
+#: ConfLoader.cpp:780 ConfLoader.cpp:795 ConfLoader.cpp:811 ConfLoader.cpp:826
+#: ConfLoader.cpp:1419
 msgid "] is not an integer."
 msgstr "] is not an integer."
 
-#: ConfLoader.cpp:637
+#: ConfLoader.cpp:630
 msgid " level "
 msgstr " level "
 
-#: ConfLoader.cpp:637
+#: ConfLoader.cpp:630
 msgid "id"
 msgstr "id"
 
-#: ConfLoader.cpp:637
+#: ConfLoader.cpp:630
 msgid " sans tileMatrix!!"
 msgstr " without tileMatrix!!"
 
-#: ConfLoader.cpp:648
+#: ConfLoader.cpp:641
 msgid " Le level "
 msgstr "The level"
 
-#: ConfLoader.cpp:648
+#: ConfLoader.cpp:641
 msgid " ref. Le TM ["
 msgstr " reference the TileMatrix ["
 
-#: ConfLoader.cpp:648
+#: ConfLoader.cpp:641
 msgid "] qui n'appartient pas au TMS ["
 msgstr "] which is no availlable in the TileMatrixSet ["
 
-#: ConfLoader.cpp:667 ConfLoader.cpp:671 ConfLoader.cpp:758 ConfLoader.cpp:762
-#: ConfLoader.cpp:768 ConfLoader.cpp:772 ConfLoader.cpp:783 ConfLoader.cpp:787
-#: ConfLoader.cpp:791 ConfLoader.cpp:798 ConfLoader.cpp:802 ConfLoader.cpp:806
-#: ConfLoader.cpp:813 ConfLoader.cpp:817 ConfLoader.cpp:822 ConfLoader.cpp:829
-#: ConfLoader.cpp:833 ConfLoader.cpp:837 ConfLoader.cpp:873 ConfLoader.cpp:881
-#: ConfLoader.cpp:894 ConfLoader.cpp:900 ConfLoader.cpp:905
+#: ConfLoader.cpp:660 ConfLoader.cpp:664 ConfLoader.cpp:747 ConfLoader.cpp:751
+#: ConfLoader.cpp:757 ConfLoader.cpp:761 ConfLoader.cpp:772 ConfLoader.cpp:776
+#: ConfLoader.cpp:780 ConfLoader.cpp:787 ConfLoader.cpp:791 ConfLoader.cpp:795
+#: ConfLoader.cpp:802 ConfLoader.cpp:806 ConfLoader.cpp:811 ConfLoader.cpp:818
+#: ConfLoader.cpp:822 ConfLoader.cpp:826 ConfLoader.cpp:862 ConfLoader.cpp:870
+#: ConfLoader.cpp:883 ConfLoader.cpp:889 ConfLoader.cpp:894
 msgid " Level "
 msgstr " Level "
 
-#: ConfLoader.cpp:667
+#: ConfLoader.cpp:660
 msgid ": Pas de pathDepth !!"
 msgstr ": No pathDepth !!"
 
-#: ConfLoader.cpp:671
+#: ConfLoader.cpp:664
 msgid ": pathDepth=["
 msgstr ": pathDepth=["
 
-#: ConfLoader.cpp:758
+#: ConfLoader.cpp:747
 msgid ": Pas de tilesPerWidth !!"
 msgstr ": No tilesPerWidth!!"
 
-#: ConfLoader.cpp:762
+#: ConfLoader.cpp:751
 msgid ": tilesPerWidth=["
 msgstr ": tilesPerWidth=["
 
-#: ConfLoader.cpp:768
+#: ConfLoader.cpp:757
 msgid ": Pas de tilesPerHeight !!"
 msgstr ": No tilesPerHeight !!"
 
-#: ConfLoader.cpp:772
+#: ConfLoader.cpp:761
 msgid ": tilesPerHeight=["
 msgstr ": tilesPerHeight=["
 
-#: ConfLoader.cpp:783
+#: ConfLoader.cpp:772
 msgid ": no minTileRow in TMSLimits element !!"
 msgstr ": no minTileRow in TMSLimits element !!"
 
-#: ConfLoader.cpp:787
+#: ConfLoader.cpp:776
 msgid ": minTileRow is empty !!"
 msgstr ": minTileRow is empty !!"
 
-#: ConfLoader.cpp:791
+#: ConfLoader.cpp:780
 msgid ": minTileRow=["
 msgstr ": minTileRow=["
 
-#: ConfLoader.cpp:798
+#: ConfLoader.cpp:787
 msgid ": no maxTileRow in TMSLimits element !!"
 msgstr ": no maxTileRow in TMSLimits element !!"
 
-#: ConfLoader.cpp:802
+#: ConfLoader.cpp:791
 msgid ": maxTileRow is empty !!"
 msgstr ": maxTileRow is empty !!"
 
-#: ConfLoader.cpp:806
+#: ConfLoader.cpp:795
 msgid ": maxTileRow=["
 msgstr ": maxTileRow=["
 
-#: ConfLoader.cpp:813
+#: ConfLoader.cpp:802
 msgid ": no minTileCol in TMSLimits element !!"
 msgstr ": no minTileCol in TMSLimits element !!"
 
-#: ConfLoader.cpp:817
+#: ConfLoader.cpp:806
 msgid ": minTileCol is empty !!"
 msgstr ": minTileCol is empty !!"
 
-#: ConfLoader.cpp:822
+#: ConfLoader.cpp:811
 msgid ": minTileCol=["
 msgstr ": minTileCol=["
 
-#: ConfLoader.cpp:829
+#: ConfLoader.cpp:818
 msgid ": no maxTileCol in TMSLimits element !!"
 msgstr ": no maxTileCol in TMSLimits element !!"
 
-#: ConfLoader.cpp:833
+#: ConfLoader.cpp:822
 msgid ": maxTileCol is empty !!"
 msgstr ": maxTileCol is empty !!"
 
-#: ConfLoader.cpp:837
+#: ConfLoader.cpp:826
 msgid ": maxTileCol=["
 msgstr ": maxTileCol=["
 
-#: ConfLoader.cpp:873
+#: ConfLoader.cpp:862
 #, fuzzy
 msgid " specifiant une tuile NoData impossible a ouvrir"
 msgstr " specifying a NoData tile without path"
 
-#: ConfLoader.cpp:881
+#: ConfLoader.cpp:870
 msgid " specifiant une tuile NoData sans chemin"
 msgstr " specifying a NoData tile without path"
 
-#: ConfLoader.cpp:894
+#: ConfLoader.cpp:883
 #, fuzzy
 msgid " specifiant une tuile NoData sans nom"
 msgstr " specifying a NoData tile without path"
 
-#: ConfLoader.cpp:900
+#: ConfLoader.cpp:889
 msgid " sans indication de stockage pour la tuile de noData"
 msgstr ""
 
-#: ConfLoader.cpp:905
+#: ConfLoader.cpp:894
 msgid ""
 " sans indication de stockage pour la tuile de noData - Utilisez la balise "
 "<nodata>"
 msgstr ""
 
-#: ConfLoader.cpp:916
+#: ConfLoader.cpp:905
 msgid "Aucun level n'a pu etre charge pour la pyramide "
 msgstr "No level was loaded from the pyramid "
 
-#: ConfLoader.cpp:928 ConfLoader.cpp:1343 ConfLoader.cpp:2150
-#: ConfLoader.cpp:2246 ConfLoader.cpp:2405
+#: ConfLoader.cpp:917 ConfLoader.cpp:1332 ConfLoader.cpp:2139
+#: ConfLoader.cpp:2235 ConfLoader.cpp:2394
 msgid "Ne peut pas charger le fichier "
 msgstr "Can't load the file"
 
-#: ConfLoader.cpp:938
+#: ConfLoader.cpp:927
 msgid "     Ajout du layer "
 msgstr "     Adding layer "
 
-#: ConfLoader.cpp:979
+#: ConfLoader.cpp:968
 msgid " La racine n'est pas un layer."
 msgstr " the root element is not a layer."
 
-#: ConfLoader.cpp:1022
+#: ConfLoader.cpp:1011
 msgid "Pas de style => style = "
 msgstr "No style. Default value : style = "
 
-#: ConfLoader.cpp:1029 ConfLoader.cpp:1046
+#: ConfLoader.cpp:1018 ConfLoader.cpp:1035
 msgid "non defini"
 msgstr "undefined"
 
-#: ConfLoader.cpp:1051
+#: ConfLoader.cpp:1040
 msgid "Pas de Style defini, Layer non valide"
 msgstr "No Style defined, invalid layer"
 
-#: ConfLoader.cpp:1059
+#: ConfLoader.cpp:1048
 msgid "La resolution min est inexploitable:["
 msgstr "The min resolution is unusable :["
 
-#: ConfLoader.cpp:1067
+#: ConfLoader.cpp:1056
 msgid "La resolution max est inexploitable:["
 msgstr "The max resolution is unusable :["
 
-#: ConfLoader.cpp:1073
+#: ConfLoader.cpp:1062
 msgid "Pas de geographicBoundingBox = "
 msgstr "No geographicBoundingBox = "
 
-#: ConfLoader.cpp:1079
+#: ConfLoader.cpp:1068
 msgid "Pas de westBoundLongitude"
 msgstr "No westBoundLongitude"
 
-#: ConfLoader.cpp:1083
+#: ConfLoader.cpp:1072
 msgid "Le westBoundLongitude est inexploitable:["
 msgstr "The westBoundLongitude is unusable :["
 
-#: ConfLoader.cpp:1089
+#: ConfLoader.cpp:1078
 msgid "Pas de southBoundLatitude"
 msgstr "No southBoundLatitude"
 
-#: ConfLoader.cpp:1093
+#: ConfLoader.cpp:1082
 msgid "Le southBoundLatitude est inexploitable:["
 msgstr "The southBoundLatitude is unusable :["
 
-#: ConfLoader.cpp:1099
+#: ConfLoader.cpp:1088
 msgid "Pas de eastBoundLongitude"
 msgstr "No eastBoundLongitude"
 
-#: ConfLoader.cpp:1103
+#: ConfLoader.cpp:1092
 msgid "Le eastBoundLongitude est inexploitable:["
 msgstr "The eastBoundLongitude is unusable :["
 
-#: ConfLoader.cpp:1109
+#: ConfLoader.cpp:1098
 msgid "Pas de northBoundLatitude"
 msgstr "No northBoundLatitude"
 
-#: ConfLoader.cpp:1113
+#: ConfLoader.cpp:1102
 msgid "Le northBoundLatitude est inexploitable:["
 msgstr "The northBoundLatitude is unusable :["
 
-#: ConfLoader.cpp:1120
+#: ConfLoader.cpp:1109
 msgid "Pas de BoundingBox"
 msgstr "No BoundingBox"
 
-#: ConfLoader.cpp:1123
+#: ConfLoader.cpp:1112
 msgid "Le CRS est inexploitable:["
 msgstr "The CRS is unusable :["
 
-#: ConfLoader.cpp:1128
+#: ConfLoader.cpp:1117
 msgid "minx attribute is missing"
 msgstr "minx attribute is missing"
 
-#: ConfLoader.cpp:1132
+#: ConfLoader.cpp:1121
 msgid "Le minx est inexploitable:["
 msgstr "The minx is unusable :["
 
-#: ConfLoader.cpp:1136
+#: ConfLoader.cpp:1125
 msgid "miny attribute is missing"
 msgstr "miny attribute is missing"
 
-#: ConfLoader.cpp:1140
+#: ConfLoader.cpp:1129
 msgid "Le miny est inexploitable:["
 msgstr "The miny is unusable :["
 
-#: ConfLoader.cpp:1144
+#: ConfLoader.cpp:1133
 msgid "maxx attribute is missing"
 msgstr "maxx attribute is missing"
 
-#: ConfLoader.cpp:1148
+#: ConfLoader.cpp:1137
 msgid "Le maxx est inexploitable:["
 msgstr "The maxx is unusable :["
 
-#: ConfLoader.cpp:1152
+#: ConfLoader.cpp:1141
 msgid "maxy attribute is missing"
 msgstr "maxy attribute is missing"
 
-#: ConfLoader.cpp:1156
+#: ConfLoader.cpp:1145
 msgid "Le maxy est inexploitable:["
 msgstr "The maxy is unusable :["
 
-#: ConfLoader.cpp:1170
+#: ConfLoader.cpp:1159
 msgid "Le CRS "
 msgstr "The CRS"
 
-#: ConfLoader.cpp:1170
+#: ConfLoader.cpp:1159
 msgid ""
 " n est pas reconnu par Proj4 et n est donc par ajoute aux CRS de la couche"
 msgstr ""
 "isn't recognised by Proj, it would not be added to the layer supported CRS "
 "list."
 
-#: ConfLoader.cpp:1178
+#: ConfLoader.cpp:1167
 msgid "         CRS "
 msgstr "         CRS "
 
-#: ConfLoader.cpp:1178
+#: ConfLoader.cpp:1167
 msgid " already present in global CRS list"
 msgstr " already present in global CRS list"
 
-#: ConfLoader.cpp:1186
+#: ConfLoader.cpp:1175
 #, fuzzy
 msgid "         Le CRS "
 msgstr "         CRS "
 
-#: ConfLoader.cpp:1186
+#: ConfLoader.cpp:1175
 msgid " n est pas compatible avec l'emprise de la couche"
 msgstr " is not compatible with the layer definition boundingbox"
 
-#: ConfLoader.cpp:1201
+#: ConfLoader.cpp:1190
 #, fuzzy
 msgid "         Forbiden CRS "
 msgstr "         Adding CRS "
 
-#: ConfLoader.cpp:1215
+#: ConfLoader.cpp:1204
 msgid "         Adding CRS "
 msgstr "         Adding CRS "
 
-#: ConfLoader.cpp:1218 ConfLoader.cpp:1233
+#: ConfLoader.cpp:1207 ConfLoader.cpp:1222
 #, fuzzy
 msgid "         Already present CRS "
 msgstr "         Adding CRS "
 
-#: ConfLoader.cpp:1231
+#: ConfLoader.cpp:1220
 #, fuzzy
 msgid "         Adding Equivalent CRS "
 msgstr "         Adding CRS "
 
-#: ConfLoader.cpp:1241
+#: ConfLoader.cpp:1230
 msgid ": Aucun CRS specifique autorise pour la couche"
 msgstr ": No specific CRS autorised for the layer"
 
-#: ConfLoader.cpp:1247
+#: ConfLoader.cpp:1236
 msgid "Pas de opaque => opaque = "
 msgstr "No opaque => opaque = "
 
-#: ConfLoader.cpp:1256
+#: ConfLoader.cpp:1245
 msgid "le param opaque n'est pas exploitable:["
 msgstr ""
 
-#: ConfLoader.cpp:1268
+#: ConfLoader.cpp:1257
 msgid "Pas de resampling => resampling = "
 msgstr ""
 
-#: ConfLoader.cpp:1289
+#: ConfLoader.cpp:1278
 msgid "La pyramide "
 msgstr ""
 
-#: ConfLoader.cpp:1289
+#: ConfLoader.cpp:1278
 msgid " ne peut etre chargee"
 msgstr ""
 
-#: ConfLoader.cpp:1294
+#: ConfLoader.cpp:1283
 msgid "Aucune pyramide associee au layer "
 msgstr ""
 
-#: ConfLoader.cpp:1305
+#: ConfLoader.cpp:1294
 msgid "MetadataURL type missing"
 msgstr ""
 
-#: ConfLoader.cpp:1312
+#: ConfLoader.cpp:1301
 msgid "MetadataURL Format missing"
 msgstr ""
 
-#: ConfLoader.cpp:1318
+#: ConfLoader.cpp:1307
 msgid "MetadataURL HRef missing"
 msgstr ""
 
-#: ConfLoader.cpp:1326
+#: ConfLoader.cpp:1315
 msgid "No MetadataURL found in the layer "
 msgstr ""
 
-#: ConfLoader.cpp:1326
+#: ConfLoader.cpp:1315
 msgid " : not compatible with INSPIRE!!"
 msgstr ""
 
-#: ConfLoader.cpp:1368
+#: ConfLoader.cpp:1357
 msgid " La racine n'est pas un serverConf."
 msgstr ""
 
-#: ConfLoader.cpp:1375
+#: ConfLoader.cpp:1364
 msgid "Pas de logOutput => logOutput = "
 msgstr ""
 
-#: ConfLoader.cpp:1386
+#: ConfLoader.cpp:1375
 msgid "Le logOutput ["
 msgstr ""
 
-#: ConfLoader.cpp:1386 ConfLoader.cpp:1420
+#: ConfLoader.cpp:1375 ConfLoader.cpp:1409
 msgid "]  est inconnu."
 msgstr ""
 
-#: ConfLoader.cpp:1393
+#: ConfLoader.cpp:1382
 msgid "Pas de logFilePrefix => logFilePrefix = "
 msgstr ""
 
-#: ConfLoader.cpp:1400
+#: ConfLoader.cpp:1389
 msgid "Pas de logFilePeriod => logFilePeriod = "
 msgstr ""
 
-#: ConfLoader.cpp:1403 ConfLoader.cpp:1563
+#: ConfLoader.cpp:1392 ConfLoader.cpp:1552
 msgid "Le logFilePeriod ["
 msgstr ""
 
-#: ConfLoader.cpp:1403 ConfLoader.cpp:1563
+#: ConfLoader.cpp:1392 ConfLoader.cpp:1552
 msgid "]  is not an integer."
 msgstr ""
 
-#: ConfLoader.cpp:1410
+#: ConfLoader.cpp:1399
 msgid "Pas de logLevel => logLevel = "
 msgstr ""
 
-#: ConfLoader.cpp:1420
+#: ConfLoader.cpp:1409
 msgid "Le logLevel ["
 msgstr ""
 
-#: ConfLoader.cpp:1427
+#: ConfLoader.cpp:1416
 msgid "Pas de nbThread => nbThread = "
 msgstr ""
 
-#: ConfLoader.cpp:1430
+#: ConfLoader.cpp:1419
 msgid "Le nbThread ["
 msgstr ""
 
-#: ConfLoader.cpp:1436
+#: ConfLoader.cpp:1425
 msgid "Pas de WMTSSupport => supportWMTS = true"
 msgstr ""
 
-#: ConfLoader.cpp:1443
+#: ConfLoader.cpp:1432
 msgid "Le WMTSSupport ["
 msgstr ""
 
-#: ConfLoader.cpp:1443 ConfLoader.cpp:1457 ConfLoader.cpp:1477
+#: ConfLoader.cpp:1432 ConfLoader.cpp:1446 ConfLoader.cpp:1466
 msgid "] n'est pas un booleen."
 msgstr ""
 
-#: ConfLoader.cpp:1450
+#: ConfLoader.cpp:1439
 msgid "Pas de WMSSupport => supportWMS = true"
 msgstr ""
 
-#: ConfLoader.cpp:1457
+#: ConfLoader.cpp:1446
 msgid "Le WMSSupport ["
 msgstr ""
 
-#: ConfLoader.cpp:1463
+#: ConfLoader.cpp:1452
 msgid "WMTS et WMS desactives, extinction du serveur"
 msgstr ""
 
-#: ConfLoader.cpp:1470
+#: ConfLoader.cpp:1459
 msgid "Pas de reprojectionCapability => reprojectionCapability = true"
 msgstr ""
 
-#: ConfLoader.cpp:1477
+#: ConfLoader.cpp:1466
 msgid "Le reprojectionCapability ["
 msgstr ""
 
-#: ConfLoader.cpp:1487
+#: ConfLoader.cpp:1476
 msgid "Pas de servicesConfigFile => servicesConfigFile = "
 msgstr ""
 
-#: ConfLoader.cpp:1495
+#: ConfLoader.cpp:1484
 msgid "Pas de layerDir => layerDir = "
 msgstr ""
 
-#: ConfLoader.cpp:1503
+#: ConfLoader.cpp:1492
 msgid "Pas de tileMatrixSetDir => tileMatrixSetDir = "
 msgstr ""
 
-#: ConfLoader.cpp:1511
+#: ConfLoader.cpp:1500
 msgid "Pas de styleDir => styleDir = "
 msgstr ""
 
-#: ConfLoader.cpp:1522
+#: ConfLoader.cpp:1511
 msgid "Pas de projConfigDir => projConfigDir = "
 msgstr ""
 
-#: ConfLoader.cpp:1543
+#: ConfLoader.cpp:1532
 msgid "ERREUR FATALE : Impossible de definir le chemin pour proj "
 msgstr ""
 
-#: ConfLoader.cpp:1546
+#: ConfLoader.cpp:1535
 msgid "Env : PROJ_LIB = "
 msgstr ""
 
-#: ConfLoader.cpp:1551
+#: ConfLoader.cpp:1540
 msgid "Pas d'element <serverPort> fonctionnement autonome impossible"
 msgstr ""
 
-#: ConfLoader.cpp:1554
+#: ConfLoader.cpp:1543
 msgid ""
 "Element <serverPort> : Lancement interne impossible (Apache, spawn-fcgi)"
 msgstr ""
 
-#: ConfLoader.cpp:1560
+#: ConfLoader.cpp:1549
 msgid "Pas d'element <serverBackLog> valeur par defaut : 0"
 msgstr ""
 
-#: ConfLoader.cpp:1703
+#: ConfLoader.cpp:1692
 msgid " La racine n'est pas un servicesConf."
 msgstr ""
 
-#: ConfLoader.cpp:1781
+#: ConfLoader.cpp:1770
 msgid "Requete POST autorisee"
 msgstr ""
 
-#: ConfLoader.cpp:1847
+#: ConfLoader.cpp:1836
 msgid "Le layerLimit est inexploitable:["
 msgstr ""
 
-#: ConfLoader.cpp:1855
+#: ConfLoader.cpp:1844
 msgid "Le maxWidth est inexploitable:["
 msgstr ""
 
-#: ConfLoader.cpp:1863
+#: ConfLoader.cpp:1852
 msgid "Le maxHeight est inexploitable:["
 msgstr ""
 
-#: ConfLoader.cpp:1871
+#: ConfLoader.cpp:1860
 msgid "Le maxTileX est inexploitable:["
 msgstr ""
 
-#: ConfLoader.cpp:1879
+#: ConfLoader.cpp:1868
 msgid "Le maxTileY est inexploitable:["
 msgstr ""
 
-#: ConfLoader.cpp:1893
+#: ConfLoader.cpp:1882
 msgid "le format d'image ["
 msgstr ""
 
-#: ConfLoader.cpp:1893
+#: ConfLoader.cpp:1882
 msgid "] n'est pas un type MIME"
 msgstr ""
 
-#: ConfLoader.cpp:1903
+#: ConfLoader.cpp:1892
 msgid "Pas de reprojection pour les CRS equivalents"
 msgstr ""
 
-#: ConfLoader.cpp:1913
+#: ConfLoader.cpp:1902
 msgid "Ajout automatique des CRS equivalents"
 msgstr ""
 
-#: ConfLoader.cpp:1926
+#: ConfLoader.cpp:1915
 msgid "Liste restreinte de CRS à partir du fichier "
 msgstr ""
 
-#: ConfLoader.cpp:1941
+#: ConfLoader.cpp:1930
 msgid "The CRS ["
 msgstr ""
 
-#: ConfLoader.cpp:1941 ConfLoader.cpp:2128 ConfLoader.cpp:2195
+#: ConfLoader.cpp:1930 ConfLoader.cpp:2117 ConfLoader.cpp:2184
 msgid "] is not present in Proj4"
 msgstr ""
 
-#: ConfLoader.cpp:1961
+#: ConfLoader.cpp:1950
 msgid "Adding global CRS "
 msgstr ""
 
-#: ConfLoader.cpp:1963 ConfLoader.cpp:1977
+#: ConfLoader.cpp:1952 ConfLoader.cpp:1966
 #, fuzzy
 msgid "Already present in global CRS list "
 msgstr " already present in global CRS list"
 
-#: ConfLoader.cpp:1975 ConfLoader.cpp:2001
+#: ConfLoader.cpp:1964 ConfLoader.cpp:1990
 msgid "Adding equivalent global CRS ["
 msgstr ""
 
-#: ConfLoader.cpp:1975 ConfLoader.cpp:2195
+#: ConfLoader.cpp:1964 ConfLoader.cpp:2184
 msgid "] of ["
 msgstr ""
 
-#: ConfLoader.cpp:1981
+#: ConfLoader.cpp:1970
 msgid "Forbiden global CRS "
 msgstr ""
 
-#: ConfLoader.cpp:1996
+#: ConfLoader.cpp:1985
 msgid "CRS:84 not found -> adding global CRS CRS:84"
 msgstr ""
 
-#: ConfLoader.cpp:2001
+#: ConfLoader.cpp:1990
 msgid "] of [CRS:84]"
 msgstr ""
 
-#: ConfLoader.cpp:2010
+#: ConfLoader.cpp:1999
 msgid "Utilisation des styles pour tous les formats"
 msgstr ""
 
-#: ConfLoader.cpp:2025
+#: ConfLoader.cpp:2014
 msgid "Utilisation du mode Inspire"
 msgstr ""
 
-#: ConfLoader.cpp:2038 ConfLoader.cpp:2041 ConfLoader.cpp:2048
-#: ConfLoader.cpp:2051 ConfLoader.cpp:2064 ConfLoader.cpp:2067
-#: ConfLoader.cpp:2074 ConfLoader.cpp:2077
+#: ConfLoader.cpp:2027 ConfLoader.cpp:2030 ConfLoader.cpp:2037
+#: ConfLoader.cpp:2040 ConfLoader.cpp:2053 ConfLoader.cpp:2056
+#: ConfLoader.cpp:2063 ConfLoader.cpp:2066
 msgid "Metadata element incorrect"
 msgstr ""
 
-#: ConfLoader.cpp:2104
+#: ConfLoader.cpp:2093
 msgid "Construction de la liste des CRS equivalents depuis "
 msgstr ""
 
-#: ConfLoader.cpp:2128 ConfLoader.cpp:2195
+#: ConfLoader.cpp:2117 ConfLoader.cpp:2184
 #, fuzzy
 msgid "The Equivalent CRS ["
 msgstr "         Adding CRS "
 
-#: ConfLoader.cpp:2150
+#: ConfLoader.cpp:2139
 msgid " ou fichier vide"
 msgstr ""
 
-#: ConfLoader.cpp:2243
+#: ConfLoader.cpp:2232
 msgid "Chargement des parametres techniques depuis "
 msgstr ""
 
-#: ConfLoader.cpp:2255
+#: ConfLoader.cpp:2244
 msgid "CHARGEMENT DES STYLES"
 msgstr "LOADING STYLES"
 
-#: ConfLoader.cpp:2264
+#: ConfLoader.cpp:2253
 msgid "Le repertoire des Styles "
 msgstr ""
 
-#: ConfLoader.cpp:2264 ConfLoader.cpp:2313 ConfLoader.cpp:2364
+#: ConfLoader.cpp:2253 ConfLoader.cpp:2302 ConfLoader.cpp:2353
 msgid " n'est pas accessible."
 msgstr ""
 
-#: ConfLoader.cpp:2279
+#: ConfLoader.cpp:2268
 msgid "Aucun fichier *.stl dans le repertoire "
 msgstr ""
 
-#: ConfLoader.cpp:2290
+#: ConfLoader.cpp:2279
 msgid "Ne peut charger le style: "
 msgstr ""
 
-#: ConfLoader.cpp:2295
+#: ConfLoader.cpp:2284
 msgid "Aucun Style n'a pu etre charge!"
 msgstr ""
 
-#: ConfLoader.cpp:2299
+#: ConfLoader.cpp:2288
 msgid "NOMBRE DE STYLES CHARGES : "
 msgstr "NUMBER OF LOADED STYLES: "
 
-#: ConfLoader.cpp:2305
+#: ConfLoader.cpp:2294
 msgid "CHARGEMENT DES TMS"
 msgstr "LOADING TMS"
 
-#: ConfLoader.cpp:2313
+#: ConfLoader.cpp:2302
 msgid "Le repertoire des TMS "
 msgstr ""
 
-#: ConfLoader.cpp:2329
+#: ConfLoader.cpp:2318
 msgid "Aucun fichier *.tms dans le repertoire "
 msgstr ""
 
-#: ConfLoader.cpp:2340
+#: ConfLoader.cpp:2329
 msgid "Ne peut charger le tms: "
 msgstr ""
 
-#: ConfLoader.cpp:2345
+#: ConfLoader.cpp:2334
 msgid "Aucun TMS n'a pu etre charge!"
 msgstr ""
 
-#: ConfLoader.cpp:2349
+#: ConfLoader.cpp:2338
 msgid "NOMBRE DE TMS CHARGES : "
 msgstr "NUMBER OF LOADED TMS: "
 
-#: ConfLoader.cpp:2357
+#: ConfLoader.cpp:2346
 msgid "CHARGEMENT DES LAYERS"
 msgstr "LOADING LAYERS"
 
-#: ConfLoader.cpp:2364
+#: ConfLoader.cpp:2353
 msgid "Le repertoire "
 msgstr ""
 
-#: ConfLoader.cpp:2376
+#: ConfLoader.cpp:2365
 msgid "Aucun fichier *.lay dans le repertoire "
 msgstr ""
 
-#: ConfLoader.cpp:2377
+#: ConfLoader.cpp:2366
 msgid "Le serveur n'a aucune donnees à servir. Dommage..."
 msgstr ""
 
-#: ConfLoader.cpp:2388
+#: ConfLoader.cpp:2377
 msgid "Ne peut charger le layer: "
 msgstr ""
 
-#: ConfLoader.cpp:2393
+#: ConfLoader.cpp:2382
 msgid "Aucun layer n'a pu etre charge!"
 msgstr ""
 
-#: ConfLoader.cpp:2397
+#: ConfLoader.cpp:2386
 msgid "NOMBRE DE LAYERS CHARGES : "
 msgstr "NUMBER OF LOADED LAYERS: "
 
-#: ConfLoader.cpp:2402
+#: ConfLoader.cpp:2391
 msgid "Construction de la configuration des services depuis "
 msgstr ""
 

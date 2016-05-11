@@ -101,7 +101,6 @@ public:
     
     bool exists(std::string name) {
 
-        std::cout << "Test existence " << pool_name << " / " << name << std::endl;
 
         char data[1];
         int readSize = rados_read(io_ctx, name.c_str(), data, 1, 0);
@@ -148,7 +147,6 @@ public:
     
     virtual ~CephPoolContext() {
 
-        std::cout << "Fermeture du contexte Ceph de pool " << pool_name << std::endl;
 
         rados_aio_flush(io_ctx);
         rados_ioctx_destroy(io_ctx);

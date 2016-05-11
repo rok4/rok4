@@ -200,7 +200,6 @@ int main ( int argc, char **argv ) {
     contextinput = new FileContext("");
 
 
-    contextinput->print();
     if (! contextinput->connection()) {
         error("Unable to connect context", -1);
     }
