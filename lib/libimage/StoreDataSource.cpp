@@ -89,7 +89,7 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
         // On retourne tout l'objet
         data = new uint8_t[maxsize];
         int tileSize = context->read(data, 0, maxsize, name);
-        if (tile_size < 0) {
+        if (tileSize < 0) {
             LOGGER_ERROR ( "Erreur lors de la lecture de la tuile = objet " << name );
             return 0;
         }
