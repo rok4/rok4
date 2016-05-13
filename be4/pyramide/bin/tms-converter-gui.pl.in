@@ -1,0 +1,400 @@
+#!/usr/bin/env perl
+# Copyright © (2011) Institut national de l'information
+#                    géographique et forestière
+#
+# Géoportail SAV <geop_services@geoportail.fr>
+#
+# This software is a computer program whose purpose is to publish geographic
+# data using OGC WMS and WMTS protocol.
+#
+# This software is governed by the CeCILL-C license under French law and
+# abiding by the rules of distribution of free software.  You can  use,
+# modify and/ or redistribute the software under the terms of the CeCILL-C
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "http://www.cecill.info".
+#
+# As a counterpart to the access to the source code and  rights to copy,
+# modify and redistribute granted by the license, users are provided only
+# with a limited warranty  and the software's author,  the holder of the
+# economic rights,  and the successive licensors  have only  limited
+# liability.
+#
+# In this respect, the user's attention is drawn to the risks associated
+# with loading,  using,  modifying and/or developing or reproducing the
+# software by the user in light of its specific status of free software,
+# that may mean  that it is complicated to manipulate,  and  that  also
+# therefore means  that it is reserved for developers  and  experienced
+# professionals having in-depth computer knowledge. Users are therefore
+# encouraged to load and test the software's suitability as regards their
+# requirements in conditions enabling the security of their systems and/or
+# data to be ensured and,  more generally, to use and operate it in the
+# same conditions as regards security.
+#
+# The fact that you are presently reading this means that you have had
+#
+# knowledge of the CeCILL-C license and that you accept its terms.
+
+################################################################################
+
+=begin nd
+File: tms-converter-gui.pl
+
+Section: TMS-CONVERTER tool
+
+Synopsis:
+    (start code)
+    perl tms-converter-gui.pl
+    (end code)
+=cut
+
+################################################################################
+
+
+use warnings; 
+use strict; 
+use utf8;
+use POSIX qw(locale_h);
+
+# Module
+use Tk;
+use Tk::FileSelect;
+use Tk::NoteBook;
+use Tk::EntryCheck;
+use Tk::LabFrame;
+use Tk::ROText;
+use Tk::Table;
+
+# My search module
+use FindBin qw($Bin);
+use lib "$Bin/../lib/perl5";
+
+# My module
+use BE4::TileMatrixSet ;
+use BE4::Base36 ;
+
+###################################################################################################
+######################################## Global variables #########################################
+###################################################################################################
+  
+my $tmsFileName = '';
+my $tmsObject;
+
+###################################################################################################
+############################################ Interface ############################################
+###################################################################################################
+
+######################## Fenêtre principale
+
+my $mainWindow = new MainWindow( 
+    -title      => 'TMS Converter', 
+    -background => 'grey', 
+);
+
+$mainWindow->minsize( 600, 400 ); 
+
+
+my $commonLabFrame = $mainWindow->LabFrame( 
+    -label => 'Common parameters',
+    -background =>  'white'
+)->pack( -fill => 'both' );
+
+
+######################## Pour entrer le TMS
+
+## La ligne : label + entry + button + button
+
+my $tmsFrame = $commonLabFrame->Frame( 
+    -background =>  'white'
+)->pack( -fill => 'both' ); 
+
+my $tmsFileSelect = $mainWindow->FileSelect(
+    -title => "Open tile matrix set file",
+    -directory => $ENV{'HOME'}
+);
+$tmsFileSelect->minsize( 600, 400 );
+
+my $tmsLabel = $tmsFrame->Label( -background =>  'white', -text => 'TMS file: ' )->pack( -side => 'left'); 
+
+my $tmsEntry = $tmsFrame->Entry( )->pack( -side => 'left', -fill => 'both', -expand => 1);
+
+my $tmsButton = $tmsFrame->Button(
+    -text => 'Browse...',
+    -command => \&openTmsBrowser,
+) ->pack( -side => 'left', -fill => 'both');
+
+$tmsFrame->Label( -background =>  'white',  -text => '  ' )->pack( -side => 'left', -expand => 1); 
+
+
+######################## Pour entrer la taille d'une dalle
+
+## La ligne : label + entry + label + entry
+
+my $slabSizeFrame = $commonLabFrame->Frame( 
+    -background =>  'white'
+)->pack( -fill => 'both' ); 
+
+
+my $slabSizeLabel1 = $slabSizeFrame->Label( -background =>  'white',  -text => 'Slab size (in tile number): widthwise' )->pack( -side => 'left'); 
+my $widthEntry = $slabSizeFrame->EntryCheck(-pattern => qr/\d/)->pack( -side => 'left', -fill => 'both');
+$widthEntry->insert(0, '16');
+my $slabSizeLabel2 = $slabSizeFrame->Label( -background =>  'white',  -text => ', heightwise' )->pack( -side => 'left'); 
+my $heightEntry = $slabSizeFrame->EntryCheck(-pattern => qr/\d/)->pack( -side => 'left', -fill => 'both');
+$heightEntry->insert(0, '16');
+$slabSizeFrame->Label( -background =>  'white',  -text => '  ' )->pack( -side => 'left', -expand => 1); 
+
+
+######################## Pour les onglets
+
+my $ongletsFrame= $mainWindow->Frame(-background =>  'white')->pack( -fill => 'both' ); 
+
+my $ongletsNoteBook = $ongletsFrame->NoteBook( 
+    -backpagecolor => 'white', 
+    -inactivebackground => 'gray', 
+    -background => 'white'
+)->pack( -fill => 'both', -expand => 1 );
+
+###### onglet 1
+
+my $onglet1 = $ongletsNoteBook->add('onglet1', -label => 'Coord -> Tile / Slab');
+$onglet1->configure( -background => 'white');
+my $onglet1ParamsFrame= $onglet1->Frame(-background =>  'white')->pack( -fill => 'both' ); 
+my $onglet1ResultFrame= $onglet1->Frame(-background =>  'white')->pack( -fill => 'both', -expand => 1 ); 
+my $onglet1Text = $onglet1ResultFrame->ROText( )->pack( -side => 'left', -fill => 'both', -expand => 1);
+
+$onglet1ParamsFrame->Label( -background =>  'white',  -text => 'Level = ' )->pack( -side => 'left'); 
+my $onglet1LevelEntry = $onglet1ParamsFrame->EntryCheck(-pattern => qr/\d/)->pack( -side => 'left', -fill => 'x');
+$onglet1ParamsFrame->Label( -background =>  'white',  -text => ', X = ' )->pack( -side => 'left'); 
+my $onglet1XEntry = $onglet1ParamsFrame->EntryCheck(-pattern => qr/[-\.\d]/)->pack( -side => 'left', -fill => 'x');
+$onglet1ParamsFrame->Label( -background =>  'white',  -text => ', Y = ' )->pack( -side => 'left'); 
+my $onglet1YEntry = $onglet1ParamsFrame->EntryCheck(-pattern => qr/[-\.\d]/)->pack( -side => 'left', -fill => 'x');
+$onglet1ParamsFrame->Label( -background =>  'white',  -text => '  ' )->pack( -side => 'left', -expand => 1); 
+$onglet1ParamsFrame->Button(
+    -text => 'Calculate...',
+    -command => \&coord2image,
+) ->pack( -side => 'left', -fill => 'x');
+
+
+###### onglet 2
+my $onglet2 = $ongletsNoteBook->add('onglet2', -label => 'Bbox -> Tile(s) / Slab(s)');
+$onglet2->configure( -background => 'white');
+my $onglet2ParamsFrame= $onglet2->Frame(-background =>  'white')->pack( -fill => 'both' ); 
+my $onglet2ResultFrame= $onglet2->Frame(-background =>  'white')->pack( -fill => 'both', -expand => 1  ); 
+my $onglet2Text = $onglet2ResultFrame->ROText( )->pack( -side => 'left', -fill => 'both', -expand => 1);
+
+my $onglet2Table = $onglet2ParamsFrame->Table(
+    -background =>  'white',
+    -rows => 4,
+    -columns => 5,
+    -scrollbars => ''
+)->pack( -side => 'left', -fill => 'both', -expand => 1);
+
+my $onglet2LevelEntry = $onglet2Table->EntryCheck(-pattern => qr/\d/);
+my $onglet2XminEntry = $onglet2Table->EntryCheck(-pattern => qr/[-\.\d]/);
+my $onglet2YminEntry = $onglet2Table->EntryCheck(-pattern => qr/[-\.\d]/);
+my $onglet2XmaxEntry = $onglet2Table->EntryCheck(-pattern => qr/[-\.\d]/);
+my $onglet2YmaxEntry = $onglet2Table->EntryCheck(-pattern => qr/[-\.\d]/);
+my $onglet2Button = $onglet2Table->Button(
+    -text => 'Calculate...',
+    -command => \&bbox2images,
+);
+
+$onglet2Table->put(0,2, $onglet2YmaxEntry);
+$onglet2Table->put(0,1, $onglet2ParamsFrame->Label( -background =>  'white',  -text => "\t Ymax = " ));
+
+$onglet2Table->put(1,0, $onglet2ParamsFrame->Label( -background =>  'white',  -text => "\t Xmin = " ));
+$onglet2Table->put(1,1, $onglet2XminEntry);
+$onglet2Table->put(1,2, $onglet2ParamsFrame->Label( -background =>  'white',  -text => "\t Xmax = " ));
+$onglet2Table->put(1,3, $onglet2XmaxEntry);
+
+$onglet2Table->put(2,2, $onglet2YminEntry);
+$onglet2Table->put(2,1, $onglet2ParamsFrame->Label( -background =>  'white',  -text => "\t Ymin = " ));
+
+$onglet2Table->put(3,0, $onglet2ParamsFrame->Label( -background =>  'white',  -text => "\t Level = " ));
+$onglet2Table->put(3,1, $onglet2LevelEntry);
+$onglet2Table->put(3,4, $onglet2Button);
+
+
+###### onglet 3
+my $onglet3 = $ongletsNoteBook->add('onglet3', -label => 'GetTile -> Slab');
+$onglet3->configure( -background => 'white');
+
+###### onglet 4
+my $onglet4 = $ongletsNoteBook->add('onglet4', -label => 'Slab -> GetMap');
+$onglet4->configure( -background => 'white');
+
+###### onglet 5
+my $onglet5 = $ongletsNoteBook->add('onglet5', -label => 'Tile -> GetMap');
+$onglet5->configure( -background => 'white');
+
+
+
+
+###################################################################################################
+############################################ Main loop ############################################
+###################################################################################################
+
+MainLoop;
+
+###################################################################################################
+############################################ Functions ############################################
+###################################################################################################
+
+###### Globals
+
+sub openTmsBrowser {
+    $tmsFileName = $tmsFileSelect->Show();
+    if (defined $tmsFileName ) {
+        $tmsEntry->delete(0, length($tmsEntry->get()));
+        $tmsEntry->insert(0, $tmsFileName);
+    }
+}
+
+sub validateGlobals {
+
+    $tmsObject = BE4::TileMatrixSet->new($tmsFileName);
+    if (! defined $tmsObject) {
+        return "TMS not valid";
+    }
+
+    if (! defined $widthEntry->get() || $widthEntry->get() eq "" || $widthEntry->get() == 0) {
+        return "Slab width (in tiles) not valid";
+    }
+
+    if (! defined $heightEntry->get() || $heightEntry->get() eq "" || $heightEntry->get() == 0) {
+        return "Slab height (in tiles) not valid";
+    }  
+
+    return undef;
+}
+
+###### Coord -> Tile / Slab
+
+sub coord2image {
+    my $error = validateGlobals();
+    if (defined $error) {
+        my $resultBox = $mainWindow->messageBox( 
+            -icon    => 'error', 
+            -title   => 'Global parameters error', 
+            -type    => 'OK', 
+            -message => $error
+        );
+
+        return;
+    }
+
+    my $x = $onglet1XEntry->get();
+    my $y = $onglet1YEntry->get();
+    my $level = $onglet1LevelEntry->get();
+    if ( ! defined $x || ! defined $y || ! defined $level ) {
+        my $resultBox = $mainWindow->messageBox( 
+            -icon    => 'error', 
+            -title   => 'Parameters error', 
+            -type    => 'OK', 
+            -message => 'Coordinates or level undefined'
+        );
+
+        return;
+    } 
+
+    my $tm = $tmsObject->getTileMatrix($level);
+    if ( ! defined $tm ) {
+        my $resultBox = $mainWindow->messageBox( 
+            -icon    => 'error', 
+            -title   => 'Parameters error', 
+            -type    => 'OK', 
+            -message => "Tile matrix with ID $level doesn't exist"
+        );
+
+        return;
+    } 
+
+    my $txt = "Level : $level, Coordinates : $x, $y \n";
+
+    my ($colMin,$rowMin,$colMax,$rowMax) = $tm->bboxToIndices($x, $y, $x, $y, 1, 1);
+
+    $txt .= "Tile's indices : $colMin, $rowMin \n";
+
+    ($colMin,$rowMin,$colMax,$rowMax) = $tm->bboxToIndices($x, $y, $x, $y, $widthEntry->get(), $heightEntry->get());
+
+    $txt .= "Slab's indices : $colMin, $rowMin \n";
+
+    my $image_path = BE4::Base36::indicesToB36Path($colMin, $rowMin, 3);
+
+    $txt .= "Slab's file path : $level/$image_path.tif \n";
+
+    $onglet1Text->selectAll();
+    $onglet1Text->deleteSelected();
+    $onglet1Text->insert('end',$txt);
+}
+
+
+
+###### Bbox -> Tile(s) / Slab(s)
+
+sub bbox2images {
+    my $error = validateGlobals();
+    if (defined $error) {
+        my $resultBox = $mainWindow->messageBox( 
+            -icon    => 'error', 
+            -title   => 'Global parameters error', 
+            -type    => 'OK', 
+            -message => $error
+        );
+
+        return;
+    }
+
+    my $xmin = $onglet2XminEntry->get();
+    my $ymin = $onglet2YminEntry->get();
+    my $xmax = $onglet2XmaxEntry->get();
+    my $ymax = $onglet2YmaxEntry->get();
+
+    my $level = $onglet2LevelEntry->get();
+    if ( ! defined $xmin || ! defined $ymin || ! defined $xmax || ! defined $ymax || ! defined $level ) {
+        my $resultBox = $mainWindow->messageBox( 
+            -icon    => 'error', 
+            -title   => 'Parameters error', 
+            -type    => 'OK', 
+            -message => 'Coordinates or level undefined'
+        );
+
+        return;
+    } 
+
+    my $tm = $tmsObject->getTileMatrix($level);
+    if ( ! defined $tm ) {
+        my $resultBox = $mainWindow->messageBox( 
+            -icon    => 'error', 
+            -title   => 'Parameters error', 
+            -type    => 'OK', 
+            -message => "Tile matrix with ID $level doesn't exist"
+        );
+
+        return;
+    } 
+
+    my $txt = "Level : $level, Coordinates : $xmin, $ymin -> $xmax, $ymax \n";
+
+    my ($colMin,$rowMin,$colMax,$rowMax) = $tm->bboxToIndices($xmin, $ymin, $xmax, $ymax, 1, 1);
+
+    $txt .= "Tiles' indices : \n \t column : $colMin -> $colMax \n \t row : $rowMin -> $rowMax \n";
+
+    ($colMin,$rowMin,$colMax,$rowMax) = $tm->bboxToIndices($xmin, $ymin, $xmax, $ymax, $widthEntry->get(), $heightEntry->get());
+
+    $txt .= "Slabs' indices : \n \t column : $colMin -> $colMax \n \t row : $rowMin -> $rowMax \n";
+
+    $txt .= "Slabs' file paths : \n";
+    for (my $col = $colMin; $col <= $colMax; $col++) {
+        for (my $row = $rowMin; $row <= $rowMax; $row++) {
+            my $image_path = BE4::Base36::indicesToB36Path($col, $row, 3);
+            $txt .= "\t $level/$image_path.tif \n";
+        }        
+    }
+
+    $onglet2Text->selectAll();
+    $onglet2Text->deleteSelected();
+    $onglet2Text->insert('end',$txt);
+}
+
+
+###### GetTile -> Slab
