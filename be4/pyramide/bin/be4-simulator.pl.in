@@ -272,7 +272,7 @@ sub doIt {
         return FALSE;
     }
 
-    my ($xmin,$xmax,$ymin,$ymax) = $ogrShape->getBbox();
+    my ($xmin,$xmax,$ymin,$ymax) = BE4::ProxyGDAL::getBbox($ogrShape);
     
     if (! defined $xmin) {
         ERROR("Cannot calculate bbox from the WKT Geometry");
