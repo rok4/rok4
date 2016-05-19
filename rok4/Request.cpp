@@ -766,9 +766,9 @@ DataSource* Request::getTileParam ( ServicesConf& servicesConf, std::map< std::s
     std::map<std::string, TileMatrixSet*>::iterator tms = tmsList.find ( str_tms );
     if ( tms == tmsList.end() )
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "TileMatrixSet " ) +str_tms+_ ( " inconnu." ),"wmts" ) );
-    std::string tmsLayer = layer->getDataPyramid()->getTms().getCrs().getProj4Code();
-    if ( tms->second->getCrs().getProj4Code() != tmsLayer )
-        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre TILEMATRIXSET différent de celui de la couche demandée. TILEMATRIXSET devrait être " ) +tmsLayer,"wmts" ) );
+//    std::string tmsLayer = layer->getDataPyramid()->getTms().getCrs().getProj4Code();
+//    if ( tms->second->getCrs().getProj4Code() != tmsLayer )
+//        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre TILEMATRIXSET différent de celui de la couche demandée. TILEMATRIXSET devrait être " ) +tmsLayer,"wmts" ) );
     layer = it->second;
     // TILEMATRIX
     tileMatrix=getParam ( "tilematrix" );
