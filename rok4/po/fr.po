@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2016-04-22 07:35+0000\n"
+"POT-Creation-Date: 2016-05-19 13:10+0200\n"
 "PO-Revision-Date: 2014-01-28 09:36+0100\n"
 "Last-Translator: \n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -1315,6 +1315,7 @@ msgid "Parametre LAYER absent."
 msgstr "Paramètre LAYER absent."
 
 #: Request.cpp:757 Request.cpp:760 Request.cpp:881 Request.cpp:884
+#: Request.cpp:1337
 msgid "Layer "
 msgstr "Layer "
 
@@ -1330,12 +1331,6 @@ msgstr " inconnu."
 #: Request.cpp:765
 msgid "Parametre TILEMATRIXSET absent."
 msgstr "Paramètre TILEMATRIXSET absent."
-
-#: Request.cpp:771
-msgid ""
-"Parametre TILEMATRIXSET différent de celui de la couche demandée. "
-"TILEMATRIXSET devrait être "
-msgstr ""
 
 #: Request.cpp:776
 msgid "Parametre TILEMATRIX absent."
@@ -1486,7 +1481,7 @@ msgstr " ) inconnu pour la couche"
 msgid "Format "
 msgstr "Format "
 
-#: Request.cpp:957 Request.cpp:1320 Request.cpp:1348
+#: Request.cpp:957 Request.cpp:1320 Request.cpp:1351
 msgid " non gere par le service."
 msgstr " non géré par le service."
 
@@ -1549,7 +1544,7 @@ msgstr "Layer "
 msgid " absent de layer."
 msgstr " : absence de séparateur"
 
-#: Request.cpp:1235
+#: Request.cpp:1235 Request.cpp:1337
 #, fuzzy
 msgid " non interrogeable."
 msgstr "] n'est pas un entier."
@@ -1586,12 +1581,12 @@ msgstr ""
 "La valeur du paramètre WIDTH est supérieure a la valeur maximum autorisée "
 "par le service."
 
-#: Request.cpp:1271 Request.cpp:1354
+#: Request.cpp:1271 Request.cpp:1357
 #, fuzzy
 msgid "Parametre I absent."
 msgstr "Paramètre BBOX absent."
 
-#: Request.cpp:1275 Request.cpp:1357
+#: Request.cpp:1275 Request.cpp:1360
 #, fuzzy
 msgid "La valeur du parametre I est negative."
 msgstr "La valeur du paramètre WIDTH est négative."
@@ -1620,12 +1615,12 @@ msgstr ""
 "La valeur du paramètre WIDTH est supérieure a la valeur maximum autorisée "
 "par le service."
 
-#: Request.cpp:1299 Request.cpp:1365
+#: Request.cpp:1299 Request.cpp:1368
 #, fuzzy
 msgid "Parametre J absent."
 msgstr "Paramètre BBOX absent."
 
-#: Request.cpp:1303 Request.cpp:1368
+#: Request.cpp:1303 Request.cpp:1371
 #, fuzzy
 msgid "La valeur du parametre J est negative."
 msgstr "La valeur du paramètre WIDTH est négative."
@@ -1642,17 +1637,17 @@ msgstr ""
 msgid "Parametre INFO_FORMAT vide."
 msgstr "Paramètre FORMAT absent."
 
-#: Request.cpp:1320 Request.cpp:1348
+#: Request.cpp:1320 Request.cpp:1351
 #, fuzzy
 msgid "Info_Format "
 msgstr "Format "
 
-#: Request.cpp:1340
+#: Request.cpp:1343
 #, fuzzy
 msgid "Parametre INFOFORMAT vide."
 msgstr "Paramètre FORMAT absent."
 
-#: Request.cpp:1359
+#: Request.cpp:1362
 #, fuzzy
 msgid ""
 "La valeur du parametre I est superieure a la largeur de la tuile (width)."
@@ -1660,7 +1655,7 @@ msgstr ""
 "La valeur du paramètre WIDTH est supérieure a la valeur maximum autorisée "
 "par le service."
 
-#: Request.cpp:1370
+#: Request.cpp:1373
 #, fuzzy
 msgid ""
 "La valeur du parametre J est superieure a la hauteur de la tuile (height)."
