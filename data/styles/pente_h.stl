@@ -13,61 +13,61 @@
                         <red>255</red>
                         <green>255</green>
                         <blue>255</blue>
-                        <alpha>100</alpha>
+                        <alpha>0</alpha>
                 </colour>
-		<colour value="30">
+                <colour value="29">
                         <red>255</red>
                         <green>255</green>
                         <blue>255</blue>
-                        <alpha>100</alpha>
+                        <alpha>0</alpha>
                 </colour>
-                <colour value="31">
+                <colour value="30">
                         <red>242</red>
                         <green>229</green>
                         <blue>0</blue>
-                        <alpha>100</alpha>
+                        <alpha>200</alpha>
+                </colour>
+                <colour value="34">
+                        <red>242</red>
+                        <green>229</green>
+                        <blue>0</blue>
+                        <alpha>200</alpha>
                 </colour>
                 <colour value="35">
-                        <red>242</red>
-                        <green>229</green>
-                        <blue>0</blue>
-                        <alpha>100</alpha>
-                </colour>
-                <colour value="36">
                         <red>243</red>
                         <green>148</green>
                         <blue>25</blue>
-                        <alpha>100</alpha>
+                        <alpha>200</alpha>
+                </colour>
+                <colour value="39">
+                        <red>243</red>
+                        <green>148</green>
+                        <blue>25</blue>
+                        <alpha>200</alpha>
                 </colour>
                 <colour value="40">
-                        <red>243</red>
-                        <green>148</green>
-                        <blue>25</blue>
-                        <alpha>100</alpha>
-                </colour>
-                <colour value="41">
                         <red>225</red>
                         <green>0</green>
                         <blue>0</blue>
-                        <alpha>100</alpha>
+                        <alpha>200</alpha>
                 </colour>
-                <colour value="45">
+                <colour value="44">
                         <red>255</red>
                         <green>0</green>
                         <blue>0</blue>
-                        <alpha>100</alpha>
+                        <alpha>200</alpha>
                 </colour>
-                <colour value="46">
+                <colour value="45">
                         <red>200</red>
                         <green>137</green>
                         <blue>187</blue>
-                        <alpha>100</alpha>
+                        <alpha>200</alpha>
                 </colour>
                 <colour value="90">
                         <red>200</red>
                         <green>137</green>
                         <blue>187</blue>
-                        <alpha>100</alpha>
+                        <alpha>200</alpha>
                 </colour>
         </palette>
         <pente algo="H"/>
