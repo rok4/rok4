@@ -172,6 +172,8 @@ protected:
     Palette* palette0;
     Style* style;
     Layer* layer;
+    ContextBook *sbook;
+    ContextBook *cbook;
     TileMatrixSet* onematrixset;
     Rok4Server* myrok4server;
 
@@ -238,7 +240,9 @@ void CppUnitCapabilitiesBuilder::setUp() {
     backlog = 0; // 7th arg
     supportWMS = true; // 9th arg
     supportWMTS = false; // If true -> seg fault for the test 8th arg
-    myrok4server = new Rok4Server(nbThread, *services_conf, layerlist, mytilematrixset, stylelist, socket, backlog, supportWMTS, supportWMS);
+    cbook = NULL;
+    sbook = NULL;
+    myrok4server = new Rok4Server(nbThread, *services_conf, layerlist, mytilematrixset, stylelist, socket, backlog, cbook,sbook,supportWMTS, supportWMS);
 
 }
 

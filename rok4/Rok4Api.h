@@ -135,6 +135,8 @@ typedef void Rok4Server;
     int rok4ReadObjectCeph(Rok4Server* server, const char* name, const char* pool, int offset, int size, char *data);
     int rok4ExistObjectSwift(Rok4Server* server, const char* name, const char* container);
     int rok4ReadObjectSwift(Rok4Server* server, const char* name, const char* container, int offset, int size, char *data);
+    int rok4ConnectObjectContext(Rok4Server* server);
+    void rok4DisconnectObjectContext(Rok4Server* server);
 
     void rok4DeleteRequest ( HttpRequest* request );
     void rok4DeleteResponse ( HttpResponse* response );
