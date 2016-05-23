@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <style>
         <Identifier>pente_30</Identifier>
-        <Title>Pente30</Title> 
-        <Abstract>Pente methodeH30</Abstract>
+        <Title>Pente superieur a 30 degres</Title> 
+        <Abstract>Pente calculee avec la methode de Horn et superieur a 30 degres</Abstract>
         <Keywords>
                 <Keyword>MNT</Keyword>
         </Keywords>

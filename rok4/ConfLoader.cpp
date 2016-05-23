@@ -351,8 +351,8 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
         algo = pElem->Attribute("algo");
 
         if ( algo != "" ) {
-            if (algo != "Z" && algo != "H") {
-                LOGGER_ERROR ("Un attribut algo invalide a ete trouve dans la pente du Style " ) << id << ( " : il est invalide!!");
+            if (algo != "H") {
+                LOGGER_ERROR ("Un attribut algo invalide a ete trouve dans la pente du Style " ) << id << ( ", la valeur possible est H");
                 return NULL;
             }
         } else {
