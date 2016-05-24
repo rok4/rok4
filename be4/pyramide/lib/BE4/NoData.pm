@@ -56,7 +56,7 @@ Using:
 Attributes:
     pixel - <Pixel> - Components of a nodata pixel.
 
-    value - string - Contains one integer value per sample, in decimal format, seperated by comma. For 8 bits unsigned integer, value must be between 0 and 255. For 32 bits float, an integer is expected too, but can be negative.
+    value - string - Contains one integer value per sample, in decimal format, separated by comma. For 8 bits unsigned integer, value must be between 0 and 255. For 32 bits float, an integer is expected too, but can be negative.
     Example : "255,255,255" (white) for images whithout alpha sample, "-99999" for a DTM.
 =cut
 
@@ -224,7 +224,7 @@ sub _init {
         
         my @nodata = split(/,/,$params->{value},-1);
         if (scalar @nodata != $self->{pixel}->getSamplesPerPixel) {
-            ERROR (sprintf "Incorrect parameter nodata (%s) : we need one value per sample (%s), seperated by ',' !",
+            ERROR (sprintf "Incorrect parameter nodata (%s) : we need one value per sample (%s), separated by ',' !",
                 $params->{value},$self->{pixel}->getSamplesPerPixel);
             return FALSE;
         }
@@ -337,7 +337,7 @@ sub createNodata {
 =begin nd
 Function: hexToDec
 
-From a color value in hexadecimal format (string), convert in decimal format (string). Different samples are seperated by comma. Input string must have an even length (one sample <=> 2 character).
+From a color value in hexadecimal format (string), convert in decimal format (string). Different samples are separated by comma. Input string must have an even length (one sample <=> 2 character).
 
 Parameters (list):
     hex - string - Color value to hexadecimal format : white -> FFFFFF

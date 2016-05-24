@@ -103,6 +103,7 @@ protected:
     std::string electronicMailAddress;
     //WMS
     std::vector<std::string> formatList;
+    std::vector<std::string> infoFormatList;
     std::vector<CRS> globalCRSList;
     bool fullStyling;
     //WMTS
@@ -185,6 +186,7 @@ protected:
     Style* style;
     Layer* layer;
     TileMatrixSet* onematrixset;
+    Proxy proxy;
     Rok4Server* myrok4server;
 
 };
@@ -202,7 +204,7 @@ void CppUnitCapabilitiesBuilder::setUp() {
     MetadataURL mtdMWS = MetadataURL ( "simple", metadataUrlWMS,metadataMediaTypeWMS );
     MetadataURL mtdWMTS = MetadataURL ( "simple", metadataUrlWMTS,metadataMediaTypeWMTS );
     services_conf = new ServicesConf ( name, title, abstract, keyWords,serviceProvider, fee,
-                                      accessConstraint, layerLimit, maxWidth, maxHeight, maxTileX, maxTileY, formatList, globalCRSList , serviceType, serviceTypeVersion,
+                                      accessConstraint, layerLimit, maxWidth, maxHeight, maxTileX, maxTileY, formatList, infoFormatList , globalCRSList , serviceType, serviceTypeVersion,
                                       providerSite, individualName, individualPosition, voice, facsimile,
                                       addressType, deliveryPoint, city, administrativeArea, postCode, country,
                                       electronicMailAddress, mtdMWS, mtdWMTS, listofequalsCRS, restrictedCRSList, postMode, fullStyling, inspire, doweuselistofequalsCRS, addEqualsCRS, dowerestrictCRSList);
@@ -264,7 +266,9 @@ void CppUnitCapabilitiesBuilder::setUp() {
     supportWMS = true; // 9th arg
     supportWMTS = false; // If true -> seg fault for the test 8th arg
     nbProcess = 1;
-    myrok4server = new Rok4Server(nbThread, *services_conf, layerlist, mytilematrixset, stylelist, socket, backlog, supportWMTS, supportWMS, nbProcess);
+    proxy.proxyName = "";
+    proxy.noProxy = "";
+    myrok4server = new Rok4Server(nbThread, *services_conf, layerlist, mytilematrixset, stylelist, socket, backlog, proxy, supportWMTS, supportWMS, nbProcess);
 
 }
 

@@ -247,6 +247,36 @@ void Rok4Server::buildWMS130Capabilities() {
     getMapEl->LinkEndChild ( DCPTypeEl );
 
     requestEl->LinkEndChild ( getMapEl );
+    
+    
+    TiXmlElement * getFeatureInfoEl = new TiXmlElement ( "GetFeatureInfo" );
+    for ( unsigned int i=0; i<servicesConf.getInfoFormatList()->size(); i++ ) {
+        getFeatureInfoEl->LinkEndChild ( buildTextNode ( "Format",servicesConf.getInfoFormatList()->at ( i ) ) );
+    }
+    DCPTypeEl = new TiXmlElement ( "DCPType" );
+    HTTPEl = new TiXmlElement ( "HTTP" );
+    GetEl = new TiXmlElement ( "Get" );
+    onlineResourceEl = new TiXmlElement ( "OnlineResource" );
+    onlineResourceEl->SetAttribute ( "xmlns:xlink","http://www.w3.org/1999/xlink" );
+    onlineResourceEl->SetAttribute ( "xlink:href",pathTag );
+    onlineResourceEl->SetAttribute ( "xlink:type","simple" );
+    GetEl->LinkEndChild ( onlineResourceEl );
+    HTTPEl->LinkEndChild ( GetEl );
+
+    if ( servicesConf.isPostEnabled() ) {
+        TiXmlElement * PostEl = new TiXmlElement ( "Post" );
+        onlineResourceEl = new TiXmlElement ( "OnlineResource" );
+        onlineResourceEl->SetAttribute ( "xmlns:xlink","http://www.w3.org/1999/xlink" );
+        onlineResourceEl->SetAttribute ( "xlink:href",pathTag );
+        onlineResourceEl->SetAttribute ( "xlink:type","simple" );
+        PostEl->LinkEndChild ( onlineResourceEl );
+        HTTPEl->LinkEndChild ( PostEl );
+    }
+
+    DCPTypeEl->LinkEndChild ( HTTPEl );
+    getFeatureInfoEl->LinkEndChild ( DCPTypeEl );
+
+    requestEl->LinkEndChild ( getFeatureInfoEl );
 
     capabilityEl->LinkEndChild ( requestEl );
 
@@ -303,6 +333,10 @@ void Rok4Server::buildWMS130Capabilities() {
             if (it->second->getWMSAuthorized()) {
                 TiXmlElement * childLayerEl = new TiXmlElement ( "Layer" );
                 Layer* childLayer = it->second;
+		// queryable
+		if (childLayer->isGetFeatureInfoAvailable()){
+		 childLayerEl->SetAttribute ( "queryable","1" ); 
+		}
                 // Name
                 childLayerEl->LinkEndChild ( buildTextNode ( "Name", childLayer->getId() ) );
                 // Title
@@ -702,6 +736,35 @@ void Rok4Server::buildWMS111Capabilities() {
     getMapEl->LinkEndChild ( DCPTypeEl );
 
     requestEl->LinkEndChild ( getMapEl );
+    
+    TiXmlElement * getFeatureInfoEl = new TiXmlElement ( "GetFeatureInfo" );
+    for ( unsigned int i=0; i<servicesConf.getInfoFormatList()->size(); i++ ) {
+        getFeatureInfoEl->LinkEndChild ( buildTextNode ( "Format",servicesConf.getInfoFormatList()->at ( i ) ) );
+    }
+    DCPTypeEl = new TiXmlElement ( "DCPType" );
+    HTTPEl = new TiXmlElement ( "HTTP" );
+    GetEl = new TiXmlElement ( "Get" );
+    onlineResourceEl = new TiXmlElement ( "OnlineResource" );
+    onlineResourceEl->SetAttribute ( "xmlns:xlink","http://www.w3.org/1999/xlink" );
+    onlineResourceEl->SetAttribute ( "xlink:href",pathTag );
+    onlineResourceEl->SetAttribute ( "xlink:type","simple" );
+    GetEl->LinkEndChild ( onlineResourceEl );
+    HTTPEl->LinkEndChild ( GetEl );
+
+    if ( servicesConf.isPostEnabled() ) {
+        TiXmlElement * PostEl = new TiXmlElement ( "Post" );
+        onlineResourceEl = new TiXmlElement ( "OnlineResource" );
+        onlineResourceEl->SetAttribute ( "xmlns:xlink","http://www.w3.org/1999/xlink" );
+        onlineResourceEl->SetAttribute ( "xlink:href",pathTag );
+        onlineResourceEl->SetAttribute ( "xlink:type","simple" );
+        PostEl->LinkEndChild ( onlineResourceEl );
+        HTTPEl->LinkEndChild ( PostEl );
+    }
+
+    DCPTypeEl->LinkEndChild ( HTTPEl );
+    getFeatureInfoEl->LinkEndChild ( DCPTypeEl );
+
+    requestEl->LinkEndChild ( getFeatureInfoEl );
 
     capabilityEl->LinkEndChild ( requestEl );
 
@@ -731,6 +794,9 @@ void Rok4Server::buildWMS111Capabilities() {
             if (it->second->getWMSAuthorized()) {
                 TiXmlElement * childLayerEl = new TiXmlElement ( "Layer" );
                 Layer* childLayer = it->second;
+		if (childLayer->isGetFeatureInfoAvailable()){
+		 childLayerEl->SetAttribute ( "queryable","1" ); 
+		}
                 // Name
                 childLayerEl->LinkEndChild ( buildTextNode ( "Name", childLayer->getId() ) );
                 // Title
@@ -1159,6 +1225,38 @@ void Rok4Server::buildWMTSCapabilities() {
     opEl->LinkEndChild ( dcpEl );
 
     opMtdEl->LinkEndChild ( opEl );
+    
+    opEl = new TiXmlElement ( "ows:Operation" );
+    opEl->SetAttribute ( "name","GetFeatureInfo" );
+    dcpEl = new TiXmlElement ( "ows:DCP" );
+    httpEl = new TiXmlElement ( "ows:HTTP" );
+    getEl = new TiXmlElement ( "ows:Get" );
+    getEl->SetAttribute ( "xlink:href","]HOSTNAME/PATH[" );
+    constraintEl = new TiXmlElement ( "ows:Constraint" );
+    constraintEl->SetAttribute ( "name","GetEncoding" );
+    allowedValuesEl = new TiXmlElement ( "ows:AllowedValues" );
+    allowedValuesEl->LinkEndChild ( buildTextNode ( "ows:Value", "KVP" ) );
+    constraintEl->LinkEndChild ( allowedValuesEl );
+    getEl->LinkEndChild ( constraintEl );
+    httpEl->LinkEndChild ( getEl );
+
+    if ( servicesConf.isPostEnabled() ) {
+        TiXmlElement * postEl = new TiXmlElement ( "ows:Post" );
+        postEl->SetAttribute ( "xlink:href","]HOSTNAME/PATH[" );
+        constraintEl = new TiXmlElement ( "ows:Constraint" );
+        constraintEl->SetAttribute ( "name","PostEncoding" );
+        allowedValuesEl = new TiXmlElement ( "ows:AllowedValues" );
+        allowedValuesEl->LinkEndChild ( buildTextNode ( "ows:Value", "XML" ) );
+        //TODO Implement SOAP like request
+        //allowedValuesEl->LinkEndChild(buildTextNode("ows:Value", "SOAP"));
+        constraintEl->LinkEndChild ( allowedValuesEl );
+        postEl->LinkEndChild ( constraintEl );
+        httpEl->LinkEndChild ( postEl );
+    }
+    dcpEl->LinkEndChild ( httpEl );
+    opEl->LinkEndChild ( dcpEl );
+
+    opMtdEl->LinkEndChild ( opEl );
 
 
     // Inspire (extended Capability)
@@ -1297,6 +1395,11 @@ void Rok4Server::buildWMTSCapabilities() {
 
             // Contrainte : 1 layer = 1 pyramide = 1 format
             layerEl->LinkEndChild ( buildTextNode ( "Format",Rok4Format::toMimeType ( ( layer->getDataPyramid()->getFormat() ) ) ) );
+            if (layer->isGetFeatureInfoAvailable()){
+                for ( unsigned int i=0; i<servicesConf.getInfoFormatList()->size(); i++ ) {
+                    layerEl->LinkEndChild ( buildTextNode ( "InfoFormat",servicesConf.getInfoFormatList()->at ( i ) ) );
+                }
+            }
 
             /* on suppose qu'on a qu'un TMS par layer parce que si on admet avoir un TMS par pyramide
              *  il faudra contrôler la cohérence entre le format, la projection et le TMS... */
@@ -1375,7 +1478,7 @@ void Rok4Server::buildWMTSCapabilities() {
             TiXmlElement * tmEl=new TiXmlElement ( "TileMatrix" );
             tmEl->LinkEndChild ( buildTextNode ( "ows:Identifier",tm.getId() ) );
             tmEl->LinkEndChild ( buildTextNode ( "ScaleDenominator",doubleToStr ( ( long double ) ( tm.getRes() *tms.getCrs().getMetersPerUnit() ) /0.00028 ) ) );
-            tmEl->LinkEndChild ( buildTextNode ( "TopLeftCorner",numToStr ( tm.getX0() ) + " " + numToStr ( tm.getY0() ) ) );
+            tmEl->LinkEndChild ( buildTextNode ( "TopLeftCorner",doubleToStr ( tm.getX0() ) + " " + doubleToStr ( tm.getY0() ) ) );
             tmEl->LinkEndChild ( buildTextNode ( "TileWidth",numToStr ( tm.getTileW() ) ) );
             tmEl->LinkEndChild ( buildTextNode ( "TileHeight",numToStr ( tm.getTileH() ) ) );
             tmEl->LinkEndChild ( buildTextNode ( "MatrixWidth",numToStr ( tm.getMatrixW() ) ) );

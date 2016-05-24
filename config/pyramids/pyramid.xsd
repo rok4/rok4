@@ -8,8 +8,11 @@
                 <xs:element name="format" type="imageFormat"/>
                 <!-- nombre de canaux utilisés dans les images (et tuiles) -->
                 <xs:element name="channels" type="xs:positiveInteger"/>
+                <!-- valeur du nodata, cohérent avec le nombre de canaux -->
+                <!-- nécessaire pour une pyramide à la demande avec génération (couleur de la tuile de noData) -->
                 <xs:element name="nodataValue" type="xs:string" minOccurs="0"/>
                 <xs:element name="interpolation" type="imageInterpolation" minOccurs="0"/>
+                <!-- nécessaire pour une pyramide à la demande avec génération -->
                 <xs:element name="photometric" type="imagePhotometric" minOccurs="0"/>
 
                 <xs:element name="level" minOccurs="1" maxOccurs="unbounded">
@@ -24,10 +27,11 @@
                             <!-- sources des données pour une pyramide à la demande -->
                             <!-- si spécifiées ici, ces sources ne concernent que ce level -->
                             <!-- ainsi, si on en met un, il faut en mettre pour chaque level -->
-                            <!-- à moins qu'il y ait des sources au niveau global -->
+                            <!-- Si le baseDir n'est pas spécifié, l'élément <sources> doit être présent -->
                             <xs:element name="sources" minOccurs="0" maxOccurs="1">
 			                    <xs:complexType>
 			                        <xs:sequence>
+                                        <!-- Doit contenir au moins une source, qu'elle soit de type 'basedPyramid' ou de type 'webService' -->
 			                            <xs:element name="basedPyramid" minOccurs="1" maxOccurs="unbounded">
 			                                <xs:complexType>
 			                                    <xs:sequence>
@@ -72,21 +76,20 @@
 			                                        			<xs:element name="styles" type="xs:string" minOccurs="1" maxOccurs="1"/>
 			                                        			<!-- crs -->
 			                                        			<xs:element name="crs" type="xs:string" minOccurs="0" maxOccurs="1"/>
-			                                        			<!-- format -->
+			                                        			<!-- format "image/jpeg" et "image/png" uniquement pour le moment-->
 			                                        			<xs:element name="format" type="xs:string" minOccurs="0" maxOccurs="1"/>
 																<!-- nombre de canaux des images -->
 			                                        			<xs:element name="channels" type="xs:positiveInteger" minOccurs="1" maxOccurs="1"/>
-			                                        			<!-- valeurs du noData -->
+			                                        			<!-- valeurs du noData, doit être cohérent avec le nombre de canaux précisé dans la balise channels du wms -->
+                                                                <!-- Si ce champ est libre, il est fortement conseillé de mettre la même couleur de noData que le nodata de la pyramide. Bien sûr en veillant à garder la cohérence avec le format de l'image (encodage, channels) -->
 			                                        			<xs:element name="noDataValue" type="xs:string" minOccurs="1" maxOccurs="1"/>
 			                                        			<!-- Bbox des données -->
-			                                        			<xs:element name="boundingBox">
+			                                        			<xs:element name="bbox" minOccurs="1" maxOccurs="1">
 																	<xs:complexType>
-																		<xs:sequence>
-																			<xs:element name="minx" type="xs:double" minOccurs="1" maxOccurs="1"/>
-																			<xs:element name="miny" type="xs:double" minOccurs="1" maxOccurs="1"/>
-																			<xs:element name="maxx" type="xs:double" minOccurs="1" maxOccurs="1"/>
-																			<xs:element name="maxy" type="xs:double" minOccurs="1" maxOccurs="1"/>
-																		</xs:sequence>
+																			<xs:attribute name="minx" type="xs:double"/>
+																			<xs:attribute name="miny" type="xs:double"/>
+																			<xs:attribute name="maxx" type="xs:double"/>
+																			<xs:attribute name="maxy" type="xs:double"/>
 																	</xs:complexType>
 																</xs:element>
 			                                        			<!-- option -->

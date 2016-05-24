@@ -60,6 +60,7 @@
 #include "Format.h"
 #include "FileImage.h"
 #include "Image.h"
+#include "Data.h"
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -286,6 +287,8 @@ public:
      * \return a LibpngImage object pointer, NULL if error
      */
     LibpngImage* createLibpngImageToRead ( char* filename, BoundingBox<double> bbox, double resx, double resy );
+
+    LibpngImage* createLibpngImageToReadFromBuffer (RawDataStream *rawStream, BoundingBox<double> bbox, double resx, double resy );
 
 };
 

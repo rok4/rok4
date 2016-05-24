@@ -69,6 +69,7 @@
 #include <cstddef>
 #include <string>
 #include "WebService.h"
+#include "EmptyDataSource.h"
 
 
 // Load style
@@ -557,7 +558,7 @@ TileMatrixSet* ConfLoader::buildTileMatrixSet ( std::string fileName ) {
 }//buildTileMatrixSet(std::string fileName)
 
 // Load a pyramid
-Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times, std::map<std::string,Style*> stylesList) {
+Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times, std::map<std::string,Style*> stylesList, Proxy proxy) {
 
     LOGGER_INFO ( _ ( "             Ajout de la pyramide : " ) << fileName );
     // Relative file Path
@@ -584,8 +585,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     WebService *ws = NULL;
     bool onFly = false;
     bool testOnFly = true;
-    std::map<std::string,std::vector<Pyramid*> > specificPyramids;
-    std::map<std::string,std::vector<WebService*> > specificWebServices;
+    std::map<std::string,std::vector<Source*> > specificSources;
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
@@ -738,14 +738,10 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             int tilesPerHeight;
             int pathDepth;
             std::string noDataFilePath="";
-            std::vector<Pyramid*> sPyramids;
-            std::vector<WebService*> sWebServices;
-            int nsPyramids;
-            int ntPyramids;
-            int nsWebServices;
-            int ntWebServices;
+            std::vector<Source*> sSources;
             bool specificLevel = false;
             bool alreadyLoad = false;
+            bool noFile = false;
             //----
 
             //----TM
@@ -786,75 +782,48 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             //  Cette pyramide peut être construite à partir d'une autre
             if (times) {
 
+                TiXmlElement* pElemS=hLvl.FirstChild ( "sources" ).Element();
+                if (pElemS) {
 
-                //Si on se base sur d'autres pyramides pour faire la nouvelle pyramide
-                TiXmlElement* pElemSP=hLvl.FirstChild ( "sources" ).Element();
-                if ( pElemSP ) {
-
-                    TiXmlHandle hbdP ( pElemSP );
                     bool timesSpecific = false;
 
-                    nsPyramids = 0;
-                    ntPyramids = 0;
-                    nsWebServices = 0;
-                    ntWebServices = 0;
+                    int ntSources = 0;
+                    int nsSources = 0;
 
-                    TiXmlElement* sPyr = hbdP.FirstChild("basedPyramid").Element();
+                    TiXmlHandle hbdP ( pElemS );
+                    TiXmlElement* pElemSP=hbdP.FirstChild().ToElement();
 
-                    if (sPyr) {
+                    for (pElemSP; pElemSP; pElemSP = pElemSP->NextSiblingElement()) {
 
-                        for ( sPyr; sPyr; sPyr=sPyr->NextSiblingElement("basedPyramid") ) {
-
-                            basedPyramid = parseBasedPyramid(sPyr,tmsList,timesSpecific,stylesList,parentDir);
+                        if (pElemSP->ValueStr() == "basedPyramid") {
+                            basedPyramid = parseBasedPyramid(pElemSP,tmsList,timesSpecific,stylesList,parentDir, proxy);
 
                             if (basedPyramid) {
 
                                 int up = updatePyrLevel(basedPyramid, tm, tms);
-                                ntPyramids++;
+                                ntSources++;
                                 if (up != 0 ) {
-                                    sPyramids.push_back( basedPyramid ) ;
-                                    nsPyramids++;
+                                    sSources.push_back( basedPyramid ) ;
+                                    nsSources++;
                                 } else {
                                     LOGGER_ERROR("Impossible de supprimer les levels en trop dans la basedPyramid ");
                                 }
 
                             } else {
                                 LOGGER_ERROR ("Impossible de charger une basedPyramid indique");
-                                cleanParsePyramid(specificPyramids,sPyramids,specificWebServices,sWebServices,levels);
+                                cleanParsePyramid(specificSources,sSources,levels);
                                 return NULL;
                             }
 
                         }
 
-                        //Aucune basedPyramid n'a pu être chargée pour ce level
-                        if ( nsPyramids !=  ntPyramids) {
-                            LOGGER_ERROR ( nsPyramids << _ (" equivalent level found for level ") << id << _ ( " but " ) << ntPyramids << _ ( " should be found" ) );
-                            cleanParsePyramid(specificPyramids,sPyramids,specificWebServices,sWebServices,levels);
-                            delete basedPyramid;
-                            basedPyramid = NULL;
-                            return NULL;
-                        } else {
-                            onDemandSpecific = true;
-                            if (!specificLevel) {
-                                specificLevel = true;
-                                nbSpecificLevel++;
-                            }
-                            specificPyramids.insert(std::pair< std::string, std::vector<Pyramid*> > ( id, sPyramids));
-                        }
+                        if (pElemSP->ValueStr() == "webService") {
 
-                    }
-
-
-                    TiXmlElement* sWeb = hbdP.FirstChild("webService").Element();
-                    if (sWeb) {
-
-                        for ( sWeb; sWeb; sWeb=sWeb->NextSiblingElement("webService") ) {
-
-                            ws = parseWebService(sWeb,tms->getCrs(),format);
-                            ntWebServices++;
+                            ws = parseWebService(pElemSP,tms->getCrs(),format, proxy);
+                            ntSources++;
                             if (ws) {
-                                sWebServices.push_back(ws);
-                                nsWebServices++;
+                                sSources.push_back(ws);
+                                nsSources++;
                             } else {
                                 LOGGER_ERROR("Impossible de charger le WebService indique");
                                 return NULL;
@@ -862,33 +831,34 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
                         }
 
-                        if (ntWebServices != nsWebServices) {
-                            LOGGER_ERROR ( nsWebServices << _ (" WebServices have been found for level ") << id << _ ( " but " ) << ntWebServices << _ ( " should be found" ) );
-                            return NULL;
-                        } else {
-                            if (!specificLevel) {
-                                specificLevel = true;
-                                nbSpecificLevel++;
-                            }
-                            onDemandSpecific = true;
-                            specificWebServices.insert(std::pair< std::string, std::vector<WebService*> > ( id, sWebServices));
-                        }
 
+                    }//end for pElemS
+
+                    if ( nsSources !=  ntSources) {
+                        LOGGER_ERROR ( nsSources << _ (" sources were found for level ") << id << _ ( " but " ) << ntSources << _ ( " should be found" ) );
+                        cleanParsePyramid(specificSources,sSources,levels);
+                        if (basedPyramid) {
+                            delete basedPyramid;
+                            basedPyramid = NULL;
+                        }
+                        return NULL;
+                    } else {
+                        onDemandSpecific = true;
+                        if (!specificLevel) {
+                            specificLevel = true;
+                            nbSpecificLevel++;
+                        }
+                        specificSources.insert(std::pair< std::string, std::vector<Source*> > ( id, sSources));
                     }
 
-
-                    if (ntWebServices == 0 && ntPyramids == 0) {
+                    if (ntSources == 0) {
                         //sources est indiqué mais pas de basedPyramid, ni de WebService
-                        LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't be loaded bacause no basedPyramid or WebServices are specified" ) );
-                        cleanParsePyramid(specificPyramids,sPyramids,specificWebServices,sWebServices,levels);
+                        LOGGER_ERROR (  "Pyramid: " << fileName << " can't be loaded bacause no basedPyramid or WebServices are specified" );
+                        cleanParsePyramid(specificSources,sSources,levels);
                         return NULL;
                     }
 
-
-
-
-
-                }
+                }//end if pElemS
 
 
             } else {
@@ -896,7 +866,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
                 if (hRoot.FirstChild ( "sources" ).Element()) {
                     LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't depend on other pyramids" ) );
-                    cleanParsePyramid(specificPyramids,sPyramids,specificWebServices,sWebServices,levels);
+                    cleanParsePyramid(specificSources,sSources,levels);
                     return NULL;
                 }
 
@@ -1062,7 +1032,8 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             //----
 
             //----NODATA
-            // Mandatory only for onDemand and onFly Pyramid
+            // Must exist for normal pyramid but could possibly not exist for onDemand and onFly Pyramid
+            // BUT the path must be written in conf file in these cases
             TiXmlElement* pElemNoData=hLvl.FirstChild ( "nodata" ).Element();
 
             if ( pElemNoData ) {    // FilePath must be specified if nodata tag exist
@@ -1084,9 +1055,10 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                 }
                 int file = open(noDataFilePath.c_str(),O_RDONLY);
                 if (file < 0) {
+                    noFile = true;
                     if (!specificLevel) {
                         LOGGER_ERROR(fileName <<_ ( " Level " ) << id <<_ ( " specifiant une tuile NoData impossible a ouvrir" ));
-                        cleanParsePyramid(specificPyramids,sPyramids,specificWebServices,sWebServices,levels);
+                        cleanParsePyramid(specificSources,sSources,levels);
                         return NULL;
                     }
                 } else {
@@ -1096,7 +1068,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             } else {
                 if (specificLevel) {
                     LOGGER_ERROR("NoDataTile must be specified for OnDemand Pyramid");
-                    cleanParsePyramid(specificPyramids,sPyramids,specificWebServices,sWebServices,levels);
+                    cleanParsePyramid(specificSources,sSources,levels);
                     return NULL;
                 }
             }
@@ -1107,9 +1079,12 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
             levels.insert(std::pair<std::string,Level*> (id,TL));
 
-            if (specificLevel && (sPyramids.size() != 0 || sWebServices.size() != 0)) {
+            if (specificLevel && sSources.size() != 0) {
                 if ( !pElemLvlTMS ) {
-                    updateTileLimits(*TL->getrefMinTileCol(),*TL->getrefMaxTileCol(),*TL->getrefMinTileRow(),*TL->getrefMaxTileRow(),TL->getTm(),tms,sPyramids,sWebServices);
+                    updateTileLimits(*TL->getrefMinTileCol(),*TL->getrefMaxTileCol(),*TL->getrefMinTileRow(),*TL->getrefMaxTileRow(),TL->getTm(),tms,sSources);
+                }
+                if (onDemandSpecific && noFile) {
+                    TL->updateNoDataTile(noDataValues);
                 }
             }
 
@@ -1137,8 +1112,8 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
              onDemand = true;
         } else {
             LOGGER_ERROR("Probleme lors du chargement de la pyramide => " << nbSpecificLevel << " trouvés pour " << levels.size() << " chargés");
-            if (specificPyramids.size() != 0) {
-                for ( std::map<std::string,std::vector<Pyramid*> >::iterator lv = specificPyramids.begin(); lv != specificPyramids.end(); lv++) {
+            if (specificSources.size() != 0) {
+                for ( std::map<std::string,std::vector<Source*> >::iterator lv = specificSources.begin(); lv != specificSources.end(); lv++) {
 
                     if (lv->second.size() != 0) {
                         for ( std::vector<int>::size_type i = 0; i != lv->second.size(); i++) {
@@ -1148,7 +1123,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                         lv->second.clear();
                     }
                 }
-                specificPyramids.clear();
+                specificSources.clear();
             }
             if (levels.size() != 0) {
                 for ( std::map<std::string,Level*>::iterator lv = levels.begin(); lv != levels.end(); lv++) {
@@ -1167,10 +1142,10 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     Pyramid* pyr;
 
     if (onFly) {
-        pyr = new PyramidOnFly(levels, *tms, format, channels, onDemand, onFly, Photometric::fromString(photometricStr),noDataValues,specificPyramids,specificWebServices);
+        pyr = new PyramidOnFly(levels, *tms, format, channels, onDemand, onFly, Photometric::fromString(photometricStr),noDataValues,specificSources);
     } else {
         if (onDemand) {
-            pyr = new PyramidOnDemand(levels, *tms, format, channels, onDemand, onFly,specificPyramids,specificWebServices);
+            pyr = new PyramidOnDemand(levels, *tms, format, channels, onDemand, onFly,specificSources);
         } else {
             pyr = new Pyramid ( levels, *tms, format, channels, onDemand, onFly );
         }
@@ -1182,37 +1157,17 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
 }// buildPyramid()
 
-void ConfLoader::cleanParsePyramid(std::map<std::string,std::vector<Pyramid*> > &specificPyramids, std::vector<Pyramid*> &sPyramids,std::map<std::string,std::vector<WebService*> > &specificWebServices, std::vector<WebService*> &sWebService,std::map<std::string, Level *> &levels) {
+void ConfLoader::cleanParsePyramid(std::map<std::string,std::vector<Source*> > &specificSources, std::vector<Source*> &sSources,std::map<std::string, Level *> &levels) {
 
-    if (sPyramids.size() != 0) {
-        for ( std::vector<int>::size_type i = 0; i != sPyramids.size(); i++) {
-            delete sPyramids[i];
-            sPyramids[i] = NULL;
+    if (sSources.size() != 0) {
+        for ( std::vector<int>::size_type i = 0; i != sSources.size(); i++) {
+            delete sSources[i];
+            sSources[i] = NULL;
         }
-        sPyramids.clear();
+        sSources.clear();
     }
-    if (specificPyramids.size() != 0) {
-        for ( std::map<std::string,std::vector<Pyramid*> >::iterator lv = specificPyramids.begin(); lv != specificPyramids.end(); lv++) {
-
-            if (lv->second.size() != 0) {
-                for ( std::vector<int>::size_type i = 0; i != lv->second.size(); i++) {
-                    delete lv->second[i];
-                    lv->second[i] = NULL;
-                }
-                lv->second.clear();
-            }
-        }
-        specificPyramids.clear();
-    }
-    if (sWebService.size() != 0) {
-        for ( std::vector<int>::size_type i = 0; i != sWebService.size(); i++) {
-            delete sWebService[i];
-            sWebService[i] = NULL;
-        }
-        sWebService.clear();
-    }
-    if (specificWebServices.size() != 0) {
-        for ( std::map<std::string,std::vector<WebService*> >::iterator lv = specificWebServices.begin(); lv != specificWebServices.end(); lv++) {
+    if (specificSources.size() != 0) {
+        for ( std::map<std::string,std::vector<Source*> >::iterator lv = specificSources.begin(); lv != specificSources.end(); lv++) {
 
             if (lv->second.size() != 0) {
                 for ( std::vector<int>::size_type i = 0; i != lv->second.size(); i++) {
@@ -1222,7 +1177,7 @@ void ConfLoader::cleanParsePyramid(std::map<std::string,std::vector<Pyramid*> > 
                 lv->second.clear();
             }
         }
-        specificWebServices.clear();
+        specificSources.clear();
     }
     if (levels.size() != 0) {
         for ( std::map<std::string,Level*>::iterator lv = levels.begin(); lv != levels.end(); lv++) {
@@ -1296,7 +1251,7 @@ int ConfLoader::updatePyrLevel(Pyramid* pyr, TileMatrix *tm, TileMatrixSet *tms)
 
 }
 
-void ConfLoader::updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Pyramid *> bPyramids,std::vector<WebService *> bWebServices) {
+void ConfLoader::updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Source *> sources) {
 
     //On met à jour les Min et Max Tiles une fois que l'on a trouvé un équivalent dans chaque basedPyramid
     // pour le level créé
@@ -1306,162 +1261,164 @@ void ConfLoader::updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, ui
 
     int time = 1;
 
-    if (bPyramids.size() != 0) {
+    if (sources.size() != 0) {
 
-        for (int ip = 0; ip < bPyramids.size(); ip++) {
-            Level *lv;
+        for (int ip = 0; ip < sources.size(); ip++) {
 
-            //On récupére les Min et Max de la basedPyramid
-            lv = bPyramids.at(ip)->getLevels().begin()->second;
+            if (sources.at(ip)->getType() == PYRAMID) {
+                Pyramid *pyr = reinterpret_cast<Pyramid*>(sources.at(ip));
+                Level *lv;
 
-
-            bPMinCol = lv->getMinTileCol();
-            bPMaxCol = lv->getMaxTileCol();
-            bPMinRow = lv->getMinTileRow();
-            bPMaxRow = lv->getMaxTileRow();
-
-            //On récupère d'autres informations sur le TM
-            xo = lv->getTm().getX0();
-            yo = lv->getTm().getY0();
-            res = lv->getTm().getRes();
-            tileW = lv->getTm().getTileW();
-            tileH = lv->getTm().getTileH();
-
-            //On transforme en bbox
-            xmin = bPMinCol * tileW * res + xo;
-            ymax = yo - bPMinRow * tileH * res;
-            xmax = xo + (bPMaxCol+1) * tileW * res;
-            ymin = ymax - (bPMaxRow - bPMinRow + 1) * tileH * res;
-
-            BoundingBox<double> MMbbox(xmin,ymin,xmax,ymax);
+                //On récupére les Min et Max de la basedPyramid
+                lv = pyr->getLevels().begin()->second;
 
 
-            //On reprojette la bbox
-            MMbbox.reproject(bPyramids.at(ip)->getTms().getCrs().getProj4Code(), tms->getCrs().getProj4Code());
+                bPMinCol = lv->getMinTileCol();
+                bPMaxCol = lv->getMaxTileCol();
+                bPMinRow = lv->getMinTileRow();
+                bPMaxRow = lv->getMaxTileRow();
 
-            //On récupère les Min et Max de Pyr pour ce level dans la nouvelle projection
-            xo = tm.getX0();
-            yo = tm.getY0();
-            res = tm.getRes();
-            tileW = tm.getTileW();
-            tileH = tm.getTileH();
+                //On récupère d'autres informations sur le TM
+                xo = lv->getTm().getX0();
+                yo = lv->getTm().getY0();
+                res = lv->getTm().getRes();
+                tileW = lv->getTm().getTileW();
+                tileH = lv->getTm().getTileH();
 
-            curMinRow = floor((yo - MMbbox.ymax) / (tileW * res));
-            curMinCol = floor((MMbbox.xmin - xo) / (tileH * res));
-            curMaxRow = floor((yo - MMbbox.ymin) / (tileW * res));
-            curMaxCol = floor((MMbbox.xmax - xo) / (tileH * res));
+                //On transforme en bbox
+                xmin = bPMinCol * tileW * res + xo;
+                ymax = yo - bPMinRow * tileH * res;
+                xmax = xo + (bPMaxCol+1) * tileW * res;
+                ymin = ymax - (bPMaxRow - bPMinRow + 1) * tileH * res;
 
-            if (curMinRow < 0) {
-                curMinRow = 0;
-            }
-            if (curMinCol < 0) {
-                curMinCol = 0;
-            }
-            if (curMaxRow < 0) {
-                curMaxRow = 0;
-            }
-            if (curMaxCol < 0) {
-                curMaxCol = 0;
-            }
+                BoundingBox<double> MMbbox(xmin,ymin,xmax,ymax);
 
-            if (time == 1) {
-                minCol = curMinCol;
-                maxCol = curMaxCol;
-                minRow = curMinRow;
-                maxRow = curMaxRow;
-            }
 
-            //On teste pour récupèrer la plus grande zone à l'intérieur du TMS
-            if (curMinCol >= minTileCol && curMinCol >= 0 && curMinCol <= curMaxCol && curMinCol <= maxTileCol) {
-                if (curMinCol <= minCol) {
+                //On reprojette la bbox
+                MMbbox.reproject(pyr->getTms().getCrs().getProj4Code(), tms->getCrs().getProj4Code());
+
+                //On récupère les Min et Max de Pyr pour ce level dans la nouvelle projection
+                xo = tm.getX0();
+                yo = tm.getY0();
+                res = tm.getRes();
+                tileW = tm.getTileW();
+                tileH = tm.getTileH();
+
+                curMinRow = floor((yo - MMbbox.ymax) / (tileW * res));
+                curMinCol = floor((MMbbox.xmin - xo) / (tileH * res));
+                curMaxRow = floor((yo - MMbbox.ymin) / (tileW * res));
+                curMaxCol = floor((MMbbox.xmax - xo) / (tileH * res));
+
+                if (curMinRow < 0) {
+                    curMinRow = 0;
+                }
+                if (curMinCol < 0) {
+                    curMinCol = 0;
+                }
+                if (curMaxRow < 0) {
+                    curMaxRow = 0;
+                }
+                if (curMaxCol < 0) {
+                    curMaxCol = 0;
+                }
+
+                if (time == 1) {
                     minCol = curMinCol;
-                }
-            }
-            if (curMinRow >= minTileRow && curMinRow >= 0 && curMinRow <= curMaxRow && curMinRow <= maxTileRow) {
-                if (curMinRow <= minRow) {
-                    minRow = curMinRow;
-                }
-            }
-            if (curMaxCol <= maxTileCol && curMaxCol >= 0 && curMaxCol >= curMinCol && curMaxCol >= minTileCol) {
-                if (curMaxCol >= maxCol) {
                     maxCol = curMaxCol;
-                }
-            }
-            if (curMaxRow <= maxTileRow && curMaxRow >= 0 && curMaxRow >= curMinRow && curMaxRow >= minTileRow) {
-                if (curMaxRow >= maxRow) {
+                    minRow = curMinRow;
                     maxRow = curMaxRow;
                 }
+
+                //On teste pour récupèrer la plus grande zone à l'intérieur du TMS
+                if (curMinCol >= minTileCol && curMinCol >= 0 && curMinCol <= curMaxCol && curMinCol <= maxTileCol) {
+                    if (curMinCol <= minCol) {
+                        minCol = curMinCol;
+                    }
+                }
+                if (curMinRow >= minTileRow && curMinRow >= 0 && curMinRow <= curMaxRow && curMinRow <= maxTileRow) {
+                    if (curMinRow <= minRow) {
+                        minRow = curMinRow;
+                    }
+                }
+                if (curMaxCol <= maxTileCol && curMaxCol >= 0 && curMaxCol >= curMinCol && curMaxCol >= minTileCol) {
+                    if (curMaxCol >= maxCol) {
+                        maxCol = curMaxCol;
+                    }
+                }
+                if (curMaxRow <= maxTileRow && curMaxRow >= 0 && curMaxRow >= curMinRow && curMaxRow >= minTileRow) {
+                    if (curMaxRow >= maxRow) {
+                        maxRow = curMaxRow;
+                    }
+                }
+
             }
 
-            time++;
+            if (sources.at(ip)->getType() == WEBSERVICE) {
 
-        }
-    }
+                WebMapService *wms = reinterpret_cast<WebMapService*>(sources.at(ip));
 
-    if (bWebServices.size() != 0) {
+                BoundingBox<double> MMbbox = wms->getBbox();
 
-        for (int ip = 0; ip < bWebServices.size(); ip++) {
-            WebMapService *wms = reinterpret_cast<WebMapService*>(bWebServices.at(ip));
+                //On récupère les Min et Max de Pyr pour ce level dans la nouvelle projection
+                xo = tm.getX0();
+                yo = tm.getY0();
+                res = tm.getRes();
+                tileW = tm.getTileW();
+                tileH = tm.getTileH();
 
-            BoundingBox<double> MMbbox = wms->getBbox();
+                curMinRow = floor((yo - MMbbox.ymax) / (tileW * res));
+                curMinCol = floor((MMbbox.xmin - xo) / (tileH * res));
+                curMaxRow = floor((yo - MMbbox.ymin) / (tileW * res));
+                curMaxCol = floor((MMbbox.xmax - xo) / (tileH * res));
 
-            //On récupère les Min et Max de Pyr pour ce level dans la nouvelle projection
-            xo = tm.getX0();
-            yo = tm.getY0();
-            res = tm.getRes();
-            tileW = tm.getTileW();
-            tileH = tm.getTileH();
+                if (curMinRow < 0) {
+                    curMinRow = 0;
+                }
+                if (curMinCol < 0) {
+                    curMinCol = 0;
+                }
+                if (curMaxRow < 0) {
+                    curMaxRow = 0;
+                }
+                if (curMaxCol < 0) {
+                    curMaxCol = 0;
+                }
 
-            curMinRow = floor((yo - MMbbox.ymax) / (tileW * res));
-            curMinCol = floor((MMbbox.xmin - xo) / (tileH * res));
-            curMaxRow = floor((yo - MMbbox.ymin) / (tileW * res));
-            curMaxCol = floor((MMbbox.xmax - xo) / (tileH * res));
-
-            if (curMinRow < 0) {
-                curMinRow = 0;
-            }
-            if (curMinCol < 0) {
-                curMinCol = 0;
-            }
-            if (curMaxRow < 0) {
-                curMaxRow = 0;
-            }
-            if (curMaxCol < 0) {
-                curMaxCol = 0;
-            }
-
-            if (time == 1) {
-                minCol = curMinCol;
-                maxCol = curMaxCol;
-                minRow = curMinRow;
-                maxRow = curMaxRow;
-            }
-
-            //On teste pour récupèrer la plus grande zone à l'intérieur du TMS
-            if (curMinCol >= minTileCol && curMinCol >= 0 && curMinCol <= curMaxCol && curMinCol <= maxTileCol) {
-                if (curMinCol <= minCol) {
+                if (time == 1) {
                     minCol = curMinCol;
-                }
-            }
-            if (curMinRow >= minTileRow && curMinRow >= 0 && curMinRow <= curMaxRow && curMinRow <= maxTileRow) {
-                if (curMinRow <= minRow) {
-                    minRow = curMinRow;
-                }
-            }
-            if (curMaxCol <= maxTileCol && curMaxCol >= 0 && curMaxCol >= curMinCol && curMaxCol >= minTileCol) {
-                if (curMaxCol >= maxCol) {
                     maxCol = curMaxCol;
-                }
-            }
-            if (curMaxRow <= maxTileRow && curMaxRow >= 0 && curMaxRow >= curMinRow && curMaxRow >= minTileRow) {
-                if (curMaxRow >= maxRow) {
+                    minRow = curMinRow;
                     maxRow = curMaxRow;
                 }
+
+                //On teste pour récupèrer la plus grande zone à l'intérieur du TMS
+                if (curMinCol >= minTileCol && curMinCol >= 0 && curMinCol <= curMaxCol && curMinCol <= maxTileCol) {
+                    if (curMinCol <= minCol) {
+                        minCol = curMinCol;
+                    }
+                }
+                if (curMinRow >= minTileRow && curMinRow >= 0 && curMinRow <= curMaxRow && curMinRow <= maxTileRow) {
+                    if (curMinRow <= minRow) {
+                        minRow = curMinRow;
+                    }
+                }
+                if (curMaxCol <= maxTileCol && curMaxCol >= 0 && curMaxCol >= curMinCol && curMaxCol >= minTileCol) {
+                    if (curMaxCol >= maxCol) {
+                        maxCol = curMaxCol;
+                    }
+                }
+                if (curMaxRow <= maxTileRow && curMaxRow >= 0 && curMaxRow >= curMinRow && curMaxRow >= minTileRow) {
+                    if (curMaxRow >= maxRow) {
+                        maxRow = curMaxRow;
+                    }
+                }
+
             }
 
-            time++;
 
+            time++;
         }
+
     }
 
     if (minCol > minTileCol ) {
@@ -1480,10 +1437,10 @@ void ConfLoader::updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, ui
 
 }
 
-WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Format::eformat_data pyrFormat) {
+WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Format::eformat_data pyrFormat, Proxy proxy_default) {
 
     WebService * ws = NULL;
-    std::string url, proxy, user, pwd, referer, userAgent, version, layers, styles, format, crs;
+    std::string url, user, proxy, noProxy,pwd, referer, userAgent, version, layers, styles, format, crs;
     std::map<std::string,std::string> options;
     int timeout, retry, interval, channels;
     std::string name,ndValuesStr,value;
@@ -1493,6 +1450,24 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
     TiXmlElement* sUrl = sWeb->FirstChildElement("url");
     if (sUrl && sUrl->GetText()) {
         url = sUrl->GetTextStr();
+
+        std::size_t found = url.find(" ");
+        if (found!=std::string::npos) {
+          LOGGER_ERROR("Une URL ne peut contenir des espaces");
+          return NULL;
+        }
+
+        found = url.find("?");
+        size_t size = url.size()-1;
+        if (found!=std::string::npos && found!=size) {
+            LOGGER_ERROR("Une URL ne peut contenir un ou des '?' hormis le dernier qui est un séparateur");
+            return NULL;
+        }
+
+        if (found==std::string::npos) {
+            url = url + "?";
+        }
+
     } else {
         LOGGER_ERROR("Une URL doit etre specifiee pour un WebService");
         return NULL;
@@ -1502,7 +1477,14 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
     if (sProxy && sProxy->GetText()) {
         proxy = sProxy->GetTextStr();
     } else {
-        proxy = "";
+        proxy = proxy_default.proxyName;
+    }
+
+    sProxy = sWeb->FirstChildElement("noProxy");
+    if (sProxy && sProxy->GetText()) {
+        noProxy = sProxy->GetTextStr();
+    } else {
+        noProxy = proxy_default.noProxy;
     }
 
     TiXmlElement* sTimeOut = sWeb->FirstChildElement("timeout");
@@ -1587,7 +1569,14 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
             format = sFormat->GetTextStr();
             Rok4Format::eformat_data fmt = Rok4Format::fromMimeType(format);
             if (fmt == Rok4Format::UNKNOWN) {
-                LOGGER_ERROR("Un WMS doit contenir un format lisible par rok4");
+                LOGGER_ERROR("Un WMS doit être requete dans un format lisible par rok4");
+                return NULL;
+            }
+            //Pour le moment, on autorise que deux formats (jpeg et png)
+            //car les autres ne sont pas gérer correctement par les decodeurs de Rok4
+            //il faudrait notamment creer un decodeur pour le tiff (lecture de l'en-tête, puis decompression)
+            if (format != "image/jpeg" && format != "image/png") {
+                LOGGER_ERROR("Un WMS doit être requete en image/jpeg ou image/png");
                 return NULL;
             }
         } else {
@@ -1708,7 +1697,7 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
             }
         }
 
-        ws = new WebMapService(url, proxy, retry, interval, timeout, version, layers, styles, format, channels, crs, bbox, noDataValues,options);
+        ws = new WebMapService(url, proxy, noProxy, retry, interval, timeout, version, layers, styles, format, channels, crs, bbox, noDataValues,options);
 
     } else {
         //On retourne une erreur car le WMS est le seul WebService disponible pour le moment
@@ -1720,7 +1709,7 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
 
 }
 
-Pyramid *ConfLoader::parseBasedPyramid(TiXmlElement* sPyr, std::map<std::string, TileMatrixSet*> &tmsList, bool timesSpecific, std::map<std::string,Style*> stylesList, std::string parentDir) {
+Pyramid *ConfLoader::parseBasedPyramid(TiXmlElement* sPyr, std::map<std::string, TileMatrixSet*> &tmsList, bool timesSpecific, std::map<std::string,Style*> stylesList, std::string parentDir, Proxy proxy) {
 
     Pyramid *basedPyramid;
 
@@ -1747,7 +1736,7 @@ Pyramid *ConfLoader::parseBasedPyramid(TiXmlElement* sPyr, std::map<std::string,
             basedPyramidFilePath.insert ( 0,parentDir );
         }
 
-        basedPyramid = buildPyramid ( basedPyramidFilePath, tmsList, timesSpecific, stylesList );
+        basedPyramid = buildPyramid ( basedPyramidFilePath, tmsList, timesSpecific, stylesList, proxy );
 
         if ( !basedPyramid) {
             LOGGER_ERROR ( _ ( "La pyramide " ) << basedPyramidFilePath << _ ( " ne peut etre chargee" ) );
@@ -1789,18 +1778,18 @@ Pyramid *ConfLoader::parseBasedPyramid(TiXmlElement* sPyr, std::map<std::string,
 }
 
 
-Pyramid* ConfLoader::buildPyramid ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times, std::map<std::string,Style*> stylesList) {
+Pyramid* ConfLoader::buildPyramid ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times, std::map<std::string,Style*> stylesList, Proxy proxy) {
     TiXmlDocument doc ( fileName.c_str() );
     if ( !doc.LoadFile() ) {
         LOGGER_ERROR ( _ ( "Ne peut pas charger le fichier " ) << fileName );
         return NULL;
     }
-    return parsePyramid ( &doc,fileName,tmsList, times, stylesList);
+    return parsePyramid ( &doc,fileName,tmsList, times, stylesList, proxy);
 }
 
 
 //TODO avoid opening a pyramid file directly
-Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability, ServicesConf* servicesConf ) {
+Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability, ServicesConf* servicesConf, Proxy proxy ) {
     LOGGER_INFO ( _ ( "     Ajout du layer " ) << fileName );
     // Relative file Path
     char * fileNameChar = ( char * ) malloc ( strlen ( fileName.c_str() ) + 1 );
@@ -1910,6 +1899,10 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
             pElem=hDoc.FirstChild("getFeatureInfoBaseURL").Element();
             if ( pElem && pElem->GetText()) {
                 getFeatureInfoBaseURL = pElem->GetTextStr();
+		std::string a = getFeatureInfoBaseURL.substr(getFeatureInfoBaseURL.length()-1, 1);
+		if ( a.compare("?") != 0 ) {
+			getFeatureInfoBaseURL = getFeatureInfoBaseURL + "?";
+		}
             }
             pElem=hDoc.FirstChild("layers").Element();
             if ( pElem && pElem->GetText()) {
@@ -2220,7 +2213,7 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
             pyramidFilePath.insert ( 0,"/" );
             pyramidFilePath.insert ( 0,parentDir );
         }
-        pyramid = buildPyramid ( pyramidFilePath, tmsList, times, stylesList);
+        pyramid = buildPyramid ( pyramidFilePath, tmsList, times, stylesList, proxy);
         if ( !pyramid ) {
             LOGGER_ERROR ( _ ( "La pyramide " ) << pyramidFilePath << _ ( " ne peut etre chargee" ) );
             return NULL;
@@ -2280,17 +2273,17 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
     return layer;
 }//buildLayer
 
-Layer * ConfLoader::buildLayer ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList, bool reprojectionCapability, ServicesConf* servicesConf ) {
+Layer * ConfLoader::buildLayer ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList, bool reprojectionCapability, ServicesConf* servicesConf, Proxy proxy ) {
     TiXmlDocument doc ( fileName.c_str() );
     if ( !doc.LoadFile() ) {
         LOGGER_ERROR ( _ ( "Ne peut pas charger le fichier " ) << fileName );
         return NULL;
     }
-    return parseLayer ( &doc,fileName,tmsList,stylesList,reprojectionCapability,servicesConf );
+    return parseLayer ( &doc,fileName,tmsList,stylesList,reprojectionCapability,servicesConf, proxy );
 }
 
 // Load the server configuration (default is server.conf file) during server initialization
-bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog, int& nbProcess ) {
+bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog, int& nbProcess, Proxy &proxy ) {
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
@@ -2408,6 +2401,20 @@ bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConf
             std::cerr<<_ ( "Le WMSSupport [" ) << pElem->GetTextStr() <<_ ( "] n'est pas un booleen." ) <<std::endl;
             return false;
         }
+    }
+
+    pElem=hRoot.FirstChild ( "proxy" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        proxy.proxyName = "";
+    } else {
+        proxy.proxyName = pElem->GetTextStr();
+    }
+
+    pElem=hRoot.FirstChild ( "noProxy" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        proxy.noProxy = "";
+    } else {
+        proxy.noProxy = pElem->GetTextStr();
     }
 
     if ( !supportWMS && !supportWMTS ) {
@@ -2563,6 +2570,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
     std::string electronicMailAddress="";
     //WMS
     std::vector<std::string> formatList;
+    std::vector<std::string> infoFormatList;
     std::vector<CRS> globalCRSList;
     bool fullStyling = false;
     //WMTS
@@ -2724,6 +2732,14 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
         } else {
             formatList.push_back ( format );
         }
+    }
+    
+    for ( pElem=hRoot.FirstChild ( "infoFormatList" ).FirstChild ( "format" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "format" ) ) {
+        if ( ! ( pElem->GetText() ) )
+            continue;
+        std::string format ( pElem->GetText() );
+	// Pas de vérification pour pouvoir autoriser des formats non gérés par Rok4 mais par un Géoserver en back.
+        infoFormatList.push_back ( format );
     }
     
     pElem=hRoot.FirstChild ( "avoidEqualsCRSReprojection" ).Element();
@@ -2917,7 +2933,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
     MetadataURL mtdWMTS = MetadataURL ( "simple",metadataUrlWMTS,metadataMediaTypeWMTS );
     ServicesConf * servicesConf;
     servicesConf = new ServicesConf ( name, title, abstract, keyWords,serviceProvider, fee,
-                                      accessConstraint, layerLimit, maxWidth, maxHeight, maxTileX, maxTileY, formatList, globalCRSList , serviceType, serviceTypeVersion,
+                                      accessConstraint, layerLimit, maxWidth, maxHeight, maxTileX, maxTileY, formatList, infoFormatList, globalCRSList , serviceType, serviceTypeVersion,
                                       providerSite, individualName, individualPosition, voice, facsimile,
                                       addressType, deliveryPoint, city, administrativeArea, postCode, country,
                                       electronicMailAddress, mtdMWS, mtdWMTS, listofequalsCRS, restrictedCRSList, postMode, fullStyling, inspire, doweuselistofequalsCRS, addEqualsCRS, dowerestrictCRSList);
@@ -3066,14 +3082,14 @@ bool ConfLoader::isCRSAllowed(std::vector<std::string> restrictedCRSList, std::s
 bool ConfLoader::getTechnicalParam ( std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix,
                                      int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS,
                                      bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir,
-                                     std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog, int& nbProcess ) {
+                                     std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog, int& nbProcess, Proxy &proxy ) {
     std::cout<<_ ( "Chargement des parametres techniques depuis " ) <<serverConfigFile<<std::endl;
     TiXmlDocument doc ( serverConfigFile );
     if ( !doc.LoadFile() ) {
         std::cerr<<_ ( "Ne peut pas charger le fichier " ) << serverConfigFile<<std::endl;
         return false;
     }
-    return parseTechnicalParam ( &doc,serverConfigFile,logOutput,logFilePrefix,logFilePeriod,logLevel,nbThread,supportWMTS,supportWMS,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,styleDir, socket, backlog, nbProcess );
+    return parseTechnicalParam ( &doc,serverConfigFile,logOutput,logFilePrefix,logFilePeriod,logLevel,nbThread,supportWMTS,supportWMS,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,styleDir, socket, backlog, nbProcess, proxy );
 }
 
 bool ConfLoader::buildStylesList ( std::string styleDir, std::map< std::string, Style* >& stylesList, bool inspire ) {
@@ -3176,7 +3192,7 @@ bool ConfLoader::buildTMSList ( std::string tmsDir,std::map<std::string, TileMat
     return true;
 }
 
-bool ConfLoader::buildLayersList ( std::string layerDir, std::map< std::string, TileMatrixSet* >& tmsList, std::map< std::string, Style* >& stylesList, std::map< std::string, Layer* >& layers, bool reprojectionCapability, ServicesConf* servicesConf ) {
+bool ConfLoader::buildLayersList ( std::string layerDir, std::map< std::string, TileMatrixSet* >& tmsList, std::map< std::string, Style* >& stylesList, std::map< std::string, Layer* >& layers, bool reprojectionCapability, ServicesConf* servicesConf, Proxy proxy ) {
     LOGGER_INFO ( _ ( "CHARGEMENT DES LAYERS" ) );
     // lister les fichier du repertoire layerDir
     std::vector<std::string> layerFiles;
@@ -3204,7 +3220,7 @@ bool ConfLoader::buildLayersList ( std::string layerDir, std::map< std::string, 
     // generer les Layers decrits par les fichiers.
     for ( unsigned int i=0; i<layerFiles.size(); i++ ) {
         Layer * layer;
-        layer = buildLayer ( layerFiles[i], tmsList, stylesList , reprojectionCapability, servicesConf );
+        layer = buildLayer ( layerFiles[i], tmsList, stylesList , reprojectionCapability, servicesConf, proxy );
         if ( layer ) {
             layers.insert ( std::pair<std::string, Layer *> ( layer->getId(), layer ) );
         } else {

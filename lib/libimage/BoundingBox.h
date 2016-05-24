@@ -216,7 +216,7 @@ public:
     std::string toString() {
         std::ostringstream oss;
         oss.setf ( std::ios::fixed,std::ios::floatfield );
-        oss << xmin << ", " << ymin << ", " << xmax << ", " << ymax;
+        oss << xmin << "," << ymin << "," << xmax << "," << ymax;
         return oss.str() ;
     }
 

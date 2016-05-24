@@ -47,6 +47,7 @@
 #include "ServicesConf.h"
 #include <Interpolation.h>
 #include "WebService.h"
+#include "Source.h"
 
 //std::string getMimeType(std::string format);
 
@@ -57,7 +58,7 @@
 * Une pyramide est associee a un layer et comporte plusieurs niveaux
 */
 
-class Pyramid {
+class Pyramid: public Source {
 
 private:
 
@@ -438,28 +439,14 @@ private:
     /**
      * \~french \brief Si une pyramide est à la demande par niveau,
      * alors elle doit pouvoir tirer ses informations d'une autre pyramide
-     * Cet attribut contient donc la liste des pyramides de base utilisées
-     * pour générer la vraie pyramide
-     * Sachant qu'une pyramide specifique ne peut pas en contenir à son tour
-     * et ne contient qu'un niveau en mémoire
-     * \~english \brief If a pyramid is onDemand by level
-     * it must contain a reference to other pyramids which have data
-     * This is the list of those pyramids
-     * They can't be onDemand and have only one level in memory
-     */
-    std::map<std::string,std::vector<Pyramid*> > specificPyramids;
-
-    /**
-     * \~french \brief Si une pyramide est à la demande par niveau,
-     * alors elle doit pouvoir tirer ses informations d'une autre pyramide
      * ou d'un service web, voir plusieurs
-     * Cet attribut contient donc la liste des services web requêtés
+     * Cet attribut contient donc la liste des sources
      * \~english \brief If a pyramid is onDemand by level
      * it must contain a reference to other pyramids which have data
      * or web services
-     * This is the list of those web services
+     * This is the list of those sources
      */
-    std::map<std::string,std::vector<WebService*> > specificWebServices;
+    std::map<std::string,std::vector<Source*> > specificSources;
 
 public:
 
@@ -471,8 +458,7 @@ public:
      * \param[in] nombre de canaux des tuiles
      * \param[in] onDemand
      * \param[in] onFly
-     * \param[in] specificPyramids
-     * \param[in] specificWebServices
+     * \param[in] specificSources
      * \~english \brief Constructor
      * \param[in] levels of the pyramid
      * \param[in] tms
@@ -480,15 +466,13 @@ public:
      * \param[in] number of channels
      * \param[in] onDemand
      * \param[in] onFly
-     * \param[in] specificPyramids
-     * \param[in] specificWebServices
+     * \param[in] specificSources
      */
     PyramidOnDemand(std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format,
                     int channels, bool onDemand, bool onFly,
-                    std::map<std::string,std::vector<Pyramid*> > sPyramids,
-                    std::map<std::string,std::vector<WebService*> > specificWebServices) :
+                    std::map<std::string,std::vector<Source*> > sSources) :
         Pyramid(levels,tms,format,channels,onDemand,onFly),
-        specificPyramids (sPyramids), specificWebServices (specificWebServices) {}
+        specificSources (sSources) {}
 
 
 
@@ -504,8 +488,8 @@ public:
      * \~english \brief Get the specific pyramids
      * \return List of specific pyramids
      */
-    std::map<std::string,std::vector<Pyramid*> >  getSPyramids(){
-        return specificPyramids;
+    std::map<std::string,std::vector<Source*> >  getSources(){
+        return specificSources;
     }
 
     /**
@@ -514,83 +498,21 @@ public:
      * \~english \brief Set the specific pyramids
      * \param[in] List of specific pyramids
      */
-    void setSPyramids (std::map<std::string,std::vector<Pyramid*> >  sP) {
-        specificPyramids = sP;
+    void setSources (std::map<std::string,std::vector<Source*> >  sP) {
+        specificSources = sP;
     }
 
     /**
-     * \~french \brief Récupère les webservices
-     * \return Liste des webservices
-     * \~english \brief Get the webservices
-     * \return List of webservices
-     */
-    std::map<std::string,std::vector<WebService*> >  getSWebServices(){
-        return specificWebServices;
-    }
-
-    /**
-     * \~french \brief Modifie la liste des webservices
-     * \param[in] Liste des webservices
-     * \~english \brief Set the webservices
-     * \param[in] List of webservices
-     */
-    void setSWebSerices (std::map<std::string,std::vector<WebService*> >  sP) {
-        specificWebServices = sP;
-    }
-
-    /**
-     * \~french \brief Informe sur la spécificité d'un level
-     * \param[in] level id
-     * \return true si spécifique
-     * \~english \brief Tell if a level is specific
-     * \param[in] level id
-     * \return true if specific
-     */
-    bool isThisLevelSpecific ( std::string lv );
-
-    /**
-     * \~french \brief Informe sur la spécificité d'un level
-     * \param[in] level id
-     * \return true si spécifique
-     * \~english \brief Tell if a level is specific
-     * \param[in] level id
-     * \return true if specific
-     */
-    bool isThisLevelSpecificFromPyramids ( std::string lv );
-
-    /**
-     * \~french \brief Informe sur la spécificité d'un level
-     * \param[in] level id
-     * \return true si spécifique
-     * \~english \brief Tell if a level is specific
-     * \param[in] level id
-     * \return true if specific
-     */
-    bool isThisLevelSpecificFromWebServices ( std::string lv );
-
-    /**
-     * \~french \brief Renvoit la liste des pyramides de base
+     * \~french \brief Renvoit la liste des sources d'un level
      * ATTENTION: ne doit être utilisé que si on est sur qu'il existe
      * \param[in] level id
-     * \return pyramids
-     * \~english \brief Return the list of based pyramids
+     * \return sources
+     * \~english \brief Return the list of sources of a level
      * WARNING: should be used only if it exists
      * \param[in] level id
-     * \return pyramids
+     * \return sources
      */
-    std::vector<Pyramid *> getSourcePyramid( std::string lv);
-
-    /**
-     * \~french \brief Renvoit la liste des webservices de base
-     * ATTENTION: ne doit être utilisé que si on est sur qu'il existe
-     * \param[in] level id
-     * \return WebServices
-     * \~english \brief Return the list of based webservices
-     * WARNING: should be used only if it exists
-     * \param[in] level id
-     * \return WebServices
-     */
-    std::vector<WebService *> getSourceWebServices( std::string lv);
+    std::vector<Source *> getSourcesOfLevel( std::string lv);
 
 };
 
@@ -640,9 +562,8 @@ public:
      */
     PyramidOnFly(std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format,
                  int channels, bool onDemand, bool onFly, Photometric::ePhotometric ph, std::vector<int> ndv,
-                 std::map<std::string,std::vector<Pyramid*> > sPyramids,
-                 std::map<std::string,std::vector<WebService*> > specificWebServices) :
-        PyramidOnDemand(levels,tms,format,channels,onDemand,onFly,sPyramids,specificWebServices),
+                 std::map<std::string,std::vector<Source*> > sSources) :
+        PyramidOnDemand(levels,tms,format,channels,onDemand,onFly,sSources),
         photo (ph),
         ndValues (ndv) {}
 
