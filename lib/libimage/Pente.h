@@ -53,43 +53,93 @@
 
 class Pente {
 
-public:
+private:
 
-        /** \~french
-     * \brief resolution : algo : choix de l'algorithme de calcul de pentes par l'utilisateur (vaut "Z" pour Zevenbergen&Thorne, "H" pour Horn)
+     /** \~french
+     * \brief algo : choix de l'algorithme de calcul de pentes par l'utilisateur ("H" pour Horn)
      ** \~english
-     * \brief resolution : algo : slope calculation algorithm chosen by the user (value = "Z" for Zevenbergen&Thorne OR "H" for Horn)
+     * \brief algo : slope calculation algorithm chosen by the user ("H" for Horn)
      */
-
     std::string algo;
+
+    /** \~french
+    * \brief isPente : indique que style est calcul de pente a partir de la donnée
+    ** \~english
+    * \brief isPente : indicate that the style is a slope computed from data
+    */
     bool isPente;
 
 public:
 
+    /**
+     * \~french
+     * \brief Constructeur sans arguments
+     * \~english
+     * \brief Constructor without arguments
+     */
     Pente(): algo ("H"), isPente (false) {
 
     }
 
+    /**
+     * \~french
+     * \brief Constructeurs avec des arguments
+     * \~english
+     * \brief Constructor with arguments
+     */
     Pente(std::string a,bool p = false): algo (a), isPente (p) {
 
     }
 
+    /**
+     * \~french
+     * \brief Destructeur
+     * \~english
+     * \brief Destructor
+     */
     ~Pente() {
 
     }
 
-    bool empty(){
-        if (isPente) {return false;}
-        else {return true;}
-        }
-
+    /**
+     * \~french
+     * \brief Modifie l'algo
+     * \~english
+     * \brief Set algo
+     */
     void setAlgo(std::string n_algo){
         algo = n_algo;
-        }
+    }
 
+    /**
+     * \~french
+     * \brief Modifie la présence de la pente
+     * \~english
+     * \brief Set pente
+     */
     void setPente(bool n_pente){
         isPente=n_pente;
-        }
+    }
+
+    /**
+     * \~french
+     * \brief Renvoie l'algo
+     * \~english
+     * \brief Get algo
+     */
+    std::string getAlgo(){
+        return algo;
+    }
+
+    /**
+     * \~french
+     * \brief Renvoie la présence de la pente
+     * \~english
+     * \brief Get pente
+     */
+    bool getPente(){
+        return isPente;
+    }
 
 };
 #endif

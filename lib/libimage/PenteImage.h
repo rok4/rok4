@@ -43,29 +43,147 @@
 
 
 class PenteImage : public Image {
+
 private:
+
+    /** \~french
+    * \brief Image d'origine utilisée pour calculer la pente
+    ** \~english
+    * \brief Origin image used to compute the slope
+    */
     Image* origImage;
+
+    /** \~french
+    * \brief Buffer contenant la pente calculée
+    ** \~english
+    * \brief Buffer of the slope
+    */
     uint8_t* pente;
+
+    /** \~french
+    * \brief Buffer temporaire
+    ** \~english
+    * \brief Temporary buffer
+    */
     float* bufferTmp;
+
+    /** \~french
+    * \brief Matrice de convolution
+    ** \~english
+    * \brief Convolution matrix
+    */
     float matrix[9];
+
+    /** \~french
+    * \brief Résolution de l'image d'origine et donc finale
+    ** \~english
+    * \brief Resolution of the image
+    */
     float resolution;
+
+    /** \~french
+    * \brief algo : choix de l'algorithme de calcul de pentes par l'utilisateur ("H" pour Horn)
+    ** \~english
+    * \brief algo : slope calculation algorithm chosen by the user ("H" for Horn)
+    */
     std::string algo;
-    //uint8_t center;
+
+
+
+
+    /** \~french
+    * \brief Récupère la ligne
+    ** \~english
+    * \brief Get line
+    */
     int _getline ( uint8_t* buffer, int line );
+
+    /** \~french
+    * \brief Récupère la ligne
+    ** \~english
+    * \brief Get line
+    */
     int _getline ( uint16_t* buffer, int line );
+
+    /** \~french
+    * \brief Récupère la ligne
+    ** \~english
+    * \brief Get line
+    */
     int _getline ( float* buffer, int line );
+
+    /** \~french
+    * \brief Récupère la ligne dans l'image d'origine
+    ** \~english
+    * \brief Get line in origin image
+    */
     int getOrigLine ( uint8_t* buffer, int line );
+
+    /** \~french
+    * \brief Récupère la ligne dans l'image d'origine
+    ** \~english
+    * \brief Get line in origin image
+    */
     int getOrigLine ( uint16_t* buffer, int line );
+
+    /** \~french
+    * \brief Récupère la ligne dans l'image d'origine
+    ** \~english
+    * \brief Get line in origin image
+    */
     int getOrigLine ( float* buffer, int line );
+
+    /** \~french
+    * \brief Génére l'image de la pente
+    ** \~english
+    * \brief Generate slope
+    */
     void generate();
+
+    /** \~french
+    * \brief Génére une ligne de l'image de la pente
+    ** \~english
+    * \brief Generate one line of the slope
+    */
     void generateLine ( int line, float* line1, float* line2 , float* line3 );
 
 public:
+
+    /** \~french
+    * \brief Récupère la ligne
+    ** \~english
+    * \brief Get line
+    */
     virtual int getline ( float* buffer, int line );
+
+    /** \~french
+    * \brief Récupère la ligne
+    ** \~english
+    * \brief Get line
+    */
     virtual int getline ( uint8_t* buffer, int line );
+
+    /** \~french
+    * \brief Récupère la ligne
+    ** \~english
+    * \brief Get line
+    */
     virtual int getline ( uint16_t* buffer, int line );
+
+    /** \~french
+    * \brief Constructeur
+    ** \~english
+    * \brief Construtor
+    */
     PenteImage ( Image* image, float resolution, std::string algo);
+
+    /** \~french
+    * \brief Destructeur
+    ** \~english
+    * \brief Destructor
+    */
     virtual ~PenteImage();
+
 };
 
 #endif // PENTEIMAGE_H

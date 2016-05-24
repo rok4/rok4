@@ -302,21 +302,9 @@ public:
     inline uint8_t getCenter() {
         return center;
     }
-
-    /**
-     * \~french
-     * \brief Retourne instance de classe pente
-     * \return instance de la classe pente
-     * \~english
-     * \brief Return the lookup table
-     * \return lookup table
-     */
-    inline Pente* getPente() {
-        return &pente;
-    }
 	
 	
-	    /**
+     /**
      * \~french
      * \brief Retourne l'algo de la pente
      * \return algo de la pente
@@ -324,8 +312,20 @@ public:
      * \brief Return the algorithm
      * \return the algorithm
      */
-    inline std::string getAlgo() {
-        return getPente()->algo;
+    inline std::string getAlgoOfPente() {
+        return pente.getAlgo();
+    }
+
+    /**
+     * \~french
+     * \brief Retourne l'algo de la pente
+     * \return algo de la pente
+     * \~english
+     * \brief Return the algorithm
+     * \return the algorithm
+     */
+    inline bool isPente() {
+        return pente.getPente();
     }
 	
 	

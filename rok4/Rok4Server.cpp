@@ -405,19 +405,19 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
             }
         }
 
-        if ( style && curImage->channels == 1 && ! (style->getPente()->empty() ) ){
+        if (curImage->channels == 1 && style->isPente()){
 			if ( format == "image/png" && size == 1 ) {
 				switch ( pyrType ) {
                 case Rok4Format::TIFF_RAW_FLOAT32 :
                 case Rok4Format::TIFF_ZIP_FLOAT32 :
                 case Rok4Format::TIFF_LZW_FLOAT32 :
                 case Rok4Format::TIFF_PKB_FLOAT32 :
-					curImage = new PenteImage ( curImage, resolution,  style->getAlgo());
+                    curImage = new PenteImage ( curImage, resolution,  style->getAlgoOfPente());
 				default:
 					break;
 				}
 			} else {
-				curImage = new PenteImage ( curImage, resolution,  style->getAlgo());
+                curImage = new PenteImage ( curImage, resolution,  style->getAlgoOfPente());
 			}
 		}
 
