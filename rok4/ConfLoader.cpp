@@ -88,7 +88,8 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
     float exaggeration=1;
     int center=0;
     int errorCode;
-    std::string algo = "Z";
+    std::string algo = "";
+    bool estompage = false;
 
     /*TiXmlDocument doc(fileName.c_str());
     if (!doc.LoadFile()){
@@ -321,6 +322,7 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
 
     pElem = hRoot.FirstChild ( "estompage" ).Element();
     if ( pElem ) {
+        estompage = true;
         errorCode = pElem->QueryIntAttribute ( "angle",&angle );
         if ( errorCode == TIXML_WRONG_TYPE ) {
             LOGGER_ERROR ( _ ( "Un attribut angle invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
@@ -346,7 +348,7 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
 	pElem = hRoot.FirstChild ( "pente" ).Element();
     Pente pente;
 	
-	if ( pElem ) {
+    if ( pElem && !estompage) {
 
         pente.setPente(true);
         algo = pElem->Attribute("algo");
