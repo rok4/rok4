@@ -492,6 +492,25 @@ uint8_t* Rok4Image::memorizeRawTile ( size_t& size, int tile )
     return memorizedTiles[index];
 }
 
+int Rok4Image::getEncodedTile ( uint8_t* buf, int tile )
+{
+
+    if ( tile < 0 || tile >= tilesNumber ) {
+        LOGGER_ERROR ( "Unvalid tile's indice (" << tile << "). Have to be between 0 and " << tilesNumber-1 );
+        return 0;
+    }
+
+    StoreDataSourceFactory sdsf;
+    StoreDataSource* encData = sdsf.createStoreDataSource(name, ROK4_IMAGE_HEADER_SIZE + tile*4, ROK4_IMAGE_HEADER_SIZE + tilesNumber*4 + tile*4, "", context);
+    size_t realSize;
+
+    const uint8_t* tmp = encData->getData(realSize);
+    memcpy(buf, tmp, realSize);
+    delete encData;
+
+    return realSize;
+}
+
 int Rok4Image::getRawTile ( uint8_t* buf, int tile )
 {
     if ( tile < 0 || tile >= tilesNumber ) {

@@ -602,6 +602,14 @@ public:
      * \return taille utile du buffer, 0 si erreur
      */
     int getRawTile ( uint8_t* buf, int tile );
+    /**
+     * \~french
+     * \brief Retourne une tuile compressée
+     * \param[out] buf buffer contenant la tuile. Doit être alloué.
+     * \param[in] line Indice de la tuile à retourner (0 <= tile < tilesNumber)
+     * \return taille utile du buffer, 0 si erreur
+     */
+    int getEncodedTile ( uint8_t* buf, int tile );
     
     int getline ( uint8_t* buffer, int line );
     int getline ( uint16_t* buffer, int line );
@@ -631,6 +639,41 @@ public:
     int writeImage ( Image* pIn, bool crop );
 
     int writeTiles ( Image* pIn, int imageCol, int imageRow, bool crop );
+
+    int storeTiles ( Rok4Image* pIn, int imageCol, int imageRow) {
+
+        if (context->getType() != CEPHCONTEXT) {
+            LOGGER_ERROR("Write tiles separatly from a Rok4Image is possible only with a ceph storage");
+            return -1;
+        }
+
+        int tileColUL = imageCol * tileWidthwise;
+        int tileRowUL = imageRow * tileHeightwise;
+
+        uint8_t* tile = new uint8_t[2*tileHeight*rawTileLineSize];
+
+        for ( int y = 0; y < tileHeightwise; y++ ) {
+
+            for ( int x = 0; x < tileWidthwise; x++ ) {
+
+                int tileInd = tileWidthwise * y + x;
+
+                char tileName[256];
+                sprintf(tileName, "%s_%d_%d", name, tileColUL + x, tileRowUL + y);
+
+                int realSize = pIn->getEncodedTile(tile, tileInd);
+
+                if (! context->writeFull(tile, realSize, std::string(tileName))) {
+                    LOGGER_ERROR("Error writting full tile " << tileColUL + x << "," << tileRowUL + y);
+                    return -1;
+                }
+            }
+        }
+
+        delete [] tile;
+
+        return 0;
+    }
 
     /**
      * \~french

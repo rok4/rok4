@@ -244,7 +244,7 @@ int main ( int argc, char **argv ) {
     }
 
     LOGGER_DEBUG ( "Write" );
-    if (rok4Image->writeTiles(sourceImage, imageI, imageJ, false) < 0) {
+    if (rok4Image->storeTiles(sourceImage, imageI, imageJ) < 0) {
         error("Cannot write ROK4 tiles on ceph", -1);
     }
 
