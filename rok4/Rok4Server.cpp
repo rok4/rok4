@@ -87,6 +87,8 @@
 #include "EmptyImage.h"
 #include "PenteImage.h"
 #include "Pente.h"
+#include "AspectImage.h"
+#include "Aspect.h"
 #include "ConvertedChannelsImage.h"
 
 
@@ -414,6 +416,22 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
                 curImage = new PenteImage ( curImage, resolution,  style->getAlgoOfPente());
 			}
 		}
+
+        if (curImage->channels == 1 && style->isAspect()){
+            if ( format == "image/png" && size == 1 ) {
+                switch ( pyrType ) {
+                case Rok4Format::TIFF_RAW_FLOAT32 :
+                case Rok4Format::TIFF_ZIP_FLOAT32 :
+                case Rok4Format::TIFF_LZW_FLOAT32 :
+                case Rok4Format::TIFF_PKB_FLOAT32 :
+                    curImage = new AspectImage ( curImage, resolution,  style->getAlgoOfAspect(), style->getMinSlopeOfAspect());
+                default:
+                    break;
+                }
+            } else {
+                curImage = new AspectImage ( curImage, resolution,  style->getAlgoOfAspect(), style->getMinSlopeOfAspect());
+            }
+        }
 
         if ( style && curImage->channels == 1 && ! ( style->getPalette()->getColoursMap()->empty() ) ) {
             if ( format == "image/png" && size == 1 ) {
