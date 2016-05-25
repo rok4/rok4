@@ -79,6 +79,14 @@ Level::~Level() {
     delete noDataSourceProxy;
     if ( noDataSource )
         delete noDataSource;
+    // les contextes sont dans des contextBooks
+    // ce sont les contextBooks qui se chargent de détruire les contexts
+    // mais ce n'est pas le cas des FILECONTEXT
+    if (context) {
+        if (context->getType() == FILECONTEXT) {
+            delete context;
+        }
+    }
 
 }
 

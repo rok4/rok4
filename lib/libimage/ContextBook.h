@@ -146,6 +146,22 @@ public:
      */
     Context * addContext(std::string pool);
 
+    /**
+     * \~french
+     * \brief Connecte l'ensemble des contexts de l'annuaire
+     * \~english
+     * \brief Connect all contexts
+     */
+    bool connectAllContext();
+
+    /**
+     * \~french
+     * \brief Deconnecte l'ensemble des contexts de l'annuaire
+     * \~english
+     * \brief Disconnect all contexts
+     */
+    void disconnectAllContext();
+
 
     /**
      * \~french

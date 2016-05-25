@@ -90,57 +90,61 @@ SwiftContext::SwiftContext (std::string container) : Context(), container_name(c
 }
 
 bool SwiftContext::connection() {
-    LOGGER_DEBUG("Swift authentication");
+    if (!connected) {
 
-    CURLcode res;
-    struct curl_slist *list = NULL;
+        LOGGER_DEBUG("Swift authentication");
 
-    curl = curl_easy_init();
-    curl_easy_setopt(curl, CURLOPT_URL, auth_url.c_str());
-    //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
-    curl_easy_setopt(curl, CURLOPT_NOPROXY, "*");
+        CURLcode res;
+        struct curl_slist *list = NULL;
 
-    // On constitue le header et le moyen de récupération des informations (avec les structures de LibcurlStruct)
+        curl = curl_easy_init();
+        curl_easy_setopt(curl, CURLOPT_URL, auth_url.c_str());
+        //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+        curl_easy_setopt(curl, CURLOPT_NOPROXY, "*");
 
-    char xUser[256];
-    strcpy(xUser, "X-Storage-User: ");
-    strcat(xUser, user_account.c_str());
-    strcat(xUser, ":");
-    strcat(xUser, user_name.c_str());
+        // On constitue le header et le moyen de récupération des informations (avec les structures de LibcurlStruct)
 
-    char xPass[256];
-    strcpy(xPass, "X-Storage-Pass: ");
-    strcat(xPass, user_passwd.c_str());
+        char xUser[256];
+        strcpy(xUser, "X-Storage-User: ");
+        strcat(xUser, user_account.c_str());
+        strcat(xUser, ":");
+        strcat(xUser, user_name.c_str());
 
-    list = curl_slist_append(list, xUser);
-    list = curl_slist_append(list, xPass);
+        char xPass[256];
+        strcpy(xPass, "X-Storage-Pass: ");
+        strcat(xPass, user_passwd.c_str());
 
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
-    curl_easy_setopt(curl, CURLOPT_HEADERDATA, (void*) &authHdr);
-    curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, header_callback);
+        list = curl_slist_append(list, xUser);
+        list = curl_slist_append(list, xPass);
 
-    res = curl_easy_perform(curl);
-    if( CURLE_OK != res) {
-        LOGGER_ERROR("Cannot authenticate to Swift");
-        LOGGER_ERROR(curl_easy_strerror(res));
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
+        curl_easy_setopt(curl, CURLOPT_HEADERDATA, (void*) &authHdr);
+        curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, header_callback);
+
+        res = curl_easy_perform(curl);
+        if( CURLE_OK != res) {
+            LOGGER_ERROR("Cannot authenticate to Swift");
+            LOGGER_ERROR(curl_easy_strerror(res));
+            curl_slist_free_all(list);
+            curl_easy_cleanup(curl);
+            return false;
+        }
+
+        long http_code = 0;
+        curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
+        if (http_code < 200 || http_code > 299) {
+            LOGGER_ERROR("Cannot authenticate to Swift");
+            LOGGER_ERROR("Response HTTP code : " << http_code);
+            curl_slist_free_all(list);
+            curl_easy_cleanup(curl);
+            return false;
+        }
+
         curl_slist_free_all(list);
         curl_easy_cleanup(curl);
-        return false;
-    }
+        connected = true;
 
-    long http_code = 0;
-    curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
-    if (http_code < 200 || http_code > 299) {
-        LOGGER_ERROR("Cannot authenticate to Swift");
-        LOGGER_ERROR("Response HTTP code : " << http_code);
-        curl_slist_free_all(list);
-        curl_easy_cleanup(curl);
-        return false;
     }
-
-    curl_slist_free_all(list);
-    curl_easy_cleanup(curl);
-    connected = true;
     return true;
 }
 

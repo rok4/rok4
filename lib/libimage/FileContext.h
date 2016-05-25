@@ -131,6 +131,10 @@ public:
     }
     
     bool connection();
+
+    void closeConnection() {
+        connected = false;
+    }
     
     virtual ~FileContext() {
     }

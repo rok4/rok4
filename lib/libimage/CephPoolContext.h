@@ -144,13 +144,22 @@ public:
         }
         return oss.str() ;
     }
+
+    void closeConnection() {
+        if (connected) {
+            rados_aio_flush(io_ctx);
+            rados_ioctx_destroy(io_ctx);
+            rados_shutdown(cluster);
+            connected = false;
+        }
+    }
     
     virtual ~CephPoolContext() {
 
 
-        rados_aio_flush(io_ctx);
-        rados_ioctx_destroy(io_ctx);
-        rados_shutdown(cluster);
+//        rados_aio_flush(io_ctx);
+//        rados_ioctx_destroy(io_ctx);
+//        rados_shutdown(cluster);
     }
 };
 

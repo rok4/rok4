@@ -103,6 +103,8 @@ public:
     virtual void print() = 0;
 
     virtual std::string toString() = 0;
+
+    virtual void closeConnection() = 0;
     
     virtual ~Context() {}
 };

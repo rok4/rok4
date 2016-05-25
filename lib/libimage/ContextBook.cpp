@@ -91,10 +91,10 @@ Context * ContextBook::addContext(std::string pool)
         }
 
         //on se connecte
-        if (!ctx->connection()) {
-            LOGGER_ERROR("Impossible de se connecter aux donnees.");
-            return NULL;
-        }
+//        if (!ctx->connection()) {
+//            LOGGER_ERROR("Impossible de se connecter aux donnees.");
+//            return NULL;
+//        }
         //on ajoute au book
         book.insert ( std::pair<std::string,Context*>(pool,ctx) );
 
@@ -125,5 +125,24 @@ ContextBook::~ContextBook()
         it->second = NULL;
     }
 
+}
+
+bool ContextBook::connectAllContext()
+{
+    std::map<std::string,Context*>::iterator it;
+    for (it=book.begin(); it!=book.end(); ++it) {
+        if (!(it->second->connection())) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void ContextBook::disconnectAllContext()
+{
+    std::map<std::string,Context*>::iterator it;
+    for (it=book.begin(); it!=book.end(); ++it) {
+        it->second->closeConnection();
+    }
 }
 

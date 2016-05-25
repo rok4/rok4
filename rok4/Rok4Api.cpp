@@ -758,6 +758,54 @@ void rok4KillServer ( Rok4Server* server ) {
 }
 
 /**
+* \brief Connexion aux contexts contenus dans les contextBook du serveur
+*/
+
+int rok4ConnectObjectContext(Rok4Server* server) {
+
+    int error = 1;
+
+    ContextBook *book = server->getCephBook();
+
+    if (book) {
+        if (!book->connectAllContext()) {
+            return error;
+        }
+    }
+
+    book = server->getSwiftBook();
+
+    if (book) {
+        if (!book->connectAllContext()) {
+            return error;
+        }
+    }
+
+    return 0;
+
+}
+
+/**
+* \brief Deconnexion aux contexts contenus dans les contextBook du serveur
+*/
+
+void rok4DisconnectObjectContext(Rok4Server* server) {
+
+    ContextBook *book = server->getCephBook();
+
+    if (book) {
+        book->disconnectAllContext();
+    }
+
+    book = server->getSwiftBook();
+
+    if (book) {
+        book->disconnectAllContext();
+    }
+
+}
+
+/**
  * \brief Extinction du Logger
  */
 void rok4KillLogger() {
