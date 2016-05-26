@@ -272,12 +272,14 @@ sub doIt {
         return FALSE;
     }
 
-    my ($xmin,$xmax,$ymin,$ymax) = BE4::ProxyGDAL::getBbox($ogrShape);
+    my $bboxes = BE4::ProxyGDAL::getBboxes($ogrShape);
     
-    if (! defined $xmin) {
-        ERROR("Cannot calculate bbox from the WKT Geometry");
+    if (! defined $bboxes) {
+        ERROR("Cannot calculate bboxes from the WKT Geometry");
         return FALSE;
     }
+
+    my $nbbboxes = scalar @{$bboxes};
     
     
     ALWAYS(sprintf ">>> Simulation for wkt '%s' ", $options{wkt});
@@ -319,30 +321,44 @@ sub doIt {
             }
             
             my $nbImages = 0;
+
+            my $curBbox = 1;
+
+            foreach my $bb (@{$bboxes}) {
+
+                DEBUG("Bbox $curBbox / $nbbboxes");
             
-            my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices($xmin,$ymin,$xmax,$ymax,$width,$height);
-            
-            for (my $i = $iMin; $i <= $iMax; $i++) {
-                for (my $j = $jMin; $j <= $jMax; $j++) {
-                    my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBBox($i,$j,$width,$height);
+                my $xmin = $bb->[0];
+                my $ymin = $bb->[2];
+                my $xmax = $bb->[1];
+                my $ymax = $bb->[3];
 
-                    my $WKTtile = sprintf "POLYGON((%s %s,%s %s,%s %s,%s %s,%s %s))",
-                        $xmin,$ymin,
-                        $xmin,$ymax,
-                        $xmax,$ymax,
-                        $xmax,$ymin,
-                        $xmin,$ymin;
+                my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices($xmin,$ymin,$xmax,$ymax,$width,$height);
+                
+                for (my $i = $iMin; $i <= $iMax; $i++) {
+                    for (my $j = $jMin; $j <= $jMax; $j++) {
+                        my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBBox($i,$j,$width,$height);
 
-                    my $OGRtile = BE4::ProxyGDAL::geometryFromWKT($WKTtile);
+                        my $WKTtile = sprintf "POLYGON((%s %s,%s %s,%s %s,%s %s,%s %s))",
+                            $xmin,$ymin,
+                            $xmin,$ymax,
+                            $xmax,$ymax,
+                            $xmax,$ymin,
+                            $xmin,$ymin;
 
-                    if (BE4::ProxyGDAL::isIntersected($OGRtile, $ogrShape)) {
-                        $nbImages++;
-                        if (defined $options{lists}) {
-                            print OUT "$i,$j\n";
+                        my $OGRtile = BE4::ProxyGDAL::geometryFromWKT($WKTtile);
+
+                        if (BE4::ProxyGDAL::isIntersected($OGRtile, $ogrShape)) {
+                            $nbImages++;
+                            if (defined $options{lists}) {
+                                print OUT "$i,$j\n";
+                            }
                         }
-                    }
 
+                    }
                 }
+
+                $curBbox++;
             }
             
             INFO("\t Level $level : $nbImages (pixel dimension of an image $imageWidth x $imageHeight)");

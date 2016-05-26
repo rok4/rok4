@@ -77,6 +77,7 @@ use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
+use Geo::GDAL;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);

@@ -385,40 +385,43 @@ sub identifyBottomNodes {
             return FALSE;
         }
 
-        my @convBbox = BE4::ProxyGDAL::getBbox($convertExtent); # (xmin,xmax,ymin,ymax)
-        DEBUG("BBox convertie de l'extent de datasource @convBbox");
-        
-        $self->updateBBox($convBbox[0],$convBbox[2],$convBbox[1],$convBbox[3]);
-        
-        my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices($convBbox[0],$convBbox[2],$convBbox[1],$convBbox[3],$TPW,$TPH);
-        
-        for (my $i = $iMin; $i <= $iMax; $i++) {
-            for (my $j = $jMin; $j <= $jMax; $j++) {
-                my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBBox($i,$j,$TPW,$TPH);
+        # Pour éviter de balayer une bbox trop grande, on récupère la bbox de chaque partie de la - potentiellement multi - géométrie
+        my $bboxes = BE4::ProxyGDAL::getBboxes($convertExtent);
 
-                my $WKTtile = sprintf "POLYGON((%s %s,%s %s,%s %s,%s %s,%s %s))",
-                    $xmin,$ymin,
-                    $xmin,$ymax,
-                    $xmax,$ymax,
-                    $xmax,$ymin,
-                    $xmin,$ymin;
+        foreach my $bb (@{$bboxes}) {
+        
+            $self->updateBBox($bb->[0],$bb->[2],$bb->[1],$bb->[3]);
+            
+            my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices$bb->[0],$bb->[2],$bb->[1],$bb->[3],$TPW,$TPH);
+            
+            for (my $i = $iMin; $i <= $iMax; $i++) {
+                for (my $j = $jMin; $j <= $jMax; $j++) {
+                    my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBBox($i,$j,$TPW,$TPH);
 
-                my $OGRtile = BE4::ProxyGDAL::geometryFromWKT($WKTtile);
+                    my $WKTtile = sprintf "POLYGON((%s %s,%s %s,%s %s,%s %s,%s %s))",
+                        $xmin,$ymin,
+                        $xmin,$ymax,
+                        $xmax,$ymax,
+                        $xmax,$ymin,
+                        $xmin,$ymin;
 
-                if (BE4::ProxyGDAL::isIntersected($OGRtile, $convertExtent)) {
-                    my $nodeKey = sprintf "%s_%s", $i, $j;
-                    # Create a new Node
-                    my $node = BE4::Node->new({
-                        i => $i,
-                        j => $j,
-                        tm => $tm,
-                        graph => $self,
-                    });
-                    if (! defined $node) { 
-                        ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $self->{bottomID}, $i, $j);
-                        return FALSE;
+                    my $OGRtile = BE4::ProxyGDAL::geometryFromWKT($WKTtile);
+
+                    if (BE4::ProxyGDAL::isIntersected($OGRtile, $convertExtent)) {
+                        my $nodeKey = sprintf "%s_%s", $i, $j;
+                        # Create a new Node
+                        my $node = BE4::Node->new({
+                            i => $i,
+                            j => $j,
+                            tm => $tm,
+                            graph => $self,
+                        });
+                        if (! defined $node) { 
+                            ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $self->{bottomID}, $i, $j);
+                            return FALSE;
+                        }
+                        $self->{nodes}->{$bottomID}->{$nodeKey} = $node;
                     }
-                    $self->{nodes}->{$bottomID}->{$nodeKey} = $node;
                 }
             }
         }

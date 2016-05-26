@@ -141,6 +141,33 @@ sub getBbox {
 }
 
 =begin nd
+Function: getBboxes
+
+Return the bboxes from a OGR geometry object. If geometry is a collection, we have one bbox per geometry in the collection.
+
+Parameters (list):
+    geom - <Geo::OGR::Geometry> - OGR geometry object
+
+Return (Array reference of array references):
+    Array of N ($xmin,$xmax,$ymin,$ymax), undef if failure
+=cut
+sub getBboxes {
+    my $geom = shift;
+
+    my $bboxes = [];
+
+    my $count = $geom->GetGeometryCount();
+
+    for (my $i = 0; $i < $count ; $i++) {
+        my $part = $geom->GetGeometryRef($i);
+        my $bboxpart = $part->GetEnvelope();
+
+        push @{$bboxes}, [$bboxpart->[0],$bboxpart->[1],$bboxpart->[2],$bboxpart->[3]];
+    }
+    return $bboxes;
+}
+
+=begin nd
 Function: getConvertedGeometry
 
 Parameters (list):
