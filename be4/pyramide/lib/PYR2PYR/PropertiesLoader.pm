@@ -156,6 +156,11 @@ sub _check {
         return FALSE;
     }
 
+    if ($self->{cfgObject}->isSection("process") != 2) {
+        ERROR("'process' section is missing");
+        return FALSE;
+    }
+
     if (! $self->{cfgObject}->isProperty({property=>"pyr_desc_file",section=>"from"})) {
        ERROR("'pyr_desc_file' property is missing");
         return FALSE; 
@@ -177,6 +182,16 @@ sub _check {
     }
     if (! $self->{cfgObject}->isProperty({property=>"pyr_desc_path",section=>"to"})) {
        ERROR("'pyr_desc_path' property is missing");
+        return FALSE; 
+    }
+
+
+    if (! $self->{cfgObject}->isProperty({property=>"job_number",section=>"process"})) {
+       ERROR("'job_number' property is missing");
+        return FALSE; 
+    }
+    if (! $self->{cfgObject}->isProperty({property=>"path_temp",section=>"process"})) {
+       ERROR("'path_temp' property is missing");
         return FALSE; 
     }
 

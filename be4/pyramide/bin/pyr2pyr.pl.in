@@ -58,6 +58,7 @@ use POSIX qw(locale_h);
 use Log::Log4perl qw(:easy);
 use Getopt::Long;
 use File::Basename;
+use File::Path;
 use Cwd;
 use Data::Dumper;
 
@@ -295,6 +296,50 @@ sub addSubElm {
 
 
 
+my $BASHFUNCTIONS   = <<'FUNCTIONS';
+
+StoreTiles () {
+    local fullPath=$1
+    local col=$2
+    local row=$3
+    local tpw=$4
+    local tph=$5
+    local prefix_objName=$6
+
+    let imin=$col*$tpw
+    let imax=$col*$tpw+$tpw-1
+    let jmin=$row*$tph
+    let jmax=$row*$tph+$tph-1
+                 
+    slab2tiles $fullPath -pool $poolName -ij $col $row -t $tpw $tph $prefix_objName
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        
+
+    for i in `seq $imin $imax` ; do 
+        for j in `seq $jmin $jmax` ; do 
+            echo "${prefix_objName}_${i}_${j}" >> ${TMP_LIST_FILE}
+            if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        done
+    done
+}
+
+
+StoreSlab () {
+    local fullPath=$1
+    local objName=$2
+  
+    rados -p $poolName put $objName $fullPath 
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+
+    echo "${objName}" >> ${TMP_LIST_FILE}
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+
+
+
+FUNCTIONS
+
+
 sub doIt {
 
 
@@ -303,7 +348,10 @@ sub doIt {
     my $params = $this{params};
     my $follow_links = 1;
     my $store_tiles = 0;
+    my $script_index = 0;
 
+
+    # Test des parametres
     if ( exists $params->{from}->{follow_links} && defined $params->{from}->{follow_links} && uc($params->{from}->{follow_links}) eq "FALSE") {
         $follow_links = 0;
     }
@@ -318,6 +366,59 @@ sub doIt {
     
     my $pyrName = $params->{to}->{pyr_name};
     my $poolName = $params->{to}->{pool_name};
+    my $job_number = $params->{process}->{job_number};
+    my $path_temp = $params->{process}->{path_temp};
+    my $listFinal = $params->{to}->{pyr_desc_path} . "/$pyrName.list";
+
+    # Création du répertoire de sortie
+    if (! -d $params->{to}->{pyr_desc_path}) {
+        DEBUG (sprintf "Create the descriptor directory '%s' !", $params->{to}->{pyr_desc_path});
+        eval { mkpath([$params->{to}->{pyr_desc_path}]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the descriptor directory '%s' : %s !", $params->{to}->{pyr_desc_path}, $@);
+            return FALSE;
+        }
+    }
+
+    # Initialisation des scripts
+    if (! -d $path_temp) {
+        DEBUG (sprintf "Create the temporary directory '%s' !", $path_temp);
+        eval { mkpath([$path_temp]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the temporary directory '%s' : %s !", $path_temp, $@);
+            return FALSE;
+        }
+    }
+
+
+    # Open stream
+    my @streams;
+    for (my $i = 1 ; $i < $job_number + 1; $i++){
+        my $STREAM;
+        my $list = "${path_temp}/SCRIPT_$i.list";
+        my $file = "${path_temp}/SCRIPT_$i.sh";
+        if ( ! (open $STREAM,">", $file )) {
+            ERROR(sprintf "Can not open stream to '%s' !", $file);
+            return FALSE;
+        }
+        push(@streams,$STREAM);
+        print $STREAM "#!/bin/bash\n\nTMP_LIST_FILE=$list\npoolName=$poolName\n";
+        print $STREAM $BASHFUNCTIONS;
+    }
+
+    my $STREAMFINISHER;
+    my $file = "${path_temp}/SCRIPT_FINISHER.sh";
+    if ( ! (open $STREAMFINISHER,">", $file )) {
+        ERROR(sprintf "Can not open stream to '%s' !", $file);
+        return FALSE;
+    }
+    print $STREAMFINISHER "#!/bin/bash\n";
+    print $STREAMFINISHER "echo $poolName > $listFinal\n";
+    print $STREAMFINISHER "echo '#' >> $listFinal\n";
+    print $STREAMFINISHER "cat ${path_temp}/*.list >> $listFinal\n";
+
+    close $STREAMFINISHER;
+
     my $tpw;
     my $tph;
 
@@ -393,13 +494,6 @@ sub doIt {
         return FALSE;
     };
 
-    open (LIST_OUT, ">", $params->{to}->{pyr_desc_path} . "/$pyrName.list") or do {
-        ERROR(sprintf "Erreur d'ouverture du fichier list (%s) : %s!", $params->{to}->{pyr_desc_path} . "/$pyrName.list", $!);
-        return FALSE;
-    };
-
-    print LIST_OUT "$poolName\n";
-    print LIST_OUT "#\n";
 
     my %roots;
     while (my $line = <FILE>) {
@@ -458,34 +552,27 @@ sub doIt {
         }
 
         if ( $store_tiles && defined($col) ) {
-            my $cmd = sprintf("slab2tiles %s -pool %s -ij %s %s -t %s %s %s", $fullPath, $params->{to}->{pool_name},$col, $row, $tpw, $tph, $prefix_objName);
+            my $cmd = sprintf("StoreTiles %s %s %s %s %s %s\n", $fullPath, $col, $row, $tpw, $tph, $prefix_objName);
             DEBUG($cmd);
-            my $return = `$cmd`;
-            if ( $? ) {
-                ERROR(sprintf "Impossible de pousser le fichier (%s) dans le pool %s sous le nom %s : %s",$fullPath,$params->{to}->{pool_name},${prefix_objName},$return);
-                next;
-            }
 
-            for (my $i = $col * $tpw ; $i < ($col + 1) * $tpw; $i++){
-                for (my $j = $row * $tph ; $j < ($row + 1) * $tph; $j++){
-                    print LIST_OUT "${prefix_objName}_${i}_${j}\n";
-                }
-            }
+            my $stream = $streams[$script_index];
+            print $stream $cmd;
+            $script_index = ($script_index + 1) % $job_number;
         }
         else {
-            print LIST_OUT "$objName\n";
-            my $cmd = sprintf("rados -p %s put %s %s", $params->{to}->{pool_name},$objName,$fullPath);
+            my $cmd = sprintf("StoreSlab %s %s\n", $fullPath, $objName);
             DEBUG($cmd);
-            my $return = `$cmd`;
-            if ( $? ) {
-                ERROR(sprintf "Impossible de pousser le fichier (%s) dans le pool %s sous le nom %s : %s",$fullPath,$params->{to}->{pool_name},$objName,$return);
-            }
+            my $stream = $streams[$script_index];
+            print $stream $cmd;
+            $script_index = ($script_index + 1) % $job_number;
         }
-
 
     }
 
-    close LIST_OUT;
+    for (my $i = 0 ; $i < $job_number ; $i++){
+        close $streams[$i];
+    }
+
     close FILE;
 
     return TRUE;
