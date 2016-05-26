@@ -160,7 +160,7 @@ void AspectImage::generateLine ( int line, float* line1, float* line2, float* li
 
     //calcul de la pente pour ne pas afficher l'exposition en dessous d'une certaine valeur de pente
     slope = sqrt(pow(value1,2.0)+pow(value2,2.0));
-    if (slope <= minSlope) {
+    if (slope < minSlope) {
         value = -1.0;
     } else {
         value = (atan2(value1,value2) + M_PI) * 180 / M_PI;
@@ -176,7 +176,7 @@ void AspectImage::generateLine ( int line, float* line1, float* line2, float* li
 
         //calcul de la pente pour ne pas afficher l'exposition en dessous d'une certaine valeur de pente
         slope = sqrt(pow(value1,2.0)+pow(value2,2.0));
-        if (slope <= minSlope) {
+        if (slope < minSlope) {
             value = -1.0;
         } else {
             value = (atan2(value1,value2) + M_PI) * 180 / M_PI;
@@ -193,7 +193,7 @@ void AspectImage::generateLine ( int line, float* line1, float* line2, float* li
 
     //calcul de la pente pour ne pas afficher l'exposition en dessous d'une certaine valeur de pente
     slope = sqrt(pow(value1,2.0)+pow(value2,2.0));
-    if (slope <= minSlope) {
+    if (slope < minSlope) {
         value = -1.0;
     } else {
         value = (atan2(value1,value2) + M_PI) * 180 / M_PI;
