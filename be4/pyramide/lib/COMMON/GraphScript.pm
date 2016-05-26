@@ -369,6 +369,7 @@ sub prepare {
         $code   .= sprintf ("export ROK4_CEPH_CONFFILE=\"%s\"\n", $pyr->getConfFile);
     }
     else {
+        ERROR(ref ($pyr));
         ERROR("Provided object for pyramid is not a handled pyramid");
     }
 
@@ -394,6 +395,7 @@ Print text in the script's file, using the opened stream.
 
 Parameters (list):
     text - string - Text to write in file.
+    w - integer - Weight of the instructions to write
 =cut
 sub write {
     my $self = shift;

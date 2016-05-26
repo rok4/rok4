@@ -78,7 +78,6 @@ use Data::Dumper;
 
 use COMMON::Harvesting;
 use BE4CEPH::Level;
-use COMMON::GraphScript;
 use COMMON::GraphNode;
 
 require Exporter;

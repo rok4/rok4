@@ -48,14 +48,18 @@ Log::Log4perl->easy_init({
 use FindBin qw($Bin); # aboslute path of the present testfile in $Bin
 
 # My tested class
-use BE4::Commands;
+use BE4::Node;
 
-#Other BE4 Used Class
+#Other Used Class
 use BE4::Pyramid;
+use COMMON::TileMatrix;
+use COMMON::DataSource;
+use COMMON::DataSourceLoader;
+use BE4::Commands;
 
 ######################################################
 
-# Commands Object Creation
+# Node Object Creation
 
 my $pyramid = BE4::Pyramid->new({
 
@@ -85,20 +89,58 @@ my $pyramid = BE4::Pyramid->new({
 
     color => "FFFFFF"
 });
+ok (defined $pyramid,"pyramid ok.");
+
+my $DSL = COMMON::DataSourceLoader->new({ filepath_conf => $Bin."/../../sources/sources.txt" });
+ok (defined $DSL,"DSL ok.");
 
 my $commands = BE4::Commands->new($pyramid);
+ok (defined $commands,"commands ok.");
 
-ok (defined $commands, "Commands Object created");
+ok ($pyramid->updateLevels($DSL,undef),"DataSourcesLoader updated and Graph Pyramid's levels created");
+my $datasource = ${$DSL->getDataSources()}[0];
+ok (defined $datasource,"datasource ok.");
+
+my $forest = COMMON::Forest->new($pyramid,$DSL,{
+	job_number => 16,
+	path_temp => $Bin."/../../temp/",
+        path_temp_common => $Bin."/../../temp/",
+	path_shell => $Bin."/../../temp",
+}, "FS");
+ok (defined $forest,"forest ok.");
+
+my $qtree = COMMON::QTree->new($forest,$datasource,$pyramid,$commands);
+ok (defined $qtree,"qtree ok.");
+
+my $tm = COMMON::TileMatrix->new({
+    id             => "level_4",
+    resolution     => 0.324,
+    topLeftCornerX => 0,
+    topLeftCornerY => 12000,
+    tileWidth      => 256,
+    tileHeight     => 128,
+    matrixWidth    => 100,
+    matrixHeight   => 47
+});
+ok (defined $tm,"tm ok.");
+
+my $node = BE4::Node->new({
+    "i" => 13,
+    "j" => 25,
+    "tm" => $tm,
+    "graph" => $qtree,
+});
+
+ok (defined $node, "Node Object created");
 
 ######################################################
+# testing Geometric function
 
-# Testing Split Header Creation
-my $header = $commands->configureFunctions();
-ok (defined $header && $header ne "", "Header created with configureFunctions method.");
-ok ($header =~ m/Wms2work/, "Header contains Wms2work function.");
-ok ($header =~ m/Cache2work/, "Header contains Cache2work function.");
-ok ($header =~ m/MergeNtiff/, "Header contains MergeNtiff function.");
-ok ($header =~ m/Merge4tiff/, "Header contains Merge4tiff function.");
-ok ($header =~ m/Work2cache/, "Header contains Work2cache function.");
+ok (! $node->isPointInNodeBbox(20000000,0), "the point isn't in the bbox.");
+ok (! $node->isPointInNodeBbox(0,0), "the point is in the bbox.");
+ok (! $node->isPointInNodeBbox(20000000,-20000000,30000000,-30000000), "bbox isn't intersecting node bbox.");
+ok (! $node->isPointInNodeBbox(0,0,1,1), "bbox is intersecting node bbox.");
+
+
 
 done_testing();

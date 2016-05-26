@@ -48,9 +48,9 @@ Using:
 
     my $tm = COMMON::TileMatrix->new(...)
     
-    my $graph = BE4::Qtree->new(...)
+    my $graph = COMMON::Qtree->new(...)
     #or
-    my $graph = BE4::NNGraph->new(...)
+    my $graph = COMMON::NNGraph->new(...)
     
     my $node = COMMON::GraphNode->new({
         i => 51,
@@ -333,7 +333,7 @@ sub writeInScript {
 Function: setScript
 
 Parameters (list):
-    script - <BE4::Script> or <BE4CEPH::Script> - Script to set.
+    script - <COMMON::GraphScript> - Script to set.
 =cut
 sub setScript {
     my $self = shift;

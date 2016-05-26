@@ -46,7 +46,7 @@ Using:
     (start code)
     use JOINCACHE::Node
 
-    my $node = BE4::Node->new(51, 756, "12", 2);
+    my $node = JOINCACHE::Node->new(51, 756, "12", 2);
     (end code)
 
 Attributes:

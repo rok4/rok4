@@ -78,7 +78,6 @@ use Data::Dumper;
 
 use COMMON::Harvesting;
 use BE4::Level;
-use BE4::Script;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);

@@ -300,7 +300,7 @@ sub _load {
     DEBUG(sprintf "COMMANDS (debug export) = %s", $commands->exportForDebug);
     
     ############# SCRIPTS #############
-    # We create BE4::Script objects and initialize them (header)
+    # We create COMMON::GraphScript objects and initialize them (header)
 
     my $functions = $commands->configureFunctions();
     $functions .= COMMON::Commands::configureFunctions();
@@ -355,7 +355,7 @@ sub _load {
                 });
 
                 my $listFile = $self->{pyramid}->getNewListFile;
-                $script->prepare($self,$listFile,$functions);
+                $script->prepare($self->{pyramid},$listFile,$functions);
 
                 push @{$self->{scripts}},$script;
             }

@@ -188,7 +188,7 @@ sub init {
     
     # logger by default at runtime
     Log::Log4perl->easy_init({
-        level => "DEBUG",
+        level => "INFO",
         layout => '%5p : %m (%M) %n'
     });
 
@@ -302,16 +302,14 @@ StoreTiles () {
     local fullPath=$1
     local col=$2
     local row=$3
-    local tpw=$4
-    local tph=$5
-    local prefix_objName=$6
+    local prefix_objName=$4
 
-    let imin=$col*$tpw
-    let imax=$col*$tpw+$tpw-1
-    let jmin=$row*$tph
-    let jmax=$row*$tph+$tph-1
+    let imin=$col*${TPW}
+    let imax=$col*${TPW}+${TPW}-1
+    let jmin=$row*${TPH}
+    let jmax=$row*${TPH}+${TPH}-1
                  
-    slab2tiles $fullPath -pool $poolName -ij $col $row -t $tpw $tph $prefix_objName
+    slab2tiles $fullPath -pool ${POOL_NAME} -ij $col $row -t ${TPW} ${TPH} $prefix_objName
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
 
@@ -328,7 +326,7 @@ StoreSlab () {
     local fullPath=$1
     local objName=$2
   
-    rados -p $poolName put $objName $fullPath 
+    rados -p ${POOL_NAME} put $objName $fullPath 
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 
     echo "${objName}" >> ${TMP_LIST_FILE}
@@ -343,7 +341,7 @@ FUNCTIONS
 sub doIt {
 
 
-    #######################
+    ############################## LES PARAMÈTRES
     # link to parameters
     my $params = $this{params};
     my $follow_links = 1;
@@ -361,8 +359,6 @@ sub doIt {
         INFO("We store tiles on ceph separately");
         $store_tiles = 1;
     }
-
-    ALWAYS(">>> Load SourcePyramid ...");
     
     my $pyrName = $params->{to}->{pyr_name};
     my $poolName = $params->{to}->{pool_name};
@@ -370,7 +366,8 @@ sub doIt {
     my $path_temp = $params->{process}->{path_temp};
     my $listFinal = $params->{to}->{pyr_desc_path} . "/$pyrName.list";
 
-    # Création du répertoire de sortie
+    ############################## LES DOSSIERS
+
     if (! -d $params->{to}->{pyr_desc_path}) {
         DEBUG (sprintf "Create the descriptor directory '%s' !", $params->{to}->{pyr_desc_path});
         eval { mkpath([$params->{to}->{pyr_desc_path}]); };
@@ -380,7 +377,6 @@ sub doIt {
         }
     }
 
-    # Initialisation des scripts
     if (! -d $path_temp) {
         DEBUG (sprintf "Create the temporary directory '%s' !", $path_temp);
         eval { mkpath([$path_temp]); };
@@ -390,34 +386,7 @@ sub doIt {
         }
     }
 
-
-    # Open stream
-    my @streams;
-    for (my $i = 1 ; $i < $job_number + 1; $i++){
-        my $STREAM;
-        my $list = "${path_temp}/SCRIPT_$i.list";
-        my $file = "${path_temp}/SCRIPT_$i.sh";
-        if ( ! (open $STREAM,">", $file )) {
-            ERROR(sprintf "Can not open stream to '%s' !", $file);
-            return FALSE;
-        }
-        push(@streams,$STREAM);
-        print $STREAM "#!/bin/bash\n\nTMP_LIST_FILE=$list\npoolName=$poolName\n";
-        print $STREAM $BASHFUNCTIONS;
-    }
-
-    my $STREAMFINISHER;
-    my $file = "${path_temp}/SCRIPT_FINISHER.sh";
-    if ( ! (open $STREAMFINISHER,">", $file )) {
-        ERROR(sprintf "Can not open stream to '%s' !", $file);
-        return FALSE;
-    }
-    print $STREAMFINISHER "#!/bin/bash\n";
-    print $STREAMFINISHER "echo $poolName > $listFinal\n";
-    print $STREAMFINISHER "echo '#' >> $listFinal\n";
-    print $STREAMFINISHER "cat ${path_temp}/*.list >> $listFinal\n";
-
-    close $STREAMFINISHER;
+    ############################## LE DESCRIPTEUR DE PYRAMIDE
 
     my $tpw;
     my $tph;
@@ -486,26 +455,81 @@ sub doIt {
     my $return = `$cmd`;
     if ( $? ) {
         ERROR(sprintf "Impossible de formater le fichier xml (%s) : %s",$params->{to}->{pyr_desc_path} . "/$pyrName.pyr", $return);
-    } 
+    }
+
+    ############################## LES SCRIPTS
+
+    ### Ouverture des flux et initialisation des N splits
+
+    my @scripts_progress;
+    my @streams;
+    for (my $i = 1 ; $i < $job_number + 1; $i++){
+        my $STREAM;
+        my $list = "${path_temp}/SCRIPT_$i.list";
+        my $file = "${path_temp}/SCRIPT_$i.sh";
+        if ( ! (open $STREAM,">", $file )) {
+            ERROR(sprintf "Can not open stream to '%s' !", $file);
+            return FALSE;
+        }
+        push(@streams, $STREAM);
+        print $STREAM "#!/bin/bash\n\n";
+        print $STREAM "TMP_LIST_FILE=$list\n";
+        print $STREAM "POOL_NAME=$poolName\n";
+        print $STREAM "TPW=$tpw\n";
+        print $STREAM "TPH=$tph\n";
+        print $STREAM $BASHFUNCTIONS;
+
+        push(@scripts_progress, 0);
+    }
+
+    ### Ouverture et initialisation du finisher
+
+    my $STREAMFINISHER;
+    my $file = "${path_temp}/SCRIPT_FINISHER.sh";
+    if ( ! (open $STREAMFINISHER,">", $file )) {
+        ERROR(sprintf "Can not open stream to '%s' !", $file);
+        return FALSE;
+    }
+    print $STREAMFINISHER "#!/bin/bash\n\n";
+    print $STREAMFINISHER "echo $poolName > $listFinal\n";
+    print $STREAMFINISHER "echo '#' >> $listFinal\n";
+    print $STREAMFINISHER "cat ${path_temp}/*.list >> $listFinal\n";
+
+    close $STREAMFINISHER;
 
 
-    open (FILE, "<", $params->{from}->{pyr_list_file}) or do {
-        ERROR(sprintf "Erreur d'ouverture du fichier list (%s) : %s!", $params->{from}->{pyr_list_file}, $!);
+    ############################## TRAITEMENT DES IMAGES
+
+    my $inputList = $params->{from}->{pyr_list_file};
+    open (FILE, "<", $inputList) or do {
+        ERROR(sprintf "Erreur d'ouverture du fichier list (%s) : %s!", $inputList, $!);
         return FALSE;
     };
 
+    ### Récupération des racines
 
+    my $hashLine;
     my %roots;
     while (my $line = <FILE>) {
 
         chomp $line;
         if ($line eq "#") {
+            $hashLine = $.;
             last;
         }
 
         my ($index,$root) = split('=',$line);
         $roots{$index} = $root;
     }
+
+    ### Calcul du nombre d'image à traiter
+    my $wc = `wc -l $inputList | cut -d' ' -f1`;
+    chomp($wc);
+
+    my $totalImages = $wc - $hashLine;
+    my $totalImagesPerScript = int($totalImages/$job_number);
+
+    ### Cephisation image par image
 
     while (my $line = <FILE>) {
 
@@ -551,25 +575,36 @@ sub doIt {
 
         }
 
+        my $cmd;
         if ( $store_tiles && defined($col) ) {
-            my $cmd = sprintf("StoreTiles %s %s %s %s %s %s\n", $fullPath, $col, $row, $tpw, $tph, $prefix_objName);
+            $cmd = sprintf("StoreTiles %s %s %s %s\n", $fullPath, $col, $row, $prefix_objName);
             DEBUG($cmd);
-
-            my $stream = $streams[$script_index];
-            print $stream $cmd;
-            $script_index = ($script_index + 1) % $job_number;
         }
         else {
-            my $cmd = sprintf("StoreSlab %s %s\n", $fullPath, $objName);
+            $cmd = sprintf("StoreSlab %s %s\n", $fullPath, $objName);
             DEBUG($cmd);
-            my $stream = $streams[$script_index];
-            print $stream $cmd;
-            $script_index = ($script_index + 1) % $job_number;
         }
 
+        my $stream = $streams[$script_index];
+        print $stream $cmd;
+
+        my $current_progress = $scripts_progress[$script_index];
+        my $next_progress = int( ($current_progress + 1) / $totalImagesPerScript * 100);
+
+        if ($next_progress != $current_progress) {
+            $scripts_progress[$script_index] = $next_progress;
+            print $stream "echo \"------------- Progression : $next_progress%\"\n";
+        }
+
+
+        $script_index = ($script_index + 1) % $job_number;
     }
 
+    ############################## FERMETURE DES FLUX
+
     for (my $i = 0 ; $i < $job_number ; $i++){
+        my $stream = $streams[$i];
+        print $stream "echo \"------------- Progression : COMPLETE\"\n";
         close $streams[$i];
     }
 
