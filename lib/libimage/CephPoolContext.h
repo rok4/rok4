@@ -100,8 +100,6 @@ public:
     }
     
     bool exists(std::string name) {
-
-
         char data[1];
         int readSize = rados_read(io_ctx, name.c_str(), data, 1, 0);
         return (readSize == 1);
@@ -155,11 +153,9 @@ public:
     }
     
     virtual ~CephPoolContext() {
-
-
-//        rados_aio_flush(io_ctx);
-//        rados_ioctx_destroy(io_ctx);
-//        rados_shutdown(cluster);
+        rados_aio_flush(io_ctx);
+        rados_ioctx_destroy(io_ctx);
+        rados_shutdown(cluster);
     }
 };
 

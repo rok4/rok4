@@ -221,6 +221,11 @@ int main ( int argc, char **argv ) {
     if ( pool != 0 ) {
         LOGGER_DEBUG( std::string("Output is an object in the Ceph pool ") + pool);
         contextoutput = new CephPoolContext(pool);
+    } else {
+        delete sourceImage;
+        delete contextinput;
+        delete acc;
+        error ("pool name must be provided", -1);
     }
 
     if (! contextoutput->connection()) {
