@@ -392,7 +392,7 @@ sub identifyBottomNodes {
         
             $self->updateBBox($bb->[0],$bb->[2],$bb->[1],$bb->[3]);
             
-            my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices$bb->[0],$bb->[2],$bb->[1],$bb->[3],$TPW,$TPH);
+            my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices($bb->[0],$bb->[2],$bb->[1],$bb->[3],$TPW,$TPH);
             
             for (my $i = $iMin; $i <= $iMax; $i++) {
                 for (my $j = $jMin; $j <= $jMax; $j++) {
