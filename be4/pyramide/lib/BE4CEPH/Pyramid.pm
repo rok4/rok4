@@ -73,7 +73,7 @@ Using:
 
     my $objPyr = BE4CEPH::Pyramid->new($params_options);
 
-    $objPyr->writeConfPyramid(); # write pyramid's descriptor in /home/ign/ORTHO_RAW_LAMB93_D075-O.pyr
+    $objPyr->writeConfPyramid(); # write pyramid's descriptor in /home/ign/DESC/ORTHO_RAW_LAMB93_D075-O.pyr
 
     (end code)
 
@@ -665,7 +665,7 @@ sub writeListPyramid {
 =begin nd
 Function: writeCachePyramid
 
-Write the Cache Directory Structure (CDS).
+Write the Cache Structure (CDS).
     - create the nodata tile for each level (add in the list).
 =cut
 sub writeCachePyramid {

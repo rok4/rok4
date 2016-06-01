@@ -638,42 +638,28 @@ public:
      */
     int writeImage ( Image* pIn, bool crop );
 
+    /**
+     * \~french
+     * \brief Ecrit les tuiles indépendantes sur un cluster Ceph, à partir d'une image source
+     * \details Toutes les informations nécessaires à l'écriture des tuiles sont dans l'objet Rok4Image, sauf les données à écrire. On renseigne cela via une seconde image.
+     *
+     * On précise également les indices (colonne et ligne) de la dalle, ce qui permet de calculer les indices de chaque tuile,  on utilise alors le nom de l'image comme préfixe, et on peut nommer les objets Ceph (<NAME>_<TILECOL>_<TILROW>).
+     *
+     * Exemple :
+     * \li nom : EXEMPLE
+     * \li colonne = 4 et ligne = 7
+     * \li nombre de tuile dans la largeur et dans la hauteur : 2
+     * \li writeTiles entraînera l'écriture de 4 objets sur Ceph (tuiles) : EXEMPLE_8_14, EXEMPLE_8_15, EXEMPLE_9_14, EXEMPLE_9_15
+     *
+     * Cette méthode permet également de préciser s'il on veut "croper". Dans le cas d'une compression JPEG, on peut vouloir "vider" les blocs (16x16 pixels) contenant un pixel blanc.     
+     *
+     * \param[in] pIn source des donnée de l'image à écrire
+     * \param[in] imageCol option de cropage, pour le jpeg
+     * \param[in] imageRow option de cropage, pour le jpeg
+     * \param[in] crop option de cropage, pour le jpeg
+     * \return 0 en cas de succes, -1 sinon
+     */
     int writeTiles ( Image* pIn, int imageCol, int imageRow, bool crop );
-
-    int storeTiles ( Rok4Image* pIn, int imageCol, int imageRow) {
-
-        if (context->getType() != CEPHCONTEXT) {
-            LOGGER_ERROR("Write tiles separatly from a Rok4Image is possible only with a ceph storage");
-            return -1;
-        }
-
-        int tileColUL = imageCol * tileWidthwise;
-        int tileRowUL = imageRow * tileHeightwise;
-
-        uint8_t* tile = new uint8_t[2*tileHeight*rawTileLineSize];
-
-        for ( int y = 0; y < tileHeightwise; y++ ) {
-
-            for ( int x = 0; x < tileWidthwise; x++ ) {
-
-                int tileInd = tileWidthwise * y + x;
-
-                char tileName[256];
-                sprintf(tileName, "%s_%d_%d", name, tileColUL + x, tileRowUL + y);
-
-                int realSize = pIn->getEncodedTile(tile, tileInd);
-
-                if (! context->writeFull(tile, realSize, std::string(tileName))) {
-                    LOGGER_ERROR("Error writting full tile " << tileColUL + x << "," << tileRowUL + y);
-                    return -1;
-                }
-            }
-        }
-
-        delete [] tile;
-
-        return 0;
-    }
 
     /**
      * \~french
@@ -766,7 +752,7 @@ public:
      * Si les résolutions fournies sont négatives, cela signifie que l'on doit calculer un géoréférencement.
      * Dans ce cas, on prend des résolutions égales à 1 et une bounding box à (0,0,width,height).
      *
-     * \param[in] filename chemin du fichier image
+     * \param[in] name nom de l'image
      * \param[in] bbox emprise rectangulaire de l'image
      * \param[in] resx résolution dans le sens des X.
      * \param[in] resy résolution dans le sens des Y.
@@ -778,14 +764,14 @@ public:
      *
      * Negative resolutions leads to georeferencement calculation.
      * Both resolutions will be equals to 1 and the bounding box will be (0,0,width,height).
-     * \param[in] filename path to image file
+     * \param[in] name image's name
      * \param[in] bbox bounding box
      * \param[in] resx X wise resolution.
      * \param[in] resy Y wise resolution.
      * \param[in] context storage context (file, ceph object or swift object)
      * \return a Rok4Image object pointer, NULL if error
      */
-    Rok4Image* createRok4ImageToRead ( char* filename, BoundingBox<double> bbox, double resx, double resy, Context* context );
+    Rok4Image* createRok4ImageToRead ( char* name, BoundingBox<double> bbox, double resx, double resy, Context* context );
 
     /** \~french
      * \brief Crée un objet Rok4Image, pour l'écriture
@@ -793,7 +779,7 @@ public:
      *
      * Si les résolutions fournies sont négatives, cela signifie que l'on doit calculer un géoréférencement.
      * Dans ce cas, on prend des résolutions égales à 1 et une bounding box à (0,0,width,height).
-     * \param[in] filename chemin du fichier image
+     * \param[in] name nom de l'image
      * \param[in] bbox emprise rectangulaire de l'image
      * \param[in] resx résolution dans le sens des X.
      * \param[in] resy résolution dans le sens des Y.
@@ -814,7 +800,7 @@ public:
      *
      * Negative resolutions leads to georeferencement calculation.
      * Both resolutions will be equals to 1 and the bounding box will be (0,0,width,height).
-     * \param[in] filename path to image file
+     * \param[in] name image's name
      * \param[in] bbox bounding box
      * \param[in] resx X wise resolution.
      * \param[in] resy Y wise resolution.
@@ -831,7 +817,7 @@ public:
      * \return a Rok4Image object pointer, NULL if error
      */
     Rok4Image* createRok4ImageToWrite (
-        char* filename, BoundingBox<double> bbox, double resx, double resy, int width, int height, int channels,
+        char* name, BoundingBox<double> bbox, double resx, double resy, int width, int height, int channels,
         SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
         Compression::eCompression compression, int tileWidth, int tileHeight, Context* context
     );

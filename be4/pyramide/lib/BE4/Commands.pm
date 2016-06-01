@@ -105,8 +105,8 @@ use constant DECIMATENTIFF_W => 3;
 use constant CACHE2WORK_W => 1;
 # Constant: WGET_W
 use constant WGET_W => 35;
-# Constant: TIFF2TILE_W
-use constant TIFF2TILE_W => 1;
+# Constant: WORK2CACHE_W
+use constant WORK2CACHE_W => 1;
 
 =begin nd
 Constant: BASHFUNCTIONS
@@ -205,7 +205,7 @@ Work2cache () {
         if [ -r $workDir/$workImgName ] ; then rm -f ${PYR_DIR}/$imgName ; fi
         if [ ! -d $dir ] ; then mkdir -p $dir ; fi
             
-        tiff2tile $workDir/$workImgName __t2tI__ ${PYR_DIR}/$imgName
+        work2cache $workDir/$workImgName __w2cI__ ${PYR_DIR}/$imgName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
         echo "0/$imgName" >> ${TMP_LIST_FILE}
@@ -226,7 +226,7 @@ Work2cache () {
                 if [ -r $workDir/$workMskName ] ; then rm -f ${PYR_DIR}/$mskName ; fi
                 if [ ! -d $dir ] ; then mkdir -p $dir ; fi
                     
-                tiff2tile $workDir/$workMskName __t2tM__ ${PYR_DIR}/$mskName
+                work2cache $workDir/$workMskName __w2cM__ ${PYR_DIR}/$mskName
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
                 echo "0/$mskName" >> ${TMP_LIST_FILE}
                 
@@ -516,7 +516,7 @@ sub cache2work {
 =begin nd
 Function: work2cache
 
-Copy image from work directory to cache and transform it (tiled and compressed) thanks to the 'Work2cache' bash function (tiff2tile).
+Copy image from work directory to cache and transform it (tiled and compressed) thanks to the 'Work2cache' bash function (work2cache).
 
 (see work2cache.png)
 
@@ -543,7 +543,7 @@ sub work2cache {
     my $pyrName = File::Spec->catfile($self->{pyramid}->getDirImage(),$node->getPyramidName());
     
     $cmd .= sprintf ("Work2cache %s %s %s %s", $node->getLevel, $workDir, $node->getWorkImageName(TRUE), $pyrName);
-    $weight += TIFF2TILE_W;
+    $weight += WORK2CACHE_W;
     
     #### Export du masque, si présent
 
@@ -556,7 +556,7 @@ sub work2cache {
             $pyrName = File::Spec->catfile($self->{pyramid}->getDirMask(),$node->getPyramidName());
             
             $cmd .= sprintf (" %s", $pyrName);
-            $weight += TIFF2TILE_W;
+            $weight += WORK2CACHE_W;
         }        
     }
     
@@ -862,7 +862,7 @@ sub configureFunctions {
     my $conf_c2w = "-c zip";
     $configuredFunc =~ s/__c2w__/$conf_c2w/;
     
-    ######## tiff2tile ########
+    ######## work2cache ########
     my $conf_t2t = "";
 
     # pour les images
@@ -875,12 +875,12 @@ sub configureFunctions {
 
     $conf_t2t .= sprintf "-t %s %s ",$pyr->getTileMatrixSet->getTileWidth,$pyr->getTileMatrixSet->getTileHeight;
 
-    $configuredFunc =~ s/__t2tI__/$conf_t2t/;
+    $configuredFunc =~ s/__w2cI__/$conf_t2t/;
     
     # pour les masques
     $conf_t2t = sprintf "-c zip -t %s %s",
         $pyr->getTileMatrixSet->getTileWidth,$pyr->getTileMatrixSet->getTileHeight;
-    $configuredFunc =~ s/__t2tM__/$conf_t2t/;
+    $configuredFunc =~ s/__w2cM__/$conf_t2t/;
     
     return $configuredFunc;
 }

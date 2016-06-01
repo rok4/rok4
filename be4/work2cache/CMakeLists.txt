@@ -2,7 +2,7 @@
 SET(PARENT_PROJECT_NAME ${PROJECT_NAME})
 
 #Défini le nom du projet 
-project(tiff2gray)
+project(work2cache)
 
 #définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
 list(GET BE4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
@@ -45,24 +45,42 @@ endif(DEBUG_BUILD)
 ########################################
 #définition des fichiers sources
 
-set(${PROJECT_NAME}_SRCS tiff2gray.cpp )
-
-
+set(${PROJECT_NAME}_SRCS work2cache.cpp )
 
 add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRCS})
+
 
 ########################################
 #Définition des dépendances.
 include(ROK4Dependencies)
 
-set(DEP_INCLUDE_DIR ${JPEG_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR})
+set(DEP_INCLUDE_DIR ${JPEG_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${LZW_INCLUDE_DIR} ${CURL_INCLUDE_DIR})
 
 #Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
-set(DEP_LIBRARY tiff zlib jpeg image)
+set(DEP_LIBRARY logger tiff zlib jpeg image proj lzw curl)
+
+#Liste des bibiliothèques à lier avaec l'executable à cause des options de curl
+if(CURL_OPTIONS)
+  list(APPEND DEP_LIBRARY ${CURL_SUP_LIBRARIES_NAMES})
+  include_directories(${CURL_SUP_LIBRARIES_INCLUDES})
+  list(LENGTH CURL_SUP_LIBRARIES_NAMES number_name)
+  list(LENGTH CURL_SUP_LIBRARIES_PATHS number_path)
+  if(${number_name} EQUAL ${number_path})
+    math(EXPR number_name "${number_name}-1")
+    foreach(element RANGE ${number_name})
+      list(GET CURL_SUP_LIBRARIES_NAMES ${element} name)
+      list(GET CURL_SUP_LIBRARIES_PATHS ${element} path)
+      add_library(${name} UNKNOWN IMPORTED)
+      set_property(TARGET ${name} PROPERTY IMPORTED_LOCATION ${path})
+    endforeach(element RANGE ${number_name})
+  else(${number_name} EQUAL ${number_path})
+    message(FATAL_ERROR "Problem with Curl options - The number of Curl library's names (${number_name}) are different of the number of paths (${number_path})")
+  endif(${number_name} EQUAL ${number_path})
+endif(CURL_OPTIONS)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
-target_link_libraries(${PROJECT_NAME} ${DEP_LIBRARY})
+target_link_libraries(${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_RADOS_LIBS_INIT} )
 
 ########################################
 # Gestion des tests unitaires (CPPUnit)
@@ -83,7 +101,7 @@ if(UNITTEST)
   "tests/cppunit/CppUnit*.cpp" )
     ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} tests/cppunit/main.cpp ${UnitTests_SRCS} )
     #Bibliothèque à lier (ajouter la cible (executable/library) du projet
-    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_RADOS_LIBS_INIT}  ${CMAKE_DL_LIBS})
+    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit lib${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_RADOS_LIBS_INIT}  ${CMAKE_DL_LIBS})
     FOREACH(test ${UnitTests_SRCS})
           MESSAGE("  - adding test ${test}")
           GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)

@@ -72,10 +72,6 @@ my $pyramid = BE4::Pyramid->new({
     pyr_desc_path => $Bin."/../../pyramid",
     pyr_name_new => "newPyramid",
 
-    dir_image => "IMAGE",
-    dir_nodata => "NODATA",
-    dir_metadata => "METADATA",
-
     pyr_level_bottom => "19",
 
     compression => "raw",

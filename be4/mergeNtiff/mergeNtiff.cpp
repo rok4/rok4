@@ -88,7 +88,7 @@
  * \li les images non compatibles et de SRS différents : un passage par la reprojection (encore plus lourd en calcul) est indispensable.
  *
  * Exemple d'appel à la commande :
- * \li pour des ortho-images \~english \li for orthoimage
+ * \li pour des ortho-images \~english \li for ortho-image
  * \~ \code
  * mergeNtiff -f conf.txt -r /home/ign/results/ -c zip -i bicubic -s 3 -b 8 -p rgb -a uint -n 255,255,255
  * \endcode
@@ -97,7 +97,6 @@
  * mergeNtiff -f conf.txt -c zip -i nn -s 1 -b 32 -p gray -a float -n -99999
  * \endcode
  ** \~french
- * \todo Gérer correctement un canal alpha
  * \todo Permettre l'ajout ou la suppression à la volée d'un canal alpha
  */
 

@@ -153,7 +153,7 @@ Work2cache () {
     if [ -r ${TMP_DIR}/$workImgName ] ; then rm -f ${PYR_DIR}/$imgName ; fi
     if [ ! -d $dir ] ; then mkdir -p $dir ; fi
 
-    tiff2tile ${TMP_DIR}/$workImgName __t2tI__ ${PYR_DIR}/$imgName
+    work2cache ${TMP_DIR}/$workImgName __t2tI__ ${PYR_DIR}/$imgName
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     rm -f ${TMP_DIR}/$workImgName
 
@@ -164,7 +164,7 @@ Work2cache () {
         if [ -r ${TMP_DIR}/$workMskName ] ; then rm -f ${PYR_DIR}/$mskName ; fi
         if [ ! -d $dir ] ; then mkdir -p $dir ; fi
 
-        tiff2tile ${TMP_DIR}/$workMskName __t2tM__ ${PYR_DIR}/$mskName
+        work2cache ${TMP_DIR}/$workMskName __t2tM__ ${PYR_DIR}/$mskName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         rm -f ${TMP_DIR}/$workMskName
     fi
@@ -616,7 +616,7 @@ sub configureFunctions {
     my $conf_c2w = "-c zip";
     $configuredFunc =~ s/__c2w__/$conf_c2w/;
 
-    ######## congigure tiff2tile ########
+    ######## configure work2cache ########
     my $conf_t2t = "";
 
     # pour les images
@@ -689,7 +689,7 @@ sub storeInList {
 
     # We extract from the old tile path, the cache name (without the old cache root path)
     my @directories = File::Spec->splitdir($path);
-    # $realName : abs_datapath/dir_image/level/XY/XY/XY.tif
+    # $realName : abs_datapath/IMAGE/level/XY/XY/XY.tif
     #                             -5      -4  -3 -2   -1
     #                     => -(3 + dir_depth)
 

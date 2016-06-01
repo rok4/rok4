@@ -51,11 +51,14 @@ Tool allowing to generate a pyramid of tiled TIFF images, several resolutions, w
 
 This tool write scripts, to execute to obtain the pyramid on a ceph cluster.
 
-Only create a new pyramid with data
+(see be4ceph_general.png)
+
+Only create a new pyramid with data (no update)
 
 2 data source type :
     - images
     - WMS service
+
 
 =cut
 
@@ -322,12 +325,12 @@ sub config {
 Function: doIt
 
 Steps in order, using parameters :
-    - create the Pyramid object : <BE4::Pyramid::new>
+    - create the Pyramid object : <BE4CEPH::Pyramid::new>
     - load data sources : <COMMON::DataSourceLoader::new>
-    - update levels for this Pyramid object : <BE4::Pyramid::updateLevels>
+    - update levels for this Pyramid object : <BE4CEPH::Pyramid::updateLevels>
     - create the Forest object : <COMMON::Forest::new>
-    - write (initialization) the pyramid's directories tree and its list : <BE4::Pyramid::writeCachePyramid> and <BE4::Pyramid::writeListPyramid>
-    - write the pyramid's descriptor : <BE4::Pyramid::writeConfPyramid>
+    - write (initialization) the pyramid and its list : <BE4CEPH::Pyramid::writeCachePyramid> and <BE4CEPH::Pyramid::writeListPyramid>
+    - write the pyramid's descriptor : <BE4CEPH::Pyramid::writeConfPyramid>
     - compute trees (write scripts) : <COMMON::Forest::computeGraphs>
 =cut
 sub doIt {
@@ -485,7 +488,7 @@ A file configuration can be composed of sections and parameters following :
 
 In a data source configuration, sections are level ID, from which the data source is used.
 
-Group: BE4 global configuration file
+Group: BE4CEPH global configuration file
 
 Properties by section.
 
@@ -501,7 +504,7 @@ Example:
     (start code)
     [ logger ]
     log_path = /var/log
-    log_file = be4_log_yyyy-mm-dd.txt
+    log_file = be4ceph_log_yyyy-mm-dd.txt
     log_level = INFO
     (end code)
 
@@ -517,19 +520,20 @@ Example:
 
 Topic: pyramid
 
-For more informations about properties, see <BE4::Pyramid>.
+For more informations about properties, see <BE4CEPH::Pyramid>.
 
-    pyr_name_new - Name of the new pyramid, used to name the descriptor, the pyramid's list, the data directory and the temporary directory.
-    pyr_data_path - Directory path, where to write the cache. Mandatory.
-    pyr_desc_path - Directory path, where to write the descriptor. Mandatory.
+    pyr_name_new - Name of the new pyramid, used to name the descriptor, the pyramid's list, the temporary directory and prefix the Ceph objects. Mandatory.
 
-    pyr_name_old - If existing pyramid, its name. If this parameter is present, generation is an update.
-    pyr_data_path_old - If existing pyramid, directory path where to find the cache. Default : pyr_data_path value.
-    pyr_desc_path_old - If existing pyramid, directory path where to find the descriptor. Default : pyr_desc_path value.
-    update_mode - Possible values :
-        slink, hlink, copy : existing pyramid, the way the new cache will reference the ancestor's cache.
-        inject : no new pyramid. The old one is updated. CAUTION : old pyramid is irreversibly modified
-        Default : slink.
+    pyr_desc_path - Directory path, where to write the descriptor and the list. Mandatory.
+
+    pyr_data_pool_name - Mandatory.
+
+    pyr_data_cluster_name - Ceph cluster name where to store data. Example: ceph. Mandatory.
+
+    pyr_data_user_name - Ceph cluster user to use to store data. Example: client.admin . Mandatory.
+
+    pyr_data_conf_file - Ceph cluster conf file to use to store data. Example: /etc/ceph/ceph.conf . Mandatory.
+
 
     compression - Possible values : raw, jpg, zip, lzw, png, pkb. PNG compression is not an official compression for tiff format (just readable by rok4). Default : raw.
 
@@ -538,7 +542,9 @@ For more informations about properties, see <BE4::Pyramid>.
     color - The color is a string and contain on value per sample, in decimal format, seperated by comma. For 8 bits unsigned integer, value must be between 0 and 255. For 32 bits float, an integer is expected too, but can be negative.
     Example : "255,255,255" (white) for images whithout alpha sample, "-99999" for a DTM.
 
-    image_width, image_height - Number a tile in the cache image, widthwise and heightwise. 16 * 16 for example. Mandatory.
+    image_width, image_height - Number a tile in the cache image (slab), widthwise and heightwise. 16 * 16 for example. Mandatory. Even if tiles_storage is used, we work with slab.
+
+    tiles_storage - If true, at the final step (work2cache), work slab are stored as independant tiles.
 
     bitspersample - Possible values : 8, 32. Have to be the same as source. Mandatory.
 
@@ -550,54 +556,49 @@ For more informations about properties, see <BE4::Pyramid>.
 
     interpolation - Possible values : nn, linear, bicubic, lanczos. Interpolation used to resampled images (in mergeNtiff). Nodata pixel are excluded by the interpolation if we use masks. Default : bicubic.
 
-    dir_depth - Image's depth from the level directory. depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif. Mandatory.
-
-    dir_image, dir_nodata, dir_mask - Names of subdirectories in the pyramid, in *pyr_data_path/pyr_name/* Default : IMAGE, NODATA, MASK.
-
     tms_name - TMS file name, with extension *.tms*. Mandatory.
 
     tms_path - Directory, where to find the TMS file. Mandatory.
 
     pyr_level_top - Optionnal. If we don't want pyramid to be generated to the TMS top level, we can force the top level. It have to be consistent with base levels in the data sources configuration file.
 
-    export_masks - An option is used to precise if we want to write masks in the final pyramid. So we can use masks but not export them (they may be useless for a pyramid which wont be never updated). Only values "true" and "TRUE" lead to masks' export. Optionnal, FALSE by default.
+    export_masks - An option is used to precise if we want to write masks in the final pyramid. So we can use masks but not export them. Only values "true" and "TRUE" lead to masks' export. Optionnal, FALSE by default.
 
 Examples:
     (start code)
     [ pyramid ]
-    pyr_data_path = /home/IGN/PYRAMIDS
-    pyr_desc_path = /home/IGN/DESCRIPTOR
-    pyr_name_new = ORTHO
-    pyr_level_bottom = 19
-    
-    tms_name = LAMB93_10cm.tms
-    tms_path = /home/IGN/TMS
+    tms_name            = PM.tms
+    tms_path = /home/ign/TILEMATRIXSETS
 
-    dir_depth = 2
-    image_width = 16
-    image_height = 16
+    pyr_data_pool_name = PYRAMIDS
+    pyr_data_cluster_name = ceph
+    pyr_data_user_name = client.admin
+    pyr_data_conf_file = /etc/ceph/ceph.conf
 
-    dir_image = IMAGE
-    dir_nodata = NODATA
-    dir_mask = MASK
-    export_masks = TRUE
-    
-    compression         = png
+    pyr_desc_path = /home/ign/PYRAMIDS
+    pyr_name_new = CEPH_TUILE
+
+    pyr_level_top = 5
+
+    compression         = zip
+    image_width         = 8
+    image_height        = 8
+    tiles_storage = TRUE
     bitspersample       = 8
     sampleformat        = uint
     photometric         = rgb
     samplesperpixel     = 3
     interpolation       = bicubic
 
-    ; red as nodata color
-    color               = 255,0,0 
+    color               = 0,255,0
+
     (end code)
 
 Topic: process
 
-For more informations about properties, see <COMMON::Forest> and <BE4::Commands>.
+For more informations about properties, see <COMMON::Forest> and <COMMON::Commands>.
 
-    job_number - Level of parallelization for scripts. Distribution details are different according to the kind of graph (see <COMMON::QTree> and <BE4::Graph>). Mandatory.
+    job_number - Level of parallelization for scripts. Distribution details are different according to the kind of graph (see <COMMON::QTree> and <COMMON::Graph>). Mandatory.
 
     path_temp - Temporary directory path proper to each script : temporary files are written in *path_temp/pyr_name_new/SCRIPT_ID*.
 
@@ -620,7 +621,6 @@ Group: Paths in brief
 
     - Descriptor file : *pyr_desc_path/pyr_name.pyr*
     - List file: *pyr_desc_path/pyr_name.list*
-    - Cache directory: *pyr_data_path/pyr_name/*
     - TMS file: *tms_path/tms_name*
     - Scripts: *path_shell/SCRIPT_X.sh*
     - Temporary directory: *path_temp/pyr_name_new/SCRIPT_X*
@@ -671,7 +671,7 @@ For more informations about properties, see <COMMON::Harvesting>.
 
     extent - Area where we have to harvest. It can be a bbox "xmin,ymin,xmax,ymax" or the path of a file which contains a geometry in WKT format. Mandatory if no georeferenced image to define extent (path_image is not present).
     
-    list - Pathy to a file, containing a list of images' indices (I,J) to harvest. It could replace an extent.
+    list - Path to a file, containing a list of images' indices (I,J) to harvest. It could replace an extent.
 
 Examples:
     (start code)
@@ -716,58 +716,6 @@ Examples:
     preprocess_command = composite
     preprocess_opt_beg = -watermark 50x50 -gravity center
     preprocess_opt_mid = grayscale_watermark_img.ext
-    (end code)
-
-Group: Old way to provide ONE datasource
-
-No specific configuration file for data sources. All parameters regarding THE data source, *with georeferenced images*, are in the BE4 configuration file.
-
-    - We have to precise the level from which the one data source is used. *pyr_level_bottom*, in the *pyramid* section.
-    - Image source parameters (*path_image* and *srs*) are in the *datasource* section (see <For an image source> for meanings).
-    - Possibly WMS service parameters (*wms_layer*, ...) are in a *harvesting* section (see <For a WMS source> for options and meanings).
-
-Example:
-    (start code)
-    
-    ; Georeferenced images + WMS
-    [ datasource ]
-    path_image          = /home/IGN/DATA/ORTHO_LAMB93
-    srs                 = IGNF:LAMB93
-
-    [ harvesting ]
-    wms_layer   = WMS_ORTHO
-    wms_url     = http://localhost/rok4
-    wms_version = 1.3.0
-    wms_request = getMap
-    wms_format  = image/tiff
-    
-
-    [ pyramid ]
-    pyr_data_path = /home/IGN/PYRAMIDS
-    pyr_desc_path = /home/IGN/DESCRIPTOR
-    pyr_name_new = ORTHO
-    pyr_level_bottom = 19
-
-    tms_name = LAMB93_10cm.tms
-    tms_path = /home/IGN/TMS
-
-    dir_depth = 2
-    image_width = 16
-    image_height = 16
-
-    dir_image = IMAGE
-    dir_nodata = NODATA
-    dir_mask = MASK
-
-    compression         = png
-    bitspersample       = 8
-    sampleformat        = uint
-    photometric         = rgb
-    samplesperpixel     = 3
-    interpolation       = bicubic
-
-    ; red as nodata color
-    color               = 255,0,0
     (end code)
 
 Group: Externals tools

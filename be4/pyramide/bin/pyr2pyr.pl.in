@@ -43,7 +43,12 @@ Section: pyr2pyr tool
 
 Synopsis:
     (start code)
+    pyr2pyr.pl --conf file.txt
     (end code)
+
+This tool allow to convert a file ROK4 pyramid into a ceph stored ROK4 pyramid. We can keep the slab storage (tile) or store seperated tiles.
+
+(see pyr2pyr_general.png)
 
 =cut
 
@@ -104,7 +109,6 @@ my %this =
 (
     params => undef
 );
-################################################################################
 
 ####################################################################################################
 #                                         Group: Functions                                         #
@@ -218,10 +222,7 @@ sub init {
 =begin nd
 Function: config
 
-Loads environment and properties files and merge parameters. Those in the properties file have priority over those in the environment file.
-
-See Also:
-    <checkParams>
+Loads properties file.
 =cut
 sub config {
 
@@ -630,3 +631,93 @@ END {}
 
 1;
 __END__
+
+=begin nd
+Section: Details
+
+Group: Command's options
+
+    --help - Display the link to the technic documentation.
+
+    --usage - Display the link to the technic documentation.
+
+    --version - Display the tool version.
+
+    --conf=path - Path to configuration file of the pyramid. This option is mandatory.
+
+Group: Write a configuration file
+
+A file configuration can be composed of sections and parameters following :
+
+    (start code)
+    [ section ]
+    parameter = value
+    ;comments
+    (end code)
+
+Group: PYR2PYR global configuration file
+
+Properties by section.
+
+Topic: logger
+
+    log_path - Directory path where to write log_file
+    log_file - Path to print too output (in addition to STDOUT). Log file path : *log_path/log_file*
+    log_level - Define importance level from which we print messages. From less to more important : DEBUG - INFO - WARN - ERROR - ALWAYS (WARN by default).
+
+Example:
+    (start code)
+    [ logger ]
+    log_path = /var/log
+    log_file = be4ceph_log_yyyy-mm-dd.txt
+    log_level = INFO
+    (end code)
+
+Topic: from
+
+    pyr_desc_file - Path to the pyramid's descriptor to convert
+    pyr_list_file - Path to the pyramid's list to convert. Only files in this list are processed
+    follow_links - Optionnal. If set to "false", only "real" files are transposed.
+
+Example:
+    (start code)
+    [ from ]
+    pyr_desc_file=/home/ign/DESC/BDORTHO.pyr
+    pyr_list_file=/home/ign/DESC/BDORTHO.list
+    (end code)
+
+Topic: to
+
+    pool_name - Pool (must already exist). Mandatory.
+    pyr_name - Pyramid's name, used to prefix ceph objects. Mandatory.
+    pyr_desc_path - Directory where new pyramid's descriptor and list are written. Mandatory.
+    tiles_storage - Optionnal. If set to "true", slab are divised and tiles are stored separated
+
+Example:
+    (start code)
+    [ to ]
+    pool_name=PYRAMIDS
+    pyr_name=MONDE12FEUILLES_JPG_PM_TILE
+    pyr_desc_path=/home/visiteur/PYR2PYR/
+    tiles_storage=TRUE
+    (end code)
+
+Topic: process
+
+    job_number - Level of parallelization for scripts. Mandatory.
+    path_temp - Scripts and temporary lists are written in this directory. Mandatory.
+
+Example:
+    (start code)
+    [ process ]
+    path_temp = /home/ign/SCRIPTS
+    job_number = 16
+    (end code)
+
+Group: Externals tools
+
+Scripts' execution needs following tools:
+
+    - rados
+    
+=cut

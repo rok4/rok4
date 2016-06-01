@@ -916,8 +916,6 @@ For more informations about properties, see <BE4::Pyramid>.
 
     dir_depth - Image's depth from the level directory. depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif. Mandatory. Have to be the same in the source pyramids.
 
-    dir_image, dir_nodata, dir_mask - Names of subdirectories in the pyramid, in *pyr_data_path/pyr_name/* Default : IMAGE, NODATA, MASK.
-
     export_masks - An option is used to precise if we want to write masks in the final pyramid. So we can use masks but not export them (they may be useless for a pyramid which wont be never updated). Only values "true" and "TRUE" lead to masks' export. Optionnal, FALSE by default.
 
     tms_name - TMS file name, with extension *.tms*. Mandatory. Have to be the same in the source pyramids.
@@ -938,9 +936,6 @@ Examples:
     image_width = 16
     image_height = 16
 
-    dir_image = IMAGE
-    dir_nodata = NODATA
-    dir_mask = MASK
     export_masks = TRUE
 
     compression         = png

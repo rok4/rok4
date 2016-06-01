@@ -45,12 +45,13 @@ Reads a configuration file, and controls it
 Using:
     (start code)
     use BE4CEPH::PropertiesLoader;
+
+    my $config = BE4CEPH::PropertiesLoader->new("/home/ign/file.txt");
     (end code)
 
 Attributes:
-    CFGFILE - string - Configuration file path
-    HDLFILE - <Config::IniFiles> - Configuration reader
-    CFGPARAMS - hash - File properties (sections...)
+    cfgFile - string - Configuration file path
+    cfgObject - <COMMON::Config> - Configuration reader
 =cut
 
 ################################################################################
@@ -129,7 +130,8 @@ sub _init {
 
     # load properties 
     my $cfg = COMMON::Config->new({
-        '-filepath' => $file
+        'filepath' => $file,
+        'format' => "INI"
     });
 
     if (! defined $cfg) {

@@ -67,10 +67,6 @@ my $newPyr = BE4::Pyramid->new({
     pyr_desc_path => $Bin."/../../pyramid",
     pyr_name_new => "newPyramid",
 
-    dir_image => "IMAGE",
-    dir_nodata => "NODATA",
-    dir_metadata => "METADATA",
-
     pyr_level_bottom => "19",
 
     compression => "raw",
@@ -98,11 +94,6 @@ my $updatePyr = BE4::Pyramid->new({
     pyr_data_path_old => $Bin."/../../pyramid",
     pyr_desc_path_old => $Bin."/../../pyramid",
     pyr_name_old => "oldPyramid",
-
-    # Parameters switched by old pyramid's ones
-    dir_image => "HIMAJE",
-    dir_nodata => "NAUDATTA",
-    dir_metadata => "MAITADATA",
 
     tms_name => "WRONG.tms",
     dir_depth => 5,
@@ -147,11 +138,6 @@ is ($updatePyr->getTmsName(), "LAMB93_10cm",
 is ($updatePyr->getNodataValue(), "0,255,255",
     "Nodata value in the old pyramid's descriptor take precedence over configuration");
 
-is ($updatePyr->getDirImage(), "IMG",
-    "Image directory name in the old pyramid's descriptor take precedence over configuration");
-is ($updatePyr->getDirNodata(), "NDT",
-    "Nodata directory name in the old pyramid's descriptor take precedence over configuration");
-
 is ($updatePyr->getDirDepth(), 2,
     "Directory depth in the old pyramid's descriptor take precedence over configuration");
 
@@ -179,9 +165,9 @@ is (scalar keys %{$updatePyr->getLevels()}, 20, "Levels fetched from the old pyr
 
 ######################################################
 
-is ($updatePyr->getDirImage(), "IMG", "Compose path of image");
-is ($updatePyr->getDirImage(FALSE), "IMG", "Compose path of image");
-is ($updatePyr->getDirImage(TRUE), $Bin."/../../pyramid/updatePyramid/IMG", "Compose path of image");
+is ($updatePyr->getDirImage(), "IMAGE", "Compose path of image");
+is ($updatePyr->getDirImage(FALSE), "IMAGE", "Compose path of image");
+is ($updatePyr->getDirImage(TRUE), $Bin."/../../pyramid/updatePyramid/IMAGE", "Compose path of image");
 
 ######################################################
 

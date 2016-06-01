@@ -63,7 +63,7 @@ Using:
 
 Attributes:
     pyramid - <Pyramid> - Images' pyramid to generate, thanks to one or several graphs.
-    commands - <Commands> - To compose generation commands (mergeNtiff, tiff2tile...).
+    commands - <Commands> - To compose generation commands (mergeNtiff, work2cache...).
     graphs - <QTree> or <NNGraph> array - Graphs composing the forest, one per data source.
     scripts - <Script> array - Scripts, whose execution generate the images' pyramid.
     splitNumber - integer - Number of script used for work parallelization.

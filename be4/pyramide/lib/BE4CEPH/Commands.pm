@@ -104,8 +104,8 @@ use constant MERGENTIFF_W => 4;
 use constant DECIMATENTIFF_W => 3;
 # Constant: WGET_W
 use constant WGET_W => 35;
-# Constant: TIFF2TILE_W
-use constant TIFF2TILE_W => 1;
+# Constant: WORK2CACHE_W
+use constant WORK2CACHE_W => 1;
 
 =begin nd
 Constant: BASHFUNCTIONS
@@ -132,7 +132,7 @@ StoreImage () {
     
     if [[ ! ${RM_IMGS[$workDir/$workImgName]} ]] ; then
              
-        tiff2tile $workDir/$workImgName __t2tI__ -pool ${PYR_POOL} $imgName
+        work2cache $workDir/$workImgName __w2cI__ -pool ${PYR_POOL} $imgName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
         echo "$imgName" >> ${TMP_LIST_FILE}
@@ -148,7 +148,7 @@ StoreImage () {
             
             if [ $mskName ] ; then
                     
-                tiff2tile $workDir/$workMskName __t2tM__ -pool ${PYR_POOL} $mskName
+                work2cache $workDir/$workMskName __w2cM__ -pool ${PYR_POOL} $mskName
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
                 echo "$mskName" >> ${TMP_LIST_FILE}
                 
@@ -187,7 +187,7 @@ StoreTiles () {
     
     if [[ ! ${RM_IMGS[$workDir/$workImgName]} ]] ; then
              
-        tiff2tile $workDir/$workImgName __t2tI__ -ij $imgI $imgJ -pool ${PYR_POOL} $imgName
+        work2cache $workDir/$workImgName __w2cI__ -ij $imgI $imgJ -pool ${PYR_POOL} $imgName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
         for i in `seq $imin $imax` ; do 
@@ -207,7 +207,7 @@ StoreTiles () {
             
             if [ $mskName ] ; then
                     
-                tiff2tile $workDir/$workMskName __t2tM__ -ij $imgI $imgJ -pool ${PYR_POOL} $mskName
+                work2cache $workDir/$workMskName __w2cM__ -ij $imgI $imgJ -pool ${PYR_POOL} $mskName
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
                 for i in `seq $imin $imax` ; do 
                     for j in `seq $jmin $jmax` ; do 
@@ -362,7 +362,7 @@ sub new {
 =begin nd
 Function: work2cache
 
-Copy image from work directory to cache and transform it (tiled and compressed) thanks to the 'Work2cache' bash function (tiff2tile).
+Copy image from work directory to cache and transform it (tiled and compressed) thanks to the 'Work2cache' bash function (work2cache).
 
 (see work2cache.png)
 
@@ -394,7 +394,7 @@ sub work2cache {
             $node->getLevel, $workDir, $node->getWorkImageName(TRUE), $pyrName,
             $node->getCol, $node->getRow, $self->{pyramid}->getTilesPerWidth, $self->{pyramid}->getTilesPerHeight;
 
-        $weight += TIFF2TILE_W;
+        $weight += WORK2CACHE_W;
         
         #### Export du masque, si présent
 
@@ -407,7 +407,7 @@ sub work2cache {
                 $pyrName = sprintf "%s_MSK_%s", $self->{pyramid}->getNewName(), $node->getPyramidName();
                 
                 $cmd .= sprintf (" %s", $pyrName);
-                $weight += TIFF2TILE_W;
+                $weight += WORK2CACHE_W;
             }        
         }
         
@@ -417,7 +417,7 @@ sub work2cache {
         my $pyrName = sprintf "%s_IMG_%s", $self->{pyramid}->getNewName(), $node->getPyramidName();
         
         $cmd .= sprintf ("StoreImage %s %s %s %s", $node->getLevel, $workDir, $node->getWorkImageName(TRUE), $pyrName);
-        $weight += TIFF2TILE_W;
+        $weight += WORK2CACHE_W;
         
         #### Export du masque, si présent
 
@@ -430,7 +430,7 @@ sub work2cache {
                 $pyrName = sprintf "%s_MSK_%s", $self->{pyramid}->getNewName(), $node->getPyramidName();
                 
                 $cmd .= sprintf (" %s", $pyrName);
-                $weight += TIFF2TILE_W;
+                $weight += WORK2CACHE_W;
             }        
         }
         
@@ -647,7 +647,7 @@ sub configureFunctions {
 
     $configuredFunc =~ s/__m4t__/$conf_m4t/;
     
-    ######## tiff2tile ########
+    ######## work2cache ########
     my $conf_t2t = "";
 
     # pour les images
@@ -661,12 +661,12 @@ sub configureFunctions {
 
     $conf_t2t .= sprintf "-t %s %s ", $pyr->getTileMatrixSet->getTileWidth,$pyr->getTileMatrixSet->getTileHeight;
 
-    $configuredFunc =~ s/__t2tI__/$conf_t2t/g;
+    $configuredFunc =~ s/__w2cI__/$conf_t2t/g;
     
     # pour les masques
     $conf_t2t = sprintf "-c zip -t %s %s",
         $pyr->getTileMatrixSet->getTileWidth, $pyr->getTileMatrixSet->getTileHeight;
-    $configuredFunc =~ s/__t2tM__/$conf_t2t/g;
+    $configuredFunc =~ s/__w2cM__/$conf_t2t/g;
     
     return $configuredFunc;
 }

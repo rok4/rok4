@@ -99,8 +99,6 @@ Les schemas de modelisations des classes (UML) sont à intégrer dans le natural
 
  Le SRS du TMS est récuperé à la configuration par l'objet TileMatrixSet.
  Et le SRS des sources par l'objet DataSource.
-
- Le changement de projection implique un moissonnage WMS des tuiles via Rok4.
  
 
 * Changement de compression :
@@ -141,7 +139,7 @@ Les schemas de modelisations des classes (UML) sont à intégrer dans le natural
  L'execution des scripts seront à la charge de l'orchestrateur Jenkins.
 
  Les programmes suivants doivent être installés (disponible sur le projet Rok4) :
-  merg4tiff, mergeNtiff, tiff2tile, tiff2gray, tiffcp, ...
+  merg4tiff, mergeNtiff, cache2work, work2cache ...
 
  De plus, un service WMS doit être installé pour les cas de moissonnage.
 

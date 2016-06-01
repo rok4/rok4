@@ -45,8 +45,8 @@ Using:
     (start code)
     # load properties 
     my $cfg = COMMON::Config->new({
-        '-filepath' => "/mon/fichier/de/configuration.txt",
-        '-format' => "INI"
+        'filepath' => "/mon/fichier/de/configuration.txt",
+        'format' => "INI"
     });
     (end code)
 
@@ -124,7 +124,7 @@ sub new {
     my $value = undef;
 
     # Read the mandatory configuration file's path parameter 
-    if (defined ($value = delete $parms->{'-filepath'})) {
+    if (defined ($value = delete $parms->{'filepath'})) {
         DEBUG(sprintf "Given configuration file's path : '%s'", $value);
         $self->{"filePath"} = $value;
     } else {
@@ -135,7 +135,7 @@ sub new {
     $value = undef;
 
     # Check the format in which the configuration file is written
-    $value = delete $parms->{'-format'};
+    $value = delete $parms->{'format'};
     if ( (defined $value) && ($self->_isKnownFormat($value)) ) {
         DEBUG(sprintf "Given configuration file's format : '%s'", $value);
         $self->{"fileFormat"} = uc($value);

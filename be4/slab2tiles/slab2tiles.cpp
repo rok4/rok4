@@ -38,7 +38,12 @@
 /**
  * \file slab2tiles.cpp
  * \author Institut national de l'information géographique et forestière
- * \~french \brief Conversion d'une dalle fichier en tuiles indépendantes sur ceph
+ * \~french \brief Conversion d'une dalle fichier en tuiles indépendantes sur Ceph
+ *
+ * \~ \image html slab2tiles.png \~french
+ *
+ * Vision libimage : Rok4Image -> Rok4Image
+ *
  * \~ \code
  * slab2tiles input.tif -pool test -ij 4 7 -t  16 16 output
  * \endcode
@@ -73,27 +78,27 @@
  * Parameters:
  *      -pool : Ceph pool where data is
  *      -t tile size : number of tilewidthwise and tileheightwise in the input slab.
- *      -ij : slab indices
+ *      -ij : slab indices (col row)
  *      -d : debug logger activation
  *
  * Examples
- *  slab2tiles input.tif -pool test -ij 4 7 -t  16 16 output
+ *  slab2tiles input.tif -pool test -ij 4 7 -t 16 16 output
  */
 void usage() {
     LOGGER_INFO ( "\tslab2tiles version " << BE4_VERSION << "\n\n" <<
 
-"Convert file slab to independant tiles on ceph cluster.\n\n"<<
+                  "Convert file slab to independant tiles on ceph cluster.\n\n"<<
 
-"Usage: slab2tiles -pool <VAL> -t <VAL> <VAL> -ij <VAL> <VAL> <INPUT FILE> <OUTPUT PREFIX>\n\n"<<
+                  "Usage: slab2tiles -pool <VAL> -t <VAL> <VAL> -ij <VAL> <VAL> <INPUT FILE> <OUTPUT PREFIX>\n\n"<<
 
-"Parameters:\n"<<
-"     -pool : Ceph pool where data is\n"<<
-"     -t tile size : number of tilewidthwise and tileheightwise in the input slab.\n"<<
-"     -ij : slab indices\n"<<
-"     -d : debug logger activation\n\n"<<
+                  "Parameters:\n"<<
+                  "     -pool : Ceph pool where data is\n"<<
+                  "     -t tile size : number of tilewidthwise and tileheightwise in the input slab.\n"<<
+                  "     -ij : slab indices (col row)\n"<<
+                  "     -d : debug logger activation\n\n"<<
 
-"Examples\n"<<
-"     slab2tiles input.tif -pool test -ij 4 7 -t  16 16 output\n");
+                  "Example\n"<<
+                  "     slab2tiles input.tif -pool test -ij 4 7 -t  16 16 prefix\n");
 }
 
 /**
@@ -118,12 +123,6 @@ void error ( std::string message, int errorCode ) {
  */
 int main ( int argc, char **argv ) {
 
-    char* input = 0, *output = 0, *pool = 0;
-    int tileWidthwise = -1, tileHeightwise = -1;
-    int imageI = -1;
-    int imageJ = -1;
-    bool debugLogger=false;
-
     /* Initialisation des Loggers */
     Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
 
@@ -137,7 +136,14 @@ int main ( int argc, char **argv ) {
     logw.precision ( 16 );
     logw.setf ( std::ios::fixed,std::ios::floatfield );
 
-    // Récupération des paramètres
+    /************* Récupération des paramètres *************/
+
+    char* input = 0, *output = 0, *pool = 0;
+    int tileWidthwise = -1, tileHeightwise = -1;
+    int imageCol = -1;
+    int imageRow = -1;
+    bool debugLogger=false;
+
     for ( int i = 1; i < argc; i++ ) {
         if ( !strcmp ( argv[i],"-pool" ) ) {
             if ( ++i == argc ) {
@@ -148,8 +154,8 @@ int main ( int argc, char **argv ) {
         }
         if ( !strcmp ( argv[i],"-ij" ) ) {
             if ( i+2 >= argc ) { error("Error in -ij option", -1 ); }
-            imageI = atoi ( argv[++i] );
-            imageJ = atoi ( argv[++i] );
+            imageCol = atoi ( argv[++i] );
+            imageRow = atoi ( argv[++i] );
             continue;
         }
         if ( argv[i][0] == '-' ) {
@@ -191,21 +197,23 @@ int main ( int argc, char **argv ) {
         error ("Number of tiles in slab must be provided", -1);
     }
 
-    if ( imageI == -1 || imageJ == -1 ) {
+    if ( imageCol == -1 || imageRow == -1 ) {
         error ("slab indices must be provided", -1);
     }
 
-    Context* contextinput;
+    /************* Image en entrée : Rok4Image *************/
+
+    Context* contextInput;
     LOGGER_DEBUG("Input is a file in a file system");
-    contextinput = new FileContext("");
+    contextInput = new FileContext("");
 
 
-    if (! contextinput->connection()) {
+    if (! contextInput->connection()) {
         error("Unable to connect context", -1);
     }
 
     Rok4ImageFactory R4IF;
-    Rok4Image* sourceImage = R4IF.createRok4ImageToRead(input, BoundingBox<double>(0.,0.,0.,0.), 0., 0., contextinput);
+    Rok4Image* sourceImage = R4IF.createRok4ImageToRead(input, BoundingBox<double>(0.,0.,0.,0.), 0., 0., contextInput);
     if (sourceImage == NULL) {
         delete acc;
         error (std::string("Cannot create ROK4 image to read ") + input, -1);
@@ -215,51 +223,61 @@ int main ( int argc, char **argv ) {
         sourceImage->print();
     }
 
+    /************* En sortie : des objets Ceph écrits sans Image *************/
 
-    Context* contextoutput;
+    Context* contextOutput;
 
     if ( pool != 0 ) {
         LOGGER_DEBUG( std::string("Output is an object in the Ceph pool ") + pool);
-        contextoutput = new CephPoolContext(pool);
+        contextOutput = new CephPoolContext(pool);
     } else {
         delete sourceImage;
-        delete contextinput;
+        delete contextInput;
         delete acc;
         error ("pool name must be provided", -1);
     }
 
-    if (! contextoutput->connection()) {
+    if (! contextOutput->connection()) {
         error("Unable to connect context", -1);
     }
 
-    Rok4Image* rok4Image = R4IF.createRok4ImageToWrite(
-        output, BoundingBox<double>(0.,0.,0.,0.), -1, -1, sourceImage->getWidth(), sourceImage->getHeight(), sourceImage->channels,
-        sourceImage->getSampleFormat(), sourceImage->getBitsPerSample(), sourceImage->getPhotometric(), sourceImage->getCompression(),
-        sourceImage->getWidth()/tileWidthwise, sourceImage->getHeight()/tileHeightwise, contextoutput
-    );
-
-    rok4Image->setExtraSample(sourceImage->getExtraSample());
-
-    if (rok4Image == NULL) {
-        error("Cannot create the ROK4 image to write", -1);
-    }
-
-    if (debugLogger) {
-        rok4Image->print();
-    }
-
     LOGGER_DEBUG ( "Write" );
-    if (rok4Image->storeTiles(sourceImage, imageI, imageJ) < 0) {
-        error("Cannot write ROK4 tiles on ceph", -1);
+
+    int tileColUL = imageCol * tileWidthwise;
+    int tileRowUL = imageRow * tileHeightwise;
+
+    int tileHeight = sourceImage->getHeight()/tileHeightwise;
+    int rawTileLineSize = sourceImage->getBitsPerSample() * sourceImage->channels / 8;
+    uint8_t* tile = new uint8_t[2 * tileHeight * rawTileLineSize];
+
+    for ( int y = 0; y < tileHeightwise; y++ ) {
+
+        for ( int x = 0; x < tileWidthwise; x++ ) {
+
+            int tileInd = tileWidthwise * y + x;
+
+            char tileName[256];
+            sprintf(tileName, "%s_%d_%d", output, tileColUL + x, tileRowUL + y);
+
+            int realSize = sourceImage->getEncodedTile(tile, tileInd);
+
+            if (! contextOutput->writeFull(tile, realSize, std::string(tileName))) {
+                LOGGER_ERROR("Error writting full tile " << tileColUL + x << "," << tileRowUL + y);
+                return -1;
+            }
+        }
     }
 
+    delete [] tile;
+
+    
+    
+    /************* Nettoyage **************/
 
     LOGGER_DEBUG ( "Clean" );
-    // Nettoyage
     delete acc;
     delete sourceImage;
-    delete rok4Image;
-    delete contextinput;
-    delete contextoutput;
+    delete contextInput;
+    delete contextOutput;
     return 0;
 }

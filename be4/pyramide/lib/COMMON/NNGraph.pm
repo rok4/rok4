@@ -614,7 +614,7 @@ sub computeYourself {
             # on ecrit la commande dans le fichier
             $script->write($c);
 
-            # final script with all tiff2tile commands
+            # final script with all work2cache commands
             # on ecrit dans chacun des scripts de manière tournante
             my $finisher = $self->getForest()->getScript($Finisher_Index);
             ($c,$w) = $self->{commands}->work2cache($node,"\${ROOT_TMP_DIR}/".$node->getScript()->getID());
