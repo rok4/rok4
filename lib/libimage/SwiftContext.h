@@ -64,38 +64,132 @@ class SwiftContext : public Context{
     
 private:
     
+    /**
+     * \~french \brief URL d'authentification à Swift
+     * \~english \brief Authentication URL to Swift
+     */
     std::string auth_url;
+    /**
+     * \~french \brief URL de communication avec Swift
+     * \~english \brief Communication URL with Swift
+     */
     std::string public_url;
+    /**
+     * \~french \brief Accompte Swift
+     * \~english \brief Swift account
+     */
     std::string user_account;
+    /**
+     * \~french \brief Utilisateur Swift
+     * \~english \brief Swift user
+     */
     std::string user_name;
+    /**
+     * \~french \brief Mot de passe Swift
+     * \~english \brief Swift password
+     */
     std::string user_passwd;
+    /**
+     * \~french \brief Nom du conteneur Swift
+     * \~english \brief Swift container name
+     */
     std::string container_name;
     
+    /**
+     * \~french \brief Objet Curl pour communiquer avec l'API rest de Swift
+     * \~english \brief Curl object to communicate with Swift Rest API
+     */
     CURL *curl;
+
+    /**
+     * \~french \brief En-tête HTTP à utiliser pour chaque échange avec Swift (contient le token)
+     * \~english \brief HTTP header to use to communicate with Swift (contain the token)
+     */
     HeaderStruct authHdr;
 
 public:
 
-    /** Constructeurs */
+    /**
+     * \~french
+     * \brief Constructeur pour un contexte Swift
+     * \param[in] name Nom du cluster Swift
+     * \param[in] user Nom de l'utilisateur Swift
+     * \param[in] conf Configuration du cluster Swift
+     * \param[in] container Conteneur avec lequel on veut communiquer
+     * \~english
+     * \brief Constructor for Swift context
+     * \param[in] name Name of Swift cluster
+     * \param[in] user Name of Swift user
+     * \param[in] conf Swift configuration file
+     * \param[in] container Container to use
+     */
     SwiftContext (std::string auth, std::string account, std::string user, std::string passwd, std::string container);
+
+    /**
+     * \~french
+     * \brief Constructeur pour un contexte Swift, avec les valeur par défaut
+     * \details Les valeurs sont récupérées dans les variables d'environnement ou sont celles par défaut
+     * <TABLE>
+     * <TR><TH>Attribut</TH><TH>Variable d'environnement</TH><TH>Valeur par défaut</TH>
+     * <TR><TD>auth_url</TD><TD>ROK4_SWIFT_AUTHURL</TD><TD>http://localhost:8080/auth/v1.0</TD>
+     * <TR><TD>user_account</TD><TD>ROK4_SWIFT_ACCOUNT</TD><TD>test</TD>
+     * <TR><TD>user_name</TD><TD>ROK4_SWIFT_USER</TD><TD>tester</TD>
+     * <TR><TD>user_passwd</TD><TD>ROK4_SWIFT_PASSWD</TD><TD>password</TD>
+     * </TABLE>
+     * \param[in] container Conteneur avec lequel on veut communiquer
+     * \~english
+     * \brief Constructor for Swift context, with default value
+     * \details Values are read in environment variables, or are deulat one
+     * <TABLE>
+     * <TR><TH>Attribute</TH><TH>Environment variables</TH><TH>Default value</TH>
+     * <TR><TD>auth_url</TD><TD>ROK4_SWIFT_AUTHURL</TD><TD>http://localhost:8080/auth/v1.0</TD>
+     * <TR><TD>user_account</TD><TD>ROK4_SWIFT_ACCOUNT</TD><TD>test</TD>
+     * <TR><TD>user_name</TD><TD>ROK4_SWIFT_USER</TD><TD>tester</TD>
+     * <TR><TD>user_passwd</TD><TD>ROK4_SWIFT_PASSWD</TD><TD>password</TD>
+     * </TABLE>
+     * \param[in] container Container to use
+     */
     SwiftContext (std::string container);
+
+
     eContextType getType();
     std::string getTypeStr();
-    std::string getContainer();
+    std::string getBucket();
         
+    /**
+     * \~french \brief Retourne le nom du conteneur
+     * \~english \brief Return the name of container
+     */
     std::string getContainerName () {
         return container_name;
     }
 
+    /**
+     * \~french \brief Retourne l'URL d'authentification
+     * \~english \brief Return the authentication URL
+     */
     std::string getAuthUrl () {
         return auth_url;
     }
+    /**
+     * \~french \brief Retourne l'accompte
+     * \~english \brief Return the account
+     */
     std::string getAccount () {
         return user_account;
     }
+    /**
+     * \~french \brief Retourne le nom de l'utilisateur
+     * \~english \brief Return the name of user
+     */
     std::string getUserName () {
         return user_name;
     }
+
+    /**
+     * \~french \brief Retourne le mot de passe
+     * \~english \brief Return the password
+     */
     std::string getUserPwd () {
         return user_passwd;
     }
@@ -105,26 +199,42 @@ public:
         return true;
     }
     int read(uint8_t* data, int offset, int size, std::string name);
+
+    /**
+     * \~french
+     * \brief Écrit de la donnée dans un objet Swift
+     * \warning Pas d'implémentation de l'écriture depuis un buffer, retourne systématiquement une erreur
+     */
     bool write(uint8_t* data, int offset, int size, std::string name) {
         LOGGER_ERROR("Can't write a Swift object from buffer");
         return false;
     }
+    /**
+     * \~french
+     * \brief Écrit un objet Swift
+     * \warning Pas d'implémentation de l'écriture depuis un buffer, retourne systématiquement une erreur
+     */
     bool writeFull(uint8_t* data, int size, std::string name) {
         LOGGER_ERROR("Can't write a Swift object from buffer");
         return false;
     }
 
+    /**
+     * \~french
+     * \brief Écrit un objet Swift depuis un fichier
+     * \param[in] fileName Nom du fichier à téléverser dans Swift
+     * \param[in] objectName Nom de l'objet Swift
+     * \~english
+     * \brief Écrit un objet Swift depuis un fichier
+     * \param[in] fileName File path to upload into Swift
+     * \param[in] objectName Swift object's name
+     */
     bool writeFromFile(std::string fileName, std::string objectName);
 
     virtual bool openToWrite(std::string name) {return true;}
     virtual bool closeToWrite(std::string name) {return true;}
 
-    /**
-     * \~french
-     * \brief Sortie des informations sur le contexte Swift
-     * \~english
-     * \brief Swift context description output
-     */
+
     virtual void print() {
         LOGGER_INFO ( "------ Swift Context -------" );
         LOGGER_INFO ( "\t- user account = " << user_account );
@@ -147,6 +257,10 @@ public:
         return oss.str() ;
     }
     
+    /**
+     * \~french \brief Récupère l'URL publique #public_url et constitue l'en-tête HTTP #authHdr
+     * \~english \brief Get public URL #public_url and constitute the HTTP header #authHdr
+     */
     bool connection();
 
     void closeConnection() {

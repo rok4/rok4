@@ -451,7 +451,7 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
     tileRef->contextType=new char[ctxType.length() +1];
     strcpy ( tileRef->contextType,ctxType.c_str() );
 
-    std::string container = level->getContext()->getContainer();
+    std::string container = level->getContext()->getBucket();
     tileRef->pool=new char[container.length() +1];
     strcpy ( tileRef->pool,container.c_str() );
 
@@ -544,7 +544,7 @@ HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char*
     tileRef->contextType=new char[ctxType.length() +1];
     strcpy ( tileRef->contextType,ctxType.c_str() );
 
-    std::string container = level->getContext()->getContainer();;
+    std::string container = level->getContext()->getBucket();;
     tileRef->pool=new char[container.length() +1];
     strcpy ( tileRef->pool,container.c_str() );
 

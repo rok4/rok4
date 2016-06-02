@@ -285,6 +285,6 @@ std::string SwiftContext::getTypeStr() {
     return "SWIFTCONTEXT";
 }
 
-std::string SwiftContext::getContainer() {
+std::string SwiftContext::getBucket() {
     return container_name;
 }

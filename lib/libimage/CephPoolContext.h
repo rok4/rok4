@@ -63,38 +63,133 @@ class CephPoolContext : public Context {
     
 private:
     
+    /**
+     * \~french \brief Nom du cluster ceph
+     * \~english \brief Name of ceph cluster
+     */
     std::string cluster_name;
     
+    /**
+     * \~french \brief Utilisateur du cluster ceph
+     * \~english \brief User of ceph cluster
+     */
     std::string user_name;
     
+    /**
+     * \~french \brief Fichier de configuration du cluster ceph
+     * \~english \brief Configuration file of ceph cluster
+     */
     std::string conf_file;
     
+    /**
+     * \~french \brief Nom du pool ceph
+     * \~english \brief Name of ceph pool
+     */
     std::string pool_name;
 
+    /**
+     * \~french \brief Objet "cluster" librados, pour gérer le cluster
+     * \~english \brief "cluster" librados object, to handle the cluster
+     */
     rados_t cluster;
+    /**
+     * \~french \brief Objet "contexte" librados, pour communiquer avec un pool précis
+     * \~english \brief "context" librados object, to communicate with a specific pool
+     */
     rados_ioctx_t io_ctx;
 
 public:
 
-    /** Constructeurs */
+    /**
+     * \~french
+     * \brief Constructeur pour un contexte Ceph
+     * \param[in] name Nom du cluster ceph
+     * \param[in] user Nom de l'utilisateur ceph
+     * \param[in] conf Configuration du cluster ceph
+     * \param[in] pool Pool avec lequel on veut communiquer
+     * \~english
+     * \brief Constructor for Ceph context
+     * \param[in] name Name of ceph cluster
+     * \param[in] user Name of ceph user
+     * \param[in] conf Ceph configuration file
+     * \param[in] pool Pool to use
+     */
     CephPoolContext (std::string cluster, std::string user, std::string conf, std::string pool);
+    /**
+     * \~french
+     * \brief Constructeur pour un contexte Ceph, avec les valeur par défaut
+     * \details Les valeurs sont récupérées dans les variables d'environnement ou sont celles par défaut
+     * <TABLE>
+     * <TR><TH>Attribut</TH><TH>Variable d'environnement</TH><TH>Valeur par défaut</TH>
+     * <TR><TD>user_name</TD><TD>ROK4_CEPH_USERNAME</TD><TD>client.admin</TD>
+     * <TR><TD>cluster_name</TD><TD>ROK4_CEPH_CLUSTERNAME</TD><TD>ceph</TD>
+     * <TR><TD>conf_file</TD><TD>ROK4_CEPH_CONFFILE</TD><TD>/etc/ceph/ceph.conf</TD>
+     * </TABLE>
+     * \param[in] pool Pool avec lequel on veut communiquer
+     * \~english
+     * \brief Constructor for Ceph context, with default value
+     * \details Values are read in environment variables, or are deulat one
+     * <TABLE>
+     * <TR><TH>Attribute</TH><TH>Environment variables</TH><TH>Default value</TH>
+     * <TR><TD>user_name</TD><TD>ROK4_CEPH_USERNAME</TD><TD>client.admin</TD>
+     * <TR><TD>cluster_name</TD><TD>ROK4_CEPH_CLUSTERNAME</TD><TD>ceph</TD>
+     * <TR><TD>conf_file</TD><TD>ROK4_CEPH_CONFFILE</TD><TD>/etc/ceph/ceph.conf</TD>
+     * </TABLE>
+     * \param[in] pool Pool to use
+     */
     CephPoolContext (std::string pool);
+
     eContextType getType();
     std::string getTypeStr();
-    std::string getContainer();
+    std::string getBucket();
+    
+    /**
+     * \~french \brief Instancie les objets librados #cluster and #io_ctx
+     * \~english \brief Instanciate librados objects #cluster and #io_ctx
+     */
+    bool connection();
 
+    /**
+     * \~french \brief Nettoie les objets librados
+     * \~english \brief Clean librados objects
+     */
+    void closeConnection() {
+        if (connected) {
+            rados_aio_flush(io_ctx);
+            rados_ioctx_destroy(io_ctx);
+            rados_shutdown(cluster);
+            connected = false;
+        }
+    }
+
+    /**
+     * \~french \brief Retourne le nom du pool ceph
+     * \~english \brief Return the name of ceph pool
+     */
     std::string getPoolName () {
         return pool_name;
     }
 
+    /**
+     * \~french \brief Retourne le nom de l'utilisateur ceph
+     * \~english \brief Return the name of ceph user
+     */
     std::string getPoolUser () {
         return user_name;
     }
 
+    /**
+     * \~french \brief Retourne le fichier de configuration ceph
+     * \~english \brief Return the ceph configuration file
+     */
     std::string getPoolConf () {
         return conf_file;
     }
 
+    /**
+     * \~french \brief Retourne le nom du cluster ceph
+     * \~english \brief Return the name of ceph cluster
+     */
     std::string getClusterName () {
         return cluster_name;
     }
@@ -111,14 +206,7 @@ public:
     virtual bool openToWrite(std::string name) {return true;}
     virtual bool closeToWrite(std::string name) {return true;}
     
-    bool connection();
 
-    /**
-     * \~french
-     * \brief Sortie des informations sur le contexte Ceph
-     * \~english
-     * \brief Ceph context description output
-     */
     virtual void print() {
         LOGGER_INFO ( "------ Ceph Context -------" );
         LOGGER_INFO ( "\t- cluster name = " << cluster_name );
@@ -141,15 +229,6 @@ public:
             oss << "\t- NOT CONNECTED !" << std::endl;
         }
         return oss.str() ;
-    }
-
-    void closeConnection() {
-        if (connected) {
-            rados_aio_flush(io_ctx);
-            rados_ioctx_destroy(io_ctx);
-            rados_shutdown(cluster);
-            connected = false;
-        }
     }
     
     virtual ~CephPoolContext() {

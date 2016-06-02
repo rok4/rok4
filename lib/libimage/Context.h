@@ -74,38 +74,132 @@ class Context {
 
 protected:
 
+    /**
+     * \~french \brief Précise si le contexte est connecté
+     * \~english \brief Precise if context is connected
+     */
     bool connected;
 
-    /** Constructeurs */
+    /**
+     * \~french \brief Crée un objet Context
+     * \~english \brief Create a Context object
+     */
     Context () : connected(false) {}
 
 public:
 
+    /**
+     * \~french \brief Connecte le contexte
+     * \~english \brief Connect the context
+     */
     virtual bool connection() = 0;
 
+    /**
+     * \~french \brief Précise si l'objet demandé existe dans ce contexte
+     * \param[in] name Nom de l'objet dont on veut savoir l'existence 
+     * \~english \brief Precise if provided object exists in this context
+     * \param[in] name Object's name whose existency is asked
+     */
     virtual bool exists(std::string name) = 0;
-    virtual int read(uint8_t* data, int offset, int size, std::string name) = 0;
-    virtual bool write(uint8_t* data, int offset, int size, std::string name) = 0;
-    virtual bool writeFull(uint8_t* data, int size, std::string name) = 0;
-
-    virtual bool openToWrite(std::string name) = 0;
-    virtual bool closeToWrite(std::string name) = 0;
-    virtual eContextType getType() = 0;
-    virtual std::string getTypeStr() = 0;
-    virtual std::string getContainer() = 0;
 
     /**
-     * \~french
-     * \brief Sortie des informations sur le contexte
-     * \~english
-     * \brief Context description output
+     * \~french \brief Récupère la donnée dans l'objet
+     * \param[in,out] data Buffer où stocker la donnée lue. Doit être initialisé et assez grand
+     * \param[in] offset À partir d'où on veut lire
+     * \param[in] size Nombre d'octet que l'on veut lire
+     * \param[in] name Nom de l'objet que l'on veut lire
+     * \return Taille effectivement lue, un nombre négatif en cas d'erreur
+     * \~english \brief Get the data in the named object
+     * \param[in,out] data Buffer where to store read data. Have to be initialized
+     * \param[in] offset From where we want to read
+     * \param[in] size Number of bytes we want to read
+     * \param[in] name Object's name we want to read
+     * \return Real size of read data, negative integer if an error occured
+     */
+    virtual int read(uint8_t* data, int offset, int size, std::string name) = 0;
+
+    /**
+     * \~french \brief Écrit de la donnée dans l'objet
+     * \param[in] data Buffer contenant la donnée à écrire
+     * \param[in] offset À partir d'où on veut écrire
+     * \param[in] size Nombre d'octet que l'on veut écrire
+     * \param[in] name Nom de l'objet dans lequel on veut écrire
+     * \~english \brief Write data in the named object
+     * \param[in] data Buffer with data to write
+     * \param[in] offset From where we want to write
+     * \param[in] size Number of bytes we want to write
+     * \param[in] name Object's name we want to write into
+     */
+    virtual bool write(uint8_t* data, int offset, int size, std::string name) = 0;
+
+    /**
+     * \~french \brief Écrit intégralement un objet
+     * \param[in] data Buffer contenant la donnée à écrire
+     * \param[in] size Nombre d'octet que l'on veut écrire
+     * \param[in] name Nom de l'objet à écrire
+     * \~english \brief Write an object full
+     * \param[in] data Buffer with data to write
+     * \param[in] size Number of bytes we want to write
+     * \param[in] name Object's name to write
+     */
+    virtual bool writeFull(uint8_t* data, int size, std::string name) = 0;
+
+    /**
+     * \~french \brief Prépare l'objet en écriture
+     * \details Cela est utile dans le cas de l'écriture d'un fichier. On ne veut pas ouvrir et fermer le flux à chaque écriture partielle. Pour les autres type de contexte, rien ne ser afait dans cette fonction
+     * \param[in] name Nom de l'objet dans lequel on va vouloir écrire
+     * \~english \brief Write data in the named object
+     * \details It is usefull to write a file. We don't want to open the stream for each partially writting. For other context type, nothing is done is this function.
+     * \param[in] name Object's name we want to write into
+     */
+    virtual bool openToWrite(std::string name) = 0;
+    /**
+     * \~french \brief Termine l'écriture d'un objet
+     * \param[in] name Nom de l'objet que l'on a fini d'écrire
+     * \~english \brief St
+     * \param[in] name Object's name whose writting is over
+     */
+    virtual bool closeToWrite(std::string name) = 0;
+
+    /**
+     * \~french \brief Retourne le type du contexte
+     * \~english \brief Return the context's type
+     */
+    virtual eContextType getType() = 0;
+    /**
+     * \~french \brief Retourne le type du contexte, sous forme de texte
+     * \~english \brief Return the context's type, as string
+     */
+    virtual std::string getTypeStr() = 0;
+
+    /**
+     * \~french \brief Retourne le contenant dans le contexte
+     * \~english \brief Return the bucket in the context
+     */
+    virtual std::string getBucket() = 0;
+
+    /**
+     * \~french \brief Sortie des informations sur le contexte
+     * \~english \brief Context description output
      */
     virtual void print() = 0;
 
+    /**
+     * \~french \brief Retourne une chaîne de caracère décrivant le contexte
+     * \~english \brief Return a string describing the context
+     */
     virtual std::string toString() = 0;
 
+    /**
+     * \~french \brief Déconnecte le contexte
+     * \~english \brief Disconnect the context
+     */
     virtual void closeConnection() = 0;
-    
+
+    /**
+     * \~french \brief Destructeur
+     * \~english \brief Destructor
+     */
     virtual ~Context() {}
 };
 

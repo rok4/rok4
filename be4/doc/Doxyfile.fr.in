@@ -610,7 +610,7 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                  = @CMAKE_CURRENT_SOURCE_DIR@/cache2work @CMAKE_CURRENT_SOURCE_DIR@/mergeNtiff @CMAKE_CURRENT_SOURCE_DIR@/merge4tiff @CMAKE_CURRENT_SOURCE_DIR@/createNodata @CMAKE_CURRENT_SOURCE_DIR@/manageNodata @CMAKE_CURRENT_SOURCE_DIR@/overlayNtiff @CMAKE_CURRENT_SOURCE_DIR@/tiff2gray @CMAKE_CURRENT_SOURCE_DIR@/tiff2tile @CMAKE_CURRENT_SOURCE_DIR@/tiffck
+INPUT                  = @CMAKE_CURRENT_SOURCE_DIR@/cache2work @CMAKE_CURRENT_SOURCE_DIR@/mergeNtiff @CMAKE_CURRENT_SOURCE_DIR@/merge4tiff @CMAKE_CURRENT_SOURCE_DIR@/createNodata @CMAKE_CURRENT_SOURCE_DIR@/manageNodata @CMAKE_CURRENT_SOURCE_DIR@/overlayNtiff @CMAKE_CURRENT_SOURCE_DIR@/composeNtiff @CMAKE_CURRENT_SOURCE_DIR@/decimateNtiff @CMAKE_CURRENT_SOURCE_DIR@/work2cache @CMAKE_CURRENT_SOURCE_DIR@/slab2tiles
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is

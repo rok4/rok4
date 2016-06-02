@@ -64,19 +64,38 @@ class FileContext : public Context {
     
 private:
     
+    /**
+     * \~french \brief Dossier racine des fichiers gérés
+     * \details Le nom du fichier fourni pour les lectures et les écritures est concaténé à cette racine
+     * \~english \brief Root directory for manipulated files
+     * \details File name provided to read or write is concatenated with this root
+     */
     std::string root_dir;
 
     /**
      * \~french \brief Flux d'écriture de l'image ROK4
+     * \details Est ouvert avec #openToWrite et doit être fermé par #closeToWrite
      * \~english \brief Stream used to write the ROK4 image
+     * \details Is opened with #openToWrite and have to be closed with #closeToWrite
      */
     std::ofstream output;
 
 public:
 
-    /** Constructeurs */
+    /**
+     * \~french
+     * \brief Constructeur pour un contexte Fichier
+     * \param[in] root Répertoire des fichiers manipulés
+     * \~english
+     * \brief Constructor for File context
+     * \param[in] root Directory for manipulated files
+     */
     FileContext (std::string root);
-        
+    
+    /**
+     * \~french \brief Retourne le dossier racine
+     * \~english \brief Return the root directory
+     */
     std::string getRootDir () {
         return root_dir;
     }
@@ -86,13 +105,19 @@ public:
         std::string fullName = root_dir + name;
         return (stat(fullName.c_str(), &buf) == 0);
     }
+
     int read(uint8_t* data, int offset, int size, std::string name);
     bool write(uint8_t* data, int offset, int size, std::string name);
     bool writeFull(uint8_t* data, int size, std::string name);
+
     eContextType getType();
     std::string getTypeStr();
-    std::string getContainer();
+    std::string getBucket();
 
+    /**
+     * \~french \brief Ouvre le flux #output
+     * \~english \brief Open stream #output
+     */
     virtual bool openToWrite(std::string name) {
         std::string fullName = root_dir + name;
         output.open ( fullName.c_str(), std::ios_base::trunc | std::ios::binary );
@@ -102,6 +127,11 @@ public:
             return true;
         }
     }
+
+    /**
+     * \~french \brief Ferme le flux #output
+     * \~english \brief Close stream #output
+     */
     virtual bool closeToWrite(std::string name) {
         output.close();
         if (output.fail()) {
@@ -111,12 +141,6 @@ public:
         }
     }
 
-    /**
-     * \~french
-     * \brief Sortie des informations sur le contexte Fichier
-     * \~english
-     * \brief File context description output
-     */
     virtual void print() {
         LOGGER_INFO ( "------ File Context -------" );
         LOGGER_INFO ( "\t- root directory = " << root_dir );

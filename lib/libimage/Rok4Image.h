@@ -448,6 +448,7 @@ protected:
      * \param[in] esType type du canal supplémentaire, si présent.
      * \param[in] tileWidth largeur en pixel de la tuile
      * \param[in] tileHeight hauteur en pixel de la tuile
+     * \param[in] context contexte de stockage
      ** \~english
      * \brief Create a Rok4Image object, from all attributes
      * \param[in] width image width, in pixel
@@ -464,6 +465,7 @@ protected:
      * \param[in] esType extra sample type
      * \param[in] tileWidth tile's pixel width
      * \param[in] tileHeight tile's pixel height
+     * \param[in] context storage's context
      */
     Rok4Image (
         int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name,

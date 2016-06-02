@@ -90,11 +90,6 @@ Context * ContextBook::addContext(std::string pool)
             return NULL;
         }
 
-        //on se connecte
-//        if (!ctx->connection()) {
-//            LOGGER_ERROR("Impossible de se connecter aux donnees.");
-//            return NULL;
-//        }
         //on ajoute au book
         book.insert ( std::pair<std::string,Context*>(pool,ctx) );
 

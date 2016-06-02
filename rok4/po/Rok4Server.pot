@@ -1,6 +1,6 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR IGN
-# This file is distributed under the same license as the PACKAGE package.
+# This file is distributed under the same license as the Rok4 package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 #, fuzzy
@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2016-05-20 15:00+0200\n"
+"POT-Creation-Date: 2016-06-02 14:25+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1002,39 +1002,39 @@ msgstr ""
 msgid "Construction de la configuration des services depuis "
 msgstr ""
 
-#: Level.cpp:152 Level.cpp:195 Level.cpp:246
+#: Level.cpp:154 Level.cpp:197 Level.cpp:248
 msgid "Image invalid !"
 msgstr ""
 
-#: Level.cpp:253
+#: Level.cpp:255
 msgid "Dimensions invalid !"
 msgstr ""
 
-#: Level.cpp:278
+#: Level.cpp:280
 msgid "Too Much Tile on X axis"
 msgstr ""
 
-#: Level.cpp:286
+#: Level.cpp:288
 msgid "Too Much Tile on Y axis"
 msgstr ""
 
-#: Level.cpp:326
+#: Level.cpp:328
 msgid "Indice de tuile negatif"
 msgstr ""
 
-#: Level.cpp:427 Level.cpp:446
+#: Level.cpp:429 Level.cpp:448
 msgid "Type d'encodage inconnu : "
 msgstr ""
 
-#: Level.cpp:451
+#: Level.cpp:453
 msgid "Tile : "
 msgstr ""
 
-#: Level.cpp:461
+#: Level.cpp:463
 msgid "GetTile Tiff"
 msgstr ""
 
-#: Level.cpp:471 Level.cpp:484
+#: Level.cpp:473 Level.cpp:486
 msgid "GetTile Image"
 msgstr ""
 
@@ -1066,8 +1066,8 @@ msgstr ""
 msgid "Rechargement de la configuration"
 msgstr ""
 
-#: main.cpp:263 Rok4Api.cpp:147 Rok4Api.cpp:155 Rok4Api.cpp:163
-#: Rok4Api.cpp:181 Rok4Api.cpp:738
+#: main.cpp:263 Rok4Api.cpp:147 Rok4Api.cpp:155 Rok4Api.cpp:163 Rok4Api.cpp:181
+#: Rok4Api.cpp:738
 msgid "Extinction du serveur ROK4"
 msgstr ""
 

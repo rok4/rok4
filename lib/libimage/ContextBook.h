@@ -44,7 +44,7 @@
  ** \~english
  * \brief Define classe ContextBook
  * \details
- * \li ContextBook : Directory of contexts
+ * \li ContextBook : book of contexts
  */
 
 #ifndef CONTEXTBOOK_H
@@ -62,58 +62,96 @@ class ContextBook {
 private:
 
     /**
-     * \~french \brief Contexte de base
-     * Issu de la lecture du server.conf
-     * Contient les infrmations utile pour se connecter à un cluster de données
-     * \~english \brief Base Context
-     */
-    Context* baseContext;
-
-    /**
-     * \~french \brief Annuaire de contextes utiles
-     * \~english \brief Directory of contexts
+     * \~french \brief Annuaire de contextes
+     * \details La clé est le contenant du contexte
+     * \~english \brief Book of contexts
+     * \details Key is the context's bucket
      */
     std::map<std::string, Context*> book;
 
+    /**
+     * \~french \brief Précise si l'annuaire est un annuaire de contextes Ceph
+     * \~english \brief Précise if book is a book of Ceph contexts
+     */
     bool bCeph;
+    /**
+     * \~french \brief Nom par défaut du cluster ceph pour les nouveaux contextes
+     * \~english \brief Default name of ceph cluster for new contexts
+     */
     std::string ceph_name;
+    /**
+     * \~french \brief Nom par défaut de l'utilisateur ceph pour les nouveaux contextes
+     * \~english \brief Default name of ceph user for new contexts
+     */
     std::string ceph_user;
+    /**
+     * \~french \brief Configuration ceph par défaut pour les nouveaux contextes
+     * \~english \brief Default ceph configuration file for new contexts
+     */
     std::string ceph_conf;
 
+    /**
+     * \~french \brief Précise si l'annuaire est un annuaire de contextes Swift
+     * \~english \brief Précise if book is a book of Swift contexts
+     */
     bool bSwift;
+    /**
+     * \~french \brief Url d'authehtification par défaut pour les nouveaux contextes swift
+     * \~english \brief Default authentication url for new swift contexts
+     */
     std::string swift_auth;
+    /**
+     * \~french \brief Compte par défaut pour les nouveaux contextes swift
+     * \~english \brief Default account for new swift contexts
+     */
     std::string swift_account;
+    /**
+     * \~french \brief Utilisateur par défaut pour les nouveaux contextes swift
+     * \~english \brief Default user for new swift contexts
+     */
     std::string swift_user;
+    /**
+     * \~french \brief Mot de passe par défaut pour les nouveaux contextes swift
+     * \~english \brief Default password for new swift contexts
+     */
     std::string swift_passwd;
 
 public:
 
     /**
      * \~french
-     * \brief Constructeur pour un annuaire de contexte Ceph
+     * \brief Constructeur pour un annuaire de contextes Ceph
+     * \param[in] name Nom par défaut du cluster ceph pour les nouveaux contextes
+     * \param[in] user Nom par défaut de l'utilisateur ceph pour les nouveaux contextes
+     * \param[in] conf Configuration ceph par défaut pour les nouveaux contextes
      * \~english
-     * \brief Constructor for CephContext
+     * \brief Constructor for a ceph context book
+     * \param[in] name Default name of ceph cluster for new contexts
+     * \param[in] user Default name of ceph user for new contexts
+     * \param[in] conf Default ceph configuration file for new contexts
      */
     ContextBook(std::string name, std::string user, std::string conf);
 
     /**
      * \~french
-     * \brief Constructeur pour un annuaire de contexte Swift
+     * \brief Constructeur pour un annuaire de contextes Swift
+     * \param[in] auth Url d'authehtification par défaut pour les nouveaux contextes swift
+     * \param[in] account Compte par défaut pour les nouveaux contextes swift
+     * \param[in] user Utilisateur par défaut pour les nouveaux contextes swift
+     * \param[in] passwd Mot de passe par défaut pour les nouveaux contextes swift
      * \~english
-     * \brief Constructor for SwiftContext
+     * \brief Constructor for a swift context book
+     * \param[in] auth Default authentication url for new swift contexts
+     * \param[in] account Default account for new swift contexts
+     * \param[in] user Default user for new swift contexts
+     * \param[in] passwd Default password for new swift contexts
      */
     ContextBook(std::string auth, std::string account, std::string user, std::string passwd);
 
     /**
-     * \~french
-     * \brief Retourne le baseContext
-     * \~english
-     * \brief Return baseContext
+     * \~french \brief Retourne une chaîne de caracère décrivant l'annuaire
+     * \~english \brief Return a string describing the book
      */
-    Context* getBaseContext() {
-        return baseContext;
-    }
-
     virtual std::string toString() {
         std::ostringstream oss;
         oss.setf ( std::ios::fixed,std::ios::floatfield );
@@ -122,7 +160,7 @@ public:
 
         std::map<std::string, Context*>::iterator it = book.begin();
         while (it != book.end()) {
-            oss << "\t\t- pool = " << it->first << std::endl;
+            oss << "\t\t- bucket = " << it->first << std::endl;
             oss << it->second->toString() << std::endl;
             it++;
         }
@@ -132,23 +170,31 @@ public:
 
     /**
      * \~french
-     * \brief Retourne le context correspondant au pool demandé
+     * \brief Retourne le context correspondant au contenant demandé
+     * \details Si il n'existe pas, une erreur s'affiche et on retourne NULL
+     * \param[in] bucket Nom du contenant pour lequel on veut le contexte
      * \~english
-     * \brief Return context of this pool
+     * \brief Return context of this bucket
+     * \details If context dosn't exist for this bucket, an error is print and NULL is returned
+     * \param[in] bucket Bucket's name for which context is wanted
      */
-    Context* getContext(std::string pool);
+    Context* getContext(std::string bucket);
 
     /**
      * \~french
-     * \brief Verifie si un contexte existe et l'ajoute si non
+     * \brief Ajoute un nouveau contexte
+     * \details Si un contexte existe déjà pour ce nom de contenant, on ne crée pas de nouveau contexte et on retourne celui déjà existant. Le nouveau contexte n'est pas connecté.
+     * \param[in] bucket Nom du contenant pour lequel on veut créer un contexte
      * \~english
-     * \brief Check if a context exists and add it if it is not exist
+     * \brief Add a new context
+     * \details If a context already exists for this bucket's name, we don't create a new one and the existing is returned. New context is not connected.
+     * \param[in] bucket Bucket's name for which context is created
      */
-    Context * addContext(std::string pool);
+    Context * addContext(std::string bucket);
 
     /**
      * \~french
-     * \brief Connecte l'ensemble des contexts de l'annuaire
+     * \brief Connecte l'ensemble des contextes de l'annuaire
      * \~english
      * \brief Connect all contexts
      */
@@ -156,7 +202,7 @@ public:
 
     /**
      * \~french
-     * \brief Deconnecte l'ensemble des contexts de l'annuaire
+     * \brief Deconnecte l'ensemble des contextes de l'annuaire
      * \~english
      * \brief Disconnect all contexts
      */
