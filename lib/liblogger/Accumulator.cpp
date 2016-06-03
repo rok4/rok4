@@ -161,6 +161,11 @@ Accumulator::Accumulator ( int capacity ) : status ( 1 ), buffer ( capacity ), f
 
 /** Destructeur virtual car nous avons un classe abstraite */
 Accumulator::~Accumulator() {
+
+}
+
+/** Destructeur de certains objets de la classe */
+void Accumulator::destroy() {
     // Note : Le thread interne doit être arrêté par le destructeur de la classe fille en utilisant stop().
     pthread_cond_destroy ( &cond_get );
     pthread_cond_destroy ( &cond_add );

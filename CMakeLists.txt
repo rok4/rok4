@@ -65,7 +65,6 @@ if(KDU_USE)
   endif(NOT DEFINED KDU_THREADING)
 endif(KDU_USE)
 
-
 if(NOT DEFINED BUILD_DOC)
   set(BUILD_DOC TRUE CACHE BOOL "Build Documentation")
   set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
@@ -133,6 +132,35 @@ if(NOT DEFINED CURL_SUP_LIBRARIES_INCLUDES)
   set(CURL_SUP_LIBRARIES_INCLUDES "" CACHE STRING "NO CURL INCLUDES USED")
 endif(NOT DEFINED CURL_SUP_LIBRARIES_INCLUDES)
 
+#Options passed to curl and used to compile it 
+# EX: --with-ssl[=PATH/TO/LIBSSL]
+if(NOT DEFINED CURL_OPTIONS)
+  set(CURL_OPTIONS "" CACHE STRING "NO CURL OPTIONS USED")
+endif(NOT DEFINED CURL_OPTIONS)
+
+#Path of libraries already installed on the computer
+#It concerns libraries used bu curl (like libssl)
+#But Rok4 need to know where find it
+#EX: PATH/TO/LIBSSL.a ou .so
+if(NOT DEFINED CURL_SUP_LIBRARIES_PATHS)
+  set(CURL_SUP_LIBRARIES_PATHS "" CACHE STRING "NO CURL PATHS USED")
+endif(NOT DEFINED CURL_SUP_LIBRARIES_PATHS)
+
+#Name of libraries already installed on the computer
+#It concerns libraries used bu curl (like libssl)
+#But Rok4 need to know where find it
+#EX: ssl
+if(NOT DEFINED CURL_SUP_LIBRARIES_NAMES)
+  set(CURL_SUP_LIBRARIES_NAMES "" CACHE STRING "NO CURL NAMES USED")
+endif(NOT DEFINED CURL_SUP_LIBRARIES_NAMES)
+
+#Include direectories of libraries already installed on the computer
+#It concerns libraries used bu curl (like libssl)
+#But Rok4 need to know where find it
+#EX: PATH/TO/INCLUDE/DIRECTORY
+if(NOT DEFINED CURL_SUP_LIBRARIES_INCLUDES)
+  set(CURL_SUP_LIBRARIES_INCLUDES "" CACHE STRING "NO CURL INCLUDES USED")
+endif(NOT DEFINED CURL_SUP_LIBRARIES_INCLUDES)
     
 ##################################################################################
 

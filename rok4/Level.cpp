@@ -45,6 +45,7 @@
 #include "Decoder.h"
 #include "TiffEncoder.h"
 #include "TiffHeaderDataSource.h"
+#include "EmptyDataSource.h"
 #include <cmath>
 #include "Logger.h"
 #include "Kernel.h"
@@ -54,6 +55,12 @@
 #include "Format.h"
 #include "intl.h"
 #include "config.h"
+#include <cstddef>
+#include <sys/stat.h>
+
+// GREG
+#include "Message.h"
+// GREG
 
 
 #define EPS 1./256. // FIXME: La valeur 256 est liée au nombre de niveau de valeur d'un canal
@@ -61,7 +68,7 @@
 
 
 
-Level::Level (TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth,
+Level::Level ( TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth,
                int tilesPerHeight, uint32_t maxTileRow, uint32_t minTileRow,
                uint32_t maxTileCol, uint32_t minTileCol, int pathDepth,
                Rok4Format::eformat_data format, std::string noDataFile , Context *&context, std::string prefix) :
@@ -72,13 +79,16 @@ Level::Level (TileMatrix tm, int channels, std::string baseDir, int tilesPerWidt
     StoreDataSourceFactory SDSF;
     noDataTileSource = SDSF.createStoreDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding ( format ) );
     noDataSourceProxy = noDataTileSource;
-    maxTileSize = tm.getTileH() * tm.getTileW() * channels * Rok4Format::toSizePerChannel(format) * 2;
 }
 
 Level::~Level() {
+
     delete noDataSourceProxy;
-    if ( noDataSource )
+    noDataSourceProxy = NULL;
+    if ( noDataSource ) {
         delete noDataSource;
+        noDataSource = NULL;
+    }
     // les contextes sont dans des contextBooks
     // ce sont les contextBooks qui se chargent de détruire les contexts
     // mais ce n'est pas le cas des FILECONTEXT
@@ -170,6 +180,7 @@ Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, 
 
     if ( ! ( grid->reproject ( dst_crs.getProj4Code(), src_crs.getProj4Code() ) ) ) {
         error = 1; // BBox invalid
+        delete grid;
         return 0;
     }
 
@@ -377,10 +388,33 @@ std::string Level::getPath ( int tilex, int tiley, int tilesPerW, int tilesPerH 
             return "";
 
     }
+}
 
+/*
+ * Creation du dossier indiqué par path
+ */
+int Level::createDirPath(std::string path) {
 
+    int success = -1;
+    int curDirCreated;
+    std::size_t found = path.find_first_of("/");
+    std::string currentDir = path.substr(0,found)+"/";
+    std::string endOfPath = path.substr(found+1);
+
+    while (found != std::string::npos) {
+        found = endOfPath.find_first_of("/");
+        currentDir += endOfPath.substr(0,found)+"/";
+        endOfPath = endOfPath.substr(found+1);
+        curDirCreated = mkdir(currentDir.c_str(),ACCESSPERMS);
+        if (curDirCreated) {
+            success = 0;
+        }
+    }
+
+    return success;
 
 }
+
 
 /*
  * @return la tuile d'indice (x,y) du niveau
@@ -515,4 +549,122 @@ int* Level::getNoDataValue ( int* nodatavalue ) {
     return nodatavalue;
 }
 
+BoundingBox<double> Level::tileIndicesToSlabBbox(int tileCol, int tileRow) {
 
+    //Variables utilisees
+    double Col, Row, xmin, ymin, xmax, ymax, xo, yo, resolution;
+    int tileH, tileW,TilePerWidth, TilePerHeight;
+
+    //Récupération du TileMatrix demandé
+    TileMatrix tm = getTm();
+
+    //Récupération des paramètres associés
+    resolution = tm.getRes();
+    xo = tm.getX0();
+    yo = tm.getY0();
+    tileH = tm.getTileH();
+    tileW = tm.getTileW();
+    TilePerWidth = getTilesPerWidth();
+    TilePerHeight = getTilesPerHeight();
+
+    Row = floor(double(tileRow) / double(TilePerHeight) ) * double(TilePerHeight);
+    Col = floor(double(tileCol) / double(TilePerWidth) ) * double(TilePerWidth);
+
+    //calcul de la bbox de la dalle et non de la tuile
+    xmin = Col * double(tileW) * resolution  + xo;
+    ymax = yo - Row * double(tileH) * resolution;
+    xmax = xmin + double(tileW) * resolution * TilePerWidth;
+    ymin = ymax - double(tileH) * resolution * TilePerHeight;
+
+    BoundingBox<double> bbox(xmin,ymin,xmax,ymax) ;
+    return bbox;
+
+}
+
+BoundingBox<double> Level::tileIndicesToTileBbox(int tileCol, int tileRow) {
+
+    //Variables utilisees
+    double Col, Row, xmin, ymin, xmax, ymax, xo, yo, resolution;
+    int tileH, tileW;
+
+    //calcul de la bbox
+    TileMatrix tm = getTm();
+
+    //Récupération des paramètres associés
+    resolution = tm.getRes();
+    xo = tm.getX0();
+    yo = tm.getY0();
+    tileH = tm.getTileH();
+    tileW = tm.getTileW();
+
+    Row = double(tileRow);
+    Col = double(tileCol);
+    xmin = Col * double(tileW) * resolution + xo;
+    ymax = yo - Row * double(tileH) * resolution;
+    xmax = xmin + double(tileW) * resolution;
+    ymin = ymax - double(tileH) * resolution;
+
+    BoundingBox<double> bbox(xmin,ymin,xmax,ymax) ;
+    return bbox;
+
+}
+
+int Level::getSlabWidth() {
+
+    int TilePerWidth = getTilesPerWidth();
+    TileMatrix tm = getTm();
+    int width = tm.getTileW();
+
+    return width*TilePerWidth;
+
+}
+
+int Level::getSlabHeight() {
+
+    int TilePerHeight = getTilesPerHeight();
+    TileMatrix tm = getTm();
+    int height = tm.getTileH();
+
+    return height*TilePerHeight;
+
+}
+
+BoundingBox<double> Level::TMLimitsToBbox() {
+
+    int bPMinCol,bPMaxCol,bPMinRow,bPMaxRow;
+    double xo,yo,res,tileW,tileH,xmin,xmax,ymin,ymax;
+
+    bPMinCol = getMinTileCol();
+    bPMaxCol = getMaxTileCol();
+    bPMinRow = getMinTileRow();
+    bPMaxRow = getMaxTileRow();
+
+    //On récupère d'autres informations sur le TM
+    xo = getTm().getX0();
+    yo = getTm().getY0();
+    res = getTm().getRes();
+    tileW = getTm().getTileW();
+    tileH = getTm().getTileH();
+
+    //On transforme en bbox
+    xmin = bPMinCol * tileW * res + xo;
+    ymax = yo - bPMinRow * tileH * res;
+    xmax = xo + (bPMaxCol+1) * tileW * res;
+    ymin = ymax - (bPMaxRow - bPMinRow + 1) * tileH * res;
+
+    return BoundingBox<double> (xmin,ymin,xmax,ymax);
+
+
+}
+
+void Level::updateNoDataTile(std::vector<int> noDataValues) {
+
+    if (noDataTileSource) {
+        delete noDataTileSource;
+        noDataTileSource = NULL;
+    }
+
+    noDataTileSource = new EmptyDataSource(channels,noDataValues,tm.getTileW(),tm.getTileH(),format);
+    noDataSourceProxy = noDataTileSource;
+
+}

@@ -177,6 +177,55 @@ public:
      * \return NULL or an error message if something went wrong
      */
     DataStream* getCapWMTSParam ( ServicesConf& servicesConf, std::string& version );
+
+    //Greg
+    /**
+     * \~french
+     * \brief Récuperation et vérifications des paramètres d'une requête GetFeatureInfoParam WMS
+     * \return message d'erreur en cas d'erreur, NULL sinon
+     * \~english
+     * \brief Fetching and validating WMS GetFeatureInfoParam request parameters
+     * \return NULL or an error message if something went wrong
+     */
+    DataStream* WMSGetFeatureInfoParam (ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers,
+                                     std::vector<Layer*>& query_layers,
+                                     BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format,
+                                     std::vector<Style*>& styles, std::string& info_format, int& X, int& Y, int& feature_count,std::map <std::string, std::string >& format_option);
+    /**
+     * \~french
+     * \brief Récuperation et vérifications des paramètres d'une requête GetFeatureInfoParam WMTS
+     * \return message d'erreur en cas d'erreur, NULL sinon
+     * \~english
+     * \brief Fetching and validating WMTS GetFeatureInfoParam request parameters
+     * \return NULL or an error message if something went wrong
+     */
+    DataStream* WMTSGetFeatureInfoParam (ServicesConf& servicesConf,  std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList,
+                                         Layer*& layer, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, Style* &style,
+                                         bool& noDataError, std::string& info_format, int& X, int& Y);
+    //
+
+    /**
+     * \~french
+     * \brief Précise si le path contient un mot
+     * \param word
+     * \return bool
+     * \~english
+     * \brief Precise if the path contains a word
+     * \param word
+     * \return bool
+     */
+    bool doesPathContain(std::string word);
+    /**
+     * \~french
+     * \brief Précise si le path finit avec un mot précisé
+     * \param word
+     * \return bool
+     * \~english
+     * \brief Precise if the path finish with a word
+     * \param word
+     * \return bool
+     */
+    bool doesPathFinishWith(std::string word);
     /**
      * \~french
      * \brief Constructeur d'une requête de type GET

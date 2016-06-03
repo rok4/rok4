@@ -258,8 +258,22 @@ sub _load {
         $ct = COMMON::ProxyGDAL::coordinateTransformationFromSpatialReference($src->getSRS(), $tms->getSRS());
         if (! defined $ct) {
             ERROR(sprintf "Cannot instanciate the coordinate transformation object %s->%s", $src->getSRS(), $tms->getSRS());
-            return FALSE;
+                return FALSE;
+            }
         }
+        
+        my $srsfin= new Geo::OSR::SpatialReference;
+        eval { $srsfin->ImportFromProj4('+init='.$tms->getSRS().' +wktext'); };
+        if ($@) {
+            eval { $srsfin->ImportFromProj4('+init='.lc($tms->getSRS()).' +wktext'); };
+            if ($@) {
+                ERROR($@);
+                ERROR(sprintf "Impossible to initialize the destination spatial coordinate system (%s) !",
+                      $tms->getSRS());
+                return FALSE;
+            }
+        }
+        $ct = new Geo::OSR::CoordinateTransformation($srsini, $srsfin);
     }
 
     # identifier les noeuds du niveau de base à mettre à jour et les associer aux images sources:
@@ -381,7 +395,7 @@ sub identifyBottomNodes {
             ERROR(sprintf "Cannot convert extent for the datasource");
             return FALSE;
         }
-
+        
         my @convBbox = COMMON::ProxyGDAL::getBbox($convertExtent); # (xmin,xmax,ymin,ymax)
         DEBUG("BBox convertie de l'extent de datasource @convBbox");
         
@@ -569,30 +583,30 @@ sub computeYourself {
     my $src = $self->{datasource};
     my $tms = $self->getPyramid()->getTileMatrixSet();
   
-    #Initialisation
-    my $Finisher_Index = 0;
-    # boucle sur tous les niveaux en partant de ceux du bas
-    for(my $i = $src->getBottomOrder; $i <= $src->getTopOrder; $i++) {
-        # boucle sur tous les noeuds du niveau
-        my $levelID = $tms->getIDfromOrder($i);
-        foreach my $node ($self->getNodesOfLevel($levelID)) {
-            # on détermine dans quel script on l'écrit en se basant sur les poids
-            my @ScriptsOfLevel = $self->getScriptsOfLevel($levelID);
-            my @WeightsOfLevel = map {$_->getWeight();} @ScriptsOfLevel ;
-            my $script_index = COMMON::Array::minArrayIndex(0,@WeightsOfLevel);
-            my $script = $ScriptsOfLevel[$script_index];
-            # on stocke l'information dans l'objet node
-            $node->setScript($script);
-            # on détermine le script à ecrire
-            my ($c,$w) ;
-            if ($self->getDataSource->hasHarvesting) {
+   #Initialisation
+   my $Finisher_Index = 0;
+   # boucle sur tous les niveaux en partant de ceux du bas
+   for(my $i = $src->getBottomOrder; $i <= $src->getTopOrder; $i++) {
+       # boucle sur tous les noeuds du niveau
+       my $levelID = $tms->getIDfromOrder($i);
+       foreach my $node ($self->getNodesOfLevel($levelID)) {
+           # on détermine dans quel script on l'écrit en se basant sur les poids
+           my @ScriptsOfLevel = $self->getScriptsOfLevel($levelID);
+           my @WeightsOfLevel = map {$_->getWeight();} @ScriptsOfLevel ;
+           my $script_index = COMMON::Array::minArrayIndex(0,@WeightsOfLevel);
+           my $script = $ScriptsOfLevel[$script_index];
+           # on stocke l'information dans l'objet node
+           $node->setScript($script);
+           # on détermine le script à ecrire
+           my ($c,$w) ;
+           if ($self->getDataSource->hasHarvesting) {
                 # Datasource has a WMS service : we have to use it
                 ($c,$w) = COMMON::Commands::wms2work($node,$self->getDataSource->getHarvesting);
                 if (! defined $c) {
                     ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName());
                     return FALSE;
                 }
-            } else {
+           } else {
                 if ($i == $src->getBottomOrder) {
                     # on utilise mergeNtiff pour le niveau du bas (à partir des images sources)
                     ($c,$w) = $self->{commands}->mergeNtiff($node);
@@ -606,29 +620,29 @@ sub computeYourself {
                     if ($w == -1) {
                         ERROR(sprintf "Cannot compose decimateNtiff command for the node %s.",$node->getWorkBaseName());
                         return FALSE;
-                    }
+                    }                    
                 }
-            }
-            # on met à jour les poids
-            $script->addWeight($w);
-            # on ecrit la commande dans le fichier
-            $script->write($c);
+           }
+           # on met à jour les poids
+           $script->addWeight($w);
+           # on ecrit la commande dans le fichier
+           $script->write($c);
+                   
+           # final script with all work2cache commands
+           # on ecrit dans chacun des scripts de manière tournante
+           my $finisher = $self->getForest()->getScript($Finisher_Index);
+           ($c,$w) = $self->{commands}->work2cache($node,"\${ROOT_TMP_DIR}/".$node->getScript()->getID());
+           # on ecrit la commande dans le fichier
+           $finisher->write($c);
+           #on met à jour l'index
+           if ($Finisher_Index == $self->getForest()->getSplitNumber() - 1) {
+               $Finisher_Index = 0;
+           } else {
+               $Finisher_Index ++;
+           }
 
-            # final script with all work2cache commands
-            # on ecrit dans chacun des scripts de manière tournante
-            my $finisher = $self->getForest()->getScript($Finisher_Index);
-            ($c,$w) = $self->{commands}->work2cache($node,"\${ROOT_TMP_DIR}/".$node->getScript()->getID());
-            # on ecrit la commande dans le fichier
-            $finisher->write($c);
-            #on met à jour l'index
-            if ($Finisher_Index == $self->getForest()->getSplitNumber() - 1) {
-                $Finisher_Index = 0;
-            } else {
-                $Finisher_Index ++;
-            }
-
-        }
-    }
+       }
+   }
     
     return TRUE;
 };

@@ -143,6 +143,8 @@ use Log::Log4perl qw(:easy);
 use Data::Dumper;
 use List::Util qw(min max);
 
+use Geo::GDAL;
+
 # My module
 use COMMON::ImageSource;
 use COMMON::Harvesting;
@@ -415,7 +417,7 @@ sub computeGlobalInfo {
         $self->{extent} = COMMON::ProxyGDAL::geometryFromWKT($WKTextent);
 
         if (! defined $self->{extent}) {
-            ERROR(sprintf "Cannot create a Geometry from the WKT string : %s.",$WKTextent);
+            ERROR(sprintf "Cannot create a Geometry from the string : %s.",$WKTextent);
             return FALSE;
         }
 

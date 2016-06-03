@@ -128,7 +128,7 @@ sub new {
         DEBUG(sprintf "Given configuration file's path : '%s'", $value);
         $self->{"filePath"} = $value;
     } else {
-        ERROR("Cannot use COMMON::Config->new whithout a valid '-filepath' parameter.");
+        ERROR("Cannot use COMMON::Config->new whithout a valid 'filepath' parameter.");
         return undef;
     }
     $key = undef;
@@ -187,18 +187,26 @@ sub _loadINI {
 
         next if ($l eq '');
 
-        if ($l =~ m/^\[(\w*)\]$/) {
+        if ($l =~ m/^\[([\w-]*)\]$/) {
             $l =~ s/[\[\]]//g;
 
+            if (exists $self->{"configuration"}->{$l}) {
+                ERROR (sprintf "A section is defined twice in the configuration : section '%s'", $l);
+                return FALSE;
+            }
             $currentSection = $l;
             $currentSubSection = undef; # Resetting subsection as section changes
             $self->{"configuration"}->{$currentSection}->{'_props'} = []; # Array of properties name, to index their order
             next;
         }
 
-        if ($l =~ m/^\[\[(\w*)\]\]$/) {
+        if ($l =~ m/^\[\[([\w-]*)\]\]$/) {
             $l =~ s/[\[\]]//g;
 
+            if (exists $self->{"configuration"}->{$currentSection}->{$l}) {
+                ERROR (sprintf "A subsection is defined twice in the configuration : section '%s', subsection '%s'", $currentSection, $l);
+                return FALSE;
+            }
             $currentSubSection = $l;            
             $self->{"configuration"}->{$currentSection}->{$currentSubSection}->{'_props'} = []; # Array of properties name, to index their order
             next;

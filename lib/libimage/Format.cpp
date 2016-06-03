@@ -218,6 +218,15 @@ std::string toMimeType ( eformat_data format ) {
     return std::string ( eformat_mime[format] );
 }
 
+eformat_data fromMimeType ( std::string mime ) {
+    int i;
+    for ( i=eformat_size; i ; --i ) {
+        if ( mime.compare ( eformat_mime[i] ) == 0 )
+            break;
+    }
+    return static_cast<eformat_data> ( i );
+}
+
 std::string toEncoding ( eformat_data format ) {
     return std::string ( eformat_encoding[format] );
 }
@@ -228,6 +237,27 @@ int toSizePerChannel ( eformat_data format ) {
     } else {
         return 1;
     }
+}
+
+int getPixelSize ( eformat_data format ) {
+
+    // selon le type des images source : 1=uint8_t   2=uint16_t    4=float
+    int pixel = 1;
+    if (format == Rok4Format::UNKNOWN) {
+        pixel = 1;
+    }
+    if (format == Rok4Format::TIFF_RAW_INT8 || format == Rok4Format::TIFF_JPG_INT8
+            || format == Rok4Format::TIFF_PNG_INT8 || format == Rok4Format::TIFF_LZW_INT8
+            || format == Rok4Format::TIFF_ZIP_INT8 || format == Rok4Format::TIFF_PKB_INT8) {
+        pixel = 1;
+    }
+    if (format == Rok4Format::TIFF_RAW_FLOAT32 || format == Rok4Format::TIFF_LZW_FLOAT32
+            || format == Rok4Format::TIFF_ZIP_FLOAT32 || format == Rok4Format::TIFF_PKB_FLOAT32) {
+        pixel = 4;
+    }
+
+    return pixel;
+
 }
 
 }

@@ -58,7 +58,7 @@ set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${JPEG_INCLUDE_DIR}
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
-#Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
+#Listes des bibliothèques à lier avec l'éxecutable à mettre à jour
 set(DEP_LIBRARY fcgi tinyxml logger image proj jpeg zlib tiff png curl)
 
 #Liste des bibiliothèques à lier avaec l'executable à cause des options de curl
@@ -147,7 +147,7 @@ endif(BUILD_DOC)
 
 #Installe les différentes sortie du projet (projet, projetcore ou UnitTester-${PROJECT_NAME})
 # ici uniquement "projet"
-INSTALL(TARGETS rok4 rok4core test_api
+INSTALL(TARGETS rok4 rok4core 
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib

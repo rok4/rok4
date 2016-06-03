@@ -91,79 +91,79 @@ HttpResponse* initResponseFromSource ( DataSource* source ) {
 */
 
 Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
-     // Initialisation des parametres techniques
-     LogOutput logOutput;
-     int nbThread,logFilePeriod,backlog;
-     LogLevel logLevel;
+    // Initialisation des parametres techniques
+    LogOutput logOutput;
+    int nbThread,logFilePeriod,backlog;
+    LogLevel logLevel;
      ContextBook *cephContextBook = NULL;
      ContextBook *swiftContextBook = NULL;
-     bool supportWMTS,supportWMS,reprojectionCapability;
+    bool supportWMTS,supportWMS,reprojectionCapability;
      std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,
              strLayerDir,strTmsDir,strStyleDir,socket,cephName,cephUser,cephConf,cephPool,
-             swiftAuthUrl,swiftUserName,swiftUserAccount,swiftUserPassword,swiftContainer;
+             swiftAuthUrl,swiftUserName,swiftUserAccount,swiftUserPassword,swiftContainer, nbProcess, proxy ;
+
 
      if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod,
                                            logLevel, nbThread, supportWMTS, supportWMS, reprojectionCapability,
                                            strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, socket, backlog,
-                                           cephName,cephUser,cephConf,cephPool,swiftAuthUrl,swiftUserName,swiftUserAccount,swiftUserPassword,swiftContainer ) ) {
+                                           cephName,cephUser,cephConf,cephPool,swiftAuthUrl,swiftUserName,swiftUserAccount,swiftUserPassword,swiftContainer, nbProcess, proxy ) ) {
+        std::cerr<<_ ( "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " ) <<strServerConfigFile<<std::endl;
+        return NULL;
+    }
 
-         std::cerr<<_ ( "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " ) <<strServerConfigFile<<std::endl;
-         return NULL;
-     }
+    if ( !loggerInitialised ) {
+        Logger::setOutput ( logOutput );
+        // Initialisation du logger
+        Accumulator *acc=0;
+        switch ( logOutput ) {
+        case ROLLING_FILE :
+            acc = new RollingFileAccumulator ( strLogFileprefix,logFilePeriod );
+            break;
+        case STATIC_FILE :
+            acc = new StaticFileAccumulator ( strLogFileprefix );
+            break;
+        case STANDARD_OUTPUT_STREAM_FOR_ERRORS :
+            acc = new StreamAccumulator();
+            break;
+        }
+        // Attention : la fonction Logger::setAccumulator n'est pas threadsafe
+        for ( int i=0; i<=logLevel; i++ )
+            Logger::setAccumulator ( ( LogLevel ) i, acc );
+        std::ostream &log = LOGGER ( DEBUG );
+        log.precision ( 8 );
+        log.setf ( std::ios::fixed,std::ios::floatfield );
 
-     if ( !loggerInitialised ) {
-         Logger::setOutput ( logOutput );
-         // Initialisation du logger
-         Accumulator *acc=0;
-         switch ( logOutput ) {
-         case ROLLING_FILE :
-             acc = new RollingFileAccumulator ( strLogFileprefix,logFilePeriod );
-             break;
-         case STATIC_FILE :
-             acc = new StaticFileAccumulator ( strLogFileprefix );
-             break;
-         case STANDARD_OUTPUT_STREAM_FOR_ERRORS :
-             acc = new StreamAccumulator();
-             break;
-         }
-         // Attention : la fonction Logger::setAccumulator n'est pas threadsafe
-         for ( int i=0; i<=logLevel; i++ )
-             Logger::setAccumulator ( ( LogLevel ) i, acc );
-         std::ostream &log = LOGGER ( DEBUG );
-         log.precision ( 8 );
-         log.setf ( std::ios::fixed,std::ios::floatfield );
+        std::cout<< _ ( "Envoi des messages dans la sortie du logger" ) << std::endl;
+        LOGGER_INFO ( _ ( "*** DEBUT DU FONCTIONNEMENT DU LOGGER ***" ) );
+        loggerInitialised=true;
+    } else {
+        LOGGER_INFO ( _ ( "*** NOUVEAU CLIENT DU LOGGER ***" ) );
+    }
 
-         std::cout<< _ ( "Envoi des messages dans la sortie du logger" ) << std::endl;
-         LOGGER_INFO ( _ ( "*** DEBUT DU FONCTIONNEMENT DU LOGGER ***" ) );
-         loggerInitialised=true;
-     } else {
-         LOGGER_INFO ( _ ( "*** NOUVEAU CLIENT DU LOGGER ***" ) );
-     }
-
-     // Construction des parametres de service
-     sc=ConfLoader::buildServicesConf ( strServicesConfigFile );
-     if ( sc==NULL ) {
-         LOGGER_FATAL ( _ ( "Impossible d'interpreter le fichier de conf " ) <<strServicesConfigFile );
-         LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
-         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
-         return NULL;
-     }
-     // Chargement des TMS
-     std::map<std::string,TileMatrixSet*> tmsList;
-     if ( !ConfLoader::buildTMSList ( strTmsDir,tmsList ) ) {
-         LOGGER_FATAL ( _ ( "Impossible de charger la conf des TileMatrix" ) );
-         LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
-         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
-         return NULL;
-     }
-     //Chargement des styles
-     std::map<std::string, Style*> styleList;
-     if ( !ConfLoader::buildStylesList ( strStyleDir,styleList, sc->isInspire() ) ) {
-         LOGGER_FATAL ( _ ( "Impossible de charger la conf des Styles" ) );
-         LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
-         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
-         return NULL;
-     }
+    // Construction des parametres de service
+    sc=ConfLoader::buildServicesConf ( strServicesConfigFile );
+    if ( sc==NULL ) {
+        LOGGER_FATAL ( _ ( "Impossible d'interpreter le fichier de conf " ) <<strServicesConfigFile );
+        LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
+        sleep ( 1 );    // Pour laisser le temps au logger pour se vider
+        return NULL;
+    }
+    // Chargement des TMS
+    std::map<std::string,TileMatrixSet*> tmsList;
+    if ( !ConfLoader::buildTMSList ( strTmsDir,tmsList ) ) {
+        LOGGER_FATAL ( _ ( "Impossible de charger la conf des TileMatrix" ) );
+        LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
+        sleep ( 1 );    // Pour laisser le temps au logger pour se vider
+        return NULL;
+    }
+    //Chargement des styles
+    std::map<std::string, Style*> styleList;
+    if ( !ConfLoader::buildStylesList ( strStyleDir,styleList, sc->isInspire() ) ) {
+        LOGGER_FATAL ( _ ( "Impossible de charger la conf des Styles" ) );
+        LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
+        sleep ( 1 );    // Pour laisser le temps au logger pour se vider
+        return NULL;
+    }
 
      if (cephName != "" && cephUser != "" && cephConf != "") {
          cephContextBook = new ContextBook(cephName,cephUser,cephConf);
@@ -174,19 +174,18 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
          swiftContextBook = new ContextBook(swiftAuthUrl, swiftUserAccount, swiftUserName, swiftUserPassword);
      }
 
-     // Chargement des layers
-     std::map<std::string, Layer*> layerList;
-     if ( !ConfLoader::buildLayersList ( strLayerDir,tmsList, styleList,layerList,reprojectionCapability,sc, cephContextBook, swiftContextBook ) ) {
-         LOGGER_FATAL ( _ ( "Impossible de charger la conf des Layers/pyramides" ) );
-         LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
-         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
-         return NULL;
-     }
+    // Chargement des layers
+    std::map<std::string, Layer*> layerList;
+     if ( !ConfLoader::buildLayersList ( strLayerDir,tmsList, styleList,layerList,reprojectionCapability,sc, cephContextBook, swiftContextBook,proxy ) ) {
+        LOGGER_FATAL ( _ ( "Impossible de charger la conf des Layers/pyramides" ) );
+        LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
+        sleep ( 1 );    // Pour laisser le temps au logger pour se vider
+        return NULL;
+    }
 
-     // Instanciation du serveur
-     //Logger::stopLogger();
-
-     return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog, cephContextBook, swiftContextBook, supportWMTS, supportWMS );
+    // Instanciation du serveur
+    Logger::stopLogger();
+    return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog, supportWMTS, supportWMS );
 }
 
 /**
@@ -233,7 +232,7 @@ HttpRequest* rok4InitRequest ( const char* queryString, const char* hostName, co
     if ( rok4Request->service == "wmts" ) {
         if ( rok4Request->request == "") {
             request->error_response = initResponseFromSource( new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Le parametre REQUEST n'est pas renseigné." ),"wmts" ) ));
-        } else if ( rok4Request->request == "getcapabilities" || rok4Request->request == "gettile") {
+        } else if ( rok4Request->request == "getcapabilities" || rok4Request->request == "gettile" || rok4Request->request == "getfeatureinfo") {
             //No error for the moment
         } else if ( rok4Request->request == "getversion" ) {
             request->error_response = initResponseFromSource( new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +rok4Request->request+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wmts" ) ));
@@ -268,6 +267,27 @@ HttpResponse* rok4GetWMTSCapabilities ( const char* queryString, const char* hos
     HttpResponse* response=initResponseFromSource ( /*new BufferedDataSource(*stream)*/source );
     delete request;
     delete stream;
+    delete source;
+    return response;
+}
+
+/**
+* \brief Implementation de l'operation GetFeatureInfo pour le WMTS
+* \param[in] hostName
+* \param[in] scriptName
+* \param[in] server : serveur
+* \return Reponse (allouee ici, doit etre desallouee ensuite)
+*/
+
+HttpResponse* rok4GetWMTSGetFeatureInfo ( const char* queryString, const char* hostName, const char* scriptName,const char* https ,Rok4Server* server ) {
+    std::string strQuery=queryString;
+    Request* request=new Request ( ( char* ) strQuery.c_str(), ( char* ) hostName, ( char* ) scriptName, ( char* ) https );
+
+    DataStream* stream=server->WMTSGetFeatureInfo ( request );
+    DataSource* source= new BufferedDataSource ( *stream );
+    HttpResponse* response=initResponseFromSource ( source );
+
+    delete request;
     delete source;
     return response;
 }
@@ -395,7 +415,7 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
 
     Request* request=new Request ( ( char* ) strQuery.c_str(), ( char* ) hostName, ( char* ) scriptName, ( char* ) https );
     Layer* layer;
-    std::string tmId,mimeType,format,encoding,imageFilePath;
+    std::string tmId,mimeType,format,encoding,imageFilePath, wmtst;
     int x,y;
     Style* style =0;
     // Analyse de la requete
@@ -441,7 +461,6 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
         strcpy ( tileRef->storeType,strType.c_str() );
 
     }
-
     tileRef->name=new char[imageFilePath.length() +1];
     strcpy ( tileRef->name,imageFilePath.c_str() );
 
@@ -478,6 +497,23 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
     encoding = Rok4Format::toEncoding( level->getFormat() );
     tileRef->encoding = new char[encoding.length() +1];
     strcpy( tileRef->encoding, encoding.c_str() );
+
+    if (layer->getDataPyramid()->getOnFly()) {
+        wmtst = "ONFLY";
+        tileRef->wmtsType = new char[wmtst.length() +1];
+        strcpy( tileRef->wmtsType, wmtst.c_str() );
+    } else {
+        if (layer->getDataPyramid()->getOnDemand()) {
+            wmtst = "ONDEMAND";
+            tileRef->wmtsType = new char[wmtst.length() +1];
+            strcpy( tileRef->wmtsType, wmtst.c_str() );
+        } else {
+            wmtst = "NORMAL";
+            tileRef->wmtsType = new char[wmtst.length() +1];
+            strcpy( tileRef->wmtsType, wmtst.c_str() );
+        }
+    }
+
     delete request;
     return 0;
 }
@@ -691,6 +727,7 @@ void rok4FlushTileRef ( TileRef* tileRef ) {
     delete[] tileRef->type;
     delete[] tileRef->encoding;
     delete[] tileRef->format;
+    delete[] tileRef->wmtsType;
 }
 
 /**
@@ -818,6 +855,8 @@ void rok4KillLogger() {
         }
     Logger::stopLogger();
     if ( acc ) {
+        acc->stop();
+        acc->destroy();
         delete acc;
     }
 

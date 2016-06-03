@@ -212,19 +212,19 @@ sub _init {
 
     # mandatory parameters !
     if (! defined $objForest || ref ($objForest) ne "COMMON::Forest") {
-        ERROR("Cannot load Forest !");
+        ERROR("Can not load Forest !");
         return FALSE;
     }
     if (! defined $objSrc || ref ($objSrc) ne "COMMON::DataSource") {
-        ERROR("Cannot load DataSource !");
+        ERROR("Can not load DataSource !");
         return FALSE;
     }
     if (! defined $objPyr || (ref ($objPyr) ne "BE4::Pyramid" && ref ($objPyr) ne "BE4CEPH::Pyramid")) {
-        ERROR("Cannot load Pyramid !");
+        ERROR("Can not load Pyramid !");
         return FALSE;
     }
     if (! defined $objCommands || (ref ($objCommands) ne "BE4::Commands" && ref ($objCommands) ne "BE4CEPH::Commands")) {
-        ERROR("Cannot load Commands !");
+        ERROR("Can not load Commands !");
         return FALSE;
     }
 

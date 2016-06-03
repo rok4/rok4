@@ -52,8 +52,10 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4ceph.pl.in ${CMAKE_CURRENT_BIN
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/joinCache.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/joinCache.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/create-layer.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/create-layer.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/coord2image.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/coord2image.pl @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/tms-converter-gui.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/tms-converter-gui.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4-simulator.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/be4-simulator.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/pyr2pyr.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/pyr2pyr.pl @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/wmtSalaD.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/wmtSalaD.pl @ONLY)
 
 set(ENV{CFLAGS} "-O3")
 add_custom_command(OUTPUT src/makefile COMMAND mkdir -p src COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/* src)
@@ -79,12 +81,20 @@ if(UNITTEST)
 
     if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/perlunit)
         # Exécution des tests unitaires PerlUnit
-        FILE(GLOB_RECURSE UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/tests/perlunit/ "PerlUnit*.t")
+        FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "tests/perlunit/BE4/PerlUnit*.t")
         
         FOREACH(test ${UnitTests_SRCS})
             MESSAGE("  - adding test ${test}")
             GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
-            ADD_TEST(NAME "${test}" COMMAND perl -I ${CMAKE_CURRENT_BINARY_DIR}/install/lib/perl5 ${CMAKE_CURRENT_BINARY_DIR}/src/tests/perlunit/${test})
+            ADD_TEST(NAME "BE4::${TestName}" COMMAND perl -I ${CMAKE_CURRENT_BINARY_DIR}/install/lib/perl5 ${CMAKE_CURRENT_BINARY_DIR}/src/${test})
+        ENDFOREACH(test)
+
+        FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "tests/perlunit/JOINCACHE/PerlUnit*.t")
+
+        FOREACH(test ${UnitTests_SRCS})
+            MESSAGE("  - adding test ${test}")
+            GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
+            ADD_TEST(NAME "JOINCACHE::${TestName}" COMMAND perl -I ${CMAKE_CURRENT_BINARY_DIR}/install/lib/perl5 ${CMAKE_CURRENT_BINARY_DIR}/src/${test})
         ENDFOREACH(test)
 
         # Nettoyage du dossier temporaire

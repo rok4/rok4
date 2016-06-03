@@ -64,6 +64,8 @@ protected:
     std::string id0;
     std::vector<std::string> titles0;
     std::vector<std::string> abstracts0;
+    bool WMSAuthorized = true;
+    bool WMTSAuthorized = true;
     LegendURL* legendURL0;
     std::vector<LegendURL> legendURLs0;
     std::map<double, Colour> colours;
@@ -84,6 +86,15 @@ protected:
     std::vector<MetadataURL> metadataURLslayer;
     std::map<std::string, Layer*> layerlist;
 
+    bool getFeatureInfoAvailability;
+    std::string getFeatureInfoType;
+    std::string getFeatureInfoBaseURL;
+    std::string GFIVersion;
+    std::string GFIService;
+    std::string GFIQueryLayers;
+    std::string GFILayers;
+    bool GFIForceEPSG;
+    
     Palette* palette0;
     Style* style;
     Layer* layer;
@@ -96,6 +107,8 @@ protected:
     void getId();
     void getTitle();
     void getAbstract();
+    void getWMSAuthorized();
+    void getWMTSAuthorized();
     void getKeyWords();
     void getStyles();
     void getMinRes();
@@ -131,7 +144,17 @@ void CppUnitLayer::setUp() {
     maxReslayer = 209715.2;
     opaquelayer = true;
     authoritylayer = "IGNF";
-    layer = new Layer ( idlayer, titlelayer, abstractlayer, keyWords, dataPyramidlayer, styleslayer, minReslayer, maxReslayer, WMSCRSListlayer, opaquelayer, authoritylayer, resamplinglayer, geographicBoundingBoxlayer, boundingBoxlayer, metadataURLslayer );
+    
+    getFeatureInfoAvailability = false;
+    getFeatureInfoType = "";
+    getFeatureInfoBaseURL = "";
+    GFIVersion = "";
+    GFIService = "";
+    GFIQueryLayers = "";
+    GFILayers = "";
+    GFIForceEPSG = true;
+    
+    layer = new Layer ( idlayer, titlelayer, abstractlayer, WMSAuthorized, WMTSAuthorized,keyWords, dataPyramidlayer, styleslayer, minReslayer, maxReslayer, WMSCRSListlayer, opaquelayer, authoritylayer, resamplinglayer, geographicBoundingBoxlayer, boundingBoxlayer, metadataURLslayer, getFeatureInfoAvailability, getFeatureInfoType, getFeatureInfoBaseURL, GFIVersion, GFIService, GFIQueryLayers, GFILayers, GFIForceEPSG );
 }
 
 void CppUnitLayer::getId() {
@@ -165,6 +188,14 @@ void CppUnitLayer::getMaxRes() {
 
 void CppUnitLayer::getOpaque() {
     CPPUNIT_ASSERT_MESSAGE ( "layer getOpaque:\n", layer->getOpaque() == true ) ;
+}
+
+void CppUnitLayer::getWMSAuthorized() {
+    CPPUNIT_ASSERT_MESSAGE ( "layer getWMSAuthorized:\n", layer->getWMSAuthorized() == true ) ;
+}
+
+void CppUnitLayer::getWMTSAuthorized() {
+    CPPUNIT_ASSERT_MESSAGE ( "layer getWMTSAuthorized:\n", layer->getWMTSAuthorized() == true ) ;
 }
 
 void CppUnitLayer::getAuthority() {

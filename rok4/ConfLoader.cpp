@@ -69,9 +69,14 @@
 #include "config.h"
 #include "Keyword.h"
 #include <fcntl.h>
+#include <cstddef>
+#include <string>
+#include "WebService.h"
+#include "EmptyDataSource.h"
+
 
 // Load style
-Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool inspire ) {
+ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool inspire ) {
     LOGGER_INFO ( _ ( "     Ajout du Style " ) << fileName );
     std::string id ="";
     std::vector<std::string> title;
@@ -92,9 +97,9 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
         LOGGER_ERROR("          Ne peut pas charger le fichier " << fileName);
         return NULL;
     }*/
-    TiXmlHandle hDoc ( doc );
-    TiXmlElement* pElem;
-    TiXmlHandle hRoot ( 0 );
+        TiXmlHandle hDoc ( doc );
+        TiXmlElement* pElem;
+        TiXmlHandle hRoot ( 0 );
 
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
     if ( !pElem ) {
@@ -243,104 +248,104 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
                 return NULL;
             }*/
 
-            double value=0;
-            uint8_t r=0,g=0,b=0;
-            int a=0;
-            for ( pElem=hRoot.FirstChild ( "palette" ).FirstChild ( "colour" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "colour" ) ) {
-                LOGGER_DEBUG ( _ ( "Value avant Couleur" ) << value );
-                errorCode = pElem->QueryDoubleAttribute ( "value",&value );
-                if ( errorCode == TIXML_WRONG_TYPE ) {
-                    LOGGER_ERROR ( _ ( "Un attribut value invalide a ete trouve dans la palette du Style " ) << id <<_ ( " : il est invalide!!" ) );
-                    continue;
-                } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
-                    value=0;
-                }
-                LOGGER_DEBUG ( _ ( "Couleur de la valeur " ) << value );
-                TiXmlHandle cHdl ( pElem );
-                TiXmlElement* colourElem;
+                double value=0;
+                uint8_t r=0,g=0,b=0;
+                int a=0;
+                for ( pElem=hRoot.FirstChild ( "palette" ).FirstChild ( "colour" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "colour" ) ) {
+                    LOGGER_DEBUG ( _ ( "Value avant Couleur" ) << value );
+                    errorCode = pElem->QueryDoubleAttribute ( "value",&value );
+                    if ( errorCode == TIXML_WRONG_TYPE ) {
+                        LOGGER_ERROR ( _ ( "Un attribut value invalide a ete trouve dans la palette du Style " ) << id <<_ ( " : il est invalide!!" ) );
+                        continue;
+                    } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
+                        value=0;
+                    }
+                    LOGGER_DEBUG ( _ ( "Couleur de la valeur " ) << value );
+                    TiXmlHandle cHdl ( pElem );
+                    TiXmlElement* colourElem;
 
                 //Red
-                colourElem = cHdl.FirstChild ( "red" ).Element();
-                if ( ! ( colourElem ) || ! ( colourElem->GetText() ) ) {
-                    LOGGER_ERROR ( _ ( "Un attribut colour invalide a ete trouve dans la palette du Style " ) << id <<_ ( " : il est invalide!!" ) );
-                    continue;
-                }
-                r = atoi ( colourElem->GetText() );
-                if ( r < 0 || r > 255 ) {
-                    LOGGER_ERROR ( _ ( "Un attribut colour invalide a ete trouve dans la palette du Style " ) << id <<_ ( " : il est invalide!!" ) );
-                    continue;
-                }
+                    colourElem = cHdl.FirstChild ( "red" ).Element();
+                    if ( ! ( colourElem ) || ! ( colourElem->GetText() ) ) {
+                        LOGGER_ERROR ( _ ( "Un attribut colour invalide a ete trouve dans la palette du Style " ) << id <<_ ( " : il est invalide!!" ) );
+                        continue;
+                    }
+                    r = atoi ( colourElem->GetText() );
+                    if ( r < 0 || r > 255 ) {
+                        LOGGER_ERROR ( _ ( "Un attribut colour invalide a ete trouve dans la palette du Style " ) << id <<_ ( " : il est invalide!!" ) );
+                        continue;
+                    }
 
                 //Green
-                colourElem = cHdl.FirstChild ( "green" ).Element();
-                if ( ! ( colourElem ) || ! ( colourElem->GetText() ) ) {
-                    LOGGER_ERROR ( _ ( "Un attribut colour invalide a ete trouve dans la palette du Style " ) << id <<_ ( " : il est invalide!!" ) );
-                    continue;
-                }
+                    colourElem = cHdl.FirstChild ( "green" ).Element();
+                    if ( ! ( colourElem ) || ! ( colourElem->GetText() ) ) {
+                        LOGGER_ERROR ( _ ( "Un attribut colour invalide a ete trouve dans la palette du Style " ) << id <<_ ( " : il est invalide!!" ) );
+                        continue;
+                    }
 
-                g = atoi ( colourElem->GetText() );
-                if ( g < 0 || g > 255 ) {
-                    LOGGER_ERROR ( _ ( "Un attribut colour invalide a ete trouve dans la palette du Style " ) << id <<_ ( " : il est invalide!!" ) );
-                    continue;
-                }
+                    g = atoi ( colourElem->GetText() );
+                    if ( g < 0 || g > 255 ) {
+                        LOGGER_ERROR ( _ ( "Un attribut colour invalide a ete trouve dans la palette du Style " ) << id <<_ ( " : il est invalide!!" ) );
+                        continue;
+                    }
 
                 //Blue
-                colourElem = cHdl.FirstChild ( "blue" ).Element();
-                if ( ! ( colourElem ) || ! ( colourElem->GetText() ) ) {
-                    LOGGER_ERROR ( _ ( "Un attribut colour invalide a ete trouve dans la palette du Style " ) << id <<_ ( " : il est invalide!!" ) );
-                    continue;
-                }
-                b = atoi ( colourElem->GetText() );
-                if ( b < 0 || b > 255 ) {
-                    LOGGER_ERROR ( _ ( "Un attribut colour invalide a ete trouve dans la palette du Style " ) << id <<_ ( " : il est invalide!!" ) );
-                    continue;
-                }
+                    colourElem = cHdl.FirstChild ( "blue" ).Element();
+                    if ( ! ( colourElem ) || ! ( colourElem->GetText() ) ) {
+                        LOGGER_ERROR ( _ ( "Un attribut colour invalide a ete trouve dans la palette du Style " ) << id <<_ ( " : il est invalide!!" ) );
+                        continue;
+                    }
+                    b = atoi ( colourElem->GetText() );
+                    if ( b < 0 || b > 255 ) {
+                        LOGGER_ERROR ( _ ( "Un attribut colour invalide a ete trouve dans la palette du Style " ) << id <<_ ( " : il est invalide!!" ) );
+                        continue;
+                    }
 
                 //Alpha
-                colourElem = cHdl.FirstChild ( "alpha" ).Element();
-                if ( ! ( colourElem ) || ! ( colourElem->GetText() ) ) {
-                    a = 0 ;
-                } else {
-                    a = atoi ( colourElem->GetText() );
+                    colourElem = cHdl.FirstChild ( "alpha" ).Element();
+                    if ( ! ( colourElem ) || ! ( colourElem->GetText() ) ) {
+                        a = 0 ;
+                    } else {
+                        a = atoi ( colourElem->GetText() );
+                    }
+                    LOGGER_DEBUG ( _ ( "Style : " ) << id <<_ ( " Couleur XML de " ) <<value<<" = " <<r<<","<<g<<","<<b<<","<<a );
+                    colourMap.insert ( std::pair<double,Colour> ( value, Colour ( r,g,b,a ) ) );
                 }
-                LOGGER_DEBUG ( _ ( "Style : " ) << id <<_ ( " Couleur XML de " ) <<value<<" = " <<r<<","<<g<<","<<b<<","<<a );
-                colourMap.insert ( std::pair<double,Colour> ( value, Colour ( r,g,b,a ) ) );
+
+                if ( colourMap.size() == 0 ) {
+                    LOGGER_ERROR ( _ ( "Palette sans Couleur " ) << id <<_ ( " : il est invalide!!" ) );
+                    return NULL;
+                }
+
+            }
+        }
+        Palette pal ( colourMap, rgbContinuous, alphaContinuous, noAlpha );
+
+        pElem = hRoot.FirstChild ( "estompage" ).Element();
+        if ( pElem ) {
+            errorCode = pElem->QueryIntAttribute ( "angle",&angle );
+            if ( errorCode == TIXML_WRONG_TYPE ) {
+                LOGGER_ERROR ( _ ( "Un attribut angle invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
+            } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
+                angle=-1;
+            }
+            errorCode = pElem->QueryFloatAttribute ( "exaggeration",&exaggeration );
+            if ( errorCode == TIXML_WRONG_TYPE ) {
+                LOGGER_ERROR ( _ ( "Un attribut exaggeration invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
+            } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
+                exaggeration=1;
             }
 
-            if ( colourMap.size() == 0 ) {
-                LOGGER_ERROR ( _ ( "Palette sans Couleur " ) << id <<_ ( " : il est invalide!!" ) );
-                return NULL;
+            errorCode = pElem->QueryIntAttribute ( "center",&center );
+            if ( errorCode == TIXML_WRONG_TYPE ) {
+                LOGGER_ERROR ( _ ( "Un attribut center invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
+            } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
+                center=0;
             }
-
         }
-    }
-    Palette pal ( colourMap, rgbContinuous, alphaContinuous, noAlpha );
-
-    pElem = hRoot.FirstChild ( "estompage" ).Element();
-    if ( pElem ) {
-        errorCode = pElem->QueryIntAttribute ( "angle",&angle );
-        if ( errorCode == TIXML_WRONG_TYPE ) {
-            LOGGER_ERROR ( _ ( "Un attribut angle invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
-        } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
-            angle=-1;
-        }
-        errorCode = pElem->QueryFloatAttribute ( "exaggeration",&exaggeration );
-        if ( errorCode == TIXML_WRONG_TYPE ) {
-            LOGGER_ERROR ( _ ( "Un attribut exaggeration invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
-        } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
-            exaggeration=1;
-        }
-
-        errorCode = pElem->QueryIntAttribute ( "center",&center );
-        if ( errorCode == TIXML_WRONG_TYPE ) {
-            LOGGER_ERROR ( _ ( "Un attribut center invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
-        } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
-            center=0;
-        }
-    }
-    Style * style = new Style ( id,title,abstract,keyWords,legendURLs,pal ,angle,exaggeration,center );
-    LOGGER_DEBUG ( _ ( "Style Cree" ) );
-    return style;
+        Style * style = new Style ( id,title,abstract,keyWords,legendURLs,pal ,angle,exaggeration,center );
+        LOGGER_DEBUG ( _ ( "Style Cree" ) );
+        return style;
 
 }//parseStyle(TiXmlDocument* doc,std::string fileName,bool inspire)
 
@@ -532,7 +537,7 @@ TileMatrixSet* ConfLoader::buildTileMatrixSet ( std::string fileName ) {
 }//buildTileMatrixSet(std::string fileName)
 
 // Load a pyramid
-Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, ContextBook* cBook, ContextBook* sBook  ) {
+Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, ContextBook* cBook, ContextBook* sBook, bool times, std::map<std::string,Style*> stylesList, Proxy proxy) {
     LOGGER_INFO ( _ ( "             Ajout de la pyramide : " ) << fileName );
     // Relative file Path
     char * fileNameChar = ( char * ) malloc ( strlen ( fileName.c_str() ) + 1 );
@@ -549,11 +554,26 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     Rok4Format::eformat_data format;
     int channels;
     std::map<std::string, Level *> levels;
-
+    bool onDemand = false;
+    bool onDemandSpecific = false;
+    int nbSpecificLevel = 0;
+    Pyramid* basedPyramid = NULL;
+    WebService *ws = NULL;
+    bool onFly = false;
+    bool testOnFly = true;
+    std::map<std::string,std::vector<Source*> > specificSources;
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
+    std::string photometricStr;
+    std::string ndValuesStr;
+    std::vector<int> noDataValues;
+    //----
 
+    //----------------------------------------------------------------------------------------------------
+    // LECTURE DU FICHIER
+
+    //----RACINE
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
     if ( !pElem ) {
         LOGGER_ERROR ( fileName << _ ( " impossible de recuperer la racine." ) );
@@ -564,7 +584,9 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         return NULL;
     }
     hRoot=TiXmlHandle ( pElem );
+    //----
 
+    //----TMS
     pElem=hRoot.FirstChild ( "tileMatrixSet" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
         LOGGER_ERROR ( _ ( "La pyramide [" ) << fileName <<_ ( "] n'a pas de TMS. C'est un probleme." ) );
@@ -578,7 +600,9 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         return NULL;
     }
     tms=it->second;
+    //----
 
+    //----FORMAT
     pElem=hRoot.FirstChild ( "format" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
         LOGGER_ERROR ( _ ( "La pyramide [" ) << fileName <<_ ( "] n'a pas de format." ) );
@@ -595,8 +619,22 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         LOGGER_ERROR ( fileName << _ ( "Le format [" ) << formatStr <<_ ( "] n'est pas gere." ) );
         return NULL;
     }
+    //----
+
+    //----PHOTOMETRIE
+    //on lit l'élément photometric, il n'est pas obligatoire pour
+    //une pyramide normale mais il le devient si la pyramide
+    //est à la volée
+    pElem=hRoot.FirstChild ( "photometric" ).Element();
+    if ( pElem && pElem->GetText() ) {
+        photometricStr = pElem->GetTextStr();
+    } else {
+        photometricStr = "UNKNOWN";
+    }
+    //----
 
 
+    //----CHANNELS
     pElem=hRoot.FirstChild ( "channels" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
         LOGGER_ERROR ( _ ( "La pyramide [" ) << fileName <<_ ( "] Pas de channels => channels = " ) << DEFAULT_CHANNELS );
@@ -606,8 +644,58 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         LOGGER_ERROR ( _ ( "La pyramide [" ) << fileName <<_ ( "] : channels=[" ) << pElem->GetTextStr() <<_ ( "] is not an integer." ) );
         return NULL;
     }
+    //----
 
-    for ( pElem=hRoot.FirstChild ( "level" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "level" ) ) {
+    //----NODATAVALUE
+    //on lit l'élément nodatavalues, il n'est pas obligatoire pour
+    //une pyramide normale mais il le devient si la pyramide
+    //est à la volée
+    pElem=hRoot.FirstChild ( "nodataValue" ).Element();
+    if ( pElem && pElem->GetText() ) {
+        ndValuesStr = pElem->GetTextStr();
+
+        //conversion string->vector
+        std::size_t found = ndValuesStr.find_first_of(",");
+        std::string currentValue = ndValuesStr.substr(0,found);
+        std::string endOfValues = ndValuesStr.substr(found+1);
+        int curVal = atoi(currentValue.c_str());
+        if (currentValue == "") {
+            curVal = DEFAULT_NODATAVALUE;
+        }
+        noDataValues.push_back(curVal);
+        while (found!=std::string::npos) {
+            found = endOfValues.find_first_of(",");
+            currentValue = endOfValues.substr(0,found);
+            endOfValues = endOfValues.substr(found+1);
+            curVal = atoi(currentValue.c_str());
+            if (currentValue == "") {
+                curVal = DEFAULT_NODATAVALUE;
+            }
+            noDataValues.push_back(curVal);
+        }
+        if (noDataValues.size() < channels) {
+            LOGGER_ERROR("Le nombre de channels indique est different du nombre de noDataValue donne");
+            int min = noDataValues.size();
+            for (int i=min;i<channels;i++) {
+                noDataValues.push_back(DEFAULT_NODATAVALUE);
+            }
+        }
+    } else {
+        for (int i=0;i<channels;i++) {
+            noDataValues.push_back(DEFAULT_NODATAVALUE);
+        }
+    }
+    //----
+
+    //----LEVELS SECTION------------------------------------------------
+
+    //on va vérifier que les levels sont spécifiés
+    //si c'est une pyramide à la demande, ce n'est pas obligatoire
+    if (hRoot.FirstChild ( "level" ).Element()) {
+
+        for ( pElem=hRoot.FirstChild ( "level" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "level" ) ) {
+
+        //----VARIABLE
         TileMatrix *tm;
         //std::string id;
         //std::string baseDir;
@@ -617,133 +705,271 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         int32_t maxTileCol=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
         int tilesPerWidth;
         int tilesPerHeight;
-        int pathDepth = -1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
+        int pathDepth;
         std::string noDataFilePath="";
-        std::string baseDir;
         Context *context = NULL;
         std::string prefix = "";
+        std::vector<Source*> sSources;
+        bool specificLevel = false;
+        bool alreadyLoad = false;
+        bool noFile = false;
+            //----
 
+            //----TM
         TiXmlHandle hLvl ( pElem );
         TiXmlElement* pElemLvl = hLvl.FirstChild ( "tileMatrix" ).Element();
-
         if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
             LOGGER_ERROR ( fileName <<_ ( " level " ) <<_ ( "id" ) <<_ ( " sans tileMatrix!!" ) );
             return NULL;
         }
         std::string tmName ( pElemLvl->GetText() );
         std::string id ( tmName );
+            //on va vérifier que le level qu'on veut charger n'a pas déjà été chargé
+        if (levels.size() != 0) {
+            for (std::map<std::string, Level *>::iterator lv = levels.begin(); lv != levels.end(); lv++) {
+                if (lv->second->getId() == id) {
+                    LOGGER_ERROR ( _ ( "Level: " ) << id << _ ( " has already been loaded" ) );
+                    alreadyLoad = true;
+                    break;
+                }
+            }
+        }
+        if (alreadyLoad) {
+            continue;
+        }
         std::map<std::string, TileMatrix>* tmList = tms->getTmList();
-        std::map<std::string, TileMatrix>::iterator it = tmList->find ( tmName );
+        std::map<std::string, TileMatrix>::iterator itTM = tmList->find ( tmName );
 
-
-
-        if ( it == tmList->end() ) {
+        if ( itTM == tmList->end() ) {
             LOGGER_ERROR ( fileName <<_ ( " Le level " ) << id <<_ ( " ref. Le TM [" ) << tmName << _ ( "] qui n'appartient pas au TMS [" ) << tmsName << "]" );
             return NULL;
         }
-        tm = & ( it->second );
+        tm = & ( itTM->second );
+            //----
 
-        pElemLvl = hLvl.FirstChild ( "baseDir" ).Element();
-        if ( pElemLvl && pElemLvl->GetText()) {
+            //----ONDEMAND AND ONFLY SECTION------------------------------------
 
-            baseDir = pElemLvl->GetText() ;
-            //Relative Path
-            if ( baseDir.compare ( 0,2,"./" ) ==0 ) {
-                baseDir.replace ( 0,1,parentDir );
-            } else if ( baseDir.compare ( 0,1,"/" ) !=0 ) {
-                baseDir.insert ( 0,"/" );
-                baseDir.insert ( 0,parentDir );
-            }
+            //Si c'est la première fois qu'on parse une pyramide, times est true
+            //  Cette pyramide peut être construite à partir d'une autre
+        if (times) {
 
-            pElemLvl = hLvl.FirstChild ( "pathDepth" ).Element();
-            if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": Pas de pathDepth !!" ) );
-                return NULL;
-            }
-            if ( !sscanf ( pElemLvl->GetText(),"%d",&pathDepth ) ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": pathDepth=[" ) << pElemLvl->GetText() <<_ ( "] is not an integer." ) );
-                return NULL;
-            }
+            TiXmlElement* pElemS=hLvl.FirstChild ( "sources" ).Element();
+            if (pElemS) {
 
-            context = new FileContext("");
-            if (!context->connection()) {
-                LOGGER_ERROR("Impossible de se connecter aux donnees.");
-                return NULL;
-            }
+                bool timesSpecific = false;
 
-        }
+                int ntSources = 0;
+                int nsSources = 0;
+
+                TiXmlHandle hbdP ( pElemS );
+                TiXmlElement* pElemSP=hbdP.FirstChild().ToElement();
+
+                for (pElemSP; pElemSP; pElemSP = pElemSP->NextSiblingElement()) {
+
+                    if (pElemSP->ValueStr() == "basedPyramid") {
+                        basedPyramid = parseBasedPyramid(pElemSP,tmsList,timesSpecific,stylesList,parentDir, proxy);
+
+                        if (basedPyramid) {
+
+                            int up = updatePyrLevel(basedPyramid, tm, tms);
+                            ntSources++;
+                            if (up != 0 ) {
+                                sSources.push_back( basedPyramid ) ;
+                                nsSources++;
+                            } else {
+                                LOGGER_ERROR("Impossible de supprimer les levels en trop dans la basedPyramid ");
+                            }
+
+                        } else {
+                            LOGGER_ERROR ("Impossible de charger une basedPyramid indique");
+                            cleanParsePyramid(specificSources,sSources,levels);
+                            return NULL;
+                        }
+
+                    }
+
+                    if (pElemSP->ValueStr() == "webService") {
+
+                        ws = parseWebService(pElemSP,tms->getCrs(),format, proxy);
+                        ntSources++;
+                        if (ws) {
+                            sSources.push_back(ws);
+                            nsSources++;
+                        } else {
+                            LOGGER_ERROR("Impossible de charger le WebService indique");
+                            return NULL;
+                        }
+
+                    }
 
 
-        pElemLvl = hLvl.FirstChild ( "cephContext" ).Element();
-        if ( pElemLvl && !context) {
+                    }//end for pElemS
 
-            std::string poolName;
+                    if ( nsSources !=  ntSources) {
+                        LOGGER_ERROR ( nsSources << _ (" sources were found for level ") << id << _ ( " but " ) << ntSources << _ ( " should be found" ) );
+                        cleanParsePyramid(specificSources,sSources,levels);
+                        if (basedPyramid) {
+                            delete basedPyramid;
+                            basedPyramid = NULL;
+                        }
+                        return NULL;
+                    } else {
+                        onDemandSpecific = true;
+                        if (!specificLevel) {
+                            specificLevel = true;
+                            nbSpecificLevel++;
+                        }
+                        specificSources.insert(std::pair< std::string, std::vector<Source*> > ( id, sSources));
+                    }
 
-            TiXmlElement* pElemCephContext;
+                    if (ntSources == 0) {
+                        //sources est indiqué mais pas de basedPyramid, ni de WebService
+                        LOGGER_ERROR (  "Pyramid: " << fileName << " can't be loaded bacause no basedPyramid or WebServices are specified" );
+                        cleanParsePyramid(specificSources,sSources,levels);
+                        return NULL;
+                    }
 
-            pElemCephContext = hLvl.FirstChild ( "cephContext" ).FirstChild ( "poolName" ).Element();
-            if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
-                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un poolName" );
-                return NULL;
+                }//end if pElemS
+
+
             } else {
-                poolName = pElemCephContext->GetText();
+            //Si c'est la deuxième fois qu'on parse une pyramide
+
+                if (hRoot.FirstChild ( "sources" ).Element()) {
+                    LOGGER_ERROR ( _ ( "Pyramid: " ) << fileName << _ ( " can't depend on other pyramids" ) );
+                    cleanParsePyramid(specificSources,sSources,levels);
+                    return NULL;
+                }
+
             }
 
-            if (cBook != NULL) {
-                context = cBook->addContext(poolName);
+            //----END OF ONDEMAND AND ONFLY SECTION------------------------------------
 
-            } else {
-                LOGGER_ERROR ( "L'utilisation d'un cephContext necessite de preciser les informations de connexions dans le server.conf");
-                return NULL;
-            }
+            pElemLvl = hLvl.FirstChild ( "baseDir" ).Element();
+            std::string baseDir;
+            if (!onDemandSpecific) {
 
-            pElemLvl = hLvl.FirstChild ( "imagePrefix" ).Element();
-            if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
-                LOGGER_ERROR ( "imagePrefix absent pour le level " << id << " qui est stocke sur du Ceph");
-                return NULL;
-            }
-            prefix = pElemLvl->GetText() ;
+              if ( pElemLvl && pElemLvl->GetText()) {
 
-        }
+                  baseDir = pElemLvl->GetText() ;
+                //Relative Path
+                  if ( baseDir.compare ( 0,2,"./" ) ==0 ) {
+                      baseDir.replace ( 0,1,parentDir );
+                  } else if ( baseDir.compare ( 0,1,"/" ) !=0 ) {
+                      baseDir.insert ( 0,"/" );
+                      baseDir.insert ( 0,parentDir );
+                  }
 
-        pElemLvl = hLvl.FirstChild ( "swiftContext" ).Element();
-        if ( pElemLvl && !context) {
+                  pElemLvl = hLvl.FirstChild ( "pathDepth" ).Element();
+                  if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
+                      LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": Pas de pathDepth !!" ) );
+                      return NULL;
+                  }
+                  if ( !sscanf ( pElemLvl->GetText(),"%d",&pathDepth ) ) {
+                      LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": pathDepth=[" ) << pElemLvl->GetText() <<_ ( "] is not an integer." ) );
+                      return NULL;
+                  }
 
-            std::string container;
+                  context = new FileContext("");
+                  if (!context->connection()) {
+                      LOGGER_ERROR("Impossible de se connecter aux donnees.");
+                      return NULL;
+                  }
 
-            TiXmlElement* pElemSwiftContext;
+              }
 
-            pElemSwiftContext = hLvl.FirstChild ( "swiftContext" ).FirstChild ( "container" ).Element();
-            if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
-                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un container" );
-                return NULL;
-            } else {
-                container = pElemSwiftContext->GetText();
-            }
 
-            if (sBook != NULL) {
-                context = sBook->addContext(container);
-            } else {
-                LOGGER_ERROR ( "L'utilisation d'un cephContext necessite de preciser les informations de connexions dans le server.conf");
-                return NULL;
-            }
+              pElemLvl = hLvl.FirstChild ( "cephContext" ).Element();
+              if ( pElemLvl && !context) {
 
-            pElemLvl = hLvl.FirstChild ( "imagePrefix" ).Element();
-            if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
-                LOGGER_ERROR ( "imagePrefix absent pour le level " << id << " qui est stocke sur du Swift");
-                return NULL;
-            }
-            prefix = pElemLvl->GetText() ;
+                  std::string poolName;
 
-        }
+                  TiXmlElement* pElemCephContext;
 
-        if (context == NULL) {
-            LOGGER_ERROR("Level " << id << " sans indication de stockage. Precisez un baseDir ou un cephContext ou un swiftContext");
-            return NULL;
-        }
+                  pElemCephContext = hLvl.FirstChild ( "cephContext" ).FirstChild ( "poolName" ).Element();
+                  if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
+                      LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un poolName" );
+                      return NULL;
+                  } else {
+                      poolName = pElemCephContext->GetText();
+                  }
 
-        pElemLvl = hLvl.FirstChild ( "tilesPerWidth" ).Element();
-        if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
+                  if (cBook != NULL) {
+                      context = cBook->addContext(poolName);
+
+                  } else {
+                      LOGGER_ERROR ( "L'utilisation d'un cephContext necessite de preciser les informations de connexions dans le server.conf");
+                      return NULL;
+                  }
+
+                  pElemLvl = hLvl.FirstChild ( "imagePrefix" ).Element();
+                  if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
+                      LOGGER_ERROR ( "imagePrefix absent pour le level " << id << " qui est stocke sur du Ceph");
+                      return NULL;
+                  }
+                  prefix = pElemLvl->GetText() ;
+
+              }
+
+              pElemLvl = hLvl.FirstChild ( "swiftContext" ).Element();
+              if ( pElemLvl && !context) {
+
+                  std::string container;
+
+                  TiXmlElement* pElemSwiftContext;
+
+                  pElemSwiftContext = hLvl.FirstChild ( "swiftContext" ).FirstChild ( "container" ).Element();
+                  if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
+                      LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un container" );
+                      return NULL;
+                  } else {
+                      container = pElemSwiftContext->GetText();
+                  }
+
+                  if (sBook != NULL) {
+                      context = sBook->addContext(container);
+                  } else {
+                      LOGGER_ERROR ( "L'utilisation d'un cephContext necessite de preciser les informations de connexions dans le server.conf");
+                      return NULL;
+                  }
+
+                  pElemLvl = hLvl.FirstChild ( "imagePrefix" ).Element();
+                  if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
+                      LOGGER_ERROR ( "imagePrefix absent pour le level " << id << " qui est stocke sur du Swift");
+                      return NULL;
+                  }
+                  prefix = pElemLvl->GetText() ;
+
+              }
+
+              if (context == NULL) {
+                  LOGGER_ERROR("Level " << id << " sans indication de stockage. Precisez un baseDir ou un cephContext ou un swiftContext");
+                  return NULL;
+              }
+
+          } else {
+
+             if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
+                 baseDir = "";
+                 testOnFly = false;
+             } else {
+                 baseDir = pElemLvl->GetText() ;
+                     //Relative Path
+                 if ( baseDir.compare ( 0,2,"./" ) ==0 ) {
+                     baseDir.replace ( 0,1,parentDir );
+                 } else if ( baseDir.compare ( 0,1,"/" ) !=0 ) {
+                     baseDir.insert ( 0,"/" );
+                     baseDir.insert ( 0,parentDir );
+                 }
+             }
+
+         }
+            //----
+
+            //----TILEPERWIDTH
+
+         pElemLvl = hLvl.FirstChild ( "tilesPerWidth" ).Element();
+         if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
             LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": Pas de tilesPerWidth !!" ) );
             return NULL;
         }
@@ -751,7 +977,9 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": tilesPerWidth=[" ) << pElemLvl->GetText() <<_ ( "] is not an integer." ) );
             return NULL;
         }
+            //----
 
+            //----TILEPERHEIGHT
         pElemLvl = hLvl.FirstChild ( "tilesPerHeight" ).Element();
         if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
             LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": Pas de tilesPerHeight !!" ) );
@@ -762,85 +990,90 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
             return NULL;
         }
 
+            //----TMSLIMITS
         TiXmlElement *pElemLvlTMS =hLvl.FirstChild ( "TMSLimits" ).Element();
         if ( pElemLvlTMS ) { // le bloc TMSLimits n'est pas obligatoire, mais s'il est là, il doit y avoir tous les champs.
 
             TiXmlHandle hTMSL ( pElemLvlTMS );
-            TiXmlElement* pElemTMSL = hTMSL.FirstChild ( "minTileRow" ).Element();
-            long int intBuff = -1;
-            if ( !pElemTMSL ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": no minTileRow in TMSLimits element !!" ) );
-                return NULL;
-            }
-            if ( !pElemTMSL->GetText() ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": minTileRow is empty !!" ) );
-                return NULL;
-            }
-            if ( !sscanf ( pElemTMSL->GetText(),"%ld",&intBuff ) ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": minTileRow=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) );
-                return NULL;
-            }
-            minTileRow = intBuff;
-            intBuff = -1;
-            pElemTMSL = hTMSL.FirstChild ( "maxTileRow" ).Element();
-            if ( !pElemTMSL ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": no maxTileRow in TMSLimits element !!" ) );
-                return NULL;
-            }
-            if ( !pElemTMSL->GetText() ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": maxTileRow is empty !!" ) );
-                return NULL;
-            }
-            if ( !sscanf ( pElemTMSL->GetText(),"%ld",&intBuff ) ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": maxTileRow=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) );
-                return NULL;
-            }
-            maxTileRow = intBuff;
-            intBuff = -1;
-            pElemTMSL = hTMSL.FirstChild ( "minTileCol" ).Element();
-            if ( !pElemTMSL ) {
-                LOGGER_ERROR ( _ ( " Level " ) << id << _ ( ": no minTileCol in TMSLimits element !!" ) );
-                return NULL;
-            }
-            if ( !pElemTMSL->GetText() ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": minTileCol is empty !!" ) );
-                return NULL;
-            }
-
-            if ( !sscanf ( pElemTMSL->GetText(),"%ld",&intBuff ) ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": minTileCol=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) );
-                return NULL;
-            }
-            minTileCol = intBuff;
-            intBuff = -1;
-            pElemTMSL = hTMSL.FirstChild ( "maxTileCol" ).Element();
-            if ( !pElemTMSL ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": no maxTileCol in TMSLimits element !!" ) );
-                return NULL;
-            }
-            if ( !pElemTMSL->GetText() ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": maxTileCol is empty !!" ) );
-                return NULL;
-            }
-            if ( !sscanf ( pElemTMSL->GetText(),"%ld",&intBuff ) ) {
-                LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": maxTileCol=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) );
-                return NULL;
-            }
-            maxTileCol = intBuff;
-
+        TiXmlElement* pElemTMSL = hTMSL.FirstChild ( "minTileRow" ).Element();
+        long int intBuff = -1;
+        if ( !pElemTMSL ) {
+            LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": no minTileRow in TMSLimits element !!" ) );
+            return NULL;
+        }
+        if ( !pElemTMSL->GetText() ) {
+            LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": minTileRow is empty !!" ) );
+            return NULL;
+        }
+        if ( !sscanf ( pElemTMSL->GetText(),"%ld",&intBuff ) ) {
+            LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": minTileRow=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) );
+            return NULL;
+        }
+        minTileRow = intBuff;
+        intBuff = -1;
+        pElemTMSL = hTMSL.FirstChild ( "maxTileRow" ).Element();
+        if ( !pElemTMSL ) {
+            LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": no maxTileRow in TMSLimits element !!" ) );
+            return NULL;
+        }
+        if ( !pElemTMSL->GetText() ) {
+            LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": maxTileRow is empty !!" ) );
+            return NULL;
+        }
+        if ( !sscanf ( pElemTMSL->GetText(),"%ld",&intBuff ) ) {
+            LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": maxTileRow=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) );
+            return NULL;
+        }
+        maxTileRow = intBuff;
+        intBuff = -1;
+        pElemTMSL = hTMSL.FirstChild ( "minTileCol" ).Element();
+        if ( !pElemTMSL ) {
+            LOGGER_ERROR ( _ ( " Level " ) << id << _ ( ": no minTileCol in TMSLimits element !!" ) );
+            return NULL;
+        }
+        if ( !pElemTMSL->GetText() ) {
+            LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": minTileCol is empty !!" ) );
+            return NULL;
         }
 
-        if ( minTileCol > tm->getMatrixW() || minTileCol < 0 )
-            minTileCol = 0;
-        if ( minTileRow > tm->getMatrixH() || minTileRow < 0 )
-            minTileRow = 0;
-        if ( maxTileCol > tm->getMatrixW() || maxTileCol < 0 )
-            maxTileCol = tm->getMatrixW();
-        if ( maxTileRow > tm->getMatrixH() || maxTileRow < 0 )
-            maxTileRow = tm->getMatrixH();
+        if ( !sscanf ( pElemTMSL->GetText(),"%ld",&intBuff ) ) {
+            LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": minTileCol=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) );
+            return NULL;
+        }
+        minTileCol = intBuff;
+        intBuff = -1;
+        pElemTMSL = hTMSL.FirstChild ( "maxTileCol" ).Element();
+        if ( !pElemTMSL ) {
+            LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": no maxTileCol in TMSLimits element !!" ) );
+            return NULL;
+        }
+        if ( !pElemTMSL->GetText() ) {
+            LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": maxTileCol is empty !!" ) );
+            return NULL;
+        }
+        if ( !sscanf ( pElemTMSL->GetText(),"%ld",&intBuff ) ) {
+            LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": maxTileCol=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) );
+            return NULL;
+        }
+        maxTileCol = intBuff;
 
-        // Would be Mandatory in future release
-        TiXmlElement* pElemNoData=hLvl.FirstChild ( "nodata" ).Element();
+    }
+
+    if ( minTileCol > tm->getMatrixW() || minTileCol < 0 )
+        minTileCol = 0;
+    if ( minTileRow > tm->getMatrixH() || minTileRow < 0 )
+        minTileRow = 0;
+    if ( maxTileCol > tm->getMatrixW() || maxTileCol < 0 )
+        maxTileCol = tm->getMatrixW();
+    if ( maxTileRow > tm->getMatrixH() || maxTileRow < 0 )
+        maxTileRow = tm->getMatrixH();
+
+            //----
+
+            //----NODATA
+            // Must exist for normal pyramid but could possibly not exist for onDemand and onFly Pyramid
+            // BUT the path must be written in conf file in these cases
+    TiXmlElement* pElemNoData=hLvl.FirstChild ( "nodata" ).Element();
 
         if ( pElemNoData ) {    // FilePath must be specified if nodata tag exist
 
@@ -896,34 +1129,709 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
         }
 
         Level *TL = new Level ( *tm, channels, baseDir, tilesPerWidth, tilesPerHeight,
-                                maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth, format, noDataFilePath, context, prefix );
+            maxTileRow,  minTileRow, maxTileCol, minTileCol, pathDepth, format, noDataFilePath, context, prefix );
 
         levels.insert ( std::pair<std::string, Level *> ( id, TL ) );
     }// boucle sur les levels
+
+    if (onDemandSpecific && testOnFly) {
+        onFly = true;
+    }
+
+    } //if level
+
+    //----END OF LEVELS SECTION------------------------------------------------
+
+    // FIN DE LA LECTURE DU FICHIER
+    //----------------------------------------------------------------------------------------------------
+
 
     if ( levels.size() ==0 ) {
         LOGGER_ERROR ( _ ( "Aucun level n'a pu etre charge pour la pyramide " ) << fileName );
         return NULL;
     }
 
-    Pyramid *pyr = new Pyramid ( levels, *tms, format, channels );
-    return pyr;
+    if ( onDemandSpecific ) {
+        if (nbSpecificLevel == levels.size() ) {
+         onDemand = true;
+     } else {
+        LOGGER_ERROR("Probleme lors du chargement de la pyramide => " << nbSpecificLevel << " trouvés pour " << levels.size() << " chargés");
+        if (specificSources.size() != 0) {
+            for ( std::map<std::string,std::vector<Source*> >::iterator lv = specificSources.begin(); lv != specificSources.end(); lv++) {
+
+                if (lv->second.size() != 0) {
+                    for ( std::vector<int>::size_type i = 0; i != lv->second.size(); i++) {
+                        delete lv->second[i];
+                        lv->second[i] = NULL;
+                    }
+                    lv->second.clear();
+                }
+            }
+            specificSources.clear();
+        }
+        if (levels.size() != 0) {
+            for ( std::map<std::string,Level*>::iterator lv = levels.begin(); lv != levels.end(); lv++) {
+                delete lv->second;
+                lv->second = NULL;
+            }
+            levels.clear();
+        }
+        return NULL;
+    }
+
+}
+
+    //----PYRAMID
+
+Pyramid* pyr;
+
+if (onFly) {
+    pyr = new PyramidOnFly(levels, *tms, format, channels, onDemand, onFly, Photometric::fromString(photometricStr),noDataValues,specificSources);
+} else {
+    if (onDemand) {
+        pyr = new PyramidOnDemand(levels, *tms, format, channels, onDemand, onFly,specificSources);
+    } else {
+        pyr = new Pyramid ( levels, *tms, format, channels, onDemand, onFly );
+    }
+}
+
+    //----
+return pyr;
 
 }// buildPyramid()
 
-Pyramid* ConfLoader::buildPyramid ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, ContextBook* cBook, ContextBook* sBook ) {
+void ConfLoader::cleanParsePyramid(std::map<std::string,std::vector<Source*> > &specificSources, std::vector<Source*> &sSources,std::map<std::string, Level *> &levels) {
+
+    if (sSources.size() != 0) {
+        for ( std::vector<int>::size_type i = 0; i != sSources.size(); i++) {
+            delete sSources[i];
+            sSources[i] = NULL;
+        }
+        sSources.clear();
+    }
+    if (specificSources.size() != 0) {
+        for ( std::map<std::string,std::vector<Source*> >::iterator lv = specificSources.begin(); lv != specificSources.end(); lv++) {
+
+            if (lv->second.size() != 0) {
+                for ( std::vector<int>::size_type i = 0; i != lv->second.size(); i++) {
+                    delete lv->second[i];
+                    lv->second[i] = NULL;
+                }
+                lv->second.clear();
+            }
+        }
+        specificSources.clear();
+    }
+    if (levels.size() != 0) {
+        for ( std::map<std::string,Level*>::iterator lv = levels.begin(); lv != levels.end(); lv++) {
+            delete lv->second;
+            lv->second = NULL;
+        }
+        levels.clear();
+    }
+
+}
+
+
+int ConfLoader::updatePyrLevel(Pyramid* pyr, TileMatrix *tm, TileMatrixSet *tms) {
+
+    double Res, ratioX, ratioY, resX, resY;
+    std::string best_h;
+
+    Res = tm->getRes();
+
+    BoundingBox<double> nBbox = tms->getCrs().getCrsDefinitionArea();
+
+    BoundingBox<double> cBbox = pyr->getTms().getCrs().cropBBoxGeographic(nBbox);
+
+    cBbox = tms->getCrs().cropBBoxGeographic(cBbox);
+    BoundingBox<double> cBboxOld = cBbox;
+    BoundingBox<double> cBboxNew = cBbox;
+
+    if (cBboxNew.reproject("epsg:4326",tms->getCrs().getProj4Code())==0 &&
+        cBboxOld.reproject("epsg:4326",pyr->getTms().getCrs().getProj4Code())==0)
+    {
+
+        ratioX = (cBboxOld.xmax - cBboxOld.xmin) / (cBboxNew.xmax - cBboxNew.xmin);
+        ratioY = (cBboxOld.ymax - cBboxOld.ymin) / (cBboxNew.ymax - cBboxNew.ymin);
+
+        resX = Res * ratioX;
+        resY = Res * ratioY;
+
+        //On recupère le best level de la basedPyramid en cours pour le tm en cours
+        best_h = pyr->best_level(resX,resY,true);
+
+    } else {
+        //Si une des reprojections n'a pas marché
+
+        best_h = "";
+
+    }
+
+    if (best_h != "") {
+
+        std::vector<std::string> to_delete;
+        std::map<std::string, Level*>::iterator lv = pyr->getLevels().begin();
+
+        for ( ; lv != pyr->getLevels().end(); lv++) {
+            if (lv->second->getId() != best_h) {
+                to_delete.push_back(lv->second->getId());
+            }
+        }
+
+        for (std::vector<int>::size_type i = 0; i != to_delete.size(); i++) {
+            lv = pyr->getLevels().find(to_delete[i]);
+            delete lv->second;
+            lv->second = NULL;
+            pyr->getLevels().erase(lv);
+        }
+
+        return 1;
+
+    } else {
+        return 0;
+    }
+
+}
+
+void ConfLoader::updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Source *> sources) {
+
+    //On met à jour les Min et Max Tiles une fois que l'on a trouvé un équivalent dans chaque basedPyramid
+    // pour le level créé
+
+    int curMinCol, curMaxCol, curMinRow, curMaxRow, bPMinCol, bPMaxCol, bPMinRow, bPMaxRow, minCol, minRow, maxCol, maxRow;
+    double xo, yo, res, tileW, tileH, xmin, xmax, ymin, ymax;
+
+    int time = 1;
+
+    if (sources.size() != 0) {
+
+        for (int ip = 0; ip < sources.size(); ip++) {
+
+            if (sources.at(ip)->getType() == PYRAMID) {
+                Pyramid *pyr = reinterpret_cast<Pyramid*>(sources.at(ip));
+                Level *lv;
+
+                //On récupére les Min et Max de la basedPyramid
+                lv = pyr->getLevels().begin()->second;
+
+
+                bPMinCol = lv->getMinTileCol();
+                bPMaxCol = lv->getMaxTileCol();
+                bPMinRow = lv->getMinTileRow();
+                bPMaxRow = lv->getMaxTileRow();
+
+                //On récupère d'autres informations sur le TM
+                xo = lv->getTm().getX0();
+                yo = lv->getTm().getY0();
+                res = lv->getTm().getRes();
+                tileW = lv->getTm().getTileW();
+                tileH = lv->getTm().getTileH();
+
+                //On transforme en bbox
+                xmin = bPMinCol * tileW * res + xo;
+                ymax = yo - bPMinRow * tileH * res;
+                xmax = xo + (bPMaxCol+1) * tileW * res;
+                ymin = ymax - (bPMaxRow - bPMinRow + 1) * tileH * res;
+
+                BoundingBox<double> MMbbox(xmin,ymin,xmax,ymax);
+
+
+                //On reprojette la bbox
+                MMbbox.reproject(pyr->getTms().getCrs().getProj4Code(), tms->getCrs().getProj4Code());
+
+                //On récupère les Min et Max de Pyr pour ce level dans la nouvelle projection
+                xo = tm.getX0();
+                yo = tm.getY0();
+                res = tm.getRes();
+                tileW = tm.getTileW();
+                tileH = tm.getTileH();
+
+                curMinRow = floor((yo - MMbbox.ymax) / (tileW * res));
+                curMinCol = floor((MMbbox.xmin - xo) / (tileH * res));
+                curMaxRow = floor((yo - MMbbox.ymin) / (tileW * res));
+                curMaxCol = floor((MMbbox.xmax - xo) / (tileH * res));
+
+                if (curMinRow < 0) {
+                    curMinRow = 0;
+                }
+                if (curMinCol < 0) {
+                    curMinCol = 0;
+                }
+                if (curMaxRow < 0) {
+                    curMaxRow = 0;
+                }
+                if (curMaxCol < 0) {
+                    curMaxCol = 0;
+                }
+
+                if (time == 1) {
+                    minCol = curMinCol;
+                    maxCol = curMaxCol;
+                    minRow = curMinRow;
+                    maxRow = curMaxRow;
+                }
+
+                //On teste pour récupèrer la plus grande zone à l'intérieur du TMS
+                if (curMinCol >= minTileCol && curMinCol >= 0 && curMinCol <= curMaxCol && curMinCol <= maxTileCol) {
+                    if (curMinCol <= minCol) {
+                        minCol = curMinCol;
+                    }
+                }
+                if (curMinRow >= minTileRow && curMinRow >= 0 && curMinRow <= curMaxRow && curMinRow <= maxTileRow) {
+                    if (curMinRow <= minRow) {
+                        minRow = curMinRow;
+                    }
+                }
+                if (curMaxCol <= maxTileCol && curMaxCol >= 0 && curMaxCol >= curMinCol && curMaxCol >= minTileCol) {
+                    if (curMaxCol >= maxCol) {
+                        maxCol = curMaxCol;
+                    }
+                }
+                if (curMaxRow <= maxTileRow && curMaxRow >= 0 && curMaxRow >= curMinRow && curMaxRow >= minTileRow) {
+                    if (curMaxRow >= maxRow) {
+                        maxRow = curMaxRow;
+                    }
+                }
+
+            }
+
+            if (sources.at(ip)->getType() == WEBSERVICE) {
+
+                WebMapService *wms = reinterpret_cast<WebMapService*>(sources.at(ip));
+
+                BoundingBox<double> MMbbox = wms->getBbox();
+
+                //On récupère les Min et Max de Pyr pour ce level dans la nouvelle projection
+                xo = tm.getX0();
+                yo = tm.getY0();
+                res = tm.getRes();
+                tileW = tm.getTileW();
+                tileH = tm.getTileH();
+
+                curMinRow = floor((yo - MMbbox.ymax) / (tileW * res));
+                curMinCol = floor((MMbbox.xmin - xo) / (tileH * res));
+                curMaxRow = floor((yo - MMbbox.ymin) / (tileW * res));
+                curMaxCol = floor((MMbbox.xmax - xo) / (tileH * res));
+
+                if (curMinRow < 0) {
+                    curMinRow = 0;
+                }
+                if (curMinCol < 0) {
+                    curMinCol = 0;
+                }
+                if (curMaxRow < 0) {
+                    curMaxRow = 0;
+                }
+                if (curMaxCol < 0) {
+                    curMaxCol = 0;
+                }
+
+                if (time == 1) {
+                    minCol = curMinCol;
+                    maxCol = curMaxCol;
+                    minRow = curMinRow;
+                    maxRow = curMaxRow;
+                }
+
+                //On teste pour récupèrer la plus grande zone à l'intérieur du TMS
+                if (curMinCol >= minTileCol && curMinCol >= 0 && curMinCol <= curMaxCol && curMinCol <= maxTileCol) {
+                    if (curMinCol <= minCol) {
+                        minCol = curMinCol;
+                    }
+                }
+                if (curMinRow >= minTileRow && curMinRow >= 0 && curMinRow <= curMaxRow && curMinRow <= maxTileRow) {
+                    if (curMinRow <= minRow) {
+                        minRow = curMinRow;
+                    }
+                }
+                if (curMaxCol <= maxTileCol && curMaxCol >= 0 && curMaxCol >= curMinCol && curMaxCol >= minTileCol) {
+                    if (curMaxCol >= maxCol) {
+                        maxCol = curMaxCol;
+                    }
+                }
+                if (curMaxRow <= maxTileRow && curMaxRow >= 0 && curMaxRow >= curMinRow && curMaxRow >= minTileRow) {
+                    if (curMaxRow >= maxRow) {
+                        maxRow = curMaxRow;
+                    }
+                }
+
+            }
+
+
+            time++;
+        }
+
+    }
+
+    if (minCol > minTileCol ) {
+        minTileCol = minCol;
+    }
+    if (minRow > minTileRow ) {
+        minTileRow = minRow;
+    }
+    if (maxCol < maxTileCol ) {
+        maxTileCol = maxCol;
+    }
+    if (maxRow < maxTileRow ) {
+        maxTileRow = maxRow;
+    }
+
+
+}
+
+WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Format::eformat_data pyrFormat, Proxy proxy_default) {
+
+    WebService * ws = NULL;
+    std::string url, user, proxy, noProxy,pwd, referer, userAgent, version, layers, styles, format, crs;
+    std::map<std::string,std::string> options;
+    int timeout, retry, interval, channels;
+    std::string name,ndValuesStr,value;
+    BoundingBox<double> bbox = BoundingBox<double> (0.,0.,0.,0.);
+    std::vector<int> noDataValues;
+
+    TiXmlElement* sUrl = sWeb->FirstChildElement("url");
+    if (sUrl && sUrl->GetText()) {
+        url = sUrl->GetTextStr();
+
+        std::size_t found = url.find(" ");
+        if (found!=std::string::npos) {
+          LOGGER_ERROR("Une URL ne peut contenir des espaces");
+          return NULL;
+      }
+
+      found = url.find("?");
+      size_t size = url.size()-1;
+      if (found!=std::string::npos && found!=size) {
+        LOGGER_ERROR("Une URL ne peut contenir un ou des '?' hormis le dernier qui est un séparateur");
+        return NULL;
+    }
+
+    if (found==std::string::npos) {
+        url = url + "?";
+    }
+
+} else {
+    LOGGER_ERROR("Une URL doit etre specifiee pour un WebService");
+    return NULL;
+}
+
+TiXmlElement* sProxy = sWeb->FirstChildElement("proxy");
+if (sProxy && sProxy->GetText()) {
+    proxy = sProxy->GetTextStr();
+} else {
+    proxy = proxy_default.proxyName;
+}
+
+sProxy = sWeb->FirstChildElement("noProxy");
+if (sProxy && sProxy->GetText()) {
+    noProxy = sProxy->GetTextStr();
+} else {
+    noProxy = proxy_default.noProxy;
+}
+
+TiXmlElement* sTimeOut = sWeb->FirstChildElement("timeout");
+if (sTimeOut && sTimeOut->GetText()) {
+    timeout = atoi(sTimeOut->GetText());
+} else {
+    timeout = DEFAULT_TIMEOUT;
+}
+
+TiXmlElement* sRetry = sWeb->FirstChildElement("retry");
+if (sRetry && sRetry->GetText()) {
+    retry = atoi(sRetry->GetText());
+} else {
+    retry = DEFAULT_RETRY;
+}
+
+TiXmlElement* sInterval = sWeb->FirstChildElement("interval");
+if (sInterval && sInterval->GetText()) {
+    interval = atoi(sInterval->GetText());
+} else {
+    interval = DEFAULT_INTERVAL;
+}
+
+TiXmlElement* sUser = sWeb->FirstChildElement("user");
+if (sUser && sUser->GetText()) {
+    user = sUser->GetTextStr();
+} else {
+    user = "";
+}
+
+TiXmlElement* sPwd = sWeb->FirstChildElement("password");
+if (sPwd && sPwd->GetText()) {
+    pwd = sPwd->GetTextStr();
+} else {
+    pwd = "";
+}
+
+TiXmlElement* sReferer = sWeb->FirstChildElement("referer");
+if (sReferer && sReferer->GetText()) {
+    referer = sReferer->GetTextStr();
+} else {
+    referer = "";
+}
+
+TiXmlElement* sUserAgent = sWeb->FirstChildElement("userAgent");
+if (sUserAgent && sUserAgent->GetText()) {
+    userAgent = sUserAgent->GetTextStr();
+} else {
+    userAgent = "";
+}
+
+
+TiXmlElement* sWMS = sWeb->FirstChildElement("wms");
+if (sWMS) {
+
+    TiXmlElement* sVersion = sWMS->FirstChildElement("version");
+    if (sVersion && sVersion->GetText()) {
+        version = sVersion->GetTextStr();
+    } else {
+        LOGGER_ERROR("Un WMS doit contenir une version");
+        return NULL;
+    }
+
+    TiXmlElement* sLayers= sWMS->FirstChildElement("layers");
+    if (sLayers && sLayers->GetText()) {
+        layers = sLayers->GetTextStr();
+    } else {
+        LOGGER_ERROR("Un WMS doit contenir un ou des layers séparés par des virgules");
+        return NULL;
+    }
+
+    TiXmlElement* sStyles = sWMS->FirstChildElement("styles");
+    if (sStyles && sStyles->GetText()) {
+        styles = sStyles->GetTextStr();
+    } else {
+        LOGGER_ERROR("Un WMS doit contenir un ou des styles séparés par des virgules");
+        return NULL;
+    }
+
+    TiXmlElement* sFormat = sWMS->FirstChildElement("format");
+    if (sFormat && sFormat->GetText()) {
+        format = sFormat->GetTextStr();
+        Rok4Format::eformat_data fmt = Rok4Format::fromMimeType(format);
+        if (fmt == Rok4Format::UNKNOWN) {
+            LOGGER_ERROR("Un WMS doit être requete dans un format lisible par rok4");
+            return NULL;
+        }
+            //Pour le moment, on autorise que deux formats (jpeg et png)
+            //car les autres ne sont pas gérer correctement par les decodeurs de Rok4
+            //il faudrait notamment creer un decodeur pour le tiff (lecture de l'en-tête, puis decompression)
+        if (format != "image/jpeg" && format != "image/png") {
+            LOGGER_ERROR("Un WMS doit être requete en image/jpeg ou image/png");
+            return NULL;
+        }
+    } else {
+        format = Rok4Format::toString(pyrFormat);
+        LOGGER_ERROR("Un WMS doit contenir un format. Par défaut => " << format);
+    }
+
+    TiXmlElement* sCrs = sWMS->FirstChildElement("crs");
+    if (sCrs && sCrs->GetText()) {
+        crs = sCrs->GetTextStr();
+
+            //le crs demandé et le crs de la pyramide en construction doivent être le même
+        CRS askedCRS = CRS(crs);
+        if (askedCRS != pyrCRS) {
+            LOGGER_ERROR("Un WMS doit contenir un crs équivalent à celui de la pyramide en construction");
+            return NULL;
+        }
+
+    } else {
+        crs = pyrCRS.getProj4Code();
+        LOGGER_ERROR("Un WMS doit contenir un crs. Par défaut => " << crs);
+    }
+
+    TiXmlElement* sChannels = sWMS->FirstChildElement("channels");
+    if (sChannels && sChannels->GetText()) {
+        channels = atoi(sChannels->GetTextStr().c_str());
+    } else {
+        LOGGER_ERROR("Un WMS doit contenir un channels");
+        return NULL;
+    }
+
+    TiXmlElement* sOpt = sWMS->FirstChildElement("option");
+    if (sOpt) {
+
+        for ( sOpt; sOpt; sOpt=sOpt->NextSiblingElement() ) {
+
+            name = sOpt->Attribute("name");
+            value = sOpt->Attribute("value");
+
+            if (name != "" && value != "") {
+                options.insert(std::pair<std::string,std::string> ( name, value));
+            }
+
+        }
+
+    }
+
+    TiXmlElement* sBbox = sWMS->FirstChildElement("bbox");
+    if (sBbox) {
+        if ( ! ( sBbox->Attribute ( "minx" ) ) ) {
+            LOGGER_ERROR ( "minx attribute is missing" );
+            return NULL;
+        }
+        if ( !sscanf ( sBbox->Attribute ( "minx" ),"%lf",&bbox.xmin) ) {
+            LOGGER_ERROR ( "Le minx est inexploitable:[" << sBbox->Attribute ( "minx" ) << "]" );
+            return NULL;
+        }
+        if ( ! ( sBbox->Attribute ( "miny" ) ) ) {
+            LOGGER_ERROR ( "miny attribute is missing" );
+            return NULL;
+        }
+        if ( !sscanf ( sBbox->Attribute ( "miny" ),"%lf",&bbox.ymin ) ) {
+            LOGGER_ERROR ("Le miny est inexploitable:[" << sBbox->Attribute ( "miny" ) << "]" );
+            return NULL;
+        }
+        if ( ! ( sBbox->Attribute ( "maxx" ) ) ) {
+            LOGGER_ERROR (  "maxx attribute is missing"  );
+            return NULL;
+        }
+        if ( !sscanf ( sBbox->Attribute ( "maxx" ),"%lf",&bbox.xmax ) ) {
+            LOGGER_ERROR (  "Le maxx est inexploitable:["  << sBbox->Attribute ( "maxx" ) << "]" );
+            return NULL;
+        }
+        if ( ! ( sBbox->Attribute ( "maxy" ) ) ) {
+            LOGGER_ERROR (  "maxy attribute is missing" );
+            return NULL;
+        }
+        if ( !sscanf ( sBbox->Attribute ( "maxy" ),"%lf",&bbox.ymax ) ) {
+            LOGGER_ERROR (  "Le maxy est inexploitable:["  << sBbox->Attribute ( "maxy" ) << "]" );
+            return NULL;
+        }
+
+    } else {
+        LOGGER_ERROR("Un WMS doit contenir une bbox");
+        return NULL;
+    }
+
+    TiXmlElement* pND=sWMS->FirstChildElement ( "noDataValue" );
+    if ( pND && pND->GetText() ) {
+        ndValuesStr = pND->GetTextStr();
+
+            //conversion string->vector
+        std::size_t found = ndValuesStr.find_first_of(",");
+        std::string currentValue = ndValuesStr.substr(0,found);
+        std::string endOfValues = ndValuesStr.substr(found+1);
+        int curVal = atoi(currentValue.c_str());
+        if (currentValue == "") {
+            curVal = DEFAULT_NODATAVALUE;
+        }
+        noDataValues.push_back(curVal);
+        while (found!=std::string::npos) {
+            found = endOfValues.find_first_of(",");
+            currentValue = endOfValues.substr(0,found);
+            endOfValues = endOfValues.substr(found+1);
+            curVal = atoi(currentValue.c_str());
+            if (currentValue == "") {
+                curVal = DEFAULT_NODATAVALUE;
+            }
+            noDataValues.push_back(curVal);
+        }
+        if (noDataValues.size() < channels) {
+            LOGGER_ERROR("Le nombre de channels indique est different du nombre de noDataValue donne");
+            return NULL;
+        }
+    } else {
+        for (int i=0;i<channels;i++) {
+            noDataValues.push_back(DEFAULT_NODATAVALUE);
+        }
+    }
+
+    ws = new WebMapService(url, proxy, noProxy, retry, interval, timeout, version, layers, styles, format, channels, crs, bbox, noDataValues,options);
+
+} else {
+        //On retourne une erreur car le WMS est le seul WebService disponible pour le moment
+    LOGGER_ERROR("Un WebService doit contenir un WMS pour être utilisé");
+    return NULL;
+}
+
+return ws;
+
+}
+
+Pyramid *ConfLoader::parseBasedPyramid(TiXmlElement* sPyr, std::map<std::string, TileMatrixSet*> &tmsList, bool timesSpecific, std::map<std::string,Style*> stylesList, std::string parentDir, Proxy proxy) {
+
+    Pyramid *basedPyramid;
+
+    TiXmlElement* sFile = sPyr->FirstChildElement("file");
+    TiXmlElement* sTransparent = sPyr->FirstChildElement("transparent");
+    TiXmlElement* sStyle = sPyr->FirstChildElement("style");
+
+    bool transparent = false;
+    std::string str_transparent,basedPyramidFilePath;
+    std::string str_style = "";
+    Style *style = NULL;
+
+    if (sFile && sTransparent && sStyle && sFile->GetText() && sTransparent->GetText() && sStyle->GetText()) {
+
+        str_transparent = sTransparent->GetTextStr();
+        str_style = sStyle->GetTextStr();
+
+        basedPyramidFilePath = sFile->GetTextStr() ;
+        //Relative Path
+        if ( basedPyramidFilePath.compare ( 0,2,"./" ) ==0 ) {
+            basedPyramidFilePath.replace ( 0,1,parentDir );
+        } else if ( basedPyramidFilePath.compare ( 0,1,"/" ) !=0 ) {
+            basedPyramidFilePath.insert ( 0,"/" );
+            basedPyramidFilePath.insert ( 0,parentDir );
+        }
+
+        basedPyramid = buildPyramid ( basedPyramidFilePath, tmsList, NULL, NULL, timesSpecific, stylesList, proxy );
+
+        if ( !basedPyramid) {
+            LOGGER_ERROR ( _ ( "La pyramide " ) << basedPyramidFilePath << _ ( " ne peut etre chargee" ) );
+            return NULL;
+        } else {
+
+
+            if (str_transparent == "true") {
+                transparent = true;
+                basedPyramid->setTransparent(transparent);
+            } else {
+                basedPyramid->setTransparent(transparent);
+            }
+
+            std::map<std::string, Style*>::iterator styleIt= stylesList.find ( str_style );
+            if ( styleIt == stylesList.end() ) {
+                LOGGER_ERROR ( _ ( "Style " ) << str_style << _ ( "non defini" ) );
+                styleIt= stylesList.find ( "normal" );
+                if (styleIt != stylesList.end()) {
+                    style = styleIt->second;
+                }
+            } else {
+                style = styleIt->second;
+            }
+
+            basedPyramid->setStyle(style);
+
+        }
+
+    } else {
+        //Il manque un des trois elements necessaires pour initialiser une
+        //nouvelle pyramide de base
+        LOGGER_ERROR ( _ ( "Pyramid: " ) << basedPyramidFilePath << _ ( " can't be loaded because information are missing" ) );
+        return NULL;
+    }
+
+    return basedPyramid;
+
+}
+
+
+Pyramid* ConfLoader::buildPyramid ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, ContextBook* cBook, ContextBook* sBook, bool times, std::map<std::string,Style*> stylesList, Proxy proxy) {
     TiXmlDocument doc ( fileName.c_str() );
     if ( !doc.LoadFile() ) {
         LOGGER_ERROR ( _ ( "Ne peut pas charger le fichier " ) << fileName );
         return NULL;
     }
-    return parsePyramid ( &doc,fileName,tmsList,cBook, sBook );
+    return parsePyramid ( &doc,fileName,tmsList,cBook, sBook, times, stylesList, proxy );
 }
 
 //TODO avoid opening a pyramid file directly
-Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,
-                                 std::map<std::string,Style*> stylesList , bool reprojectionCapability,
-                                 ServicesConf* servicesConf, ContextBook* cBook, ContextBook* sBook ) {
+Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList , bool reprojectionCapability, ServicesConf* servicesConf, ContextBook* cBook, ContextBook* sBook, Proxy proxy ) {
     LOGGER_INFO ( _ ( "     Ajout du layer " ) << fileName );
     // Relative file Path
     char * fileNameChar = ( char * ) malloc ( strlen ( fileName.c_str() ) + 1 );
@@ -954,10 +1862,22 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
     GeographicBoundingBoxWMS geographicBoundingBox;
     BoundingBoxWMS boundingBox;
     std::vector<MetadataURL> metadataURLs;
+    bool WMSauth = true;
+    bool WMTSauth = true;
+    bool times = true;
 
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
+
+    bool getFeatureInfoAvailability = false;
+    std::string getFeatureInfoType = "";
+    std::string getFeatureInfoBaseURL = "";
+    std::string GFIService = "";
+    std::string GFIVersion = "";
+    std::string GFIQueryLayers = "";
+    std::string GFILayers = "";
+    bool GFIForceEPSG = true;
 
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
     if ( !pElem ) {
@@ -993,180 +1913,242 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
         abstract= pElem->GetTextStr();
     }
 
+    pElem=hRoot.FirstChild ( "WMSAuthorized" ).Element();
+    if ( pElem && pElem->GetText() && pElem->GetTextStr()=="false") {
+        WMSauth= false;
+    }
 
-    for ( pElem=hRoot.FirstChild ( "keywordList" ).FirstChild ( "keyword" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "keyword" ) ) {
+    pElem=hRoot.FirstChild ( "WMTSAuthorized" ).Element();
+    if ( pElem && pElem->GetText() && pElem->GetTextStr()=="false") {
+        WMTSauth= false;
+    }
+
+    pElem=hRoot.FirstChild("getFeatureInfoAvailability").Element();
+    if ( pElem && pElem->GetText() && pElem->GetTextStr()=="true") {
+        getFeatureInfoAvailability= true;
+
+        pElem=hRoot.FirstChild("getFeatureInfoType").Element();
+        if ( pElem && pElem->GetText()) {
+            getFeatureInfoType = pElem->GetTextStr();
+        }
+
+        // en fonction du type : pas le meme schema xml
+        if(getFeatureInfoType.compare("PYRAMID") == 0){
+            // Donnee elle-meme
+        }else if(getFeatureInfoType.compare("EXTERNALWMS") == 0){
+            // WMS
+            hDoc=hRoot.FirstChild("getFeatureInfoUrl");
+            pElem=hDoc.FirstChild("getFeatureInfoBaseURL").Element();
+            if ( pElem && pElem->GetText()) {
+                getFeatureInfoBaseURL = pElem->GetTextStr();
+                std::string a = getFeatureInfoBaseURL.substr(getFeatureInfoBaseURL.length()-1, 1);
+                if ( a.compare("?") != 0 ) {
+                   getFeatureInfoBaseURL = getFeatureInfoBaseURL + "?";
+               }
+           }
+           pElem=hDoc.FirstChild("layers").Element();
+           if ( pElem && pElem->GetText()) {
+            GFILayers = pElem->GetTextStr();
+        }
+        pElem=hDoc.FirstChild("queryLayers").Element();
+        if ( pElem && pElem->GetText()) {
+            GFIQueryLayers = pElem->GetTextStr();
+        }
+        pElem=hDoc.FirstChild("version").Element();
+        if ( pElem && pElem->GetText()) {
+            GFIVersion = pElem->GetTextStr();
+        }
+        pElem=hDoc.FirstChild("service").Element();
+        if ( pElem && pElem->GetText()) {
+            GFIService = pElem->GetTextStr();
+        }
+        pElem=hDoc.FirstChild("forceEPSG").Element();
+        if ( pElem && pElem->GetText()=="false") {
+            GFIForceEPSG = false;
+        }
+    }else if(getFeatureInfoType.compare("SQL") == 0){
+            // SQL
+    }else{
+        LOGGER_ERROR ( fileName << _ ( "La source du GetFeatureInfo n'est pas autorisée." ) );
+        return NULL;
+    }
+}
+
+    //
+
+for ( pElem=hRoot.FirstChild ( "keywordList" ).FirstChild ( "keyword" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "keyword" ) ) {
+    if ( ! ( pElem->GetText() ) )
+        continue;
+    std::map<std::string,std::string> attributes;
+    TiXmlAttribute* attrib = pElem->FirstAttribute();
+    while ( attrib ) {
+        attributes.insert ( attribute ( attrib->NameTStr(),attrib->ValueStr() ) );
+        attrib = attrib->Next();
+    }
+    keyWords.push_back ( Keyword ( pElem->GetTextStr(),attributes ) );
+}
+std::string inspireStyleName = DEFAULT_STYLE_INSPIRE;
+for ( pElem=hRoot.FirstChild ( "style" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "style" ) ) {
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        LOGGER_ERROR ( _ ( "Pas de style => style = " ) << ( inspire?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE ) );
+        styleName = ( inspire?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE );
+    } else {
+        styleName = pElem->GetTextStr();
+    }
+    std::map<std::string, Style*>::iterator styleIt= stylesList.find ( styleName );
+    if ( styleIt == stylesList.end() ) {
+        LOGGER_ERROR ( _ ( "Style " ) << styleName << _ ( "non defini" ) );
+        continue;
+    }
+
+    if ( styleIt->second->getId().compare ( DEFAULT_STYLE_INSPIRE_ID ) ==0 ) {
+        inspireStyleName = styleName;
+    }
+    styles.push_back ( styleIt->second );
+    if ( inspire && ( styleName==inspireStyleName ) ) {
+        styles.pop_back();
+    }
+}
+if ( inspire ) {
+    std::map<std::string, Style*>::iterator styleIt= stylesList.find ( inspireStyleName );
+    if ( styleIt != stylesList.end() ) {
+        styles.insert ( styles.begin(),styleIt->second );
+    } else {
+        LOGGER_ERROR ( _ ( "Style " ) << styleName << _ ( "non defini" ) );
+        return NULL;
+    }
+}
+if ( styles.size() ==0 ) {
+    LOGGER_ERROR ( _ ( "Pas de Style defini, Layer non valide" ) );
+    return NULL;
+}
+
+pElem = hRoot.FirstChild ( "minRes" ).Element();
+if ( !pElem || ! ( pElem->GetText() ) ) {
+    minRes=0.;
+} else if ( !sscanf ( pElem->GetText(),"%lf",&minRes ) ) {
+    LOGGER_ERROR ( _ ( "La resolution min est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+    return NULL;
+}
+
+pElem = hRoot.FirstChild ( "maxRes" ).Element();
+if ( !pElem || ! ( pElem->GetText() ) ) {
+    maxRes=0.;
+} else if ( !sscanf ( pElem->GetText(),"%lf",&maxRes ) ) {
+    LOGGER_ERROR ( _ ( "La resolution max est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+    return NULL;
+}
+    // EX_GeographicBoundingBox
+pElem = hRoot.FirstChild ( "EX_GeographicBoundingBox" ).Element();
+if ( !pElem ) {
+    LOGGER_ERROR ( _ ( "Pas de geographicBoundingBox = " ) );
+    return NULL;
+} else {
+        // westBoundLongitude
+    pElem = hRoot.FirstChild ( "EX_GeographicBoundingBox" ).FirstChild ( "westBoundLongitude" ).Element();
+    if ( !pElem  || ! ( pElem->GetText() ) ) {
+        LOGGER_ERROR ( _ ( "Pas de westBoundLongitude" ) );
+        return NULL;
+    }
+    if ( !sscanf ( pElem->GetText(),"%lf",&geographicBoundingBox.minx ) ) {
+        LOGGER_ERROR ( _ ( "Le westBoundLongitude est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+        return NULL;
+    }
+        // southBoundLatitude
+    pElem = hRoot.FirstChild ( "EX_GeographicBoundingBox" ).FirstChild ( "southBoundLatitude" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        LOGGER_ERROR ( _ ( "Pas de southBoundLatitude" ) );
+        return NULL;
+    }
+    if ( !sscanf ( pElem->GetText(),"%lf",&geographicBoundingBox.miny ) ) {
+        LOGGER_ERROR ( _ ( "Le southBoundLatitude est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+        return NULL;
+    }
+        // eastBoundLongitude
+    pElem = hRoot.FirstChild ( "EX_GeographicBoundingBox" ).FirstChild ( "eastBoundLongitude" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        LOGGER_ERROR ( _ ( "Pas de eastBoundLongitude" ) );
+        return NULL;
+    }
+    if ( !sscanf ( pElem->GetText(),"%lf",&geographicBoundingBox.maxx ) ) {
+        LOGGER_ERROR ( _ ( "Le eastBoundLongitude est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+        return NULL;
+    }
+        // northBoundLatitude
+    pElem = hRoot.FirstChild ( "EX_GeographicBoundingBox" ).FirstChild ( "northBoundLatitude" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        LOGGER_ERROR ( _ ( "Pas de northBoundLatitude" ) );
+        return NULL;
+    }
+    if ( !sscanf ( pElem->GetText(),"%lf",&geographicBoundingBox.maxy ) ) {
+        LOGGER_ERROR ( _ ( "Le northBoundLatitude est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+        return NULL;
+    }
+}
+
+pElem = hRoot.FirstChild ( "boundingBox" ).Element();
+if ( !pElem ) {
+    LOGGER_ERROR ( _ ( "Pas de BoundingBox" ) );
+} else {
+    if ( ! ( pElem->Attribute ( "CRS" ) ) ) {
+        LOGGER_ERROR ( _ ( "Le CRS est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+        return NULL;
+    }
+    boundingBox.srs=pElem->Attribute ( "CRS" );
+    if ( ! ( pElem->Attribute ( "minx" ) ) ) {
+        LOGGER_ERROR ( _ ( "minx attribute is missing" ) );
+        return NULL;
+    }
+    if ( !sscanf ( pElem->Attribute ( "minx" ),"%lf",&boundingBox.minx ) ) {
+        LOGGER_ERROR ( _ ( "Le minx est inexploitable:[" ) << pElem->Attribute ( "minx" ) << "]" );
+        return NULL;
+    }
+    if ( ! ( pElem->Attribute ( "miny" ) ) ) {
+        LOGGER_ERROR ( _ ( "miny attribute is missing" ) );
+        return NULL;
+    }
+    if ( !sscanf ( pElem->Attribute ( "miny" ),"%lf",&boundingBox.miny ) ) {
+        LOGGER_ERROR ( _ ( "Le miny est inexploitable:[" ) << pElem->Attribute ( "miny" ) << "]" );
+        return NULL;
+    }
+    if ( ! ( pElem->Attribute ( "maxx" ) ) ) {
+        LOGGER_ERROR ( _ ( "maxx attribute is missing" ) );
+        return NULL;
+    }
+    if ( !sscanf ( pElem->Attribute ( "maxx" ),"%lf",&boundingBox.maxx ) ) {
+        LOGGER_ERROR ( _ ( "Le maxx est inexploitable:[" ) << pElem->Attribute ( "maxx" ) << "]" );
+        return NULL;
+    }
+    if ( ! ( pElem->Attribute ( "maxy" ) ) ) {
+        LOGGER_ERROR ( _ ( "maxy attribute is missing" ) );
+        return NULL;
+    }
+    if ( !sscanf ( pElem->Attribute ( "maxy" ),"%lf",&boundingBox.maxy ) ) {
+        LOGGER_ERROR ( _ ( "Le maxy est inexploitable:[" ) << pElem->Attribute ( "maxy" ) << "]" );
+        return NULL;
+    }
+}
+
+if ( reprojectionCapability==true ) {
+    for ( pElem=hRoot.FirstChild ( "WMSCRSList" ).FirstChild ( "WMSCRS" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "WMSCRS" ) ) {
         if ( ! ( pElem->GetText() ) )
             continue;
-        std::map<std::string,std::string> attributes;
-        TiXmlAttribute* attrib = pElem->FirstAttribute();
-        while ( attrib ) {
-            attributes.insert ( attribute ( attrib->NameTStr(),attrib->ValueStr() ) );
-            attrib = attrib->Next();
-        }
-        keyWords.push_back ( Keyword ( pElem->GetTextStr(),attributes ) );
-    }
-    std::string inspireStyleName = DEFAULT_STYLE_INSPIRE;
-    for ( pElem=hRoot.FirstChild ( "style" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "style" ) ) {
-        if ( !pElem || ! ( pElem->GetText() ) ) {
-            LOGGER_ERROR ( _ ( "Pas de style => style = " ) << ( inspire?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE ) );
-            styleName = ( inspire?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE );
-        } else {
-            styleName = pElem->GetTextStr();
-        }
-        std::map<std::string, Style*>::iterator styleIt= stylesList.find ( styleName );
-        if ( styleIt == stylesList.end() ) {
-            LOGGER_ERROR ( _ ( "Style " ) << styleName << _ ( "non defini" ) );
-            continue;
-        }
-
-        if ( styleIt->second->getId().compare ( DEFAULT_STYLE_INSPIRE_ID ) ==0 ) {
-            inspireStyleName = styleName;
-        }
-        styles.push_back ( styleIt->second );
-        if ( inspire && ( styleName==inspireStyleName ) ) {
-            styles.pop_back();
-        }
-    }
-    if ( inspire ) {
-        std::map<std::string, Style*>::iterator styleIt= stylesList.find ( inspireStyleName );
-        if ( styleIt != stylesList.end() ) {
-            styles.insert ( styles.begin(),styleIt->second );
-        } else {
-            LOGGER_ERROR ( _ ( "Style " ) << styleName << _ ( "non defini" ) );
-            return NULL;
-        }
-    }
-    if ( styles.size() ==0 ) {
-        LOGGER_ERROR ( _ ( "Pas de Style defini, Layer non valide" ) );
-        return NULL;
-    }
-
-    pElem = hRoot.FirstChild ( "minRes" ).Element();
-    if ( !pElem || ! ( pElem->GetText() ) ) {
-        minRes=0.;
-    } else if ( !sscanf ( pElem->GetText(),"%lf",&minRes ) ) {
-        LOGGER_ERROR ( _ ( "La resolution min est inexploitable:[" ) << pElem->GetTextStr() << "]" );
-        return NULL;
-    }
-
-    pElem = hRoot.FirstChild ( "maxRes" ).Element();
-    if ( !pElem || ! ( pElem->GetText() ) ) {
-        maxRes=0.;
-    } else if ( !sscanf ( pElem->GetText(),"%lf",&maxRes ) ) {
-        LOGGER_ERROR ( _ ( "La resolution max est inexploitable:[" ) << pElem->GetTextStr() << "]" );
-        return NULL;
-    }
-    // EX_GeographicBoundingBox
-    pElem = hRoot.FirstChild ( "EX_GeographicBoundingBox" ).Element();
-    if ( !pElem ) {
-        LOGGER_ERROR ( _ ( "Pas de geographicBoundingBox = " ) );
-        return NULL;
-    } else {
-        // westBoundLongitude
-        pElem = hRoot.FirstChild ( "EX_GeographicBoundingBox" ).FirstChild ( "westBoundLongitude" ).Element();
-        if ( !pElem  || ! ( pElem->GetText() ) ) {
-            LOGGER_ERROR ( _ ( "Pas de westBoundLongitude" ) );
-            return NULL;
-        }
-        if ( !sscanf ( pElem->GetText(),"%lf",&geographicBoundingBox.minx ) ) {
-            LOGGER_ERROR ( _ ( "Le westBoundLongitude est inexploitable:[" ) << pElem->GetTextStr() << "]" );
-            return NULL;
-        }
-        // southBoundLatitude
-        pElem = hRoot.FirstChild ( "EX_GeographicBoundingBox" ).FirstChild ( "southBoundLatitude" ).Element();
-        if ( !pElem || ! ( pElem->GetText() ) ) {
-            LOGGER_ERROR ( _ ( "Pas de southBoundLatitude" ) );
-            return NULL;
-        }
-        if ( !sscanf ( pElem->GetText(),"%lf",&geographicBoundingBox.miny ) ) {
-            LOGGER_ERROR ( _ ( "Le southBoundLatitude est inexploitable:[" ) << pElem->GetTextStr() << "]" );
-            return NULL;
-        }
-        // eastBoundLongitude
-        pElem = hRoot.FirstChild ( "EX_GeographicBoundingBox" ).FirstChild ( "eastBoundLongitude" ).Element();
-        if ( !pElem || ! ( pElem->GetText() ) ) {
-            LOGGER_ERROR ( _ ( "Pas de eastBoundLongitude" ) );
-            return NULL;
-        }
-        if ( !sscanf ( pElem->GetText(),"%lf",&geographicBoundingBox.maxx ) ) {
-            LOGGER_ERROR ( _ ( "Le eastBoundLongitude est inexploitable:[" ) << pElem->GetTextStr() << "]" );
-            return NULL;
-        }
-        // northBoundLatitude
-        pElem = hRoot.FirstChild ( "EX_GeographicBoundingBox" ).FirstChild ( "northBoundLatitude" ).Element();
-        if ( !pElem || ! ( pElem->GetText() ) ) {
-            LOGGER_ERROR ( _ ( "Pas de northBoundLatitude" ) );
-            return NULL;
-        }
-        if ( !sscanf ( pElem->GetText(),"%lf",&geographicBoundingBox.maxy ) ) {
-            LOGGER_ERROR ( _ ( "Le northBoundLatitude est inexploitable:[" ) << pElem->GetTextStr() << "]" );
-            return NULL;
-        }
-    }
-
-    pElem = hRoot.FirstChild ( "boundingBox" ).Element();
-    if ( !pElem ) {
-        LOGGER_ERROR ( _ ( "Pas de BoundingBox" ) );
-    } else {
-        if ( ! ( pElem->Attribute ( "CRS" ) ) ) {
-            LOGGER_ERROR ( _ ( "Le CRS est inexploitable:[" ) << pElem->GetTextStr() << "]" );
-            return NULL;
-        }
-        boundingBox.srs=pElem->Attribute ( "CRS" );
-        if ( ! ( pElem->Attribute ( "minx" ) ) ) {
-            LOGGER_ERROR ( _ ( "minx attribute is missing" ) );
-            return NULL;
-        }
-        if ( !sscanf ( pElem->Attribute ( "minx" ),"%lf",&boundingBox.minx ) ) {
-            LOGGER_ERROR ( _ ( "Le minx est inexploitable:[" ) << pElem->Attribute ( "minx" ) << "]" );
-            return NULL;
-        }
-        if ( ! ( pElem->Attribute ( "miny" ) ) ) {
-            LOGGER_ERROR ( _ ( "miny attribute is missing" ) );
-            return NULL;
-        }
-        if ( !sscanf ( pElem->Attribute ( "miny" ),"%lf",&boundingBox.miny ) ) {
-            LOGGER_ERROR ( _ ( "Le miny est inexploitable:[" ) << pElem->Attribute ( "miny" ) << "]" );
-            return NULL;
-        }
-        if ( ! ( pElem->Attribute ( "maxx" ) ) ) {
-            LOGGER_ERROR ( _ ( "maxx attribute is missing" ) );
-            return NULL;
-        }
-        if ( !sscanf ( pElem->Attribute ( "maxx" ),"%lf",&boundingBox.maxx ) ) {
-            LOGGER_ERROR ( _ ( "Le maxx est inexploitable:[" ) << pElem->Attribute ( "maxx" ) << "]" );
-            return NULL;
-        }
-        if ( ! ( pElem->Attribute ( "maxy" ) ) ) {
-            LOGGER_ERROR ( _ ( "maxy attribute is missing" ) );
-            return NULL;
-        }
-        if ( !sscanf ( pElem->Attribute ( "maxy" ),"%lf",&boundingBox.maxy ) ) {
-            LOGGER_ERROR ( _ ( "Le maxy est inexploitable:[" ) << pElem->Attribute ( "maxy" ) << "]" );
-            return NULL;
-        }
-    }
-
-    if ( reprojectionCapability==true ) {
-        for ( pElem=hRoot.FirstChild ( "WMSCRSList" ).FirstChild ( "WMSCRS" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "WMSCRS" ) ) {
-            if ( ! ( pElem->GetText() ) )
-                continue;
-            std::string str_crs ( pElem->GetTextStr() );
+        std::string str_crs ( pElem->GetTextStr() );
             // On verifie que la CRS figure dans la liste des CRS de proj4 (sinon, le serveur n est pas capable de la gerer)
-            CRS crs ( str_crs );
-            bool crsOk=true;
-            if ( !crs.isProj4Compatible() ) {
-                LOGGER_WARN ( _ ( "Le CRS " ) <<str_crs<<_ ( " n est pas reconnu par Proj4 et n est donc par ajoute aux CRS de la couche" ) );
-                crsOk = false;
-            } else {
+        CRS crs ( str_crs );
+        bool crsOk=true;
+        if ( !crs.isProj4Compatible() ) {
+            LOGGER_WARN ( _ ( "Le CRS " ) <<str_crs<<_ ( " n est pas reconnu par Proj4 et n est donc par ajoute aux CRS de la couche" ) );
+            crsOk = false;
+        } else {
                 //Test if already define in Global CRS
 
-                for ( unsigned int k=0; k<servicesConf->getGlobalCRSList()->size(); k++ )
-                    if ( crs.cmpRequestCode ( servicesConf->getGlobalCRSList()->at ( k ).getRequestCode() ) ) {
-                        crsOk = false;
-                        LOGGER_INFO ( _ ( "         CRS " ) <<str_crs << _ ( " already present in global CRS list" ) );
-                        break;
-                    }
+            for ( unsigned int k=0; k<servicesConf->getGlobalCRSList()->size(); k++ )
+                if ( crs.cmpRequestCode ( servicesConf->getGlobalCRSList()->at ( k ).getRequestCode() ) ) {
+                    crsOk = false;
+                    LOGGER_INFO ( _ ( "         CRS " ) <<str_crs << _ ( " already present in global CRS list" ) );
+                    break;
+                }
                 // Test if the current layer bounding box is compatible with the current CRS
                 if ( inspire && !crs.validateBBoxGeographic ( geographicBoundingBox.minx,geographicBoundingBox.miny,geographicBoundingBox.maxx,geographicBoundingBox.maxy ) ) {
                     BoundingBox<double> cropBBox = crs.cropBBoxGeographic ( geographicBoundingBox.minx,geographicBoundingBox.miny,geographicBoundingBox.maxx,geographicBoundingBox.maxy );
@@ -1273,7 +2255,7 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
             pyramidFilePath.insert ( 0,"/" );
             pyramidFilePath.insert ( 0,parentDir );
         }
-        pyramid = buildPyramid ( pyramidFilePath, tmsList, cBook, sBook );
+        pyramid = buildPyramid ( pyramidFilePath, tmsList, cBook, sBook, times, stylesList, proxy );
         if ( !pyramid ) {
             LOGGER_ERROR ( _ ( "La pyramide " ) << pyramidFilePath << _ ( " ne peut etre chargee" ) );
             return NULL;
@@ -1318,32 +2300,39 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
 
     Layer *layer;
 
-    layer = new Layer ( id, title, abstract, keyWords, pyramid, styles, minRes, maxRes,
-                        WMSCRSList, opaque, authority, resampling,geographicBoundingBox,boundingBox,metadataURLs );
+    layer = new Layer ( id, title, abstract, WMSauth, WMTSauth,keyWords, pyramid, styles, minRes, maxRes,
+        WMSCRSList, opaque, authority, resampling,geographicBoundingBox,boundingBox,metadataURLs,
+        getFeatureInfoAvailability, getFeatureInfoType, getFeatureInfoBaseURL, GFIVersion,
+        GFIService, GFIQueryLayers, GFILayers, GFIForceEPSG);
+
+    //Si une pyramide est à la demande, on n'authorize pas le WMS car c'est un cas non gérer dans les processus de reponse du serveur
+    if (layer->getDataPyramid()->getOnDemand()) {
+        layer->setWMSAuthorized(false);
+    }
 
     return layer;
 }//buildLayer
 
-Layer * ConfLoader::buildLayer ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,
-                                 std::map<std::string,Style*> stylesList, bool reprojectionCapability,
-                                 ServicesConf* servicesConf, ContextBook* cBook, ContextBook* sBook) {
+Layer * ConfLoader::buildLayer ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList,std::map<std::string,Style*> stylesList, bool reprojectionCapability, ServicesConf* servicesConf, ContextBook* cBook, ContextBook* sBook, Proxy proxy ) {
     TiXmlDocument doc ( fileName.c_str() );
     if ( !doc.LoadFile() ) {
         LOGGER_ERROR ( _ ( "Ne peut pas charger le fichier " ) << fileName );
         return NULL;
     }
-    return parseLayer ( &doc,fileName,tmsList,stylesList,reprojectionCapability,servicesConf, cBook, sBook );
+    return parseLayer ( &doc,fileName,tmsList,stylesList,reprojectionCapability,servicesConf, cBook, sBook, proxy );
 }
 
 // Load the server configuration (default is server.conf file) during server initialization
 bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput,
-                                       std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread,
-                                       bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability,
-                                       std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir,
-                                       std::string &styleDir, std::string& socket, int& backlog,
-                                       std::string &cephName, std::string &cephUser, std::string &cephConf, std::string &cephPool,
-                                       std::string &swiftAuthUrl,std::string &swiftUserName,std::string &swiftUserAccount,
-                                       std::string &swiftUserPassword,std::string &swiftContainer) {
+   std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread,
+   bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability,
+   std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir,
+   std::string &styleDir, std::string& socket, int& backlog,
+   std::string &cephName, std::string &cephUser, std::string &cephConf, std::string &cephPool,
+   std::string &swiftAuthUrl,std::string &swiftUserName,std::string &swiftUserAccount,
+   std::string &swiftUserPassword,std::string &swiftContainer,
+   int& nbProcess, Proxy &proxy) {
+
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
@@ -1420,6 +2409,21 @@ bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConf
         return false;
     }
 
+    pElem=hRoot.FirstChild ( "nbProcess" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        std::cerr<<_ ( "Pas de nbProcess=> nbProcess = " ) << DEFAULT_NB_PROCESS<<std::endl;
+        nbProcess = DEFAULT_NB_PROCESS;
+    } else if ( !sscanf ( pElem->GetText(),"%d",&nbProcess ) ) {
+        std::cerr<<_ ( "Le nbProcess [" ) << pElem->GetTextStr() <<_ ( "] is not an integer." ) <<std::endl;
+        std::cerr<<_ ( "=> nbProcess = " ) << DEFAULT_NB_PROCESS<<std::endl;
+        nbProcess = DEFAULT_NB_PROCESS;
+    }
+    if (nbProcess > MAX_NB_PROCESS) {
+        std::cerr<<_ ( "Le nbProcess [" ) << pElem->GetTextStr() <<_ ( "] is bigger than " ) << MAX_NB_PROCESS <<std::endl;
+        std::cerr<<_ ( "=> nbProcess = " ) << MAX_NB_PROCESS<<std::endl;
+        nbProcess = MAX_NB_PROCESS;
+    }
+
     pElem=hRoot.FirstChild ( "WMTSSupport" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
         std::cerr<<_ ( "Pas de WMTSSupport => supportWMTS = true" ) <<std::endl;
@@ -1446,6 +2450,20 @@ bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConf
             std::cerr<<_ ( "Le WMSSupport [" ) << pElem->GetTextStr() <<_ ( "] n'est pas un booleen." ) <<std::endl;
             return false;
         }
+    }
+
+    pElem=hRoot.FirstChild ( "proxy" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        proxy.proxyName = "";
+    } else {
+        proxy.proxyName = pElem->GetTextStr();
+    }
+
+    pElem=hRoot.FirstChild ( "noProxy" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        proxy.noProxy = "";
+    } else {
+        proxy.noProxy = pElem->GetTextStr();
     }
 
     if ( !supportWMS && !supportWMTS ) {
@@ -1722,6 +2740,7 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
     std::string electronicMailAddress="";
     //WMS
     std::vector<std::string> formatList;
+    std::vector<std::string> infoFormatList;
     std::vector<CRS> globalCRSList;
     bool fullStyling = false;
     //WMTS
@@ -1874,213 +2893,221 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
             continue;
         std::string format ( pElem->GetText() );
         if ( format != "image/jpeg" &&
-                format != "image/png"  &&
-                format != "image/tiff" &&
-                format != "image/geotiff" &&
-                format != "image/x-bil;bits=32" &&
-                format != "image/gif" ) {
+            format != "image/png"  &&
+            format != "image/tiff" &&
+            format != "image/geotiff" &&
+            format != "image/x-bil;bits=32" &&
+            format != "image/gif" ) {
             LOGGER_ERROR ( servicesConfigFile << _ ( "le format d'image [" ) << format << _ ( "] n'est pas un type MIME" ) );
-        } else {
-            formatList.push_back ( format );
-        }
+    } else {
+        formatList.push_back ( format );
     }
-    
-    pElem=hRoot.FirstChild ( "avoidEqualsCRSReprojection" ).Element();
-    if ( pElem && pElem->GetText() ) {
-        std::string doweuselistofequalsCRSstr = pElem->GetTextStr();
-        if ( doweuselistofequalsCRSstr.compare ( "true" ) ==0 || doweuselistofequalsCRSstr.compare ( "1" ) ==0 ) {
-            LOGGER_INFO ( _ ( "Pas de reprojection pour les CRS equivalents" ) );
-            doweuselistofequalsCRS = true;
+}
+
+for ( pElem=hRoot.FirstChild ( "infoFormatList" ).FirstChild ( "format" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "format" ) ) {
+    if ( ! ( pElem->GetText() ) )
+        continue;
+    std::string format ( pElem->GetText() );
+    // Pas de vérification pour pouvoir autoriser des formats non gérés par Rok4 mais par un Géoserver en back.
+    infoFormatList.push_back ( format );
+}
+
+pElem=hRoot.FirstChild ( "avoidEqualsCRSReprojection" ).Element();
+if ( pElem && pElem->GetText() ) {
+    std::string doweuselistofequalsCRSstr = pElem->GetTextStr();
+    if ( doweuselistofequalsCRSstr.compare ( "true" ) ==0 || doweuselistofequalsCRSstr.compare ( "1" ) ==0 ) {
+        LOGGER_INFO ( _ ( "Pas de reprojection pour les CRS equivalents" ) );
+        doweuselistofequalsCRS = true;
+        listofequalsCRS=loadListEqualsCRS();
+    }
+}
+
+pElem=hRoot.FirstChild ( "addEqualsCRS" ).Element();
+if ( pElem && pElem->GetText() ) {
+    std::string addEqualsCRSstr = pElem->GetTextStr();
+    if ( addEqualsCRSstr.compare ( "true" ) ==0 || addEqualsCRSstr.compare ( "1" ) ==0 ) {
+        LOGGER_INFO ( _ ( "Ajout automatique des CRS equivalents" ) );
+        addEqualsCRS = true;
+        if (!doweuselistofequalsCRS){
             listofequalsCRS=loadListEqualsCRS();
         }
+
     }
-    
-    pElem=hRoot.FirstChild ( "addEqualsCRS" ).Element();
-    if ( pElem && pElem->GetText() ) {
-        std::string addEqualsCRSstr = pElem->GetTextStr();
-        if ( addEqualsCRSstr.compare ( "true" ) ==0 || addEqualsCRSstr.compare ( "1" ) ==0 ) {
-            LOGGER_INFO ( _ ( "Ajout automatique des CRS equivalents" ) );
-            addEqualsCRS = true;
-            if (!doweuselistofequalsCRS){
-                listofequalsCRS=loadListEqualsCRS();
-            }
-            
-        }
+}
+
+pElem=hRoot.FirstChild ( "restrictedCRSList" ).Element();
+if ( pElem && pElem->GetText() ) {
+    std::string restritedCRSListfile = pElem->GetTextStr();
+    if ( restritedCRSListfile.compare ( "" ) != 0 )  {
+        LOGGER_INFO ( _ ( "Liste restreinte de CRS à partir du fichier " ) << restritedCRSListfile );
+        dowerestrictCRSList = true;
+        restrictedCRSList = loadStringVectorFromFile(restritedCRSListfile);
+
     }
-    
-    pElem=hRoot.FirstChild ( "restrictedCRSList" ).Element();
-    if ( pElem && pElem->GetText() ) {
-        std::string restritedCRSListfile = pElem->GetTextStr();
-        if ( restritedCRSListfile.compare ( "" ) != 0 )  {
-            LOGGER_INFO ( _ ( "Liste restreinte de CRS à partir du fichier " ) << restritedCRSListfile );
-            dowerestrictCRSList = true;
-            restrictedCRSList = loadStringVectorFromFile(restritedCRSListfile);
-            
-        }
-        
-    }
+
+}
 
     //Global CRS List
-    for ( pElem=hRoot.FirstChild ( "globalCRSList" ).FirstChild ( "crs" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "crs" ) ) {
-        if ( ! ( pElem->GetText() ) )
-            continue;
-        std::string crsStr ( pElem->GetTextStr() );
-        CRS crs ( crsStr );
-        if ( !crs.isProj4Compatible() ) {
-            LOGGER_ERROR ( servicesConfigFile << _ ( "The CRS [" ) << crsStr << _ ( "] is not present in Proj4" ) );
-        } else {
-            std::vector<CRS> tmpEquilist;
-            if (addEqualsCRS){
-               tmpEquilist = getEqualsCRS(listofequalsCRS, crsStr );
-            }
-            bool allowedCRS = true;
-            if ( dowerestrictCRSList ){
-                allowedCRS = isCRSAllowed(restrictedCRSList, crsStr, tmpEquilist);
-            }
-            if (allowedCRS) {
-                bool found = false;
-                for ( int i = 0; i<globalCRSList.size() ; i++ ){
-                    if (globalCRSList.at( i ).getRequestCode().compare( crs.getRequestCode() ) == 0 ){
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found){
-                    globalCRSList.push_back ( crs );
-                    LOGGER_INFO ( _ ( "Adding global CRS " ) << crsStr  );
-                } else {
-                    LOGGER_WARN ( _ ( "Already present in global CRS list " ) << crsStr  );
-                }
-                for (unsigned int l = 0; l< tmpEquilist.size();l++){
-                    found = false;
-                    for ( int i = 0; i<globalCRSList.size() ; i++ ){
-                        if ( globalCRSList.at( i ) == tmpEquilist.at( l ) ){
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found){
-                        globalCRSList.push_back( tmpEquilist.at( l ) );
-                        LOGGER_INFO ( _ ( "Adding equivalent global CRS [" ) << tmpEquilist.at( l ).getRequestCode() << _ ( "] of [" ) << crsStr << "]" );
-                    } else {
-                        LOGGER_WARN ( _ ( "Already present in global CRS list " ) << tmpEquilist.at( l ).getRequestCode()  );   
-                    }
-                }
-            } else {
-                LOGGER_WARN ( _ ( "Forbiden global CRS " ) << crsStr  );
-            }
-        }
+for ( pElem=hRoot.FirstChild ( "globalCRSList" ).FirstChild ( "crs" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "crs" ) ) {
+    if ( ! ( pElem->GetText() ) )
+        continue;
+    std::string crsStr ( pElem->GetTextStr() );
+    CRS crs ( crsStr );
+    if ( !crs.isProj4Compatible() ) {
+        LOGGER_ERROR ( servicesConfigFile << _ ( "The CRS [" ) << crsStr << _ ( "] is not present in Proj4" ) );
+    } else {
+        std::vector<CRS> tmpEquilist;
+        if (addEqualsCRS){
+           tmpEquilist = getEqualsCRS(listofequalsCRS, crsStr );
+       }
+       bool allowedCRS = true;
+       if ( dowerestrictCRSList ){
+        allowedCRS = isCRSAllowed(restrictedCRSList, crsStr, tmpEquilist);
     }
-
-    //Add CRS:84 if not defined in services.config
-    {
-        bool crs84Found = false;
-        for ( int i =0 ; i < globalCRSList.size(); i++ ) {
-            if ( globalCRSList.at ( i ).getRequestCode().compare ( "CRS:84" ) ==0 ) {
-                crs84Found = true;
+    if (allowedCRS) {
+        bool found = false;
+        for ( int i = 0; i<globalCRSList.size() ; i++ ){
+            if (globalCRSList.at( i ).getRequestCode().compare( crs.getRequestCode() ) == 0 ){
+                found = true;
                 break;
             }
         }
-        if ( !crs84Found ) {
-            LOGGER_INFO ( _ ( "CRS:84 not found -> adding global CRS CRS:84" )  );
-            globalCRSList.push_back ( CRS ( "CRS:84" ) );
-            std::vector<CRS> tmpEquilist = getEqualsCRS(listofequalsCRS, "CRS:84" );
-            for (unsigned int l = 0; l< tmpEquilist.size();l++){
+        if (!found){
+            globalCRSList.push_back ( crs );
+            LOGGER_INFO ( _ ( "Adding global CRS " ) << crsStr  );
+        } else {
+            LOGGER_WARN ( _ ( "Already present in global CRS list " ) << crsStr  );
+        }
+        for (unsigned int l = 0; l< tmpEquilist.size();l++){
+            found = false;
+            for ( int i = 0; i<globalCRSList.size() ; i++ ){
+                if ( globalCRSList.at( i ) == tmpEquilist.at( l ) ){
+                    found = true;
+                    break;
+                }
+            }
+            if (!found){
                 globalCRSList.push_back( tmpEquilist.at( l ) );
-                LOGGER_INFO ( _ ( "Adding equivalent global CRS [" ) << tmpEquilist.at( l ).getRequestCode() << _ ( "] of [CRS:84]") );
-            }
-        }
-    }
-
-    pElem=hRoot.FirstChild ( "fullStylingCapability" ).Element();
-    if ( pElem && pElem->GetText() ) {
-        std::string styleStr = pElem->GetTextStr();
-        if ( styleStr.compare ( "true" ) ==0 || styleStr.compare ( "1" ) ==0 ) {
-            LOGGER_INFO ( _ ( "Utilisation des styles pour tous les formats" ) );
-            fullStyling = true;
-        }
-    }
-
-
-    pElem=hRoot.FirstChild ( "serviceType" ).Element();
-    if ( pElem && pElem->GetText() ) serviceType = pElem->GetTextStr();
-    pElem=hRoot.FirstChild ( "serviceTypeVersion" ).Element();
-    if ( pElem && pElem->GetText() ) serviceTypeVersion = pElem->GetTextStr();
-
-    pElem=hRoot.FirstChild ( "inspire" ).Element();
-    if ( pElem && pElem->GetText() ) {
-        std::string inspirestr = pElem->GetTextStr();
-        if ( inspirestr.compare ( "true" ) ==0 || inspirestr.compare ( "1" ) ==0 ) {
-            LOGGER_INFO ( _ ( "Utilisation du mode Inspire" ) );
-            inspire = true;
-        }
-    }
-
-    pElem=hRoot.FirstChild ( "metadataWMS" ).Element();
-    if ( pElem ) {
-        pElem = pElem->FirstChildElement ( "url" );
-        if ( pElem &&  pElem->GetText() ) {
-            metadataUrlWMS = pElem->GetTextStr();
-            pElem = pElem->NextSiblingElement ( "mediaType" );
-        } else {
-            if ( inspire ) {
-                LOGGER_ERROR ( _ ( "Metadata element incorrect" ) );
-                return NULL;
+                LOGGER_INFO ( _ ( "Adding equivalent global CRS [" ) << tmpEquilist.at( l ).getRequestCode() << _ ( "] of [" ) << crsStr << "]" );
             } else {
-                LOGGER_INFO ( _ ( "Metadata element incorrect" ) );
+                LOGGER_WARN ( _ ( "Already present in global CRS list " ) << tmpEquilist.at( l ).getRequestCode()  );   
             }
         }
-        if ( pElem &&  pElem->GetText() ) {
-            metadataMediaTypeWMS = pElem->GetTextStr();
-        } else {
-            if ( inspire ) {
-                LOGGER_ERROR ( _ ( "Metadata element incorrect" ) );
-                return NULL;
-            } else {
-                LOGGER_INFO ( _ ( "Metadata element incorrect" ) );
-            }
+    } else {
+        LOGGER_WARN ( _ ( "Forbiden global CRS " ) << crsStr  );
+    }
+}
+}
+
+    //Add CRS:84 if not defined in services.config
+{
+    bool crs84Found = false;
+    for ( int i =0 ; i < globalCRSList.size(); i++ ) {
+        if ( globalCRSList.at ( i ).getRequestCode().compare ( "CRS:84" ) ==0 ) {
+            crs84Found = true;
+            break;
         }
     }
-
-    pElem=hRoot.FirstChild ( "metadataWMTS" ).Element();
-    if ( pElem ) {
-        pElem = pElem->FirstChildElement ( "url" );
-        if ( pElem &&  pElem->GetText() ) {
-            metadataUrlWMTS = pElem->GetTextStr();
-            pElem = pElem->NextSiblingElement ( "mediaType" );
-        } else {
-            if ( inspire ) {
-                LOGGER_ERROR ( _ ( "Metadata element incorrect" ) );
-                return NULL;
-            } else {
-                LOGGER_INFO ( _ ( "Metadata element incorrect" ) );
-            }
-        }
-        if ( pElem &&  pElem->GetText() ) {
-            metadataMediaTypeWMTS = pElem->GetTextStr();
-        } else {
-            if ( inspire ) {
-                LOGGER_ERROR ( _ ( "Metadata element incorrect" ) );
-                return NULL;
-            } else {
-                LOGGER_INFO ( _ ( "Metadata element incorrect" ) );
-            }
+    if ( !crs84Found ) {
+        LOGGER_INFO ( _ ( "CRS:84 not found -> adding global CRS CRS:84" )  );
+        globalCRSList.push_back ( CRS ( "CRS:84" ) );
+        std::vector<CRS> tmpEquilist = getEqualsCRS(listofequalsCRS, "CRS:84" );
+        for (unsigned int l = 0; l< tmpEquilist.size();l++){
+            globalCRSList.push_back( tmpEquilist.at( l ) );
+            LOGGER_INFO ( _ ( "Adding equivalent global CRS [" ) << tmpEquilist.at( l ).getRequestCode() << _ ( "] of [CRS:84]") );
         }
     }
+}
 
-    
+pElem=hRoot.FirstChild ( "fullStylingCapability" ).Element();
+if ( pElem && pElem->GetText() ) {
+    std::string styleStr = pElem->GetTextStr();
+    if ( styleStr.compare ( "true" ) ==0 || styleStr.compare ( "1" ) ==0 ) {
+        LOGGER_INFO ( _ ( "Utilisation des styles pour tous les formats" ) );
+        fullStyling = true;
+    }
+}
 
-    
 
-    MetadataURL mtdMWS = MetadataURL ( "simple",metadataUrlWMS,metadataMediaTypeWMS );
-    MetadataURL mtdWMTS = MetadataURL ( "simple",metadataUrlWMTS,metadataMediaTypeWMTS );
-    ServicesConf * servicesConf;
-    servicesConf = new ServicesConf ( name, title, abstract, keyWords,serviceProvider, fee,
-                                      accessConstraint, layerLimit, maxWidth, maxHeight, maxTileX, maxTileY, formatList, globalCRSList , serviceType, serviceTypeVersion,
-                                      providerSite, individualName, individualPosition, voice, facsimile,
-                                      addressType, deliveryPoint, city, administrativeArea, postCode, country,
-                                      electronicMailAddress, mtdMWS, mtdWMTS, listofequalsCRS, restrictedCRSList, postMode, fullStyling, inspire, doweuselistofequalsCRS, addEqualsCRS, dowerestrictCRSList);
-    return servicesConf;
+pElem=hRoot.FirstChild ( "serviceType" ).Element();
+if ( pElem && pElem->GetText() ) serviceType = pElem->GetTextStr();
+pElem=hRoot.FirstChild ( "serviceTypeVersion" ).Element();
+if ( pElem && pElem->GetText() ) serviceTypeVersion = pElem->GetTextStr();
+
+pElem=hRoot.FirstChild ( "inspire" ).Element();
+if ( pElem && pElem->GetText() ) {
+    std::string inspirestr = pElem->GetTextStr();
+    if ( inspirestr.compare ( "true" ) ==0 || inspirestr.compare ( "1" ) ==0 ) {
+        LOGGER_INFO ( _ ( "Utilisation du mode Inspire" ) );
+        inspire = true;
+    }
+}
+
+pElem=hRoot.FirstChild ( "metadataWMS" ).Element();
+if ( pElem ) {
+    pElem = pElem->FirstChildElement ( "url" );
+    if ( pElem &&  pElem->GetText() ) {
+        metadataUrlWMS = pElem->GetTextStr();
+        pElem = pElem->NextSiblingElement ( "mediaType" );
+    } else {
+        if ( inspire ) {
+            LOGGER_ERROR ( _ ( "Metadata element incorrect" ) );
+            return NULL;
+        } else {
+            LOGGER_INFO ( _ ( "Metadata element incorrect" ) );
+        }
+    }
+    if ( pElem &&  pElem->GetText() ) {
+        metadataMediaTypeWMS = pElem->GetTextStr();
+    } else {
+        if ( inspire ) {
+            LOGGER_ERROR ( _ ( "Metadata element incorrect" ) );
+            return NULL;
+        } else {
+            LOGGER_INFO ( _ ( "Metadata element incorrect" ) );
+        }
+    }
+}
+
+pElem=hRoot.FirstChild ( "metadataWMTS" ).Element();
+if ( pElem ) {
+    pElem = pElem->FirstChildElement ( "url" );
+    if ( pElem &&  pElem->GetText() ) {
+        metadataUrlWMTS = pElem->GetTextStr();
+        pElem = pElem->NextSiblingElement ( "mediaType" );
+    } else {
+        if ( inspire ) {
+            LOGGER_ERROR ( _ ( "Metadata element incorrect" ) );
+            return NULL;
+        } else {
+            LOGGER_INFO ( _ ( "Metadata element incorrect" ) );
+        }
+    }
+    if ( pElem &&  pElem->GetText() ) {
+        metadataMediaTypeWMTS = pElem->GetTextStr();
+    } else {
+        if ( inspire ) {
+            LOGGER_ERROR ( _ ( "Metadata element incorrect" ) );
+            return NULL;
+        } else {
+            LOGGER_INFO ( _ ( "Metadata element incorrect" ) );
+        }
+    }
+}
+
+
+
+
+
+MetadataURL mtdMWS = MetadataURL ( "simple",metadataUrlWMS,metadataMediaTypeWMS );
+MetadataURL mtdWMTS = MetadataURL ( "simple",metadataUrlWMTS,metadataMediaTypeWMTS );
+ServicesConf * servicesConf;
+servicesConf = new ServicesConf ( name, title, abstract, keyWords,serviceProvider, fee,
+  accessConstraint, layerLimit, maxWidth, maxHeight, maxTileX, maxTileY, formatList, infoFormatList, globalCRSList , serviceType, serviceTypeVersion,
+  providerSite, individualName, individualPosition, voice, facsimile,
+  addressType, deliveryPoint, city, administrativeArea, postCode, country,
+  electronicMailAddress, mtdMWS, mtdWMTS, listofequalsCRS, restrictedCRSList, postMode, fullStyling, inspire, doweuselistofequalsCRS, addEqualsCRS, dowerestrictCRSList);
+return servicesConf;
 }
 
 std::vector<std::string> ConfLoader::loadListEqualsCRS(){
@@ -2124,9 +3151,9 @@ std::vector<std::string> ConfLoader::loadListEqualsCRS(){
         }
         if (targetLine.length() != 0) {
            strVector.push_back( targetLine.substr(0, targetLine.length()) );
-        }
-    }
-    return strVector;
+       }
+   }
+   return strVector;
 }
 
 
@@ -2223,12 +3250,14 @@ bool ConfLoader::isCRSAllowed(std::vector<std::string> restrictedCRSList, std::s
 
 
 bool ConfLoader::getTechnicalParam ( std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix,
-                                     int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS,
-                                     bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir,
-                                     std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog,
-                                     std::string &cephName, std::string &cephUser, std::string &cephConf, std::string &cephPool,
-                                     std::string &swiftAuthUrl,std::string &swiftUserName,std::string &swiftUserAccount,
-                                     std::string &swiftUserPassword,std::string &swiftContainer) {
+ int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS,
+ bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir,
+ std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog,
+ std::string &cephName, std::string &cephUser, std::string &cephConf, std::string &cephPool,
+ std::string &swiftAuthUrl,std::string &swiftUserName,std::string &swiftUserAccount,
+ std::string &swiftUserPassword,std::string &swiftContainer,
+ int& nbProcess, Proxy &proxy) {
+
     std::cout<<_ ( "Chargement des parametres techniques depuis " ) <<serverConfigFile<<std::endl;
     TiXmlDocument doc ( serverConfigFile );
     if ( !doc.LoadFile() ) {
@@ -2236,8 +3265,8 @@ bool ConfLoader::getTechnicalParam ( std::string serverConfigFile, LogOutput& lo
         return false;
     }
     return parseTechnicalParam ( &doc,serverConfigFile,logOutput,logFilePrefix,logFilePeriod,logLevel,
-                                 nbThread,supportWMTS,supportWMS,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,
-                                 styleDir, socket, backlog, cephName, cephUser, cephConf, cephPool,swiftAuthUrl, swiftUserName,swiftUserAccount,swiftUserPassword,swiftContainer );
+     nbThread,supportWMTS,supportWMS,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,
+     styleDir, socket, backlog, cephName, cephUser, cephConf, cephPool,swiftAuthUrl, swiftUserName,swiftUserAccount,swiftUserPassword,swiftContainer, nbProcess, proxy  );
 }
 
 bool ConfLoader::buildStylesList ( std::string styleDir, std::map< std::string, Style* >& stylesList, bool inspire ) {
@@ -2341,8 +3370,8 @@ bool ConfLoader::buildTMSList ( std::string tmsDir,std::map<std::string, TileMat
 }
 
 bool ConfLoader::buildLayersList ( std::string layerDir, std::map< std::string, TileMatrixSet* >& tmsList,
-                                   std::map< std::string, Style* >& stylesList, std::map< std::string, Layer* >& layers,
-                                   bool reprojectionCapability, ServicesConf* servicesConf, ContextBook* cBook, ContextBook* sBook ) {
+   std::map< std::string, Style* >& stylesList, std::map< std::string, Layer* >& layers,
+   bool reprojectionCapability, ServicesConf* servicesConf, ContextBook* cBook, ContextBook* sBook, Proxy proxy ) {
     LOGGER_INFO ( _ ( "CHARGEMENT DES LAYERS" ) );
     // lister les fichier du repertoire layerDir
     std::vector<std::string> layerFiles;
@@ -2370,7 +3399,7 @@ bool ConfLoader::buildLayersList ( std::string layerDir, std::map< std::string, 
     // generer les Layers decrits par les fichiers.
     for ( unsigned int i=0; i<layerFiles.size(); i++ ) {
         Layer * layer;
-        layer = buildLayer ( layerFiles[i], tmsList, stylesList , reprojectionCapability, servicesConf, cBook, sBook );
+        layer = buildLayer ( layerFiles[i], tmsList, stylesList , reprojectionCapability, servicesConf, cBook, sBook, proxy );
         if ( layer ) {
             layers.insert ( std::pair<std::string, Layer *> ( layer->getId(), layer ) );
         } else {

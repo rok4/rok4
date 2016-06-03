@@ -95,6 +95,11 @@ void Logger::setAccumulator(LogLevel level, Accumulator* A) {
     if (prev && last) delete prev;
 }
 
+void Logger::setCurrentAccumulator(LogLevel level, Accumulator* A) {
+
+    accumulator[level] = A;
+
+}
 
 
 std::ostream& Logger::getLogger(LogLevel level) {
@@ -115,7 +120,7 @@ std::ostream& Logger::getLogger(LogLevel level) {
 
 void Logger::stopLogger()
 {
-    for ( int i = 0 ; i <= nbLogLevel ; i++ ) {
+    for ( int i = 0 ; i < nbLogLevel ; i++ ) {
         std::ostream *L = (std::ostream*) pthread_getspecific(logger_key[( LogLevel ) i]);
         if (L != 0) {
             delete (logbuffer*) L->rdbuf(); // Delete the logbuffer associated with the outputstream

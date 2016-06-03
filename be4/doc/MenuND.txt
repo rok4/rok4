@@ -44,6 +44,7 @@ Group: Tools  {
     File: BE4  (no auto-title, bin/be4.pl)
     File: BE4CEPH  (no auto-title, bin/be4ceph.pl)
     File: JOINCACHE  (no auto-title, bin/joinCache.pl)
+    File: WMTSALAD  (no auto-title, bin/wmtSalaD.pl)
 
     File: PYR2PYR  (no auto-title, bin/pyr2pyr.pl)
 
@@ -81,6 +82,13 @@ Group: Classes  {
         File: PropertiesLoader (no auto-title, lib/JOINCACHE/PropertiesLoader.pm)
         File: Script (no auto-title, lib/JOINCACHE/Script.pm)
 
+    }
+
+    Group: WMTSALAD  {
+        File: Pyramid  (no auto-title, lib/WMTSALAD/Pyramid.pm)
+        File: DataSource  (no auto-title, lib/WMTSALAD/DataSource.pm)
+        File: WmsSource  (no auto-title, lib/WMTSALAD/WmsSource.pm)
+        File: PyrSource  (no auto-title, lib/WMTSALAD/PyrSource.pm)
     }
 
     Group: COMMON  {

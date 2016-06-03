@@ -60,6 +60,7 @@
 
 #include <string>
 #include <stdint.h>
+#include "tiff.h"
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -327,9 +328,21 @@ std::string toString ( eformat_data format );
  */
 std::string toMimeType ( eformat_data format );
 
+/**
+ * \~french \brief Conversion d'une chaîne de caractère (type MIME) vers un format
+ * \param[in] type MIME du format
+ * \return format format
+ * \~english \brief Convert a format to a string (type MIME)
+ * \param[in] MIME type of the format
+ * \return format format
+ */
+eformat_data fromMimeType ( std::string mime );
+
 std::string toEncoding ( eformat_data format );
 
 int toSizePerChannel( eformat_data format );
+
+int getPixelSize ( eformat_data format );
 
 }
 

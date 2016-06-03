@@ -49,6 +49,7 @@ SET(
     Grid.cpp CRS.cpp TiffEncoder.cpp
     BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp FileContext.cpp CephPoolContext.cpp SwiftContext.cpp FileContext.cpp PaletteConfig.cpp PaletteDataSource.cpp
     Format.cpp TiffHeaderDataSource.cpp StoreDataSource.cpp ContextBook.cpp
+    EmptyDataSource.cpp ConvertedChannelsImage.cpp
 )
 
 # OPTION : 'sources' JPEG2000
@@ -73,27 +74,7 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${DE
 
 ########################################
 # Listes des bibliothèques à liées avec l'éxecutable
-SET(DEP_LIBRARY logger proj jpeg zlib tiff lzw pkb png jpeg2000 curl)
-
-#Liste des bibiliothèques à lier avaec l'executable à cause des options de curl
-if(CURL_OPTIONS)
-  list(APPEND DEP_LIBRARY ${CURL_SUP_LIBRARIES_NAMES})
-  include_directories(${CURL_SUP_LIBRARIES_INCLUDES})
-  list(LENGTH CURL_SUP_LIBRARIES_NAMES number_name)
-  list(LENGTH CURL_SUP_LIBRARIES_PATHS number_path)
-  if(${number_name} EQUAL ${number_path})
-    math(EXPR number_name "${number_name}-1")
-    foreach(element RANGE ${number_name})
-      list(GET CURL_SUP_LIBRARIES_NAMES ${element} name)
-      list(GET CURL_SUP_LIBRARIES_PATHS ${element} path)
-      add_library(${name} UNKNOWN IMPORTED)
-      set_property(TARGET ${name} PROPERTY IMPORTED_LOCATION ${path})
-    endforeach(element RANGE ${number_name})
-  else(${number_name} EQUAL ${number_path})
-    message(FATAL_ERROR "Problem with Curl options - The number of Curl library's names (${number_name}) are different of the number of paths (${number_path})")
-  endif(${number_name} EQUAL ${number_path})
-endif(CURL_OPTIONS)
-
+SET(DEP_LIBRARY logger proj jpeg zlib tiff lzw pkb png jpeg2000)
 
 IF(KDU_USE)
     SET(DEP_LIBRARY ${DEP_LIBRARY} jpeg2000_plus)

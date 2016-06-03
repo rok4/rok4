@@ -57,7 +57,7 @@ protected:
         Logger::setAccumulator ( DEBUG, acc );
 
         for ( int i = 0; i < 200; i++ ) LOGGER ( DEBUG ) << i << std::endl;
-        Logger::setAccumulator ( DEBUG, 0 );
+        Logger::setAccumulator ( DEBUG, NULL );
 
         for ( int i = 0; i < 200; i++ ) {
             std::string s1, s2;

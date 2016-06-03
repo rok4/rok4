@@ -63,10 +63,10 @@ private:
     const Rok4Format::eformat_data format; //format d'image des tuiles
     int maxTileSize;
     const int     channels;
-    const uint32_t maxTileRow;
-    const uint32_t minTileRow;
-    const uint32_t maxTileCol;
-    const uint32_t minTileCol;
+    uint32_t maxTileRow;
+    uint32_t minTileRow;
+    uint32_t maxTileCol;
+    uint32_t minTileCol;
     uint32_t      tilesPerWidth;   //nombre de tuiles par dalle dans le sens de la largeur
     uint32_t      tilesPerHeight;  //nombre de tuiles par dalle dans le sens de la hauteur
     std::string noDataFile;
@@ -113,6 +113,18 @@ public:
     uint32_t    getMinTileCol() {
         return minTileCol;
     }
+    void    setMaxTileRow(uint32_t mm ) {
+        maxTileRow = mm;
+    }
+    void    setMinTileRow(uint32_t mm ) {
+        minTileRow = mm;
+    }
+    void    setMaxTileCol(uint32_t mm ) {
+        maxTileCol = mm;
+    }
+    void    setMinTileCol(uint32_t mm ) {
+        minTileCol = mm;
+    }
     double      getRes() {
         return tm.getRes();
     }
@@ -127,6 +139,7 @@ public:
     }
 
     std::string getPath (int tilex, int tiley , int tilesPerW, int tilesPerH);
+    int createDirPath ( std::string path );
     std::string getNoDataFilePath() {
         return noDataFile;
     }
@@ -165,7 +178,7 @@ public:
     void setNoDataSource ( DataSource* source );
 
     /** D */
-    Level (TileMatrix tm, int channels, std::string baseDir,
+    Level ( TileMatrix tm, int channels, std::string baseDir,
             int tilesPerWidth, int tilesPerHeight,
             uint32_t maxTileRow, uint32_t minTileRow, uint32_t maxTileCol, uint32_t minTileCol,
             int pathDepth, Rok4Format::eformat_data format, std::string noDataFile, Context*& context, std::string prefix );

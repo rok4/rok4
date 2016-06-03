@@ -141,7 +141,12 @@ typedef enum {
      * \~french Implémentation de l'erreur HTTP 404
      * \~english HTTP 404 implementation
      */
-    HTTP_NOT_FOUND = 16
+    HTTP_NOT_FOUND = 16,
+    /**
+     * \~french GFI from pyramid Responses
+     * \~english GFI from pyramid Responses
+     */
+    GFI_PYRAMID_VALUES = 17
 
 } ExceptionCode;
 
