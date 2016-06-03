@@ -160,7 +160,7 @@ uint8_t* StoreDataSource::getThisData ( const uint32_t offset, const uint32_t si
     uint8_t* wanteddata = new uint8_t[size];
     if ( context->read(wanteddata, offset, size, name) < 0) {
         LOGGER_ERROR ( "Unable to read " << size << " bytes (from the " << offset << " one) in the object " << name );
-        return 0;
+        return NULL;
     }
 
     return wanteddata;

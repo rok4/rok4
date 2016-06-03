@@ -242,6 +242,10 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( char* name, BoundingBox< do
 
     size_t tmpSize;
     uint8_t* hdr = sds->getThisData(0,ROK4_IMAGE_HEADER_SIZE);
+    if ( hdr == NULL ) {
+        LOGGER_ERROR ( "Cannot read header of Rok4Image " << name );
+        return NULL;
+    }
     
     uint8_t* p;
     
