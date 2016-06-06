@@ -84,6 +84,7 @@
 #include "ProcessFactory.h"
 #include "Rok4Image.h"
 #include "EmptyImage.h"
+#include "FileContext.h"
 #include "ConvertedChannelsImage.h"
 
 void* Rok4Server::thread_loop ( void* arg ) {
@@ -659,6 +660,10 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
     int bSize = 0;
     std::vector <Source*> bSources;
 
+    FileContext* nullContext = new FileContext("");
+    nullContext->connection();
+    StoreDataSourceFactory SDSF;
+
     LOGGER_INFO("GetTileOnDemand");
 
     //Calcul des paramètres nécessaires
@@ -673,7 +678,7 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
     //---- on verifie certains paramètres pour ne pas effectuer des calculs inutiles
     if (lv == pyr->getLevels().end()) {
         //le level demandé n'existe pas
-        return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( pyr->getLowestLevel()->getEncodedNoDataTile() ) );
+        return new DataSourceProxy ( SDSF.createStoreDataSource( "",0,0,"",nullContext,"" ), * ( pyr->getLowestLevel()->getEncodedNoDataTile() ) );
     } else {
 
         if (tileRow >= lv->second->getMinTileRow() && tileRow <= lv->second->getMaxTileRow()
@@ -788,14 +793,14 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
             } else {
 
                 LOGGER_ERROR("Aucune image n'a été récupérée");
-                return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( lv->second->getEncodedNoDataTile() ) );
+                return new DataSourceProxy ( SDSF.createStoreDataSource( "",0,0,"",nullContext,"" ), * ( lv->second->getEncodedNoDataTile() ) );
 
             }
 
 
         } else {
             //on est en dehors des TMLimits
-            return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( lv->second->getEncodedNoDataTile() ) );
+            return new DataSourceProxy ( SDSF.createStoreDataSource( "",0,0,"",nullContext,"" ), * ( lv->second->getEncodedNoDataTile() ) );
         }
 
     }
@@ -830,19 +835,23 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
     struct stat bufferT;
     struct stat bufferE;
 
+    FileContext* nullContext = new FileContext("");
+    nullContext->connection();
+    StoreDataSourceFactory SDSF;
+
     LOGGER_INFO("GetTileOnFly");
 
     //on récupère l'emplacement théorique de la dalle
     std::map<std::string, Level*>::iterator lv = pyr->getLevels().find(tileMatrix);
     if (lv == pyr->getLevels().end()) {
         LOGGER_WARN("Level demandé invalide");
-        return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( pyr->getLowestLevel()->getEncodedNoDataTile() ) );
+        return new DataSourceProxy ( SDSF.createStoreDataSource( "",0,0,"",nullContext,"" ), * ( pyr->getLowestLevel()->getEncodedNoDataTile() ) );
     } else {
 
         if (tileRow >= lv->second->getMinTileRow() && tileRow <= lv->second->getMaxTileRow()
                 && tileCol >= lv->second->getMinTileCol() && tileCol <= lv->second->getMaxTileCol()) {
 
-            Spath = lv->second->getFilePath(tileCol,tileRow);
+            Spath = lv->second->getPath(tileCol, tileRow, lv->second->getTilesPerWidth(), lv->second->getTilesPerHeight());
             SpathDir = lv->second->getDirPath(tileCol,tileRow);
             SpathTmp = Spath + ".tmp";
             SpathErr = Spath + ".err";
@@ -957,7 +966,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
             }
 
         } else {
-            return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( lv->second->getEncodedNoDataTile() ) );
+            return new DataSourceProxy ( SDSF.createStoreDataSource( "",0,0,"",nullContext,"" ), * ( lv->second->getEncodedNoDataTile() ) );
         }
 
     }
@@ -1108,11 +1117,15 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     //à cause d'un problème de typage...
     char * pathToWrite = (char *)path.c_str();
     LOGGER_DEBUG("Create Rok4Image");
+
+    FileContext* fc = new FileContext("");
+    fc->connection();
+
     Rok4Image * finalImage = R4IF.createRok4ImageToWrite(pathToWrite,bbox,lastImage->getResX(),lastImage->getResY(),
                                                          lastImage->getWidth(),lastImage->getHeight(),pyr->getChannels(),
                                                          pyr->getSampleFormat(),pyr->getBitsPerSample(),
                                                          pyr->getPhotometry(),pyr->getSampleCompression(),tileW,
-                                                         tileH);
+                                                         tileH, fc);
     LOGGER_DEBUG("Created");
 
     if (finalImage != NULL) {
@@ -1186,10 +1199,14 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
         //à cause d'un problème de typage...
         char * pathToNoData = (char *)noDataFile.c_str();
 
+
+        FileContext* fc = new FileContext("");
+        fc->connection();
+
         Rok4Image* nodataTile = R4IF.createRok4ImageToWrite(
             pathToNoData, BoundingBox<double>(0.,0.,0.,0.), 0., 0., tileW, tileH, channels,
             pyr->getSampleFormat(), pyr->getBitsPerSample(), pyr->getPhotometry(), pyr->getSampleCompression(),
-            tileW, tileH);
+            tileW, tileH, fc);
 
         LOGGER_DEBUG ( "Write noDataTile" );
         if (nodataTile->writeImage(nodataImage) < 0) {

@@ -139,6 +139,7 @@ public:
     }
 
     std::string getPath (int tilex, int tiley , int tilesPerW, int tilesPerH);
+    std::string getDirPath ( int tilex, int tiley );
     int createDirPath ( std::string path );
     std::string getNoDataFilePath() {
         return noDataFile;
@@ -176,6 +177,14 @@ public:
 
     void setNoData ( const std::string& file ) ;
     void setNoDataSource ( DataSource* source );
+
+    void updateNoDataTile(std::vector<int> noDataValues);
+
+    BoundingBox<double> tileIndicesToSlabBbox(int tileCol, int tileRow);
+    BoundingBox<double> tileIndicesToTileBbox(int tileCol, int tileRow);
+    BoundingBox<double> TMLimitsToBbox();
+    int getSlabHeight();
+    int getSlabWidth();
 
     /** D */
     Level ( TileMatrix tm, int channels, std::string baseDir,

@@ -93,20 +93,22 @@ HttpResponse* initResponseFromSource ( DataSource* source ) {
 Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     // Initialisation des parametres techniques
     LogOutput logOutput;
-    int nbThread,logFilePeriod,backlog;
+    int nbThread,logFilePeriod,backlog, nbProcess;
     LogLevel logLevel;
+    Proxy proxy;
      ContextBook *cephContextBook = NULL;
      ContextBook *swiftContextBook = NULL;
     bool supportWMTS,supportWMS,reprojectionCapability;
      std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,
              strLayerDir,strTmsDir,strStyleDir,socket,cephName,cephUser,cephConf,cephPool,
-             swiftAuthUrl,swiftUserName,swiftUserAccount,swiftUserPassword,swiftContainer, nbProcess, proxy ;
+             swiftAuthUrl,swiftUserName,swiftUserAccount,swiftUserPassword,swiftContainer ;
 
 
      if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod,
                                            logLevel, nbThread, supportWMTS, supportWMS, reprojectionCapability,
                                            strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, socket, backlog,
-                                           cephName,cephUser,cephConf,cephPool,swiftAuthUrl,swiftUserName,swiftUserAccount,swiftUserPassword,swiftContainer, nbProcess, proxy ) ) {
+                                           cephName,cephUser,cephConf,cephPool,swiftAuthUrl,swiftUserName,swiftUserAccount,swiftUserPassword,swiftContainer,
+                                           nbProcess, proxy ) ) {
         std::cerr<<_ ( "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " ) <<strServerConfigFile<<std::endl;
         return NULL;
     }
@@ -185,7 +187,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
 
     // Instanciation du serveur
     Logger::stopLogger();
-    return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog, supportWMTS, supportWMS );
+    return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog, cephContextBook, swiftContextBook, proxy, supportWMTS, supportWMS, nbProcess );
 }
 
 /**

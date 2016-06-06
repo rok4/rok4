@@ -51,6 +51,7 @@
 #include "Kernel.h"
 #include <vector>
 #include "Pyramid.h"
+#include "Context.h"
 #include "PaletteDataSource.h"
 #include "Format.h"
 #include "intl.h"
@@ -331,7 +332,7 @@ Image* Level::getwindow ( ServicesConf& servicesConf, BoundingBox< int64_t > bbo
 static const char* Base36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 /*
- * Recuperation du nom de fichier de la dalle du cache en fonction de son indice
+ * Recuperation du nom de la dalle du cache en fonction de son indice
  */
 std::string Level::getPath ( int tilex, int tiley, int tilesPerW, int tilesPerH ) {
     // Cas normalement filtré en amont (exception WMS/WMTS)
@@ -388,6 +389,19 @@ std::string Level::getPath ( int tilex, int tiley, int tilesPerW, int tilesPerH 
             return "";
 
     }
+}
+
+std::string Level::getDirPath ( int tilex, int tiley ) {
+
+    if (context->getType() == FILECONTEXT) {
+        std::string file = getPath(tilex,tiley, tilesPerWidth, tilesPerHeight);
+        return file.substr(0,file.find_last_of("/"));        
+    } else {
+        LOGGER_ERROR ( _ ( "getDirPath n'a pas de sens dans le cas d'un contexte non fichier" ) );
+        return "";
+    }
+
+    return "";
 }
 
 /*
