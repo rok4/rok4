@@ -481,7 +481,7 @@ sub doIt {
 
     ### Ouverture des flux et initialisation des N splits
 
-    my @scripts_progress;
+    my @scripts_done;
     my @streams;
     for (my $i = 1 ; $i < $job_number + 1; $i++){
         my $STREAM;
@@ -502,7 +502,7 @@ sub doIt {
         print $STREAM "date\n";
         print $STREAM $BASHFUNCTIONS;
 
-        push(@scripts_progress, 0);
+        push(@scripts_done, 0);
     }
 
     ### Ouverture et initialisation du finisher
@@ -550,7 +550,9 @@ sub doIt {
     chomp($wc);
 
     my $totalImages = $wc - $hashLine;
+    INFO("$totalImages image(s) to process");
     my $totalImagesPerScript = int($totalImages/$job_number);
+    INFO("$totalImagesPerScript image(s) per script to process");
 
     ### Cephisation image par image
 
@@ -611,15 +613,15 @@ sub doIt {
         my $stream = $streams[$script_index];
         print $stream $cmd;
 
-        my $current_progress = $scripts_progress[$script_index];
-        my $next_progress = int( ($current_progress + 1) / $totalImagesPerScript * 100);
+        my $current_progress = int( $scripts_done[$script_index] / $totalImagesPerScript * 100);
+        my $next_progress = int( ($scripts_done[$script_index] + 1) / $totalImagesPerScript * 100);
 
         if ($next_progress != $current_progress) {
-            $scripts_progress[$script_index] = $next_progress;
+            $next_progress = 100 if ($next_progress > 100);
             print $stream "echo \"------------- Progression : $next_progress%\"\n";
         }
 
-
+        $scripts_done[$script_index] = $scripts_done[$script_index] + 1;
         $script_index = ($script_index + 1) % $job_number;
     }
 
@@ -1190,7 +1192,7 @@ sub doIt {
 
     ### Ouverture des flux et initialisation des N splits
 
-    my @scripts_progress;
+    my @scripts_done;
     my @streams;
     for (my $i = 1 ; $i < $job_number + 1; $i++){
         my $STREAM;
@@ -1208,7 +1210,7 @@ sub doIt {
         print $STREAM "TPH=$tph\n";
         print $STREAM $BASHFUNCTIONS;
 
-        push(@scripts_progress, 0);
+        push(@scripts_done, 0);
     }
 
     ### Ouverture et initialisation du finisher
@@ -1256,7 +1258,9 @@ sub doIt {
     chomp($wc);
 
     my $totalImages = $wc - $hashLine;
+    INFO("$totalImagesPerScript images to push into ceph");
     my $totalImagesPerScript = int($totalImages/$job_number);
+    INFO("$totalImagesPerScript images per script");
 
     ### Cephisation image par image
 
@@ -1317,14 +1321,13 @@ sub doIt {
         my $stream = $streams[$script_index];
         print $stream $cmd;
 
-        my $current_progress = $scripts_progress[$script_index];
-        my $next_progress = int( ($current_progress + 1) / $totalImagesPerScript * 100);
+        my $current_progress = int( $scripts_done[$script_index] / $totalImagesPerScript * 100)
+        my $next_progress = int( ($scripts_done[$script_index] + 1) / $totalImagesPerScript * 100);
 
         if ($next_progress != $current_progress) {
-            $scripts_progress[$script_index] = $next_progress;
             print $stream "echo \"------------- Progression : $next_progress%\"\n";
         }
-
+        $scripts_done[$script_index] = $scripts_done[$script_index] + 1;
 
         $script_index = ($script_index + 1) % $job_number;
     }
