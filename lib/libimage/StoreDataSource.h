@@ -54,6 +54,7 @@
 
 #include "Data.h"
 #include "Context.h"
+#include <stdlib.h>
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -208,8 +209,9 @@ public:
      * \~english \brief Delete memorized data (#data)
      */
     bool releaseData() {
-        if (data)
+        if (data) {
             delete[] data;
+        }
         data = 0;
         return true;
     }
