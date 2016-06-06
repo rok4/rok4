@@ -238,6 +238,10 @@ int main ( int argc, char **argv ) {
     }
 
     if (! contextOutput->connection()) {
+        delete sourceImage;
+        delete contextInput;
+        delete contextOutput;
+        delete acc;
         error("Unable to connect context", -1);
     }
 
@@ -246,9 +250,7 @@ int main ( int argc, char **argv ) {
     int tileColUL = imageCol * tileWidthwise;
     int tileRowUL = imageRow * tileHeightwise;
 
-    int tileHeight = sourceImage->getHeight()/tileHeightwise;
-    int rawTileLineSize = sourceImage->getBitsPerSample() * sourceImage->channels / 8;
-    uint8_t* tile = new uint8_t[2 * tileHeight * rawTileLineSize];
+    uint8_t* tile = new uint8_t[2 * sourceImage->getRawTileSize() ];
 
     for ( int y = 0; y < tileHeightwise; y++ ) {
 
@@ -268,13 +270,12 @@ int main ( int argc, char **argv ) {
         }
     }
 
-    delete [] tile;
-
-    
     
     /************* Nettoyage **************/
 
     LOGGER_DEBUG ( "Clean" );
+
+    delete [] tile;
     delete acc;
     delete sourceImage;
     delete contextInput;

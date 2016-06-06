@@ -46,7 +46,7 @@ Using:
     (start code)
     use BE4::PropertiesLoader;
 
-    my $config = BE4CEPH::PropertiesLoader->new("/home/ign/file.txt");
+    my $config = BE4::PropertiesLoader->new("/home/ign/file.txt");
     (end code)
 
 Attributes:

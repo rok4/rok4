@@ -232,9 +232,7 @@ public:
     }
     
     virtual ~CephPoolContext() {
-        rados_aio_flush(io_ctx);
-        rados_ioctx_destroy(io_ctx);
-        rados_shutdown(cluster);
+        closeConnection();
     }
 };
 

@@ -564,6 +564,16 @@ public:
 
     /**
      * \~french
+     * \brief Retourne la taille d'une tuile brute (décompessée)
+     * \~english
+     * \brief Return raw tile size (uncompressed)
+     */
+    int getRawTileSize() {
+        return rawTileSize;
+    }
+
+    /**
+     * \~french
      * \brief Destructeur par défaut
      * \details Suppression des buffer de lecture et de l'interface TIFF
      * \~english
