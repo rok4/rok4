@@ -322,11 +322,6 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     // Récupération des paramètres
     DataStream* errorResp = request->getMapParam ( servicesConf, layerList, layers, bbox, width, height, crs, format, styles, format_option );
 
-
-    //calcul de la resolution grace a la bbox et a la hauteur
-	//cette information est necessaire pour le calcul des penteImage
-	resolution = (bbox.xmax-bbox.xmin)/width*M_PI*6378137.0/180;
-
 	if ( errorResp ) {
         LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getMap" ) );
         return errorResp;
@@ -337,6 +332,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     for ( int i = 0 ; i < layers.size(); i ++ ) {
 
             Image* curImage = layers.at ( i )->getbbox ( servicesConf, bbox, width, height, crs, error );
+            curImage->setCRS(crs);
             Rok4Format::eformat_data pyrType = layers.at ( i )->getDataPyramid()->getFormat();
             Style* style = styles.at(i);
             LOGGER_DEBUG ( _ ( "GetMap de Style : " ) << styles.at ( i )->getId() << _ ( " pal size : " ) <<styles.at ( i )->getPalette()->getPalettePNGSize() );
@@ -356,7 +352,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
                 }
             }
 
-            Image *image = styleImage(curImage, pyrType, style, format, layers.size(), resolution);
+            Image *image = styleImage(curImage, pyrType, style, format, layers.size());
 
             images.push_back ( image );
     }
@@ -374,7 +370,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
 }
 
 Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
-                            Style *style, std::string format, int size, float resolution) {
+                            Style *style, std::string format, int size) {
 
 
 
@@ -402,6 +398,13 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
         }
 
         if (curImage->channels == 1 && style->isPente()){
+            //calcul de la resolution grace a la bbox et a la hauteur
+            //cette information est necessaire pour le calcul des penteImage
+            float resolution = (curImage->getBbox().xmax-curImage->getBbox().xmin)/curImage->getWidth();
+            if (curImage->getCRS().getMetersPerUnit() != 1.0) {
+                resolution = resolution*M_PI*6378137.0/180;
+            }
+
 			if ( format == "image/png" && size == 1 ) {
 				switch ( pyrType ) {
                 case Rok4Format::TIFF_RAW_FLOAT32 :
@@ -418,6 +421,12 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
 		}
 
         if (curImage->channels == 1 && style->isAspect()){
+            //calcul de la resolution grace a la bbox et a la hauteur
+            //cette information est necessaire pour le calcul des aspectImage
+            float resolution = (curImage->getBbox().xmax-curImage->getBbox().xmin)/curImage->getWidth();
+            if (curImage->getCRS().getMetersPerUnit() != 1.0) {
+                resolution = resolution*M_PI*6378137.0/180;
+            }
             if ( format == "image/png" && size == 1 ) {
                 switch ( pyrType ) {
                 case Rok4Format::TIFF_RAW_FLOAT32 :
@@ -771,7 +780,7 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
 
                             if (curImage != NULL) {
                                 //On applique un style à l'image
-                                image = styleImage(curImage, pyrType, bStyle, format, bSize,0);
+                                image = styleImage(curImage, pyrType, bStyle, format, bSize);
                                 images.push_back ( image );
                             } else {
                                 LOGGER_ERROR("Impossible de générer la tuile car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile");
@@ -1078,7 +1087,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
             LOGGER_DEBUG("Created");
             if (curImage != NULL) {
                 //On applique un style à l'image
-                image = styleImage(curImage, pyrType, bStyle, format, bSize,0);
+                image = styleImage(curImage, pyrType, bStyle, format, bSize);
                 LOGGER_DEBUG("Apply style");
                 images.push_back ( image );
             } else {
