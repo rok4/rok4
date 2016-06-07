@@ -398,12 +398,6 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
         }
 
         if (curImage->channels == 1 && style->isPente()){
-            //calcul de la resolution grace a la bbox et a la hauteur
-            //cette information est necessaire pour le calcul des penteImage
-            float resolution = (curImage->getBbox().xmax-curImage->getBbox().xmin)/curImage->getWidth();
-            if (curImage->getCRS().getMetersPerUnit() != 1.0) {
-                resolution = resolution*M_PI*6378137.0/180;
-            }
 
 			if ( format == "image/png" && size == 1 ) {
 				switch ( pyrType ) {
@@ -411,34 +405,29 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
                 case Rok4Format::TIFF_ZIP_FLOAT32 :
                 case Rok4Format::TIFF_LZW_FLOAT32 :
                 case Rok4Format::TIFF_PKB_FLOAT32 :
-                    curImage = new PenteImage ( curImage, resolution,  style->getAlgoOfPente());
+                    curImage = new PenteImage ( curImage, curImage->computeMeanResolution(),  style->getAlgoOfPente());
 				default:
 					break;
 				}
 			} else {
-                curImage = new PenteImage ( curImage, resolution,  style->getAlgoOfPente());
+                curImage = new PenteImage ( curImage, curImage->computeMeanResolution(),  style->getAlgoOfPente());
 			}
 		}
 
         if (curImage->channels == 1 && style->isAspect()){
-            //calcul de la resolution grace a la bbox et a la hauteur
-            //cette information est necessaire pour le calcul des aspectImage
-            float resolution = (curImage->getBbox().xmax-curImage->getBbox().xmin)/curImage->getWidth();
-            if (curImage->getCRS().getMetersPerUnit() != 1.0) {
-                resolution = resolution*M_PI*6378137.0/180;
-            }
+
             if ( format == "image/png" && size == 1 ) {
                 switch ( pyrType ) {
                 case Rok4Format::TIFF_RAW_FLOAT32 :
                 case Rok4Format::TIFF_ZIP_FLOAT32 :
                 case Rok4Format::TIFF_LZW_FLOAT32 :
                 case Rok4Format::TIFF_PKB_FLOAT32 :
-                    curImage = new AspectImage ( curImage, resolution,  style->getAlgoOfAspect(), style->getMinSlopeOfAspect());
+                    curImage = new AspectImage ( curImage, curImage->computeMeanResolution(),  style->getAlgoOfAspect(), style->getMinSlopeOfAspect());
                 default:
                     break;
                 }
             } else {
-                curImage = new AspectImage ( curImage, resolution,  style->getAlgoOfAspect(), style->getMinSlopeOfAspect());
+                curImage = new AspectImage ( curImage, curImage->computeMeanResolution(),  style->getAlgoOfAspect(), style->getMinSlopeOfAspect());
             }
         }
 
