@@ -352,7 +352,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
                 }
             }
 
-            Image *image = styleImage(curImage, pyrType, style, format, layers.size());
+            Image *image = styleImage(curImage, pyrType, style, format, layers.size(), layers.at(i)->getDataPyramid());
 
             images.push_back ( image );
     }
@@ -370,14 +370,14 @@ DataStream* Rok4Server::getMap ( Request* request ) {
 }
 
 Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
-                            Style *style, std::string format, int size) {
+                            Style *style, std::string format, int size, Pyramid* pyr) {
 
-
+    Image * expandedImage = curImage;
 
     if ( servicesConf.isFullStyleCapable() ) {
         if ( style->isEstompage() ) {
             LOGGER_DEBUG ( _ ( "Estompage" ) );
-            curImage = new EstompageImage ( curImage,style->getAngle(),style->getExaggeration(), style->getCenter() );
+            expandedImage = new EstompageImage ( expandedImage,style->getAngle(),style->getExaggeration(), style->getCenter() );
             switch ( pyrType ) {
                 //Only use int8 output whith estompage
             case Rok4Format::TIFF_RAW_FLOAT32 :
@@ -397,7 +397,11 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
             }
         }
 
-        if (curImage->channels == 1 && style->isPente()){
+        if (expandedImage->channels == 1 && style->isPente()){
+
+            int error=0;
+            expandedImage = pyr->getbbox(servicesConf,curImage->getBbox(),curImage->getWidth(),curImage->getHeight(),curImage->getCRS(),Interpolation::CUBIC,error);
+            expandedImage->setCRS(curImage->getCRS());
 
 			if ( format == "image/png" && size == 1 ) {
 				switch ( pyrType ) {
@@ -405,16 +409,21 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
                 case Rok4Format::TIFF_ZIP_FLOAT32 :
                 case Rok4Format::TIFF_LZW_FLOAT32 :
                 case Rok4Format::TIFF_PKB_FLOAT32 :
-                    curImage = new PenteImage ( curImage, curImage->computeMeanResolution(),  style->getAlgoOfPente());
+                    expandedImage = new PenteImage ( expandedImage, expandedImage->computeMeanResolution(),  style->getAlgoOfPente());
 				default:
 					break;
 				}
 			} else {
-                curImage = new PenteImage ( curImage, curImage->computeMeanResolution(),  style->getAlgoOfPente());
+                expandedImage = new PenteImage ( expandedImage, expandedImage->computeMeanResolution(),  style->getAlgoOfPente());
 			}
+            delete curImage;
 		}
 
-        if (curImage->channels == 1 && style->isAspect()){
+        if (expandedImage->channels == 1 && style->isAspect()){
+
+            int error=0;
+            expandedImage = pyr->getbbox(servicesConf,curImage->getBbox(),curImage->getWidth(),curImage->getHeight(),curImage->getCRS(),Interpolation::CUBIC,error);
+            expandedImage->setCRS(curImage->getCRS());
 
             if ( format == "image/png" && size == 1 ) {
                 switch ( pyrType ) {
@@ -422,16 +431,17 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
                 case Rok4Format::TIFF_ZIP_FLOAT32 :
                 case Rok4Format::TIFF_LZW_FLOAT32 :
                 case Rok4Format::TIFF_PKB_FLOAT32 :
-                    curImage = new AspectImage ( curImage, curImage->computeMeanResolution(),  style->getAlgoOfAspect(), style->getMinSlopeOfAspect());
+                    expandedImage = new AspectImage ( expandedImage, expandedImage->computeMeanResolution(),  style->getAlgoOfAspect(), style->getMinSlopeOfAspect());
                 default:
                     break;
                 }
             } else {
-                curImage = new AspectImage ( curImage, curImage->computeMeanResolution(),  style->getAlgoOfAspect(), style->getMinSlopeOfAspect());
+                expandedImage = new AspectImage ( expandedImage, expandedImage->computeMeanResolution(),  style->getAlgoOfAspect(), style->getMinSlopeOfAspect());
             }
+            delete curImage;
         }
 
-        if ( style && curImage->channels == 1 && ! ( style->getPalette()->getColoursMap()->empty() ) ) {
+        if ( style && expandedImage->channels == 1 && ! ( style->getPalette()->getColoursMap()->empty() ) ) {
             if ( format == "image/png" && size == 1 ) {
                 switch ( pyrType ) {
 
@@ -439,19 +449,19 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
                 case Rok4Format::TIFF_ZIP_FLOAT32 :
                 case Rok4Format::TIFF_LZW_FLOAT32 :
                 case Rok4Format::TIFF_PKB_FLOAT32 :
-                    curImage = new StyledImage ( curImage, style->getPalette()->isNoAlpha()?3:4 , style->getPalette() );
+                    expandedImage = new StyledImage ( expandedImage, style->getPalette()->isNoAlpha()?3:4 , style->getPalette() );
                 default:
                     break;
                 }
             } else {
-                curImage = new StyledImage ( curImage, style->getPalette()->isNoAlpha()?3:4, style->getPalette() );
+                expandedImage = new StyledImage ( expandedImage, style->getPalette()->isNoAlpha()?3:4, style->getPalette() );
             }
         }
 
 
     }
 
-    return curImage;
+    return expandedImage;
 
 }
 
@@ -769,7 +779,7 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
 
                             if (curImage != NULL) {
                                 //On applique un style à l'image
-                                image = styleImage(curImage, pyrType, bStyle, format, bSize);
+                                image = styleImage(curImage, pyrType, bStyle, format, bSize, bPyr);
                                 images.push_back ( image );
                             } else {
                                 LOGGER_ERROR("Impossible de générer la tuile car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile");
@@ -1076,7 +1086,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
             LOGGER_DEBUG("Created");
             if (curImage != NULL) {
                 //On applique un style à l'image
-                image = styleImage(curImage, pyrType, bStyle, format, bSize);
+                image = styleImage(curImage, pyrType, bStyle, format, bSize, bPyr);
                 LOGGER_DEBUG("Apply style");
                 images.push_back ( image );
             } else {
