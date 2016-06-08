@@ -160,14 +160,22 @@ void* Rok4Server::thread_loop ( void* arg ) {
     return 0;
 }
 
-Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
-                         std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList,
-                         std::string socket, int backlog, ContextBook* cBook, ContextBook* sBook, Proxy proxy, bool supportWMTS, bool supportWMS, int nbProcess ) :
-    sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ),
-    styleList ( styleList ), threads ( nbThread ), socket ( socket ), backlog ( backlog ),
-    running ( false ), notFoundError ( NULL ), supportWMTS ( supportWMTS ), supportWMS ( supportWMS ), cephBook (cBook), swiftBook(sBook), proxy (proxy) {
+Rok4Server::Rok4Server (  ServerXML& serverXML, ServicesXML& servicesXML, std::map<std::string,Layer*> &layers, std::map<std::string,TileMatrixSet*> &tms, std::map<std::string,Style*> &styles) {
+    
 
-    if ( supportWMS ) {
+    sock = 0;
+    servicesConf =  servicesXML;
+    serverConf =  serverXML;
+    layerList = layers;
+    tmsList = tms;
+    styleList = styles;
+
+    threads = new std::vector<pthread_t>(serverConf.getNbThreads());
+
+    running = false;
+    notFoundError = NULL;
+
+    if ( serverConf.supportWMS ) {
         LOGGER_DEBUG ( _ ( "Build WMS Capabilities 1.3.0" ) );
         buildWMS130Capabilities();
         //---- WMS 1.1.1
@@ -175,18 +183,18 @@ Rok4Server::Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std:
         buildWMS111Capabilities();
         //----
     }
-    if ( supportWMTS ) {
+    if ( serverConf.supportWMTS ) {
         LOGGER_DEBUG ( _ ( "Build WMTS Capabilities" ) );
         buildWMTSCapabilities();
     }
     //initialize processFactory
-    if (nbProcess > MAX_NB_PROCESS) {
-        nbProcess = MAX_NB_PROCESS;
+    if (serverConf.nbProcess > MAX_NB_PROCESS) {
+        serverConf.nbProcess = MAX_NB_PROCESS;
     }
-    if (nbProcess < 0) {
-        nbProcess = DEFAULT_NB_PROCESS;
+    if (serverConf.nbProcess < 0) {
+        serverConf.nbProcess = DEFAULT_NB_PROCESS;
     }
-    parallelProcess = new ProcessFactory(nbProcess,"");
+    parallelProcess = new ProcessFactory(serverConf.nbProcess, "");
 }
 
 Rok4Server::~Rok4Server() {

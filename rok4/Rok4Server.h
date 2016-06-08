@@ -53,7 +53,6 @@
 #include <pthread.h>
 #include <map>
 #include <vector>
-#include "ServicesConf.h"
 #include "Layer.h"
 #include <stdio.h>
 #include "TileMatrixSet.h"
@@ -61,12 +60,9 @@
 #include "fcgiapp.h"
 #include <csignal>
 #include "ContextBook.h"
+#include "ServerXML.h"
+#include "ServicesXML.h"
 #include "GetFeatureInfoEncoder.h"
-
-struct Proxy {
-    std::string proxyName;
-    std::string noProxy;
-};
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -91,31 +87,13 @@ private:
      * \~english \brief FCGI stream connector
      */
     ResponseSender S;
-    /**
-     * \~french \brief Défini si le serveur doit honorer les requêtes WMTS
-     * \~english \brief Define whether WMTS request should be honored
-     */
-    bool supportWMTS;
-    /**
-     * \~french \brief Défini si le serveur doit honorer les requêtes WMS
-     * \~english \brief Define whether WMS request should be honored
-     */
-    bool supportWMS;
+
     /**
      * \~french \brief Défini si le serveur est en cours d'éxécution
      * \~english \brief Define whether the server is running
      */
     volatile bool running;
-    /**
-     * \~french \brief Adresse du socket d'écoute (vide si lancement géré par un tiers)
-     * \~english \brief Listening socket address (empty if lauched in managed mode)
-     */
-    std::string socket;
-    /**
-     * \~french \brief Profondeur de la file d'attente du socket
-     * \~english \brief Socket listen queue depth
-     */
-    int backlog;
+
     /**
      * \~french \brief Identifiant du socket
      * \~english \brief Socket identifier
@@ -126,7 +104,14 @@ private:
      * \~french \brief Configurations globales des services
      * \~english \brief Global services configuration
      */
-    ServicesConf servicesConf;
+    ServicesXML servicesConf;
+
+    /**
+     * \~french \brief Configurations globales du serveur
+     * \~english \brief Global server configuration
+     */
+    ServerXML serverConf;
+
     /**
      * \~french \brief Liste des couches disponibles
      * \~english \brief Available layers list
@@ -158,19 +143,12 @@ private:
      */
     DataSource* notFoundError;
 
-    ContextBook* cephBook;
-    ContextBook* swiftBook;
 
     /**
      * \~french \brief Gestion des processus créés
      * \~english \brief Management of created process
      */
     ProcessFactory *parallelProcess;
-    /**
-     * \~french \brief Proxy utilisé par défaut pour des requêtes WMS
-     * \~english \brief Default proxy used for WMS requests
-     */
-    Proxy proxy;
 
     /**
      * \~french
@@ -442,9 +420,10 @@ public:
      * \~french Retourne la configuration des services
      * \~english Return the services configurations
      */
-    ServicesConf& getServicesConf() {
-        return servicesConf;
+    ServicesXML* getServicesConf() {
+        return &servicesConf;
     }
+
     /**
      * \~french Retourne la liste des couches
      * \~english Return the layers list
@@ -485,12 +464,12 @@ public:
      * \~french Retourne l'annuaire de contextes ceph
      * \~english Return ContextBook
      */
-    ContextBook* getCephBook() {return cephBook;}
+    ContextBook* getCephBook() {return serverConf.cephBook;}
     /**
      * \~french Retourne l'annuaire de contextes swift
      * \~english Return ContextBook
      */
-    ContextBook* getSwiftBook() {return swiftBook;}
+    ContextBook* getSwiftBook() {return serverConf.swiftBook;}
 
     /**
      * \~french
@@ -613,7 +592,7 @@ public:
      * \brief to know if the server responde to WMTS request
      */
     bool isWMTSSupported(){
-            return supportWMTS ;
+        return serverConf.supportWMTS ;
     }
     
     /**
@@ -623,7 +602,7 @@ public:
      * \brief to know if the server responde to WMS request
      */
     bool isWMSSupported(){
-            return supportWMS ;
+            return serverConf.supportWMS ;
     }
     /**
      * \~french
@@ -632,7 +611,7 @@ public:
      * \brief to know if the server responde to WMTS request
      */
     void setProxy(Proxy pr){
-            proxy = pr ;
+        serverConf.proxy = pr ;
     }
 
     /**
@@ -642,14 +621,13 @@ public:
      * \brief Return default proxy
      */
     Proxy getProxy(){
-            return proxy ;
+        return serverConf.proxy ;
     }
 
     /**
      * \brief Construction du serveur
      */
-    Rok4Server ( int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
-                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, std::string socket, int backlog, ContextBook* cBook, ContextBook* sBook, Proxy proxy, bool supportWMTS = true, bool supportWMS = true, int nbProcess =1 );
+    Rok4Server ( ServerXML* serverXML, ServicesXML& servicesXML, std::map<std::string,Layer*> &layers, std::map<std::string,TileMatrixSet*> &tms, std::map<std::string,Style*> &styles);
     /**
      * \~french
      * \brief Destructeur par défaut

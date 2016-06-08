@@ -60,6 +60,8 @@
 #include "Context.h"
 #include <cfloat>
 #include <libintl.h>
+#include "ServerXML.h"
+#include "ServicesXML.h"
 
 static bool loggerInitialised = false;
 //Keep the servicesConf for deletion
@@ -91,46 +93,39 @@ HttpResponse* initResponseFromSource ( DataSource* source ) {
 */
 
 Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
-    // Initialisation des parametres techniques
-    LogOutput logOutput;
-    int nbThread,logFilePeriod,backlog, nbProcess;
-    LogLevel logLevel;
-    Proxy proxy;
-     ContextBook *cephContextBook = NULL;
-     ContextBook *swiftContextBook = NULL;
-    bool supportWMTS,supportWMS,reprojectionCapability;
-     std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,
-             strLayerDir,strTmsDir,strStyleDir,socket,cephName,cephUser,cephConf,cephPool,
-             swiftAuthUrl,swiftUserName,swiftUserAccount,swiftUserPassword,swiftContainer ;
 
+    ContextBook *cephContextBook = NULL;
+    ContextBook *swiftContextBook = NULL;
+    std::string strServerConfigFile = serverConfigFile;
 
-     if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod,
-                                           logLevel, nbThread, supportWMTS, supportWMS, reprojectionCapability,
-                                           strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, socket, backlog,
-                                           cephName,cephUser,cephConf,cephPool,swiftAuthUrl,swiftUserName,swiftUserAccount,swiftUserPassword,swiftContainer,
-                                           nbProcess, proxy ) ) {
+    ServerXML* serverXML = ConfLoader::getTechnicalParam(strServerConfigFile);
+    if ( ! serverXML->isOk() ) {
         std::cerr<<_ ( "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " ) <<strServerConfigFile<<std::endl;
         return NULL;
     }
 
-    if ( !loggerInitialised ) {
-        Logger::setOutput ( logOutput );
+    if ( ! loggerInitialised ) {
+        Logger::setOutput ( serverXML->getLogOutput() );
+
         // Initialisation du logger
         Accumulator *acc=0;
-        switch ( logOutput ) {
-        case ROLLING_FILE :
-            acc = new RollingFileAccumulator ( strLogFileprefix,logFilePeriod );
-            break;
-        case STATIC_FILE :
-            acc = new StaticFileAccumulator ( strLogFileprefix );
-            break;
-        case STANDARD_OUTPUT_STREAM_FOR_ERRORS :
-            acc = new StreamAccumulator();
-            break;
+        switch ( serverXML->getLogOutput() ) {
+            case ROLLING_FILE :
+                acc = new RollingFileAccumulator ( serverXML->getLogFilePrefix(), serverXML->getLogFilePeriod() );
+                break;
+            case STATIC_FILE :
+                acc = new StaticFileAccumulator ( serverXML->getLogFilePrefix() );
+                break;
+            case STANDARD_OUTPUT_STREAM_FOR_ERRORS :
+                acc = new StreamAccumulator();
+                break;
         }
+
         // Attention : la fonction Logger::setAccumulator n'est pas threadsafe
-        for ( int i=0; i<=logLevel; i++ )
+        for ( int i=0; i <= serverXML->getLogLevel(); i++ ) {
             Logger::setAccumulator ( ( LogLevel ) i, acc );
+        }
+
         std::ostream &log = LOGGER ( DEBUG );
         log.precision ( 8 );
         log.setf ( std::ios::fixed,std::ios::floatfield );
@@ -143,42 +138,35 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     }
 
     // Construction des parametres de service
-    sc=ConfLoader::buildServicesConf ( strServicesConfigFile );
-    if ( sc==NULL ) {
-        LOGGER_FATAL ( _ ( "Impossible d'interpreter le fichier de conf " ) <<strServicesConfigFile );
+    ServicesXML* servicesXML = ConfLoader::buildServicesConf ( serverXML->getServicesConfigFile() );
+    if ( ! servicesXML->isOk() ) {
+        LOGGER_FATAL ( _ ( "Impossible d'interpreter le fichier de conf " ) << serverXML->getServicesConfigFile() );
         LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
         return NULL;
     }
+
     // Chargement des TMS
     std::map<std::string,TileMatrixSet*> tmsList;
-    if ( !ConfLoader::buildTMSList ( strTmsDir,tmsList ) ) {
+    if ( ! ConfLoader::buildTMSList ( serverXML, tmsList ) ) {
         LOGGER_FATAL ( _ ( "Impossible de charger la conf des TileMatrix" ) );
         LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
         return NULL;
     }
+
     //Chargement des styles
     std::map<std::string, Style*> styleList;
-    if ( !ConfLoader::buildStylesList ( strStyleDir,styleList, sc->isInspire() ) ) {
+    if ( ! ConfLoader::buildStylesList ( serverXML, servicesXML, styleList ) ) {
         LOGGER_FATAL ( _ ( "Impossible de charger la conf des Styles" ) );
         LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
         return NULL;
     }
 
-     if (cephName != "" && cephUser != "" && cephConf != "") {
-         cephContextBook = new ContextBook(cephName,cephUser,cephConf);
-     }
-
-
-     if (swiftAuthUrl != "" && swiftUserName != "" && swiftUserAccount != "" && swiftUserPassword != "") {
-         swiftContextBook = new ContextBook(swiftAuthUrl, swiftUserAccount, swiftUserName, swiftUserPassword);
-     }
-
     // Chargement des layers
     std::map<std::string, Layer*> layerList;
-     if ( !ConfLoader::buildLayersList ( strLayerDir,tmsList, styleList,layerList,reprojectionCapability,sc, cephContextBook, swiftContextBook,proxy ) ) {
+    if ( !ConfLoader::buildLayersList ( serverXML, servicesXML, tmsList, styleList, layerList) ) {
         LOGGER_FATAL ( _ ( "Impossible de charger la conf des Layers/pyramides" ) );
         LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
@@ -187,7 +175,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
 
     // Instanciation du serveur
     Logger::stopLogger();
-    return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog, cephContextBook, swiftContextBook, proxy, supportWMTS, supportWMS, nbProcess );
+    return new Rok4Server ( serverXML, servicesXML, layerList, tmsList, styleList );
 }
 
 /**
