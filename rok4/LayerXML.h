@@ -35,118 +35,70 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#ifndef SERVERXML_H
-#define SERVERXML_H
+#ifndef LAYERXML_H
+#define LAYERXML_H
 
 #include <vector>
 #include <string>
+#include <tinyxml.h>
+#include <tinystr.h>
 
-#include "ContextBook.h"
-#include "Rok4Server.h"
+#include "Layer.h"
+#include "ServerXML.h"
+#include "ServicesXML.h"
 
 #include "config.h"
 #include "intl.h"
 
-struct Proxy {
-    std::string proxyName;
-    std::string noProxy;
-};
-
-class ServerXML
+class LayerXML
 {
-    friend class Rok4Server;
+    friend class Layer;
 
     public:
-        ServerXML(std::string serverConfigFile);
-        ~ServerXML(){
+        LayerXML(std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> stylesList);
+        ~LayerXML(){
+        }
+
+        std::string getId() {
+            return id;
         }
 
         bool isOk() { return ok; }
 
-        LogOutput getLogOutput() {return logOutput;}
-        int getLogFilePeriod() {return logFilePeriod;}
-        std::string getLogFilePrefix() {return logFilePrefix;}
-        LogLevel getLogLevel() {return logLevel;}
-
-        std::string getServicesConfigFile() {return servicesConfigFile;}
-
-        std::string getTmsDir() {return tmsDir;}
-        std::string getStylesDir() {return styleDir;}
-        std::string getLayersDir() {return layerDir;}
-
-        ContextBook* getCephContextBook(){return cephBook;};
-        ContextBook* getSwiftContextBook(){return swiftBook;};
-        
-        int getNbThreads() {return nbThread;}
-        std::string getSocket() {return socket;}
-        bool getSupportWMTS() {return supportWMTS;}
-        bool getSupportWMS() {return supportWMS;}
-        int getBacklog() {return backlog;}
-        Proxy getProxy() {return proxy;}
-
     protected:
+        std::string id;
+        std::string title;
+        std::string abstract;
+        std::vector<Keyword> keyWords;
+        std::string styleName;
+        std::vector<Style*> styles;
+        double minRes;
+        double maxRes;
+        std::vector<CRS> WMSCRSList;
+        bool opaque;
+        std::string authority;
+        std::string resamplingStr;
+        Interpolation::KernelType resampling;
+        Pyramid* pyramid;
+        GeographicBoundingBoxWMS geographicBoundingBox;
+        BoundingBoxWMS boundingBox;
+        std::vector<MetadataURL> metadataURLs;
+        bool WMSauth;
+        bool WMTSauth;
+        bool times;
 
-    std::string serverConfigFile;
-
-    LogOutput logOutput;
-    std::string logFilePrefix;
-    int logFilePeriod;
-    LogLevel logLevel;
-
-    int nbThread;
-
-    /**
-     * \~french \brief Défini si le serveur doit honorer les requêtes WMTS
-     * \~english \brief Define whether WMTS request should be honored
-     */
-    bool supportWMTS;
-    /**
-     * \~french \brief Défini si le serveur doit honorer les requêtes WMS
-     * \~english \brief Define whether WMS request should be honored
-     */
-    bool supportWMS;
-    bool reprojectionCapability;
-
-    std::string servicesConfigFile;
-    std::string layerDir;
-    std::string tmsDir;
-    std::string styleDir;
-
-    /**
-     * \~french \brief Adresse du socket d'écoute (vide si lancement géré par un tiers)
-     * \~english \brief Listening socket address (empty if lauched in managed mode)
-     */
-    std::string socket;
-    /**
-     * \~french \brief Profondeur de la file d'attente du socket
-     * \~english \brief Socket listen queue depth
-     */
-    int backlog;
-
-    std::string cephName;
-    std::string cephUser;
-    std::string cephConf;
-
-    std::string swiftAuthUrl;
-    std::string swiftUserName;
-    std::string swiftUserAccount;
-    std::string swiftUserPassword;
-
-    int nbProcess;
-
-    /**
-     * \~french \brief Proxy utilisé par défaut pour des requêtes WMS
-     * \~english \brief Default proxy used for WMS requests
-     */
-    Proxy proxy;
-
-    ContextBook* cephBook;
-    ContextBook* swiftBook;
-
-    bool ok;
-
+        bool getFeatureInfoAvailability;
+        std::string getFeatureInfoType;
+        std::string getFeatureInfoBaseURL;
+        std::string GFIService;
+        std::string GFIVersion;
+        std::string GFIQueryLayers;
+        std::string GFILayers;
+        bool GFIForceEPSG;
     private:
+
+        bool ok;
 };
 
-#endif // SERVERXML_H
+#endif // LAYERXML_H
 

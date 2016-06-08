@@ -143,9 +143,9 @@ class ServerXML
     ContextBook* cephBook;
     ContextBook* swiftBook;
 
-    bool ok;
-
     private:
+
+    bool ok;
 };
 
 #endif // SERVERXML_H

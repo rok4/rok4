@@ -35,23 +35,53 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#include "ServerXML.h"
+#include "LayerXML.h"
 
-#include <dirent.h>
-#include <tinyxml.h>
-#include <tinystr.h>
-
-ServerXML::ServerXML(std::string serverConfigFile )
+LayerXML::LayerXML(std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> stylesList)
 {
     ok = false;
 
-    std::cout<<_ ( "Chargement des parametres techniques depuis " ) <<serverConfigFile<<std::endl;
-
-    TiXmlDocument doc ( serverConfigFile );
-    if ( ! doc.LoadFile() ) {
-        std::cerr<<_ ( "Ne peut pas charger le fichier " ) << serverConfigFile << std::endl;
+    TiXmlDocument doc ( fileName.c_str() );
+    if ( !doc.LoadFile() ) {
+        LOGGER_ERROR ( _ ( "Ne peut pas charger le fichier " ) << fileName );
         return;
     }
+
+    LOGGER_INFO ( _ ( "     Ajout du layer " ) << fileName );
+    // Relative file Path
+    char * fileNameChar = ( char * ) malloc ( strlen ( fileName.c_str() ) + 1 );
+    strcpy ( fileNameChar, fileName.c_str() );
+    char * parentDirChar = dirname ( fileNameChar );
+    std::string parentDir ( parentDirChar );
+    free ( fileNameChar );
+    fileNameChar=NULL;
+    parentDirChar=NULL;
+    LOGGER_INFO ( _ ( "           BaseDir Relative to : " ) << parentDir );
+
+    /********************** Default values */
+
+    bool inspire = servicesConf->isInspire();
+
+    title="";
+    abstract="";
+    styleName="";
+
+    authority="";
+    resamplingStr="";
+
+    WMSauth = true;
+    WMTSauth = true;
+
+    getFeatureInfoAvailability = false;
+    getFeatureInfoType = "";
+    getFeatureInfoBaseURL = "";
+    GFIService = "";
+    GFIVersion = "";
+    GFIQueryLayers = "";
+    GFILayers = "";
+    GFIForceEPSG = true;
+
+    /********************** Parse */
 
     TiXmlHandle hDoc ( &doc );
     TiXmlElement* pElem;
@@ -59,350 +89,415 @@ ServerXML::ServerXML(std::string serverConfigFile )
 
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
     if ( !pElem ) {
-        std::cerr<<serverConfigFile <<_ ( " impossible de recuperer la racine." ) <<std::endl;
+        LOGGER_ERROR ( fileName << _ ( " impossible de recuperer la racine." ) );
         return;
     }
-
-    if ( strcmp ( pElem->Value(), "serverConf" ) ) {
-        std::cerr<<serverConfigFile <<_ ( " La racine n'est pas un serverConf." ) <<std::endl;
+    if ( strcmp ( pElem->Value(),"layer" ) ) {
+        LOGGER_ERROR ( fileName << _ ( " La racine n'est pas un layer." ) );
         return;
     }
     hRoot=TiXmlHandle ( pElem );
 
-    pElem=hRoot.FirstChild ( "logOutput" ).Element();
-    if ( !pElem || ! ( pElem->GetText() ) ) {
-        std::cerr<<_ ( "Pas de logOutput => logOutput = " ) << DEFAULT_LOG_OUTPUT;
-        logOutput = DEFAULT_LOG_OUTPUT;
-    } else {
-        std::string strLogOutput= ( pElem->GetTextStr() );
-        if ( strLogOutput=="rolling_file" ) {
-            logOutput=ROLLING_FILE;
-        } else if ( strLogOutput=="standard_output_stream_for_errors" ) {
-            logOutput=STANDARD_OUTPUT_STREAM_FOR_ERRORS;
-        } else if ( strLogOutput=="static_file" ) {
-            logOutput=STATIC_FILE;
-        } else {
-            std::cerr<<_ ( "Le logOutput [" ) << pElem->GetTextStr() <<_ ( "]  est inconnu." ) <<std::endl;
+    unsigned int idBegin=fileName.rfind ( "/" );
+    if ( idBegin == std::string::npos ) {
+        idBegin=0;
+    }
+    unsigned int idEnd=fileName.rfind ( ".lay" );
+    if ( idEnd == std::string::npos ) {
+        idEnd=fileName.rfind ( ".LAY" );
+        if ( idEnd == std::string::npos ) {
+            idEnd=fileName.size();
+        }
+    }
+    id=fileName.substr ( idBegin+1, idEnd-idBegin-1 );
+
+    pElem=hRoot.FirstChild ( "title" ).Element();
+    if ( pElem && pElem->GetText() ) title= pElem->GetTextStr();
+
+    pElem=hRoot.FirstChild ( "abstract" ).Element();
+    if ( pElem && pElem->GetText() ) abstract= pElem->GetTextStr();
+
+    pElem=hRoot.FirstChild ( "WMSAuthorized" ).Element();
+    if ( pElem && pElem->GetText() && pElem->GetTextStr()=="false") WMSauth= false;
+
+    pElem=hRoot.FirstChild ( "WMTSAuthorized" ).Element();
+    if ( pElem && pElem->GetText() && pElem->GetTextStr()=="false") WMTSauth= false;
+
+    pElem=hRoot.FirstChild("getFeatureInfoAvailability").Element();
+    if ( pElem && pElem->GetText() && pElem->GetTextStr()=="true") {
+        getFeatureInfoAvailability= true;
+
+        pElem=hRoot.FirstChild("getFeatureInfoType").Element();
+        if ( pElem && pElem->GetText()) {
+            getFeatureInfoType = pElem->GetTextStr();
+        }
+
+        // en fonction du type : pas le meme schema xml
+        if(getFeatureInfoType.compare("PYRAMID") == 0){
+            // Donnee elle-meme
+        }else if(getFeatureInfoType.compare("EXTERNALWMS") == 0){
+            // WMS
+            hDoc=hRoot.FirstChild("getFeatureInfoUrl");
+            pElem=hDoc.FirstChild("getFeatureInfoBaseURL").Element();
+            if ( pElem && pElem->GetText()) {
+                getFeatureInfoBaseURL = pElem->GetTextStr();
+                std::string a = getFeatureInfoBaseURL.substr(getFeatureInfoBaseURL.length()-1, 1);
+                if ( a.compare("?") != 0 ) {
+                   getFeatureInfoBaseURL = getFeatureInfoBaseURL + "?";
+                }
+            }
+            pElem=hDoc.FirstChild("layers").Element();
+            if ( pElem && pElem->GetText()) {
+                GFILayers = pElem->GetTextStr();
+            }
+            pElem=hDoc.FirstChild("queryLayers").Element();
+            if ( pElem && pElem->GetText()) {
+                GFIQueryLayers = pElem->GetTextStr();
+            }
+            pElem=hDoc.FirstChild("version").Element();
+            if ( pElem && pElem->GetText()) {
+                GFIVersion = pElem->GetTextStr();
+            }
+            pElem=hDoc.FirstChild("service").Element();
+            if ( pElem && pElem->GetText()) {
+                GFIService = pElem->GetTextStr();
+            }
+            pElem=hDoc.FirstChild("forceEPSG").Element();
+            if ( pElem && pElem->GetText()=="false") {
+                GFIForceEPSG = false;
+            }
+        }else if(getFeatureInfoType.compare("SQL") == 0){
+                // SQL
+        }else{
+            LOGGER_ERROR ( fileName << _ ( "La source du GetFeatureInfo n'est pas autorisée." ) );
             return;
         }
     }
 
-    pElem=hRoot.FirstChild ( "logFilePrefix" ).Element();
-    if ( !pElem || ! ( pElem->GetText() ) ) {
-        std::cerr<<_ ( "Pas de logFilePrefix => logFilePrefix = " ) << DEFAULT_LOG_FILE_PREFIX;
-        logFilePrefix = DEFAULT_LOG_FILE_PREFIX;
-    } else {
-        logFilePrefix= pElem->GetTextStr();
-    }
-    pElem=hRoot.FirstChild ( "logFilePeriod" ).Element();
-    if ( !pElem || ! ( pElem->GetText() ) ) {
-        std::cerr<<_ ( "Pas de logFilePeriod => logFilePeriod = " ) << DEFAULT_LOG_FILE_PERIOD;
-        logFilePeriod = DEFAULT_LOG_FILE_PERIOD;
-    } else if ( !sscanf ( pElem->GetText(),"%d",&logFilePeriod ) )  {
-        std::cerr<<_ ( "Le logFilePeriod [" ) << pElem->GetTextStr() <<_ ( "]  is not an integer." ) <<std::endl;
-        return;
-    }
-
-    pElem=hRoot.FirstChild ( "logLevel" ).Element();
-
-    if ( !pElem || ! ( pElem->GetText() ) ) {
-        std::cerr<<_ ( "Pas de logLevel => logLevel = " ) << DEFAULT_LOG_LEVEL;
-        logLevel = DEFAULT_LOG_LEVEL;
-    } else {
-        std::string strLogLevel ( pElem->GetText() );
-        if ( strLogLevel=="fatal" ) logLevel=FATAL;
-        else if ( strLogLevel=="error" ) logLevel=ERROR;
-        else if ( strLogLevel=="warn" ) logLevel=WARN;
-        else if ( strLogLevel=="info" ) logLevel=INFO;
-        else if ( strLogLevel=="debug" ) logLevel=DEBUG;
-        else {
-            std::cerr<<_ ( "Le logLevel [" ) << pElem->GetTextStr() <<_ ( "]  est inconnu." ) <<std::endl;
-            return;
+    for ( pElem=hRoot.FirstChild ( "keywordList" ).FirstChild ( "keyword" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "keyword" ) ) {
+        if ( ! ( pElem->GetText() ) )
+            continue;
+        std::map<std::string,std::string> attributes;
+        TiXmlAttribute* attrib = pElem->FirstAttribute();
+        while ( attrib ) {
+            attributes.insert ( attribute ( attrib->NameTStr(),attrib->ValueStr() ) );
+            attrib = attrib->Next();
         }
+        keyWords.push_back ( Keyword ( pElem->GetTextStr(),attributes ) );
     }
-
-    pElem=hRoot.FirstChild ( "nbThread" ).Element();
-    if ( !pElem || ! ( pElem->GetText() ) ) {
-        std::cerr<<_ ( "Pas de nbThread => nbThread = " ) << DEFAULT_NB_THREAD<<std::endl;
-        nbThread = DEFAULT_NB_THREAD;
-    } else if ( !sscanf ( pElem->GetText(),"%d",&nbThread ) ) {
-        std::cerr<<_ ( "Le nbThread [" ) << pElem->GetTextStr() <<_ ( "] is not an integer." ) <<std::endl;
-        return;
-    }
-
-    pElem=hRoot.FirstChild ( "nbProcess" ).Element();
-    if ( !pElem || ! ( pElem->GetText() ) ) {
-        std::cerr<<_ ( "Pas de nbProcess=> nbProcess = " ) << DEFAULT_NB_PROCESS<<std::endl;
-        nbProcess = DEFAULT_NB_PROCESS;
-    } else if ( !sscanf ( pElem->GetText(),"%d",&nbProcess ) ) {
-        std::cerr<<_ ( "Le nbProcess [" ) << pElem->GetTextStr() <<_ ( "] is not an integer." ) <<std::endl;
-        std::cerr<<_ ( "=> nbProcess = " ) << DEFAULT_NB_PROCESS<<std::endl;
-        nbProcess = DEFAULT_NB_PROCESS;
-    }
-    if (nbProcess > MAX_NB_PROCESS) {
-        std::cerr<<_ ( "Le nbProcess [" ) << pElem->GetTextStr() <<_ ( "] is bigger than " ) << MAX_NB_PROCESS <<std::endl;
-        std::cerr<<_ ( "=> nbProcess = " ) << MAX_NB_PROCESS<<std::endl;
-        nbProcess = MAX_NB_PROCESS;
-    }
-
-    pElem=hRoot.FirstChild ( "WMTSSupport" ).Element();
-    if ( !pElem || ! ( pElem->GetText() ) ) {
-        std::cerr<<_ ( "Pas de WMTSSupport => supportWMTS = true" ) <<std::endl;
-        supportWMTS = true;
-    } else {
-        std::string strReprojection ( pElem->GetText() );
-        if ( strReprojection=="true" ) supportWMTS=true;
-        else if ( strReprojection=="false" ) supportWMTS=false;
-        else {
-            std::cerr<<_ ( "Le WMTSSupport [" ) << pElem->GetTextStr() <<_ ( "] n'est pas un booleen." ) <<std::endl;
-            return;
-        }
-    }
-
-    pElem=hRoot.FirstChild ( "WMSSupport" ).Element();
-    if ( !pElem || ! ( pElem->GetText() ) ) {
-        std::cerr<<_ ( "Pas de WMSSupport => supportWMS = true" ) <<std::endl;
-        supportWMS = true;
-    } else {
-        std::string strReprojection ( pElem->GetText() );
-        if ( strReprojection=="true" ) supportWMS=true;
-        else if ( strReprojection=="false" ) supportWMS=false;
-        else {
-            std::cerr<<_ ( "Le WMSSupport [" ) << pElem->GetTextStr() <<_ ( "] n'est pas un booleen." ) <<std::endl;
-            return;
-        }
-    }
-
-    pElem=hRoot.FirstChild ( "proxy" ).Element();
-    if ( !pElem || ! ( pElem->GetText() ) ) {
-        proxy.proxyName = "";
-    } else {
-        proxy.proxyName = pElem->GetTextStr();
-    }
-
-    pElem=hRoot.FirstChild ( "noProxy" ).Element();
-    if ( !pElem || ! ( pElem->GetText() ) ) {
-        proxy.noProxy = "";
-    } else {
-        proxy.noProxy = pElem->GetTextStr();
-    }
-
-    if ( !supportWMS && !supportWMTS ) {
-        std::cerr<<_ ( "WMTS et WMS desactives, extinction du serveur" ) <<std::endl;
-        return;
-    }
-
-    if ( supportWMS ) {
-        pElem=hRoot.FirstChild ( "reprojectionCapability" ).Element();
+    std::string inspireStyleName = DEFAULT_STYLE_INSPIRE;
+    for ( pElem=hRoot.FirstChild ( "style" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "style" ) ) {
         if ( !pElem || ! ( pElem->GetText() ) ) {
-            std::cerr<<_ ( "Pas de reprojectionCapability => reprojectionCapability = true" ) <<std::endl;
-            reprojectionCapability = true;
+            LOGGER_ERROR ( _ ( "Pas de style => style = " ) << ( inspire?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE ) );
+            styleName = ( inspire?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE );
         } else {
-            std::string strReprojection ( pElem->GetText() );
-            if ( strReprojection=="true" ) reprojectionCapability=true;
-            else if ( strReprojection=="false" ) reprojectionCapability=false;
-            else {
-                std::cerr<<_ ( "Le reprojectionCapability [" ) << pElem->GetTextStr() <<_ ( "] n'est pas un booleen." ) <<std::endl;
-                return;
-            }
+            styleName = pElem->GetTextStr();
         }
-    } else {
-        reprojectionCapability = false;
-    }
+        std::map<std::string, Style*>::iterator styleIt= stylesList.find ( styleName );
+        if ( styleIt == stylesList.end() ) {
+            LOGGER_ERROR ( _ ( "Style " ) << styleName << _ ( "non defini" ) );
+            continue;
+        }
 
-    pElem=hRoot.FirstChild ( "servicesConfigFile" ).Element();
-    if ( !pElem || ! ( pElem->GetText() ) ) {
-        std::cerr<<_ ( "Pas de servicesConfigFile => servicesConfigFile = " ) << DEFAULT_SERVICES_CONF_PATH <<std::endl;
-        servicesConfigFile = DEFAULT_SERVICES_CONF_PATH;
-    } else {
-        servicesConfigFile= pElem->GetTextStr();
-    }
-
-    pElem=hRoot.FirstChild ( "layerDir" ).Element();
-    if ( !pElem || ! ( pElem->GetText() ) ) {
-        std::cerr<<_ ( "Pas de layerDir => layerDir = " ) << DEFAULT_LAYER_DIR<<std::endl;
-        layerDir = DEFAULT_LAYER_DIR;
-    } else {
-        layerDir= pElem->GetTextStr();
-    }
-
-    pElem=hRoot.FirstChild ( "tileMatrixSetDir" ).Element();
-    if ( !pElem || ! ( pElem->GetText() ) ) {
-        std::cerr<<_ ( "Pas de tileMatrixSetDir => tileMatrixSetDir = " ) << DEFAULT_TMS_DIR<<std::endl;
-        tmsDir = DEFAULT_TMS_DIR;
-    } else {
-        tmsDir= pElem->GetTextStr();
-    }
-
-    pElem=hRoot.FirstChild ( "styleDir" ).Element();
-    if ( !pElem || ! ( pElem->GetText() ) ) {
-        std::cerr<<_ ( "Pas de styleDir => styleDir = " ) << DEFAULT_STYLE_DIR<<std::endl;
-        styleDir = DEFAULT_STYLE_DIR;
-    } else {
-        styleDir = pElem->GetTextStr();
-    }
-    // Definition de la variable PROJ_LIB à partir de la configuration
-    std::string projDir;
-
-    bool absolut=true;
-    pElem=hRoot.FirstChild ( "projConfigDir" ).Element();
-    if ( !pElem || ! ( pElem->GetText() ) ) {
-        std::cerr<<_ ( "Pas de projConfigDir => projConfigDir = " ) << DEFAULT_PROJ_DIR<<std::endl;
-        char* pwdBuff = ( char* ) malloc ( PATH_MAX );
-        getcwd ( pwdBuff,PATH_MAX );
-        projDir = std::string ( pwdBuff );
-        projDir.append ( "/" ).append ( DEFAULT_PROJ_DIR );
-        free ( pwdBuff );
-    } else {
-        projDir= pElem->GetTextStr();
-        //Gestion des chemins relatif
-        if ( projDir.compare ( 0,1,"/" ) != 0 ) {
-            absolut=false;
-            char* pwdBuff = ( char* ) malloc ( PATH_MAX );
-            getcwd ( pwdBuff,PATH_MAX );
-            std::string pwdBuffStr = std::string ( pwdBuff );
-            pwdBuffStr.append ( "/" );
-            projDir.insert ( 0,pwdBuffStr );
-            free ( pwdBuff );
+        if ( styleIt->second->getId().compare ( DEFAULT_STYLE_INSPIRE_ID ) ==0 ) {
+            inspireStyleName = styleName;
+        }
+        styles.push_back ( styleIt->second );
+        if ( inspire && ( styleName==inspireStyleName ) ) {
+            styles.pop_back();
         }
     }
-
-    if ( setenv ( "PROJ_LIB", projDir.c_str(), 1 ) !=0 ) {
-        std::cerr<<_ ( "ERREUR FATALE : Impossible de definir le chemin pour proj " ) << projDir<<std::endl;
+    if ( inspire ) {
+        std::map<std::string, Style*>::iterator styleIt= stylesList.find ( inspireStyleName );
+        if ( styleIt != stylesList.end() ) {
+            styles.insert ( styles.begin(),styleIt->second );
+        } else {
+            LOGGER_ERROR ( _ ( "Style " ) << styleName << _ ( "non defini" ) );
+            return;
+        }
+    }
+    if ( styles.size() ==0 ) {
+        LOGGER_ERROR ( _ ( "Pas de Style defini, Layer non valide" ) );
         return;
     }
-    std::clog << _ ( "Env : PROJ_LIB = " ) << getenv ( "PROJ_LIB" ) << std::endl;
 
-
-    pElem=hRoot.FirstChild ( "serverPort" ).Element();
+    pElem = hRoot.FirstChild ( "minRes" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
-        std::cerr<<_ ( "Pas d'element <serverPort> fonctionnement autonome impossible" ) <<std::endl;
-        socket = "";
+        minRes=0.;
+    } else if ( !sscanf ( pElem->GetText(),"%lf",&minRes ) ) {
+        LOGGER_ERROR ( _ ( "La resolution min est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+        return;
+    }
+
+    pElem = hRoot.FirstChild ( "maxRes" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        maxRes=0.;
+    } else if ( !sscanf ( pElem->GetText(),"%lf",&maxRes ) ) {
+        LOGGER_ERROR ( _ ( "La resolution max est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+        return;
+    }
+        // EX_GeographicBoundingBox
+    pElem = hRoot.FirstChild ( "EX_GeographicBoundingBox" ).Element();
+    if ( !pElem ) {
+        LOGGER_ERROR ( _ ( "Pas de geographicBoundingBox = " ) );
+        return;
     } else {
-        std::cerr<<_ ( "Element <serverPort> : Lancement interne impossible (Apache, spawn-fcgi)" ) <<std::endl;
-        socket = pElem->GetTextStr();
+            // westBoundLongitude
+        pElem = hRoot.FirstChild ( "EX_GeographicBoundingBox" ).FirstChild ( "westBoundLongitude" ).Element();
+        if ( !pElem  || ! ( pElem->GetText() ) ) {
+            LOGGER_ERROR ( _ ( "Pas de westBoundLongitude" ) );
+            return;
+        }
+        if ( !sscanf ( pElem->GetText(),"%lf",&geographicBoundingBox.minx ) ) {
+            LOGGER_ERROR ( _ ( "Le westBoundLongitude est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+            return;
+        }
+            // southBoundLatitude
+        pElem = hRoot.FirstChild ( "EX_GeographicBoundingBox" ).FirstChild ( "southBoundLatitude" ).Element();
+        if ( !pElem || ! ( pElem->GetText() ) ) {
+            LOGGER_ERROR ( _ ( "Pas de southBoundLatitude" ) );
+            return;
+        }
+        if ( !sscanf ( pElem->GetText(),"%lf",&geographicBoundingBox.miny ) ) {
+            LOGGER_ERROR ( _ ( "Le southBoundLatitude est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+            return;
+        }
+            // eastBoundLongitude
+        pElem = hRoot.FirstChild ( "EX_GeographicBoundingBox" ).FirstChild ( "eastBoundLongitude" ).Element();
+        if ( !pElem || ! ( pElem->GetText() ) ) {
+            LOGGER_ERROR ( _ ( "Pas de eastBoundLongitude" ) );
+            return;
+        }
+        if ( !sscanf ( pElem->GetText(),"%lf",&geographicBoundingBox.maxx ) ) {
+            LOGGER_ERROR ( _ ( "Le eastBoundLongitude est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+            return;
+        }
+            // northBoundLatitude
+        pElem = hRoot.FirstChild ( "EX_GeographicBoundingBox" ).FirstChild ( "northBoundLatitude" ).Element();
+        if ( !pElem || ! ( pElem->GetText() ) ) {
+            LOGGER_ERROR ( _ ( "Pas de northBoundLatitude" ) );
+            return;
+        }
+        if ( !sscanf ( pElem->GetText(),"%lf",&geographicBoundingBox.maxy ) ) {
+            LOGGER_ERROR ( _ ( "Le northBoundLatitude est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+            return;
+        }
     }
 
-    pElem=hRoot.FirstChild ( "serverBackLog" ).Element();
+    pElem = hRoot.FirstChild ( "boundingBox" ).Element();
+    if ( !pElem ) {
+        LOGGER_ERROR ( _ ( "Pas de BoundingBox" ) );
+    } else {
+        if ( ! ( pElem->Attribute ( "CRS" ) ) ) {
+            LOGGER_ERROR ( _ ( "Le CRS est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+            return;
+        }
+        boundingBox.srs=pElem->Attribute ( "CRS" );
+        if ( ! ( pElem->Attribute ( "minx" ) ) ) {
+            LOGGER_ERROR ( _ ( "minx attribute is missing" ) );
+            return;
+        }
+        if ( !sscanf ( pElem->Attribute ( "minx" ),"%lf",&boundingBox.minx ) ) {
+            LOGGER_ERROR ( _ ( "Le minx est inexploitable:[" ) << pElem->Attribute ( "minx" ) << "]" );
+            return;
+        }
+        if ( ! ( pElem->Attribute ( "miny" ) ) ) {
+            LOGGER_ERROR ( _ ( "miny attribute is missing" ) );
+            return;
+        }
+        if ( !sscanf ( pElem->Attribute ( "miny" ),"%lf",&boundingBox.miny ) ) {
+            LOGGER_ERROR ( _ ( "Le miny est inexploitable:[" ) << pElem->Attribute ( "miny" ) << "]" );
+            return;
+        }
+        if ( ! ( pElem->Attribute ( "maxx" ) ) ) {
+            LOGGER_ERROR ( _ ( "maxx attribute is missing" ) );
+            return;
+        }
+        if ( !sscanf ( pElem->Attribute ( "maxx" ),"%lf",&boundingBox.maxx ) ) {
+            LOGGER_ERROR ( _ ( "Le maxx est inexploitable:[" ) << pElem->Attribute ( "maxx" ) << "]" );
+            return;
+        }
+        if ( ! ( pElem->Attribute ( "maxy" ) ) ) {
+            LOGGER_ERROR ( _ ( "maxy attribute is missing" ) );
+            return;
+        }
+        if ( !sscanf ( pElem->Attribute ( "maxy" ),"%lf",&boundingBox.maxy ) ) {
+            LOGGER_ERROR ( _ ( "Le maxy est inexploitable:[" ) << pElem->Attribute ( "maxy" ) << "]" );
+            return;
+        }
+    }
+
+    if ( reprojectionCapability==true ) {
+        for ( pElem=hRoot.FirstChild ( "WMSCRSList" ).FirstChild ( "WMSCRS" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "WMSCRS" ) ) {
+            if ( ! ( pElem->GetText() ) ) continue;
+            std::string str_crs ( pElem->GetTextStr() );
+            // On verifie que la CRS figure dans la liste des CRS de proj4 (sinon, le serveur n est pas capable de la gerer)
+            CRS crs ( str_crs );
+            bool crsOk=true;
+            if ( !crs.isProj4Compatible() ) {
+                LOGGER_WARN ( _ ( "Le CRS " ) <<str_crs<<_ ( " n est pas reconnu par Proj4 et n est donc par ajoute aux CRS de la couche" ) );
+                crsOk = false;
+            } else {
+                //Test if already define in Global CRS
+
+                for ( unsigned int k=0; k<servicesConf->getGlobalCRSList()->size(); k++ ) {
+                    if ( crs.cmpRequestCode ( servicesConf->getGlobalCRSList()->at ( k ).getRequestCode() ) ) {
+                        crsOk = false;
+                        LOGGER_INFO ( _ ( "         CRS " ) <<str_crs << _ ( " already present in global CRS list" ) );
+                        break;
+                    }
+                }
+
+                // Test if the current layer bounding box is compatible with the current CRS
+                if ( inspire && !crs.validateBBoxGeographic ( geographicBoundingBox.minx,geographicBoundingBox.miny,geographicBoundingBox.maxx,geographicBoundingBox.maxy ) ) {
+                    BoundingBox<double> cropBBox = crs.cropBBoxGeographic ( geographicBoundingBox.minx,geographicBoundingBox.miny,geographicBoundingBox.maxx,geographicBoundingBox.maxy );
+                    // Test if the remaining bbox contain useful data
+                    if ( cropBBox.xmax - cropBBox.xmin <= 0 || cropBBox.ymax - cropBBox.ymin <= 0 ) {
+                        LOGGER_WARN ( _ ( "         Le CRS " ) <<str_crs<<_ ( " n est pas compatible avec l'emprise de la couche" ) );
+                        crsOk = false;
+                    }
+                }
+                
+                if ( crsOk ){
+                    bool allowedCRS = true;
+                    std::vector<CRS> tmpEquilist;
+                    if (servicesConf->getAddEqualsCRS()){
+                        tmpEquilist = getEqualsCRS(servicesConf->getListOfEqualsCRS(), str_crs );
+                    }
+                    if ( servicesConf->getDoWeRestrictCRSList() ){
+                        allowedCRS = isCRSAllowed(servicesConf->getRestrictedCRSList(), str_crs, tmpEquilist);
+                    }
+                    if (!allowedCRS){
+                        LOGGER_WARN ( _ ( "         Forbiden CRS " ) << str_crs  );
+                        crsOk = false;
+                    }
+                }
+                
+                if ( crsOk ) {
+                    bool found = false;
+                    for ( int i = 0; i<WMSCRSList.size() ; i++ ){
+                        if ( WMSCRSList.at( i ) == crs ){
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found){
+                        LOGGER_INFO ( _ ( "         Adding CRS " ) <<str_crs );
+                        WMSCRSList.push_back ( crs );
+                    } else {
+                        LOGGER_WARN ( _ ( "         Already present CRS " ) << str_crs  );
+                    }
+                    std::vector<CRS> tmpEquilist = getEqualsCRS(servicesConf->getListOfEqualsCRS() , str_crs );
+                    for (unsigned int l = 0; l< tmpEquilist.size();l++){
+                        found = false;
+                        for ( int i = 0; i<WMSCRSList.size() ; i++ ){
+                            if ( WMSCRSList.at( i ) == tmpEquilist.at( l ) ){
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found){
+                            WMSCRSList.push_back( tmpEquilist.at( l ) );
+                            LOGGER_INFO ( _ ( "         Adding Equivalent CRS " ) << tmpEquilist.at( l ).getRequestCode() );
+                        } else {
+                            LOGGER_WARN ( _ ( "         Already present CRS " ) << tmpEquilist.at( l ).getRequestCode()  );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if ( WMSCRSList.size() ==0 ) {
+        LOGGER_INFO ( fileName <<_ ( ": Aucun CRS specifique autorise pour la couche" ) );
+    }
+
+    //DEPRECATED
+    pElem=hRoot.FirstChild ( "opaque" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
-        std::clog<<_ ( "Pas d'element <serverBackLog> valeur par defaut : 0" ) <<std::endl;
-        backlog = 0;
-    } else if ( !sscanf ( pElem->GetText(),"%d",&backlog ) )  {
-        std::cerr<<_ ( "Le logFilePeriod [" ) << pElem->GetTextStr() <<_ ( "]  is not an integer." ) <<std::endl;
-        backlog = 0;
-    }
-
-    pElem = hRoot.FirstChild ( "cephContext" ).Element();
-    if ( pElem) {
-
-        TiXmlElement* pElemCephContext;
-
-        pElemCephContext = hRoot.FirstChild ( "cephContext" ).FirstChild ( "clusterName" ).Element();
-        if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
-            char* cluster = getenv ("ROK4_CEPH_CLUSTERNAME");
-            if (cluster == NULL) {
-                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un clusterName" );
-                return;
-            } else {
-                cephName.assign(cluster);
-            }
+        LOGGER_DEBUG ( _ ( "Pas de opaque => opaque = " ) << DEFAULT_OPAQUE );
+        opaque = DEFAULT_OPAQUE;
+    } else {
+        std::string opaStr= pElem->GetTextStr();
+        if ( opaStr=="true" ) {
+            opaque = true;
+        } else if ( opaStr=="false" ) {
+            opaque = false;
         } else {
-            cephName = pElemCephContext->GetText();
-        }
-
-        pElemCephContext = hRoot.FirstChild ( "cephContext" ).FirstChild ( "userName" ).Element();
-        if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
-            char* user = getenv ("ROK4_CEPH_USERNAME");
-            if (user == NULL) {
-                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un userName" );
-                return;
-            } else {
-                cephUser.assign(user);
-            }
-        } else {
-            cephUser = pElemCephContext->GetText();
-        }
-
-        pElemCephContext = hRoot.FirstChild ( "cephContext" ).FirstChild ( "confFile" ).Element();
-        if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
-            char* conf = getenv ("ROK4_CEPH_CONFFILE");
-            if (conf == NULL) {
-                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un confFile" );
-                return;
-            } else {
-                cephConf.assign(conf);
-            }
-        } else {
-            cephConf = pElemCephContext->GetText();
-        }
-
-    }
-
-    pElem = hRoot.FirstChild ( "swiftContext" ).Element();
-    if ( pElem ) {
-
-        TiXmlElement* pElemSwiftContext;
-
-        pElemSwiftContext = hRoot.FirstChild ( "swiftContext" ).FirstChild ( "authUrl" ).Element();
-        if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
-            char* auth = getenv ("ROK4_SWIFT_AUTHURL");
-            if (auth == NULL) {
-                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un authUrl" );
-                return;
-            } else {
-                swiftAuthUrl.assign(auth);
-            }
-        } else {
-            swiftAuthUrl = pElemSwiftContext->GetText();
-        }
-
-        pElemSwiftContext = hRoot.FirstChild ( "swiftContext" ).FirstChild ( "userName" ).Element();
-        if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
-            char* user = getenv ("ROK4_SWIFT_USER");
-            if (user == NULL) {
-                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un userName" );
-                return;
-            } else {
-                swiftUserName.assign(user);
-            }
-        } else {
-            swiftUserName = pElemSwiftContext->GetText();
-        }
-
-        pElemSwiftContext = hRoot.FirstChild ( "swiftContext" ).FirstChild ( "userAccount" ).Element();
-        if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
-            char* account = getenv ("ROK4_SWIFT_ACCOUNT");
-            if (account == NULL) {
-                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un userAccount" );
-                return;
-            } else {
-                swiftUserAccount.assign(account);
-            }
-        } else {
-            swiftUserAccount = pElemSwiftContext->GetText();
-        }
-
-        pElemSwiftContext = hRoot.FirstChild ( "swiftContext" ).FirstChild ( "userPassword" ).Element();
-        if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
-            char* passwd = getenv ("ROK4_SWIFT_PASSWD");
-            if (passwd == NULL) {
-                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un userPassword" );
-                return;
-            } else {
-                swiftUserPassword.assign(passwd);
-            }
-        } else {
-            swiftUserPassword = pElemSwiftContext->GetText();
+            LOGGER_ERROR ( _ ( "le param opaque n'est pas exploitable:[" ) << opaStr <<"]" );
+            return;
         }
     }
 
-    if (cephName != "" && cephUser != "" && cephConf != "") {
-        cephBook = new ContextBook(cephName,cephUser,cephConf);
+    pElem=hRoot.FirstChild ( "authority" ).Element();
+    if ( pElem && pElem->GetText() ) {
+        authority= pElem->GetTextStr();
     }
 
-    if (swiftAuthUrl != "" && swiftUserName != "" && swiftUserAccount != "" && swiftUserPassword != "") {
-        swiftBook = new ContextBook(swiftAuthUrl, swiftUserAccount, swiftUserName, swiftUserPassword);
+    pElem=hRoot.FirstChild ( "resampling" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        LOGGER_ERROR ( _ ( "Pas de resampling => resampling = " ) << DEFAULT_RESAMPLING );
+        resamplingStr = DEFAULT_RESAMPLING;
+    } else {
+        resamplingStr = pElem->GetTextStr();
+    }
+
+    resampling = Interpolation::fromString ( resamplingStr );
+
+    pElem=hRoot.FirstChild ( "pyramid" ).Element();
+    if ( pElem && pElem->GetText() ) {
+
+        std::string pyramidFilePath ( pElem->GetTextStr() );
+        //Relative Path
+        if ( pyramidFilePath.compare ( 0,2,"./" ) ==0 ) {
+            pyramidFilePath.replace ( 0,1,parentDir );
+        } else if ( pyramidFilePath.compare ( 0,1,"/" ) !=0 ) {
+            pyramidFilePath.insert ( 0,"/" );
+            pyramidFilePath.insert ( 0,parentDir );
+        }
+        pyramid = ConfLoader::buildPyramid ( pyramidFilePath, serverXML, servicesXML tmsList, stylesList, true);
+        if ( !pyramid ) {
+            LOGGER_ERROR ( _ ( "La pyramide " ) << pyramidFilePath << _ ( " ne peut etre chargee" ) );
+            return;
+        }
+    } else {
+        // FIXME: pas forcement critique si on a un cache d'une autre nature (jpeg2000 par exemple).
+        LOGGER_ERROR ( _ ( "Aucune pyramide associee au layer " ) << fileName );
+        return;
+    }
+
+    //MetadataURL Elements , mandatory in INSPIRE
+    for ( pElem=hRoot.FirstChild ( "MetadataURL" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "MetadataURL" ) ) {
+        std::string format;
+        std::string href;
+        std::string type;
+
+        if ( pElem->QueryStringAttribute ( "type",&type ) != TIXML_SUCCESS ) {
+            LOGGER_ERROR ( fileName << _ ( "MetadataURL type missing" ) );
+            continue;
+        }
+
+        TiXmlHandle hMetadata ( pElem );
+        TiXmlElement *pElemMTD = hMetadata.FirstChild ( "Format" ).Element();
+        if ( !pElemMTD || !pElemMTD->GetText() ) {
+            LOGGER_ERROR ( fileName << _ ( "MetadataURL Format missing" ) );
+            continue;
+        }
+        format = pElemMTD->GetText();
+        pElemMTD = hMetadata.FirstChild ( "OnlineResource" ).Element();
+        if ( !pElemMTD || pElemMTD->QueryStringAttribute ( "xlink:href",&href ) != TIXML_SUCCESS ) {
+            LOGGER_ERROR ( fileName << _ ( "MetadataURL HRef missing" ) );
+            continue;
+        }
+
+        metadataURLs.push_back ( MetadataURL ( format,href,type ) );
+    }
+
+    if ( metadataURLs.size() == 0 && inspire ) {
+        LOGGER_ERROR ( _ ( "No MetadataURL found in the layer " ) << fileName <<_ ( " : not compatible with INSPIRE!!" ) );
+        return;
     }
 
     ok = true;
 }
+

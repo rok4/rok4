@@ -53,6 +53,14 @@ std::map<std::string, TileMatrix>* TileMatrixSet::getTmList() {
     return &tmList;
 }
 
+TileMatrixSet::TileMatrixSet ( const TileMatrixSetXML& t ) {
+	id = t.id;
+	title = t.title;
+	abstract = t.abstract;
+	keyWords = t.keyWords;
+	crs = t.crs;
+	tmList = t.listTM;
+}
 
 bool TileMatrixSet::operator== ( const TileMatrixSet& other ) const {
     return ( this->keyWords.size() ==other.keyWords.size()

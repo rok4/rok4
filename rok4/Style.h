@@ -50,6 +50,7 @@
 #include "LegendURL.h"
 #include "Keyword.h"
 #include "Palette.h"
+#include "StyleXML.h"
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -149,33 +150,18 @@ private :
      */
     uint8_t center;
 public:
+
     /**
-      * \~french
-     * \brief Crée un Style à partir de ses éléments constitutifs
-      * \param[in] id identifiant WMS/WMTS du style
-      * \param[in] titles liste des titres
-      * \param[in] abstracts liste des résumés
-      * \param[in] keywords liste des mots-clés
-      * \param[in] legendURLs liste des légendes
-      * \param[in] palette table de correspondance (valeur -> couleur)
-      * \param[in] angle azimuth du soleil en degré compris entre [0 et 360[
-      * \param[in] exaggeration facteur d'éxagération de la pente
-      * \param[in] center valeur d'un pixel de pente nulle
-      * \~english
-     * \brief Create a Style
-      * \param[in] id WMS/WMTS style identifier
-      * \param[in] titles list of titles
-      * \param[in] abstracts list of abstracts
-      * \param[in] keywords list of keywords
-      * \param[in] legendURLs list of legends
-      * \param[in] palette lookup table (value -> colour)
-      * \param[in] angle sun's azimuth in degree between [0 and 360[
-      * \param[in] exaggeration slope exaggeration factor
-      * \param[in] center value of a pixel without slope
-      */
-    Style ( const std::string& id,const std::vector<std::string>& titles,
-            const std::vector<std::string>& abstracts,const  std::vector<Keyword>& keywords,
-            const std::vector<LegendURL>& legendURLs, Palette& palette ,int angle =-1, float exaggeration=1., uint8_t center=0 );
+    * \~french
+    * Crée un Style à partir d'un StyleXML
+    * \brief Constructeur
+    * \param[in] s StyleXML contenant les informations
+    * \~english
+    * Create a Style from a StyleXML
+    * \brief Constructor
+    * \param[in] s StyleXML to get informations
+    */
+    Style ( const StyleXML& s );
 
     /**
      * \~french

@@ -47,32 +47,32 @@
 
     /********************** Default values */
 
-    std::string name="";
-    std::string title="";
-    std::string abstract="";
-    std::string serviceProvider="";
-    std::string fee="";
-    std::string accessConstraint="";
-    bool postMode = false;
-    std::string providerSite="";
-    std::string individualName="";
-    std::string individualPosition="";
-    std::string voice="";
-    std::string facsimile="";
-    std::string addressType="";
-    std::string deliveryPoint="";
-    std::string city="";
-    std::string administrativeArea="";
-    std::string postCode="";
-    std::string country="";
-    std::string electronicMailAddress="";
-    bool fullStyling = false;
-    std::string serviceType="";
-    std::string serviceTypeVersion="";
-    bool inspire = false;
-    bool doweuselistofequalsCRS = false;
-    bool addEqualsCRS = false;
-    bool dowerestrictCRSList = false;
+    name="";
+    title="";
+    abstract="";
+    serviceProvider="";
+    fee="";
+    accessConstraint="";
+    postMode = false;
+    providerSite="";
+    individualName="";
+    individualPosition="";
+    voice="";
+    facsimile="";
+    addressType="";
+    deliveryPoint="";
+    city="";
+    administrativeArea="";
+    postCode="";
+    country="";
+    electronicMailAddress="";
+    fullStyling = false;
+    serviceType="";
+    serviceTypeVersion="";
+    inspire = false;
+    doweuselistofequalsCRS = false;
+    addEqualsCRS = false;
+    dowerestrictCRSList = false;
 
     /********************** Parse */
 

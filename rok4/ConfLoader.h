@@ -58,6 +58,8 @@
 #include "TileMatrixSetXML.h"
 #include "ServerXML.h"
 #include "ServicesXML.h"
+#include "StyleXML.h"
+#include "LayerXML.h"
 
 
 /**
@@ -154,21 +156,7 @@ public:
     void pElem();
 
 private:
-    /**
-     * \~french
-     * \brief Création d'un Style à partir de sa représentation XML
-     * \param[in] doc Racine du document XML
-     * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
-     * \param[in] inspire définit si les règles de conformité INSPIRE doivent être utilisées
-     * \return un pointeur vers le style nouvellement instancié, NULL en cas d'erreur
-     * \~english
-     * \brief Create a new Style from its XML representation
-     * \param[in] doc XML root
-     * \param[in] fileName original filename, used as identifier
-     * \param[in] inspire whether INSPIRE validity rules are enforced
-     * \return pointer to the newly created Style, NULL if something went wrong
-     */
-    static Style* parseStyle ( TiXmlDocument* doc,std::string fileName,bool inspire );
+
     /**
      * \~french
      * \brief Création d'un Style à partir d'un fichier
@@ -181,7 +169,7 @@ private:
      * \param[in] inspire whether INSPIRE validity rules are enforced
      * \return pointer to the newly created Style, NULL if something went wrong
      */
-    static Style* buildStyle ( std::string fileName,bool inspire );
+    static Style* buildStyle ( std::string fileName, ServicesXML* servicesXML);
     /**
      * \~french
      * \brief Création d'un TileMatrixSet à partir d'un fichier
@@ -193,27 +181,7 @@ private:
      * \return pointer to the newly created TileMatrixSet, NULL if something went wrong
      */
     static TileMatrixSet* buildTileMatrixSet ( std::string fileName );
-    /**
-     * \~french
-     * \brief Création d'une Pyramide à partir de sa représentation XML
-     * \param[in] doc Racine du document XML
-     * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
-     * \param[in] tmsList liste des TileMatrixSets connus
-     * \param[in] times vrai si premier appel, faux sinon
-     * \param[in] stylesList liste des styles disponibles
-     * \param[in] proxy
-     * \return un pointeur vers la Pyramid nouvellement instanciée, NULL en cas d'erreur
-     * \~english
-     * \brief Create a new Pyramid from its XML representation
-     * \param[in] doc XML root
-     * \param[in] fileName original filename, used as identifier
-     * \param[in] tmsList known TileMatrixSets
-     * \param[in] times true if first call, false in other cases
-     * \param[in] stylesList available style list
-     * \param[in] proxy
-     * \return pointer to the newly created Pyramid, NULL if something went wrong
-     */
-    static Pyramid* parsePyramid (TiXmlDocument* doc, std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList , ContextBook *cBook, ContextBook *sBook, bool times , std::map<std::string, Style *> stylesList, Proxy proxy);
+
     /**
      * \~french
      * \brief Création d'une Pyramide à partir d'un fichier
@@ -232,7 +200,7 @@ private:
      * \param[in] proxy
      * \return pointer to the newly created Pyramid, NULL if something went wrong
      */
-    static Pyramid* buildPyramid (std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList , ContextBook *cBook, ContextBook *sBook, bool times , std::map<std::string, Style *> stylesList, Proxy proxy);
+    static Pyramid* buildPyramid (std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML, std::map<std::string, TileMatrixSet*> &tmsList , std::map<std::string, Style *> stylesList, bool times);
 
     /**
      * \~french
@@ -296,30 +264,6 @@ private:
      */
     static void cleanParsePyramid(std::map<std::string, std::vector<Source *> > &specificSources, std::vector<Source *> &sSources, std::map<std::string, Level *> &levels);
 
-
-    /**
-     * \~french
-     * \brief Création d'un Layer à partir de sa représentation XML
-     * \param[in] doc Racine du document XML
-     * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
-     * \param[in] tmsList liste des TileMatrixSets connus
-     * \param[in] stylesList liste des Styles connus
-     * \param[in] reprojectionCapability définit si le serveur est capable de reprojeter des données
-     * \param[in] servicesConf pointeur vers les configurations globales du services
-     * \param[in] proxy
-     * \return un pointeur vers le Layer nouvellement instancié, NULL en cas d'erreur
-     * \~english
-     * \brief Create a new Layer from its XML representation
-     * \param[in] doc XML root
-     * \param[in] fileName original filename, used as identifier
-     * \param[in] tmsList known TileMatrixSets
-     * \param[in] stylesList known Styles
-     * \param[in] reprojectionCapability whether the server can handle reprojection
-     * \param[in] servicesConf global service configuration pointer
-     * \param[in] proxy
-     * \return pointer to the newly created Layer, NULL if something went wrong
-     */
-    static Layer * parseLayer (TiXmlDocument* doc, std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> stylesList , bool reprojectionCapability, ServicesConf* servicesConf , ContextBook *cBook, ContextBook *sBook , Proxy proxy);
     /**
      * \~french
      * \brief Création d'un Layer à partir d'un fichier
@@ -340,7 +284,7 @@ private:
      * \param[in] proxy
      * \return pointer to the newly created Layer, NULL if something went wrong
      */
-    static Layer * buildLayer (ServerXML* serverXML, ServicesXML* servicesXML, std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> stylesList);
+    static Layer * buildLayer (std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> stylesList);
     
     /**
      * \~french

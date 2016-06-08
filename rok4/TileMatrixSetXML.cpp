@@ -127,7 +127,7 @@ TileMatrixSetXML::TileMatrixSetXML(std::string filePath )
         }
 
         std::string tmId = tmXML.getId();
-        TileMatrix tmObj = tmXML.getObject();
+        TileMatrix tmObj(tmXML);
         listTM.insert ( std::pair<std::string, TileMatrix> ( tmId, tmObj ) );
     }
 

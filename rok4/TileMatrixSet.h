@@ -50,6 +50,7 @@
 #include <vector>
 #include <map>
 #include "TileMatrix.h"
+#include "TileMatrixSetXML.h"
 #include "CRS.h"
 #include "Keyword.h"
 
@@ -135,25 +136,17 @@ private:
     std::map<std::string, TileMatrix> tmList;
 public:
     /**
-     * \~french
-     * \brief Crée un TileMatrixSet à partir des ses éléments constitutifs
-     * \param[in] id identifiant
-     * \param[in] title titre
-     * \param[in] abstract résumé
-     * \param[in] keyWords liste des mots-clés
-     * \param[in] crs système de coordonnées associé
-     * \param[in] tmList liste des TileMatrix
-     * \~english
-     * \brief Create a TileMatrixSet
-     * \param[in] id identifier
-     * \param[in] title title
-     * \param[in] abstract abstract
-     * \param[in] keyWords list of keywords
-     * \param[in] crs linked coordinates systems
-     * \param[in] tmList list of TileMatrix
-     */
-    TileMatrixSet ( std::string id, std::string title, std::string abstract, std::vector<Keyword> & keyWords, CRS& crs, std::map<std::string, TileMatrix> & tmList ) :
-        id ( id ), title ( title ), abstract ( abstract ), keyWords ( keyWords ), crs ( crs ), tmList ( tmList ) {};
+    * \~french
+    * Crée un TileMatrixSet à partir d'un TileMatrixSetXML
+    * \brief Constructeur
+    * \param[in] t TileMatrixSetXML contenant les informations
+    * \~english
+    * Create a TileMatrixSet from a TileMatrixSetXML
+    * \brief Constructor
+    * \param[in] t TileMatrixSetXML to get informations
+    */
+    TileMatrixSet ( const TileMatrixSetXML& t );
+
     /**
      * \~french
      * Crée un TileMatrixSet à partir d'un autre

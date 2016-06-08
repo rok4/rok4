@@ -35,32 +35,66 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-/**
- * \file Style.cpp
- * \~french
- * \brief Implémentation de la classe Style modélisant les styles.
- * \~english
- * \brief Implement the Style Class handling style definition
- */
+#ifndef LEVELXML_H
+#define LEVELXML_H
 
-#include "Style.h"
-#include "Logger.h"
-#include "intl.h"
+#include <vector>
+#include <string>
+#include <tinyxml.h>
+#include <tinystr.h>
+
+#include "Level.h"
+
 #include "config.h"
+#include "intl.h"
 
-Style::Style ( const StyleXML& s ) {
-    LOGGER_DEBUG ( _ ( "Nouveau Style : " ) << s.id );
-    this->id = s.id.c_str();
-    this->titles = s.titles;
-    this->abstracts = s.abstracts;
-    this->keywords = s.keywords;
-    this->legendURLs = s.legendURLs;
-    this->palette = s.palette;
-    if ( s.angle >= 0 && s.angle < 360 ) {
-        estompage = true;
-    }
-}
+class LevelXML
+{
+    friend class Level;
 
-Style::~Style() {
+    public:
+        LevelXML( TiXmlElement* levelElement, std::string fileName, std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML, std::map<std::string, TileMatrixSet*> &tmsList , std::map<std::string, Style *> stylesList, bool times);
+        ~LevelXML(){
+        }
 
-}
+        std::string getId() {
+            return id;
+        }
+
+        bool isOk() { return ok; }
+
+    protected:
+
+        //----VARIABLE
+        TileMatrix *tm;
+        //std::string id;
+        //std::string baseDir;
+        int32_t minTileRow=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
+        int32_t maxTileRow=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
+        int32_t minTileCol=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
+        int32_t maxTileCol=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
+        int tilesPerWidth;
+        int tilesPerHeight;
+        int pathDepth;
+        std::string noDataFilePath="";
+        std::string noDataObjectName="";
+        Context *context;
+        std::string prefix = "";
+        std::vector<Source*> sSources;
+        bool specificLevel = false;
+        bool noFile = false;
+        std::string baseDir;
+
+        // Sans stockage
+        bool onDemand;
+
+        // Avec stockage
+        bool onFly;
+
+    private:
+
+        bool ok;
+};
+
+#endif // LEVELXML_H
+

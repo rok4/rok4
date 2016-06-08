@@ -51,13 +51,13 @@
 
 class TileMatrixSetXML
 {
+
+    friend class TileMatrixSet;
+
     public:
+
         TileMatrixSetXML(std::string filePath);
         ~TileMatrixSetXML(){
-        }
-
-        TileMatrixSet* getPtrObject() {
-            return new TileMatrixSet ( id,title,abstract,keyWords,crs,listTM );
         }
 
         std::string getId() {
@@ -67,8 +67,6 @@ class TileMatrixSetXML
         bool isOk() { return ok; }
 
     protected:
-
-    private:
         std::string id;
         std::string title;
         CRS crs;
@@ -76,6 +74,7 @@ class TileMatrixSetXML
         std::vector<Keyword> keyWords;
         std::map<std::string, TileMatrix> listTM;
 
+    private:
         bool ok;
 };
 

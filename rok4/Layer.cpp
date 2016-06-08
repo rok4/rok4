@@ -47,6 +47,39 @@
 #include "Pyramid.h"
 #include "Logger.h"
 
+
+Layer::Layer ( const LayerXML& l ) {
+    this->id = l.id;
+    this->title = l.title;
+    this->abstract = l.abstract;
+    this->WMSAuthorized = l.WMSauth;
+    this->WMTSAuthorized = l.WMTSauth;
+    this->keyWords = l.keyWords;
+    this->dataPyramid = l.pyramid;
+    this->styles = l.styles;
+    this->minRes = l.minRes;
+    this->maxRes = l.maxRes;
+
+    this->WMSCRSList = l.WMSCRSList;
+    this->opaque = l.opaque;
+    this->authority = l.authority;
+    this->resampling = l.resampling;
+    this->geographicBoundingBox = l.geographicBoundingBox;
+    this->boundingBox = l.boundingBox;
+    this->metadataURLs = l.metadataURLs;
+
+    this->getFeatureInfoAvailability = l.getFeatureInfoAvailability;
+    this->getFeatureInfoType = l.getFeatureInfoType;
+    this->getFeatureInfoBaseURL = l.getFeatureInfoBaseURL;
+    this->GFIVersion = l.GFIVersion;
+
+    this->GFIService = l.GFIService;
+    this->GFIQueryLayers = l.GFIQueryLayers;
+    this->GFILayers = l.GFILayers;
+    this->GFIForceEPSG = l.GFIForceEPSG;
+}
+
+
 DataSource* Layer::gettile ( int x, int y, std::string tmId, DataSource* errorDataSource ) {
     return dataPyramid->getTile ( x, y, tmId, errorDataSource );
 }

@@ -35,32 +35,55 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-/**
- * \file Style.cpp
- * \~french
- * \brief Implémentation de la classe Style modélisant les styles.
- * \~english
- * \brief Implement the Style Class handling style definition
- */
+#ifndef STYLEXML_H
+#define STYLEXML_H
+
+#include <vector>
+#include <string>
+#include <tinyxml.h>
+#include <tinystr.h>
 
 #include "Style.h"
-#include "Logger.h"
-#include "intl.h"
+#include "ServicesXML.h"
+
 #include "config.h"
+#include "intl.h"
 
-Style::Style ( const StyleXML& s ) {
-    LOGGER_DEBUG ( _ ( "Nouveau Style : " ) << s.id );
-    this->id = s.id.c_str();
-    this->titles = s.titles;
-    this->abstracts = s.abstracts;
-    this->keywords = s.keywords;
-    this->legendURLs = s.legendURLs;
-    this->palette = s.palette;
-    if ( s.angle >= 0 && s.angle < 360 ) {
-        estompage = true;
-    }
-}
+class StyleXML
+{
+    friend class Style;
 
-Style::~Style() {
+    public:
+        StyleXML(std::string styleFilepath, ServicesXML* servicesXML);
+        ~StyleXML(){
+        }
 
-}
+        std::string getId() {
+            return id;
+        }
+
+        bool isOk() { return ok; }
+
+    protected:
+
+        std::string id;
+        std::vector<std::string> titles;
+        std::vector<std::string> abstracts;
+        std::vector<Keyword> keywords;
+        std::vector<LegendURL> legendURLs;
+        std::map<double, Colour> colourMap;
+        bool rgbContinuous;
+        bool alphaContinuous;
+        bool noAlpha;
+        int angle;
+        float exaggeration;
+        int center;
+        Palette palette;
+
+    private:
+
+        bool ok;
+};
+
+#endif // STYLEXML_H
+

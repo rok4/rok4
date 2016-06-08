@@ -50,13 +50,11 @@
 
 class TileMatrixXML
 {
+    friend class TileMatrix;
+
     public:
         TileMatrixXML(std::string tmsId, TiXmlElement* levelElement);
         ~TileMatrixXML(){
-        }
-
-        TileMatrix getObject() {
-            return TileMatrix( id, res, x0, y0, tileW, tileH, matrixW, matrixH );
         }
 
         std::string getId() {
@@ -67,8 +65,6 @@ class TileMatrixXML
 
     protected:
 
-    private:
-
         std::string id;
         double res;
         double x0;
@@ -77,6 +73,8 @@ class TileMatrixXML
         int tileH;
         long int matrixW;
         long int matrixH;
+
+    private:
 
         bool ok;
 };

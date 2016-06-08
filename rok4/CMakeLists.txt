@@ -40,7 +40,7 @@ configure_file(config.h.in config.h ESCAPE_QUOTES @ONLY)
 add_subdirectory(po)
 
 set(rok4core_SRCS  GetFeatureInfoEncoder.cpp MetadataURL.cpp ResourceLocator.cpp LegendURL.cpp Style.cpp CapabilitiesBuilder.cpp ConfLoader.cpp Layer.cpp Level.cpp Message.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TileMatrix.cpp TileMatrixSet.cpp Rok4Api.cpp Keyword.cpp Rok4Server.cpp ProcessFactory.cpp WebService.cpp Source.cpp
-TileMatrixSetXML.cpp TileMatrixXML.cpp ServerXML.cpp ServicesXML.cpp)
+TileMatrixSetXML.cpp TileMatrixXML.cpp ServerXML.cpp ServicesXML.cpp LayerXML.cpp StyleXML.cpp PyramidXML.cpp LevelXML.cpp)
 set(rok4server_SRCS main.cpp )
 #set(rok4apitest_SRCS test_api.c )
 set(rok4parsertest_SRCS test_parser.cpp )
