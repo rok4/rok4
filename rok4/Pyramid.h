@@ -46,7 +46,6 @@
 #include "Style.h"
 #include "ServicesConf.h"
 #include <Interpolation.h>
-#include "WebService.h"
 #include "Source.h"
 
 //std::string getMimeType(std::string format);
@@ -58,7 +57,7 @@
 * Une pyramide est associee a un layer et comporte plusieurs niveaux
 */
 
-class Pyramid: public Source {
+class Pyramid : public Source {
 
 private:
 
@@ -72,7 +71,7 @@ private:
      * \~french \brief TileMatrixSet des données
      * \~english \brief TileMatrixSet of the data
      */
-    const TileMatrixSet tms;
+    TileMatrixSet* tms;
 
     /**
      * \~french \brief Format des tuiles
@@ -98,6 +97,8 @@ private:
      */
     Level* lowestLevel;
 
+
+    bool isBasedPyramid;
     /**
      * \~french \brief Indique si la pyramide peut avoir de la transparence
      * utilisé seulement pour une pyramide de base
@@ -108,7 +109,6 @@ private:
      * There are no use for a normal pyramid or a OnDemand pyramid
      */
     bool transparent;
-
     /**
      * \~french \brief Indique si la pyramide a un style
      * utilisé seulement pour une pyramide de base
@@ -120,21 +120,7 @@ private:
      */
     Style *style;
 
-    /**
-     * \~french \brief Indique si la pyramide contient des tuiles déjà pré-calculées (false)
-     * ou si elle est à la demande, donc calcule des tuiles sur demande (true)
-     * \~english \brief Indicate if the pyramid has tiles (false)
-     * or if tiles are generated on demand (true)
-     */
-    bool onDemand;
-
-    /**
-     * \~french \brief Indique si la pyramide doit être générée à la volée
-     * Dans ce cas, elle doit nécessairement être à la demande
-     * \~english \brief Indicate if the pyramid must be generated on the fly
-     * In this case, it must be onDemand
-     */
-    bool onFly;
+    bool containOdLevels;
 
     /**
      * \~french \brief Teste si deux CRS sont équivalent
@@ -184,7 +170,7 @@ public:
      * \~english \brief Get the TMS
      * \return TileMatrixSet
      */
-    TileMatrixSet getTms();
+    TileMatrixSet* getTms();
 
     /**
      * \~french \brief Récupère les niveaux
@@ -195,6 +181,25 @@ public:
     std::map<std::string, Level*>& getLevels() {
         return levels;
     }
+
+    Level* getLevel(std::string id) {
+        std::map<std::string, Level*>::iterator it= levels.find ( id );
+        if ( it == stylesList.end() ) {
+            return NULL;
+        }
+        return it->second();
+    }
+
+    void removeLevel(std::string id) {
+
+        std::map<std::string, Level*>::iterator lv = levels.find(id);
+        delete lv->second;
+        lv->second = NULL;
+        levels.erase(lv);
+        
+    }
+
+
     /**
      * \~french \brief Attribue les niveaux
      * \~english \brief Set the levels
@@ -247,53 +252,13 @@ public:
     }
 
     /**
-     * \~french \brief Indique si la pyramide est à la demande
-     * \return onDemand
-     * \~english \brief Indicate if the pyramid is onDemand
-     * \return onDemand
+     * \~french \brief Indique si la pyramide contient des niveaux à la demande
+     * \return containOdLevels
+     * \~english \brief Indicate if the pyramid contains onDemand levels
+     * \return containOdLevels
      */
-    bool getOnDemand(){
-        return onDemand;
-    }
-
-    /**
-     * \~french \brief Modifie le paramètre onDemand
-     * \param[in] booleen
-     * \~english \brief Modify onDemand
-     * \param[in] boolean
-     */
-    void setOnDemand (bool od) {
-        onDemand = od;
-    }
-
-
-    /**
-     * \~french \brief Indique si la pyramide est à la volée
-     * \return onFly
-     * \~english \brief Indicate if the pyramid is onFly
-     * \return onFly
-     */
-    bool getOnFly(){
-        return onFly;
-    }
-
-    /**
-     * \~french \brief Modifie le paramètre onFly
-     * \param[in] booleen
-     * \~english \brief Modify onFly
-     * \param[in] boolean
-     */
-    void setOnFly (bool of) {
-        if (of) {
-            if (onDemand) {
-                onFly = of;
-            }
-        } else {
-            if (!onDemand) {
-                onFly = of;
-            }
-        }
-
+    bool getContainOdLevels(){
+        return containOdLevels;
     }
 
     /**
@@ -400,21 +365,9 @@ public:
 
     /**
      * \~french \brief Constructeur
-     * \param[in] levels de la pyramide
-     * \param[in] tms
-     * \param[in] format des tuiles
-     * \param[in] nombre de canaux des tuiles
-     * \param[in] onDemand
-     * \param[in] onFly
      * \~english \brief Constructor
-     * \param[in] levels of the pyramid
-     * \param[in] tms
-     * \param[in] format of the tiles
-     * \param[in] number of channels
-     * \param[in] onDemand
-     * \param[in] onFly
      */
-    Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format, int channels, bool onDemand, bool onFly);
+    Pyramid (PyramidXML* p);
 
     /**
      * \~french \brief Destructeur
@@ -428,190 +381,6 @@ public:
 //    virtual std::vector<int> getNdValues();
 //    virtual Photometric::ePhotometric getPhotometry();
 
-
-
-};
-
-class PyramidOnDemand : public Pyramid {
-
-private:
-
-    /**
-     * \~french \brief Si une pyramide est à la demande par niveau,
-     * alors elle doit pouvoir tirer ses informations d'une autre pyramide
-     * ou d'un service web, voir plusieurs
-     * Cet attribut contient donc la liste des sources
-     * \~english \brief If a pyramid is onDemand by level
-     * it must contain a reference to other pyramids which have data
-     * or web services
-     * This is the list of those sources
-     */
-    std::map<std::string,std::vector<Source*> > specificSources;
-
-public:
-
-    /**
-     * \~french \brief Constructeur
-     * \param[in] levels de la pyramide
-     * \param[in] tms
-     * \param[in] format des tuiles
-     * \param[in] nombre de canaux des tuiles
-     * \param[in] onDemand
-     * \param[in] onFly
-     * \param[in] specificSources
-     * \~english \brief Constructor
-     * \param[in] levels of the pyramid
-     * \param[in] tms
-     * \param[in] format of the tiles
-     * \param[in] number of channels
-     * \param[in] onDemand
-     * \param[in] onFly
-     * \param[in] specificSources
-     */
-    PyramidOnDemand(std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format,
-                    int channels, bool onDemand, bool onFly,
-                    std::map<std::string,std::vector<Source*> > sSources) :
-        Pyramid(levels,tms,format,channels,onDemand,onFly),
-        specificSources (sSources) {}
-
-
-
-    /**
-     * \~french \brief Destructeur
-     * \~english \brief Destructor
-     */
-    ~PyramidOnDemand();
-
-    /**
-     * \~french \brief Récupère les pyramides specifiques
-     * \return Liste des pyramides specifiques
-     * \~english \brief Get the specific pyramids
-     * \return List of specific pyramids
-     */
-    std::map<std::string,std::vector<Source*> >  getSources(){
-        return specificSources;
-    }
-
-    /**
-     * \~french \brief Modifie la liste des pyramides specifiques
-     * \param[in] Liste des pyramides specifiques
-     * \~english \brief Set the specific pyramids
-     * \param[in] List of specific pyramids
-     */
-    void setSources (std::map<std::string,std::vector<Source*> >  sP) {
-        specificSources = sP;
-    }
-
-    /**
-     * \~french \brief Renvoit la liste des sources d'un level
-     * ATTENTION: ne doit être utilisé que si on est sur qu'il existe
-     * \param[in] level id
-     * \return sources
-     * \~english \brief Return the list of sources of a level
-     * WARNING: should be used only if it exists
-     * \param[in] level id
-     * \return sources
-     */
-    std::vector<Source *> getSourcesOfLevel( std::string lv);
-
-};
-
-
-
-class PyramidOnFly : public PyramidOnDemand {
-
-private:
-
-    /**
-     * \~french \brief Donne la photométrie des images de la pyramide
-     * Non Obligatoire sauf pour les pyramides avec stockage
-     * \~english \brief Give the photometry of images
-     * Not Mandatory, only used for pyramid onFly
-     */
-    Photometric::ePhotometric photo;
-
-    /**
-     * \~french \brief Donne les valeurs des noData pour la pyramide
-     * Non Obligatoire sauf pour les pyramides avec stockage
-     * \~english \brief Give the noData value
-     * Not Mandatory, only used for pyramid onFly
-     */
-    std::vector<int> ndValues;
-
-public:
-
-    /**
-     * \~french \brief Constructeur
-     * \param[in] levels de la pyramide
-     * \param[in] tms
-     * \param[in] format des tuiles
-     * \param[in] nombre de canaux des tuiles
-     * \param[in] onDemand
-     * \param[in] onFly
-     * \param[in] transparence
-     * \param[in] style
-     * \~english \brief Constructor
-     * \param[in] levels of the pyramid
-     * \param[in] tms
-     * \param[in] format of the tiles
-     * \param[in] number of channels
-     * \param[in] onDemand
-     * \param[in] onFly
-     * \param[in] transparence
-     * \param[in] style
-     */
-    PyramidOnFly(std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format,
-                 int channels, bool onDemand, bool onFly, Photometric::ePhotometric ph, std::vector<int> ndv,
-                 std::map<std::string,std::vector<Source*> > sSources) :
-        PyramidOnDemand(levels,tms,format,channels,onDemand,onFly,sSources),
-        photo (ph),
-        ndValues (ndv) {}
-
-
-    /**
-     * \~french \brief Destructeur
-     * \~english \brief Destructor
-     */
-    ~PyramidOnFly() {
-    }
-
-    /**
-     * \~french \brief Indique la photometrie de la pyramide
-     * \return photo
-     * \~english \brief Indicate the photometry of the pyramid
-     * \return photo
-     */
-    Photometric::ePhotometric getPhotometry();
-
-    /**
-     * \~french \brief Modifie le paramètre onDemand
-     * \param[in] booleen
-     * \~english \brief Modify onDemand
-     * \param[in] boolean
-     */
-    void setPhotometry (Photometric::ePhotometric ph) {
-       photo = ph;
-    }
-
-    /**
-     * \~french \brief Indique les valeurs de noData
-     * \return ndValues
-     * \~english \brief Indicate the noData values
-     * \return ndValues
-     */
-    std::vector<int> getNdValues() {
-        return ndValues;
-    }
-
-    /**
-     * \~french \brief Modifie le paramètre noData
-     * \param[in] noData
-     * \~english \brief Modify noData
-     * \param[in] noData
-     */
-    void setNdValues (std::vector<int> ndv) {
-       ndValues = ndv;
-    }
 
 
 };

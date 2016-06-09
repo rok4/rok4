@@ -147,8 +147,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     }
 
     // Chargement des TMS
-    std::map<std::string,TileMatrixSet*> tmsList;
-    if ( ! ConfLoader::buildTMSList ( serverXML, tmsList ) ) {
+    if ( ! ConfLoader::buildTMSList ( serverXML ) ) {
         LOGGER_FATAL ( _ ( "Impossible de charger la conf des TileMatrix" ) );
         LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
@@ -156,8 +155,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     }
 
     //Chargement des styles
-    std::map<std::string, Style*> styleList;
-    if ( ! ConfLoader::buildStylesList ( serverXML, servicesXML, styleList ) ) {
+    if ( ! ConfLoader::buildStylesList ( serverXML, servicesXML ) ) {
         LOGGER_FATAL ( _ ( "Impossible de charger la conf des Styles" ) );
         LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
@@ -165,8 +163,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     }
 
     // Chargement des layers
-    std::map<std::string, Layer*> layerList;
-    if ( !ConfLoader::buildLayersList ( serverXML, servicesXML, tmsList, styleList, layerList) ) {
+    if ( ! ConfLoader::buildLayersList ( serverXML, servicesXML ) ) {
         LOGGER_FATAL ( _ ( "Impossible de charger la conf des Layers/pyramides" ) );
         LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
@@ -175,7 +172,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
 
     // Instanciation du serveur
     Logger::stopLogger();
-    return new Rok4Server ( serverXML, servicesXML, layerList, tmsList, styleList );
+    return new Rok4Server ( serverXML, servicesXML );
 }
 
 /**

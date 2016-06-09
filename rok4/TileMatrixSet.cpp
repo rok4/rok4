@@ -62,6 +62,71 @@ TileMatrixSet::TileMatrixSet ( const TileMatrixSetXML& t ) {
 	tmList = t.listTM;
 }
 
+std::vector<std::pair<std::string, double>> TileMatrixSet::getCorrespondingLevels(std::string levelIn, TileMatrixSet* otherTMS, bool limits) {
+    
+    std::vector<std::pair<std::string, double>> acceptedLevels;
+
+    TileMatrix* tmIn =  this->getLevel(levelIn);
+    if (tmIn == NULL) return acceptedLevels;
+
+    double ratioX, ratioY, resOutX, resOutY;
+    double resIn = tmIn->getRes();
+
+
+    BoundingBox<double> nBbox = this->getCrs().getCrsDefinitionArea();
+    BoundingBox<double> cBbox = otherTMS->getCrs().cropBBoxGeographic(nBbox);
+
+    cBbox = this->getCrs().cropBBoxGeographic(cBbox);
+    // cBBox est une bbox géographique contenue dans les espaces de définition des 2 crs
+
+    BoundingBox<double> cBboxOld = cBbox;
+    BoundingBox<double> cBboxNew = cBbox;
+
+
+    double Res, ratioX, ratioY, resX, resY;
+    std::string best_h;
+
+    Res = tm->getRes();
+
+    BoundingBox<double> nBbox = tms->getCrs().getCrsDefinitionArea();
+
+    BoundingBox<double> cBbox = pyr->getTms().getCrs().cropBBoxGeographic(nBbox);
+
+    cBbox = tms->getCrs().cropBBoxGeographic(cBbox);
+    BoundingBox<double> cBboxOld = cBbox;
+    BoundingBox<double> cBboxNew = cBbox;
+
+    if (cBboxNew.reproject("epsg:4326",this->getCrs().getProj4Code()) == 0 &&
+        cBboxOld.reproject("epsg:4326",otherTMS->getCrs().getProj4Code()) == 0)
+    {
+        // On a bien réussi à reprojeter la bbox dans chaque CRS, on peut calculer un ratio
+
+        ratioX = (cBboxOld.xmax - cBboxOld.xmin) / (cBboxNew.xmax - cBboxNew.xmin);
+        ratioY = (cBboxOld.ymax - cBboxOld.ymin) / (cBboxNew.ymax - cBboxNew.ymin);
+
+        resOutX = resIn * ratioX;
+        resOutY = resIn * ratioY;
+
+        double resolution = sqrt ( resOutX * resOutY );
+
+        std::map<std::string, Level*>::iterator it = otherTMS->getTmList().begin();
+        for ( it; it < otherTMS->getTmList().end(); it++ ) {
+            // Pour chaque niveau du deuxième TMS, on calcule le ratio
+            double d = resolution / it->second->getRes();
+
+            if (! limits || (d <= 1.8 && d >= 0.8)) {
+                // On ajoute car l'écart de résolution est pas trop grand ou on ne veut pas de limites
+                acceptedLevels.push_back(std::pair<std::string, double> ( it->first, d ));
+            }
+        }
+
+        std::sort(acceptedLevels.begin(), acceptedLevels.end());
+
+    }
+
+    return acceptedLevels;
+}
+
 bool TileMatrixSet::operator== ( const TileMatrixSet& other ) const {
     return ( this->keyWords.size() ==other.keyWords.size()
              && this->tmList.size() ==other.tmList.size()

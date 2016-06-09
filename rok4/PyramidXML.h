@@ -56,7 +56,7 @@ class PyramidXML
 
     public:
 
-        PyramidXML(std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML, std::map<std::string, TileMatrixSet*> &tmsList , std::map<std::string, Style *> stylesList, bool times);
+        PyramidXML(std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML, bool times);
         ~PyramidXML(){
         }
 
@@ -67,19 +67,20 @@ class PyramidXML
         bool isOk() { return ok; }
 
     protected:
+
         TileMatrixSet *tms;
-        std::string formatStr;
+        Rok4Format format;
         Rok4Format::eformat_data format;
         int channels;
+        bool allowWMS;
         std::map<std::string, Level *> levels;
-        bool onDemand;
-        int nbSpecificLevel;
-        Pyramid* basedPyramid;
-        WebService* ws;
-        bool onFly;
+
         std::string photometricStr;
         std::string ndValuesStr;
         std::vector<int> noDataValues;
+
+        bool isBasedPyramid;
+        bool containOdLevels;
 
     private:
         bool ok;

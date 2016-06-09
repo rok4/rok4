@@ -55,7 +55,7 @@ class LayerXML
     friend class Layer;
 
     public:
-        LayerXML(std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> stylesList);
+        LayerXML(std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML );
         ~LayerXML(){
         }
 

@@ -53,41 +53,41 @@ class LevelXML
     friend class Level;
 
     public:
-        LevelXML( TiXmlElement* levelElement, std::string fileName, std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML, std::map<std::string, TileMatrixSet*> &tmsList , std::map<std::string, Style *> stylesList, bool times);
+        LevelXML(TiXmlElement* levelElement, std::string fileName, std::string parentDir, ServerXML* serverXML, TileMatrixSet* tms, bool times);
         ~LevelXML(){
         }
 
-        std::string getId() {
-            return id;
-        }
+        std::string getId() { return id; }
+        bool isOnDemand() { return onDemand; }
+        bool isOnFly() { return onFly; }
 
         bool isOk() { return ok; }
 
     protected:
 
         //----VARIABLE
-        TileMatrix *tm;
-        //std::string id;
-        //std::string baseDir;
-        int32_t minTileRow=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
-        int32_t maxTileRow=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
-        int32_t minTileCol=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
-        int32_t maxTileCol=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
+        TileMatrix* tm;
+
+        int32_t minTileRow;    
+        int32_t maxTileRow;    
+        int32_t minTileCol;    
+        int32_t maxTileCol;  
+
         int tilesPerWidth;
         int tilesPerHeight;
-        int pathDepth;
-        std::string noDataFilePath="";
-        std::string noDataObjectName="";
-        Context *context;
-        std::string prefix = "";
-        std::vector<Source*> sSources;
-        bool specificLevel = false;
-        bool noFile = false;
-        std::string baseDir;
 
+        Context *context;
+
+        std::string baseDir;
+        int pathDepth;
+        std::string noDataFilePath;
+
+        std::string prefix;
+        std::string noDataObjectName;
+
+        std::vector<Source*> sSources;
         // Sans stockage
         bool onDemand;
-
         // Avec stockage
         bool onFly;
 

@@ -191,6 +191,27 @@ public:
     std::map<std::string, TileMatrix>* getTmList();
     /**
      * \~french
+     * \brief Retourne la TileMatrix
+     * \return TileMatrix
+     * \~english
+     * \brief Return the TileMatrix
+     * \return TileMatrix
+     */
+    TileMatrix* getTm(std::string id) {
+        std::map<std::string, TileMatrix>::iterator itTM = tmList->find ( id );
+
+        if ( itTM == tmList->end() ) {
+            return NULL;
+        }
+
+        return & ( itTM->second );
+    }
+
+    std::vector<std::pair<std::string, double>> getCorrespondingLevels(std::string level, TileMatrixSet* otherTMS, bool limits);
+
+
+    /**
+     * \~french
      * \brief Retourne l'indentifiant
      * \return identifiant
      * \~english

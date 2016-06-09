@@ -42,7 +42,7 @@
 
 #include "TileMatrixXML.h"
 
-PyramidXML::PyramidXML(std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML, std::map<std::string, TileMatrixSet*> &tmsList , std::map<std::string, Style *> stylesList, bool times)
+PyramidXML::PyramidXML(std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML, bool times)
 {
     ok = false;
 
@@ -67,13 +67,9 @@ PyramidXML::PyramidXML(std::string fileName, ServerXML* serverXML, ServicesXML* 
     /********************** Default values */
 
     formatStr="";
-    onDemand = false;
-    onDemandSpecific = false;
-    nbSpecificLevel = 0;
-    basedPyramid = NULL;
-    ws = NULL;
-    onFly = false;
-    testOnFly = true;
+    allowWMS = true;
+    isBasedPyramid = ! times;
+    containOdLevels = false;
 
     /********************** Parse */
 
@@ -100,13 +96,12 @@ PyramidXML::PyramidXML(std::string fileName, ServerXML* serverXML, ServicesXML* 
         return;
     }
     std::string tmsName= pElem->GetTextStr();
-    std::map<std::string, TileMatrixSet *>::iterator it;
-    it=tmsList.find ( tmsName );
-    if ( it == tmsList.end() ) {
+
+    TileMatrixSet * tms = serverXML->getTMS(tmsName);
+    if ( tms == NULL ) {
         LOGGER_ERROR ( _ ( "La pyramide [" ) << fileName <<_ ( "] reference un TMS [" ) << tmsName <<_ ( "] qui n'existe pas." ) );
         return;
     }
-    tms=it->second;
     //----
 
     //----FORMAT
@@ -115,7 +110,7 @@ PyramidXML::PyramidXML(std::string fileName, ServerXML* serverXML, ServicesXML* 
         LOGGER_ERROR ( _ ( "La pyramide [" ) << fileName <<_ ( "] n'a pas de format." ) );
         return;
     }
-    formatStr= pElem->GetTextStr();
+    std::string formatStr= pElem->GetTextStr();
 
     //  to remove when TIFF_RAW_INT8 et TIFF_RAW_FLOAT32 only will be used
     if ( formatStr.compare ( "TIFF_INT8" ) == 0 ) formatStr = "TIFF_RAW_INT8";
@@ -192,49 +187,26 @@ PyramidXML::PyramidXML(std::string fileName, ServerXML* serverXML, ServicesXML* 
             noDataValues.push_back(DEFAULT_NODATAVALUE);
         }
     }
-    //----
 
-    //----LEVELS SECTION------------------------------------------------
-
-    // on va vérifier que les levels sont spécifiés
-    // si c'est une pyramide à la demande, ce n'est pas obligatoire
-    if (hRoot.FirstChild ( "level" ).Element()) {
 
     for ( pElem=hRoot.FirstChild ( "level" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "level" ) ) {
-
-        LevelXML levXML(pElem, ...);
+        LevelXML levXML(pElem, fileName, parentDir, serverXML, tms, times);
         if (! levXML.isOk()) {
             return;
         }
 
+        if (levXML.isOnDemand() || isOnFly()) containOdLevels = true;
+
         std::string lId = levXML.getId();
         Level* levObj = new Level(levXML);
-        listTM.insert ( std::pair<std::string, Level*> ( lId, levObj ) );
+        levels.insert ( std::pair<std::string, Level*> ( lId, levObj ) );
 
     } //if level
 
-    if ( levels.size() ==0 ) {
+    if ( levels.size() == 0 ) {
         LOGGER_ERROR ( _ ( "Aucun level n'a pu etre charge pour la pyramide " ) << fileName );
         return;
     }
-
-
-    //----PYRAMID
-
-    Pyramid* pyr;
-
-    if (onFly) {
-    pyr = new PyramidOnFly(levels, *tms, format, channels, onDemand, onFly, Photometric::fromString(photometricStr),noDataValues,specificSources);
-    } else {
-    if (onDemand) {
-    pyr = new PyramidOnDemand(levels, *tms, format, channels, onDemand, onFly,specificSources);
-    } else {
-    pyr = new Pyramid ( levels, *tms, format, channels, onDemand, onFly );
-    }
-    }
-
-    //----
-    return pyr;
 
     ok = true;
 }

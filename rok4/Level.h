@@ -55,29 +55,29 @@
 class Level {
 private:
 
-    std::string   baseDir;
-    Context*       context;
-    int           pathDepth;        //used only for file context
+    std::string baseDir;
+    Context* context;
+    int pathDepth;        //used only for file context
     std::string prefix;     //used only for ceph and swift context
-    TileMatrix    tm;         // FIXME j'ai des problème de compil que je ne comprends pas si je mets un const ?!
+    TileMatrix* tm;
     const Rok4Format::eformat_data format; //format d'image des tuiles
     int maxTileSize;
-    const int     channels;
+    const int channels;
     uint32_t maxTileRow;
     uint32_t minTileRow;
     uint32_t maxTileCol;
     uint32_t minTileCol;
-    uint32_t      tilesPerWidth;   //nombre de tuiles par dalle dans le sens de la largeur
-    uint32_t      tilesPerHeight;  //nombre de tuiles par dalle dans le sens de la hauteur
+    uint32_t tilesPerWidth;   //nombre de tuiles par dalle dans le sens de la largeur
+    uint32_t tilesPerHeight;  //nombre de tuiles par dalle dans le sens de la hauteur
     std::string noDataFile;
     DataSource* noDataSource;
     DataSource* noDataTileSource;
     DataSource* noDataSourceProxy;
+    
+    std::vector<Source*> sSources;
 
     DataSource* getEncodedTile ( int x, int y );
     DataSource* getDecodedTile ( int x, int y );
-
-
 
 protected:
     /**
@@ -187,10 +187,7 @@ public:
     int getSlabWidth();
 
     /** D */
-    Level ( TileMatrix tm, int channels, std::string baseDir,
-            int tilesPerWidth, int tilesPerHeight,
-            uint32_t maxTileRow, uint32_t minTileRow, uint32_t maxTileCol, uint32_t minTileCol,
-            int pathDepth, Rok4Format::eformat_data format, std::string noDataFile, Context*& context, std::string prefix );
+    Level ( LevelXML* l );
 
     /*
      * Destructeur

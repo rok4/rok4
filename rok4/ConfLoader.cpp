@@ -80,7 +80,7 @@
 
 ServerXML* ConfLoader::getTechnicalParam ( std::string serverConfigFile ) {
 
-    return new ServerXML(serverConfigFile);
+    return new ServerXML( serverConfigFile );
 }
 
 ServicesXML* ConfLoader::buildServicesConf ( std::string servicesConfigFile ) {
@@ -92,16 +92,17 @@ ServicesXML* ConfLoader::buildServicesConf ( std::string servicesConfigFile ) {
 /********************************************** STYLES ****************************************************/
 /**********************************************************************************************************/
 
-bool ConfLoader::buildStylesList ( ServerXML* serverXML, ServicesXML* servicesXML, std::map<std::string,Style*> &stylesList ) {
+bool ConfLoader::buildStylesList ( ServerXML* serverXML, ServicesXML* servicesXML ) {
     LOGGER_INFO ( _ ( "CHARGEMENT DES STYLES" ) );
 
     // lister les fichier du repertoire styleDir
     std::vector<std::string> styleFiles;
     std::vector<std::string> styleName;
+    std::string styleDir = serverXML->getStylesDir();
     std::string styleFileName;
     struct dirent *fileEntry;
     DIR *dir;
-    if ( ( dir = opendir ( serverXML->getStylesDir().c_str() ) ) == NULL ) {
+    if ( ( dir = opendir ( styleDir.c_str() ) ) == NULL ) {
         LOGGER_FATAL ( _ ( "Le repertoire des Styles " ) << styleDir << _ ( " n'est pas accessible." ) );
         return false;
     }
@@ -126,18 +127,18 @@ bool ConfLoader::buildStylesList ( ServerXML* serverXML, ServicesXML* servicesXM
         Style * style;
         style = buildStyle ( styleFiles[i], servicesXML );
         if ( style ) {
-            stylesList.insert ( std::pair<std::string, Style *> ( styleName[i], style ) );
+            serverXML->addStyle ( std::pair<std::string, Style *> ( styleName[i], style ) );
         } else {
             LOGGER_ERROR ( _ ( "Ne peut charger le style: " ) << styleFiles[i] );
         }
     }
 
-    if ( stylesList.size() ==0 ) {
+    if ( serverXML->getNbStyles() ==0 ) {
         LOGGER_FATAL ( _ ( "Aucun Style n'a pu etre charge!" ) );
         return false;
     }
 
-    LOGGER_INFO ( _ ( "NOMBRE DE STYLES CHARGES : " ) <<stylesList.size() );
+    LOGGER_INFO ( _ ( "NOMBRE DE STYLES CHARGES : " ) << serverXML->getNbStyles() );
 
     return true;
 }
@@ -158,7 +159,7 @@ Style* ConfLoader::buildStyle ( std::string fileName, ServicesXML* servicesXML )
 /*********************************************** TMS ******************************************************/
 /**********************************************************************************************************/
 
-bool ConfLoader::buildTMSList ( ServerXML* serverXML, std::map<std::string, TileMatrixSet*> &tmsList ) {
+bool ConfLoader::buildTMSList ( ServerXML* serverXML ) {
     LOGGER_INFO ( _ ( "CHARGEMENT DES TMS" ) );
 
     // lister les fichier du repertoire tmsDir
@@ -192,18 +193,18 @@ bool ConfLoader::buildTMSList ( ServerXML* serverXML, std::map<std::string, Tile
         TileMatrixSet * tms;
         tms = buildTileMatrixSet ( tmsFiles[i] );
         if ( tms ) {
-            tmsList.insert ( std::pair<std::string, TileMatrixSet *> ( tms->getId(), tms ) );
+            serverXML->addTMStmsList ( std::pair<std::string, TileMatrixSet *> ( tms->getId(), tms ) );
         } else {
             LOGGER_ERROR ( _ ( "Ne peut charger le tms: " ) << tmsFiles[i] );
         }
     }
 
-    if ( tmsList.size() ==0 ) {
+    if ( serverXML->getNbTMS() ==0 ) {
         LOGGER_FATAL ( _ ( "Aucun TMS n'a pu etre charge!" ) );
         return false;
     }
 
-    LOGGER_INFO ( _ ( "NOMBRE DE TMS CHARGES : " ) <<tmsList.size() );
+    LOGGER_INFO ( _ ( "NOMBRE DE TMS CHARGES : " ) << serverXML->getNbTMS() );
 
     return true;
 }
@@ -223,18 +224,16 @@ TileMatrixSet* ConfLoader::buildTileMatrixSet ( std::string fileName ) {
 /********************************************* LAYERS *****************************************************/
 /**********************************************************************************************************/
 
-bool ConfLoader::buildLayersList (ServerXML* serverXML, ServicesXML* servicesXML, 
-                                  std::map<std::string, TileMatrixSet*> &tmsList, 
-                                  std::map<std::string,Style*> &stylesList, 
-                                  std::map<std::string,Layer*> &layers) {
+bool ConfLoader::buildLayersList ( ServerXML* serverXML, ServicesXML* servicesXML ) {
 
     LOGGER_INFO ( _ ( "CHARGEMENT DES LAYERS" ) );
     // lister les fichier du repertoire layerDir
     std::vector<std::string> layerFiles;
+    std::string layerDir = serverXML->getLayersDir();
     std::string layerFileName;
     struct dirent *fileEntry;
     DIR *dir;
-    if ( ( dir = opendir ( serverXML->getLayersDir().c_str() ) ) == NULL ) {
+    if ( ( dir = opendir ( layerDir.c_str() ) ) == NULL ) {
         LOGGER_FATAL ( _ ( "Le repertoire " ) << layerDir << _ ( " n'est pas accessible." ) );
         return false;
     }
@@ -255,26 +254,26 @@ bool ConfLoader::buildLayersList (ServerXML* serverXML, ServicesXML* servicesXML
     // generer les Layers decrits par les fichiers.
     for ( unsigned int i=0; i<layerFiles.size(); i++ ) {
         Layer * layer;
-        layer = buildLayer (serverXML, servicesXML, layerFiles[i], tmsList, stylesList);
+        layer = buildLayer ( layerFiles[i], serverXML, servicesXML );
         if ( layer ) {
-            layers.insert ( std::pair<std::string, Layer *> ( layer->getId(), layer ) );
+            serverXML->addLayer ( std::pair<std::string, Layer *> ( layer->getId(), layer ) );
         } else {
             LOGGER_ERROR ( _ ( "Ne peut charger le layer: " ) << layerFiles[i] );
         }
     }
 
-    if ( layers.size() ==0 ) {
+    if ( serverXML->getNbLayers() ==0 ) {
         LOGGER_ERROR ( _ ( "Aucun layer n'a pu etre charge!" ) );
         //return false;
     }
 
-    LOGGER_INFO ( _ ( "NOMBRE DE LAYERS CHARGES : " ) << layers.size() );
+    LOGGER_INFO ( _ ( "NOMBRE DE LAYERS CHARGES : " ) << serverXML->getNbLayers() );
     return true;
 }
 
-Layer * ConfLoader::buildLayer ( std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> stylesList ) {
+Layer * ConfLoader::buildLayer ( std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML ) {
 
-    LayerXML layerXML(fileName, serverXML, servicesXML, tmsList, stylesList);
+    LayerXML layerXML(fileName, serverXML, servicesXML );
     if ( ! layerXML.isOk() ) {
         return NULL;
     }
@@ -293,301 +292,112 @@ Layer * ConfLoader::buildLayer ( std::string fileName, ServerXML* serverXML, Ser
 /******************************************** PYRAMIDS ****************************************************/
 /**********************************************************************************************************/
 
-Pyramid* ConfLoader::buildPyramid ( std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML, std::map<std::string, TileMatrixSet*> &tmsList , std::map<std::string, Style *> stylesList, bool times ) {
+Pyramid* ConfLoader::buildPyramid ( std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML, bool times ) {
     
-    PyramidXML pyrXML(fileName, serverXML, servicesXML, tmsList, stylesList, times);
+    PyramidXML pyrXML(fileName, serverXML, servicesXML, times);
 
     if ( ! pyrXML.isOk() ) {
         return NULL;
     }
 
     return new Pyramid(pyrXML);
+}
 
-    TiXmlDocument doc ( fileName.c_str() );
-    if ( !doc.LoadFile() ) {
-        LOGGER_ERROR ( _ ( "Ne peut pas charger le fichier " ) << fileName );
+/**********************************************************************************************************/
+/*********************************************** SOURCES **************************************************/
+/**********************************************************************************************************/
+
+PyramidSource* ConfLoader::buildBasedPyramid (
+    TiXmlElement* pElemBP,
+    ServerXML* serverXML, ServicesXML* servicesXML,
+    std::string levelOD,
+    TileMatrixSet* tmsOD,
+    std::string parentDir
+) {
+
+    TiXmlElement* sFile = sPyr->FirstChildElement("file");
+    TiXmlElement* sTransparent = sPyr->FirstChildElement("transparent");
+    TiXmlElement* sStyle = sPyr->FirstChildElement("style");
+
+    bool transparent = false;
+    std::string str_transparent, basedPyramidFilePath;
+    std::string str_style = "";
+
+    if (! sFile || ! sTransparent || ! sStyle || ! sFile->GetText() || ! sTransparent->GetText() || ! sStyle->GetText()) {
+        // Il manque un des trois elements necessaires pour initialiser une
+        // nouvelle pyramide de base
+        LOGGER_ERROR ( _ ( "Source Pyramid: " ) << basedPyramidFilePath << _ ( " can't be loaded because information are missing" ) );
         return NULL;
     }
-}
 
-void ConfLoader::cleanParsePyramid(std::map<std::string,std::vector<Source*> > &specificSources, std::vector<Source*> &sSources,std::map<std::string, Level *> &levels) {
+    str_transparent = sTransparent->GetTextStr();
+    str_style = sStyle->GetTextStr();
 
-    if (sSources.size() != 0) {
-        for ( std::vector<int>::size_type i = 0; i != sSources.size(); i++) {
-            delete sSources[i];
-            sSources[i] = NULL;
-        }
-        sSources.clear();
-    }
-    if (specificSources.size() != 0) {
-        for ( std::map<std::string,std::vector<Source*> >::iterator lv = specificSources.begin(); lv != specificSources.end(); lv++) {
-
-            if (lv->second.size() != 0) {
-                for ( std::vector<int>::size_type i = 0; i != lv->second.size(); i++) {
-                    delete lv->second[i];
-                    lv->second[i] = NULL;
-                }
-                lv->second.clear();
-            }
-        }
-        specificSources.clear();
-    }
-    if (levels.size() != 0) {
-        for ( std::map<std::string,Level*>::iterator lv = levels.begin(); lv != levels.end(); lv++) {
-            delete lv->second;
-            lv->second = NULL;
-        }
-        levels.clear();
+    basedPyramidFilePath = sFile->GetTextStr() ;
+    //Relative Path
+    if ( basedPyramidFilePath.compare ( 0,2,"./" ) == 0 ) {
+        basedPyramidFilePath.replace ( 0,1,parentDir );
+    } else if ( basedPyramidFilePath.compare ( 0,1,"/" ) != 0 ) {
+        basedPyramidFilePath.insert ( 0,"/" );
+        basedPyramidFilePath.insert ( 0,parentDir );
     }
 
-}
+    // On commence par charger toute la pyramide
 
+    Pyramid* basedPyramid = buildPyramid ( basedPyramidFilePath, serverXML, servicesXML, false );
 
-int ConfLoader::updatePyrLevel(Pyramid* pyr, TileMatrix *tm, TileMatrixSet *tms) {
+    if ( ! basedPyramid) {
+        LOGGER_ERROR ( _ ( "La pyramide source " ) << basedPyramidFilePath << _ ( " ne peut etre chargee" ) );
+        return NULL;
+    }
 
-    double Res, ratioX, ratioY, resX, resY;
-    std::string best_h;
-
-    Res = tm->getRes();
-
-    BoundingBox<double> nBbox = tms->getCrs().getCrsDefinitionArea();
-
-    BoundingBox<double> cBbox = pyr->getTms().getCrs().cropBBoxGeographic(nBbox);
-
-    cBbox = tms->getCrs().cropBBoxGeographic(cBbox);
-    BoundingBox<double> cBboxOld = cBbox;
-    BoundingBox<double> cBboxNew = cBbox;
-
-    if (cBboxNew.reproject("epsg:4326",tms->getCrs().getProj4Code())==0 &&
-        cBboxOld.reproject("epsg:4326",pyr->getTms().getCrs().getProj4Code())==0)
-    {
-
-        ratioX = (cBboxOld.xmax - cBboxOld.xmin) / (cBboxNew.xmax - cBboxNew.xmin);
-        ratioY = (cBboxOld.ymax - cBboxOld.ymin) / (cBboxNew.ymax - cBboxNew.ymin);
-
-        resX = Res * ratioX;
-        resY = Res * ratioY;
-
-        //On recupère le best level de la basedPyramid en cours pour le tm en cours
-        best_h = pyr->best_level(resX,resY,true);
-
+    // On met à jour la transparence
+    if (str_transparent == "true") {
+        transparent = true;
+        basedPyramid->setTransparent(transparent);
     } else {
-        //Si une des reprojections n'a pas marché
-
-        best_h = "";
-
+        basedPyramid->setTransparent(transparent);
     }
 
-    if (best_h != "") {
+    // On teste le style et on ajoute le normal au pire
+    Style* style = serverXML->getStyle(str_style);
+    if ( style == NULL ) {
+        LOGGER_ERROR ( _ ( "Style " ) << str_style << _ ( "non defini" ) );
+        style = serverXML->getStyle("normal");
+    }
+    basedPyramid->setStyle(style);
 
-        std::vector<std::string> to_delete;
-        std::map<std::string, Level*>::iterator lv = pyr->getLevels().begin();
+    /* Calcul du meilleur niveau */
 
-        for ( ; lv != pyr->getLevels().end(); lv++) {
-            if (lv->second->getId() != best_h) {
-                to_delete.push_back(lv->second->getId());
-            }
-        }
+    std::vector<std::pair<std::string, double>> acceptedLevels = tmsOD->getCorrespondingLevels(levelOD, basedPyramid->getTms(), true);
 
-        for (std::vector<int>::size_type i = 0; i != to_delete.size(); i++) {
-            lv = pyr->getLevels().find(to_delete[i]);
-            delete lv->second;
-            lv->second = NULL;
-            pyr->getLevels().erase(lv);
-        }
-
-        return 1;
-
-    } else {
-        return 0;
+    if (acceptedLevels.size() == 0) {
+        // Aucun niveau dans la pyramide de base ne convient
+        LOGGER_ERROR ( "La pyramide source " << basedPyramidFilePath << " ne contient pas de niveau satisfaisant pour le niveau " << levelOD );
+        return NULL;
     }
 
-}
+    Level* bestLevel;
 
-void ConfLoader::updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Source *> sources) {
-
-    //On met à jour les Min et Max Tiles une fois que l'on a trouvé un équivalent dans chaque basedPyramid
-    // pour le level créé
-
-    int curMinCol, curMaxCol, curMinRow, curMaxRow, bPMinCol, bPMaxCol, bPMinRow, bPMaxRow, minCol, minRow, maxCol, maxRow;
-    double xo, yo, res, tileW, tileH, xmin, xmax, ymin, ymax;
-
-    int time = 1;
-
-    if (sources.size() != 0) {
-
-        for (int ip = 0; ip < sources.size(); ip++) {
-
-            if (sources.at(ip)->getType() == PYRAMID) {
-                Pyramid *pyr = reinterpret_cast<Pyramid*>(sources.at(ip));
-                Level *lv;
-
-                //On récupére les Min et Max de la basedPyramid
-                lv = pyr->getLevels().begin()->second;
-
-
-                bPMinCol = lv->getMinTileCol();
-                bPMaxCol = lv->getMaxTileCol();
-                bPMinRow = lv->getMinTileRow();
-                bPMaxRow = lv->getMaxTileRow();
-
-                //On récupère d'autres informations sur le TM
-                xo = lv->getTm().getX0();
-                yo = lv->getTm().getY0();
-                res = lv->getTm().getRes();
-                tileW = lv->getTm().getTileW();
-                tileH = lv->getTm().getTileH();
-
-                //On transforme en bbox
-                xmin = bPMinCol * tileW * res + xo;
-                ymax = yo - bPMinRow * tileH * res;
-                xmax = xo + (bPMaxCol+1) * tileW * res;
-                ymin = ymax - (bPMaxRow - bPMinRow + 1) * tileH * res;
-
-                BoundingBox<double> MMbbox(xmin,ymin,xmax,ymax);
-
-
-                //On reprojette la bbox
-                MMbbox.reproject(pyr->getTms().getCrs().getProj4Code(), tms->getCrs().getProj4Code());
-
-                //On récupère les Min et Max de Pyr pour ce level dans la nouvelle projection
-                xo = tm.getX0();
-                yo = tm.getY0();
-                res = tm.getRes();
-                tileW = tm.getTileW();
-                tileH = tm.getTileH();
-
-                curMinRow = floor((yo - MMbbox.ymax) / (tileW * res));
-                curMinCol = floor((MMbbox.xmin - xo) / (tileH * res));
-                curMaxRow = floor((yo - MMbbox.ymin) / (tileW * res));
-                curMaxCol = floor((MMbbox.xmax - xo) / (tileH * res));
-
-                if (curMinRow < 0) {
-                    curMinRow = 0;
-                }
-                if (curMinCol < 0) {
-                    curMinCol = 0;
-                }
-                if (curMaxRow < 0) {
-                    curMaxRow = 0;
-                }
-                if (curMaxCol < 0) {
-                    curMaxCol = 0;
-                }
-
-                if (time == 1) {
-                    minCol = curMinCol;
-                    maxCol = curMaxCol;
-                    minRow = curMinRow;
-                    maxRow = curMaxRow;
-                }
-
-                //On teste pour récupèrer la plus grande zone à l'intérieur du TMS
-                if (curMinCol >= minTileCol && curMinCol >= 0 && curMinCol <= curMaxCol && curMinCol <= maxTileCol) {
-                    if (curMinCol <= minCol) {
-                        minCol = curMinCol;
-                    }
-                }
-                if (curMinRow >= minTileRow && curMinRow >= 0 && curMinRow <= curMaxRow && curMinRow <= maxTileRow) {
-                    if (curMinRow <= minRow) {
-                        minRow = curMinRow;
-                    }
-                }
-                if (curMaxCol <= maxTileCol && curMaxCol >= 0 && curMaxCol >= curMinCol && curMaxCol >= minTileCol) {
-                    if (curMaxCol >= maxCol) {
-                        maxCol = curMaxCol;
-                    }
-                }
-                if (curMaxRow <= maxTileRow && curMaxRow >= 0 && curMaxRow >= curMinRow && curMaxRow >= minTileRow) {
-                    if (curMaxRow >= maxRow) {
-                        maxRow = curMaxRow;
-                    }
-                }
-
-            }
-
-            if (sources.at(ip)->getType() == WEBSERVICE) {
-
-                WebMapService *wms = reinterpret_cast<WebMapService*>(sources.at(ip));
-
-                BoundingBox<double> MMbbox = wms->getBbox();
-
-                //On récupère les Min et Max de Pyr pour ce level dans la nouvelle projection
-                xo = tm.getX0();
-                yo = tm.getY0();
-                res = tm.getRes();
-                tileW = tm.getTileW();
-                tileH = tm.getTileH();
-
-                curMinRow = floor((yo - MMbbox.ymax) / (tileW * res));
-                curMinCol = floor((MMbbox.xmin - xo) / (tileH * res));
-                curMaxRow = floor((yo - MMbbox.ymin) / (tileW * res));
-                curMaxCol = floor((MMbbox.xmax - xo) / (tileH * res));
-
-                if (curMinRow < 0) {
-                    curMinRow = 0;
-                }
-                if (curMinCol < 0) {
-                    curMinCol = 0;
-                }
-                if (curMaxRow < 0) {
-                    curMaxRow = 0;
-                }
-                if (curMaxCol < 0) {
-                    curMaxCol = 0;
-                }
-
-                if (time == 1) {
-                    minCol = curMinCol;
-                    maxCol = curMaxCol;
-                    minRow = curMinRow;
-                    maxRow = curMaxRow;
-                }
-
-                //On teste pour récupèrer la plus grande zone à l'intérieur du TMS
-                if (curMinCol >= minTileCol && curMinCol >= 0 && curMinCol <= curMaxCol && curMinCol <= maxTileCol) {
-                    if (curMinCol <= minCol) {
-                        minCol = curMinCol;
-                    }
-                }
-                if (curMinRow >= minTileRow && curMinRow >= 0 && curMinRow <= curMaxRow && curMinRow <= maxTileRow) {
-                    if (curMinRow <= minRow) {
-                        minRow = curMinRow;
-                    }
-                }
-                if (curMaxCol <= maxTileCol && curMaxCol >= 0 && curMaxCol >= curMinCol && curMaxCol >= minTileCol) {
-                    if (curMaxCol >= maxCol) {
-                        maxCol = curMaxCol;
-                    }
-                }
-                if (curMaxRow <= maxTileRow && curMaxRow >= 0 && curMaxRow >= curMinRow && curMaxRow >= minTileRow) {
-                    if (curMaxRow >= maxRow) {
-                        maxRow = curMaxRow;
-                    }
-                }
-
-            }
-
-
-            time++;
-        }
-
+    std::pair<std::string, double>::iterator itAccLev = acceptedLevels.begin();
+    for ( itAccLev; itAccLev < acceptedLevels->getLevels().end(); itAccLev++ ) {
+        bestLevel = basedPyramid->getLevel(itAccLev->first);
+        if (bestLevel != NULL) break;
     }
 
-    if (minCol > minTileCol ) {
-        minTileCol = minCol;
-    }
-    if (minRow > minTileRow ) {
-        minTileRow = minRow;
-    }
-    if (maxCol < maxTileCol ) {
-        maxTileCol = maxCol;
-    }
-    if (maxRow < maxTileRow ) {
-        maxTileRow = maxRow;
+    if (bestLevel == NULL) {
+        // Aucun des niveaux acceptables n'est présent dans la pyramide de base
+        LOGGER_ERROR ( "La pyramide source " << basedPyramidFilePath << " ne contient pas de niveau satisfaisant pour le niveau " << levelOD );
+        return NULL;
     }
 
+    // On va pouvoir ne garder que le niveau utile dans la pyramide de base
+    std::pair<std::string, Level* >::iterator itLev = basedPyramid->getLevels.begin();
+    for ( itLev; itLev < acceptedLevels->getLevels().end(); itLev++ ) {
+        if (itLev->first != bestLevel->getId()) basedPyramid->removeLevel(itLev->first);
+    }
 
+    return basedPyramid;
 }
 
 WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Format::eformat_data pyrFormat, Proxy proxy_default) {
@@ -861,77 +671,6 @@ if (sWMS) {
 return ws;
 
 }
-
-Pyramid *ConfLoader::parseBasedPyramid(TiXmlElement* sPyr, std::map<std::string, TileMatrixSet*> &tmsList, bool timesSpecific, std::map<std::string,Style*> stylesList, std::string parentDir, Proxy proxy) {
-
-    Pyramid *basedPyramid;
-
-    TiXmlElement* sFile = sPyr->FirstChildElement("file");
-    TiXmlElement* sTransparent = sPyr->FirstChildElement("transparent");
-    TiXmlElement* sStyle = sPyr->FirstChildElement("style");
-
-    bool transparent = false;
-    std::string str_transparent,basedPyramidFilePath;
-    std::string str_style = "";
-    Style *style = NULL;
-
-    if (sFile && sTransparent && sStyle && sFile->GetText() && sTransparent->GetText() && sStyle->GetText()) {
-
-        str_transparent = sTransparent->GetTextStr();
-        str_style = sStyle->GetTextStr();
-
-        basedPyramidFilePath = sFile->GetTextStr() ;
-        //Relative Path
-        if ( basedPyramidFilePath.compare ( 0,2,"./" ) ==0 ) {
-            basedPyramidFilePath.replace ( 0,1,parentDir );
-        } else if ( basedPyramidFilePath.compare ( 0,1,"/" ) !=0 ) {
-            basedPyramidFilePath.insert ( 0,"/" );
-            basedPyramidFilePath.insert ( 0,parentDir );
-        }
-
-        basedPyramid = buildPyramid ( basedPyramidFilePath, tmsList, NULL, NULL, timesSpecific, stylesList, proxy );
-
-        if ( !basedPyramid) {
-            LOGGER_ERROR ( _ ( "La pyramide " ) << basedPyramidFilePath << _ ( " ne peut etre chargee" ) );
-            return NULL;
-        } else {
-
-
-            if (str_transparent == "true") {
-                transparent = true;
-                basedPyramid->setTransparent(transparent);
-            } else {
-                basedPyramid->setTransparent(transparent);
-            }
-
-            std::map<std::string, Style*>::iterator styleIt= stylesList.find ( str_style );
-            if ( styleIt == stylesList.end() ) {
-                LOGGER_ERROR ( _ ( "Style " ) << str_style << _ ( "non defini" ) );
-                styleIt= stylesList.find ( "normal" );
-                if (styleIt != stylesList.end()) {
-                    style = styleIt->second;
-                }
-            } else {
-                style = styleIt->second;
-            }
-
-            basedPyramid->setStyle(style);
-
-        }
-
-    } else {
-        //Il manque un des trois elements necessaires pour initialiser une
-        //nouvelle pyramide de base
-        LOGGER_ERROR ( _ ( "Pyramid: " ) << basedPyramidFilePath << _ ( " can't be loaded because information are missing" ) );
-        return NULL;
-    }
-
-    return basedPyramid;
-
-}
-
-
-
 
 
 

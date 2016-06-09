@@ -58,6 +58,16 @@
 #include "config.h"
 #include "EmptyImage.h"
 
+Pyramid::Pyramid (PyramidXML* p) {
+    levels = p->levels;
+    tms = p->tms;
+    format = p->format;
+    channels = p->channels;
+
+    isBasedPyramid = p->isBasedPyramid;
+    containOdLevels = p->containOdLevels;
+}
+
 Pyramid::Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format,
                    int channels, bool onDemand, bool onFly)
     : Source(PYRAMID),levels ( levels ), tms ( tms ), format ( format ), channels ( channels ),

@@ -71,8 +71,50 @@ class ServerXML
         std::string getServicesConfigFile() {return servicesConfigFile;}
 
         std::string getTmsDir() {return tmsDir;}
+        void addTMS(std::pair<std::string, TileMatrixSet *> t) {
+            tmsList.insert ( t );
+        }
+        int getNbTMS() {
+            return tmsList.size();
+        }
+        TileMatrixSet* getTMS(std::string id) {
+            std::map<std::string, TileMatrixSet*>::iterator tmsIt= tmsList.find ( id );
+            if ( tmsIt == tmsList.end() ) {
+                return NULL;
+            }
+            return tmsIt->second();
+        }
+
+
         std::string getStylesDir() {return styleDir;}
+        void addStyle(std::pair<std::string, Style *> s) {
+            stylesList.insert ( s );
+        }
+        int getNbStyles() {
+            return stylesList.size();
+        }
+        Style* getStyle(std::string id) {
+            std::map<std::string, Style*>::iterator styleIt= stylesList.find ( id );
+            if ( styleIt == stylesList.end() ) {
+                return NULL;
+            }
+            return styleIt->second();
+        }
+
         std::string getLayersDir() {return layerDir;}
+        void addLayer(std::pair<std::string, Layer *> l) {
+            layersList.insert ( l );
+        }
+        int getNbLayers() {
+            return layersList.size();
+        }
+        Layer* getLayer(std::string id) {
+            std::map<std::string, Layer*>::iterator layIt= layersList.find ( id );
+            if ( layIt == layersList.end() ) {
+                return NULL;
+            }
+            return layIt->second();
+        }
 
         ContextBook* getCephContextBook(){return cephBook;};
         ContextBook* getSwiftContextBook(){return swiftBook;};
@@ -87,6 +129,7 @@ class ServerXML
     protected:
 
     std::string serverConfigFile;
+    std::string servicesConfigFile;
 
     LogOutput logOutput;
     std::string logFilePrefix;
@@ -107,10 +150,12 @@ class ServerXML
     bool supportWMS;
     bool reprojectionCapability;
 
-    std::string servicesConfigFile;
     std::string layerDir;
+    std::map<std::string, Layer*> layersList;
     std::string tmsDir;
+    std::map<std::string,TileMatrixSet*> tmsList;
     std::string styleDir;
+    std::map<std::string, Style*> stylesList;
 
     /**
      * \~french \brief Adresse du socket d'écoute (vide si lancement géré par un tiers)

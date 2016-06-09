@@ -38,28 +38,18 @@
 #include "LevelXML.h"
 
 
-LevelXML::LevelXML( TiXmlElement* levelElement, std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML, TileMatrixSet* tmsList , std::map<std::string, Style *> stylesList, bool times)
+LevelXML::LevelXML( TiXmlElement* levelElement, std::string fileName, std::string parentDir, ServerXML* serverXML, TileMatrixSet* tms, bool times)
 {
     ok = false;
 
-    //----VARIABLE
-    TileMatrix *tm;
-    //std::string id;
-    //std::string baseDir;
-    int32_t minTileRow=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
-    int32_t maxTileRow=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
-    int32_t minTileCol=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
-    int32_t maxTileCol=-1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
-    int tilesPerWidth;
-    int tilesPerHeight;
-    int pathDepth;
-    std::string noDataFilePath="";
-    context = NULL;
-    std::string prefix = "";
-    std::vector<Source*> sSources;
-    bool specificLevel = false;
-    bool noFile = false;
+    minTileRow = -1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
+    maxTileRow = -1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
+    minTileCol = -1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
+    maxTileCol = -1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
+    noDataFilePath="";
+    prefix = "";
 
+    context = NULL;
 
     onDemand = false;
     onFly = false;
@@ -85,14 +75,11 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string fileName, ServerXML*
         }
     }
 
-    std::map<std::string, TileMatrix>* tmList = tms->getTmList();
-    std::map<std::string, TileMatrix>::iterator itTM = tmList->find ( tmName );
-
-    if ( itTM == tmList->end() ) {
+    tm = tms->getTm(tmName);
+    if ( tm == NULL ) {
         LOGGER_ERROR ( fileName <<_ ( " Le level " ) << id <<_ ( " ref. Le TM [" ) << tmName << _ ( "] qui n'appartient pas au TMS [" ) << tmsName << "]" );
         return;
     }
-    tm = & ( itTM->second );
 
     TiXmlElement* pElemLvl = hLvl.FirstChild ( "onFly" ).Element();
     if ( pElemLvl && pElemLvl->GetText() ) {
@@ -158,41 +145,33 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string fileName, ServerXML*
         TiXmlElement* pElemSP=hbdP.FirstChild().ToElement();
 
         for (pElemSP; pElemSP; pElemSP = pElemSP->NextSiblingElement()) {
+            // On lit chaque source, qui est soit une pyramide, soit un web service
 
             if (pElemSP->ValueStr() == "basedPyramid") {
-                Pyramid* basedPyramid = ConfLoader::parseBasedPyramid(pElemSP,tmsList,false,stylesList,parentDir, proxy);
 
-                if (basedPyramid) {
+                PyramidLevelSource* pls = ConfLoader::buildPyramidLevelSource(pElemSP, serverXML, tmsList,false,stylesList,parentDir, proxy);
 
-                    int up = ConfLoader::updatePyrLevel(basedPyramid, tm, tms);
-                    if (up != 0 ) {
-                        sSources.push_back( basedPyramid ) ;
-                    } else {
-                        LOGGER_ERROR("Impossible de supprimer les levels en trop dans la basedPyramid ");
-                        return;
-                    }
-
-                } else {
-                    LOGGER_ERROR ("Impossible de charger une basedPyramid indique");
+                if (pls == NULL) {
+                    LOGGER_ERROR ("Impossible de charger une basedPyramid (un niveau) indique");
                     ConfLoader::cleanParsePyramid(specificSources,sSources,levels);
                     return;
                 }
 
+                sSources.push_back( pls ) ;
             }
 
             if (pElemSP->ValueStr() == "webService") {
 
                 WebService* ws = ConfLoader::parseWebService(pElemSP,tms->getCrs(),format, proxy);
-                if (ws) {
-                    sSources.push_back(ws);
-                } else {
+                if (ws == NULL) {
                     LOGGER_ERROR("Impossible de charger le WebService indique");
                     return;
                 }
-
+                
+                sSources.push_back(ws);
             }
 
-        }//end for pElemS
+        }
 
     }
 

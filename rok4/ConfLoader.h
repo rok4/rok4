@@ -105,7 +105,7 @@ public:
      * \param[in] inspire whether INSPIRE validity rules are enforced
      * \return false if something went wrong
      */
-    static bool buildStylesList ( ServerXML* serverXML, ServicesXML* servicesXML, std::map<std::string,Style*> &stylesList );
+    static bool buildStylesList ( ServerXML* serverXML, ServicesXML* servicesXML );
     /**
      * \~french
      * \brief Charges les différents TileMatrixSet présent dans le répertoire tmsDir
@@ -118,7 +118,7 @@ public:
      * \param[out] tmsList set of available TileMatrixSets
      * \return false if something went wrong
      */
-    static bool buildTMSList ( ServerXML* serverXML, std::map<std::string, TileMatrixSet*> &tmsList );
+    static bool buildTMSList ( ServerXML* serverXML );
     /**
      * \~french
      * \brief Charges les différents Layers présent dans le répertoire layerDir
@@ -141,7 +141,7 @@ public:
      * \param[in] proxy
      * \return false if something went wrong
      */
-    static bool buildLayersList (ServerXML* serverXML, ServicesXML* servicesXML, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> &stylesList, std::map<std::string,Layer*> &layers);
+    static bool buildLayersList (ServerXML* serverXML, ServicesXML* servicesXML );
     /**
      * \~french
      * \brief Chargement des paramètres des services à partir d'un fichier
@@ -153,6 +153,7 @@ public:
      * \return pointer to the newly created ServicesConf, NULL if something went wrong
      */
     static ServicesXML* buildServicesConf ( std::string servicesConfigFile );
+
     void pElem();
 
 private:
@@ -200,69 +201,15 @@ private:
      * \param[in] proxy
      * \return pointer to the newly created Pyramid, NULL if something went wrong
      */
-    static Pyramid* buildPyramid (std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML, std::map<std::string, TileMatrixSet*> &tmsList , std::map<std::string, Style *> stylesList, bool times);
-
+    static Pyramid* buildPyramid (std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML, bool times);
     /**
-     * \~french
-     * \brief Suppresion des levels d'une pyramide pour ne garder que celui qui est utile
-     * \param[in] pyramid
-     * \param[in] tileMatrix
-     * \param[in] tileMatrixSet
-     * \return 1 si tout s'est bien passé, 0 sinon
-     * \~english
-     * \brief Delete levels of a pyramid to save the only one which will be used
-     * \param[in] pyramid
-     * \param[in] tileMatrix
-     * \param[in] tileMatrixSet
-     * \return 1 if eveything is ok, 0 else
-     */
-    static int updatePyrLevel(Pyramid* pyr, TileMatrix *tm, TileMatrixSet *tms);
+    * \~french
+    * \brief Retourne une pyramide en fonction des paramètres lus dans la configuration
+    * \~english
+    * \brief Return a Pyramid from the configuration
+    */
+    static Pyramid* buildBasedPyramid(TiXmlElement* sPyr, std::map<std::string, TileMatrixSet*> &tmsList, bool timesSpecific, std::map<std::string,Style*> stylesList, std::string parentDir, Proxy proxy);
 
-    /**
-     * \~french
-     * \brief Mise à jour des TileMatrixLimits pour un level
-     * \param[in] levelId
-     * \param[in] minCol
-     * \param[in] maxCol
-     * \param[in] minRow
-     * \param[in] maxRow
-     * \param[in] TileMatrix
-     * \param[in] TileMatrixSet
-     * \param[in] bPyramids
-     * \param[in] aLevel
-     * \param[in] specific
-     * \~english
-     * \brief Update TileMatrixLimits
-     * \param[in] levelId
-     * \param[in] minCol
-     * \param[in] maxCol
-     * \param[in] minRow
-     * \param[in] maxRow
-     * \param[in] TileMatrix
-     * \param[in] TileMatrixSet
-     * \param[in] bPyramids
-     * \param[in] aLevel
-     * \param[in] specific
-     */
-    static void updateTileLimits (uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Source *> sources);
-
-    /**
-     * \~french
-     * \brief Nettoyage des pointeurs
-     * \param[in] specificPyramids
-     * \param[in] sPyramids
-     * \param[in] specificWebServices
-     * \param[in] sWebServices
-     * \param[in] levels
-     * \~english
-     * \brief Clean pointers
-     * \param[in] specificPyramids
-     * \param[in] sPyramids
-     * \param[in] specificWebServices
-     * \param[in] sWebServices
-     * \param[in] levels
-     */
-    static void cleanParsePyramid(std::map<std::string, std::vector<Source *> > &specificSources, std::vector<Source *> &sSources, std::map<std::string, Level *> &levels);
 
     /**
      * \~french
@@ -284,7 +231,7 @@ private:
      * \param[in] proxy
      * \return pointer to the newly created Layer, NULL if something went wrong
      */
-    static Layer * buildLayer (std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> stylesList);
+    static Layer * buildLayer (std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML );
     
     /**
      * \~french
@@ -324,16 +271,7 @@ private:
     * \~english
     * \brief Return a WebService from the configuration
     */
-   static WebService *parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Format::eformat_data pyrFormat, Proxy proxy_default);
-
-   /**
-   * \~french
-   * \brief Retourne une pyramide en fonction des paramètres lus dans la configuration
-   * \~english
-   * \brief Return a Pyramid from the configuration
-   */
-  static Pyramid *parseBasedPyramid(TiXmlElement* sPyr, std::map<std::string, TileMatrixSet*> &tmsList, bool timesSpecific, std::map<std::string,Style*> stylesList, std::string parentDir, Proxy proxy);
-
+    static WebService *parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Format::eformat_data pyrFormat, Proxy proxy_default);
 
 };
 

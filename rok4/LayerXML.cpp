@@ -37,7 +37,7 @@
 
 #include "LayerXML.h"
 
-LayerXML::LayerXML(std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> stylesList)
+LayerXML::LayerXML(std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML )
 {
     ok = false;
 
@@ -193,29 +193,33 @@ LayerXML::LayerXML(std::string fileName, ServerXML* serverXML, ServicesXML* serv
         } else {
             styleName = pElem->GetTextStr();
         }
-        std::map<std::string, Style*>::iterator styleIt= stylesList.find ( styleName );
-        if ( styleIt == stylesList.end() ) {
+
+        Style* sty = serverXML->getStyle(styleName);
+        if ( sty == NULL ) {
             LOGGER_ERROR ( _ ( "Style " ) << styleName << _ ( "non defini" ) );
             continue;
         }
 
-        if ( styleIt->second->getId().compare ( DEFAULT_STYLE_INSPIRE_ID ) ==0 ) {
+        if ( sty->getId().compare ( DEFAULT_STYLE_INSPIRE_ID ) ==0 ) {
             inspireStyleName = styleName;
         }
-        styles.push_back ( styleIt->second );
-        if ( inspire && ( styleName==inspireStyleName ) ) {
+        styles.push_back ( sty );
+        if ( inspire && ( styleName == inspireStyleName ) ) {
             styles.pop_back();
         }
     }
+
     if ( inspire ) {
-        std::map<std::string, Style*>::iterator styleIt= stylesList.find ( inspireStyleName );
-        if ( styleIt != stylesList.end() ) {
-            styles.insert ( styles.begin(),styleIt->second );
-        } else {
+
+        Style* sty = serverXML->getStyle(inspireStyleName);
+        if ( sty == NULL ) {
             LOGGER_ERROR ( _ ( "Style " ) << styleName << _ ( "non defini" ) );
             return;
         }
+        styles.insert ( styles.begin(), sty );
+
     }
+
     if ( styles.size() ==0 ) {
         LOGGER_ERROR ( _ ( "Pas de Style defini, Layer non valide" ) );
         return;
@@ -455,7 +459,7 @@ LayerXML::LayerXML(std::string fileName, ServerXML* serverXML, ServicesXML* serv
             pyramidFilePath.insert ( 0,"/" );
             pyramidFilePath.insert ( 0,parentDir );
         }
-        pyramid = ConfLoader::buildPyramid ( pyramidFilePath, serverXML, servicesXML tmsList, stylesList, true);
+        pyramid = ConfLoader::buildPyramid ( pyramidFilePath, serverXML, servicesXML, true);
         if ( !pyramid ) {
             LOGGER_ERROR ( _ ( "La pyramide " ) << pyramidFilePath << _ ( " ne peut etre chargee" ) );
             return;

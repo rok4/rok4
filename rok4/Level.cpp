@@ -68,17 +68,33 @@
 //        Il faudra la changer lorsqu'on aura des images non 8bits.
 
 
+Level::Level ( LevelXML* l ) {
+    tm = l->tm;
+    channels = l->channels;
+    baseDir = l->baseDir;
+    sSources = l->sSources;
 
-Level::Level ( TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth,
-               int tilesPerHeight, uint32_t maxTileRow, uint32_t minTileRow,
-               uint32_t maxTileCol, uint32_t minTileCol, int pathDepth,
-               Rok4Format::eformat_data format, std::string noDataFile , Context *&context, std::string prefix) :
-    tm ( tm ), channels ( channels ), baseDir ( baseDir ),
-    tilesPerWidth ( tilesPerWidth ), tilesPerHeight ( tilesPerHeight ),
-    maxTileRow ( maxTileRow ), minTileRow ( minTileRow ), maxTileCol ( maxTileCol ),
-    minTileCol ( minTileCol ), pathDepth ( pathDepth ), format ( format ),noDataFile ( noDataFile ), noDataSource ( NULL ), context (context), prefix (prefix){
+    tilesPerWidth = l->tilesPerWidth;
+    tilesPerHeight = l->tilesPerHeight;
+
+    maxTileRow = l->maxTileRow;
+    minTileRow = l->minTileRow;
+    maxTileCol = l->maxTileCol;
+    minTileCol = l->minTileCol;
+
+    pathDepth = l->pathDepth;
+    format = l->format;
+    noDataFile = l->noDataFilePath;
+    noDataSource = NULL;
+    context = l->context;
+    prefix = l->prefix;
+
     StoreDataSourceFactory SDSF;
-    noDataTileSource = SDSF.createStoreDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding ( format ) );
+    noDataTileSource = SDSF.createStoreDataSource (
+        noDataFile.c_str(), 2048, 2048+4, Rok4Format::toMimeType ( format ), context;
+        Rok4Format::toEncoding ( format )
+    );
+
     noDataSourceProxy = noDataTileSource;
 }
 
