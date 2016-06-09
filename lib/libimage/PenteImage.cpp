@@ -69,8 +69,8 @@ int PenteImage::getline ( uint8_t* buffer, int line ) {
 }
 
 //definition des variables
-PenteImage::PenteImage ( Image* image,  float resolution, std::string algo) :
-    Image ( image->getWidth(), image->getHeight(), 1, image->getBbox() ),
+PenteImage::PenteImage ( int width, int height, int channels, BoundingBox<double> bbox, Image* image, float resolution, std::string algo) :
+    Image ( width, height, channels, bbox ),
     origImage ( image ), pente ( NULL ), resolution (resolution), algo (algo)//, center ( center )
 	{
 
@@ -125,7 +125,7 @@ int PenteImage::getOrigLine ( float* buffer, int line ) {
 
 
 void PenteImage::generate() {
-    pente = new uint8_t[origImage->getWidth() * origImage->getHeight()];
+    pente = new uint8_t[width * height];
     bufferTmp = new float[origImage->getWidth() * 3];
     float* lineBuffer[3];
     lineBuffer[0]= bufferTmp;
@@ -134,45 +134,33 @@ void PenteImage::generate() {
 
     int line = 0;
     int nextBuffer = 0;
-    getOrigLine ( lineBuffer[0], line );
-    getOrigLine ( lineBuffer[1], line+1 );
-    getOrigLine ( lineBuffer[2], line+2 );
-    generateLine ( line++, lineBuffer[0],lineBuffer[0],lineBuffer[1] );
+    int lineOrig = 0;
+    getOrigLine ( lineBuffer[0], lineOrig++ );
+    getOrigLine ( lineBuffer[1], lineOrig++ );
+    getOrigLine ( lineBuffer[2], lineOrig++ );
     generateLine ( line++, lineBuffer[0],lineBuffer[1],lineBuffer[2] );
-    while ( line < origImage->getHeight() -1 ) {
-        getOrigLine ( lineBuffer[nextBuffer], line+1 );
+
+    while ( line < height ) {
+        getOrigLine ( lineBuffer[nextBuffer], lineOrig++ );
         generateLine ( line++, lineBuffer[ ( nextBuffer+1 ) %3],lineBuffer[ ( nextBuffer+2 ) %3],lineBuffer[nextBuffer] );
         nextBuffer = ( nextBuffer+1 ) %3;
     }
-    generateLine ( line,lineBuffer[nextBuffer], lineBuffer[ ( nextBuffer+1 ) %3],lineBuffer[ ( nextBuffer+1 ) %3] );
     delete[] bufferTmp;
 }
 
 void PenteImage::generateLine ( int line, float* line1, float* line2, float* line3) {
     uint8_t* currentLine =pente + line * width;
 	//on commence a la premiere colonne
-    int column = 1;
+    int columnOrig = 1;
+    int column = 0;
 	//creation de la variable sur laquelle on travaille pour trouver le seuil
     double value;
 
-    //calcul de la variable sur la premiere colonne
-
-    value = pow((matrix[2] * ( * ( line1+column+1 ) ) + matrix[5] * ( * ( line2+column+1 ) ) + matrix[8] * ( * ( line3+column+1 ) ) - matrix[0] * ( * ( line1+column ) ) - matrix[3] * ( * ( line2+column ) ) - matrix[6] * ( * ( line3+column ) )),2.0)
-    + pow((matrix[0] * ( * ( line1+column ) ) + matrix[1] * ( * ( line1+column ) ) + matrix[2] * ( * ( line1+column+1 ) ) - matrix[6] * ( * ( line3+column ) ) - matrix[7] * ( * ( line3+column ) ) - matrix[8] * ( * ( line3+column+1 ) )),2.0);
-
-    value = sqrt(value);
-    value = atan(value) * 180 / M_PI;
-    //verification valeur non superieure a 90
-    if (value>90){value = 180-value;}
-
-
-    *currentLine = ( int ) value;
-
 	//calcul de la variable sur toutes les autres colonnes
-    while ( column < width - 1 ) {
+    while ( column < width  ) {
 
-        value = pow((matrix[2] * ( * ( line1+column+1 ) ) + matrix[5] * ( * ( line2+column+1 ) ) + matrix[8] * ( * ( line3+column+1 ) ) - matrix[0] * ( * ( line1+column-1 ) ) - matrix[3] * ( * ( line2+column-1 ) ) - matrix[6] * ( * ( line3+column-1 ) )),2.0)
-        + pow((matrix[0] * ( * ( line1+column-1 ) ) + matrix[1] * ( * ( line1+column ) ) + matrix[2] * ( * ( line1+column+1 ) ) - matrix[6] * ( * ( line3+column-1 ) ) - matrix[7] * ( * ( line3+column ) ) - matrix[8] * ( * ( line3+column+1 ) )),2.0);
+        value = pow((matrix[2] * ( * ( line1+columnOrig+1 ) ) + matrix[5] * ( * ( line2+columnOrig+1 ) ) + matrix[8] * ( * ( line3+columnOrig+1 ) ) - matrix[0] * ( * ( line1+columnOrig-1 ) ) - matrix[3] * ( * ( line2+columnOrig-1 ) ) - matrix[6] * ( * ( line3+columnOrig-1 ) )),2.0)
+        + pow((matrix[0] * ( * ( line1+columnOrig-1 ) ) + matrix[1] * ( * ( line1+columnOrig ) ) + matrix[2] * ( * ( line1+columnOrig+1 ) ) - matrix[6] * ( * ( line3+columnOrig-1 ) ) - matrix[7] * ( * ( line3+columnOrig ) ) - matrix[8] * ( * ( line3+columnOrig+1 ) )),2.0);
 
         value = sqrt(value);
         value = atan(value) * 180 / M_PI;
@@ -180,19 +168,8 @@ void PenteImage::generateLine ( int line, float* line1, float* line2, float* lin
         if (value>90){value = 180-value;}
 
         * ( currentLine+ ( column++ ) ) = ( int ) ( value );
+        columnOrig++;
 
     }
 
-
-	//calcul de la variable sur la dernière colonne
-    value = pow((matrix[2] * ( * ( line1+column ) ) + matrix[5] * ( * ( line2+column ) ) + matrix[8] * ( * ( line3+column ) ) - matrix[0] * ( * ( line1+column-1 ) ) - matrix[3] * ( * ( line2+column-1 ) ) - matrix[6] * ( * ( line3+column-1 ) )),2.0)
-    + pow((matrix[0] * ( * ( line1+column-1 ) ) + matrix[1] * ( * ( line1+column ) ) + matrix[2] * ( * ( line1+column ) ) - matrix[6] * ( * ( line3+column-1 ) ) - matrix[7] * ( * ( line3+column ) ) - matrix[8] * ( * ( line3+column ) )),2.0);
-
-    value = sqrt(value);
-    value = atan(value) * 180 / M_PI;
-    //verification valeur non superieure a 90
-    if (value>90){value = 180-value;}
-
-
-    * ( currentLine+column ) = ( int ) ( value );
 }

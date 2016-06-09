@@ -175,7 +175,7 @@ public:
     ** \~english
     * \brief Construtor
     */
-    PenteImage ( Image* image, float resolution, std::string algo);
+    PenteImage (int width, int height, int channels, BoundingBox<double> bbox, Image* image, float resolution, std::string algo);
 
     /** \~french
     * \brief Destructeur
