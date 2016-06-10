@@ -1006,7 +1006,10 @@ sub writeConfPyramid {
         $levelEl->appendTextChild("tileMatrix", $lvlId);
         if ($self->{persistent}) {
             my $imageBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_image}, $lvlId);
+            $levelEl->appendTextChild("onFly", "true");
             $levelEl->appendTextChild("baseDir", $imageBaseDir);
+        } else {
+            $levelEl->appendTextChild("onDemand", "true");
         }
         my $sourcesEl = $descDoc->createElement("sources");
         $levelEl->appendChild($sourcesEl);

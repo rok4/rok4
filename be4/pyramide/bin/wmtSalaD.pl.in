@@ -144,7 +144,7 @@ See Also:
     <init>, <loadLogger>
 =cut
 sub main {
-    printf("BE4: version [%s]\n",$VERSION);
+    printf("BE4 - wmtSalaD: version [%s]\n",$VERSION);
     # message
     my $message = undef;
 
