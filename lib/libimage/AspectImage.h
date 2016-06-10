@@ -182,7 +182,7 @@ public:
     ** \~english
     * \brief Construtor
     */
-    AspectImage ( Image* image, float resolution, std::string algo, float minSlope);
+    AspectImage ( int width, int height, int channels, BoundingBox<double> bbox, Image* image, float resolution, std::string algo, float minSlope);
 
     /** \~french
     * \brief Destructeur

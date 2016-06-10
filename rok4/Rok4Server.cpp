@@ -423,7 +423,8 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
         if (expandedImage->channels == 1 && style->isAspect()){
 
             int error=0;
-            expandedImage = pyr->getbbox(servicesConf,curImage->getBbox(),curImage->getWidth(),curImage->getHeight(),curImage->getCRS(),Interpolation::CUBIC,error);
+            BoundingBox<double> expandedBbox = curImage->getBbox().expand(curImage->getResX(),curImage->getResY(),1);
+            expandedImage = pyr->getbbox(servicesConf,expandedBbox,curImage->getWidth()+2,curImage->getHeight()+2,curImage->getCRS(),Interpolation::CUBIC,error);
             expandedImage->setCRS(curImage->getCRS());
 
             if ( format == "image/png" && size == 1 ) {
@@ -432,12 +433,12 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
                 case Rok4Format::TIFF_ZIP_FLOAT32 :
                 case Rok4Format::TIFF_LZW_FLOAT32 :
                 case Rok4Format::TIFF_PKB_FLOAT32 :
-                    expandedImage = new AspectImage ( expandedImage, expandedImage->computeMeanResolution(),  style->getAlgoOfAspect(), style->getMinSlopeOfAspect());
+                    expandedImage = new AspectImage ( curImage->getWidth(), curImage->getHeight(), curImage->channels, curImage->getBbox(),expandedImage, expandedImage->computeMeanResolution(),  style->getAlgoOfAspect(), style->getMinSlopeOfAspect());
                 default:
                     break;
                 }
             } else {
-                expandedImage = new AspectImage ( expandedImage, expandedImage->computeMeanResolution(),  style->getAlgoOfAspect(), style->getMinSlopeOfAspect());
+                expandedImage = new AspectImage ( curImage->getWidth(), curImage->getHeight(), curImage->channels, curImage->getBbox(),expandedImage, expandedImage->computeMeanResolution(),  style->getAlgoOfAspect(), style->getMinSlopeOfAspect());
             }
             delete curImage;
         }

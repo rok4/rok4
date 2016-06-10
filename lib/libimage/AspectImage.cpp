@@ -67,8 +67,8 @@ int AspectImage::getline ( uint8_t* buffer, int line ) {
 }
 
 //definition des variables
-AspectImage::AspectImage (Image* image,  float resolution, std::string algo, float minSlope) :
-    Image ( image->getWidth(), image->getHeight(), 1, image->getBbox() ),
+AspectImage::AspectImage (int width, int height, int channels, BoundingBox<double> bbox, Image* image,  float resolution, std::string algo, float minSlope) :
+    Image ( width, height, channels, bbox ),
     origImage ( image ), aspect ( NULL ), resolution (resolution), algo (algo), minSlope (minSlope)
     {
 
@@ -123,7 +123,7 @@ int AspectImage::getOrigLine ( float* buffer, int line ) {
 
 
 void AspectImage::generate() {
-    aspect = new float[origImage->getWidth() * origImage->getHeight()];
+    aspect = new float[width * height];
     bufferTmp = new float[origImage->getWidth() * 3];
     float* lineBuffer[3];
     lineBuffer[0]= bufferTmp;
@@ -132,47 +132,33 @@ void AspectImage::generate() {
 
     int line = 0;
     int nextBuffer = 0;
-    getOrigLine ( lineBuffer[0], line );
-    getOrigLine ( lineBuffer[1], line+1 );
-    getOrigLine ( lineBuffer[2], line+2 );
-    generateLine ( line++, lineBuffer[0],lineBuffer[0],lineBuffer[1] );
+    int lineOrig = 0;
+    getOrigLine ( lineBuffer[0], lineOrig++ );
+    getOrigLine ( lineBuffer[1], lineOrig++ );
+    getOrigLine ( lineBuffer[2], lineOrig++ );
     generateLine ( line++, lineBuffer[0],lineBuffer[1],lineBuffer[2] );
-    while ( line < origImage->getHeight() -1 ) {
-        getOrigLine ( lineBuffer[nextBuffer], line+1 );
+
+    while ( line < height ) {
+        getOrigLine ( lineBuffer[nextBuffer], lineOrig++ );
         generateLine ( line++, lineBuffer[ ( nextBuffer+1 ) %3],lineBuffer[ ( nextBuffer+2 ) %3],lineBuffer[nextBuffer] );
         nextBuffer = ( nextBuffer+1 ) %3;
     }
-    generateLine ( line,lineBuffer[nextBuffer], lineBuffer[ ( nextBuffer+1 ) %3],lineBuffer[ ( nextBuffer+1 ) %3] );
     delete[] bufferTmp;
 }
 
 void AspectImage::generateLine ( int line, float* line1, float* line2, float* line3) {
     float* currentLine =aspect + line * width;
     //on commence a la premiere colonne
-    int column = 1;
+    int columnOrig = 1;
+    int column = 0;
     //creation de la variable sur laquelle on travaille pour trouver le seuil
     double value,value1,value2,slope;
 
-    //calcul de la variable sur la premiere colonne
-
-    value1 = (matrix[2] * ( * ( line1+column+1 ) ) + matrix[5] * ( * ( line2+column+1 ) ) + matrix[8] * ( * ( line3+column+1 ) ) - matrix[0] * ( * ( line1+column ) ) - matrix[3] * ( * ( line2+column ) ) - matrix[6] * ( * ( line3+column ) ));
-    value2 = (matrix[0] * ( * ( line1+column ) ) + matrix[1] * ( * ( line1+column ) ) + matrix[2] * ( * ( line1+column+1 ) ) - matrix[6] * ( * ( line3+column ) ) - matrix[7] * ( * ( line3+column ) ) - matrix[8] * ( * ( line3+column+1 ) ));
-
-    //calcul de la pente pour ne pas afficher l'exposition en dessous d'une certaine valeur de pente
-    slope = sqrt(pow(value1,2.0)+pow(value2,2.0));
-    if (slope < minSlope) {
-        value = -1.0;
-    } else {
-        value = (atan2(value1,value2) + M_PI) * 180 / M_PI;
-    }
-
-    *currentLine = value;
-
     //calcul de la variable sur toutes les autres colonnes
-    while ( column < width - 1 ) {
+    while ( column < width ) {
 
-        value1 = (matrix[2] * ( * ( line1+column+1 ) ) + matrix[5] * ( * ( line2+column+1 ) ) + matrix[8] * ( * ( line3+column+1 ) ) - matrix[0] * ( * ( line1+column-1 ) ) - matrix[3] * ( * ( line2+column-1 ) ) - matrix[6] * ( * ( line3+column-1 ) ));
-        value2 = (matrix[0] * ( * ( line1+column-1 ) ) + matrix[1] * ( * ( line1+column ) ) + matrix[2] * ( * ( line1+column+1 ) ) - matrix[6] * ( * ( line3+column-1 ) ) - matrix[7] * ( * ( line3+column ) ) - matrix[8] * ( * ( line3+column+1 ) ));
+        value1 = (matrix[2] * ( * ( line1+columnOrig+1 ) ) + matrix[5] * ( * ( line2+columnOrig+1 ) ) + matrix[8] * ( * ( line3+columnOrig+1 ) ) - matrix[0] * ( * ( line1+columnOrig-1 ) ) - matrix[3] * ( * ( line2+columnOrig-1 ) ) - matrix[6] * ( * ( line3+columnOrig-1 ) ));
+        value2 = (matrix[0] * ( * ( line1+columnOrig-1 ) ) + matrix[1] * ( * ( line1+columnOrig ) ) + matrix[2] * ( * ( line1+columnOrig+1 ) ) - matrix[6] * ( * ( line3+columnOrig-1 ) ) - matrix[7] * ( * ( line3+columnOrig ) ) - matrix[8] * ( * ( line3+columnOrig+1 ) ));
 
         //calcul de la pente pour ne pas afficher l'exposition en dessous d'une certaine valeur de pente
         slope = sqrt(pow(value1,2.0)+pow(value2,2.0));
@@ -183,23 +169,10 @@ void AspectImage::generateLine ( int line, float* line1, float* line2, float* li
         }
 
         * ( currentLine+ ( column++ ) ) = ( value );
+        columnOrig++;
 
     }
 
-
-    //calcul de la variable sur la dernière colonne
-    value1 = (matrix[2] * ( * ( line1+column ) ) + matrix[5] * ( * ( line2+column ) ) + matrix[8] * ( * ( line3+column ) ) - matrix[0] * ( * ( line1+column-1 ) ) - matrix[3] * ( * ( line2+column-1 ) ) - matrix[6] * ( * ( line3+column-1 ) ));
-    value2 = (matrix[0] * ( * ( line1+column-1 ) ) + matrix[1] * ( * ( line1+column ) ) + matrix[2] * ( * ( line1+column ) ) - matrix[6] * ( * ( line3+column-1 ) ) - matrix[7] * ( * ( line3+column ) ) - matrix[8] * ( * ( line3+column ) ));
-
-    //calcul de la pente pour ne pas afficher l'exposition en dessous d'une certaine valeur de pente
-    slope = sqrt(pow(value1,2.0)+pow(value2,2.0));
-    if (slope < minSlope) {
-        value = -1.0;
-    } else {
-        value = (atan2(value1,value2) + M_PI) * 180 / M_PI;
-    }
-
-    * ( currentLine+column ) = ( value );
 }
 
 
