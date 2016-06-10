@@ -400,14 +400,8 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
         if (expandedImage->channels == 1 && style->isPente()){
 
             int error=0;
-            BoundingBox<double> expandedBbox = curImage->getBbox();
-            expandedBbox.xmin = expandedBbox.xmin - curImage->getResX();
-            expandedBbox.xmax = expandedBbox.xmax + curImage->getResX();
-            expandedBbox.ymin = expandedBbox.ymin - curImage->getResY();
-            expandedBbox.ymax = expandedBbox.ymax + curImage->getResY();
-            int expandedWidth = curImage->getWidth() + 2;
-            int expandedHeight = curImage->getHeight() + 2;
-            expandedImage = pyr->getbbox(servicesConf,expandedBbox,expandedWidth,expandedHeight,curImage->getCRS(),Interpolation::CUBIC,error);
+            BoundingBox<double> expandedBbox = curImage->getBbox().expand(curImage->getResX(),curImage->getResY(),1);
+            expandedImage = pyr->getbbox(servicesConf,expandedBbox,curImage->getWidth()+2,curImage->getHeight()+2,curImage->getCRS(),Interpolation::CUBIC,error);
             expandedImage->setCRS(curImage->getCRS());
 
 			if ( format == "image/png" && size == 1 ) {
