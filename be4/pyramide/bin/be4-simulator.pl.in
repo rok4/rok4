@@ -60,8 +60,6 @@ use Getopt::Long;
 use File::Basename;
 use File::Spec;
 use File::Path;
-use Geo::OSR;
-use Geo::GDAL;
 use Cwd;
 
 # My search module
@@ -70,6 +68,7 @@ use lib "$Bin/../lib/perl5";
 
 # My module
 use BE4::TileMatrixSet;
+use BE4::ProxyGDAL;
 
 ################################################################################
 # Constantes
@@ -266,25 +265,21 @@ sub doIt {
     }
     close(SHAPE);
     
-    my $ogrShape;
-    eval { $ogrShape = Geo::OGR::Geometry->create(WKT=>$wktShape); };
-    if ($@) {
-        ERROR(sprintf "WKT geometry (%s) is not valid : %s",$wktShape,$@);
-        return FALSE;
-    }
+    my $ogrShape = BE4::ProxyGDAL::geometryFromWKT($wktShape);
 
     if (! defined $ogrShape) {
         ERROR(sprintf "Cannot create a Geometry from the string : %s.",$wktShape);
         return FALSE;
     }
 
-    my $bboxref = $ogrShape->GetEnvelope();
-    my ($xmin,$xmax,$ymin,$ymax) = ($bboxref->[0],$bboxref->[1],$bboxref->[2],$bboxref->[3]);
+    my $bboxes = BE4::ProxyGDAL::getBboxes($ogrShape);
     
-    if (! defined $xmin) {
-        ERROR("Cannot calculate bbox from the WKT Geometry");
+    if (! defined $bboxes) {
+        ERROR("Cannot calculate bboxes from the WKT Geometry");
         return FALSE;
     }
+
+    my $nbbboxes = scalar @{$bboxes};
     
     
     ALWAYS(sprintf ">>> Simulation for wkt '%s' ", $options{wkt});
@@ -326,28 +321,44 @@ sub doIt {
             }
             
             my $nbImages = 0;
-            
-            my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices($xmin,$ymin,$xmax,$ymax,$width,$height);
-            
-            for (my $i = $iMin; $i <= $iMax; $i++) {
-                for (my $j = $jMin; $j <= $jMax; $j++) {
-                    my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBBox($i,$j,$width,$height);
 
-                    my $WKTtile = sprintf "POLYGON((%s %s,%s %s,%s %s,%s %s,%s %s))",
-                        $xmin,$ymin,
-                        $xmin,$ymax,
-                        $xmax,$ymax,
-                        $xmax,$ymin,
-                        $xmin,$ymin;
+            my $curBbox = 1;
 
-                    my $OGRtile = Geo::OGR::Geometry->create(WKT=>$WKTtile);
-                    if ($OGRtile->Intersect($ogrShape)){
-                        $nbImages++;
-                        if (defined $options{lists}) {
-                            print OUT "$i,$j\n";
+            foreach my $bb (@{$bboxes}) {
+
+                DEBUG("Bbox $curBbox / $nbbboxes");
+            
+                my $xmin = $bb->[0];
+                my $ymin = $bb->[2];
+                my $xmax = $bb->[1];
+                my $ymax = $bb->[3];
+
+                my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices($xmin,$ymin,$xmax,$ymax,$width,$height);
+                
+                for (my $i = $iMin; $i <= $iMax; $i++) {
+                    for (my $j = $jMin; $j <= $jMax; $j++) {
+                        my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBBox($i,$j,$width,$height);
+
+                        my $WKTtile = sprintf "POLYGON((%s %s,%s %s,%s %s,%s %s,%s %s))",
+                            $xmin,$ymin,
+                            $xmin,$ymax,
+                            $xmax,$ymax,
+                            $xmax,$ymin,
+                            $xmin,$ymin;
+
+                        my $OGRtile = BE4::ProxyGDAL::geometryFromWKT($WKTtile);
+
+                        if (BE4::ProxyGDAL::isIntersected($OGRtile, $ogrShape)) {
+                            $nbImages++;
+                            if (defined $options{lists}) {
+                                print OUT "$i,$j\n";
+                            }
                         }
+
                     }
                 }
+
+                $curBbox++;
             }
             
             INFO("\t Level $level : $nbImages (pixel dimension of an image $imageWidth x $imageHeight)");
