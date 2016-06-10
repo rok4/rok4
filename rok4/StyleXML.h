@@ -55,15 +55,12 @@ class StyleXML
 
     public:
         StyleXML(std::string styleFilepath, ServicesXML* servicesXML);
-        ~StyleXML(){
-        }
+        ~StyleXML();
 
-        std::string getId() {
-            return id;
-        }
+        std::string getId() ;
 
-        bool isOk() { return ok; }
-
+        bool isOk() ;
+        
     protected:
 
         std::string id;

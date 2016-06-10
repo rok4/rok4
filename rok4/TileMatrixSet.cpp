@@ -53,6 +53,12 @@ std::map<std::string, TileMatrix>* TileMatrixSet::getTmList() {
     return &tmList;
 }
 
+TileMatrixSet::TileMatrixSet ( const TileMatrixSet& t ) : 
+    id ( t.id ),title ( t.title ),abstract ( t.abstract ),keyWords ( t.keyWords ),
+    crs ( t.crs ),tmList ( t.tmList ) {
+
+}
+
 TileMatrixSet::TileMatrixSet ( const TileMatrixSetXML& t ) {
 	id = t.id;
 	title = t.title;
@@ -62,12 +68,12 @@ TileMatrixSet::TileMatrixSet ( const TileMatrixSetXML& t ) {
 	tmList = t.listTM;
 }
 
-std::vector<std::pair<std::string, double>> TileMatrixSet::getCorrespondingLevels(std::string levelIn, TileMatrixSet* otherTMS, bool limits) {
-    
-    std::vector<std::pair<std::string, double>> acceptedLevels;
+std::map<std::string, double> TileMatrixSet::getCorrespondingLevels(std::string levelIn, TileMatrixSet* otherTMS) {
 
-    TileMatrix* tmIn =  this->getLevel(levelIn);
-    if (tmIn == NULL) return acceptedLevels;
+    std::map<std::string, double> levelsRatios;
+
+    TileMatrix* tmIn =  this->getTm(levelIn);
+    if (tmIn == NULL) return levelsRatios;
 
     double ratioX, ratioY, resOutX, resOutY;
     double resIn = tmIn->getRes();
@@ -79,20 +85,6 @@ std::vector<std::pair<std::string, double>> TileMatrixSet::getCorrespondingLevel
     cBbox = this->getCrs().cropBBoxGeographic(cBbox);
     // cBBox est une bbox géographique contenue dans les espaces de définition des 2 crs
 
-    BoundingBox<double> cBboxOld = cBbox;
-    BoundingBox<double> cBboxNew = cBbox;
-
-
-    double Res, ratioX, ratioY, resX, resY;
-    std::string best_h;
-
-    Res = tm->getRes();
-
-    BoundingBox<double> nBbox = tms->getCrs().getCrsDefinitionArea();
-
-    BoundingBox<double> cBbox = pyr->getTms().getCrs().cropBBoxGeographic(nBbox);
-
-    cBbox = tms->getCrs().cropBBoxGeographic(cBbox);
     BoundingBox<double> cBboxOld = cBbox;
     BoundingBox<double> cBboxNew = cBbox;
 
@@ -109,22 +101,17 @@ std::vector<std::pair<std::string, double>> TileMatrixSet::getCorrespondingLevel
 
         double resolution = sqrt ( resOutX * resOutY );
 
-        std::map<std::string, Level*>::iterator it = otherTMS->getTmList().begin();
-        for ( it; it < otherTMS->getTmList().end(); it++ ) {
+        std::map<std::string, TileMatrix>::iterator it = otherTMS->getTmList()->begin();
+        for ( it; it != otherTMS->getTmList()->end(); it++ ) {
             // Pour chaque niveau du deuxième TMS, on calcule le ratio
-            double d = resolution / it->second->getRes();
+            double d = resolution / it->second.getRes();
 
-            if (! limits || (d <= 1.8 && d >= 0.8)) {
-                // On ajoute car l'écart de résolution est pas trop grand ou on ne veut pas de limites
-                acceptedLevels.push_back(std::pair<std::string, double> ( it->first, d ));
-            }
+            levelsRatios.insert(std::pair<std::string, double> ( it->first, d ));
         }
-
-        std::sort(acceptedLevels.begin(), acceptedLevels.end());
 
     }
 
-    return acceptedLevels;
+    return levelsRatios;
 }
 
 bool TileMatrixSet::operator== ( const TileMatrixSet& other ) const {
@@ -138,4 +125,31 @@ bool TileMatrixSet::operator== ( const TileMatrixSet& other ) const {
 
 bool TileMatrixSet::operator!= ( const TileMatrixSet& other ) const {
     return ! ( *this == other );
+}
+
+TileMatrixSet::~TileMatrixSet() {}
+
+TileMatrix* TileMatrixSet::getTm(std::string id) {
+    std::map<std::string, TileMatrix>::iterator itTM = tmList.find ( id );
+
+    if ( itTM == tmList.end() ) {
+        return NULL;
+    }
+
+    return & ( itTM->second );
+}
+
+CRS TileMatrixSet::getCrs() {
+    return crs;
+}
+
+std::vector<Keyword>* TileMatrixSet::getKeyWords() {
+    return &keyWords;
+}
+
+std::string TileMatrixSet::getAbstract() {
+    return abstract;
+}
+    std::string TileMatrixSet::getTitle() {
+    return title;
 }

@@ -54,14 +54,11 @@ class TileMatrixXML
 
     public:
         TileMatrixXML(std::string tmsId, TiXmlElement* levelElement);
-        ~TileMatrixXML(){
-        }
+        ~TileMatrixXML() ;
 
-        std::string getId() {
-            return id;
-        }
+        std::string getId();
 
-        bool isOk() { return ok; }
+        bool isOk() ;
 
     protected:
 

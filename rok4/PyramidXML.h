@@ -35,6 +35,8 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+class PyramidXML;
+
 #ifndef PYRAMIDXML_H
 #define PYRAMIDXML_H
 
@@ -44,7 +46,11 @@
 #include "Keyword.h"
 #include "CRS.h"
 #include "TileMatrix.h"
+#include "ServicesXML.h"
+#include "ServerXML.h"
 #include "Pyramid.h"
+#include "Format.h"
+#include "Level.h"
 
 #include "config.h"
 #include "intl.h"
@@ -57,25 +63,21 @@ class PyramidXML
     public:
 
         PyramidXML(std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML, bool times);
-        ~PyramidXML(){
-        }
+        ~PyramidXML();
 
-        std::string getId() {
-            return id;
-        }
+        bool isOk() ;
 
-        bool isOk() { return ok; }
+        int getChannels() ;
+        Rok4Format::eformat_data getFormat() ;
 
     protected:
 
         TileMatrixSet *tms;
-        Rok4Format format;
         Rok4Format::eformat_data format;
         int channels;
         bool allowWMS;
         std::map<std::string, Level *> levels;
-
-        std::string photometricStr;
+        Photometric::ePhotometric photo;
         std::string ndValuesStr;
         std::vector<int> noDataValues;
 

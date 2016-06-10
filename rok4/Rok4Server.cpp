@@ -114,9 +114,7 @@ void* Rok4Server::thread_loop ( void* arg ) {
 
         Request* request;
 
-
-
-        postRequest = ( server->servicesConf.isPostEnabled() ?strcmp ( FCGX_GetParam ( "REQUEST_METHOD",fcgxRequest.envp ),"POST" ) ==0:false );
+        postRequest = ( server->servicesConf->isPostEnabled() ?strcmp ( FCGX_GetParam ( "REQUEST_METHOD",fcgxRequest.envp ),"POST" ) ==0:false );
 
         if ( postRequest ) { // Post Request
             char* contentBuffer = ( char* ) malloc ( sizeof ( char ) *200 );
@@ -160,22 +158,19 @@ void* Rok4Server::thread_loop ( void* arg ) {
     return 0;
 }
 
-Rok4Server::Rok4Server (  ServerXML& serverXML, ServicesXML& servicesXML, std::map<std::string,Layer*> &layers, std::map<std::string,TileMatrixSet*> &tms, std::map<std::string,Style*> &styles) {
+Rok4Server::Rok4Server (  ServerXML* serverXML, ServicesXML* servicesXML) {
     
 
     sock = 0;
     servicesConf =  servicesXML;
     serverConf =  serverXML;
-    layerList = layers;
-    tmsList = tms;
-    styleList = styles;
 
-    threads = new std::vector<pthread_t>(serverConf.getNbThreads());
+    threads = std::vector<pthread_t>(serverConf->getNbThreads());
 
     running = false;
     notFoundError = NULL;
 
-    if ( serverConf.supportWMS ) {
+    if ( serverConf->supportWMS ) {
         LOGGER_DEBUG ( _ ( "Build WMS Capabilities 1.3.0" ) );
         buildWMS130Capabilities();
         //---- WMS 1.1.1
@@ -183,18 +178,18 @@ Rok4Server::Rok4Server (  ServerXML& serverXML, ServicesXML& servicesXML, std::m
         buildWMS111Capabilities();
         //----
     }
-    if ( serverConf.supportWMTS ) {
+    if ( serverConf->supportWMTS ) {
         LOGGER_DEBUG ( _ ( "Build WMTS Capabilities" ) );
         buildWMTSCapabilities();
     }
     //initialize processFactory
-    if (serverConf.nbProcess > MAX_NB_PROCESS) {
-        serverConf.nbProcess = MAX_NB_PROCESS;
+    if (serverConf->nbProcess > MAX_NB_PROCESS) {
+        serverConf->nbProcess = MAX_NB_PROCESS;
     }
-    if (serverConf.nbProcess < 0) {
-        serverConf.nbProcess = DEFAULT_NB_PROCESS;
+    if (serverConf->nbProcess < 0) {
+        serverConf->nbProcess = DEFAULT_NB_PROCESS;
     }
-    parallelProcess = new ProcessFactory(serverConf.nbProcess, "");
+    parallelProcess = new ProcessFactory(serverConf->nbProcess, "");
 }
 
 Rok4Server::~Rok4Server() {
@@ -204,8 +199,8 @@ Rok4Server::~Rok4Server() {
         notFoundError = NULL;
     }
 
-    delete cephBook;
-    delete swiftBook;
+    delete serverConf;
+    delete servicesConf;
 
     delete parallelProcess;
     parallelProcess = NULL;
@@ -213,9 +208,9 @@ Rok4Server::~Rok4Server() {
 
 void Rok4Server::initFCGI() {
     int init=FCGX_Init();
-    if ( !socket.empty() ) {
-        LOGGER_INFO ( _ ( "Listening on " ) << socket );
-        sock = FCGX_OpenSocket ( socket.c_str(), backlog );
+    if ( ! serverConf->socket.empty() ) {
+        LOGGER_INFO ( _ ( "Listening on " ) << serverConf->socket );
+        sock = FCGX_OpenSocket ( serverConf->socket.c_str(), serverConf->backlog );
     }
 }
 
@@ -267,7 +262,7 @@ std::string Rok4Server::getParam ( std::map<std::string, std::string>& option, s
 }
 
 DataStream* Rok4Server::WMSGetCapabilities ( Request* request ) {
-    if ( !supportWMS ) {
+    if ( ! serverConf->supportWMS ) {
         // Return Error
     }
     std::string version;
@@ -293,7 +288,7 @@ DataStream* Rok4Server::WMSGetCapabilities ( Request* request ) {
 }
 
 DataStream* Rok4Server::WMTSGetCapabilities ( Request* request ) {
-    if ( !supportWMTS ) {
+    if ( ! serverConf->supportWMTS ) {
         // Return Error
     }
     std::string version;
@@ -326,7 +321,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
 
 
     // Récupération des paramètres
-    DataStream* errorResp = request->getMapParam ( servicesConf, layerList, layers, bbox, width, height, crs, format ,styles, format_option );
+    DataStream* errorResp = request->getMapParam ( servicesConf, serverConf->layersList, layers, bbox, width, height, crs, format ,styles, format_option );
     if ( errorResp ) {
         LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getMap" ) );
         return errorResp;
@@ -378,7 +373,7 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
 
 
 
-        if ( servicesConf.isFullStyleCapable() ) {
+        if ( servicesConf->isFullStyleCapable() ) {
         if ( style->isEstompage() ) {
                 LOGGER_DEBUG ( _ ( "Estompage" ) );
             curImage = new EstompageImage ( curImage,style->getAngle(),style->getExaggeration(), style->getCenter() );
@@ -603,7 +598,7 @@ DataSource* Rok4Server::getTile ( Request* request ) {
     Style* style=0;
 
     // Récupération des parametres de la requete
-    DataSource* errorResp = request->getTileParam ( servicesConf, tmsList, layerList, L, tileMatrix, tileCol, tileRow, format, style, noDataError );
+    DataSource* errorResp = request->getTileParam ( servicesConf, serverConf->tmsList, serverConf->layersList, L, tileMatrix, tileCol, tileRow, format, style, noDataError );
 
     if ( errorResp ) {
         LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getTile" ) );
@@ -617,19 +612,17 @@ DataSource* Rok4Server::getTile ( Request* request ) {
         errorResp = notFoundError;
     }
 
-
     DataSource* tileSource;
 
-    if (L->getDataPyramid()->getOnDemand()) {
-        //Si la pyramide est à la demande, on doit créer la tuile
-        if (L->getDataPyramid()->getOnFly()) {
-            tileSource = getTileOnFly(L, tileMatrix, tileCol, tileRow, style, format, errorResp);
-        } else {
-            tileSource = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
-        }
+    Level* level = L->getDataPyramid()->getLevel(tileMatrix);
 
-    } else {
-        //GetTile normal, on renvoit la tuile
+    if (level->isOnFly()) {
+        tileSource = getTileOnFly(L, tileMatrix, tileCol, tileRow, style, format, errorResp);
+    }
+    else if (level->isOnDemand()) {
+        tileSource = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
+    }
+    else {
         tileSource = getTileUsual(L, format, tileCol, tileRow, tileMatrix, errorResp, style) ;
     }
 
@@ -676,143 +669,140 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
 
     //Calcul des paramètres nécessaires
     LOGGER_DEBUG("Compute parameters");
-    std::string level = tileMatrix;
-    PyramidOnDemand * pyr = reinterpret_cast<PyramidOnDemand*>(L->getDataPyramid());
-    CRS dst_crs = pyr->getTms().getCrs();
+    Pyramid* pyr = L->getDataPyramid();
+
+    CRS dst_crs = pyr->getTms()->getCrs();
     error = 0;
     Interpolation::KernelType interpolation = L->getResampling();
-    std::map<std::string, Level*>::iterator lv = pyr->getLevels().find(level);
 
     //---- on verifie certains paramètres pour ne pas effectuer des calculs inutiles
-    if (lv == pyr->getLevels().end()) {
+    Level* lev = pyr->getLevel(tileMatrix);
+    if (lev == NULL) {
         //le level demandé n'existe pas
         return new DataSourceProxy ( SDSF.createStoreDataSource( "",0,0,"",nullContext,"" ), * ( pyr->getLowestLevel()->getEncodedNoDataTile() ) );
-    } else {
+    }
 
-        if (tileRow >= lv->second->getMinTileRow() && tileRow <= lv->second->getMaxTileRow()
-                && tileCol >= lv->second->getMinTileCol() && tileCol <= lv->second->getMaxTileCol()) {
+    if (tileRow >= lev->getMinTileRow() && tileRow <= lev->getMaxTileRow()
+            && tileCol >= lev->getMinTileCol() && tileCol <= lev->getMaxTileCol()) {
 
-            //--------------------------------------------------------------------------------------------------------
-            //Suite du calcul des paramètres nécessaires
-            //calcul de la bbox
-            LOGGER_DEBUG("Compute BBOX");
-            BoundingBox<double> bbox = lv->second->tileIndicesToTileBbox(tileCol,tileRow) ;
-            bbox.print();
-            //width and height and channels
-            width = lv->second->getTm().getTileW();
-            height = lv->second->getTm().getTileH();
+        //--------------------------------------------------------------------------------------------------------
+        //Suite du calcul des paramètres nécessaires
+        //calcul de la bbox
+        LOGGER_DEBUG("Compute BBOX");
+        BoundingBox<double> bbox = lev->tileIndicesToTileBbox(tileCol,tileRow) ;
+        bbox.print();
+        //width and height and channels
+        width = lev->getTm()->getTileW();
+        height = lev->getTm()->getTileH();
 
 
-            //--------------------------------------------------------------------------------------------------------
+        //--------------------------------------------------------------------------------------------------------
 
-            //--------------------------------------------------------------------------------------------------------
-            //CREATION DE L'IMAGE
-            LOGGER_DEBUG("Create Image");
+        //--------------------------------------------------------------------------------------------------------
+        //CREATION DE L'IMAGE
+        LOGGER_DEBUG("Create Image");
 
-            bSources = pyr->getSourcesOfLevel(lv->second->getId());
-            bSize = bSources.size();
+        bSources = lev->getSources();
+        bSize = bSources.size();
 
-            for(int i = bSize-1; i >= 0; i-- ) {
+        for(int i = bSize-1; i >= 0; i-- ) {
 
-                eSourceType type = bSources.at(i)->getType();
+            eSourceType type = bSources.at(i)->getType();
 
-                if (type == PYRAMID) {
+            if (type == PYRAMID) {
 
-                    //----on recupère la Pyramide Source
-                    Pyramid *bPyr = reinterpret_cast<Pyramid*>(bSources.at(i));
+                //----on recupère la Pyramide Source
+                Pyramid* bPyr = reinterpret_cast<Pyramid*>(bSources.at(i));
 
-                    pyrType = bPyr->getFormat();
-                    bStyle = bPyr->getStyle();
-                    bLevel = bPyr->getLevels().begin()->second->getId();
+                pyrType = bPyr->getFormat();
+                bStyle = bPyr->getStyle();
+                bLevel = bPyr->getUniqueLevel()->getId();
 
-                    //on transforme la bbox
-                    BoundingBox<double> motherBbox = bbox;
-                    BoundingBox<double> childBBox = bPyr->getTms().getCrs().getCrsDefinitionArea();
-                    if (motherBbox.reproject(pyr->getTms().getCrs().getProj4Code(),bPyr->getTms().getCrs().getProj4Code()) ==0 &&
-                    childBBox.reproject("epsg:4326",bPyr->getTms().getCrs().getProj4Code()) == 0) {
-                        //on récupère l'image si on a pu reprojeter les bbox
-                        //  cela a un double objectif:
-                        //      on peut voir s'il y a de la donnée
-                        //      et si on ne peut pas reprojeter,on ne pourra pas le faire plus tard non plus
-                        //          donc il sera impossible de créer une image
+                //on transforme la bbox
+                BoundingBox<double> motherBbox = bbox;
+                BoundingBox<double> childBBox = bPyr->getTms()->getCrs().getCrsDefinitionArea();
+                if (motherBbox.reproject(pyr->getTms()->getCrs().getProj4Code(),bPyr->getTms()->getCrs().getProj4Code()) ==0 &&
+                childBBox.reproject("epsg:4326",bPyr->getTms()->getCrs().getProj4Code()) == 0) {
+                    //on récupère l'image si on a pu reprojeter les bbox
+                    //  cela a un double objectif:
+                    //      on peut voir s'il y a de la donnée
+                    //      et si on ne peut pas reprojeter,on ne pourra pas le faire plus tard non plus
+                    //          donc il sera impossible de créer une image
 
-                        if (childBBox.containsInside(motherBbox) || motherBbox.containsInside(childBBox) || motherBbox.intersects(childBBox)) {
+                    if (childBBox.containsInside(motherBbox) || motherBbox.containsInside(childBBox) || motherBbox.intersects(childBBox)) {
 
-                            curImage = bPyr->createReprojectedImage(bLevel, bbox, dst_crs, servicesConf, width, height, interpolation, error);
+                        curImage = bPyr->createReprojectedImage(bLevel, bbox, dst_crs, servicesConf, width, height, interpolation, error);
 
-                            if (curImage != NULL) {
-                                //On applique un style à l'image
-                                image = styleImage(curImage, pyrType, bStyle, format, bSize);
-                                images.push_back ( image );
-                            } else {
-                                LOGGER_ERROR("Impossible de générer la tuile car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile");
-                                return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
-                            }
-
+                        if (curImage != NULL) {
+                            //On applique un style à l'image
+                            image = styleImage(curImage, pyrType, bStyle, format, bSize);
+                            images.push_back ( image );
                         } else {
-
-                            LOGGER_DEBUG("Incohérence des bbox: Impossible de générer une tuile issue d'une basedPyramid du layer "+L->getTitle());
-
+                            LOGGER_ERROR("Impossible de générer la tuile car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile");
+                            return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
                         }
 
                     } else {
-                        //on n'a pas pu reprojeter les bbox
 
-                        LOGGER_DEBUG("Reprojection impossible: Impossible de générer une tuile issue d'une basedPyramid du layer "+L->getTitle());
+                        LOGGER_DEBUG("Incohérence des bbox: Impossible de générer une tuile issue d'une basedPyramid du layer "+L->getTitle());
 
                     }
 
                 } else {
+                    //on n'a pas pu reprojeter les bbox
 
-                    if (type == WEBSERVICE) {
+                    LOGGER_DEBUG("Reprojection impossible: Impossible de générer une tuile issue d'une basedPyramid du layer "+L->getTitle());
 
-                        //----on recupère le WebService Source
-                        WebMapService *wms = reinterpret_cast<WebMapService*>(bSources.at(i));
+                }
 
-                        //----traitement de la requete
-                        image = wms->createImageFromRequest(width,height,bbox);
+            } else {
 
-                        if (image) {
-                            images.push_back(image);
-                        } else {
-                            LOGGER_ERROR("Impossible de generer la tuile car l'un des WebServices du layer "+L->getTitle()+" ne renvoit pas de tuile");
-                            return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
-                        }
+                if (type == WEBSERVICE) {
 
+                    //----on recupère le WebService Source
+                    WebMapService *wms = reinterpret_cast<WebMapService*>(bSources.at(i));
+
+                    //----traitement de la requete
+                    image = wms->createImageFromRequest(width,height,bbox);
+
+                    if (image) {
+                        images.push_back(image);
+                    } else {
+                        LOGGER_ERROR("Impossible de generer la tuile car l'un des WebServices du layer "+L->getTitle()+" ne renvoit pas de tuile");
+                        return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
                     }
 
                 }
 
             }
 
-
-            //re-initialisation du pyrType pour le merge
-//            pyrType = bPyr.at ( 0 )->getFormat();
-
-            //On merge les images récupérés dans chacune des basedPyramid ou/et des WebServices
-            if (images.size() != 0) {
-                mergeImage = mergeImages(images, pyrType, style, dst_crs, bbox);
-
-                if (mergeImage == NULL) {
-                    LOGGER_ERROR("Impossible de générer la tuile car l'opération de merge n'a pas fonctionné");
-                    return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
-                }
-
-            } else {
-
-                LOGGER_ERROR("Aucune image n'a été récupérée");
-                return new DataSourceProxy ( SDSF.createStoreDataSource( "",0,0,"",nullContext,"" ), * ( lv->second->getEncodedNoDataTile() ) );
-
-            }
-
-
-        } else {
-            //on est en dehors des TMLimits
-            return new DataSourceProxy ( SDSF.createStoreDataSource( "",0,0,"",nullContext,"" ), * ( lv->second->getEncodedNoDataTile() ) );
         }
 
-    }
 
+        //re-initialisation du pyrType pour le merge
+//            pyrType = bPyr.at ( 0 )->getFormat();
+
+        //On merge les images récupérés dans chacune des basedPyramid ou/et des WebServices
+        if (images.size() != 0) {
+            mergeImage = mergeImages(images, pyrType, style, dst_crs, bbox);
+
+            if (mergeImage == NULL) {
+                LOGGER_ERROR("Impossible de générer la tuile car l'opération de merge n'a pas fonctionné");
+                return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
+            }
+
+        } else {
+
+            LOGGER_ERROR("Aucune image n'a été récupérée");
+            return new DataSourceProxy ( SDSF.createStoreDataSource( "",0,0,"",nullContext,"" ), * ( lev->getEncodedNoDataTile() ) );
+
+        }
+
+
+    } else {
+        //on est en dehors des TMLimits
+        return new DataSourceProxy ( SDSF.createStoreDataSource( "",0,0,"",nullContext,"" ), * ( lev->getEncodedNoDataTile() ) );
+    }
 
 
     //De cette image mergée, on lui applique un format pour la renvoyer au client
@@ -838,7 +828,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
     //variables
     std::string Spath, SpathTmp, SpathErr, SpathDir;
     DataSource *tile;
-    PyramidOnFly * pyr = reinterpret_cast<PyramidOnFly*>(L->getDataPyramid());
+    Pyramid* pyr = L->getDataPyramid();
     struct stat bufferS;
     struct stat bufferT;
     struct stat bufferE;
@@ -849,134 +839,132 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
 
     LOGGER_INFO("GetTileOnFly");
 
-    //on récupère l'emplacement théorique de la dalle
-    std::map<std::string, Level*>::iterator lv = pyr->getLevels().find(tileMatrix);
-    if (lv == pyr->getLevels().end()) {
+    //---- on verifie certains paramètres pour ne pas effectuer des calculs inutiles
+    Level* lev = pyr->getLevel(tileMatrix);
+    if (lev == NULL) {
         LOGGER_WARN("Level demandé invalide");
         return new DataSourceProxy ( SDSF.createStoreDataSource( "",0,0,"",nullContext,"" ), * ( pyr->getLowestLevel()->getEncodedNoDataTile() ) );
-    } else {
+    }
 
-        if (tileRow >= lv->second->getMinTileRow() && tileRow <= lv->second->getMaxTileRow()
-                && tileCol >= lv->second->getMinTileCol() && tileCol <= lv->second->getMaxTileCol()) {
+    if (tileRow >= lev->getMinTileRow() && tileRow <= lev->getMaxTileRow()
+            && tileCol >= lev->getMinTileCol() && tileCol <= lev->getMaxTileCol()) {
 
-            Spath = lv->second->getPath(tileCol, tileRow, lv->second->getTilesPerWidth(), lv->second->getTilesPerHeight());
-            SpathDir = lv->second->getDirPath(tileCol,tileRow);
-            SpathTmp = Spath + ".tmp";
-            SpathErr = Spath + ".err";
+        Spath = lev->getPath(tileCol, tileRow, lev->getTilesPerWidth(), lev->getTilesPerHeight());
+        SpathDir = lev->getDirPath(tileCol,tileRow);
+        SpathTmp = Spath + ".tmp";
+        SpathErr = Spath + ".err";
 
-            if (stat (Spath.c_str(), &bufferS) == 0 && stat (SpathTmp.c_str(), &bufferT) == -1) {
-                //la dalle existe donc on fait une requete normale
-                LOGGER_INFO("Dalle déjà existante");
-                tile = getTileUsual(L, format, tileCol, tileRow, tileMatrix, errorResp, style);
+        if (stat (Spath.c_str(), &bufferS) == 0 && stat (SpathTmp.c_str(), &bufferT) == -1) {
+            //la dalle existe donc on fait une requete normale
+            LOGGER_INFO("Dalle déjà existante");
+            tile = getTileUsual(L, format, tileCol, tileRow, tileMatrix, errorResp, style);
+        } else {
+            //la dalle n'existe pas
+
+            if (stat (SpathTmp.c_str(), &bufferT) == 0 || stat (SpathErr.c_str(), &bufferE) == 0) {
+                //la dalle est en cours de creation ou on a deja essaye de la creer et ça n'a pas marché
+                //donc on a un fichier d'erreur
+                LOGGER_INFO("Dalle inexistante, en cours de création ou non réalisable");
+                tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
+
             } else {
-                //la dalle n'existe pas
 
-                if (stat (SpathTmp.c_str(), &bufferT) == 0 || stat (SpathErr.c_str(), &bufferE) == 0) {
-                    //la dalle est en cours de creation ou on a deja essaye de la creer et ça n'a pas marché
-                    //donc on a un fichier d'erreur
-                    LOGGER_INFO("Dalle inexistante, en cours de création ou non réalisable");
-                    tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
+                //la dalle n'est pas en cours de creation
+                //on cree un processus qui va creer la dalle en parallele
+                if (parallelProcess->createProcess()) {
 
-                } else {
+                    //---------------------------------------------------------------------------------------------------
 
-                    //la dalle n'est pas en cours de creation
-                    //on cree un processus qui va creer la dalle en parallele
-                    if (parallelProcess->createProcess()) {
+                    if (parallelProcess->getLastPid() == 0) {
+                        //PROCESSUS FILS
+                        // on va créer un fichier tmp, générer la dalle et supprimer le fichier tmp
 
-                        //---------------------------------------------------------------------------------------------------
-
-                        if (parallelProcess->getLastPid() == 0) {
-                            //PROCESSUS FILS
-                            // on va créer un fichier tmp, générer la dalle et supprimer le fichier tmp
-
-                            //on cree un fichier temporaire pour indiquer que la dalle va etre creer
-                            int fileTmp = open(SpathTmp.c_str(),O_CREAT|O_EXCL,S_IWRITE);
-                            if (fileTmp != -1) {
-                                //on a pu creer un fichier temporaire
-                                close(fileTmp);
-                            } else {
-                                //impossible de creer un fichier temporaire
-                                int directory = lv->second->createDirPath(SpathDir.c_str());
-                                if (directory != -1) {
-                                    //on a pu creer le dossier donc on reessaye de creer le fichier tmp
-                                    fileTmp = open(SpathTmp.c_str(),O_CREAT|O_EXCL,S_IWRITE);
-                                    if (fileTmp != -1) {
-                                        //on a pu creer un fichier temporaire
-                                        close(fileTmp);
-                                    }
-                                } else {
-                                    std::cerr << "Impossible de creer le dossier contenant la dalle " << SpathDir.c_str() << std::endl;
-                                    std::cerr << "Impossible de creer le fichier de temporaire " << SpathTmp.c_str() << std::endl;
-                                    std::cerr << "Pas de generation de dalles " << std::endl;
-                                    exit(0);
-                                }
-
-                            }
-
-                            //on cree un logger et supprime l'ancien pour ne pas mélanger les sorties
-                            // il sera écrit dans SpathErr et supprimé si la dalle a été généré correctement
-                            parallelProcess->initializeLogger(SpathErr);
-
-                            //on cree la dalle
-                            int state = createSlabOnFly(L, tileMatrix, tileCol, tileRow, style, format, Spath);
-                            if (!state) {
-                                //la generation s'est bien déroulé
-                                //on supprime le logger qui ne contient en théorie pas ou peu
-                                //d'erreurs. Du moins, aucune ayant empéchée la génération
-                                int fileErr = remove(SpathErr.c_str());
-                                if (fileErr != 0) {
-                                    //Impossible de supprimer le fichier erreur
-                                    LOGGER_ERROR("Impossible de supprimer le fichier de log");
-                                }
-                            } else {
-                                //la generation n'a pas fonctionne
-                                //on essaye de supprimer le fichier de dalle potentiellement existant
-                                //mais contenant des erreurs
-
-                                if (stat (Spath.c_str(), &bufferS) == 0) {
-                                    //le fichier existe mais il faut le supprimer
-                                    int file = remove(Spath.c_str());
-                                    if (file != 0) {
-                                        LOGGER_ERROR("Impossible de supprimer la dalle contenant des erreurs");
-                                    }
-                                }
-                            }
-
-                            //on nettoie
-                            fileTmp = remove(SpathTmp.c_str());
-                            if (fileTmp != 0) {
-                                //Impossible de supprimer le fichier temporaire
-                                std::cerr << "Impossible de supprimer le fichier de temporaire " << SpathTmp.c_str() << std::endl;
-                            }
-                            parallelProcess->destroyLogger();
-
-                            //on arrete le processus
-                            exit(0);
-
+                        //on cree un fichier temporaire pour indiquer que la dalle va etre creer
+                        int fileTmp = open(SpathTmp.c_str(),O_CREAT|O_EXCL,S_IWRITE);
+                        if (fileTmp != -1) {
+                            //on a pu creer un fichier temporaire
+                            close(fileTmp);
                         } else {
-                            //PROCESSUS PERE
-                            //on va répondre a la requête
-                            LOGGER_DEBUG("Création de la dalle "+Spath);
-                            LOGGER_DEBUG("Log dans le fichier "+SpathErr);
-                            tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
+                            //impossible de creer un fichier temporaire
+                            int directory = lev->createDirPath(SpathDir.c_str());
+                            if (directory != -1) {
+                                //on a pu creer le dossier donc on reessaye de creer le fichier tmp
+                                fileTmp = open(SpathTmp.c_str(),O_CREAT|O_EXCL,S_IWRITE);
+                                if (fileTmp != -1) {
+                                    //on a pu creer un fichier temporaire
+                                    close(fileTmp);
+                                }
+                            } else {
+                                std::cerr << "Impossible de creer le dossier contenant la dalle " << SpathDir.c_str() << std::endl;
+                                std::cerr << "Impossible de creer le fichier de temporaire " << SpathTmp.c_str() << std::endl;
+                                std::cerr << "Pas de generation de dalles " << std::endl;
+                                exit(0);
+                            }
+
                         }
 
-                        //-------------------------------------------------------------------------------------------------
+                        //on cree un logger et supprime l'ancien pour ne pas mélanger les sorties
+                        // il sera écrit dans SpathErr et supprimé si la dalle a été généré correctement
+                        parallelProcess->initializeLogger(SpathErr);
 
+                        //on cree la dalle
+                        int state = createSlabOnFly(L, tileMatrix, tileCol, tileRow, style, format, Spath);
+                        if (!state) {
+                            //la generation s'est bien déroulé
+                            //on supprime le logger qui ne contient en théorie pas ou peu
+                            //d'erreurs. Du moins, aucune ayant empéchée la génération
+                            int fileErr = remove(SpathErr.c_str());
+                            if (fileErr != 0) {
+                                //Impossible de supprimer le fichier erreur
+                                LOGGER_ERROR("Impossible de supprimer le fichier de log");
+                            }
+                        } else {
+                            //la generation n'a pas fonctionne
+                            //on essaye de supprimer le fichier de dalle potentiellement existant
+                            //mais contenant des erreurs
+
+                            if (stat (Spath.c_str(), &bufferS) == 0) {
+                                //le fichier existe mais il faut le supprimer
+                                int file = remove(Spath.c_str());
+                                if (file != 0) {
+                                    LOGGER_ERROR("Impossible de supprimer la dalle contenant des erreurs");
+                                }
+                            }
+                        }
+
+                        //on nettoie
+                        fileTmp = remove(SpathTmp.c_str());
+                        if (fileTmp != 0) {
+                            //Impossible de supprimer le fichier temporaire
+                            std::cerr << "Impossible de supprimer le fichier de temporaire " << SpathTmp.c_str() << std::endl;
+                        }
+                        parallelProcess->destroyLogger();
+
+                        //on arrete le processus
+                        exit(0);
 
                     } else {
-                        LOGGER_WARN("Impossible de créer un processus parallele donc pas de génération de dalle");
+                        //PROCESSUS PERE
+                        //on va répondre a la requête
+                        LOGGER_DEBUG("Création de la dalle "+Spath);
+                        LOGGER_DEBUG("Log dans le fichier "+SpathErr);
                         tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
                     }
 
+                    //-------------------------------------------------------------------------------------------------
+
+
+                } else {
+                    LOGGER_WARN("Impossible de créer un processus parallele donc pas de génération de dalle");
+                    tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
                 }
 
             }
 
-        } else {
-            return new DataSourceProxy ( SDSF.createStoreDataSource( "",0,0,"",nullContext,"" ), * ( lv->second->getEncodedNoDataTile() ) );
         }
 
+    } else {
+        return new DataSourceProxy ( SDSF.createStoreDataSource( "",0,0,"",nullContext,"" ), * ( lev->getEncodedNoDataTile() ) );
     }
 
     return tile;
@@ -1006,32 +994,33 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     LOGGER_DEBUG("Compute parameters");
     //la correspondance est assurée par les vérifications qui ont eu lieu dans getTile()
     std::string level = tileMatrix;
-    PyramidOnFly * pyr = reinterpret_cast<PyramidOnFly*>(L->getDataPyramid());
-    CRS dst_crs = pyr->getTms().getCrs();
+    Pyramid* pyr = L->getDataPyramid();
+    CRS dst_crs = pyr->getTms()->getCrs();
     error = 0;
     Interpolation::KernelType interpolation = L->getResampling();
 
 
     //---- on va créer la bbox associée à la dalle
     LOGGER_DEBUG("Compute BBOX");
-    std::map<std::string, Level*>::iterator lv = pyr->getLevels().find(level);
-    BoundingBox<double> bbox = lv->second->tileIndicesToSlabBbox(tileCol,tileRow) ;
+    Level* lev = pyr->getLevel(tileMatrix);
+
+    BoundingBox<double> bbox = lev->tileIndicesToSlabBbox(tileCol,tileRow) ;
     bbox.print();
     //---- bbox creee
 
     //width and height
     LOGGER_DEBUG("Compute width and height");
-    width = lv->second->getSlabWidth();
-    height = lv->second->getSlabHeight();
-    tileW = lv->second->getTm().getTileW();
-    tileH = lv->second->getTm().getTileH();
+    width = lev->getSlabWidth();
+    height = lev->getSlabHeight();
+    tileW = lev->getTm()->getTileW();
+    tileH = lev->getTm()->getTileH();
 
 
     //--------------------------------------------------------------------------------------------------------
     //CREATION DE L'IMAGE
     LOGGER_DEBUG("Create Image");
 
-    bSources = pyr->getSourcesOfLevel(lv->second->getId());
+    bSources = lev->getSources();
     bSize = bSources.size();
 
     for(int i = bSize-1; i >= 0; i-- ) {
@@ -1129,11 +1118,13 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     FileContext* fc = new FileContext("");
     fc->connection();
 
-    Rok4Image * finalImage = R4IF.createRok4ImageToWrite(pathToWrite,bbox,lastImage->getResX(),lastImage->getResY(),
-                                                         lastImage->getWidth(),lastImage->getHeight(),pyr->getChannels(),
-                                                         pyr->getSampleFormat(),pyr->getBitsPerSample(),
-                                                         pyr->getPhotometry(),pyr->getSampleCompression(),tileW,
-                                                         tileH, fc);
+    Rok4Image * finalImage = R4IF.createRok4ImageToWrite(
+        pathToWrite,bbox,lastImage->getResX(),lastImage->getResY(),
+        lastImage->getWidth(),lastImage->getHeight(),pyr->getChannels(),
+        pyr->getSampleFormat(),pyr->getBitsPerSample(),
+        pyr->getPhotometric(),pyr->getSampleCompression(),tileW, tileH, fc
+    );
+
     LOGGER_DEBUG("Created");
 
     if (finalImage != NULL) {
@@ -1167,7 +1158,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     //on va voir si la tuile de noData existe deja pour la creer dans le cas negatif
     LOGGER_INFO("Create NoDataTile");
 
-    std::string noDataFile = lv->second->getNoDataFilePath();
+    std::string noDataFile = lev->getNoDataFilePath();
 
     if (stat (noDataFile.c_str(), &buffer) != 0) {
         //la tuile de noData n'existe pas
@@ -1175,7 +1166,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
 
         //on cree le dossier
         std::string noDataDir = noDataFile.substr(0,noDataFile.find_last_of("/"));
-        int directory = lv->second->createDirPath(noDataDir);
+        int directory = lev->createDirPath(noDataDir);
         if (directory == -1) {
             //le repertoire n'a pas ete cree
             LOGGER_ERROR("Impossible de creer le repertoire contenant les tuiles de noData");
@@ -1213,7 +1204,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
 
         Rok4Image* nodataTile = R4IF.createRok4ImageToWrite(
             pathToNoData, BoundingBox<double>(0.,0.,0.,0.), 0., 0., tileW, tileH, channels,
-            pyr->getSampleFormat(), pyr->getBitsPerSample(), pyr->getPhotometry(), pyr->getSampleCompression(),
+            pyr->getSampleFormat(), pyr->getBitsPerSample(), pyr->getPhotometric(), pyr->getSampleCompression(),
             tileW, tileH, fc);
 
         LOGGER_DEBUG ( "Write noDataTile" );
@@ -1255,7 +1246,7 @@ DataStream* Rok4Server::WMSGetFeatureInfo ( Request* request ) {
     std::map <std::string, std::string > format_option;
     //exception ?
 
-    DataStream* errorResp = request->WMSGetFeatureInfoParam (servicesConf, layerList, layers, query_layers, bbox, width, height, crs, format, styles, info_format, X, Y, feature_count, format_option);
+    DataStream* errorResp = request->WMSGetFeatureInfoParam (servicesConf, serverConf->layersList, layers, query_layers, bbox, width, height, crs, format, styles, info_format, X, Y, feature_count, format_option);
     if ( errorResp ) {
         LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getFeatureInfo" ) );
         return errorResp;
@@ -1278,7 +1269,7 @@ DataStream* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
 
     LOGGER_DEBUG("Verification des parametres de la requete");
 
-    DataStream* errorResp = request->WMTSGetFeatureInfoParam (servicesConf, tmsList, layerList, layer, tileMatrix, tileCol, tileRow, format,
+    DataStream* errorResp = request->WMTSGetFeatureInfoParam (servicesConf, serverConf->tmsList, serverConf->layersList, layer, tileMatrix, tileCol, tileRow, format,
                                                               style, noDataError, info_format, X, Y);
     if ( errorResp ) {
         LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getFeatureInfo" ) );
@@ -1288,9 +1279,9 @@ DataStream* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
     std::map<std::string, Level*>::iterator lv = pyr->getLevels().find(tileMatrix);
     Level* level = lv->second;
     BoundingBox<double> bbox = level->tileIndicesToTileBbox(tileCol,tileRow) ;
-    int height = level->getTm().getTileH();
-    int width = level->getTm().getTileW();
-    CRS crs = pyr->getTms().getCrs();
+    int height = level->getTm()->getTileH();
+    int width = level->getTm()->getTileW();
+    CRS crs = pyr->getTms()->getCrs();
     return CommonGetFeatureInfo( "wmts", layer, bbox, width, height, crs, info_format, X, Y, format, 1 );
 }
 
@@ -1366,7 +1357,7 @@ DataStream* Rok4Server::CommonGetFeatureInfo ( std::string service, Layer* layer
         
     } else if ( getFeatureInfoType.compare( "EXTERNALWMS" ) == 0 ) {
         LOGGER_DEBUG("GFI sur WMS externe");
-        WebService* myWMSV = new WebService(layer->getGFIBaseUrl(),proxy.proxyName,proxy.noProxy,1,1,10);
+        WebService* myWMSV = new WebService(layer->getGFIBaseUrl(),serverConf->proxy.proxyName,serverConf->proxy.noProxy,1,1,10);
         std::stringstream vectorRequest;
         std::string crsstring = crs.getRequestCode();
         if(layer->getGFIForceEPSG()){
@@ -1463,11 +1454,11 @@ void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
 }
 
 void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest ) {
-    if ( supportWMTS && request->service == "wmts" && (request->doesPathFinishWith("wmts") || !request->doesPathFinishWith("wms"))) {
+    if ( serverConf->supportWMTS && request->service == "wmts" && (request->doesPathFinishWith("wmts") || !request->doesPathFinishWith("wms"))) {
         processWMTS ( request, fcgxRequest );
         //Service is not mandatory in GetMap request in WMS 1.3.0 and GetFeatureInfo
         //le map est présent pour une compatibilité avec le WMS 1.1.1
-    } else if ( supportWMS && ( request->service=="wms" || request->request == "getmap" || request->request == "map") && (request->doesPathFinishWith("wms") || !request->doesPathFinishWith("wmts"))) {
+    } else if ( serverConf->supportWMS && ( request->service=="wms" || request->request == "getmap" || request->request == "map") && (request->doesPathFinishWith("wms") || !request->doesPathFinishWith("wmts"))) {
         processWMS ( request, fcgxRequest );
     } else if ( request->service == "" ) {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, ( "Le parametre SERVICE n'est pas renseigne." ) ,"xxx" ) ),&fcgxRequest );
@@ -1476,4 +1467,20 @@ void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest 
     }
 }
 
+/******************* GETTERS / SETTERS *****************/
 
+ServicesXML* Rok4Server::getServicesConf() { return servicesConf; }
+std::map<std::string, Layer*>& Rok4Server::getLayerList() { return serverConf->layersList; }
+std::map<std::string, TileMatrixSet*>& Rok4Server::getTmsList() { return serverConf->tmsList; }
+std::map<std::string, Style*>& Rok4Server::getStyleList() { return serverConf->stylesList; }
+std::map<std::string,std::vector<std::string> >& Rok4Server::getWmsCapaFrag() { return wmsCapaFrag; }
+std::vector<std::string>& Rok4Server::getWmtsCapaFrag() { return wmtsCapaFrag; }
+ContextBook* Rok4Server::getCephBook() {return serverConf->cephBook;}
+ContextBook* Rok4Server::getSwiftBook() {return serverConf->swiftBook;}
+int Rok4Server::getFCGISocket() { return sock; }
+void Rok4Server::setFCGISocket ( int sockFCGI ) { sock = sockFCGI; }
+bool Rok4Server::isRunning() { return running ; }
+bool Rok4Server::isWMTSSupported(){ return serverConf->supportWMTS ; }
+bool Rok4Server::isWMSSupported(){ return serverConf->supportWMS ; }
+void Rok4Server::setProxy(Proxy pr){ serverConf->proxy = pr ; }
+Proxy Rok4Server::getProxy(){ return serverConf->proxy ; }

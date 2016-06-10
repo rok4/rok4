@@ -124,14 +124,17 @@ PyramidXML::PyramidXML(std::string fileName, ServerXML* serverXML, ServicesXML* 
     //----
 
     //----PHOTOMETRIE
-    // on lit l'élément photometric, il n'est pas obligatoire pour
-    // une pyramide normale mais il le devient si la pyramide
-    // est à la volée
     pElem=hRoot.FirstChild ( "photometric" ).Element();
-    if ( pElem && pElem->GetText() ) {
-        photometricStr = pElem->GetTextStr();
-    } else {
-        photometricStr = "UNKNOWN";
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        LOGGER_ERROR ( "La pyramide [" << fileName << "] n'a pas de photométrie." ) );
+        return;
+    }
+    std::string photometricStr = pElem->GetTextStr();
+
+    photo = Photometric::fromString ( photometricStr );
+    if ( ! ( photo ) ) {
+        LOGGER_ERROR ( fileName << "La photométrie [" << photometricStr << "] n'est pas gere." );
+        return;
     }
     //----
 
@@ -198,7 +201,7 @@ PyramidXML::PyramidXML(std::string fileName, ServerXML* serverXML, ServicesXML* 
         if (levXML.isOnDemand() || isOnFly()) containOdLevels = true;
 
         std::string lId = levXML.getId();
-        Level* levObj = new Level(levXML);
+        Level* levObj = new Level(levXML, this);
         levels.insert ( std::pair<std::string, Level*> ( lId, levObj ) );
 
     } //if level
@@ -211,3 +214,8 @@ PyramidXML::PyramidXML(std::string fileName, ServerXML* serverXML, ServicesXML* 
     ok = true;
 }
 
+PyramidXML::~PyramidXML(){ }
+
+bool PyramidXML::isOk() { return ok; }
+int PyramidXML::getChannels() { return channels; }
+Rok4Format::eformat_data PyramidXML::getFormat() {return format; }

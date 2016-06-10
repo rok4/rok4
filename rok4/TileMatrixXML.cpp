@@ -123,3 +123,8 @@ TileMatrixXML::TileMatrixXML(std::string tmsId, TiXmlElement* levelElement)
     ok = true;
 }
 
+~TileMatrixXML::TileMatrixXML(){ }
+
+std::string TileMatrixXML::getId() { return id; }
+
+bool TileMatrixXML::isOk() { return ok; }

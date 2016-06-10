@@ -64,7 +64,7 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string fileName, std::strin
         return;
     }
     std::string tmName ( pElemLvl->GetText() );
-    std::string id ( tmName );
+    id ( tmName );
     //on va vérifier que le level qu'on veut charger n'a pas déjà été chargé
     if (levels.size() != 0) {
         for (std::map<std::string, Level *>::iterator lv = levels.begin(); lv != levels.end(); lv++) {
@@ -149,15 +149,13 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string fileName, std::strin
 
             if (pElemSP->ValueStr() == "basedPyramid") {
 
-                PyramidLevelSource* pls = ConfLoader::buildPyramidLevelSource(pElemSP, serverXML, tmsList,false,stylesList,parentDir, proxy);
-
-                if (pls == NULL) {
+                Pyramid* sourcePyr = ConfLoader::buildBasedPyramid(pElemSP, serverXML, servicesXML, id, tms, parentDir);
+                if (sourcePyr == NULL) {
                     LOGGER_ERROR ("Impossible de charger une basedPyramid (un niveau) indique");
-                    ConfLoader::cleanParsePyramid(specificSources,sSources,levels);
                     return;
                 }
 
-                sSources.push_back( pls ) ;
+                sSources.push_back( sourcePyr ) ;
             }
 
             if (pElemSP->ValueStr() == "webService") {
@@ -167,7 +165,7 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string fileName, std::strin
                     LOGGER_ERROR("Impossible de charger le WebService indique");
                     return;
                 }
-                
+
                 sSources.push_back(ws);
             }
 
@@ -422,3 +420,10 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string fileName, std::strin
     ok = true;
 }
 
+~LevelXML::LevelXML(){ }
+
+std::string LevelXML::getId() { return id; }
+bool LevelXML::isOnDemand() { return onDemand; }
+bool LevelXML::isOnFly() { return onFly; }
+
+bool LevelXML::isOk() { return ok; }

@@ -64,8 +64,7 @@
 #include "ServicesXML.h"
 
 static bool loggerInitialised = false;
-//Keep the servicesConf for deletion
-static ServicesConf* sc = NULL;
+
 /**
 * \brief Initialisation d'une reponse a partir d'une source
 * \brief Les donnees source sont copiees dans la reponse
@@ -418,13 +417,13 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
     }
 
     // References de la tuile
-    std::map<std::string, Level*>::iterator itLevel=layer->getDataPyramid()->getLevels().find ( tmId );
-    if ( itLevel==layer->getDataPyramid()->getLevels().end() ) {
+    Level* level = layer->getDataPyramid()->getLevel(tmId);
+
+    if ( level == NULL ) {
         //Should not occurs.
         delete request;
         return rok4GetNoDataFoundException();
     }
-    Level* level=layer->getDataPyramid()->getLevels().find ( tmId )->second;
 
     if (level->getTilesPerHeight() == 0 && level->getTilesPerWidth() == 0) {
         //on doit lire une tuile et non une dalle
@@ -464,8 +463,8 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
     tileRef->type=new char[mimeType.length() +1];
     strcpy ( tileRef->type,mimeType.c_str() );
 
-    tileRef->width=level->getTm().getTileW();
-    tileRef->height=level->getTm().getTileH();
+    tileRef->width=level->getTm()->getTileW();
+    tileRef->height=level->getTm()->getTileH();
     tileRef->channels=level->getChannels();
 
     format = Rok4Format::toString ( layer->getDataPyramid()->getFormat() );
@@ -485,20 +484,19 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
     tileRef->encoding = new char[encoding.length() +1];
     strcpy( tileRef->encoding, encoding.c_str() );
 
-    if (layer->getDataPyramid()->getOnFly()) {
+    if (level->isOnFly()) {
         wmtst = "ONFLY";
         tileRef->wmtsType = new char[wmtst.length() +1];
         strcpy( tileRef->wmtsType, wmtst.c_str() );
+    }
+    else if (level->isOnDemand()) {
+        wmtst = "ONDEMAND";
+        tileRef->wmtsType = new char[wmtst.length() +1];
+        strcpy( tileRef->wmtsType, wmtst.c_str() );
     } else {
-        if (layer->getDataPyramid()->getOnDemand()) {
-            wmtst = "ONDEMAND";
-            tileRef->wmtsType = new char[wmtst.length() +1];
-            strcpy( tileRef->wmtsType, wmtst.c_str() );
-        } else {
-            wmtst = "NORMAL";
-            tileRef->wmtsType = new char[wmtst.length() +1];
-            strcpy( tileRef->wmtsType, wmtst.c_str() );
-        }
+        wmtst = "NORMAL";
+        tileRef->wmtsType = new char[wmtst.length() +1];
+        strcpy( tileRef->wmtsType, wmtst.c_str() );
     }
 
     delete request;
@@ -537,22 +535,16 @@ HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char*
     }
 
     // References de la tuile
-    Level* level;
-    std::map<std::string, Level*>::iterator itLevel=layer->getDataPyramid()->getLevels().find ( tmId );
-    if ( itLevel==layer->getDataPyramid()->getLevels().end() ) {
-        //Pick the nearest available level for NoData
-        std::map<std::string, TileMatrix>::iterator itTM;
-        double askedRes;
+    Level* level = layer->getDataPyramid()->getLevel(tmId);
+    if ( level == NULL ) {
 
-        itTM = layer->getDataPyramid()->getTms().getTmList()->find ( tmId );
-        if ( itTM==layer->getDataPyramid()->getTms().getTmList()->end() ) {
+        TileMatrix* tm = layer->getDataPyramid()->getTms()->getTm( tmId );
+        if ( tm == NULL ) {
             //return the lowest Level available
             level = layer->getDataPyramid()->getLowestLevel();
         }
-        askedRes = itTM->second.getRes();
+        double askedRes = tm->getRes();
         level = ( askedRes > layer->getDataPyramid()->getLowestLevel()->getRes() ? layer->getDataPyramid()->getHighestLevel() : layer->getDataPyramid()->getLowestLevel() );
-    } else {
-        level = layer->getDataPyramid()->getLevels().find ( tmId )->second;
     }
 
     tileRef->posoff=2048;
@@ -578,8 +570,8 @@ HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char*
     tileRef->encoding = new char[encoding.length() +1];
     strcpy( tileRef->encoding, encoding.c_str() );
 
-    tileRef->width=level->getTm().getTileW();
-    tileRef->height=level->getTm().getTileH();
+    tileRef->width=level->getTm()->getTileW();
+    tileRef->height=level->getTm()->getTileH();
     tileRef->channels=level->getChannels();
     
     format = Rok4Format::toString ( layer->getDataPyramid()->getFormat() );
@@ -776,9 +768,7 @@ void rok4KillServer ( Rok4Server* server ) {
     //Clear proj4 cache
     pj_clear_initcache();
 
-    delete sc;
     delete server;
-    sc = NULL;
 }
 
 /**

@@ -104,29 +104,14 @@ private:
      * \~french \brief Configurations globales des services
      * \~english \brief Global services configuration
      */
-    ServicesXML servicesConf;
+    ServicesXML* servicesConf;
 
     /**
      * \~french \brief Configurations globales du serveur
      * \~english \brief Global server configuration
      */
-    ServerXML serverConf;
+    ServerXML* serverConf;
 
-    /**
-     * \~french \brief Liste des couches disponibles
-     * \~english \brief Available layers list
-     */
-    std::map<std::string, Layer*> layerList;
-    /**
-     * \~french \brief Liste des TileMatrixSet disponibles
-     * \~english \brief Available TileMatrixSet list
-     */
-    std::map<std::string, TileMatrixSet*> tmsList;
-    /**
-     * \~french \brief Liste des styles disponibles
-     * \~english \brief Available styles list
-     */
-    std::map<std::string, Style*> styleList;
     /**
      * \~french \brief Liste des fragments invariants de capabilities prets à être concaténés avec les infos de la requête.
      * \~english \brief Invariant GetCapabilities fragments ready to be concatained with request informations
@@ -420,56 +405,44 @@ public:
      * \~french Retourne la configuration des services
      * \~english Return the services configurations
      */
-    ServicesXML* getServicesConf() {
-        return &servicesConf;
-    }
+    ServicesXML* getServicesConf() ;
 
     /**
      * \~french Retourne la liste des couches
      * \~english Return the layers list
      */
-    std::map<std::string, Layer*>& getLayerList() {
-        return layerList;
-    }
+    std::map<std::string, Layer*>& getLayerList() ;
     /**
      * \~french Retourne la liste des TileMatrixSets
      * \~english Return the TileMatrixSets list
      */
-    std::map<std::string, TileMatrixSet*>& getTmsList() {
-        return tmsList;
-    }
+    std::map<std::string, TileMatrixSet*>& getTmsList() ;
     /**
      * \~french Retourne la liste des styles
      * \~english Return the styles list
      */
-    std::map<std::string, Style*>& getStyleList() {
-        return styleList;
-    }
+    std::map<std::string, Style*>& getStyleList() ;
     /**
      * \~french Retourne les fragments du GetCapabilities WMS
      * \~english Return WMS GetCapabilities fragments
      */
-    std::map<std::string,std::vector<std::string> >& getWmsCapaFrag() {
-        return wmsCapaFrag;
-    }
+    std::map<std::string,std::vector<std::string> >& getWmsCapaFrag() ;
     /**
      * \~french Retourne les fragments du GetCapabilities WMTS
      * \~english Return WMTS GetCapabilities fragments
      */
-    std::vector<std::string>& getWmtsCapaFrag() {
-        return wmtsCapaFrag;
-    }
+    std::vector<std::string>& getWmtsCapaFrag() ;
 
     /**
      * \~french Retourne l'annuaire de contextes ceph
      * \~english Return ContextBook
      */
-    ContextBook* getCephBook() {return serverConf.cephBook;}
+    ContextBook* getCephBook() ;
     /**
      * \~french Retourne l'annuaire de contextes swift
      * \~english Return ContextBook
      */
-    ContextBook* getSwiftBook() {return serverConf.swiftBook;}
+    ContextBook* getSwiftBook() ;
 
     /**
      * \~french
@@ -547,9 +520,7 @@ public:
      * \brief Get the internal FastCGI socket representation, usefull for configuration reloading.
      * \return the internal FastCGI socket representation
      */
-    int getFCGISocket() {
-        return sock;
-    }
+    int getFCGISocket() ;
 
     /**
      * \~french
@@ -561,9 +532,7 @@ public:
      * \brief Set the internal FastCGI socket representation
      * \param sockFCGI the internal FastCGI socket representation
      */
-    void setFCGISocket ( int sockFCGI ) {
-        sock = sockFCGI;
-    }
+    void setFCGISocket ( int sockFCGI ) ;
     
      /**
      * \~french
@@ -581,9 +550,7 @@ public:
      * \brief Return the server state
      * \return true if running
      */
-    bool isRunning() {
-        return running ;
-    }
+    bool isRunning() ;
     
     /**
      * \~french
@@ -591,9 +558,7 @@ public:
      * \~english
      * \brief to know if the server responde to WMTS request
      */
-    bool isWMTSSupported(){
-        return serverConf.supportWMTS ;
-    }
+    bool isWMTSSupported();
     
     /**
      * \~french
@@ -601,18 +566,14 @@ public:
      * \~english
      * \brief to know if the server responde to WMS request
      */
-    bool isWMSSupported(){
-            return serverConf.supportWMS ;
-    }
+    bool isWMSSupported();
     /**
      * \~french
      * \brief Pour savoir si le server honore les requêtes WMTS
      * \~english
      * \brief to know if the server responde to WMTS request
      */
-    void setProxy(Proxy pr){
-        serverConf.proxy = pr ;
-    }
+    void setProxy(Proxy pr);
 
     /**
      * \~french
@@ -620,14 +581,12 @@ public:
      * \~english
      * \brief Return default proxy
      */
-    Proxy getProxy(){
-        return serverConf.proxy ;
-    }
+    Proxy getProxy();
 
     /**
      * \brief Construction du serveur
      */
-    Rok4Server ( ServerXML* serverXML, ServicesXML& servicesXML, std::map<std::string,Layer*> &layers, std::map<std::string,TileMatrixSet*> &tms, std::map<std::string,Style*> &styles);
+    Rok4Server ( ServerXML* serverXML, ServicesXML* servicesXML);
     /**
      * \~french
      * \brief Destructeur par défaut

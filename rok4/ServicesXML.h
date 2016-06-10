@@ -52,133 +52,54 @@ class ServicesXML
 {
     public:
         ServicesXML(std::string servicesConfigFile);
-        ~ServicesXML(){
-        }
+        ~ServicesXML();
 
-        bool isOk() { return ok; }
+        bool isOk() ;
 
-        std::string inline getAbstract() const      {
-            return abstract;
-        }
-        std::string inline getAccessConstraint() const {
-            return accessConstraint;
-        }
-        std::string inline getFee() const {
-            return fee;
-        }
-        std::vector<Keyword> * getKeyWords() {
-            return &keyWords;
-        }
-        bool inline isPostEnabled() {
-            return postMode;
-        }
-        std::string inline getServiceProvider() const {
-            return serviceProvider;
-        }
-        std::string inline getTitle() const {
-            return title;
-        }
+        std::string getAbstract() const      ;
+        std::string getAccessConstraint() const ;
+        std::string getFee() const ;
+        std::vector<Keyword> * getKeyWords() ;
+        bool isPostEnabled() ;
+        std::string getServiceProvider() const ;
+        std::string getTitle() const ;
         //ContactInfo
-        std::string inline getProviderSite() const {
-            return providerSite;
-        }
-        std::string inline getIndividualName() const {
-            return individualName;
-        }
-        std::string inline getIndividualPosition() const {
-            return individualPosition;
-        }
-        std::string inline getVoice() const {
-            return voice;
-        }
-        std::string inline getFacsimile() const {
-            return facsimile;
-        }
-        std::string inline getAddressType() const {
-            return addressType;
-        }
-        std::string inline getDeliveryPoint() const {
-            return deliveryPoint;
-        }
-        std::string inline getCity() const {
-            return city;
-        }
-        std::string inline getAdministrativeArea() const {
-            return administrativeArea;
-        }
-        std::string inline getPostCode() const {
-            return postCode;
-        }
-        std::string inline getCountry() const {
-            return country;
-        }
-        std::string inline getElectronicMailAddress() const {
-            return electronicMailAddress;
-        }
+        std::string getProviderSite() const ;
+        std::string getIndividualName() const ;
+        std::string getIndividualPosition() const ;
+        std::string getVoice() const ;
+        std::string getFacsimile() const ;
+        std::string getAddressType() const ;
+        std::string getDeliveryPoint() const ;
+        std::string getCity() const ;
+        std::string getAdministrativeArea() const ;
+        std::string getPostCode() const ;
+        std::string getCountry() const ;
+        std::string getElectronicMailAddress() const ;
         // WMS
-        unsigned int inline getLayerLimit() const {
-            return layerLimit;
-        }
-        unsigned int inline getMaxHeight() const {
-            return maxHeight;
-        }
-        unsigned int inline getMaxWidth() const {
-            return maxWidth;
-        }
-        unsigned int inline getMaxTileX() const {
-            return maxTileX;
-        }
-        unsigned int inline getMaxTileY() const {
-            return maxTileY;
-        }
-        std::string inline getName() const {
-            return name;
-        }
-        std::vector<std::string>* getFormatList() {
-            return &formatList;
-        }
-        std::vector<std::string>* getInfoFormatList() {
-            return &infoFormatList;
-        }
-        std::vector<CRS>* getGlobalCRSList() {
-            return &globalCRSList;
-        }
-        bool inline isFullStyleCapable() {
-            return fullStyling;
-        }
+        unsigned int getLayerLimit() const ;
+        unsigned int getMaxHeight() const ;
+        unsigned int getMaxWidth() const ;
+        unsigned int getMaxTileX() const ;
+        unsigned int getMaxTileY() const ;
+        std::string getName() const ;
+        std::vector<std::string>* getFormatList() ;
+        std::vector<std::string>* getInfoFormatList() ;
+        std::vector<CRS>* getGlobalCRSList() ;
+        bool isFullStyleCapable() ;
         // WMTS
-        std::string inline getServiceType() {
-            return serviceType;
-        }
-        std::string inline getServiceTypeVersion() {
-            return serviceTypeVersion;
-        }
-        bool inline isInspire() {
-            return inspire;
-        }
+        std::string getServiceType() ;
+        std::string getServiceTypeVersion() ;
+        bool isInspire() ;
 
-        MetadataURL inline *getWMSMetadataURL() {
-            return &mtdWMS;
-        }
-        MetadataURL inline *getWMTSMetadataURL() {
-            return &mtdWMTS;
-        }
+        MetadataURL *getWMSMetadataURL() ;
+        MetadataURL *getWMTSMetadataURL() ;
         // CRS
-        bool inline getDoWeUseListOfEqualsCRS() {
-            return doweuselistofequalsCRS;
-        }
-         bool inline getAddEqualsCRS() {
-            return addEqualsCRS;
-        }
-        std::vector<std::string> getListOfEqualsCRS() {
-            return listofequalsCRS;
-        }
-        bool inline getDoWeRestrictCRSList() {
-            return dowerestrictCRSList;
-        }
-        std::vector<std::string> getRestrictedCRSList() {
-            return restrictedCRSList;
-        }
+        bool getDoWeUseListOfEqualsCRS() ;
+         bool getAddEqualsCRS() ;
+        std::vector<std::string> getListOfEqualsCRS() ;
+        bool getDoWeRestrictCRSList() ;
+        std::vector<std::string> getRestrictedCRSList() ;
 
 
     protected:

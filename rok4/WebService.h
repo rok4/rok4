@@ -46,28 +46,28 @@
 #include "Source.h"
 
 struct MemoryStruct {
-  uint8_t *memory;
-  size_t size;
+    uint8_t *memory;
+    size_t size;
 };
 
 
 static size_t WriteInMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
-  size_t realsize = size * nmemb;
-  struct MemoryStruct *mem = (struct MemoryStruct *)userp;
+    size_t realsize = size * nmemb;
+    struct MemoryStruct *mem = (struct MemoryStruct *)userp;
 
-  mem->memory = (uint8_t*)realloc(mem->memory, mem->size + realsize + 1);
-  if(mem->memory == NULL) {
-    /* out of memory! */
-    LOGGER_ERROR("not enough memory (realloc returned NULL)\n");
-    return 0;
-  }
+    mem->memory = (uint8_t*)realloc(mem->memory, mem->size + realsize + 1);
+    if(mem->memory == NULL) {
+        /* out of memory! */
+        LOGGER_ERROR("not enough memory (realloc returned NULL)\n");
+        return 0;
+    }
 
-  memcpy(&(mem->memory[mem->size]), contents, realsize);
-  mem->size += realsize;
-  mem->memory[mem->size] = 0;
+    memcpy(&(mem->memory[mem->size]), contents, realsize);
+    mem->size += realsize;
+    mem->memory[mem->size] = 0;
 
-  return realsize;
+    return realsize;
 }
 
 /**
@@ -150,9 +150,7 @@ public:
      * \~english \brief Get the url
      * \return url
      */
-    std::string getUrl(){
-        return url;
-    }
+    std::string getUrl();
 
     /**
      * \~french \brief Modifie l'url
@@ -160,9 +158,7 @@ public:
      * \~english \brief Set the url
      * \param[in] url
      */
-    void setUrl (std::string u) {
-        url = u;
-    }
+    void setUrl (std::string u) ;
 
     /**
      * \~french \brief Récupère le proxy
@@ -170,9 +166,7 @@ public:
      * \~english \brief Get the proxy
      * \return proxy
      */
-    std::string getProxy(){
-        return proxy;
-    }
+    std::string getProxy();
 
     /**
      * \~french \brief Modifie le proxy
@@ -180,9 +174,7 @@ public:
      * \~english \brief Set the proxy
      * \param[in] proxy
      */
-    void setProxy (std::string u) {
-        proxy = u;
-    }
+    void setProxy (std::string u) ;
 
     /**
      * \~french \brief Récupère le user
@@ -190,9 +182,7 @@ public:
      * \~english \brief Get the user
      * \return user
      */
-    std::string getUser(){
-        return user;
-    }
+    std::string getUser();
 
     /**
      * \~french \brief Modifie le user
@@ -200,9 +190,7 @@ public:
      * \~english \brief Set the user
      * \param[in] user
      */
-    void setUser (std::string u) {
-        user = u;
-    }
+    void setUser (std::string u) ;
 
     /**
      * \~french \brief Récupère le pwd
@@ -210,9 +198,7 @@ public:
      * \~english \brief Get the pwd
      * \return pwd
      */
-    std::string getPassword(){
-        return pwd;
-    }
+    std::string getPassword();
 
     /**
      * \~french \brief Modifie le pwd
@@ -220,9 +206,7 @@ public:
      * \~english \brief Set the pwd
      * \param[in] pwd
      */
-    void setPassword (std::string u) {
-        pwd = u;
-    }
+    void setPassword (std::string u) ;
 
     /**
      * \~french \brief Récupère le referer
@@ -230,9 +214,7 @@ public:
      * \~english \brief Get the referer
      * \return referer
      */
-    std::string getReferer(){
-        return referer;
-    }
+    std::string getReferer();
 
     /**
      * \~french \brief Modifie le referer
@@ -240,9 +222,7 @@ public:
      * \~english \brief Set the referer
      * \param[in] referer
      */
-    void setReferer (std::string u) {
-        referer = u;
-    }
+    void setReferer (std::string u) ;
 
     /**
      * \~french \brief Récupère le userAgent
@@ -250,9 +230,7 @@ public:
      * \~english \brief Get the userAgent
      * \return userAgent
      */
-    std::string getUserAgent(){
-        return userAgent;
-    }
+    std::string getUserAgent();
 
     /**
      * \~french \brief Modifie le userAgent
@@ -260,9 +238,7 @@ public:
      * \~english \brief Set the userAgent
      * \param[in] userAgent
      */
-    void setUserAgent (std::string u) {
-        userAgent = u;
-    }
+    void setUserAgent (std::string u) ;
 
     /**
      * \~french \brief Récupère le timeout
@@ -270,9 +246,7 @@ public:
      * \~english \brief Get the timeout
      * \return timeout
      */
-    int getTimeOut(){
-        return timeout;
-    }
+    int getTimeOut();
 
     /**
      * \~french \brief Modifie le timeout
@@ -280,9 +254,7 @@ public:
      * \~english \brief Set the timeout
      * \param[in] timeout
      */
-    void setTimeOut (int u) {
-        timeout = u;
-    }
+    void setTimeOut (int u) ;
 
     /**
      * \~french \brief Récupère le retry
@@ -290,9 +262,7 @@ public:
      * \~english \brief Get the retry
      * \return retry
      */
-    int getRetry(){
-        return retry;
-    }
+    int getRetry();
 
     /**
      * \~french \brief Modifie le retry
@@ -300,9 +270,7 @@ public:
      * \~english \brief Set the retry
      * \param[in] retry
      */
-    void setRetry (int u) {
-        retry = u;
-    }
+    void setRetry (int u) ;
 
     /**
      * \~french \brief Récupère le interval
@@ -310,9 +278,7 @@ public:
      * \~english \brief Get the interval
      * \return interval
      */
-    int getInterval(){
-        return interval;
-    }
+    int getInterval();
 
     /**
      * \~french \brief Modifie le interval
@@ -320,9 +286,7 @@ public:
      * \~english \brief Set the interval
      * \param[in] interval
      */
-    void setInterval (int u) {
-        interval = u;
-    }
+    void setInterval (int u) ;
     /**
      * \~french
      * \brief Récupération des données à partir d'une URL
@@ -420,9 +384,7 @@ public:
      * \~english \brief Get the version
      * \return version
      */
-    std::string getVersion(){
-        return version;
-    }
+    std::string getVersion();
 
     /**
      * \~french \brief Modifie le version
@@ -430,9 +392,7 @@ public:
      * \~english \brief Set the version
      * \param[in] version
      */
-    void setVersion (std::string u) {
-        version = u;
-    }
+    void setVersion (std::string u) ;
 
     /**
      * \~french \brief Récupère la bbox
@@ -440,9 +400,7 @@ public:
      * \~english \brief Get the bbox
      * \return bbox
      */
-    BoundingBox<double> getBbox(){
-        return bbox;
-    }
+    BoundingBox<double> getBbox();
 
     /**
      * \~french \brief Modifie la bbox
@@ -450,9 +408,7 @@ public:
      * \~english \brief Set the bbox
      * \param[in] bbox
      */
-    void setBbox (BoundingBox<double> u) {
-        bbox = u;
-    }
+    void setBbox (BoundingBox<double> u) ;
 
     /**
      * \~french \brief Indique les valeurs de noData
@@ -460,9 +416,7 @@ public:
      * \~english \brief Indicate the noData values
      * \return ndValues
      */
-    std::vector<int> getNdValues() {
-        return ndValues;
-    }
+    std::vector<int> getNdValues() ;
 
     /**
      * \~french \brief Modifie le paramètre noData
@@ -470,18 +424,14 @@ public:
      * \~english \brief Modify noData
      * \param[in] noData
      */
-    void setNdValues (std::vector<int> ndv) {
-       ndValues = ndv;
-    }
+    void setNdValues (std::vector<int> ndv) ;
     /**
      * \~french \brief Récupère channels
      * \return channels
      * \~english \brief Get the channels
      * \return channels
      */
-    int getChannels(){
-        return channels;
-    }
+    int getChannels();
 
     /**
      * \~french \brief Modifie channels
@@ -489,18 +439,14 @@ public:
      * \~english \brief Set the channels
      * \param[in] channels
      */
-    void setChannels (int u) {
-        channels = u;
-    }
+    void setChannels (int u) ;
     /**
      * \~french \brief Récupère le layers
      * \return layers
      * \~english \brief Get the layers
      * \return layers
      */
-    std::string getLayers(){
-        return layers;
-    }
+    std::string getLayers();
 
     /**
      * \~french \brief Modifie le layers
@@ -508,9 +454,7 @@ public:
      * \~english \brief Set the layers
      * \param[in] layers
      */
-    void setLayers (std::string u) {
-        layers = u;
-    }
+    void setLayers (std::string u) ;
 
     /**
      * \~french \brief Récupère le styles
@@ -518,9 +462,7 @@ public:
      * \~english \brief Get the styles
      * \return styles
      */
-    std::string getStyles(){
-        return styles;
-    }
+    std::string getStyles();
 
     /**
      * \~french \brief Modifie le styles
@@ -528,9 +470,7 @@ public:
      * \~english \brief Set the styles
      * \param[in] styles
      */
-    void setStyles (std::string u) {
-        styles = u;
-    }
+    void setStyles (std::string u) ;
 
     /**
      * \~french \brief Récupère le format
@@ -538,9 +478,7 @@ public:
      * \~english \brief Get the format
      * \return format
      */
-    std::string getFormat(){
-        return format;
-    }
+    std::string getFormat();
 
     /**
      * \~french \brief Modifie le format
@@ -548,9 +486,7 @@ public:
      * \~english \brief Set the format
      * \param[in] format
      */
-    void setFormat (std::string u) {
-        format = u;
-    }
+    void setFormat (std::string u) ;
 
     /**
      * \~french \brief Récupère le crs
@@ -558,9 +494,7 @@ public:
      * \~english \brief Get the crs
      * \return crs
      */
-    std::string getCrs(){
-        return crs;
-    }
+    std::string getCrs();
 
     /**
      * \~french \brief Modifie le crs
@@ -568,9 +502,7 @@ public:
      * \~english \brief Set the crs
      * \param[in] crs
      */
-    void setCrs (std::string u) {
-        crs = u;
-    }
+    void setCrs (std::string u) ;
 
     /**
      * \~french \brief Récupère les options
@@ -578,9 +510,7 @@ public:
      * \~english \brief Get the options
      * \return options
      */
-    std::map<std::string,std::string> getOptions(){
-        return options;
-    }
+    std::map<std::string,std::string> getOptions();
 
     /**
      * \~french \brief Modifie les options
@@ -588,9 +518,7 @@ public:
      * \~english \brief Set the options
      * \param[in] options
      */
-    void setOptions (std::map<std::string,std::string> u) {
-        options = u;
-    }
+    void setOptions (std::map<std::string,std::string> u) ;
 
     /**
      * \~french \brief teste l'existence d'une option
@@ -644,9 +572,7 @@ public:
      */
     WebMapService(std::string url, std::string proxy, std::string noProxy,int retry, int interval, int timeout, std::string version,std::string layers, std::string styles,std::string format, int channels,
                                  std::string crs, BoundingBox<double> bbox, std::vector<int> ndValues,
-                                 std::map<std::string,std::string> options) : WebService(url,proxy,noProxy,retry,interval,timeout),
-        version (version), layers (layers), styles (styles), format (format),
-        crs (crs), channels (channels), bbox (bbox), ndValues (ndValues),options (options) {}
+                                 std::map<std::string,std::string> options);
     /**
      * \~french \brief Destructeur
      * \~english \brief Destructor

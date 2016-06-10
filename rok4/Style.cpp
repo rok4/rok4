@@ -64,3 +64,14 @@ Style::Style ( const StyleXML& s ) {
 Style::~Style() {
 
 }
+
+inline std::string Style::getId() { return id; }
+inline std::vector<std::string> Style::getTitles() { return titles; }
+inline std::vector<std::string> Style::getAbstracts() { return abstracts; }
+inline std::vector<Keyword>* Style::getKeywords() { return &keywords; }
+inline std::vector<LegendURL> Style::getLegendURLs() { return legendURLs; }
+inline Palette* Style::getPalette() { return &palette; }
+inline bool Style::isEstompage() { return estompage; }
+inline int Style::getAngle() { return angle; }
+inline float Style::getExaggeration() { return exaggeration; }
+inline uint8_t Style::getCenter() { return center; }

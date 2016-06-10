@@ -139,3 +139,8 @@ TileMatrixSetXML::TileMatrixSetXML(std::string filePath )
     ok = true;
 }
 
+~TileMatrixSetXML::TileMatrixSetXML(){ }
+
+std::string TileMatrixSetXML::getId() { return id; }
+
+bool TileMatrixSetXML::isOk() { return ok; }

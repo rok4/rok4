@@ -432,3 +432,131 @@
     ok = true;
 }
 
+
+~ServicesXML(){
+}
+
+bool ServicesXML::isOk { return ok; }
+
+inline std::string ServicesXML::getAbstract const {
+    return abstract;
+}
+inline std::string ServicesXML::getAccessConstraint const {
+    return accessConstraint;
+}
+inline std::string ServicesXML::getFee const {
+    return fee;
+}
+std::vector<Keyword> * ServicesXML::getKeyWords {
+    return &keyWords;
+}
+inline bool ServicesXML::isPostEnabled {
+    return postMode;
+}
+inline std::string ServicesXML::getServiceProvider const {
+    return serviceProvider;
+}
+inline std::string ServicesXML::getTitle const {
+    return title;
+}
+//ContactInfo
+inline std::string ServicesXML::getProviderSite const {
+    return providerSite;
+}
+inline std::string ServicesXML::getIndividualName const {
+    return individualName;
+}
+inline std::string ServicesXML::getIndividualPosition const {
+    return individualPosition;
+}
+inline std::string ServicesXML::getVoice const {
+    return voice;
+}
+inline std::string ServicesXML::getFacsimile const {
+    return facsimile;
+}
+inline std::string ServicesXML::getAddressType const {
+    return addressType;
+}
+inline std::string ServicesXML::getDeliveryPoint const {
+    return deliveryPoint;
+}
+inline std::string ServicesXML::getCity const {
+    return city;
+}
+inline std::string ServicesXML::getAdministrativeArea const {
+    return administrativeArea;
+}
+inline std::string ServicesXML::getPostCode const {
+    return postCode;
+}
+inline std::string ServicesXML::getCountry const {
+    return country;
+}
+inline std::string ServicesXML::getElectronicMailAddress const {
+    return electronicMailAddress;
+}
+// WMS
+inline unsigned int ServicesXML::getLayerLimit const {
+    return layerLimit;
+}
+inline unsigned int ServicesXML::getMaxHeight const {
+    return maxHeight;
+}
+inline unsigned int ServicesXML::getMaxWidth const {
+    return maxWidth;
+}
+inline unsigned int ServicesXML::getMaxTileX const {
+    return maxTileX;
+}
+inline unsigned int ServicesXML::getMaxTileY const {
+    return maxTileY;
+}
+inline std::string ServicesXML::getName const {
+    return name;
+}
+std::vector<std::string>* ServicesXML::getFormatList {
+    return &formatList;
+}
+std::vector<std::string>* ServicesXML::getInfoFormatList {
+    return &infoFormatList;
+}
+std::vector<CRS>* ServicesXML::getGlobalCRSList {
+    return &globalCRSList;
+}
+inline bool ServicesXML::isFullStyleCapable {
+    return fullStyling;
+}
+// WMTS
+inline std::string ServicesXML::getServiceType {
+    return serviceType;
+}
+inline std::string ServicesXML::getServiceTypeVersion {
+    return serviceTypeVersion;
+}
+inline bool ServicesXML::isInspire {
+    return inspire;
+}
+
+inline MetadataURL* ServicesXML::getWMSMetadataURL {
+    return &mtdWMS;
+}
+inline MetadataURL ServicesXML::getWMTSMetadataURL {
+    return* &mtdWMTS;
+}
+// CRS
+inline bool ServicesXML::getDoWeUseListOfEqualsCRS {
+    return doweuselistofequalsCRS;
+}
+ inline bool ServicesXML::getAddEqualsCRS {
+    return addEqualsCRS;
+}
+std::vector<std::string> ServicesXML::getListOfEqualsCRS {
+    return listofequalsCRS;
+}
+inline bool ServicesXML::getDoWeRestrictCRSList {
+    return dowerestrictCRSList;
+}
+std::vector<std::string> ServicesXML::getRestrictedCRSList {
+    return restrictedCRSList;
+}

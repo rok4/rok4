@@ -157,7 +157,7 @@ public:
      * \brief Copy Constructor
      * \param[in] t TileMatrixSet to copy
      */
-    TileMatrixSet ( const TileMatrixSet& t ) : id ( t.id ),title ( t.title ),abstract ( t.abstract ),keyWords ( t.keyWords ),crs ( t.crs ),tmList ( t.tmList ) {}
+    TileMatrixSet ( const TileMatrixSet& t );
     /**
      * \~french
      * La comparaison ignore les mots-clés et les TileMatrix
@@ -197,17 +197,9 @@ public:
      * \brief Return the TileMatrix
      * \return TileMatrix
      */
-    TileMatrix* getTm(std::string id) {
-        std::map<std::string, TileMatrix>::iterator itTM = tmList->find ( id );
+    TileMatrix* getTm(std::string id);
 
-        if ( itTM == tmList->end() ) {
-            return NULL;
-        }
-
-        return & ( itTM->second );
-    }
-
-    std::vector<std::pair<std::string, double>> getCorrespondingLevels(std::string level, TileMatrixSet* otherTMS, bool limits);
+    std::map<std::string, double> getCorrespondingLevels(std::string level, TileMatrixSet* otherTMS);
 
 
     /**
@@ -227,9 +219,7 @@ public:
      * \brief Return the title
      * \return title
      */
-    std::string getTitle() {
-        return title;
-    }
+    std::string getTitle() ;
     /**
      * \~french
      * \brief Retourne le résumé
@@ -238,9 +228,7 @@ public:
      * \brief Return the abstract
      * \return abstract
      */
-    std::string getAbstract() {
-        return abstract;
-    }
+    std::string getAbstract() ;
     /**
      * \~french
      * \brief Retourne la liste des mots-clés
@@ -249,9 +237,7 @@ public:
      * \brief Return the list of keywords
      * \return keywords
      */
-    std::vector<Keyword>* getKeyWords() {
-        return &keyWords;
-    }
+    std::vector<Keyword>* getKeyWords() ;
     /**
      * \~french
      * \brief Retourne le système de coordonnées utilisé
@@ -260,9 +246,7 @@ public:
      * \brief Return the linked coordinates system
      * \return crs
      */
-    CRS getCrs() const {
-        return crs;
-    }
+    CRS getCrs();
 
     ///\TODO
     int best_scale ( double resolution_x, double resolution_y );
@@ -273,7 +257,7 @@ public:
      * \~english
      * \brief Default destructor
      */
-    ~TileMatrixSet() {}
+    ~TileMatrixSet();
 };
 
 #endif /* TILEMATRIXSET_H_ */

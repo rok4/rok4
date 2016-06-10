@@ -406,3 +406,75 @@ ServerXML::ServerXML(std::string serverConfigFile )
 
     ok = true;
 }
+
+
+/*********************** DESTRUCTOR ********************/
+
+~ServerXML(){ }
+
+/******************* GETTERS / SETTERS *****************/
+
+bool ServerXML::isOk() { return ok; }
+
+LogOutput ServerXML::getLogOutput() {return logOutput;}
+int ServerXML::getLogFilePeriod() {return logFilePeriod;}
+std::string ServerXML::getLogFilePrefix() {return logFilePrefix;}
+LogLevel ServerXML::getLogLevel() {return logLevel;}
+
+std::string ServerXML::getServicesConfigFile() {return servicesConfigFile;}
+
+std::string ServerXML::getTmsDir() {return tmsDir;}
+void ServerXML::addTMS(std::string id, TileMatrixSet* t) {
+    tmsList.insert ( std::pair<std::string, TileMatrixSet *> ( id, t ) );
+}
+int ServerXML::getNbTMS() {
+    return tmsList.size();
+}
+TileMatrixSet* ServerXML::getTMS(std::string id) {
+    std::map<std::string, TileMatrixSet*>::iterator tmsIt= tmsList.find ( id );
+    if ( tmsIt == tmsList.end() ) {
+        return NULL;
+    }
+    return tmsIt->second;
+}
+
+
+std::string ServerXML::getStylesDir() {return styleDir;}
+void ServerXML::addStyle(std::string id, Style* s) {
+    stylesList.insert ( std::pair<std::string, Style *> ( id, s ) );
+}
+int ServerXML::getNbStyles() {
+    return stylesList.size();
+}
+Style* ServerXML::getStyle(std::string id) {
+    std::map<std::string, Style*>::iterator styleIt= stylesList.find ( id );
+    if ( styleIt == stylesList.end() ) {
+        return NULL;
+    }
+    return styleIt->second;
+}
+
+std::string ServerXML::getLayersDir() {return layerDir;}
+void ServerXML::addLayer(std::string id, Layer* l) {
+    layersList.insert ( std::pair<std::string, Layer *> ( id, l ) );
+}
+int ServerXML::getNbLayers() {
+    return layersList.size();
+}
+Layer* ServerXML::getLayer(std::string id) {
+    std::map<std::string, Layer*>::iterator layIt= layersList.find ( id );
+    if ( layIt == layersList.end() ) {
+        return NULL;
+    }
+    return layIt->second;
+}
+
+ContextBook* ServerXML::getCephContextBook(){return cephBook;};
+ContextBook* ServerXML::getSwiftContextBook(){return swiftBook;};
+
+int ServerXML::getNbThreads() {return nbThread;}
+std::string ServerXML::getSocket() {return socket;}
+bool ServerXML::getSupportWMTS() {return supportWMTS;}
+bool ServerXML::getSupportWMS() {return supportWMS;}
+int ServerXML::getBacklog() {return backlog;}
+Proxy ServerXML::getProxy() {return proxy;}

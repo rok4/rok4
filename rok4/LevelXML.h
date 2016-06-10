@@ -44,6 +44,8 @@
 #include <tinystr.h>
 
 #include "Level.h"
+#include "TileMatrixSet.h"
+#include "ServerXML.h"
 
 #include "config.h"
 #include "intl.h"
@@ -54,19 +56,19 @@ class LevelXML
 
     public:
         LevelXML(TiXmlElement* levelElement, std::string fileName, std::string parentDir, ServerXML* serverXML, TileMatrixSet* tms, bool times);
-        ~LevelXML(){
-        }
+        ~LevelXML();
 
-        std::string getId() { return id; }
-        bool isOnDemand() { return onDemand; }
-        bool isOnFly() { return onFly; }
+        std::string getId();
+        bool isOnDemand();
+        bool isOnFly();
 
-        bool isOk() { return ok; }
+        bool isOk();
 
     protected:
 
         //----VARIABLE
         TileMatrix* tm;
+        std::string id;
 
         int32_t minTileRow;    
         int32_t maxTileRow;    

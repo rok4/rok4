@@ -35,6 +35,8 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+class Level;
+
 #ifndef LEVEL_H
 #define LEVEL_H
 
@@ -45,9 +47,12 @@
 #include "StoreDataSource.h"
 #include "CRS.h"
 #include "Format.h"
-#include "ServicesConf.h"
 #include "Interpolation.h"
 #include "Context.h"
+#include "Source.h"
+#include "PyramidXML.h"
+#include "LevelXML.h"
+#include "ServicesXML.h"
 
 /**
  */
@@ -60,9 +65,9 @@ private:
     int pathDepth;        //used only for file context
     std::string prefix;     //used only for ceph and swift context
     TileMatrix* tm;
-    const Rok4Format::eformat_data format; //format d'image des tuiles
+    Rok4Format::eformat_data format; //format d'image des tuiles
     int maxTileSize;
-    const int channels;
+    int channels;
     uint32_t maxTileRow;
     uint32_t minTileRow;
     uint32_t maxTileCol;
@@ -73,8 +78,12 @@ private:
     DataSource* noDataSource;
     DataSource* noDataTileSource;
     DataSource* noDataSourceProxy;
-    
+
     std::vector<Source*> sSources;
+    // Sans stockage
+    bool onDemand;
+    // Avec stockage
+    bool onFly;
 
     DataSource* getEncodedTile ( int x, int y );
     DataSource* getDecodedTile ( int x, int y );
@@ -86,76 +95,43 @@ protected:
      * le coin haut gauche de cette image est le pixel offsetx, offsety de la tuile tilex, tilex.
      * Toutes les coordonnées sont entière depuis le coin haut gauche.
      */
-    Image* getwindow ( ServicesConf& servicesConf, BoundingBox<int64_t> src_bbox, int& error );
+    Image* getwindow ( ServicesXML* servicesConf, BoundingBox<int64_t> src_bbox, int& error );
 
 public:
-    TileMatrix getTm() {
-        return tm;
-    }
-    Rok4Format::eformat_data getFormat() {
-        return format;
-    }
-    int     getChannels() {
-        return channels;
-    }
-    int     getMaxTileSize() {
-        return maxTileSize;
-    }
-    uint32_t    getMaxTileRow() {
-        return maxTileRow;
-    }
-    uint32_t    getMinTileRow() {
-        return minTileRow;
-    }
-    uint32_t    getMaxTileCol() {
-        return maxTileCol;
-    }
-    uint32_t    getMinTileCol() {
-        return minTileCol;
-    }
-    void    setMaxTileRow(uint32_t mm ) {
-        maxTileRow = mm;
-    }
-    void    setMinTileRow(uint32_t mm ) {
-        minTileRow = mm;
-    }
-    void    setMaxTileCol(uint32_t mm ) {
-        maxTileCol = mm;
-    }
-    void    setMinTileCol(uint32_t mm ) {
-        minTileCol = mm;
-    }
-    double      getRes() {
-        return tm.getRes();
-    }
-    std::string getId() {
-        return tm.getId();
-    }
-    uint32_t      getTilesPerWidth() {
-        return tilesPerWidth;
-    }
-    uint32_t      getTilesPerHeight() {
-        return tilesPerHeight;
-    }
+    TileMatrix* getTm() ;
+    Rok4Format::eformat_data getFormat() ;
+    int getChannels() ;
+    int getMaxTileSize() ;
+    uint32_t getMaxTileRow() ;
+    uint32_t getMinTileRow() ;
+    uint32_t getMaxTileCol() ;
+    uint32_t getMinTileCol() ;
+    void setMaxTileRow(uint32_t mm ) ;
+    void setMinTileRow(uint32_t mm ) ;
+    void setMaxTileCol(uint32_t mm ) ;
+    void setMinTileCol(uint32_t mm ) ;
+    double getRes() ;
+    std::string getId() ;
+    uint32_t getTilesPerWidth() ;
+    uint32_t getTilesPerHeight() ;
+    std::vector<Source*> getSources() ;
 
     std::string getPath (int tilex, int tiley , int tilesPerW, int tilesPerH);
     std::string getDirPath ( int tilex, int tiley );
     int createDirPath ( std::string path );
-    std::string getNoDataFilePath() {
-        return noDataFile;
-    }
-    Context* getContext() {
-        return context;
-    }
+    std::string getNoDataFilePath() ;
+    Context* getContext() ;
 
     DataSource* getEncodedNoDataTile();
     DataSource* getDecodedNoDataTile();
+    bool isOnDemand();
+    bool isOnFly();
 
-    Image* getnodatabbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, Interpolation::KernelType interpolation, int& error );
+    Image* getnodatabbox ( ServicesXML* servicesConf, BoundingBox<double> bbox, int width, int height, Interpolation::KernelType interpolation, int& error );
 
-    Image* getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, Interpolation::KernelType interpolation, int& error );
+    Image* getbbox ( ServicesXML* servicesConf, BoundingBox<double> bbox, int width, int height, Interpolation::KernelType interpolation, int& error );
 
-    Image* getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS src_crs, CRS dst_crs, Interpolation::KernelType interpolation, int& error );
+    Image* getbbox ( ServicesXML* servicesConf, BoundingBox<double> bbox, int width, int height, CRS src_crs, CRS dst_crs, Interpolation::KernelType interpolation, int& error );
     /**
      * Renvoie la tuile x, y numéroté depuis l'origine.
      * Le coin haut gauche de la tuile (0,0) est (Xorigin, Yorigin)
@@ -187,7 +163,7 @@ public:
     int getSlabWidth();
 
     /** D */
-    Level ( LevelXML* l );
+    Level ( LevelXML* l, PyramidXML* p );
 
     /*
      * Destructeur

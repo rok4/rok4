@@ -43,7 +43,7 @@
  * \brief Define the Layer Class handling data layer.
  */
 
-
+class Layer;
 
 #ifndef LAYER_H_
 #define LAYER_H_
@@ -55,7 +55,6 @@
 #include "CRS.h"
 #include "Style.h"
 #include "MetadataURL.h"
-#include "ServicesConf.h"
 #include "Interpolation.h"
 #include "Keyword.h"
 
@@ -85,7 +84,7 @@ public:
      * \~english \brief maxy y-coordinate of the top right corner of the boundingBox
      */
     double maxy;
-    GeographicBoundingBoxWMS() {}
+    GeographicBoundingBoxWMS();
 };
 
 /**
@@ -119,13 +118,10 @@ public:
      * \~english \brief maxy y-coordinate of the top right corner of the boundingBox
      */
     double maxy;
-    BoundingBoxWMS() {}
+    BoundingBoxWMS();
 };
 
-// On doit inclure LayerXML après la définition des struct, sinon on a une boucle d'include inrésolvable
 #include "LayerXML.h"
-
-
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -395,7 +391,7 @@ public:
      * \param [in,out] error error code
      * \return an image or a null pointer
      */
-    Image* getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error );
+    Image* getbbox (ServicesXML* servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error );
     /**
     * \~french
     * \brief Retourne le résumé
@@ -404,9 +400,7 @@ public:
     * \brief Return the abstract
     * \return abstract
     */
-    std::string              getAbstract()   const {
-        return abstract;
-    }
+    std::string getAbstract() ;
     /**
      * \~french
      * \brief Retourne le droit d'utiliser un service WMS
@@ -415,18 +409,14 @@ public:
      * \brief Return the right to use WMS
      * \return WMSAuthorized
      */
-    bool getWMSAuthorized() {
-        return WMSAuthorized;
-    }
+    bool getWMSAuthorized() ;
     /**
      * \~french
      * \brief Modifie le droit d'utiliser un service WMS
      * \~english
      * \brief Modify the right to use WMS
      */
-    void setWMSAuthorized(bool wmsA) {
-        WMSAuthorized = wmsA;
-    }
+    void setWMSAuthorized(bool wmsA) ;
     /**
      * \~french
      * \brief Retourne le droit d'utiliser un service WMTS
@@ -435,18 +425,14 @@ public:
      * \brief Return the right to use WMTS
      * \return WMTSAuthorized
      */
-    bool getWMTSAuthorized() {
-        return WMTSAuthorized;
-    }
+    bool getWMTSAuthorized() ;
     /**
      * \~french
      * \brief Modifie le droit d'utiliser un service WMTS
      * \~english
      * \brief Modify the right to use WMTS
      */
-    void setWMTSAuthorized(bool wmtsA) {
-        WMTSAuthorized = wmtsA;
-    }
+    void setWMTSAuthorized(bool wmtsA) ;
     /**
      * \~french
      * \brief Retourne le nom de l'entité propriétaire de la couche
@@ -455,9 +441,7 @@ public:
      * \brief Return the layer owner's entitity name
      * \return name
      */
-    std::string              getAuthority()  const {
-        return authority;
-    }
+    std::string getAuthority() ;
     /**
      * \~french
      * \brief Retourne la liste des mots-clés
@@ -466,9 +450,7 @@ public:
      * \brief Return the list of keywords
      * \return keywords
      */
-    std::vector<Keyword>* getKeyWords() {
-        return &keyWords;
-    }
+    std::vector<Keyword>* getKeyWords() ;
     /**
      * \~french
      * \brief Retourne l'échelle maximum
@@ -477,9 +459,7 @@ public:
      * \brief Return the maximum scale
      * \return maximum scale
      */
-    double                   getMaxRes()     const {
-        return maxRes;
-    }
+    double getMaxRes() ;
     /**
      * \~french
      * \brief Retourne l'échelle minimum
@@ -488,9 +468,7 @@ public:
      * \brief Return the minimum scale
      * \return minimum scale
      */
-    double                   getMinRes()     const {
-        return minRes;
-    }
+    double getMinRes() ;
     /**
      * \deprecated
      * \~french
@@ -500,9 +478,7 @@ public:
      * \brief The layer is opaque
      * \return true if it is
      */
-    bool                     getOpaque()     const {
-        return opaque;
-    }
+    bool getOpaque() ;
     /**
      * \~french
      * \brief Retourne la pyramide de données associée
@@ -511,9 +487,7 @@ public:
      * \brief Return the associated data pyramid
      * \return pyramid
      */
-    Pyramid*&            getDataPyramid() {
-        return dataPyramid;
-    }
+    Pyramid* getDataPyramid() ;
     /**
      * \~french
      * \brief Retourne l'interpolation utilisée
@@ -522,9 +496,7 @@ public:
      * \brief Return the used interpolation
      * \return interpolation
      */
-    Interpolation::KernelType getResampling() const {
-        return resampling;
-    }
+    Interpolation::KernelType getResampling() ;
     /**
      * \~french
      * \brief Retourne le style par défaut associé à la couche
@@ -533,9 +505,7 @@ public:
      * \brief Return the layer's default style
      * \return style identifier
      */
-    std::string getDefaultStyle() const {
-        return defaultStyle;
-    }
+    std::string getDefaultStyle() ;
     /**
      * \~french
      * \brief Retourne la liste des styles associés à la couche
@@ -544,9 +514,7 @@ public:
      * \brief Return the associated styles list
      * \return styles list
      */
-    std::vector<Style*>      getStyles()     const {
-        return styles;
-    }
+    std::vector<Style*> getStyles() ;
     /**
      * \~french
      * \brief Retourne le titre
@@ -555,9 +523,7 @@ public:
      * \brief Return the title
      * \return title
      */
-    std::string              getTitle()      const {
-        return title;
-    }
+    std::string getTitle() ;
     /**
      * \~french
      * \brief Retourne la liste des systèmes de coordonnées authorisés
@@ -566,9 +532,7 @@ public:
      * \brief Return the authorised coordinates systems list
      * \return CRS list
      */
-    std::vector<CRS> getWMSCRSList() const {
-        return WMSCRSList;
-    }
+    std::vector<CRS> getWMSCRSList() ;
     /**
      * \~french
      * \brief Retourne l'emprise des données en coordonnées géographique (WGS84)
@@ -577,9 +541,7 @@ public:
      * \brief Return the data bounding box in geographic coordinates (WGS84)
      * \return bounding box
      */
-    GeographicBoundingBoxWMS getGeographicBoundingBox() const {
-        return geographicBoundingBox;
-    }
+    GeographicBoundingBoxWMS getGeographicBoundingBox() ;
     /**
      * \~french
      * \brief Retourne l'emprise des données dans le système de coordonnées natif
@@ -588,9 +550,7 @@ public:
      * \brief Return the data bounding box in the native coordinates system
      * \return bounding box
      */
-    BoundingBoxWMS           getBoundingBox() const {
-        return boundingBox;
-    }
+    BoundingBoxWMS getBoundingBox() ;
     /**
      * \~french
      * \brief Retourne la liste des métadonnées associées
@@ -599,9 +559,7 @@ public:
      * \brief Return the associated metadata list
      * \return metadata list
      */
-    std::vector<MetadataURL> getMetadataURLs() const {
-        return metadataURLs;
-    }
+    std::vector<MetadataURL> getMetadataURLs() ;
     /**
      * \~french
      * \brief GFI est-il autorisé
@@ -610,9 +568,7 @@ public:
      * \brief Is GFI authorized
      * \return true if it is
      */
-    bool isGetFeatureInfoAvailable() const {
-        return getFeatureInfoAvailability;
-    }
+    bool isGetFeatureInfoAvailable() ;
     /**
      * \~french
      * \brief Retourne la source du GFI
@@ -621,9 +577,7 @@ public:
      * \brief Return the source used by GFI
      * \return source used by GFI
      */
-    std::string getGFIType() const {
-        return getFeatureInfoType;
-    }
+    std::string getGFIType() ;
     /**
      * \~french
      * \brief Retourne l'URL du service de GFI
@@ -632,9 +586,7 @@ public:
      * \brief Return the URL of the service used for GFI
      * \return URL of the service
      */
-    std::string getGFIBaseUrl() const {
-        return getFeatureInfoBaseURL;
-    }
+    std::string getGFIBaseUrl() ;
     /**
      * \~french
      * \brief Retourne le paramètre layers de la requête de GFI
@@ -643,9 +595,7 @@ public:
      * \brief Return the parameter layers of GFI request
      * \return parameter layers
      */
-    std::string getGFILayers() const {
-        return GFILayers;
-    }
+    std::string getGFILayers() ;
     /**
      * \~french
      * \brief Retourne le paramètre query_layers de la requête de GFI
@@ -654,9 +604,7 @@ public:
      * \brief Return the parameter query_layers of GFI request
      * \return parameter query_layers
      */
-    std::string getGFIQueryLayers() const {
-        return GFIQueryLayers;
-    }
+    std::string getGFIQueryLayers() ;
     /**
      * \~french
      * \brief Retourne le type du service de GFI
@@ -665,9 +613,7 @@ public:
      * \brief Return type of service used for GFI
      * \return type of service used for GFI
      */
-    std::string getGFIService() const {
-        return GFIService;
-    }
+    std::string getGFIService() ;
     /**
      * \~french
      * \brief Retourne la version du service de GFI
@@ -676,9 +622,7 @@ public:
      * \brief Return version of service used for GFI
      * \return version of service used for GFI
      */
-    std::string getGFIVersion() const {
-        return GFIVersion;
-    }
+    std::string getGFIVersion() ;
     /**
      * \~french
      * \brief
@@ -687,9 +631,7 @@ public:
      * \brief
      * \return
      */
-    bool getGFIForceEPSG() const {
-        return GFIForceEPSG;
-    }
+    bool getGFIForceEPSG() ;
     /**
      * \~french
      * \brief Destructeur par défaut

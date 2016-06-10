@@ -48,19 +48,22 @@
 
 #include <vector>
 #include <string>
-#include "ServicesConf.h"
-#include "Style.h"
-#include "Layer.h"
-#include "TileMatrixSet.h"
-#include "tinyxml.h"
-#include "ContextBook.h"
-#include "Rok4Server.h"
-#include "TileMatrixSetXML.h"
+
+#include "intl.h"
+#include "config.h"
+
 #include "ServerXML.h"
 #include "ServicesXML.h"
+
+#include "TileMatrixSet.h"
+#include "TileMatrixSetXML.h"
+
+#include "Style.h"
 #include "StyleXML.h"
+#include "Layer.h"
 #include "LayerXML.h"
 
+#include "WebService.h"
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -77,7 +80,6 @@ public:
     friend class CppUnitConfLoaderStyle;
     friend class CppUnitConfLoaderTMS;
     friend class CppUnitConfLoaderPyramid;
-    friend class CppUnitConfLoaderServicesConf;
     friend class CppUnitConfLoaderTechnicalParam;
 #endif //UNITTEST
     /**
@@ -208,7 +210,7 @@ private:
     * \~english
     * \brief Return a Pyramid from the configuration
     */
-    static Pyramid* buildBasedPyramid(TiXmlElement* sPyr, std::map<std::string, TileMatrixSet*> &tmsList, bool timesSpecific, std::map<std::string,Style*> stylesList, std::string parentDir, Proxy proxy);
+    static Pyramid* buildBasedPyramid( TiXmlElement* pElemBP, ServerXML* serverXML, ServicesXML* servicesXML, std::string levelOD, TileMatrixSet* tmsOD, std::string parentDir);
 
 
     /**

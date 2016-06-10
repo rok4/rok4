@@ -171,9 +171,7 @@ public:
      * \brief Return the style's identifier
      * \return identifier
      */
-    inline std::string getId() {
-        return id;
-    }
+    std::string getId() ;
 
     /**
      * \~french
@@ -183,9 +181,7 @@ public:
      * \brief Return the list of titles
      * \return titles
      */
-    inline std::vector<std::string> getTitles() {
-        return titles;
-    }
+    std::vector<std::string> getTitles() ;
 
     /**
      * \~french
@@ -195,9 +191,7 @@ public:
      * \brief Return the list of abstracts
      * \return abstracts
      */
-    inline std::vector<std::string> getAbstracts() {
-        return abstracts;
-    }
+    std::vector<std::string> getAbstracts() ;
 
     /**
      * \~french
@@ -207,9 +201,7 @@ public:
      * \brief Return the list of keywords
      * \return keywords
      */
-    inline std::vector<Keyword>* getKeywords() {
-        return &keywords;
-    }
+    std::vector<Keyword>* getKeywords() ;
 
     /**
      * \~french
@@ -219,9 +211,7 @@ public:
      * \brief Return the list of legends
      * \return legends
      */
-    inline std::vector<LegendURL> getLegendURLs() {
-        return legendURLs;
-    }
+    std::vector<LegendURL> getLegendURLs() ;
 
     /**
      * \~french
@@ -231,9 +221,7 @@ public:
      * \brief Return the lookup table
      * \return lookup table
      */
-    inline Palette* getPalette() {
-        return &palette;
-    }
+    Palette* getPalette() ;
 
     /**
      * \~french
@@ -243,9 +231,7 @@ public:
      * \brief Determine if the style describe a relief shadows
      * \return true if it does
      */
-    inline bool isEstompage() {
-        return estompage;
-    }
+    bool isEstompage() ;
 
     /**
      * \~french
@@ -255,9 +241,7 @@ public:
      * \brief Return the sun azimuth
      * \return azimuth
      */
-    inline int getAngle() {
-        return angle;
-    }
+    int getAngle() ;
 
     /**
      * \~french
@@ -267,9 +251,7 @@ public:
      * \brief Return the slope exaggeration
      * \return exaggeration factor
      */
-    inline float getExaggeration() {
-        return exaggeration;
-    }
+    float getExaggeration() ;
 
     /**
      * \~french
@@ -279,9 +261,7 @@ public:
      * \brief Return the value of a pixel without slope
      * \return value
      */
-    inline uint8_t getCenter() {
-        return center;
-    }
+    uint8_t getCenter() ;
     /**
      * \~french
      * \brief Destructeur par défaut

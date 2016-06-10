@@ -505,3 +505,9 @@ LayerXML::LayerXML(std::string fileName, ServerXML* serverXML, ServicesXML* serv
     ok = true;
 }
 
+
+~LayerXML::LayerXML(){ }
+
+std::string LayerXML::getId() { return id; }
+
+bool LayerXML::isOk() { return ok; }

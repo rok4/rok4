@@ -48,6 +48,9 @@
 #include "Logger.h"
 
 
+GeographicBoundingBoxWMS::GeographicBoundingBoxWMS() {}
+BoundingBoxWMS::BoundingBoxWMS() {}
+
 Layer::Layer ( const LayerXML& l ) {
     this->id = l.id;
     this->title = l.title;
@@ -84,7 +87,7 @@ DataSource* Layer::gettile ( int x, int y, std::string tmId, DataSource* errorDa
     return dataPyramid->getTile ( x, y, tmId, errorDataSource );
 }
 
-Image* Layer::getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error ) {
+Image* Layer::getbbox (ServicesXML* servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error ) {
     error=0;
     return dataPyramid->getbbox (servicesConf, bbox, width, height, dst_crs, resampling, error );
 }
@@ -103,3 +106,32 @@ Layer::~Layer() {
 
     delete dataPyramid;
 }
+
+
+std::string Layer::getAbstract() { return abstract; }
+bool Layer::getWMSAuthorized() { return WMSAuthorized; }
+void Layer::setWMSAuthorized(bool wmsA) { WMSAuthorized = wmsA; }
+bool Layer::getWMTSAuthorized() { return WMTSAuthorized; }
+void Layer::setWMTSAuthorized(bool wmtsA) { WMTSAuthorized = wmtsA; }
+std::string Layer::getAuthority() { return authority; }
+std::vector<Keyword>* Layer::getKeyWords() { return &keyWords; }
+double Layer::getMaxRes() { return maxRes; }
+double Layer::getMinRes() { return minRes; }
+bool Layer::getOpaque() { return opaque; }
+Pyramid* Layer::getDataPyramid() { return dataPyramid; }
+Interpolation::KernelType Layer::getResampling() { return resampling; }
+std::string Layer::getDefaultStyle() { return defaultStyle; }
+std::vector<Style*> Layer::getStyles() { return styles; }
+std::string Layer::getTitle() { return title; }
+std::vector<CRS> Layer::getWMSCRSList() { return WMSCRSList; }
+GeographicBoundingBoxWMS Layer::getGeographicBoundingBox() { return geographicBoundingBox; }
+BoundingBoxWMS Layer::getBoundingBox() { return boundingBox; }
+std::vector<MetadataURL> Layer::getMetadataURLs() { return metadataURLs; }
+bool Layer::isGetFeatureInfoAvailable() { return getFeatureInfoAvailability; }
+std::string Layer::getGFIType() { return getFeatureInfoType; }
+std::string Layer::getGFIBaseUrl() { return getFeatureInfoBaseURL; }
+std::string Layer::getGFILayers() { return GFILayers; }
+std::string Layer::getGFIQueryLayers() { return GFIQueryLayers; }
+std::string Layer::getGFIService() { return GFIService; }
+std::string Layer::getGFIVersion() { return GFIVersion; }
+bool Layer::getGFIForceEPSG() { return GFIForceEPSG; }

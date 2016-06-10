@@ -58,20 +58,17 @@
 #include "config.h"
 #include "EmptyImage.h"
 
-Pyramid::Pyramid (PyramidXML* p) {
+Pyramid::Pyramid (PyramidXML* p) : Source(PYRAMID) {
     levels = p->levels;
     tms = p->tms;
     format = p->format;
+    photo = p->photo;
     channels = p->channels;
+    ndValues = p->noDataValues;
 
     isBasedPyramid = p->isBasedPyramid;
     containOdLevels = p->containOdLevels;
-}
 
-Pyramid::Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format,
-                   int channels, bool onDemand, bool onFly)
-    : Source(PYRAMID),levels ( levels ), tms ( tms ), format ( format ), channels ( channels ),
-      onDemand ( onDemand ), onFly (onFly) {
 
     std::map<std::string, Level*>::iterator itLevel;
     double minRes= DBL_MAX;
@@ -81,14 +78,14 @@ Pyramid::Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4
         DataSource* noDataSource;
         DataStream* nodatastream;
 
-        if ( format==Rok4Format::TIFF_JPG_INT8 ) {
-            nodatastream = new JPEGEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ) );
-        } else if ( format==Rok4Format::TIFF_PNG_INT8 ) {
-            nodatastream = new PNGEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ) );
-        } else if ( format==Rok4Format::TIFF_RAW_FLOAT32 ) {
-            nodatastream = new BilEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ) );
+        if ( format == Rok4Format::TIFF_JPG_INT8 ) {
+            nodatastream = new JPEGEncoder ( new ImageDecoder ( 0, itLevel->second->getTm()->getTileW(), itLevel->second->getTm()->getTileH(), channels ) );
+        } else if ( format == Rok4Format::TIFF_PNG_INT8 ) {
+            nodatastream = new PNGEncoder ( new ImageDecoder ( 0, itLevel->second->getTm()->getTileW(), itLevel->second->getTm()->getTileH(), channels ) );
+        } else if ( format == Rok4Format::TIFF_RAW_FLOAT32 ) {
+            nodatastream = new BilEncoder ( new ImageDecoder ( 0, itLevel->second->getTm()->getTileW(), itLevel->second->getTm()->getTileH(), channels ) );
         } else {
-            nodatastream = TiffEncoder::getTiffEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ), format );
+            nodatastream = TiffEncoder::getTiffEncoder ( new ImageDecoder ( 0, itLevel->second->getTm()->getTileW(), itLevel->second->getTm()->getTileH(), channels ), format );
         }
         if ( nodatastream ) {
             noDataSource = new BufferedDataSource ( *nodatastream );
@@ -98,7 +95,6 @@ Pyramid::Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4
             LOGGER_ERROR ( "Format non pris en charge : "<< Rok4Format::toString ( format ) );
         }
         itLevel->second->setNoDataSource ( noDataSource );
-
 
         //Determine Higher and Lower Levels
         double d = itLevel->second->getRes();
@@ -111,8 +107,8 @@ Pyramid::Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4
             highestLevel = itLevel->second;
         }
     }
-    int i = 0;
 
+    int i = 0;
 }
 
 DataSource* Pyramid::getTile ( int x, int y, std::string tmId, DataSource* errorDataSource ) {
@@ -129,16 +125,17 @@ DataSource* Pyramid::getTile ( int x, int y, std::string tmId, DataSource* error
         std::map<std::string, TileMatrix>::iterator itTM;
         double askedRes;
 
-        itTM = getTms().getTmList()->find ( tmId );
-        if ( itTM==getTms().getTmList()->end() ) {
+        TileMatrix* tm = tms->getTm(tmId);
+
+        if ( tm == NULL ) {
             //return the lowest Level available
-            noDataSource = getLowestLevel()->getEncodedNoDataTile();
+            noDataSource = lowestLevel->getEncodedNoDataTile();
         } else {
             askedRes = itTM->second.getRes();
-            noDataSource = ( askedRes > getLowestLevel()->getRes() ? getHighestLevel()->getEncodedNoDataTile() : getLowestLevel()->getEncodedNoDataTile() );
+            noDataSource = ( askedRes > lowestLevel->getRes() ? highestLevel->getEncodedNoDataTile() : lowestLevel->getEncodedNoDataTile() );
         }
         StoreDataSourceFactory SDSF;
-        return new DataSourceProxy ( SDSF.createStoreDataSource ( "",0,0,"", getLowestLevel()->getContext() ), * ( noDataSource ) );
+        return new DataSourceProxy ( SDSF.createStoreDataSource ( "",0,0,"", lowestLevel->getContext() ), * ( noDataSource ) );
     }
 
     return itLevel->second->getTile ( x, y, errorDataSource );
@@ -179,24 +176,14 @@ std::string Pyramid::best_level ( double resolution_x, double resolution_y, bool
 }
 
 
-Level * Pyramid::getFirstLevel() {
-    std::map<std::string, Level*>::iterator it ( levels.begin() );
-    return it->second;
-}
-
-TileMatrixSet Pyramid::getTms() {
-    return tms;
-}
-
-
-Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error ) {
+Image* Pyramid::getbbox ( ServicesXML* servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error ) {
 
     // On calcule la résolution de la requete dans le crs source selon une diagonale de l'image
     double resolution_x, resolution_y;
 
-    LOGGER_DEBUG ( "source tms.getCRS() is " << tms.getCrs().getProj4Code() << " and destination dst_crs is " << dst_crs.getProj4Code() );
+    LOGGER_DEBUG ( "source tms->getCRS() is " << tms->getCrs().getProj4Code() << " and destination dst_crs is " << dst_crs.getProj4Code() );
 
-    if ( (tms.getCrs() == dst_crs) || (are_the_two_CRS_equal( tms.getCrs().getProj4Code(), dst_crs.getProj4Code(), servicesConf.getListOfEqualsCRS() ) ) ) {
+    if ( (tms->getCrs() == dst_crs) || (are_the_two_CRS_equal( tms->getCrs().getProj4Code(), dst_crs.getProj4Code(), servicesConf->getListOfEqualsCRS() ) ) ) {
         resolution_x = ( bbox.xmax - bbox.xmin ) / width;
         resolution_y = ( bbox.ymax - bbox.ymin ) / height;
     } else {
@@ -204,7 +191,7 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
 
 
         LOGGER_DEBUG ( _ ( "debut pyramide" ) );
-        if ( !grid->reproject ( dst_crs.getProj4Code(),getTms().getCrs().getProj4Code() ) ) {
+        if ( !grid->reproject ( dst_crs.getProj4Code(),tms->getCrs().getProj4Code() ) ) {
             // BBOX invalide
             error=1;
             return 0;
@@ -219,7 +206,7 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
     std::string l = best_level ( resolution_x, resolution_y, false );
     LOGGER_DEBUG ( _ ( "best_level=" ) << l << _ ( " resolution requete=" ) << resolution_x << " " << resolution_y );
 
-    if ( (tms.getCrs() == dst_crs) || (are_the_two_CRS_equal( tms.getCrs().getProj4Code(), dst_crs.getProj4Code(), servicesConf.getListOfEqualsCRS() ) ) ) {
+    if ( (tms->getCrs() == dst_crs) || (are_the_two_CRS_equal( tms->getCrs().getProj4Code(), dst_crs.getProj4Code(), servicesConf->getListOfEqualsCRS() ) ) ) {
         return levels[l]->getbbox ( servicesConf, bbox, width, height, interpolation, error );
     } else {
         return createReprojectedImage(l, bbox, dst_crs, servicesConf, width, height, interpolation, error);
@@ -227,10 +214,10 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
 
 }
 
-Image * Pyramid::createReprojectedImage(std::string l, BoundingBox<double> bbox, CRS dst_crs, ServicesConf& servicesConf, int width, int height, Interpolation::KernelType interpolation, int error) {
+Image * Pyramid::createReprojectedImage(std::string l, BoundingBox<double> bbox, CRS dst_crs, ServicesXML* servicesConf, int width, int height, Interpolation::KernelType interpolation, int error) {
 
     if ( dst_crs.validateBBox ( bbox ) ) {
-        return levels[l]->getbbox ( servicesConf, bbox, width, height, tms.getCrs(), dst_crs, interpolation, error );
+        return levels[l]->getbbox ( servicesConf, bbox, width, height, tms->getCrs(), dst_crs, interpolation, error );
     } else {
         BoundingBox<double> cropBBox = dst_crs.cropBBox ( bbox );
         return createExtendedCompoundImage(l,bbox,cropBBox,dst_crs,servicesConf,width,height,interpolation,error);
@@ -238,7 +225,7 @@ Image * Pyramid::createReprojectedImage(std::string l, BoundingBox<double> bbox,
 
 }
 
-Image *Pyramid::createExtendedCompoundImage(std::string l, BoundingBox<double> bbox, BoundingBox<double> cropBBox,CRS dst_crs, ServicesConf& servicesConf, int width, int height, Interpolation::KernelType interpolation, int error){
+Image *Pyramid::createExtendedCompoundImage(std::string l, BoundingBox<double> bbox, BoundingBox<double> cropBBox,CRS dst_crs, ServicesXML* servicesConf, int width, int height, Interpolation::KernelType interpolation, int error){
 
     ExtendedCompoundImageFactory facto;
     std::vector<Image*> images;
@@ -288,7 +275,7 @@ Image *Pyramid::createExtendedCompoundImage(std::string l, BoundingBox<double> b
             LOGGER_DEBUG ( _ ( "BBox decoupe incorrect" ) );
             tmp = 0;
         } else if ( newWidth > 0 && newHeigth > 0 ) {
-            tmp = levels[l]->getbbox ( servicesConf, cropBBox, newWidth, newHeigth, tms.getCrs(), dst_crs, interpolation, cropError );
+            tmp = levels[l]->getbbox ( servicesConf, cropBBox, newWidth, newHeigth, tms->getCrs(), dst_crs, interpolation, cropError );
         }
         if ( tmp != 0 ) {
             LOGGER_DEBUG ( _ ( "Image decoupe valide" ) );
@@ -310,7 +297,7 @@ Image *Pyramid::createExtendedCompoundImage(std::string l, BoundingBox<double> b
 
 }
 
-Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst_crs, ServicesConf& servicesConf, int width, int height, Interpolation::KernelType interpolation, int error){
+Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst_crs, ServicesXML* servicesConf, int width, int height, Interpolation::KernelType interpolation, int error){
 
     LOGGER_INFO ( "Create Based Slab " );
     //variables
@@ -324,16 +311,16 @@ Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst
     }
 
     //on met les deux bbox dans le même système de projection
-    if ((are_the_two_CRS_equal( tms.getCrs().getProj4Code(), dst_crs.getProj4Code(), servicesConf.getListOfEqualsCRS() ) ) ) {
+    if ((are_the_two_CRS_equal( tms->getCrs().getProj4Code(), dst_crs.getProj4Code(), servicesConf->getListOfEqualsCRS() ) ) ) {
         LOGGER_DEBUG ( "Les deux CRS sont équivalents " );
     } else {
         LOGGER_DEBUG ( "Conversion de la bbox demandee et de la bbox des donnees en EPSG:4326 " );
         askBbox.reproject(dst_crs.getProj4Code(),"epsg:4326");
-        dataBbox.reproject(tms.getCrs().getProj4Code(),"epsg:4326");
+        dataBbox.reproject(tms->getCrs().getProj4Code(),"epsg:4326");
     }
 
     //on compare les deux bbox
-    if (tms.getCrs() == dst_crs) {
+    if (tms->getCrs() == dst_crs) {
         //elles sont identiques
         LOGGER_DEBUG ( "Les deux bbox sont identiques " );
         return createReprojectedImage(l, bbox, dst_crs, servicesConf, width, height, interpolation, error);
@@ -400,14 +387,6 @@ Pyramid::~Pyramid() {
 
 }
 
-PyramidOnDemand::~PyramidOnDemand() {
-
-//    for (int i=0;i<basedPyramids.size();i++) {
-//        delete basedPyramids.at(i);
-//        basedPyramids.at(i) = NULL;
-//    }
-
-}
 
 // Check if two CRS are equivalent
 //   A list of equivalent CRS was created during server initialization
@@ -497,23 +476,64 @@ int Pyramid::getBitsPerSample() {
 
 }
 
-std::vector<Source *> PyramidOnDemand::getSourcesOfLevel( std::string lv) {
-
-    std::vector<Source*> bSrc;
-
-    bSrc = getSources().find(lv)->second;
-
-    return bSrc;
+Level* Pyramid::getHighestLevel() { return highestLevel; }
+Level* Pyramid::getLowestLevel() { return lowestLevel; }
+Level * Pyramid::getFirstLevel() {
+    std::map<std::string, Level*>::iterator it ( levels.begin() );
+    return it->second;
+}
+TileMatrixSet* Pyramid::getTms() { return tms; }
+std::map<std::string, Level*>& Pyramid::getLevels() { return levels; }
+Level* Pyramid::getLevel(std::string id) {
+    std::map<std::string, Level*>::iterator it= levels.find ( id );
+    if ( it == levels.end() ) {
+        return NULL;
+    }
+    return it->second;
 }
 
-Photometric::ePhotometric PyramidOnFly::getPhotometry(){
-    if (photo == Photometric::UNKNOWN) {
-        if (getChannels() == 1) {
-            return Photometric::GRAY;
-        } else {
-            return Photometric::RGB;
-        }
+Level* Pyramid::getUniqueLevel() {
+    if (! isBasedPyramid) {
+        // Cette fonction est pour les pyramides de base, pour lesquelles on a gardé un seul niveau
+        return NULL;
     }
 
-    return photo;
+    // Dans le cas d'une pyramide de base à un niveau, highestLevel et lowestLevel sont ce niveau
+    return highestLevel;
 }
+
+void Pyramid::setUniqueLevel(std::string id) {
+    if (! isBasedPyramid) {
+        // Cette fonction est pour les pyramides de base, pour lesquelles on ne garde qu'un seul niveau
+    }
+    std::map<std::string, Level*>::iterator uniqueLev= levels.find ( id );
+    if ( uniqueLev == levels.end() ) {
+        highestLevel = NULL;
+        lowestLevel = NULL;
+        return;
+    }
+
+    highestLevel = uniqueLev->second;
+    lowestLevel = uniqueLev->second;
+
+    return;
+}
+
+void Pyramid::removeLevel(std::string id) {
+
+    std::map<std::string, Level*>::iterator lv = levels.find(id);
+    delete lv->second;
+    lv->second = NULL;
+    levels.erase(lv);
+
+}
+void Pyramid::setLevels(std::map<std::string, Level*>& lv) { levels = lv; }
+Rok4Format::eformat_data Pyramid::getFormat() { return format; }
+Photometric::ePhotometric Pyramid::getPhotometric() { return photo; }
+int Pyramid::getChannels() { return channels; }
+bool Pyramid::getContainOdLevels(){ return containOdLevels; }
+bool Pyramid::getTransparent(){ return transparent; }
+void Pyramid::setTransparent (bool tr) { transparent = tr; }
+Style* Pyramid::getStyle(){ return style; }
+void Pyramid::setStyle (Style * st) { style = st; }
+std::vector<int> Pyramid::getNdValues() { return ndValues; }

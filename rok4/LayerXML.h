@@ -44,8 +44,9 @@
 #include <tinystr.h>
 
 #include "Layer.h"
-#include "ServerXML.h"
+#include "Pyramid.h"
 #include "ServicesXML.h"
+#include "ServerXML.h"
 
 #include "config.h"
 #include "intl.h"
@@ -56,14 +57,10 @@ class LayerXML
 
     public:
         LayerXML(std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML );
-        ~LayerXML(){
-        }
+        ~LayerXML();
 
-        std::string getId() {
-            return id;
-        }
-
-        bool isOk() { return ok; }
+        std::string getId();
+        bool isOk();
 
     protected:
         std::string id;

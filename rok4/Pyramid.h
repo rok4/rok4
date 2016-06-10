@@ -35,16 +35,19 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+class Pyramid;
+
 #ifndef PYRAMID_H
 #define PYRAMID_H
+
 #include <string>
 #include <map>
 #include "Level.h"
+#include "PyramidXML.h"
 #include "TileMatrixSet.h"
 #include "CRS.h"
 #include "Format.h"
 #include "Style.h"
-#include "ServicesConf.h"
 #include <Interpolation.h>
 #include "Source.h"
 
@@ -77,13 +80,27 @@ private:
      * \~french \brief Format des tuiles
      * \~english \brief Format of the tiles
      */
-    const Rok4Format::eformat_data format;
+    Rok4Format::eformat_data format;
+
+    /**
+     * \~french \brief Donne la photométrie des images de la pyramide
+     * Non Obligatoire sauf pour les pyramides avec stockage
+     * \~english \brief Give the photometry of images
+     * Not Mandatory, only used for pyramid onFly
+     */
+    Photometric::ePhotometric photo;
+
+    /**
+     * \~french \brief Donne les valeurs des noData pour la pyramide
+     * \~english \brief Give the noData value
+     */
+    std::vector<int> ndValues;
 
     /**
      * \~french \brief Nombre de canaux pour les tuiles
      * \~english \brief Number of channels for the tiles
      */
-    const int channels;
+    int channels;
 
     /**
      * \~french \brief Référence au niveau le plus haut
@@ -150,9 +167,7 @@ public:
      * \~english \brief Get the highest level
      * \return level highest level
      */
-    Level* getHighestLevel() {
-        return highestLevel;
-    }
+    Level* getHighestLevel() ;
 
     /**
      * \~french \brief Récupère le plus bas niveau
@@ -160,9 +175,7 @@ public:
      * \~english \brief Get the lowest level
      * \return level lowest level
      */
-    Level* getLowestLevel() {
-        return lowestLevel;
-    }
+    Level* getLowestLevel() ;
 
     /**
      * \~french \brief Récupère le TMS
@@ -178,44 +191,36 @@ public:
      * \~english \brief Get the levels
      * \return List of level
      */
-    std::map<std::string, Level*>& getLevels() {
-        return levels;
-    }
+    std::map<std::string, Level*>& getLevels() ;
 
-    Level* getLevel(std::string id) {
-        std::map<std::string, Level*>::iterator it= levels.find ( id );
-        if ( it == stylesList.end() ) {
-            return NULL;
-        }
-        return it->second();
-    }
+    Level* getLevel(std::string id) ;
 
-    void removeLevel(std::string id) {
+    Level* getUniqueLevel() ;
+    void setUniqueLevel(std::string id);
 
-        std::map<std::string, Level*>::iterator lv = levels.find(id);
-        delete lv->second;
-        lv->second = NULL;
-        levels.erase(lv);
-        
-    }
+    void removeLevel(std::string id) ;
 
 
     /**
      * \~french \brief Attribue les niveaux
      * \~english \brief Set the levels
      */
-    void setLevels(std::map<std::string, Level*>& lv) {
-        levels = lv;
-    }
+    void setLevels(std::map<std::string, Level*>& lv) ;
     /**
      * \~french \brief Récupère le format
      * \return format
      * \~english \brief Get the format
      * \return format
      */
-    Rok4Format::eformat_data getFormat() {
-        return format;
-    }
+    Rok4Format::eformat_data getFormat() ;
+
+    /**
+     * \~french \brief Indique la photometrie de la pyramide
+     * \return photo
+     * \~english \brief Indicate the photometry of the pyramid
+     * \return photo
+     */
+    Photometric::ePhotometric getPhotometric();
 
     /**
      * \~french \brief Récupère le sample
@@ -234,6 +239,14 @@ public:
     Compression::eCompression getSampleCompression();
 
     /**
+     * \~french \brief Indique les valeurs de noData
+     * \return ndValues
+     * \~english \brief Indicate the noData values
+     * \return ndValues
+     */
+    std::vector<int> getNdValues() ;
+
+    /**
      * \~french \brief Récupère le nombre de bits par sample
      * \return format
      * \~english \brief Get the number of bits per sample
@@ -247,9 +260,7 @@ public:
      * \~english \brief Get the number of channels of a tile
      * \return number of channels
      */
-    int getChannels() {
-        return channels;
-    }
+    int getChannels() ;
 
     /**
      * \~french \brief Indique si la pyramide contient des niveaux à la demande
@@ -257,9 +268,7 @@ public:
      * \~english \brief Indicate if the pyramid contains onDemand levels
      * \return containOdLevels
      */
-    bool getContainOdLevels(){
-        return containOdLevels;
-    }
+    bool getContainOdLevels();
 
     /**
      * \~french \brief Récupère la transparence
@@ -267,18 +276,14 @@ public:
      * \~english \brief Get the transparency
      * \return boolean
      */
-    bool getTransparent(){
-        return transparent;
-    }
+    bool getTransparent();
     /**
      * \~french \brief Modifie la transparence
      * \param[in] booleen
      * \~english \brief Set the transparency
      * \param[in] boolean
      */
-    void setTransparent (bool tr) {
-        transparent = tr;
-    }
+    void setTransparent (bool tr) ;
 
     /**
      * \~french \brief Récupère le style
@@ -286,9 +291,7 @@ public:
      * \~english \brief Get the style
      * \return style
      */
-    Style *getStyle(){
-        return style;
-    }
+    Style *getStyle();
 
     /**
      * \~french \brief Modifie le style
@@ -296,9 +299,7 @@ public:
      * \~english \brief Set the style
      * \param[in] style
      */
-    void setStyle (Style * st) {
-        style = st;
-    }
+    void setStyle (Style * st) ;
 
 
     /**
@@ -331,13 +332,13 @@ public:
      * \~french \brief Récupère une image
      * \~english \brief Get an image
      */
-    Image* getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error );
+    Image* getbbox (ServicesXML* servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error );
 
     /**
      * \~french \brief Créé une image reprojetée
      * \~english \brief Create a reprojected image
      */
-    Image *createReprojectedImage(std::string l, BoundingBox<double> bbox, CRS dst_crs, ServicesConf& servicesConf, int width, int height, Interpolation::KernelType interpolation, int error);
+    Image *createReprojectedImage(std::string l, BoundingBox<double> bbox, CRS dst_crs, ServicesXML* servicesConf, int width, int height, Interpolation::KernelType interpolation, int error);
 
     /**
      * \~french \brief Créé une image reprojetée mais complétée par du nodata
@@ -345,13 +346,13 @@ public:
      * \~english \brief Create a reprojected image but completed by nodata
      * Used data on cropBBox but completed by nodata on bbox
      */
-    Image *createExtendedCompoundImage(std::string l, BoundingBox<double> bbox, BoundingBox<double> cropBBox,CRS dst_crs, ServicesConf& servicesConf, int width, int height, Interpolation::KernelType interpolation, int error);
+    Image *createExtendedCompoundImage(std::string l, BoundingBox<double> bbox, BoundingBox<double> cropBBox,CRS dst_crs, ServicesXML* servicesConf, int width, int height, Interpolation::KernelType interpolation, int error);
 
     /**
      * \~french \brief Créé une dalle
      * \~english \brief Create a slab
      */
-    Image *createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst_crs, ServicesConf& servicesConf, int width, int height, Interpolation::KernelType interpolation, int error);
+    Image *createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst_crs, ServicesXML* servicesConf, int width, int height, Interpolation::KernelType interpolation, int error);
 
     /**
      * \~french \brief Renvoit une image de noData
@@ -374,14 +375,6 @@ public:
      * \~english \brief Destructor
      */
     virtual ~Pyramid();
-
-//    virtual bool isThisLevelSpecific(std::string lv);
-//    virtual std::map<std::string, std::map<std::string, std::string> > getALevel();
-//    virtual std::vector<Pyramid *> getSourcePyramid( std::string lv,bool sp );
-//    virtual std::vector<int> getNdValues();
-//    virtual Photometric::ePhotometric getPhotometry();
-
-
 
 };
 

@@ -57,14 +57,11 @@ class TileMatrixSetXML
     public:
 
         TileMatrixSetXML(std::string filePath);
-        ~TileMatrixSetXML(){
-        }
+        ~TileMatrixSetXML();
 
-        std::string getId() {
-            return id;
-        }
+        std::string getId() ;
 
-        bool isOk() { return ok; }
+        bool isOk();
 
     protected:
         std::string id;

@@ -98,19 +98,5 @@ public:
     }
 };
 
-class PyramidLevelSource : public Source {
-
-private:
-
-
-
-public:
-
-    PyramidLevelSource(Pyramid* p);
-
-};
-
-
-
 
 #endif // SOURCE_H

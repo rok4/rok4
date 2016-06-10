@@ -311,3 +311,9 @@ StylesXML::StylesXML(std::string styleFilepath, ServicesXML* servicesXML)
     ok = true;
 }
 
+
+~StyleXML::StyleXML(){ }
+
+std::string StyleXML::getId() { return id; }
+
+bool StyleXML::isOk() { return ok; }

@@ -49,30 +49,14 @@
 
 #include <dirent.h>
 #include <cstdio>
-#include "ConfLoader.h"
-#include "Rok4Server.h"
-#include "Pyramid.h"
-#include "tinyxml.h"
-#include "tinystr.h"
-#include "config.h"
-#include "CephPoolContext.h"
-#include "SwiftContext.h"
-#include "FileContext.h"
-#include "Format.h"
-#include "MetadataURL.h"
-#include "LegendURL.h"
+#include <map>
+#include <fcntl.h>
+#include <cstddef>
 #include <malloc.h>
 #include <stdlib.h>
 #include <libgen.h>
-#include "Interpolation.h"
-#include "intl.h"
-#include "config.h"
-#include "Keyword.h"
-#include <fcntl.h>
-#include <cstddef>
-#include <string>
-#include "WebService.h"
-#include "EmptyDataSource.h"
+
+#include "ConfLoader.h"
 
 /**********************************************************************************************************/
 /***************************************** SERVER & SERVICES **********************************************/
@@ -127,7 +111,7 @@ bool ConfLoader::buildStylesList ( ServerXML* serverXML, ServicesXML* servicesXM
         Style * style;
         style = buildStyle ( styleFiles[i], servicesXML );
         if ( style ) {
-            serverXML->addStyle ( std::pair<std::string, Style *> ( styleName[i], style ) );
+            serverXML->addStyle ( styleName[i], style );
         } else {
             LOGGER_ERROR ( _ ( "Ne peut charger le style: " ) << styleFiles[i] );
         }
@@ -165,9 +149,10 @@ bool ConfLoader::buildTMSList ( ServerXML* serverXML ) {
     // lister les fichier du repertoire tmsDir
     std::vector<std::string> tmsFiles;
     std::string tmsFileName;
+    std::string tmsDir = serverXML->getTmsDir();
     struct dirent *fileEntry;
     DIR *dir;
-    if ( ( dir = opendir ( serverXML->getTmsDir().c_str() ) ) == NULL ) {
+    if ( ( dir = opendir ( tmsDir.c_str() ) ) == NULL ) {
         LOGGER_FATAL ( _ ( "Le repertoire des TMS " ) << tmsDir << _ ( " n'est pas accessible." ) );
         return false;
     }
@@ -193,7 +178,7 @@ bool ConfLoader::buildTMSList ( ServerXML* serverXML ) {
         TileMatrixSet * tms;
         tms = buildTileMatrixSet ( tmsFiles[i] );
         if ( tms ) {
-            serverXML->addTMStmsList ( std::pair<std::string, TileMatrixSet *> ( tms->getId(), tms ) );
+            serverXML->addTMS ( tms->getId(), tms );
         } else {
             LOGGER_ERROR ( _ ( "Ne peut charger le tms: " ) << tmsFiles[i] );
         }
@@ -256,7 +241,7 @@ bool ConfLoader::buildLayersList ( ServerXML* serverXML, ServicesXML* servicesXM
         Layer * layer;
         layer = buildLayer ( layerFiles[i], serverXML, servicesXML );
         if ( layer ) {
-            serverXML->addLayer ( std::pair<std::string, Layer *> ( layer->getId(), layer ) );
+            serverXML->addLayer ( layer->getId(), layer );
         } else {
             LOGGER_ERROR ( _ ( "Ne peut charger le layer: " ) << layerFiles[i] );
         }
@@ -280,8 +265,9 @@ Layer * ConfLoader::buildLayer ( std::string fileName, ServerXML* serverXML, Ser
 
     Layer* pLay =  new Layer(layerXML);
 
-    // Si une pyramide est à la demande, on n'authorize pas le WMS car c'est un cas non gérer dans les processus de reponse du serveur
-    if (pLay->getDataPyramid()->getOnDemand()) {
+    // Si une pyramide contient un niveau à la demande ou à la volée, on n'authorize pas le WMS 
+    // car c'est un cas non géré dans les processus de reponse du serveur
+    if (pLay->getDataPyramid()->getContainOdLevels()) {
         pLay->setWMSAuthorized(false);
     }
 
@@ -300,14 +286,14 @@ Pyramid* ConfLoader::buildPyramid ( std::string fileName, ServerXML* serverXML, 
         return NULL;
     }
 
-    return new Pyramid(pyrXML);
+    return new Pyramid(&pyrXML);
 }
 
 /**********************************************************************************************************/
 /*********************************************** SOURCES **************************************************/
 /**********************************************************************************************************/
 
-PyramidSource* ConfLoader::buildBasedPyramid (
+Pyramid* ConfLoader::buildBasedPyramid (
     TiXmlElement* pElemBP,
     ServerXML* serverXML, ServicesXML* servicesXML,
     std::string levelOD,
@@ -315,9 +301,9 @@ PyramidSource* ConfLoader::buildBasedPyramid (
     std::string parentDir
 ) {
 
-    TiXmlElement* sFile = sPyr->FirstChildElement("file");
-    TiXmlElement* sTransparent = sPyr->FirstChildElement("transparent");
-    TiXmlElement* sStyle = sPyr->FirstChildElement("style");
+    TiXmlElement* sFile = pElemBP->FirstChildElement("file");
+    TiXmlElement* sTransparent = pElemBP->FirstChildElement("transparent");
+    TiXmlElement* sStyle = pElemBP->FirstChildElement("style");
 
     bool transparent = false;
     std::string str_transparent, basedPyramidFilePath;
@@ -369,9 +355,9 @@ PyramidSource* ConfLoader::buildBasedPyramid (
 
     /* Calcul du meilleur niveau */
 
-    std::vector<std::pair<std::string, double>> acceptedLevels = tmsOD->getCorrespondingLevels(levelOD, basedPyramid->getTms(), true);
+    std::map<std::string, double> levelsRatios = tmsOD->getCorrespondingLevels(levelOD, basedPyramid->getTms());
 
-    if (acceptedLevels.size() == 0) {
+    if (levelsRatios.size() == 0) {
         // Aucun niveau dans la pyramide de base ne convient
         LOGGER_ERROR ( "La pyramide source " << basedPyramidFilePath << " ne contient pas de niveau satisfaisant pour le niveau " << levelOD );
         return NULL;
@@ -379,23 +365,28 @@ PyramidSource* ConfLoader::buildBasedPyramid (
 
     Level* bestLevel;
 
-    std::pair<std::string, double>::iterator itAccLev = acceptedLevels.begin();
-    for ( itAccLev; itAccLev < acceptedLevels->getLevels().end(); itAccLev++ ) {
-        bestLevel = basedPyramid->getLevel(itAccLev->first);
-        if (bestLevel != NULL) break;
+    std::map<std::string, double>::iterator itRatio = levelsRatios.begin();
+    for ( itRatio; itRatio != levelsRatios.end(); itRatio++ ) {
+        if (itRatio->second < 0.8 || itRatio->second > 1.8) continue;
+
+        bestLevel = basedPyramid->getLevel(itRatio->first);
+        if (bestLevel != NULL) {
+            // On a le niveau satisfaisant
+            break;
+        }
     }
 
     if (bestLevel == NULL) {
-        // Aucun des niveaux acceptables n'est présent dans la pyramide de base
         LOGGER_ERROR ( "La pyramide source " << basedPyramidFilePath << " ne contient pas de niveau satisfaisant pour le niveau " << levelOD );
         return NULL;
     }
 
     // On va pouvoir ne garder que le niveau utile dans la pyramide de base
-    std::pair<std::string, Level* >::iterator itLev = basedPyramid->getLevels.begin();
-    for ( itLev; itLev < acceptedLevels->getLevels().end(); itLev++ ) {
+    std::map<std::string, Level*>::iterator itLev = basedPyramid->getLevels().begin();
+    for ( itLev; itLev != basedPyramid->getLevels().end(); itLev++ ) {
         if (itLev->first != bestLevel->getId()) basedPyramid->removeLevel(itLev->first);
     }
+    basedPyramid->setUniqueLevel(bestLevel->getId());
 
     return basedPyramid;
 }
