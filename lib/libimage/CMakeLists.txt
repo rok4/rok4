@@ -74,7 +74,7 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${DE
 
 ########################################
 # Listes des bibliothèques à liées avec l'éxecutable
-SET(DEP_LIBRARY logger proj jpeg zlib tiff lzw pkb png jpeg2000)
+SET(DEP_LIBRARY logger proj jpeg zlib tiff lzw pkb png jpeg2000 curl)
 
 IF(KDU_USE)
     SET(DEP_LIBRARY ${DEP_LIBRARY} jpeg2000_plus)

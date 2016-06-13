@@ -65,13 +65,13 @@ Style::~Style() {
 
 }
 
-inline std::string Style::getId() { return id; }
-inline std::vector<std::string> Style::getTitles() { return titles; }
-inline std::vector<std::string> Style::getAbstracts() { return abstracts; }
-inline std::vector<Keyword>* Style::getKeywords() { return &keywords; }
-inline std::vector<LegendURL> Style::getLegendURLs() { return legendURLs; }
-inline Palette* Style::getPalette() { return &palette; }
-inline bool Style::isEstompage() { return estompage; }
-inline int Style::getAngle() { return angle; }
-inline float Style::getExaggeration() { return exaggeration; }
-inline uint8_t Style::getCenter() { return center; }
+std::string Style::getId() { return id; }
+std::vector<std::string> Style::getTitles() { return titles; }
+std::vector<std::string> Style::getAbstracts() { return abstracts; }
+std::vector<Keyword>* Style::getKeywords() { return &keywords; }
+std::vector<LegendURL> Style::getLegendURLs() { return legendURLs; }
+Palette* Style::getPalette() { return &palette; }
+bool Style::isEstompage() { return estompage; }
+int Style::getAngle() { return angle; }
+float Style::getExaggeration() { return exaggeration; }
+uint8_t Style::getCenter() { return center; }

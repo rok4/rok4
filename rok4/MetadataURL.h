@@ -43,8 +43,11 @@
  * \brief Define the MetadataURL Class handling capabilities metadata link elements
  */
 
+class MetadataURL;
+
 #ifndef METADATAURL_H
 #define METADATAURL_H
+
 #include "ResourceLocator.h"
 
 /**
@@ -78,6 +81,8 @@ public:
      * \param[in] type metadata type
      */
     MetadataURL ( std::string format, std::string href, std::string type );
+
+    MetadataURL (  );
     /**
      * \~french
      * Crée un MetadataURL à partir d'un autre

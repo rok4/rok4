@@ -156,34 +156,38 @@ public:
      */
     static ServicesXML* buildServicesConf ( std::string servicesConfigFile );
 
-    void pElem();
-
-private:
+    
+    /**
+     * \~french
+     * \brief Vérifie que le CRS ou un équivalent se trouve dans la liste des CRS autorisés
+     * \~english
+     * \brief Check if the CRS or an equivalent is in the allowed CRS list
+     */
+    static bool isCRSAllowed(std::vector<std::string> restrictedCRSList, std::string crs, std::vector<CRS> equiCRSList);
+    
+    /**
+     * \~french
+     * \brief Retourne la liste des CRS équivalents et valable dans proj4
+     * \~english
+     * \brief Return the list of the equivalents CRS who are Proj4 compatible
+     */
+    static std::vector<CRS> getEqualsCRS(std::vector<std::string> listofequalsCRS, std::string crs);
 
     /**
      * \~french
-     * \brief Création d'un Style à partir d'un fichier
-     * \param[in] fileName Nom du fichier, utilisé comme identifiant
-     * \param[in] inspire définit si les règles de conformité INSPIRE doivent être utilisées
-     * \return un pointeur vers le Style nouvellement instancié, NULL en cas d'erreur
+     * \brief Chargement de la liste des CRS équivalents à partir du fichier listofequalscrs.txt dans le dossier Proj
      * \~english
-     * \brief Create a new Style from a file
-     * \param[in] fileName filename, used as identifier
-     * \param[in] inspire whether INSPIRE validity rules are enforced
-     * \return pointer to the newly created Style, NULL if something went wrong
+     * \brief Load equivalents CRS list from listofequalscrs.txt file in Proj directory
      */
-    static Style* buildStyle ( std::string fileName, ServicesXML* servicesXML);
+    static std::vector<std::string> loadListEqualsCRS();
+
     /**
      * \~french
-     * \brief Création d'un TileMatrixSet à partir d'un fichier
-     * \param[in] fileName Nom du fichier, utilisé comme identifiant
-     * \return un pointeur vers le TileMatrixSet nouvellement instancié, NULL en cas d'erreur
+     * \brief Chargement d'une liste à partir d'un fichier
      * \~english
-     * \brief Create a new TileMatrixSet from a file
-     * \param[in] fileName filename, used as identifier
-     * \return pointer to the newly created TileMatrixSet, NULL if something went wrong
+     * \brief Load strings list form file
      */
-    static TileMatrixSet* buildTileMatrixSet ( std::string fileName );
+    static std::vector<std::string> loadStringVectorFromFile(std::string file);
 
     /**
      * \~french
@@ -214,6 +218,44 @@ private:
 
 
     /**
+    * \~french
+    * \brief Retourne un WebService en fonction des paramètres lus dans la configuration
+    * \~english
+    * \brief Return a WebService from the configuration
+    */
+    static WebService *parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Format::eformat_data pyrFormat, Proxy proxy_default);
+
+
+private:
+
+    /**
+     * \~french
+     * \brief Création d'un Style à partir d'un fichier
+     * \param[in] fileName Nom du fichier, utilisé comme identifiant
+     * \param[in] inspire définit si les règles de conformité INSPIRE doivent être utilisées
+     * \return un pointeur vers le Style nouvellement instancié, NULL en cas d'erreur
+     * \~english
+     * \brief Create a new Style from a file
+     * \param[in] fileName filename, used as identifier
+     * \param[in] inspire whether INSPIRE validity rules are enforced
+     * \return pointer to the newly created Style, NULL if something went wrong
+     */
+    static Style* buildStyle ( std::string fileName, ServicesXML* servicesXML);
+    /**
+     * \~french
+     * \brief Création d'un TileMatrixSet à partir d'un fichier
+     * \param[in] fileName Nom du fichier, utilisé comme identifiant
+     * \return un pointeur vers le TileMatrixSet nouvellement instancié, NULL en cas d'erreur
+     * \~english
+     * \brief Create a new TileMatrixSet from a file
+     * \param[in] fileName filename, used as identifier
+     * \return pointer to the newly created TileMatrixSet, NULL if something went wrong
+     */
+    static TileMatrixSet* buildTileMatrixSet ( std::string fileName );
+
+
+
+    /**
      * \~french
      * \brief Création d'un Layer à partir d'un fichier
      * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
@@ -234,46 +276,6 @@ private:
      * \return pointer to the newly created Layer, NULL if something went wrong
      */
     static Layer * buildLayer (std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML );
-    
-    /**
-     * \~french
-     * \brief Chargement de la liste des CRS équivalents à partir du fichier listofequalscrs.txt dans le dossier Proj
-     * \~english
-     * \brief Load equivalents CRS list from listofequalscrs.txt file in Proj directory
-     */
-    static std::vector<std::string> loadListEqualsCRS();
-    
-    /**
-     * \~french
-     * \brief Chargement d'une liste à partir d'un fichier
-     * \~english
-     * \brief Load strings list form file
-     */
-    static std::vector<std::string> loadStringVectorFromFile(std::string file);
-    
-     /**
-     * \~french
-     * \brief Vérifie que le CRS ou un équivalent se trouve dans la liste des CRS autorisés
-     * \~english
-     * \brief Check if the CRS or an equivalent is in the allowed CRS list
-     */
-    static bool isCRSAllowed(std::vector<std::string> restrictedCRSList, std::string crs, std::vector<CRS> equiCRSList);
-    
-     /**
-     * \~french
-     * \brief Retourne la liste des CRS équivalents et valable dans proj4
-     * \~english
-     * \brief Return the list of the equivalents CRS who are Proj4 compatible
-     */
-    static std::vector<CRS> getEqualsCRS(std::vector<std::string> listofequalsCRS, std::string crs);
-
-    /**
-    * \~french
-    * \brief Retourne un WebService en fonction des paramètres lus dans la configuration
-    * \~english
-    * \brief Return a WebService from the configuration
-    */
-    static WebService *parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Format::eformat_data pyrFormat, Proxy proxy_default);
 
 };
 

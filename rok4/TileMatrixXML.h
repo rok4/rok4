@@ -35,25 +35,26 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+class TileMatrixXML;
+
 #ifndef TMXML_H
 #define TMXML_H
 
 #include <vector>
 #include <string>
-#include <tinyxml.h>
-#include <tinystr.h>
 
+#include "DocumentXML.h"
 #include "TileMatrix.h"
 
 #include "config.h"
 #include "intl.h"
 
-class TileMatrixXML
+class TileMatrixXML : public DocumentXML
 {
     friend class TileMatrix;
 
     public:
-        TileMatrixXML(std::string tmsId, TiXmlElement* levelElement);
+        TileMatrixXML(std::string tmsId, std::string path, TiXmlElement* levelElement);
         ~TileMatrixXML() ;
 
         std::string getId();

@@ -37,19 +37,14 @@
 
 #include "ServerXML.h"
 
-#include <dirent.h>
-#include <tinyxml.h>
-#include <tinystr.h>
-
-ServerXML::ServerXML(std::string serverConfigFile )
-{
+ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
     ok = false;
 
-    std::cout<<_ ( "Chargement des parametres techniques depuis " ) <<serverConfigFile<<std::endl;
+    std::cout<<_ ( "Chargement des parametres techniques depuis " ) <<filePath<<std::endl;
 
-    TiXmlDocument doc ( serverConfigFile );
+    TiXmlDocument doc ( filePath );
     if ( ! doc.LoadFile() ) {
-        std::cerr<<_ ( "Ne peut pas charger le fichier " ) << serverConfigFile << std::endl;
+        std::cerr<<_ ( "Ne peut pas charger le fichier " ) << filePath << std::endl;
         return;
     }
 
@@ -59,12 +54,12 @@ ServerXML::ServerXML(std::string serverConfigFile )
 
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
     if ( !pElem ) {
-        std::cerr<<serverConfigFile <<_ ( " impossible de recuperer la racine." ) <<std::endl;
+        std::cerr<<filePath <<_ ( " impossible de recuperer la racine." ) <<std::endl;
         return;
     }
 
     if ( strcmp ( pElem->Value(), "serverConf" ) ) {
-        std::cerr<<serverConfigFile <<_ ( " La racine n'est pas un serverConf." ) <<std::endl;
+        std::cerr<<filePath <<_ ( " La racine n'est pas un serverConf." ) <<std::endl;
         return;
     }
     hRoot=TiXmlHandle ( pElem );
@@ -410,7 +405,7 @@ ServerXML::ServerXML(std::string serverConfigFile )
 
 /*********************** DESTRUCTOR ********************/
 
-~ServerXML(){ }
+ServerXML::~ServerXML(){ }
 
 /******************* GETTERS / SETTERS *****************/
 
@@ -469,8 +464,8 @@ Layer* ServerXML::getLayer(std::string id) {
     return layIt->second;
 }
 
-ContextBook* ServerXML::getCephContextBook(){return cephBook;};
-ContextBook* ServerXML::getSwiftContextBook(){return swiftBook;};
+ContextBook* ServerXML::getCephContextBook(){return cephBook;}
+ContextBook* ServerXML::getSwiftContextBook(){return swiftBook;}
 
 int ServerXML::getNbThreads() {return nbThread;}
 std::string ServerXML::getSocket() {return socket;}
@@ -478,3 +473,4 @@ bool ServerXML::getSupportWMTS() {return supportWMTS;}
 bool ServerXML::getSupportWMS() {return supportWMS;}
 int ServerXML::getBacklog() {return backlog;}
 Proxy ServerXML::getProxy() {return proxy;}
+bool ServerXML::getReprojectionCapability() { return reprojectionCapability; }

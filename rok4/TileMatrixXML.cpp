@@ -38,7 +38,7 @@
 #include "TileMatrixXML.h"
 
 
-TileMatrixXML::TileMatrixXML(std::string tmsId, TiXmlElement* levelElement)
+TileMatrixXML::TileMatrixXML(std::string tmsId, std::string path, TiXmlElement* levelElement) : DocumentXML(path)
 {
     ok = false;
 
@@ -123,7 +123,7 @@ TileMatrixXML::TileMatrixXML(std::string tmsId, TiXmlElement* levelElement)
     ok = true;
 }
 
-~TileMatrixXML::TileMatrixXML(){ }
+TileMatrixXML::~TileMatrixXML(){ }
 
 std::string TileMatrixXML::getId() { return id; }
 

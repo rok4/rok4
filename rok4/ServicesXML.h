@@ -35,6 +35,8 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+class ServicesXML;
+
 #ifndef SERVICESXML_H
 #define SERVICESXML_H
 
@@ -42,6 +44,7 @@
 #include <string>
 
 #include "Keyword.h"
+#include "ConfLoader.h"
 #include "MetadataURL.h"
 #include "CRS.h"
 
@@ -92,11 +95,11 @@ class ServicesXML
         std::string getServiceTypeVersion() ;
         bool isInspire() ;
 
-        MetadataURL *getWMSMetadataURL() ;
-        MetadataURL *getWMTSMetadataURL() ;
+        MetadataURL* getWMSMetadataURL() ;
+        MetadataURL* getWMTSMetadataURL() ;
         // CRS
         bool getDoWeUseListOfEqualsCRS() ;
-         bool getAddEqualsCRS() ;
+        bool getAddEqualsCRS() ;
         std::vector<std::string> getListOfEqualsCRS() ;
         bool getDoWeRestrictCRSList() ;
         std::vector<std::string> getRestrictedCRSList() ;
@@ -147,10 +150,6 @@ class ServicesXML
         //INSPIRE
         bool inspire;
         std::vector<std::string> applicationProfileList;
-        std::string metadataUrlWMS;
-        std::string metadataMediaTypeWMS;
-        std::string metadataUrlWMTS;
-        std::string metadataMediaTypeWMTS;
 
         // CRS
         bool doweuselistofequalsCRS;

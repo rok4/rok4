@@ -664,16 +664,17 @@ void WebService::setUserAgent (std::string u) { userAgent = u; }
 int WebService::getTimeOut(){ return timeout; }
 void WebService::setTimeOut (int u) { timeout = u; }
 int WebService::getRetry(){ return retry; }
-void setRetry (int u) { retry = u; }
+void WebService::setRetry (int u) { retry = u; }
 int WebService::getInterval(){ return interval; }
 void WebService::setInterval (int u) { interval = u; }
 
 
 
 
-WebMapService(std::string url, std::string proxy, std::string noProxy,int retry, int interval, int timeout, std::string version,std::string layers, std::string styles,std::string format, int channels,
-              std::string crs, BoundingBox<double> bbox, std::vector<int> ndValues,
-              std::map<std::string,std::string> options) : 
+WebMapService::WebMapService(
+    std::string url, std::string proxy, std::string noProxy,int retry, int interval, int timeout, std::string version,std::string layers, std::string styles,
+    std::string format, int channels, std::string crs, BoundingBox<double> bbox, std::vector<int> ndValues, std::map<std::string,std::string> options) : 
+
     WebService(url,proxy,noProxy,retry,interval,timeout), version (version), layers (layers), styles (styles), 
     format (format), crs (crs), channels (channels), bbox (bbox), ndValues (ndValues),options (options)
 {
@@ -683,21 +684,21 @@ WebMapService(std::string url, std::string proxy, std::string noProxy,int retry,
 WebMapService::~WebMapService() {}
 
 
-std::string getVersion(){ return version; }
-void setVersion (std::string u) { version = u; }
-BoundingBox<double> getBbox(){ return bbox; }
-void setBbox (BoundingBox<double> u) { bbox = u; }
-std::vector<int> getNdValues() { return ndValues; }
-void setNdValues (std::vector<int> ndv) {ndValues = ndv; }
-int getChannels(){ return channels; }
-void setChannels (int u) { channels = u; }
-std::string getLayers(){ return layers; }
-void setLayers (std::string u) { layers = u; }
-std::string getStyles(){ return styles; }
-void setStyles (std::string u) { styles = u; }
-std::string getFormat(){ return format; }
-void setFormat (std::string u) { format = u; }
-std::string getCrs(){ return crs; }
-void setCrs (std::string u) { crs = u; }
-std::map<std::string,std::string> getOptions(){ return options; }
-void setOptions (std::map<std::string,std::string> u) { options = u; }
+std::string WebMapService::getVersion(){ return version; }
+void WebMapService::setVersion (std::string u) { version = u; }
+BoundingBox<double> WebMapService::getBbox(){ return bbox; }
+void WebMapService::setBbox (BoundingBox<double> u) { bbox = u; }
+std::vector<int> WebMapService::getNdValues() { return ndValues; }
+void WebMapService::setNdValues (std::vector<int> ndv) {ndValues = ndv; }
+int WebMapService::getChannels(){ return channels; }
+void WebMapService::setChannels (int u) { channels = u; }
+std::string WebMapService::getLayers(){ return layers; }
+void WebMapService::setLayers (std::string u) { layers = u; }
+std::string WebMapService::getStyles(){ return styles; }
+void WebMapService::setStyles (std::string u) { styles = u; }
+std::string WebMapService::getFormat(){ return format; }
+void WebMapService::setFormat (std::string u) { format = u; }
+std::string WebMapService::getCrs(){ return crs; }
+void WebMapService::setCrs (std::string u) { crs = u; }
+std::map<std::string,std::string> WebMapService::getOptions(){ return options; }
+void WebMapService::setOptions (std::map<std::string,std::string> u) { options = u; }

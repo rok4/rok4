@@ -35,26 +35,27 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+class StyleXML;
+
 #ifndef STYLEXML_H
 #define STYLEXML_H
 
 #include <vector>
 #include <string>
-#include <tinyxml.h>
-#include <tinystr.h>
 
 #include "Style.h"
 #include "ServicesXML.h"
+#include "DocumentXML.h"
 
 #include "config.h"
 #include "intl.h"
 
-class StyleXML
+class StyleXML : public DocumentXML
 {
     friend class Style;
 
     public:
-        StyleXML(std::string styleFilepath, ServicesXML* servicesXML);
+        StyleXML(std::string path, ServicesXML* servicesXML);
         ~StyleXML();
 
         std::string getId() ;

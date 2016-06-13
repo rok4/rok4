@@ -35,27 +35,29 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+class LevelXML;
+
 #ifndef LEVELXML_H
 #define LEVELXML_H
 
 #include <vector>
 #include <string>
-#include <tinyxml.h>
-#include <tinystr.h>
 
 #include "Level.h"
 #include "TileMatrixSet.h"
+#include "DocumentXML.h"
 #include "ServerXML.h"
+#include "Context.h"
 
 #include "config.h"
 #include "intl.h"
 
-class LevelXML
+class LevelXML : public DocumentXML
 {
     friend class Level;
 
     public:
-        LevelXML(TiXmlElement* levelElement, std::string fileName, std::string parentDir, ServerXML* serverXML, TileMatrixSet* tms, bool times);
+        LevelXML(TiXmlElement* levelElement, std::string path, ServerXML* serverXML, ServicesXML* servicesXML, PyramidXML* pyr, bool times);
         ~LevelXML();
 
         std::string getId();

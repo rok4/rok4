@@ -37,30 +37,24 @@
 
 #include "LayerXML.h"
 
-LayerXML::LayerXML(std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML )
+#include <libgen.h>
+
+LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* servicesXML ) : DocumentXML ( path )
 {
     ok = false;
 
-    TiXmlDocument doc ( fileName.c_str() );
+    TiXmlDocument doc ( filePath.c_str() );
     if ( !doc.LoadFile() ) {
-        LOGGER_ERROR ( _ ( "Ne peut pas charger le fichier " ) << fileName );
+        LOGGER_ERROR ( _ ( "Ne peut pas charger le fichier " ) << filePath );
         return;
     }
 
-    LOGGER_INFO ( _ ( "     Ajout du layer " ) << fileName );
-    // Relative file Path
-    char * fileNameChar = ( char * ) malloc ( strlen ( fileName.c_str() ) + 1 );
-    strcpy ( fileNameChar, fileName.c_str() );
-    char * parentDirChar = dirname ( fileNameChar );
-    std::string parentDir ( parentDirChar );
-    free ( fileNameChar );
-    fileNameChar=NULL;
-    parentDirChar=NULL;
+    LOGGER_INFO ( _ ( "           Ajout du layer " ) << filePath );
     LOGGER_INFO ( _ ( "           BaseDir Relative to : " ) << parentDir );
 
     /********************** Default values */
 
-    bool inspire = servicesConf->isInspire();
+    bool inspire = servicesXML->isInspire();
 
     title="";
     abstract="";
@@ -89,27 +83,27 @@ LayerXML::LayerXML(std::string fileName, ServerXML* serverXML, ServicesXML* serv
 
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
     if ( !pElem ) {
-        LOGGER_ERROR ( fileName << _ ( " impossible de recuperer la racine." ) );
+        LOGGER_ERROR ( filePath << _ ( " impossible de recuperer la racine." ) );
         return;
     }
     if ( strcmp ( pElem->Value(),"layer" ) ) {
-        LOGGER_ERROR ( fileName << _ ( " La racine n'est pas un layer." ) );
+        LOGGER_ERROR ( filePath << _ ( " La racine n'est pas un layer." ) );
         return;
     }
     hRoot=TiXmlHandle ( pElem );
 
-    unsigned int idBegin=fileName.rfind ( "/" );
+    unsigned int idBegin=filePath.rfind ( "/" );
     if ( idBegin == std::string::npos ) {
         idBegin=0;
     }
-    unsigned int idEnd=fileName.rfind ( ".lay" );
+    unsigned int idEnd=filePath.rfind ( ".lay" );
     if ( idEnd == std::string::npos ) {
-        idEnd=fileName.rfind ( ".LAY" );
+        idEnd=filePath.rfind ( ".LAY" );
         if ( idEnd == std::string::npos ) {
-            idEnd=fileName.size();
+            idEnd=filePath.size();
         }
     }
-    id=fileName.substr ( idBegin+1, idEnd-idBegin-1 );
+    id=filePath.substr ( idBegin+1, idEnd-idBegin-1 );
 
     pElem=hRoot.FirstChild ( "title" ).Element();
     if ( pElem && pElem->GetText() ) title= pElem->GetTextStr();
@@ -169,7 +163,7 @@ LayerXML::LayerXML(std::string fileName, ServerXML* serverXML, ServicesXML* serv
         }else if(getFeatureInfoType.compare("SQL") == 0){
                 // SQL
         }else{
-            LOGGER_ERROR ( fileName << _ ( "La source du GetFeatureInfo n'est pas autorisée." ) );
+            LOGGER_ERROR ( filePath << _ ( "La source du GetFeatureInfo n'est pas autorisée." ) );
             return;
         }
     }
@@ -331,7 +325,7 @@ LayerXML::LayerXML(std::string fileName, ServerXML* serverXML, ServicesXML* serv
         }
     }
 
-    if ( reprojectionCapability==true ) {
+    if ( serverXML->getReprojectionCapability() == true ) {
         for ( pElem=hRoot.FirstChild ( "WMSCRSList" ).FirstChild ( "WMSCRS" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "WMSCRS" ) ) {
             if ( ! ( pElem->GetText() ) ) continue;
             std::string str_crs ( pElem->GetTextStr() );
@@ -344,8 +338,8 @@ LayerXML::LayerXML(std::string fileName, ServerXML* serverXML, ServicesXML* serv
             } else {
                 //Test if already define in Global CRS
 
-                for ( unsigned int k=0; k<servicesConf->getGlobalCRSList()->size(); k++ ) {
-                    if ( crs.cmpRequestCode ( servicesConf->getGlobalCRSList()->at ( k ).getRequestCode() ) ) {
+                for ( unsigned int k=0; k<servicesXML->getGlobalCRSList()->size(); k++ ) {
+                    if ( crs.cmpRequestCode ( servicesXML->getGlobalCRSList()->at ( k ).getRequestCode() ) ) {
                         crsOk = false;
                         LOGGER_INFO ( _ ( "         CRS " ) <<str_crs << _ ( " already present in global CRS list" ) );
                         break;
@@ -365,11 +359,11 @@ LayerXML::LayerXML(std::string fileName, ServerXML* serverXML, ServicesXML* serv
                 if ( crsOk ){
                     bool allowedCRS = true;
                     std::vector<CRS> tmpEquilist;
-                    if (servicesConf->getAddEqualsCRS()){
-                        tmpEquilist = getEqualsCRS(servicesConf->getListOfEqualsCRS(), str_crs );
+                    if (servicesXML->getAddEqualsCRS()){
+                        tmpEquilist = ConfLoader::getEqualsCRS(servicesXML->getListOfEqualsCRS(), str_crs );
                     }
-                    if ( servicesConf->getDoWeRestrictCRSList() ){
-                        allowedCRS = isCRSAllowed(servicesConf->getRestrictedCRSList(), str_crs, tmpEquilist);
+                    if ( servicesXML->getDoWeRestrictCRSList() ){
+                        allowedCRS = ConfLoader::isCRSAllowed(servicesXML->getRestrictedCRSList(), str_crs, tmpEquilist);
                     }
                     if (!allowedCRS){
                         LOGGER_WARN ( _ ( "         Forbiden CRS " ) << str_crs  );
@@ -391,7 +385,7 @@ LayerXML::LayerXML(std::string fileName, ServerXML* serverXML, ServicesXML* serv
                     } else {
                         LOGGER_WARN ( _ ( "         Already present CRS " ) << str_crs  );
                     }
-                    std::vector<CRS> tmpEquilist = getEqualsCRS(servicesConf->getListOfEqualsCRS() , str_crs );
+                    std::vector<CRS> tmpEquilist = ConfLoader::getEqualsCRS(servicesXML->getListOfEqualsCRS() , str_crs );
                     for (unsigned int l = 0; l< tmpEquilist.size();l++){
                         found = false;
                         for ( int i = 0; i<WMSCRSList.size() ; i++ ){
@@ -413,7 +407,7 @@ LayerXML::LayerXML(std::string fileName, ServerXML* serverXML, ServicesXML* serv
     }
 
     if ( WMSCRSList.size() ==0 ) {
-        LOGGER_INFO ( fileName <<_ ( ": Aucun CRS specifique autorise pour la couche" ) );
+        LOGGER_INFO ( filePath <<_ ( ": Aucun CRS specifique autorise pour la couche" ) );
     }
 
     //DEPRECATED
@@ -466,7 +460,7 @@ LayerXML::LayerXML(std::string fileName, ServerXML* serverXML, ServicesXML* serv
         }
     } else {
         // FIXME: pas forcement critique si on a un cache d'une autre nature (jpeg2000 par exemple).
-        LOGGER_ERROR ( _ ( "Aucune pyramide associee au layer " ) << fileName );
+        LOGGER_ERROR ( _ ( "Aucune pyramide associee au layer " ) << filePath );
         return;
     }
 
@@ -477,20 +471,20 @@ LayerXML::LayerXML(std::string fileName, ServerXML* serverXML, ServicesXML* serv
         std::string type;
 
         if ( pElem->QueryStringAttribute ( "type",&type ) != TIXML_SUCCESS ) {
-            LOGGER_ERROR ( fileName << _ ( "MetadataURL type missing" ) );
+            LOGGER_ERROR ( filePath << _ ( "MetadataURL type missing" ) );
             continue;
         }
 
         TiXmlHandle hMetadata ( pElem );
         TiXmlElement *pElemMTD = hMetadata.FirstChild ( "Format" ).Element();
         if ( !pElemMTD || !pElemMTD->GetText() ) {
-            LOGGER_ERROR ( fileName << _ ( "MetadataURL Format missing" ) );
+            LOGGER_ERROR ( filePath << _ ( "MetadataURL Format missing" ) );
             continue;
         }
         format = pElemMTD->GetText();
         pElemMTD = hMetadata.FirstChild ( "OnlineResource" ).Element();
         if ( !pElemMTD || pElemMTD->QueryStringAttribute ( "xlink:href",&href ) != TIXML_SUCCESS ) {
-            LOGGER_ERROR ( fileName << _ ( "MetadataURL HRef missing" ) );
+            LOGGER_ERROR ( filePath << _ ( "MetadataURL HRef missing" ) );
             continue;
         }
 
@@ -498,7 +492,7 @@ LayerXML::LayerXML(std::string fileName, ServerXML* serverXML, ServicesXML* serv
     }
 
     if ( metadataURLs.size() == 0 && inspire ) {
-        LOGGER_ERROR ( _ ( "No MetadataURL found in the layer " ) << fileName <<_ ( " : not compatible with INSPIRE!!" ) );
+        LOGGER_ERROR ( _ ( "No MetadataURL found in the layer " ) << filePath <<_ ( " : not compatible with INSPIRE!!" ) );
         return;
     }
 
@@ -506,7 +500,7 @@ LayerXML::LayerXML(std::string fileName, ServerXML* serverXML, ServicesXML* serv
 }
 
 
-~LayerXML::LayerXML(){ }
+LayerXML::~LayerXML(){ }
 
 std::string LayerXML::getId() { return id; }
 

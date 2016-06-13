@@ -35,6 +35,8 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+class LayerXML;
+
 #ifndef LAYERXML_H
 #define LAYERXML_H
 
@@ -47,11 +49,14 @@
 #include "Pyramid.h"
 #include "ServicesXML.h"
 #include "ServerXML.h"
+#include "BoundingBox.h"
+#include "MetadataURL.h"
+#include "DocumentXML.h"
 
 #include "config.h"
 #include "intl.h"
 
-class LayerXML
+class LayerXML : public DocumentXML
 {
     friend class Layer;
 

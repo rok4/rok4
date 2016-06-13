@@ -57,69 +57,7 @@ class Layer;
 #include "MetadataURL.h"
 #include "Interpolation.h"
 #include "Keyword.h"
-
-/**
- * \~french \brief Structure de stockage d'une emprise géographique
- * \~english \brief Storage structure for a geographic bounding box
- */
-struct GeographicBoundingBoxWMS {
-public:
-    /**
-     * \~french \brief minx abscisse du coin inférieur gauche de l'emprise
-     * \~english \brief minx x-coordinate of the bottom left corner of the boundingBox
-     */
-    double minx;
-    /**
-     * \~french \brief miny ordonnée du coin inférieur gauche de l'emprise
-     * \~english \brief miny y-coordinate of the bottom left corner of the boundingBox
-     */
-    double miny;
-    /**
-     * \~french \brief maxx abscisse du coin supérieur droit de l'emprise
-     * \~english \brief maxx x-coordinate of the top right corner of the boundingBox
-     */
-    double maxx;
-    /**
-     * \~french \brief maxy ordonnée du coin supérieur droit de l'emprise
-     * \~english \brief maxy y-coordinate of the top right corner of the boundingBox
-     */
-    double maxy;
-    GeographicBoundingBoxWMS();
-};
-
-/**
- * \~french \brief Structure de stockage d'une emprise
- * \~english \brief Storage structure for a bounding box
- */
-struct BoundingBoxWMS {
-public:
-    /**
-     * \~french \brief Code du CRS tel qu'il est ecrit dans la requete WMS
-     * \~english \brief CRS identifier from the WMS request
-     */
-    std::string srs;
-    /**
-     * \~french \brief minx abscisse du coin inférieur gauche de l'emprise
-     * \~english \brief minx x-coordinate of the bottom left corner of the boundingBox
-     */
-    double minx;
-    /**
-     * \~french \brief miny ordonnée du coin inférieur gauche de l'emprise
-     * \~english \brief miny y-coordinate of the bottom left corner of the boundingBox
-     */
-    double miny;
-    /**
-     * \~french \brief maxx abscisse du coin supérieur droit de l'emprise
-     * \~english \brief maxx x-coordinate of the top right corner of the boundingBox
-     */
-    double maxx;
-    /**
-     * \~french \brief maxy ordonnée du coin supérieur droit de l'emprise
-     * \~english \brief maxy y-coordinate of the top right corner of the boundingBox
-     */
-    double maxy;
-    BoundingBoxWMS();
-};
+#include "BoundingBox.h"
 
 #include "LayerXML.h"
 

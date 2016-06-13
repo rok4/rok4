@@ -39,34 +39,26 @@
 
 #include <tinyxml.h>
 #include <tinystr.h>
+#include <libgen.h>
 
 #include "TileMatrixXML.h"
 
-PyramidXML::PyramidXML(std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML, bool times)
+PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* servicesXML, bool times) : DocumentXML (path)
 {
     ok = false;
 
-    TiXmlDocument doc ( fileName.c_str() );
+    TiXmlDocument doc ( filePath.c_str() );
     if ( !doc.LoadFile() ) {
-        LOGGER_ERROR ( _ ( "Ne peut pas charger le fichier " ) << fileName );
+        LOGGER_ERROR ( _ ( "Ne peut pas charger le fichier " ) << filePath );
         return;
     }
 
-    LOGGER_INFO ( _ ( "             Ajout de la pyramide : " ) << fileName );
-
-    char * fileNameChar = ( char * ) malloc ( strlen ( fileName.c_str() ) + 1 );
-    strcpy ( fileNameChar, fileName.c_str() );
-    char * parentDirChar = dirname ( fileNameChar );
-    std::string parentDir ( parentDirChar );
-    free ( fileNameChar );
-    fileNameChar=NULL;
-    parentDirChar=NULL;
+    LOGGER_INFO ( _ ( "           Ajout de la pyramide : " ) << filePath );
     LOGGER_INFO ( _ ( "           BaseDir Relative to : " ) << parentDir );
 
 
     /********************** Default values */
 
-    formatStr="";
     allowWMS = true;
     isBasedPyramid = ! times;
     containOdLevels = false;
@@ -79,11 +71,11 @@ PyramidXML::PyramidXML(std::string fileName, ServerXML* serverXML, ServicesXML* 
 
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
     if ( !pElem ) {
-        LOGGER_ERROR ( fileName << _ ( " impossible de recuperer la racine." ) );
+        LOGGER_ERROR ( filePath << _ ( " impossible de recuperer la racine." ) );
         return;
     }
     if ( strcmp ( pElem->Value(),"Pyramid" ) ) {
-        LOGGER_ERROR ( fileName << _ ( " La racine n'est pas une Pyramid." ) );
+        LOGGER_ERROR ( filePath << _ ( " La racine n'est pas une Pyramid." ) );
         return;
     }
     hRoot=TiXmlHandle ( pElem );
@@ -92,14 +84,14 @@ PyramidXML::PyramidXML(std::string fileName, ServerXML* serverXML, ServicesXML* 
     //----TMS
     pElem=hRoot.FirstChild ( "tileMatrixSet" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
-        LOGGER_ERROR ( _ ( "La pyramide [" ) << fileName <<_ ( "] n'a pas de TMS. C'est un probleme." ) );
+        LOGGER_ERROR ( _ ( "La pyramide [" ) << filePath <<_ ( "] n'a pas de TMS. C'est un probleme." ) );
         return;
     }
     std::string tmsName= pElem->GetTextStr();
 
     TileMatrixSet * tms = serverXML->getTMS(tmsName);
     if ( tms == NULL ) {
-        LOGGER_ERROR ( _ ( "La pyramide [" ) << fileName <<_ ( "] reference un TMS [" ) << tmsName <<_ ( "] qui n'existe pas." ) );
+        LOGGER_ERROR ( _ ( "La pyramide [" ) << filePath <<_ ( "] reference un TMS [" ) << tmsName <<_ ( "] qui n'existe pas." ) );
         return;
     }
     //----
@@ -107,7 +99,7 @@ PyramidXML::PyramidXML(std::string fileName, ServerXML* serverXML, ServicesXML* 
     //----FORMAT
     pElem=hRoot.FirstChild ( "format" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
-        LOGGER_ERROR ( _ ( "La pyramide [" ) << fileName <<_ ( "] n'a pas de format." ) );
+        LOGGER_ERROR ( _ ( "La pyramide [" ) << filePath <<_ ( "] n'a pas de format." ) );
         return;
     }
     std::string formatStr= pElem->GetTextStr();
@@ -118,7 +110,7 @@ PyramidXML::PyramidXML(std::string fileName, ServerXML* serverXML, ServicesXML* 
 
     format = Rok4Format::fromString ( formatStr );
     if ( ! ( format ) ) {
-        LOGGER_ERROR ( fileName << _ ( "Le format [" ) << formatStr <<_ ( "] n'est pas gere." ) );
+        LOGGER_ERROR ( filePath << _ ( "Le format [" ) << formatStr <<_ ( "] n'est pas gere." ) );
         return;
     }
     //----
@@ -126,14 +118,14 @@ PyramidXML::PyramidXML(std::string fileName, ServerXML* serverXML, ServicesXML* 
     //----PHOTOMETRIE
     pElem=hRoot.FirstChild ( "photometric" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
-        LOGGER_ERROR ( "La pyramide [" << fileName << "] n'a pas de photométrie." ) );
+        LOGGER_ERROR ( "La pyramide [" << filePath << "] n'a pas de photométrie." );
         return;
     }
     std::string photometricStr = pElem->GetTextStr();
 
     photo = Photometric::fromString ( photometricStr );
     if ( ! ( photo ) ) {
-        LOGGER_ERROR ( fileName << "La photométrie [" << photometricStr << "] n'est pas gere." );
+        LOGGER_ERROR ( filePath << "La photométrie [" << photometricStr << "] n'est pas gere." );
         return;
     }
     //----
@@ -142,11 +134,11 @@ PyramidXML::PyramidXML(std::string fileName, ServerXML* serverXML, ServicesXML* 
     //----CHANNELS
     pElem=hRoot.FirstChild ( "channels" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
-        LOGGER_ERROR ( _ ( "La pyramide [" ) << fileName <<_ ( "] Pas de channels => channels = " ) << DEFAULT_CHANNELS );
+        LOGGER_ERROR ( _ ( "La pyramide [" ) << filePath <<_ ( "] Pas de channels => channels = " ) << DEFAULT_CHANNELS );
         channels = DEFAULT_CHANNELS;
         return;
     } else if ( !sscanf ( pElem->GetText(),"%d",&channels ) ) {
-        LOGGER_ERROR ( _ ( "La pyramide [" ) << fileName <<_ ( "] : channels=[" ) << pElem->GetTextStr() <<_ ( "] is not an integer." ) );
+        LOGGER_ERROR ( _ ( "La pyramide [" ) << filePath <<_ ( "] : channels=[" ) << pElem->GetTextStr() <<_ ( "] is not an integer." ) );
         return;
     }
     //----
@@ -193,21 +185,28 @@ PyramidXML::PyramidXML(std::string fileName, ServerXML* serverXML, ServicesXML* 
 
 
     for ( pElem=hRoot.FirstChild ( "level" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "level" ) ) {
-        LevelXML levXML(pElem, fileName, parentDir, serverXML, tms, times);
-        if (! levXML.isOk()) {
+        LevelXML* levXML = new LevelXML(pElem, filePath, serverXML, servicesXML, this, times);
+        if (! levXML->isOk()) {
             return;
         }
 
-        if (levXML.isOnDemand() || isOnFly()) containOdLevels = true;
+        //on va vérifier que le level qu'on vient de charger n'a pas déjà été chargé
+        std::map<std::string, Level*>::iterator it= levels.find ( levXML->getId() );
+        if ( it != levels.end() ) {
+            LOGGER_ERROR ( _ ( "Level: " ) << levXML->getId() << _ ( " has already been loaded" ) );
+            return ;
+        }
 
-        std::string lId = levXML.getId();
+        if (levXML->isOnDemand() || levXML->isOnFly()) containOdLevels = true;
+
+        std::string lId = levXML->getId();
         Level* levObj = new Level(levXML, this);
         levels.insert ( std::pair<std::string, Level*> ( lId, levObj ) );
 
     } //if level
 
     if ( levels.size() == 0 ) {
-        LOGGER_ERROR ( _ ( "Aucun level n'a pu etre charge pour la pyramide " ) << fileName );
+        LOGGER_ERROR ( _ ( "Aucun level n'a pu etre charge pour la pyramide " ) << filePath );
         return;
     }
 
@@ -218,4 +217,5 @@ PyramidXML::~PyramidXML(){ }
 
 bool PyramidXML::isOk() { return ok; }
 int PyramidXML::getChannels() { return channels; }
+TileMatrixSet* PyramidXML::getTMS() { return tms; }
 Rok4Format::eformat_data PyramidXML::getFormat() {return format; }

@@ -50,6 +50,7 @@
 #include "TiffEncoder.h"
 #include "TiffHeaderDataSource.h"
 #include "Palette.h"
+#include "Style.h"
 #include <cstdlib>
 #include "PNGEncoder.h"
 #include "Decoder.h"

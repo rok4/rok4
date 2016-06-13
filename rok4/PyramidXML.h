@@ -47,27 +47,28 @@ class PyramidXML;
 #include "CRS.h"
 #include "TileMatrix.h"
 #include "ServicesXML.h"
+#include "DocumentXML.h"
 #include "ServerXML.h"
-#include "Pyramid.h"
 #include "Format.h"
 #include "Level.h"
 
 #include "config.h"
 #include "intl.h"
 
-class PyramidXML
+class PyramidXML : public DocumentXML
 {
 
     friend class Pyramid;
 
     public:
 
-        PyramidXML(std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML, bool times);
+        PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* servicesXML, bool times);
         ~PyramidXML();
 
         bool isOk() ;
 
         int getChannels() ;
+        TileMatrixSet* getTMS() ;
         Rok4Format::eformat_data getFormat() ;
 
     protected:

@@ -36,13 +36,9 @@
  */
 
 #include "TileMatrixSetXML.h"
-
-#include <tinyxml.h>
-#include <tinystr.h>
-
 #include "TileMatrixXML.h"
 
-TileMatrixSetXML::TileMatrixSetXML(std::string filePath )
+TileMatrixSetXML::TileMatrixSetXML(std::string path ) : DocumentXML(path)
 {
     ok = false;
 
@@ -121,7 +117,7 @@ TileMatrixSetXML::TileMatrixSetXML(std::string filePath )
 
 
     for ( pElem=hRoot.FirstChild ( "tileMatrix" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "tileMatrix" ) ) {
-        TileMatrixXML tmXML(id, pElem);
+        TileMatrixXML tmXML(id, filePath, pElem);
         if (! tmXML.isOk()) {
             return;
         }
@@ -139,7 +135,7 @@ TileMatrixSetXML::TileMatrixSetXML(std::string filePath )
     ok = true;
 }
 
-~TileMatrixSetXML::TileMatrixSetXML(){ }
+TileMatrixSetXML::~TileMatrixSetXML(){ }
 
 std::string TileMatrixSetXML::getId() { return id; }
 

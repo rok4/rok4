@@ -68,7 +68,8 @@
 //        Il faudra la changer lorsqu'on aura des images non 8bits.
 
 
-Level::Level ( LevelXML* l, PyramidXML* p ) { tm = l->tm;
+Level::Level ( LevelXML* l, PyramidXML* p ) {
+    tm = l->tm;
     channels = p->getChannels();
     baseDir = l->baseDir;
     sSources = l->sSources;
@@ -87,6 +88,7 @@ Level::Level ( LevelXML* l, PyramidXML* p ) { tm = l->tm;
     noDataSource = NULL;
     context = l->context;
     prefix = l->prefix;
+
 
     StoreDataSourceFactory SDSF;
     noDataTileSource = SDSF.createStoreDataSource (

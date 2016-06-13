@@ -37,8 +37,11 @@
 
 #include "LevelXML.h"
 
+#include "FileContext.h"
+#include "CephPoolContext.h"
+#include "SwiftContext.h"
 
-LevelXML::LevelXML( TiXmlElement* levelElement, std::string fileName, std::string parentDir, ServerXML* serverXML, TileMatrixSet* tms, bool times)
+LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* serverXML, ServicesXML* servicesXML, PyramidXML* pyr, bool times) : DocumentXML(path)
 {
     ok = false;
 
@@ -58,44 +61,35 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string fileName, std::strin
 
     //----TM
     TiXmlHandle hLvl ( levelElement );
-    TiXmlElement* pElemLvl = hLvl.FirstChild ( "tileMatrix" ).Element();
-    if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
-        LOGGER_ERROR ( fileName <<_ ( " level " ) <<_ ( "id" ) <<_ ( " sans tileMatrix!!" ) );
+    TiXmlElement* pElem = hLvl.FirstChild ( "tileMatrix" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        LOGGER_ERROR ( filePath <<_ ( " level " ) <<_ ( "id" ) <<_ ( " sans tileMatrix!!" ) );
         return;
     }
-    std::string tmName ( pElemLvl->GetText() );
-    id ( tmName );
-    //on va vérifier que le level qu'on veut charger n'a pas déjà été chargé
-    if (levels.size() != 0) {
-        for (std::map<std::string, Level *>::iterator lv = levels.begin(); lv != levels.end(); lv++) {
-            if (lv->second->getId() == id) {
-                LOGGER_ERROR ( _ ( "Level: " ) << id << _ ( " has already been loaded" ) );
-                return ;
-            }
-        }
-    }
+    std::string id ( pElem->GetText() );
 
-    tm = tms->getTm(tmName);
+    TileMatrixSet* tms = pyr->getTMS();
+    tm = tms->getTm(id);
     if ( tm == NULL ) {
-        LOGGER_ERROR ( fileName <<_ ( " Le level " ) << id <<_ ( " ref. Le TM [" ) << tmName << _ ( "] qui n'appartient pas au TMS [" ) << tmsName << "]" );
+        LOGGER_ERROR ( filePath <<_ ( " Le level " ) << id <<_ ( " ref. Le TM [" ) << id << _ ( "] qui n'appartient pas au TMS [" ) << tms->getId() << "]" );
         return;
     }
 
-    TiXmlElement* pElemLvl = hLvl.FirstChild ( "onFly" ).Element();
-    if ( pElemLvl && pElemLvl->GetText() ) {
+    pElem = hLvl.FirstChild ( "onFly" ).Element();
+    if ( pElem && pElem->GetText() ) {
         onFly = true;
     }
 
-    pElemLvl = hLvl.FirstChild ( "onDemand" ).Element();
-    if ( pElemLvl && pElemLvl->GetText() ) {
+    pElem = hLvl.FirstChild ( "onDemand" ).Element();
+    if ( pElem && pElem->GetText() ) {
         onDemand = true;
     }
 
-    pElemLvl = hLvl.FirstChild ( "baseDir" ).Element();
+    pElem = hLvl.FirstChild ( "baseDir" ).Element();
 
-    if ( pElemLvl && pElemLvl->GetText()) {
+    if ( pElem && pElem->GetText()) {
 
-        baseDir = pElemLvl->GetText() ;
+        baseDir = pElem->GetText() ;
         //Relative Path
         if ( baseDir.compare ( 0,2,"./" ) == 0 ) {
             baseDir.replace ( 0,1,parentDir );
@@ -104,14 +98,14 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string fileName, std::strin
             baseDir.insert ( 0, parentDir );
         }
 
-        pElemLvl = hLvl.FirstChild ( "pathDepth" ).Element();
-        if ( ! pElemLvl || ! ( pElemLvl->GetText() ) ) {
-            LOGGER_ERROR ( fileName << " Level " << id << ": Pas de pathDepth alors que baseDir!!" );
+        pElem = hLvl.FirstChild ( "pathDepth" ).Element();
+        if ( ! pElem || ! ( pElem->GetText() ) ) {
+            LOGGER_ERROR ( filePath << " Level " << id << ": Pas de pathDepth alors que baseDir!!" );
             return;
         }
 
-        if ( !sscanf ( pElemLvl->GetText(),"%d",&pathDepth ) ) {
-            LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": pathDepth=[" ) << pElemLvl->GetText() <<_ ( "] is not an integer." ) );
+        if ( !sscanf ( pElem->GetText(),"%d",&pathDepth ) ) {
+            LOGGER_ERROR ( filePath <<_ ( " Level " ) << id <<_ ( ": pathDepth=[" ) << pElem->GetText() <<_ ( "] is not an integer." ) );
             return;
         }
 
@@ -160,7 +154,7 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string fileName, std::strin
 
             if (pElemSP->ValueStr() == "webService") {
 
-                WebService* ws = ConfLoader::parseWebService(pElemSP,tms->getCrs(),format, proxy);
+                WebService* ws = ConfLoader::parseWebService(pElemSP,tms->getCrs(),pyr->getFormat(), serverXML->getProxy());
                 if (ws == NULL) {
                     LOGGER_ERROR("Impossible de charger le WebService indique");
                     return;
@@ -185,14 +179,12 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string fileName, std::strin
         // Je suis sur une pyramide normale, et je n'ai a priori pas de base dir donc de stockage fichier
         // Il me faut un stockage objet
 
-        pElemLvl = hLvl.FirstChild ( "cephContext" ).Element();
-        if ( pElemLvl ) {
+        pElem = hLvl.FirstChild ( "cephContext" ).Element();
+        if ( pElem ) {
 
             std::string poolName;
 
-            TiXmlElement* pElemCephContext;
-
-            pElemCephContext = pElemLvl.FirstChild ( "poolName" ).Element();
+            TiXmlElement* pElemCephContext = pElem->FirstChildElement("poolName");
 
             if ( ! pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
                 LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un poolName" );
@@ -208,49 +200,48 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string fileName, std::strin
                 return;
             }
 
-            pElemLvl = hLvl.FirstChild ( "imagePrefix" ).Element();
-            if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
+            pElem = hLvl.FirstChild ( "imagePrefix" ).Element();
+            if ( !pElem || ! ( pElem->GetText() ) ) {
                 LOGGER_ERROR ( "imagePrefix absent pour le level " << id << " qui est stocke sur du Ceph");
                 return;
             }
-            prefix = pElemLvl->GetText() ;
+            prefix = pElem->GetText() ;
         }
 
         if (context == NULL) {
             // Je n'ai toujours pas de stockage, il me faut du swift
 
-            pElemLvl = hLvl.FirstChild ( "swiftContext" ).Element();
-            if ( pElemLvl ) {
+            pElem = hLvl.FirstChild ( "swiftContext" ).Element();
+            if ( pElem ) {
 
-            std::string container;
+                std::string container;
 
-            TiXmlElement* pElemSwiftContext;
+                TiXmlElement* pElemSwiftContext = pElem->FirstChildElement ( "container" );
+                if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
+                    LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un container" );
+                    return;
+                } else {
+                    container = pElemSwiftContext->GetText();
+                }
 
-            pElemSwiftContext = pElemLvl.FirstChild ( "container" ).Element();
-            if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
-                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un container" );
-                return;
+                if (serverXML->getSwiftContextBook() != NULL) {
+                    context = serverXML->getSwiftContextBook()->addContext(container);
+                } else {
+                    LOGGER_ERROR ( "L'utilisation d'un cephContext necessite de preciser les informations de connexions dans le server.conf");
+                    return;
+                }
+
+                pElem = hLvl.FirstChild ( "imagePrefix" ).Element();
+                if ( !pElem || ! ( pElem->GetText() ) ) {
+                    LOGGER_ERROR ( "imagePrefix absent pour le level " << id << " qui est stocke sur du Swift");
+                    return;
+                }
+                prefix = pElem->GetText() ;
+
             } else {
-                container = pElemSwiftContext->GetText();
-            }
-
-            if (serverXML->getSwiftContextBook() != NULL) {
-                context = serverXML->getSwiftContextBook()->addContext(container);
-            } else {
-                LOGGER_ERROR ( "L'utilisation d'un cephContext necessite de preciser les informations de connexions dans le server.conf");
+                LOGGER_ERROR("Level " << id << " sans indication de stockage et pas à la demande. Precisez un baseDir ou un cephContext ou un swiftContext");
                 return;
             }
-
-            pElemLvl = hLvl.FirstChild ( "imagePrefix" ).Element();
-            if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
-                LOGGER_ERROR ( "imagePrefix absent pour le level " << id << " qui est stocke sur du Swift");
-                return;
-            }
-            prefix = pElemLvl->GetText() ;
-
-        } else {
-            LOGGER_ERROR("Level " << id << " sans indication de stockage et pas à la demande. Precisez un baseDir ou un cephContext ou un swiftContext");
-            return;
         }
 
     }
@@ -258,32 +249,32 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string fileName, std::strin
 
     //----TILEPERWIDTH
 
-    pElemLvl = hLvl.FirstChild ( "tilesPerWidth" ).Element();
-    if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
-        LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": Pas de tilesPerWidth !!" ) );
+    pElem = hLvl.FirstChild ( "tilesPerWidth" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        LOGGER_ERROR ( filePath <<_ ( " Level " ) << id << _ ( ": Pas de tilesPerWidth !!" ) );
         return;
     }
-    if ( !sscanf ( pElemLvl->GetText(),"%d",&tilesPerWidth ) ) {
-        LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": tilesPerWidth=[" ) << pElemLvl->GetText() <<_ ( "] is not an integer." ) );
+    if ( !sscanf ( pElem->GetText(),"%d",&tilesPerWidth ) ) {
+        LOGGER_ERROR ( filePath <<_ ( " Level " ) << id <<_ ( ": tilesPerWidth=[" ) << pElem->GetText() <<_ ( "] is not an integer." ) );
         return;
     }
     //----
 
     //----TILEPERHEIGHT
-    pElemLvl = hLvl.FirstChild ( "tilesPerHeight" ).Element();
-    if ( !pElemLvl || ! ( pElemLvl->GetText() ) ) {
-        LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": Pas de tilesPerHeight !!" ) );
+    pElem = hLvl.FirstChild ( "tilesPerHeight" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        LOGGER_ERROR ( filePath <<_ ( " Level " ) << id << _ ( ": Pas de tilesPerHeight !!" ) );
         return;
     }
-    if ( !sscanf ( pElemLvl->GetText(),"%d",&tilesPerHeight ) ) {
-        LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": tilesPerHeight=[" ) << pElemLvl->GetText() <<_ ( "] is not an integer." ) );
+    if ( !sscanf ( pElem->GetText(),"%d",&tilesPerHeight ) ) {
+        LOGGER_ERROR ( filePath <<_ ( " Level " ) << id <<_ ( ": tilesPerHeight=[" ) << pElem->GetText() <<_ ( "] is not an integer." ) );
         return;
     }
 
     //----TMSLIMITS
     TiXmlElement *pElemLvlTMS =hLvl.FirstChild ( "TMSLimits" ).Element();
     if ( ! pElemLvlTMS ) {
-        LOGGER_ERROR ( fileName << " Level " << id << ": TMSLimits have to be present." );
+        LOGGER_ERROR ( filePath << " Level " << id << ": TMSLimits have to be present." );
         return;
     }
 
@@ -291,30 +282,30 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string fileName, std::strin
     TiXmlElement* pElemTMSL = hTMSL.FirstChild ( "minTileRow" ).Element();
     long int intBuff = -1;
     if ( !pElemTMSL ) {
-        LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": no minTileRow in TMSLimits element !!" ) );
+        LOGGER_ERROR ( filePath <<_ ( " Level " ) << id << _ ( ": no minTileRow in TMSLimits element !!" ) );
         return;
     }
     if ( !pElemTMSL->GetText() ) {
-        LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": minTileRow is empty !!" ) );
+        LOGGER_ERROR ( filePath <<_ ( " Level " ) << id << _ ( ": minTileRow is empty !!" ) );
         return;
     }
     if ( !sscanf ( pElemTMSL->GetText(),"%ld",&intBuff ) ) {
-        LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": minTileRow=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) );
+        LOGGER_ERROR ( filePath <<_ ( " Level " ) << id <<_ ( ": minTileRow=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) );
         return;
     }
     minTileRow = intBuff;
     intBuff = -1;
     pElemTMSL = hTMSL.FirstChild ( "maxTileRow" ).Element();
     if ( !pElemTMSL ) {
-        LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": no maxTileRow in TMSLimits element !!" ) );
+        LOGGER_ERROR ( filePath <<_ ( " Level " ) << id << _ ( ": no maxTileRow in TMSLimits element !!" ) );
         return;
     }
     if ( !pElemTMSL->GetText() ) {
-        LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": maxTileRow is empty !!" ) );
+        LOGGER_ERROR ( filePath <<_ ( " Level " ) << id <<_ ( ": maxTileRow is empty !!" ) );
         return;
     }
     if ( !sscanf ( pElemTMSL->GetText(),"%ld",&intBuff ) ) {
-        LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": maxTileRow=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) );
+        LOGGER_ERROR ( filePath <<_ ( " Level " ) << id <<_ ( ": maxTileRow=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) );
         return;
     }
     maxTileRow = intBuff;
@@ -325,27 +316,27 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string fileName, std::strin
         return;
     }
     if ( !pElemTMSL->GetText() ) {
-        LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": minTileCol is empty !!" ) );
+        LOGGER_ERROR ( filePath <<_ ( " Level " ) << id << _ ( ": minTileCol is empty !!" ) );
         return;
     }
 
     if ( !sscanf ( pElemTMSL->GetText(),"%ld",&intBuff ) ) {
-        LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": minTileCol=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) );
+        LOGGER_ERROR ( filePath <<_ ( " Level " ) << id <<_ ( ": minTileCol=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) );
         return;
     }
     minTileCol = intBuff;
     intBuff = -1;
     pElemTMSL = hTMSL.FirstChild ( "maxTileCol" ).Element();
     if ( !pElemTMSL ) {
-        LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": no maxTileCol in TMSLimits element !!" ) );
+        LOGGER_ERROR ( filePath <<_ ( " Level " ) << id << _ ( ": no maxTileCol in TMSLimits element !!" ) );
         return;
     }
     if ( !pElemTMSL->GetText() ) {
-        LOGGER_ERROR ( fileName <<_ ( " Level " ) << id << _ ( ": maxTileCol is empty !!" ) );
+        LOGGER_ERROR ( filePath <<_ ( " Level " ) << id << _ ( ": maxTileCol is empty !!" ) );
         return;
     }
     if ( !sscanf ( pElemTMSL->GetText(),"%ld",&intBuff ) ) {
-        LOGGER_ERROR ( fileName <<_ ( " Level " ) << id <<_ ( ": maxTileCol=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) );
+        LOGGER_ERROR ( filePath <<_ ( " Level " ) << id <<_ ( ": maxTileCol=[" ) << pElemTMSL->GetText() <<_ ( "] is not an integer." ) );
         return;
     }
     maxTileCol = intBuff;
@@ -369,7 +360,7 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string fileName, std::strin
         }
 
         if (onFly) {
-            TiXmlElement* pElemNoDataPath = pElemNoData.FirstChild ( "filePath" ).Element();
+            TiXmlElement* pElemNoDataPath = pElemNoData->FirstChildElement ( "filePath" );
             if (! pElemNoDataPath || ! pElemNoDataPath->GetText()) {
                 LOGGER_ERROR ( "Level " << id << " : nodata.filePath have to be present if onFly pyramid");
                 return;
@@ -383,7 +374,7 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string fileName, std::strin
             }
         }
         else if (context->getType() == FILECONTEXT) {
-            TiXmlElement* pElemNoDataPath = pElemNoData.FirstChild ( "filePath" ).Element();
+            TiXmlElement* pElemNoDataPath = pElemNoData->FirstChildElement ( "filePath" );
             if (! pElemNoDataPath || ! pElemNoDataPath->GetText()) {
                 LOGGER_ERROR ( "Level " << id << " : nodata.filePath have to be present if regular FileSystem pyramid");
                 return;
@@ -397,12 +388,12 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string fileName, std::strin
             }
 
             if (! context->exists(noDataFilePath)) {
-                LOGGER_ERROR(fileName <<_ ( " Level " ) << id <<_ ( " specifiant une tuile NoData impossible a ouvrir" ));
+                LOGGER_ERROR(filePath <<_ ( " Level " ) << id <<_ ( " specifiant une tuile NoData impossible a ouvrir" ));
                 return;
             }
         }
         else {
-            TiXmlElement* pElemNoDataName = pElemNoData.FirstChild ( "objectName" ).Element();
+            TiXmlElement* pElemNoDataName = pElemNoData->FirstChildElement ( "objectName" );
             if (! pElemNoDataName || ! pElemNoDataName->GetText()) {
                 LOGGER_ERROR ( "Level " << id << " : nodata.objectName have to be present if regular ObjectStorage pyramid");
                 return;
@@ -410,7 +401,7 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string fileName, std::strin
             noDataObjectName = pElemNoDataName->GetText();
 
             if (! context->exists(noDataObjectName)) {
-                LOGGER_ERROR(fileName <<_ ( " Level " ) << id <<_ ( " specifiant une tuile NoData (objet) impossible a ouvrir" ));
+                LOGGER_ERROR(filePath <<_ ( " Level " ) << id <<_ ( " specifiant une tuile NoData (objet) impossible a ouvrir" ));
                 return;
             }
         }
@@ -420,7 +411,7 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string fileName, std::strin
     ok = true;
 }
 
-~LevelXML::LevelXML(){ }
+LevelXML::~LevelXML(){ }
 
 std::string LevelXML::getId() { return id; }
 bool LevelXML::isOnDemand() { return onDemand; }

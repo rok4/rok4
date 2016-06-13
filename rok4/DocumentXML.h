@@ -35,48 +35,41 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-class TileMatrixSetXML;
 
-#ifndef TMSXML_H
-#define TMSXML_H
+#ifndef DOCUMENTXML_H
+#define DOCUMENTXML_H
 
-#include <vector>
 #include <string>
+#include <libgen.h>
+#include <tinyxml.h>
+#include <tinystr.h>
 
-#include "Keyword.h"
-#include "CRS.h"
-#include "DocumentXML.h"
-#include "TileMatrix.h"
-#include "TileMatrixSet.h"
-
-#include "config.h"
-#include "intl.h"
-
-class TileMatrixSetXML : public DocumentXML
+class DocumentXML
 {
-
-    friend class TileMatrixSet;
-
+    
     public:
+        DocumentXML(std::string path) {
+            filePath = path;
 
-        TileMatrixSetXML(std::string path);
-        ~TileMatrixSetXML();
+            char * fileNameChar = ( char * ) malloc ( strlen ( filePath.c_str() ) + 1 );
+            strcpy ( fileNameChar, filePath.c_str() );
+            char * parentDirChar = dirname ( fileNameChar );
+            std::string parentDir ( parentDirChar );
+            free ( fileNameChar );
+            fileNameChar=NULL;
+            parentDirChar=NULL;
+        }
 
-        std::string getId() ;
-
-        bool isOk();
-
+        ~DocumentXML() {}
+        
     protected:
-        std::string id;
-        std::string title;
-        CRS crs;
-        std::string abstract;
-        std::vector<Keyword> keyWords;
-        std::map<std::string, TileMatrix> listTM;
+
+        std::string filePath;
+        std::string parentDir;
 
     private:
-        bool ok;
+
 };
 
-#endif // TMSXML_H
+#endif // DOCUMENTXML_H
 

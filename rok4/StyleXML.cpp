@@ -35,20 +35,20 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#include "StylesXML.h"
+#include "StyleXML.h"
 
 
-StylesXML::StylesXML(std::string styleFilepath, ServicesXML* servicesXML)
+StyleXML::StyleXML(std::string path, ServicesXML* servicesXML) : DocumentXML ( path )
 {
     ok = false;
 
-    TiXmlDocument doc ( fileName.c_str() );
+    TiXmlDocument doc ( filePath.c_str() );
     if ( !doc.LoadFile() ) {
-        LOGGER_ERROR ( _ ( "                Ne peut pas charger le fichier " )  << fileName );
+        LOGGER_ERROR ( _ ( "                Ne peut pas charger le fichier " )  << filePath );
         return;
     }
 
-    LOGGER_INFO ( _ ( "     Ajout du Style " ) << fileName );
+    LOGGER_INFO ( _ ( "     Ajout du Style " ) << filePath );
 
     /********************** Default values */
 
@@ -71,18 +71,18 @@ StylesXML::StylesXML(std::string styleFilepath, ServicesXML* servicesXML)
 
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
     if ( !pElem ) {
-        LOGGER_ERROR ( fileName << _ ( "            Impossible de recuperer la racine." ) );
+        LOGGER_ERROR ( filePath << _ ( "            Impossible de recuperer la racine." ) );
         return;
     }
     if ( strcmp ( pElem->Value(),"style" ) ) {
-        LOGGER_ERROR ( fileName << _ ( "            La racine n'est pas un style." ) );
+        LOGGER_ERROR ( filePath << _ ( "            La racine n'est pas un style." ) );
         return;
     }
     hRoot=TiXmlHandle ( pElem );
 
     pElem=hRoot.FirstChild ( "Identifier" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
-        LOGGER_ERROR ( _ ( "Style " ) << fileName <<_ ( " pas de d'identifiant!!" ) );
+        LOGGER_ERROR ( _ ( "Style " ) << filePath <<_ ( " pas de d'identifiant!!" ) );
         return;
     }
     id = pElem->GetTextStr();
@@ -312,7 +312,7 @@ StylesXML::StylesXML(std::string styleFilepath, ServicesXML* servicesXML)
 }
 
 
-~StyleXML::StyleXML(){ }
+StyleXML::~StyleXML(){ }
 
 std::string StyleXML::getId() { return id; }
 

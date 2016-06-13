@@ -35,14 +35,13 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#include "ServicesXML.h"
 
 #include <dirent.h>
 #include <tinyxml.h>
 #include <tinystr.h>
-#include "ConfLoader.h"
+#include "ServicesXML.h"
 
- ServicesXML::ServicesXML(std::string servicesConfigFile ) {
+ServicesXML::ServicesXML( std::string servicesConfigFile ) {
     ok = false;
 
     /********************** Default values */
@@ -374,6 +373,12 @@
         }
     }
 
+
+    std::string metadataUrlWMS;
+    std::string metadataMediaTypeWMS;
+    std::string metadataUrlWMTS;
+    std::string metadataMediaTypeWMTS;
+
     pElem=hRoot.FirstChild ( "metadataWMS" ).Element();
     if ( pElem ) {
         pElem = pElem->FirstChildElement ( "url" );
@@ -433,130 +438,51 @@
 }
 
 
-~ServicesXML(){
-}
+ServicesXML::~ServicesXML(){ }
 
-bool ServicesXML::isOk { return ok; }
+bool ServicesXML::isOk() { return ok; }
 
-inline std::string ServicesXML::getAbstract const {
-    return abstract;
-}
-inline std::string ServicesXML::getAccessConstraint const {
-    return accessConstraint;
-}
-inline std::string ServicesXML::getFee const {
-    return fee;
-}
-std::vector<Keyword> * ServicesXML::getKeyWords {
-    return &keyWords;
-}
-inline bool ServicesXML::isPostEnabled {
-    return postMode;
-}
-inline std::string ServicesXML::getServiceProvider const {
-    return serviceProvider;
-}
-inline std::string ServicesXML::getTitle const {
-    return title;
-}
+std::string ServicesXML::getAbstract() const { return abstract; }
+std::string ServicesXML::getAccessConstraint() const { return accessConstraint; }
+std::string ServicesXML::getFee() const { return fee; }
+std::vector<Keyword> * ServicesXML::getKeyWords() { return &keyWords; }
+bool ServicesXML::isPostEnabled() { return postMode; }
+std::string ServicesXML::getServiceProvider() const { return serviceProvider; }
+std::string ServicesXML::getTitle() const { return title; }
 //ContactInfo
-inline std::string ServicesXML::getProviderSite const {
-    return providerSite;
-}
-inline std::string ServicesXML::getIndividualName const {
-    return individualName;
-}
-inline std::string ServicesXML::getIndividualPosition const {
-    return individualPosition;
-}
-inline std::string ServicesXML::getVoice const {
-    return voice;
-}
-inline std::string ServicesXML::getFacsimile const {
-    return facsimile;
-}
-inline std::string ServicesXML::getAddressType const {
-    return addressType;
-}
-inline std::string ServicesXML::getDeliveryPoint const {
-    return deliveryPoint;
-}
-inline std::string ServicesXML::getCity const {
-    return city;
-}
-inline std::string ServicesXML::getAdministrativeArea const {
-    return administrativeArea;
-}
-inline std::string ServicesXML::getPostCode const {
-    return postCode;
-}
-inline std::string ServicesXML::getCountry const {
-    return country;
-}
-inline std::string ServicesXML::getElectronicMailAddress const {
-    return electronicMailAddress;
-}
+std::string ServicesXML::getProviderSite() const { return providerSite; }
+std::string ServicesXML::getIndividualName() const { return individualName; }
+std::string ServicesXML::getIndividualPosition() const { return individualPosition; }
+std::string ServicesXML::getVoice() const { return voice; }
+std::string ServicesXML::getFacsimile() const { return facsimile; }
+std::string ServicesXML::getAddressType() const { return addressType; }
+std::string ServicesXML::getDeliveryPoint() const { return deliveryPoint; }
+std::string ServicesXML::getCity() const { return city; }
+std::string ServicesXML::getAdministrativeArea() const { return administrativeArea; }
+std::string ServicesXML::getPostCode() const { return postCode; }
+std::string ServicesXML::getCountry() const { return country; }
+std::string ServicesXML::getElectronicMailAddress() const { return electronicMailAddress; }
 // WMS
-inline unsigned int ServicesXML::getLayerLimit const {
-    return layerLimit;
-}
-inline unsigned int ServicesXML::getMaxHeight const {
-    return maxHeight;
-}
-inline unsigned int ServicesXML::getMaxWidth const {
-    return maxWidth;
-}
-inline unsigned int ServicesXML::getMaxTileX const {
-    return maxTileX;
-}
-inline unsigned int ServicesXML::getMaxTileY const {
-    return maxTileY;
-}
-inline std::string ServicesXML::getName const {
-    return name;
-}
-std::vector<std::string>* ServicesXML::getFormatList {
-    return &formatList;
-}
-std::vector<std::string>* ServicesXML::getInfoFormatList {
-    return &infoFormatList;
-}
-std::vector<CRS>* ServicesXML::getGlobalCRSList {
-    return &globalCRSList;
-}
-inline bool ServicesXML::isFullStyleCapable {
-    return fullStyling;
-}
+unsigned int ServicesXML::getLayerLimit() const { return layerLimit; }
+unsigned int ServicesXML::getMaxHeight() const { return maxHeight; }
+unsigned int ServicesXML::getMaxWidth() const { return maxWidth; }
+unsigned int ServicesXML::getMaxTileX() const { return maxTileX; }
+unsigned int ServicesXML::getMaxTileY() const { return maxTileY; }
+std::string ServicesXML::getName() const { return name; }
+std::vector<std::string>* ServicesXML::getFormatList() { return &formatList; }
+std::vector<std::string>* ServicesXML::getInfoFormatList() { return &infoFormatList; }
+std::vector<CRS>* ServicesXML::getGlobalCRSList() { return &globalCRSList; }
+bool ServicesXML::isFullStyleCapable() { return fullStyling; }
 // WMTS
-inline std::string ServicesXML::getServiceType {
-    return serviceType;
-}
-inline std::string ServicesXML::getServiceTypeVersion {
-    return serviceTypeVersion;
-}
-inline bool ServicesXML::isInspire {
-    return inspire;
-}
+std::string ServicesXML::getServiceType() { return serviceType; }
+std::string ServicesXML::getServiceTypeVersion() { return serviceTypeVersion; }
+bool ServicesXML::isInspire() { return inspire; }
 
-inline MetadataURL* ServicesXML::getWMSMetadataURL {
-    return &mtdWMS;
-}
-inline MetadataURL ServicesXML::getWMTSMetadataURL {
-    return* &mtdWMTS;
-}
+MetadataURL* ServicesXML::getWMSMetadataURL() { return &mtdWMS; }
+MetadataURL* ServicesXML::getWMTSMetadataURL() { return &mtdWMTS; }
 // CRS
-inline bool ServicesXML::getDoWeUseListOfEqualsCRS {
-    return doweuselistofequalsCRS;
-}
- inline bool ServicesXML::getAddEqualsCRS {
-    return addEqualsCRS;
-}
-std::vector<std::string> ServicesXML::getListOfEqualsCRS {
-    return listofequalsCRS;
-}
-inline bool ServicesXML::getDoWeRestrictCRSList {
-    return dowerestrictCRSList;
-}
-std::vector<std::string> ServicesXML::getRestrictedCRSList {
-    return restrictedCRSList;
-}
+bool ServicesXML::getDoWeUseListOfEqualsCRS() { return doweuselistofequalsCRS; }
+bool ServicesXML::getAddEqualsCRS() { return addEqualsCRS; }
+std::vector<std::string> ServicesXML::getListOfEqualsCRS() { return listofequalsCRS; }
+bool ServicesXML::getDoWeRestrictCRSList() { return dowerestrictCRSList; }
+std::vector<std::string> ServicesXML::getRestrictedCRSList() { return restrictedCRSList; }

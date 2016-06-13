@@ -46,6 +46,7 @@ struct Proxy;
 #include <map>
 #include "ContextBook.h"
 #include "TileMatrixSet.h"
+#include "DocumentXML.h"
 #include "Layer.h"
 #include "Style.h"
 
@@ -59,12 +60,12 @@ struct Proxy {
 };
 
 
-class ServerXML
+class ServerXML : public DocumentXML
 {
     friend class Rok4Server;
 
     public:
-        ServerXML(std::string serverConfigFile);
+        ServerXML(std::string path);
         ~ServerXML();
 
         bool isOk() ;
@@ -91,13 +92,14 @@ class ServerXML
         int getNbLayers() ;
         Layer* getLayer(std::string id) ;
 
-        ContextBook* getCephContextBook();;
-        ContextBook* getSwiftContextBook();;
+        ContextBook* getCephContextBook();
+        ContextBook* getSwiftContextBook();
         
         int getNbThreads() ;
         std::string getSocket() ;
         bool getSupportWMTS() ;
         bool getSupportWMS() ;
+        bool getReprojectionCapability() ;
         int getBacklog() ;
         Proxy getProxy() ;
 

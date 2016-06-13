@@ -43,6 +43,8 @@
  * \brief Define the Style Class handling style definition
  */
 
+class Style;
+
 #ifndef STYLE_H
 #define STYLE_H
 #include <string>
