@@ -62,6 +62,7 @@
 #include <fcntl.h>
 #include "curl/curl.h"
 #include "WebService.h"
+#include <cmath>
 
 
 #include "config.h"
@@ -84,7 +85,13 @@
 #include "ProcessFactory.h"
 #include "Rok4Image.h"
 #include "EmptyImage.h"
+#include "PenteImage.h"
+#include "Pente.h"
+#include "AspectImage.h"
+#include "Aspect.h"
 #include "ConvertedChannelsImage.h"
+
+
 
 void* Rok4Server::thread_loop ( void* arg ) {
     Rok4Server* server = ( Rok4Server* ) ( arg );
@@ -216,11 +223,11 @@ void Rok4Server::run(sig_atomic_t signal_pending) {
     for ( int i = 0; i < threads.size(); i++ ) {
         pthread_create ( & ( threads[i] ), NULL, Rok4Server::thread_loop, ( void* ) this );
     }
-    
+
     if (signal_pending != 0 ) {
 	raise( signal_pending );
     }
-    
+
     for ( int i = 0; i < threads.size(); i++ )
         pthread_join ( threads[i], NULL );
 }
@@ -304,6 +311,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     std::vector<Layer*> layers;
     BoundingBox<double> bbox ( 0.0, 0.0, 0.0, 0.0 );
     int width, height;
+	float resolution;
     CRS crs;
     std::string format;
     std::vector<Style*> styles;
@@ -312,8 +320,9 @@ DataStream* Rok4Server::getMap ( Request* request ) {
 
 
     // Récupération des paramètres
-    DataStream* errorResp = request->getMapParam ( servicesConf, layerList, layers, bbox, width, height, crs, format ,styles, format_option );
-    if ( errorResp ) {
+    DataStream* errorResp = request->getMapParam ( servicesConf, layerList, layers, bbox, width, height, crs, format, styles, format_option );
+
+	if ( errorResp ) {
         LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getMap" ) );
         return errorResp;
     }
@@ -323,6 +332,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     for ( int i = 0 ; i < layers.size(); i ++ ) {
 
             Image* curImage = layers.at ( i )->getbbox ( servicesConf, bbox, width, height, crs, error );
+            curImage->setCRS(crs);
             Rok4Format::eformat_data pyrType = layers.at ( i )->getDataPyramid()->getFormat();
             Style* style = styles.at(i);
             LOGGER_DEBUG ( _ ( "GetMap de Style : " ) << styles.at ( i )->getId() << _ ( " pal size : " ) <<styles.at ( i )->getPalette()->getPalettePNGSize() );
@@ -342,7 +352,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
                 }
             }
 
-            Image *image = styleImage(curImage, pyrType, style, format, layers.size());
+            Image *image = styleImage(curImage, pyrType, style, format, layers.size(), layers.at(i)->getDataPyramid());
 
             images.push_back ( image );
     }
@@ -360,14 +370,14 @@ DataStream* Rok4Server::getMap ( Request* request ) {
 }
 
 Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
-                            Style *style, std::string format, int size) {
+                            Style *style, std::string format, int size, Pyramid* pyr) {
 
-
+    Image * expandedImage = curImage;
 
     if ( servicesConf.isFullStyleCapable() ) {
         if ( style->isEstompage() ) {
             LOGGER_DEBUG ( _ ( "Estompage" ) );
-            curImage = new EstompageImage ( curImage,style->getAngle(),style->getExaggeration(), style->getCenter() );
+            expandedImage = new EstompageImage ( expandedImage,style->getAngle(),style->getExaggeration(), style->getCenter() );
             switch ( pyrType ) {
                 //Only use int8 output whith estompage
             case Rok4Format::TIFF_RAW_FLOAT32 :
@@ -387,7 +397,53 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
             }
         }
 
-        if ( style && curImage->channels == 1 && ! ( style->getPalette()->getColoursMap()->empty() ) ) {
+        if (expandedImage->channels == 1 && style->isPente()){
+
+            int error=0;
+            BoundingBox<double> expandedBbox = curImage->getBbox().expand(curImage->getResX(),curImage->getResY(),1);
+            expandedImage = pyr->getbbox(servicesConf,expandedBbox,curImage->getWidth()+2,curImage->getHeight()+2,curImage->getCRS(),Interpolation::CUBIC,error);
+            expandedImage->setCRS(curImage->getCRS());
+
+			if ( format == "image/png" && size == 1 ) {
+				switch ( pyrType ) {
+                case Rok4Format::TIFF_RAW_FLOAT32 :
+                case Rok4Format::TIFF_ZIP_FLOAT32 :
+                case Rok4Format::TIFF_LZW_FLOAT32 :
+                case Rok4Format::TIFF_PKB_FLOAT32 :
+                    expandedImage = new PenteImage ( curImage->getWidth(), curImage->getHeight(), curImage->channels, curImage->getBbox(),expandedImage, expandedImage->computeMeanResolution(),  style->getAlgoOfPente());
+				default:
+					break;
+				}
+			} else {
+                expandedImage = new PenteImage (curImage->getWidth(), curImage->getHeight(), curImage->channels, curImage->getBbox(),expandedImage, expandedImage->computeMeanResolution(),  style->getAlgoOfPente());
+			}
+            delete curImage;
+		}
+
+        if (expandedImage->channels == 1 && style->isAspect()){
+
+            int error=0;
+            BoundingBox<double> expandedBbox = curImage->getBbox().expand(curImage->getResX(),curImage->getResY(),1);
+            expandedImage = pyr->getbbox(servicesConf,expandedBbox,curImage->getWidth()+2,curImage->getHeight()+2,curImage->getCRS(),Interpolation::CUBIC,error);
+            expandedImage->setCRS(curImage->getCRS());
+
+            if ( format == "image/png" && size == 1 ) {
+                switch ( pyrType ) {
+                case Rok4Format::TIFF_RAW_FLOAT32 :
+                case Rok4Format::TIFF_ZIP_FLOAT32 :
+                case Rok4Format::TIFF_LZW_FLOAT32 :
+                case Rok4Format::TIFF_PKB_FLOAT32 :
+                    expandedImage = new AspectImage ( curImage->getWidth(), curImage->getHeight(), curImage->channels, curImage->getBbox(),expandedImage, expandedImage->computeMeanResolution(),  style->getAlgoOfAspect(), style->getMinSlopeOfAspect());
+                default:
+                    break;
+                }
+            } else {
+                expandedImage = new AspectImage ( curImage->getWidth(), curImage->getHeight(), curImage->channels, curImage->getBbox(),expandedImage, expandedImage->computeMeanResolution(),  style->getAlgoOfAspect(), style->getMinSlopeOfAspect());
+            }
+            delete curImage;
+        }
+
+        if ( style && expandedImage->channels == 1 && ! ( style->getPalette()->getColoursMap()->empty() ) ) {
             if ( format == "image/png" && size == 1 ) {
                 switch ( pyrType ) {
 
@@ -395,18 +451,19 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
                 case Rok4Format::TIFF_ZIP_FLOAT32 :
                 case Rok4Format::TIFF_LZW_FLOAT32 :
                 case Rok4Format::TIFF_PKB_FLOAT32 :
-                    curImage = new StyledImage ( curImage, style->getPalette()->isNoAlpha()?3:4 , style->getPalette() );
+                    expandedImage = new StyledImage ( expandedImage, style->getPalette()->isNoAlpha()?3:4 , style->getPalette() );
                 default:
                     break;
                 }
             } else {
-                curImage = new StyledImage ( curImage, style->getPalette()->isNoAlpha()?3:4, style->getPalette() );
+                expandedImage = new StyledImage ( expandedImage, style->getPalette()->isNoAlpha()?3:4, style->getPalette() );
             }
         }
 
+
     }
 
-    return curImage;
+    return expandedImage;
 
 }
 
@@ -442,7 +499,7 @@ Image * Rok4Server::mergeImages(std::vector<Image*> images, Rok4Format::eformat_
         int spp = images.at ( 0 )->channels;
 	int bg[spp];
 	int transparentColor[spp];
-        
+
 	switch (pyrType) {
 	  case Rok4Format::TIFF_RAW_FLOAT32 :
 	  case Rok4Format::TIFF_ZIP_FLOAT32 :
@@ -463,7 +520,7 @@ Image * Rok4Server::mergeImages(std::vector<Image*> images, Rok4Format::eformat_
 		  break;
 	      default:
 		  memset(bg, 0, sizeof(int) * spp);
-		  break;                
+		  break;
 	    }
 	    memccpy(transparentColor, bg, spp, sizeof(int));
 	    break;
@@ -487,11 +544,11 @@ Image * Rok4Server::mergeImages(std::vector<Image*> images, Rok4Format::eformat_
 		  break;
 	      default:
 		  memset(bg, 0, sizeof(uint8_t) * spp);
-		  break;                
+		  break;
 	    }
 	    break;
 	}
-        
+
 	image = MIF.createMergeImage(images,spp,bg,transparentColor,Merge::ALPHATOP);
 
         if ( image == NULL ) {
@@ -724,7 +781,7 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
 
                             if (curImage != NULL) {
                                 //On applique un style à l'image
-                                image = styleImage(curImage, pyrType, bStyle, format, bSize);
+                                image = styleImage(curImage, pyrType, bStyle, format, bSize, bPyr);
                                 images.push_back ( image );
                             } else {
                                 LOGGER_ERROR("Impossible de générer la tuile car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile");
@@ -1031,7 +1088,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
             LOGGER_DEBUG("Created");
             if (curImage != NULL) {
                 //On applique un style à l'image
-                image = styleImage(curImage, pyrType, bStyle, format, bSize);
+                image = styleImage(curImage, pyrType, bStyle, format, bSize, bPyr);
                 LOGGER_DEBUG("Apply style");
                 images.push_back ( image );
             } else {
@@ -1432,7 +1489,7 @@ void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
     }
 }
 
-void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest ) {   
+void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest ) {
     if ( supportWMTS && request->service == "wmts" && (request->doesPathFinishWith("wmts") || !request->doesPathFinishWith("wms"))) {
         processWMTS ( request, fcgxRequest );
         //Service is not mandatory in GetMap request in WMS 1.3.0 and GetFeatureInfo

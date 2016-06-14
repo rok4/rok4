@@ -50,7 +50,8 @@
 
 Style::Style ( const std::string& id,const std::vector<std::string>& titles,
                const std::vector<std::string>& abstracts,const std::vector<Keyword>& keywords,
-               const std::vector<LegendURL>& legendURLs, Palette& palette ,int angle, float exaggeration, uint8_t center ) : estompage ( false ), angle ( angle ), exaggeration ( exaggeration ), center ( center ) { //: id(id), titles(titles),             abstracts(abstracts), keywords(keywords), legendURLs(legendURLs), palette(palette)
+               const std::vector<LegendURL>& legendURLs, Palette& palette, Pente& pente,  Aspect& aspect, int angle, float exaggeration, uint8_t center ) : estompage ( false ), angle ( angle ), exaggeration ( exaggeration ), center ( center ) {
+			   //: id(id), titles(titles),             abstracts(abstracts), keywords(keywords), legendURLs(legendURLs), palette(palette)
     LOGGER_DEBUG ( _ ( "Nouveau Style : " ) << id );
     this->id = id.c_str();
     this->titles= titles;
@@ -58,6 +59,8 @@ Style::Style ( const std::string& id,const std::vector<std::string>& titles,
     this->keywords = keywords;
     this->legendURLs = legendURLs;
     this->palette = palette;
+    this->pente = pente;
+    this->aspect = aspect;
     if ( angle >= 0 && angle < 360 ) {
         estompage = true;
     }

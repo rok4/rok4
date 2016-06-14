@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<style>
+        <Identifier>aspect</Identifier>
+        <Title>Aspect</Title> 
+        <Abstract>Calcul de l'exposition par la méthode de Horn</Abstract>
+        <Keywords>
+                <Keyword>MNT</Keyword>
+        </Keywords>
+        <LegendURL format="image/png" xlink:simpleLink="simple" xlink:href="http://ign.fr" height="100" width="100" minScaleDenominator="0" maxScaleDenominator="30"/>
+        <!-- Rok4-->
+        <palette maxValue="360.0" rgbContinuous="true" alphaContinuous="true">
+                <colour value="-1.0">
+                        <red>255</red>
+                        <green>255</green>
+                        <blue>255</blue>
+                        <alpha>0</alpha>
+                </colour>
+				<!-- N -->
+				<colour value="0.0">
+                        <red>224</red>
+                        <green>32</green>
+                        <blue>29</blue>
+                        <alpha>200</alpha>
+                </colour>
+				
+				<colour value="22.5">
+                        <red>224</red>
+                        <green>32</green>
+                        <blue>29</blue>
+                        <alpha>200</alpha>
+                </colour>
+                <!-- NE -->
+				<colour value="22.6">
+                        <red>230</red>
+                        <green>142</green>
+                        <blue>28</blue>
+                        <alpha>200</alpha>
+                </colour>
+				
+				<colour value="67.5">
+                        <red>230</red>
+                        <green>142</green>
+                        <blue>28</blue>
+                        <alpha>200</alpha>
+                </colour>
+                <!-- E -->
+				<colour value="67.5">
+                        <red>255</red>
+                        <green>112</green>
+                        <blue>18</blue>
+                        <alpha>200</alpha>
+                </colour>
+				<colour value="112.5">
+                        <red>255</red>
+                        <green>112</green>
+                        <blue>18</blue>
+                        <alpha>200</alpha>
+                </colour>
+                <!-- ES -->
+				<colour value="112.6">
+                        <red>219</red>
+                        <green>199</green>
+                        <blue>14</blue>
+                        <alpha>200</alpha>
+                </colour>
+				<colour value="157.5">
+                        <red>219</red>
+                        <green>199</green>
+                        <blue>14</blue>
+                        <alpha>200</alpha>
+                </colour>
+                <!-- S -->
+				<colour value="157.6">
+                        <red>11</red>
+                        <green>215</green>
+                        <blue>230</blue>
+                        <alpha>200</alpha>
+                </colour>
+				<colour value="202.5">
+                        <red>11</red>
+                        <green>215</green>
+                        <blue>230</blue>
+                        <alpha>200</alpha>
+                </colour>
+                <!-- SO -->
+				<colour value="202.6">
+                        <red>14</red>
+                        <green>113</green>
+                        <blue>199</blue>
+                        <alpha>200</alpha>
+                </colour>
+				<colour value="247.5">
+                        <red>14</red>
+                        <green>113</green>
+                        <blue>199</blue>
+                        <alpha>200</alpha>
+                </colour>
+                <!-- O -->
+				<colour value="247.6">
+                        <red>50</red>
+                        <green>50</green>
+                        <blue>235</blue>
+                        <alpha>200</alpha>
+                </colour>
+				<colour value="292.5">
+                        <red>50</red>
+                        <green>50</green>
+                        <blue>235</blue>
+                        <alpha>200</alpha>
+                </colour>
+                <!-- ON -->
+				<colour value="292.6">
+                        <red>222</red>
+                        <green>27</green>
+                        <blue>141</blue>
+                        <alpha>200</alpha>
+                </colour>
+				<colour value="337.5">
+                        <red>222</red>
+                        <green>27</green>
+                        <blue>141</blue>
+                        <alpha>200</alpha>
+                </colour>
+                <!-- N -->
+				<colour value="337.6">
+                        <red>224</red>
+                        <green>32</green>
+                        <blue>29</blue>
+                        <alpha>200</alpha>
+                </colour>
+				<colour value="360.0">
+                        <red>224</red>
+                        <green>32</green>
+                        <blue>29</blue>
+                        <alpha>200</alpha>
+                </colour>
+        </palette>
+        <exposition algo="H" minSlope="1"/>
+</style>
