@@ -343,6 +343,30 @@ public:
 
     }
 
+    /** \~french \brief Agrandit une bbox
+     ** \~english \brief Expand a bbox
+     */
+    BoundingBox<T> expand (T resolution, int gap) {
+        BoundingBox<T> expanded = this;
+        expanded.xmin = expanded.xmin - gap * resolution;
+        expanded.xmax = expanded.xmax + gap * resolution;
+        expanded.ymin = expanded.ymin - gap * resolution;
+        expanded.ymax = expanded.ymax + gap * resolution;
+        return expanded;
+    }
+
+    /** \~french \brief Agrandit une bbox
+     ** \~english \brief Expand a bbox
+     */
+    BoundingBox<T> expand (T resolutionX, T resolutionY, int gap) {
+        BoundingBox<T> expanded = *this;
+        expanded.xmin = expanded.xmin - gap * resolutionX;
+        expanded.xmax = expanded.xmax + gap * resolutionX;
+        expanded.ymin = expanded.ymin - gap * resolutionY;
+        expanded.ymax = expanded.ymax + gap * resolutionY;
+        return expanded;
+    }
+
     /** \~french \brief Détermine si une boundingBox est égale à une autre
      * \param[in] bbox
      ** \~english \brief Determine if a bounding box is equal to an other
