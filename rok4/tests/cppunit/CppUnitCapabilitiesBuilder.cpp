@@ -225,7 +225,9 @@ void CppUnitCapabilitiesBuilder::setUp() {
     }
     palette0 = new Palette ( colours,false,false,false );
     palette0->buildPalettePNG();
-    style = new Style ( id0,titles0,abstracts0,keyWords,legendURLs0,*palette0 );
+    Pente pente;
+    Aspect aspect;
+    style = new Style ( id0,titles0,abstracts0,keyWords,legendURLs0,*palette0,pente,aspect  );
     styleslayer.push_back(style);
     
     getFeatureInfoAvailability = false;

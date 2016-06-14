@@ -84,6 +84,8 @@ protected:
     //Effective Palette
     std::map<double,Colour> colours;
     Palette* palette1;
+    Pente pente;
+    Aspect aspect;
 
 
     Style* style;
@@ -134,19 +136,19 @@ void CppUnitStyle::setUp() {
 
 void CppUnitStyle::constructors() {
     Style* style;
-    style = new Style ( id0,titles0,abstracts0,keywords0,legendURLs0,*palette0 );
+    style = new Style ( id0,titles0,abstracts0,keywords0,legendURLs0,*palette0,pente,aspect );
     CPPUNIT_ASSERT_MESSAGE ( "Style initialisation with empty element",style != NULL );
 
     delete style;
     style = NULL;
 
-    style = new Style ( id1,titles1,abstracts1,keywords1,legendURLs1,*palette1 );
+    style = new Style ( id1,titles1,abstracts1,keywords1,legendURLs1,*palette1,pente,aspect  );
     CPPUNIT_ASSERT_MESSAGE ( "Style initialisation with one element",style != NULL );
 
     delete style;
     style = NULL;
 
-    style = new Style ( id2,titles2,abstracts2,keywords2,legendURLs2,*palette1 );
+    style = new Style ( id2,titles2,abstracts2,keywords2,legendURLs2,*palette1,pente,aspect  );
     CPPUNIT_ASSERT_MESSAGE ( "Style initialisation with two elements",style != NULL );
 
     delete style;
@@ -155,7 +157,7 @@ void CppUnitStyle::constructors() {
 
 
 void CppUnitStyle::getters() {
-    style = new Style ( id0,titles0,abstracts0,keywords0,legendURLs0,*palette0 );
+    style = new Style ( id0,titles0,abstracts0,keywords0,legendURLs0,*palette0,pente,aspect  );
     CPPUNIT_ASSERT_MESSAGE ( "Style initialisation with empty element",style != NULL );
 
     CPPUNIT_ASSERT_MESSAGE ( "Style with empty element getId",style->getId().compare ( id0 ) ==0 );
@@ -169,7 +171,7 @@ void CppUnitStyle::getters() {
 
     style = NULL;
 
-    style = new Style ( id1,titles1,abstracts1,keywords1,legendURLs1,*palette1 );
+    style = new Style ( id1,titles1,abstracts1,keywords1,legendURLs1,*palette1,pente,aspect  );
     CPPUNIT_ASSERT_MESSAGE ( "Style initialisation with one element",style != NULL );
     CPPUNIT_ASSERT_MESSAGE ( "Style with one element getId",style->getId().compare ( id1 ) ==0 );
     CPPUNIT_ASSERT_MESSAGE ( "Style with one element getTitles",style->getTitles().size() ==1 );
@@ -185,7 +187,7 @@ void CppUnitStyle::getters() {
     delete style;
     style = NULL;
 
-    style = new Style ( id2,titles2,abstracts2,keywords2,legendURLs2,*palette1 );
+    style = new Style ( id2,titles2,abstracts2,keywords2,legendURLs2,*palette1,pente,aspect  );
     CPPUNIT_ASSERT_MESSAGE ( "Style initialisation with two elements",style != NULL );
     CPPUNIT_ASSERT_MESSAGE ( "Style initialisation with one element",style != NULL );
     CPPUNIT_ASSERT_MESSAGE ( "Style with two elements getId",style->getId().compare ( id2 ) ==0 );
