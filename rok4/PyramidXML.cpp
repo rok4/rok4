@@ -89,7 +89,7 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
     }
     std::string tmsName= pElem->GetTextStr();
 
-    TileMatrixSet * tms = serverXML->getTMS(tmsName);
+    tms = serverXML->getTMS(tmsName);
     if ( tms == NULL ) {
         LOGGER_ERROR ( _ ( "La pyramide [" ) << filePath <<_ ( "] reference un TMS [" ) << tmsName <<_ ( "] qui n'existe pas." ) );
         return;
@@ -187,6 +187,7 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
     for ( pElem=hRoot.FirstChild ( "level" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "level" ) ) {
         LevelXML* levXML = new LevelXML(pElem, filePath, serverXML, servicesXML, this, times);
         if (! levXML->isOk()) {
+            delete levXML;
             return;
         }
 
@@ -194,6 +195,7 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
         std::map<std::string, Level*>::iterator it= levels.find ( levXML->getId() );
         if ( it != levels.end() ) {
             LOGGER_ERROR ( _ ( "Level: " ) << levXML->getId() << _ ( " has already been loaded" ) );
+            delete levXML;
             return ;
         }
 
@@ -203,6 +205,7 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
         Level* levObj = new Level(levXML, this);
         levels.insert ( std::pair<std::string, Level*> ( lId, levObj ) );
 
+        delete levXML;
     } //if level
 
     if ( levels.size() == 0 ) {
@@ -213,7 +216,17 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
     ok = true;
 }
 
-PyramidXML::~PyramidXML(){ }
+PyramidXML::~PyramidXML(){
+
+    if (! ok) {
+        // Cette pyramide n'est pas valide, donc n'a pas été utilisé pour créer un objet Pyramid. Il faut donc nettoyer tout ce qui a été créé.
+        std::map<std::string, Level*>::iterator iLevel;
+        for ( iLevel=levels.begin(); iLevel!=levels.end(); iLevel++ )
+            delete iLevel->second;
+
+    }
+
+}
 
 bool PyramidXML::isOk() { return ok; }
 int PyramidXML::getChannels() { return channels; }

@@ -72,7 +72,7 @@ class TileMatrixSetXML : public DocumentXML
         CRS crs;
         std::string abstract;
         std::vector<Keyword> keyWords;
-        std::map<std::string, TileMatrix> listTM;
+        std::map<std::string, TileMatrix*> listTM;
 
     private:
         bool ok;

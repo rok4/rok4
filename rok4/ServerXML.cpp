@@ -405,7 +405,29 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
 
 /*********************** DESTRUCTOR ********************/
 
-ServerXML::~ServerXML(){ }
+ServerXML::~ServerXML(){ 
+    std::map<std::string, DataSource*>::iterator itDataSource;
+    /*for ( itDataSource=noDataSources.begin(); itDataSource!=noDataSources.end(); itDataSource++ )
+        delete ( *itDataSource ).second;*/
+
+    // Les TMS
+    std::map<std::string, TileMatrixSet*>::iterator itTMS;
+    for ( itTMS=tmsList.begin(); itTMS!=tmsList.end(); itTMS++ )
+        delete itTMS->second;
+
+    // Les styles
+    std::map<std::string, Style*>::iterator itSty;
+    for ( itSty=stylesList.begin(); itSty!=stylesList.end(); itSty++ )
+        delete itSty->second;
+
+    // Les couches
+    std::map<std::string, Layer*>::iterator itLay;
+    for ( itLay=layersList.begin(); itLay!=layersList.end(); itLay++ )
+        delete itLay->second;
+
+    delete cephBook;
+    delete swiftBook;
+}
 
 /******************* GETTERS / SETTERS *****************/
 

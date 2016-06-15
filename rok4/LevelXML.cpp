@@ -66,7 +66,7 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
         LOGGER_ERROR ( filePath <<_ ( " level " ) <<_ ( "id" ) <<_ ( " sans tileMatrix!!" ) );
         return;
     }
-    std::string id ( pElem->GetText() );
+    id  = std::string( pElem->GetText() );
 
     TileMatrixSet* tms = pyr->getTMS();
     tm = tms->getTm(id);
@@ -118,12 +118,12 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
 
     if ( onFly ) {
         if (! times) {
-            LOGGER_ERROR ( "OnFly pyramid cannot use a onFly/onDemand pyramid as source" );
+            LOGGER_ERROR ( "OnFly pyramid cannot use a onFly/onDemand level as source" );
             return;
         }
 
         if ( context == NULL ) {
-            LOGGER_ERROR ( "OnFly pyramid have to own a basedir and pathdepth to store images" );
+            LOGGER_ERROR ( "OnFly level have to own a basedir and pathdepth to store images" );
             return;
         }
 
@@ -131,7 +131,7 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
         if (pElemS) {
 
         } else {
-            LOGGER_ERROR ( "OnFly pyramid need sources" );
+            LOGGER_ERROR ( "OnFly level need sources" );
             return;
         }
 
@@ -169,10 +169,46 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
 
     else if (onDemand) {
         if (! times) {
-            LOGGER_ERROR ( "OnDemand pyramid cannot use a onFly/onDemand pyramid as source" );
+            LOGGER_ERROR ( "OnDemand level cannot use a onFly/onDemand pyramid as source" );
             return;
         }
-        // quasi pareil context en moins
+        TiXmlElement* pElemS=hLvl.FirstChild ( "sources" ).Element();
+        if (pElemS) {
+
+        } else {
+            LOGGER_ERROR ( "OnDemand level need sources" );
+            return;
+        }
+
+        TiXmlHandle hbdP ( pElemS );
+        TiXmlElement* pElemSP=hbdP.FirstChild().ToElement();
+
+        for (pElemSP; pElemSP; pElemSP = pElemSP->NextSiblingElement()) {
+            // On lit chaque source, qui est soit une pyramide, soit un web service
+
+            if (pElemSP->ValueStr() == "basedPyramid") {
+
+                Pyramid* sourcePyr = ConfLoader::buildBasedPyramid(pElemSP, serverXML, servicesXML, id, tms, parentDir);
+                if (sourcePyr == NULL) {
+                    LOGGER_ERROR ("Impossible de charger une basedPyramid (un niveau) indique");
+                    return;
+                }
+
+                sSources.push_back( sourcePyr ) ;
+            }
+
+            if (pElemSP->ValueStr() == "webService") {
+
+                WebService* ws = ConfLoader::parseWebService(pElemSP,tms->getCrs(),pyr->getFormat(), serverXML->getProxy());
+                if (ws == NULL) {
+                    LOGGER_ERROR("Impossible de charger le WebService indique");
+                    return;
+                }
+
+                sSources.push_back(ws);
+            }
+
+        }
     }
 
     else if (context == NULL) {
@@ -411,7 +447,21 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
     ok = true;
 }
 
-LevelXML::~LevelXML(){ }
+LevelXML::~LevelXML() {
+
+    if (! ok) {
+        // Ce niveau n'est pas valide, donc n'a pas été utilisé pour créer un objet Level. Il faut donc nettoyer tout ce qui a été créé.
+        if (context) {
+            if (context->getType() == FILECONTEXT) delete context;
+        }
+
+        for ( int i = 0; i < sSources.size(); i++ ) {
+            Source* pS = sSources.at(i);
+            delete pS;
+        }
+    }
+
+}
 
 std::string LevelXML::getId() { return id; }
 bool LevelXML::isOnDemand() { return onDemand; }

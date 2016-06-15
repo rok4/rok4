@@ -431,14 +431,17 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
         }
     }
 
-    mtdWMS = MetadataURL ( "simple",metadataUrlWMS,metadataMediaTypeWMS );
-    mtdWMTS = MetadataURL ( "simple",metadataUrlWMTS,metadataMediaTypeWMTS );
+    mtdWMS = new MetadataURL ( "simple",metadataUrlWMS,metadataMediaTypeWMS );
+    mtdWMTS = new MetadataURL ( "simple",metadataUrlWMTS,metadataMediaTypeWMTS );
 
     ok = true;
 }
 
 
-ServicesXML::~ServicesXML(){ }
+ServicesXML::~ServicesXML(){ 
+    delete mtdWMS;
+    delete mtdWMTS;
+}
 
 bool ServicesXML::isOk() { return ok; }
 
@@ -478,8 +481,8 @@ std::string ServicesXML::getServiceType() { return serviceType; }
 std::string ServicesXML::getServiceTypeVersion() { return serviceTypeVersion; }
 bool ServicesXML::isInspire() { return inspire; }
 
-MetadataURL* ServicesXML::getWMSMetadataURL() { return &mtdWMS; }
-MetadataURL* ServicesXML::getWMTSMetadataURL() { return &mtdWMTS; }
+MetadataURL* ServicesXML::getWMSMetadataURL() { return mtdWMS; }
+MetadataURL* ServicesXML::getWMTSMetadataURL() { return mtdWMTS; }
 // CRS
 bool ServicesXML::getDoWeUseListOfEqualsCRS() { return doweuselistofequalsCRS; }
 bool ServicesXML::getAddEqualsCRS() { return addEqualsCRS; }

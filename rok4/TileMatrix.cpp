@@ -116,7 +116,5 @@ bool TileMatrix::operator!= ( const TileMatrix& other ) const {
     return ! ( *this == other );
 }
 
-TileMatrix::~TileMatrix() {
-
-}
+TileMatrix::~TileMatrix() { }
 

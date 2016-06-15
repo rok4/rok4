@@ -168,7 +168,7 @@ Rok4Server::Rok4Server (  ServerXML* serverXML, ServicesXML* servicesXML) {
     threads = std::vector<pthread_t>(serverConf->getNbThreads());
 
     running = false;
-    notFoundError = NULL;
+    notFoundError = new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "wmts" ) );
 
     if ( serverConf->supportWMS ) {
         LOGGER_DEBUG ( _ ( "Build WMS Capabilities 1.3.0" ) );
@@ -606,15 +606,16 @@ DataSource* Rok4Server::getTile ( Request* request ) {
     }
     errorResp = NULL;
     if ( noDataError ) {
-        if ( !notFoundError ) {
-            notFoundError = new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "wmts" ) );
-        }
         errorResp = notFoundError;
     }
 
     DataSource* tileSource;
 
     Level* level = L->getDataPyramid()->getLevel(tileMatrix);
+
+    if (level == NULL) {
+        return notFoundError;
+    }
 
     if (level->isOnFly()) {
         tileSource = getTileOnFly(L, tileMatrix, tileCol, tileRow, style, format, errorResp);

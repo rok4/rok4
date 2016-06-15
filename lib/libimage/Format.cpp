@@ -57,6 +57,8 @@
 
 #include "Format.h"
 #include <string.h>
+#include <ctype.h>
+#include <algorithm>
 
 namespace Compression {
 
@@ -96,8 +98,11 @@ const char *photometric_name[] = {
     "MASK"
 };
 
-ePhotometric fromString ( std::string strPh ) {
+ePhotometric fromString ( std::string strPh ) {  
+
     int i;
+    std::transform(strPh.begin(), strPh.end(), strPh.begin(), toupper);
+
     for ( i = photometric_size; i ; --i ) {
         if ( strPh.compare ( photometric_name[i] ) == 0 )
             break;

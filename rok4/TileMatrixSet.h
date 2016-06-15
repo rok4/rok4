@@ -133,7 +133,7 @@ private:
      * \~french \brief Liste des TileMatrix
      * \~english \brief List of TileMatrix
      */
-    std::map<std::string, TileMatrix> tmList;
+    std::map<std::string, TileMatrix*> tmList;
 public:
     /**
     * \~french
@@ -188,7 +188,7 @@ public:
      * \brief Return the list of TileMatrix
      * \return liste of TileMatrix
      */
-    std::map<std::string, TileMatrix>* getTmList();
+    std::map<std::string, TileMatrix*>* getTmList();
     /**
      * \~french
      * \brief Retourne la TileMatrix

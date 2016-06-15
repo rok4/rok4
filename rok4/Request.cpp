@@ -775,9 +775,9 @@ DataSource* Request::getTileParam ( ServicesXML* servicesConf, std::map< std::st
     if ( tileMatrix == "" )
         return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre TILEMATRIX absent." ),"wmts" ) );
 
-    std::map<std::string, TileMatrix>* pList=tms->second->getTmList();
-    std::map<std::string, TileMatrix>::iterator tm = pList->find ( tileMatrix );
-    if ( tm==pList->end() )
+    std::map<std::string, TileMatrix*>* pList=tms->second->getTmList();
+    std::map<std::string, TileMatrix*>::iterator tm = pList->find ( tileMatrix );
+    if ( tm == pList->end() )
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "TileMatrix " ) +tileMatrix+_ ( " inconnu pour le TileMatrixSet " ) +str_tms,"wmts" ) );
 
     // TILEROW

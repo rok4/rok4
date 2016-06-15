@@ -383,7 +383,7 @@ Pyramid::~Pyramid() {
 
     std::map<std::string, Level*>::iterator iLevel;
     for ( iLevel=levels.begin(); iLevel!=levels.end(); iLevel++ )
-        delete ( *iLevel ).second;
+        delete iLevel->second;
 
 }
 

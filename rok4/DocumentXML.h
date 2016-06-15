@@ -54,7 +54,7 @@ class DocumentXML
             char * fileNameChar = ( char * ) malloc ( strlen ( filePath.c_str() ) + 1 );
             strcpy ( fileNameChar, filePath.c_str() );
             char * parentDirChar = dirname ( fileNameChar );
-            std::string parentDir ( parentDirChar );
+            parentDir = std::string ( parentDirChar );
             free ( fileNameChar );
             fileNameChar=NULL;
             parentDirChar=NULL;

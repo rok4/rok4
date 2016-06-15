@@ -85,7 +85,7 @@ TileMatrixSetXML::TileMatrixSetXML(std::string path ) : DocumentXML(path)
         LOGGER_ERROR ( _ ( "TileMatrixSet " ) << id <<_ ( " pas de crs!!" ) );
         return;
     }
-    CRS crs ( pElem->GetTextStr() );
+    crs = CRS( pElem->GetTextStr() );
 
     // Récupération du titre
 
@@ -123,8 +123,8 @@ TileMatrixSetXML::TileMatrixSetXML(std::string path ) : DocumentXML(path)
         }
 
         std::string tmId = tmXML.getId();
-        TileMatrix tmObj(tmXML);
-        listTM.insert ( std::pair<std::string, TileMatrix> ( tmId, tmObj ) );
+        TileMatrix* tmObj = new TileMatrix(tmXML);
+        listTM.insert ( std::pair<std::string, TileMatrix*> ( tmId, tmObj ) );
     }
 
     if ( listTM.size() == 0 ) {
@@ -135,7 +135,17 @@ TileMatrixSetXML::TileMatrixSetXML(std::string path ) : DocumentXML(path)
     ok = true;
 }
 
-TileMatrixSetXML::~TileMatrixSetXML(){ }
+TileMatrixSetXML::~TileMatrixSetXML(){
+
+    if (! ok) {
+        // Ce TMS n'est pas valide, donc n'a pas été utilisé pour créer un objet TileMatrixSet. Il faut donc nettoyer tout ce qui a été créé.
+        std::map<std::string, TileMatrix*>::iterator itTM;
+        for ( itTM=listTM.begin(); itTM != listTM.end(); itTM++ )
+            delete itTM->second;
+
+    }
+
+}
 
 std::string TileMatrixSetXML::getId() { return id; }
 

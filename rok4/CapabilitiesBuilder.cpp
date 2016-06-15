@@ -1063,7 +1063,7 @@ void Rok4Server::buildWMTSCapabilities() {
     // std::string hostNameTag="]HOSTNAME[";   ///Tag a remplacer par le nom du serveur
     std::string pathTag="]HOSTNAME/PATH[";  ///Tag à remplacer par le chemin complet avant le ?.
 
-    std::map<std::string,TileMatrixSet> usedTMSList;
+    std::map<std::string,TileMatrixSet*> usedTMSList;
 
     TiXmlDocument doc;
     TiXmlDeclaration * decl = new TiXmlDeclaration ( "1.0", "UTF-8", "" );
@@ -1405,7 +1405,7 @@ void Rok4Server::buildWMTSCapabilities() {
              *  il faudra contrôler la cohérence entre le format, la projection et le TMS... */
             TiXmlElement * tmsLinkEl = new TiXmlElement ( "TileMatrixSetLink" );
             tmsLinkEl->LinkEndChild ( buildTextNode ( "TileMatrixSet",layer->getDataPyramid()->getTms()->getId() ) );
-            usedTMSList.insert ( std::pair<std::string,TileMatrixSet> ( layer->getDataPyramid()->getTms()->getId() , *(layer->getDataPyramid()->getTms() )) );
+            usedTMSList.insert ( std::pair<std::string,TileMatrixSet*> ( layer->getDataPyramid()->getTms()->getId() , layer->getDataPyramid()->getTms()) );
             //tileMatrixSetLimits
             TiXmlElement * tmsLimitsEl = new TiXmlElement ( "TileMatrixSetLimits" );
 
@@ -1435,28 +1435,28 @@ void Rok4Server::buildWMTSCapabilities() {
 
     // TileMatrixSet
     //--------------------------------------------------------
-    std::map<std::string,TileMatrixSet>::iterator itTms ( usedTMSList.begin() ), itTmsEnd ( usedTMSList.end() );
+    std::map<std::string,TileMatrixSet*>::iterator itTms ( usedTMSList.begin() ), itTmsEnd ( usedTMSList.end() );
     for ( ; itTms!=itTmsEnd; ++itTms ) {
 
-        TileMatrixSet tms = itTms->second;
+        TileMatrixSet* tms = itTms->second;
 
         TiXmlElement * tmsEl=new TiXmlElement ( "TileMatrixSet" );
-        tmsEl->LinkEndChild ( buildTextNode ( "ows:Identifier",tms.getId() ) );
-        if ( ! ( tms.getTitle().empty() ) ) {
-            tmsEl->LinkEndChild ( buildTextNode ( "ows:Title", tms.getTitle().c_str() ) );
+        tmsEl->LinkEndChild ( buildTextNode ( "ows:Identifier",tms->getId() ) );
+        if ( ! ( tms->getTitle().empty() ) ) {
+            tmsEl->LinkEndChild ( buildTextNode ( "ows:Title", tms->getTitle().c_str() ) );
         }
 
-        if ( ! ( tms.getAbstract().empty() ) ) {
-            tmsEl->LinkEndChild ( buildTextNode ( "ows:Abstract", tms.getAbstract().c_str() ) );
+        if ( ! ( tms->getAbstract().empty() ) ) {
+            tmsEl->LinkEndChild ( buildTextNode ( "ows:Abstract", tms->getAbstract().c_str() ) );
         }
 
-        if ( tms.getKeyWords()->size() != 0 ) {
+        if ( tms->getKeyWords()->size() != 0 ) {
             TiXmlElement * kwlEl = new TiXmlElement ( "ows:Keywords" );
             TiXmlElement * kwEl;
-            for ( unsigned int i=0; i < tms.getKeyWords()->size(); i++ ) {
+            for ( unsigned int i=0; i < tms->getKeyWords()->size(); i++ ) {
                 kwEl = new TiXmlElement ( "ows:Keyword" );
-                kwEl->LinkEndChild ( new TiXmlText ( tms.getKeyWords()->at ( i ).getContent() ) );
-                const std::map<std::string,std::string>* attributes = tms.getKeyWords()->at ( i ).getAttributes();
+                kwEl->LinkEndChild ( new TiXmlText ( tms->getKeyWords()->at ( i ).getContent() ) );
+                const std::map<std::string,std::string>* attributes = tms->getKeyWords()->at ( i ).getAttributes();
                 for ( std::map<std::string,std::string>::const_iterator it = attributes->begin(); it !=attributes->end(); it++ ) {
                     kwEl->SetAttribute ( ( *it ).first, ( *it ).second );
                 }
@@ -1468,21 +1468,21 @@ void Rok4Server::buildWMTSCapabilities() {
         }
 
 
-        tmsEl->LinkEndChild ( buildTextNode ( "ows:SupportedCRS",tms.getCrs().getRequestCode() ) );
-        std::map<std::string, TileMatrix>* tmList = tms.getTmList();
+        tmsEl->LinkEndChild ( buildTextNode ( "ows:SupportedCRS",tms->getCrs().getRequestCode() ) );
+        std::map<std::string, TileMatrix*>* tmList = tms->getTmList();
 
         // TileMatrix
-        std::map<std::string, TileMatrix>::iterator itTm ( tmList->begin() ), itTmEnd ( tmList->end() );
+        std::map<std::string, TileMatrix*>::iterator itTm ( tmList->begin() ), itTmEnd ( tmList->end() );
         for ( ; itTm!=itTmEnd; ++itTm ) {
-            TileMatrix tm =itTm->second;
+            TileMatrix* tm =itTm->second;
             TiXmlElement * tmEl=new TiXmlElement ( "TileMatrix" );
-            tmEl->LinkEndChild ( buildTextNode ( "ows:Identifier",tm.getId() ) );
-            tmEl->LinkEndChild ( buildTextNode ( "ScaleDenominator",doubleToStr ( ( long double ) ( tm.getRes() *tms.getCrs().getMetersPerUnit() ) /0.00028 ) ) );
-            tmEl->LinkEndChild ( buildTextNode ( "TopLeftCorner",doubleToStr ( tm.getX0() ) + " " + doubleToStr ( tm.getY0() ) ) );
-            tmEl->LinkEndChild ( buildTextNode ( "TileWidth",numToStr ( tm.getTileW() ) ) );
-            tmEl->LinkEndChild ( buildTextNode ( "TileHeight",numToStr ( tm.getTileH() ) ) );
-            tmEl->LinkEndChild ( buildTextNode ( "MatrixWidth",numToStr ( tm.getMatrixW() ) ) );
-            tmEl->LinkEndChild ( buildTextNode ( "MatrixHeight",numToStr ( tm.getMatrixH() ) ) );
+            tmEl->LinkEndChild ( buildTextNode ( "ows:Identifier",tm->getId() ) );
+            tmEl->LinkEndChild ( buildTextNode ( "ScaleDenominator",doubleToStr ( ( long double ) ( tm->getRes() * tms->getCrs().getMetersPerUnit() ) /0.00028 ) ) );
+            tmEl->LinkEndChild ( buildTextNode ( "TopLeftCorner",doubleToStr ( tm->getX0() ) + " " + doubleToStr ( tm->getY0() ) ) );
+            tmEl->LinkEndChild ( buildTextNode ( "TileWidth",numToStr ( tm->getTileW() ) ) );
+            tmEl->LinkEndChild ( buildTextNode ( "TileHeight",numToStr ( tm->getTileH() ) ) );
+            tmEl->LinkEndChild ( buildTextNode ( "MatrixWidth",numToStr ( tm->getMatrixW() ) ) );
+            tmEl->LinkEndChild ( buildTextNode ( "MatrixHeight",numToStr ( tm->getMatrixH() ) ) );
             tmsEl->LinkEndChild ( tmEl );
         }
         contentsEl->LinkEndChild ( tmsEl );

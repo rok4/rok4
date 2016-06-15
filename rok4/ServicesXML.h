@@ -158,8 +158,8 @@ class ServicesXML
         std::vector<std::string> listofequalsCRS;
         std::vector<std::string> restrictedCRSList;
 
-        MetadataURL mtdWMS;
-        MetadataURL mtdWMTS;
+        MetadataURL* mtdWMS;
+        MetadataURL* mtdWMTS;
 
         bool ok;
 };

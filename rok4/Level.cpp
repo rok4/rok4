@@ -109,8 +109,13 @@ Level::~Level() {
     // les contextes sont dans des contextBooks
     // ce sont les contextBooks qui se chargent de détruire les contexts
     // mais ce n'est pas le cas des FILECONTEXT
-    if (context) {     if (context->getType() == FILECONTEXT) {         delete context;
-        }
+    if (context) {
+        if (context->getType() == FILECONTEXT) delete context;
+    }
+
+    for ( int i = 0; i < sSources.size(); i++ ) {
+        Source* pS = sSources.at(i);
+        delete pS;
     }
 
 }

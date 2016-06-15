@@ -82,7 +82,6 @@ public:
      */
     MetadataURL ( std::string format, std::string href, std::string type );
 
-    MetadataURL (  );
     /**
      * \~french
      * Crée un MetadataURL à partir d'un autre

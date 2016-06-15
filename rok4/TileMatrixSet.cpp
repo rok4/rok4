@@ -49,7 +49,7 @@
 std::string TileMatrixSet::getId() {
     return id;
 }
-std::map<std::string, TileMatrix>* TileMatrixSet::getTmList() {
+std::map<std::string, TileMatrix*>* TileMatrixSet::getTmList() {
     return &tmList;
 }
 
@@ -101,10 +101,10 @@ std::map<std::string, double> TileMatrixSet::getCorrespondingLevels(std::string 
 
         double resolution = sqrt ( resOutX * resOutY );
 
-        std::map<std::string, TileMatrix>::iterator it = otherTMS->getTmList()->begin();
+        std::map<std::string, TileMatrix*>::iterator it = otherTMS->getTmList()->begin();
         for ( it; it != otherTMS->getTmList()->end(); it++ ) {
             // Pour chaque niveau du deuxième TMS, on calcule le ratio
-            double d = resolution / it->second.getRes();
+            double d = resolution / it->second->getRes();
 
             levelsRatios.insert(std::pair<std::string, double> ( it->first, d ));
         }
@@ -117,9 +117,9 @@ std::map<std::string, double> TileMatrixSet::getCorrespondingLevels(std::string 
 bool TileMatrixSet::operator== ( const TileMatrixSet& other ) const {
     return ( this->keyWords.size() ==other.keyWords.size()
              && this->tmList.size() ==other.tmList.size()
-             && this->id.compare ( other.id ) ==0
-             && this->title.compare ( other.title ) ==0
-             && this->abstract.compare ( other.abstract ) ==0
+             && this->id.compare ( other.id ) == 0
+             && this->title.compare ( other.title ) == 0
+             && this->abstract.compare ( other.abstract ) == 0
              && this->crs==other.crs );
 }
 
@@ -127,16 +127,22 @@ bool TileMatrixSet::operator!= ( const TileMatrixSet& other ) const {
     return ! ( *this == other );
 }
 
-TileMatrixSet::~TileMatrixSet() {}
+TileMatrixSet::~TileMatrixSet() {
+    std::map<std::string, TileMatrix*>::iterator itTM;
+    for ( itTM=tmList.begin(); itTM != tmList.end(); itTM++ )
+        delete itTM->second;
+
+}
 
 TileMatrix* TileMatrixSet::getTm(std::string id) {
-    std::map<std::string, TileMatrix>::iterator itTM = tmList.find ( id );
+
+    std::map<std::string, TileMatrix*>::iterator itTM = tmList.find ( id );
 
     if ( itTM == tmList.end() ) {
         return NULL;
     }
 
-    return & ( itTM->second );
+    return itTM->second;
 }
 
 CRS TileMatrixSet::getCrs() {

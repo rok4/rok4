@@ -48,7 +48,7 @@ TileMatrixXML::TileMatrixXML(std::string tmsId, std::string path, TiXmlElement* 
         LOGGER_ERROR ( _ ( "TileMatrixSet " ) << tmsId << ", TileMatrix sans id!!" );
         return;
     }
-    id=pElemTM->GetText();
+    id = std::string(pElemTM->GetText());
 
     pElemTM = hTM.FirstChild ( "resolution" ).Element();
     if ( !pElemTM || ! ( pElemTM->GetText() ) ) {

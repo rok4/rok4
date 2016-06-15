@@ -754,18 +754,6 @@ void rok4DeleteTilePalette ( TilePalette* palette ) {
 void rok4KillServer ( Rok4Server* server ) {
     LOGGER_INFO ( _ ( "Extinction du serveur ROK4" ) );
 
-    std::map<std::string,TileMatrixSet*>::iterator iTms;
-    for ( iTms = server->getTmsList().begin(); iTms != server->getTmsList().end(); iTms++ )
-        delete ( *iTms ).second;
-
-    std::map<std::string, Style*>::iterator iStyle;
-    for ( iStyle = server->getStyleList().begin(); iStyle != server->getStyleList().end(); iStyle++ )
-        delete ( *iStyle ).second;
-
-    std::map<std::string, Layer*>::iterator iLayer;
-    for ( iLayer = server->getLayerList().begin(); iLayer != server->getLayerList().end(); iLayer++ )
-        delete ( *iLayer ).second;
-
     //Clear proj4 cache
     pj_clear_initcache();
 

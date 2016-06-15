@@ -360,10 +360,11 @@ Pyramid* ConfLoader::buildBasedPyramid (
     if (levelsRatios.size() == 0) {
         // Aucun niveau dans la pyramide de base ne convient
         LOGGER_ERROR ( "La pyramide source " << basedPyramidFilePath << " ne contient pas de niveau satisfaisant pour le niveau " << levelOD );
+        delete basedPyramid;
         return NULL;
     }
 
-    Level* bestLevel;
+    Level* bestLevel = NULL;
 
     std::map<std::string, double>::iterator itRatio = levelsRatios.begin();
     for ( itRatio; itRatio != levelsRatios.end(); itRatio++ ) {
@@ -378,6 +379,7 @@ Pyramid* ConfLoader::buildBasedPyramid (
 
     if (bestLevel == NULL) {
         LOGGER_ERROR ( "La pyramide source " << basedPyramidFilePath << " ne contient pas de niveau satisfaisant pour le niveau " << levelOD );
+        delete basedPyramid;
         return NULL;
     }
 
@@ -407,259 +409,259 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
 
         std::size_t found = url.find(" ");
         if (found!=std::string::npos) {
-          LOGGER_ERROR("Une URL ne peut contenir des espaces");
-          return NULL;
-      }
-
-      found = url.find("?");
-      size_t size = url.size()-1;
-      if (found!=std::string::npos && found!=size) {
-        LOGGER_ERROR("Une URL ne peut contenir un ou des '?' hormis le dernier qui est un séparateur");
-        return NULL;
-    }
-
-    if (found==std::string::npos) {
-        url = url + "?";
-    }
-
-} else {
-    LOGGER_ERROR("Une URL doit etre specifiee pour un WebService");
-    return NULL;
-}
-
-TiXmlElement* sProxy = sWeb->FirstChildElement("proxy");
-if (sProxy && sProxy->GetText()) {
-    proxy = sProxy->GetTextStr();
-} else {
-    proxy = proxy_default.proxyName;
-}
-
-sProxy = sWeb->FirstChildElement("noProxy");
-if (sProxy && sProxy->GetText()) {
-    noProxy = sProxy->GetTextStr();
-} else {
-    noProxy = proxy_default.noProxy;
-}
-
-TiXmlElement* sTimeOut = sWeb->FirstChildElement("timeout");
-if (sTimeOut && sTimeOut->GetText()) {
-    timeout = atoi(sTimeOut->GetText());
-} else {
-    timeout = DEFAULT_TIMEOUT;
-}
-
-TiXmlElement* sRetry = sWeb->FirstChildElement("retry");
-if (sRetry && sRetry->GetText()) {
-    retry = atoi(sRetry->GetText());
-} else {
-    retry = DEFAULT_RETRY;
-}
-
-TiXmlElement* sInterval = sWeb->FirstChildElement("interval");
-if (sInterval && sInterval->GetText()) {
-    interval = atoi(sInterval->GetText());
-} else {
-    interval = DEFAULT_INTERVAL;
-}
-
-TiXmlElement* sUser = sWeb->FirstChildElement("user");
-if (sUser && sUser->GetText()) {
-    user = sUser->GetTextStr();
-} else {
-    user = "";
-}
-
-TiXmlElement* sPwd = sWeb->FirstChildElement("password");
-if (sPwd && sPwd->GetText()) {
-    pwd = sPwd->GetTextStr();
-} else {
-    pwd = "";
-}
-
-TiXmlElement* sReferer = sWeb->FirstChildElement("referer");
-if (sReferer && sReferer->GetText()) {
-    referer = sReferer->GetTextStr();
-} else {
-    referer = "";
-}
-
-TiXmlElement* sUserAgent = sWeb->FirstChildElement("userAgent");
-if (sUserAgent && sUserAgent->GetText()) {
-    userAgent = sUserAgent->GetTextStr();
-} else {
-    userAgent = "";
-}
-
-
-TiXmlElement* sWMS = sWeb->FirstChildElement("wms");
-if (sWMS) {
-
-    TiXmlElement* sVersion = sWMS->FirstChildElement("version");
-    if (sVersion && sVersion->GetText()) {
-        version = sVersion->GetTextStr();
-    } else {
-        LOGGER_ERROR("Un WMS doit contenir une version");
-        return NULL;
-    }
-
-    TiXmlElement* sLayers= sWMS->FirstChildElement("layers");
-    if (sLayers && sLayers->GetText()) {
-        layers = sLayers->GetTextStr();
-    } else {
-        LOGGER_ERROR("Un WMS doit contenir un ou des layers séparés par des virgules");
-        return NULL;
-    }
-
-    TiXmlElement* sStyles = sWMS->FirstChildElement("styles");
-    if (sStyles && sStyles->GetText()) {
-        styles = sStyles->GetTextStr();
-    } else {
-        LOGGER_ERROR("Un WMS doit contenir un ou des styles séparés par des virgules");
-        return NULL;
-    }
-
-    TiXmlElement* sFormat = sWMS->FirstChildElement("format");
-    if (sFormat && sFormat->GetText()) {
-        format = sFormat->GetTextStr();
-        Rok4Format::eformat_data fmt = Rok4Format::fromMimeType(format);
-        if (fmt == Rok4Format::UNKNOWN) {
-            LOGGER_ERROR("Un WMS doit être requete dans un format lisible par rok4");
-            return NULL;
-        }
-            //Pour le moment, on autorise que deux formats (jpeg et png)
-            //car les autres ne sont pas gérer correctement par les decodeurs de Rok4
-            //il faudrait notamment creer un decodeur pour le tiff (lecture de l'en-tête, puis decompression)
-        if (format != "image/jpeg" && format != "image/png") {
-            LOGGER_ERROR("Un WMS doit être requete en image/jpeg ou image/png");
-            return NULL;
-        }
-    } else {
-        format = Rok4Format::toString(pyrFormat);
-        LOGGER_ERROR("Un WMS doit contenir un format. Par défaut => " << format);
-    }
-
-    TiXmlElement* sCrs = sWMS->FirstChildElement("crs");
-    if (sCrs && sCrs->GetText()) {
-        crs = sCrs->GetTextStr();
-
-            //le crs demandé et le crs de la pyramide en construction doivent être le même
-        CRS askedCRS = CRS(crs);
-        if (askedCRS != pyrCRS) {
-            LOGGER_ERROR("Un WMS doit contenir un crs équivalent à celui de la pyramide en construction");
+            LOGGER_ERROR("Une URL ne peut contenir des espaces");
             return NULL;
         }
 
-    } else {
-        crs = pyrCRS.getProj4Code();
-        LOGGER_ERROR("Un WMS doit contenir un crs. Par défaut => " << crs);
-    }
+        found = url.find("?");
+        size_t size = url.size()-1;
+        if (found!=std::string::npos && found!=size) {
+            LOGGER_ERROR("Une URL ne peut contenir un ou des '?' hormis le dernier qui est un séparateur");
+            return NULL;
+        }
 
-    TiXmlElement* sChannels = sWMS->FirstChildElement("channels");
-    if (sChannels && sChannels->GetText()) {
-        channels = atoi(sChannels->GetTextStr().c_str());
+        if (found==std::string::npos) {
+            url = url + "?";
+        }
+
     } else {
-        LOGGER_ERROR("Un WMS doit contenir un channels");
+        LOGGER_ERROR("Une URL doit etre specifiee pour un WebService");
         return NULL;
     }
 
-    TiXmlElement* sOpt = sWMS->FirstChildElement("option");
-    if (sOpt) {
+    TiXmlElement* sProxy = sWeb->FirstChildElement("proxy");
+    if (sProxy && sProxy->GetText()) {
+        proxy = sProxy->GetTextStr();
+    } else {
+        proxy = proxy_default.proxyName;
+    }
 
-        for ( sOpt; sOpt; sOpt=sOpt->NextSiblingElement() ) {
+    sProxy = sWeb->FirstChildElement("noProxy");
+    if (sProxy && sProxy->GetText()) {
+        noProxy = sProxy->GetTextStr();
+    } else {
+        noProxy = proxy_default.noProxy;
+    }
 
-            name = sOpt->Attribute("name");
-            value = sOpt->Attribute("value");
+    TiXmlElement* sTimeOut = sWeb->FirstChildElement("timeout");
+    if (sTimeOut && sTimeOut->GetText()) {
+        timeout = atoi(sTimeOut->GetText());
+    } else {
+        timeout = DEFAULT_TIMEOUT;
+    }
 
-            if (name != "" && value != "") {
-                options.insert(std::pair<std::string,std::string> ( name, value));
+    TiXmlElement* sRetry = sWeb->FirstChildElement("retry");
+    if (sRetry && sRetry->GetText()) {
+        retry = atoi(sRetry->GetText());
+    } else {
+        retry = DEFAULT_RETRY;
+    }
+
+    TiXmlElement* sInterval = sWeb->FirstChildElement("interval");
+    if (sInterval && sInterval->GetText()) {
+        interval = atoi(sInterval->GetText());
+    } else {
+        interval = DEFAULT_INTERVAL;
+    }
+
+    TiXmlElement* sUser = sWeb->FirstChildElement("user");
+    if (sUser && sUser->GetText()) {
+        user = sUser->GetTextStr();
+    } else {
+        user = "";
+    }
+
+    TiXmlElement* sPwd = sWeb->FirstChildElement("password");
+    if (sPwd && sPwd->GetText()) {
+        pwd = sPwd->GetTextStr();
+    } else {
+        pwd = "";
+    }
+
+    TiXmlElement* sReferer = sWeb->FirstChildElement("referer");
+    if (sReferer && sReferer->GetText()) {
+        referer = sReferer->GetTextStr();
+    } else {
+        referer = "";
+    }
+
+    TiXmlElement* sUserAgent = sWeb->FirstChildElement("userAgent");
+    if (sUserAgent && sUserAgent->GetText()) {
+        userAgent = sUserAgent->GetTextStr();
+    } else {
+        userAgent = "";
+    }
+
+
+    TiXmlElement* sWMS = sWeb->FirstChildElement("wms");
+    if (sWMS) {
+
+        TiXmlElement* sVersion = sWMS->FirstChildElement("version");
+        if (sVersion && sVersion->GetText()) {
+            version = sVersion->GetTextStr();
+        } else {
+            LOGGER_ERROR("Un WMS doit contenir une version");
+            return NULL;
+        }
+
+        TiXmlElement* sLayers= sWMS->FirstChildElement("layers");
+        if (sLayers && sLayers->GetText()) {
+            layers = sLayers->GetTextStr();
+        } else {
+            LOGGER_ERROR("Un WMS doit contenir un ou des layers séparés par des virgules");
+            return NULL;
+        }
+
+        TiXmlElement* sStyles = sWMS->FirstChildElement("styles");
+        if (sStyles && sStyles->GetText()) {
+            styles = sStyles->GetTextStr();
+        } else {
+            LOGGER_ERROR("Un WMS doit contenir un ou des styles séparés par des virgules");
+            return NULL;
+        }
+
+        TiXmlElement* sFormat = sWMS->FirstChildElement("format");
+        if (sFormat && sFormat->GetText()) {
+            format = sFormat->GetTextStr();
+            Rok4Format::eformat_data fmt = Rok4Format::fromMimeType(format);
+            if (fmt == Rok4Format::UNKNOWN) {
+                LOGGER_ERROR("Un WMS doit être requete dans un format lisible par rok4");
+                return NULL;
+            }
+                //Pour le moment, on autorise que deux formats (jpeg et png)
+                //car les autres ne sont pas gérer correctement par les decodeurs de Rok4
+                //il faudrait notamment creer un decodeur pour le tiff (lecture de l'en-tête, puis decompression)
+            if (format != "image/jpeg" && format != "image/png") {
+                LOGGER_ERROR("Un WMS doit être requete en image/jpeg ou image/png");
+                return NULL;
+            }
+        } else {
+            format = Rok4Format::toString(pyrFormat);
+            LOGGER_ERROR("Un WMS doit contenir un format. Par défaut => " << format);
+        }
+
+        TiXmlElement* sCrs = sWMS->FirstChildElement("crs");
+        if (sCrs && sCrs->GetText()) {
+            crs = sCrs->GetTextStr();
+
+                //le crs demandé et le crs de la pyramide en construction doivent être le même
+            CRS askedCRS = CRS(crs);
+            if (askedCRS != pyrCRS) {
+                LOGGER_ERROR("Un WMS doit contenir un crs équivalent à celui de la pyramide en construction");
+                return NULL;
+            }
+
+        } else {
+            crs = pyrCRS.getProj4Code();
+            LOGGER_ERROR("Un WMS doit contenir un crs. Par défaut => " << crs);
+        }
+
+        TiXmlElement* sChannels = sWMS->FirstChildElement("channels");
+        if (sChannels && sChannels->GetText()) {
+            channels = atoi(sChannels->GetTextStr().c_str());
+        } else {
+            LOGGER_ERROR("Un WMS doit contenir un channels");
+            return NULL;
+        }
+
+        TiXmlElement* sOpt = sWMS->FirstChildElement("option");
+        if (sOpt) {
+
+            for ( sOpt; sOpt; sOpt=sOpt->NextSiblingElement() ) {
+
+                name = sOpt->Attribute("name");
+                value = sOpt->Attribute("value");
+
+                if (name != "" && value != "") {
+                    options.insert(std::pair<std::string,std::string> ( name, value));
+                }
+
             }
 
         }
 
-    }
+        TiXmlElement* sBbox = sWMS->FirstChildElement("bbox");
+        if (sBbox) {
+            if ( ! ( sBbox->Attribute ( "minx" ) ) ) {
+                LOGGER_ERROR ( "minx attribute is missing" );
+                return NULL;
+            }
+            if ( !sscanf ( sBbox->Attribute ( "minx" ),"%lf",&bbox.xmin) ) {
+                LOGGER_ERROR ( "Le minx est inexploitable:[" << sBbox->Attribute ( "minx" ) << "]" );
+                return NULL;
+            }
+            if ( ! ( sBbox->Attribute ( "miny" ) ) ) {
+                LOGGER_ERROR ( "miny attribute is missing" );
+                return NULL;
+            }
+            if ( !sscanf ( sBbox->Attribute ( "miny" ),"%lf",&bbox.ymin ) ) {
+                LOGGER_ERROR ("Le miny est inexploitable:[" << sBbox->Attribute ( "miny" ) << "]" );
+                return NULL;
+            }
+            if ( ! ( sBbox->Attribute ( "maxx" ) ) ) {
+                LOGGER_ERROR (  "maxx attribute is missing"  );
+                return NULL;
+            }
+            if ( !sscanf ( sBbox->Attribute ( "maxx" ),"%lf",&bbox.xmax ) ) {
+                LOGGER_ERROR (  "Le maxx est inexploitable:["  << sBbox->Attribute ( "maxx" ) << "]" );
+                return NULL;
+            }
+            if ( ! ( sBbox->Attribute ( "maxy" ) ) ) {
+                LOGGER_ERROR (  "maxy attribute is missing" );
+                return NULL;
+            }
+            if ( !sscanf ( sBbox->Attribute ( "maxy" ),"%lf",&bbox.ymax ) ) {
+                LOGGER_ERROR (  "Le maxy est inexploitable:["  << sBbox->Attribute ( "maxy" ) << "]" );
+                return NULL;
+            }
 
-    TiXmlElement* sBbox = sWMS->FirstChildElement("bbox");
-    if (sBbox) {
-        if ( ! ( sBbox->Attribute ( "minx" ) ) ) {
-            LOGGER_ERROR ( "minx attribute is missing" );
-            return NULL;
-        }
-        if ( !sscanf ( sBbox->Attribute ( "minx" ),"%lf",&bbox.xmin) ) {
-            LOGGER_ERROR ( "Le minx est inexploitable:[" << sBbox->Attribute ( "minx" ) << "]" );
-            return NULL;
-        }
-        if ( ! ( sBbox->Attribute ( "miny" ) ) ) {
-            LOGGER_ERROR ( "miny attribute is missing" );
-            return NULL;
-        }
-        if ( !sscanf ( sBbox->Attribute ( "miny" ),"%lf",&bbox.ymin ) ) {
-            LOGGER_ERROR ("Le miny est inexploitable:[" << sBbox->Attribute ( "miny" ) << "]" );
-            return NULL;
-        }
-        if ( ! ( sBbox->Attribute ( "maxx" ) ) ) {
-            LOGGER_ERROR (  "maxx attribute is missing"  );
-            return NULL;
-        }
-        if ( !sscanf ( sBbox->Attribute ( "maxx" ),"%lf",&bbox.xmax ) ) {
-            LOGGER_ERROR (  "Le maxx est inexploitable:["  << sBbox->Attribute ( "maxx" ) << "]" );
-            return NULL;
-        }
-        if ( ! ( sBbox->Attribute ( "maxy" ) ) ) {
-            LOGGER_ERROR (  "maxy attribute is missing" );
-            return NULL;
-        }
-        if ( !sscanf ( sBbox->Attribute ( "maxy" ),"%lf",&bbox.ymax ) ) {
-            LOGGER_ERROR (  "Le maxy est inexploitable:["  << sBbox->Attribute ( "maxy" ) << "]" );
+        } else {
+            LOGGER_ERROR("Un WMS doit contenir une bbox");
             return NULL;
         }
 
-    } else {
-        LOGGER_ERROR("Un WMS doit contenir une bbox");
-        return NULL;
-    }
+        TiXmlElement* pND=sWMS->FirstChildElement ( "noDataValue" );
+        if ( pND && pND->GetText() ) {
+            ndValuesStr = pND->GetTextStr();
 
-    TiXmlElement* pND=sWMS->FirstChildElement ( "noDataValue" );
-    if ( pND && pND->GetText() ) {
-        ndValuesStr = pND->GetTextStr();
-
-            //conversion string->vector
-        std::size_t found = ndValuesStr.find_first_of(",");
-        std::string currentValue = ndValuesStr.substr(0,found);
-        std::string endOfValues = ndValuesStr.substr(found+1);
-        int curVal = atoi(currentValue.c_str());
-        if (currentValue == "") {
-            curVal = DEFAULT_NODATAVALUE;
-        }
-        noDataValues.push_back(curVal);
-        while (found!=std::string::npos) {
-            found = endOfValues.find_first_of(",");
-            currentValue = endOfValues.substr(0,found);
-            endOfValues = endOfValues.substr(found+1);
-            curVal = atoi(currentValue.c_str());
+                //conversion string->vector
+            std::size_t found = ndValuesStr.find_first_of(",");
+            std::string currentValue = ndValuesStr.substr(0,found);
+            std::string endOfValues = ndValuesStr.substr(found+1);
+            int curVal = atoi(currentValue.c_str());
             if (currentValue == "") {
                 curVal = DEFAULT_NODATAVALUE;
             }
             noDataValues.push_back(curVal);
+            while (found!=std::string::npos) {
+                found = endOfValues.find_first_of(",");
+                currentValue = endOfValues.substr(0,found);
+                endOfValues = endOfValues.substr(found+1);
+                curVal = atoi(currentValue.c_str());
+                if (currentValue == "") {
+                    curVal = DEFAULT_NODATAVALUE;
+                }
+                noDataValues.push_back(curVal);
+            }
+            if (noDataValues.size() < channels) {
+                LOGGER_ERROR("Le nombre de channels indique est different du nombre de noDataValue donne");
+                return NULL;
+            }
+        } else {
+            for (int i=0;i<channels;i++) {
+                noDataValues.push_back(DEFAULT_NODATAVALUE);
+            }
         }
-        if (noDataValues.size() < channels) {
-            LOGGER_ERROR("Le nombre de channels indique est different du nombre de noDataValue donne");
-            return NULL;
-        }
+
+        ws = new WebMapService(url, proxy, noProxy, retry, interval, timeout, version, layers, styles, format, channels, crs, bbox, noDataValues,options);
+
     } else {
-        for (int i=0;i<channels;i++) {
-            noDataValues.push_back(DEFAULT_NODATAVALUE);
-        }
+         //On retourne une erreur car le WMS est le seul WebService disponible pour le moment
+        LOGGER_ERROR("Un WebService doit contenir un WMS pour être utilisé");
+        return NULL;
     }
 
-    ws = new WebMapService(url, proxy, noProxy, retry, interval, timeout, version, layers, styles, format, channels, crs, bbox, noDataValues,options);
-
-} else {
-        //On retourne une erreur car le WMS est le seul WebService disponible pour le moment
-    LOGGER_ERROR("Un WebService doit contenir un WMS pour être utilisé");
-    return NULL;
-}
-
-return ws;
+    return ws;
 
 }
 
