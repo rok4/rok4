@@ -88,6 +88,9 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
     float exaggeration=1;
     int center=0;
     int errorCode;
+    std::string algo = "";
+    bool estompage = false;
+    float minSlope = 5.0;
 
     /*TiXmlDocument doc(fileName.c_str());
     if (!doc.LoadFile()){
@@ -320,6 +323,7 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
 
     pElem = hRoot.FirstChild ( "estompage" ).Element();
     if ( pElem ) {
+        estompage = true;
         errorCode = pElem->QueryIntAttribute ( "angle",&angle );
         if ( errorCode == TIXML_WRONG_TYPE ) {
             LOGGER_ERROR ( _ ( "Un attribut angle invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
@@ -340,7 +344,64 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
             center=0;
         }
     }
-    Style * style = new Style ( id,title,abstract,keyWords,legendURLs,pal ,angle,exaggeration,center );
+	
+	//recuperation des informations pour le calcul des pentes
+	pElem = hRoot.FirstChild ( "pente" ).Element();
+    Pente pente;
+	
+    if ( pElem && !estompage) {
+
+        pente.setPente(true);
+        algo = pElem->Attribute("algo");
+
+        if ( algo != "" ) {
+            if (algo != "H") {
+                LOGGER_ERROR ("Un attribut algo invalide a ete trouve dans la pente du Style " ) << id << ( ", la valeur possible est H");
+                return NULL;
+            }
+        } else {
+            LOGGER_INFO("Pas d'algo defini, H par defaut");
+            algo = "H";
+		}
+        pente.setAlgo(algo);
+	}
+
+    //recuperation des informations pour le calcul des pentes
+    pElem = hRoot.FirstChild ( "exposition" ).Element();
+    Aspect aspect;
+
+    if ( pElem && !estompage && !pente.getPente()) {
+
+        aspect.setAspect(true);
+        algo = pElem->Attribute("algo");
+
+        if ( algo != "" ) {
+            if (algo != "H") {
+                LOGGER_ERROR ("Un attribut algo invalide a ete trouve dans l'exposition du Style " ) << id << ( ", la valeur possible est H");
+                return NULL;
+            }
+        } else {
+            LOGGER_INFO("Pas d'algo defini, H par defaut");
+            algo = "H";
+        }
+        aspect.setAlgo(algo);
+
+        errorCode = pElem->QueryFloatAttribute ( "minSlope",&minSlope );
+        if ( errorCode == TIXML_WRONG_TYPE ) {
+            LOGGER_ERROR ( ( "Un attribut minSlope invalide a ete trouve dans l'exposition du Style " ) << id << ( " : mauvais type, float attendu" ) );
+        } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
+            LOGGER_INFO ( ( "Un attribut est manquant dans l'exposition du Style " ) << id << ( " : minSlope" ) );
+        }
+        if (minSlope < 0.0 || minSlope > 90.0) {
+            LOGGER_ERROR ( ( "Un attribut minSlope invalide a ete trouve dans l'exposition du Style " ) << id << ( " : mauvaise valeur, entre 0 et 90 attendue" ) );
+            minSlope = 1.0;
+        }
+        aspect.setMinSlope(minSlope);
+
+    }
+	
+	
+    Style * style = new Style ( id,title,abstract,keyWords,legendURLs,pal,pente,aspect,angle,exaggeration,center);
     LOGGER_DEBUG ( _ ( "Style Cree" ) );
     return style;
 

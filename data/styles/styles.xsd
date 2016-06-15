@@ -70,6 +70,17 @@
                                         </xs:complexContent>
                                 </xs:complexType>
                         </xs:element>
+						
+						<!-- Définition de la palette de couleur à utiliser -->
+                        <xs:element name="pente" minOccurs="0" maxOccurs="1">
+                            <xs:complexType>
+                                        <xs:complexContent>
+                                        <!-- Type d'algo -->
+                                        <xs:attribute name="algo" type="xs:string" use="optional"/>
+                                        </xs:complexContent>
+                                </xs:complexType>
+                        </xs:element>
+						
                         </xs:sequence>
                 </xs:complexType>
         </xs:element>
