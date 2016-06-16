@@ -355,8 +355,6 @@ Checks presence of mandatory sections in parameters.
     - pyramid
     - process
     - datasource
-    
-Sections tile, tms and nodata are inserted into the pyramid section.
 
 Logger parameters are used to initialize logger (Log::Log4perl library).
 

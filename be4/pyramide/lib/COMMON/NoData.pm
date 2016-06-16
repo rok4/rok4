@@ -88,7 +88,6 @@ our @EXPORT      = qw();
 # Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
-use constant CREATE_NODATA => "createNodata";
 
 # Constant: HEX2DEC
 # Define conversion from hedecimal to decimal number.
@@ -270,70 +269,6 @@ sub getValue {
 sub getPixel {
     my $self = shift;
     return $self->{pixel};
-}
-
-=begin nd
-Function: getNodataFilename
-
-Returns the name of the nodata tile : nd.tif
-=cut
-sub getNodataFilename {
-    my $self = shift;
-    return "nd.tif";
-}
-
-####################################################################################################
-#                                    Group: Commands                                               #
-####################################################################################################
-
-=begin nd
-Function: createNodata
-
-Compose the command to create a nodata tile and execute it. The tile's name is given by the method getNodataName.
-
-Returns TRUE if the nodata tile is succefully written, FALSE otherwise.
-
-Parameters (list):
-    nodataDirPath - string - complete absolute directory path, where to write the nodata tile ("/path/to/write/")
-    width - integer - Width in pixel of the tile
-    height - integer - Height in pixel of the tile
-    compression - string - Compression to apply to the nodata tile
-=cut
-sub createNodata {
-    my $self = shift;
-    my $nodataDirPath = shift;
-    my $width = shift;
-    my $height = shift;
-    my $compression = shift;
-    
-    TRACE();
-    
-    my $nodataFilePath = File::Spec->catfile($nodataDirPath,$self->getNodataFilename());
-    
-    my $cmd = sprintf ("%s -n %s",CREATE_NODATA, $self->{value});
-    $cmd .= sprintf ( " -c %s", $compression);
-    $cmd .= sprintf ( " -p %s", $self->{pixel}->getPhotometric);
-    $cmd .= sprintf ( " -t %s %s",$width,$height);
-    $cmd .= sprintf ( " -b %s", $self->{pixel}->getBitsPerSample);
-    $cmd .= sprintf ( " -s %s", $self->{pixel}->getSamplesPerPixel);
-    $cmd .= sprintf ( " -a %s", $self->{pixel}->getSampleFormat);
-    $cmd .= sprintf ( " %s", $nodataFilePath);
-
-    if (! -d $nodataDirPath) {
-        # create folders
-        eval { mkpath([$nodataDirPath]); };
-        if ($@) {
-            ERROR(sprintf "Can not create the nodata directory '%s' : %s !", $nodataDirPath , $@);
-            return FALSE;
-        }
-    }
-    
-    if (! system($cmd) == 0) {
-        ERROR (sprintf "The command to create a nodata tile is incorrect : '%s'",$cmd);
-        return FALSE;
-    }
-
-    return TRUE; 
 }
 
 ####################################################################################################

@@ -40,8 +40,7 @@ File: Pyramid.pm
 
 Class: WMTSALAD::Pyramid
 
-Stores all information about the pyramid to generate. Also write the descriptor file, the nodata tiles 
-and, if needed, initiates the directories tree for the cache.
+Stores all information about the pyramid to generate. Also write the descriptor file and, if needed, initiates the directories tree for the cache.
 
 Using:
     (start code)
@@ -59,7 +58,7 @@ Attributes:
     format - string - image format. 
     compression - string - image compression. default to 'raw'. accepted values : 'raw', 'jpg', 'png', 'lzw', 'zip', 'pkb'
     channels - strict positive integer - number of channels / samples per pixel
-    noData - <BE4::NoData> - contains information for the nodata tiles.
+    noData - <COMMON::NoData> - contains information for the nodata.
     interpolation - string - The interpolation method. values : "lanczos", "nn" (nearest neighbour), "bicubic", "linear"
     photometric - string - image photometric. Values : "gray", "rgb". Mandatory, and must match the number of channels.
     image_width - strict positive integer - image width, in tiles
@@ -71,7 +70,6 @@ Attributes:
 
     pyr_desc_path - string - path to the new pyramid's descriptor file
     pyr_data_path - string - path to the directory containing the caches' roots.
-    dir_nodata - string - path to the nodata tiles root (in pyr_data_path/)
     dir_depth - non negative integer - depth of the cache tree path between the cache root and the files. (affect image cache)
     dir_image - string - cache root's path for images, if persistent
 
@@ -97,10 +95,10 @@ use COMMON::CheckUtils;
 use WMTSALAD::DataSource;
 use WMTSALAD::PyrSource;
 use WMTSALAD::WmsSource;
-use BE4::TileMatrixSet;
-use BE4::TileMatrix;
-use BE4::Pixel;
-use BE4::NoData;
+use COMMON::TileMatrixSet;
+use COMMON::TileMatrix;
+use COMMON::Pixel;
+use COMMON::NoData;
 
 use parent qw(Exporter);
 
@@ -198,7 +196,6 @@ sub new {
         persistent => undef,
         dir_depth => undef,
         dir_image => undef,
-        dir_nodata => undef,
         pyr_name => undef,
         pyr_data_path => undef,
         pyr_desc_path => undef,
@@ -342,9 +339,6 @@ sub _loadProperties {
     if ($self->{persistent} == TRUE) {
         $self->{dir_image} = $refFileContent->{pyramid}->{dir_image};
     }
-
-    # Nodata Directory
-    $self->{dir_nodata} = $refFileContent->{pyramid}->{dir_nodata};
 
     # Descriptor's path
     $self->{pyr_desc_path} = $refFileContent->{pyramid}->{pyr_desc_path};
@@ -761,12 +755,6 @@ sub _checkProperties {
         }
     }
 
-    my $dir_nodata = $propCfg->getProperty({section => 'pyramid', property => 'dir_nodata'});
-    if (! defined $dir_nodata) {
-        ERROR ("The parameter 'dir_nodata' is required!");
-        return FALSE;
-    }
-
     my $pyr_desc_path = $propCfg->getProperty({section => 'pyramid', property => 'pyr_desc_path'});
     if (! defined $pyr_desc_path) {
         ERROR ("The parameter 'pyr_desc_path' is required!");
@@ -934,7 +922,6 @@ sub exportForDebug {
     $pyr_dump .= "\n  pyr_data_path => ".$self->{pyr_data_path};
     $pyr_dump .= "\n  dir_depth => ".$self->{dir_depth};
     if ($self->{persistent}) {$pyr_dump .= "\n  dir_image => ".$self->{dir_image};}
-    $pyr_dump .= "\n  dir_nodata => ".$self->{dir_nodata};
     $pyr_dump .= "\n  persistent => ".$self->{persistent};
     $pyr_dump .= "\n  image_width => ".$self->{image_width};
     $pyr_dump .= "\n  image_height => ".$self->{image_height};
@@ -1022,10 +1009,6 @@ sub writeConfPyramid {
         $levelEl->appendTextChild("tilesPerWidth", $self->{image_width});
         $levelEl->appendTextChild("tilesPerHeight", $self->{image_height});
         $levelEl->appendTextChild("pathDepth", $self->{dir_depth});
-        my $nodataEl = $descDoc->createElement("nodata");
-        $levelEl->appendChild($nodataEl);
-        my $nodataBaseFilePath = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_nodata}, $lvlId, $self->{noData}->getNodataFilename());
-        $nodataEl->appendTextChild("filePath", $nodataBaseFilePath);
 
         # TMSLimits : level extent in the TileMatrix
         my $TMSLimitsEl = $descDoc->createElement("TMSLimits");
@@ -1053,7 +1036,6 @@ Function: writeCachePyramid
 Write the Cache Directory Structure (CDS).
 
     - creates the root cache directory
-    - creates the nodata tiles for each level
     - if the pyramid is persistent, creates an image directory for each level
 
 Using:
@@ -1072,7 +1054,7 @@ sub writeCachePyramid {
     foreach my $lvl (@levels) {
         my $lvlId = $self->{tileMatrixSet}->getIDfromOrder($lvl);
 
-        # Create folders for data, and nodata, if they don't exist
+        # Create folders for data, if they don't exist
 
         # Data folder created only if the pyramid is defined as persistent
         if ($self->{persistent} == TRUE) {
@@ -1085,20 +1067,6 @@ sub writeCachePyramid {
                     ERROR(sprintf "Can not create the data directory '%s' : %s !", $imageBaseDir , $@);
                     return FALSE;
                 }
-            }
-        }
-
-        ### NODATA
-        my $nodataBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_nodata}, $lvlId);
-        my $nodataTilePath = File::Spec->catfile($nodataBaseDir, $self->{noData}->getNodataFilename);
-        if (! -e $nodataTilePath) {
-
-            my $width = $self->{tileMatrixSet}->getTileWidth($lvlId);
-            my $height = $self->{tileMatrixSet}->getTileHeight($lvlId);
-
-            if (! $self->{noData}->createNodata($nodataBaseDir,$width,$height,$self->{compression})) {
-                ERROR (sprintf "Impossible to create the nodata tile for the level %i !",$lvlId);
-                return FALSE;
             }
         }
 
@@ -1170,9 +1138,6 @@ And details about each level.
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
-        <nodata>
-            <filePath>be4/pyramide/tests/WMTSalaD/generated/TEST-OD-PYR/NODATA/15</filePath>
-        </nodata>
         <TMSLimits>
             <minTileRow>10837</minTileRow>
             <maxTileRow>12353</maxTileRow>
@@ -1188,17 +1153,10 @@ Cache Directory Structure:
 
 Only if $pyramid->writeCachePyramid() is called (using ofr example wmtSalaD_with_cache.pl.
 
-For a temporary pyramid, the directory structure is empty, and only the directory and tile for nodata are written.
+For a temporary pyramid, the directory structure is empty, and only the directory are written.
     (start code)
     pyr_data_path/
             |_ pyr_name/
-                    |__dir_nodata/
-                            |_ ID_LEVEL0/
-                                    |_ nd.tif
-                            |_ ID_LEVEL1/
-                                    |_ nd.tif
-                            |_ ID_LEVEL2/
-                                    |_ nd.tif
     (end code)
 
 For a persistent pyramid, the directory structure is still empty, but this time even the directory for images is created.
@@ -1207,12 +1165,6 @@ For a persistent pyramid, the directory structure is still empty, but this time 
             |__pyr_name/
                     |__dir_image/
                             |_ ID_LEVEL0/
-                            |__ ID_LEVEL1/
-                            |__ ID_LEVEL2/
-                            |__ ...
-                    |__dir_nodata/
-                            |_ ID_LEVEL0/
-                                    |_ nd.tif
                             |__ ID_LEVEL1/
                             |__ ID_LEVEL2/
                             |__ ...

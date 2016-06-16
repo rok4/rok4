@@ -323,7 +323,7 @@ Function: _load
 We have to collect pyramid's attributes' values
     - for a new pyramid : all informations must be present in configuration.
 
-Informations are checked, using perl classes like <NoData>, <Level>, <PyrImageSpec>...
+Informations are checked, using perl classes like <COMMON::NoData>, <BE4CEPH::Level>, <COMMON::PyrImageSpec>...
 
 Parameters (list):
     params - All parameters about a pyramid's format (new or update).
@@ -660,58 +660,6 @@ sub writeListPyramid {
     close $NEWLIST;
     
     return TRUE;
-}
-
-=begin nd
-Function: writeCachePyramid
-
-Write the Cache Structure (CDS).
-    - create the nodata tile for each level (add in the list).
-=cut
-sub writeCachePyramid {
-    my $self = shift;
-    
-    my $newcachelist = $self->getNewListFile;
-    
-    if (! -f $newcachelist) {
-        ERROR(sprintf "New pyramid list ('%s') doesn't exist.", $newcachelist);
-        return FALSE;
-    }
-    
-    my $NEWLIST;
-
-    if (! open $NEWLIST, ">>", $newcachelist) {
-        ERROR(sprintf "Cannot open new pyramid list file : %s",$newcachelist);
-        return FALSE;
-    }
-    
-    my %levels = %{$self->getLevels};
-    foreach my $objLevel (values %levels) {
-
-        ### NODATA
-
-        my $width = $self->getTileMatrixSet->getTileWidth($objLevel->getID);
-        my $height = $self->getTileMatrixSet->getTileHeight($objLevel->getID);
-
-        my $ok = COMMON::Commands::createNodataCeph(
-            $self->{new_pyramid}->{data_pool},
-            $objLevel->getNodataObjectName(),
-            $self->{nodata},
-            $width,$height,
-            $self->getCompression()
-        );
-        if (! $ok) {
-            ERROR (sprintf "Impossible to create the nodata tile for the level %i !",$objLevel->getID);
-            return FALSE;
-        }
-            
-        printf $NEWLIST "%s\n", $objLevel->getNodataObjectName();
-    }
-    
-    close $NEWLIST;
-
-    return TRUE;
-  
 }
 
 ####################################################################################################
@@ -1095,7 +1043,7 @@ The pyramid descriptor is written in pyr_desc_path contains global informations 
         <tileMatrixSet>LAMB93_10cm</tileMatrixSet>
         <format>TIFF_RAW_INT8</format>
         <channels>3</channels>
-        <nodataValue>FFFFFF</nodataValue>
+        <nodataValue>255,255,255</nodataValue>
         <interpolation>bicubic</interpolation>
         <photometric>rgb</photometric>
             .
@@ -1107,17 +1055,17 @@ The pyramid descriptor is written in pyr_desc_path contains global informations 
 And details about each level.
     (start code)
     <level>
-        <tileMatrix>level_5</tileMatrix>
-        <baseDir>./BDORTHO/IMAGE/level_5/</baseDir>
+        <tileMatrix>6</tileMatrix>
+        <cephContext>
+            <poolName>CEPH_POOL_NAME</poolName>
+        </cephContext>
+        <imagePrefix>MYPYRAMID_IMG_6</imagePrefix>
         <mask>
-            <baseDir>./BDORTHO/MASK/level_5/</baseDir>
+            <maskPrefix>MYPYRAMID_MSK_6</maskPrefix>
+            <format>TIFF_ZIP_INT8</format>
         </mask>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
-        <pathDepth>2</pathDepth>
-        <nodata>
-            <filePath>./BDORTHO/NODATA/level_5/nd.tif</filePath>
-        </nodata>
         <TMSLimits>
             <minTileRow>365</minTileRow>
             <maxTileRow>368</maxTileRow>
@@ -1145,13 +1093,10 @@ A separator : #, necessary.
 
 Images' list : just object names
     (start code)
-    MYPYRAMID_NDT_6
-    MYPYRAMID_NDT_7
-    .
-    .
-    .
     MYPYRAMID_IMG_6_125_65
     MYPYRAMID_IMG_7_1625_845
+    .
+    .
     (end code)
 
 The new cache's list is written by writeCachePyramid. The file is completed by Process, to add generated images.

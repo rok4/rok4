@@ -62,7 +62,6 @@ Attributes:
     id - string - Level identifiant.
     order - integer - Level order (ascending resolution)
     prefix_image - string - Object name prefix for this level's images
-    objectname_nodata - string - Object name for this level's nodata tile
     prefix_mask - string - Object name prefix for this level's masks
     size - integer array - Number of tile in one image for this level, widthwise and heightwise : [width, height].
     limits - integer array - Extrems columns and rows for the level (Extrems tiles which contains data) : [rowMin,rowMax,colMin,colMax]
@@ -107,9 +106,6 @@ my $STRLEVELTMPLT = <<"TLEVEL";
 <!-- __MASK__ -->
         <tilesPerWidth>__TILEW__</tilesPerWidth>
         <tilesPerHeight>__TILEH__</tilesPerHeight>
-        <nodata>
-            <objectName>__NODATAPATH__</objectName>
-        </nodata>
         <TMSLimits>
             <minTileRow>__MINROW__</minTileRow>
             <maxTileRow>__MAXROW__</maxTileRow>
@@ -151,7 +147,7 @@ Parameters (hash):
     size - integer array - Number of tile in one image for this level
     limits - integer array - Optionnal. Current level's limits. Set to [undef,undef,undef,undef] if not defined.
     hasMask - boolean - Optionnal (default value : false) : precise if level owns masks
-    prefix - string - prefix used to determine image and mask prefix, and nodata tile object name
+    prefix - string - prefix used to determine image and mask prefix
 
 See also:
     <_init>
@@ -166,7 +162,6 @@ sub new {
         id => undef,
         order => undef,
         prefix_image => undef,
-        objectname_nodata => undef,
         prefix_mask => undef,
         size => [],
         limits => undef
@@ -194,10 +189,9 @@ Parameters (hash):
     size - integer array - Number of tile in one image for this level
     hasMask - boolean - Optionnal (default value : false) : precise if level owns masks
     limits - integer array - Optionnal. Current level's limits. Set to [undef,undef,undef,undef] if not defined.
-    prefix - string - prefix used to determine image and mask prefix, and nodata tile object name
+    prefix - string - prefix used to determine image and mask prefix
 |       prefix_mask = <prefix>_MSK_<id>
 |       prefix_image = <prefix>_IMG_<id>
-|       objectname_nodata = <prefix>_NDT_<id>
 =cut
 sub _init {
     my $self   = shift;
@@ -236,7 +230,6 @@ sub _init {
     $self->{id}             = $params->{id};
     $self->{order}          = $params->{order};
     $self->{prefix_image} = sprintf "%s_IMG_%s", $params->{prefix}, $params->{id};
-    $self->{objectname_nodata} = sprintf "%s_NDT_%s", $params->{prefix}, $params->{id};
     $self->{size}           = $params->{size};
     $self->{limits}         = $params->{limits};
 
@@ -268,13 +261,6 @@ sub getLimits {
     my $self = shift;
     return ($self->{limits}[0], $self->{limits}[1], $self->{limits}[2], $self->{limits}[3]);
 }
-
-# Function: getNodataObjectName
-sub getNodataObjectName {
-    my $self = shift;
-    return $self->{objectname_nodata};
-}
-
 
 =begin nd
 method: updateExtremTiles
@@ -318,9 +304,6 @@ Example:
         <imagePrefix>BDORTHO_IMG_level_5</imagePrefix>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
-        <nodata>
-            <objectName>BDORTHO_NDT_level_5</objectName>
-        </nodata>
         <TMSLimits>
             <minTileRow>365</minTileRow>
             <maxTileRow>368</maxTileRow>
@@ -343,9 +326,6 @@ sub exportToXML {
 
     my $prefix = $self->{prefix_image};
     $levelXML =~ s/__IMGPREFIX__/$prefix/;
-
-    my $ndName = $self->{objectname_nodata};
-    $levelXML =~ s/__NODATAPATH__/$ndName/;
 
 
     if ($pyramid->storeTiles) {
@@ -404,7 +384,6 @@ sub exportForDebug {
 
     $export .= "\t Prefixes and object name: \n";
     $export .= sprintf "\t\t- Images prefix : %s\n",$self->{prefix_image};
-    $export .= sprintf "\t\t- Nodata object name : %s\n",$self->{objectname_nodata};
     $export .= sprintf "\t\t- Mask prefix: %s\n",$self->{prefix_mask} if (defined $self->{prefix_mask});
     
     $export .= "\t Tile limits : \n";

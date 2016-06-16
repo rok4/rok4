@@ -47,13 +47,13 @@ perl wmtSalaD.pl --conf=path --dsrc=path
 (end code)
 
 Tool creating a pyramid descriptor specific to Rok4's 'WMTS on demand' service.
-It also creates the 'nodata' tiles, and may initiate the directories tree.
+It also initiate the directories tree.
 
 (see be4_general.png)
 
 2 types of generation :
-    - only create the descriptor file and the nodata tiles (on demand pyramid without cache)
-    - creates the descriptor, the nodata tiles, and the directories trees for images and masks cache.
+    - only create the descriptor file (on demand pyramid without cache)
+    - creates the descriptor and the directories trees for images and masks cache.
 
 2 data source type :
     - existing Rok4 pyramids (normal ones, with its cache)
@@ -425,9 +425,8 @@ For more informations about properties, see <WMTSALAD::Pyramid>.
 
     dir_depth - Image's depth from the level directory. depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif. Mandatory.
 
-    persistent -  boolean value. If false, only the descriptor and the nodata tiles will be created. Default : false.
+    persistent -  boolean value. If false, only the descriptor will be created. Default : false.
 
-    dir_nodata - Name of the subdirectory for the nodata tiles, in *pyr_data_path/pyr_name/*. Mandatory
     dir_image - Name of the subdirectory for the image data tiles, in *pyr_data_path/pyr_name/*. Required if 'persistent' is set to 'true', ignored if 'false'
 
     tms_name - TMS file name, with extension *.tms*. Mandatory.
@@ -450,7 +449,6 @@ Examples:
 
     dir_depth = 2
     dir_image = IMAGE
-    dir_nodata = NODATA
 
     compression = jpg
     bitspersample = 8
@@ -467,7 +465,6 @@ Group: Paths in brief
 
     - Descriptor file : *pyr_desc_path/pyr_name.pyr*
     - Cache directory: *pyr_data_path/pyr_name/*
-    -- Nodata drectory: *pyr_data_path/pyr_name/dir_nodata*
     -- Images drectory: *pyr_data_path/pyr_name/dir_image*
     - TMS file: *tms_path/tms_name*
 

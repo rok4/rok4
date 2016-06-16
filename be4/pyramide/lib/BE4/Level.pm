@@ -50,7 +50,6 @@ Using:
         id                => level_5,
         order             => 12,
         dir_image         => "/home/ign/BDORTHO/IMAGE/level_5/",
-        dir_nodata        => "/home/ign/BDORTHO/NODATA/level_5/",
         dir_mask          => "/home/ign/BDORTHO/MASK/level_5/",
         dir_metadata      => undef,
         compress_metadata => undef,
@@ -67,7 +66,6 @@ Attributes:
     id - string - Level identifiant.
     order - integer - Level order (ascending resolution)
     dir_image - string - Absolute images' directory path for this level.
-    dir_nodata - string - Absolute nodata's directory path for this level.
     dir_mask - string - Absolute mask' directory path for this level.
     dir_metadata - NOT IMPLEMENTED
     compress_metadata - NOT IMPLEMENTED
@@ -115,9 +113,6 @@ my $STRLEVELTMPLT = <<"TLEVEL";
         <tilesPerWidth>__TILEW__</tilesPerWidth>
         <tilesPerHeight>__TILEH__</tilesPerHeight>
         <pathDepth>__DEPTH__</pathDepth>
-        <nodata>
-            <filePath>__NODATAPATH__</filePath>
-        </nodata>
         <TMSLimits>
             <minTileRow>__MINROW__</minTileRow>
             <maxTileRow>__MAXROW__</maxTileRow>
@@ -168,7 +163,6 @@ Parameters (hash):
     limits - integer array - Optionnal. Current level's limits. Set to [undef,undef,undef,undef] if not defined.
     dir_depth - integer - Number of subdirectories from the level root to the image
     dir_image - string - Absolute images' directory path for this level.
-    dir_nodata - string - Absolute nodata's directory path for this level.
     dir_mask - string - Optionnal (if we want to keep mask in the final images' pyramid). Absolute mask' directory path for this level.
 
 See also:
@@ -184,7 +178,6 @@ sub new {
         id                => undef,
         order             => undef,
         dir_image         => undef,
-        dir_nodata        => undef,
         dir_mask          => undef,
         dir_metadata      => undef,
         compress_metadata => undef,
@@ -219,7 +212,6 @@ Parameters (hash):
     limits - integer array - Optionnal. Current level's limits. Set to [undef,undef,undef,undef] if not defined.
     dir_depth - integer - Number of subdirectories from the level root to the image
     dir_image - string - Absolute images' directory path for this level.
-    dir_nodata - string - Absolute nodata's directory path for this level.
     dir_mask - string - Optionnal (if we want to keep mask in the final images' pyramid). Absolute mask' directory path for this level.
 =cut
 sub _init {
@@ -241,10 +233,6 @@ sub _init {
     }
     if (! exists($params->{dir_image})) {
         ERROR ("The parameter 'dir_image' is required");
-        return FALSE;
-    }
-    if (! exists($params->{dir_nodata})) {
-        ERROR ("The parameter 'dir_nodata' is required");
         return FALSE;
     }
     if (! exists($params->{size})) {
@@ -280,7 +268,6 @@ sub _init {
     $self->{id}             = $params->{id};
     $self->{order}          = $params->{order};
     $self->{dir_image}      = $params->{dir_image};
-    $self->{dir_nodata}     = $params->{dir_nodata};
     $self->{size}           = $params->{size};
     $self->{dir_depth}      = $params->{dir_depth};
     $self->{limits}         = $params->{limits};
@@ -308,12 +295,6 @@ sub getOrder {
 sub getDirImage {
     my $self = shift;
     return $self->{dir_image};
-}
-
-# Function: getDirNodata
-sub getDirNodata {
-    my $self = shift;
-    return $self->{dir_nodata};
 }
 
 # Function: getDirMask
@@ -373,9 +354,6 @@ Example:
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
-        <nodata>
-            <filePath>./BDORTHO/NODATA/level_5/nd.tif</filePath>
-        </nodata>
         <TMSLimits>
             <minTileRow>365</minTileRow>
             <maxTileRow>368</maxTileRow>
@@ -396,9 +374,6 @@ sub exportToXML {
 
     my $dirimg = File::Spec->abs2rel($self->{dir_image},$descriptorDir);
     $levelXML =~ s/__DIRIMG__/$dirimg/;
-
-    my $pathnd = File::Spec->abs2rel($self->{dir_nodata}."/nd.tif",$descriptorDir);
-    $levelXML =~ s/__NODATAPATH__/$pathnd/;
 
     my $tilew    = $self->{size}[0];
     $levelXML =~ s/__TILEW__/$tilew/;
@@ -456,7 +431,6 @@ Example:
          ID (string) : 16, and order (integer) : 5
          Directories (depth = 2):
                 - Images : /home/ign/data/pyramid/IMAGE/16
-                - Nodata : /home/ign/data/pyramid/NODATA/16
                 - Mask : /home/ign/data/pyramid/MASK/16
          Tile limits :
                 - Column min : 783
@@ -478,7 +452,6 @@ sub exportForDebug {
 
     $export .= sprintf "\t Directories (depth = %s): \n",$self->{dir_depth};
     $export .= sprintf "\t\t- Images : %s\n",$self->{dir_image};
-    $export .= sprintf "\t\t- Nodata : %s\n",$self->{dir_nodata};
     $export .= sprintf "\t\t- Metadata : %s\n",$self->{dir_metadata} if (defined $self->{dir_metadata});
     $export .= sprintf "\t\t- Mask : %s\n",$self->{dir_mask} if (defined $self->{dir_mask});
     

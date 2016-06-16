@@ -619,9 +619,7 @@ sub doIt {
 
         # base dir image
         my $imageDir = File::Spec->catdir($pyramid->getNewDataDir, $pyramid->getDirImage, $levelId);
-        # base dir nodata
-        my $nodataDir = File::Spec->catdir($pyramid->getNewDataDir, $pyramid->getDirNodata, $levelId);
-        # mask dir nodata
+        # base dir mask
         my $maskDir = undef;
         if ($pyramid->ownMasks()) {
             $maskDir = File::Spec->catdir($pyramid->getNewDataDir, $pyramid->getDirMask, $levelId);
@@ -685,7 +683,6 @@ sub doIt {
             id => $levelId,
             order => $levelOrder,
             dir_image => $imageDir,
-            dir_nodata => $nodataDir,
             dir_mask => $maskDir,
             size => [$pyramid->getTilesPerWidth,$pyramid->getTilesPerHeight],
             dir_depth => $pyramid->getDirDepth,
@@ -719,7 +716,7 @@ sub doIt {
         return FALSE;
     }
 
-    # writting pyramid's cache (nodata tiles)
+    # writting pyramid's cache
     ALWAYS(">>> Write pyramid's cache");
     if (! $this{pyramid}->writeCachePyramid) {
         ERROR("Can not write Pyramid Cache !");

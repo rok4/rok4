@@ -40,7 +40,6 @@ File: Command.pm
 
 Class: COMMON::Commands
 
-
 Using:
     (start code)
     (end code)
@@ -72,48 +71,6 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-####################################################################################################
-#                                Group: Create nodata tile                                         #
-####################################################################################################
-
-use constant CREATE_NODATA => "createNodata";
-
-=begin nd
-Function: createNodataCeph
-
-Compose the command to create a nodata tile and execute it.
-
-Returns TRUE if the nodata tile is succefully written on a ceph cluster, FALSE otherwise.
-
-Parameters (list):
-=cut
-sub createNodataCeph {
-    my $poolName = shift;
-    my $objName = shift;
-    my $nodataObj = shift;
-    my $width = shift;
-    my $height = shift;
-    my $compression = shift; 
-
-    
-    my $cmd = sprintf ("%s -n %s",CREATE_NODATA, $nodataObj->getValue());
-    $cmd .= sprintf ( " -c %s", $compression);
-    $cmd .= sprintf ( " -p %s", $nodataObj->getPixel->getPhotometric);
-    $cmd .= sprintf ( " -t %s %s",$width,$height);
-    $cmd .= sprintf ( " -b %s", $nodataObj->getPixel->getBitsPerSample);
-    $cmd .= sprintf ( " -s %s", $nodataObj->getPixel->getSamplesPerPixel);
-    $cmd .= sprintf ( " -a %s", $nodataObj->getPixel->getSampleFormat);
-    $cmd .= sprintf ( " -pool %s", $poolName);
-    $cmd .= sprintf ( " %s", $objName);
-    
-    if (! system($cmd) == 0) {
-        ERROR (sprintf "The command to create a nodata tile is incorrect : '%s'",$cmd);
-        return FALSE;
-    }
-
-
-    return TRUE; 
-}
 
 ####################################################################################################
 #                                Group: Create nodata tile                                         #

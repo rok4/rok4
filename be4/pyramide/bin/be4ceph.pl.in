@@ -329,7 +329,7 @@ Steps in order, using parameters :
     - load data sources : <COMMON::DataSourceLoader::new>
     - update levels for this Pyramid object : <BE4CEPH::Pyramid::updateLevels>
     - create the Forest object : <COMMON::Forest::new>
-    - write (initialization) the pyramid and its list : <BE4CEPH::Pyramid::writeCachePyramid> and <BE4CEPH::Pyramid::writeListPyramid>
+    - write (initialization) its list : <BE4CEPH::Pyramid::writeListPyramid>
     - write the pyramid's descriptor : <BE4CEPH::Pyramid::writeConfPyramid>
     - compute trees (write scripts) : <COMMON::Forest::computeGraphs>
 =cut
@@ -406,16 +406,6 @@ sub doIt {
 
     if (! $objPyramid->writeListPyramid($objForest)) {
         ERROR("Can not write Pyramid list !");
-        return FALSE;
-    }
-    
-    #######################
-    # write the pyramid cache
-    
-    ALWAYS(">>> Write the pyramid's cache ...");
-
-    if (! $objPyramid->writeCachePyramid) {
-        ERROR("Can not write Pyramid Cache !");
         return FALSE;
     }
     

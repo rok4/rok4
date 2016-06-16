@@ -121,10 +121,10 @@ Attributes:
     image_width - integer - Number of tile in an pyramid's image, widthwise.
     image_height - integer - Number of tile in an pyramid's image, heightwise.
 
-    pyrImgSpec - <PyrImageSpec> - New pyramid's image's components
-    tms - <TileMatrixSet> - Pyramid's images will be cutted according to this TMS grid.
-    nodata - <NoData> - Informations about nodata
-    levels - <Level> hash - Key is the level ID, the value is the <Level> object. Define levels present in this new pyramid.
+    pyrImgSpec - <COMMON::PyrImageSpec> - New pyramid's image's components
+    tms - <COMMON::TileMatrixSet> - Pyramid's images will be cutted according to this TMS grid.
+    nodata - <COMMON::NoData> - Informations about nodata
+    levels - <BE4::Level> hash - Key is the level ID, the value is the <Level> object. Define levels present in this new pyramid.
 
 Limitations:
 
@@ -411,7 +411,7 @@ We have to collect pyramid's attributes' values
     - for a new pyramid : all informations must be present in configuration.
     - for an updated pyramid (with ancestor) : informations are collected in the ancestor pyramid's descriptor, <fillFromAncestor> is called.
 
-Informations are checked, using perl classes like <NoData>, <Level>, <PyrImageSpec>...
+Informations are checked, using perl classes like <COMMON::NoData>, <BE4::Level>, <COMMON::PyrImageSpec>...
 
 Parameters (list):
     params - All parameters about a pyramid's format (new or update).
@@ -658,8 +658,6 @@ sub readConfPyramid {
         #
         my $imageDir = File::Spec->catdir($self->getNewDataDir(), $self->getDirImage(), $tagtm );
         #
-        my $nodataDir = File::Spec->catdir($self->getNewDataDir(), $self->getDirNodata(), $tagtm );
-        #
         my $maskDir = undef;
         if ($self->ownMasks()) {
             $maskDir = File::Spec->catdir($self->getNewDataDir(), $self->getDirMask(), $tagtm );
@@ -674,7 +672,6 @@ sub readConfPyramid {
             id                => $tagtm,
             order             => $levelOrder,
             dir_image         => $imageDir,
-            dir_nodata        => $nodataDir,
             dir_mask          => $maskDir, # Can be undefined
             size              => [$tagsize[0],$tagsize[1]],
             dir_depth         => $tagdirdepth,
@@ -707,7 +704,7 @@ sub readConfPyramid {
 =begin nd
 Function: readCachePyramid
 
-Browse old cache. We store images (data and nodata) in a file and broken symbolic links in an array. This function is needed if the ancestor pyramid doesn't own a content list.
+Browse old cache. We store images in a file and broken symbolic links in an array. This function is needed if the ancestor pyramid doesn't own a content list.
 
 Parameters (list):
     cachedir - string - Root directory to browse.
@@ -787,7 +784,7 @@ sub readCachePyramid {
 =begin nd
 Function: findImages
 
-Recursive method to browse a file tree structure. Store directories, images (data and nodata) and broken symbolic links.
+Recursive method to browse a file tree structure. Store directories, images and broken symbolic links.
 
 Parameters (list):
     directory - string - Root directory to browse.
@@ -856,13 +853,7 @@ sub findImages {
         # $realName : abs_datapath/IMAGE/level/XY/XY/XY.tif
         #                             -5      -4  -3 -2   -1
         #                     => -(3 + dir_depth)
-        #    OR
-        # $realName : abs_datapath/NODATA/level/nd.tif
-        #                              -3      -2     -1
-        #                           => - 3
-        my $deb = -3;
-            
-        $deb -= $self->{dir_depth} if ($directories[-3] ne $self->getDirNodata);
+        my $deb = -3 - $self->{dir_depth};
         
         my @indexName = ($deb..-1);
         my @indexRoot = (0..@directories+$deb-1);
@@ -989,9 +980,6 @@ sub createLevels {
         # base dir image
         my $imageDir = File::Spec->catdir($self->getNewDataDir(), $self->getDirImage(), $ID);
 
-        # base dir nodata
-        my $nodataDir = File::Spec->catdir($self->getNewDataDir(), $self->getDirNodata(), $ID);
-
         # base dir mask
         my $maskDir = undef;
         if ($self->ownMasks()) {
@@ -1003,7 +991,6 @@ sub createLevels {
             id                => $ID,
             order             => $order,
             dir_image         => $imageDir,
-            dir_nodata        => $nodataDir,
             dir_mask          => $maskDir,
             size              => [$tilesperwidth, $tilesperheight],
             dir_depth         => $self->getDirDepth(),
@@ -1292,18 +1279,16 @@ sub writeListPyramid {
                 next;
             }            
             
-            if ($directories[1] ne $self->getDirNodata) {
-                $level = $directories[2];
+            $level = $directories[2];
 
-                my $b36path = "";
-                for (my $i = 3; $i < scalar @directories; $i++) {
-                    $b36path .= $directories[$i]."/";
-                }
-
-                # Extension is removed
-                $b36path =~ s/(\.tif|\.tiff|\.TIF|\.TIFF)//;
-                ($x,$y) = COMMON::Base36::b36PathToIndices($b36path);
+            my $b36path = "";
+            for (my $i = 3; $i < scalar @directories; $i++) {
+                $b36path .= $directories[$i]."/";
             }
+
+            # Extension is removed
+            $b36path =~ s/(\.tif|\.tiff|\.TIF|\.TIFF)//;
+            ($x,$y) = COMMON::Base36::b36PathToIndices($b36path);
             
             if (! $forest->containsNode($level,$x,$y)) {
                 # This image is not in the forest, it won't be modified by this generation.
@@ -1428,7 +1413,6 @@ Write the Cache Directory Structure (CDS).
 
     - create an image directory for each level.
     - create a mask directory for each level, if asked.
-    - create the nodata tile for each level, if not exists (add in the list).
 =cut
 sub writeCachePyramid {
     my $self = shift;
@@ -1451,7 +1435,7 @@ sub writeCachePyramid {
     
     my %levels = %{$self->getLevels};
     foreach my $objLevel (values %levels) {
-        # Create folders for data and nodata (metadata not implemented) if they don't exist
+        # Create folders for data and mask
         ### DATA
         my $dataDir = $objLevel->getDirImage;
         if (! -d $dataDir) {
@@ -1471,22 +1455,6 @@ sub writeCachePyramid {
                     return FALSE;
                 }
             }
-        }
-
-        ### NODATA
-        my $nodataDir = $objLevel->getDirNodata;
-        my $nodataTilePath = File::Spec->catfile($nodataDir,$self->{nodata}->getNodataFilename);
-        if (! -e $nodataTilePath) {
-
-            my $width = $self->getTileMatrixSet->getTileWidth($objLevel->getID);
-            my $height = $self->getTileMatrixSet->getTileHeight($objLevel->getID);
-
-            if (! $self->{nodata}->createNodata($nodataDir,$width,$height,$self->getCompression)) {
-                ERROR (sprintf "Impossible to create the nodata tile for the level %i !",$objLevel->getID);
-                return FALSE;
-            }
-            
-            printf $NEWLIST "%s\n", File::Spec->catdir("0",$self->getDirNodata,$objLevel->getID,$self->{nodata}->getNodataFilename);
         }
     }
     
@@ -1653,27 +1621,6 @@ sub getDirMask {
     
     return "MASK" if (! defined $complete || ! $complete);
     return File::Spec->catfile($self->getNewDataDir, "MASK");
-}
-
-=begin nd
-Function: getDirNodata
-
-Returns nodata directory, just the name or the complete path
-
-Examples:
-    - $objPyr->getDirNodata() returns "NODATA"
-    - $objPyr->getDirNodata(FALSE) returns "NODATA"
-    - $objPyr->getDirNodata(TRUE) returns "/home/ign/PYRAMID/NODATA"
-
-Parameters (list):
-    absolute - boolean - If we want complete directory path. Optionnal, FALSE by default.
-=cut
-sub getDirNodata {
-    my $self = shift;
-    my $complete = shift;
-    
-    return "NODATA" if (! defined $complete || ! $complete);
-    return File::Spec->catfile($self->getNewDataDir, "NODATA");
 }
 
 # Function: getDirDepth
@@ -1928,7 +1875,6 @@ Example:
                 - Data path : /home/ign/data
          Directories' name (depth = 2):
                 - Data : IMAGE
-                - Nodata : NODATA
                 - Mask : MASK
          Image size (in pixel):
                 - width : 16
@@ -2027,9 +1973,6 @@ And details about each level.
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
-        <nodata>
-            <filePath>./BDORTHO/NODATA/level_5/nd.tif</filePath>
-        </nodata>
         <TMSLimits>
             <minTileRow>365</minTileRow>
             <maxTileRow>368</maxTileRow>
@@ -2060,11 +2003,6 @@ A separator : #, necessary.
 
 Images' list : just real files, links' targets.
     (start code)
-    1/NODATA/11/nd.tif
-    1/NODATA/7/nd.tif
-    .
-    .
-    .
     1/IMAGE/16/00/1A/CV.tif
     1/IMAGE/17/00/2L/PR.tif
     .
@@ -2080,7 +2018,7 @@ The new cache's list is written by writeCachePyramid, using the old cache's list
 
 Cache Directory Structure:
 
-For a new pyramid, the directory structure is empty, only the level directory for images and directory and tile for nodata are written.
+For a new pyramid, the directory structure is empty, only the level directory for images and directory are written.
     (start code)
     pyr_data_path/
             |_ pyr_name_new/
@@ -2088,13 +2026,10 @@ For a new pyramid, the directory structure is empty, only the level directory fo
                             |_ ID_LEVEL0/
                             |_ ID_LEVEL1/
                             |_ ID_LEVEL2/
-                    |__NODATA/
+                    |__MASK/
                             |_ ID_LEVEL0/
-                                    |_ nd.tif
                             |_ ID_LEVEL1/
-                                    |_ nd.tif
                             |_ ID_LEVEL2/
-                                    |_ nd.tif
     (end code)
 
 For an existing pyramid, the directory structure is duplicated to the new pyramid with all file linked, thanks to the old cache list.
@@ -2113,19 +2048,10 @@ The kind of linking can be chosen between symbolic link (default), hard link (do
                             |__ ID_LEVEL1/
                             |__ ID_LEVEL2/
                             |__ ...
-                    |__NODATA/
-                            |_ ID_LEVEL0/
-                                    |_ nd.tif
-                            |__ ID_LEVEL1/
-                            |__ ID_LEVEL2/
-                            |__ ...
 
     with
         ls -l CV.tif
         CV.tif -> /pyr_data_path_old/pyr_name_old/IMAGE/ID_LEVEL0/7G/CV.tif
-    and
-        ls -l nd.tif
-        nd.tif -> /pyr_data_path_old/pyr_name_old/NODATA/ID_LEVEL0/nd.tif
     (end code)
 
 So be careful when you create a new tile in an updated pyramid, you have to test if the link exists, to use image as a background.
