@@ -303,7 +303,7 @@ sub _init() {
 
     return FALSE if(!$self->SUPER::_init($params));
 
-    foreach my $key (keys $params) {
+    foreach my $key (keys %{$params}) {
         chomp $params->{$key};
     }
 

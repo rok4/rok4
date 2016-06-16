@@ -53,7 +53,7 @@ Using:
     (end code)
 
 Attributes:
-    tileMatrixSet - <BE4::TileMatrixSet> - Tile matrix set in which the pyramid is defined
+    tileMatrixSet - <COMMON::TileMatrixSet> - Tile matrix set in which the pyramid is defined
 
     format - string - image format. 
     compression - string - image compression. default to 'raw'. accepted values : 'raw', 'jpg', 'png', 'lzw', 'zip', 'pkb'
@@ -71,7 +71,6 @@ Attributes:
     pyr_desc_path - string - path to the new pyramid's descriptor file
     pyr_data_path - string - path to the directory containing the caches' roots.
     dir_depth - non negative integer - depth of the cache tree path between the cache root and the files. (affect image cache)
-    dir_image - string - cache root's path for images, if persistent
 
     datasources - hash - ordered by level then priorities, the list of data sources used for this pyramid.
    
@@ -195,7 +194,6 @@ sub new {
         photometric => undef,
         persistent => undef,
         dir_depth => undef,
-        dir_image => undef,
         pyr_name => undef,
         pyr_data_path => undef,
         pyr_desc_path => undef,
@@ -273,12 +271,12 @@ sub _loadProperties {
     }
     my %fileContent = $cfg->getConfig();
     my $refFileContent = \%fileContent;
-    my $sampleformat; # Value to pass to BE4::Pixel
+    my $sampleformat; # Value to pass to COMMON::Pixel
 
     return FALSE if(! $self->_checkProperties($cfg));
 
     # Tile Matrix Set    
-    my $TMS = BE4::TileMatrixSet->new(File::Spec->catfile($refFileContent->{pyramid}->{tms_path},$refFileContent->{pyramid}->{tms_name}));
+    my $TMS = COMMON::TileMatrixSet->new(File::Spec->catfile($refFileContent->{pyramid}->{tms_path},$refFileContent->{pyramid}->{tms_name}));
     $self->{tileMatrixSet} = $TMS ;
 
     # Image format
@@ -335,10 +333,6 @@ sub _loadProperties {
     # Data paths
     $self->{pyr_data_path} = $refFileContent->{pyramid}->{pyr_data_path};
 
-    # Images directory
-    if ($self->{persistent} == TRUE) {
-        $self->{dir_image} = $refFileContent->{pyramid}->{dir_image};
-    }
 
     # Descriptor's path
     $self->{pyr_desc_path} = $refFileContent->{pyramid}->{pyr_desc_path};
@@ -347,7 +341,7 @@ sub _loadProperties {
     $self->{photometric} = lc ($refFileContent->{pyramid}->{photometric});
 
     # Nodata (default value : white, transparent if alpha channel available), -9999 for float32
-    my $pixel = BE4::Pixel->new({
+    my $pixel = COMMON::Pixel->new({
         photometric => $self->{photometric},
         sampleformat => $sampleformat,
         bitspersample => $refFileContent->{pyramid}->{bitspersample},
@@ -357,7 +351,7 @@ sub _loadProperties {
     if ($cfg->isProperty({section => 'pyramid', property => 'color'})) {
         $noDataValue = $refFileContent->{pyramid}->{color};
     }
-    $self->{noData} = BE4::NoData->new({ pixel => $pixel, value => $noDataValue });
+    $self->{noData} = COMMON::NoData->new({ pixel => $pixel, value => $noDataValue });
     if (! defined $self->{noData}) {
         ERROR("Failed NoData initialization. Check 'color' value.");
         return FALSE;
@@ -452,7 +446,7 @@ sub _loadDatasources {
                 return FALSE;
             }
 
-            push $self->{datasources}->{$lv}, \@tileExtent;
+            push @{$self->{datasources}->{$lv}}, \@tileExtent;
 
             for (my $order = 0; $order < scalar (@orders); $order++) {
                 my $source = {
@@ -468,10 +462,10 @@ sub _loadDatasources {
 
                 if ($cfg->isProperty({section => $section, subsection => $orders[$order], property => 'file'})) {
                     $sourceObject = WMTSALAD::PyrSource->new($source);
-                    push $self->{datasources}->{$lv}, $sourceObject;
+                    push @{$self->{datasources}->{$lv}}, $sourceObject;
                 } elsif ($cfg->isProperty({section => $section, subsection => $orders[$order], property => 'wms_url'})) {
                     $sourceObject = WMTSALAD::WmsSource->new($source);
-                    push $self->{datasources}->{$lv}, $sourceObject;
+                    push @{$self->{datasources}->{$lv}}, $sourceObject;
                 }
                 if (! defined $sourceObject) {
                     ERROR("Could not load source.");
@@ -747,14 +741,6 @@ sub _checkProperties {
         return FALSE;
     }
 
-    if ((defined $persistent) && ($persistent =~ m/\A(1|t|true)\z/i)) {
-        my $dir_image = $propCfg->getProperty({section => 'pyramid', property => 'dir_image'});
-        if (! defined $dir_image) {
-            ERROR ("The parameter 'dir_image' is required for a persistent pyramid!");
-            return FALSE;
-        }
-    }
-
     my $pyr_desc_path = $propCfg->getProperty({section => 'pyramid', property => 'pyr_desc_path'});
     if (! defined $pyr_desc_path) {
         ERROR ("The parameter 'pyr_desc_path' is required!");
@@ -921,7 +907,6 @@ sub exportForDebug {
     $pyr_dump .= "\n  pyr_desc_path => ".$self->{pyr_desc_path};
     $pyr_dump .= "\n  pyr_data_path => ".$self->{pyr_data_path};
     $pyr_dump .= "\n  dir_depth => ".$self->{dir_depth};
-    if ($self->{persistent}) {$pyr_dump .= "\n  dir_image => ".$self->{dir_image};}
     $pyr_dump .= "\n  persistent => ".$self->{persistent};
     $pyr_dump .= "\n  image_width => ".$self->{image_width};
     $pyr_dump .= "\n  image_height => ".$self->{image_height};
@@ -991,10 +976,15 @@ sub writeConfPyramid {
         my $levelEl = $descDoc->createElement("level");
         $rootEl->appendChild($levelEl);
         $levelEl->appendTextChild("tileMatrix", $lvlId);
+        
         if ($self->{persistent}) {
-            my $imageBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_image}, $lvlId);
+            my $imageBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, "IMAGE", $lvlId);
+            $levelEl->appendTextChild("onFly", "true");
             $levelEl->appendTextChild("baseDir", $imageBaseDir);
+        } else {
+            $levelEl->appendTextChild("onDemand", "true");
         }
+
         my $sourcesEl = $descDoc->createElement("sources");
         $levelEl->appendChild($sourcesEl);
 
@@ -1059,7 +1049,7 @@ sub writeCachePyramid {
         # Data folder created only if the pyramid is defined as persistent
         if ($self->{persistent} == TRUE) {
             ### DATA
-            my $imageBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, $self->{dir_image}, $lvlId);
+            my $imageBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, "IMAGE", $lvlId);
 
             if (! -d $imageBaseDir) {
                 eval { File::Path::make_path($imageBaseDir, {mode => 0755}); };
@@ -1163,7 +1153,7 @@ For a persistent pyramid, the directory structure is still empty, but this time 
     (start code)
     pyr_data_path/
             |__pyr_name/
-                    |__dir_image/
+                    |__IMAGE/
                             |_ ID_LEVEL0/
                             |__ ID_LEVEL1/
                             |__ ID_LEVEL2/
@@ -1194,6 +1184,6 @@ Index X base 36 (write with 3 number) = X2X1X0 (example: 0D4)
 
 Index Y base 36 (write with 3 number) = Y2Y1Y0 (example: 18Z)
 
-The image path, from the data root is : dir_image/levelID/X2Y2/X1Y1/X0Y0.tif (example: IMAGE/level_15/01/D8/4Z.tif)
+The image path, from the data root is : IMAGE/levelID/X2Y2/X1Y1/X0Y0.tif (example: IMAGE/level_15/01/D8/4Z.tif)
 
 =cut

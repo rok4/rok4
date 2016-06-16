@@ -81,12 +81,15 @@ Level::Level ( LevelXML* l, PyramidXML* p ) {
     minTileRow = l->minTileRow;
     maxTileCol = l->maxTileCol;
     minTileCol = l->minTileCol;
+    onDemand = l->onDemand;
+    onFly = l->onFly;
 
     pathDepth = l->pathDepth;
     format = p->getFormat();
     context = l->context;
     prefix = l->prefix;
 
+    maxTileSize = tm->getTileH() * tm->getTileW() * channels * Rok4Format::toSizePerChannel(format) * 2;
 }
 
 Level::~Level() {

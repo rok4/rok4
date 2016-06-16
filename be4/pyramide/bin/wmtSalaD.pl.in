@@ -144,7 +144,7 @@ See Also:
     <init>, <loadLogger>
 =cut
 sub main {
-    printf("BE4: version [%s]\n",$VERSION);
+    printf("WMTSALAD: version [%s]\n",$VERSION);
     # message
     my $message = undef;
 
@@ -427,8 +427,6 @@ For more informations about properties, see <WMTSALAD::Pyramid>.
 
     persistent -  boolean value. If false, only the descriptor will be created. Default : false.
 
-    dir_image - Name of the subdirectory for the image data tiles, in *pyr_data_path/pyr_name/*. Required if 'persistent' is set to 'true', ignored if 'false'
-
     tms_name - TMS file name, with extension *.tms*. Mandatory.
     tms_path - Directory, where to find the TMS file. Mandatory.
 
@@ -448,7 +446,6 @@ Examples:
     image_height = 16
 
     dir_depth = 2
-    dir_image = IMAGE
 
     compression = jpg
     bitspersample = 8
