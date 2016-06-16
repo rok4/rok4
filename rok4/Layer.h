@@ -280,29 +280,7 @@ public:
      * \return identifier
      */
     std::string getId();
-    /**
-     * \~french
-     * Deux possibilités :
-     * - la tuile existe dans la pyramide : la tuile est retournée
-     * - la tuile n'existe pas dans la pyramide : retourne une tuile de NoData si errorDataSource est nulle, errorDataSource sinon
-     * \brief Retourne une tuile
-     * \param [in] x Indice de la colone de la tuile
-     * \param [in] y Indice de la ligne de la tuile
-     * \param [in] tmId Identifiant du TileMatrix contenant la tuile
-     * \param [in] errorDataSource Réponse alternative à renvoyer si la tuile demandée n'existe pas dans la pyramide
-     * \return une tuile ou un message d'erreur
-     * \~english
-     * Two possibilities :
-     * - the tile is present in the pyramid : the tile is returned
-     * - the tile is not present in the pyramid : a NoData tile is returned if errorDataSource is null, else errorDataSource is returned
-     * \brief Return a tile
-     * \param [in] x Column index of the tile
-     * \param [in] y Line index of the tile
-     * \param [in] tmId TileMatrix identifier
-     * \param [in] errorDataSource Alternative response in case of missing data
-     * \return a tile or an error message
-     */
-    DataSource* gettile ( int x, int y, std::string tmId, DataSource* errorDataSource = NULL );
+
     /**
      * \~french
      * L'image résultante est découpé sur l'emprise de définition du système de coordonnées demandé.

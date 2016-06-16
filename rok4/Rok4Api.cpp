@@ -207,13 +207,7 @@ HttpRequest* rok4InitRequest ( const char* queryString, const char* hostName, co
     request->operationType=new char[rok4Request->request.length() +1];
     strcpy ( request->operationType,rok4Request->request.c_str() );
     request->error_response = 0;
-    
-    std::map<std::string, std::string>::iterator it = rok4Request->params.find ( "nodataashttpstatus" );
-    if ( it == rok4Request->params.end() ) {
-        request->noDataAsHttpStatus = 0;
-    } else {
-        request->noDataAsHttpStatus = 1;
-    }
+
     
     //Vérification des erreurs et ecriture dans error_response
     if ( rok4Request->service == "wmts" ) {
@@ -406,8 +400,7 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
     int x,y;
     Style* style =0;
     // Analyse de la requete
-    bool errorNoData;
-    DataSource* errorResp = request->getTileParam ( server->getServicesConf(), server->getTmsList(), server->getLayerList(), layer, tmId, x, y, mimeType, style, errorNoData );
+    DataSource* errorResp = request->getTileParam ( server->getServicesConf(), server->getTmsList(), server->getLayerList(), layer, tmId, x, y, mimeType, style );
     // Exception
     if ( errorResp ) {
         LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getTile" ) );
@@ -498,94 +491,6 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
         wmtst = "NORMAL";
         tileRef->wmtsType = new char[wmtst.length() +1];
         strcpy( tileRef->wmtsType, wmtst.c_str() );
-    }
-
-    delete request;
-    return 0;
-}
-
-/**
-* \brief Implementation de l'operation GetNoDataTile
-* \brief La tuile n'est pas lue, les elements recuperes sont les references de la tuile : le fichier dans lequel elle est stockee et les positions d'enregistrement (sur 4 octets) dans ce fichier de l'index du premier octet de la tuile et de sa taille
-* \param[in] queryString
-* \param[in] hostName
-* \param[in] scriptName
-* \param[in] server : serveur
-* \param[out] tileRef : reference de la tuile (la variable filename est allouee ici et doit etre desallouee ensuite)
-* \param[out] palette : palette à ajouter, NULL sinon.
-* \return Reponse en cas d'exception, NULL sinon
-*/
-HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char* hostName, const char* scriptName, const char* https, Rok4Server* server, TileRef* tileRef, TilePalette* palette ) {
-// Initialisation
-    std::string strQuery=queryString;
-
-    Request* request=new Request ( ( char* ) strQuery.c_str(), ( char* ) hostName, ( char* ) scriptName, ( char* ) https );
-    Layer* layer;
-    std::string tmId,format,encoding;
-    int x,y;
-    Style* style =0;
-    bool errorNoData;
-    // Analyse de la requete
-    DataSource* errorResp = request->getTileParam ( server->getServicesConf(), server->getTmsList(), server->getLayerList(), layer, tmId, x, y, format, style, errorNoData );
-    // Exception
-    if ( errorResp ) {
-        LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getTile" ) );
-        HttpResponse* error=initResponseFromSource ( errorResp );
-        delete errorResp;
-        return error;
-    }
-
-    // References de la tuile
-    Level* level = layer->getDataPyramid()->getLevel(tmId);
-    if ( level == NULL ) {
-
-        TileMatrix* tm = layer->getDataPyramid()->getTms()->getTm( tmId );
-        if ( tm == NULL ) {
-            //return the lowest Level available
-            level = layer->getDataPyramid()->getLowestLevel();
-        }
-        double askedRes = tm->getRes();
-        level = ( askedRes > layer->getDataPyramid()->getLowestLevel()->getRes() ? layer->getDataPyramid()->getHighestLevel() : layer->getDataPyramid()->getLowestLevel() );
-    }
-
-    tileRef->posoff=2048;
-    tileRef->possize=2048+4;
-    tileRef->maxsize = level->getMaxTileSize();
-
-    std::string imageFilePath=level->getNoDataFilePath();
-    tileRef->name=new char[imageFilePath.length() +1];
-    strcpy ( tileRef->name,imageFilePath.c_str() );
-
-    std::string ctxType = level->getContext()->getTypeStr();;
-    tileRef->contextType=new char[ctxType.length() +1];
-    strcpy ( tileRef->contextType,ctxType.c_str() );
-
-    std::string container = level->getContext()->getBucket();;
-    tileRef->pool=new char[container.length() +1];
-    strcpy ( tileRef->pool,container.c_str() );
-
-    tileRef->type=new char[format.length() +1];
-    strcpy ( tileRef->type,format.c_str() );
-    
-    encoding = Rok4Format::toEncoding( level->getFormat() );
-    tileRef->encoding = new char[encoding.length() +1];
-    strcpy( tileRef->encoding, encoding.c_str() );
-
-    tileRef->width=level->getTm()->getTileW();
-    tileRef->height=level->getTm()->getTileH();
-    tileRef->channels=level->getChannels();
-    
-    format = Rok4Format::toString ( layer->getDataPyramid()->getFormat() );
-    tileRef->format= new char[format.length() +1];
-    strcpy ( tileRef->format, format.c_str() );
-
-//Palette uniquement PNG pour le moment
-    if ( format == "image/png" ) {
-        palette->size = style->getPalette()->getPalettePNGSize();
-        palette->data = style->getPalette()->getPalettePNG();
-    } else {
-        palette->size = 0;
-        palette->data = NULL;
     }
 
     delete request;

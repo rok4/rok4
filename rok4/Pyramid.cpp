@@ -64,7 +64,13 @@ Pyramid::Pyramid (PyramidXML* p) : Source(PYRAMID) {
     format = p->format;
     photo = p->photo;
     channels = p->channels;
-    ndValues = p->noDataValues;
+
+    transparent = false;
+
+    ndValues = new int[p->noDataValues.size()];
+    for (int i = 0; i < p->noDataValues.size(); i++) {
+        ndValues[i] = p->noDataValues.at(i);
+    }
 
     isBasedPyramid = p->isBasedPyramid;
     containOdLevels = p->containOdLevels;
@@ -74,27 +80,6 @@ Pyramid::Pyramid (PyramidXML* p) : Source(PYRAMID) {
     double minRes= DBL_MAX;
     double maxRes= DBL_MIN;
     for ( itLevel=levels.begin(); itLevel!=levels.end(); itLevel++ ) {
-        //Empty Source as fallback
-        DataSource* noDataSource;
-        DataStream* nodatastream;
-
-        if ( format == Rok4Format::TIFF_JPG_INT8 ) {
-            nodatastream = new JPEGEncoder ( new ImageDecoder ( 0, itLevel->second->getTm()->getTileW(), itLevel->second->getTm()->getTileH(), channels ) );
-        } else if ( format == Rok4Format::TIFF_PNG_INT8 ) {
-            nodatastream = new PNGEncoder ( new ImageDecoder ( 0, itLevel->second->getTm()->getTileW(), itLevel->second->getTm()->getTileH(), channels ) );
-        } else if ( format == Rok4Format::TIFF_RAW_FLOAT32 ) {
-            nodatastream = new BilEncoder ( new ImageDecoder ( 0, itLevel->second->getTm()->getTileW(), itLevel->second->getTm()->getTileH(), channels ) );
-        } else {
-            nodatastream = TiffEncoder::getTiffEncoder ( new ImageDecoder ( 0, itLevel->second->getTm()->getTileW(), itLevel->second->getTm()->getTileH(), channels ), format );
-        }
-        if ( nodatastream ) {
-            noDataSource = new BufferedDataSource ( *nodatastream );
-            delete nodatastream;
-            nodatastream = NULL;
-        } else {
-            LOGGER_ERROR ( "Format non pris en charge : "<< Rok4Format::toString ( format ) );
-        }
-        itLevel->second->setNoDataSource ( noDataSource );
 
         //Determine Higher and Lower Levels
         double d = itLevel->second->getRes();
@@ -111,38 +96,7 @@ Pyramid::Pyramid (PyramidXML* p) : Source(PYRAMID) {
     int i = 0;
 }
 
-DataSource* Pyramid::getTile ( int x, int y, std::string tmId, DataSource* errorDataSource ) {
-
-    std::map<std::string, Level*>::const_iterator itLevel=levels.find ( tmId );
-    if ( itLevel==levels.end() ) {
-        if ( errorDataSource ) { // NoData Error
-            StoreDataSourceFactory SDSF;
-            return new DataSourceProxy ( SDSF.createStoreDataSource ( "",0,0,"",getLowestLevel()->getContext() ), * errorDataSource );
-        }
-        DataSource * noDataSource;
-
-        //Pick the nearest available level for NoData
-        std::map<std::string, TileMatrix>::iterator itTM;
-        double askedRes;
-
-        TileMatrix* tm = tms->getTm(tmId);
-
-        if ( tm == NULL ) {
-            //return the lowest Level available
-            noDataSource = lowestLevel->getEncodedNoDataTile();
-        } else {
-            askedRes = itTM->second.getRes();
-            noDataSource = ( askedRes > lowestLevel->getRes() ? highestLevel->getEncodedNoDataTile() : lowestLevel->getEncodedNoDataTile() );
-        }
-        StoreDataSourceFactory SDSF;
-        return new DataSourceProxy ( SDSF.createStoreDataSource ( "",0,0,"", lowestLevel->getContext() ), * ( noDataSource ) );
-    }
-
-    return itLevel->second->getTile ( x, y, errorDataSource );
-
-}
-
-std::string Pyramid::best_level ( double resolution_x, double resolution_y, bool onDemand ) {
+std::string Pyramid::best_level ( double resolution_x, double resolution_y ) {
 
     // TODO: A REFAIRE !!!!
     // res_level/resx ou resy ne doit pas exceder une certaine valeur
@@ -161,17 +115,7 @@ std::string Pyramid::best_level ( double resolution_x, double resolution_y, bool
         }
     }
 
-    if (onDemand) {
-
-        if (best <= 1.8 && best >= 0.8) {
-            return best_h;
-        } else {
-            return "";
-        }
-
-    } else {
-        return best_h;
-    }
+    return best_h;
 
 }
 
@@ -203,7 +147,7 @@ Image* Pyramid::getbbox ( ServicesXML* servicesConf, BoundingBox<double> bbox, i
         delete grid;
     }
 
-    std::string l = best_level ( resolution_x, resolution_y, false );
+    std::string l = best_level ( resolution_x, resolution_y );
     LOGGER_DEBUG ( _ ( "best_level=" ) << l << _ ( " resolution requete=" ) << resolution_x << " " << resolution_y );
 
     if ( (tms->getCrs() == dst_crs) || (are_the_two_CRS_equal( tms->getCrs().getProj4Code(), dst_crs.getProj4Code(), servicesConf->getListOfEqualsCRS() ) ) ) {
@@ -283,17 +227,13 @@ Image *Pyramid::createExtendedCompoundImage(std::string l, BoundingBox<double> b
         }
     }
 
-    int ndvalue[this->channels];
-    memset(ndvalue,0,this->channels*sizeof(int));
-    levels[l]->getNoDataValue(ndvalue);
-
     if ( images.empty() ) {
-        EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
+        EmptyImage* fond = new EmptyImage(width, height, channels, ndValues);
         fond->setBbox(bbox);
         return fond;
     }
 
-    return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,ndvalue,0 );
+    return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,ndValues,0 );
 
 }
 
@@ -343,11 +283,8 @@ Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst
                 if (!dataBbox.intersects(askBbox)) {
                     //les deux ne s'intersectent pas donc on renvoit une image de nodata
                     LOGGER_DEBUG ("les deux ne s'intersectent pas donc on renvoit une image de nodata");
-                    int ndvalue[this->channels];
-                    memset(ndvalue,0,this->channels*sizeof(int));
-                    levels[l]->getNoDataValue(ndvalue);
 
-                    EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
+                    EmptyImage* fond = new EmptyImage(width, height, channels, ndValues);
                     fond->setBbox(bbox);
                     return fond;
 
@@ -370,16 +307,12 @@ Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst
 }
 
 
-Image *Pyramid::NoDataOnDemand(std::string bLevel, BoundingBox<double> bbox) {
-
-    return levels[bLevel]->getNoDataTile(bbox);
-
-}
-
 Pyramid::~Pyramid() {
     std::map<std::string, DataSource*>::iterator itDataSource;
     /*for ( itDataSource=noDataSources.begin(); itDataSource!=noDataSources.end(); itDataSource++ )
         delete ( *itDataSource ).second;*/
+
+    delete[] ndValues;
 
     std::map<std::string, Level*>::iterator iLevel;
     for ( iLevel=levels.begin(); iLevel!=levels.end(); iLevel++ )
@@ -536,4 +469,4 @@ bool Pyramid::getTransparent(){ return transparent; }
 void Pyramid::setTransparent (bool tr) { transparent = tr; }
 Style* Pyramid::getStyle(){ return style; }
 void Pyramid::setStyle (Style * st) { style = st; }
-std::vector<int> Pyramid::getNdValues() { return ndValues; }
+int* Pyramid::getNdValues() { return ndValues; }

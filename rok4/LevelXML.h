@@ -84,10 +84,8 @@ class LevelXML : public DocumentXML
 
         std::string baseDir;
         int pathDepth;
-        std::string noDataFilePath;
 
         std::string prefix;
-        std::string noDataObjectName;
 
         std::vector<Source*> sSources;
         // Sans stockage

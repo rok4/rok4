@@ -73,7 +73,6 @@ typedef void Rok4Server;
         char* scriptName;
         char* service;
         char* operationType;
-        int  noDataAsHttpStatus;
         HttpResponse* error_response;
     } HttpRequest;
 
@@ -124,7 +123,6 @@ typedef void Rok4Server;
 
     HttpResponse* rok4GetTile ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server );
     HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server, TileRef* tileRef, TilePalette* palette );
-    HttpResponse* rok4GetNoDataTileReferences ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server, TileRef* tileRef, TilePalette* palette );
 
 // DEPRECATED
     TiffHeader* rok4GetTiffHeader ( int width, int height, int channels );

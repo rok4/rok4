@@ -74,10 +74,6 @@ private:
     uint32_t minTileCol;
     uint32_t tilesPerWidth;   //nombre de tuiles par dalle dans le sens de la largeur
     uint32_t tilesPerHeight;  //nombre de tuiles par dalle dans le sens de la hauteur
-    std::string noDataFile;
-    DataSource* noDataSource;
-    DataSource* noDataTileSource;
-    DataSource* noDataSourceProxy;
 
     std::vector<Source*> sSources;
     // Sans stockage
@@ -119,15 +115,10 @@ public:
     std::string getPath (int tilex, int tiley , int tilesPerW, int tilesPerH);
     std::string getDirPath ( int tilex, int tiley );
     int createDirPath ( std::string path );
-    std::string getNoDataFilePath() ;
     Context* getContext() ;
 
-    DataSource* getEncodedNoDataTile();
-    DataSource* getDecodedNoDataTile();
     bool isOnDemand();
     bool isOnFly();
-
-    Image* getnodatabbox ( ServicesXML* servicesConf, BoundingBox<double> bbox, int width, int height, Interpolation::KernelType interpolation, int& error );
 
     Image* getbbox ( ServicesXML* servicesConf, BoundingBox<double> bbox, int width, int height, Interpolation::KernelType interpolation, int& error );
 
@@ -143,18 +134,9 @@ public:
      * y = floor((Y - Y0) / (tile_height * resolution_y))
      */
 
-    DataSource* getTile ( int x, int y, DataSource* errorDataSource = NULL );
+    DataSource* getTile (int x, int y);
 
     Image* getTile ( int x, int y, int left, int top, int right, int bottom );
-
-    Image* getNoDataTile ( BoundingBox<double> bbox );
-
-    int* getNoDataValue ( int* nodatavalue );
-
-    void setNoData ( const std::string& file ) ;
-    void setNoDataSource ( DataSource* source );
-
-    void updateNoDataTile(std::vector<int> noDataValues);
 
     BoundingBox<double> tileIndicesToSlabBbox(int tileCol, int tileRow);
     BoundingBox<double> tileIndicesToTileBbox(int tileCol, int tileRow);

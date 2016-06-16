@@ -122,11 +122,6 @@ private:
      * \~english \brief Invariant GetCapabilities fragments ready to be concatained with request informations
      */
     std::vector<std::string> wmtsCapaFrag;
-    /**
-     * \~french \brief Erreur à retourner en cas de tuile non trouvée (http 404)
-     * \~english \brief Error response in case data tiel is not found (http 404)
-     */
-    DataSource* notFoundError;
 
 
     /**
@@ -301,7 +296,7 @@ private:
      * \param[in] style style of the resquest
      * \return requested tile
      */
-    DataSource *getTileUsual(Layer* L, std::string format, int tileCol, int tileRow, std::string tileMatrix, DataSource *errorResp, Style *style);
+    DataSource *getTileUsual(Layer* L, std::string format, int tileCol, int tileRow, std::string tileMatrix, Style *style);
     /**
      * \~french
      * \brief Renvoit une tuile qui vient d'être calculée
@@ -311,6 +306,7 @@ private:
      * \param[in] tileRow indice de ligne de la requete
      * \param[in] style style de la requête
      * \param[in] format format de la requête
+     * \param[in] errorResp error parameter
      * \return Tuile demandée
      * \~english
      * \brief Give a tile compute for the request
@@ -320,6 +316,7 @@ private:
      * \param[in] tileRow row index of the request
      * \param[in] style style of the resquest
      * \param[in] format format of the request
+     * \param[in] errorResp error parameter
      * \return requested tile
      */
     DataSource *getTileOnDemand(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format);
@@ -368,7 +365,7 @@ private:
      * \param[in] errorResp error
      * \return requested tile
      */
-    DataSource *getTileOnFly(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format, DataSource *errorResp);
+    DataSource *getTileOnFly(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format);
 
     /**
      * \~french

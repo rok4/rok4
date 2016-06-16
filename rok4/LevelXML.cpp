@@ -49,7 +49,6 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
     maxTileRow = -1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
     minTileCol = -1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
     maxTileCol = -1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
-    noDataFilePath="";
     prefix = "";
 
     context = NULL;
@@ -381,68 +380,6 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
     if ( minTileRow > tm->getMatrixH() || minTileRow < 0 ) minTileRow = 0;
     if ( maxTileCol > tm->getMatrixW() || maxTileCol < 0 ) maxTileCol = tm->getMatrixW();
     if ( maxTileRow > tm->getMatrixH() || maxTileRow < 0 ) maxTileRow = tm->getMatrixH();
-
-    //----
-
-    //----NODATA
-    // Must exist for normal pyramid but could possibly not exist for onDemand and onFly Pyramid
-    // BUT the path must be written in conf file in these cases
-    
-    if (! onDemand) {
-        TiXmlElement* pElemNoData=hLvl.FirstChild ( "nodata" ).Element();
-        if ( ! pElemNoData ) {
-            LOGGER_ERROR ( "Level " << id << " : nodata have to be present if onFly or regular pyramid");
-            return;
-        }
-
-        if (onFly) {
-            TiXmlElement* pElemNoDataPath = pElemNoData->FirstChildElement ( "filePath" );
-            if (! pElemNoDataPath || ! pElemNoDataPath->GetText()) {
-                LOGGER_ERROR ( "Level " << id << " : nodata.filePath have to be present if onFly pyramid");
-                return;
-            }
-            noDataFilePath = pElemNoDataPath->GetText();
-            if ( noDataFilePath.compare ( 0,2,"./" ) ==0 ) {
-                noDataFilePath.replace ( 0,1,parentDir );
-            } else if ( noDataFilePath.compare ( 0,1,"/" ) !=0 ) {
-                noDataFilePath.insert ( 0,"/" );
-                noDataFilePath.insert ( 0, parentDir );
-            }
-        }
-        else if (context->getType() == FILECONTEXT) {
-            TiXmlElement* pElemNoDataPath = pElemNoData->FirstChildElement ( "filePath" );
-            if (! pElemNoDataPath || ! pElemNoDataPath->GetText()) {
-                LOGGER_ERROR ( "Level " << id << " : nodata.filePath have to be present if regular FileSystem pyramid");
-                return;
-            }
-            noDataFilePath = pElemNoDataPath->GetText();
-            if ( noDataFilePath.compare ( 0,2,"./" ) == 0 ) {
-                noDataFilePath.replace ( 0,1,parentDir );
-            } else if ( noDataFilePath.compare ( 0,1,"/" ) != 0 ) {
-                noDataFilePath.insert ( 0,"/" );
-                noDataFilePath.insert ( 0, parentDir );
-            }
-
-            if (! context->exists(noDataFilePath)) {
-                LOGGER_ERROR(filePath <<_ ( " Level " ) << id <<_ ( " specifiant une tuile NoData impossible a ouvrir" ));
-                return;
-            }
-        }
-        else {
-            TiXmlElement* pElemNoDataName = pElemNoData->FirstChildElement ( "objectName" );
-            if (! pElemNoDataName || ! pElemNoDataName->GetText()) {
-                LOGGER_ERROR ( "Level " << id << " : nodata.objectName have to be present if regular ObjectStorage pyramid");
-                return;
-            }
-            noDataObjectName = pElemNoDataName->GetText();
-
-            if (! context->exists(noDataObjectName)) {
-                LOGGER_ERROR(filePath <<_ ( " Level " ) << id <<_ ( " specifiant une tuile NoData (objet) impossible a ouvrir" ));
-                return;
-            }
-        }
-
-    }
 
     ok = true;
 }

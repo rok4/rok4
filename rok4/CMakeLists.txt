@@ -43,14 +43,12 @@ set(rok4core_SRCS  GetFeatureInfoEncoder.cpp MetadataURL.cpp ResourceLocator.cpp
 TileMatrixSetXML.cpp TileMatrixXML.cpp ServerXML.cpp ServicesXML.cpp LayerXML.cpp StyleXML.cpp PyramidXML.cpp LevelXML.cpp)
 set(rok4server_SRCS main.cpp )
 #set(rok4apitest_SRCS test_api.c )
-set(rok4parsertest_SRCS test_parser.cpp )
 
 
 add_library(rok4core STATIC ${rok4core_SRCS})
 
 add_executable(rok4 ${rok4server_SRCS})
 #add_executable(test_api ${rok4apitest_SRCS})
-add_executable(test_parser ${rok4parsertest_SRCS})
 
 
 ########################################
@@ -86,7 +84,6 @@ endif(CURL_OPTIONS)
 target_link_libraries(rok4core ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_RADOS_LIBS_INIT} )
 target_link_libraries(rok4 rok4core)
 #target_link_libraries(test_api rok4core)
-target_link_libraries(test_parser rok4core)
 
 #set_target_properties(test_api PROPERTIES LINKER_LANGUAGE C)
 

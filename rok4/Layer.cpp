@@ -82,11 +82,6 @@ Layer::Layer ( const LayerXML& l ) {
     this->GFIForceEPSG = l.GFIForceEPSG;
 }
 
-
-DataSource* Layer::gettile ( int x, int y, std::string tmId, DataSource* errorDataSource ) {
-    return dataPyramid->getTile ( x, y, tmId, errorDataSource );
-}
-
 Image* Layer::getbbox (ServicesXML* servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error ) {
     error=0;
     return dataPyramid->getbbox (servicesConf, bbox, width, height, dst_crs, resampling, error );

@@ -94,7 +94,7 @@ private:
      * \~french \brief Donne les valeurs des noData pour la pyramide
      * \~english \brief Give the noData value
      */
-    std::vector<int> ndValues;
+    int* ndValues;
 
     /**
      * \~french \brief Nombre de canaux pour les tuiles
@@ -244,7 +244,7 @@ public:
      * \~english \brief Indicate the noData values
      * \return ndValues
      */
-    std::vector<int> getNdValues() ;
+    int *getNdValues() ;
 
     /**
      * \~french \brief Récupère le nombre de bits par sample
@@ -306,27 +306,12 @@ public:
      * \~french \brief Récupère le meilleur niveau pour une résolution donnée
      * \param[in] résolution en x
      * \param[in] résolution en y
-     * \param[in] onDemand
      * \~english \brief Get the best level for the given resolution
      * \param[in] resolution in x
      * \param[in] resolution in y
-     * \param[in] onDemand
      */
-    std::string best_level ( double resolution_x, double resolution_y, bool onDemand );
+    std::string best_level ( double resolution_x, double resolution_y );
 
-
-
-    /**
-     * \~french \brief Récupère une tuile déjà calculée
-     * \param[in] x
-     * \param[in] y
-     * \param[in] ID du TileMatrix
-     * \~english \brief Get a tile
-     * \param[in] x
-     * \param[in] y
-     * \param[in] ID of the TileMatrix
-     */
-    DataSource* getTile ( int x, int y, std::string tmId, DataSource* errorDataSource = NULL );
 
     /**
      * \~french \brief Récupère une image

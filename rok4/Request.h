@@ -151,7 +151,7 @@ public:
      * \brief Fetching and validating GetTile request parameters
      * \return NULL or an error message if something went wrong
      */
-    DataSource* getTileParam ( ServicesXML* servicesConf,  std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList, Layer*& layer, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, Style* &style, bool& noDataError );
+    DataSource* getTileParam (ServicesXML* servicesConf,  std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList, Layer*& layer, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, Style* &style);
     /**
      * \~french
      * \brief Récuperation et vérifications des paramètres d'une requête GetMap
@@ -203,7 +203,7 @@ public:
      */
     DataStream* WMTSGetFeatureInfoParam (ServicesXML* servicesConf,  std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList,
                                          Layer*& layer, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, Style* &style,
-                                         bool& noDataError, std::string& info_format, int& X, int& Y);
+                                         std::string& info_format, int& X, int& Y);
     //
 
     /**

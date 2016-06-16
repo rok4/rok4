@@ -122,7 +122,7 @@ void displayFCGIError ( int error ) {
 
 int ResponseSender::sendresponse ( DataSource* source, FCGX_Request* request ) {
     // Creation de l'en-tete
-    std::string statusHeader= genStatusHeader ( source->getHttpStatus() );
+    std::string statusHeader = genStatusHeader ( source->getHttpStatus() );
     std::string filename = genFileName ( source->getType() );
     LOGGER_DEBUG ( filename );
     FCGX_PutStr ( statusHeader.data(),statusHeader.size(),request->out );

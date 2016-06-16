@@ -279,7 +279,6 @@ StyleXML::StyleXML(std::string path, ServicesXML* servicesXML) : DocumentXML ( p
                 LOGGER_ERROR ( _ ( "Palette sans Couleur " ) << id <<_ ( " : il est invalide!!" ) );
                 return;
             }
-
         }
     }
 

@@ -340,10 +340,9 @@ Pyramid* ConfLoader::buildBasedPyramid (
     // On met à jour la transparence
     if (str_transparent == "true") {
         transparent = true;
-        basedPyramid->setTransparent(transparent);
-    } else {
-        basedPyramid->setTransparent(transparent);
     }
+
+    basedPyramid->setTransparent(transparent);
 
     // On teste le style et on ajoute le normal au pire
     Style* style = serverXML->getStyle(str_style);

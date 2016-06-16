@@ -741,7 +741,7 @@ std::string Request::getParam ( std::string paramName ) {
     return it->second;
 }
 
-DataSource* Request::getTileParam ( ServicesXML* servicesConf, std::map< std::string, TileMatrixSet* >& tmsList, std::map< std::string, Layer* >& layerList, Layer*& layer, std::string& tileMatrix, int& tileCol, int& tileRow, std::string& format, Style*& style, bool& noDataError ) {
+DataSource* Request::getTileParam ( ServicesXML* servicesConf, std::map< std::string, TileMatrixSet* >& tmsList, std::map< std::string, Layer* >& layerList, Layer*& layer, std::string& tileMatrix, int& tileCol, int& tileRow, std::string& format, Style*& style) {
     // VERSION
     std::string version=getParam ( "version" );
     if ( version=="" )
@@ -815,38 +815,12 @@ DataSource* Request::getTileParam ( ServicesXML* servicesConf, std::map< std::st
     }
     if ( ! ( style ) )
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le style " ) +styleName+_ ( " n'est pas gere pour la couche " ) +str_layer,"wmts" ) );
-    //Nodata Error
-    noDataError = hasParam ( "nodataashttpstatus" );
+
+
 
     return NULL;
 
 }
-
-
-/* *
- * \~french
- * \brief Découpe une chaîne de caractères selon un délimiteur
- * \param[in] str la chaîne à découper
- * \param[in] delim le délimiteur
- * \param[in,out] results la liste contenant les parties de la chaîne
- * \~english
- * \brief Split a string using a specified delimitor
- * \param[in] str the string to split
- * \param[in] delim the delimitor
- * \param[in,out] results the list with the splited string
- */
-/*void stringSplit ( std::string str, std::string delim, std::vector<std::string> &results ) {
-    int cutAt;
-    while ( ( cutAt = str.find_first_of ( delim ) ) != str.npos ) {
-        if ( cutAt > 0 ) {
-            results.push_back ( str.substr ( 0,cutAt ) );
-        }
-        str = str.substr ( cutAt+1 );
-    }
-    if ( str.length() > 0 ) {
-        results.push_back ( str );
-    }
-}*/
 
 DataStream* Request::getMapParam ( ServicesXML* servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers,
                                    BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format,
@@ -1325,10 +1299,9 @@ DataStream* Request::WMSGetFeatureInfoParam (ServicesXML* servicesConf, std::map
 }
 
 DataStream* Request::WMTSGetFeatureInfoParam (ServicesXML* servicesConf,  std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList,
-                                     Layer*& layer, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, Style* &style,
-                                     bool& noDataError, std::string& info_format, int& X, int& Y) {
+                                     Layer*& layer, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, Style* &style, std::string& info_format, int& X, int& Y) {
 
-    DataSource* getTileError = getTileParam(servicesConf, tmsList, layerList, layer, tileMatrix, tileCol, tileRow, format, style, noDataError);
+    DataSource* getTileError = getTileParam(servicesConf, tmsList, layerList, layer, tileMatrix, tileCol, tileRow, format, style);
     
     if (getTileError) {
         return new DataStreamFromDataSource(getTileError);

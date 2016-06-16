@@ -50,12 +50,16 @@
 
 Style::Style ( const StyleXML& s ) {
     LOGGER_DEBUG ( _ ( "Nouveau Style : " ) << s.id );
-    this->id = s.id.c_str();
+    this->id = s.id;
     this->titles = s.titles;
     this->abstracts = s.abstracts;
     this->keywords = s.keywords;
     this->legendURLs = s.legendURLs;
+    this->angle = s.angle;
     this->palette = s.palette;
+    this->exaggeration = s.exaggeration;
+    this->center = s.center;
+    estompage = false;
     if ( s.angle >= 0 && s.angle < 360 ) {
         estompage = true;
     }

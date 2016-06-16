@@ -145,65 +145,6 @@ public:
 
 
 
-class DataSourceProxy : public DataSource {
-private:
-    // Status pour déterminer quelle source de données il faut utiliser.
-    // UNKNOWN (valeur initiale) la validité de dataSource n'est pas encore connue.
-    // DATA    dataSource est valide   => l'utiliser
-    // NODATA  dataSource est invalide => utiliser noDataSource
-    enum {UNKNOWN, DATA, NODATA} status;
-
-    DataSource* dataSource;
-    DataSource& noDataSource;
-
-    inline DataSource& getDataSource() {
-        switch ( status ) {
-        case UNKNOWN:
-            size_t size;
-            if ( dataSource && dataSource->getData ( size ) ) {
-                status = DATA;
-                return *dataSource;
-            } else {
-                status = NODATA;
-                return noDataSource;
-            }
-        case DATA:
-            return *dataSource;
-        case NODATA:
-            return noDataSource;
-        }
-    }
-
-public:
-
-    DataSourceProxy	( DataSource* dataSource, DataSource& noDataSource ) :
-        status ( UNKNOWN ), dataSource ( dataSource ), noDataSource ( noDataSource ) {}
-
-    virtual ~DataSourceProxy() {
-        delete dataSource;
-    }
-
-    inline const uint8_t* getData ( size_t &size ) {
-        return getDataSource().getData ( size );
-    }
-    inline bool releaseData()                   {
-        return getDataSource().releaseData();
-    }
-    inline std::string getType()                {
-        return getDataSource().getType();
-    }
-    inline int getHttpStatus()                  {
-        return getDataSource().getHttpStatus();
-    }
-    inline std::string getEncoding()                  {
-        return getDataSource().getEncoding();
-    }
-};
-
-
-
-
-
 /**
  * Classe transformant un DataStream en DataSource.
  */

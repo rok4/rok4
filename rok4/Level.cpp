@@ -84,28 +84,13 @@ Level::Level ( LevelXML* l, PyramidXML* p ) {
 
     pathDepth = l->pathDepth;
     format = p->getFormat();
-    noDataFile = l->noDataFilePath;
-    noDataSource = NULL;
     context = l->context;
     prefix = l->prefix;
 
-
-    StoreDataSourceFactory SDSF;
-    noDataTileSource = SDSF.createStoreDataSource (
-        noDataFile.c_str(), 2048, 2048+4, Rok4Format::toMimeType ( format ), context,
-        Rok4Format::toEncoding ( format )
-    );
-
-    noDataSourceProxy = noDataTileSource;
 }
 
 Level::~Level() {
 
-    delete noDataSourceProxy;
-    noDataSourceProxy = NULL;
-    if ( noDataSource ) {     delete noDataSource;
-        noDataSource = NULL;
-    }
     // les contextes sont dans des contextBooks
     // ce sont les contextBooks qui se chargent de détruire les contexts
     // mais ce n'est pas le cas des FILECONTEXT
@@ -120,73 +105,13 @@ Level::~Level() {
 
 }
 
-void Level::setNoData ( const std::string& file ) { noDataFile=file;
-    StoreDataSourceFactory SDSF;
-    DataSource* tmpDataSource = SDSF.createStoreDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding ( format ) );
-    if ( noDataTileSource ) {     delete noDataTileSource;
-    }
-
-    if ( noDataSource ) {     delete noDataSourceProxy;
-        noDataSourceProxy = new DataSourceProxy ( tmpDataSource, *noDataSource );
-    } else {     noDataSourceProxy = tmpDataSource;
-    }
-
-    noDataTileSource= tmpDataSource;
-}
-
-
-void Level::setNoDataSource ( DataSource* source ) { if ( noDataSource ) {     delete noDataSourceProxy;
-        StoreDataSourceFactory SDSF;
-        noDataTileSource = SDSF.createStoreDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding ( format ) );
-    }
-    noDataSource=source;
-    noDataSourceProxy = new DataSourceProxy ( noDataTileSource, *noDataSource );
-}
-
-
-Image* Level::getnodatabbox ( ServicesXML* servicesConf, BoundingBox< double > bbox, int width, int height, Interpolation::KernelType interpolation, int& error ) {
-//     Image* imageout = getNoDataTile (bbox);
-    // On convertit les coordonnées en nombre de pixels depuis l'origine X0,Y0
-    bbox.xmin = ( bbox.xmin - tm->getX0() ) /tm->getRes();
-    bbox.xmax = ( bbox.xmax - tm->getX0() ) /tm->getRes();
-    double tmp = bbox.ymin;
-    bbox.ymin = ( tm->getY0() - bbox.ymax ) /tm->getRes();
-    bbox.ymax = ( tm->getY0() - tmp ) /tm->getRes();
-
-
-    //A VERIFIER !!!!
-    BoundingBox<int64_t> bbox_int ( floor ( bbox.xmin + EPS ),
-                                    floor ( bbox.ymin + EPS ),
-                                    ceil ( bbox.xmax - EPS ),
-                                    ceil ( bbox.ymax - EPS ) );
-
-    // Rappel : les coordonnees de la bbox sont ici en pixels
-    double res_x = ( bbox.xmax - bbox.xmin ) / width;
-    double res_y = ( bbox.ymax - bbox.ymin ) / height;
-
-    //Most efficient
-    interpolation = Interpolation::LINEAR;
-    const Kernel& kk = Kernel::getInstance ( interpolation );
-
-    bbox_int.xmin = floor ( bbox.xmin - kk.size ( res_x ) );
-    bbox_int.xmax = ceil ( bbox.xmax + kk.size ( res_x ) );
-    bbox_int.ymin = floor ( bbox.ymin - kk.size ( res_y ) );
-    bbox_int.ymax = ceil ( bbox.ymax + kk.size ( res_y ) );
-
-    Image* imageout = getNoDataTile ( bbox );
-    if ( !imageout ) {     LOGGER_DEBUG ( _ ( "Image invalid !" ) );
-        return 0;
-    }
-
-    LOGGER_DEBUG ( "Top 1" );
-    return new ResampledImage ( imageout, width, height, res_x, res_y, bbox, interpolation, false );
-}
-
 
 /*
  * A REFAIRE
  */
-Image* Level::getbbox ( ServicesXML* servicesConf, BoundingBox< double > bbox, int width, int height, CRS src_crs, CRS dst_crs, Interpolation::KernelType interpolation, int& error ) { Grid* grid = new Grid ( width, height, bbox );
+Image* Level::getbbox ( ServicesXML* servicesConf, BoundingBox< double > bbox, int width, int height, CRS src_crs, CRS dst_crs, Interpolation::KernelType interpolation, int& error ) {
+
+    Grid* grid = new Grid ( width, height, bbox );
 
     grid->bbox.print();
 
@@ -264,6 +189,7 @@ Image* Level::getbbox ( ServicesXML* servicesConf, BoundingBox< double > bbox, i
     bbox_int.ymax = ceil ( bbox.ymax + kk.size ( ratio_y ) );
 
     Image* imageout = getwindow ( servicesConf, bbox_int, error );
+
     if ( !imageout ) {     LOGGER_DEBUG ( _ ( "Image invalid !" ) );
         return 0;
     }
@@ -318,8 +244,10 @@ Image* Level::getwindow ( ServicesXML* servicesConf, BoundingBox< int64_t > bbox
 
     std::vector<std::vector<Image*> > T ( nby, std::vector<Image*> ( nbx ) );
     for ( int y = 0; y < nby; y++ )
-        for ( int x = 0; x < nbx; x++ ) {         T[y][x] = getTile ( tile_xmin + x, tile_ymin + y, left[x], top[y], right[x], bottom[y] );
+        for ( int x = 0; x < nbx; x++ ) {
+            T[y][x] = getTile ( tile_xmin + x, tile_ymin + y, left[x], top[y], right[x], bottom[y] );
         }
+
 
     if ( nbx == 1 && nby == 1 ) return T[0][0];
     else return new CompoundImage ( T );
@@ -431,6 +359,7 @@ DataSource* Level::getEncodedTile ( int x, int y ) { // TODO: return 0 sur des c
         //on stocke une tuile et non une dalle
         std::string path=getPath ( x, y, 1, 1 );
         LOGGER_DEBUG ( path );
+        if (! context->exists(path)) return NULL;
         StoreDataSourceFactory SDSF;
         return SDSF.createStoreDataSource( path.c_str(),maxTileSize,Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );
 
@@ -443,6 +372,7 @@ DataSource* Level::getEncodedTile ( int x, int y ) { // TODO: return 0 sur des c
         uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
         std::string path=getPath ( x, y, tilesPerWidth, tilesPerHeight);
         LOGGER_DEBUG ( path );
+        if (! context->exists(path)) return NULL;
         StoreDataSourceFactory SDSF;
         return SDSF.createStoreDataSource( path.c_str(),posoff,possize,Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );
 
@@ -450,7 +380,11 @@ DataSource* Level::getEncodedTile ( int x, int y ) { // TODO: return 0 sur des c
 
 }
 
-DataSource* Level::getDecodedTile ( int x, int y ) { DataSource* encData = new DataSourceProxy ( getEncodedTile ( x, y ),*getEncodedNoDataTile() );
+DataSource* Level::getDecodedTile ( int x, int y ) {
+
+    DataSource* encData = getEncodedTile ( x, y );
+    if (encData == NULL) return 0;
+
     if ( format==Rok4Format::TIFF_RAW_INT8 || format==Rok4Format::TIFF_RAW_FLOAT32 )
         return encData;
     else if ( format==Rok4Format::TIFF_JPG_INT8 )
@@ -467,38 +401,30 @@ DataSource* Level::getDecodedTile ( int x, int y ) { DataSource* encData = new D
     return 0;
 }
 
-DataSource* Level::getDecodedNoDataTile () { StoreDataSourceFactory SDSF;
-    DataSource* encData = new DataSourceProxy ( SDSF.createStoreDataSource ( "",0,0,"",context ),*getEncodedNoDataTile() );
-    if ( format==Rok4Format::TIFF_RAW_INT8 || format==Rok4Format::TIFF_RAW_FLOAT32 )
-        return encData;
-    else if ( format==Rok4Format::TIFF_JPG_INT8 )
-        return new DataSourceDecoder<JpegDecoder> ( encData );
-    else if ( format==Rok4Format::TIFF_PNG_INT8 )
-        return new DataSourceDecoder<PngDecoder> ( encData );
-    else if ( format==Rok4Format::TIFF_LZW_INT8 || format == Rok4Format::TIFF_LZW_FLOAT32 )
-        return new DataSourceDecoder<LzwDecoder> ( encData );
-    else if ( format==Rok4Format::TIFF_ZIP_INT8 || format == Rok4Format::TIFF_ZIP_FLOAT32 )
-        return new DataSourceDecoder<DeflateDecoder> ( encData );
-    else if ( format==Rok4Format::TIFF_PKB_INT8 || format == Rok4Format::TIFF_PKB_FLOAT32 )
-        return new DataSourceDecoder<PackBitsDecoder> ( encData );
-    LOGGER_ERROR ( _ ( "Type d'encodage inconnu : " ) <<format );
-    return 0;
-}
 
-DataSource* Level::getEncodedNoDataTile () { LOGGER_DEBUG ( _ ( "Tile : " ) << noDataFile );
-    return noDataSourceProxy;
-}
+DataSource* Level::getTile (int x, int y) {
 
-DataSource* Level::getTile ( int x, int y , DataSource* errorDataSource ) { DataSource* source=getEncodedTile ( x, y );
-    DataSource* ndSource = ( errorDataSource?errorDataSource:noDataSourceProxy );
+    DataSource* source = getEncodedTile ( x, y );
+    if (source == NULL) return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "wmts" ) );
+
     size_t size;
 
-    if ( ( format==Rok4Format::TIFF_RAW_INT8 || format == Rok4Format::TIFF_LZW_INT8 || format==Rok4Format::TIFF_LZW_FLOAT32 || format==Rok4Format::TIFF_ZIP_INT8 || format == Rok4Format::TIFF_ZIP_FLOAT32 || format==Rok4Format::TIFF_PKB_FLOAT32 || format==Rok4Format::TIFF_PKB_INT8 ) && source!=0 && source->getData ( size ) !=0 ) {     LOGGER_DEBUG ( _ ( "GetTile Tiff" ) );
+    if (
+            ( format==Rok4Format::TIFF_RAW_INT8 || format == Rok4Format::TIFF_LZW_INT8 ||
+              format==Rok4Format::TIFF_LZW_FLOAT32 || format==Rok4Format::TIFF_ZIP_INT8 ||
+              format == Rok4Format::TIFF_ZIP_FLOAT32 || format==Rok4Format::TIFF_PKB_FLOAT32 ||
+              format==Rok4Format::TIFF_PKB_INT8
+            )
+            &&
+            source!=0 && source->getData ( size ) !=0
+        )
+    {
+        LOGGER_DEBUG ( _ ( "GetTile Tiff" ) );
         TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource ( source,format,channels,tm->getTileW(), tm->getTileH() );
-        return new DataSourceProxy ( fullTiffDS,*ndSource );
+        return fullTiffDS;
     }
 
-    return new DataSourceProxy ( source, *ndSource );
+    return source;
 }
 
 Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom ) { int pixel_size=1;
@@ -513,30 +439,6 @@ Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom )
                               left, top, right, bottom, pixel_size );
 }
 
-Image* Level::getNoDataTile ( BoundingBox<double> bbox ) { int pixel_size=1;
-    LOGGER_DEBUG ( _ ( "GetTile Image" ) );
-    if ( format==Rok4Format::TIFF_RAW_FLOAT32 || format == Rok4Format::TIFF_LZW_FLOAT32 || format == Rok4Format::TIFF_ZIP_FLOAT32 || format == Rok4Format::TIFF_PKB_FLOAT32 )
-        pixel_size=4;
-    return new ImageDecoder ( getDecodedNoDataTile() , tm->getTileW(), tm->getTileH(), channels,
-                              bbox, 0, 0, 0, 0, pixel_size );
-}
-
-int* Level::getNoDataValue ( int* nodatavalue ) { DataSource *nd =  getDecodedNoDataTile();
-
-    size_t size;
-    const uint8_t * buffer = nd->getData ( size );
-    if ( buffer ) {     if ( format == Rok4Format::TIFF_RAW_FLOAT32 || format == Rok4Format::TIFF_LZW_FLOAT32 || format == Rok4Format::TIFF_ZIP_FLOAT32 || format == Rok4Format::TIFF_PKB_FLOAT32 ) {         const float* fbuf = ( const float* ) buffer;
-            for ( int pixel = 0; pixel < this->channels; pixel++ ) {             * ( nodatavalue + pixel )  = ( int ) * ( fbuf + pixel );
-            }
-        } else {         for ( int pixel = 0; pixel < this->channels; pixel++ ) {             * ( nodatavalue + pixel )  = * ( buffer + pixel );
-            }
-        }
-    } else {     for (int pixel = 0; pixel < this->channels; pixel++) {         *(nodatavalue + pixel)  = 0;
-        }
-    }
-    delete nd;
-    return nodatavalue;
-}
 
 BoundingBox<double> Level::tileIndicesToSlabBbox (int tileCol, int tileRow) {
 
@@ -638,17 +540,6 @@ BoundingBox<double> Level::TMLimitsToBbox () {
 
 }
 
-void Level::updateNoDataTile (std::vector<int> noDataValues) {
-
-    if (noDataTileSource) {     delete noDataTileSource;
-        noDataTileSource = NULL;
-    }
-
-    noDataTileSource = new EmptyDataSource(channels,noDataValues,tm->getTileW(),tm->getTileH(),format);
-    noDataSourceProxy = noDataTileSource;
-
-}
-
 TileMatrix* Level::getTm () { return tm; }
 Rok4Format::eformat_data Level::getFormat () { return format; }
 int Level::getChannels () { return channels; }
@@ -665,7 +556,6 @@ double Level::getRes () { return tm->getRes(); }
 std::string Level::getId () { return tm->getId(); }
 uint32_t Level::getTilesPerWidth () { return tilesPerWidth; }
 uint32_t Level::getTilesPerHeight () { return tilesPerHeight; }
-std::string Level::getNoDataFilePath () { return noDataFile; }
 Context* Level::getContext () { return context; }
 bool Level::isOnDemand() { return onDemand; }
 bool Level::isOnFly() { return onFly; }
