@@ -268,7 +268,7 @@ private:
      * \param[in] size number of images used in the global process where this function is called
      * \return requested and styled image
      */
-    Image *styleImage(Image *curImage, Rok4Format::eformat_data pyrType, Style *style, std::string format, int size);
+    Image *styleImage(Image *curImage, Rok4Format::eformat_data pyrType, Style *style, std::string format, int size, Pyramid *pyr);
     /**
      * \~french
      * \brief Fond un groupe d'image en une seule

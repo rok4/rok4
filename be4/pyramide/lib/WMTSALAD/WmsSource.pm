@@ -303,7 +303,7 @@ sub _init() {
 
     return FALSE if(!$self->SUPER::_init($params));
 
-    foreach my $key (keys $params) {
+    foreach my $key (keys %{$params}) {
         chomp $params->{$key};
     }
 
@@ -340,7 +340,10 @@ sub _init() {
     if (!exists $params->{wms_styles} || !defined $params->{wms_styles} || $params->{wms_styles} eq '') {
         ERROR("Undefined layer styles list.");
         return FALSE;
-    } elsif (scalar (split (',',$params->{wms_styles})) != scalar (split (',',$params->{wms_layers})) ) {
+    }
+    my @styles = split (',',$params->{wms_styles});
+    my @layers = split (',',$params->{wms_layers});
+    if (scalar (@styles) != scalar (@layers) ) {
         ERROR("The number of layer styles does not match the number of layers.");
         return FALSE;
     }
@@ -370,11 +373,12 @@ sub _init() {
     if (!exists $params->{wms_extent} || !defined $params->{wms_extent} || $params->{wms_extent} eq '') {
         ERROR("Undefined data extent.");
         return FALSE;
-    } elsif (scalar (split (',',$params->{wms_extent})) != 4) {
+    } 
+    my @coords = split (',',$params->{wms_extent});
+    if (scalar (@coords) != 4) {
         ERROR("Wrong coordinates count in extent. Extent should be 'min_x,min_y,max_x,max_y'");
         return FALSE;
     }
-    my @coords = split (',',$params->{wms_extent});
     foreach my $coord (@coords) {
         if (! COMMON::CheckUtils::isNumber($coord)) {
             ERROR("Extent coordinates should be decimal numbers.");

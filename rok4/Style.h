@@ -50,6 +50,8 @@
 #include "LegendURL.h"
 #include "Keyword.h"
 #include "Palette.h"
+#include "Pente.h"
+#include "Aspect.h"
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -129,6 +131,16 @@ private :
      */
     Palette palette;
     /**
+     * \~french \brief Définit si un calcul de pente doit être appliqué
+     * \~english \brief Define wether the server must compute a slope
+     */
+    Pente pente;
+    /**
+     * \~french \brief Définit si un calcul d'exposition doit être appliqué
+     * \~english \brief Define wether the server must compute an aspect
+     */
+    Aspect aspect;
+    /**
      * \~french \brief Définit si un estompage doit être appliqué
      * \~english \brief Define wether the server must compute a relief shadow
      */
@@ -175,7 +187,7 @@ public:
       */
     Style ( const std::string& id,const std::vector<std::string>& titles,
             const std::vector<std::string>& abstracts,const  std::vector<Keyword>& keywords,
-            const std::vector<LegendURL>& legendURLs, Palette& palette ,int angle =-1, float exaggeration=1., uint8_t center=0 );
+            const std::vector<LegendURL>& legendURLs, Palette& palette ,  Pente& pente, Aspect& aspect,int angle =-1, float exaggeration=1., uint8_t center=0 );
 
     /**
      * \~french
@@ -296,6 +308,69 @@ public:
     inline uint8_t getCenter() {
         return center;
     }
+	
+	
+     /**
+     * \~french
+     * \brief Retourne l'algo de la pente
+     * \return algo de la pente
+     * \~english
+     * \brief Return the algorithm
+     * \return the algorithm
+     */
+    inline std::string getAlgoOfPente() {
+        return pente.getAlgo();
+    }
+
+    /**
+     * \~french
+     * \brief Return vrai si le style est une pente
+     * \return bool
+     * \~english
+     * \brief Return true if the style is a slope
+     * \return bool
+     */
+    inline bool isPente() {
+        return pente.getPente();
+    }
+
+    /**
+    * \~french
+    * \brief Retourne l'algo de l'exposition
+    * \return algo de l'exposition
+    * \~english
+    * \brief Return the algorithm
+    * \return the algorithm
+    */
+   inline std::string getAlgoOfAspect() {
+       return aspect.getAlgo();
+   }
+
+   /**
+   * \~french
+   * \brief Retourne le minSlope de l'exposition
+   * \return minSlope de l'exposition
+   * \~english
+   * \brief Return the minSlope
+   * \return the minSlope
+   */
+   inline float getMinSlopeOfAspect() {
+       return aspect.getMinSlope();
+   }
+
+   /**
+    * \~french
+    * \brief Return vrai si le style est une exposition
+    * \return bool
+    * \~english
+    * \brief Return true if the style is an aspect
+    * \return bool
+    */
+   inline bool isAspect() {
+       return aspect.getAspect();
+   }
+	
+	
     /**
      * \~french
      * \brief Destructeur par défaut

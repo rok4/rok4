@@ -57,6 +57,8 @@
 #include "CRS.h"
 #include "math.h"
 
+#define METER_PER_DEG 111319.492
+
 #ifndef __max
 #define __max(a, b)   ( ((a) > (b)) ? (a) : (b) )
 #endif
@@ -690,6 +692,21 @@ public:
      */
     virtual void printTFW() {
         LOGGER_INFO ( "TFW : \n" << resx << "\n-" << resy << "\n0\n0\n" << bbox.xmin+0.5*resx << "\n" << bbox.ymax - 0.5*resy );
+    }
+
+    /**
+     * \~french
+     * \brief Résolution moyenne
+     * \~english
+     * \brief Mean resolution
+     */
+    virtual float computeMeanResolution() {
+        if (crs.getMetersPerUnit() != 1.0) {
+            return ((resx+resy)/2.0)*METER_PER_DEG;
+        } else {
+            return (resx+resy)/2.0;
+        }
+
     }
 };
 

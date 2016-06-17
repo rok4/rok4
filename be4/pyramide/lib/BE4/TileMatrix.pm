@@ -383,6 +383,40 @@ sub indicesToBBox {
 
 #
 =begin nd
+Function: indicesToTFW
+
+Returns the TFW from image's indices.
+
+Parameters (list):
+    i - integer - Image's column
+    j - integer - Image's row
+    tilesPerWidth - integer - Number of tile in the image, widthwise
+    tilesPerHeight - integer - Number of tile in the image, heightwise
+=cut
+sub indicesToTFW {
+    my $self  = shift;
+    my $i     = shift;
+    my $j     = shift;
+    my $tilesPerWidth = shift;
+    my $tilesPerHeight = shift;
+    
+    my $imgGroundWidth = $self->getImgGroundWidth($tilesPerWidth);
+    my $imgGroundHeight = $self->getImgGroundHeight($tilesPerHeight);
+
+    my $tfwText = "";
+
+    $tfwText .= sprintf "%s\n", $self->getResolution();
+    $tfwText .= "0\n";
+    $tfwText .= "0\n";
+    $tfwText .= sprintf "%s\n", -1 * $self->getResolution();
+    $tfwText .= sprintf "%s\n", $self->getTopLeftCornerX + $imgGroundWidth * $i + 0.5 * $self->getResolution();
+    $tfwText .= sprintf "%s", $self->getTopLeftCornerY - $imgGroundHeight * $j - 0.5 * $self->getResolution();
+
+    return $tfwText;
+}
+
+#
+=begin nd
 Function: bboxToIndices
 
 Returns the extrem indices from a bbox in a list : (iMin,jMin,iMax,jMax).

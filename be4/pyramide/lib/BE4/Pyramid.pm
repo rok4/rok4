@@ -148,8 +148,6 @@ use warnings;
 use Log::Log4perl qw(:easy);
 use XML::LibXML;
 
-use Geo::OSR;
-
 use File::Spec::Link;
 use File::Basename;
 use File::Spec;

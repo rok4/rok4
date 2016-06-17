@@ -87,8 +87,6 @@ use Log::Log4perl qw(:easy);
 use Data::Dumper;
 use List::Util qw(min max);
 
-use Geo::GDAL;
-
 # My module
 use BE4::DataSource;
 use BE4::PropertiesLoader;
