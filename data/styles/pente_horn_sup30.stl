@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <style>
-        <Identifier>pente_30</Identifier>
+        <Identifier>pente_horn_sup30</Identifier>
         <Title>Pente superieur a 30 degres</Title> 
         <Abstract>Pente calculee avec la methode de Horn et superieur a 30 degres</Abstract>
         <Keywords>
