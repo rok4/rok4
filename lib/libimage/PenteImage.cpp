@@ -69,25 +69,10 @@ int PenteImage::getline ( uint8_t* buffer, int line ) {
 }
 
 //definition des variables
-PenteImage::PenteImage ( int width, int height, int channels, BoundingBox<double> bbox, Image* image, float resolution, std::string algo) :
+PenteImage::PenteImage (int width, int height, int channels, BoundingBox<double> bbox, Image* image, float resolutionx, float resolutiony, std::string algo) :
     Image ( width, height, channels, bbox ),
-    origImage ( image ), pente ( NULL ), resolution (resolution), algo (algo)//, center ( center )
-	{
-
-    matrix[0] = 1 / (8.0*resolution) ;
-    matrix[1] = 2 / (8.0*resolution) ;
-    matrix[2] = 1 / (8.0*resolution) ;
-
-    matrix[3] = 2 / (8.0*resolution) ;
-    matrix[4] = 0 ;
-    matrix[5] = 2 / (8.0*resolution) ;
-
-    matrix[6] = 1 / (8.0*resolution) ;
-    matrix[7] = 2 / (8.0*resolution) ;
-    matrix[8] = 1 / (8.0*resolution) ;
-
-
-}
+    origImage ( image ), pente ( NULL ), resolutionX (resolutionx), resolutionY (resolutiony),algo (algo)
+    { }
 
 PenteImage::~PenteImage() {
     delete origImage;
@@ -154,20 +139,21 @@ void PenteImage::generateLine ( int line, float* line1, float* line2, float* lin
     int columnOrig = 1;
     int column = 0;
 	//creation de la variable sur laquelle on travaille pour trouver le seuil
-    double value;
+    double dzdx,dzdy,rise,slope;
 
 	//calcul de la variable sur toutes les autres colonnes
     while ( column < width  ) {
 
-        value = pow((matrix[2] * ( * ( line1+columnOrig+1 ) ) + matrix[5] * ( * ( line2+columnOrig+1 ) ) + matrix[8] * ( * ( line3+columnOrig+1 ) ) - matrix[0] * ( * ( line1+columnOrig-1 ) ) - matrix[3] * ( * ( line2+columnOrig-1 ) ) - matrix[6] * ( * ( line3+columnOrig-1 ) )),2.0)
-        + pow((matrix[0] * ( * ( line1+columnOrig-1 ) ) + matrix[1] * ( * ( line1+columnOrig ) ) + matrix[2] * ( * ( line1+columnOrig+1 ) ) - matrix[6] * ( * ( line3+columnOrig-1 ) ) - matrix[7] * ( * ( line3+columnOrig ) ) - matrix[8] * ( * ( line3+columnOrig+1 ) )),2.0);
+        dzdx = (( ( * ( line1+columnOrig+1 ) ) + 2.0 * ( * ( line2+columnOrig+1 ) ) + ( * ( line3+columnOrig+1 ) )) - (( * ( line1+columnOrig-1 ) ) + 2 *  ( * ( line2+columnOrig-1 ) ) + ( * ( line3+columnOrig-1 ) ))) / (8.0 * resolutionX);
+        dzdy = (( ( * ( line3+columnOrig-1 ) ) + 2.0 * ( * ( line3+columnOrig ) ) + ( * ( line3+columnOrig+1 ) )) - (( * ( line1+columnOrig-1 ) ) + 2 *  ( * ( line1+columnOrig ) ) + ( * ( line1+columnOrig+1 ) ))) / (8.0 * resolutionY);
 
-        value = sqrt(value);
-        value = atan(value) * 180 / M_PI;
-        //verification valeur non superieure a 90
-        if (value>90){value = 180-value;}
+        rise = sqrt(pow(dzdx,2.0) + pow(dzdy,2.0));
 
-        * ( currentLine+ ( column++ ) ) = ( int ) ( value );
+        slope = atan(rise) * 180 / M_PI;
+
+        if (slope>90){slope = 180-slope;}
+
+        * ( currentLine+ ( column++ ) ) = ( int ) ( slope );
         columnOrig++;
 
     }
