@@ -360,6 +360,37 @@ public:
 
     /**
      * \~french
+     * \brief Retourne la résolution dans le sens des X
+     * \return résolution en X
+     * \~english
+     * \brief Return the X wise resolution
+     * \return X resolution
+     */
+     virtual double getResXmeter() {
+        if (crs.getMetersPerUnit() != 1.0) {
+            return resx*METER_PER_DEG;
+        } else {
+            return resx;
+        }
+    }
+    /**
+     * \~french
+     * \brief Retourne la résolution dans le sens des Y
+     * \return résolution en Y
+     * \~english
+     * \brief Return the Y wise resolution
+     * \return Y resolution
+     */
+     virtual double getResYmeter() {
+        if (crs.getMetersPerUnit() != 1.0) {
+            return resy*METER_PER_DEG;
+        } else {
+            return resy;
+        }
+    }
+
+    /**
+     * \~french
      * \brief Retourne le masque de donnée associé à l'image
      * \return masque
      * \~english

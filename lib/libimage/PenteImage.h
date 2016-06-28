@@ -68,18 +68,18 @@ private:
     float* bufferTmp;
 
     /** \~french
-    * \brief Matrice de convolution
+    * \brief Résolution de l'image d'origine et donc finale en X
     ** \~english
-    * \brief Convolution matrix
+    * \brief Resolution of the image (X)
     */
-    float matrix[9];
+    float resolutionX;
 
     /** \~french
-    * \brief Résolution de l'image d'origine et donc finale
+    * \brief Résolution de l'image d'origine et donc finale en Y
     ** \~english
-    * \brief Resolution of the image
+    * \brief Resolution of the image (Y)
     */
-    float resolution;
+    float resolutionY;
 
     /** \~french
     * \brief algo : choix de l'algorithme de calcul de pentes par l'utilisateur ("H" pour Horn)
@@ -175,7 +175,7 @@ public:
     ** \~english
     * \brief Construtor
     */
-    PenteImage (int width, int height, int channels, BoundingBox<double> bbox, Image* image, float resolution, std::string algo);
+    PenteImage (int width, int height, int channels, BoundingBox<double> bbox, Image* image, float resolutionx, float resolutiony,std::string algo);
 
     /** \~french
     * \brief Destructeur
