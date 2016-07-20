@@ -1092,6 +1092,10 @@ DataStream* Request::getCapWMSParam ( ServicesConf& servicesConf, std::string& v
     if ( service.compare ( "wms" ) !=0 ) {
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le service " ) +service+_ ( " est inconnu pour ce serveur." ),"wms" ) );
     }
+    std::string location = getParam("location");
+    if (location !="") {
+        path = location;
+    }
     version=getParam ( "version" );
     if ( version=="" ) {
         //---- WMS 1.1.1
@@ -1151,6 +1155,10 @@ DataStream* Request::getCapWMTSParam ( ServicesConf& servicesConf, std::string& 
     if ( version=="" ) {
         version=servicesConf.getServiceTypeVersion();
         return NULL;
+    }
+    std::string location = getParam("location");
+    if (location !="") {
+        path = location;
     }
     if ( version.compare ( servicesConf.getServiceTypeVersion() ) !=0 )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Valeur du parametre VERSION invalide (1.0.0 disponible seulement)" ),"wmts" ) );

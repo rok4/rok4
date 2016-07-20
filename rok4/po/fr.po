@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2016-06-27 17:49+0200\n"
+"POT-Creation-Date: 2016-07-20 17:03+0200\n"
 "PO-Revision-Date: 2014-01-28 09:36+0100\n"
 "Last-Translator: \n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -1316,11 +1316,11 @@ msgid "Parametre LAYER absent."
 msgstr "Paramètre LAYER absent."
 
 #: Request.cpp:757 Request.cpp:760 Request.cpp:881 Request.cpp:884
-#: Request.cpp:1337
+#: Request.cpp:1345
 msgid "Layer "
 msgstr "Layer "
 
-#: Request.cpp:757 Request.cpp:768 Request.cpp:881 Request.cpp:1219
+#: Request.cpp:757 Request.cpp:768 Request.cpp:881 Request.cpp:1227
 msgid " inconnu."
 msgstr " inconnu."
 
@@ -1395,7 +1395,7 @@ msgstr "Paramètre STYLE absent."
 msgid "Le style "
 msgstr "Le style "
 
-#: Request.cpp:866 Request.cpp:1142
+#: Request.cpp:866 Request.cpp:1146
 #, fuzzy
 msgid ""
 "Valeur du parametre VERSION invalide (1.1.1 et 1.3.0 disponibles seulement))"
@@ -1405,7 +1405,7 @@ msgstr "Valeur du paramètre VERSION invalide (1.3.0 disponible seulement))"
 msgid "Parametre LAYERS absent."
 msgstr "Parametre LAYERS absent."
 
-#: Request.cpp:873 Request.cpp:1211
+#: Request.cpp:873 Request.cpp:1219
 msgid "Nombre de couches demandees ="
 msgstr "Nombre de couches demandées = "
 
@@ -1488,7 +1488,7 @@ msgstr " ) inconnu pour la couche"
 msgid "Format "
 msgstr "Format "
 
-#: Request.cpp:957 Request.cpp:1320 Request.cpp:1351
+#: Request.cpp:957 Request.cpp:1328 Request.cpp:1359
 msgid " non gere par le service."
 msgstr " non géré par le service."
 
@@ -1520,141 +1520,141 @@ msgstr "Nombre de styles demandés = "
 msgid "Parametre STYLES incomplet."
 msgstr "Paramètre STYLES incomplet."
 
-#: Request.cpp:1093 Request.cpp:1148 Rok4Api.cpp:226 Rok4Server.cpp:1503
+#: Request.cpp:1093 Request.cpp:1152 Rok4Api.cpp:226 Rok4Server.cpp:1503
 msgid "Le service "
 msgstr "Le service "
 
-#: Request.cpp:1093 Request.cpp:1148 Rok4Api.cpp:226 Rok4Server.cpp:1503
+#: Request.cpp:1093 Request.cpp:1152 Rok4Api.cpp:226 Rok4Server.cpp:1503
 msgid " est inconnu pour ce serveur."
 msgstr " est inconnu pour ce serveur."
 
-#: Request.cpp:1156
+#: Request.cpp:1164
 msgid "Valeur du parametre VERSION invalide (1.0.0 disponible seulement)"
 msgstr "Valeur du paramètre VERSION invalide (1.0.0 disponible seulement)"
 
-#: Request.cpp:1208
+#: Request.cpp:1216
 #, fuzzy
 msgid "Parametre QUERY_LAYERS absent."
 msgstr "Parametre LAYERS absent."
 
-#: Request.cpp:1213
+#: Request.cpp:1221
 msgid "Le nombre de couche interrogée est limité à 1."
 msgstr ""
 
-#: Request.cpp:1219 Request.cpp:1231 Request.cpp:1235
+#: Request.cpp:1227 Request.cpp:1239 Request.cpp:1243
 #, fuzzy
 msgid "Query_Layer "
 msgstr "Layer "
 
-#: Request.cpp:1231
+#: Request.cpp:1239
 #, fuzzy
 msgid " absent de layer."
 msgstr " : absence de séparateur"
 
-#: Request.cpp:1235 Request.cpp:1337
+#: Request.cpp:1243 Request.cpp:1345
 #, fuzzy
 msgid " non interrogeable."
 msgstr "] n'est pas un entier."
 
-#: Request.cpp:1239
+#: Request.cpp:1247
 #, fuzzy
 msgid "Nombre de couches requetées ="
 msgstr "Nombre de couches demandées = "
 
-#: Request.cpp:1249
+#: Request.cpp:1257
 #, fuzzy
 msgid "La valeur du parametre FEATURE_COUNT n'est pas une valeur entiere."
 msgstr "La valeur du paramètre WIDTH n'est pas une valeur entière."
 
-#: Request.cpp:1251
+#: Request.cpp:1259
 #, fuzzy
 msgid "La valeur du parametre FEATURE_COUNT est negative."
 msgstr "La valeur du paramètre WIDTH est négative."
 
-#: Request.cpp:1260
+#: Request.cpp:1268
 #, fuzzy
 msgid "Parametre X absent."
 msgstr "Paramètre BBOX absent."
 
-#: Request.cpp:1264
+#: Request.cpp:1272
 #, fuzzy
 msgid "La valeur du parametre X est negative."
 msgstr "La valeur du paramètre WIDTH est négative."
 
-#: Request.cpp:1266
+#: Request.cpp:1274
 #, fuzzy
 msgid "La valeur du parametre X est superieure a la largeur fournie (width)."
 msgstr ""
 "La valeur du paramètre WIDTH est supérieure a la valeur maximum autorisée "
 "par le service."
 
-#: Request.cpp:1271 Request.cpp:1357
+#: Request.cpp:1279 Request.cpp:1365
 #, fuzzy
 msgid "Parametre I absent."
 msgstr "Paramètre BBOX absent."
 
-#: Request.cpp:1275 Request.cpp:1360
+#: Request.cpp:1283 Request.cpp:1368
 #, fuzzy
 msgid "La valeur du parametre I est negative."
 msgstr "La valeur du paramètre WIDTH est négative."
 
-#: Request.cpp:1277
+#: Request.cpp:1285
 #, fuzzy
 msgid "La valeur du parametre I est superieure a la largeur fournie (width)."
 msgstr ""
 "La valeur du paramètre WIDTH est supérieure a la valeur maximum autorisée "
 "par le service."
 
-#: Request.cpp:1288
+#: Request.cpp:1296
 #, fuzzy
 msgid "Parametre Y absent."
 msgstr "Paramètre LAYER absent."
 
-#: Request.cpp:1292
+#: Request.cpp:1300
 #, fuzzy
 msgid "La valeur du parametre Y est negative."
 msgstr "La valeur du paramètre WIDTH est négative."
 
-#: Request.cpp:1294
+#: Request.cpp:1302
 #, fuzzy
 msgid "La valeur du parametre Y est superieure a la largeur fournie (height)."
 msgstr ""
 "La valeur du paramètre WIDTH est supérieure a la valeur maximum autorisée "
 "par le service."
 
-#: Request.cpp:1299 Request.cpp:1368
+#: Request.cpp:1307 Request.cpp:1376
 #, fuzzy
 msgid "Parametre J absent."
 msgstr "Paramètre BBOX absent."
 
-#: Request.cpp:1303 Request.cpp:1371
+#: Request.cpp:1311 Request.cpp:1379
 #, fuzzy
 msgid "La valeur du parametre J est negative."
 msgstr "La valeur du paramètre WIDTH est négative."
 
-#: Request.cpp:1305
+#: Request.cpp:1313
 #, fuzzy
 msgid "La valeur du parametre J est superieure a la largeur fournie (height)."
 msgstr ""
 "La valeur du paramètre WIDTH est supérieure a la valeur maximum autorisée "
 "par le service."
 
-#: Request.cpp:1313
+#: Request.cpp:1321
 #, fuzzy
 msgid "Parametre INFO_FORMAT vide."
 msgstr "Paramètre FORMAT absent."
 
-#: Request.cpp:1320 Request.cpp:1351
+#: Request.cpp:1328 Request.cpp:1359
 #, fuzzy
 msgid "Info_Format "
 msgstr "Format "
 
-#: Request.cpp:1343
+#: Request.cpp:1351
 #, fuzzy
 msgid "Parametre INFOFORMAT vide."
 msgstr "Paramètre FORMAT absent."
 
-#: Request.cpp:1362
+#: Request.cpp:1370
 #, fuzzy
 msgid ""
 "La valeur du parametre I est superieure a la largeur de la tuile (width)."
@@ -1662,7 +1662,7 @@ msgstr ""
 "La valeur du paramètre WIDTH est supérieure a la valeur maximum autorisée "
 "par le service."
 
-#: Request.cpp:1373
+#: Request.cpp:1381
 #, fuzzy
 msgid ""
 "La valeur du parametre J est superieure a la hauteur de la tuile (height)."
