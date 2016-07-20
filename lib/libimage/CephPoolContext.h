@@ -204,7 +204,7 @@ public:
     bool writeFull(uint8_t* data, int size, std::string name);
 
     virtual bool openToWrite(std::string name) {return true;}
-    virtual bool closeToWrite(std::string name) {return true;}
+    virtual bool closeToWrite() {return true;}
     
 
     virtual void print() {

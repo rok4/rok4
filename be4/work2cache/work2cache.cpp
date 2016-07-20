@@ -54,7 +54,7 @@
  *
  * Vision libimage : FileImage -> Rok4Image
  *
- * Dans le cas d'un stockage sur Swift, on va commencer par écrire l'image ROK4 finale dans un fichier pour la téléverser en une fois après.
+ * Dans le cas d'un stockage sur Swift ou S3, on va commencer par écrire l'image ROK4 finale dans un fichier pour la téléverser en une fois après.
  * \~ \code
  * work2cache input.tif -c zip -p rgb -t 100 100 -b 8 -a uint -s 3 output.tif
  * \endcode
@@ -69,6 +69,7 @@
 #include "CephPoolContext.h"
 #include "FileContext.h"
 #include "SwiftContext.h"
+#include "S3Context.h"
 #include "FileImage.h"
 #include "Rok4Image.h"
 #include "TiffNodataManager.h"
@@ -101,8 +102,9 @@ int white[4] = {255,255,255,255};
  *              png     Non-official TIFF compression, each tile is an independant PNG image (with PNG header)
  *      -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size
  *      -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object
- *      -ij image indices : for ceph, if we want to store one tile = one object, to know itle indices
+ *      -ij image indices : for object storage, if we want to store one tile = one object, to know tile indices
  *      -container Swift container where data is. Then OUTPUT FILE is interpreted as a Swift object name
+ *      -bucket S3 bucket where data is. Then OUTPUT FILE is interpreted as a S3 object name
  *      -crop : blocks (used by JPEG compression) wich contain a white pixel are filled with white
  *      -d debug logger activation
  *
@@ -132,8 +134,9 @@ void usage() {
                   "             png     Non-official TIFF compression, each tile is an independant PNG image (with PNG header)\n" <<
                   "     -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size\n" <<
                   "     -pool Ceph pool where data is. Then OUTPUT FILE is interpreted as a Ceph object ID\n" <<
-                  "     -ij image indices : for ceph, if we want to store one tile = one object, to know itle indices\n"
+                  "     -ij image indices : for object storage, if we want to store one tile = one object, to know tile indices\n"
                   "     -container Swift container where data is. Then OUTPUT FILE is interpreted as a Swift object name\n" <<
+                  "     -bucket S3 bucket where data is. Then OUTPUT FILE is interpreted as a S3 object name\n" <<
                   "     -crop : blocks (used by JPEG compression) wich contain a white pixel are filled with white\n" <<
                   "     -d : debug logger activation\n\n" <<
 
@@ -173,14 +176,16 @@ void error ( std::string message, int errorCode ) {
  */
 int main ( int argc, char **argv ) {
 
-    char* input = 0, *output = 0, *pool = 0, *container = 0;
+    char* input = 0, *output = 0, *pool = 0, *container = 0, *bucket = 0;
     int tileWidth = 256, tileHeight = 256;
     int imageI = -1;
     int imageJ = -1;
     Compression::eCompression compression = Compression::NONE;
     bool crop = false;
     bool debugLogger=false;
+    bool onCeph = false;
     bool onSwift = false;
+    bool onS3 = false;
     bool tilesOnCeph = false;
 
     /* Initialisation des Loggers */
@@ -209,6 +214,13 @@ int main ( int argc, char **argv ) {
             pool = argv[i];
             continue;
         }
+        if ( !strcmp ( argv[i],"-bucket" ) ) {
+            if ( ++i == argc ) {
+                error("Error in -bucket option", -1);
+            }
+            bucket = argv[i];
+            continue;
+        }
         if ( !strcmp ( argv[i],"-ij" ) ) {
             if ( i+2 >= argc ) { error("Error in -ij option", -1 ); }
             imageI = atoi ( argv[++i] );
@@ -220,7 +232,6 @@ int main ( int argc, char **argv ) {
                 error("Error in -container option", -1);
             }
             container = argv[i];
-            onSwift = true;
             continue;
         }
         if ( argv[i][0] == '-' ) {
@@ -278,20 +289,44 @@ int main ( int argc, char **argv ) {
 
     Context* context;
 
-    // Dans le cas d'un stockage sur Swift, on a tout de même besoin d'un contexte fichier pour écrire l'image au format final
+    // Dans le cas d'un stockage sur Swift ou S3, on a tout de même besoin d'un contexte fichier pour écrire l'image au format final
     // et pouvoir la téléverser en une fois
-    // Pour cela ,on utilise deux contexte, et un nom de fichier temporaire = input.swift
+    // Pour cela ,on utilise deux contextes, et un nom de fichier temporaire = input.obj
     SwiftContext* contextSwift;
+    S3Context* contextS3;
     char swiftName[256];
+    char s3Name[256];
 
     if ( pool != 0 ) {
+        onCeph = true;
+
         LOGGER_DEBUG( std::string("Output is an object in the Ceph pool ") + pool);
         context = new CephPoolContext(pool);
 
         if (imageI >= 0 && imageJ >= 0) {
             tilesOnCeph = true;
         }
+    } else if (bucket != 0) {
+        onS3 = true;
+
+        curl_global_init(CURL_GLOBAL_ALL);
+
+        LOGGER_DEBUG( std::string("Output is an object in the S3 bucket ") + bucket);
+        contextS3 = new S3Context(bucket);
+        if (! contextS3->connection()) {
+            error("Unable to connect S3 context", -1);
+        }
+        context = new FileContext("");
+
+        // On sauvegarde le nom final de l'objet Swift à créer
+        strcpy ( s3Name, output );
+        // output devient le nom du fichier temporaire à écrire
+        strcpy(output, input);
+        strcat(output, ".obj");
+
+        LOGGER_DEBUG("Temporary file path for S3 storage : " << string(output));
     } else if (container != 0) {
+        onSwift = true;
 
         curl_global_init(CURL_GLOBAL_ALL);
 
@@ -306,7 +341,7 @@ int main ( int argc, char **argv ) {
         strcpy ( swiftName, output );
         // output devient le nom du fichier temporaire à écrire
         strcpy(output, input);
-        strcat(output, ".swift");
+        strcat(output, ".obj");
 
         LOGGER_DEBUG("Temporary file path for Swift storage : " << string(output));
     } else {
@@ -373,7 +408,7 @@ int main ( int argc, char **argv ) {
     }
 
     LOGGER_DEBUG ( "Write" );
-    if (tilesOnCeph) {
+    if (onCeph && tilesOnCeph) {
         if (rok4Image->writeTiles(sourceImage, imageI, imageJ, crop) < 0) {
             error("Cannot write ROK4 tiles on ceph", -1);
         }
@@ -388,6 +423,29 @@ int main ( int argc, char **argv ) {
         if (! contextSwift->writeFromFile(string(output), string(swiftName))) {
             error("Cannot upload ROK4 image into Swift", -1);
         }
+
+        // Nettoyage spécial
+        if ( remove( output ) != 0 ) {
+            LOGGER_WARN("Cannot remove temporary file (for Swift upload) " << output);
+        } else {
+            LOGGER_DEBUG(output << " removed");
+        }
+        curl_global_cleanup();
+        delete contextSwift;
+    } else if (onS3) {
+        LOGGER_DEBUG("S3 upload");
+        if (! contextS3->writeFromFile(string(output), string(s3Name))) {
+            error("Cannot upload ROK4 image into S3", -1);
+        }  
+
+        // Nettoyage spécial
+        if ( remove( output ) != 0 ) {
+            LOGGER_WARN("Cannot remove temporary file (for S3 upload) " << output);
+        } else {
+            LOGGER_DEBUG(output << " removed");
+        }
+        curl_global_cleanup();
+        delete contextS3;      
     }
 
     LOGGER_DEBUG ( "Clean" );
@@ -396,15 +454,6 @@ int main ( int argc, char **argv ) {
     delete sourceImage;
     delete rok4Image;
     delete context;
-    if (onSwift) {
-        if ( remove( output ) != 0 ) {
-            LOGGER_WARN("Cannot remove temporary file (for Swift upload) " << output);
-        } else {
-            LOGGER_DEBUG(output << "removed");
-        }
-        curl_global_cleanup();
-        delete contextSwift;
-    }
 
     return 0;
 }

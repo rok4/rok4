@@ -54,6 +54,7 @@
 #include "CephPoolContext.h"
 #include "FileContext.h"
 #include "SwiftContext.h"
+#include "S3Context.h"
 #include "FileImage.h"
 #include "../be4version.h"
 
@@ -77,11 +78,12 @@
  *              pkb     PackBits encoding
  *              zip     Deflate encoding
  *     -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object
- *     -container Swift container where data is. Then INPUT FILE is interpreted as a Swift object name
+ *     -bucket S3 bucket where data is. INPUT FILE is interpreted as a S3 object
+ *     -container Swift container where data is. INPUT FILE is interpreted as a Swift object name
  *     -d debug logger activation
  *
  * Example
- *      createNodata JpegTiled.tif -c zip ZipUntiled.tif
+ *      cache2work JpegTiled.tif -c zip ZipUntiled.tif
  * \endcode
  */
 void usage() {
@@ -100,8 +102,9 @@ void usage() {
                   "             lzw     Lempel-Ziv & Welch encoding\n" <<
                   "             pkb     PackBits encoding\n" <<
                   "             zip     Deflate encoding\n" <<
-                  "    -pool Ceph pool where data is. Then INPUT FILE is interpreted as a Ceph object\n" <<
-                  "    -container Swift container where data is. Then INPUT FILE is interpreted as a Swift object name\n" <<
+                  "    -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object\n" <<
+                  "    -bucket S3 bucket where data is. INPUT FILE is interpreted as a S3 object\n" <<
+                  "    -container Swift container where data is. INPUT FILE is interpreted as a Swift object name\n" <<
                   "    -d debug logger activation\n\n" <<
 
                   "Example\n" <<
@@ -138,7 +141,7 @@ void error ( std::string message, int errorCode ) {
 int main ( int argc, char **argv )
 {
 
-    char* input = 0, *output = 0, *pool = 0, *container = 0;
+    char* input = 0, *output = 0, *pool = 0, *container = 0, *bucket = 0;
     Compression::eCompression compression = Compression::NONE;
     bool debugLogger=false;
 
@@ -162,6 +165,13 @@ int main ( int argc, char **argv )
                 error("Error in -pool option", -1);
             }
             pool = argv[i];
+            continue;
+        }
+        if ( !strcmp ( argv[i],"-bucket" ) ) {
+            if ( ++i == argc ) {
+                error("Error in -bucket option", -1);
+            }
+            bucket = argv[i];
             continue;
         }
         if ( !strcmp ( argv[i],"-container" ) ) {
@@ -226,6 +236,10 @@ int main ( int argc, char **argv )
     if ( pool != 0 ) {
         LOGGER_DEBUG( std::string("Input is an object in the Ceph pool ") + pool);
         context = new CephPoolContext(pool);
+    } else if (bucket != 0) {
+        LOGGER_DEBUG( std::string("Input is an object in the S3 bucket ") + bucket);
+        curl_global_init(CURL_GLOBAL_ALL);
+        context = new S3Context(bucket);
     } else if (container != 0) {
         LOGGER_DEBUG( std::string("Input is an object in the Swift container ") + container);
         curl_global_init(CURL_GLOBAL_ALL);
@@ -244,7 +258,7 @@ int main ( int argc, char **argv )
     Rok4Image* rok4image = R4IF.createRok4ImageToRead(input, BoundingBox<double>(0.,0.,0.,0.), 0., 0., context);
     if (rok4image == NULL) {
         delete acc;
-        error (std::string("Cannot create ROK4 image to read ") + input, -1);
+        error (std::string("Cannot create ROK4 image to read ") + input, 1);
     }
 
     rok4image->print();

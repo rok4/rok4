@@ -232,7 +232,7 @@ public:
     bool writeFromFile(std::string fileName, std::string objectName);
 
     virtual bool openToWrite(std::string name) {return true;}
-    virtual bool closeToWrite(std::string name) {return true;}
+    virtual bool closeToWrite() {return true;}
 
 
     virtual void print() {

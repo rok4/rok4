@@ -274,6 +274,12 @@ if(NOT TARGET rados)
   SET(CMAKE_RADOS_LIBS_INIT "-lrados")
 endif(NOT TARGET rados)
 
+if(NOT TARGET openssl)
+  add_library(openssl STATIC IMPORTED)
+  set_property(TARGET openssl PROPERTY IMPORTED_LOCATION "-lssl -lcrypto")
+  SET(CMAKE_OPENSSL_LIBS_INIT "-lssl -lcrypto")
+endif(NOT TARGET openssl)
+
 if(NOT TARGET image)
 find_package(Image)
 if(IMAGE_FOUND)

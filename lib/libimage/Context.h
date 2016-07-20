@@ -62,7 +62,8 @@
 enum eContextType {
     FILECONTEXT,
     CEPHCONTEXT,
-    SWIFTCONTEXT
+    SWIFTCONTEXT,
+    S3CONTEXT
 };
 
 /**
@@ -155,11 +156,9 @@ public:
     virtual bool openToWrite(std::string name) = 0;
     /**
      * \~french \brief Termine l'écriture d'un objet
-     * \param[in] name Nom de l'objet que l'on a fini d'écrire
-     * \~english \brief St
-     * \param[in] name Object's name whose writting is over
+     * \~english \brief Stop the writting
      */
-    virtual bool closeToWrite(std::string name) = 0;
+    virtual bool closeToWrite() = 0;
 
     /**
      * \~french \brief Retourne le type du contexte
