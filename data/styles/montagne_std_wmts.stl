@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <style>
-        <Identifier>pente_horn_std_wmts</Identifier>
+        <Identifier>montagne_std_wmts</Identifier>
         <Title>Pente par paliers standards pour le WMTS</Title> 
         <Abstract>Pente calculee avec la methode de Horn mais affichee par parlier standard de 30 a 90 degres, pour le WMTS</Abstract>
         <Keywords>
