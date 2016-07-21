@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<style>
+        <Identifier>pente_horn_normal</Identifier>
+        <Title>Pente de 0 a 90 degres sans changement de palette</Title> 
+        <Abstract>Pente calculee avec la methode de Horn mais affichee sans changement de palette de 0 a 90 degres</Abstract>
+        <Keywords>
+                <Keyword>MNT</Keyword>
+        </Keywords>
+        <LegendURL format="image/png" xlink:simpleLink="simple" xlink:href="http://ign.fr" height="100" width="100" minScaleDenominator="0" maxScaleDenominator="30"/>
+        <pente algo="H"/>
+</style>
