@@ -2,7 +2,7 @@
 SET(PARENT_PROJECT_NAME ${PROJECT_NAME})
 
 #Défini le nom du projet 
-project(tiff2tile)
+project(work2cache)
 
 #définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
 list(GET BE4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
@@ -45,7 +45,7 @@ endif(DEBUG_BUILD)
 ########################################
 #définition des fichiers sources
 
-set(${PROJECT_NAME}_SRCS tiff2tile.cpp )
+set(${PROJECT_NAME}_SRCS work2cache.cpp )
 
 add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRCS})
 

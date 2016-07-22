@@ -168,10 +168,10 @@ sub new {
     }
     $self->{samplesperpixel} = int($params->{samplesperpixel});
 
-    ### Photometric
-    if (! exists $params->{photometric} || ! defined $params->{photometric}) {
-        $params->{photometric} = $DEFAULT{photometric};
-        INFO(sprintf "Default value for 'photometric' : %s", $params->{photometric});
+    ### Photometric :  REQUIRED
+    if (! exists $params->{photometric} || ! defined $params->{bitspersample}) {
+        ERROR ("'bitspersample' required !");
+        return undef;
     } else {
         if (! $self->isPhotometric($params->{photometric})) {
             ERROR (sprintf "Unknown 'photometric' : %s !",$params->{photometric});
@@ -191,6 +191,12 @@ sub new {
         }
     }
     $self->{bitspersample} = int($params->{bitspersample});
+
+    # If image own one-bit sample, conversion will be done, so it's like a 8-bit image
+    if ($self->{bitspersample} == 1) {
+        INFO("We have a one-bit pixel, we memorize an 8-bit pixel because on fly conversion will be done");
+        $self->{bitspersample} = 8;
+    }
 
     return $self;
 }
@@ -315,6 +321,38 @@ sub getBitsPerSample {
 sub getSamplesPerPixel {
     my $self = shift;
     return $self->{samplesperpixel};
+}
+
+# Function: equals
+sub equals {
+    my $self = shift;
+    my $other = shift;
+
+    return (
+        $self->{samplesperpixel} eq $other->getSamplesPerPixel() &&
+        $self->{sampleformat} eq $other->getSampleFormat() &&
+        $self->{photometric} eq $other->getPhotometric() &&
+        $self->{bitspersample} eq $other->getBitsPerSample()
+    );
+}
+
+# Function: convertible
+sub convertible {
+    my $self = shift;
+    my $other = shift;
+
+    if ($self->equals($other)) {
+        return TRUE;
+    }
+
+    if ($self->getSampleFormat() eq "float" || $other->getSampleFormat() eq "float") {
+        # aucune conversion pour des canaux flottant
+        return FALSE;
+    }
+
+    # TODO : permettre des conversions : le test se fera ici
+    # La conversion se fait dans le work2cache
+    return FALSE;
 }
 
 ####################################################################################################

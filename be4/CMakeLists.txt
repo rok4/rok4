@@ -42,7 +42,7 @@ add_subdirectory(mergeNtiff)
 add_subdirectory(overlayNtiff)
 add_subdirectory(pyramide)
 add_subdirectory(tiff2gray)
-add_subdirectory(tiff2tile)
+add_subdirectory(work2cache)
 add_subdirectory(tiffck)
 #######################
 # utilitaire de test :

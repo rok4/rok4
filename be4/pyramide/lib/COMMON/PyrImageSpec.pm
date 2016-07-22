@@ -49,16 +49,7 @@ Using:
     # PyrImageSpec object creation
 
     # Basic constructor
-    my $objPIS = COMMON::PyrImageSpec->new({
-        compression => "raw",
-        sampleformat => "uint",
-        bitspersample => 8,
-        samplesperpixel => 3,
-        photometric => "rgb",
-        compressionoption => "none",
-        interpolation => "bicubic",
-        gamma  => 1
-    });
+    my $objPIS = COMMON::PyrImageSpec->new($pyramidParams, );
 
     # From a code
     my $objPIS = COMMON::PyrImageSpec->new({
@@ -168,29 +159,24 @@ END {}
 =begin nd
 Constructor: new
 
-PyrImageSpec constructor. Bless an instance.
+PyrImageSpec constructor. Bless an instance. Possibilities :
+    - We have an ancestor : all output format properties come from its pyramid desciptor. We have a 'formatCode' to extract compression, sampleformat and bitspersample
+    - bitspersample or samplesperpixel or photometric or sampleformat is not provided by configuration. We try to use those from image source
+    - bitspersample and samplesperpixel and photometric and sampleformat is provided by configuration : we use it, with potentially conversion
 
-Parameters (hash):
-    formatCode - string - Format code, present in the pyramid's descriptor. If formatCode is provided, it has priority and overwrite other parameters.
+Gamma, interpolation and compressionoption own default value, but we have to provide it in configuration file if we want special value.
 
-        OR
-
-    compression - string - Image's compression
-    sampleformat - string - Image's sample format
-    bitspersample - integer - Image's bits per sample
-
-    samplesperpixel - integer - Image's samples per pixel
-    photometric - string - Image's photometric
-    compressionoption - string - Image's compression option
-    interpolation - string - Image's interpolation
-    gamma - float - Merge gamma
+Parameters (list):
+    pyramidParams - string hash - Pyramid parameters, from configuration file or ancestor's pyramid descriptor
+    pixelIn - <COMMON::Pixel> - Pixel caracteristic of input image data. Undefined if no image source
 
 See also:
-    <_init>
+    <_load>
 =cut
 sub new {
     my $this = shift;
     my $params = shift;
+    my $pixelIn = shift;
     
     my $class= ref($this) || $this;
     # IMPORTANT : if modification, think to update natural documentation (just above)
@@ -208,7 +194,7 @@ sub new {
     TRACE;
   
     # init. class
-    if (! $self->_init($params)) {
+    if (! $self->_load($params, $pixelIn)) {
         ERROR ("Can not create PyrImageSpec object !");
         return undef;
     }
@@ -218,40 +204,57 @@ sub new {
 }
 
 =begin nd
-Function: _init
+Function: _load
 
 Checks and stores informations.
 
-Parameters (hash):
-    formatCode - string - Format code, present in the pyramid's descriptor. If formatCode is provided, it has priority and overwrite other parameters.
-        
-        OR
-        
-    compression - string - Image's compression
-    sampleformat - string - Image's sample format
-    bitspersample - integer - Image's bits per sample
-    
-    samplesperpixel - integer - Image's samples per pixel
-    photometric - string - Image's photometric
-    compressionoption - string - Image's compression option
-    interpolation - string - Image's interpolation
-    gamma - float - Merge gamma
+Parameters (list):
+    pyramidParams - string hash - Pyramid parameters, from configuration file or ancestor's pyramid descriptor
+    pixelIn - <COMMON::Pixel> - Pixel caracteristic of input image data. Undefined if no image source
 =cut
-sub _init {
+sub _load {
     my $self   = shift;
     my $params = shift;
+    my $pixelIn = shift;
 
     TRACE;
     
     return FALSE if (! defined $params);
 
     if (exists $params->{formatCode} && defined $params->{formatCode}) {
+        # We have a format code, parameters compression, sampleformat and bitspersample are extracted
         ($params->{compression}, $params->{sampleformat}, $params->{bitspersample}) =
             $self->decodeFormat($params->{formatCode});
         if (! defined $params->{compression}) {
             ERROR (sprintf "Can not decode formatCode '%s' !",$params->{formatCode});
             return FALSE;
         }
+    }
+
+    if ( (! exists $params->{photometric} && ! defined $params->{photometric}) ||
+         (! exists $params->{sampleformat} && ! defined $params->{sampleformat}) ||
+         (! exists $params->{bitspersample} && ! defined $params->{bitspersample}) ||
+         (! exists $params->{samplesperpixel} && ! defined $params->{samplesperpixel}) ) {
+
+        # One pixel parameter is missing, we must have a pixelIn (information from image source)
+        if (! defined $pixelIn) {
+            ERROR(
+                "One pixel parameter is missing (photometric, sampleformat, bitspersample ".
+                "or samplesperpixel), we must have a pixelIn (information from image source)"
+            );
+            return FALSE;
+        }
+
+        INFO(
+            "One pixel parameter is missing (photometric, sampleformat, bitspersample ".
+            "or samplesperpixel), we pick information from image source"
+        );
+
+        $params->{samplesperpixel} = $pixelIn->getSamplesPerPixel();
+        $params->{sampleformat} = $pixelIn->getSampleFormat();
+        $params->{photometric} = $pixelIn->getPhotometric();
+        $params->{bitspersample} = $pixelIn->getBitsPerSample();
+        
     }
 
     ### Pixel object
@@ -266,6 +269,17 @@ sub _init {
         ERROR ("Can not create Pixel object !");
         return FALSE;
     }
+ 
+    if (defined $pixelIn && ! $pixelIn->convertible($objPixel) ) {
+        # We have an input pixel differet from the output pixel, we have to check if conversion is possible
+        ERROR ("Cannot convert input format into output format !");
+        ERROR ("From :");
+        ERROR ($pixelIn->exportForDebug());
+        ERROR ("To :");
+        ERROR ($objPixel->exportForDebug());
+        return FALSE;
+    }
+
 
     $self->{pixel} = $objPixel;
     

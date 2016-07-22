@@ -204,7 +204,7 @@ sub new {
         # Image source
         imageSource => undef,
         # Harvesting
-        harvesting => undef,
+        harvesting => undef
     };
 
     bless($self, $class);
@@ -516,6 +516,15 @@ sub getBottomOrder {
 sub getTopOrder {
     my $self = shift;
     return $self->{topOrder};
+}
+
+# Function: getPixel
+sub getPixel {
+    my $self = shift;
+
+    if (! defined $self->{imageSource}) {return undef;}
+    
+    return $self->{imageSource}->getPixel();
 }
 
 =begin nd

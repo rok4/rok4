@@ -466,13 +466,20 @@ sub doIt {
         ERROR("Cannot load data sources !");
         return FALSE;
     }
-    
+
+
+    my ($ok, $pixelIn) = $objDSL->getPixelFromSources();
+    if (! $ok) {
+        ERROR("Cannot extract ONE pixel information from sources");
+        return FALSE;
+    }
+
     #######################
     # create a pyramid
     
     ALWAYS(">>> Load a Pyramid ...");
     
-    $objPyramid = BE4::Pyramid->new( $params->{pyramid}, $params->{process}->{path_temp} );
+    $objPyramid = BE4::Pyramid->new( $params->{pyramid}, $pixelIn, $params->{process}->{path_temp} );
     if (! defined $objPyramid) {
         ERROR("Can not load Pyramid !");
         return FALSE;

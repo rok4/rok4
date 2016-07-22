@@ -76,7 +76,7 @@ Using:
         interpolation       => "bicubic",
     };
 
-    my $objPyr = BE4::Pyramid->new($params_options,$path_temp);
+    my $objPyr = BE4::Pyramid->new($params_options, $pixelIn, $path_temp);
 
     $objPyr->writeConfPyramid(); # write pyramid's descriptor in /home/ign/ORTHO_RAW_LAMB93_D075-O.pyr
 
@@ -97,7 +97,7 @@ Using:
         update_mode      => "slink"
     };
 
-    my $objPyr = BE4::Pyramid->new($params_options,"/home/ign/TMP");
+    my $objPyr = BE4::Pyramid->new($params_options, $pixelIn, "/home/ign/TMP");
 
     $objPyr->writeConfPyramid(); # write pyramid's descriptor in /home/ign/ORTHO_RAW_LAMB93_D075-E.pyr
 
@@ -235,6 +235,7 @@ Pyramid constructor. Bless an instance.
 
 Parameters (list):
     params - hash - All parameters about the new pyramid, "pyramid" section of the be4 configuration file
+    pixelIn - <COMMON::Pixel> - Pixel caracteristic of input image data. Undefined if no image source
     pathfile - string - Path to the Tile Matrix File (with extension .tms or .TMS)
 
 See also:
@@ -243,6 +244,7 @@ See also:
 sub new {
     my $this = shift;
     my $params = shift;
+    my $pixelIn = shift;
     my $path_temp = shift;
 
     my $class= ref($this) || $this;
@@ -297,7 +299,7 @@ sub new {
     if (! $self->_init($params)) {return undef;}
 
     # a new pyramid or from existing pyramid !
-    if (! $self->_load($params,$path_temp)) {return undef;};
+    if (! $self->_load($params, $pixelIn, $path_temp)) {return undef;};
     
     return $self;   
 }
@@ -305,7 +307,7 @@ sub new {
 =begin nd
 Function: _init
 
-We detect missing parameters and define default values for pyramids' name and path (for the new one and the ancestor). Store data directories' names
+We detect just check new pyramid locations and if an ancestor is provided. Other parameters will be loaded from ancestor or from configuration file and check in <_load>.
 
 Parameters (list):
     params - hash - All parameters about pyramid's format, pyramid section of the be4 configuration file
@@ -349,8 +351,8 @@ sub _init {
     }
     $self->{tms_path} = $params->{tms_path};
     
-    
-    # Different treatment for a new or an update pyramid
+    ### Ancestor ?
+
     if (exists $params->{pyr_name_old} && defined $params->{pyr_name_old}) {
         # With an ancestor
         $params->{pyr_name_old} =~ s/\.(pyr|PYR)$//;
@@ -387,59 +389,6 @@ sub _init {
             $self->{new_pyramid}->{content_path} = $self->{old_pyramid}->{content_path};
         }
         
-    } else {
-        # For a new pyramid, are mandatory (and controlled in this class):
-        #   - image_width, image_height
-        #   - dir_depth
-        
-        if (! exists $params->{image_width} || ! defined $params->{image_width}) {
-            ERROR ("The parameter 'image_width' is required!");
-            return FALSE;
-        }
-        $self->{image_width} = $params->{image_width};
-
-        if (! exists $params->{image_height} || ! defined $params->{image_height}) {
-            ERROR ("The parameter 'image_height' is required!");
-            return FALSE;
-        }
-        $self->{image_height} = $params->{image_height};
-
-        if (! exists $params->{dir_depth} || ! defined $params->{dir_depth}) {
-            ERROR ("The parameter 'dir_depth' is required!");
-            return FALSE;
-        }
-        $self->{dir_depth} = $params->{dir_depth};
-    }
-    
-    ### Images' directory
-    if (! exists $params->{dir_image} || ! defined $params->{dir_image}) {
-        $params->{dir_image} = $DEFAULT{dir_image};
-        INFO(sprintf "Default value for 'dir_image' : %s", $params->{dir_image});
-    }
-    $self->{dir_image} = $params->{dir_image};
-
-    ### Nodata's directory
-    if (! exists $params->{dir_nodata} || ! defined $params->{dir_nodata}) {
-        $params->{dir_nodata} = $DEFAULT{dir_nodata};
-        INFO(sprintf "Default value for 'dir_nodata' : %s", $params->{dir_nodata});
-    }
-    $self->{dir_nodata} = $params->{dir_nodata}; 
-
-    ### Mask's directory
-    if (! exists $params->{dir_mask} || ! defined $params->{dir_mask}) {
-        $params->{dir_mask} = $DEFAULT{dir_mask};
-        INFO(sprintf "Default value for 'dir_mask' : %s", $params->{dir_mask});
-    }
-    $self->{dir_mask} = $params->{dir_mask};
-
-    ### We want masks in the final pyramid ?
-    if ( exists $params->{export_masks} && defined $params->{export_masks} && uc($params->{export_masks}) eq "TRUE" ) {
-        $self->{own_masks} = TRUE;
-    }
-    
-    ### Metadatas' directory
-    if (exists $params->{dir_metadata} && defined $params->{dir_metadata}) {
-        WARN ("We want to generate metadatas, but it is not implemented !");
     }
     
     return TRUE;
@@ -448,24 +397,31 @@ sub _init {
 =begin nd
 Function: _load
 
-We have to collect pyramid's attributes' values
+We have to check pyramid's attributes' values
     - for a new pyramid : all informations must be present in configuration.
     - for an updated pyramid (with ancestor) : informations are collected in the ancestor pyramid's descriptor, <fillFromAncestor> is called.
 
-Informations are checked, using perl classes like <NoData>, <Level>, <PyrImageSpec>...
+Informations are checked, using perl classes like <COMMON::NoData>, <BE4::Level>, <COMMON::PyrImageSpec>...
 
 Parameters (list):
     params - All parameters about a pyramid's format (new or update).
+    pixelIn - <COMMON::Pixel> - Pixel caracteristic of input image data. Undefined if no image source
     path_temp - string - Directory path, where to write the temporary old cache list, if not exist.
 =cut
 sub _load {
     my $self = shift;
     my $params = shift;
+    my $pixelIn = shift;
     my $path_temp = shift;
 
     TRACE;
 
-    if ($self->isNewPyramid) {
+    if (! $self->isNewPyramid) {
+        # A pyramid with ancestor
+        # init. process hasn't checked all parameters,
+        # so, we must read file pyramid to initialyze them...
+        return FALSE if (! $self->fillFromAncestor($params,$path_temp));
+    } else {
         ##### create TileMatrixSet !
         my $objTMS = COMMON::TileMatrixSet->new(File::Spec->catfile($params->{tms_path},$params->{tms_name}));
 
@@ -476,25 +432,59 @@ sub _load {
 
         $self->{tms} = $objTMS;
         DEBUG (sprintf "TMS = %s", $objTMS->exportForDebug);
-    } else {
-        # A pyramid with ancestor
-        # init. process hasn't checked all parameters,
-        # so, we must read file pyramid to initialyze them...
-        return FALSE if (! $self->fillFromAncestor($params,$path_temp));
+    }
+
+    ### MANDATORY
+    # image_width
+    if (! exists $params->{image_width} || ! defined $params->{image_width}) {
+        ERROR ("The parameter 'image_width' is required!");
+        return FALSE;
+    }
+    $self->{image_width} = $params->{image_width};
+
+    # image_height
+    if (! exists $params->{image_height} || ! defined $params->{image_height}) {
+        ERROR ("The parameter 'image_height' is required!");
+        return FALSE;
+    }
+    $self->{image_height} = $params->{image_height};
+
+    # dir_depth
+    if (! exists $params->{dir_depth} || ! defined $params->{dir_depth}) {
+        ERROR ("The parameter 'dir_depth' is required!");
+        return FALSE;
+    }
+    $self->{dir_depth} = $params->{dir_depth};
+    
+    ### With default values
+    # Images' directory
+    if (! exists $params->{dir_image} || ! defined $params->{dir_image}) {
+        $params->{dir_image} = $DEFAULT{dir_image};
+        INFO(sprintf "Default value for 'dir_image' : %s", $params->{dir_image});
+    }
+    $self->{dir_image} = $params->{dir_image};
+
+    # Nodata's directory
+    if (! exists $params->{dir_nodata} || ! defined $params->{dir_nodata}) {
+        $params->{dir_nodata} = $DEFAULT{dir_nodata};
+        INFO(sprintf "Default value for 'dir_nodata' : %s", $params->{dir_nodata});
+    }
+    $self->{dir_nodata} = $params->{dir_nodata}; 
+
+    # Mask's directory
+    if (! exists $params->{dir_mask} || ! defined $params->{dir_mask}) {
+        $params->{dir_mask} = $DEFAULT{dir_mask};
+        INFO(sprintf "Default value for 'dir_mask' : %s", $params->{dir_mask});
+    }
+    $self->{dir_mask} = $params->{dir_mask};
+
+    # We want masks in the final pyramid ?
+    if ( exists $params->{export_masks} && defined $params->{export_masks} && uc($params->{export_masks}) eq "TRUE" ) {
+        $self->{own_masks} = TRUE;
     }
 
     ##### create PyrImageSpec !
-    my $pyrImgSpec = COMMON::PyrImageSpec->new({
-        formatCode => $params->{formatCode},
-        bitspersample => $params->{bitspersample},
-        sampleformat => $params->{sampleformat},
-        photometric => $params->{photometric},
-        samplesperpixel => $params->{samplesperpixel},
-        interpolation => $params->{interpolation},
-        compression => $params->{compression},
-        compressionoption => $params->{compressionoption},
-        gamma => $params->{gamma},
-    });
+    my $pyrImgSpec = COMMON::PyrImageSpec->new($params, $pixelIn);
 
     if (! defined $pyrImgSpec) {
         ERROR ("Can not load specification of pyramid's images !");
@@ -612,29 +602,26 @@ sub readConfPyramid {
     # NODATA
     my $tagnodata = $root->findnodes('nodataValue')->to_literal;
     if ($tagnodata eq '') {
-        WARN (sprintf "Can not extract 'nodata' from the XML file Pyramid ! Value from parameters kept");
-    } else {
-        INFO (sprintf "Nodata value ('%s') in the XML file Pyramid is used",$tagnodata);
-        $params->{color} = $tagnodata;
+        ERROR (sprintf "Can not extract 'nodata' from the XML file Pyramid !");
+        return FALSE;
     }
+    $params->{color} = $tagnodata;
     
     # PHOTOMETRIC
     my $tagphotometric = $root->findnodes('photometric')->to_literal;
     if ($tagphotometric eq '') {
-        WARN (sprintf "Can not extract 'photometric' from the XML file Pyramid ! Value from parameters kept");
-    } else {
-        INFO (sprintf "Photometric value ('%s') in the XML file Pyramid is used",$tagphotometric);
-        $params->{photometric} = $tagphotometric;
+        ERROR (sprintf "Can not extract 'photometric' from the XML file Pyramid !");
+        return FALSE;
     }
+    $params->{photometric} = $tagphotometric;
 
     # INTERPOLATION    
     my $taginterpolation = $root->findnodes('interpolation')->to_literal;
     if ($taginterpolation eq '') {
-        WARN (sprintf "Can not extract 'interpolation' from the XML file Pyramid ! Value from parameters kept");
-    } else {
-        INFO (sprintf "Interpolation value ('%s') in the XML file Pyramid is used",$taginterpolation);
-        $params->{interpolation} = $taginterpolation;
+        ERROR (sprintf "Can not extract 'interpolation' from the XML file Pyramid !");
+        return FALSE;
     }
+    $params->{interpolation} = $taginterpolation;
 
     # Read tag value of tileMatrixSet, format and channel, MANDATORY
 
@@ -643,17 +630,15 @@ sub readConfPyramid {
     if ($tagtmsname eq '') {
         ERROR (sprintf "Can not extract 'tileMatrixSet' from the XML file Pyramid !");
         return FALSE;
-    } else {
-        INFO (sprintf "TMS's name value ('%s') in the XML file Pyramid is used",$tagtmsname);
-        $params->{tms_name} = $tagtmsname.".tms";
     }
+    $params->{tms_name} = $tagtmsname.".tms";
 
     ##### create TileMatrixSet !
     my $objTMS = COMMON::TileMatrixSet->new(File::Spec->catfile($params->{tms_path},$params->{tms_name}));
 
     if (! defined $objTMS) {
-      ERROR ("Can not load TMS !");
-      return FALSE;
+        ERROR ("Can not load TMS !");
+        return FALSE;
     }
 
     $self->{tms} = $objTMS;
@@ -664,20 +649,16 @@ sub readConfPyramid {
     if ($tagformat eq '') {
         ERROR (sprintf "Can not extract 'format' in the XML file Pyramid !");
         return FALSE;
-    } else {
-        INFO (sprintf "Format value ('%s') in the XML file Pyramid is used",$taginterpolation);
-        $params->{formatCode} = $tagformat;
     }
+    $params->{formatCode} = $tagformat;
 
     # SAMPLESPERPIXEL  
     my $tagsamplesperpixel = $root->findnodes('channels')->to_literal;
     if ($tagsamplesperpixel eq '') {
         ERROR (sprintf "Can not extract 'channels' in the XML file Pyramid !");
         return FALSE;
-    } else {
-        INFO (sprintf "Samples per pixel value ('%s') in the XML file Pyramid is used",$tagsamplesperpixel);
-        $params->{samplesperpixel} = $tagsamplesperpixel;
-    }
+    } 
+    $params->{samplesperpixel} = $tagsamplesperpixel;
 
     # load pyramid level
     my @levels = $root->getElementsByTagName('level');
@@ -754,9 +735,9 @@ sub readConfPyramid {
         $self->addLevel($tagtm,$objLevel);
 
         # same for each level
-        $self->{dir_depth}  = $tagdirdepth;
-        $self->{image_width}  = $tagsize[0];
-        $self->{image_height} = $tagsize[1];
+        $params->{dir_depth}  = $tagdirdepth;
+        $params->{image_width}  = $tagsize[0];
+        $params->{image_height} = $tagsize[1];
     }
 
     #

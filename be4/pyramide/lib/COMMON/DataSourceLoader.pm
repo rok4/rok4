@@ -342,6 +342,35 @@ sub getNumberDataSources {
     return scalar @{$self->{dataSources}}; 
 }
 
+# Function: getPixelFromSources
+sub getPixelFromSources {
+    my $self = shift;
+
+    my $pixel = undef;
+    foreach my $source (@{$self->{dataSources}}) {
+        if (! $source->hasImages()) {next;}
+
+        my $tmpPixel = $source->getPixel();
+
+        if (! defined $pixel) {
+            $pixel = $tmpPixel;
+            next;
+        }
+
+        if (! $tmpPixel->equals($pixel)) {
+            ERROR("We have several images sources but pixel caracteristics are different, we can't extract ONE format from sources for output");
+            return (FALSE, undef);
+        }
+    }
+
+    if (defined $pixel) {
+        INFO("We extract ONE format from sources for output. We can use it if no output format is provided");
+        INFO( $pixel->exportForDebug() );
+    }
+
+    return (TRUE, $pixel);
+}
+
 ####################################################################################################
 #                                Group: Export methods                                             #
 ####################################################################################################
