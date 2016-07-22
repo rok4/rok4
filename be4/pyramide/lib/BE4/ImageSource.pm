@@ -288,7 +288,7 @@ sub computeImageSource {
 
         my $prePsFilePath = undef;
 
-                my $objGeoImage = BE4::GeoImage->new($filepath);
+        my $objGeoImage = BE4::GeoImage->new($filepath);
 
         if (! defined $objGeoImage) {
             ERROR ("Can not load image source ('$filepath') !");
@@ -323,7 +323,7 @@ sub computeImageSource {
         }
 
         if (! defined $pixel) {
-            # we have read the first image, components are empty. This first image will be the reference.
+            # we read the first image, components are empty. This first image will be the reference.
             $pixel = BE4::Pixel->new({
                 bitspersample => $imageInfo[0],
                 photometric => $imageInfo[1],
@@ -459,6 +459,12 @@ sub getResolution {
 sub getSRS {
     my $self = shift;
     return $self->{srs};
+}
+
+# Function: getPixel
+sub getPixel {
+    my $self = shift;
+    return $self->{pixel};
 }
 
 # Function: getImages
