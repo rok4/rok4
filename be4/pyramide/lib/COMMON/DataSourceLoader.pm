@@ -38,16 +38,16 @@
 =begin nd
 File: DataSourceLoader.pm
 
-Class: BE4::DataSourceLoader
+Class: COMMON::DataSourceLoader
 
 Loads, validates and manages data sources. Data sources informations are read from a specific configuration file.
 
 Using:
     (start code)
-    use BE4::DataSourceLoader
+    use COMMON::DataSourceLoader
 
     # DataSourceLoader object creation
-    my $objDataSourceLoader = BE4::DataSourceLoader->new({
+    my $objDataSourceLoader = COMMON::DataSourceLoader->new({
         filepath_conf => "/home/IGN/CONF/source.txt",
     });
 
@@ -63,7 +63,7 @@ Limitations:
 
 ################################################################################
 
-package BE4::DataSourceLoader;
+package COMMON::DataSourceLoader;
 
 use strict;
 use warnings;
@@ -73,7 +73,7 @@ use Data::Dumper;
 use List::Util qw(min max);
 
 # My module
-use BE4::DataSource;
+use COMMON::DataSource;
 use BE4::PropertiesLoader;
 
 require Exporter;
@@ -198,7 +198,7 @@ sub _load {
     my $nbSources = 0;
 
     while( my ($level,$params) = each(%$sourcesProperties) ) {
-        my $datasource = BE4::DataSource->new($level,$params);
+        my $datasource = COMMON::DataSource->new($level,$params);
         if (! defined $datasource) {
             ERROR(sprintf "Cannot create a DataSource object for the base level %s",$level);
             return FALSE;
@@ -248,7 +248,7 @@ sub updateDataSources {
 
     TRACE();
     
-    if (! defined $TMS || ref ($TMS) ne "BE4::TileMatrixSet") {
+    if (! defined $TMS || ref ($TMS) ne "COMMON::TileMatrixSet") {
         ERROR("We need a TileMatrixSet object to update data sources");
         return (-1, -1);
     }
@@ -360,8 +360,8 @@ sub exportForDebug {
     
     my $export = "";
     
-    $export .= sprintf "\n Object BE4::DataSourceLoader :\n";
-    $export .= sprintf "\t Configuration file :\n", $self->{FILEPATH_DATACONF};
+    $export .= sprintf "\n Object COMMON::DataSourceLoader :\n";
+    $export .= sprintf "\t Configuration file :%s\n", $self->{FILEPATH_DATACONF};
     $export .= sprintf "\t Sources number : %s\n", scalar @{$self->{dataSources}};
     
     return $export;

@@ -39,13 +39,13 @@ use warnings;
 use Test::More;
 
 # My tested class
-use JOINCACHE::SourceLevel;
+use COMMON::SourceLevel;
 
 ######################################################
 
 # Level object creation
 
-my $sourceLevel = JOINCACHE::SourceLevel->new({
+my $sourceLevel = COMMON::SourceLevel->new({
     id                => "level_12",
     dir_image         => "/absolute/path/to/imageDir",
     dir_mask          => "/absolute/path/to/maskDir",

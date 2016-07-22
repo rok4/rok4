@@ -46,13 +46,13 @@ Log::Log4perl->easy_init({
 });
 
 # My tested class
-use BE4::TileMatrix;
+use COMMON::TileMatrix;
 
 ######################################################
 
 # TileMatrix objects creations
 
-my $tm = BE4::TileMatrix->new({
+my $tm = COMMON::TileMatrix->new({
     id             => "level4",
     resolution     => 0.324,
     topLeftCornerX => 0,

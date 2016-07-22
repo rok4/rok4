@@ -157,13 +157,13 @@ use Tie::File;
 
 use Data::Dumper;
 
-use BE4::TileMatrixSet;
+use COMMON::TileMatrixSet;
 use BE4::Level;
-use BE4::NoData;
-use BE4::PyrImageSpec;
-use BE4::Pixel;
-use BE4::Forest;
-use BE4::Base36;
+use COMMON::NoData;
+use COMMON::PyrImageSpec;
+use COMMON::Pixel;
+use COMMON::Forest;
+use COMMON::Base36;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -467,7 +467,7 @@ sub _load {
 
     if ($self->isNewPyramid) {
         ##### create TileMatrixSet !
-        my $objTMS = BE4::TileMatrixSet->new(File::Spec->catfile($params->{tms_path},$params->{tms_name}));
+        my $objTMS = COMMON::TileMatrixSet->new(File::Spec->catfile($params->{tms_path},$params->{tms_name}));
 
         if (! defined $objTMS) {
             ERROR ("Can not load TMS !");
@@ -484,7 +484,7 @@ sub _load {
     }
 
     ##### create PyrImageSpec !
-    my $pyrImgSpec = BE4::PyrImageSpec->new({
+    my $pyrImgSpec = COMMON::PyrImageSpec->new({
         formatCode => $params->{formatCode},
         bitspersample => $params->{bitspersample},
         sampleformat => $params->{sampleformat},
@@ -505,7 +505,7 @@ sub _load {
     DEBUG(sprintf "PYRIMAGESSPEC (debug export) = %s", $pyrImgSpec->exportForDebug());
 
     ##### create NoData !
-    my $objNodata = BE4::NoData->new({
+    my $objNodata = COMMON::NoData->new({
         pixel   => $self->getPixel(),
         value   => $params->{color},
     });
@@ -649,7 +649,7 @@ sub readConfPyramid {
     }
 
     ##### create TileMatrixSet !
-    my $objTMS = BE4::TileMatrixSet->new(File::Spec->catfile($params->{tms_path},$params->{tms_name}));
+    my $objTMS = COMMON::TileMatrixSet->new(File::Spec->catfile($params->{tms_path},$params->{tms_name}));
 
     if (! defined $objTMS) {
       ERROR ("Can not load TMS !");
@@ -1366,7 +1366,7 @@ sub writeListPyramid {
 
                 # Extension is removed
                 $b36path =~ s/(\.tif|\.tiff|\.TIF|\.TIFF)//;
-                ($x,$y) = BE4::Base36::b36PathToIndices($b36path);
+                ($x,$y) = COMMON::Base36::b36PathToIndices($b36path);
             }
             
             if (! $forest->containsNode($level,$x,$y)) {
@@ -2004,7 +2004,7 @@ Example:
                 - width : 16
                 - height : 16
          Image components :
-    Object BE4::PyrImageSpec :
+    Object COMMON::PyrImageSpec :
          Global information :
                 - Compression : raw
                 - Compression option : none
@@ -2012,7 +2012,7 @@ Example:
                 - Gamma : 1
                 - Format code : TIFF_RAW_INT8
          Pixel components :
-    Object BE4::Pixel :
+    Object COMMON::Pixel :
          Bits per sample : 8
          Photometric : rgb
          Sample format : uint

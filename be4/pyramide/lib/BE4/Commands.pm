@@ -58,7 +58,7 @@ Using:
     (end code)
 
 Attributes:
-    pyramid - <Pyramid> - Allowed to know output format specifications and configure commands.
+    pyramid - <BE4::Pyramid> - Allowed to know output format specifications and configure commands.
     mntConfDir - string - Directory, where to write mergeNtiff configuration files.
     dntConfDir - string - Directory, where to write decimateNtiff configuration files.
     useMasks - boolean - If TRUE, all generating tools (mergeNtiff, merge4tiff...) use masks if present and generate a resulting mask. This processing is longer, that's why default behaviour is without mask.
@@ -76,9 +76,9 @@ use File::Basename;
 use File::Path;
 use Data::Dumper;
 
-use BE4::Harvesting;
+use COMMON::Harvesting;
 use BE4::Level;
-use BE4::Script;
+use COMMON::GraphScript;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -369,7 +369,7 @@ Constructor: new
 Commands constructor. Bless an instance.
 
 Parameters (list):
-    pyr - <Pyramid> - Image pyramid to generate
+    pyr - <BE4::Pyramid> - Image pyramid to generate
     useMasks - string - Do we want use masks to generate images ?
 =cut
 sub new {
@@ -434,8 +434,8 @@ Example:
     (end code)
 
 Parameters (list):
-    node - <Node> - Node whose image have to be harvested.
-    harvesting - <Harvesting> - To use to harvest image.
+    node - <COMMON::GraphNode> - Node whose image have to be harvested.
+    harvesting - <COMMON::Harvesting> - To use to harvest image.
 
 Returns:
     An array (code, weight), (undef,WGET_W) if error.
@@ -484,7 +484,7 @@ Examples:
     (end code)
     
 Parameters (list):
-    node - <Node> - Node whose image have to be transfered in the work directory.
+    node - <COMMON::GraphNode> - Node whose image have to be transfered in the work directory.
 
 Returns:
     An array (code, weight), ("",-1) if error.
@@ -525,7 +525,7 @@ Example:
 |    Work2cache ${TMP_DIR}/19_395_3137.tif IMAGE/19/02/AF/Z5.tif
 
 Parameter:
-    node - <Node> - Node whose image have to be transfered in the cache.
+    node - <COMMON::GraphNode> - Node whose image have to be transfered in the cache.
     workDir - string - Work image directory, can be an environment variable.
 
 Returns:
@@ -574,7 +574,7 @@ Use the 'MergeNtiff' bash function. Write a configuration file, with sources.
 (see mergeNtiff.png)
 
 Parameters (list):
-    node - <Node> - Node to generate thanks to a 'mergeNtiff' command.
+    node - <COMMON::GraphNode> - Node to generate thanks to a 'mergeNtiff' command.
     
 Example:
 |    MergeNtiff 19_397_3134.txt
@@ -654,7 +654,7 @@ Use the 'decimateNtiff' bash function. Write a configuration file, with sources.
 (see decimateNtiff.png)
 
 Parameters (list):
-    node - <Node> - Node to generate thanks to a 'decimateNtiff' command.
+    node - <COMMON::GraphNode> - Node to generate thanks to a 'decimateNtiff' command.
     
 Example:
 |    DecimateNtiff 12_26_17.txt
@@ -736,7 +736,7 @@ Use the 'Merge4tiff' bash function.
 (see merge4tiff.png)
 
 Parameters (list):
-    node - <Node> - Node to generate thanks to a 'merge4tiff' command.
+    node - <COMMON::GraphNode> - Node to generate thanks to a 'merge4tiff' command.
 
 Example:
 |    

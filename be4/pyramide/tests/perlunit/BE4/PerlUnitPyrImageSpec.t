@@ -46,14 +46,14 @@ Log::Log4perl->easy_init({
 });
 
 # My tested class
-use BE4::PyrImageSpec;
+use COMMON::PyrImageSpec;
 
 ######################################################
 
 # PyrImageSpec objects creations
 
 # classic
-my $pis = BE4::PyrImageSpec->new({
+my $pis = COMMON::PyrImageSpec->new({
     samplesperpixel => 1,
     bitspersample => 32,
     sampleformat => "float",
@@ -70,7 +70,7 @@ is ($pis->getCompressionOption(), "none", "Default value for 'compressionoption'
 is ($pis->getFormatCode(), "TIFF_LZW_FLOAT32", "Format code verification");
 
 # with format code
-my $pis2 = BE4::PyrImageSpec->new({
+my $pis2 = COMMON::PyrImageSpec->new({
     formatCode => "TIFF_PKB_INT8",
     samplesperpixel => 3,
     photometric => "rgb",
@@ -96,7 +96,7 @@ is_deeply ([$comp,$sf,$bps],["raw","float",32], "Deprecated format code 'TIFF_FL
 ######################################################
 
 # Test on parameter 'interpolation'
-$pis = BE4::PyrImageSpec->new({
+$pis = COMMON::PyrImageSpec->new({
     samplesperpixel => 1,
     bitspersample => 32,
     sampleformat => "float",
@@ -109,7 +109,7 @@ $pis = BE4::PyrImageSpec->new({
 is ($pis->getInterpolation(), "bicubic", "Interpolation 'bicubique' is deprecated and change into 'bicubic'");
 undef $pis;
 
-$pis = BE4::PyrImageSpec->new({
+$pis = COMMON::PyrImageSpec->new({
     samplesperpixel => 1,
     bitspersample => 32,
     sampleformat => "float",
@@ -125,7 +125,7 @@ undef $pis;
 ######################################################
 
 # Test on parameter 'compression'
-$pis = BE4::PyrImageSpec->new({
+$pis = COMMON::PyrImageSpec->new({
     samplesperpixel => 1,
     bitspersample => 32,
     sampleformat => "float",
@@ -138,7 +138,7 @@ $pis = BE4::PyrImageSpec->new({
 is ($pis->getCompression(), "raw", "Compression 'floatraw' is deprecated and change into 'raw'");
 undef $pis;
 
-$pis = BE4::PyrImageSpec->new({
+$pis = COMMON::PyrImageSpec->new({
     samplesperpixel => 1,
     bitspersample => 32,
     sampleformat => "float",
@@ -154,7 +154,7 @@ undef $pis;
 ######################################################
 
 # Test on parameter 'compressionoption'
-$pis = BE4::PyrImageSpec->new({
+$pis = COMMON::PyrImageSpec->new({
     samplesperpixel => 1,
     bitspersample => 32,
     sampleformat => "float",
@@ -168,7 +168,7 @@ $pis = BE4::PyrImageSpec->new({
 ok (! defined $pis, "Incorrect value detected for 'compressionoption'");
 undef $pis;
 
-$pis = BE4::PyrImageSpec->new({
+$pis = COMMON::PyrImageSpec->new({
     samplesperpixel => 1,
     bitspersample => 8,
     sampleformat => "uint",
@@ -182,7 +182,7 @@ $pis = BE4::PyrImageSpec->new({
 ok (defined $pis, "Compression option 'crop' is accepted for jpeg compression");
 undef $pis;
 
-$pis = BE4::PyrImageSpec->new({
+$pis = COMMON::PyrImageSpec->new({
     samplesperpixel => 1,
     bitspersample => 8,
     sampleformat => "uint",
@@ -199,7 +199,7 @@ undef $pis;
 ######################################################
 
 # Test on parameter 'gamma'
-$pis = BE4::PyrImageSpec->new({
+$pis = COMMON::PyrImageSpec->new({
     samplesperpixel => 1,
     bitspersample => 32,
     sampleformat => "float",
@@ -212,7 +212,7 @@ $pis = BE4::PyrImageSpec->new({
 cmp_ok ($pis->getGamma(), '==', 0, "Gamma cannot be negative");
 undef $pis;
 
-$pis = BE4::PyrImageSpec->new({
+$pis = COMMON::PyrImageSpec->new({
     samplesperpixel => 1,
     bitspersample => 32,
     sampleformat => "float",
@@ -225,7 +225,7 @@ $pis = BE4::PyrImageSpec->new({
 ok (! defined $pis, "Incorrect value detected for 'gamma', have to be a number");
 undef $pis;
 
-$pis = BE4::PyrImageSpec->new({
+$pis = COMMON::PyrImageSpec->new({
     samplesperpixel => 1,
     bitspersample => 32,
     sampleformat => "float",

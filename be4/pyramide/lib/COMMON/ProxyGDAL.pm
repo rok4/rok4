@@ -38,21 +38,21 @@
 =begin nd
 File: ProxyGDAL.pm
 
-Class: BE4::ProxyGDAL
+Class: COMMON::ProxyGDAL
 
 Proxy to use different versions of GDAL transparently
 
 Using:
     (start code)
-    use BE4::ProxyGDAL;
-    my $geom = BE4::ProxyGDAL::geometryFromWKT("POLYGON(0 0,1 0,1 1,0 1,0 0)") ;
-    my $sr = BE4::ProxyGDAL::spatialReferenceFromSRS("EPSG:4326") ;
+    use COMMON::ProxyGDAL;
+    my $geom = COMMON::ProxyGDAL::geometryFromWKT("POLYGON(0 0,1 0,1 1,0 1,0 0)") ;
+    my $sr = COMMON::ProxyGDAL::spatialReferenceFromSRS("EPSG:4326") ;
     (end code)
 =cut
 
 ################################################################################
 
-package BE4::ProxyGDAL;
+package COMMON::ProxyGDAL;
 
 use strict;
 use warnings;
@@ -236,7 +236,6 @@ sub spatialReferenceFromSRS {
         #version 2.x    
         eval { $sr = Geo::OSR::SpatialReference->new(Proj4 => '+init='.$srs.' +wktext'); };
         if ($@) {
-            INFO("top");
             eval { $sr = Geo::OSR::SpatialReference->new(Proj4 => '+init='.lc($srs).' +wktext'); };
             if ($@) {
                 ERROR("$@");
@@ -250,7 +249,6 @@ sub spatialReferenceFromSRS {
         $sr= new Geo::OSR::SpatialReference;
         eval { $sr->ImportFromProj4('+init='.$srs.' +wktext'); };
         if ($@) {
-            INFO("top");
             eval { $sr->ImportFromProj4('+init='.lc($srs).' +wktext'); };
             if ($@) {
                 ERROR("$@");
@@ -292,13 +290,13 @@ sub coordinateTransformationFromSpatialReference {
     my $src = shift;
     my $dst = shift;
     
-    my $srcSR = BE4::ProxyGDAL::spatialReferenceFromSRS($src);
+    my $srcSR = COMMON::ProxyGDAL::spatialReferenceFromSRS($src);
     if (! defined $srcSR) {
         ERROR(sprintf "Impossible to initialize the initial spatial coordinate system (%s) !", $src);
         return undef;
     }
 
-    my $dstSR = BE4::ProxyGDAL::spatialReferenceFromSRS($dst);
+    my $dstSR = COMMON::ProxyGDAL::spatialReferenceFromSRS($dst);
     if (! defined $srcSR) {
         ERROR(sprintf "Impossible to initialize the destination spatial coordinate system (%s) !", $dst);
         return undef;

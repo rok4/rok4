@@ -38,18 +38,18 @@
 =begin nd
 File: DataSource.pm
 
-Class: BE4::DataSource
+Class: COMMON::DataSource
 
 Manage a data source, physical (image files) or virtual (WMS server) or both.
 
 Using:
     (start code)
-    use BE4::DataSource;
+    use COMMON::DataSource;
 
     # DataSource object creation : 3 cases
 
     # Real Data and no harvesting : native SRS and lossless compression
-    my $objDataSource = BE4::DataSource->new(
+    my $objDataSource = COMMON::DataSource->new(
         "19",
         {
             srs => "IGNF:LAMB93",
@@ -58,7 +58,7 @@ Using:
     );
 
     # No Data, just harvesting (here for a WMS vector) 
-    my $objDataSource = BE4::DataSource->new(
+    my $objDataSource = COMMON::DataSource->new(
         "19",
         {
             srs => IGNF:WGS84G,
@@ -79,7 +79,7 @@ Using:
     );
     
     # No Data, just harvesting provided images
-    my $objDataSource = BE4::DataSource->new(
+    my $objDataSource = COMMON::DataSource->new(
         "19",
         {
             srs => IGNF:WGS84G,
@@ -100,7 +100,7 @@ Using:
     );
 
     # Real Data and harvesting : reprojection or lossy compression
-    my $objDataSource = BE4::DataSource->new(
+    my $objDataSource = COMMON::DataSource->new(
         "19",
         {
             srs => "IGNF:LAMB93",
@@ -134,7 +134,7 @@ Limitations:
 
 ################################################################################
 
-package BE4::DataSource;
+package COMMON::DataSource;
 
 use strict;
 use warnings;
@@ -144,9 +144,9 @@ use Data::Dumper;
 use List::Util qw(min max);
 
 # My module
-use BE4::ImageSource;
-use BE4::Harvesting;
-use BE4::ProxyGDAL;
+use COMMON::ImageSource;
+use COMMON::Harvesting;
+use COMMON::ProxyGDAL;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -290,7 +290,7 @@ sub _load {
     # ImageSource is optionnal
     my $imagesource = undef;
     if (exists $params->{path_image}) {
-        $imagesource = BE4::ImageSource->new($params);
+        $imagesource = COMMON::ImageSource->new($params);
         if (! defined $imagesource) {
             ERROR("Cannot create the ImageSource object");
             return FALSE;
@@ -301,7 +301,7 @@ sub _load {
     # Harvesting is optionnal, but if we have 'wms_layer' parameter, we suppose that we have others
     my $harvesting = undef;
     if (exists $params->{wms_layer}) {
-        $harvesting = BE4::Harvesting->new($params);
+        $harvesting = COMMON::Harvesting->new($params);
         if (! defined $harvesting) {
             ERROR("Cannot create the Harvesting object");
             return FALSE;
@@ -412,14 +412,14 @@ sub computeGlobalInfo {
         # We use extent to define a WKT string, Now, we store in this attribute the equivalent OGR Geometry
         $self->{extent} = undef;
 
-        $self->{extent} = BE4::ProxyGDAL::geometryFromWKT($WKTextent);
+        $self->{extent} = COMMON::ProxyGDAL::geometryFromWKT($WKTextent);
 
         if (! defined $self->{extent}) {
             ERROR(sprintf "Cannot create a Geometry from the WKT string : %s.",$WKTextent);
             return FALSE;
         }
 
-        my ($xmin,$xmax,$ymin,$ymax) = BE4::ProxyGDAL::getBbox($self->{extent});
+        my ($xmin,$xmax,$ymin,$ymax) = COMMON::ProxyGDAL::getBbox($self->{extent});
 
         if (! defined $xmin) {
             ERROR("Cannot calculate bbox from the OGR Geometry");
@@ -572,7 +572,7 @@ sub exportForDebug {
     
     my $export = "";
     
-    $export .= sprintf "\n Object BE4::DataSource :\n";
+    $export .= sprintf "\n Object COMMON::DataSource :\n";
     $export .= sprintf "\t Extent: %s\n",$self->{extent};
     $export .= sprintf "\t Levels ID (order):\n";
     $export .= sprintf "\t\t- bottom : %s (%s)\n",$self->{bottomID},$self->{bottomOrder};

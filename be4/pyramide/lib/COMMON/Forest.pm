@@ -38,7 +38,7 @@
 =begin nd
 File: Forest.pm
 
-Class: BE4::Forest
+Class: COMMON::Forest
 
 Creates and manages all graphs, <NNGraph> and <QTree>.
 
@@ -51,17 +51,17 @@ We have several kinds of graphs and their using have to be transparent for the f
 
 Using:
     (start code)
-    use BE4::Forest
+    use COMMON::Forest
 
-    my $Forest = BE4::Forest->new(
+    my $Forest = COMMON::Forest->new(
         $objPyramid, # a BE4::Pyramid object
-        $objDSL, # a BE4::DataSourceLoader object
+        $objDSL, # a COMMON::DataSourceLoader object
         $param_process, # a hash with following keys : job_number, path_temp, path_temp_common and path_shell
     );
     (end code)
 
 Attributes:
-    pyramid - <Pyramid> - Images' pyramid to generate, thanks to one or several graphs.
+    pyramid - <BE4::Pyramid> - Images' pyramid to generate, thanks to one or several graphs.
     commands - <Commands> - To compose generation commands (mergeNtiff, tiff2tile...).
     graphs - <QTree> or <NNGraph> array - Graphs composing the forest, one per data source.
     scripts - <Script> array - Scripts, whose execution generate the images' pyramid.
@@ -71,7 +71,7 @@ Attributes:
 
 ################################################################################
 
-package BE4::Forest;
+package COMMON::Forest;
 
 use strict;
 use warnings;
@@ -83,13 +83,13 @@ use List::Util qw(min max);
 use Geo::GDAL;
 
 # My module
-use BE4::QTree;
-use BE4::NNGraph;
+use COMMON::QTree;
+use COMMON::NNGraph;
 use BE4::Commands;
 use BE4::Pyramid;
-use BE4::Script;
-use BE4::DataSourceLoader;
-use BE4::DataSource;
+use COMMON::GraphScript;
+use COMMON::DataSourceLoader;
+use COMMON::DataSource;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -121,7 +121,7 @@ Constructor: new
 Forest constructor. Bless an instance.
 
 Parameters (list):
-    pyr - <Pyramid> - Contains output format specifications, needed by generations command's.
+    pyr - <BE4::Pyramid> - Contains output format specifications, needed by generations command's.
     DSL - <DataSourceLoader> - Contains one or several data sources
     params_process - hash - Informations for scripts
 |               job_number - integer - Parallelization level
@@ -166,7 +166,7 @@ Function: _init
 Checks parameters and stores the pyramid.
 
 Parameters (list):
-    pyr - <Pyramid> - Contains output format specifications, needed by generations command's.
+    pyr - <BE4::Pyramid> - Contains output format specifications, needed by generations command's.
     DSL - <DataSourceLoader> - Contains one or several data sources
     params_process - hash - Informations for scipts, where to write them, temporary directory to use...
 |               job_number - integer - Parallelization level
@@ -188,7 +188,7 @@ sub _init {
     $self->{pyramid} = $pyr;
     
     # it's an object and it's mandatory !
-    if (! defined $DSL || ref ($DSL) ne "BE4::DataSourceLoader") {
+    if (! defined $DSL || ref ($DSL) ne "COMMON::DataSourceLoader") {
         ERROR("Can not load data sources !");
         return FALSE;
     }
@@ -211,7 +211,7 @@ All differences between different kinds of graphs are handled in respective clas
 Only scripts creation and initial organization are managed by the forest.
 
 Parameters (list):
-    pyr - <Pyramid> - Contains output format specifications, needed by generations command's.
+    pyr - <BE4::Pyramid> - Contains output format specifications, needed by generations command's.
     DSL - <DataSourceLoader> - Contains one or several data sources
     params_process - hash - Informations for scipts, where to write them, temporary directory to use...
 |               job_number - integer - Parallelization level
@@ -272,7 +272,7 @@ sub _load {
     $self->{commands} = $commands;
     
     ############# SCRIPTS #############
-    # We create BE4::Script objects and initialize them (header)
+    # We create COMMON::GraphScript objects and initialize them (header)
 
     my $functions = $commands->configureFunctions;
 
@@ -288,7 +288,7 @@ sub _load {
                 $executedAlone = TRUE;
             }
 
-            my $script = BE4::Script->new({
+            my $script = COMMON::GraphScript->new({
                 id => $scriptID,
                 tempDir => $tempDir,
                 commonTempDir => $commonTempDir,
@@ -317,7 +317,7 @@ sub _load {
                     $scriptID = sprintf "LEVEL_%s_SCRIPT_%s", $levelID, $j;
                 }
 
-                my $script = BE4::Script->new({
+                my $script = COMMON::GraphScript->new({
                     id => $scriptID,
                     tempDir => $tempDir,
                     commonTempDir => $commonTempDir,
@@ -333,7 +333,7 @@ sub _load {
         }
 
         # Le SUPER finisher
-        my $script = BE4::Script->new({
+        my $script = COMMON::GraphScript->new({
             id => "SCRIPT_FINISHER",
             tempDir => $tempDir,
             commonTempDir => $commonTempDir,
@@ -360,9 +360,9 @@ sub _load {
         # Creation of QTree or NNGraph object
         my $graph = undef;
         if ($isQTree) {
-            $graph = BE4::QTree->new($self, $datasource, $self->{pyramid}, $self->{commands});
+            $graph = COMMON::QTree->new($self, $datasource, $self->{pyramid}, $self->{commands});
         } else {
-            $graph = BE4::NNGraph->new($self,$datasource, $self->{pyramid}, $self->{commands});
+            $graph = COMMON::NNGraph->new($self,$datasource, $self->{pyramid}, $self->{commands});
         };
                 
         if (! defined $graph) {
@@ -526,7 +526,7 @@ sub exportForDebug {
     
     my $export = "";
     
-    $export .= sprintf "\n Object BE4::Forest :\n";
+    $export .= sprintf "\n Object COMMON::Forest :\n";
 
     $export .= "\t Graph :\n";
     $export .= sprintf "\t Number of graphs in the forest : %s\n", scalar @{$self->{graphs}};

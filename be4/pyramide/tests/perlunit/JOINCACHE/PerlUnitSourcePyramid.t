@@ -41,7 +41,7 @@ use FindBin qw($Bin);
 use Test::More;
 
 # My tested class
-use JOINCACHE::SourcePyramid;
+use COMMON::SourcePyramid;
 
 use BE4::Pyramid;
 
@@ -79,8 +79,8 @@ my $newPyr = BE4::Pyramid->new({
 
 ok (defined $newPyr, "BE4::Pyramid created");
 
-my $sourcePyr = JOINCACHE::SourcePyramid->new($Bin."/../../pyramid/oldPyramid.pyr");
-ok (defined $sourcePyr, "JOINCACHE::SourcePyramid created");
+my $sourcePyr = COMMON::SourcePyramid->new($Bin."/../../pyramid/oldPyramid.pyr");
+ok (defined $sourcePyr, "COMMON::SourcePyramid created");
 
 ok (! $sourcePyr->isCompatible(), "Non-compatibility detected");
 

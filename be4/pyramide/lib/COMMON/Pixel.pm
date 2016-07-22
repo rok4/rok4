@@ -38,15 +38,15 @@
 =begin nd
 File: Pixel.pm
 
-Class: BE4::Pixel
+Class: COMMON::Pixel
 
 Store all pixel's intrinsic components.
 
 Using:
     (start code)
-    use BE4::Pixel;
+    use COMMON::Pixel;
 
-    my $objC = BE4::Pixel->new({
+    my $objC = COMMON::Pixel->new({
         sampleformat => "uint",
         photometric => "rgb",
         samplesperpixel => 3,
@@ -63,7 +63,7 @@ Attributes:
 
 ################################################################################
 
-package BE4::Pixel;
+package COMMON::Pixel;
 
 use strict;
 use warnings;
@@ -328,7 +328,7 @@ Returns all pixel's components. Useful for debug.
 
 Example:
     (start code)
-    Object BE4::Pixel :
+    Object COMMON::Pixel :
          Bits per sample : 8
          Photometric : rgb
          Sample format : uint
@@ -340,7 +340,7 @@ sub exportForDebug {
     
     my $export = "";
     
-    $export .= "\nObject BE4::Pixel :\n";
+    $export .= "\nObject COMMON::Pixel :\n";
     $export .= sprintf "\t Bits per sample : %s\n", $self->{bitspersample};
     $export .= sprintf "\t Photometric : %s\n", $self->{photometric};
     $export .= sprintf "\t Sample format : %s\n", $self->{sampleformat};

@@ -38,7 +38,7 @@
 =begin nd
 File: TileMatrixSet.pm
 
-Class: BE4::TileMatrixSet
+Class: COMMON::TileMatrixSet
 
 Load and store all information about a Tile Matrix Set. A Tile Matrix Set is a XML file which describe a grid for several levels.
 
@@ -52,10 +52,10 @@ We tell the difference between :
 
 Using:
     (start code)
-    use BE4::TileMatrixSet;
+    use COMMON::TileMatrixSet;
 
     my $filepath = "/home/ign/tms/LAMB93_50cm.tms";
-    my $objTMS = BE4::TileMatrixSet->new($filepath);
+    my $objTMS = COMMON::TileMatrixSet->new($filepath);
 
     $objTMS->getTileMatrixCount()};      # ie 19
     $objTMS->getTileMatrix(12);          # object TileMatrix with level id = 12
@@ -91,7 +91,7 @@ Limitations:
 
 ################################################################################
 
-package BE4::TileMatrixSet;
+package COMMON::TileMatrixSet;
 
 use strict;
 use warnings;
@@ -101,8 +101,8 @@ use XML::LibXML;
 
 use Data::Dumper;
 
-use BE4::TileMatrix;
-use BE4::ProxyGDAL;
+use COMMON::TileMatrix;
+use COMMON::ProxyGDAL;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -237,7 +237,7 @@ sub _load {
             $self->{bottomResolution} = $res;
         }
         
-        my $objTM = BE4::TileMatrix->new({
+        my $objTM = COMMON::TileMatrix->new({
             id => $id,
             resolution     => $res,
             topLeftCornerX => $tm->findvalue('topLeftCornerX'),
@@ -272,14 +272,14 @@ sub _load {
     $self->{srs} = uc($crs); # srs is cast in uppercase in order to ease comparisons
     
     # Have coodinates to be reversed ?
-    my $sr = BE4::ProxyGDAL::spatialReferenceFromSRS($self->{srs});
+    my $sr = COMMON::ProxyGDAL::spatialReferenceFromSRS($self->{srs});
     if (! defined $sr) {
         ERROR (sprintf "Impossible to initialize the final spatial coordinate system (%s) to know if coordinates have to be reversed !\n",$self->{srs});
         return FALSE;
     }
 
     my $authority = (split(":",$self->{srs}))[0];
-    if (BE4::ProxyGDAL::isGeographic($sr) && uc($authority) eq "EPSG") {
+    if (COMMON::ProxyGDAL::isGeographic($sr) && uc($authority) eq "EPSG") {
         INFO(sprintf "Coordinates will be reversed in requests (SRS : %s)",$self->{srs});
         $self->{coordinatesInversion} = TRUE;
     } else {
@@ -638,7 +638,7 @@ Returns all informations about the tile matrix set. Useful for debug.
 
 Example:
     (start code)
-    Object BE4::TileMatrixSet :
+    Object COMMON::TileMatrixSet :
          TMS file complete path : /home/ign/TMS/LAMB93_10cm.tms
          Top level identifiant : 0
          Top level resolution : 209715.2
@@ -677,7 +677,7 @@ Example:
 sub exportForDebug {
     my $self = shift ;
 
-    my $export = "\nObject BE4::TileMatrixSet :\n";
+    my $export = "\nObject COMMON::TileMatrixSet :\n";
     $export .= sprintf "\t TMS file complete path : %s\n", $self->getPathFilename;
     $export .= sprintf "\t Top level identifiant : %s\n", $self->getTopLevel;
     $export .= sprintf "\t Top level resolution : %s\n", $self->getTopResolution;

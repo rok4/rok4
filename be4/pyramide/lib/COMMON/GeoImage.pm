@@ -38,16 +38,16 @@
 =begin nd
 File: GeoImage.pm
 
-Class: BE4::GeoImage
+Class: COMMON::GeoImage
 
 Describes a georeferenced image and enable to know its components.
 
 Using:
     (start code)
-    use BE4::GeoImage;
+    use COMMON::GeoImage;
 
     # GeoImage object creation
-    my $objGeoImage = BE4::GeoImage->new("/home/ign/DATA/XXXXX_YYYYY.tif");
+    my $objGeoImage = COMMON::GeoImage->new("/home/ign/DATA/XXXXX_YYYYY.tif");
     (end code)
 
 Attributes:
@@ -71,7 +71,7 @@ Attributes:
 
 ################################################################################
 
-package BE4::GeoImage;
+package COMMON::GeoImage;
 
 use strict;
 use warnings;
@@ -393,7 +393,7 @@ sub convertBBox {
     # FIXME: il faut absoluement tester les erreurs ici:
     #        les transformations WGS84G vers PM ne sont pas possible au dela de 85.05°.
 
-    my ($tx, $ty) = BE4::ProxyGDAL::transformPoint($polygon[$i][0], $polygon[$i][1], $ct);
+    my ($tx, $ty) = COMMON::ProxyGDAL::transformPoint($polygon[$i][0], $polygon[$i][1], $ct);
     if (! defined $tx) {
         ERROR(sprintf "Impossible to transform point (%s,%s). Probably limits are reached !",$polygon[$i][0],$polygon[$i][1]);
         return [0,0,0,0];
@@ -494,8 +494,8 @@ sub setImageSource {
     my $self = shift;
     my $imgSrc = shift;
 
-    if (! defined ($imgSrc) || ref ($imgSrc) ne "BE4::ImageSource") {
-        ERROR("We expect to a BE4::ImageSource object.");
+    if (! defined ($imgSrc) || ref ($imgSrc) ne "COMMON::ImageSource") {
+        ERROR("We expect to a COMMON::ImageSource object.");
     } else {
         $self->{imgSrc} = $imgSrc;
     }
@@ -615,7 +615,7 @@ sub exportForDebug {
     
     my $export = "";
     
-    $export .= sprintf "\nObject BE4::GeoImage :\n";
+    $export .= sprintf "\nObject COMMON::GeoImage :\n";
     $export .= sprintf "\t Image path : %s\n",$self->{completePath};
     $export .= sprintf "\t Mask path : %s\n",$self->{maskCompletePath} if (defined $self->{maskCompletePath});
 

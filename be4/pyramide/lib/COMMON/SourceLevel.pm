@@ -38,13 +38,13 @@
 =begin nd
 File: SourceLevel.pm
 
-Class: JOINCACHE::SourceLevel
+Class: COMMON::SourceLevel
 
 Describe a level in a pyramid.
 
 Using:
     (start code)
-    use JOINCACHE::SourceLevel;
+    use COMMON::SourceLevel;
 
     my $params = {
         id => "level_5",
@@ -53,7 +53,7 @@ Using:
         limits => [365,368,1026,1035]
     };
 
-    my $objSourceLevel = JOINCACHE::SourceLevel->new($params);
+    my $objSourceLevel = COMMON::SourceLevel->new($params);
     (end code)
 
 Attributes:
@@ -69,7 +69,7 @@ Metadata not implemented.
 
 ################################################################################
 
-package JOINCACHE::SourceLevel;
+package COMMON::SourceLevel;
 
 use strict;
 use warnings;
@@ -225,7 +225,7 @@ sub exportForDebug {
     
     my $export = "";
     
-    $export .= "\nObject JOINCACHE::SourceLevel :\n";
+    $export .= "\nObject COMMON::SourceLevel :\n";
     $export .= sprintf "\t ID (string) : %s\n", $self->{id};
 
     $export .= sprintf "\t Directories (absolute paths): \n";

@@ -346,7 +346,7 @@ Function: treatImage
     - the node owns several source images -> we use tool 'overlayNtiff', commands are written in scripts : <mergeImages>.
 
 Parameters (list):
-    node - <Node> - Node to treat
+    node - <JOINCACHE::Node> - Node to treat
 =cut
 sub treatImage {
     my $self = shift;
@@ -478,7 +478,7 @@ Returns:
     A boolean, TRUE if success, FALSE otherwise.
 
 Parameters (list):
-    node - <Node> - Node to treat
+    node - <JOINCACHE::Node> - Node to treat
 =cut
 sub mergeImages {
     my $self = shift;

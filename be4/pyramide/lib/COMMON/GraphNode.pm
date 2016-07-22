@@ -38,21 +38,21 @@
 =begin nd
 File: Node.pm
 
-Class: BE4::Node
+Class: COMMON::GraphNode
 
-Descibe a node of a <QTree> or a <Graph>.
+Descibe a node of a <COMMON::QTree> or a <COMMON::NNGraph>.
 
 Using:
     (start code)
-    use BE4::Node
+    use COMMON::GraphNode
 
-    my $tm = BE4::TileMatrix->new(...)
+    my $tm = COMMON::TileMatrix->new(...)
     
-    my $graph = BE4::Qtree->new(...)
+    my $graph = COMMON::QTree->new(...)
     #or
-    my $graph = BE4::Graph->new(...)
+    my $graph = COMMON::NNGraph->new(...)
     
-    my $node = BE4::Node->new({
+    my $node = COMMON::GraphNode->new({
         i => 51,
         j => 756,
         tm => $tm,
@@ -71,19 +71,19 @@ Attributes:
     workMaskBasename - string - 
     
     workExtension - string - extension of the temporary work image, lower case. Default value : tif.
-    tm - <TileMatrix> - Tile matrix associated to the level which the node belong to.
-    graph - <Graph> or <QTree> - Graph which contains the node.
+    tm - <COMMON::TileMatrix> - Tile matrix associated to the level which the node belong to.
+    graph - <COMMON::NNGraph> or <COMMON::QTree> - Graph which contains the node.
     w - integer - Own node's weight
     W - integer - Accumulated weight (own weight + childs' accumulated weights sum)
     code - string - Commands to execute to generate this node (to write in a script)
     script - <Script> - Script in which the node will be generated
-    nodeSources - <Node> array - Nodes from which this node is generated (working for <NNGraph>)
-    geoImages - <GeoImage> array - Source images from which this node (if it belongs to the tree's bottom level) is generated (working for <QTree>)
+    nodeSources - <COMMON::GraphNode> array - Nodes from which this node is generated (working for <NNGraph>)
+    geoImages - <COMMON::GeoImage> array - Source images from which this node (if it belongs to the tree's bottom level) is generated (working for <QTree>)
 =cut
 
 ################################################################################
 
-package BE4::Node;
+package COMMON::GraphNode;
 
 use strict;
 use warnings;
@@ -92,7 +92,7 @@ use Log::Log4perl qw(:easy);
 
 use File::Spec ;
 use Data::Dumper ;
-use BE4::Base36 ;
+use COMMON::Base36 ;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -126,8 +126,8 @@ Node constructor. Bless an instance.
 Parameters (hash):
     i - integer - Node's column
     j - integer - Node's row
-    tm - <TileMatrix> - Tile matrix of the level which node belong to
-    graph - <Graph> or <QTree> - Graph containing the node.
+    tm - <COMMON::TileMatrix> - Tile matrix of the level which node belong to
+    graph - <COMMON::NNGraph> or <COMMON::QTree> - Graph containing the node.
 
 See also:
     <_init>
@@ -177,8 +177,8 @@ Check and store node's attributes values. Initialize weights to 0. Calculate the
 Parameters (hash):
     i - integer - Node's column
     j - integer - Node's row
-    tm - <TileMatrix> - Tile matrix of the level which node belong to
-    graph - <Graph> or <QTree> - Graph containing the node.
+    tm - <COMMON::TileMatrix> - Tile matrix of the level which node belong to
+    graph - <COMMON::Graph> or <COMMON::NNQTree> - Graph containing the node.
 =cut
 sub _init {
     my $self = shift;
@@ -213,7 +213,7 @@ sub _init {
     $self->{W} = 0;
     $self->{code} = '';
     
-    my $base36path = BE4::Base36::indicesToB36Path($params->{i}, $params->{j}, $self->getGraph->getPyramid->getDirDepth()+1);
+    my $base36path = COMMON::Base36::indicesToB36Path($params->{i}, $params->{j}, $self->getGraph->getPyramid->getDirDepth()+1);
     
     $self->{pyramidName} = File::Spec->catfile($self->getLevel, $base36path.".tif");
     $self->{workImageBasename} = sprintf "%s_%s_%s_I", $self->getLevel, $params->{i}, $params->{j};
@@ -302,14 +302,14 @@ sub writeInScript {
 Function: setScript
 
 Parameters (list):
-    script - <Script> - Script to set.
+    script - <COMMON::GraphScript> - Script to set.
 =cut
 sub setScript {
     my $self = shift;
     my $script = shift;
     
-    if (! defined $script || ref ($script) ne "BE4::Script") {
-        ERROR("We expect to a BE4::Script object.");
+    if (! defined $script || ref ($script) ne "COMMON::GraphScript") {
+        ERROR("We expect to a COMMON::GraphScript object.");
     }
     
     $self->{script} = $script; 
@@ -447,7 +447,7 @@ sub getGeoImages {
 Function: addNodeSources
 
 Parameters (list):
-    nodes - <Node> array - Source nodes to add
+    nodes - <COMMON::GraphNode> array - Source nodes to add
 =cut
 sub addNodeSources {
     my $self = shift;
@@ -543,7 +543,7 @@ sub setAccumulatedWeight {
 =begin nd
 Function: getPossibleChildren
 
-Returns a <Node> array, containing children (length is always 4, with undefined value for children which don't exist), an empty array if the node is a leaf.
+Returns a <COMMON::GraphNode> array, containing children (length is always 4, with undefined value for children which don't exist), an empty array if the node is a leaf.
 
 Warning:
     Do not mistake with <getChildren>
@@ -556,7 +556,7 @@ sub getPossibleChildren {
 =begin nd
 Function: getChildren
 
-Returns a <Node> array, containing real children (max length = 4), an empty array if the node is a leaf.
+Returns a <GraphNode> array, containing real children (max length = 4), an empty array if the node is a leaf.
 
 Warning:
     Do not mistake with <getPossibleChildren>
@@ -721,7 +721,7 @@ sub exportForDebug {
     
     my $output = "";
     
-    $output .= sprintf "Object BE4::Node :\n";
+    $output .= sprintf "Object COMMON::GraphNode :\n";
     $output .= sprintf "\tLevel : %s\n",$self->getLevel();
     $output .= sprintf "\tTM Resolution : %s\n",$self->getTM()->getResolution();
     $output .= sprintf "\tColonne : %s\n",$self->getCol();

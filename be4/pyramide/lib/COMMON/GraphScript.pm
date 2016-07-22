@@ -38,15 +38,15 @@
 =begin nd
 File: Script.pm
 
-Class: BE4::Script
+Class: COMMON::GraphScript
 
 Describe a script, its weight and allowed to write in.
 
 Using:
     (start code)
-    use BE4::Script;
+    use COMMON::GraphScript;
 
-    my $objC = BE4::Script->new({
+    my $objC = COMMON::GraphScript->new({
         id => "SCRIPT_1",
         tempDir => "/home/ign/TMP/",
         commonTempDir => "/home/ign/TMP/",
@@ -70,7 +70,7 @@ Attributes:
 
 ################################################################################
 
-package BE4::Script;
+package COMMON::GraphScript;
 
 use strict;
 use warnings;
@@ -468,7 +468,7 @@ Returns all informations about the script. Useful for debug.
 
 Example:
     (start code)
-    Object BE4::Script :
+    Object COMMON::GraphScript :
         ID : SCRIPT_2
         Will NOT be executed alone
         Script path : /home/IGN/SCRIPTS/SCRIPT_2.sh 
@@ -484,7 +484,7 @@ sub exportForDebug {
     
     my $export = "";
     
-    $export .= "\nObject BE4::Script :\n";
+    $export .= "\nObject COMMON::GraphScript :\n";
     $export .= sprintf "\t ID : %s\n", $self->{id};
     
     $export .= sprintf "\t Will NOT be executed alone\n" if (! $self->{executedAlone});

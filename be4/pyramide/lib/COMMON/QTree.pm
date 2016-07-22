@@ -38,9 +38,9 @@
 =begin nd
 File: QTree.pm
 
-Class: BE4::QTree
+Class: COMMON::QTree
 
-Representation of a quad tree image pyramid : pyramid's image = <Node>
+Representation of a quad tree image pyramid : pyramid's image = <COMMON::GraphNode>
 
 (see QTreeTMS.png)
 
@@ -66,10 +66,10 @@ Link between a node and his children or his father is trivial, and needn't to be
 
 Using:
     (start code)
-    use BE4::QTree;
+    use COMMON::QTree;
 
     # QTree object creation
-    my $objQTree = BE4::QTree->new($objForest, $objDataSource, $objPyramid, $objCommands);
+    my $objQTree = COMMON::QTree->new($objForest, $objDataSource, $objPyramid, $objCommands);
 
     ...
 
@@ -79,12 +79,12 @@ Using:
 
 Attributes:
     forest - <Forest> - Forest which this tree belong to.
-    pyramid - <Pyramid> - Pyramid linked to this tree.
+    pyramid - <BE4::Pyramid> - Pyramid linked to this tree.
     commands - <Commands> - Command to use to generate images.
     datasource - <DataSource> - Data source to use to define bottom level nodes and generate them.
 
     bbox - double array - Datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
-    nodes - <Node> hash - Structure is:
+    nodes - <COMMON::GraphNode> hash - Structure is:
         (start code)
         level1 => {
            c1_r2 => n1,
@@ -96,7 +96,7 @@ Attributes:
 
         cX : node's column
         rX : node's row
-        nX : BE4::Node
+        nX : COMMON::GraphNode
         (end code)
 
     cutLevelID - string - Cut level identifiant. To parallelize work, split scripts will generate cache from the bottom to this level. Script finisher will be generate from this above, to top.
@@ -106,7 +106,7 @@ Attributes:
 
 ################################################################################
 
-package BE4::QTree;
+package COMMON::QTree;
 
 use strict;
 use warnings;
@@ -114,9 +114,9 @@ use warnings;
 use Math::BigFloat;
 use Data::Dumper;
 
-use BE4::DataSource;
-use BE4::Node;
-use BE4::Array;
+use COMMON::DataSource;
+use COMMON::GraphNode;
+use COMMON::Array;
 
 use Log::Log4perl qw(:easy);
 
@@ -152,7 +152,7 @@ QTree constructor. Bless an instance.
 Parameters (list):
     objForest - <Forest> - Forest which this tree belong to
     objSrc - <DataSource> - Datasource which determine bottom level nodes
-    objPyr - <Pyramid> - Pyramid linked to this tree
+    objPyr - <BE4::Pyramid> - Pyramid linked to this tree
     objCommands - <Commands> - Commands to use to generate pyramid's images
 
 See also:
@@ -198,7 +198,7 @@ Checks and stores informations.
 Parameters (list):
     objForest - <Forest> - Forest which this tree belong to
     objSrc - <DataSource> - Data source which determine bottom level nodes
-    objPyr - <Pyramid> - Pyramid linked to this tree
+    objPyr - <BE4::Pyramid> - Pyramid linked to this tree
     objCommands - <Commands> - Commands to use to generate pyramid's images
 =cut
 sub _init {
@@ -211,11 +211,11 @@ sub _init {
     TRACE;
 
     # mandatory parameters !
-    if (! defined $objForest || ref ($objForest) ne "BE4::Forest") {
+    if (! defined $objForest || ref ($objForest) ne "COMMON::Forest") {
         ERROR("Can not load Forest !");
         return FALSE;
     }
-    if (! defined $objSrc || ref ($objSrc) ne "BE4::DataSource") {
+    if (! defined $objSrc || ref ($objSrc) ne "COMMON::DataSource") {
         ERROR("Can not load DataSource !");
         return FALSE;
     }
@@ -260,7 +260,7 @@ sub _load {
     my $ct = undef;
     
     if ($tms->getSRS() ne $src->getSRS()){
-        $ct = BE4::ProxyGDAL::coordinateTransformationFromSpatialReference($src->getSRS(), $tms->getSRS());
+        $ct = COMMON::ProxyGDAL::coordinateTransformationFromSpatialReference($src->getSRS(), $tms->getSRS());
         if (! defined $ct) {
             ERROR(sprintf "Cannot instanciate the coordinate transformation object %s->%s", $src->getSRS(), $tms->getSRS());
             return FALSE;
@@ -339,7 +339,7 @@ sub identifyBottomNodes {
                             next;
                         }
                         # Create a new Node
-                        my $node = BE4::Node->new({
+                        my $node = COMMON::GraphNode->new({
                             i => $i,
                             j => $j,
                             tm => $tm,
@@ -360,7 +360,7 @@ sub identifyBottomNodes {
                             next;
                         }
                         # Create a new Node
-                        my $node = BE4::Node->new({
+                        my $node = COMMON::GraphNode->new({
                             i => $i,
                             j => $j,
                             tm => $tm,
@@ -379,14 +379,14 @@ sub identifyBottomNodes {
         }
     } elsif (defined $datasource->getExtent) {
         # We have just a WMS service as source. We use extent to determine bottom tiles
-        my $convertExtent = BE4::ProxyGDAL::getConvertedGeometry($datasource->getExtent(), $ct);
+        my $convertExtent = COMMON::ProxyGDAL::getConvertedGeometry($datasource->getExtent(), $ct);
         if (! defined $convertExtent) {
             ERROR(sprintf "Cannot convert extent for the datasource");
             return FALSE;
         }
 
         # Pour éviter de balayer une bbox trop grande, on récupère la bbox de chaque partie de la - potentiellement multi - géométrie
-        my $bboxes = BE4::ProxyGDAL::getBboxes($convertExtent);
+        my $bboxes = COMMON::ProxyGDAL::getBboxes($convertExtent);
 
         foreach my $bb (@{$bboxes}) {
         
@@ -405,12 +405,12 @@ sub identifyBottomNodes {
                         $xmax,$ymin,
                         $xmin,$ymin;
 
-                    my $OGRtile = BE4::ProxyGDAL::geometryFromWKT($WKTtile);
+                    my $OGRtile = COMMON::ProxyGDAL::geometryFromWKT($WKTtile);
 
-                    if (BE4::ProxyGDAL::isIntersected($OGRtile, $convertExtent)) {
+                    if (COMMON::ProxyGDAL::isIntersected($OGRtile, $convertExtent)) {
                         my $nodeKey = sprintf "%s_%s", $i, $j;
                         # Create a new Node
-                        my $node = BE4::Node->new({
+                        my $node = COMMON::GraphNode->new({
                             i => $i,
                             j => $j,
                             tm => $tm,
@@ -451,7 +451,7 @@ sub identifyBottomNodes {
             $self->updateBBox($xmin,$ymin,$xmax,$ymax);
             
             # Create a new Node
-            my $node = BE4::Node->new({
+            my $node = COMMON::GraphNode->new({
                 i => $i,
                 j => $j,
                 tm => $tm,
@@ -501,7 +501,7 @@ sub identifyAboveNodes {
                     next;
                 }
                 # Create a new Node
-                my $node = BE4::Node->new({
+                my $node = COMMON::GraphNode->new({
                     i => int($node->getCol/2),
                     j => int($node->getRow/2),
                     tm => $tms->getTileMatrix($aboveLevelID),
@@ -596,7 +596,7 @@ Recursive method, which allow to browse tree downward.
     - the node does not belong to the bottom level -> <computeBranch> on each child, then <computeAboveImage>
 
 Parameters (list):
-    node - <Node> - Node to compute.
+    node - <COMMON::GraphNode> - Node to compute.
 =cut
 sub computeBranch {
     
@@ -647,7 +647,7 @@ Treats a bottom node : determine code or weight.
 Then the work image is formatted and move to the final place thanks to <Commands::work2cache>.
 
 Parameters (list):
-    node - <Node> - Bottom level's node, to treat.
+    node - <COMMON::GraphNode> - Bottom level's node, to treat.
     
 =cut
 sub computeBottomImage {
@@ -704,7 +704,7 @@ To generate an above node, we use <Commands::merge4tiff> with children.
 Then the work image is formatted and move to the final place thanks to <Commands::work2cache>.
 
 Parameters (list):
-    node - <Node> - Above level's node, to treat.
+    node - <COMMON::GraphNode> - Above level's node, to treat.
 =cut
 sub computeAboveImage {
     
@@ -748,7 +748,7 @@ Function: writeCode
 Recursive method, which allow to browse tree (downward) and write commands in associated node's script.
 
 Parameters (list):
-    node - <Node> - Node whose code is written.
+    node - <COMMON::GraphNode> - Node whose code is written.
 =cut
 sub writeCode {
     my $self = shift;
@@ -833,7 +833,7 @@ sub shareNodesOnJobs {
         my $finisherWeight = $wholeTreeWeight;
         
         for (my $j = 0; $j < scalar @levelNodeList; $j++) {
-            my $scriptInd = BE4::Array::minArrayIndex(1,@TMP_WEIGHTS);
+            my $scriptInd = COMMON::Array::minArrayIndex(1,@TMP_WEIGHTS);
             my $nodeWeight = $levelNodeList[$j]->getAccumulatedWeight;
             $TMP_WEIGHTS[$scriptInd] += $nodeWeight;
             $finisherWeight -= $nodeWeight;
@@ -843,7 +843,7 @@ sub shareNodesOnJobs {
         # on additionne le poids du job le plus "lourd" et le poids du finisher pour quantifier le
         # pire temps d'exécution
         $TMP_WEIGHTS[0] += $finisherWeight;
-        my $worstWeight = BE4::Array::maxArrayValue(1,@TMP_WEIGHTS) + $finisherWeight;
+        my $worstWeight = COMMON::Array::maxArrayValue(1,@TMP_WEIGHTS) + $finisherWeight;
         
         DEBUG(sprintf "For the level $levelID, the worst weight is $worstWeight.");
 
@@ -956,13 +956,13 @@ sub updateBBox {
 =begin nd
 Function: getPossibleChildren
 
-Returns a <Node> array, containing children (length is always 4, with undefined value for children which don't exist), an empty array if the node is a leaf.
+Returns a <COMMON::GraphNode> array, containing children (length is always 4, with undefined value for children which don't exist), an empty array if the node is a leaf.
 
 Warning:
     Do not mistake with <getChildren>
 
 Parameters (list):
-    node - <Node> - Node whose we want to know possible children.
+    node - <COMMON::GraphNode> - Node whose we want to know possible children.
 =cut
 sub getPossibleChildren {
     my $self = shift;
@@ -992,13 +992,13 @@ sub getPossibleChildren {
 =begin nd
 Function: getChildren
 
-Returns a <Node> array, containing real children (max length = 4), an empty array if the node is a leaf.
+Returns a <COMMON::GraphNode> array, containing real children (max length = 4), an empty array if the node is a leaf.
 
 Warning:
     Do not mistake with <getPossibleChildren>
 
 Parameters (list):
-    node - <Node> - Node whose we want to know children.
+    node - <COMMON::GraphNode> - Node whose we want to know children.
 =cut
 sub getChildren {
     my $self = shift;
@@ -1026,7 +1026,7 @@ sub getChildren {
 =begin nd
 Function: getNodesOfLevel
 
-Returns a <Node> array, contaning all nodes of the provided level.
+Returns a <COMMON::GraphNode> array, contaning all nodes of the provided level.
 
 Parameters (list):
     level - string - Level ID whose we want all nodes.
@@ -1091,7 +1091,7 @@ sub exportForDebug {
     
     my $export = "";
     
-    $export .= sprintf "\nObject BE4::QTree :\n";
+    $export .= sprintf "\nObject COMMON::QTree :\n";
     $export .= sprintf "\t Levels ID:\n";
     $export .= sprintf "\t\t- bottom : %s\n",$self->{bottomID};
     $export .= sprintf "\t\t- cut : %s\n",$self->{cutLevelID};

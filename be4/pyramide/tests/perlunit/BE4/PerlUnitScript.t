@@ -48,13 +48,13 @@ Log::Log4perl->easy_init({
 use FindBin qw($Bin); # aboslute path of the present testfile in $Bin
 
 # My tested class
-use BE4::Script;
+use COMMON::Script;
 
 ######################################################
 
 # Script Object Creation
 
-my $script = BE4::Script->new({
+my $script = COMMON::Script->new({
     id => "test",
     scriptDir => "$Bin/../../temp",
     tempDir => "$Bin/../../temp",

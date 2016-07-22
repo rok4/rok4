@@ -38,21 +38,21 @@
 =begin nd
 File: Array.pm
 
-Class: BE4::Array
+Class: COMMON::Array
 
 Provides functions to compute the max value or the min index of an array. Do not instanciate.
 
 Using:
     (start code)
     my @array = (1,3,5,9);
-    my $minIndex = BE4::Array::minArrayIndex(@array); # return 0
-    my $maxArrayValue = BE4::Array::maxArrayValue($array); # return 9
+    my $minIndex = COMMON::Array::minArrayIndex(@array); # return 0
+    my $maxArrayValue = COMMON::Array::maxArrayValue($array); # return 9
     (end code)
 =cut
 
 ################################################################################
 
-package BE4::Array;
+package COMMON::Array;
 
 use strict;
 use warnings;

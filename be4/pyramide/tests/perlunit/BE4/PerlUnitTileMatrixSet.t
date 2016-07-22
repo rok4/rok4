@@ -48,13 +48,13 @@ Log::Log4perl->easy_init({
 });
 
 # My tested class
-use BE4::TileMatrixSet;
+use COMMON::TileMatrixSet;
 
 ######################################################
 
 # Quad tree TileMatrixSet
 
-my $tmsQuadTree = BE4::TileMatrixSet->new($Bin."/../../tms/LAMB93_10cm.tms");
+my $tmsQuadTree = COMMON::TileMatrixSet->new($Bin."/../../tms/LAMB93_10cm.tms");
 ok (defined $tmsQuadTree, "Quad tree TileMatrixSet created");
 ok ($tmsQuadTree->isQTree(), "TileMatrixSet recognized as a QTree one");
 is ($tmsQuadTree->getName(), "LAMB93_10cm", "TMS' name extraction");
@@ -63,7 +63,7 @@ is ($tmsQuadTree->getName(), "LAMB93_10cm", "TMS' name extraction");
 
 # TileMatrixSet for DTM
 
-my $tmsDTM = BE4::TileMatrixSet->new($Bin."/../../tms/LAMB93_1M_MNT.tms");
+my $tmsDTM = COMMON::TileMatrixSet->new($Bin."/../../tms/LAMB93_1M_MNT.tms");
 ok (defined $tmsDTM, "TileMatrixSet for DTM created");
 
 ok (! $tmsDTM->isQTree(),"TileMatrixSet recognized as a DTM one");
@@ -72,10 +72,10 @@ ok (! $tmsDTM->isQTree(),"TileMatrixSet recognized as a DTM one");
 
 # Bad TileMatrixSet
 
-my $badTMS = BE4::TileMatrixSet->new($Bin."/../../tms/BadTMS.tms");
+my $badTMS = COMMON::TileMatrixSet->new($Bin."/../../tms/BadTMS.tms");
 ok (! defined $badTMS, "Unvalid TMS detected");
 
-my $badSRS = BE4::TileMatrixSet->new($Bin."/../../tms/BadSRS.tms");
+my $badSRS = COMMON::TileMatrixSet->new($Bin."/../../tms/BadSRS.tms");
 ok (! defined $badSRS, "Unvalid SRS detected");
 
 ######################################################
@@ -90,7 +90,7 @@ is ($tmsQuadTree->getBelowLevelID("level_16"), "level_17", "Find the below level
 
 # Test on inversion SRS and TMS with just one TM
 
-my $inversionSRS = BE4::TileMatrixSet->new($Bin."/../../tms/InversionSRS.tms");
+my $inversionSRS = COMMON::TileMatrixSet->new($Bin."/../../tms/InversionSRS.tms");
 ok (defined $inversionSRS, "TileMatrixSet with just one tile matrix created");
 ok ($inversionSRS->getInversion(),"SRS which need reversed coordinates detected");
 

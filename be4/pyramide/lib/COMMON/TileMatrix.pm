@@ -38,13 +38,13 @@
 =begin nd
 File: TileMatrix.pm
 
-Class: BE4::TileMatrix
+Class: COMMON::TileMatrix
 
 A Tile Matrix defines a grid for a level. Informations are extracted from a XML file.
 
 Using:
     (start code)
-    use BE4::TileMatrix;
+    use COMMON::TileMatrix;
 
     my $params = {
         id             => "18",
@@ -57,7 +57,7 @@ Using:
         matrixHeight   => 84081,
     };
 
-    my $objTM = BE4::TileMatrix->new($params);                # ie '/home/ign/tms/'
+    my $objTM = COMMON::TileMatrix->new($params);                # ie '/home/ign/tms/'
     (end code)
 
 Attributes:
@@ -78,7 +78,7 @@ Limits:
 
 ################################################################################
 
-package BE4::TileMatrix;
+package COMMON::TileMatrix;
 
 use strict;
 use warnings;
@@ -459,8 +459,8 @@ sub setTMS {
     my $self = shift;
     my $tms = shift;
     
-    if ( ! defined ($tms) || ref ($tms) ne "BE4::TileMatrixSet" ) {
-        ERROR("We expect to a BE4::TileMatrixSet object.");
+    if ( ! defined ($tms) || ref ($tms) ne "COMMON::TileMatrixSet" ) {
+        ERROR("We expect to a COMMON::TileMatrixSet object.");
     } else {
         $self->{tms} = $tms;
     }
@@ -550,7 +550,7 @@ sub exportForDebug {
     
     my $export = "";
     
-    $export .= sprintf "\nObject BE4::TileMatrix :\n";
+    $export .= sprintf "\nObject COMMON::TileMatrix :\n";
     $export .= sprintf "\t ID : %s \n", $self->getID();
     $export .= sprintf "\t Resolution : %s \n", $self->getResolution();
     $export .= sprintf "\t Top left corner : %s, %s \n", $self->getTopLeftCornerX(), $self->getTopLeftCornerY();

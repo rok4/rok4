@@ -48,13 +48,13 @@ Log::Log4perl->easy_init({
 use FindBin qw($Bin); # aboslute path of the present testfile in $Bin
 
 # My tested class
-use BE4::Node;
+use COMMON::Node;
 
 #Other Used Class
 use BE4::Pyramid;
-use BE4::TileMatrix;
-use BE4::DataSource;
-use BE4::DataSourceLoader;
+use COMMON::TileMatrix;
+use COMMON::DataSource;
+use COMMON::DataSourceLoader;
 use BE4::Commands;
 
 ######################################################
@@ -91,7 +91,7 @@ my $pyramid = BE4::Pyramid->new({
 });
 ok (defined $pyramid,"pyramid ok.");
 
-my $DSL = BE4::DataSourceLoader->new({ filepath_conf => $Bin."/../../sources/sources.txt" });
+my $DSL = COMMON::DataSourceLoader->new({ filepath_conf => $Bin."/../../sources/sources.txt" });
 ok (defined $DSL,"DSL ok.");
 
 my $commands = BE4::Commands->new($pyramid);
@@ -101,7 +101,7 @@ ok ($pyramid->updateLevels($DSL,undef),"DataSourcesLoader updated and Graph Pyra
 my $datasource = ${$DSL->getDataSources()}[0];
 ok (defined $datasource,"datasource ok.");
 
-my $forest = BE4::Forest->new($pyramid,$DSL,{
+my $forest = COMMON::Forest->new($pyramid,$DSL,{
 	job_number => 16,
 	path_temp => $Bin."/../../temp/",
         path_temp_common => $Bin."/../../temp/",
@@ -109,10 +109,10 @@ my $forest = BE4::Forest->new($pyramid,$DSL,{
 });
 ok (defined $forest,"forest ok.");
 
-my $qtree = BE4::QTree->new($forest,$datasource,$pyramid,$commands);
+my $qtree = COMMON::QTree->new($forest,$datasource,$pyramid,$commands);
 ok (defined $qtree,"qtree ok.");
 
-my $tm = BE4::TileMatrix->new({
+my $tm = COMMON::TileMatrix->new({
     id             => "level_4",
     resolution     => 0.324,
     topLeftCornerX => 0,
@@ -124,7 +124,7 @@ my $tm = BE4::TileMatrix->new({
 });
 ok (defined $tm,"tm ok.");
 
-my $node = BE4::Node->new({
+my $node = COMMON::Node->new({
     "i" => 13,
     "j" => 25,
     "tm" => $tm,

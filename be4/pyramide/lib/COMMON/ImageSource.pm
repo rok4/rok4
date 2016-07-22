@@ -38,13 +38,13 @@
 =begin nd
 File: ImageSource.pm
 
-Class: BE4::ImageSource
+Class: COMMON::ImageSource
 
 Define a data source, with georeferenced image directory.
 
 Using:
     (start code)
-    use BE4::ImageSource;
+    use COMMON::ImageSource;
 
     # ImageSource object creation
     my $objImageSource = BE4::XXX->new({
@@ -81,7 +81,7 @@ Constraint on the input format of images :
 
 ################################################################################
 
-package BE4::ImageSource;
+package COMMON::ImageSource;
 
 use strict;
 use warnings;
@@ -91,8 +91,8 @@ use List::Util qw(min max);
 
 use File::Path qw(make_path);
 
-use BE4::GeoImage;
-use BE4::Pixel;
+use COMMON::GeoImage;
+use COMMON::Pixel;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -288,7 +288,7 @@ sub computeImageSource {
 
         my $prePsFilePath = undef;
 
-        my $objGeoImage = BE4::GeoImage->new($filepath);
+        my $objGeoImage = COMMON::GeoImage->new($filepath);
 
         if (! defined $objGeoImage) {
             ERROR ("Can not load image source ('$filepath') !");
@@ -324,7 +324,7 @@ sub computeImageSource {
 
         if (! defined $pixel) {
             # we read the first image, components are empty. This first image will be the reference.
-            $pixel = BE4::Pixel->new({
+            $pixel = COMMON::Pixel->new({
                 bitspersample => $imageInfo[0],
                 photometric => $imageInfo[1],
                 sampleformat => $imageInfo[2],
@@ -496,7 +496,7 @@ sub exportForDebug {
     
     my $export = "";
     
-    $export .= "\nObject BE4::ImageSource :\n";
+    $export .= "\nObject COMMON::ImageSource :\n";
     $export .= sprintf "\t Image directory : %s\n", $self->{PATHIMG};
     $export .= sprintf "\t Image number : %s\n", scalar @{$self->{images}};
 

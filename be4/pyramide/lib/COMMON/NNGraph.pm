@@ -38,9 +38,9 @@
 =begin nd
 File: NNGraph.pm
 
-Class: BE4::NNGraph
+Class: COMMON::NNGraph
 
-Representation of a "nearest neighbour" pyramid : pyramid's image = <Node>.
+Representation of a "nearest neighbour" pyramid : pyramid's image = <COMMON::GraphNode>.
 
 (see NNGraphTMS.png)
 
@@ -54,14 +54,14 @@ Organization in the <Forest> scripts' array :
 
 (see script_NNGraph.png)
 
-Link between a node and his children or his father is not trivial. It is calculated and store in the <Node> object.
+Link between a node and his children or his father is not trivial. It is calculated and store in the <COMMON::GraphNode> object.
 
 Using:
     (start code)
-    use BE4::NNGraph;
+    use COMMON::NNGraph;
 
     # NNGraph object creation
-    my $objNNGraph = BE4::QTree->new($objForest, $objDataSource, $objPyramid, $objCommands);
+    my $objNNGraph = COMMON::QTree->new($objForest, $objDataSource, $objPyramid, $objCommands);
 
     ...
 
@@ -71,12 +71,12 @@ Using:
 
 Attributes:
     forest - <Forest> - Forest which this tree belong to.
-    pyramid - <Pyramid> - Pyramid linked to this tree.
+    pyramid - <BE4::Pyramid> - Pyramid linked to this tree.
     commands - <Commands> - Command to use to generate images.
     datasource - <DataSource> - Data source to use to define bottom level nodes and generate them.
 
     bbox - double array - Datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
-    nodes - <Node> hash - Structure is:
+    nodes - <COMMON::GraphNode> hash - Structure is:
         (start code)
         level1 => {
            c1_r2 => n1,
@@ -88,7 +88,7 @@ Attributes:
 
         cX : node's column
         rX : node's row
-        nX : BE4::Node
+        nX : COMMON::GraphNode
         (end code)
         
     bottomID - string - Bottom level identifiant
@@ -97,7 +97,7 @@ Attributes:
 
 ################################################################################
 
-package BE4::NNGraph;
+package COMMON::NNGraph;
 
 use strict;
 use warnings;
@@ -108,9 +108,9 @@ use File::Path;
 use Data::Dumper;
 
 # My Module
-use BE4::DataSource;
-use BE4::Node;
-use BE4::ProxyGDAL;
+use COMMON::DataSource;
+use COMMON::GraphNode;
+use COMMON::ProxyGDAL;
 
 use Log::Log4perl qw(:easy);
 
@@ -147,7 +147,7 @@ NNGraph constructor. Bless an instance.
 Parameters (list):
     objForest - <Forest> - Forest which this tree belong to
     objSrc - <DataSource> - Datasource which determine bottom level nodes
-    objPyr - <Pyramid> - Pyramid linked to this tree
+    objPyr - <BE4::Pyramid> - Pyramid linked to this tree
     objCommands - <Commands> - Commands to use to generate pyramid's images
 
 See also:
@@ -191,7 +191,7 @@ Checks and stores informations.
 Parameters (list):
     objForest - <Forest> - Forest which this tree belong to
     objSrc - <DataSource> - Data source which determine bottom level nodes
-    objPyr - <Pyramid> - Pyramid linked to this tree
+    objPyr - <BE4::Pyramid> - Pyramid linked to this tree
     objCommands - <Commands> - Commands to use to generate pyramid's images
 =cut
 sub _init {
@@ -204,11 +204,11 @@ sub _init {
     TRACE;
 
     # mandatory parameters !
-    if (! defined $objForest || ref ($objForest) ne "BE4::Forest") {
+    if (! defined $objForest || ref ($objForest) ne "COMMON::Forest") {
         ERROR("Can not load Forest !");
         return FALSE;
     }
-    if (! defined $objSrc || ref ($objSrc) ne "BE4::DataSource") {
+    if (! defined $objSrc || ref ($objSrc) ne "COMMON::DataSource") {
         ERROR("Can not load DataSource !");
         return FALSE;
     }
@@ -255,7 +255,7 @@ sub _load {
     my $ct = undef;
     
     if ($tms->getSRS() ne $src->getSRS()){
-        $ct = BE4::ProxyGDAL::coordinateTransformationFromSpatialReference($src->getSRS(), $tms->getSRS());
+        $ct = COMMON::ProxyGDAL::coordinateTransformationFromSpatialReference($src->getSRS(), $tms->getSRS());
         if (! defined $ct) {
             ERROR(sprintf "Cannot instanciate the coordinate transformation object %s->%s", $src->getSRS(), $tms->getSRS());
             return FALSE;
@@ -334,7 +334,7 @@ sub identifyBottomNodes {
                             next;
                         }
                         # Create a new Node
-                        my $node = BE4::Node->new({
+                        my $node = COMMON::GraphNode->new({
                             i => $i,
                             j => $j,
                             tm => $tm,
@@ -355,7 +355,7 @@ sub identifyBottomNodes {
                             next;
                         }
                         # Create a new Node
-                        my $node = BE4::Node->new({
+                        my $node = COMMON::GraphNode->new({
                             i => $i,
                             j => $j,
                             tm => $tm,
@@ -374,13 +374,13 @@ sub identifyBottomNodes {
         }
     } elsif (defined $datasource->getExtent) {
         # We have just a WMS service as source. We use extent to determine bottom tiles
-        my $convertExtent = BE4::ProxyGDAL::getConvertedGeometry($datasource->getExtent(), $ct);
+        my $convertExtent = COMMON::ProxyGDAL::getConvertedGeometry($datasource->getExtent(), $ct);
         if (! defined $convertExtent) {
             ERROR(sprintf "Cannot convert extent for the datasource");
             return FALSE;
         }
 
-        my @convBbox = BE4::ProxyGDAL::getBbox($convertExtent); # (xmin,xmax,ymin,ymax)
+        my @convBbox = COMMON::ProxyGDAL::getBbox($convertExtent); # (xmin,xmax,ymin,ymax)
         DEBUG("BBox convertie de l'extent de datasource @convBbox");
         
         $self->updateBBox($convBbox[0],$convBbox[2],$convBbox[1],$convBbox[3]);
@@ -398,12 +398,12 @@ sub identifyBottomNodes {
                     $xmax,$ymin,
                     $xmin,$ymin;
 
-                my $OGRtile = BE4::ProxyGDAL::geometryFromWKT($WKTtile);
+                my $OGRtile = COMMON::ProxyGDAL::geometryFromWKT($WKTtile);
 
-                if (BE4::ProxyGDAL::isIntersected($OGRtile, $convertExtent)) {
+                if (COMMON::ProxyGDAL::isIntersected($OGRtile, $convertExtent)) {
                     my $nodeKey = sprintf "%s_%s", $i, $j;
                     # Create a new Node
-                    my $node = BE4::Node->new({
+                    my $node = COMMON::GraphNode->new({
                         i => $i,
                         j => $j,
                         tm => $tm,
@@ -443,7 +443,7 @@ sub identifyBottomNodes {
             $self->updateBBox($xmin,$ymin,$xmax,$ymax);
             
             # Create a new Node
-            my $node = BE4::Node->new({
+            my $node = COMMON::GraphNode->new({
                 i => $i,
                 j => $j,
                 tm => $tm,
@@ -520,7 +520,7 @@ sub identifyAboveNodes {
                         my $idxkey = sprintf "%s_%s",$i,$j;
                         my $newnode = undef;
                         if (! defined $self->{nodes}->{$targetTm->getID}->{$idxkey}) {
-                            $newnode = new BE4::Node({
+                            $newnode = new COMMON::GraphNode({
                                 i => $i,
                                 j => $j,
                                 tm => $targetTm,
@@ -574,7 +574,7 @@ sub computeYourself {
            # on détermine dans quel script on l'écrit en se basant sur les poids
            my @ScriptsOfLevel = $self->getScriptsOfLevel($levelID);
            my @WeightsOfLevel = map {$_->getWeight();} @ScriptsOfLevel ;
-           my $script_index = BE4::Array::minArrayIndex(0,@WeightsOfLevel);
+           my $script_index = COMMON::Array::minArrayIndex(0,@WeightsOfLevel);
            my $script = $ScriptsOfLevel[$script_index];
            # on stocke l'information dans l'objet node
            $node->setScript($script);
@@ -701,7 +701,7 @@ sub getBottomOrder {
 =begin nd
 Function: getNodesOfLevel
 
-Returns a <Node> array, contaning all nodes of the provided level.
+Returns a <COMMON::GraphNode> array, contaning all nodes of the provided level.
 
 Parameters (list):
     level - string - Level ID whose we want all nodes.

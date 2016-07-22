@@ -38,16 +38,16 @@
 =begin nd
 File: NoData.pm
 
-Class: BE4::NoData
+Class: COMMON::NoData
 
 Define Nodata informations and tools.
 
 Using:
     (start code)
-    use BE4::NoData;
+    use COMMON::NoData;
 
     # NoData object creation
-    my $objNodata = BE4::NoData->new({
+    my $objNodata = COMMON::NoData->new({
         pixel   => $objPixel,
         value   => "255,255,255"
     });
@@ -62,7 +62,7 @@ Attributes:
 
 ################################################################################
 
-package BE4::NoData;
+package COMMON::NoData;
 
 use strict;
 use warnings;
@@ -73,7 +73,7 @@ use File::Basename;
 use File::Spec;
 use File::Path;
 
-use BE4::Pixel;
+use COMMON::Pixel;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -398,7 +398,7 @@ sub exportForDebug {
     
     my $export = "";
     
-    $export .= "\nObject BE4::NoData :\n";
+    $export .= "\nObject COMMON::NoData :\n";
     $export .= sprintf "\t Value : %s\n", $self->{value};
     
     return $export;

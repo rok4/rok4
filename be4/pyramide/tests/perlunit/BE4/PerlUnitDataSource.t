@@ -48,13 +48,13 @@ Log::Log4perl->easy_init({
 });
 
 # My tested class
-use BE4::DataSource;
+use COMMON::DataSource;
 
 ######################################################
 
 # DataSource creation
 
-my $objDSimage = BE4::DataSource->new(
+my $objDSimage = COMMON::DataSource->new(
     "19",
     {
         srs => "IGNF:LAMB93",
@@ -63,7 +63,7 @@ my $objDSimage = BE4::DataSource->new(
 );
 ok (defined $objDSimage, "DataSource (just image) created");
 
-my $objDSharvest = BE4::DataSource->new(
+my $objDSharvest = COMMON::DataSource->new(
     "19",
     {
         srs => "IGNF:WGS84G",
@@ -81,7 +81,7 @@ ok (defined $objDSharvest, "DataSource (just harvesting) created");
 
 # Bad parameters
 
-my $error = BE4::DataSource->new(
+my $error = COMMON::DataSource->new(
     "19",
     {
         srs => "IGNF:LAMB93",
@@ -91,7 +91,7 @@ my $error = BE4::DataSource->new(
 ok (! defined $error, "Wrong data source detected");
 undef $error;
 
-$error = BE4::DataSource->new(
+$error = COMMON::DataSource->new(
     "19",
     {
         srs => "IGNF:LAMB93",

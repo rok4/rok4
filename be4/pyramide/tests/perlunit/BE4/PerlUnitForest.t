@@ -48,10 +48,10 @@ Log::Log4perl->easy_init({
 use FindBin qw($Bin); # absolute path of the present testfile in $Bin
 
 # My tested class
-use BE4::Forest;
+use COMMON::Forest;
 
 #Other Used Class
-use BE4::DataSourceLoader;
+use COMMON::DataSourceLoader;
 use BE4::Pyramid;
 
 
@@ -88,11 +88,11 @@ my $pyramid = BE4::Pyramid->new({
     color => "255,255,255"
 });
 
-my $DSL = BE4::DataSourceLoader->new({ filepath_conf => $Bin."/../../sources/sources_Forest.txt" });
+my $DSL = COMMON::DataSourceLoader->new({ filepath_conf => $Bin."/../../sources/sources_Forest.txt" });
 
 ok ($pyramid->updateLevels($DSL,undef),"DataSourcesLoader updated and QTree Pyramid's levels created");
 
-my $forest = BE4::Forest->new($pyramid,$DSL,{
+my $forest = COMMON::Forest->new($pyramid,$DSL,{
     job_number => 16,
     path_temp => $Bin."/../../temp/",
     path_temp_common => $Bin."/../../temp/",
@@ -105,7 +105,7 @@ is (scalar @{$forest->getGraphs}, 2, "QTree Forest contains 2 graphs");
 
 # Forest Object Creation (with Graph)
 
-$DSL = BE4::DataSourceLoader->new({ filepath_conf => $Bin."/../../sources/sources_Forest.txt" });
+$DSL = COMMON::DataSourceLoader->new({ filepath_conf => $Bin."/../../sources/sources_Forest.txt" });
 $pyramid = BE4::Pyramid->new({
 
     tms_path => $Bin."/../../tms",
@@ -137,7 +137,7 @@ $pyramid = BE4::Pyramid->new({
 
 ok ($pyramid->updateLevels($DSL,undef),"DataSourcesLoader updated and Graph Pyramid's levels created");
 
-$forest = BE4::Forest->new($pyramid,$DSL,{
+$forest = COMMON::Forest->new($pyramid,$DSL,{
     job_number => 16,
     path_temp => $Bin."/../../temp/",
     path_temp_common => $Bin."/../../temp/",
