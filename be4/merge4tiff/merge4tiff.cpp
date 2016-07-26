@@ -380,7 +380,7 @@ int checkComponents ( FileImage* image, FileImage* mask) {
         bitspersample = image->getBitsPerSample();
         photometric = image->getPhotometric();
         sampleformat = image->getSampleFormat();
-        samplesperpixel = image->channels;
+        samplesperpixel = image->getChannels();
         
         if ( width%2 || height%2 ) {
             LOGGER_ERROR ( "Sorry : only even dimensions for input images are supported" );
@@ -394,7 +394,7 @@ int checkComponents ( FileImage* image, FileImage* mask) {
     } else {
 
         if ( ! ( image->getWidth() == width && image->getHeight() == height && image->getBitsPerSample() == bitspersample &&
-                image->getSampleFormat() == sampleformat && image->getPhotometric() == photometric && image->channels == samplesperpixel ) ) {
+                image->getSampleFormat() == sampleformat && image->getPhotometric() == photometric && image->getChannels() == samplesperpixel ) ) {
 
             LOGGER_ERROR ( "Error : all input image must have the same parameters (width, height, etc...) : " << image->getFilename());
             return -1;
@@ -403,7 +403,7 @@ int checkComponents ( FileImage* image, FileImage* mask) {
 
     if (mask != NULL) {
         if ( ! ( mask->getWidth() == width && mask->getHeight() == height && mask->getBitsPerSample() == 8 &&
-                mask->getSampleFormat() == SampleFormat::UINT && mask->getPhotometric() == Photometric::GRAY && mask->channels == 1 ) ) {
+                mask->getSampleFormat() == SampleFormat::UINT && mask->getPhotometric() == Photometric::GRAY && mask->getChannels() == 1 ) ) {
 
             LOGGER_ERROR ( "Error : all input masks must have the same parameters (width, height, etc...) : " << mask->getFilename());
             return -1;

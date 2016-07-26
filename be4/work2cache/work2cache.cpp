@@ -252,7 +252,7 @@ int main ( int argc, char **argv ) {
         LOGGER_DEBUG ( "Open image to read" );
         // On récupère les informations nécessaires pour appeler le nodata manager
         FileImage* tmpSourceImage = FIF.createImageToRead(input);
-        int spp = tmpSourceImage->channels;
+        int spp = tmpSourceImage->getChannels();
         int bps = tmpSourceImage->getBitsPerSample();
         SampleFormat::eSampleFormat sf = tmpSourceImage->getSampleFormat();
         delete tmpSourceImage;
@@ -279,7 +279,7 @@ int main ( int argc, char **argv ) {
 
     Rok4ImageFactory R4IF;
     Rok4Image* rok4Image = R4IF.createRok4ImageToWrite(
-        output, BoundingBox<double>(0.,0.,0.,0.), -1, -1, sourceImage->getWidth(), sourceImage->getHeight(), sourceImage->channels,
+        output, BoundingBox<double>(0.,0.,0.,0.), -1, -1, sourceImage->getWidth(), sourceImage->getHeight(), sourceImage->getChannels(),
         sourceImage->getSampleFormat(), sourceImage->getBitsPerSample(), sourceImage->getPhotometric(), compression,
         tileWidth, tileHeight
     );

@@ -44,16 +44,16 @@ size_t BilEncoder::read ( uint8_t *buffer, size_t size ) {
     size_t offset = 0;
 
     // Hypothese 1 : tous les bil produits sont en float
-    int linesize = image->getWidth() * image->channels * sizeof ( float );
+    int linesize = image->getWidth() * image->getChannels() * sizeof ( float );
 
     // Hypothese 2 : le pixel de l'image source est de type float
-    float* buf_f=new float[image->getWidth() *image->channels];
+    float* buf_f=new float[image->getWidth() *image->getChannels()];
     for ( ; line < image->getHeight() && offset + linesize <= size; line++ ) {
 
         //	image->getline(buffer + offset, line);
         image->getline ( buf_f,line );
 
-        // Hypothese 3 : image->channels=1
+        // Hypothese 3 : image->getChannels()=1
         // On n'utilise pas la fonction convert qui caste un float en uint8_t
         // On copie simplement les octets des floats dans des uint8_t
         for ( int i=0; i<image->getWidth(); i++ ) {

@@ -1,6 +1,6 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR IGN
-# This file is distributed under the same license as the PACKAGE package.
+# This file is distributed under the same license as the Rok4 package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 #, fuzzy
@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2016-06-27 17:49+0200\n"
+"POT-Creation-Date: 2016-07-26 12:08+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1110,8 +1110,8 @@ msgstr ""
 msgid "Rechargement de la configuration"
 msgstr ""
 
-#: main.cpp:264 Rok4Api.cpp:137 Rok4Api.cpp:145 Rok4Api.cpp:153
-#: Rok4Api.cpp:162 Rok4Api.cpp:620
+#: main.cpp:264 Rok4Api.cpp:137 Rok4Api.cpp:145 Rok4Api.cpp:153 Rok4Api.cpp:162
+#: Rok4Api.cpp:620
 msgid "Extinction du serveur ROK4"
 msgstr ""
 

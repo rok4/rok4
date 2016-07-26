@@ -41,13 +41,8 @@ add_subdirectory(merge4tiff)
 add_subdirectory(mergeNtiff)
 add_subdirectory(overlayNtiff)
 add_subdirectory(pyramide)
-add_subdirectory(tiff2gray)
 add_subdirectory(work2cache)
-add_subdirectory(tiffck)
 #######################
-# utilitaire de test :
-add_subdirectory(checkImage)
-######################
 
 # Documentation Doxygen
 if(BUILD_DOC)

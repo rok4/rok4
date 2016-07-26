@@ -440,7 +440,7 @@ LibtiffImage::LibtiffImage (
     
     if ( bps == 1 && sampleformat == SampleFormat::UINT) {
         // On fera la conversion en entiers sur 8 bits à la volée.
-        // Cette image sera donc comme une image sur 8 bits.
+        // Cette image sera comme une image sur 8 bits.
         // On change donc les informations, en précisant que la conversion doit être faite à la lecture.
         LOGGER_DEBUG ( "We have 1-bit samples for the file " << filename << ". We will convert for reading into 8-bit samples");
         bitspersample = 8;
@@ -486,7 +486,7 @@ LibtiffImage::LibtiffImage (
 
 template<typename T>
 int LibtiffImage::_getline ( T* buffer, int line ) {
-    // buffer doit déjà être alloué, et assez grand
+    // buffer doit déjà être alloué, et assez grand, en tenant compte de la conversion
     
     if ( line / rowsperstrip != current_strip ) {
         
@@ -504,35 +504,49 @@ int LibtiffImage::_getline ( T* buffer, int line ) {
             OneBitConverter::minblackToGray(oneTo8bits_buffer, strip_buffer, size);
         }
     }
+
+    T buffertmp[width * channels];
+
+    /************* SI CONVERSION 1 bit -> 8 bits **************/
     
     if (oneTo8bits) {
-        memcpy ( buffer, oneTo8bits_buffer + ( line%rowsperstrip ) * width * pixelSize, width * pixelSize );
+        memcpy ( buffertmp, oneTo8bits_buffer + ( line%rowsperstrip ) * width * pixelSize, width * pixelSize );
     } else {
-        memcpy ( buffer, strip_buffer + ( line%rowsperstrip ) * width * pixelSize, width * pixelSize );
+        memcpy ( buffertmp, strip_buffer + ( line%rowsperstrip ) * width * pixelSize, width * pixelSize );
+    }
+
+    /********************* SI ALPHA ASSOCIE *******************/
+
+    if (esType == ExtraSample::ALPHA_ASSOC) unassociateAlpha ( buffertmp );
+
+    /******************** SI PIXEL CONVERTER ******************/
+
+    if (converter) {
+        converter->convertLine(buffer, buffertmp);
+    } else {
+        memcpy(buffer, buffertmp, channels * width);
     }
     
-    return width*channels;
+    return width * getChannels();
 }
 
 int LibtiffImage::getline ( uint8_t* buffer, int line ) {
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
-        int r = _getline ( buffer,line );
-        if (esType == ExtraSample::ALPHA_ASSOC) unassociateAlpha ( buffer );
-        return r;
+        return _getline ( buffer,line );
     } else if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) { // uint16
         /* On ne convertit pas les entiers 16 bits en entier sur 8 bits (aucun intérêt)
          * On va copier le buffer entier 16 bits sur le buffer entier, de même taille en octet (2 fois plus grand en "nombre de cases")*/
-        uint16_t int16line[width * channels];
+        uint16_t int16line[width * getChannels()];
         _getline ( int16line, line );
-        memcpy ( buffer, int16line, width*pixelSize );
-        return width*pixelSize;
+        memcpy ( buffer, int16line, width * getPixelSize() );
+        return width * getPixelSize();
     } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) { // float
         /* On ne convertit pas les nombres flottants en entier sur 8 bits (aucun intérêt)
          * On va copier le buffer flottant sur le buffer entier, de même taille en octet (4 fois plus grand en "nombre de cases")*/
-        float floatline[width * channels];
+        float floatline[width * getChannels()];
         _getline ( floatline, line );
-        memcpy ( buffer, floatline, width*pixelSize );
-        return width*pixelSize;
+        memcpy ( buffer, floatline, width * getPixelSize() );
+        return width * getPixelSize();
     }
 }
 
@@ -540,11 +554,11 @@ int LibtiffImage::getline ( uint16_t* buffer, int line ) {
     
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
         // On veut la ligne en entier 16 bits mais l'image lue est sur 8 bits : on convertit
-        uint8_t* buffer_t = new uint8_t[width*channels];
+        uint8_t* buffer_t = new uint8_t[width * getChannels()];
         _getline ( buffer_t,line );
-        convert ( buffer,buffer_t,width*channels);
+        convert ( buffer, buffer_t, width * getChannels() );
         delete [] buffer_t;
-        return width*channels;
+        return width * getChannels();
     } else if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) { // uint16
         return _getline ( buffer,line );        
     } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) { // float
@@ -560,20 +574,18 @@ int LibtiffImage::getline ( uint16_t* buffer, int line ) {
 int LibtiffImage::getline ( float* buffer, int line ) {
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
         // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers
-        uint8_t* buffer_t = new uint8_t[width*channels];
-        
-        // Ne pas appeler directement _getline pour bien faire les potentielles conversions (alpha ou 1 bit)
-        getline ( buffer_t,line );
-        convert ( buffer,buffer_t,width*channels );
+        uint8_t* buffer_t = new uint8_t[width * getChannels()];
+        _getline ( buffer_t,line );
+        convert ( buffer, buffer_t, width * getChannels() );
         delete [] buffer_t;
-        return width*channels;
+        return width * getChannels();
     } else if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) { // uint16
         // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers
-        uint16_t* buffer_t = new uint16_t[width*channels];
+        uint16_t* buffer_t = new uint16_t[width * getChannels()];
         _getline ( buffer_t,line );
-        convert ( buffer,buffer_t,width*channels );
+        convert ( buffer, buffer_t, width * getChannels() );
         delete [] buffer_t;
-        return width*channels;     
+        return width * getChannels();   
     } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) { // float
         return _getline ( buffer, line );
     }
@@ -645,37 +657,13 @@ int LibtiffImage::writeImage ( uint8_t* buffer) {
         print();
         return -1;        
     }
-    
-    /* else if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) {
-        uint16_t* buf_t = new uint16_t[width * channels];
-        for ( int line = 0; line < height; line++ ) {
-            convert ( buf_t, buffer + line * width * channels, width * channels );
-            if ( TIFFWriteScanline ( tif, buf_t, line, 0 ) < 0 ) {
-                LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
-                return -1;
-            }
-        }
-
-        delete []  buf_t ;
-    } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
-        float* buf_f = new float[width * channels];
-        for ( int line = 0; line < height; line++ ) {
-            convert ( buf_f, buffer + line * width * channels, width * channels );
-            if ( TIFFWriteScanline ( tif, buf_f, line, 0 ) < 0 ) {
-                LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
-                return -1;
-            }
-        }
-
-        delete []  buf_f ;
-    }*/
 
     return 0;
 }
 
 int LibtiffImage::writeImage ( uint16_t* buffer) {
     
-    // Si l'image à écrire n'a pas des canaux en entiers sur 8 bits, on sort en erreur
+    // Si l'image à écrire n'a pas des canaux en entiers sur 16 bits, on sort en erreur
 
     // Ecriture de l'image
     if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) {
@@ -697,23 +685,8 @@ int LibtiffImage::writeImage ( uint16_t* buffer) {
 
 int LibtiffImage::writeImage ( float* buffer) {
     
-    // Si l'image à écrire n'a pas des canaux en entiers sur 8 bits, on sort en erreur
+    // Si l'image à écrire n'a pas des canaux en flottant sur 32 bits, on sort en erreur
 
-    // Ecriture de l'image
-    /*if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
-        uint8_t* buf_u = new uint8_t[height * width * channels];
-        convert ( buf_u, buffer, height*width*channels );
-        for ( int line = 0; line < height; line++ ) {
-            if ( TIFFWriteScanline ( tif, buf_u + line * width * channels, line, 0 ) < 0 ) {
-                LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
-                return -1;
-            }
-        }
-
-        delete [] buf_u;
-
-    } else */
-    
     if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
         for ( int line = 0; line < height; line++ ) {
             if ( TIFFWriteScanline ( tif, buffer + line * width * channels, line, 0 ) < 0 ) {
@@ -747,23 +720,11 @@ int LibtiffImage::writeLine ( uint8_t* buffer, int line) {
     }
     
     
-    /* else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
-        float* buf_f = new float[height * width * channels];
-        convert ( buf_f, buffer, height*width*channels );
-
-        if ( TIFFWriteScanline ( tif, buf_f, line, 0 ) < 0 ) {
-            LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
-            return -1;
-        }
-
-        delete []  buf_f ;
-    }*/
-
     return 0;
 }
 
 int LibtiffImage::writeLine ( uint16_t* buffer, int line) {
-    // Si l'image à écrire n'a pas des canaux en entiers sur 8 bits, on sort en erreur
+    // Si l'image à écrire n'a pas des canaux en entiers sur 16 bits, on sort en erreur
 
     // Ecriture de l'image
     if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) {
@@ -782,21 +743,7 @@ int LibtiffImage::writeLine ( uint16_t* buffer, int line) {
 }
 
 int LibtiffImage::writeLine ( float* buffer, int line) {
-    // Si l'image à écrire n'a pas des canaux en entiers sur 8 bits, on sort en erreur
-
-    // Ecriture de l'image
-    /*if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
-        uint8_t* buf_u = new uint8_t[height * width * channels];
-        convert ( buf_u, buffer, height*width*channels );
-
-        if ( TIFFWriteScanline ( tif, buf_u, line, 0 ) < 0 ) {
-            LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
-            return -1;
-        }
-
-        delete [] buf_u;
-
-    } else */
+    // Si l'image à écrire n'a pas des canaux en flottant sur 32 bits, on sort en erreur
     
     if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
         if ( TIFFWriteScanline ( tif, buffer, line, 0 ) < 0 ) {

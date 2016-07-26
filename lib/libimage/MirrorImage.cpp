@@ -61,6 +61,7 @@
 #endif
 
 MirrorImage* MirrorImageFactory::createMirrorImage ( Image* pImageSrc, int position, uint mirrorSize ) {
+
     int wTopBottom = pImageSrc->getWidth() +2*mirrorSize;
     int wLeftRight = mirrorSize;
     int hTopBottom = mirrorSize;
@@ -69,7 +70,7 @@ MirrorImage* MirrorImageFactory::createMirrorImage ( Image* pImageSrc, int posit
     double xmin,ymin,xmax,ymax;
 
     if ( pImageSrc == NULL ) {
-        LOGGER_ERROR ( "Source imageis NULL" );
+        LOGGER_ERROR ( "Source image is NULL" );
         return NULL;
     }
 
@@ -85,7 +86,7 @@ MirrorImage* MirrorImageFactory::createMirrorImage ( Image* pImageSrc, int posit
         ymin=pImageSrc->getYmax();
         ymax=pImageSrc->getYmax() +pImageSrc->getResY() *mirrorSize;
         BoundingBox<double> bbox ( xmin,ymin,xmax,ymax );
-        return new MirrorImage ( wTopBottom,hTopBottom,pImageSrc->channels,bbox,pImageSrc,0,mirrorSize );
+        return new MirrorImage ( wTopBottom,hTopBottom,pImageSrc->getChannels(),bbox,pImageSrc,0,mirrorSize );
     } else if ( position == 1 ) {
         // RIGHT
         xmin=pImageSrc->getXmax();
@@ -93,7 +94,7 @@ MirrorImage* MirrorImageFactory::createMirrorImage ( Image* pImageSrc, int posit
         ymin=pImageSrc->getYmin();
         ymax=pImageSrc->getYmax();
         BoundingBox<double> bbox ( xmin,ymin,xmax,ymax );
-        return new MirrorImage ( wLeftRight,hLeftRight,pImageSrc->channels,bbox,pImageSrc,1,mirrorSize );
+        return new MirrorImage ( wLeftRight,hLeftRight,pImageSrc->getChannels(),bbox,pImageSrc,1,mirrorSize );
     } else if ( position == 2 ) {
         // BOTTOM
         xmin=pImageSrc->getXmin()-pImageSrc->getResX() *mirrorSize;
@@ -101,7 +102,7 @@ MirrorImage* MirrorImageFactory::createMirrorImage ( Image* pImageSrc, int posit
         ymin=pImageSrc->getYmin()-pImageSrc->getResY() *mirrorSize;
         ymax=pImageSrc->getYmin();
         BoundingBox<double> bbox ( xmin,ymin,xmax,ymax );
-        return new MirrorImage ( wTopBottom,hTopBottom,pImageSrc->channels,bbox,pImageSrc,2,mirrorSize );
+        return new MirrorImage ( wTopBottom,hTopBottom,pImageSrc->getChannels(),bbox,pImageSrc,2,mirrorSize );
     } else if ( position == 3 ) {
         // LEFT
         xmin=pImageSrc->getXmin()-pImageSrc->getResX() *mirrorSize;
@@ -109,7 +110,7 @@ MirrorImage* MirrorImageFactory::createMirrorImage ( Image* pImageSrc, int posit
         ymin=pImageSrc->getYmin();
         ymax=pImageSrc->getYmax();
         BoundingBox<double> bbox ( xmin,ymin,xmax,ymax );
-        return new MirrorImage ( wLeftRight,hLeftRight,pImageSrc->channels,bbox,pImageSrc,3,mirrorSize );
+        return new MirrorImage ( wLeftRight,hLeftRight,pImageSrc->getChannels(),bbox,pImageSrc,3,mirrorSize );
     } else {
         return NULL;
     }

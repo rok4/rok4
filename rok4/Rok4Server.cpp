@@ -397,7 +397,7 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
             }
         }
 
-        if (expandedImage->channels == 1 && style->isPente()){
+        if (expandedImage->getChannels() == 1 && style->isPente()){
 
             int error=0;
             BoundingBox<double> expandedBbox = curImage->getBbox().expand(curImage->getResX(),curImage->getResY(),1);
@@ -411,17 +411,17 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
                 case Rok4Format::TIFF_ZIP_FLOAT32 :
                 case Rok4Format::TIFF_LZW_FLOAT32 :
                 case Rok4Format::TIFF_PKB_FLOAT32 :
-                    expandedImage = new PenteImage ( curImage->getWidth(), curImage->getHeight(), curImage->channels, curImage->getBbox(),expandedImage, expandedImage->getResXmeter(), expandedImage->getResYmeter(), style->getAlgoOfPente());
+                    expandedImage = new PenteImage ( curImage->getWidth(), curImage->getHeight(), curImage->getChannels(), curImage->getBbox(),expandedImage, expandedImage->getResXmeter(), expandedImage->getResYmeter(), style->getAlgoOfPente());
 				default:
 					break;
 				}
 			} else {
-                expandedImage = new PenteImage (curImage->getWidth(), curImage->getHeight(), curImage->channels, curImage->getBbox(),expandedImage, expandedImage->getResXmeter(), expandedImage->getResYmeter(), style->getAlgoOfPente());
+                expandedImage = new PenteImage (curImage->getWidth(), curImage->getHeight(), curImage->getChannels(), curImage->getBbox(),expandedImage, expandedImage->getResXmeter(), expandedImage->getResYmeter(), style->getAlgoOfPente());
 			}
             delete curImage;
 		}
 
-        if (expandedImage->channels == 1 && style->isAspect()){
+        if (expandedImage->getChannels() == 1 && style->isAspect()){
 
             int error=0;
             BoundingBox<double> expandedBbox = curImage->getBbox().expand(curImage->getResX(),curImage->getResY(),1);
@@ -434,17 +434,17 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
                 case Rok4Format::TIFF_ZIP_FLOAT32 :
                 case Rok4Format::TIFF_LZW_FLOAT32 :
                 case Rok4Format::TIFF_PKB_FLOAT32 :
-                    expandedImage = new AspectImage ( curImage->getWidth(), curImage->getHeight(), curImage->channels, curImage->getBbox(),expandedImage, expandedImage->computeMeanResolution(),  style->getAlgoOfAspect(), style->getMinSlopeOfAspect());
+                    expandedImage = new AspectImage ( curImage->getWidth(), curImage->getHeight(), curImage->getChannels(), curImage->getBbox(),expandedImage, expandedImage->computeMeanResolution(),  style->getAlgoOfAspect(), style->getMinSlopeOfAspect());
                 default:
                     break;
                 }
             } else {
-                expandedImage = new AspectImage ( curImage->getWidth(), curImage->getHeight(), curImage->channels, curImage->getBbox(),expandedImage, expandedImage->computeMeanResolution(),  style->getAlgoOfAspect(), style->getMinSlopeOfAspect());
+                expandedImage = new AspectImage ( curImage->getWidth(), curImage->getHeight(), curImage->getChannels(), curImage->getBbox(),expandedImage, expandedImage->computeMeanResolution(),  style->getAlgoOfAspect(), style->getMinSlopeOfAspect());
             }
             delete curImage;
         }
 
-        if ( style && expandedImage->channels == 1 && ! ( style->getPalette()->getColoursMap()->empty() ) ) {
+        if ( style && expandedImage->getChannels() == 1 && ! ( style->getPalette()->getColoursMap()->empty() ) ) {
             if ( format == "image/png" && size == 1 ) {
                 switch ( pyrType ) {
 
@@ -497,7 +497,7 @@ Image * Rok4Server::mergeImages(std::vector<Image*> images, Rok4Format::eformat_
     if (images.size() > 1 ){
 
         MergeImageFactory MIF;
-        int spp = images.at ( 0 )->channels;
+        int spp = images.at ( 0 )->getChannels();
 	int bg[spp];
 	int transparentColor[spp];
 
@@ -1137,7 +1137,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
             return state;
         }
 
-        if (images.size() == 1 && pyr->getChannels() != mergeImage->channels) {
+        if (images.size() == 1 && pyr->getChannels() != mergeImage->getChannels()) {
             lastImage = new ConvertedChannelsImage(pyr->getChannels(),mergeImage);
         } else {
             lastImage = mergeImage;
@@ -1352,7 +1352,7 @@ DataStream* Rok4Server::CommonGetFeatureInfo ( std::string service, Layer* layer
 
         std::vector<std::string> strData;
         Rok4Format::eformat_data pyrType = layer->getDataPyramid()->getFormat();
-        int n = image->channels;
+        int n = image->getChannels();
         switch ( pyrType ) {
             case Rok4Format::TIFF_RAW_INT8 :
             case Rok4Format::TIFF_JPG_INT8 :

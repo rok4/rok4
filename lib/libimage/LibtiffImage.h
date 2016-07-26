@@ -99,7 +99,7 @@ private:
     uint16_t current_strip;
     
     /**
-     * \~french \brief Doit convertor les canaux de 1 à 8 bits
+     * \~french \brief Doit convertir les canaux de 1 à 8 bits
      * \details
      * \li 0 = pas de conversion
      * \li 1 = conversion nécessaire, et 0 est blanc (min-is-white)

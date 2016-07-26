@@ -209,7 +209,7 @@ int main ( int argc, char **argv )
     FileImageFactory FIF;
     FileImage* outputImage = FIF.createImageToWrite(
         output, rok4image->getBbox(), rok4image->getResX(), rok4image->getResY(), rok4image->getWidth(), rok4image->getHeight(),
-        rok4image->channels, rok4image->getSampleFormat(), rok4image->getBitsPerSample(), rok4image->getPhotometric(), compression
+        rok4image->getChannels(), rok4image->getSampleFormat(), rok4image->getBitsPerSample(), rok4image->getPhotometric(), compression
     );
 
     if (outputImage == NULL) {
