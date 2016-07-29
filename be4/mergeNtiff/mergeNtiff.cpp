@@ -313,6 +313,7 @@ int parseCommandLine ( int argc, char** argv ) {
                 }
                 break;
 
+            /****************** OPTIONNEL, POUR FORCER DES CONVERSION **********************/
             case 's': // samplesperpixel
                 if ( i++ >= argc ) {
                     LOGGER_ERROR ( "Error in option -s" );
@@ -351,6 +352,7 @@ int parseCommandLine ( int argc, char** argv ) {
                     return -1;
                 }
                 break;
+            /*******************************************************************************/
 
             default:
                 LOGGER_ERROR ( "Unknown option : -" << argv[i][1] );
