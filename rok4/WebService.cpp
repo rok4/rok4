@@ -49,8 +49,10 @@
 #include "LibpngImage.h"
 
 
-WebService::WebService(std::string url, std::string proxy="", std::string noProxy="",int retry=DEFAULT_RETRY, int interval=DEFAULT_INTERVAL,
-                       int timeout=DEFAULT_TIMEOUT):Source(WEBSERVICE), url (url),proxy (proxy),retry (retry), interval (interval), timeout (timeout), noProxy (noProxy) {}
+WebService::WebService(std::string url, std::string proxy="", std::string noProxy="", int retry=DEFAULT_RETRY, int interval=DEFAULT_INTERVAL,
+                       int timeout=DEFAULT_TIMEOUT):Source(WEBSERVICE), url (url),proxy (proxy),retry (retry), interval (interval), timeout (timeout), noProxy (noProxy){
+    responseType = "";
+}
 
 
 WebService::~WebService() {
@@ -78,6 +80,7 @@ RawDataSource * WebService::performRequest(std::string request) {
         while (nbPerformed <= retry) {
 
             nbPerformed++;
+            errors = false;
 
             LOGGER_DEBUG("Initialization of Curl Handle");
             //it is one handle - just one per thread - that is a whole theory...
@@ -134,11 +137,6 @@ RawDataSource * WebService::performRequest(std::string request) {
                         if (responseCode != 200) {
                             LOGGER_ERROR("The request returned a " << responseCode << " code");
                             errors = true;
-                        } else {
-                            errors = false;
-                            /* always cleanup */
-                            curl_easy_cleanup(curl);
-                            break;
                         }
 
                     } else {
@@ -147,16 +145,18 @@ RawDataSource * WebService::performRequest(std::string request) {
                     }
 
                     if ((resT == CURLE_OK) && responseType) {
-                        if (errors) {
+                        std::string rType(responseType);
+                        if (errors || (this->responseType != "" && this->responseType != rType )) {
                             LOGGER_ERROR("The request returned with a " << responseType << " content type");
                             std::string text = "text/";
-			    std::string application = "application/";
-                            std::string rType(responseType);
+                            std::string application = "application/";
+
                             if (rType.find(text) != std::string::npos || rType.find(application) != std::string::npos) {
                                 LOGGER_ERROR("Content of the answer: " << chunk.memory);
                             } else {
                                 LOGGER_ERROR("Impossible to read the answer...");
                             }
+                            errors = true;
                         }
                     } else {
                         LOGGER_ERROR("curl_easy_getinfo() on response type failed: " << curl_easy_strerror(resT));
@@ -165,6 +165,10 @@ RawDataSource * WebService::performRequest(std::string request) {
 
                     /* always cleanup */
                     curl_easy_cleanup(curl);
+
+                    if (!errors) {
+                        break;
+                    }
 
                 } else {
                     LOGGER_ERROR("curl_easy_perform() failed: " << curl_easy_strerror(res));

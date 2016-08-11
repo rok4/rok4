@@ -1155,13 +1155,14 @@ DataStream* Request::getCapWMTSParam ( ServicesConf& servicesConf, std::string& 
     if (location !="") {
         path = location;
     }
-    if ( version.compare ( servicesConf.getServiceTypeVersion() ) !=0 )
     version=getParam ( "version" );
     if ( version=="" ) {
         version=servicesConf.getServiceTypeVersion();
         return NULL;
     }
+    if ( version.compare ( servicesConf.getServiceTypeVersion() ) !=0 )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Valeur du parametre VERSION invalide (1.0.0 disponible seulement)" ),"wmts" ) );
+
     return NULL;
 }
 
