@@ -311,7 +311,6 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     std::vector<Layer*> layers;
     BoundingBox<double> bbox ( 0.0, 0.0, 0.0, 0.0 );
     int width, height;
-	float resolution;
     CRS crs;
     std::string format;
     std::vector<Style*> styles;
@@ -332,6 +331,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     for ( int i = 0 ; i < layers.size(); i ++ ) {
 
             Image* curImage = layers.at ( i )->getbbox ( servicesConf, bbox, width, height, crs, error );
+            curImage->setBbox(bbox);
             curImage->setCRS(crs);
             Rok4Format::eformat_data pyrType = layers.at ( i )->getDataPyramid()->getFormat();
             Style* style = styles.at(i);
@@ -402,6 +402,7 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
             int error=0;
             BoundingBox<double> expandedBbox = curImage->getBbox().expand(curImage->getResX(),curImage->getResY(),1);
             expandedImage = pyr->getbbox(servicesConf,expandedBbox,curImage->getWidth()+2,curImage->getHeight()+2,curImage->getCRS(),Interpolation::CUBIC,error);
+            expandedImage->setBbox(expandedBbox);
             expandedImage->setCRS(curImage->getCRS());
 
 			if ( format == "image/png" && size == 1 ) {
@@ -410,12 +411,12 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
                 case Rok4Format::TIFF_ZIP_FLOAT32 :
                 case Rok4Format::TIFF_LZW_FLOAT32 :
                 case Rok4Format::TIFF_PKB_FLOAT32 :
-                    expandedImage = new PenteImage ( curImage->getWidth(), curImage->getHeight(), curImage->channels, curImage->getBbox(),expandedImage, expandedImage->computeMeanResolution(),  style->getAlgoOfPente());
+                    expandedImage = new PenteImage ( curImage->getWidth(), curImage->getHeight(), curImage->channels, curImage->getBbox(),expandedImage, expandedImage->getResXmeter(), expandedImage->getResYmeter(), style->getAlgoOfPente());
 				default:
 					break;
 				}
 			} else {
-                expandedImage = new PenteImage (curImage->getWidth(), curImage->getHeight(), curImage->channels, curImage->getBbox(),expandedImage, expandedImage->computeMeanResolution(),  style->getAlgoOfPente());
+                expandedImage = new PenteImage (curImage->getWidth(), curImage->getHeight(), curImage->channels, curImage->getBbox(),expandedImage, expandedImage->getResXmeter(), expandedImage->getResYmeter(), style->getAlgoOfPente());
 			}
             delete curImage;
 		}

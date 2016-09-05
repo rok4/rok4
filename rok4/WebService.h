@@ -142,6 +142,12 @@ protected:
      */
     std::string userAgent;
 
+    /**
+     * \~french \brief responseType, réponse attendue
+     * \~english \brief responseType, expected answer
+     */
+    std::string responseType;
+
 public:
 
     /**
@@ -323,6 +329,27 @@ public:
     void setInterval (int u) {
         interval = u;
     }
+
+    /**
+     * \~french \brief Récupère le responseType
+     * \return interval
+     * \~english \brief Get the responseType
+     * \return interval
+     */
+    std::string getResponseType(){
+        return responseType;
+    }
+
+    /**
+     * \~french \brief Modifie le responseType
+     * \param[in] interval
+     * \~english \brief Set the responseType
+     * \param[in] interval
+     */
+    void setResponseType (std::string u) {
+        responseType = u;
+    }
+
     /**
      * \~french
      * \brief Récupération des données à partir d'une URL
