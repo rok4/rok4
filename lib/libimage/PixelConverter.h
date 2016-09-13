@@ -214,13 +214,13 @@ public:
         if ( inSamplesPerPixel == 3) {
             if (outSamplesPerPixel == 1) {
                 for ( int i = 0; i < width; i++ ) {
-                    bufferto[i] = ( T ) 0.2125*bufferfrom[3*i] + 0.7154*bufferfrom[3*i+1] + 0.0721*bufferfrom[3*i+2];
+                    bufferto[i] = ( T ) (0.2125*bufferfrom[3*i] + 0.7154*bufferfrom[3*i+1] + 0.0721*bufferfrom[3*i+2]);
                 }
                 return;
             }
             if (outSamplesPerPixel == 2) {
                 for ( int i = 0; i < width; i++ ) {
-                    bufferto[2*i] = ( T ) 0.2125*bufferfrom[3*i] + 0.7154*bufferfrom[3*i+1] + 0.0721*bufferfrom[3*i+2];
+                    bufferto[2*i] = ( T ) (0.2125*bufferfrom[3*i] + 0.7154*bufferfrom[3*i+1] + 0.0721*bufferfrom[3*i+2]);
                     bufferto[2*i+1] = defaultAlpha;
                 }
                 return;
@@ -238,13 +238,13 @@ public:
         if ( inSamplesPerPixel == 4) {
             if (outSamplesPerPixel == 1) {
                 for ( int i = 0; i < width; i++ ) {
-                    bufferto[i] = ( T ) 0.2125*bufferfrom[4*i] + 0.7154*bufferfrom[4*i+1] + 0.0721*bufferfrom[4*i+2];
+                    bufferto[i] = ( T ) (0.2125*bufferfrom[4*i] + 0.7154*bufferfrom[4*i+1] + 0.0721*bufferfrom[4*i+2]);
                 }
                 return;
             }
             if (outSamplesPerPixel == 2) {
                 for ( int i = 0; i < width; i++ ) {
-                    bufferto[2*i] = ( T ) 0.2125*bufferfrom[4*i] + 0.7154*bufferfrom[4*i+1] + 0.0721*bufferfrom[4*i+2];
+                    bufferto[2*i] = ( T ) (0.2125*bufferfrom[4*i] + 0.7154*bufferfrom[4*i+1] + 0.0721*bufferfrom[4*i+2]);
                     bufferto[2*i+1] = bufferfrom[4*i + 3];
                 }
                 return;

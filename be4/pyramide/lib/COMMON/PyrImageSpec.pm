@@ -168,7 +168,7 @@ Gamma, interpolation and compressionoption own default value, but we have to pro
 
 Parameters (list):
     pyramidParams - string hash - Pyramid parameters, from configuration file or ancestor's pyramid descriptor
-    pixelIn - <COMMON::Pixel> - Pixel caracteristic of input image data. Undefined if no image source
+    pixelIn - <COMMON::Pixel> - Pixel caracteristic of input image data. Undefined if no image source or several format
 
 See also:
     <_load>

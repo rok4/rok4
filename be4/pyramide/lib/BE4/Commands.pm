@@ -830,8 +830,6 @@ sub configureFunctions {
     $conf_mNt .= "-s $spp ";
     my $bps = $pyr->getBitsPerSample;
     $conf_mNt .= "-b $bps ";
-    my $ph = $pyr->getPhotometric;
-    $conf_mNt .= "-p $ph ";
     my $sf = $pyr->getSampleFormat;
     $conf_mNt .= "-a $sf ";
 
@@ -856,6 +854,10 @@ sub configureFunctions {
     $conf_m4t .= "-g $gamma ";
     $conf_m4t .= "-n $nd ";
 
+    $conf_m4t .= "-s $spp ";
+    $conf_m4t .= "-b $bps ";
+    $conf_m4t .= "-a $sf ";
+
     $configuredFunc =~ s/__m4t__/$conf_m4t/;
 
     ######## cache2work ########
@@ -875,6 +877,10 @@ sub configureFunctions {
     }
 
     $conf_w2c .= sprintf "-t %s %s ",$pyr->getTileMatrixSet->getTileWidth,$pyr->getTileMatrixSet->getTileHeight;
+
+    $conf_w2c .= "-s $spp ";
+    $conf_w2c .= "-b $bps ";
+    $conf_w2c .= "-a $sf ";
 
     $configuredFunc =~ s/__w2cI__/$conf_w2c/;
     

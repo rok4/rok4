@@ -346,7 +346,7 @@ int parseCommandLine ( int argc, char* argv[] ) {
                 }
                 break;
 
-            /****************** OPTIONNEL, POUR FORCER DES CONVERSION **********************/
+            /****************** OPTIONNEL, POUR FORCER DES CONVERSIONS **********************/
             case 's': // samplesperpixel
                 if ( i++ >= argc ) {
                     LOGGER_ERROR ( "Error in option -s" );
@@ -455,7 +455,7 @@ int checkComponents ( FileImage* image, FileImage* mask) {
     } else {
 
         if ( image->getWidth() != width || image->getHeight() != height) {
-            LOGGER_ERROR ( "Error : all input image must have the same dimensions (width, height, etc...) : " << image->getFilename());
+            LOGGER_ERROR ( "Error : all input image must have the same dimensions (width, height) : " << image->getFilename());
             return -1;
         }
 

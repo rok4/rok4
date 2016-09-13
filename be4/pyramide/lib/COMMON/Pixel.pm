@@ -345,14 +345,52 @@ sub convertible {
         return TRUE;
     }
 
+
+    # La conversion se fait par la classe de la libimage PixelConverter, dont une instance est ajoutée à un FileImage pour convertir à la volée
+    # Les tests de faisabilité ici doivent être identiques à ceux dans PixelConverter :
+    # ----------------------------- PixelConverter constructor : C++ ----------------------------------
+    # if (inSampleFormat == SampleFormat::FLOAT || outSampleFormat == SampleFormat::FLOAT) {
+    #     LOGGER_WARN("PixelConverter doesn't handle float samples");
+    #     return;
+    # }
+    # if (inSampleFormat != outSampleFormat) {
+    #     LOGGER_WARN("PixelConverter doesn't handle different samples format");
+    #     return;
+    # }
+    # if (inBitsPerSample != outBitsPerSample) {
+    #     LOGGER_WARN("PixelConverter doesn't handle different number of bits per sample");
+    #     return;
+    # }
+
+    # if (inSamplesPerPixel == outSamplesPerPixel) {
+    #     LOGGER_WARN("PixelConverter have not to be used if number of samples per pixel is the same");
+    #     return;
+    # }
+
+    # if (inBitsPerSample != 8) {
+    #     LOGGER_WARN("PixelConverter only handle 8 bits sample");
+    #     return;
+    # }
+    # -------------------------------------------------------------------------------------------------
+
     if ($self->getSampleFormat() eq "float" || $other->getSampleFormat() eq "float") {
         # aucune conversion pour des canaux flottant
         return FALSE;
     }
 
-    # TODO : permettre des conversions : le test se fera ici
-    # La conversion se fait dans le work2cache
-    return FALSE;
+    if ($self->getSampleFormat() ne $other->getSampleFormat()) {
+        return FALSE;
+    }
+
+    if ($self->getBitsPerSample() != $other->getBitsPerSample()) {
+        return FALSE;
+    }
+
+    if ($self->getBitsPerSample() != 8) {
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 ####################################################################################################

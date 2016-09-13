@@ -165,6 +165,14 @@ int main ( int argc, char **argv ) {
     char* input = 0, *output = 0;
     int tileWidth = 256, tileHeight = 256;
     Compression::eCompression compression = Compression::NONE;
+
+    bool outputProvided = false;
+    uint16_t samplesperpixel = 0;
+    uint16_t bitspersample = 0;
+    SampleFormat::eSampleFormat sampleformat = SampleFormat::UNKNOWN;
+
+    Photometric::ePhotometric photometric;
+
     bool crop = false;
     bool debugLogger=false;
 
@@ -218,6 +226,42 @@ int main ( int argc, char **argv ) {
                     tileWidth = atoi ( argv[++i] );
                     tileHeight = atoi ( argv[++i] );
                     break;
+
+                /****************** OPTIONNEL, POUR FORCER DES CONVERSIONS **********************/
+                case 's': // samplesperpixel
+                    if ( i++ >= argc ) {
+                        error ( "Error in option -s", -1 );
+                    }
+                    if ( strncmp ( argv[i], "1",1 ) == 0 ) samplesperpixel = 1 ;
+                    else if ( strncmp ( argv[i], "2",1 ) == 0 ) samplesperpixel = 2 ;
+                    else if ( strncmp ( argv[i], "3",1 ) == 0 ) samplesperpixel = 3 ;
+                    else if ( strncmp ( argv[i], "4",1 ) == 0 ) samplesperpixel = 4 ;
+                    else {
+                        error ( "Unknown value for option -s : " + string(argv[i]), -1 );
+                    }
+                    break;
+                case 'b': // bitspersample
+                    if ( i++ >= argc ) {
+                        error ( "Error in option -b", -1 );
+                    }
+                    if ( strncmp ( argv[i], "8",1 ) == 0 ) bitspersample = 8 ;
+                    else if ( strncmp ( argv[i], "32",2 ) == 0 ) bitspersample = 32 ;
+                    else {
+                        error ( "Unknown value for option -b : " + string(argv[i]), -1 );
+                    }
+                    break;
+                case 'a': // sampleformat
+                    if ( i++ >= argc ) {
+                        error ( "Error in option -a", -1 );
+                    }
+                    if ( strncmp ( argv[i],"uint",4 ) == 0 ) sampleformat = SampleFormat::UINT ;
+                    else if ( strncmp ( argv[i],"float",5 ) == 0 ) sampleformat = SampleFormat::FLOAT;
+                    else {
+                        error ( "Unknown value for option -a : " + string(argv[i]), -1 );
+                    }
+                    break;
+                /*******************************************************************************/
+
                 default:
                     error ( "Unknown option : " + string(argv[i]) ,-1 );
             }
@@ -272,6 +316,30 @@ int main ( int argc, char **argv ) {
     if (sourceImage == NULL) {
         error("Cannot read the source image", -1);
     }
+
+    // On regarde si on a tout précisé en sortie, pour voir si des conversions sont possibles
+    if (sampleformat != SampleFormat::UNKNOWN && bitspersample != 0 && samplesperpixel !=0) {
+        outputProvided = true;
+        // La photométrie est déduite du nombre de canaux
+        if (samplesperpixel == 1) {
+            photometric = Photometric::GRAY;
+        } else if (samplesperpixel == 2) {
+            photometric = Photometric::GRAY;
+        } else {
+            photometric = Photometric::RGB;
+        }
+
+        if (! sourceImage->addConverter ( sampleformat, bitspersample, samplesperpixel ) ) {
+            error ( "Cannot add converter to the input FileImage " + string(input), -1 );
+        }
+    } else {
+        // On n'a pas précisé de format de sortie
+        // La sortie aura ce format
+        bitspersample = sourceImage->getBitsPerSample();
+        photometric = sourceImage->getPhotometric();
+        sampleformat = sourceImage->getSampleFormat();
+        samplesperpixel = sourceImage->getChannels();
+    }
     
     if (debugLogger) {
         sourceImage->print();
@@ -279,8 +347,8 @@ int main ( int argc, char **argv ) {
 
     Rok4ImageFactory R4IF;
     Rok4Image* rok4Image = R4IF.createRok4ImageToWrite(
-        output, BoundingBox<double>(0.,0.,0.,0.), -1, -1, sourceImage->getWidth(), sourceImage->getHeight(), sourceImage->getChannels(),
-        sourceImage->getSampleFormat(), sourceImage->getBitsPerSample(), sourceImage->getPhotometric(), compression,
+        output, BoundingBox<double>(0.,0.,0.,0.), -1, -1, sourceImage->getWidth(), sourceImage->getHeight(), samplesperpixel,
+        sampleformat, bitspersample, photometric, compression,
         tileWidth, tileHeight
     );
     
