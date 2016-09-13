@@ -1736,6 +1736,8 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
 
         ws = new WebMapService(url, proxy, noProxy, retry, interval, timeout, version, layers, styles, format, channels, crs, bbox, noDataValues,options);
 
+        ws->setResponseType(format);
+
     } else {
         //On retourne une erreur car le WMS est le seul WebService disponible pour le moment
         LOGGER_ERROR("Un WebService doit contenir un WMS pour être utilisé");

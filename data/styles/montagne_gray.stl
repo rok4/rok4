@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <style>
-        <Identifier>pente_horn_gray</Identifier>
+        <Identifier>montagne_gray</Identifier>
         <Title>Pente en niveau de gris de 0 a 90 degres</Title> 
         <Abstract>Pente calculee avec la methode de Horn mais affichee en niveau de gris de 0 a 90 degres</Abstract>
         <Keywords>
