@@ -51,9 +51,11 @@
 #include <sys/stat.h>
 #include <iostream>
 #include <fstream>
+#include <errno.h>
 
 #include "config.h"
 #include "ProcessFactory.h"
+#include "Logger.h"
 
 ProcessFactory::ProcessFactory(int max, std::string f)
 {
@@ -87,6 +89,7 @@ bool ProcessFactory::createProcess() {
 
         if (pid != -1) {
             //a process has been created
+            LOGGER_INFO("Process created");
             lastPid = pid;
             nbCurrentPid++;
             listCurrentPid.push_back(pid);
@@ -94,10 +97,14 @@ bool ProcessFactory::createProcess() {
 
         } else {
             //can't create a process for any reason
+            LOGGER_WARN("Can't create process...");
+            LOGGER_WARN(errno);
+            LOGGER_WARN(strerror(errno));
         }
 
     } else {
         //can't create child process because max is already taken
+        LOGGER_WARN("Max process already taken... Try again");
     }
 
     return processCreated;
