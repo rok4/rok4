@@ -49,9 +49,6 @@
  * \endcode
  * Les caractéristiques suivantes doivent être les mêmes pour les 4 images, le fond et seront celles de l'image de sortie :
  * \li largeur et hauteur en pixel
- * \li nombre de canaux
- * \li format des canaux
- * \li photomètrie
  *
  * Si les images en entrée peuvent être de différents formats (selon les implémentations de la classe FileImage), l'image de sortie est au format TIFF.
  *
@@ -130,7 +127,7 @@ bool debugLogger=false;
  * \~ \code
  * merge4tiff version X.X.X
  *
- * Usage: merge4tiff [-g <VAL>] -n <VAL> [-c <VAL>] [-iX <FILE> [-mX<FILE>]] -io <FILE> [-mo <FILE>]
+ * Usage: merge4tiff [-g <VAL>] -n <VAL> [-c <VAL>] [-iX <FILE> [-mX<FILE>]] -io <FILE> [-mo <FILE>] [-a <VAL> -b <VAL> -s <VAL>]
  *
  * Parameters:
  *      -g gamma float value, to dark (0 < g < 1) or brighten (1 < g) 8-bit integer images' subsampling
@@ -158,6 +155,8 @@ bool debugLogger=false;
  *      -mX input associated masks (optionnal)
  *              X = [1..4] or X = b
  *      -d debug logger activation
+ *
+ * If bitspersample, sampleformat or samplesperpixel is not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.
  *
  * Examples
  *      - without mask, with background image
@@ -199,7 +198,12 @@ void usage() {
                   "             X = b           background image\n" <<
                   "     -mX input associated masks (optionnal)\n" <<
                   "             X = [1..4] or X = b\n" <<
+                  "     -a sample format : (float or uint)\n" <<
+                  "     -b bits per sample : (8 or 32)\n" <<
+                  "     -s samples per pixel : (1, 2, 3 or 4)\n" <<
                   "     -d debug logger activation\n\n" <<
+
+                  "If bitspersample, sampleformat or samplesperpixel is not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.\n\n" <<
 
                   "Examples\n" <<
                   "     - without mask, with background image\n" <<

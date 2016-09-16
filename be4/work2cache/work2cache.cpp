@@ -83,7 +83,7 @@ int white[4] = {255,255,255,255};
  * 
  * Make image tiled and compressed, in TIFF format, respecting ROK4 specifications.
  * 
- * Usage: tiff2tile -c <VAL> -t <VAL> <VAL> <INPUT FILE> <OUTPUT FILE> [-crop]
+ * Usage: tiff2tile -c <VAL> -t <VAL> <VAL> <INPUT FILE> <OUTPUT FILE> [-crop] [-a <VAL> -b <VAL> -s <VAL>]
  * 
  * Parameters:
  *      -c output compression :
@@ -96,7 +96,12 @@ int white[4] = {255,255,255,255};
  *              png     Non-official TIFF compression, each tile is an independant PNG image (with PNG header)
  *      -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size
  *      -crop : blocks (used by JPEG compression) wich contain a white pixel are filled with white
+ *      -a sample format : (float or uint)
+ *      -b bits per sample : (8 or 32)
+ *      -s samples per pixel : (1, 2, 3 or 4)
  *      -d debug logger activation
+ *
+ * If bitspersample, sampleformat or samplesperpixel is not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.
  * 
  * Examples
  *      - for orthophotography
@@ -124,7 +129,12 @@ void usage() {
                   "             png     Non-official TIFF compression, each tile is an independant PNG image (with PNG header)\n" <<
                   "     -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size\n" <<
                   "     -crop : blocks (used by JPEG compression) wich contain a white pixel are filled with white\n" <<
+                  "     -a sample format : (float or uint)\n" <<
+                  "     -b bits per sample : (8 or 32)\n" <<
+                  "     -s samples per pixel : (1, 2, 3 or 4)\n" <<
                   "     -d : debug logger activation\n\n" <<
+
+                  "If bitspersample, sampleformat or samplesperpixel is not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.\n\n" <<
 
                   "Examples\n" <<
                   "     - for orthophotography\n" <<

@@ -47,9 +47,7 @@
  * \li être recouvrantes entre elles
  * \li être dans des systèmes spatiaux différents
  *
- * Les images en entrée et celle en sortie doivent avoir les même composantes suivantes :
- * \li le même nombre de canaux
- * \li le même format de canal
+ * Les images en entrée peuvent avoir un format de canaux différents si on précise celui en sortie : une conversion à la volée sera alors effctuée, selon les possibilités de PixelConverter. Si toutes les images ont le même format, on peut ne pas préciser celui de sortie et il sera le même qu'en entrée.
  *
  * Les formats des canaux gérés sont :
  * \li entier non signé sur 8 bits
@@ -166,7 +164,7 @@ bool debugLogger=false;
  * \~ \code
  * mergeNtiff version X.X.X
  *
- * Usage: mergeNtiff -f <FILE> [-r <DIR>] -c <VAL> -a <VAL> -i <VAL> -n <VAL> -s <VAL> -b <VAL> -p <VAL>
+ * Usage: mergeNtiff -f <FILE> [-r <DIR>] -c <VAL> -i <VAL> -n <VAL> [-a <VAL> -b <VAL> -s <VAL>]
  *
  * Parameters:
  *      -f configuration file : list of output and source images and masks
@@ -186,7 +184,12 @@ bool debugLogger=false;
  *      -n nodata value, one interger per sample, seperated with comma. Examples
  *              -99999 for DTM
  *              255,255,255 for orthophotography
+ *      -a sample format : (float or uint)
+ *      -b bits per sample : (8 or 32)
+ *      -s samples per pixel : (1, 2, 3 or 4)
  *      -d debug logger activation
+ *
+ * If bitspersample, sampleformat or samplesperpixel is not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.
  *
  * Examples
  *      - for orthophotography
@@ -220,7 +223,12 @@ void usage() {
                   "    -n nodata value, one interger per sample, seperated with comma. Examples\n" <<
                   "            -99999 for DTM\n" <<
                   "            255,255,255 for orthophotography\n" <<
+                  "    -a sample format : (float or uint)\n" <<
+                  "    -b bits per sample : (8 or 32)\n" <<
+                  "    -s samples per pixel : (1, 2, 3 or 4)\n" <<
                   "    -d debug logger activation\n\n" <<
+
+                  "If bitspersample, sampleformat or samplesperpixel is not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.\n\n" <<
 
                   "Examples\n" <<
                   "    - for orthophotography\n" <<

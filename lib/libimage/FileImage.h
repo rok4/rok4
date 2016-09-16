@@ -344,7 +344,6 @@ public:
      * \return number of bits per sample
      */
     int getBitsPerSample() {
-        LOGGER_DEBUG("titi");
         if (converter) return converter->getBitsPerSample();
         return bitspersample;
     }
@@ -373,6 +372,17 @@ public:
         return pixelSize;
     }
 
+    /**
+     * \~french
+     * \brief Ajoute un convertisseur si nécessaire
+     * \details En précisant le format voulu en sortie, on va déterminer si un convertisseur est nécessaire et si la conversion est possible. Dans ce cas, on l'ajoute et :
+     * \li Lors de la demande du format de l'image, on retournera celui post conversion
+     * \li Lors de la lecture d'une ligne, la conversion sera faite de manière transparente pour l'utilisateur de la FileImage
+     * \param[in] osf Format du canal voulu en sortie
+     * \param[in] obps Nombre de bits par canal voulu en sortie
+     * \param[in] ospp Nombre de canaux voulu en sortie
+     * \return Vrai si pas de conversion ou conversion possible, faux sinon
+     */
     bool addConverter(SampleFormat::eSampleFormat osf, int obps, int ospp) {
 
         // Si il n'y a pas besoin de conversion, on évite d'en mettre une

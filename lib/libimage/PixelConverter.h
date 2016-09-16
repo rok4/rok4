@@ -54,36 +54,66 @@
 
 /** \~ \author Institut national de l'information géographique et forestière
  ** \~french
- * \brief PixelConverter
+ * \brief Outil de conversion des images à la volée
+ * \details Une instance de PixelConverter va permettre, au moment de la lecture d'une ligne issue d'une image fichier (FileImage), de modifier le format des canaux.
+ *
+ * On ne permet pour le moment que l'ajout ou la suppression de canal pour le format en entrée et en sortie entier sur 8 bits.
  ** \~english
- * \brief PixelConverter
+ * \brief Converter for FileImage
  */
 class PixelConverter {
 
 private:
     /**
-     * \~french \brief Canaux de couleur, sans tenir compte de l'alpha
-     * \~english \brief Color's samples, ignoring alpha
+     * \~french \brief Format du canal en entrée
+     * \~english \brief Input sample format
      */
-
     SampleFormat::eSampleFormat inSampleFormat;
+    /**
+     * \~french \brief Format du canal en sortie
+     * \~english \brief Output sample format
+     */
     SampleFormat::eSampleFormat outSampleFormat;
 
+    /**
+     * \~french \brief Nombre de bits d'un canal en entrée
+     * \~english \brief Input number of bits per sample
+     */
     int inBitsPerSample;
+    /**
+     * \~french \brief Nombre de bits d'un canal en sortie
+     * \~english \brief Output number of bits per sample
+     */
     int outBitsPerSample;
 
+    /**
+     * \~french \brief Nombre de canal en entrée
+     * \~english \brief Input number of channel
+     */
     int inSamplesPerPixel;
+    /**
+     * \~french \brief Nombre de canal en sortie
+     * \~english \brief Output number of channel
+     */
     int outSamplesPerPixel;
 
+    /**
+     * \~french \brief Largeur d'une ligne à convertir
+     * \~english \brief Width of line to convert
+     */
     int width;
 
+    /**
+     * \~french \brief La conversion est-elle possible ?
+     * \~english \brief Conversion is allowed ?
+     */
     bool yesWeCan;
 
 public:
     /** \~french
-     * \brief Crée un objet PixelConverter à partir de la largeur
+     * \brief Crée un objet PixelConverter
      ** \~english
-     * \brief Create a PixelConverter, from the width
+     * \brief Create a PixelConverter
      */
     PixelConverter ( int w, SampleFormat::eSampleFormat isf, int ibps, int ispp, SampleFormat::eSampleFormat osf, int obps, int ospp ) : 
         width(w), inSampleFormat (isf), inBitsPerSample(ibps), inSamplesPerPixel(ispp),
@@ -117,22 +147,42 @@ public:
         yesWeCan = true;
     }
 
+    /**
+     * \~french \brief La conversion est-elle possible ?
+     * \~english \brief Conversion is allowed ?
+     */
     bool youCan () {
         return yesWeCan;
     }
 
+    /**
+     * \~french \brief Retourne le format de canal en sortie
+     * \~english \brief Get the output sample format
+     */
     SampleFormat::eSampleFormat getSampleFormat () {
         return outSampleFormat;
     }
 
+    /**
+     * \~french \brief Retourne le nombre de bits par canal en sortie
+     * \~english \brief Get the output number of bits per channel
+     */
     int getBitsPerSample () {
         return outBitsPerSample;
     }
 
+    /**
+     * \~french \brief Retourne le nombre de canaux en sortie
+     * \~english \brief Get the output number of channels
+     */
     int getSamplesPerPixel () {
         return outSamplesPerPixel;
     }
 
+    /**
+     * \~french \brief Affiche les information sur le convertisseur
+     * \~english \brief Print converter's values
+     */
     void print() {
         LOGGER_INFO ( "" );
         LOGGER_INFO ( "---------- PixelConverter ------------" );
@@ -152,6 +202,14 @@ public:
     virtual ~PixelConverter() {
     }
 
+
+    /**
+     * \~french \brief Affiche les information sur le convertisseur
+     * \~english \brief Print converter's values
+     * \~french
+     * \param[in] bufferto Buffer de sortie où stocker la ligne convertie
+     * \param[in] bufferfrom Buffer de stockage de la ligne à convertir
+     */
     template<typename T>
     void convertLine ( T* bufferto, T* bufferfrom ) {
 

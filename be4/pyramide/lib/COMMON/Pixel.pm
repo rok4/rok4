@@ -336,7 +336,14 @@ sub equals {
     );
 }
 
-# Function: convertible
+=begin nd
+Function: convertible
+
+Tests if conversion is allowed between two pixel formats
+
+Parameters (list):
+    other - <COMMON::Pixel> - Destination pixel for conversion to test
+=cut
 sub convertible {
     my $self = shift;
     my $other = shift;
