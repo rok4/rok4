@@ -64,7 +64,6 @@
 #include "WebService.h"
 #include <cmath>
 #include <errno.h>
-#include <time.h>
 
 #include "config.h"
 #include "intl.h"
@@ -927,11 +926,8 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                             // on va créer un fichier tmp, générer la dalle et supprimer le fichier tmp
 
                             //on attend un temps aléatoire pour être certain qu'un autre processus ne génére pas la dalle
-                            clock_t c = clock();
-                            srand(c);
-                            int rTime = rand() % 100;
-                            usleep(rTime);
-                            //std::cout << "clock: "<< c << " time: "<< rTime << std::endl;
+                            parallelProcess->randomSleep();
+
                             if (stat (SpathTmp.c_str(), &bufferT) == 0 || stat (SpathErr.c_str(), &bufferE) == 0) {
                                 //std::cout << "Dalle genere par un autre processus... " << std::endl;
                                 exit(0);
@@ -1005,6 +1001,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                         } else {
                             //PROCESSUS PERE
                             //on va répondre a la requête
+                            LOGGER_DEBUG("Processus parallele lance ");
                             LOGGER_DEBUG("Création de la dalle "+Spath);
                             LOGGER_DEBUG("Log dans le fichier "+SpathErr);
 

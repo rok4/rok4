@@ -356,6 +356,14 @@ public:
      * \brief Kill all current child process
      */
     void killAllPid();
+
+    /**
+     * \~french
+     * \brief Fais dormir le processus qui l'appel un temps aléatoire inférieur à la seconde
+     * \~english
+     * \brief Sleepa processus less than one second
+     */
+    void randomSleep();
 };
 
 #endif // PROCESSFACTORY_H

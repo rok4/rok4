@@ -52,6 +52,7 @@
 #include <iostream>
 #include <fstream>
 #include <errno.h>
+#include <time.h>
 
 #include "config.h"
 #include "ProcessFactory.h"
@@ -89,7 +90,6 @@ bool ProcessFactory::createProcess() {
 
         if (pid != -1) {
             //a process has been created
-            LOGGER_INFO("Process created");
             lastPid = pid;
             nbCurrentPid++;
             listCurrentPid.push_back(pid);
@@ -306,4 +306,13 @@ void ProcessFactory::destroyLogger() {
         }
     }
     delete acc;
+}
+
+void ProcessFactory::randomSleep() {
+
+    clock_t c = clock();
+    srand(c);
+    int rTime = rand() % 100;
+    usleep(rTime);
+
 }
