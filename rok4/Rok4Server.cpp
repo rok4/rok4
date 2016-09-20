@@ -63,7 +63,8 @@
 #include "curl/curl.h"
 #include "WebService.h"
 #include <cmath>
-
+#include <errno.h>
+#include <time.h>
 
 #include "config.h"
 #include "intl.h"
@@ -925,6 +926,17 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                             //PROCESSUS FILS
                             // on va créer un fichier tmp, générer la dalle et supprimer le fichier tmp
 
+                            //on attend un temps aléatoire pour être certain qu'un autre processus ne génére pas la dalle
+                            clock_t c = clock();
+                            srand(c);
+                            int rTime = rand() % 100;
+                            usleep(rTime);
+                            //std::cout << "clock: "<< c << " time: "<< rTime << std::endl;
+                            if (stat (SpathTmp.c_str(), &bufferT) == 0 || stat (SpathErr.c_str(), &bufferE) == 0) {
+                                //std::cout << "Dalle genere par un autre processus... " << std::endl;
+                                exit(0);
+                            }
+
                             //on cree un fichier temporaire pour indiquer que la dalle va etre creer
                             int fileTmp = open(SpathTmp.c_str(),O_CREAT|O_EXCL,S_IWRITE);
                             if (fileTmp != -1) {
@@ -979,14 +991,11 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                             }
 
                             //on nettoie
-
                             fileTmp = remove(SpathTmp.c_str());
-                            //TODO: trouver une solution meilleure que le sleep. Il est utilisé car remove renvoie une erreur
-                            // alors que le fichier est bien supprimé.
-                            sleep(1);
                             if (fileTmp != 0) {
                                 //Impossible de supprimer le fichier temporaire
                                 std::cerr << "Impossible de supprimer le fichier de temporaire " << SpathTmp.c_str() << std::endl;
+                                std::cerr << "errno: " << errno << " " << strerror(errno) << std::endl;
                             }
                             parallelProcess->destroyLogger();
 
@@ -998,6 +1007,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                             //on va répondre a la requête
                             LOGGER_DEBUG("Création de la dalle "+Spath);
                             LOGGER_DEBUG("Log dans le fichier "+SpathErr);
+
                             tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
                         }
 
