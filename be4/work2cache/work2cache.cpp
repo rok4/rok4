@@ -36,7 +36,7 @@
  */
 
 /**
- * \file tiff2tile.cpp
+ * \file work2cache.cpp
  * \author Institut national de l'information géographique et forestière
  * \~french \brief Formattage d'une image, respectant les spécifications d'une pyramide de données ROK4
  * \~english \brief Image formatting, according to ROK4 specifications
@@ -54,7 +54,7 @@
  *
  * Vision libimage : FileImage -> Rok4Image
  * \~ \code
- * tiff2tile input.tif -c zip -p rgb -t 100 100 -b 8 -a uint -s 3 output.tif
+ * work2cache input.tif -c zip -p rgb -t 100 100 -b 8 -a uint -s 3 output.tif
  * \endcode
  */
 
@@ -76,14 +76,14 @@ int white[4] = {255,255,255,255};
 
 /**
  * \~french
- * \brief Affiche l'utilisation et les différentes options de la commande tiff2tile
+ * \brief Affiche l'utilisation et les différentes options de la commande work2cache
  * \details L'affichage se fait dans le niveau de logger INFO
  * \~ \code
- * tiff2tile version X.Y.Z
+ * work2cache version X.Y.Z
  * 
  * Make image tiled and compressed, in TIFF format, respecting ROK4 specifications.
  * 
- * Usage: tiff2tile -c <VAL> -t <VAL> <VAL> <INPUT FILE> <OUTPUT FILE> [-crop] [-a <VAL> -b <VAL> -s <VAL>]
+ * Usage: work2cache -c <VAL> -t <VAL> <VAL> <INPUT FILE> <OUTPUT FILE> [-crop] [-a <VAL> -b <VAL> -s <VAL>]
  * 
  * Parameters:
  *      -c output compression :
@@ -105,18 +105,18 @@ int white[4] = {255,255,255,255};
  * 
  * Examples
  *      - for orthophotography
- *      tiff2tile input.tif -c png -t 256 256 output.tif
+ *      work2cache input.tif -c png -t 256 256 output.tif
  *      - for DTM
- *      tiff2tile input.tif -c zip -t 256 256 output.tif
+ *      work2cache input.tif -c zip -t 256 256 output.tif
  * 
  * \endcode
  */
 void usage() {
-    LOGGER_INFO ( "\ttiff2tile version " << BE4_VERSION << "\n\n" <<
+    LOGGER_INFO ( "\twork2cache version " << BE4_VERSION << "\n\n" <<
 
                   "Make image tiled and compressed, in TIFF format, respecting ROK4 specifications.\n\n" <<
 
-                  "Usage: tiff2tile -c <VAL> -t <VAL> <VAL> <INPUT FILE> <OUTPUT FILE> [-crop]\n\n" <<
+                  "Usage: work2cache -c <VAL> -t <VAL> <VAL> <INPUT FILE> <OUTPUT FILE> [-crop]\n\n" <<
 
                   "Parameters:\n" <<
                   "     -c output compression :\n" <<
@@ -138,9 +138,9 @@ void usage() {
 
                   "Examples\n" <<
                   "     - for orthophotography\n" <<
-                  "     tiff2tile input.tif -c png -t 256 256 output.tif\n" <<
+                  "     work2cache input.tif -c png -t 256 256 output.tif\n" <<
                   "     - for DTM\n" <<
-                  "     tiff2tile input.tif -c zip -t 256 256 output.tif\n\n" );
+                  "     work2cache input.tif -c zip -t 256 256 output.tif\n\n" );
 }
 
 /**
