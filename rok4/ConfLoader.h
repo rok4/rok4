@@ -317,7 +317,7 @@ private:
      * \param[in] aLevel
      * \param[in] specific
      */
-    static void updateTileLimits (uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Source *> sources);
+    static int updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Source *> sources);
 
     /**
      * \~french

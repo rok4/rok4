@@ -979,7 +979,11 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                             }
 
                             //on nettoie
+
                             fileTmp = remove(SpathTmp.c_str());
+                            //TODO: trouver une solution meilleure que le sleep. Il est utilisé car remove renvoie une erreur
+                            // alors que le fichier est bien supprimé.
+                            sleep(1);
                             if (fileTmp != 0) {
                                 //Impossible de supprimer le fichier temporaire
                                 std::cerr << "Impossible de supprimer le fichier de temporaire " << SpathTmp.c_str() << std::endl;

@@ -1118,6 +1118,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
             if (specificLevel && sSources.size() != 0) {
                 if ( !pElemLvlTMS ) {
+                    //TODO: prendre en compte le code de retour de la fonction
                     updateTileLimits(*TL->getrefMinTileCol(),*TL->getrefMaxTileCol(),*TL->getrefMinTileRow(),*TL->getrefMaxTileRow(),TL->getTm(),tms,sSources);
                 }
                 if (onDemandSpecific && noFile) {
@@ -1288,7 +1289,7 @@ int ConfLoader::updatePyrLevel(Pyramid* pyr, TileMatrix *tm, TileMatrixSet *tms)
 
 }
 
-void ConfLoader::updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Source *> sources) {
+int ConfLoader::updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Source *> sources) {
 
     //On met à jour les Min et Max Tiles une fois que l'on a trouvé un équivalent dans chaque basedPyramid
     // pour le level créé
@@ -1332,7 +1333,10 @@ void ConfLoader::updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, ui
 
 
                 //On reprojette la bbox
-                MMbbox.reproject(pyr->getTms().getCrs().getProj4Code(), tms->getCrs().getProj4Code());
+                if (MMbbox.reproject(pyr->getTms().getCrs().getProj4Code(), tms->getCrs().getProj4Code()) != 0) {
+                    LOGGER_ERROR("Ne peut pas reprojeter la bbox de base");
+                    return 1;
+                }
 
                 //On récupère les Min et Max de Pyr pour ce level dans la nouvelle projection
                 xo = tm.getX0();
@@ -1471,6 +1475,7 @@ void ConfLoader::updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, ui
         maxTileRow = maxRow;
     }
 
+    return 0;
 
 }
 

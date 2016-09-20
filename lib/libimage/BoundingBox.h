@@ -94,7 +94,10 @@ public:
      */
     int reproject ( std::string from_srs, std::string to_srs , int nbSegment = 256 ) {
 
-        pthread_mutex_lock ( & mutex_proj );
+        if (pthread_mutex_trylock ( & mutex_proj ) != 0 ) {
+            LOGGER_ERROR("Can't lock mutex for reprojection.");
+            return 1;
+        }
 
         projCtx ctx = pj_ctx_alloc();
 
