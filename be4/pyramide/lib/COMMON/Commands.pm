@@ -107,7 +107,7 @@ Wms2work () {
                 if [ "$harvest_ext" == "png" ] ; then
                     if pngcheck $nameImg 1>/dev/null ; then break ; fi
                 else
-                    if tiffck $nameImg 1>/dev/null ; then break ; fi
+                    if tiffinfo $nameImg 1>/dev/null ; then break ; fi
                 fi
             fi
             

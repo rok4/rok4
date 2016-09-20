@@ -43,8 +43,7 @@ Section: BE4CEPH tool
 
 Synopsis:
     (start code)
-    perl be4ceph.pl --conf=path [ --env=path ]
-    # All parameters of the --env config file can be overided by --conf config file parameter
+    perl be4ceph.pl --conf=path 
     (end code)
 
 Tool allowing to generate a pyramid of tiled TIFF images, several resolutions, with compression (lossless or lossy) from several data sources, georeferenced image (ortho, scan, ...) or WMS service. Output format respects WMS/WMTS server ROK4.
@@ -115,7 +114,6 @@ Contains be4ceph call options :
     help - To obtain the command's help
     usage - To obtain the command's usage
     properties - Configuration file
-    environment - Environment file
 =cut
 my %options =
 (
@@ -125,7 +123,6 @@ my %options =
     
     # Configuration
     "properties"  => undef, # file properties params (mandatory) !
-    "environment" => undef, # file environment be4ceph params (optional) !
     
     # Only for maintenance !
     "test" => 0,
@@ -197,7 +194,7 @@ sub main {
 =begin nd
 Function: init
 
-Checks options and initializes the default logger. Check environment file (optionnal) and properties file (mandatory).
+Checks options and initializes the default logger. Check properties file (mandatory).
 =cut
 sub init {
   
@@ -255,7 +252,7 @@ sub init {
 =begin nd
 Function: config
 
-Loads environment and properties files and merge parameters. Those in the properties file have priority over those in the environment file.
+Loads properties files and merge parameters.
 
 See Also:
     <checkParams>
@@ -463,8 +460,6 @@ Group: Command's options
     --version - Display the tool version.
 
     --conf=path - Path to configuration file of the pyramid. This option is mandatory.
-
-    --env=path - Path to environment file of all pyramid, it's the common configuration. This option is optional. By default, the file configuration of install is used.
 
 Group: Write a configuration file
 

@@ -123,14 +123,11 @@ DataSourceLoader constructor. Bless an instance.
 Parameters (list):
     datasource - hash - Section *datasource*, in the general BE4 configuration file. Contains the key "filepath_conf" if we use a specific data sources configuration file :
 |               filepath_conf - string - Path to the data sources configuration file
-    or keys "srs" and "path_image" if we use the old way :
-|               srs - string - Source images' SRS
-|               path_image - string - Directory contaning images
     harvesting - hash - If we use the old ways, section *harvesting*, in the general BE4 configuration file
     bottomId - string - If we use the old ways, parameter *pyr_level_bottom* in the section *pyramid*, in the general BE4 configuration file, to define from which level data source is used.
 
 See also:
-    <_init>, <_load>, <_loadOld>
+    <_init>, <_load>
 =cut
 sub new {
     my $this = shift;
@@ -155,9 +152,6 @@ sub new {
     # load. class
     if (defined $self->{FILEPATH_DATACONF}) {
         return undef if (! $self->_load());
-    } else {
-        # Old datasource definition
-        return undef if (! $self->_loadOld($datasource, $harvesting, $bottomId));
     }
     
     INFO (sprintf "Data sources number : %s",scalar @{$self->{dataSources}});
@@ -168,14 +162,11 @@ sub new {
 =begin nd
 Function: _init
 
-Checks the "datasource" section. Must contain keys "path_image" or "filepath_conf" (and path is tested)
+Checks the "datasource" section. Must contain key "filepath_conf" (and path is tested)
 
 Parameters (list):
     datasource - hash - Section *datasource*, in the general BE4 configuration file. Contains the key "filepath_conf" if we use a specific data sources configuration file :
 |               filepath_conf - string - Path to the data sources configuration file
-    or keys "srs" and "path_image" if we use the old way :
-|               srs - string - Source images' SRS
-|               path_image - string - Directory contaning images
 =cut
 sub _init {
     my $self   = shift;
@@ -184,11 +175,6 @@ sub _init {
     TRACE;
     
     return FALSE if (! defined $datasource);
-    
-    if (exists($datasource->{path_image})) {
-        WARN("Old method is used to define a datasource (without datasource configuration file), convert it.");
-        return TRUE;
-    }
     
     if (! exists($datasource->{filepath_conf}) || ! defined ($datasource->{filepath_conf})) {
         ERROR("'filepath_conf' is required in the 'datasource' section !");
@@ -213,16 +199,19 @@ sub _load {
 
     TRACE;
 
-    my $propLoader = BE4::PropertiesLoader->new($self->{FILEPATH_DATACONF});
+    my $propLoader = COMMON::Config->new({
+        'filepath' => $self->{FILEPATH_DATACONF},
+        'format' => "INI"
+    });
 
     if (! defined $propLoader) {
         ERROR("Can not load sources' properties !");
         return FALSE;
     }
 
-    my $sourcesProperties = $propLoader->getAllProperties();
+    my %sourcesProperties = $propLoader->getConfig();
 
-    if (! defined $sourcesProperties) {
+    if (! scalar keys %sourcesProperties) {
         ERROR("All parameters properties of sources are empty !");
         return FALSE;
     }
@@ -230,7 +219,7 @@ sub _load {
     my $sources = $self->{dataSources};
     my $nbSources = 0;
 
-    while( my ($level,$params) = each(%$sourcesProperties) ) {
+    while( my ($level,$params) = each(%sourcesProperties) ) {
         my $datasource = COMMON::DataSource->new($level,$params);
         if (! defined $datasource) {
             ERROR(sprintf "Cannot create a DataSource object for the base level %s",$level);
@@ -244,48 +233,6 @@ sub _load {
         ERROR ("No source !");
         return FALSE;
     }
-
-    return TRUE;
-}
-
-=begin nd
-Function: _loadOld
-
-Allow to use old method to define datasource (just one). Use be4 configuration sections *datasource*, *harvesting* and parameter *pyr_level_bottom*. Creates a <DataSource>.
-
-Parameters (list):
-    datasource - hash - Section *datasource*, in the general BE4 configuration file. Contains the keys "srs" and "path_image" :
-|               srs - string - Source images' SRS
-|               path_image - string - Directory contaning images
-    harvesting - hash - If we use the old ways, section *harvesting*, in the general BE4 configuration file
-    bottomId - string - If we use the old ways, parameter *pyr_level_bottom* in the section *pyramid*, in the general BE4 configuration file, to define from which level data source is used.
-=cut
-sub _loadOld {
-    my $self   = shift;
-    my $datasource = shift;
-    my $harvesting = shift;
-    my $bottomId = shift;
-
-    TRACE;
-
-    if (! defined $bottomId) {
-        ERROR("We need a bottom level identifiant (section 'pyramid', parameter 'pyr_level_bottom') !");
-        return FALSE;
-    }
-    
-    my $params;
-    
-    $params = { map %$_, grep ref $_ eq 'HASH', ($datasource, $params) };
-    $params = { map %$_, grep ref $_ eq 'HASH', ($harvesting, $params) };
-
-    my $sources = $self->{dataSources};
-
-    my $objDataSource = COMMON::DataSource->new($bottomId,$params);
-    if (! defined $objDataSource) {
-        ERROR(sprintf "Cannot create the DataSource object for the base level %s (old method)",$bottomId);
-        return FALSE;
-    }
-    push @{$sources}, $objDataSource;
 
     return TRUE;
 }

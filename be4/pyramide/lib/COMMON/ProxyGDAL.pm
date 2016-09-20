@@ -249,7 +249,6 @@ sub spatialReferenceFromSRS {
         $sr= new Geo::OSR::SpatialReference;
         eval { $sr->ImportFromProj4('+init='.$srs.' +wktext'); };
         if ($@) {
-            INFO("top");
             eval { $sr->ImportFromProj4('+init='.lc($srs).' +wktext'); };
             if ($@) {
                 ERROR("$@");

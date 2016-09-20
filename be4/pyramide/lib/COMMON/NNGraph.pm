@@ -258,22 +258,8 @@ sub _load {
         $ct = COMMON::ProxyGDAL::coordinateTransformationFromSpatialReference($src->getSRS(), $tms->getSRS());
         if (! defined $ct) {
             ERROR(sprintf "Cannot instanciate the coordinate transformation object %s->%s", $src->getSRS(), $tms->getSRS());
-                return FALSE;
-            }
+            return FALSE;
         }
-        
-        my $srsfin= new Geo::OSR::SpatialReference;
-        eval { $srsfin->ImportFromProj4('+init='.$tms->getSRS().' +wktext'); };
-        if ($@) {
-            eval { $srsfin->ImportFromProj4('+init='.lc($tms->getSRS()).' +wktext'); };
-            if ($@) {
-                ERROR($@);
-                ERROR(sprintf "Impossible to initialize the destination spatial coordinate system (%s) !",
-                      $tms->getSRS());
-                return FALSE;
-            }
-        }
-        $ct = new Geo::OSR::CoordinateTransformation($srsini, $srsfin);
     }
 
     # identifier les noeuds du niveau de base à mettre à jour et les associer aux images sources:

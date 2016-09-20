@@ -74,6 +74,10 @@ Attributes:
 |       pyramidName - string - object suffix name in the ceph pool. Example level16_6545_981
 |       poolName - string - ceph pool name.
 
+    s3storage - string hash - informations for s3 final storage
+|       pyramidName - string - object suffix name in the s3 bucket. Example level16_6545_981
+|       bucketName - string - s3 bucket name.
+
     swiftstorage - string hash - informations for swift final storage
 |       pyramidName - string - object suffix name in the swift container. Example level16_6545_981
 |       containerName - string - swift container name.
@@ -137,7 +141,7 @@ Constructor: new
 Node constructor. Bless an instance.
 
 Parameters (hash):
-    type - string - Final storage type : 'FS', 'CEPH' or 'SWIFT'
+    type - string - Final storage type : 'FS', 'CEPH', 'S3' or 'SWIFT'
     i - integer - Node's column
     j - integer - Node's row
     tm - <TileMatrix> - Tile matrix of the level which node belong to
@@ -171,6 +175,7 @@ sub new {
         
         filestorage => undef,
         cephstorage => undef,
+        s3storage => undef,
         swiftstorage => undef
     };
     
@@ -190,7 +195,7 @@ Function: _init
 Check and store node's attributes values. Initialize weights to 0. Calculate the pyramid's relative path, from indices, thanks to <Base36::indicesToB36Path>.
 
 Parameters (hash):
-    type - string - Final storage type : 'FS', 'CEPH' or 'SWIFT'
+    type - string - Final storage type : 'FS', 'CEPH', 'S3' or 'SWIFT'
     i - integer - Node's column
     j - integer - Node's row
     tm - <TileMatrix> - Tile matrix of the level which node belong to
@@ -221,7 +226,7 @@ sub _init {
     }
 
     my $type = $params->{type};
-    if (! defined $type || "|FS|SWIFT|CEPH|" !~ m/\|$type\|/) {
+    if (! defined $type || "|FS|SWIFT|S3|CEPH|" !~ m/\|$type\|/) {
         ERROR("Node's storage type is undef or not valid !");
         return FALSE;
     }
@@ -241,6 +246,9 @@ sub _init {
     }
     elsif ($type eq "CEPH") {
         $self->{cephstorage}->{pyramidName} = sprintf "%s_%s_%s", $self->getLevel, $params->{i}, $params->{j};
+    }
+    elsif ($type eq "S3") {
+        $self->{s3storage}->{pyramidName} = sprintf "%s_%s_%s", $self->getLevel, $params->{i}, $params->{j};
     }
     elsif ($type eq "SWIFT") {
         ERROR("Swift storage not yet implemented");
@@ -363,6 +371,9 @@ sub getPyramidName {
     }
     elsif (defined $self->{cephstorage}) {
         return $self->{cephstorage}->{pyramidName};
+    }
+    elsif (defined $self->{s3storage}) {
+        return $self->{s3storage}->{pyramidName};
     }
     elsif (defined $self->{swiftstorage}) {
         return $self->{swiftstorage}->{pyramidName};
@@ -782,6 +793,9 @@ sub exportForDebug {
     }
     elsif (defined $self->{cephstorage}) {
         $output .= "\tCeph storage\n";
+    }
+    elsif (defined $self->{s3storage}) {
+        $output .= "\tS3 storage\n";
     }
     elsif (defined $self->{swiftstorage}) {
         $output .= "\tSwift storage\n";

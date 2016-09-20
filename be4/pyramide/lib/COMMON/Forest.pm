@@ -57,7 +57,7 @@ Using:
         $objPyramid, # a BE4::Pyramid object
         $objDSL, # a COMMON::DataSourceLoader object
         $param_process, # a hash with following keys : job_number, path_temp, path_temp_common and path_shell
-        $storageType, # final storage : FS, CEPH or SWIFT
+        $storageType, # final storage : FS, CEPH, S3 or SWIFT
     );
     (end code)
 
@@ -67,7 +67,7 @@ Attributes:
     graphs - <QTree> or <NNGraph> array - Graphs composing the forest, one per data source.
     scripts - <Script> array - Scripts, whose execution generate the images' pyramid.
     splitNumber - integer - Number of script used for work parallelization.
-    storageType - string - Pyramid final storage type : FS, CEPH or SWIFT
+    storageType - string - Pyramid final storage type : FS, CEPH, S3 or SWIFT
 
 =cut
 
@@ -89,8 +89,10 @@ use COMMON::QTree;
 use COMMON::NNGraph;
 use BE4::Commands;
 use BE4CEPH::Commands;
+use BE4S3::Commands;
 use BE4::Pyramid;
 use BE4CEPH::Pyramid;
+use BE4S3::Pyramid;
 use COMMON::GraphScript;
 use COMMON::DataSourceLoader;
 use COMMON::DataSource;
@@ -125,14 +127,14 @@ Constructor: new
 Forest constructor. Bless an instance.
 
 Parameters (list):
-    pyr - <BE4::Pyramid> or <BE4CEPH::Pyramid> - Contains output format specifications, needed by generations command's.
+    pyr - <BE4::Pyramid> or <BE4CEPH::Pyramid> or <BE4S3::Pyramid> - Contains output format specifications, needed by generations command's.
     DSL - <DataSourceLoader> - Contains one or several data sources
     params_process - hash - Informations for scripts
 |               job_number - integer - Parallelization level
 |               path_temp - string - Temporary directory
 |               path_temp_common - string - Common temporary directory
 |               path_shell - string - Script directory
-    storageType - string - Pyramid final storage type : FS, CEPH or SWIFT
+    storageType - string - Pyramid final storage type : FS, CEPH, S3 or SWIFT
 
 See also:
     <_init>, <_load>
@@ -170,14 +172,14 @@ Function: _init
 Checks parameters and stores the pyramid.
 
 Parameters (list):
-    pyr - <BE4::Pyramid> or <BE4CEPH::Pyramid> - Contains output format specifications, needed by generations command's.
+    pyr - <BE4::Pyramid> or <BE4CEPH::Pyramid> or <BE4S3::Pyramid> - Contains output format specifications, needed by generations command's.
     DSL - <COMMON::DataSourceLoader> - Contains one or several data sources
     params_process - hash - Informations for scipts, where to write them, temporary directory to use...
 |               job_number - integer - Parallelization level
 |               path_temp - string - Temporary directory
 |               path_temp_common - string - Common temporary directory
 |               path_shell - string - Script directory
-    storageType - string - Pyramid final storage type : FS, CEPH or SWIFT
+    storageType - string - Pyramid final storage type : FS, CEPH, S3 or SWIFT
 
 =cut
 sub _init {
@@ -188,7 +190,7 @@ sub _init {
     my $storageType = shift;
 
     # it's an object and it's mandatory !
-    if (! defined $pyr || (ref ($pyr) ne "BE4::Pyramid" && ref ($pyr) ne "BE4CEPH::Pyramid")) {
+    if (! defined $pyr || (ref ($pyr) ne "BE4::Pyramid" && ref ($pyr) ne "BE4CEPH::Pyramid" && ref ($pyr) ne "BE4S3::Pyramid")) {
         ERROR("Can not load Pyramid !");
         return FALSE;
     }
@@ -205,7 +207,7 @@ sub _init {
         return FALSE;
     }
 
-    if (! defined $storageType || "|FS|SWIFT|CEPH|" !~ m/\|$storageType\|/) {
+    if (! defined $storageType || "|FS|SWIFT|CEPH|S3|" !~ m/\|$storageType\|/) {
         ERROR("Forest's storage type is undef or not valid !");
         return FALSE;
     }
@@ -231,7 +233,7 @@ Parameters (list):
 |               path_temp - string - Temporary directory
 |               path_temp_common - string - Common temporary directory
 |               path_shell - string - Script directory
-    storageType - string - Pyramid final storage type : FS, CEPH or SWIFT
+    storageType - string - Pyramid final storage type : FS, CEPH, S3 or SWIFT
 
 =cut
 sub _load {
@@ -286,6 +288,9 @@ sub _load {
     }
     elsif ($storageType eq 'CEPH') {
         $commands = BE4CEPH::Commands->new($pyr,$params_process->{use_masks});
+    }
+    elsif ($storageType eq 'S3') {
+        $commands = BE4S3::Commands->new($pyr,$params_process->{use_masks});
     }
     elsif ($storageType eq 'SWIFT') {
         ERROR("Swift storage not yet implemented");

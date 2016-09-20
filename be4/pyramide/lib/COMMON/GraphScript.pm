@@ -334,7 +334,7 @@ Function: prepare
 Write script's header, which contains environment variables: the script ID, path to work directory, cache... And functions to factorize code.
 
 Parameters (list):
-    pyr - <BE4::Pyramid> or <BE4CEPH::Pyramid> - Pyramid to generate.
+    pyr - <BE4::Pyramid> or <BE4CEPH::Pyramid> or <BE4S3::Pyramid> - Pyramid to generate.
     listFile - string - Path to the list file.
     functions - string - Configured functions, used in the script (mergeNtiff, wget...).
 
@@ -367,6 +367,12 @@ sub prepare {
         $code   .= sprintf ("export ROK4_CEPH_CLUSTERNAME=\"%s\"\n", $pyr->getClusterName);
         $code   .= sprintf ("export ROK4_CEPH_USERNAME=\"%s\"\n", $pyr->getUserName);
         $code   .= sprintf ("export ROK4_CEPH_CONFFILE=\"%s\"\n", $pyr->getConfFile);
+    }
+    elsif (ref ($pyr) eq "BE4S3::Pyramid") {
+        $code   .= sprintf ("PYR_BUCKET=\"%s\"\n", $pyr->getNewDataBucket);
+        $code   .= sprintf ("export ROK4_S3_URL=\"%s\"\n", $pyr->getApiUrl);
+        $code   .= sprintf ("export ROK4_S3_KEY=\"%s\"\n", $pyr->getKey);
+        $code   .= sprintf ("export ROK4_S3_SECRETKEY=\"%s\"\n", $pyr->getSecretKey);
     }
     else {
         ERROR(ref ($pyr));

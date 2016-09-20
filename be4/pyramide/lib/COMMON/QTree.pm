@@ -219,11 +219,11 @@ sub _init {
         ERROR("Can not load DataSource !");
         return FALSE;
     }
-    if (! defined $objPyr || (ref ($objPyr) ne "BE4::Pyramid" && ref ($objPyr) ne "BE4CEPH::Pyramid")) {
+    if (! defined $objPyr || (ref ($objPyr) ne "BE4::Pyramid" && ref ($objPyr) ne "BE4CEPH::Pyramid" && ref ($objPyr) ne "BE4S3::Pyramid")) {
         ERROR("Can not load Pyramid !");
         return FALSE;
     }
-    if (! defined $objCommands || (ref ($objCommands) ne "BE4::Commands" && ref ($objCommands) ne "BE4CEPH::Commands")) {
+    if (! defined $objCommands || (ref ($objCommands) ne "BE4::Commands" && ref ($objCommands) ne "BE4CEPH::Commands" && ref ($objCommands) ne "BE4S3::Commands")) {
         ERROR("Can not load Commands !");
         return FALSE;
     }

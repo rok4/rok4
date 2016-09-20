@@ -8,8 +8,8 @@ WriteMakefile(
         NAME        => "Be4-Pyramid",
         DISTNAME    => "Be4-Pyramid",
         # install to INSTALL_BASE/bin
-        EXE_FILES   => ['bin/be4.pl', 'bin/joinCache.pl', 'bin/create-layer.pl', 'bin/coord2image.pl', 'bin/be4-simulator.pl', 'bin/be4ceph.pl', 'bin/pyr2pyr.pl', 'bin/wmtSalaD.pl', 'bin/tms-converter-gui.pl'],
-        PMLIBDIRS   => ['lib/BE4', 'lib/JOINCACHE', 'lib/COMMON', 'lib/BE4CEPH', 'lib/PYR2PYR', 'lib/WMTSALAD'],
+        EXE_FILES   => ['bin/be4.pl', 'bin/joinCache.pl', 'bin/create-layer.pl', 'bin/coord2image.pl', 'bin/be4-simulator.pl', 'bin/be4ceph.pl', 'bin/be4s3.pl', 'bin/pyr2pyr.pl', 'bin/wmtSalaD.pl', 'bin/tms-converter-gui.pl'],
+        PMLIBDIRS   => ['lib/BE4', 'lib/JOINCACHE', 'lib/COMMON', 'lib/BE4CEPH', 'lib/BE4S3', 'lib/PYR2PYR', 'lib/WMTSALAD'],
         # modules that are needed to run your module
         PREREQ_PM   => {
                 # Require least x.xx
