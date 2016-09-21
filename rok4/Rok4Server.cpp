@@ -91,7 +91,12 @@
 #include "Aspect.h"
 #include "ConvertedChannelsImage.h"
 
-
+void hangleSIGALARM(int id) {
+    if(id==SIGALRM) {
+         exit(0) ; /* exit on receiving SIGALRM signal */
+    }
+    signal(SIGALRM, hangleSIGALARM) ;
+}
 
 void* Rok4Server::thread_loop ( void* arg ) {
     Rok4Server* server = ( Rok4Server* ) ( arg );
@@ -925,6 +930,10 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                             //PROCESSUS FILS
                             // on va créer un fichier tmp, générer la dalle et supprimer le fichier tmp
 
+                            //on met en place une alarme qui va eteindre le processus au bout de 5min
+                            signal(SIGALRM, hangleSIGALARM);
+                            alarm(10);
+
                             //on attend un temps aléatoire pour être certain qu'un autre processus ne génére pas la dalle
                             parallelProcess->randomSleep();
 
@@ -1057,7 +1066,6 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     CRS dst_crs = pyr->getTms().getCrs();
     error = 0;
     Interpolation::KernelType interpolation = L->getResampling();
-
 
     //---- on va créer la bbox associée à la dalle
     LOGGER_DEBUG("Compute BBOX");
@@ -1267,7 +1275,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
 
         delete nodataTile;
         delete nodataImage;
-        delete NDValues;
+        delete[] NDValues;
 
     } else {
         LOGGER_DEBUG("La tuile de noData existe deja");
