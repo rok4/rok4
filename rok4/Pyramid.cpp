@@ -191,6 +191,7 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
         LOGGER_DEBUG ( _ ( "debut pyramide" ) );
         if ( !grid->reproject ( dst_crs.getProj4Code(),getTms().getCrs().getProj4Code() ) ) {
             // BBOX invalide
+            delete grid;
             error=1;
             return 0;
         }

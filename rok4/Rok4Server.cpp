@@ -336,11 +336,6 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     for ( int i = 0 ; i < layers.size(); i ++ ) {
 
             Image* curImage = layers.at ( i )->getbbox ( servicesConf, bbox, width, height, crs, error );
-            curImage->setBbox(bbox);
-            curImage->setCRS(crs);
-            Rok4Format::eformat_data pyrType = layers.at ( i )->getDataPyramid()->getFormat();
-            Style* style = styles.at(i);
-            LOGGER_DEBUG ( _ ( "GetMap de Style : " ) << styles.at ( i )->getId() << _ ( " pal size : " ) <<styles.at ( i )->getPalette()->getPalettePNGSize() );
 
             if ( curImage == 0 ) {
                 switch ( error ) {
@@ -357,7 +352,18 @@ DataStream* Rok4Server::getMap ( Request* request ) {
                 }
             }
 
+            curImage->setBbox(bbox);
+            curImage->setCRS(crs);
+            Rok4Format::eformat_data pyrType = layers.at ( i )->getDataPyramid()->getFormat();
+            Style* style = styles.at(i);
+            LOGGER_DEBUG ( _ ( "GetMap de Style : " ) << styles.at ( i )->getId() << _ ( " pal size : " ) <<styles.at ( i )->getPalette()->getPalettePNGSize() );
+
+
             Image *image = styleImage(curImage, pyrType, style, format, layers.size(), layers.at(i)->getDataPyramid());
+
+            if (image == 0) {
+                return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wms" ) );
+            }
 
             images.push_back ( image );
     }
@@ -407,6 +413,13 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
             int error=0;
             BoundingBox<double> expandedBbox = curImage->getBbox().expand(curImage->getResX(),curImage->getResY(),1);
             expandedImage = pyr->getbbox(servicesConf,expandedBbox,curImage->getWidth()+2,curImage->getHeight()+2,curImage->getCRS(),Interpolation::CUBIC,error);
+
+            if (expandedImage == 0) {
+                LOGGER_ERROR("expanded Image is NULL");
+                delete curImage;
+                return NULL;
+            }
+
             expandedImage->setBbox(expandedBbox);
             expandedImage->setCRS(curImage->getCRS());
 
@@ -431,6 +444,14 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
             int error=0;
             BoundingBox<double> expandedBbox = curImage->getBbox().expand(curImage->getResX(),curImage->getResY(),1);
             expandedImage = pyr->getbbox(servicesConf,expandedBbox,curImage->getWidth()+2,curImage->getHeight()+2,curImage->getCRS(),Interpolation::CUBIC,error);
+
+            if (expandedImage == 0) {
+                LOGGER_ERROR("expanded Image is NULL");
+                delete curImage;
+                return NULL;
+            }
+
+            expandedImage->setBbox(expandedBbox);
             expandedImage->setCRS(curImage->getCRS());
 
             if ( format == "image/png" && size == 1 ) {
