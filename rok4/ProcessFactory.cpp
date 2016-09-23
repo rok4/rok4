@@ -58,7 +58,7 @@
 #include "ProcessFactory.h"
 #include "Logger.h"
 
-ProcessFactory::ProcessFactory(int max, std::string f)
+ProcessFactory::ProcessFactory(int max, std::string f, int time)
 {
     nbMaxPid = max;
     nbCurrentPid = 0;
@@ -69,6 +69,8 @@ ProcessFactory::ProcessFactory(int max, std::string f)
         updatePreviousProcess();
 
     }
+
+    timeBeforeAutoKill = time;
 
 
 

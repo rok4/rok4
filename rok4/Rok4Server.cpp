@@ -173,7 +173,8 @@ void* Rok4Server::thread_loop ( void* arg ) {
 
 Rok4Server::Rok4Server (int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
                          std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList,
-                         std::string socket, int backlog, Proxy proxy, bool supportWMTS, bool supportWMS, int nbProcess) :
+                         std::string socket, int backlog, Proxy proxy, bool supportWMTS, bool supportWMS, int nbProcess,
+                        int timeKill) :
     sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ),
     styleList ( styleList ), threads ( nbThread ), socket ( socket ), backlog ( backlog ),
     running ( false ), notFoundError ( NULL ), supportWMTS ( supportWMTS ), supportWMS ( supportWMS ), proxy (proxy) {
@@ -197,7 +198,7 @@ Rok4Server::Rok4Server (int nbThread, ServicesConf& servicesConf, std::map<std::
     if (nbProcess < 0) {
         nbProcess = DEFAULT_NB_PROCESS;
     }
-    parallelProcess = new ProcessFactory(nbProcess,"");
+    parallelProcess = new ProcessFactory(nbProcess,"",timeKill);
 }
 
 Rok4Server::~Rok4Server() {

@@ -89,6 +89,12 @@ private:
     int nbCurrentPid;
 
     /**
+     * \~french \brief Temps d'execution laissé au processus
+     * \~english \brief Execution time allowed for the process
+     */
+    int timeBeforeAutoKill;
+
+    /**
      * \~french \brief Liste des pid de processus en cours
      * \~english \brief Pid list of current process
      */
@@ -125,7 +131,7 @@ public:
      * \param[in] file used to write current pid
      * We can use a null name to avoid this file
      */
-    ProcessFactory(int max, std::string f);
+    ProcessFactory(int max, std::string f, int time=300);
 
     /**
      * \~french
