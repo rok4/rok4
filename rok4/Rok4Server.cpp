@@ -954,7 +954,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
 
                             //on met en place une alarme qui va eteindre le processus au bout de 5min
                             signal(SIGALRM, hangleSIGALARM);
-                            alarm(300);
+                            alarm(parallelProcess->getTimeBeforeAutoKill());
 
                             //on attend un temps aléatoire pour être certain qu'un autre processus ne génére pas la dalle
                             parallelProcess->randomSleep();

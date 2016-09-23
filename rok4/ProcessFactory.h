@@ -263,6 +263,30 @@ public:
 
     /**
      * \~french
+     * \brief Modifie la valeur timeBeforeAutoKill
+     * \param[in] timeBeforeAutoKill
+     * \~english
+     * \brief Set timeBeforeAutoKill
+     * \param[in] timeBeforeAutoKill
+     */
+    void setTimeBeforeAutoKill(int f) {
+        timeBeforeAutoKill = f;
+    }
+
+    /**
+     * \~french
+     * \brief Récupère la valeur timeBeforeAutoKill
+     * \return timeBeforeAutoKill
+     * \~english
+     * \brief Get timeBeforeAutoKill
+     * \return timeBeforeAutoKill
+     */
+    int getTimeBeforeAutoKill() {
+        return timeBeforeAutoKill;
+    }
+
+    /**
+     * \~french
      * \brief Modifie la liste listPreviousPid
      * \param[in] listPreviousPid
      * \~english
