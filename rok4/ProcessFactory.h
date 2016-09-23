@@ -89,6 +89,12 @@ private:
     int nbCurrentPid;
 
     /**
+     * \~french \brief Temps d'execution laissé au processus
+     * \~english \brief Execution time allowed for the process
+     */
+    int timeBeforeAutoKill;
+
+    /**
      * \~french \brief Liste des pid de processus en cours
      * \~english \brief Pid list of current process
      */
@@ -125,7 +131,7 @@ public:
      * \param[in] file used to write current pid
      * We can use a null name to avoid this file
      */
-    ProcessFactory(int max, std::string f);
+    ProcessFactory(int max, std::string f, int time=300);
 
     /**
      * \~french
@@ -257,6 +263,30 @@ public:
 
     /**
      * \~french
+     * \brief Modifie la valeur timeBeforeAutoKill
+     * \param[in] timeBeforeAutoKill
+     * \~english
+     * \brief Set timeBeforeAutoKill
+     * \param[in] timeBeforeAutoKill
+     */
+    void setTimeBeforeAutoKill(int f) {
+        timeBeforeAutoKill = f;
+    }
+
+    /**
+     * \~french
+     * \brief Récupère la valeur timeBeforeAutoKill
+     * \return timeBeforeAutoKill
+     * \~english
+     * \brief Get timeBeforeAutoKill
+     * \return timeBeforeAutoKill
+     */
+    int getTimeBeforeAutoKill() {
+        return timeBeforeAutoKill;
+    }
+
+    /**
+     * \~french
      * \brief Modifie la liste listPreviousPid
      * \param[in] listPreviousPid
      * \~english
@@ -356,6 +386,14 @@ public:
      * \brief Kill all current child process
      */
     void killAllPid();
+
+    /**
+     * \~french
+     * \brief Fais dormir le processus qui l'appel un temps aléatoire inférieur à la seconde
+     * \~english
+     * \brief Sleepa processus less than one second
+     */
+    void randomSleep();
 };
 
 #endif // PROCESSFACTORY_H

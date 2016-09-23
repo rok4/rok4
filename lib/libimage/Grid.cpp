@@ -217,8 +217,6 @@ bool Grid::reproject ( std::string from_srs, std::string to_srs ) {
     LOGGER_DEBUG ( from_srs<<" -> " <<to_srs );
 
     pthread_mutex_lock ( & mutex_proj );
-
-
     projCtx ctx = pj_ctx_alloc();
 
     projPJ pj_src, pj_dst;
