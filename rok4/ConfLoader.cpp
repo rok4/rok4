@@ -1118,6 +1118,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
             if (specificLevel && sSources.size() != 0) {
                 if ( !pElemLvlTMS ) {
+                    //TODO: prendre en compte le code de retour de la fonction
                     updateTileLimits(*TL->getrefMinTileCol(),*TL->getrefMaxTileCol(),*TL->getrefMinTileRow(),*TL->getrefMaxTileRow(),TL->getTm(),tms,sSources);
                 }
                 if (onDemandSpecific && noFile) {
@@ -1288,7 +1289,7 @@ int ConfLoader::updatePyrLevel(Pyramid* pyr, TileMatrix *tm, TileMatrixSet *tms)
 
 }
 
-void ConfLoader::updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Source *> sources) {
+int ConfLoader::updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Source *> sources) {
 
     //On met à jour les Min et Max Tiles une fois que l'on a trouvé un équivalent dans chaque basedPyramid
     // pour le level créé
@@ -1332,7 +1333,10 @@ void ConfLoader::updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, ui
 
 
                 //On reprojette la bbox
-                MMbbox.reproject(pyr->getTms().getCrs().getProj4Code(), tms->getCrs().getProj4Code());
+                if (MMbbox.reproject(pyr->getTms().getCrs().getProj4Code(), tms->getCrs().getProj4Code()) != 0) {
+                    LOGGER_ERROR("Ne peut pas reprojeter la bbox de base");
+                    return 1;
+                }
 
                 //On récupère les Min et Max de Pyr pour ce level dans la nouvelle projection
                 xo = tm.getX0();
@@ -1471,6 +1475,7 @@ void ConfLoader::updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, ui
         maxTileRow = maxRow;
     }
 
+    return 0;
 
 }
 
@@ -2322,7 +2327,7 @@ Layer * ConfLoader::buildLayer ( std::string fileName, std::map<std::string, Til
 }
 
 // Load the server configuration (default is server.conf file) during server initialization
-bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog, int& nbProcess, Proxy &proxy ) {
+bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog, int& nbProcess, Proxy &proxy, int& timeKill ) {
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
@@ -2412,6 +2417,16 @@ bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConf
         std::cerr<<_ ( "Le nbProcess [" ) << pElem->GetTextStr() <<_ ( "] is bigger than " ) << MAX_NB_PROCESS <<std::endl;
         std::cerr<<_ ( "=> nbProcess = " ) << MAX_NB_PROCESS<<std::endl;
         nbProcess = MAX_NB_PROCESS;
+    }
+
+    pElem=hRoot.FirstChild ( "timeForProcess" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        timeKill = DEFAULT_TIME_PROCESS;
+    } else if ( !sscanf ( pElem->GetText(),"%d",&timeKill ) ) {
+        timeKill = DEFAULT_TIME_PROCESS;
+    }
+    if (timeKill > DEFAULT_MAX_TIME_PROCESS) {
+        timeKill = DEFAULT_MAX_TIME_PROCESS;
     }
 
     pElem=hRoot.FirstChild ( "WMTSSupport" ).Element();
@@ -3121,14 +3136,14 @@ bool ConfLoader::isCRSAllowed(std::vector<std::string> restrictedCRSList, std::s
 bool ConfLoader::getTechnicalParam ( std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix,
                                      int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS,
                                      bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir,
-                                     std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog, int& nbProcess, Proxy &proxy ) {
+                                     std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog, int& nbProcess, Proxy &proxy, int& timeKill ) {
     std::cout<<_ ( "Chargement des parametres techniques depuis " ) <<serverConfigFile<<std::endl;
     TiXmlDocument doc ( serverConfigFile );
     if ( !doc.LoadFile() ) {
         std::cerr<<_ ( "Ne peut pas charger le fichier " ) << serverConfigFile<<std::endl;
         return false;
     }
-    return parseTechnicalParam ( &doc,serverConfigFile,logOutput,logFilePrefix,logFilePeriod,logLevel,nbThread,supportWMTS,supportWMS,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,styleDir, socket, backlog, nbProcess, proxy );
+    return parseTechnicalParam ( &doc,serverConfigFile,logOutput,logFilePrefix,logFilePeriod,logLevel,nbThread,supportWMTS,supportWMS,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,styleDir, socket, backlog, nbProcess, proxy,timeKill );
 }
 
 bool ConfLoader::buildStylesList ( std::string styleDir, std::map< std::string, Style* >& stylesList, bool inspire ) {
