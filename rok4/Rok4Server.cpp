@@ -1136,11 +1136,8 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
             } else {
                 LOGGER_ERROR("Impossible de générer la dalle car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile");
                 state = 1;
-                delete bStyle;
                 return state;
             }
-
-            delete bStyle;
 
         } else {
 
