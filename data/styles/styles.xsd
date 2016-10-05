@@ -75,8 +75,10 @@
                         <xs:element name="pente" minOccurs="0" maxOccurs="1">
                             <xs:complexType>
                                         <xs:complexContent>
-                                        <!-- Type d'algo -->
-                                        <xs:attribute name="algo" type="xs:string" use="optional"/>
+                                        <!-- Type d'algo, seulement H pour le moment-->
+                                        <xs:attribute name="algo" type="xs:string" use="required"/>
+                                        <!-- Unité, 'degree' ou 'pourcent'-->
+                                        <xs:attribute name="unit" type="xs:string" use="required"/>
                                         </xs:complexContent>
                                 </xs:complexType>
                         </xs:element>
