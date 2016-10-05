@@ -89,6 +89,7 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
     int center=0;
     int errorCode;
     std::string algo = "";
+    std::string unit = "";
     bool estompage = false;
     float minSlope = 5.0;
 
@@ -364,6 +365,19 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
             algo = "H";
 		}
         pente.setAlgo(algo);
+
+        unit = pElem->Attribute("unit");
+
+        if ( unit != "" ) {
+            if (unit != "degree" && unit != "pourcent") {
+                LOGGER_ERROR ("Un attribut unit invalide a ete trouve dans la pente du Style " ) << id << ( ", la valeur possible est 'degree' or 'pourcent'");
+                return NULL;
+            }
+        } else {
+            LOGGER_INFO("Pas d'unit defini, 'degree' par defaut");
+            unit = "degree";
+        }
+        pente.setUnit(unit);
 	}
 
     //recuperation des informations pour le calcul des pentes
