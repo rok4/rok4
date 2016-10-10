@@ -1259,6 +1259,8 @@ int main ( int argc, char **argv ) {
     LOGGER_DEBUG ( "Clean" );
     // Nettoyage
     pj_clear_initcache();
+    acc->stop();
+    acc->destroy();
     delete acc;
     delete pECI;
     delete pImageOut;

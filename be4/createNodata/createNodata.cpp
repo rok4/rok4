@@ -294,6 +294,8 @@ int main ( int argc, char* argv[] ) {
     }
 
     LOGGER_DEBUG ( "Nettoyage" );
+    acc->stop();
+    acc->destroy();
     delete acc;
     delete nodataTile;
     delete nodataImage;
