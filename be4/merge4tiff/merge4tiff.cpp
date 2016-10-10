@@ -830,6 +830,8 @@ int main ( int argc, char* argv[] ) {
 
     delete OUTPUTI;
 
+    acc->stop();
+    acc->destroy();
     delete acc;
 }
 
