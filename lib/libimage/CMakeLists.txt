@@ -41,14 +41,14 @@ endif(DEBUG_BUILD)
 CONFIGURE_FILE(Jpeg2000_library_config.h.in Jpeg2000_library_config.h ESCAPE_QUOTES @ONLY)
 
 SET(
-    libimage_SRCS Palette.cpp Data.cpp Decoder.cpp
+    libimage_SRCS Palette.cpp Data.cpp Decoder.cpp Pente.h PenteImage.cpp Aspect.h AspectImage.cpp
     FileImage.cpp Jpeg2000Image.cpp LibtiffImage.cpp LibpngImage.cpp Rok4Image.cpp BilzImage.cpp
     ReprojectedImage.cpp ResampledImage.cpp Kernel.cpp Interpolation.cpp DecimatedImage.cpp
     MirrorImage.cpp StyledImage.cpp EstompageImage.cpp
-    ExtendedCompoundImage.cpp CompoundImage.cpp MergeImage.cpp
+    ExtendedCompoundImage.cpp CompoundImage.cpp Line.cpp MergeImage.cpp
     Grid.cpp CRS.cpp TiffEncoder.cpp
     BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp FileDataSource.cpp PaletteConfig.cpp PaletteDataSource.cpp
-    Format.cpp TiffHeaderDataSource.cpp
+    Format.cpp TiffHeaderDataSource.cpp EmptyDataSource.cpp ConvertedChannelsImage.cpp
 )
 
 # OPTION : 'sources' JPEG2000

@@ -55,7 +55,11 @@
 #include "config.h"
 #include "EmptyImage.h"
 
-Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format, int channels ) : levels ( levels ), tms ( tms ), format ( format ), channels ( channels ) {
+Pyramid::Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format,
+                   int channels, bool onDemand, bool onFly)
+    : Source(PYRAMID),levels ( levels ), tms ( tms ), format ( format ), channels ( channels ),
+      onDemand ( onDemand ), onFly (onFly) {
+
     std::map<std::string, Level*>::iterator itLevel;
     double minRes= DBL_MAX;
     double maxRes= DBL_MIN;
@@ -82,6 +86,7 @@ Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok
         }
         itLevel->second->setNoDataSource ( noDataSource );
 
+
         //Determine Higher and Lower Levels
         double d = itLevel->second->getRes();
         if ( minRes > d ) {
@@ -93,6 +98,7 @@ Pyramid::Pyramid ( std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok
             highestLevel = itLevel->second;
         }
     }
+    int i = 0;
 
 }
 
@@ -119,10 +125,12 @@ DataSource* Pyramid::getTile ( int x, int y, std::string tmId, DataSource* error
         }
         return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( noDataSource ) );
     }
+
     return itLevel->second->getTile ( x, y, errorDataSource );
+
 }
 
-std::string Pyramid::best_level ( double resolution_x, double resolution_y ) {
+std::string Pyramid::best_level ( double resolution_x, double resolution_y, bool onDemand ) {
 
     // TODO: A REFAIRE !!!!
     // res_level/resx ou resy ne doit pas exceder une certaine valeur
@@ -140,7 +148,19 @@ std::string Pyramid::best_level ( double resolution_x, double resolution_y ) {
             best_h = it->first;
         }
     }
-    return best_h;
+
+    if (onDemand) {
+
+        if (best <= 1.8 && best >= 0.8) {
+            return best_h;
+        } else {
+            return "";
+        }
+
+    } else {
+        return best_h;
+    }
+
 }
 
 
@@ -155,9 +175,12 @@ TileMatrixSet Pyramid::getTms() {
 
 
 Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error ) {
+
     // On calcule la résolution de la requete dans le crs source selon une diagonale de l'image
     double resolution_x, resolution_y;
+
     LOGGER_DEBUG ( "source tms.getCRS() is " << tms.getCrs().getProj4Code() << " and destination dst_crs is " << dst_crs.getProj4Code() );
+
     if ( (tms.getCrs() == dst_crs) || (are_the_two_CRS_equal( tms.getCrs().getProj4Code(), dst_crs.getProj4Code(), servicesConf.getListOfEqualsCRS() ) ) ) {
         resolution_x = ( bbox.xmax - bbox.xmin ) / width;
         resolution_y = ( bbox.ymax - bbox.ymin ) / height;
@@ -168,6 +191,7 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
         LOGGER_DEBUG ( _ ( "debut pyramide" ) );
         if ( !grid->reproject ( dst_crs.getProj4Code(),getTms().getCrs().getProj4Code() ) ) {
             // BBOX invalide
+            delete grid;
             error=1;
             return 0;
         }
@@ -177,84 +201,186 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
         resolution_y = ( grid->bbox.ymax - grid->bbox.ymin ) / height;
         delete grid;
     }
-    std::string l = best_level ( resolution_x, resolution_y );
+
+    std::string l = best_level ( resolution_x, resolution_y, false );
     LOGGER_DEBUG ( _ ( "best_level=" ) << l << _ ( " resolution requete=" ) << resolution_x << " " << resolution_y );
+
     if ( (tms.getCrs() == dst_crs) || (are_the_two_CRS_equal( tms.getCrs().getProj4Code(), dst_crs.getProj4Code(), servicesConf.getListOfEqualsCRS() ) ) ) {
         return levels[l]->getbbox ( servicesConf, bbox, width, height, interpolation, error );
     } else {
-        if ( dst_crs.validateBBox ( bbox ) ) {
-            return levels[l]->getbbox ( servicesConf, bbox, width, height, tms.getCrs(), dst_crs, interpolation, error );
-        } else {
-            ExtendedCompoundImageFactory facto;
-            std::vector<Image*> images;
-            LOGGER_DEBUG ( _ ( "BBox en dehors de la definition du CRS" ) );
-            BoundingBox<double> cropBBox = dst_crs.cropBBox ( bbox );
+        return createReprojectedImage(l, bbox, dst_crs, servicesConf, width, height, interpolation, error);
+    }
 
-            if ( cropBBox.xmin == cropBBox.xmax || cropBBox.ymin == cropBBox.ymax ) { // BBox out of CRS definition area Only NoData
-                LOGGER_DEBUG ( _ ( "BBox decoupe incorrect" ) );
+}
+
+Image * Pyramid::createReprojectedImage(std::string l, BoundingBox<double> bbox, CRS dst_crs, ServicesConf& servicesConf, int width, int height, Interpolation::KernelType interpolation, int error) {
+
+    if ( dst_crs.validateBBox ( bbox ) ) {
+        return levels[l]->getbbox ( servicesConf, bbox, width, height, tms.getCrs(), dst_crs, interpolation, error );
+    } else {
+        BoundingBox<double> cropBBox = dst_crs.cropBBox ( bbox );
+        return createExtendedCompoundImage(l,bbox,cropBBox,dst_crs,servicesConf,width,height,interpolation,error);
+    }
+
+}
+
+Image *Pyramid::createExtendedCompoundImage(std::string l, BoundingBox<double> bbox, BoundingBox<double> cropBBox,CRS dst_crs, ServicesConf& servicesConf, int width, int height, Interpolation::KernelType interpolation, int error){
+
+    ExtendedCompoundImageFactory facto;
+    std::vector<Image*> images;
+    LOGGER_DEBUG ( _ ( "BBox en dehors de la definition du CRS" ) );
+
+
+    if ( cropBBox.xmin == cropBBox.xmax || cropBBox.ymin == cropBBox.ymax ) { // BBox out of CRS definition area Only NoData
+        LOGGER_DEBUG ( _ ( "BBox decoupe incorrect" ) );
+    } else {
+
+        double ratio_x = ( cropBBox.xmax - cropBBox.xmin ) / ( bbox.xmax - bbox.xmin );
+        double ratio_y = ( cropBBox.ymax - cropBBox.ymin ) / ( bbox.ymax - bbox.ymin ) ;
+        int newWidth = lround(width * ratio_x);
+        int newHeigth = lround(height * ratio_y);
+
+
+//Avec lround, taille en pixel et cropBBox ne sont plus cohérents.
+//On ajoute la différence de l'arrondi dans la cropBBox et on ajoute un pixel en plus tout autour.
+
+//Calcul de l'erreur d'arrondi converti en coordonnées
+        double delta_h = double (newHeigth) - double(height) * ratio_y ;
+        double delta_w = double (newWidth) - double(width) * ratio_x ;
+
+        double res_y = ( cropBBox.ymax - cropBBox.ymin ) / double(height * ratio_y) ;
+        double res_x = ( cropBBox.xmax - cropBBox.xmin ) / double(width * ratio_x) ;
+
+        double delta_y = res_y * delta_h ;
+        double delta_x = res_x * delta_w ;
+
+//Ajout de l'erreur d'arrondi et le pixel en plus
+        cropBBox.ymax += delta_y +res_y;
+        cropBBox.ymin -= res_y;
+
+        cropBBox.xmax += delta_x +res_x;
+        cropBBox.xmin -= res_x;
+
+        newHeigth += 2;
+        newWidth += 2;
+
+        LOGGER_DEBUG ( _ ( "New Width = " ) << newWidth << " " << _ ( "New Height = " ) << newHeigth );
+        LOGGER_DEBUG ( _ ( "ratio_x = " ) << ratio_x << " " << _ ( "ratio_y = " ) << ratio_y );
+
+
+        Image* tmp = 0;
+        int cropError = 0;
+        if ( (1/ratio_x > 5 && newWidth < 3) || (newHeigth < 3 && 1/ratio_y > 5) ){ //Too small BBox
+            LOGGER_DEBUG ( _ ( "BBox decoupe incorrect" ) );
+            tmp = 0;
+        } else if ( newWidth > 0 && newHeigth > 0 ) {
+            tmp = levels[l]->getbbox ( servicesConf, cropBBox, newWidth, newHeigth, tms.getCrs(), dst_crs, interpolation, cropError );
+        }
+        if ( tmp != 0 ) {
+            LOGGER_DEBUG ( _ ( "Image decoupe valide" ) );
+            images.push_back ( tmp );
+        }
+    }
+
+    int ndvalue[this->channels];
+    memset(ndvalue,0,this->channels*sizeof(int));
+    levels[l]->getNoDataValue(ndvalue);
+
+    if ( images.empty() ) {
+        EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
+        fond->setBbox(bbox);
+        return fond;
+    }
+
+    return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,ndvalue,0 );
+
+}
+
+Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst_crs, ServicesConf& servicesConf, int width, int height, Interpolation::KernelType interpolation, int error){
+
+    LOGGER_INFO ( "Create Based Slab " );
+    //variables
+    BoundingBox<double> askBbox = bbox;
+    BoundingBox<double> dataBbox = levels[l]->TMLimitsToBbox();
+
+    //on regarde si elle n'est pas en dehors de la defintion de son CRS
+    if (!dst_crs.validateBBox ( bbox )) {
+        LOGGER_DEBUG ( "Bbox plus grande que sa definition dans le CRS, croppe à la taille maximale du CRS " );
+        askBbox = dst_crs.cropBBox ( bbox );
+    }
+
+    //on met les deux bbox dans le même système de projection
+    if ((are_the_two_CRS_equal( tms.getCrs().getProj4Code(), dst_crs.getProj4Code(), servicesConf.getListOfEqualsCRS() ) ) ) {
+        LOGGER_DEBUG ( "Les deux CRS sont équivalents " );
+    } else {
+        LOGGER_DEBUG ( "Conversion de la bbox demandee et de la bbox des donnees en EPSG:4326 " );
+        if (askBbox.reproject(dst_crs.getProj4Code(),"epsg:4326") !=0 || dataBbox.reproject(tms.getCrs().getProj4Code(),"epsg:4326") != 0) {
+            LOGGER_ERROR("Ne peut pas reprojeter les bbox");
+            return NULL;
+        }
+    }
+
+    //on compare les deux bbox
+    if (tms.getCrs() == dst_crs) {
+        //elles sont identiques
+        LOGGER_DEBUG ( "Les deux bbox sont identiques " );
+        return createReprojectedImage(l, bbox, dst_crs, servicesConf, width, height, interpolation, error);
+    } else {
+        if (askBbox.containsInside(dataBbox)) {
+            //les données sont a l'intérieur de la bbox demandée
+            LOGGER_DEBUG ( "les données sont a l'intérieur de la bbox demandée " );
+            if (dataBbox.reproject("epsg:4326",dst_crs.getProj4Code()) != 0) {
+                LOGGER_ERROR("Ne peut pas reprojeter la bbox des données");
+                return NULL;
+            }
+            return createExtendedCompoundImage(l,bbox,dataBbox,dst_crs,servicesConf,width,height,interpolation,error);
+
+        } else {
+
+            if (dataBbox.containsInside(askBbox)) {
+                //la bbox demandée est plus petite que les données disponibles
+                LOGGER_DEBUG ("la bbox demandée est plus petite que les données disponibles");
+                return createReprojectedImage(l, bbox, dst_crs, servicesConf, width, height, interpolation, error);
+
             } else {
 
-                double ratio_x = ( cropBBox.xmax - cropBBox.xmin ) / ( bbox.xmax - bbox.xmin );
-                double ratio_y = ( cropBBox.ymax - cropBBox.ymin ) / ( bbox.ymax - bbox.ymin ) ;
-                int newWidth = lround(width * ratio_x);
-                int newHeigth = lround(height * ratio_y);
+                if (!dataBbox.intersects(askBbox)) {
+                    //les deux ne s'intersectent pas donc on renvoit une image de nodata
+                    LOGGER_DEBUG ("les deux ne s'intersectent pas donc on renvoit une image de nodata");
+                    int ndvalue[this->channels];
+                    memset(ndvalue,0,this->channels*sizeof(int));
+                    levels[l]->getNoDataValue(ndvalue);
 
-		
-		//Avec lround, taille en pixel et cropBBox ne sont plus cohérents.
-		//On ajoute la différence de l'arrondi dans la cropBBox et on ajoute un pixel en plus tout autour.
-		
-		//Calcul de l'erreur d'arrondi converti en coordonnées
-                double delta_h = double (newHeigth) - double(height) * ratio_y ;
-                double delta_w = double (newWidth) - double(width) * ratio_x ;
+                    EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
+                    fond->setBbox(bbox);
+                    return fond;
 
-                double res_y = ( cropBBox.ymax - cropBBox.ymin ) / double(height * ratio_y) ;
-                double res_x = ( cropBBox.xmax - cropBBox.xmin ) / double(width * ratio_x) ;
-
-                double delta_y = res_y * delta_h ;
-                double delta_x = res_x * delta_w ;
-
-		//Ajout de l'erreur d'arrondi et le pixel en plus
-                cropBBox.ymax += delta_y +res_y;
-                cropBBox.ymin -= res_y;
-
-                cropBBox.xmax += delta_x +res_x;
-                cropBBox.xmin -= res_x;
-
-                newHeigth += 2;
-                newWidth += 2;
-
-                LOGGER_DEBUG ( _ ( "New Width = " ) << newWidth << " " << _ ( "New Height = " ) << newHeigth );
-                LOGGER_DEBUG ( _ ( "ratio_x = " ) << ratio_x << " " << _ ( "ratio_y = " ) << ratio_y );
-
-
-                Image* tmp = 0;
-                int cropError = 0;
-                if ( (1/ratio_x > 5 && newWidth < 3) || (newHeigth < 3 && 1/ratio_y > 5) ){ //Too small BBox
-                    LOGGER_DEBUG ( _ ( "BBox decoupe incorrect" ) );
-                    tmp = 0;
-                } else if ( newWidth > 0 && newHeigth > 0 ) {
-                    tmp = levels[l]->getbbox ( servicesConf, cropBBox, newWidth, newHeigth, tms.getCrs(), dst_crs, interpolation, cropError );
+                } else {
+                    //les deux s'intersectent
+                    LOGGER_DEBUG ("les deux bbox s'intersectent");
+                    BoundingBox<double> partBbox = askBbox.cutIntersectionWith(dataBbox);
+                    if (partBbox.reproject("epsg:4326",dst_crs.getProj4Code()) != 0) {
+                        LOGGER_ERROR("Ne peut pas reprojeter la bbox partielle");
+                        return NULL;
+                    }
+                    return createExtendedCompoundImage(l,bbox,partBbox,dst_crs,servicesConf,width,height,interpolation,error);
                 }
-                if ( tmp != 0 ) {
-                    LOGGER_DEBUG ( _ ( "Image decoupe valide" ) );
-                    images.push_back ( tmp );
-                }
+
             }
-            
-            int ndvalue[this->channels];
-            memset(ndvalue,0,this->channels*sizeof(int));
-            levels[l]->getNoDataValue(ndvalue);
-            
-            if ( images.empty() ) {
-                EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
-                fond->setBbox(bbox);
-                return fond;
-            }
-            
-            return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,ndvalue,0 );
+
         }
 
     }
+
+
+
+}
+
+
+Image *Pyramid::NoDataOnDemand(std::string bLevel, BoundingBox<double> bbox) {
+
+    return levels[bLevel]->getNoDataTile(bbox);
+
 }
 
 Pyramid::~Pyramid() {
@@ -265,6 +391,16 @@ Pyramid::~Pyramid() {
     std::map<std::string, Level*>::iterator iLevel;
     for ( iLevel=levels.begin(); iLevel!=levels.end(); iLevel++ )
         delete ( *iLevel ).second;
+
+}
+
+PyramidOnDemand::~PyramidOnDemand() {
+
+//    for (int i=0;i<basedPyramids.size();i++) {
+//        delete basedPyramids.at(i);
+//        basedPyramids.at(i) = NULL;
+//    }
+
 }
 
 // Check if two CRS are equivalent
@@ -274,6 +410,8 @@ bool Pyramid::are_the_two_CRS_equal( std::string crs1, std::string crs2, std::ve
     // Could have issues with lowercase name -> we put the CRS in upercase
     transform(crs1.begin(), crs1.end(), crs1.begin(), toupper);
     transform(crs2.begin(), crs2.end(), crs2.begin(), toupper);
+    crs1.append(" ");
+    crs2.append(" ");
     for (int line_number = 0 ; line_number < listofequalsCRS.size() ; line_number++) {
         std::string line = listofequalsCRS.at(line_number);
         // We check if the two CRS are on the same line inside the file. If yes then they are equivalent.
@@ -289,3 +427,87 @@ bool Pyramid::are_the_two_CRS_equal( std::string crs1, std::string crs2, std::ve
     return false; // The 2 CRS were not found on the same line inside the list
 }
 
+Compression::eCompression Pyramid::getSampleCompression() {
+    Compression::eCompression cpn = Compression::UNKNOWN;
+    if (format == Rok4Format::UNKNOWN) {
+        cpn = Compression::UNKNOWN;
+    }
+    if (format == Rok4Format::TIFF_RAW_INT8 || format == Rok4Format::TIFF_RAW_FLOAT32) {
+        cpn = Compression::NONE;
+    }
+    if (format == Rok4Format::TIFF_ZIP_INT8 || format == Rok4Format::TIFF_ZIP_FLOAT32) {
+        cpn = Compression::DEFLATE;
+    }
+    if (format == Rok4Format::TIFF_JPG_INT8) {
+        cpn = Compression::JPEG;
+    }
+    if (format == Rok4Format::TIFF_PNG_INT8) {
+        cpn = Compression::PNG;
+    }
+    if (format == Rok4Format::TIFF_LZW_INT8 || format == Rok4Format::TIFF_LZW_FLOAT32) {
+        cpn = Compression::LZW;
+    }
+    if (format == Rok4Format::TIFF_PKB_INT8 || format == Rok4Format::TIFF_PKB_FLOAT32) {
+        cpn = Compression::PACKBITS;
+    }
+    return cpn;
+}
+
+SampleFormat::eSampleFormat Pyramid::getSampleFormat() {
+    SampleFormat::eSampleFormat sft = SampleFormat::UNKNOWN;
+    if (format == Rok4Format::UNKNOWN) {
+        sft = SampleFormat::UNKNOWN;
+    }
+    if (format == Rok4Format::TIFF_RAW_INT8 || format == Rok4Format::TIFF_JPG_INT8
+            || format == Rok4Format::TIFF_PNG_INT8 || format == Rok4Format::TIFF_LZW_INT8
+            || format == Rok4Format::TIFF_ZIP_INT8 || format == Rok4Format::TIFF_PKB_INT8) {
+        sft = SampleFormat::UINT;
+    }
+    if (format == Rok4Format::TIFF_RAW_FLOAT32 || format == Rok4Format::TIFF_LZW_FLOAT32
+            || format == Rok4Format::TIFF_ZIP_FLOAT32 || format == Rok4Format::TIFF_PKB_FLOAT32) {
+        sft = SampleFormat::FLOAT;
+    }
+
+    return sft;
+
+}
+
+int Pyramid::getBitsPerSample() {
+    int bits = 8;
+    if (format == Rok4Format::UNKNOWN) {
+        bits = 8;
+    }
+    if (format == Rok4Format::TIFF_RAW_INT8 || format == Rok4Format::TIFF_JPG_INT8
+            || format == Rok4Format::TIFF_PNG_INT8 || format == Rok4Format::TIFF_LZW_INT8
+            || format == Rok4Format::TIFF_ZIP_INT8 || format == Rok4Format::TIFF_PKB_INT8) {
+        bits = 8;
+    }
+    if (format == Rok4Format::TIFF_RAW_FLOAT32 || format == Rok4Format::TIFF_LZW_FLOAT32
+            || format == Rok4Format::TIFF_ZIP_FLOAT32 || format == Rok4Format::TIFF_PKB_FLOAT32) {
+        bits = 32;
+    }
+
+    return bits;
+
+}
+
+std::vector<Source *> PyramidOnDemand::getSourcesOfLevel( std::string lv) {
+
+    std::vector<Source*> bSrc;
+
+    bSrc = getSources().find(lv)->second;
+
+    return bSrc;
+}
+
+Photometric::ePhotometric PyramidOnFly::getPhotometry(){
+    if (photo == Photometric::UNKNOWN) {
+        if (getChannels() == 1) {
+            return Photometric::GRAY;
+        } else {
+            return Photometric::RGB;
+        }
+    }
+
+    return photo;
+}

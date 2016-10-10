@@ -123,6 +123,11 @@ int DecimatedImage::getline ( uint8_t* buffer, int line ) {
 }
 
 /* Implementation de getline pour les float */
+int DecimatedImage::getline ( uint16_t* buffer, int line ) {
+    return _getline ( buffer, line );
+}
+
+/* Implementation de getline pour les float */
 int DecimatedImage::getline ( float* buffer, int line ) {
     return _getline ( buffer, line );
 }

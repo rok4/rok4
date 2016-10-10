@@ -8,51 +8,55 @@
 			<xs:element name="title"    type="xs:string"/>
 			<!-- Une description -->
 			<xs:element name="abstract" type="xs:string"/>
+			<!-- Autoriser le WMS -->
+			<xs:element name="WMSAuthorized" type="xs:boolean" minOccurs="0" maxOccurs="1"/>
+			<!-- Autoriser le WMTS -->
+			<xs:element name="WMTSAuthorized" type="xs:boolean" minOccurs="0" maxOccurs="1"/>
 			<!-- Liste des mots clefs -->
 			<xs:element name="keywordList">
+                <xs:complexType>
+					<xs:sequence>
+                        <xs:element name="Keyword" minOccurs="0" maxOccurs="unbounded">
                             <xs:complexType>
-				<xs:sequence>
-                                    <xs:element name="Keyword" minOccurs="0" maxOccurs="unbounded">
-                                        <xs:complexType>
-                                            <xs:simpleContent>
-                                                <xs:extension base="xs:string">
-                                                    <xs:anyAttribute/>
-                                                </xs:extension>
-                                            </xs:simpleContent>
-                                        </xs:complexType>
-                                    </xs:element>
-				</xs:sequence>
+                                <xs:simpleContent>
+                                    <xs:extension base="xs:string">
+                                        <xs:anyAttribute/>
+                                    </xs:extension>
+                                </xs:simpleContent>
                             </xs:complexType>
+                        </xs:element>
+					</xs:sequence>
+                </xs:complexType>
 			</xs:element>
 			<!-- identifiants des fichiers de styles applicables au layer.-->
 			<xs:element name="styles">
 				<xs:complexType>
-				<xs:sequence>
-					<xs:element name="style" type="xs:string" maxOccurs="unbounded"/>
-				</xs:sequence>
+					<xs:sequence>
+						<xs:element name="style" type="xs:string" maxOccurs="unbounded"/>
+					</xs:sequence>
 				</xs:complexType>
 			</xs:element>
 			<!-- BoundingBox WMS -->
-                        <xs:element name="latLonBoundingBox">
-                                <xs:complexType>
-				<xs:sequence>
-                                        <xs:element name="minx" type="xs:double" minOccurs="unbounded" maxOccurs="unbounded"/>
-                                        <xs:element name="miny" type="xs:double" minOccurs="unbounded" maxOccurs="unbounded"/>
-                                        <xs:element name="maxx" type="xs:double" minOccurs="unbounded" maxOccurs="unbounded"/>
-                                        <xs:element name="maxy" type="xs:double" minOccurs="unbounded" maxOccurs="unbounded"/>
-                                </xs:sequence>
-                                </xs:complexType>
-                        </xs:element>
+            <xs:element name="latLonBoundingBox">
+                    <xs:complexType>
+						<xs:sequence>
+	                            <xs:element name="minx" type="xs:double" minOccurs="0" maxOccurs="unbounded"/>
+	                            <xs:element name="miny" type="xs:double" minOccurs="0" maxOccurs="unbounded"/>
+	                            <xs:element name="maxx" type="xs:double" minOccurs="0" maxOccurs="unbounded"/>
+	                            <xs:element name="maxy" type="xs:double" minOccurs="0" maxOccurs="unbounded"/>
+	                    </xs:sequence>
+                    </xs:complexType>
+            </xs:element>
 			<!-- BoundingBox WMS -->
 			<xs:element name="boundingBox">
 				<xs:complexType>
-				<xs:sequence>
-					<xs:element name="CRS" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
-					<xs:element name="minx" type="xs:double" minOccurs="unbounded" maxOccurs="unbounded"/>
-					<xs:element name="miny" type="xs:double" minOccurs="unbounded" maxOccurs="unbounded"/>
-					<xs:element name="maxx" type="xs:double" minOccurs="unbounded" maxOccurs="unbounded"/>
-					<xs:element name="maxy" type="xs:double" minOccurs="unbounded" maxOccurs="unbounded"/>
-				</xs:sequence>
+					<xs:sequence>
+						<xs:element name="CRS" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
+						<xs:element name="minx" type="xs:double" minOccurs="0" maxOccurs="unbounded"/>
+						<xs:element name="miny" type="xs:double" minOccurs="0" maxOccurs="unbounded"/>
+						<xs:element name="maxx" type="xs:double" minOccurs="0" maxOccurs="unbounded"/>
+						<xs:element name="maxy" type="xs:double" minOccurs="0" maxOccurs="unbounded"/>
+					</xs:sequence>
 				</xs:complexType>
 			</xs:element>
 			<!-- Les résolutions min et max acceptables pour les requêtes WMS -->
@@ -61,9 +65,9 @@
 			<!-- Liste des CRS accepté pour les requêtes WMS -->
 			<xs:element name="WMSCRSList">
 				<xs:complexType>
-				<xs:sequence>
-					<xs:element name="WMSCRS" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
-				</xs:sequence>
+					<xs:sequence>
+						<xs:element name="WMSCRS" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
+					</xs:sequence>
 				</xs:complexType>
 			</xs:element>
 			<!--  -->
@@ -75,7 +79,8 @@
 			<!-- Pyramide du layer -->
 			<xs:element name="pyramid" type="xs:string"/>
 			<!-- Elément MetadataURL Inspire -->
-			<xs:element ref="inpire_common:MetadataURL" minOccurs="0" maxOccurs="unbounded">
+			<xs:element ref="inpire_common:MetadataURL" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
 		</xs:complexType>
 	</xs:element>
 

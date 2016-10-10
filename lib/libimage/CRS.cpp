@@ -238,7 +238,9 @@ bool CRS::operator!= ( const CRS& crs ) const {
 
 BoundingBox<double> CRS::boundingBoxFromGeographic ( BoundingBox< double > geographicBBox ) {
     BoundingBox<double> bbox ( geographicBBox );
-    bbox.reproject ( "epsg:4326", proj4Code, 256 );
+    if (bbox.reproject ( "epsg:4326", proj4Code, 256 ) != 0) {
+        return BoundingBox<double> (0.,0.,0.,0.);
+    }
     return bbox;
 }
 
@@ -250,7 +252,9 @@ BoundingBox< double > CRS::boundingBoxFromGeographic ( double minx, double miny,
 
 BoundingBox<double> CRS::boundingBoxToGeographic ( BoundingBox< double > projectedBBox ) {
     BoundingBox<double> bbox ( projectedBBox );
-    bbox.reproject ( proj4Code, "epsg:4326", 256 );
+    if (bbox.reproject ( proj4Code, "epsg:4326", 256 ) != 0) {
+        return BoundingBox<double> (0.,0.,0.,0.);
+    }
     return bbox;
 }
 
@@ -261,12 +265,22 @@ BoundingBox<double> CRS::boundingBoxToGeographic ( double minx, double miny, dou
 
 
 bool CRS::validateBBox ( BoundingBox< double > BBox ) {
-    return validateBBoxGeographic ( boundingBoxToGeographic ( BBox ) );
+    BoundingBox<double> bbox = boundingBoxToGeographic ( BBox );
+    if (bbox.isNull()) {
+        return false;
+    } else {
+        return validateBBoxGeographic ( bbox );
+    }
 }
 
 
 bool CRS::validateBBox ( double minx, double miny, double maxx, double maxy ) {
-    return validateBBoxGeographic ( boundingBoxToGeographic ( minx,miny,maxx,maxy ) );
+    BoundingBox<double> bbox = boundingBoxToGeographic ( minx,miny,maxx,maxy );
+    if (bbox.isNull()) {
+        return false;
+    } else {
+        return validateBBoxGeographic ( bbox );
+    }
 }
 
 
@@ -375,6 +389,15 @@ std::string CRS::getProj4Param ( std::string paramName ) {
     find = toLowerCase( getProj4Def() ).find( " ", pos );
     //LOGGER_DEBUG("Valeur du paramètre " + paramName + " : [" + toLowerCase( getProj4Def() ).substr(find_equal+1, find - find_equal -1) + "]" );
     return toLowerCase( getProj4Def() ).substr(find_equal+1, find - find_equal -1);
+}
+
+bool CRS::testProj4Param ( std::string paramName ) {
+    std::size_t pos = 0;
+    pos = toLowerCase( getProj4Def() ).find( "+" + toLowerCase( paramName ));
+    if ( pos <0 || pos >getProj4Def().size() ) {
+      return false;
+    }
+    return true;
 }
 
 

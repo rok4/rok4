@@ -24,12 +24,12 @@ set(BUILD_SHARED_LIBS OFF)
 #Build Type si les build types par défaut de CMake ne conviennent pas
 if(DEBUG_BUILD)
   set(CMAKE_BUILD_TYPE debugbuild)
-  set(CMAKE_CXX_FLAGS_DEBUGBUILD "-g -O0 -msse -msse2 -msse3")
-  set(CMAKE_C_FLAGS_DEBUGBUILD "-g -std=c99")
+  set(CMAKE_CXX_FLAGS_DEBUGBUILD "-g -O0 -msse -msse2 -msse3 -lrt")
+  set(CMAKE_C_FLAGS_DEBUGBUILD "-g -std=c99 -lrt")
 else(DEBUG_BUILD)
   set(CMAKE_BUILD_TYPE specificbuild)
-  set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3 -msse -msse2 -msse3")
-  set(CMAKE_C_FLAGS_SPECIFICBUILD "-std=c99")
+  set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3 -msse -msse2 -msse3 -lrt")
+  set(CMAKE_C_FLAGS_SPECIFICBUILD "-std=c99 -lrt")
 endif(DEBUG_BUILD)
 
 
@@ -39,7 +39,7 @@ configure_file(config.h.in config.h ESCAPE_QUOTES @ONLY)
 
 add_subdirectory(po)
 
-set(rok4core_SRCS MetadataURL.cpp ResourceLocator.cpp LegendURL.cpp Style.cpp CapabilitiesBuilder.cpp ConfLoader.cpp Layer.cpp Level.cpp Message.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TileMatrix.cpp TileMatrixSet.cpp Rok4Api.cpp Keyword.cpp Rok4Server.cpp)
+set(rok4core_SRCS  GetFeatureInfoEncoder.cpp MetadataURL.cpp ResourceLocator.cpp LegendURL.cpp Style.cpp CapabilitiesBuilder.cpp ConfLoader.cpp Layer.cpp Level.cpp Message.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TileMatrix.cpp TileMatrixSet.cpp Rok4Api.cpp Keyword.cpp Rok4Server.cpp ProcessFactory.cpp WebService.cpp Source.cpp)
 set(rok4server_SRCS main.cpp )
 set(rok4apitest_SRCS test_api.c )
 
@@ -54,12 +54,31 @@ add_executable(test_api ${rok4apitest_SRCS})
 #Définition des dépendances.
 include(ROK4Dependencies)
 
-set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${JPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${PNG_INCLUDE_DIR})
+set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${JPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${CURL_INCLUDE_DIR})
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
-#Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
-set(DEP_LIBRARY fcgi tinyxml logger image proj jpeg zlib tiff png)
+#Listes des bibliothèques à lier avec l'éxecutable à mettre à jour
+set(DEP_LIBRARY fcgi tinyxml logger image proj jpeg zlib tiff png curl)
+
+#Liste des bibiliothèques à lier avaec l'executable à cause des options de curl
+if(CURL_OPTIONS) 
+  list(APPEND DEP_LIBRARY ${CURL_SUP_LIBRARIES_NAMES})
+  include_directories(${CURL_SUP_LIBRARIES_INCLUDES})
+  list(LENGTH CURL_SUP_LIBRARIES_NAMES number_name)
+  list(LENGTH CURL_SUP_LIBRARIES_PATHS number_path)
+  if(${number_name} EQUAL ${number_path})
+    math(EXPR number_name "${number_name}-1")
+    foreach(element RANGE ${number_name})
+      list(GET CURL_SUP_LIBRARIES_NAMES ${element} name)
+      list(GET CURL_SUP_LIBRARIES_PATHS ${element} path)
+      add_library(${name} UNKNOWN IMPORTED)
+      set_property(TARGET ${name} PROPERTY IMPORTED_LOCATION ${path})
+    endforeach(element RANGE ${number_name})
+  else(${number_name} EQUAL ${number_path})
+    message(FATAL_ERROR "Problem with Curl options - The number of Curl library's names (${number_name}) are different of the number of paths (${number_path})")
+  endif(${number_name} EQUAL ${number_path})
+endif(CURL_OPTIONS)
 
 target_link_libraries(rok4core ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(rok4 rok4core)
@@ -141,12 +160,12 @@ INSTALL(FILES Rok4Api.h
 
 #Installe la documentation
 INSTALL(FILES README LICENCE
-  DESTINATION doc/${PROJECT_NAME})
+  DESTINATION share/doc/${PROJECT_NAME})
 
 if(BUILD_DOC)
 if(DOXYGEN_FOUND)
 INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
-  DESTINATION doc/${PROJECT_NAME})
+  DESTINATION share/doc/${PROJECT_NAME})
 endif(DOXYGEN_FOUND)
 endif(BUILD_DOC)
 

@@ -87,8 +87,6 @@ use Log::Log4perl qw(:easy);
 use Data::Dumper;
 use List::Util qw(min max);
 
-use Geo::GDAL;
-
 # My module
 use BE4::DataSource;
 use BE4::PropertiesLoader;
@@ -188,7 +186,7 @@ sub _init {
     return FALSE if (! defined $datasource);
     
     if (exists($datasource->{path_image})) {
-        WARN("Old method is using to define a datasource (without datasource configuration file), convert it.");
+        WARN("Old method is used to define a datasource (without datasource configuration file), convert it.");
         return TRUE;
     }
     

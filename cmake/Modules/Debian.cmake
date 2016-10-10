@@ -11,5 +11,8 @@ else()
   set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "i386")
 endif()
 
+set( CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${Rok4_SOURCE_DIR}/cmake/debian/postinst;" )
+
 set(CPACK_BINARY_DEB "ON")
 set(CPACK_GENERATOR "DEB")
+

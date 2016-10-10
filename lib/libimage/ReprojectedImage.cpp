@@ -86,7 +86,7 @@ void ReprojectedImage::initialize () {
     int kxSize = 4* ( ( Kx+3 ) /4 );
     int kySize = 4* ( ( Ky+3 ) /4 );
 
-    int globalSize = srcImgSize * memorizedLines * sizeof ( float ) // place pour "memorizedLines" lignes d'image source
+    int globalSize = srcImgSize * double(memorizedLines) * sizeof ( float ) // place pour "memorizedLines" lignes d'image source
                      + outImgSize * 8 * sizeof ( float ) // 4 lignes reprojetées, en multiplexées et en séparées => 8
                      + gridSize * 8 * sizeof ( float ) // 4 lignes de la grille, X et Y => 8
 
@@ -307,15 +307,12 @@ float* ReprojectedImage::computeDestLine ( int line ) {
 int ReprojectedImage::getline ( uint8_t* buffer, int line ) {
     const float* dst_line = computeDestLine ( line );
     convert ( buffer, dst_line, width*channels );
-    for (int i = 0; i < width*channels; i++) {
-        if (buffer[i] == 254 && dst_line[i] > 254.99999) {
-        //if (i == 8187) {
-            LOGGER_INFO("line " << line);
-            LOGGER_INFO("pixel " << i);
-            LOGGER_INFO("valeur initiale = " << dst_line[i]);
-        }
-        //if (abs(dst_line[i] - (float) buffer[i]) > 0.6) LOGGER_INFO("pixel " << i);
-    }
+    return width*channels;
+}
+
+int ReprojectedImage::getline ( uint16_t* buffer, int line ) {
+    const float* dst_line = computeDestLine ( line );
+    convert ( buffer, dst_line, width*channels );
     return width*channels;
 }
 

@@ -278,13 +278,22 @@ public:
     int getline ( float* buffer, int line );
 
     /** \~french
-     * \brief Retourne une ligne entièrement réechantillonnée, entière
+     * \brief Retourne une ligne entièrement réechantillonnée, entière sur 8 bits
      * \details Elle ne fait que convertir le résultat du #getline flottant en entier. On ne travaille en effet que sur des flottants, même si les canaux des images sont des entiers, et cela car les poids de l'interpolation sont toujours flottants.
      * \param[in,out] buffer Tableau contenant au moins width*channels valeurs
      * \param[in] line Indice de la ligne à retourner (0 <= line < height)
      * \return taille utile du buffer, 0 si erreur
      */
     int getline ( uint8_t* buffer, int line );
+    
+    /** \~french
+     * \brief Retourne une ligne entièrement réechantillonnée, entière sur 16 bits
+     * \details Elle ne fait que convertir le résultat du #getline flottant en entier. On ne travaille en effet que sur des flottants, même si les canaux des images sont des entiers, et cela car les poids de l'interpolation sont toujours flottants.
+     * \param[in,out] buffer Tableau contenant au moins width*channels valeurs
+     * \param[in] line Indice de la ligne à retourner (0 <= line < height)
+     * \return taille utile du buffer, 0 si erreur
+     */
+    int getline ( uint16_t* buffer, int line );
 
     /** \~french
      * \brief Crée un objet ResampledImage à partir de tous ses éléments constitutifs

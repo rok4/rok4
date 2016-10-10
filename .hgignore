@@ -10,7 +10,9 @@ build*
 syntax: regexp
 ~
 kdev4
+autosplit.ix
 .orig
 target
 .vagrant
 .vagrant.d
+^install

@@ -99,8 +99,6 @@ Attributes:
 
 package BE4::NNGraph;
 
-use Geo::OSR;
-
 use strict;
 use warnings;
 
@@ -112,6 +110,7 @@ use Data::Dumper;
 # My Module
 use BE4::DataSource;
 use BE4::Node;
+use BE4::ProxyGDAL;
 
 use Log::Log4perl qw(:easy);
 
@@ -255,32 +254,12 @@ sub _load {
     # le srs de la pyramide. Si les srs sont identiques on laisse undef.
     my $ct = undef;
     
-    my $srsini= new Geo::OSR::SpatialReference;
     if ($tms->getSRS() ne $src->getSRS()){
-        eval { $srsini->ImportFromProj4('+init='.$src->getSRS().' +wktext'); };
-        if ($@) { 
-            eval { $srsini->ImportFromProj4('+init='.lc($src->getSRS()).' +wktext'); };
-            if ($@) { 
-                ERROR($@);
-                ERROR(sprintf "Impossible to initialize the initial spatial coordinate system (%s) !",
-                      $src->getSRS());
-                return FALSE;
-            }
+        $ct = BE4::ProxyGDAL::coordinateTransformationFromSpatialReference($src->getSRS(), $tms->getSRS());
+        if (! defined $ct) {
+            ERROR(sprintf "Cannot instanciate the coordinate transformation object %s->%s", $src->getSRS(), $tms->getSRS());
+            return FALSE;
         }
-        $src->getExtent->AssignSpatialReference($srsini);
-        
-        my $srsfin= new Geo::OSR::SpatialReference;
-        eval { $srsfin->ImportFromProj4('+init='.$tms->getSRS().' +wktext'); };
-        if ($@) {
-            eval { $srsfin->ImportFromProj4('+init='.lc($tms->getSRS()).' +wktext'); };
-            if ($@) {
-                ERROR($@);
-                ERROR(sprintf "Impossible to initialize the destination spatial coordinate system (%s) !",
-                      $tms->getSRS());
-                return FALSE;
-            }
-        }
-        $ct = new Geo::OSR::CoordinateTransformation($srsini, $srsfin);
     }
 
     # identifier les noeuds du niveau de base à mettre à jour et les associer aux images sources:
@@ -320,7 +299,7 @@ sub identifyBottomNodes {
     TRACE();
     
     my $bottomID = $self->{bottomID};
-    my $tm = $self->getPyramid()->getTileMatrixSet()->getTileMatrix($bottomID);
+    my $tm = $self->{pyramid}->getTileMatrixSet->getTileMatrix($bottomID);
     if (! defined $tm) {
         ERROR(sprintf "Impossible de récupérer le TM à partir de %s (bottomID) et du TMS : %s.",$bottomID,$self->getPyramid()->getTileMatrixSet()->exportForDebug());
         return FALSE;
@@ -393,23 +372,20 @@ sub identifyBottomNodes {
                 }
             }
         }
-    } else {
+    } elsif (defined $datasource->getExtent) {
         # We have just a WMS service as source. We use extent to determine bottom tiles
-        my $convertExtent = $datasource->getExtent->Clone();
-        if (defined $ct) {
-            eval { $convertExtent->Transform($ct); };
-            if ($@) { 
-                ERROR(sprintf "Cannot convert extent for the datasource : %s",$@);
-                return FALSE;
-            }
+        my $convertExtent = BE4::ProxyGDAL::getConvertedGeometry($datasource->getExtent(), $ct);
+        if (! defined $convertExtent) {
+            ERROR(sprintf "Cannot convert extent for the datasource");
+            return FALSE;
         }
+
+        my @convBbox = BE4::ProxyGDAL::getBbox($convertExtent); # (xmin,xmax,ymin,ymax)
+        DEBUG("BBox convertie de l'extent de datasource @convBbox");
         
-        my $bboxref = $convertExtent->GetEnvelope(); #bboxref = [xmin,xmax,ymin,ymax]
+        $self->updateBBox($convBbox[0],$convBbox[2],$convBbox[1],$convBbox[3]);
         
-        $self->updateBBox($bboxref->[0],$bboxref->[2],$bboxref->[1],$bboxref->[3]);
-        if (! defined $tm) {print "\n test : ".$bboxref->[0].",".$bboxref->[2].",".$bboxref->[1].",".$bboxref->[3].",".$TPW.",".$TPH."\n";};
-        my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices(
-            $bboxref->[0],$bboxref->[2],$bboxref->[1],$bboxref->[3],$TPW,$TPH);
+        my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices($convBbox[0],$convBbox[2],$convBbox[1],$convBbox[3],$TPW,$TPH);
         
         for (my $i = $iMin; $i <= $iMax; $i++) {
             for (my $j = $jMin; $j <= $jMax; $j++) {
@@ -422,8 +398,9 @@ sub identifyBottomNodes {
                     $xmax,$ymin,
                     $xmin,$ymin;
 
-                my $OGRtile = Geo::OGR::Geometry->create(WKT=>$WKTtile);
-                if ($OGRtile->Intersect($convertExtent)){
+                my $OGRtile = BE4::ProxyGDAL::geometryFromWKT($WKTtile);
+
+                if (BE4::ProxyGDAL::isIntersected($OGRtile, $convertExtent)) {
                     my $nodeKey = sprintf "%s_%s", $i, $j;
                     # Create a new Node
                     my $node = BE4::Node->new({
@@ -433,16 +410,55 @@ sub identifyBottomNodes {
                         graph => $self,
                     });
                     if (! defined $node) { 
-                        ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.",
-                              $self->{bottomID}, $i, $j);
+                        ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $self->{bottomID}, $i, $j);
                         return FALSE;
                     }
                     $self->{nodes}->{$bottomID}->{$nodeKey} = $node;
                 }
             }
         }
-    }
+    } else {
+        # On a un fichier qui liste les indices des dalles à générer
+        my $listfile = $datasource->getList();
+        
+        open(LISTIN, "<$listfile") or do {
+            ERROR(sprintf "Cannot open the file containing the list of image for the bottom level ($listfile)");
+            return FALSE;            
+        };
+        
+        while (my $line = <LISTIN>) {
+            chomp($line);
+            
+            my ($i, $j) = split(/,/, $line);
+            
+            my $nodeKey = sprintf "%s_%s", $i, $j;
+            
+            if (exists $self->{nodes}->{$bottomID}->{$nodeKey}) {
+                # This Node already exists
+                next;
+            }
+            
+            my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBBox($i,$j,$TPW,$TPH);
 
+            $self->updateBBox($xmin,$ymin,$xmax,$ymax);
+            
+            # Create a new Node
+            my $node = BE4::Node->new({
+                i => $i,
+                j => $j,
+                tm => $tm,
+                graph => $self,
+            });
+            if (! defined $node) { 
+                ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $self->{bottomID}, $i, $j);
+                return FALSE;
+            }
+            $self->{nodes}->{$bottomID}->{$nodeKey} = $node;
+        }
+        
+        close(LISTIN);        
+    }
+  
     return TRUE;  
 }
 

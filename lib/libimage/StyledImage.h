@@ -49,10 +49,12 @@ private:
     Palette* palette;
     int channels;
     int _getline ( uint8_t* buffer, int line );
+    int _getline ( uint16_t* buffer, int line );
     int _getline ( float* buffer, int line );
 
 public:
     virtual int getline ( float* buffer, int line );
+    virtual int getline ( uint16_t* buffer, int line );
     virtual int getline ( uint8_t* buffer, int line );
     StyledImage ( Image* image, int expectedChannels, Palette* palette );
     virtual ~StyledImage();

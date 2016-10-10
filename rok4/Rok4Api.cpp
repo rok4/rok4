@@ -92,11 +92,12 @@ HttpResponse* initResponseFromSource ( DataSource* source ) {
 Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     // Initialisation des parametres techniques
     LogOutput logOutput;
-    int nbThread,logFilePeriod,backlog;
+    int nbThread,logFilePeriod,backlog, nbProcess,timeKill;
     LogLevel logLevel;
     bool supportWMTS,supportWMS,reprojectionCapability;
+    Proxy proxy;
     std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,strLayerDir,strTmsDir,strStyleDir,socket;
-    if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, supportWMTS, supportWMS, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, socket, backlog ) ) {
+    if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, supportWMTS, supportWMS, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, socket, backlog, nbProcess, proxy,timeKill ) ) {
         std::cerr<<_ ( "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " ) <<strServerConfigFile<<std::endl;
         return NULL;
     }
@@ -156,7 +157,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
 
     // Chargement des layers
     std::map<std::string, Layer*> layerList;
-    if ( !ConfLoader::buildLayersList ( strLayerDir,tmsList, styleList,layerList,reprojectionCapability,sc ) ) {
+    if ( !ConfLoader::buildLayersList ( strLayerDir,tmsList, styleList,layerList,reprojectionCapability,sc,proxy ) ) {
         LOGGER_FATAL ( _ ( "Impossible de charger la conf des Layers/pyramides" ) );
         LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
@@ -165,7 +166,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
 
     // Instanciation du serveur
     Logger::stopLogger();
-    return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog, supportWMTS, supportWMS );
+    return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog, proxy, supportWMTS, supportWMS, nbProcess,timeKill );
 }
 
 /**
@@ -212,7 +213,7 @@ HttpRequest* rok4InitRequest ( const char* queryString, const char* hostName, co
     if ( rok4Request->service == "wmts" ) {
         if ( rok4Request->request == "") {
             request->error_response = initResponseFromSource( new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Le parametre REQUEST n'est pas renseigné." ),"wmts" ) ));
-        } else if ( rok4Request->request == "getcapabilities" || rok4Request->request == "gettile") {
+        } else if ( rok4Request->request == "getcapabilities" || rok4Request->request == "gettile" || rok4Request->request == "getfeatureinfo") {
             //No error for the moment
         } else if ( rok4Request->request == "getversion" ) {
             request->error_response = initResponseFromSource( new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +rok4Request->request+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wmts" ) ));
@@ -247,6 +248,27 @@ HttpResponse* rok4GetWMTSCapabilities ( const char* queryString, const char* hos
     HttpResponse* response=initResponseFromSource ( /*new BufferedDataSource(*stream)*/source );
     delete request;
     delete stream;
+    delete source;
+    return response;
+}
+
+/**
+* \brief Implementation de l'operation GetFeatureInfo pour le WMTS
+* \param[in] hostName
+* \param[in] scriptName
+* \param[in] server : serveur
+* \return Reponse (allouee ici, doit etre desallouee ensuite)
+*/
+
+HttpResponse* rok4GetWMTSGetFeatureInfo ( const char* queryString, const char* hostName, const char* scriptName,const char* https ,Rok4Server* server ) {
+    std::string strQuery=queryString;
+    Request* request=new Request ( ( char* ) strQuery.c_str(), ( char* ) hostName, ( char* ) scriptName, ( char* ) https );
+
+    DataStream* stream=server->WMTSGetFeatureInfo ( request );
+    DataSource* source= new BufferedDataSource ( *stream );
+    HttpResponse* response=initResponseFromSource ( source );
+
+    delete request;
     delete source;
     return response;
 }
@@ -288,7 +310,7 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
 
     Request* request=new Request ( ( char* ) strQuery.c_str(), ( char* ) hostName, ( char* ) scriptName, ( char* ) https );
     Layer* layer;
-    std::string tmId,mimeType,format,encoding;
+    std::string tmId,mimeType,format,encoding, wmtst;
     int x,y;
     Style* style =0;
     // Analyse de la requete
@@ -343,6 +365,23 @@ HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostN
     encoding = Rok4Format::toEncoding( level->getFormat() );
     tileRef->encoding = new char[encoding.length() +1];
     strcpy( tileRef->encoding, encoding.c_str() );
+
+    if (layer->getDataPyramid()->getOnFly()) {
+        wmtst = "ONFLY";
+        tileRef->wmtsType = new char[wmtst.length() +1];
+        strcpy( tileRef->wmtsType, wmtst.c_str() );
+    } else {
+        if (layer->getDataPyramid()->getOnDemand()) {
+            wmtst = "ONDEMAND";
+            tileRef->wmtsType = new char[wmtst.length() +1];
+            strcpy( tileRef->wmtsType, wmtst.c_str() );
+        } else {
+            wmtst = "NORMAL";
+            tileRef->wmtsType = new char[wmtst.length() +1];
+            strcpy( tileRef->wmtsType, wmtst.c_str() );
+        }
+    }
+
     delete request;
     return 0;
 }
@@ -544,6 +583,7 @@ void rok4FlushTileRef ( TileRef* tileRef ) {
     delete[] tileRef->type;
     delete[] tileRef->encoding;
     delete[] tileRef->format;
+    delete[] tileRef->wmtsType;
 }
 
 /**
@@ -612,6 +652,8 @@ void rok4KillLogger() {
         }
     Logger::stopLogger();
     if ( acc ) {
+        acc->stop();
+        acc->destroy();
         delete acc;
     }
 

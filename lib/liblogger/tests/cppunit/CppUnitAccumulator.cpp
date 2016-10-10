@@ -73,6 +73,8 @@ protected:
     std::stringstream out;
     Accumulator* A = new StreamAccumulator(out);
     fill_accumulator((void*) A);
+    A->stop();
+    A->destroy();
     delete A;
 
     for(int i = 0; i < 100; i++) {
@@ -94,6 +96,8 @@ protected:
       pthread_create(&T[i], NULL, fill_accumulator, (void*) A);
     for(int i = 0; i < 64; i++) 
       pthread_join(T[i], 0);
+    A->stop();
+    A->destroy();
     delete A;
 
     std::map<pthread_t, int> M;
@@ -113,6 +117,8 @@ protected:
   void test_rollingfile() {
     Accumulator* A = new RollingFileAccumulator("bubu",3600);
     fill_accumulator((void*) A);
+    A->stop();
+    A->destroy();
     delete A;
   }
 

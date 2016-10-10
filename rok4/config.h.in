@@ -70,6 +70,8 @@
 #define DEFAULT_LOG_FILE_PERIOD 3600
 #define DEFAULT_LOG_LEVEL  ERROR
 #define DEFAULT_NB_THREAD  1
+#define DEFAULT_NB_PROCESS 1
+#define MAX_NB_PROCESS 100
 #define DEFAULT_LAYER_DIR  "../config/layers/"
 #define DEFAULT_TMS_DIR    "../config/tileMatrixSet"
 #define DEFAULT_STYLE_DIR  "../config/styles"
@@ -80,7 +82,17 @@
 #define DEFAULT_OPAQUE     true
 #define DEFAULT_RESAMPLING "lanczos_2"
 #define DEFAULT_CHANNELS   3
+#define DEFAULT_NODATAVALUE 255
 #define DEFAULT_LAYER_LIMIT  1
+#define DEFAULT_PATHDEPTH 2
+#define DEFAULT_TILEPERWIDTHANDHEIGHT 16
+#define DEFAULT_RETRY 0
+#define DEFAULT_TIMEOUT 300
+#define DEFAULT_INTERVAL 5
+#define DEFAULT_MAX_SIZE_BEFORE_CUT 2000
+#define DEFAULT_MAX_NB_CUT 25
+#define DEFAULT_TIME_PROCESS 300
+#define DEFAULT_MAX_TIME_PROCESS 6000
 
 // Configuration de l'acces au parametrage de PROJ4
 #define PROJ_LIB_PATH      "../config/proj/";

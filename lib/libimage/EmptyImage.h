@@ -35,19 +35,35 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+/**
+ * \file EmptyImage.h
+ ** \~french
+ * \brief Définition de la classe EmptyImage
+ * \details
+ * \li EmptyImage : image monochrome
+ ** \~english
+ * \brief Define classe EmptyImage
+ * \details
+ * \li EmptyImage : one-color image
+ */
+
 #ifndef EMPTY_IMAGE_H
 #define EMPTY_IMAGE_H
 
 #include "Image.h"
 
 /**
- * Interface de base des classes Image.
- * Les implémentations définiront des images avec différentes structures de pixel
- * (type et nombre de canaux). Cette interface basique permet de définir des
- * fonctions prenant en paramètre tout type d'image.
+ * \author Institut national de l'information géographique et forestière
+ * \~french
+ * \brief Création d'une image monochrome, utile pour simulée une image source ou remplir de nodata
  */
 class EmptyImage : public Image {
-
+    
+    /**
+     * \~french \brief Valeur de du monochrome
+     * \details On a une valeur entière par canal. Tous les pixel de l'image auront cette valeur
+     * \~english \brief Nodata value
+     */
     int *color;
 
 public:
@@ -62,11 +78,24 @@ public:
         for ( int i = 0; i < width; i++ )
             for ( int c = 0; c < channels; c++ )
                 buffer[channels*i + c] = ( uint8_t ) color[c];
+            
+        return width * channels * sizeof(uint8_t);
     };
+    
+    virtual int getline ( uint16_t *buffer, int line ) {
+        for ( int i = 0; i < width; i++ )
+            for ( int c = 0; c < channels; c++ )
+                buffer[channels*i + c] = ( uint16_t ) color[c];
+            
+        return width * channels * sizeof(uint16_t);
+    };
+    
     virtual int getline ( float *buffer, int line ) {
         for ( int i = 0; i < width; i++ )
             for ( int c = 0; c < channels; c++ )
                 buffer[channels*i + c] = ( float ) color[c];
+            
+        return width * channels * sizeof(float);
     };
 
     virtual ~EmptyImage() {

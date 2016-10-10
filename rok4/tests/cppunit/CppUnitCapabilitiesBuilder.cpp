@@ -76,6 +76,8 @@ protected:
     std::string name;
     std::string title;
     std::string abstract;
+    bool WMSAuthorized;
+    bool WMTSAuthorized;
     std::vector<Keyword> keyWords;
     std::string serviceProvider;
     std::string fee;
@@ -101,6 +103,7 @@ protected:
     std::string electronicMailAddress;
     //WMS
     std::vector<std::string> formatList;
+    std::vector<std::string> infoFormatList;
     std::vector<CRS> globalCRSList;
     bool fullStyling;
     //WMTS
@@ -163,9 +166,19 @@ protected:
 
     // A list of styles
     std::map<std::string, Style*> stylelist;
+    
+    bool getFeatureInfoAvailability;
+    std::string getFeatureInfoType;
+    std::string getFeatureInfoBaseURL;
+    std::string GFIVersion;
+    std::string GFIService;
+    std::string GFIQueryLayers;
+    std::string GFILayers;
+    bool GFIForceEPSG;
 
     std::string socket;
     int nbThread;
+    int nbProcess;
     int backlog;
     bool supportWMS;
     bool supportWMTS;
@@ -173,6 +186,7 @@ protected:
     Style* style;
     Layer* layer;
     TileMatrixSet* onematrixset;
+    Proxy proxy;
     Rok4Server* myrok4server;
 
 };
@@ -190,7 +204,7 @@ void CppUnitCapabilitiesBuilder::setUp() {
     MetadataURL mtdMWS = MetadataURL ( "simple", metadataUrlWMS,metadataMediaTypeWMS );
     MetadataURL mtdWMTS = MetadataURL ( "simple", metadataUrlWMTS,metadataMediaTypeWMTS );
     services_conf = new ServicesConf ( name, title, abstract, keyWords,serviceProvider, fee,
-                                      accessConstraint, layerLimit, maxWidth, maxHeight, maxTileX, maxTileY, formatList, globalCRSList , serviceType, serviceTypeVersion,
+                                      accessConstraint, layerLimit, maxWidth, maxHeight, maxTileX, maxTileY, formatList, infoFormatList , globalCRSList , serviceType, serviceTypeVersion,
                                       providerSite, individualName, individualPosition, voice, facsimile,
                                       addressType, deliveryPoint, city, administrativeArea, postCode, country,
                                       electronicMailAddress, mtdMWS, mtdWMTS, listofequalsCRS, restrictedCRSList, postMode, fullStyling, inspire, doweuselistofequalsCRS, addEqualsCRS, dowerestrictCRSList);
@@ -198,19 +212,34 @@ void CppUnitCapabilitiesBuilder::setUp() {
     id0 = "zero";
     titles0.push_back("title0");
     abstracts0.push_back("abstracts0");
+    WMSAuthorized = true;
+    WMTSAuthorized = true;
     keyWords.push_back( Keyword ("Lambert93", std::map<std::string, std::string>()));
     keyWords.push_back( Keyword ("10cm", std::map<std::string, std::string>()));
     legendURL0 = new LegendURL ("image/jpeg", "http://ign.fr", 400, 400, 25000, 100000);
     legendURLs0.push_back(*legendURL0);
+
     srand ( time ( NULL ) );
     for ( int i = 0 ; i < 255; ++i ) {
         colours.insert ( std::pair<double,Colour> ( i,Colour ( 256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ),256 * ( rand() / ( RAND_MAX +1.0 ) ) ) ) );
     }
     palette0 = new Palette ( colours,false,false,false );
     palette0->buildPalettePNG();
-    style = new Style ( id0,titles0,abstracts0,keyWords,legendURLs0,*palette0 );
+    Pente pente;
+    Aspect aspect;
+    style = new Style ( id0,titles0,abstracts0,keyWords,legendURLs0,*palette0,pente,aspect  );
     styleslayer.push_back(style);
-    layer = new Layer ( idlayer, titlelayer, abstractlayer, keyWords, dataPyramidlayer, styleslayer, minReslayer, maxReslayer, WMSCRSListlayer, opaquelayer, authoritylayer, resamplinglayer, geographicBoundingBoxlayer, boundingBoxlayer, metadataURLslayer );
+    
+    getFeatureInfoAvailability = false;
+    getFeatureInfoType = "";
+    getFeatureInfoBaseURL = "";
+    GFIVersion = "";
+    GFIService = "";
+    GFIQueryLayers = "";
+    GFILayers = "";
+    GFIForceEPSG = true;
+    
+    layer = new Layer ( idlayer, titlelayer, abstractlayer, WMSAuthorized, WMTSAuthorized, keyWords, dataPyramidlayer, styleslayer, minReslayer, maxReslayer, WMSCRSListlayer, opaquelayer, authoritylayer, resamplinglayer, geographicBoundingBoxlayer, boundingBoxlayer, metadataURLslayer, getFeatureInfoAvailability, getFeatureInfoType, getFeatureInfoBaseURL, GFIVersion, GFIService, GFIQueryLayers, GFILayers, GFIForceEPSG );
     layerlist.insert(std::pair<std::string, Layer*> (layer->getId(), layer) );
 
     // Load TimeMatrixSet - Rok4Server 4th argument
@@ -238,7 +267,10 @@ void CppUnitCapabilitiesBuilder::setUp() {
     backlog = 0; // 7th arg
     supportWMS = true; // 9th arg
     supportWMTS = false; // If true -> seg fault for the test 8th arg
-    myrok4server = new Rok4Server(nbThread, *services_conf, layerlist, mytilematrixset, stylelist, socket, backlog, supportWMTS, supportWMS);
+    nbProcess = 1;
+    proxy.proxyName = "";
+    proxy.noProxy = "";
+    myrok4server = new Rok4Server(nbThread, *services_conf, layerlist, mytilematrixset, stylelist, socket, backlog, proxy, supportWMTS, supportWMS, nbProcess);
 
 }
 

@@ -77,7 +77,6 @@ use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
-use Geo::OSR;
 use Geo::GDAL;
 
 require Exporter;
@@ -174,11 +173,7 @@ sub _init {
     
     # init. params    
     $self->{completePath} = $completePath;
-    
-    #
-    $self->{filepath} = File::Basename::dirname($completePath);
-    $self->{filename} = File::Basename::basename($completePath);
-    
+        
     my $maskPath = $completePath;
     $maskPath =~ s/\.[a-zA-Z0-9]+$/\.msk/;
     
@@ -187,6 +182,10 @@ sub _init {
         $self->{maskCompletePath} = $maskPath;
     }
     
+    #
+    $self->{filepath} = File::Basename::dirname($completePath);
+    $self->{filename} = File::Basename::basename($completePath);
+
     return TRUE;
 }
 
@@ -394,22 +393,20 @@ sub convertBBox {
     # FIXME: il faut absoluement tester les erreurs ici:
     #        les transformations WGS84G vers PM ne sont pas possible au dela de 85.05°.
 
-    my $p = 0;
-    eval { $p= $ct->TransformPoint($polygon[$i][0],$polygon[$i][1]); };
-    if ($@) {
-        ERROR($@);
+    my ($tx, $ty) = BE4::ProxyGDAL::transformPoint($polygon[$i][0], $polygon[$i][1], $ct);
+    if (! defined $tx) {
         ERROR(sprintf "Impossible to transform point (%s,%s). Probably limits are reached !",$polygon[$i][0],$polygon[$i][1]);
         return [0,0,0,0];
     }
 
     if ($i==0) {
-      $xmin_reproj= $xmax_reproj= @{$p}[0];
-      $ymin_reproj= $ymax_reproj= @{$p}[1];
+      $xmin_reproj= $xmax_reproj= $tx;
+      $ymin_reproj= $ymax_reproj= $ty;
     } else {
-      $xmin_reproj= @{$p}[0] if @{$p}[0] < $xmin_reproj;
-      $ymin_reproj= @{$p}[1] if @{$p}[1] < $ymin_reproj;
-      $xmax_reproj= @{$p}[0] if @{$p}[0] > $xmax_reproj;
-      $ymax_reproj= @{$p}[1] if @{$p}[1] > $ymax_reproj;
+      $xmin_reproj= $tx if $tx < $xmin_reproj;
+      $ymin_reproj= $ty if $ty < $ymin_reproj;
+      $xmax_reproj= $tx if $tx > $xmax_reproj;
+      $ymax_reproj= $ty if $ty > $ymax_reproj;
     }
   }
 
@@ -503,6 +500,24 @@ sub setImageSource {
         $self->{imgSrc} = $imgSrc;
     }
 }
+
+# Function: setImagePath
+sub setImagePath {
+  my $self = shift;
+  my $imagePath = shift;
+
+  if (! defined $imagePath) {
+    ERROR("Cannot set image path to 'undef'.");
+    return FALSE; 
+  }
+
+  $self->{completePath} = $imagePath;
+  $self->{filepath} = File::Basename::dirname($imagePath);
+  $self->{filename} = File::Basename::basename($imagePath);
+
+  return TRUE;
+}
+
 
 # Function: getXmin
 sub getXmin {

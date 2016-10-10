@@ -63,13 +63,19 @@ public:
         }
         memcpy ( buffer, ( uint8_t* ) &data[line*channels*width],width*channels*sizeof ( uint8_t ) );
         return width*channels*sizeof ( uint8_t );
-    };
+    }
     virtual int getline ( float *buffer, int line ) {
         buffer = 0;
-    };
+    }
+    virtual int getline ( uint16_t *buffer, int line ) {
+        buffer = 0;
+    }
 
     virtual ~RawImage() {
-    };
+        if (source) {
+            delete source;
+        }
+    }
 };
 
 #endif

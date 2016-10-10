@@ -51,6 +51,9 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4.pl.in ${CMAKE_CURRENT_BINARY_
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/joinCache.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/joinCache.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/create-layer.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/create-layer.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/coord2image.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/coord2image.pl @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/tms-converter-gui.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/tms-converter-gui.pl @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4-simulator.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/be4-simulator.pl @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/wmtSalaD.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/wmtSalaD.pl @ONLY)
 
 set(ENV{CFLAGS} "-O3")
 add_custom_command(OUTPUT src/makefile COMMAND mkdir -p src COMMAND cp -f -r -l ${CMAKE_CURRENT_SOURCE_DIR}/* src)
@@ -108,13 +111,13 @@ if(BUILD_DOC)
     if(NATURALDOCS_FOUND)
         add_custom_target(doc ALL BE4_SRC="${CMAKE_CURRENT_SOURCE_DIR}" make doc WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src COMMENT "Generating BE4 documentation with NaturalDocs" VERBATIM )
         #add_custom_target(doc ALL make doc WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/src COMMENT "Generating BE4 documentation with NaturalDocs" VERBATIM )
-        INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src/docs/" DESTINATION doc/${PARENT_PROJECT_NAME}/${PROJECT_NAME})
+        INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src/docs/" DESTINATION share/doc/${PARENT_PROJECT_NAME}/${PROJECT_NAME})
     endif(NATURALDOCS_FOUND)
 
 endif(BUILD_DOC)
 
 #Installe la documentation de base
-INSTALL(FILES QUESTIONS README CHANGES INSTALL FIXME DESTINATION doc/${PARENT_PROJECT_NAME}/${PROJECT_NAME})
+INSTALL(FILES QUESTIONS README CHANGES INSTALL FIXME DESTINATION share/doc/${PARENT_PROJECT_NAME}/${PROJECT_NAME})
 
 ########################################
 #Installation dans les répertoires par défauts

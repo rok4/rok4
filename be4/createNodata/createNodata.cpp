@@ -293,6 +293,7 @@ int main ( int argc, char* argv[] ) {
         error("Cannot write nodata tile", -1);
     }
 
+    LOGGER_DEBUG ( "Nettoyage" );
     delete acc;
     delete nodataTile;
     delete nodataImage;

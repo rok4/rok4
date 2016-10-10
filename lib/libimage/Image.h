@@ -57,6 +57,15 @@
 #include "CRS.h"
 #include "math.h"
 
+#define METER_PER_DEG 111319.492
+
+#ifndef __max
+#define __max(a, b)   ( ((a) > (b)) ? (a) : (b) )
+#endif
+#ifndef __min
+#define __min(a, b)   ( ((a) < (b)) ? (a) : (b) )
+#endif
+
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
@@ -351,6 +360,37 @@ public:
 
     /**
      * \~french
+     * \brief Retourne la résolution dans le sens des X
+     * \return résolution en X
+     * \~english
+     * \brief Return the X wise resolution
+     * \return X resolution
+     */
+     virtual double getResXmeter() {
+        if (crs.getMetersPerUnit() != 1.0) {
+            return resx*METER_PER_DEG;
+        } else {
+            return resx;
+        }
+    }
+    /**
+     * \~french
+     * \brief Retourne la résolution dans le sens des Y
+     * \return résolution en Y
+     * \~english
+     * \brief Return the Y wise resolution
+     * \return Y resolution
+     */
+     virtual double getResYmeter() {
+        if (crs.getMetersPerUnit() != 1.0) {
+            return resy*METER_PER_DEG;
+        } else {
+            return resy;
+        }
+    }
+
+    /**
+     * \~french
      * \brief Retourne le masque de donnée associé à l'image
      * \return masque
      * \~english
@@ -400,7 +440,7 @@ public:
      * \return column
      */
     int inline x2c ( double x ) {
-        return (int) ( ( x-bbox.xmin ) /resx );
+        return floor ( ( x-bbox.xmin ) /resx );
     }
     /**
      * \~french
@@ -413,7 +453,7 @@ public:
      * \return line
      */
     int inline y2l ( double y ) {
-        return (int) ( ( bbox.ymax-y ) /resy );
+        return floor ( ( bbox.ymax-y ) /resy );
     }
 
     /**
@@ -620,6 +660,16 @@ public:
      * \return taille utile du buffer, 0 si erreur
      */
     virtual int getline ( uint8_t *buffer, int line ) = 0;
+    
+    /**
+     * \~french
+     * \brief Retourne une ligne en entier 16 bits.
+     * Les canaux sont entrelacés. ATTENTION : si les données ne sont pas intrinsèquement codées sur des entiers 16 bits, il n'y a pas de conversion (une valeur sur 32 bits occupera 2 "cases" sur 16 bits).
+     * \param[in,out] buffer Tableau contenant au moins 'width * channels * sizeof(sample) * 2' entier sur 16 bits
+     * \param[in] line Indice de la ligne à retourner (0 <= line < height)
+     * \return taille utile du buffer, 0 si erreur
+     */
+    virtual int getline ( uint16_t *buffer, int line ) = 0;
 
     /**
      * \~french
@@ -663,6 +713,31 @@ public:
         } else {
             LOGGER_INFO ( "\t- No mask\n" );
         }
+    }
+    
+    /**
+     * \~french
+     * \brief Sortie du tfw de l'image
+     * \~english
+     * \brief Image TFW output
+     */
+    virtual void printTFW() {
+        LOGGER_INFO ( "TFW : \n" << resx << "\n-" << resy << "\n0\n0\n" << bbox.xmin+0.5*resx << "\n" << bbox.ymax - 0.5*resy );
+    }
+
+    /**
+     * \~french
+     * \brief Résolution moyenne
+     * \~english
+     * \brief Mean resolution
+     */
+    virtual float computeMeanResolution() {
+        if (crs.getMetersPerUnit() != 1.0) {
+            return ((resx+resy)/2.0)*METER_PER_DEG;
+        } else {
+            return (resx+resy)/2.0;
+        }
+
     }
 };
 
