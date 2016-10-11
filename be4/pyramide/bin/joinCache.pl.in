@@ -91,13 +91,13 @@ use FindBin qw($Bin);
 use lib "$Bin/../lib/perl5";
 
 # My module
-use BE4::TileMatrixSet;
-use BE4::TileMatrix;
+use COMMON::TileMatrixSet;
+use COMMON::TileMatrix;
 use BE4::Pyramid;
-use BE4::Base36;
+use COMMON::Base36;
 use JOINCACHE::PropertiesLoader;
 use JOINCACHE::Process;
-use JOINCACHE::SourcePyramid;
+use COMMON::SourcePyramid;
 use JOINCACHE::Node;
 
 ################################################################################
@@ -145,12 +145,12 @@ Informations are treated, interpreted and store in this hash, using JOINCACHE cl
     pyramid - <BE4::Pyramid> - Final pyramid's components and tools
     process - <JOINCACHE::Process> - Compute the final pyramid
     bboxes - array hash - Defines identifiants with associated validated bounding boxes (as array)
-    sourcePyramids - <JOINCACHE::SourcePyramid> hash - Key is the descriptor's path. We have an complete and without repetition list of source pyramids.
+    sourcePyramids - <COMMON::SourcePyramid> hash - Key is the descriptor's path. We have an complete and without repetition list of source pyramids.
     composition - hash - Contain validate and pre-treated composition :
 |       level_id => priority => {
 |               extremTiles => [colMin, rowMin, colMax, rowMax],
 |               extremImages => [colMin, rowMin, colMax, rowMax], # = extremTiles / (number of tiles in the dimension)
-|               sourcePyramid => <JOINCACHE::SourcePyramid>
+|               sourcePyramid => <COMMON::SourcePyramid>
 |       }
     doneImages - boolean hash - To memorize already done tiles, we use this hash, containing "I_J => TRUE".
 =cut
@@ -460,7 +460,7 @@ sub validate {
 =begin nd
 Function: validateSourcePyramids
 
-For each pyramid in composition, we create a <JOINCACHE::SourcePyramid> object and we control attributes (<JOINCACHE::SourcePyramid::loadAndCheck>), reading pyramid's descriptor. TMS, tiles per width, tiles per height and directory depth have to be the same for every one.
+For each pyramid in composition, we create a <COMMON::SourcePyramid> object and we control attributes (<COMMON::SourcePyramid::loadAndCheck>), reading pyramid's descriptor. TMS, tiles per width, tiles per height and directory depth have to be the same for every one.
 =cut
 sub validateSourcePyramids {
 
@@ -468,7 +468,7 @@ sub validateSourcePyramids {
 
     foreach my $pyr (keys %sourcePyramids) {
 
-        my $sourcePyramid = JOINCACHE::SourcePyramid->new($pyr);
+        my $sourcePyramid = COMMON::SourcePyramid->new($pyr);
         if (! defined $sourcePyramid) {
             ERROR ("Cannot create the SourcePyramid object");
             return FALSE;

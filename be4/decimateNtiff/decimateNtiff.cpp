@@ -453,7 +453,7 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
     
     *ppImageOut = factory.createImageToWrite (
         outputImageFileName, outputBbox,outputResx, outputResy, outputWidth, outputHeight,
-        pImagesIn->at(0)->channels, pImagesIn->at(0)->getSampleFormat(), 
+        pImagesIn->at(0)->getChannels(), pImagesIn->at(0)->getSampleFormat(), 
         pImagesIn->at(0)->getBitsPerSample(), pImagesIn->at(0)->getPhotometric(),
         pImagesIn->at(0)->getCompression()
     );
@@ -545,13 +545,13 @@ int sortImages ( std::vector<FileImage*> ImagesIn, std::vector<std::vector<Image
 int checkImages ( std::vector<FileImage*>& ImagesIn ) {
     
     int bps = ImagesIn.at ( 0 )->getBitsPerSample();
-    int spp = ImagesIn.at ( 0 )->channels;
+    int spp = ImagesIn.at ( 0 )->getChannels();
     int sf = ImagesIn.at ( 0 )->getSampleFormat();
     int photometric = ImagesIn.at ( 0 )->getPhotometric(); 
     
     for ( int i = 1; i < ImagesIn.size(); i++ ) {
         if ( ImagesIn.at ( i )->getBitsPerSample() != bps || ImagesIn.at ( i )->getSampleFormat() != sf ||
-             ImagesIn.at ( i )->channels != spp || ImagesIn.at ( i )->getPhotometric() != photometric) {
+             ImagesIn.at ( i )->getChannels() != spp || ImagesIn.at ( i )->getPhotometric() != photometric) {
                         
             LOGGER_ERROR ( "All input images must have same components" );
             ImagesIn.at ( 0 )->print();
@@ -640,7 +640,7 @@ int mergeTabImages ( FileImage* pImageOut, // Sortie
 
     // Assemblage des paquets et decoupage aux dimensions de l image de sortie
     *ppECIout = ECIF.createExtendedCompoundImage (
-        pImageOut->getWidth(), pImageOut->getHeight(), pImageOut->channels, pImageOut->getBbox(),
+        pImageOut->getWidth(), pImageOut->getHeight(), pImageOut->getChannels(), pImageOut->getBbox(),
         pOverlayedImages, nodata, 0
     );
 
@@ -715,7 +715,7 @@ int main ( int argc, char **argv ) {
     
     // Conversion string->int[] du paramètre nodata
     LOGGER_DEBUG ( "Nodata interpretation" );
-    int spp = ImagesIn.at(0)->channels;
+    int spp = ImagesIn.at(0)->getChannels();
     int nodata[spp];
 
     char* charValue = strtok ( strnodata,"," );

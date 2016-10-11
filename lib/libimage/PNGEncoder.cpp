@@ -169,7 +169,7 @@ size_t PNGEncoder::write_IDAT ( uint8_t *buffer, size_t size ) {
         if ( zstream.avail_in == 0 ) {                                    // si plus de donnée en entrée de la zlib, on lit une nouvelle ligne
             image->getline ( linebuffer+1, line++ );
             zstream.next_in  = ( ( uint8_t* ) ( linebuffer+1 ) ) - 1;
-            zstream.avail_in = image->getWidth() * image->channels + 1;
+            zstream.avail_in = image->getWidth() * image->getChannels() + 1;
         }
         if ( deflate ( &zstream, Z_NO_FLUSH ) != Z_OK ) return 0;         // return 0 en cas d'erreur.
     }
@@ -191,11 +191,11 @@ size_t PNGEncoder::read ( uint8_t *buffer, size_t size ) {
     // On traite 2 cas : 'Greyscale' et 'Truecolor'
     // cf: http://www.w3.org/TR/PNG/#11IHDR
 
-    if ( image->channels==1 )
+    if ( image->getChannels()==1 )
         colortype=0;
-    else if ( image->channels==3 )
+    else if ( image->getChannels()==3 )
         colortype=2;
-    else if ( image->channels==4 )
+    else if ( image->getChannels()==4 )
         colortype=6;
     if ( line == -1 ) pos += write_IHDR ( buffer, size, colortype );
     if ( line >= 0 && line <= image->getHeight() ) pos += write_IDAT ( buffer + pos, size - pos );
@@ -214,7 +214,7 @@ PNGEncoder::PNGEncoder ( Image* image,Palette* palette ) : image ( image ), line
     zstream.data_type = Z_BINARY;
     deflateInit ( &zstream, 5 ); // taux de compression zlib
     zstream.avail_in = 0;
-    linebuffer = new uint8_t[image->getWidth() * image->channels + 1]; // On rajoute une valeur en plus pour l'index de debut de ligne png qui sera toujours 0 dans notre cas. TODO : essayer d'aligner en memoire pour des getline plus efficace
+    linebuffer = new uint8_t[image->getWidth() * image->getChannels() + 1]; // On rajoute une valeur en plus pour l'index de debut de ligne png qui sera toujours 0 dans notre cas. TODO : essayer d'aligner en memoire pour des getline plus efficace
     linebuffer[0] = 0;
     if ( ! palette ) {
         stubpalette = new Palette();

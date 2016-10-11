@@ -81,15 +81,13 @@
  * Le géoréférencement est assuré par le renseignement des résolutions et du rectangle englobant. Cependant, on peut également gérer des images simples. Dans ce cas, on mettra par convention une bbox à 0,0,0,0 et des résolutions à -1. Aucun test ne sera fait par les fonctions qui utilisent ces attributs. On doit donc bien faire attention à rester cohérent.
  */
 class Image {
-public:
 
+protected:
     /**
      * \~french \brief Nombre de canaux de l'image
      * \~english \brief Number of samples per pixel
      */
-    const int channels;
-
-protected:
+    int channels;
     /**
      * \~french \brief Largeur de l'image en pixel
      * \~english \brief Image's width, in pixel
@@ -192,6 +190,18 @@ public:
      */
     inline void makeMask () {
         isMask = true;
+    }
+
+    /**
+     * \~french
+     * \brief Retourne le nombre de canaux par pixel
+     * \return channels
+     * \~english
+     * \brief Return the number of samples per pixel
+     * \return channels
+     */
+    virtual int getChannels() {
+        return channels;
     }
 
     /**
@@ -415,9 +425,9 @@ public:
             delete mask;
         }
         
-        if ( newMask->getWidth() != width || newMask->getHeight() != height || newMask->channels != 1 ) {
+        if ( newMask->getWidth() != width || newMask->getHeight() != height || newMask->getChannels() != 1 ) {
             LOGGER_ERROR ( "Unvalid mask" );
-            LOGGER_ERROR ( "\t - channels have to be 1, it is " << newMask->channels );
+            LOGGER_ERROR ( "\t - channels have to be 1, it is " << newMask->getChannels() );
             LOGGER_ERROR ( "\t - width have to be " << width << ", it is " << newMask->getWidth() );
             LOGGER_ERROR ( "\t - height have to be " << height << ", it is " << newMask->getHeight() );
             return false;
@@ -530,6 +540,7 @@ public:
      * \li la même résolution en Y
      * \li la même phase en X
      * \li la même phase en Y
+     * \li le même nombre de canaux
      *
      * Les tests d'égalité acceptent un epsilon qui est le suivant :
      * \li 1 pour mille de la résolution la plus petite pour les résolutions
@@ -538,13 +549,15 @@ public:
      * \param[in] pImage image à comparer
      * \return compatibilité
      * \~english
-     * \brief Determine compatibility with another image, comparing CRS, phasis and resolutions
+     * \brief Determine compatibility with another image, comparing CRS, phasis and resolutions and channels
      * \param[in] pImage image to compare
      * \return compatibility
      */
     bool isCompatibleWith ( Image* pImage ) {
 
         if ( crs.isDefine() && pImage->getCRS().isDefine() && crs != pImage->getCRS() ) return false;
+
+        if ( channels != pImage->getChannels() ) return false;
 
         double epsilon_x=__min ( getResX(), pImage->getResX() ) /1000.;
         double epsilon_y=__min ( getResY(), pImage->getResY() ) /1000.;

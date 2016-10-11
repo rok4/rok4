@@ -54,7 +54,7 @@ ResampledImage::ResampledImage ( Image* image, int width, int height,
                                  double resx, double resy, BoundingBox< double > bbox,
                                  Interpolation::KernelType KT, bool bMask ) :
 
-    Image ( width, height, image->channels, resx, resy, bbox ), sourceImage ( image ), K ( Kernel::getInstance ( KT ) ), useMask ( bMask ) {
+    Image ( width, height, image->getChannels(), resx, resy, bbox ), sourceImage ( image ), K ( Kernel::getInstance ( KT ) ), useMask ( bMask ) {
 
     double resX_src = image->getResX();
     double resY_src = image->getResY();
@@ -219,7 +219,7 @@ int ResampledImage::resampleSourceLine ( int line ) {
      */
     multiplex ( mux_src_image_buffer,
                 src_image_buffer[0], src_image_buffer[1], src_image_buffer[2], src_image_buffer[3],
-                sourceImage->getWidth() *sourceImage->channels );
+                sourceImage->getWidth() *sourceImage->getChannels() );
 
 
     if ( useMask ) {
