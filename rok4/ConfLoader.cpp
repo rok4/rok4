@@ -2764,8 +2764,9 @@ ServicesConf * ConfLoader::parseServicesConf ( TiXmlDocument* doc,std::string se
                 format != "image/tiff" &&
                 format != "image/geotiff" &&
                 format != "image/x-bil;bits=32" &&
-                format != "image/gif" ) {
-            LOGGER_ERROR ( servicesConfigFile << _ ( "le format d'image [" ) << format << _ ( "] n'est pas un type MIME" ) );
+                format != "image/gif" &&
+                format != "text/asc" ) {
+            LOGGER_ERROR ( servicesConfigFile << _ ( "le format d'image [" ) << format << _ ( "] n'est pas un type MIME pris en charge" ) );
         } else {
             formatList.push_back ( format );
         }

@@ -45,6 +45,7 @@
 #include "PNGEncoder.h"
 #include "TiffEncoder.h"
 #include "BilEncoder.h"
+#include "AscEncoder.h"
 #include "ExtendedCompoundImage.h"
 #include "Format.h"
 #include "EmptyImage.h"
