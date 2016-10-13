@@ -54,11 +54,10 @@
 #include <openssl/hmac.h>
 #include <time.h>
 
-S3Context::S3Context (std::string u, std::string k, std::__cxx11::string sk, std::string b) :
+S3Context::S3Context (std::string u, std::string k, std::string sk, std::string b) :
     Context(),
     url(u), key(k), secret_key(sk), bucket_name(b)
 {
-    endpoint = bucket_name + "." + url;
 }
 
 S3Context::S3Context (std::string b) : Context(), bucket_name(b) {
@@ -69,7 +68,6 @@ S3Context::S3Context (std::string b) : Context(), bucket_name(b) {
     } else {
         url.assign(u);
     }
-    endpoint = bucket_name + "." + url;
 
     char* k = getenv ("ROK4_S3_KEY");
     if (k == NULL) {
@@ -160,19 +158,17 @@ int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
     //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
 
-    std::string fullUrl = "https://" + endpoint + "/" + name;
-
-    std::string date = "0";
+    std::string fullUrl = url + "/" + bucket_name + "/" + name;
 
     time_t current;
-    char rfc_2822[40];
+    char gmt_time[40];
 
     time(&current);
-    strftime( rfc_2822, sizeof(rfc_2822), "%a, %d %b %Y %T %z", localtime(&current) );
+    strftime( gmt_time, sizeof(gmt_time), "%a, %d %b %Y %T %z", gmtime(&current) );
 
     std::string content_type = "application/octet-stream";
     std::string resource = "/" + bucket_name + "/" + name;
-    std::string stringToSign = "GET\n\n" + content_type + "\n" + std::string(rfc_2822) + "\n" + resource;
+    std::string stringToSign = "GET\n\n" + content_type + "\n" + std::string(gmt_time) + "\n" + resource;
     std::string signature = getAuthorizationHeader(stringToSign);
 
     // Constitution du header
@@ -182,16 +178,19 @@ int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
     list = curl_slist_append(list, range);
 
     char host[256];
-    sprintf(host, "Host: %s", endpoint.c_str());
+    sprintf(host, "Host: %s", url.c_str());
     list = curl_slist_append(list, host);
 
     char d[100];
-    sprintf(d, "Date: %s", rfc_2822);
+    sprintf(d, "Date: %s", gmt_time);
     list = curl_slist_append(list, d);
 
     char ct[50];
     sprintf(ct, "Content-Type: %s", content_type.c_str());
     list = curl_slist_append(list, ct);
+
+    std::string ex = "Expect:";
+    list = curl_slist_append(list, ex.c_str());
 
     char auth[512];
     sprintf(auth, "Authorization: AWS %s:%s", key.c_str(), signature.c_str());
@@ -226,6 +225,7 @@ int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
     if (http_code < 200 || http_code > 299) {
         LOGGER_ERROR("Cannot read data from S3 : " << size << " bytes (from the " << offset << " one) in the object " << name);
         LOGGER_ERROR("Response HTTP code : " << http_code);
+        LOGGER_ERROR("Response HTTP : " << chunk.data);
         return -1;
     }
 
@@ -258,34 +258,39 @@ bool S3Context::writeFromFile(std::string fileName, std::string objectName) {
     curl = curl_easy_init();
     //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
-    std::string fullUrl = "https://" + endpoint + "/" + objectName;
-
-    std::string date = "0";
+    std::string fullUrl = url + "/" + bucket_name + "/" + objectName;
 
     time_t current;
-    char rfc_2822[40];
+    char gmt_time[40];
 
     time(&current);
-    strftime( rfc_2822, sizeof(rfc_2822), "%a, %d %b %Y %T %z", localtime(&current) );
+    strftime( gmt_time, sizeof(gmt_time), "%a, %d %b %Y %T %z", gmtime(&current) );
 
     std::string content_type = "application/octet-stream";
     std::string resource = "/" + bucket_name + "/" + objectName;
-    std::string stringToSign = "PUT\n\n" + content_type + "\n" + std::string(rfc_2822) + "\n" + resource;
+    std::string stringToSign = "PUT\n\n" + content_type + "\n" + std::string(gmt_time) + "\n" + resource;
     std::string signature = getAuthorizationHeader(stringToSign);
 
     // Constitution du header
 
     char host[256];
-    sprintf(host, "Host: %s", endpoint.c_str());
+    sprintf(host, "Host: %s", url.c_str());
     list = curl_slist_append(list, host);
 
     char d[100];
-    sprintf(d, "Date: %s", rfc_2822);
+    sprintf(d, "Date: %s", gmt_time);
     list = curl_slist_append(list, d);
 
     char ct[50];
     sprintf(ct, "Content-Type: %s", content_type.c_str());
     list = curl_slist_append(list, ct);
+
+    char cl[50];
+    sprintf(cl, "Content-Length: %d", file_info.st_size);
+    list = curl_slist_append(list, cl);
+
+    std::string ex = "Expect:";
+    list = curl_slist_append(list, ex.c_str());
 
     char auth[512];
     sprintf(auth, "Authorization: AWS %s:%s", key.c_str(), signature.c_str());

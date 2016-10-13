@@ -681,9 +681,19 @@ int rok4ConnectObjectContext(Rok4Server* server) {
         }
     }
 
-    book = server->getSwiftBook();
+    book = server->getS3Book();
 
     if (book) {
+
+        if (!book->connectAllContext()) {
+            return error;
+        }
+
+    }
+
+    book = server->getSwiftBook();
+
+    if (book != NULL) {
         if (!book->connectAllContext()) {
             return error;
         }

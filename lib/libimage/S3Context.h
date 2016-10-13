@@ -65,16 +65,10 @@ class S3Context : public Context {
 private:
     
     /**
-     * \~french \brief URL de l'API S3, sans protocole
-     * \~english \brief S3 API URL, without protocol
+     * \~french \brief URL de l'API S3, avec protocole
+     * \~english \brief S3 API URL, with protocol
      */
     std::string url;
-
-    /**
-     * \~french \brief Endpoint pour ce bucket, sans protocole
-     * \~english \brief Endpoint for this bucket, without protocol
-     */
-    std::string endpoint;
 
     /**
      * \~french \brief Clé S3

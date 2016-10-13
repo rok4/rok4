@@ -244,38 +244,71 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
         }
 
         if (context == NULL) {
-            // Je n'ai toujours pas de stockage, il me faut du swift
+            // Je n'ai toujours pas de stockage, il me faut du s3
 
-            pElem = hLvl.FirstChild ( "swiftContext" ).Element();
+            pElem = hLvl.FirstChild ( "s3Context" ).Element();
             if ( pElem ) {
 
-                std::string container;
+                std::string bucket;
 
-                TiXmlElement* pElemSwiftContext = pElem->FirstChildElement ( "container" );
-                if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
-                    LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un container" );
+                TiXmlElement* pElemS3Context = pElem->FirstChildElement ( "bucketName" );
+                if ( !pElemS3Context  || ! ( pElemS3Context->GetText() ) ) {
+                    LOGGER_ERROR ("L'utilisation d'un s3Context necessite de preciser un bucket" );
                     return;
                 } else {
-                    container = pElemSwiftContext->GetText();
+                    bucket = pElemS3Context->GetText();
                 }
 
-                if (serverXML->getSwiftContextBook() != NULL) {
-                    context = serverXML->getSwiftContextBook()->addContext(container);
+                if (serverXML->getS3ContextBook() != NULL) {
+                    context = serverXML->getS3ContextBook()->addContext(bucket);
                 } else {
-                    LOGGER_ERROR ( "L'utilisation d'un cephContext necessite de preciser les informations de connexions dans le server.conf");
+                    LOGGER_ERROR ( "L'utilisation d'un s3Context necessite de preciser les informations de connexions dans le server.conf");
                     return;
                 }
 
                 pElem = hLvl.FirstChild ( "imagePrefix" ).Element();
                 if ( !pElem || ! ( pElem->GetText() ) ) {
-                    LOGGER_ERROR ( "imagePrefix absent pour le level " << id << " qui est stocke sur du Swift");
+                    LOGGER_ERROR ( "imagePrefix absent pour le level " << id << " qui est stocke sur du S3");
                     return;
                 }
                 prefix = pElem->GetText() ;
 
-            } else {
-                LOGGER_ERROR("Level " << id << " sans indication de stockage et pas à la demande. Precisez un baseDir ou un cephContext ou un swiftContext");
-                return;
+            }
+
+            if (context == NULL) {
+                // Je n'ai toujours pas de stockage, il me faut du swift
+
+                pElem = hLvl.FirstChild ( "swiftContext" ).Element();
+                if ( pElem ) {
+
+                    std::string container;
+
+                    TiXmlElement* pElemSwiftContext = pElem->FirstChildElement ( "container" );
+                    if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
+                        LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un container" );
+                        return;
+                    } else {
+                        container = pElemSwiftContext->GetText();
+                    }
+
+                    if (serverXML->getSwiftContextBook() != NULL) {
+                        context = serverXML->getSwiftContextBook()->addContext(container);
+                    } else {
+                        LOGGER_ERROR ( "L'utilisation d'un swiftContext necessite de preciser les informations de connexions dans le server.conf");
+                        return;
+                    }
+
+                    pElem = hLvl.FirstChild ( "imagePrefix" ).Element();
+                    if ( !pElem || ! ( pElem->GetText() ) ) {
+                        LOGGER_ERROR ( "imagePrefix absent pour le level " << id << " qui est stocke sur du Swift");
+                        return;
+                    }
+                    prefix = pElem->GetText() ;
+
+                } else {
+                    LOGGER_ERROR("Level " << id << " sans indication de stockage et pas à la demande. Precisez un baseDir ou un cephContext ou un swiftContext");
+                    return;
+                }
             }
         }
 

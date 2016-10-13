@@ -513,7 +513,7 @@ For more informations about properties, see <BE4S3::Pyramid>.
 
     pyr_data_bucket_name - Mandatory.
 
-    pyr_data_api_url - S3 API url, without protocol. Example: localhost:8080. Mandatory.
+    pyr_data_api_url - S3 API url, with protocol. Example: http://localhost:8080. Mandatory.
 
     pyr_data_key - S3 public key. Mandatory.
 

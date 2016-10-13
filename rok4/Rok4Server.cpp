@@ -1358,8 +1358,9 @@ std::map<std::string, TileMatrixSet*>& Rok4Server::getTmsList() { return serverC
 std::map<std::string, Style*>& Rok4Server::getStyleList() { return serverConf->stylesList; }
 std::map<std::string,std::vector<std::string> >& Rok4Server::getWmsCapaFrag() { return wmsCapaFrag; }
 std::vector<std::string>& Rok4Server::getWmtsCapaFrag() { return wmtsCapaFrag; }
-ContextBook* Rok4Server::getCephBook() {return serverConf->cephBook;}
-ContextBook* Rok4Server::getSwiftBook() {return serverConf->swiftBook;}
+ContextBook* Rok4Server::getCephBook() {return serverConf->getCephContextBook();}
+ContextBook* Rok4Server::getS3Book() {return serverConf->getS3ContextBook();}
+ContextBook* Rok4Server::getSwiftBook() {return serverConf->getSwiftContextBook();}
 int Rok4Server::getFCGISocket() { return sock; }
 void Rok4Server::setFCGISocket ( int sockFCGI ) { sock = sockFCGI; }
 bool Rok4Server::isRunning() { return running ; }

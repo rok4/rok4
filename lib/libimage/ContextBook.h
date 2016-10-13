@@ -50,12 +50,12 @@
 #ifndef CONTEXTBOOK_H
 #define CONTEXTBOOK_H
 
-#include <rados/librados.h>
 #include <map>
 #include "Logger.h"
 #include "Context.h"
 #include "CephPoolContext.h"
 #include "SwiftContext.h"
+#include "S3Context.h"
 
 class ContextBook {
 
@@ -70,10 +70,11 @@ private:
     std::map<std::string, Context*> book;
 
     /**
-     * \~french \brief Précise si l'annuaire est un annuaire de contextes Ceph
-     * \~english \brief Précise if book is a book of Ceph contexts
+     * \~french \brief Précise le type des contextes de l'annuaire
+     * \~english \brief Précise book type
      */
-    bool bCeph;
+    eContextType contextType;
+
     /**
      * \~french \brief Nom par défaut du cluster ceph pour les nouveaux contextes
      * \~english \brief Default name of ceph cluster for new contexts
@@ -91,10 +92,21 @@ private:
     std::string ceph_conf;
 
     /**
-     * \~french \brief Précise si l'annuaire est un annuaire de contextes Swift
-     * \~english \brief Précise if book is a book of Swift contexts
+     * \~french \brief Url par défaut pour les nouveaux contextes s3
+     * \~english \brief Default url for new s3 contexts
      */
-    bool bSwift;
+    std::string s3_url;
+    /**
+     * \~french \brief Clé par défaut pour les nouveaux contextes s3
+     * \~english \brief Default key for new s3 contexts
+     */
+    std::string s3_key;
+    /**
+     * \~french \brief Clé secrète par défaut pour les nouveaux contextes s3
+     * \~english \brief Default secret key for new s3 contexts
+     */
+    std::string s3_secret_key;
+
     /**
      * \~french \brief Url d'authehtification par défaut pour les nouveaux contextes swift
      * \~english \brief Default authentication url for new swift contexts
@@ -120,17 +132,20 @@ public:
 
     /**
      * \~french
-     * \brief Constructeur pour un annuaire de contextes Ceph
-     * \param[in] name Nom par défaut du cluster ceph pour les nouveaux contextes
-     * \param[in] user Nom par défaut de l'utilisateur ceph pour les nouveaux contextes
-     * \param[in] conf Configuration ceph par défaut pour les nouveaux contextes
+     * \brief Constructeur pour un annuaire de contextes Ceph ou S3
+     * \param[in] type Type des contextes de l'annuaire
+     * \param[in] s1 Nom par défaut du cluster ceph ou URL S3 par défaut pour les nouveaux contextes
+     * \param[in] s2 Nom par défaut de l'utilisateur ceph ou Clé par défaut S3 pour les nouveaux contextes
+     * \param[in] s3 Configuration ceph par défaut ou Clé secrète S3 par défaut pour les nouveaux contextes
      * \~english
      * \brief Constructor for a ceph context book
-     * \param[in] name Default name of ceph cluster for new contexts
-     * \param[in] user Default name of ceph user for new contexts
-     * \param[in] conf Default ceph configuration file for new contexts
+     * \param[in] type Book type
+     * \param[in] s1 Default name of ceph cluster or Default S3 url for new contexts
+     * \param[in] s2 Default name of ceph user or Default S3 key for new contexts
+     * \param[in] s3 Default ceph configuration file or Default S3 secret key for new contexts
      */
-    ContextBook(std::string name, std::string user, std::string conf);
+    ContextBook(eContextType type, std::string s1, std::string s2, std::string s3);
+
 
     /**
      * \~french

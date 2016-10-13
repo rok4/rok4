@@ -93,6 +93,7 @@ class ServerXML : public DocumentXML
         Layer* getLayer(std::string id) ;
 
         ContextBook* getCephContextBook();
+        ContextBook* getS3ContextBook();
         ContextBook* getSwiftContextBook();
         
         int getNbThreads() ;
@@ -161,6 +162,10 @@ class ServerXML : public DocumentXML
         std::string cephUser;
         std::string cephConf;
 
+        std::string s3URL;
+        std::string s3AccessKey;
+        std::string s3SecretKey;
+
         std::string swiftAuthUrl;
         std::string swiftUserName;
         std::string swiftUserAccount;
@@ -175,6 +180,7 @@ class ServerXML : public DocumentXML
         Proxy proxy;
 
         ContextBook* cephBook;
+        ContextBook* s3Book;
         ContextBook* swiftBook;
 
     private:

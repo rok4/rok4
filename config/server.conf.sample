@@ -8,6 +8,22 @@
 	<logFilePeriod>3600</logFilePeriod>
 	<!-- Nombre de thread de traitement des requêtes -->
 	<nbThread>2</nbThread>
+
+	<!--
+    <cephContext>
+        <clusterName>ceph</clusterName>
+        <userName>client.pyramidr</userName>
+        <confFile>/etc/ceph/ceph.conf</confFile>
+    </cephContext>
+	-->
+	<!--
+    <s3Context>
+        <url>http://s3-server.fr</url>
+        <key>hfkjfhskfhksf</key>
+        <secretKey>kjhjhKJhkjhkJHKJhkjMLGfkjhGJ</secretKey>
+    </s3Context>
+	-->
+
 	<!-- Niveau maximum des logs (fatal|error|warn|info|debug) -->
 	<logLevel>debug</logLevel>
         <!-- Active le serveur WMTS -->

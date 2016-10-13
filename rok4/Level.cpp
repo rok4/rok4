@@ -196,8 +196,6 @@ Image* Level::getbbox ( ServicesXML* servicesConf, BoundingBox< double > bbox, i
     if ( !imageout ) {     LOGGER_DEBUG ( _ ( "Image invalid !" ) );
         return 0;
     }
-
-    LOGGER_DEBUG ( "Top 2" );
     // On affecte la bonne bbox à l'image source afin que la classe de réechantillonnage calcule les bonnes valeurs d'offset
     if (! imageout->setDimensions ( bbox_int.xmax - bbox_int.xmin, bbox_int.ymax - bbox_int.ymin, BoundingBox<double> ( bbox_int ), 1.0, 1.0 ) ) {     LOGGER_DEBUG ( _ ( "Dimensions invalid !" ) );
         return 0;
@@ -277,7 +275,8 @@ std::string Level::getPath ( int tilex, int tiley, int tilesPerW, int tilesPerH 
     y = tiley / tilesPerH;
 
 
-    switch (context->getType()) {     case FILECONTEXT:
+    switch (context->getType()) {
+        case FILECONTEXT:
 
             char path[32];
             path[sizeof ( path ) - 5] = '.';
@@ -307,6 +306,10 @@ std::string Level::getPath ( int tilex, int tiley, int tilesPerW, int tilesPerH 
             convert << "_" << x << "_" << y;
             return prefix + convert.str();
             break;
+        case S3CONTEXT:
+            convert << "_" << x << "_" << y;
+            return prefix + convert.str();
+            break;
         case SWIFTCONTEXT:
             convert << "_" << x << "_" << y;
             return prefix + convert.str();
@@ -319,9 +322,11 @@ std::string Level::getPath ( int tilex, int tiley, int tilesPerW, int tilesPerH 
 
 std::string Level::getDirPath ( int tilex, int tiley ) {
 
-    if (context->getType() == FILECONTEXT) {     std::string file = getPath(tilex,tiley, tilesPerWidth, tilesPerHeight);
+    if (context->getType() == FILECONTEXT) {
+        std::string file = getPath(tilex,tiley, tilesPerWidth, tilesPerHeight);
         return file.substr(0,file.find_last_of("/"));        
-    } else {     LOGGER_ERROR ( _ ( "getDirPath n'a pas de sens dans le cas d'un contexte non fichier" ) );
+    } else {
+        LOGGER_ERROR ( _ ( "getDirPath n'a pas de sens dans le cas d'un contexte non fichier" ) );
         return "";
     }
 
@@ -339,7 +344,8 @@ int Level::createDirPath (std::string path) {
     std::string currentDir = path.substr(0,found)+"/";
     std::string endOfPath = path.substr(found+1);
 
-    while (found != std::string::npos) {     found = endOfPath.find_first_of("/");
+    while (found != std::string::npos) {
+        found = endOfPath.find_first_of("/");
         currentDir += endOfPath.substr(0,found)+"/";
         endOfPath = endOfPath.substr(found+1);
         curDirCreated = mkdir(currentDir.c_str(),ACCESSPERMS);

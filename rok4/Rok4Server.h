@@ -432,12 +432,14 @@ public:
 
     /**
      * \~french Retourne l'annuaire de contextes ceph
-     * \~english Return ContextBook
      */
     ContextBook* getCephBook() ;
     /**
+     * \~french Retourne l'annuaire de contextes s3
+     */
+    ContextBook* getS3Book() ;
+    /**
      * \~french Retourne l'annuaire de contextes swift
-     * \~english Return ContextBook
      */
     ContextBook* getSwiftBook() ;
 

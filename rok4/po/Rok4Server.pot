@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2016-06-16 19:07+0200\n"
+"POT-Creation-Date: 2016-10-13 15:39+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -193,40 +193,40 @@ msgstr ""
 msgid "Image invalid !"
 msgstr ""
 
-#: Level.cpp:202
+#: Level.cpp:200
 msgid "Dimensions invalid !"
 msgstr ""
 
-#: Level.cpp:223
+#: Level.cpp:221
 msgid "Too Much Tile on X axis"
 msgstr ""
 
-#: Level.cpp:230
+#: Level.cpp:228
 msgid "Too Much Tile on Y axis"
 msgstr ""
 
-#: Level.cpp:269
+#: Level.cpp:267
 msgid "Indice de tuile negatif"
 msgstr ""
 
-#: Level.cpp:324
+#: Level.cpp:329
 msgid "getDirPath n'a pas de sens dans le cas d'un contexte non fichier"
 msgstr ""
 
-#: Level.cpp:403
+#: Level.cpp:409
 msgid "Type d'encodage inconnu : "
 msgstr ""
 
-#: Level.cpp:411 Rok4Api.cpp:568 Rok4Server.cpp:606 Rok4Server.cpp:614
+#: Level.cpp:417 Rok4Api.cpp:568 Rok4Server.cpp:606 Rok4Server.cpp:614
 #: Rok4Server.cpp:778
 msgid "No data found"
 msgstr ""
 
-#: Level.cpp:425
+#: Level.cpp:431
 msgid "GetTile Tiff"
 msgstr ""
 
-#: Level.cpp:434
+#: Level.cpp:440
 msgid "GetTile Image"
 msgstr ""
 

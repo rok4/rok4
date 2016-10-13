@@ -49,22 +49,34 @@
 
 #include "ContextBook.h"
 
-ContextBook::ContextBook(std::string name, std::string user, std::string conf)
+ContextBook::ContextBook(eContextType type, std::string s1, std::string s2, std::string s3)
 {
-
-    bCeph = true;
-    bSwift = false;
-    ceph_name = name;
-    ceph_user = user;
-    ceph_conf = conf;
-
+    switch(type) {
+        case CEPHCONTEXT : 
+            contextType = CEPHCONTEXT;
+            ceph_name = s1;
+            ceph_user = s2;
+            ceph_conf = s3;
+            break;
+        case S3CONTEXT : 
+            contextType = S3CONTEXT;
+            s3_url = s1;
+            s3_key = s2;
+            s3_secret_key = s3;
+            break;
+        default :
+            contextType = CEPHCONTEXT;
+            ceph_name = s1;
+            ceph_user = s2;
+            ceph_conf = s3;
+            break;
+    }
 }
 
 ContextBook::ContextBook(std::string auth, std::string account, std::string user, std::string passwd)
 {
 
-    bSwift = true;
-    bCeph = false;
+    contextType = SWIFTCONTEXT;
     swift_auth = auth;
     swift_account = account;
     swift_user = user;
@@ -82,12 +94,20 @@ Context * ContextBook::addContext(std::string pool)
 
     } else {
         //ce pool n'est pas encore connecté, on va créer la connexion
-        if (bCeph) {
-            ctx = new CephPoolContext(ceph_name, ceph_user, ceph_conf, pool);
-        } else if (bSwift) {
-            ctx = new SwiftContext(swift_auth,swift_account,swift_user,swift_passwd,pool);
-        } else {
-            return NULL;
+
+
+        switch(contextType) {
+            case CEPHCONTEXT : 
+                ctx = new CephPoolContext(ceph_name, ceph_user, ceph_conf, pool);
+                break;
+            case S3CONTEXT : 
+                ctx = new S3Context(s3_url, s3_key, s3_secret_key, pool);
+                break;
+            case SWIFTCONTEXT :
+                ctx = new SwiftContext(swift_auth,swift_account,swift_user,swift_passwd,pool);
+                break;
+            default :
+                return NULL;
         }
 
         //on ajoute au book

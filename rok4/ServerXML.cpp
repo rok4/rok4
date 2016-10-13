@@ -333,6 +333,52 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
 
     }
 
+    pElem = hRoot.FirstChild ( "s3Context" ).Element();
+    if ( pElem) {
+
+        TiXmlElement* pElemS3Context;
+
+        pElemS3Context = hRoot.FirstChild ( "s3Context" ).FirstChild ( "url" ).Element();
+        if ( !pElemS3Context  || ! ( pElemS3Context->GetText() ) ) {
+            char* url = getenv ("ROK4_S3_URL");
+            if (url == NULL) {
+                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser une url" );
+                return;
+            } else {
+                s3URL.assign(url);
+            }
+        } else {
+            s3URL = pElemS3Context->GetText();
+        }
+
+        pElemS3Context = hRoot.FirstChild ( "s3Context" ).FirstChild ( "key" ).Element();
+        if ( !pElemS3Context  || ! ( pElemS3Context->GetText() ) ) {
+            char* k = getenv ("ROK4_S3_KEY");
+            if (k == NULL) {
+                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser une key" );
+                return;
+            } else {
+                s3AccessKey.assign(k);
+            }
+        } else {
+            s3AccessKey = pElemS3Context->GetText();
+        }
+
+        pElemS3Context = hRoot.FirstChild ( "s3Context" ).FirstChild ( "secretKey" ).Element();
+        if ( !pElemS3Context  || ! ( pElemS3Context->GetText() ) ) {
+            char* sk = getenv ("ROK4_S3_SECRETKEY");
+            if (sk == NULL) {
+                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser une secretKey" );
+                return;
+            } else {
+                s3SecretKey.assign(sk);
+            }
+        } else {
+            s3SecretKey = pElemS3Context->GetText();
+        }
+
+    }
+
     pElem = hRoot.FirstChild ( "swiftContext" ).Element();
     if ( pElem ) {
 
@@ -392,11 +438,21 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
     }
 
     if (cephName != "" && cephUser != "" && cephConf != "") {
-        cephBook = new ContextBook(cephName,cephUser,cephConf);
+        cephBook = new ContextBook(CEPHCONTEXT, cephName,cephUser,cephConf);
+    } else {
+        cephBook = NULL;
+    }
+
+    if (s3URL != "" && s3AccessKey != "" && s3SecretKey != "") {
+        s3Book = new ContextBook(S3CONTEXT, s3URL,s3AccessKey,s3SecretKey);
+    } else {
+        s3Book = NULL;
     }
 
     if (swiftAuthUrl != "" && swiftUserName != "" && swiftUserAccount != "" && swiftUserPassword != "") {
         swiftBook = new ContextBook(swiftAuthUrl, swiftUserAccount, swiftUserName, swiftUserPassword);
+    } else {
+        swiftBook = NULL;
     }
 
     ok = true;
@@ -488,6 +544,7 @@ Layer* ServerXML::getLayer(std::string id) {
 
 ContextBook* ServerXML::getCephContextBook(){return cephBook;}
 ContextBook* ServerXML::getSwiftContextBook(){return swiftBook;}
+ContextBook* ServerXML::getS3ContextBook(){return s3Book;}
 
 int ServerXML::getNbThreads() {return nbThread;}
 std::string ServerXML::getSocket() {return socket;}
