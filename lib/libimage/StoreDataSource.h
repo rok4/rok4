@@ -81,6 +81,14 @@ protected:
      * \~english \brief Precise if data source have to be read entirely or just a part
      */
     bool readFull;
+
+
+    /**
+     * \~french \brief Précise si l'index et la taille de la tuile doivent êtr elus ou is nous les avons directement
+     * \~english \brief Precise if tile's offset and size have to be read or if we have thme directly
+     */
+    bool readIndex;
+
     /**
      * \~french \brief Taille maximale lue dans la source de donnée
      * \~english \brief Max size read in the datasource
@@ -88,13 +96,13 @@ protected:
     const uint32_t maxsize;
 
     /**
-     * \~french \brief Position dans la source de l'offset de la tuile voulue
-     * \~english \brief Position in the data source of the tile's offset
+     * \~french \brief (Position dans la source de) l'offset de la tuile voulue
+     * \~english \brief (Position in the data source of) the tile's offset
      */
     const uint32_t posoff;
     /**
-     * \~french \brief Position dans la source de la taille de la tuile voulue
-     * \~english \brief Position in the data source of the tile's size
+     * \~french \brief (Position dans la source de) la taille de la tuile voulue
+     * \~english \brief (Position in the data source of) the tile's size
      */
     const uint32_t possize;
     /**
@@ -144,7 +152,7 @@ protected:
      * \param[in] c Data storage context
      * \param[in] encoding Data encoding
      */
-    StoreDataSource ( const char* name, const uint32_t posoff, const uint32_t possize, std::string type, Context* c, std::string encoding);
+    StoreDataSource ( const char* name, bool indexToRead, const uint32_t o, const uint32_t s, std::string type, Context* c, std::string encoding);
 
     /** \~french
      * \brief Crée un objet StoreDataSource à lecture complète
@@ -260,22 +268,24 @@ public:
      * \brief Crée un objet StoreDataSource à lecture partielle
      * \details La donnée (tuile) n'est qu'une partie de la source de donnée qui sera lue.
      * \param[in] name Nom de la source de donnée
-     * \param[in] posoff Position de l'offset de la tuile
-     * \param[in] possize Position de la taille de la tuile dans la source de donnée
+     * \param[in] indexToRead Précise si on doit lire la taille et l'offset dans la source ou si ils sont fournis directement
+     * \param[in] o (Position de) l'offset de la tuile
+     * \param[in] s (Position de) la taille de la tuile dans la source de donnée
      * \param[in] type Mime-type de la donnée
      * \param[in] c Contexte de stockage de la donnée
      * \param[in] encoding Encodage de la source de donnée
      ** \~english
      * \brief Create a StoreDataSource object, for partially reading.
      * \param[in] name Data source name
-     * \param[in] posoff Position of tile's offset
-     * \param[in] possize Position of tile's size
+     * \param[in] indexToRead Precise if offset and size have to be read in source or if it's directly provided
+     * \param[in] o (Position of) tile's offset
+     * \param[in] s (Position of) tile's size
      * \param[in] type Data mime-type
      * \param[in] c Data storage context
      * \param[in] encoding Data encoding
      */
     StoreDataSource * createStoreDataSource (
-        const char* name, const uint32_t posoff, const uint32_t possize, std::string type ,
+        const char* name, bool indexToRead, const uint32_t o, const uint32_t s, std::string type ,
         Context* c, std::string encoding = ""
     );
 

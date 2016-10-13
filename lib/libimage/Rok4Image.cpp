@@ -238,7 +238,7 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( char* name, BoundingBox< do
     // On va lire toutes les informations de l'en-tête TIFF à la main, sans passer par la libtiff pour être libre quant au type de stockage de la donnée
     
     StoreDataSourceFactory sdsf;
-    StoreDataSource* sds = sdsf.createStoreDataSource(name, 0, 0, "", c);
+    StoreDataSource* sds = sdsf.createStoreDataSource(name, false, 0, 0, "", c);
 
     size_t tmpSize;
     uint8_t* hdr = sds->getThisData(0,ROK4_IMAGE_HEADER_SIZE);
@@ -319,11 +319,18 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( char* name, BoundingBox< do
         resy = 1.;
     }
 
-    return new Rok4Image (
+    Rok4Image* ri = new Rok4Image (
         width, height, resx, resy, channels, bbox, name,
         toROK4SampleFormat( sf ), bitspersample, toROK4Photometric ( ph ), toROK4Compression ( comp ), es,
         tileWidth, tileHeight, c
     );
+
+    if ( ! ri->loadIndex() ) {
+        LOGGER_ERROR ( "Cannot load index of Rok4Image " << name );
+        return NULL;
+    }
+
+    return ri;
 }
 
 Rok4Image* Rok4ImageFactory::createRok4ImageToWrite (
@@ -382,6 +389,8 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToWrite (
         width, height, resx, resy, channels, bbox, name,
         sampleformat, bitspersample, photometric, compression, ExtraSample::ALPHA_UNASSOC, tileWidth, tileHeight, c
     );
+
+
 }
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -419,6 +428,7 @@ Rok4Image::Rok4Image (
 
     memorizedIndex = new int[memorySize];
     memset ( memorizedIndex, -1, memorySize*sizeof ( int ) );
+
 }
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -442,7 +452,7 @@ uint8_t* Rok4Image::memorizeRawTile ( size_t& size, int tile )
         LOGGER_DEBUG ( "Not memorized tile (" << tile << "). We read, decompress, and memorize it");
 
         StoreDataSourceFactory sdsf;
-        StoreDataSource* encData = sdsf.createStoreDataSource(name, ROK4_IMAGE_HEADER_SIZE + tile*4, ROK4_IMAGE_HEADER_SIZE + tilesNumber*4 + tile*4, "", context);
+        StoreDataSource* encData = sdsf.createStoreDataSource(name, false, tilesOffset[tile], tilesByteCounts[tile], "", context);
 
         DataSource* decData;
         size_t tmpSize;
@@ -505,7 +515,7 @@ int Rok4Image::getEncodedTile ( uint8_t* buf, int tile )
     }
 
     StoreDataSourceFactory sdsf;
-    StoreDataSource* encData = sdsf.createStoreDataSource(name, ROK4_IMAGE_HEADER_SIZE + tile*4, ROK4_IMAGE_HEADER_SIZE + tilesNumber*4 + tile*4, "", context);
+    StoreDataSource* encData = sdsf.createStoreDataSource(name, false, tilesOffset[tile], tilesByteCounts[tile], "", context);
     size_t realSize;
 
     const uint8_t* tmp = encData->getData(realSize);
@@ -604,6 +614,34 @@ int Rok4Image::getline ( float* buffer, int line ) {
     }
 
     return width * channels;
+}
+
+bool Rok4Image::loadIndex()
+{
+
+    tilesOffset = new uint32_t[tilesNumber];
+    tilesByteCounts = new uint32_t[tilesNumber];
+
+    StoreDataSourceFactory sdsf;
+    StoreDataSource* sds = sdsf.createStoreDataSource(name, false, 0, 0, "", context);
+
+    size_t tmpSize;
+    uint32_t* index = (uint32_t*) sds->getThisData(ROK4_IMAGE_HEADER_SIZE, 2 * 4 * tilesNumber);
+    if ( index == NULL ) {
+        LOGGER_ERROR ( "Cannot read index of Rok4Image " << name );
+        return false;
+    }
+
+    for (int i = 0; i < tilesNumber; i++) {
+        tilesOffset[i] = *(index + i);
+        tilesByteCounts[i] = *(index + tilesNumber + i);
+    }
+
+
+    delete [] index;
+    delete sds;
+
+    return true;
 }
 
 /* ------------------------------------------------------------------------------------------------ */

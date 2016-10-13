@@ -383,7 +383,7 @@ DataSource* Level::getEncodedTile ( int x, int y ) { // TODO: return 0 sur des c
         LOGGER_DEBUG ( path );
         if (! context->exists(path)) return NULL;
         StoreDataSourceFactory SDSF;
-        return SDSF.createStoreDataSource( path.c_str(),posoff,possize,Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );
+        return SDSF.createStoreDataSource( path.c_str(), true,posoff,possize,Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );
 
     }
 

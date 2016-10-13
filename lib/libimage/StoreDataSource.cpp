@@ -58,12 +58,13 @@
 // Taille maximum d'une tuile WMTS
 #define MAX_TILE_SIZE 1048576
 
-StoreDataSource::StoreDataSource (const char* name, const uint32_t posoff, const uint32_t possize, std::string type, Context* c, std::string encoding ) :
-    name ( name ), posoff ( posoff ), possize ( possize ) , maxsize(0), type (type), encoding( encoding ), context(c)
+StoreDataSource::StoreDataSource (const char* name, bool indexToRead, const uint32_t o, const uint32_t s, std::string type, Context* c, std::string encoding ) :
+    name ( name ), posoff(o), possize(s), maxsize(0), type (type), encoding( encoding ), context(c)
 {
     data = 0;
     size = 0;
     readFull = false;
+    readIndex = indexToRead;
 }
 
 StoreDataSource::StoreDataSource (const char* name, const uint32_t maxsize, std::string type, Context* c, std::string encoding ) :
@@ -72,16 +73,18 @@ StoreDataSource::StoreDataSource (const char* name, const uint32_t maxsize, std:
     data = 0;
     size = 0;
     readFull = true;
+    readIndex = false;
 }
 
 
 StoreDataSource * StoreDataSourceFactory::createStoreDataSource (
-    const char* name, const uint32_t posoff, const uint32_t possize, std::string type ,
+    const char* name, bool indexToRead, const uint32_t posoff, const uint32_t possize, std::string type ,
     Context* c, std::string encoding
 ) {
 
-    return new StoreDataSource(name,posoff,possize, type, c, encoding);
+    return new StoreDataSource(name, indexToRead, posoff,possize, type, c, encoding);
 }
+
 
 StoreDataSource * StoreDataSourceFactory::createStoreDataSource ( const char* name, const uint32_t maxsize, std::string type , Context* c, std::string encoding ) {
 
@@ -110,7 +113,19 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
         tile_size = tileSize;
         size = tileSize;
 
-    } else {
+    }
+    else if (! readIndex) {
+        // On a directement la taille et l'offset
+        data = new uint8_t[possize];
+        int tileSize = context->read(data, posoff, possize, name);
+        if (tileSize < 0) {
+            LOGGER_ERROR ( "Erreur lors de la lecture de la tuile dans l'objet (sans passer par l'index) " << name );
+            return 0;
+        }
+        tile_size = tileSize;
+        size = tileSize;
+    }
+    else {
 
         // On ne lit pas tout l'objet, juste une partie, que l'on connaît grâce à l'index
 

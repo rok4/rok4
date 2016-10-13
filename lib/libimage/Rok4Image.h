@@ -268,6 +268,15 @@ private:
      */
     struct jpeg_error_mgr jerr;
 
+
+    /**
+     * \~french \brief Charge l'index des tuiles de l'image ROK4 à lire
+     * \return VRAI en cas de succès, FAUX sinon
+     * \~english \brief Load index of ROK4 image to read
+     * \return TRUE if success, FALSE otherwise
+     */
+    bool loadIndex();
+
     /**
      * \~french \brief Écrit l'en-tête TIFF de l'image ROK4
      * \details L'en-tête est de taille fixe (ROK4_IMAGE_HEADER_SIZE) et contient toutes les métadonnées sur l'image. Elle ne sera pas lue par le serveur ROK4 (c'est pourquoi sa taille doit être fixe), mais permet de lire l'image avec un logiciel autre (avoir une image TIFF respectant les spécifications).

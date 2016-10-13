@@ -249,7 +249,6 @@ int main ( int argc, char **argv )
         context = new FileContext("");
     }
 
-    context->print();
     if (! context->connection()) {
         error("Unable to connect context", -1);
     }
@@ -260,8 +259,6 @@ int main ( int argc, char **argv )
         delete acc;
         error (std::string("Cannot create ROK4 image to read ") + input, 1);
     }
-
-    rok4image->print();
 
     FileImageFactory FIF;
     FileImage* outputImage = FIF.createImageToWrite(
