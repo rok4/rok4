@@ -63,6 +63,7 @@
 #include "curl/curl.h"
 #include "WebService.h"
 #include <cmath>
+#include <errno.h>
 
 #include "config.h"
 #include "intl.h"
@@ -90,7 +91,12 @@
 #include "Aspect.h"
 #include "ConvertedChannelsImage.h"
 
-
+void hangleSIGALARM(int id) {
+    if(id==SIGALRM) {
+         exit(0) ; /* exit on receiving SIGALRM signal */
+    }
+    signal(SIGALRM, hangleSIGALARM) ;
+}
 
 void* Rok4Server::thread_loop ( void* arg ) {
     Rok4Server* server = ( Rok4Server* ) ( arg );
@@ -167,7 +173,8 @@ void* Rok4Server::thread_loop ( void* arg ) {
 
 Rok4Server::Rok4Server (int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
                          std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList,
-                         std::string socket, int backlog, Proxy proxy, bool supportWMTS, bool supportWMS, int nbProcess) :
+                         std::string socket, int backlog, Proxy proxy, bool supportWMTS, bool supportWMS, int nbProcess,
+                        int timeKill) :
     sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ),
     styleList ( styleList ), threads ( nbThread ), socket ( socket ), backlog ( backlog ),
     running ( false ), notFoundError ( NULL ), supportWMTS ( supportWMTS ), supportWMS ( supportWMS ), proxy (proxy) {
@@ -191,7 +198,7 @@ Rok4Server::Rok4Server (int nbThread, ServicesConf& servicesConf, std::map<std::
     if (nbProcess < 0) {
         nbProcess = DEFAULT_NB_PROCESS;
     }
-    parallelProcess = new ProcessFactory(nbProcess,"");
+    parallelProcess = new ProcessFactory(nbProcess,"",timeKill);
 }
 
 Rok4Server::~Rok4Server() {
@@ -330,11 +337,6 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     for ( int i = 0 ; i < layers.size(); i ++ ) {
 
             Image* curImage = layers.at ( i )->getbbox ( servicesConf, bbox, width, height, crs, error );
-            curImage->setBbox(bbox);
-            curImage->setCRS(crs);
-            Rok4Format::eformat_data pyrType = layers.at ( i )->getDataPyramid()->getFormat();
-            Style* style = styles.at(i);
-            LOGGER_DEBUG ( _ ( "GetMap de Style : " ) << styles.at ( i )->getId() << _ ( " pal size : " ) <<styles.at ( i )->getPalette()->getPalettePNGSize() );
 
             if ( curImage == 0 ) {
                 switch ( error ) {
@@ -351,7 +353,18 @@ DataStream* Rok4Server::getMap ( Request* request ) {
                 }
             }
 
+            curImage->setBbox(bbox);
+            curImage->setCRS(crs);
+            Rok4Format::eformat_data pyrType = layers.at ( i )->getDataPyramid()->getFormat();
+            Style* style = styles.at(i);
+            LOGGER_DEBUG ( _ ( "GetMap de Style : " ) << styles.at ( i )->getId() << _ ( " pal size : " ) <<styles.at ( i )->getPalette()->getPalettePNGSize() );
+
+
             Image *image = styleImage(curImage, pyrType, style, format, layers.size(), layers.at(i)->getDataPyramid());
+
+            if (image == 0) {
+                return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wms" ) );
+            }
 
             images.push_back ( image );
     }
@@ -396,11 +409,18 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
             }
         }
 
-        if (expandedImage->channels == 1 && style->isPente()){
+        if (expandedImage->getChannels() == 1 && style->isPente()){
 
             int error=0;
             BoundingBox<double> expandedBbox = curImage->getBbox().expand(curImage->getResX(),curImage->getResY(),1);
             expandedImage = pyr->getbbox(servicesConf,expandedBbox,curImage->getWidth()+2,curImage->getHeight()+2,curImage->getCRS(),Interpolation::CUBIC,error);
+
+            if (expandedImage == 0) {
+                LOGGER_ERROR("expanded Image is NULL");
+                delete curImage;
+                return NULL;
+            }
+
             expandedImage->setBbox(expandedBbox);
             expandedImage->setCRS(curImage->getCRS());
 
@@ -410,21 +430,29 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
                 case Rok4Format::TIFF_ZIP_FLOAT32 :
                 case Rok4Format::TIFF_LZW_FLOAT32 :
                 case Rok4Format::TIFF_PKB_FLOAT32 :
-                    expandedImage = new PenteImage ( curImage->getWidth(), curImage->getHeight(), curImage->channels, curImage->getBbox(),expandedImage, expandedImage->getResXmeter(), expandedImage->getResYmeter(), style->getAlgoOfPente());
+                    expandedImage = new PenteImage ( curImage->getWidth(), curImage->getHeight(), curImage->getChannels(), curImage->getBbox(),expandedImage, expandedImage->getResXmeter(), expandedImage->getResYmeter(), style->getAlgoOfPente(), style->getUnitOfPente());
 				default:
 					break;
 				}
 			} else {
-                expandedImage = new PenteImage (curImage->getWidth(), curImage->getHeight(), curImage->channels, curImage->getBbox(),expandedImage, expandedImage->getResXmeter(), expandedImage->getResYmeter(), style->getAlgoOfPente());
+                expandedImage = new PenteImage (curImage->getWidth(), curImage->getHeight(), curImage->getChannels(), curImage->getBbox(),expandedImage, expandedImage->getResXmeter(), expandedImage->getResYmeter(), style->getAlgoOfPente(), style->getUnitOfPente());
 			}
             delete curImage;
 		}
 
-        if (expandedImage->channels == 1 && style->isAspect()){
+        if (expandedImage->getChannels() == 1 && style->isAspect()){
 
             int error=0;
             BoundingBox<double> expandedBbox = curImage->getBbox().expand(curImage->getResX(),curImage->getResY(),1);
             expandedImage = pyr->getbbox(servicesConf,expandedBbox,curImage->getWidth()+2,curImage->getHeight()+2,curImage->getCRS(),Interpolation::CUBIC,error);
+
+            if (expandedImage == 0) {
+                LOGGER_ERROR("expanded Image is NULL");
+                delete curImage;
+                return NULL;
+            }
+
+            expandedImage->setBbox(expandedBbox);
             expandedImage->setCRS(curImage->getCRS());
 
             if ( format == "image/png" && size == 1 ) {
@@ -433,17 +461,17 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
                 case Rok4Format::TIFF_ZIP_FLOAT32 :
                 case Rok4Format::TIFF_LZW_FLOAT32 :
                 case Rok4Format::TIFF_PKB_FLOAT32 :
-                    expandedImage = new AspectImage ( curImage->getWidth(), curImage->getHeight(), curImage->channels, curImage->getBbox(),expandedImage, expandedImage->computeMeanResolution(),  style->getAlgoOfAspect(), style->getMinSlopeOfAspect());
+                    expandedImage = new AspectImage ( curImage->getWidth(), curImage->getHeight(), curImage->getChannels(), curImage->getBbox(),expandedImage, expandedImage->computeMeanResolution(),  style->getAlgoOfAspect(), style->getMinSlopeOfAspect());
                 default:
                     break;
                 }
             } else {
-                expandedImage = new AspectImage ( curImage->getWidth(), curImage->getHeight(), curImage->channels, curImage->getBbox(),expandedImage, expandedImage->computeMeanResolution(),  style->getAlgoOfAspect(), style->getMinSlopeOfAspect());
+                expandedImage = new AspectImage ( curImage->getWidth(), curImage->getHeight(), curImage->getChannels(), curImage->getBbox(),expandedImage, expandedImage->computeMeanResolution(),  style->getAlgoOfAspect(), style->getMinSlopeOfAspect());
             }
             delete curImage;
         }
 
-        if ( style && expandedImage->channels == 1 && ! ( style->getPalette()->getColoursMap()->empty() ) ) {
+        if ( style && expandedImage->getChannels() == 1 && ! ( style->getPalette()->getColoursMap()->empty() ) ) {
             if ( format == "image/png" && size == 1 ) {
                 switch ( pyrType ) {
 
@@ -496,7 +524,7 @@ Image * Rok4Server::mergeImages(std::vector<Image*> images, Rok4Format::eformat_
     if (images.size() > 1 ){
 
         MergeImageFactory MIF;
-        int spp = images.at ( 0 )->channels;
+        int spp = images.at ( 0 )->getChannels();
 	int bg[spp];
 	int transparentColor[spp];
 
@@ -924,6 +952,18 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                             //PROCESSUS FILS
                             // on va créer un fichier tmp, générer la dalle et supprimer le fichier tmp
 
+                            //on met en place une alarme qui va eteindre le processus au bout de 5min
+                            signal(SIGALRM, hangleSIGALARM);
+                            alarm(parallelProcess->getTimeBeforeAutoKill());
+
+                            //on attend un temps aléatoire pour être certain qu'un autre processus ne génére pas la dalle
+                            parallelProcess->randomSleep();
+
+                            if (stat (SpathTmp.c_str(), &bufferT) == 0 || stat (SpathErr.c_str(), &bufferE) == 0) {
+                                //std::cout << "Dalle genere par un autre processus... " << std::endl;
+                                exit(0);
+                            }
+
                             //on cree un fichier temporaire pour indiquer que la dalle va etre creer
                             int fileTmp = open(SpathTmp.c_str(),O_CREAT|O_EXCL,S_IWRITE);
                             if (fileTmp != -1) {
@@ -982,6 +1022,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                             if (fileTmp != 0) {
                                 //Impossible de supprimer le fichier temporaire
                                 std::cerr << "Impossible de supprimer le fichier de temporaire " << SpathTmp.c_str() << std::endl;
+                                std::cerr << "errno: " << errno << " " << strerror(errno) << std::endl;
                             }
                             parallelProcess->destroyLogger();
 
@@ -991,8 +1032,10 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                         } else {
                             //PROCESSUS PERE
                             //on va répondre a la requête
+                            LOGGER_DEBUG("Processus parallele lance ");
                             LOGGER_DEBUG("Création de la dalle "+Spath);
                             LOGGER_DEBUG("Log dans le fichier "+SpathErr);
+
                             tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
                         }
 
@@ -1046,7 +1089,6 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
     error = 0;
     Interpolation::KernelType interpolation = L->getResampling();
 
-
     //---- on va créer la bbox associée à la dalle
     LOGGER_DEBUG("Compute BBOX");
     std::map<std::string, Level*>::iterator lv = pyr->getLevels().find(level);
@@ -1094,11 +1136,8 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
             } else {
                 LOGGER_ERROR("Impossible de générer la dalle car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile");
                 state = 1;
-                delete bStyle;
                 return state;
             }
-
-            delete bStyle;
 
         } else {
 
@@ -1136,7 +1175,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
             return state;
         }
 
-        if (images.size() == 1 && pyr->getChannels() != mergeImage->channels) {
+        if (images.size() == 1 && pyr->getChannels() != mergeImage->getChannels()) {
             lastImage = new ConvertedChannelsImage(pyr->getChannels(),mergeImage);
         } else {
             lastImage = mergeImage;
@@ -1255,7 +1294,7 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
 
         delete nodataTile;
         delete nodataImage;
-        delete NDValues;
+        delete[] NDValues;
 
     } else {
         LOGGER_DEBUG("La tuile de noData existe deja");
@@ -1351,7 +1390,7 @@ DataStream* Rok4Server::CommonGetFeatureInfo ( std::string service, Layer* layer
 
         std::vector<std::string> strData;
         Rok4Format::eformat_data pyrType = layer->getDataPyramid()->getFormat();
-        int n = image->channels;
+        int n = image->getChannels();
         switch ( pyrType ) {
             case Rok4Format::TIFF_RAW_INT8 :
             case Rok4Format::TIFF_JPG_INT8 :
