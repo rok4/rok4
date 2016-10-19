@@ -441,6 +441,8 @@ int main ( int argc, char **argv ) {
         error ( "Cannot write the compound image",-1 );
     }
 
+    acc->stop();
+    acc->destroy();
     delete acc;
     delete pCompoundIn;
     delete pImageOut;

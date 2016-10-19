@@ -612,6 +612,8 @@ int main ( int argc, char **argv ) {
         }
     }
 
+    acc->stop();
+    acc->destroy();
     delete acc;
     delete pMergeIn;
     delete pImageOut;
