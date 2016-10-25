@@ -42,58 +42,49 @@
 
 
 size_t AscEncoder::read ( uint8_t *buffer, size_t size ) {
-    size_t offset=0;
+    //size_t offset=0;
     std::ostringstream tmp_stream;
     std::string tmp_str;
 
-//    if(image->channels!=1){
-//        LOGGER_DEBUG("nombre de channels incompatible");
-//        return 0;
-//    }
-
     nodata_value=-99999.00;
+
     // Définit l'affichage des nombres dans les chaines
-    tmp_stream << std::fixed << std::setprecision(8);
+    tmp_stream << std::fixed << std::setprecision(2);
 
     if(line==0 ){
         //On traite l'entete
-        tmp_stream << "ncols        " << image->getWidth() << std::endl
+        tmp_stream << std::setprecision(8)
+                   << "ncols        " << image->getWidth() << std::endl
                    << "nrows        " << image->getHeight() << std::endl
                    << "xllcorner    " << image->getXmin() << std::endl
                    << "yllcorner    " << image->getYmin() << std::endl
                    << "cellsize     " << image->getResXmeter() << std::endl
                    << "NODATA_value " << std::setprecision(2) << nodata_value ;
     }
-    //TODO : faut-il traiter le masque lorsqu'il est présent?
-    if (image->getMask()!=NULL){
-        Image* mask =  image->getMask();
-	LOGGER_DEBUG("nombre de channels du mask" << mask->channels );
-	LOGGER_DEBUG("hauteur du mask" << mask->getHeight());
-	LOGGER_DEBUG("largeur du mask" << mask->getWidth() );
-    }
 
-    // dim d'une ligne de data (normalement 1 seul channel... mais
-    size_t linesize = image->getWidth()*image->channels*sizeof(float);
-    // stockage d'une ligne de donnée
-    float* buffer_line=new float[image->getWidth()*image->channels];
+    // stockage d'une ligne de donnée (1 canal)
+    float* buffer_line=new float[image->getWidth()];
 
-    // lecture des lignes une par une, normalement, pas de dépassement de buffer (donc le && est inutile)
-    if( line < image->getHeight() && line*linesize <= size){
+    if( line < image->getHeight() ){
 
         image->getline(buffer_line,line++);
 
         tmp_stream << std::endl;
-        tmp_stream << std::setprecision(2);
         for( int i=0;i<image->getWidth();i++){
-            // formattage des données
+        // formattage des données
             tmp_stream << " " << buffer_line[(i*image->channels)];
         }
 
         tmp_str = tmp_stream.str();
 
+        if(tmp_str.size()<=size){
         //écriture des données texte dans le buffer flux
-        for ( int i=0; i<tmp_str.size(); i++ ) {
+            for ( int i=0; i<tmp_str.size(); i++ ) {
                 buffer[sizeof(uint8_t)*i]= (uint8_t) tmp_str.at(i);
+            }
+        }else{
+          LOGGER_ERROR ( "Too much data to write on 2^21 buffer");
+          return tmp_str.size();
         }
 
     }
