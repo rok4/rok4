@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2016-10-14 15:55+0200\n"
+"POT-Creation-Date: 2016-10-26 10:11+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -521,8 +521,8 @@ msgstr ""
 msgid " can't be loaded because information are missing"
 msgstr ""
 
-#: ConfLoader.cpp:1844 ConfLoader.cpp:2339 ConfLoader.cpp:3066
-#: ConfLoader.cpp:3159 ConfLoader.cpp:3314
+#: ConfLoader.cpp:1844 ConfLoader.cpp:2339 ConfLoader.cpp:3067
+#: ConfLoader.cpp:3160 ConfLoader.cpp:3315
 msgid "Ne peut pas charger le fichier "
 msgstr ""
 
@@ -876,173 +876,173 @@ msgstr ""
 msgid "Le maxTileY est inexploitable:["
 msgstr ""
 
-#: ConfLoader.cpp:2801
+#: ConfLoader.cpp:2802
 msgid "le format d'image ["
 msgstr ""
 
-#: ConfLoader.cpp:2801
-msgid "] n'est pas un type MIME"
+#: ConfLoader.cpp:2802
+msgid "] n'est pas un type MIME pris en charge"
 msgstr ""
 
-#: ConfLoader.cpp:2819
+#: ConfLoader.cpp:2820
 msgid "Pas de reprojection pour les CRS equivalents"
 msgstr ""
 
-#: ConfLoader.cpp:2829
+#: ConfLoader.cpp:2830
 msgid "Ajout automatique des CRS equivalents"
 msgstr ""
 
-#: ConfLoader.cpp:2842
+#: ConfLoader.cpp:2843
 msgid "Liste restreinte de CRS à partir du fichier "
 msgstr ""
 
-#: ConfLoader.cpp:2857
+#: ConfLoader.cpp:2858
 msgid "The CRS ["
 msgstr ""
 
-#: ConfLoader.cpp:2857 ConfLoader.cpp:3044 ConfLoader.cpp:3111
+#: ConfLoader.cpp:2858 ConfLoader.cpp:3045 ConfLoader.cpp:3112
 msgid "] is not present in Proj4"
 msgstr ""
 
-#: ConfLoader.cpp:2877
+#: ConfLoader.cpp:2878
 msgid "Adding global CRS "
 msgstr ""
 
-#: ConfLoader.cpp:2879 ConfLoader.cpp:2893
+#: ConfLoader.cpp:2880 ConfLoader.cpp:2894
 msgid "Already present in global CRS list "
 msgstr ""
 
-#: ConfLoader.cpp:2891 ConfLoader.cpp:2917
+#: ConfLoader.cpp:2892 ConfLoader.cpp:2918
 msgid "Adding equivalent global CRS ["
 msgstr ""
 
-#: ConfLoader.cpp:2891 ConfLoader.cpp:3111
+#: ConfLoader.cpp:2892 ConfLoader.cpp:3112
 msgid "] of ["
 msgstr ""
 
-#: ConfLoader.cpp:2897
+#: ConfLoader.cpp:2898
 msgid "Forbiden global CRS "
 msgstr ""
 
-#: ConfLoader.cpp:2912
+#: ConfLoader.cpp:2913
 msgid "CRS:84 not found -> adding global CRS CRS:84"
 msgstr ""
 
-#: ConfLoader.cpp:2917
+#: ConfLoader.cpp:2918
 msgid "] of [CRS:84]"
 msgstr ""
 
-#: ConfLoader.cpp:2926
+#: ConfLoader.cpp:2927
 msgid "Utilisation des styles pour tous les formats"
 msgstr ""
 
-#: ConfLoader.cpp:2941
+#: ConfLoader.cpp:2942
 msgid "Utilisation du mode Inspire"
 msgstr ""
 
-#: ConfLoader.cpp:2954 ConfLoader.cpp:2957 ConfLoader.cpp:2964
-#: ConfLoader.cpp:2967 ConfLoader.cpp:2980 ConfLoader.cpp:2983
-#: ConfLoader.cpp:2990 ConfLoader.cpp:2993
+#: ConfLoader.cpp:2955 ConfLoader.cpp:2958 ConfLoader.cpp:2965
+#: ConfLoader.cpp:2968 ConfLoader.cpp:2981 ConfLoader.cpp:2984
+#: ConfLoader.cpp:2991 ConfLoader.cpp:2994
 msgid "Metadata element incorrect"
 msgstr ""
 
-#: ConfLoader.cpp:3020
+#: ConfLoader.cpp:3021
 msgid "Construction de la liste des CRS equivalents depuis "
 msgstr ""
 
-#: ConfLoader.cpp:3044 ConfLoader.cpp:3111
+#: ConfLoader.cpp:3045 ConfLoader.cpp:3112
 msgid "The Equivalent CRS ["
 msgstr ""
 
-#: ConfLoader.cpp:3066
+#: ConfLoader.cpp:3067
 msgid " ou fichier vide"
 msgstr ""
 
-#: ConfLoader.cpp:3156
+#: ConfLoader.cpp:3157
 msgid "Chargement des parametres techniques depuis "
 msgstr ""
 
-#: ConfLoader.cpp:3166
+#: ConfLoader.cpp:3167
 msgid "CHARGEMENT DES STYLES"
 msgstr ""
 
-#: ConfLoader.cpp:3175
+#: ConfLoader.cpp:3176
 msgid "Le repertoire des Styles "
 msgstr ""
 
-#: ConfLoader.cpp:3175 ConfLoader.cpp:3224 ConfLoader.cpp:3273
+#: ConfLoader.cpp:3176 ConfLoader.cpp:3225 ConfLoader.cpp:3274
 msgid " n'est pas accessible."
 msgstr ""
 
-#: ConfLoader.cpp:3190
+#: ConfLoader.cpp:3191
 msgid "Aucun fichier *.stl dans le repertoire "
 msgstr ""
 
-#: ConfLoader.cpp:3201
+#: ConfLoader.cpp:3202
 msgid "Ne peut charger le style: "
 msgstr ""
 
-#: ConfLoader.cpp:3206
+#: ConfLoader.cpp:3207
 msgid "Aucun Style n'a pu etre charge!"
 msgstr ""
 
-#: ConfLoader.cpp:3210
+#: ConfLoader.cpp:3211
 msgid "NOMBRE DE STYLES CHARGES : "
 msgstr ""
 
-#: ConfLoader.cpp:3216
+#: ConfLoader.cpp:3217
 msgid "CHARGEMENT DES TMS"
 msgstr ""
 
-#: ConfLoader.cpp:3224
+#: ConfLoader.cpp:3225
 msgid "Le repertoire des TMS "
 msgstr ""
 
-#: ConfLoader.cpp:3240
+#: ConfLoader.cpp:3241
 msgid "Aucun fichier *.tms dans le repertoire "
 msgstr ""
 
-#: ConfLoader.cpp:3251
+#: ConfLoader.cpp:3252
 msgid "Ne peut charger le tms: "
 msgstr ""
 
-#: ConfLoader.cpp:3256
+#: ConfLoader.cpp:3257
 msgid "Aucun TMS n'a pu etre charge!"
 msgstr ""
 
-#: ConfLoader.cpp:3260
+#: ConfLoader.cpp:3261
 msgid "NOMBRE DE TMS CHARGES : "
 msgstr ""
 
-#: ConfLoader.cpp:3266
+#: ConfLoader.cpp:3267
 msgid "CHARGEMENT DES LAYERS"
 msgstr ""
 
-#: ConfLoader.cpp:3273
+#: ConfLoader.cpp:3274
 msgid "Le repertoire "
 msgstr ""
 
-#: ConfLoader.cpp:3285
+#: ConfLoader.cpp:3286
 msgid "Aucun fichier *.lay dans le repertoire "
 msgstr ""
 
-#: ConfLoader.cpp:3286
+#: ConfLoader.cpp:3287
 msgid "Le serveur n'a aucune donnees à servir. Dommage..."
 msgstr ""
 
-#: ConfLoader.cpp:3297
+#: ConfLoader.cpp:3298
 msgid "Ne peut charger le layer: "
 msgstr ""
 
-#: ConfLoader.cpp:3302
+#: ConfLoader.cpp:3303
 msgid "Aucun layer n'a pu etre charge!"
 msgstr ""
 
-#: ConfLoader.cpp:3306
+#: ConfLoader.cpp:3307
 msgid "NOMBRE DE LAYERS CHARGES : "
 msgstr ""
 
-#: ConfLoader.cpp:3311
+#: ConfLoader.cpp:3312
 msgid "Construction de la configuration des services depuis "
 msgstr ""
 
@@ -1115,47 +1115,47 @@ msgstr ""
 msgid "Extinction du serveur ROK4"
 msgstr ""
 
-#: Pyramid.cpp:191
+#: Pyramid.cpp:192
 msgid "debut pyramide"
 msgstr ""
 
-#: Pyramid.cpp:198
+#: Pyramid.cpp:199
 msgid "fin pyramide"
 msgstr ""
 
-#: Pyramid.cpp:206
+#: Pyramid.cpp:207
 msgid "best_level="
 msgstr ""
 
-#: Pyramid.cpp:206
+#: Pyramid.cpp:207
 msgid " resolution requete="
 msgstr ""
 
-#: Pyramid.cpp:231
+#: Pyramid.cpp:232
 msgid "BBox en dehors de la definition du CRS"
 msgstr ""
 
-#: Pyramid.cpp:235 Pyramid.cpp:274
+#: Pyramid.cpp:236 Pyramid.cpp:275
 msgid "BBox decoupe incorrect"
 msgstr ""
 
-#: Pyramid.cpp:267
+#: Pyramid.cpp:268
 msgid "New Width = "
 msgstr ""
 
-#: Pyramid.cpp:267
+#: Pyramid.cpp:268
 msgid "New Height = "
 msgstr ""
 
-#: Pyramid.cpp:268
+#: Pyramid.cpp:269
 msgid "ratio_x = "
 msgstr ""
 
-#: Pyramid.cpp:268
+#: Pyramid.cpp:269
 msgid "ratio_y = "
 msgstr ""
 
-#: Pyramid.cpp:280
+#: Pyramid.cpp:281
 msgid "Image decoupe valide"
 msgstr ""
 
@@ -1358,7 +1358,7 @@ msgstr ""
 msgid "Parametre FORMAT absent."
 msgstr ""
 
-#: Request.cpp:804 Rok4Server.cpp:665
+#: Request.cpp:804 Rok4Server.cpp:670
 msgid "Le format "
 msgstr ""
 
@@ -1491,11 +1491,11 @@ msgstr ""
 msgid "Parametre STYLES incomplet."
 msgstr ""
 
-#: Request.cpp:1093 Request.cpp:1152 Rok4Api.cpp:226 Rok4Server.cpp:1541
+#: Request.cpp:1093 Request.cpp:1152 Rok4Api.cpp:226 Rok4Server.cpp:1546
 msgid "Le service "
 msgstr ""
 
-#: Request.cpp:1093 Request.cpp:1152 Rok4Api.cpp:226 Rok4Server.cpp:1541
+#: Request.cpp:1093 Request.cpp:1152 Rok4Api.cpp:226 Rok4Server.cpp:1546
 msgid " est inconnu pour ce serveur."
 msgstr ""
 
@@ -1679,12 +1679,12 @@ msgstr ""
 msgid "Le parametre REQUEST n'est pas renseigné."
 msgstr ""
 
-#: Rok4Api.cpp:219 Rok4Api.cpp:221 Rok4Api.cpp:530 Rok4Server.cpp:1505
-#: Rok4Server.cpp:1509 Rok4Server.cpp:1523 Rok4Server.cpp:1527
+#: Rok4Api.cpp:219 Rok4Api.cpp:221 Rok4Api.cpp:530 Rok4Server.cpp:1510
+#: Rok4Server.cpp:1514 Rok4Server.cpp:1528 Rok4Server.cpp:1532
 msgid " n'est pas prise en charge par ce serveur."
 msgstr ""
 
-#: Rok4Api.cpp:221 Rok4Api.cpp:530 Rok4Server.cpp:1509
+#: Rok4Api.cpp:221 Rok4Api.cpp:530 Rok4Server.cpp:1514
 msgid "L'operation "
 msgstr ""
 
@@ -1692,11 +1692,11 @@ msgstr ""
 msgid "Le parametre SERVICE n'est pas renseigné."
 msgstr ""
 
-#: Rok4Api.cpp:321 Rok4Api.cpp:414 Rok4Server.cpp:680
+#: Rok4Api.cpp:321 Rok4Api.cpp:414 Rok4Server.cpp:685
 msgid "Probleme dans les parametres de la requete getTile"
 msgstr ""
 
-#: Rok4Api.cpp:542 Rok4Server.cpp:686
+#: Rok4Api.cpp:542 Rok4Server.cpp:691
 msgid "No data found"
 msgstr ""
 
@@ -1712,88 +1712,88 @@ msgstr ""
 msgid "Request Content :"
 msgstr ""
 
-#: Rok4Server.cpp:169
+#: Rok4Server.cpp:167
 msgid "Extinction du thread"
 msgstr ""
 
-#: Rok4Server.cpp:183
+#: Rok4Server.cpp:181
 msgid "Build WMS Capabilities 1.3.0"
 msgstr ""
 
-#: Rok4Server.cpp:186
+#: Rok4Server.cpp:184
 msgid "Build WMS Capabilities 1.1.1"
 msgstr ""
 
-#: Rok4Server.cpp:191
+#: Rok4Server.cpp:189
 msgid "Build WMTS Capabilities"
 msgstr ""
 
-#: Rok4Server.cpp:216
+#: Rok4Server.cpp:214
 msgid "Listening on "
 msgstr ""
 
-#: Rok4Server.cpp:275 Rok4Server.cpp:301
+#: Rok4Server.cpp:273 Rok4Server.cpp:299
 msgid "Probleme dans les parametres de la requete getCapabilities"
 msgstr ""
 
-#: Rok4Server.cpp:331
+#: Rok4Server.cpp:329
 msgid "Probleme dans les parametres de la requete getMap"
 msgstr ""
 
-#: Rok4Server.cpp:345 Rok4Server.cpp:1380
+#: Rok4Server.cpp:343 Rok4Server.cpp:1385
 msgid "bbox invalide"
 msgstr ""
 
-#: Rok4Server.cpp:348 Rok4Server.cpp:1383
+#: Rok4Server.cpp:346 Rok4Server.cpp:1388
 msgid "bbox trop grande"
 msgstr ""
 
-#: Rok4Server.cpp:351 Rok4Server.cpp:366 Rok4Server.cpp:816 Rok4Server.cpp:846
-#: Rok4Server.cpp:865 Rok4Server.cpp:891 Rok4Server.cpp:1386
+#: Rok4Server.cpp:349 Rok4Server.cpp:364 Rok4Server.cpp:821 Rok4Server.cpp:851
+#: Rok4Server.cpp:870 Rok4Server.cpp:896 Rok4Server.cpp:1391
 msgid "Impossible de repondre a la requete"
 msgstr ""
 
-#: Rok4Server.cpp:360
+#: Rok4Server.cpp:358
 msgid "GetMap de Style : "
 msgstr ""
 
-#: Rok4Server.cpp:360
+#: Rok4Server.cpp:358
 msgid " pal size : "
 msgstr ""
 
-#: Rok4Server.cpp:391
+#: Rok4Server.cpp:389
 msgid "Estompage"
 msgstr ""
 
-#: Rok4Server.cpp:665
+#: Rok4Server.cpp:670
 msgid " ne peut etre traite"
 msgstr ""
 
-#: Rok4Server.cpp:1326 Rok4Server.cpp:1350
+#: Rok4Server.cpp:1331 Rok4Server.cpp:1355
 msgid "Probleme dans les parametres de la requete getFeatureInfo"
 msgstr ""
 
-#: Rok4Server.cpp:1424
+#: Rok4Server.cpp:1429
 msgid "Erreur interne."
 msgstr ""
 
-#: Rok4Server.cpp:1429
+#: Rok4Server.cpp:1434
 msgid "Info_format non "
 msgstr ""
 
-#: Rok4Server.cpp:1429
+#: Rok4Server.cpp:1434
 msgid " supporté par la couche "
 msgstr ""
 
-#: Rok4Server.cpp:1484
+#: Rok4Server.cpp:1489
 msgid "Internal server error"
 msgstr ""
 
-#: Rok4Server.cpp:1490
+#: Rok4Server.cpp:1495
 msgid "GFI depuis un SQL non géré."
 msgstr ""
 
-#: Rok4Server.cpp:1492
+#: Rok4Server.cpp:1497
 msgid "ERRORRRRRR !"
 msgstr ""
 

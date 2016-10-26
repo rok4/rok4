@@ -64,13 +64,13 @@
 #include "WebService.h"
 #include <cmath>
 #include <errno.h>
-
 #include "config.h"
 #include "intl.h"
 #include "TiffEncoder.h"
 #include "PNGEncoder.h"
 #include "JPEGEncoder.h"
 #include "BilEncoder.h"
+#include "AscEncoder.h"
 #include "Format.h"
 #include "Message.h"
 #include "StyledImage.h"
@@ -142,8 +142,6 @@ void* Rok4Server::thread_loop ( void* arg ) {
                                     FCGX_GetParam ( "SCRIPT_NAME", fcgxRequest.envp ),
                                     FCGX_GetParam ( "HTTPS", fcgxRequest.envp ),
                                     content );
-
-
 
         } else { // Get Request
 
@@ -658,6 +656,13 @@ DataStream * Rok4Server::formatImage(Image *image, std::string format, Rok4Forma
         return new JPEGEncoder ( image );
     } else if ( format == "image/x-bil;bits=32" ) {
         return new BilEncoder ( image );
+    } else if ( format == "text/asc" ) {
+        // On ne traite le format asc que sur les image à un seul channel
+        if (image->getChannels() != 1){
+            LOGGER_ERROR ( "Le format "<<format<<" ne concerne que les images à 1 canal" );
+        }else{
+            return new AscEncoder ( image );
+        }
     }
 
     LOGGER_ERROR ( "Le format "<<format<<" ne peut etre traite" );

@@ -37,6 +37,7 @@
         <format>image/png</format>
         <format>image/tiff</format>
         <format>image/x-bil;bits=32</format>
+        <format>text/asc</format>
     </formatList>
 
     <globalCRSList>
