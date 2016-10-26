@@ -70,7 +70,7 @@ protected:
             if ( zstream.avail_in == 0 ) {                                    // si plus de donnée en entrée de la zlib, on lit une nouvelle ligne
                 image->getline ( linebuffer, rawLine++ );
                 zstream.next_in  = ( uint8_t* ) ( linebuffer );
-                zstream.avail_in = image->getWidth() * image->channels * sizeof ( T );
+                zstream.avail_in = image->getWidth() * image->getChannels() * sizeof ( T );
             }
             error = deflate ( &zstream, Z_NO_FLUSH );
             switch ( error ) {
@@ -117,17 +117,17 @@ protected:
     
     virtual void prepareHeader(){
 	LOGGER_DEBUG("TiffDeflateEncoder : preparation de l'en-tete");
-	sizeHeader = TiffHeader::headerSize ( image->channels );
+	sizeHeader = TiffHeader::headerSize ( image->getChannels() );
 	header = new uint8_t[sizeHeader];
-	if ( image->channels==1 )
+	if ( image->getChannels()==1 )
 	    if ( sizeof ( T ) == sizeof ( float ) ) {
 		memcpy( header, TiffHeader::TIFF_HEADER_ZIP_FLOAT32_GRAY, sizeHeader);
 	    } else {
 		memcpy( header, TiffHeader::TIFF_HEADER_ZIP_INT8_GRAY, sizeHeader);
 	    }
-	else if ( image->channels==3 )
+	else if ( image->getChannels()==3 )
 	    memcpy( header, TiffHeader::TIFF_HEADER_ZIP_INT8_RGB, sizeHeader);
-	else if ( image->channels==4 )
+	else if ( image->getChannels()==4 )
 	    memcpy( header, TiffHeader::TIFF_HEADER_ZIP_INT8_RGBA, sizeHeader);
 	* ( ( uint32_t* ) ( header+18 ) )  = image->getWidth();
 	* ( ( uint32_t* ) ( header+30 ) )  = image->getHeight();
@@ -137,7 +137,7 @@ protected:
     
     virtual void prepareBuffer(){
 	LOGGER_DEBUG("TiffDeflateEncoder : preparation du buffer d'image");
-	tmpBufferSize = image->getWidth() * image->channels * image->getHeight() * 2 * sizeof(T) ;
+	tmpBufferSize = image->getWidth() * image->getChannels() * image->getHeight() * 2 * sizeof(T) ;
 	tmpBuffer = new uint8_t[tmpBufferSize];
 	while ( !encode() ) {
 	    tmpBufferSize *= 2;
@@ -154,7 +154,7 @@ public:
 //         zstream.data_type = Z_BINARY;
 //         deflateInit ( &zstream, 6 ); // taux de compression zlib
 //         zstream.avail_in = 0;
-        linebuffer = new T[image->getWidth() * image->channels];
+        linebuffer = new T[image->getWidth() * image->getChannels()];
     }
     ~TiffDeflateEncoder() {
         if ( linebuffer ) delete[] linebuffer;

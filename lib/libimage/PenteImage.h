@@ -88,6 +88,13 @@ private:
     */
     std::string algo;
 
+    /** \~french
+    * \brief unit : unité de la pente
+    ** \~english
+    * \brief unit : slope unit
+    */
+    std::string unit;
+
 
 
 
@@ -175,7 +182,7 @@ public:
     ** \~english
     * \brief Construtor
     */
-    PenteImage (int width, int height, int channels, BoundingBox<double> bbox, Image* image, float resolutionx, float resolutiony,std::string algo);
+    PenteImage (int width, int height, int channels, BoundingBox<double> bbox, Image* image, float resolutionx, float resolutiony,std::string algo,std::string unit);
 
     /** \~french
     * \brief Destructeur

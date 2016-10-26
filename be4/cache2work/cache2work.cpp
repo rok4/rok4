@@ -202,6 +202,8 @@ int main ( int argc, char **argv )
     Rok4ImageFactory R4IF;
     Rok4Image* rok4image = R4IF.createRok4ImageToRead(input, BoundingBox<double>(0.,0.,0.,0.), 0., 0.);
     if (rok4image == NULL) {
+        acc->stop();
+        acc->destroy();
         delete acc;
         error (std::string("Cannot create ROK4 image to read ") + input, -1);
     }
@@ -209,11 +211,13 @@ int main ( int argc, char **argv )
     FileImageFactory FIF;
     FileImage* outputImage = FIF.createImageToWrite(
         output, rok4image->getBbox(), rok4image->getResX(), rok4image->getResY(), rok4image->getWidth(), rok4image->getHeight(),
-        rok4image->channels, rok4image->getSampleFormat(), rok4image->getBitsPerSample(), rok4image->getPhotometric(), compression
+        rok4image->getChannels(), rok4image->getSampleFormat(), rok4image->getBitsPerSample(), rok4image->getPhotometric(), compression
     );
 
     if (outputImage == NULL) {
         delete rok4image;
+        acc->stop();
+        acc->destroy();
         delete acc;
         error (std::string("Cannot create image to write ") + output, -1);
     }
@@ -222,12 +226,16 @@ int main ( int argc, char **argv )
     if (outputImage->writeImage(rok4image) < 0) {
         delete rok4image;
         delete outputImage;
+        acc->stop();
+        acc->destroy();
         delete acc;
         error("Cannot write image", -1);
     }
 
     delete rok4image;
     delete outputImage;
+    acc->stop();
+    acc->destroy();
     delete acc;
 
     return 0;

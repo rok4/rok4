@@ -192,6 +192,7 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
         LOGGER_DEBUG ( _ ( "debut pyramide" ) );
         if ( !grid->reproject ( dst_crs.getProj4Code(),getTms().getCrs().getProj4Code() ) ) {
             // BBOX invalide
+            delete grid;
             error=1;
             return 0;
         }
@@ -314,8 +315,10 @@ Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst
         LOGGER_DEBUG ( "Les deux CRS sont équivalents " );
     } else {
         LOGGER_DEBUG ( "Conversion de la bbox demandee et de la bbox des donnees en EPSG:4326 " );
-        askBbox.reproject(dst_crs.getProj4Code(),"epsg:4326");
-        dataBbox.reproject(tms.getCrs().getProj4Code(),"epsg:4326");
+        if (askBbox.reproject(dst_crs.getProj4Code(),"epsg:4326") !=0 || dataBbox.reproject(tms.getCrs().getProj4Code(),"epsg:4326") != 0) {
+            LOGGER_ERROR("Ne peut pas reprojeter les bbox");
+            return NULL;
+        }
     }
 
     //on compare les deux bbox
@@ -327,7 +330,10 @@ Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst
         if (askBbox.containsInside(dataBbox)) {
             //les données sont a l'intérieur de la bbox demandée
             LOGGER_DEBUG ( "les données sont a l'intérieur de la bbox demandée " );
-            dataBbox.reproject("epsg:4326",dst_crs.getProj4Code());
+            if (dataBbox.reproject("epsg:4326",dst_crs.getProj4Code()) != 0) {
+                LOGGER_ERROR("Ne peut pas reprojeter la bbox des données");
+                return NULL;
+            }
             return createExtendedCompoundImage(l,bbox,dataBbox,dst_crs,servicesConf,width,height,interpolation,error);
 
         } else {
@@ -354,7 +360,10 @@ Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst
                     //les deux s'intersectent
                     LOGGER_DEBUG ("les deux bbox s'intersectent");
                     BoundingBox<double> partBbox = askBbox.cutIntersectionWith(dataBbox);
-                    partBbox.reproject("epsg:4326",dst_crs.getProj4Code());
+                    if (partBbox.reproject("epsg:4326",dst_crs.getProj4Code()) != 0) {
+                        LOGGER_ERROR("Ne peut pas reprojeter la bbox partielle");
+                        return NULL;
+                    }
                     return createExtendedCompoundImage(l,bbox,partBbox,dst_crs,servicesConf,width,height,interpolation,error);
                 }
 

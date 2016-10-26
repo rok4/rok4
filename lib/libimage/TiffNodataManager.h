@@ -344,7 +344,7 @@ bool TiffNodataManager<T>::treatNodata ( char* inputImage, char* outputImage, ch
     Photometric::ePhotometric photometric = sourceImage->getPhotometric();
     Compression::eCompression compression = sourceImage->getCompression();
     SampleFormat::eSampleFormat sampleformat = sourceImage->getSampleFormat();
-    samplesperpixel = sourceImage->channels;
+    samplesperpixel = sourceImage->getChannels();
     
     if ( samplesperpixel > maxChannels )  {
         LOGGER_ERROR ( "The nodata manager is not adapted (samplesperpixel have to be " << maxChannels <<

@@ -50,17 +50,17 @@ class TiffRawEncoder : public TiffEncoder {
 protected:
     virtual void prepareHeader(){
 	LOGGER_DEBUG("TiffRawEncoder : preparation de l'en-tete");
-	sizeHeader = TiffHeader::headerSize ( image->channels );
+	sizeHeader = TiffHeader::headerSize ( image->getChannels() );
 	header = new uint8_t[sizeHeader];
-	if ( image->channels==1 )
+	if ( image->getChannels()==1 )
 	    if ( sizeof ( T ) == sizeof ( float ) ) {
 		memcpy( header, TiffHeader::TIFF_HEADER_RAW_FLOAT32_GRAY, sizeHeader);
 	    } else {
 		memcpy( header, TiffHeader::TIFF_HEADER_RAW_INT8_GRAY, sizeHeader);
 	    }
-	else if ( image->channels==3 )
+	else if ( image->getChannels()==3 )
 	    memcpy( header, TiffHeader::TIFF_HEADER_RAW_INT8_RGB, sizeHeader);
-	else if ( image->channels==4 )
+	else if ( image->getChannels()==4 )
 	    memcpy( header, TiffHeader::TIFF_HEADER_RAW_INT8_RGBA, sizeHeader);
 	* ( ( uint32_t* ) ( header+18 ) )  = image->getWidth();
 	* ( ( uint32_t* ) ( header+30 ) )  = image->getHeight();
@@ -70,10 +70,10 @@ protected:
   
     virtual void prepareBuffer(){
 	LOGGER_DEBUG("TiffRawEncoder : preparation du buffer d'image");
-	tmpBuffer = new uint8_t[image->getHeight()*image->getWidth()*image->channels*sizeof ( T )];
+	tmpBuffer = new uint8_t[image->getHeight()*image->getWidth()*image->getChannels()*sizeof ( T )];
 	int lRead = 0;
 	tmpBufferSize = 0;
-	int linesize = image->getWidth()*image->channels;
+	int linesize = image->getWidth()*image->getChannels();
 	int linesizetmp = linesize * sizeof ( T );
 	for ( ; lRead < image->getHeight() ; lRead++ ) {
 	    image->getline ( ( T* ) (tmpBuffer+tmpBufferSize), lRead );

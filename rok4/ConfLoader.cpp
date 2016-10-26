@@ -89,6 +89,7 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
     int center=0;
     int errorCode;
     std::string algo = "";
+    std::string unit = "";
     bool estompage = false;
     float minSlope = 5.0;
 
@@ -364,6 +365,19 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
             algo = "H";
 		}
         pente.setAlgo(algo);
+
+        unit = pElem->Attribute("unit");
+
+        if ( unit != "" ) {
+            if (unit != "degree" && unit != "pourcent") {
+                LOGGER_ERROR ("Un attribut unit invalide a ete trouve dans la pente du Style " ) << id << ( ", la valeur possible est 'degree' or 'pourcent'");
+                return NULL;
+            }
+        } else {
+            LOGGER_INFO("Pas d'unit defini, 'degree' par defaut");
+            unit = "degree";
+        }
+        pente.setUnit(unit);
 	}
 
     //recuperation des informations pour le calcul des pentes
@@ -595,7 +609,7 @@ TileMatrixSet* ConfLoader::buildTileMatrixSet ( std::string fileName ) {
 }//buildTileMatrixSet(std::string fileName)
 
 // Load a pyramid
-Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times, std::map<std::string,Style*> stylesList, Proxy proxy) {
+Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times, std::map<std::string,Style*> stylesList, Proxy proxy, ServicesConf *serviceConf) {
 
     LOGGER_INFO ( _ ( "             Ajout de la pyramide : " ) << fileName );
     // Relative file Path
@@ -833,7 +847,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
                     for (pElemSP; pElemSP; pElemSP = pElemSP->NextSiblingElement()) {
 
                         if (pElemSP->ValueStr() == "basedPyramid") {
-                            basedPyramid = parseBasedPyramid(pElemSP,tmsList,timesSpecific,stylesList,parentDir, proxy);
+                            basedPyramid = parseBasedPyramid(pElemSP,tmsList,timesSpecific,stylesList,parentDir, proxy, serviceConf);
 
                             if (basedPyramid) {
 
@@ -856,7 +870,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
                         if (pElemSP->ValueStr() == "webService") {
 
-                            ws = parseWebService(pElemSP,tms->getCrs(),format, proxy);
+                            ws = parseWebService(pElemSP,tms->getCrs(),format, proxy, serviceConf);
                             ntSources++;
                             if (ws) {
                                 sSources.push_back(ws);
@@ -1118,6 +1132,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
 
             if (specificLevel && sSources.size() != 0) {
                 if ( !pElemLvlTMS ) {
+                    //TODO: prendre en compte le code de retour de la fonction
                     updateTileLimits(*TL->getrefMinTileCol(),*TL->getrefMaxTileCol(),*TL->getrefMinTileRow(),*TL->getrefMaxTileRow(),TL->getTm(),tms,sSources);
                 }
                 if (onDemandSpecific && noFile) {
@@ -1288,7 +1303,7 @@ int ConfLoader::updatePyrLevel(Pyramid* pyr, TileMatrix *tm, TileMatrixSet *tms)
 
 }
 
-void ConfLoader::updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Source *> sources) {
+int ConfLoader::updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Source *> sources) {
 
     //On met à jour les Min et Max Tiles une fois que l'on a trouvé un équivalent dans chaque basedPyramid
     // pour le level créé
@@ -1332,7 +1347,10 @@ void ConfLoader::updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, ui
 
 
                 //On reprojette la bbox
-                MMbbox.reproject(pyr->getTms().getCrs().getProj4Code(), tms->getCrs().getProj4Code());
+                if (MMbbox.reproject(pyr->getTms().getCrs().getProj4Code(), tms->getCrs().getProj4Code()) != 0) {
+                    LOGGER_ERROR("Ne peut pas reprojeter la bbox de base");
+                    return 1;
+                }
 
                 //On récupère les Min et Max de Pyr pour ce level dans la nouvelle projection
                 xo = tm.getX0();
@@ -1471,10 +1489,11 @@ void ConfLoader::updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, ui
         maxTileRow = maxRow;
     }
 
+    return 0;
 
 }
 
-WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Format::eformat_data pyrFormat, Proxy proxy_default) {
+WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Format::eformat_data pyrFormat, Proxy proxy_default,ServicesConf *serviceConf) {
 
     WebService * ws = NULL;
     std::string url, user, proxy, noProxy,pwd, referer, userAgent, version, layers, styles, format, crs;
@@ -1627,7 +1646,9 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
 
             //le crs demandé et le crs de la pyramide en construction doivent être le même
             CRS askedCRS = CRS(crs);
-            if (askedCRS != pyrCRS) {
+            std::string pcrs = pyrCRS.getProj4Code();
+
+            if ((askedCRS != pyrCRS) && !serviceConf->are_the_two_CRS_equal(crs,pcrs)) {
                 LOGGER_ERROR("Un WMS doit contenir un crs équivalent à celui de la pyramide en construction");
                 return NULL;
             }
@@ -1736,6 +1757,8 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
 
         ws = new WebMapService(url, proxy, noProxy, retry, interval, timeout, version, layers, styles, format, channels, crs, bbox, noDataValues,options);
 
+        ws->setResponseType(format);
+
     } else {
         //On retourne une erreur car le WMS est le seul WebService disponible pour le moment
         LOGGER_ERROR("Un WebService doit contenir un WMS pour être utilisé");
@@ -1746,7 +1769,7 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
 
 }
 
-Pyramid *ConfLoader::parseBasedPyramid(TiXmlElement* sPyr, std::map<std::string, TileMatrixSet*> &tmsList, bool timesSpecific, std::map<std::string,Style*> stylesList, std::string parentDir, Proxy proxy) {
+Pyramid *ConfLoader::parseBasedPyramid(TiXmlElement* sPyr, std::map<std::string, TileMatrixSet*> &tmsList, bool timesSpecific, std::map<std::string,Style*> stylesList, std::string parentDir, Proxy proxy, ServicesConf *serviceConf) {
 
     Pyramid *basedPyramid;
 
@@ -1773,7 +1796,7 @@ Pyramid *ConfLoader::parseBasedPyramid(TiXmlElement* sPyr, std::map<std::string,
             basedPyramidFilePath.insert ( 0,parentDir );
         }
 
-        basedPyramid = buildPyramid ( basedPyramidFilePath, tmsList, timesSpecific, stylesList, proxy );
+        basedPyramid = buildPyramid ( basedPyramidFilePath, tmsList, timesSpecific, stylesList, proxy, serviceConf );
 
         if ( !basedPyramid) {
             LOGGER_ERROR ( _ ( "La pyramide " ) << basedPyramidFilePath << _ ( " ne peut etre chargee" ) );
@@ -1815,13 +1838,13 @@ Pyramid *ConfLoader::parseBasedPyramid(TiXmlElement* sPyr, std::map<std::string,
 }
 
 
-Pyramid* ConfLoader::buildPyramid ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times, std::map<std::string,Style*> stylesList, Proxy proxy) {
+Pyramid* ConfLoader::buildPyramid ( std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times, std::map<std::string,Style*> stylesList, Proxy proxy, ServicesConf *serviceConf) {
     TiXmlDocument doc ( fileName.c_str() );
     if ( !doc.LoadFile() ) {
         LOGGER_ERROR ( _ ( "Ne peut pas charger le fichier " ) << fileName );
         return NULL;
     }
-    return parsePyramid ( &doc,fileName,tmsList, times, stylesList, proxy);
+    return parsePyramid ( &doc,fileName,tmsList, times, stylesList, proxy, serviceConf);
 }
 
 
@@ -2250,7 +2273,7 @@ Layer * ConfLoader::parseLayer ( TiXmlDocument* doc,std::string fileName, std::m
             pyramidFilePath.insert ( 0,"/" );
             pyramidFilePath.insert ( 0,parentDir );
         }
-        pyramid = buildPyramid ( pyramidFilePath, tmsList, times, stylesList, proxy);
+        pyramid = buildPyramid ( pyramidFilePath, tmsList, times, stylesList, proxy, servicesConf);
         if ( !pyramid ) {
             LOGGER_ERROR ( _ ( "La pyramide " ) << pyramidFilePath << _ ( " ne peut etre chargee" ) );
             return NULL;
@@ -2320,7 +2343,7 @@ Layer * ConfLoader::buildLayer ( std::string fileName, std::map<std::string, Til
 }
 
 // Load the server configuration (default is server.conf file) during server initialization
-bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog, int& nbProcess, Proxy &proxy ) {
+bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog, int& nbProcess, Proxy &proxy, int& timeKill ) {
     TiXmlHandle hDoc ( doc );
     TiXmlElement* pElem;
     TiXmlHandle hRoot ( 0 );
@@ -2410,6 +2433,16 @@ bool ConfLoader::parseTechnicalParam ( TiXmlDocument* doc,std::string serverConf
         std::cerr<<_ ( "Le nbProcess [" ) << pElem->GetTextStr() <<_ ( "] is bigger than " ) << MAX_NB_PROCESS <<std::endl;
         std::cerr<<_ ( "=> nbProcess = " ) << MAX_NB_PROCESS<<std::endl;
         nbProcess = MAX_NB_PROCESS;
+    }
+
+    pElem=hRoot.FirstChild ( "timeForProcess" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        timeKill = DEFAULT_TIME_PROCESS;
+    } else if ( !sscanf ( pElem->GetText(),"%d",&timeKill ) ) {
+        timeKill = DEFAULT_TIME_PROCESS;
+    }
+    if (timeKill > DEFAULT_MAX_TIME_PROCESS) {
+        timeKill = DEFAULT_MAX_TIME_PROCESS;
     }
 
     pElem=hRoot.FirstChild ( "WMTSSupport" ).Element();
@@ -3120,14 +3153,14 @@ bool ConfLoader::isCRSAllowed(std::vector<std::string> restrictedCRSList, std::s
 bool ConfLoader::getTechnicalParam ( std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix,
                                      int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS,
                                      bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir,
-                                     std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog, int& nbProcess, Proxy &proxy ) {
+                                     std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog, int& nbProcess, Proxy &proxy, int& timeKill ) {
     std::cout<<_ ( "Chargement des parametres techniques depuis " ) <<serverConfigFile<<std::endl;
     TiXmlDocument doc ( serverConfigFile );
     if ( !doc.LoadFile() ) {
         std::cerr<<_ ( "Ne peut pas charger le fichier " ) << serverConfigFile<<std::endl;
         return false;
     }
-    return parseTechnicalParam ( &doc,serverConfigFile,logOutput,logFilePrefix,logFilePeriod,logLevel,nbThread,supportWMTS,supportWMS,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,styleDir, socket, backlog, nbProcess, proxy );
+    return parseTechnicalParam ( &doc,serverConfigFile,logOutput,logFilePrefix,logFilePeriod,logLevel,nbThread,supportWMTS,supportWMS,reprojectionCapability,servicesConfigFile,layerDir,tmsDir,styleDir, socket, backlog, nbProcess, proxy,timeKill );
 }
 
 bool ConfLoader::buildStylesList ( std::string styleDir, std::map< std::string, Style* >& stylesList, bool inspire ) {

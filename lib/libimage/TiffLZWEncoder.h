@@ -56,17 +56,17 @@ protected:
     
     virtual void prepareHeader(){
 	LOGGER_DEBUG("TiffLZWEncoder : preparation de l'en-tete");
-	sizeHeader = TiffHeader::headerSize ( image->channels );
+	sizeHeader = TiffHeader::headerSize ( image->getChannels() );
 	header = new uint8_t[sizeHeader];
-	if ( image->channels==1 )
+	if ( image->getChannels()==1 )
 	    if ( sizeof ( T ) == sizeof ( float ) ) {
 		memcpy( header, TiffHeader::TIFF_HEADER_LZW_FLOAT32_GRAY, sizeHeader);
 	    } else {
 		memcpy( header, TiffHeader::TIFF_HEADER_LZW_INT8_GRAY, sizeHeader);
 	    }
-	else if ( image->channels==3 )
+	else if ( image->getChannels()==3 )
 	    memcpy( header, TiffHeader::TIFF_HEADER_LZW_INT8_RGB, sizeHeader);
-	else if ( image->channels==4 )
+	else if ( image->getChannels()==4 )
 	    memcpy( header, TiffHeader::TIFF_HEADER_LZW_INT8_RGBA, sizeHeader);
 	* ( ( uint32_t* ) ( header+18 ) )  = image->getWidth();
 	* ( ( uint32_t* ) ( header+30 ) )  = image->getHeight();
@@ -76,8 +76,8 @@ protected:
     
     virtual void prepareBuffer(){
 	LOGGER_DEBUG("TiffLZWEncoder : preparation du buffer d'image");
-	int linesize = image->getWidth()*image->channels;
-	rawBuffer = new T[image->getHeight()*image->getWidth()*image->channels];
+	int linesize = image->getWidth()*image->getChannels();
+	rawBuffer = new T[image->getHeight()*image->getWidth()*image->getChannels()];
 	rawBufferSize = 0;
 	int lRead = 0;
 	for ( ; lRead < image->getHeight() ; lRead++ ) {

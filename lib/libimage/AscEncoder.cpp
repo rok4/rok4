@@ -72,7 +72,7 @@ size_t AscEncoder::read ( uint8_t *buffer, size_t size ) {
         tmp_stream << std::endl;
         for( int i=0;i<image->getWidth();i++){
         // formattage des données
-            tmp_stream << " " << buffer_line[(i*image->channels)];
+            tmp_stream << " " << buffer_line[(i*image->getChannels())];
         }
 
         tmp_str = tmp_stream.str();

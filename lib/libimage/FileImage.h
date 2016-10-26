@@ -55,6 +55,7 @@
 #include "Image.h"
 #include <string.h>
 #include "Format.h"
+#include "PixelConverter.h"
 
 #define IMAGE_MAX_FILENAME_LENGTH 512
 
@@ -119,6 +120,12 @@ protected:
      */
     int pixelSize;
 
+    /**
+     * \~french \brief Module de conversion des pixels à la volée
+     * \~english \brief Pixel convert module
+     */
+    PixelConverter* converter;
+
     /** \~french
      * \brief Crée un objet FileImage à partir de tous ses éléments constitutifs
      * \details Ce constructeur n'est appelé que par les constructeurs des classes filles
@@ -155,15 +162,46 @@ protected:
         ExtraSample::eExtraSample esType = ExtraSample::ALPHA_UNASSOC
     );
 
-public:
-
     /**
      * \~french
      * \brief Désassocie le canal alpha
      * \details Le canal alpha peut être prémultiplié aux autres canaux dans les images lues. La libimage travaille toujours en alpha non-associé. Si associatedalpha est à vrai, on convertit alors à la lecture le canal alpha
      * \param[in,out] buffer source des donnée, dont l'alpha doit être désassocié
      */
-    void unassociateAlpha ( uint8_t* buffer );
+    template<typename T>
+    void unassociateAlpha ( T* buffer ) {
+        
+        T coeff;
+        if (sizeof(T) == 1) {
+            // pour les entiers sur 8 bits
+            coeff = (T) 255;
+        } else {
+            coeff = (T) 1;
+        }
+
+        T* pix = buffer;
+        int alphaInd = channels - 1;
+        for (int i = 0; i < width; i++, pix += channels) {
+            T alpha = *(pix + alphaInd);
+            
+            if (alpha == coeff) {
+                // Opacité pleine
+                continue;
+            }
+            if (alpha == 0) {
+                // Transperence complète
+                memset(pix, 0, channels);
+                continue;
+            }
+            
+            for (int c = 0; c < alphaInd; c++) {
+                pix[c] = pix[c] * coeff / alpha;
+            }
+        }
+    }
+
+public:
+
 
     virtual int getline ( uint8_t *buffer, int line ) = 0;
     virtual int getline ( float *buffer, int line ) = 0;
@@ -242,17 +280,6 @@ public:
     }
     /**
      * \~french
-     * \brief Retourne le nombre de bits par canal
-     * \return nombre de bits par canal
-     * \~english
-     * \brief Return number of bits per sample
-     * \return number of bits per sample
-     */
-    inline int getBitsPerSample() {
-        return bitspersample;
-    }
-    /**
-     * \~french
      * \brief Retourne la photométrie des données image (rgb, gray...)
      * \return photométrie
      * \~english
@@ -304,8 +331,34 @@ public:
      * \brief Return sample format (integer, float)
      * \return sample format
      */
-    inline SampleFormat::eSampleFormat getSampleFormat() {
+    SampleFormat::eSampleFormat getSampleFormat() {
+        if (converter) return converter->getSampleFormat();
         return sampleformat;
+    }
+    /**
+     * \~french
+     * \brief Retourne le nombre de bits par canal
+     * \return nombre de bits par canal
+     * \~english
+     * \brief Return number of bits per sample
+     * \return number of bits per sample
+     */
+    int getBitsPerSample() {
+        if (converter) return converter->getBitsPerSample();
+        return bitspersample;
+    }
+
+    /**
+     * \~french
+     * \brief Retourne le nombre de canaux par pixel
+     * \return channels
+     * \~english
+     * \brief Return the number of samples per pixel
+     * \return channels
+     */
+    int getChannels() {
+        if (converter) return converter->getSamplesPerPixel();
+        return channels;
     }
 
     /**
@@ -314,8 +367,30 @@ public:
      * \~english
      * \brief Return the pixel's byte size
      */
-    inline int getPixelSize () {
+    int getPixelSize () {
+        if (converter) return converter->getBitsPerSample() * converter->getSamplesPerPixel() / 8;
         return pixelSize;
+    }
+
+    /**
+     * \~french
+     * \brief Ajoute un convertisseur si nécessaire
+     * \details En précisant le format voulu en sortie, on va déterminer si un convertisseur est nécessaire et si la conversion est possible. Dans ce cas, on l'ajoute et :
+     * \li Lors de la demande du format de l'image, on retournera celui post conversion
+     * \li Lors de la lecture d'une ligne, la conversion sera faite de manière transparente pour l'utilisateur de la FileImage
+     * \param[in] osf Format du canal voulu en sortie
+     * \param[in] obps Nombre de bits par canal voulu en sortie
+     * \param[in] ospp Nombre de canaux voulu en sortie
+     * \return Vrai si pas de conversion ou conversion possible, faux sinon
+     */
+    bool addConverter(SampleFormat::eSampleFormat osf, int obps, int ospp) {
+
+        // Si il n'y a pas besoin de conversion, on évite d'en mettre une
+        if (sampleformat == osf && bitspersample == obps && channels == ospp) return true;
+
+        converter = new PixelConverter(width, sampleformat, bitspersample, channels, osf, obps, ospp);
+
+        return converter->youCan();
     }
 
     /**
@@ -326,6 +401,7 @@ public:
      */
     ~FileImage() {
         delete [] filename;
+        delete converter;
     }
 
     /** \~french
@@ -341,6 +417,13 @@ public:
         LOGGER_INFO ( "\t- Bits per sample : " << bitspersample );
         LOGGER_INFO ( "\t- Sample format : " << SampleFormat::toString ( sampleformat ) );
         if (esType == ExtraSample::ALPHA_ASSOC) LOGGER_INFO ( "\t- Alpha have to be unassociated");
+        if (converter) {
+            LOGGER_INFO ( "\tWith pixel converter: " );
+            LOGGER_INFO ( "\t\tSample format: " << SampleFormat::toString(converter->getSampleFormat()) );
+            LOGGER_INFO ( "\t\tBits per sample: " << converter->getBitsPerSample() );
+            LOGGER_INFO ( "\t\tSamples per pixel: " << converter->getSamplesPerPixel() );
+            LOGGER_INFO ( "\t\tPixel size: " << converter->getBitsPerSample() * converter->getSamplesPerPixel() / 8 );
+        }
         LOGGER_INFO ( "" );
     }
 };

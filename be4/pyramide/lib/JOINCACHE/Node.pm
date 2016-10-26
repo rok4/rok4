@@ -46,7 +46,7 @@ Using:
     (start code)
     use JOINCACHE::Node
 
-    my $node = BE4::Node->new(51, 756, "12", 2);
+    my $node = COMMON::GraphNode->new(51, 756, "12", 2);
     (end code)
 
 Attributes:
@@ -59,7 +59,7 @@ Attributes:
     sources - hash array - Source images from which this node is generated. One image source :
 |               img - string - Absolute path to the image
 |               msk - string - Absolute path to the associated mask (optionnal)
-|               sourcePyramid - <JOINCACHE::SourcePyramid> - Pyramid which image belong to
+|               sourcePyramid - <COMMON::SourcePyramid> - Pyramid which image belong to
 =cut
 
 ################################################################################
@@ -73,7 +73,7 @@ use Log::Log4perl qw(:easy);
 
 use File::Spec ;
 use Data::Dumper ;
-use BE4::Base36 ;
+use COMMON::Base36 ;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -183,7 +183,7 @@ sub _init {
     $self->{level} = $level;
     $self->{code} = '';
     
-    $self->{pyramidName} = BE4::Base36::indicesToB36Path( $i, $j, $dirDepth+1).".tif";
+    $self->{pyramidName} = COMMON::Base36::indicesToB36Path( $i, $j, $dirDepth+1).".tif";
     
     return TRUE;
 }
@@ -306,7 +306,7 @@ Returns
     A source image, as an hash :
 |               img - string - Absolute path to the image
 |               msk - string - Absolute path to the associated mask (optionnal)
-|               sourcePyramid - <JOINCACHE::SourcePyramid> - Pyramid which image belong to
+|               sourcePyramid - <COMMON::SourcePyramid> - Pyramid which image belong to
 =cut
 sub getSource {
     my $self = shift;
@@ -327,7 +327,7 @@ Parameters (list):
     image - hash reference - Source images to add
 |               img - string - Absolute path to the image
 |               msk - string - Absolute path to the associated mask (optionnal)
-|               sourcePyramid - <JOINCACHE::SourcePyramid> - Pyramid which image belong to
+|               sourcePyramid - <COMMON::SourcePyramid> - Pyramid which image belong to
 =cut
 sub addSource {
     my $self = shift;

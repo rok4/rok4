@@ -153,7 +153,7 @@ Work2cache () {
     if [ -r ${TMP_DIR}/$workImgName ] ; then rm -f ${PYR_DIR}/$imgName ; fi
     if [ ! -d $dir ] ; then mkdir -p $dir ; fi
 
-    tiff2tile ${TMP_DIR}/$workImgName __t2tI__ ${PYR_DIR}/$imgName
+    work2cache ${TMP_DIR}/$workImgName __w2cI__ ${PYR_DIR}/$imgName
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     rm -f ${TMP_DIR}/$workImgName
 
@@ -164,7 +164,7 @@ Work2cache () {
         if [ -r ${TMP_DIR}/$workMskName ] ; then rm -f ${PYR_DIR}/$mskName ; fi
         if [ ! -d $dir ] ; then mkdir -p $dir ; fi
 
-        tiff2tile ${TMP_DIR}/$workMskName __t2tM__ ${PYR_DIR}/$mskName
+        work2cache ${TMP_DIR}/$workMskName __w2cM__ ${PYR_DIR}/$mskName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         rm -f ${TMP_DIR}/$workMskName
     fi
@@ -346,7 +346,7 @@ Function: treatImage
     - the node owns several source images -> we use tool 'overlayNtiff', commands are written in scripts : <mergeImages>.
 
 Parameters (list):
-    node - <Node> - Node to treat
+    node - <JOINCACHE::Node> - Node to treat
 =cut
 sub treatImage {
     my $self = shift;
@@ -478,7 +478,7 @@ Returns:
     A boolean, TRUE if success, FALSE otherwise.
 
 Parameters (list):
-    node - <Node> - Node to treat
+    node - <JOINCACHE::Node> - Node to treat
 =cut
 sub mergeImages {
     my $self = shift;
@@ -616,18 +616,18 @@ sub configureFunctions {
     my $conf_c2w = "-c zip";
     $configuredFunc =~ s/__c2w__/$conf_c2w/;
 
-    ######## congigure tiff2tile ########
-    my $conf_t2t = "";
+    ######## congigure work2cache ########
+    my $conf_w2c = "";
 
     # pour les images
-    $conf_t2t .= sprintf "-c %s ", $pyr->getCompression();
-    $conf_t2t .= "-t $tileWidth $tileHeight";
+    $conf_w2c .= sprintf "-c %s ", $pyr->getCompression();
+    $conf_w2c .= "-t $tileWidth $tileHeight";
 
-    $configuredFunc =~ s/__t2tI__/$conf_t2t/;
+    $configuredFunc =~ s/__w2cI__/$conf_w2c/;
 
     # pour les masques
-    $conf_t2t = "-c zip -t $tileWidth $tileHeight";
-    $configuredFunc =~ s/__t2tM__/$conf_t2t/;
+    $conf_w2c = "-c zip -t $tileWidth $tileHeight";
+    $configuredFunc =~ s/__w2cM__/$conf_w2c/;
 
     return $configuredFunc;
 }

@@ -116,7 +116,7 @@ public:
      * \param[out] proxy
      * \return false if something went wrong
      */
-    static bool getTechnicalParam (std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int &nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog , int &nbProcess, Proxy &proxy);
+    static bool getTechnicalParam (std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int &nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog , int &nbProcess, Proxy &proxy, int &timeKill);
     /**
      * \~french
      * \brief Charges les différents Styles présent dans le répertoire styleDir
@@ -254,7 +254,7 @@ private:
      * \param[in] proxy
      * \return pointer to the newly created Pyramid, NULL if something went wrong
      */
-    static Pyramid* parsePyramid (TiXmlDocument* doc, std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times , std::map<std::string, Style *> stylesList, Proxy proxy);
+    static Pyramid* parsePyramid (TiXmlDocument* doc, std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times , std::map<std::string, Style *> stylesList, Proxy proxy, ServicesConf *serviceConf);
     /**
      * \~french
      * \brief Création d'une Pyramide à partir d'un fichier
@@ -273,7 +273,7 @@ private:
      * \param[in] proxy
      * \return pointer to the newly created Pyramid, NULL if something went wrong
      */
-    static Pyramid* buildPyramid (std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times , std::map<std::string, Style *> stylesList, Proxy proxy);
+    static Pyramid* buildPyramid (std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times , std::map<std::string, Style *> stylesList, Proxy proxy, ServicesConf *serviceConf);
 
     /**
      * \~french
@@ -317,7 +317,7 @@ private:
      * \param[in] aLevel
      * \param[in] specific
      */
-    static void updateTileLimits (uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Source *> sources);
+    static int updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Source *> sources);
 
     /**
      * \~french
@@ -425,7 +425,7 @@ private:
      * \param[out] proxy
      * \return false if something went wrong
      */
-    static bool parseTechnicalParam (TiXmlDocument* doc, std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog , int &nbProcess, Proxy &proxy);
+    static bool parseTechnicalParam (TiXmlDocument* doc, std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog , int &nbProcess, Proxy &proxy, int &timeKill);
     /**
      * \~french
      * \brief Chargement des paramètres des services à partir de leur représentation XML
@@ -478,7 +478,7 @@ private:
     * \~english
     * \brief Return a WebService from the configuration
     */
-   static WebService *parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Format::eformat_data pyrFormat, Proxy proxy_default);
+   static WebService *parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Format::eformat_data pyrFormat, Proxy proxy_default, ServicesConf *serviceConf);
 
    /**
    * \~french
@@ -486,7 +486,7 @@ private:
    * \~english
    * \brief Return a Pyramid from the configuration
    */
-  static Pyramid *parseBasedPyramid(TiXmlElement* sPyr, std::map<std::string, TileMatrixSet*> &tmsList, bool timesSpecific, std::map<std::string,Style*> stylesList, std::string parentDir, Proxy proxy);
+  static Pyramid *parseBasedPyramid(TiXmlElement* sPyr, std::map<std::string, TileMatrixSet*> &tmsList, bool timesSpecific, std::map<std::string,Style*> stylesList, std::string parentDir, Proxy proxy, ServicesConf *serviceConf);
 
 
 };

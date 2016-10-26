@@ -54,15 +54,15 @@ Log::Log4perl->easy_init({
 use WMTSALAD::Pyramid;
 
 
-my $valid_prop = 'be4/pyramide/tests/properties/WMTSalaD_valid_prop.conf';
-my $valid_src = 'be4/pyramide/tests/sources/WMTSalaD_valid_src.txt';
+my $valid_prop = $Bin."/../../properties/WMTSalaD_valid_prop.conf";
+my $valid_src = $Bin."/../../sources/WMTSalaD_valid_src.txt";
 
 my $prop_buffer; # buffer to store the properties file's content
 my $prop_fh; # file handle for this file
-my $temp_prop_file = 'be4/pyramide/tests/properties/WMTSalaD_temp_prop.conf'; # temporary properties file for tests
+my $temp_prop_file = $Bin."/../../properties/WMTSalaD_temp_prop.conf"; # temporary properties file for tests
 my $src_buffer; # buffer to store the datasources file's content
 my $src_fh; # file handle for this file
-my $temp_src_file = 'be4/pyramide/tests/sources/WMTSalaD_temp_src.txt'; # temporary datasources file for tests
+my $temp_src_file = $Bin."/../../sources/WMTSalaD_temp_src.txt"; # temporary datasources file for tests
 
 open ($prop_fh, '<', $valid_prop) or die ("Unable to open properties file.");
 $prop_buffer = do { local $/; <$prop_fh> };

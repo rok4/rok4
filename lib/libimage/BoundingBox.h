@@ -95,7 +95,6 @@ public:
     int reproject ( std::string from_srs, std::string to_srs , int nbSegment = 256 ) {
 
         pthread_mutex_lock ( & mutex_proj );
-
         projCtx ctx = pj_ctx_alloc();
 
         projPJ pj_src, pj_dst;
