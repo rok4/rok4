@@ -40,7 +40,7 @@ File: DataSourceLoader.pm
 
 Class: COMMON::DataSourceLoader
 
-Loads, validates and manages data sources. Data sources informations are read from a specific configuration file or directly in an hash (old working).
+Loads, validates and manages data sources. Data sources informations are read from a specific configuration file.
 
 Using:
     (start code)
@@ -51,25 +51,10 @@ Using:
         filepath_conf => "/home/IGN/CONF/source.txt",
     });
 
-    # DataSourceLoader object creation for old configuration (just one data source)
-    my $objDataSourceLoader = COMMON::DataSourceLoader->new(
-        { # datasource section
-            SRS         => "IGNF:LAMB93",
-            path_image  => "/home/IGN/DATA/IMAGES/",
-        },
-        { # harvesting section
-            wms_layer   => ORTHO_RAW_LAMB93_PARIS_OUEST
-            wms_url     => http://localhost/wmts/rok4
-            wms_version => 1.3.0
-            wms_request => getMap
-            wms_format  => image/tiff
-        },
-        $bottomLevel, # bottom level for this one data source
-    );
     (end code)
 
 Attributes:
-    FILEPATH_DATACONF - string - Path to the specific datasources configuration file. Is undefined if old way is used.
+    FILEPATH_DATACONF - string - Path to the specific datasources configuration file.
     dataSources - <DataSource> array - Data sources ensemble. Can contain just one element.
 
 Limitations:
@@ -121,10 +106,8 @@ Constructor: new
 DataSourceLoader constructor. Bless an instance.
 
 Parameters (list):
-    datasource - hash - Section *datasource*, in the general BE4 configuration file. Contains the key "filepath_conf" if we use a specific data sources configuration file :
+    datasource - hash - Section *datasource*, in the general BE4 configuration file. Contains the key "filepath_conf"
 |               filepath_conf - string - Path to the data sources configuration file
-    harvesting - hash - If we use the old ways, section *harvesting*, in the general BE4 configuration file
-    bottomId - string - If we use the old ways, parameter *pyr_level_bottom* in the section *pyramid*, in the general BE4 configuration file, to define from which level data source is used.
 
 See also:
     <_init>, <_load>
@@ -132,8 +115,6 @@ See also:
 sub new {
     my $this = shift;
     my $datasource = shift;
-    my $harvesting = shift;
-    my $bottomId = shift;
 
     my $class= ref($this) || $this;
     # IMPORTANT : if modification, think to update natural documentation (just above)
@@ -144,7 +125,6 @@ sub new {
 
     bless($self, $class);
 
-    TRACE;
 
     # init. class
     return undef if (! $self->_init($datasource));
@@ -165,14 +145,13 @@ Function: _init
 Checks the "datasource" section. Must contain key "filepath_conf" (and path is tested)
 
 Parameters (list):
-    datasource - hash - Section *datasource*, in the general BE4 configuration file. Contains the key "filepath_conf" if we use a specific data sources configuration file :
+    datasource - hash - Section *datasource*, in the general BE4 configuration file. Contains the key "filepath_conf" :
 |               filepath_conf - string - Path to the data sources configuration file
 =cut
 sub _init {
     my $self   = shift;
     my $datasource = shift;
 
-    TRACE;
     
     return FALSE if (! defined $datasource);
     
@@ -197,7 +176,6 @@ Reads the specific data sources configuration file and creates corresponding <Da
 sub _load {
     my $self   = shift;
 
-    TRACE;
 
     my $propLoader = COMMON::Config->new({
         'filepath' => $self->{FILEPATH_DATACONF},
@@ -268,7 +246,6 @@ sub updateDataSources {
     my $TMS = shift;
     my $topID = shift;
 
-    TRACE();
     
     if (! defined $TMS || ref ($TMS) ne "COMMON::TileMatrixSet") {
         ERROR("We need a TileMatrixSet object to update data sources");
@@ -362,6 +339,35 @@ sub getDataSources {
 sub getNumberDataSources {
     my $self = shift;
     return scalar @{$self->{dataSources}}; 
+}
+
+# Function: getPixelFromSources
+sub getPixelFromSources {
+    my $self = shift;
+
+    my $pixel = undef;
+    foreach my $source (@{$self->{dataSources}}) {
+        if (! $source->hasImages()) {next;}
+
+        my $tmpPixel = $source->getPixel();
+
+        if (! defined $pixel) {
+            $pixel = $tmpPixel;
+            next;
+        }
+
+        if (! $tmpPixel->equals($pixel)) {
+            ERROR("We have several images sources but pixel caracteristics are different, we can't extract ONE format from sources for output");
+            return (FALSE, undef);
+        }
+    }
+
+    if (defined $pixel) {
+        INFO("We extract ONE format from sources for output. We can use it if no output format is provided");
+        INFO( $pixel->exportForDebug() );
+    }
+
+    return (TRUE, $pixel);
 }
 
 ####################################################################################################

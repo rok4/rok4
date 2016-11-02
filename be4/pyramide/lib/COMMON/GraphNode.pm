@@ -40,7 +40,7 @@ File: Node.pm
 
 Class: COMMON::GraphNode
 
-Descibe a node of a <QTree> or a <Graph>. Allow different storage (FileSystem, Ceph, Swift)
+Descibe a node of a <COMMON::QTree> or a <COMMON::NNGraph>. Allow different storage (FileSystem, Ceph, Swift).
 
 Using:
     (start code)
@@ -57,7 +57,7 @@ Using:
         j => 756,
         tm => $tm,
         graph => $graph,
-        type => 'FS'
+        type => 'FILE'
     });
     (end code)
 
@@ -84,6 +84,7 @@ Attributes:
 
     workImageBasename - string - 
     workMaskBasename - string - 
+    
     workExtension - string - extension of the temporary work image, lower case. Default value : tif.
 
     tm - <TileMatrix> - Tile matrix associated to the level which the node belong to.
@@ -141,7 +142,7 @@ Constructor: new
 Node constructor. Bless an instance.
 
 Parameters (hash):
-    type - string - Final storage type : 'FS', 'CEPH', 'S3' or 'SWIFT'
+    type - string - Final storage type : 'FILE', 'CEPH', 'S3' or 'SWIFT'
     i - integer - Node's column
     j - integer - Node's row
     tm - <TileMatrix> - Tile matrix of the level which node belong to
@@ -181,8 +182,6 @@ sub new {
     
     bless($self, $class);
     
-    TRACE;
-    
     # init. class
     return undef if (! $self->_init($params));
     
@@ -198,14 +197,13 @@ Parameters (hash):
     type - string - Final storage type : 'FS', 'CEPH', 'S3' or 'SWIFT'
     i - integer - Node's column
     j - integer - Node's row
-    tm - <TileMatrix> - Tile matrix of the level which node belong to
-    graph - <Graph> or <QTree> - Graph containing the node.
+    tm - <COMMON::TileMatrix> - Tile matrix of the level which node belong to
+    graph - <COMMON::Graph> or <COMMON::NNQTree> - Graph containing the node.
 =cut
 sub _init {
     my $self = shift;
     my $params = shift;
     
-    TRACE;
     
     # mandatory parameters !
     if (! defined $params->{i}) {
@@ -346,6 +344,10 @@ Parameters (list):
 sub setScript {
     my $self = shift;
     my $script = shift;
+    
+    if (! defined $script || ref ($script) ne "COMMON::GraphScript") {
+        ERROR("We expect to a COMMON::GraphScript object.");
+    }
     
     $self->{script} = $script; 
 }
@@ -514,7 +516,7 @@ sub getGeoImages {
 Function: addNodeSources
 
 Parameters (list):
-    nodes - <Node> array - Source nodes to add
+    nodes - <COMMON::GraphNode> array - Source nodes to add
 =cut
 sub addNodeSources {
     my $self = shift;
@@ -610,7 +612,7 @@ sub setAccumulatedWeight {
 =begin nd
 Function: getPossibleChildren
 
-Returns a <Node> array, containing children (length is always 4, with undefined value for children which don't exist), an empty array if the node is a leaf.
+Returns a <COMMON::GraphNode> array, containing children (length is always 4, with undefined value for children which don't exist), an empty array if the node is a leaf.
 
 Warning:
     Do not mistake with <getChildren>
@@ -623,7 +625,7 @@ sub getPossibleChildren {
 =begin nd
 Function: getChildren
 
-Returns a <Node> array, containing real children (max length = 4), an empty array if the node is a leaf.
+Returns a <COMMON::GraphNode> array, containing real children (max length = 4), an empty array if the node is a leaf.
 
 Warning:
     Do not mistake with <getPossibleChildren>
@@ -655,7 +657,6 @@ sub exportForMntConf {
     
     $prefix = "" if (! defined $prefix);
 
-    TRACE;
 
     my @Bbox = $self->getBBox;
     my $output = "";
@@ -704,6 +705,7 @@ sub exportForDntConf {
     my $prefix = shift;
     
     $prefix = "" if (! defined $prefix);
+
 
     my @Bbox = $self->getBBox();
     my $output = "";

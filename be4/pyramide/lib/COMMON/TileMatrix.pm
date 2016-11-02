@@ -136,7 +136,7 @@ sub new {
     # IMPORTANT : if modification, think to update natural documentation (just above)
     my $self = {
         id             => undef,
-        tms             => undef,
+        tms            => undef,
         resolution     => undef,
         topLeftCornerX => undef,
         topLeftCornerY => undef,
@@ -149,7 +149,6 @@ sub new {
 
     bless($self, $class);
 
-    TRACE;
 
     # init. class
     if (! $self->_init($params)) {
@@ -179,7 +178,6 @@ sub _init {
     my $self   = shift;
     my $params = shift;
 
-    TRACE;
     
     return FALSE if (! defined $params);
     
@@ -452,6 +450,12 @@ sub bboxToIndices {
 sub getID {
     my $self = shift;
     return $self->{id}; 
+}
+
+# Function: getOrder
+sub getOrder {
+    my $self = shift;
+    return $self->{tms}->getOrderfromID($self->{id});
 }
 
 # Function: setTMS

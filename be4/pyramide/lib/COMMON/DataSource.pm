@@ -143,8 +143,6 @@ use Log::Log4perl qw(:easy);
 use Data::Dumper;
 use List::Util qw(min max);
 
-use Geo::GDAL;
-
 # My module
 use COMMON::ImageSource;
 use COMMON::Harvesting;
@@ -206,12 +204,11 @@ sub new {
         # Image source
         imageSource => undef,
         # Harvesting
-        harvesting => undef,
+        harvesting => undef
     };
 
     bless($self, $class);
 
-    TRACE;
 
     # load. class
     return undef if (! $self->_load($level,$params));
@@ -264,7 +261,6 @@ sub _load {
     my $level = shift;
     my $params = shift;
 
-    TRACE;
     
     return FALSE if (! defined $params);
 
@@ -333,7 +329,6 @@ We generate an OGR Geometry from the supplied extent or the image source boundin
 sub computeGlobalInfo {
     my $self = shift;
 
-    TRACE;
 
     # Bounding polygon
     if (defined $self->{imageSource}) {
@@ -359,69 +354,23 @@ sub computeGlobalInfo {
 
         if (scalar @limits == 4) {
             # user supplied a BBOX
-            if ($limits[0] !~ m/[+-]?\d+\.?\d*/ || $limits[1] !~ m/[+-]?\d+\.?\d*/ ||
-                $limits[2] !~ m/[+-]?\d+\.?\d*/ || $limits[3] !~ m/[+-]?\d+\.?\d*/ ) {
-                ERROR(sprintf "If 'extent' is a bbox, value must be a string like 'xmin,ymin,xmax,ymax' : %s !",$self->{extent});
+            $self->{extent} = COMMON::ProxyGDAL::geometryFromString("BBOX", $self->{extent});
+            if (! defined $self->{extent}) {
+                ERROR(sprintf "Cannot create a OGR geometry from the bbox %s", $self->{extent});
                 return FALSE ;
             }
-
-            my $xmin = $limits[0];
-            my $ymin = $limits[1];
-            my $xmax = $limits[2];
-            my $ymax = $limits[3];
-
-            if ($xmax <= $xmin || $ymax <= $ymin) {
-                ERROR(sprintf "'box' value is not logical for a bbox (max < min) : %s !",$self->{extent});
-                return FALSE ;
-            }
-
-            $WKTextent = sprintf "POLYGON((%s %s,%s %s,%s %s,%s %s,%s %s))",
-                $xmin,$ymin,
-                $xmin,$ymax,
-                $xmax,$ymax,
-                $xmax,$ymin,
-                $xmin,$ymin;
 
         }
-        elsif (scalar @limits == 1) {
+        else {
             # user supplied a file which contains bounding polygon
-            if (! -f $self->{extent}) {
-                ERROR (sprintf "Shape file ('%s') doesn't exist !",$self->{extent});
-                return FALSE;
+            $self->{extent} = COMMON::ProxyGDAL::geometryFromFile($self->{extent});
+            if (! defined $self->{extent}) {
+                ERROR(sprintf "Cannot create a OGR geometry from the file %s", $self->{extent});
+                return FALSE ;
             }
-
-            if (! open SHAPE, "<", $self->{extent} ){
-                ERROR(sprintf "Cannot open the shape file %s.",$self->{extent});
-                return FALSE;
-            }
-
-            $WKTextent = '';
-            while( defined( my $line = <SHAPE> ) ) {
-                $WKTextent .= $line;
-            }
-            close(SHAPE);
-        } else {
-            ERROR(sprintf "The value for 'extent' is not valid (must be a BBOX or a file with a WKT shape) : %s.",
-                $self->{extent});
-            return FALSE;
         }
 
-        if (! defined $WKTextent) {
-            ERROR(sprintf "Cannot define the string from the parameter 'extent' (WKT) => %s.",$self->{extent});
-            return FALSE;
-        }
-
-        # We use extent to define a WKT string, Now, we store in this attribute the equivalent OGR Geometry
-        $self->{extent} = undef;
-
-        $self->{extent} = COMMON::ProxyGDAL::geometryFromWKT($WKTextent);
-
-        if (! defined $self->{extent}) {
-            ERROR(sprintf "Cannot create a Geometry from the string : %s.",$WKTextent);
-            return FALSE;
-        }
-
-        my ($xmin,$xmax,$ymin,$ymax) = COMMON::ProxyGDAL::getBbox($self->{extent});
+        my ($xmin,$ymin,$xmax,$ymax) = COMMON::ProxyGDAL::getBbox($self->{extent});
 
         if (! defined $xmin) {
             ERROR("Cannot calculate bbox from the OGR Geometry");
@@ -518,6 +467,15 @@ sub getBottomOrder {
 sub getTopOrder {
     my $self = shift;
     return $self->{topOrder};
+}
+
+# Function: getPixel
+sub getPixel {
+    my $self = shift;
+
+    if (! defined $self->{imageSource}) {return undef;}
+    
+    return $self->{imageSource}->getPixel();
 }
 
 =begin nd

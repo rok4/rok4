@@ -226,7 +226,6 @@ sub new {
 
     bless($self, $class);
 
-    TRACE;
 
     # init. class
     if (! $self->_init($params)) {
@@ -262,7 +261,6 @@ sub _init {
     my $self   = shift;
     my $params = shift;
 
-    TRACE;
     
     return FALSE if (! defined $params);
     
@@ -422,7 +420,6 @@ Example:
 sub exportToXML {
   my $self = shift;
   
-  TRACE;
   
   my $string = undef;
   

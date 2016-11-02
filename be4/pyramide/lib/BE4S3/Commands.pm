@@ -341,7 +341,7 @@ sub new {
 
     bless($self, $class);
 
-    if (! defined $pyr || ref ($pyr) ne "BE4S3::Pyramid") {
+    if (! defined $pyr || ref ($pyr) ne "COMMON::Pyramid") {
         ERROR("Can not load Pyramid !");
         return undef;
     }

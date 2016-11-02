@@ -140,7 +140,6 @@ sub new {
 
     bless($self, $class);
 
-    TRACE;
 
     # All attributes have to be present in parameters and defined
 
@@ -168,10 +167,10 @@ sub new {
     }
     $self->{samplesperpixel} = int($params->{samplesperpixel});
 
-    ### Photometric
-    if (! exists $params->{photometric} || ! defined $params->{photometric}) {
-        $params->{photometric} = $DEFAULT{photometric};
-        INFO(sprintf "Default value for 'photometric' : %s", $params->{photometric});
+    ### Photometric :  REQUIRED
+    if (! exists $params->{photometric} || ! defined $params->{bitspersample}) {
+        ERROR ("'bitspersample' required !");
+        return undef;
     } else {
         if (! $self->isPhotometric($params->{photometric})) {
             ERROR (sprintf "Unknown 'photometric' : %s !",$params->{photometric});
@@ -192,6 +191,12 @@ sub new {
     }
     $self->{bitspersample} = int($params->{bitspersample});
 
+    # If image own one-bit sample, conversion will be done, so it's like a 8-bit image
+    if ($self->{bitspersample} == 1) {
+        INFO("We have a one-bit pixel, we memorize an 8-bit pixel because on fly conversion will be done");
+        $self->{bitspersample} = 8;
+    }
+
     return $self;
 }
 
@@ -211,7 +216,6 @@ sub isSampleFormat {
     my $self = shift;
     my $sampleformat = shift;
 
-    TRACE;
 
     return FALSE if (! defined $sampleformat);
 
@@ -233,7 +237,6 @@ sub isBitsPerSample {
     my $self = shift;
     my $bitspersample = shift;
 
-    TRACE;
 
     return FALSE if (! defined $bitspersample);
 
@@ -257,7 +260,6 @@ sub isPhotometric {
     my $self = shift;
     my $photometric = shift;
 
-    TRACE;
 
     return FALSE if (! defined $photometric);
 
@@ -279,7 +281,6 @@ sub isSamplesPerPixel {
     my $self = shift;
     my $samplesperpixel = shift;
 
-    TRACE;
 
     return FALSE if (! defined $samplesperpixel);
 
@@ -315,6 +316,83 @@ sub getBitsPerSample {
 sub getSamplesPerPixel {
     my $self = shift;
     return $self->{samplesperpixel};
+}
+
+# Function: equals
+sub equals {
+    my $self = shift;
+    my $other = shift;
+
+    return (
+        $self->{samplesperpixel} eq $other->getSamplesPerPixel() &&
+        $self->{sampleformat} eq $other->getSampleFormat() &&
+        $self->{photometric} eq $other->getPhotometric() &&
+        $self->{bitspersample} eq $other->getBitsPerSample()
+    );
+}
+
+=begin nd
+Function: convertible
+
+Tests if conversion is allowed between two pixel formats
+
+Parameters (list):
+    other - <COMMON::Pixel> - Destination pixel for conversion to test
+=cut
+sub convertible {
+    my $self = shift;
+    my $other = shift;
+
+    if ($self->equals($other)) {
+        return TRUE;
+    }
+
+
+    # La conversion se fait par la classe de la libimage PixelConverter, dont une instance est ajoutée à un FileImage pour convertir à la volée
+    # Les tests de faisabilité ici doivent être identiques à ceux dans PixelConverter :
+    # ----------------------------- PixelConverter constructor : C++ ----------------------------------
+    # if (inSampleFormat == SampleFormat::FLOAT || outSampleFormat == SampleFormat::FLOAT) {
+    #     LOGGER_WARN("PixelConverter doesn't handle float samples");
+    #     return;
+    # }
+    # if (inSampleFormat != outSampleFormat) {
+    #     LOGGER_WARN("PixelConverter doesn't handle different samples format");
+    #     return;
+    # }
+    # if (inBitsPerSample != outBitsPerSample) {
+    #     LOGGER_WARN("PixelConverter doesn't handle different number of bits per sample");
+    #     return;
+    # }
+
+    # if (inSamplesPerPixel == outSamplesPerPixel) {
+    #     LOGGER_WARN("PixelConverter have not to be used if number of samples per pixel is the same");
+    #     return;
+    # }
+
+    # if (inBitsPerSample != 8) {
+    #     LOGGER_WARN("PixelConverter only handle 8 bits sample");
+    #     return;
+    # }
+    # -------------------------------------------------------------------------------------------------
+
+    if ($self->getSampleFormat() eq "float" || $other->getSampleFormat() eq "float") {
+        # aucune conversion pour des canaux flottant
+        return FALSE;
+    }
+
+    if ($self->getSampleFormat() ne $other->getSampleFormat()) {
+        return FALSE;
+    }
+
+    if ($self->getBitsPerSample() != $other->getBitsPerSample()) {
+        return FALSE;
+    }
+
+    if ($self->getBitsPerSample() != 8) {
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 ####################################################################################################

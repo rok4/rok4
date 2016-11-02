@@ -137,5 +137,55 @@ sub isNumber {
     return FALSE;
 }
 
+=begin nd
+Function: isBbox
+
+Tells if a string is a bouding box, i.e. a succession of coordinates in the form "xmin,ymin,xmax,ymax".
+
+Parameters (list):
+    value - string - String to test
+=cut
+sub isBbox {
+
+    my $value = shift;
+
+    my $result;
+
+    my @array = split (',', $value);
+    if (scalar @array == 4) {
+        foreach my $item (@array) {
+            if (! isNumber($item) ) {
+                return FALSE;
+            }
+        }  
+    } else {
+        return FALSE;
+    }
+
+    if ($array[0] > $array[2] || $array[1] > $array[3]) {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+
+=begin nd
+Function: isEmpty
+
+Precises if an hash or a reference can be considered as empty.
+
+Parameters (list):
+    value - var - Variable to test
+=cut
+sub isEmpty {
+
+  my $value = shift;
+  
+  return FALSE if (ref($value) eq "HASH");
+  return TRUE  if (! defined $value);
+  return TRUE  if ($value eq "");
+  return FALSE;
+}
 
 1;

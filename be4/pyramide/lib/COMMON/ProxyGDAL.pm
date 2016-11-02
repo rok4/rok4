@@ -45,7 +45,7 @@ Proxy to use different versions of GDAL transparently
 Using:
     (start code)
     use COMMON::ProxyGDAL;
-    my $geom = COMMON::ProxyGDAL::geometryFromWKT("POLYGON(0 0,1 0,1 1,0 1,0 0)") ;
+    my $geom = COMMON::ProxyGDAL::geometryFromString("WKT", "POLYGON(0 0,1 0,1 1,0 1,0 0)") ;
     my $sr = COMMON::ProxyGDAL::spatialReferenceFromSRS("EPSG:4326") ;
     (end code)
 =cut
@@ -58,6 +58,8 @@ use strict;
 use warnings;
 
 use Data::Dumper;
+
+use COMMON::Array;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -84,42 +86,133 @@ my $gdalVersion = Geo::GDAL::VersionInfo();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
+my @FORMATS = ("WKT", "BBOX", "GML", "GeoJSON");
+
 ####################################################################################################
-#                               Group: Geometry functions                                          #
+#                               Group: Geometry constrctors                                        #
 ####################################################################################################
 
 =begin nd
-Function: geometryFromWKT
+Function: geometryFromString
 
 Return an OGR geometry from a WKT string.
 
 Parameters (list):
-    wkt - string - WKT geometry
+    format - string - Geomtry format
+    string - string - String geometry according format
 
 Return :
     a <Geo::OGR::Geometry> object, undef if failure
 =cut
-sub geometryFromWKT {
-    my $wkt = shift;
+sub geometryFromString {
+    my $format = shift;
+    my $string = shift;
+
+    if (! COMMON::Array::isInArray($format, @FORMATS)) {
+        ERROR("Geometry string format unknown $format");
+        return undef;
+    }
+
+    if ($format eq "BBOX") {
+        my ($xmin,$ymin,$xmax,$ymax) = split(/,/, $string);
+        return geometryFromBbox($xmin,$ymin,$xmax,$ymax);
+    }
     
     my $geom;
 
     if ($gdalVersion =~ /^2/) {
         #version 2.x
-        eval { $geom = Geo::OGR::Geometry->new(WKT=>$wkt); };
+        eval { $geom = Geo::OGR::Geometry->new($format => $string); };
     } elsif ($gdalVersion =~ /^1/) {
         #version 1.x
-        eval { $geom = Geo::OGR::Geometry->create(WKT=>$wkt); };
+        eval { $geom = Geo::OGR::Geometry->create($format => $string); };
     }
 
     if ($@) {
-        ERROR(sprintf "WKT geometry is not valid : %s \n", $@ );
+        ERROR(sprintf "String geometry is not valid : %s \n", $@ );
         return undef;
     }
 
     return $geom
 }
 
+=begin nd
+Function: geometryFromFile
+
+Return an OGR geometry from a file.
+
+Parameters (list):
+    file - string - File containing the geometry description
+
+Return :
+    a <Geo::OGR::Geometry> object, undef if failure
+=cut
+sub geometryFromFile {
+    my $file = shift;
+
+    if (! -f $file) {
+        ERROR("Geometry file $file does not exist");
+        return undef;
+    }
+
+    my $format;
+    if ($file =~ m/\.json$/i) {
+        $format = "GeoJSON";
+    } elsif ($file =~ m/\.gml$/i) {
+        $format = "GML";
+    } else {
+        $format = "WKT";
+    }
+
+    if (! open FILE, "<", $file ){
+        ERROR(sprintf "Cannot open the file %s.",$file);
+        return FALSE;
+    }
+
+    my $string = '';
+    while( defined( my $line = <FILE> ) ) {
+        $string .= $line;
+    }
+    close(FILE);
+    
+    return geometryFromString($format, $string);
+}
+
+=begin nd
+Function: geometryFromBbox
+
+Return the OGR Geometry from a bbox
+
+Parameters (list):
+    xmin - float
+    ymin - float
+    xmax - float
+    ymax - float
+
+Return (list):
+    a <Geo::OGR::Geometry> object, undef if failure
+=cut
+sub geometryFromBbox {
+    my ($xmin,$ymin,$xmax,$ymax) = @_;
+
+    if ($xmax <= $xmin || $ymax <= $ymin) {
+        ERROR("Coordinates are not logical for a bbox (max < min) : $xmin,$ymin $xmax,$ymax");
+        return undef ;
+    }
+
+    return geometryFromString("WKT", sprintf "POLYGON((%s %s,%s %s,%s %s,%s %s,%s %s))",
+        $xmin,$ymin,
+        $xmin,$ymax,
+        $xmax,$ymax,
+        $xmax,$ymin,
+        $xmin,$ymin
+    );
+}
+
+
+####################################################################################################
+#                               Group: Geometry tools                                              #
+####################################################################################################
 
 =begin nd
 Function: getBbox
@@ -130,14 +223,14 @@ Parameters (list):
     geom - <Geo::OGR::Geometry> - OGR geometry object
 
 Return (list):
-    ($xmin,$xmax,$ymin,$ymax), xmin is undefined if failure
+    (xmin,ymin,xmax,ymax), xmin is undefined if failure
 =cut
 sub getBbox {
     my $geom = shift;
 
     my $bboxref = $geom->GetEnvelope();
 
-    return ($bboxref->[0],$bboxref->[1],$bboxref->[2],$bboxref->[3]);
+    return ($bboxref->[0],$bboxref->[2],$bboxref->[1],$bboxref->[3]);
 }
 
 =begin nd
@@ -149,7 +242,7 @@ Parameters (list):
     geom - <Geo::OGR::Geometry> - OGR geometry object
 
 Return (Array reference of array references):
-    Array of N ($xmin,$xmax,$ymin,$ymax), undef if failure
+    Array reference of N (xmin,xmax,ymin,ymax), undef if failure
 =cut
 sub getBboxes {
     my $geom = shift;
@@ -162,7 +255,7 @@ sub getBboxes {
         my $part = $geom->GetGeometryRef($i);
         my $bboxpart = $part->GetEnvelope();
 
-        push @{$bboxes}, [$bboxpart->[0],$bboxpart->[1],$bboxpart->[2],$bboxpart->[3]];
+        push @{$bboxes}, [$bboxpart->[0],$bboxpart->[2],$bboxpart->[1],$bboxpart->[3]];
     }
     return $bboxes;
 }

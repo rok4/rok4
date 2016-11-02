@@ -166,7 +166,6 @@ sub new {
 
     bless($self, $class);
 
-    TRACE;
 
     # init. class
     return undef if (! defined $pathfile);
@@ -206,7 +205,6 @@ See also:
 sub _load {
     my $self = shift;
     
-    TRACE;
     
     # read xml pyramid
     my $parser  = XML::LibXML->new();
@@ -280,10 +278,10 @@ sub _load {
 
     my $authority = (split(":",$self->{srs}))[0];
     if (COMMON::ProxyGDAL::isGeographic($sr) && uc($authority) eq "EPSG") {
-        INFO(sprintf "Coordinates will be reversed in requests (SRS : %s)",$self->{srs});
+        DEBUG(sprintf "Coordinates will be reversed in requests (SRS : %s)",$self->{srs});
         $self->{coordinatesInversion} = TRUE;
     } else {
-        INFO(sprintf "Coordinates order will be kept in requests (SRS : %s)",$self->{srs});
+        DEBUG(sprintf "Coordinates order will be kept in requests (SRS : %s)",$self->{srs});
         $self->{coordinatesInversion} = FALSE;
     }
     
@@ -516,7 +514,6 @@ sub getIDfromOrder {
     my $self = shift;
     my $order= shift;
 
-    TRACE;
 
     foreach my $k (keys %{$self->{levelsBind}}) {
         if ($self->{levelsBind}->{$k} == $order) {return $k;}
@@ -537,7 +534,6 @@ sub getBelowLevelID {
     my $self = shift;
     my $ID= shift;
 
-    TRACE;
 
     return undef if (! exists $self->{levelsBind}->{$ID});
     my $order = $self->{levelsBind}->{$ID};
@@ -559,7 +555,6 @@ sub getOrderfromID {
     my $self = shift;
     my $ID= shift;
 
-    TRACE;
 
     if (exists $self->{levelsBind}->{$ID}) {
         return $self->{levelsBind}->{$ID};
@@ -638,7 +633,7 @@ Returns all informations about the tile matrix set. Useful for debug.
 
 Example:
     (start code)
-    Object BE4::TileMatrixSet :
+    Object COMMON::TileMatrixSet :
          TMS file complete path : /home/ign/TMS/LAMB93_10cm.tms
          Top level identifiant : 0
          Top level resolution : 209715.2

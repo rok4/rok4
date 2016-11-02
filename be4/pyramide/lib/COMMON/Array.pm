@@ -133,5 +133,33 @@ sub maxArrayValue {
     return $max;
 }
 
+
+####################################################################################################
+#                               Group: Boolean returning functions                                 #
+####################################################################################################
+
+=begin nd
+Function: isInArray
+
+Parameters:
+    value - scalar - Value to search in the array
+    array - array - Array wherre to search value
+
+Returns:
+    The greater value in a array, begining with the element 'first'
+=cut
+sub isInArray {
+    my $value = shift;
+    my @array = @_;
+
+    foreach my $v (@array) {
+        if ($v eq $value) {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
 1;
 __END__

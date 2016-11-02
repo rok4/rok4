@@ -146,7 +146,6 @@ sub new {
     
     bless($self, $class);
     
-    TRACE;
     
     # init. class
     return undef if (! $self->_init($params));
@@ -169,7 +168,6 @@ sub _init {
     my $self = shift;
     my $params = shift;
 
-    TRACE;
     
     return FALSE if (! defined $params);
     

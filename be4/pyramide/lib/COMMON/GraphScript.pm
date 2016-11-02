@@ -137,7 +137,6 @@ sub new {
 
     bless($self, $class);
 
-    TRACE;
 
     ########## ID
 
@@ -340,51 +339,81 @@ Parameters (list):
 
 Example:
     (start code)
+    # Variables d'environnement
+    SCRIPT_ID="SCRIPT_1"
+    COMMON_TMP_DIR="/tmp/ORTHO/COMMON"
+    ROOT_TMP_DIR="/tmp/ORTHO/"
+    TMP_DIR="/tmp/ORTHO/SCRIPT_1"
+    MNT_CONF_DIR="/home/ign/TMP/ORTHO/SCRIPT_1/mergeNtiff"
+    DNT_CONF_DIR="/home/ign/TMP/ORTHO/SCRIPT_1/decimateNtiff"
+    PYR_DIR="/home/ign/PYR/ORTHO"
+    LIST_FILE="/home/ign/PYR/ORTHO.list"
+
+    # fonctions de factorisation
+    Wms2work () {
+      local img_dst=$1
+      local url=$2
+      local count=0; local wait_delay=60
+      while :
+      do
+        let count=count+1
+        wget --no-verbose -O $img_dst $url
+        if tiffck $img_dst ; then break ; fi
+        echo "Failure $count : wait for $wait_delay s"
+        sleep $wait_delay
+        let wait_delay=wait_delay*2
+        if [ 3600 -lt $wait_delay ] ; then
+          let wait_delay=3600
+        fi
+      done
+    }
     (end code)
 
 =cut
 sub prepare {
     my $self = shift;
     my $pyr = shift;
-    my $listFile = shift;
     my $functions = shift;
+
 
     # definition des variables d'environnement du script
     my $code = sprintf ("# Variables d'environnement\n");
-    $code   .= sprintf ("SCRIPT_ID=\"%s\"\n", $self->{id});
-    $code   .= sprintf ("COMMON_TMP_DIR=\"%s\"\n", $self->{commonTempDir});
-    $code   .= sprintf ("ROOT_TMP_DIR=\"%s\"\n", dirname($self->{tempDir}));
-    $code   .= sprintf ("TMP_DIR=\"%s\"\n", $self->{tempDir});
-    $code   .= sprintf ("MNT_CONF_DIR=\"%s\"\n", $self->{mntConfDir});
-    $code   .= sprintf ("DNT_CONF_DIR=\"%s\"\n", $self->{dntConfDir});
-    $code   .= sprintf ("LIST_FILE=\"%s\"\n", $listFile);
+    $code .= sprintf ("SCRIPT_ID=\"%s\"\n", $self->{id});
+    $code .= sprintf ("COMMON_TMP_DIR=\"%s\"\n", $self->{commonTempDir});
+    $code .= sprintf ("ROOT_TMP_DIR=\"%s\"\n", dirname($self->{tempDir}));
+    $code .= sprintf ("TMP_DIR=\"%s\"\n", $self->{tempDir});
+    $code .= sprintf ("MNT_CONF_DIR=\"%s\"\n", $self->{mntConfDir});
+    $code .= sprintf ("DNT_CONF_DIR=\"%s\"\n", $self->{dntConfDir});
+    $code .= sprintf ("LIST_FILE=\"%s\"\n", $pyr->getListFile() );
 
-    if (ref ($pyr) eq "BE4::Pyramid") {
-        $code   .= sprintf ("PYR_DIR=\"%s\"\n", $pyr->getNewDataDir);
+    if ($pyr->getStorageType() eq "FILE") {
+        $code .= sprintf ("PYR_DIR=\"%s\"\n", $pyr->getDataDir() );
     }
-    elsif (ref ($pyr) eq "BE4CEPH::Pyramid") {
-        $code   .= sprintf ("PYR_POOL=\"%s\"\n", $pyr->getNewDataPool);
-        $code   .= sprintf ("export ROK4_CEPH_CLUSTERNAME=\"%s\"\n", $pyr->getClusterName);
-        $code   .= sprintf ("export ROK4_CEPH_USERNAME=\"%s\"\n", $pyr->getUserName);
-        $code   .= sprintf ("export ROK4_CEPH_CONFFILE=\"%s\"\n", $pyr->getConfFile);
+    elsif ($pyr->getStorageType() eq "CEPH") {
+        $code .= sprintf ("PYR_POOL=\"%s\"\n", $pyr->getDataPool() );
+        $code .= sprintf ("export ROK4_CEPH_CLUSTERNAME=\"%s\"\n", $pyr->getClusterName() );
+        $code .= sprintf ("export ROK4_CEPH_USERNAME=\"%s\"\n", $pyr->getUserName() );
+        $code .= sprintf ("export ROK4_CEPH_CONFFILE=\"%s\"\n", $pyr->getConfFile() );
     }
-    elsif (ref ($pyr) eq "BE4S3::Pyramid") {
-        $code   .= sprintf ("PYR_BUCKET=\"%s\"\n", $pyr->getNewDataBucket);
-        $code   .= sprintf ("export ROK4_S3_URL=\"%s\"\n", $pyr->getApiUrl);
-        $code   .= sprintf ("export ROK4_S3_KEY=\"%s\"\n", $pyr->getKey);
-        $code   .= sprintf ("export ROK4_S3_SECRETKEY=\"%s\"\n", $pyr->getSecretKey);
+    elsif ($pyr->getStorageType() eq "S3") {
+        $code .= sprintf ("PYR_BUCKET=\"%s\"\n", $pyr->getDataBucket() );
+        $code .= sprintf ("export ROK4_S3_URL=\"%s\"\n", $pyr->getApiUrl() );
+        $code .= sprintf ("export ROK4_S3_KEY=\"%s\"\n", $pyr->getKey() );
+        $code .= sprintf ("export ROK4_S3_SECRETKEY=\"%s\"\n", $pyr->getSecretKey() );
     }
     else {
-        ERROR(ref ($pyr));
-        ERROR("Provided object for pyramid is not a handled pyramid");
+        ERROR("Storage type of new pyramid is not handled");
     }
 
     my $tmpListFile = File::Spec->catdir($self->{tempDir},"list_".$self->{id}.".txt");
-    $code   .= sprintf ("TMP_LIST_FILE=\"%s\"\n", $tmpListFile);
-    $code   .= "\n";
+    $code .= sprintf ("TMP_LIST_FILE=\"%s\"\n", $tmpListFile);
+    $code .= "\n";
     
-    $code   .= "# Fonctions\n";
-    $code   .= "$functions\n";
+    $code .= "# Pour mémoriser les dalles supprimées\n";
+    $code .= "declare -A RM_IMGS\n";
+
+    $code .= "# Fonctions\n";
+    $code .= "$functions\n";
 
     $code .= "# Création du repertoire de travail\n";
     $code .= "if [ ! -d \"\${TMP_DIR}\" ] ; then mkdir -p \${TMP_DIR} ; fi\n\n";

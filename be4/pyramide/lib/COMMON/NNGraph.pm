@@ -40,7 +40,7 @@ File: NNGraph.pm
 
 Class: COMMON::NNGraph
 
-Representation of a "nearest neighbour" pyramid : pyramid's image = <Node>.
+Representation of a "nearest neighbour" pyramid : pyramid's image = <COMMON::GraphNode>.
 
 (see NNGraphTMS.png)
 
@@ -54,7 +54,7 @@ Organization in the <Forest> scripts' array :
 
 (see script_NNGraph.png)
 
-Link between a node and his children or his father is not trivial. It is calculated and store in the <Node> object.
+Link between a node and his children or his father is not trivial. It is calculated and store in the <COMMON::GraphNode> object.
 
 Using:
     (start code)
@@ -71,12 +71,12 @@ Using:
 
 Attributes:
     forest - <Forest> - Forest which this tree belong to.
-    pyramid - <Pyramid> - Pyramid linked to this tree.
+    pyramid - <COMMON::FilePyramid> - Pyramid linked to this tree.
     commands - <Commands> - Command to use to generate images.
     datasource - <DataSource> - Data source to use to define bottom level nodes and generate them.
 
     bbox - double array - Datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
-    nodes - <Node> hash - Structure is:
+    nodes - <COMMON::GraphNode> hash - Structure is:
         (start code)
         level1 => {
            c1_r2 => n1,
@@ -147,7 +147,7 @@ NNGraph constructor. Bless an instance.
 Parameters (list):
     objForest - <Forest> - Forest which this tree belong to
     objSrc - <DataSource> - Datasource which determine bottom level nodes
-    objPyr - <Pyramid> - Pyramid linked to this tree
+    objPyr - <COMMON::FilePyramid> - Pyramid linked to this tree
     objCommands - <Commands> - Commands to use to generate pyramid's images
 
 See also:
@@ -173,7 +173,6 @@ sub new {
 
     bless($self, $class);
 
-    TRACE;
 
     # init. class
     return undef if (! $self->_init(@_));
@@ -191,7 +190,7 @@ Checks and stores informations.
 Parameters (list):
     objForest - <Forest> - Forest which this tree belong to
     objSrc - <DataSource> - Data source which determine bottom level nodes
-    objPyr - <Pyramid> - Pyramid linked to this tree
+    objPyr - <COMMON::FilePyramid> - Pyramid linked to this tree
     objCommands - <Commands> - Commands to use to generate pyramid's images
 =cut
 sub _init {
@@ -201,7 +200,6 @@ sub _init {
     my $objPyr  = shift;
     my $objCommands  = shift;
 
-    TRACE;
 
     # mandatory parameters !
     if (! defined $objForest || ref ($objForest) ne "COMMON::Forest") {
@@ -212,7 +210,7 @@ sub _init {
         ERROR("Can not load DataSource !");
         return FALSE;
     }
-    if (! defined $objPyr || ref ($objPyr) ne "BE4::Pyramid") {
+    if (! defined $objPyr || ref ($objPyr) ne "COMMON::FilePyramid") {
         ERROR("Can not load Pyramid !");
         return FALSE;
     }
@@ -238,7 +236,6 @@ Determines all nodes from the bottom level to the top level, thanks to the data 
 sub _load {
     my $self = shift;
 
-    TRACE;
 
     # initialisation pratique:
     my $tms = $self->{pyramid}->getTileMatrixSet;
@@ -296,7 +293,6 @@ sub identifyBottomNodes {
     my $self = shift;
     my $ct = shift;
     
-    TRACE();
     
     my $bottomID = $self->{bottomID};
     my $tm = $self->{pyramid}->getTileMatrixSet->getTileMatrix($bottomID);
@@ -381,26 +377,19 @@ sub identifyBottomNodes {
             ERROR(sprintf "Cannot convert extent for the datasource");
             return FALSE;
         }
-        
-        my @convBbox = COMMON::ProxyGDAL::getBbox($convertExtent); # (xmin,xmax,ymin,ymax)
+
+        my @convBbox = COMMON::ProxyGDAL::getBbox($convertExtent); # (xmin,ymin,xmax,ymax)
         DEBUG("BBox convertie de l'extent de datasource @convBbox");
         
-        $self->updateBBox($convBbox[0],$convBbox[2],$convBbox[1],$convBbox[3]);
+        $self->updateBBox(@convBbox);
         
-        my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices($convBbox[0],$convBbox[2],$convBbox[1],$convBbox[3],$TPW,$TPH);
+        my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices(@convBbox,$TPW,$TPH);
         
         for (my $i = $iMin; $i <= $iMax; $i++) {
             for (my $j = $jMin; $j <= $jMax; $j++) {
                 my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBBox($i,$j,$TPW,$TPH);
 
-                my $WKTtile = sprintf "POLYGON((%s %s,%s %s,%s %s,%s %s,%s %s))",
-                    $xmin,$ymin,
-                    $xmin,$ymax,
-                    $xmax,$ymax,
-                    $xmax,$ymin,
-                    $xmin,$ymin;
-
-                my $OGRtile = COMMON::ProxyGDAL::geometryFromWKT($WKTtile);
+                my $OGRtile = COMMON::ProxyGDAL::geometryFromBbox($xmin,$ymin,$xmax,$ymax);
 
                 if (COMMON::ProxyGDAL::isIntersected($OGRtile, $convertExtent)) {
                     my $nodeKey = sprintf "%s_%s", $i, $j;
@@ -630,6 +619,7 @@ sub computeYourself {
        }
    }
     
+    
     return TRUE;
 };
 
@@ -704,7 +694,7 @@ sub getBottomOrder {
 =begin nd
 Function: getNodesOfLevel
 
-Returns a <Node> array, contaning all nodes of the provided level.
+Returns a <COMMON::GraphNode> array, contaning all nodes of the provided level.
 
 Parameters (list):
     level - string - Level ID whose we want all nodes.
@@ -766,7 +756,6 @@ sub updateBBox {
     my $self = shift;
     my ($xmin,$ymin,$xmax,$ymax) = @_;
 
-    TRACE();
     
     if (! defined $self->{bbox}[0] || $xmin < $self->{bbox}[0]) {$self->{bbox}[0] = $xmin;}
     if (! defined $self->{bbox}[1] || $ymin < $self->{bbox}[1]) {$self->{bbox}[1] = $ymin;}

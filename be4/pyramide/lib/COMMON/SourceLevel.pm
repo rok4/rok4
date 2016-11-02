@@ -127,8 +127,6 @@ sub new {
     
     bless($self, $class);
     
-    TRACE;
-    
     return undef if (! defined $params);
 
     # Mandatory parameters !

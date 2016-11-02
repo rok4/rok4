@@ -79,8 +79,6 @@ use warnings;
 use Log::Log4perl qw(:easy);
 use Geo::GDAL;
 
-use Geo::GDAL;
-
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
 
@@ -142,7 +140,6 @@ sub new {
 
     bless($self, $class);
 
-    TRACE;
 
     # init. class
     return undef if (! $self->_init($completePath));
@@ -164,7 +161,6 @@ sub _init {
     my $self   = shift;
     my $completePath = shift;
 
-    TRACE;
     
     return FALSE if (! defined $completePath);
     
@@ -233,8 +229,6 @@ sub computeInfo {
     foreach my $objBand ($dataset->Bands()) {
 
         # FIXME undefined !
-        # TRACE (sprintf "NoDataValue         :%s", $objBand->GetNoDataValue());
-        # TRACE (sprintf "NoDataValue         :%s", $objBand->NoDataValue());
 
         # ie Float32,  GrayIndex,          , , .
         # ie Byte,     (Red|Green|Blue)Band, , .
@@ -346,7 +340,6 @@ sub convertBBox {
   my $self = shift;
   my $ct = shift;
   
-  TRACE;
   
   my @BBox = [0,0,0,0];
 
@@ -456,7 +449,6 @@ Example:
 sub getInfo {
     my $self = shift;
 
-    TRACE;
 
     return (
         $self->{filename},
@@ -482,7 +474,6 @@ Return the image's bbox as a double array [xMin, yMin, xMax, yMax], source SRS.
 sub getBBox {
   my $self = shift;
 
-  TRACE;
   
   my @bbox;
 
@@ -584,7 +575,6 @@ sub exportForMntConf {
     my $useMasks = shift;
     $useMasks = TRUE if (! defined $useMasks);
 
-    TRACE;
 
     my $output = sprintf "IMG %s", $self->{completePath};
 

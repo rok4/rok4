@@ -54,7 +54,7 @@ Using:
     use COMMON::Forest
 
     my $Forest = COMMON::Forest->new(
-        $objPyramid, # a BE4::Pyramid object
+        $objPyramid, # a COMMON::FilePyramid object
         $objDSL, # a COMMON::DataSourceLoader object
         $param_process, # a hash with following keys : job_number, path_temp, path_temp_common and path_shell
         $storageType, # final storage : FS, CEPH, S3 or SWIFT
@@ -62,7 +62,7 @@ Using:
     (end code)
 
 Attributes:
-    pyramid - <Pyramid> - Images' pyramid to generate, thanks to one or several graphs.
+    pyramid - <COMMON::FilePyramid> - Images' pyramid to generate, thanks to one or several graphs.
     commands - <Commands> - To compose generation commands (mergeNtiff, work2cache...).
     graphs - <QTree> or <NNGraph> array - Graphs composing the forest, one per data source.
     scripts - <Script> array - Scripts, whose execution generate the images' pyramid.
@@ -82,17 +82,16 @@ use Log::Log4perl qw(:easy);
 use Data::Dumper;
 use List::Util qw(min max);
 
-use Geo::GDAL;
-
 # My module
 use COMMON::QTree;
 use COMMON::NNGraph;
+use COMMON::Array;
+
 use BE4::Commands;
 use BE4CEPH::Commands;
 use BE4S3::Commands;
-use BE4::Pyramid;
-use BE4CEPH::Pyramid;
-use BE4S3::Pyramid;
+
+use COMMON::Pyramid;
 use COMMON::GraphScript;
 use COMMON::DataSourceLoader;
 use COMMON::DataSource;
@@ -111,10 +110,16 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
+# Constant: STORAGETYPES
+# Define allowed values for attribute storage type.
+my @STORAGETYPES;
+
 ################################################################################
 
 BEGIN {}
-INIT {}
+INIT {
+    @STORAGETYPES = ("FS", "SWIFT", "CEPH", "S3");
+}
 END {}
 
 ####################################################################################################
@@ -155,6 +160,7 @@ sub new {
 
     bless($self, $class);
 
+
     # init. class
     return undef if (! $self->_init(@_));
     
@@ -172,7 +178,7 @@ Function: _init
 Checks parameters and stores the pyramid.
 
 Parameters (list):
-    pyr - <BE4::Pyramid> or <BE4CEPH::Pyramid> or <BE4S3::Pyramid> - Contains output format specifications, needed by generations command's.
+    pyr - <COMMON::Pyramid> - Contains output format specifications, needed by generations command's.
     DSL - <COMMON::DataSourceLoader> - Contains one or several data sources
     params_process - hash - Informations for scipts, where to write them, temporary directory to use...
 |               job_number - integer - Parallelization level
@@ -190,7 +196,7 @@ sub _init {
     my $storageType = shift;
 
     # it's an object and it's mandatory !
-    if (! defined $pyr || (ref ($pyr) ne "BE4::Pyramid" && ref ($pyr) ne "BE4CEPH::Pyramid" && ref ($pyr) ne "BE4S3::Pyramid")) {
+    if (! defined $pyr || ref ($pyr) ne "COMMON::Pyramid") {
         ERROR("Can not load Pyramid !");
         return FALSE;
     }
@@ -207,7 +213,7 @@ sub _init {
         return FALSE;
     }
 
-    if (! defined $storageType || "|FS|SWIFT|CEPH|S3|" !~ m/\|$storageType\|/) {
+    if (! COMMON::Array::isInArray($storageType, @STORAGETYPES) ) {
         ERROR("Forest's storage type is undef or not valid !");
         return FALSE;
     }
@@ -276,8 +282,8 @@ sub _load {
     }
 
     # Ajout du nom de la pyramide aux dossiers temporaires (pour distinguer de ceux des autres générations)
-    $tempDir = File::Spec->catdir($tempDir,$self->{pyramid}->getNewName);
-    $commonTempDir = File::Spec->catdir($commonTempDir,$self->{pyramid}->getNewName);
+    $tempDir = File::Spec->catdir($tempDir,$self->{pyramid}->getName() );
+    $commonTempDir = File::Spec->catdir($commonTempDir,$self->{pyramid}->getName() );
 
     ############# PROCESS #############
 
@@ -302,7 +308,6 @@ sub _load {
         return FALSE;
     }
     $self->{commands} = $commands;
-    DEBUG(sprintf "COMMANDS (debug export) = %s", $commands->exportForDebug);
     
     ############# SCRIPTS #############
     # We create COMMON::GraphScript objects and initialize them (header)
@@ -331,7 +336,7 @@ sub _load {
             });
 
             my $listFile = $self->{pyramid}->getNewListFile;
-            $script->prepare($self->{pyramid},$listFile,$functions);
+            $script->prepare($self->{pyramid}, $functions);
 
             push @{$self->{scripts}}, $script;
         }
@@ -360,7 +365,7 @@ sub _load {
                 });
 
                 my $listFile = $self->{pyramid}->getNewListFile;
-                $script->prepare($self->{pyramid},$listFile,$functions);
+                $script->prepare($self->{pyramid}, $functions);
 
                 push @{$self->{scripts}},$script;
             }
@@ -376,7 +381,7 @@ sub _load {
         });
 
         my $listFile = $self->{pyramid}->getNewListFile;
-        $script->prepare($self->{pyramid}->getNewDataDir,$listFile,$functions);
+        $script->prepare($self->{pyramid}->getNewDataDir, $functions);
 
         push @{$self->{scripts}},$script;
     }
@@ -451,7 +456,6 @@ See Also:
 sub computeGraphs {
     my $self = shift;
 
-    TRACE;
     
     my $graphInd = 1;
     my $graphNumber = scalar @{$self->{graphs}};

@@ -40,7 +40,7 @@ File: QTree.pm
 
 Class: COMMON::QTree
 
-Representation of a quad tree image pyramid : pyramid's image = <Node>
+Representation of a quad tree image pyramid : pyramid's image = <COMMON::GraphNode>
 
 (see QTreeTMS.png)
 
@@ -79,12 +79,12 @@ Using:
 
 Attributes:
     forest - <Forest> - Forest which this tree belong to.
-    pyramid - <Pyramid> - Pyramid linked to this tree.
+    pyramid - <COMMON::FilePyramid> - Pyramid linked to this tree.
     commands - <Commands> - Command to use to generate images.
     datasource - <DataSource> - Data source to use to define bottom level nodes and generate them.
 
     bbox - double array - Datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
-    nodes - <Node> hash - Structure is:
+    nodes - <COMMON::GraphNode> hash - Structure is:
         (start code)
         level1 => {
            c1_r2 => n1,
@@ -152,7 +152,7 @@ QTree constructor. Bless an instance.
 Parameters (list):
     objForest - <Forest> - Forest which this tree belong to
     objSrc - <DataSource> - Datasource which determine bottom level nodes
-    objPyr - <Pyramid> - Pyramid linked to this tree
+    objPyr - <COMMON::FilePyramid> - Pyramid linked to this tree
     objCommands - <Commands> - Commands to use to generate pyramid's images
 
 See also:
@@ -180,7 +180,6 @@ sub new {
 
     bless($self, $class);
 
-    TRACE;
 
     # init. class
     return undef if (! $self->_init(@_));
@@ -196,9 +195,9 @@ Function: _init
 Checks and stores informations.
 
 Parameters (list):
-    objForest - <Forest> - Forest which this tree belong to
-    objSrc - <DataSource> - Data source which determine bottom level nodes
-    objPyr - <Pyramid> - Pyramid linked to this tree
+    objForest - <COMMON::Forest> - Forest which this tree belong to
+    objSrc - <COMMON::DataSource> - Data source which determine bottom level nodes
+    objPyr - <COMMON::Pyramid> - Pyramid linked to this tree
     objCommands - <Commands> - Commands to use to generate pyramid's images
 =cut
 sub _init {
@@ -208,7 +207,6 @@ sub _init {
     my $objPyr  = shift;
     my $objCommands  = shift;
 
-    TRACE;
 
     # mandatory parameters !
     if (! defined $objForest || ref ($objForest) ne "COMMON::Forest") {
@@ -219,7 +217,7 @@ sub _init {
         ERROR("Can not load DataSource !");
         return FALSE;
     }
-    if (! defined $objPyr || (ref ($objPyr) ne "BE4::Pyramid" && ref ($objPyr) ne "BE4CEPH::Pyramid" && ref ($objPyr) ne "BE4S3::Pyramid")) {
+    if (! defined $objPyr || ref ($objPyr) ne "COMMON::Pyramid") {
         ERROR("Can not load Pyramid !");
         return FALSE;
     }
@@ -245,7 +243,6 @@ Determines all nodes from the bottom level to the top level, thanks to the data 
 sub _load {
     my $self = shift;
 
-    TRACE;
 
     # initialisation pratique:
     my $tms = $self->{pyramid}->getTileMatrixSet;
@@ -300,6 +297,7 @@ Parameters (list):
 sub identifyBottomNodes {
     my $self = shift;
     my $ct = shift;
+    
     
     my $bottomID = $self->{bottomID};
     my $tm = $self->{pyramid}->getTileMatrixSet->getTileMatrix($bottomID);
@@ -385,41 +383,36 @@ sub identifyBottomNodes {
             return FALSE;
         }
 
-        my @convBbox = COMMON::ProxyGDAL::getBbox($convertExtent); # (xmin,xmax,ymin,ymax)
-        DEBUG("BBox convertie de l'extent de datasource @convBbox");
-        
-        $self->updateBBox($convBbox[0],$convBbox[2],$convBbox[1],$convBbox[3]);
-        
-        my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices($convBbox[0],$convBbox[2],$convBbox[1],$convBbox[3],$TPW,$TPH);
-        
-        for (my $i = $iMin; $i <= $iMax; $i++) {
-            for (my $j = $jMin; $j <= $jMax; $j++) {
-                my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBBox($i,$j,$TPW,$TPH);
+        # Pour éviter de balayer une bbox trop grande, on récupère la bbox de chaque partie de la - potentiellement multi - géométrie
+        my $bboxes = COMMON::ProxyGDAL::getBboxes($convertExtent);
 
-                my $WKTtile = sprintf "POLYGON((%s %s,%s %s,%s %s,%s %s,%s %s))",
-                    $xmin,$ymin,
-                    $xmin,$ymax,
-                    $xmax,$ymax,
-                    $xmax,$ymin,
-                    $xmin,$ymin;
+        foreach my $bb (@{$bboxes}) {
+        
+            $self->updateBBox($bb->[0],$bb->[1],$bb->[2],$bb->[3]);
+            
+            my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices($bb->[0],$bb->[1],$bb->[2],$bb->[3],$TPW,$TPH);
+            
+            for (my $i = $iMin; $i <= $iMax; $i++) {
+                for (my $j = $jMin; $j <= $jMax; $j++) {
+                    my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBBox($i,$j,$TPW,$TPH);
 
-                my $OGRtile = COMMON::ProxyGDAL::geometryFromWKT($WKTtile);
+                    my $OGRtile = COMMON::ProxyGDAL::geometryFromBbox($xmin,$ymin,$xmax,$ymax);
 
-                if (COMMON::ProxyGDAL::isIntersected($OGRtile, $convertExtent)) {
-                    my $nodeKey = sprintf "%s_%s", $i, $j;
-                    # Create a new Node
-                    my $node = COMMON::GraphNode->new({
-                        i => $i,
-                        j => $j,
-                        tm => $tm,
-                        graph => $self,
-                        type => $self->{forest}->getStorageType()
-                    });
-                    if (! defined $node) { 
-                        ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $self->{bottomID}, $i, $j);
-                        return FALSE;
+                    if (COMMON::ProxyGDAL::isIntersected($OGRtile, $convertExtent)) {
+                        my $nodeKey = sprintf "%s_%s", $i, $j;
+                        # Create a new Node
+                        my $node = COMMON::GraphNode->new({
+                            i => $i,
+                            j => $j,
+                            tm => $tm,
+                            graph => $self,
+                        });
+                        if (! defined $node) { 
+                            ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $self->{bottomID}, $i, $j);
+                            return FALSE;
+                        }
+                        $self->{nodes}->{$bottomID}->{$nodeKey} = $node;
                     }
-                    $self->{nodes}->{$bottomID}->{$nodeKey} = $node;
                 }
             }
         }
@@ -540,6 +533,7 @@ Three steps:
 =cut
 sub computeYourself {
     my $self = shift;
+
     
     my @topLevelNodes = $self->getNodesOfTopLevel;
     
@@ -602,6 +596,7 @@ sub computeBranch {
     my $node = shift;
 
     my $weight = 0;
+
     
     my $res = '';
     my @childList = $self->getChildren($node);
@@ -637,19 +632,20 @@ Function: computeBottomImage
 Treats a bottom node : determine code or weight.
 
 2 cases:
-    - from georeferenced images -> <Commands::mergeNtiff>
-    - from a WMS service -> <COMMON::Commands::wms2work>
+    - lossless compression and images as data -> <Commands::mergeNtiff>
+    - reprojection or lossy compression or just a WMS service as data -> <Commands::wms2work>
 
-Then the work image is formatted and move to the final place thanks to <COMMON::Commands::work2cache>.
+Then the work image is formatted and move to the final place thanks to <Commands::work2cache>.
 
 Parameters (list):
-    node - <Node> - Bottom level's node, to treat.
+    node - <COMMON::GraphNode> - Bottom level's node, to treat.
     
 =cut
 sub computeBottomImage {
     
     my $self = shift;
     my $node = shift;
+
     
     # Temporary weight and code
     my ($c,$w);
@@ -698,14 +694,13 @@ To generate an above node, we use <Commands::merge4tiff> with children.
 Then the work image is formatted and move to the final place thanks to <Commands::work2cache>.
 
 Parameters (list):
-    node - <Node> - Above level's node, to treat.
+    node - <COMMON::GraphNode> - Above level's node, to treat.
 =cut
 sub computeAboveImage {
     
     my $self = shift;
     my $node = shift;
 
-    TRACE;
 
     # Temporary weight and code
     my ($c,$w);
@@ -742,13 +737,12 @@ Function: writeCode
 Recursive method, which allow to browse tree (downward) and write commands in associated node's script.
 
 Parameters (list):
-    node - <Node> - Node whose code is written.
+    node - <COMMON::GraphNode> - Node whose code is written.
 =cut
 sub writeCode {
     my $self = shift;
     my $node = shift;
 
-    TRACE;
 
 
     my @childList = $self->getChildren($node);
@@ -794,7 +788,6 @@ To manipulate weights array, we use the tool class <Array>.
 sub shareNodesOnJobs {
     my $self = shift;
 
-    TRACE;
 
     my $tms = $self->{pyramid}->getTileMatrixSet;
     my $splitNumber = $self->{forest}->getSplitNumber;
@@ -939,7 +932,6 @@ sub updateBBox {
     my $self = shift;
     my ($xmin,$ymin,$xmax,$ymax) = @_;
 
-    TRACE();
     
     if (! defined $self->{bbox}[0] || $xmin < $self->{bbox}[0]) {$self->{bbox}[0] = $xmin;}
     if (! defined $self->{bbox}[1] || $ymin < $self->{bbox}[1]) {$self->{bbox}[1] = $ymin;}
@@ -950,13 +942,13 @@ sub updateBBox {
 =begin nd
 Function: getPossibleChildren
 
-Returns a <Node> array, containing children (length is always 4, with undefined value for children which don't exist), an empty array if the node is a leaf.
+Returns a <COMMON::GraphNode> array, containing children (length is always 4, with undefined value for children which don't exist), an empty array if the node is a leaf.
 
 Warning:
     Do not mistake with <getChildren>
 
 Parameters (list):
-    node - <Node> - Node whose we want to know possible children.
+    node - <COMMON::GraphNode> - Node whose we want to know possible children.
 =cut
 sub getPossibleChildren {
     my $self = shift;
@@ -986,13 +978,13 @@ sub getPossibleChildren {
 =begin nd
 Function: getChildren
 
-Returns a <Node> array, containing real children (max length = 4), an empty array if the node is a leaf.
+Returns a <COMMON::GraphNode> array, containing real children (max length = 4), an empty array if the node is a leaf.
 
 Warning:
     Do not mistake with <getPossibleChildren>
 
 Parameters (list):
-    node - <Node> - Node whose we want to know children.
+    node - <COMMON::GraphNode> - Node whose we want to know children.
 =cut
 sub getChildren {
     my $self = shift;
@@ -1020,7 +1012,7 @@ sub getChildren {
 =begin nd
 Function: getNodesOfLevel
 
-Returns a <Node> array, contaning all nodes of the provided level.
+Returns a <COMMON::GraphNode> array, contaning all nodes of the provided level.
 
 Parameters (list):
     level - string - Level ID whose we want all nodes.
@@ -1064,9 +1056,9 @@ sub exportLevelsForScript {
     my $self = shift ;
 
     my $code = sprintf ("\n# QTree levels\n");
-    $code   .= sprintf ("TOP_LEVEL=\"%s\"\n", $self->{topID});
-    $code   .= sprintf ("CUT_LEVEL=\"%s\"\n", $self->{cutLevelID});
-    $code   .= sprintf ("BOTTOM_LEVEL=\"%s\"\n", $self->{bottomID});
+    $code .= sprintf ("TOP_LEVEL=\"%s\"\n", $self->{topID});
+    $code .= sprintf ("CUT_LEVEL=\"%s\"\n", $self->{cutLevelID});
+    $code .= sprintf ("BOTTOM_LEVEL=\"%s\"\n", $self->{bottomID});
 
     return $code;
 }

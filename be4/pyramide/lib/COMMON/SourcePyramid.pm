@@ -70,6 +70,7 @@ use Log::Log4perl qw(:easy);
 use XML::LibXML;
 use File::Basename;
 
+use COMMON::FilePyramid;
 use COMMON::SourceLevel;
 
 require Exporter;
@@ -113,16 +114,25 @@ sub new {
     # IMPORTANT : if modification, think to update natural documentation (just above)
     my $self = {
         pyramidDescriptor => undef,
+        
         levels => {},
+        dirdepth => undef,
+        tpw => undef,
+        tph => undef,
+        
         formatCode => undef,
         photometric => undef,
         samplesperpixel => undef,
-        compatible => FALSE,
+        nodata => undef,
+        interpolation => undef,
+        
+        tmsName => undef,
+
+        compatible => FALSE
     };
 
     bless($self, $class);
 
-    TRACE;
 
     if (! defined $file) {
         ERROR("The parameter 'file' is required!");
@@ -135,26 +145,20 @@ sub new {
     }
 
     $self->{pyramidDescriptor} = $file;
+
+    if (! $self->_load()) {return undef;}
     
     return $self;   
 }
 
 =begin nd
-Function: loadAndCheck
+Function: _load
 
-We have to collect pyramid's attributes' values, parsing the XML file. We control values, in order to have the same as the final pyramid. Returns FALSE if there is a problem to load or if source pyramid is not consistent with the final pyramid.
+We have to collect pyramid's attributes' values, parsing the XML file. Returns FALSE if there is a problem to load.
 
-Parameters (list):
-    pyramid - <BE4::Pyramid> - Final pyramid, to compare components
 =cut
-sub loadAndCheck {
+sub _load {
     my $self = shift;
-    my $pyramid = shift;
-
-    my $dirDepth = $pyramid->getDirDepth();
-    my $tilesPerWidth = $pyramid->getTilesPerWidth();
-    my $tilesPerHeight = $pyramid->getTilesPerHeight();
-    my $tmsName = $pyramid->getTmsName();
 
     my $pyramidDescFile = $self->{pyramidDescriptor};
 
@@ -175,19 +179,6 @@ sub loadAndCheck {
         ERROR(sprintf "Can not find parameter 'format' in the XML file Pyramid (%s) !", $pyramidDescFile);
         return FALSE;
     }
-    # Format have to be the same as the final pyramid
-    if ($tagformat =~ m/_INT8/) {
-        if (! ($pyramid->getBitsPerSample() == 8 && $pyramid->getSampleFormat eq "uint") ) {
-            ERROR("Source pyramids have to be in 8-bits unsigned integer (format = TIFF_XXX_INT8");
-            return FALSE;
-        }
-    }
-    if ($tagformat =~ m/_FLOAT32/) {
-        if (! ($pyramid->getBitsPerSample() == 32 && $pyramid->getSampleFormat eq "float") ) {
-            ERROR("Source pyramids have to be in 32-bits float (format = TIFF_XXX_FLOAT32");
-            return FALSE;
-        }
-    }
     $self->{formatCode} = $tagformat;
 
     # SAMPLES PER PIXEL
@@ -204,24 +195,29 @@ sub loadAndCheck {
         ERROR(sprintf "Can not find parameter 'tileMatrixSet' in the XML file Pyramid (%s) !", $pyramidDescFile);
         return FALSE;
     }
-    if ($tagTMS ne $tmsName) {
-        ERROR(sprintf "The TMS in the source pyramid '%s' (%s) is different from the TMS in the configuration (%s) !",
-              $pyramidDescFile,$tagTMS,$tmsName);
+    $self->{tmsName} = $tagTMS;
+
+    # NODATA COLOR
+    my $tagNodata = $root->findnodes('nodataValue')->to_literal;
+    if ($tagNodata eq '') {
+        ERROR(sprintf "Can not find parameter 'nodataValue' in the XML file Pyramid (%s) !", $pyramidDescFile);
         return FALSE;
     }
+    $self->{nodata} = $tagNodata;
+
+    # INTERPOLATION
+    my $tagInterpolation = $root->findnodes('interpolation')->to_literal;
+    if ($tagInterpolation eq '') {
+        ERROR(sprintf "Can not find parameter 'interpolation' in the XML file Pyramid (%s) !", $pyramidDescFile);
+        return FALSE;
+    }
+    $self->{interpolation} = $tagInterpolation;
 
     # PHOTOMETRIC
     my $tagphotometric = $root->findnodes('photometric')->to_literal;
     if ($tagphotometric eq '') {
-        WARN("Can not find parameter 'photometric', determine it from the samples per pixel .");
-
-        my %sppToPh = (
-            1 => "gray",
-            3 => "rgb",
-            4 => "rgb"
-        );
-
-        $tagphotometric = $sppToPh{$tagchannels};
+        ERROR(sprintf "Can not find parameter 'photometric' in the XML file Pyramid (%s) !", $pyramidDescFile);
+        return FALSE;
     }
     $self->{photometric} = $tagphotometric;
 
@@ -234,31 +230,22 @@ sub loadAndCheck {
     if ($tagtilesPerWidth eq '') {
         ERROR(sprintf "Can not find parameter 'tilesPerWidth' in the XML file Pyramid (%s) !", $pyramidDescFile);
         return FALSE;
-    } elsif ($tagtilesPerWidth != $tilesPerWidth) {
-        ERROR(sprintf "Tiles per width in the source pyramid '%s' (%s) != tiles per width in the configuration (%s) !",
-              $pyramidDescFile,$tagtilesPerWidth,$tilesPerWidth);
-        return FALSE;
     }
+    $self->{tpw} = $tagtilesPerWidth;
     
     my $tagtilesPerHeight = $levels[0]->findvalue('tilesPerHeight');
     if ($tagtilesPerHeight eq '') {
         ERROR(sprintf "Can not find parameter 'tilesPerHeight' in the XML file Pyramid (%s) !", $pyramidDescFile);
         return FALSE;
-    } elsif ($tagtilesPerHeight != $tilesPerHeight) {
-        ERROR(sprintf "Tiles per height in the source pyramid '%s' (%s) != tiles per height in the configuration (%s) !",
-              $pyramidDescFile,$tagtilesPerHeight,$tilesPerHeight);
-        return FALSE;
     }
+    $self->{tph} = $tagtilesPerHeight;
     
     my $tagdepth = $levels[0]->findvalue('pathDepth');
     if ($tagdepth eq '') {
         ERROR(sprintf "Can not find parameter 'pathDepth' in the XML file Pyramid (%s) !", $pyramidDescFile);
         return FALSE;
-    } elsif ($tagdepth != $dirDepth) {
-        ERROR(sprintf "Directory depth in the source pyramid '%s' (%s) != directory depth in the configuration (%s) !",
-              $pyramidDescFile,$tagdepth,$dirDepth);
-        return FALSE;
     }
+    $self->{dirdepth} = $tagdepth;
 
     my $directory = dirname($pyramidDescFile);
 
@@ -294,6 +281,81 @@ sub loadAndCheck {
         }
 
         $self->{levels}->{$levelId} = $level;
+    }
+    return TRUE;
+}
+
+
+=begin nd
+Function: checkConsistency
+
+We control values, in order to have the same as the final pyramid.
+
+Consistency = it's possible to convert (different compression or samples per pixel).
+
+Compatibility = it's possible to link (all parameters are the same).
+
+Return FALSE if source pyramid is not consistent (unusable for a JoinCache for example).
+
+Parameters (list):
+    pyramid - <COMMON::FilePyramid> - Final pyramid, to compare components
+=cut
+sub checkConsistency {
+    my $self = shift;
+    my $pyramid = shift;
+
+    my $dirDepth = $pyramid->getDirDepth();
+    my $tilesPerWidth = $pyramid->getTilesPerWidth();
+    my $tilesPerHeight = $pyramid->getTilesPerHeight();
+    my $tmsName = $pyramid->getTmsName();
+
+    # Format have to be the same as the final pyramid
+    if ($self->{formatCode} =~ m/_INT8/) {
+        if (! ($pyramid->getBitsPerSample() == 8 && $pyramid->getSampleFormat eq "uint") ) {
+            ERROR("Source pyramids have to be in 8-bits unsigned integer (format = TIFF_XXX_INT8");
+            return FALSE;
+        }
+    }
+    if ($self->{formatCode} =~ m/_FLOAT32/) {
+        if (! ($pyramid->getBitsPerSample() == 32 && $pyramid->getSampleFormat eq "float") ) {
+            ERROR("Source pyramids have to be in 32-bits float (format = TIFF_XXX_FLOAT32");
+            return FALSE;
+        }
+    }
+
+    # TMS
+    if ($self->{tmsName} ne $tmsName) {
+        ERROR(
+            sprintf "The TMS in the source pyramid '%s' (%s) is different from the TMS in the final pyramid (%s) !",
+            $self->{pyramidDescriptor}, $self->{tmsName},$tmsName
+        );
+        return FALSE;
+    }
+
+    # Reads and controls tilesPerWidth, tilesPerHeight and dirDepth
+    
+    if ($self->{tpw} != $tilesPerWidth) {
+        ERROR(
+            sprintf "Tiles per width in the source pyramid '%s' (%s) != tiles per width in the final pyramid (%s) !",
+            $self->{pyramidDescriptor},$self->{tpw},$tilesPerWidth
+        );
+        return FALSE;
+    }
+    
+    if ($self->{tpw} != $tilesPerHeight) {
+        ERROR(
+            sprintf "Tiles per height in the source pyramid '%s' (%s) != tiles per height in the final pyramid (%s) !",
+            $self->{pyramidDescriptor},$self->{tpw},$tilesPerHeight
+        );
+        return FALSE;
+    }
+    
+    if ($self->{dirdepth} != $dirDepth) {
+        ERROR(
+            sprintf "Directory depth in the source pyramid '%s' (%s) != directory depth in the final pyramid (%s) !",
+            $self->{pyramidDescriptor}, $self->{dirdepth},$dirDepth
+        );
+        return FALSE;
     }
 
     # Is it compatible with the final pyramid
@@ -381,10 +443,46 @@ sub isCompatible {
     return $self->{compatible};
 }
 
+# Function: getInterpolation
+sub getInterpolation {
+    my $self = shift;
+    return $self->{interpolation};
+}
+
+# Function: getNodataColor
+sub getNodataColor {
+    my $self = shift;
+    return $self->{nodata};
+}
+
 # Function: getFormatCode
 sub getFormatCode {
     my $self = shift;
     return $self->{formatCode};
+}
+
+# Function: getTmsName
+sub getTmsName {
+    my $self = shift;
+    return $self->{tmsName};
+}
+
+# Function: getTilesPerWidth
+sub getTilesPerWidth {
+    my $self = shift;
+    return $self->{tpw};
+}
+
+# Function: getTilesPerHeight
+sub getTilesPerHeight {
+    my $self = shift;
+    return $self->{tph};
+}
+
+# Function: getDirDepth
+sub getDirDepth {
+    my $self = shift;
+    return $self->{dirdepth};
 }
 
 # Function: getBitsPerSample

@@ -70,7 +70,6 @@ my $VERSION = '0.1';
 
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
-use List::Util qw(min max);
 use Scalar::Util qw/reftype/;
 
   # inheritance
@@ -95,7 +94,6 @@ BEGIN {}
 INIT {}
 END {}
 
-
 ################################################################################
 #                             Group: Constructors                              #
 ################################################################################
@@ -110,6 +108,7 @@ sub new {
         "filePath" => undef,
         "fileFormat" => undef,
         "configuration" => {},
+        "rawConfiguration" => {},
     };
 
 	bless($self, $class);
@@ -146,17 +145,14 @@ sub new {
         return undef;
     }
 
-    my $loaded = FALSE;
     if ($self->{"fileFormat"} eq "INI") {
-        $loaded = $self->_loadINI();
+        if (! $self->_loadINI() ) {
+            ERROR("Configuration file wasn't properly loaded.");
+            return undef;
+        }
     }
 
-    if ($loaded) {
-        return $self;
-    } else {
-        ERROR("Configuration file wasn't properly loaded.");
-        return undef;
-    }
+    return $self;
 }
 
 =begin nd
@@ -228,15 +224,19 @@ sub _loadINI {
                 ERROR (sprintf "A property is defined twice in the configuration : section %s, parameter %s", $currentSection, $prop[0]);
                 return FALSE;
             }            
-            $self->{"configuration"}->{$currentSection}->{$prop[0]} = $prop[1]; 
+            $self->{"configuration"}->{$currentSection}->{$prop[0]} = $prop[1];
             push (@{$self->{"configuration"}->{$currentSection}->{'_props'}}, $prop[0]);
+
+            $self->{"rawConfiguration"}->{$currentSection}->{$prop[0]} = $prop[1];
         } else {
             if (defined $self->{"configuration"}->{$currentSection}->{$currentSubSection}->{$prop[0]}) {
                 ERROR (sprintf "A property is defined twice in the configuration : section %s, subsection %s parameter %s", $currentSection, $currentSubSection, $prop[0]);
                 return FALSE;
-            }            
+            }
             $self->{"configuration"}->{$currentSection}->{$currentSubSection}->{$prop[0]} = $prop[1];
             push (@{$self->{"configuration"}->{$currentSection}->{$currentSubSection}->{'_props'}}, $prop[0]);
+            
+            $self->{"rawConfiguration"}->{$currentSection}->{$currentSubSection}->{$prop[0]} = $prop[1];
         }
         
 
@@ -267,7 +267,6 @@ sub _isKnownFormat {
     my $self = shift;
     my $format = shift;
 
-    TRACE;
 
     return FALSE if (! defined $format);
 
@@ -510,6 +509,37 @@ sub getProperty {
 }
 
 =begin nd
+Function: setProperty
+
+Store the value of a property in a section or a section-subsection pair.
+
+Syntax: setProperty({ 'section' => sectionName, 'property' => propertyName [, 'subsection' => subSectionName], 'value' = value })
+
+Parameters (hash):
+    'section' => sectionName - string - section's name
+    'subsection' => subSectionName - string - subsection's name (optionnal)
+    'property' => propertyName - string - the property to set
+    'value' => propertyName - string - the value to set
+=cut
+sub setProperty {
+    my $self = shift;
+    my $parms = shift;
+
+    my $sec = $parms->{section};
+    my $prop = $parms->{property};
+    my $val = $parms->{value};
+
+    if (exists $parms->{subsection} && defined $parms->{subsection}) {
+        my $subsec = $parms->{subsection};
+        $self->{"configuration"}->{$sec}->{$subsec}->{$prop} = $val;
+        $self->{"rawConfiguration"}->{$sec}->{$subsec}->{$prop} = $val;
+    } else {
+        $self->{"configuration"}->{$sec}->{$prop} = $val;
+        $self->{"rawConfiguration"}->{$sec}->{$prop} = $val;
+    }
+}
+
+=begin nd
 Function: getProperty
 
 Returns the list of existing sections.
@@ -605,6 +635,17 @@ sub getConfig {
     my $refConfig = $self->{'configuration'};
     my %hashConfig = %{$refConfig};
     return %hashConfig;
+}
+
+=begin nd
+Function: getRawConfig
+
+Returns a hash reference of the the part of the COMMON::Config object that actually contains the raw configuration (without order).
+=cut
+sub getRawConfig {
+    my $self = shift;
+
+    return $self->{'rawConfiguration'};
 }
 
 

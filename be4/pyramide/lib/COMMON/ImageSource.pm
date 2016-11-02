@@ -154,7 +154,6 @@ sub new {
 
     bless($self, $class);
 
-    TRACE;
 
     # init. class
     return undef if (! $self->_init($params));
@@ -185,7 +184,6 @@ sub _init {
     my $self   = shift;
     my $params = shift;
 
-    TRACE;
     
     return FALSE if (! defined $params);
     if (! exists($params->{srs}) || ! defined ($params->{srs})) {
@@ -254,7 +252,6 @@ See also:
 sub computeImageSource {
     my $self = shift;
 
-    TRACE;
 
     my $lstGeoImages = $self->{images};
 
@@ -271,7 +268,12 @@ sub computeImageSource {
     }
 
     my $badRefCtrl = 0;
-    my $pixel = undef;
+
+    my $bps = undef;
+    my $sf = undef;
+    my $ph = undef;
+    my $spp = undef;
+
     my $bestResX = undef;
     my $bestResY = undef;
     my $ppsPath = undef;
@@ -288,7 +290,7 @@ sub computeImageSource {
 
         my $prePsFilePath = undef;
 
-                my $objGeoImage = COMMON::GeoImage->new($filepath);
+        my $objGeoImage = COMMON::GeoImage->new($filepath);
 
         if (! defined $objGeoImage) {
             ERROR ("Can not load image source ('$filepath') !");
@@ -322,22 +324,16 @@ sub computeImageSource {
             }
         }
 
-        if (! defined $pixel) {
-            # we have read the first image, components are empty. This first image will be the reference.
-            $pixel = COMMON::Pixel->new({
-                bitspersample => $imageInfo[0],
-                photometric => $imageInfo[1],
-                sampleformat => $imageInfo[2],
-                samplesperpixel => $imageInfo[3]
-            });
-            if (! defined $pixel) {
-                ERROR ("Can not create Pixel object for DataSource !");
-                return FALSE;
-            }
+        if (! defined $bps) {
+            # we read the first image, components are empty. This first image will be the reference.
+            $bps = $imageInfo[0];
+            $ph = $imageInfo[1];
+            $sf = $imageInfo[2];
+            $spp = $imageInfo[3];
         } else {
             # we have already values. We must have the same components for all images
-            if (! ($pixel->getBitsPerSample eq $imageInfo[0] && $pixel->getPhotometric eq $imageInfo[1] &&
-                    $pixel->getSampleFormat eq $imageInfo[2] && $pixel->getSamplesPerPixel eq $imageInfo[3])) {
+            if (! ($bps eq $imageInfo[0] && $ph eq $imageInfo[1] &&
+                    $sf eq $imageInfo[2] && $spp eq $imageInfo[3])) {
                 ERROR ("All images must have same components. This image ('$filepath') is different !");
                 return FALSE;
             }
@@ -360,7 +356,16 @@ sub computeImageSource {
         $objGeoImage->setImageSource($self);
     }
 
-    $self->{pixel} = $pixel;
+    $self->{pixel} = COMMON::Pixel->new({
+        bitspersample => $bps,
+        photometric => $ph,
+        sampleformat => $sf,
+        samplesperpixel => $spp
+    });
+    if (! defined $self->{pixel}) {
+        ERROR ("Can not create Pixel object for DataSource !");
+        return FALSE;
+    }
     $self->{bestResX} = $bestResX;
     $self->{bestResY} = $bestResY;
 
@@ -387,7 +392,6 @@ sub getListImages {
     my $self      = shift;
     my $directory = shift;
 
-    TRACE();
 
     my $search = {
         images => [],
@@ -429,7 +433,6 @@ Returns a double list : (xMin,yMin,xMax,yMax).
 sub computeBBox {
     my $self = shift;
 
-    TRACE;
 
     my $lstGeoImages = $self->{images};
 
@@ -459,6 +462,12 @@ sub getResolution {
 sub getSRS {
     my $self = shift;
     return $self->{srs};
+}
+
+# Function: getPixel
+sub getPixel {
+    my $self = shift;
+    return $self->{pixel};
 }
 
 # Function: getImages

@@ -180,7 +180,6 @@ sub new {
 
     bless($self, $class);
 
-    TRACE;
 
     # init. class
     return undef if (! $self->_init($params));
@@ -210,7 +209,6 @@ sub _init {
     my $self   = shift;
     my $params = shift;
 
-    TRACE;
     
     return FALSE if (! defined $params);
     
@@ -355,7 +353,6 @@ sub doRequestUrl {
 
     my $args = shift;
 
-    TRACE;
 
     my $srs       = $args->{srs}          || ( ERROR ("'srs' parameter required !") && return undef );
     my $bbox      = $args->{bbox}         || ( ERROR ("'bbox' parameter required !") && return undef );
@@ -443,7 +440,6 @@ sub getCommandWms2work {
 
     my $args = shift;
 
-    TRACE;
 
     my $dir = $args->{dir} || ( ERROR ("'dir' parameter required !") && return (undef, undef) );
     my $srs = $args->{srs} || ( ERROR ("'srs' parameter required !") && return (undef, undef) );
@@ -559,7 +555,6 @@ sub isWmsFormat {
     my $self = shift;
     my $wmsformat = shift;
 
-    TRACE;
 
     return FALSE if (! defined $wmsformat);
 
