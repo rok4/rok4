@@ -157,7 +157,7 @@ sub new {
         desc_path => undef,
 
         # CAS FICHIER
-        dir_depth => 0,
+        dir_depth => undef,
         dir_image => undef,
         dir_mask => undef,
 
@@ -191,13 +191,13 @@ sub new {
     }
     
     # STOCKAGE TYPE
-    if ( exists $this->{dir_depth} ) {
+    if ( defined $this->{dir_depth} ) {
         $this->{type} = "FILE";
     }
-    elsif ( exists $this->{bucket_name} ) {
+    elsif ( defined $this->{bucket_name} ) {
         $this->{type} = "S3";
     }
-    elsif ( exists $this->{pool_name} ) {
+    elsif ( defined $this->{pool_name} ) {
         $this->{type} = "CEPH";
     }
 
@@ -511,11 +511,13 @@ sub getSlabPath {
     my $col = shift;
     my $row = shift;
 
-
     if ($this->{type} eq "FILE") {
         my $b36 = COMMON::Base36::indicesToB36Path($col, $row, $this->{dir_depth} + 1);
 
-        if ($type eq "IMAGE") {
+        if (! defined $type) {
+            return "$b36.tif";
+        }
+        elsif ($type eq "IMAGE") {
             return File::Spec->catdir($this->{dir_image}, "$b36.tif");
         }
         elsif ($type eq "MASK") {
@@ -525,11 +527,14 @@ sub getSlabPath {
             return undef;
         }
     } else {
-        if ($type eq "IMAGE") {
-            return sprintf "%s_%s_${row}_${col}", $this->{prefix_image}, $this->{id};
+        if (! defined $type) {
+            return sprintf "%s_%s_%s", $this->{id}, $col, $row;
+        }
+        elsif ($type eq "IMAGE") {
+            return sprintf "%s_%s_%s_%s", $this->{prefix_image}, $this->{id}, $col, $row;
         }
         elsif ($type eq "MASK") {
-            return sprintf "%s_%s_${row}_${col}", $this->{prefix_mask}, $this->{id};
+            return sprintf "%s_%s_%s_%s", $this->{prefix_mask}, $this->{id}, $col, $row;
         }
         else {
             return undef;
@@ -568,6 +573,22 @@ sub updateLimitsFromSlab {
         $row * $this->{size}->[1], $row * $this->{size}->[1] + ($this->{size}->[1] - 1),
         $col * $this->{size}->[0], $col * $this->{size}->[0] + ($this->{size}->[0] - 1)
     );
+}
+
+
+=begin nd
+method: updateLimitsFromBbox
+=cut
+sub updateLimitsFromBbox {
+    my $this = shift;
+    my ($xmin, $ymin, $xmax, $ymax) = @_;
+
+    my $colMin = $this->{tm}->xToColumn($xmin);
+    my $colMax = $this->{tm}->xToColumn($xmax);
+    my $rowMin = $this->{tm}->yToRow($ymax);
+    my $rowMax = $this->{tm}->yToRow($ymin);
+
+    $this->updateLimits($rowMin,$rowMax,$colMin,$colMax);
 }
 
 # Function: getDirImage
@@ -649,11 +670,13 @@ sub exportToXML {
         $string .= sprintf "        <pathDepth>%s</pathDepth>\n", $this->{dir_depth};
     }
     elsif ($this->{type} eq "S3") {
+        $string .= sprintf "        <imagePrefix>%s</imagePrefix>\n", $this->{prefix_image};
         $string .= "        <s3Context>\n";
         $string .= sprintf "            <bucketName>%s</bucketName>\n", $this->{bucket_name};
         $string .= "        </s3Context>\n";
     }
     elsif ($this->{type} eq "CEPH") {
+        $string .= sprintf "        <imagePrefix>%s</imagePrefix>\n", $this->{prefix_image};
         $string .= "        <cephContext>\n";
         $string .= sprintf "            <poolName>%s</poolName>\n", $this->{pool_name};
         $string .= "        </cephContext>\n";

@@ -86,7 +86,7 @@ use lib "$Bin/../lib/perl5";
 
 # My module
 use BE4CEPH::PropertiesLoader;
-use BE4CEPH::Pyramid;
+use COMMON::Pyramid;
 use COMMON::Forest;
 
 ################################################################################
@@ -318,16 +318,19 @@ sub config {
     return TRUE;
 }
 
+
 =begin nd
 Function: doIt
 
 Steps in order, using parameters :
-    - create the Pyramid object : <BE4CEPH::Pyramid::new>
+    - create the Pyramid object : <COMMON::Pyramid::new>
+    - update the Pyramid object with the TMS : <COMMON::Pyramid::bindTileMatrixSet>
     - load data sources : <COMMON::DataSourceLoader::new>
-    - update levels for this Pyramid object : <BE4CEPH::Pyramid::updateLevels>
+    - update data sources with the levels : <COMMON::DataSourceLoader::updateDataSources>
+    - create the pyramid's levels : <COMMON::Pyramid::addLevel>
     - create the Forest object : <COMMON::Forest::new>
-    - write (initialization) its list : <BE4CEPH::Pyramid::writeListPyramid>
-    - write the pyramid's descriptor : <BE4CEPH::Pyramid::writeConfPyramid>
+    - write the pyramid's list : <COMMON::Pyramid::writeList>
+    - write the pyramid's descriptor : <COMMON::Pyramid::writeDescriptor>
     - compute trees (write scripts) : <COMMON::Forest::computeGraphs>
 =cut
 sub doIt {
@@ -348,34 +351,57 @@ sub doIt {
     
     ALWAYS(">>> Load a Pyramid ...");
     
-    $objPyramid = BE4CEPH::Pyramid->new( $params->{pyramid} );
+    $objPyramid = COMMON::Pyramid->new("VALUES", $params->{pyramid} );
     if (! defined $objPyramid) {
-        ERROR("Can not load Pyramid !");
+        ERROR("Cannot load Pyramid !");
         return FALSE;
     }
+
+    if (! $objPyramid->bindTileMatrixSet($params->{pyramid}->{tms_path})) {
+        ERROR("Cannot bind TMS to Pyramid !");
+        return FALSE;
+    }
+
+
+    my $objTMS = $objPyramid->getTileMatrixSet();
     
     #######################
     # load data source
     
     ALWAYS(">>> Load Data Source ...");
 
-    $objDSL = COMMON::DataSourceLoader->new($params->{datasource},$params->{harvesting},$params->{pyramid}->{pyr_level_bottom});
+    $objDSL = COMMON::DataSourceLoader->new($params->{datasource});
     if (! defined $objDSL) {
         ERROR("Cannot load data sources !");
         return FALSE;
     }
+
+    # update datasources top/bottom levels !
+    my ($bottomOrder,$topOrder) = $objDSL->updateDataSources($objTMS, $params->{pyramid}->{pyr_level_top});
+    if ($bottomOrder == -1) {
+        ERROR("Cannot determine top and bottom levels, from data sources.");
+        return FALSE;
+    }
     
     #######################
-    # update levels
+    # add levels to pyramid
     
     ALWAYS(">>> Determine levels ...");
     
-    if (! $objPyramid->updateLevels($objDSL,$params->{pyramid}->{pyr_level_top})) {
-        ERROR("Can not update levels !");
-        return FALSE;
-    }
+    # Create all level between the bottom and the top
+    for (my $order = $bottomOrder; $order <= $topOrder; $order++) {
 
-    DEBUG(sprintf "DATA SOURCE LOADER (debug export) = %s", $objDSL->exportForDebug);
+        my $ID = $objTMS->getIDfromOrder($order);
+        if (! defined $ID) {
+            ERROR(sprintf "Cannot identify ID for the order %s !", $order);
+            return FALSE;
+        }
+
+        if (! $objPyramid->addLevel($ID) ) {
+            ERROR("Cannot add level $ID");
+            return FALSE;            
+        }
+    }
     
     # we cannot write the pyramid descriptor and cache now. We need data's limits, calculated by graphs.
   
@@ -401,7 +427,7 @@ sub doIt {
     
     ALWAYS(">>> Write the pyramid's list ...");
 
-    if (! $objPyramid->writeListPyramid($objForest)) {
+    if ( ! $objPyramid->writeList($objForest, undef) ) {
         ERROR("Can not write Pyramid list !");
         return FALSE;
     }
@@ -411,12 +437,10 @@ sub doIt {
 
     ALWAYS(">>> Write the pyramid's descriptor ...");
 
-    if (! $objPyramid->writeConfPyramid) {
+    if ( ! $objPyramid->writeDescriptor() ) {
         ERROR("Can not write Pyramid file !");
         return FALSE;
     }
-  
-    DEBUG(sprintf "PYRAMID (debug export) = %s", $objPyramid->exportForDebug);
   
     #######################
     # compute graphs

@@ -101,18 +101,18 @@ use constant FALSE => 0;
 =begin nd
 Constructor: new
 
-Commands constructor. Bless an instance.
+ShellCommands constructor. Bless an instance.
 
 Parameters (list):
-    pyr - <BE4S3::Pyramid> - Image pyramid to generate
+    pyr - <COMMON::Pyramid> - Image pyramid to generate
     useMasks - string - Do we want use masks to generate images ?
 =cut
 sub new {
-    my $this = shift;
-    my $pyr = shift;
+    my $class = shift;
+    my $pyramid = shift;
     my $useMasks = shift;
     
-    my $class= ref($this) || $this;
+    $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above)
     my $this = {
         pyramid => undef,
@@ -123,11 +123,11 @@ sub new {
 
     bless($this, $class);
 
-    if (! defined $pyr || ref ($pyr) ne "COMMON::Pyramid") {
+    if (! defined $pyramid || ref ($pyramid) ne "COMMON::Pyramid") {
         ERROR("Can not load Pyramid !");
         return undef;
     }
-    $this->{pyramid} = $pyr;
+    $this->{pyramid} = $pyramid;
 
     if ( $this->{pyramid}->ownMasks() || (defined $useMasks && uc($useMasks) eq "TRUE") ) {
         $this->{useMasks} = TRUE;
@@ -215,8 +215,8 @@ sub mergeNtiff {
 # Constant: WORK2CACHE_W
 use constant WORK2CACHE_W => 1;
 
-my $W2CFUNCTION = <<'W2CFUNCTION';
-StoreImage () {
+my $S3_W2CFUNCTION = <<'W2CFUNCTION';
+StoreSlab () {
     local level=$1
     local workDir=$2
     local workImgName=$3
@@ -257,6 +257,51 @@ StoreImage () {
         fi
     fi
 }
+W2CFUNCTION
+
+
+my $CEPH_W2CFUNCTION = <<'W2CFUNCTION';
+StoreSlab () {
+    local level=$1
+    local workDir=$2
+    local workImgName=$3
+    local imgName=$4
+    local workMskName=$5
+    local mskName=$6
+    
+    
+    if [[ ! ${RM_IMGS[$workDir/$workImgName]} ]] ; then
+             
+        work2cache $workDir/$workImgName __w2cI__ -pool ${PYR_POOL} $imgName
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        
+        echo "$imgName" >> ${TMP_LIST_FILE}
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        
+        if [ "$level" == "$TOP_LEVEL" ] ; then
+            rm $workDir/$workImgName
+        elif [ "$level" == "$CUT_LEVEL" ] ; then
+            mv $workDir/$workImgName ${COMMON_TMP_DIR}/
+        fi
+        
+        if [ $workMskName ] ; then
+            
+            if [ $mskName ] ; then
+                    
+                work2cache $workDir/$workMskName __w2cM__ -pool ${PYR_POOL} $mskName
+                if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+                echo "$mskName" >> ${TMP_LIST_FILE}
+                
+            fi
+            
+            if [ "$level" == "$TOP_LEVEL" ] ; then
+                rm $workDir/$workMskName
+            elif [ "$level" == "$CUT_LEVEL" ] ; then
+                mv $workDir/$workMskName ${COMMON_TMP_DIR}/
+            fi
+        fi
+    fi
+}
 StoreTiles () {
     local level=$1
     local workDir=$2
@@ -282,7 +327,7 @@ StoreTiles () {
     
     if [[ ! ${RM_IMGS[$workDir/$workImgName]} ]] ; then
              
-        work2cache $workDir/$workImgName __w2cI__ -ij $imgI $imgJ -bucket ${PYR_BUCKET} $imgName
+        work2cache $workDir/$workImgName __w2cI__ -ij $imgI $imgJ -pool ${PYR_POOL} $imgName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
         for i in `seq $imin $imax` ; do 
@@ -302,7 +347,7 @@ StoreTiles () {
             
             if [ $mskName ] ; then
                     
-                work2cache $workDir/$workMskName __w2cM__ -ij $imgI $imgJ -bucket ${PYR_BUCKET} $mskName
+                work2cache $workDir/$workMskName __w2cM__ -ij $imgI $imgJ -pool ${PYR_POOL} $mskName
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
                 for i in `seq $imin $imax` ; do 
                     for j in `seq $jmin $jmax` ; do 
@@ -323,6 +368,59 @@ StoreTiles () {
 }
 W2CFUNCTION
 
+
+my $FILE_W2CFUNCTION = <<'W2CFUNCTION';
+StoreSlab () {
+    local level=$1
+    local workDir=$2
+    local workImgName=$3
+    local imgName=$4
+    local workMskName=$5
+    local mskName=$6
+        
+    if [[ ! ${RM_IMGS[$workDir/$workImgName]} ]] ; then
+        
+        local dir=`dirname ${PYR_DIR}/$imgName`
+        
+        if [ -r $workDir/$workImgName ] ; then rm -f ${PYR_DIR}/$imgName ; fi
+        if [ ! -d $dir ] ; then mkdir -p $dir ; fi
+            
+        work2cache $workDir/$workImgName __w2cI__ ${PYR_DIR}/$imgName
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        
+        echo "0/$imgName" >> ${TMP_LIST_FILE}
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        
+        if [ "$level" == "$TOP_LEVEL" ] ; then
+            rm $workDir/$workImgName
+        elif [ "$level" == "$CUT_LEVEL" ] ; then
+            mv $workDir/$workImgName ${COMMON_TMP_DIR}/
+        fi
+        
+        if [ $workMskName ] ; then
+            
+            if [ $mskName ] ; then
+                
+                dir=`dirname ${PYR_DIR}/$mskName`
+                
+                if [ -r $workDir/$workMskName ] ; then rm -f ${PYR_DIR}/$mskName ; fi
+                if [ ! -d $dir ] ; then mkdir -p $dir ; fi
+                    
+                work2cache $workDir/$workMskName __w2cM__ ${PYR_DIR}/$mskName
+                if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+                echo "0/$mskName" >> ${TMP_LIST_FILE}
+                
+            fi
+            
+            if [ "$level" == "$TOP_LEVEL" ] ; then
+                rm $workDir/$workMskName
+            elif [ "$level" == "$CUT_LEVEL" ] ; then
+                mv $workDir/$workMskName ${COMMON_TMP_DIR}/
+            fi
+        fi
+    fi
+}
+W2CFUNCTION
 
 =begin nd
 Function: work2cache
@@ -353,7 +451,7 @@ sub work2cache {
 
     if ($this->{pyramid}->storeTiles()) {
 
-        my $pyrName = sprintf "%s_IMG_%s", $this->{pyramid}->getNewName(), $node->getLevel();
+        my $pyrName = sprintf "%s_IMG_%s", $this->{pyramid}->getName(), $node->getLevel();
         
         $cmd .= sprintf "StoreTiles %s %s %s %s %s %s %s %s",
             $node->getLevel, $workDir, $node->getWorkImageName(TRUE), $pyrName,
@@ -369,7 +467,7 @@ sub work2cache {
             
             # En plus, on veut exporter les masques dans la pyramide, on en précise donc l'emplacement final
             if ( $this->{pyramid}->ownMasks() ) {
-                $pyrName = sprintf "%s_MSK_%s", $this->{pyramid}->getNewName(), $node->getPyramidName();
+                $pyrName = sprintf "%s_MSK_%s", $this->{pyramid}->getName(), $node->getPyramidName();
                 
                 $cmd .= sprintf (" %s", $pyrName);
                 $weight += WORK2CACHE_W;
@@ -379,9 +477,9 @@ sub work2cache {
         $cmd .= "\n";
     } else {
     
-        my $pyrName = sprintf "%s_IMG_%s", $this->{pyramid}->getNewName(), $node->getPyramidName();
+        my $pyrName = sprintf "%s_IMG_%s", $this->{pyramid}->getName(), $node->getPyramidName();
         
-        $cmd .= sprintf ("StoreImage %s %s %s %s", $node->getLevel, $workDir, $node->getWorkImageName(TRUE), $pyrName);
+        $cmd .= sprintf ("StoreSlab %s %s %s %s", $node->getLevel, $workDir, $node->getWorkImageName(TRUE), $pyrName);
         $weight += WORK2CACHE_W;
         
         #### Export du masque, si présent
@@ -392,7 +490,7 @@ sub work2cache {
             
             # En plus, on veut exporter les masques dans la pyramide, on en précise donc l'emplacement final
             if ( $this->{pyramid}->ownMasks() ) {
-                $pyrName = sprintf "%s_MSK_%s", $this->{pyramid}->getNewName(), $node->getPyramidName();
+                $pyrName = sprintf "%s_MSK_%s", $this->{pyramid}->getName(), $node->getPyramidName();
                 
                 $cmd .= sprintf (" %s", $pyrName);
                 $weight += WORK2CACHE_W;
@@ -512,10 +610,8 @@ sub wms2work {
     my $node = shift;
     my $harvesting = shift;
 
-    my $pyramid = $node->getGraph->getPyramid;
-    
-    my @imgSize = $pyramid->getCacheImageSize($node->getLevel); # ie size tile image in pixel !
-    my $tms     = $pyramid->getTileMatrixSet;
+    my @imgSize = $this->{pyramid}->getCacheImageSize($node->getLevel); # ie size tile image in pixel !
+    my $tms     = $this->{pyramid}->getTileMatrixSet;
     
     my $nodeName = $node->getWorkImageName();
     
@@ -546,7 +642,7 @@ sub wms2work {
 # Constant: MERGE4TIFF_W
 use constant MERGE4TIFF_W => 1;
 
-my $M4TFUNCTION << M4TFUNCTION
+my $M4TFUNCTION = <<'M4TFUNCTION';
 Merge4tiff () {
     local imgOut=$1
     local mskOut=$2
@@ -665,7 +761,7 @@ sub merge4tiff {
 
 use constant DECIMATENTIFF_W => 3;
 
-my $DNTFUNCTION << DNTFUNCTION
+my $DNTFUNCTION = <<'DNTFUNCTION';
 DecimateNtiff () {
     local config=$1
     
@@ -728,113 +824,88 @@ sub decimateNtiff {
     return ($code,$weight);
 }
 
-################################################################################
-
-BEGIN {}
-INIT {}
-END {}
-
-
-
 ####################################################################################################
-#                               Group: Commands methods                                            #
+#                               Group: Functions configuration                                     #
 ####################################################################################################
-
-
-
-
-
-
-
 
 
 =begin nd
-Function: configureFunctions
+Function: getConfiguredFunctions
 
 Configure bash functions to write in scripts' header thanks to pyramid's components.
 =cut
-sub configureFunctions {
+sub getConfiguredFunctions {
     my $this = shift;
 
-    my $pyr = $this->{pyramid};
-    my $configuredFunc = $BASHFUNCTIONS;
+    ######## wms2work ########
+    # Rien à configurer
+    my $functions = $HARVESTFUNCTION;
 
     ######## mergeNtiff ########
     # work compression : deflate
-    my $conf_mNt = "-c zip ";
 
-    my $ip = $pyr->getInterpolation;
-    $conf_mNt .= "-i $ip ";
-    my $spp = $pyr->getSamplesPerPixel;
-    $conf_mNt .= "-s $spp ";
-    my $bps = $pyr->getBitsPerSample;
-    $conf_mNt .= "-b $bps ";
-    my $ph = $pyr->getPhotometric;
-    $conf_mNt .= "-p $ph ";
-    my $sf = $pyr->getSampleFormat;
-    $conf_mNt .= "-a $sf ";
+    my $conf_mNt = sprintf "-c zip -i %s -s %s -b %s -p %s -a %s -n %s",
+        $this->{pyramid}->getImageSpec()->getInterpolation(),
+        $this->{pyramid}->getImageSpec()->getPixel()->getSamplesPerPixel(),
+        $this->{pyramid}->getImageSpec()->getPixel()->getBitsPerSample(),
+        $this->{pyramid}->getImageSpec()->getPixel()->getPhotometric(),
+        $this->{pyramid}->getImageSpec()->getPixel()->getSampleFormat(),
+        $this->{pyramid}->getNodata()->getValue();
 
-    my $nd = $this->getNodata->getValue;
-    $conf_mNt .= "-n $nd ";
-
-    $configuredFunc =~ s/__mNt__/$conf_mNt/;
+    $functions .= $MNTFUNCTION;
+    $functions =~ s/__mNt__/$conf_mNt/g;
     
     ######## decimateNtiff ########
     # work compression : deflate
-    my $conf_dNt = "-c zip ";
+    my $conf_dNt = sprintf "-c zip -n %s", $this->{pyramid}->getNodata()->getValue();
 
-    $conf_dNt .= "-n $nd ";
-
-    $configuredFunc =~ s/__dNt__/$conf_dNt/;
+    $functions .= $DNTFUNCTION;
+    $functions =~ s/__dNt__/$conf_dNt/g;
     
     ######## merge4tiff ########
     # work compression : deflate
-    my $conf_m4t = "-c zip ";
+    my $conf_m4t = sprintf "-c zip -g %s -n %s", 
+        $this->{pyramid}->getImageSpec()->getGamma(),
+        $this->{pyramid}->getNodata()->getValue();
 
-    my $gamma = $pyr->getGamma;
-    $conf_m4t .= "-g $gamma ";
-    $conf_m4t .= "-n $nd ";
-
-    $configuredFunc =~ s/__m4t__/$conf_m4t/;
+    $functions .= $M4TFUNCTION;
+    $functions =~ s/__m4t__/$conf_m4t/g;
     
     ######## work2cache ########
-    my $conf_t2t = "";
 
-    # pour les images
-    my $compression = $pyr->getCompression;
-    
-    $conf_t2t .= "-c $compression ";
-    if ($pyr->getCompressionOption eq 'crop') {
-        $conf_t2t .= "-crop ";
+    # pour les images    
+    my $conf_w2c = sprintf "-c %s -t %s %s",
+        $this->{pyramid}->getImageSpec()->getCompression,
+        $this->{pyramid}->getTileMatrixSet()->getTileWidth(), $this->{pyramid}->getTileMatrixSet()->getTileHeight();
+
+    if ($this->{pyramid}->getImageSpec()->getCompressionOption() eq 'crop') {
+        $conf_w2c .= " -crop";
     }
 
+    # Selon le type de stockage, on a une version différente des fonctions de stockage final
+    if ($this->{pyramid}->getStorageType() eq "FILE") {
+        $functions .= $FILE_W2CFUNCTION;
+    }
+    elsif ($this->{pyramid}->getStorageType() eq "S3") {
+        $functions .= $S3_W2CFUNCTION;
+    }
+    elsif ($this->{pyramid}->getStorageType() eq "CEPH") {
+        $functions .= $CEPH_W2CFUNCTION;
+    }
 
-    $conf_t2t .= sprintf "-t %s %s ", $pyr->getTileMatrixSet->getTileWidth,$pyr->getTileMatrixSet->getTileHeight;
+    $functions =~ s/__w2cI__/$conf_w2c/g;
 
-    $configuredFunc =~ s/__w2cI__/$conf_t2t/g;
-    
     # pour les masques
-    $conf_t2t = sprintf "-c zip -t %s %s", $pyr->getTileMatrixSet->getTileWidth, $pyr->getTileMatrixSet->getTileHeight;
-    $configuredFunc =~ s/__w2cM__/$conf_t2t/g;
+    $conf_w2c = sprintf "-c zip -t %s %s", $this->{pyramid}->getTileMatrixSet()->getTileWidth(), $this->{pyramid}->getTileMatrixSet()->getTileHeight();
+    $functions =~ s/__w2cM__/$conf_w2c/g;  
     
-    return $configuredFunc;
+    return $functions;
 }
 
 ####################################################################################################
 #                                Group: Getters - Setters                                          #
 ####################################################################################################
 
-# Function: getNodata
-sub getNodata {
-    my $this = shift;
-    return $this->{pyramid}->getNodata();
-}
-
-# Function: getPyramid
-sub getPyramid {
-    my $this = shift;
-    return $this->{pyramid};
-}
 
 =begin nd
 Function: setConfDir

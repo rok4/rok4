@@ -117,12 +117,12 @@ Parameters (hash):
     executedAlone - boolean - Optionnal, FALSE by default.
 =cut
 sub new {
-    my $this = shift;
+    my $class = shift;
     my $params = shift;
 
-    my $class= ref($this) || $this;
+    $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above)
-    my $self = {
+    my $this = {
         id => undef,
         executedAlone => FALSE,
         filePath => undef,
@@ -135,7 +135,7 @@ sub new {
         stream => undef,
     };
 
-    bless($self, $class);
+    bless($this, $class);
 
 
     ########## ID
@@ -144,12 +144,12 @@ sub new {
         ERROR ("'id' mandatory to create a Script object !");
         return undef;
     }
-    $self->{id} = $params->{id};
+    $this->{id} = $params->{id};
 
     ########## Will be executed alone ?
 
     if ( exists $params->{executedAlone} && defined $params->{executedAlone} && $params->{executedAlone}) {
-        $self->{executedAlone} = TRUE;
+        $this->{executedAlone} = TRUE;
     }
 
     ########## Chemin d'écriture du script
@@ -158,7 +158,7 @@ sub new {
         ERROR ("'scriptDir' mandatory to create a Script object !");
         return undef;
     }
-    $self->{filePath} = File::Spec->catfile($params->{scriptDir},$self->{id}.".sh");
+    $this->{filePath} = File::Spec->catfile($params->{scriptDir},$this->{id}.".sh");
 
     ########## Dossier temporaire dédié à ce script
     
@@ -166,7 +166,7 @@ sub new {
         ERROR ("'tempDir' mandatory to create a Script object !");
         return undef;
     }
-    $self->{tempDir} = File::Spec->catdir($params->{tempDir},$self->{id});
+    $this->{tempDir} = File::Spec->catdir($params->{tempDir},$this->{id});
 
     ########## Dossier commun à tous les scripts
 
@@ -174,56 +174,56 @@ sub new {
         ERROR ("'commonTempDir mandatory to create a Script object !");
         return undef;
     }
-    $self->{commonTempDir} = File::Spec->catdir($params->{commonTempDir},"COMMON");
+    $this->{commonTempDir} = File::Spec->catdir($params->{commonTempDir},"COMMON");
 
     ########## Dossier des configurations des mergeNtiff pour ce script
     
-    $self->{mntConfDir} = File::Spec->catfile($self->{commonTempDir},"mergeNtiff");
+    $this->{mntConfDir} = File::Spec->catfile($this->{commonTempDir},"mergeNtiff");
     
     ########## Dossier des configurations des decimateNtiff pour ce script
     
-    $self->{dntConfDir} = File::Spec->catfile($self->{commonTempDir},"decimateNtiff");
+    $this->{dntConfDir} = File::Spec->catfile($this->{commonTempDir},"decimateNtiff");
 
     ########## Tests et création de l'ensemble des dossiers
     
     # Temporary directory
-    if (! -d $self->{tempDir}) {
-        DEBUG (sprintf "Create the temporary directory '%s' !", $self->{tempDir});
-        eval { mkpath([$self->{tempDir}]); };
+    if (! -d $this->{tempDir}) {
+        DEBUG (sprintf "Create the temporary directory '%s' !", $this->{tempDir});
+        eval { mkpath([$this->{tempDir}]); };
         if ($@) {
-            ERROR(sprintf "Can not create the temporary directory '%s' : %s !", $self->{tempDir}, $@);
+            ERROR(sprintf "Can not create the temporary directory '%s' : %s !", $this->{tempDir}, $@);
             return undef;
         }
     }
 
     # Common directory
-    if (! -d $self->{commonTempDir}) {
-        DEBUG (sprintf "Create the common temporary directory '%s' !", $self->{commonTempDir});
-        eval { mkpath([$self->{commonTempDir}]); };
+    if (! -d $this->{commonTempDir}) {
+        DEBUG (sprintf "Create the common temporary directory '%s' !", $this->{commonTempDir});
+        eval { mkpath([$this->{commonTempDir}]); };
         if ($@) {
-            ERROR(sprintf "Can not create the common temporary directory '%s' : %s !", $self->{commonTempDir}, $@);
+            ERROR(sprintf "Can not create the common temporary directory '%s' : %s !", $this->{commonTempDir}, $@);
             return undef;
         }
     }
     
     # MergeNtiff configurations directory
-    if (! -d $self->{mntConfDir}) {
-        DEBUG (sprintf "Create the MergeNtiff configurations directory '%s' !", $self->{mntConfDir});
-        eval { mkpath([$self->{mntConfDir}]); };
+    if (! -d $this->{mntConfDir}) {
+        DEBUG (sprintf "Create the MergeNtiff configurations directory '%s' !", $this->{mntConfDir});
+        eval { mkpath([$this->{mntConfDir}]); };
         if ($@) {
             ERROR(sprintf "Can not create the MergeNtiff configurations directory '%s' : %s !",
-                $self->{mntConfDir}, $@);
+                $this->{mntConfDir}, $@);
             return undef;
         }
     }
     
     # DecimateNtiff configurations directory
-    if (! -d $self->{dntConfDir}) {
-        DEBUG (sprintf "Create the DecimateNtiff configurations directory '%s' !", $self->{dntConfDir});
-        eval { mkpath([$self->{dntConfDir}]); };
+    if (! -d $this->{dntConfDir}) {
+        DEBUG (sprintf "Create the DecimateNtiff configurations directory '%s' !", $this->{dntConfDir});
+        eval { mkpath([$this->{dntConfDir}]); };
         if ($@) {
             ERROR(sprintf "Can not create the DecimateNtiff configurations directory '%s' : %s !",
-                $self->{dntConfDir}, $@);
+                $this->{dntConfDir}, $@);
             return undef;
         }
     }
@@ -240,13 +240,13 @@ sub new {
     
     # Open stream
     my $STREAM;
-    if ( ! (open $STREAM,">", $self->{filePath})) {
-        ERROR(sprintf "Can not open stream to '%s' !", $self->{filePath});
+    if ( ! (open $STREAM,">", $this->{filePath})) {
+        ERROR(sprintf "Can not open stream to '%s' !", $this->{filePath});
         return undef;
     }
-    $self->{stream} = $STREAM;
+    $this->{stream} = $STREAM;
 
-    return $self;
+    return $this;
 }
 
 ####################################################################################################
@@ -256,43 +256,43 @@ sub new {
 # Function: getID
 # Returns the script's identifiant
 sub getID {
-    my $self = shift;
-    return $self->{id};
+    my $this = shift;
+    return $this->{id};
 }
 
 # Function: isExecutedAlone
 sub isExecutedAlone {
-    my $self = shift;
-    return $self->{executedAlone};
+    my $this = shift;
+    return $this->{executedAlone};
 }
 
 # Function: getTempDir
 # Returns the script's temporary directories
 sub getTempDir {
-    my $self = shift;
-    return $self->{tempDir};
+    my $this = shift;
+    return $this->{tempDir};
 }
 
 # Function: getMntConfDir
 # Returns the mergeNtiff configuration's directory
 sub getMntConfDir {
-    my $self = shift;
-    return $self->{mntConfDir};
+    my $this = shift;
+    return $this->{mntConfDir};
 }
 
 # Function: getDntConfDir
 # Returns the decimateNtiff configuration's directory
 sub getDntConfDir {
-    my $self = shift;
-    return $self->{dntConfDir};
+    my $this = shift;
+    return $this->{dntConfDir};
 }
 
 
 # Function: getWeight
 # Returns the script's weight
 sub getWeight {
-    my $self = shift;
-    return $self->{weight};
+    my $this = shift;
+    return $this->{weight};
 }
 
 =begin nd
@@ -303,10 +303,10 @@ Parameters (list):
     weight - integer - weight to add to script's one.
 =cut
 sub addWeight {
-    my $self = shift;
+    my $this = shift;
     my $weight = shift;
     
-    $self->{weight} += $weight;
+    $this->{weight} += $weight;
 }
 
 =begin nd
@@ -317,10 +317,10 @@ Parameters (list):
     weight - integer - weight to set as script's one.
 =cut
 sub setWeight {
-    my $self = shift;
+    my $this = shift;
     my $weight = shift;
     
-    $self->{weight} = $weight;
+    $this->{weight} = $weight;
 }
 
 ####################################################################################################
@@ -333,79 +333,50 @@ Function: prepare
 Write script's header, which contains environment variables: the script ID, path to work directory, cache... And functions to factorize code.
 
 Parameters (list):
-    pyr - <BE4::Pyramid> or <BE4CEPH::Pyramid> or <BE4S3::Pyramid> - Pyramid to generate.
-    listFile - string - Path to the list file.
+    pyramid - <COMMON::Pyramid> or <BE4CEPH::Pyramid> or <BE4S3::Pyramid> - Pyramid to generate.
     functions - string - Configured functions, used in the script (mergeNtiff, wget...).
 
 Example:
     (start code)
-    # Variables d'environnement
-    SCRIPT_ID="SCRIPT_1"
-    COMMON_TMP_DIR="/tmp/ORTHO/COMMON"
-    ROOT_TMP_DIR="/tmp/ORTHO/"
-    TMP_DIR="/tmp/ORTHO/SCRIPT_1"
-    MNT_CONF_DIR="/home/ign/TMP/ORTHO/SCRIPT_1/mergeNtiff"
-    DNT_CONF_DIR="/home/ign/TMP/ORTHO/SCRIPT_1/decimateNtiff"
-    PYR_DIR="/home/ign/PYR/ORTHO"
-    LIST_FILE="/home/ign/PYR/ORTHO.list"
-
-    # fonctions de factorisation
-    Wms2work () {
-      local img_dst=$1
-      local url=$2
-      local count=0; local wait_delay=60
-      while :
-      do
-        let count=count+1
-        wget --no-verbose -O $img_dst $url
-        if tiffck $img_dst ; then break ; fi
-        echo "Failure $count : wait for $wait_delay s"
-        sleep $wait_delay
-        let wait_delay=wait_delay*2
-        if [ 3600 -lt $wait_delay ] ; then
-          let wait_delay=3600
-        fi
-      done
-    }
     (end code)
 
 =cut
 sub prepare {
-    my $self = shift;
-    my $pyr = shift;
+    my $this = shift;
+    my $pyramid = shift;
     my $functions = shift;
-
 
     # definition des variables d'environnement du script
     my $code = sprintf ("# Variables d'environnement\n");
-    $code .= sprintf ("SCRIPT_ID=\"%s\"\n", $self->{id});
-    $code .= sprintf ("COMMON_TMP_DIR=\"%s\"\n", $self->{commonTempDir});
-    $code .= sprintf ("ROOT_TMP_DIR=\"%s\"\n", dirname($self->{tempDir}));
-    $code .= sprintf ("TMP_DIR=\"%s\"\n", $self->{tempDir});
-    $code .= sprintf ("MNT_CONF_DIR=\"%s\"\n", $self->{mntConfDir});
-    $code .= sprintf ("DNT_CONF_DIR=\"%s\"\n", $self->{dntConfDir});
-    $code .= sprintf ("LIST_FILE=\"%s\"\n", $pyr->getListFile() );
+    $code .= sprintf ("SCRIPT_ID=\"%s\"\n", $this->{id});
+    $code .= sprintf ("COMMON_TMP_DIR=\"%s\"\n", $this->{commonTempDir});
+    $code .= sprintf ("ROOT_TMP_DIR=\"%s\"\n", dirname($this->{tempDir}));
+    $code .= sprintf ("TMP_DIR=\"%s\"\n", $this->{tempDir});
+    $code .= sprintf ("MNT_CONF_DIR=\"%s\"\n", $this->{mntConfDir});
+    $code .= sprintf ("DNT_CONF_DIR=\"%s\"\n", $this->{dntConfDir});
+    $code .= sprintf ("LIST_FILE=\"%s\"\n", $pyramid->getListFile() );
 
-    if ($pyr->getStorageType() eq "FILE") {
-        $code .= sprintf ("PYR_DIR=\"%s\"\n", $pyr->getDataDir() );
+    if ($pyramid->getStorageType() eq "FILE") {
+        $code .= sprintf ("PYR_DIR=\"%s\"\n", $pyramid->getDataDir() );
     }
-    elsif ($pyr->getStorageType() eq "CEPH") {
-        $code .= sprintf ("PYR_POOL=\"%s\"\n", $pyr->getDataPool() );
-        $code .= sprintf ("export ROK4_CEPH_CLUSTERNAME=\"%s\"\n", $pyr->getClusterName() );
-        $code .= sprintf ("export ROK4_CEPH_USERNAME=\"%s\"\n", $pyr->getUserName() );
-        $code .= sprintf ("export ROK4_CEPH_CONFFILE=\"%s\"\n", $pyr->getConfFile() );
+    elsif ($pyramid->getStorageType() eq "CEPH") {
+        $code .= sprintf ("PYR_POOL=\"%s\"\n", $pyramid->getDataPool() );
+        $code .= sprintf ("export ROK4_CEPH_CLUSTERNAME=\"%s\"\n", $pyramid->getClusterName() );
+        $code .= sprintf ("export ROK4_CEPH_USERNAME=\"%s\"\n", $pyramid->getUserName() );
+        $code .= sprintf ("export ROK4_CEPH_CONFFILE=\"%s\"\n", $pyramid->getConfFile() );
     }
-    elsif ($pyr->getStorageType() eq "S3") {
-        $code .= sprintf ("PYR_BUCKET=\"%s\"\n", $pyr->getDataBucket() );
-        $code .= sprintf ("export ROK4_S3_URL=\"%s\"\n", $pyr->getApiUrl() );
-        $code .= sprintf ("export ROK4_S3_KEY=\"%s\"\n", $pyr->getKey() );
-        $code .= sprintf ("export ROK4_S3_SECRETKEY=\"%s\"\n", $pyr->getSecretKey() );
+    elsif ($pyramid->getStorageType() eq "S3") {
+        $code .= sprintf ("PYR_BUCKET=\"%s\"\n", $pyramid->getDataBucket() );
+        $code .= sprintf ("export ROK4_S3_URL=\"%s\"\n", $pyramid->getApiUrl() );
+        $code .= sprintf ("export ROK4_S3_KEY=\"%s\"\n", $pyramid->getKey() );
+        $code .= sprintf ("export ROK4_S3_SECRETKEY=\"%s\"\n", $pyramid->getSecretKey() );
     }
     else {
         ERROR("Storage type of new pyramid is not handled");
+        return FALSE;
     }
 
-    my $tmpListFile = File::Spec->catdir($self->{tempDir},"list_".$self->{id}.".txt");
+    my $tmpListFile = File::Spec->catdir($this->{tempDir},"list_".$this->{id}.".txt");
     $code .= sprintf ("TMP_LIST_FILE=\"%s\"\n", $tmpListFile);
     $code .= "\n";
     
@@ -421,7 +392,9 @@ sub prepare {
     $code .= "# Création de la liste temporaire\n";
     $code .= "if [ ! -f \"\${TMP_LIST_FILE}\" ] ; then touch \${TMP_LIST_FILE} ; fi\n\n";
 
-    $self->write($code);
+    $this->write($code);
+
+    return TRUE;
 }
 
 =begin nd
@@ -433,17 +406,17 @@ Parameters (list):
     w - integer - Weight of the instructions to write
 =cut
 sub write {
-    my $self = shift;
+    my $this = shift;
     my $text = shift;
     my $w = shift;
     
-    my $stream = $self->{stream};
+    my $stream = $this->{stream};
     printf $stream "%s", $text;
     
-    if ($self->{weight} != 0 && defined $w) {
-        my $oldpercent = int($self->{currentweight}/$self->{weight}*100);
-        $self->{currentweight} += $w;
-        my $newpercent = int($self->{currentweight}/$self->{weight}*100);
+    if ($this->{weight} != 0 && defined $w) {
+        my $oldpercent = int($this->{currentweight}/$this->{weight}*100);
+        $this->{currentweight} += $w;
+        my $newpercent = int($this->{currentweight}/$this->{weight}*100);
         if ($oldpercent != $newpercent) {
             print $stream "echo \"------------- Progression : $newpercent%\"\n";
         }
@@ -452,22 +425,22 @@ sub write {
 
 # Function: close
 sub close {
-    my $self = shift;
+    my $this = shift;
     
-    my $stream = $self->{stream};
+    my $stream = $this->{stream};
 
-    if ($self->{weight} == 0) {
+    if ($this->{weight} == 0) {
         printf $stream "\necho \"No image to generate (null weight)\"\n";
     } else {
         print $stream "echo \"------------- Progression : COMPLETE\"\n";
-        printf $stream "\necho \"Theorical weight was : %s\"\n", $self->{weight};
+        printf $stream "\necho \"Theorical weight was : %s\"\n", $this->{weight};
     }
 
     # On copie la liste temporaire de ce script vers le dossier commun
     printf $stream "\necho \"Temporary files list is moving to the common directory\"\n";
     printf $stream "mv \${TMP_LIST_FILE} \${COMMON_TMP_DIR}\n";
 
-    if ($self->{executedAlone}) {
+    if ($this->{executedAlone}) {
         printf $stream "\necho \"Temporary files lists (list_*.txt in the common directory) are added to the global files list, then removed\"\n";
         printf $stream "cat \${COMMON_TMP_DIR}/list_*.txt >>\${LIST_FILE}\n";
         printf $stream "rm -f \${COMMON_TMP_DIR}/list_*.txt\n";
@@ -499,22 +472,22 @@ Example:
     (end code)
 =cut
 sub exportForDebug {
-    my $self = shift ;
+    my $this = shift ;
     
     my $export = "";
     
     $export .= "\nObject COMMON::GraphScript :\n";
-    $export .= sprintf "\t ID : %s\n", $self->{id};
+    $export .= sprintf "\t ID : %s\n", $this->{id};
     
-    $export .= sprintf "\t Will NOT be executed alone\n" if (! $self->{executedAlone});
-    $export .= sprintf "\t Will be executed ALONE\n" if ($self->{executedAlone});
+    $export .= sprintf "\t Will NOT be executed alone\n" if (! $this->{executedAlone});
+    $export .= sprintf "\t Will be executed ALONE\n" if ($this->{executedAlone});
     
-    $export .= sprintf "\t Script path : %s\n", $self->{filePath};
-    $export .= sprintf "\t Temporary directory : %s\n", $self->{tempDir};
-    $export .= sprintf "\t Common temporary directory : %s\n", $self->{commonTempDir};
-    $export .= sprintf "\t MergeNtiff configuration directory : %s\n", $self->{mntConfDir};
-    $export .= sprintf "\t DecimateNtiff configuration directory : %s\n", $self->{dntConfDir};
-    $export .= sprintf "\t Weight : %s\n", $self->{weight};
+    $export .= sprintf "\t Script path : %s\n", $this->{filePath};
+    $export .= sprintf "\t Temporary directory : %s\n", $this->{tempDir};
+    $export .= sprintf "\t Common temporary directory : %s\n", $this->{commonTempDir};
+    $export .= sprintf "\t MergeNtiff configuration directory : %s\n", $this->{mntConfDir};
+    $export .= sprintf "\t DecimateNtiff configuration directory : %s\n", $this->{dntConfDir};
+    $export .= sprintf "\t Weight : %s\n", $this->{weight};
 
     return $export;
 }

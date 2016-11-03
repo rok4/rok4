@@ -169,7 +169,8 @@ sub new {
         data_pool => undef,
         cluster_name => undef,
         user_name => undef,
-        conf_file => undef
+        conf_file => undef,
+        tiles_storage => FALSE
     };
 
     bless($this, $class);
@@ -276,6 +277,10 @@ sub new {
                 return undef;
             }
             $this->{conf_file} = $params->{pyr_data_conf_file};
+
+            if (exists $params->{tiles_storage} && defined $params->{tiles_storage} && uc($params->{tiles_storage}) eq "TRUE") {
+                $this->{tiles_storage} = $params->{tiles_storage};
+            }
 
         }
 
@@ -561,14 +566,13 @@ sub addLevel {
             size => [$this->{image_width}, $this->{image_height}],
 
             prefix => $this->{name},
-            pool_name => $this->{data_bucket}
+            bucket_name => $this->{data_bucket}
         };
 
         if ($this->{own_masks}) {
             $levelParams->{hasMask} = TRUE;
         }
     }
-
 
     $this->{levels}->{$level} = COMMON::Level->new("VALUES", $levelParams, $this->{desc_path});
 
@@ -578,6 +582,13 @@ sub addLevel {
     }
 
     return TRUE;
+}
+
+sub updateTMLimits {
+    my $this = shift;
+    my ($level,@bbox) = @_;
+        
+    $this->{levels}->{$level}->updateLimitsFromBbox(@bbox);
 }
 
 ####################################################################################################
@@ -642,10 +653,16 @@ sub checkCompatibility {
 #                                Group: Common getters                                             #
 ####################################################################################################
 
-# Function: ownMasks
+# Function: storeTiles
 sub ownMasks {
     my $this = shift;
     return $this->{own_masks};
+}
+
+# Function: storeTiles
+sub storeTiles {
+    my $this = shift;
+    return $this->{tiles_storage};
 }
 
 # Function: getName
@@ -731,6 +748,50 @@ sub getTilesPerWidth {
 sub getTilesPerHeight {
     my $this = shift;
     return $this->{image_height};
+}
+
+=begin nd
+Function: getCacheImageSize
+
+Returns the pyramid's image's pixel width and height as the double list (width, height), for a given level.
+
+Parameters (list):
+    level - string - Level ID
+=cut
+sub getCacheImageSize {
+    my $this = shift;
+    my $level = shift;
+    return ($this->getCacheImageWidth($level), $this->getCacheImageHeight($level));
+}
+
+=begin nd
+Function: getCacheImageWidth
+
+Returns the pyramid's image's pixel width, for a given level.
+
+Parameters (list):
+    level - string - Level ID
+=cut
+sub getCacheImageWidth {
+    my $this = shift;
+    my $level = shift;
+
+    return $this->{image_width} * $this->{tms}->getTileWidth($level);
+}
+
+=begin nd
+Function: getCacheImageHeight
+
+Returns the pyramid's image's pixel height, for a given level.
+
+Parameters (list):
+    level - string - Level ID
+=cut
+sub getCacheImageHeight {
+    my $this = shift;
+    my $level = shift;
+
+    return $this->{image_height} * $this->{tms}->getTileHeight($level);
 }
 
 # Function: getLevel
@@ -846,7 +907,7 @@ sub writeDescriptor {
     my $descPath = File::Spec->catdir($this->{desc_path}, $this->{name}.".pyr");
 
     if (-f $descPath) {
-        ERROR("Cannot owerwrite pyramid descriptor $descPath");
+        ERROR("New pyramid descriptor ('$descPath') exist, can not overwrite it !");
         return FALSE;
     }
 
@@ -891,7 +952,7 @@ sub writeList {
         return FALSE;        
     }
 
-    if (! defined $forest || ref ($ancestor) ne "COMMON::Forest" ) {
+    if (! defined $forest || ref ($forest) ne "COMMON::Forest" ) {
         ERROR(sprintf "We need a COMMON::Forest to write pyramid list ! ");
         return FALSE;
     }

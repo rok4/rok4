@@ -322,12 +322,14 @@ sub config {
 Function: doIt
 
 Steps in order, using parameters :
-    - create the Pyramid object : <BE4S3::Pyramid::new>
+    - create the Pyramid object : <COMMON::Pyramid::new>
+    - update the Pyramid object with the TMS : <COMMON::Pyramid::bindTileMatrixSet>
     - load data sources : <COMMON::DataSourceLoader::new>
-    - update levels for this Pyramid object : <BE4S3::Pyramid::updateLevels>
+    - update data sources with the levels : <COMMON::DataSourceLoader::updateDataSources>
+    - create the pyramid's levels : <COMMON::Pyramid::addLevel>
     - create the Forest object : <COMMON::Forest::new>
-    - write (initialization) its list : <BE4S3::Pyramid::writeListPyramid>
-    - write the pyramid's descriptor : <BE4S3::Pyramid::writeConfPyramid>
+    - write the pyramid's list : <COMMON::Pyramid::writeList>
+    - write the pyramid's descriptor : <COMMON::Pyramid::writeDescriptor>
     - compute trees (write scripts) : <COMMON::Forest::computeGraphs>
 =cut
 sub doIt {
@@ -438,8 +440,6 @@ sub doIt {
         ERROR("Can not write Pyramid file !");
         return FALSE;
     }
-  
-    DEBUG(sprintf "PYRAMID (debug export) = %s", $objPyramid->exportForDebug);
   
     #######################
     # compute graphs

@@ -40,7 +40,7 @@ File: NNGraph.pm
 
 Class: COMMON::NNGraph
 
-Representation of a "nearest neighbour" pyramid : pyramid's image = <COMMON::GraphNode>.
+Representation of a "nearest neighbour" pyramid : pyramid's image = <COMMON::Node>.
 
 (see NNGraphTMS.png)
 
@@ -54,7 +54,7 @@ Organization in the <Forest> scripts' array :
 
 (see script_NNGraph.png)
 
-Link between a node and his children or his father is not trivial. It is calculated and store in the <COMMON::GraphNode> object.
+Link between a node and his children or his father is not trivial. It is calculated and store in the <COMMON::Node> object.
 
 Using:
     (start code)
@@ -76,7 +76,7 @@ Attributes:
     datasource - <DataSource> - Data source to use to define bottom level nodes and generate them.
 
     bbox - double array - Datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
-    nodes - <COMMON::GraphNode> hash - Structure is:
+    nodes - <COMMON::Node> hash - Structure is:
         (start code)
         level1 => {
            c1_r2 => n1,
@@ -88,7 +88,7 @@ Attributes:
 
         cX : node's column
         rX : node's row
-        nX : COMMON::GraphNode
+        nX : COMMON::Node
         (end code)
         
     bottomID - string - Bottom level identifiant
@@ -109,7 +109,7 @@ use Data::Dumper;
 
 # My Module
 use COMMON::DataSource;
-use COMMON::GraphNode;
+use COMMON::Node;
 use COMMON::ProxyGDAL;
 
 use Log::Log4perl qw(:easy);
@@ -330,9 +330,9 @@ sub identifyBottomNodes {
                             next;
                         }
                         # Create a new Node
-                        my $node = COMMON::GraphNode->new({
-                            i => $i,
-                            j => $j,
+                        my $node = COMMON::Node->new({
+                            col => $i,
+                            row => $j,
                             tm => $tm,
                             graph => $self,
                             type => $self->{forest}->getStorageType()
@@ -352,9 +352,9 @@ sub identifyBottomNodes {
                             next;
                         }
                         # Create a new Node
-                        my $node = COMMON::GraphNode->new({
-                            i => $i,
-                            j => $j,
+                        my $node = COMMON::Node->new({
+                            col => $i,
+                            row => $j,
                             tm => $tm,
                             graph => $self,
                             type => $self->{forest}->getStorageType()
@@ -394,9 +394,9 @@ sub identifyBottomNodes {
                 if (COMMON::ProxyGDAL::isIntersected($OGRtile, $convertExtent)) {
                     my $nodeKey = sprintf "%s_%s", $i, $j;
                     # Create a new Node
-                    my $node = COMMON::GraphNode->new({
-                        i => $i,
-                        j => $j,
+                    my $node = COMMON::Node->new({
+                        col => $i,
+                        row => $j,
                         tm => $tm,
                         graph => $self,
                         type => $self->{forest}->getStorageType()
@@ -435,9 +435,9 @@ sub identifyBottomNodes {
             $self->updateBBox($xmin,$ymin,$xmax,$ymax);
             
             # Create a new Node
-            my $node = COMMON::GraphNode->new({
-                i => $i,
-                j => $j,
+            my $node = COMMON::Node->new({
+                col => $i,
+                row => $j,
                 tm => $tm,
                 graph => $self,
                 type => $self->{forest}->getStorageType()
@@ -513,9 +513,9 @@ sub identifyAboveNodes {
                         my $idxkey = sprintf "%s_%s",$i,$j;
                         my $newnode = undef;
                         if (! defined $self->{nodes}->{$targetTm->getID}->{$idxkey}) {
-                            $newnode = new COMMON::GraphNode({
-                                i => $i,
-                                j => $j,
+                            $newnode = new COMMON::Node({
+                                col => $i,
+                                row => $j,
                                 tm => $targetTm,
                                 graph => $self,
                                 type => $self->{forest}->getStorageType()
@@ -694,7 +694,7 @@ sub getBottomOrder {
 =begin nd
 Function: getNodesOfLevel
 
-Returns a <COMMON::GraphNode> array, contaning all nodes of the provided level.
+Returns a <COMMON::Node> array, contaning all nodes of the provided level.
 
 Parameters (list):
     level - string - Level ID whose we want all nodes.

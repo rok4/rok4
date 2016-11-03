@@ -38,13 +38,13 @@
 =begin nd
 File: Node.pm
 
-Class: COMMON::GraphNode
+Class: COMMON::Node
 
 Descibe a node of a <COMMON::QTree> or a <COMMON::NNGraph>. Allow different storage (FileSystem, Ceph, Swift).
 
 Using:
     (start code)
-    use COMMON::GraphNode
+    use COMMON::Node
 
     my $tm = COMMON::TileMatrix->new(...)
     
@@ -52,7 +52,7 @@ Using:
     #or
     my $graph = COMMON::NNGraph->new(...)
     
-    my $node = COMMON::GraphNode->new({
+    my $node = COMMON::Node->new({
         i => 51,
         j => 756,
         tm => $tm,
@@ -78,10 +78,6 @@ Attributes:
 |       pyramidName - string - object suffix name in the s3 bucket. Example level16_6545_981
 |       bucketName - string - s3 bucket name.
 
-    swiftstorage - string hash - informations for swift final storage
-|       pyramidName - string - object suffix name in the swift container. Example level16_6545_981
-|       containerName - string - swift container name.
-
     workImageBasename - string - 
     workMaskBasename - string - 
     
@@ -101,7 +97,7 @@ Attributes:
 
 ################################################################################
 
-package COMMON::GraphNode;
+package COMMON::Node;
 
 use strict;
 use warnings;
@@ -126,10 +122,16 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
+# Constant: STORAGETYPES
+# Define allowed values for attribute storage type.
+my @STORAGETYPES;
+
 ################################################################################
 
 BEGIN {}
-INIT {}
+INIT {
+    @STORAGETYPES = ("FILE", "CEPH", "S3");
+}
 END {}
 
 ####################################################################################################
@@ -142,7 +144,7 @@ Constructor: new
 Node constructor. Bless an instance.
 
 Parameters (hash):
-    type - string - Final storage type : 'FILE', 'CEPH', 'S3' or 'SWIFT'
+    type - string - Final storage type : 'FILE', 'CEPH', 'S3'
     i - integer - Node's column
     j - integer - Node's row
     tm - <TileMatrix> - Tile matrix of the level which node belong to
@@ -152,21 +154,23 @@ See also:
     <_init>
 =cut
 sub new {
-    my $this = shift;
+    my $class = shift;
     my $params = shift;
     
-    my $class= ref($this) || $this;
+    $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above)
-    my $self = {
-        i => undef,
-        j => undef,
-        
+    my $this = {
+        col => undef,
+        row => undef,
         tm => undef,
         graph => undef,
+
         w => 0,
         W => 0,
         code => '',
         script => undef,
+
+        # Sources pour générer ce noeud
         nodeSources => [],
         geoImages => [],
 
@@ -174,90 +178,52 @@ sub new {
         workMaskBasename => undef,
         workExtension => "tif", # for images, masks are always tif
         
-        filestorage => undef,
-        cephstorage => undef,
-        s3storage => undef,
-        swiftstorage => undef
+        # Stockage final de la dalle dans la pyramide pour ce noeud
+        type => undef,
+        pyramidName => undef
     };
     
-    bless($self, $class);
-    
-    # init. class
-    return undef if (! $self->_init($params));
-    
-    return $self;
-}
-
-=begin nd
-Function: _init
-
-Check and store node's attributes values. Initialize weights to 0. Calculate the pyramid's relative path, from indices, thanks to <Base36::indicesToB36Path>.
-
-Parameters (hash):
-    type - string - Final storage type : 'FS', 'CEPH', 'S3' or 'SWIFT'
-    i - integer - Node's column
-    j - integer - Node's row
-    tm - <COMMON::TileMatrix> - Tile matrix of the level which node belong to
-    graph - <COMMON::Graph> or <COMMON::NNQTree> - Graph containing the node.
-=cut
-sub _init {
-    my $self = shift;
-    my $params = shift;
-    
+    bless($this, $class);
     
     # mandatory parameters !
-    if (! defined $params->{i}) {
+    if (! defined $params->{col}) {
         ERROR("Node's column is undef !");
-        return FALSE;
+        return undef;
     }
-    if (! defined $params->{j}) {
+    if (! defined $params->{row}) {
         ERROR("Node's row is undef !");
-        return FALSE;
+        return undef;
     }
     if (! defined $params->{tm}) {
         ERROR("Node's tile matrix is undef !");
-        return FALSE;
+        return undef;
     }
     if (! defined $params->{graph}) {
         ERROR("Node's graph is undef !");
-        return FALSE;
+        return undef;
     }
 
-    my $type = $params->{type};
-    if (! defined $type || "|FS|SWIFT|S3|CEPH|" !~ m/\|$type\|/) {
-        ERROR("Node's storage type is undef or not valid !");
-        return FALSE;
+    $this->{type} = $params->{type};
+    if (! defined $this->{type} || ! COMMON::Array::isInArray($this->{type}, @STORAGETYPES) ) {
+        ERROR("Node's storage type is undef or not valid: ".$this->{type});
+        return undef;
     }
     
     # init. params    
-    $self->{i} = $params->{i};
-    $self->{j} = $params->{j};
-    $self->{tm} = $params->{tm};
-    $self->{graph} = $params->{graph};
-    $self->{w} = 0;
-    $self->{W} = 0;
-    $self->{code} = '';
+    $this->{col} = $params->{col};
+    $this->{row} = $params->{row};
+    $this->{tm} = $params->{tm};
+    $this->{graph} = $params->{graph};
+    $this->{w} = 0;
+    $this->{W} = 0;
+    $this->{code} = '';
 
-    if ($type eq "FS") {
-        my $base36path = COMMON::Base36::indicesToB36Path($params->{i}, $params->{j}, $self->getGraph->getPyramid->getDirDepth()+1);
-        $self->{filestorage}->{pyramidName} = File::Spec->catfile($self->getLevel, $base36path.".tif");
-    }
-    elsif ($type eq "CEPH") {
-        $self->{cephstorage}->{pyramidName} = sprintf "%s_%s_%s", $self->getLevel, $params->{i}, $params->{j};
-    }
-    elsif ($type eq "S3") {
-        $self->{s3storage}->{pyramidName} = sprintf "%s_%s_%s", $self->getLevel, $params->{i}, $params->{j};
-    }
-    elsif ($type eq "SWIFT") {
-        ERROR("Swift storage not yet implemented");
-        return FALSE;
-    }
+    $this->{workImageBasename} = sprintf "%s_%s_%s_I", $this->getLevel(), $this->{col}, $this->{row};
 
-    $self->{workImageBasename} = sprintf "%s_%s_%s_I", $self->getLevel, $params->{i}, $params->{j};
-    
-    return TRUE;
+    $this->{pyramidName} = $this->{graph}->getPyramid()->getSlabPath(undef, $this->getLevel(), $this->{col}, $this->{row});
+        
+    return $this;
 }
-
 
 ####################################################################################################
 #                                Group: Geographic tools                                           #
@@ -273,11 +239,11 @@ Parameters:
     y - double - Y coordinate of the point you want to know if it is in
 =cut
 sub isPointInNodeBbox {
-    my $self = shift;
+    my $this = shift;
     my $x = shift;
     my $y = shift;
     
-    my ($xMinNode,$yMinNode,$xMaxNode,$yMaxNode) = $self->getBBox();
+    my ($xMinNode,$yMinNode,$xMaxNode,$yMaxNode) = $this->getBBox();
     
     if ( $xMinNode <= $x && $x <= $xMaxNode && $yMinNode <= $y && $y <= $yMaxNode ) {
         return TRUE;
@@ -295,16 +261,15 @@ Parameters:
     Bbox - double list - (xmin,ymin,xmax,ymax) : coordinates of the bbox
 =cut
 sub isBboxIntersectingNodeBbox {
-    my $self = shift;
+    my $this = shift;
     my ($xMin,$yMin,$xMax,$yMax) = @_;
-    my ($xMinNode,$yMinNode,$xMaxNode,$yMaxNode) = $self->getBBox();
+    my ($xMinNode,$yMinNode,$xMaxNode,$yMaxNode) = $this->getBBox();
     
     if ($xMax > $xMinNode && $xMin < $xMaxNode && $yMax > $yMinNode && $yMin < $yMaxNode) {
         return TRUE;
     } else {
         return FALSE;
     }
-    
 }
 
 ####################################################################################################
@@ -313,8 +278,8 @@ sub isBboxIntersectingNodeBbox {
 
 # Function: getScript
 sub getScript {
-    my $self = shift;
-    return $self->{script};
+    my $this = shift;
+    return $this->{script};
 }
 
 =begin nd
@@ -326,13 +291,13 @@ Parameters (list):
     additionnalText - string - Optionnal, can be undefined, text to add after the own code.
 =cut
 sub writeInScript {
-    my $self = shift;
+    my $this = shift;
     my $additionnalText = shift;
 
-    my $text = $self->{code};
+    my $text = $this->{code};
     $text .= $additionnalText if (defined $additionnalText);
     
-    $self->{script}->write($text, $self->getOwnWeight());
+    $this->{script}->write($text, $this->getOwnWeight());
 }
 
 =begin nd
@@ -342,80 +307,66 @@ Parameters (list):
     script - <COMMON::GraphScript> - Script to set.
 =cut
 sub setScript {
-    my $self = shift;
+    my $this = shift;
     my $script = shift;
     
     if (! defined $script || ref ($script) ne "COMMON::GraphScript") {
         ERROR("We expect to a COMMON::GraphScript object.");
     }
     
-    $self->{script} = $script; 
+    $this->{script} = $script; 
 }
 
 # Function: getCol
 sub getCol {
-    my $self = shift;
-    return $self->{i};
+    my $this = shift;
+    return $this->{col};
 }
 
 # Function: getRow
 sub getRow {
-    my $self = shift;
-    return $self->{j};
+    my $this = shift;
+    return $this->{row};
 }
 
 # Function: getPyramidName
 sub getPyramidName {
-    my $self = shift;
-
-    if (defined $self->{filestorage}) {
-        return $self->{filestorage}->{pyramidName};
-    }
-    elsif (defined $self->{cephstorage}) {
-        return $self->{cephstorage}->{pyramidName};
-    }
-    elsif (defined $self->{s3storage}) {
-        return $self->{s3storage}->{pyramidName};
-    }
-    elsif (defined $self->{swiftstorage}) {
-        return $self->{swiftstorage}->{pyramidName};
-    }
-
-    return undef;    
+    my $this = shift;
+    return $this->{pyramidName}; 
 }
 
 ########## work files
 
 # Function: setWorkExtension
 sub setWorkExtension {
-    my $self = shift;
+    my $this = shift;
     my $ext = shift;
     
-    $self->{workExtension} = lc($ext);
+    $this->{workExtension} = lc($ext);
 }
 
 # Function: addBgImage
 sub addWorkMask {
-    my $self = shift;
-    $self->{workMaskBasename} = sprintf "%s_%s_%s_M", $self->getLevel, $self->{i}, $self->{j};
+    my $this = shift;
+    $this->{workMaskBasename} = sprintf "%s_%s_%s_M", $this->getLevel, $this->{col}, $this->{row};
 }
 
 # Function: getWorkImageName
 sub getWorkImageName {
-    my $self = shift;
+    my $this = shift;
     my $withExtension = shift;
     
-    return $self->{workImageBasename}.".".$self->{workExtension} if ($withExtension);
-    return $self->{workImageBasename};
+    return $this->{workImageBasename}.".".$this->{workExtension} if ($withExtension);
+    return $this->{workImageBasename};
 }
 
 # Function: getWorkMaskName
 sub getWorkMaskName {
-    my $self = shift;
+    my $this = shift;
     my $withExtension = shift;
     
-    return $self->{workMaskBasename}.".tif" if ($withExtension);
-    return $self->{workMaskBasename};
+    return $this->{workMaskBasename}.".tif" if ($withExtension);
+    return $this->{workMaskBasename};
 }
 
 =begin nd
@@ -424,58 +375,58 @@ Function: getWorkBaseName
 Returns the work image base name (no extension) : "level_col_row"
 =cut
 sub getWorkBaseName {
-    my $self = shift;
-    return (sprintf "%s_%s_%s", $self->getLevel, $self->{i}, $self->{j});
+    my $this = shift;
+    return (sprintf "%s_%s_%s", $this->getLevel, $this->{col}, $this->{row});
 }
 
 ########## background files
 
 # Function: addBgImage
 sub addBgImage {
-    my $self = shift;
+    my $this = shift;
 
-    if (! defined $self->{filestorage}) {
+    if (! defined $this->{filestorage}) {
         ERROR("Background is not handled for no file system storage");
     }
 
-    $self->{bgImageBasename} = sprintf "%s_%s_%s_BgI", $self->getLevel, $self->{i}, $self->{j};
+    $this->{bgImageBasename} = sprintf "%s_%s_%s_BgI", $this->getLevel, $this->{col}, $this->{row};
 }
 
 # Function: getBgImageName
 sub getBgImageName {
-    my $self = shift;
+    my $this = shift;
     my $withExtension = shift;
 
-    if (! defined $self->{filestorage}) {
+    if (! defined $this->{filestorage}) {
         ERROR("Background is not handled for no file system storage");
     }
     
-    return $self->{bgImageBasename}.".tif" if ($withExtension);
-    return $self->{bgImageBasename};
+    return $this->{bgImageBasename}.".tif" if ($withExtension);
+    return $this->{bgImageBasename};
 }
 
 # Function: addBgMask
 sub addBgMask {
-    my $self = shift;
+    my $this = shift;
 
-    if (! defined $self->{filestorage}) {
+    if (! defined $this->{filestorage}) {
         ERROR("Background is not handled for no file system storage");
     }
 
-    $self->{bgMaskBasename} = sprintf "%s_%s_%s_BgM", $self->getLevel, $self->{i}, $self->{j};
+    $this->{bgMaskBasename} = sprintf "%s_%s_%s_BgM", $this->getLevel, $this->{col}, $this->{row};
 }
 
 # Function: getBgMaskName
 sub getBgMaskName {
-    my $self = shift;
+    my $this = shift;
     my $withExtension = shift;
 
-    if (! defined $self->{filestorage}) {
+    if (! defined $this->{filestorage}) {
         ERROR("Background is not handled for no file system storage");
     }
     
-    return $self->{bgMaskBasename}.".tif" if ($withExtension);
-    return $self->{bgMaskBasename};
+    return $this->{bgMaskBasename}.".tif" if ($withExtension);
+    return $this->{bgMaskBasename};
 }
 
 
@@ -484,45 +435,45 @@ sub getBgMaskName {
 
 # Function: getLevel
 sub getLevel {
-    my $self = shift;
-    return $self->{tm}->getID;
+    my $this = shift;
+    return $this->{tm}->getID;
 }
 
 # Function: getTM
 sub getTM {
-    my $self = shift;
-    return $self->{tm};
+    my $this = shift;
+    return $this->{tm};
 }
 
 # Function: getGraph
 sub getGraph {
-    my $self = shift;
-    return $self->{graph};
+    my $this = shift;
+    return $this->{graph};
 }
 
 # Function: getNodeSources
 sub getNodeSources {
-    my $self = shift;
-    return $self->{nodeSources};
+    my $this = shift;
+    return $this->{nodeSources};
 }
 
 # Function: getGeoImages
 sub getGeoImages {
-    my $self = shift;
-    return $self->{geoImages};
+    my $this = shift;
+    return $this->{geoImages};
 }
 
 =begin nd
 Function: addNodeSources
 
 Parameters (list):
-    nodes - <COMMON::GraphNode> array - Source nodes to add
+    nodes - <COMMON::Node> array - Source nodes to add
 =cut
 sub addNodeSources {
-    my $self = shift;
+    my $this = shift;
     my @nodes = shift;
     
-    push(@{$self->getNodeSources()},@nodes);
+    push(@{$this->getNodeSources()},@nodes);
     
     return TRUE;
 }
@@ -534,10 +485,10 @@ Parameters (list):
     images - <GeoImage> array - Source images to add
 =cut
 sub addGeoImages {
-    my $self = shift;
+    my $this = shift;
     my @images = shift;
     
-    push(@{$self->getGeoImages()},@images);
+    push(@{$this->getGeoImages()},@images);
     
     return TRUE;
 }
@@ -549,20 +500,20 @@ Parameters (list):
     code - string - Code to set.
 =cut
 sub setCode {
-    my $self = shift;
+    my $this = shift;
     my $code = shift;
-    $self->{code} = $code;
+    $this->{code} = $code;
 }
 
 # Function: getBBox
 sub getBBox {
-    my $self = shift;
+    my $this = shift;
     
-    my @Bbox = $self->{tm}->indicesToBBox(
-        $self->{i},
-        $self->{j},
-        $self->{graph}->getPyramid->getTilesPerWidth,
-        $self->{graph}->getPyramid->getTilesPerHeight
+    my @Bbox = $this->{tm}->indicesToBBox(
+        $this->{col},
+        $this->{row},
+        $this->{graph}->getPyramid->getTilesPerWidth,
+        $this->{graph}->getPyramid->getTilesPerHeight
     );
     
     return @Bbox;
@@ -570,14 +521,14 @@ sub getBBox {
 
 # Function: getOwnWeight
 sub getOwnWeight {
-    my $self = shift;
-    return $self->{w};
+    my $this = shift;
+    return $this->{w};
 }
 
 # Function: getAccumulatedWeight
 sub getAccumulatedWeight {
-    my $self = shift;
-    return $self->{W};
+    my $this = shift;
+    return $this->{W};
 }
 
 =begin nd
@@ -587,15 +538,15 @@ Parameters (list):
     weight - integer - Own weight to set
 =cut
 sub setOwnWeight {
-    my $self = shift;
+    my $this = shift;
     my $weight = shift;
-    $self->{w} = $weight;
+    $this->{w} = $weight;
 }
 
 # Function: getScriptID
 sub getScriptID {
-    my $self = shift;
-    return $self->{script}->getID;
+    my $this = shift;
+    return $this->{script}->getID;
 }
 
 =begin nd
@@ -604,35 +555,35 @@ Function: setAccumulatedWeight
 AccumulatedWeight = children's weights sum + own weight = provided weight + already store own weight.
 =cut
 sub setAccumulatedWeight {
-    my $self = shift;
+    my $this = shift;
     my $childrenWeight = shift;
-    $self->{W} = $childrenWeight + $self->getOwnWeight;
+    $this->{W} = $childrenWeight + $this->getOwnWeight;
 }
 
 =begin nd
 Function: getPossibleChildren
 
-Returns a <COMMON::GraphNode> array, containing children (length is always 4, with undefined value for children which don't exist), an empty array if the node is a leaf.
+Returns a <COMMON::Node> array, containing children (length is always 4, with undefined value for children which don't exist), an empty array if the node is a leaf.
 
 Warning:
     Do not mistake with <getChildren>
 =cut
 sub getPossibleChildren {
-    my $self = shift;
-    return $self->{graph}->getPossibleChildren($self);
+    my $this = shift;
+    return $this->{graph}->getPossibleChildren($this);
 }
 
 =begin nd
 Function: getChildren
 
-Returns a <COMMON::GraphNode> array, containing real children (max length = 4), an empty array if the node is a leaf.
+Returns a <COMMON::Node> array, containing real children (max length = 4), an empty array if the node is a leaf.
 
 Warning:
     Do not mistake with <getPossibleChildren>
 =cut
 sub getChildren {
-    my $self = shift;
-    return $self->{graph}->getChildren($self);
+    my $this = shift;
+    return $this->{graph}->getChildren($this);
 }
 
 ####################################################################################################
@@ -651,36 +602,36 @@ Parameters (list):
     prefix - string - String to add before paths, can be undefined.
 =cut
 sub exportForMntConf {
-    my $self = shift;
+    my $this = shift;
     my $exportBg = shift;
     my $prefix = shift;
     
     $prefix = "" if (! defined $prefix);
 
 
-    my @Bbox = $self->getBBox;
+    my @Bbox = $this->getBBox;
     my $output = "";
 
     $output = sprintf "IMG %s%s.%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-        $prefix, $self->{workImageBasename}, $self->{workExtension},
-        $self->{tm}->getSRS(),
+        $prefix, $this->{workImageBasename}, $this->{workExtension},
+        $this->{tm}->getSRS(),
         $Bbox[0], $Bbox[3], $Bbox[2], $Bbox[1],
-        $self->getTM()->getResolution(), $self->getTM()->getResolution();
+        $this->getTM()->getResolution(), $this->getTM()->getResolution();
 
-    if (defined $self->{workMaskBasename}) {
-        $output .= sprintf "MSK %s%s.tif\n", $prefix,  $self->{workMaskBasename};
+    if (defined $this->{workMaskBasename}) {
+        $output .= sprintf "MSK %s%s.tif\n", $prefix,  $this->{workMaskBasename};
     }
     
-    if ($exportBg && defined $self->{filestorage}) {
-        if (defined $self->{filestorage}->{bgImageBasename}) {
+    if ($exportBg && defined $this->{filestorage}) {
+        if (defined $this->{filestorage}->{bgImageBasename}) {
             $output .= sprintf "IMG %s%s.tif\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-                $prefix, $self->{filestorage}->{bgImageBasename},
-                $self->{tm}->getSRS(),
+                $prefix, $this->{filestorage}->{bgImageBasename},
+                $this->{tm}->getSRS(),
                 $Bbox[0], $Bbox[3], $Bbox[2], $Bbox[1],
-                $self->getTM()->getResolution(), $self->getTM()->getResolution();
+                $this->getTM()->getResolution(), $this->getTM()->getResolution();
                 
-            if (defined $self->{filestorage}->{bgMaskBasename}) {
-                $output .= sprintf "MSK %s%s.tif\n", $prefix, $self->{filestorage}->{bgMaskBasename};
+            if (defined $this->{filestorage}->{bgMaskBasename}) {
+                $output .= sprintf "MSK %s%s.tif\n", $prefix, $this->{filestorage}->{bgMaskBasename};
             }        
         }
     }
@@ -700,34 +651,34 @@ Parameters (list):
     prefix - string - String to add before paths, can be undefined.
 =cut
 sub exportForDntConf {
-    my $self = shift;
+    my $this = shift;
     my $exportBg = shift;
     my $prefix = shift;
     
     $prefix = "" if (! defined $prefix);
 
 
-    my @Bbox = $self->getBBox();
+    my @Bbox = $this->getBBox();
     my $output = "";
 
     $output = sprintf "IMG %s%s.%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-        $prefix, $self->{workImageBasename}, $self->{workExtension},
+        $prefix, $this->{workImageBasename}, $this->{workExtension},
         $Bbox[0], $Bbox[3], $Bbox[2], $Bbox[1],
-        $self->getTM()->getResolution(), $self->getTM()->getResolution();
+        $this->getTM()->getResolution(), $this->getTM()->getResolution();
 
-    if (defined $self->{workMaskBasename}) {
-        $output .= sprintf "MSK %s%s.tif\n", $prefix,  $self->{workMaskBasename};
+    if (defined $this->{workMaskBasename}) {
+        $output .= sprintf "MSK %s%s.tif\n", $prefix,  $this->{workMaskBasename};
     }
     
-    if ($exportBg && defined $self->{filestorage}) {
-        if (defined $self->{filestorage}->{bgImageBasename}) {
+    if ($exportBg && defined $this->{filestorage}) {
+        if (defined $this->{filestorage}->{bgImageBasename}) {
             $output .= sprintf "IMG %s%s.tif\t%s\t%s\t%s\t%s\t%s\t%s\n",
-                $prefix, $self->{filestorage}->{bgImageBasename},
+                $prefix, $this->{filestorage}->{bgImageBasename},
                 $Bbox[0], $Bbox[3], $Bbox[2], $Bbox[1],
-                $self->getTM()->getResolution(), $self->getTM()->getResolution();
+                $this->getTM()->getResolution(), $this->getTM()->getResolution();
                 
-            if (defined $self->{filestorage}->{bgMaskBasename}) {
-                $output .= sprintf "MSK %s%s.tif\n", $prefix, $self->{filestorage}->{bgMaskBasename};
+            if (defined $this->{filestorage}->{bgMaskBasename}) {
+                $output .= sprintf "MSK %s%s.tif\n", $prefix, $this->{filestorage}->{bgMaskBasename};
             }        
         }
     }
@@ -744,24 +695,24 @@ Parameters (list):
     exportBg - boolean - Export background files (image + mask) if presents. Considered only for file storage
 =cut
 sub exportForM4tConf {
-    my $self = shift;
+    my $this = shift;
     my $exportBg = shift;
 
-    my $output = sprintf " %s.%s", $self->{workImageBasename}, $self->{workExtension};
+    my $output = sprintf " %s.%s", $this->{workImageBasename}, $this->{workExtension};
 
-    if (defined $self->{workMaskBasename}) {
-        $output .= sprintf " %s.tif", $self->{workMaskBasename};
+    if (defined $this->{workMaskBasename}) {
+        $output .= sprintf " %s.tif", $this->{workMaskBasename};
     } else {
         $output .= " 0"
     }
     
-    if ($exportBg && defined $self->{filestorage}) {
+    if ($exportBg && defined $this->{filestorage}) {
     
-        if (defined $self->{filestorage}->{bgImageBasename}) {
-            $output .= sprintf " %s.tif", $self->{filestorage}->{bgImageBasename};
+        if (defined $this->{filestorage}->{bgImageBasename}) {
+            $output .= sprintf " %s.tif", $this->{filestorage}->{bgImageBasename};
             
-            if (defined $self->{filestorage}->{bgMaskBasename}) {
-                $output .= sprintf " %s.tif", $self->{filestorage}->{bgMaskBasename};
+            if (defined $this->{filestorage}->{bgMaskBasename}) {
+                $output .= sprintf " %s.tif", $this->{filestorage}->{bgMaskBasename};
             } else {
                 $output .= " 0"
             }
@@ -784,50 +735,50 @@ Example:
     (end code)
 =cut
 sub exportForDebug {
-    my $self = shift ;
+    my $this = shift ;
     
     my $output = "";
     
-    $output .= sprintf "Object COMMON::GraphNode :\n";
+    $output .= sprintf "Object COMMON::Node :\n";
 
-    if (defined $self->{filestorage}) {
+    if (defined $this->{filestorage}) {
         $output .= "\tFile storage\n";
     }
-    elsif (defined $self->{cephstorage}) {
+    elsif (defined $this->{cephstorage}) {
         $output .= "\tCeph storage\n";
     }
-    elsif (defined $self->{s3storage}) {
+    elsif (defined $this->{s3storage}) {
         $output .= "\tS3 storage\n";
     }
-    elsif (defined $self->{swiftstorage}) {
+    elsif (defined $this->{swiftstorage}) {
         $output .= "\tSwift storage\n";
     }
     else {
         $output .= "\tNo storage !!!\n";
     }
 
-    $output .= sprintf "\tLevel : %s\n",$self->getLevel();
-    $output .= sprintf "\tTM Resolution : %s\n",$self->getTM()->getResolution();
-    $output .= sprintf "\tColonne : %s\n",$self->getCol();
-    $output .= sprintf "\tLigne : %s\n",$self->getRow();
-    if (defined $self->getScript()) {
-        $output .= sprintf "\tScript ID : %\n",$self->getScriptID();
+    $output .= sprintf "\tLevel : %s\n",$this->getLevel();
+    $output .= sprintf "\tTM Resolution : %s\n",$this->getTM()->getResolution();
+    $output .= sprintf "\tColonne : %s\n",$this->getCol();
+    $output .= sprintf "\tLigne : %s\n",$this->getRow();
+    if (defined $this->getScript()) {
+        $output .= sprintf "\tScript ID : %\n",$this->getScriptID();
     } else {
         $output .= sprintf "\tScript undefined.\n";
     }
     $output .= sprintf "\tNoeud Source :\n";
-    foreach my $node_sup ( @{$self->getNodeSources()} ) {
+    foreach my $node_sup ( @{$this->getNodeSources()} ) {
         $output .= sprintf "\t\tResolution : %s, Colonne ; %s, Ligne : %s\n",$node_sup->getTM()->getResolution(),$node_sup->getCol(),$node_sup->getRow();
     }
     $output .= sprintf "\tGeoimage Source :\n";
     
-    foreach my $img ( @{$self->getGeoImages()} ) {
+    foreach my $img ( @{$this->getGeoImages()} ) {
         $output .= sprintf "\t\tNom : %s\n",$img->getName();
     }
 
-    $output .= sprintf "\tworkImageBasename : %s\n",$self->{workImageBasename} if (defined $self->{workImageBasename});
-    $output .= sprintf "\tworkMaskBasename : %s\n",$self->{workMaskBasename} if (defined $self->{workMaskBasename});
-    $output .= sprintf "\tworkExtension : %s\n",$self->{workExtension} if (defined $self->{workExtension});
+    $output .= sprintf "\tworkImageBasename : %s\n",$this->{workImageBasename} if (defined $this->{workImageBasename});
+    $output .= sprintf "\tworkMaskBasename : %s\n",$this->{workMaskBasename} if (defined $this->{workMaskBasename});
+    $output .= sprintf "\tworkExtension : %s\n",$this->{workExtension} if (defined $this->{workExtension});
     
     return $output;
 }
