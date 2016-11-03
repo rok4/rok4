@@ -182,7 +182,7 @@ bool debugLogger=false;
  * \endcode
  */
 void usage() {
-    LOGGER_INFO ( "\ndecimateNtiff version " << BE4_VERSION << "\n\n" <<
+    LOGGER_INFO ( "\ndecimateNtiff version " << ROK4_VERSION << "\n\n" <<
 
                   "Create one georeferenced TIFF image from several georeferenced TIFF images.\n\n" <<
 

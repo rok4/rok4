@@ -164,7 +164,7 @@ bool debugLogger=false;
  * \endcode
  */
 void usage() {
-    LOGGER_INFO ( "\nmerge4tiff version " << BE4_VERSION << "\n\n" <<
+    LOGGER_INFO ( "\nmerge4tiff version " << ROK4_VERSION << "\n\n" <<
 
                   "Four images subsampling, formed a square, might use a background and data masks\n\n" <<
 

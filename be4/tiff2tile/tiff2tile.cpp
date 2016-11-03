@@ -107,7 +107,7 @@ int white[4] = {255,255,255,255};
  * \endcode
  */
 void usage() {
-    LOGGER_INFO ( "\ttiff2tile version " << BE4_VERSION << "\n\n" <<
+    LOGGER_INFO ( "\ttiff2tile version " << ROK4_VERSION << "\n\n" <<
 
                   "Make image tiled and compressed, in TIFF format, respecting ROK4 specifications.\n\n" <<
 

@@ -114,7 +114,7 @@ void usage() {
 
     LOGGER_INFO (
 
-        "\nmanageNodata version " << BE4_VERSION << "\n\n" <<
+        "\nmanageNodata version " << ROK4_VERSION << "\n\n" <<
 
         "Manage nodata pixel color in a TIFF file, byte samples\n\n" <<
 

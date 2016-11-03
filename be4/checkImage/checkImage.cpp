@@ -68,7 +68,7 @@ int main ( int argc, char **argv ) {
         logw.setf ( std::ios::fixed,std::ios::floatfield );
 
         // Version
-        LOGGER_INFO("Version " << BE4_VERSION);
+        LOGGER_INFO("Version " << ROK4_VERSION);
 
         char *cFilenameIn  = NULL;
         char *cFilenameOut = NULL;

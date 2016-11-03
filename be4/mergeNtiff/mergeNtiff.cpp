@@ -200,7 +200,7 @@ bool debugLogger=false;
  * \endcode
  */
 void usage() {
-    LOGGER_INFO ( "\nmergeNtiff version " << BE4_VERSION << "\n\n" <<
+    LOGGER_INFO ( "\nmergeNtiff version " << ROK4_VERSION << "\n\n" <<
 
                   "Create one georeferenced TIFF image from several georeferenced TIFF images.\n\n" <<
 

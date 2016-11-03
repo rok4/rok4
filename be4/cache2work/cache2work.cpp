@@ -81,7 +81,7 @@
  */
 void usage() {
 
-    LOGGER_INFO ( "\ncache2work version " << BE4_VERSION << "\n\n" <<
+    LOGGER_INFO ( "\ncache2work version " << ROK4_VERSION << "\n\n" <<
 
                   "Convert a ROK4 pyramid's TIFF image to untiled TIFF image\n\n" <<
 

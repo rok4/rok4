@@ -161,7 +161,7 @@ bool debugLogger=false;
  * \endcode
  */
 void usage() {
-    LOGGER_INFO ( "\noverlayNtiff version " << BE4_VERSION << "\n\n" <<
+    LOGGER_INFO ( "\noverlayNtiff version " << ROK4_VERSION << "\n\n" <<
 
                   "Create one TIFF image, from several images with same dimensions, with different available merge methods.\n" <<
                   "Sources and output image can have different numbers of samples per pixel. The sample type have to be the same for all sources and will be the output one\n\n" <<

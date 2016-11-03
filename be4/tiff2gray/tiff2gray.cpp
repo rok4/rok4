@@ -45,7 +45,7 @@
 using namespace std;
 
 void usage() {
-    cerr << "tiff2gray version "<< BE4_VERSION << std::endl;
+    cerr << "tiff2gray version "<< ROK4_VERSION << std::endl;
     cerr << endl << "usage: tiff2gray [-c (none|zip|packbits|jpeg|lzw)] <input_file> <output_file>" << endl << endl;
     cerr << "       The default compression is the same as the source image." << endl << endl;
 }
