@@ -57,7 +57,8 @@ protected:
         Logger::setAccumulator ( DEBUG, acc );
 
         for ( int i = 0; i < 200; i++ ) LOGGER ( DEBUG ) << i << std::endl;
-        Logger::setAccumulator ( DEBUG, NULL );
+        //Logger::setAccumulator ( DEBUG, 0 );
+        Logger::stopLogger();
 
         for ( int i = 0; i < 200; i++ ) {
             std::string s1, s2;
@@ -65,7 +66,6 @@ protected:
             out >> s1 >> s2 >> n;
             CPPUNIT_ASSERT_EQUAL ( i, n );
         }
-        Logger::stopLogger();
     }
 
 };
