@@ -112,7 +112,11 @@ int white[4] = {255,255,255,255};
  * \endcode
  */
 void usage() {
+<<<<<<< HEAD:be4/work2cache/work2cache.cpp
     LOGGER_INFO ( "\twork2cache version " << BE4_VERSION << "\n\n" <<
+=======
+    LOGGER_INFO ( "\ttiff2tile version " << ROK4_VERSION << "\n\n" <<
+>>>>>>> clean-POM-BE4_VERSION:be4/tiff2tile/tiff2tile.cpp
 
                   "Make image tiled and compressed, in TIFF format, respecting ROK4 specifications.\n\n" <<
 

@@ -137,7 +137,7 @@ bool debugLogger=false;
  * \endcode
  */
 void usage() {
-    LOGGER_INFO ( "\ncomposeNtiff version " << BE4_VERSION << "\n\n" <<
+    LOGGER_INFO ( "\ncomposeNtiff version " << ROK4_VERSION << "\n\n" <<
 
                   "Monte N TIFF image, forming a regular grid\n\n" <<
 
