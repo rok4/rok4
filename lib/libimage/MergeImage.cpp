@@ -83,7 +83,7 @@ int MergeImage::_getline ( tBuf* buffer, int line ) {
 
     for ( int i = 0; i < images.size(); i++ ) {
 
-        int srcSpp = images[i]->channels;
+        int srcSpp = images[i]->getChannels();
         images[i]->getline ( imageLine,line );
 
         if ( images[i]->getMask() == NULL ) {

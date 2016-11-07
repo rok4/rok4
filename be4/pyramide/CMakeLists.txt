@@ -5,9 +5,9 @@ SET(PARENT_PROJECT_NAME ${PROJECT_NAME})
 project(pyramide)
 
 #définit la version du projet : 1.0.0 MAJOR.MINOR.PATCH
-list(GET BE4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
-list(GET BE4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
-list(GET BE4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
+list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
+list(GET ROK4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
+list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
 
 cmake_minimum_required(VERSION 2.6)
 
@@ -79,20 +79,12 @@ if(UNITTEST)
 
     if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/perlunit)
         # Exécution des tests unitaires PerlUnit
-        FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "tests/perlunit/BE4/PerlUnit*.t")
+
+        FILE(GLOB_RECURSE UnitTests_SRCS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/tests/perlunit/" "PerlUnit*.t")
         
         FOREACH(test ${UnitTests_SRCS})
             MESSAGE("  - adding test ${test}")
-            GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
-            ADD_TEST(NAME "BE4::${TestName}" COMMAND perl -I ${CMAKE_CURRENT_BINARY_DIR}/install/lib/perl5 ${CMAKE_CURRENT_BINARY_DIR}/src/${test})
-        ENDFOREACH(test)
-
-        FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "tests/perlunit/JOINCACHE/PerlUnit*.t")
-
-        FOREACH(test ${UnitTests_SRCS})
-            MESSAGE("  - adding test ${test}")
-            GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
-            ADD_TEST(NAME "JOINCACHE::${TestName}" COMMAND perl -I ${CMAKE_CURRENT_BINARY_DIR}/install/lib/perl5 ${CMAKE_CURRENT_BINARY_DIR}/src/${test})
+            ADD_TEST(NAME "${test}" COMMAND perl -I ${CMAKE_CURRENT_BINARY_DIR}/install/lib/perl5 ${CMAKE_CURRENT_BINARY_DIR}/src/tests/perlunit/${test})
         ENDFOREACH(test)
 
         # Nettoyage du dossier temporaire

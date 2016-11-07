@@ -137,7 +137,7 @@ bool debugLogger=false;
  * \endcode
  */
 void usage() {
-    LOGGER_INFO ( "\ncomposeNtiff version " << BE4_VERSION << "\n\n" <<
+    LOGGER_INFO ( "\ncomposeNtiff version " << ROK4_VERSION << "\n\n" <<
 
                   "Monte N TIFF image, forming a regular grid\n\n" <<
 
@@ -347,7 +347,7 @@ int loadImages ( FileImage** ppImageOut, CompoundImage** ppCompoundIn ) {
             bitspersample = pImage->getBitsPerSample();
             sampleformat = pImage->getSampleFormat();
             photometric = pImage->getPhotometric();
-            samplesperpixel = pImage->channels;
+            samplesperpixel = pImage->getChannels();
             width = pImage->getWidth();
             height = pImage->getHeight();
         } else {
@@ -355,7 +355,7 @@ int loadImages ( FileImage** ppImageOut, CompoundImage** ppCompoundIn ) {
             if ( bitspersample != pImage->getBitsPerSample() ||
                  sampleformat != pImage->getSampleFormat() ||
                  photometric != pImage->getPhotometric() ||
-                 samplesperpixel != pImage->channels ||
+                 samplesperpixel != pImage->getChannels() ||
                  width != pImage->getWidth() ||
                  height != pImage->getHeight() )
             {

@@ -49,9 +49,6 @@
  * \endcode
  * Les caractéristiques suivantes doivent être les mêmes pour les 4 images, le fond et seront celles de l'image de sortie :
  * \li largeur et hauteur en pixel
- * \li nombre de canaux
- * \li format des canaux
- * \li photomètrie
  *
  * Si les images en entrée peuvent être de différents formats (selon les implémentations de la classe FileImage), l'image de sortie est au format TIFF.
  *
@@ -106,14 +103,18 @@ uint32_t width;
 /** \~french Hauteur des images */
 uint32_t height;
 /** \~french Compression de l'image de sortie */
-Compression::eCompression compression;
-/** \~french Nombre de bits occupé par un canal */
-int bitspersample;
-/** \~french Format du canal (entier, flottant, signé ou non...), dans les images en entrée et celle en sortie */
-SampleFormat::eSampleFormat sampleformat;
-/** \~french Nombre de canaux par pixel, dans les images en entrée et celle en sortie */
-int samplesperpixel;
-/** \~french Photométrie (rgb, gray), dans les images en entrée et celle en sortie */
+Compression::eCompression compression = Compression::NONE;
+
+/** \~french A-t-on précisé le format en sortie, c'est à dire les 3 informations samplesperpixel, bitspersample et sampleformat */
+bool outputProvided = false;
+/** \~french Nombre de canaux par pixel, pour l'image en sortie */
+uint16_t samplesperpixel = 0;
+/** \~french Nombre de bits occupé par un canal, pour l'image en sortie */
+uint16_t bitspersample = 0;
+/** \~french Format du canal (entier, flottant, signé ou non...), pour l'image en sortie */
+SampleFormat::eSampleFormat sampleformat = SampleFormat::UNKNOWN;
+
+/** \~french Photométrie (rgb, gray), déduit du nombre de canaux */
 Photometric::ePhotometric photometric;
 
 /** \~french Activation du niveau de log debug. Faux par défaut */
@@ -126,7 +127,7 @@ bool debugLogger=false;
  * \~ \code
  * merge4tiff version X.X.X
  *
- * Usage: merge4tiff [-g <VAL>] -n <VAL> [-c <VAL>] [-iX <FILE> [-mX<FILE>]] -io <FILE> [-mo <FILE>]
+ * Usage: merge4tiff [-g <VAL>] -n <VAL> [-c <VAL>] [-iX <FILE> [-mX<FILE>]] -io <FILE> [-mo <FILE>] [-a <VAL> -b <VAL> -s <VAL>]
  *
  * Parameters:
  *      -g gamma float value, to dark (0 < g < 1) or brighten (1 < g) 8-bit integer images' subsampling
@@ -155,6 +156,8 @@ bool debugLogger=false;
  *              X = [1..4] or X = b
  *      -d debug logger activation
  *
+ * If bitspersample, sampleformat or samplesperpixel is not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.
+ *
  * Examples
  *      - without mask, with background image
  *      merge4tiff -g 1 -n 255,255,255 -c zip -b backgroundImage.tif -i1 image1.tif -i3 image3.tif imageOut.tif
@@ -164,7 +167,7 @@ bool debugLogger=false;
  * \endcode
  */
 void usage() {
-    LOGGER_INFO ( "\nmerge4tiff version " << BE4_VERSION << "\n\n" <<
+    LOGGER_INFO ( "\nmerge4tiff version " << ROK4_VERSION << "\n\n" <<
 
                   "Four images subsampling, formed a square, might use a background and data masks\n\n" <<
 
@@ -195,7 +198,12 @@ void usage() {
                   "             X = b           background image\n" <<
                   "     -mX input associated masks (optionnal)\n" <<
                   "             X = [1..4] or X = b\n" <<
+                  "     -a sample format : (float or uint)\n" <<
+                  "     -b bits per sample : (8 or 32)\n" <<
+                  "     -s samples per pixel : (1, 2, 3 or 4)\n" <<
                   "     -d debug logger activation\n\n" <<
+
+                  "If bitspersample, sampleformat or samplesperpixel is not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.\n\n" <<
 
                   "Examples\n" <<
                   "     - without mask, with background image\n" <<
@@ -282,6 +290,7 @@ int parseCommandLine ( int argc, char* argv[] ) {
                     return -1;
                 }
                 break;
+
             case 'i': // images
                 if ( ++i == argc ) {
                     LOGGER_ERROR ( "Error in option -i" );
@@ -340,6 +349,48 @@ int parseCommandLine ( int argc, char* argv[] ) {
                     return -1;
                 }
                 break;
+
+            /****************** OPTIONNEL, POUR FORCER DES CONVERSIONS **********************/
+            case 's': // samplesperpixel
+                if ( i++ >= argc ) {
+                    LOGGER_ERROR ( "Error in option -s" );
+                    return -1;
+                }
+                if ( strncmp ( argv[i], "1",1 ) == 0 ) samplesperpixel = 1 ;
+                else if ( strncmp ( argv[i], "2",1 ) == 0 ) samplesperpixel = 2 ;
+                else if ( strncmp ( argv[i], "3",1 ) == 0 ) samplesperpixel = 3 ;
+                else if ( strncmp ( argv[i], "4",1 ) == 0 ) samplesperpixel = 4 ;
+                else {
+                    LOGGER_ERROR ( "Unknown value for option -s : " << argv[i] );
+                    return -1;
+                }
+                break;
+            case 'b': // bitspersample
+                if ( i++ >= argc ) {
+                    LOGGER_ERROR ( "Error in option -b" );
+                    return -1;
+                }
+                if ( strncmp ( argv[i], "8",1 ) == 0 ) bitspersample = 8 ;
+                else if ( strncmp ( argv[i], "32",2 ) == 0 ) bitspersample = 32 ;
+                else {
+                    LOGGER_ERROR ( "Unknown value for option -b : " << argv[i] );
+                    return -1;
+                }
+                break;
+            case 'a': // sampleformat
+                if ( i++ >= argc ) {
+                    LOGGER_ERROR ( "Error in option -a" );
+                    return -1;
+                }
+                if ( strncmp ( argv[i],"uint",4 ) == 0 ) sampleformat = SampleFormat::UINT ;
+                else if ( strncmp ( argv[i],"float",5 ) == 0 ) sampleformat = SampleFormat::FLOAT;
+                else {
+                    LOGGER_ERROR ( "Unknown value for option -a : " << argv[i] );
+                    return -1;
+                }
+                break;
+            /*******************************************************************************/
+
             default:
                 LOGGER_ERROR ( "Unknown option : -" << argv[i][1] );
                 return -1;
@@ -350,7 +401,6 @@ int parseCommandLine ( int argc, char* argv[] ) {
     /* Obligatoire :
      *  - la valeur de nodata
      *  - l'image de sortie
-     *  - la compression
      */
     if ( strnodata == 0 ) {
         LOGGER_ERROR ( "Missing nodata value" );
@@ -377,14 +427,29 @@ int checkComponents ( FileImage* image, FileImage* mask) {
     if ( width == 0 ) { // read the parameters of the first input file
         width = image->getWidth();
         height = image->getHeight();
-        bitspersample = image->getBitsPerSample();
-        photometric = image->getPhotometric();
-        sampleformat = image->getSampleFormat();
-        samplesperpixel = image->channels;
         
         if ( width%2 || height%2 ) {
             LOGGER_ERROR ( "Sorry : only even dimensions for input images are supported" );
             return -1;
+        }
+
+        if (! outputProvided) {
+            // On n'a pas précisé de format de sortie
+            // Toutes les images en entrée doivent avoir le même format
+            // La sortie aura ce format
+            bitspersample = image->getBitsPerSample();
+            photometric = image->getPhotometric();
+            sampleformat = image->getSampleFormat();
+            samplesperpixel = image->getChannels();
+        } else {
+            // La photométrie est déduite du nombre de canaux
+            if (samplesperpixel == 1) {
+                photometric = Photometric::GRAY;
+            } else if (samplesperpixel == 2) {
+                photometric = Photometric::GRAY;
+            } else {
+                photometric = Photometric::RGB;
+            }
         }
 
         if ( ! (( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) || ( bitspersample == 8 && sampleformat == SampleFormat::UINT )) ) {
@@ -393,17 +458,27 @@ int checkComponents ( FileImage* image, FileImage* mask) {
         }
     } else {
 
-        if ( ! ( image->getWidth() == width && image->getHeight() == height && image->getBitsPerSample() == bitspersample &&
-                image->getSampleFormat() == sampleformat && image->getPhotometric() == photometric && image->channels == samplesperpixel ) ) {
-
-            LOGGER_ERROR ( "Error : all input image must have the same parameters (width, height, etc...) : " << image->getFilename());
+        if ( image->getWidth() != width || image->getHeight() != height) {
+            LOGGER_ERROR ( "Error : all input image must have the same dimensions (width, height) : " << image->getFilename());
             return -1;
+        }
+
+        if (! outputProvided) {
+            if ( image->getBitsPerSample() != bitspersample || image->getSampleFormat() != sampleformat ||
+                 image->getPhotometric() != photometric || image->getChannels() != samplesperpixel
+            ) {
+                LOGGER_ERROR (
+                    "Error : output format is not provided, so all input image must have the same format (bits per sample, channels, etc...) : " << 
+                    image->getFilename()
+                );
+                return -1;
+            }
         }
     }
 
     if (mask != NULL) {
         if ( ! ( mask->getWidth() == width && mask->getHeight() == height && mask->getBitsPerSample() == 8 &&
-                mask->getSampleFormat() == SampleFormat::UINT && mask->getPhotometric() == Photometric::GRAY && mask->channels == 1 ) ) {
+                mask->getSampleFormat() == SampleFormat::UINT && mask->getPhotometric() == Photometric::GRAY && mask->getChannels() == 1 ) ) {
 
             LOGGER_ERROR ( "Error : all input masks must have the same parameters (width, height, etc...) : " << mask->getFilename());
             return -1;
@@ -414,6 +489,14 @@ int checkComponents ( FileImage* image, FileImage* mask) {
             return -1;
         }
         
+    }
+
+    if (outputProvided) {
+        bool ok = image->addConverter ( sampleformat, bitspersample, samplesperpixel );
+        if (! ok ) {
+            LOGGER_ERROR ( "Cannot add converter to the input FileImage " << image->getFilename() );
+            return -1;
+        }
     }
 
     return 0;
@@ -499,6 +582,8 @@ int checkImages ( FileImage* INPUTI[2][2], FileImage*& BGI, FileImage*& OUTPUTI,
             return -1;
         }
     }
+
+    /********************** EN SORTIE ***********************/
 
     OUTPUTI = NULL;
     OUTPUTM = NULL;
@@ -777,6 +862,11 @@ int main ( int argc, char* argv[] ) {
         std::ostream &logd = LOGGER ( DEBUG );
         logd.precision ( 16 );
         logd.setf ( std::ios::fixed,std::ios::floatfield );
+    }
+
+    // On regarde si on a tout précisé en sortie, pour voir si des conversions sont possibles
+    if (sampleformat != SampleFormat::UNKNOWN && bitspersample != 0 && samplesperpixel !=0) {
+        outputProvided = true;
     }
 
     LOGGER_DEBUG ( "Check images" );

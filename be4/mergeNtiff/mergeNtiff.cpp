@@ -47,9 +47,7 @@
  * \li être recouvrantes entre elles
  * \li être dans des systèmes spatiaux différents
  *
- * Les images en entrée et celle en sortie doivent avoir les même composantes suivantes :
- * \li le même nombre de canaux
- * \li le même format de canal
+ * Les images en entrée peuvent avoir un format de canaux différents si on précise celui en sortie : une conversion à la volée sera alors effctuée, selon les possibilités de PixelConverter. Si toutes les images ont le même format, on peut ne pas préciser celui de sortie et il sera le même qu'en entrée.
  *
  * Les formats des canaux gérés sont :
  * \li entier non signé sur 8 bits
@@ -73,9 +71,6 @@
  * \li On peut préciser une racine (un répertoire) à ajouter au chemin de l'image de sortie (et de son masque). Le chemin du répertoire doit finir par le séparateur de dossier (slash en linux).
  * \li La compression de l'image de sortie
  * \li Le mode d'interpolation
- * \li Le nombre de canaux par pixel
- * \li Le nombre de bits par canal
- * \li Le format du canal (entier ou flottant)
  * \li La valeur de non-donnée
  *
  * La légende utilisée dans tous les schémas de la documentation de ce fichier sera la suivante
@@ -90,14 +85,13 @@
  * Exemple d'appel à la commande :
  * \li pour des ortho-images \~english \li for orthoimage
  * \~ \code
- * mergeNtiff -f conf.txt -r /home/ign/results/ -c zip -i bicubic -s 3 -b 8 -p rgb -a uint -n 255,255,255
+ * mergeNtiff -f conf.txt -r /home/ign/results/ -c zip -i bicubic -n 255,255,255
  * \endcode
  * \~french \li pour du MNT \~english \li for DTM
  * \~ \code
- * mergeNtiff -f conf.txt -c zip -i nn -s 1 -b 32 -p gray -a float -n -99999
+ * mergeNtiff -f conf.txt -c zip -i nn -n -99999
  * \endcode
  ** \~french
- * \todo Gérer correctement un canal alpha
  * \todo Permettre l'ajout ou la suppression à la volée d'un canal alpha
  */
 
@@ -119,6 +113,7 @@
 #include "ResampledImage.h"
 #include "ReprojectedImage.h"
 #include "ExtendedCompoundImage.h"
+#include "PixelConverter.h"
 
 #include "CRS.h"
 #include "Interpolation.h"
@@ -138,22 +133,27 @@
 char imageListFilename[256];
 /** \~french Racine pour les images de sortie */
 char outImagesRoot[256];
-/** \~french Valeur de nodata sour forme de chaîne de caractère (passée en paramètre de la commande) */
+
+/** \~french Valeur de nodata sous forme de chaîne de caractère (passée en paramètre de la commande) */
 char strnodata[256];
-/** \~french Nombre de canaux par pixel, dans les images en entrée et celle en sortie */
-uint16_t samplesperpixel;
-/** \~french Nombre de bits occupé par un canal */
-uint16_t bitspersample;
-/** \~french Format du canal (entier, flottant, signé ou non...), dans les images en entrée et celle en sortie */
-SampleFormat::eSampleFormat sampleformat;
-/** \~french Photométrie (rgb, gray), dans les images en entrée et celle en sortie */
+
+/** \~french A-t-on précisé le format en sortie, c'est à dire les 3 informations samplesperpixel, bitspersample et sampleformat */
+bool outputProvided = false;
+/** \~french Nombre de canaux par pixel, pour l'image en sortie */
+uint16_t samplesperpixel = 0;
+/** \~french Nombre de bits occupé par un canal, pour l'image en sortie */
+uint16_t bitspersample = 0;
+/** \~french Format du canal (entier, flottant, signé ou non...), pour l'image en sortie */
+SampleFormat::eSampleFormat sampleformat = SampleFormat::UNKNOWN;
+
+/** \~french Photométrie (rgb, gray), déduit du nombre de canaux */
 Photometric::ePhotometric photometric;
+
 /** \~french Compression de l'image de sortie */
-Compression::eCompression compression;
-/** \~french Type de donnée traitée : image (1) ou meta-donnée (0, non implémenté) */
-int type=-1;
+Compression::eCompression compression = Compression::NONE;
 /** \~french Interpolation utilisée pour le réechantillonnage ou la reprojection */
-Interpolation::KernelType interpolation;
+Interpolation::KernelType interpolation = Interpolation::CUBIC;
+
 /** \~french Activation du niveau de log debug. Faux par défaut */
 bool debugLogger=false;
 
@@ -164,7 +164,7 @@ bool debugLogger=false;
  * \~ \code
  * mergeNtiff version X.X.X
  *
- * Usage: mergeNtiff -f <FILE> [-r <DIR>] -c <VAL> -a <VAL> -i <VAL> -n <VAL> -s <VAL> -b <VAL> -p <VAL>
+ * Usage: mergeNtiff -f <FILE> [-r <DIR>] -c <VAL> -i <VAL> -n <VAL> [-a <VAL> -b <VAL> -s <VAL>]
  *
  * Parameters:
  *      -f configuration file : list of output and source images and masks
@@ -176,7 +176,6 @@ bool debugLogger=false;
  *              lzw     Lempel-Ziv & Welch encoding
  *              pkb     PackBits encoding
  *              zip     Deflate encoding
- *      -a sample format : uint (unsigned integer) or float
  *      -i interpolation : used for resampling :
  *              nn      nearest neighbor
  *              linear
@@ -185,22 +184,22 @@ bool debugLogger=false;
  *      -n nodata value, one interger per sample, seperated with comma. Examples
  *              -99999 for DTM
  *              255,255,255 for orthophotography
- *      -s samples per pixel : 1, 3 or 4
- *      -b bits per sample : 8 (for unsigned 8-bit integer) or 32 (for 32-bit float)
- *      -p photometric :
- *              gray    min is black
- *              rgb     for image with alpha too
+ *      -a sample format : (float or uint)
+ *      -b bits per sample : (8 or 32)
+ *      -s samples per pixel : (1, 2, 3 or 4)
  *      -d debug logger activation
+ *
+ * If bitspersample, sampleformat or samplesperpixel is not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.
  *
  * Examples
  *      - for orthophotography
- *      mergeNtiff -f conf.txt -c zip -i bicubic -s 3 -b 8 -p rgb -a uint -n 255,255,255
+ *      mergeNtiff -f conf.txt -c zip -i bicubic -s 3 -b 8 -a uint -n 255,255,255
  *      - for DTM
- *      mergeNtiff -f conf.txt -c zip -i nn -s 1 -b 32 -p gray -a float -n -99999
+ *      mergeNtiff -f conf.txt -c zip -i nn -s 1 -b 32 -a float -n -99999
  * \endcode
  */
 void usage() {
-    LOGGER_INFO ( "\nmergeNtiff version " << BE4_VERSION << "\n\n" <<
+    LOGGER_INFO ( "\nmergeNtiff version " << ROK4_VERSION << "\n\n" <<
 
                   "Create one georeferenced TIFF image from several georeferenced TIFF images.\n\n" <<
 
@@ -216,7 +215,6 @@ void usage() {
                   "            lzw     Lempel-Ziv & Welch encoding\n" <<
                   "            pkb     PackBits encoding\n" <<
                   "            zip     Deflate encoding\n" <<
-                  "    -a sample format : uint (unsigned integer) or float\n" <<
                   "    -i interpolation : used for resampling :\n" <<
                   "            nn      nearest neighbor\n" <<
                   "            linear\n" <<
@@ -225,16 +223,16 @@ void usage() {
                   "    -n nodata value, one interger per sample, seperated with comma. Examples\n" <<
                   "            -99999 for DTM\n" <<
                   "            255,255,255 for orthophotography\n" <<
-                  "    -s samples per pixel : 1, 3 or 4\n" <<
-                  "    -b bits per sample : 8 (for unsigned 8-bit integer) or 32 (for 32-bit float)\n" <<
-                  "    -p photometric :\n" <<
-                  "            gray    min is black\n" <<
-                  "            rgb     for image with alpha too\n" <<
+                  "    -a sample format : (float or uint)\n" <<
+                  "    -b bits per sample : (8 or 32)\n" <<
+                  "    -s samples per pixel : (1, 2, 3 or 4)\n" <<
                   "    -d debug logger activation\n\n" <<
+
+                  "If bitspersample, sampleformat or samplesperpixel is not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.\n\n" <<
 
                   "Examples\n" <<
                   "    - for orthophotography\n" <<
-                  "    mergeNtiff -f conf.txt -c zip -i bicubic -s 3 -b 8 -p rgb -a uint -n 255,255,255\n" <<
+                  "    mergeNtiff -f conf.txt -c zip -i bicubic -n 255,255,255\n" <<
                   "    - for DTM\n" <<
                   "    mergeNtiff -f conf.txt -c zip -i nn -s 1 -b 32 -p gray -a float -n -99999\n\n" );
 }
@@ -261,11 +259,6 @@ void error ( std::string message, int errorCode ) {
  * \return code de retour, 0 si réussi, -1 sinon
  */
 int parseCommandLine ( int argc, char** argv ) {
-
-    if ( argc < 17 && argc != 2 ) {
-        LOGGER_ERROR ( "Unvalid parameters number : is " << argc << " and have to be 17 or more (2 to request help)" );
-        return -1;
-    }
 
     for ( int i = 1; i < argc; i++ ) {
         if ( argv[i][0] == '-' ) {
@@ -311,12 +304,31 @@ int parseCommandLine ( int argc, char** argv ) {
                 }
                 strcpy ( strnodata,argv[i] );
                 break;
+            case 'c': // compression
+                if ( i++ >= argc ) {
+                    LOGGER_ERROR ( "Error in option -c" );
+                    return -1;
+                }
+                if ( strncmp ( argv[i], "raw",3 ) == 0 ) compression = Compression::NONE;
+                else if ( strncmp ( argv[i], "none",4 ) == 0 ) compression = Compression::NONE;
+                else if ( strncmp ( argv[i], "zip",3 ) == 0 ) compression = Compression::DEFLATE;
+                else if ( strncmp ( argv[i], "pkb",3 ) == 0 ) compression = Compression::PACKBITS;
+                else if ( strncmp ( argv[i], "jpg",3 ) == 0 ) compression = Compression::JPEG;
+                else if ( strncmp ( argv[i], "lzw",3 ) == 0 ) compression = Compression::LZW;
+                else {
+                    LOGGER_ERROR ( "Unknown value for option -c : " << argv[i] );
+                    return -1;
+                }
+                break;
+
+            /****************** OPTIONNEL, POUR FORCER DES CONVERSION **********************/
             case 's': // samplesperpixel
                 if ( i++ >= argc ) {
                     LOGGER_ERROR ( "Error in option -s" );
                     return -1;
                 }
                 if ( strncmp ( argv[i], "1",1 ) == 0 ) samplesperpixel = 1 ;
+                else if ( strncmp ( argv[i], "2",1 ) == 0 ) samplesperpixel = 2 ;
                 else if ( strncmp ( argv[i], "3",1 ) == 0 ) samplesperpixel = 3 ;
                 else if ( strncmp ( argv[i], "4",1 ) == 0 ) samplesperpixel = 4 ;
                 else {
@@ -348,34 +360,8 @@ int parseCommandLine ( int argc, char** argv ) {
                     return -1;
                 }
                 break;
-            case 'p': // photometric
-                if ( i++ >= argc ) {
-                    LOGGER_ERROR ( "Error in option -p" );
-                    return -1;
-                }
-                if ( strncmp ( argv[i], "gray",4 ) == 0 ) photometric = Photometric::GRAY;
-                else if ( strncmp ( argv[i], "rgb",3 ) == 0 ) photometric = Photometric::RGB;
-                else {
-                    LOGGER_ERROR ( "Unknown value for option -p : " << argv[i] );
-                    return -1;
-                }
-                break;
-            case 'c': // compression
-                if ( i++ >= argc ) {
-                    LOGGER_ERROR ( "Error in option -c" );
-                    return -1;
-                }
-                if ( strncmp ( argv[i], "raw",3 ) == 0 ) compression = Compression::NONE;
-                else if ( strncmp ( argv[i], "none",4 ) == 0 ) compression = Compression::NONE;
-                else if ( strncmp ( argv[i], "zip",3 ) == 0 ) compression = Compression::DEFLATE;
-                else if ( strncmp ( argv[i], "pkb",3 ) == 0 ) compression = Compression::PACKBITS;
-                else if ( strncmp ( argv[i], "jpg",3 ) == 0 ) compression = Compression::JPEG;
-                else if ( strncmp ( argv[i], "lzw",3 ) == 0 ) compression = Compression::LZW;
-                else {
-                    LOGGER_ERROR ( "Unknown value for option -c : " << argv[i] );
-                    return -1;
-                }
-                break;
+            /*******************************************************************************/
+
             default:
                 LOGGER_ERROR ( "Unknown option : -" << argv[i][1] );
                 return -1;
@@ -385,64 +371,6 @@ int parseCommandLine ( int argc, char** argv ) {
 
     LOGGER_DEBUG ( "mergeNtiff -f " << imageListFilename );
 
-    return 0;
-}
-
-/**
- * \~french
- * \brief Enregistre une image TIFF, avec passage de ses composantes (pour le déboguage)
- * \details Toutes les informations nécessaires à l'écriture d'une image n'étant pas stockées dans un objet Image, on se doit de les préciser en paramètre de la fonction. Cette fonction est utilisée pour le déboguage pour enregistrer des images intermédiaires. Pour l'image finale, on utilisera la fonction d'enregistrement propre aux objets de la classe FileImage
- * \param[in] pImage image à enregistrer
- * \param[in] pName chemin de l'image à écrire
- * \param[in] bps nombre de bits par canal de l'image TIFF
- * \param[in] sf format des canaux (entier ou fottant)
- * \param[in] ph photométrie de l'image à écrire
- * \param[in] comp compression de l'image à écrire
- * \return code de retour, 0 si réussi, -1 sinon
- */
-int saveImage ( Image *pImage, char* pName, uint16_t bps, uint16_t sf, uint16_t ph, uint16_t comp ) {
-    // Ouverture du fichier
-    TIFF* output=TIFFOpen ( pName,"w" );
-    if ( output==NULL ) {
-        LOGGER_ERROR ( "Impossible d'ouvrir le fichier " << pName << " en ecriture" );
-        return -1;
-    }
-
-    // Ecriture de l'en-tete
-    TIFFSetField ( output, TIFFTAG_IMAGEWIDTH, pImage->getWidth() );
-    TIFFSetField ( output, TIFFTAG_IMAGELENGTH, pImage->getHeight() );
-    TIFFSetField ( output, TIFFTAG_SAMPLESPERPIXEL, pImage->channels );
-    TIFFSetField ( output, TIFFTAG_BITSPERSAMPLE, bps );
-    TIFFSetField ( output, TIFFTAG_SAMPLEFORMAT, sf );
-    TIFFSetField ( output, TIFFTAG_PHOTOMETRIC, ph );
-    TIFFSetField ( output, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG );
-    TIFFSetField ( output, TIFFTAG_COMPRESSION, comp );
-    TIFFSetField ( output, TIFFTAG_ROWSPERSTRIP, 1 );
-    TIFFSetField ( output, TIFFTAG_RESOLUTIONUNIT, RESUNIT_NONE );
-
-    // Initialisation du buffer
-    unsigned char* buf_u=0;
-    float* buf_f=0;
-
-    // Ecriture de l'image
-    if ( sf == SAMPLEFORMAT_UINT ) {
-        buf_u = ( unsigned char* ) _TIFFmalloc ( pImage->getWidth() * pImage->channels * bps / 8 );
-        for ( int line = 0; line < pImage->getHeight(); line++ ) {
-            pImage->getline ( buf_u,line );
-            TIFFWriteScanline ( output, buf_u, line, 0 );
-        }
-    } else if ( sf == SAMPLEFORMAT_IEEEFP ) {
-        buf_f = ( float* ) _TIFFmalloc ( pImage->getWidth() *pImage->channels*bps/8 );
-        for ( int line = 0; line < pImage->getHeight(); line++ ) {
-            pImage->getline ( buf_f,line );
-            TIFFWriteScanline ( output, buf_f, line, 0 );
-        }
-    }
-
-    // Liberation
-    if ( buf_u ) _TIFFfree ( buf_u );
-    if ( buf_f ) _TIFFfree ( buf_f );
-    TIFFClose ( output );
     return 0;
 }
 
@@ -552,15 +480,6 @@ int readFileLine ( std::ifstream& file, char* imageFileName, bool* hasMask, char
  * \return code de retour, 0 si réussi, -1 sinon
  */
 int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<FileImage*>* pImageIn ) {
-    char imageFileName[IMAGE_MAX_FILENAME_LENGTH];
-    char maskFileName[IMAGE_MAX_FILENAME_LENGTH];
-    BoundingBox<double> bbox ( 0.,0.,0.,0. );
-    int width, height;
-    bool hasMask;
-    std::string stringCRS;
-    double resx, resy;
-    FileImageFactory factory;
-
 
     // Ouverture du fichier texte listant les images
     std::ifstream file;
@@ -571,48 +490,42 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
         return -1;
     }
 
-    // Lecture et creation de l image de sortie
-    if ( readFileLine ( file,imageFileName,&hasMask,maskFileName, &stringCRS, &bbox,&resx,&resy ) ) {
+
+    /********************** LA SORTIE : LECTURE *************************/
+    /* On récupère les informations mais on ne crée pas l'objet image. Pour cela, on attend de lire les images en entrée pour avoir les caractéristiques */
+    char outImageFileName[IMAGE_MAX_FILENAME_LENGTH];
+    char outMaskFileName[IMAGE_MAX_FILENAME_LENGTH];
+    BoundingBox<double> outBbox ( 0.,0.,0.,0. );
+    bool outHasMask;
+    std::string outStringCRS;
+    double outresx, outresy;
+    if ( readFileLine ( file, outImageFileName, &outHasMask, outMaskFileName, &outStringCRS, &outBbox,&outresx,&outresy ) ) {
         LOGGER_ERROR ( "Erreur lecture des premieres lignes du fichier de parametres: " << imageListFilename );
         return -1;
     }
 
-    CRS crs ( stringCRS );
+    /****************** LA SORTIE : LECTURE & CRÉATION ******************/
+    char imageFileName[IMAGE_MAX_FILENAME_LENGTH];
+    char maskFileName[IMAGE_MAX_FILENAME_LENGTH];
+    BoundingBox<double> bbox ( 0.,0.,0.,0. );
+    int width, height;
+    bool hasMask;
+    std::string stringCRS;
+    double resx, resy;
+    FileImageFactory factory;
+    int nbImgsIn = 0;
 
-    // Arrondi a la valeur entiere la plus proche
-    width = lround ( ( bbox.xmax - bbox.xmin ) / ( resx ) );
-    height = lround ( ( bbox.ymax - bbox.ymin ) / ( resy ) );
+    int out=0;
+    while ( ( out = readFileLine ( file, imageFileName, &hasMask, maskFileName, &stringCRS, &bbox, &resx, &resy ) ) == 0 ) {
 
-    *ppImageOut = factory.createImageToWrite (
-                      imageFileName, bbox,resx, resy, width, height,
-                      samplesperpixel, sampleformat, bitspersample, photometric, compression
-                  );
+    	CRS crs;
 
-    if ( *ppImageOut == NULL ) {
-        LOGGER_ERROR ( "Impossible de creer l'image " << imageFileName );
-        return -1;
-    }
+        nbImgsIn++;
 
-    ( *ppImageOut )->setCRS ( crs );
-
-    if ( hasMask ) {
-
-        *ppMaskOut = factory.createImageToWrite (
-                         maskFileName, bbox,resx, resy, width, height,
-                         1, SampleFormat::UINT, 8, Photometric::MASK, Compression::DEFLATE
-                     );
-
-        if ( *ppMaskOut == NULL ) {
-            LOGGER_ERROR ( "Impossible de creer le masque " << maskFileName );
+        if ( resx == 0. || resy == 0.) {
+            LOGGER_ERROR ( "Source image " << nbImgsIn << " is not valid (resolutions)" );
             return -1;
         }
-
-        ( *ppMaskOut )->setCRS ( crs );
-    }
-
-    // Lecture et creation des images sources
-    int out=0;
-    while ( ( out = readFileLine ( file,imageFileName,&hasMask,maskFileName, &stringCRS,&bbox,&resx,&resy ) ) == 0 ) {
 
         crs.setRequestCode ( stringCRS );
 
@@ -642,7 +555,44 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
         }
 
         pImageIn->push_back ( pImage );
-        
+
+        /* On vérifie que le format des canaux est le même pour toutes les images en entrée :
+         *     - sampleformat
+         *     - bitspersample
+         *     - samplesperpixel
+         */
+
+        if (! outputProvided && nbImgsIn == 1) {
+            /* On n'a pas précisé de format en sortie, on va donc utiliser celui des entrées
+             * On veut donc avoir le même format pour toutes les entrées
+             * On lit la première image en entrée, qui sert de référence
+             * L'image en sortie sera à ce format
+             */
+
+        LOGGER_DEBUG("toto");
+            bitspersample = pImage->getBitsPerSample();
+            samplesperpixel = pImage->getChannels();
+            sampleformat = pImage->getSampleFormat();
+
+        LOGGER_DEBUG("toto");
+        } else if (! outputProvided) {
+        	// On doit avoir le même format pour tout le monde
+        	if (bitspersample != pImage->getBitsPerSample()) {
+        		LOGGER_ERROR("We don't provided output format, so all inputs have to own the same" );
+        		LOGGER_ERROR("The first image and the " << nbImgsIn << " one don't have the same number of bits per sample" );
+        		LOGGER_ERROR(bitspersample << " != " << pImage->getBitsPerSample() );
+        	}
+        	if (samplesperpixel != pImage->getChannels()) {
+        		LOGGER_ERROR("We don't provided output format, so all inputs have to own the same" );
+        		LOGGER_ERROR("The first image and the " << nbImgsIn << " one don't have the same number of samples per pixel" );
+        		LOGGER_ERROR(samplesperpixel << " != " << pImage->getChannels() );
+        	}
+        	if (sampleformat != pImage->getSampleFormat()) {
+        		LOGGER_ERROR("We don't provided output format, so all inputs have to own the same" );
+        		LOGGER_ERROR("The first image and the " << nbImgsIn << " one don't have the same sample format" );
+        		LOGGER_ERROR(sampleformat << " != " << pImage->getSampleFormat() );
+        	}
+        }
     }
 
     if ( out != -1 ) {
@@ -656,41 +606,80 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
     if ( pImageIn->size() == 0 ) {
         LOGGER_ERROR ( "Erreur lecture du fichier de parametres '" << imageListFilename << "' : pas de données en entrée." );
         return -1;
+    } else {
+    	LOGGER_DEBUG( nbImgsIn << " image(s) en entrée" );
     }
 
-    return 0;
-}
+    /********************** LA SORTIE : CRÉATION *************************/
 
-/**
- * \~french
- * \brief Contrôle la cohérence des images en entrée et celle en sortie
- * \details On vérifie que les résolutions fournies ne sont pas nulles et que le format des canaux est le même pour les images en entrée et pour celle en sortie
- * \param[in] pImageOut image résultante de l'outil
- * \param[in] ImageIn images en entrée
- * \return code de retour, 0 si réussi, -1 sinon
- * \todo Contrôler les éventuels masques
- */
-int checkImages ( FileImage* pImageOut, std::vector<FileImage*>& ImageIn ) {
-    for ( unsigned int i=0; i < ImageIn.size(); i++ ) {
-        if ( ImageIn.at ( i )->getResX() *ImageIn.at ( i )->getResY() == 0. ) {
-            LOGGER_ERROR ( "Source image " << i+1 << " is not valid (resolutions)" );
-            ImageIn.at ( i )->print();
-            return -1;
-        }
-        if ( ImageIn.at ( i )->channels != pImageOut->channels ) {
-            LOGGER_ERROR ( "Source image " << i+1 << " is not valid (samples per pixel have to be " << pImageOut->channels << ")" );
-            ImageIn.at ( i )->print();
-            return -1;
-        }
+    if (samplesperpixel == 1) {
+    	photometric = Photometric::GRAY;
+    } else if (samplesperpixel == 2) {
+    	photometric = Photometric::GRAY;
+    } else {
+    	photometric = Photometric::RGB;
     }
-    if ( pImageOut->getResX() *pImageOut->getResY() == 0. ) {
-        LOGGER_ERROR ( "Output image (" << pImageOut->getFilename() << ") is not valid (resolutions)" );
-        pImageOut->print();
+
+    CRS outCrs ( outStringCRS );
+
+    // Arrondi a la valeur entiere la plus proche
+    width = lround ( ( outBbox.xmax - outBbox.xmin ) / ( outresx ) );
+    height = lround ( ( outBbox.ymax - outBbox.ymin ) / ( outresy ) );
+
+    *ppImageOut = factory.createImageToWrite (
+        outImageFileName, outBbox, outresx, outresy, width, height,
+        samplesperpixel, sampleformat, bitspersample, photometric, compression
+    );
+
+    if ( *ppImageOut == NULL ) {
+        LOGGER_ERROR ( "Impossible de creer l'image " << imageFileName );
         return -1;
     }
 
+    ( *ppImageOut )->setCRS ( outCrs );
+
+    if ( outHasMask ) {
+
+        *ppMaskOut = factory.createImageToWrite (
+            outMaskFileName, outBbox,outresx, outresy, width, height,
+            1, SampleFormat::UINT, 8, Photometric::MASK, Compression::DEFLATE
+        );
+
+        if ( *ppMaskOut == NULL ) {
+            LOGGER_ERROR ( "Impossible de creer le masque " << outMaskFileName );
+            return -1;
+        }
+
+        ( *ppMaskOut )->setCRS ( outCrs );
+    }
+
+    if (debugLogger) ( *ppImageOut )->print();
+
     return 0;
 }
+
+int addConverters(std::vector<FileImage*> ImageIn) {
+	if (! outputProvided) {
+		// On n'a pas précisé de format en sortie, donc toutes les images doivent avoir le même
+		// Et la sortie a aussi ce format, donc pas besoin de convertisseur
+		return 0;
+	}
+
+    for ( std::vector<FileImage*>::iterator itImg = ImageIn.begin(); itImg < ImageIn.end(); itImg++ ) {
+
+        if ( ! ( *itImg )->addConverter ( sampleformat, bitspersample, samplesperpixel ) ) {
+            LOGGER_ERROR("Cannot add converter for an input image");
+            ( *itImg )->print();
+            return -1;
+        }
+
+        if (debugLogger) ( *itImg )->print();
+    }
+
+    return 0;
+
+}
+
 
 /**
  * \~french
@@ -835,6 +824,7 @@ bool resampleImages ( FileImage* pImageOut, ExtendedCompoundImage* pECI, Resampl
     int mirrorSize = std::max ( mirrorSizeX, mirrorSizeY );
 
     LOGGER_DEBUG("\t Mirror's size : " << mirrorSize);
+
 
     // On mémorise la bbox d'origine, sans les miroirs
     BoundingBox<double> realBbox = pECI->getBbox();
@@ -1135,7 +1125,7 @@ int mergeTabImages ( FileImage* pImageOut, // Sortie
 
     // Assemblage des paquets et decoupage aux dimensions de l image de sortie
     *ppECIout = ECIF.createExtendedCompoundImage (
-                    pImageOut->getWidth(), pImageOut->getHeight(), pImageOut->channels, pImageOut->getBbox(),
+                    pImageOut->getWidth(), pImageOut->getHeight(), pImageOut->getChannels(), pImageOut->getBbox(),
                     pOverlayedImages, nodata,0 );
 
     if ( *ppECIout == NULL ) {
@@ -1201,6 +1191,24 @@ int main ( int argc, char **argv ) {
         logd.setf ( std::ios::fixed,std::ios::floatfield );
     }
 
+    // On regarde si on a tout précisé en sortie, pour voir si des conversions sont possibles
+    if (sampleformat != SampleFormat::UNKNOWN && bitspersample != 0 && samplesperpixel !=0) {
+    	outputProvided = true;
+    }
+
+    LOGGER_DEBUG ( "Load" );
+    // Chargement des images
+    if ( loadImages ( &pImageOut,&pMaskOut,&ImageIn ) < 0 ) {
+        error ( "Echec chargement des images",-1 );
+    }
+
+    LOGGER_DEBUG ( "Add converters" );
+    // Ajout des modules de conversion aux images en entrée
+    if ( addConverters ( ImageIn ) < 0 ) {
+        error ( "Echec ajout des convertisseurs", -1 );
+    }
+
+    // Maintenant que l'on a la valeur de samplesperpixel, on peut lire le nodata
     // Conversion string->int[] du paramètre nodata
     LOGGER_DEBUG ( "Nodata interpretation" );
     int nodata[samplesperpixel];
@@ -1213,21 +1221,9 @@ int main ( int argc, char **argv ) {
     for ( int i = 1; i < samplesperpixel; i++ ) {
         charValue = strtok ( NULL, "," );
         if ( charValue == NULL ) {
-            error ( "Error with option -n : a value for nodata is missing",-1 );
+            error ( "Error with option -n : one value per sample, separate with comma",-1 );
         }
         nodata[i] = atoi ( charValue );
-    }
-
-    LOGGER_DEBUG ( "Load" );
-    // Chargement des images
-    if ( loadImages ( &pImageOut,&pMaskOut,&ImageIn ) < 0 ) {
-        error ( "Echec chargement des images",-1 );
-    }
-
-    LOGGER_DEBUG ( "Check images" );
-    // Controle des images
-    if ( checkImages ( pImageOut,ImageIn ) < 0 ) {
-        error ( "Echec controle des images",-1 );
     }
 
     LOGGER_DEBUG ( "Sort" );

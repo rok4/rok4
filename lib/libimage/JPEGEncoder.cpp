@@ -53,18 +53,18 @@ JPEGEncoder::JPEGEncoder ( Image* image ) : image ( image ), status ( -1 ) {
 
     cinfo.image_width = image->getWidth();
     cinfo.image_height = image->getHeight();
-    cinfo.input_components = image->channels;
-    if ( image->channels == 3 ) cinfo.in_color_space = JCS_RGB;
-    else if ( image->channels == 1 ) cinfo.in_color_space = JCS_GRAYSCALE;
-    else if ( image->channels == 4 ) cinfo.in_color_space = JCS_EXT_RGBX;
+    cinfo.input_components = image->getChannels();
+    if ( image->getChannels() == 3 ) cinfo.in_color_space = JCS_RGB;
+    else if ( image->getChannels() == 1 ) cinfo.in_color_space = JCS_GRAYSCALE;
+    else if ( image->getChannels() == 4 ) cinfo.in_color_space = JCS_EXT_RGBX;
     else cinfo.in_color_space = JCS_UNKNOWN;
 
 
     jpeg_set_defaults ( &cinfo );
 
-    bufferLimit = std::max ( 1024, ( ( image->getWidth() * image->channels ) / 2 ) );
+    bufferLimit = std::max ( 1024, ( ( image->getWidth() * image->getChannels() ) / 2 ) );
 
-    linebuffer = new uint8_t[image->getWidth() *image->channels];
+    linebuffer = new uint8_t[image->getWidth() *image->getChannels()];
 }
 
 /**

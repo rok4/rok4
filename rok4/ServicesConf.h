@@ -40,6 +40,7 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
 #include "MetadataURL.h"
 #include "CRS.h"
 #include "Keyword.h"
@@ -235,6 +236,29 @@ public:
     }
     std::vector<std::string> getRestrictedCRSList() {
         return restrictedCRSList;
+    }
+    // Check if two CRS are equivalent
+    //   A list of equivalent CRS was created during server initialization
+    // TODO: return false if servicesconf tells we don't check the equality
+    bool are_the_two_CRS_equal( std::string crs1, std::string crs2 ) {
+        // Could have issues with lowercase name -> we put the CRS in upercase
+        transform(crs1.begin(), crs1.end(), crs1.begin(), toupper);
+        transform(crs2.begin(), crs2.end(), crs2.begin(), toupper);
+        crs1.append(" ");
+        crs2.append(" ");
+        for (int line_number = 0 ; line_number < listofequalsCRS.size() ; line_number++) {
+            std::string line = listofequalsCRS.at(line_number);
+            // We check if the two CRS are on the same line inside the file. If yes then they are equivalent.
+            std::size_t found1 = line.find(crs1);
+            if ( found1 != std::string::npos  )  {
+                std::size_t found2 = line.find(crs2);
+                if ( found2 != std::string::npos  )  {
+                    LOGGER_DEBUG ( "The two CRS (source and destination) are equals and were found on line  " << line );
+                    return true;
+                }
+            }
+        }
+        return false; // The 2 CRS were not found on the same line inside the list
     }
 };
 

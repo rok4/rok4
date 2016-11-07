@@ -2,9 +2,9 @@
 project(Be4)
 
 #définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
-list(GET BE4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
-list(GET BE4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
-list(GET BE4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
+list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
+list(GET ROK4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
+list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
 
 cmake_minimum_required(VERSION 2.8.4)
 
@@ -41,13 +41,8 @@ add_subdirectory(merge4tiff)
 add_subdirectory(mergeNtiff)
 add_subdirectory(overlayNtiff)
 add_subdirectory(pyramide)
-add_subdirectory(tiff2gray)
-add_subdirectory(tiff2tile)
-add_subdirectory(tiffck)
+add_subdirectory(work2cache)
 #######################
-# utilitaire de test :
-add_subdirectory(checkImage)
-######################
 
 # Documentation Doxygen
 if(BUILD_DOC)

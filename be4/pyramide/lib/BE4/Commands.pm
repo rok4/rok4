@@ -58,7 +58,7 @@ Using:
     (end code)
 
 Attributes:
-    pyramid - <Pyramid> - Allowed to know output format specifications and configure commands.
+    pyramid - <BE4::Pyramid> - Allowed to know output format specifications and configure commands.
     mntConfDir - string - Directory, where to write mergeNtiff configuration files.
     dntConfDir - string - Directory, where to write decimateNtiff configuration files.
     useMasks - boolean - If TRUE, all generating tools (mergeNtiff, merge4tiff...) use masks if present and generate a resulting mask. This processing is longer, that's why default behaviour is without mask.
@@ -76,9 +76,9 @@ use File::Basename;
 use File::Path;
 use Data::Dumper;
 
-use BE4::Harvesting;
+use COMMON::Harvesting;
 use BE4::Level;
-use BE4::Script;
+use COMMON::GraphScript;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -106,8 +106,8 @@ use constant DECIMATENTIFF_W => 3;
 use constant CACHE2WORK_W => 1;
 # Constant: WGET_W
 use constant WGET_W => 35;
-# Constant: TIFF2TILE_W
-use constant TIFF2TILE_W => 1;
+# Constant: WORK2CACHE_W
+use constant WORK2CACHE_W => 1;
 
 =begin nd
 Constant: BASHFUNCTIONS
@@ -206,7 +206,7 @@ Work2cache () {
         if [ -r $workDir/$workImgName ] ; then rm -f ${PYR_DIR}/$imgName ; fi
         if [ ! -d $dir ] ; then mkdir -p $dir ; fi
             
-        tiff2tile $workDir/$workImgName __t2tI__ ${PYR_DIR}/$imgName
+        work2cache $workDir/$workImgName __w2cI__ ${PYR_DIR}/$imgName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
         echo "0/$imgName" >> ${TMP_LIST_FILE}
@@ -227,7 +227,7 @@ Work2cache () {
                 if [ -r $workDir/$workMskName ] ; then rm -f ${PYR_DIR}/$mskName ; fi
                 if [ ! -d $dir ] ; then mkdir -p $dir ; fi
                     
-                tiff2tile $workDir/$workMskName __t2tM__ ${PYR_DIR}/$mskName
+                work2cache $workDir/$workMskName __w2cM__ ${PYR_DIR}/$mskName
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
                 echo "0/$mskName" >> ${TMP_LIST_FILE}
                 
@@ -369,7 +369,7 @@ Constructor: new
 Commands constructor. Bless an instance.
 
 Parameters (list):
-    pyr - <Pyramid> - Image pyramid to generate
+    pyr - <BE4::Pyramid> - Image pyramid to generate
     useMasks - string - Do we want use masks to generate images ?
 =cut
 sub new {
@@ -434,8 +434,8 @@ Example:
     (end code)
 
 Parameters (list):
-    node - <Node> - Node whose image have to be harvested.
-    harvesting - <Harvesting> - To use to harvest image.
+    node - <COMMON::GraphNode> - Node whose image have to be harvested.
+    harvesting - <COMMON::Harvesting> - To use to harvest image.
 
 Returns:
     An array (code, weight), (undef,WGET_W) if error.
@@ -484,7 +484,7 @@ Examples:
     (end code)
     
 Parameters (list):
-    node - <Node> - Node whose image have to be transfered in the work directory.
+    node - <COMMON::GraphNode> - Node whose image have to be transfered in the work directory.
 
 Returns:
     An array (code, weight), ("",-1) if error.
@@ -517,7 +517,7 @@ sub cache2work {
 =begin nd
 Function: work2cache
 
-Copy image from work directory to cache and transform it (tiled and compressed) thanks to the 'Work2cache' bash function (tiff2tile).
+Copy image from work directory to cache and transform it (tiled and compressed) thanks to the 'Work2cache' bash function (work2cache).
 
 (see work2cache.png)
 
@@ -525,7 +525,7 @@ Example:
 |    Work2cache ${TMP_DIR}/19_395_3137.tif IMAGE/19/02/AF/Z5.tif
 
 Parameter:
-    node - <Node> - Node whose image have to be transfered in the cache.
+    node - <COMMON::GraphNode> - Node whose image have to be transfered in the cache.
     workDir - string - Work image directory, can be an environment variable.
 
 Returns:
@@ -544,7 +544,7 @@ sub work2cache {
     my $pyrName = File::Spec->catfile($self->{pyramid}->getDirImage(),$node->getPyramidName());
     
     $cmd .= sprintf ("Work2cache %s %s %s %s", $node->getLevel, $workDir, $node->getWorkImageName(TRUE), $pyrName);
-    $weight += TIFF2TILE_W;
+    $weight += WORK2CACHE_W;
     
     #### Export du masque, si présent
 
@@ -557,7 +557,7 @@ sub work2cache {
             $pyrName = File::Spec->catfile($self->{pyramid}->getDirMask(),$node->getPyramidName());
             
             $cmd .= sprintf (" %s", $pyrName);
-            $weight += TIFF2TILE_W;
+            $weight += WORK2CACHE_W;
         }        
     }
     
@@ -574,7 +574,7 @@ Use the 'MergeNtiff' bash function. Write a configuration file, with sources.
 (see mergeNtiff.png)
 
 Parameters (list):
-    node - <Node> - Node to generate thanks to a 'mergeNtiff' command.
+    node - <COMMON::GraphNode> - Node to generate thanks to a 'mergeNtiff' command.
     
 Example:
 |    MergeNtiff 19_397_3134.txt
@@ -654,7 +654,7 @@ Use the 'decimateNtiff' bash function. Write a configuration file, with sources.
 (see decimateNtiff.png)
 
 Parameters (list):
-    node - <Node> - Node to generate thanks to a 'decimateNtiff' command.
+    node - <COMMON::GraphNode> - Node to generate thanks to a 'decimateNtiff' command.
     
 Example:
 |    DecimateNtiff 12_26_17.txt
@@ -736,7 +736,7 @@ Use the 'Merge4tiff' bash function.
 (see merge4tiff.png)
 
 Parameters (list):
-    node - <Node> - Node to generate thanks to a 'merge4tiff' command.
+    node - <COMMON::GraphNode> - Node to generate thanks to a 'merge4tiff' command.
 
 Example:
 |    
@@ -830,8 +830,6 @@ sub configureFunctions {
     $conf_mNt .= "-s $spp ";
     my $bps = $pyr->getBitsPerSample;
     $conf_mNt .= "-b $bps ";
-    my $ph = $pyr->getPhotometric;
-    $conf_mNt .= "-p $ph ";
     my $sf = $pyr->getSampleFormat;
     $conf_mNt .= "-a $sf ";
 
@@ -856,6 +854,10 @@ sub configureFunctions {
     $conf_m4t .= "-g $gamma ";
     $conf_m4t .= "-n $nd ";
 
+    $conf_m4t .= "-s $spp ";
+    $conf_m4t .= "-b $bps ";
+    $conf_m4t .= "-a $sf ";
+
     $configuredFunc =~ s/__m4t__/$conf_m4t/;
 
     ######## cache2work ########
@@ -863,25 +865,29 @@ sub configureFunctions {
     my $conf_c2w = "-c zip";
     $configuredFunc =~ s/__c2w__/$conf_c2w/;
     
-    ######## tiff2tile ########
-    my $conf_t2t = "";
+    ######## work2cache ########
+    my $conf_w2c = "";
 
     # pour les images
     my $compression = $pyr->getCompression;
     
-    $conf_t2t .= "-c $compression ";
+    $conf_w2c .= "-c $compression ";
     if ($pyr->getCompressionOption eq 'crop') {
-        $conf_t2t .= "-crop ";
+        $conf_w2c .= "-crop ";
     }
 
-    $conf_t2t .= sprintf "-t %s %s ",$pyr->getTileMatrixSet->getTileWidth,$pyr->getTileMatrixSet->getTileHeight;
+    $conf_w2c .= sprintf "-t %s %s ",$pyr->getTileMatrixSet->getTileWidth,$pyr->getTileMatrixSet->getTileHeight;
 
-    $configuredFunc =~ s/__t2tI__/$conf_t2t/;
+    $conf_w2c .= "-s $spp ";
+    $conf_w2c .= "-b $bps ";
+    $conf_w2c .= "-a $sf ";
+
+    $configuredFunc =~ s/__w2cI__/$conf_w2c/;
     
     # pour les masques
-    $conf_t2t = sprintf "-c zip -t %s %s",
+    $conf_w2c = sprintf "-c zip -t %s %s",
         $pyr->getTileMatrixSet->getTileWidth,$pyr->getTileMatrixSet->getTileHeight;
-    $configuredFunc =~ s/__t2tM__/$conf_t2t/;
+    $configuredFunc =~ s/__w2cM__/$conf_w2c/;
     
     return $configuredFunc;
 }

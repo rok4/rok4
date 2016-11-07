@@ -2,13 +2,13 @@
 <style>
         <Identifier>epandage</Identifier>
         <Title>Pente par paliers standards pour epandage</Title> 
-        <Abstract>Pente calculee avec la methode de Horn mais affichee par parlier standard de 7 a 20 degres</Abstract>
+        <Abstract>Pente calculee avec la methode de Horn mais affichee par parlier standard de 7 a 20 pourcent</Abstract>
         <Keywords>
                 <Keyword>MNT</Keyword>
         </Keywords>
         <LegendURL format="image/png" xlink:simpleLink="simple" xlink:href="http://ign.fr" height="100" width="100" minScaleDenominator="0" maxScaleDenominator="30"/>
         <!-- Rok4-->
-        <palette maxValue="90" rgbContinuous="true" alphaContinuous="true">
+        <palette maxValue="1000" rgbContinuous="true" alphaContinuous="true">
                 <colour value="0">
                         <red>255</red>
                         <green>255</green>
@@ -63,12 +63,12 @@
                         <blue>255</blue>
                         <alpha>0</alpha>
                 </colour>
-                <colour value="90">
+                <colour value="1000">
                         <red>255</red>
                         <green>255</green>
                         <blue>255</blue>
                         <alpha>0</alpha>
                 </colour>
         </palette>
-        <pente algo="H"/>
+        <pente algo="H" unit="pourcent"/>
 </style>
