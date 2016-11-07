@@ -50,7 +50,7 @@ int StyledImage::getline ( uint16_t* buffer, int line ) {
 }
 
 int StyledImage::getline ( uint8_t* buffer, int line ) {
-    if ( origImage->channels==1 && palette->getColoursMap() && !palette->getColoursMap()->empty() ) {
+    if ( origImage->getChannels()==1 && palette->getColoursMap() && !palette->getColoursMap()->empty() ) {
         return _getline ( buffer, line );
     }
 
@@ -61,7 +61,7 @@ StyledImage::StyledImage ( Image* image, int expectedChannels, Palette* palette 
     if ( !this->palette->getColoursMap()->empty() ) {
         channels = expectedChannels;
     } else {
-        channels = image->channels;
+        channels = image->getChannels();
     }
 }
 
@@ -71,7 +71,7 @@ StyledImage::~StyledImage() {
 
 
 int StyledImage::_getline ( uint8_t* buffer, int line ) {
-    float* source = new float[origImage->getWidth() *origImage->channels];
+    float* source = new float[origImage->getWidth() *origImage->getChannels()];
     origImage->getline ( source, line );
     //TODO Optimize It
     int i = 0;

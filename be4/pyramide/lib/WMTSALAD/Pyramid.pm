@@ -54,12 +54,12 @@ Using:
     (end code)
 
 Attributes:
-    tileMatrixSet - <BE4::TileMatrixSet> - Tile matrix set in which the pyramid is defined
+    tileMatrixSet - <COMMON::TileMatrixSet> - Tile matrix set in which the pyramid is defined
 
     format - string - image format. 
     compression - string - image compression. default to 'raw'. accepted values : 'raw', 'jpg', 'png', 'lzw', 'zip', 'pkb'
     channels - strict positive integer - number of channels / samples per pixel
-    noData - <BE4::NoData> - contains information for the nodata tiles.
+    noData - <COMMON::NoData> - contains information for the nodata tiles.
     interpolation - string - The interpolation method. values : "lanczos", "nn" (nearest neighbour), "bicubic", "linear"
     photometric - string - image photometric. Values : "gray", "rgb". Mandatory, and must match the number of channels.
     image_width - strict positive integer - image width, in tiles
@@ -97,10 +97,10 @@ use COMMON::CheckUtils;
 use WMTSALAD::DataSource;
 use WMTSALAD::PyrSource;
 use WMTSALAD::WmsSource;
-use BE4::TileMatrixSet;
-use BE4::TileMatrix;
-use BE4::Pixel;
-use BE4::NoData;
+use COMMON::TileMatrixSet;
+use COMMON::TileMatrix;
+use COMMON::Pixel;
+use COMMON::NoData;
 
 use parent qw(Exporter);
 
@@ -276,12 +276,12 @@ sub _loadProperties {
     }
     my %fileContent = $cfg->getConfig();
     my $refFileContent = \%fileContent;
-    my $sampleformat; # Value to pass to BE4::Pixel
+    my $sampleformat; # Value to pass to COMMON::Pixel
 
     return FALSE if(! $self->_checkProperties($cfg));
 
     # Tile Matrix Set    
-    my $TMS = BE4::TileMatrixSet->new(File::Spec->catfile($refFileContent->{pyramid}->{tms_path},$refFileContent->{pyramid}->{tms_name}));
+    my $TMS = COMMON::TileMatrixSet->new(File::Spec->catfile($refFileContent->{pyramid}->{tms_path},$refFileContent->{pyramid}->{tms_name}));
     $self->{tileMatrixSet} = $TMS ;
 
     # Image format
@@ -353,7 +353,7 @@ sub _loadProperties {
     $self->{photometric} = lc ($refFileContent->{pyramid}->{photometric});
 
     # Nodata (default value : white, transparent if alpha channel available), -9999 for float32
-    my $pixel = BE4::Pixel->new({
+    my $pixel = COMMON::Pixel->new({
         photometric => $self->{photometric},
         sampleformat => $sampleformat,
         bitspersample => $refFileContent->{pyramid}->{bitspersample},
@@ -363,7 +363,7 @@ sub _loadProperties {
     if ($cfg->isProperty({section => 'pyramid', property => 'color'})) {
         $noDataValue = $refFileContent->{pyramid}->{color};
     }
-    $self->{noData} = BE4::NoData->new({ pixel => $pixel, value => $noDataValue });
+    $self->{noData} = COMMON::NoData->new({ pixel => $pixel, value => $noDataValue });
     if (! defined $self->{noData}) {
         ERROR("Failed NoData initialization. Check 'color' value.");
         return FALSE;

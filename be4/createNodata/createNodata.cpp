@@ -95,7 +95,7 @@
  */
 void usage() {
 
-    LOGGER_INFO ( "\ncreateNodata version " << BE4_VERSION << "\n\n" <<
+    LOGGER_INFO ( "\ncreateNodata version " << ROK4_VERSION << "\n\n" <<
 
                   "Create an TIFF image, containing one monochrome tile\n\n" <<
 

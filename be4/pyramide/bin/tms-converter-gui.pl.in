@@ -76,8 +76,8 @@ use FindBin qw($Bin);
 use lib "$Bin/../lib/perl5";
 
 # My module
-use BE4::TileMatrixSet ;
-use BE4::Base36 ;
+use COMMON::TileMatrixSet ;
+use COMMON::Base36 ;
 
 ###################################################################################################
 ####################################### Variables globales ########################################
@@ -175,7 +175,7 @@ sub openTmsBrowser {
 
 sub validateGlobals {
 
-    $tmsObject = BE4::TileMatrixSet->new($tmsFileName);
+    $tmsObject = COMMON::TileMatrixSet->new($tmsFileName);
     if (! defined $tmsObject) {
         return "TMS not valid";
     }
@@ -253,7 +253,7 @@ sub coord2image {
 
     $txt .= "Slab's indices : $colMin, $rowMin \n";
 
-    my $image_path = BE4::Base36::indicesToB36Path($colMin, $rowMin, 3);
+    my $image_path = COMMON::Base36::indicesToB36Path($colMin, $rowMin, 3);
 
     $txt .= "Slab's file path : $level/$image_path.tif \n";
 
@@ -349,7 +349,7 @@ sub bbox2images {
     $txt .= "Slabs' file paths : \n";
     for (my $col = $colMin; $col <= $colMax; $col++) {
         for (my $row = $rowMin; $row <= $rowMax; $row++) {
-            my $image_path = BE4::Base36::indicesToB36Path($col, $row, 3);
+            my $image_path = COMMON::Base36::indicesToB36Path($col, $row, 3);
             $txt .= "\t $level/$image_path.tif \n";
         }        
     }
@@ -421,7 +421,7 @@ sub gettile2image {
     $x = int($y / $heightEntry->get());
     $txt .= "Slab's indices : $x, $y \n";
 
-    my $image_path = BE4::Base36::indicesToB36Path($x, $y, 3);
+    my $image_path = COMMON::Base36::indicesToB36Path($x, $y, 3);
 
     $txt .= "Slab's file path : $level/$image_path.tif \n";
 
@@ -478,7 +478,7 @@ sub slab2getmap {
     my $level = shift(@parts);
     my $end = join('/', @parts);
 
-    my ($col, $row) = BE4::Base36::b36PathToIndices($end);
+    my ($col, $row) = COMMON::Base36::b36PathToIndices($end);
 
     if ( ! defined $col || ! defined $row ) {
         $onglet4Text->insert('end', "ERROR: Cannot convert path to slab indices");
@@ -582,7 +582,7 @@ sub addTFW {
         my $level = $path[-4];
         my $end = join('/', @path[-3..-1]);
 
-        my ($col, $row) = BE4::Base36::b36PathToIndices($end);
+        my ($col, $row) = COMMON::Base36::b36PathToIndices($end);
 
         if ( ! defined $col || ! defined $row ) {
             $onglet5Text->insert('end', "\nERROR : cannot convert path to slab indices for file $file");

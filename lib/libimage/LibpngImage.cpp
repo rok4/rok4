@@ -428,36 +428,86 @@ LibpngImage::LibpngImage (
 /* ------------------------------------------------------------------------------------------------ */
 /* ------------------------------------------- LECTURE -------------------------------------------- */
 
-int LibpngImage::getline ( uint8_t* buffer, int line ) {
-    
+template<typename T>
+int LibpngImage::_getline ( T* buffer, int line ) {
+
+    T buffertmp[width * channels];
+
     for (int x = 0;  x < width * channels; x++) {
-        buffer[x] = (uint8_t) data[line][x];
+        buffertmp[x] = data[line][x];
     }
-    return width*channels;
+
+    /******************** SI PIXEL CONVERTER ******************/
+
+    if (converter) {
+        converter->convertLine(buffer, buffertmp);
+    } else {
+        memcpy(buffer, buffertmp, pixelSize * width);
+    }
+    
+    return width * getChannels();
+}
+
+
+int LibpngImage::getline ( uint8_t* buffer, int line ) {
+    if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
+        return _getline ( buffer,line );
+    } else if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) { // uint16
+        /* On ne convertit pas les entiers 16 bits en entier sur 8 bits (aucun intérêt)
+         * On va copier le buffer entier 16 bits sur le buffer entier, de même taille en octet (2 fois plus grand en "nombre de cases")*/
+        uint16_t int16line[width * getChannels()];
+        _getline ( int16line, line );
+        memcpy ( buffer, int16line, width * getPixelSize() );
+        return width * getPixelSize();
+    } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) { // float
+        /* On ne convertit pas les nombres flottants en entier sur 8 bits (aucun intérêt)
+         * On va copier le buffer flottant sur le buffer entier, de même taille en octet (4 fois plus grand en "nombre de cases")*/
+        float floatline[width * getChannels()];
+        _getline ( floatline, line );
+        memcpy ( buffer, floatline, width * getPixelSize() );
+        return width * getPixelSize();
+    }
 }
 
 int LibpngImage::getline ( uint16_t* buffer, int line ) {
-
-    // On doit implémenter le getline 16 bits pour respecter la classe mère Image
-    // L'image lue est sur des entiers 8 bits (forcément pour du PNG)
-    // On convertit les entiers 8 bits en 16 bits
     
-    uint8_t* buffer_t = new uint8_t[width*channels];
-    int retour = getline ( buffer_t,line );
-    convert ( buffer, buffer_t, width*channels );
-    delete [] buffer_t;
-    return retour;
+    if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
+        // On veut la ligne en entier 16 bits mais l'image lue est sur 8 bits : on convertit
+        uint8_t* buffer_t = new uint8_t[width * getChannels()];
+        _getline ( buffer_t,line );
+        convert ( buffer, buffer_t, width * getChannels() );
+        delete [] buffer_t;
+        return width * getChannels();
+    } else if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) { // uint16
+        return _getline ( buffer,line );        
+    } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) { // float
+        /* On ne convertit pas les nombres flottants en entier sur 16 bits (aucun intérêt)
+        * On va copier le buffer flottant sur le buffer entier 16 bits, de même taille en octet (2 fois plus grand en "nombre de cases")*/
+        float floatline[width * channels];
+        _getline ( floatline, line );
+        memcpy ( buffer, floatline, width*pixelSize );
+        return width*pixelSize;
+    }
 }
 
 int LibpngImage::getline ( float* buffer, int line ) {
-    
-    // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers 8bits (forcément pour du PNG)
-    uint8_t* buffer_t = new uint8_t[width*channels];
-    int retour = getline ( buffer_t,line );
-    convert ( buffer,buffer_t,width*channels );
-    delete [] buffer_t;
-    return retour;
-    
+    if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
+        // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers
+        uint8_t* buffer_t = new uint8_t[width * getChannels()];
+        _getline ( buffer_t,line );
+        convert ( buffer, buffer_t, width * getChannels() );
+        delete [] buffer_t;
+        return width * getChannels();
+    } else if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) { // uint16
+        // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers
+        uint16_t* buffer_t = new uint16_t[width * getChannels()];
+        _getline ( buffer_t,line );
+        convert ( buffer, buffer_t, width * getChannels() );
+        delete [] buffer_t;
+        return width * getChannels();   
+    } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) { // float
+        return _getline ( buffer, line );
+    }
 }
 
 

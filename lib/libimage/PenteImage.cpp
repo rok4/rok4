@@ -69,9 +69,9 @@ int PenteImage::getline ( uint8_t* buffer, int line ) {
 }
 
 //definition des variables
-PenteImage::PenteImage (int width, int height, int channels, BoundingBox<double> bbox, Image* image, float resolutionx, float resolutiony, std::string algo) :
+PenteImage::PenteImage (int width, int height, int channels, BoundingBox<double> bbox, Image* image, float resolutionx, float resolutiony, std::string algo, std::string unit) :
     Image ( width, height, channels, bbox ),
-    origImage ( image ), pente ( NULL ), resolutionX (resolutionx), resolutionY (resolutiony),algo (algo)
+    origImage ( image ), pente ( NULL ), resolutionX (resolutionx), resolutionY (resolutiony),algo (algo),unit (unit)
     { }
 
 PenteImage::~PenteImage() {
@@ -149,9 +149,12 @@ void PenteImage::generateLine ( int line, float* line1, float* line2, float* lin
 
         rise = sqrt(pow(dzdx,2.0) + pow(dzdy,2.0));
 
-        slope = atan(rise) * 180 / M_PI;
-
-        if (slope>90){slope = 180-slope;}
+        if (unit == "pourcent") {
+            slope = rise * 100.0;
+        } else {
+            slope = atan(rise) * 180 / M_PI;
+            if (slope>90){slope = 180-slope;}
+        }
 
         * ( currentLine+ ( column++ ) ) = ( int ) ( slope );
         columnOrig++;

@@ -86,6 +86,15 @@ private:
      */
     png_bytep * data;
 
+    /** \~french
+     * \brief Retourne une ligne, flottante ou entière
+     * \param[out] buffer Tableau contenant au moins width*channels valeurs
+     * \param[in] line Indice de la ligne à retourner (0 <= line < height)
+     * \return taille utile du buffer, 0 si erreur
+     */
+    template<typename T>
+    int _getline ( T* buffer, int line );    
+
 protected:
     /** \~french
      * \brief Crée un objet LibpngImage à partir de tous ses éléments constitutifs

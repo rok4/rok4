@@ -91,14 +91,15 @@ private:
     
     /** \~french
      * \brief Calcule la ligne entrelacée
-     * \details Au format BIL, les différents canaux sont regroupés, par ligne. On doit donc convertir pour renvoyer une ligne aux canaux entralés.
+     * \details Au format BIL, les différents canaux sont regroupés, par ligne. On doit donc convertir pour renvoyer une ligne aux canaux entrelacés.
      * 
      * [Schéma](http://help.arcgis.com/fr/arcgisdesktop/10.0/help/index.html#/na/009t00000011000000/)
      * 
      * \param[in] width buffer de sortie, doit être alloué
      * \param[in] line ligne à calculer
      */
-    int _getline ( uint8_t* buffer, int line );
+     template<typename T>
+     int _getline ( T* buffer, int line );
 
 protected:
     /** \~french

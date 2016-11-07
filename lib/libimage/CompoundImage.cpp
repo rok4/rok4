@@ -91,7 +91,7 @@ int CompoundImage::getline ( float* buffer, int line ) {
 
 /** D */
 CompoundImage::CompoundImage ( std::vector< std::vector<Image*> >& images ) :
-    Image ( computeWidth ( images ), computeHeight ( images ), images[0][0]->channels, images[0][0]->getResX(),images[0][0]->getResY(), computeBbox ( images ) ),
+    Image ( computeWidth ( images ), computeHeight ( images ), images[0][0]->getChannels(), images[0][0]->getResX(),images[0][0]->getResY(), computeBbox ( images ) ),
     images ( images ),
     top ( 0 ),
     y ( 0 ) {}

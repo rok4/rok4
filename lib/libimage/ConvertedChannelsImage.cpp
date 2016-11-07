@@ -6,7 +6,7 @@ ConvertedChannelsImage::ConvertedChannelsImage(int channels, Image *sourceImage)
                                                                                        sourceImage->getResX(),
                                                                                        sourceImage->getResY(),
                                                                                        sourceImage->getBbox()),
-    sourceImage (sourceImage), channelsOut (channels), channelsIn (sourceImage->channels), alphaOut (255)
+    sourceImage (sourceImage), channelsOut (channels), channelsIn (sourceImage->getChannels()), alphaOut (255)
 {
 
 }
@@ -17,7 +17,7 @@ ConvertedChannelsImage::ConvertedChannelsImage(int channels, Image *sourceImage,
                                                                                        sourceImage->getResX(),
                                                                                        sourceImage->getResY(),
                                                                                        sourceImage->getBbox()),
-    sourceImage (sourceImage), channelsOut (channels), channelsIn (sourceImage->channels), alphaOut (alpha)
+    sourceImage (sourceImage), channelsOut (channels), channelsIn (sourceImage->getChannels()), alphaOut (alpha)
 {
 
 }

@@ -81,16 +81,16 @@ int DecimatedImage::_getline ( T* buffer, int line ) {
         return width*channels;
     }
     
-    T* buffer_t = new T[sourceImage->getWidth() * sourceImage->channels];
+    T* buffer_t = new T[sourceImage->getWidth() * sourceImage->getChannels()];
     sourceImage->getline ( buffer_t, src_ligne );
     
-    T* pix_src = buffer_t + sourceOffsetX * sourceImage->channels;
+    T* pix_src = buffer_t + sourceOffsetX * sourceImage->getChannels();
     T* pix_dst = buffer + imageOffsetX * channels;
     
     if ( sourceImage->getMask() == NULL ) {
         for (int i = 0; i < numberX; i++) {
             memcpy(pix_dst, pix_src, channels*sizeof ( T ));
-            pix_src += ratioX * sourceImage->channels;
+            pix_src += ratioX * sourceImage->getChannels();
             pix_dst += channels;
         }
     } else {
@@ -103,7 +103,7 @@ int DecimatedImage::_getline ( T* buffer, int line ) {
             if (*pix_src_mask) {
                 memcpy(pix_dst, pix_src, channels*sizeof ( T ));
             }
-            pix_src += ratioX * sourceImage->channels;
+            pix_src += ratioX * sourceImage->getChannels();
             pix_src_mask += ratioX;
             pix_dst += channels;
         }
@@ -245,7 +245,7 @@ DecimatedImage* DecimatedImageFactory::createDecimatedImage ( Image* image, Boun
     int w = ( int ) ( bb.xmax - bb.xmin ) / res_x + 0.5 ;
     int h = ( int ) ( bb.ymax - bb.ymin ) / res_y + 0.5 ;
     
-    DecimatedImage* pDI = new DecimatedImage ( w, h, image->channels, res_x, res_y, bb, image, nodata);
+    DecimatedImage* pDI = new DecimatedImage ( w, h, image->getChannels(), res_x, res_y, bb, image, nodata);
 
     return pDI;
 }

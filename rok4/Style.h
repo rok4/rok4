@@ -323,6 +323,18 @@ public:
     }
 
     /**
+    * \~french
+    * \brief Retourne l'unité de la pente
+    * \return unit de la pente
+    * \~english
+    * \brief Return the slope unit
+    * \return the unit
+    */
+   inline std::string getUnitOfPente() {
+       return pente.getUnit();
+   }
+
+    /**
      * \~french
      * \brief Return vrai si le style est une pente
      * \return bool

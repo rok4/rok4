@@ -60,7 +60,6 @@
 
 template <typename T>
 int ExtendedCompoundImage::_getline ( T* buffer, int line ) {
-    //LOGGER_INFO("ECI line " << line);
     int i;
 
     // Initialisation de tous les pixels de la ligne avec la valeur de nodata
@@ -91,7 +90,7 @@ int ExtendedCompoundImage::_getline ( T* buffer, int line ) {
         // c2 : indice de de la 1ere colonne de l'ExtendedCompoundImage dans l'image courante
         int c2 = c2s[i];
 
-        T* buffer_t = new T[sourceImages[i]->getWidth() *sourceImages[i]->channels];
+        T* buffer_t = new T[sourceImages[i]->getWidth() * sourceImages[i]->getChannels()];
 
         sourceImages[i]->getline ( buffer_t,lineInSource );
 
@@ -309,7 +308,7 @@ ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage
     int h = ( int ) ( ( ymax-ymin ) / ( *images.begin() )->getResY() +0.5 );
     
     ExtendedCompoundImage* pECI = new ExtendedCompoundImage (
-        w, h, images.at ( 0 )->channels, ( *images.begin() )->getResX(), ( *images.begin() )->getResY(), BoundingBox<double> ( xmin,ymin,xmax,ymax ),
+        w, h, images.at ( 0 )->getChannels(), ( *images.begin() )->getResX(), ( *images.begin() )->getResY(), BoundingBox<double> ( xmin,ymin,xmax,ymax ),
         images, nodata, mirrors
     );
     pECI->setCRS ( images.at ( 0 )->getCRS() );

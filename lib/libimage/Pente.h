@@ -69,6 +69,13 @@ private:
     */
     bool isPente;
 
+    /** \~french
+    * \brief unit : unité de la pente
+    ** \~english
+    * \brief unit : slope unit
+    */
+    std::string unit;
+
 public:
 
     /**
@@ -77,7 +84,7 @@ public:
      * \~english
      * \brief Constructor without arguments
      */
-    Pente(): algo ("H"), isPente (false) {
+    Pente(): algo ("H"), isPente (false), unit ("degree") {
 
     }
 
@@ -87,7 +94,7 @@ public:
      * \~english
      * \brief Constructor with arguments
      */
-    Pente(std::string a,bool p = false): algo (a), isPente (p) {
+    Pente(std::string a,bool p = false,std::string u = "degree"): algo (a), isPente (p), unit (u) {
 
     }
 
@@ -139,6 +146,26 @@ public:
      */
     bool getPente(){
         return isPente;
+    }
+
+    /**
+     * \~french
+     * \brief Modifie unit
+     * \~english
+     * \brief Set unit
+     */
+    void setUnit(std::string u){
+        unit = u;
+    }
+
+    /**
+     * \~french
+     * \brief Renvoie unit
+     * \~english
+     * \brief Get unit
+     */
+    std::string getUnit(){
+        return unit;
     }
 
 };
