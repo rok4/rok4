@@ -353,50 +353,59 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
     if ( pElem && !estompage) {
 
         pente.setPente(true);
-        algo = pElem->Attribute("algo");
-
-        if ( algo != "" ) {
+        
+        errorCode = pElem->QueryStringAttribute("algo", &algo);
+        
+        if ( errorCode == TIXML_WRONG_TYPE ) {
+            LOGGER_ERROR ( _ ( "Un attribut algo invalide a ete trouve dans la pente du Style " ) << id <<_ ( " : il est invalide!!" ) );
+            return NULL;
+        } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
+            LOGGER_INFO("Pas d'algo defini, H par defaut");
+            algo = "H";
+        } else {
             if (algo != "H") {
                 LOGGER_ERROR ("Un attribut algo invalide a ete trouve dans la pente du Style " ) << id << ( ", la valeur possible est H");
                 return NULL;
             }
-        } else {
-            LOGGER_INFO("Pas d'algo defini, H par defaut");
-            algo = "H";
-		}
+        }
         pente.setAlgo(algo);
 
-        unit = pElem->Attribute("unit");
-
-        if ( unit != "" ) {
-            if (unit != "degree" && unit != "pourcent") {
+        errorCode = pElem->QueryStringAttribute("unit", &unit);
+        if ( errorCode == TIXML_WRONG_TYPE ) {
+            LOGGER_ERROR ( _ ( "Un attribut unit invalide a ete trouve dans la pente du Style " ) << id <<_ ( " : il est invalide!!" ) );
+            return NULL;
+        } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
+            LOGGER_INFO("Pas d'unit defini, 'degree' par defaut");
+            unit = "degree";
+        } else {
+             if (unit != "degree" && unit != "pourcent") {
                 LOGGER_ERROR ("Un attribut unit invalide a ete trouve dans la pente du Style " ) << id << ( ", la valeur possible est 'degree' or 'pourcent'");
                 return NULL;
             }
-        } else {
-            LOGGER_INFO("Pas d'unit defini, 'degree' par defaut");
-            unit = "degree";
         }
         pente.setUnit(unit);
-	}
+    }
 
-    //recuperation des informations pour le calcul des pentes
+    //recuperation des informations pour le calcul des expostiions des  pentes
     pElem = hRoot.FirstChild ( "exposition" ).Element();
     Aspect aspect;
 
     if ( pElem && !estompage && !pente.getPente()) {
 
         aspect.setAspect(true);
-        algo = pElem->Attribute("algo");
-
-        if ( algo != "" ) {
+        errorCode = pElem->QueryStringAttribute("algo", &algo);
+        
+         if ( errorCode == TIXML_WRONG_TYPE ) {
+            LOGGER_ERROR ( _ ( "Un attribut algo invalide a ete trouve dans l'exposition du Style " ) << id <<_ ( " : il est invalide!!" ) );
+            return NULL;
+        } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
+            LOGGER_INFO("Pas d'algo defini, 'H' par defaut");
+            algo = "H";
+        } else {
             if (algo != "H") {
                 LOGGER_ERROR ("Un attribut algo invalide a ete trouve dans l'exposition du Style " ) << id << ( ", la valeur possible est H");
                 return NULL;
             }
-        } else {
-            LOGGER_INFO("Pas d'algo defini, H par defaut");
-            algo = "H";
         }
         aspect.setAlgo(algo);
 
