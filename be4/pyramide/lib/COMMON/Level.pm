@@ -199,6 +199,9 @@ sub new {
     }
     elsif ( defined $this->{pool_name} ) {
         $this->{type} = "CEPH";
+    } else {
+        ERROR ("Cannot identify the storage type for the COMMON::Level");
+        return undef;
     }
 
     return $this;
@@ -540,6 +543,41 @@ sub getSlabPath {
             return undef;
         }
 
+    }
+
+}
+
+=begin nd
+Function: getFromSlabPath
+
+Extarct column and row from a slab path
+
+Parameter (list):
+    path - string - Path to decode, to obtain column and row
+
+Returns:
+    Integers' list, (col, row)
+=cut
+sub getFromSlabPath {
+    my $this = shift;
+    my $path = shift;
+
+    if ($this->{type} eq "FILE") {
+        # 1 on ne garde que la partie finale propre à l'indexation de la dalle
+        my @parts = split("/", $path);
+
+        my @finalParts;
+        for (my $i = -1 - $this->{dir_depth}; $i < 0; $i++) {
+            push(@finalParts, $parts[$i]);
+        }
+        # 2 on enlève l'extension
+        $path = join("/", @finalParts);
+        $path =~ s/(\.tif|\.tiff|\.TIF|\.TIFF)//;
+        return COMMON::Base36::b36PathToIndices($path);
+
+    } else {
+        my @parts = split("_", $path);
+        return ($parts[-2], $parts[-1]);
     }
 
 }

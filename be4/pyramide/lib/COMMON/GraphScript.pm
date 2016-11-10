@@ -361,15 +361,9 @@ sub prepare {
     }
     elsif ($pyramid->getStorageType() eq "CEPH") {
         $code .= sprintf ("PYR_POOL=\"%s\"\n", $pyramid->getDataPool() );
-        $code .= sprintf ("export ROK4_CEPH_CLUSTERNAME=\"%s\"\n", $pyramid->getClusterName() );
-        $code .= sprintf ("export ROK4_CEPH_USERNAME=\"%s\"\n", $pyramid->getUserName() );
-        $code .= sprintf ("export ROK4_CEPH_CONFFILE=\"%s\"\n", $pyramid->getConfFile() );
     }
     elsif ($pyramid->getStorageType() eq "S3") {
         $code .= sprintf ("PYR_BUCKET=\"%s\"\n", $pyramid->getDataBucket() );
-        $code .= sprintf ("export ROK4_S3_URL=\"%s\"\n", $pyramid->getApiUrl() );
-        $code .= sprintf ("export ROK4_S3_KEY=\"%s\"\n", $pyramid->getKey() );
-        $code .= sprintf ("export ROK4_S3_SECRETKEY=\"%s\"\n", $pyramid->getSecretKey() );
     }
     else {
         ERROR("Storage type of new pyramid is not handled");

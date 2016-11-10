@@ -98,8 +98,8 @@ use AutoLoader qw(AUTOLOAD);
 our @ISA = qw(Exporter);
 
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
-our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
-our @EXPORT      = qw();
+our @EXPORT_OK = ( @{$EXPORT_TAGS{'all'}} );
+our @EXPORT = qw();
 
 ################################################################################
 # Constantes
@@ -109,9 +109,7 @@ use constant FALSE => 0;
 ################################################################################
 
 BEGIN {}
-
 INIT {}
-
 END {}
 
 ####################################################################################################
@@ -133,6 +131,7 @@ sub new {
     my $class = shift;
     my $type = shift;
     my $params = shift;
+    my $ancestor = shift;
 
     $class = ref($class) || $class;
 
@@ -155,21 +154,16 @@ sub new {
         nodata => undef,
         levels => {},
 
+        storage_type => undef,
         # Pyramide FICHIER
         data_path => undef,
         dir_depth => undef,
 
         # Pyramide S3
         data_bucket => undef,
-        s3_api_url => undef,
-        s3_key => undef,
-        s3_secret_key => undef,
 
         # Pyramide CEPH
         data_pool => undef,
-        cluster_name => undef,
-        user_name => undef,
-        conf_file => undef,
         tiles_storage => FALSE
     };
 
@@ -182,11 +176,12 @@ sub new {
             return FALSE;
         }
 
-        # Cette pyramide est donc en lecture
+        # Cette pyramide est donc en lecture, on ne tient pas compte d'un éventuel ancêtre
         $this->{type} = "READ";
+        $ancestor = undef;
 
         $this->{name} = File::Basename::basename($params);
-        $this->{name} =~ s/\.(pyr|PYR)$//;
+        $this->{name} =~ s/\.pyr$//i;
         $this->{desc_path} = File::Basename::dirname($params);
 
         # On remplit params avec les paramètres issus du parsage du XML
@@ -220,6 +215,7 @@ sub new {
         if (exists $params->{data_path} && defined $params->{pyr_data_path}) {
 
             #### CAS D'UNE PYRAMIDE FICHIER
+            $this->{storage_type} = "FILE";
             $this->{data_path} = $params->{pyr_data_path};
 
             # dir_depth
@@ -233,50 +229,16 @@ sub new {
         elsif (exists $params->{pyr_data_bucket_name} && defined $params->{pyr_data_bucket_name}) {
 
             #### CAS D'UNE PYRAMIDE S3
+            $this->{storage_type} = "S3";
             $this->{data_bucket} = $params->{pyr_data_bucket_name};
-
-            if (! exists $params->{pyr_data_api_url} || ! defined $params->{pyr_data_api_url}) {
-                ERROR ("The parameter 'pyr_data_api_url' is required!");
-                return undef;
-            }
-            $this->{s3_api_url} = $params->{pyr_data_api_url};
-            
-            if (! exists $params->{pyr_data_key} || ! defined $params->{pyr_data_key}) {
-                ERROR ("The parameter 'pyr_data_key' is required!");
-                return undef;
-            }
-            $this->{s3_key} = $params->{pyr_data_key};
-            
-            if (! exists $params->{pyr_data_secret_key} || ! defined $params->{pyr_data_secret_key}) {
-                ERROR ("The parameter 'pyr_data_secret_key' is required!");
-                return undef;
-            }
-            $this->{s3_secret_key} = $params->{pyr_data_secret_key};
 
         }
 
         elsif (exists $params->{pyr_data_pool_name} && defined $params->{pyr_data_pool_name}) {
 
             #### CAS D'UNE PYRAMIDE CEPH
+            $this->{storage_type} = "CEPH";
             $this->{data_pool} = $params->{pyr_data_pool_name};
-
-            if (! exists $params->{pyr_data_cluster_name} || ! defined $params->{pyr_data_cluster_name}) {
-                ERROR ("The parameter 'pyr_data_cluster_name' is required!");
-                return undef;
-            }
-            $this->{cluster_name} = $params->{pyr_data_cluster_name};
-            
-            if (! exists $params->{pyr_data_user_name} || ! defined $params->{pyr_data_user_name}) {
-                ERROR ("The parameter 'pyr_data_user_name' is required!");
-                return undef;
-            }
-            $this->{user_name} = $params->{pyr_data_user_name};
-            
-            if (! exists $params->{pyr_data_conf_file} || ! defined $params->{pyr_data_conf_file}) {
-                ERROR ("The parameter 'pyr_data_conf_file' is required!");
-                return undef;
-            }
-            $this->{conf_file} = $params->{pyr_data_conf_file};
 
             if (exists $params->{tiles_storage} && defined $params->{tiles_storage} && uc($params->{tiles_storage}) eq "TRUE") {
                 $this->{tiles_storage} = $params->{tiles_storage};
@@ -291,7 +253,7 @@ sub new {
 
     }
 
-    if ( ! $this->_load($params) ) {return undef;}
+    if ( ! $this->_load($params,$ancestor) ) {return undef;}
 
     return $this;
 }
@@ -302,67 +264,77 @@ Function: _load
 sub _load {
     my $this   = shift;
     my $params = shift;
+    my $ancestor = shift;
 
     if (! defined $params ) {
         ERROR ("Parameters argument required (null) !");
         return FALSE;
     }
 
-    # TMS
+    if (defined $ancestor) {
+        INFO("We have an ancestor, all parameters are picked from this pyramid");
+        # les valeurs sont récupérées de l'ancêtre pour s'assurer la cohérence
+        $this->{tms} = $ancestor->getTileMatrixSet()->getName();
+        $this->{image_width} = $ancestor->getTilesPerWidth();
+        $this->{image_height} = $ancestor->getTilesPerHeight();
+        $this->{pyrImgSpec} = $ancestor->getImageSpec();
+        $this->{nodata} = $ancestor->getNodata();
+    } else {
+        # TMS
+        if (! exists $params->{tms_name} || ! defined $params->{tms_name}) {
+            ERROR ("The parameter 'tms_name' is required!");
+            return FALSE;
+        }
+        # On chargera l'objet TMS plus tard on ne mémorise pour le moment que son nom.
+        $this->{tms} = $params->{tms_name};
+        $this->{tms} =~ s/\.TMS$//i;
+        
+        # image_width
+        if (! exists $params->{image_width} || ! defined $params->{image_width}) {
+            ERROR ("The parameter 'image_width' is required!");
+            return FALSE;
+        }
+        $this->{image_width} = $params->{image_width};
 
-    if (! exists $params->{tms_name} || ! defined $params->{tms_name}) {
-        ERROR ("The parameter 'tms_name' is required!");
-        return FALSE;
-    }
-    # On chargera l'objet TMS plus tard on ne mémorise pour le moment que son nom.
-    $this->{tms} = $params->{tms_name};
-    $this->{tms} =~ s/\.TMS$//i;
-    
-    # image_width
-    if (! exists $params->{image_width} || ! defined $params->{image_width}) {
-        ERROR ("The parameter 'image_width' is required!");
-        return FALSE;
-    }
-    $this->{image_width} = $params->{image_width};
+        # image_height
+        if (! exists $params->{image_height} || ! defined $params->{image_height}) {
+            ERROR ("The parameter 'image_height' is required!");
+            return FALSE;
+        }
+        $this->{image_height} = $params->{image_height};
 
-    # image_height
-    if (! exists $params->{image_height} || ! defined $params->{image_height}) {
-        ERROR ("The parameter 'image_height' is required!");
-        return FALSE;
+        # PyrImageSpec
+        my $pyrImgSpec = COMMON::PyrImageSpec->new($params);
+
+        if (! defined $pyrImgSpec) {
+            ERROR ("Can not load specification of pyramid's images !");
+            return FALSE;
+        }
+
+        $this->{pyrImgSpec} = $pyrImgSpec;
+
+        # NoData
+        if (! exists $params->{color} || ! defined $params->{color}) {
+            ERROR ("The parameter 'color' is required!");
+            return FALSE;
+        }
+        ##### create NoData !
+        my $objNodata = COMMON::NoData->new({
+            pixel   => $this->{pyrImgSpec}->getPixel(),
+            value   => $params->{color},
+        });
+
+        if (! defined $objNodata) {
+            ERROR ("Can not load NoData !");
+            return FALSE;
+        }
+        $this->{nodata} = $objNodata;
     }
-    $this->{image_height} = $params->{image_height};
 
     # We want masks in the final pyramid ?
     if ( exists $params->{export_masks} && defined $params->{export_masks} && uc($params->{export_masks}) eq "TRUE" ) {
         $this->{own_masks} = TRUE;
     }
-
-    # PyrImageSpec
-    my $pyrImgSpec = COMMON::PyrImageSpec->new($params);
-
-    if (! defined $pyrImgSpec) {
-        ERROR ("Can not load specification of pyramid's images !");
-        return FALSE;
-    }
-
-    $this->{pyrImgSpec} = $pyrImgSpec;
-
-    # NoData
-    if (! exists $params->{color} || ! defined $params->{color}) {
-        ERROR ("The parameter 'color' is required!");
-        return FALSE;
-    }
-    ##### create NoData !
-    my $objNodata = COMMON::NoData->new({
-        pixel   => $this->{pyrImgSpec}->getPixel(),
-        value   => $params->{color},
-    });
-
-    if (! defined $objNodata) {
-        ERROR ("Can not load NoData !");
-        return FALSE;
-    }
-    $this->{nodata} = $objNodata;
 
     return TRUE;
 }
@@ -453,6 +425,7 @@ sub _readDescriptor {
     my @levels = $root->getElementsByTagName('level');
 
     my $oneLevelId;
+    my $storageType = undef;
     foreach my $v (@levels) {
 
         my $tagtm = $v->findvalue('tileMatrix');
@@ -462,6 +435,13 @@ sub _readDescriptor {
             ERROR(sprintf "Can not load the pyramid level : '%s'", $tagtm);
             return FALSE;
         }
+
+        # On vérifie que tous les niveaux ont le même type de stockage
+        if(defined $storageType && $objLevel->getStorageType() ne $storageType) {
+            ERROR(sprintf "All level have to own the same storage type (%s -> %s != %s)", $tagtm, $objLevel->getStorageType(), $storageType);
+            return FALSE;
+        }
+        $storageType = $objLevel->getStorageType();
 
         $this->{levels}->{$tagtm} = $objLevel;
 
@@ -477,6 +457,7 @@ sub _readDescriptor {
         if ($this->{levels}->{$oneLevelId}->ownMasks()) {
             $params->{export_masks} = "TRUE";
         }
+        $this->{storage_type} = $storageType;
     } else {
         # On a aucun niveau dans la pyramide à charger, il va donc nous manquer des informations : on sort en erreur
         ERROR("No level in the pyramid's descriptor $pyrDescFile");
@@ -516,6 +497,7 @@ sub bindTileMatrixSet {
 sub addLevel {
     my $this = shift;
     my $level = shift;
+    my $ancestor = shift;
 
     if ($this->{type} eq "READ") {
         ERROR("Cannot add level to 'read' pyramid");
@@ -571,6 +553,15 @@ sub addLevel {
 
         if ($this->{own_masks}) {
             $levelParams->{hasMask} = TRUE;
+        }
+    }
+
+    # Niveau ancêtre, potentiellement non défini, pour en reprendre les limites
+    if (defined $ancestor) {
+        my $ancestorLevel = $ancestor->getLevel($ID);
+        if (defined $ancestorLevel) {
+            my ($rowMin,$rowMax,$colMin,$colMax) = $ancestorLevel->getLimits();
+            $levelParams->{limits} = [$rowMin,$rowMax,$colMin,$colMax];
         }
     }
 
@@ -647,6 +638,399 @@ sub checkCompatibility {
     }
 
     return 2;
+}
+
+####################################################################################################
+#                                      Group: Write  functions                                     #
+####################################################################################################
+
+sub writeDescriptor {
+    my $this = shift;
+
+    if ($this->{type} eq "READ") {
+        ERROR("Cannot write descriptor of 'read' pyramid");
+        return FALSE;        
+    }
+
+    my $descPath = File::Spec->catdir($this->{desc_path}, $this->{name}.".pyr");
+
+    if (-f $descPath) {
+        ERROR("New pyramid descriptor ('$descPath') exist, can not overwrite it !");
+        return FALSE;
+    }
+
+    if (! open FILE, ">", $descPath ){
+        ERROR(sprintf "Cannot open the pyramid descriptor %s to write",$descPath);
+        return FALSE;
+    }
+
+    my $string = "<?xml version='1.0' encoding='UTF-8'?>\n";
+    $string .= "<Pyramid>\n";
+    $string .= sprintf "    <tileMatrixSet>%s</tileMatrixSet>\n", $this->{tms}->getName();
+    $string .= sprintf "    <format>%s</format>\n", $this->{pyrImgSpec}->getFormatCode();
+    $string .= sprintf "    <channels>%s</channels>\n", $this->{pyrImgSpec}->getPixel()->getSamplesPerPixel();
+    $string .= sprintf "    <nodataValue>%s</nodataValue>\n", $this->{nodata}->getValue();
+    $string .= sprintf "    <interpolation>%s</interpolation>\n", $this->{pyrImgSpec}->getInterpolation();
+    $string .= sprintf "    <photometric>%s</photometric>\n", $this->{pyrImgSpec}->getPixel()->getPhotometric();
+
+
+    my @orderedLevels = sort {$a->getOrder <=> $b->getOrder} ( values %{$this->{levels}});
+
+    for (my $i = scalar @orderedLevels - 1; $i >= 0; $i--) {
+        # we write levels in pyramid's descriptor from the top to the bottom
+        $string .= $orderedLevels[$i]->exportToXML();
+    }
+
+    $string .= "</Pyramid>";
+
+    print FILE $string;
+
+    close(FILE);
+
+    return TRUE
+}
+
+sub writeList {
+    my $this = shift;
+    my $forest = shift;
+    my $ancestor = shift;
+    my $updateMode = shift;
+
+    if ($this->{type} eq "READ") {
+        ERROR("Cannot write list of 'read' pyramid");
+        return FALSE;        
+    }
+
+    if (! defined $forest || ref ($forest) ne "COMMON::Forest" ) {
+        ERROR(sprintf "We need a COMMON::Forest to write pyramid list ! ");
+        return FALSE;
+    }
+
+    if (defined $ancestor && ref ($ancestor) ne "COMMON::Pyramid" ) {
+        ERROR(sprintf "Ancestor, if provided, have to be a COMMON::Pyramid ! ");
+        return FALSE;
+    }
+
+    my $newListPath = $this->getListFile();
+
+    if (-f $newListPath ) {
+        ERROR(sprintf "New pyramid list ('%s') exist, can not overwrite it ! ", $newListPath);
+        return FALSE;
+    }
+
+    my $dir = File::Basename::dirname($newListPath);
+    if (! -d $dir) {
+        eval { mkpath([$dir]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the pyramid list directory '%s' : %s !", $dir , $@);
+            return FALSE;
+        }
+    }
+    
+    my $NEWLIST;
+
+    if (! open $NEWLIST, ">", $newListPath) {
+        ERROR(sprintf "Cannot open new pyramid list file (write) : %s",$newListPath);
+        return FALSE;
+    }
+    
+    if (! defined $ancestor) {
+        # Pas d'ancêtre, on doit juste écrire l'en tête : le dossier propre à cette pyramide ou le nom du conteneur objet
+        
+        if (defined $this->{data_path}) {
+            printf $NEWLIST "0=%s\n", $this->getDataDir();
+        }
+        elsif (defined $this->{data_pool}) {
+            printf $NEWLIST "0=%s\n", $this->{data_pool};
+        }
+        elsif (defined $this->{data_bucket}) {
+            printf $NEWLIST "0=%s\n", $this->{data_bucket};
+        }
+
+        printf $NEWLIST "#\n";
+        close $NEWLIST;
+
+        return TRUE
+    }
+
+    # On a un ancêtre, il va falloir en référencer toutes les dalles
+    # On va vérifier la compatibilité du stockage de l'ancêtre avec celui de la nouvelle pyramide et le mode de mise à jour
+
+    if (! defined $updateMode || $updateMode eq "") {
+        ERROR("Update mode have to be provided with an ancestor");
+        return FALSE;
+    }
+
+    my $newStorageType = $this->getStorageType();
+
+    # Le hash est de la forme : ancestor storage => new storage => update mode possible = 1
+    my $allowedUpdateModes = {
+        "FILE" => {
+            "FILE" => {
+                "slink" => 1,
+                "hlink" => 1,
+                "copy" => 1,
+                "inject" => 1
+            }
+        },
+        "CEPH" => {
+            "CEPH" => {
+            }
+        },
+        "S3" => {
+            "S3" => {
+            }
+        },
+    };
+
+    my $ancestorStorageType = $ancestor->getStorageType();
+
+    if (! exists $allowedUpdateModes->{$ancestorStorageType}->{$newStorageType}->{updateMode})
+        ERROR("Update mode '$updateMode' is not allowed for storages $ancestorStorageType -> $newStorageType");
+        return FALSE;
+    }
+
+    # On va lire la liste de l'ancêtre
+    my $ancestorListPath = $ancestor->getListFile();
+    my $OLDLIST;
+    
+    if (! open $OLDLIST, "<", $ancestorListPath) {
+        ERROR("Cannot open old pyramid list file (read) : $ancestorListPath");
+        return FALSE;
+    }
+    
+    my %newCacheRoots;
+    my %newCacheRootsUse;
+    while( my $line = <$OLDLIST> ) {
+        chomp $line;
+        if ($line eq "#") {
+            # separator between caches' roots and images
+            last;
+        }
+        
+        $line =~ s/\s+//g; # we remove all spaces
+        my @Root = split(/=/,$line,-1);
+        
+        if (scalar @Root != 2) {
+            ERROR(sprintf "Wrong formatted pyramid list (root definition) : %s",$line);
+            return FALSE;
+        }
+        
+        # ID 0 is kept for the new pyramid root, all ID are incremented
+        $newCacheRoots{$Root[0]+1} = $Root[1];
+        $newCacheRootsUse{$Root[0]+1} = 0;
+    }
+    
+    while( my $line = <$OLDLIST> ) {
+        chomp $line;
+        
+        # Une ligne du fichier c'est
+        # Cas fichier : 0/IMAGE/15/AB/CD/EF.tif
+        # Cas objet : 0/PYRAMID_IMG_15_15656_5423
+        my @parts = split("/", $line);
+        # La première partie est donc toujours l'index de la racine, qui est soit un dossier soit un conteneur d'objet
+        my $rootIndex = shift(@parts);
+
+        my $dataType = undef;
+        my $level = undef;
+        # Selon le type de stockage, on identifie le type de donnée, image ou masque
+        if ($this->{storage_type} eq "FILE") {
+            # Dans le cas d'un stockage fichier, le premier élément du chemin est maintenant le type de donnée
+            $dataType = shift(@parts);
+            # et le suivant est le niveau
+            $level = shift(@parts);
+        }
+        else {
+            # Dans le cas d'un stockage objet, on a un nom d'objet de la forme BLA_BLA_DATATYPE_LEVEL_COL_ROW
+            # DATATYPE vaut MSK ou IMG
+            my @p = split("_", join("", @parts));
+            $level = $p[-3];
+            $dataType = $p[-4];
+        }
+
+        if (! $self->ownMasks() && ($dataType = "MSK" || $dataType = "MASK")) {
+            # On ne veut pas des masques dans la pyramide finale, donc on ne lie pas ceux de l'ancienne pyramide
+            next;
+        }
+
+        if (! exists $this->{levels}->{$level}) {
+            # La dalle appartient à un niveau qui n'est pas voulu dans la nouvelle pyramide
+            next;
+        }
+        
+        my ($x,$y) = $this->{levels}->{$level}->getFromSlabPath($line);
+        
+        if (! $forest->containsNode($level,$x,$y)) {
+            # This image is not in the forest, it won't be modified by this generation.
+            # We add it now to the list (real file path)
+            my $newTileFileName = File::Spec->catdir(@directories);
+            if ($self->getUpdateMode() eq 'hlink' || $self->getUpdateMode() eq 'copy' || $self->getUpdateMode() eq 'inject') {
+                $newTileFileName =~ s/^[0-9]+\//0\//;
+            }
+            printf $NEWLISTTMP "%s\n", $newTileFileName;
+            # Root is used : we incremente its counter
+            $newCacheRootsUse{$directories[0]}++;
+        }
+        
+        if ($self->getUpdateMode() ne 'inject') {
+            # In injection case, we don't create a new pyramid version : no link, no copy, nothing to do
+        
+            # We replace root ID with the root path, to obtain a real path.
+            if (! exists $newCacheRoots{$directories[0]}) {
+                ERROR(sprintf "Old pyramid list uses an undefined root ID : %s",$directories[0]);
+                return FALSE;
+            }
+            $directories[0] = $newCacheRoots{$directories[0]};
+            $oldtile = File::Spec->catdir(@directories);
+            
+            # We remove the root to replace it by the new pyramid root
+            shift @directories;
+            my $newtile = File::Spec->catdir($newcachepyramid,@directories);
+
+            #create folders
+            my $dir = dirname($newtile);
+            
+            if (! -d $dir) {
+                eval { mkpath([$dir]); };
+                if ($@) {
+                    ERROR(sprintf "Can not create the pyramid directory '%s' : %s !",$dir, $@);
+                    return FALSE;
+                }
+            }
+
+            if (! -f $oldtile || -l $oldtile) {
+                ERROR(sprintf "File path in the pyramid list does not exist or is a link : %s",$oldtile);
+                return FALSE;
+            }
+            
+            my $reloldtile = File::Spec->abs2rel($oldtile, $dir);
+
+            if ($self->getUpdateMode() eq 'slink') {
+                DEBUG(sprintf "Creating symbolic link from %s to %s", $oldtile, $newtile);
+                my $result = eval { symlink ($reloldtile, $newtile); };
+                if (! $result) {
+                    ERROR (sprintf "The tile '%s' can not be soft linked to '%s' (%s)",$reloldtile,$newtile,$!);
+                    return FALSE;
+                }
+            } elsif ($self->getUpdateMode() eq 'hlink') {
+                DEBUG(sprintf "Creating hard link from %s to %s", $oldtile, $newtile);
+                my $result = eval { link ($oldtile, $newtile); };
+                if (! $result) {
+                    ERROR (sprintf "The tile '%s' can not be hard linked to '%s' (%s)",$oldtile,$newtile,$!);
+                    return FALSE;
+                }
+            } elsif ($self->getUpdateMode() eq 'copy') {
+                DEBUG(sprintf "Copying tile from %s to %s", $newtile, $oldtile);
+                my $result = eval { copy($oldtile, $newtile); };
+                if (! $result) {
+                    ERROR (sprintf "The tile '%s' can not be copied to '%s' (%s)",$oldtile,$newtile,$!);
+                    return FALSE;
+                }
+            } else {
+                ERROR (sprintf "Unknown update mode : '%s'",$self->getUpdateMode());
+                return FALSE;
+            }
+        }
+        
+    }
+    
+    close $OLDLIST;
+
+
+
+
+
+
+
+
+    my $newcachepyramid = $self->getNewDataDir;
+    
+    my $newcachelisttmp = File::Spec->catfile($path_temp,$self->getNewName(),$self->getNewName()."_tmp.list");;
+    
+    my $newcachelist = $self->getNewListFile;
+    if (-f $newcachelist && ($self->isNewPyramid() || $self->getUpdateMode() ne "inject")) {
+        ERROR(sprintf "New pyramid list ('%s') exist, can not overwrite it ! ", $newcachelist);
+        return FALSE;
+    }
+    
+    my $dir = dirname($newcachelist);
+    if (! -d $dir) {
+        DEBUG (sprintf "Create the pyramid list directory '%s' !", $dir);
+        eval { mkpath([$dir]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the pyramid list directory '%s' : %s !", $dir , $@);
+            return FALSE;
+        }
+    }
+    
+    my $dirtmp = dirname($newcachelisttmp);
+    if (! -d $dir) {
+        DEBUG (sprintf "Create the temporary pyramid list directory '%s' !", $dirtmp);
+        eval { mkpath([$dirtmp]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the temporary pyramid list directory '%s' : %s !", $dirtmp , $@);
+            return FALSE;
+        }
+    }
+    
+    my $NEWLISTTMP;
+
+    if (! open $NEWLISTTMP, ">", $newcachelisttmp) {
+        ERROR(sprintf "Cannot open temporary new pyramid list file : %s",$newcachelisttmp);
+        return FALSE;
+    }
+    
+    printf $NEWLISTTMP "#\n";
+    
+    # Hash to bind ID and root directory
+    my %newCacheRoots;
+    
+    # Hash to count root's uses (to remove useless roots)
+    my %newCacheRootsUse;
+    
+    # search and create link for only new pyramid tile
+    if (! $self->isNewPyramid) {
+        
+
+    }
+    
+    close $NEWLISTTMP;
+    
+    # Now, we can write binding between ID and root, testing counter.
+    # We write at the top of the list file, caches' roots, using Tie library
+    my @NEWLISTTMP;
+    if (! tie @NEWLISTTMP, 'Tie::File', $newcachelisttmp) {
+        ERROR(sprintf "Cannot write the header of temporary new pyramid list file : %s",$newcachelisttmp);
+        return FALSE;
+    }
+    
+    if (! $self->isNewPyramid && $self->getUpdateMode() eq 'slink') {
+        while( my ($rootID,$root) = each(%newCacheRoots) ) {
+            if ($newCacheRootsUse{$rootID} > 0) {
+                # Used roots are written in the header
+                
+                INFO (sprintf "%s is used %d times", $root, $newCacheRootsUse{$rootID});
+                
+                unshift @NEWLISTTMP,(sprintf "%s=%s",$rootID,$root);
+            } else {
+                INFO (sprintf "The old pyramid '%s' is no longer used.", $root)
+            }
+        }
+    }
+    
+    # Root of the new pyramid (first position)
+    unshift @NEWLISTTMP,"0=$newcachepyramid\n";
+    
+    untie @NEWLISTTMP;
+    
+    # On copie notre descripteur de pyramide temporaire au bon endroit
+    my $return = `mv $newcachelisttmp $newcachelist`;
+    if ($? != 0) {
+        ERROR("Cannot move $newcachelisttmp -> $newcachelist : $!");
+        return FALSE;
+    }    
+
+    return FALSE;
 }
 
 ####################################################################################################
@@ -809,21 +1193,7 @@ sub getLevel {
 # Function: getStorageType
 sub getStorageType {
     my $this = shift;
-
-    if ($this->{type} eq "READ") {
-        # Potentiellement, les niveaux n'ont pas tous le même type de stockage, on ne répond pas
-        return undef;
-    }
-
-    if (defined $this->{data_path}) {
-        return "FILE";
-    }
-    elsif (defined $this->{data_pool}) {
-        return "CEPH";
-    }
-    elsif (defined $this->{data_bucket}) {
-        return "S3";
-    }
+    return $this->{storage_type};
 }
 
 ### FILE
@@ -846,24 +1216,6 @@ sub getDirDepth {
 sub getDataBucket {
     my $this = shift;    
     return $this->{data_bucket};
-}
-
-# Function: getApiUrl
-sub getApiUrl {
-    my $this = shift;    
-    return $this->{s3_api_url};
-}
-
-# Function: getKey
-sub getKey {
-    my $this = shift;    
-    return $this->{s3_key};
-}
-
-# Function: getSecretKey
-sub getSecretKey {
-    my $this = shift;    
-    return $this->{s3_secret_key};
 }
 
 ### CEPH
@@ -891,123 +1243,6 @@ sub getConfFile {
     my $this = shift;    
     return $this->{conf_file};
 }
-
-####################################################################################################
-#                                      Group: Write  functions                                     #
-####################################################################################################
-
-sub writeDescriptor {
-    my $this = shift;
-
-    if ($this->{type} eq "READ") {
-        ERROR("Cannot write descriptor of 'read' pyramid");
-        return FALSE;        
-    }
-
-    my $descPath = File::Spec->catdir($this->{desc_path}, $this->{name}.".pyr");
-
-    if (-f $descPath) {
-        ERROR("New pyramid descriptor ('$descPath') exist, can not overwrite it !");
-        return FALSE;
-    }
-
-    if (! open FILE, ">", $descPath ){
-        ERROR(sprintf "Cannot open the pyramid descriptor %s to write",$descPath);
-        return FALSE;
-    }
-
-    my $string = "<?xml version='1.0' encoding='UTF-8'?>\n";
-    $string .= "<Pyramid>\n";
-    $string .= sprintf "    <tileMatrixSet>%s</tileMatrixSet>\n", $this->{tms}->getName();
-    $string .= sprintf "    <format>%s</format>\n", $this->{pyrImgSpec}->getFormatCode();
-    $string .= sprintf "    <channels>%s</channels>\n", $this->{pyrImgSpec}->getPixel()->getSamplesPerPixel();
-    $string .= sprintf "    <nodataValue>%s</nodataValue>\n", $this->{nodata}->getValue();
-    $string .= sprintf "    <interpolation>%s</interpolation>\n", $this->{pyrImgSpec}->getInterpolation();
-    $string .= sprintf "    <photometric>%s</photometric>\n", $this->{pyrImgSpec}->getPixel()->getPhotometric();
-
-
-    my @orderedLevels = sort {$a->getOrder <=> $b->getOrder} ( values %{$this->{levels}});
-
-    for (my $i = scalar @orderedLevels - 1; $i >= 0; $i--) {
-        # we write levels in pyramid's descriptor from the top to the bottom
-        $string .= $orderedLevels[$i]->exportToXML();
-    }
-
-    $string .= "</Pyramid>";
-
-    print FILE $string;
-
-    close(FILE);
-
-    return TRUE
-}
-
-sub writeList {
-    my $this = shift;
-    my $forest = shift;
-    my $ancestor = shift;
-
-    if ($this->{type} eq "READ") {
-        ERROR("Cannot write list of 'read' pyramid");
-        return FALSE;        
-    }
-
-    if (! defined $forest || ref ($forest) ne "COMMON::Forest" ) {
-        ERROR(sprintf "We need a COMMON::Forest to write pyramid list ! ");
-        return FALSE;
-    }
-
-    if (defined $ancestor && ref ($ancestor) ne "COMMON::Pyramid" ) {
-        ERROR(sprintf "Ancestor, if provided, have to be a COMMON::Pyramid ! ");
-        return FALSE;
-    }
-
-    my $filePath = $this->getListFile();
-
-    if (-f $filePath ) {
-        ERROR(sprintf "New pyramid list ('%s') exist, can not overwrite it ! ", $filePath);
-        return FALSE;
-    }
-    
-    if (! defined $ancestor) {
-        # Pas d'ancêtre, on doit juste écrire l'en tête : le dossier propre à cette pyramide ou le nom du conteneur objet
-        my $dir = File::Basename::dirname($filePath);
-        if (! -d $dir) {
-            eval { mkpath([$dir]); };
-            if ($@) {
-                ERROR(sprintf "Can not create the pyramid list directory '%s' : %s !", $dir , $@);
-                return FALSE;
-            }
-        }
-        
-        my $LIST;
-
-        if (! open $LIST, ">", $filePath) {
-            ERROR(sprintf "Cannot open new pyramid list file : %s",$filePath);
-            return FALSE;
-        }
-        
-        if (defined $this->{data_path}) {
-            printf $LIST "0=%s\n", $this->getDataDir();
-        }
-        elsif (defined $this->{data_pool}) {
-            printf $LIST "%s\n", $this->{data_pool};
-        }
-        elsif (defined $this->{data_bucket}) {
-            printf $LIST "%s\n", $this->{data_bucket};
-        }
-
-        printf $LIST "#\n";
-        close $LIST;
-
-        return TRUE
-    }
-
-    ERROR("Pour l'instant on ne gère pas les mises à jour avec cette classe");
-
-    return FALSE;
-}
-
 
 1;
 __END__

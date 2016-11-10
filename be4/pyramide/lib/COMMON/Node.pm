@@ -179,7 +179,7 @@ sub new {
         workExtension => "tif", # for images, masks are always tif
         
         # Stockage final de la dalle dans la pyramide pour ce noeud
-        type => undef,
+        storageType => undef,
         pyramidName => undef
     };
     
@@ -203,9 +203,9 @@ sub new {
         return undef;
     }
 
-    $this->{type} = $params->{type};
-    if (! defined $this->{type} || ! COMMON::Array::isInArray($this->{type}, @STORAGETYPES) ) {
-        ERROR("Node's storage type is undef or not valid: ".$this->{type});
+    $this->{storageType} = $params->{type};
+    if (! defined $this->{storageType} || ! defined COMMON::Array::isInArray($this->{storageType}, @STORAGETYPES) ) {
+        ERROR("Node's storage type is undef or not valid: ".$this->{storageType});
         return undef;
     }
     

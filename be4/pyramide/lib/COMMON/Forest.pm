@@ -179,7 +179,7 @@ sub new {
         return undef;
     }
 
-    if (! COMMON::Array::isInArray($storageType, @STORAGETYPES) ) {
+    if (! defined COMMON::Array::isInArray($storageType, @STORAGETYPES) ) {
         ERROR("Forest's storage type is undefined or not valid !");
         return undef;
     }

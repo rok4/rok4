@@ -287,7 +287,7 @@ sub _load {
         $params->{compression} = $DEFAULT{compression};
         DEBUG(sprintf "Default value for 'compression' : %s", $params->{compression});
     } else {
-        if (! COMMON::Array::isInArray($params->{compression}, @COMPRESSIONS) ) {
+        if (! defined COMMON::Array::isInArray($params->{compression}, @COMPRESSIONS) ) {
             ERROR (sprintf "Unknown 'compression' : %s !",$params->{compression});
             return FALSE;
         }
@@ -299,7 +299,7 @@ sub _load {
         $params->{compressionoption} = $DEFAULT{compressionoption};
         DEBUG(sprintf "Default value for 'compressionoption' : %s", $params->{compressionoption});
     } else {
-        if (! COMMON::Array::isInArray($params->{compressionoption}, @COMPRESSIONOPTIONS) ) {
+        if (! defined COMMON::Array::isInArray($params->{compressionoption}, @COMPRESSIONOPTIONS) ) {
             ERROR (sprintf "Unknown compressionoption option : %s !",$params->{compressionoption});
             return FALSE;
         }
@@ -311,7 +311,7 @@ sub _load {
         $params->{interpolation} = $DEFAULT{interpolation};
         DEBUG(sprintf "Default value for 'interpolation' : %s", $params->{interpolation});
     } else {
-        if (! COMMON::Array::isInArray($params->{interpolation}, @INTERPOLATIONS) ) {
+        if (! defined COMMON::Array::isInArray($params->{interpolation}, @INTERPOLATIONS) ) {
             ERROR (sprintf "Unknown interpolation : '%s'",$params->{interpolation});
             return FALSE;
         }

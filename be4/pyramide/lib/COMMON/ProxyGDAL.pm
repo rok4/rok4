@@ -108,7 +108,7 @@ sub geometryFromString {
     my $format = shift;
     my $string = shift;
 
-    if (! COMMON::Array::isInArray($format, @FORMATS)) {
+    if (! defined COMMON::Array::isInArray($format, @FORMATS)) {
         ERROR("Geometry string format unknown $format");
         return undef;
     }

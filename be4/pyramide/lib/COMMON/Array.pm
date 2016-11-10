@@ -143,22 +143,22 @@ Function: isInArray
 
 Parameters:
     value - scalar - Value to search in the array
-    array - array - Array wherre to search value
+    array - array - Array where to search value
 
 Returns:
-    The greater value in a array, begining with the element 'first'
+    The index of the first occurence of the value, undef if not in the array
 =cut
 sub isInArray {
     my $value = shift;
     my @array = @_;
 
-    foreach my $v (@array) {
-        if ($v eq $value) {
-            return TRUE;
+    for (my $i = 0; $i < scalar(@array), $i++) {
+        if ($array[$i] eq $value) {
+            return $i;
         }
     }
 
-    return FALSE;
+    return undef;
 }
 
 1;

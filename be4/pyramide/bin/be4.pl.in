@@ -433,12 +433,14 @@ sub checkParams {
 Function: doIt
 
 Steps in order, using parameters :
-    - create the Pyramid object : <BE4::Pyramid::new>
+    - create the Pyramid object : <COMMON::Pyramid::new>
+    - update the Pyramid object with the TMS : <COMMON::Pyramid::bindTileMatrixSet>
     - load data sources : <COMMON::DataSourceLoader::new>
-    - update levels for this Pyramid object : <BE4::Pyramid::updateLevels>
+    - update data sources with the levels : <COMMON::DataSourceLoader::updateDataSources>
+    - create the pyramid's levels : <COMMON::Pyramid::addLevel>
     - create the Forest object : <COMMON::Forest::new>
-    - write (initialization) the pyramid's directories tree and its list : <BE4::Pyramid::writeCachePyramid> and <BE4::Pyramid::writeListPyramid>
-    - write the pyramid's descriptor : <BE4::Pyramid::writeConfPyramid>
+    - write the pyramid's list : <COMMON::Pyramid::writeList>
+    - write the pyramid's descriptor : <COMMON::Pyramid::writeDescriptor>
     - compute trees (write scripts) : <COMMON::Forest::computeGraphs>
 =cut
 sub doIt {
@@ -450,43 +452,91 @@ sub doIt {
     #######################
     # objects to implemented
     
+    my $objAncestorPyramid = undef;
     my $objPyramid = undef;
     my $objDSL = undef;
     my $objForest = undef;
+
+    #######################
+    # if ancestor, read it
+
+    if (exists $params->{pyramid}->{pyr_name_old} && defined $params->{pyramid}->{pyr_name_old}) {
     
+        ALWAYS(">>> Load an ancestor pyramid ...");
+
+        if (exists $params->{pyramid}->{pyr_desc_path_old} && defined $params->{pyramid}->{pyr_desc_path_old}) {
+            ERROR("If ancestor pyramid, we need the 'pyr_desc_path_old' parameter with 'pyr_name_old'");
+            return FALSE;
+        }
+
+        my $ancestorDescriptor = File::Spec->catdir($params->{pyramid}->{pyr_desc_path_old}, $params->{pyramid}->{pyr_name_old});
+        $ancestorDescriptor .= ".pyr" if ($ancestorDescriptor !~ m/\.pyr/i);
+
+        $objAncestorPyramid = COMMON::Pyramid->new("DESCRIPTOR", $ancestorDescriptor );
+        if (! defined $objPyramid) {
+            ERROR("Cannot load ancestor pyramid !");
+            return FALSE;
+        }
+
+        if (! $objAncestorPyramid->bindTileMatrixSet($params->{pyramid}->{tms_path})) {
+            ERROR("Cannot bind TMS to ancestor pyramid !");
+            return FALSE;
+        }
+    }
+
     #######################
     # create a pyramid
     
-    ALWAYS(">>> Load a Pyramid ...");
+    ALWAYS(">>> Load the new pyramid ...");
     
-    $objPyramid = BE4::Pyramid->new( $params->{pyramid}, $params->{process}->{path_temp} );
+    $objPyramid = COMMON::Pyramid->new("VALUES", $params->{pyramid}, $objAncestorPyramid );
     if (! defined $objPyramid) {
-        ERROR("Can not load Pyramid !");
+        ERROR("Cannot load new pyramid !");
         return FALSE;
     }
-    
+
+    if (! $objPyramid->bindTileMatrixSet($params->{pyramid}->{tms_path})) {
+        ERROR("Cannot bind TMS to pyramid !");
+        return FALSE;
+    }
+
     #######################
     # load data source
     
     ALWAYS(">>> Load Data Source ...");
 
-    $objDSL = COMMON::DataSourceLoader->new($params->{datasource},$params->{harvesting},$params->{pyramid}->{pyr_level_bottom});
+    $objDSL = COMMON::DataSourceLoader->new($params->{datasource});
     if (! defined $objDSL) {
         ERROR("Cannot load data sources !");
         return FALSE;
     }
+
+    # update datasources top/bottom levels !
+    my ($bottomOrder,$topOrder) = $objDSL->updateDataSources($objTMS, $params->{pyramid}->{pyr_level_top});
+    if ($bottomOrder == -1) {
+        ERROR("Cannot determine top and bottom levels, from data sources.");
+        return FALSE;
+    }
     
     #######################
-    # update levels
+    # add levels to pyramid
     
     ALWAYS(">>> Determine levels ...");
     
-    if (! $objPyramid->updateLevels($objDSL,$params->{pyramid}->{pyr_level_top})) {
-        ERROR("Can not update levels !");
-        return FALSE;
-    }
+    # Create all level between the bottom and the top
+    for (my $order = $bottomOrder; $order <= $topOrder; $order++) {
 
-    DEBUG(sprintf "DATA SOURCE LOADER (debug export) = %s", $objDSL->exportForDebug);
+        my $ID = $objTMS->getIDfromOrder($order);
+        if (! defined $ID) {
+            ERROR(sprintf "Cannot identify ID for the order %s !", $order);
+            return FALSE;
+        }
+
+        if (! $objPyramid->addLevel($ID, $objAncestorPyramid) ) {
+            ERROR("Cannot add level $ID");
+            return FALSE;            
+        }
+    }
     
     # we cannot write the pyramid descriptor and cache now. We need data's limits, calculated by graphs.
   
@@ -499,7 +549,7 @@ sub doIt {
         $objPyramid,
         $objDSL,
         $params->{process},
-        'FS'
+        "FILE"
     );
   
     if (! defined $objForest) {
@@ -512,18 +562,8 @@ sub doIt {
     
     ALWAYS(">>> Write the pyramid's list ...");
 
-    if (! $objPyramid->writeListPyramid($objForest, $params->{process}->{path_temp})) {
+    if ( ! $objPyramid->writeList($objForest, $objAncestorPyramid, $params->{pyramid}->{update_mode}) ) {
         ERROR("Can not write Pyramid list !");
-        return FALSE;
-    }
-    
-    #######################
-    # write the pyramid cache
-    
-    ALWAYS(">>> Write the pyramid's cache ...");
-
-    if (! $objPyramid->writeCachePyramid) {
-        ERROR("Can not write Pyramid Cache !");
         return FALSE;
     }
     
@@ -532,12 +572,10 @@ sub doIt {
 
     ALWAYS(">>> Write the pyramid's descriptor ...");
 
-    if (! $objPyramid->writeConfPyramid) {
+    if ( ! $objPyramid->writeDescriptor() ) {
         ERROR("Can not write Pyramid file !");
         return FALSE;
     }
-  
-    DEBUG(sprintf "PYRAMID (debug export) = %s", $objPyramid->exportForDebug);
   
     #######################
     # compute graphs
@@ -552,24 +590,6 @@ sub doIt {
     DEBUG(sprintf "FOREST (debug export) = %s", $objForest->exportForDebug);
     
     return TRUE;
-}
-
-=begin nd
-Function: IsEmpty
-
-Precises if an hash or a reference can be considered as empty.
-
-Parameters (list):
-    value - var - Variable to test
-=cut
-sub IsEmpty {
-
-  my $value = shift;
-  
-  return FALSE if (ref($value) eq "HASH");
-  return TRUE  if (! defined $value);
-  return TRUE  if ($value eq "");
-  return FALSE;
 }
 
 ################################################################################
