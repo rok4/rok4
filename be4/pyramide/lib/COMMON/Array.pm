@@ -152,7 +152,7 @@ sub isInArray {
     my $value = shift;
     my @array = @_;
 
-    for (my $i = 0; $i < scalar(@array), $i++) {
+    for (my $i = 0; $i < scalar(@array); $i++) {
         if ($array[$i] eq $value) {
             return $i;
         }

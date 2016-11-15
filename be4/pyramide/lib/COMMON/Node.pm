@@ -174,13 +174,15 @@ sub new {
         nodeSources => [],
         geoImages => [],
 
+        bgImageBasename => undef,
+        bgMaskBasename => undef,
+
         workImageBasename => undef,
         workMaskBasename => undef,
         workExtension => "tif", # for images, masks are always tif
         
         # Stockage final de la dalle dans la pyramide pour ce noeud
-        storageType => undef,
-        pyramidName => undef
+        storageType => undef
     };
     
     bless($this, $class);
@@ -219,8 +221,6 @@ sub new {
     $this->{code} = '';
 
     $this->{workImageBasename} = sprintf "%s_%s_%s_I", $this->getLevel(), $this->{col}, $this->{row};
-
-    $this->{pyramidName} = $this->{graph}->getPyramid()->getSlabPath(undef, $this->getLevel(), $this->{col}, $this->{row});
         
     return $this;
 }
@@ -329,10 +329,10 @@ sub getRow {
     return $this->{row};
 }
 
-# Function: getPyramidName
-sub getPyramidName {
+# Function: getStorageType
+sub getStorageType {
     my $this = shift;
-    return $this->{pyramidName}; 
+    return $this->{storageType};
 }
 
 ########## work files
@@ -385,10 +385,6 @@ sub getWorkBaseName {
 sub addBgImage {
     my $this = shift;
 
-    if (! defined $this->{filestorage}) {
-        ERROR("Background is not handled for no file system storage");
-    }
-
     $this->{bgImageBasename} = sprintf "%s_%s_%s_BgI", $this->getLevel, $this->{col}, $this->{row};
 }
 
@@ -397,9 +393,7 @@ sub getBgImageName {
     my $this = shift;
     my $withExtension = shift;
 
-    if (! defined $this->{filestorage}) {
-        ERROR("Background is not handled for no file system storage");
-    }
+    return undef if (! defined $this->{bgImageBasename});
     
     return $this->{bgImageBasename}.".tif" if ($withExtension);
     return $this->{bgImageBasename};
@@ -409,10 +403,6 @@ sub getBgImageName {
 sub addBgMask {
     my $this = shift;
 
-    if (! defined $this->{filestorage}) {
-        ERROR("Background is not handled for no file system storage");
-    }
-
     $this->{bgMaskBasename} = sprintf "%s_%s_%s_BgM", $this->getLevel, $this->{col}, $this->{row};
 }
 
@@ -421,17 +411,11 @@ sub getBgMaskName {
     my $this = shift;
     my $withExtension = shift;
 
-    if (! defined $this->{filestorage}) {
-        ERROR("Background is not handled for no file system storage");
-    }
+    return undef if (! defined $this->{bgMaskBasename});
     
     return $this->{bgMaskBasename}.".tif" if ($withExtension);
     return $this->{bgMaskBasename};
 }
-
-
-
-
 
 # Function: getLevel
 sub getLevel {
@@ -621,17 +605,17 @@ sub exportForMntConf {
     if (defined $this->{workMaskBasename}) {
         $output .= sprintf "MSK %s%s.tif\n", $prefix,  $this->{workMaskBasename};
     }
-    
-    if ($exportBg && defined $this->{filestorage}) {
-        if (defined $this->{filestorage}->{bgImageBasename}) {
+
+    if ($exportBg) {
+        if (defined $this->{bgImageBasename}) {
             $output .= sprintf "IMG %s%s.tif\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-                $prefix, $this->{filestorage}->{bgImageBasename},
+                $prefix, $this->{bgImageBasename},
                 $this->{tm}->getSRS(),
                 $Bbox[0], $Bbox[3], $Bbox[2], $Bbox[1],
                 $this->getTM()->getResolution(), $this->getTM()->getResolution();
                 
-            if (defined $this->{filestorage}->{bgMaskBasename}) {
-                $output .= sprintf "MSK %s%s.tif\n", $prefix, $this->{filestorage}->{bgMaskBasename};
+            if (defined $this->{bgMaskBasename}) {
+                $output .= sprintf "MSK %s%s.tif\n", $prefix, $this->{bgMaskBasename};
             }        
         }
     }
@@ -670,15 +654,15 @@ sub exportForDntConf {
         $output .= sprintf "MSK %s%s.tif\n", $prefix,  $this->{workMaskBasename};
     }
     
-    if ($exportBg && defined $this->{filestorage}) {
-        if (defined $this->{filestorage}->{bgImageBasename}) {
+    if ($exportBg) {
+        if (defined $this->{bgImageBasename}) {
             $output .= sprintf "IMG %s%s.tif\t%s\t%s\t%s\t%s\t%s\t%s\n",
-                $prefix, $this->{filestorage}->{bgImageBasename},
+                $prefix, $this->{bgImageBasename},
                 $Bbox[0], $Bbox[3], $Bbox[2], $Bbox[1],
                 $this->getTM()->getResolution(), $this->getTM()->getResolution();
                 
-            if (defined $this->{filestorage}->{bgMaskBasename}) {
-                $output .= sprintf "MSK %s%s.tif\n", $prefix, $this->{filestorage}->{bgMaskBasename};
+            if (defined $this->{bgMaskBasename}) {
+                $output .= sprintf "MSK %s%s.tif\n", $prefix, $this->{bgMaskBasename};
             }        
         }
     }
@@ -706,13 +690,13 @@ sub exportForM4tConf {
         $output .= " 0"
     }
     
-    if ($exportBg && defined $this->{filestorage}) {
+    if ($exportBg) {
     
-        if (defined $this->{filestorage}->{bgImageBasename}) {
-            $output .= sprintf " %s.tif", $this->{filestorage}->{bgImageBasename};
+        if (defined $this->{bgImageBasename}) {
+            $output .= sprintf " %s.tif", $this->{bgImageBasename};
             
-            if (defined $this->{filestorage}->{bgMaskBasename}) {
-                $output .= sprintf " %s.tif", $this->{filestorage}->{bgMaskBasename};
+            if (defined $this->{bgMaskBasename}) {
+                $output .= sprintf " %s.tif", $this->{bgMaskBasename};
             } else {
                 $output .= " 0"
             }

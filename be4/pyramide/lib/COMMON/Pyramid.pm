@@ -91,6 +91,7 @@ use Data::Dumper;
 use COMMON::Level;
 use COMMON::NoData;
 use COMMON::PyrImageSpec;
+use COMMON::ProxyStorage;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -212,7 +213,7 @@ sub new {
         }
         $this->{desc_path} = $params->{pyr_desc_path};
 
-        if (exists $params->{data_path} && defined $params->{pyr_data_path}) {
+        if (exists $params->{pyr_data_path} && defined $params->{pyr_data_path}) {
 
             #### CAS D'UNE PYRAMIDE FICHIER
             $this->{storage_type} = "FILE";
@@ -517,13 +518,9 @@ sub addLevel {
             tm => $this->{tms}->getTileMatrix($level),
             size => [$this->{image_width}, $this->{image_height}],
 
-            dir_image => File::Spec->catdir($this->{desc_path}, $this->{name}, $this->{dir_image}, $level),
+            dir_data => File::Spec->catdir($this->{data_path}, $this->{name}),
             dir_depth => $this->{dir_depth}
         };
-
-        if ($this->{own_masks}) {
-            $levelParams->{dir_mask} = File::Spec->catdir($this->{desc_path}, $this->{name}, $this->{dir_mask}, $level);
-        }
     }
     elsif (defined $this->{data_pool}) {
         # On doit ajouter un niveau stockage ceph
@@ -535,10 +532,6 @@ sub addLevel {
             prefix => $this->{name},
             pool_name => $this->{data_pool}
         };
-
-        if ($this->{own_masks}) {
-            $levelParams->{hasMask} = TRUE;
-        }
     }
     elsif (defined $this->{data_bucket}) {
         # On doit ajouter un niveau stockage s3
@@ -550,15 +543,15 @@ sub addLevel {
             prefix => $this->{name},
             bucket_name => $this->{data_bucket}
         };
+    }
 
-        if ($this->{own_masks}) {
-            $levelParams->{hasMask} = TRUE;
-        }
+    if ($this->{own_masks}) {
+        $levelParams->{hasMask} = TRUE;
     }
 
     # Niveau ancêtre, potentiellement non défini, pour en reprendre les limites
     if (defined $ancestor) {
-        my $ancestorLevel = $ancestor->getLevel($ID);
+        my $ancestorLevel = $ancestor->getLevel($level);
         if (defined $ancestorLevel) {
             my ($rowMin,$rowMax,$colMin,$colMax) = $ancestorLevel->getLimits();
             $levelParams->{limits} = [$rowMin,$rowMax,$colMin,$colMax];
@@ -733,21 +726,23 @@ sub writeList {
         ERROR(sprintf "Cannot open new pyramid list file (write) : %s",$newListPath);
         return FALSE;
     }
+
+    # La racine de la pyramide est soit un dossier dans le cas fichier, soit un conteneur (pool Ceph ou bucket S3)
+    my $newRoot;
+    if (defined $this->{data_path}) {
+        $newRoot = $this->getDataDir();
+    }
+    elsif (defined $this->{data_pool}) {
+        $newRoot = $this->{data_pool};
+    }
+    elsif (defined $this->{data_bucket}) {
+        $newRoot = $this->{data_bucket};
+    }
     
     if (! defined $ancestor) {
         # Pas d'ancêtre, on doit juste écrire l'en tête : le dossier propre à cette pyramide ou le nom du conteneur objet
-        
-        if (defined $this->{data_path}) {
-            printf $NEWLIST "0=%s\n", $this->getDataDir();
-        }
-        elsif (defined $this->{data_pool}) {
-            printf $NEWLIST "0=%s\n", $this->{data_pool};
-        }
-        elsif (defined $this->{data_bucket}) {
-            printf $NEWLIST "0=%s\n", $this->{data_bucket};
-        }
-
-        printf $NEWLIST "#\n";
+        print $NEWLIST "0=$newRoot\n";
+        print $NEWLIST "#\n";
         close $NEWLIST;
 
         return TRUE
@@ -762,31 +757,28 @@ sub writeList {
     }
 
     my $newStorageType = $this->getStorageType();
-
-    # Le hash est de la forme : ancestor storage => new storage => update mode possible = 1
-    my $allowedUpdateModes = {
-        "FILE" => {
-            "FILE" => {
-                "slink" => 1,
-                "hlink" => 1,
-                "copy" => 1,
-                "inject" => 1
-            }
-        },
-        "CEPH" => {
-            "CEPH" => {
-            }
-        },
-        "S3" => {
-            "S3" => {
-            }
-        },
-    };
-
     my $ancestorStorageType = $ancestor->getStorageType();
 
-    if (! exists $allowedUpdateModes->{$ancestorStorageType}->{$newStorageType}->{updateMode})
-        ERROR("Update mode '$updateMode' is not allowed for storages $ancestorStorageType -> $newStorageType");
+    if ($newStorageType ne $ancestorStorageType) {
+        ERROR("Ancestor have to own the same storage type than the new pyramid");
+        return FALSE;
+    }
+
+    # Le hash est de la forme : storage type => update mode possible => 1
+    my $allowedUpdateModes = {
+        "FILE" => {
+            "slink" => 1,
+            "hlink" => 1,
+            "copy" => 1
+        },
+        "CEPH" => {
+        },
+        "S3" => {
+        }
+    };
+
+    if (! exists $allowedUpdateModes->{$newStorageType}->{$updateMode}) {
+        ERROR("Update mode '$updateMode' is not allowed for storage type $newStorageType");
         return FALSE;
     }
 
@@ -799,8 +791,8 @@ sub writeList {
         return FALSE;
     }
     
-    my %newCacheRoots;
-    my %newCacheRootsUse;
+    my %ancestorRoots;
+    my %ancestorRootsUse;
     while( my $line = <$OLDLIST> ) {
         chomp $line;
         if ($line eq "#") {
@@ -816,9 +808,8 @@ sub writeList {
             return FALSE;
         }
         
-        # ID 0 is kept for the new pyramid root, all ID are incremented
-        $newCacheRoots{$Root[0]+1} = $Root[1];
-        $newCacheRootsUse{$Root[0]+1} = 0;
+        $ancestorRoots{$Root[0]} = $Root[1];
+        $ancestorRootsUse{$Root[0]} = 0;
     }
     
     while( my $line = <$OLDLIST> ) {
@@ -830,6 +821,7 @@ sub writeList {
         my @parts = split("/", $line);
         # La première partie est donc toujours l'index de la racine, qui est soit un dossier soit un conteneur d'objet
         my $rootIndex = shift(@parts);
+        my $rootValue = $ancestorRoots{$rootIndex};
 
         my $dataType = undef;
         my $level = undef;
@@ -848,7 +840,7 @@ sub writeList {
             $dataType = $p[-4];
         }
 
-        if (! $self->ownMasks() && ($dataType = "MSK" || $dataType = "MASK")) {
+        if (! $this->ownMasks() && ($dataType eq "MSK" || $dataType eq "MASK")) {
             # On ne veut pas des masques dans la pyramide finale, donc on ne lie pas ceux de l'ancienne pyramide
             next;
         }
@@ -859,178 +851,89 @@ sub writeList {
         }
         
         my ($x,$y) = $this->{levels}->{$level}->getFromSlabPath($line);
+
+        if (! exists $ancestorRoots{$rootIndex}) {
+            ERROR(sprintf "Old pyramid list ($ancestorListPath) uses an undefined root ID : %s", $rootIndex);
+            return FALSE;
+        }
+
+        # On reconstruit le chemin de la source et de la destination
+
+        my $ancestorSlab = $line;
+        $ancestorSlab =~ s/^[0-9]+/$rootValue/;
+
+        my $newSlab = $line;
+        $newSlab =~ s/^[0-9]+/$newRoot/;
+
+        if ($updateMode eq "slink") {
+            if (! COMMON::ProxyStorage::symLink($ancestorStorageType, $ancestorSlab, $newStorageType, $newSlab)) {
+                ERROR("The ancestor slab '$ancestorSlab' cannot be referenced by sym link in the new pyramid");
+                return FALSE;
+            }
+        }
+        elsif ($updateMode eq "hlink") {
+            if (! COMMON::ProxyStorage::hardLink($ancestorStorageType, $ancestorSlab, $newStorageType, $newSlab)) {
+                ERROR("The ancestor slab '$ancestorSlab' cannot be referenced by hard link in the new pyramid");
+                return FALSE;
+            }
+        }
+        elsif ($updateMode eq "copy") {
+            if (! COMMON::ProxyStorage::copy($ancestorStorageType, $ancestorSlab, $newStorageType, $newSlab)) {
+                ERROR("The ancestor slab '$ancestorSlab' cannot be referenced by copy in the new pyramid");
+                return FALSE;
+            }
+        }
         
         if (! $forest->containsNode($level,$x,$y)) {
             # This image is not in the forest, it won't be modified by this generation.
             # We add it now to the list (real file path)
-            my $newTileFileName = File::Spec->catdir(@directories);
-            if ($self->getUpdateMode() eq 'hlink' || $self->getUpdateMode() eq 'copy' || $self->getUpdateMode() eq 'inject') {
-                $newTileFileName =~ s/^[0-9]+\//0\//;
-            }
-            printf $NEWLISTTMP "%s\n", $newTileFileName;
-            # Root is used : we incremente its counter
-            $newCacheRootsUse{$directories[0]}++;
-        }
-        
-        if ($self->getUpdateMode() ne 'inject') {
-            # In injection case, we don't create a new pyramid version : no link, no copy, nothing to do
-        
-            # We replace root ID with the root path, to obtain a real path.
-            if (! exists $newCacheRoots{$directories[0]}) {
-                ERROR(sprintf "Old pyramid list uses an undefined root ID : %s",$directories[0]);
-                return FALSE;
-            }
-            $directories[0] = $newCacheRoots{$directories[0]};
-            $oldtile = File::Spec->catdir(@directories);
-            
-            # We remove the root to replace it by the new pyramid root
-            shift @directories;
-            my $newtile = File::Spec->catdir($newcachepyramid,@directories);
-
-            #create folders
-            my $dir = dirname($newtile);
-            
-            if (! -d $dir) {
-                eval { mkpath([$dir]); };
-                if ($@) {
-                    ERROR(sprintf "Can not create the pyramid directory '%s' : %s !",$dir, $@);
-                    return FALSE;
-                }
-            }
-
-            if (! -f $oldtile || -l $oldtile) {
-                ERROR(sprintf "File path in the pyramid list does not exist or is a link : %s",$oldtile);
-                return FALSE;
-            }
-            
-            my $reloldtile = File::Spec->abs2rel($oldtile, $dir);
-
-            if ($self->getUpdateMode() eq 'slink') {
-                DEBUG(sprintf "Creating symbolic link from %s to %s", $oldtile, $newtile);
-                my $result = eval { symlink ($reloldtile, $newtile); };
-                if (! $result) {
-                    ERROR (sprintf "The tile '%s' can not be soft linked to '%s' (%s)",$reloldtile,$newtile,$!);
-                    return FALSE;
-                }
-            } elsif ($self->getUpdateMode() eq 'hlink') {
-                DEBUG(sprintf "Creating hard link from %s to %s", $oldtile, $newtile);
-                my $result = eval { link ($oldtile, $newtile); };
-                if (! $result) {
-                    ERROR (sprintf "The tile '%s' can not be hard linked to '%s' (%s)",$oldtile,$newtile,$!);
-                    return FALSE;
-                }
-            } elsif ($self->getUpdateMode() eq 'copy') {
-                DEBUG(sprintf "Copying tile from %s to %s", $newtile, $oldtile);
-                my $result = eval { copy($oldtile, $newtile); };
-                if (! $result) {
-                    ERROR (sprintf "The tile '%s' can not be copied to '%s' (%s)",$oldtile,$newtile,$!);
-                    return FALSE;
-                }
+            my $slab = $line;
+            $slab =~ s/^[0-9]+\///;
+            # On retire l'index de la racine :
+            # - On le rajoute incrémenté de 1 dans le cas d'un chaînage slink
+            #   Ex :
+            #      Dans la liste de l'ancêtre, on avait 12/<Chemin ou nom de l'objet de la dalle>
+            #      Dans la nouvelle liste, on aura 13/<Chemin ou nom de l'objet de la dalle>
+            #   Ainsi on libère l'index 0 pour les dalles propre à la nouvelle pyramide
+            # - On met zéro sinon, la dalle étant importée dans la nouvelle pyramide (pas de dépendance avec l'ancêtre)
+            if ($updateMode eq 'slink') {
+                printf $NEWLIST "%s/$slab\n", $rootIndex + 1;
             } else {
-                ERROR (sprintf "Unknown update mode : '%s'",$self->getUpdateMode());
-                return FALSE;
+                print $NEWLIST "0/$slab\n";
             }
+            # Root is used : we incremente its counter
+            $ancestorRootsUse{$rootIndex}++;
         }
         
     }
     
     close $OLDLIST;
+    close $NEWLIST;
 
-
-
-
-
-
-
-
-    my $newcachepyramid = $self->getNewDataDir;
-    
-    my $newcachelisttmp = File::Spec->catfile($path_temp,$self->getNewName(),$self->getNewName()."_tmp.list");;
-    
-    my $newcachelist = $self->getNewListFile;
-    if (-f $newcachelist && ($self->isNewPyramid() || $self->getUpdateMode() ne "inject")) {
-        ERROR(sprintf "New pyramid list ('%s') exist, can not overwrite it ! ", $newcachelist);
-        return FALSE;
-    }
-    
-    my $dir = dirname($newcachelist);
-    if (! -d $dir) {
-        DEBUG (sprintf "Create the pyramid list directory '%s' !", $dir);
-        eval { mkpath([$dir]); };
-        if ($@) {
-            ERROR(sprintf "Can not create the pyramid list directory '%s' : %s !", $dir , $@);
-            return FALSE;
-        }
-    }
-    
-    my $dirtmp = dirname($newcachelisttmp);
-    if (! -d $dir) {
-        DEBUG (sprintf "Create the temporary pyramid list directory '%s' !", $dirtmp);
-        eval { mkpath([$dirtmp]); };
-        if ($@) {
-            ERROR(sprintf "Can not create the temporary pyramid list directory '%s' : %s !", $dirtmp , $@);
-            return FALSE;
-        }
-    }
-    
-    my $NEWLISTTMP;
-
-    if (! open $NEWLISTTMP, ">", $newcachelisttmp) {
-        ERROR(sprintf "Cannot open temporary new pyramid list file : %s",$newcachelisttmp);
-        return FALSE;
-    }
-    
-    printf $NEWLISTTMP "#\n";
-    
-    # Hash to bind ID and root directory
-    my %newCacheRoots;
-    
-    # Hash to count root's uses (to remove useless roots)
-    my %newCacheRootsUse;
-    
-    # search and create link for only new pyramid tile
-    if (! $self->isNewPyramid) {
-        
-
-    }
-    
-    close $NEWLISTTMP;
-    
     # Now, we can write binding between ID and root, testing counter.
     # We write at the top of the list file, caches' roots, using Tie library
-    my @NEWLISTTMP;
-    if (! tie @NEWLISTTMP, 'Tie::File', $newcachelisttmp) {
-        ERROR(sprintf "Cannot write the header of temporary new pyramid list file : %s",$newcachelisttmp);
+    my @NEWLISTHDR;
+    if (! tie @NEWLISTHDR, 'Tie::File', $newListPath) {
+        ERROR("Cannot write the header of the new pyramid list file : $newListPath");
         return FALSE;
     }
+
+    unshift @NEWLISTHDR,"#\n";
     
-    if (! $self->isNewPyramid && $self->getUpdateMode() eq 'slink') {
-        while( my ($rootID,$root) = each(%newCacheRoots) ) {
-            if ($newCacheRootsUse{$rootID} > 0) {
-                # Used roots are written in the header
-                
-                INFO (sprintf "%s is used %d times", $root, $newCacheRootsUse{$rootID});
-                
-                unshift @NEWLISTTMP,(sprintf "%s=%s",$rootID,$root);
-            } else {
-                INFO (sprintf "The old pyramid '%s' is no longer used.", $root)
+    if ($updateMode eq 'slink') {
+        while( my ($rootID,$root) = each(%ancestorRoots) ) {
+            if ($ancestorRootsUse{$rootID} > 0) {
+                # Used roots are written in the header, invremented
+                unshift @NEWLISTHDR,(sprintf "%s=%s", $rootID + 1, $root);
             }
         }
     }
     
     # Root of the new pyramid (first position)
-    unshift @NEWLISTTMP,"0=$newcachepyramid\n";
+    unshift @NEWLISTHDR,"0=$newRoot\n";
+    untie @NEWLISTHDR;
     
-    untie @NEWLISTTMP;
-    
-    # On copie notre descripteur de pyramide temporaire au bon endroit
-    my $return = `mv $newcachelisttmp $newcachelist`;
-    if ($? != 0) {
-        ERROR("Cannot move $newcachelisttmp -> $newcachelist : $!");
-        return FALSE;
-    }    
-
-    return FALSE;
+    return TRUE;
 }
 
 ####################################################################################################
@@ -1114,12 +1017,13 @@ sub getSlabPath {
     my $level = shift;
     my $col = shift;
     my $row = shift;
+    my $full = shift;
 
     if (! exists $this->{levels}->{$level}) {
         return undef;
     }
 
-    return $this->{levels}->{$level}->getSlabPath($type, $col, $row);
+    return $this->{levels}->{$level}->getSlabPath($type, $col, $row, $full);
 }
 
 # Function: getTilesPerWidth

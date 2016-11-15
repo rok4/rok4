@@ -88,9 +88,10 @@ use lib "$Bin/../lib/perl5";
 
 # My module
 use BE4::PropertiesLoader;
-use BE4::Pyramid;
+use COMMON::Pyramid;
 use COMMON::DataSourceLoader;
 use COMMON::Forest;
+use COMMON::CheckUtils;
 
 ################################################################################
 # Constantes
@@ -305,22 +306,25 @@ sub config {
     $fenv = $options{environment} if (defined $options{environment} && $options{environment} ne "");
 
     if (defined $fenv) {
-        my $objEnv = BE4::PropertiesLoader->new($fenv);
+        my $objEnv = COMMON::Config->new({
+            'filepath' => $fenv,
+            'format' => "INI"
+        });
 
         if (! defined $objEnv) {
             ERROR("Can not load environment properties !");
             return FALSE;
         }
 
-        my %envs = $objEnv->getAllProperties();
+        my $envs = $objEnv->getRawConfig();
 
-        if (! scalar keys %envs) {
+        if (! scalar keys %{$envs}) {
             ERROR("All parameters environment are empty !");
             return FALSE;
         }
         
         foreach (keys %{$this{params}}) {
-            my $href = { map %$_, grep ref $_ eq 'HASH', ($envs{$_}, $props{$_}) };
+            my $href = { map %$_, grep ref $_ eq 'HASH', ($envs->{$_}, $props{$_}) };
             $hashref->{$_} = $href;
         }
     } else {
@@ -395,7 +399,7 @@ sub checkParams {
         my $layout= '%5p : %m (%M) %n';
         my $level = $logger->{log_level};
         my $out   = sprintf (">>%s", File::Spec->catfile($logger->{log_path}, $logger->{log_file}))
-            if (! main::IsEmpty($logger->{log_path}) && ! main::IsEmpty($logger->{log_file}));
+            if (! COMMON::CheckUtils::isEmpty($logger->{log_path}) && ! COMMON::CheckUtils::isEmpty($logger->{log_file}));
         
         $out   = "STDOUT" if (! defined $out);
         $level = "WARN"   if (! defined $level);
@@ -464,7 +468,7 @@ sub doIt {
     
         ALWAYS(">>> Load an ancestor pyramid ...");
 
-        if (exists $params->{pyramid}->{pyr_desc_path_old} && defined $params->{pyramid}->{pyr_desc_path_old}) {
+        if (! exists $params->{pyramid}->{pyr_desc_path_old} || ! defined $params->{pyramid}->{pyr_desc_path_old}) {
             ERROR("If ancestor pyramid, we need the 'pyr_desc_path_old' parameter with 'pyr_name_old'");
             return FALSE;
         }
@@ -473,7 +477,7 @@ sub doIt {
         $ancestorDescriptor .= ".pyr" if ($ancestorDescriptor !~ m/\.pyr/i);
 
         $objAncestorPyramid = COMMON::Pyramid->new("DESCRIPTOR", $ancestorDescriptor );
-        if (! defined $objPyramid) {
+        if (! defined $objAncestorPyramid) {
             ERROR("Cannot load ancestor pyramid !");
             return FALSE;
         }
@@ -512,7 +516,7 @@ sub doIt {
     }
 
     # update datasources top/bottom levels !
-    my ($bottomOrder,$topOrder) = $objDSL->updateDataSources($objTMS, $params->{pyramid}->{pyr_level_top});
+    my ($bottomOrder,$topOrder) = $objDSL->updateDataSources($objPyramid->getTileMatrixSet(), $params->{pyramid}->{pyr_level_top});
     if ($bottomOrder == -1) {
         ERROR("Cannot determine top and bottom levels, from data sources.");
         return FALSE;
@@ -526,7 +530,7 @@ sub doIt {
     # Create all level between the bottom and the top
     for (my $order = $bottomOrder; $order <= $topOrder; $order++) {
 
-        my $ID = $objTMS->getIDfromOrder($order);
+        my $ID = $objPyramid->getTileMatrixSet()->getIDfromOrder($order);
         if (! defined $ID) {
             ERROR(sprintf "Cannot identify ID for the order %s !", $order);
             return FALSE;

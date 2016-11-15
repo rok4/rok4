@@ -272,14 +272,17 @@ sub _loadValues {
             return FALSE;
         }
         $this->{dir_depth} = $params->{dir_depth};
-        if (! exists($params->{dir_image})) {
-            ERROR ("The parameter 'dir_image' is required");
+
+        if (! exists($params->{dir_data})) {
+            ERROR ("The parameter 'dir_data' is required");
             return FALSE;
         }
-        $this->{dir_image} = $params->{dir_image};
 
-        if (exists $params->{dir_mask} && defined $params->{dir_mask}) {
-            $this->{dir_mask} = $params->{dir_mask};
+
+        $this->{dir_image} = File::Spec->catdir($params->{dir_data}, "IMAGE", $this->{id});
+
+        if (exists $params->{hasMask} && defined $params->{hasMask}) {
+            $this->{dir_mask} = File::Spec->catdir($params->{dir_data}, "MASK", $this->{id});
         }
     }
     elsif ( exists $params->{prefix} ) {
@@ -507,33 +510,39 @@ Parameters (list):
     type - string - "IMAGE" ou "MASK"
     col - integer - Slab column
     row - integer - Slab row
+    full - boolean - In file storage case, precise if we want full path or juste the end (without data root)
 =cut
 sub getSlabPath {
     my $this = shift;
     my $type = shift;
     my $col = shift;
     my $row = shift;
+    my $full = shift;
+
+    if ($type eq "MASK" && ! $this->ownMasks()) {
+        return undef;
+    }
 
     if ($this->{type} eq "FILE") {
         my $b36 = COMMON::Base36::indicesToB36Path($col, $row, $this->{dir_depth} + 1);
 
-        if (! defined $type) {
-            return "$b36.tif";
-        }
-        elsif ($type eq "IMAGE") {
+        if ($type eq "IMAGE") {
+            if (defined $full && ! $full) {
+                return File::Spec->catdir("IMAGE", $this->{id}, "$b36.tif");
+            }
             return File::Spec->catdir($this->{dir_image}, "$b36.tif");
         }
         elsif ($type eq "MASK") {
+            if (defined $full && ! $full) {
+                return File::Spec->catdir("MASK", $this->{id}, "$b36.tif");
+            }
             return File::Spec->catdir($this->{dir_mask}, "$b36.tif");
         }
         else {
             return undef;
         }
     } else {
-        if (! defined $type) {
-            return sprintf "%s_%s_%s", $this->{id}, $col, $row;
-        }
-        elsif ($type eq "IMAGE") {
+        if ($type eq "IMAGE") {
             return sprintf "%s_%s_%s_%s", $this->{prefix_image}, $this->{id}, $col, $row;
         }
         elsif ($type eq "MASK") {
@@ -553,7 +562,7 @@ Function: getFromSlabPath
 Extarct column and row from a slab path
 
 Parameter (list):
-    path - string - Path to decode, to obtain column and row
+    path - string - Path to decode, to obtain slab's column and row
 
 Returns:
     Integers' list, (col, row)

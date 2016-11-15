@@ -146,11 +146,22 @@ use constant MERGENTIFF_W => 4;
 my $MNTFUNCTION = <<'MNTFUNCTION';
 MergeNtiff () {
     local config=$1
+    local bgI=$2
+    local bgM=$3
+
     
     mergeNtiff -f ${MNT_CONF_DIR}/$config -r ${TMP_DIR}/ __mNt__
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     
     rm -f ${MNT_CONF_DIR}/$config
+
+    if [ $bgI ] ; then
+        rm -f ${TMP_DIR}/$bgI
+    fi
+    
+    if [ $bgM ] ; then
+        rm -f ${TMP_DIR}/$bgM
+    fi
 }
 MNTFUNCTION
 
@@ -176,7 +187,28 @@ sub mergeNtiff {
     
     my ($c, $w);
     my ($code, $weight) = ("",MERGENTIFF_W);
-    
+
+    # Si elle existe, on copie la dalle de la pyramide de base dans le repertoire de travail 
+    # en la convertissant du format cache au format de travail: c'est notre image de fond.
+    # Si la dalle de la pyramide de base existe, on a créé un lien, donc il existe un fichier
+    # correspondant dans la nouvelle pyramide.
+    # On fait de même avec le masque de donnée associé, s'il existe.
+    my $imgBg = $this->{pyramid}->getSlabPath("IMAGE", $node->getLevel(), $node->getCol(), $node->getRow(), TRUE);
+    if ( COMMON::ProxyStorage::isPresent($node->getStorageType(), $imgBg) ) {
+        $node->addBgImage();
+        
+        my $maskBg = $this->{pyramid}->getSlabPath("MASK", $node->getLevel(), $node->getCol(), $node->getRow(), TRUE);
+        
+        if ( $this->{useMasks} && defined $maskBg && COMMON::ProxyStorage::isPresent($node->getStorageType(), $maskBg) ) {
+            # On a en plus un masque associé à l'image de fond
+            $node->addBgMask();
+        }
+        
+        ($c,$w) = $this->cache2work($node);
+        $code .= $c;
+        $weight += $w;
+    }
+
     if ($this->{useMasks}) {
         $node->addWorkMask();
     }
@@ -203,9 +235,91 @@ sub mergeNtiff {
     close CFGF;
     
     $code .= "MergeNtiff $mNtConfFilename";
+    $code .= sprintf " %s", $node->getBgImageName(TRUE) if (defined $node->getBgImageName()); # pour supprimer l'image de fond si elle existe
+    $code .= sprintf " %s", $node->getBgMaskName(TRUE) if (defined $node->getBgMaskName()); # pour supprimer le masque de fond si il existe
     $code .= "\n";
 
     return ($code,$weight);
+}
+
+####################################################################################################
+#                                        Group: CACHE TO WORK                                      #
+####################################################################################################
+
+# Constant: CACHE2WORK_W
+use constant CACHE2WORK_W => 1;
+
+my $FILE_C2WFUNCTION = <<'C2WFUNCTION';
+Cache2work () {
+    local input=$1
+    local output=$2
+
+    cache2work -c zip ${PYR_DIR}/$input ${TMP_DIR}/$output
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+C2WFUNCTION
+
+my $S3_C2WFUNCTION = <<'C2WFUNCTION';
+Cache2work () {
+    local input=$1
+    local output=$2
+
+    cache2work -c zip -bucket ${PYR_BUCKET} $input ${TMP_DIR}/$output
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+C2WFUNCTION
+
+my $CEPH_C2WFUNCTION = <<'C2WFUNCTION';
+Cache2work () {
+    local input=$1
+    local output=$2
+
+    cache2work -c zip -pool ${PYR_POOL} $input ${TMP_DIR}/$output
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+C2WFUNCTION
+
+=begin nd
+Function: cache2work
+
+Copy slab from cache to work directory and transform (work format : untiled, zip-compression). Use the 'Cache2work' bash function.
+
+(see cache2work.png)
+    
+Examples:
+    (start code)
+    (end code)
+    
+Parameters (list):
+    node - <Node> - Node whose image have to be transfered in the work directory.
+
+Returns:
+    An array (code, weight), ("",-1) if error.
+=cut
+sub cache2work {
+    my $this = shift;
+    my $node = shift;
+    
+    #### Rappatriement de l'image de donnée ####    
+    my $cmd = "";
+    my $weight = 0;
+    
+    $cmd = sprintf "Cache2work %s %s\n",
+        $this->{pyramid}->getSlabPath("IMAGE", $node->getLevel(), $node->getCol(), $node->getRow(), FALSE),
+        $node->getBgImageName(TRUE);
+    $weight = CACHE2WORK_W;
+    
+    #### Rappatriement du masque de donnée (si présent) ####
+    
+    if ( defined $node->getBgMaskName() ) {
+        # Un masque est associé à l'image que l'on va utiliser, on doit le mettre également au format de travail
+        $cmd = sprintf "Cache2work %s %s\n", 
+            $this->{pyramid}->getSlabPath("MASK", $node->getLevel(), $node->getCol(), $node->getRow(), FALSE),
+            $node->getBgMaskName(TRUE);
+        $weight += CACHE2WORK_W;
+    }
+    
+    return ($cmd,$weight);
 }
 
 ####################################################################################################
@@ -224,13 +338,12 @@ StoreSlab () {
     local workMskName=$5
     local mskName=$6
     
-    
     if [[ ! ${RM_IMGS[$workDir/$workImgName]} ]] ; then
              
         work2cache $workDir/$workImgName __w2cI__ -bucket ${PYR_BUCKET} $imgName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
-        echo "$imgName" >> ${TMP_LIST_FILE}
+        echo "0/$imgName" >> ${TMP_LIST_FILE}
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
         if [ "$level" == "$TOP_LEVEL" ] ; then
@@ -245,7 +358,7 @@ StoreSlab () {
                     
                 work2cache $workDir/$workMskName __w2cM__ -bucket ${PYR_BUCKET} $mskName
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-                echo "$mskName" >> ${TMP_LIST_FILE}
+                echo "0/$mskName" >> ${TMP_LIST_FILE}
                 
             fi
             
@@ -275,7 +388,7 @@ StoreSlab () {
         work2cache $workDir/$workImgName __w2cI__ -pool ${PYR_POOL} $imgName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
-        echo "$imgName" >> ${TMP_LIST_FILE}
+        echo "0/$imgName" >> ${TMP_LIST_FILE}
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
         if [ "$level" == "$TOP_LEVEL" ] ; then
@@ -290,7 +403,7 @@ StoreSlab () {
                     
                 work2cache $workDir/$workMskName __w2cM__ -pool ${PYR_POOL} $mskName
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-                echo "$mskName" >> ${TMP_LIST_FILE}
+                echo "0/$mskName" >> ${TMP_LIST_FILE}
                 
             fi
             
@@ -332,7 +445,7 @@ StoreTiles () {
         
         for i in `seq $imin $imax` ; do 
             for j in `seq $jmin $jmax` ; do 
-                echo "${imgName}_${i}_${j}" >> ${TMP_LIST_FILE}
+                echo "0/${imgName}_${i}_${j}" >> ${TMP_LIST_FILE}
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
             done
         done
@@ -351,7 +464,7 @@ StoreTiles () {
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
                 for i in `seq $imin $imax` ; do 
                     for j in `seq $jmin $jmax` ; do 
-                        echo "${mskName}_${i}_${j}" >> ${TMP_LIST_FILE}
+                        echo "0/${mskName}_${i}_${j}" >> ${TMP_LIST_FILE}
                         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
                     done
                 done
@@ -450,6 +563,7 @@ sub work2cache {
     #### Export de l'image
 
     if ($this->{pyramid}->storeTiles()) {
+        # Je suis forcément en stockage objet
 
         my $pyrName = sprintf "%s_IMG_%s", $this->{pyramid}->getName(), $node->getLevel();
         
@@ -467,7 +581,7 @@ sub work2cache {
             
             # En plus, on veut exporter les masques dans la pyramide, on en précise donc l'emplacement final
             if ( $this->{pyramid}->ownMasks() ) {
-                $pyrName = sprintf "%s_MSK_%s", $this->{pyramid}->getName(), $node->getPyramidName();
+                $pyrName = sprintf "%s_MSK_%s", $this->{pyramid}->getName(), $node->getLevel();
                 
                 $cmd .= sprintf (" %s", $pyrName);
                 $weight += WORK2CACHE_W;
@@ -476,8 +590,8 @@ sub work2cache {
         
         $cmd .= "\n";
     } else {
-    
-        my $pyrName = sprintf "%s_IMG_%s", $this->{pyramid}->getName(), $node->getPyramidName();
+        # Le stockage peut être objet ou fichier
+        my $pyrName = $this->{pyramid}->getSlabPath("IMAGE", $node->getLevel(), $node->getCol(), $node->getRow(), FALSE);
         
         $cmd .= sprintf ("StoreSlab %s %s %s %s", $node->getLevel, $workDir, $node->getWorkImageName(TRUE), $pyrName);
         $weight += WORK2CACHE_W;
@@ -490,7 +604,7 @@ sub work2cache {
             
             # En plus, on veut exporter les masques dans la pyramide, on en précise donc l'emplacement final
             if ( $this->{pyramid}->ownMasks() ) {
-                $pyrName = sprintf "%s_MSK_%s", $this->{pyramid}->getName(), $node->getPyramidName();
+                $pyrName = $this->{pyramid}->getSlabPath("MASK", $node->getLevel(), $node->getCol(), $node->getRow(), FALSE);
                 
                 $cmd .= sprintf (" %s", $pyrName);
                 $weight += WORK2CACHE_W;
@@ -647,6 +761,9 @@ Merge4tiff () {
     local imgOut=$1
     local mskOut=$2
     shift 2
+    local imgBg=$1
+    local mskBg=$2
+    shift 2
     local levelIn=$1
     local imgIn=( 0 $2 $4 $6 $8 )
     local mskIn=( 0 $3 $5 $7 $9 )
@@ -662,6 +779,15 @@ Merge4tiff () {
     fi
     
     local inM4T=''
+
+    if [ $imgBg != '0'  ] ; then
+        forRM="$forRM ${TMP_DIR}/$imgBg"
+        inM4T="$inM4T -ib ${TMP_DIR}/$imgBg"
+        if [ $mskBg != '0'  ] ; then
+            forRM="$forRM ${TMP_DIR}/$mskBg"
+            inM4T="$inM4T -mb ${TMP_DIR}/$mskBg"
+        fi
+    fi
     
     local nbImgs=0
     for i in `seq 1 4`;
@@ -728,6 +854,27 @@ sub merge4tiff {
     my ($code, $weight) = ("",MERGE4TIFF_W);
     
     my @childList = $node->getChildren;
+
+    # Si elle existe, on copie la dalle de la pyramide de base dans le repertoire de travail 
+    # en la convertissant du format cache au format de travail: c'est notre image de fond.
+    # Si la dalle de la pyramide de base existe, on a créé un lien, donc il existe un fichier
+    # correspondant dans la nouvelle pyramide.
+    # On fait de même avec le masque de donnée associé, s'il existe.
+    my $imgBg = $this->{pyramid}->getSlabPath("IMAGE", $node->getLevel(), $node->getCol(), $node->getRow(), TRUE);
+    if ( COMMON::ProxyStorage::isPresent($node->getStorageType(), $imgBg) && ($this->{useMasks} || scalar @childList != 4) ) {
+        $node->addBgImage();
+        
+        my $maskBg = $this->{pyramid}->getSlabPath("MASK", $node->getLevel(), $node->getCol(), $node->getRow(), TRUE);
+        
+        if ( $this->{useMasks} && defined $maskBg && COMMON::ProxyStorage::isPresent($node->getStorageType(), $maskBg) ) {
+            # On a en plus un masque associé à l'image de fond
+            $node->addBgMask();
+        }
+        
+        ($c,$w) = $this->cache2work($node);
+        $code .= $c;
+        $weight += $w;
+    }
     
     if ($this->{useMasks}) {
         $node->addWorkMask();
@@ -764,11 +911,21 @@ use constant DECIMATENTIFF_W => 3;
 my $DNTFUNCTION = <<'DNTFUNCTION';
 DecimateNtiff () {
     local config=$1
+    local bgI=$2
+    local bgM=$3
     
     decimateNtiff -f ${DNT_CONF_DIR}/$config __dNt__
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     
     rm -f ${DNT_CONF_DIR}/$config
+    
+    if [ $bgI ] ; then
+        rm -f ${TMP_DIR}/$bgI
+    fi
+    
+    if [ $bgM ] ; then
+        rm -f ${TMP_DIR}/$bgM
+    fi
 }
 DNTFUNCTION
 
@@ -794,6 +951,27 @@ sub decimateNtiff {
     
     my ($c, $w);
     my ($code, $weight) = ("",DECIMATENTIFF_W);
+
+    # Si elle existe, on copie la dalle de la pyramide de base dans le repertoire de travail 
+    # en la convertissant du format cache au format de travail: c'est notre image de fond.
+    # Si la dalle de la pyramide de base existe, on a créé un lien, donc il existe un fichier
+    # correspondant dans la nouvelle pyramide.
+    # On fait de même avec le masque de donnée associé, s'il existe.
+    my $imgBg = $this->{pyramid}->getSlabPath("IMAGE", $node->getLevel(), $node->getCol(), $node->getRow(), TRUE);
+    if ( COMMON::ProxyStorage::isPresent($node->getStorageType(), $imgBg) ) {
+        $node->addBgImage();
+        
+        my $maskBg = $this->{pyramid}->getSlabPath("MASK", $node->getLevel(), $node->getCol(), $node->getRow(), TRUE);
+        
+        if ( $this->{useMasks} && defined $maskBg && COMMON::ProxyStorage::isPresent($node->getStorageType(), $maskBg) ) {
+            # On a en plus un masque associé à l'image de fond
+            $node->addBgMask();
+        }
+        
+        ($c,$w) = $this->cache2work($node);
+        $code .= $c;
+        $weight += $w;
+    }
     
     if ($this->{useMasks}) {
         $node->addWorkMask();
@@ -819,6 +997,8 @@ sub decimateNtiff {
     close CFGF;
     
     $code .= "DecimateNtiff $dNtConfFilename";
+    $code .= sprintf " %s", $node->getBgImageName(TRUE) if (defined $node->getBgImageName()); # pour supprimer l'image de fond si elle existe
+    $code .= sprintf " %s", $node->getBgMaskName(TRUE) if (defined $node->getBgMaskName()); # pour supprimer le masque de fond si il existe
     $code .= "\n";
 
     return ($code,$weight);
@@ -861,6 +1041,18 @@ sub getConfiguredFunctions {
 
     $functions .= $DNTFUNCTION;
     $functions =~ s/__dNt__/$conf_dNt/g;
+    
+    ######## cache2work ########
+
+    if ($this->{pyramid}->getStorageType() eq "FILE") {
+        $functions .= $FILE_C2WFUNCTION;
+    }
+    elsif ($this->{pyramid}->getStorageType() eq "S3") {
+        $functions .= $S3_C2WFUNCTION;
+    }
+    elsif ($this->{pyramid}->getStorageType() eq "CEPH") {
+        $functions .= $CEPH_C2WFUNCTION;
+    }
     
     ######## merge4tiff ########
     # work compression : deflate
