@@ -95,6 +95,27 @@ private:
     */
     std::string unit;
 
+    /** \~french
+    * \brief slopeNoData : noData de la pente
+    ** \~english
+    * \brief slopeNoData : slope noData
+    */
+    int slopeNoData;
+
+    /** \~french
+    * \brief imgNoData : noData de l'image
+    ** \~english
+    * \brief imgNoData : image noData
+    */
+    float imgNoData;
+
+    /** \~french
+    * \brief maxSlope : max de la pente
+    ** \~english
+    * \brief maxSlope : max slope
+    */
+    int maxSlope;
+
 
 
 
@@ -182,7 +203,7 @@ public:
     ** \~english
     * \brief Construtor
     */
-    PenteImage (int width, int height, int channels, BoundingBox<double> bbox, Image* image, float resolutionx, float resolutiony,std::string algo,std::string unit);
+    PenteImage (int width, int height, int channels, BoundingBox<double> bbox, Image* image, float resolutionx, float resolutiony,std::string algo,std::string unit, int slopend, float imgnd, int mxSlope);
 
     /** \~french
     * \brief Destructeur

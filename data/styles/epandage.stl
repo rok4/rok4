@@ -2,73 +2,73 @@
 <style>
         <Identifier>epandage</Identifier>
         <Title>Pente par paliers standards pour epandage</Title> 
-        <Abstract>Pente calculee avec la methode de Horn mais affichee par parlier standard de 7 a 20 pourcent</Abstract>
+        <Abstract>Pente calculee avec la methode de Horn mais affichee par parlier standard de 0 a 20 pourcent</Abstract>
         <Keywords>
                 <Keyword>MNT</Keyword>
         </Keywords>
         <LegendURL format="image/png" xlink:simpleLink="simple" xlink:href="http://ign.fr" height="100" width="100" minScaleDenominator="0" maxScaleDenominator="30"/>
         <!-- Rok4-->
-        <palette maxValue="1000" rgbContinuous="true" alphaContinuous="true">
+        <palette maxValue="255" rgbContinuous="true" alphaContinuous="true">
                 <colour value="0">
-                        <red>255</red>
-                        <green>255</green>
-                        <blue>255</blue>
-                        <alpha>0</alpha>
+                        <red>91</red>
+                        <green>177</green>
+                        <blue>198</blue>
+                        <alpha>255</alpha>
                 </colour>
-		<colour value="6">
-                        <red>255</red>
-                        <green>255</green>
-                        <blue>255</blue>
-                        <alpha>0</alpha>
+                <colour value="6">
+                        <red>91</red>
+                        <green>177</green>
+                        <blue>198</blue>
+                        <alpha>255</alpha>
                 </colour>
                 <colour value="7">
-                        <red>68</red>
-                        <green>184</green>
-                        <blue>103</blue>
-                        <alpha>120</alpha>
+                        <red>73</red>
+                        <green>127</green>
+                        <blue>198</blue>
+                        <alpha>255</alpha>
                 </colour>
                 <colour value="9">
-                        <red>68</red>
-                        <green>184</green>
-                        <blue>103</blue>
-                        <alpha>120</alpha>
+                        <red>73</red>
+                        <green>127</green>
+                        <blue>198</blue>
+                        <alpha>255</alpha>
                 </colour>
                 <colour value="10">
-                        <red>250</red>
-                        <green>203</green>
-                        <blue>262</blue>
-                        <alpha>120</alpha>
+                        <red>8</red>
+                        <green>51</green>
+                        <blue>160</blue>
+                        <alpha>255</alpha>
                 </colour>
                 <colour value="14">
-                        <red>250</red>
-                        <green>203</green>
-                        <blue>262</blue>
-                        <alpha>120</alpha>
+                        <red>8</red>
+                        <green>51</green>
+                        <blue>160</blue>
+                        <alpha>255</alpha>
                 </colour>
                 <colour value="15">
-                        <red>207</red>
-                        <green>53</green>
-                        <blue>10</blue>
-                        <alpha>120</alpha>
+                        <red>4</red>
+                        <green>6</green>
+                        <blue>142</blue>
+                        <alpha>255</alpha>
+                </colour>
+                <colour value="19">
+                        <red>4</red>
+                        <green>6</green>
+                        <blue>142</blue>
+                        <alpha>255</alpha>
                 </colour>
                 <colour value="20">
-                        <red>207</red>
-                        <green>53</green>
-                        <blue>10</blue>
-                        <alpha>120</alpha>
-                </colour>
-                <colour value="21">
                         <red>255</red>
                         <green>255</green>
                         <blue>255</blue>
                         <alpha>0</alpha>
                 </colour>
-                <colour value="1000">
+                <colour value="255">
                         <red>255</red>
                         <green>255</green>
                         <blue>255</blue>
                         <alpha>0</alpha>
                 </colour>
         </palette>
-        <pente algo="H" unit="pourcent"/>
+        <pente algo="H" unit="pourcent" interpolation="linear" imageNoData="-99999" slopeNoData="255"/>
 </style>
