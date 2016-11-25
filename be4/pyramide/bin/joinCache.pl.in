@@ -93,12 +93,12 @@ use lib "$Bin/../lib/perl5";
 # My module
 use COMMON::TileMatrixSet;
 use COMMON::TileMatrix;
-use BE4::Pyramid;
-use BE4::Base36;
+use COMMON::Pyramid;
+use COMMON::Level;
+
+use JOINCACHE::Node;
 use JOINCACHE::PropertiesLoader;
 use JOINCACHE::Process;
-use COMMON::SourcePyramid;
-use JOINCACHE::Node;
 
 ################################################################################
 # Constantes
@@ -149,7 +149,7 @@ Informations are treated, interpreted and store in this hash, using JOINCACHE cl
     composition - hash - Contain validate and pre-treated composition :
 |       level_id => priority => {
 |               extremTiles => [colMin, rowMin, colMax, rowMax],
-|               extremImages => [colMin, rowMin, colMax, rowMax], # = extremTiles / (number of tiles in the dimension)
+|               extremSlabs => [colMin, rowMin, colMax, rowMax], # = extremTiles / (number of tiles in the dimension)
 |               sourcePyramid => <COMMON::SourcePyramid>
 |       }
     doneImages - boolean hash - To memorize already done tiles, we use this hash, containing "I_J => TRUE".
@@ -395,14 +395,22 @@ sub validate {
 
     my $pyramidSection = $this{propertiesLoader}->getPyramidSection();
 
-    my $objPyramid = BE4::Pyramid->new($pyramidSection);
+    my $objPyramid = COMMON::Pyramid->new("VALUES", $pyramidSection);
 
     if (! defined $objPyramid) {
-        ERROR ("Cannot create the BE4::Pyramid object !");
+        ERROR ("Cannot create the COMMON::Pyramid object !");
         return FALSE;
     }
 
-    DEBUG(sprintf "FINAL PYRAMID (debug export) = %s", $objPyramid->exportForDebug);
+    if ($objPyramid->getStorageType() ne "FILE") {
+        ERROR ("JoinCache only handle FILE output pyramid");
+        return FALSE;
+    }
+    
+    if (! $objPyramid->bindTileMatrixSet($pyramidSection->{tms_path})) {
+        ERROR("Cannot bind TMS to output pyramid");
+        return FALSE;
+    }
 
     $this{pyramid} = $objPyramid;
 
@@ -426,7 +434,7 @@ sub validate {
 
     ALWAYS(">>> Validate source pyramids ...");
 
-    if (! main::validateSourcePyramids()) {
+    if (! main::validateSourcePyramids($pyramidSection->{tms_path})) {
         ERROR ("Some source pyramids are not valid !");
         return FALSE;
     }
@@ -463,23 +471,32 @@ Function: validateSourcePyramids
 For each pyramid in composition, we create a <COMMON::SourcePyramid> object and we control attributes (<COMMON::SourcePyramid::loadAndCheck>), reading pyramid's descriptor. TMS, tiles per width, tiles per height and directory depth have to be the same for every one.
 =cut
 sub validateSourcePyramids {
+    my $tms_path = shift;
 
     my %sourcePyramids = %{$this{propertiesLoader}->getSourcePyramids()};
 
     foreach my $pyr (keys %sourcePyramids) {
 
-        my $sourcePyramid = COMMON::SourcePyramid->new($pyr);
+        my $sourcePyramid = COMMON::Pyramid->new("DESCRIPTOR", $pyr);
         if (! defined $sourcePyramid) {
-            ERROR ("Cannot create the SourcePyramid object");
+            ERROR ("Cannot create the COMMON::Pyramid object for source");
             return FALSE;
         }
 
-        if (! $sourcePyramid->loadAndCheck($this{pyramid}) ) {
-            ERROR ("Cannot load the source pyramid's attributes or they are not consistent");
+        if ($sourcePyramid->getStorageType() ne "FILE") {
+            ERROR ("JoinCache only handle FILE source pyramid ($pyr)");
             return FALSE;
         }
 
-        DEBUG(sprintf "SOURCE PYRAMID (debug export) = %s", $sourcePyramid->exportForDebug);
+        if (! $sourcePyramid->bindTileMatrixSet($tms_path)) {
+            ERROR("Cannot bind TMS to source pyramid $pyr");
+            return FALSE;
+        }
+
+        if ($sourcePyramid->checkCompatibility($this{pyramid}) == 0) {
+            ERROR ("Source pyramid ($pyr) and output pyramid are not compatible");
+            return FALSE;
+        }
 
         $this{sourcePyramids}->{$pyr} = $sourcePyramid;
     }
@@ -498,9 +515,8 @@ sub validateBboxes {
 
     while( my ($bboxId,$bbox) = each(%bboxes) ) {
 
-        if ($bbox !~ m/([+-]?\d+(\.\d+)?),([+-]?\d+(\.\d+)?),([+-]?\d+(\.\d+)?),([+-]?\d+(\.\d+)?)/) {
-            ERROR (sprintf "The bbox with id '%s' is not valid (%s).
-                Must be 'xmin,ymin,xmax,ymax', to decimal format.",$bboxId,$bbox);
+        if (! COMMON::CheckUtils::isBbox($bbox)) {
+            ERROR (sprintf "The bbox with id '%s' is not valid (%s). Must be 'xmin,ymin,xmax,ymax', to decimal format.",$bboxId,$bbox);
             return FALSE;
         }
 
@@ -528,14 +544,12 @@ Validates each source in the composition.
     - bboxId have to be defined in the 'bboxes' section (and is interpreted)
     - used level have to be present in the pyramid
 
-We store too pyramid's format (phtomoetric, samples per pixel...).
+We store too pyramid's format (photometric, samples per pixel...).
 =cut
 sub validateComposition {
 
-    TRACE;
-
     my %composition = %{$this{propertiesLoader}->getCompositionSection()};
-    my $TMS = $this{pyramid}->getTileMatrixSet;
+    my $TMS = $this{pyramid}->getTileMatrixSet();
 
     while( my ($levelId,$sources) = each(%composition) ) {
 
@@ -570,7 +584,7 @@ sub validateComposition {
             $sourcePyr->getLevel($levelId)->intersectBboxIndices(\@bboxIndices);
 
             @{$this{composition}->{$levelId}->{$priority}->{extremTiles}} = @bboxIndices;
-            @{$this{composition}->{$levelId}->{$priority}->{extremImages}} = main::tileToImage(@bboxIndices);
+            @{$this{composition}->{$levelId}->{$priority}->{extremSlabs}} = main::tileToImage(@bboxIndices);
         }
 
         DEBUG("COMPOSITION (debug export) = level ID : $levelId");
@@ -599,8 +613,6 @@ For each level, for each source pyramid :
 =cut
 sub doIt {
 
-    TRACE();
-
     ALWAYS(">>> Browse source pyramids");
 
     my $composition = $this{composition};
@@ -618,11 +630,11 @@ sub doIt {
         my $priority = 1;
 
         # base dir image
-        my $imageDir = File::Spec->catdir($pyramid->getNewDataDir, $pyramid->getDirImage, $levelId);
+        my $imageDir = $pyramid->getLevel($levelId)->getDirImage();
         # base dir mask
         my $maskDir = undef;
         if ($pyramid->ownMasks()) {
-            $maskDir = File::Spec->catdir($pyramid->getNewDataDir, $pyramid->getDirMask, $levelId);
+            $maskDir = $pyramid->getLevel($levelId)->getDirMask();
         }
 
         # tuiles extrêmes pour ce niveau
@@ -638,9 +650,9 @@ sub doIt {
             if (! defined $imax || $extremTiles[2] > $imax) {$imax = $extremTiles[2];}
             if (! defined $jmax || $extremTiles[3] > $jmax) {$jmax = $extremTiles[3];}
 
-            INFO(sprintf "Priority %s : pyramid %s",$priority,$source->{sourcePyramid}->getImageDirectory($levelId));
+            INFO(sprintf "Priority %s : pyramid %s",$priority,$source->{sourcePyramid}->getLevel($levelId)->getDirImage());
 
-            my ($IMIN,$JMIN,$IMAX,$JMAX) = @{$source->{extremImages}};
+            my ($IMIN,$JMIN,$IMAX,$JMAX) = @{$source->{extremSlabs}};
 
             DEBUG("Images' extrem indices : $IMIN,$JMIN,$IMAX,$JMAX");
 
@@ -654,7 +666,7 @@ sub doIt {
                         next;
                     }
 
-                    my $node = JOINCACHE::Node->new($I, $J, $levelId, $this{pyramid}->getDirDepth);
+                    my $node = JOINCACHE::Node->new($I, $J, $levelId, $this{pyramid}->getDirDepth());
                     if (! defined $node) {
                         ERROR(sprintf "Cannot create the node %s,%s", $I, $J);
                         return FALSE;
@@ -711,15 +723,15 @@ sub doIt {
 
     # writting pyramid's configuration file
     ALWAYS(">>> Write pyramid's descriptor");
-    if (! $this{pyramid}->writeConfPyramid) {
+    if (! $this{pyramid}->writeDescriptor()) {
         ERROR("Can not write Pyramid file !");
         return FALSE;
     }
 
     # writting pyramid's cache
     ALWAYS(">>> Write pyramid's cache");
-    if (! $this{pyramid}->writeCachePyramid) {
-        ERROR("Can not write Pyramid Cache !");
+    if (! $this{pyramid}->writeList()) {
+        ERROR("Can not write Pyramid List !");
         return FALSE;
     }
 
@@ -791,7 +803,7 @@ sub searchImage {
     # On cherche maintenant cette dalle dans les sources moins prioritaires
     while( exists $sources->{$priority}) {
         $source = $sources->{$priority};
-        my ($IMIN,$JMIN,$IMAX,$JMAX) = @{$source->{extremImages}};
+        my ($IMIN,$JMIN,$IMAX,$JMAX) = @{$source->{extremSlabs}};
 
         # La dalle appartient-elle à la BBOX de cette source ?
         if ($I < $IMIN || $I > $IMAX || $J < $JMIN || $J > $JMAX) {

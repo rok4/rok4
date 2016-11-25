@@ -243,6 +243,25 @@ sub mergeNtiff {
 }
 
 ####################################################################################################
+#                                      Group: OVERLAY N TIFF                                       #
+####################################################################################################
+
+# Constant: OVERLAYNTIFF_W
+use constant OVERLAYNTIFF_W => 3;
+
+my $ONTFUNCTION = <<'ONTFUNCTION';
+OverlayNtiff () {
+    local config=$1
+    local inTemplate=$2
+
+    overlayNtiff -f ${ONT_CONF_DIR}/$config __oNt__
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    rm -f ${TMP_DIR}/$inTemplate
+    rm -f ${ONT_CONF_DIR}/$config
+}
+ONTFUNCTION
+
+####################################################################################################
 #                                        Group: CACHE TO WORK                                      #
 ####################################################################################################
 
@@ -1041,6 +1060,26 @@ sub getConfiguredFunctions {
 
     $functions .= $DNTFUNCTION;
     $functions =~ s/__dNt__/$conf_dNt/g;
+
+    ######## congigure overlayNtiff ########
+    
+    # my $conf_oNt = "-c zip -s $spp -p $ph -b $nd ";
+    
+    # if ($mm eq "REPLACE") {
+    #     # Dans le cas REPLACE, overlayNtiff est utilisé uniquement pour modifier les caractéristiques
+    #     # d'une image (passer en noir et blanc par exemple)
+    #     # overlayNtiff sera appelé sur une image unique, qu'on "fusionne" en mode TOP
+    #     $conf_oNt .= "-m TOP ";
+    # } else {
+    #     $conf_oNt .= "-m $mm ";        
+    # }
+
+    # if ($mm eq "ALPHATOP") {
+    #     $conf_oNt .= "-t 255,255,255 ";
+    # }
+
+    # $functions .= $ONTFUNCTION;
+    # $functions =~ s/__oNt__/$conf_oNt/;
     
     ######## cache2work ########
 

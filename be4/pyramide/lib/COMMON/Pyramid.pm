@@ -177,7 +177,7 @@ sub new {
             return FALSE;
         }
 
-        # Cette pyramide est donc en lecture, on ne tient pas compte d'un éventuel ancêtre
+        # Cette pyramide est donc en lecture, on ne tient pas compte d'un éventuel ancêtre (qu'on ne devrait pas avoir)
         $this->{type} = "READ";
         $ancestor = undef;
 
@@ -598,13 +598,20 @@ sub checkCompatibility {
     my $other = shift;
     my $strict = shift;
 
+    if ($this->getStorageType() != $other->getStorageType()) {
+        return 0;
+    }
+
+    if ($this->getStorageType() eq "FILE") {
+        if ($this->getDirDepth() != $other->getDirDepth()) {
+            return 0;
+        }
+    }
+
     if ($this->getTilesPerWidth() != $other->getTilesPerWidth()) {
         return 0;
     }
     if ($this->getTilesPerHeight() != $other->getTilesPerHeight()) {
-        return 0;
-    }
-    if ($this->getDirDepth() != $other->getDirDepth()) {
         return 0;
     }
 
@@ -634,7 +641,7 @@ sub checkCompatibility {
 }
 
 ####################################################################################################
-#                                      Group: Write  functions                                     #
+#                                      Group: Write functions                                     #
 ####################################################################################################
 
 sub writeDescriptor {
@@ -694,11 +701,6 @@ sub writeList {
         return FALSE;        
     }
 
-    if (! defined $forest || ref ($forest) ne "COMMON::Forest" ) {
-        ERROR(sprintf "We need a COMMON::Forest to write pyramid list ! ");
-        return FALSE;
-    }
-
     if (defined $ancestor && ref ($ancestor) ne "COMMON::Pyramid" ) {
         ERROR(sprintf "Ancestor, if provided, have to be a COMMON::Pyramid ! ");
         return FALSE;
@@ -749,6 +751,12 @@ sub writeList {
     }
 
     # On a un ancêtre, il va falloir en référencer toutes les dalles
+
+    if (! defined $forest || ref ($forest) ne "COMMON::Forest" ) {
+        ERROR(sprintf "We need a COMMON::Forest to write pyramid list ! ");
+        return FALSE;
+    }
+
     # On va vérifier la compatibilité du stockage de l'ancêtre avec celui de la nouvelle pyramide et le mode de mise à jour
 
     if (! defined $updateMode || $updateMode eq "") {
@@ -1087,6 +1095,25 @@ sub getLevel {
     my $this = shift;
     my $level = shift;
     return $this->{levels}->{$level};
+}
+
+=begin nd
+Function: hasLevel
+
+Precises if the provided level exists in the pyramid.
+
+Parameters (list):
+    levelID - string - Identifiant of the asked level
+=cut
+sub hasLevel {
+    my $this = shift;
+    my $levelID = shift;
+
+    if (defined $levelID && exists $this->{levels}->{$levelID}) {
+        return TRUE;
+    }
+
+    return FALSE;
 }
 
 

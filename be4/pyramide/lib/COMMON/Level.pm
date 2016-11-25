@@ -410,6 +410,12 @@ sub getDirImage {
     return $this->{dir_image};
 }
 
+# Function: getDirImage
+sub getDirMask {
+    my $this = shift;
+    return $this->{dir_mask};
+}
+
 # Function: getDirsInfo
 sub getDirsInfo {
     my $this = shift;
@@ -430,7 +436,7 @@ sub getDirsInfo {
 
     return ($this->{dir_depth}, $dir_data, $dir_image_name, $dir_mask_name);
 }
-# Function: getDirsInfo
+# Function: getS3Info
 sub getS3Info {
     my $this = shift;
 
@@ -440,7 +446,7 @@ sub getS3Info {
 
     return ($this->{bucket_name}, $this->{prefix_image}, $this->{prefix_mask});
 }
-# Function: getDirsInfo
+# Function: getCephInfo
 sub getCephInfo {
     my $this = shift;
 
@@ -657,6 +663,28 @@ sub bindTileMatrix {
     $this->{order} = $tms->getOrderfromID($this->{id});
 
     return TRUE;
+}
+
+####################################################################################################
+#                                  Group: BBOX tools                                               #
+####################################################################################################
+
+=begin nd
+Function: intersectBboxIndices
+
+Intersects provided indices bbox with the extrem tiles of this source level. Provided list is directly modified.
+
+Parameters (list):
+    bbox - list reference - Bounding box to intersect with the level's limits : (colMin,rowMin,colMax,rowMax).
+=cut
+sub intersectBboxIndices {
+    my $self = shift;
+    my $bbox = shift;
+
+    $bbox->[0] = max($bbox->[0], $self->{limits}[0]);
+    $bbox->[1] = max($bbox->[1], $self->{limits}[1]);
+    $bbox->[2] = min($bbox->[2], $self->{limits}[2]);
+    $bbox->[3] = min($bbox->[3], $self->{limits}[3]);
 }
 
 ####################################################################################################

@@ -80,6 +80,8 @@ use warnings;
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
 
+use COMMON::Config;
+
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
 
@@ -119,13 +121,14 @@ END {}
 
 # Function: new
 sub new {
-    my $this = shift;
+    my $class = shift;
     my $filepath = shift;
 
-    my $class= ref($this) || $this;
+    $class= ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above)
-    my $self = {
-        configurationPath => undef,
+    my $this = {
+        cfgFile   => $filepath,
+        cfgObject => undef
         
         logger => undef,
         pyramid => undef,
@@ -134,14 +137,46 @@ sub new {
         process => undef,
     };
 
-    bless($self, $class);
-
-    TRACE;
+    bless($this, $class);
 
     # Load parameters
-    return undef if (! $self->_load($filepath));
+    return undef if (! $this->_init());
+    return undef if (! $this->_load($filepath));
 
-    return $self;
+    return $this;
+}
+
+# Function: _init
+sub _init {
+    my $this = shift;
+
+    my $file = $this->{cfgFile};
+    
+    if (! defined $file || $file eq "") {
+        ERROR ("Filepath undefined");
+        return FALSE;
+    }
+    
+    # init. params
+    if (! -f $file) {
+        ERROR (sprintf "File properties '%s' doesn't exist !?", $file);
+        return FALSE;
+    }
+
+    # load properties 
+    my $cfg = COMMON::Config->new({
+        'filepath' => $file,
+        'format' => "INI"
+    });
+
+    if (! defined $cfg) {
+        ERROR ("Can not load properties !");
+        return FALSE;
+    }
+
+    $this->{cfgObject} = $cfg;
+    
+    return TRUE;
 }
 
 =begin nd
@@ -156,10 +191,8 @@ See Also:
     <isConfSection>, <readCompositionLine>
 =cut
 sub _load {
-    my $self = shift;
+    my $this = shift;
     my $filepath = shift;
-
-    TRACE;
 
     if (! open CFGF, "<", $filepath ){
         ERROR(sprintf "Cannot open configurations' file %s.",$filepath);
@@ -178,7 +211,7 @@ sub _load {
         if ($l =~ m/^\[(\w*)\]$/) {
             $l =~ s/[\[\]]//g;
 
-            if (! $self->isConfSection($l)) {
+            if (! $this->isConfSection($l)) {
                 ERROR ("Invalid section's name");
                 return FALSE;
             }
@@ -198,13 +231,13 @@ sub _load {
         }
 
         if ($currentSection ne 'composition') {
-            if (exists $self->{$currentSection}->{$prop[0]}) {
+            if (exists $this->{$currentSection}->{$prop[0]}) {
                 ERROR (sprintf "A property is defined twice in the configuration : section %s, parameter %s", $currentSection,$prop[0]);
                 return FALSE;
             }
-            $self->{$currentSection}->{$prop[0]} = $prop[1];
+            $this->{$currentSection}->{$prop[0]} = $prop[1];
         } else {
-            if (! $self->readCompositionLine($prop[0],$prop[1])) {
+            if (! $this->readCompositionLine($prop[0],$prop[1])) {
                 ERROR (sprintf "Cannot read a composition line !");
                 return FALSE;
             }
@@ -227,11 +260,10 @@ Parameters (list):
     val - string - Composition's value: pyrPath1,pyrPath2,pyrPath3
 =cut
 sub readCompositionLine {
-    my $self = shift;
+    my $this = shift;
     my $prop = shift;
     my $val = shift;
 
-    TRACE;
 
     my ($levelId,$bboxId) = split(/\./,$prop,-1);
 
@@ -253,21 +285,21 @@ sub readCompositionLine {
         }
 
         my $priority = 1;
-        if (exists $self->{sourceByLevel}->{$levelId}) {
-            $self->{sourceByLevel}->{$levelId} += 1;
-            $priority = $self->{sourceByLevel}->{$levelId};
+        if (exists $this->{sourceByLevel}->{$levelId}) {
+            $this->{sourceByLevel}->{$levelId} += 1;
+            $priority = $this->{sourceByLevel}->{$levelId};
         } else {
-            $self->{sourceByLevel}->{$levelId} = 1;
+            $this->{sourceByLevel}->{$levelId} = 1;
         }
 
-        $self->{composition}->{$levelId}->{$priority} = {
+        $this->{composition}->{$levelId}->{$priority} = {
             bbox => $bboxId,
             pyr => $pyr,
         };
 
-        if (! exists $self->{sourcePyramids}->{$pyr}) {
+        if (! exists $this->{sourcePyramids}->{$pyr}) {
             # we have a new source pyramid, but not yet information about
-            $self->{sourcePyramids}->{$pyr} = undef;
+            $this->{sourcePyramids}->{$pyr} = undef;
         }
 
     }
@@ -289,10 +321,9 @@ Parameters (list):
     section - string - section's name
 =cut
 sub isConfSection {
-    my $self = shift;
+    my $this = shift;
     my $section = shift;
 
-    TRACE;
 
     return FALSE if (! defined $section);
 
@@ -309,38 +340,38 @@ sub isConfSection {
 
 # Function: getSourcePyramids
 sub getSourcePyramids {
-    my $self = shift;
-    return $self->{sourcePyramids};
+    my $this = shift;
+    return $this->{sourcePyramids};
 }
 
 # Function: getPyramidSection
 sub getPyramidSection {
-    my $self = shift;
-    return $self->{pyramid};
+    my $this = shift;
+    return $this->{pyramid};
 }
 
 # Function: getLoggerSection
 sub getLoggerSection {
-    my $self = shift;
-    return $self->{logger};
+    my $this = shift;
+    return $this->{logger};
 }
 
 # Function: getCompositionSection
 sub getCompositionSection {
-    my $self = shift;
-    return $self->{composition};
+    my $this = shift;
+    return $this->{composition};
 }
 
 # Function: getBboxesSection
 sub getBboxesSection {
-    my $self = shift;
-    return $self->{bboxes};
+    my $this = shift;
+    return $this->{bboxes};
 }
 
 # Function: getProcessSection
 sub getProcessSection {
-    my $self = shift;
-    return $self->{process};
+    my $this = shift;
+    return $this->{process};
 }
 
 1;
