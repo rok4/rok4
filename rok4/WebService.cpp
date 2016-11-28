@@ -104,9 +104,9 @@ RawDataSource * WebService::performRequest(std::string request) {
                 curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
                 /* time to connect - not to receive answer */
                 curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, long(timeout));
-		curl_easy_setopt(curl, CURLOPT_TIMEOUT, long(timeout));
+                curl_easy_setopt(curl, CURLOPT_TIMEOUT, long(timeout));
                 curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "identity");
-		curl_easy_setopt(curl, CURLOPT_USERAGENT, ROK4_INFO);
+                curl_easy_setopt(curl, CURLOPT_USERAGENT, ROK4_INFO);
                 if (proxy != "") {
                     curl_easy_setopt(curl, CURLOPT_PROXY, proxy.c_str());
                 }
@@ -194,7 +194,8 @@ RawDataSource * WebService::performRequest(std::string request) {
     /* Convert chunk into a DataSource readable by rok4 */
     if (!errors) {
         LOGGER_DEBUG("Sauvegarde de la donnee");
-        rawData = new RawDataSource(chunk.memory, chunk.size);
+        std::string rType(responseType);
+        rawData = new RawDataSource(chunk.memory, chunk.size, rType,"");
     }
 
     free(chunk.memory);
@@ -210,7 +211,7 @@ RawDataStream * WebService::performRequestStream(std::string request) {
   }
   size_t bufferSize = rawData->getSize();
   const uint8_t* buffer = rawData->getData(bufferSize);
-  RawDataStream* rawStream = new RawDataStream((uint8_t*)buffer,bufferSize);
+  RawDataStream* rawStream = new RawDataStream((uint8_t*)buffer, bufferSize, rawData->getType(), rawData->getEncoding());
   delete rawData;
   return rawStream;
 }

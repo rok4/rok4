@@ -268,7 +268,20 @@ class RawDataSource : public DataSource {
 private:
     size_t dataSize;
     uint8_t* data;
+    std::string type;
+    std::string encoding;
 public:
+    /**
+     * Constructeur.
+     */
+    RawDataSource ( uint8_t *dat, size_t dataS, std::string t, std::string e){
+        dataSize = dataS;
+        data = new uint8_t[dataSize];
+        memcpy ( data, dat, dataSize );
+        type = t;
+        encoding = e;
+    }
+
     /**
      * Constructeur.
      */
@@ -276,6 +289,8 @@ public:
         dataSize = dataS;
         data = new uint8_t[dataSize];
         memcpy ( data, dat, dataSize );
+        type = "";
+        encoding = "";
     }
 
     /** Destructeur **/
@@ -303,7 +318,7 @@ public:
 
     /** @return le type du dataStream */
     std::string getType() {
-        return "";
+        return type;
     }
 
     /** @return le status du dataStream */
@@ -313,7 +328,7 @@ public:
 
      /** @return l'encodage du dataStream */
     std::string getEncoding() {
-        return "";
+        return encoding;
     }
 
     /** @return la taille du buffer */
@@ -330,7 +345,21 @@ private:
     size_t dataSize;
     uint8_t* data;
     size_t pos;
+    std::string type;
+    std::string encoding;
 public:
+    /**
+     * Constructeur.
+     */
+    RawDataStream ( uint8_t *dat, size_t dataS, std::string t, std::string e){
+        dataSize = dataS;
+        data = new uint8_t[dataSize];
+        memcpy ( data, dat, dataSize );
+        pos = 0;
+        type = t;
+        encoding = e;
+    }
+
     /**
      * Constructeur.
      */
@@ -339,6 +368,8 @@ public:
         data = new uint8_t[dataSize];
         memcpy ( data, dat, dataSize );
         pos = 0;
+        type = "";
+        encoding = "";
     }
 
     /** Destructeur **/
@@ -360,7 +391,7 @@ public:
 
     /** @return le type du dataStream */
     std::string getType() {
-        return "";
+        return type;
     }
 
     /** @return le status du dataStream */
@@ -370,7 +401,7 @@ public:
 
      /** @return l'encodage du dataStream */
     std::string getEncoding() {
-        return "";
+        return encoding;
     }
 
     /** @return la taille du buffer */
