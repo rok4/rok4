@@ -62,6 +62,15 @@ use File::Map qw(map_file);
 use HTTP::Request;
 use File::Basename;
 
+require Exporter;
+use AutoLoader qw(AUTOLOAD);
+
+our @ISA = qw(Exporter);
+
+our %EXPORT_TAGS = ( 'all' => [ qw() ] );
+our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
+our @EXPORT      = qw();
+
 use Log::Log4perl qw(:easy);
 
 ################################################################################
