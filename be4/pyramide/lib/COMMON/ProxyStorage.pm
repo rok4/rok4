@@ -56,19 +56,11 @@ use strict;
 use warnings;
 
 use Data::Dumper;
-use Net::Amazon::S3;
+use XML::Hash;
+use Digest::SHA;
+use File::Map qw(map_file);
+use HTTP::Request;
 use File::Basename;
-
-use COMMON::Array;
-
-require Exporter;
-use AutoLoader qw(AUTOLOAD);
-
-our @ISA = qw(Exporter);
-
-our %EXPORT_TAGS = ( 'all' => [ qw() ] );
-our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
-our @EXPORT      = qw();
 
 use Log::Log4perl qw(:easy);
 
@@ -78,6 +70,13 @@ use constant TRUE  => 1;
 use constant FALSE => 0;
 
 my @STORAGETYPES = ("FILE", "CEPH", "S3");
+
+my $UA = LWP::UserAgent->new();
+
+### S3
+
+my $S3_ENDPOINT_NOPROTOCOL = $ENV{ROK4_S3_URL};
+$S3_ENDPOINT_NOPROTOCOL =~ s/^https?:\/\///;
 
 ####################################################################################################
 #                               Group: Copy methods                                                #
@@ -113,10 +112,65 @@ sub copy {
             return TRUE;
         }
         elsif ($toType eq "CEPH") {
-            return FALSE;
+            my ($poolName, @rest) = split("/", $toPath);
+            my $objectName = join("", @rest);
+
+            if (! defined $poolName || ! defined $objectName) {
+                ERROR("CEPH path is not valid (<poolName>/<objectName>) : $toPath");
+                return FALSE;
+            }
+
+            `rados -p $poolName put $objectName $fromPath`;
+            if ($?) {
+                ERROR("Cannot upload file '$fromPath' to CEPH object $objectName (pool $poolName): $!");
+                return FALSE;
+            }
+
+            return TRUE;
         }
         elsif ($toType eq "S3") {
-            return FALSE;
+            my ($bucketName, @rest) = split("/", $toPath);
+            my $objectName = join("", @rest);
+
+            if (! defined $bucketName || ! defined $objectName) {
+                ERROR("S3 path is not valid (<bucketName>/<objectName>) : $toPath");
+                return FALSE;
+            }
+
+            my $body;
+
+            map_file $body, $fromPath;
+
+            my $resource = "/$bucketName/$objectName";
+            my $contentType="application/octet-stream";
+            my $dateValue=`TZ=GMT date -R`;
+            chomp($dateValue);
+            my $stringToSign="PUT\n\n$contentType\n$dateValue\n$resource";
+
+            my $signature = Digest::SHA::hmac_sha1_base64($stringToSign, $ENV{ROK4_S3_SECRETKEY});
+            while (length($signature) % 4) {
+                $signature .= '=';
+            }
+
+            # set custom HTTP request header fields
+            my $request = HTTP::Request->new(PUT => $ENV{ROK4_S3_URL}.$resource);
+            $request->content($body);
+            $request->header('Host' => $S3_ENDPOINT_NOPROTOCOL);
+            $request->header('Date' => $dateValue);
+            $request->header('Content-Type' => $contentType);
+            $request->header('Authorization' => sprintf ("AWS %s:$signature", $ENV{ROK4_S3_KEY}));
+             
+            my $response = $UA->request($request);
+            if ($response->is_success) {
+                return TRUE;
+            }
+            else {
+                ERROR("Cannot upload file '$fromPath' to S3 object $objectName (bucket $bucketName)");
+                ERROR("HTTP code: ", $response->code);
+                ERROR("HTTP message: ", $response->message);
+                ERROR("HTTP decoded content : ", $response->decoded_content);
+                return FALSE;
+            }
         }
     }
     elsif ($fromType eq "CEPH") {
@@ -206,6 +260,201 @@ sub isPresent {
     }
 
     return FALSE;
+}
+
+####################################################################################################
+#                               Group: Content methods                                             #
+####################################################################################################
+
+=begin nd
+Function: getContainers
+
+Return array reference
+=cut
+sub getContainers {
+    my $type = shift;
+
+    if ($type eq "FILE") {
+        ERROR("No container concept in file storage");
+        return undef;
+    }
+    elsif ($type eq "CEPH") {
+        ERROR("Not implemented");
+        return undef;
+    }
+    elsif ($type eq "S3") {
+        my $resource = "/";
+        my $contentType="application/octet-stream";
+        my $dateValue=`TZ=GMT date -R`;
+        chomp($dateValue);
+        my $stringToSign="GET\n\n$contentType\n$dateValue\n$resource";
+
+        my $signature = Digest::SHA::hmac_sha1_base64($stringToSign, $ENV{ROK4_S3_SECRETKEY});
+        while (length($signature) % 4) {
+            $signature .= '=';
+        }
+
+        # set custom HTTP request header fields
+        my $request = HTTP::Request->new(GET => $ENV{ROK4_S3_URL}.$resource);
+        $request->header('Host' => $S3_ENDPOINT_NOPROTOCOL);
+        $request->header('Date' => $dateValue);
+        $request->header('Content-Type' => $contentType);
+        $request->header('Authorization' => sprintf ("AWS %s:$signature", $ENV{ROK4_S3_KEY}));
+         
+        my $response = $UA->request($request);
+        if ($response->is_success) {
+            my $xml_converter = XML::Hash->new();
+            my $xml_hash = $xml_converter->fromXMLStringtoHash($response->decoded_content);
+            if (exists $xml_hash->{ListAllMyBucketsResult}->{Buckets}->{Bucket} && ref($xml_hash->{ListAllMyBucketsResult}->{Buckets}->{Bucket}) eq "HASH") {
+                return [$xml_hash->{ListAllMyBucketsResult}->{Buckets}->{Bucket}->{Name}->{text}];
+            }
+            elsif (exists $xml_hash->{ListAllMyBucketsResult}->{Buckets}->{Bucket} && ref($xml_hash->{ListAllMyBucketsResult}->{Buckets}->{Bucket}) eq "ARRAY") {
+                my $result = [];
+                foreach my $b (@{$xml_hash->{ListAllMyBucketsResult}->{Buckets}->{Bucket}}) {
+                    push @{$result}, $b->{Name}->{text};
+                }
+                return $result;
+            } else {
+                return [];
+            }
+        }
+        else {
+            ERROR("HTTP code: ", $response->code);
+            ERROR("HTTP message: ", $response->message);
+            ERROR("HTTP decoded content : ", $response->decoded_content);
+            return undef;
+        }
+
+    }
+
+    return undef;
+}
+
+=begin nd
+Function: getContent
+
+Return array reference
+=cut
+sub getContent {
+    my $type = shift;
+    my $container = shift;
+
+    if ($type eq "FILE") {
+        my @ls = `ls $container`;
+        my $results = [];
+        foreach my $c (@ls) {
+            push(@{$results}, chomp($c));
+        }
+        return $results;
+    }
+    elsif ($type eq "CEPH") {
+        ERROR("Not implemented");
+        return undef;
+    }
+    elsif ($type eq "S3") {
+        my $resource = "/$container";
+        my $contentType="application/octet-stream";
+        my $dateValue=`TZ=GMT date -R`;
+        chomp($dateValue);
+        my $stringToSign="GET\n\n$contentType\n$dateValue\n$resource";
+
+        my $signature = Digest::SHA::hmac_sha1_base64($stringToSign, $ENV{ROK4_S3_SECRETKEY});
+        while (length($signature) % 4) {
+            $signature .= '=';
+        }
+
+        # set custom HTTP request header fields
+        my $request = HTTP::Request->new(GET => $ENV{ROK4_S3_URL}.$resource);
+        $request->header('Host' => $S3_ENDPOINT_NOPROTOCOL);
+        $request->header('Date' => $dateValue);
+        $request->header('Content-Type' => $contentType);
+        $request->header('Authorization' => sprintf ("AWS %s:$signature", $ENV{ROK4_S3_KEY}));
+         
+        my $response = $UA->request($request);
+        if ($response->is_success) {
+            my $xml_converter = XML::Hash->new();
+            my $xml_hash = $xml_converter->fromXMLStringtoHash($response->decoded_content);
+            if (exists $xml_hash->{ListBucketResult}->{Contents} && ref($xml_hash->{ListBucketResult}->{Contents}) eq "HASH") {
+                return [$xml_hash->{ListBucketResult}->{Contents}->{Key}->{text}];
+            }
+            elsif (exists $xml_hash->{ListBucketResult}->{Contents} && ref($xml_hash->{ListBucketResult}->{Contents}) eq "ARRAY") {
+                my $result = [];
+                foreach my $o (@{$xml_hash->{ListBucketResult}->{Contents}}) {
+                    push @{$result}, $o->{Key}->{text};
+                }
+                return $result;
+            } else {
+                return [];
+            }
+        }
+        else {
+            ERROR("HTTP code: ", $response->code);
+            ERROR("HTTP message: ", $response->message);
+            ERROR("HTTP decoded content : ", $response->decoded_content);
+            return undef;
+        }
+    }
+
+    return undef;
+}
+
+=begin nd
+Function: getSize
+
+Return size of file/object
+=cut
+sub getSize {
+    my $type = shift;
+    my $path = shift;
+
+    if ($type eq "FILE") {
+        return -s $path;
+    }
+    elsif ($type eq "CEPH") {
+        ERROR("Not implemented");
+        return undef;
+    }
+    elsif ($type eq "S3") {
+
+        my ($bucketName, @rest) = split("/", $path);
+        my $objectName = join("", @rest);
+
+        if (! defined $bucketName || ! defined $objectName) {
+            ERROR("S3 path is not valid (<bucketName>/<objectName>) : $path");
+            return FALSE;
+        }
+
+        my $resource = "/$bucketName/$objectName";
+        my $contentType="application/octet-stream";
+        my $dateValue=`TZ=GMT date -R`;
+        chomp($dateValue);
+        my $stringToSign="HEAD\n\n$contentType\n$dateValue\n$resource";
+
+        my $signature = Digest::SHA::hmac_sha1_base64($stringToSign, $ENV{ROK4_S3_SECRETKEY});
+        while (length($signature) % 4) {
+            $signature .= '=';
+        }
+
+        # set custom HTTP request header fields
+        my $request = HTTP::Request->new(HEAD => $ENV{ROK4_S3_URL}.$resource);
+        $request->header('Host' => $S3_ENDPOINT_NOPROTOCOL);
+        $request->header('Date' => $dateValue);
+        $request->header('Content-Type' => $contentType);
+        $request->header('Authorization' => sprintf ("AWS %s:$signature", $ENV{ROK4_S3_KEY}));
+         
+        my $response = $UA->request($request);
+        if ($response->is_success) {
+            return $response->header("Content-Length");
+        }
+        else {
+            ERROR("HTTP code: ", $response->code);
+            ERROR("HTTP message: ", $response->message);
+            ERROR("HTTP decoded content : ", $response->decoded_content);
+            return undef;
+        }
+    }
+
+    return undef;
 }
 
 ####################################################################################################
