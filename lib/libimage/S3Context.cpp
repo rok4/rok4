@@ -58,16 +58,32 @@ S3Context::S3Context (std::string u, std::string k, std::string sk, std::string 
     Context(),
     url(u), key(k), secret_key(sk), bucket_name(b)
 {
+    // On calcule host = url sans le protocole
+    std::size_t found = url.find("://");
+    if (found != std::string::npos) {
+        host = url.substr(found + 3);
+    } else {
+        host = url;
+    }
 }
 
 S3Context::S3Context (std::string b) : Context(), bucket_name(b) {
 
     char* u = getenv ("ROK4_S3_URL");
     if (u == NULL) {
-        url.assign("localhost:8080");
+        url.assign("http://localhost:8080");
     } else {
         url.assign(u);
     }
+
+    // On calcule host = url sans le protocole
+    std::size_t found = url.find("://");
+    if (found != std::string::npos) {
+        host = url.substr(found + 3);
+    } else {
+        host = url;
+    }
+    
 
     char* k = getenv ("ROK4_S3_KEY");
     if (k == NULL) {
@@ -154,7 +170,7 @@ int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
 
     int lastBytes = offset + size - 1;
 
-    curl = curl_easy_init();
+    CURL *curl = curl_easy_init();
     //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
 
@@ -177,9 +193,9 @@ int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
     sprintf(range, "Range: bytes=%d-%d", offset, lastBytes);
     list = curl_slist_append(list, range);
 
-    char host[256];
-    sprintf(host, "Host: %s", url.c_str());
-    list = curl_slist_append(list, host);
+    char hd_host[256];
+    sprintf(hd_host, "Host: %s", host.c_str());
+    list = curl_slist_append(list, hd_host);
 
     char d[100];
     sprintf(d, "Date: %s", gmt_time);
@@ -253,7 +269,7 @@ bool S3Context::writeFromFile(std::string fileName, std::string objectName) {
 
     CURLcode res;
     struct curl_slist *list = NULL;
-    curl = curl_easy_init();
+    CURL *curl = curl_easy_init();
     //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
     std::string fullUrl = url + "/" + bucket_name + "/" + objectName;

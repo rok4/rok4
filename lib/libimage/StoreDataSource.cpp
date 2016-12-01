@@ -81,7 +81,6 @@ StoreDataSource * StoreDataSourceFactory::createStoreDataSource (
     const char* name, bool indexToRead, const uint32_t posoff, const uint32_t possize, std::string type ,
     Context* c, std::string encoding
 ) {
-
     return new StoreDataSource(name, indexToRead, posoff,possize, type, c, encoding);
 }
 

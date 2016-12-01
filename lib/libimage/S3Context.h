@@ -71,6 +71,11 @@ private:
     std::string url;
 
     /**
+     * \~french \brief Hôte de l'API S3 (URL sans protocole)
+     * \~english \brief S3 API Host (URL without protocol)
+     */
+    std::string host;
+    /**
      * \~french \brief Clé S3
      * \~english \brief S3 key
      */
@@ -87,12 +92,6 @@ private:
      */
     std::string bucket_name;
     
-    /**
-     * \~french \brief Objet Curl pour communiquer avec l'API Rest de S3
-     * \~english \brief Curl object to communicate with S3 Rest API
-     */
-    CURL *curl;
-
 
     /**
      * \~french \brief Calcule la signature à partir du header
