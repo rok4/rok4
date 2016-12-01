@@ -173,10 +173,18 @@ sub _check {
     }
 
 
-    if (! $self->{cfgObject}->isProperty({property=>"pool_name",section=>"to"})) {
-       ERROR("'pool_name' property is missing");
-        return FALSE; 
+    if ( $self->{cfgObject}->isProperty({property=>"pool_name",section=>"to"})) {
+        INFO("'pool_name' is provided : CEPH push");
     }
+    elsif ( $self->{cfgObject}->isProperty({property=>"bucket_name",section=>"to"})) {
+        INFO("'bucket_name' is provided : S3 push");
+    }
+    else {
+        ERROR("Neither pool_name nor bucket_name provided");       
+        return FALSE;
+    }
+
+
     if (! $self->{cfgObject}->isProperty({property=>"pyr_name",section=>"to"})) {
        ERROR("'pyr_name' property is missing");
         return FALSE; 

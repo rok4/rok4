@@ -316,7 +316,7 @@ sub addSubElm {
 
 
 
-my $BASHFUNCTIONS   = <<'FUNCTIONS';
+my $BASHFUNCTIONS_CEPH   = <<'FUNCTIONS';
 
 StoreTiles () {
     local fullPath=$1
@@ -349,13 +349,48 @@ StoreSlab () {
     rados -p ${POOL_NAME} put $objName $fullPath 
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 
-    echo "${objName}" >> ${TMP_LIST_FILE}
+    echo "0/${objName}" >> ${TMP_LIST_FILE}
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 
 
 
 FUNCTIONS
+
+my $BASHFUNCTIONS_S3   = <<'FUNCTIONS';
+
+
+StoreSlab () {
+
+    local fullPath=$1
+    local objName=$2
+    
+    resource="/${BUCKET_NAME}/${objName}"
+    contentType="application/octet-stream"
+    dateValue=`TZ=GMT date -R`
+    stringToSign="PUT\n\n${contentType}\n${dateValue}\n${resource}"
+
+    server=$(echo ${ROK4_S3_URL} | sed 's!.*://!!')
+
+    signature=`echo -en ${stringToSign} | openssl sha1 -hmac ${ROK4_S3_SECRETKEY} -binary | base64`
+
+    curl -X PUT -T "${fullPath}" \
+     -H "Host: ${server}" \
+     -H "Date: ${dateValue}" \
+     -H "Content-Type: ${contentType}" \
+     -H "Authorization: AWS ${ROK4_S3_KEY}:${signature}" \
+     ${ROK4_S3_URL}${resource}
+
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+
+    echo "0/${objName}" >> ${TMP_LIST_FILE}
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+
+
+FUNCTIONS
+
+
 
 
 sub doIt {
@@ -367,6 +402,8 @@ sub doIt {
     my $follow_links = 1;
     my $store_tiles = 0;
     my $script_index = 0;
+    my $to_storage_type = undef;
+    my $containerName = undef;
 
 
     # Test des parametres
@@ -374,14 +411,30 @@ sub doIt {
         $follow_links = 0;
     }
 
+    if ( defined $params->{to}->{pool_name} ) {
+        $to_storage_type = "CEPH";
+        $containerName = $params->{to}->{pool_name};
+    }
+    elsif ( defined $params->{to}->{bucket_name} ) {
+        $to_storage_type = "S3";
+        $containerName = $params->{to}->{bucket_name};
+    }
+    else {
+        ERROR( "Neither pool_name nor bucket_name provided. Not normal");
+        return FALSE;
+    }
+
     ### We want to store tiles separatly ?
     if ( exists $params->{to}->{tiles_storage} && defined $params->{to}->{tiles_storage} && uc($params->{to}->{tiles_storage}) eq "TRUE" ) {
+        if ( $to_storage_type ne "CEPH" ) {
+            ERROR("Tile storage only handled for ceph");
+            return FALSE;
+        }
         INFO("We store tiles on ceph separately");
         $store_tiles = 1;
     }
     
     my $pyrName = $params->{to}->{pyr_name};
-    my $poolName = $params->{to}->{pool_name};
     my $job_number = $params->{process}->{job_number};
     my $path_temp = $params->{process}->{path_temp};
     my $listFinal = $params->{to}->{pyr_desc_path} . "/$pyrName.list";
@@ -448,9 +501,14 @@ sub doIt {
             $masknode->removeChild($maskfilenode);
         }
 
-        my $cephcontext = $level->addNewChild('', "cephContext");
-        addSubElm($doc, $cephcontext, "poolName", $params->{to}->{pool_name});
-
+        if ( $to_storage_type eq "CEPH" ) {
+            my $cephcontext = $level->addNewChild('', "cephContext");
+            addSubElm($doc, $cephcontext, "poolName", $containerName);
+        }
+        elsif ( $to_storage_type eq "S3" ) {
+            my $s3context = $level->addNewChild('', "s3Context");
+            addSubElm($doc, $s3context, "bucketName", $containerName);
+        }
         addSubElm($doc, $level, "imagePrefix", "${pyrName}_IMG_$id");
 
         $level->normalize;
@@ -490,12 +548,24 @@ sub doIt {
         print $STREAM "#!/bin/bash\n\n";
         print $STREAM "TMP_LIST_FILE=$list\n";
         print $STREAM "SECONDS=0\n";
-        print $STREAM "POOL_NAME=$poolName\n";
-        print $STREAM "TPW=$tpw\n";
-        print $STREAM "TPH=$tph\n";
+        if ( $to_storage_type eq "CEPH" ) {
+            print $STREAM "POOL_NAME=$containerName\n";
+        }
+        elsif ( $to_storage_type eq "S3" ) {
+            print $STREAM "BUCKET_NAME=$containerName\n";
+        }
+        if ( $store_tiles ) {
+            print $STREAM "TPW=$tpw\n";
+            print $STREAM "TPH=$tph\n";
+        }
         print $STREAM "TMP_LIST_FILE=$list\n";
         print $STREAM "date\n";
-        print $STREAM $BASHFUNCTIONS;
+        if ( $to_storage_type eq "CEPH" ) {
+            print $STREAM $BASHFUNCTIONS_CEPH;
+        }
+        elsif ( $to_storage_type eq "S3" ) {
+            print $STREAM $BASHFUNCTIONS_S3;
+        }
 
         push(@scripts_done, 0);
     }
@@ -509,7 +579,7 @@ sub doIt {
         return FALSE;
     }
     print $STREAMFINISHER "#!/bin/bash\n\n";
-    print $STREAMFINISHER "echo $poolName > $listFinal\n";
+    print $STREAMFINISHER "echo '0=${containerName}' > $listFinal\n";
     print $STREAMFINISHER "echo '#' >> $listFinal\n";
     print $STREAMFINISHER "cat ${path_temp}/*.list >> $listFinal\n";
 
@@ -710,10 +780,11 @@ Example:
 
 Topic: to
 
-    pool_name - Pool (must already exist). Mandatory.
-    pyr_name - Pyramid's name, used to prefix ceph objects. Mandatory.
+    pool_name - Pool (must already exist). If not, bucket_name mandatory.
+    bucket_name - Bucket (must already exist). If not, pool_name mandatory.
+    pyr_name - Pyramid's name, used to prefix objects. Mandatory.
     pyr_desc_path - Directory where new pyramid's descriptor and list are written. Mandatory.
-    tiles_storage - Optionnal. If set to "true", slab are divised and tiles are stored separated
+    tiles_storage - Optionnal (only for ceph). If set to "true", slab are divised and tiles are stored separated
 
 Example:
     (start code)
@@ -741,5 +812,7 @@ Group: Externals tools
 Scripts' execution needs following tools:
 
     - rados
+    - openssl
+    - curl
     
 =cut
