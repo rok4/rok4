@@ -96,8 +96,6 @@ use COMMON::Base36;
 use XML::LibXML;
 use PYR2PYR::PropertiesLoader;
 
-
-
 ################################################################################
 # Constantes
 use constant TRUE  => 1;

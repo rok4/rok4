@@ -71,7 +71,6 @@ use POSIX qw(locale_h);
 use Log::Log4perl qw(:easy);
 use Getopt::Long;
 use File::Basename;
-use Pod::Usage;
 use Cwd;
 
 # My search module

@@ -71,7 +71,6 @@ use strict;
 use POSIX qw(locale_h);
 
 use Getopt::Long;
-use Pod::Usage;
 
 use Data::Dumper;
 

@@ -60,6 +60,8 @@ use XML::Hash;
 use Digest::SHA;
 use File::Map qw(map_file);
 use HTTP::Request;
+use HTTP::Response;
+use LWP::UserAgent;
 use File::Basename;
 
 require Exporter;

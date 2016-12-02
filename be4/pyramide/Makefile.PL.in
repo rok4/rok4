@@ -16,7 +16,6 @@ WriteMakefile(
                 "Config::IniFiles" => 2.68,
                 # Require any version
                 "POSIX"            => 0,
-                "Pod::Usage"       => 0,
                 "Getopt::Long"     => 0,
                 #
                 "Log::Log4perl"    => 0,
