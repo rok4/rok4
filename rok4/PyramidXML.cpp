@@ -38,7 +38,6 @@
 #include "PyramidXML.h"
 
 #include <tinyxml.h>
-#include <tinystr.h>
 #include <libgen.h>
 
 #include "TileMatrixXML.h"
@@ -87,7 +86,7 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
         LOGGER_ERROR ( _ ( "La pyramide [" ) << filePath <<_ ( "] n'a pas de TMS. C'est un probleme." ) );
         return;
     }
-    std::string tmsName= pElem->GetTextStr();
+    std::string tmsName= DocumentXML::getTextStrFromElem(pElem);
 
     tms = serverXML->getTMS(tmsName);
     if ( tms == NULL ) {
@@ -102,7 +101,7 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
         LOGGER_ERROR ( _ ( "La pyramide [" ) << filePath <<_ ( "] n'a pas de format." ) );
         return;
     }
-    std::string formatStr= pElem->GetTextStr();
+    std::string formatStr= DocumentXML::getTextStrFromElem(pElem);
 
     //  to remove when TIFF_RAW_INT8 et TIFF_RAW_FLOAT32 only will be used
     if ( formatStr.compare ( "TIFF_INT8" ) == 0 ) formatStr = "TIFF_RAW_INT8";
@@ -121,7 +120,7 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
         LOGGER_ERROR ( "La pyramide [" << filePath << "] n'a pas de photométrie." );
         return;
     }
-    std::string photometricStr = pElem->GetTextStr();
+    std::string photometricStr = DocumentXML::getTextStrFromElem(pElem);
 
     photo = Photometric::fromString ( photometricStr );
     if ( ! ( photo ) ) {
@@ -138,7 +137,7 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
         channels = DEFAULT_CHANNELS;
         return;
     } else if ( !sscanf ( pElem->GetText(),"%d",&channels ) ) {
-        LOGGER_ERROR ( _ ( "La pyramide [" ) << filePath <<_ ( "] : channels=[" ) << pElem->GetTextStr() <<_ ( "] is not an integer." ) );
+        LOGGER_ERROR ( _ ( "La pyramide [" ) << filePath <<_ ( "] : channels=[" ) << DocumentXML::getTextStrFromElem(pElem) <<_ ( "] is not an integer." ) );
         return;
     }
     //----
@@ -149,7 +148,7 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
     // est à la volée
     pElem=hRoot.FirstChild ( "nodataValue" ).Element();
     if ( pElem && pElem->GetText() ) {
-        ndValuesStr = pElem->GetTextStr();
+        ndValuesStr = DocumentXML::getTextStrFromElem(pElem);
 
         //conversion string->vector
         std::size_t found = ndValuesStr.find_first_of(",");

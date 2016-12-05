@@ -77,8 +77,7 @@ use File::Path;
 use Data::Dumper;
 
 use COMMON::Harvesting;
-use BE4S3::Level;
-use COMMON::GraphNode;
+use COMMON::Node;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);

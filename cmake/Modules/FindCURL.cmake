@@ -1,3 +1,4 @@
+
 # CMake module to search for Curl library
 #
 # If it's found it sets CURL_FOUND to TRUE

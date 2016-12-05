@@ -45,7 +45,6 @@
 
 #include "Rok4Server.h"
 #include "tinyxml.h"
-#include "tinystr.h"
 #include <iostream>
 #include <algorithm>
 #include <iomanip>

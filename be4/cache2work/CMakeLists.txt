@@ -123,10 +123,6 @@ if(UNITTEST)
 endif(UNITTEST)
 
 ########################################
-#Installe la documentation de base
-INSTALL(FILES LICENCE README DESTINATION share/doc/${PARENT_PROJECT_NAME}/${PROJECT_NAME})
-
-########################################
 #Installation dans les répertoires par défauts
 #Pour installer dans le répertoire /opt/projet :
 #cmake -DCMAKE_INSTALL_PREFIX=/opt/projet 

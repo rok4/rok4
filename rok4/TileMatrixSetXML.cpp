@@ -85,20 +85,20 @@ TileMatrixSetXML::TileMatrixSetXML(std::string path ) : DocumentXML(path)
         LOGGER_ERROR ( _ ( "TileMatrixSet " ) << id <<_ ( " pas de crs!!" ) );
         return;
     }
-    crs = CRS( pElem->GetTextStr() );
+    crs = CRS( DocumentXML::getTextStrFromElem(pElem) );
 
     // Récupération du titre
 
     pElem=hRoot.FirstChild ( "title" ).Element();
     if ( pElem && pElem->GetText() ) {
-        title = pElem->GetTextStr();
+        title = DocumentXML::getTextStrFromElem(pElem);
     }
 
     // Récupération du résumé
 
     pElem=hRoot.FirstChild ( "abstract" ).Element();
     if ( pElem && pElem->GetText() ) {
-        abstract = pElem->GetTextStr();
+        abstract = DocumentXML::getTextStrFromElem(pElem);
     }
 
     // Récupération des mots clés
@@ -112,7 +112,7 @@ TileMatrixSetXML::TileMatrixSetXML(std::string path ) : DocumentXML(path)
             attributes.insert ( attribute ( attrib->NameTStr(),attrib->ValueStr() ) );
             attrib = attrib->Next();
         }
-        keyWords.push_back ( Keyword ( pElem->GetTextStr(),attributes ) );
+        keyWords.push_back ( Keyword ( DocumentXML::getTextStrFromElem(pElem),attributes ) );
     }
 
 

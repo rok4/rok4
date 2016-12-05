@@ -85,13 +85,13 @@ StyleXML::StyleXML(std::string path, ServicesXML* servicesXML) : DocumentXML ( p
         LOGGER_ERROR ( _ ( "Style " ) << filePath <<_ ( " pas de d'identifiant!!" ) );
         return;
     }
-    id = pElem->GetTextStr();
+    id = DocumentXML::getTextStrFromElem(pElem);
 
     for ( pElem=hRoot.FirstChild ( "Title" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "Title" ) ) {
         
         if ( ! ( pElem->GetText() ) ) continue;
 
-        std::string curtitle = pElem->GetTextStr();
+        std::string curtitle = DocumentXML::getTextStrFromElem(pElem);
         titles.push_back ( curtitle );
     }
 
@@ -104,7 +104,7 @@ StyleXML::StyleXML(std::string path, ServicesXML* servicesXML) : DocumentXML ( p
         
         if ( ! ( pElem->GetText() ) ) continue;
 
-        std::string curAbstract = pElem->GetTextStr();
+        std::string curAbstract = DocumentXML::getTextStrFromElem(pElem);
         abstracts.push_back ( curAbstract );
     }
 
@@ -122,7 +122,7 @@ StyleXML::StyleXML(std::string path, ServicesXML* servicesXML) : DocumentXML ( p
             attributes.insert ( attribute ( attrib->NameTStr(),attrib->ValueStr() ) );
             attrib = attrib->Next();
         }
-        keywords.push_back ( Keyword ( pElem->GetTextStr(),attributes ) );
+        keywords.push_back ( Keyword ( DocumentXML::getTextStrFromElem(pElem),attributes ) );
     }
 
     for ( pElem=hRoot.FirstChild ( "LegendURL" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "LegendURL" ) ) {

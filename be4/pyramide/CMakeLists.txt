@@ -119,9 +119,6 @@ if(BUILD_DOC)
 
 endif(BUILD_DOC)
 
-#Installe la documentation de base
-INSTALL(FILES QUESTIONS README CHANGES INSTALL FIXME DESTINATION share/doc/${PARENT_PROJECT_NAME}/${PROJECT_NAME})
-
 ########################################
 #Installation dans les répertoires par défauts
 #Pour installer dans le répertoire /opt/projet :

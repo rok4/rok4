@@ -106,24 +106,24 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
     id=filePath.substr ( idBegin+1, idEnd-idBegin-1 );
 
     pElem=hRoot.FirstChild ( "title" ).Element();
-    if ( pElem && pElem->GetText() ) title= pElem->GetTextStr();
+    if ( pElem && pElem->GetText() ) title= DocumentXML::getTextStrFromElem(pElem);
 
     pElem=hRoot.FirstChild ( "abstract" ).Element();
-    if ( pElem && pElem->GetText() ) abstract= pElem->GetTextStr();
+    if ( pElem && pElem->GetText() ) abstract= DocumentXML::getTextStrFromElem(pElem);
 
     pElem=hRoot.FirstChild ( "WMSAuthorized" ).Element();
-    if ( pElem && pElem->GetText() && pElem->GetTextStr()=="false") WMSauth= false;
+    if ( pElem && pElem->GetText() && DocumentXML::getTextStrFromElem(pElem)=="false") WMSauth= false;
 
     pElem=hRoot.FirstChild ( "WMTSAuthorized" ).Element();
-    if ( pElem && pElem->GetText() && pElem->GetTextStr()=="false") WMTSauth= false;
+    if ( pElem && pElem->GetText() && DocumentXML::getTextStrFromElem(pElem)=="false") WMTSauth= false;
 
     pElem=hRoot.FirstChild("getFeatureInfoAvailability").Element();
-    if ( pElem && pElem->GetText() && pElem->GetTextStr()=="true") {
+    if ( pElem && pElem->GetText() && DocumentXML::getTextStrFromElem(pElem)=="true") {
         getFeatureInfoAvailability= true;
 
         pElem=hRoot.FirstChild("getFeatureInfoType").Element();
         if ( pElem && pElem->GetText()) {
-            getFeatureInfoType = pElem->GetTextStr();
+            getFeatureInfoType = DocumentXML::getTextStrFromElem(pElem);
         }
 
         // en fonction du type : pas le meme schema xml
@@ -134,7 +134,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
             hDoc=hRoot.FirstChild("getFeatureInfoUrl");
             pElem=hDoc.FirstChild("getFeatureInfoBaseURL").Element();
             if ( pElem && pElem->GetText()) {
-                getFeatureInfoBaseURL = pElem->GetTextStr();
+                getFeatureInfoBaseURL = DocumentXML::getTextStrFromElem(pElem);
                 std::string a = getFeatureInfoBaseURL.substr(getFeatureInfoBaseURL.length()-1, 1);
                 if ( a.compare("?") != 0 ) {
                    getFeatureInfoBaseURL = getFeatureInfoBaseURL + "?";
@@ -142,19 +142,19 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
             }
             pElem=hDoc.FirstChild("layers").Element();
             if ( pElem && pElem->GetText()) {
-                GFILayers = pElem->GetTextStr();
+                GFILayers = DocumentXML::getTextStrFromElem(pElem);
             }
             pElem=hDoc.FirstChild("queryLayers").Element();
             if ( pElem && pElem->GetText()) {
-                GFIQueryLayers = pElem->GetTextStr();
+                GFIQueryLayers = DocumentXML::getTextStrFromElem(pElem);
             }
             pElem=hDoc.FirstChild("version").Element();
             if ( pElem && pElem->GetText()) {
-                GFIVersion = pElem->GetTextStr();
+                GFIVersion = DocumentXML::getTextStrFromElem(pElem);
             }
             pElem=hDoc.FirstChild("service").Element();
             if ( pElem && pElem->GetText()) {
-                GFIService = pElem->GetTextStr();
+                GFIService = DocumentXML::getTextStrFromElem(pElem);
             }
             pElem=hDoc.FirstChild("forceEPSG").Element();
             if ( pElem && pElem->GetText()=="false") {
@@ -177,7 +177,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
             attributes.insert ( attribute ( attrib->NameTStr(),attrib->ValueStr() ) );
             attrib = attrib->Next();
         }
-        keyWords.push_back ( Keyword ( pElem->GetTextStr(),attributes ) );
+        keyWords.push_back ( Keyword ( DocumentXML::getTextStrFromElem(pElem),attributes ) );
     }
     std::string inspireStyleName = DEFAULT_STYLE_INSPIRE;
     for ( pElem=hRoot.FirstChild ( "style" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "style" ) ) {
@@ -185,7 +185,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
             LOGGER_ERROR ( _ ( "Pas de style => style = " ) << ( inspire?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE ) );
             styleName = ( inspire?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE );
         } else {
-            styleName = pElem->GetTextStr();
+            styleName = DocumentXML::getTextStrFromElem(pElem);
         }
 
         Style* sty = serverXML->getStyle(styleName);
@@ -223,7 +223,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
     if ( !pElem || ! ( pElem->GetText() ) ) {
         minRes=0.;
     } else if ( !sscanf ( pElem->GetText(),"%lf",&minRes ) ) {
-        LOGGER_ERROR ( _ ( "La resolution min est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+        LOGGER_ERROR ( _ ( "La resolution min est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
         return;
     }
 
@@ -231,7 +231,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
     if ( !pElem || ! ( pElem->GetText() ) ) {
         maxRes=0.;
     } else if ( !sscanf ( pElem->GetText(),"%lf",&maxRes ) ) {
-        LOGGER_ERROR ( _ ( "La resolution max est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+        LOGGER_ERROR ( _ ( "La resolution max est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
         return;
     }
         // EX_GeographicBoundingBox
@@ -247,7 +247,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
             return;
         }
         if ( !sscanf ( pElem->GetText(),"%lf",&geographicBoundingBox.minx ) ) {
-            LOGGER_ERROR ( _ ( "Le westBoundLongitude est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+            LOGGER_ERROR ( _ ( "Le westBoundLongitude est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
             return;
         }
             // southBoundLatitude
@@ -257,7 +257,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
             return;
         }
         if ( !sscanf ( pElem->GetText(),"%lf",&geographicBoundingBox.miny ) ) {
-            LOGGER_ERROR ( _ ( "Le southBoundLatitude est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+            LOGGER_ERROR ( _ ( "Le southBoundLatitude est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
             return;
         }
             // eastBoundLongitude
@@ -267,7 +267,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
             return;
         }
         if ( !sscanf ( pElem->GetText(),"%lf",&geographicBoundingBox.maxx ) ) {
-            LOGGER_ERROR ( _ ( "Le eastBoundLongitude est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+            LOGGER_ERROR ( _ ( "Le eastBoundLongitude est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
             return;
         }
             // northBoundLatitude
@@ -277,7 +277,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
             return;
         }
         if ( !sscanf ( pElem->GetText(),"%lf",&geographicBoundingBox.maxy ) ) {
-            LOGGER_ERROR ( _ ( "Le northBoundLatitude est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+            LOGGER_ERROR ( _ ( "Le northBoundLatitude est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
             return;
         }
     }
@@ -287,7 +287,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
         LOGGER_ERROR ( _ ( "Pas de BoundingBox" ) );
     } else {
         if ( ! ( pElem->Attribute ( "CRS" ) ) ) {
-            LOGGER_ERROR ( _ ( "Le CRS est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+            LOGGER_ERROR ( _ ( "Le CRS est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
             return;
         }
         boundingBox.srs=pElem->Attribute ( "CRS" );
@@ -328,7 +328,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
     if ( serverXML->getReprojectionCapability() == true ) {
         for ( pElem=hRoot.FirstChild ( "WMSCRSList" ).FirstChild ( "WMSCRS" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "WMSCRS" ) ) {
             if ( ! ( pElem->GetText() ) ) continue;
-            std::string str_crs ( pElem->GetTextStr() );
+            std::string str_crs ( DocumentXML::getTextStrFromElem(pElem) );
             // On verifie que la CRS figure dans la liste des CRS de proj4 (sinon, le serveur n est pas capable de la gerer)
             CRS crs ( str_crs );
             bool crsOk=true;
@@ -416,7 +416,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
         LOGGER_DEBUG ( _ ( "Pas de opaque => opaque = " ) << DEFAULT_OPAQUE );
         opaque = DEFAULT_OPAQUE;
     } else {
-        std::string opaStr= pElem->GetTextStr();
+        std::string opaStr= DocumentXML::getTextStrFromElem(pElem);
         if ( opaStr=="true" ) {
             opaque = true;
         } else if ( opaStr=="false" ) {
@@ -429,7 +429,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
 
     pElem=hRoot.FirstChild ( "authority" ).Element();
     if ( pElem && pElem->GetText() ) {
-        authority= pElem->GetTextStr();
+        authority= DocumentXML::getTextStrFromElem(pElem);
     }
 
     pElem=hRoot.FirstChild ( "resampling" ).Element();
@@ -437,7 +437,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
         LOGGER_ERROR ( _ ( "Pas de resampling => resampling = " ) << DEFAULT_RESAMPLING );
         resamplingStr = DEFAULT_RESAMPLING;
     } else {
-        resamplingStr = pElem->GetTextStr();
+        resamplingStr = DocumentXML::getTextStrFromElem(pElem);
     }
 
     resampling = Interpolation::fromString ( resamplingStr );
@@ -445,7 +445,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
     pElem=hRoot.FirstChild ( "pyramid" ).Element();
     if ( pElem && pElem->GetText() ) {
 
-        std::string pyramidFilePath ( pElem->GetTextStr() );
+        std::string pyramidFilePath ( DocumentXML::getTextStrFromElem(pElem) );
         //Relative Path
         if ( pyramidFilePath.compare ( 0,2,"./" ) ==0 ) {
             pyramidFilePath.replace ( 0,1,parentDir );

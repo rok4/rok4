@@ -69,7 +69,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         std::cerr<<_ ( "Pas de logOutput => logOutput = " ) << DEFAULT_LOG_OUTPUT;
         logOutput = DEFAULT_LOG_OUTPUT;
     } else {
-        std::string strLogOutput= ( pElem->GetTextStr() );
+        std::string strLogOutput= ( DocumentXML::getTextStrFromElem(pElem) );
         if ( strLogOutput=="rolling_file" ) {
             logOutput=ROLLING_FILE;
         } else if ( strLogOutput=="standard_output_stream_for_errors" ) {
@@ -77,7 +77,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         } else if ( strLogOutput=="static_file" ) {
             logOutput=STATIC_FILE;
         } else {
-            std::cerr<<_ ( "Le logOutput [" ) << pElem->GetTextStr() <<_ ( "]  est inconnu." ) <<std::endl;
+            std::cerr<<_ ( "Le logOutput [" ) << DocumentXML::getTextStrFromElem(pElem) <<_ ( "]  est inconnu." ) <<std::endl;
             return;
         }
     }
@@ -87,14 +87,14 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         std::cerr<<_ ( "Pas de logFilePrefix => logFilePrefix = " ) << DEFAULT_LOG_FILE_PREFIX;
         logFilePrefix = DEFAULT_LOG_FILE_PREFIX;
     } else {
-        logFilePrefix= pElem->GetTextStr();
+        logFilePrefix= DocumentXML::getTextStrFromElem(pElem);
     }
     pElem=hRoot.FirstChild ( "logFilePeriod" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
         std::cerr<<_ ( "Pas de logFilePeriod => logFilePeriod = " ) << DEFAULT_LOG_FILE_PERIOD;
         logFilePeriod = DEFAULT_LOG_FILE_PERIOD;
     } else if ( !sscanf ( pElem->GetText(),"%d",&logFilePeriod ) )  {
-        std::cerr<<_ ( "Le logFilePeriod [" ) << pElem->GetTextStr() <<_ ( "]  is not an integer." ) <<std::endl;
+        std::cerr<<_ ( "Le logFilePeriod [" ) << DocumentXML::getTextStrFromElem(pElem) <<_ ( "]  is not an integer." ) <<std::endl;
         return;
     }
 
@@ -111,7 +111,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         else if ( strLogLevel=="info" ) logLevel=INFO;
         else if ( strLogLevel=="debug" ) logLevel=DEBUG;
         else {
-            std::cerr<<_ ( "Le logLevel [" ) << pElem->GetTextStr() <<_ ( "]  est inconnu." ) <<std::endl;
+            std::cerr<<_ ( "Le logLevel [" ) << DocumentXML::getTextStrFromElem(pElem) <<_ ( "]  est inconnu." ) <<std::endl;
             return;
         }
     }
@@ -121,7 +121,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         std::cerr<<_ ( "Pas de nbThread => nbThread = " ) << DEFAULT_NB_THREAD<<std::endl;
         nbThread = DEFAULT_NB_THREAD;
     } else if ( !sscanf ( pElem->GetText(),"%d",&nbThread ) ) {
-        std::cerr<<_ ( "Le nbThread [" ) << pElem->GetTextStr() <<_ ( "] is not an integer." ) <<std::endl;
+        std::cerr<<_ ( "Le nbThread [" ) << DocumentXML::getTextStrFromElem(pElem) <<_ ( "] is not an integer." ) <<std::endl;
         return;
     }
 
@@ -130,12 +130,12 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         std::cerr<<_ ( "Pas de nbProcess=> nbProcess = " ) << DEFAULT_NB_PROCESS<<std::endl;
         nbProcess = DEFAULT_NB_PROCESS;
     } else if ( !sscanf ( pElem->GetText(),"%d",&nbProcess ) ) {
-        std::cerr<<_ ( "Le nbProcess [" ) << pElem->GetTextStr() <<_ ( "] is not an integer." ) <<std::endl;
+        std::cerr<<_ ( "Le nbProcess [" ) << DocumentXML::getTextStrFromElem(pElem) <<_ ( "] is not an integer." ) <<std::endl;
         std::cerr<<_ ( "=> nbProcess = " ) << DEFAULT_NB_PROCESS<<std::endl;
         nbProcess = DEFAULT_NB_PROCESS;
     }
     if (nbProcess > MAX_NB_PROCESS) {
-        std::cerr<<_ ( "Le nbProcess [" ) << pElem->GetTextStr() <<_ ( "] is bigger than " ) << MAX_NB_PROCESS <<std::endl;
+        std::cerr<<_ ( "Le nbProcess [" ) << DocumentXML::getTextStrFromElem(pElem) <<_ ( "] is bigger than " ) << MAX_NB_PROCESS <<std::endl;
         std::cerr<<_ ( "=> nbProcess = " ) << MAX_NB_PROCESS<<std::endl;
         nbProcess = MAX_NB_PROCESS;
     }
@@ -149,7 +149,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         if ( strReprojection=="true" ) supportWMTS=true;
         else if ( strReprojection=="false" ) supportWMTS=false;
         else {
-            std::cerr<<_ ( "Le WMTSSupport [" ) << pElem->GetTextStr() <<_ ( "] n'est pas un booleen." ) <<std::endl;
+            std::cerr<<_ ( "Le WMTSSupport [" ) << DocumentXML::getTextStrFromElem(pElem) <<_ ( "] n'est pas un booleen." ) <<std::endl;
             return;
         }
     }
@@ -163,7 +163,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         if ( strReprojection=="true" ) supportWMS=true;
         else if ( strReprojection=="false" ) supportWMS=false;
         else {
-            std::cerr<<_ ( "Le WMSSupport [" ) << pElem->GetTextStr() <<_ ( "] n'est pas un booleen." ) <<std::endl;
+            std::cerr<<_ ( "Le WMSSupport [" ) << DocumentXML::getTextStrFromElem(pElem) <<_ ( "] n'est pas un booleen." ) <<std::endl;
             return;
         }
     }
@@ -172,14 +172,14 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
     if ( !pElem || ! ( pElem->GetText() ) ) {
         proxy.proxyName = "";
     } else {
-        proxy.proxyName = pElem->GetTextStr();
+        proxy.proxyName = DocumentXML::getTextStrFromElem(pElem);
     }
 
     pElem=hRoot.FirstChild ( "noProxy" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
         proxy.noProxy = "";
     } else {
-        proxy.noProxy = pElem->GetTextStr();
+        proxy.noProxy = DocumentXML::getTextStrFromElem(pElem);
     }
 
     if ( !supportWMS && !supportWMTS ) {
@@ -197,7 +197,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
             if ( strReprojection=="true" ) reprojectionCapability=true;
             else if ( strReprojection=="false" ) reprojectionCapability=false;
             else {
-                std::cerr<<_ ( "Le reprojectionCapability [" ) << pElem->GetTextStr() <<_ ( "] n'est pas un booleen." ) <<std::endl;
+                std::cerr<<_ ( "Le reprojectionCapability [" ) << DocumentXML::getTextStrFromElem(pElem) <<_ ( "] n'est pas un booleen." ) <<std::endl;
                 return;
             }
         }
@@ -210,7 +210,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         std::cerr<<_ ( "Pas de servicesConfigFile => servicesConfigFile = " ) << DEFAULT_SERVICES_CONF_PATH <<std::endl;
         servicesConfigFile = DEFAULT_SERVICES_CONF_PATH;
     } else {
-        servicesConfigFile= pElem->GetTextStr();
+        servicesConfigFile= DocumentXML::getTextStrFromElem(pElem);
     }
 
     pElem=hRoot.FirstChild ( "layerDir" ).Element();
@@ -218,7 +218,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         std::cerr<<_ ( "Pas de layerDir => layerDir = " ) << DEFAULT_LAYER_DIR<<std::endl;
         layerDir = DEFAULT_LAYER_DIR;
     } else {
-        layerDir= pElem->GetTextStr();
+        layerDir= DocumentXML::getTextStrFromElem(pElem);
     }
 
     pElem=hRoot.FirstChild ( "tileMatrixSetDir" ).Element();
@@ -226,7 +226,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         std::cerr<<_ ( "Pas de tileMatrixSetDir => tileMatrixSetDir = " ) << DEFAULT_TMS_DIR<<std::endl;
         tmsDir = DEFAULT_TMS_DIR;
     } else {
-        tmsDir= pElem->GetTextStr();
+        tmsDir= DocumentXML::getTextStrFromElem(pElem);
     }
 
     pElem=hRoot.FirstChild ( "styleDir" ).Element();
@@ -234,7 +234,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         std::cerr<<_ ( "Pas de styleDir => styleDir = " ) << DEFAULT_STYLE_DIR<<std::endl;
         styleDir = DEFAULT_STYLE_DIR;
     } else {
-        styleDir = pElem->GetTextStr();
+        styleDir = DocumentXML::getTextStrFromElem(pElem);
     }
     // Definition de la variable PROJ_LIB à partir de la configuration
     std::string projDir;
@@ -249,7 +249,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         projDir.append ( "/" ).append ( DEFAULT_PROJ_DIR );
         free ( pwdBuff );
     } else {
-        projDir= pElem->GetTextStr();
+        projDir= DocumentXML::getTextStrFromElem(pElem);
         //Gestion des chemins relatif
         if ( projDir.compare ( 0,1,"/" ) != 0 ) {
             absolut=false;
@@ -275,7 +275,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         socket = "";
     } else {
         std::cerr<<_ ( "Element <serverPort> : Lancement interne impossible (Apache, spawn-fcgi)" ) <<std::endl;
-        socket = pElem->GetTextStr();
+        socket = DocumentXML::getTextStrFromElem(pElem);
     }
 
     pElem=hRoot.FirstChild ( "serverBackLog" ).Element();
@@ -283,7 +283,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         std::clog<<_ ( "Pas d'element <serverBackLog> valeur par defaut : 0" ) <<std::endl;
         backlog = 0;
     } else if ( !sscanf ( pElem->GetText(),"%d",&backlog ) )  {
-        std::cerr<<_ ( "Le logFilePeriod [" ) << pElem->GetTextStr() <<_ ( "]  is not an integer." ) <<std::endl;
+        std::cerr<<_ ( "Le logFilePeriod [" ) << DocumentXML::getTextStrFromElem(pElem) <<_ ( "]  is not an integer." ) <<std::endl;
         backlog = 0;
     }
 

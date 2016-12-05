@@ -42,12 +42,24 @@
 #include <string>
 #include <libgen.h>
 #include <tinyxml.h>
-#include <tinystr.h>
 
 class DocumentXML
 {
     
     public:
+
+        static const std::string getTextStrFromElem(TiXmlElement* pElem) {
+            const TiXmlNode* child = pElem->FirstChild();
+            if ( child ) {
+                const TiXmlText* childText = child->ToText();
+                if ( childText ) {
+                    return childText->ValueStr();
+                }
+            }
+            return "";
+        }
+
+        
         DocumentXML(std::string path) {
             filePath = path;
 

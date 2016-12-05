@@ -316,10 +316,10 @@ Pyramid* ConfLoader::buildBasedPyramid (
         return NULL;
     }
 
-    str_transparent = sTransparent->GetTextStr();
-    str_style = sStyle->GetTextStr();
+    str_transparent = DocumentXML::getTextStrFromElem(sTransparent);
+    str_style = DocumentXML::getTextStrFromElem(sStyle);
 
-    basedPyramidFilePath = sFile->GetTextStr() ;
+    basedPyramidFilePath = DocumentXML::getTextStrFromElem(sFile) ;
     //Relative Path
     if ( basedPyramidFilePath.compare ( 0,2,"./" ) == 0 ) {
         basedPyramidFilePath.replace ( 0,1,parentDir );
@@ -404,7 +404,7 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
 
     TiXmlElement* sUrl = sWeb->FirstChildElement("url");
     if (sUrl && sUrl->GetText()) {
-        url = sUrl->GetTextStr();
+        url = DocumentXML::getTextStrFromElem(sUrl);
 
         std::size_t found = url.find(" ");
         if (found!=std::string::npos) {
@@ -430,14 +430,14 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
 
     TiXmlElement* sProxy = sWeb->FirstChildElement("proxy");
     if (sProxy && sProxy->GetText()) {
-        proxy = sProxy->GetTextStr();
+        proxy = DocumentXML::getTextStrFromElem(sProxy);
     } else {
         proxy = proxy_default.proxyName;
     }
 
     sProxy = sWeb->FirstChildElement("noProxy");
     if (sProxy && sProxy->GetText()) {
-        noProxy = sProxy->GetTextStr();
+        noProxy = DocumentXML::getTextStrFromElem(sProxy);
     } else {
         noProxy = proxy_default.noProxy;
     }
@@ -465,28 +465,28 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
 
     TiXmlElement* sUser = sWeb->FirstChildElement("user");
     if (sUser && sUser->GetText()) {
-        user = sUser->GetTextStr();
+        user = DocumentXML::getTextStrFromElem(sUser);
     } else {
         user = "";
     }
 
     TiXmlElement* sPwd = sWeb->FirstChildElement("password");
     if (sPwd && sPwd->GetText()) {
-        pwd = sPwd->GetTextStr();
+        pwd = DocumentXML::getTextStrFromElem(sPwd);
     } else {
         pwd = "";
     }
 
     TiXmlElement* sReferer = sWeb->FirstChildElement("referer");
     if (sReferer && sReferer->GetText()) {
-        referer = sReferer->GetTextStr();
+        referer = DocumentXML::getTextStrFromElem(sReferer);
     } else {
         referer = "";
     }
 
     TiXmlElement* sUserAgent = sWeb->FirstChildElement("userAgent");
     if (sUserAgent && sUserAgent->GetText()) {
-        userAgent = sUserAgent->GetTextStr();
+        userAgent = DocumentXML::getTextStrFromElem(sUserAgent);
     } else {
         userAgent = "";
     }
@@ -497,7 +497,7 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
 
         TiXmlElement* sVersion = sWMS->FirstChildElement("version");
         if (sVersion && sVersion->GetText()) {
-            version = sVersion->GetTextStr();
+            version = DocumentXML::getTextStrFromElem(sVersion);
         } else {
             LOGGER_ERROR("Un WMS doit contenir une version");
             return NULL;
@@ -505,7 +505,7 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
 
         TiXmlElement* sLayers= sWMS->FirstChildElement("layers");
         if (sLayers && sLayers->GetText()) {
-            layers = sLayers->GetTextStr();
+            layers = DocumentXML::getTextStrFromElem(sLayers);
         } else {
             LOGGER_ERROR("Un WMS doit contenir un ou des layers séparés par des virgules");
             return NULL;
@@ -513,7 +513,7 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
 
         TiXmlElement* sStyles = sWMS->FirstChildElement("styles");
         if (sStyles && sStyles->GetText()) {
-            styles = sStyles->GetTextStr();
+            styles = DocumentXML::getTextStrFromElem(sStyles);
         } else {
             LOGGER_ERROR("Un WMS doit contenir un ou des styles séparés par des virgules");
             return NULL;
@@ -521,7 +521,7 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
 
         TiXmlElement* sFormat = sWMS->FirstChildElement("format");
         if (sFormat && sFormat->GetText()) {
-            format = sFormat->GetTextStr();
+            format = DocumentXML::getTextStrFromElem(sFormat);
             Rok4Format::eformat_data fmt = Rok4Format::fromMimeType(format);
             if (fmt == Rok4Format::UNKNOWN) {
                 LOGGER_ERROR("Un WMS doit être requete dans un format lisible par rok4");
@@ -541,7 +541,7 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
 
         TiXmlElement* sCrs = sWMS->FirstChildElement("crs");
         if (sCrs && sCrs->GetText()) {
-            crs = sCrs->GetTextStr();
+            crs = DocumentXML::getTextStrFromElem(sCrs);
 
                 //le crs demandé et le crs de la pyramide en construction doivent être le même
             CRS askedCRS = CRS(crs);
@@ -557,7 +557,7 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
 
         TiXmlElement* sChannels = sWMS->FirstChildElement("channels");
         if (sChannels && sChannels->GetText()) {
-            channels = atoi(sChannels->GetTextStr().c_str());
+            channels = atoi(DocumentXML::getTextStrFromElem(sChannels).c_str());
         } else {
             LOGGER_ERROR("Un WMS doit contenir un channels");
             return NULL;
@@ -621,7 +621,7 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
 
         TiXmlElement* pND=sWMS->FirstChildElement ( "noDataValue" );
         if ( pND && pND->GetText() ) {
-            ndValuesStr = pND->GetTextStr();
+            ndValuesStr = DocumentXML::getTextStrFromElem(pND);
 
                 //conversion string->vector
             std::size_t found = ndValuesStr.find_first_of(",");

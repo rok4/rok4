@@ -43,7 +43,6 @@ class LayerXML;
 #include <vector>
 #include <string>
 #include <tinyxml.h>
-#include <tinystr.h>
 
 #include "Layer.h"
 #include "Pyramid.h"

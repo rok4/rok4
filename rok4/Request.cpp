@@ -52,7 +52,6 @@
 #include <vector>
 #include <cstdio>
 #include "tinyxml.h"
-#include "tinystr.h"
 #include "config.h"
 #include <algorithm>
 #include "intl.h"
@@ -255,7 +254,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
         LOGGER_DEBUG ( _ ( "No Layer" ) );
         return;
     }
-    parameters.insert ( std::pair<std::string, std::string> ( "layer", pElem->GetTextStr() ) );
+    parameters.insert ( std::pair<std::string, std::string> ( "layer", DocumentXML::getTextStrFromElem(pElem) ) );
 
     //Style
     pElem = pElem->NextSiblingElement();
@@ -264,7 +263,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
         LOGGER_DEBUG ( _ ( "No Style" ) );
         return;
     }
-    parameters.insert ( std::pair<std::string, std::string> ( "style", pElem->GetTextStr() ) );
+    parameters.insert ( std::pair<std::string, std::string> ( "style", DocumentXML::getTextStrFromElem(pElem) ) );
 
     //Format
     pElem = pElem->NextSiblingElement();
@@ -273,7 +272,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
         LOGGER_DEBUG ( _ ( "No Format" ) );
         return;
     }
-    parameters.insert ( std::pair<std::string, std::string> ( "format", pElem->GetTextStr() ) );
+    parameters.insert ( std::pair<std::string, std::string> ( "format", DocumentXML::getTextStrFromElem(pElem) ) );
 
     //DimensionNameValue name="NAME" OPTIONAL
     pElem = pElem->NextSiblingElement();
@@ -283,7 +282,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
             LOGGER_DEBUG ( _ ( "No Name attribute" ) );
             continue;
         } else {
-            parameters.insert ( std::pair<std::string, std::string> ( dimensionName, pElem->GetTextStr() ) );
+            parameters.insert ( std::pair<std::string, std::string> ( dimensionName, DocumentXML::getTextStrFromElem(pElem) ) );
         }
         pElem = pElem->NextSiblingElement();
     }
@@ -293,7 +292,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
         LOGGER_DEBUG ( _ ( "No TileMatrixSet" ) );
         return;
     }
-    parameters.insert ( std::pair<std::string, std::string> ( "tilematrixset", pElem->GetTextStr() ) );
+    parameters.insert ( std::pair<std::string, std::string> ( "tilematrixset", DocumentXML::getTextStrFromElem(pElem) ) );
 
     //TileMatrix
     pElem = pElem->NextSiblingElement();
@@ -301,7 +300,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
         LOGGER_DEBUG ( _ ( "No TileMatrix" ) );
         return;
     }
-    parameters.insert ( std::pair<std::string, std::string> ( "tilematrix", pElem->GetTextStr() ) );
+    parameters.insert ( std::pair<std::string, std::string> ( "tilematrix", DocumentXML::getTextStrFromElem(pElem) ) );
 
     //TileRow
     pElem = pElem->NextSiblingElement();
@@ -309,14 +308,14 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
         LOGGER_DEBUG ( _ ( "No TileRow" ) );
         return;
     }
-    parameters.insert ( std::pair<std::string, std::string> ( "tilerow", pElem->GetTextStr() ) );
+    parameters.insert ( std::pair<std::string, std::string> ( "tilerow", DocumentXML::getTextStrFromElem(pElem) ) );
     //TileCol
     pElem = pElem->NextSiblingElement();
     if ( !pElem && pElem->ValueStr().find ( "TileCol" ) ==std::string::npos && !pElem->GetText() ) {
         LOGGER_DEBUG ( _ ( "No TileCol" ) );
         return;
     }
-    parameters.insert ( std::pair<std::string, std::string> ( "tilecol", pElem->GetTextStr() ) );
+    parameters.insert ( std::pair<std::string, std::string> ( "tilecol", DocumentXML::getTextStrFromElem(pElem) ) );
 
     pElem = pElem->NextSiblingElement();
     // "VendorOption"
@@ -325,7 +324,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
             LOGGER_DEBUG ( _ ( "VendorOption" ) );
             std::string vendorOpt = pElem->Attribute ( "name" );
             std::transform ( vendorOpt.begin(), vendorOpt.end(), vendorOpt.begin(), ::tolower );
-            parameters.insert ( std::pair<std::string, std::string> ( vendorOpt, ( pElem->GetText() ?pElem->GetTextStr() :"true" ) ) );
+            parameters.insert ( std::pair<std::string, std::string> ( vendorOpt, ( pElem->GetText() ?DocumentXML::getTextStrFromElem(pElem) :"true" ) ) );
         }
         pElem =  pElem->NextSiblingElement();
     }
@@ -440,7 +439,7 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
         return;
     }
 
-    parameters.insert ( std::pair<std::string, std::string> ( "crs", pElem->GetTextStr() ) );
+    parameters.insert ( std::pair<std::string, std::string> ( "crs", DocumentXML::getTextStrFromElem(pElem) ) );
 
     //BoundingBox
 
@@ -549,7 +548,7 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
     pElem = pElem->NextSiblingElement();
     if ( pElem ) {
         if ( pElem->ValueStr().find ( "Exceptions" ) !=std::string::npos && pElem->GetText() ) {
-            parameters.insert ( std::pair<std::string, std::string> ( "exceptions", pElem->GetTextStr() ) );
+            parameters.insert ( std::pair<std::string, std::string> ( "exceptions", DocumentXML::getTextStrFromElem(pElem) ) );
             pElem = pElem->NextSiblingElement();
         }
     }
@@ -557,7 +556,7 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
     //Time
     if ( pElem ) {
         if ( pElem->ValueStr().find ( "Time" ) !=std::string::npos && pElem->GetText() ) {
-            parameters.insert ( std::pair<std::string, std::string> ( "time", pElem->GetTextStr() ) );
+            parameters.insert ( std::pair<std::string, std::string> ( "time", DocumentXML::getTextStrFromElem(pElem) ) );
             pElem = pElem->NextSiblingElement();
         }
     }
@@ -576,20 +575,20 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
                 if ( !pElem && pElem->ValueStr().find ( "Min" ) ==std::string::npos && !pElem->GetText() ) {
                     return;
                 }
-                elevation.append ( pElem->GetTextStr() );
+                elevation.append ( DocumentXML::getTextStrFromElem(pElem) );
                 elevation.append ( "/" );
                 pElem = pElem->NextSiblingElement();
                 if ( !pElem && pElem->ValueStr().find ( "Max" ) ==std::string::npos && !pElem->GetText() ) {
                     return;
                 }
-                elevation.append ( pElem->GetTextStr() );
+                elevation.append ( DocumentXML::getTextStrFromElem(pElem) );
 
             } else if ( pElem->ValueStr().find ( "Value" ) !=std::string::npos ) {
                 while ( pElem && pElem->GetText() ) {
                     if ( elevation.size() >0 ) {
                         elevation.append ( "," );
                     }
-                    elevation.append ( pElem->GetTextStr() );
+                    elevation.append ( DocumentXML::getTextStrFromElem(pElem) );
                     pElem = pElem->NextSiblingElement ( pElem->ValueStr() );
                 }
             }

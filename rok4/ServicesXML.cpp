@@ -38,7 +38,6 @@
 
 #include <dirent.h>
 #include <tinyxml.h>
-#include <tinystr.h>
 #include "ServicesXML.h"
 
 ServicesXML::ServicesXML( std::string servicesConfigFile ) {
@@ -98,13 +97,13 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
     hRoot=TiXmlHandle ( pElem );
 
     pElem=hRoot.FirstChild ( "name" ).Element();
-    if ( pElem && pElem->GetText() ) name = pElem->GetTextStr();
+    if ( pElem && pElem->GetText() ) name = DocumentXML::getTextStrFromElem(pElem);
 
     pElem=hRoot.FirstChild ( "title" ).Element();
-    if ( pElem && pElem->GetText() ) title = pElem->GetTextStr();
+    if ( pElem && pElem->GetText() ) title = DocumentXML::getTextStrFromElem(pElem);
 
     pElem=hRoot.FirstChild ( "abstract" ).Element();
-    if ( pElem && pElem->GetText() ) abstract = pElem->GetTextStr();
+    if ( pElem && pElem->GetText() ) abstract = DocumentXML::getTextStrFromElem(pElem);
 
 
     for ( pElem=hRoot.FirstChild ( "keywordList" ).FirstChild ( "keyword" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "keyword" ) ) {
@@ -117,12 +116,12 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
             attributes.insert ( attribute ( attrib->NameTStr(),attrib->ValueStr() ) );
             attrib = attrib->Next();
         }
-        keyWords.push_back ( Keyword ( pElem->GetTextStr(),attributes ) );
+        keyWords.push_back ( Keyword ( DocumentXML::getTextStrFromElem(pElem),attributes ) );
     }
 
     pElem=hRoot.FirstChild ( "postMode" ).Element();
     if ( pElem && pElem->GetText() ) {
-        std::string postStr = pElem->GetTextStr();
+        std::string postStr = DocumentXML::getTextStrFromElem(pElem);
         if ( postStr.compare ( "true" ) ==0 || postStr.compare ( "1" ) ==0 ) {
             LOGGER_INFO ( _ ( "Requete POST autorisee" ) );
             postMode = true;
@@ -132,56 +131,56 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
     /********************** Contact Info */
 
     pElem=hRoot.FirstChild ( "serviceProvider" ).Element();
-    if ( pElem && pElem->GetText() ) serviceProvider = pElem->GetTextStr();
+    if ( pElem && pElem->GetText() ) serviceProvider = DocumentXML::getTextStrFromElem(pElem);
 
     pElem=hRoot.FirstChild ( "providerSite" ).Element();
-    if ( pElem && pElem->GetText() ) providerSite = pElem->GetTextStr();
+    if ( pElem && pElem->GetText() ) providerSite = DocumentXML::getTextStrFromElem(pElem);
 
     pElem=hRoot.FirstChild ( "fee" ).Element();
-    if ( pElem && pElem->GetText() ) fee = pElem->GetTextStr();
+    if ( pElem && pElem->GetText() ) fee = DocumentXML::getTextStrFromElem(pElem);
 
     pElem=hRoot.FirstChild ( "accessConstraint" ).Element();
-    if ( pElem && pElem->GetText() ) accessConstraint = pElem->GetTextStr();
+    if ( pElem && pElem->GetText() ) accessConstraint = DocumentXML::getTextStrFromElem(pElem);
 
     pElem=hRoot.FirstChild ( "individualName" ).Element();
-    if ( pElem && pElem->GetText() ) individualName= pElem->GetTextStr();
+    if ( pElem && pElem->GetText() ) individualName= DocumentXML::getTextStrFromElem(pElem);
 
     pElem=hRoot.FirstChild ( "individualPosition" ).Element();
-    if ( pElem && pElem->GetText() ) individualPosition= pElem->GetTextStr();
+    if ( pElem && pElem->GetText() ) individualPosition= DocumentXML::getTextStrFromElem(pElem);
 
     pElem=hRoot.FirstChild ( "voice" ).Element();
-    if ( pElem && pElem->GetText() ) voice= pElem->GetTextStr();
+    if ( pElem && pElem->GetText() ) voice= DocumentXML::getTextStrFromElem(pElem);
 
     pElem=hRoot.FirstChild ( "facsimile" ).Element();
-    if ( pElem && pElem->GetText() ) facsimile= pElem->GetTextStr();
+    if ( pElem && pElem->GetText() ) facsimile= DocumentXML::getTextStrFromElem(pElem);
 
     pElem=hRoot.FirstChild ( "addressType" ).Element();
-    if ( pElem && pElem->GetText() ) addressType = pElem->GetTextStr();
+    if ( pElem && pElem->GetText() ) addressType = DocumentXML::getTextStrFromElem(pElem);
 
     pElem=hRoot.FirstChild ( "deliveryPoint" ).Element();
-    if ( pElem && pElem->GetText() ) deliveryPoint= pElem->GetTextStr();
+    if ( pElem && pElem->GetText() ) deliveryPoint= DocumentXML::getTextStrFromElem(pElem);
 
     pElem=hRoot.FirstChild ( "city" ).Element();
-    if ( pElem && pElem->GetText() ) city = pElem->GetTextStr();
+    if ( pElem && pElem->GetText() ) city = DocumentXML::getTextStrFromElem(pElem);
 
     pElem=hRoot.FirstChild ( "administrativeArea" ).Element();
-    if ( pElem && pElem->GetText() ) administrativeArea = pElem->GetTextStr();
+    if ( pElem && pElem->GetText() ) administrativeArea = DocumentXML::getTextStrFromElem(pElem);
 
     pElem=hRoot.FirstChild ( "postCode" ).Element();
-    if ( pElem && pElem->GetText() ) postCode = pElem->GetTextStr();
+    if ( pElem && pElem->GetText() ) postCode = DocumentXML::getTextStrFromElem(pElem);
 
     pElem=hRoot.FirstChild ( "country" ).Element();
-    if ( pElem && pElem->GetText() ) country = pElem->GetTextStr();
+    if ( pElem && pElem->GetText() ) country = DocumentXML::getTextStrFromElem(pElem);
 
     pElem=hRoot.FirstChild ( "electronicMailAddress" ).Element();
     if ( pElem && pElem->GetText() )
-    electronicMailAddress= pElem->GetTextStr();
+    electronicMailAddress= DocumentXML::getTextStrFromElem(pElem);
 
     pElem = hRoot.FirstChild ( "layerLimit" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
         layerLimit = DEFAULT_LAYER_LIMIT;
     } else if ( !sscanf ( pElem->GetText(),"%d",&layerLimit ) ) {
-        LOGGER_ERROR ( servicesConfigFile << _ ( "Le layerLimit est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+        LOGGER_ERROR ( servicesConfigFile << _ ( "Le layerLimit est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
         return;
     }
 
@@ -189,7 +188,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
     if ( !pElem || ! ( pElem->GetText() ) ) {
         maxWidth=MAX_IMAGE_WIDTH;
     } else if ( !sscanf ( pElem->GetText(),"%d",&maxWidth ) ) {
-        LOGGER_ERROR ( servicesConfigFile << _ ( "Le maxWidth est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+        LOGGER_ERROR ( servicesConfigFile << _ ( "Le maxWidth est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
         return;
     }
 
@@ -197,7 +196,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
     if ( !pElem || ! ( pElem->GetText() ) ) {
         maxHeight=MAX_IMAGE_HEIGHT;
     } else if ( !sscanf ( pElem->GetText(),"%d",&maxHeight ) ) {
-        LOGGER_ERROR ( servicesConfigFile << _ ( "Le maxHeight est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+        LOGGER_ERROR ( servicesConfigFile << _ ( "Le maxHeight est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
         return;
     }
 
@@ -205,7 +204,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
     if ( !pElem || ! ( pElem->GetText() ) ) {
         maxTileX=MAX_TILE_X;
     } else if ( !sscanf ( pElem->GetText(),"%d",&maxTileX ) ) {
-        LOGGER_ERROR ( servicesConfigFile << _ ( "Le maxTileX est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+        LOGGER_ERROR ( servicesConfigFile << _ ( "Le maxTileX est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
         return;
     }
 
@@ -213,7 +212,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
     if ( !pElem || ! ( pElem->GetText() ) ) {
         maxTileY=MAX_TILE_Y;
     } else if ( !sscanf ( pElem->GetText(),"%d",&maxTileY ) ) {
-        LOGGER_ERROR ( servicesConfigFile << _ ( "Le maxTileY est inexploitable:[" ) << pElem->GetTextStr() << "]" );
+        LOGGER_ERROR ( servicesConfigFile << _ ( "Le maxTileY est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
         return;
     }
 
@@ -245,7 +244,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
 
     pElem=hRoot.FirstChild ( "avoidEqualsCRSReprojection" ).Element();
     if ( pElem && pElem->GetText() ) {
-        std::string doweuselistofequalsCRSstr = pElem->GetTextStr();
+        std::string doweuselistofequalsCRSstr = DocumentXML::getTextStrFromElem(pElem);
         if ( doweuselistofequalsCRSstr.compare ( "true" ) ==0 || doweuselistofequalsCRSstr.compare ( "1" ) ==0 ) {
             LOGGER_INFO ( _ ( "Pas de reprojection pour les CRS equivalents" ) );
             doweuselistofequalsCRS = true;
@@ -255,7 +254,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
 
     pElem=hRoot.FirstChild ( "addEqualsCRS" ).Element();
     if ( pElem && pElem->GetText() ) {
-        std::string addEqualsCRSstr = pElem->GetTextStr();
+        std::string addEqualsCRSstr = DocumentXML::getTextStrFromElem(pElem);
         if ( addEqualsCRSstr.compare ( "true" ) ==0 || addEqualsCRSstr.compare ( "1" ) ==0 ) {
             LOGGER_INFO ( _ ( "Ajout automatique des CRS equivalents" ) );
             addEqualsCRS = true;
@@ -267,7 +266,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
 
     pElem=hRoot.FirstChild ( "restrictedCRSList" ).Element();
     if ( pElem && pElem->GetText() ) {
-        std::string restritedCRSListfile = pElem->GetTextStr();
+        std::string restritedCRSListfile = DocumentXML::getTextStrFromElem(pElem);
         if ( restritedCRSListfile.compare ( "" ) != 0 )  {
             LOGGER_INFO ( _ ( "Liste restreinte de CRS à partir du fichier " ) << restritedCRSListfile );
             dowerestrictCRSList = true;
@@ -280,7 +279,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
         
         if ( ! ( pElem->GetText() ) ) continue;
 
-        std::string crsStr ( pElem->GetTextStr() );
+        std::string crsStr ( DocumentXML::getTextStrFromElem(pElem) );
         CRS crs ( crsStr );
         if ( !crs.isProj4Compatible() ) {
             LOGGER_ERROR ( servicesConfigFile << _ ( "The CRS [" ) << crsStr << _ ( "] is not present in Proj4" ) );
@@ -350,7 +349,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
 
     pElem=hRoot.FirstChild ( "fullStylingCapability" ).Element();
     if ( pElem && pElem->GetText() ) {
-        std::string styleStr = pElem->GetTextStr();
+        std::string styleStr = DocumentXML::getTextStrFromElem(pElem);
         if ( styleStr.compare ( "true" ) ==0 || styleStr.compare ( "1" ) ==0 ) {
             LOGGER_INFO ( _ ( "Utilisation des styles pour tous les formats" ) );
             fullStyling = true;
@@ -359,14 +358,14 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
 
 
     pElem=hRoot.FirstChild ( "serviceType" ).Element();
-    if ( pElem && pElem->GetText() ) serviceType = pElem->GetTextStr();
+    if ( pElem && pElem->GetText() ) serviceType = DocumentXML::getTextStrFromElem(pElem);
 
     pElem=hRoot.FirstChild ( "serviceTypeVersion" ).Element();
-    if ( pElem && pElem->GetText() ) serviceTypeVersion = pElem->GetTextStr();
+    if ( pElem && pElem->GetText() ) serviceTypeVersion = DocumentXML::getTextStrFromElem(pElem);
 
     pElem=hRoot.FirstChild ( "inspire" ).Element();
     if ( pElem && pElem->GetText() ) {
-        std::string inspirestr = pElem->GetTextStr();
+        std::string inspirestr = DocumentXML::getTextStrFromElem(pElem);
         if ( inspirestr.compare ( "true" ) ==0 || inspirestr.compare ( "1" ) ==0 ) {
             LOGGER_INFO ( _ ( "Utilisation du mode Inspire" ) );
             inspire = true;
@@ -383,7 +382,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
     if ( pElem ) {
         pElem = pElem->FirstChildElement ( "url" );
         if ( pElem &&  pElem->GetText() ) {
-            metadataUrlWMS = pElem->GetTextStr();
+            metadataUrlWMS = DocumentXML::getTextStrFromElem(pElem);
             pElem = pElem->NextSiblingElement ( "mediaType" );
         } else {
             if ( inspire ) {
@@ -394,7 +393,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
             }
         }
         if ( pElem &&  pElem->GetText() ) {
-            metadataMediaTypeWMS = pElem->GetTextStr();
+            metadataMediaTypeWMS = DocumentXML::getTextStrFromElem(pElem);
         } else {
             if ( inspire ) {
                 LOGGER_ERROR ( _ ( "Metadata element incorrect" ) );
@@ -409,7 +408,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
     if ( pElem ) {
         pElem = pElem->FirstChildElement ( "url" );
         if ( pElem &&  pElem->GetText() ) {
-            metadataUrlWMTS = pElem->GetTextStr();
+            metadataUrlWMTS = DocumentXML::getTextStrFromElem(pElem);
             pElem = pElem->NextSiblingElement ( "mediaType" );
         } else {
             if ( inspire ) {
@@ -420,7 +419,7 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
             }
         }
         if ( pElem &&  pElem->GetText() ) {
-            metadataMediaTypeWMTS = pElem->GetTextStr();
+            metadataMediaTypeWMTS = DocumentXML::getTextStrFromElem(pElem);
         } else {
             if ( inspire ) {
                 LOGGER_ERROR ( _ ( "Metadata element incorrect" ) );
