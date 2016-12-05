@@ -459,6 +459,11 @@ sub _readDescriptor {
             $params->{export_masks} = "TRUE";
         }
         $this->{storage_type} = $storageType;
+
+        if ($storageType eq "FILE") {
+            $this->{dir_depth} = $this->{levels}->{$oneLevelId}->getDirDepth();
+        }
+
     } else {
         # On a aucun niveau dans la pyramide à charger, il va donc nous manquer des informations : on sort en erreur
         ERROR("No level in the pyramid's descriptor $pyrDescFile");
@@ -598,7 +603,7 @@ sub checkCompatibility {
     my $other = shift;
     my $strict = shift;
 
-    if ($this->getStorageType() != $other->getStorageType()) {
+    if ($this->getStorageType() ne $other->getStorageType()) {
         return 0;
     }
 

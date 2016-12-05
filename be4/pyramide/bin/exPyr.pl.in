@@ -1,0 +1,613 @@
+#!/usr/bin/env perl
+# Copyright © (2011) Institut national de l'information
+#                    géographique et forestière 
+# 
+# Géoportail SAV <geop_services@geoportail.fr>
+# 
+# This software is a computer program whose purpose is to publish geographic
+# data using OGC WMS and WMTS protocol.
+# 
+# This software is governed by the CeCILL-C license under French law and
+# abiding by the rules of distribution of free software.  You can  use, 
+# modify and/ or redistribute the software under the terms of the CeCILL-C
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "http://www.cecill.info". 
+# 
+# As a counterpart to the access to the source code and  rights to copy,
+# modify and redistribute granted by the license, users are provided only
+# with a limited warranty  and the software's author,  the holder of the
+# economic rights,  and the successive licensors  have only  limited
+# liability. 
+# 
+# In this respect, the user's attention is drawn to the risks associated
+# with loading,  using,  modifying and/or developing or reproducing the
+# software by the user in light of its specific status of free software,
+# that may mean  that it is complicated to manipulate,  and  that  also
+# therefore means  that it is reserved for developers  and  experienced
+# professionals having in-depth computer knowledge. Users are therefore
+# encouraged to load and test the software's suitability as regards their
+# requirements in conditions enabling the security of their systems and/or 
+# data to be ensured and,  more generally, to use and operate it in the 
+# same conditions as regards security. 
+# 
+# The fact that you are presently reading this means that you have had
+# 
+# knowledge of the CeCILL-C license and that you accept its terms.
+
+################################################################################
+
+=begin nd
+File: exPyr.pl
+
+Section: EXPYR tool
+
+Synopsis:
+    (start code)
+
+    (end code)
+
+Tool allowing to extract a sub pyramid from one or more existing pyramids (one for each level).
+User can define if the new pyramid's tiles are just symbolic links to source pyramids tiles (default),
+hard links or copies of these tiles.
+
+Source pyramids must have the same :
+    - TMS
+    - directory depth
+    - format code
+    - channels
+    - tiles number (heigthwise and widthwise)
+
+=cut
+
+################################################################################
+
+use warnings;
+use strict;
+
+use POSIX qw(locale_h);
+
+use Getopt::Long;
+use Pod::Usage;
+
+use Data::Dumper;
+local $Data::Dumper::Maxdepth = 1;
+
+use File::Basename;
+use File::Spec;
+use File::Path;
+use Cwd;
+
+use Log::Log4perl qw(:easy);
+
+# My search module
+use FindBin qw($Bin);
+use lib "$Bin/../lib/perl5";
+
+# My module
+use COMMON::CheckUtils;
+use COMMON::Pyramid;
+use EXPYR::PropertiesLoader;
+
+################################################################################
+# Constantes
+use constant TRUE  => 1;
+use constant FALSE => 0;
+
+################################################################################
+# no output buffering.
+$|=1;
+
+####################################################################################################
+#                                       Group: Variables                                           #
+####################################################################################################
+
+# Variable: version
+my $VERSION = '@VERSION_TEXT@';
+
+=begin nd
+Variable: options
+
+Contains exPyr call options :
+
+    version - To obtain the command's version
+    help - To obtain the command's help
+    usage - To obtain the command's usage
+    properties - Configuration file
+=cut
+my %options =
+(
+    "version"    => 0,
+    "help"       => "Documentation can be found in the generated html documentation or inside the script files.\n",
+    "usage"      => "perl exPyr.pl <options>\n".
+                    "List of available options :\n".
+                    "  --properties=<file> | -conf <file> : configuration file for the generation\n".
+                    "  --usage : prints this message\n".
+                    "  --version | -v : prints the tool's version\n".
+                    "  --help | -h : for now, only prints a clue to find the documentation\n",
+    
+    # Configuration
+    "properties"  => undef, # datasource and output properties file (mandatory) !
+    
+    # Only for maintenance !
+    "test" => 0,
+);
+
+=begin nd
+Variable: this
+
+=cut
+my %this =
+(
+    properties => undef,
+    configuration => undef,
+    params => {
+        datasource    => undef,
+        pyramid       => undef
+    }
+);
+
+####################################################################################################
+#                                         Group: Functions                                         #
+####################################################################################################
+=begin nd
+Function: main
+
+Main method.
+
+See Also:
+    <init>, <config>, <doIt>
+=cut
+sub main {
+    printf("EXPYR: version [%s]\n",$VERSION);
+
+    # initialization
+    ALWAYS("> Initialization");
+    if (! main::init()) {
+    print STDERR "ERROR INITIALIZATION !\n";
+    exit 1;
+    }
+
+    print STDOUT "BEGIN\n";
+
+    # configuration
+    ALWAYS("> Configuration");
+    if (! main::config()) {
+    print STDERR "ERROR CONFIGURATION !\n";
+    exit 2;
+    }
+
+    # execution
+    ALWAYS("> Execution");
+    if (! main::doIt()) {
+    print STDERR "ERROR EXECUTION !\n";
+    exit 3;
+    }
+
+    print STDOUT "END\n";
+}
+
+=begin nd
+Function: init
+
+Checks options and initializes the default logger.
+=cut
+sub init {
+  
+    # init Getopt
+    local $ENV{POSIXLY_CORRECT} = 1;
+    
+    Getopt::Long::config qw(
+        default
+        no_autoabbrev
+        no_getopt_compat
+        require_order
+        bundling
+        no_ignorecase
+        permute
+    );
+
+    # init Options
+    GetOptions(
+        "help|h" => sub {
+            printf ($options{"help"});
+            exit 0;
+        },
+        "version|v" => sub { exit 0; },
+        "usage" => sub {
+            printf ($options{"usage"});
+            exit 0;
+        },
+        
+        "properties|conf=s" => \$options{properties},       
+    ) or do {
+        printf "Unappropriate usage\n";
+        printf ($options{"usage"});
+        exit -1;
+    };
+  
+    # logger by default at runtime
+    Log::Log4perl->easy_init({
+        level => "INFO",
+        layout => '%5p : %m (%M) %n'
+    });
+
+    # We make path absolute
+
+    # properties : mandatory !
+    if ((! defined $options{properties}) || ($options{properties} eq "")) {
+        ERROR("Option 'properties' not defined !");
+        return FALSE;
+    }
+    my $fproperties = File::Spec->rel2abs($options{properties});
+    $options{properties} = $fproperties;
+    
+    return TRUE;
+}
+
+=begin nd
+Function: config
+
+Loads properties file.
+
+See Also:
+    <checkParams>
+=cut
+sub config {
+
+    ###################
+    ALWAYS(">>> Load Properties ...");
+    
+    my $fprop = $options{properties};
+    my $objProp = EXPYR::PropertiesLoader->new($fprop);
+    
+    if (! defined $objProp) {
+        ERROR("Can not load properties !");
+        return FALSE;
+    }
+
+    my $properties = $objProp->getAllProperties();
+
+    $this{params}->{pyramid} = $properties->{pyramid};
+    $this{params}->{datasource} = $properties->{datasource};
+
+    # logger
+    if (defined $properties->{logger}) {
+    
+        my @args;
+        
+        my $layout= '%5p : %m (%M) %n';
+        my $level = $properties->{logger}->{log_level};
+        my $out   = sprintf (">>%s", File::Spec->catfile($properties->{logger}->{log_path}, $properties->{logger}->{log_file}))
+            if (! COMMON::CheckUtils::isEmpty($properties->{logger}->{log_path}) && ! COMMON::CheckUtils::isEmpty($properties->{logger}->{log_file}));
+        
+        $out   = "STDOUT" if (! defined $out);
+        $level = "WARN"   if (! defined $level);
+        
+        if ($level =~ /(ALL|DEBUG)/) {
+            $layout = '%5p : %m (%M) %n';
+        }
+        
+        # add the param logger by default (user settings !)
+        push @args, {
+            file   => $out,
+            level  => $level,
+            layout => $layout,
+        };
+        
+        if ($out ne "STDOUT") {
+            # add the param logger to the STDOUT
+            push @args, {
+                file   => "STDOUT",
+                level  => $level,
+                layout => $layout,
+            },
+        }
+        Log::Log4perl->easy_init(@args); 
+    }
+
+    return TRUE;
+}
+
+sub doIt {
+
+    my @levels = keys(%{$this{params}->{datasource}});
+
+    # On récupère la première pyramide pour configurer celle de sortie
+    my $first = $levels[0];
+    my $tmpSrcPyr = COMMON::Pyramid->new("DESCRIPTOR", $this{params}->{datasource}->{$first}->{desc_file});
+    if (! defined $tmpSrcPyr) {
+        ERROR("Can not load a source pyramid (level $first) to obtain reference parameters !");
+        return FALSE;
+    }
+
+    if (! $tmpSrcPyr->bindTileMatrixSet($this{params}->{pyramid}->{tms_path})) {
+        ERROR("Can not bind the TMS to reference source pyramid (level $first)");
+        return FALSE;
+    }
+
+    my $tpw = $tmpSrcPyr->getTilesPerWidth();
+    my $tph = $tmpSrcPyr->getTilesPerHeight();
+
+    my $dstPyramid = COMMON::Pyramid->new("VALUES", {
+        pyr_data_path => $this{params}->{pyramid}->{pyr_data_path},
+        pyr_desc_path => $this{params}->{pyramid}->{pyr_desc_path},
+        pyr_name_new => $this{params}->{pyramid}->{pyr_name},
+
+        tms_name => $tmpSrcPyr->getTileMatrixSet()->getName(),
+
+        image_width => $tpw,
+        image_height => $tph,
+        dir_depth => $tmpSrcPyr->getDirDepth(),
+
+        interpolation => $tmpSrcPyr->getImageSpec()->getInterpolation(),
+        color => $tmpSrcPyr->getNodata()->getValue(),
+
+        compression => $tmpSrcPyr->getImageSpec()->getCompression(),
+        photometric => $tmpSrcPyr->getImageSpec()->getPixel()->getPhotometric(),
+        sampleformat => $tmpSrcPyr->getImageSpec()->getPixel()->getSampleFormat(),
+        bitspersample => $tmpSrcPyr->getImageSpec()->getPixel()->getBitsPerSample(),
+        samplesperpixel => $tmpSrcPyr->getImageSpec()->getPixel()->getSamplesPerPixel()
+    });
+
+    if (! defined $dstPyramid) {
+        ERROR("Cannot create the output pyramid for extraction");
+        return FALSE;
+    }
+
+    if (! $dstPyramid->bindTileMatrixSet($this{params}->{pyramid}->{tms_path})) {
+        ERROR("Can not bind the TMS to output pyramid");
+        return FALSE;
+    }
+
+    my $dstStorageType = $dstPyramid->getStorageType();
+
+    # Si le descripteur de pyramide existe déjà, on aura fait tout le travail pour planter lors du writeDescriptor
+    # Petit check avant tout ça
+    if (-e $dstPyramid->getDescriptorFile()) {
+        ERROR("Cannot owerwrite the already existing output pyramid descriptor");
+        return FALSE;
+    }
+
+    # Chargement et vérification des sources
+    my $loadedSources = {};
+
+    while (my ($level, $source) = each (%{$this{params}->{datasource}}) ) {
+
+        INFO("Load source for level $level:");
+        INFO("\t Source pyramid: ".$source->{desc_file});
+        INFO("\t Extent: ".$source->{extent});
+
+        # Load the source pyramid and check usability
+        $loadedSources->{$level}->{pyramid} = COMMON::Pyramid->new("DESCRIPTOR", $source->{desc_file});
+        if (! defined $loadedSources->{$level}->{pyramid}) {
+            ERROR("Can not load the source pyramid (level $level)");
+            return FALSE;
+        }
+
+        if (! $loadedSources->{$level}->{pyramid}->bindTileMatrixSet($this{params}->{pyramid}->{tms_path})) {
+            ERROR("Can not bind the TMS to source pyramid (level $level)");
+            return FALSE;
+        }
+
+        if ($dstPyramid->checkCompatibility($loadedSources->{$level}->{pyramid}) != 2 ) {
+            ERROR("Source pyramid for level $level is not equals to output pyramid");
+            return FALSE;
+        }
+
+        if (! defined $loadedSources->{$level}->{pyramid}->getLevel($level)) {
+            ERROR("No level $level in the source pyramid, next level");
+            return FALSE;
+        }
+        $loadedSources->{$level}->{pyramid} = $loadedSources->{$level}->{pyramid}->getLevel($level);
+
+
+        # Ce niveau est créé dans la pyramide de sortie, même s'il est potentiellement vide
+        if (! $dstPyramid->addLevel($level)) {
+            ERROR("Cannot add level $level in the output pyramid");
+            return FALSE;
+        }
+
+        $source->{extent} =~ s/ //;
+        my @limits = split (/,/, $source->{extent},-1);
+
+        if (scalar @limits == 4) {
+            # user supplied a BBOX
+            $loadedSources->{$level}->{extent} = COMMON::ProxyGDAL::geometryFromString("BBOX", $source->{extent});
+            if (! defined $loadedSources->{$level}->{extent}) {
+                ERROR(sprintf "Cannot create a OGR geometry from the bbox %s", $source->{extent});
+                return FALSE ;
+            }
+
+        }
+        else {
+            # user supplied a file which contains bounding polygon
+            $loadedSources->{$level}->{extent} = COMMON::ProxyGDAL::geometryFromFile($source->{extent});
+            if (! defined $loadedSources->{$level}->{extent}) {
+                ERROR(sprintf "Cannot create a OGR geometry from the file %s", $source->{extent});
+                return FALSE ;
+            }
+        }
+    }
+
+    # Construction de la pyamide de sortie
+    while (my ($level, $source) = each (%{$loadedSources}) ) {
+        INFO("Level $level in progress...");
+
+        my $srcLevel = $source->{pyramid};
+        my $srcStorageType = $srcLevel->getStorageType();
+
+        my $dstLevel = $dstPyramid->getLevel($level);
+
+        my $extent = $source->{extent};
+        my $bboxes = COMMON::ProxyGDAL::getBboxes($extent);
+        if (! defined $bboxes) {
+            ERROR("Cannot calculate bboxes from the extent for level $level");
+            return FALSE;
+        }
+
+        my @tileBbox = (undef, undef, undef, undef);
+        foreach my $bb (@{$bboxes}) {
+
+            my ($colMin, $rowMin, $colMax, $rowMax) = $srcLevel->bboxToSlabIndices(@{$bb});
+            
+            for (my $col = $colMin; $col <= $colMax; $col++) {
+                for (my $row = $rowMin; $row <= $rowMax; $row++) {
+
+                    my $srcSlabPath = $srcLevel->getSlabPath("IMAGE", $col, $row);
+                    if (! defined $srcSlabPath) {
+                        ERROR("Cannot calculate path of slab for $level - $col - $row");
+                        return FALSE;
+                    }
+
+                    if (! COMMON::ProxyStorage::isPresent($srcStorageType, $srcSlabPath)) {
+                        next;
+                    }
+
+                    $dstLevel->updateLimitsFromSlab($col, $row);
+
+                    my $dstSlabPath = $dstLevel->getSlabPath("IMAGE", $col, $row);
+                    my $dstSlabDir = File::Basename::dirname($dstSlabPath);
+
+
+                    if ($this{params}->{pyramid}->{extract_mode} eq "slink") {
+                        if (! COMMON::ProxyStorage::symLink($srcStorageType, $srcSlabPath, $dstStorageType, $dstSlabPath)) {
+                            ERROR("The ancestor slab '$srcSlabPath' cannot be referenced by sym link in the new pyramid");
+                            return FALSE;
+                        }
+                    }
+                    elsif ($this{params}->{pyramid}->{extract_mode} eq "hlink") {
+                        if (! COMMON::ProxyStorage::hardLink($srcStorageType, $srcSlabPath, $dstStorageType, $dstSlabPath)) {
+                            ERROR("The ancestor slab '$srcSlabPath' cannot be referenced by hard link in the new pyramid");
+                            return FALSE;
+                        }
+                    }
+                    elsif ($this{params}->{pyramid}->{extract_mode} eq "copy") {
+                        if (! COMMON::ProxyStorage::copy($srcStorageType, $srcSlabPath, $dstStorageType, $dstSlabPath)) {
+                            ERROR("The ancestor slab '$srcSlabPath' cannot be referenced by copy in the new pyramid");
+                            return FALSE;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (! $dstPyramid->writeDescriptor()) {
+        ERROR("Cannot write the output pyramid descriptor");
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+################################################################################
+
+BEGIN {}
+
+main();
+exit 0;
+
+END {}
+
+################################################################################
+
+1;
+__END__
+
+=begin nd
+Section: Details
+
+Group: Command's options
+
+--help - Display the link to the technic documentation.
+
+--usage - Display the link to the technic documentation.
+
+--version - Display the tool version.
+
+--conf=path - Path to configuration file of the pyramid. This option is mandatory.
+
+--env=path - Path to environment file of all pyramid, it's the common configuration. This option is optional. By default, the file configuration of install is used.
+
+Group: Write a configuration file
+
+Topic: general syntax
+
+A file configuration can be composed of sections, parameters, and also subsections for section 'datasource' following :
+
+(start code)
+[ section ]
+[[ subsection ]]
+parameter = value
+;comments
+(end code)
+
+Topic: logger
+
+log_path - Directory path where to write log_file
+log_file - Path to print too output (in addition to STDOUT). Log file path : *log_path/log_file*
+log_level - Define importance level from which we print messages. From less to more important : DEBUG - INFO - WARN - ERROR - ALWAYS (WARN by default).
+
+Example:
+(start code)
+[ logger ]
+log_path = /var/log
+log_file = be4_log_yyyy-mm-dd.txt
+log_level = INFO
+(end code)
+
+Topic: pyramid
+
+For more informations about properties, see <EXPYR::Pyramid>.
+
+pyr_name - Name of the new pyramid, used to name the descriptor, the pyramid's list, the data directory and the temporary directory.
+pyr_data_path - Directory path, where to write the cache. Mandatory.
+pyr_desc_path - Directory path, where to write the descriptor. Mandatory.
+extract_mode - The type of pyramid extraction, i.e. of files linking. Possible values : 'slink' (symbolic link, default value), 'hlink' (hard link), 'copy'
+
+Examples:
+(start code)
+[ pyramid ]
+pyr_data_path = /home/user/PYRAMIDS
+pyr_desc_path = /home/user/DESCRIPTOR
+pyr_name = ORTHO
+extract_mode = hlink
+(end code)
+
+Topic: datasource
+
+Defines which sources images are to be used. We must define for each desired level the path to the source pyramid's descriptor file, and an extent.
+Order does not matter, neither does the continuity between levels. Exactly one source is given for each defined level.
+
+This sections makes use of subsection, according to the following syntax.
+(start code)
+[ datasource ]
+[[ level_ID ]]
+desc_file = 
+extent =
+(end code) 
+
+level_ID - string -  level's ID in the pyramid's tile matrix set, i.e. tile matrix's ID
+desc_file - string - path to the source pyramid's descriptor file
+extent - string - extent to intersect with source pyramid's corresponding level to select images to extract. Can be either a bounding box or a path to a WKT file.
+Example:
+(start code)
+[ datasource ]
+[[ 8 ]]
+desc_file = /home/user/DESCRIPTOR/source1.pyr
+extent = -1,40,2,43
+
+[[ 10 ]]
+desc_file = /home/user/DESCRIPTOR/source2.pyr
+extent = /home/user/EXTENTS/extent.wkt
+(end code)
+
+Group: Paths in brief
+
+- Descriptor file : *pyr_desc_path/pyr_name.pyr*
+- List file: *pyr_desc_path/pyr_name.list*
+- Cache directory: *pyr_data_path/pyr_name/*
+- TMS file: *tms_path/tms_name*
+- Common temporary directory: *path_temp_common/pyr_name_new/COMMON*
+
+=cut
