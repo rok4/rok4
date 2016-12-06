@@ -1491,6 +1491,8 @@ DataStream* Rok4Server::CommonGetFeatureInfo ( std::string service, Layer* layer
             return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Internal server error" ),"wms" ) );
         }
 
+        LOGGER_DEBUG("CONTENT-TYPE = " << response->getType());
+
         delete myWMSV;
         return response;
 
