@@ -65,7 +65,8 @@ RawDataSource * WebService::performRequest(std::string request) {
     CURL *curl;
     CURLcode res, resC, resT;
     long responseCode = 0;
-    char* responseType;
+    char* rpType;
+    std::string fType;
     struct MemoryStruct chunk;
     bool errors = false;
     RawDataSource *rawData = NULL;
@@ -131,7 +132,7 @@ RawDataSource * WebService::performRequest(std::string request) {
                 if(res == CURLE_OK) {
 
                     resC = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &responseCode);
-                    resT = curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &responseType);
+                    resT = curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &rpType);
                     if ((resC == CURLE_OK) && responseCode) {
 
                         if (responseCode != 200) {
@@ -144,10 +145,11 @@ RawDataSource * WebService::performRequest(std::string request) {
                         errors = true;
                     }
 
-                    if ((resT == CURLE_OK) && responseType) {
-                        std::string rType(responseType);
+                    if ((resT == CURLE_OK) && rpType) {
+                        std::string rType(rpType);
+                        fType = rType;
                         if (errors || (this->responseType != "" && this->responseType != rType )) {
-                            LOGGER_ERROR("The request returned with a " << responseType << " content type");
+                            LOGGER_ERROR("The request returned with a " << rpType << " content type");
                             std::string text = "text/";
                             std::string application = "application/";
 
@@ -194,9 +196,8 @@ RawDataSource * WebService::performRequest(std::string request) {
     /* Convert chunk into a DataSource readable by rok4 */
     if (!errors) {
         LOGGER_DEBUG("Sauvegarde de la donnee");
-        std::string rType(responseType);
-        LOGGER_DEBUG("content-type de la reponse: "+ rType);
-        rawData = new RawDataSource(chunk.memory, chunk.size, rType,"");
+        LOGGER_DEBUG("content-type de la reponse: "+ fType);
+        rawData = new RawDataSource(chunk.memory, chunk.size, fType,"");
     }
 
     free(chunk.memory);
