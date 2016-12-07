@@ -211,12 +211,8 @@ RawDataStream * WebService::performRequestStream(std::string request) {
   if (rawData == NULL){
       return NULL;
   }
-  LOGGER_DEBUG("Conversion en Stream");
   size_t bufferSize = rawData->getSize();
   const uint8_t* buffer = rawData->getData(bufferSize);
-  LOGGER_DEBUG("taille de la reponse: "+ bufferSize);
-  LOGGER_DEBUG("type de la reponse: "+ rawData->getType());
-  LOGGER_DEBUG("encoding de la reponse: "+ rawData->getEncoding());
   RawDataStream* rawStream = new RawDataStream((uint8_t*)buffer, bufferSize, rawData->getType(), rawData->getEncoding());
   delete rawData;
   return rawStream;

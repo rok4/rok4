@@ -59,7 +59,6 @@
 #include "intl.h"
 #include <cfloat>
 #include <libintl.h>
-#include "Logger.h"
 
 static bool loggerInitialised = false;
 //Keep the servicesConf for deletion
@@ -71,10 +70,8 @@ static ServicesConf* sc = NULL;
 HttpResponse* initResponseFromSource ( DataSource* source ) {
     HttpResponse* response=new HttpResponse;
     response->status=source->getHttpStatus();
-    LOGGER_DEBUG("INIT TYPE:" + source->getType());
     response->type=new char[source->getType().length() +1];
     strcpy ( response->type,source->getType().c_str() );
-    LOGGER_DEBUG(response->type);
     response->encoding=new char[source->getEncoding().length() +1];
     strcpy(response->encoding, source->getEncoding().c_str() );
     size_t buffer_size;

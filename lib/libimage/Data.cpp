@@ -50,8 +50,6 @@ BufferedDataSource::BufferedDataSource ( DataStream& dataStream ) : type ( dataS
     size_t maxSize = 32768;
     data = new uint8_t[maxSize];
 
-    LOGGER_DEBUG("BUFFERED DATA SOURCE TYPE: " +type);
-
     while ( !dataStream.eof() ) { // On lit le DataStream jusqu'au bout
         size_t size = dataStream.read ( data + dataSize, maxSize - dataSize );
         dataSize += size;
