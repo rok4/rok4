@@ -282,18 +282,8 @@ int euclideanDivisionRemainder ( int64_t i, int n ) {
 
 Image* Level::getwindow ( ServicesConf& servicesConf, BoundingBox< int64_t > bbox, int& error ) {
     int tile_xmin=euclideanDivisionQuotient ( bbox.xmin,tm.getTileW() );
-    if (tile_xmin < 0) {
-        LOGGER_INFO("tile_xmin < 0");
-        error=1;
-        return 0;
-    }
 
     int tile_xmax=euclideanDivisionQuotient ( bbox.xmax -1,tm.getTileW() );
-    if (tile_xmax < 0) {
-        LOGGER_INFO("tile_xmax < 0");
-        error=1;
-        return 0;
-    }
 
     int nbx = tile_xmax - tile_xmin + 1;
     if ( nbx >= servicesConf.getMaxTileX() ) {
@@ -308,18 +298,8 @@ Image* Level::getwindow ( ServicesConf& servicesConf, BoundingBox< int64_t > bbo
     }
 
     int tile_ymin=euclideanDivisionQuotient ( bbox.ymin,tm.getTileH() );
-    if (tile_ymin < 0) {
-        LOGGER_INFO("tile_ymin < 0");
-        error=1;
-        return 0;
-    }
 
     int tile_ymax = euclideanDivisionQuotient ( bbox.ymax-1,tm.getTileH() );
-    if (tile_ymax < 0) {
-        LOGGER_INFO("tile_ymax < 0");
-        error=1;
-        return 0;
-    }
 
     int nby = tile_ymax - tile_ymin + 1;
     if ( nby >= servicesConf.getMaxTileY() ) {
