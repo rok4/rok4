@@ -166,7 +166,17 @@ Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, 
     grid->bbox.print();
 
     if ( ! ( grid->reproject ( dst_crs.getProj4Code(), src_crs.getProj4Code() ) ) ) {
+        LOGGER_DEBUG("Impossible de reprojeter la grid");
         error = 1; // BBox invalid
+        delete grid;
+        return 0;
+    }
+
+    //la reprojection peut marcher alors que la bbox contient des NaN
+    //cela arrive notamment lors que la bbox envoyée par l'utilisateur n'est pas dans le crs specifié par ce dernier
+    if (grid->bbox.xmin != grid->bbox.xmin || grid->bbox.xmax != grid->bbox.xmax || grid->bbox.ymin != grid->bbox.ymin || grid->bbox.ymax != grid->bbox.ymax ) {
+        LOGGER_DEBUG("Bbox de la grid contenant des NaN");
+        error = 1;
         delete grid;
         return 0;
     }
@@ -272,19 +282,54 @@ int euclideanDivisionRemainder ( int64_t i, int n ) {
 
 Image* Level::getwindow ( ServicesConf& servicesConf, BoundingBox< int64_t > bbox, int& error ) {
     int tile_xmin=euclideanDivisionQuotient ( bbox.xmin,tm.getTileW() );
+    if (tile_xmin < 0) {
+        LOGGER_INFO("tile_xmin < 0");
+        error=1;
+        return 0;
+    }
+
     int tile_xmax=euclideanDivisionQuotient ( bbox.xmax -1,tm.getTileW() );
+    if (tile_xmax < 0) {
+        LOGGER_INFO("tile_xmax < 0");
+        error=1;
+        return 0;
+    }
+
     int nbx = tile_xmax - tile_xmin + 1;
     if ( nbx >= servicesConf.getMaxTileX() ) {
         LOGGER_INFO ( _ ( "Too Much Tile on X axis" ) );
         error=2;
         return 0;
     }
+    if (nbx == 0) {
+        LOGGER_INFO("nbx = 0");
+        error=1;
+        return 0;
+    }
+
     int tile_ymin=euclideanDivisionQuotient ( bbox.ymin,tm.getTileH() );
+    if (tile_ymin < 0) {
+        LOGGER_INFO("tile_ymin < 0");
+        error=1;
+        return 0;
+    }
+
     int tile_ymax = euclideanDivisionQuotient ( bbox.ymax-1,tm.getTileH() );
+    if (tile_ymax < 0) {
+        LOGGER_INFO("tile_ymax < 0");
+        error=1;
+        return 0;
+    }
+
     int nby = tile_ymax - tile_ymin + 1;
     if ( nby >= servicesConf.getMaxTileY() ) {
         LOGGER_INFO ( _ ( "Too Much Tile on Y axis" ) );
         error=2;
+        return 0;
+    }
+    if (nbx == 0) {
+        LOGGER_INFO("nby = 0");
+        error=1;
         return 0;
     }
 
