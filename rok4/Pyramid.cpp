@@ -397,10 +397,19 @@ Pyramid::~Pyramid() {
 
 PyramidOnDemand::~PyramidOnDemand() {
 
-//    for (int i=0;i<basedPyramids.size();i++) {
-//        delete basedPyramids.at(i);
-//        basedPyramids.at(i) = NULL;
-//    }
+    if (specificSources.size() != 0) {
+        for ( std::map<std::string,std::vector<Source*> >::iterator lv = specificSources.begin(); lv != specificSources.end(); lv++) {
+
+            if (lv->second.size() != 0) {
+                for ( std::vector<int>::size_type i = 0; i != lv->second.size(); i++) {
+                    delete lv->second[i];
+                    lv->second[i] = NULL;
+                }
+                lv->second.clear();
+            }
+        }
+        specificSources.clear();
+    }
 
 }
 
