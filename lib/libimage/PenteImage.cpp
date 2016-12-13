@@ -69,10 +69,11 @@ int PenteImage::getline ( uint8_t* buffer, int line ) {
 }
 
 //definition des variables
-PenteImage::PenteImage (int width, int height, int channels, BoundingBox<double> bbox, Image* image, float resolutionx, float resolutiony, std::string algo, std::string unit) :
+PenteImage::PenteImage (int width, int height, int channels, BoundingBox<double> bbox, Image* image, float resolutionx, float resolutiony, std::string algo, std::string unit, int slopend, float imgnd, int mxSlope) :
     Image ( width, height, channels, bbox ),
-    origImage ( image ), pente ( NULL ), resolutionX (resolutionx), resolutionY (resolutiony),algo (algo),unit (unit)
-    { }
+    origImage ( image ), pente ( NULL ), resolutionX (resolutionx), resolutionY (resolutiony),algo (algo),unit (unit), slopeNoData (slopend), imgNoData (imgnd), maxSlope (mxSlope)
+    {}
+
 
 PenteImage::~PenteImage() {
     delete origImage;
@@ -140,20 +141,62 @@ void PenteImage::generateLine ( int line, float* line1, float* line2, float* lin
     int column = 0;
 	//creation de la variable sur laquelle on travaille pour trouver le seuil
     double dzdx,dzdy,rise,slope;
+    float a,b,c,d,e,f,g,h,i;
+    float resx,resy;
+
+    if (algo == "H") {
+        resx = 8.0 * resolutionX;
+        resy = 8.0 * resolutionY;
+    } else if (algo == "Z") {
+        resx = 2.0 * resolutionX;
+        resy = 2.0 * resolutionY;
+    } else {
+
+    }
+
 
 	//calcul de la variable sur toutes les autres colonnes
     while ( column < width  ) {
 
-        dzdx = (( ( * ( line1+columnOrig+1 ) ) + 2.0 * ( * ( line2+columnOrig+1 ) ) + ( * ( line3+columnOrig+1 ) )) - (( * ( line1+columnOrig-1 ) ) + 2 *  ( * ( line2+columnOrig-1 ) ) + ( * ( line3+columnOrig-1 ) ))) / (8.0 * resolutionX);
-        dzdy = (( ( * ( line3+columnOrig-1 ) ) + 2.0 * ( * ( line3+columnOrig ) ) + ( * ( line3+columnOrig+1 ) )) - (( * ( line1+columnOrig-1 ) ) + 2 *  ( * ( line1+columnOrig ) ) + ( * ( line1+columnOrig+1 ) ))) / (8.0 * resolutionY);
+        a = ( * ( line1+columnOrig-1 ) );
+        b = ( * ( line1+columnOrig ) );
+        c = ( * ( line1+columnOrig+1 ) );
+        d = ( * ( line2+columnOrig-1 ) );
+        e = ( * ( line2+columnOrig ) );
+        f = ( * ( line2+columnOrig+1 ) );
+        g = ( * ( line3+columnOrig-1 ) );
+        h = ( * ( line3+columnOrig ) );
+        i = ( * ( line3+columnOrig+1 ) );
 
-        rise = sqrt(pow(dzdx,2.0) + pow(dzdy,2.0));
-
-        if (unit == "pourcent") {
-            slope = rise * 100.0;
+        if (a == imgNoData || b == imgNoData || c == imgNoData || d == imgNoData || e == imgNoData ||
+                f == imgNoData || g == imgNoData || h == imgNoData || i == imgNoData) {
+            slope = slopeNoData;
         } else {
-            slope = atan(rise) * 180 / M_PI;
-            if (slope>90){slope = 180-slope;}
+
+            if (algo == "H") {
+                dzdx = (( c + 2.0 * f + i) - (a + 2.0 *  d + g)) / resx;
+                dzdy = (( g + 2.0 * h + i) - (a + 2.0 *  b + c)) / resy;
+            } else if (algo == "Z" ) {
+                dzdx = (f - d) / resx;
+                dzdy = (h - b) / resy;
+            } else {
+
+            }
+
+
+            if (unit == "pourcent") {
+                slope = sqrt(pow(dzdx,2.0) + pow(dzdy,2.0)) * 100.0;
+            } else if (unit == "degree") {
+                rise = sqrt(pow(dzdx,2.0) + pow(dzdy,2.0));
+
+                slope = atan(rise) * 180.0 / M_PI;
+                if (slope>90.0){slope = 180.0-slope;}
+            } else {
+                slope = 0;
+            }
+
+            if (slope>maxSlope){slope = maxSlope;}
+
         }
 
         * ( currentLine+ ( column++ ) ) = ( int ) ( slope );

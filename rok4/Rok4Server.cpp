@@ -411,7 +411,7 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
 
             int error=0;
             BoundingBox<double> expandedBbox = curImage->getBbox().expand(curImage->getResX(),curImage->getResY(),1);
-            expandedImage = pyr->getbbox(servicesConf,expandedBbox,curImage->getWidth()+2,curImage->getHeight()+2,curImage->getCRS(),Interpolation::CUBIC,error);
+            expandedImage = pyr->getbbox(servicesConf,expandedBbox,curImage->getWidth()+2,curImage->getHeight()+2,curImage->getCRS(),style->getInterpolationOfPente(),error);
 
             if (expandedImage == 0) {
                 LOGGER_ERROR("expanded Image is NULL");
@@ -428,13 +428,21 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
                 case Rok4Format::TIFF_ZIP_FLOAT32 :
                 case Rok4Format::TIFF_LZW_FLOAT32 :
                 case Rok4Format::TIFF_PKB_FLOAT32 :
-                    expandedImage = new PenteImage ( curImage->getWidth(), curImage->getHeight(), curImage->getChannels(), curImage->getBbox(),expandedImage, expandedImage->getResXmeter(), expandedImage->getResYmeter(), style->getAlgoOfPente(), style->getUnitOfPente());
-				default:
+                    expandedImage = new PenteImage ( curImage->getWidth(), curImage->getHeight(), curImage->getChannels(),
+                                                                         curImage->getBbox(),expandedImage, expandedImage->getResXmeter(),
+                                                                         expandedImage->getResYmeter(), style->getAlgoOfPente(), style->getUnitOfPente(),
+                                                                         style->getSlopeNoDataOfPente(),pyr->getFirstNoDataValue(),
+                                                                         style->getMaxSlopeOfPente());
+                default:
 					break;
 				}
 			} else {
-                expandedImage = new PenteImage (curImage->getWidth(), curImage->getHeight(), curImage->getChannels(), curImage->getBbox(),expandedImage, expandedImage->getResXmeter(), expandedImage->getResYmeter(), style->getAlgoOfPente(), style->getUnitOfPente());
-			}
+                expandedImage = new PenteImage ( curImage->getWidth(), curImage->getHeight(), curImage->getChannels(),
+                                                                     curImage->getBbox(),expandedImage, expandedImage->getResXmeter(),
+                                                                     expandedImage->getResYmeter(), style->getAlgoOfPente(), style->getUnitOfPente(),
+                                                                     style->getSlopeNoDataOfPente(),pyr->getFirstNoDataValue(),
+                                                                     style->getMaxSlopeOfPente());
+            }
             delete curImage;
 		}
 
@@ -442,7 +450,7 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
 
             int error=0;
             BoundingBox<double> expandedBbox = curImage->getBbox().expand(curImage->getResX(),curImage->getResY(),1);
-            expandedImage = pyr->getbbox(servicesConf,expandedBbox,curImage->getWidth()+2,curImage->getHeight()+2,curImage->getCRS(),Interpolation::CUBIC,error);
+            expandedImage = pyr->getbbox(servicesConf,expandedBbox,curImage->getWidth()+2,curImage->getHeight()+2,curImage->getCRS(),Interpolation::LINEAR,error);
 
             if (expandedImage == 0) {
                 LOGGER_ERROR("expanded Image is NULL");

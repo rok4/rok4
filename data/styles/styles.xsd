@@ -79,6 +79,12 @@
                                         <xs:attribute name="algo" type="xs:string" use="required"/>
                                         <!-- Unité, 'degree' ou 'pourcent'-->
                                         <xs:attribute name="unit" type="xs:string" use="required"/>
+                                        <!-- Interpolation appliquée sur les données sources, 'nn','linear','cubic' et 'lanczos'-->
+ 										<xs:attribute name="interpolation" type="xs:string" use="required"/>
+                                        <!-- Valeur du noData à utiliser pour la pente (compris entre 0 et 255)-->
+                                        <xs:attribute name="slopeNoData" type="xs:interger" use="required"/>
+                                        <!-- Valeur du noData à vérifier dans le MNT source -->
+                                        <xs:attribute name="imageNoData" type="xs:float" use="required"/>
                                         </xs:complexContent>
                                 </xs:complexType>
                         </xs:element>
