@@ -131,12 +131,12 @@ See also:
     <_init>, <computeImageSource>
 =cut
 sub new {
-    my $this = shift;
+    my $class = shift;
     my $params = shift;
 
-    my $class= ref($this) || $this;
+    $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above)
-    my $self = {
+    my $this = {
         PATHIMG => undef,
         PATHMTD => undef,
         #
@@ -152,15 +152,15 @@ sub new {
         preprocess_tmp_dir => undef,
     };
 
-    bless($self, $class);
+    bless($this, $class);
 
 
     # init. class
-    return undef if (! $self->_init($params));
+    return undef if (! $this->_init($params));
 
-    return undef if (! $self->computeImageSource());
+    return undef if (! $this->computeImageSource());
 
-    return $self;
+    return $this;
 }
 
 =begin nd
@@ -181,7 +181,7 @@ Parameters (hash):
 =cut
 sub _init {
 
-    my $self   = shift;
+    my $this   = shift;
     my $params = shift;
 
     
@@ -192,41 +192,41 @@ sub _init {
     }
     
     # init. params    
-    $self->{PATHIMG} = $params->{path_image} if (exists($params->{path_image})); 
-    $self->{PATHMTD} = $params->{path_metadata} if (exists($params->{path_metadata}));
-    $self->{srs} = $params->{srs};
+    $this->{PATHIMG} = $params->{path_image} if (exists($params->{path_image})); 
+    $this->{PATHMTD} = $params->{path_metadata} if (exists($params->{path_metadata}));
+    $this->{srs} = $params->{srs};
     if (exists($params->{preprocess_command})) {
         if (exists($params->{preprocess_tmp_dir})) {
-            $self->{preprocess_tmp_dir} = $params->{preprocess_tmp_dir};
+            $this->{preprocess_tmp_dir} = $params->{preprocess_tmp_dir};
         } else {
             ERROR ("If a preprocessing command is provided, a temporary directory to store preprocessed images must be provided as well.");
             return FALSE;
         }
-        $self->{preprocess_command}[0] = $params->{preprocess_command};
+        $this->{preprocess_command}[0] = $params->{preprocess_command};
         if (exists($params->{preprocess_opt_beg}) && defined ($params->{preprocess_opt_beg})){
-            $self->{preprocess_command}[1] = ' '.$params->{preprocess_opt_beg}.' ';
+            $this->{preprocess_command}[1] = ' '.$params->{preprocess_opt_beg}.' ';
         } else {
-            $self->{preprocess_command}[1] = ' ';
+            $this->{preprocess_command}[1] = ' ';
         }
         if (exists($params->{preprocess_opt_mid}) && defined ($params->{preprocess_opt_mid})){
-            $self->{preprocess_command}[2] = ' '.$params->{preprocess_opt_mid}.' ';
+            $this->{preprocess_command}[2] = ' '.$params->{preprocess_opt_mid}.' ';
         } else {
-            $self->{preprocess_command}[2] = ' ';
+            $this->{preprocess_command}[2] = ' ';
         }
         if (exists($params->{preprocess_opt_end}) && defined ($params->{preprocess_opt_end})){
-            $self->{preprocess_command}[3] = ' '.$params->{preprocess_opt_end};
+            $this->{preprocess_command}[3] = ' '.$params->{preprocess_opt_end};
         } else {
-            $self->{preprocess_command}[3] = '';
+            $this->{preprocess_command}[3] = '';
         }
-        # command = $self->{preprocess_command}[0].$self->{preprocess_command}[1].$self->{PATHIMG}."imageName.ext".$self->{preprocess_command}[2].$self->{preprocess_tmp_dir}."imageName.ext".$self->{preprocess_command}[3];
+        # command = $this->{preprocess_command}[0].$this->{preprocess_command}[1].$this->{PATHIMG}."imageName.ext".$this->{preprocess_command}[2].$this->{preprocess_tmp_dir}."imageName.ext".$this->{preprocess_command}[3];
     }
     
-    if (! defined ($self->{PATHIMG}) || ! -d $self->{PATHIMG}) {
-        ERROR (sprintf "Directory image ('%s') doesn't exist !",$self->{PATHIMG});
+    if (! defined ($this->{PATHIMG}) || ! -d $this->{PATHIMG}) {
+        ERROR (sprintf "Directory image ('%s') doesn't exist !",$this->{PATHIMG});
         return FALSE;
     }
     
-    if (defined ($self->{PATHMTD}) && ! -d $self->{PATHMTD}) {
+    if (defined ($this->{PATHMTD}) && ! -d $this->{PATHMTD}) {
         ERROR ("Directory metadata doesn't exist !");
         return FALSE;
     }
@@ -250,12 +250,12 @@ See also:
     <getListImages>, <GeoImage::computeInfo>
 =cut
 sub computeImageSource {
-    my $self = shift;
+    my $this = shift;
 
 
-    my $lstGeoImages = $self->{images};
+    my $lstGeoImages = $this->{images};
 
-    my $search = $self->getListImages($self->{PATHIMG});
+    my $search = $this->getListImages($this->{PATHIMG});
     if (! defined $search) {
         ERROR ("Can not load data source !");
         return FALSE;
@@ -279,9 +279,9 @@ sub computeImageSource {
     my $ppsPath = undef;
     my $isPreProcessed = FALSE;
 
-    my $imgPath = $self->{PATHIMG};
-    if (defined $self->{preprocess_tmp_dir}) {
-        $ppsPath = $self->{preprocess_tmp_dir};
+    my $imgPath = $this->{PATHIMG};
+    if (defined $this->{preprocess_tmp_dir}) {
+        $ppsPath = $this->{preprocess_tmp_dir};
         $isPreProcessed = TRUE;
         make_path($ppsPath);
     }
@@ -309,7 +309,7 @@ sub computeImageSource {
             $prePsFilePath = $filepath;
             $prePsFilePath =~ s/$imgPath/$ppsPath/;
             INFO(sprintf "Preprocessing image '%s'.", $filepath);
-            my $commandCall = $self->{preprocess_command}[0].$self->{preprocess_command}[1].$filepath.$self->{preprocess_command}[2].$prePsFilePath.$self->{preprocess_command}[3];
+            my $commandCall = $this->{preprocess_command}[0].$this->{preprocess_command}[1].$filepath.$this->{preprocess_command}[2].$prePsFilePath.$this->{preprocess_command}[3];
             
             make_path(File::Basename::dirname($prePsFilePath));
 
@@ -353,24 +353,24 @@ sub computeImageSource {
         $bestResY = $yRes if (! defined $bestResY || $yRes < $bestResY);
 
         push @$lstGeoImages, $objGeoImage;
-        $objGeoImage->setImageSource($self);
+        $objGeoImage->setImageSource($this);
     }
 
-    $self->{pixel} = COMMON::Pixel->new({
+    $this->{pixel} = COMMON::Pixel->new({
         bitspersample => $bps,
         photometric => $ph,
         sampleformat => $sf,
         samplesperpixel => $spp
     });
-    if (! defined $self->{pixel}) {
+    if (! defined $this->{pixel}) {
         ERROR ("Can not create Pixel object for DataSource !");
         return FALSE;
     }
-    $self->{bestResX} = $bestResX;
-    $self->{bestResY} = $bestResY;
+    $this->{bestResX} = $bestResX;
+    $this->{bestResY} = $bestResY;
 
     if (!defined $lstGeoImages || ! scalar @$lstGeoImages) {
-        ERROR (sprintf "Can not found image source in '%s' !",$self->{PATHIMG});
+        ERROR (sprintf "Can not found image source in '%s' !",$this->{PATHIMG});
         return FALSE;
     }
 
@@ -389,7 +389,7 @@ Parameters (list):
     directory - string - Path to directory, to browse.
 =cut  
 sub getListImages {
-    my $self      = shift;
+    my $this      = shift;
     my $directory = shift;
 
 
@@ -409,7 +409,7 @@ sub getListImages {
 
         # Si on a à faire à un dossier, on appelle récursivement la méthode pourle parcourir
         if ( -d File::Spec->catdir($directory, $entry)) {
-            $newsearch = $self->getListImages(File::Spec->catdir($directory, $entry));
+            $newsearch = $this->getListImages(File::Spec->catdir($directory, $entry));
             push @{$search->{images}}, $_  foreach(@{$newsearch->{images}});
         }
 
@@ -431,10 +431,10 @@ Calculate extrem limits of images, in the source SRS.
 Returns a double list : (xMin,yMin,xMax,yMax).
 =cut
 sub computeBBox {
-    my $self = shift;
+    my $this = shift;
 
 
-    my $lstGeoImages = $self->{images};
+    my $lstGeoImages = $this->{images};
 
     my ($xmin,$ymin,$xmax,$ymax) = $lstGeoImages->[0]->getBBox;
 
@@ -454,28 +454,28 @@ sub computeBBox {
 
 # Function: getResolution
 sub getResolution {
-    my $self = shift;
-    return $self->{resolution};  
+    my $this = shift;
+    return $this->{resolution};  
 }
 
 # Function: getSRS
 sub getSRS {
-    my $self = shift;
-    return $self->{srs};
+    my $this = shift;
+    return $this->{srs};
 }
 
 # Function: getPixel
 sub getPixel {
-    my $self = shift;
-    return $self->{pixel};
+    my $this = shift;
+    return $this->{pixel};
 }
 
 # Function: getImages
 sub getImages {
-    my $self = shift;
+    my $this = shift;
     # copy !
     my @images;
-    foreach (@{$self->{images}}) {
+    foreach (@{$this->{images}}) {
         push @images, $_;
     }
     return @images;
@@ -495,19 +495,19 @@ Example:
     (end code)
 =cut
 sub exportForDebug {
-    my $self = shift ;
+    my $this = shift ;
     
     my $export = "";
     
     $export .= "\nObject COMMON::ImageSource :\n";
-    $export .= sprintf "\t Image directory : %s\n", $self->{PATHIMG};
-    $export .= sprintf "\t Image number : %s\n", scalar @{$self->{images}};
+    $export .= sprintf "\t Image directory : %s\n", $this->{PATHIMG};
+    $export .= sprintf "\t Image number : %s\n", scalar @{$this->{images}};
 
     $export .= "\t Best resolution : \n";
-    $export .= sprintf "\t\t- x : %s\n", $self->{bestResX};
-    $export .= sprintf "\t\t- y : %s\n", $self->{bestResY};
+    $export .= sprintf "\t\t- x : %s\n", $this->{bestResX};
+    $export .= sprintf "\t\t- y : %s\n", $this->{bestResY};
     
-    $export .= sprintf "\t Pixel : %s\n", $self->{pixel}->exportForDebug;
+    $export .= sprintf "\t Pixel : %s\n", $this->{pixel}->exportForDebug;
     
     return $export;
 }

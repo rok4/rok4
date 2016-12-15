@@ -54,7 +54,7 @@ Using:
 
     _init {
         ...
-        $self->SUPER->_init( {type => "WMS", level => 7, order => 0});
+        $this->SUPER->_init( {type => "WMS", level => 7, order => 0});
         ...
     }    
     (end code)
@@ -128,18 +128,18 @@ sub new() {
     my $this = shift;
     my $params = shift;
 
-    my $class= ref($this) || $this;
+    $class = ref($class) || $class;
 
     # IMPORTANT : if modification, think to update natural documentation (just above)
-    my $self = {
+    my $this = {
         type => undef,
         level => undef,
         order => undef,
     };
 
-    bless($self, $class);
+    bless($this, $class);
 
-    return $self;
+    return $this;
 }
 
 =begin nd
@@ -170,14 +170,14 @@ Returns:
     
 =cut
 sub _init() {
-    my $self = shift;
+    my $this = shift;
     my $params = shift;
 
     # Tests type
     if (!exists $params->{type} || !defined $params->{type}) {
         ERROR("Data source's type is undefined.");
         return FALSE;
-    } elsif (!$self->isKnownType($params->{type})) {
+    } elsif (!$this->isKnownType($params->{type})) {
         ERROR(sprintf "Unrecognized data source's type : %s.", $params->{type});
         return FALSE;
     }
@@ -196,9 +196,9 @@ sub _init() {
     }
 
     # Initializes
-    $self->{type} = $params->{type};
-    $self->{level} = $params->{level};
-    $self->{order} = $params->{order};
+    $this->{type} = $params->{type};
+    $this->{level} = $params->{level};
+    $this->{order} = $params->{order};
 
     return TRUE;
 }
@@ -227,7 +227,7 @@ Returns:
 
 =cut
 sub isKnownType {
-    my $self = shift;
+    my $this = shift;
     my $type = shift;
 
     return FALSE if (!defined $type);

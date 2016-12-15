@@ -738,13 +738,13 @@ Parameters (list):
     bbox - list reference - Bounding box to intersect with the level's limits : (colMin,rowMin,colMax,rowMax).
 =cut
 sub intersectBboxIndices {
-    my $self = shift;
+    my $this = shift;
     my $bbox = shift;
 
-    $bbox->[0] = max($bbox->[0], $self->{limits}[2]);
-    $bbox->[1] = max($bbox->[1], $self->{limits}[0]);
-    $bbox->[2] = min($bbox->[2], $self->{limits}[3]);
-    $bbox->[3] = min($bbox->[3], $self->{limits}[1]);
+    $bbox->[0] = max($bbox->[0], $this->{limits}[2]);
+    $bbox->[1] = max($bbox->[1], $this->{limits}[0]);
+    $bbox->[2] = min($bbox->[2], $this->{limits}[3]);
+    $bbox->[3] = min($bbox->[3], $this->{limits}[1]);
 }
 
 ####################################################################################################

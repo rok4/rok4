@@ -134,23 +134,23 @@ Parameters (hash):
     value - string - Optionnal, value (color) to use when no input data
 =cut
 sub new {
-    my $this = shift;
+    my $class = shift;
     my $params = shift;
     
-    my $class= ref($this) || $this;
+    $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above)
-    my $self = {
+    my $this = {
         pixel           => undef,
         value           => undef,
     };
     
-    bless($self, $class);
+    bless($this, $class);
     
     
     # init. class
-    return undef if (! $self->_init($params));
+    return undef if (! $this->_init($params));
     
-    return $self;
+    return $this;
 }
 
 =begin nd
@@ -165,7 +165,7 @@ Parameters (hash):
     value - string - Optionnal, value (color) to use when no input data
 =cut
 sub _init {
-    my $self = shift;
+    my $this = shift;
     my $params = shift;
 
     
@@ -180,19 +180,19 @@ sub _init {
         ERROR ("Parameter 'pixel' required !");
         return FALSE;
     }
-    $self->{pixel} = $params->{pixel};
+    $this->{pixel} = $params->{pixel};
 
     ### Value
     # For nodata value, it has to be coherent with bitspersample/sampleformat :
     #       - 32/float -> an integer in decimal format (-99999 for a DTM for example)
     #       - 8/uint -> a uint in decimal format (255 for example)
     if (! exists $params->{value} || ! defined ($params->{value})) {
-        if ($self->{pixel}->getBitsPerSample == 32 && $self->{pixel}->getSampleFormat eq 'float') {
+        if ($this->{pixel}->getBitsPerSample == 32 && $this->{pixel}->getSampleFormat eq 'float') {
             WARN ("Parameter 'nodata value' has not been set. The default value is -99999 per sample");
-            $params->{value} .= '-99999' . ',-99999'x($self->{pixel}->getSamplesPerPixel - 1);
-        } elsif ($self->{pixel}->getBitsPerSample == 8 && $self->{pixel}->getSampleFormat eq 'uint') {
+            $params->{value} .= '-99999' . ',-99999'x($this->{pixel}->getSamplesPerPixel - 1);
+        } elsif ($this->{pixel}->getBitsPerSample == 8 && $this->{pixel}->getSampleFormat eq 'uint') {
             WARN ("Parameter 'nodata value' has not been set. The default value is 255 per sample");
-            $params->{value} = '255' . ',255'x($self->{pixel}->getSamplesPerPixel - 1);
+            $params->{value} = '255' . ',255'x($this->{pixel}->getSamplesPerPixel - 1);
         } else {
             ERROR ("sampleformat/bitspersample not supported !");
             return FALSE;
@@ -201,15 +201,15 @@ sub _init {
         $params->{value} =~ s/ //g;
 
         # On garde la possibilité de traiter une valeur fournie en héxadécimal
-        if ($self->{pixel}->getBitsPerSample == 8 &&
-            $self->{pixel}->getSampleFormat eq 'uint' &&
+        if ($this->{pixel}->getBitsPerSample == 8 &&
+            $this->{pixel}->getSampleFormat eq 'uint' &&
             ( $params->{value} !~ m/^[0-9,]+$/ || $params->{value} =~ m/^0[0-9A-F]+$/ ) ) {
 
             WARN (sprintf "Nodata value in hexadecimal format (%s) is deprecated, use decimal format instead !",
                 $params->{value});
             
             # nodata is supplied in hexadecimal format, we convert it
-            my $valueDec = $self->hexToDec($params->{value});
+            my $valueDec = $this->hexToDec($params->{value});
             if (! defined $valueDec) {
                 ERROR (sprintf "Incorrect value for nodata in hexadecimal format '%s' ! Unable to convert",
                     $params->{value});
@@ -220,19 +220,19 @@ sub _init {
         }
         
         my @nodata = split(/,/,$params->{value},-1);
-        if (scalar @nodata != $self->{pixel}->getSamplesPerPixel) {
+        if (scalar @nodata != $this->{pixel}->getSamplesPerPixel) {
             ERROR (sprintf "Incorrect parameter nodata (%s) : we need one value per sample (%s), separated by ',' !",
-                $params->{value},$self->{pixel}->getSamplesPerPixel);
+                $params->{value},$this->{pixel}->getSamplesPerPixel);
             return FALSE;
         }
 
         foreach my $value (@nodata) {
-            if ($self->{pixel}->getBitsPerSample == 32 && $self->{pixel}->getSampleFormat eq 'float') {
+            if ($this->{pixel}->getBitsPerSample == 32 && $this->{pixel}->getSampleFormat eq 'float') {
                 if ( $value !~ m/^[-+]?[0-9]+$/ ) {
                     ERROR (sprintf "Incorrect value for nodata for a float32 pixel's format (%s) !",$value);
                     return FALSE;
                 }
-            } elsif ($self->{pixel}->getBitsPerSample == 8 && $self->{pixel}->getSampleFormat eq 'uint') {
+            } elsif ($this->{pixel}->getBitsPerSample == 8 && $this->{pixel}->getSampleFormat eq 'uint') {
                 if ( $value !~ m/^[0-9]+$/ ) {
                     ERROR (sprintf "Incorrect value for nodata for a uint8 pixel's in decimal format '%s' !",$value);
                     return FALSE;
@@ -248,7 +248,7 @@ sub _init {
         }
     }
     
-    $self->{value} = $params->{value};
+    $this->{value} = $params->{value};
 
     return TRUE;
 }
@@ -259,14 +259,14 @@ sub _init {
 
 # Function: getValue
 sub getValue {
-    my $self = shift;
-    return $self->{value};
+    my $this = shift;
+    return $this->{value};
 }
 
 # Function: getPixel
 sub getPixel {
-    my $self = shift;
-    return $self->{pixel};
+    my $this = shift;
+    return $this->{pixel};
 }
 
 ####################################################################################################
@@ -285,7 +285,7 @@ Example:
     hexToDec("7BFF0300") = "123,255,3,0"
 =cut
 sub hexToDec {
-    my $self = shift;
+    my $this = shift;
     my $hex = shift;
 
     if (length($hex) % 2 != 0) {
@@ -333,12 +333,12 @@ Example:
     (end code)
 =cut
 sub exportForDebug {
-    my $self = shift ;
+    my $this = shift ;
     
     my $export = "";
     
     $export .= "\nObject COMMON::NoData :\n";
-    $export .= sprintf "\t Value : %s\n", $self->{value};
+    $export .= sprintf "\t Value : %s\n", $this->{value};
     
     return $export;
 }

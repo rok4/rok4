@@ -185,13 +185,13 @@ See also:
     <_load>, <computeGlobalInfo>
 =cut
 sub new {
-    my $this = shift;
+    my $class = shift;
     my $level = shift;
     my $params = shift;
 
-    my $class= ref($this) || $this;
+    $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
-    my $self = {
+    my $this = {
         # Global information
         bottomID => undef,
         bottomOrder => undef,
@@ -207,15 +207,15 @@ sub new {
         harvesting => undef
     };
 
-    bless($self, $class);
+    bless($this, $class);
 
 
     # load. class
-    return undef if (! $self->_load($level,$params));
+    return undef if (! $this->_load($level,$params));
 
-    return undef if (! $self->computeGlobalInfo());
+    return undef if (! $this->computeGlobalInfo());
 
-    return $self;
+    return $this;
 }
 
 =begin nd
@@ -257,7 +257,7 @@ Parameters (list):
     This hash is directly and entirely relayed to <ImageSource::new> (even though only common and harvesting parts will be used) and harvesting part is directly relayed to <Harvesting::new> (see parameters' meaning).
 =cut
 sub _load {
-    my $self   = shift;
+    my $this   = shift;
     my $level = shift;
     my $params = shift;
 
@@ -268,21 +268,21 @@ sub _load {
         ERROR("A data source have to be defined with a level !");
         return FALSE;
     }
-    $self->{bottomID} = $level;
+    $this->{bottomID} = $level;
 
     if (! exists $params->{srs} || ! defined $params->{srs}) {
         ERROR("A data source have to be defined with the 'srs' parameter !");
         return FALSE;
     }
-    $self->{srs} = $params->{srs};
+    $this->{srs} = $params->{srs};
 
     # bbox is optionnal if we have an ImageSource (checked in computeGlobalInfo)
     if (exists $params->{extent} && defined $params->{extent}) {
-        $self->{extent} = $params->{extent};
+        $this->{extent} = $params->{extent};
     }
     
     if (exists $params->{list} && defined $params->{list}) {
-        $self->{list} = $params->{list};
+        $this->{list} = $params->{list};
     }
 
     # ImageSource is optionnal
@@ -294,7 +294,7 @@ sub _load {
             return FALSE;
         }
     }
-    $self->{imageSource} = $imagesource;
+    $this->{imageSource} = $imagesource;
 
     # Harvesting is optionnal, but if we have 'wms_layer' parameter, we suppose that we have others
     my $harvesting = undef;
@@ -305,7 +305,7 @@ sub _load {
             return FALSE;
         }
     }
-    $self->{harvesting} = $harvesting;
+    $this->{harvesting} = $harvesting;
     
     if (! defined $harvesting && ! defined $imagesource) {
         ERROR("A data source must have a ImageSource OR a Harvesting !");
@@ -327,62 +327,62 @@ If an extent is supplied (no image source), 2 cases are possible :
 We generate an OGR Geometry from the supplied extent or the image source bounding box.
 =cut
 sub computeGlobalInfo {
-    my $self = shift;
+    my $this = shift;
 
 
     # Bounding polygon
-    if (defined $self->{imageSource}) {
+    if (defined $this->{imageSource}) {
         # We have real images for source, bbox will be calculated from them.
         my ($xmin,$ymin,$xmax,$ymax);
 
-        my @BBOX = $self->{imageSource}->computeBBox();
+        my @BBOX = $this->{imageSource}->computeBBox();
         $xmin = $BBOX[0] if (! defined $xmin || $xmin > $BBOX[0]);
         $ymin = $BBOX[1] if (! defined $ymin || $ymin > $BBOX[1]);
         $xmax = $BBOX[2] if (! defined $xmax || $xmax < $BBOX[2]);
         $ymax = $BBOX[3] if (! defined $ymax || $ymax < $BBOX[3]);
 
-        $self->{extent} = sprintf "%s,%s,%s,%s",$xmin,$ymin,$xmax,$ymax;
+        $this->{extent} = sprintf "%s,%s,%s,%s",$xmin,$ymin,$xmax,$ymax;
     }
     
-    if (defined $self->{extent}) {
+    if (defined $this->{extent}) {
         # On a des images, une bbox ou une géométrie WKT pour définir la zone de génération
 
         my $WKTextent;
 
-        $self->{extent} =~ s/ //;
-        my @limits = split (/,/,$self->{extent},-1);
+        $this->{extent} =~ s/ //;
+        my @limits = split (/,/,$this->{extent},-1);
 
         if (scalar @limits == 4) {
             # user supplied a BBOX
-            $self->{extent} = COMMON::ProxyGDAL::geometryFromString("BBOX", $self->{extent});
-            if (! defined $self->{extent}) {
-                ERROR(sprintf "Cannot create a OGR geometry from the bbox %s", $self->{extent});
+            $this->{extent} = COMMON::ProxyGDAL::geometryFromString("BBOX", $this->{extent});
+            if (! defined $this->{extent}) {
+                ERROR(sprintf "Cannot create a OGR geometry from the bbox %s", $this->{extent});
                 return FALSE ;
             }
 
         }
         else {
             # user supplied a file which contains bounding polygon
-            $self->{extent} = COMMON::ProxyGDAL::geometryFromFile($self->{extent});
-            if (! defined $self->{extent}) {
-                ERROR(sprintf "Cannot create a OGR geometry from the file %s", $self->{extent});
+            $this->{extent} = COMMON::ProxyGDAL::geometryFromFile($this->{extent});
+            if (! defined $this->{extent}) {
+                ERROR(sprintf "Cannot create a OGR geometry from the file %s", $this->{extent});
                 return FALSE ;
             }
         }
 
-        my ($xmin,$ymin,$xmax,$ymax) = COMMON::ProxyGDAL::getBbox($self->{extent});
+        my ($xmin,$ymin,$xmax,$ymax) = COMMON::ProxyGDAL::getBbox($this->{extent});
 
         if (! defined $xmin) {
             ERROR("Cannot calculate bbox from the OGR Geometry");
             return FALSE;
         }
 
-        $self->{bbox} = [$xmin,$ymin,$xmax,$ymax];
+        $this->{bbox} = [$xmin,$ymin,$xmax,$ymax];
         
-    } elsif (defined $self->{list}) {
+    } elsif (defined $this->{list}) {
         # On a fourni un fichier contenant la liste des images (I et J) à générer
         
-        my $file = $self->{list};
+        my $file = $this->{list};
         
         if (! -e $file) {
             ERROR("Parameter 'list' value have to be an existing file ($file)");
@@ -405,77 +405,77 @@ sub computeGlobalInfo {
 
 # Function: getSRS
 sub getSRS {
-    my $self = shift;
-    return $self->{srs};
+    my $this = shift;
+    return $this->{srs};
 }
 
 # Function: getExtent
 sub getExtent {
-    my $self = shift;
-    return $self->{extent};
+    my $this = shift;
+    return $this->{extent};
 }
 
 # Function: getList
 sub getList {
-    my $self = shift;
-    return $self->{list};
+    my $this = shift;
+    return $this->{list};
 }
 
 # Function: getHarvesting
 sub getHarvesting {
-    my $self = shift;
-    return $self->{harvesting};
+    my $this = shift;
+    return $this->{harvesting};
 }
 
 # Function: getImages
 sub getImages {
-    my $self = shift;
-    return $self->{imageSource}->getImages();
+    my $this = shift;
+    return $this->{imageSource}->getImages();
 }
 
 # Function: hasImages
 sub hasImages {
-    my $self = shift;
-    return (defined $self->{imageSource});
+    my $this = shift;
+    return (defined $this->{imageSource});
 }
 
 # Function: hasHarvesting
 sub hasHarvesting {
-    my $self = shift;
-    return (defined $self->{harvesting});
+    my $this = shift;
+    return (defined $this->{harvesting});
 }
 
 # Function: getBottomID
 sub getBottomID {
-    my $self = shift;
-    return $self->{bottomID};
+    my $this = shift;
+    return $this->{bottomID};
 }
 
 # Function: getTopID
 sub getTopID {
-    my $self = shift;
-    return $self->{topID};
+    my $this = shift;
+    return $this->{topID};
 }
 
 # Function: getBottomOrder
 sub getBottomOrder {
-    my $self = shift;
-    return $self->{bottomOrder};
+    my $this = shift;
+    return $this->{bottomOrder};
 }
 
 # Function: getTopOrder
 sub getTopOrder {
-    my $self = shift;
-    return $self->{topOrder};
+    my $this = shift;
+    return $this->{topOrder};
 }
 
 # Function: getPixel
 sub getPixel {
-    my $self = shift;
+    my $this = shift;
 
-    if (! defined $self->{imageSource}) {return undef;}
+    if (! defined $this->{imageSource}) {return undef;}
     
-    return $self->{imageSource}->getPixel();
+    return $this->{imageSource}->getPixel();
 }
 
 =begin nd
@@ -485,9 +485,9 @@ Parameters (list):
     bottomOrder - integer - Bottom level order to set
 =cut
 sub setBottomOrder {
-    my $self = shift;
+    my $this = shift;
     my $bottomOrder = shift;
-    $self->{bottomOrder} = $bottomOrder;
+    $this->{bottomOrder} = $bottomOrder;
 }
 
 =begin nd
@@ -497,9 +497,9 @@ Parameters (list):
     topOrder - integer - Top level order to set
 =cut
 sub setTopOrder {
-    my $self = shift;
+    my $this = shift;
     my $topOrder = shift;
-    $self->{topOrder} = $topOrder;
+    $this->{topOrder} = $topOrder;
 }
 
 =begin nd
@@ -509,9 +509,9 @@ Parameters (list):
     topID - string - Top level identifiant to set
 =cut
 sub setTopID {
-    my $self = shift;
+    my $this = shift;
     my $topID = shift;
-    $self->{topID} = $topID;
+    $this->{topID} = $topID;
 }
 
 ####################################################################################################
@@ -528,31 +528,31 @@ Example:
     (end code)
 =cut
 sub exportForDebug {
-    my $self = shift ;
+    my $this = shift ;
     
     my $export = "";
     
     $export .= sprintf "\n Object COMMON::DataSource :\n";
-    $export .= sprintf "\t Extent: %s\n",$self->{extent};
+    $export .= sprintf "\t Extent: %s\n",$this->{extent};
     $export .= sprintf "\t Levels ID (order):\n";
-    $export .= sprintf "\t\t- bottom : %s (%s)\n",$self->{bottomID},$self->{bottomOrder};
-    $export .= sprintf "\t\t- top : %s (%s)\n",$self->{topID},$self->{topOrder};
+    $export .= sprintf "\t\t- bottom : %s (%s)\n",$this->{bottomID},$this->{bottomOrder};
+    $export .= sprintf "\t\t- top : %s (%s)\n",$this->{topID},$this->{topOrder};
 
     $export .= sprintf "\t Data :\n";
-    $export .= sprintf "\t\t- SRS : %s\n",$self->{srs};
-    $export .= "\t\t- We have images\n" if (defined $self->{imageSource});
-    $export .= "\t\t- We have a WMS service\n" if (defined $self->{harvesting});
+    $export .= sprintf "\t\t- SRS : %s\n",$this->{srs};
+    $export .= "\t\t- We have images\n" if (defined $this->{imageSource});
+    $export .= "\t\t- We have a WMS service\n" if (defined $this->{harvesting});
     
-    if (defined $self->{bbox}) {
+    if (defined $this->{bbox}) {
         $export .= "\t\t Bbox :\n";
-        $export .= sprintf "\t\t\t- xmin : %s\n",$self->{bbox}[0];
-        $export .= sprintf "\t\t\t- ymin : %s\n",$self->{bbox}[1];
-        $export .= sprintf "\t\t\t- xmax : %s\n",$self->{bbox}[2];
-        $export .= sprintf "\t\t\t- ymax : %s\n",$self->{bbox}[3];
+        $export .= sprintf "\t\t\t- xmin : %s\n",$this->{bbox}[0];
+        $export .= sprintf "\t\t\t- ymin : %s\n",$this->{bbox}[1];
+        $export .= sprintf "\t\t\t- xmax : %s\n",$this->{bbox}[2];
+        $export .= sprintf "\t\t\t- ymax : %s\n",$this->{bbox}[3];
     }
     
-    if (defined $self->{list}) {
-        $export .= sprintf "\t\t List file : %s\n", $self->{list};
+    if (defined $this->{list}) {
+        $export .= sprintf "\t\t List file : %s\n", $this->{list};
     }
     
     return $export;

@@ -43,14 +43,20 @@ Link: BE4 is an integral part of the ROK4 project  (http://www.rok4.org)
 Group: Tools  {
     File: BE4  (no auto-title, bin/be4.pl)
     File: BE4CEPH  (no auto-title, bin/be4ceph.pl)
+    File: BE4S3  (no auto-title, bin/be4s3.pl)
+
     File: JOINCACHE  (no auto-title, bin/joinCache.pl)
+    
     File: WMTSALAD  (no auto-title, bin/wmtSalaD.pl)
 
     File: PYR2PYR  (no auto-title, bin/pyr2pyr.pl)
+    
+    File: EXPYR  (no auto-title, bin/exPyr.pl)
 
     File: COORD2IMAGE  (no auto-title, bin/coord2image.pl)
     File: CREATE-LAYER  (no auto-title, bin/create-layer.pl)
     File: BE4-SIMULATOR  (no auto-title, bin/be4-simulator.pl)
+    File: TMS-CONVERTER-GUI  (no auto-title, bin/tms-converter-gui.pl)
 }
 
 Group: Classes  {
@@ -59,18 +65,12 @@ Group: Classes  {
 
         File: Global  (no auto-title, lib/BE4.txt)
 
-        File: Commands (no auto-title, lib/BE4/Commands.pm)
-        File: Level (no auto-title, lib/BE4/Level.pm)
         File: PropertiesLoader (no auto-title, lib/BE4/PropertiesLoader.pm)
-        File: Pyramid (no auto-title, lib/BE4/Pyramid.pm)
     }
 
     Group: BE4CEPH  {
 
-        File: Commands (no auto-title, lib/BE4CEPH/Commands.pm)
-        File: Level (no auto-title, lib/BE4CEPH/Level.pm)
         File: PropertiesLoader (no auto-title, lib/BE4CEPH/PropertiesLoader.pm)
-        File: Pyramid (no auto-title, lib/BE4CEPH/Pyramid.pm)
     }
 
     Group: JOINCACHE  {

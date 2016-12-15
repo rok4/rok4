@@ -175,15 +175,15 @@ Returns:
     
 =cut
 sub new {
-    my $this = shift;
+    my $class = shift;
     my $propertiesFile = shift;
     my $datasourcesFile = shift;
 
-    my $class= ref($this) || $this;
+    $class = ref($class) || $class;
 
     # IMPORTANT : if modification, think to update natural documentation (just above)
     # see config/pyramids/pyramid.xsd to get the list of parameters, as used by Rok4.
-    my $self = {
+    my $this = {
         tileMatrixSet => undef,
 
         format => undef,
@@ -204,23 +204,23 @@ sub new {
         datasources => {},
     };
 
-    bless($self, $class);
+    bless($this, $class);
 
-    if (!$self->_init($propertiesFile,$datasourcesFile)) {
+    if (!$this->_init($propertiesFile,$datasourcesFile)) {
         ERROR(sprintf "Pyramid initialization failed.");
         return undef;
     }
 
-    return $self;
+    return $this;
 }
 
 sub _init {
-    my $self = shift;
+    my $this = shift;
     my $propertiesFile = shift;
     my $datasourcesFile = shift;
 
-    return FALSE if (!$self->_loadProperties($propertiesFile));
-    return FALSE if (!$self->_loadDatasources($datasourcesFile));
+    return FALSE if (!$this->_loadProperties($propertiesFile));
+    return FALSE if (!$this->_loadDatasources($datasourcesFile));
 
     return TRUE;
 }
@@ -249,7 +249,7 @@ Returns:
     
 =cut
 sub _loadProperties {
-    my $self = shift;
+    my $this = shift;
     my $file = shift;
 
     if ((!defined $file) || ($file eq '')) {
@@ -273,17 +273,17 @@ sub _loadProperties {
     my $refFileContent = \%fileContent;
     my $sampleformat; # Value to pass to COMMON::Pixel
 
-    return FALSE if(! $self->_checkProperties($cfg));
+    return FALSE if(! $this->_checkProperties($cfg));
 
     # Tile Matrix Set    
     my $TMS = COMMON::TileMatrixSet->new(File::Spec->catfile($refFileContent->{pyramid}->{tms_path},$refFileContent->{pyramid}->{tms_name}));
-    $self->{tileMatrixSet} = $TMS ;
+    $this->{tileMatrixSet} = $TMS ;
 
     # Image format
     my $format = "TIFF_";
     if (( $cfg->isProperty({section => 'pyramid', property => 'compression'})) && ($refFileContent->{pyramid}->{compression} =~ m/^(jpg|png|lzw|zip|pkb)$/i)) {
         $format.= uc($refFileContent->{pyramid}->{compression})."_";
-        $self->{compression} = lc($refFileContent->{pyramid}->{compression});
+        $this->{compression} = lc($refFileContent->{pyramid}->{compression});
     } else {
         if (defined $refFileContent->{pyramid}->{compression}) {
             WARN(sprintf "Unrecognized compression type : '%s'. Setting to '%s'", $refFileContent->{pyramid}->{compression},$DEFAULT{compression});
@@ -291,7 +291,7 @@ sub _loadProperties {
             WARN(sprintf "Undefined compression type. Setting to '%s'",$DEFAULT{compression});
         }
         $format .= $DEFAULT{compression}."_";
-        $self->{compression} = lc $DEFAULT{compression};
+        $this->{compression} = lc $DEFAULT{compression};
     }
     if ($refFileContent->{pyramid}->{sampleformat} eq "int") {
         $sampleformat = "uint";
@@ -299,72 +299,72 @@ sub _loadProperties {
         $sampleformat = $refFileContent->{pyramid}->{sampleformat};
     }
     $format .= uc($refFileContent->{pyramid}->{sampleformat}).$refFileContent->{pyramid}->{bitspersample} ;
-    if ($self->isImageFormat($format)) {
-        $self->{format} = $format;
+    if ($this->isImageFormat($format)) {
+        $this->{format} = $format;
     } else {
         ERROR(sprintf "Unrecognized image format : '%s'. Known image formats are : %s", $format, Dumper($IMAGE_SPECS{image_format}));
         return FALSE;
     }
 
     # Channels number 
-    $self->{channels} = $refFileContent->{pyramid}->{samplesperpixel};
+    $this->{channels} = $refFileContent->{pyramid}->{samplesperpixel};
 
     # Pyramid's name. Some people say it's useful to name the resulting .pyr file.
     my $pyr_name = $refFileContent->{pyramid}->{pyr_name};
     $pyr_name =~ s/\.(pyr)$//i;
-    $self->{pyr_name} = $pyr_name;
+    $this->{pyr_name} = $pyr_name;
 
     # Persistence (default value : FALSE)
     my $persistent = $refFileContent->{pyramid}->{persistent};
     if (defined $persistent) {
         if ($persistent=~ m/\A(1|t|true)\z/i) {
-            $self->{persistent} = TRUE;
+            $this->{persistent} = TRUE;
         } elsif ($persistent =~ m/\A(0|f|false)\z/i) {
-            $self->{persistent} = FALSE;
+            $this->{persistent} = FALSE;
         }
     } else {
         INFO ("The undefined 'persistent' parameter is now set to 'false'.");
-        $self->{persistent} = FALSE;
+        $this->{persistent} = FALSE;
     }
 
     # Path depth
-    $self->{dir_depth} = $refFileContent->{pyramid}->{dir_depth};
+    $this->{dir_depth} = $refFileContent->{pyramid}->{dir_depth};
 
     # Data paths
-    $self->{pyr_data_path} = $refFileContent->{pyramid}->{pyr_data_path};
+    $this->{pyr_data_path} = $refFileContent->{pyramid}->{pyr_data_path};
 
 
     # Descriptor's path
-    $self->{pyr_desc_path} = $refFileContent->{pyramid}->{pyr_desc_path};
+    $this->{pyr_desc_path} = $refFileContent->{pyramid}->{pyr_desc_path};
 
     # Photometric
-    $self->{photometric} = lc ($refFileContent->{pyramid}->{photometric});
+    $this->{photometric} = lc ($refFileContent->{pyramid}->{photometric});
 
     # Nodata (default value : white, transparent if alpha channel available), -9999 for float32
     my $pixel = COMMON::Pixel->new({
-        photometric => $self->{photometric},
+        photometric => $this->{photometric},
         sampleformat => $sampleformat,
         bitspersample => $refFileContent->{pyramid}->{bitspersample},
-        samplesperpixel => $self->{channels},
+        samplesperpixel => $this->{channels},
     });
     my $noDataValue;
     if ($cfg->isProperty({section => 'pyramid', property => 'color'})) {
         $noDataValue = $refFileContent->{pyramid}->{color};
     }
-    $self->{noData} = COMMON::NoData->new({ pixel => $pixel, value => $noDataValue });
-    if (! defined $self->{noData}) {
+    $this->{noData} = COMMON::NoData->new({ pixel => $pixel, value => $noDataValue });
+    if (! defined $this->{noData}) {
         ERROR("Failed NoData initialization. Check 'color' value.");
         return FALSE;
     }
 
     # Interpolation (optionnal)
     if ($cfg->isProperty({section => 'pyramid', property => 'interpolation'})) {
-        $self->{interpolation} = $refFileContent->{pyramid}->{interpolation};
+        $this->{interpolation} = $refFileContent->{pyramid}->{interpolation};
     }
 
     # Image dimensions (number of tiles)
-    $self->{image_width} = $refFileContent->{pyramid}->{image_width};
-    $self->{image_height} = $refFileContent->{pyramid}->{image_height};
+    $this->{image_width} = $refFileContent->{pyramid}->{image_width};
+    $this->{image_height} = $refFileContent->{pyramid}->{image_height};
 
     return TRUE;
 }
@@ -388,7 +388,7 @@ Returns:
     
 =cut
 sub _loadDatasources {
-    my $self = shift;
+    my $this = shift;
     my $file = shift;
 
 
@@ -409,28 +409,28 @@ sub _loadDatasources {
         return FALSE;
     }
 
-    return FALSE if (!$self->_checkDatasources($cfg));
+    return FALSE if (!$this->_checkDatasources($cfg));
 
     foreach my $section ($cfg->getSections()) {
         my @orders = sort {$a <=> $b} ($cfg->getSubSections($section));
 
         my $bottomId =  $cfg->getProperty({section => $section, property => 'lv_bottom'});
         my $topId =  $cfg->getProperty({section => $section, property => 'lv_top'});
-        my $bottomOrder = $self->{tileMatrixSet}->getOrderfromID($bottomId);
-        my $topOrder = $self->{tileMatrixSet}->getOrderfromID($topId);
+        my $bottomOrder = $this->{tileMatrixSet}->getOrderfromID($bottomId);
+        my $topOrder = $this->{tileMatrixSet}->getOrderfromID($topId);
 
         my ($xMin, $yMin, $xMax, $yMax) = split(",", $cfg->getProperty({section => $section, property => 'extent'}));
 
         my @levelOrderRanges = sort {$a <=> $b} ($bottomOrder, $topOrder);
 
         for (my $lv = $levelOrderRanges[0]; $lv <= $levelOrderRanges[1]; $lv++) {
-            $self->{datasources}->{$lv} = [];
+            $this->{datasources}->{$lv} = [];
 
-            my $id = $self->{tileMatrixSet}->getIDfromOrder($lv);
-            my ($rowMin, $rowMax, $colMin, $colMax) = $self->{tileMatrixSet}->getTileMatrix($id)->bboxToIndices($xMin, $yMin, $xMax, $yMax, 1, 1);
+            my $id = $this->{tileMatrixSet}->getIDfromOrder($lv);
+            my ($rowMin, $rowMax, $colMin, $colMax) = $this->{tileMatrixSet}->getTileMatrix($id)->bboxToIndices($xMin, $yMin, $xMax, $yMax, 1, 1);
 
-            my $TMWidth = $self->{tileMatrixSet}->getTileMatrix($id)->getMatrixWidth();
-            my $TMHeight = $self->{tileMatrixSet}->getTileMatrix($id)->getMatrixHeight();
+            my $TMWidth = $this->{tileMatrixSet}->getTileMatrix($id)->getMatrixWidth();
+            my $TMHeight = $this->{tileMatrixSet}->getTileMatrix($id)->getMatrixHeight();
 
             if ($colMin < 0 || $colMin > $TMWidth - 1) {
                 ERROR(sprintf "In section '%s', level '%s', extent's min abscissa outside of tile matrix boundaries : %s", $section, $id, $xMin);
@@ -446,7 +446,7 @@ sub _loadDatasources {
                 return FALSE;
             }
 
-            push @{$self->{datasources}->{$lv}}, [$colMin, $rowMin, $colMax, $rowMax];
+            push @{$this->{datasources}->{$lv}}, [$colMin, $rowMin, $colMax, $rowMax];
 
             for (my $order = 0; $order < scalar (@orders); $order++) {
                 my $source = {
@@ -462,10 +462,10 @@ sub _loadDatasources {
 
                 if ($cfg->isProperty({section => $section, subsection => $orders[$order], property => 'file'})) {
                     $sourceObject = WMTSALAD::PyrSource->new($source);
-                    push @{$self->{datasources}->{$lv}}, $sourceObject;
+                    push @{$this->{datasources}->{$lv}}, $sourceObject;
                 } elsif ($cfg->isProperty({section => $section, subsection => $orders[$order], property => 'wms_url'})) {
                     $sourceObject = WMTSALAD::WmsSource->new($source);
-                    push @{$self->{datasources}->{$lv}}, $sourceObject;
+                    push @{$this->{datasources}->{$lv}}, $sourceObject;
                 }
                 if (! defined $sourceObject) {
                     ERROR("Could not load source.");
@@ -504,7 +504,7 @@ Returns:
 
 =cut
 sub isImageFormat {
-    my $self = shift;
+    my $this = shift;
     my $string = shift;
 
     foreach my $imgFormat (@{$IMAGE_SPECS{image_format}}) {
@@ -533,7 +533,7 @@ Returns:
 
 =cut
 sub isInterpolation {
-    my $self = shift;
+    my $this = shift;
     my $string = shift;
 
     foreach my $validString (@{$IMAGE_SPECS{interpolation}}) {
@@ -562,7 +562,7 @@ Returns:
 
 =cut
 sub isPhotometric {
-    my $self = shift;
+    my $this = shift;
     my $string = shift;
 
     foreach my $validString (@{$IMAGE_SPECS{photometric}}) {
@@ -591,7 +591,7 @@ Returns:
 
 =cut
 sub isSampleFormat {
-    my $self = shift;
+    my $this = shift;
     my $string = shift;
 
     foreach my $validString (@{$IMAGE_SPECS{sampleformat}}) {
@@ -620,7 +620,7 @@ Returns:
 
 =cut
 sub isValidExtent {
-    my $self = shift;
+    my $this = shift;
     my $string = shift;
 
     # @extent = (xMin, yMin, xMax, yMax), in the tile matrix set's SRS
@@ -664,7 +664,7 @@ Returns:
 
 =cut
 sub _checkProperties {
-    my $self = shift;
+    my $this = shift;
     my $propCfg = shift;
 
     if (!$propCfg->isSection('pyramid')) {
@@ -688,7 +688,7 @@ sub _checkProperties {
     if (!defined $sampleformat) {
         ERROR(sprintf "Undefined sampleformat");
         return FALSE;
-    } elsif (!$self->isSampleFormat($sampleformat)) {
+    } elsif (!$this->isSampleFormat($sampleformat)) {
         ERROR(sprintf "Invalid sampleformat : '%s'. Valid formats are : %s", $sampleformat, Dumper($IMAGE_SPECS{sampleformat}));
         return FALSE;
     }
@@ -751,7 +751,7 @@ sub _checkProperties {
     if (! defined $photometric) {
         ERROR(sprintf "Undefined photometric value");
         return FALSE;
-    } elsif (! $self->isPhotometric($photometric)) {
+    } elsif (! $this->isPhotometric($photometric)) {
         ERROR(sprintf "Invalid photometric value : '%s'. Allowed values are : %s",$photometric,Dumper($IMAGE_SPECS{photometric}));
         return FALSE;
     } elsif (
@@ -763,7 +763,7 @@ sub _checkProperties {
     }
 
     my $interpolation = $propCfg->getProperty({section => 'pyramid', property => 'interpolation'});
-    if ((defined $interpolation) && (! $self->isInterpolation($interpolation))) {
+    if ((defined $interpolation) && (! $this->isInterpolation($interpolation))) {
         ERROR(sprintf "Invalid interpolation value : '%s'. Allowed values are : %s",$interpolation,Dumper($IMAGE_SPECS{interpolation}));
         return FALSE;
     }
@@ -808,7 +808,7 @@ Returns:
 
 =cut
 sub _checkDatasources {
-    my $self = shift;
+    my $this = shift;
     my $srcCfg = shift;
 
     my %ranges; # hash {bottom_TM_order => top_TM_order} for each levels (=tile matrices) range. We use TM's order in the TMS, not TM's id, cause the latter has no meaning
@@ -817,23 +817,23 @@ sub _checkDatasources {
         if ((!defined $srcCfg->getProperty({section => $section, property => 'lv_bottom'})) || (!defined $srcCfg->getProperty({section => $section, property => 'lv_top'}))) {
             ERROR(sprintf "Levels range ('lv_bottom', 'lv_top') properties missing in section '%s'", $section);
             return FALSE;
-        } elsif (!defined $self->{tileMatrixSet}->getTileMatrix($srcCfg->getProperty({section => $section, property => 'lv_bottom'}))) {
-            ERROR(sprintf "No tile matrix with id '%s' exists in tile matrix set '%s'. (section '%s', field 'lv_bottom')", $srcCfg->getProperty({section => $section, property => 'lv_bottom'}), $self->{tileMatrixSet}->getName(), $section);
+        } elsif (!defined $this->{tileMatrixSet}->getTileMatrix($srcCfg->getProperty({section => $section, property => 'lv_bottom'}))) {
+            ERROR(sprintf "No tile matrix with id '%s' exists in tile matrix set '%s'. (section '%s', field 'lv_bottom')", $srcCfg->getProperty({section => $section, property => 'lv_bottom'}), $this->{tileMatrixSet}->getName(), $section);
             return FALSE;
-        } elsif (!defined $self->{tileMatrixSet}->getTileMatrix($srcCfg->getProperty({section => $section, property => 'lv_top'}))) {
-            ERROR(sprintf "No tile matrix with id '%s' exists in tile matrix set '%s'. (section '%s', field 'lv_top')", $srcCfg->getProperty({section => $section, property => 'lv_top'}), $self->{tileMatrixSet}->getName(), $section);
+        } elsif (!defined $this->{tileMatrixSet}->getTileMatrix($srcCfg->getProperty({section => $section, property => 'lv_top'}))) {
+            ERROR(sprintf "No tile matrix with id '%s' exists in tile matrix set '%s'. (section '%s', field 'lv_top')", $srcCfg->getProperty({section => $section, property => 'lv_top'}), $this->{tileMatrixSet}->getName(), $section);
             return FALSE;
         }
 
         my $bottomId =  $srcCfg->getProperty({section => $section, property => 'lv_bottom'});
         my $topId =  $srcCfg->getProperty({section => $section, property => 'lv_top'});
-        my $bottomOrder = $self->{tileMatrixSet}->getOrderfromID($bottomId);
-        my $topOrder = $self->{tileMatrixSet}->getOrderfromID($topId);
+        my $bottomOrder = $this->{tileMatrixSet}->getOrderfromID($bottomId);
+        my $topOrder = $this->{tileMatrixSet}->getOrderfromID($topId);
 
         if ($bottomOrder <= $topOrder) {
             $ranges{$bottomOrder} = $topOrder;
         } else {
-            WARN((sprintf "In section '%s', using TMS '%s', 'lv_bottom' ID '%s' corresponds to a higher level than 'lv_top' ID '%s'.", $section, $self->{tileMatrixSet}->getName(), $bottomId, $topId)
+            WARN((sprintf "In section '%s', using TMS '%s', 'lv_bottom' ID '%s' corresponds to a higher level than 'lv_top' ID '%s'.", $section, $this->{tileMatrixSet}->getName(), $bottomId, $topId)
                  .(sprintf "Their respective orders in the TMS are %d and %d. Those will be reversed.", $bottomOrder, $topOrder));
             $ranges{$topOrder} = $bottomOrder;
         }
@@ -841,7 +841,7 @@ sub _checkDatasources {
         if (!defined $srcCfg->getProperty({section => $section, property => 'extent'})) {
             ERROR(sprintf "Undefined extent in section '%s'", $section);
             return FALSE;
-        } elsif (! $self->isValidExtent($srcCfg->getProperty({section => $section, property => 'extent'}))) {
+        } elsif (! $this->isValidExtent($srcCfg->getProperty({section => $section, property => 'extent'}))) {
             return FALSE;
         }
 
@@ -901,22 +901,22 @@ Returns:
 
 =cut
 sub exportForDebug {
-    my $self = shift;
+    my $this = shift;
     
-    my $pyr_dump = "\n  pyr_name => ".$self->{pyr_name};
-    $pyr_dump .= "\n  pyr_desc_path => ".$self->{pyr_desc_path};
-    $pyr_dump .= "\n  pyr_data_path => ".$self->{pyr_data_path};
-    $pyr_dump .= "\n  dir_depth => ".$self->{dir_depth};
-    $pyr_dump .= "\n  persistent => ".$self->{persistent};
-    $pyr_dump .= "\n  image_width => ".$self->{image_width};
-    $pyr_dump .= "\n  image_height => ".$self->{image_height};
-    $pyr_dump .= "\n  format => ".$self->{format};
-    $pyr_dump .= "\n  channels => ".$self->{channels};
-    if (exists $self->{photometric} && defined $self->{photometric}) {$pyr_dump .= "\n  photometric => ".$self->{photometric};}
-    $pyr_dump .= "\n  noDataValue => ".$self->{noData}->getValue();
-    if (exists $self->{interpolation} && defined $self->{interpolation}) {$pyr_dump .= "\n  interpolation => ".$self->{interpolation};}
-    $pyr_dump .= "\n  tileMatrixSet->{PATHFILENAME} => ".$self->{tileMatrixSet}->getPathFilename();
-    my $ds_dump = Dumper($self->{datasources});
+    my $pyr_dump = "\n  pyr_name => ".$this->{pyr_name};
+    $pyr_dump .= "\n  pyr_desc_path => ".$this->{pyr_desc_path};
+    $pyr_dump .= "\n  pyr_data_path => ".$this->{pyr_data_path};
+    $pyr_dump .= "\n  dir_depth => ".$this->{dir_depth};
+    $pyr_dump .= "\n  persistent => ".$this->{persistent};
+    $pyr_dump .= "\n  image_width => ".$this->{image_width};
+    $pyr_dump .= "\n  image_height => ".$this->{image_height};
+    $pyr_dump .= "\n  format => ".$this->{format};
+    $pyr_dump .= "\n  channels => ".$this->{channels};
+    if (exists $this->{photometric} && defined $this->{photometric}) {$pyr_dump .= "\n  photometric => ".$this->{photometric};}
+    $pyr_dump .= "\n  noDataValue => ".$this->{noData}->getValue();
+    if (exists $this->{interpolation} && defined $this->{interpolation}) {$pyr_dump .= "\n  interpolation => ".$this->{interpolation};}
+    $pyr_dump .= "\n  tileMatrixSet->{PATHFILENAME} => ".$this->{tileMatrixSet}->getPathFilename();
+    my $ds_dump = Dumper($this->{datasources});
     $ds_dump =~ s/^\$VAR1 = //;
     $pyr_dump .= "\n  datasources => ".$ds_dump;
 
@@ -939,14 +939,14 @@ Returns:
 
 =cut
 sub writeConfPyramid {
-    my $self = shift;
+    my $this = shift;
 
-    my $descPath = File::Spec->catfile($self->{pyr_desc_path},$self->{pyr_name}).".pyr";
+    my $descPath = File::Spec->catfile($this->{pyr_desc_path},$this->{pyr_name}).".pyr";
 
-    if (! -e $self->{pyr_desc_path}) {
-        eval { File::Path::make_path($self->{pyr_desc_path}, {mode => 0755}); } or die (sprintf "Failed to create directory '%s' : %s", $self->{pyr_desc_path}, $@);
-    } elsif (! -d $self->{pyr_desc_path}) {
-        ERROR(sprintf "Path '%s' exists, but is not a directory.", $self->{pyr_desc_path});
+    if (! -e $this->{pyr_desc_path}) {
+        eval { File::Path::make_path($this->{pyr_desc_path}, {mode => 0755}); } or die (sprintf "Failed to create directory '%s' : %s", $this->{pyr_desc_path}, $@);
+    } elsif (! -d $this->{pyr_desc_path}) {
+        ERROR(sprintf "Path '%s' exists, but is not a directory.", $this->{pyr_desc_path});
         return FALSE;
     }
 
@@ -958,27 +958,27 @@ sub writeConfPyramid {
     my $rootEl = $descDoc->createElement("Pyramid");
     $descDoc->setDocumentElement($rootEl);
 
-    $rootEl->appendTextChild("tileMatrixSet", $self->{tileMatrixSet}->getName());
-    $rootEl->appendTextChild("format", $self->{format});
-    $rootEl->appendTextChild("channels", $self->{channels});
-    $rootEl->appendTextChild("nodataValue", $self->{noData}->getValue());
-    if (exists $self->{interpolation} && defined $self->{interpolation}) {
-        $rootEl->appendTextChild("interpolation", $self->{interpolation});
+    $rootEl->appendTextChild("tileMatrixSet", $this->{tileMatrixSet}->getName());
+    $rootEl->appendTextChild("format", $this->{format});
+    $rootEl->appendTextChild("channels", $this->{channels});
+    $rootEl->appendTextChild("nodataValue", $this->{noData}->getValue());
+    if (exists $this->{interpolation} && defined $this->{interpolation}) {
+        $rootEl->appendTextChild("interpolation", $this->{interpolation});
     }
-    if (exists $self->{photometric} && defined $self->{photometric}) {
-        $rootEl->appendTextChild("photometric", $self->{photometric});
+    if (exists $this->{photometric} && defined $this->{photometric}) {
+        $rootEl->appendTextChild("photometric", $this->{photometric});
     }
 
-    my @levels = sort {$b <=> $a} (keys %{$self->{datasources}});
+    my @levels = sort {$b <=> $a} (keys %{$this->{datasources}});
     foreach my $lvl (@levels) {
-        my $lvlId = $self->{tileMatrixSet}->getIDfromOrder($lvl);
+        my $lvlId = $this->{tileMatrixSet}->getIDfromOrder($lvl);
 
         my $levelEl = $descDoc->createElement("level");
         $rootEl->appendChild($levelEl);
         $levelEl->appendTextChild("tileMatrix", $lvlId);
         
-        if ($self->{persistent}) {
-            my $imageBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, "IMAGE", $lvlId);
+        if ($this->{persistent}) {
+            my $imageBaseDir = File::Spec->catfile($this->{pyr_data_path}, $this->{pyr_name}, "IMAGE", $lvlId);
             $levelEl->appendTextChild("onFly", "true");
             $levelEl->appendTextChild("baseDir", $imageBaseDir);
         } else {
@@ -988,17 +988,17 @@ sub writeConfPyramid {
         my $sourcesEl = $descDoc->createElement("sources");
         $levelEl->appendChild($sourcesEl);
 
-        my $maxIndex = (scalar @{$self->{datasources}->{$lvl}}) - 1;
-        my $extent = $self->{datasources}->{$lvl}->[0];
-        my @sources = @{$self->{datasources}->{$lvl}}[1..$maxIndex];
+        my $maxIndex = (scalar @{$this->{datasources}->{$lvl}}) - 1;
+        my $extent = $this->{datasources}->{$lvl}->[0];
+        my @sources = @{$this->{datasources}->{$lvl}}[1..$maxIndex];
 
         foreach my $source (@sources) {
             $source->writeInXml($descDoc, $sourcesEl);
         }
 
-        $levelEl->appendTextChild("tilesPerWidth", $self->{image_width});
-        $levelEl->appendTextChild("tilesPerHeight", $self->{image_height});
-        $levelEl->appendTextChild("pathDepth", $self->{dir_depth});
+        $levelEl->appendTextChild("tilesPerWidth", $this->{image_width});
+        $levelEl->appendTextChild("tilesPerHeight", $this->{image_height});
+        $levelEl->appendTextChild("pathDepth", $this->{dir_depth});
 
         # TMSLimits : level extent in the TileMatrix
         my $TMSLimitsEl = $descDoc->createElement("TMSLimits");
@@ -1038,18 +1038,18 @@ Returns:
 
 =cut
 sub writeCachePyramid {
-    my $self = shift;
+    my $this = shift;
         
-    my @levels = sort {$b <=> $a} (keys %{$self->{datasources}});
+    my @levels = sort {$b <=> $a} (keys %{$this->{datasources}});
     foreach my $lvl (@levels) {
-        my $lvlId = $self->{tileMatrixSet}->getIDfromOrder($lvl);
+        my $lvlId = $this->{tileMatrixSet}->getIDfromOrder($lvl);
 
         # Create folders for data, if they don't exist
 
         # Data folder created only if the pyramid is defined as persistent
-        if ($self->{persistent} == TRUE) {
+        if ($this->{persistent} == TRUE) {
             ### DATA
-            my $imageBaseDir = File::Spec->catfile($self->{pyr_data_path}, $self->{pyr_name}, "IMAGE", $lvlId);
+            my $imageBaseDir = File::Spec->catfile($this->{pyr_data_path}, $this->{pyr_name}, "IMAGE", $lvlId);
 
             if (! -d $imageBaseDir) {
                 eval { File::Path::make_path($imageBaseDir, {mode => 0755}); };

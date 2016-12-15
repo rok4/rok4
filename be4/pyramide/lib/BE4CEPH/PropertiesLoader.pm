@@ -92,30 +92,30 @@ END {}
 
 # Function: new
 sub new {
-    my $this = shift;
+    my $class = shift;
     my $filepath = shift;
 
-    my $class= ref($this) || $this;
+    $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above)
-    my $self = {
+    my $this = {
         cfgFile   => $filepath,
         cfgObject => undef
     };
 
-    bless($self, $class);
+    bless($this, $class);
 
     # init. class
-    return undef if (! $self->_init());
-    return undef if (! $self->_check());
+    return undef if (! $this->_init());
+    return undef if (! $this->_check());
 
-    return $self;
+    return $this;
 }
 
 # Function: _init
 sub _init {
-    my $self = shift;
+    my $this = shift;
 
-    my $file = $self->{cfgFile};
+    my $file = $this->{cfgFile};
     
     if (! defined $file || $file eq "") {
         ERROR ("Filepath undefined");
@@ -139,26 +139,26 @@ sub _init {
         return FALSE;
     }
 
-    $self->{cfgObject} = $cfg;
+    $this->{cfgObject} = $cfg;
     
     return TRUE;
 }
 
 # Function: _init
 sub _check {
-    my $self = shift;
+    my $this = shift;
 
-    if ($self->{cfgObject}->isSection("pyramid") != 2) {
+    if ($this->{cfgObject}->isSection("pyramid") != 2) {
         ERROR("'pyramid' section is missing");
         return FALSE;
     }
 
-    if ($self->{cfgObject}->isSection("datasource") != 2) {
+    if ($this->{cfgObject}->isSection("datasource") != 2) {
         ERROR("'datasource' section is missing");
         return FALSE;
     }
 
-    if ($self->{cfgObject}->isSection("process") != 2) {
+    if ($this->{cfgObject}->isSection("process") != 2) {
         ERROR("'process' section is missing");
         return FALSE;
     }
@@ -172,15 +172,15 @@ sub _check {
 
 # Function: getCfgObject
 sub getCfgObject {
-    my $self = shift;
-    return $self->{cfgObject};
+    my $this = shift;
+    return $this->{cfgObject};
 }
 
 # Function: getAllProperties
 sub getAllProperties {
-  my $self = shift;
+  my $this = shift;
   
-  return $self->{cfgObject}->getConfig();
+  return $this->{cfgObject}->getConfig();
 }
 
 1;

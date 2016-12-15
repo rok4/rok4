@@ -112,30 +112,30 @@ END {}
 
 # Function: new
 sub new {
-    my $this = shift;
+    my $class = shift;
     my $filepath = shift;
 
-    my $class= ref($this) || $this;
+    $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above)
-    my $self = {
+    my $this = {
         cfgFile   => $filepath,
         cfgObject => undef
     };
 
-    bless($self, $class);
+    bless($this, $class);
 
     # init. class
-    return undef if (! $self->_init());
-    return undef if (! $self->_check());
+    return undef if (! $this->_init());
+    return undef if (! $this->_check());
 
-    return $self;
+    return $this;
 }
 
 # Function: _init
 sub _init {
-    my $self = shift;
+    my $this = shift;
 
-    my $file = $self->{cfgFile};
+    my $file = $this->{cfgFile};
     
     if (! defined $file || $file eq "") {
         ERROR ("Filepath undefined");
@@ -159,42 +159,42 @@ sub _init {
         return FALSE;
     }
 
-    $self->{cfgObject} = $cfg;
+    $this->{cfgObject} = $cfg;
     
     return TRUE;
 }
 
 # Function: _check
 sub _check {
-    my $self = shift;
+    my $this = shift;
 
     # Pyramid section
-    if ($self->{cfgObject}->isSection("pyramid") != 2) {
+    if ($this->{cfgObject}->isSection("pyramid") != 2) {
         ERROR("'pyramid' section is missing");
         return FALSE;
     }
 
-    if (! $self->{cfgObject}->isProperty({ 'section' => "pyramid", 'property' => "pyr_name"}) ) {
+    if (! $this->{cfgObject}->isProperty({ 'section' => "pyramid", 'property' => "pyr_name"}) ) {
         ERROR("'pyramid.pyr_name' property is missing");
         return FALSE;
     }
-    if (! $self->{cfgObject}->isProperty({ 'section' => "pyramid", 'property' => "pyr_desc_path"}) ) {
+    if (! $this->{cfgObject}->isProperty({ 'section' => "pyramid", 'property' => "pyr_desc_path"}) ) {
         ERROR("'pyramid.pyr_desc_path' property is missing");
         return FALSE;
     }
-    if (! $self->{cfgObject}->isProperty({ 'section' => "pyramid", 'property' => "pyr_data_path"}) ) {
+    if (! $this->{cfgObject}->isProperty({ 'section' => "pyramid", 'property' => "pyr_data_path"}) ) {
         ERROR("'pyramid.pyr_data_path' property is missing");
         return FALSE;
     }
-    if (! $self->{cfgObject}->isProperty({ 'section' => "pyramid", 'property' => "tms_path"}) ) {
+    if (! $this->{cfgObject}->isProperty({ 'section' => "pyramid", 'property' => "tms_path"}) ) {
         ERROR("'pyramid.tms_path' property is missing");
         return FALSE;
     }
 
-    if (! $self->{cfgObject}->isProperty({ 'section' => "pyramid", 'property' => "extract_mode"}) ) {
-        $self->{cfgObject}->setProperty({ section => "pyramid", property => "extract_mode", value => "slink"})
+    if (! $this->{cfgObject}->isProperty({ 'section' => "pyramid", 'property' => "extract_mode"}) ) {
+        $this->{cfgObject}->setProperty({ section => "pyramid", property => "extract_mode", value => "slink"})
     } else {
-        my $mode = $self->{cfgObject}->getProperty({ section => "pyramid", property => "extract_mode"});
+        my $mode = $this->{cfgObject}->getProperty({ section => "pyramid", property => "extract_mode"});
         if (! defined COMMON::Array::isInArray($mode, @MODES) ) {
             ERROR("Unvalid value for 'pyramid.extract_mode' property: $mode");
             ERROR("Possible values are @MODES");
@@ -203,17 +203,17 @@ sub _check {
     }
 
     # Datasource section
-    if ($self->{cfgObject}->isSection("datasource") != 2) {
+    if ($this->{cfgObject}->isSection("datasource") != 2) {
         ERROR("'datasource' section is missing");
         return FALSE;
     }
 
     my $error = FALSE;
 
-    foreach my $level ($self->{cfgObject}->getSubSections("datasource")) {
+    foreach my $level ($this->{cfgObject}->getSubSections("datasource")) {
 
-        my $descPath = $self->{cfgObject}->getProperty({section => "datasource", subsection => $level, property => "desc_file"});
-        my $extent = $self->{cfgObject}->getProperty({section => "datasource", subsection => $level, property => "extent"});
+        my $descPath = $this->{cfgObject}->getProperty({section => "datasource", subsection => $level, property => "desc_file"});
+        my $extent = $this->{cfgObject}->getProperty({section => "datasource", subsection => $level, property => "extent"});
 
         if (! defined $descPath) {
             ERROR("Undefined descriptor file's path for level '$level'");
@@ -246,9 +246,9 @@ sub _check {
 
 # Function: getAllProperties
 sub getAllProperties {
-    my $self = shift;
+    my $this = shift;
 
-    return $self->{cfgObject}->getRawConfig();
+    return $this->{cfgObject}->getRawConfig();
 }
 
 

@@ -1,7 +1,7 @@
 C++ LIBRARIES
 +++++++++++++
 
-The ROK4 server, BE4 tools adn IMAGE library require these extern C++ libraries. Equivalent debian package name are given.
+The ROK4 server, BE4 tools and IMAGE library require these extern C++ libraries. Equivalent debian package name are given.
 
 * external, dynamically linked
     - TINYXML -> libtinyxml-dev

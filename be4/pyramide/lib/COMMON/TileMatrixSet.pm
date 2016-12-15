@@ -140,12 +140,12 @@ See also:
     <_load>
 =cut
 sub new {
-    my $this = shift;
+    my $class = shift;
     my $pathfile = shift;
 
-    my $class= ref($this) || $this;
+    $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above)
-    my $self = {
+    my $this = {
         PATHFILENAME => undef,
         name     => undef,
         filename => undef,
@@ -164,7 +164,7 @@ sub new {
         isQTree => undef,
     };
 
-    bless($self, $class);
+    bless($this, $class);
 
 
     # init. class
@@ -176,16 +176,16 @@ sub new {
     }
 
     # init. params
-    $self->{PATHFILENAME} = $pathfile;
-    $self->{filepath} = File::Basename::dirname($pathfile);
-    $self->{filename} = File::Basename::basename($pathfile);
-    $self->{name} = File::Basename::basename($pathfile);
-    $self->{name} =~ s/\.(tms|TMS)$//;
+    $this->{PATHFILENAME} = $pathfile;
+    $this->{filepath} = File::Basename::dirname($pathfile);
+    $this->{filename} = File::Basename::basename($pathfile);
+    $this->{name} = File::Basename::basename($pathfile);
+    $this->{name} =~ s/\.(tms|TMS)$//;
     
     # load
-    return undef if (! $self->_load());
+    return undef if (! $this->_load());
 
-    return $self;
+    return $this;
 }
 
 =begin nd
@@ -203,12 +203,12 @@ See also:
     <computeTmSource>
 =cut
 sub _load {
-    my $self = shift;
+    my $this = shift;
     
     
     # read xml pyramid
     my $parser  = XML::LibXML->new();
-    my $xmltree =  eval { $parser->parse_file($self->{PATHFILENAME}); };
+    my $xmltree =  eval { $parser->parse_file($this->{PATHFILENAME}); };
 
     if (! defined ($xmltree) || $@) {
         ERROR (sprintf "Can not read the XML file TMS : %s !", $@);
@@ -226,13 +226,13 @@ sub _load {
         my $id = $tm->findvalue('id');
         my $res = $tm->findvalue('resolution');
         
-        if (! defined $self->{topID} || $res > $self->{topResolution}) {
-            $self->{topID} = $id;
-            $self->{topResolution} = $res;
+        if (! defined $this->{topID} || $res > $this->{topResolution}) {
+            $this->{topID} = $id;
+            $this->{topResolution} = $res;
         }
-        if (! defined $self->{bottomID} || $res < $self->{bottomResolution}) {
-            $self->{bottomID} = $id;
-            $self->{bottomResolution} = $res;
+        if (! defined $this->{bottomID} || $res < $this->{bottomResolution}) {
+            $this->{bottomID} = $id;
+            $this->{bottomResolution} = $res;
         }
         
         my $objTM = COMMON::TileMatrix->new({
@@ -251,12 +251,12 @@ sub _load {
             return FALSE;
         }
         
-        $self->{tileMatrix}->{$id} = $objTM;
-        $objTM->setTMS($self);
+        $this->{tileMatrix}->{$id} = $objTM;
+        $objTM->setTMS($this);
         undef $objTM;
     }
     
-    if (! $self->getCountTileMatrix()) {
+    if (! $this->getCountTileMatrix()) {
         ERROR (sprintf "No tile matrix loading from XML file TMS !");
         return FALSE;
     }
@@ -267,65 +267,65 @@ sub _load {
         ERROR (sprintf "Can not determine parameter 'crs' in the XML file TMS !");
         return FALSE;
     }
-    $self->{srs} = uc($crs); # srs is cast in uppercase in order to ease comparisons
+    $this->{srs} = uc($crs); # srs is cast in uppercase in order to ease comparisons
     
     # Have coodinates to be reversed ?
-    my $sr = COMMON::ProxyGDAL::spatialReferenceFromSRS($self->{srs});
+    my $sr = COMMON::ProxyGDAL::spatialReferenceFromSRS($this->{srs});
     if (! defined $sr) {
-        ERROR (sprintf "Impossible to initialize the final spatial coordinate system (%s) to know if coordinates have to be reversed !\n",$self->{srs});
+        ERROR (sprintf "Impossible to initialize the final spatial coordinate system (%s) to know if coordinates have to be reversed !\n",$this->{srs});
         return FALSE;
     }
 
-    my $authority = (split(":",$self->{srs}))[0];
+    my $authority = (split(":",$this->{srs}))[0];
     if (COMMON::ProxyGDAL::isGeographic($sr) && uc($authority) eq "EPSG") {
-        DEBUG(sprintf "Coordinates will be reversed in requests (SRS : %s)",$self->{srs});
-        $self->{coordinatesInversion} = TRUE;
+        DEBUG(sprintf "Coordinates will be reversed in requests (SRS : %s)",$this->{srs});
+        $this->{coordinatesInversion} = TRUE;
     } else {
-        DEBUG(sprintf "Coordinates order will be kept in requests (SRS : %s)",$self->{srs});
-        $self->{coordinatesInversion} = FALSE;
+        DEBUG(sprintf "Coordinates order will be kept in requests (SRS : %s)",$this->{srs});
+        $this->{coordinatesInversion} = FALSE;
     }
     
     # clean
     $xmltree = undef;
     
     # tileMatrix list sort by resolution
-    my @tmList = $self->getTileMatrixByArray();
+    my @tmList = $this->getTileMatrixByArray();
   
     # Is TMS a QuadTree ? If not, we use a graph (less efficient for calculs)
-    $self->{isQTree} = TRUE; # default value
+    $this->{isQTree} = TRUE; # default value
     if (scalar(@tmList) != 1) {
         my $epsilon = $tmList[0]->getResolution / 100 ;
         for (my $i = 0; $i < scalar(@tmList) - 1;$i++) {
             if ( abs($tmList[$i]->getResolution*2 - $tmList[$i+1]->getResolution) > $epsilon ) {
-                $self->{isQTree} = FALSE;
+                $this->{isQTree} = FALSE;
                 INFO(sprintf "Not a QTree : resolutions don't go by twos : level '%s' (%s) and level '%s' (%s).",
                     $tmList[$i]->{id},$tmList[$i]->getResolution,
                     $tmList[$i+1]->{id},$tmList[$i+1]->getResolution);
                 last;
             }
             elsif ( abs($tmList[$i]->getTopLeftCornerX - $tmList[$i+1]->getTopLeftCornerX) > $epsilon ) {
-                $self->{isQTree} = FALSE;
+                $this->{isQTree} = FALSE;
                 ERROR(sprintf "Not a QTree : 'topleftcornerx' is not the same for all levels : level '%s' (%s) and level '%s' (%s).",
                     $tmList[$i]->{id},$tmList[$i]->getTopLeftCornerX,
                     $tmList[$i+1]->{id},$tmList[$i+1]->getTopLeftCornerX);
                 last;
             }
             elsif ( abs($tmList[$i]->getTopLeftCornerY - $tmList[$i+1]->getTopLeftCornerY) > $epsilon ) {
-                $self->{isQTree} = FALSE;
+                $this->{isQTree} = FALSE;
                 ERROR(sprintf "Not a QTree : 'topleftcornery' is not the same for all levels : level '%s' (%s) and level '%s' (%s).",
                     $tmList[$i]->{id},$tmList[$i]->getTopLeftCornerY,
                     $tmList[$i+1]->{id},$tmList[$i+1]->getTopLeftCornerY);
                 last;
             }
             elsif ( $tmList[$i]->getTileWidth != $tmList[$i+1]->getTileWidth) {
-                $self->{isQTree} = FALSE;
+                $this->{isQTree} = FALSE;
                 ERROR(sprintf "Not a QTree : 'tilewidth' is not the same for all levels : level '%s' (%s) and level '%s' (%s).",
                     $tmList[$i]->{id},$tmList[$i]->getTileWidth,
                     $tmList[$i+1]->{id},$tmList[$i+1]->getTileWidth);
                 last;
             }
             elsif ( $tmList[$i]->getTileHeight != $tmList[$i+1]->getTileHeight) {
-                $self->{isQTree} = FALSE;
+                $this->{isQTree} = FALSE;
                 INFO(sprintf "Not a QTree : 'tileheight' is not the same for all levels : level '%s' (%s) and level '%s' (%s).",
                     $tmList[$i]->{id},$tmList[$i]->getTileHeight,
                     $tmList[$i+1]->{id},$tmList[$i+1]->getTileHeight);
@@ -336,14 +336,14 @@ sub _load {
   
     # on fait un hash pour retrouver l'ordre d'un niveau a partir de son id.
     for (my $i=0; $i < scalar @tmList; $i++){
-        $self->{levelsBind}{$tmList[$i]->getID()} = $i;
+        $this->{levelsBind}{$tmList[$i]->getID()} = $i;
     }
     
-    if ($self->isQTree) { return TRUE;}
+    if ($this->isQTree) { return TRUE;}
     
     ## Adding informations about child/parent in TM objects
     for (my $i = 0; $i < scalar(@tmList) ;$i++) {
-        if (! $self->computeTmSource($tmList[$i])) {
+        if (! $this->computeTmSource($tmList[$i])) {
             ERROR(sprintf "Nor a QTree neither a Graph made for nearest neighbour generation. No source for level %s.",$tmList[$i]->getID());
             return FALSE;
         }
@@ -358,62 +358,62 @@ sub _load {
 
 # Function: getPathFilename
 sub getPathFilename {
-    my $self = shift;
-    return $self->{PATHFILENAME};
+    my $this = shift;
+    return $this->{PATHFILENAME};
 }
 
 # Function: getSRS
 sub getSRS {
-  my $self = shift;
-  return $self->{srs};
+  my $this = shift;
+  return $this->{srs};
 }
 
 # Function: getInversion
 sub getInversion {
-  my $self = shift;
-  return $self->{coordinatesInversion};
+  my $this = shift;
+  return $this->{coordinatesInversion};
 }
 
 # Function: getName
 sub getName {
-  my $self = shift;
-  return $self->{name};
+  my $this = shift;
+  return $this->{name};
 }
 
 # Function: getPath
 sub getPath {
-  my $self = shift;
-  return $self->{filepath};
+  my $this = shift;
+  return $this->{filepath};
 }
 
 # Function: getFile
 sub getFile {
-  my $self = shift;
-  return $self->{filename};
+  my $this = shift;
+  return $this->{filename};
 }
 
 # Function: getTopLevel
 sub getTopLevel {
-  my $self = shift;
-  return $self->{topID};
+  my $this = shift;
+  return $this->{topID};
 }
 
 # Function: getBottomLevel
 sub getBottomLevel {
-  my $self = shift;
-  return $self->{bottomID};
+  my $this = shift;
+  return $this->{bottomID};
 }
 
 # Function: getTopResolution
 sub getTopResolution {
-  my $self = shift;
-  return $self->{topResolution};
+  my $this = shift;
+  return $this->{topResolution};
 }
 
 # Function: getBottomResolution
 sub getBottomResolution {
-  my $self = shift;
-  return $self->{bottomResolution};
+  my $this = shift;
+  return $this->{bottomResolution};
 }
 
 =begin nd
@@ -423,13 +423,13 @@ Parameters (list):
     ID - string - Level identifiant whose tile pixel width we want.
 =cut
 sub getTileWidth {
-  my $self = shift;
+  my $this = shift;
   my $levelID = shift;
   
-  $levelID = $self->{bottomID} if (! defined $levelID);
+  $levelID = $this->{bottomID} if (! defined $levelID);
   
   # size of tile in pixel !
-  return $self->{tileMatrix}->{$levelID}->getTileWidth;
+  return $this->{tileMatrix}->{$levelID}->getTileWidth;
 }
 
 =begin nd
@@ -439,19 +439,19 @@ Parameters (list):
     ID - string - Level identifiant whose tile pixel height we want.
 =cut
 sub getTileHeight {
-  my $self = shift;
+  my $this = shift;
   my $ID = shift;
   
-  $ID = $self->{bottomID} if (! defined $ID);
+  $ID = $this->{bottomID} if (! defined $ID);
   
   # size of tile in pixel !
-  return $self->{tileMatrix}->{$ID}->getTileHeight;
+  return $this->{tileMatrix}->{$ID}->getTileHeight;
 }
 
 # Function: isQTree
 sub isQTree {
-    my $self = shift;
-    return $self->{isQTree};
+    my $this = shift;
+    return $this->{isQTree};
 }
 
 =begin nd
@@ -460,11 +460,11 @@ Function: getTileMatrixByArray
 Returns the tile matrix array in the ascending resolution order.
 =cut
 sub getTileMatrixByArray {
-    my $self = shift;
+    my $this = shift;
 
     my @levels;
 
-    foreach my $k (sort {$a->getResolution() <=> $b->getResolution()} (values %{$self->{tileMatrix}})) {
+    foreach my $k (sort {$a->getResolution() <=> $b->getResolution()} (values %{$this->{tileMatrix}})) {
         push @levels, $k;
     }
 
@@ -480,14 +480,14 @@ Parameters (list):
     ID - string - Wanted level identifiant
 =cut
 sub getTileMatrix {
-    my $self = shift;
+    my $this = shift;
     my $ID = shift;
 
-    if (! defined $ID || ! exists($self->{tileMatrix}->{$ID})) {
+    if (! defined $ID || ! exists($this->{tileMatrix}->{$ID})) {
         return undef;
     }
 
-    return $self->{tileMatrix}->{$ID};
+    return $this->{tileMatrix}->{$ID};
 }
 
 =begin nd
@@ -496,8 +496,8 @@ Function: getCountTileMatrix
 Returns the count of tile matrix in the TMS.
 =cut
 sub getCountTileMatrix {
-    my $self = shift;
-    return scalar (keys %{$self->{tileMatrix}});
+    my $this = shift;
+    return scalar (keys %{$this->{tileMatrix}});
 }
 
 =begin nd
@@ -511,12 +511,12 @@ Parameters (list):
     order - integer - Level order, whose identifiant we want.
 =cut
 sub getIDfromOrder {
-    my $self = shift;
+    my $this = shift;
     my $order= shift;
 
 
-    foreach my $k (keys %{$self->{levelsBind}}) {
-        if ($self->{levelsBind}->{$k} == $order) {return $k;}
+    foreach my $k (keys %{$this->{levelsBind}}) {
+        if ($this->{levelsBind}->{$k} == $order) {return $k;}
     }
 
     return undef;
@@ -531,14 +531,14 @@ Parameters (list):
     ID - string - Level identifiant, whose below level ID we want.
 =cut
 sub getBelowLevelID {
-    my $self = shift;
+    my $this = shift;
     my $ID= shift;
 
 
-    return undef if (! exists $self->{levelsBind}->{$ID});
-    my $order = $self->{levelsBind}->{$ID};
+    return undef if (! exists $this->{levelsBind}->{$ID});
+    my $order = $this->{levelsBind}->{$ID};
     return undef if ($order == 0);
-    return $self->getIDfromOrder($order-1);
+    return $this->getIDfromOrder($order-1);
 }
 
 =begin nd
@@ -552,12 +552,12 @@ Parameters (list):
     ID - string - Level identifiant, whose order we want.
 =cut
 sub getOrderfromID {
-    my $self = shift;
+    my $this = shift;
     my $ID= shift;
 
 
-    if (exists $self->{levelsBind}->{$ID}) {
-        return $self->{levelsBind}->{$ID};
+    if (exists $this->{levelsBind}->{$ID}) {
+        return $this->{levelsBind}->{$ID};
     } else {
         return undef;
     }
@@ -580,10 +580,10 @@ Returns:
     TRUE if there is a TM source (obj) for the TM target (obj) in argument.
 =cut
 sub computeTmSource {
-  my $self = shift;
+  my $this = shift;
   my $tmTarget = shift;
   
-  if ($tmTarget->{id} eq $self->{bottomID}) {
+  if ($tmTarget->{id} eq $this->{bottomID}) {
     return TRUE;
   }
 
@@ -594,10 +594,10 @@ sub computeTmSource {
   my $xTopLeftCorner_CenterPixel = $tmTarget->getTopLeftCornerX() + 0.5 * $tmTarget->getResolution();
   my $yTopLeftCorner_CenterPixel = $tmTarget->getTopLeftCornerY() - 0.5 * $tmTarget->getResolution();
 
-  for (my $i = $self->getOrderfromID($tmTarget->getID()) - 1; $i >= $self->getOrderfromID($self->getBottomLevel) ;$i--) {
-      my $potentialTmSource = $self->getTileMatrix($self->getIDfromOrder($i));
+  for (my $i = $this->getOrderfromID($tmTarget->getID()) - 1; $i >= $this->getOrderfromID($this->getBottomLevel) ;$i--) {
+      my $potentialTmSource = $this->getTileMatrix($this->getIDfromOrder($i));
       # la précision vaut 1/100 de la plus petit résolution du TMS
-      my $epsilon = $self->getTileMatrix($self->getBottomLevel())->getResolution() / 100;
+      my $epsilon = $this->getTileMatrix($this->getBottomLevel())->getResolution() / 100;
       my $rapport = $tmTarget->getResolution() / $potentialTmSource->getResolution() ;
       #on veut que le rapport soit (proche d') un entier
       next if ( abs( int( $rapport + 0.5) - $rapport) > $epsilon );
@@ -670,23 +670,23 @@ Example:
     (end code)
 =cut
 sub exportForDebug {
-    my $self = shift ;
+    my $this = shift ;
 
     my $export = "\nObject COMMON::TileMatrixSet :\n";
-    $export .= sprintf "\t TMS file complete path : %s\n", $self->getPathFilename;
-    $export .= sprintf "\t Top level identifiant : %s\n", $self->getTopLevel;
-    $export .= sprintf "\t Top level resolution : %s\n", $self->getTopResolution;
-    $export .= sprintf "\t Bottom level identifiant : %s\n", $self->getBottomLevel;
-    $export .= sprintf "\t Bottom level resolution : %s\n", $self->getBottomResolution;
+    $export .= sprintf "\t TMS file complete path : %s\n", $this->getPathFilename;
+    $export .= sprintf "\t Top level identifiant : %s\n", $this->getTopLevel;
+    $export .= sprintf "\t Top level resolution : %s\n", $this->getTopResolution;
+    $export .= sprintf "\t Bottom level identifiant : %s\n", $this->getBottomLevel;
+    $export .= sprintf "\t Bottom level resolution : %s\n", $this->getBottomResolution;
     
-    $export .= sprintf "\t Spatial Reference System : %s\n", $self->getSRS;
-    if ( $self->getInversion() ) {
+    $export .= sprintf "\t Spatial Reference System : %s\n", $this->getSRS;
+    if ( $this->getInversion() ) {
         $export .= sprintf "\t Coordinates have to be inversed to harvest with WMS 1.3.0\n";
     } else {
         $export .= sprintf "\t Coordinates have not to be inversed to harvest with WMS 1.3.0\n";
     }
 
-    if ( $self->isQTree() ) {
+    if ( $this->isQTree() ) {
         $export .= sprintf "\t This TMS is a quad tree\n";
     } else {
         $export .= sprintf "\t This TMS is not a quad tree\n";
@@ -695,9 +695,9 @@ sub exportForDebug {
     $export .= sprintf "\t TileMatrix Array :\n";
     $export .= sprintf "\t\t     ID    | Order |  Resolution\n";
     $export .= sprintf "\t\t-----------+-------+------------------\n";
-    foreach my $tm ( $self->getTileMatrixByArray ) {
+    foreach my $tm ( $this->getTileMatrixByArray ) {
         my $id = $tm->getID();
-        $export .= sprintf "\t\t %9s |  %-4s | %-14s \n", $id, $self->{levelsBind}->{$id}, $tm->getResolution();
+        $export .= sprintf "\t\t %9s |  %-4s | %-14s \n", $id, $this->{levelsBind}->{$id}, $tm->getResolution();
     }
     
     return $export;

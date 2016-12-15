@@ -205,41 +205,41 @@ sub new() {
     my $this = shift;
     my $params = shift;
 
-    my $class= ref($this) || $this;
+    $class = ref($class) || $class;
 
     # IMPORTANT : if modification, think to update natural documentation (just above)
     # see config/pyramids/pyramid.xsd to get the list of parameters, as used by Rok4.
 
     $params->{type} = 'WMS';
 
-    my $self = $class->SUPER::new($params);
-        $self->{url} = undef;
-        $self->{proxy} = undef;
-        $self->{timeout} = undef;
-        $self->{retry} = undef;
-        $self->{interval} = undef;
-        $self->{user} = undef;
-        $self->{password} = undef;
-        $self->{referer} = undef;
-        $self->{userAgent} = undef;
-        $self->{version} = undef;
-        $self->{layers} = undef;
-        $self->{styles} = undef;
-        $self->{crs} = undef;
-        $self->{format} = undef;
-        $self->{channels} = undef;
-        $self->{nodata} = undef;
-        $self->{extent} = undef;
-        $self->{option} = undef;
+    my $this = $class->SUPER::new($params);
+        $this->{url} = undef;
+        $this->{proxy} = undef;
+        $this->{timeout} = undef;
+        $this->{retry} = undef;
+        $this->{interval} = undef;
+        $this->{user} = undef;
+        $this->{password} = undef;
+        $this->{referer} = undef;
+        $this->{userAgent} = undef;
+        $this->{version} = undef;
+        $this->{layers} = undef;
+        $this->{styles} = undef;
+        $this->{crs} = undef;
+        $this->{format} = undef;
+        $this->{channels} = undef;
+        $this->{nodata} = undef;
+        $this->{extent} = undef;
+        $this->{option} = undef;
 
-    bless($self, $class);
+    bless($this, $class);
 
-    if (!$self->_init($params)) {
+    if (!$this->_init($params)) {
         ERROR("Could not load WMS source.");
         return undef;
     }
 
-    return $self;
+    return $this;
 }
 
 =begin nd
@@ -298,10 +298,10 @@ Returns:
     
 =cut
 sub _init() {
-    my $self = shift;
+    my $this = shift;
     my $params = shift;
 
-    return FALSE if(!$self->SUPER::_init($params));
+    return FALSE if(!$this->SUPER::_init($params));
 
     foreach my $key (keys %{$params}) {
         chomp $params->{$key};
@@ -315,17 +315,17 @@ sub _init() {
         return FALSE;
     }
     $params->{wms_url} =~ s/^http:\/\///;
-    $self->{url} = $params->{wms_url};
+    $this->{url} = $params->{wms_url};
 
 
     ## WMS version
     if (!exists $params->{wms_version} || !defined $params->{wms_version} || $params->{wms_version} eq '') {
         ERROR("Undefined WMS protocol version.");
         return FALSE;
-    } elsif (! $self->isWmsVersion($params->{wms_version})) {
+    } elsif (! $this->isWmsVersion($params->{wms_version})) {
         return FALSE;
     }
-    $self->{version} = $params->{wms_version};
+    $this->{version} = $params->{wms_version};
 
 
     ## Layers list
@@ -333,7 +333,7 @@ sub _init() {
         ERROR("Undefined layers list.");
         return FALSE;
     }
-    $self->{layers} = $params->{wms_layers};
+    $this->{layers} = $params->{wms_layers};
 
 
     ## Layer styles list
@@ -344,7 +344,7 @@ sub _init() {
         ERROR("The number of layer styles does not match the number of layers.");
         return FALSE;
     }
-    $self->{styles} = $params->{wms_styles};
+    $this->{styles} = $params->{wms_styles};
 
 
     ## Number of color channels
@@ -355,7 +355,7 @@ sub _init() {
         ERROR("Channels number must be a strict positive integer.");
         return FALSE;
     }
-    $self->{channels} = $params->{wms_channels};
+    $this->{channels} = $params->{wms_channels};
 
 
     ## Background color
@@ -363,7 +363,7 @@ sub _init() {
         ERROR("Undefined nodata value / background color.");
         return FALSE;
     }
-    $self->{nodata} = $params->{wms_nodata};
+    $this->{nodata} = $params->{wms_nodata};
 
 
     ## Bounding box
@@ -385,7 +385,7 @@ sub _init() {
         ERROR("Wrong coordinates order in extent. Extent should be 'min_x,min_y,max_x,max_y'");
         return FALSE;
     }
-    $self->{extent} = $params->{wms_extent};
+    $this->{extent} = $params->{wms_extent};
 
 
 
@@ -393,7 +393,7 @@ sub _init() {
 
     ## wms_proxy - (opt)
     if (exists $params->{wms_proxy} && defined $params->{wms_proxy} && $params->{wms_proxy} ne '') {
-        $self->{proxy} = $params->{wms_proxy};
+        $this->{proxy} = $params->{wms_proxy};
     }
 
     ## wms_timeout - (opt)
@@ -402,7 +402,7 @@ sub _init() {
             ERROR("Request timeout value must be a positive integer.");
             return FALSE;
         }
-        $self->{timeout} = $params->{wms_timeout};
+        $this->{timeout} = $params->{wms_timeout};
     }
 
     ## wms_retry - (opt)
@@ -411,7 +411,7 @@ sub _init() {
             ERROR("Request retry number must be a positive integer.");
             return FALSE;
         }
-        $self->{retry} = $params->{wms_retry};
+        $this->{retry} = $params->{wms_retry};
     }
 
     ## wms_interval - (opt)
@@ -420,45 +420,45 @@ sub _init() {
             ERROR("Request retry interval delay must be a positive integer.");
             return FALSE;
         }
-        $self->{interval} = $params->{wms_interval};
+        $this->{interval} = $params->{wms_interval};
     }
 
     ## wms_user - (opt)
     if (exists $params->{wms_user} && defined $params->{wms_user} && $params->{wms_user} ne '') {
-        $self->{user} = $params->{wms_user};
+        $this->{user} = $params->{wms_user};
     }
 
     ## wms_password - (opt)
     if (exists $params->{wms_password} && defined $params->{wms_password} && $params->{wms_password} ne '') {
-        $self->{password} = $params->{wms_password};
+        $this->{password} = $params->{wms_password};
     }
 
     ## wms_referer - (opt)
     if (exists $params->{wms_referer} && defined $params->{wms_referer} && $params->{wms_referer} ne '') {
-        $self->{wms_referer} = $params->{wms_referer};
+        $this->{wms_referer} = $params->{wms_referer};
     }
 
     ## wms_userAgent - (opt)
     if (exists $params->{wms_userAgent} && defined $params->{wms_userAgent} && $params->{wms_userAgent} ne '') {
-        $self->{userAgent} = $params->{wms_userAgent};
+        $this->{userAgent} = $params->{wms_userAgent};
     }
 
     ## wms_crs - (opt)
     if (exists $params->{wms_crs} && defined $params->{wms_crs} && $params->{wms_crs} ne '') {
-        $self->{crs} = $params->{wms_crs};
+        $this->{crs} = $params->{wms_crs};
     }
 
     ## wms_format - (opt)
     if (exists $params->{wms_format} && defined $params->{wms_format} && $params->{wms_format} ne '') {
-        if (! $self->isWmsFormat($params->{wms_format})) {
+        if (! $this->isWmsFormat($params->{wms_format})) {
             return FALSE;
         }
-        $self->{format} = $params->{wms_format};
+        $this->{format} = $params->{wms_format};
     }  
 
     ## wms_option - (opt)
     if (exists $params->{wms_option} && defined $params->{wms_option} && $params->{wms_option} ne '') {
-        $self->{option} = $params->{wms_option};
+        $this->{option} = $params->{wms_option};
     }
 
 
@@ -478,7 +478,7 @@ Parameters (list):
     wmsformat - string - Format value to test
 =cut
 sub isWmsFormat {
-    my $self = shift;
+    my $this = shift;
     my $wmsformat = shift;
 
     TRACE;
@@ -502,7 +502,7 @@ Parameters (list):
 =cut
 sub isWmsVersion {
 
-    my $self = shift;
+    my $this = shift;
     my $wmsversion = shift;
 
     TRACE;
@@ -544,38 +544,38 @@ Returns:
 
 =cut
 sub writeInXml() {
-    my $self = shift;
+    my $this = shift;
     my $xmlDoc = shift;
     my $sourcesNode = shift;
 
     my $webServiceEl = $xmlDoc->createElement("webService");
     $sourcesNode->appendChild($webServiceEl);
-    $webServiceEl->appendTextChild("url", $self->{url});
-    if (defined $self->{proxy}) { $webServiceEl->appendTextChild("proxy", $self->{proxy}); }
-    if (defined $self->{timeout}) { $webServiceEl->appendTextChild("timeout", $self->{timeout}); }
-    if (defined $self->{retry}) { $webServiceEl->appendTextChild("retry", $self->{retry}); }
-    if (defined $self->{interval}) { $webServiceEl->appendTextChild("interval", $self->{interval}); }
-    if (defined $self->{user}) { $webServiceEl->appendTextChild("user", $self->{user}); }
-    if (defined $self->{password}) { $webServiceEl->appendTextChild("password", $self->{password}); }
-    if (defined $self->{referer}) { $webServiceEl->appendTextChild("referer", $self->{referer}); }
-    if (defined $self->{userAgent}) { $webServiceEl->appendTextChild("userAgent", $self->{userAgent}); }
+    $webServiceEl->appendTextChild("url", $this->{url});
+    if (defined $this->{proxy}) { $webServiceEl->appendTextChild("proxy", $this->{proxy}); }
+    if (defined $this->{timeout}) { $webServiceEl->appendTextChild("timeout", $this->{timeout}); }
+    if (defined $this->{retry}) { $webServiceEl->appendTextChild("retry", $this->{retry}); }
+    if (defined $this->{interval}) { $webServiceEl->appendTextChild("interval", $this->{interval}); }
+    if (defined $this->{user}) { $webServiceEl->appendTextChild("user", $this->{user}); }
+    if (defined $this->{password}) { $webServiceEl->appendTextChild("password", $this->{password}); }
+    if (defined $this->{referer}) { $webServiceEl->appendTextChild("referer", $this->{referer}); }
+    if (defined $this->{userAgent}) { $webServiceEl->appendTextChild("userAgent", $this->{userAgent}); }
     my $wmsEl = $xmlDoc->createElement("wms");
     $webServiceEl->appendChild($wmsEl);
-    $wmsEl->appendTextChild("version", $self->{version});
-    $wmsEl->appendTextChild("layers", $self->{layers});
-    $wmsEl->appendTextChild("styles", $self->{styles});
-    if (defined $self->{crs}) { $wmsEl->appendTextChild("crs", $self->{crs}); }
-    if (defined $self->{format}) { $wmsEl->appendTextChild("format", $self->{format}); }
-    $wmsEl->appendTextChild("channels", $self->{channels});
-    $wmsEl->appendTextChild("noDataValue", $self->{nodata});
+    $wmsEl->appendTextChild("version", $this->{version});
+    $wmsEl->appendTextChild("layers", $this->{layers});
+    $wmsEl->appendTextChild("styles", $this->{styles});
+    if (defined $this->{crs}) { $wmsEl->appendTextChild("crs", $this->{crs}); }
+    if (defined $this->{format}) { $wmsEl->appendTextChild("format", $this->{format}); }
+    $wmsEl->appendTextChild("channels", $this->{channels});
+    $wmsEl->appendTextChild("noDataValue", $this->{nodata});
     my $boundingBoxEl = $xmlDoc->createElement("bbox");
     $wmsEl->appendChild($boundingBoxEl);
-    my @boundingBox = split (",", $self->{extent});
+    my @boundingBox = split (",", $this->{extent});
     $boundingBoxEl->setAttribute("minx", $boundingBox[0]);
     $boundingBoxEl->setAttribute("miny", $boundingBox[1]);
     $boundingBoxEl->setAttribute("maxx", $boundingBox[2]);
     $boundingBoxEl->setAttribute("maxy", $boundingBox[3]);
-    if (defined $self->{option}) { $wmsEl->appendTextChild("option", $self->{option}); }
+    if (defined $this->{option}) { $wmsEl->appendTextChild("option", $this->{option}); }
 
     return TRUE;
 }
