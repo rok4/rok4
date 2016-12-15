@@ -38,15 +38,15 @@
 =begin nd
 File: Script.pm
 
-Class: COMMON::GraphScript
+Class: COMMON::Script
 
 Describe a script, its weight and allowed to write in.
 
 Using:
     (start code)
-    use COMMON::GraphScript;
+    use COMMON::Script;
 
-    my $objC = COMMON::GraphScript->new({
+    my $objC = COMMON::Script->new({
         id => "SCRIPT_1",
         tempDir => "/home/ign/TMP/",
         commonTempDir => "/home/ign/TMP/",
@@ -62,7 +62,8 @@ Attributes:
     tempDir - string - Directory used to write temporary images.
     commonTempDir - string - Directory used to write temporary images which have to be shared between different scripts.
     mntConfDir - string - Directory used to write mergeNtiff configuration files. *mntConfDir* is a subdirectory of *commonTempDir*.
-    dntConfDir - string - Directory used to write decimateNtiff configuration files (used by <NNGraph> generation). *dntConfDir* is a subdirectory of *commonTempDir*.
+    dntConfDir - string - Directory used to write decimateNtiff configuration files (used by <COMMON::NNGraph> generation). *dntConfDir* is a subdirectory of *commonTempDir*.
+    ontConfDir - string - Directory used to write overlayNtiff configuration files (used by JoinCache tool). *ontConfDir* is a subdirectory of *commonTempDir*.
     currentweight - integer - Current weight of the script (already written in the file)
     weight - integer - Total weight of the script, according to its content.
     stream - stream - Stream to the script file, to write in.
@@ -70,7 +71,7 @@ Attributes:
 
 ################################################################################
 
-package COMMON::GraphScript;
+package COMMON::Script;
 
 use strict;
 use warnings;
@@ -126,12 +127,16 @@ sub new {
         id => undef,
         executedAlone => FALSE,
         filePath => undef,
+
         tempDir => undef,
         commonTempDir => undef,
         mntConfDir => undef,
         dntConfDir => undef,
+        ontConfDir => undef,
+
         weight => 0,
         currentweight => 0,
+
         stream => undef,
     };
 
@@ -183,6 +188,10 @@ sub new {
     ########## Dossier des configurations des decimateNtiff pour ce script
     
     $this->{dntConfDir} = File::Spec->catfile($this->{commonTempDir},"decimateNtiff");
+    
+    ########## Dossier des configurations des overlayNtiff pour ce script
+    
+    $this->{ontConfDir} = File::Spec->catfile($this->{commonTempDir},"overlayNtiff");
 
     ########## Tests et création de l'ensemble des dossiers
     
@@ -224,6 +233,17 @@ sub new {
         if ($@) {
             ERROR(sprintf "Can not create the DecimateNtiff configurations directory '%s' : %s !",
                 $this->{dntConfDir}, $@);
+            return undef;
+        }
+    }
+    
+    # OverlayNtiff configurations directory
+    if (! -d $this->{ontConfDir}) {
+        DEBUG (sprintf "Create the OverlayNtiff configurations directory '%s' !", $this->{ontConfDir});
+        eval { mkpath([$this->{ontConfDir}]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the OverlayNtiff configurations directory '%s' : %s !",
+                $this->{ontConfDir}, $@);
             return undef;
         }
     }
@@ -285,6 +305,13 @@ sub getMntConfDir {
 sub getDntConfDir {
     my $this = shift;
     return $this->{dntConfDir};
+}
+
+# Function: getDntConfDir
+# Returns the overlayNtiff configuration's directory
+sub getOntConfDir {
+    my $this = shift;
+    return $this->{ontConfDir};
 }
 
 
@@ -354,6 +381,7 @@ sub prepare {
     $code .= sprintf ("TMP_DIR=\"%s\"\n", $this->{tempDir});
     $code .= sprintf ("MNT_CONF_DIR=\"%s\"\n", $this->{mntConfDir});
     $code .= sprintf ("DNT_CONF_DIR=\"%s\"\n", $this->{dntConfDir});
+    $code .= sprintf ("ONT_CONF_DIR=\"%s\"\n", $this->{ontConfDir});
     $code .= sprintf ("LIST_FILE=\"%s\"\n", $pyramid->getListFile() );
 
     if ($pyramid->getStorageType() eq "FILE") {
@@ -379,9 +407,6 @@ sub prepare {
 
     $code .= "# Fonctions\n";
     $code .= "$functions\n";
-
-    $code .= "# Création du repertoire de travail\n";
-    $code .= "if [ ! -d \"\${TMP_DIR}\" ] ; then mkdir -p \${TMP_DIR} ; fi\n\n";
 
     $code .= "# Création de la liste temporaire\n";
     $code .= "if [ ! -f \"\${TMP_LIST_FILE}\" ] ; then touch \${TMP_LIST_FILE} ; fi\n\n";
@@ -423,16 +448,14 @@ sub close {
     
     my $stream = $this->{stream};
 
-    if ($this->{weight} == 0) {
-        printf $stream "\necho \"No image to generate (null weight)\"\n";
-    } else {
-        print $stream "echo \"------------- Progression : COMPLETE\"\n";
-        printf $stream "\necho \"Theorical weight was : %s\"\n", $this->{weight};
-    }
+    print $stream "echo \"------------- Progression : COMPLETE\"\n";
+    printf $stream "\necho \"Theorical weight was : %s\"\n", $this->{weight};
 
-    # On copie la liste temporaire de ce script vers le dossier commun
-    printf $stream "\necho \"Temporary files list is moving to the common directory\"\n";
-    printf $stream "mv \${TMP_LIST_FILE} \${COMMON_TMP_DIR}\n";
+    # On copie la liste temporaire de ce script vers le dossier commun si il existe
+    printf $stream "if [ -f \"\${TMP_LIST_FILE}\" ];then\n";
+    printf $stream "\t\necho \"Temporary files list is moving to the common directory\"\n";
+    printf $stream "\tmv \${TMP_LIST_FILE} \${COMMON_TMP_DIR}\n";
+    printf $stream "fi\n";
 
     if ($this->{executedAlone}) {
         printf $stream "\necho \"Temporary files lists (list_*.txt in the common directory) are added to the global files list, then removed\"\n";
@@ -441,49 +464,6 @@ sub close {
     }
     
     close $stream;
-}
-
-####################################################################################################
-#                                Group: Export methods                                             #
-####################################################################################################
-
-=begin nd
-Function: exportForDebug
-
-Returns all informations about the script. Useful for debug.
-
-Example:
-    (start code)
-    Object COMMON::GraphScript :
-        ID : SCRIPT_2
-        Will NOT be executed alone
-        Script path : /home/IGN/SCRIPTS/SCRIPT_2.sh 
-        Temporary directory : /home/IGN/TEMP/SCRIPT_2
-        Common temporary directory : /home/IGN/TEMP/COMMON
-        MergeNtiff configuration directory : /home/IGN/TEMP/COMMON/mergeNtiff
-        DecimateNtiff configuration directory : /home/IGN/TEMP/COMMON/decimateNtiff
-        Weight : 59
-    (end code)
-=cut
-sub exportForDebug {
-    my $this = shift ;
-    
-    my $export = "";
-    
-    $export .= "\nObject COMMON::GraphScript :\n";
-    $export .= sprintf "\t ID : %s\n", $this->{id};
-    
-    $export .= sprintf "\t Will NOT be executed alone\n" if (! $this->{executedAlone});
-    $export .= sprintf "\t Will be executed ALONE\n" if ($this->{executedAlone});
-    
-    $export .= sprintf "\t Script path : %s\n", $this->{filePath};
-    $export .= sprintf "\t Temporary directory : %s\n", $this->{tempDir};
-    $export .= sprintf "\t Common temporary directory : %s\n", $this->{commonTempDir};
-    $export .= sprintf "\t MergeNtiff configuration directory : %s\n", $this->{mntConfDir};
-    $export .= sprintf "\t DecimateNtiff configuration directory : %s\n", $this->{dntConfDir};
-    $export .= sprintf "\t Weight : %s\n", $this->{weight};
-
-    return $export;
 }
 
 1;

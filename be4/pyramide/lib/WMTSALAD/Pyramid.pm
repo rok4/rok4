@@ -402,8 +402,8 @@ sub _loadDatasources {
 
     my $cfg = COMMON::Config->new({
         'filepath' => $file,
-        'format' => 'INI',
-        });
+        'format' => 'INI'
+    });
     if (!defined $cfg) {
         ERROR(sprintf "An error occured while loading datasources configuration file '%s'.", $file);
         return FALSE;
@@ -427,26 +427,26 @@ sub _loadDatasources {
             $self->{datasources}->{$lv} = [];
 
             my $id = $self->{tileMatrixSet}->getIDfromOrder($lv);
-            my @tileExtent = $self->{tileMatrixSet}->getTileMatrix($id)->bboxToIndices($xMin, $yMin, $xMax, $yMax, 1, 1);
+            my ($rowMin, $rowMax, $colMin, $colMax) = $self->{tileMatrixSet}->getTileMatrix($id)->bboxToIndices($xMin, $yMin, $xMax, $yMax, 1, 1);
 
             my $TMWidth = $self->{tileMatrixSet}->getTileMatrix($id)->getMatrixWidth();
             my $TMHeight = $self->{tileMatrixSet}->getTileMatrix($id)->getMatrixHeight();
 
-            if (($tileExtent[0] < 0) || ($tileExtent[0] > $TMWidth-1)) {
+            if ($colMin < 0 || $colMin > $TMWidth - 1) {
                 ERROR(sprintf "In section '%s', level '%s', extent's min abscissa outside of tile matrix boundaries : %s", $section, $id, $xMin);
                 return FALSE;
-            } elsif (($tileExtent[1] < 0) || ($tileExtent[1] > $TMHeight-1)) {
-                ERROR(sprintf "In section '%s', level '%s', extent's min ordinate outside of tile matrix boundaries : %s", $section, $id, $yMin);
+            } elsif ($rowMin < 0 || $rowMin > $TMHeight-1) {
+                ERROR(sprintf "In section '%s', level '%s', extent's max ordinate outside of tile matrix boundaries : %s", $section, $id, $yMin);
                 return FALSE;
-            } elsif (($tileExtent[2] < 0) || ($tileExtent[2] > $TMWidth-1)) {
+            } elsif ($colMax < 0 || $colMax > $TMWidth-1) {
                 ERROR(sprintf "In section '%s', level '%s', extent's max abscissa outside of tile matrix boundaries : %s", $section, $id, $xMax);
                 return FALSE;
-            } elsif (($tileExtent[3] < 0) || ($tileExtent[3] > $TMHeight-1)) {
-                ERROR(sprintf "In section '%s', level '%s', extent's max ordinate outside of tile matrix boundaries : %s", $section, $id, $yMax);
+            } elsif ($rowMax < 0 || $rowMax > $TMHeight-1) {
+                ERROR(sprintf "In section '%s', level '%s', extent's min ordinate outside of tile matrix boundaries : %s", $section, $id, $yMax);
                 return FALSE;
             }
 
-            push @{$self->{datasources}->{$lv}}, \@tileExtent;
+            push @{$self->{datasources}->{$lv}}, [$colMin, $rowMin, $colMax, $rowMax];
 
             for (my $order = 0; $order < scalar (@orders); $order++) {
                 my $source = {

@@ -110,6 +110,7 @@ sub new {
     my $class = shift;
     my $pyramid = shift;
     my $useMasks = shift;
+    my $mergeMethod = shift;
     
     $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above)
@@ -118,6 +119,7 @@ sub new {
         mntConfDir => undef,
         dntConfDir => undef,
         useMasks => FALSE,
+        mergeMethod => undef
     };
 
     bless($this, $class);
@@ -130,6 +132,10 @@ sub new {
 
     if ( $this->{pyramid}->ownMasks() || (defined $useMasks && uc($useMasks) eq "TRUE") ) {
         $this->{useMasks} = TRUE;
+    }
+
+    if (defined $mergeMethod) {
+        $this->{mergeMethod} = $mergeMethod;
     }
 
     return $this;
@@ -258,7 +264,193 @@ OverlayNtiff () {
     rm -f ${TMP_DIR}/$inTemplate
     rm -f ${ONT_CONF_DIR}/$config
 }
+
 ONTFUNCTION
+
+my $JC_S3_W2CFUNCTION = <<'W2CFUNCTION';
+StoreSlab () {
+    local workImgName=$1
+    local imgName=$2
+    local workMskName=$3
+    local mskName=$4
+
+    work2cache ${TMP_DIR}/$workImgName __w2cI__ -bucket ${PYR_BUCKET} $imgName
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    rm -f ${TMP_DIR}/$workImgName
+
+    if [ $workMskName ] ; then
+        work2cache ${TMP_DIR}/$workMskName __w2cM__ -bucket ${PYR_BUCKET} $mskName
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        rm -f ${TMP_DIR}/$workMskName
+    fi
+}
+
+Cache2work () {
+    local input=$1
+    local output=$2
+
+    cache2work -c zip -bucket ${PYR_BUCKET} $input ${TMP_DIR}/$output
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+W2CFUNCTION
+
+
+my $JC_CEPH_W2CFUNCTION = <<'W2CFUNCTION';
+StoreSlab () {
+    local workImgName=$1
+    local imgName=$2
+    local workMskName=$3
+    local mskName=$4
+
+    work2cache ${TMP_DIR}/$workImgName __w2cI__ -pool ${PYR_POOL} $imgName
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    rm -f ${TMP_DIR}/$workImgName
+
+    if [ $workMskName ] ; then
+        work2cache ${TMP_DIR}/$workMskName __w2cM__ -pool ${PYR_POOL} $mskName
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        rm -f ${TMP_DIR}/$workMskName
+    fi
+}
+
+Cache2work () {
+    local input=$1
+    local output=$2
+
+    cache2work -c zip -pool ${PYR_POOL} $input ${TMP_DIR}/$output
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+W2CFUNCTION
+
+
+my $JC_FILE_W2CFUNCTION = <<'W2CFUNCTION';
+StoreSlab () {
+
+    local workImgName=$1
+    local imgName=$2
+    local workMskName=$3
+    local mskName=$4
+
+    local dir=`dirname ${PYR_DIR}/$imgName`
+
+    if [ -r ${TMP_DIR}/$workImgName ] ; then rm -f ${PYR_DIR}/$imgName ; fi
+    if [ ! -d $dir ] ; then mkdir -p $dir ; fi
+
+    work2cache ${TMP_DIR}/$workImgName __w2cI__ ${PYR_DIR}/$imgName
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    rm -f ${TMP_DIR}/$workImgName
+
+    if [ $workMskName ] ; then
+
+        dir=`dirname ${PYR_DIR}/$mskName`
+
+        if [ -r ${TMP_DIR}/$workMskName ] ; then rm -f ${PYR_DIR}/$mskName ; fi
+        if [ ! -d $dir ] ; then mkdir -p $dir ; fi
+
+        work2cache ${TMP_DIR}/$workMskName __w2cM__ ${PYR_DIR}/$mskName
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        rm -f ${TMP_DIR}/$workMskName
+    fi
+}
+
+Cache2work () {
+    local input=$1
+    local output=$2
+
+    cache2work -c zip $input ${TMP_DIR}/$output
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+
+W2CFUNCTION
+
+
+=begin nd
+Function: overlayNtiff
+
+Write commands in the current script to merge N (N could be 1) images according to the merge method. We use *tiff2rgba* to convert into work format and *overlayNtiff* to merge. Masks are treated if needed. Code is store into the node.
+
+If just one input image, overlayNtiff is used to change the image's properties (samples per pixel for example). Mask is not treated (masks have always the same properties and a symbolic link have been created).
+
+Returns:
+    A boolean, TRUE if success, FALSE otherwise.
+
+Parameters (list):
+    node - <JOINCACHE::Node> - Node to treat
+=cut
+sub overlayNtiff {
+    my $this = shift;
+    my $node = shift;
+
+    my $code = "";
+    my $nodeName = $node->getWorkBaseName();
+    my $inNumber = $node->getSourcesNumber();
+
+    #### Fichier de configuration ####
+    my $oNtConfFile = File::Spec->catfile($node->getScript()->getOntConfDir(), "$nodeName.txt");
+    
+    if (! open CFGF, ">", $oNtConfFile ) {
+        ERROR(sprintf "Impossible de creer le fichier $oNtConfFile, en écriture.");
+        return FALSE;
+    }
+
+    #### Sorties ####
+
+
+    my $line = File::Spec->catfile($node->getScript()->getTempDir(), $node->getWorkName("I"));
+    
+    # Pas de masque de sortie si on a juste une image : le masque a été lié symboliquement
+    if ($this->{pyramid}->ownMasks() && $inNumber > 1) {
+        $line .= " " . File::Spec->catfile($node->getScript->getTempDir(), $node->getWorkName("M"));
+    }
+    
+    printf CFGF "$line\n";
+    
+    #### Entrées ####
+    my $inTemplate = $node->getWorkName("*_*");
+
+    for (my $i = $inNumber - 1; $i >= 0; $i--) {
+        # Les images sont dans l'ordre suivant : du dessus vers le dessous
+        # Dans le fichier de configuration de overlayNtiff, elles doivent être dans l'autre sens, d'où la lecture depuis la fin.
+        my $sourceImage = $node->getSource($i);
+
+        my $inImgName = $node->getWorkName($i."_I");
+        my $inImgPath = File::Spec->catfile($node->getScript()->getTempDir(), $inImgName);
+        $code .= sprintf "Cache2work %s $inImgName\n", $sourceImage->{img};
+        $line = "$inImgPath";
+
+        if (exists $sourceImage->{msk}) {
+            my $inMskName = $node->getWorkName($i."_M");
+            my $inMskPath = File::Spec->catfile($node->getScript->getTempDir, $inMskName);
+            $code .= sprintf "Cache2work %s $inMskName\n", $sourceImage->{msk};
+            $line = " $inMskPath";
+        }
+
+        printf CFGF "$line\n";
+    }
+
+    close CFGF;
+
+    $code .= "OverlayNtiff $nodeName.txt $inTemplate\n";
+
+    # Final location writting
+    my $outImgName = $node->getWorkName("I");
+    my $imgCacheName = $this->{pyramid}->getSlabPath("IMAGE", $node->getLevel(), $node->getColumn(), $node->getRow(), FALSE);
+    $code .= "StoreSlab $outImgName $imgCacheName";
+    
+    # Pas de masque à tuiler si on a juste une image : le masque a été lié symboliquement
+    if ($this->{pyramid}->ownMasks() && $inNumber != 1) {
+        my $outMaskName = $node->getWorkName("M");
+        my $mskCacheName = $this->{pyramid}->getSlabPath("MASK", $node->getLevel(), $node->getColumn(), $node->getRow(), FALSE);
+        $code .= sprintf (" $outMaskName $mskCacheName");
+    }
+
+    $code .= "\n\n";
+
+    $node->setCode($code);
+    $node->writeInScript();
+    
+    return TRUE;
+}
 
 ####################################################################################################
 #                                        Group: CACHE TO WORK                                      #
@@ -753,7 +945,7 @@ sub wms2work {
         inversion => $tms->getInversion,
         dir => "\${TMP_DIR}/".$nodeName,
         srs => $tms->getSRS,
-        bbox => [$xMin, $yMin, $xMax, $yMax],
+        bbox => [$xMin, $yMin, $xMax, $yMax], 
         width => $imgSize[0],
         height => $imgSize[1]
     });
@@ -1035,100 +1227,144 @@ Configure bash functions to write in scripts' header thanks to pyramid's compone
 sub getConfiguredFunctions {
     my $this = shift;
 
-    ######## wms2work ########
-    # Rien à configurer
-    my $functions = $HARVESTFUNCTION;
+    my $functions = "";
 
-    ######## mergeNtiff ########
-    # work compression : deflate
 
-    my $conf_mNt = sprintf "-c zip -i %s -s %s -b %s -p %s -a %s -n %s",
-        $this->{pyramid}->getImageSpec()->getInterpolation(),
-        $this->{pyramid}->getImageSpec()->getPixel()->getSamplesPerPixel(),
-        $this->{pyramid}->getImageSpec()->getPixel()->getBitsPerSample(),
-        $this->{pyramid}->getImageSpec()->getPixel()->getPhotometric(),
-        $this->{pyramid}->getImageSpec()->getPixel()->getSampleFormat(),
-        $this->{pyramid}->getNodata()->getValue();
+    if (defined $this->{mergeMethod}) {
+        my $mm = $this->{mergeMethod};
 
-    $functions .= $MNTFUNCTION;
-    $functions =~ s/__mNt__/$conf_mNt/g;
+        ######## congigure overlayNtiff ########
+        
+        # On a précisé une méthode de fusion, on est dans le cas d'un JOINCACHE, on exporte la fonction overlayNtiff
+        my $conf_oNt = sprintf "-c zip -s %s -p %s -b %s ",
+            $this->{pyramid}->getImageSpec()->getPixel()->getSamplesPerPixel(),
+            $this->{pyramid}->getImageSpec()->getPixel()->getPhotometric(),
+            $this->{pyramid}->getNodata()->getValue();
+        
+        if ($mm eq "REPLACE") {
+            # Dans le cas REPLACE, overlayNtiff est utilisé uniquement pour modifier les caractéristiques
+            # d'une image (passer en noir et blanc par exemple)
+            # overlayNtiff sera appelé sur une image unique, qu'on "fusionne" en mode TOP
+            $conf_oNt .= "-m TOP ";
+        } else {
+            $conf_oNt .= "-m $mm ";        
+        }
+
+        if ($mm eq "ALPHATOP") {
+            $conf_oNt .= "-t 255,255,255 ";
+        }
+
+        $functions .= $ONTFUNCTION;
+        $functions =~ s/__oNt__/$conf_oNt/;
+
+        ######## work2cache ########
+
+        # pour les images    
+        my $conf_w2c = sprintf "-c %s -t %s %s",
+            $this->{pyramid}->getImageSpec()->getCompression,
+            $this->{pyramid}->getTileMatrixSet()->getTileWidth(), $this->{pyramid}->getTileMatrixSet()->getTileHeight();
+
+        if ($this->{pyramid}->getImageSpec()->getCompressionOption() eq 'crop') {
+            $conf_w2c .= " -crop";
+        }
+
+        # Selon le type de stockage, on a une version différente des fonctions de stockage final
+        if ($this->{pyramid}->getStorageType() eq "FILE") {
+            $functions .= $JC_FILE_W2CFUNCTION;
+        }
+        elsif ($this->{pyramid}->getStorageType() eq "S3") {
+            $functions .= $JC_S3_W2CFUNCTION;
+        }
+        elsif ($this->{pyramid}->getStorageType() eq "CEPH") {
+            $functions .= $JC_CEPH_W2CFUNCTION;
+        }
+
+        $functions =~ s/__w2cI__/$conf_w2c/g;
+
+        # pour les masques
+        $conf_w2c = sprintf "-c zip -t %s %s", $this->{pyramid}->getTileMatrixSet()->getTileWidth(), $this->{pyramid}->getTileMatrixSet()->getTileHeight();
+        $functions =~ s/__w2cM__/$conf_w2c/g;  
+    } else {
+
+        # Pas de méthode de fusion, on exporte toutes les fonctions potentiellement utiles à un BE4
     
-    ######## decimateNtiff ########
-    # work compression : deflate
-    my $conf_dNt = sprintf "-c zip -n %s", $this->{pyramid}->getNodata()->getValue();
+        ######## wms2work ########
+        # Rien à configurer
+        $functions = $HARVESTFUNCTION;
 
-    $functions .= $DNTFUNCTION;
-    $functions =~ s/__dNt__/$conf_dNt/g;
+        ######## mergeNtiff ########
+        # work compression : deflate
 
-    ######## congigure overlayNtiff ########
+        my $conf_mNt = sprintf "-c zip -i %s -s %s -b %s -p %s -a %s -n %s",
+            $this->{pyramid}->getImageSpec()->getInterpolation(),
+            $this->{pyramid}->getImageSpec()->getPixel()->getSamplesPerPixel(),
+            $this->{pyramid}->getImageSpec()->getPixel()->getBitsPerSample(),
+            $this->{pyramid}->getImageSpec()->getPixel()->getPhotometric(),
+            $this->{pyramid}->getImageSpec()->getPixel()->getSampleFormat(),
+            $this->{pyramid}->getNodata()->getValue();
+
+        $functions .= $MNTFUNCTION;
+        $functions =~ s/__mNt__/$conf_mNt/g;
+        
+        ######## decimateNtiff ########
+        # work compression : deflate
+        my $conf_dNt = sprintf "-c zip -n %s", $this->{pyramid}->getNodata()->getValue();
+
+        $functions .= $DNTFUNCTION;
+        $functions =~ s/__dNt__/$conf_dNt/g;
+
+        ######## merge4tiff ########
+        # work compression : deflate
+        my $conf_m4t = sprintf "-c zip -g %s -n %s", 
+            $this->{pyramid}->getImageSpec()->getGamma(),
+            $this->{pyramid}->getNodata()->getValue();
+
+        $functions .= $M4TFUNCTION;
+        $functions =~ s/__m4t__/$conf_m4t/g;
+
+        ######## work2cache ########
+
+        # pour les images    
+        my $conf_w2c = sprintf "-c %s -t %s %s",
+            $this->{pyramid}->getImageSpec()->getCompression,
+            $this->{pyramid}->getTileMatrixSet()->getTileWidth(), $this->{pyramid}->getTileMatrixSet()->getTileHeight();
+
+        if ($this->{pyramid}->getImageSpec()->getCompressionOption() eq 'crop') {
+            $conf_w2c .= " -crop";
+        }
+
+        # Selon le type de stockage, on a une version différente des fonctions de stockage final
+        if ($this->{pyramid}->getStorageType() eq "FILE") {
+            $functions .= $FILE_W2CFUNCTION;
+        }
+        elsif ($this->{pyramid}->getStorageType() eq "S3") {
+            $functions .= $S3_W2CFUNCTION;
+        }
+        elsif ($this->{pyramid}->getStorageType() eq "CEPH") {
+            $functions .= $CEPH_W2CFUNCTION;
+        }
+
+        $functions =~ s/__w2cI__/$conf_w2c/g;
+
+        # pour les masques
+        $conf_w2c = sprintf "-c zip -t %s %s", $this->{pyramid}->getTileMatrixSet()->getTileWidth(), $this->{pyramid}->getTileMatrixSet()->getTileHeight();
+        $functions =~ s/__w2cM__/$conf_w2c/g;
+
     
-    # my $conf_oNt = "-c zip -s $spp -p $ph -b $nd ";
-    
-    # if ($mm eq "REPLACE") {
-    #     # Dans le cas REPLACE, overlayNtiff est utilisé uniquement pour modifier les caractéristiques
-    #     # d'une image (passer en noir et blanc par exemple)
-    #     # overlayNtiff sera appelé sur une image unique, qu'on "fusionne" en mode TOP
-    #     $conf_oNt .= "-m TOP ";
-    # } else {
-    #     $conf_oNt .= "-m $mm ";        
-    # }
+        ######## cache2work ########
 
-    # if ($mm eq "ALPHATOP") {
-    #     $conf_oNt .= "-t 255,255,255 ";
-    # }
+        if ($this->{pyramid}->getStorageType() eq "FILE") {
+            $functions .= $FILE_C2WFUNCTION;
+        }
+        elsif ($this->{pyramid}->getStorageType() eq "S3") {
+            $functions .= $S3_C2WFUNCTION;
+        }
+        elsif ($this->{pyramid}->getStorageType() eq "CEPH") {
+            $functions .= $CEPH_C2WFUNCTION;
+        }
 
-    # $functions .= $ONTFUNCTION;
-    # $functions =~ s/__oNt__/$conf_oNt/;
-    
-    ######## cache2work ########
-
-    if ($this->{pyramid}->getStorageType() eq "FILE") {
-        $functions .= $FILE_C2WFUNCTION;
-    }
-    elsif ($this->{pyramid}->getStorageType() eq "S3") {
-        $functions .= $S3_C2WFUNCTION;
-    }
-    elsif ($this->{pyramid}->getStorageType() eq "CEPH") {
-        $functions .= $CEPH_C2WFUNCTION;
-    }
-    
-    ######## merge4tiff ########
-    # work compression : deflate
-    my $conf_m4t = sprintf "-c zip -g %s -n %s", 
-        $this->{pyramid}->getImageSpec()->getGamma(),
-        $this->{pyramid}->getNodata()->getValue();
-
-    $functions .= $M4TFUNCTION;
-    $functions =~ s/__m4t__/$conf_m4t/g;
-    
-    ######## work2cache ########
-
-    # pour les images    
-    my $conf_w2c = sprintf "-c %s -t %s %s",
-        $this->{pyramid}->getImageSpec()->getCompression,
-        $this->{pyramid}->getTileMatrixSet()->getTileWidth(), $this->{pyramid}->getTileMatrixSet()->getTileHeight();
-
-    if ($this->{pyramid}->getImageSpec()->getCompressionOption() eq 'crop') {
-        $conf_w2c .= " -crop";
     }
 
-    # Selon le type de stockage, on a une version différente des fonctions de stockage final
-    if ($this->{pyramid}->getStorageType() eq "FILE") {
-        $functions .= $FILE_W2CFUNCTION;
-    }
-    elsif ($this->{pyramid}->getStorageType() eq "S3") {
-        $functions .= $S3_W2CFUNCTION;
-    }
-    elsif ($this->{pyramid}->getStorageType() eq "CEPH") {
-        $functions .= $CEPH_W2CFUNCTION;
-    }
-
-    $functions =~ s/__w2cI__/$conf_w2c/g;
-
-    # pour les masques
-    $conf_w2c = sprintf "-c zip -t %s %s", $this->{pyramid}->getTileMatrixSet()->getTileWidth(), $this->{pyramid}->getTileMatrixSet()->getTileHeight();
-    $functions =~ s/__w2cM__/$conf_w2c/g;  
-    
     return $functions;
 }
 
@@ -1136,6 +1372,12 @@ sub getConfiguredFunctions {
 #                                Group: Getters - Setters                                          #
 ####################################################################################################
 
+# Function: useMasks
+sub useMasks {
+    my $this = shift;
+
+    return $this->{useMasks};
+}
 
 =begin nd
 Function: setConfDir

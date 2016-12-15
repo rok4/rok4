@@ -245,11 +245,11 @@ sub coord2image {
 
     my $txt = "Level : $level, Coordinates : $x, $y \n";
 
-    my ($colMin,$rowMin,$colMax,$rowMax) = $tm->bboxToIndices($x, $y, $x, $y, 1, 1);
+    my (rowMin, $rowMax, $colMin, $colMax) = $tm->bboxToIndices($x, $y, $x, $y, 1, 1);
 
     $txt .= "Tile's indices : $colMin, $rowMin \n";
 
-    ($colMin,$rowMin,$colMax,$rowMax) = $tm->bboxToIndices($x, $y, $x, $y, $widthEntry->get(), $heightEntry->get());
+    (rowMin, $rowMax, $colMin, $colMax) = $tm->bboxToIndices($x, $y, $x, $y, $widthEntry->get(), $heightEntry->get());
 
     $txt .= "Slab's indices : $colMin, $rowMin \n";
 
@@ -338,11 +338,11 @@ sub bbox2images {
 
     my $txt = "Level : $level, Coordinates : $xmin, $ymin -> $xmax, $ymax \n";
 
-    my ($colMin,$rowMin,$colMax,$rowMax) = $tm->bboxToIndices($xmin, $ymin, $xmax, $ymax, 1, 1);
+    my (rowMin, $rowMax, $colMin, $colMax) = $tm->bboxToIndices($xmin, $ymin, $xmax, $ymax, 1, 1);
 
     $txt .= "Tiles' indices : \n \t column : $colMin -> $colMax \n \t row : $rowMin -> $rowMax \n";
 
-    ($colMin,$rowMin,$colMax,$rowMax) = $tm->bboxToIndices($xmin, $ymin, $xmax, $ymax, $widthEntry->get(), $heightEntry->get());
+    (rowMin, $rowMax, $colMin, $colMax) = $tm->bboxToIndices($xmin, $ymin, $xmax, $ymax, $widthEntry->get(), $heightEntry->get());
 
     $txt .= "Slabs' indices : \n \t column : $colMin -> $colMax \n \t row : $rowMin -> $rowMax \n";
 
@@ -494,7 +494,7 @@ sub slab2getmap {
     my $txt = "Level : $level\n";
     $txt .= "Slab's indices : $col, $row \n";
 
-    my ($xMin,$yMin,$xMax,$yMax) = $tm->indicesToBBox($col, $row, $widthEntry->get(), $heightEntry->get());
+    my ($xMin,$yMin,$xMax,$yMax) = $tm->indicesToBbox($col, $row, $widthEntry->get(), $heightEntry->get());
 
     my $w = $tm->getTileWidth() * $widthEntry->get();
     my $h = $tm->getTileHeight() * $heightEntry->get();

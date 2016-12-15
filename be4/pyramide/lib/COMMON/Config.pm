@@ -102,7 +102,7 @@ sub new {
 	my $this = shift;
 	my $parms = shift;
     
-    my $class= ref($this) || $this;
+    my $class = ref($this) || $this;
 
 	my $self = {
         "filePath" => undef,

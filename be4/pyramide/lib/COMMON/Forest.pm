@@ -89,7 +89,7 @@ use COMMON::Array;
 
 use COMMON::ShellCommands;
 use COMMON::Pyramid;
-use COMMON::GraphScript;
+use COMMON::Script;
 use COMMON::DataSourceLoader;
 use COMMON::DataSource;
 
@@ -264,7 +264,7 @@ sub _load {
     }
     
     ############# SCRIPTS #############
-    # We create COMMON::GraphScript objects and initialize them (header)
+    # We create COMMON::Script objects and initialize them (header)
 
     my $functions = $this->{commands}->getConfiguredFunctions();
 
@@ -280,7 +280,7 @@ sub _load {
                 $executedAlone = TRUE;
             }
 
-            my $script = COMMON::GraphScript->new({
+            my $script = COMMON::Script->new({
                 id => $scriptID,
                 tempDir => $tempDir,
                 commonTempDir => $commonTempDir,
@@ -308,7 +308,7 @@ sub _load {
                     $scriptID = sprintf "LEVEL_%s_SCRIPT_%s", $levelID, $j;
                 }
 
-                my $script = COMMON::GraphScript->new({
+                my $script = COMMON::Script->new({
                     id => $scriptID,
                     tempDir => $tempDir,
                     commonTempDir => $commonTempDir,
@@ -323,7 +323,7 @@ sub _load {
         }
 
         # Le SUPER finisher
-        my $script = COMMON::GraphScript->new({
+        my $script = COMMON::Script->new({
             id => "SCRIPT_FINISHER",
             tempDir => $tempDir,
             commonTempDir => $commonTempDir,

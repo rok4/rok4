@@ -60,8 +60,8 @@
  * Exemple de configuration :
  * \~ \code{.txt}
  * IMAGE.tif MASK.tif
- * IMG sources/image1.tif  sources/mask1.tif
- * IMG sources/image2.png
+ * sources/image1.tif  sources/mask1.tif
+ * sources/image2.png
  * \endcode
  * \~french
  * \li La compression de l'image de sortie

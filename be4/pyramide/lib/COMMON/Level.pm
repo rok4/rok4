@@ -46,37 +46,43 @@ Using:
     (start code)
     use COMMON::Level;
 
-    my $params = {
-        id                => level_5,
-        order             => 12,
-        dir_image         => "/home/ign/BDORTHO/IMAGE/level_5/",
-        dir_mask          => "/home/ign/BDORTHO/MASK/level_5/",
-        dir_metadata      => undef,
-        compress_metadata => undef,
-        type_metadata     => undef,
-        size              => [16, 16],
-        dir_depth         => 2,
-        limits            => [365,368,1026,1035]
-    };
+    # From values
+    my $valuesLevel = COMMON::Level->new("VALUES",{
+        id => "12",
+        tm => $tms->getTileMatrix("12"),
+        size => [16, 16],
 
-    my $objLevel = COMMON::Level->new($params);
+        prefix => "TOTO_",
+        bucket_name => "MyBucket"
+    });
+
+    # From XML element
+    my $xmlLevel = COMMON::Level->new("XML", $xmlElement);
+    $xmlLevel->bindTileMatrix($tms)
+
     (end code)
 
 Attributes:
     id - string - Level identifiant.
     order - integer - Level order (ascending resolution)
-    dir_image - string - Absolute images' directory path for this level.
-    dir_mask - string - Absolute mask' directory path for this level.
-    dir_metadata - NOT IMPLEMENTED
-    compress_metadata - NOT IMPLEMENTED
-    type_metadata - NOT IMPLEMENTED
+    tm - <COMMON::TileMatrix> - Binding Tile Matrix to this level
+    type - string - Storage type of data : FILE, S3 or CEPH
+
     size - integer array - Number of tile in one image for this level, widthwise and heightwise : [width, height].
-    dir_depth - integer - Number of subdirectories from the level root to the image : depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif, in the images' pyramid.
     limits - integer array - Extrems columns and rows for the level (Extrems tiles which contains data) : [rowMin,rowMax,colMin,colMax]
 
-Limitations:
+    desc_path - string - Directory path of the pyramid's descriptor containing this level
 
-Metadata not implemented.
+    dir_depth - integer - Number of subdirectories from the level root to the image if FILE storage type : depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif
+    dir_image - string - Directory in which we write the pyramid's images if FILE storage type
+    dir_mask - string - Directory in which we write the pyramid's masks if FILE storage type
+
+    prefix_image - string - Prefix used to name the image objects, in CEPH or S3 storage (contains the pyramid's name and the level's id)
+    prefix_mask - string - Prefix used to name the mask objects, in CEPH or S3 storage (contains the pyramid's name and the level's id)
+
+    bucket_name - string - Name of the (existing) S3 bucket, where to store data if S3 storage type
+
+    pool_name - string - Name of the (existing) CEPH pool, where to store data if CEPH storage type
 =cut
 
 ################################################################################
@@ -126,15 +132,16 @@ Constructor: new
 Level constructor. Bless an instance.
 
 Parameters (hash):
-    id - string - Level identifiant
-    size - integer array - Number of tile in one image for this level
-    limits - integer array - Optionnal. Current level's limits. Set to [undef,undef,undef,undef] if not defined.
-    dir_depth - integer - Number of subdirectories from the level root to the image
-    dir_image - string - Absolute images' directory path for this level.
-    dir_mask - string - Optionnal (if we want to keep mask in the final images' pyramid). Absolute mask' directory path for this level.
+    type - string - XML
+    params - <XML::LibXML::Element> - XML node of the level (from the pyramid's descriptor)
+        or
+    type - string - VALUES
+    params - hash - Hash containg all needed level informations
+
+    descDirectory - string - Directory path of the pyramid's descriptor containing this level
 
 See also:
-    <_init>
+    <_loadXML>, <_loadValues>
 =cut
 sub new {
     my $class = shift;
@@ -167,7 +174,7 @@ sub new {
         #    - S3
         bucket_name => undef,
         #    - CEPH
-        pool_name => undef,
+        pool_name => undef
     };
     
     bless($this, $class);
@@ -212,13 +219,8 @@ Function: _initValues
 
 Check and store level's attributes values.
 
-Parameters (hash):
-    id - string - Level identifiant
-    size - integer array - Number of tile in one image for this level
-    limits - integer array - Optionnal. Current level's limits. Set to [undef,undef,undef,undef] if not defined.
-    dir_depth - integer - Number of subdirectories from the level root to the image
-    dir_image - string - Absolute images' directory path for this level.
-    dir_mask - string - Optionnal (if we want to keep mask in the final images' pyramid). Absolute mask' directory path for this level.
+Parameter:
+    params - hash - Hash containg all needed level informations
 =cut
 sub _loadValues {
     my $this   = shift;
@@ -315,11 +317,12 @@ sub _loadValues {
 }
 
 =begin nd
-Function: _initXML
+Function: _loadXML
 
-Check and store level's attributes values.
+Extract level's information from the XML element
 
-Parameters (hash):
+Parameter:
+    levelRoot - <XML::LibXML::Element> - XML node of the level (from the pyramid's descriptor)
 =cut
 sub _loadXML {
     my $this   = shift;
@@ -493,12 +496,35 @@ sub getTileMatrix {
     return $this->{tm};
 }
 
-# Function: bboxToSlabIndices
+=begin nd
+Function: bboxToSlabIndices
+
+Returns the extrem slab's indices from a bbox in a list : ($rowMin, $rowMax, $colMin, $colMax).
+
+Parameters (list):
+    xMin,yMin,xMax,yMax - bounding box
+=cut
 sub bboxToSlabIndices {
     my $this = shift;
     my @bbox = @_;
 
     return $this->{tm}->bboxToIndices(@bbox, $this->{size}->[0], $this->{size}->[1]);
+}
+
+=begin nd
+Function: slabIndicesToBbox
+
+Returns the bounding box from the slab's column and row.
+
+Parameters (list):
+    col,row - Slab's column and row
+=cut
+sub slabIndicesToBbox {
+    my $this = shift;
+    my $col = shift;
+    my $row = shift;
+
+    return $this->{tm}->indicesToBbox($col, $row, $this->{size}->[0], $this->{size}->[1]);
 }
 
 # Function: ownMasks
@@ -516,7 +542,7 @@ Parameters (list):
     type - string - "IMAGE" ou "MASK"
     col - integer - Slab column
     row - integer - Slab row
-    full - boolean - In file storage case, precise if we want full path or juste the end (without data root)
+    full - boolean - In file storage case, precise if we want full path or juste the end (without data root). In object storage case, precise if we want full path (with the container name) or juste the object name.
 =cut
 sub getSlabPath {
     my $this = shift;
@@ -547,17 +573,42 @@ sub getSlabPath {
         else {
             return undef;
         }
-    } else {
+    }
+    elsif ($this->{type} eq "S3") {
         if ($type eq "IMAGE") {
+            if (defined $full && ! $full) {
+                return sprintf "%s/%s_%s_%s_%s", $this->{prefix_image}, $this->{id}, $col, $row, $this->{bucket_name};
+            }
             return sprintf "%s_%s_%s_%s", $this->{prefix_image}, $this->{id}, $col, $row;
         }
         elsif ($type eq "MASK") {
+            if (defined $full && ! $full) {
+                return sprintf "%s/%s_%s_%s_%s", $this->{prefix_mask}, $this->{id}, $col, $row, $this->{bucket_name};
+            }
             return sprintf "%s_%s_%s_%s", $this->{prefix_mask}, $this->{id}, $col, $row;
         }
         else {
             return undef;
         }
-
+    }
+    elsif ($this->{type} eq "CEPH") {
+        if ($type eq "IMAGE") {
+            if (defined $full && ! $full) {
+                return sprintf "%s/%s_%s_%s_%s", $this->{prefix_image}, $this->{id}, $col, $row, $this->{pool_name};
+            }
+            return sprintf "%s_%s_%s_%s", $this->{prefix_image}, $this->{id}, $col, $row;
+        }
+        elsif ($type eq "MASK") {
+            if (defined $full && ! $full) {
+                return sprintf "%s/%s_%s_%s_%s", $this->{prefix_mask}, $this->{id}, $col, $row, $this->{pool_name};
+            }
+            return sprintf "%s_%s_%s_%s", $this->{prefix_mask}, $this->{id}, $col, $row;
+        }
+        else {
+            return undef;
+        }
+    } else {
+        return undef;
     }
 
 }
@@ -644,7 +695,16 @@ sub updateLimitsFromBbox {
     $this->updateLimits($rowMin,$rowMax,$colMin,$colMax);
 }
 
-# Function: getDirImage
+=begin nd
+method: bindTileMatrix
+
+For levels loaded from an XML element, we have to link the Tile Matrix (we only have the level ID).
+
+We control if level exists in the provided TMS, and we calculate the level's order in this TMS.
+
+Parameter:
+    tms - <COMMON::TileMatrixSet> - TMS containg the Tile Matrix to link to this level.
+=cut
 sub bindTileMatrix {
     my $this = shift;
     my $tms = shift;
@@ -681,10 +741,10 @@ sub intersectBboxIndices {
     my $self = shift;
     my $bbox = shift;
 
-    $bbox->[0] = max($bbox->[0], $self->{limits}[0]);
-    $bbox->[1] = max($bbox->[1], $self->{limits}[1]);
-    $bbox->[2] = min($bbox->[2], $self->{limits}[2]);
-    $bbox->[3] = min($bbox->[3], $self->{limits}[3]);
+    $bbox->[0] = max($bbox->[0], $self->{limits}[2]);
+    $bbox->[1] = max($bbox->[1], $self->{limits}[0]);
+    $bbox->[2] = min($bbox->[2], $self->{limits}[3]);
+    $bbox->[3] = min($bbox->[3], $self->{limits}[1]);
 }
 
 ####################################################################################################
@@ -717,14 +777,24 @@ Example:
         </TMSLimits>
     </level>
     (end code)
+
+Parameter:
+    tiles_storage - boolean - If tiles are stored individually, we put 0 for tilesPerWidth and tilesPerHeight
 =cut
 sub exportToXML {
     my $this = shift;
+    my $tiles_storage = shift;
 
     my $string = "    <level>\n";
     $string .= sprintf "        <tileMatrix>%s</tileMatrix>\n", $this->{id};
-    $string .= sprintf "        <tilesPerWidth>%s</tilesPerWidth>\n", $this->{size}->[0];
-    $string .= sprintf "        <tilesPerHeight>%s</tilesPerHeight>\n", $this->{size}->[1];
+
+    if ($tiles_storage) {
+        $string .= "        <tilesPerWidth>0</tilesPerWidth>\n";
+        $string .= "        <tilesPerHeight>0</tilesPerHeight>\n";
+    } else {
+        $string .= sprintf "        <tilesPerWidth>%s</tilesPerWidth>\n", $this->{size}->[0];
+        $string .= sprintf "        <tilesPerHeight>%s</tilesPerHeight>\n", $this->{size}->[1];
+    }
     $string .= "        <TMSLimits>\n";
 
     if (defined $this->{limits}->[0]) {

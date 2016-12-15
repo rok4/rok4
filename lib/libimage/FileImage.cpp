@@ -67,6 +67,11 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
     char * pch;
     pch = strrchr ( name,'.' );
 
+    if (pch == NULL) {
+        LOGGER_ERROR ( "Cannto find the dot to determine extension and driver: " << name );
+        return NULL;
+    }
+
     /********************* TIFF *********************/
     if ( strncmp ( pch+1, "tif", 3 ) == 0 || strncmp ( pch+1, "TIF", 3 ) == 0 ) {
         LOGGER_DEBUG ( "TIFF image to read : " << name );

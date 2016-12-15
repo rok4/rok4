@@ -298,14 +298,14 @@ sub identifyBottomNodes {
                 return FALSE;
             }
             
-            $this->updateBBox($bbox[0], $bbox[1], $bbox[2], $bbox[3]);
+            $this->updateBBox(@bbox);
             
             # On divise les coord par la taille des dalles de cache pour avoir les indices min et max en x et y
-            my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices($bbox[0],$bbox[1],$bbox[2],$bbox[3],$TPW,$TPH);
+            my ($rowMin, $rowMax, $colMin, $colMax) = $tm->bboxToIndices(@bbox,$TPW,$TPH);
             
-            for (my $i = $iMin; $i<= $iMax; $i++){
-                for (my $j = $jMin; $j<= $jMax; $j++){
-                    my $nodeKey = sprintf "%s_%s", $i, $j;
+            for (my $col = $colMin; $col<= $colMax; $col++){
+                for (my $row = $rowMin; $row<= $rowMax; $row++){
+                    my $nodeKey = sprintf "%s_%s", $col, $row;
 
                     if ( $datasource->hasHarvesting() ) {
                         # we use WMS service to generate this leaf
@@ -315,14 +315,14 @@ sub identifyBottomNodes {
                         }
                         # Create a new Node
                         my $node = COMMON::Node->new({
-                            col => $i,
-                            row => $j,
+                            col => $col,
+                            row => $row,
                             tm => $tm,
                             graph => $this,
                             type => $this->{forest}->getStorageType()
                         });
                         if (! defined $node) { 
-                            ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $this->{bottomID}, $i, $j);
+                            ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $this->{bottomID}, $col, $row);
                             return FALSE;
                         }
                         $this->{nodes}->{$bottomID}->{$nodeKey} = $node;
@@ -332,14 +332,14 @@ sub identifyBottomNodes {
 
                             # Create a new Node
                             my $node = COMMON::Node->new({
-                                col => $i,
-                                row => $j,
+                                col => $col,
+                                row => $row,
                                 tm => $tm,
                                 graph => $this,
                                 type => $this->{forest}->getStorageType()
                             });
                             if (! defined $node) { 
-                                ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $this->{bottomID}, $i, $j);
+                                ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $this->{bottomID}, $col, $row);
                                 return FALSE;
                             }
                             
@@ -364,28 +364,29 @@ sub identifyBottomNodes {
 
         foreach my $bb (@{$bboxes}) {
         
-            $this->updateBBox($bb->[0],$bb->[1],$bb->[2],$bb->[3]);
+            $this->updateBBox(@{$bb});
+
+            my ($rowMin, $rowMax, $colMin, $colMax) = $tm->bboxToIndices(@{$bb},$TPW,$TPH);
             
-            my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices($bb->[0],$bb->[1],$bb->[2],$bb->[3],$TPW,$TPH);
+            for (my $col = $colMin; $col<= $colMax; $col++){
+                for (my $row = $rowMin; $row<= $rowMax; $row++){
             
-            for (my $i = $iMin; $i <= $iMax; $i++) {
-                for (my $j = $jMin; $j <= $jMax; $j++) {
-                    my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBBox($i,$j,$TPW,$TPH);
+                    my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBbox($col, $row, $TPW, $TPH);
 
                     my $OGRtile = COMMON::ProxyGDAL::geometryFromBbox($xmin,$ymin,$xmax,$ymax);
 
                     if (COMMON::ProxyGDAL::isIntersected($OGRtile, $convertExtent)) {
-                        my $nodeKey = sprintf "%s_%s", $i, $j;
+                        my $nodeKey = sprintf "%s_%s", $col, $row;
                         # Create a new Node
                         my $node = COMMON::Node->new({
-                            col => $i,
-                            row => $j,
+                            col => $col,
+                            row => $row,
                             tm => $tm,
                             graph => $this,
                             type => $this->{forest}->getStorageType()
                         });
                         if (! defined $node) { 
-                            ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $this->{bottomID}, $i, $j);
+                            ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $this->{bottomID}, $col, $row);
                             return FALSE;
                         }
                         $this->{nodes}->{$bottomID}->{$nodeKey} = $node;
@@ -405,29 +406,29 @@ sub identifyBottomNodes {
         while (my $line = <LISTIN>) {
             chomp($line);
             
-            my ($i, $j) = split(/,/, $line);
+            my ($col, $row) = split(/,/, $line);
             
-            my $nodeKey = sprintf "%s_%s", $i, $j;
+            my $nodeKey = sprintf "%s_%s", $col, $row;
             
             if (exists $this->{nodes}->{$bottomID}->{$nodeKey}) {
                 # This Node already exists
                 next;
             }
             
-            my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBBox($i,$j,$TPW,$TPH);
+            my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBbox($col,$row,$TPW,$TPH);
 
             $this->updateBBox($xmin,$ymin,$xmax,$ymax);
             
             # Create a new Node
             my $node = COMMON::Node->new({
-                col => $i,
-                row => $j,
+                col => $col,
+                row => $row,
                 tm => $tm,
                 graph => $this,
                 type => $this->{forest}->getStorageType()
             });
             if (! defined $node) { 
-                ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $this->{bottomID}, $i, $j);
+                ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $this->{bottomID}, $col, $row);
                 return FALSE;
             }
             $this->{nodes}->{$bottomID}->{$nodeKey} = $node;

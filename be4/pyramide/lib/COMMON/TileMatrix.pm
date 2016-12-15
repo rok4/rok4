@@ -351,28 +351,28 @@ sub yToRow {
 
 #
 =begin nd
-Function: indicesToBBox
+Function: indicesToBbox
 
 Returns the BBox from image's indices in a list : (xMin,yMin,xMax,yMax).
 
 Parameters (list):
-    i - integer - Image's column
-    j - integer - Image's row
+    col - integer - Image's column
+    row - integer - Image's row
     tilesPerWidth - integer - Number of tile in the image, widthwise
     tilesPerHeight - integer - Number of tile in the image, heightwise
 =cut
-sub indicesToBBox {
+sub indicesToBbox {
     my $self  = shift;
-    my $i     = shift;
-    my $j     = shift;
+    my $col     = shift;
+    my $row     = shift;
     my $tilesPerWidth = shift;
     my $tilesPerHeight = shift;
     
     my $imgGroundWidth = $self->getImgGroundWidth($tilesPerWidth);
     my $imgGroundHeight = $self->getImgGroundHeight($tilesPerHeight);
     
-    my $xMin = $self->getTopLeftCornerX + $imgGroundWidth * $i;
-    my $yMax = $self->getTopLeftCornerY - $imgGroundHeight * $j;
+    my $xMin = $self->getTopLeftCornerX + $imgGroundWidth * $col;
+    my $yMax = $self->getTopLeftCornerY - $imgGroundHeight * $row;
     my $xMax = $xMin + $imgGroundWidth;
     my $yMin = $yMax - $imgGroundHeight;
     
@@ -413,16 +413,16 @@ sub indicesToTFW {
     return $tfwText;
 }
 
-#
+
 =begin nd
 Function: bboxToIndices
 
-Returns the extrem indices from a bbox in a list : (iMin,jMin,iMax,jMax).
+Returns the extrem indices from a bbox in a list : ($rowMin, $rowMax, $colMin, $colMax).
 
 Parameters (list):
     xMin,yMin,xMax,yMax - bounding box
-    tilesPerWidth - integer - Number of tile in the image, widthwise
-    tilesPerHeight - integer - Number of tile in the image, heightwise
+    tilesPerWidth - integer - Number of tile in the slab, widthwise
+    tilesPerHeight - integer - Number of tile in the slab, heightwise
 =cut
 sub bboxToIndices {
     my $self = shift;
@@ -434,12 +434,12 @@ sub bboxToIndices {
     my $tilesPerWidth = shift;
     my $tilesPerHeight = shift;
     
-    my $iMin = $self->xToColumn($xMin,$tilesPerWidth);
-    my $iMax = $self->xToColumn($xMax,$tilesPerWidth);
-    my $jMin = $self->yToRow($yMax,$tilesPerHeight);
-    my $jMax = $self->yToRow($yMin,$tilesPerHeight);
+    my $rowMin = $self->yToRow($yMax,$tilesPerHeight);
+    my $rowMax = $self->yToRow($yMin,$tilesPerHeight);
+    my $colMin = $self->xToColumn($xMin,$tilesPerWidth);
+    my $colMax = $self->xToColumn($xMax,$tilesPerWidth);
     
-    return ($iMin,$jMin,$iMax,$jMax);
+    return ($rowMin, $rowMax, $colMin, $colMax);
 }
 
 ####################################################################################################

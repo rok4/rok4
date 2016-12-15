@@ -242,7 +242,7 @@ Parameters (list):
     geom - <Geo::OGR::Geometry> - OGR geometry object
 
 Return (Array reference of array references):
-    Array reference of N (xmin,xmax,ymin,ymax), undef if failure
+    Array reference of N (xmin,ymin,xmax,ymax), undef if failure
 =cut
 sub getBboxes {
     my $geom = shift;

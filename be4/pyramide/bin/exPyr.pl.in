@@ -70,7 +70,7 @@ use Getopt::Long;
 use Pod::Usage;
 
 use Data::Dumper;
-local $Data::Dumper::Maxdepth = 1;
+#local $Data::Dumper::Maxdepth = 1;
 
 use File::Basename;
 use File::Spec;
@@ -448,12 +448,12 @@ sub doIt {
         my @tileBbox = (undef, undef, undef, undef);
         foreach my $bb (@{$bboxes}) {
 
-            my ($colMin, $rowMin, $colMax, $rowMax) = $srcLevel->bboxToSlabIndices(@{$bb});
+            my ($rowMin, $rowMax, $colMin, $colMax) = $srcLevel->bboxToSlabIndices(@{$bb});
             
             for (my $col = $colMin; $col <= $colMax; $col++) {
                 for (my $row = $rowMin; $row <= $rowMax; $row++) {
 
-                    my $srcSlabPath = $srcLevel->getSlabPath("IMAGE", $col, $row);
+                    my $srcSlabPath = $srcLevel->getSlabPath("IMAGE", $col, $row, TRUE);
                     if (! defined $srcSlabPath) {
                         ERROR("Cannot calculate path of slab for $level - $col - $row");
                         return FALSE;
@@ -465,9 +465,7 @@ sub doIt {
 
                     $dstLevel->updateLimitsFromSlab($col, $row);
 
-                    my $dstSlabPath = $dstLevel->getSlabPath("IMAGE", $col, $row);
-                    my $dstSlabDir = File::Basename::dirname($dstSlabPath);
-
+                    my $dstSlabPath = $dstLevel->getSlabPath("IMAGE", $col, $row, TRUE);
 
                     if ($this{params}->{pyramid}->{extract_mode} eq "slink") {
                         if (! COMMON::ProxyStorage::symLink($srcStorageType, $srcSlabPath, $dstStorageType, $dstSlabPath)) {
@@ -605,9 +603,6 @@ extent = /home/user/EXTENTS/extent.wkt
 Group: Paths in brief
 
 - Descriptor file : *pyr_desc_path/pyr_name.pyr*
-- List file: *pyr_desc_path/pyr_name.list*
-- Cache directory: *pyr_data_path/pyr_name/*
 - TMS file: *tms_path/tms_name*
-- Common temporary directory: *path_temp_common/pyr_name_new/COMMON*
 
 =cut

@@ -304,14 +304,14 @@ sub writeInScript {
 Function: setScript
 
 Parameters (list):
-    script - <COMMON::GraphScript> - Script to set.
+    script - <COMMON::Script> - Script to set.
 =cut
 sub setScript {
     my $this = shift;
     my $script = shift;
     
-    if (! defined $script || ref ($script) ne "COMMON::GraphScript") {
-        ERROR("We expect to a COMMON::GraphScript object.");
+    if (! defined $script || ref ($script) ne "COMMON::Script") {
+        ERROR("We expect to a COMMON::Script object.");
     }
     
     $this->{script} = $script; 
@@ -493,7 +493,7 @@ sub setCode {
 sub getBBox {
     my $this = shift;
     
-    my @Bbox = $this->{tm}->indicesToBBox(
+    my @Bbox = $this->{tm}->indicesToBbox(
         $this->{col},
         $this->{row},
         $this->{graph}->getPyramid->getTilesPerWidth,

@@ -59,12 +59,12 @@ Attributes:
     
     logger - hash - Can be null
     pyramid - hash - Final pyramid's parameters
-    bboxes - hash - Defines identifiants with associated bounding boxes (as string)
+    extents - hash - Defines identifiants with associated extents (as OGR Geometry)
     composition - hash - Defines source pyramids for each level, extent, and order
-|       level_id => priority => {
-|               bbox => bbox_id,
-|               pyr => descriptor_path,
-|       }
+|       level_id => [
+|           { bbox => bbox_id1, source => descriptor_path1}
+|           { bbox => bbox_id2, source => descriptor_path2}
+|       ]
     sourceByLevel - integer hash - Precises the number of source pyramids for each level (to define priorities).
     sourcePyramids - string hash - Key is the descriptor's path. Just undefined values, to list used pyramids.
     process - hash - Generation parameters
@@ -80,7 +80,8 @@ use warnings;
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
 
-use COMMON::Config;
+use COMMON::Array;
+use COMMON::ProxyGDAL;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -97,23 +98,18 @@ use constant TRUE  => 1;
 use constant FALSE => 0;
 
 =begin nd
-Variable: PROPLOADER
+Variable: SECTIONS
 
 Define allowed sections
 =cut
-my %PROPLOADER;
+my @SECTIONS = ('pyramid','process','composition','logger','extents');
 
-################################################################################
+=begin nd
+Variable: MERGEMETHODS
 
-BEGIN {}
-INIT {
-    
-    %PROPLOADER = (
-        sections => ['pyramid','process','composition','logger','bboxes'],
-    );
-    
-}
-END {}
+Define allowed merge methods
+=cut
+my @MERGEMETHODS = ('REPLACE','ALPHATOP','MULTIPLY','TOP');
 
 ####################################################################################################
 #                                        Group: Constructors                                       #
@@ -124,24 +120,32 @@ sub new {
     my $class = shift;
     my $filepath = shift;
 
-    $class= ref($class) || $class;
+    $class  = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above)
     my $this = {
         cfgFile   => $filepath,
-        cfgObject => undef
         
         logger => undef,
         pyramid => undef,
-        bboxes => undef,
+        extents => undef,
         composition => undef,
         process => undef,
+
+        sourcePyramids => undef
     };
 
     bless($this, $class);
 
     # Load parameters
     return undef if (! $this->_init());
-    return undef if (! $this->_load($filepath));
+    return undef if (! $this->_load());
+
+    ERROR("toto");
+
+    ERROR(Dumper($this->{composition}));
+    ERROR(Dumper($this->{sourcePyramids}));
+
+    return undef if (! $this->_check());
 
     return $this;
 }
@@ -157,45 +161,29 @@ sub _init {
         return FALSE;
     }
     
-    # init. params
     if (! -f $file) {
         ERROR (sprintf "File properties '%s' doesn't exist !?", $file);
         return FALSE;
     }
-
-    # load properties 
-    my $cfg = COMMON::Config->new({
-        'filepath' => $file,
-        'format' => "INI"
-    });
-
-    if (! defined $cfg) {
-        ERROR ("Can not load properties !");
-        return FALSE;
-    }
-
-    $this->{cfgObject} = $cfg;
     
     return TRUE;
 }
+
+
 
 =begin nd
 Function: _load
 
 Read line by line (order is important), no library is used.
 
-Parameters (list):
-    filepath - string - Configuration file path, to read
-
 See Also:
-    <isConfSection>, <readCompositionLine>
+    <readCompositionLine>
 =cut
 sub _load {
     my $this = shift;
-    my $filepath = shift;
 
-    if (! open CFGF, "<", $filepath ){
-        ERROR(sprintf "Cannot open configurations' file %s.",$filepath);
+    if (! open CFGF, "<", $this->{cfgFile} ){
+        ERROR(sprintf "Cannot open configurations' file %s.", $this->{cfgFile});
         return FALSE;
     }
 
@@ -209,9 +197,10 @@ sub _load {
         next if ($l eq '');
 
         if ($l =~ m/^\[(\w*)\]$/) {
+            # Je lis une ligne [section]
             $l =~ s/[\[\]]//g;
 
-            if (! $this->isConfSection($l)) {
+            if (! defined COMMON::Array::isInArray($l, @SECTIONS)) {
                 ERROR ("Invalid section's name");
                 return FALSE;
             }
@@ -230,17 +219,57 @@ sub _load {
             return FALSE;
         }
 
-        if ($currentSection ne 'composition') {
-            if (exists $this->{$currentSection}->{$prop[0]}) {
-                ERROR (sprintf "A property is defined twice in the configuration : section %s, parameter %s", $currentSection,$prop[0]);
+        my $key = $prop[0];
+        my $value = $prop[1];
+
+        if ($currentSection eq 'extents') {
+            # On lit une 'extent', on va directement la convertir en géométrie OGR
+            if (exists $this->{$currentSection}->{$key}) {
+                ERROR ("A property is defined twice in the configuration : section $currentSection, parameter $key");
                 return FALSE;
             }
-            $this->{$currentSection}->{$prop[0]} = $prop[1];
-        } else {
-            if (! $this->readCompositionLine($prop[0],$prop[1])) {
+
+            my @limits = split (/,/, $value, -1);
+
+            if (scalar @limits == 4) {
+                # user supplied a BBOX
+                $this->{extents}->{$key}->{extent} = COMMON::ProxyGDAL::geometryFromString("BBOX", $value);
+                if (! defined $this->{extents}->{$key}->{extent}) {
+                    ERROR("Cannot create a OGR geometry from the bbox $value");
+                    ERROR("Cannot load extent with ID $key");
+                    return FALSE ;
+                }
+
+            }
+            else {
+                # user supplied a file which contains bounding polygon
+                $this->{extents}->{$key}->{extent} = COMMON::ProxyGDAL::geometryFromFile($value);
+                if (! defined $this->{extents}->{$key}->{extent}) {
+                    ERROR("Cannot create a OGR geometry from the file $value");
+                    ERROR("Cannot load extent with ID $key");
+                    return FALSE ;
+                }
+            }
+
+            $this->{extents}->{$key}->{bboxes} = COMMON::ProxyGDAL::getBboxes($this->{extents}->{$key}->{extent});
+            if (! defined $this->{extents}->{$key}->{bboxes}) {
+                ERROR("Cannot calculate bboxes from the extent for level $key - $value");
+                return FALSE;
+            }
+
+
+        }
+        elsif ($currentSection eq 'composition') {
+            if (! $this->readCompositionLine($key, $value)) {
                 ERROR (sprintf "Cannot read a composition line !");
                 return FALSE;
             }
+        } else {
+            if (exists $this->{$currentSection}->{$key}) {
+                ERROR ("A property is defined twice in the configuration : section $currentSection, parameter $key");
+                return FALSE;
+            }
+            $this->{$currentSection}->{$key} = $value;
         }
 
     }
@@ -253,10 +282,10 @@ sub _load {
 =begin nd
 Function: readComposition
 
-Reads a *composition* section line. Determine sources by level and calculate priorities.
+Reads a *composition* section line. Determine sources by level and calculate priorities. We load source pyramids too.
 
 Parameters (list):
-    prop - string - Composition's name: levelId.bboxId
+    prop - string - Composition's name: levelId.extentId
     val - string - Composition's value: pyrPath1,pyrPath2,pyrPath3
 =cut
 sub readCompositionLine {
@@ -264,11 +293,10 @@ sub readCompositionLine {
     my $prop = shift;
     my $val = shift;
 
+    my ($levelId,$extentId) = split(/\./,$prop,-1);
 
-    my ($levelId,$bboxId) = split(/\./,$prop,-1);
-
-    if ($levelId eq '' || $bboxId eq '') {
-        ERROR (sprintf "Cannot define a level id and a bbox id (%s). Must be levelId.bboxId",$prop);
+    if ($levelId eq '' || $extentId eq '') {
+        ERROR ("Cannot define a level id and an extent id ($prop). Must be levelId.extentId");
         return FALSE;
     }
 
@@ -276,31 +304,41 @@ sub readCompositionLine {
 
     foreach my $pyr (@pyrs) {
         if ($pyr eq '') {
-            ERROR (sprintf "Invalid list of pyramids (%s). Must be /path/pyr1.pyr,/path/pyr2.pyr",$val);
-            return FALSE;
-        }
-        if (! -f $pyr) {
-            ERROR (sprintf "A referenced pyramid's file doesn't exist : %s",$pyr);
+            ERROR ("Invalid list of pyramids ($val). Must be /path/pyr1.pyr,/path/pyr2.pyr");
             return FALSE;
         }
 
-        my $priority = 1;
-        if (exists $this->{sourceByLevel}->{$levelId}) {
-            $this->{sourceByLevel}->{$levelId} += 1;
-            $priority = $this->{sourceByLevel}->{$levelId};
-        } else {
-            $this->{sourceByLevel}->{$levelId} = 1;
-        }
-
-        $this->{composition}->{$levelId}->{$priority} = {
-            bbox => $bboxId,
-            pyr => $pyr,
-        };
+        my $objPyramid;
 
         if (! exists $this->{sourcePyramids}->{$pyr}) {
             # we have a new source pyramid, but not yet information about
-            $this->{sourcePyramids}->{$pyr} = undef;
+            $objPyramid = COMMON::Pyramid->new("DESCRIPTOR", $pyr);
+            if (! defined $objPyramid) {
+                ERROR ("Cannot create the COMMON::Pyramid object from source pyramid's descriptor: $pyr ($levelId,$extentId)");
+                return FALSE;
+            }
+            if ($objPyramid->getStorageType() ne "FILE") {
+                ERROR ("JoinCache only handle FILE output pyramid");
+                return FALSE;
+            }
+            $this->{sourcePyramids}->{$pyr} = $objPyramid;
+
+        } else {
+            $objPyramid = $this->{sourcePyramids}->{$pyr};
         }
+
+        if (! defined $objPyramid->getLevel($levelId)) {
+            ERROR("No level $levelId in the source pyramid $pyr");
+            return FALSE;
+        }
+
+        push(
+            @{$this->{composition}->{$levelId}},
+            {
+                extent => $extentId,
+                pyr => $pyr
+            }
+        );
 
     }
 
@@ -308,30 +346,73 @@ sub readCompositionLine {
 }
 
 
-####################################################################################################
-#                                      Group: Tester                                               #
-####################################################################################################
-
-=begin nd
-Function: isConfSection
-
-Check section's name. Possible values: 'pyramid','process','composition','logger','bboxes'.
-
-Parameters (list):
-    section - string - section's name
-=cut
-sub isConfSection {
+# Function: _check
+sub _check {
     my $this = shift;
-    my $section = shift;
 
-
-    return FALSE if (! defined $section);
-
-    foreach (@{$PROPLOADER{sections}}) {
-        return TRUE if ($section eq $_);
+    # pyramid
+    if (! defined $this->{pyramid}) {
+        ERROR ("Section [pyramid] can not be empty !");
+        return FALSE;
     }
-    ERROR (sprintf "Unknown 'section' (%s) !",$section);
-    return FALSE;
+
+    # composition
+    if (! defined $this->{composition}) {
+        ERROR ("Section [composition] can not be empty !");
+        return FALSE;
+    }
+
+    # extents
+    if (! defined $this->{extents}) {
+        ERROR ("Section [extents] can not be empty !");
+        return FALSE;
+    }
+
+    # process
+    if (! defined $this->{process}) {
+        ERROR ("Section [process] can not be empty !");
+        return FALSE;
+    }
+
+    # merge method
+    if (! defined $this->{process}->{merge_method} || ! defined COMMON::Array::isInArray($this->{process}->{merge_method}, @MERGEMETHODS)) {
+        ERROR ("process.merge_method is not provided or is not allowed");
+        return FALSE;
+    }
+
+    if (! defined $this->{process}->{job_number}) {
+        ERROR ("process.job_number is not provided");
+        return FALSE;
+    }
+    if (! defined $this->{process}->{path_temp}) {
+        ERROR ("process.path_temp is not provided");
+        return FALSE;
+    }
+    if (! defined $this->{process}->{path_temp_common}) {
+        ERROR ("process.path_temp_common is not provided");
+        return FALSE;
+    }
+    if (! defined $this->{process}->{job_number}) {
+        ERROR ("process.job_number is not provided");
+        return FALSE;
+    }
+
+    # Check extents' ids (have to be defined in the 'extents' section)
+
+    while( my ($levelId,$sources) = each(%{$this->{composition}}) ) {
+
+        foreach my $source (@{$sources}) {
+            if (! exists $this->{extents}->{$source->{extent}}) {
+                ERROR (sprintf "A extent ID (%s) from the composition is not define in the 'extents' section !", $source->{extent});
+                return FALSE;
+            }
+            $source->{bboxes} = $this->{extents}->{$source->{extent}}->{bboxes};
+            $source->{extent} = $this->{extents}->{$source->{extent}}->{extent};
+            $source->{pyr} = $this->{sourcePyramids}->{$source->{pyr}};
+        }
+    }
+    
+    return TRUE;
 }
 
 ####################################################################################################
@@ -363,9 +444,9 @@ sub getCompositionSection {
 }
 
 # Function: getBboxesSection
-sub getBboxesSection {
+sub getExtentsSection {
     my $this = shift;
-    return $this->{bboxes};
+    return $this->{extents};
 }
 
 # Function: getProcessSection
