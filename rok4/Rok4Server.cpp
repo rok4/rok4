@@ -1485,10 +1485,15 @@ DataStream* Rok4Server::CommonGetFeatureInfo ( std::string service, Layer* layer
 
         LOGGER_DEBUG("REQUETE = " << vectorRequest.str());
         RawDataStream* response = myWMSV->performRequestStream (vectorRequest.str());
+
         if(response == NULL){
+            delete myWMSV;
             return new SERDataStream ( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Internal server error" ),"wms" ) );
         }
+
+        delete myWMSV;
         return response;
+
     } else if ( getFeatureInfoType.compare( "SQL" ) == 0 ) {
         LOGGER_DEBUG("GFI sur SQL");
         // Non géré pour le moment. (nouvelle lib a integrer)

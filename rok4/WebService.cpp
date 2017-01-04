@@ -65,7 +65,8 @@ RawDataSource * WebService::performRequest(std::string request) {
     CURL *curl;
     CURLcode res, resC, resT;
     long responseCode = 0;
-    char* responseType;
+    char* rpType;
+    std::string fType;
     struct MemoryStruct chunk;
     bool errors = false;
     RawDataSource *rawData = NULL;
@@ -104,9 +105,9 @@ RawDataSource * WebService::performRequest(std::string request) {
                 curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
                 /* time to connect - not to receive answer */
                 curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, long(timeout));
-		curl_easy_setopt(curl, CURLOPT_TIMEOUT, long(timeout));
+                curl_easy_setopt(curl, CURLOPT_TIMEOUT, long(timeout));
                 curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "identity");
-		curl_easy_setopt(curl, CURLOPT_USERAGENT, ROK4_INFO);
+                curl_easy_setopt(curl, CURLOPT_USERAGENT, ROK4_INFO);
                 if (proxy != "") {
                     curl_easy_setopt(curl, CURLOPT_PROXY, proxy.c_str());
                 }
@@ -131,7 +132,7 @@ RawDataSource * WebService::performRequest(std::string request) {
                 if(res == CURLE_OK) {
 
                     resC = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &responseCode);
-                    resT = curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &responseType);
+                    resT = curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &rpType);
                     if ((resC == CURLE_OK) && responseCode) {
 
                         if (responseCode != 200) {
@@ -144,10 +145,11 @@ RawDataSource * WebService::performRequest(std::string request) {
                         errors = true;
                     }
 
-                    if ((resT == CURLE_OK) && responseType) {
-                        std::string rType(responseType);
+                    if ((resT == CURLE_OK) && rpType) {
+                        std::string rType(rpType);
+                        fType = rType;
                         if (errors || (this->responseType != "" && this->responseType != rType )) {
-                            LOGGER_ERROR("The request returned with a " << responseType << " content type");
+                            LOGGER_ERROR("The request returned with a " << rpType << " content type");
                             std::string text = "text/";
                             std::string application = "application/";
 
@@ -194,7 +196,8 @@ RawDataSource * WebService::performRequest(std::string request) {
     /* Convert chunk into a DataSource readable by rok4 */
     if (!errors) {
         LOGGER_DEBUG("Sauvegarde de la donnee");
-        rawData = new RawDataSource(chunk.memory, chunk.size);
+        LOGGER_DEBUG("content-type de la reponse: "+ fType);
+        rawData = new RawDataSource(chunk.memory, chunk.size, fType,"");
     }
 
     free(chunk.memory);
@@ -210,7 +213,7 @@ RawDataStream * WebService::performRequestStream(std::string request) {
   }
   size_t bufferSize = rawData->getSize();
   const uint8_t* buffer = rawData->getData(bufferSize);
-  RawDataStream* rawStream = new RawDataStream((uint8_t*)buffer,bufferSize);
+  RawDataStream* rawStream = new RawDataStream((uint8_t*)buffer, bufferSize, rawData->getType(), rawData->getEncoding());
   delete rawData;
   return rawStream;
 }
