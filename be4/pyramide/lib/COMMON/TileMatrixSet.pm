@@ -55,7 +55,7 @@ Using:
     use COMMON::TileMatrixSet;
 
     my $filepath = "/home/ign/tms/LAMB93_50cm.tms";
-    my $objTMS = COMMON::TileMatrixSet->new($filepath);
+    my $objTMS = COMMON::TileMatrixSet->new($filepath, $acceptUntypedTMS); # $acceptUntypedTMS is an optional boolean
 
     $objTMS->getTileMatrixCount()};      # ie 19
     $objTMS->getTileMatrix(12);          # object TileMatrix with level id = 12
@@ -80,12 +80,7 @@ Attributes:
     srs - string - Spatial Reference System, casted in uppercase (EPSG:4326).
     coordinatesInversion - boolean - Precise if we have to reverse coordinates to harvest in this SRS. For some SRS, we have to reverse coordinates when we compose WMS request (1.3.0). Used test to determine this SRSs is : if the SRS is geographic and an EPSG one.
     tileMatrix - <TileMatrix> hash - Keys are Tile Matrix identifiant, values are <TileMatrix> objects.
-    isQTree - boolean - Precise if this TMS match with a quad tree. TRUE if this TMS describe a quad tree, FALSE otherwise.
-
-Limitations:
-    File name of tms must be with extension : tms or TMS.
-
-    All levels must be continuous (QuadTree) and unique.
+    type - string - Precise the TMS type : "QTREE" if this TMS describes a quad tree, "NNGRAPH" if it is a "nearest neighbour" graph, and "NONE" otherwise.
 
 =cut
 
@@ -135,6 +130,7 @@ TileMatrixSet constructor. Bless an instance. Fill file's informations.
 
 Parameters (list):
     pathfile - string - Path to the Tile Matrix File (with extension .tms or .TMS)
+    acceptUntypedTMS - boolean - optional : Do we accept a TMS that is neither a quad tree nor a neares neighbour graph (default : refused)
 
 See also:
     <_load>
@@ -142,6 +138,7 @@ See also:
 sub new {
     my $this = shift;
     my $pathfile = shift;
+    my $acceptUntypedTMS = shift;
 
     my $class= ref($this) || $this;
     # IMPORTANT : if modification, think to update natural documentation (just above)
@@ -161,7 +158,7 @@ sub new {
         coordinatesInversion  => FALSE,
         tileMatrix => {},
         #
-        isQTree => undef,
+        type => undef,
     };
 
     bless($self, $class);
@@ -184,7 +181,7 @@ sub new {
     $self->{name} =~ s/\.(tms|TMS)$//;
     
     # load
-    return undef if (! $self->_load());
+    return undef if (! $self->_load($acceptUntypedTMS));
 
     return $self;
 }
@@ -198,13 +195,17 @@ It determines if the TMS match with a quad tree:
     - resolutions go by twos between two contigues levels
     - top left corner coordinates and pixel dimensions are same for all levels
 
-If TMS is not a quad tree, we have to determine the lower source level for each level (used for the genaration).
+If TMS is a nearest neighbour graph, we have to determine the lower source level for each level (used for the generation).
+
+Parameters (list):
+    acceptUntypedTMS - boolean - optional : Do we accept a TMS that is neither a quad tree nor a neares neighbour graph (default : refused)
 
 See also:
     <computeTmSource>
 =cut
 sub _load {
     my $self = shift;
+    my $acceptUntypedTMS = shift;
     
     TRACE;
     
@@ -293,41 +294,46 @@ sub _load {
     # tileMatrix list sort by resolution
     my @tmList = $self->getTileMatrixByArray();
   
+    # on fait un hash pour retrouver l'ordre d'un niveau a partir de son id.
+    for (my $i=0; $i < scalar @tmList; $i++){
+        $self->{levelsBind}{$tmList[$i]->getID()} = $i;
+    }
+      
     # Is TMS a QuadTree ? If not, we use a graph (less efficient for calculs)
-    $self->{isQTree} = TRUE; # default value
+    $self->{type} = "QTREE"; # default value
     if (scalar(@tmList) != 1) {
         my $epsilon = $tmList[0]->getResolution / 100 ;
         for (my $i = 0; $i < scalar(@tmList) - 1;$i++) {
             if ( abs($tmList[$i]->getResolution*2 - $tmList[$i+1]->getResolution) > $epsilon ) {
-                $self->{isQTree} = FALSE;
+                $self->{type} = "NONE";
                 INFO(sprintf "Not a QTree : resolutions don't go by twos : level '%s' (%s) and level '%s' (%s).",
                     $tmList[$i]->{id},$tmList[$i]->getResolution,
                     $tmList[$i+1]->{id},$tmList[$i+1]->getResolution);
                 last;
             }
             elsif ( abs($tmList[$i]->getTopLeftCornerX - $tmList[$i+1]->getTopLeftCornerX) > $epsilon ) {
-                $self->{isQTree} = FALSE;
+                $self->{type} = "NONE";
                 ERROR(sprintf "Not a QTree : 'topleftcornerx' is not the same for all levels : level '%s' (%s) and level '%s' (%s).",
                     $tmList[$i]->{id},$tmList[$i]->getTopLeftCornerX,
                     $tmList[$i+1]->{id},$tmList[$i+1]->getTopLeftCornerX);
                 last;
             }
             elsif ( abs($tmList[$i]->getTopLeftCornerY - $tmList[$i+1]->getTopLeftCornerY) > $epsilon ) {
-                $self->{isQTree} = FALSE;
+                $self->{type} = "NONE";
                 ERROR(sprintf "Not a QTree : 'topleftcornery' is not the same for all levels : level '%s' (%s) and level '%s' (%s).",
                     $tmList[$i]->{id},$tmList[$i]->getTopLeftCornerY,
                     $tmList[$i+1]->{id},$tmList[$i+1]->getTopLeftCornerY);
                 last;
             }
             elsif ( $tmList[$i]->getTileWidth != $tmList[$i+1]->getTileWidth) {
-                $self->{isQTree} = FALSE;
+                $self->{type} = "NONE";
                 ERROR(sprintf "Not a QTree : 'tilewidth' is not the same for all levels : level '%s' (%s) and level '%s' (%s).",
                     $tmList[$i]->{id},$tmList[$i]->getTileWidth,
                     $tmList[$i+1]->{id},$tmList[$i+1]->getTileWidth);
                 last;
             }
             elsif ( $tmList[$i]->getTileHeight != $tmList[$i+1]->getTileHeight) {
-                $self->{isQTree} = FALSE;
+                $self->{type} = "NONE";
                 INFO(sprintf "Not a QTree : 'tileheight' is not the same for all levels : level '%s' (%s) and level '%s' (%s).",
                     $tmList[$i]->{id},$tmList[$i]->getTileHeight,
                     $tmList[$i+1]->{id},$tmList[$i+1]->getTileHeight);
@@ -335,21 +341,24 @@ sub _load {
             }
         };
     };
-  
-    # on fait un hash pour retrouver l'ordre d'un niveau a partir de son id.
-    for (my $i=0; $i < scalar @tmList; $i++){
-        $self->{levelsBind}{$tmList[$i]->getID()} = $i;
-    }
     
-    if ($self->isQTree) { return TRUE;}
+
+
+    if ($self->{type} eq "QTREE") { return TRUE;}
     
     ## Adding informations about child/parent in TM objects
     for (my $i = 0; $i < scalar(@tmList) ;$i++) {
         if (! $self->computeTmSource($tmList[$i])) {
-            ERROR(sprintf "Nor a QTree neither a Graph made for nearest neighbour generation. No source for level %s.",$tmList[$i]->getID());
-            return FALSE;
+            if(defined $acceptUntypedTMS && $acceptUntypedTMS) {
+                return TRUE;
+            } else {
+                ERROR(sprintf "Nor a QTree neither a Graph made for nearest neighbour generation. No source for level %s.",$tmList[$i]->getID());
+                return FALSE;
+            }
         }
     }
+
+    $self->{type} = "NNGRAPH";
     
     return TRUE;
 }
@@ -453,7 +462,7 @@ sub getTileHeight {
 # Function: isQTree
 sub isQTree {
     my $self = shift;
-    return $self->{isQTree};
+    return ($self->{type} eq "QTREE");
 }
 
 =begin nd
