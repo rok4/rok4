@@ -53,8 +53,8 @@ Using:
     my $graph = COMMON::NNGraph->new(...)
     
     my $node = COMMON::Node->new({
-        i => 51,
-        j => 756,
+        col => 51,
+        row => 756,
         tm => $tm,
         graph => $graph,
         type => 'FILE'
@@ -62,37 +62,28 @@ Using:
     (end code)
 
 Attributes:
-    i - integer - Column, according to the TMS grid.
-    j - integer - Row, according to the TMS grid.
-    
-    filestorage - string hash - informations for file system final storage
-|       pyramidName - string - relative path of this node in the pyramid (generated from i,j). Example : level16/00/12/L5.tif
-|       bgImageBasename - string - 
-|       bgMaskBasename - string -
+    col - integer - Column, according to the TMS grid.
+    row - integer - Row, according to the TMS grid.
 
-    cephstorage - string hash - informations for ceph final storage
-|       pyramidName - string - object suffix name in the ceph pool. Example level16_6545_981
-|       poolName - string - ceph pool name.
+    storageType - string - Final storage type for the node : "FILE", "CEPH" or "S3"
 
-    s3storage - string hash - informations for s3 final storage
-|       pyramidName - string - object suffix name in the s3 bucket. Example level16_6545_981
-|       bucketName - string - s3 bucket name.
+    bgImageBasename - string - 
+    bgMaskBasename - string - 
 
     workImageBasename - string - 
     workMaskBasename - string - 
-    
     workExtension - string - extension of the temporary work image, lower case. Default value : tif.
 
-    tm - <TileMatrix> - Tile matrix associated to the level which the node belong to.
-    graph - <Graph> or <QTree> - Graph which contains the node.
+    tm - <COMMON::TileMatrix> - Tile matrix associated to the level which the node belong to.
+    graph - <COMMON::NNGraph> or <COMMON::QTree> - Graph which contains the node.
     w - integer - Own node's weight
     W - integer - Accumulated weight (own weight + childs' accumulated weights sum)
 
     code - string - Commands to execute to generate this node (to write in a script)
-    script - <Script> - Script in which the node will be generated
+    script - <COMMON::Script> - Script in which the node will be generated
 
-    nodeSources - <Node> array - Nodes from which this node is generated (working for <NNGraph>)
-    geoImages - <GeoImage> array - Source images from which this node (if it belongs to the tree's bottom level) is generated (working for <QTree>)
+    nodeSources - <COMMON::Node> array - Nodes from which this node is generated (working for <COMMON::NNGraph>)
+    geoImages - <COMMON::GeoImage> array - Source images from which this node (if it belongs to the tree's bottom level) is generated (working for <COMMON::QTree>)
 =cut
 
 ################################################################################
@@ -124,15 +115,7 @@ use constant FALSE => 0;
 
 # Constant: STORAGETYPES
 # Define allowed values for attribute storage type.
-my @STORAGETYPES;
-
-################################################################################
-
-BEGIN {}
-INIT {
-    @STORAGETYPES = ("FILE", "CEPH", "S3");
-}
-END {}
+my @STORAGETYPES = ("FILE", "CEPH", "S3");
 
 ####################################################################################################
 #                                        Group: Constructors                                       #
@@ -145,10 +128,10 @@ Node constructor. Bless an instance.
 
 Parameters (hash):
     type - string - Final storage type : 'FILE', 'CEPH', 'S3'
-    i - integer - Node's column
-    j - integer - Node's row
-    tm - <TileMatrix> - Tile matrix of the level which node belong to
-    graph - <Graph> or <QTree> - Graph containing the node.
+    col - integer - Node's column
+    row - integer - Node's row
+    tm - <COMMON::TileMatrix> - Tile matrix of the level which node belong to
+    graph - <COMMON::NNGraph> or <COMMON::QTree> - Graph containing the node.
 
 See also:
     <_init>
@@ -706,64 +689,6 @@ sub exportForM4tConf {
         
     }
 
-    return $output;
-}
-
-=begin nd
-Function: exportForDebug
-
-Returns all image's components. Useful for debug.
-
-Example:
-    (start code)
-    (end code)
-=cut
-sub exportForDebug {
-    my $this = shift ;
-    
-    my $output = "";
-    
-    $output .= sprintf "Object COMMON::Node :\n";
-
-    if (defined $this->{filestorage}) {
-        $output .= "\tFile storage\n";
-    }
-    elsif (defined $this->{cephstorage}) {
-        $output .= "\tCeph storage\n";
-    }
-    elsif (defined $this->{s3storage}) {
-        $output .= "\tS3 storage\n";
-    }
-    elsif (defined $this->{swiftstorage}) {
-        $output .= "\tSwift storage\n";
-    }
-    else {
-        $output .= "\tNo storage !!!\n";
-    }
-
-    $output .= sprintf "\tLevel : %s\n",$this->getLevel();
-    $output .= sprintf "\tTM Resolution : %s\n",$this->getTM()->getResolution();
-    $output .= sprintf "\tColonne : %s\n",$this->getCol();
-    $output .= sprintf "\tLigne : %s\n",$this->getRow();
-    if (defined $this->getScript()) {
-        $output .= sprintf "\tScript ID : %\n",$this->getScriptID();
-    } else {
-        $output .= sprintf "\tScript undefined.\n";
-    }
-    $output .= sprintf "\tNoeud Source :\n";
-    foreach my $node_sup ( @{$this->getNodeSources()} ) {
-        $output .= sprintf "\t\tResolution : %s, Colonne ; %s, Ligne : %s\n",$node_sup->getTM()->getResolution(),$node_sup->getCol(),$node_sup->getRow();
-    }
-    $output .= sprintf "\tGeoimage Source :\n";
-    
-    foreach my $img ( @{$this->getGeoImages()} ) {
-        $output .= sprintf "\t\tNom : %s\n",$img->getName();
-    }
-
-    $output .= sprintf "\tworkImageBasename : %s\n",$this->{workImageBasename} if (defined $this->{workImageBasename});
-    $output .= sprintf "\tworkMaskBasename : %s\n",$this->{workMaskBasename} if (defined $this->{workMaskBasename});
-    $output .= sprintf "\tworkExtension : %s\n",$this->{workExtension} if (defined $this->{workExtension});
-    
     return $output;
 }
 

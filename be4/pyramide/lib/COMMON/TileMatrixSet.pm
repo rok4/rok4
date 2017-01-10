@@ -79,7 +79,7 @@ Attributes:
 
     srs - string - Spatial Reference System, casted in uppercase (EPSG:4326).
     coordinatesInversion - boolean - Precise if we have to reverse coordinates to harvest in this SRS. For some SRS, we have to reverse coordinates when we compose WMS request (1.3.0). Used test to determine this SRSs is : if the SRS is geographic and an EPSG one.
-    tileMatrix - <TileMatrix> hash - Keys are Tile Matrix identifiant, values are <TileMatrix> objects.
+    tileMatrix - <COMMON::TileMatrix> hash - Keys are Tile Matrix identifiant, values are <TileMatrix> objects.
     isQTree - boolean - Precise if this TMS match with a quad tree. TRUE if this TMS describe a quad tree, FALSE otherwise.
 
 Limitations:

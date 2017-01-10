@@ -82,7 +82,7 @@ use lib "$Bin/../lib/perl5";
 
 # My module
 use COMMON::TileMatrixSet;
-use BE4::Base36;
+use COMMON::Base36;
 
 ################################################################################
 # Constantes

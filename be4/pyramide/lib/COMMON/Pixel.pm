@@ -71,6 +71,8 @@ use warnings;
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
 
+use COMMON::Array;
+
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
 
@@ -85,30 +87,21 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-# Constant: PIXEL
-# Define allowed values for attributes bitspersample, sampleformat, photometric and samplesperpixel.
-my %PIXEL;
+# Constant: BITSPERSAMPLES
+# Define allowed values for attributes bitspersample
+my @BITSPERSAMPLES = (1,8,32);
 
-# Constant: DEFAULT
-# Define default values for attribute photometric.
-my %DEFAULT;
+# Constant: PHOTOMETRICS
+# Define allowed values for attributes photometric
+my @PHOTOMETRICS = ('rgb','gray','mask');
 
-################################################################################
+# Constant: SAMPLESPERPIXELS
+# Define allowed values for attributes samplesperpixel
+my @SAMPLESPERPIXELS = (1,2,3,4);
 
-BEGIN {}
-INIT {
-    %PIXEL = (
-        bitspersample     => [1,8,32],
-        sampleformat      => ['uint','float'],
-        photometric       => ['rgb','gray','mask'],
-        samplesperpixel   => [1,2,3,4],
-    );
-
-    %DEFAULT = (
-        photometric => 'rgb',
-    );
-}
-END {}
+# Constant: SAMPLEFORMATS
+# Define allowed values for attributes sampleformat
+my @SAMPLEFORMATS = ('uint','float');
 
 ####################################################################################################
 #                                        Group: Constructors                                       #
@@ -140,7 +133,6 @@ sub new {
 
     bless($this, $class);
 
-
     # All attributes have to be present in parameters and defined
 
     ### Sample format : REQUIRED
@@ -148,7 +140,7 @@ sub new {
         ERROR ("'sampleformat' required !");
         return undef;
     } else {
-        if (! $this->isSampleFormat($params->{sampleformat})) {
+        if (! defined COMMON::Array::isInArray($params->{sampleformat}, @SAMPLEFORMATS)) {
             ERROR (sprintf "Unknown 'sampleformat' : %s !",$params->{sampleformat});
             return undef;
         }
@@ -160,7 +152,7 @@ sub new {
         ERROR ("'samplesperpixel' required !");
         return undef;
     } else {
-        if (! $this->isSamplesPerPixel($params->{samplesperpixel})) {
+        if (! defined COMMON::Array::isInArray($params->{samplesperpixel}, @SAMPLESPERPIXELS)) {
             ERROR (sprintf "Unknown 'samplesperpixel' : %s !",$params->{samplesperpixel});
             return undef;
         }
@@ -169,10 +161,10 @@ sub new {
 
     ### Photometric :  REQUIRED
     if (! exists $params->{photometric} || ! defined $params->{bitspersample}) {
-        ERROR ("'bitspersample' required !");
+        ERROR ("'photometric' required !");
         return undef;
     } else {
-        if (! $this->isPhotometric($params->{photometric})) {
+        if (! defined COMMON::Array::isInArray($params->{photometric}, @PHOTOMETRICS)) {
             ERROR (sprintf "Unknown 'photometric' : %s !",$params->{photometric});
             return undef;
         }
@@ -184,7 +176,7 @@ sub new {
         ERROR ("'bitspersample' required !");
         return undef;
     } else {
-        if (! $this->isBitsPerSample($params->{bitspersample})) {
+        if (! defined COMMON::Array::isInArray($params->{bitspersample}, @BITSPERSAMPLES)) {
             ERROR (sprintf "Unknown 'bitspersample' : %s !",$params->{bitspersample});
             return undef;
         }
@@ -198,96 +190,6 @@ sub new {
     }
 
     return $this;
-}
-
-####################################################################################################
-#                             Group: Attributes' testers                                           #
-####################################################################################################
-
-=begin nd
-Function: isSampleFormat
-
-Tests if sample format value is allowed.
-
-Parameters (list):
-    sampleformat - string - Sample format value to test
-=cut
-sub isSampleFormat {
-    my $this = shift;
-    my $sampleformat = shift;
-
-
-    return FALSE if (! defined $sampleformat);
-
-    foreach (@{$PIXEL{sampleformat}}) {
-        return TRUE if ($sampleformat eq $_);
-    }
-    return FALSE;
-}
-
-=begin nd
-Function: isBitsPerSample
-
-Tests if bits per sample value is allowed.
-
-Parameters (list):
-    bitspersample - string - Bits per sample value to test
-=cut
-sub isBitsPerSample {
-    my $this = shift;
-    my $bitspersample = shift;
-
-
-    return FALSE if (! defined $bitspersample);
-
-    foreach (@{$PIXEL{bitspersample}}) {
-        if ($bitspersample eq $_) {
-            return TRUE;
-        }
-    }
-    return FALSE;
-}
-
-=begin nd
-Function: isPhotometric
-
-Tests if photometric value is allowed.
-
-Parameters (list):
-    photometric - string - Photometric value to test
-=cut
-sub isPhotometric {
-    my $this = shift;
-    my $photometric = shift;
-
-
-    return FALSE if (! defined $photometric);
-
-    foreach (@{$PIXEL{photometric}}) {
-        return TRUE if ($photometric eq $_);
-    }
-    return FALSE;
-}
-
-=begin nd
-Function: isSamplesPerPixel
-
-Tests if samples per pixel value is allowed.
-
-Parameters (list):
-    samplesperpixel - string - Samples per pixel value to test
-=cut
-sub isSamplesPerPixel {
-    my $this = shift;
-    my $samplesperpixel = shift;
-
-
-    return FALSE if (! defined $samplesperpixel);
-
-    foreach (@{$PIXEL{samplesperpixel}}) {
-        return TRUE if ($samplesperpixel eq $_);
-    }
-    return FALSE;
 }
 
 ####################################################################################################

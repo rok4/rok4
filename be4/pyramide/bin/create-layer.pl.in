@@ -273,32 +273,19 @@ sub doIt {
 
     my @keyword;
 
-    # read xml pyramid
-    my $parser  = XML::LibXML->new();
-    my $xmltree =  eval { $parser->parse_file($options{pyramid}); };
+    my $pyramid = COMMON::Pyramid->new("DESCRIPTOR", $options{pyramid});
 
-    if (! defined ($xmltree) || $@) {
-        ERROR (sprintf "Can not read the XML file Pyramid : %s !", $@);
+    if (! defined $pyramid) {
+        ERROR("Cannot create the Pyramid object");
         return FALSE;
     }
 
-    my $root = $xmltree->getDocumentElement;
-
-    ## TMS
-    my $tmsname = $root->findnodes('tileMatrixSet')->to_literal;
-    if ($tmsname eq '') {
-        ERROR (sprintf "Can not determine parameter 'tileMatrixSet' in the XML file Pyramid !");
+    if (! $pyramid->bindTileMatrixSet($options{"tms-path"})) {
+        ERROR("Can not bind the TMS to the pyramid");
         return FALSE;
     }
 
-    my $tmsFilePath = File::Spec->catfile($options{"tms-path"},$tmsname.".tms");
-    my $objTMS  = COMMON::TileMatrixSet->new($tmsFilePath);
-    if (! defined $objTMS) {
-        ERROR (sprintf "Can not create object TileMatrixSet from this path : %s ",$tmsFilePath);
-        return FALSE;
-    }
-
-    push @keyword, $tmsname;
+    push @keyword, $pyramid->getTileMatrixSet()->getName();
 
     # NODATA
     my $nodata = $root->findnodes('nodataValue')->to_literal;

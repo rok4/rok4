@@ -176,6 +176,8 @@ Parameters (list):
     type - string - DESCRIPTOR
     params - string - Path to the pyramid's descriptor to load
 
+    ancestor - <COMMON::Pyramid> - Optionnal, to provide if we want to use parameters from ancestor 
+
 See also:
     <_readDescriptor>, <_load>
 =cut
@@ -1242,23 +1244,6 @@ sub getDataPool {
     return $this->{data_pool};
 }
 
-# Function: getClusterName
-sub getClusterName {
-    my $this = shift;    
-    return $this->{cluster_name};
-}
-
-# Function: getUserName
-sub getUserName {
-    my $this = shift;    
-    return $this->{user_name};
-}
-
-# Function: getConfFile
-sub getConfFile {
-    my $this = shift;    
-    return $this->{conf_file};
-}
 
 1;
 __END__

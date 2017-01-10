@@ -58,9 +58,10 @@ Using:
     (end code)
 
 Attributes:
-    pyramid - <BE4S3::Pyramid> - Allowed to know output format specifications and configure commands.
+    pyramid - <COMMON::Pyramid> - Output pyramid to generate.
     mntConfDir - string - Directory, where to write mergeNtiff configuration files.
     dntConfDir - string - Directory, where to write decimateNtiff configuration files.
+    mergeMethod - string - Optionnal. If present we know that pyramid's generation tool is JOINCACHE, and mergeMethod is used by ovelayNtiff
     useMasks - boolean - If TRUE, all generating tools (mergeNtiff, merge4tiff...) use masks if present and generate a resulting mask. This processing is longer, that's why default behaviour is without mask.
 =cut
 
@@ -1392,6 +1393,7 @@ sub setConfDir {
     my $this = shift;
     my $mntConfDir = shift;
     my $dntConfDir = shift;
+    my $ontConfDir = shift;
 
     $this->{mntConfDir} = $mntConfDir;
     $this->{dntConfDir} = $dntConfDir;

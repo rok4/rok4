@@ -55,7 +55,7 @@ Using:
 
 Attributes:
     FILEPATH_DATACONF - string - Path to the specific datasources configuration file.
-    dataSources - <DataSource> array - Data sources ensemble. Can contain just one element.
+    dataSources - <COMMON::DataSource> array - Data sources ensemble. Can contain just one element.
 
 Limitations:
     Metadata managing not yet implemented.

@@ -55,7 +55,7 @@ Attributes:
     filename - string - Just the image name, with file extension (XXXXX_YYYYY.tif).
     filepath - string - The directory which contain the image (/home/ign/DATA)
     maskCompletePath - string - Complete path of associated mask, if exists (undef otherwise).
-    imgSrc - ImageSource - Image source to whom the image belong
+    srs - string - Projection of image
     xmin - double - Bottom left corner X coordinate.
     ymin - double - Bottom left corner Y coordinate.
     xmax - double - Top right corner X coordinate.
@@ -110,6 +110,7 @@ GeoImage constructor. Bless an instance.
 
 Parameters (list):
     completePath - string - Complete path to the image file.
+    srs - string - Projection of georeferenced image
 
 See also:
     <_init>
@@ -117,6 +118,7 @@ See also:
 sub new {
     my $class = shift;
     my $completePath = shift;
+    my $srs = shift;
 
     $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above)
@@ -125,7 +127,7 @@ sub new {
         filename => undef,
         filepath => undef,
         maskCompletePath => undef,
-        imgSrc => undef,
+        srs => undef,
         xmin => undef,
         ymax => undef,
         xmax => undef,
@@ -135,14 +137,14 @@ sub new {
         xcenter => undef,
         ycenter => undef,
         height  => undef,
-        width   => undef,
+        width   => undef
     };
 
     bless($this, $class);
 
 
     # init. class
-    return undef if (! $this->_init($completePath));
+    return undef if (! $this->_init($completePath, $srs));
 
     return $this;
 }
@@ -156,17 +158,19 @@ Search a potential associated data mask : A file with the same base name but the
 
 Parameters (list):
     completePath - string - Complete path to the image file.
+    srs - string - Projection of georeferenced image
 =cut
 sub _init {
     my $this   = shift;
     my $completePath = shift;
+    my $srs = shift;
 
-    
     return FALSE if (! defined $completePath);
+    return FALSE if (! defined $srs);
     
     if (! -f $completePath) {
-      ERROR ("File doesn't exist !");
-      return FALSE;
+        ERROR ("File doesn't exist !");
+        return FALSE;
     }
     
     # init. params    
@@ -482,18 +486,6 @@ sub getBBox {
   return @bbox;
 }
 
-# Function: setImageSource
-sub setImageSource {
-    my $this = shift;
-    my $imgSrc = shift;
-
-    if (! defined ($imgSrc) || ref ($imgSrc) ne "COMMON::ImageSource") {
-        ERROR("We expect to a COMMON::ImageSource object.");
-    } else {
-        $this->{imgSrc} = $imgSrc;
-    }
-}
-
 # Function: setImagePath
 sub setImagePath {
   my $this = shift;
@@ -576,11 +568,7 @@ sub exportForMntConf {
     $useMasks = TRUE if (! defined $useMasks);
 
 
-    my $output = sprintf "IMG %s", $this->{completePath};
-
-    if (defined $this->{imgSrc}) {
-        $output .= sprintf "\t%s", $this->{imgSrc}->getSRS();
-    }
+    my $output = sprintf "IMG %s\t%s", $this->{completePath}, $this->{srs};
 
     $output .= sprintf "\t%s\t%s\t%s\t%s\t%s\t%s\n",
         $this->{xmin}, $this->{ymax}, $this->{xmax}, $this->{ymin},
@@ -593,40 +581,6 @@ sub exportForMntConf {
     return $output;
 }
 
-=begin nd
-Function: exportForDebug
-
-Returns all informations about the georeferenced image. Useful for debug.
-
-Example:
-    (start code)
-    (end code)
-=cut
-sub exportForDebug {
-    my $this = shift ;
-    
-    my $export = "";
-    
-    $export .= sprintf "\nObject COMMON::GeoImage :\n";
-    $export .= sprintf "\t Image path : %s\n",$this->{completePath};
-    $export .= sprintf "\t Mask path : %s\n",$this->{maskCompletePath} if (defined $this->{maskCompletePath});
-
-    $export .= "\t Dimensions (in pixel) :\n";
-    $export .= sprintf "\t\t- width : %s\n",$this->{width};
-    $export .= sprintf "\t\t- height : %s\n",$this->{height};
-    
-    $export .= "\t Resolution (in SRS unity) :\n";
-    $export .= sprintf "\t\t- x : %s\n",$this->{xres};
-    $export .= sprintf "\t\t- y : %s\n",$this->{yres};
-    
-    $export .= sprintf "\t Bbox (in SRS '%s' unity) :\n",$this->{imgSrc}->getSRS();
-    $export .= sprintf "\t\t- xmin : %s\n",$this->{bbox}[0];
-    $export .= sprintf "\t\t- ymin : %s\n",$this->{bbox}[1];
-    $export .= sprintf "\t\t- xmax : %s\n",$this->{bbox}[2];
-    $export .= sprintf "\t\t- ymax : %s\n",$this->{bbox}[3];
-    
-    return $export;
-}
 
 1;
 __END__

@@ -66,24 +66,24 @@ Using:
 Attributes:
     level - string - the level ID for this source in the tile matrix sytem (TMS) (inherited from <WMTSALAD::DataSource>
     order - positive integer (starts at 0) - the priority order for this source at this level (inherited from <WMTSALAD::DataSource>
-    wms_url - string - WMS server's URL
-    wms_proxy - string - proxy's URL (opt)
-    wms_timeout - int - waiting time before timeout, in seconds (opt)
-    wms_retry - int - max number of tries (opt)
-    wms_interval - int - time interval between tries, in seconds (opt)
-    wms_user - string - authentification username on the WMS server (opt)
-    wms_password - string - authentification password (opt)
-    wms_referer - string - authentification referer (opt)
-    wms_userAgent - string - authentifcation user agent (opt)
-    wms_version - string - version number
-    wms_layers - string - comma separated layers list
-    wms_styles - string - comma separated styles list, matching the layers list
-    wms_crs - string - coordinate reference system (opt)
-    wms_format - string - output image format (opt)
-    wms_channels - int - output image channels number
-    wms_nodata - string - value of the no_data / background color
-    wms_extent - string - data bounding box, in the following format : minx,miny,maxx,maxxy
-    wms_option - string - WMS request options (opt)
+    url - string - WMS server's URL
+    proxy - string - proxy's URL (opt)
+    timeout - int - waiting time before timeout, in seconds (opt)
+    retry - int - max number of tries (opt)
+    interval - int - time interval between tries, in seconds (opt)
+    user - string - authentification username on the WMS server (opt)
+    password - string - authentification password (opt)
+    referer - string - authentification referer (opt)
+    userAgent - string - authentifcation user agent (opt)
+    version - string - version number
+    layers - string - comma separated layers list
+    styles - string - comma separated styles list, matching the layers list
+    crs - string - coordinate reference system (opt)
+    format - string - output image format (opt)
+    channels - int - output image channels number
+    nodata - string - value of the no_data / background color
+    extent - string - data bounding box, in the following format : minx,miny,maxx,maxxy
+    option - string - WMS request options (opt)
 
 Related:
     <WMTSALAD::DataSource> - Mother class
@@ -202,7 +202,7 @@ Returns:
     
 =cut
 sub new() {
-    my $this = shift;
+    my $class = shift;
     my $params = shift;
 
     $class = ref($class) || $class;
@@ -435,7 +435,7 @@ sub _init() {
 
     ## wms_referer - (opt)
     if (exists $params->{wms_referer} && defined $params->{wms_referer} && $params->{wms_referer} ne '') {
-        $this->{wms_referer} = $params->{wms_referer};
+        $this->{referer} = $params->{wms_referer};
     }
 
     ## wms_userAgent - (opt)

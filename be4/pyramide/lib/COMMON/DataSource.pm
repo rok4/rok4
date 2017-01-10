@@ -125,8 +125,8 @@ Attributes:
     list - string - File path, containing a list of image indices (I,J) to harvest.
     bbox - double array - Data source bounding box, in the previous SRS : [xmin,ymin,xmax,ymax].
 
-    imageSource - <ImageSource> - Georeferenced images' source.
-    harvesting - <Harvesting> - WMS server. If it is useless, it will be remove.
+    imageSource - <COMMON::ImageSource> - Georeferenced images' source.
+    harvesting - <COMMON::Harvesting> - WMS server. If it is useless, it will be remove.
 
 Limitations:
     Metadata managing not yet implemented.
@@ -209,10 +209,8 @@ sub new {
 
     bless($this, $class);
 
-
     # load. class
     return undef if (! $this->_load($level,$params));
-
     return undef if (! $this->computeGlobalInfo());
 
     return $this;

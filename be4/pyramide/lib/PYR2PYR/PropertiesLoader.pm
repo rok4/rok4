@@ -40,7 +40,7 @@ File: PropertiesLoader.pm
 
 Class: PYR2PYR::PropertiesLoader
 
-Reads a configuration file, to sIniFiles* format
+Reads a configuration file, to IniFiles format
 
 Using:
     (start code)

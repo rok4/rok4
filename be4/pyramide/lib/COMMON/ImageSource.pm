@@ -56,18 +56,18 @@ Using:
 Attributes:
     PATHIMG - string - Path to images directory.
     PATHMTD - string - Path to metadata directory. NOT IMPLEMENTED.
-    images - <GeoImage> array - Georeferenced images' ensemble, found in PATHIMG and subdirectories
+    images - <COMMON::GeoImage> array - Georeferenced images' ensemble, found in PATHIMG and subdirectories
     srs - string - SRS of the georeferenced images
     bestResX - double - Best X resolution among all images.
     bestResY - double - Best Y resolution among all images.
-    pixel - <Pixel> - Pixel components of all images, have to be same for each one.
-    preprocess_command - string[] - elements forming an eventual call to a preprocessing command (optionnal):
+    pixel - <COMMON::Pixel> - Pixel components of all images, have to be same for each one.
+    preprocess_command - string array - elements forming an eventual call to a preprocessing command (optionnal):
         |_ [0] the command itself
         |_ [1] command arguments placed between the command and the source file (optionnal even with a command specified)
         |_ [2] command arguments placed between the source file and the target file (optionnal even with a command specified)
         |_ [3] command arguments placed after the target file (optionnal even with a command specified)
-    preprocess_tmp_dir - string   - directory in which preprocessed images will be created. Mandatory if a preprocessing command is given.
-     |_ command call structure : command[0] [command[1]] PATHIMG/img.ext [command[2]] preprocess_tmp_dir/img.ext [command[3]]
+    preprocess_tmp_dir - string - directory in which preprocessed images will be created. Mandatory if a preprocessing command is given.
+        |_ command call structure : command[0] [command[1]] PATHIMG/img.ext [command[2]] preprocess_tmp_dir/img.ext [command[3]]
 
 Limitations:
 
@@ -125,8 +125,14 @@ ImageSource constructor. Bless an instance.
 
 Parameters (hash):
     path_image - string - Path to images' directory, to analyze.
+    path_metadata - string - Path to metadata's directory, to analyze.
     srs - string - SRS of the georeferenced images
-
+    preprocess_command - string - Command to call to preprocess source images (optionnal)
+    preprocess_opt_beg - string - Command arguments placed between the command and the source file (optionnal even with a command specified)
+    preprocess_opt_mid - string - Command arguments placed between the source file and the target file (optionnal even with a command specified)
+    preprocess_opt_end - string - Command arguments placed after the target file (optionnal even with a command specified)
+    preprocess_tmp_dir - string - Directory in which preprocessed images will be created. Mandatory if a preprocessing command is given.
+    
 See also:
     <_init>, <computeImageSource>
 =cut
@@ -141,6 +147,7 @@ sub new {
         PATHMTD => undef,
         #
         images  => [],
+        srs => undef,
         #
         bestResX => undef,
         bestResY => undef,
@@ -290,7 +297,7 @@ sub computeImageSource {
 
         my $prePsFilePath = undef;
 
-        my $objGeoImage = COMMON::GeoImage->new($filepath);
+        my $objGeoImage = COMMON::GeoImage->new($filepath, $this->{srs});
 
         if (! defined $objGeoImage) {
             ERROR ("Can not load image source ('$filepath') !");
@@ -353,7 +360,6 @@ sub computeImageSource {
         $bestResY = $yRes if (! defined $bestResY || $yRes < $bestResY);
 
         push @$lstGeoImages, $objGeoImage;
-        $objGeoImage->setImageSource($this);
     }
 
     $this->{pixel} = COMMON::Pixel->new({
@@ -452,12 +458,6 @@ sub computeBBox {
 #                                Group: Getters - Setters                                          #
 ####################################################################################################
 
-# Function: getResolution
-sub getResolution {
-    my $this = shift;
-    return $this->{resolution};  
-}
-
 # Function: getSRS
 sub getSRS {
     my $this = shift;
@@ -481,36 +481,6 @@ sub getImages {
     return @images;
 }
 
-####################################################################################################
-#                                Group: Export methods                                             #
-####################################################################################################
-
-=begin nd
-Function: exportForDebug
-
-Returns all image source's informations. Useful for debug.
-
-Example:
-    (start code)
-    (end code)
-=cut
-sub exportForDebug {
-    my $this = shift ;
-    
-    my $export = "";
-    
-    $export .= "\nObject COMMON::ImageSource :\n";
-    $export .= sprintf "\t Image directory : %s\n", $this->{PATHIMG};
-    $export .= sprintf "\t Image number : %s\n", scalar @{$this->{images}};
-
-    $export .= "\t Best resolution : \n";
-    $export .= sprintf "\t\t- x : %s\n", $this->{bestResX};
-    $export .= sprintf "\t\t- y : %s\n", $this->{bestResY};
-    
-    $export .= sprintf "\t Pixel : %s\n", $this->{pixel}->exportForDebug;
-    
-    return $export;
-}
 
 1;
 __END__

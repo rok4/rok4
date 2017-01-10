@@ -100,8 +100,7 @@ my @SRC_TYPE = ("WMS", "pyr");
 ################################################################################
 
 BEGIN {}
-INIT {
-}
+INIT {}
 END {}
 
 ####################################################################################################
@@ -125,7 +124,7 @@ Returns:
     
 =cut
 sub new() {
-    my $this = shift;
+    my $class = shift;
     my $params = shift;
 
     $class = ref($class) || $class;
@@ -177,7 +176,7 @@ sub _init() {
     if (!exists $params->{type} || !defined $params->{type}) {
         ERROR("Data source's type is undefined.");
         return FALSE;
-    } elsif (!$this->isKnownType($params->{type})) {
+    } elsif (! defined COMMON::Array::isInArray($params->{type}, @SRC_TYPE)) {
         ERROR(sprintf "Unrecognized data source's type : %s.", $params->{type});
         return FALSE;
     }
@@ -202,44 +201,6 @@ sub _init() {
 
     return TRUE;
 }
-
-
-####################################################################################################
-#                                        Group: Tests                                              #
-####################################################################################################
-
-=begin nd
-
-Function: isKnownType
-
-Tests if the given type is recognized.
-
-Using:
-    (start code)
-    my $answer = $dataSource->isKnownType( $type );
-    (end code)
-
-Parameter:
-    type - string - the type to test
-
-Returns:
-    1 (TRUE) if the type is recognized, 0 (FALSE) if not.
-
-=cut
-sub isKnownType {
-    my $this = shift;
-    my $type = shift;
-
-    return FALSE if (!defined $type);
-
-    foreach (@SRC_TYPE) {
-        return TRUE if ((lc $type) eq (lc $_));
-    }
-
-    return FALSE;
-}
-
-
 
 ####################################################################################################
 #                                        Group: Output                                             #

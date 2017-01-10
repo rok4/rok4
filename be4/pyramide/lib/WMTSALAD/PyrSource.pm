@@ -132,12 +132,12 @@ Returns:
     
 =cut
 sub new() {
-    my $this = shift;
+    my $class = shift;
     my $params = shift;
 
     $class = ref($class) || $class;
 
-    $params->{type}='pyr';
+    $params->{type} = 'pyr';
 
     # IMPORTANT : if modification, think to update natural documentation (just above)
     my $this = $class->SUPER::new($params);

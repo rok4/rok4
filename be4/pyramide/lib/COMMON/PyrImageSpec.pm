@@ -60,19 +60,10 @@ Using:
         gamma  => 1
     });
 
-    # From a code
-    my $objPIS = COMMON::PyrImageSpec->new({
-        formatCode => "TIFF_RAW_INT8",
-        samplesperpixel => 3,
-        photometric => "rgb",
-        compressionoption => "none",
-        interpolation => "bicubic",
-        gamma  => 1
-    });
     (end code)
 
 Attributes:
-    pixel - <Pixel> - Contains pixel intrinsic components.
+    pixel - <COMMON::Pixel> - Contains pixel intrinsic components.
     compression - string - Data compression. Only PNG is a unofficial TIFF compression.
     compressionoption - string - Precise additionnal actions, to do before compression. Just "crop" is available, with JPEG compression. It's allowed to empty blocs which contain white pixel, to keep pure white, even with JPEG compression.
     interpolation - string - Image could be resampling. Resampling use a kind of interpolation.
@@ -108,93 +99,68 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
+# Constant: COMPRESSIONOPTIONS
+# Define allowed values for attributes compression options.
+my @COMPRESSIONOPTIONS = ('none','crop');
+
 # Constant: COMPRESSIONS
 # Define allowed values for attributes compression
-my @COMPRESSIONS;
+my @COMPRESSIONS = ('raw','jpg','png','lzw','zip','pkb');
 
 # Constant: INTERPOLATIONS
 # Define allowed values for attributes interpolation
-my @INTERPOLATIONS;
+my @INTERPOLATIONS = ('nn','bicubic','linear','lanczos');
 
-# Constant: COMPRESSIONOPTIONS
-# Define allowed values for attributes compression options.
-my @COMPRESSIONOPTIONS;
 
 # Constant: DEFAULT
 # Define default values for attributes interpolation, compression, compressionoption and gamma.
-my %DEFAULT;
+my %DEFAULT = (
+    interpolation => 'bicubic',
+    compression => 'raw',
+    compressionoption => 'none',
+    gamma => 1
+);
 
 # Constant: SAMPLEFORMAT2CODE
 # Convert the sample format parameter to the code element.
-my %SAMPLEFORMAT2CODE;
+my %SAMPLEFORMAT2CODE = (
+    uint => "INT",
+    float => "FLOAT"
+);
 
 # Constant: CODES
 # Define all available formats' codes, and parse them.
-my %CODES;
+my %CODES = (
+    TIFF_RAW_INT8 => ["raw", "uint", 8],
+    TIFF_JPG_INT8 => ["jpg", "uint", 8],
+    TIFF_PNG_INT8 => ["png", "uint", 8],
+    TIFF_LZW_INT8 => ["lzw", "uint", 8],
+    TIFF_ZIP_INT8 => ["zip", "uint", 8],
+    TIFF_PKB_INT8 => ["pkb", "uint", 8],
 
-################################################################################
-
-BEGIN {}
-INIT {
-    @INTERPOLATIONS = ('nn','bicubic','linear','lanczos');
-    @COMPRESSIONS = ('raw','jpg','png','lzw','zip','pkb');
-    @COMPRESSIONOPTIONS = ('none','crop');
-
-    %DEFAULT = (
-        interpolation => 'bicubic',
-        compression => 'raw',
-        compressionoption => 'none',
-        gamma => 1
-    );
-
-    %SAMPLEFORMAT2CODE = (
-        uint => "INT",
-        float => "FLOAT"
-    );
-
-    %CODES = (
-        TIFF_RAW_INT8 => ["raw", "uint", 8],
-        TIFF_JPG_INT8 => ["jpg", "uint", 8],
-        TIFF_PNG_INT8 => ["png", "uint", 8],
-        TIFF_LZW_INT8 => ["lzw", "uint", 8],
-        TIFF_ZIP_INT8 => ["zip", "uint", 8],
-        TIFF_PKB_INT8 => ["pkb", "uint", 8],
-
-        TIFF_RAW_FLOAT32 => ["raw", "float", 32],
-        TIFF_LZW_FLOAT32 => ["lzw", "float", 32],
-        TIFF_ZIP_FLOAT32 => ["zip", "float", 32],
-        TIFF_PKB_FLOAT32 => ["pkb", "float", 32]
-    );
-}
-END {}
+    TIFF_RAW_FLOAT32 => ["raw", "float", 32],
+    TIFF_LZW_FLOAT32 => ["lzw", "float", 32],
+    TIFF_ZIP_FLOAT32 => ["zip", "float", 32],
+    TIFF_PKB_FLOAT32 => ["pkb", "float", 32]
+);
 
 ####################################################################################################
 #                                   Group: Class methods                                           #
 ####################################################################################################
 
 =begin nd
-method: decodeFormat
+Function: decodeFormat
 
 Extracts bits per sample, compression and sample format from a code (present in pyramid's descriptor).
 
 Returns a list : (compression, sample format, bits per sample) : ("png", "uint", 8), (undef,undef,undef) if error.
 
 Parameters (list):
-    formatCode - TIFF_INT8 and TIFF_FLOAT32 are deprecated, but handled (warnings) .
+    formatCode - Format code to decode
 =cut
 sub decodeFormat {
     my $formatCode = shift;
     
-#   to remove when format 'TIFF_INT8' and 'TIFF_FLOAT32' will be remove
-    if ($formatCode eq 'TIFF_INT8') {
-        WARN("'TIFF_INT8' is a deprecated format, use 'TIFF_RAW_INT8' instead");
-        $formatCode = 'TIFF_RAW_INT8';
-    }
-    if ($formatCode eq 'TIFF_FLOAT32') {
-        WARN("'TIFF_FLOAT32' is a deprecated format, use 'TIFF_RAW_FLOAT32' instead");
-        $formatCode = 'TIFF_RAW_FLOAT32';
-    }
-
     if (! exists $CODES{$formatCode}) {
         ERROR(sprintf "Format code is not valid '%s' !", $formatCode);
         return (undef,undef,undef);
@@ -268,12 +234,7 @@ sub _load {
     return FALSE if (! defined $params);
 
     ### Pixel object
-    my $objPixel = COMMON::Pixel->new({
-        photometric => $params->{photometric},
-        sampleformat => $params->{sampleformat},
-        bitspersample => $params->{bitspersample},
-        samplesperpixel => $params->{samplesperpixel}
-    });
+    my $objPixel = COMMON::Pixel->new($params);
 
     if (! defined $objPixel) {
         ERROR ("Can not create Pixel object !");

@@ -136,7 +136,7 @@ Parameters (hash):
     params - <XML::LibXML::Element> - XML node of the level (from the pyramid's descriptor)
         or
     type - string - VALUES
-    params - hash - Hash containg all needed level informations
+    params - string hash - Hash containg all needed level informations
 
     descDirectory - string - Directory path of the pyramid's descriptor containing this level
 

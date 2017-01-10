@@ -78,10 +78,10 @@ Using:
     (end code)
 
 Attributes:
-    forest - <Forest> - Forest which this tree belong to.
-    pyramid - <COMMON::FilePyramid> - Pyramid linked to this tree.
-    commands - <Commands> - Command to use to generate images.
-    datasource - <DataSource> - Data source to use to define bottom level nodes and generate them.
+    forest - <COMMON::Forest> - Forest which this tree belong to.
+    pyramid - <COMMON::Pyramid> - Pyramid linked to this tree.
+    commands - <COMMON::ShellCommands> - Command to use to generate images.
+    datasource - <COMMON::DataSource> - Data source to use to define bottom level nodes and generate them.
 
     bbox - double array - Datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
     nodes - <COMMON::Node> hash - Structure is:
