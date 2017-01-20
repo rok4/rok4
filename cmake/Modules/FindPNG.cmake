@@ -15,7 +15,8 @@ FIND_PATH(PNG_INCLUDE_DIR png.h
 
 FIND_LIBRARY(PNG_LIBRARY NAMES libpng.so PATHS 
     /usr/local/lib 
-    /usr/lib 
+    /usr/lib
+    /usr/lib64 
     c:/msys/local/lib
     C:/dev/cpp/libpng/src
     )

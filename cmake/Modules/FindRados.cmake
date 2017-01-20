@@ -18,6 +18,7 @@ FIND_LIBRARY(RADOS_LIBRARY NAMES librados.so PATHS
     /usr/lib/x86_64-linux-gnu/
     /usr/local/lib 
     /usr/lib
+    /usr/lib64
     c:/msys/local/lib
     C:/dev/cpp/librados/src
     )

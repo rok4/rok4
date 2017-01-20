@@ -14,7 +14,8 @@ FIND_PATH(TINYXML_INCLUDE_DIR tinyxml.h
     )
 FIND_LIBRARY(TINYXML_LIBRARY NAMES libtinyxml.so PATHS 
     /usr/local/lib 
-    /usr/lib 
+    /usr/lib
+    /usr/lib64 
     /usr/lib/x86_64-linux-gnu 
     c:/msys/local/lib
     C:/dev/cpp/libtinyxml/src

@@ -1,23 +1,24 @@
 C++ LIBRARIES
 +++++++++++++
 
-The ROK4 server, BE4 tools and IMAGE library require these extern C++ libraries. Equivalent debian package name are given.
+The ROK4 server, BE4 tools and IMAGE library require these extern C++ libraries. Equivalent debian package name and centos package name are given.
 
 * external, dynamically linked
-    - TINYXML -> libtinyxml-dev
-    - ZLIB -> zlib1g-dev
-    - TIFF -> libtiff5-dev
-    - PNG -> libpng16-dev
-    - CURL -> libcurl4-openssl-dev
-    - OPENSSL -> libssl-dev
-    - RADOS -> librados-dev
+    - LIB NAME | DEBIAN | CENTOS
+    - TINYXML | libtinyxml-dev | 
+    - ZLIB | zlib1g-dev | 
+    - TIFF | libtiff5-dev | 
+    - PNG | libpng16-dev | 
+    - CURL | libcurl4-openssl-dev | 
+    - OPENSSL | libssl-dev | 
+    - RADOS | librados-dev | 
     - KAKADU -> proprietary software, no package
     	 or
-    - OPENJPEG -> libopenjp2-7-dev
+    - OPENJPEG | libopenjp2-7-dev | 
 
 * external, statically linked
-    - TURBOJPEG -> libjpeg-turbo8-dev
-    - PTHREAD -> libc6-dev
+    - TURBOJPEG | libjpeg-turbo8-dev | 
+    - PTHREAD | libc6-dev | 
 
 * internal, statically linked
     - PROJ
@@ -87,7 +88,7 @@ This two commands should be enough:
 
     apt install libfile-copy-link-perl libgdal-perl libhttp-message-perl liblog-log4perl-perl libperl5.22 libperl5.22 or libdigest-sha-perl libwww-perl libxml-libxml-perl perl-base perl-modules-5.22 perl-modules-5.22 or libmath-bigint-perl perl-tk
 
-    cpan Tk::EntryCheck File::Map
+    cpan Tk::EntryCheck File::Map XML::Hash
 
 The perl libraries list can be obtained with the command grep -r "^use [A-Z]" pyramide/ | cut -d' ' -f 2 | grep -v COMMON | grep -v BE4 | grep -v JOINCACHE | grep -v WMTSALAD | grep -v PYR2PYR | sed "s#;##" | sed "s# ##" | sort | uniq
 

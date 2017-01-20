@@ -15,6 +15,7 @@ FIND_PATH(ZLIB_INCLUDE_DIR zlib.h
 FIND_LIBRARY(ZLIB_LIBRARY NAMES libz.so PATHS 
     /usr/local/lib 
     /usr/lib
+    /usr/lib64
     /usr/lib/x86_64-linux-gnu
     c:/msys/local/lib
     C:/dev/cpp/libzlib/src

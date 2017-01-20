@@ -17,6 +17,7 @@ FIND_PATH(JPEG2000_INCLUDE_DIR openjpeg.h
 FIND_LIBRARY(OPENJPEG_LIBRARY NAMES libopenjp2.so PATHS 
     /usr/local/lib 
     /usr/lib 
+    /usr/lib64
     /usr/lib/x86_64-linux-gnu/
     c:/msys/local/lib
     C:/dev/cpp/libopenjpeg/src

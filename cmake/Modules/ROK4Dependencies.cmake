@@ -104,18 +104,17 @@ ELSE(KDU_USE)
   endif(NOT TARGET jpeg2000)
 ENDIF(KDU_USE)
 
-
-###################################################### Extern libraries, static
-
 if(NOT TARGET jpeg)
   find_package(Jpeg)
   if(JPEG_FOUND)
-    add_library(jpeg STATIC IMPORTED)
+    add_library(jpeg SHARED IMPORTED)
     set_property(TARGET jpeg PROPERTY IMPORTED_LOCATION ${JPEG_LIBRARY})
   else(JPEG_FOUND)
-    message(FATAL_ERROR "Cannot find extern library libjpeg")
+    message(FATAL_ERROR "Cannot find extern library libturbojpeg")
   endif(JPEG_FOUND)
 endif(NOT TARGET jpeg)
+
+###################################################### Extern libraries, static
 
 if(NOT TARGET thread)
   find_package(Threads REQUIRED)
@@ -127,7 +126,6 @@ if(NOT TARGET thread)
 endif(NOT TARGET thread)
 
 ###################################################### Intern libraries, static
-
 
 if(NOT TARGET proj)
 find_package(Proj)
