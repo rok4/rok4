@@ -78,6 +78,7 @@ use warnings;
 
 use Log::Log4perl qw(:easy);
 use Geo::GDAL;
+use Data::Dumper;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -167,6 +168,8 @@ sub _init {
 
     return FALSE if (! defined $completePath);
     return FALSE if (! defined $srs);
+
+    $this->{srs} = $srs;
     
     if (! -f $completePath) {
         ERROR ("File doesn't exist !");
@@ -566,7 +569,6 @@ sub exportForMntConf {
     my $this = shift;
     my $useMasks = shift;
     $useMasks = TRUE if (! defined $useMasks);
-
 
     my $output = sprintf "IMG %s\t%s", $this->{completePath}, $this->{srs};
 
