@@ -3,15 +3,9 @@
 #
 # If it's found it sets JPEG_FOUND to TRUE
 # and following variables are set:
-#    JPEG_INCLUDE_DIR
 #    JPEG_LIBRARY
 
-FIND_PATH(JPEG_INCLUDE_DIR turbojpeg.h
-  /usr/local/include 
-  /usr/include 
-  c:/msys/local/include
-  )
-FIND_LIBRARY(JPEG_LIBRARY NAMES libturbojpeg.so PATHS 
+FIND_LIBRARY(JPEG_LIBRARY NAMES libjpeg.so PATHS 
   /usr/local/lib 
   /usr/lib 
   /usr/lib64
@@ -21,4 +15,4 @@ FIND_LIBRARY(JPEG_LIBRARY NAMES libturbojpeg.so PATHS
   )
 
 INCLUDE( "FindPackageHandleStandardArgs" )
-FIND_PACKAGE_HANDLE_STANDARD_ARGS( "Jpeg" DEFAULT_MSG JPEG_INCLUDE_DIR JPEG_LIBRARY )
+FIND_PACKAGE_HANDLE_STANDARD_ARGS( "Jpeg" DEFAULT_MSG JPEG_LIBRARY )

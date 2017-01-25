@@ -66,29 +66,10 @@ add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRCS})
 #Définition des dépendances.
 include(ROK4Dependencies)
 
-set(DEP_INCLUDE_DIR ${JPEG_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${LZW_INCLUDE_DIR} ${CURL_INCLUDE_DIR})
+set(DEP_INCLUDE_DIR ${PROJ_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${CURL_INCLUDE_DIR})
 
 #Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
-set(DEP_LIBRARY logger tiff zlib jpeg image proj lzw curl)
-
-#Liste des bibiliothèques à lier avaec l'executable à cause des options de curl
-if(CURL_OPTIONS)
-  list(APPEND DEP_LIBRARY ${CURL_SUP_LIBRARIES_NAMES})
-  include_directories(${CURL_SUP_LIBRARIES_INCLUDES})
-  list(LENGTH CURL_SUP_LIBRARIES_NAMES number_name)
-  list(LENGTH CURL_SUP_LIBRARIES_PATHS number_path)
-  if(${number_name} EQUAL ${number_path})
-    math(EXPR number_name "${number_name}-1")
-    foreach(element RANGE ${number_name})
-      list(GET CURL_SUP_LIBRARIES_NAMES ${element} name)
-      list(GET CURL_SUP_LIBRARIES_PATHS ${element} path)
-      add_library(${name} UNKNOWN IMPORTED)
-      set_property(TARGET ${name} PROPERTY IMPORTED_LOCATION ${path})
-    endforeach(element RANGE ${number_name})
-  else(${number_name} EQUAL ${number_path})
-    message(FATAL_ERROR "Problem with Curl options - The number of Curl library's names (${number_name}) are different of the number of paths (${number_path})")
-  endif(${number_name} EQUAL ${number_path})
-endif(CURL_OPTIONS)
+set(DEP_LIBRARY logger image proj curl)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 

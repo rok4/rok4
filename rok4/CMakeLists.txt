@@ -55,31 +55,12 @@ add_executable(rok4 ${rok4server_SRCS})
 #Définition des dépendances.
 include(ROK4Dependencies)
 
-set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${JPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${CURL_INCLUDE_DIR})
+set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${CURL_INCLUDE_DIR})
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
 #Listes des bibliothèques à lier avec l'éxecutable à mettre à jour
-set(DEP_LIBRARY fcgi tinyxml logger image proj jpeg zlib tiff png curl)
-
-#Liste des bibiliothèques à lier avaec l'executable à cause des options de curl
-if(CURL_OPTIONS) 
-  list(APPEND DEP_LIBRARY ${CURL_SUP_LIBRARIES_NAMES})
-  include_directories(${CURL_SUP_LIBRARIES_INCLUDES})
-  list(LENGTH CURL_SUP_LIBRARIES_NAMES number_name)
-  list(LENGTH CURL_SUP_LIBRARIES_PATHS number_path)
-  if(${number_name} EQUAL ${number_path})
-    math(EXPR number_name "${number_name}-1")
-    foreach(element RANGE ${number_name})
-      list(GET CURL_SUP_LIBRARIES_NAMES ${element} name)
-      list(GET CURL_SUP_LIBRARIES_PATHS ${element} path)
-      add_library(${name} UNKNOWN IMPORTED)
-      set_property(TARGET ${name} PROPERTY IMPORTED_LOCATION ${path})
-    endforeach(element RANGE ${number_name})
-  else(${number_name} EQUAL ${number_path})
-    message(FATAL_ERROR "Problem with Curl options - The number of Curl library's names (${number_name}) are different of the number of paths (${number_path})")
-  endif(${number_name} EQUAL ${number_path})
-endif(CURL_OPTIONS)
+set(DEP_LIBRARY fcgi tinyxml logger image proj zlib tiff png curl)
 
 target_link_libraries(rok4core ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_RADOS_LIBS_INIT} ${CMAKE_OPENSSL_LIBS_INIT} )
 target_link_libraries(rok4 rok4core)
