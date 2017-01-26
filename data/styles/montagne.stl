@@ -76,5 +76,5 @@
                         <alpha>0</alpha>
                 </colour>
         </palette>
-        <pente algo="H" unit="degree" interpolation="linear" imageNoData="-99999" slopeNoData="91"/>
+        <pente algo="H" unit="degree" interpolation="linear" imageNoData="-99999" slopeNoData="91" maxSlope="90"/>
 </style>

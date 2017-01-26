@@ -85,6 +85,8 @@
                                         <xs:attribute name="slopeNoData" type="xs:interger" use="required"/>
                                         <!-- Valeur du noData à vérifier dans le MNT source -->
                                         <xs:attribute name="imageNoData" type="xs:float" use="required"/>
+                                        <!-- Valeur de la pente maximale calculee (compris entre 0 et 255)-->
+                                        <xs:attribute name="maxSlope" type="xs:integer" use="required"/>
                                         </xs:complexContent>
                                 </xs:complexType>
                         </xs:element>
