@@ -68,7 +68,6 @@ use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
-use File::Spec::Link;
 use File::Basename;
 use File::Spec;
 use File::Path;

@@ -77,7 +77,6 @@ use Getopt::Long;
 use Data::Dumper;
 local $Data::Dumper::Maxdepth = 2;
 use Math::BigFloat;
-use File::Spec::Link;
 use File::Basename;
 use File::Spec;
 use File::Path;
