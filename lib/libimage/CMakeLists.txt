@@ -47,8 +47,10 @@ SET(
     MirrorImage.cpp StyledImage.cpp EstompageImage.cpp
     ExtendedCompoundImage.cpp CompoundImage.cpp Line.cpp MergeImage.cpp
     Grid.cpp CRS.cpp TiffEncoder.cpp
-    BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp FileContext.cpp CephPoolContext.cpp S3Context.cpp SwiftContext.cpp FileContext.cpp PaletteConfig.cpp PaletteDataSource.cpp
-    Format.cpp TiffHeaderDataSource.cpp StoreDataSource.cpp ContextBook.cpp
+    BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp 
+    FileContext.cpp CephPoolContext.cpp S3Context.cpp SwiftContext.cpp ContextBook.cpp 
+    PaletteConfig.cpp PaletteDataSource.cpp
+    Format.cpp TiffHeaderDataSource.cpp StoreDataSource.cpp
     EmptyDataSource.cpp ConvertedChannelsImage.cpp
 )
 
@@ -68,13 +70,13 @@ ADD_LIBRARY(image STATIC ${libimage_SRCS})
 
 INCLUDE(ROK4Dependencies)
 
-SET(DEP_INCLUDE_DIR ${TURBOJPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${LZW_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${PKB_INCLUDE_DIR} ${JPEG2000_INCLUDE_DIR} ${CURL_INCLUDE_DIR} ${RADOS_INCLUDE_DIR} ${OPENSSL_INCLUDE_DIR})
+SET(DEP_INCLUDE_DIR ${TURBOJPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${LZW_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${PKB_INCLUDE_DIR} ${JPEG2000_INCLUDE_DIR} ${CURL_INCLUDE_DIR} ${HIREDIS_INCLUDE_DIR} ${RADOS_INCLUDE_DIR} ${OPENSSL_INCLUDE_DIR})
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${DEP_INCLUDE_DIR})
 
 ########################################
 # Listes des bibliothèques à liées avec l'éxecutable
-SET(DEP_LIBRARY logger proj turbojpeg jpeg zlib tiff lzw pkb png jpeg2000 curl rados openssl crypto)
+SET(DEP_LIBRARY logger proj turbojpeg jpeg zlib tiff lzw pkb png jpeg2000 curl rados openssl crypto hiredis)
 
 TARGET_LINK_LIBRARIES(image ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_RADOS_LIBS_INIT} ${CMAKE_OPENSSL_LIBS_INIT} )
 

@@ -116,11 +116,22 @@ bool CephPoolContext::connection() {
 }
 
 int CephPoolContext::read(uint8_t* data, int offset, int size, std::string name) {
-    LOGGER_DEBUG("Ceph read : " << size << " bytes (from the " << offset << " one) in the object " << name);
-    int readSize = rados_read(io_ctx, name.c_str(), (char*) data, size, offset);
+
+    // Première étape : convertir le nom si un gestionnaire d'alias est présent
+    std::string realName;
+    if (am != NULL) {
+        bool ex;
+        realName = am->getAliasedName(name, &ex);
+        if (! ex) {
+            realName = name;
+        }
+    }
+    
+    LOGGER_DEBUG("Ceph read : " << size << " bytes (from the " << offset << " one) in the object " << realName);
+    int readSize = rados_read(io_ctx, realName.c_str(), (char*) data, size, offset);
 
     if (readSize < 0) {
-        LOGGER_ERROR ( "Unable to read " << size << " bytes (from the " << offset << " one) in the object " << name );
+        LOGGER_ERROR ( "Unable to read " << size << " bytes (from the " << offset << " one) in the object " << realName );
     }
 
     return readSize;

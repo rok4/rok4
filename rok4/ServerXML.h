@@ -46,6 +46,7 @@ struct Proxy;
 #include <map>
 #include "ContextBook.h"
 #include "TileMatrixSet.h"
+#include "RedisAliasManager.h"
 #include "DocumentXML.h"
 #include "Layer.h"
 #include "Style.h"

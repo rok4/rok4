@@ -11,13 +11,15 @@ The ROK4 server, BE4 tools and IMAGE library require these extern C++ libraries.
     - PNG | libpng16-dev | 
     - CURL | libcurl4-openssl-dev | 
     - OPENSSL | libssl-dev | 
+    - TURBOJPEG | libturbojpeg | 
+    - HIREDIS | libhiredis-dev | 
+    - JPEG | libjpeg | 
     - RADOS | librados-dev | 
     - KAKADU -> proprietary software, no package
     	 or
     - OPENJPEG | libopenjp2-7-dev | 
 
 * external, statically linked
-    - TURBOJPEG | libjpeg-turbo8-dev | 
     - PTHREAD | libc6-dev | 
 
 * internal, statically linked

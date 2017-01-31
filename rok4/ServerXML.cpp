@@ -287,6 +287,8 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         backlog = 0;
     }
 
+    /************************************ PARTIE OBJET ************************************/
+
     pElem = hRoot.FirstChild ( "cephContext" ).Element();
     if ( pElem) {
 
@@ -331,6 +333,9 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
             cephConf = pElemCephContext->GetText();
         }
 
+        cephBook = new ContextBook(CEPHCONTEXT, cephName, cephUser, cephConf);
+    } else {
+        cephBook = NULL;
     }
 
     pElem = hRoot.FirstChild ( "s3Context" ).Element();
@@ -377,6 +382,9 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
             s3SecretKey = pElemS3Context->GetText();
         }
 
+        s3Book = new ContextBook(S3CONTEXT, s3URL,s3AccessKey,s3SecretKey);
+    } else {
+        s3Book = NULL;
     }
 
     pElem = hRoot.FirstChild ( "swiftContext" ).Element();
@@ -435,24 +443,39 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         } else {
             swiftUserPassword = pElemSwiftContext->GetText();
         }
-    }
 
-    if (cephName != "" && cephUser != "" && cephConf != "") {
-        cephBook = new ContextBook(CEPHCONTEXT, cephName,cephUser,cephConf);
-    } else {
-        cephBook = NULL;
-    }
-
-    if (s3URL != "" && s3AccessKey != "" && s3SecretKey != "") {
-        s3Book = new ContextBook(S3CONTEXT, s3URL,s3AccessKey,s3SecretKey);
-    } else {
-        s3Book = NULL;
-    }
-
-    if (swiftAuthUrl != "" && swiftUserName != "" && swiftUserAccount != "" && swiftUserPassword != "") {
         swiftBook = new ContextBook(swiftAuthUrl, swiftUserAccount, swiftUserName, swiftUserPassword);
     } else {
         swiftBook = NULL;
+    }
+
+    // ALIAS MANAGER
+
+    pElem = hRoot.FirstChild ( "redisAliasManager" ).Element();
+    if ( pElem ) {
+
+        TiXmlElement* pElemUrl = hRoot.FirstChild ( "redisAliasManager" ).FirstChild ( "url" ).Element();
+        TiXmlElement* pElemPort = hRoot.FirstChild ( "redisAliasManager" ).FirstChild ( "port" ).Element();
+
+        if ( pElemUrl && pElemUrl->GetText() && pElemPort && pElemPort->GetText()) {
+            RedisAliasManager* am = new RedisAliasManager(pElemUrl->GetText(), std::atoi(pElemPort->GetText()));
+            if (! am->isOk()) {
+                LOGGER_ERROR("RedisAliasManager impossible à créer");
+                return ;
+            }
+            LOGGER_INFO("RedisAliasManager créé");
+
+            if (swiftBook) {
+                swiftBook->setAliasManager(am);
+            }
+            if (cephBook) {
+                cephBook->setAliasManager(am);
+            }
+            if (s3Book) {
+                s3Book->setAliasManager(am);
+            }
+        }
+
     }
 
     ok = true;

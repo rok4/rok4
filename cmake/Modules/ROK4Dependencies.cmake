@@ -124,6 +124,16 @@ if(NOT TARGET jpeg)
   endif(JPEG_FOUND)
 endif(NOT TARGET jpeg)
 
+if(NOT TARGET hiredis)
+  find_package(Hiredis)
+  if(HIREDIS_FOUND)
+    add_library(hiredis SHARED IMPORTED)
+    set_property(TARGET hiredis PROPERTY IMPORTED_LOCATION ${HIREDIS_LIBRARY})
+  else(HIREDIS_FOUND)
+    message(FATAL_ERROR "Cannot find extern library hiredis")
+  endif(HIREDIS_FOUND)
+endif(NOT TARGET hiredis)
+
 ###################################################### Extern libraries, static
 
 if(NOT TARGET thread)

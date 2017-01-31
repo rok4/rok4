@@ -128,6 +128,12 @@ private:
      */
     std::string swift_passwd;
 
+    /**
+     * \~french \brief Gestionnaire d'alias, pour convertir les noms de fichier/objet
+     * \~english \brief Alias manager to convert file/object name
+     */
+    AliasManager* am;
+
 public:
 
     /**
@@ -206,6 +212,16 @@ public:
      * \param[in] bucket Bucket's name for which context is created
      */
     Context * addContext(std::string bucket);
+
+    /**
+     * \~french
+     * \brief Précise le gestionnaire d'alias
+     * \~english
+     * \brief Set the alias manager
+     */
+    void setAliasManager(AliasManager* a) {
+        am = a;
+    }
 
     /**
      * \~french

@@ -86,7 +86,9 @@ my $UA = LWP::UserAgent->new();
 ### S3
 
 my $S3_ENDPOINT_NOPROTOCOL = $ENV{ROK4_S3_URL};
-$S3_ENDPOINT_NOPROTOCOL =~ s/^https?:\/\///;
+if (! defined $S3_ENDPOINT_NOPROTOCOL) {
+    $S3_ENDPOINT_NOPROTOCOL =~ s/^https?:\/\///;
+}
 
 ####################################################################################################
 #                               Group: Copy methods                                                #

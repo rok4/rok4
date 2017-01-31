@@ -95,7 +95,6 @@ Context * ContextBook::addContext(std::string pool)
     } else {
         //ce pool n'est pas encore connecté, on va créer la connexion
 
-
         switch(contextType) {
             case CEPHCONTEXT : 
                 ctx = new CephPoolContext(ceph_name, ceph_user, ceph_conf, pool);
@@ -109,6 +108,8 @@ Context * ContextBook::addContext(std::string pool)
             default :
                 return NULL;
         }
+
+        ctx->setAliasManager(am);
 
         //on ajoute au book
         book.insert ( std::pair<std::string,Context*>(pool,ctx) );
