@@ -76,8 +76,8 @@ use FindBin qw($Bin);
 use lib "$Bin/../lib/perl5";
 
 # My module
-use BE4::TileMatrixSet ;
-use BE4::Base36 ;
+use COMMON::TileMatrixSet ;
+use COMMON::Base36 ;
 
 ###################################################################################################
 ####################################### Variables globales ########################################

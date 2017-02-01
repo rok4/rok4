@@ -116,7 +116,6 @@ To test if all dependencies are satisfied, play a script with this content:
     use warnings;
     use AutoLoader qw(AUTOLOAD);
     use Cwd;
-    use Data::Dumper ;
     use Data::Dumper;
     use Digest::SHA;
     use ExtUtils::MakeMaker;

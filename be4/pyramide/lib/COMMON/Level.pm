@@ -577,15 +577,15 @@ sub getSlabPath {
     elsif ($this->{type} eq "S3") {
         if ($type eq "IMAGE") {
             if (defined $full && ! $full) {
-                return sprintf "%s/%s_%s_%s_%s", $this->{prefix_image}, $this->{id}, $col, $row, $this->{bucket_name};
+                return sprintf "%s_%s_%s", $this->{prefix_image}, $col, $row;
             }
-            return sprintf "%s_%s_%s_%s", $this->{prefix_image}, $this->{id}, $col, $row;
+            return sprintf "%s/%s_%s_%s", $this->{bucket_name}, $this->{prefix_image}, $col, $row;
         }
         elsif ($type eq "MASK") {
             if (defined $full && ! $full) {
-                return sprintf "%s/%s_%s_%s_%s", $this->{prefix_mask}, $this->{id}, $col, $row, $this->{bucket_name};
+                return sprintf "%s_%s_%s", $this->{prefix_mask}, $col, $row;
             }
-            return sprintf "%s_%s_%s_%s", $this->{prefix_mask}, $this->{id}, $col, $row;
+            return sprintf "%s/%s_%s_%s", $this->{bucket_name}, $this->{prefix_mask}, $col, $row;
         }
         else {
             return undef;
@@ -594,15 +594,15 @@ sub getSlabPath {
     elsif ($this->{type} eq "CEPH") {
         if ($type eq "IMAGE") {
             if (defined $full && ! $full) {
-                return sprintf "%s/%s_%s_%s_%s", $this->{prefix_image}, $this->{id}, $col, $row, $this->{pool_name};
+                return sprintf "%s_%s_%s", $this->{prefix_image}, $col, $row;
             }
-            return sprintf "%s_%s_%s_%s", $this->{prefix_image}, $this->{id}, $col, $row;
+            return sprintf "%s/%s_%s_%s", $this->{pool_name}, $this->{prefix_image}, $col, $row;
         }
         elsif ($type eq "MASK") {
             if (defined $full && ! $full) {
-                return sprintf "%s/%s_%s_%s_%s", $this->{prefix_mask}, $this->{id}, $col, $row, $this->{pool_name};
+                return sprintf "%s_%s_%s", $this->{prefix_mask}, $col, $row;
             }
-            return sprintf "%s_%s_%s_%s", $this->{prefix_mask}, $this->{id}, $col, $row;
+            return sprintf "%s/%s_%s_%s", $this->{pool_name}, $this->{prefix_mask}, $col, $row;
         }
         else {
             return undef;
