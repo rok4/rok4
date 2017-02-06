@@ -194,11 +194,6 @@ public:
         return cluster_name;
     }
     
-    bool exists(std::string name) {
-        char data[1];
-        int readSize = rados_read(io_ctx, name.c_str(), data, 1, 0);
-        return (readSize == 1);
-    }
     int read(uint8_t* data, int offset, int size, std::string name);
     bool write(uint8_t* data, int offset, int size, std::string name);
     bool writeFull(uint8_t* data, int size, std::string name);

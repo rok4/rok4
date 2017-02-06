@@ -194,10 +194,6 @@ public:
         return user_passwd;
     }
     
-    bool exists(std::string name) {
-        // TODO : Implémenter l'existance d'un objet dans swift
-        return true;
-    }
     int read(uint8_t* data, int offset, int size, std::string name);
 
     /**

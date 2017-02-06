@@ -92,7 +92,7 @@ protected:
      * \~french \brief Crée un objet Context
      * \~english \brief Create a Context object
      */
-    Context () : connected(false) {}
+    Context () : connected(false) { am = NULL; }
 
 public:
 
@@ -118,7 +118,11 @@ public:
      * \~english \brief Precise if provided object exists in this context
      * \param[in] name Object's name whose existency is asked
      */
-    virtual bool exists(std::string name) = 0;
+    
+    bool exists(std::string name) {
+        uint8_t test;
+        return (read(&test, 0, 1, name) == 1);
+    }
 
     /**
      * \~french \brief Récupère la donnée dans l'objet

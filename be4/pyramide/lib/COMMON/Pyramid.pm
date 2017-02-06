@@ -1183,6 +1183,12 @@ sub getLevel {
     return $this->{levels}->{$level};
 }
 
+# Function: getLevels
+sub getLevels {
+    my $this = shift;
+    return values %{$this->{levels}};
+}
+
 =begin nd
 Function: hasLevel
 

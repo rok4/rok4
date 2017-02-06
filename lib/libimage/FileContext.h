@@ -100,12 +100,6 @@ public:
         return root_dir;
     }
     
-    bool exists(std::string name) {
-        struct stat buf;
-        std::string fullName = root_dir + name;
-        return (stat(fullName.c_str(), &buf) == 0);
-    }
-
     int read(uint8_t* data, int offset, int size, std::string name);
     bool write(uint8_t* data, int offset, int size, std::string name);
     bool writeFull(uint8_t* data, int size, std::string name);

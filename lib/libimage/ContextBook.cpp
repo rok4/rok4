@@ -71,17 +71,18 @@ ContextBook::ContextBook(eContextType type, std::string s1, std::string s2, std:
             ceph_conf = s3;
             break;
     }
+
+    am = NULL;
 }
 
 ContextBook::ContextBook(std::string auth, std::string account, std::string user, std::string passwd)
 {
-
     contextType = SWIFTCONTEXT;
     swift_auth = auth;
     swift_account = account;
     swift_user = user;
     swift_passwd = passwd;
-
+    am = NULL;
 }
 
 Context * ContextBook::addContext(std::string pool)
@@ -109,7 +110,7 @@ Context * ContextBook::addContext(std::string pool)
                 return NULL;
         }
 
-        ctx->setAliasManager(am);
+        if (am != NULL) ctx->setAliasManager(am);
 
         //on ajoute au book
         book.insert ( std::pair<std::string,Context*>(pool,ctx) );
@@ -139,6 +140,10 @@ ContextBook::~ContextBook()
     for (it=book.begin(); it!=book.end(); ++it) {
         delete it->second;
         it->second = NULL;
+    }
+
+    if (am != NULL) {
+        delete am;
     }
 
 }

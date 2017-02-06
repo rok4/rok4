@@ -640,9 +640,9 @@ DataSource *Rok4Server::getTileUsual(Layer* L,std::string format, int tileCol, i
     DataSource* tileSource;
     // Avoid using unnecessary palette
     if ( format == "image/png" ) {
-        tileSource= new PaletteDataSource ( L->getDataPyramid()->getLevel(tileMatrix)->getTile ( tileCol, tileRow ), style->getPalette() );
+        tileSource = new PaletteDataSource ( L->getDataPyramid()->getLevel(tileMatrix)->getTile ( tileCol, tileRow ), style->getPalette() );
     } else {
-        tileSource= L->getDataPyramid()->getLevel(tileMatrix)->getTile ( tileCol, tileRow );
+        tileSource = L->getDataPyramid()->getLevel(tileMatrix)->getTile ( tileCol, tileRow );
     }
     return tileSource;
 

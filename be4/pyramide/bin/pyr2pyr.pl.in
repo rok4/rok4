@@ -351,12 +351,11 @@ StoreSlab () {
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 
-
-
 FUNCTIONS
 
 my $BASHFUNCTIONS_S3   = <<'FUNCTIONS';
 
+HOST=$(echo ${ROK4_S3_URL} | sed 's!.*://!!' | sed 's!:[0-9]\+$!!')
 
 StoreSlab () {
 
@@ -368,12 +367,10 @@ StoreSlab () {
     dateValue=`TZ=GMT date -R`
     stringToSign="PUT\n\n${contentType}\n${dateValue}\n${resource}"
 
-    server=$(echo ${ROK4_S3_URL} | sed 's!.*://!!')
-
     signature=`echo -en ${stringToSign} | openssl sha1 -hmac ${ROK4_S3_SECRETKEY} -binary | base64`
 
-    curl -X PUT -T "${fullPath}" \
-     -H "Host: ${server}" \
+    curl -k -X PUT -T "${fullPath}" \
+     -H "Host: ${HOST}" \
      -H "Date: ${dateValue}" \
      -H "Content-Type: ${contentType}" \
      -H "Authorization: AWS ${ROK4_S3_KEY}:${signature}" \
@@ -385,10 +382,7 @@ StoreSlab () {
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 
-
 FUNCTIONS
-
-
 
 
 sub doIt {

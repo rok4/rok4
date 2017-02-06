@@ -80,6 +80,8 @@ use lib "$Bin/../lib/perl5";
 # My module
 use COMMON::TileMatrixSet;
 use COMMON::Layer;
+use COMMON::Pyramid;
+use COMMON::Level;
 
 ################################################################################
 # Constantes
@@ -285,77 +287,25 @@ sub doIt {
         return FALSE;
     }
 
+    my $objTMS = $pyramid->getTileMatrixSet();
+
     push @keyword, $pyramid->getTileMatrixSet()->getName();
-
-    # NODATA
-    my $nodata = $root->findnodes('nodataValue')->to_literal;
-    if ($nodata ne '') {
-        push @keyword, $nodata;
-    }
-
-    # PHOTOMETRIC
-    my $photometric = $root->findnodes('photometric')->to_literal;
-    if ($photometric ne '') {
-        push @keyword, $photometric;
-    }
-
-    # INTERPOLATION
-    my $interpolation = $root->findnodes('interpolation')->to_literal;
-    if ($interpolation ne '') {
-        push @keyword, $interpolation;
-    }
-
-    # FORMAT
-    my $format = $root->findnodes('format')->to_literal;
-    if ($format ne '') {
-        push @keyword, $format;
-    }
-
-    # SAMPLESPERPIXEL
-    my $samplesperpixel = $root->findnodes('channels')->to_literal;
-    if ($samplesperpixel ne '') {
-        push @keyword, "Samples per pixel: $samplesperpixel";
-    }
-
-    # load pyramid level to determine the top and bottom, and bbox
-    my @levels = $root->getElementsByTagName('level');
-
-    # global informations
-    my $level = $levels[0];
-    my $tilesPerWidth = $level->findvalue('tilesPerWidth');
-    if ($tilesPerWidth ne '') {
-        push @keyword, "Tiles per width: $tilesPerWidth";
-    }
-    my $tilesPerHeight = $level->findvalue('tilesPerHeight');
-    if ($tilesPerHeight ne '') {
-        push @keyword, "Tiles per height: $tilesPerHeight";
-    }
-    my $dirdepth = $level->findvalue('pathDepth');
-    if ($dirdepth ne '') {
-        push @keyword, "Directory depth: $dirdepth";
-    }
 
     my $bottomID = undef;
     my $bottomOrder = undef;
     my $topID = undef;
     my $topOrder = undef;
-    my ($imin,$imax,$jmin,$jmax);
+    my ($rowMin, $rowMax, $colMin, $colMax);
 
-    foreach my $v (@levels) {
-        my $ID = $v->findvalue('tileMatrix');
-        my $order = $objTMS->getOrderfromID($ID);
+    foreach my $v ($pyramid->getLevels()) {
+        my $order = $v->getOrder();
+        my $ID = $v->getID();
 
         if (! defined $bottomOrder || $order < $bottomOrder) {
             $bottomOrder = $order;
             $bottomID = $ID;
-            ($imin,$imax,$jmin,$jmax) = (
-                $v->findvalue('TMSLimits/minTileCol'),
-                $v->findvalue('TMSLimits/maxTileCol'),
-                $v->findvalue('TMSLimits/minTileRow'),
-                $v->findvalue('TMSLimits/maxTileRow')
-            );
+            ($rowMin, $rowMax, $colMin, $colMax) = $v->getLimits();
         }
-
         if (! defined $topOrder || $order > $topOrder) {
             $topOrder = $order;
             $topID = $ID;
@@ -364,10 +314,10 @@ sub doIt {
 
     my $bottomTM = $objTMS->getTileMatrix($bottomID);
 
-    my $xmin = $bottomTM->columnToX($imin);
-    my $ymax = $bottomTM->rowToY($jmin);
-    my $xmax = $bottomTM->columnToX($imax+1);
-    my $ymin = $bottomTM->rowToY($jmax+1);
+    my $xmin = $bottomTM->columnToX($colMin);
+    my $ymax = $bottomTM->rowToY($rowMin);
+    my $xmax = $bottomTM->columnToX($colMax+1);
+    my $ymin = $bottomTM->rowToY($rowMax+1);
 
     ALWAYS(sprintf "BBOX (%s) : xmin %s xmax %s ymin %s ymax %s", $objTMS->getSRS(), $xmin, $xmax, $ymin, $ymax);
 

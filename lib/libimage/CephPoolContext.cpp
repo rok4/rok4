@@ -125,6 +125,8 @@ int CephPoolContext::read(uint8_t* data, int offset, int size, std::string name)
         if (! ex) {
             realName = name;
         }
+    } else {
+        realName = name;
     }
     
     LOGGER_DEBUG("Ceph read : " << size << " bytes (from the " << offset << " one) in the object " << realName);

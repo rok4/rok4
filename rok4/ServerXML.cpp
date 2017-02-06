@@ -298,7 +298,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
             char* cluster = getenv ("ROK4_CEPH_CLUSTERNAME");
             if (cluster == NULL) {
-                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un clusterName" );
+                std::cerr<< ("L'utilisation d'un cephContext necessite de preciser un clusterName" ) <<std::endl;
                 return;
             } else {
                 cephName.assign(cluster);
@@ -311,7 +311,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
             char* user = getenv ("ROK4_CEPH_USERNAME");
             if (user == NULL) {
-                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un userName" );
+                std::cerr<< ("L'utilisation d'un cephContext necessite de preciser un userName" ) <<std::endl;
                 return;
             } else {
                 cephUser.assign(user);
@@ -324,7 +324,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
             char* conf = getenv ("ROK4_CEPH_CONFFILE");
             if (conf == NULL) {
-                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser un confFile" );
+                std::cerr<< ("L'utilisation d'un cephContext necessite de preciser un confFile" ) <<std::endl;
                 return;
             } else {
                 cephConf.assign(conf);
@@ -347,7 +347,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         if ( !pElemS3Context  || ! ( pElemS3Context->GetText() ) ) {
             char* url = getenv ("ROK4_S3_URL");
             if (url == NULL) {
-                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser une url" );
+                std::cerr<< ("L'utilisation d'un cephContext necessite de preciser une url" ) <<std::endl;
                 return;
             } else {
                 s3URL.assign(url);
@@ -360,7 +360,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         if ( !pElemS3Context  || ! ( pElemS3Context->GetText() ) ) {
             char* k = getenv ("ROK4_S3_KEY");
             if (k == NULL) {
-                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser une key" );
+                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser une key" ) <<std::endl;
                 return;
             } else {
                 s3AccessKey.assign(k);
@@ -373,7 +373,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         if ( !pElemS3Context  || ! ( pElemS3Context->GetText() ) ) {
             char* sk = getenv ("ROK4_S3_SECRETKEY");
             if (sk == NULL) {
-                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser une secretKey" );
+                std::cerr<< ("L'utilisation d'un cephContext necessite de preciser une secretKey" ) <<std::endl;
                 return;
             } else {
                 s3SecretKey.assign(sk);
@@ -396,7 +396,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
             char* auth = getenv ("ROK4_SWIFT_AUTHURL");
             if (auth == NULL) {
-                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un authUrl" );
+                std::cerr<< ("L'utilisation d'un swiftContext necessite de preciser un authUrl" ) <<std::endl;
                 return;
             } else {
                 swiftAuthUrl.assign(auth);
@@ -409,7 +409,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
             char* user = getenv ("ROK4_SWIFT_USER");
             if (user == NULL) {
-                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un userName" );
+                std::cerr<< ("L'utilisation d'un swiftContext necessite de preciser un userName" ) <<std::endl;
                 return;
             } else {
                 swiftUserName.assign(user);
@@ -422,7 +422,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
             char* account = getenv ("ROK4_SWIFT_ACCOUNT");
             if (account == NULL) {
-                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un userAccount" );
+                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un userAccount" ) <<std::endl;
                 return;
             } else {
                 swiftUserAccount.assign(account);
@@ -435,7 +435,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
             char* passwd = getenv ("ROK4_SWIFT_PASSWD");
             if (passwd == NULL) {
-                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un userPassword" );
+                std::cerr<< ("L'utilisation d'un swiftContext necessite de preciser un userPassword" ) <<std::endl;
                 return;
             } else {
                 swiftUserPassword.assign(passwd);
@@ -460,10 +460,9 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         if ( pElemUrl && pElemUrl->GetText() && pElemPort && pElemPort->GetText()) {
             RedisAliasManager* am = new RedisAliasManager(pElemUrl->GetText(), std::atoi(pElemPort->GetText()));
             if (! am->isOk()) {
-                LOGGER_ERROR("RedisAliasManager impossible à créer");
+                std::cerr<<("RedisAliasManager impossible à créer") <<std::endl;
                 return ;
             }
-            LOGGER_INFO("RedisAliasManager créé");
 
             if (swiftBook) {
                 swiftBook->setAliasManager(am);
@@ -474,6 +473,9 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
             if (s3Book) {
                 s3Book->setAliasManager(am);
             }
+        } else {
+            std::cerr<<("L'utilisation d'un gestionnaire d'alias redis nécessite de préciser une url et un port") <<std::endl;
+            return ;
         }
 
     }

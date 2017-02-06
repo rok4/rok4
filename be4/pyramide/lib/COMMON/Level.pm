@@ -401,6 +401,13 @@ sub _loadXML {
 #                                Group: Getters - Setters                                          #
 ####################################################################################################
 
+
+# Function: getID
+sub getID {
+    my $this = shift;
+    return $this->{id};
+}
+
 # Function: getDirDepth
 sub getDirDepth {
     my $this = shift;

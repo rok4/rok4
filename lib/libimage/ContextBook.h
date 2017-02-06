@@ -179,6 +179,12 @@ public:
         oss << "------ Context book -------" << std::endl;
         oss << "\t- context number = " << book.size() << std::endl;
 
+        if (contextType == S3CONTEXT) {
+            oss << "\t- s3_url = " << s3_url << std::endl;
+            oss << "\t- s3_key = " << s3_key << std::endl;
+            oss << "\t- s3_secret_key = " << s3_secret_key << std::endl;
+        }
+
         std::map<std::string, Context*>::iterator it = book.begin();
         while (it != book.end()) {
             oss << "\t\t- bucket = " << it->first << std::endl;
