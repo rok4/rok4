@@ -65,14 +65,14 @@ class S3Context : public Context {
 private:
     
     /**
-     * \~french \brief URL de l'API S3, avec protocole
-     * \~english \brief S3 API URL, with protocol
+     * \~french \brief URL de l'API S3, avec protocole et port
+     * \~english \brief S3 API URL, with protocol and port
      */
     std::string url;
 
     /**
-     * \~french \brief Hôte de l'API S3 (URL sans protocole)
-     * \~english \brief S3 API Host (URL without protocol)
+     * \~french \brief Hôte de l'API S3 (URL sans protocole ni port)
+     * \~english \brief S3 API Host (URL without protocol or port)
      */
     std::string host;
     /**

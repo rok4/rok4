@@ -58,12 +58,16 @@ S3Context::S3Context (std::string u, std::string k, std::string sk, std::string 
     Context(),
     url(u), key(k), secret_key(sk), bucket_name(b)
 {
-    // On calcule host = url sans le protocole
-    std::size_t found = url.find("://");
+    // On calcule host = url sans le protocole ni le port
+
+    host = url;
+    std::size_t found = host.find("://");
     if (found != std::string::npos) {
-        host = url.substr(found + 3);
-    } else {
-        host = url;
+        host = host.substr(found + 3);
+    }
+    found = host.find(":");
+    if (found != std::string::npos) {
+        host = host.substr(0, found);
     }
 }
 
@@ -76,14 +80,17 @@ S3Context::S3Context (std::string b) : Context(), bucket_name(b) {
         url.assign(u);
     }
 
-    // On calcule host = url sans le protocole
-    std::size_t found = url.find("://");
+    // On calcule host = url sans le protocole ni le port
+
+    host = url;
+    std::size_t found = host.find("://");
     if (found != std::string::npos) {
-        host = url.substr(found + 3);
-    } else {
-        host = url;
+        host = host.substr(found + 3);
     }
-    
+    found = host.find(":");
+    if (found != std::string::npos) {
+        host = host.substr(0, found);
+    }    
 
     char* k = getenv ("ROK4_S3_KEY");
     if (k == NULL) {

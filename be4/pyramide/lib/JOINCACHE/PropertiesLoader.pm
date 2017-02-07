@@ -55,7 +55,7 @@ Using:
     (end code)
 
 Attributes:
-    configurationPath - string - Configuration file path.
+    cfgFile - string - Configuration file path.
     
     logger - hash - Can be null
     pyramid - hash - Final pyramid's parameters
@@ -65,7 +65,6 @@ Attributes:
 |           { bbox => bbox_id1, source => descriptor_path1}
 |           { bbox => bbox_id2, source => descriptor_path2}
 |       ]
-    sourceByLevel - integer hash - Precises the number of source pyramids for each level (to define priorities).
     sourcePyramids - string hash - Key is the descriptor's path. Just undefined values, to list used pyramids.
     process - hash - Generation parameters
 =cut

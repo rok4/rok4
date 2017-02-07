@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2016-12-02 16:19+0100\n"
+"POT-Creation-Date: 2017-02-06 15:16+0100\n"
 "PO-Revision-Date: 2014-01-28 09:36+0100\n"
 "Last-Translator: \n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -218,20 +218,20 @@ msgstr "Indice de tuile négatif"
 msgid "getDirPath n'a pas de sens dans le cas d'un contexte non fichier"
 msgstr ""
 
-#: Level.cpp:409
+#: Level.cpp:411
 msgid "Type d'encodage inconnu : "
 msgstr "Type d'encodage inconnu : "
 
-#: Level.cpp:417 Rok4Api.cpp:568 Rok4Server.cpp:606 Rok4Server.cpp:614
+#: Level.cpp:419 Rok4Api.cpp:568 Rok4Server.cpp:606 Rok4Server.cpp:614
 #: Rok4Server.cpp:629 Rok4Server.cpp:783
 msgid "No data found"
 msgstr "Aucune donnée"
 
-#: Level.cpp:431
+#: Level.cpp:433
 msgid "GetTile Tiff"
 msgstr "GetTile Tiff"
 
-#: Level.cpp:440
+#: Level.cpp:442
 msgid "GetTile Image"
 msgstr "GetTile Image"
 

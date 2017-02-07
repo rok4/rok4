@@ -88,6 +88,7 @@ my $UA = LWP::UserAgent->new();
 my $S3_ENDPOINT_NOPROTOCOL = $ENV{ROK4_S3_URL};
 if (defined $S3_ENDPOINT_NOPROTOCOL) {
     $S3_ENDPOINT_NOPROTOCOL =~ s/^https?:\/\///;
+    $S3_ENDPOINT_NOPROTOCOL =~ s/:[0-9]+$//;
 }
 
 ####################################################################################################

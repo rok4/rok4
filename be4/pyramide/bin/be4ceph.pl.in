@@ -251,7 +251,7 @@ sub init {
 =begin nd
 Function: config
 
-Loads properties files and merge parameters.
+Loads properties files and merge parameters. We also check environment variable (object storage configuration).
 
 See Also:
     <checkParams>
@@ -312,6 +312,21 @@ sub config {
         }
 
         Log::Log4perl->easy_init(@args);
+    }
+
+    # Environment variables
+
+    if (! defined $ENV{ROK4_CEPH_CONFFILE}) {
+        ERROR("Environment variable ROK4_CEPH_CONFFILE is not defined");
+        return FALSE;
+    }
+    if (! defined $ENV{ROK4_CEPH_USERNAME}) {
+        ERROR("Environment variable ROK4_CEPH_USERNAME is not defined");
+        return FALSE;
+    }
+    if (! defined $ENV{ROK4_CEPH_CLUSTERNAME}) {
+        ERROR("Environment variable ROK4_CEPH_CLUSTERNAME is not defined");
+        return FALSE;
     }
     
     return TRUE;
@@ -483,6 +498,12 @@ Group: Command's options
     --version - Display the tool version.
 
     --conf=path - Path to configuration file of the pyramid. This option is mandatory.
+
+Group: Mandatory environment variable
+
+    ROK4_CEPH_CONFFILE
+    ROK4_CEPH_USERNAME
+    ROK4_CEPH_CLUSTERNAME
 
 Group: Write a configuration file
 

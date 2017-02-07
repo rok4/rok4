@@ -62,7 +62,7 @@ Using:
 
 Attributes:
     id - string - TM identifiant.
-    tms - <TileMatrixSet> - TMS to whom it belong
+    tms - <COMMON::TileMatrixSet> - TMS to whom it belong
     resolution - double - Ground size of a pixel, using unity of the SRS.
     topLeftCornerX - double - X coordinate of the upper left corner for the level, the grid's origin.
     topLeftCornerY - double - Y coordinate of the upper left corner for the level, the grid's origin.
@@ -70,7 +70,7 @@ Attributes:
     tileHeight - integer -  Pixel height of a tile.
     matrixWidth - integer - Number of tile in the grid, widthwise.
     matrixHeight - integer -  Number of tile in the grid, heightwise.
-    targetsTm - <TileMatrix> array - Determine other levels which use this one to be generated. Empty if this level belong to a quad tree <TileMatrixSet>.
+    targetsTm - <COMMON::TileMatrix> array - Determine other levels which use this one to be generated. Empty if this level belong to a quad tree <TileMatrixSet>.
 
 Limits:
     Resolution have to be the same  X and Y wise.

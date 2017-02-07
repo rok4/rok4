@@ -197,15 +197,39 @@ sub new {
         }
     }
     
-    # STOCKAGE TYPE
+    # STOCKAGE TYPE AND ENVIRONMENT VARAIBLES CONTROLS
     if ( defined $this->{dir_depth} ) {
         $this->{type} = "FILE";
     }
     elsif ( defined $this->{bucket_name} ) {
         $this->{type} = "S3";
+        if (! defined $ENV{ROK4_S3_URL}) {
+            ERROR("Environment variable ROK4_S3_URL is not defined");
+            return undef;
+        }
+        if (! defined $ENV{ROK4_S3_KEY}) {
+            ERROR("Environment variable ROK4_S3_KEY is not defined");
+            return undef;
+        }
+        if (! defined $ENV{ROK4_S3_SECRETKEY}) {
+            ERROR("Environment variable ROK4_S3_SECRETKEY is not defined");
+            return undef;
+        }
     }
     elsif ( defined $this->{pool_name} ) {
         $this->{type} = "CEPH";
+        if (! defined $ENV{ROK4_CEPH_CONFFILE}) {
+            ERROR("Environment variable ROK4_CEPH_CONFFILE is not defined");
+            return undef;
+        }
+        if (! defined $ENV{ROK4_CEPH_USERNAME}) {
+            ERROR("Environment variable ROK4_CEPH_USERNAME is not defined");
+            return undef;
+        }
+        if (! defined $ENV{ROK4_CEPH_CLUSTERNAME}) {
+            ERROR("Environment variable ROK4_CEPH_CLUSTERNAME is not defined");
+            return undef;
+        }
     } else {
         ERROR ("Cannot identify the storage type for the COMMON::Level");
         return undef;

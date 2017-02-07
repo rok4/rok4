@@ -54,7 +54,7 @@ Attributes:
     j - integer - Row
     level - string - Level's identifiant
     code - string - Commands to execute to generate this node (to write in a script)
-    script - <Script> - Script in which the node will be generated
+    script - <COMMON::Script> - Script in which the node will be generated
     sources - hash array - Source images from which this node is generated. One image source :
 |               img - string - Absolute path to the image
 |               msk - string - Absolute path to the associated mask (optionnal)

@@ -251,7 +251,7 @@ sub init {
 =begin nd
 Function: config
 
-Loads properties files and merge parameters.
+Loads properties files and merge parameters. We also check environment variable (object storage configuration).
 
 See Also:
     <checkParams>
@@ -312,6 +312,21 @@ sub config {
         }
 
         Log::Log4perl->easy_init(@args);
+    }
+
+    # Environment variables
+
+    if (! defined $ENV{ROK4_S3_URL}) {
+        ERROR("Environment variable ROK4_S3_URL is not defined");
+        return FALSE;
+    }
+    if (! defined $ENV{ROK4_S3_KEY}) {
+        ERROR("Environment variable ROK4_S3_KEY is not defined");
+        return FALSE;
+    }
+    if (! defined $ENV{ROK4_S3_SECRETKEY}) {
+        ERROR("Environment variable ROK4_S3_SECRETKEY is not defined");
+        return FALSE;
     }
     
     return TRUE;
@@ -482,6 +497,12 @@ Group: Command's options
     --version - Display the tool version.
 
     --conf=path - Path to configuration file of the pyramid. This option is mandatory.
+
+Group: Mandatory environment variable
+
+    ROK4_S3_URL
+    ROK4_S3_KEY
+    ROK4_S3_SECRETKEY
 
 Group: Write a configuration file
 
