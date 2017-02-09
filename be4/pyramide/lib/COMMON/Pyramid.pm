@@ -941,7 +941,7 @@ sub writeList {
         $newSlab =~ s/^[0-9]+/$newRoot/;
 
         if ($updateMode eq "slink") {
-            if (! COMMON::ProxyStorage::symLink($ancestorStorageType, $ancestorSlab, $newStorageType, $newSlab)) {
+            if (! defined COMMON::ProxyStorage::symLink($ancestorStorageType, $ancestorSlab, $newStorageType, $newSlab)) {
                 ERROR("The ancestor slab '$ancestorSlab' cannot be referenced by sym link in the new pyramid");
                 return FALSE;
             }

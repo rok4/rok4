@@ -356,8 +356,36 @@ sub doIt {
     # objects to implemented
     
     my $objPyramid = undef;
+    my $objAncestorPyramid = undef;
     my $objDSL = undef;
     my $objForest = undef;
+
+    #######################
+    # if ancestor, read it
+
+    if (exists $params->{pyramid}->{pyr_name_old} && defined $params->{pyramid}->{pyr_name_old}) {
+    
+        ALWAYS(">>> Load an ancestor pyramid ...");
+
+        if (! exists $params->{pyramid}->{pyr_desc_path_old} || ! defined $params->{pyramid}->{pyr_desc_path_old}) {
+            ERROR("If ancestor pyramid, we need the 'pyr_desc_path_old' parameter with 'pyr_name_old'");
+            return FALSE;
+        }
+
+        my $ancestorDescriptor = File::Spec->catdir($params->{pyramid}->{pyr_desc_path_old}, $params->{pyramid}->{pyr_name_old});
+        $ancestorDescriptor .= ".pyr" if ($ancestorDescriptor !~ m/\.pyr/i);
+
+        $objAncestorPyramid = COMMON::Pyramid->new("DESCRIPTOR", $ancestorDescriptor );
+        if (! defined $objAncestorPyramid) {
+            ERROR("Cannot load ancestor pyramid !");
+            return FALSE;
+        }
+
+        if (! $objAncestorPyramid->bindTileMatrixSet($params->{pyramid}->{tms_path})) {
+            ERROR("Cannot bind TMS to ancestor pyramid !");
+            return FALSE;
+        }
+    }
     
     #######################
     # create a pyramid
@@ -366,12 +394,12 @@ sub doIt {
     
     $objPyramid = COMMON::Pyramid->new("VALUES", $params->{pyramid} );
     if (! defined $objPyramid) {
-        ERROR("Cannot load Pyramid !");
+        ERROR("Cannot create output Pyramid !");
         return FALSE;
     }
 
     if (! $objPyramid->bindTileMatrixSet($params->{pyramid}->{tms_path})) {
-        ERROR("Cannot bind TMS to Pyramid !");
+        ERROR("Cannot bind TMS to output Pyramid !");
         return FALSE;
     }
 
@@ -440,7 +468,7 @@ sub doIt {
     
     ALWAYS(">>> Write the pyramid's list ...");
 
-    if ( ! $objPyramid->writeList($objForest, undef) ) {
+    if ( ! $objPyramid->writeList($objForest, $objAncestorPyramid, $params->{pyramid}->{update_mode}) ) {
         ERROR("Can not write Pyramid list !");
         return FALSE;
     }

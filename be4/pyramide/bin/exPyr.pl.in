@@ -468,7 +468,7 @@ sub doIt {
                     my $dstSlabPath = $dstLevel->getSlabPath("IMAGE", $col, $row, TRUE);
 
                     if ($this{params}->{pyramid}->{extract_mode} eq "slink") {
-                        if (! COMMON::ProxyStorage::symLink($srcStorageType, $srcSlabPath, $dstStorageType, $dstSlabPath)) {
+                        if (! defined COMMON::ProxyStorage::symLink($srcStorageType, $srcSlabPath, $dstStorageType, $dstSlabPath)) {
                             ERROR("The ancestor slab '$srcSlabPath' cannot be referenced by sym link in the new pyramid");
                             return FALSE;
                         }

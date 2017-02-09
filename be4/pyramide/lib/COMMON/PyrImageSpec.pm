@@ -84,6 +84,7 @@ use Data::Dumper;
 # My module
 use COMMON::Pixel;
 use COMMON::Array;
+use COMMON::CheckUtils;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);

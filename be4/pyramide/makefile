@@ -24,11 +24,12 @@ buildlib:
 buildbin: \
 ./bin/be4.pl \
 ./bin/joinCache.pl \
+./bin/joinCache-s3.pl \
 ./bin/coord2image.pl \
 ./bin/be4-simulator.pl \
 ./bin/tms-converter-gui.pl \
-./bin/be4ceph.pl \
-./bin/be4s3.pl \
+./bin/be4-ceph.pl \
+./bin/be4-s3.pl \
 ./bin/pyr2pyr.pl \
 ./bin/create-layer.pl \
 ./bin/exPyr.pl \

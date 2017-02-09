@@ -25,12 +25,10 @@ endif(NOT DEFINED ROK4LIBSDIR)
 
 set(BUILD_SHARED_LIBS OFF)
 
-
 #Build Type si les build types par défaut de CMake ne conviennent pas
 #set(CMAKE_BUILD_TYPE specificbuild)
 #set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-g -O0 -msse -msse2 -msse3")
 #set(CMAKE_C_FLAGS_SPECIFICBUILD "")
-
 
 ########################################
 #définition des fichiers sources
@@ -48,9 +46,10 @@ set(DEP_INCLUDE_DIR ${TIFF_INCLUDE_DIR} )
 set(VERSION_TEXT ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Makefile.PL.in ${CMAKE_CURRENT_BINARY_DIR}/src/Makefile.PL @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/be4.pl @ONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4ceph.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/be4ceph.pl @ONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4s3.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/be4s3.pl @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4-ceph.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/be4-ceph.pl @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4-s3.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/be4-s3.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/joinCache.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/joinCache.pl @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/joinCache-s3.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/joinCache-s3.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/create-layer.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/create-layer.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/coord2image.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/coord2image.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/tms-converter-gui.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/tms-converter-gui.pl @ONLY)

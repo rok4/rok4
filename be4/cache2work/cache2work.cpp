@@ -288,7 +288,8 @@ int main ( int argc, char **argv )
     delete outputImage;
     delete acc;
     delete context;
-    if (container != 0) {
+
+    if (container != 0 || bucket != 0) {
         curl_global_cleanup();
     }
 

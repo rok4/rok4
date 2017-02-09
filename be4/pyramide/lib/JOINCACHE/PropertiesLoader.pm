@@ -138,12 +138,6 @@ sub new {
     # Load parameters
     return undef if (! $this->_init());
     return undef if (! $this->_load());
-
-    ERROR("toto");
-
-    ERROR(Dumper($this->{composition}));
-    ERROR(Dumper($this->{sourcePyramids}));
-
     return undef if (! $this->_check());
 
     return $this;
@@ -314,10 +308,6 @@ sub readCompositionLine {
             $objPyramid = COMMON::Pyramid->new("DESCRIPTOR", $pyr);
             if (! defined $objPyramid) {
                 ERROR ("Cannot create the COMMON::Pyramid object from source pyramid's descriptor: $pyr ($levelId,$extentId)");
-                return FALSE;
-            }
-            if ($objPyramid->getStorageType() ne "FILE") {
-                ERROR ("JoinCache only handle FILE output pyramid");
                 return FALSE;
             }
             $this->{sourcePyramids}->{$pyr} = $objPyramid;

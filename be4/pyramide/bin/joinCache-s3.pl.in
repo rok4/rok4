@@ -43,10 +43,10 @@ Section: JOINCACHE tool
 
 Synopsis:
     (start code)
-    perl joinCache.pl --conf=path
+    perl joinCache-s3.pl --conf=path
     (end code)
 
-Tool allowing to merge pyramids, using the same TMS. Merge method (if an image is present in several source pyramids) can be :
+Tool allowing to merge pyramids stored on S3 object system, using the same TMS. Merge method (if an image is present in several source pyramids) can be :
     - replace : only the top pyramid's image is kept
     - multiply : samples are multiplied
     - alphatop : alpha blending method
@@ -168,7 +168,6 @@ my %this =
     composition => undef,
 
     listStream => undef,
-    roots => {},
 
     doneSlabs => {}
 );
@@ -330,8 +329,36 @@ sub config {
         Log::Log4perl->easy_init(@args);
     }
 
+    # Environment variables
+
+    if (! defined $ENV{ROK4_S3_URL}) {
+        ERROR("Environment variable ROK4_S3_URL is not defined");
+        return FALSE;
+    }
+    if (! defined $ENV{ROK4_S3_KEY}) {
+        ERROR("Environment variable ROK4_S3_KEY is not defined");
+        return FALSE;
+    }
+    if (! defined $ENV{ROK4_S3_SECRETKEY}) {
+        ERROR("Environment variable ROK4_S3_SECRETKEY is not defined");
+        return FALSE;
+    }
+    if (! defined $ENV{ROK4_REDIS_HOST}) {
+        ERROR("Environment variable ROK4_REDIS_HOST is not defined");
+        return FALSE;
+    }
+    if (! defined $ENV{ROK4_REDIS_PORT}) {
+        ERROR("Environment variable ROK4_REDIS_PORT is not defined");
+        return FALSE;
+    }
+    if (! defined $ENV{ROK4_REDIS_PASSWD}) {
+        ERROR("Environment variable ROK4_REDIS_PASSWD is not defined");
+        return FALSE;
+    }
+
     return TRUE;
 }
+
 ####################################################################################################
 #                                 Group: Validation methods                                        #
 ####################################################################################################
@@ -359,8 +386,8 @@ sub validate {
         return FALSE;
     }
 
-    if ($objPyramid->getStorageType() ne "FILE") {
-        ERROR ("JoinCache only handle FILE output pyramid");
+    if ($objPyramid->getStorageType() ne "S3") {
+        ERROR ("JoinCache-S3 only handle S3 output pyramid");
         return FALSE;
     }
     
@@ -480,8 +507,19 @@ sub doIt {
     my $TPW = $pyramid->getTilesPerWidth();
     my $TPH = $pyramid->getTilesPerHeight();
     my $TMS = $pyramid->getTileMatrixSet();
+    my $bucketName = $pyramid->getTilesPerHeight();
 
     my $listFile = $pyramid->getListFile();
+    my $dir = File::Basename::dirname($listFile);
+
+    if (! -d $dir) {
+        eval { mkpath([$dir]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the output pyramid list directory '%s' : %s !", $dir , $@);
+            return FALSE;
+        }
+    }
+
     my $STREAM;
     if (! open $STREAM, ">", $listFile) {
         ERROR(sprintf "Cannot open output pyramid list file (write) : %s",$listFile);
@@ -489,8 +527,7 @@ sub doIt {
     }
     $this{listStream} = $STREAM;
 
-    # On stocke la racine de la pyramide de sortie avec l'index 0
-    $this{roots}->{$pyramid->getDataRoot()} = 0;
+    printf $STREAM "0=%s\n#\n", $pyramid->getDataRoot();
 
     while( my ($level,$sources) = each(%{$this{composition}}) ) {
         INFO(sprintf "Level %s",$level);
@@ -565,11 +602,6 @@ sub doIt {
         $s->close();
     }
 
-    if (! main::writeRootsInList()) {
-        ERROR(sprintf "Cannot write the header in the cache list file : %s", $this{pyramid}->getListFile());
-        return FALSE;
-    }
-
     # writting pyramid's configuration file
     ALWAYS(">>> Write pyramid's descriptor");
     if (! $this{pyramid}->writeDescriptor()) {
@@ -583,13 +615,10 @@ sub doIt {
 sub treatNode {
     my $node = shift;
 
-    my $finalImageEnd = $this{pyramid}->getLevel($node->getLevel())->getSlabPath("IMAGE", $node->getColumn(), $node->getRow(), FALSE);
     my $finalImage = $this{pyramid}->getLevel($node->getLevel())->getSlabPath("IMAGE", $node->getColumn(), $node->getRow(), TRUE);
 
     my $finalMask = undef;
-    my $finalMaskEnd = undef;
     if ($this{pyramid}->ownMasks()) {
-        $finalMaskEnd = $this{pyramid}->getLevel($node->getLevel())->getSlabPath("MASK", $node->getColumn(), $node->getRow(), FALSE);
         $finalMask = $this{pyramid}->getLevel($node->getLevel())->getSlabPath("MASK", $node->getColumn(), $node->getRow(), TRUE);
     }
 
@@ -597,22 +626,23 @@ sub treatNode {
     $node->setScript($this{scripts}->[$this{currentScript}]);
 
     if ($node->getSourcesNumber() == 1) {
+
         my $sourceImage = $node->getSource(0);
 
         if ($this{pyramid}->checkCompatibility($sourceImage->{sourcePyramid}) == 2) {
             # We can just make a symbolic link, no code in a script
 
-            my $linkedFile = COMMON::ProxyStorage::symLink(
+            my $aliasedObject = COMMON::ProxyStorage::symLink(
                 $sourceImage->{sourcePyramid}->getStorageType(), $sourceImage->{img},
                 $this{pyramid}->getStorageType(), $finalImage
             );
 
-            if (! defined $linkedFile) {
-                ERROR(sprintf "The ancestor image slab '%s' cannot be referenced by sym link in the new pyramid", $sourceImage->{img});
+            if (! defined $aliasedObject) {
+                ERROR(sprintf "The ancestor image slab '%s' cannot be aliased (redis key value) in the new pyramid", $sourceImage->{img});
                 return FALSE;
             }
 
-            main::storeInList($finalImageEnd, $linkedFile);
+            main::storeInList($aliasedObject);
             
         } else {
             # We have just one source image, but it is not compatible with the final cache
@@ -622,7 +652,7 @@ sub treatNode {
                 return FALSE;
             }
 
-            main::storeInList($finalImageEnd, $finalImage);
+            main::storeInList($finalImage);
             
             $this{currentScript} = ($this{currentScript}+1)%(scalar(@{$this{scripts}}));
         }
@@ -631,17 +661,17 @@ sub treatNode {
         if (exists $sourceImage->{msk} && defined $finalMask) {
             # We can just make a symbolic link, no code in a script
 
-            my $linkedFile = COMMON::ProxyStorage::symLink(
+            my $aliasedObject = COMMON::ProxyStorage::symLink(
                 $sourceImage->{sourcePyramid}->getStorageType(), $sourceImage->{msk},
                 $this{pyramid}->getStorageType(), $finalMask
             );
 
-            if (! defined $linkedFile ) {
-                ERROR(sprintf "The ancestor mask slab '%s' cannot be referenced by sym link in the new pyramid", $sourceImage->{msk});
+            if (! defined $aliasedObject) {
+                ERROR(sprintf "The ancestor mask slab '%s' cannot be aliased (redis key value) in the new pyramid", $sourceImage->{msk});
                 return FALSE;
             }
-            
-            main::storeInList($finalMaskEnd, $linkedFile);
+
+            main::storeInList($aliasedObject);
         }
         
     } else {
@@ -652,10 +682,10 @@ sub treatNode {
         }
         $this{currentScript} = ($this{currentScript}+1)%(scalar(@{$this{scripts}}));
 
-        main::storeInList($finalImageEnd, $finalImage);
+        main::storeInList($finalImage);
 
         if (defined $finalMask) {
-            main::storeInList($finalMaskEnd, $finalMask);
+            main::storeInList($finalMask);
         }
     }
 
@@ -676,51 +706,13 @@ Parameters:
     slabPath - string - Full slab path, to store in the file list (with indexed root).
 =cut
 sub storeInList {
-    my $slabPathEnd = shift;
     my $slabPath = shift;
 
-    my $root = $slabPath;
-    $root =~ s/\/$slabPathEnd//;
-
-    my $rootID;
-    if (exists $this{roots}->{$root}) {
-        $rootID = $this{roots}->{$root};
-    } else {
-        $rootID = scalar (keys %{$this{roots}}) + 1;
-        $this{roots}->{$root} = $rootID;
-    }
+    my $bucketName = $this{pyramid}->getDataRoot();
+    $slabPath =~ s/$bucketName/0/;
 
     my $STREAM = $this{listStream};
-    printf $STREAM "%s\n", "$rootID/$slabPathEnd";
-}
-
-=begin nd
-Function: writeRootsInList
-
-Write roots at the top of the cache list.
-=cut
-sub writeRootsInList {
-
-    my $listFile = $this{pyramid}->getListFile();
-
-    # We write at the top of the list file, caches' roots, using Tie library
-
-    my @LIST;
-    if (! tie @LIST, 'Tie::File', $listFile) {
-        ERROR("Cannot open '$listFile' with Tie librairy");
-        return FALSE;
-    }
-
-    unshift @LIST, "#\n";
-    while( my ($root,$rootID) = each( %{$this{roots}} ) ) {
-        if ($rootID == 0) {next;}
-        unshift @LIST, "$rootID=$root\n";
-    }
-
-    # Root of the new cache (first position)
-    unshift @LIST,(sprintf "0=%s\n", $this{pyramid}->getDataRoot());
-
-    untie @LIST;
+    print $STREAM "$slabPath\n";
 }
 
 ################################################################################
@@ -750,6 +742,16 @@ Group: Command's options
     --version - Display the tool version.
 
     --conf=path - Path to configuration file of the pyramid. This option is mandatory.
+
+Group: Mandatory environment variable
+
+    ROK4_S3_URL
+    ROK4_S3_KEY
+    ROK4_S3_SECRETKEY
+
+    ROK4_REDIS_HOST
+    ROK4_REDIS_PORT
+    ROK4_REDIS_PASSWD
 
 Group: Write a configuration file
 

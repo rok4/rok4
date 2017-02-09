@@ -70,6 +70,7 @@ private:
     redisReply *rReply;
 
     std::string host;
+    std::string passwd;
     int port;
 
 public:
@@ -79,24 +80,41 @@ public:
      * \~french \brief Crée un objet RedisAliasManager
      * \~english \brief Create a RedisAliasManager object
      */
-    RedisAliasManager (std::string h, int p) : AliasManager(), host(h), port(p) {
+    RedisAliasManager (std::string h, int p, std::string pwd) : AliasManager(), host(h), port(p), passwd(pwd) {
+
         ok = false;
         struct timeval timeout = { 1, 500000 }; // 1.5 seconds
         rContext = redisConnectWithTimeout(host.c_str(), port, timeout);
         if (rContext == NULL || rContext->err) {
             if (rContext) {
-                LOGGER_ERROR("Redis connection error: " << rContext->errstr);
+                std::cerr << "Redis connection error: " << std::string(rContext->errstr) << std::endl;
                 redisFree(rContext);
             } else {
-                LOGGER_ERROR("Connection error: can't allocate redis context");
+                std::cerr << ("Connection error: can't allocate redis context") << std::endl;
             }
             return;
         }
+
+        // Authentification
+
+        std::string auth = "AUTH " + passwd;
+        rReply = (redisReply*) redisCommand(rContext, auth.c_str());
+
+        //if (rReply->type != REDIS_REPLY_STATUS || strcasecmp(rReply->str,"OK") != 0 ) {
+        if (rReply->type == REDIS_REPLY_ERROR ) {
+            std::cerr << "Connection error: can't authticate redis context: " << std::string(rReply->str) << std::endl;
+            freeReplyObject(rReply);
+            redisFree(rContext);
+            return;
+        }
+
+        freeReplyObject(rReply);
 
         ok = true;
     }
 
     std::string getAliasedName(std::string alias, bool* exists) {
+
         rReply = (redisReply*) redisCommand(rContext, "GET %s", alias.c_str());
 
         if (rReply->type == 4) {
@@ -104,7 +122,6 @@ public:
             freeReplyObject(rReply);
             return "";
         }
-
 
         std::string res = rReply->str;
         freeReplyObject(rReply);

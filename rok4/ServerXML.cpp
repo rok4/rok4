@@ -454,30 +454,64 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
     pElem = hRoot.FirstChild ( "redisAliasManager" ).Element();
     if ( pElem ) {
 
-        TiXmlElement* pElemUrl = hRoot.FirstChild ( "redisAliasManager" ).FirstChild ( "url" ).Element();
-        TiXmlElement* pElemPort = hRoot.FirstChild ( "redisAliasManager" ).FirstChild ( "port" ).Element();
+        std::string redisHost;
+        std::string redisPwd;
+        int redisPort;
 
-        if ( pElemUrl && pElemUrl->GetText() && pElemPort && pElemPort->GetText()) {
-            RedisAliasManager* am = new RedisAliasManager(pElemUrl->GetText(), std::atoi(pElemPort->GetText()));
-            if (! am->isOk()) {
-                std::cerr<<("RedisAliasManager impossible à créer") <<std::endl;
-                return ;
-            }
-
-            if (swiftBook) {
-                swiftBook->setAliasManager(am);
-            }
-            if (cephBook) {
-                cephBook->setAliasManager(am);
-            }
-            if (s3Book) {
-                s3Book->setAliasManager(am);
+        TiXmlElement* pElemRedis = hRoot.FirstChild ( "redisAliasManager" ).FirstChild ( "host" ).Element();
+        if ( !pElemRedis  || ! ( pElemRedis->GetText() ) ) {
+            char* url = getenv ("ROK4_REDIS_HOST");
+            if (url == NULL) {
+                std::cerr<< ("L'utilisation d'un RedisAliasManager necessite de preciser un HOST" ) <<std::endl;
+                return;
+            } else {
+                redisHost.assign(url);
             }
         } else {
-            std::cerr<<("L'utilisation d'un gestionnaire d'alias redis nécessite de préciser une url et un port") <<std::endl;
+            redisHost = pElemRedis->GetText();
+        }
+
+        pElemRedis = hRoot.FirstChild ( "redisAliasManager" ).FirstChild ( "passwd" ).Element();
+        if ( !pElemRedis  || ! ( pElemRedis->GetText() ) ) {
+            char* pwd = getenv ("ROK4_REDIS_PASSWD");
+            if (pwd == NULL) {
+                std::cerr<< ("L'utilisation d'un RedisAliasManager necessite de preciser un PASSWD" ) <<std::endl;
+                return;
+            } else {
+                redisPwd.assign(pwd);
+            }
+        } else {
+            redisPwd = pElemRedis->GetText();
+        }
+
+        pElemRedis = hRoot.FirstChild ( "redisAliasManager" ).FirstChild ( "port" ).Element();
+        if ( !pElemRedis  || ! ( pElemRedis->GetText() ) ) {
+            char* po = getenv ("ROK4_REDIS_PORT");
+            if (po == NULL) {
+                std::cerr<< ("L'utilisation d'un RedisAliasManager necessite de preciser un PORT" ) <<std::endl;
+                return;
+            } else {
+                redisPort = std::atoi(po);
+            }
+        } else {
+            redisPort = std::atoi(pElemRedis->GetText());
+        }
+
+        RedisAliasManager* am = new RedisAliasManager(redisHost, redisPort, redisPwd);
+        if (! am->isOk()) {
+            std::cerr<<("RedisAliasManager impossible à créer") <<std::endl;
             return ;
         }
 
+        if (swiftBook) {
+            swiftBook->setAliasManager(am);
+        }
+        if (cephBook) {
+            cephBook->setAliasManager(am);
+        }
+        if (s3Book) {
+            s3Book->setAliasManager(am);
+        }
     }
 
     ok = true;

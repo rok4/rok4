@@ -213,6 +213,49 @@ sub copy {
 }
 
 ####################################################################################################
+#                               Group: Redis methods                                               #
+####################################################################################################
+
+sub redisValueFromKey {
+    my $key = shift;
+
+    my $redisValue = `redis-cli -h $ENV{ROK4_REDIS_HOST} -p $ENV{ROK4_REDIS_PORT} -a $ENV{ROK4_REDIS_PASSWD} GET $key`;
+    chomp($redisValue);
+
+    if ($redisValue ne "") {
+        return $redisValue;
+    } else {
+        return undef;
+    }
+}
+
+sub addKeyValue {
+    my $key = shift;
+    my $value = shift;
+
+    INFO("redis add $key => $value");
+
+    my $ret = `redis-cli -h $ENV{ROK4_REDIS_HOST} -p $ENV{ROK4_REDIS_PORT} -a $ENV{ROK4_REDIS_PASSWD} SET $key $value`;
+    chomp($ret);
+    if ($ret ne "OK") {
+        ERROR("REDIS: $ret");
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+sub redisKeyExists {
+    my $key = shift;
+
+    my $redisPresent = `redis-cli -h $ENV{ROK4_REDIS_HOST} -p $ENV{ROK4_REDIS_PORT} -a $ENV{ROK4_REDIS_PASSWD} EXISTS $key | cut -d' ' -f1`;
+    chomp($redisPresent);
+
+    return ($redisPresent eq "1");
+}
+
+
+####################################################################################################
 #                               Group: Test methods                                                #
 ####################################################################################################
 
@@ -266,10 +309,48 @@ sub isPresent {
         return FALSE;
     }
     elsif ($type eq "CEPH") {
+        ERROR("Not implemented");
         return FALSE;
     }
     elsif ($type eq "S3") {
-        return FALSE;
+        # On interroge la base REDIS puis le S3
+
+        my ($bucketName, @rest) = split("/", $path);
+        my $objectName = join("", @rest);
+
+        if (! defined $bucketName || ! defined $objectName) {
+            ERROR("S3 path is not valid (<bucketName>/<objectName>) : $path");
+            return FALSE;
+        }
+
+        if (redisKeyExists($objectName)) {
+            return TRUE;
+        }
+
+        my $resource = "/$bucketName/$objectName";
+        my $contentType="application/octet-stream";
+        my $dateValue=`TZ=GMT date -R`;
+        chomp($dateValue);
+        my $stringToSign="HEAD\n\n$contentType\n$dateValue\n$resource";
+
+        my $signature = Digest::SHA::hmac_sha1_base64($stringToSign, $ENV{ROK4_S3_SECRETKEY});
+        while (length($signature) % 4) {
+            $signature .= '=';
+        }
+
+        # set custom HTTP request header fields
+        my $request = HTTP::Request->new(HEAD => $ENV{ROK4_S3_URL}.$resource);
+        $request->header('Host' => $S3_ENDPOINT_NOPROTOCOL);
+        $request->header('Date' => $dateValue);
+        $request->header('Content-Type' => $contentType);
+        $request->header('Authorization' => sprintf ("AWS %s:$signature", $ENV{ROK4_S3_KEY}));
+         
+        my $response = $UA->request($request);
+        if ($response->is_success) {
+            return TRUE;
+        } else {
+            return FALSE;
+        }
     }
 
     return FALSE;
@@ -345,7 +426,7 @@ sub getSize {
 =begin nd
 Function: symLink
 
-Return TRUE if success FALSE otherwise
+Return the real file/object linked if success, undef otherwise
 =cut
 sub symLink {
     my $targetType = shift;
@@ -353,57 +434,87 @@ sub symLink {
     my $toType = shift;
     my $toPath = shift;
 
-    if ($targetType eq "FILE") {
-        if ($toType eq "FILE") {
-
-            # create folder
-            my $dir = File::Basename::dirname($toPath);
-            `mkdir -p $dir`;
-            if ($?) {
-                ERROR("Cannot create directory '$dir' : $!");
-                return FALSE;
-            }
-
-            my $relTargetPath = File::Spec->abs2rel($targetPath, $dir);
-
-            `ln -s $relTargetPath $toPath`;
-            if ($?) {
-                ERROR("Cannot link (symbolic) file $targetPath from file $toPath : $!");
-                return FALSE;
-            }
-            return TRUE;
+    if ($targetType eq "FILE" && $toType eq "FILE") {
+        # create folder
+        my $dir = File::Basename::dirname($toPath);
+        `mkdir -p $dir`;
+        if ($?) {
+            ERROR("Cannot create directory '$dir' : $!");
+            return undef;
         }
-        elsif ($toType eq "CEPH") {
-            return FALSE;
+
+        my $relativeTargetPath;
+        my $realTargetPath;
+        if (-f $targetPath && ! -l $targetPath) {
+            $relativeTargetPath = File::Spec->abs2rel($targetPath,$dir);
+            $realTargetPath = $targetPath;
         }
-        elsif ($toType eq "S3") {
-            return FALSE;
+        elsif (-f $targetPath && -l $targetPath) {
+            $realTargetPath = File::Spec::Link->full_resolve( File::Spec::Link->linked($targetPath) );
+            $relativeTargetPath = File::Spec->abs2rel($realTargetPath, $dir);
+        } else {
+            ERROR(sprintf "The tile '%s' (to symlink) is not a file or a link in '%s' !", basename($targetPath), dirname($targetPath));
+            return undef;
         }
+
+        my $result = eval { symlink ($relativeTargetPath, $toPath); };
+        if (! $result) {
+            ERROR (sprintf "The tile '%s' can not be linked by '%s' (%s) ?", $targetPath, $toPath, $!);
+            return undef;
+        }
+
+        return $realTargetPath;
     }
-    elsif ($targetType eq "CEPH") {
-        if ($toType eq "FILE") {
-            return FALSE;
+    elsif ($targetType eq "CEPH" && $toType eq "CEPH") {
+        my ($poolName, @rest) = split("/", $targetPath);
+        my $realTarget = join("", @rest);
+
+        # On vérifie que la dalle CEPH à lier n'est pas un alias, auquel cas on référence le vrai objet (pour éviter des alias en cascade)
+        my $value = redisValueFromKey($realTarget);
+        if (defined $value) {
+            # On a une valeur qui est le vrai nom de l'objet (réellement stocké sur S3)
+            $realTarget = $value;
         }
-        elsif ($toType eq "CEPH") {
-            return FALSE;
+
+        # On retire le bucket du nom de l'alias à créer
+        ($poolName, @rest) = split("/", $toPath);
+        $toPath = join("", @rest);
+
+        # On ajoute la paire clé - valeur dans redis : $toPath => $realTarget
+        if (! addKeyValue($toPath, $realTarget)) {
+            ERROR("Cannot symlink (add a key/value in redis) object $realTarget with alias $toPath : $!");
+            return undef;
         }
-        elsif ($toType eq "S3") {
-            return FALSE;
-        }
+
+        return "$poolName/$realTarget";
     }
-    elsif ($targetType eq "S3") {
-        if ($toType eq "FILE") {
-            return FALSE;
+    elsif ($targetType eq "S3" && $toType eq "S3") {
+        my ($bucketName, @rest) = split("/", $targetPath);
+        my $realTarget = join("", @rest);
+
+        # On vérifie que la dalle S3 à lier n'est pas un alias, auquel cas on référence le vrai objet (pour éviter des alias en cascade)
+
+        my $value = redisValueFromKey($realTarget);
+        if (defined $value) {
+            # On a une valeur qui est le vrai nom de l'objet (réellement stocké sur S3)
+            $realTarget = $value;
         }
-        elsif ($toType eq "CEPH") {
-            return FALSE;
+
+        # On retire le bucket du nom de l'alias à créer
+        ($bucketName, @rest) = split("/", $toPath);
+        $toPath = join("", @rest);
+
+        # On ajoute la paire clé - valeur dans redis : $toPath => $realTarget
+        if (! addKeyValue($toPath, $realTarget)) {
+            ERROR("Cannot symlink (add a key/value in redis) object $realTarget with alias $toPath : $!");
+            return undef;
         }
-        elsif ($toType eq "S3") {
-            return FALSE;
-        }
+
+        return "$bucketName/$realTarget";
     }
 
-    return FALSE;
+    ERROR("Symlink can only be done between two file/path using the same storage type (and not $toType -> $targetType)");
+    return undef;
 }
 
 =begin nd
@@ -417,54 +528,37 @@ sub hardLink {
     my $toType = shift;
     my $toPath = shift;
 
-    if ($targetType eq "FILE") {
-        if ($toType eq "FILE") {
+    if ($targetType eq "FILE" && $toType eq "FILE") {
 
-            # create folder
-            my $dir = File::Basename::dirname($toPath);
-            `mkdir -p $dir`;
-            if ($?) {
-                ERROR("Cannot create directory '$dir' : $!");
-                return FALSE;
-            }
+        # create folder
+        my $dir = File::Basename::dirname($toPath);
+        `mkdir -p $dir`;
+        if ($?) {
+            ERROR("Cannot create directory '$dir' : $!");
+            return FALSE;
+        }
 
-            `ln $targetPath $toPath`;
-            if ($?) {
-                ERROR("Cannot link (hard) file $targetPath from file $toPath : $!");
-                return FALSE;
-            }
-            return TRUE;
+        my $realTarget;
+        if (-f $targetPath && ! -l $targetPath) {
+            $realTarget = $targetPath;
         }
-        elsif ($toType eq "CEPH") {
+        elsif (-f $targetPath && -l $targetPath) {
+            $realTarget = File::Spec::Link->full_resolve( File::Spec::Link->linked($targetPath) );
+        } else {
+            ERROR(sprintf "The file (to hardlink) '%s' is not a file or a link in '%s' !", basename($targetPath), dirname($targetPath));
             return FALSE;
         }
-        elsif ($toType eq "S3") {
+
+        `ln $targetPath $toPath`;
+        if ($?) {
+            ERROR("Cannot link (hard) file $targetPath from file $toPath : $!");
             return FALSE;
         }
-    }
-    elsif ($targetType eq "CEPH") {
-        if ($toType eq "FILE") {
-            return FALSE;
-        }
-        elsif ($toType eq "CEPH") {
-            return FALSE;
-        }
-        elsif ($toType eq "S3") {
-            return FALSE;
-        }
-    }
-    elsif ($targetType eq "S3") {
-        if ($toType eq "FILE") {
-            return FALSE;
-        }
-        elsif ($toType eq "CEPH") {
-            return FALSE;
-        }
-        elsif ($toType eq "S3") {
-            return FALSE;
-        }
+
+        return TRUE;
     }
 
+    ERROR("Symlink can only be done between two files (and not $toType -> $targetType)");
     return FALSE;
 }
 

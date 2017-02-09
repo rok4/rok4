@@ -290,6 +290,9 @@ Cache2work () {
     local input=$1
     local output=$2
 
+    # On retire le bucket du input
+    input=`echo -n "$input" | sed "s#${PYR_BUCKET}/##"`
+
     cache2work -c zip -bucket ${PYR_BUCKET} $input ${TMP_DIR}/$output
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
@@ -317,6 +320,9 @@ StoreSlab () {
 Cache2work () {
     local input=$1
     local output=$2
+
+    # On retire le pool du input
+    input=`echo -n "$input" | sed "s#${PYR_POOL}/##"`
 
     cache2work -c zip -pool ${PYR_POOL} $input ${TMP_DIR}/$output
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
@@ -423,7 +429,7 @@ sub overlayNtiff {
             my $inMskName = $node->getWorkName($i."_M");
             my $inMskPath = File::Spec->catfile($node->getScript->getTempDir, $inMskName);
             $code .= sprintf "Cache2work %s $inMskName\n", $sourceImage->{msk};
-            $line = " $inMskPath";
+            $line .= " $inMskPath";
         }
 
         printf CFGF "$line\n";

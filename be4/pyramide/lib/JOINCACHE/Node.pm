@@ -179,7 +179,7 @@ sub _load {
     my $params = shift;
 
     if (! exists $params->{sourcePyramids} || ! defined $params->{sourcePyramids}) {
-        ERROR("Sources is undefined !");
+        ERROR("Source pyramids is undefined !");
         return FALSE;
     }
     if (! exists $params->{mainSourceIndice} || ! defined $params->{mainSourceIndice}) {
