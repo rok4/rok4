@@ -107,6 +107,24 @@ public:
     }
 
     /**
+     * \~french
+     * \brief Convertit le nom grâce au gestionnaire d'alias si présent
+     */
+    std::string convertName(std::string name) {
+        if (am != NULL) {
+            bool ex;
+            std::string realName = am->getAliasedName(name, &ex);
+            if (! ex) {
+                return name;
+            } else {
+                return realName;
+            }
+        } else {
+            return name;
+        }
+    }
+
+    /**
      * \~french \brief Connecte le contexte
      * \~english \brief Connect the context
      */

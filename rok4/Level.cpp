@@ -381,10 +381,6 @@ DataSource* Level::getEncodedTile ( int x, int y ) { // TODO: return 0 sur des c
         uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
         std::string path=getPath ( x, y, tilesPerWidth, tilesPerHeight);
         LOGGER_DEBUG ( path );
-        if (! context->exists(path)) {
-            LOGGER_ERROR("ça n'existe pas");
-            return NULL;
-        }
         StoreDataSourceFactory SDSF;
         return SDSF.createStoreDataSource( path.c_str(), true,posoff,possize,Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );
     }
@@ -419,6 +415,8 @@ DataSource* Level::getTile (int x, int y) {
     if (source == NULL) return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "wmts" ) );
 
     size_t size;
+
+    if (source->getData ( size ) == NULL) return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "wmts" ) );
 
     if (
             ( format==Rok4Format::TIFF_RAW_INT8 || format == Rok4Format::TIFF_LZW_INT8 ||

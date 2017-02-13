@@ -67,7 +67,6 @@ class RedisAliasManager : public AliasManager {
 private:
 
     redisContext *rContext;
-    redisReply *rReply;
 
     std::string host;
     std::string passwd;
@@ -98,9 +97,70 @@ public:
         // Authentification
 
         std::string auth = "AUTH " + passwd;
-        rReply = (redisReply*) redisCommand(rContext, auth.c_str());
+        redisReply* rReply = (redisReply*) redisCommand(rContext, auth.c_str());
 
-        //if (rReply->type != REDIS_REPLY_STATUS || strcasecmp(rReply->str,"OK") != 0 ) {
+        if (rReply->type == REDIS_REPLY_ERROR ) {
+            std::cerr << "Connection error: can't authticate redis context: " << std::string(rReply->str) << std::endl;
+            freeReplyObject(rReply);
+            redisFree(rContext);
+            return;
+        }
+
+        freeReplyObject(rReply);
+
+        ok = true;
+    }
+
+    /**
+     * \~french \brief Crée un objet RedisAliasManager
+     * \~english \brief Create a RedisAliasManager object
+     */
+    RedisAliasManager () : AliasManager() {
+
+        ok = false;
+
+        // Tout est récupéré des variables d'environnement
+
+        char* h = getenv ("ROK4_REDIS_HOST");
+        if (h == NULL) {
+            LOGGER_ERROR("L'utilisation d'un RedisAliasManager necessite d'avoir la variable d'environnement ROK4_REDIS_HOST" );
+            return;
+        }
+        host.assign(h);
+
+        char* pwd = getenv ("ROK4_REDIS_PASSWD");
+        if (pwd == NULL) {
+            LOGGER_ERROR("L'utilisation d'un RedisAliasManager necessite d'avoir la variable d'environnement ROK4_REDIS_PASSWD" );
+            return;
+        }
+        passwd.assign(pwd);
+
+        char* po = getenv ("ROK4_REDIS_PORT");
+        if (po == NULL) {
+            LOGGER_ERROR("L'utilisation d'un RedisAliasManager necessite d'avoir la variable d'environnement ROK4_REDIS_PORT" );
+            return;
+        }
+        port = std::atoi(po);
+
+        // On connecte
+
+        struct timeval timeout = { 1, 500000 }; // 1.5 seconds
+        rContext = redisConnectWithTimeout(host.c_str(), port, timeout);
+        if (rContext == NULL || rContext->err) {
+            if (rContext) {
+                LOGGER_ERROR("Redis connection error: " << std::string(rContext->errstr));
+                redisFree(rContext);
+            } else {
+                LOGGER_ERROR("Connection error: can't allocate redis context");
+            }
+            return;
+        }
+
+        // Authentification
+
+        std::string auth = "AUTH " + passwd;
+        redisReply* rReply = (redisReply*) redisCommand(rContext, auth.c_str());
+
         if (rReply->type == REDIS_REPLY_ERROR ) {
             std::cerr << "Connection error: can't authticate redis context: " << std::string(rReply->str) << std::endl;
             freeReplyObject(rReply);
@@ -115,7 +175,14 @@ public:
 
     std::string getAliasedName(std::string alias, bool* exists) {
 
-        rReply = (redisReply*) redisCommand(rContext, "GET %s", alias.c_str());
+        redisReply* rReply = (redisReply*) redisCommand(rContext, "GET %s", alias.c_str());
+
+        if (rReply->type == REDIS_REPLY_ERROR ) {
+            LOGGER_ERROR("Redis error: can't get '" << alias << "' : " << std::string(rReply->str));
+            freeReplyObject(rReply);
+            *exists = false;
+            return "";
+        }
 
         if (rReply->type == 4) {
             *exists = false;

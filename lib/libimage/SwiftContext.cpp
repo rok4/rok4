@@ -150,19 +150,7 @@ bool SwiftContext::connection() {
 
 int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
 
-    // Première étape : convertir le nom si un gestionnaire d'alias est présent
-    std::string realName;
-    if (am != NULL) {
-        bool ex;
-        realName = am->getAliasedName(name, &ex);
-        if (! ex) {
-            realName = name;
-        }
-    } else {
-        realName = name;
-    }
-
-    LOGGER_DEBUG("Swift read : " << size << " bytes (from the " << offset << " one) in the object " << realName);
+    LOGGER_DEBUG("Swift read : " << size << " bytes (from the " << offset << " one) in the object " << name);
 
     CURLcode res;
     struct curl_slist *list = NULL;
@@ -183,7 +171,7 @@ int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
     strcat(fullUrl, "/");
     strcat(fullUrl, container_name.c_str());
     strcat(fullUrl, "/");
-    strcat(fullUrl, realName.c_str());
+    strcat(fullUrl, name.c_str());
 
     char range[50];
     sprintf(range, "Range: bytes=%d-%d", offset, lastBytes);
@@ -202,7 +190,7 @@ int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
 
 
     if( CURLE_OK != res) {
-        LOGGER_ERROR("Cannot read data from Swift : " << size << " bytes (from the " << offset << " one) in the object " << realName);
+        LOGGER_ERROR("Cannot read data from Swift : " << size << " bytes (from the " << offset << " one) in the object " << name);
         LOGGER_ERROR(curl_easy_strerror(res));
         return -1;
     }
@@ -210,7 +198,7 @@ int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
     long http_code = 0;
     curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
     if (http_code < 200 || http_code > 299) {
-        LOGGER_ERROR("Cannot read data from Swift : " << size << " bytes (from the " << offset << " one) in the object " << realName);
+        LOGGER_ERROR("Cannot read data from Swift : " << size << " bytes (from the " << offset << " one) in the object " << name);
         LOGGER_ERROR("Response HTTP code : " << http_code);
         return -1;
     }

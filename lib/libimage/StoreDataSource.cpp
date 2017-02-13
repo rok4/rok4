@@ -58,22 +58,26 @@
 // Taille maximum d'une tuile WMTS
 #define MAX_TILE_SIZE 1048576
 
-StoreDataSource::StoreDataSource (const char* name, bool indexToRead, const uint32_t o, const uint32_t s, std::string type, Context* c, std::string encoding ) :
-    name ( name ), posoff(o), possize(s), maxsize(0), type (type), encoding( encoding ), context(c)
+StoreDataSource::StoreDataSource (const char* n, bool indexToRead, const uint32_t o, const uint32_t s, std::string type, Context* c, std::string encoding ) :
+    name ( n ), posoff(o), possize(s), maxsize(0), type (type), encoding( encoding ), context(c)
 {
     data = 0;
     size = 0;
     readFull = false;
     readIndex = indexToRead;
+
+    name = context->convertName(name);
 }
 
-StoreDataSource::StoreDataSource (const char* name, const uint32_t maxsize, std::string type, Context* c, std::string encoding ) :
-    name ( name ), posoff ( 0 ), possize ( 0 ), maxsize(maxsize), type (type), encoding( encoding ), context(c)
+StoreDataSource::StoreDataSource (const char* n, const uint32_t maxsize, std::string type, Context* c, std::string encoding ) :
+    name ( n ), posoff ( 0 ), possize ( 0 ), maxsize(maxsize), type (type), encoding( encoding ), context(c)
 {
     data = 0;
     size = 0;
     readFull = true;
     readIndex = false;
+
+    name = context->convertName(name);
 }
 
 

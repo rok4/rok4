@@ -8,8 +8,8 @@
 
 FIND_PATH(JPEG2000_INCLUDE_DIR openjpeg.h
     /usr/local/include 
-    /usr/include 
-    /usr/include/openjpeg-2.1/      
+    /usr/include/openjpeg-2.1/  
+    /usr/include     
     c:/msys/local/include
     C:/dev/cpp/libopenjpeg/src
     )

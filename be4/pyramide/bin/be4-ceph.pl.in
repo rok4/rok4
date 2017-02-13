@@ -552,17 +552,14 @@ Topic: pyramid
 For more informations about properties, see <BE4CEPH::Pyramid>.
 
     pyr_name_new - Name of the new pyramid, used to name the descriptor, the pyramid's list, the temporary directory and prefix the Ceph objects. Mandatory.
-
     pyr_desc_path - Directory path, where to write the descriptor and the list. Mandatory.
-
     pyr_data_pool_name - Mandatory.
 
-    pyr_data_cluster_name - Ceph cluster name where to store data. Example: ceph. Mandatory.
-
-    pyr_data_user_name - Ceph cluster user to use to store data. Example: client.admin . Mandatory.
-
-    pyr_data_conf_file - Ceph cluster conf file to use to store data. Example: /etc/ceph/ceph.conf . Mandatory.
-
+    pyr_name_old - Ancestor's name. If this parameter is present, generation is an update.
+    pyr_desc_path_old - Directory path where to find the ancestor's descriptor.
+    update_mode - Possible values :
+        slink, copy : existing pyramid, the way the new cache will reference the ancestor's cache.
+        inject : no new pyramid. The old one is updated. CAUTION : old pyramid is irreversibly modified
 
     compression - Possible values : raw, jpg, zip, lzw, png, pkb. PNG compression is not an official compression for tiff format (just readable by rok4). Default : raw.
 

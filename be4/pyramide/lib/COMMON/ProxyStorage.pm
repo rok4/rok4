@@ -188,10 +188,59 @@ sub copy {
     }
     elsif ($fromType eq "CEPH") {
         if ($toType eq "FILE") {
-            return FALSE;
+            my ($poolName, @rest) = split("/", $fromPath);
+            my $objectName = join("", @rest);
+
+            if (! defined $poolName || ! defined $objectName) {
+                ERROR("CEPH path is not valid (<poolName>/<objectName>) : $fromPath");
+                return FALSE;
+            }
+
+            # create folder
+            my $dir = File::Basename::dirname($toPath);
+            `mkdir -p $dir`;
+            if ($?) {
+                ERROR("Cannot create directory '$dir' : $!");
+                return FALSE;
+            }
+
+            `rados -p $poolName get $objectName $toPath`;
+            if ($?) {
+                ERROR("Cannot download CEPH object $objectName (pool $poolName) into file '$fromPath': $!");
+                return FALSE;
+            }
+
+            return TRUE;
         }
         elsif ($toType eq "CEPH") {
-            return FALSE;
+            my ($fromPool, @from) = split("/", $fromPath);
+            my $fromObjectName = join("", @from);
+
+            if (! defined $fromPool || ! defined $fromObjectName) {
+                ERROR("CEPH path is not valid (<poolName>/<objectName>) : $fromPath");
+                return FALSE;
+            }
+
+            my ($toPool, @to) = split("/", $toPath);
+            my $toObjectName = join("", @to);
+
+            if (! defined $toPool || ! defined $toObjectName) {
+                ERROR("CEPH path is not valid (<poolName>/<objectName>) : $toPath");
+                return FALSE;
+            }
+
+            if ($toPool ne $fromPool) {
+                ERROR("CEPH copy is not possible for different pool: $fromPath -> X $toPath");
+                return FALSE;
+            }
+
+            `rados -p $toPool cp $fromObjectName $toObjectName`;
+            if ($?) {
+                ERROR("Cannot copy CEPH object $fromObjectName -> $toObjectName (pool $fromPool): $!");
+                return FALSE;
+            }
+
+            return TRUE;
         }
         elsif ($toType eq "S3") {
             return FALSE;
@@ -199,13 +248,102 @@ sub copy {
     }
     elsif ($fromType eq "S3") {
         if ($toType eq "FILE") {
-            return FALSE;
+
+            my ($bucketName, @rest) = split("/", $fromPath);
+            my $objectName = join("", @rest);
+
+            if (! defined $bucketName || ! defined $objectName) {
+                ERROR("S3 path is not valid (<bucketName>/<objectName>) : $fromPath");
+                return FALSE;
+            }
+
+            my $context = "/$bucketName/$objectName";
+            my $content_type = "application/octet-stream";
+            my $date_gmt = `TZ=GMT date -R`;
+            chomp($date_gmt);
+            my $string_to_sign="GET\n\n$content_type\n$date_gmt\n$context";
+
+            my $signature = Digest::SHA::hmac_sha1_base64($string_to_sign, $ENV{ROK4_S3_SECRETKEY});
+            while (length($signature) % 4) {
+                $signature .= '=';
+            }
+
+            my $request = HTTP::Request->new(GET => $ENV{ROK4_S3_URL}.$context);
+
+            $request->header('Host' => $S3_ENDPOINT_NOPROTOCOL);
+            $request->header('Date' => $date_gmt);
+            $request->header('Content-Type' => $content_type);
+            $request->header('Authorization' => sprintf ("AWS %s:$signature", $ENV{ROK4_S3_KEY}));
+             
+            # create folder
+            my $dir = File::Basename::dirname($toPath);
+            `mkdir -p $dir`;
+            if ($?) {
+                ERROR("Cannot create directory '$dir' : $!");
+                return FALSE;
+            }
+
+            my $response = $UA->request($request, $toPath);
+            if ($response->is_success) {
+                return TRUE;
+            } else {
+                ERROR("Cannot download S3 object '$fromPath' to file $toPath");
+                ERROR("HTTP code: ", $response->code);
+                ERROR("HTTP message: ", $response->message);
+                ERROR("HTTP decoded content : ", $response->decoded_content);
+                return FALSE;
+            }
         }
         elsif ($toType eq "CEPH") {
             return FALSE;
         }
         elsif ($toType eq "S3") {
-            return FALSE;
+
+            my ($fromBucket, @from) = split("/", $fromPath);
+            my $fromObjectName = join("", @from);
+
+            if (! defined $fromBucket || ! defined $fromObjectName) {
+                ERROR("S3 path is not valid (<bucketName>/<objectName>) : $fromPath");
+                return FALSE;
+            }
+
+            my ($toBucket, @to) = split("/", $toPath);
+            my $toObjectName = join("", @to);
+
+            if (! defined $toBucket || ! defined $toObjectName) {
+                ERROR("CEPH path is not valid (<bucketName>/<objectName>) : $toPath");
+                return FALSE;
+            }
+
+            my $context = "/$toBucket/$toObjectName";
+            my $content_type = "application/octet-stream";
+            my $date_gmt = `TZ=GMT date -R`;
+            chomp($date_gmt);
+            my $string_to_sign="PUT\n\n$content_type\n$date_gmt\n$context";
+
+            my $signature = Digest::SHA::hmac_sha1_base64($string_to_sign, $ENV{ROK4_S3_SECRETKEY});
+            while (length($signature) % 4) {
+                $signature .= '=';
+            }
+
+            my $request = HTTP::Request->new(PUT => $ENV{ROK4_S3_URL}.$context);
+
+            $request->header('Host' => $S3_ENDPOINT_NOPROTOCOL);
+            $request->header('Date' => $date_gmt);
+            $request->header('Content-Type' => $content_type);
+            $request->header('x-amz-copy-source' => "/$fromBucket/$fromObjectName");
+            $request->header('Authorization' => sprintf ("AWS %s:$signature", $ENV{ROK4_S3_KEY}));
+
+            my $response = $UA->request($request, $toPath);
+            if ($response->is_success) {
+                return TRUE;
+            } else {
+                ERROR("Cannot copy S3 object '$fromPath' to S3 object '$toPath'");
+                ERROR("HTTP code: ", $response->code);
+                ERROR("HTTP message: ", $response->message);
+                ERROR("HTTP decoded content : ", $response->decoded_content);
+                return FALSE;
+            }
         }
     }
 
@@ -232,8 +370,6 @@ sub redisValueFromKey {
 sub addKeyValue {
     my $key = shift;
     my $value = shift;
-
-    INFO("redis add $key => $value");
 
     my $ret = `redis-cli -h $ENV{ROK4_REDIS_HOST} -p $ENV{ROK4_REDIS_PORT} -a $ENV{ROK4_REDIS_PASSWD} SET $key $value`;
     chomp($ret);
@@ -466,7 +602,7 @@ sub symLink {
         return $realTargetPath;
     }
     elsif ($targetType eq "CEPH" && $toType eq "CEPH") {
-        my ($poolName, @rest) = split("/", $targetPath);
+        my ($tPoolName, @rest) = split("/", $targetPath);
         my $realTarget = join("", @rest);
 
         # On vérifie que la dalle CEPH à lier n'est pas un alias, auquel cas on référence le vrai objet (pour éviter des alias en cascade)
@@ -477,8 +613,13 @@ sub symLink {
         }
 
         # On retire le bucket du nom de l'alias à créer
-        ($poolName, @rest) = split("/", $toPath);
+        (my $toPoolName, @rest) = split("/", $toPath);
         $toPath = join("", @rest);
+
+        if ($tPoolName ne $toPoolName) {
+            ERROR("CEPH link (redis key-value) is not possible between different pool: $toPath -> X $targetPath");
+            return FALSE;
+        }
 
         # On ajoute la paire clé - valeur dans redis : $toPath => $realTarget
         if (! addKeyValue($toPath, $realTarget)) {
@@ -486,10 +627,10 @@ sub symLink {
             return undef;
         }
 
-        return "$poolName/$realTarget";
+        return "$tPoolName/$realTarget";
     }
     elsif ($targetType eq "S3" && $toType eq "S3") {
-        my ($bucketName, @rest) = split("/", $targetPath);
+        my ($tBucketName, @rest) = split("/", $targetPath);
         my $realTarget = join("", @rest);
 
         # On vérifie que la dalle S3 à lier n'est pas un alias, auquel cas on référence le vrai objet (pour éviter des alias en cascade)
@@ -501,8 +642,13 @@ sub symLink {
         }
 
         # On retire le bucket du nom de l'alias à créer
-        ($bucketName, @rest) = split("/", $toPath);
+        (my $toBucketName, @rest) = split("/", $toPath);
         $toPath = join("", @rest);
+
+        if ($tBucketName ne $toBucketName) {
+            ERROR("S3 link (redis key-value) is not possible between different pool: $toPath -> X $targetPath");
+            return FALSE;
+        }
 
         # On ajoute la paire clé - valeur dans redis : $toPath => $realTarget
         if (! addKeyValue($toPath, $realTarget)) {
@@ -510,7 +656,7 @@ sub symLink {
             return undef;
         }
 
-        return "$bucketName/$realTarget";
+        return "$tBucketName/$realTarget";
     }
 
     ERROR("Symlink can only be done between two file/path using the same storage type (and not $toType -> $targetType)");

@@ -71,6 +71,7 @@ use POSIX qw(locale_h);
 use Getopt::Long;
 
 use Data::Dumper;
+local $Data::Dumper::Maxdepth = 2;
 
 use File::Basename;
 use File::Spec;
@@ -92,6 +93,8 @@ use COMMON::Forest;
 # Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
+
+my @UPDATESMODES = ( "slink", "copy" );
 
 ################################################################################
 # Pas de bufferisation des sorties.
@@ -333,6 +336,178 @@ sub config {
 }
 
 =begin nd
+Function: writeListAndReferences
+=cut
+sub writeListAndReferences {
+    my $forest = shift;
+    my $newpyr = shift;
+    my $ancestor = shift;
+
+    my $updateMode = $this{params}->{pyramid}->{update_mode};
+
+    if ($newpyr->{type} eq "READ") {
+        ERROR("Cannot write list of 'read' pyramid");
+        return FALSE;        
+    }
+
+    if (defined $ancestor && ref ($ancestor) ne "COMMON::Pyramid" ) {
+        ERROR(sprintf "Ancestor, if provided, have to be a COMMON::Pyramid ! ");
+        return FALSE;
+    }
+
+    my $newListPath = $newpyr->getListFile();
+
+    if (-f $newListPath ) {
+        ERROR(sprintf "New pyramid list ('%s') exist, can not overwrite it ! ", $newListPath);
+        return FALSE;
+    }
+
+    my $dir = File::Basename::dirname($newListPath);
+    if (! -d $dir) {
+        eval { mkpath([$dir]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the pyramid list directory '%s' : %s !", $dir , $@);
+            return FALSE;
+        }
+    }
+    
+    my $NEWLIST;
+
+    if (! open $NEWLIST, ">", $newListPath) {
+        ERROR(sprintf "Cannot open new pyramid list file (write) : %s",$newListPath);
+        return FALSE;
+    }
+
+    # La racine de la pyramide est un conteneur (pool Ceph ou bucket S3)
+    # L'ancêtre utilise obligatoirement le même conteneur
+    my $containerName = $newpyr->getDataRoot();
+    
+    print $NEWLIST "0=$containerName\n";
+    print $NEWLIST "#\n";
+
+    if (! defined $ancestor) {
+        # Pas d'ancêtre, rien à référencer
+        close $NEWLIST;
+        return TRUE
+    }
+
+    ############################## RÉFÉRENCEMENT DES OBJETS DE L'ANCÊTRE #######################################
+
+    my $newPyrName = $newpyr->getName();
+    my $ancestorPyrName = $ancestor->getName();
+
+    # On a un ancêtre, il va falloir en référencer toutes les dalles
+
+    if (! defined $forest || ref ($forest) ne "COMMON::Forest" ) {
+        ERROR(sprintf "We need a COMMON::Forest to write pyramid list ! ");
+        return FALSE;
+    }
+
+    # On va vérifier la compatibilité du stockage de l'ancêtre avec celui de la nouvelle pyramide et le mode de mise à jour
+
+    if (! defined $updateMode || $updateMode eq "") {
+        ERROR("Update mode have to be provided with an ancestor");
+        return FALSE;
+    }
+
+    if (! defined COMMON::Array::isInArray($updateMode, @UPDATESMODES) ) {
+        ERROR("Update mode '$updateMode' is not allowed for S3 pyrmids");
+        return FALSE;
+    }
+
+    # On va lire la liste de l'ancêtre
+    my $ancestorListPath = $ancestor->getListFile();
+    my $OLDLIST;
+    
+    if (! open $OLDLIST, "<", $ancestorListPath) {
+        ERROR("Cannot open old pyramid list file (read) : $ancestorListPath");
+        return FALSE;
+    }
+        
+    my $header = TRUE;
+    while( my $line = <$OLDLIST> ) {
+        chomp $line;
+
+        ############# ON ZAPPE LE HEADER #############
+
+        if ($line eq "#") {
+            $header = FALSE;
+            next;
+        }
+
+        if ($header) {
+            next;
+        }
+
+        ##############################################
+        
+        # Une ligne du fichier c'est
+        # Cas objet : 0/PYRAMID_IMG_15_15656_5423
+        my @parts = split("/", $line);
+        # La première partie est donc toujours l'index du bucket, déjà connu
+        shift(@parts);
+
+        # Dans le cas d'un stockage objet, on a un nom d'objet de la forme BLA_BLA_DATATYPE_LEVEL_COL_ROW
+        # DATATYPE vaut MSK ou IMG
+        my @p = split("_", join("", @parts));
+        my $col = $p[-2];
+        my $row = $p[-1];
+        my $level = $p[-3];
+        my $dataType = $p[-4];
+
+        # Dans le cas objet, la racine est seulement le conteneur, il faut aussi remplacer le nom de la pyramide qui est contenu dans le nom de l'objet
+        my $ancestorSlab = $line;
+        $ancestorSlab =~ s/^[0-9]+/$containerName/;
+        my $newSlab = $line;
+        $newSlab =~ s/^[0-9]+\/$ancestorPyrName/$containerName\/$newPyrName/;
+
+        if (! $newpyr->ownMasks() && $dataType eq "MSK") {
+            # On ne veut pas des masques dans la pyramide finale, donc on ne lie pas ceux de l'ancienne pyramide
+            next;
+        }
+
+        if (! exists $newpyr->{levels}->{$level}) {
+            # La dalle appartient à un niveau qui n'est pas voulu dans la nouvelle pyramide
+            next;
+        }
+
+        if ($updateMode eq "slink") {
+            if (! defined COMMON::ProxyStorage::symLink("S3", $ancestorSlab, "S3", $newSlab)) {
+                ERROR("The ancestor slab '$ancestorSlab' cannot be referenced by sym link in the new pyramid");
+                return FALSE;
+            }
+        }
+        elsif ($updateMode eq "copy") {
+            if (! COMMON::ProxyStorage::copy("S3", $ancestorSlab, "S3", $newSlab)) {
+                ERROR("The ancestor slab '$ancestorSlab' cannot be referenced by copy in the new pyramid");
+                return FALSE;
+            }
+        }
+        
+        if (! $forest->containsNode($level,$col,$row)) {
+            # This image is not in the forest, it won't be modified by this generation.
+            # We add it now to the list (real file path)
+
+            # slink : we print the name of the slab in the old pyramid
+            # else : object is duplicate, we put the name of the slab in the new pyramid
+            if ($updateMode eq 'slink') {
+                print $NEWLIST "$line\n";
+            } else {
+                my $slab = $newSlab;
+                $slab =~ s/^$containerName/0/;
+                print $NEWLIST "$slab\n";
+            }
+        }
+        
+    }
+    
+    close $OLDLIST;
+    close $NEWLIST;
+    
+    return TRUE;
+}
+
+=begin nd
 Function: doIt
 
 Steps in order, using parameters :
@@ -342,7 +517,7 @@ Steps in order, using parameters :
     - update data sources with the levels : <COMMON::DataSourceLoader::updateDataSources>
     - create the pyramid's levels : <COMMON::Pyramid::addLevel>
     - create the Forest object : <COMMON::Forest::new>
-    - write the pyramid's list : <COMMON::Pyramid::writeList>
+    - write the pyramid's list : <writeListAndReferences>
     - write the pyramid's descriptor : <COMMON::Pyramid::writeDescriptor>
     - compute trees (write scripts) : <COMMON::Forest::computeGraphs>
 =cut
@@ -385,6 +560,11 @@ sub doIt {
             ERROR("Cannot bind TMS to ancestor pyramid !");
             return FALSE;
         }
+
+        if ($objAncestorPyramid->getStorageType() ne "S3") {
+            ERROR("Ancestor pyramid have to be a S3 pyramid !");
+            return FALSE;
+        }
     }
     
     #######################
@@ -398,11 +578,15 @@ sub doIt {
         return FALSE;
     }
 
+    if ($objPyramid->getStorageType() ne "S3") {
+        ERROR("New pyramid have to be a S3 pyramid !");
+        return FALSE;
+    }
+
     if (! $objPyramid->bindTileMatrixSet($params->{pyramid}->{tms_path})) {
         ERROR("Cannot bind TMS to output Pyramid !");
         return FALSE;
     }
-
 
     my $objTMS = $objPyramid->getTileMatrixSet();
     
@@ -468,8 +652,8 @@ sub doIt {
     
     ALWAYS(">>> Write the pyramid's list ...");
 
-    if ( ! $objPyramid->writeList($objForest, $objAncestorPyramid, $params->{pyramid}->{update_mode}) ) {
-        ERROR("Can not write Pyramid list !");
+    if ( ! writeListAndReferences($objForest, $objPyramid, $objAncestorPyramid) ) {
+        ERROR("Can not write Pyramid list and reference ancestor if exist !");
         return FALSE;
     }
     
@@ -579,17 +763,14 @@ Topic: pyramid
 For more informations about properties, see <BE4S3::Pyramid>.
 
     pyr_name_new - Name of the new pyramid, used to name the descriptor, the pyramid's list, the temporary directory and prefix the Ceph objects. Mandatory.
-
     pyr_desc_path - Directory path, where to write the descriptor and the list. Mandatory.
-
     pyr_data_bucket_name - Mandatory.
 
-    pyr_data_api_url - S3 API url, with protocol. Example: http://localhost:8080. Mandatory.
-
-    pyr_data_key - S3 public key. Mandatory.
-
-    pyr_data_secret_key - S3 secret key, used to sign requests. Mandatory.
-
+    pyr_name_old - Ancestor's name. If this parameter is present, generation is an update.
+    pyr_desc_path_old - Directory path where to find the ancestor's descriptor.
+    update_mode - Possible values :
+        slink, copy : existing pyramid, the way the new cache will reference the ancestor's cache.
+        inject : no new pyramid. The old one is updated. CAUTION : old pyramid is irreversibly modified
 
     compression - Possible values : raw, jpg, zip, lzw, png, pkb. PNG compression is not an official compression for tiff format (just readable by rok4). Default : raw.
 

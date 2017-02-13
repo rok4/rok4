@@ -55,6 +55,7 @@
 #include "FileContext.h"
 #include "SwiftContext.h"
 #include "S3Context.h"
+#include "RedisAliasManager.h"
 #include "FileImage.h"
 #include "../be4version.h"
 
@@ -233,17 +234,35 @@ int main ( int argc, char **argv )
     }
 
     Context* context;
+    // Dans le cas objet, on a besoin d'un gestionnaire d'alias
+    AliasManager* am;
+
     if ( pool != 0 ) {
         LOGGER_DEBUG( std::string("Input is an object in the Ceph pool ") + pool);
         context = new CephPoolContext(pool);
+        am = new RedisAliasManager();
+        if (! am->isOk()) {
+            error("RedisAliasManager impossible à créer", 1);
+        }
+        context->setAliasManager(am);
     } else if (bucket != 0) {
         LOGGER_DEBUG( std::string("Input is an object in the S3 bucket ") + bucket);
         curl_global_init(CURL_GLOBAL_ALL);
         context = new S3Context(bucket);
+        am = new RedisAliasManager();
+        if (! am->isOk()) {
+            error("RedisAliasManager impossible à créer", 1);
+        }
+        context->setAliasManager(am);
     } else if (container != 0) {
         LOGGER_DEBUG( std::string("Input is an object in the Swift container ") + container);
         curl_global_init(CURL_GLOBAL_ALL);
         context = new SwiftContext(container);
+        am = new RedisAliasManager();
+        if (! am->isOk()) {
+            error("RedisAliasManager impossible à créer", 1);
+        }
+        context->setAliasManager(am);
     } else {
         LOGGER_DEBUG("Input is a file in a file system");
         context = new FileContext("");
@@ -288,6 +307,10 @@ int main ( int argc, char **argv )
     delete outputImage;
     delete acc;
     delete context;
+
+    if (am != NULL) {
+        delete am;
+    }
 
     if (container != 0 || bucket != 0) {
         curl_global_cleanup();

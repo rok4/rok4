@@ -879,7 +879,7 @@ int Rok4Image::writeTiles ( Image* pIn, int imageCol, int imageRow, bool crop )
 
 bool Rok4Image::writeHeader()
 {
-    if (! context->openToWrite(std::string(name))) {
+    if (! context->openToWrite(name)) {
         LOGGER_ERROR("Unable to open output truc " << name);
         return false;
     }

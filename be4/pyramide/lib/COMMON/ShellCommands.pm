@@ -530,7 +530,7 @@ sub cache2work {
     
     if ( defined $node->getBgMaskName() ) {
         # Un masque est associé à l'image que l'on va utiliser, on doit le mettre également au format de travail
-        $cmd = sprintf "Cache2work %s %s\n", 
+        $cmd .= sprintf "Cache2work %s %s\n", 
             $this->{pyramid}->getSlabPath("MASK", $node->getLevel(), $node->getCol(), $node->getRow(), FALSE),
             $node->getBgMaskName(TRUE);
         $weight += CACHE2WORK_W;

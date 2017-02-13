@@ -165,19 +165,7 @@ std::string S3Context::getAuthorizationHeader(std::string toSign) {
 
 int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
 
-    // Première étape : convertir le nom si un gestionnaire d'alias est présent
-    std::string realName;
-    if (am != NULL) {
-        bool ex;
-        realName = am->getAliasedName(name, &ex);
-        if (! ex) {
-            realName = name;
-        }
-    } else {
-        realName = name;
-    }
-
-    LOGGER_DEBUG("S3 read : " << size << " bytes (from the " << offset << " one) in the object " << realName);
+    LOGGER_DEBUG("S3 read : " << size << " bytes (from the " << offset << " one) in the object " << name);
 
     // On constitue le moyen de récupération des informations (avec les structures de LibcurlStruct)
 
@@ -194,7 +182,7 @@ int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
     //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
 
-    std::string fullUrl = url + "/" + bucket_name + "/" + realName;
+    std::string fullUrl = url + "/" + bucket_name + "/" + name;
 
     time_t current;
     char gmt_time[40];
@@ -203,7 +191,7 @@ int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
     strftime( gmt_time, sizeof(gmt_time), "%a, %d %b %Y %T %z", gmtime(&current) );
 
     std::string content_type = "application/octet-stream";
-    std::string resource = "/" + bucket_name + "/" + realName;
+    std::string resource = "/" + bucket_name + "/" + name;
     std::string stringToSign = "GET\n\n" + content_type + "\n" + std::string(gmt_time) + "\n" + resource;
     std::string signature = getAuthorizationHeader(stringToSign);
 
@@ -249,7 +237,7 @@ int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
 
 
     if( CURLE_OK != res) {
-        LOGGER_ERROR("Cannot read data from S3 : " << size << " bytes (from the " << offset << " one) in the object " << realName);
+        LOGGER_ERROR("Cannot read data from S3 : " << size << " bytes (from the " << offset << " one) in the object " << name);
         LOGGER_ERROR(curl_easy_strerror(res));
         return -1;
     }
@@ -257,7 +245,7 @@ int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
     long http_code = 0;
     curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
     if (http_code < 200 || http_code > 299) {
-        LOGGER_ERROR("Cannot read data from S3 : " << size << " bytes (from the " << offset << " one) in the object " << realName);
+        LOGGER_ERROR("Cannot read data from S3 : " << size << " bytes (from the " << offset << " one) in the object " << name);
         LOGGER_ERROR("Response HTTP code : " << http_code);
         LOGGER_ERROR("Response HTTP : " << chunk.data);
         return -1;

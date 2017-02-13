@@ -377,19 +377,19 @@ Returns a boolean : TRUE if the node belong to this forest, FALSE otherwise (if 
 
 Parameters (list):
     level - string - Level ID of the node we want to know if it is in the forest.
-    i - integer - Column of the node we want to know if it is in the forest.
-    j - integer - Row of the node we want to know if it is in the forest.
+    col - integer - Column of the node we want to know if it is in the forest.
+    row - integer - Row of the node we want to know if it is in the forest.
 =cut
 sub containsNode {
     my $this = shift;
     my $level = shift;
-    my $i = shift;
-    my $j = shift;
+    my $col = shift;
+    my $row = shift;
 
-    return FALSE if (! defined $level || ! defined $i || ! defined $j);
+    return FALSE if (! defined $level || ! defined $col || ! defined $row);
     
     foreach my $graph (@{$this->{graphs}}) {
-        return TRUE if ($graph->containsNode($level,$i,$j));
+        return TRUE if ($graph->containsNode($level,$col,$row));
     }
     
     return FALSE;
