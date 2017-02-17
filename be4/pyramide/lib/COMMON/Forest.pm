@@ -81,6 +81,7 @@ use warnings;
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
 use List::Util qw(min max);
+use Cwd;
 
 # My module
 use COMMON::QTree;
@@ -226,9 +227,9 @@ sub _load {
     ######### PARAM PROCESS ###########
     
     my $splitNumber = $params_process->{job_number};
-    my $tempDir = $params_process->{path_temp};
-    my $commonTempDir = $params_process->{path_temp_common};
-    my $scriptDir = $params_process->{path_shell};
+    my $tempDir = Cwd::realpath($params_process->{path_temp});
+    my $commonTempDir = Cwd::realpath($params_process->{path_temp_common});
+    my $scriptDir = Cwd::realpath($params_process->{path_shell});
 
     if (! defined $splitNumber) {
         ERROR("Parameter required : 'job_number' in section 'Process' !");

@@ -117,19 +117,6 @@ bool parseCommandLine ( int argc, char* argv[], char* server_config_file, int* n
 void* processThread ( void* server ) {
     // Initialisation du serveur
 
-    if (rok4ExistObjectCeph(server ,"toto", "PYRAMIDS") == 0) {
-        printf("PYRAMIDS / toto n'existe pas\n");
-    } else {
-        printf("PYRAMIDS / toto existe\n");
-    }
-    if (rok4ExistObjectCeph(server ,"CEPH_DALLE_IMG_10_65_43", "PYRAMIDS") == 0) {
-        printf("PYRAMIDS / CEPH_DALLE_IMG_10_65_43 n'existe pas\n");
-    } else {
-        printf("PYRAMIDS / CEPH_DALLE_IMG_10_65_43 existe\n");
-    }
-
-    printf("Tests finis");
-
     // Traitement des requetes
     /*
     while ( !feof ( requestFile ) ) {

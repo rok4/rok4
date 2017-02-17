@@ -527,7 +527,7 @@ sub doIt {
     }
     $this{listStream} = $STREAM;
 
-    printf $STREAM "0=%s\n#\n", $pyramid->getDataRoot();
+    printf $STREAM "0=%s\n#\n", $pyramid->getDataBucket();
 
     while( my ($level,$sources) = each(%{$this{composition}}) ) {
         INFO(sprintf "Level %s",$level);
@@ -708,7 +708,7 @@ Parameters:
 sub storeInList {
     my $slabPath = shift;
 
-    my $bucketName = $this{pyramid}->getDataRoot();
+    my $bucketName = $this{pyramid}->getDataBucket();
     $slabPath =~ s/$bucketName/0/;
 
     my $STREAM = $this{listStream};

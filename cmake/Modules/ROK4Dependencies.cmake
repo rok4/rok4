@@ -255,7 +255,6 @@ else(LOGGER_FOUND)
 endif(LOGGER_FOUND)
 endif(NOT TARGET logger)
 
-
 if(NOT TARGET image)
   find_package(Image)
   if(IMAGE_FOUND)

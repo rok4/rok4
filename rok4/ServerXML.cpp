@@ -497,10 +497,15 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
             redisPort = std::atoi(pElemRedis->GetText());
         }
 
-        RedisAliasManager* am = new RedisAliasManager(redisHost, redisPort, redisPwd);
+        am = new RedisAliasManager(redisHost, redisPort, redisPwd);
         if (! am->isOk()) {
             std::cerr<<("RedisAliasManager impossible à créer") <<std::endl;
             return ;
+        }
+
+        if (! am->connect() ) {
+            std::cerr<<("Impossible de connecter le gestionnaire d'alias") <<std::endl;
+            return;
         }
 
         if (swiftBook) {
@@ -516,7 +521,6 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
 
     ok = true;
 }
-
 
 /*********************** DESTRUCTOR ********************/
 
@@ -540,7 +544,12 @@ ServerXML::~ServerXML(){
     for ( itLay=layersList.begin(); itLay!=layersList.end(); itLay++ )
         delete itLay->second;
 
+    if (am != NULL) {
+        delete am;
+    }
+
     delete cephBook;
+    delete s3Book;
     delete swiftBook;
 }
 

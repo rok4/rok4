@@ -73,12 +73,16 @@ class AliasManager {
 protected:
 
     bool ok;
+    bool connected;
 
     /**
      * \~french \brief Crée un objet AliasManager
      * \~english \brief Create a AliasManager object
      */
-    AliasManager () {}
+    AliasManager () {
+        connected = false;
+        ok = false;
+    }
 
 public:
 
@@ -104,6 +108,8 @@ public:
     virtual std::string getTypeStr() = 0;
 
 
+    virtual bool connect() = 0;
+    bool isConnected() {return connected;}
     bool isOk() {return ok;}
 
     /**

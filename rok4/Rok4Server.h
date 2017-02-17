@@ -383,17 +383,17 @@ private:
      * \~french Traite les requêtes de type WMS
      * \~english Process WMS request
      */
-    void        processWMS ( Request *request, FCGX_Request&  fcgxRequest );
+    void processWMS ( Request *request, FCGX_Request&  fcgxRequest );
     /**
      * \~french Traite les requêtes de type WMTS
      * \~english Process WMTS request
      */
-    void        processWMTS ( Request *request, FCGX_Request&  fcgxRequest );
+    void processWMTS ( Request *request, FCGX_Request&  fcgxRequest );
     /**
      * \~french Sépare les requêtes de type WMS et WMTS
      * \~english Route WMS and WMTS request
      */
-    void        processRequest ( Request *request, FCGX_Request&  fcgxRequest );
+    void processRequest ( Request *request, FCGX_Request&  fcgxRequest );
 
     DataStream* CommonGetFeatureInfo ( std::string service, Layer* layer, BoundingBox<double> bbox, int width, int height, CRS crs, std::string info_format , int X, int Y, std::string format, int feature_count);
 
@@ -403,6 +403,11 @@ public:
      * \~english Return the services configurations
      */
     ServicesXML* getServicesConf() ;
+    /**
+     * \~french Retourne la configuration du serveur
+     * \~english Return the server configuration
+     */
+    ServerXML* getServerConf() ;
 
     /**
      * \~french Retourne la liste des couches

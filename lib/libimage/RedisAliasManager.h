@@ -57,6 +57,8 @@
 #include <hiredis.h>
 #include <sstream>
 
+static pthread_mutex_t mutex_hiredis = PTHREAD_MUTEX_INITIALIZER;
+
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
@@ -74,40 +76,11 @@ private:
 
 public:
 
-
     /**
      * \~french \brief Crée un objet RedisAliasManager
      * \~english \brief Create a RedisAliasManager object
      */
     RedisAliasManager (std::string h, int p, std::string pwd) : AliasManager(), host(h), port(p), passwd(pwd) {
-
-        ok = false;
-        struct timeval timeout = { 1, 500000 }; // 1.5 seconds
-        rContext = redisConnectWithTimeout(host.c_str(), port, timeout);
-        if (rContext == NULL || rContext->err) {
-            if (rContext) {
-                std::cerr << "Redis connection error: " << std::string(rContext->errstr) << std::endl;
-                redisFree(rContext);
-            } else {
-                std::cerr << ("Connection error: can't allocate redis context") << std::endl;
-            }
-            return;
-        }
-
-        // Authentification
-
-        std::string auth = "AUTH " + passwd;
-        redisReply* rReply = (redisReply*) redisCommand(rContext, auth.c_str());
-
-        if (rReply->type == REDIS_REPLY_ERROR ) {
-            std::cerr << "Connection error: can't authticate redis context: " << std::string(rReply->str) << std::endl;
-            freeReplyObject(rReply);
-            redisFree(rContext);
-            return;
-        }
-
-        freeReplyObject(rReply);
-
         ok = true;
     }
 
@@ -116,8 +89,6 @@ public:
      * \~english \brief Create a RedisAliasManager object
      */
     RedisAliasManager () : AliasManager() {
-
-        ok = false;
 
         // Tout est récupéré des variables d'environnement
 
@@ -142,6 +113,16 @@ public:
         }
         port = std::atoi(po);
 
+        ok = true;
+    }
+
+    bool connect() {
+
+        if (connected) {
+            LOGGER_WARN("Redis alias manager already connected");
+            return true;
+        }
+
         // On connecte
 
         struct timeval timeout = { 1, 500000 }; // 1.5 seconds
@@ -153,7 +134,7 @@ public:
             } else {
                 LOGGER_ERROR("Connection error: can't allocate redis context");
             }
-            return;
+            return false;
         }
 
         // Authentification
@@ -165,15 +146,19 @@ public:
             std::cerr << "Connection error: can't authticate redis context: " << std::string(rReply->str) << std::endl;
             freeReplyObject(rReply);
             redisFree(rContext);
-            return;
+            return false;
         }
 
         freeReplyObject(rReply);
 
-        ok = true;
+        connected = true;
+
+        return true;
     }
 
     std::string getAliasedName(std::string alias, bool* exists) {
+
+        pthread_mutex_lock ( & mutex_hiredis );
 
         redisReply* rReply = (redisReply*) redisCommand(rContext, "GET %s", alias.c_str());
 
@@ -181,12 +166,14 @@ public:
             LOGGER_ERROR("Redis error: can't get '" << alias << "' : " << std::string(rReply->str));
             freeReplyObject(rReply);
             *exists = false;
+            pthread_mutex_unlock ( & mutex_hiredis );
             return "";
         }
 
         if (rReply->type == 4) {
             *exists = false;
             freeReplyObject(rReply);
+            pthread_mutex_unlock ( & mutex_hiredis );
             return "";
         }
 
@@ -194,6 +181,7 @@ public:
         freeReplyObject(rReply);
         *exists = true;
 
+        pthread_mutex_unlock ( & mutex_hiredis );
         return res;
     }
 
@@ -210,7 +198,7 @@ public:
      * \~english \brief Destructor
      */
     virtual ~RedisAliasManager() {
-        if (ok && rContext) {
+        if (ok && connected) {
             redisFree(rContext);
         }
     }

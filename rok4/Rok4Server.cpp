@@ -221,7 +221,7 @@ void Rok4Server::run(sig_atomic_t signal_pending) {
     }
     
     if (signal_pending != 0 ) {
-	raise( signal_pending );
+        raise( signal_pending );
     }
     
     for ( int i = 0; i < threads.size(); i++ )
@@ -1358,6 +1358,7 @@ void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest 
 /******************* GETTERS / SETTERS *****************/
 
 ServicesXML* Rok4Server::getServicesConf() { return servicesConf; }
+ServerXML* Rok4Server::getServerConf() { return serverConf; }
 std::map<std::string, Layer*>& Rok4Server::getLayerList() { return serverConf->layersList; }
 std::map<std::string, TileMatrixSet*>& Rok4Server::getTmsList() { return serverConf->tmsList; }
 std::map<std::string, Style*>& Rok4Server::getStyleList() { return serverConf->stylesList; }

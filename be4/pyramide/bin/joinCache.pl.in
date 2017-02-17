@@ -490,7 +490,7 @@ sub doIt {
     $this{listStream} = $STREAM;
 
     # On stocke la racine de la pyramide de sortie avec l'index 0
-    $this{roots}->{$pyramid->getDataRoot()} = 0;
+    $this{roots}->{$pyramid->getDataDir()} = 0;
 
     while( my ($level,$sources) = each(%{$this{composition}}) ) {
         INFO(sprintf "Level %s",$level);
@@ -718,7 +718,7 @@ sub writeRootsInList {
     }
 
     # Root of the new cache (first position)
-    unshift @LIST,(sprintf "0=%s\n", $this{pyramid}->getDataRoot());
+    unshift @LIST,(sprintf "0=%s\n", $this{pyramid}->getDataDir());
 
     untie @LIST;
 }

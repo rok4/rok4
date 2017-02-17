@@ -384,7 +384,7 @@ sub _loadXML {
         
         my $dirmsk = $levelRoot->findvalue('mask/baseDir');
         if (defined $dirmsk && $dirmsk ne "" ) {
-            $this->{dir_mask} = Cwd::realpath(File::Spec->rel2abs( $dirimg , $this->{desc_path} ) );
+            $this->{dir_mask} = Cwd::realpath(File::Spec->rel2abs( $dirmsk , $this->{desc_path} ) );
         }
 
         $this->{dir_depth} = $levelRoot->findvalue('pathDepth');
@@ -455,40 +455,34 @@ sub getDirsInfo {
     my $this = shift;
 
     if ($this->{type} ne "FILE") {
-        return (undef, undef, undef, undef);
+        return (undef, undef);
     }
 
     my @dirs = File::Spec->splitdir($this->{dir_image});
-    my $dir_image_name = $dirs[-2];
-    my $dir_data = File::Spec->catdir(@dirs[0..-4]);
+    pop(@dirs);pop(@dirs);pop(@dirs);
+    my $dir_data = File::Spec->catdir(@dirs);
 
-    my $dir_mask_name = undef;
-    if (defined $this->{dir_mask}) {
-        @dirs = File::Spec->splitdir($this->{dir_mask});
-        $dir_mask_name = $dirs[-2];
-    }
-
-    return ($this->{dir_depth}, $dir_data, $dir_image_name, $dir_mask_name);
+    return ($this->{dir_depth}, $dir_data);
 }
 # Function: getS3Info
 sub getS3Info {
     my $this = shift;
 
     if ($this->{type} ne "S3") {
-        return (undef, undef, undef);
+        return undef;
     }
 
-    return ($this->{bucket_name}, $this->{prefix_image}, $this->{prefix_mask});
+    return $this->{bucket_name};
 }
 # Function: getCephInfo
 sub getCephInfo {
     my $this = shift;
 
     if ($this->{type} ne "CEPH") {
-        return (undef, undef, undef);
+        return undef;
     }
 
-    return ($this->{pool_name}, $this->{prefix_image}, $this->{prefix_mask});
+    return $this->{pool_name};
 }
 
 # Function: getStorageType
@@ -509,7 +503,11 @@ sub getImageHeight {
     return $this->{size}->[0];
 }
 
-# Function: getLimits
+=begin nd
+Function: getLimits
+
+Return extrem tiles as an array: rowMin,rowMax,colMin,colMax
+=cut
 sub getLimits {
     my $this = shift;
     return ($this->{limits}->[0], $this->{limits}->[1], $this->{limits}->[2], $this->{limits}->[3]);
@@ -862,10 +860,10 @@ sub exportToXML {
         $string .=  "        <mask>\n";
 
         if (defined $this->{dir_mask}) {
-            $string .= sprintf "            <baseDir>%s</baseDir>", File::Spec->abs2rel($this->{dir_mask}, $this->{desc_path});
+            $string .= sprintf "            <baseDir>%s</baseDir>\n", File::Spec->abs2rel($this->{dir_mask}, $this->{desc_path});
         }
         elsif (defined $this->{prefix_mask}) {
-            $string .= sprintf "            <maskPrefix>%s</maskPrefix>", $this->{prefix_mask};
+            $string .= sprintf "            <maskPrefix>%s</maskPrefix>\n", $this->{prefix_mask};
         }
 
         $string .=  "            <format>TIFF_ZIP_INT8</format>\n";

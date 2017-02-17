@@ -235,7 +235,7 @@ int main ( int argc, char **argv )
 
     Context* context;
     // Dans le cas objet, on a besoin d'un gestionnaire d'alias
-    AliasManager* am;
+    AliasManager* am = NULL;
 
     if ( pool != 0 ) {
         LOGGER_DEBUG( std::string("Input is an object in the Ceph pool ") + pool);
@@ -243,6 +243,9 @@ int main ( int argc, char **argv )
         am = new RedisAliasManager();
         if (! am->isOk()) {
             error("RedisAliasManager impossible à créer", 1);
+        }
+        if (! am->connect()) {
+            error("RedisAliasManager impossible à connecter", 1);
         }
         context->setAliasManager(am);
     } else if (bucket != 0) {
@@ -253,6 +256,9 @@ int main ( int argc, char **argv )
         if (! am->isOk()) {
             error("RedisAliasManager impossible à créer", 1);
         }
+        if (! am->connect()) {
+            error("RedisAliasManager impossible à connecter", 1);
+        }
         context->setAliasManager(am);
     } else if (container != 0) {
         LOGGER_DEBUG( std::string("Input is an object in the Swift container ") + container);
@@ -261,6 +267,9 @@ int main ( int argc, char **argv )
         am = new RedisAliasManager();
         if (! am->isOk()) {
             error("RedisAliasManager impossible à créer", 1);
+        }
+        if (! am->connect()) {
+            error("RedisAliasManager impossible à connecter", 1);
         }
         context->setAliasManager(am);
     } else {

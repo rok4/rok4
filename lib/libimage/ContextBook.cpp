@@ -141,11 +141,6 @@ ContextBook::~ContextBook()
         delete it->second;
         it->second = NULL;
     }
-
-    if (am != NULL) {
-        delete am;
-    }
-
 }
 
 bool ContextBook::connectAllContext()

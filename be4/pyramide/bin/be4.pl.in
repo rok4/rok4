@@ -47,7 +47,7 @@ Synopsis:
     # All parameters of the --env config file can be overided by --conf config file parameter
     (end code)
 
-Tool allowing to generate a pyramid of tiled TIFF images, several resolutions, with compression (lossless or lossy) from serveral data sources, georeferenced image (ortho, scan, ...) or WMS service. Output format respects WMS/WMTS server ROK4.
+Tool allowing to generate a pyramid of tiled TIFF images, several resolutions, with compression (lossless or lossy) from several data sources, georeferenced image (ortho, scan, ...) or WMS service. Output format respects WMS/WMTS server ROK4.
 
 This tool write scripts, to execute to obtain the pyramid.
 
@@ -73,6 +73,7 @@ use POSIX qw(locale_h);
 use Getopt::Long;
 
 use Data::Dumper;
+local $Data::Dumper::Maxdepth = 2;
 
 use File::Basename;
 use File::Spec;
@@ -98,7 +99,7 @@ use COMMON::CheckUtils;
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-my @UPDATESMODES = ( "slink", "hlink", "copy" );
+my @UPDATESMODES = ( "slink", "hlink", "copy", "inject" );
 
 ################################################################################
 # Pas de bufferisation des sorties.
@@ -143,7 +144,7 @@ All parameters by section :
 
     logger - Can be null
     datasource - 
-    pyramid - 
+    pyramid -
     process - 
 =cut
 my %this =
@@ -152,7 +153,7 @@ my %this =
         logger        => undef,
         datasource    => undef,
         pyramid       => undef,
-        process       => undef,
+        process       => undef
     },
 );
 
@@ -169,39 +170,39 @@ See Also:
     <init>, <config>, <doIt>
 =cut
 sub main {
-  printf("BE4: version [%s]\n",$VERSION);
-  # message
-  my $message = undef;
-  
-  # initialization
-  ALWAYS("> Initialization");
-  if (! main::init()) {
-    $message = "ERROR INITIALIZATION !";
-    printf STDERR "%s\n", $message;
-    exit 1;
-  }
+    printf("BE4: version [%s]\n",$VERSION);
+    # message
+    my $message = undef;
 
-  $message = "BEGIN";
-  printf STDOUT "%s\n", $message;
-  
-  # configuration
-  ALWAYS("> Configuration");
-  if (! main::config()) {
-    $message = "ERROR CONFIGURATION !";
-    printf STDERR "%s\n", $message;
-    exit 2;
-  }
-  
-  # execution
-  ALWAYS("> Execution");
-  if (! main::doIt()) {
-    $message = "ERROR EXECUTION !";
-    printf STDERR "%s\n", $message;
-    exit 3;
-  }
-  
-  $message = "END";
-  printf STDOUT "%s\n", $message;
+    # initialization
+    ALWAYS("> Initialization");
+    if (! main::init()) {
+        $message = "ERROR INITIALIZATION !";
+        printf STDERR "%s\n", $message;
+        exit 1;
+    }
+
+    $message = "BEGIN";
+    printf STDOUT "%s\n", $message;
+
+    # configuration
+    ALWAYS("> Configuration");
+    if (! main::config()) {
+        $message = "ERROR CONFIGURATION !";
+        printf STDERR "%s\n", $message;
+        exit 2;
+    }
+
+    # execution
+    ALWAYS("> Execution");
+    if (! main::doIt()) {
+        $message = "ERROR EXECUTION !";
+        printf STDERR "%s\n", $message;
+        exit 3;
+    }
+
+    $message = "END";
+    printf STDOUT "%s\n", $message;
 }
 
 =begin nd
@@ -237,7 +238,7 @@ sub init {
         },
         
         "properties|conf=s" => \$options{properties},
-        "environment|env=s" => \$options{environment},        
+        "environment|env=s" => \$options{environment}
     ) or do {
         printf "Unappropriate usage\n";
         printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-pl.html\n";
@@ -346,27 +347,6 @@ sub config {
     # save params properties
     $this{params} = $hashref;
     
-    if (! main::checkParams() ) {
-        ERROR("Can not check parameters of properties !");
-        return FALSE;
-    }
-    
-    return TRUE;
-}
-
-=begin nd
-Function: checkParams
-
-Checks presence of mandatory sections in parameters.
-    - pyramid
-    - process
-    - datasource
-
-Logger parameters are used to initialize logger (Log::Log4perl library).
-
-=cut
-sub checkParams {
-    
     ###################
     # check parameters
     
@@ -442,6 +422,11 @@ sub writeListAndReferences {
     my $forest = shift;
     my $newpyr = shift;
     my $ancestor = shift;
+    my $force = shift;
+
+    if (! defined $force) {
+        $force = FALSE;     
+    }
 
     my $updateMode = $this{params}->{pyramid}->{update_mode};
 
@@ -456,8 +441,9 @@ sub writeListAndReferences {
     }
 
     my $newListPath = $newpyr->getListFile();
+    my $newListPathTmp = "$newListPath.tmp";
 
-    if (-f $newListPath ) {
+    if (! $force  && -f $newListPath) {
         ERROR(sprintf "New pyramid list ('%s') exist, can not overwrite it ! ", $newListPath);
         return FALSE;
     }
@@ -471,18 +457,19 @@ sub writeListAndReferences {
         }
     }
     
-    my $NEWLIST;
-
-    if (! open $NEWLIST, ">", $newListPath) {
-        ERROR(sprintf "Cannot open new pyramid list file (write) : %s",$newListPath);
-        return FALSE;
-    }
-
-    # La racine de la pyramide est soit un dossier dans le cas fichier, soit un conteneur (pool Ceph ou bucket S3)
-    my $newRoot = $newpyr->getDataRoot();
+    # La racine de la pyramide est un dossier dans le cas fichier
+    my $newRoot = $newpyr->getDataDir();
     
     if (! defined $ancestor) {
         # Pas d'ancêtre, on doit juste écrire l'en tête : le dossier propre à cette pyramide ou le nom du conteneur objet
+
+        my $NEWLIST;
+
+        if (! open $NEWLIST, ">", $newListPath) {
+            ERROR(sprintf "Cannot open new pyramid list file (write) : %s",$newListPath);
+            return FALSE;
+        }
+
         print $NEWLIST "0=$newRoot\n";
         print $NEWLIST "#\n";
         close $NEWLIST;
@@ -496,18 +483,6 @@ sub writeListAndReferences {
 
     if (! defined $forest || ref ($forest) ne "COMMON::Forest" ) {
         ERROR(sprintf "We need a COMMON::Forest to write pyramid list ! ");
-        return FALSE;
-    }
-
-    # On va vérifier la compatibilité du stockage de l'ancêtre avec celui de la nouvelle pyramide et le mode de mise à jour
-
-    if (! defined $updateMode || $updateMode eq "") {
-        ERROR("Update mode have to be provided with an ancestor");
-        return FALSE;
-    }
-
-    if (! defined COMMON::Array::isInArray($updateMode, @UPDATESMODES) ) {
-        ERROR("Update mode '$updateMode' is not allowed for FILE pyrmids");
         return FALSE;
     }
 
@@ -540,6 +515,22 @@ sub writeListAndReferences {
         $ancestorRoots{$Root[0]} = $Root[1];
         $ancestorRootsUse{$Root[0]} = 0;
     }
+
+    my $NEWLIST;
+
+    if ($updateMode eq "inject") {
+        # En mode injection, il ne faut pas écrire directement le fichier de la nouvelle pyramide, car c'est celui de l'ancêtre
+        if (! open $NEWLIST, ">", $newListPathTmp) {
+            ERROR("Cannot open temporary (inject mode) new pyramid list file (write) : $newListPathTmp");
+            return FALSE;
+        }
+    } else {
+        # Sinon, on peut directement écrire dans le fichier liste final de la nouvelle pyramide
+        if (! open $NEWLIST, ">", $newListPath) {
+            ERROR("Cannot open new pyramid list file (write) : $newListPath");
+            return FALSE;
+        }
+    }
     
     while( my $line = <$OLDLIST> ) {
         chomp $line;
@@ -567,7 +558,7 @@ sub writeListAndReferences {
             next;
         }
         
-        my ($x,$y) = $newpyr->{levels}->{$level}->getFromSlabPath($line);
+        my ($col,$row) = $newpyr->{levels}->{$level}->getFromSlabPath($line);
 
         if (! exists $ancestorRoots{$rootIndex}) {
             ERROR(sprintf "Old pyramid list ($ancestorListPath) uses an undefined root ID : %s", $rootIndex);
@@ -599,7 +590,7 @@ sub writeListAndReferences {
             }
         }
         
-        if (! $forest->containsNode($level,$x,$y)) {
+        if (! $forest->containsNode($level,$col,$row)) {
             # This image is not in the forest, it won't be modified by this generation.
             # We add it now to the list (real file path)
             my $slab = $line;
@@ -613,6 +604,9 @@ sub writeListAndReferences {
             # - On met zéro sinon, la dalle étant importée dans la nouvelle pyramide (pas de dépendance avec l'ancêtre)
             if ($updateMode eq 'slink') {
                 printf $NEWLIST "%s/$slab\n", $rootIndex + 1;
+            } elsif ($updateMode eq 'inject') {
+                # Dans le cas injectif, on a laissé le fichier ou lien tel quel, on remet donc la ligne telle quelle
+                print $NEWLIST "$line\n";
             } else {
                 print $NEWLIST "0/$slab\n";
             }
@@ -628,9 +622,21 @@ sub writeListAndReferences {
     # Now, we can write binding between ID and root, testing counter.
     # We write at the top of the list file, caches' roots, using Tie library
     my @NEWLISTHDR;
-    if (! tie @NEWLISTHDR, 'Tie::File', $newListPath) {
-        ERROR("Cannot write the header of the new pyramid list file : $newListPath");
-        return FALSE;
+
+    if ($updateMode eq "inject") {
+        # En mode injection, il ne faut pas écrire directement le fichier de la nouvelle pyramide, car c'est celui de l'ancêtre
+
+        if (! tie @NEWLISTHDR, 'Tie::File', $newListPathTmp) {
+            ERROR("Cannot write the header of the new pyramid list file : $newListPathTmp");
+            return FALSE;
+        }
+    } else {
+        # Sinon, on peut directement écrire dans le fichier liste final de la nouvelle pyramide
+
+        if (! tie @NEWLISTHDR, 'Tie::File', $newListPath) {
+            ERROR("Cannot write the header of the new pyramid list file : $newListPath");
+            return FALSE;
+        }
     }
 
     unshift @NEWLISTHDR,"#\n";
@@ -643,10 +649,27 @@ sub writeListAndReferences {
             }
         }
     }
+    elsif ($updateMode eq 'inject') {
+        while ( my ($rootID,$root) = each(%ancestorRoots) ) {
+            if ($rootID == 0) {
+                # La racine de la nouvelle pyramide (= l'ancienne) sera ajoutée après, pour être en première ligne
+                next;
+            }
+            if ($ancestorRootsUse{$rootID} > 0) {
+                # Used roots are written in the header, like in the ancestor
+                unshift @NEWLISTHDR,(sprintf "%s=%s", $rootID, $root);
+            }
+        }
+    }
     
-    # Root of the new pyramid (first position)
     unshift @NEWLISTHDR,"0=$newRoot\n";
     untie @NEWLISTHDR;
+
+    if ($updateMode eq "inject") {
+        # On peut maintenant mettre le nouveau fichier liste à la place de l'ancien
+        DEBUG("Inject mode: $newListPathTmp -> $newListPath");
+        `mv $newListPathTmp $newListPath`;
+    }
     
     return TRUE;
 }
@@ -691,6 +714,17 @@ sub doIt {
             return FALSE;
         }
 
+        if (! defined $params->{pyramid}->{update_mode} || $params->{pyramid}->{update_mode} eq "") {
+            ERROR("If ancestor pyramid, we need the 'update_mode' parameter");
+            return FALSE;
+        }
+
+        my $updateMode = $params->{pyramid}->{update_mode} ;
+        if (! defined COMMON::Array::isInArray($updateMode, @UPDATESMODES) ) {
+            ERROR("Update mode '$updateMode' is not allowed for FILE pyramids");
+            return FALSE;
+        }
+
         my $ancestorDescriptor = File::Spec->catdir($params->{pyramid}->{pyr_desc_path_old}, $params->{pyramid}->{pyr_name_old});
         $ancestorDescriptor .= ".pyr" if ($ancestorDescriptor !~ m/\.pyr/i);
 
@@ -709,6 +743,16 @@ sub doIt {
             ERROR("Ancestor pyramid have to be a FILE pyramid !");
             return FALSE;
         }
+
+        # Dans le cas de l'injection, on veut que la nouvelle pyramide soit écrite sur l'ancienne
+        # On va donc modifier le nom et les emplacements pour mettre les mêmes que ceux de l'ancêtre
+
+        if ($updateMode eq "inject") {
+            WARN("'inject' update mode is selected, ancestor is modified, without possible rollback.");
+            $params->{pyramid}->{pyr_desc_path} = $objAncestorPyramid->getDescriptorDir();
+            $params->{pyramid}->{pyr_data_path} = $objAncestorPyramid->getDataRoot();
+            $params->{pyramid}->{pyr_name_new} = $objAncestorPyramid->getName();
+        }
     }
 
     #######################
@@ -718,7 +762,7 @@ sub doIt {
     
     $objPyramid = COMMON::Pyramid->new("VALUES", $params->{pyramid}, $objAncestorPyramid );
     if (! defined $objPyramid) {
-        ERROR("Cannot load new pyramid !");
+        ERROR("Cannot create output Pyramid !");
         return FALSE;
     }
 
@@ -728,10 +772,12 @@ sub doIt {
     }
 
     if (! $objPyramid->bindTileMatrixSet($params->{pyramid}->{tms_path})) {
-        ERROR("Cannot bind TMS to pyramid !");
+        ERROR("Cannot bind TMS to output Pyramid !");
         return FALSE;
     }
 
+    my $objTMS = $objPyramid->getTileMatrixSet();
+    
     #######################
     # load data source
     
@@ -744,7 +790,7 @@ sub doIt {
     }
 
     # update datasources top/bottom levels !
-    my ($bottomOrder,$topOrder) = $objDSL->updateDataSources($objPyramid->getTileMatrixSet(), $params->{pyramid}->{pyr_level_top});
+    my ($bottomOrder,$topOrder) = $objDSL->updateDataSources($objTMS, $params->{pyramid}->{pyr_level_top});
     if ($bottomOrder == -1) {
         ERROR("Cannot determine top and bottom levels, from data sources.");
         return FALSE;
@@ -758,7 +804,7 @@ sub doIt {
     # Create all level between the bottom and the top
     for (my $order = $bottomOrder; $order <= $topOrder; $order++) {
 
-        my $ID = $objPyramid->getTileMatrixSet()->getIDfromOrder($order);
+        my $ID = $objTMS->getIDfromOrder($order);
         if (! defined $ID) {
             ERROR(sprintf "Cannot identify ID for the order %s !", $order);
             return FALSE;
@@ -790,11 +836,18 @@ sub doIt {
     }
 
     #######################
+
+    my $force = FALSE;
+    if (defined $objAncestorPyramid && $this{params}->{pyramid}->{update_mode} eq "inject") {
+        $force = TRUE;
+    }
+
+    #######################
     # write the pyramid list
     
     ALWAYS(">>> Write the pyramid's list ...");
 
-    if ( ! writeListAndReferences($objForest, $objPyramid, $objAncestorPyramid) ) {
+    if ( ! writeListAndReferences($objForest, $objPyramid, $objAncestorPyramid, $force) ) {
         ERROR("Can not write Pyramid list and reference ancestor if exist !");
         return FALSE;
     }
@@ -804,7 +857,7 @@ sub doIt {
 
     ALWAYS(">>> Write the pyramid's descriptor ...");
 
-    if ( ! $objPyramid->writeDescriptor() ) {
+    if ( ! $objPyramid->writeDescriptor($force) ) {
         ERROR("Can not write Pyramid file !");
         return FALSE;
     }
@@ -901,12 +954,12 @@ Topic: pyramid
 For more informations about properties, see <BE4::Pyramid>.
 
     pyr_name_new - Name of the new pyramid, used to name the descriptor, the pyramid's list, the data directory and the temporary directory.
-    pyr_data_path - Directory path, where to write the cache. Mandatory.
     pyr_desc_path - Directory path, where to write the descriptor. Mandatory.
+    pyr_data_path - Directory path, where to write the cache. Mandatory.
 
     pyr_name_old - If existing pyramid, its name. If this parameter is present, generation is an update.
-    pyr_data_path_old - If existing pyramid, directory path where to find the cache. Default : pyr_data_path value.
-    pyr_desc_path_old - If existing pyramid, directory path where to find the descriptor. Default : pyr_desc_path value.
+    pyr_data_path_old - If existing pyramid, directory path where to find the cache.
+    pyr_desc_path_old - If existing pyramid, directory path where to find the descriptor.
     update_mode - Possible values :
         slink, hlink, copy : existing pyramid, the way the new cache will reference the ancestor's cache.
         inject : no new pyramid. The old one is updated. CAUTION : old pyramid is irreversibly modified
@@ -918,7 +971,7 @@ For more informations about properties, see <BE4::Pyramid>.
     color - The color is a string and contain on value per sample, in decimal format, seperated by comma. For 8 bits unsigned integer, value must be between 0 and 255. For 32 bits float, an integer is expected too, but can be negative.
     Example : "255,255,255" (white) for images whithout alpha sample, "-99999" for a DTM.
 
-    image_width, image_height - Number a tile in the cache image, widthwise and heightwise. 16 * 16 for example. Mandatory.
+    image_width, image_height - Number a tile in the cache image (slab), widthwise and heightwise. 16 * 16 for example. Mandatory.
 
     bitspersample - Possible values : 8, 32. Have to be the same as source. Mandatory.
 
@@ -970,9 +1023,9 @@ Examples:
 
 Topic: process
 
-For more informations about properties, see <COMMON::Forest> and <BE4::Commands>.
+For more informations about properties, see <COMMON::Forest> and <COMMON::Commands>.
 
-    job_number - Level of parallelization for scripts. Distribution details are different according to the kind of graph (see <COMMON::QTree> and <BE4::Graph>). Mandatory.
+    job_number - Level of parallelization for scripts. Distribution details are different according to the kind of graph (see <COMMON::QTree> and <COMMON::Graph>). Mandatory.
 
     path_temp - Temporary directory path proper to each script : temporary files are written in *path_temp/pyr_name_new/SCRIPT_ID*.
 
@@ -1046,7 +1099,7 @@ For more informations about properties, see <COMMON::Harvesting>.
 
     extent - Area where we have to harvest. It can be a bbox "xmin,ymin,xmax,ymax" or the path of a file which contains a geometry in WKT format. Mandatory if no georeferenced image to define extent (path_image is not present).
     
-    list - Pathy to a file, containing a list of images' indices (I,J) to harvest. It could replace an extent.
+    list - Path to a file, containing a list of images' indices (I,J) to harvest. It could replace an extent.
 
 Examples:
     (start code)

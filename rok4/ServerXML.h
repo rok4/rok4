@@ -184,6 +184,8 @@ class ServerXML : public DocumentXML
         ContextBook* s3Book;
         ContextBook* swiftBook;
 
+        AliasManager* am;
+
     private:
 
         bool ok;

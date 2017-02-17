@@ -37,13 +37,13 @@
 ################################################################################
 
 =begin nd
-File: be4s3.pl
+File: be4-s3.pl
 
-Section: BE4S3 tool
+Section: BE4-S3 tool
 
 Synopsis:
     (start code)
-    perl be4s3.pl --conf=path
+    perl be4-s3.pl --conf=path
     (end code)
 
 Tool allowing to generate a pyramid of tiled TIFF images, several resolutions, with compression (lossless or lossy) from several data sources, georeferenced image (ortho, scan, ...) or WMS service. Output format respects WMS/WMTS server ROK4.
@@ -52,12 +52,13 @@ This tool write scripts, to execute to obtain the pyramid in a S3 bucket.
 
 (see be4s3_general.png)
 
-Only create a new pyramid with data (no update)
+2 types of generation :
+    - create a new pyramid with data
+    - create a pyramid from an ancestor one (update)
 
 2 data source type :
     - images
     - WMS service
-
 
 =cut
 
@@ -87,14 +88,17 @@ use lib "$Bin/../lib/perl5";
 # My module
 use BE4S3::PropertiesLoader;
 use COMMON::Pyramid;
+use COMMON::DataSourceLoader;
 use COMMON::Forest;
+use COMMON::Array;
+use COMMON::CheckUtils;
 
 ################################################################################
 # Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-my @UPDATESMODES = ( "slink", "copy" );
+my @UPDATESMODES = ( "slink", "copy", "inject" );
 
 ################################################################################
 # Pas de bufferisation des sorties.
@@ -110,7 +114,7 @@ my $VERSION = '@VERSION_TEXT@';
 =begin nd
 Variable: options
 
-Contains be4s3 call options :
+Contains be4-s3 call options :
 
     version - To obtain the command's version
     help - To obtain the command's help
@@ -142,7 +146,12 @@ All parameters by section :
 =cut
 my %this =
 (
-    params => undef
+    params => {
+        logger        => undef,
+        datasource    => undef,
+        pyramid       => undef,
+        process       => undef
+    },
 );
 
 ####################################################################################################
@@ -158,7 +167,7 @@ See Also:
     <init>, <config>, <doIt>
 =cut
 sub main {
-    printf("BE4S3: version [%s]\n",$VERSION);
+    printf("BE4-S3: version [%s]\n",$VERSION);
     # message
     my $message = undef;
 
@@ -216,19 +225,19 @@ sub init {
     # init Options
     GetOptions(
         "help|h" => sub {
-            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4s3-pl.html\n" ;
+            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-s3-pl.html\n" ;
             exit 0;
         },
         "version|v" => sub { exit 0; },
         "usage" => sub {
-            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4s3-pl.html\n" ;
+            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-s3-pl.html\n" ;
             exit 0;
         },
         
         "properties|conf=s" => \$options{properties}
     ) or do {
         printf "Unappropriate usage\n";
-        printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4s3-pl.html\n";
+        printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-s3-pl.html\n";
         exit -1;
     };
   
@@ -342,6 +351,11 @@ sub writeListAndReferences {
     my $forest = shift;
     my $newpyr = shift;
     my $ancestor = shift;
+    my $force = shift;
+
+    if (! defined $force) {
+        $force = FALSE;     
+    }
 
     my $updateMode = $this{params}->{pyramid}->{update_mode};
 
@@ -356,8 +370,9 @@ sub writeListAndReferences {
     }
 
     my $newListPath = $newpyr->getListFile();
+    my $newListPathTmp = "$newListPath.tmp";
 
-    if (-f $newListPath ) {
+    if (! $force  && -f $newListPath) {
         ERROR(sprintf "New pyramid list ('%s') exist, can not overwrite it ! ", $newListPath);
         return FALSE;
     }
@@ -371,23 +386,23 @@ sub writeListAndReferences {
         }
     }
     
-    my $NEWLIST;
-
-    if (! open $NEWLIST, ">", $newListPath) {
-        ERROR(sprintf "Cannot open new pyramid list file (write) : %s",$newListPath);
-        return FALSE;
-    }
-
-    # La racine de la pyramide est un conteneur (pool Ceph ou bucket S3)
-    # L'ancêtre utilise obligatoirement le même conteneur
-    my $containerName = $newpyr->getDataRoot();
+    # La racine de la pyramide est un nom de bucket dans le cas S3
+    my $containerName = $newpyr->getDataBucket();
     
-    print $NEWLIST "0=$containerName\n";
-    print $NEWLIST "#\n";
-
     if (! defined $ancestor) {
-        # Pas d'ancêtre, rien à référencer
+        # Pas d'ancêtre, on doit juste écrire l'en tête : le dossier propre à cette pyramide ou le nom du conteneur objet
+
+        my $NEWLIST;
+
+        if (! open $NEWLIST, ">", $newListPath) {
+            ERROR(sprintf "Cannot open new pyramid list file (write) : %s",$newListPath);
+            return FALSE;
+        }
+
+        print $NEWLIST "0=$containerName\n";
+        print $NEWLIST "#\n";
         close $NEWLIST;
+
         return TRUE
     }
 
@@ -403,18 +418,6 @@ sub writeListAndReferences {
         return FALSE;
     }
 
-    # On va vérifier la compatibilité du stockage de l'ancêtre avec celui de la nouvelle pyramide et le mode de mise à jour
-
-    if (! defined $updateMode || $updateMode eq "") {
-        ERROR("Update mode have to be provided with an ancestor");
-        return FALSE;
-    }
-
-    if (! defined COMMON::Array::isInArray($updateMode, @UPDATESMODES) ) {
-        ERROR("Update mode '$updateMode' is not allowed for S3 pyrmids");
-        return FALSE;
-    }
-
     # On va lire la liste de l'ancêtre
     my $ancestorListPath = $ancestor->getListFile();
     my $OLDLIST;
@@ -423,23 +426,38 @@ sub writeListAndReferences {
         ERROR("Cannot open old pyramid list file (read) : $ancestorListPath");
         return FALSE;
     }
-        
-    my $header = TRUE;
+    
     while( my $line = <$OLDLIST> ) {
         chomp $line;
 
-        ############# ON ZAPPE LE HEADER #############
+        ############# ON ZAPPE JUSTE LE HEADER #############
 
         if ($line eq "#") {
-            $header = FALSE;
-            next;
+            last;
         }
+    }
 
-        if ($header) {
-            next;
+    my $NEWLIST;
+
+    if ($updateMode eq "inject") {
+        # En mode injection, il ne faut pas écrire directement le fichier de la nouvelle pyramide, car c'est celui de l'ancêtre
+        if (! open $NEWLIST, ">", $newListPathTmp) {
+            ERROR("Cannot open temporary (inject mode) new pyramid list file (write) : $newListPathTmp");
+            return FALSE;
         }
+    } else {
+        # Sinon, on peut directement écrire dans le fichier liste final de la nouvelle pyramide
+        if (! open $NEWLIST, ">", $newListPath) {
+            ERROR("Cannot open new pyramid list file (write) : $newListPath");
+            return FALSE;
+        }
+    }
 
-        ##############################################
+    print $NEWLIST "0=$containerName\n";
+    print $NEWLIST "#\n";
+    
+    while( my $line = <$OLDLIST> ) {
+        chomp $line;
         
         # Une ligne du fichier c'est
         # Cas objet : 0/PYRAMID_IMG_15_15656_5423
@@ -490,7 +508,7 @@ sub writeListAndReferences {
 
             # slink : we print the name of the slab in the old pyramid
             # else : object is duplicate, we put the name of the slab in the new pyramid
-            if ($updateMode eq 'slink') {
+            if ($updateMode eq 'slink' || $updateMode eq 'inject') {
                 print $NEWLIST "$line\n";
             } else {
                 my $slab = $newSlab;
@@ -503,6 +521,12 @@ sub writeListAndReferences {
     
     close $OLDLIST;
     close $NEWLIST;
+
+    if ($updateMode eq "inject") {
+        # On peut maintenant mettre le nouveau fichier liste à la place de l'ancien
+        DEBUG("Inject mode: $newListPathTmp -> $newListPath");
+        `mv $newListPathTmp $newListPath`;
+    }
     
     return TRUE;
 }
@@ -530,8 +554,8 @@ sub doIt {
     #######################
     # objects to implemented
     
-    my $objPyramid = undef;
     my $objAncestorPyramid = undef;
+    my $objPyramid = undef;
     my $objDSL = undef;
     my $objForest = undef;
 
@@ -544,6 +568,17 @@ sub doIt {
 
         if (! exists $params->{pyramid}->{pyr_desc_path_old} || ! defined $params->{pyramid}->{pyr_desc_path_old}) {
             ERROR("If ancestor pyramid, we need the 'pyr_desc_path_old' parameter with 'pyr_name_old'");
+            return FALSE;
+        }
+
+        if (! defined $params->{pyramid}->{update_mode} || $params->{pyramid}->{update_mode} eq "") {
+            ERROR("If ancestor pyramid, we need the 'update_mode' parameter");
+            return FALSE;
+        }
+
+        my $updateMode = $params->{pyramid}->{update_mode} ;
+        if (! defined COMMON::Array::isInArray($updateMode, @UPDATESMODES) ) {
+            ERROR("Update mode '$updateMode' is not allowed for FILE pyramids");
             return FALSE;
         }
 
@@ -565,14 +600,24 @@ sub doIt {
             ERROR("Ancestor pyramid have to be a S3 pyramid !");
             return FALSE;
         }
+
+        # Dans le cas de l'injection, on veut que la nouvelle pyramide soit écrite sur l'ancienne
+        # On va donc modifier le nom et les emplacements pour mettre les mêmes que ceux de l'ancêtre
+
+        if ($updateMode eq "inject") {
+            WARN("'inject' update mode is selected, ancestor is modified, without possible rollback.");
+            $params->{pyramid}->{pyr_desc_path} = $objAncestorPyramid->getDescriptorDir();
+            $params->{pyramid}->{pyr_data_bucket_name} = $objAncestorPyramid->getDataBucket();
+            $params->{pyramid}->{pyr_name_new} = $objAncestorPyramid->getName();
+        }
     }
-    
+
     #######################
     # create a pyramid
     
-    ALWAYS(">>> Load a Pyramid ...");
+    ALWAYS(">>> Load the new pyramid ...");
     
-    $objPyramid = COMMON::Pyramid->new("VALUES", $params->{pyramid} );
+    $objPyramid = COMMON::Pyramid->new("VALUES", $params->{pyramid}, $objAncestorPyramid );
     if (! defined $objPyramid) {
         ERROR("Cannot create output Pyramid !");
         return FALSE;
@@ -622,7 +667,7 @@ sub doIt {
             return FALSE;
         }
 
-        if (! $objPyramid->addLevel($ID) ) {
+        if (! $objPyramid->addLevel($ID, $objAncestorPyramid) ) {
             ERROR("Cannot add level $ID");
             return FALSE;            
         }
@@ -648,11 +693,18 @@ sub doIt {
     }
 
     #######################
+
+    my $force = FALSE;
+    if (defined $objAncestorPyramid && $this{params}->{pyramid}->{update_mode} eq "inject") {
+        $force = TRUE;
+    }
+
+    #######################
     # write the pyramid list
     
     ALWAYS(">>> Write the pyramid's list ...");
 
-    if ( ! writeListAndReferences($objForest, $objPyramid, $objAncestorPyramid) ) {
+    if ( ! writeListAndReferences($objForest, $objPyramid, $objAncestorPyramid, $force) ) {
         ERROR("Can not write Pyramid list and reference ancestor if exist !");
         return FALSE;
     }
@@ -662,7 +714,7 @@ sub doIt {
 
     ALWAYS(">>> Write the pyramid's descriptor ...");
 
-    if ( ! $objPyramid->writeDescriptor() ) {
+    if ( ! $objPyramid->writeDescriptor($force) ) {
         ERROR("Can not write Pyramid file !");
         return FALSE;
     }
@@ -716,6 +768,10 @@ Group: Mandatory environment variable
     ROK4_S3_KEY
     ROK4_S3_SECRETKEY
 
+    ROK4_REDIS_PORT
+    ROK4_REDIS_PASSWD
+    ROK4_REDIS_HOST
+
 Group: Write a configuration file
 
 A file configuration can be composed of sections and parameters following :
@@ -728,7 +784,7 @@ A file configuration can be composed of sections and parameters following :
 
 In a data source configuration, sections are level ID, from which the data source is used.
 
-Group: BE4S3 global configuration file
+Group: BE4-S3 global configuration file
 
 Properties by section.
 
@@ -779,9 +835,7 @@ For more informations about properties, see <BE4S3::Pyramid>.
     color - The color is a string and contain on value per sample, in decimal format, seperated by comma. For 8 bits unsigned integer, value must be between 0 and 255. For 32 bits float, an integer is expected too, but can be negative.
     Example : "255,255,255" (white) for images whithout alpha sample, "-99999" for a DTM.
 
-    image_width, image_height - Number a tile in the cache image (slab), widthwise and heightwise. 16 * 16 for example. Mandatory. Even if tiles_storage is used, we work with slab.
-
-    tiles_storage - If true, at the final step (work2cache), work slab are stored as independant tiles. Disabled for S3 storage now.
+    image_width, image_height - Number a tile in the cache image (slab), widthwise and heightwise. 16 * 16 for example. Mandatory.
 
     bitspersample - Possible values : 8, 32. Have to be the same as source. Mandatory.
 
@@ -799,7 +853,7 @@ For more informations about properties, see <BE4S3::Pyramid>.
 
     pyr_level_top - Optionnal. If we don't want pyramid to be generated to the TMS top level, we can force the top level. It have to be consistent with base levels in the data sources configuration file.
 
-    export_masks - An option is used to precise if we want to write masks in the final pyramid. So we can use masks but not export them. Only values "true" and "TRUE" lead to masks' export. Optionnal, FALSE by default.
+    export_masks - An option is used to precise if we want to write masks in the final pyramid. So we can use masks but not export them (they may be useless for a pyramid which wont be never updated). Only values "true" and "TRUE" lead to masks' export. Optionnal, FALSE by default.
 
 Examples:
     (start code)
@@ -808,10 +862,6 @@ Examples:
     tms_path = /home/ign/TILEMATRIXSETS
 
     pyr_data_bucket_name = PYRAMIDS
-    pyr_data_api_url = s3.amazonaws.com
-    pyr_data_key = client.admin
-    pyr_data_secret_key = /etc/ceph/ceph.conf
-
     pyr_desc_path = /home/ign/PYRAMIDS
     pyr_name_new = S3_DALLE
 

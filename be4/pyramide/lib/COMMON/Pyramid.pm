@@ -131,6 +131,7 @@ use File::Spec;
 use File::Path;
 use File::Copy;
 use Tie::File;
+use Cwd;
 
 use Data::Dumper;
 
@@ -223,6 +224,9 @@ sub new {
     bless($this, $class);
 
     if ($type eq "DESCRIPTOR") {
+
+        $params = Cwd::realpath($params);
+
         # Le paramètre est le chemin du descripteur de pyramide, on en tire 'name' et 'desc_path'
         if (! -f $params) {
             ERROR ("XML file does not exist: $params !");
@@ -242,7 +246,7 @@ sub new {
         $params->{desc_path} = $this->{desc_path};
         $params->{name} = $this->{name};
         if (! $this->_readDescriptor($params)) {
-            ERROR ("The parameter 'name' is required !");
+            ERROR ("Cannot extract informations from pyramid descriptor");
             return undef;
         }
 
@@ -263,20 +267,14 @@ sub new {
             ERROR ("The parameter 'pyr_desc_path' is required!");
             return undef;
         }
-        $this->{desc_path} = $params->{pyr_desc_path};
+        $this->{desc_path} = Cwd::realpath($params->{pyr_desc_path});
 
         if (exists $params->{pyr_data_path} && defined $params->{pyr_data_path}) {
 
             #### CAS D'UNE PYRAMIDE FICHIER
             $this->{storage_type} = "FILE";
-            $this->{data_path} = $params->{pyr_data_path};
+            $this->{data_path} = Cwd::realpath($params->{pyr_data_path});
 
-            # dir_depth
-            if (! exists $params->{dir_depth} || ! defined $params->{dir_depth}) {
-                ERROR ("The parameter 'dir_depth' is required!");
-                return undef;
-            }
-            $this->{dir_depth} = $params->{dir_depth};
         }
 
         elsif (exists $params->{pyr_data_bucket_name} && defined $params->{pyr_data_bucket_name}) {
@@ -337,7 +335,20 @@ sub _load {
         $this->{image_height} = $ancestor->getTilesPerHeight();
         $this->{pyrImgSpec} = $ancestor->getImageSpec();
         $this->{nodata} = $ancestor->getNodata();
+
+        if (defined $ancestor->getDirDepth()) {
+            $this->{dir_depth} = $ancestor->getDirDepth();
+        }
     } else {
+
+
+        # dir_depth
+        if ($this->{storage_type} eq "FILE" && (! exists $params->{dir_depth} || ! defined $params->{dir_depth})) {
+            ERROR ("The parameter 'dir_depth' is required!");
+            return undef;
+        }
+        $this->{dir_depth} = $params->{dir_depth};
+
         # TMS
         if (! exists $params->{tms_name} || ! defined $params->{tms_name}) {
             ERROR ("The parameter 'tms_name' is required!");
@@ -518,7 +529,15 @@ sub _readDescriptor {
         $this->{storage_type} = $storageType;
 
         if ($storageType eq "FILE") {
-            $this->{dir_depth} = $this->{levels}->{$oneLevelId}->getDirDepth();
+            my ($dd, $dp) = $this->{levels}->{$oneLevelId}->getDirsInfo();
+            $params->{dir_depth} = $dd;
+            $this->{data_path} = $dp;
+        }
+        elsif ($storageType eq "S3") {
+            $this->{data_bucket} = $this->{levels}->{$oneLevelId}->getS3Info();
+        }
+        elsif ($storageType eq "CEPH") {
+            $this->{data_pool} = $this->{levels}->{$oneLevelId}->getCephInfo();
         }
 
     } else {
@@ -588,7 +607,7 @@ sub addLevel {
             tm => $this->{tms}->getTileMatrix($level),
             size => [$this->{image_width}, $this->{image_height}],
 
-            dir_data => File::Spec->catdir($this->{data_path}, $this->{name}),
+            dir_data => $this->getDataDir(),
             dir_depth => $this->{dir_depth}
         };
     }
@@ -723,6 +742,11 @@ Function: writeDescriptor
 =cut
 sub writeDescriptor {
     my $this = shift;
+    my $force = shift;
+
+    if (! defined $force) {
+        $force = FALSE;     
+    }
 
     if ($this->{type} eq "READ") {
         ERROR("Cannot write descriptor of 'read' pyramid");
@@ -731,7 +755,7 @@ sub writeDescriptor {
 
     my $descPath = File::Spec->catdir($this->{desc_path}, $this->{name}.".pyr");
 
-    if (-f $descPath) {
+    if (! $force && -f $descPath) {
         ERROR("New pyramid descriptor ('$descPath') exist, can not overwrite it !");
         return FALSE;
     }
@@ -782,7 +806,7 @@ sub getDataRoot {
     my $this = shift;
 
     if (defined $this->{data_path}) {
-        return $this->getDataDir();
+        return $this->{data_path};
     }
     elsif (defined $this->{data_pool}) {
         return $this->{data_pool};
