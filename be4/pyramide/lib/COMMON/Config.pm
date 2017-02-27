@@ -72,6 +72,8 @@ use Log::Log4perl qw(:easy);
 use Data::Dumper;
 use Scalar::Util qw/reftype/;
 
+use COMMON::Array;
+
   # inheritance
 our @ISA;
 use parent 'Exporter';
@@ -141,7 +143,7 @@ sub new {
 
     if ( ! defined $value) {
         INFO("No format defined for the configuration file. Switching to default INI-like format ('INI').");
-        $this->{fileFormat} = "INI";
+        $value = "INI";
     }
     if ( ! defined COMMON::Array::isInArray(uc($value), @FILEFORMATS) ) {
         ERROR("Unknown file format: $value");
