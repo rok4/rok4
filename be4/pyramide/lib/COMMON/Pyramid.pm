@@ -225,7 +225,7 @@ sub new {
 
     if ($type eq "DESCRIPTOR") {
 
-        $params = Cwd::realpath($params);
+        $params = File::Spec->rel2abs($params);
 
         # Le paramètre est le chemin du descripteur de pyramide, on en tire 'name' et 'desc_path'
         if (! -f $params) {
@@ -267,13 +267,13 @@ sub new {
             ERROR ("The parameter 'pyr_desc_path' is required!");
             return undef;
         }
-        $this->{desc_path} = Cwd::realpath($params->{pyr_desc_path});
+        $this->{desc_path} = File::Spec->rel2abs($params->{pyr_desc_path});
 
         if (exists $params->{pyr_data_path} && defined $params->{pyr_data_path}) {
 
             #### CAS D'UNE PYRAMIDE FICHIER
             $this->{storage_type} = "FILE";
-            $this->{data_path} = Cwd::realpath($params->{pyr_data_path});
+            $this->{data_path} = File::Spec->rel2abs($params->{pyr_data_path});
 
         }
 

@@ -380,11 +380,11 @@ sub _loadXML {
     my $imgprefix = $levelRoot->findvalue('imagePrefix');
     
     if (defined $dirimg && $dirimg ne "" ) {
-        $this->{dir_image} = Cwd::realpath(File::Spec->rel2abs( $dirimg , $this->{desc_path} ) );
+        $this->{dir_image} = File::Spec->rel2abs(File::Spec->rel2abs( $dirimg , $this->{desc_path} ) );
         
         my $dirmsk = $levelRoot->findvalue('mask/baseDir');
         if (defined $dirmsk && $dirmsk ne "" ) {
-            $this->{dir_mask} = Cwd::realpath(File::Spec->rel2abs( $dirmsk , $this->{desc_path} ) );
+            $this->{dir_mask} = File::Spec->rel2abs(File::Spec->rel2abs( $dirmsk , $this->{desc_path} ) );
         }
 
         $this->{dir_depth} = $levelRoot->findvalue('pathDepth');

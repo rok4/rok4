@@ -145,6 +145,7 @@ sub new {
         INFO("No format defined for the configuration file. Switching to default INI-like format ('INI').");
         $value = "INI";
     }
+    
     if ( ! defined COMMON::Array::isInArray(uc($value), @FILEFORMATS) ) {
         ERROR("Unknown file format: $value");
         return undef;
