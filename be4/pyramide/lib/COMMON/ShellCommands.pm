@@ -865,11 +865,7 @@ Wms2work () {
             wget --no-verbose -O $nameImg "$url&BBOX=$1"
 
             if [ $? == 0 ] ; then
-                if [ "$harvest_ext" == "png" ] ; then
-                    if pngcheck $nameImg 1>/dev/null ; then break ; fi
-                else
-                    if tiffinfo $nameImg 1>/dev/null ; then break ; fi
-                fi
+                if gdalinfo $nameImg 1>/dev/null ; then break ; fi
             fi
             
             echo "Failure $count : wait for $wait_delay s"
