@@ -514,6 +514,9 @@ sub getCommandWms2work {
     if ($this->getFormat eq "image/png") {
         $format = "png";
         $cmd .= " \"png\"";
+    } elsif ($this->getFormat eq "image/jpeg") {
+        $format = "jpeg";
+        $cmd .= " \"jpeg\"";
     } else {
         $format = "tif";
         $cmd .= " \"tif\"";
