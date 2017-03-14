@@ -398,20 +398,17 @@ std::string Level::getDirPath ( int tilex, int tiley ) {
  */
 int Level::createDirPath(std::string path) {
 
-    int success = -1;
-    int curDirCreated;
+    int success;
     std::size_t found = path.find_first_of("/");
     std::string currentDir = path.substr(0,found)+"/";
     std::string endOfPath = path.substr(found+1);
 
     while (found!=std::string::npos) {
+        success = -1;
         found = endOfPath.find_first_of("/");
         currentDir += endOfPath.substr(0,found)+"/";
         endOfPath = endOfPath.substr(found+1);
-        curDirCreated = mkdir(currentDir.c_str(),ACCESSPERMS);
-        if (curDirCreated) {
-            success = 0;
-        }
+        success = mkdir(currentDir.c_str(),ACCESSPERMS);
     }
 
     return success;

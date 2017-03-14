@@ -137,6 +137,12 @@ private:
     bool onFly;
 
     /**
+     * \~french \brief Valeurs de noData
+     * \~english \brief noData values
+     */
+    int* noData;
+
+    /**
      * \~french \brief Teste si deux CRS sont équivalent
      * \param[in] CRS1
      * \param[in] CRS2
@@ -335,6 +341,14 @@ public:
         style = st;
     }
 
+    /**
+     * \~french \brief Retourne la premiere valeur de noData
+     * \~english \brief Return the first noData value
+     */
+    int getFirstNoDataValue () {
+        return noData[0];
+    }
+
 
     /**
      * \~french \brief Récupère le meilleur niveau pour une résolution donnée
@@ -414,7 +428,7 @@ public:
      * \param[in] onDemand
      * \param[in] onFly
      */
-    Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format, int channels, bool onDemand, bool onFly);
+    Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format, int channels, bool onDemand, bool onFly, std::vector<int> nd);
 
     /**
      * \~french \brief Destructeur
@@ -469,9 +483,9 @@ public:
      * \param[in] specificSources
      */
     PyramidOnDemand(std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format,
-                    int channels, bool onDemand, bool onFly,
+                    int channels, bool onDemand, bool onFly, std::vector<int> nd,
                     std::map<std::string,std::vector<Source*> > sSources) :
-        Pyramid(levels,tms,format,channels,onDemand,onFly),
+        Pyramid(levels,tms,format,channels,onDemand,onFly,nd),
         specificSources (sSources) {}
 
 
@@ -561,9 +575,9 @@ public:
      * \param[in] style
      */
     PyramidOnFly(std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format,
-                 int channels, bool onDemand, bool onFly, Photometric::ePhotometric ph, std::vector<int> ndv,
+                 int channels, bool onDemand, bool onFly, std::vector<int> ndv, Photometric::ePhotometric ph,
                  std::map<std::string,std::vector<Source*> > sSources) :
-        PyramidOnDemand(levels,tms,format,channels,onDemand,onFly,sSources),
+        PyramidOnDemand(levels,tms,format,channels,onDemand,onFly,ndv,sSources),
         photo (ph),
         ndValues (ndv) {}
 

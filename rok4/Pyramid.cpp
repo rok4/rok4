@@ -57,7 +57,7 @@
 #include "EmptyImage.h"
 
 Pyramid::Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format,
-                   int channels, bool onDemand, bool onFly)
+                   int channels, bool onDemand, bool onFly, std::vector<int> nd)
     : Source(PYRAMID),levels ( levels ), tms ( tms ), format ( format ), channels ( channels ),
       onDemand ( onDemand ), onFly (onFly) {
 
@@ -99,7 +99,10 @@ Pyramid::Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4
             highestLevel = itLevel->second;
         }
     }
-    int i = 0;
+    noData = new int[channels];
+    for (int i = 0; i < channels ; i++) {
+        noData[i] = nd[i];
+    }
 
 }
 
@@ -393,14 +396,25 @@ Pyramid::~Pyramid() {
     for ( iLevel=levels.begin(); iLevel!=levels.end(); iLevel++ )
         delete ( *iLevel ).second;
 
+    delete [] noData;
+
 }
 
 PyramidOnDemand::~PyramidOnDemand() {
 
-//    for (int i=0;i<basedPyramids.size();i++) {
-//        delete basedPyramids.at(i);
-//        basedPyramids.at(i) = NULL;
-//    }
+    if (specificSources.size() != 0) {
+        for ( std::map<std::string,std::vector<Source*> >::iterator lv = specificSources.begin(); lv != specificSources.end(); lv++) {
+
+            if (lv->second.size() != 0) {
+                for ( std::vector<int>::size_type i = 0; i != lv->second.size(); i++) {
+                    delete lv->second[i];
+                    lv->second[i] = NULL;
+                }
+                lv->second.clear();
+            }
+        }
+        specificSources.clear();
+    }
 
 }
 
