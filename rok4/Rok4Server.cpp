@@ -940,7 +940,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
             SpathTmp = Spath + ".tmp";
             SpathErr = Spath + ".err";
 
-            if (stat (Spath.c_str(), &bufferS) == 0 && stat (SpathTmp.c_str(), &bufferT) == -1) {
+            if (stat (Spath.c_str(), &bufferS) == 0 && (stat (SpathTmp.c_str(), &bufferT) == -1 || stat (SpathErr.c_str(), &bufferE) == -1)) {
                 //la dalle existe donc on fait une requete normale
                 LOGGER_INFO("Dalle déjà existante");
                 tile = getTileUsual(L, format, tileCol, tileRow, tileMatrix, errorResp, style);
@@ -965,41 +965,31 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
                             //PROCESSUS FILS
                             // on va créer un fichier tmp, générer la dalle et supprimer le fichier tmp
 
-                            //on met en place une alarme qui va eteindre le processus au bout de 5min
+                            //on met en place une alarme qui va eteindre le processus au bout d'un certain temps
                             signal(SIGALRM, hangleSIGALARM);
                             alarm(parallelProcess->getTimeBeforeAutoKill());
 
-                            //on attend un temps aléatoire pour être certain qu'un autre processus ne génére pas la dalle
-                            parallelProcess->randomSleep();
-
-                            if (stat (SpathTmp.c_str(), &bufferT) == 0 || stat (SpathErr.c_str(), &bufferE) == 0) {
-                                //std::cout << "Dalle genere par un autre processus... " << std::endl;
-                                exit(0);
+                            //on cree un fichier temporaire pour indiquer que la dalle va etre creer
+                            //on commence par créer le dossier
+                            int directory = lv->second->createDirPath(SpathDir.c_str());
+                            if (directory == -1) {
+                                if (errno != EEXIST) {
+                                    std::cerr << "Impossible de creer le dossier contenant la dalle " << SpathDir.c_str() << std::endl;
+                                    std::cerr << "errno: " << errno << " " << strerror(errno) << std::endl;
+                                    exit(0);
+                                }
                             }
 
-                            //on cree un fichier temporaire pour indiquer que la dalle va etre creer
+                            //on vient de creer le dossier donc on essaye de creer le fichier tmp
                             int fileTmp = open(SpathTmp.c_str(),O_CREAT|O_EXCL,S_IWRITE);
                             if (fileTmp != -1) {
                                 //on a pu creer un fichier temporaire
                                 close(fileTmp);
                             } else {
-                                //impossible de creer un fichier temporaire
-                                int directory = lv->second->createDirPath(SpathDir.c_str());
-                                if (directory != -1) {
-                                    //on a pu creer le dossier donc on reessaye de creer le fichier tmp
-                                    fileTmp = open(SpathTmp.c_str(),O_CREAT|O_EXCL,S_IWRITE);
-                                    if (fileTmp != -1) {
-                                        //on a pu creer un fichier temporaire
-                                        close(fileTmp);
-                                    }
-                                } else {
-                                    std::cerr << "Impossible de creer le dossier contenant la dalle " << SpathDir.c_str() << std::endl;
-                                    std::cerr << "Impossible de creer le fichier de temporaire " << SpathTmp.c_str() << std::endl;
-                                    std::cerr << "Pas de generation de dalles " << std::endl;
-                                    exit(0);
-                                }
-
+                                exit(0);
                             }
+
+
 
                             //on cree un logger et supprime l'ancien pour ne pas mélanger les sorties
                             // il sera écrit dans SpathErr et supprimé si la dalle a été généré correctement
