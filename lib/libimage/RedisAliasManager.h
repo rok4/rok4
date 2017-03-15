@@ -94,21 +94,21 @@ public:
 
         char* h = getenv ("ROK4_REDIS_HOST");
         if (h == NULL) {
-            LOGGER_ERROR("L'utilisation d'un RedisAliasManager necessite d'avoir la variable d'environnement ROK4_REDIS_HOST" );
+            LOGGER_WARN("L'utilisation d'un RedisAliasManager necessite d'avoir la variable d'environnement ROK4_REDIS_HOST" );
             return;
         }
         host.assign(h);
 
         char* pwd = getenv ("ROK4_REDIS_PASSWD");
         if (pwd == NULL) {
-            LOGGER_ERROR("L'utilisation d'un RedisAliasManager necessite d'avoir la variable d'environnement ROK4_REDIS_PASSWD" );
+            LOGGER_WARN("L'utilisation d'un RedisAliasManager necessite d'avoir la variable d'environnement ROK4_REDIS_PASSWD" );
             return;
         }
         passwd.assign(pwd);
 
         char* po = getenv ("ROK4_REDIS_PORT");
         if (po == NULL) {
-            LOGGER_ERROR("L'utilisation d'un RedisAliasManager necessite d'avoir la variable d'environnement ROK4_REDIS_PORT" );
+            LOGGER_WARN("L'utilisation d'un RedisAliasManager necessite d'avoir la variable d'environnement ROK4_REDIS_PORT" );
             return;
         }
         port = std::atoi(po);

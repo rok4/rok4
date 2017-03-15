@@ -100,7 +100,6 @@ bool SwiftContext::connection() {
         curl = curl_easy_init();
         curl_easy_setopt(curl, CURLOPT_URL, auth_url.c_str());
         //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
-        curl_easy_setopt(curl, CURLOPT_NOPROXY, "*");
 
         // On constitue le header et le moyen de récupération des informations (avec les structures de LibcurlStruct)
 
