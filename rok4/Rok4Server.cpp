@@ -1251,9 +1251,11 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
         int directory = lv->second->createDirPath(noDataDir);
         if (directory == -1) {
             //le repertoire n'a pas ete cree
-            LOGGER_ERROR("Impossible de creer le repertoire contenant les tuiles de noData");
-            state = 1;
-            return state;
+            if (errno != EEXIST) {
+                LOGGER_ERROR("Impossible de creer le repertoire contenant les tuiles de noData");
+                state = 1;
+                return state;
+            }
         }
 
         //recuperation des parametres necessaires pour creer la tuile
