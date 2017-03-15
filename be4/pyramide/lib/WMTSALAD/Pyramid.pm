@@ -281,7 +281,7 @@ sub _loadProperties {
     return FALSE if(! $self->_checkProperties($cfg));
 
     # Tile Matrix Set    
-    my $TMS = COMMON::TileMatrixSet->new(File::Spec->catfile($refFileContent->{pyramid}->{tms_path},$refFileContent->{pyramid}->{tms_name}));
+    my $TMS = COMMON::TileMatrixSet->new(File::Spec->catfile($refFileContent->{pyramid}->{tms_path},$refFileContent->{pyramid}->{tms_name}), 1);
     $self->{tileMatrixSet} = $TMS ;
 
     # Image format
