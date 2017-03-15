@@ -241,37 +241,34 @@ int main ( int argc, char **argv )
         LOGGER_DEBUG( std::string("Input is an object in the Ceph pool ") + pool);
         context = new CephPoolContext(pool);
         am = new RedisAliasManager();
-        if (! am->isOk()) {
-            error("RedisAliasManager impossible à créer", 1);
+        if (am->isOk()) {
+            if (! am->connect()) {
+                error("RedisAliasManager impossible à connecter", 1);
+            }
+            context->setAliasManager(am);
         }
-        if (! am->connect()) {
-            error("RedisAliasManager impossible à connecter", 1);
-        }
-        context->setAliasManager(am);
     } else if (bucket != 0) {
         LOGGER_DEBUG( std::string("Input is an object in the S3 bucket ") + bucket);
         curl_global_init(CURL_GLOBAL_ALL);
         context = new S3Context(bucket);
         am = new RedisAliasManager();
-        if (! am->isOk()) {
-            error("RedisAliasManager impossible à créer", 1);
+        if (am->isOk()) {
+            if (! am->connect()) {
+                error("RedisAliasManager impossible à connecter", 1);
+            }
+            context->setAliasManager(am);
         }
-        if (! am->connect()) {
-            error("RedisAliasManager impossible à connecter", 1);
-        }
-        context->setAliasManager(am);
     } else if (container != 0) {
         LOGGER_DEBUG( std::string("Input is an object in the Swift container ") + container);
         curl_global_init(CURL_GLOBAL_ALL);
         context = new SwiftContext(container);
         am = new RedisAliasManager();
-        if (! am->isOk()) {
-            error("RedisAliasManager impossible à créer", 1);
+        if (am->isOk()) {
+            if (! am->connect()) {
+                error("RedisAliasManager impossible à connecter", 1);
+            }
+            context->setAliasManager(am);
         }
-        if (! am->connect()) {
-            error("RedisAliasManager impossible à connecter", 1);
-        }
-        context->setAliasManager(am);
     } else {
         LOGGER_DEBUG("Input is a file in a file system");
         context = new FileContext("");

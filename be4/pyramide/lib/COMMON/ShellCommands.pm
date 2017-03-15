@@ -298,6 +298,36 @@ Cache2work () {
 }
 W2CFUNCTION
 
+my $JC_SWIFT_W2CFUNCTION = <<'W2CFUNCTION';
+StoreSlab () {
+    local workImgName=$1
+    local imgName=$2
+    local workMskName=$3
+    local mskName=$4
+
+    work2cache ${TMP_DIR}/$workImgName __w2cI__ -container ${PYR_CONTAINER} $imgName
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    rm -f ${TMP_DIR}/$workImgName
+
+    if [ $workMskName ] ; then
+        work2cache ${TMP_DIR}/$workMskName __w2cM__ -container ${PYR_CONTAINER} $mskName
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        rm -f ${TMP_DIR}/$workMskName
+    fi
+}
+
+Cache2work () {
+    local input=$1
+    local output=$2
+
+    # On retire le container du input
+    input=`echo -n "$input" | sed "s#${PYR_CONTAINER}/##"`
+
+    cache2work -c zip -container ${PYR_CONTAINER} $input ${TMP_DIR}/$output
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+W2CFUNCTION
+
 
 my $JC_CEPH_W2CFUNCTION = <<'W2CFUNCTION';
 StoreSlab () {
@@ -486,6 +516,16 @@ Cache2work () {
 }
 C2WFUNCTION
 
+my $SWIFT_C2WFUNCTION = <<'C2WFUNCTION';
+Cache2work () {
+    local input=$1
+    local output=$2
+
+    cache2work -c zip -container ${PYR_CONTAINER} $input ${TMP_DIR}/$output
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+C2WFUNCTION
+
 my $CEPH_C2WFUNCTION = <<'C2WFUNCTION';
 Cache2work () {
     local input=$1
@@ -574,6 +614,49 @@ StoreSlab () {
             if [ $mskName ] ; then
                     
                 work2cache $workDir/$workMskName __w2cM__ -bucket ${PYR_BUCKET} $mskName
+                if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+                echo "0/$mskName" >> ${TMP_LIST_FILE}
+                
+            fi
+            
+            if [ "$level" == "$TOP_LEVEL" ] ; then
+                rm $workDir/$workMskName
+            elif [ "$level" == "$CUT_LEVEL" ] ; then
+                mv $workDir/$workMskName ${COMMON_TMP_DIR}/
+            fi
+        fi
+    fi
+}
+W2CFUNCTION
+
+my $SWIFT_W2CFUNCTION = <<'W2CFUNCTION';
+StoreSlab () {
+    local level=$1
+    local workDir=$2
+    local workImgName=$3
+    local imgName=$4
+    local workMskName=$5
+    local mskName=$6
+    
+    if [[ ! ${RM_IMGS[$workDir/$workImgName]} ]] ; then
+             
+        work2cache $workDir/$workImgName __w2cI__ -container ${PYR_CONTAINER} $imgName
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        
+        echo "0/$imgName" >> ${TMP_LIST_FILE}
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        
+        if [ "$level" == "$TOP_LEVEL" ] ; then
+            rm $workDir/$workImgName
+        elif [ "$level" == "$CUT_LEVEL" ] ; then
+            mv $workDir/$workImgName ${COMMON_TMP_DIR}/
+        fi
+        
+        if [ $workMskName ] ; then
+            
+            if [ $mskName ] ; then
+                    
+                work2cache $workDir/$workMskName __w2cM__ -container ${PYR_CONTAINER} $mskName
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
                 echo "0/$mskName" >> ${TMP_LIST_FILE}
                 
@@ -1278,6 +1361,9 @@ sub getConfiguredFunctions {
         elsif ($this->{pyramid}->getStorageType() eq "S3") {
             $functions .= $JC_S3_W2CFUNCTION;
         }
+        elsif ($this->{pyramid}->getStorageType() eq "SWIFT") {
+            $functions .= $JC_SWIFT_W2CFUNCTION;
+        }
         elsif ($this->{pyramid}->getStorageType() eq "CEPH") {
             $functions .= $JC_CEPH_W2CFUNCTION;
         }
@@ -1343,6 +1429,9 @@ sub getConfiguredFunctions {
         elsif ($this->{pyramid}->getStorageType() eq "S3") {
             $functions .= $S3_W2CFUNCTION;
         }
+        elsif ($this->{pyramid}->getStorageType() eq "SWIFT") {
+            $functions .= $SWIFT_W2CFUNCTION;
+        }
         elsif ($this->{pyramid}->getStorageType() eq "CEPH") {
             $functions .= $CEPH_W2CFUNCTION;
         }
@@ -1361,6 +1450,9 @@ sub getConfiguredFunctions {
         }
         elsif ($this->{pyramid}->getStorageType() eq "S3") {
             $functions .= $S3_C2WFUNCTION;
+        }
+        elsif ($this->{pyramid}->getStorageType() eq "SWIFT") {
+            $functions .= $SWIFT_C2WFUNCTION;
         }
         elsif ($this->{pyramid}->getStorageType() eq "CEPH") {
             $functions .= $CEPH_C2WFUNCTION;

@@ -215,6 +215,9 @@ sub new {
 
         # Pyramide S3
         data_bucket => undef,
+        
+        # Pyramide SWIFT
+        data_container => undef,
 
         # Pyramide CEPH
         data_pool => undef,
@@ -282,6 +285,14 @@ sub new {
             #### CAS D'UNE PYRAMIDE S3
             $this->{storage_type} = "S3";
             $this->{data_bucket} = $params->{pyr_data_bucket_name};
+
+        }
+
+        elsif (exists $params->{pyr_data_container_name} && defined $params->{pyr_data_container_name}) {
+
+            #### CAS D'UNE PYRAMIDE SWIFT
+            $this->{storage_type} = "SWIFT";
+            $this->{data_container} = $params->{pyr_data_container_name};
 
         }
 
@@ -536,6 +547,9 @@ sub _readDescriptor {
         elsif ($storageType eq "S3") {
             $this->{data_bucket} = $this->{levels}->{$oneLevelId}->getS3Info();
         }
+        elsif ($storageType eq "SWIFT") {
+            $this->{data_container} = $this->{levels}->{$oneLevelId}->getSwiftInfo();
+        }
         elsif ($storageType eq "CEPH") {
             $this->{data_pool} = $this->{levels}->{$oneLevelId}->getCephInfo();
         }
@@ -631,6 +645,17 @@ sub addLevel {
 
             prefix => $this->{name},
             bucket_name => $this->{data_bucket}
+        };
+    }
+    elsif (defined $this->{data_container}) {
+        # On doit ajouter un niveau stockage swift
+        $levelParams = {
+            id => $level,
+            tm => $this->{tms}->getTileMatrix($level),
+            size => [$this->{image_width}, $this->{image_height}],
+
+            prefix => $this->{name},
+            container_name => $this->{data_container}
         };
     }
 
@@ -814,7 +839,9 @@ sub getDataRoot {
     elsif (defined $this->{data_bucket}) {
         return $this->{data_bucket};
     }
-
+    elsif (defined $this->{data_container}) {
+        return $this->{data_container};
+    }
     return undef;
 }
 
@@ -1019,6 +1046,14 @@ sub getDirDepth {
 sub getDataBucket {
     my $this = shift;    
     return $this->{data_bucket};
+}
+
+### SWIFT
+
+# Function: getDataContainer
+sub getDataContainer {
+    my $this = shift;    
+    return $this->{data_container};
 }
 
 ### CEPH

@@ -173,6 +173,8 @@ sub new {
         prefix_mask => undef,
         #    - S3
         bucket_name => undef,
+        #    - SWIFT
+        container_name => undef,
         #    - CEPH
         pool_name => undef
     };
@@ -228,6 +230,25 @@ sub new {
         }
         if (! defined $ENV{ROK4_CEPH_CLUSTERNAME}) {
             ERROR("Environment variable ROK4_CEPH_CLUSTERNAME is not defined");
+            return undef;
+        } 
+    }
+    elsif ( defined $this->{container_name} ) {
+        $this->{type} = "SWIFT";
+        if (! defined $ENV{ROK4_SWIFT_AUTHURL}) {
+            ERROR("Environment variable ROK4_SWIFT_AUTHURL is not defined");
+            return undef;
+        }
+        if (! defined $ENV{ROK4_SWIFT_ACCOUNT}) {
+            ERROR("Environment variable ROK4_SWIFT_ACCOUNT is not defined");
+            return undef;
+        }
+        if (! defined $ENV{ROK4_SWIFT_USER}) {
+            ERROR("Environment variable ROK4_SWIFT_USER is not defined");
+            return undef;
+        }
+        if (! defined $ENV{ROK4_SWIFT_PASSWD}) {
+            ERROR("Environment variable ROK4_SWIFT_PASSWD is not defined");
             return undef;
         }
     } else {
@@ -327,8 +348,12 @@ sub _loadValues {
             # CAS CEPH
             $this->{pool_name} = $params->{pool_name};
         }
+        elsif ( exists $params->{container_name} ) {
+            # CAS SWIFT
+            $this->{container_name} = $params->{container_name};
+        }
         else {
-            ERROR("No container name (bucket or pool) for object storage for the level");
+            ERROR("No container name (bucket or pool or container) for object storage for the level");
             return FALSE;        
         }
     }
@@ -403,6 +428,7 @@ sub _loadXML {
 
         my $pool = $levelRoot->findvalue('cephContext/poolName');
         my $bucket = $levelRoot->findvalue('s3Context/bucketName');
+        my $container = $levelRoot->findvalue('swiftContext/containerName');
 
         if ( defined $bucket && $bucket ne "" ) {
             # CAS S3
@@ -411,6 +437,10 @@ sub _loadXML {
         elsif ( defined $pool && $pool ne "" ) {
             # CAS CEPH
             $this->{pool_name} = $pool;
+        }
+        elsif ( defined $container && $container ne "" ) {
+            # CAS SWIFT
+            $this->{container_name} = $container;
         }
         else {
             ERROR("No container name (bucket or pool) for object storage for the level");
@@ -473,6 +503,16 @@ sub getS3Info {
     }
 
     return $this->{bucket_name};
+}
+# Function: getSwiftInfo
+sub getSwiftInfo {
+    my $this = shift;
+
+    if ($this->{type} ne "SWIFT") {
+        return undef;
+    }
+
+    return $this->{container_name};
 }
 # Function: getCephInfo
 sub getCephInfo {
@@ -615,6 +655,23 @@ sub getSlabPath {
                 return sprintf "%s_%s_%s", $this->{prefix_mask}, $col, $row;
             }
             return sprintf "%s/%s_%s_%s", $this->{bucket_name}, $this->{prefix_mask}, $col, $row;
+        }
+        else {
+            return undef;
+        }
+    }    
+    elsif ($this->{type} eq "SWIFT") {
+        if ($type eq "IMAGE") {
+            if (defined $full && ! $full) {
+                return sprintf "%s_%s_%s", $this->{prefix_image}, $col, $row;
+            }
+            return sprintf "%s/%s_%s_%s", $this->{container_name}, $this->{prefix_image}, $col, $row;
+        }
+        elsif ($type eq "MASK") {
+            if (defined $full && ! $full) {
+                return sprintf "%s_%s_%s", $this->{prefix_mask}, $col, $row;
+            }
+            return sprintf "%s/%s_%s_%s", $this->{container_name}, $this->{prefix_mask}, $col, $row;
         }
         else {
             return undef;
@@ -848,6 +905,12 @@ sub exportToXML {
         $string .= "        <s3Context>\n";
         $string .= sprintf "            <bucketName>%s</bucketName>\n", $this->{bucket_name};
         $string .= "        </s3Context>\n";
+    }
+    elsif ($this->{type} eq "SWIFT") {
+        $string .= sprintf "        <imagePrefix>%s</imagePrefix>\n", $this->{prefix_image};
+        $string .= "        <swiftContext>\n";
+        $string .= sprintf "            <containerName>%s</containerName>\n", $this->{container_name};
+        $string .= "        </swiftContext>\n";
     }
     elsif ($this->{type} eq "CEPH") {
         $string .= sprintf "        <imagePrefix>%s</imagePrefix>\n", $this->{prefix_image};

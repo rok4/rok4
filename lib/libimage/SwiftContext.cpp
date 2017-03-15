@@ -114,8 +114,21 @@ bool SwiftContext::connection() {
         strcpy(xPass, "X-Storage-Pass: ");
         strcat(xPass, user_passwd.c_str());
 
+        char xAuthUser[256];
+        strcpy(xAuthUser, "X-Auth-User: ");
+        strcat(xAuthUser, user_account.c_str());
+        strcat(xAuthUser, ":");
+        strcat(xAuthUser, user_name.c_str());
+
+        char xAuthKey[256];
+        strcpy(xAuthKey, "X-Auth-Key: ");
+        strcat(xAuthKey, user_passwd.c_str());
+
+
         list = curl_slist_append(list, xUser);
-        list = curl_slist_append(list, xPass);
+        list = curl_slist_append(list, xPass);        
+        list = curl_slist_append(list, xAuthUser);
+        list = curl_slist_append(list, xAuthKey);
 
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
         curl_easy_setopt(curl, CURLOPT_HEADERDATA, (void*) &authHdr);

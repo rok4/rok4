@@ -397,11 +397,11 @@ int main ( int argc, char **argv ) {
         tileWidth, tileHeight, context
     );
 
-    rok4Image->setExtraSample(sourceImage->getExtraSample());
-
     if (rok4Image == NULL) {
         error("Cannot create the ROK4 image to write", -1);
     }
+
+    rok4Image->setExtraSample(sourceImage->getExtraSample());
 
     if (debugLogger) {
         rok4Image->print();

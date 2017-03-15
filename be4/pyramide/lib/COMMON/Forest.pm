@@ -117,7 +117,7 @@ my @STORAGETYPES;
 
 BEGIN {}
 INIT {
-    @STORAGETYPES = ("FILE", "CEPH", "S3");
+    @STORAGETYPES = ("FILE", "CEPH", "S3", "SWIFT");
 }
 END {}
 

@@ -393,6 +393,9 @@ sub prepare {
     elsif ($pyramid->getStorageType() eq "S3") {
         $code .= sprintf ("PYR_BUCKET=\"%s\"\n", $pyramid->getDataBucket() );
     }
+    elsif ($pyramid->getStorageType() eq "SWIFT") {
+        $code .= sprintf ("PYR_CONTAINER=\"%s\"\n", $pyramid->getDataContainer() );
+    }
     else {
         ERROR("Storage type of new pyramid is not handled");
         return FALSE;

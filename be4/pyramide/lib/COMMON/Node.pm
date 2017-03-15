@@ -115,7 +115,7 @@ use constant FALSE => 0;
 
 # Constant: STORAGETYPES
 # Define allowed values for attribute storage type.
-my @STORAGETYPES = ("FILE", "CEPH", "S3");
+my @STORAGETYPES = ("FILE", "CEPH", "S3", "SWIFT");
 
 ####################################################################################################
 #                                        Group: Constructors                                       #
@@ -127,7 +127,7 @@ Constructor: new
 Node constructor. Bless an instance.
 
 Parameters (hash):
-    type - string - Final storage type : 'FILE', 'CEPH', 'S3'
+    type - string - Final storage type : 'FILE', 'CEPH', 'S3', 'SWIFT'
     col - integer - Node's column
     row - integer - Node's row
     tm - <COMMON::TileMatrix> - Tile matrix of the level which node belong to
