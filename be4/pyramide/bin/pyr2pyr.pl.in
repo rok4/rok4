@@ -395,7 +395,7 @@ StoreSlab () {
 
     curl -k -X PUT -T "${fullPath}" \
      -H "X-Auth-Token: ${ROK4_SWIFT_TOKEN}" \
-     ${ROK4_SWIFT_URL}/${resource}
+     ${ROK4_SWIFT_URL}${resource}
 
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 
