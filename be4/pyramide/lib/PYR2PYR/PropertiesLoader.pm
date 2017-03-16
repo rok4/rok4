@@ -178,12 +178,15 @@ sub _check {
     }
     elsif ( $this->{cfgObject}->isProperty({property=>"bucket_name",section=>"to"})) {
         INFO("'bucket_name' is provided : S3 push");
+    }    
+    elsif ( $this->{cfgObject}->isProperty({property=>"container_name",section=>"to"})) {
+        INFO("'bucket_name' is provided : SWIFT push");
     }
     elsif ( $this->{cfgObject}->isProperty({property=>"container_name",section=>"to"})) {
         INFO("'container_name' is provided : SWIFT push");
     }
     else {
-        ERROR("Neither pool_name nor bucket_name provided");       
+        ERROR("Neither pool_name nor bucket_name not container_name provided");       
         return FALSE;
     }
 
