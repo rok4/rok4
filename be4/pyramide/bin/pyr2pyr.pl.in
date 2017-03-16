@@ -384,6 +384,26 @@ StoreSlab () {
 
 FUNCTIONS
 
+my $BASHFUNCTIONS_SWIFT   = <<'FUNCTIONS';
+
+StoreSlab () {
+
+    local fullPath=$1
+    local objName=$2
+    
+    resource="/${CONTAINER_NAME}/${objName}"
+
+    curl -k -X PUT -T "${fullPath}" \
+     -H "X-Auth-Token: ${ROK4_SWIFT_TOKEN} \
+     ${ROK4_SWIFT_URL}/${resource}
+
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+
+    echo "0/${objName}" >> ${TMP_LIST_FILE}
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+
+FUNCTIONS
 
 sub doIt {
 
@@ -410,9 +430,13 @@ sub doIt {
     elsif ( defined $params->{to}->{bucket_name} ) {
         $to_storage_type = "S3";
         $containerName = $params->{to}->{bucket_name};
+    }    
+    elsif ( defined $params->{to}->{container_name} ) {
+        $to_storage_type = "SWIFT";
+        $containerName = $params->{to}->{container_name};
     }
     else {
-        ERROR( "Neither pool_name nor bucket_name provided. Not normal");
+        ERROR( "Neither pool_name nor bucket_name nor container_name provided. Not normal");
         return FALSE;
     }
 
@@ -500,6 +524,10 @@ sub doIt {
         elsif ( $to_storage_type eq "S3" ) {
             my $s3context = $level->addNewChild('', "s3Context");
             addSubElm($doc, $s3context, "bucketName", $containerName);
+        }        
+        elsif ( $to_storage_type eq "SWIFT" ) {
+            my $swiftcontext = $level->addNewChild('', "swiftContext");
+            addSubElm($doc, $swiftcontext, "containerName", $containerName);
         }
         addSubElm($doc, $level, "imagePrefix", "${pyrName}_IMG_$id");
 
@@ -545,6 +573,9 @@ sub doIt {
         }
         elsif ( $to_storage_type eq "S3" ) {
             print $STREAM "BUCKET_NAME=$containerName\n";
+        }        
+        elsif ( $to_storage_type eq "SWIFT" ) {
+            print $STREAM "CONTAINER_NAME=$containerName\n";
         }
         if ( $store_tiles ) {
             print $STREAM "TPW=$tpw\n";
@@ -557,6 +588,9 @@ sub doIt {
         }
         elsif ( $to_storage_type eq "S3" ) {
             print $STREAM $BASHFUNCTIONS_S3;
+        }
+        elsif ( $to_storage_type eq "SWIFT" ) {
+            print $STREAM $BASHFUNCTIONS_SWIFT;
         }
 
         push(@scripts_done, 0);
