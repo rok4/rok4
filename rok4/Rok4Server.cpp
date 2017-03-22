@@ -314,7 +314,7 @@ DataStream* Rok4Server::WMTSGetCapabilities ( Request* request ) {
 DataStream* Rok4Server::getMap ( Request* request ) {
     std::vector<Layer*> layers;
     BoundingBox<double> bbox ( 0.0, 0.0, 0.0, 0.0 );
-    int width, height;
+    int width, height, dpi;
     CRS crs;
     std::string format;
     std::vector<Style*> styles;
@@ -323,7 +323,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
 
 
     // Récupération des paramètres
-    DataStream* errorResp = request->getMapParam ( servicesConf, layerList, layers, bbox, width, height, crs, format, styles, format_option );
+    DataStream* errorResp = request->getMapParam ( servicesConf, layerList, layers, bbox, width, height, crs, format, styles, format_option, dpi );
 
 	if ( errorResp ) {
         LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getMap" ) );
@@ -334,7 +334,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
     Image* image;
     for ( int i = 0 ; i < layers.size(); i ++ ) {
 
-            Image* curImage = layers.at ( i )->getbbox ( servicesConf, bbox, width, height, crs, error );
+            Image* curImage = layers.at ( i )->getbbox ( servicesConf, bbox, width, height, crs, dpi, error );
 
             if ( curImage == 0 ) {
                 switch ( error ) {
@@ -411,7 +411,7 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
 
             int error=0;
             BoundingBox<double> expandedBbox = curImage->getBbox().expand(curImage->getResX(),curImage->getResY(),1);
-            expandedImage = pyr->getbbox(servicesConf,expandedBbox,curImage->getWidth()+2,curImage->getHeight()+2,curImage->getCRS(),style->getInterpolationOfPente(),error);
+            expandedImage = pyr->getbbox(servicesConf,expandedBbox,curImage->getWidth()+2,curImage->getHeight()+2,curImage->getCRS(),style->getInterpolationOfPente(),0,error);
 
             if (expandedImage == 0) {
                 LOGGER_ERROR("expanded Image is NULL");
@@ -450,7 +450,7 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
 
             int error=0;
             BoundingBox<double> expandedBbox = curImage->getBbox().expand(curImage->getResX(),curImage->getResY(),1);
-            expandedImage = pyr->getbbox(servicesConf,expandedBbox,curImage->getWidth()+2,curImage->getHeight()+2,curImage->getCRS(),Interpolation::LINEAR,error);
+            expandedImage = pyr->getbbox(servicesConf,expandedBbox,curImage->getWidth()+2,curImage->getHeight()+2,curImage->getCRS(),Interpolation::LINEAR,0,error);
 
             if (expandedImage == 0) {
                 LOGGER_ERROR("expanded Image is NULL");
@@ -1378,7 +1378,7 @@ DataStream* Rok4Server::CommonGetFeatureInfo ( std::string service, Layer* layer
         
         int error;
         Image* image;
-        image = layer->getbbox ( servicesConf, pxBbox, 1, 1, crs, error );
+        image = layer->getbbox ( servicesConf, pxBbox, 1, 1, crs, 0, error );
         if ( image == 0 ) {
            switch ( error ) {
              case 1: {

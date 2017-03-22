@@ -178,7 +178,7 @@ TileMatrixSet Pyramid::getTms() {
 }
 
 
-Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error ) {
+Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int dpi, int& error ) {
 
     // On calcule la résolution de la requete dans le crs source selon une diagonale de l'image
     double resolution_x, resolution_y;
@@ -204,6 +204,17 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
         resolution_x = ( grid->bbox.xmax - grid->bbox.xmin ) / width;
         resolution_y = ( grid->bbox.ymax - grid->bbox.ymin ) / height;
         delete grid;
+    }
+
+    if (dpi != 0) {
+        //si un parametre dpi a ete donne dans la requete, alors on l'utilise
+        resolution_x = resolution_x * dpi / 90.7;
+        resolution_y = resolution_y * dpi / 90.7;
+        //on teste si on vient d'avoir des NaN
+        if (resolution_x != resolution_x || resolution_y != resolution_y) {
+            error = 3;
+            return 0;
+        }
     }
 
     std::string l = best_level ( resolution_x, resolution_y, false );

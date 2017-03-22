@@ -158,7 +158,7 @@ public:
      * \brief Fetching and validating GetTile request parameters
      * \return NULL or an error message if something went wrong
      */
-    DataStream* getMapParam ( ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers, BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format, std::vector<Style*>& styles,std::map <std::string, std::string >& format_option );
+    DataStream* getMapParam (ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers, BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format, std::vector<Style*>& styles, std::map <std::string, std::string >& format_option , int &dpi);
     /**
      * \~french
      * \brief Récuperation et vérifications des paramètres d'une requête GetCapabilities WMS

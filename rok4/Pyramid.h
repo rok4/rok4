@@ -380,7 +380,7 @@ public:
      * \~french \brief Récupère une image
      * \~english \brief Get an image
      */
-    Image* getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int& error );
+    Image* getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int dpi, int& error );
 
     /**
      * \~french \brief Créé une image reprojetée
