@@ -283,9 +283,9 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
 
                     std::string container;
 
-                    TiXmlElement* pElemSwiftContext = pElem->FirstChildElement ( "container" );
+                    TiXmlElement* pElemSwiftContext = pElem->FirstChildElement ( "containerName" );
                     if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
-                        LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un container" );
+                        LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un containerName" );
                         return;
                     } else {
                         container = pElemSwiftContext->GetText();
@@ -306,7 +306,7 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
                     prefix = pElem->GetText() ;
 
                 } else {
-                    LOGGER_ERROR("Level " << id << " sans indication de stockage et pas à la demande. Precisez un baseDir ou un cephContext ou un swiftContext");
+                    LOGGER_ERROR("Level " << id << " sans indication de stockage et pas à la demande. Precisez un baseDir ou un cephContext ou un swiftContext ou un s3Context");
                     return;
                 }
             }
