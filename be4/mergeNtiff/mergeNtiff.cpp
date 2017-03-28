@@ -504,7 +504,7 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
         return -1;
     }
 
-    /****************** LA SORTIE : LECTURE & CRÉATION ******************/
+    /****************** LES ENTRÉES : LECTURE & CRÉATION ******************/
     char imageFileName[IMAGE_MAX_FILENAME_LENGTH];
     char maskFileName[IMAGE_MAX_FILENAME_LENGTH];
     BoundingBox<double> bbox ( 0.,0.,0.,0. );
@@ -518,7 +518,7 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
     int out=0;
     while ( ( out = readFileLine ( file, imageFileName, &hasMask, maskFileName, &stringCRS, &bbox, &resx, &resy ) ) == 0 ) {
 
-    	CRS crs;
+        CRS crs;
 
         nbImgsIn++;
 
@@ -568,30 +568,26 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
              * On lit la première image en entrée, qui sert de référence
              * L'image en sortie sera à ce format
              */
-
-        LOGGER_DEBUG("toto");
             bitspersample = pImage->getBitsPerSample();
             samplesperpixel = pImage->getChannels();
             sampleformat = pImage->getSampleFormat();
-
-        LOGGER_DEBUG("toto");
         } else if (! outputProvided) {
-        	// On doit avoir le même format pour tout le monde
-        	if (bitspersample != pImage->getBitsPerSample()) {
-        		LOGGER_ERROR("We don't provided output format, so all inputs have to own the same" );
-        		LOGGER_ERROR("The first image and the " << nbImgsIn << " one don't have the same number of bits per sample" );
-        		LOGGER_ERROR(bitspersample << " != " << pImage->getBitsPerSample() );
-        	}
-        	if (samplesperpixel != pImage->getChannels()) {
-        		LOGGER_ERROR("We don't provided output format, so all inputs have to own the same" );
-        		LOGGER_ERROR("The first image and the " << nbImgsIn << " one don't have the same number of samples per pixel" );
-        		LOGGER_ERROR(samplesperpixel << " != " << pImage->getChannels() );
-        	}
-        	if (sampleformat != pImage->getSampleFormat()) {
-        		LOGGER_ERROR("We don't provided output format, so all inputs have to own the same" );
-        		LOGGER_ERROR("The first image and the " << nbImgsIn << " one don't have the same sample format" );
-        		LOGGER_ERROR(sampleformat << " != " << pImage->getSampleFormat() );
-        	}
+            // On doit avoir le même format pour tout le monde
+            if (bitspersample != pImage->getBitsPerSample()) {
+                LOGGER_ERROR("We don't provided output format, so all inputs have to own the same" );
+                LOGGER_ERROR("The first image and the " << nbImgsIn << " one don't have the same number of bits per sample" );
+                LOGGER_ERROR(bitspersample << " != " << pImage->getBitsPerSample() );
+            }
+            if (samplesperpixel != pImage->getChannels()) {
+                LOGGER_ERROR("We don't provided output format, so all inputs have to own the same" );
+                LOGGER_ERROR("The first image and the " << nbImgsIn << " one don't have the same number of samples per pixel" );
+                LOGGER_ERROR(samplesperpixel << " != " << pImage->getChannels() );
+            }
+            if (sampleformat != pImage->getSampleFormat()) {
+                LOGGER_ERROR("We don't provided output format, so all inputs have to own the same" );
+                LOGGER_ERROR("The first image and the " << nbImgsIn << " one don't have the same sample format" );
+                LOGGER_ERROR(sampleformat << " != " << pImage->getSampleFormat() );
+            }
         }
     }
 
@@ -607,17 +603,17 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
         LOGGER_ERROR ( "Erreur lecture du fichier de parametres '" << imageListFilename << "' : pas de données en entrée." );
         return -1;
     } else {
-    	LOGGER_DEBUG( nbImgsIn << " image(s) en entrée" );
+        LOGGER_DEBUG( nbImgsIn << " image(s) en entrée" );
     }
 
     /********************** LA SORTIE : CRÉATION *************************/
 
     if (samplesperpixel == 1) {
-    	photometric = Photometric::GRAY;
+      photometric = Photometric::GRAY;
     } else if (samplesperpixel == 2) {
-    	photometric = Photometric::GRAY;
+      photometric = Photometric::GRAY;
     } else {
-    	photometric = Photometric::RGB;
+      photometric = Photometric::RGB;
     }
 
     CRS outCrs ( outStringCRS );
@@ -659,11 +655,12 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
 }
 
 int addConverters(std::vector<FileImage*> ImageIn) {
-	if (! outputProvided) {
-		// On n'a pas précisé de format en sortie, donc toutes les images doivent avoir le même
-		// Et la sortie a aussi ce format, donc pas besoin de convertisseur
-		return 0;
-	}
+    if (! outputProvided) {
+        // On n'a pas précisé de format en sortie, donc toutes les images doivent avoir le même
+        // Et la sortie a aussi ce format, donc pas besoin de convertisseur
+
+        return 0;
+    }
 
     for ( std::vector<FileImage*>::iterator itImg = ImageIn.begin(); itImg < ImageIn.end(); itImg++ ) {
 
@@ -704,6 +701,7 @@ int sortImages ( std::vector<FileImage*> ImageIn, std::vector<std::vector<Image*
     /* we create consistent images' vectors (X/Y resolution and X/Y phases)
      * Masks are moved in parallel with images
      */
+    int toto = 0;
     for ( std::vector<FileImage*>::iterator itImg = ImageIn.begin(); itImg < ImageIn.end()-1; itImg++ ) {
 
         if ( ! ( *itImg )->isCompatibleWith ( * ( itImg+1 ) ) ) {
@@ -1068,7 +1066,7 @@ int mergeTabImages ( FileImage* pImageOut, // Sortie
         // Etape 1 : Creation d'une image composite (avec potentiellement une seule image)
 
         ExtendedCompoundImage* pECI = ECIF.createExtendedCompoundImage ( TabImageIn.at ( i ),nodata,0 );
-        if ( pECI==NULL ) {
+        if ( pECI == NULL ) {
             LOGGER_ERROR ( "Impossible d'assembler les images" );
             return -1;
         }
@@ -1193,7 +1191,7 @@ int main ( int argc, char **argv ) {
 
     // On regarde si on a tout précisé en sortie, pour voir si des conversions sont possibles
     if (sampleformat != SampleFormat::UNKNOWN && bitspersample != 0 && samplesperpixel !=0) {
-    	outputProvided = true;
+      outputProvided = true;
     }
 
     LOGGER_DEBUG ( "Load" );

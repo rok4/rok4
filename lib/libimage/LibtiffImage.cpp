@@ -504,6 +504,7 @@ int LibtiffImage::_getline ( T* buffer, int line ) {
             OneBitConverter::minblackToGray(oneTo8bits_buffer, strip_buffer, size);
         }
     }
+    
 
     T buffertmp[width * channels];
 
@@ -524,8 +525,9 @@ int LibtiffImage::_getline ( T* buffer, int line ) {
     if (converter) {
         converter->convertLine(buffer, buffertmp);
     } else {
-        memcpy(buffer, buffertmp, channels * width);
+        memcpy(buffer, buffertmp, pixelSize * width);
     }
+
     
     return width * getChannels();
 }
