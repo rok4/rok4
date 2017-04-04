@@ -91,6 +91,11 @@ public:
      * Indique l'encodage Http associé à la donnée source.
      */
     virtual std::string getEncoding() = 0;
+    
+    /**
+     * Indique la taille de la réponse en octets.
+     */
+    virtual unsigned int getLength() = 0;
 };
 
 
@@ -141,6 +146,11 @@ public:
      * Indique l'encodage associé au flux.
      */
     virtual std::string getEncoding() = 0;
+    
+    /**
+     * Indique la taille de la réponse en octets.
+     */
+    virtual unsigned int getLength() = 0;
 };
 
 
@@ -198,6 +208,9 @@ public:
     inline std::string getEncoding()                  {
         return getDataSource().getEncoding();
     }
+    inline unsigned int getLength() {
+        return getDataSource().getLength();
+    }
 };
 
 
@@ -214,6 +227,7 @@ private:
     int httpStatus;
     size_t dataSize;
     uint8_t* data;
+    unsigned int length;
 public:
     /**
      * Constructeur.
@@ -259,6 +273,11 @@ public:
    size_t getSize() {
        return dataSize;
    }
+   
+   /** @return la taille du datastream */
+   unsigned int getLength() {
+       return dataSize;
+   }
 };
 
 /**
@@ -270,7 +289,20 @@ private:
     uint8_t* data;
     std::string type;
     std::string encoding;
+    unsigned int length;
 public:
+     /**
+     * Constructeur.
+     */
+    RawDataSource ( uint8_t *dat, size_t dataS, std::string t, std::string e, unsigned int l){
+        dataSize = dataS;
+        data = new uint8_t[dataSize];
+        memcpy ( data, dat, dataSize );
+        type = t;
+        encoding = e;
+        length = l;
+    }
+    
     /**
      * Constructeur.
      */
@@ -280,6 +312,7 @@ public:
         memcpy ( data, dat, dataSize );
         type = t;
         encoding = e;
+        length = 0;
     }
 
     /**
@@ -291,6 +324,7 @@ public:
         memcpy ( data, dat, dataSize );
         type = "";
         encoding = "";
+        length = 0;
     }
 
     /** Destructeur **/
@@ -335,6 +369,11 @@ public:
    size_t getSize() {
        return dataSize;
    }
+   
+   /** @return le taille du dataStream */
+    unsigned int getLength() {
+        return length;
+    }
 };
 
 /**
@@ -347,7 +386,21 @@ private:
     size_t pos;
     std::string type;
     std::string encoding;
+    unsigned int length;
 public:
+    /**
+     * Constructeur.
+     */
+    RawDataStream ( uint8_t *dat, size_t dataS, std::string t, std::string e, unsigned int l){
+        dataSize = dataS;
+        data = new uint8_t[dataSize];
+        memcpy ( data, dat, dataSize );
+        pos = 0;
+        type = t;
+        encoding = e;
+        length = l;
+    }
+    
     /**
      * Constructeur.
      */
@@ -358,6 +411,7 @@ public:
         pos = 0;
         type = t;
         encoding = e;
+        length = 0;
     }
 
     /**
@@ -370,6 +424,7 @@ public:
         pos = 0;
         type = "";
         encoding = "";
+        length = 0;
     }
 
     /** Destructeur **/
@@ -408,6 +463,12 @@ public:
    size_t getSize() {
        return dataSize;
    }
+   
+    /** @return la taille du dataStream */
+    unsigned int getLength(){
+        return length;
+    }
+
 };
 
 /**
@@ -444,6 +505,9 @@ public:
     }
     std::string getEncoding(){
         return datasource->getEncoding();
+    }
+    unsigned int getLength(){
+        return datasource->getLength();
     }
 };
 

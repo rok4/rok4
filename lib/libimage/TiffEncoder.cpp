@@ -135,4 +135,20 @@ bool TiffEncoder::eof() {
     return ( tmpBufferPos>=tmpBufferSize );
 }
 
+unsigned int TiffEncoder::getLength(){
+    if ( !tmpBuffer ) {
+        LOGGER_DEBUG("TiffEncoder : preparation du buffer d'image");
+        prepareBuffer();
+    }
+    
+    if ( !header ) {
+        LOGGER_DEBUG("TiffEncoder : preparation de l'en-tete");
+        prepareHeader();
+        if ( isGeoTiff ){
+            this->header = TiffHeader::insertGeoTags(image, this->header, &(this->sizeHeader) );
+        }
+    }
+    return sizeHeader + tmpBufferSize;
+    
+}
 

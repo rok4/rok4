@@ -59,6 +59,9 @@ public:
         return "";
     }
     bool eof();
+    unsigned int getLength(){
+        return image->getWidth()*image->getHeight()*sizeof ( float );
+    }
 
 };
 #endif

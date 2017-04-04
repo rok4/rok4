@@ -236,16 +236,21 @@ void Rok4Server::run(sig_atomic_t signal_pending) {
         pthread_join ( threads[i], NULL );
 }
 
+
 void Rok4Server::terminate() {
+    running = false;
+}
+
+
+void Rok4Server::stop() {
     running = false;
     //FCGX_ShutdownPending();
     // Terminate FCGI Thread
     for ( int i = 0; i < threads.size(); i++ ) {
         pthread_kill ( threads[i], SIGPIPE );
     }
-
-
 }
+
 
 bool Rok4Server::hasParam ( std::map<std::string, std::string>& option, std::string paramName ) {
     std::map<std::string, std::string>::iterator it = option.find ( paramName );

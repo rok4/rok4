@@ -1,6 +1,6 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR IGN
-# This file is distributed under the same license as the Rok4 package.
+# This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 #, fuzzy
@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2017-03-28 16:58+0200\n"
+"POT-Creation-Date: 2017-04-04 15:08+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1141,8 +1141,8 @@ msgstr ""
 msgid "Rechargement de la configuration"
 msgstr ""
 
-#: main.cpp:264 Rok4Api.cpp:137 Rok4Api.cpp:145 Rok4Api.cpp:153 Rok4Api.cpp:162
-#: Rok4Api.cpp:620
+#: main.cpp:264 Rok4Api.cpp:137 Rok4Api.cpp:145 Rok4Api.cpp:153
+#: Rok4Api.cpp:162 Rok4Api.cpp:620
 msgid "Extinction du serveur ROK4"
 msgstr ""
 
@@ -1389,7 +1389,7 @@ msgstr ""
 msgid "Parametre FORMAT absent."
 msgstr ""
 
-#: Request.cpp:804 Rok4Server.cpp:678
+#: Request.cpp:804 Rok4Server.cpp:683
 msgid "Le format "
 msgstr ""
 
@@ -1522,11 +1522,11 @@ msgstr ""
 msgid "Parametre STYLES incomplet."
 msgstr ""
 
-#: Request.cpp:1093 Request.cpp:1152 Rok4Api.cpp:226 Rok4Server.cpp:1551
+#: Request.cpp:1093 Request.cpp:1152 Rok4Api.cpp:226 Rok4Server.cpp:1577
 msgid "Le service "
 msgstr ""
 
-#: Request.cpp:1093 Request.cpp:1152 Rok4Api.cpp:226 Rok4Server.cpp:1551
+#: Request.cpp:1093 Request.cpp:1152 Rok4Api.cpp:226 Rok4Server.cpp:1577
 msgid " est inconnu pour ce serveur."
 msgstr ""
 
@@ -1636,39 +1636,39 @@ msgid ""
 "La valeur du parametre J est superieure a la hauteur de la tuile (height)."
 msgstr ""
 
-#: ResponseSender.cpp:110
+#: ResponseSender.cpp:114
 msgid "Code erreur : "
 msgstr ""
 
-#: ResponseSender.cpp:112
+#: ResponseSender.cpp:116
 msgid "Version FCGI non supportee"
 msgstr ""
 
-#: ResponseSender.cpp:114
+#: ResponseSender.cpp:118
 msgid "Erreur de protocole"
 msgstr ""
 
-#: ResponseSender.cpp:116
+#: ResponseSender.cpp:120
 msgid "Erreur de parametre"
 msgstr ""
 
-#: ResponseSender.cpp:118
+#: ResponseSender.cpp:122
 msgid "Preconditions non remplies"
 msgstr ""
 
-#: ResponseSender.cpp:120
+#: ResponseSender.cpp:124
 msgid "Erreur inconnue"
 msgstr ""
 
-#: ResponseSender.cpp:149 ResponseSender.cpp:192
+#: ResponseSender.cpp:160 ResponseSender.cpp:210
 msgid "Echec d'ecriture dans le flux de sortie de la requete FCGI "
 msgstr ""
 
-#: ResponseSender.cpp:158 ResponseSender.cpp:216
+#: ResponseSender.cpp:169 ResponseSender.cpp:234
 msgid "End of Response"
 msgstr ""
 
-#: ResponseSender.cpp:201
+#: ResponseSender.cpp:219
 msgid "Nombre incorrect d'octets ecrits dans le flux de sortie"
 msgstr ""
 
@@ -1710,12 +1710,12 @@ msgstr ""
 msgid "Le parametre REQUEST n'est pas renseigné."
 msgstr ""
 
-#: Rok4Api.cpp:219 Rok4Api.cpp:221 Rok4Api.cpp:530 Rok4Server.cpp:1515
-#: Rok4Server.cpp:1519 Rok4Server.cpp:1533 Rok4Server.cpp:1537
+#: Rok4Api.cpp:219 Rok4Api.cpp:221 Rok4Api.cpp:530 Rok4Server.cpp:1541
+#: Rok4Server.cpp:1545 Rok4Server.cpp:1559 Rok4Server.cpp:1563
 msgid " n'est pas prise en charge par ce serveur."
 msgstr ""
 
-#: Rok4Api.cpp:221 Rok4Api.cpp:530 Rok4Server.cpp:1519
+#: Rok4Api.cpp:221 Rok4Api.cpp:530 Rok4Server.cpp:1545
 msgid "L'operation "
 msgstr ""
 
@@ -1723,11 +1723,11 @@ msgstr ""
 msgid "Le parametre SERVICE n'est pas renseigné."
 msgstr ""
 
-#: Rok4Api.cpp:321 Rok4Api.cpp:414 Rok4Server.cpp:693
+#: Rok4Api.cpp:321 Rok4Api.cpp:414 Rok4Server.cpp:698
 msgid "Probleme dans les parametres de la requete getTile"
 msgstr ""
 
-#: Rok4Api.cpp:542 Rok4Server.cpp:699
+#: Rok4Api.cpp:542 Rok4Server.cpp:704
 msgid "No data found"
 msgstr ""
 
@@ -1763,68 +1763,68 @@ msgstr ""
 msgid "Listening on "
 msgstr ""
 
-#: Rok4Server.cpp:273 Rok4Server.cpp:299
+#: Rok4Server.cpp:278 Rok4Server.cpp:304
 msgid "Probleme dans les parametres de la requete getCapabilities"
 msgstr ""
 
-#: Rok4Server.cpp:329
+#: Rok4Server.cpp:334
 msgid "Probleme dans les parametres de la requete getMap"
 msgstr ""
 
-#: Rok4Server.cpp:343 Rok4Server.cpp:1385
+#: Rok4Server.cpp:348 Rok4Server.cpp:1411
 msgid "bbox invalide"
 msgstr ""
 
-#: Rok4Server.cpp:346 Rok4Server.cpp:1388
+#: Rok4Server.cpp:351 Rok4Server.cpp:1414
 msgid "bbox trop grande"
 msgstr ""
 
-#: Rok4Server.cpp:349 Rok4Server.cpp:364 Rok4Server.cpp:829 Rok4Server.cpp:859
-#: Rok4Server.cpp:878 Rok4Server.cpp:904 Rok4Server.cpp:1391
+#: Rok4Server.cpp:354 Rok4Server.cpp:369 Rok4Server.cpp:834 Rok4Server.cpp:864
+#: Rok4Server.cpp:883 Rok4Server.cpp:909 Rok4Server.cpp:1417
 msgid "Impossible de repondre a la requete"
 msgstr ""
 
-#: Rok4Server.cpp:358
+#: Rok4Server.cpp:363
 msgid "GetMap de Style : "
 msgstr ""
 
-#: Rok4Server.cpp:358
+#: Rok4Server.cpp:363
 msgid " pal size : "
 msgstr ""
 
-#: Rok4Server.cpp:389
+#: Rok4Server.cpp:394
 msgid "Estompage"
 msgstr ""
 
-#: Rok4Server.cpp:678
+#: Rok4Server.cpp:683
 msgid " ne peut etre traite"
 msgstr ""
 
-#: Rok4Server.cpp:1331 Rok4Server.cpp:1355
+#: Rok4Server.cpp:1357 Rok4Server.cpp:1381
 msgid "Probleme dans les parametres de la requete getFeatureInfo"
 msgstr ""
 
-#: Rok4Server.cpp:1429
+#: Rok4Server.cpp:1455
 msgid "Erreur interne."
 msgstr ""
 
-#: Rok4Server.cpp:1434
+#: Rok4Server.cpp:1460
 msgid "Info_format non "
 msgstr ""
 
-#: Rok4Server.cpp:1434
+#: Rok4Server.cpp:1460
 msgid " supporté par la couche "
 msgstr ""
 
-#: Rok4Server.cpp:1491
+#: Rok4Server.cpp:1517
 msgid "Internal server error"
 msgstr ""
 
-#: Rok4Server.cpp:1500
+#: Rok4Server.cpp:1526
 msgid "GFI depuis un SQL non géré."
 msgstr ""
 
-#: Rok4Server.cpp:1502
+#: Rok4Server.cpp:1528
 msgid "ERRORRRRRR !"
 msgstr ""
 

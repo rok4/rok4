@@ -118,6 +118,13 @@ const uint8_t* PaletteDataSource::getData ( size_t& size ) {
     return dataSource->getData ( size );
 }
 
+unsigned int PaletteDataSource::getLength ( ) {
+    if ( palette->getPalettePNGSize() !=0 ) {
+        return dataSize;
+    }
+    return dataSource->getLength();
+}
+
 PaletteDataSource::~PaletteDataSource() {
     dataSource->releaseData();
     delete dataSource;

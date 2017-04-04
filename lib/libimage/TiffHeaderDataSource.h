@@ -39,6 +39,9 @@ public:
     inline std::string getEncoding()                {
         return dataSource->getEncoding();
     }
+    inline unsigned int getLength() {
+        return dataSize;
+    }
     virtual const uint8_t* getData ( size_t& size );
     virtual ~TiffHeaderDataSource();
 };

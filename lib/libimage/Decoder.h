@@ -121,6 +121,10 @@ public:
     std::string getEncoding() {
         return "";
     }
+    
+    unsigned int getLength() {
+        return decSize;
+    }
 };
 
 

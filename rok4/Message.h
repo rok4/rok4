@@ -134,6 +134,10 @@ public:
      * \~ \see libimage : DataSource
      */
     bool releaseData() {}
+    
+    unsigned int getLength(){
+            return message.length();
+    }
 };
 
 /**
@@ -219,6 +223,9 @@ public:
     }
     int getHttpStatus() {
         return 200;
+    }
+    unsigned int getLength(){
+        return message.length();
     }
 };
 

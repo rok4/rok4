@@ -60,6 +60,9 @@ public:
         return "";
     }
     bool eof();
+    unsigned int getLength(){
+        return 0;
+    }
 
 };
 #endif

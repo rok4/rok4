@@ -82,6 +82,10 @@ public:
     int getHttpStatus() {
         return 200;
     }
+    
+    unsigned int getLength() {
+        return 0;
+    }
 };
 
 

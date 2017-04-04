@@ -91,6 +91,10 @@ public:
     std::string getEncoding() {
         return "";
     }
+    
+    unsigned int getLength() {
+        return 0;
+    }
 };
 
 #endif

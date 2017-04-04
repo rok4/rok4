@@ -84,6 +84,8 @@ std::string genStatusHeader ( int statusCode ) {
 std::string genFileName ( std::string mime ) {
     if ( mime.compare ( "image/tiff" ) ==0 )
         return "image.tif";
+    else if ( mime.compare ( "image/geotiff" ) ==0 )
+        return "image.tif";
     else if ( mime.compare ( "image/jpeg" ) ==0 )
         return "image.jpg";
     else if ( mime.compare ( "image/png" ) ==0 )
@@ -94,6 +96,8 @@ std::string genFileName ( std::string mime ) {
         return "message.txt";
     else if ( mime.compare ( "text/xml" ) ==0 )
         return "message.xml";
+    else if ( mime.compare ( "text/asc" ) ==0 )
+        return "file.asc";
     return "file";
 }
 
@@ -132,6 +136,13 @@ int ResponseSender::sendresponse ( DataSource* source, FCGX_Request* request ) {
         FCGX_PutStr ( "\r\nContent-Encoding: ",20,request->out );
         FCGX_PutStr ( source->getEncoding().c_str(), strlen ( source->getEncoding().c_str() ),request->out );
     }
+    if ( source->getLength() != 0 ){
+        std::stringstream ss;
+        ss << source->getLength();
+        std::string lengthStr = ss.str();
+        FCGX_PutStr ( "\r\nContent-Length: ",18,request->out );
+        FCGX_PutStr ( lengthStr.c_str(), strlen ( lengthStr.c_str() ),request->out );
+    }
     FCGX_PutStr ( "\r\nContent-Disposition: filename=\"",33,request->out );
     FCGX_PutStr ( filename.data(),filename.size(), request->out );
     FCGX_PutStr ( "\"",1,request->out );
@@ -167,6 +178,13 @@ int ResponseSender::sendresponse ( DataStream* stream, FCGX_Request* request ) {
     FCGX_PutStr ( statusHeader.data(),statusHeader.size(),request->out );
     FCGX_PutStr ( "Content-Type: ",14,request->out );
     FCGX_PutStr ( stream->getType().c_str(), strlen ( stream->getType().c_str() ),request->out );
+    if ( stream->getLength() != 0 ){
+        std::stringstream ss;
+        ss << stream->getLength();
+        std::string lengthStr = ss.str();
+        FCGX_PutStr ( "\r\nContent-Length: ",18,request->out );
+        FCGX_PutStr ( lengthStr.c_str(), strlen ( lengthStr.c_str() ),request->out );
+    }
     FCGX_PutStr ( "\r\nContent-Disposition: filename=\"",33,request->out );
     FCGX_PutStr ( filename.data(),filename.size(), request->out );
     FCGX_PutStr ( "\"",1,request->out );

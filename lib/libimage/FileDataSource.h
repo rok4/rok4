@@ -78,6 +78,10 @@ public:
     std::string getEncoding() {
         return encoding;
     }
+    
+    unsigned int getLength(){
+        return size;
+    }
 };
 
 #endif

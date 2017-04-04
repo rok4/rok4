@@ -118,6 +118,10 @@ public:
    size_t getSize() {
        return dataSize;
    }
+   
+   unsigned int getLength() {
+       return dataSize;
+   }
 };
 
 #endif // EMPTYDATASOURCE_H
