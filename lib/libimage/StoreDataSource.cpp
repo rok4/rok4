@@ -61,10 +61,11 @@
 StoreDataSource::StoreDataSource (const char* n, bool indexToRead, const uint32_t o, const uint32_t s, std::string type, Context* c, std::string encoding ) :
     name ( n ), posoff(o), possize(s), maxsize(0), type (type), encoding( encoding ), context(c)
 {
-    data = 0;
+    data = NULL;
     size = 0;
     readFull = false;
     readIndex = indexToRead;
+    alreadyTried = false;
 
     name = context->convertName(name);
 }
@@ -72,10 +73,11 @@ StoreDataSource::StoreDataSource (const char* n, bool indexToRead, const uint32_
 StoreDataSource::StoreDataSource (const char* n, const uint32_t maxsize, std::string type, Context* c, std::string encoding ) :
     name ( n ), posoff ( 0 ), possize ( 0 ), maxsize(maxsize), type (type), encoding( encoding ), context(c)
 {
-    data = 0;
+    data = NULL;
     size = 0;
     readFull = true;
     readIndex = false;
+    alreadyTried = false;
 
     name = context->convertName(name);
 }
@@ -100,18 +102,21 @@ StoreDataSource * StoreDataSourceFactory::createStoreDataSource ( const char* na
  * Indique la taille de la tuile (inconnue a priori)
  */
 const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
-    if ( data ) {
-        tile_size=size;
+    if ( alreadyTried) {
+        tile_size = size;
         return data;
     }
 
+    alreadyTried = true;
     if (readFull) {
         // On retourne tout l'objet
         data = new uint8_t[maxsize];
         int tileSize = context->read(data, 0, maxsize, name);
         if (tileSize < 0) {
             LOGGER_ERROR ( "Erreur lors de la lecture de la tuile = objet " << name );
-            return 0;
+            delete[] data;
+            data = NULL;
+            return NULL;
         }
         tile_size = tileSize;
         size = tileSize;
@@ -122,7 +127,9 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
         int tileSize = context->read(data, posoff, possize, name);
         if (tileSize < 0) {
             LOGGER_ERROR ( "Erreur lors de la lecture de la tuile dans l'objet (sans passer par l'index) " << name );
-            return 0;
+            delete[] data;
+            data = NULL;
+            return NULL;
         }
         tile_size = tileSize;
         size = tileSize;
@@ -137,7 +144,7 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
         if ( context->read(uint32tab, posoff, 4, name) < 0) {
             LOGGER_ERROR ( "Erreur lors de la lecture de la position de la tuile dans l'objet " << name );
             delete[] uint32tab;
-            return 0;
+            return NULL;
         }
         uint32_t tileOffset = *((uint32_t*) uint32tab);
 
@@ -147,7 +154,7 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
         if (context->read(uint32tab, possize, 4, name) < 0) {
             LOGGER_ERROR ( "Erreur lors de la lecture de la taille de la tuile dans l'objet " << name );
             delete[] uint32tab;
-            return 0;
+            return NULL;
         }
         uint32_t tileSize = *((uint32_t*) uint32tab);
         tile_size = tileSize;
@@ -159,15 +166,17 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
         if ( tile_size > MAX_TILE_SIZE ) {
             LOGGER_ERROR ( "Tuile trop volumineuse dans le fichier/objet " << name ) ;
             delete[] uint32tab;
-            return 0;
+            return NULL;
         }
 
         // Lecture de la tuile
         data = new uint8_t[tile_size];
         if (context->read(data, tileOffset, tile_size, name) < 0) {
+            delete[] data;
+            data = NULL;
             LOGGER_ERROR ( "Erreur lors de la lecture de la tuile dans l'objet " << name );
             delete[] uint32tab;
-            return 0;
+            return NULL;
         }
 
         delete[] uint32tab;

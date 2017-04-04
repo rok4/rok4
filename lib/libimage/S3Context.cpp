@@ -228,9 +228,9 @@ int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
 
     res = curl_easy_perform(curl);
 
-    // double time;
-    // curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &time);
-    // LOGGER_INFO(time);
+    double time;
+    curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &time);
+    LOGGER_INFO(time);
 
     curl_slist_free_all(list);
     curl_easy_cleanup(curl);

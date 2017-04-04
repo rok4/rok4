@@ -286,14 +286,15 @@ std::string Level::getPath ( int tilex, int tiley, int tilesPerW, int tilesPerH 
             path[sizeof ( path ) - 1] = 0;
             pos = sizeof ( path ) - 6;
 
-            for ( int d = 0; d < pathDepth; d++ ) {             ;
+            for ( int d = 0; d < pathDepth; d++ ) {
                 path[pos--] = Base36[y % 36];
                 path[pos--] = Base36[x % 36];
                 path[pos--] = '/';
                 x = x / 36;
                 y = y / 36;
             }
-            do {             path[pos--] = Base36[y % 36];
+            do {             
+                path[pos--] = Base36[y % 36];
                 path[pos--] = Base36[x % 36];
                 x = x / 36;
                 y = y / 36;
@@ -368,7 +369,6 @@ DataSource* Level::getEncodedTile ( int x, int y ) { // TODO: return 0 sur des c
         //on stocke une tuile et non une dalle
         std::string path=getPath ( x, y, 1, 1 );
         LOGGER_DEBUG ( path );
-        if (! context->exists(path)) return NULL;
         StoreDataSourceFactory SDSF;
         return SDSF.createStoreDataSource( path.c_str(),maxTileSize,Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );
 
@@ -382,7 +382,7 @@ DataSource* Level::getEncodedTile ( int x, int y ) { // TODO: return 0 sur des c
         std::string path=getPath ( x, y, tilesPerWidth, tilesPerHeight);
         LOGGER_DEBUG ( path );
         StoreDataSourceFactory SDSF;
-        return SDSF.createStoreDataSource( path.c_str(), true,posoff,possize,Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );
+        return SDSF.createStoreDataSource( path.c_str(), true, posoff, possize, Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );
     }
 
 }
@@ -415,17 +415,12 @@ DataSource* Level::getTile (int x, int y) {
     if (source == NULL) return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "wmts" ) );
 
     size_t size;
-
     if (source->getData ( size ) == NULL) return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "wmts" ) );
 
-    if (
-            ( format==Rok4Format::TIFF_RAW_INT8 || format == Rok4Format::TIFF_LZW_INT8 ||
-              format==Rok4Format::TIFF_LZW_FLOAT32 || format==Rok4Format::TIFF_ZIP_INT8 ||
-              format == Rok4Format::TIFF_ZIP_FLOAT32 || format==Rok4Format::TIFF_PKB_FLOAT32 ||
-              format==Rok4Format::TIFF_PKB_INT8
-            )
-            &&
-            source!=0 && source->getData ( size ) !=0
+    if ( format == Rok4Format::TIFF_RAW_INT8 || format == Rok4Format::TIFF_LZW_INT8 ||
+         format == Rok4Format::TIFF_LZW_FLOAT32 || format == Rok4Format::TIFF_ZIP_INT8 ||
+         format == Rok4Format::TIFF_ZIP_FLOAT32 || format == Rok4Format::TIFF_PKB_FLOAT32 ||
+         format == Rok4Format::TIFF_PKB_INT8
         )
     {
         LOGGER_DEBUG ( _ ( "GetTile Tiff" ) );
@@ -436,7 +431,8 @@ DataSource* Level::getTile (int x, int y) {
     return source;
 }
 
-Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom ) { int pixel_size=1;
+Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom ) {
+    int pixel_size=1;
     LOGGER_DEBUG ( _ ( "GetTile Image" ) );
     if ( format==Rok4Format::TIFF_RAW_FLOAT32 || format == Rok4Format::TIFF_LZW_FLOAT32 || format == Rok4Format::TIFF_ZIP_FLOAT32 || format == Rok4Format::TIFF_PKB_FLOAT32 )
         pixel_size=4;

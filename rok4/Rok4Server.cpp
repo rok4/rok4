@@ -624,11 +624,6 @@ DataSource* Rok4Server::getTile ( Request* request ) {
         tileSource = getTileUsual(L, format, tileCol, tileRow, tileMatrix, style) ;
     }
 
-    size_t tmp;
-    if (! tileSource->getData(tmp)) {
-        return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "wmts" ) );
-    }
-
     return tileSource;
 
 }

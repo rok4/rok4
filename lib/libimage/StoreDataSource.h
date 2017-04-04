@@ -113,6 +113,11 @@ protected:
      */
     uint8_t* data;
     /**
+     * \~french \brief A-t-on déjà essayé de lire la donnée
+     * \~english \brief Have we already tried to read data
+     */
+    bool alreadyTried;
+    /**
      * \~french \brief Taille utile dans #data
      * \~english \brief Real size in #data
      */
