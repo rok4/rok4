@@ -940,118 +940,139 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
             SpathTmp = Spath + ".tmp";
             SpathErr = Spath + ".err";
 
-            if (stat (Spath.c_str(), &bufferS) == 0 && (stat (SpathTmp.c_str(), &bufferT) == -1 || stat (SpathErr.c_str(), &bufferE) == -1)) {
-                //la dalle existe donc on fait une requete normale
-                LOGGER_INFO("Dalle déjà existante");
-                tile = getTileUsual(L, format, tileCol, tileRow, tileMatrix, errorResp, style);
-            } else {
-                //la dalle n'existe pas
-
-                if (stat (SpathTmp.c_str(), &bufferT) == 0 || stat (SpathErr.c_str(), &bufferE) == 0) {
-                    //la dalle est en cours de creation ou on a deja essaye de la creer et ça n'a pas marché
-                    //donc on a un fichier d'erreur
-                    LOGGER_INFO("Dalle inexistante, en cours de création ou non réalisable");
-                    tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
-
-                } else {
-
-                    //la dalle n'est pas en cours de creation
-                    //on cree un processus qui va creer la dalle en parallele
-                    if (parallelProcess->createProcess()) {
-
-                        //---------------------------------------------------------------------------------------------------
-
-                        if (parallelProcess->getLastPid() == 0) {
-                            //PROCESSUS FILS
-                            // on va créer un fichier tmp, générer la dalle et supprimer le fichier tmp
-
-                            //on met en place une alarme qui va eteindre le processus au bout d'un certain temps
-                            signal(SIGALRM, hangleSIGALARM);
-                            alarm(parallelProcess->getTimeBeforeAutoKill());
-
-                            //on cree un fichier temporaire pour indiquer que la dalle va etre creer
-                            //on commence par créer le dossier
-                            int directory = lv->second->createDirPath(SpathDir.c_str());
-                            if (directory == -1) {
-                                if (errno != EEXIST) {
-                                    std::cerr << "Impossible de creer le dossier contenant la dalle " << SpathDir.c_str() << std::endl;
-                                    std::cerr << "errno: " << errno << " " << strerror(errno) << std::endl;
-                                    exit(0);
-                                }
-                            }
-
-                            //on vient de creer le dossier donc on essaye de creer le fichier tmp
-                            int fileTmp = open(SpathTmp.c_str(),O_CREAT|O_EXCL,S_IWRITE);
-                            if (fileTmp != -1) {
-                                //on a pu creer un fichier temporaire
-                                close(fileTmp);
-                            } else {
-                                exit(0);
-                            }
-
-
-
-                            //on cree un logger et supprime l'ancien pour ne pas mélanger les sorties
-                            // il sera écrit dans SpathErr et supprimé si la dalle a été généré correctement
-                            parallelProcess->initializeLogger(SpathErr);
-
-                            //on cree la dalle
-                            int state = createSlabOnFly(L, tileMatrix, tileCol, tileRow, style, format, Spath);
-                            if (!state) {
-                                //la generation s'est bien déroulé
-                                //on supprime le logger qui ne contient en théorie pas ou peu
-                                //d'erreurs. Du moins, aucune ayant empéchée la génération
-                                int fileErr = remove(SpathErr.c_str());
-                                if (fileErr != 0) {
-                                    //Impossible de supprimer le fichier erreur
-                                    LOGGER_ERROR("Impossible de supprimer le fichier de log");
-                                }
-                            } else {
-                                //la generation n'a pas fonctionne
-                                //on essaye de supprimer le fichier de dalle potentiellement existant
-                                //mais contenant des erreurs
-
-                                if (stat (Spath.c_str(), &bufferS) == 0) {
-                                    //le fichier existe mais il faut le supprimer
-                                    int file = remove(Spath.c_str());
-                                    if (file != 0) {
-                                        LOGGER_ERROR("Impossible de supprimer la dalle contenant des erreurs");
-                                    }
-                                }
-                            }
-
-                            //on nettoie
-                            fileTmp = remove(SpathTmp.c_str());
-                            if (fileTmp != 0) {
-                                //Impossible de supprimer le fichier temporaire
-                                std::cerr << "Impossible de supprimer le fichier de temporaire " << SpathTmp.c_str() << std::endl;
-                                std::cerr << "errno: " << errno << " " << strerror(errno) << std::endl;
-                            }
-                            parallelProcess->destroyLogger();
-
-                            //on arrete le processus
-                            exit(0);
-
-                        } else {
-                            //PROCESSUS PERE
-                            //on va répondre a la requête
-                            LOGGER_DEBUG("Processus parallele lance ");
-                            LOGGER_DEBUG("Création de la dalle "+Spath);
-                            LOGGER_DEBUG("Log dans le fichier "+SpathErr);
-
-                            tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
-                        }
-
-                        //-------------------------------------------------------------------------------------------------
-
-
+            if (stat (Spath.c_str(), &bufferS) == 0) {
+                //la dalle existe ou est en cours de création
+                if (stat (SpathTmp.c_str(), &bufferT) == -1) {
+                    // il n'y a pas de tmp donc la dalle existe mais une erreur peut subsister
+                    if (stat (SpathErr.c_str(), &bufferE) == -1) {
+                        // il n'y a pas d'erreurs donc la dalle existe
+                        //Usual
+                        tile = getTileUsual(L, format, tileCol, tileRow, tileMatrix, errorResp, style);
                     } else {
-                        LOGGER_WARN("Impossible de créer un processus parallele donc pas de génération de dalle");
+                        //il y a une erreur
+                        //onDemand
                         tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
                     }
-
+                } else {
+                    //il y a un fichier tmp donc la dalle est en cours de génération
+                    //onDemand
+                    tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
                 }
+            } else {
+                //la dalle n'existe pas mais peut être en cours de création
+                if (stat (SpathTmp.c_str(), &bufferT) == 0) {
+                    //la dalle est en cours de création
+                    //onDemand
+                    tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
+                } else {
+                    //la dalle n'est pas en cours de création, il peut y avoir une erreur
+                    if (stat (SpathErr.c_str(), &bufferE) == 0) {
+                        //il y a une erreur
+                        //onDemand
+                        tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
+                    } else {
+                        //il n'y a pas d'erreurs, on peut générer la dalle
 
+                        //on cree un processus qui va creer la dalle en parallele
+                        if (parallelProcess->createProcess()) {
+
+                            //---------------------------------------------------------------------------------------------------
+
+                            if (parallelProcess->getLastPid() == 0) {
+                                //PROCESSUS FILS
+
+                                // on va créer un fichier tmp, générer la dalle et supprimer le fichier tmp
+                                //on met en place une alarme qui va eteindre le processus au bout d'un certain temps
+                                signal(SIGALRM, hangleSIGALARM);
+                                alarm(parallelProcess->getTimeBeforeAutoKill());
+
+                                //on cree un fichier temporaire pour indiquer que la dalle va etre creer
+                                //on commence par créer le dossier
+                                int directory = lv->second->createDirPath(SpathDir.c_str());
+                                if (directory == -1) {
+                                    if (errno != EEXIST) {
+                                        std::cerr << "Impossible de creer le dossier contenant la dalle " << SpathDir.c_str() << std::endl;
+                                        std::cerr << "errno: " << errno << " " << strerror(errno) << std::endl;
+                                        exit(0);
+                                    }
+                                }
+
+                                //on vient de creer le dossier donc on essaye de creer le fichier tmp
+                                int fileTmp = open(SpathTmp.c_str(),O_CREAT|O_EXCL,S_IWRITE);
+                                if (fileTmp != -1) {
+                                    //on a pu creer un fichier temporaire
+                                    close(fileTmp);
+                                } else {
+                                    //impossible de creer le fichier tmp, il est potentiellement déjà existant
+                                    exit(0);
+                                }
+
+                                //on cree un logger et supprime l'ancien pour ne pas mélanger les sorties
+                                // il sera écrit dans SpathErr et supprimé si la dalle a été généré correctement
+                                parallelProcess->initializeLogger(SpathErr);
+
+                                //on cree la dalle
+                                int state = createSlabOnFly(L, tileMatrix, tileCol, tileRow, style, format, Spath);
+                                if (!state) {
+                                    //la generation s'est bien déroulé
+                                    //on supprime le logger qui ne contient en théorie pas ou peu
+                                    //d'erreurs. Du moins, aucune ayant empéchée la génération
+
+                                    //vide du logger
+                                    sleep(1);
+
+                                    int fileErr = remove(SpathErr.c_str());
+                                    if (fileErr != 0) {
+                                        //Impossible de supprimer le fichier erreur
+                                        //std::cerr << "Impossible de supprimer le fichier de log .err " << SpathErr.c_str() << std::endl;
+                                        //std::cerr << "errno: " << errno << " " << strerror(errno) << std::endl;
+                                    }
+                                } else {
+                                    //la generation n'a pas fonctionne
+                                    //on essaye de supprimer le fichier de dalle potentiellement existant
+                                    //mais contenant des erreurs
+
+                                    if (stat (Spath.c_str(), &bufferS) == 0) {
+                                        //le fichier existe mais il faut le supprimer
+                                        int file = remove(Spath.c_str());
+                                        if (file != 0) {
+                                            //std::cerr << "Impossible de supprimer la dalle contenant des erreurs " << Spath.c_str() << std::endl;
+                                            //std::cerr << "errno: " << errno << " " << strerror(errno) << std::endl;
+                                        }
+                                    }
+                                }
+
+                                //on nettoie
+                                fileTmp = remove(SpathTmp.c_str());
+                                if (fileTmp != 0) {
+                                    //Impossible de supprimer le fichier temporaire
+                                    //std::cerr << "Impossible de supprimer le fichier de temporaire " << SpathTmp.c_str() << std::endl;
+                                    //std::cerr << "errno: " << errno << " " << strerror(errno) << std::endl;
+                                }
+
+                                parallelProcess->destroyLogger();
+                                //on arrete le processus
+                                exit(0);
+
+                            } else {
+                                //PROCESSUS PERE
+                                //on va répondre a la requête
+                                LOGGER_DEBUG("Processus parallele lance ");
+                                LOGGER_DEBUG("Création de la dalle "+Spath);
+                                LOGGER_DEBUG("Log dans le fichier "+SpathErr);
+
+                                tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
+                            }
+
+                            //-------------------------------------------------------------------------------------------------
+
+
+                        } else {
+                            LOGGER_WARN("Impossible de créer un processus parallele donc pas de génération de dalle");
+                            tile = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
+                        }
+                    }
+                }
             }
 
         } else {
