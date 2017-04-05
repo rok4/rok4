@@ -54,21 +54,21 @@ Log::Log4perl->easy_init({
 use WMTSALAD::Pyramid;
 
 
-my $valid_prop = $Bin."/../../properties/WMTSalaD_valid_prop.conf";
-my $valid_src = $Bin."/../../sources/WMTSalaD_valid_src.txt";
+my $valid_prop = $Bin."/../../properties/WMTSALAD/valid.conf";
+my $valid_src = $Bin."/../../sources/WMTSALAD/valid.txt";
 
 my $prop_buffer; # buffer to store the properties file's content
 my $prop_fh; # file handle for this file
-my $temp_prop_file = $Bin."/../../properties/WMTSalaD_temp_prop.conf"; # temporary properties file for tests
+my $temp_prop_file = $Bin."/../../properties/WMTSALAD/temp_prop.conf"; # temporary properties file for tests
 my $src_buffer; # buffer to store the datasources file's content
 my $src_fh; # file handle for this file
-my $temp_src_file = $Bin."/../../sources/WMTSalaD_temp_src.txt"; # temporary datasources file for tests
+my $temp_src_file = $Bin."/../../sources/WMTSALAD/temp_src.txt"; # temporary datasources file for tests
 
 open ($prop_fh, '<', $valid_prop) or die ("Unable to open properties file.");
 $prop_buffer = do { local $/; <$prop_fh> };
 close ($prop_fh);
 
-open ($src_fh, '<', $valid_src) or die ("Unable to open properties file.");
+open ($src_fh, '<', $valid_src) or die ("Unable to open sources file.");
 $src_buffer = do { local $/; <$src_fh> };
 close ($src_fh);
 
@@ -78,11 +78,8 @@ close ($src_fh);
 my $pyramid = WMTSALAD::Pyramid->new($valid_prop, $valid_src);
 my ($testWriteConf, $testWriteCache);
 if (defined $pyramid) { 
-    #print(sprintf "Pyramid object content : %s", $pyramid->exportForDebug());
     $testWriteConf = $pyramid->writeConfPyramid(); 
     $testWriteCache = $pyramid->writeCachePyramid();
-    # print (sprintf "find 'be4/pyramide/tests/WMTSalaD/generated/' -ls\n");
-    # print `find 'be4/pyramide/tests/WMTSalaD/generated/' -ls`;
 }
 ok ((defined $pyramid) && $testWriteConf && $testWriteCache, "Pyramid created (exhaustive parameters)");
 if (-e 'be4/pyramide/tests/WMTSalaD/generated') { File::Path::remove_tree('be4/pyramide/tests/WMTSalaD/generated');}
@@ -100,11 +97,8 @@ my $written = writeTemp($prop_buffer, $temp_prop_file);
 $prop_buffer =~ s/\n;/\n/g;
 $pyramid = WMTSALAD::Pyramid->new($temp_prop_file, $valid_src);
 if (defined $pyramid) { 
-    #print(sprintf "Pyramid object content : %s", $pyramid->exportForDebug()); 
     $testWriteConf = $pyramid->writeConfPyramid(); 
     $testWriteCache = $pyramid->writeCachePyramid();
-    # print (sprintf "find 'be4/pyramide/tests/WMTSalaD/generated/' -ls\n");
-    # print `find 'be4/pyramide/tests/WMTSalaD/generated/' -ls`;
 }
 ok ((defined $pyramid) && $testWriteConf && $testWriteCache, "Pyramid created (only mandatory parameters)");
 if (-e 'be4/pyramide/tests/WMTSalaD/generated') { File::Path::remove_tree('be4/pyramide/tests/WMTSalaD/generated');}
@@ -363,9 +357,9 @@ ok(! defined $errPyramid, "Datasources file error : invalid extent");
 undef $errPyramid;
 
 # Datasources file error : PyrSource => descriptor does not exist
-$src_buffer =~ s/file = be4\/pyramide\/tests\/pyramid\/oldPyramid.pyr/file = does\/not\/exist.pyr/;
+$src_buffer =~ s/file = src\/tests\/pyramid\/oldPyramid.pyr/file = does\/not\/exist.pyr/;
 $written = writeTemp($src_buffer, $temp_src_file);
-$src_buffer =~ s/file = does\/not\/exist.pyr/file = be4\/pyramide\/tests\/pyramid\/oldPyramid.pyr/;
+$src_buffer =~ s/file = does\/not\/exist.pyr/file = src\/tests\/pyramid\/oldPyramid.pyr/;
 $errPyramid = WMTSALAD::Pyramid->new($valid_prop, $temp_src_file);
 ok(! defined $errPyramid, "Datasources file error : WMTSALAD::PyrSource error");
 undef $errPyramid;
@@ -381,9 +375,6 @@ undef $errPyramid;
 
 ####################### End #######################
 
-# print "temp src file : \n";
-# print `cat $temp_src_file`;
-# print "\n";
 unlink ($temp_prop_file) or warn (sprintf "Could not remove file '%s'", $temp_prop_file);
 unlink ($temp_src_file) or warn (sprintf "Could not remove file '%s'", $temp_src_file);
 

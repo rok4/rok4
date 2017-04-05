@@ -4,7 +4,7 @@ lv_top = 11
 extent = -770850,4929770,1279780,6783830
 
 [[ 1 ]]
-file = be4/pyramide/tests/pyramid/oldPyramid.pyr
+file = src/tests/pyramid/oldPyramid.pyr
 style = style1
 transparent = false
 
@@ -28,4 +28,4 @@ extent = -770850,4929770,1279780,6783830
 
 
 [[ 0 ]]
-file = be4/pyramide/tests/pyramid/oldPyramid.pyr
+file = src/tests/pyramid/oldPyramid.pyr
