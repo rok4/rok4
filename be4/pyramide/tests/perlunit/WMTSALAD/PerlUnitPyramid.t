@@ -94,7 +94,6 @@ undef $testWriteCache;
 $prop_buffer =~ s/\n(persistent)/\n;$1/;
 $prop_buffer =~ s/\n(dir_metadata)/\n;$1/;
 $prop_buffer =~ s/\n(compression)/\n;$1/;
-$prop_buffer =~ s/\n(photometric)/\n;$1/;
 $prop_buffer =~ s/\n(interpolation)/\n;$1/;
 $prop_buffer =~ s/\n(color)/\n;$1/;
 my $written = writeTemp($prop_buffer, $temp_prop_file);
