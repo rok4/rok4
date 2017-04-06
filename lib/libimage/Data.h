@@ -228,6 +228,7 @@ private:
     size_t dataSize;
     uint8_t* data;
     unsigned int length;
+    bool status;
 public:
     /**
      * Constructeur.
