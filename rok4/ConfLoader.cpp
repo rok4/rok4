@@ -90,6 +90,9 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
     int errorCode;
     std::string algo = "";
     std::string unit = "";
+    std::string inter = "";
+    int ndslope,mxSlope;
+    float ndimg;
     bool estompage = false;
     float minSlope = 5.0;
 
@@ -361,14 +364,14 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
             return NULL;
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
             LOGGER_INFO("Pas d'algo defini, H par defaut");
-            algo = "H";
         } else {
-            if (algo != "H") {
+            if (algo != "H" && algo != "Z") {
                 LOGGER_ERROR ("Un attribut algo invalide a ete trouve dans la pente du Style " ) << id << ( ", la valeur possible est H");
                 return NULL;
             }
+            pente.setAlgo(algo);
         }
-        pente.setAlgo(algo);
+
 
         errorCode = pElem->QueryStringAttribute("unit", &unit);
         if ( errorCode == TIXML_WRONG_TYPE ) {
@@ -376,14 +379,75 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
             return NULL;
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
             LOGGER_INFO("Pas d'unit defini, 'degree' par defaut");
-            unit = "degree";
         } else {
              if (unit != "degree" && unit != "pourcent") {
                 LOGGER_ERROR ("Un attribut unit invalide a ete trouve dans la pente du Style " ) << id << ( ", la valeur possible est 'degree' or 'pourcent'");
                 return NULL;
             }
+            pente.setUnit(unit);
         }
-        pente.setUnit(unit);
+
+
+        errorCode = pElem->QueryStringAttribute("interpolation", &inter);
+        if ( errorCode == TIXML_WRONG_TYPE ) {
+            LOGGER_ERROR ( _ ( "Un attribut interpolation invalide a ete trouve dans la pente du Style " ) << id <<_ ( " : il est invalide!!" ) );
+            return NULL;
+        } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
+            LOGGER_INFO("Pas d'interpolation defini, 'linear' par defaut");
+        } else {
+             if (inter != "linear" && inter != "cubic" && inter != "nn" && inter != "lanczos") {
+                LOGGER_ERROR ("Un attribut interpolation invalide a ete trouve dans la pente du Style " ) << id << ( ", les valeurs possibles sont 'nn','linear','cubic' et 'lanczos'");
+                return NULL;
+            }
+            pente.setInterpolation(inter);
+        }
+
+
+        errorCode = pElem->QueryIntAttribute("slopeNoData", &ndslope);
+        if ( errorCode == TIXML_WRONG_TYPE ) {
+            LOGGER_ERROR ( _ ( "Un attribut slopeNoData invalide a ete trouve dans la pente du Style " ) << id <<_ ( " : il est invalide!!" ) );
+            return NULL;
+        } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
+            LOGGER_INFO("Pas de slopeNoData defini, '0' par defaut");
+        } else {
+             if (ndslope < 0 || ndslope > 255) {
+                LOGGER_ERROR ("Un attribut ndslope invalide a ete trouve dans la pente du Style " ) << id << ( ", les valeurs possibles sont entre 0 et 255");
+                return NULL;
+            }
+            pente.setSlopeNoData(ndslope);
+        }
+
+
+        errorCode = pElem->QueryFloatAttribute("imageNoData", &ndimg);
+        if ( errorCode == TIXML_WRONG_TYPE ) {
+            LOGGER_ERROR ( _ ( "Un attribut imageNoData invalide a ete trouve dans la pente du Style " ) << id <<_ ( " : il est invalide!!" ) );
+            return NULL;
+        } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
+            LOGGER_INFO("Pas de imageNoData defini, '-99999' par defaut");
+        } else {
+            pente.setImgNoData(ndimg);
+        }
+
+        errorCode = pElem->QueryIntAttribute("maxSlope", &mxSlope);
+        if ( errorCode == TIXML_WRONG_TYPE ) {
+            LOGGER_ERROR ( _ ( "Un attribut maxSlope invalide a ete trouve dans la pente du Style " ) << id <<_ ( " : il est invalide!!" ) );
+            return NULL;
+        } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
+            if (unit == "degree") {
+                LOGGER_INFO("Pas de maxSlope defini, '90' par defaut");
+            } else {
+                LOGGER_INFO("Pas de maxSlope defini, '255' par defaut");
+                mxSlope = 255;
+                pente.setMaxSlope(mxSlope);
+            }
+        } else {
+             if (mxSlope < 0 || mxSlope > 255) {
+                LOGGER_ERROR ("Un attribut maxSlope invalide a ete trouve dans la pente du Style " ) << id << ( ", les valeurs possibles sont entre 0 et 255");
+                return NULL;
+            }
+            pente.setMaxSlope(mxSlope);
+        }
+
     }
 
     //recuperation des informations pour le calcul des expostiions des  pentes
@@ -743,6 +807,7 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     //on lit l'élément nodatavalues, il n'est pas obligatoire pour
     //une pyramide normale mais il le devient si la pyramide
     //est à la volée
+    //EDIT: obligatoire dans tous les cas
     pElem=hRoot.FirstChild ( "nodataValue" ).Element();
     if ( pElem && pElem->GetText() ) {
         ndValuesStr = pElem->GetTextStr();
@@ -1203,12 +1268,12 @@ Pyramid* ConfLoader::parsePyramid ( TiXmlDocument* doc,std::string fileName, std
     Pyramid* pyr;
 
     if (onFly) {
-        pyr = new PyramidOnFly(levels, *tms, format, channels, onDemand, onFly, Photometric::fromString(photometricStr),noDataValues,specificSources);
+        pyr = new PyramidOnFly(levels, *tms, format, channels, onDemand, onFly, noDataValues, Photometric::fromString(photometricStr), specificSources);
     } else {
         if (onDemand) {
-            pyr = new PyramidOnDemand(levels, *tms, format, channels, onDemand, onFly,specificSources);
+            pyr = new PyramidOnDemand(levels, *tms, format, channels, onDemand, onFly, noDataValues, specificSources);
         } else {
-            pyr = new Pyramid ( levels, *tms, format, channels, onDemand, onFly );
+            pyr = new Pyramid ( levels, *tms, format, channels, onDemand, onFly,noDataValues );
         }
     }
 

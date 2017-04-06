@@ -52,6 +52,7 @@
 #include "Palette.h"
 #include "Pente.h"
 #include "Aspect.h"
+#include "Interpolation.h"
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -345,6 +346,54 @@ public:
     inline bool isPente() {
         return pente.getPente();
     }
+
+    /**
+    * \~french
+    * \brief Retourne l'interpolation de la pente
+    * \return interpolation de la pente
+    * \~english
+    * \brief Return the slope interpolation
+    * \return the slope interpolation
+    */
+    inline Interpolation::KernelType getInterpolationOfPente() {
+      return Interpolation::fromString(pente.getInterpolation());
+    }
+
+    /**
+    * \~french
+    * \brief Retourne le noData de la pente
+    * \return noData de la pente
+    * \~english
+    * \brief Return the slope noData
+    * \return the slope noData
+    */
+   inline float getSlopeNoDataOfPente() {
+       return pente.getSlopeNoData();
+   }
+
+   /**
+   * \~french
+   * \brief Retourne le noData de la pente
+   * \return noData de la pente
+   * \~english
+   * \brief Return the slope noData
+   * \return the slope noData
+   */
+  inline float getImgNoDataOfPente() {
+      return pente.getImgNoData();
+  }
+
+  /**
+  * \~french
+  * \brief Retourne le noData de la pente
+  * \return noData de la pente
+  * \~english
+  * \brief Return the slope noData
+  * \return the slope noData
+  */
+ inline int getMaxSlopeOfPente() {
+     return pente.getMaxSlope();
+ }
 
     /**
     * \~french

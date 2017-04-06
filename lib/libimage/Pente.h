@@ -76,6 +76,36 @@ private:
     */
     std::string unit;
 
+    /** \~french
+    * \brief interpolation : interpolation utilisée pour ré-échantilloner les données sources
+    ** \~english
+    * \brief interpolation : interpolation used for resampling source data
+    */
+    std::string interpolation;
+
+    /** \~french
+    * \brief noData : valeur de noData pour la pente
+    ** \~english
+    * \brief noData : value of noData for the slope
+    */
+    int slopeNoData;
+
+    /** \~french
+    * \brief noData : valeur de noData pour l'image source
+    ** \~english
+    * \brief noData : value of noData for the source image
+    */
+    float imgNoData;
+
+    /** \~french
+    * \brief maxSlope : valeur max pour la pente
+    ** \~english
+    * \brief maxSlope : max value for the slope
+    */
+    int maxSlope;
+
+
+
 public:
 
     /**
@@ -84,7 +114,7 @@ public:
      * \~english
      * \brief Constructor without arguments
      */
-    Pente(): algo ("H"), isPente (false), unit ("degree") {
+    Pente(): algo ("H"), isPente (false), unit ("degree"), interpolation ("linear"), slopeNoData (0), imgNoData (-99999), maxSlope (90) {
 
     }
 
@@ -94,7 +124,7 @@ public:
      * \~english
      * \brief Constructor with arguments
      */
-    Pente(std::string a,bool p = false,std::string u = "degree"): algo (a), isPente (p), unit (u) {
+    Pente(std::string a,bool p = false,std::string u = "degree", std::string in = "linear", int nd = 0, float ndi = -99999, int ms = 90) : algo (a), isPente (p), unit (u), interpolation (in), slopeNoData (nd), imgNoData (ndi), maxSlope (ms) {
 
     }
 
@@ -167,6 +197,87 @@ public:
     std::string getUnit(){
         return unit;
     }
+
+    /**
+     * \~french
+     * \brief Modifie interpolation
+     * \~english
+     * \brief Set interpolation
+     */
+    void setInterpolation(std::string u){
+        interpolation = u;
+    }
+
+    /**
+     * \~french
+     * \brief Renvoie interpolation
+     * \~english
+     * \brief Get interpolation
+     */
+    std::string getInterpolation(){
+        return interpolation;
+    }
+
+    /**
+     * \~french
+     * \brief Modifie noData de la pente
+     * \~english
+     * \brief Set noData of the slope
+     */
+    void setSlopeNoData(int n){
+        slopeNoData = n;
+    }
+
+    /**
+     * \~french
+     * \brief Renvoie noData de la pente
+     * \~english
+     * \brief Get noData of the slope
+     */
+    int getSlopeNoData(){
+        return slopeNoData;
+    }
+
+    /**
+     * \~french
+     * \brief Modifie noData de l'image
+     * \~english
+     * \brief Set noData of image
+     */
+    void setImgNoData(float n){
+        imgNoData = n;
+    }
+
+    /**
+     * \~french
+     * \brief Renvoie noData de l'image
+     * \~english
+     * \brief Get noData of image
+     */
+    float getImgNoData(){
+        return imgNoData;
+    }
+
+    /**
+     * \~french
+     * \brief Modifie maxSlope de la pente
+     * \~english
+     * \brief Set maxSlope of the slope
+     */
+    void setMaxSlope(int n){
+        maxSlope = n;
+    }
+
+    /**
+     * \~french
+     * \brief Renvoie maxSlope de la pente
+     * \~english
+     * \brief Get maxSlope of the slope
+     */
+    int getMaxSlope(){
+        return maxSlope;
+    }
+
 
 };
 #endif

@@ -8,14 +8,14 @@
         </Keywords>
         <LegendURL format="image/png" xlink:simpleLink="simple" xlink:href="http://ign.fr" height="100" width="100" minScaleDenominator="0" maxScaleDenominator="30"/>
         <!-- Rok4-->
-        <palette maxValue="90" rgbContinuous="true" alphaContinuous="true">
+        <palette maxValue="91" rgbContinuous="true" alphaContinuous="true">
                 <colour value="0">
                         <red>255</red>
                         <green>255</green>
                         <blue>255</blue>
                         <alpha>0</alpha>
                 </colour>
-		<colour value="29">
+                <colour value="29">
                         <red>255</red>
                         <green>255</green>
                         <blue>255</blue>
@@ -25,50 +25,56 @@
                         <red>242</red>
                         <green>229</green>
                         <blue>0</blue>
-                        <alpha>120</alpha>
+                        <alpha>255</alpha>
                 </colour>
                 <colour value="34">
                         <red>242</red>
                         <green>229</green>
                         <blue>0</blue>
-                        <alpha>120</alpha>
+                        <alpha>255</alpha>
                 </colour>
                 <colour value="35">
                         <red>243</red>
                         <green>148</green>
                         <blue>25</blue>
-                        <alpha>120</alpha>
+                        <alpha>255</alpha>
                 </colour>
                 <colour value="39">
                         <red>243</red>
                         <green>148</green>
                         <blue>25</blue>
-                        <alpha>120</alpha>
+                        <alpha>255</alpha>
                 </colour>
                 <colour value="40">
                         <red>225</red>
                         <green>0</green>
                         <blue>0</blue>
-                        <alpha>120</alpha>
+                        <alpha>255</alpha>
                 </colour>
                 <colour value="44">
                         <red>255</red>
                         <green>0</green>
                         <blue>0</blue>
-                        <alpha>120</alpha>
+                        <alpha>255</alpha>
                 </colour>
                 <colour value="45">
                         <red>200</red>
                         <green>137</green>
                         <blue>187</blue>
-                        <alpha>120</alpha>
+                        <alpha>255</alpha>
                 </colour>
                 <colour value="90">
                         <red>200</red>
                         <green>137</green>
                         <blue>187</blue>
-                        <alpha>120</alpha>
+                        <alpha>255</alpha>
+                </colour>
+                <colour value="91">
+                        <red>255</red>
+                        <green>255</green>
+                        <blue>255</blue>
+                        <alpha>0</alpha>
                 </colour>
         </palette>
-        <pente algo="H" unit="degree"/>
+        <pente algo="H" unit="degree" interpolation="linear" imageNoData="-99999" slopeNoData="91" maxSlope="90"/>
 </style>
