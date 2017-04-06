@@ -147,11 +147,6 @@ is ($updatePyr->getTmsName(), "LAMB93_10cm",
 is ($updatePyr->getNodataValue(), "0,255,255",
     "Nodata value in the old pyramid's descriptor take precedence over configuration");
 
-is ($updatePyr->getDirImage(), "IMG",
-    "Image directory name in the old pyramid's descriptor take precedence over configuration");
-is ($updatePyr->getDirNodata(), "NDT",
-    "Nodata directory name in the old pyramid's descriptor take precedence over configuration");
-
 is ($updatePyr->getDirDepth(), 2,
     "Directory depth in the old pyramid's descriptor take precedence over configuration");
 
@@ -179,9 +174,9 @@ is (scalar keys %{$updatePyr->getLevels()}, 20, "Levels fetched from the old pyr
 
 ######################################################
 
-is ($updatePyr->getDirImage(), "IMG", "Compose path of image");
-is ($updatePyr->getDirImage(FALSE), "IMG", "Compose path of image");
-is ($updatePyr->getDirImage(TRUE), $Bin."/../../pyramid/updatePyramid/IMG", "Compose path of image");
+is ($updatePyr->getDirImage(), "HIMAJE", "Compose path of image");
+is ($updatePyr->getDirImage(FALSE), "HIMAJE", "Compose path of image");
+is ($updatePyr->getDirImage(TRUE), $Bin."/../../pyramid/updatePyramid/HIMAJE", "Compose path of image");
 
 ######################################################
 
