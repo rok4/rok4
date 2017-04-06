@@ -72,7 +72,9 @@ JPEGEncoder::JPEGEncoder ( Image* image ) : image ( image ), status ( -1 ) {
 */
 
 size_t JPEGEncoder::read ( uint8_t *buffer, size_t size ) {
-    assert ( size >= 1024 );
+    if ( size < 1024 ) {
+        return 0;
+    }
 
     // On initialise le buffer d'écriture de la libjpeg
     cinfo.dest->next_output_byte = buffer;
