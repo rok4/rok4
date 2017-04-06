@@ -53,7 +53,7 @@ BufferedDataSource::BufferedDataSource ( DataStream& dataStream ) : type ( dataS
 
     while ( !dataStream.eof() ) { // On lit le DataStream jusqu'au bout
 
-        size_t size = dataStream.read ( data + dataSize, maxSize - dataSize);
+        size_t size = dataStream.read ( data + dataSize, maxSize);
         dataSize += size;
 
         if (size == 0) {
@@ -63,13 +63,18 @@ BufferedDataSource::BufferedDataSource ( DataStream& dataStream ) : type ( dataS
             break;
         }
 
-        if ( dataSize == maxSize ) { // On alloue 2 fois plus de place si on en manque.
+        if (dataStream.eof()) {
+            //on a tout lu
+            break;
+        } else {
+            //on doit encore lire, on augmente la taille du buffer de lecture
             maxSize *= 2;
-            uint8_t* tmp = new uint8_t[maxSize];
+            uint8_t* tmp = new uint8_t[maxSize+dataSize];
             memcpy ( tmp, data, dataSize );
             delete[] data;
             data = tmp;
         }
+
     }
 
     if (status) {
