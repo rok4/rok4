@@ -850,7 +850,7 @@ DataSource* Request::getTileParam ( ServicesConf& servicesConf, std::map< std::s
 
 DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers,
                                    BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format,
-                                   std::vector<Style*>& styles, std::map< std::string, std::string >& format_option ) {
+                                   std::vector<Style*>& styles, std::map< std::string, std::string >& format_option,int& dpi ) {
     // VERSION
     std::string version=getParam ( "version" );
     if ( version=="" ) {
@@ -1065,6 +1065,21 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
             return new SERDataStream ( new ServiceException ( "",WMS_STYLE_NOT_DEFINED,_ ( "Le style " ) +stylesString.at ( k ) +_ ( " n'est pas gere pour la couche " ) +layersString.at ( k ),"wms" ) );
     }
 
+    //DPI
+    std::string strDPI = getParam("dpi");
+    if (strDPI != "") {
+        dpi = atoi(strDPI.c_str());
+        if ( dpi == 0 || dpi == INT_MAX || dpi == INT_MIN ) {
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre DPI n'est pas une valeur entiere." ),"wms" ) );
+        }
+        if ( dpi<0 ) {
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre DPI est negative." ),"wms" ) );
+        }
+
+    } else {
+        dpi = 0;
+    }
+
     std::string formatOptionString= getParam ( "format_options" ).c_str();
     char* formatOptionChar = new char[formatOptionString.size() +1];
     memset ( formatOptionChar,0,formatOptionString.size() +1 );
@@ -1196,8 +1211,8 @@ DataStream* Request::WMSGetFeatureInfoParam (ServicesConf& servicesConf, std::ma
                                           BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format,
                                           std::vector<Style*>& styles, std::string& info_format, int& X, int& Y, int& feature_count,std::map <std::string, std::string >& format_option){
 
-  
-    DataStream* getMapError = getMapParam(servicesConf,layerList,layers, bbox,width,height,crs,format,styles,format_option);
+    int dpi;
+    DataStream* getMapError = getMapParam(servicesConf,layerList,layers, bbox,width,height,crs,format,styles,format_option,dpi);
     
     if (getMapError) {
 	return getMapError;

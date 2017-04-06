@@ -452,7 +452,7 @@ public:
      * \param [in,out] error error code
      * \return an image or a null pointer
      */
-    Image* getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, int& error );
+    Image* getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, int dpi, int& error );
     /**
     * \~french
     * \brief Retourne le résumé
