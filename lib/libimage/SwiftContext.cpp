@@ -100,6 +100,7 @@ bool SwiftContext::connection() {
         curl = curl_easy_init();
         curl_easy_setopt(curl, CURLOPT_URL, auth_url.c_str());
         //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
 
         // On constitue le header et le moyen de récupération des informations (avec les structures de LibcurlStruct)
 
@@ -193,6 +194,7 @@ int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
 
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
     curl_easy_setopt(curl, CURLOPT_URL, fullUrl);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, data_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &chunk);
 
@@ -257,6 +259,7 @@ bool SwiftContext::writeFromFile(std::string fileName, std::string objectName) {
 
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
     curl_easy_setopt(curl, CURLOPT_URL, fullUrl);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
     curl_easy_setopt(curl, CURLOPT_READDATA, fileToUpload);
     curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE, (curl_off_t)file_info.st_size);
