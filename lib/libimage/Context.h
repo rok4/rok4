@@ -128,7 +128,7 @@ public:
      * \~french \brief Connecte le contexte
      * \~english \brief Connect the context
      */
-    virtual bool connection() = 0;
+    virtual bool connection(bool option = false) = 0;
 
     /**
      * \~french \brief Précise si l'objet demandé existe dans ce contexte

@@ -142,7 +142,7 @@ void error ( std::string message, int errorCode ) {
 int main ( int argc, char **argv )
 {
 
-    char* input = 0, *output = 0, *pool = 0, *container = 0, *bucket = 0;
+    char* input = 0, *output = 0, *pool = 0, *container = 0, *bucket = 0, keystone = false;
     Compression::eCompression compression = Compression::NONE;
     bool debugLogger=false;
 
@@ -158,7 +158,6 @@ int main ( int argc, char **argv )
     std::ostream &logw = LOGGER ( WARN );
     logw.precision ( 16 );
     logw.setf ( std::ios::fixed,std::ios::floatfield );
-
 
     for ( int i = 1; i < argc; i++ ) {
         if ( !strcmp ( argv[i],"-pool" ) ) {
@@ -180,6 +179,14 @@ int main ( int argc, char **argv )
                 error("Error in -container option", -1);
             }
             container = argv[i];
+            continue;
+        }
+        if ( !strcmp ( argv[i],"-kscontainer" ) ) {
+            if ( ++i == argc ) {
+                error("Error in -kscontainer option", -1);
+            }
+            container = argv[i];
+            keystone = true;
             continue;
         }
         if ( argv[i][0] == '-' ) {
@@ -274,7 +281,7 @@ int main ( int argc, char **argv )
         context = new FileContext("");
     }
 
-    if (! context->connection()) {
+    if (! context->connection(keystone)) {
         error("Unable to connect context", -1);
     }
 

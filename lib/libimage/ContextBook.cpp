@@ -75,11 +75,10 @@ ContextBook::ContextBook(eContextType type, std::string s1, std::string s2, std:
     am = NULL;
 }
 
-ContextBook::ContextBook(std::string auth, std::string account, std::string user, std::string passwd)
+ContextBook::ContextBook(std::string auth, std::string user, std::string passwd)
 {
     contextType = SWIFTCONTEXT;
     swift_auth = auth;
-    swift_account = account;
     swift_user = user;
     swift_passwd = passwd;
     am = NULL;
@@ -104,7 +103,7 @@ Context * ContextBook::addContext(std::string pool)
                 ctx = new S3Context(s3_url, s3_key, s3_secret_key, pool);
                 break;
             case SWIFTCONTEXT :
-                ctx = new SwiftContext(swift_auth,swift_account,swift_user,swift_passwd,pool);
+                ctx = new SwiftContext(swift_auth,swift_user,swift_passwd,pool);
                 break;
             default :
                 return NULL;

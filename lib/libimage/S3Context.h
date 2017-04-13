@@ -219,7 +219,7 @@ public:
      * \~french \brief Récupère l'URL publique #public_url et constitue l'en-tête HTTP #authHdr
      * \~english \brief Get public URL #public_url and constitute the HTTP header #authHdr
      */
-    bool connection();
+    bool connection(bool option = false);
 
     void closeConnection() {
         connected = false;

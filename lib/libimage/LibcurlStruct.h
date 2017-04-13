@@ -89,6 +89,13 @@ static size_t header_callback(char *buffer, size_t nitems, size_t size, void *us
         hdr->token[realsize - 2] = '\0';
     }
 
+    else if (! strncmp ( buffer,"X-Subject-Token: ", 17)) {
+        hdr->token = (char*) malloc(realsize - 17 + 14);
+        strncpy(hdr->token, "X-Auth-Token: ", 14);
+        strncpy(hdr->token, buffer + 17, realsize - 17 - 2);
+        hdr->token[realsize - 17 + 14 - 2] = '\0';
+    }
+
     return realsize;
 }
 

@@ -63,22 +63,12 @@
 class SwiftContext : public Context{
     
 private:
-    
+
     /**
      * \~french \brief URL d'authentification à Swift
      * \~english \brief Authentication URL to Swift
      */
     std::string auth_url;
-    /**
-     * \~french \brief URL de communication avec Swift
-     * \~english \brief Communication URL with Swift
-     */
-    std::string public_url;
-    /**
-     * \~french \brief Accompte Swift
-     * \~english \brief Swift account
-     */
-    std::string user_account;
     /**
      * \~french \brief Utilisateur Swift
      * \~english \brief Swift user
@@ -89,6 +79,30 @@ private:
      * \~english \brief Swift password
      */
     std::string user_passwd;
+
+    /**
+     * \~french \brief ID de domaine, pour une authentification Keystone
+     * \details Récupéré via la variable d'environnement ROK4_KEYSTONE_DOMAINID
+     * \~english \brief Domain ID, for keystone authentication
+     */
+    std::string domain_id;
+
+    /**
+     * \~french \brief Accompte Swift, pour une authentification Swift
+     * \details Récupéré via la variable d'environnement ROK4_SWIFT_ACCOUNT
+     * \~english \brief Swift account, for swift authentication
+     */
+    std::string user_account;
+    
+    /**
+     * \~french \brief URL de communication avec Swift
+     * \details
+     * \li Authentification keystone : récupéré via la variable d'environnement ROK4_SWIFT_PUBLICURL
+     * \li Authentification Swift : récupéré dans le header de la réponse à la requête de connexion
+     * \~english \brief Communication URL with Swift
+     */
+    std::string public_url;
+
     /**
      * \~french \brief Nom du conteneur Swift
      * \~english \brief Swift container name
@@ -102,28 +116,28 @@ private:
     CURL *curl;
 
     /**
-     * \~french \brief En-tête HTTP à utiliser pour chaque échange avec Swift (contient le token)
-     * \~english \brief HTTP header to use to communicate with Swift (contain the token)
+     * \~french \brief Token à utiliser pour chaque échange avec Swift
+     * \~english \brief Token to use to communicate with Swift
      */
-    HeaderStruct authHdr;
+    std::string token;
 
 public:
 
     /**
      * \~french
      * \brief Constructeur pour un contexte Swift
-     * \param[in] name Nom du cluster Swift
-     * \param[in] user Nom de l'utilisateur Swift
-     * \param[in] conf Configuration du cluster Swift
-     * \param[in] container Conteneur avec lequel on veut communiquer
+     * \param[in] auth URL d'authentification
+     * \param[in] user Nom d'utilisateur
+     * \param[in] passwd Mot de passe
+     * \param[in] container Container à utiliser
      * \~english
      * \brief Constructor for Swift context
-     * \param[in] name Name of Swift cluster
-     * \param[in] user Name of Swift user
-     * \param[in] conf Swift configuration file
+     * \param[in] auth Authentication URL
+     * \param[in] user User name
+     * \param[in] passwd User password
      * \param[in] container Container to use
      */
-    SwiftContext (std::string auth, std::string account, std::string user, std::string passwd, std::string container);
+    SwiftContext (std::string auth, std::string user, std::string passwd, std::string container);
 
     /**
      * \~french
@@ -132,7 +146,6 @@ public:
      * <TABLE>
      * <TR><TH>Attribut</TH><TH>Variable d'environnement</TH><TH>Valeur par défaut</TH>
      * <TR><TD>auth_url</TD><TD>ROK4_SWIFT_AUTHURL</TD><TD>http://localhost:8080/auth/v1.0</TD>
-     * <TR><TD>user_account</TD><TD>ROK4_SWIFT_ACCOUNT</TD><TD>test</TD>
      * <TR><TD>user_name</TD><TD>ROK4_SWIFT_USER</TD><TD>tester</TD>
      * <TR><TD>user_passwd</TD><TD>ROK4_SWIFT_PASSWD</TD><TD>password</TD>
      * </TABLE>
@@ -143,7 +156,6 @@ public:
      * <TABLE>
      * <TR><TH>Attribute</TH><TH>Environment variables</TH><TH>Default value</TH>
      * <TR><TD>auth_url</TD><TD>ROK4_SWIFT_AUTHURL</TD><TD>http://localhost:8080/auth/v1.0</TD>
-     * <TR><TD>user_account</TD><TD>ROK4_SWIFT_ACCOUNT</TD><TD>test</TD>
      * <TR><TD>user_name</TD><TD>ROK4_SWIFT_USER</TD><TD>tester</TD>
      * <TR><TD>user_passwd</TD><TD>ROK4_SWIFT_PASSWD</TD><TD>password</TD>
      * </TABLE>
@@ -151,49 +163,10 @@ public:
      */
     SwiftContext (std::string container);
 
-
     eContextType getType();
     std::string getTypeStr();
     std::string getBucket();
-        
-    /**
-     * \~french \brief Retourne le nom du conteneur
-     * \~english \brief Return the name of container
-     */
-    std::string getContainerName () {
-        return container_name;
-    }
-
-    /**
-     * \~french \brief Retourne l'URL d'authentification
-     * \~english \brief Return the authentication URL
-     */
-    std::string getAuthUrl () {
-        return auth_url;
-    }
-    /**
-     * \~french \brief Retourne l'accompte
-     * \~english \brief Return the account
-     */
-    std::string getAccount () {
-        return user_account;
-    }
-    /**
-     * \~french \brief Retourne le nom de l'utilisateur
-     * \~english \brief Return the name of user
-     */
-    std::string getUserName () {
-        return user_name;
-    }
-
-    /**
-     * \~french \brief Retourne le mot de passe
-     * \~english \brief Return the password
-     */
-    std::string getUserPwd () {
-        return user_passwd;
-    }
-    
+          
     int read(uint8_t* data, int offset, int size, std::string name);
 
     /**
@@ -233,7 +206,6 @@ public:
 
     virtual void print() {
         LOGGER_INFO ( "------ Swift Context -------" );
-        LOGGER_INFO ( "\t- user account = " << user_account );
         LOGGER_INFO ( "\t- user name = " << user_name );
         LOGGER_INFO ( "\t- container name = " << container_name );
     }
@@ -242,7 +214,6 @@ public:
         std::ostringstream oss;
         oss.setf ( std::ios::fixed,std::ios::floatfield );
         oss << "------ Swift Context -------" << std::endl;
-        oss << "\t- user account = " << user_account << std::endl;
         oss << "\t- user name = " << user_name << std::endl;
         oss << "\t- container name = " << container_name << std::endl;
         if (connected) {
@@ -254,10 +225,22 @@ public:
     }
     
     /**
-     * \~french \brief Récupère l'URL publique #public_url et constitue l'en-tête HTTP #authHdr
-     * \~english \brief Get public URL #public_url and constitute the HTTP header #authHdr
+     * \~french \brief Récupère le token #token
+     * \details 
+     * \li Pour une authentification keystone
+     * <TABLE>
+     * <TR><TH>Attribut</TH><TH>Variables d'environnement</TH>
+     * <TR><TD>domain_id</TD><TD>ROK4_KEYSTONE_DOMAINID</TD>
+     * <TR><TD>public_url</TD><TD>ROK4_SWIFT_PUBLICURL</TD>
+     * </TABLE>
+     * \li Pour une authentification Swift
+     * <TABLE>
+     * <TR><TH>Attribut</TH><TH>Variables d'environnement</TH>
+     * <TR><TD>user_account</TD><TD>ROK4_SWIFT_ACCOUNT</TD>
+     * </TABLE>
+     * \~english \brief Get token #token
      */
-    bool connection();
+    bool connection(bool keystone = false);
 
     void closeConnection() {
         connected = false;

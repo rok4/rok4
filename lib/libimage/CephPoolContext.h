@@ -147,7 +147,7 @@ public:
      * \~french \brief Instancie les objets librados #cluster and #io_ctx
      * \~english \brief Instanciate librados objects #cluster and #io_ctx
      */
-    bool connection();
+    bool connection(bool option = false);
 
     /**
      * \~french \brief Nettoie les objets librados

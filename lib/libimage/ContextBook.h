@@ -113,11 +113,6 @@ private:
      */
     std::string swift_auth;
     /**
-     * \~french \brief Compte par défaut pour les nouveaux contextes swift
-     * \~english \brief Default account for new swift contexts
-     */
-    std::string swift_account;
-    /**
      * \~french \brief Utilisateur par défaut pour les nouveaux contextes swift
      * \~english \brief Default user for new swift contexts
      */
@@ -157,17 +152,15 @@ public:
      * \~french
      * \brief Constructeur pour un annuaire de contextes Swift
      * \param[in] auth Url d'authehtification par défaut pour les nouveaux contextes swift
-     * \param[in] account Compte par défaut pour les nouveaux contextes swift
      * \param[in] user Utilisateur par défaut pour les nouveaux contextes swift
      * \param[in] passwd Mot de passe par défaut pour les nouveaux contextes swift
      * \~english
      * \brief Constructor for a swift context book
      * \param[in] auth Default authentication url for new swift contexts
-     * \param[in] account Default account for new swift contexts
      * \param[in] user Default user for new swift contexts
      * \param[in] passwd Default password for new swift contexts
      */
-    ContextBook(std::string auth, std::string account, std::string user, std::string passwd);
+    ContextBook(std::string auth, std::string user, std::string passwd);
 
     /**
      * \~french \brief Retourne une chaîne de caracère décrivant l'annuaire

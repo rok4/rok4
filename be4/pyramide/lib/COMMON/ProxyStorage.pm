@@ -658,6 +658,35 @@ sub symLink {
 
         return "$tBucketName/$realTarget";
     }
+    elsif ($targetType eq "SWIFT" && $toType eq "SWIFT") {
+        my ($tContainerName, @rest) = split("/", $targetPath);
+        my $realTarget = join("", @rest);
+
+        # On vérifie que la dalle SWIFT à lier n'est pas un alias, auquel cas on référence le vrai objet (pour éviter des alias en cascade)
+
+        my $value = redisValueFromKey($realTarget);
+        if (defined $value) {
+            # On a une valeur qui est le vrai nom de l'objet (réellement stocké sur SWIFT)
+            $realTarget = $value;
+        }
+
+        # On retire le bucket du nom de l'alias à créer
+        (my $toBucketName, @rest) = split("/", $toPath);
+        $toPath = join("", @rest);
+
+        if ($tBucketName ne $toBucketName) {
+            ERROR("SWIFT link (redis key-value) is not possible between different pool: $toPath -> X $targetPath");
+            return FALSE;
+        }
+
+        # On ajoute la paire clé - valeur dans redis : $toPath => $realTarget
+        if (! addKeyValue($toPath, $realTarget)) {
+            ERROR("Cannot symlink (add a key/value in redis) object $realTarget with alias $toPath : $!");
+            return undef;
+        }
+
+        return "$tBucketName/$realTarget";
+    }
 
     ERROR("Symlink can only be done between two file/path using the same storage type (and not $toType -> $targetType)");
     return undef;

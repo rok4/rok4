@@ -56,7 +56,7 @@ using namespace std;
 
 FileContext::FileContext (std::string root) : Context(), root_dir(root) {}
 
-bool FileContext::connection() {
+bool FileContext::connection(bool option) {
     connected = true;
     return true;
 }
