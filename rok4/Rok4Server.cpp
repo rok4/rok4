@@ -239,11 +239,6 @@ void Rok4Server::run(sig_atomic_t signal_pending) {
 
 void Rok4Server::terminate() {
     running = false;
-}
-
-
-void Rok4Server::stop() {
-    running = false;
     //FCGX_ShutdownPending();
     // Terminate FCGI Thread
     for ( int i = 0; i < threads.size(); i++ ) {

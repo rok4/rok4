@@ -575,14 +575,6 @@ public:
      * \brief Ask for server shutdown
      */
     void terminate();
-    
-    /**
-     * \~french
-     * \brief Finir l'arrêt du serveur
-     * \~english
-     * \brief Finish for server shutdown
-     */
-    void stop();
 
     /**
      * \~french
