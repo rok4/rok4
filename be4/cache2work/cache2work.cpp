@@ -181,11 +181,7 @@ int main ( int argc, char **argv )
             container = argv[i];
             continue;
         }
-        if ( !strcmp ( argv[i],"-kscontainer" ) ) {
-            if ( ++i == argc ) {
-                error("Error in -kscontainer option", -1);
-            }
-            container = argv[i];
+        if ( !strcmp ( argv[i],"-ks" ) ) {
             keystone = true;
             continue;
         }
@@ -268,7 +264,7 @@ int main ( int argc, char **argv )
     } else if (container != 0) {
         LOGGER_DEBUG( std::string("Input is an object in the Swift container ") + container);
         curl_global_init(CURL_GLOBAL_ALL);
-        context = new SwiftContext(container);
+        context = new SwiftContext(container, keystone);
         am = new RedisAliasManager();
         if (am->isOk()) {
             if (! am->connect()) {
@@ -281,7 +277,7 @@ int main ( int argc, char **argv )
         context = new FileContext("");
     }
 
-    if (! context->connection(keystone)) {
+    if (! context->connection()) {
         error("Unable to connect context", -1);
     }
 

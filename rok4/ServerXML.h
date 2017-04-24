@@ -169,7 +169,6 @@ class ServerXML : public DocumentXML
 
         std::string swiftAuthUrl;
         std::string swiftUserName;
-        std::string swiftUserAccount;
         std::string swiftUserPassword;
 
         int nbProcess;

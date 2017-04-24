@@ -418,19 +418,6 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
             swiftUserName = pElemSwiftContext->GetText();
         }
 
-        pElemSwiftContext = hRoot.FirstChild ( "swiftContext" ).FirstChild ( "userAccount" ).Element();
-        if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
-            char* account = getenv ("ROK4_SWIFT_ACCOUNT");
-            if (account == NULL) {
-                LOGGER_ERROR ("L'utilisation d'un swiftContext necessite de preciser un userAccount" ) <<std::endl;
-                return;
-            } else {
-                swiftUserAccount.assign(account);
-            }
-        } else {
-            swiftUserAccount = pElemSwiftContext->GetText();
-        }
-
         pElemSwiftContext = hRoot.FirstChild ( "swiftContext" ).FirstChild ( "userPassword" ).Element();
         if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
             char* passwd = getenv ("ROK4_SWIFT_PASSWD");
@@ -444,7 +431,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
             swiftUserPassword = pElemSwiftContext->GetText();
         }
 
-        swiftBook = new ContextBook(swiftAuthUrl, swiftUserAccount, swiftUserName, swiftUserPassword);
+        swiftBook = new ContextBook(SWIFTCONTEXT, swiftAuthUrl, swiftUserName, swiftUserPassword);
     } else {
         swiftBook = NULL;
     }

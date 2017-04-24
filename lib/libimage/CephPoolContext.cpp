@@ -78,7 +78,7 @@ CephPoolContext::CephPoolContext (std::string pool) : Context(), pool_name(pool)
     }
 }
 
-bool CephPoolContext::connection(bool option) {
+bool CephPoolContext::connection() {
 
 
     uint64_t flags;

@@ -39,6 +39,7 @@
 
 #include "FileContext.h"
 #include "CephPoolContext.h"
+#include "S3Context.h"
 #include "SwiftContext.h"
 
 LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* serverXML, ServicesXML* servicesXML, PyramidXML* pyr, bool times) : DocumentXML(path)
@@ -282,6 +283,7 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
                 if ( pElem ) {
 
                     std::string container;
+                    bool keystone = false;
 
                     TiXmlElement* pElemSwiftContext = pElem->FirstChildElement ( "containerName" );
                     if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
@@ -291,8 +293,13 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
                         container = pElemSwiftContext->GetText();
                     }
 
+                    pElemSwiftContext = pElem->FirstChildElement ( "keystoneConnection" );
+                    if ( pElemSwiftContext && pElemSwiftContext->GetText() ) {
+                        keystone = true;
+                    }
+
                     if (serverXML->getSwiftContextBook() != NULL) {
-                        context = serverXML->getSwiftContextBook()->addContext(container);
+                        context = serverXML->getSwiftContextBook()->addContext(container, keystone);
                     } else {
                         LOGGER_ERROR ( "L'utilisation d'un swiftContext necessite de preciser les informations de connexions dans le server.conf");
                         return;

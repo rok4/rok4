@@ -395,6 +395,12 @@ sub prepare {
     }
     elsif ($pyramid->getStorageType() eq "SWIFT") {
         $code .= sprintf ("PYR_CONTAINER=\"%s\"\n", $pyramid->getDataContainer() );
+
+        if ($pyramid->keystoneConnection()) {
+            $code .= "KEYSTONE_OPTION=\"-ks\"\n";
+        } else {
+            $code .= "KEYSTONE_OPTION=\"\"\n";
+        }
     }
     else {
         ERROR("Storage type of new pyramid is not handled");

@@ -176,7 +176,7 @@ void error ( std::string message, int errorCode ) {
  */
 int main ( int argc, char **argv ) {
 
-    char* input = 0, *output = 0, *pool = 0, *container = 0, *bucket = 0;
+    char* input = 0, *output = 0, *pool = 0, *container = 0, *bucket = 0, keystone = false;
     int tileWidth = 256, tileHeight = 256;
     int imageI = -1;
     int imageJ = -1;
@@ -232,6 +232,10 @@ int main ( int argc, char **argv ) {
                 error("Error in -container option", -1);
             }
             container = argv[i];
+            continue;
+        }
+        if ( !strcmp ( argv[i],"-ks" ) ) {
+            keystone = true;
             continue;
         }
         if ( argv[i][0] == '-' ) {
@@ -331,7 +335,7 @@ int main ( int argc, char **argv ) {
         curl_global_init(CURL_GLOBAL_ALL);
 
         LOGGER_DEBUG( std::string("Output is an object in the Swift container ") + container);
-        contextSwift = new SwiftContext(container);
+        contextSwift = new SwiftContext(container, keystone);
         if (! contextSwift->connection()) {
             error("Unable to connect Swift context", -1);
         }

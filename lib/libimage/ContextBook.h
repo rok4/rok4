@@ -133,34 +133,20 @@ public:
 
     /**
      * \~french
-     * \brief Constructeur pour un annuaire de contextes Ceph ou S3
+     * \brief Constructeur pour un annuaire de contextes Ceph S3 ou SWIFT
      * \param[in] type Type des contextes de l'annuaire
-     * \param[in] s1 Nom par défaut du cluster ceph ou URL S3 par défaut pour les nouveaux contextes
-     * \param[in] s2 Nom par défaut de l'utilisateur ceph ou Clé par défaut S3 pour les nouveaux contextes
-     * \param[in] s3 Configuration ceph par défaut ou Clé secrète S3 par défaut pour les nouveaux contextes
+     * \param[in] s1 
+     * \param[in] s2 
+     * \param[in] s3 
      * \~english
-     * \brief Constructor for a ceph context book
+     * \brief Constructor for a ceph, s3 or swift context book
      * \param[in] type Book type
-     * \param[in] s1 Default name of ceph cluster or Default S3 url for new contexts
-     * \param[in] s2 Default name of ceph user or Default S3 key for new contexts
-     * \param[in] s3 Default ceph configuration file or Default S3 secret key for new contexts
+     * \param[in] s1
+     * \param[in] s2
+     * \param[in] s3
      */
     ContextBook(eContextType type, std::string s1, std::string s2, std::string s3);
 
-
-    /**
-     * \~french
-     * \brief Constructeur pour un annuaire de contextes Swift
-     * \param[in] auth Url d'authehtification par défaut pour les nouveaux contextes swift
-     * \param[in] user Utilisateur par défaut pour les nouveaux contextes swift
-     * \param[in] passwd Mot de passe par défaut pour les nouveaux contextes swift
-     * \~english
-     * \brief Constructor for a swift context book
-     * \param[in] auth Default authentication url for new swift contexts
-     * \param[in] user Default user for new swift contexts
-     * \param[in] passwd Default password for new swift contexts
-     */
-    ContextBook(std::string auth, std::string user, std::string passwd);
 
     /**
      * \~french \brief Retourne une chaîne de caracère décrivant l'annuaire
@@ -171,12 +157,6 @@ public:
         oss.setf ( std::ios::fixed,std::ios::floatfield );
         oss << "------ Context book -------" << std::endl;
         oss << "\t- context number = " << book.size() << std::endl;
-
-        if (contextType == S3CONTEXT) {
-            oss << "\t- s3_url = " << s3_url << std::endl;
-            oss << "\t- s3_key = " << s3_key << std::endl;
-            oss << "\t- s3_secret_key = " << s3_secret_key << std::endl;
-        }
 
         std::map<std::string, Context*>::iterator it = book.begin();
         while (it != book.end()) {
@@ -210,7 +190,7 @@ public:
      * \details If a context already exists for this bucket's name, we don't create a new one and the existing is returned. New context is not connected.
      * \param[in] bucket Bucket's name for which context is created
      */
-    Context * addContext(std::string bucket);
+    Context * addContext(std::string bucket, bool keystone = false);
 
     /**
      * \~french

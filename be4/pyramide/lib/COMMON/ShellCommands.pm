@@ -305,12 +305,12 @@ StoreSlab () {
     local workMskName=$3
     local mskName=$4
 
-    work2cache ${TMP_DIR}/$workImgName __w2cI__ -container ${PYR_CONTAINER} $imgName
+    work2cache ${TMP_DIR}/$workImgName __w2cI__ -container ${PYR_CONTAINER} ${KEYSTONE_OPTION} $imgName
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     rm -f ${TMP_DIR}/$workImgName
 
     if [ $workMskName ] ; then
-        work2cache ${TMP_DIR}/$workMskName __w2cM__ -container ${PYR_CONTAINER} $mskName
+        work2cache ${TMP_DIR}/$workMskName __w2cM__ -container ${PYR_CONTAINER} ${KEYSTONE_OPTION} $mskName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         rm -f ${TMP_DIR}/$workMskName
     fi
@@ -521,7 +521,7 @@ Cache2work () {
     local input=$1
     local output=$2
 
-    cache2work -c zip -container ${PYR_CONTAINER} $input ${TMP_DIR}/$output
+    cache2work -c zip -container ${PYR_CONTAINER} ${KEYSTONE_OPTION} $input ${TMP_DIR}/$output
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 C2WFUNCTION
@@ -640,7 +640,7 @@ StoreSlab () {
     
     if [[ ! ${RM_IMGS[$workDir/$workImgName]} ]] ; then
              
-        work2cache $workDir/$workImgName __w2cI__ -container ${PYR_CONTAINER} $imgName
+        work2cache $workDir/$workImgName __w2cI__ -container ${PYR_CONTAINER} ${KEYSTONE_OPTION} $imgName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
         echo "0/$imgName" >> ${TMP_LIST_FILE}
@@ -656,7 +656,7 @@ StoreSlab () {
             
             if [ $mskName ] ; then
                     
-                work2cache $workDir/$workMskName __w2cM__ -container ${PYR_CONTAINER} $mskName
+                work2cache $workDir/$workMskName __w2cM__ -container ${PYR_CONTAINER} ${KEYSTONE_OPTION} $mskName
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
                 echo "0/$mskName" >> ${TMP_LIST_FILE}
                 

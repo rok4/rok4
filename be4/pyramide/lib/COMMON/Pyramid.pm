@@ -218,6 +218,7 @@ sub new {
         
         # Pyramide SWIFT
         data_container => undef,
+        keystone_connection => FALSE,
 
         # Pyramide CEPH
         data_pool => undef,
@@ -294,6 +295,9 @@ sub new {
             $this->{storage_type} = "SWIFT";
             $this->{data_container} = $params->{pyr_data_container_name};
 
+            if ( exists $params->{keystone_connection} && defined $params->{keystone_connection} && uc($params->{keystone_connection}) eq "TRUE" ) {
+                $this->{keystone_connection} = TRUE;                
+            }
         }
 
         elsif (exists $params->{pyr_data_pool_name} && defined $params->{pyr_data_pool_name}) {
@@ -351,7 +355,6 @@ sub _load {
             $this->{dir_depth} = $ancestor->getDirDepth();
         }
     } else {
-
 
         # dir_depth
         if ($this->{storage_type} eq "FILE" && (! exists $params->{dir_depth} || ! defined $params->{dir_depth})) {
@@ -548,7 +551,7 @@ sub _readDescriptor {
             $this->{data_bucket} = $this->{levels}->{$oneLevelId}->getS3Info();
         }
         elsif ($storageType eq "SWIFT") {
-            $this->{data_container} = $this->{levels}->{$oneLevelId}->getSwiftInfo();
+            ($this->{data_container}, $this->{keystone_connection}) = $this->{levels}->{$oneLevelId}->getSwiftInfo();
         }
         elsif ($storageType eq "CEPH") {
             $this->{data_pool} = $this->{levels}->{$oneLevelId}->getCephInfo();
@@ -655,8 +658,11 @@ sub addLevel {
             size => [$this->{image_width}, $this->{image_height}],
 
             prefix => $this->{name},
-            container_name => $this->{data_container}
+            container_name => $this->{data_container},
+            keystone_connection => $this->{keystone_connection}
         };
+
+        INFO(Dumper($levelParams));
     }
 
     if ($this->{own_masks}) {
@@ -845,6 +851,11 @@ sub getDataRoot {
     return undef;
 }
 
+# Function: keystoneConnection
+sub keystoneConnection {
+    my $this = shift;
+    return $this->{keystone_connection};
+}
 
 # Function: storeTiles
 sub storeTiles {

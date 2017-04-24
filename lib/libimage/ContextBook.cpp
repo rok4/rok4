@@ -64,6 +64,12 @@ ContextBook::ContextBook(eContextType type, std::string s1, std::string s2, std:
             s3_key = s2;
             s3_secret_key = s3;
             break;
+        case SWIFTCONTEXT:
+            contextType = SWIFTCONTEXT;
+            swift_auth = s1;
+            swift_user = s2;
+            swift_passwd = s3;
+            break;
         default :
             contextType = CEPHCONTEXT;
             ceph_name = s1;
@@ -75,16 +81,7 @@ ContextBook::ContextBook(eContextType type, std::string s1, std::string s2, std:
     am = NULL;
 }
 
-ContextBook::ContextBook(std::string auth, std::string user, std::string passwd)
-{
-    contextType = SWIFTCONTEXT;
-    swift_auth = auth;
-    swift_user = user;
-    swift_passwd = passwd;
-    am = NULL;
-}
-
-Context * ContextBook::addContext(std::string pool)
+Context * ContextBook::addContext(std::string pool, bool keystone)
 {
     Context* ctx;
     std::map<std::string, Context*>::iterator it = book.find ( pool );
@@ -103,7 +100,7 @@ Context * ContextBook::addContext(std::string pool)
                 ctx = new S3Context(s3_url, s3_key, s3_secret_key, pool);
                 break;
             case SWIFTCONTEXT :
-                ctx = new SwiftContext(swift_auth,swift_user,swift_passwd,pool);
+                ctx = new SwiftContext(swift_auth, swift_user, swift_passwd, pool, keystone);
                 break;
             default :
                 return NULL;

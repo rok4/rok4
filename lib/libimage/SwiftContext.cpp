@@ -52,13 +52,13 @@
 #include <curl/curl.h>
 #include <sys/stat.h>
 
-SwiftContext::SwiftContext (std::string auth, std::string user, std::string passwd, std::string container) :
+SwiftContext::SwiftContext (std::string auth, std::string user, std::string passwd, std::string container, bool ks) :
     Context(),
-    auth_url(auth),user_name(user), user_passwd(passwd), container_name(container)
+    auth_url(auth),user_name(user), user_passwd(passwd), container_name(container), keystone_connection (ks)
 {
 }
 
-SwiftContext::SwiftContext (std::string container) : Context(), container_name(container) {
+SwiftContext::SwiftContext (std::string container, bool ks) : Context(), container_name(container), keystone_connection (ks) {
 
     char* auth = getenv ("ROK4_SWIFT_AUTHURL");
     if (auth == NULL) {
@@ -82,11 +82,11 @@ SwiftContext::SwiftContext (std::string container) : Context(), container_name(c
     }
 }
 
-bool SwiftContext::connection(bool keystone) {
+bool SwiftContext::connection() {
 
     if (! connected) {
 
-        if (keystone) {
+        if (keystone_connection) {
             LOGGER_DEBUG("Keystone authentication");
 
             char* domain = getenv ("ROK4_KEYSTONE_DOMAINID");

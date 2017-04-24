@@ -81,6 +81,12 @@ private:
     std::string user_passwd;
 
     /**
+     * \~french \brief Est ce que la connexion se fait via keystone ?
+     * \~english \brief Keystone connection ?
+     */
+    bool keystone_connection;
+
+    /**
      * \~french \brief ID de domaine, pour une authentification Keystone
      * \details Récupéré via la variable d'environnement ROK4_KEYSTONE_DOMAINID
      * \~english \brief Domain ID, for keystone authentication
@@ -110,7 +116,7 @@ private:
     std::string container_name;
     
     /**
-     * \~french \brief Objet Curl pour communiquer avec l'API rest de Swift
+     * \~french \brief Objet Curl pour communiquer avec l'API rest Swift
      * \~english \brief Curl object to communicate with Swift Rest API
      */
     CURL *curl;
@@ -130,14 +136,16 @@ public:
      * \param[in] user Nom d'utilisateur
      * \param[in] passwd Mot de passe
      * \param[in] container Container à utiliser
+     * \param[in] ks Keystone connection ?
      * \~english
      * \brief Constructor for Swift context
      * \param[in] auth Authentication URL
      * \param[in] user User name
      * \param[in] passwd User password
      * \param[in] container Container to use
+     * \param[in] ks Keystone connection ?
      */
-    SwiftContext (std::string auth, std::string user, std::string passwd, std::string container);
+    SwiftContext (std::string auth, std::string user, std::string passwd, std::string container, bool ks = false);
 
     /**
      * \~french
@@ -150,6 +158,7 @@ public:
      * <TR><TD>user_passwd</TD><TD>ROK4_SWIFT_PASSWD</TD><TD>password</TD>
      * </TABLE>
      * \param[in] container Conteneur avec lequel on veut communiquer
+     * \param[in] ks Connexion par keystone ?
      * \~english
      * \brief Constructor for Swift context, with default value
      * \details Values are read in environment variables, or are deulat one
@@ -160,8 +169,9 @@ public:
      * <TR><TD>user_passwd</TD><TD>ROK4_SWIFT_PASSWD</TD><TD>password</TD>
      * </TABLE>
      * \param[in] container Container to use
+     * \param[in] ks Keystone connection ?
      */
-    SwiftContext (std::string container);
+    SwiftContext (std::string container, bool ks = false);
 
     eContextType getType();
     std::string getTypeStr();
@@ -240,7 +250,7 @@ public:
      * </TABLE>
      * \~english \brief Get token #token
      */
-    bool connection(bool keystone = false);
+    bool connection();
 
     void closeConnection() {
         connected = false;

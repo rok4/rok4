@@ -175,6 +175,7 @@ sub new {
         bucket_name => undef,
         #    - SWIFT
         container_name => undef,
+        keystone_connection => FALSE,
         #    - CEPH
         pool_name => undef
     };
@@ -351,6 +352,10 @@ sub _loadValues {
         elsif ( exists $params->{container_name} ) {
             # CAS SWIFT
             $this->{container_name} = $params->{container_name};
+            
+            if ( exists $params->{keystone_connection} && defined $params->{keystone_connection} && $params->{keystone_connection}) {
+                $this->{keystone_connection} = TRUE;                
+            }
         }
         else {
             ERROR("No container name (bucket or pool or container) for object storage for the level");
@@ -441,6 +446,10 @@ sub _loadXML {
         elsif ( defined $container && $container ne "" ) {
             # CAS SWIFT
             $this->{container_name} = $container;
+            my $ks = $levelRoot->findvalue('swiftContext/keystoneConnection');
+            if ( defined $ks && uc($ks) eq "TRUE" ) {
+                $this->{keystone_connection} = TRUE;
+            }
         }
         else {
             ERROR("No container name (bucket or pool) for object storage for the level");
@@ -512,7 +521,7 @@ sub getSwiftInfo {
         return undef;
     }
 
-    return $this->{container_name};
+    return ($this->{container_name}, $this->{keystone_connection});
 }
 # Function: getCephInfo
 sub getCephInfo {
@@ -540,7 +549,7 @@ sub getImageWidth {
 # Function: getImageHeight
 sub getImageHeight {
     my $this = shift;
-    return $this->{size}->[0];
+    return $this->{size}->[1];
 }
 
 =begin nd
@@ -910,6 +919,11 @@ sub exportToXML {
         $string .= sprintf "        <imagePrefix>%s</imagePrefix>\n", $this->{prefix_image};
         $string .= "        <swiftContext>\n";
         $string .= sprintf "            <containerName>%s</containerName>\n", $this->{container_name};
+
+        if ($this->{keystone_connection}) {
+            $string .= "            <keystoneConnection>TRUE</keystoneConnection>\n";
+        }
+
         $string .= "        </swiftContext>\n";
     }
     elsif ($this->{type} eq "CEPH") {

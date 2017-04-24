@@ -311,7 +311,7 @@ sub copy {
             my $toObjectName = join("", @to);
 
             if (! defined $toBucket || ! defined $toObjectName) {
-                ERROR("CEPH path is not valid (<bucketName>/<objectName>) : $toPath");
+                ERROR("S3 path is not valid (<bucketName>/<objectName>) : $toPath");
                 return FALSE;
             }
 
@@ -671,11 +671,11 @@ sub symLink {
         }
 
         # On retire le bucket du nom de l'alias à créer
-        (my $toBucketName, @rest) = split("/", $toPath);
+        (my $toContainerName, @rest) = split("/", $toPath);
         $toPath = join("", @rest);
 
-        if ($tBucketName ne $toBucketName) {
-            ERROR("SWIFT link (redis key-value) is not possible between different pool: $toPath -> X $targetPath");
+        if ($tContainerName ne $toContainerName) {
+            ERROR("SWIFT link (redis key-value) is not possible between different container: $toContainerName/toPath -> X $targetPath");
             return FALSE;
         }
 
@@ -685,7 +685,7 @@ sub symLink {
             return undef;
         }
 
-        return "$tBucketName/$realTarget";
+        return "$tContainerName/$realTarget";
     }
 
     ERROR("Symlink can only be done between two file/path using the same storage type (and not $toType -> $targetType)");

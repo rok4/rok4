@@ -107,7 +107,7 @@ S3Context::S3Context (std::string b) : Context(), bucket_name(b) {
     }
 }
 
-bool S3Context::connection(bool option) {
+bool S3Context::connection() {
     connected = true;
     return true;
 }

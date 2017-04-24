@@ -148,7 +148,7 @@ public:
         return oss.str() ;
     }
     
-    bool connection(bool option = false);
+    bool connection();
 
     void closeConnection() {
         connected = false;
