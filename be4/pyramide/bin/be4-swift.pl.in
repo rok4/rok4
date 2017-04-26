@@ -328,20 +328,8 @@ sub config {
 
     # Environment variables
 
-    if (! defined $ENV{ROK4_SWIFT_AUTHURL}) {
-        ERROR("Environment variable ROK4_SWIFT_AUTHURL is not defined");
-        return FALSE;
-    }
-    if (! defined $ENV{ROK4_SWIFT_ACCOUNT}) {
-        ERROR("Environment variable ROK4_SWIFT_ACCOUNT is not defined");
-        return FALSE;
-    }
-    if (! defined $ENV{ROK4_SWIFT_USER}) {
-        ERROR("Environment variable ROK4_SWIFT_USER is not defined");
-        return FALSE;
-    }
-    if (! defined $ENV{ROK4_SWIFT_PASSWD}) {
-        ERROR("Environment variable ROK4_SWIFT_PASSWD is not defined");
+    if (! COMMON::ProxyStorage::checkEnvironmentVariables("SWIFT")) {
+        ERROR("Environment variable is missing for a Swift storage");
         return FALSE;
     }
     

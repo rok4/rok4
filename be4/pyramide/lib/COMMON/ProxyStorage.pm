@@ -59,6 +59,7 @@ use Data::Dumper;
 use Digest::SHA;
 use File::Map qw(map_file);
 use HTTP::Request;
+use HTTP::Request::Common;
 use HTTP::Response;
 use LWP::UserAgent;
 use File::Basename;
@@ -79,16 +80,225 @@ use Log::Log4perl qw(:easy);
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-my @STORAGETYPES = ("FILE", "CEPH", "S3");
+my @STORAGETYPES = ("FILE", "CEPH", "S3", "SWIFT");
 
-my $UA = LWP::UserAgent->new();
+my $UA;
+
+### CEPH
+
+my $ROK4_CEPH_CONFFILE;
+my $ROK4_CEPH_USERNAME;
+my $ROK4_CEPH_CLUSTERNAME;
 
 ### S3
 
-my $S3_ENDPOINT_NOPROTOCOL = $ENV{ROK4_S3_URL};
-if (defined $S3_ENDPOINT_NOPROTOCOL) {
-    $S3_ENDPOINT_NOPROTOCOL =~ s/^https?:\/\///;
-    $S3_ENDPOINT_NOPROTOCOL =~ s/:[0-9]+$//;
+my $ROK4_S3_URL;
+my $ROK4_S3_KEY;
+my $ROK4_S3_SECRETKEY;
+
+my $ROK4_S3_ENDPOINT_HOST;
+
+### SWIFT
+# global
+my $ROK4_SWIFT_AUTHURL;
+my $ROK4_SWIFT_USER;
+my $ROK4_SWIFT_PASSWD;
+
+my $SWIFT_TOKEN;
+my $ROK4_SWIFT_PUBLICURL;
+# swift authentication
+my $ROK4_SWIFT_ACCOUNT;
+# keystone authentication
+my $ROK4_KEYSTONE_DOMAINID;
+my $ROK4_KEYSTONE_PROJECTID;
+
+####################################################################################################
+#                             Group: Controls methods                                              #
+####################################################################################################
+
+=begin nd
+Function: checkEnvironmentVariables
+
+Return TRUE if all required environment variables for storage are defined FALSE otherwise
+=cut
+sub checkEnvironmentVariables {
+    my $type = shift;
+    my $keystone = shift;
+
+    if ($type eq "CEPH") {
+
+        if (! defined $ENV{ROK4_CEPH_CONFFILE}) {
+            ERROR("Environment variable ROK4_CEPH_CONFFILE is not defined");
+            return FALSE;
+        }
+        if (! defined $ENV{ROK4_CEPH_USERNAME}) {
+            ERROR("Environment variable ROK4_CEPH_USERNAME is not defined");
+            return FALSE;
+        }
+        if (! defined $ENV{ROK4_CEPH_CLUSTERNAME}) {
+            ERROR("Environment variable ROK4_CEPH_CLUSTERNAME is not defined");
+            return FALSE;
+        }
+
+        $ROK4_CEPH_CONFFILE = $ENV{ROK4_CEPH_CONFFILE};
+        $ROK4_CEPH_USERNAME = $ENV{ROK4_CEPH_USERNAME};
+        $ROK4_CEPH_CLUSTERNAME = $ENV{ROK4_CEPH_CLUSTERNAME};
+
+        
+    } elsif ($type eq "SWIFT") {
+
+        if (! defined $ENV{ROK4_SWIFT_AUTHURL}) {
+            ERROR("Environment variable ROK4_SWIFT_AUTHURL is not defined");
+            return FALSE;
+        }
+        if (! defined $ENV{ROK4_SWIFT_USER}) {
+            ERROR("Environment variable ROK4_SWIFT_USER is not defined");
+            return FALSE;
+        }
+        if (! defined $ENV{ROK4_SWIFT_PASSWD}) {
+            ERROR("Environment variable ROK4_SWIFT_PASSWD is not defined");
+            return FALSE;
+        }
+
+        $ROK4_SWIFT_PASSWD = $ENV{ROK4_SWIFT_PASSWD};
+        $ROK4_SWIFT_USER = $ENV{ROK4_SWIFT_USER};
+        $ROK4_SWIFT_AUTHURL = $ENV{ROK4_SWIFT_AUTHURL};
+
+        $UA = LWP::UserAgent->new();
+        $UA->ssl_opts(verify_hostname => 0);
+
+    } elsif ($type eq "S3") {
+        
+        if (! defined $ROK4_S3_URL) {
+            ERROR("Environment variable ROK4_S3_URL is not defined");
+            return FALSE;
+        }
+        if (! defined $ROK4_S3_KEY) {
+            ERROR("Environment variable ROK4_S3_KEY is not defined");
+            return FALSE;
+        }
+        if (! defined $ROK4_S3_SECRETKEY) {
+            ERROR("Environment variable ROK4_S3_SECRETKEY is not defined");
+            return FALSE;
+        }
+
+        $ROK4_S3_URL = $ENV{ROK4_S3_URL};
+        $ROK4_S3_KEY = $ENV{ROK4_S3_KEY};
+        $ROK4_S3_SECRETKEY = $ENV{ROK4_S3_SECRETKEY};
+
+        $ROK4_S3_ENDPOINT_HOST = $ROK4_S3_URL;
+        $ROK4_S3_ENDPOINT_HOST =~ s/^https?:\/\///;
+        $ROK4_S3_ENDPOINT_HOST =~ s/:[0-9]+$//;
+
+        $UA = LWP::UserAgent->new();
+        $UA->ssl_opts(verify_hostname => 0);
+    }
+
+    return TRUE;
+}
+
+
+####################################################################################################
+#                            Group: Connection methods                                             #
+####################################################################################################
+
+=begin nd
+Function: getSwiftToken
+
+Return TRUE if swift token (with keystone or not) is valid FALSE otherwise
+=cut
+sub getSwiftToken {
+    my $keystone = shift;
+
+    if ($keystone) {
+
+        if (! defined $ENV{ROK4_KEYSTONE_DOMAINID}) {
+            ERROR("Environment variable ROK4_KEYSTONE_DOMAINID is not defined");
+            ERROR("We need it for a keystone authentication (swift)");
+            return FALSE;
+        }
+
+        if (! defined $ENV{ROK4_SWIFT_PUBLICURL}) {
+            ERROR("Environment variable ROK4_SWIFT_PUBLICURL is not defined");
+            ERROR("We need it for a keystone authentication (swift)");
+            return FALSE;
+        }
+
+        if (! defined $ENV{ROK4_KEYSTONE_PROJECTID}) {
+            ERROR("Environment variable ROK4_KEYSTONE_PROJECTID is not defined");
+            ERROR("We need it for a keystone authentication (swift)");
+            return FALSE;
+        }
+
+        $ROK4_KEYSTONE_DOMAINID = $ENV{ROK4_KEYSTONE_DOMAINID};
+        $ROK4_KEYSTONE_PROJECTID = $ENV{ROK4_KEYSTONE_PROJECTID};
+        $ROK4_SWIFT_PUBLICURL = $ENV{ROK4_SWIFT_PUBLICURL};
+
+        my $json = sprintf "{\"auth\":{\"scope\": { \"project\": {\"id\": \"%s\"}},\"identity\":{\"methods\":[\"password\"],\"password\":{\"user\":{\"domain\":{\"id\":\"%s\"},\"name\":\"%s\",\"password\":\"%s\"}}}}}",
+            $ROK4_KEYSTONE_PROJECTID, $ROK4_KEYSTONE_DOMAINID, $ROK4_SWIFT_USER, $ROK4_SWIFT_PASSWD;
+
+        my $request = HTTP::Request::Common::POST(
+            $ROK4_SWIFT_AUTHURL,
+            Content_Type => "application/json",
+            Content => $json
+        );
+
+        my $response = $UA->request($request);
+
+        if (! defined $response || ! $response->is_success() ) {
+            ERROR("Cannot get Swift token via Keystone");
+            ERROR(Dumper($response));
+            return FALSE;
+        }
+
+        $SWIFT_TOKEN = $response->header("X-Subject-Token");
+        
+        if (! defined $SWIFT_TOKEN) {
+            ERROR("No token in the keystone authentication response");
+            ERROR(Dumper($response));
+            return FALSE;
+        }
+    } else {
+        if (! defined $ENV{ROK4_SWIFT_ACCOUNT}) {
+            ERROR("Environment variable ROK4_SWIFT_ACCOUNT is not defined");
+            ERROR("We need it for a swift authentication");
+            return FALSE;
+        }
+
+        $ROK4_SWIFT_ACCOUNT = $ENV{ROK4_SWIFT_ACCOUNT};
+
+        my $request = HTTP::Request::Common::GET(
+            $ROK4_SWIFT_AUTHURL
+        );
+
+        $request->header('X-Storage-User' => "$ROK4_SWIFT_ACCOUNT:$ROK4_SWIFT_USER");
+        $request->header('X-Storage-Pass' => "$ROK4_SWIFT_PASSWD");
+        $request->header('X-Auth-User' => "$ROK4_SWIFT_ACCOUNT:$ROK4_SWIFT_USER");
+        $request->header('X-Auth-Key' => "$ROK4_SWIFT_PASSWD");
+
+        my $response = $UA->request($request);
+
+        if (! defined $response || ! $response->is_success() ) {
+            ERROR("Cannot get Swift token");
+            return FALSE;
+        }
+
+        $SWIFT_TOKEN = $response->header("X-Auth-Token");
+        $ROK4_SWIFT_PUBLICURL = $response->header("X-Storage-Url");
+        
+        if (! defined $SWIFT_TOKEN) {
+            ERROR("No token in the swift authentication response");
+            ERROR(Dumper($response));
+            return FALSE;
+        }
+        if (! defined $ROK4_SWIFT_PUBLICURL) {
+            ERROR("No public URL in the swift authentication response");
+            ERROR(Dumper($response));
+            return FALSE;
+        }
+    }
+
+    return TRUE;
 }
 
 ####################################################################################################
@@ -160,18 +370,18 @@ sub copy {
             chomp($dateValue);
             my $stringToSign="PUT\n\n$contentType\n$dateValue\n$resource";
 
-            my $signature = Digest::SHA::hmac_sha1_base64($stringToSign, $ENV{ROK4_S3_SECRETKEY});
+            my $signature = Digest::SHA::hmac_sha1_base64($stringToSign, $ROK4_S3_SECRETKEY);
             while (length($signature) % 4) {
                 $signature .= '=';
             }
 
             # set custom HTTP request header fields
-            my $request = HTTP::Request->new(PUT => $ENV{ROK4_S3_URL}.$resource);
+            my $request = HTTP::Request->new(PUT => $ROK4_S3_URL.$resource);
             $request->content($body);
-            $request->header('Host' => $S3_ENDPOINT_NOPROTOCOL);
+            $request->header('Host' => $ROK4_S3_ENDPOINT_HOST);
             $request->header('Date' => $dateValue);
             $request->header('Content-Type' => $contentType);
-            $request->header('Authorization' => sprintf ("AWS %s:$signature", $ENV{ROK4_S3_KEY}));
+            $request->header('Authorization' => sprintf ("AWS %s:$signature", $ROK4_S3_KEY));
              
             my $response = $UA->request($request);
             if ($response->is_success) {
@@ -179,6 +389,37 @@ sub copy {
             }
             else {
                 ERROR("Cannot upload file '$fromPath' to S3 object $objectName (bucket $bucketName)");
+                ERROR("HTTP code: ", $response->code);
+                ERROR("HTTP message: ", $response->message);
+                ERROR("HTTP decoded content : ", $response->decoded_content);
+                return FALSE;
+            }
+        }
+        elsif ($toType eq "SWIFT") {
+            my ($containerName, @rest) = split("/", $toPath);
+            my $objectName = join("", @rest);
+
+            if (! defined $containerName || ! defined $objectName) {
+                ERROR("SWIFT path is not valid (<containerName>/<objectName>) : $fromPath");
+                return FALSE;
+            }
+
+            my $context = "/$containerName/$objectName";
+
+            my $body;
+
+            map_file $body, $fromPath;
+
+            my $request = HTTP::Request->new(PUT => $ROK4_SWIFT_PUBLICURL.$context);
+
+            $request->content($body);
+            $request->header('X-Auth-Token' => $SWIFT_TOKEN);
+
+            my $response = $UA->request($request);
+            if ($response->is_success) {
+                return TRUE;
+            } else {
+                ERROR("Cannot upload SWIFT object '$toPath' from file $fromPath");
                 ERROR("HTTP code: ", $response->code);
                 ERROR("HTTP message: ", $response->message);
                 ERROR("HTTP decoded content : ", $response->decoded_content);
@@ -263,17 +504,17 @@ sub copy {
             chomp($date_gmt);
             my $string_to_sign="GET\n\n$content_type\n$date_gmt\n$context";
 
-            my $signature = Digest::SHA::hmac_sha1_base64($string_to_sign, $ENV{ROK4_S3_SECRETKEY});
+            my $signature = Digest::SHA::hmac_sha1_base64($string_to_sign, $ROK4_S3_SECRETKEY);
             while (length($signature) % 4) {
                 $signature .= '=';
             }
 
-            my $request = HTTP::Request->new(GET => $ENV{ROK4_S3_URL}.$context);
+            my $request = HTTP::Request->new(GET => $ROK4_S3_URL.$context);
 
-            $request->header('Host' => $S3_ENDPOINT_NOPROTOCOL);
+            $request->header('Host' => $ROK4_S3_ENDPOINT_HOST);
             $request->header('Date' => $date_gmt);
             $request->header('Content-Type' => $content_type);
-            $request->header('Authorization' => sprintf ("AWS %s:$signature", $ENV{ROK4_S3_KEY}));
+            $request->header('Authorization' => sprintf ("AWS %s:$signature", $ROK4_S3_KEY));
              
             # create folder
             my $dir = File::Basename::dirname($toPath);
@@ -321,18 +562,18 @@ sub copy {
             chomp($date_gmt);
             my $string_to_sign="PUT\n\n$content_type\n$date_gmt\n$context";
 
-            my $signature = Digest::SHA::hmac_sha1_base64($string_to_sign, $ENV{ROK4_S3_SECRETKEY});
+            my $signature = Digest::SHA::hmac_sha1_base64($string_to_sign, $ROK4_S3_SECRETKEY);
             while (length($signature) % 4) {
                 $signature .= '=';
             }
 
-            my $request = HTTP::Request->new(PUT => $ENV{ROK4_S3_URL}.$context);
+            my $request = HTTP::Request->new(PUT => $ROK4_S3_URL.$context);
 
-            $request->header('Host' => $S3_ENDPOINT_NOPROTOCOL);
+            $request->header('Host' => $ROK4_S3_ENDPOINT_HOST);
             $request->header('Date' => $date_gmt);
             $request->header('Content-Type' => $content_type);
             $request->header('x-amz-copy-source' => "/$fromBucket/$fromObjectName");
-            $request->header('Authorization' => sprintf ("AWS %s:$signature", $ENV{ROK4_S3_KEY}));
+            $request->header('Authorization' => sprintf ("AWS %s:$signature", $ROK4_S3_KEY));
 
             my $response = $UA->request($request, $toPath);
             if ($response->is_success) {
@@ -344,6 +585,49 @@ sub copy {
                 ERROR("HTTP decoded content : ", $response->decoded_content);
                 return FALSE;
             }
+        }
+    }
+    elsif ($fromType eq "SWIFT") {
+        if ($toType eq "FILE") {
+
+            my ($containerName, @rest) = split("/", $fromPath);
+            my $objectName = join("", @rest);
+
+            if (! defined $containerName || ! defined $objectName) {
+                ERROR("SWIFT path is not valid (<containerName>/<objectName>) : $fromPath");
+                return FALSE;
+            }
+
+            my $context = "/$containerName/$objectName";
+
+            my $request = HTTP::Request->new(GET => $ROK4_SWIFT_PUBLICURL.$context);
+
+            $request->header('X-Auth-Token' => $SWIFT_TOKEN);
+             
+            # create folder
+            my $dir = File::Basename::dirname($toPath);
+            `mkdir -p $dir`;
+            if ($?) {
+                ERROR("Cannot create directory '$dir' : $!");
+                return FALSE;
+            }
+
+            my $response = $UA->request($request, $toPath);
+            if ($response->is_success) {
+                return TRUE;
+            } else {
+                ERROR("Cannot download SWIFT object '$fromPath' to file $toPath");
+                ERROR("HTTP code: ", $response->code);
+                ERROR("HTTP message: ", $response->message);
+                ERROR("HTTP decoded content : ", $response->decoded_content);
+                return FALSE;
+            }
+        }
+        elsif ($toType eq "CEPH") {
+            return FALSE;
+        }
+        elsif ($toType eq "S3") {
+            return FALSE;
         }
     }
 
@@ -469,17 +753,57 @@ sub isPresent {
         chomp($dateValue);
         my $stringToSign="HEAD\n\n$contentType\n$dateValue\n$resource";
 
-        my $signature = Digest::SHA::hmac_sha1_base64($stringToSign, $ENV{ROK4_S3_SECRETKEY});
+        my $signature = Digest::SHA::hmac_sha1_base64($stringToSign, $ROK4_S3_SECRETKEY);
         while (length($signature) % 4) {
             $signature .= '=';
         }
 
         # set custom HTTP request header fields
-        my $request = HTTP::Request->new(HEAD => $ENV{ROK4_S3_URL}.$resource);
-        $request->header('Host' => $S3_ENDPOINT_NOPROTOCOL);
+        my $request = HTTP::Request->new(HEAD => $ROK4_S3_URL.$resource);
+        $request->header('Host' => $ROK4_S3_ENDPOINT_HOST);
         $request->header('Date' => $dateValue);
         $request->header('Content-Type' => $contentType);
-        $request->header('Authorization' => sprintf ("AWS %s:$signature", $ENV{ROK4_S3_KEY}));
+        $request->header('Authorization' => sprintf ("AWS %s:$signature", $ROK4_S3_KEY));
+         
+        my $response = $UA->request($request);
+        if ($response->is_success) {
+            return TRUE;
+        } else {
+            return FALSE;
+        }
+    }
+    elsif ($type eq "SWIFT") {
+        # On interroge la base REDIS puis le SWIFT
+
+        my ($containerName, @rest) = split("/", $path);
+        my $objectName = join("", @rest);
+
+        if (! defined $containerName || ! defined $objectName) {
+            ERROR("SWIFT path is not valid (<containerName>/<objectName>) : $path");
+            return FALSE;
+        }
+
+        if (redisKeyExists($objectName)) {
+            return TRUE;
+        }
+
+        my $resource = "/$containerName/$objectName";
+        my $contentType="application/octet-stream";
+        my $dateValue=`TZ=GMT date -R`;
+        chomp($dateValue);
+        my $stringToSign="HEAD\n\n$contentType\n$dateValue\n$resource";
+
+        my $signature = Digest::SHA::hmac_sha1_base64($stringToSign, $ROK4_S3_SECRETKEY);
+        while (length($signature) % 4) {
+            $signature .= '=';
+        }
+
+        # set custom HTTP request header fields
+        my $request = HTTP::Request->new(HEAD => $ROK4_S3_URL.$resource);
+        $request->header('Host' => $ROK4_S3_ENDPOINT_HOST);
+        $request->header('Date' => $dateValue);
+        $request->header('Content-Type' => $contentType);
+        $request->header('Authorization' => sprintf ("AWS %s:$signature", $ROK4_S3_KEY));
          
         my $response = $UA->request($request);
         if ($response->is_success) {
@@ -528,17 +852,17 @@ sub getSize {
         chomp($dateValue);
         my $stringToSign="HEAD\n\n$contentType\n$dateValue\n$resource";
 
-        my $signature = Digest::SHA::hmac_sha1_base64($stringToSign, $ENV{ROK4_S3_SECRETKEY});
+        my $signature = Digest::SHA::hmac_sha1_base64($stringToSign, $ROK4_S3_SECRETKEY);
         while (length($signature) % 4) {
             $signature .= '=';
         }
 
         # set custom HTTP request header fields
-        my $request = HTTP::Request->new(HEAD => $ENV{ROK4_S3_URL}.$resource);
-        $request->header('Host' => $S3_ENDPOINT_NOPROTOCOL);
+        my $request = HTTP::Request->new(HEAD => $ROK4_S3_URL.$resource);
+        $request->header('Host' => $ROK4_S3_ENDPOINT_HOST);
         $request->header('Date' => $dateValue);
         $request->header('Content-Type' => $contentType);
-        $request->header('Authorization' => sprintf ("AWS %s:$signature", $ENV{ROK4_S3_KEY}));
+        $request->header('Authorization' => sprintf ("AWS %s:$signature", $ROK4_S3_KEY));
          
         my $response = $UA->request($request);
         if ($response->is_success) {

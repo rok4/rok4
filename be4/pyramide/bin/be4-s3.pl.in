@@ -328,16 +328,8 @@ sub config {
 
     # Environment variables
 
-    if (! defined $ENV{ROK4_S3_URL}) {
-        ERROR("Environment variable ROK4_S3_URL is not defined");
-        return FALSE;
-    }
-    if (! defined $ENV{ROK4_S3_KEY}) {
-        ERROR("Environment variable ROK4_S3_KEY is not defined");
-        return FALSE;
-    }
-    if (! defined $ENV{ROK4_S3_SECRETKEY}) {
-        ERROR("Environment variable ROK4_S3_SECRETKEY is not defined");
+    if (! COMMON::ProxyStorage::checkEnvironmentVariables("S3")) {
+        ERROR("Environment variable is missing for a S3 storage");
         return FALSE;
     }
     

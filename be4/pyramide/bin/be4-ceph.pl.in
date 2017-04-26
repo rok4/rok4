@@ -328,16 +328,8 @@ sub config {
 
     # Environment variables
 
-    if (! defined $ENV{ROK4_CEPH_CONFFILE}) {
-        ERROR("Environment variable ROK4_CEPH_CONFFILE is not defined");
-        return FALSE;
-    }
-    if (! defined $ENV{ROK4_CEPH_USERNAME}) {
-        ERROR("Environment variable ROK4_CEPH_USERNAME is not defined");
-        return FALSE;
-    }
-    if (! defined $ENV{ROK4_CEPH_CLUSTERNAME}) {
-        ERROR("Environment variable ROK4_CEPH_CLUSTERNAME is not defined");
+    if (! COMMON::ProxyStorage::checkEnvironmentVariables("CEPH")) {
+        ERROR("Environment variable is missing for a Ceph storage");
         return FALSE;
     }
     

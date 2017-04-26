@@ -97,6 +97,14 @@ bool SwiftContext::connection() {
                 domain_id.assign(domain);
             }
 
+            char* project = getenv ("ROK4_KEYSTONE_PROJECTID");
+            if (project == NULL) {
+                LOGGER_ERROR("We need a project id (ROK4_KEYSTONE_PROJECTID) for a keystone authentication");
+                return false;
+            } else {
+                project_id.assign(project);
+            }
+
             char* publicu = getenv ("ROK4_SWIFT_PUBLICURL");
             if (publicu == NULL) {
                 LOGGER_ERROR("We need a public url (ROK4_SWIFT_PUBLICURL) for a keystone authentication");
@@ -110,7 +118,7 @@ bool SwiftContext::connection() {
 
             curl = curl_easy_init();
             curl_easy_setopt(curl, CURLOPT_URL, auth_url.c_str());
-            //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+            curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
 
             // On constitue le header
@@ -120,13 +128,9 @@ bool SwiftContext::connection() {
 
             // On constitue le body
 
-            std::string body = "{ \"auth\": { \"identity\": { \"methods\": [\"password\"], \"password\": { \"user\": { \"domain\": { \"id\": \"'";
-            body += domain_id;
-            body += "'\"}, \"name\": \"'";
-            body += user_name;
-            body += "'\", \"password\": \"'";
-            body += user_passwd;
-            body += "'\" } } } } }";
+            std::string body = "{ \"auth\": {\"scope\": { \"project\": {\"id\": \"'"+project_id+"'\"}}, ";
+            body += " \"identity\": { \"methods\": [\"password\"], \"password\": { \"user\": { \"domain\": { \"id\": \"'"+domain_id+"'\"},";
+            body += "\"name\": \"'"+user_name+"'\", \"password\": \"'"+user_passwd+"'\" } } } } }";
 
             HeaderStruct authHdr;
 
@@ -262,7 +266,7 @@ int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
     int lastBytes = offset + size - 1;
 
     curl = curl_easy_init();
-    //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
     // On constitue le header et le moyen de récupération des informations (avec les structures de LibcurlStruct)
 
@@ -326,7 +330,7 @@ bool SwiftContext::writeFromFile(std::string fileName, std::string objectName) {
     CURLcode res;
     struct curl_slist *list = NULL;
     curl = curl_easy_init();
-    //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
     // On constitue le header
 

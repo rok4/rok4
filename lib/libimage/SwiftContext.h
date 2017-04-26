@@ -92,6 +92,12 @@ private:
      * \~english \brief Domain ID, for keystone authentication
      */
     std::string domain_id;
+    /**
+     * \~french \brief ID de projet, pour une authentification Keystone
+     * \details Récupéré via la variable d'environnement ROK4_KEYSTONE_PROJECTID
+     * \~english \brief Project ID, for keystone authentication
+     */
+    std::string project_id;
 
     /**
      * \~french \brief Accompte Swift, pour une authentification Swift
