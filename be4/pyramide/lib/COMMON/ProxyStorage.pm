@@ -112,6 +112,12 @@ my $ROK4_SWIFT_ACCOUNT;
 my $ROK4_KEYSTONE_DOMAINID;
 my $ROK4_KEYSTONE_PROJECTID;
 
+### Redis
+my $USE_REDIS = FALSE;
+my $ROK4_REDIS_HOST;
+my $ROK4_REDIS_PORT;
+my $ROK4_REDIS_PASSWD;
+
 ####################################################################################################
 #                             Group: Controls methods                                              #
 ####################################################################################################
@@ -169,15 +175,15 @@ sub checkEnvironmentVariables {
 
     } elsif ($type eq "S3") {
         
-        if (! defined $ROK4_S3_URL) {
+        if (! defined $ENV{ROK4_S3_URL}) {
             ERROR("Environment variable ROK4_S3_URL is not defined");
             return FALSE;
         }
-        if (! defined $ROK4_S3_KEY) {
+        if (! defined $ENV{ROK4_S3_KEY}) {
             ERROR("Environment variable ROK4_S3_KEY is not defined");
             return FALSE;
         }
-        if (! defined $ROK4_S3_SECRETKEY) {
+        if (! defined $ENV{ROK4_S3_SECRETKEY}) {
             ERROR("Environment variable ROK4_S3_SECRETKEY is not defined");
             return FALSE;
         }
@@ -192,6 +198,25 @@ sub checkEnvironmentVariables {
 
         $UA = LWP::UserAgent->new();
         $UA->ssl_opts(verify_hostname => 0);
+    } elsif ($type eq "REDIS") {
+        
+        if (! defined $ENV{ROK4_REDIS_HOST}) {
+            ERROR("Environment variable ROK4_REDIS_HOST is not defined");
+            return FALSE;
+        }
+        if (! defined $ENV{ROK4_REDIS_PORT}) {
+            ERROR("Environment variable ROK4_REDIS_PORT is not defined");
+            return FALSE;
+        }
+        if (! defined $ENV{ROK4_REDIS_PASSWD}) {
+            ERROR("Environment variable ROK4_REDIS_PASSWD is not defined");
+            return FALSE;
+        }
+
+        $USE_REDIS = TRUE;
+        $ROK4_REDIS_HOST = $ENV{ROK4_REDIS_HOST};
+        $ROK4_REDIS_PORT = $ENV{ROK4_REDIS_PORT};
+        $ROK4_REDIS_PASSWD = $ENV{ROK4_REDIS_PASSWD};
     }
 
     return TRUE;
@@ -316,7 +341,7 @@ sub copy {
     my $toType = shift;
     my $toPath = shift;
 
-    if ($fromType eq "FILE") {
+    if ($fromType eq "FILE") { ############################################ FILE
         if ($toType eq "FILE") {
 
             # create folder
@@ -427,7 +452,7 @@ sub copy {
             }
         }
     }
-    elsif ($fromType eq "CEPH") {
+    elsif ($fromType eq "CEPH") { ############################################ CEPH
         if ($toType eq "FILE") {
             my ($poolName, @rest) = split("/", $fromPath);
             my $objectName = join("", @rest);
@@ -483,11 +508,8 @@ sub copy {
 
             return TRUE;
         }
-        elsif ($toType eq "S3") {
-            return FALSE;
-        }
     }
-    elsif ($fromType eq "S3") {
+    elsif ($fromType eq "S3") { ############################################ S3
         if ($toType eq "FILE") {
 
             my ($bucketName, @rest) = split("/", $fromPath);
@@ -534,9 +556,6 @@ sub copy {
                 ERROR("HTTP decoded content : ", $response->decoded_content);
                 return FALSE;
             }
-        }
-        elsif ($toType eq "CEPH") {
-            return FALSE;
         }
         elsif ($toType eq "S3") {
 
@@ -587,7 +606,7 @@ sub copy {
             }
         }
     }
-    elsif ($fromType eq "SWIFT") {
+    elsif ($fromType eq "SWIFT") { ############################################ SWIFT
         if ($toType eq "FILE") {
 
             my ($containerName, @rest) = split("/", $fromPath);
@@ -623,11 +642,42 @@ sub copy {
                 return FALSE;
             }
         }
-        elsif ($toType eq "CEPH") {
-            return FALSE;
-        }
-        elsif ($toType eq "S3") {
-            return FALSE;
+        elsif ($toType eq "SWIFT") {
+
+            my ($fromContainer, @from) = split("/", $fromPath);
+            my $fromObjectName = join("", @from);
+
+            if (! defined $fromContainer || ! defined $fromObjectName) {
+                ERROR("SWIFT path is not valid (<containerName>/<objectName>) : $fromPath");
+                return FALSE;
+            }
+
+            my ($toContainer, @to) = split("/", $toPath);
+            my $toObjectName = join("", @to);
+
+            if (! defined $toContainer || ! defined $toObjectName) {
+                ERROR("SWIFT path is not valid (<containerName>/<objectName>) : $toPath");
+                return FALSE;
+            }
+
+            my $context = "/$fromContainer/$fromObjectName";
+
+            my $request = HTTP::Request->new(COPY => $ROK4_SWIFT_PUBLICURL.$context);
+
+            $request->header('X-Auth-Token' => $SWIFT_TOKEN);
+            $request->header('Destination' => "$toContainer/$toObjectName");
+
+            my $response = $UA->request($request);
+            if ($response->is_success) {
+                return TRUE;
+            } else {
+                ERROR("Cannot copy SWIFT object : '$fromPath' -> '$toPath'");
+                ERROR("HTTP code: ", $response->code);
+                ERROR("HTTP message: ", $response->message);
+                ERROR("HTTP decoded content : ", $response->decoded_content);
+                return FALSE;
+            }
+
         }
     }
 
@@ -641,7 +691,7 @@ sub copy {
 sub redisValueFromKey {
     my $key = shift;
 
-    my $redisValue = `redis-cli -h $ENV{ROK4_REDIS_HOST} -p $ENV{ROK4_REDIS_PORT} -a $ENV{ROK4_REDIS_PASSWD} GET $key`;
+    my $redisValue = `redis-cli -h $ROK4_REDIS_HOST -p $ROK4_REDIS_PORT -a $ROK4_REDIS_PASSWD GET $key`;
     chomp($redisValue);
 
     if ($redisValue ne "") {
@@ -655,7 +705,7 @@ sub addKeyValue {
     my $key = shift;
     my $value = shift;
 
-    my $ret = `redis-cli -h $ENV{ROK4_REDIS_HOST} -p $ENV{ROK4_REDIS_PORT} -a $ENV{ROK4_REDIS_PASSWD} SET $key $value`;
+    my $ret = `redis-cli -h $ROK4_REDIS_HOST -p $ROK4_REDIS_PORT -a $ROK4_REDIS_PASSWD SET $key $value`;
     chomp($ret);
     if ($ret ne "OK") {
         ERROR("REDIS: $ret");
@@ -668,7 +718,7 @@ sub addKeyValue {
 sub redisKeyExists {
     my $key = shift;
 
-    my $redisPresent = `redis-cli -h $ENV{ROK4_REDIS_HOST} -p $ENV{ROK4_REDIS_PORT} -a $ENV{ROK4_REDIS_PASSWD} EXISTS $key | cut -d' ' -f1`;
+    my $redisPresent = `redis-cli -h $ROK4_REDIS_HOST -p $ROK4_REDIS_PORT -a $ROK4_REDIS_PASSWD EXISTS $key | cut -d' ' -f1`;
     chomp($redisPresent);
 
     return ($redisPresent eq "1");
@@ -743,7 +793,7 @@ sub isPresent {
             return FALSE;
         }
 
-        if (redisKeyExists($objectName)) {
+        if ($USE_REDIS && redisKeyExists($objectName)) {
             return TRUE;
         }
 
@@ -783,28 +833,16 @@ sub isPresent {
             return FALSE;
         }
 
-        if (redisKeyExists($objectName)) {
+        if ($USE_REDIS && redisKeyExists($objectName)) {
             return TRUE;
         }
 
-        my $resource = "/$containerName/$objectName";
-        my $contentType="application/octet-stream";
-        my $dateValue=`TZ=GMT date -R`;
-        chomp($dateValue);
-        my $stringToSign="HEAD\n\n$contentType\n$dateValue\n$resource";
+        my $context = "/$containerName/$objectName";
 
-        my $signature = Digest::SHA::hmac_sha1_base64($stringToSign, $ROK4_S3_SECRETKEY);
-        while (length($signature) % 4) {
-            $signature .= '=';
-        }
+        my $request = HTTP::Request->new(HEAD => $ROK4_SWIFT_PUBLICURL.$context);
 
-        # set custom HTTP request header fields
-        my $request = HTTP::Request->new(HEAD => $ROK4_S3_URL.$resource);
-        $request->header('Host' => $ROK4_S3_ENDPOINT_HOST);
-        $request->header('Date' => $dateValue);
-        $request->header('Content-Type' => $contentType);
-        $request->header('Authorization' => sprintf ("AWS %s:$signature", $ROK4_S3_KEY));
-         
+        $request->header('X-Auth-Token' => $SWIFT_TOKEN);
+
         my $response = $UA->request($request);
         if ($response->is_success) {
             return TRUE;
@@ -832,9 +870,32 @@ sub getSize {
     if ($type eq "FILE") {
         return -s $path;
     }
-    elsif ($type eq "CEPH") {
-        ERROR("Not implemented");
-        return undef;
+    elsif ($type eq "SWIFT") {
+
+        my ($containerName, @rest) = split("/", $path);
+        my $objectName = join("", @rest);
+
+        if (! defined $containerName || ! defined $objectName) {
+            ERROR("SWIFT path is not valid (<containerName>/<objectName>) : $path");
+            return FALSE;
+        }
+
+        my $context = "/$containerName/$objectName";
+
+        my $request = HTTP::Request->new(HEAD => $ROK4_SWIFT_PUBLICURL.$context);
+
+        $request->header('X-Auth-Token' => $SWIFT_TOKEN);
+
+        my $response = $UA->request($request);
+        if ($response->is_success) {
+            return $response->header("Content-Length");
+        }
+        else {
+            ERROR("HTTP code: ", $response->code);
+            ERROR("HTTP message: ", $response->message);
+            ERROR("HTTP decoded content : ", $response->decoded_content);
+            return undef;
+        }
     }
     elsif ($type eq "S3") {
 
@@ -941,7 +1002,7 @@ sub symLink {
         $toPath = join("", @rest);
 
         if ($tPoolName ne $toPoolName) {
-            ERROR("CEPH link (redis key-value) is not possible between different pool: $toPath -> X $targetPath");
+            ERROR("CEPH link (redis key-value) is not possible between different pool: $toPoolName/toPath -> X $targetPath");
             return FALSE;
         }
 
@@ -970,7 +1031,7 @@ sub symLink {
         $toPath = join("", @rest);
 
         if ($tBucketName ne $toBucketName) {
-            ERROR("S3 link (redis key-value) is not possible between different pool: $toPath -> X $targetPath");
+            ERROR("S3 link (redis key-value) is not possible between different pool: $toBucketName/toPath -> X $targetPath");
             return FALSE;
         }
 

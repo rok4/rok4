@@ -49,7 +49,6 @@
 #include <stdlib.h>
 
 struct HeaderStruct {
-    char* tmp;
     char* url;
     char* token;
 

@@ -664,8 +664,6 @@ sub addLevel {
             container_name => $this->{data_container},
             keystone_connection => $this->{keystone_connection}
         };
-
-        INFO(Dumper($levelParams));
     }
 
     if ($this->{own_masks}) {
