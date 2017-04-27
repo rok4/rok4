@@ -53,6 +53,12 @@ struct HeaderStruct {
     char* url;
     char* token;
 
+    HeaderStruct()
+    {
+        url = 0;
+        token = 0;
+    }
+
     ~HeaderStruct()
     {
         if (url) free(url);
@@ -92,7 +98,7 @@ static size_t header_callback(char *buffer, size_t nitems, size_t size, void *us
     else if (! strncmp ( buffer,"X-Subject-Token: ", 17)) {
         hdr->token = (char*) malloc(realsize - 17 + 14);
         strncpy(hdr->token, "X-Auth-Token: ", 14);
-        strncpy(hdr->token, buffer + 17, realsize - 17 - 2);
+        strncpy(hdr->token + 14, buffer + 17, realsize - 17 - 2);
         hdr->token[realsize - 17 + 14 - 2] = '\0';
     }
 

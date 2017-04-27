@@ -128,16 +128,22 @@ bool SwiftContext::connection() {
 
             // On constitue le body
 
-            std::string body = "{ \"auth\": {\"scope\": { \"project\": {\"id\": \"'"+project_id+"'\"}}, ";
-            body += " \"identity\": { \"methods\": [\"password\"], \"password\": { \"user\": { \"domain\": { \"id\": \"'"+domain_id+"'\"},";
-            body += "\"name\": \"'"+user_name+"'\", \"password\": \"'"+user_passwd+"'\" } } } } }";
+            std::string body = "{ \"auth\": {\"scope\": { \"project\": {\"id\": \""+project_id+"\"}}, ";
+            body += " \"identity\": { \"methods\": [\"password\"], \"password\": { \"user\": { \"domain\": { \"id\": \""+domain_id+"\"},";
+            body += "\"name\": \""+user_name+"\", \"password\": \""+user_passwd+"\" } } } } }";
 
             HeaderStruct authHdr;
+            DataStruct chunk;
+            chunk.nbPassage = 0;
+            chunk.data = (char*) malloc(1);
+            chunk.size = 0;
 
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body.c_str());
             curl_easy_setopt(curl, CURLOPT_HEADERDATA, (void*) &authHdr);
             curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, header_callback);
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, data_callback);
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &chunk);
 
             res = curl_easy_perform(curl);
             if( CURLE_OK != res) {
