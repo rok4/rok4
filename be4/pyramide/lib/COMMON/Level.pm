@@ -206,51 +206,26 @@ sub new {
     }
     elsif ( defined $this->{bucket_name} ) {
         $this->{type} = "S3";
-        if (! defined $ENV{ROK4_S3_URL}) {
-            ERROR("Environment variable ROK4_S3_URL is not defined");
-            return undef;
-        }
-        if (! defined $ENV{ROK4_S3_KEY}) {
-            ERROR("Environment variable ROK4_S3_KEY is not defined");
-            return undef;
-        }
-        if (! defined $ENV{ROK4_S3_SECRETKEY}) {
-            ERROR("Environment variable ROK4_S3_SECRETKEY is not defined");
-            return undef;
+
+        if (! COMMON::ProxyStorage::checkEnvironmentVariables("S3")) {
+            ERROR("Environment variable is missing for a S3 storage");
+            return FALSE;
         }
     }
     elsif ( defined $this->{pool_name} ) {
         $this->{type} = "CEPH";
-        if (! defined $ENV{ROK4_CEPH_CONFFILE}) {
-            ERROR("Environment variable ROK4_CEPH_CONFFILE is not defined");
-            return undef;
+
+        if (! COMMON::ProxyStorage::checkEnvironmentVariables("CEPH")) {
+            ERROR("Environment variable is missing for a CEPH storage");
+            return FALSE;
         }
-        if (! defined $ENV{ROK4_CEPH_USERNAME}) {
-            ERROR("Environment variable ROK4_CEPH_USERNAME is not defined");
-            return undef;
-        }
-        if (! defined $ENV{ROK4_CEPH_CLUSTERNAME}) {
-            ERROR("Environment variable ROK4_CEPH_CLUSTERNAME is not defined");
-            return undef;
-        } 
     }
     elsif ( defined $this->{container_name} ) {
         $this->{type} = "SWIFT";
-        if (! defined $ENV{ROK4_SWIFT_AUTHURL}) {
-            ERROR("Environment variable ROK4_SWIFT_AUTHURL is not defined");
-            return undef;
-        }
-        if (! defined $ENV{ROK4_SWIFT_ACCOUNT}) {
-            ERROR("Environment variable ROK4_SWIFT_ACCOUNT is not defined");
-            return undef;
-        }
-        if (! defined $ENV{ROK4_SWIFT_USER}) {
-            ERROR("Environment variable ROK4_SWIFT_USER is not defined");
-            return undef;
-        }
-        if (! defined $ENV{ROK4_SWIFT_PASSWD}) {
-            ERROR("Environment variable ROK4_SWIFT_PASSWD is not defined");
-            return undef;
+
+        if (! COMMON::ProxyStorage::checkEnvironmentVariables("SWIFT")) {
+            ERROR("Environment variable is missing for a SWIFT storage");
+            return FALSE;
         }
     } else {
         ERROR ("Cannot identify the storage type for the COMMON::Level");
