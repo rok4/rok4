@@ -332,7 +332,7 @@ sub config {
         ERROR("Environment variable is missing for a Swift storage");
         return FALSE;
     }
-    
+
     return TRUE;
 }
 
@@ -617,6 +617,13 @@ sub doIt {
 
     if ($objPyramid->getStorageType() ne "SWIFT") {
         ERROR("New pyramid have to be a SWIFT pyramid !");
+        return FALSE;
+    }
+
+    # Get swift token
+
+    if (! COMMON::ProxyStorage::getSwiftToken($objPyramid->keystoneConnection()) {
+        ERROR("Cannot get swift token");
         return FALSE;
     }
 

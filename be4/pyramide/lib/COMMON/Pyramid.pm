@@ -105,12 +105,15 @@ Attributes:
     nodata - <COMMON::NoData> - Information about nodata (like its value)
     levels - <COMMON::Level> hash - Key is the level ID, the value is the <COMMON::Level> object. Define levels present in the pyramid.
 
-    storage_type - string - Storage type of data : FILE, S3 or CEPH
+    storage_type - string - Storage type of data : FILE, S3, SWIFT or CEPH
 
     data_path - string - Directory in which we write the pyramid's data if FILE storage type
     dir_depth - integer - Number of subdirectories from the level root to the image if FILE storage type : depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif
 
     data_bucket - string - Name of the (existing) S3 bucket, where to store data if S3 storage type
+
+    data_container - string - Name of the (existing) Swift container, where to store data if Swift storage type
+    keystone_connection - boolean - For swift storage, keystone authentication or not ?
 
     data_pool - string - Name of the (existing) CEPH pool, where to store data if CEPH storage type
     tiles_storage - boolean - Precise if tiles are stored independently if CEPH storage type
