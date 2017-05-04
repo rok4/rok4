@@ -154,12 +154,10 @@ bool ContextBook::reconnectAllContext()
 {
     std::map<std::string,Context*>::iterator it;
     for (it=book.begin(); it!=book.end(); ++it) {
-        it->second->print();
         it->second->closeConnection();
         if (!(it->second->connection())) {
             LOGGER_ERROR("Impossible de reconnecter un contexte");
         }
-        it->second->print();
     }
     return true;
 }

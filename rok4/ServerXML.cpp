@@ -125,6 +125,15 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         return;
     }
 
+    pElem=hRoot.FirstChild ( "reconnectionFrequency" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        std::cerr<<_ ( "Pas de reconnectionFrequency => reconnectionFrequency = " ) << DEFAULT_RECONNECTION_FREQUENCY<<std::endl;
+        reconnectionFrequency = DEFAULT_RECONNECTION_FREQUENCY;
+    } else if ( !sscanf ( pElem->GetText(),"%d",&reconnectionFrequency ) ) {
+        std::cerr<<_ ( "Le reconnectionFrequency [" ) << DocumentXML::getTextStrFromElem(pElem) <<_ ( "] is not an integer." ) <<std::endl;
+        return;
+    }
+
     pElem=hRoot.FirstChild ( "nbProcess" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
         std::cerr<<_ ( "Pas de nbProcess=> nbProcess = " ) << DEFAULT_NB_PROCESS<<std::endl;
@@ -602,6 +611,7 @@ ContextBook* ServerXML::getSwiftContextBook(){return swiftBook;}
 ContextBook* ServerXML::getS3ContextBook(){return s3Book;}
 
 int ServerXML::getNbThreads() {return nbThread;}
+int ServerXML::getReconnectionFrequency() {return reconnectionFrequency;}
 std::string ServerXML::getSocket() {return socket;}
 bool ServerXML::getSupportWMTS() {return supportWMTS;}
 bool ServerXML::getSupportWMS() {return supportWMS;}

@@ -98,6 +98,7 @@ class ServerXML : public DocumentXML
         ContextBook* getSwiftContextBook();
         
         int getNbThreads() ;
+        int getReconnectionFrequency() ;
         std::string getSocket() ;
         bool getSupportWMTS() ;
         bool getSupportWMS() ;
@@ -116,6 +117,8 @@ class ServerXML : public DocumentXML
         LogLevel logLevel;
 
         int nbThread;
+
+        int reconnectionFrequency;
 
         /**
          * \~french \brief Défini si le serveur doit honorer les requêtes WMTS
