@@ -119,7 +119,7 @@ void reloadConfig ( int signum ) {
         }
     } else {
         defer_signal++;
-	signal_pending = 0;
+        signal_pending = 0;
         timeval begin;
         gettimeofday ( &begin, NULL );
         signal_timestamp.tv_sec = begin.tv_sec;
@@ -152,7 +152,7 @@ void shutdownServer ( int signum ) {
 
 /**
  * \~french
- * \brief Retourne l'emplacement des fichier de tranduction
+ * \brief Retourne l'emplacement des fichier de traduction
  * \return repertoire des traductions
  * \~english
  * \brief Return the translation files path
@@ -236,7 +236,7 @@ int main ( int argc, char** argv ) {
         std::cout<< _ ( "Lancement du serveur rok4" ) << "["<< getpid() <<"]" <<std::endl;
        
         if ( firstStart ) {
-             W=rok4InitServer ( serverConfigFile.c_str() );
+            W = rok4InitServer ( serverConfigFile.c_str() );
             if ( !W ) {
                 return 1;
             }

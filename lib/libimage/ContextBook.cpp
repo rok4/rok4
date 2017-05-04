@@ -150,6 +150,20 @@ bool ContextBook::connectAllContext()
     return true;
 }
 
+bool ContextBook::reconnectAllContext()
+{
+    std::map<std::string,Context*>::iterator it;
+    for (it=book.begin(); it!=book.end(); ++it) {
+        it->second->print();
+        it->second->closeConnection();
+        if (!(it->second->connection())) {
+            return false;
+        }
+        it->second->print();
+    }
+    return true;
+}
+
 void ContextBook::disconnectAllContext()
 {
     std::map<std::string,Context*>::iterator it;

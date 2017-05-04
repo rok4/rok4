@@ -83,6 +83,12 @@ private:
      */
     std::vector<pthread_t> threads;
     /**
+     * \~french \brief Thread de reconnexion des contextes
+     * \~english \brief Context reconnection thread
+     */
+    pthread_t reco_thread;
+
+    /**
      * \~french \brief Connecteur sur le flux FCGI
      * \~english \brief FCGI stream connector
      */
@@ -141,6 +147,19 @@ private:
      * \return true if present
      */
     static void* thread_loop ( void* arg );
+
+    /**
+     * \~french
+     * \brief Boucle principale exécutée par le thread de reconnexion des contextes de lecture #reco_thread
+     * \param[in] arg pointeur vers l'instance de Rok4Server
+     * \return true si présent
+     * \~english
+     * \brief Main event loop executed by reconnection thread #reco_thread
+     * \param[in] arg pointer to the Rok4Server instance
+     * \return true if present
+     */
+    static void* thread_reconnection_loop ( void* arg );
+    
     /**
      * \~french
      * \brief Donne le nombre de chiffres après la virgule

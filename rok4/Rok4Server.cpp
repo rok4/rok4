@@ -158,12 +158,28 @@ void* Rok4Server::thread_loop ( void* arg ) {
     return 0;
 }
 
+void* Rok4Server::thread_reconnection_loop ( void* arg ) {
+    Rok4Server* server = ( Rok4Server* ) ( arg );
+
+    while ( server->isRunning() ) {
+        sleep(20);
+        LOGGER_INFO("Reconnexion des contextes Swift");
+        if (! server->getSwiftBook()->reconnectAllContext()) {
+            LOGGER_FATAL ( "Impossible de reconnecter un contexte swift (recuperer un nouveau token)" );
+        }
+    }
+
+    LOGGER_DEBUG ( _ ( "Extinction du thread de reconnection des contextes" ) );
+    Logger::stopLogger();
+    return 0;
+}
+
 Rok4Server::Rok4Server (  ServerXML* serverXML, ServicesXML* servicesXML) {
     
 
     sock = 0;
-    servicesConf =  servicesXML;
-    serverConf =  serverXML;
+    servicesConf = servicesXML;
+    serverConf = serverXML;
 
     threads = std::vector<pthread_t>(serverConf->getNbThreads());
 
@@ -219,6 +235,7 @@ void Rok4Server::run(sig_atomic_t signal_pending) {
     for ( int i = 0; i < threads.size(); i++ ) {
         pthread_create ( & ( threads[i] ), NULL, Rok4Server::thread_loop, ( void* ) this );
     }
+    pthread_create ( & reco_thread, NULL, Rok4Server::thread_reconnection_loop, ( void* ) this );
     
     if (signal_pending != 0 ) {
         raise( signal_pending );
@@ -226,6 +243,8 @@ void Rok4Server::run(sig_atomic_t signal_pending) {
     
     for ( int i = 0; i < threads.size(); i++ )
         pthread_join ( threads[i], NULL );
+
+    pthread_join ( reco_thread, NULL );
 }
 
 void Rok4Server::terminate() {
@@ -235,6 +254,7 @@ void Rok4Server::terminate() {
     for ( int i = 0; i < threads.size(); i++ ) {
         pthread_kill ( threads[i], SIGPIPE );
     }
+    pthread_kill ( reco_thread, SIGPIPE );
 
 
 }

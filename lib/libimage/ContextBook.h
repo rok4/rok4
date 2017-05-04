@@ -212,6 +212,14 @@ public:
 
     /**
      * \~french
+     * \brief Reconnecte l'ensemble des contextes de l'annuaire
+     * \~english
+     * \brief Reconnect all contexts
+     */
+    bool reconnectAllContext();
+
+    /**
+     * \~french
      * \brief Deconnecte l'ensemble des contextes de l'annuaire
      * \~english
      * \brief Disconnect all contexts

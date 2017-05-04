@@ -222,8 +222,8 @@ public:
 
     virtual void print() {
         LOGGER_INFO ( "------ Swift Context -------" );
-        LOGGER_INFO ( "\t- user name = " << user_name );
         LOGGER_INFO ( "\t- container name = " << container_name );
+        LOGGER_INFO ( "\t- token = " << token );
     }
 
     virtual std::string toString() {
