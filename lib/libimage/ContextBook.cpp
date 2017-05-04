@@ -157,7 +157,7 @@ bool ContextBook::reconnectAllContext()
         it->second->print();
         it->second->closeConnection();
         if (!(it->second->connection())) {
-            return false;
+            LOGGER_ERROR("Impossible de reconnecter un contexte");
         }
         it->second->print();
     }
