@@ -118,7 +118,6 @@ Context * ContextBook::addContext(std::string pool, bool keystone)
 
 Context * ContextBook::getContext(std::string pool)
 {
-
     std::map<std::string, Context*>::iterator it = book.find ( pool );
     if ( it == book.end() ) {
         LOGGER_ERROR("Le pool demandé n'a pas été trouvé dans l'annuaire.");
@@ -144,7 +143,7 @@ bool ContextBook::connectAllContext()
     std::map<std::string,Context*>::iterator it;
     for (it=book.begin(); it!=book.end(); ++it) {
         if (!(it->second->connection())) {
-            return false;
+            LOGGER_ERROR("Impossible de connecter un contexte");
         }
     }
     return true;

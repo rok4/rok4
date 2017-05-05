@@ -116,7 +116,7 @@ bool SwiftContext::connection() {
             CURLcode res;
             struct curl_slist *list = NULL;
 
-            curl = curl_easy_init();
+            CURL* curl = curl_easy_init();
             curl_easy_setopt(curl, CURLOPT_URL, auth_url.c_str());
             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
 
@@ -175,7 +175,7 @@ bool SwiftContext::connection() {
 
             char* account = getenv ("ROK4_SWIFT_ACCOUNT");
             if (account == NULL) {
-                LOGGER_ERROR("We need an account (ROK4_SWIFT_ACCOUNT) for a keystone authentication");
+                LOGGER_ERROR("We need an account (ROK4_SWIFT_ACCOUNT) for a Swift authentication");
                 return false;
             } else {
                 user_account.assign(account);
@@ -184,7 +184,7 @@ bool SwiftContext::connection() {
             CURLcode res;
             struct curl_slist *list = NULL;
 
-            curl = curl_easy_init();
+            CURL* curl = curl_easy_init();
             curl_easy_setopt(curl, CURLOPT_URL, auth_url.c_str());
             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
 
@@ -258,6 +258,11 @@ bool SwiftContext::connection() {
 
 int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
 
+    if (! connected) {
+        LOGGER_ERROR("Impossible de lire via un contexte non connecté");
+        return -1;
+    }
+
     LOGGER_DEBUG("Swift read : " << size << " bytes (from the " << offset << " one) in the object " << name);
 
     CURLcode res;
@@ -269,8 +274,8 @@ int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
 
     int lastBytes = offset + size - 1;
 
-    curl = curl_easy_init();
-    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+    CURL* curl = curl_easy_init();
+    //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
     // On constitue le header et le moyen de récupération des informations (avec les structures de LibcurlStruct)
 
@@ -313,6 +318,12 @@ int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
 }
 
 bool SwiftContext::writeFromFile(std::string fileName, std::string objectName) {
+
+    if (! connected) {
+        LOGGER_ERROR("Impossible d'écrire via un contexte non connecté");
+        return -1;
+    }
+
     LOGGER_DEBUG("Write file '" << fileName << "' as a Swift object '" << objectName << "'");
 
     struct stat file_info;
@@ -333,7 +344,7 @@ bool SwiftContext::writeFromFile(std::string fileName, std::string objectName) {
 
     CURLcode res;
     struct curl_slist *list = NULL;
-    curl = curl_easy_init();
+    CURL* curl = curl_easy_init();
 
     // On constitue le header
 

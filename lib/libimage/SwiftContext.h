@@ -120,12 +120,6 @@ private:
      * \~english \brief Swift container name
      */
     std::string container_name;
-    
-    /**
-     * \~french \brief Objet Curl pour communiquer avec l'API rest Swift
-     * \~english \brief Curl object to communicate with Swift Rest API
-     */
-    CURL *curl;
 
     /**
      * \~french \brief Token à utiliser pour chaque échange avec Swift
