@@ -84,7 +84,7 @@ public:
     }
 
     static void printNumCurls () {
-        LOGGER_DEBUG("Nombre de contextes curl : " << pool.size);
+        LOGGER_DEBUG("Nombre de contextes curl : " << pool.size());
     }
 
     static void cleanCurlPool () {

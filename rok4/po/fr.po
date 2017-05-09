@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2017-05-05 16:18+0200\n"
+"POT-Creation-Date: 2017-05-09 10:47+0200\n"
 "PO-Revision-Date: 2014-01-28 09:36+0100\n"
 "Last-Translator: \n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -222,8 +222,8 @@ msgstr ""
 msgid "Type d'encodage inconnu : "
 msgstr "Type d'encodage inconnu : "
 
-#: Level.cpp:415 Level.cpp:418 Rok4Api.cpp:568 Rok4Server.cpp:627
-#: Rok4Server.cpp:635 Rok4Server.cpp:799
+#: Level.cpp:415 Level.cpp:418 Rok4Api.cpp:568 Rok4Server.cpp:634
+#: Rok4Server.cpp:642 Rok4Server.cpp:806
 msgid "No data found"
 msgstr "Aucune donnée"
 
@@ -513,7 +513,7 @@ msgstr " format pyramide : "
 msgid "Parametre FORMAT absent."
 msgstr "Paramètre FORMAT absent."
 
-#: Request.cpp:803 Rok4Server.cpp:604
+#: Request.cpp:803 Rok4Server.cpp:611
 msgid "Le format "
 msgstr "Le format ["
 
@@ -654,11 +654,11 @@ msgstr "Nombre de styles demandés = "
 msgid "Parametre STYLES incomplet."
 msgstr "Paramètre STYLES incomplet."
 
-#: Request.cpp:1066 Request.cpp:1121 Rok4Api.cpp:226 Rok4Server.cpp:1370
+#: Request.cpp:1066 Request.cpp:1121 Rok4Api.cpp:226 Rok4Server.cpp:1377
 msgid "Le service "
 msgstr "Le service "
 
-#: Request.cpp:1066 Request.cpp:1121 Rok4Api.cpp:226 Rok4Server.cpp:1370
+#: Request.cpp:1066 Request.cpp:1121 Rok4Api.cpp:226 Rok4Server.cpp:1377
 msgid " est inconnu pour ce serveur."
 msgstr " est inconnu pour ce serveur."
 
@@ -881,12 +881,12 @@ msgstr "Impossible de charger la configuration des couches/pyramides"
 msgid "Le parametre REQUEST n'est pas renseigné."
 msgstr "La valeur du paramètre HEIGHT n'est pas une valeur entière."
 
-#: Rok4Api.cpp:219 Rok4Api.cpp:221 Rok4Api.cpp:556 Rok4Server.cpp:1334
-#: Rok4Server.cpp:1338 Rok4Server.cpp:1352 Rok4Server.cpp:1356
+#: Rok4Api.cpp:219 Rok4Api.cpp:221 Rok4Api.cpp:556 Rok4Server.cpp:1341
+#: Rok4Server.cpp:1345 Rok4Server.cpp:1359 Rok4Server.cpp:1363
 msgid " n'est pas prise en charge par ce serveur."
 msgstr " n'est pas prise en charge par ce serveur."
 
-#: Rok4Api.cpp:221 Rok4Api.cpp:556 Rok4Server.cpp:1338
+#: Rok4Api.cpp:221 Rok4Api.cpp:556 Rok4Server.cpp:1345
 msgid "L'operation "
 msgstr "L'opération "
 
@@ -895,7 +895,7 @@ msgstr "L'opération "
 msgid "Le parametre SERVICE n'est pas renseigné."
 msgstr "La valeur du paramètre HEIGHT n'est pas une valeur entière."
 
-#: Rok4Api.cpp:406 Rok4Server.cpp:618
+#: Rok4Api.cpp:406 Rok4Server.cpp:625
 msgid "Probleme dans les parametres de la requete getTile"
 msgstr "Probleme dans les paramètres de la requête getTile"
 
@@ -915,94 +915,94 @@ msgstr "Request Content :"
 msgid "Extinction du thread"
 msgstr "Extinction du processus de traitement"
 
-#: Rok4Server.cpp:173
+#: Rok4Server.cpp:180
 msgid "Extinction du thread de reconnection des contextes"
 msgstr ""
 
-#: Rok4Server.cpp:190
+#: Rok4Server.cpp:197
 #, fuzzy
 msgid "Build WMS Capabilities 1.3.0"
 msgstr "Génération du Capabilities WMS"
 
-#: Rok4Server.cpp:193
+#: Rok4Server.cpp:200
 #, fuzzy
 msgid "Build WMS Capabilities 1.1.1"
 msgstr "Génération du Capabilities WMS"
 
-#: Rok4Server.cpp:198
+#: Rok4Server.cpp:205
 msgid "Build WMTS Capabilities"
 msgstr "Génération du Capabilities WMTS"
 
-#: Rok4Server.cpp:223
+#: Rok4Server.cpp:230
 msgid "Listening on "
 msgstr "Écoute sur "
 
-#: Rok4Server.cpp:286 Rok4Server.cpp:312
+#: Rok4Server.cpp:293 Rok4Server.cpp:319
 msgid "Probleme dans les parametres de la requete getCapabilities"
 msgstr "Problème dans les parametres de la requête getCapabilities"
 
-#: Rok4Server.cpp:341
+#: Rok4Server.cpp:348
 msgid "Probleme dans les parametres de la requete getMap"
 msgstr "Problème dans les paramètres de la requête getMap"
 
-#: Rok4Server.cpp:353
+#: Rok4Server.cpp:360
 msgid "GetMap de Style : "
 msgstr "GetMap de Style : "
 
-#: Rok4Server.cpp:353
+#: Rok4Server.cpp:360
 msgid " pal size : "
 msgstr " pal size : "
 
-#: Rok4Server.cpp:359 Rok4Server.cpp:1209
+#: Rok4Server.cpp:366 Rok4Server.cpp:1216
 msgid "bbox invalide"
 msgstr "La BoundingBox demandée est invalide"
 
-#: Rok4Server.cpp:362 Rok4Server.cpp:1212
+#: Rok4Server.cpp:369 Rok4Server.cpp:1219
 msgid "bbox trop grande"
 msgstr "La BoundingBox demandée est trop grande"
 
-#: Rok4Server.cpp:365 Rok4Server.cpp:748 Rok4Server.cpp:778 Rok4Server.cpp:794
-#: Rok4Server.cpp:809 Rok4Server.cpp:1215
+#: Rok4Server.cpp:372 Rok4Server.cpp:755 Rok4Server.cpp:785 Rok4Server.cpp:801
+#: Rok4Server.cpp:816 Rok4Server.cpp:1222
 msgid "Impossible de repondre a la requete"
 msgstr "Impossible de répondre a la requête"
 
-#: Rok4Server.cpp:393
+#: Rok4Server.cpp:400
 msgid "Estompage"
 msgstr "Estompage"
 
-#: Rok4Server.cpp:604
+#: Rok4Server.cpp:611
 msgid " ne peut etre traite"
 msgstr " ne peut être traité"
 
-#: Rok4Server.cpp:1156 Rok4Server.cpp:1179
+#: Rok4Server.cpp:1163 Rok4Server.cpp:1186
 #, fuzzy
 msgid "Probleme dans les parametres de la requete getFeatureInfo"
 msgstr "Problème dans les paramètres de la requête getMap"
 
-#: Rok4Server.cpp:1253
+#: Rok4Server.cpp:1260
 #, fuzzy
 msgid "Erreur interne."
 msgstr "Erreur inconnue"
 
-#: Rok4Server.cpp:1258
+#: Rok4Server.cpp:1265
 #, fuzzy
 msgid "Info_format non "
 msgstr "Format "
 
-#: Rok4Server.cpp:1258
+#: Rok4Server.cpp:1265
 #, fuzzy
 msgid " supporté par la couche "
 msgstr " n'est pas géré pour la couche "
 
-#: Rok4Server.cpp:1313
+#: Rok4Server.cpp:1320
 msgid "Internal server error"
 msgstr ""
 
-#: Rok4Server.cpp:1319
+#: Rok4Server.cpp:1326
 msgid "GFI depuis un SQL non géré."
 msgstr ""
 
-#: Rok4Server.cpp:1321
+#: Rok4Server.cpp:1328
 msgid "ERRORRRRRR !"
 msgstr ""
 
