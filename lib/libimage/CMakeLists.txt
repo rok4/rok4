@@ -48,7 +48,7 @@ SET(
     ExtendedCompoundImage.cpp CompoundImage.cpp Line.cpp MergeImage.cpp
     Grid.cpp CRS.cpp TiffEncoder.cpp
     BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp 
-    FileContext.cpp CephPoolContext.cpp S3Context.cpp SwiftContext.cpp ContextBook.cpp 
+    FileContext.cpp CephPoolContext.cpp S3Context.cpp SwiftContext.cpp ContextBook.cpp CurlPool.cpp 
     PaletteConfig.cpp PaletteDataSource.cpp
     Format.cpp TiffHeaderDataSource.cpp StoreDataSource.cpp
     EmptyDataSource.cpp ConvertedChannelsImage.cpp

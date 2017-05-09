@@ -51,6 +51,7 @@
 #include "LibcurlStruct.h"
 #include <curl/curl.h>
 #include <sys/stat.h>
+#include "CurlPool.h"
 
 SwiftContext::SwiftContext (std::string auth, std::string user, std::string passwd, std::string container, bool ks) :
     Context(),
@@ -274,7 +275,7 @@ int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
 
     int lastBytes = offset + size - 1;
 
-    CURL* curl = curl_easy_init();
+    CURL* curl = CurlPool::getCurlEnv();
     //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
     // On constitue le header et le moyen de récupération des informations (avec les structures de LibcurlStruct)
@@ -296,7 +297,6 @@ int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
 
     res = curl_easy_perform(curl);
     curl_slist_free_all(list);
-    curl_easy_cleanup(curl);
 
     if( CURLE_OK != res) {
         LOGGER_ERROR("Cannot read data from Swift : " << size << " bytes (from the " << offset << " one) in the object " << name);
@@ -344,7 +344,7 @@ bool SwiftContext::writeFromFile(std::string fileName, std::string objectName) {
 
     CURLcode res;
     struct curl_slist *list = NULL;
-    CURL* curl = curl_easy_init();
+    CURL* curl = CurlPool::getCurlEnv();
 
     // On constitue le header
 
@@ -381,7 +381,6 @@ bool SwiftContext::writeFromFile(std::string fileName, std::string objectName) {
     }
 
     curl_slist_free_all(list);
-    curl_easy_cleanup(curl);
 
     fclose(fileToUpload);
 

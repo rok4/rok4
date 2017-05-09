@@ -71,6 +71,7 @@
 #include "SwiftContext.h"
 #include "S3Context.h"
 #include "FileImage.h"
+#include "CurlPool.h"
 #include "Rok4Image.h"
 #include "TiffNodataManager.h"
 #include "../be4version.h"
@@ -434,6 +435,7 @@ int main ( int argc, char **argv ) {
         } else {
             LOGGER_DEBUG(output << " removed");
         }
+        CurlPool::cleanCurlPool();
         curl_global_cleanup();
         delete contextSwift;
     } else if (onS3) {
@@ -448,6 +450,7 @@ int main ( int argc, char **argv ) {
         } else {
             LOGGER_DEBUG(output << " removed");
         }
+        CurlPool::cleanCurlPool();
         curl_global_cleanup();
         delete contextS3;      
     }

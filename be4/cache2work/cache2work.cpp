@@ -322,6 +322,7 @@ int main ( int argc, char **argv )
     }
 
     if (container != 0 || bucket != 0) {
+        CurlPool::cleanCurlPool();
         curl_global_cleanup();
     }
 

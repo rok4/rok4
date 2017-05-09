@@ -67,6 +67,7 @@
 #include "config.h"
 #include "intl.h"
 #include "TiffEncoder.h"
+#include "CurlPool.h"
 #include "PNGEncoder.h"
 #include "JPEGEncoder.h"
 #include "BilEncoder.h"
@@ -162,7 +163,14 @@ void* Rok4Server::thread_reconnection_loop ( void* arg ) {
     Rok4Server* server = ( Rok4Server* ) ( arg );
 
     while ( server->isRunning() ) {
-        sleep(server->getServerConf()->getReconnectionFrequency() * 60);
+
+        for (int i = 0; i < server->getServerConf()->getReconnectionFrequency(); ++i)
+        {
+            sleep(60);
+            CurlPool::printNumCurls();
+        }
+
+        //sleep(server->getServerConf()->getReconnectionFrequency() * 60);
         LOGGER_INFO("Reconnexion des contextes Swift");
         if (! server->getSwiftBook()->reconnectAllContext()) {
             LOGGER_FATAL ( "Impossible de reconnecter un contexte swift (recuperer un nouveau token)" );
@@ -256,7 +264,7 @@ void Rok4Server::terminate() {
     }
     pthread_kill ( reco_thread, SIGPIPE );
 
-
+    CurlPool::cleanCurlPool();
 }
 
 bool Rok4Server::hasParam ( std::map<std::string, std::string>& option, std::string paramName ) {
