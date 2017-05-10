@@ -14,8 +14,7 @@ script:
 - export FILE_TOUPLOAD=$(find ./ -maxdepth 1 -name "Rok4*.tar.gz")
 deploy:
   provider: releases
-  api_key:
-    secure: iBvpbuyzyk/ReIli72fki1cvUTffXc/kgu3zcg8rlYk00BNWe1Maf9ziNo/0SWRu5vHQnKyipd6/dQaXgBF+sjBg2yTTSMumOHUnMY3/Mu7m2Id/iqAM+MuprQH+EQjFuOMUUdcXWPnm0RkHQmXF624ckt+zmol/pwjB1ag1tK8=
+  api_key: $GH_TOKEN
   file: $FILE_TOUPLOAD
   on:
     repo: rok4/rok4
