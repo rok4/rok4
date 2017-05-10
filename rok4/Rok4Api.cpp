@@ -169,6 +169,115 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog, proxy, supportWMTS, supportWMS, nbProcess,timeKill );
 }
 
+Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, time_t lastReload ) {
+
+    time_t lastModServerConf,lastModServiceConf,lastModCRS;
+    LogOutput logOutputNew;
+    int nbThreadNew,logFilePeriodNew,backlogNew, nbProcessNew,timeKillNew;
+    LogLevel logLevelNew;
+    bool supportWMTSNew,supportWMSNew,reprojectionCapabilityNew;
+    Proxy proxyNew;
+    std::string strServerConfigFile=serverConfigFile,strLogFileprefixNew,strServicesConfigFileNew,
+            strLayerDirNew,strTmsDirNew,strStyleDirNew,socketNew,strListOfEqualCRSbool,strRestrictedCRSFile,
+            strEqualCRSFile;
+
+    LOGGER_DEBUG("Rechargement de la conf");
+    //--- server.conf
+    LOGGER_DEBUG("Rechargement du server.conf");
+
+    lastModServerConf = ConfLoader::getLastModifiedDate(strServerConfigFile);
+
+    //on n'est obligé de le recharger pour avoir des informations qui ne sont pas accessible dans l'objet Rok4Server
+    if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutputNew, strLogFileprefixNew, logFilePeriodNew,
+                                          logLevelNew, nbThreadNew, supportWMTSNew, supportWMSNew, reprojectionCapabilityNew,
+                                          strServicesConfigFileNew, strLayerDirNew, strTmsDirNew, strStyleDirNew, socketNew,
+                                          backlogNew, nbProcessNew, proxyNew,timeKillNew ) ) {
+        std::cerr << "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " << strServerConfigFile << std::endl;
+        sleep ( 1 );    // Pour laisser le temps au logger pour se vider
+        return NULL;
+    }
+
+
+    if (lastModServerConf > lastReload) {
+        //fichier modifié, on recharge particulièrement le logger et on doit vérifier que les fichiers et dossiers
+        //indiqués sont les mêmes qu'avant
+        LOGGER_DEBUG("Server.conf modifie");
+        // TODO: Reload du logger et stockage des anciennes valeurs de rok4server pour comparer et voir si c'est nécessaire de
+        //tout recharger
+
+    } else {
+        //fichier non modifié, il n'y a rien à faire
+        LOGGER_DEBUG("Server.conf non modifie");
+
+    }
+
+    //--- service.conf
+    LOGGER_DEBUG("Rechargement du service.conf et des fichiers associes (listofequalcrs.txt et restrictedcrslist.txt)");
+
+    lastModServiceConf = ConfLoader::getLastModifiedDate(strServicesConfigFileNew);
+
+    if (lastModServiceConf > lastReload) {
+        //fichier modifié, on recharge l'ensemble
+        LOGGER_DEBUG("Service.conf modifie");
+
+        delete sc;
+        sc = NULL;
+
+        sc = ConfLoader::buildServicesConf ( strServicesConfigFileNew );
+        if ( sc==NULL ) {
+            LOGGER_FATAL ( "Impossible d'interpreter le fichier de conf " << strServicesConfigFileNew );
+            LOGGER_FATAL ( "Extinction du serveur ROK4" );
+            sleep ( 1 );    // Pour laisser le temps au logger pour se vider
+            return NULL;
+        }
+
+    } else {
+        //fichier non modifié, on récupère certaines informations pour voir s'elles ont changé
+        LOGGER_DEBUG("Service.conf non modifie");
+
+        //listequalCRS.txt
+        strListOfEqualCRSbool = ConfLoader::getTagContentOfFile(strServicesConfigFileNew,"addEqualsCRS");
+        if (strListOfEqualCRSbool == "true") {
+            //on verifie que le fichier correspondant n'a pas changé
+            char* projDir = getenv("PROJ_LIB");
+            std::string projDirstr(projDir);
+            strEqualCRSFile = projDirstr+"/listofequalscrs.txt";
+            lastModCRS = ConfLoader::getLastModifiedDate(strEqualCRSFile);
+            if (lastModCRS > lastReload) {
+                //fichier modifié
+                std::vector<std::string> equalCRSNew = ConfLoader::loadListEqualsCRS();
+                sc->setListOfEqualsCRS(equalCRSNew);
+            } else {
+                //fichier non modifié, on ne fait rien
+
+            }
+        }
+
+        //restrictedCRSList
+        strRestrictedCRSFile = ConfLoader::getTagContentOfFile(strServicesConfigFileNew,"restrictedCRSList");
+        if (strRestrictedCRSFile != "") {
+            //on verifie que le fichier correspondant n'a pas changé
+            lastModCRS = ConfLoader::getLastModifiedDate(strRestrictedCRSFile);
+            if (lastModCRS > lastReload) {
+                //fichier modifié
+                std::vector<std::string> restrictedCRS = ConfLoader::loadStringVectorFromFile(strRestrictedCRSFile);
+                sc->setRestrictedCRSList(restrictedCRS);
+            } else {
+                //fichier non modifié, on ne fait rien
+
+            }
+        }
+
+    }
+
+    //--- TMS
+    LOGGER_DEBUG("Rechargement des TMS");
+
+    return new Rok4Server ( nbThreadNew, *sc, server->getLayerList(), server->getTmsList(), server->getStyleList(),
+                            socketNew, backlogNew, proxyNew, supportWMTSNew, supportWMSNew, nbProcessNew,timeKillNew );
+
+}
+
 /**
 * \brief \~french Initialisation d'une requete \~english Initialize a request \~
 * \param[in] queryString

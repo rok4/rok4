@@ -231,11 +231,23 @@ public:
     std::vector<std::string> getListOfEqualsCRS() {
         return listofequalsCRS;
     }
+    void setListOfEqualsCRS(std::vector<std::string> newList) {
+        listofequalsCRS.clear();
+        for (unsigned i=0; i<newList.size(); i++) {
+           listofequalsCRS.push_back(newList[i]);
+        }
+    }
     bool inline getDoWeRestrictCRSList() {
         return dowerestrictCRSList;
     }
     std::vector<std::string> getRestrictedCRSList() {
         return restrictedCRSList;
+    }
+    void setRestrictedCRSList(std::vector<std::string> newList) {
+        restrictedCRSList.clear();
+        for (unsigned i=0; i<newList.size(); i++) {
+           restrictedCRSList.push_back(newList[i]);
+        }
     }
     // Check if two CRS are equivalent
     //   A list of equivalent CRS was created during server initialization

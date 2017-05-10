@@ -181,6 +181,46 @@ public:
     static ServicesConf * buildServicesConf ( std::string servicesConfigFile );
     void pElem();
 
+    /**
+    * \~french
+    * \brief Retourne la date de derniere modification d'un fichier
+    * \~english
+    * \brief Return the last modification date of a file
+    */
+    static time_t getLastModifiedDate(std::string file);
+
+    /**
+    * \~french
+    * \brief Retourne le contenu d'une balise xml
+    * \~english
+    * \brief Return the content of a xml tag
+    */
+    static std::string getTagContentOfFile(std::string file, std::string tag);
+
+    /**
+     * \~french
+     * \brief Chargement de la liste des CRS équivalents à partir du fichier listofequalscrs.txt dans le dossier Proj
+     * \~english
+     * \brief Load equivalents CRS list from listofequalscrs.txt file in Proj directory
+     */
+    static std::vector<std::string> loadListEqualsCRS();
+
+    /**
+     * \~french
+     * \brief Chargement d'une liste à partir d'un fichier
+     * \~english
+     * \brief Load strings list form file
+     */
+    static std::vector<std::string> loadStringVectorFromFile(std::string file);
+
+    /**
+     * \~french
+     * \brief Chargement d'une liste de fichiers contenu dans un dossier
+     * \~english
+     * \brief Load file from a directory
+     */
+    static std::vector<std::string> listFileFromDir(std::string directory, std::string extension);
+
 private:
     /**
      * \~french
@@ -440,22 +480,6 @@ private:
      */
     static ServicesConf * parseServicesConf ( TiXmlDocument* doc,std::string servicesConfigFile );
     
-    /**
-     * \~french
-     * \brief Chargement de la liste des CRS équivalents à partir du fichier listofequalscrs.txt dans le dossier Proj
-     * \~english
-     * \brief Load equivalents CRS list from listofequalscrs.txt file in Proj directory
-     */
-    static std::vector<std::string> loadListEqualsCRS();
-    
-    /**
-     * \~french
-     * \brief Chargement d'une liste à partir d'un fichier
-     * \~english
-     * \brief Load strings list form file
-     */
-    static std::vector<std::string> loadStringVectorFromFile(std::string file);
-    
      /**
      * \~french
      * \brief Vérifie que le CRS ou un équivalent se trouve dans la liste des CRS autorisés
@@ -487,7 +511,6 @@ private:
    * \brief Return a Pyramid from the configuration
    */
   static Pyramid *parseBasedPyramid(TiXmlElement* sPyr, std::map<std::string, TileMatrixSet*> &tmsList, bool timesSpecific, std::map<std::string,Style*> stylesList, std::string parentDir, Proxy proxy, ServicesConf *serviceConf);
-
 
 };
 

@@ -76,6 +76,7 @@
 #include <limits>
 #include "config.h"
 #include "curl/curl.h"
+#include <time.h>
 /* Usage de la ligne de commande */
 
 Rok4Server* W;
@@ -83,6 +84,7 @@ Rok4Server* Wtmp;
 bool reload;
 
 std::string serverConfigFile;
+time_t lastReload;
 
 // Minimum time between two signal to be defered.
 // Earlier signal would be ignored.
@@ -119,18 +121,20 @@ void reloadConfig ( int signum ) {
         }
     } else {
         defer_signal++;
-	signal_pending = 0;
+        signal_pending = 0;
         timeval begin;
         gettimeofday ( &begin, NULL );
         signal_timestamp.tv_sec = begin.tv_sec;
         signal_timestamp.tv_usec = begin.tv_usec;
         reload = true;
         std::cout<< _ ( "Rechargement du serveur rok4" ) << "["<< getpid() <<"]" <<std::endl;
-        Wtmp=rok4InitServer ( serverConfigFile.c_str() );
+        time_t tmpTime = time(NULL);
+        Wtmp=rok4ReloadServer ( serverConfigFile.c_str(), W, lastReload );
         if ( !Wtmp ){
             std::cout<< _ ( "Erreur lors du rechargement du serveur rok4" ) << "["<< getpid() <<"]" <<std::endl;
             return;
         }
+        lastReload = tmpTime;
         W->terminate();
     }
 }
@@ -236,12 +240,14 @@ int main ( int argc, char** argv ) {
         std::cout<< _ ( "Lancement du serveur rok4" ) << "["<< getpid() <<"]" <<std::endl;
        
         if ( firstStart ) {
+            lastReload = time(NULL);
              W=rok4InitServer ( serverConfigFile.c_str() );
             if ( !W ) {
                 return 1;
             }
             W->initFCGI();
             firstStart = false;
+
         } else {
             std::cout<< _ ( "Mise a jour de la configuration" ) << "["<< getpid() <<"]" <<std::endl;
             if ( Wtmp ){
