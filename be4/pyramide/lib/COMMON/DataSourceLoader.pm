@@ -246,7 +246,6 @@ sub updateDataSources {
     my $TMS = shift;
     my $topID = shift;
 
-    
     if (! defined $TMS || ref ($TMS) ne "COMMON::TileMatrixSet") {
         ERROR("We need a TileMatrixSet object to update data sources");
         return (-1, -1);

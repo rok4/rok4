@@ -51,8 +51,11 @@ Using:
     (end code)
 
 Attributes:
+    filePath - string - Path to the configuration file
+    fileFormat - string - Configuration format : INI
+    configuration - string hash - Configuration stored in string hash, with section and sub section, with orders
+    rawConfiguration - string hash - Configuration stored in string hash, with section and sub section, without orders
     
-
 Limitations:
     
 =cut
@@ -74,15 +77,13 @@ use Scalar::Util qw/reftype/;
 
 use COMMON::Array;
 
-  # inheritance
+# inheritance
 our @ISA;
 use parent 'Exporter';
 
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
-
-
 
 ################################################################################
 # Constants
@@ -91,7 +92,7 @@ use constant FALSE => 0;
 
 # Constant: FILEFORMATS
 # Define allowed values for configuration format
-my @FILEFORMATS = ('INI','float');
+my @FILEFORMATS = ('INI');
 
 ################################################################################
 

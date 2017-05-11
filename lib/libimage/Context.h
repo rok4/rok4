@@ -39,12 +39,10 @@
  * \file Context.h
  ** \~french
  * \brief Définition de la classe Context
- * \details
- * \li Context : classe d'abstraction du contexte de stockage (fichier, ceph ou swift)
+ * \details Classe d'abstraction du contexte de stockage (fichier, ceph s3 ou swift)
  ** \~english
  * \brief Define classe Context
- * \details
- * \li Context : storage context abstraction
+ * \details Storage context abstraction
  */
 
 #ifndef CONTEXT_H
@@ -186,10 +184,10 @@ public:
 
     /**
      * \~french \brief Prépare l'objet en écriture
-     * \details Cela est utile dans le cas de l'écriture d'un fichier. On ne veut pas ouvrir et fermer le flux à chaque écriture partielle. Pour les autres type de contexte, rien ne ser afait dans cette fonction
+     * \details Cela est utile dans le cas de l'écriture d'un fichier. On ne veut pas ouvrir et fermer le flux à chaque écriture partielle. Pour les autres type de contexte, rien ne sera fait dans cette fonction
      * \param[in] name Nom de l'objet dans lequel on va vouloir écrire
      * \~english \brief Write data in the named object
-     * \details It is usefull to write a file. We don't want to open the stream for each partially writting. For other context type, nothing is done is this function.
+     * \details It is usefull to write a file. We don't want to open the stream for each partially writting. For other context type, nothing done in this function.
      * \param[in] name Object's name we want to write into
      */
     virtual bool openToWrite(std::string name) = 0;
@@ -212,9 +210,9 @@ public:
 
     /**
      * \~french \brief Retourne le contenant dans le contexte
-     * \~english \brief Return the bucket in the context
+     * \~english \brief Return the tray in the context
      */
-    virtual std::string getBucket() = 0;
+    virtual std::string getTray() = 0;
 
     /**
      * \~french \brief Sortie des informations sur le contexte

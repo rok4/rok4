@@ -80,5 +80,15 @@ is ($minIndex, undef, "minArrayIndex : identify bad value for the first element 
 
 ######################################################
 
+# Test on isInArray
+
+my $isIn = COMMON::Array::isInArray(0,@array);
+is ($isIn, undef, "Don't find an absent value");
+
+$isIn = COMMON::Array::isInArray(32,@array);
+is ($minIndex, 5, "Find the index of the value '32' in the array");
+
+######################################################
+
 done_testing();
 

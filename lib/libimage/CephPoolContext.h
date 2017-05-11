@@ -141,7 +141,7 @@ public:
 
     eContextType getType();
     std::string getTypeStr();
-    std::string getBucket();
+    std::string getTray();
     
     /**
      * \~french \brief Instancie les objets librados #cluster and #io_ctx

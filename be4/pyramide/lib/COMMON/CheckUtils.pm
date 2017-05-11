@@ -149,8 +149,6 @@ sub isBbox {
 
     my $value = shift;
 
-    my $result;
-
     my @array = split (',', $value);
     if (scalar @array == 4) {
         foreach my $item (@array) {

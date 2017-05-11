@@ -39,12 +39,10 @@
  * \file RedisAliasManager.h
  ** \~french
  * \brief Définition de la classe RedisAliasManager
- * \details
- * \li RedisAliasManager : classe d'abstraction du gestionnaire d'alias (redis)
+ * \details Classe d'abstraction du gestionnaire d'alias (redis)
  ** \~english
  * \brief Define classe RedisAliasManager
- * \details
- * \li RedisAliasManager : alias manager abstraction
+ * \details Alias manager abstraction
  */
 
 #ifndef REDISALIASMANAGER_H
@@ -68,25 +66,63 @@ class RedisAliasManager : public AliasManager {
 
 private:
 
+    /**
+     * \~french \brief Objet "contexte" redis, pour communiquer avec une base Redis
+     * \~english \brief "context" redis object, to communicate with a Redis database
+     */
     redisContext *rContext;
 
+    /**
+     * \~french \brief Hôte du serveur Redis
+     * \~english \brief Redis server host
+     */
     std::string host;
+
+    /**
+     * \~french \brief Mot de passe du serveur redis
+     * \~english \brief Redis server password
+     */
     std::string passwd;
+
+    /**
+     * \~french \brief Port du serveur redis
+     * \~english \brief Redis server port
+     */
     int port;
 
 public:
 
     /**
      * \~french \brief Crée un objet RedisAliasManager
+     * \param[in] h Hôte du serveur redis
+     * \param[in] p Port du serveur redis
+     * \param[in] pwd Mot de passe du serveur redis
      * \~english \brief Create a RedisAliasManager object
+     * \param[in] h Redis server host
+     * \param[in] p Redis server port
+     * \param[in] pwd Redis server password
      */
     RedisAliasManager (std::string h, int p, std::string pwd) : AliasManager(), host(h), port(p), passwd(pwd) {
         ok = true;
     }
 
     /**
-     * \~french \brief Crée un objet RedisAliasManager
-     * \~english \brief Create a RedisAliasManager object
+     * \~french \brief Crée un objet RedisAliasManager, à partir des variable d'environnement
+     * \details Les variables d'environnement sont :
+     * <TABLE>
+     * <TR><TH>Attribut</TH><TH>Variable d'environnement</TH>
+     * <TR><TD>host</TD><TD>ROK4_REDIS_HOST</TD>
+     * <TR><TD>pwd</TD><TD>ROK4_REDIS_PASSWD</TD>
+     * <TR><TD>port</TD><TD>ROK4_REDIS_PORT</TD>
+     * </TABLE>
+     * \~english \brief Create a RedisAliasManager object, from environment variable
+     * \details Environment variable are :
+     * <TABLE>
+     * <TR><TH>Attribut</TH><TH>Variable d'environnement</TH>
+     * <TR><TD>host</TD><TD>ROK4_REDIS_HOST</TD>
+     * <TR><TD>pwd</TD><TD>ROK4_REDIS_PASSWD</TD>
+     * <TR><TD>port</TD><TD>ROK4_REDIS_PORT</TD>
+     * </TABLE>
      */
     RedisAliasManager () : AliasManager() {
 
@@ -116,6 +152,10 @@ public:
         ok = true;
     }
 
+    /**
+     * \~french \brief Connecte le contexte redis #redisContext
+     * \~english \brief Connect the redis context #redisContext
+     */
     bool connect() {
 
         if (connected) {
@@ -156,6 +196,16 @@ public:
         return true;
     }
 
+    /**
+     * \~french \brief Interroge le gestionnaire d'alias
+     * \param[in] alias Clé dont on veut la valeur associée
+     * \param[in] exists Est ce que la clé fournie existe
+     * \return La valeur associée si la clé existe, "" sinon
+     * \~english \brief Request de alias manager
+     * \param[in] alias Key to obtain the associated value
+     * \param[out] exists Provided key exists ?
+     * \return Associated value if key exists, "" otherwise
+     */
     std::string getAliasedName(std::string alias, bool* exists) {
 
         pthread_mutex_lock ( & mutex_hiredis );
@@ -185,10 +235,18 @@ public:
         return res;
     }
 
+    /**
+     * \~french \brief Retourne le type du gestionnaire d'alias
+     * \~english \brief Return the alias manager's type
+     */
     eAliasManagerType getType() {
         return REDISDATABASE;
     }
 
+    /**
+     * \~french \brief Retourne le type du gestionnaire d'alias, en texte
+     * \~english \brief Return the alias manager's type, as string
+     */
     std::string getTypeStr() {
         return "REDISDATABASE";
     }

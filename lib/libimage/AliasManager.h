@@ -107,9 +107,20 @@ public:
      */
     virtual std::string getTypeStr() = 0;
 
-
+    /**
+     * \~french \brief Connecte le gestionnaire d'alias
+     * \~english \brief Connect the alias manager
+     */
     virtual bool connect() = 0;
+    /**
+     * \~french \brief Précise si le gestionnaire d'alias est connecté
+     * \~english \brief Precis if alias manager is connected
+     */
     bool isConnected() {return connected;}
+    /**
+     * \~french \brief Précise si le gestionnaire d'alias est prêt à être utilisé
+     * \~english \brief Precis if alias manager is usable
+     */
     bool isOk() {return ok;}
 
     /**

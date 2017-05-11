@@ -62,6 +62,8 @@ my $objDSimage = COMMON::DataSource->new(
     }
 );
 ok (defined $objDSimage, "DataSource (just image) created");
+ok ($objDSimage->hasImages(), "DataSource has images");
+ok (! $objDSimage->hasHarvesting(), "DataSource has not harvesting");
 
 my $objDSharvest = COMMON::DataSource->new(
     "19",
@@ -76,6 +78,8 @@ my $objDSharvest = COMMON::DataSource->new(
     }
 );
 ok (defined $objDSharvest, "DataSource (just harvesting) created");
+ok (! $objDSharvest->hasImages(), "DataSource has not images");
+ok ($objDSharvest->hasHarvesting(), "DataSource has harvesting");
 
 ######################################################
 

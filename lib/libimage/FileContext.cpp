@@ -124,6 +124,6 @@ std::string FileContext::getTypeStr() {
     return "FILECONTEXT";
 }
 
-std::string FileContext::getBucket() {
+std::string FileContext::getTray() {
     return root_dir;
 }

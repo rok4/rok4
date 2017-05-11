@@ -133,17 +133,17 @@ public:
 
     /**
      * \~french
-     * \brief Constructeur pour un annuaire de contextes Ceph S3 ou SWIFT
+     * \brief Constructeur pour un annuaire de contextes Ceph, S3 ou SWIFT
      * \param[in] type Type des contextes de l'annuaire
-     * \param[in] s1 
-     * \param[in] s2 
-     * \param[in] s3 
+     * \param[in] s1 ceph_name ou s3_url ou swift_auth
+     * \param[in] s2 ceph_user ou s3_key ou swift_user
+     * \param[in] s3 ceph_conf ou s3_secret_key ou swift_passwd
      * \~english
      * \brief Constructor for a ceph, s3 or swift context book
      * \param[in] type Book type
-     * \param[in] s1
-     * \param[in] s2
-     * \param[in] s3
+     * \param[in] s1 ceph_name or s3_url or swift_auth
+     * \param[in] s2 ceph_user or s3_key or swift_user
+     * \param[in] s3 ceph_conf or s3_secret_key or swift_passwd
      */
     ContextBook(eContextType type, std::string s1, std::string s2, std::string s3);
 
@@ -172,25 +172,27 @@ public:
      * \~french
      * \brief Retourne le context correspondant au contenant demandé
      * \details Si il n'existe pas, une erreur s'affiche et on retourne NULL
-     * \param[in] bucket Nom du contenant pour lequel on veut le contexte
+     * \param[in] tray Nom du contenant pour lequel on veut le contexte
      * \~english
-     * \brief Return context of this bucket
-     * \details If context dosn't exist for this bucket, an error is print and NULL is returned
-     * \param[in] bucket Bucket's name for which context is wanted
+     * \brief Return context of this tray
+     * \details If context dosn't exist for this tray, an error is print and NULL is returned
+     * \param[in] tray Tray's name for which context is wanted
      */
-    Context* getContext(std::string bucket);
+    Context* getContext(std::string tray);
 
     /**
      * \~french
      * \brief Ajoute un nouveau contexte
      * \details Si un contexte existe déjà pour ce nom de contenant, on ne crée pas de nouveau contexte et on retourne celui déjà existant. Le nouveau contexte n'est pas connecté.
-     * \param[in] bucket Nom du contenant pour lequel on veut créer un contexte
+     * \param[in] tray Nom du contenant pour lequel on veut créer un contexte
+     * \param[in] keystone Dans le cas Swift, on précise si on veut une authentification keystone (ignoré dans les autres cas)
      * \~english
      * \brief Add a new context
-     * \details If a context already exists for this bucket's name, we don't create a new one and the existing is returned. New context is not connected.
-     * \param[in] bucket Bucket's name for which context is created
+     * \details If a context already exists for this tray's name, we don't create a new one and the existing is returned. New context is not connected.
+     * \param[in] tray Tray's name for which context is created
+     * \param[in] keystone In Swift case, precise if we want a keystone authentication, ignored else
      */
-    Context * addContext(std::string bucket, bool keystone = false);
+    Context * addContext(std::string tray, bool keystone = false);
 
     /**
      * \~french

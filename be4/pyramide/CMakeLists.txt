@@ -83,20 +83,11 @@ if(UNITTEST)
 
     if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/perlunit)
         # Exécution des tests unitaires PerlUnit
-        FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "tests/perlunit/BE4/PerlUnit*.t")
-        
-        FOREACH(test ${UnitTests_SRCS})
-            MESSAGE("  - adding test ${test}")
-            GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
-            ADD_TEST(NAME "BE4::${TestName}" COMMAND perl -I ${CMAKE_CURRENT_BINARY_DIR}/install/lib/perl5 ${CMAKE_CURRENT_BINARY_DIR}/src/${test})
-        ENDFOREACH(test)
-
-        FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "tests/perlunit/JOINCACHE/PerlUnit*.t")
+        FILE(GLOB_RECURSE UnitTests_SRCS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/tests/perlunit/" "PerlUnit*.t")
 
         FOREACH(test ${UnitTests_SRCS})
-            MESSAGE("  - adding test ${test}")
-            GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
-            ADD_TEST(NAME "JOINCACHE::${TestName}" COMMAND perl -I ${CMAKE_CURRENT_BINARY_DIR}/install/lib/perl5 ${CMAKE_CURRENT_BINARY_DIR}/src/${test})
+            MESSAGE(" - adding test ${test}")
+            ADD_TEST(NAME "${test}" COMMAND perl -I ${CMAKE_CURRENT_BINARY_DIR}/src/lib/ ${CMAKE_CURRENT_BINARY_DIR}/src/tests/perlunit/${test})
         ENDFOREACH(test)
 
         # Nettoyage du dossier temporaire

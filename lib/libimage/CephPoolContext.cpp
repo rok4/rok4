@@ -161,6 +161,6 @@ std::string CephPoolContext::getTypeStr() {
     return "CEPHCONTEXT";
 }
 
-std::string CephPoolContext::getBucket() {
+std::string CephPoolContext::getTray() {
     return pool_name;
 }

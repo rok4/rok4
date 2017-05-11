@@ -81,26 +81,26 @@ ContextBook::ContextBook(eContextType type, std::string s1, std::string s2, std:
     am = NULL;
 }
 
-Context * ContextBook::addContext(std::string pool, bool keystone)
+Context * ContextBook::addContext(std::string tray, bool keystone)
 {
     Context* ctx;
-    std::map<std::string, Context*>::iterator it = book.find ( pool );
+    std::map<std::string, Context*>::iterator it = book.find ( tray );
     if ( it != book.end() ) {
-        //le pool est déjà existant et donc connecté
+        //le contenant est déjà existant et donc connecté
         return it->second;
 
     } else {
-        //ce pool n'est pas encore connecté, on va créer la connexion
+        //ce contenant n'est pas encore connecté, on va créer la connexion
 
         switch(contextType) {
             case CEPHCONTEXT : 
-                ctx = new CephPoolContext(ceph_name, ceph_user, ceph_conf, pool);
+                ctx = new CephPoolContext(ceph_name, ceph_user, ceph_conf, tray);
                 break;
             case S3CONTEXT : 
-                ctx = new S3Context(s3_url, s3_key, s3_secret_key, pool);
+                ctx = new S3Context(s3_url, s3_key, s3_secret_key, tray);
                 break;
             case SWIFTCONTEXT :
-                ctx = new SwiftContext(swift_auth, swift_user, swift_passwd, pool, keystone);
+                ctx = new SwiftContext(swift_auth, swift_user, swift_passwd, tray, keystone);
                 break;
             default :
                 return NULL;
@@ -109,21 +109,21 @@ Context * ContextBook::addContext(std::string pool, bool keystone)
         if (am != NULL) ctx->setAliasManager(am);
 
         //on ajoute au book
-        book.insert ( std::pair<std::string,Context*>(pool,ctx) );
+        book.insert ( std::pair<std::string,Context*>(tray,ctx) );
 
         return ctx;
     }
 
 }
 
-Context * ContextBook::getContext(std::string pool)
+Context * ContextBook::getContext(std::string tray)
 {
-    std::map<std::string, Context*>::iterator it = book.find ( pool );
+    std::map<std::string, Context*>::iterator it = book.find ( tray );
     if ( it == book.end() ) {
-        LOGGER_ERROR("Le pool demandé n'a pas été trouvé dans l'annuaire.");
+        LOGGER_ERROR("Le contenant demandé n'a pas été trouvé dans l'annuaire.");
         return NULL;
     } else {
-        //le pool est déjà existant et donc connecté
+        //le contenant est déjà existant et donc connecté
         return it->second;
     }
 

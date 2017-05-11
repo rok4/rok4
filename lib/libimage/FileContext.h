@@ -106,7 +106,7 @@ public:
 
     eContextType getType();
     std::string getTypeStr();
-    std::string getBucket();
+    std::string getTray();
 
     /**
      * \~french \brief Ouvre le flux #output

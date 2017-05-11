@@ -57,19 +57,45 @@
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
- * \brief Création d'un gestionnaire d'alias abstrait 
+ * \brief Création d'un pool
+ * \details Cette classe est prévue pour être utilisée sans instance
  */
 class CurlPool {  
 
 private:
 
+    /**
+     * \~french \brief Annuaire des objet Curl
+     * \details La clé est l'identifiant du thread
+     * \~english \brief Curl object book
+     * \details Key is the thread's ID
+     */
     static std::map<pthread_t, CURL*> pool;
+
+    /**
+     * \~french
+     * \brief Constructeur
+     * \~english
+     * \brief Constructeur
+     */
     CurlPool(){};
 
 public:
 
+    /**
+     * \~french
+     * \brief Destructeur
+     * \~english
+     * \brief Destructor
+     */
     ~CurlPool(){};
 
+    /**
+     * \~french \brief Retourne un objet Curl propre au thread appelant
+     * \details Si il n'existe pas encore d'objet curl pour ce tread, on le crée et on l'initialise
+     * \~english \brief Get the curl object specific to the calling thread
+     * \details If curl object doesn't exist for this thread, it is created and initialized
+     */
     static CURL* getCurlEnv() {
         pthread_t i = pthread_self();
 
@@ -83,15 +109,24 @@ public:
         }
     }
 
+    /**
+     * \~french \brief Affiche le nombre d'objet curl dans l'annuaire
+     * \~english \brief Print the number of curl objects in the book
+     */
     static void printNumCurls () {
         LOGGER_INFO("Nombre de contextes curl : " << pool.size());
     }
 
+    /**
+     * \~french \brief Nettoie tous les objets curl dans l'annuaire et le vide
+     * \~english \brief Clean all curl objects in the book and empty it
+     */
     static void cleanCurlPool () {
         std::map<pthread_t, CURL*>::iterator it;
         for (it = pool.begin(); it != pool.end(); ++it) {
             curl_easy_cleanup(it->second);
         }
+        pool.clear();
     }
 
 };

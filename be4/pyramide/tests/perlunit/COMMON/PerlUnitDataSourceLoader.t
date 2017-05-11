@@ -55,46 +55,29 @@ use COMMON::TileMatrixSet;
 
 ######################################################
 
-# GeoImage creation
-
-my $newDSL = COMMON::DataSourceLoader->new({
-    filepath_conf => $Bin."/../../sources/sources.txt"
+my $dsl = COMMON::DataSourceLoader->new({
+    filepath_conf => $Bin."/../../confs/dsl_ok.txt"
 });
-ok (defined $newDSL, "DataSourceLoader created");
-is ($newDSL->getNumberDataSources(), 4, "All expected data sources are created");
 
-my $oldDSL = COMMON::DataSourceLoader->new({
-        path_image => $Bin."/../../images/BDORTHO",
-        srs => "IGNF:LAMB93",
-    },{
-        wms_layer   => "LAYER",
-        wms_url     => "http://url/server/wms",
-        wms_version => "1.3.0",
-        wms_request => "getMap",
-        wms_format  => "image/tiff"
-    }, "18"
-);
-ok (defined $oldDSL, "DataSourceLoader created with old configuration");
+ok (defined $dsl, "DataSourceLoader created");
+is ($dsl->getNumberDataSources(), 4, "All expected data sources are created");
+ok (! defined $dsl->getPixelFromSources(), "no pixel infos from sources (only harvest)");
 
 ######################################################
 
 my $TMS = COMMON::TileMatrixSet->new($Bin."/../../tms/LAMB93_10cm.tms");
 
-my ($bottomOrder,$topOrder) = $newDSL->updateDataSources($TMS);
-is_deeply([$bottomOrder,$topOrder],[10,21],
-          "Update bottom/top ID/orders for each data source : no global top level specified");
+my ($bottomOrder,$topOrder) = $dsl->updateDataSources($TMS);
+is_deeply([$bottomOrder,$topOrder],[10,21], "Update bottom/top ID/orders for each data source : no global top level specified");
 
-($bottomOrder,$topOrder) = $newDSL->updateDataSources($TMS,"level_3");
-is_deeply([$bottomOrder,$topOrder],[10,18],
-          "Update bottom/top ID/orders for each data source : global top level specified");
+($bottomOrder,$topOrder) = $dsl->updateDataSources($TMS,"level_3");
+is_deeply([$bottomOrder,$topOrder],[10,18], "Update bottom/top ID/orders for each data source : global top level specified");
 
-($bottomOrder,$topOrder) = $newDSL->updateDataSources($TMS,"level_6");
-is_deeply([$bottomOrder,$topOrder],[-1,-1],
-          "Update bottom/top ID/orders for each data source : unconsistent level ID detected");
+($bottomOrder,$topOrder) = $dsl->updateDataSources($TMS,"level_6");
+is_deeply([$bottomOrder,$topOrder],[-1,-1], "Update bottom/top ID/orders for each data source : unconsistent level ID detected");
 
-($bottomOrder,$topOrder) = $newDSL->updateDataSources($TMS,"fake_level");
-is_deeply([$bottomOrder,$topOrder],[-1,-1],
-          "Update bottom/top ID/orders for each data source : unknown level ID detected");
+($bottomOrder,$topOrder) = $dsl->updateDataSources($TMS,"fake_level");
+is_deeply([$bottomOrder,$topOrder],[-1,-1], "Update bottom/top ID/orders for each data source : unknown level ID detected");
 
 ######################################################
 
