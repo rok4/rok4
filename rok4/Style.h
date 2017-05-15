@@ -190,6 +190,26 @@ public:
             const std::vector<std::string>& abstracts,const  std::vector<Keyword>& keywords,
             const std::vector<LegendURL>& legendURLs, Palette& palette ,  Pente& pente, Aspect& aspect,int angle =-1, float exaggeration=1., uint8_t center=0 );
 
+    Style ( const Style &obj) {
+
+        estompage = false;
+        angle = obj.angle;
+        exaggeration = obj.exaggeration;
+        center = obj.center;
+        this->id = obj.id;
+        this->titles= obj.titles;
+        this->abstracts = obj.abstracts;
+        this->keywords = obj.keywords;
+        this->legendURLs = obj.legendURLs;
+        this->palette = obj.palette;
+        this->pente = obj.pente;
+        this->aspect = obj.aspect;
+        if ( obj.angle >= 0 && obj.angle < 360 ) {
+            this->estompage = true;
+        }
+
+    }
+
     /**
      * \~french
      * \brief Retourne l'identifiant du style

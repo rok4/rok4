@@ -273,7 +273,31 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
     //--- TMS
     LOGGER_DEBUG("Rechargement des TMS");
 
-    return new Rok4Server ( nbThreadNew, *sc, server->getLayerList(), server->getTmsList(), server->getStyleList(),
+    std::map<std::string,TileMatrixSet* > tmsListNew;
+    for (std::map<std::string,TileMatrixSet* >::iterator lv = server->getTmsList().begin();lv != server->getTmsList().end(); lv++) {
+        TileMatrixSet* tms = new TileMatrixSet(*lv->second);
+        tmsListNew.insert(std::pair<std::string,TileMatrixSet*> (lv->first,tms));
+    }
+
+    //--- Styles
+    LOGGER_DEBUG("Rechargement des Styles");
+
+    std::map<std::string,Style* > styleListNew;
+    for (std::map<std::string,Style* >::iterator lv = server->getStyleList().begin();lv != server->getStyleList().end(); lv++) {
+        Style* stl = new Style(*lv->second);
+        styleListNew.insert(std::pair<std::string,Style*> (lv->first,stl));
+    }
+
+    //--- Layers
+    LOGGER_DEBUG("Rechargement des Layers");
+
+    std::map<std::string,Layer* > layerListNew;
+    for (std::map<std::string,Layer* >::iterator lv = server->getLayerList().begin();lv != server->getLayerList().end(); lv++) {
+        Layer* lay = new Layer(*lv->second);
+        layerListNew.insert(std::pair<std::string,Layer*> (lv->first,lay));
+    }
+
+    return new Rok4Server ( nbThreadNew, *sc, layerListNew, tmsListNew, styleListNew,
                             socketNew, backlogNew, proxyNew, supportWMTSNew, supportWMSNew, nbProcessNew,timeKillNew );
 
 }

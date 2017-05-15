@@ -394,6 +394,36 @@ public:
 
     }
 
+    Layer (const Layer &obj) {
+        id = obj.id;
+        title = obj.title;
+        abstract = obj.abstract;
+        WMSAuthorized = obj.WMSAuthorized;
+        WMTSAuthorized = obj.WMTSAuthorized;
+        keyWords = obj.keyWords;
+        dataPyramid = new Pyramid(*obj.dataPyramid);
+        styles = obj.styles;
+        minRes = obj.minRes;
+        maxRes = obj.maxRes;
+        WMSCRSList = obj.WMSCRSList;
+        opaque = obj.opaque;
+        authority = obj.authority;
+        resampling = obj.resampling;
+        geographicBoundingBox = obj.geographicBoundingBox;
+        boundingBox = obj.boundingBox;
+        metadataURLs = obj.metadataURLs;
+        defaultStyle = obj.defaultStyle;
+        getFeatureInfoAvailability = obj.getFeatureInfoAvailability;
+        getFeatureInfoType = obj.getFeatureInfoType;
+        getFeatureInfoBaseURL = obj.getFeatureInfoBaseURL;
+        GFIVersion = obj.GFIVersion;
+        GFIService = obj.GFIService;
+        GFIQueryLayers = obj.GFIQueryLayers;
+        GFILayers = obj.GFILayers;
+        GFIForceEPSG = obj.GFIForceEPSG;
+
+    }
+
     /**
      * \~french
      * \brief Retourne l'indentifiant de la couche

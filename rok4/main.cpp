@@ -245,9 +245,9 @@ int main ( int argc, char** argv ) {
             if ( !W ) {
                 return 1;
             }
+
             W->initFCGI();
             firstStart = false;
-
         } else {
             std::cout<< _ ( "Mise a jour de la configuration" ) << "["<< getpid() <<"]" <<std::endl;
             if ( Wtmp ){

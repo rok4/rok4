@@ -72,19 +72,19 @@ private:
      * \~french \brief TileMatrixSet des données
      * \~english \brief TileMatrixSet of the data
      */
-    const TileMatrixSet tms;
+    TileMatrixSet tms;
 
     /**
      * \~french \brief Format des tuiles
      * \~english \brief Format of the tiles
      */
-    const Rok4Format::eformat_data format;
+    Rok4Format::eformat_data format;
 
     /**
      * \~french \brief Nombre de canaux pour les tuiles
      * \~english \brief Number of channels for the tiles
      */
-    const int channels;
+    int channels;
 
     /**
      * \~french \brief Référence au niveau le plus haut
@@ -429,6 +429,8 @@ public:
      * \param[in] onFly
      */
     Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format, int channels, bool onDemand, bool onFly, std::vector<int> nd);
+
+    Pyramid (const Pyramid &obj);
 
     /**
      * \~french \brief Destructeur

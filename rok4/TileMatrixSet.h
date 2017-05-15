@@ -153,7 +153,8 @@ public:
      * \param[in] tmList list of TileMatrix
      */
     TileMatrixSet ( std::string id, std::string title, std::string abstract, std::vector<Keyword> & keyWords, CRS& crs, std::map<std::string, TileMatrix> & tmList ) :
-        id ( id ), title ( title ), abstract ( abstract ), keyWords ( keyWords ), crs ( crs ), tmList ( tmList ) {};
+        id ( id ), title ( title ), abstract ( abstract ), keyWords ( keyWords ), crs ( crs ), tmList ( tmList ) {}
+
     /**
      * \~french
      * Crée un TileMatrixSet à partir d'un autre
@@ -164,7 +165,7 @@ public:
      * \brief Copy Constructor
      * \param[in] t TileMatrixSet to copy
      */
-    TileMatrixSet ( const TileMatrixSet& t ) : id ( t.id ),title ( t.title ),abstract ( t.abstract ),keyWords ( t.keyWords ),crs ( t.crs ),tmList ( t.tmList ) {}
+    TileMatrixSet ( const TileMatrixSet& t ) : id ( t.id ),title ( t.title ),abstract ( t.abstract ),keyWords ( t.keyWords ),crs ( t.crs ),tmList (t.tmList) {}
     /**
      * \~french
      * La comparaison ignore les mots-clés et les TileMatrix

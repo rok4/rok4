@@ -106,6 +106,69 @@ Pyramid::Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4
 
 }
 
+Pyramid::Pyramid (const Pyramid &obj): Source(PYRAMID), tms (obj.tms) {
+
+    std::map<std::string, Level*>::iterator itLevel;
+    double minRes= DBL_MAX;
+    double maxRes= DBL_MIN;
+
+    this->channels = obj.channels;
+    this->format = obj.format;
+    this->onDemand = obj.onDemand;
+    this->onFly = obj.onFly;
+    this->style = obj.style;
+    this->transparent = obj.transparent;
+
+    for (std::map<std::string,Level* >::const_iterator lv = obj.levels.begin();lv != obj.levels.end(); lv++) {
+        Level* lev = new Level(*lv->second);
+        levels.insert(std::pair<std::string,Level*> (lv->first,lev));
+    }
+
+    noData = new int[channels];
+    for (int i = 0; i < channels ; i++) {
+        noData[i] = obj.noData[i];
+    }
+
+
+    for ( itLevel=levels.begin(); itLevel!=levels.end(); itLevel++ ) {
+        //Empty Source as fallback
+        DataSource* noDataSource;
+        DataStream* nodatastream;
+
+        if ( format==Rok4Format::TIFF_JPG_INT8 ) {
+            nodatastream = new JPEGEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ) );
+        } else if ( format==Rok4Format::TIFF_PNG_INT8 ) {
+            nodatastream = new PNGEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ) );
+        } else if ( format==Rok4Format::TIFF_RAW_FLOAT32 ) {
+            nodatastream = new BilEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ) );
+        } else {
+            nodatastream = TiffEncoder::getTiffEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ), format );
+        }
+        if ( nodatastream ) {
+            noDataSource = new BufferedDataSource ( *nodatastream );
+            delete nodatastream;
+            nodatastream = NULL;
+        } else {
+            LOGGER_ERROR ( "Format non pris en charge : "<< Rok4Format::toString ( format ) );
+        }
+        itLevel->second->setNoDataSource ( noDataSource );
+
+
+        //Determine Higher and Lower Levels
+        double d = itLevel->second->getRes();
+        if ( minRes > d ) {
+            minRes = d;
+            lowestLevel = itLevel->second;
+        }
+        if ( maxRes < d ) {
+            maxRes = d;
+            highestLevel = itLevel->second;
+        }
+    }
+
+}
+
+
 DataSource* Pyramid::getTile ( int x, int y, std::string tmId, DataSource* errorDataSource ) {
 
     std::map<std::string, Level*>::const_iterator itLevel=levels.find ( tmId );
@@ -125,9 +188,12 @@ DataSource* Pyramid::getTile ( int x, int y, std::string tmId, DataSource* error
             noDataSource = getLowestLevel()->getEncodedNoDataTile();
         } else {
             askedRes = itTM->second.getRes();
+
             noDataSource = ( askedRes > getLowestLevel()->getRes() ? getHighestLevel()->getEncodedNoDataTile() : getLowestLevel()->getEncodedNoDataTile() );
+
         }
         return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( noDataSource ) );
+
     }
 
     return itLevel->second->getTile ( x, y, errorDataSource );
