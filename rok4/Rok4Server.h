@@ -161,10 +161,30 @@ private:
      */
     ProcessFactory *parallelProcess;
     /**
-     * \~french \brief Proxy utilisé par défaut pour des requêtes WMS
-     * \~english \brief Default proxy used for WMS requests
-     */
+    * \~french \brief Proxy utilisé par défaut pour des requêtes WMS
+    * \~english \brief Default proxy used for WMS requests
+    */
     Proxy proxy;
+    /**
+     * \~french \brief Dossier contenant les TMS
+     * \~english \brief Directory of TMS
+     */
+    std::string tmsDir;
+    /**
+     * \~french \brief Dossier contenant les styles
+     * \~english \brief Directory of styles
+     */
+    std::string styleDir;
+    /**
+     * \~french \brief Dossier contenant les layers
+     * \~english \brief Directory of layers
+     */
+    std::string layDir;
+    /**
+     * \~french \brief Dossier contenant les projections
+     * \~english \brief Directory of proj4
+     */
+    std::string projDir;
 
     /**
      * \~french
@@ -626,12 +646,91 @@ public:
     Proxy getProxy(){
             return proxy ;
     }
+    /**
+     * \~french
+     * \brief Modifier le dossier des tms
+     * \~english
+     * \brief Set tms directory
+     */
+    void setTmsDir(std::string d){
+            tmsDir = d ;
+    }
+
+    /**
+     * \~french
+     * \brief Récupérer le dossier des tms
+     * \~english
+     * \brief Get tms directory
+     */
+    std::string getTmsDir(){
+            return tmsDir ;
+    }
+    /**
+     * \~french
+     * \brief Modifier le dossier des styles
+     * \~english
+     * \brief Set styles directory
+     */
+    void setStylesDir(std::string d){
+            styleDir = d ;
+    }
+
+    /**
+     * \~french
+     * \brief Récupérer le dossier des styles
+     * \~english
+     * \brief Get styles directory
+     */
+    std::string getStylesDir(){
+            return styleDir ;
+    }
+    /**
+     * \~french
+     * \brief Modifier le dossier des layers
+     * \~english
+     * \brief Set layers directory
+     */
+    void setLayersDir(std::string d){
+            layDir = d ;
+    }
+
+    /**
+     * \~french
+     * \brief Récupérer le dossier des layers
+     * \~english
+     * \brief Get layers directory
+     */
+    std::string getLayersDir(){
+            return layDir ;
+    }
+    /**
+     * \~french
+     * \brief Modifier le dossier des proj
+     * \~english
+     * \brief Set proj directory
+     */
+    void setProjDir(std::string d){
+            projDir = d ;
+    }
+
+    /**
+     * \~french
+     * \brief Récupérer le dossier des proj
+     * \~english
+     * \brief Get proj directory
+     */
+    std::string getProjDir(){
+            return projDir ;
+    }
 
     /**
      * \brief Construction du serveur
      */
     Rok4Server (int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
-                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList, std::string socket, int backlog, Proxy proxy, bool supportWMTS = true, bool supportWMS = true, int nbProcess =1, int timeKill =300);
+                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList,
+                std::string socket, int backlog, Proxy proxy, std::string tmsdir, std::string styledir,
+                std::string layerdir, std::string projdir, bool supportWMTS = true, bool supportWMS = true,
+                int nbProcess =1, int timeKill =300);
     /**
      * \~french
      * \brief Destructeur par défaut

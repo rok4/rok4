@@ -171,11 +171,12 @@ void* Rok4Server::thread_loop ( void* arg ) {
 
 Rok4Server::Rok4Server (int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
                          std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList,
-                         std::string socket, int backlog, Proxy proxy, bool supportWMTS, bool supportWMS, int nbProcess,
+                         std::string socket, int backlog, Proxy proxy, std::string tmsdir, std::string styledir, std::string layerdir, std::string projdir, bool supportWMTS, bool supportWMS, int nbProcess,
                         int timeKill) :
     sock ( 0 ), servicesConf ( servicesConf ), layerList ( layerList ), tmsList ( tmsList ),
     styleList ( styleList ), threads ( nbThread ), socket ( socket ), backlog ( backlog ),
-    running ( false ), notFoundError ( NULL ), supportWMTS ( supportWMTS ), supportWMS ( supportWMS ), proxy (proxy) {
+    running ( false ), notFoundError ( NULL ), supportWMTS ( supportWMTS ), supportWMS ( supportWMS ),
+    proxy (proxy), tmsDir (tmsdir), styleDir (styledir), layDir (layerdir), projDir (projdir) {
 
     if ( supportWMS ) {
         LOGGER_DEBUG ( _ ( "Build WMS Capabilities 1.3.0" ) );

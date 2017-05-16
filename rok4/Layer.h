@@ -394,15 +394,13 @@ public:
 
     }
 
-    Layer (const Layer &obj) {
+    Layer (const Layer &obj,std::map<std::string,Style*> &styleList) {
         id = obj.id;
         title = obj.title;
         abstract = obj.abstract;
         WMSAuthorized = obj.WMSAuthorized;
         WMTSAuthorized = obj.WMTSAuthorized;
         keyWords = obj.keyWords;
-        dataPyramid = new Pyramid(*obj.dataPyramid);
-        styles = obj.styles;
         minRes = obj.minRes;
         maxRes = obj.maxRes;
         WMSCRSList = obj.WMSCRSList;
@@ -421,6 +419,21 @@ public:
         GFIQueryLayers = obj.GFIQueryLayers;
         GFILayers = obj.GFILayers;
         GFIForceEPSG = obj.GFIForceEPSG;
+
+        dataPyramid = new Pyramid(*obj.dataPyramid);
+
+        std::map<std::string,Style*>::iterator is;
+        for (unsigned it = 0 ; it < obj.styles.size(); it++) {
+            is = styleList.find(obj.styles.at(it)->getId());
+            if (is != styleList.end()) {
+                styles.push_back(is->second);
+            } else {
+                //TODO
+            }
+        }
+
+        //TODO: gérer le cas où il n'y aucun style de disponible
+
 
     }
 

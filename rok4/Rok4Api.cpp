@@ -96,6 +96,8 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     LogLevel logLevel;
     bool supportWMTS,supportWMS,reprojectionCapability;
     Proxy proxy;
+    char* projDir = getenv("PROJ_LIB");
+    std::string projDirstr(projDir);
     std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,strLayerDir,strTmsDir,strStyleDir,socket;
     if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, supportWMTS, supportWMS, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, socket, backlog, nbProcess, proxy,timeKill ) ) {
         std::cerr<<_ ( "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " ) <<strServerConfigFile<<std::endl;
@@ -166,7 +168,8 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
 
     // Instanciation du serveur
     Logger::stopLogger();
-    return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog, proxy, supportWMTS, supportWMS, nbProcess,timeKill );
+    return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog, proxy, strTmsDir,
+                            strStyleDir, strLayerDir, projDirstr,supportWMTS, supportWMS, nbProcess,timeKill );
 }
 
 Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, time_t lastReload ) {
@@ -180,6 +183,9 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
     std::string strServerConfigFile=serverConfigFile,strLogFileprefixNew,strServicesConfigFileNew,
             strLayerDirNew,strTmsDirNew,strStyleDirNew,socketNew,strListOfEqualCRSbool,strRestrictedCRSFile,
             strEqualCRSFile;
+
+    char* projDir = getenv("PROJ_LIB");
+    std::string projDirstr(projDir);
 
     LOGGER_DEBUG("Rechargement de la conf");
     //--- server.conf
@@ -239,8 +245,6 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
         strListOfEqualCRSbool = ConfLoader::getTagContentOfFile(strServicesConfigFileNew,"addEqualsCRS");
         if (strListOfEqualCRSbool == "true") {
             //on verifie que le fichier correspondant n'a pas changé
-            char* projDir = getenv("PROJ_LIB");
-            std::string projDirstr(projDir);
             strEqualCRSFile = projDirstr+"/listofequalscrs.txt";
             lastModCRS = ConfLoader::getLastModifiedDate(strEqualCRSFile);
             if (lastModCRS > lastReload) {
@@ -274,31 +278,104 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
     LOGGER_DEBUG("Rechargement des TMS");
 
     std::map<std::string,TileMatrixSet* > tmsListNew;
-    for (std::map<std::string,TileMatrixSet* >::iterator lv = server->getTmsList().begin();lv != server->getTmsList().end(); lv++) {
-        TileMatrixSet* tms = new TileMatrixSet(*lv->second);
-        tmsListNew.insert(std::pair<std::string,TileMatrixSet*> (lv->first,tms));
+
+    if (strTmsDirNew != server->getTmsDir()) {
+        //on recharge tout comme à l'initialisation
+
+        if ( !ConfLoader::buildTMSList ( strTmsDirNew,tmsListNew ) ) {
+            LOGGER_FATAL ( "Impossible de charger la conf des TileMatrix" );
+            LOGGER_FATAL ( "Extinction du serveur ROK4" );
+            sleep ( 1 );    // Pour laisser le temps au logger pour se vider
+            return NULL;
+        }
+
+    } else {
+        //Copie de l'ancien serveur
+
+        for (std::map<std::string,TileMatrixSet* >::iterator lv = server->getTmsList().begin();lv != server->getTmsList().end(); lv++) {
+            TileMatrixSet* tms = new TileMatrixSet(*lv->second);
+            tmsListNew.insert(std::pair<std::string,TileMatrixSet*> (lv->first,tms));
+        }
+
+        //Lecture du dossier et chargement de ce qui a changé
+
+        //pour chaque entrée du std::map on regarde s'il y a bien un fichier correspondant
+        // si ce n'est pas le cas, on le supprime de la map
     }
 
     //--- Styles
     LOGGER_DEBUG("Rechargement des Styles");
 
     std::map<std::string,Style* > styleListNew;
-    for (std::map<std::string,Style* >::iterator lv = server->getStyleList().begin();lv != server->getStyleList().end(); lv++) {
-        Style* stl = new Style(*lv->second);
-        styleListNew.insert(std::pair<std::string,Style*> (lv->first,stl));
+
+    if (strStyleDirNew != server->getStylesDir()) {
+        //on recharge tout comme à l'initialisation
+
+        if ( !ConfLoader::buildStylesList ( strStyleDirNew,styleListNew, sc->isInspire() ) ) {
+            LOGGER_FATAL ( "Impossible de charger la conf des Styles" );
+            LOGGER_FATAL ( "Extinction du serveur ROK4" );
+            sleep ( 1 );    // Pour laisser le temps au logger pour se vider
+            return NULL;
+        }
+
+    } else {
+        //Copie de l'ancien serveur
+
+        for (std::map<std::string,Style* >::iterator lv = server->getStyleList().begin();lv != server->getStyleList().end(); lv++) {
+            Style* stl = new Style(*lv->second);
+            styleListNew.insert(std::pair<std::string,Style*> (lv->first,stl));
+        }
+
+
+        //Lecture du dossier et chargement de ce qui a changé
+
+        //pour chaque entrée du std::map on regarde s'il y a bien un fichier correspondant
+        // si ce n'est pas le cas, on le supprime de la map
     }
+
+
+
 
     //--- Layers
     LOGGER_DEBUG("Rechargement des Layers");
 
     std::map<std::string,Layer* > layerListNew;
-    for (std::map<std::string,Layer* >::iterator lv = server->getLayerList().begin();lv != server->getLayerList().end(); lv++) {
-        Layer* lay = new Layer(*lv->second);
-        layerListNew.insert(std::pair<std::string,Layer*> (lv->first,lay));
+
+
+    if (strLayerDirNew != server->getLayersDir()) {
+        //on recharge tout comme à l'initialisation
+
+        if ( !ConfLoader::buildLayersList ( strLayerDirNew,tmsListNew, styleListNew,layerListNew,reprojectionCapabilityNew,sc,proxyNew ) ) {
+            LOGGER_FATAL ( "Impossible de charger la conf des Layers" );
+            LOGGER_FATAL ( "Extinction du serveur ROK4" );
+            sleep ( 1 );    // Pour laisser le temps au logger pour se vider
+            return NULL;
+        }
+
+    } else {
+        //Copie de l'ancien serveur
+
+        for (std::map<std::string,Layer* >::iterator lv = server->getLayerList().begin();lv != server->getLayerList().end(); lv++) {
+            Layer* lay = new Layer(*lv->second,styleListNew);
+            layerListNew.insert(std::pair<std::string,Layer*> (lv->first,lay));
+
+            //Suppression de l'ancien petit à petit
+            delete lv->second;
+            lv->second = NULL;
+        }
+        server->getLayerList().clear();
+
+        //Lecture du dossier et chargement de ce qui a changé
+
+        //pour chaque entrée du std::map on regarde s'il y a bien un fichier correspondant
+        // si ce n'est pas le cas, on le supprime de la map
     }
 
+    //--- PROJ4
+
     return new Rok4Server ( nbThreadNew, *sc, layerListNew, tmsListNew, styleListNew,
-                            socketNew, backlogNew, proxyNew, supportWMTSNew, supportWMSNew, nbProcessNew,timeKillNew );
+                            socketNew, backlogNew, proxyNew, strTmsDirNew, strStyleDirNew, strLayerDirNew, projDirstr,
+                            supportWMTSNew, supportWMSNew, nbProcessNew,timeKillNew );
 
 }
 
