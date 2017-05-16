@@ -220,6 +220,58 @@ public:
      * \brief Load file from a directory
      */
     static std::vector<std::string> listFileFromDir(std::string directory, std::string extension);
+    /**
+     * \~french
+     * \brief Création d'un TileMatrixSet à partir d'un fichier
+     * \param[in] fileName Nom du fichier, utilisé comme identifiant
+     * \return un pointeur vers le style nouvellement instancié, NULL en cas d'erreur
+     * \~english
+     * \brief Create a new TileMatrixSet from a file
+     * \param[in] fileName filename, used as identifier
+     * \return pointer to the newly created TileMatrixSet, NULL if something went wrong
+     */
+    static TileMatrixSet* buildTileMatrixSet ( std::string fileName );
+    /**
+     * \~french
+     * \brief Création d'un Style à partir d'un fichier
+     * \param[in] fileName Nom du fichier, utilisé comme identifiant
+     * \param[in] inspire définit si les règles de conformité INSPIRE doivent être utilisées
+     * \return un pointeur vers le Style nouvellement instancié, NULL en cas d'erreur
+     * \~english
+     * \brief Create a new Style from a file
+     * \param[in] fileName filename, used as identifier
+     * \param[in] inspire whether INSPIRE validity rules are enforced
+     * \return pointer to the newly created Style, NULL if something went wrong
+     */
+    static Style* buildStyle ( std::string fileName,bool inspire );
+    /**
+     * \~french
+     * \brief Création d'un Layer à partir d'un fichier
+     * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
+     * \param[in] tmsList liste des TileMatrixSets connus
+     * \param[in] stylesList liste des Styles connus
+     * \param[in] reprojectionCapability définit si le serveur est capable de reprojeter des données
+     * \param[in] servicesConf pointeur vers les configurations globales du services
+     * \param[in] proxy
+     * \return un pointeur vers le Layer nouvellement instancié, NULL en cas d'erreur
+     * \~english
+     * \brief Create a new Layer from a file
+     * \param[in] fileName original filename, used as identifier
+     * \param[in] tmsList known TileMatrixSets
+     * \param[in] stylesList known Styles
+     * \param[in] reprojectionCapability whether the server can handle reprojection
+     * \param[in] servicesConf global service configuration pointer
+     * \param[in] proxy
+     * \return pointer to the newly created Layer, NULL if something went wrong
+     */
+    static Layer * buildLayer (std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> stylesList , bool reprojectionCapability, ServicesConf* servicesConf , Proxy proxy);
+    /**
+     * \~french
+     * \brief Test l'existence d'un fichier
+     * \~english
+     * \brief Test a file
+     */
+    static bool doesFileExist(std::string file);
 
 private:
     /**
@@ -239,19 +291,6 @@ private:
     static Style* parseStyle ( TiXmlDocument* doc,std::string fileName,bool inspire );
     /**
      * \~french
-     * \brief Création d'un Style à partir d'un fichier
-     * \param[in] fileName Nom du fichier, utilisé comme identifiant
-     * \param[in] inspire définit si les règles de conformité INSPIRE doivent être utilisées
-     * \return un pointeur vers le Style nouvellement instancié, NULL en cas d'erreur
-     * \~english
-     * \brief Create a new Style from a file
-     * \param[in] fileName filename, used as identifier
-     * \param[in] inspire whether INSPIRE validity rules are enforced
-     * \return pointer to the newly created Style, NULL if something went wrong
-     */
-    static Style* buildStyle ( std::string fileName,bool inspire );
-    /**
-     * \~french
      * \brief Création d'un TileMatrixSet à partir de sa représentation XML
      * \param[in] doc Racine du document XML
      * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
@@ -263,17 +302,6 @@ private:
      * \return pointer to the newly created TileMatrixSet, NULL if something went wrong
      */
     static TileMatrixSet* parseTileMatrixSet ( TiXmlDocument* doc,std::string fileName );
-    /**
-     * \~french
-     * \brief Création d'un TileMatrixSet à partir d'un fichier
-     * \param[in] fileName Nom du fichier, utilisé comme identifiant
-     * \return un pointeur vers le style nouvellement instancié, NULL en cas d'erreur
-     * \~english
-     * \brief Create a new TileMatrixSet from a file
-     * \param[in] fileName filename, used as identifier
-     * \return pointer to the newly created TileMatrixSet, NULL if something went wrong
-     */
-    static TileMatrixSet* buildTileMatrixSet ( std::string fileName );
     /**
      * \~french
      * \brief Création d'une Pyramide à partir de sa représentation XML
@@ -400,27 +428,6 @@ private:
      * \return pointer to the newly created Layer, NULL if something went wrong
      */
     static Layer * parseLayer (TiXmlDocument* doc, std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> stylesList , bool reprojectionCapability, ServicesConf* servicesConf , Proxy proxy);
-    /**
-     * \~french
-     * \brief Création d'un Layer à partir d'un fichier
-     * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
-     * \param[in] tmsList liste des TileMatrixSets connus
-     * \param[in] stylesList liste des Styles connus
-     * \param[in] reprojectionCapability définit si le serveur est capable de reprojeter des données
-     * \param[in] servicesConf pointeur vers les configurations globales du services
-     * \param[in] proxy
-     * \return un pointeur vers le Layer nouvellement instancié, NULL en cas d'erreur
-     * \~english
-     * \brief Create a new Layer from a file
-     * \param[in] fileName original filename, used as identifier
-     * \param[in] tmsList known TileMatrixSets
-     * \param[in] stylesList known Styles
-     * \param[in] reprojectionCapability whether the server can handle reprojection
-     * \param[in] servicesConf global service configuration pointer
-     * \param[in] proxy
-     * \return pointer to the newly created Layer, NULL if something went wrong
-     */
-    static Layer * buildLayer (std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> stylesList , bool reprojectionCapability, ServicesConf* servicesConf , Proxy proxy);
     /**
      * \~french
      * \brief Chargement des paramètres du serveur à partir de sa représentation XML

@@ -3465,3 +3465,13 @@ std::vector<std::string> ConfLoader::listFileFromDir(std::string directory, std:
     return files;
 
 }
+
+bool ConfLoader::doesFileExist(std::string file) {
+    struct stat buffer;
+
+    if (stat (file.c_str(), &buffer) == 0) {
+        return true;
+    } else {
+        return false;
+    }
+}

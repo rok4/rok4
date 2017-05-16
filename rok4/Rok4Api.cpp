@@ -96,8 +96,7 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     LogLevel logLevel;
     bool supportWMTS,supportWMS,reprojectionCapability;
     Proxy proxy;
-    char* projDir = getenv("PROJ_LIB");
-    std::string projDirstr(projDir);
+
     std::string strServerConfigFile=serverConfigFile,strLogFileprefix,strServicesConfigFile,strLayerDir,strTmsDir,strStyleDir,socket;
     if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutput, strLogFileprefix, logFilePeriod, logLevel, nbThread, supportWMTS, supportWMS, reprojectionCapability, strServicesConfigFile, strLayerDir, strTmsDir, strStyleDir, socket, backlog, nbProcess, proxy,timeKill ) ) {
         std::cerr<<_ ( "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " ) <<strServerConfigFile<<std::endl;
@@ -169,12 +168,12 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     // Instanciation du serveur
     Logger::stopLogger();
     return new Rok4Server ( nbThread, *sc, layerList, tmsList, styleList, socket, backlog, proxy, strTmsDir,
-                            strStyleDir, strLayerDir, projDirstr,supportWMTS, supportWMS, nbProcess,timeKill );
+                            strStyleDir, strLayerDir, getenv("PROJ_LIB"),supportWMTS, supportWMS, nbProcess,timeKill );
 }
 
 Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, time_t lastReload ) {
 
-    time_t lastModServerConf,lastModServiceConf,lastModCRS;
+    time_t lastModServerConf,lastModServiceConf,lastModCRS, lastMod;
     LogOutput logOutputNew;
     int nbThreadNew,logFilePeriodNew,backlogNew, nbProcessNew,timeKillNew;
     LogLevel logLevelNew;
@@ -183,7 +182,7 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
     std::string strServerConfigFile=serverConfigFile,strLogFileprefixNew,strServicesConfigFileNew,
             strLayerDirNew,strTmsDirNew,strStyleDirNew,socketNew,strListOfEqualCRSbool,strRestrictedCRSFile,
             strEqualCRSFile;
-
+    std::vector<std::string> listOfFile;
     char* projDir = getenv("PROJ_LIB");
     std::string projDirstr(projDir);
 
@@ -291,16 +290,65 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
 
     } else {
         //Copie de l'ancien serveur
+        std::map<std::string,TileMatrixSet* >::iterator lv;
 
-        for (std::map<std::string,TileMatrixSet* >::iterator lv = server->getTmsList().begin();lv != server->getTmsList().end(); lv++) {
+        for (lv = server->getTmsList().begin();lv != server->getTmsList().end(); lv++) {
             TileMatrixSet* tms = new TileMatrixSet(*lv->second);
             tmsListNew.insert(std::pair<std::string,TileMatrixSet*> (lv->first,tms));
         }
 
         //Lecture du dossier et chargement de ce qui a changé
+        listOfFile = ConfLoader::listFileFromDir(strTmsDirNew, ".tms");
+
+        if (listOfFile.size() != 0) {
+            for (unsigned i=0; i<listOfFile.size(); i++) {
+                lastMod = ConfLoader::getLastModifiedDate(listOfFile[i]);
+
+                if (lastMod > lastReload) {
+                    //fichier modifié, on le recharge
+                    TileMatrixSet* tms = ConfLoader::buildTileMatrixSet ( listOfFile[i] );
+
+                    if (tms != NULL) {
+                        lv = tmsListNew.find(tms->getId());
+                        if (lv != tmsListNew.end()){
+                            tmsListNew.erase(lv);
+                            tmsListNew.insert(std::pair<std::string,TileMatrixSet*> (tms->getId(),tms));
+                        } else {
+                            //nouveau fichier
+                            tmsListNew.insert(std::pair<std::string,TileMatrixSet*> (tms->getId(),tms));
+                        }
+                    } else {
+                        LOGGER_ERROR("Impossible de charger " << listOfFile[i]);
+                    }
+
+                } else {
+                    //fichier non modifié, on ne fait rien
+                }
+
+            }
+        }
 
         //pour chaque entrée du std::map on regarde s'il y a bien un fichier correspondant
         // si ce n'est pas le cas, on le supprime de la map
+        std::vector<std::string> to_delete;
+
+        for (lv = tmsListNew.begin();lv != tmsListNew.end(); lv++) {
+            std::string name = strTmsDirNew + "/" + lv->first + ".tms";
+            if (!ConfLoader::doesFileExist(name)) {
+                //le fichier a été supprimé donc on supprime de la map
+                to_delete.push_back(lv->first);
+            } else {
+                //tout va bien
+            }
+        }
+
+        for (std::vector<int>::size_type i = 0; i != to_delete.size(); i++) {
+            lv = tmsListNew.find(to_delete[i]);
+            delete lv->second;
+            lv->second = NULL;
+            tmsListNew.erase(lv);
+        }
+
     }
 
     //--- Styles
@@ -320,17 +368,66 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
 
     } else {
         //Copie de l'ancien serveur
+        std::map<std::string,Style* >::iterator lv;
 
-        for (std::map<std::string,Style* >::iterator lv = server->getStyleList().begin();lv != server->getStyleList().end(); lv++) {
+        for (lv = server->getStyleList().begin();lv != server->getStyleList().end(); lv++) {
             Style* stl = new Style(*lv->second);
             styleListNew.insert(std::pair<std::string,Style*> (lv->first,stl));
         }
 
 
         //Lecture du dossier et chargement de ce qui a changé
+        listOfFile = ConfLoader::listFileFromDir(strStyleDirNew, ".stl");
+
+        if (listOfFile.size() != 0) {
+            for (unsigned i=0; i<listOfFile.size(); i++) {
+                lastMod = ConfLoader::getLastModifiedDate(listOfFile[i]);
+
+                if (lastMod > lastReload) {
+                    //fichier modifié, on le recharge
+                    Style* stl = ConfLoader::buildStyle ( listOfFile[i], sc->isInspire() );
+
+                    if (stl != NULL) {
+                        lv = styleListNew.find(stl->getId());
+                        if (lv != styleListNew.end()){
+                            styleListNew.erase(lv);
+                            styleListNew.insert(std::pair<std::string,Style*> (stl->getId(),stl));
+                        } else {
+                            //nouveau fichier
+                            styleListNew.insert(std::pair<std::string,Style*> (stl->getId(),stl));
+                        }
+                    } else {
+                        LOGGER_ERROR("Impossible de charger " << listOfFile[i]);
+                    }
+
+                } else {
+                    //fichier non modifié, on ne fait rien
+                }
+
+            }
+        }
 
         //pour chaque entrée du std::map on regarde s'il y a bien un fichier correspondant
         // si ce n'est pas le cas, on le supprime de la map
+        std::vector<std::string> to_delete;
+
+        for (lv = styleListNew.begin();lv != styleListNew.end(); lv++) {
+            std::string name = strStyleDirNew + "/" + lv->first + ".stl";
+            if (!ConfLoader::doesFileExist(name)) {
+                //le fichier a été supprimé donc on supprime de la map
+                to_delete.push_back(lv->first);
+            } else {
+                //tout va bien
+            }
+        }
+
+        for (std::vector<int>::size_type i = 0; i != to_delete.size(); i++) {
+            lv = styleListNew.find(to_delete[i]);
+            delete lv->second;
+            lv->second = NULL;
+            styleListNew.erase(lv);
+        }
+
     }
 
 
@@ -354,8 +451,9 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
 
     } else {
         //Copie de l'ancien serveur
+        std::map<std::string,Layer* >::iterator lv;
 
-        for (std::map<std::string,Layer* >::iterator lv = server->getLayerList().begin();lv != server->getLayerList().end(); lv++) {
+        for (lv = server->getLayerList().begin();lv != server->getLayerList().end(); lv++) {
             Layer* lay = new Layer(*lv->second,styleListNew);
             layerListNew.insert(std::pair<std::string,Layer*> (lv->first,lay));
 
@@ -366,12 +464,62 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
         server->getLayerList().clear();
 
         //Lecture du dossier et chargement de ce qui a changé
+        listOfFile = ConfLoader::listFileFromDir(strLayerDirNew, ".lay");
+
+        if (listOfFile.size() != 0) {
+            for (unsigned i=0; i<listOfFile.size(); i++) {
+                lastMod = ConfLoader::getLastModifiedDate(listOfFile[i]);
+
+                if (lastMod > lastReload) {
+                    //fichier modifié, on le recharge
+                    Layer* lay = ConfLoader::buildLayer ( listOfFile[i], tmsListNew, styleListNew, reprojectionCapabilityNew, sc, proxyNew );
+
+                    if (lay != NULL) {
+                        lv = layerListNew.find(lay->getId());
+                        if (lv != layerListNew.end()){
+                            layerListNew.erase(lv);
+                            layerListNew.insert(std::pair<std::string,Layer*> (lay->getId(),lay));
+                        } else {
+                            //nouveau fichier
+                            layerListNew.insert(std::pair<std::string,Layer*> (lay->getId(),lay));
+                        }
+                    } else {
+                        LOGGER_ERROR("Impossible de charger " << listOfFile[i]);
+                    }
+
+                } else {
+                    //fichier non modifié, on teste si le .pyr a changé
+                    //TODO
+                }
+
+            }
+        }
 
         //pour chaque entrée du std::map on regarde s'il y a bien un fichier correspondant
         // si ce n'est pas le cas, on le supprime de la map
+        std::vector<std::string> to_delete;
+
+        for (lv = layerListNew.begin();lv != layerListNew.end(); lv++) {
+            std::string name = strLayerDirNew + "/" + lv->first + ".lay";
+            if (!ConfLoader::doesFileExist(name)) {
+                //le fichier a été supprimé donc on supprime de la map
+                to_delete.push_back(lv->first);
+            } else {
+                //tout va bien
+            }
+        }
+
+        for (std::vector<int>::size_type i = 0; i != to_delete.size(); i++) {
+            lv = layerListNew.find(to_delete[i]);
+            delete lv->second;
+            lv->second = NULL;
+            layerListNew.erase(lv);
+        }
+
     }
 
     //--- PROJ4
+    //TODO: voir s'il y a quelque chose à faire en fait...
 
     return new Rok4Server ( nbThreadNew, *sc, layerListNew, tmsListNew, styleListNew,
                             socketNew, backlogNew, proxyNew, strTmsDirNew, strStyleDirNew, strLayerDirNew, projDirstr,
