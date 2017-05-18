@@ -207,8 +207,7 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
         //fichier modifié, on recharge particulièrement le logger et on doit vérifier que les fichiers et dossiers
         //indiqués sont les mêmes qu'avant
         LOGGER_DEBUG("Server.conf modifie");
-        // TODO: Reload du logger et stockage des anciennes valeurs de rok4server pour comparer et voir si c'est nécessaire de
-        //tout recharger
+        // TODO: Reload du logger si nécessaire
 
     } else {
         //fichier non modifié, il n'y a rien à faire
@@ -326,6 +325,11 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
                 }
 
             }
+        } else {
+            //aucun fichier dans le dossier
+            LOGGER_FATAL ( "Aucun fichier .tms dans le dossier " << strTmsDirNew );
+            sleep ( 1 );    // Pour laisser le temps au logger pour se vider
+            return NULL;
         }
 
         //pour chaque entrée du std::map on regarde s'il y a bien un fichier correspondant
@@ -405,6 +409,11 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
                 }
 
             }
+        } else {
+            //aucun fichier dans le dossier
+            LOGGER_FATAL ( "Aucun fichier .stl dans le dossier " << strStyleDirNew );
+            sleep ( 1 );    // Pour laisser le temps au logger pour se vider
+            return NULL;
         }
 
         //pour chaque entrée du std::map on regarde s'il y a bien un fichier correspondant
@@ -484,15 +493,52 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
                             layerListNew.insert(std::pair<std::string,Layer*> (lay->getId(),lay));
                         }
                     } else {
-                        LOGGER_ERROR("Impossible de charger " << listOfFile[i]);
+                        LOGGER_ERROR("Impossible de charger le layer " << listOfFile[i]);
                     }
 
                 } else {
                     //fichier non modifié, on teste si le .pyr a changé
-                    //TODO
+
+                    std::string strPyrFile = ConfLoader::getTagContentOfFile(listOfFile[i],"pyramid");
+
+                    if (strPyrFile != "") {
+                        lastMod = ConfLoader::getLastModifiedDate(strPyrFile);
+
+                        if (lastMod > lastReload) {
+                            //fichier modifié
+                            Layer* lay = ConfLoader::buildLayer ( listOfFile[i], tmsListNew, styleListNew, reprojectionCapabilityNew, sc, proxyNew );
+
+                            if (lay != NULL) {
+                                lv = layerListNew.find(lay->getId());
+                                if (lv != layerListNew.end()){
+                                    layerListNew.erase(lv);
+                                    layerListNew.insert(std::pair<std::string,Layer*> (lay->getId(),lay));
+                                } else {
+                                    //nouveau fichier
+                                    layerListNew.insert(std::pair<std::string,Layer*> (lay->getId(),lay));
+                                }
+                            } else {
+                                LOGGER_ERROR("Impossible de charger le layer " << listOfFile[i]);
+                            }
+
+                        } else {
+                            //fichier non modifié, super on ne fait rien
+                        }
+
+
+                    } else {
+                        //impossible de récupérer le nom du fichier .pyr, tant pis...
+                        LOGGER_ERROR("Impossible de charger la pyramide " << strPyrFile);
+                    }
+
                 }
 
             }
+        } else {
+            //aucun fichier dans le dossier
+            LOGGER_FATAL ( "Aucun fichier .lay dans le dossier " << strLayerDirNew );
+            sleep ( 1 );    // Pour laisser le temps au logger pour se vider
+            return NULL;
         }
 
         //pour chaque entrée du std::map on regarde s'il y a bien un fichier correspondant

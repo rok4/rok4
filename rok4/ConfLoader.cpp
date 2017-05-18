@@ -75,8 +75,13 @@
 time_t ConfLoader::getLastModifiedDate(std::string file) {
     struct stat sb;
 
-    stat(file.c_str(), &sb);
-    return *(&sb.st_mtim.tv_sec);
+    int result = stat(file.c_str(), &sb);
+    if (result == 0) {
+        return *(&sb.st_mtim.tv_sec);
+    } else {
+        return 0;
+    }
+
 
 
 }
