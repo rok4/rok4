@@ -410,8 +410,7 @@ StoreSlab () {
                 }
             }
         }
-    }' $ROK4_SWIFT_AUTHURL | grep "X-Subject-Token" | cut -d":" -f2 | tr -d ' ')
-
+    }' $ROK4_SWIFT_AUTHURL | grep "X-Subject-Token" | cut -d":" -f2 | tr -cd '[:print:]')
 
     resource="/${CONTAINER_NAME}/${objName}"
 
