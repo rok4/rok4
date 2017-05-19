@@ -175,7 +175,7 @@ public:
 
     eContextType getType();
     std::string getTypeStr();
-    std::string getBucket();
+    std::string getTray();
           
     int read(uint8_t* data, int offset, int size, std::string name);
 

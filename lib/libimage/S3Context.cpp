@@ -363,6 +363,6 @@ std::string S3Context::getTypeStr() {
     return "S3Context";
 }
 
-std::string S3Context::getBucket() {
+std::string S3Context::getTray() {
     return bucket_name;
 }

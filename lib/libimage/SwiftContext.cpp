@@ -395,6 +395,6 @@ std::string SwiftContext::getTypeStr() {
     return "SWIFTCONTEXT";
 }
 
-std::string SwiftContext::getBucket() {
+std::string SwiftContext::getTray() {
     return container_name;
 }

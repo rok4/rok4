@@ -191,11 +191,11 @@ sub init {
     # init Options
     GetOptions(
         "help|h" => sub {
-            printf "PyrToPyr.pl --conf=<conf_file>\n";
+            printf "pyr2pYr.pl --conf=<conf_file>\n";
             exit 0;
         },
         "usage" => sub {
-            printf "PyrToPyr.pl --conf=<conf_file>\n";
+            printf "pyr2pYr.pl --conf=<conf_file>\n";
             exit 0;
         },
         
@@ -203,7 +203,7 @@ sub init {
 
     ) or do {
         printf "Unappropriate usage\n";
-        printf "PyrToPyr.pl --conf=<conf_file>\n";
+        printf "pyr2pYr.pl --conf=<conf_file>\n";
         exit -1;
     };
     
@@ -391,11 +391,33 @@ StoreSlab () {
     local fullPath=$1
     local objName=$2
     
+    TOKEN=$(curl -s -ik \
+        -H "Content-Type: application/json" \
+        -XPOST \
+        -d '
+    {   "auth": {
+            "scope": {
+                "project": {"id": "'$ROK4_KEYSTONE_PROJECTID'"}
+            },
+            "identity": {
+                "methods": ["password"],
+                "password": {
+                    "user": {
+                        "domain": {"id": "'$ROK4_KEYSTONE_DOMAINID'"},
+                        "password": "'$ROK4_SWIFT_PASSWD'",
+                        "name": "'$ROK4_SWIFT_USER'"
+                    }
+                }
+            }
+        }
+    }' $ROK4_SWIFT_AUTHURL | grep "X-Subject-Token" | cut -d":" -f2 | tr -d ' ')
+
+
     resource="/${CONTAINER_NAME}/${objName}"
 
     curl -k -X PUT -T "${fullPath}" \
-     -H "X-Auth-Token: ${ROK4_SWIFT_TOKEN}" \
-     ${ROK4_SWIFT_URL}${resource}
+     -H "X-Auth-Token: ${TOKEN}" \
+     ${ROK4_SWIFT_PUBLICURL}${resource}
 
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 

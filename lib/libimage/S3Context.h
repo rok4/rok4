@@ -144,7 +144,7 @@ public:
 
     eContextType getType();
     std::string getTypeStr();
-    std::string getBucket();
+    std::string getTray();
         
     /**
      * \~french \brief Retourne le nom du bucket
