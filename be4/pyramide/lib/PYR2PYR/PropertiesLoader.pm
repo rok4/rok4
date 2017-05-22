@@ -178,9 +178,6 @@ sub _check {
     }
     elsif ( $this->{cfgObject}->isProperty({property=>"bucket_name",section=>"to"})) {
         INFO("'bucket_name' is provided : S3 push");
-    }    
-    elsif ( $this->{cfgObject}->isProperty({property=>"container_name",section=>"to"})) {
-        INFO("'bucket_name' is provided : SWIFT push");
     }
     elsif ( $this->{cfgObject}->isProperty({property=>"container_name",section=>"to"})) {
         INFO("'container_name' is provided : SWIFT push");
