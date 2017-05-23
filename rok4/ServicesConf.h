@@ -113,7 +113,48 @@ public:
         deliveryPoint ( deliveryPoint ), city ( city ), administrativeArea ( administrativeArea ), postCode ( postCode ),
         country ( country ), electronicMailAddress ( electronicMailAddress ), metadataWMS ( metadataWMS ), metadataWMTS ( metadataWMTS ),
         listofequalsCRS ( listofequalsCRS ), restrictedCRSList ( restrictedCRSList ),
-        postMode ( postMode ), fullStyling ( fullStyling ), inspire ( inspire ),doweuselistofequalsCRS ( doweuselistofequalsCRS ), addEqualsCRS ( addEqualsCRS ), dowerestrictCRSList (dowerestrictCRSList)  {};
+        postMode ( postMode ), fullStyling ( fullStyling ), inspire ( inspire ),doweuselistofequalsCRS ( doweuselistofequalsCRS ), addEqualsCRS ( addEqualsCRS ), dowerestrictCRSList (dowerestrictCRSList)  {}
+
+    ServicesConf (const ServicesConf & obj): metadataWMS (obj.metadataWMS), metadataWMTS (metadataWMTS) {
+        title = obj.title;
+        abstract = obj.abstract;
+        keyWords = obj.keyWords;
+        serviceProvider = obj.serviceProvider;
+        fee = obj.fee;
+        accessConstraint = obj.accessConstraint;
+        postMode = obj.postMode;
+        providerSite = obj.providerSite;
+        individualName = obj.individualName;
+        individualPosition = obj.individualPosition;
+        voice = obj.voice;
+        facsimile = obj.facsimile;
+        addressType = obj.addressType;
+        deliveryPoint = obj.deliveryPoint;
+        city = obj.city;
+        administrativeArea = obj.administrativeArea;
+        postCode = obj.postCode;
+        country = obj.country;
+        electronicMailAddress = obj.electronicMailAddress;
+        name = obj.name;
+        layerLimit = obj.layerLimit;
+        maxWidth = obj.maxWidth;
+        maxHeight = obj.maxHeight;
+        maxTileX = obj.maxTileX;
+        maxTileY = obj.maxTileY;
+        formatList = obj.formatList;
+        infoFormatList = obj.infoFormatList;
+        globalCRSList = obj.globalCRSList;
+        fullStyling = obj.fullStyling;
+        serviceType = obj.serviceType;
+        serviceTypeVersion = obj.serviceTypeVersion;
+        inspire = obj.inspire;
+        doweuselistofequalsCRS = obj.doweuselistofequalsCRS;
+        listofequalsCRS = obj.listofequalsCRS;
+        addEqualsCRS = obj.addEqualsCRS;
+        dowerestrictCRSList = obj.dowerestrictCRSList;
+        restrictedCRSList = obj.restrictedCRSList;
+    }
+
     //  WMS & WMTS
     std::string inline getAbstract() const      {
         return abstract;

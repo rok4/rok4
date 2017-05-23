@@ -218,59 +218,17 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
     //--- service.conf
     LOGGER_DEBUG("Rechargement du service.conf et des fichiers associes (listofequalcrs.txt et restrictedcrslist.txt)");
 
-    lastModServiceConf = ConfLoader::getLastModifiedDate(strServicesConfigFileNew);
+    delete sc;
+    sc = NULL;
 
-    if (lastModServiceConf > lastReload) {
-        //fichier modifié, on recharge l'ensemble
-        LOGGER_DEBUG("Service.conf modifie");
-
-        delete sc;
-        sc = NULL;
-
-        sc = ConfLoader::buildServicesConf ( strServicesConfigFileNew );
-        if ( sc==NULL ) {
-            LOGGER_FATAL ( "Impossible d'interpreter le fichier de conf " << strServicesConfigFileNew );
-            LOGGER_FATAL ( "Extinction du serveur ROK4" );
-            sleep ( 1 );    // Pour laisser le temps au logger pour se vider
-            return NULL;
-        }
-
-    } else {
-        //fichier non modifié, on récupère certaines informations pour voir s'elles ont changé
-        LOGGER_DEBUG("Service.conf non modifie");
-
-        //listequalCRS.txt
-        strListOfEqualCRSbool = ConfLoader::getTagContentOfFile(strServicesConfigFileNew,"addEqualsCRS");
-        if (strListOfEqualCRSbool == "true") {
-            //on verifie que le fichier correspondant n'a pas changé
-            strEqualCRSFile = projDirstr+"/listofequalscrs.txt";
-            lastModCRS = ConfLoader::getLastModifiedDate(strEqualCRSFile);
-            if (lastModCRS > lastReload) {
-                //fichier modifié
-                std::vector<std::string> equalCRSNew = ConfLoader::loadListEqualsCRS();
-                sc->setListOfEqualsCRS(equalCRSNew);
-            } else {
-                //fichier non modifié, on ne fait rien
-
-            }
-        }
-
-        //restrictedCRSList
-        strRestrictedCRSFile = ConfLoader::getTagContentOfFile(strServicesConfigFileNew,"restrictedCRSList");
-        if (strRestrictedCRSFile != "") {
-            //on verifie que le fichier correspondant n'a pas changé
-            lastModCRS = ConfLoader::getLastModifiedDate(strRestrictedCRSFile);
-            if (lastModCRS > lastReload) {
-                //fichier modifié
-                std::vector<std::string> restrictedCRS = ConfLoader::loadStringVectorFromFile(strRestrictedCRSFile);
-                sc->setRestrictedCRSList(restrictedCRS);
-            } else {
-                //fichier non modifié, on ne fait rien
-
-            }
-        }
-
+    sc = ConfLoader::buildServicesConf ( strServicesConfigFileNew );
+    if ( sc==NULL ) {
+        LOGGER_FATAL ( "Impossible d'interpreter le fichier de conf " << strServicesConfigFileNew );
+        LOGGER_FATAL ( "Extinction du serveur ROK4" );
+        sleep ( 1 );    // Pour laisser le temps au logger pour se vider
+        return NULL;
     }
+
 
     //--- TMS
     LOGGER_DEBUG("Rechargement des TMS");
@@ -564,6 +522,7 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
 
     }
 
+    Logger::stopLogger();
     return new Rok4Server ( nbThreadNew, *sc, layerListNew, tmsListNew, styleListNew,
                             socketNew, backlogNew, proxyNew, strTmsDirNew, strStyleDirNew, strLayerDirNew, projDirstr,
                             supportWMTSNew, supportWMSNew, nbProcessNew,timeKillNew );
