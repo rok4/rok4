@@ -564,9 +564,6 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
 
     }
 
-    //--- PROJ4
-    //TODO: voir s'il y a quelque chose à faire en fait...
-
     return new Rok4Server ( nbThreadNew, *sc, layerListNew, tmsListNew, styleListNew,
                             socketNew, backlogNew, proxyNew, strTmsDirNew, strStyleDirNew, strLayerDirNew, projDirstr,
                             supportWMTSNew, supportWMSNew, nbProcessNew,timeKillNew );
