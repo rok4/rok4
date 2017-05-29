@@ -173,15 +173,15 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
 
 Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, time_t lastReload ) {
 
-    time_t lastModServerConf,lastModServiceConf,lastModCRS, lastMod;
+    time_t lastModServerConf,lastMod;
     LogOutput logOutputNew;
     int nbThreadNew,logFilePeriodNew,backlogNew, nbProcessNew,timeKillNew;
     LogLevel logLevelNew;
     bool supportWMTSNew,supportWMSNew,reprojectionCapabilityNew;
     Proxy proxyNew;
     std::string strServerConfigFile=serverConfigFile,strLogFileprefixNew,strServicesConfigFileNew,
-            strLayerDirNew,strTmsDirNew,strStyleDirNew,socketNew,strListOfEqualCRSbool,strRestrictedCRSFile,
-            strEqualCRSFile;
+            strLayerDirNew,strTmsDirNew,strStyleDirNew,socketNew;
+
     std::vector<std::string> listOfFile;
     char* projDir = getenv("PROJ_LIB");
     std::string projDirstr(projDir);
