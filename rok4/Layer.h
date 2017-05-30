@@ -420,7 +420,16 @@ public:
         GFILayers = obj.GFILayers;
         GFIForceEPSG = obj.GFIForceEPSG;
 
-        dataPyramid = new Pyramid(*obj.dataPyramid);
+        if (obj.dataPyramid->getOnDemand()) {
+            if (obj.dataPyramid->getOnFly()) {
+                dataPyramid = new PyramidOnFly(*reinterpret_cast<PyramidOnFly*>(obj.dataPyramid));
+            } else {
+                dataPyramid = new PyramidOnDemand(*reinterpret_cast<PyramidOnDemand*>(obj.dataPyramid));
+            }
+        } else {
+            dataPyramid = new Pyramid(*obj.dataPyramid);
+        }
+
 
         std::map<std::string,Style*>::iterator is;
         for (unsigned it = 0 ; it < obj.styles.size(); it++) {

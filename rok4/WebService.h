@@ -374,6 +374,26 @@ public:
     WebService(std::string url, std::string proxy, std::string noProxy, int retry, int interval, int timeout);
 
     /**
+     * \~french \brief Constructeur
+     * \~english \brief Constructor
+     */
+    WebService(const WebService& obj):Source(WEBSERVICE) {
+
+        url = obj.url;
+        proxy = obj.proxy;
+        noProxy = obj.noProxy;
+        timeout = obj.timeout;
+        retry = obj.retry;
+        interval = obj.interval;
+        user = obj.user;
+        pwd = obj.pwd;
+        referer = obj.referer;
+        userAgent = obj.userAgent;
+        responseType = obj.responseType;
+
+    }
+
+    /**
      * \~french \brief Destructeur
      * \~english \brief Destructor
      */

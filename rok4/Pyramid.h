@@ -490,6 +490,38 @@ public:
         Pyramid(levels,tms,format,channels,onDemand,onFly,nd),
         specificSources (sSources) {}
 
+    PyramidOnDemand(const PyramidOnDemand& obj) : Pyramid(obj) {
+
+
+        std::map<std::string,std::vector<Source*> > oldSources = obj.specificSources;
+
+        if (oldSources.size() != 0) {
+            for ( std::map<std::string,std::vector<Source*> >::iterator lv = oldSources.begin(); lv != oldSources.end(); lv++) {
+
+                std::vector<Source*> newSources;
+
+                if (lv->second.size() != 0) {
+                    for ( std::vector<int>::size_type i = 0; i != lv->second.size(); i++) {
+                        if (lv->second[i]->getType() == PYRAMID) {
+                            newSources.push_back(new Pyramid(*reinterpret_cast<Pyramid*>(lv->second[i])));
+                        }
+                        if (lv->second[i]->getType() == WEBSERVICE) {
+                            newSources.push_back(new WebService(*reinterpret_cast<WebService*>(lv->second[i])));
+                        }
+
+                    }
+                    specificSources.insert(std::pair< std::string, std::vector<Source*> > ( lv->first, newSources));
+                } else {
+                    //TODO
+                }
+            }
+
+        } else {
+            //TODO
+        }
+
+    }
+
 
 
     /**
@@ -582,6 +614,11 @@ public:
         PyramidOnDemand(levels,tms,format,channels,onDemand,onFly,ndv,sSources),
         photo (ph),
         ndValues (ndv) {}
+
+    PyramidOnFly(const PyramidOnFly& obj) :
+        PyramidOnDemand(obj),
+        photo (obj.photo),
+        ndValues (obj.ndValues) {}
 
 
     /**
