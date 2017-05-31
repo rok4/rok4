@@ -8,6 +8,7 @@
 
 FIND_PATH(CURL_INCLUDE_DIR curl.h 
     /usr/local/include 
+    /usr/include/x86_64-linux-gnu/curl
     /usr/include 
     /usr/local/include/curl
     /usr/include/curl
