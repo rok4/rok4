@@ -70,6 +70,7 @@ use lib "$Bin/../lib/perl5";
 # My module
 use COMMON::TileMatrixSet;
 use COMMON::ProxyGDAL;
+use COMMON::Base36;
 
 ################################################################################
 # Constantes
@@ -94,6 +95,7 @@ Contains be4-simulator call options :
     levels - To precise calculated levels 
     dims - To precise dimensions of image to compare
     lists - To precise the directory to write images' lists
+    listPaths - To precise to write slabs' path and not just slabs' indices
     
 =cut
 my %options =
@@ -107,6 +109,7 @@ my %options =
     "wkt" => undef,
     "levels" => undef,
     "lists" => undef,
+    "listPaths" => undef,
     "dims" => undef
 );
 
@@ -180,6 +183,7 @@ sub init {
         "wkt=s" => \$options{wkt},
         "levels=s" => \$options{levels},
         "lists=s" => \$options{lists},
+        "listPaths" => \$options{listPaths},
         "dims=s" => \$options{dims}
     ) or do {
         printf "Unappropriate usage\n";
@@ -243,13 +247,13 @@ sub init {
 Function: doIt
 
 Use classes :
-    - <BE4::TileMatrixSet>
-    - <BE4::TileMatrix>
+    - <COMMON::TileMatrixSet>
+    - <COMMON::TileMatrix>
     - <Geo::OGR::Geometry>
 =cut
 sub doIt {
     
-    my $objTMS  = BE4::TileMatrixSet->new($options{tms});
+    my $objTMS  = COMMON::TileMatrixSet->new($options{tms});
     if (! defined $objTMS) {
         ERROR (sprintf "Can not create object TileMatrixSet from this path : %s ", $options{tms});
         return FALSE;
@@ -266,14 +270,14 @@ sub doIt {
     }
     close(SHAPE);
     
-    my $ogrShape = BE4::ProxyGDAL::geometryFromWKT($wktShape);
+    my $ogrShape = COMMON::ProxyGDAL::geometryFromString("WKT", $wktShape);
 
     if (! defined $ogrShape) {
         ERROR(sprintf "Cannot create a Geometry from the string : %s.",$wktShape);
         return FALSE;
     }
 
-    my $bboxes = BE4::ProxyGDAL::getBboxes($ogrShape);
+    my $bboxes = COMMON::ProxyGDAL::getBboxes($ogrShape);
     
     if (! defined $bboxes) {
         ERROR("Cannot calculate bboxes from the WKT Geometry");
@@ -329,7 +333,7 @@ sub doIt {
 
                 DEBUG("Bbox $curBbox / $nbbboxes");
             
-                my (rowMin, $rowMax, $colMin, $colMax) = $tm->bboxToIndices(@{$bb},$width,$height);
+                my ($rowMin, $rowMax, $colMin, $colMax) = $tm->bboxToIndices(@{$bb},$width,$height);
                 
                 for (my $col = $colMin; $col <= $colMax; $col++) {
                     for (my $row = $rowMin; $row <= $rowMax; $row++) {
@@ -342,12 +346,17 @@ sub doIt {
                             $xmax,$ymin,
                             $xmin,$ymin;
 
-                        my $OGRtile = BE4::ProxyGDAL::geometryFromWKT($WKTtile);
+                        my $OGRtile = COMMON::ProxyGDAL::geometryFromString("WKT", $WKTtile);
 
-                        if (BE4::ProxyGDAL::isIntersected($OGRtile, $ogrShape)) {
+                        if (COMMON::ProxyGDAL::isIntersected($OGRtile, $ogrShape)) {
                             $nbImages++;
                             if (defined $options{lists}) {
-                                print OUT "$i,$j\n";
+                                if ($options{listPaths}) {
+                                    my $path = COMMON::Base36::indicesToB36Path($col, $row, 3);
+                                    print OUT "$level/$path.tif\n";
+                                } else {
+                                    print OUT "$col,$row\n";
+                                }
                             }
                         }
 
