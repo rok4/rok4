@@ -301,7 +301,7 @@ int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
 
     double time;
     curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &time);
-    LOGGER_INFO("CURLTIME=" << time);
+    LOGGER_INFO("CURLTIME=" << time << " (" << size << ")");
 
     if( CURLE_OK != res) {
         LOGGER_ERROR("Cannot read data from Swift : " << size << " bytes (from the " << offset << " one) in the object " << name);
