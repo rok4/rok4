@@ -52,6 +52,7 @@
 #include <curl/curl.h>
 #include <sys/stat.h>
 #include "CurlPool.h"
+#include <time.h>
 
 SwiftContext::SwiftContext (std::string auth, std::string user, std::string passwd, std::string container, bool ks) :
     Context(),
@@ -297,6 +298,10 @@ int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
 
     res = curl_easy_perform(curl);
     curl_slist_free_all(list);
+
+    double time;
+    curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &time);
+    LOGGER_INFO("CURLTIME=" << time);
 
     if( CURLE_OK != res) {
         LOGGER_ERROR("Cannot read data from Swift : " << size << " bytes (from the " << offset << " one) in the object " << name);

@@ -53,6 +53,7 @@
 #include <sys/stat.h>
 #include <openssl/hmac.h>
 #include <time.h>
+#include "CurlPool.h"
 
 S3Context::S3Context (std::string u, std::string k, std::string sk, std::string b) :
     Context(),
@@ -178,7 +179,7 @@ int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
 
     int lastBytes = offset + size - 1;
 
-    CURL *curl = curl_easy_init();
+    CURL* curl = CurlPool::getCurlEnv();
     //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
 
@@ -227,14 +228,11 @@ int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &chunk);
 
     res = curl_easy_perform(curl);
+    curl_slist_free_all(list);
 
     double time;
     curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &time);
-    LOGGER_INFO(time);
-
-    curl_slist_free_all(list);
-    curl_easy_cleanup(curl);
-
+    LOGGER_INFO("CURLTIME=" << time);
 
     if( CURLE_OK != res) {
         LOGGER_ERROR("Cannot read data from S3 : " << size << " bytes (from the " << offset << " one) in the object " << name);
@@ -277,7 +275,7 @@ bool S3Context::writeFromFile(std::string fileName, std::string objectName) {
 
     CURLcode res;
     struct curl_slist *list = NULL;
-    CURL *curl = curl_easy_init();
+    CURL* curl = CurlPool::getCurlEnv();
     //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
     std::string fullUrl = url + "/" + bucket_name + "/" + objectName;
@@ -327,13 +325,12 @@ bool S3Context::writeFromFile(std::string fileName, std::string objectName) {
     curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE, (curl_off_t)file_info.st_size);
 
     res = curl_easy_perform(curl);
+    curl_slist_free_all(list);
 
 
     if( CURLE_OK != res) {
         LOGGER_ERROR("Cannot upload the file " << fileName);
         LOGGER_ERROR(curl_easy_strerror(res));
-        curl_slist_free_all(list);
-        curl_easy_cleanup(curl);
         return false;
     }
 
@@ -342,13 +339,9 @@ bool S3Context::writeFromFile(std::string fileName, std::string objectName) {
     if (http_code < 200 || http_code > 299) {
         LOGGER_ERROR("Cannot upload the file " << fileName);
         LOGGER_ERROR("Response HTTP code : " << http_code);
-        curl_slist_free_all(list);
-        curl_easy_cleanup(curl);
         return false;
     }
 
-    curl_slist_free_all(list);
-    curl_easy_cleanup(curl);
 
     fclose(fileToUpload);
 
