@@ -120,6 +120,7 @@ private:
      */
     Style *style;
 
+
     /**
      * \~french \brief Indique si la pyramide contient des tuiles déjà pré-calculées (false)
      * ou si elle est à la demande, donc calcule des tuiles sur demande (true)
@@ -327,7 +328,7 @@ public:
      * \~english \brief Get the style
      * \return style
      */
-    Style *getStyle(){
+    Style *getStyle() const {
         return style;
     }
 
@@ -490,7 +491,7 @@ public:
         Pyramid(levels,tms,format,channels,onDemand,onFly,nd),
         specificSources (sSources) {}
 
-    PyramidOnDemand(const PyramidOnDemand& obj) : Pyramid(obj) {
+    PyramidOnDemand(const PyramidOnDemand& obj,std::map<std::string,Style*> &styleList) : Pyramid(obj) {
 
 
         std::map<std::string,std::vector<Source*> > oldSources = obj.specificSources;
@@ -503,7 +504,15 @@ public:
                 if (lv->second.size() != 0) {
                     for ( std::vector<int>::size_type i = 0; i != lv->second.size(); i++) {
                         if (lv->second[i]->getType() == PYRAMID) {
-                            newSources.push_back(new Pyramid(*reinterpret_cast<Pyramid*>(lv->second[i])));
+                            Pyramid* nPyr = new Pyramid(*reinterpret_cast<Pyramid*>(lv->second[i]));
+                            std::map<std::string,Style*>::iterator is;
+                            is = styleList.find(nPyr->getStyle()->getId());
+                            if (is != styleList.end()) {
+                                nPyr->setStyle(is->second);
+                            } else {
+                                //TODO
+                            }
+                            newSources.push_back(nPyr);
                         }
                         if (lv->second[i]->getType() == WEBSERVICE) {
                             newSources.push_back(new WebService(*reinterpret_cast<WebService*>(lv->second[i])));
@@ -615,8 +624,8 @@ public:
         photo (ph),
         ndValues (ndv) {}
 
-    PyramidOnFly(const PyramidOnFly& obj) :
-        PyramidOnDemand(obj),
+    PyramidOnFly(const PyramidOnFly& obj,std::map<std::string,Style*> &styleList) :
+        PyramidOnDemand(obj,styleList),
         photo (obj.photo),
         ndValues (obj.ndValues) {}
 

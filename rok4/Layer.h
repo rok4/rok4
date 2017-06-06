@@ -422,9 +422,9 @@ public:
 
         if (obj.dataPyramid->getOnDemand()) {
             if (obj.dataPyramid->getOnFly()) {
-                dataPyramid = new PyramidOnFly(*reinterpret_cast<PyramidOnFly*>(obj.dataPyramid));
+                dataPyramid = new PyramidOnFly(*reinterpret_cast<PyramidOnFly*>(obj.dataPyramid),styleList);
             } else {
-                dataPyramid = new PyramidOnDemand(*reinterpret_cast<PyramidOnDemand*>(obj.dataPyramid));
+                dataPyramid = new PyramidOnDemand(*reinterpret_cast<PyramidOnDemand*>(obj.dataPyramid),styleList);
             }
         } else {
             dataPyramid = new Pyramid(*obj.dataPyramid);
