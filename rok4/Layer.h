@@ -433,7 +433,12 @@ public:
 
         std::map<std::string,Style*>::iterator is;
         for (unsigned it = 0 ; it < obj.styles.size(); it++) {
-            is = styleList.find(obj.styles.at(it)->getId());
+            std::string oldName = obj.styles.at(it)->getId();
+            for (is = styleList.begin(); is != styleList.end(); is++) {
+                if (is->second->getId() == oldName) {
+                    break;
+                }
+            }
             if (is != styleList.end()) {
                 styles.push_back(is->second);
             } else {
