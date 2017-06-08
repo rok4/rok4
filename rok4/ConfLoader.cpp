@@ -3480,3 +3480,21 @@ bool ConfLoader::doesFileExist(std::string file) {
         return false;
     }
 }
+
+std::string ConfLoader::getFileName(std::string file, std::string extension) {
+
+    std::string id;
+
+    unsigned int idBegin=file.rfind ( "/" );
+    if ( idBegin == std::string::npos ) {
+        idBegin=0;
+    }
+    unsigned int idEnd=file.rfind ( extension );
+    if ( idEnd == std::string::npos ) {
+        idEnd=file.size();
+    }
+    id=file.substr ( idBegin+1, idEnd-idBegin-1 );
+
+    return id;
+
+}

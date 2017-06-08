@@ -272,6 +272,13 @@ public:
      * \brief Test a file
      */
     static bool doesFileExist(std::string file);
+    /**
+     * \~french
+     * \brief Récupère le nom d'un fichier
+     * \~english
+     * \brief Get file name
+     */
+    static std::string getFileName(std::string file, std::string extension);
 
 private:
     /**

@@ -180,7 +180,7 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
     bool supportWMTSNew,supportWMSNew,reprojectionCapabilityNew;
     Proxy proxyNew;
     std::string strServerConfigFile=serverConfigFile,strLogFileprefixNew,strServicesConfigFileNew,
-            strLayerDirNew,strTmsDirNew,strStyleDirNew,socketNew;
+            strLayerDirNew,strTmsDirNew,strStyleDirNew,socketNew,fileName;
 
     std::vector<std::string> listOfFile;
     char* projDir = getenv("PROJ_LIB");
@@ -279,7 +279,24 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
                     }
 
                 } else {
-                    //fichier non modifié, on ne fait rien
+                    //fichier non modifié
+
+                    fileName = ConfLoader::getFileName(listOfFile[i],".tms");
+
+                    lv = tmsListNew.find(fileName);
+
+                    if (lv == tmsListNew.end()) {
+                        //on l'inclue
+                        TileMatrixSet* tms = ConfLoader::buildTileMatrixSet ( listOfFile[i] );
+                        if (tms != NULL) {
+                            tmsListNew.insert(std::pair<std::string,TileMatrixSet*> (tms->getId(),tms));
+                        } else {
+                            LOGGER_ERROR("Impossible de charger le TileMatrixSet " << listOfFile[i]);
+                        }
+                    } else {
+
+                    }
+
                 }
 
             }
@@ -363,7 +380,24 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
                     }
 
                 } else {
-                    //fichier non modifié, on ne fait rien
+                    //fichier non modifié
+
+                    fileName = ConfLoader::getFileName(listOfFile[i],".stl");
+
+                    lv = styleListNew.find(fileName);
+
+                    if (lv == styleListNew.end()) {
+                        //on l'inclue
+                        Style* stl = ConfLoader::buildStyle ( listOfFile[i], sc->isInspire() );
+                        if (stl != NULL) {
+                            styleListNew.insert(std::pair<std::string,Style*> (stl->getId(),stl));
+                        } else {
+                            LOGGER_ERROR("Impossible de charger le style " << listOfFile[i]);
+                        }
+                    } else {
+
+                    }
+
                 }
 
             }
@@ -455,39 +489,57 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
                     }
 
                 } else {
-                    //fichier non modifié, on teste si le .pyr a changé
+                    //fichier non modifié
 
-                    std::string strPyrFile = ConfLoader::getTagContentOfFile(listOfFile[i],"pyramid");
+                    fileName = ConfLoader::getFileName(listOfFile[i],".lay");
 
-                    if (strPyrFile != "") {
-                        lastMod = ConfLoader::getLastModifiedDate(strPyrFile);
+                    lv = layerListNew.find(fileName);
 
-                        if (lastMod > lastReload) {
-                            //fichier modifié
-                            Layer* lay = ConfLoader::buildLayer ( listOfFile[i], tmsListNew, styleListNew, reprojectionCapabilityNew, sc, proxyNew );
+                    if (lv == layerListNew.end()) {
+                        //on l'inclue
+                        Layer* lay = ConfLoader::buildLayer ( listOfFile[i], tmsListNew, styleListNew, reprojectionCapabilityNew, sc, proxyNew );
+                        if (lay != NULL) {
+                            layerListNew.insert(std::pair<std::string,Layer*> (lay->getId(),lay));
+                        } else {
+                            LOGGER_ERROR("Impossible de charger le layer " << listOfFile[i]);
+                        }
+                    } else {
+                        //on teste si le .pyr a changé
+                        std::string strPyrFile = ConfLoader::getTagContentOfFile(listOfFile[i],"pyramid");
 
-                            if (lay != NULL) {
-                                lv = layerListNew.find(lay->getId());
-                                if (lv != layerListNew.end()){
-                                    layerListNew.erase(lv);
-                                    layerListNew.insert(std::pair<std::string,Layer*> (lay->getId(),lay));
+                        if (strPyrFile != "") {
+                            lastMod = ConfLoader::getLastModifiedDate(strPyrFile);
+
+                            if (lastMod > lastReload) {
+                                //fichier modifié
+                                Layer* lay = ConfLoader::buildLayer ( listOfFile[i], tmsListNew, styleListNew, reprojectionCapabilityNew, sc, proxyNew );
+
+                                if (lay != NULL) {
+                                    lv = layerListNew.find(lay->getId());
+                                    if (lv != layerListNew.end()){
+                                        layerListNew.erase(lv);
+                                        layerListNew.insert(std::pair<std::string,Layer*> (lay->getId(),lay));
+                                    } else {
+                                        //nouveau fichier
+                                        layerListNew.insert(std::pair<std::string,Layer*> (lay->getId(),lay));
+                                    }
                                 } else {
-                                    //nouveau fichier
-                                    layerListNew.insert(std::pair<std::string,Layer*> (lay->getId(),lay));
+                                    LOGGER_ERROR("Impossible de charger le layer " << listOfFile[i]);
                                 }
+
                             } else {
-                                LOGGER_ERROR("Impossible de charger le layer " << listOfFile[i]);
+                                //fichier non modifié, super on ne fait rien
                             }
 
+
                         } else {
-                            //fichier non modifié, super on ne fait rien
+                            //impossible de récupérer le nom du fichier .pyr, tant pis...
+                            LOGGER_ERROR("Impossible de charger la pyramide " << strPyrFile);
                         }
 
-
-                    } else {
-                        //impossible de récupérer le nom du fichier .pyr, tant pis...
-                        LOGGER_ERROR("Impossible de charger la pyramide " << strPyrFile);
                     }
+
+
 
                 }
 
