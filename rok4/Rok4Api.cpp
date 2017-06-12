@@ -268,6 +268,7 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
                     if (tms != NULL) {
                         lv = tmsListNew.find(tms->getId());
                         if (lv != tmsListNew.end()){
+                            delete lv->second;
                             tmsListNew.erase(lv);
                             tmsListNew.insert(std::pair<std::string,TileMatrixSet*> (tms->getId(),tms));
                         } else {
@@ -369,6 +370,7 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
                     if (stl != NULL) {
                         lv = styleListNew.find(stl->getId());
                         if (lv != styleListNew.end()){
+                            delete lv->second;
                             styleListNew.erase(lv);
                             styleListNew.insert(std::pair<std::string,Style*> (stl->getId(),stl));
                         } else {
@@ -478,6 +480,7 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
                     if (lay != NULL) {
                         lv = layerListNew.find(lay->getId());
                         if (lv != layerListNew.end()){
+                            delete lv->second;
                             layerListNew.erase(lv);
                             layerListNew.insert(std::pair<std::string,Layer*> (lay->getId(),lay));
                         } else {
