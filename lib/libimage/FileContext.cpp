@@ -51,6 +51,7 @@
 #include <fcntl.h>
 #include <cstdio>
 #include <errno.h>
+#include <time.h>
 
 using namespace std;
 
@@ -64,6 +65,8 @@ bool FileContext::connection() {
 int FileContext::read(uint8_t* data, int offset, int size, std::string name) {
     std::string fullName = root_dir + name;
     LOGGER_DEBUG("File read : " << size << " bytes (from the " << offset << " one) in the file " << fullName);
+
+    const clock_t begin_time = clock();
 
     // Ouverture du fichier
     int fildes = open( fullName.c_str(), O_RDONLY );
@@ -79,6 +82,10 @@ int FileContext::read(uint8_t* data, int offset, int size, std::string name) {
         close ( fildes );
         return -1;
     }
+
+    float time = float( clock () - begin_time ) /  CLOCKS_PER_SEC;
+    LOGGER_INFO("FILETIME=" << time << " (" << size << ") " << pthread_self());
+
     close ( fildes );
 
     return read_size;
