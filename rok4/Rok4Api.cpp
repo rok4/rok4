@@ -455,7 +455,7 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
         std::map<std::string,Layer* >::iterator lv;
 
         for (lv = server->getLayerList().begin();lv != server->getLayerList().end(); lv++) {
-            Layer* lay = new Layer(*lv->second,styleListNew);
+            Layer* lay = new Layer(*lv->second,styleListNew,tmsListNew);
             layerListNew.insert(std::pair<std::string,Layer*> (lv->first,lay));
 
             //Suppression de l'ancien petit à petit

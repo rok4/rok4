@@ -205,7 +205,7 @@ public:
      * \brief Return the identifier
      * \return identifier
      */
-    std::string getId();
+    std::string getId() const;
     /**
      * \~french
      * \brief Retourne le titre

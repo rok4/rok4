@@ -394,7 +394,7 @@ public:
 
     }
 
-    Layer (const Layer &obj,std::map<std::string,Style*> &styleList) {
+    Layer (const Layer &obj,std::map<std::string,Style*> &styleList,std::map<std::string,TileMatrixSet*> &tmsList) {
         id = obj.id;
         title = obj.title;
         abstract = obj.abstract;
@@ -422,12 +422,12 @@ public:
 
         if (obj.dataPyramid->getOnDemand()) {
             if (obj.dataPyramid->getOnFly()) {
-                dataPyramid = new PyramidOnFly(*reinterpret_cast<PyramidOnFly*>(obj.dataPyramid),styleList);
+                dataPyramid = new PyramidOnFly(*reinterpret_cast<PyramidOnFly*>(obj.dataPyramid),styleList,tmsList);
             } else {
-                dataPyramid = new PyramidOnDemand(*reinterpret_cast<PyramidOnDemand*>(obj.dataPyramid),styleList);
+                dataPyramid = new PyramidOnDemand(*reinterpret_cast<PyramidOnDemand*>(obj.dataPyramid),styleList,tmsList);
             }
         } else {
-            dataPyramid = new Pyramid(*obj.dataPyramid);
+            dataPyramid = new Pyramid(*obj.dataPyramid,tmsList);
         }
 
 
@@ -447,6 +447,7 @@ public:
         }
 
         //TODO: gérer le cas où il n'y aucun style de disponible
+        // cas à gérer en amont de ce constructeur
 
 
     }

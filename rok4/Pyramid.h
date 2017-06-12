@@ -431,7 +431,7 @@ public:
      */
     Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format, int channels, bool onDemand, bool onFly, std::vector<int> nd);
 
-    Pyramid (const Pyramid &obj);
+    Pyramid (const Pyramid &obj, std::map<std::string, TileMatrixSet *> &tmsList);
 
     /**
      * \~french \brief Destructeur
@@ -491,7 +491,7 @@ public:
         Pyramid(levels,tms,format,channels,onDemand,onFly,nd),
         specificSources (sSources) {}
 
-    PyramidOnDemand(const PyramidOnDemand& obj,std::map<std::string,Style*> &styleList) : Pyramid(obj) {
+    PyramidOnDemand(const PyramidOnDemand& obj,std::map<std::string,Style*> &styleList,std::map<std::string,TileMatrixSet*> &tmsList) : Pyramid(obj,tmsList) {
 
 
         std::map<std::string,std::vector<Source*> > oldSources = obj.specificSources;
@@ -624,8 +624,8 @@ public:
         photo (ph),
         ndValues (ndv) {}
 
-    PyramidOnFly(const PyramidOnFly& obj,std::map<std::string,Style*> &styleList) :
-        PyramidOnDemand(obj,styleList),
+    PyramidOnFly(const PyramidOnFly& obj,std::map<std::string,Style*> &styleList,std::map<std::string,TileMatrixSet*> &tmsList) :
+        PyramidOnDemand(obj,styleList,tmsList),
         photo (obj.photo),
         ndValues (obj.ndValues) {}
 

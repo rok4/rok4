@@ -46,7 +46,7 @@
 
 #include "TileMatrixSet.h"
 
-std::string TileMatrixSet::getId() {
+std::string TileMatrixSet::getId() const {
     return id;
 }
 std::map<std::string, TileMatrix>* TileMatrixSet::getTmList() {

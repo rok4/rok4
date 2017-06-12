@@ -106,7 +106,7 @@ Pyramid::Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4
 
 }
 
-Pyramid::Pyramid (const Pyramid &obj): Source(PYRAMID), tms (obj.tms) {
+Pyramid::Pyramid (const Pyramid &obj, std::map<std::string, TileMatrixSet *> &tmsList): Source(PYRAMID), tms (obj.tms) {
 
     std::map<std::string, Level*>::iterator itLevel;
     double minRes= DBL_MAX;
@@ -165,6 +165,23 @@ Pyramid::Pyramid (const Pyramid &obj): Source(PYRAMID), tms (obj.tms) {
             highestLevel = itLevel->second;
         }
     }
+
+    std::map<std::string,TileMatrixSet*>::iterator is;
+
+    std::string oldName = obj.tms.getId();
+    for (is = tmsList.begin(); is != tmsList.end(); is++) {
+        if (is->second->getId() == oldName) {
+            break;
+        }
+    }
+    if (is != tmsList.end()) {
+        this->tms = *(is->second);
+    } else {
+        //TODO
+    }
+
+    //TODO: gérer le cas où il n'y aucun tms de disponible
+    // cas à gérer en amont de ce constructeur
 
 }
 
