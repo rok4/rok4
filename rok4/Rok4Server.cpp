@@ -62,6 +62,7 @@
 #include <fcntl.h>
 #include "curl/curl.h"
 #include "WebService.h"
+#include <time.h>
 
 
 #include "config.h"
@@ -618,6 +619,8 @@ DataSource* Rok4Server::getTile ( Request* request ) {
     int tileCol,tileRow;
     Style* style=0;
 
+    const clock_t begin_time = clock();
+
     // Récupération des parametres de la requete
     DataSource* errorResp = request->getTileParam ( servicesConf, serverConf->tmsList, serverConf->layersList, L, tileMatrix, tileCol, tileRow, format, style );
 
@@ -651,6 +654,9 @@ DataSource* Rok4Server::getTile ( Request* request ) {
     else {
         tileSource = getTileUsual(L, format, tileCol, tileRow, tileMatrix, style) ;
     }
+
+    double time = double( clock () - begin_time ) /  CLOCKS_PER_SEC;
+    LOGGER_INFO("GETILETIME=" << time << " (" << pthread_self() << ")");
 
     return tileSource;
 

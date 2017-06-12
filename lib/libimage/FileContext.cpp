@@ -83,7 +83,7 @@ int FileContext::read(uint8_t* data, int offset, int size, std::string name) {
         return -1;
     }
 
-    float time = float( clock () - begin_time ) /  CLOCKS_PER_SEC;
+    double time = double( clock () - begin_time ) /  CLOCKS_PER_SEC;
     LOGGER_INFO("FILETIME=" << time << " (" << size << ") " << pthread_self());
 
     close ( fildes );
