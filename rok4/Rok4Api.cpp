@@ -277,6 +277,15 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
                         }
                     } else {
                         LOGGER_ERROR("Impossible de charger " << listOfFile[i]);
+
+                        fileName = ConfLoader::getFileName(listOfFile[i],".stl");
+                        lv = tmsListNew.find(fileName);
+                        if (lv != tmsListNew.end()){
+                            delete lv->second;
+                            tmsListNew.erase(lv);
+                        } else {
+                            //rien à faire
+                        }
                     }
 
                 } else {
@@ -379,6 +388,15 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
                         }
                     } else {
                         LOGGER_ERROR("Impossible de charger " << listOfFile[i]);
+
+                        fileName = ConfLoader::getFileName(listOfFile[i],".stl");
+                        lv = styleListNew.find(fileName);
+                        if (lv != styleListNew.end()){
+                            delete lv->second;
+                            styleListNew.erase(lv);
+                        } else {
+                            //rien à faire
+                        }
                     }
 
                 } else {
@@ -489,6 +507,15 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
                         }
                     } else {
                         LOGGER_ERROR("Impossible de charger le layer " << listOfFile[i]);
+
+                        fileName = ConfLoader::getFileName(listOfFile[i],".lay");
+                        lv = layerListNew.find(fileName);
+                        if (lv != layerListNew.end()){
+                            delete lv->second;
+                            layerListNew.erase(lv);
+                        } else {
+                            //rien à faire
+                        }
                     }
 
                 } else {
