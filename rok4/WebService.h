@@ -374,8 +374,8 @@ public:
     WebService(std::string url, std::string proxy, std::string noProxy, int retry, int interval, int timeout);
 
     /**
-     * \~french \brief Constructeur
-     * \~english \brief Constructor
+     * \~french \brief Constructeur à partir d'un autre
+     * \~english \brief Constructor from another
      */
     WebService(const WebService& obj):Source(WEBSERVICE) {
 

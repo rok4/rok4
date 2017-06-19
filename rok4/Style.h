@@ -190,6 +190,15 @@ public:
             const std::vector<std::string>& abstracts,const  std::vector<Keyword>& keywords,
             const std::vector<LegendURL>& legendURLs, Palette& palette ,  Pente& pente, Aspect& aspect,int angle =-1, float exaggeration=1., uint8_t center=0 );
 
+    /**
+      * \~french
+     * \brief Crée un Style à partir d'un autre
+      * \param[in] obj style
+      * \~english
+     * \brief Create a Style from another
+      * \param[in] obj style
+      */
+
     Style ( const Style &obj) {
 
         estompage = false;

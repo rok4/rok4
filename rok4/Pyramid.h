@@ -431,6 +431,16 @@ public:
      */
     Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format, int channels, bool onDemand, bool onFly, std::vector<int> nd);
 
+    /**
+     * \~french
+     * \brief Crée une pyramide à partir d'une autre
+     * \param[in] obj pyramide
+     * \param[in] tmsList liste des tms disponibles
+     * \~english
+     * \brief Create a pyramid from another
+     * \param[in] obj pyramid
+     * \param[in] tmsList available tms list
+     */
     Pyramid (const Pyramid &obj, std::map<std::string, TileMatrixSet *> &tmsList);
 
     /**
@@ -491,6 +501,18 @@ public:
         Pyramid(levels,tms,format,channels,onDemand,onFly,nd),
         specificSources (sSources) {}
 
+    /**
+     * \~french
+     * \brief Crée une pyramide à partir d'une autre
+     * \param[in] obj pyramide
+     * \param[in] styleList liste des styles disponibles
+     * \param[in] tmsList liste des tms disponibles
+     * \~english
+     * \brief Create a pyramid from another
+     * \param[in] obj pyramid
+     * \param[in] styleList available style list
+     * \param[in] tmsList available tms list
+     */
     PyramidOnDemand(const PyramidOnDemand& obj,std::map<std::string,Style*> &styleList,std::map<std::string,TileMatrixSet*> &tmsList) : Pyramid(obj,tmsList) {
 
 
@@ -624,6 +646,18 @@ public:
         photo (ph),
         ndValues (ndv) {}
 
+    /**
+     * \~french
+     * \brief Crée une pyramide à partir d'une autre
+     * \param[in] obj pyramide
+     * \param[in] styleList liste des styles disponibles
+     * \param[in] tmsList liste des tms disponibles
+     * \~english
+     * \brief Create a pyramid from another
+     * \param[in] obj pyramid
+     * \param[in] styleList available style list
+     * \param[in] tmsList available tms list
+     */
     PyramidOnFly(const PyramidOnFly& obj,std::map<std::string,Style*> &styleList,std::map<std::string,TileMatrixSet*> &tmsList) :
         PyramidOnDemand(obj,styleList,tmsList),
         photo (obj.photo),

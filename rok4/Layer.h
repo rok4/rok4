@@ -394,6 +394,18 @@ public:
 
     }
 
+    /**
+     * \~french
+     * \brief Crée un Layer à partir des ses éléments constitutifs
+     * \param[in] obj layer
+     * \param[in] styleList liste des styles disponibles
+     * \param[in] tmsList liste des tms disponibles
+     * \~english
+     * \brief Create a Layer
+     * \param[in] obj layer
+     * \param[in] styleList available style list
+     * \param[in] tmsList available tms list
+     */
     Layer (const Layer &obj,std::map<std::string,Style*> &styleList,std::map<std::string,TileMatrixSet*> &tmsList) {
         id = obj.id;
         title = obj.title;
