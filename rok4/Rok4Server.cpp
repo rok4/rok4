@@ -1445,6 +1445,7 @@ DataStream* Rok4Server::CommonGetFeatureInfo ( std::string service, Layer* layer
                   ss << (float) floatbuffer[i];
                   strData.push_back( ss.str() );
                 }
+                delete[] floatbuffer;
                 break;
             }
             default:
@@ -1455,6 +1456,7 @@ DataStream* Rok4Server::CommonGetFeatureInfo ( std::string service, Layer* layer
         if (responseDS == NULL){
             return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Info_format non ") +info_format+ _( " supporté par la couche ") + layer->getId() , service ) );
         }
+        delete image;
         return responseDS;
         
     } else if ( getFeatureInfoType.compare( "EXTERNALWMS" ) == 0 ) {
