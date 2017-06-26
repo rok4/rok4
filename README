@@ -81,6 +81,11 @@ BUILD_BE4 :
   BE4 compilation (BOOL)
   Default Value : TRUE  
 
+BUILD_OBJECT : 
+  Object storage handling compilation (BOOL)
+  This option activate all parts which allowed ROK4 to handle object storage : generation and server parts
+  Default Value : FALSE  
+
 BUILD_DOC : 
   Doxygen documentation creation (BOOL)
   This option creates the "doc" target (to be used before make install or make package) : make doc
