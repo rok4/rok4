@@ -203,7 +203,7 @@ void rok4ReloadLogger() {
 }
 
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
 
 /**
 * \brief Connexion aux contexts contenus dans les contextBook du serveur

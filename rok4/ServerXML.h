@@ -55,7 +55,7 @@ struct Proxy;
 #include "Rok4Server.h"
 
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
 #include "RedisAliasManager.h"
 #include "ContextBook.h"
 #endif
@@ -98,7 +98,7 @@ class ServerXML : public DocumentXML
         int getNbLayers() ;
         Layer* getLayer(std::string id) ;
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
         ContextBook* getCephContextBook();
         ContextBook* getS3ContextBook();
         ContextBook* getSwiftContextBook();
@@ -167,7 +167,7 @@ class ServerXML : public DocumentXML
          */
         int backlog;
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
         std::string cephName;
         std::string cephUser;
         std::string cephConf;

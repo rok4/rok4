@@ -54,7 +54,7 @@
 #include "Rok4Image.h"
 #include "FileContext.h"
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
 #include "CephPoolContext.h"
 #include "SwiftContext.h"
 #include "S3Context.h"
@@ -110,7 +110,7 @@ void usage() {
                   "             pkb     PackBits encoding\n" <<
                   "             zip     Deflate encoding\n" <<
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
                   "    -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object\n" <<
                   "    -bucket S3 bucket where data is. INPUT FILE is interpreted as a S3 object\n" <<
                   "    -container Swift container where data is. INPUT FILE is interpreted as a Swift object name\n" <<
@@ -175,7 +175,7 @@ int main ( int argc, char **argv )
 
     for ( int i = 1; i < argc; i++ ) {
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
         if ( !strcmp ( argv[i],"-pool" ) ) {
             if ( ++i == argc ) {
                 error("Error in -pool option", -1);
@@ -256,7 +256,7 @@ int main ( int argc, char **argv )
 
     Context* context;
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
     // Dans le cas objet, on a besoin d'un gestionnaire d'alias
     AliasManager* am = NULL;
 
@@ -298,7 +298,7 @@ int main ( int argc, char **argv )
         LOGGER_DEBUG("Input is a file in a file system");
         context = new FileContext("");
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
     }
 #endif
 
@@ -342,7 +342,7 @@ int main ( int argc, char **argv )
     delete acc;
     delete context;
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
     if (am != NULL) {
         delete am;
     }

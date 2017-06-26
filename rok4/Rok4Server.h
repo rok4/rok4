@@ -63,7 +63,7 @@
 #include "ServicesXML.h"
 #include "GetFeatureInfoEncoder.h"
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
 #include "ContextBook.h"
 #endif
 
@@ -86,7 +86,7 @@ private:
      */
     std::vector<pthread_t> threads;
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
     /**
      * \~french \brief Thread de reconnexion des contextes Swift
      * \~english \brief Swift contexts reconnection thread
@@ -155,7 +155,7 @@ private:
     static void* thread_loop ( void* arg );
 
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
     /**
      * \~french
      * \brief Boucle principale exécutée par le thread de reconnexion des contextes de lecture #reco_thread
@@ -463,7 +463,7 @@ public:
      */
     std::vector<std::string>& getWmtsCapaFrag() ;
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
     /**
      * \~french Retourne l'annuaire de contextes ceph
      */

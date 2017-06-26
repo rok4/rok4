@@ -287,7 +287,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         backlog = 0;
     }
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
 
     pElem=hRoot.FirstChild ( "reconnectionFrequency" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
@@ -543,7 +543,7 @@ ServerXML::~ServerXML(){
     for ( itLay=layersList.begin(); itLay!=layersList.end(); itLay++ )
         delete itLay->second;
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
     if (am != NULL) {
         delete am;
     }
@@ -611,7 +611,7 @@ Layer* ServerXML::getLayer(std::string id) {
     return layIt->second;
 }
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
 ContextBook* ServerXML::getCephContextBook(){return cephBook;}
 ContextBook* ServerXML::getSwiftContextBook(){return swiftBook;}
 ContextBook* ServerXML::getS3ContextBook(){return s3Book;}

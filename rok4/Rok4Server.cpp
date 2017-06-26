@@ -161,7 +161,7 @@ void* Rok4Server::thread_loop ( void* arg ) {
 }
 
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
 void* Rok4Server::thread_reconnection_loop ( void* arg ) {
     Rok4Server* server = ( Rok4Server* ) ( arg );
 
@@ -249,7 +249,7 @@ void Rok4Server::run(sig_atomic_t signal_pending) {
     for ( int i = 0; i < threads.size(); i++ ) {
         pthread_create ( & ( threads[i] ), NULL, Rok4Server::thread_loop, ( void* ) this );
     }
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
     pthread_create ( & reco_thread, NULL, Rok4Server::thread_reconnection_loop, ( void* ) this );
 #endif
     
@@ -260,7 +260,7 @@ void Rok4Server::run(sig_atomic_t signal_pending) {
     for ( int i = 0; i < threads.size(); i++ )
         pthread_join ( threads[i], NULL );
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
     pthread_join ( reco_thread, NULL );
 #endif
 }
@@ -272,7 +272,7 @@ void Rok4Server::terminate() {
     for ( int i = 0; i < threads.size(); i++ ) {
         pthread_kill ( threads[i], SIGPIPE );
     }
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
     pthread_kill ( reco_thread, SIGPIPE );
 #endif
 
@@ -1405,7 +1405,7 @@ std::map<std::string, Style*>& Rok4Server::getStyleList() { return serverConf->s
 std::map<std::string,std::vector<std::string> >& Rok4Server::getWmsCapaFrag() { return wmsCapaFrag; }
 std::vector<std::string>& Rok4Server::getWmtsCapaFrag() { return wmtsCapaFrag; }
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
 ContextBook* Rok4Server::getCephBook() {return serverConf->getCephContextBook();}
 ContextBook* Rok4Server::getS3Book() {return serverConf->getS3ContextBook();}
 ContextBook* Rok4Server::getSwiftBook() {return serverConf->getSwiftContextBook();}

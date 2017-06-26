@@ -211,7 +211,13 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
         }
     }
 
-#ifdef BUILD_OBJECT
+
+#if ! BUILD_OBJECT
+    else {
+        LOGGER_ERROR("Level " << id << " sans indication de stockage et pas à la demande. Precisez un baseDir");
+        return;
+    }
+#else
     else if (context == NULL) {
         // Je suis sur une pyramide normale, et je n'ai a priori pas de base dir donc de stockage fichier
         // Il me faut un stockage objet
@@ -319,11 +325,6 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
                 }
             }
         }
-    }
-#else
-    else {
-        LOGGER_ERROR("Level " << id << " sans indication de stockage et pas à la demande. Precisez un baseDir");
-        return;
     }
 #endif
     //----

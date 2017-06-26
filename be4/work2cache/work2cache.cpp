@@ -69,7 +69,7 @@
 #include "FileContext.h"
 
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
     #include "SwiftContext.h"
     #include "S3Context.h"
     #include "CephPoolContext.h"
@@ -141,7 +141,7 @@ void usage() {
                   "             png     Non-official TIFF compression, each tile is an independant PNG image (with PNG header)\n" <<
                   "     -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size\n" <<
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
                   "     -pool Ceph pool where data is. Then OUTPUT FILE is interpreted as a Ceph object ID\n" <<
                   "     -ij image indices : for object storage, if we want to store one tile = one object, to know tile indices\n"
                   "     -container Swift container where data is. Then OUTPUT FILE is interpreted as a Swift object name\n" <<
@@ -194,7 +194,7 @@ int main ( int argc, char **argv ) {
     bool crop = false;
     bool debugLogger=false;
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
     char *pool = 0, *container = 0, *bucket = 0;
     bool onCeph = false;
     bool onSwift = false;
@@ -225,7 +225,7 @@ int main ( int argc, char **argv ) {
             continue;
         }
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
         if ( !strcmp ( argv[i],"-pool" ) ) {
             if ( ++i == argc ) {
                 error("Error in -pool option", -1);
@@ -314,7 +314,7 @@ int main ( int argc, char **argv ) {
 
     Context* context;
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
     // Dans le cas d'un stockage sur Swift ou S3, on a tout de même besoin d'un contexte fichier pour écrire l'image au format final
     // et pouvoir la téléverser en une fois
     // Pour cela ,on utilise deux contextes, et un nom de fichier temporaire = input.obj
@@ -376,7 +376,7 @@ int main ( int argc, char **argv ) {
         LOGGER_DEBUG("Output is a file in a file system");
         context = new FileContext("");
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
     }  
 #endif
 
@@ -439,7 +439,7 @@ int main ( int argc, char **argv ) {
     }
 
     LOGGER_DEBUG ( "Write" );
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
     if (onCeph && tilesOnCeph) {
         if (rok4Image->writeTiles(sourceImage, imageI, imageJ, crop) < 0) {
             error("Cannot write ROK4 tiles on ceph", -1);
@@ -451,7 +451,7 @@ int main ( int argc, char **argv ) {
             error("Cannot write ROK4 image", -1);
         }
 
-#ifdef BUILD_OBJECT
+#if BUILD_OBJECT
     }
 
     if (onSwift) {
