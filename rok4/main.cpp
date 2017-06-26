@@ -76,6 +76,7 @@
 #include <limits>
 #include "config.h"
 #include "curl/curl.h"
+
 /* Usage de la ligne de commande */
 
 Rok4Server* W;

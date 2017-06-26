@@ -38,9 +38,12 @@
 #include "LevelXML.h"
 
 #include "FileContext.h"
+
+#if BUILD_OBJECT
 #include "CephPoolContext.h"
 #include "S3Context.h"
 #include "SwiftContext.h"
+#endif
 
 LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* serverXML, ServicesXML* servicesXML, PyramidXML* pyr, bool times) : DocumentXML(path)
 {

@@ -67,7 +67,11 @@
 #include "Format.h"
 #include "Logger.h"
 #include "FileContext.h"
-
+#include "FileImage.h"
+#include "CurlPool.h"
+#include "Rok4Image.h"
+#include "TiffNodataManager.h"
+#include "../be4version.h"
 
 #if BUILD_OBJECT
     #include "SwiftContext.h"
@@ -75,11 +79,6 @@
     #include "CephPoolContext.h"
 #endif
 
-#include "FileImage.h"
-#include "CurlPool.h"
-#include "Rok4Image.h"
-#include "TiffNodataManager.h"
-#include "../be4version.h"
 
 /** \~french Presque blanc, en RGBA. Utilisé pour supprimer le blanc pur des données quand l'option "crop" est active */
 int fastWhite[4] = {254,254,254,255};

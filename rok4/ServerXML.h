@@ -54,7 +54,6 @@ struct Proxy;
 #include "intl.h"
 #include "Rok4Server.h"
 
-
 #if BUILD_OBJECT
 #include "RedisAliasManager.h"
 #include "ContextBook.h"

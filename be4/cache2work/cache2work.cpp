@@ -53,6 +53,9 @@
 #include "CurlPool.h"
 #include "Rok4Image.h"
 #include "FileContext.h"
+#include "FileImage.h"
+#include "../be4version.h"
+
 
 #if BUILD_OBJECT
 #include "CephPoolContext.h"
@@ -60,9 +63,6 @@
 #include "S3Context.h"
 #include "RedisAliasManager.h"
 #endif
-
-#include "FileImage.h"
-#include "../be4version.h"
 
 /**
  * \~french

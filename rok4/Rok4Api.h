@@ -46,6 +46,7 @@
 #ifdef __cplusplus
 
 #include "Rok4Server.h"
+#include "config.h"
 
 extern "C" {
 
