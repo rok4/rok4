@@ -160,18 +160,22 @@ void* Rok4Server::thread_loop ( void* arg ) {
     return 0;
 }
 
+
+#ifdef BUILD_OBJECT
 void* Rok4Server::thread_reconnection_loop ( void* arg ) {
     Rok4Server* server = ( Rok4Server* ) ( arg );
 
     while ( server->isRunning() ) {
 
+/*
         for (int i = 0; i < server->getServerConf()->getReconnectionFrequency(); ++i)
         {
             sleep(60);
             CurlPool::printNumCurls();
         }
+*/
 
-        //sleep(server->getServerConf()->getReconnectionFrequency() * 60);
+        sleep(server->getServerConf()->getReconnectionFrequency() * 60);
         LOGGER_INFO("Reconnexion des contextes Swift");
         if (! server->getSwiftBook()->reconnectAllContext()) {
             LOGGER_FATAL ( "Impossible de reconnecter un contexte swift (recuperer un nouveau token)" );
@@ -182,6 +186,7 @@ void* Rok4Server::thread_reconnection_loop ( void* arg ) {
     Logger::stopLogger();
     return 0;
 }
+#endif
 
 Rok4Server::Rok4Server (  ServerXML* serverXML, ServicesXML* servicesXML) {
     
@@ -244,7 +249,9 @@ void Rok4Server::run(sig_atomic_t signal_pending) {
     for ( int i = 0; i < threads.size(); i++ ) {
         pthread_create ( & ( threads[i] ), NULL, Rok4Server::thread_loop, ( void* ) this );
     }
+#ifdef BUILD_OBJECT
     pthread_create ( & reco_thread, NULL, Rok4Server::thread_reconnection_loop, ( void* ) this );
+#endif
     
     if (signal_pending != 0 ) {
         raise( signal_pending );
@@ -253,7 +260,9 @@ void Rok4Server::run(sig_atomic_t signal_pending) {
     for ( int i = 0; i < threads.size(); i++ )
         pthread_join ( threads[i], NULL );
 
+#ifdef BUILD_OBJECT
     pthread_join ( reco_thread, NULL );
+#endif
 }
 
 void Rok4Server::terminate() {
@@ -263,7 +272,9 @@ void Rok4Server::terminate() {
     for ( int i = 0; i < threads.size(); i++ ) {
         pthread_kill ( threads[i], SIGPIPE );
     }
+#ifdef BUILD_OBJECT
     pthread_kill ( reco_thread, SIGPIPE );
+#endif
 
     CurlPool::cleanCurlPool();
 }
@@ -1393,9 +1404,13 @@ std::map<std::string, TileMatrixSet*>& Rok4Server::getTmsList() { return serverC
 std::map<std::string, Style*>& Rok4Server::getStyleList() { return serverConf->stylesList; }
 std::map<std::string,std::vector<std::string> >& Rok4Server::getWmsCapaFrag() { return wmsCapaFrag; }
 std::vector<std::string>& Rok4Server::getWmtsCapaFrag() { return wmtsCapaFrag; }
+
+#ifdef BUILD_OBJECT
 ContextBook* Rok4Server::getCephBook() {return serverConf->getCephContextBook();}
 ContextBook* Rok4Server::getS3Book() {return serverConf->getS3ContextBook();}
 ContextBook* Rok4Server::getSwiftBook() {return serverConf->getSwiftContextBook();}
+#endif
+
 int Rok4Server::getFCGISocket() { return sock; }
 void Rok4Server::setFCGISocket ( int sockFCGI ) { sock = sockFCGI; }
 bool Rok4Server::isRunning() { return running ; }

@@ -44,9 +44,8 @@ struct Proxy;
 #include <vector>
 #include <string>
 #include <map>
-#include "ContextBook.h"
 #include "TileMatrixSet.h"
-#include "RedisAliasManager.h"
+
 #include "DocumentXML.h"
 #include "Layer.h"
 #include "Style.h"
@@ -54,6 +53,12 @@ struct Proxy;
 #include "config.h"
 #include "intl.h"
 #include "Rok4Server.h"
+
+
+#ifdef BUILD_OBJECT
+#include "RedisAliasManager.h"
+#include "ContextBook.h"
+#endif
 
 struct Proxy {
     std::string proxyName;
@@ -93,12 +98,14 @@ class ServerXML : public DocumentXML
         int getNbLayers() ;
         Layer* getLayer(std::string id) ;
 
+#ifdef BUILD_OBJECT
         ContextBook* getCephContextBook();
         ContextBook* getS3ContextBook();
         ContextBook* getSwiftContextBook();
+        int getReconnectionFrequency() ;
+#endif
         
         int getNbThreads() ;
-        int getReconnectionFrequency() ;
         std::string getSocket() ;
         bool getSupportWMTS() ;
         bool getSupportWMS() ;
@@ -117,8 +124,6 @@ class ServerXML : public DocumentXML
         LogLevel logLevel;
 
         int nbThread;
-
-        int reconnectionFrequency;
 
         /**
          * \~french \brief Défini si le serveur doit honorer les requêtes WMTS
@@ -162,6 +167,7 @@ class ServerXML : public DocumentXML
          */
         int backlog;
 
+#ifdef BUILD_OBJECT
         std::string cephName;
         std::string cephUser;
         std::string cephConf;
@@ -174,6 +180,15 @@ class ServerXML : public DocumentXML
         std::string swiftUserName;
         std::string swiftUserPassword;
 
+        int reconnectionFrequency;
+
+        ContextBook* cephBook;
+        ContextBook* s3Book;
+        ContextBook* swiftBook;
+
+        AliasManager* am;
+#endif
+
         int nbProcess;
 
         /**
@@ -181,12 +196,6 @@ class ServerXML : public DocumentXML
          * \~english \brief Default proxy used for WMS requests
          */
         Proxy proxy;
-
-        ContextBook* cephBook;
-        ContextBook* s3Book;
-        ContextBook* swiftBook;
-
-        AliasManager* am;
 
     private:
 

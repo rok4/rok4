@@ -41,7 +41,10 @@ add_subdirectory(overlayNtiff)
 add_subdirectory(pyramide)
 add_subdirectory(cache2work)
 add_subdirectory(work2cache)
-add_subdirectory(slab2tiles)
+
+if(BUILD_OBJECT)
+	add_subdirectory(slab2tiles)
+endif(BUILD_OBJECT)
 
 ######################
 

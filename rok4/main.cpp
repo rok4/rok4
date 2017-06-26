@@ -250,7 +250,9 @@ int main ( int argc, char** argv ) {
             }
             W->setFCGISocket ( sock );
         }
+#ifdef BUILD_OBJECT
         rok4ConnectObjectContext(W);
+#endif
 
         // Remove Event Lock
         defer_signal--;
@@ -265,7 +267,9 @@ int main ( int argc, char** argv ) {
             LOGGER_INFO ( _ ( "Extinction du serveur ROK4" ) );
             W->killFCGI();
         }
+#ifdef BUILD_OBJECT
         rok4DisconnectObjectContext(W);
+#endif
         rok4KillServer ( W );
         rok4ReloadLogger();
     }

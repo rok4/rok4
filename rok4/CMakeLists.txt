@@ -64,7 +64,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 #Listes des bibliothèques à lier avec l'éxecutable à mettre à jour
 set(DEP_LIBRARY fcgi tinyxml logger image proj zlib tiff hiredis png curl)
 
-target_link_libraries(rok4core ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_RADOS_LIBS_INIT} ${CMAKE_OPENSSL_LIBS_INIT} )
+target_link_libraries(rok4core ${DEP_LIBRARY} )
 target_link_libraries(rok4 rok4core)
 #target_link_libraries(test_api rok4core)
 #target_link_libraries(test_command rok4core)

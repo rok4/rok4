@@ -48,7 +48,7 @@ SET(
     ExtendedCompoundImage.cpp CompoundImage.cpp Line.cpp MergeImage.cpp
     Grid.cpp CRS.cpp TiffEncoder.cpp
     BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp 
-    FileContext.cpp CephPoolContext.cpp S3Context.cpp SwiftContext.cpp ContextBook.cpp CurlPool.cpp 
+    FileContext.cpp CurlPool.cpp 
     PaletteConfig.cpp PaletteDataSource.cpp
     Format.cpp TiffHeaderDataSource.cpp StoreDataSource.cpp
     EmptyDataSource.cpp ConvertedChannelsImage.cpp
@@ -63,6 +63,11 @@ ELSE(KDU_USE)
   SET(libimage_SRCS ${libimage_SRCS} LibopenjpegImage.cpp)
 ENDIF(KDU_USE)
 
+
+IF(BUILD_OBJECT)
+  SET(libimage_SRCS ${libimage_SRCS} CephPoolContext.cpp S3Context.cpp SwiftContext.cpp ContextBook.cpp)
+ENDIF(BUILD_OBJECT)
+
 ADD_LIBRARY(image STATIC ${libimage_SRCS})
 
 ########################################
@@ -70,13 +75,21 @@ ADD_LIBRARY(image STATIC ${libimage_SRCS})
 
 INCLUDE(ROK4Dependencies)
 
-SET(DEP_INCLUDE_DIR ${TURBOJPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${LZW_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${PKB_INCLUDE_DIR} ${JPEG2000_INCLUDE_DIR} ${CURL_INCLUDE_DIR} ${HIREDIS_INCLUDE_DIR} ${RADOS_INCLUDE_DIR} ${OPENSSL_INCLUDE_DIR})
+SET(DEP_INCLUDE_DIR ${TURBOJPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${LZW_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${PKB_INCLUDE_DIR} ${JPEG2000_INCLUDE_DIR} ${OPENSSL_INCLUDE_DIR} ${CURL_INCLUDE_DIR})
+
+IF(BUILD_OBJECT)
+  SET(DEP_INCLUDE_DIR ${DEP_INCLUDE_DIR} ${HIREDIS_INCLUDE_DIR} ${RADOS_INCLUDE_DIR})
+ENDIF(BUILD_OBJECT)
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${DEP_INCLUDE_DIR})
 
 ########################################
 # Listes des bibliothèques à liées avec l'éxecutable
-SET(DEP_LIBRARY logger proj turbojpeg jpeg zlib tiff lzw pkb png jpeg2000 curl rados openssl crypto hiredis)
+SET(DEP_LIBRARY logger proj turbojpeg jpeg zlib tiff lzw pkb png jpeg2000 curl openssl crypto)
+
+IF(BUILD_OBJECT)
+  SET(DEP_LIBRARY ${DEP_LIBRARY} rados hiredis)
+ENDIF(BUILD_OBJECT)
 
 TARGET_LINK_LIBRARIES(image ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_RADOS_LIBS_INIT} ${CMAKE_OPENSSL_LIBS_INIT} )
 

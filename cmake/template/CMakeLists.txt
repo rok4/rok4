@@ -70,7 +70,7 @@ add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRCS})
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
-target_link_libraries(${PROJECT_NAME} lib${PROJECT_NAME} ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_RADOS_LIBS_INIT} ${CMAKE_OPENSSL_LIBS_INIT} )
+target_link_libraries(${PROJECT_NAME} lib${PROJECT_NAME} ${DEP_LIBRARY} )
 set(GettextTranslate_ALL 0)
 set(GettextTranslate_GMO_BINARY 1)
 include(GettextTranslate)

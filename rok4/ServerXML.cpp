@@ -125,15 +125,6 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         return;
     }
 
-    pElem=hRoot.FirstChild ( "reconnectionFrequency" ).Element();
-    if ( !pElem || ! ( pElem->GetText() ) ) {
-        std::cerr<<_ ( "Pas de reconnectionFrequency => reconnectionFrequency = " ) << DEFAULT_RECONNECTION_FREQUENCY<<std::endl;
-        reconnectionFrequency = DEFAULT_RECONNECTION_FREQUENCY;
-    } else if ( !sscanf ( pElem->GetText(),"%d",&reconnectionFrequency ) ) {
-        std::cerr<<_ ( "Le reconnectionFrequency [" ) << DocumentXML::getTextStrFromElem(pElem) <<_ ( "] is not an integer." ) <<std::endl;
-        return;
-    }
-
     pElem=hRoot.FirstChild ( "nbProcess" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
         std::cerr<<_ ( "Pas de nbProcess=> nbProcess = " ) << DEFAULT_NB_PROCESS<<std::endl;
@@ -294,6 +285,17 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
     } else if ( !sscanf ( pElem->GetText(),"%d",&backlog ) )  {
         std::cerr<<_ ( "Le logFilePeriod [" ) << DocumentXML::getTextStrFromElem(pElem) <<_ ( "]  is not an integer." ) <<std::endl;
         backlog = 0;
+    }
+
+#ifdef BUILD_OBJECT
+
+    pElem=hRoot.FirstChild ( "reconnectionFrequency" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        std::cerr<<_ ( "Pas de reconnectionFrequency => reconnectionFrequency = " ) << DEFAULT_RECONNECTION_FREQUENCY<<std::endl;
+        reconnectionFrequency = DEFAULT_RECONNECTION_FREQUENCY;
+    } else if ( !sscanf ( pElem->GetText(),"%d",&reconnectionFrequency ) ) {
+        std::cerr<<_ ( "Le reconnectionFrequency [" ) << DocumentXML::getTextStrFromElem(pElem) <<_ ( "] is not an integer." ) <<std::endl;
+        return;
     }
 
     /************************************ PARTIE OBJET ************************************/
@@ -514,6 +516,7 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
             s3Book->setAliasManager(am);
         }
     }
+#endif
 
     ok = true;
 }
@@ -540,6 +543,7 @@ ServerXML::~ServerXML(){
     for ( itLay=layersList.begin(); itLay!=layersList.end(); itLay++ )
         delete itLay->second;
 
+#ifdef BUILD_OBJECT
     if (am != NULL) {
         delete am;
     }
@@ -547,6 +551,7 @@ ServerXML::~ServerXML(){
     delete cephBook;
     delete s3Book;
     delete swiftBook;
+#endif
 }
 
 /******************* GETTERS / SETTERS *****************/
@@ -606,12 +611,15 @@ Layer* ServerXML::getLayer(std::string id) {
     return layIt->second;
 }
 
+#ifdef BUILD_OBJECT
 ContextBook* ServerXML::getCephContextBook(){return cephBook;}
 ContextBook* ServerXML::getSwiftContextBook(){return swiftBook;}
 ContextBook* ServerXML::getS3ContextBook(){return s3Book;}
 
-int ServerXML::getNbThreads() {return nbThread;}
 int ServerXML::getReconnectionFrequency() {return reconnectionFrequency;}
+#endif
+
+int ServerXML::getNbThreads() {return nbThread;}
 std::string ServerXML::getSocket() {return socket;}
 bool ServerXML::getSupportWMTS() {return supportWMTS;}
 bool ServerXML::getSupportWMS() {return supportWMS;}

@@ -59,10 +59,13 @@
 #include "ProcessFactory.h"
 #include "fcgiapp.h"
 #include <csignal>
-#include "ContextBook.h"
 #include "ServerXML.h"
 #include "ServicesXML.h"
 #include "GetFeatureInfoEncoder.h"
+
+#ifdef BUILD_OBJECT
+#include "ContextBook.h"
+#endif
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -82,11 +85,14 @@ private:
      * \~english \brief Threads liste
      */
     std::vector<pthread_t> threads;
+
+#ifdef BUILD_OBJECT
     /**
-     * \~french \brief Thread de reconnexion des contextes
-     * \~english \brief Context reconnection thread
+     * \~french \brief Thread de reconnexion des contextes Swift
+     * \~english \brief Swift contexts reconnection thread
      */
     pthread_t reco_thread;
+#endif
 
     /**
      * \~french \brief Connecteur sur le flux FCGI
@@ -148,6 +154,8 @@ private:
      */
     static void* thread_loop ( void* arg );
 
+
+#ifdef BUILD_OBJECT
     /**
      * \~french
      * \brief Boucle principale exécutée par le thread de reconnexion des contextes de lecture #reco_thread
@@ -159,6 +167,7 @@ private:
      * \return true if present
      */
     static void* thread_reconnection_loop ( void* arg );
+#endif
     
     /**
      * \~french
@@ -454,6 +463,7 @@ public:
      */
     std::vector<std::string>& getWmtsCapaFrag() ;
 
+#ifdef BUILD_OBJECT
     /**
      * \~french Retourne l'annuaire de contextes ceph
      */
@@ -466,6 +476,7 @@ public:
      * \~french Retourne l'annuaire de contextes swift
      */
     ContextBook* getSwiftBook() ;
+#endif
 
     /**
      * \~french

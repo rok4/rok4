@@ -66,10 +66,15 @@
 #include "tiffio.h"
 #include "Format.h"
 #include "Logger.h"
-#include "CephPoolContext.h"
 #include "FileContext.h"
-#include "SwiftContext.h"
-#include "S3Context.h"
+
+
+#ifdef BUILD_OBJECT
+    #include "SwiftContext.h"
+    #include "S3Context.h"
+    #include "CephPoolContext.h"
+#endif
+
 #include "FileImage.h"
 #include "CurlPool.h"
 #include "Rok4Image.h"
@@ -105,6 +110,7 @@ int white[4] = {255,255,255,255};
  *      -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object
  *      -ij image indices : for object storage, if we want to store one tile = one object, to know tile indices
  *      -container Swift container where data is. Then OUTPUT FILE is interpreted as a Swift object name
+ *      -ks in Swift storage case, activate keystone authentication
  *      -bucket S3 bucket where data is. Then OUTPUT FILE is interpreted as a S3 object name
  *      -crop : blocks (used by JPEG compression) wich contain a white pixel are filled with white
  *      -d debug logger activation
@@ -134,10 +140,15 @@ void usage() {
                   "             zip     Deflate encoding\n" <<
                   "             png     Non-official TIFF compression, each tile is an independant PNG image (with PNG header)\n" <<
                   "     -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size\n" <<
+
+#ifdef BUILD_OBJECT
                   "     -pool Ceph pool where data is. Then OUTPUT FILE is interpreted as a Ceph object ID\n" <<
                   "     -ij image indices : for object storage, if we want to store one tile = one object, to know tile indices\n"
                   "     -container Swift container where data is. Then OUTPUT FILE is interpreted as a Swift object name\n" <<
+                  "     -ks in Swift storage case, activate keystone authentication\n" <<
                   "     -bucket S3 bucket where data is. Then OUTPUT FILE is interpreted as a S3 object name\n" <<
+#endif
+
                   "     -crop : blocks (used by JPEG compression) wich contain a white pixel are filled with white\n" <<
                   "     -d : debug logger activation\n\n" <<
 
@@ -177,17 +188,22 @@ void error ( std::string message, int errorCode ) {
  */
 int main ( int argc, char **argv ) {
 
-    char* input = 0, *output = 0, *pool = 0, *container = 0, *bucket = 0, keystone = false;
+    char* input = 0, *output = 0;
     int tileWidth = 256, tileHeight = 256;
-    int imageI = -1;
-    int imageJ = -1;
     Compression::eCompression compression = Compression::NONE;
     bool crop = false;
     bool debugLogger=false;
+
+#ifdef BUILD_OBJECT
+    char *pool = 0, *container = 0, *bucket = 0;
     bool onCeph = false;
     bool onSwift = false;
     bool onS3 = false;
     bool tilesOnCeph = false;
+    bool keystone = false;
+    int imageI = -1;
+    int imageJ = -1;
+#endif
 
     /* Initialisation des Loggers */
     Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
@@ -208,6 +224,8 @@ int main ( int argc, char **argv ) {
             crop = true;
             continue;
         }
+
+#ifdef BUILD_OBJECT
         if ( !strcmp ( argv[i],"-pool" ) ) {
             if ( ++i == argc ) {
                 error("Error in -pool option", -1);
@@ -239,6 +257,8 @@ int main ( int argc, char **argv ) {
             keystone = true;
             continue;
         }
+#endif
+
         if ( argv[i][0] == '-' ) {
             switch ( argv[i][1] ) {
                 case 'h': // help
@@ -294,6 +314,7 @@ int main ( int argc, char **argv ) {
 
     Context* context;
 
+#ifdef BUILD_OBJECT
     // Dans le cas d'un stockage sur Swift ou S3, on a tout de même besoin d'un contexte fichier pour écrire l'image au format final
     // et pouvoir la téléverser en une fois
     // Pour cela ,on utilise deux contextes, et un nom de fichier temporaire = input.obj
@@ -350,9 +371,14 @@ int main ( int argc, char **argv ) {
 
         LOGGER_DEBUG("Temporary file path for Swift storage : " << string(output));
     } else {
+#endif
+
         LOGGER_DEBUG("Output is a file in a file system");
         context = new FileContext("");
-    }
+
+#ifdef BUILD_OBJECT
+    }  
+#endif
 
     if (! context->connection()) {
         error("Unable to connect context", -1);
@@ -413,14 +439,19 @@ int main ( int argc, char **argv ) {
     }
 
     LOGGER_DEBUG ( "Write" );
+#ifdef BUILD_OBJECT
     if (onCeph && tilesOnCeph) {
         if (rok4Image->writeTiles(sourceImage, imageI, imageJ, crop) < 0) {
             error("Cannot write ROK4 tiles on ceph", -1);
         }
     } else {
+#endif
+
         if (rok4Image->writeImage(sourceImage, crop) < 0) {
             error("Cannot write ROK4 image", -1);
         }
+
+#ifdef BUILD_OBJECT
     }
 
     if (onSwift) {
@@ -454,6 +485,7 @@ int main ( int argc, char **argv ) {
         curl_global_cleanup();
         delete contextS3;      
     }
+#endif
 
     LOGGER_DEBUG ( "Clean" );
     // Nettoyage

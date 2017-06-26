@@ -52,11 +52,15 @@
 #include "Format.h"
 #include "CurlPool.h"
 #include "Rok4Image.h"
-#include "CephPoolContext.h"
 #include "FileContext.h"
+
+#ifdef BUILD_OBJECT
+#include "CephPoolContext.h"
 #include "SwiftContext.h"
 #include "S3Context.h"
 #include "RedisAliasManager.h"
+#endif
+
 #include "FileImage.h"
 #include "../be4version.h"
 
@@ -82,6 +86,7 @@
  *     -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object
  *     -bucket S3 bucket where data is. INPUT FILE is interpreted as a S3 object
  *     -container Swift container where data is. INPUT FILE is interpreted as a Swift object name
+ *     -ks in Swift storage case, activate keystone authentication
  *     -d debug logger activation
  *
  * Example
@@ -104,9 +109,14 @@ void usage() {
                   "             lzw     Lempel-Ziv & Welch encoding\n" <<
                   "             pkb     PackBits encoding\n" <<
                   "             zip     Deflate encoding\n" <<
+
+#ifdef BUILD_OBJECT
                   "    -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object\n" <<
                   "    -bucket S3 bucket where data is. INPUT FILE is interpreted as a S3 object\n" <<
                   "    -container Swift container where data is. INPUT FILE is interpreted as a Swift object name\n" <<
+                  "    -ks in Swift storage case, activate keystone authentication\n" <<
+#endif
+
                   "    -d debug logger activation\n\n" <<
 
                   "Example\n" <<
@@ -143,9 +153,12 @@ void error ( std::string message, int errorCode ) {
 int main ( int argc, char **argv )
 {
 
-    char* input = 0, *output = 0, *pool = 0, *container = 0, *bucket = 0, keystone = false;
+    char* input = 0, *output = 0;
     Compression::eCompression compression = Compression::NONE;
     bool debugLogger=false;
+
+    char *pool = 0, *container = 0, *bucket = 0;
+    bool keystone = false;
 
     /* Initialisation des Loggers */
     Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
@@ -161,6 +174,8 @@ int main ( int argc, char **argv )
     logw.setf ( std::ios::fixed,std::ios::floatfield );
 
     for ( int i = 1; i < argc; i++ ) {
+
+#ifdef BUILD_OBJECT
         if ( !strcmp ( argv[i],"-pool" ) ) {
             if ( ++i == argc ) {
                 error("Error in -pool option", -1);
@@ -186,6 +201,8 @@ int main ( int argc, char **argv )
             keystone = true;
             continue;
         }
+#endif
+
         if ( argv[i][0] == '-' ) {
             switch ( argv[i][1] ) {
             case 'h': // help
@@ -238,6 +255,8 @@ int main ( int argc, char **argv )
     }
 
     Context* context;
+
+#ifdef BUILD_OBJECT
     // Dans le cas objet, on a besoin d'un gestionnaire d'alias
     AliasManager* am = NULL;
 
@@ -274,9 +293,14 @@ int main ( int argc, char **argv )
             context->setAliasManager(am);
         }
     } else {
+#endif
+
         LOGGER_DEBUG("Input is a file in a file system");
         context = new FileContext("");
+
+#ifdef BUILD_OBJECT
     }
+#endif
 
     if (! context->connection()) {
         error("Unable to connect context", -1);
@@ -318,6 +342,7 @@ int main ( int argc, char **argv )
     delete acc;
     delete context;
 
+#ifdef BUILD_OBJECT
     if (am != NULL) {
         delete am;
     }
@@ -326,6 +351,7 @@ int main ( int argc, char **argv )
         CurlPool::cleanCurlPool();
         curl_global_cleanup();
     }
+#endif
 
     return 0;
 }

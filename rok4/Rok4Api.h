@@ -58,97 +58,15 @@ typedef void Rok4Server;
 
 #endif
 
-
-    typedef struct {
-        int status;
-        char* type;
-        char* encoding;
-        uint8_t* content;
-        size_t contentSize;
-    } HttpResponse;
-    
-    typedef struct {
-        char* queryString;
-        char* hostName;
-        char* scriptName;
-        char* service;
-        char* operationType;
-        HttpResponse* error_response;
-    } HttpRequest;
-
-    typedef struct {
-        char* name;
-        char* pool;
-        char* contextType;
-        char* storeType;
-        uint32_t posoff;
-        uint32_t possize;
-        uint32_t maxsize;
-        char* type;
-        char* encoding;
-        int width;
-        int height;
-        int channels;
-        char* format;
-        char* wmtsType;
-    } TileRef;
-
-    typedef struct {
-        size_t size;
-        uint8_t* data;
-    } TiffHeader;
-
-    typedef struct {
-        char* name;
-        char* user;
-        char* conf;
-    } CephRef;
-
-    typedef struct {
-        size_t size;
-        uint8_t* data;
-    } PngPaletteHeader;
-
-    typedef struct {
-        size_t size;
-        uint8_t* data;
-    } TilePalette;
-
-// Functions
-
     Rok4Server* rok4InitServer ( const char* serverConfigFile );
-    HttpRequest* rok4InitRequest ( const char* queryString, const char* hostName, const char* scriptName, const char* https, Rok4Server* server );
-    HttpResponse* rok4GetWMTSCapabilities ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server );
-    HttpResponse* rok4GetWMTSGetFeatureInfo ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server );
-
-    HttpResponse* rok4GetTile ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server );
-    HttpResponse* rok4GetTileReferences ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server, TileRef* tileRef, TilePalette* palette );
-
-// DEPRECATED
-    TiffHeader* rok4GetTiffHeader ( int width, int height, int channels );
-
-    TiffHeader* rok4GetTiffHeaderFormat ( int width, int height, int channels, char* format, uint32_t possize );
-    PngPaletteHeader* rok4GetPngPaletteHeader ( int width, int height, TilePalette* palette );
-    HttpResponse* rok4GetOperationNotSupportedException ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server );
-    HttpResponse* rok4GetNoDataFoundException ( );
-    int rok4ExistObjectCeph(Rok4Server* server, const char* name, const char* pool);
-    int rok4ReadObjectCeph(Rok4Server* server, const char* name, const char* pool, int offset, int size, char *data);
-    int rok4ExistObjectSwift(Rok4Server* server, const char* name, const char* container);
-    int rok4ReadObjectSwift(Rok4Server* server, const char* name, const char* container, int offset, int size, char *data);
-    int rok4ConnectObjectContext(Rok4Server* server);
-    void rok4DisconnectObjectContext(Rok4Server* server);
-
-    void rok4DeleteRequest ( HttpRequest* request );
-    void rok4DeleteResponse ( HttpResponse* response );
-    void rok4FlushTileRef ( TileRef* tileRef );
-    void rok4DeleteTiffHeader ( TiffHeader* header );
-    void rok4DeletePngPaletteHeader ( PngPaletteHeader* header );
-    void rok4DeleteTilePalette ( TilePalette* palette );
-
     void rok4KillServer ( Rok4Server* server );
     void rok4ReloadLogger ();
     void rok4KillLogger ();
 
+#ifdef BUILD_OBJECT
+    int rok4ConnectObjectContext(Rok4Server* server);
+    void rok4DisconnectObjectContext(Rok4Server* server);
+#endif
 
 #ifdef __cplusplus
 }
