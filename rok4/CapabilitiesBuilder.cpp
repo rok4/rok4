@@ -360,10 +360,14 @@ void Rok4Server::buildWMS130Capabilities() {
                     }
                     childLayerEl->LinkEndChild ( kwlEl );
                 }
+
                 // CRS
-                for ( unsigned int i=0; i < childLayer->getWMSCRSList().size(); i++ ) {
-                    childLayerEl->LinkEndChild ( buildTextNode ( "CRS", childLayer->getWMSCRSList() [i].getRequestCode() ) );
+                std::vector<CRS> vectorCRS = childLayer->getWMSCRSList();
+                int layerSize = vectorCRS.size();
+                for (int i=0; i < layerSize; i++ ) {
+                    childLayerEl->LinkEndChild ( buildTextNode ( "CRS", vectorCRS[i].getRequestCode() ) );
                 }
+
                 // GeographicBoundingBox
                 TiXmlElement * gbbEl = new TiXmlElement ( "EX_GeographicBoundingBox" );
 
@@ -820,10 +824,14 @@ void Rok4Server::buildWMS111Capabilities() {
                     }
                     childLayerEl->LinkEndChild ( kwlEl );
                 }
+
                 // CRS
-                for ( unsigned int i=0; i < childLayer->getWMSCRSList().size(); i++ ) {
-                    childLayerEl->LinkEndChild ( buildTextNode ( "SRS", childLayer->getWMSCRSList() [i].getRequestCode() ) );
+                std::vector<CRS> vectorCRS = childLayer->getWMSCRSList();
+                int layerSize = vectorCRS.size();
+                for (int i=0; i < layerSize; i++ ) {
+                    childLayerEl->LinkEndChild ( buildTextNode ( "SRS", vectorCRS[i].getRequestCode() ) );
                 }
+
                 // GeographicBoundingBox
                 TiXmlElement * gbbEl = new TiXmlElement ( "LatLonBoundingBox" );
 

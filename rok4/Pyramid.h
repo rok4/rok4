@@ -72,19 +72,19 @@ private:
      * \~french \brief TileMatrixSet des données
      * \~english \brief TileMatrixSet of the data
      */
-    const TileMatrixSet tms;
+    TileMatrixSet tms;
 
     /**
      * \~french \brief Format des tuiles
      * \~english \brief Format of the tiles
      */
-    const Rok4Format::eformat_data format;
+    Rok4Format::eformat_data format;
 
     /**
      * \~french \brief Nombre de canaux pour les tuiles
      * \~english \brief Number of channels for the tiles
      */
-    const int channels;
+    int channels;
 
     /**
      * \~french \brief Référence au niveau le plus haut
@@ -119,6 +119,7 @@ private:
      * There are no use for a normal pyramid or a OnDemand pyramid
      */
     Style *style;
+
 
     /**
      * \~french \brief Indique si la pyramide contient des tuiles déjà pré-calculées (false)
@@ -327,7 +328,7 @@ public:
      * \~english \brief Get the style
      * \return style
      */
-    Style *getStyle(){
+    Style *getStyle() const {
         return style;
     }
 
@@ -431,6 +432,18 @@ public:
     Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format, int channels, bool onDemand, bool onFly, std::vector<int> nd);
 
     /**
+     * \~french
+     * \brief Crée une pyramide à partir d'une autre
+     * \param[in] obj pyramide
+     * \param[in] tmsList liste des tms disponibles
+     * \~english
+     * \brief Create a pyramid from another
+     * \param[in] obj pyramid
+     * \param[in] tmsList available tms list
+     */
+    Pyramid (const Pyramid &obj, std::map<std::string, TileMatrixSet *> &tmsList);
+
+    /**
      * \~french \brief Destructeur
      * \~english \brief Destructor
      */
@@ -487,6 +500,58 @@ public:
                     std::map<std::string,std::vector<Source*> > sSources) :
         Pyramid(levels,tms,format,channels,onDemand,onFly,nd),
         specificSources (sSources) {}
+
+    /**
+     * \~french
+     * \brief Crée une pyramide à partir d'une autre
+     * \param[in] obj pyramide
+     * \param[in] styleList liste des styles disponibles
+     * \param[in] tmsList liste des tms disponibles
+     * \~english
+     * \brief Create a pyramid from another
+     * \param[in] obj pyramid
+     * \param[in] styleList available style list
+     * \param[in] tmsList available tms list
+     */
+    PyramidOnDemand(const PyramidOnDemand& obj,std::map<std::string,Style*> &styleList,std::map<std::string,TileMatrixSet*> &tmsList) : Pyramid(obj,tmsList) {
+
+
+        std::map<std::string,std::vector<Source*> > oldSources = obj.specificSources;
+
+        if (oldSources.size() != 0) {
+            for ( std::map<std::string,std::vector<Source*> >::iterator lv = oldSources.begin(); lv != oldSources.end(); lv++) {
+
+                std::vector<Source*> newSources;
+
+                if (lv->second.size() != 0) {
+                    for ( std::vector<int>::size_type i = 0; i != lv->second.size(); i++) {
+                        if (lv->second[i]->getType() == PYRAMID) {
+                            Pyramid* nPyr = new Pyramid(*reinterpret_cast<Pyramid*>(lv->second[i]));
+                            std::map<std::string,Style*>::iterator is;
+                            is = styleList.find(nPyr->getStyle()->getId());
+                            if (is != styleList.end()) {
+                                nPyr->setStyle(is->second);
+                            } else {
+                                //TODO
+                            }
+                            newSources.push_back(nPyr);
+                        }
+                        if (lv->second[i]->getType() == WEBSERVICE) {
+                            newSources.push_back(new WebService(*reinterpret_cast<WebService*>(lv->second[i])));
+                        }
+
+                    }
+                    specificSources.insert(std::pair< std::string, std::vector<Source*> > ( lv->first, newSources));
+                } else {
+                    //TODO
+                }
+            }
+
+        } else {
+            //TODO
+        }
+
+    }
 
 
 
@@ -580,6 +645,23 @@ public:
         PyramidOnDemand(levels,tms,format,channels,onDemand,onFly,ndv,sSources),
         photo (ph),
         ndValues (ndv) {}
+
+    /**
+     * \~french
+     * \brief Crée une pyramide à partir d'une autre
+     * \param[in] obj pyramide
+     * \param[in] styleList liste des styles disponibles
+     * \param[in] tmsList liste des tms disponibles
+     * \~english
+     * \brief Create a pyramid from another
+     * \param[in] obj pyramid
+     * \param[in] styleList available style list
+     * \param[in] tmsList available tms list
+     */
+    PyramidOnFly(const PyramidOnFly& obj,std::map<std::string,Style*> &styleList,std::map<std::string,TileMatrixSet*> &tmsList) :
+        PyramidOnDemand(obj,styleList,tmsList),
+        photo (obj.photo),
+        ndValues (obj.ndValues) {}
 
 
     /**

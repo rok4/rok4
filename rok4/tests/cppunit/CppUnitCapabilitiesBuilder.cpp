@@ -187,6 +187,10 @@ protected:
     Layer* layer;
     TileMatrixSet* onematrixset;
     Proxy proxy;
+    std::string tmsDir;
+    std::string projDir;
+    std::string layDir;
+    std::string styleDir;
     Rok4Server* myrok4server;
 
 };
@@ -270,7 +274,12 @@ void CppUnitCapabilitiesBuilder::setUp() {
     nbProcess = 1;
     proxy.proxyName = "";
     proxy.noProxy = "";
-    myrok4server = new Rok4Server(nbThread, *services_conf, layerlist, mytilematrixset, stylelist, socket, backlog, proxy, supportWMTS, supportWMS, nbProcess);
+    tmsDir = "tileMatrixSet";
+    styleDir = "styles";
+    layDir = "layers";
+    projDir = "proj";
+    myrok4server = new Rok4Server(nbThread, *services_conf, layerlist, mytilematrixset, stylelist,
+                                  socket, backlog, proxy, tmsDir, styleDir, layDir, projDir, supportWMTS, supportWMS, nbProcess);
 
 }
 

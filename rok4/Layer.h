@@ -396,6 +396,76 @@ public:
 
     /**
      * \~french
+     * \brief Crée un Layer à partir des ses éléments constitutifs
+     * \param[in] obj layer
+     * \param[in] styleList liste des styles disponibles
+     * \param[in] tmsList liste des tms disponibles
+     * \~english
+     * \brief Create a Layer
+     * \param[in] obj layer
+     * \param[in] styleList available style list
+     * \param[in] tmsList available tms list
+     */
+    Layer (const Layer &obj,std::map<std::string,Style*> &styleList,std::map<std::string,TileMatrixSet*> &tmsList) {
+        id = obj.id;
+        title = obj.title;
+        abstract = obj.abstract;
+        WMSAuthorized = obj.WMSAuthorized;
+        WMTSAuthorized = obj.WMTSAuthorized;
+        keyWords = obj.keyWords;
+        minRes = obj.minRes;
+        maxRes = obj.maxRes;
+        WMSCRSList = obj.WMSCRSList;
+        opaque = obj.opaque;
+        authority = obj.authority;
+        resampling = obj.resampling;
+        geographicBoundingBox = obj.geographicBoundingBox;
+        boundingBox = obj.boundingBox;
+        metadataURLs = obj.metadataURLs;
+        defaultStyle = obj.defaultStyle;
+        getFeatureInfoAvailability = obj.getFeatureInfoAvailability;
+        getFeatureInfoType = obj.getFeatureInfoType;
+        getFeatureInfoBaseURL = obj.getFeatureInfoBaseURL;
+        GFIVersion = obj.GFIVersion;
+        GFIService = obj.GFIService;
+        GFIQueryLayers = obj.GFIQueryLayers;
+        GFILayers = obj.GFILayers;
+        GFIForceEPSG = obj.GFIForceEPSG;
+
+        if (obj.dataPyramid->getOnDemand()) {
+            if (obj.dataPyramid->getOnFly()) {
+                dataPyramid = new PyramidOnFly(*reinterpret_cast<PyramidOnFly*>(obj.dataPyramid),styleList,tmsList);
+            } else {
+                dataPyramid = new PyramidOnDemand(*reinterpret_cast<PyramidOnDemand*>(obj.dataPyramid),styleList,tmsList);
+            }
+        } else {
+            dataPyramid = new Pyramid(*obj.dataPyramid,tmsList);
+        }
+
+
+        std::map<std::string,Style*>::iterator is;
+        for (unsigned it = 0 ; it < obj.styles.size(); it++) {
+            std::string oldName = obj.styles.at(it)->getId();
+            for (is = styleList.begin(); is != styleList.end(); is++) {
+                if (is->second->getId() == oldName) {
+                    break;
+                }
+            }
+            if (is != styleList.end()) {
+                styles.push_back(is->second);
+            } else {
+                //TODO
+            }
+        }
+
+        //TODO: gérer le cas où il n'y aucun style de disponible
+        // cas à gérer en amont de ce constructeur
+
+
+    }
+
+    /**
+     * \~french
      * \brief Retourne l'indentifiant de la couche
      * \return identifiant
      * \~english

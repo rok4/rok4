@@ -57,8 +57,8 @@ private:
     std::string   baseDir;
     int           pathDepth;
     TileMatrix    tm;         // FIXME j'ai des problème de compil que je ne comprends pas si je mets un const ?!
-    const Rok4Format::eformat_data format; //format d'image des tuiles
-    const int     channels;
+    Rok4Format::eformat_data format; //format d'image des tuiles
+    int     channels;
     uint32_t maxTileRow;
     uint32_t minTileRow;
     uint32_t maxTileCol;
@@ -192,6 +192,26 @@ public:
             int tilesPerWidth, int tilesPerHeight,
             uint32_t maxTileRow, uint32_t minTileRow, uint32_t maxTileCol, uint32_t minTileCol,
             int pathDepth, Rok4Format::eformat_data format, std::string noDataFile );
+
+    Level (Level &obj): tm(obj.tm) {
+
+        baseDir = obj.baseDir;
+        pathDepth = obj.pathDepth;
+        tm = obj.tm;
+        format = obj.format;
+        channels = obj.channels;
+        maxTileRow = obj.maxTileRow;
+        minTileRow = obj.minTileRow;
+        maxTileCol = obj.maxTileCol;
+        minTileCol = obj.minTileCol;
+        tilesPerWidth = obj.tilesPerWidth;
+        tilesPerHeight = obj.tilesPerHeight;
+        noDataFile = obj.noDataFile;
+        noDataSource = NULL;
+        noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), Rok4Format::toEncoding ( format ) );
+        noDataSourceProxy = noDataTileSource;
+
+    }
 
     /*
      * Destructeur
