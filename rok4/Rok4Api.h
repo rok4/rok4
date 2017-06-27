@@ -108,6 +108,7 @@ typedef void Rok4Server;
 // Functions
 
     Rok4Server* rok4InitServer ( const char* serverConfigFile );
+    Rok4Server* rok4ReloadServer ( const char* serverConfigFile,Rok4Server* server, time_t lastReload );
     HttpRequest* rok4InitRequest ( const char* queryString, const char* hostName, const char* scriptName, const char* https, Rok4Server* server );
     HttpResponse* rok4GetWMTSCapabilities ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server );
     HttpResponse* rok4GetWMTSGetFeatureInfo ( const char* queryString, const char* hostName, const char* scriptName,const char* https, Rok4Server* server );

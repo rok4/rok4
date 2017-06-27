@@ -70,6 +70,21 @@
 #include <string>
 #include "WebService.h"
 #include "EmptyDataSource.h"
+#include <sys/stat.h>
+
+time_t ConfLoader::getLastModifiedDate(std::string file) {
+    struct stat sb;
+
+    int result = stat(file.c_str(), &sb);
+    if (result == 0) {
+        return *(&sb.st_mtim.tv_sec);
+    } else {
+        return 0;
+    }
+
+
+
+}
 
 
 // Load style
@@ -3392,3 +3407,94 @@ ServicesConf * ConfLoader::buildServicesConf ( std::string servicesConfigFile ) 
     return parseServicesConf ( &doc,servicesConfigFile );
 }
 
+
+std::string ConfLoader::getTagContentOfFile(std::string file, std::string tag) {
+
+    std::string content;
+
+    TiXmlDocument doc ( file );
+    if ( !doc.LoadFile() ) {
+        LOGGER_ERROR (  "Ne peut pas charger le fichier " << file );
+        return "";
+    }
+
+    TiXmlHandle hDoc ( &doc );
+    TiXmlElement* pElem;
+    TiXmlHandle hRoot ( 0 );
+
+    pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
+    if ( !pElem ) {
+        LOGGER_ERROR ( file << " impossible de recuperer la racine."  );
+        return "";
+    }
+    if ( pElem->ValueStr() == tag ) {
+        if (pElem->GetText()) {
+            content = pElem->GetTextStr();
+        }
+    }
+
+    hRoot=TiXmlHandle ( pElem );
+
+    pElem=hRoot.FirstChild ( tag ).Element();
+    if ( pElem && pElem->GetText() ) {
+        content = pElem->GetTextStr();
+    }
+
+    return content;
+}
+
+std::vector<std::string> ConfLoader::listFileFromDir(std::string directory, std::string extension) {
+
+    // lister les fichier du repertoire layerDir
+    std::vector<std::string> files;
+    std::string fileName;
+    struct dirent *fileEntry;
+    DIR *dir;
+    if ( ( dir = opendir ( directory.c_str() ) ) == NULL ) {
+        LOGGER_FATAL ( "Le repertoire "  << directory <<  " n'est pas accessible."  );
+        return files;
+    }
+    while ( ( fileEntry = readdir ( dir ) ) ) {
+        fileName = fileEntry->d_name;
+        if ( fileName.rfind ( extension ) ==fileName.size()-extension.size() ) {
+            files.push_back ( directory+"/"+fileName );
+        }
+    }
+    closedir ( dir );
+
+    if ( files.empty() ) {
+        LOGGER_ERROR ( "Aucun fichier " << extension << " dans le repertoire "  << directory );
+        return files;
+    }
+
+    return files;
+
+}
+
+bool ConfLoader::doesFileExist(std::string file) {
+    struct stat buffer;
+
+    if (stat (file.c_str(), &buffer) == 0) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+std::string ConfLoader::getFileName(std::string file, std::string extension) {
+
+    std::string id;
+
+    unsigned int idBegin=file.rfind ( "/" );
+    if ( idBegin == std::string::npos ) {
+        idBegin=0;
+    }
+    unsigned int idEnd=file.rfind ( extension );
+    if ( idEnd == std::string::npos ) {
+        idEnd=file.size();
+    }
+    id=file.substr ( idBegin+1, idEnd-idBegin-1 );
+
+    return id;
+
+}
