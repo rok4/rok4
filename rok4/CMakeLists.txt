@@ -57,12 +57,21 @@ add_executable(rok4 ${rok4server_SRCS})
 #Définition des dépendances.
 include(ROK4Dependencies)
 
-set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${HIREDIS_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${CURL_INCLUDE_DIR})
+set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${CURL_INCLUDE_DIR})
+
+
+if(BUILD_OBJECT)
+    set (DEP_INCLUDE_DIR ${DEP_INCLUDE_DIR} ${HIREDIS_INCLUDE_DIR})
+endif(BUILD_OBJECT)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
 #Listes des bibliothèques à lier avec l'éxecutable à mettre à jour
-set(DEP_LIBRARY fcgi tinyxml logger image proj zlib tiff hiredis png curl)
+set(DEP_LIBRARY fcgi tinyxml logger image proj zlib tiff png curl)
+
+if(BUILD_OBJECT)
+    set (DEP_LIBRARY ${DEP_LIBRARY} hiredis)
+endif(BUILD_OBJECT)
 
 target_link_libraries(rok4core ${DEP_LIBRARY} )
 target_link_libraries(rok4 rok4core)

@@ -49,9 +49,6 @@
 #include "Format.h"
 #include "EmptyImage.h"
 #include "TiffEncoder.h"
-#include "CephPoolContext.h"
-#include "SwiftContext.h"
-#include "FileContext.h"
 #include "Level.h"
 #include <cfloat>
 #include "intl.h"
