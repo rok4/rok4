@@ -625,12 +625,11 @@ DataStream * Rok4Server::formatImage(Image *image, std::string format, Rok4Forma
 }
 
 DataSource* Rok4Server::getTile ( Request* request ) {
+    LOGGER_INFO("GET TILE START () " << pthread_self());
     Layer* L;
     std::string tileMatrix,format;
     int tileCol,tileRow;
     Style* style=0;
-
-    const clock_t begin_time = clock();
 
     // Récupération des parametres de la requete
     DataSource* errorResp = request->getTileParam ( servicesConf, serverConf->tmsList, serverConf->layersList, L, tileMatrix, tileCol, tileRow, format, style );
@@ -666,8 +665,7 @@ DataSource* Rok4Server::getTile ( Request* request ) {
         tileSource = getTileUsual(L, format, tileCol, tileRow, tileMatrix, style) ;
     }
 
-    double time = double( clock () - begin_time ) /  CLOCKS_PER_SEC;
-    LOGGER_INFO("GETILETIME=" << time << " (" << pthread_self() << ")");
+    LOGGER_INFO("GET TILE END () " << pthread_self());
 
     return tileSource;
 

@@ -227,12 +227,11 @@ int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, data_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &chunk);
 
+    LOGGER_INFO("S3 READ START (" << size << ") " << pthread_self());
     res = curl_easy_perform(curl);
+    LOGGER_INFO("S3 READ END (" << size << ") " << pthread_self());
+    
     curl_slist_free_all(list);
-
-    double time;
-    curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &time);
-    LOGGER_INFO("CURLTIME=" << time << " (" << size << ") " << pthread_self());
 
     if( CURLE_OK != res) {
         LOGGER_ERROR("Cannot read data from S3 : " << size << " bytes (from the " << offset << " one) in the object " << name);
