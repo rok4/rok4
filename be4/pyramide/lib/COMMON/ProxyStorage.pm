@@ -779,8 +779,26 @@ sub isPresent {
         return FALSE;
     }
     elsif ($type eq "CEPH") {
-        ERROR("Not implemented");
-        return FALSE;
+        # On interroge la base REDIS puis le S3
+
+        my ($poolName, @rest) = split("/", $path);
+        my $objectName = join("", @rest);
+
+        if (! defined $poolName || ! defined $objectName) {
+            ERROR("CEPH path is not valid (<poolName>/<objectName>) : $path");
+            return FALSE;
+        }
+
+        if ($USE_REDIS && redisKeyExists($objectName)) {
+            return TRUE;
+        }
+
+        `rados -p $poolName stat $objectName`;
+        if ($?) {
+            return FALSE;
+        }
+
+        return TRUE;
     }
     elsif ($type eq "S3") {
         # On interroge la base REDIS puis le S3
@@ -935,6 +953,24 @@ sub getSize {
             ERROR("HTTP decoded content : ", $response->decoded_content);
             return undef;
         }
+    }
+    elsif ($type eq "CEPH") {
+
+        my ($poolName, @rest) = split("/", $path);
+        my $objectName = join("", @rest);
+
+        if (! defined $poolName || ! defined $objectName) {
+            ERROR("CEPH path is not valid (<poolName>/<objectName>) : $path");
+            return undef;
+        }
+
+        my $ret = `rados -p $poolName stat $objectName`;
+        if ($?) {
+            ERROR("Cannot stat CEPH object $objectName (pool $poolName): $!");
+            return undef;
+        }
+
+        return (split(/ /, $ret))[-1];
     }
 
     return undef;
