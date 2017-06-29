@@ -403,7 +403,7 @@ sub writeListAndReferences {
     if ($updateMode eq "slink" && ! COMMON::ProxyStorage::checkEnvironmentVariables("REDIS")) {
         ERROR("Environment variable is missing to link ancestor");
         return FALSE;
-    }    
+    }
 
     my $newPyrName = $newpyr->getName();
     my $ancestorPyrName = $ancestor->getName();

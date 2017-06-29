@@ -515,6 +515,9 @@ sub doIt {
         my ($depthnode) = $level->findnodes("pathDepth");
         $level->removeChild($depthnode);
 
+        my ($nodatanode) = $level->findnodes("nodata");
+        $level->removeChild($nodatanode);
+
         if ( $store_tiles ) {
             my $tpw_node = ($level->findnodes("tilesPerWidth"))[0];
             $tpw = ($level->findnodes("tilesPerWidth"))[0]->textContent;

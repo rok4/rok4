@@ -43,7 +43,7 @@ Class: JOINCACHE::PropertiesLoader
 Reads a configuration file for joinCache, respect the IniFiles format, but consider order. Possible sections are limited :
     - logger
     - pyramid
-    - bboxes
+    - extents
     - composition
     - process
 
@@ -62,8 +62,8 @@ Attributes:
     extents - hash - Defines identifiants with associated extents (as OGR Geometry)
     composition - hash - Defines source pyramids for each level, extent, and order
 |       level_id => [
-|           { bbox => bbox_id1, source => descriptor_path1}
-|           { bbox => bbox_id2, source => descriptor_path2}
+|           { extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]] pyr => COMMON::Pyramid}
+|           { extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]] pyr => COMMON::Pyramid}
 |       ]
     sourcePyramids - string hash - Key is the descriptor's path. Just undefined values, to list used pyramids.
     process - hash - Generation parameters

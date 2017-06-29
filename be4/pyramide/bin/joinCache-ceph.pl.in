@@ -37,16 +37,16 @@
 ################################################################################
 
 =begin nd
-File: joinCache-s3.pl
+File: joinCache-ceph.pl
 
-Section: JOINCACHE-S3 tool
+Section: JOINCACHE-CEPH tool
 
 Synopsis:
     (start code)
-    perl joinCache-s3.pl --conf=path
+    perl joinCache-ceph.pl --conf=path
     (end code)
 
-Tool allowing to merge pyramids stored on S3 object system, using the same TMS. Merge method (if an image is present in several source pyramids) can be :
+Tool allowing to merge pyramids stored on Ceph object system, using the same TMS. Merge method (if an image is present in several source pyramids) can be :
     - replace : only the top pyramid's image is kept
     - multiply : samples are multiplied
     - alphatop : alpha blending method
@@ -332,8 +332,8 @@ sub config {
 
     # Environment variables
 
-    if (! COMMON::ProxyStorage::checkEnvironmentVariables("S3")) {
-        ERROR("Environment variable is missing for a S3 storage");
+    if (! COMMON::ProxyStorage::checkEnvironmentVariables("CEPH")) {
+        ERROR("Environment variable is missing for a CEPH storage");
         return FALSE;
     }
 
@@ -373,8 +373,8 @@ sub validate {
         return FALSE;
     }
 
-    if ($objPyramid->getStorageType() ne "S3") {
-        ERROR ("JoinCache-S3 only handle S3 output pyramid");
+    if ($objPyramid->getStorageType() ne "CEPH") {
+        ERROR ("JoinCache-Ceph only handle CEPH output pyramid");
         return FALSE;
     }
     
@@ -512,7 +512,7 @@ sub doIt {
     }
     $this{listStream} = $STREAM;
 
-    printf $STREAM "0=%s\n#\n", $pyramid->getDataBucket();
+    printf $STREAM "0=%s\n#\n", $pyramid->getDataPool();
 
     while( my ($level,$sources) = each(%{$this{composition}}) ) {
         INFO(sprintf "Level %s",$level);
@@ -693,8 +693,8 @@ Parameters:
 sub storeInList {
     my $slabPath = shift;
 
-    my $bucketName = $this{pyramid}->getDataBucket();
-    $slabPath =~ s/$bucketName/0/;
+    my $poolName = $this{pyramid}->getDataPool();
+    $slabPath =~ s/$poolName/0/;
 
     my $STREAM = $this{listStream};
     print $STREAM "$slabPath\n";
@@ -730,9 +730,9 @@ Group: Command's options
 
 Group: Mandatory environment variable
 
-    ROK4_S3_URL
-    ROK4_S3_KEY
-    ROK4_S3_SECRETKEY
+    ROK4_CEPH_CONFFILE
+    ROK4_CEPH_USERNAME
+    ROK4_CEPH_CLUSTERNAME
 
     ROK4_REDIS_HOST
     ROK4_REDIS_PORT

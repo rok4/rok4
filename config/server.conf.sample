@@ -17,11 +17,25 @@
     </cephContext>
 	-->
 	<!--
+	<reconnectionFrequency>30</reconnectionFrequency>
+    <swiftContext>
+        <authUrl>https://server.com:5000/v3/auth</authUrl>
+        <userName>ign</userName>
+        <userPassword>mypassword</userPassword>
+    </swiftContext>
+	-->
+	<!--
     <s3Context>
         <url>http://s3-server.fr</url>
         <key>hfkjfhskfhksf</key>
         <secretKey>kjhjhKJhkjhkJHKJhkjMLGfkjhGJ</secretKey>
     </s3Context>
+
+    <redisAliasManager>
+        <host>localhost</host>
+        <passwd>mypassword</passwd>
+        <port>6379</port>
+	</redisAliasManager>
 	-->
 
 	<!-- Niveau maximum des logs (fatal|error|warn|info|debug) -->
