@@ -51,6 +51,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4-s3.pl.in ${CMAKE_CURRENT_BINA
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4-swift.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/be4-swift.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/joinCache.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/joinCache.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/joinCache-s3.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/joinCache-s3.pl @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/joinCache-ceph.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/joinCache-ceph.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/create-layer.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/create-layer.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/coord2image.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/coord2image.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/tms-converter-gui.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/tms-converter-gui.pl @ONLY)

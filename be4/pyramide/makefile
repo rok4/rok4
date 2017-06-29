@@ -25,6 +25,7 @@ buildbin: \
 ./bin/be4.pl \
 ./bin/joinCache.pl \
 ./bin/joinCache-s3.pl \
+./bin/joinCache-ceph.pl \
 ./bin/coord2image.pl \
 ./bin/be4-simulator.pl \
 ./bin/tms-converter-gui.pl \
