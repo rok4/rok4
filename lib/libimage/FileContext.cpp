@@ -66,7 +66,6 @@ int FileContext::read(uint8_t* data, int offset, int size, std::string name) {
     std::string fullName = root_dir + name;
     LOGGER_DEBUG("File read : " << size << " bytes (from the " << offset << " one) in the file " << fullName);
 
-    LOGGER_INFO("FILE READ START (" << size << ") " << pthread_self());
     // Ouverture du fichier
     int fildes = open( fullName.c_str(), O_RDONLY );
     if ( fildes < 0 ) {
@@ -75,7 +74,6 @@ int FileContext::read(uint8_t* data, int offset, int size, std::string name) {
     }
 
     size_t read_size = pread ( fildes, data, size, offset );
-    LOGGER_INFO("FILE READ END (" << size << ") " << pthread_self());
 
     if ( read_size != size ) {
         LOGGER_ERROR ( "Impossible de lire la tuile dans le fichier " << fullName );
