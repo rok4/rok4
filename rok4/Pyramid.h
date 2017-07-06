@@ -526,7 +526,7 @@ public:
                 if (lv->second.size() != 0) {
                     for ( std::vector<int>::size_type i = 0; i != lv->second.size(); i++) {
                         if (lv->second[i]->getType() == PYRAMID) {
-                            Pyramid* nPyr = new Pyramid(*reinterpret_cast<Pyramid*>(lv->second[i]));
+                            Pyramid* nPyr = new Pyramid(*reinterpret_cast<Pyramid*>(lv->second[i]),tmsList);
                             std::map<std::string,Style*>::iterator is;
                             is = styleList.find(nPyr->getStyle()->getId());
                             if (is != styleList.end()) {
