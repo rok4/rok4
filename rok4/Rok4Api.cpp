@@ -462,6 +462,7 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
 
     if (strLayerDirNew != server->getLayersDir()) {
         //on recharge tout comme à l'initialisation
+        LOGGER_DEBUG("Rechargement complet du nouveau dossier" << strLayerDirNew);
 
         if ( !ConfLoader::buildLayersList ( strLayerDirNew,tmsListNew, styleListNew,layerListNew,reprojectionCapabilityNew,sc,proxyNew ) ) {
             LOGGER_FATAL ( "Impossible de charger la conf des Layers" );
@@ -471,6 +472,8 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
         }
 
     } else {
+
+        LOGGER_DEBUG("Copie des anciens layers");
         //Copie de l'ancien serveur
         std::map<std::string,Layer* >::iterator lv;
 
@@ -484,15 +487,20 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
         }
         server->getLayerList().clear();
 
+        LOGGER_DEBUG("Lecture du dossier");
+
         //Lecture du dossier et chargement de ce qui a changé
         listOfFile = ConfLoader::listFileFromDir(strLayerDirNew, ".lay");
 
         if (listOfFile.size() != 0) {
             for (unsigned i=0; i<listOfFile.size(); i++) {
+                LOGGER_DEBUG("Rechargement du layer " << listOfFile[i]);
+
                 lastMod = ConfLoader::getLastModifiedDate(listOfFile[i]);
 
                 if (lastMod > lastReload) {
                     //fichier modifié, on le recharge
+                    LOGGER_DEBUG("Fichier layer modifie");
                     Layer* lay = ConfLoader::buildLayer ( listOfFile[i], tmsListNew, styleListNew, reprojectionCapabilityNew, sc, proxyNew );
 
                     if (lay != NULL) {
@@ -520,12 +528,13 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
 
                 } else {
                     //fichier non modifié
-
+                    LOGGER_DEBUG("Fichier layer non modifie");
                     fileName = ConfLoader::getFileName(listOfFile[i],".lay");
 
                     lv = layerListNew.find(fileName);
 
                     if (lv == layerListNew.end()) {
+                        LOGGER_DEBUG("Ajout de ce nouveau layer");
                         //on l'inclue
                         Layer* lay = ConfLoader::buildLayer ( listOfFile[i], tmsListNew, styleListNew, reprojectionCapabilityNew, sc, proxyNew );
                         if (lay != NULL) {
@@ -534,10 +543,12 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
                             LOGGER_ERROR("Impossible de charger le layer " << listOfFile[i]);
                         }
                     } else {
+
                         //on teste si le .pyr a changé
                         std::string strPyrFile = ConfLoader::getTagContentOfFile(listOfFile[i],"pyramid");
 
                         if (strPyrFile != "") {
+                            LOGGER_DEBUG("Verification du fichier pyr" << strPyrFile);
                             lastMod = ConfLoader::getLastModifiedDate(strPyrFile);
 
                             if (lastMod > lastReload) {
@@ -559,6 +570,7 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
 
                             } else {
                                 //fichier non modifié, super on ne fait rien
+                                LOGGER_DEBUG("Rien a faire");
                             }
 
 
@@ -581,6 +593,7 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
             return NULL;
         }
 
+        LOGGER_DEBUG("Verification des layers a supprimer");
         //pour chaque entrée du std::map on regarde s'il y a bien un fichier correspondant
         // si ce n'est pas le cas, on le supprime de la map
         std::vector<std::string> to_delete;
@@ -595,7 +608,10 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
             }
         }
 
+        LOGGER_DEBUG("Suppression des layers");
+
         for (std::vector<int>::size_type i = 0; i != to_delete.size(); i++) {
+            LOGGER_DEBUG("Suppression du layer " << to_delete[i]);
             lv = layerListNew.find(to_delete[i]);
             delete lv->second;
             lv->second = NULL;
@@ -604,7 +620,10 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
 
     }
 
+    LOGGER_DEBUG("Arret du logger");
     Logger::stopLogger();
+    LOGGER_DEBUG("Logger arrete");
+
     return new Rok4Server ( nbThreadNew, *sc, layerListNew, tmsListNew, styleListNew,
                             socketNew, backlogNew, proxyNew, strTmsDirNew, strStyleDirNew, strLayerDirNew, projDirstr,
                             supportWMTSNew, supportWMSNew, nbProcessNew,timeKillNew );
