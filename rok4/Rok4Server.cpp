@@ -176,9 +176,14 @@ void* Rok4Server::thread_reconnection_loop ( void* arg ) {
 */
 
         sleep(server->getServerConf()->getReconnectionFrequency() * 60);
-        LOGGER_INFO("Reconnexion des contextes Swift");
-        if (! server->getSwiftBook()->reconnectAllContext()) {
-            LOGGER_FATAL ( "Impossible de reconnecter un contexte swift (recuperer un nouveau token)" );
+
+        if (server->getSwiftBook()) {
+            LOGGER_INFO("Reconnexion des contextes Swift");
+            if (! server->getSwiftBook()->reconnectAllContext()) {
+                LOGGER_FATAL ( "Impossible de reconnecter un contexte swift (recuperer un nouveau token)" );
+            }
+        } else {
+            LOGGER_INFO("Pas d'annuaire Swift");
         }
     }
 
