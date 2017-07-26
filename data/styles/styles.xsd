@@ -61,12 +61,12 @@
                         <xs:element name="estompage" minOccurs="0" maxOccurs="1">
                             <xs:complexType>
                                         <xs:complexContent>
-                                        <!-- angle de l'éclairement -->
-                                        <xs:attribute name="angle" type="angleindegree" use="required"/>
+                                        <!-- zenith du soleil-->
+                                        <xs:attribute name="zenith" type="xs:decimal" use="required"/>
+                                        <!-- azimuth du soleil -->
+                                        <xs:attribute name="azimuth" type="xs:decimal" use="required"/>
                                         <!-- Exagération de la pente -->
-                                        <xs:attribute name="exaggeration" type="xs:decimal" use="required"/>
-                                        <!-- Valeur du pixel sans pente -->
-                                        <xs:attribute name="center" type="xs:unsignedByte" use="required"/>
+                                        <xs:attribute name="zFactor" type="xs:decimal" use="required"/>
                                         </xs:complexContent>
                                 </xs:complexType>
                         </xs:element>

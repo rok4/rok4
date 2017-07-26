@@ -66,56 +66,12 @@ int EstompageImage::getline ( uint8_t* buffer, int line ) {
     return _getline ( buffer, line );
 }
 
-EstompageImage::EstompageImage ( Image* image, int angle, float exaggeration, uint8_t center ) :
+EstompageImage::EstompageImage (Image* image, float zenithDeg, float azimuthDeg, float zFactor , float resx, float resy) :
     Image ( image->getWidth(), image->getHeight(), 1, image->getBbox() ),
-    origImage ( image ), estompage ( NULL ), exaggeration ( exaggeration ), center ( center ) {
+    origImage ( image ), estompage ( NULL ), zFactor (zFactor), resx (resx), resy (resy) {
 
-    //   Sun direction
-    float angleRad = angle * DEG_TO_RAD;
-    matrix[0] = sin ( angleRad - M_PI_4 );
-    matrix[1] = sin ( angleRad );
-    matrix[2] = sin ( angleRad + M_PI_4 );
-
-    matrix[3] = sin ( angleRad - M_PI_2 );
-    matrix[4] =  0.   ;
-    matrix[5] = sin ( angleRad + M_PI_2 );
-
-    matrix[6] = sin ( angleRad - M_PI_4 - M_PI_2 );
-    matrix[7] = sin ( angleRad + M_PI );
-    matrix[8] = sin ( angleRad + M_PI_4 + M_PI_2 );
-
-    /*float intensity = 0.5;
-    angleRad = (angle + 60) * DEG_TO_RAD;
-    matrix[0] += intensity * sin(angleRad - M_PI_4);
-    matrix[1] += intensity * sin(angleRad);
-    matrix[2] += intensity * sin(angleRad + M_PI_4);
-
-    matrix[3] += intensity * sin(angleRad - M_PI_2);
-    matrix[4] += intensity *  0.   ;
-    matrix[5] += intensity * sin(angleRad + M_PI_2);
-
-    matrix[6] += intensity * sin(angleRad - M_PI_4 - M_PI_2);
-    matrix[7] += intensity * sin(angleRad + M_PI);
-    matrix[8] += intensity * sin(angleRad + M_PI_4 + M_PI_2);
-
-    angleRad = (angle - 20) * DEG_TO_RAD;
-    matrix[0] += intensity * sin(angleRad - M_PI_4);
-    matrix[1] += intensity * sin(angleRad);
-    matrix[2] += intensity * sin(angleRad + M_PI_4);
-
-    matrix[3] += intensity * sin(angleRad - M_PI_2);
-    matrix[4] += intensity *  0.   ;
-    matrix[5] += intensity * sin(angleRad + M_PI_2);
-
-    matrix[6] += intensity * sin(angleRad - M_PI_4 - M_PI_2);
-    matrix[7] += intensity * sin(angleRad + M_PI);
-    matrix[8] += intensity * sin(angleRad + M_PI_4 + M_PI_2);*/
-
-    for ( int i = 0; i< 9 ; i++ ) {
-        //matrix[i] *= 0.5;
-        //Add Zenithal Light
-        matrix[i] += ( i==4?8:-1 );
-    }
+    zenith = 90.0 - zenithDeg * DEG_TO_RAD;
+    azimuth = (360.0 - azimuthDeg ) * DEG_TO_RAD;
 
 }
 
@@ -182,32 +138,54 @@ void EstompageImage::generateLine ( int line, float* line1, float* line2, float*
     uint8_t* currentLine = estompage + line * width;
     int column = 1;
     double value;
-    value = matrix[0] * ( *line1 ) + matrix[1] * ( *line1 ) + matrix[2] * ( * ( line1+1 ) )
-            + matrix[3] * ( *line2 ) + matrix[4] * ( *line2 ) + matrix[5] * ( * ( line2+1 ) )
-            + matrix[6] * ( *line3 ) + matrix[7] * ( *line3 ) + matrix[8] * ( * ( line3+1 ) );
-    value*=exaggeration;
-    value+=center;
-    if ( value < 0 ) value = 0;
-    if ( value > 255 ) value = 255;
+    float dzdx,dzdy,slope,aspect;
+    float a,b,c,d,e,f,g,h,i;
+
+    value = 0;
+
     *currentLine = ( int ) value;
 
     while ( column < width - 1 ) {
-        value = matrix[0] * ( * ( line1+column-1 ) ) + matrix[1] * ( * ( line1+column ) ) + matrix[2] * ( * ( line1+column+1 ) )
-                + matrix[3] * ( * ( line2+column-1 ) ) + matrix[4] * ( * ( line2+column ) ) + matrix[5] * ( * ( line2+column+1 ) )
-                + matrix[6] * ( * ( line3+column-1 ) ) + matrix[7] * ( * ( line3+column ) ) + matrix[8] * ( * ( line3+column+1 ) );
-        value*=exaggeration;
-        value+=center;
-        if ( value < 0 ) value = 0;
-        if ( value > 255 ) value = 255;
+
+        a = ( * ( line1+column-1 ) );
+        b = ( * ( line1+column ) );
+        c = ( * ( line1+column+1 ) );
+        d = ( * ( line2+column-1 ) );
+        e = ( * ( line2+column ) );
+        f = ( * ( line2+column+1 ) );
+        g = ( * ( line3+column-1 ) );
+        h = ( * ( line3+column ) );
+        i = ( * ( line3+column+1 ) );
+
+        dzdx = ((c + 2*f + i) - (a + 2*d + g)) / (8 * resx);
+        dzdy = ((g + 2*h + i) - (a + 2*b + c)) / (8 * resy);
+
+        slope = atan(zFactor * sqrt(dzdx*dzdx+dzdy*dzdy));
+
+        if (dzdx != 0) {
+            aspect = atan2(dzdy,-dzdx);
+            if (aspect < 0) {
+                aspect = 2 * M_PI + aspect;
+            } else {
+
+            }
+        } else {
+            if (dzdy > 0) {
+                aspect = M_PI_2;
+            } else {
+                aspect = 2 * M_PI - M_PI_2;
+            }
+        }
+
+        value = 255.0 * ((cos(zenith) * cos(slope)) + (sin(zenith) * sin(slope) * cos(azimuth - aspect)));
+        if (value<0) {value = 0;}
+
         * ( currentLine+ ( column++ ) ) = ( int ) ( value );
 
     }
-    value = matrix[0] * ( * ( line1+column-1 ) ) + matrix[1] * ( * ( line1+column ) ) + matrix[2] * ( * ( line1+column ) )
-            + matrix[3] * ( * ( line2+column-1 ) ) + matrix[4] * ( * ( line2+column ) ) + matrix[5] * ( * ( line2+column ) )
-            + matrix[6] * ( * ( line3+column-1 ) ) + matrix[7] * ( * ( line3+column ) ) + matrix[8] * ( * ( line3+column ) );
-    value*=exaggeration;
-    value+=center;
-    if ( value < 0 ) value = 0;
-    if ( value > 255 ) value = 255;
+
+    value = 0;
+
     * ( currentLine+column ) = ( int ) ( value );
+
 }

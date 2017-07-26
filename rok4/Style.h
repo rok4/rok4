@@ -150,17 +150,17 @@ private :
      * \~french \brief Azimuth du soleil en degré
      * \~english \brief Sun's azimuth in degree
      */
-    int angle;
+    float azimuth;
     /**
      * \~french \brief Facteur d'éxagération de la pente
      * \~english \brief Slope exaggeration factor
      */
-    float exaggeration;
+    float zFactor;
     /**
-     * \~french \brief Valeur d'un pixel de pente nulle
-     * \~english \brief Value of a pixel without slope
+     * \~french \brief Zenith du soleil en degré
+     * \~english \brief Sun's zenith in degree
      */
-    uint8_t center;
+    float zenith;
 public:
     /**
       * \~french
@@ -188,7 +188,7 @@ public:
       */
     Style ( const std::string& id,const std::vector<std::string>& titles,
             const std::vector<std::string>& abstracts,const  std::vector<Keyword>& keywords,
-            const std::vector<LegendURL>& legendURLs, Palette& palette ,  Pente& pente, Aspect& aspect,int angle =-1, float exaggeration=1., uint8_t center=0 );
+            const std::vector<LegendURL>& legendURLs, Palette& palette ,  Pente& pente, Aspect& aspect,float zenith = 45, float azimuth = 315, float zFactor = 1 );
 
     /**
       * \~french
@@ -202,9 +202,9 @@ public:
     Style ( const Style &obj) {
 
         estompage = false;
-        angle = obj.angle;
-        exaggeration = obj.exaggeration;
-        center = obj.center;
+        zenith = obj.zenith;
+        azimuth = obj.azimuth;
+        zFactor = obj.zFactor;
         this->id = obj.id;
         this->titles= obj.titles;
         this->abstracts = obj.abstracts;
@@ -213,7 +213,7 @@ public:
         this->palette = obj.palette;
         this->pente = obj.pente;
         this->aspect = obj.aspect;
-        if ( obj.angle >= 0 && obj.angle < 360 ) {
+        if ( obj.azimuth >= 0 && obj.azimuth < 360 ) {
             this->estompage = true;
         }
 
@@ -311,8 +311,8 @@ public:
      * \brief Return the sun azimuth
      * \return azimuth
      */
-    inline int getAngle() {
-        return angle;
+    inline float getZenith() {
+        return zenith;
     }
 
     /**
@@ -323,8 +323,8 @@ public:
      * \brief Return the slope exaggeration
      * \return exaggeration factor
      */
-    inline float getExaggeration() {
-        return exaggeration;
+    inline float getAzimuth() {
+        return azimuth;
     }
 
     /**
@@ -335,8 +335,8 @@ public:
      * \brief Return the value of a pixel without slope
      * \return value
      */
-    inline uint8_t getCenter() {
-        return center;
+    inline float getZFactor() {
+        return zFactor;
     }
 	
 	

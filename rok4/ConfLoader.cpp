@@ -99,9 +99,9 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
     bool rgbContinuous = false;
     bool alphaContinuous = false;
     bool noAlpha = false;
-    int angle =-1;
-    float exaggeration=1;
-    int center=0;
+    float zenith = 45;
+    float azimuth = 315;
+    float zFactor = 1;
     int errorCode;
     std::string algo = "";
     std::string unit = "";
@@ -343,24 +343,24 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
     pElem = hRoot.FirstChild ( "estompage" ).Element();
     if ( pElem ) {
         estompage = true;
-        errorCode = pElem->QueryIntAttribute ( "angle",&angle );
+        errorCode = pElem->QueryFloatAttribute ( "zenith",&zenith );
         if ( errorCode == TIXML_WRONG_TYPE ) {
-            LOGGER_ERROR ( _ ( "Un attribut angle invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
+            LOGGER_ERROR ( _ ( "Un attribut zenith invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
-            angle=-1;
+            zenith=45;
         }
-        errorCode = pElem->QueryFloatAttribute ( "exaggeration",&exaggeration );
+        errorCode = pElem->QueryFloatAttribute ( "azimuth",&azimuth );
         if ( errorCode == TIXML_WRONG_TYPE ) {
-            LOGGER_ERROR ( _ ( "Un attribut exaggeration invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
+            LOGGER_ERROR ( _ ( "Un attribut azimuth invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
-            exaggeration=1;
+            azimuth=315;
         }
 
-        errorCode = pElem->QueryIntAttribute ( "center",&center );
+        errorCode = pElem->QueryFloatAttribute ( "zFactor",&zFactor );
         if ( errorCode == TIXML_WRONG_TYPE ) {
-            LOGGER_ERROR ( _ ( "Un attribut center invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
+            LOGGER_ERROR ( _ ( "Un attribut zFactor invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
-            center=0;
+            zFactor=1;
         }
     }
 	
@@ -503,7 +503,7 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
     }
 	
 	
-    Style * style = new Style ( id,title,abstract,keyWords,legendURLs,pal,pente,aspect,angle,exaggeration,center);
+    Style * style = new Style ( id,title,abstract,keyWords,legendURLs,pal,pente,aspect,zenith,azimuth,zFactor);
     LOGGER_DEBUG ( _ ( "Style Cree" ) );
     return style;
 

@@ -388,7 +388,7 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
     if ( servicesConf.isFullStyleCapable() ) {
         if ( style->isEstompage() ) {
             LOGGER_DEBUG ( _ ( "Estompage" ) );
-            expandedImage = new EstompageImage ( expandedImage,style->getAngle(),style->getExaggeration(), style->getCenter() );
+            expandedImage = new EstompageImage ( expandedImage,style->getZenith(),style->getAzimuth(),style->getZFactor(),expandedImage->getResXmeter(),expandedImage->getResYmeter() );
             switch ( pyrType ) {
                 //Only use int8 output whith estompage
             case Rok4Format::TIFF_RAW_FLOAT32 :

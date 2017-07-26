@@ -45,9 +45,12 @@ private:
     Image* origImage;
     uint8_t* estompage;
     float* bufferTmp;
-    float matrix[9];
-    float exaggeration;
-    uint8_t center;
+    float zenith;
+    float azimuth;
+    float resx;
+    float resy;
+    float zFactor;
+
     int _getline ( uint8_t* buffer, int line );
     int _getline ( uint16_t* buffer, int line );
     int _getline ( float* buffer, int line );
@@ -61,7 +64,7 @@ public:
     virtual int getline ( float* buffer, int line );
     virtual int getline ( uint8_t* buffer, int line );
     virtual int getline ( uint16_t* buffer, int line );
-    EstompageImage ( Image* image, int angle, float exaggeration, uint8_t center );
+    EstompageImage (Image* image, float zenithDeg, float azimuthDeg, float zFactor, float resx, float resy );
     virtual ~EstompageImage();
 };
 
