@@ -106,6 +106,7 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
     std::string algo = "";
     std::string unit = "";
     std::string inter = "";
+    std::string interOfEst = "";
     int ndslope,mxSlope;
     float ndimg;
     bool estompage = false;
@@ -362,6 +363,20 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
             zFactor=1;
         }
+
+        errorCode = pElem->QueryStringAttribute("interpolation", &interOfEst);
+        if ( errorCode == TIXML_WRONG_TYPE ) {
+            LOGGER_ERROR ( _ ( "Un attribut interpolation invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
+            return NULL;
+        } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
+            LOGGER_INFO("Pas d'interpolation defini, 'linear' par defaut");
+            interOfEst = "linear";
+        } else {
+             if (inter != "linear" && inter != "cubic" && inter != "nn" && inter != "lanczos") {
+                LOGGER_ERROR ("Un attribut interpolation invalide a ete trouve dans la pente du Style " ) << id << ( ", les valeurs possibles sont 'nn','linear','cubic' et 'lanczos'");
+                return NULL;
+            }
+        }
     }
 	
 	//recuperation des informations pour le calcul des pentes
@@ -503,7 +518,7 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
     }
 	
 	
-    Style * style = new Style ( id,title,abstract,keyWords,legendURLs,pal,pente,aspect,zenith,azimuth,zFactor);
+    Style * style = new Style ( id,title,abstract,keyWords,legendURLs,pal,pente,aspect,zenith,azimuth,zFactor,interOfEst);
     LOGGER_DEBUG ( _ ( "Style Cree" ) );
     return style;
 

@@ -50,7 +50,7 @@
 
 Style::Style (const std::string& id, const std::vector<std::string>& titles,
                const std::vector<std::string>& abstracts, const std::vector<Keyword>& keywords,
-               const std::vector<LegendURL>& legendURLs, Palette& palette, Pente& pente,  Aspect& aspect, float zenith, float azimuth, float zFactor ) : estompage ( false ), zenith ( zenith ), azimuth ( azimuth ), zFactor ( zFactor ) {
+               const std::vector<LegendURL>& legendURLs, Palette& palette, Pente& pente,  Aspect& aspect, float zenith, float azimuth, float zFactor , std::string inter) : estompage ( false ), zenith ( zenith ), azimuth ( azimuth ), zFactor ( zFactor ), interpolationOfEstompage (inter) {
 			   //: id(id), titles(titles),             abstracts(abstracts), keywords(keywords), legendURLs(legendURLs), palette(palette)
     LOGGER_DEBUG ( _ ( "Nouveau Style : " ) << id );
     this->id = id.c_str();

@@ -22,5 +22,5 @@
                         <alpha>64</alpha>
                 </colour>
         </palette>
-        <estompage zenith="45" azimuth="315" zFactor="1"/>
+        <estompage zenith="45" azimuth="315" zFactor="1" interpolation="linear"/>
 </style>

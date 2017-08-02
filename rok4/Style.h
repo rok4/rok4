@@ -161,6 +161,11 @@ private :
      * \~english \brief Sun's zenith in degree
      */
     float zenith;
+    /**
+     * \~french \brief Interpolation pour l'estompage
+     * \~english \brief Estompage interpolation
+     */
+    std::string interpolationOfEstompage;
 public:
     /**
       * \~french
@@ -188,7 +193,7 @@ public:
       */
     Style ( const std::string& id,const std::vector<std::string>& titles,
             const std::vector<std::string>& abstracts,const  std::vector<Keyword>& keywords,
-            const std::vector<LegendURL>& legendURLs, Palette& palette ,  Pente& pente, Aspect& aspect,float zenith = 45, float azimuth = 315, float zFactor = 1 );
+            const std::vector<LegendURL>& legendURLs, Palette& palette ,  Pente& pente, Aspect& aspect,float zenith = 45, float azimuth = 315, float zFactor = 1, std::string inter = "linear" );
 
     /**
       * \~french
@@ -205,6 +210,7 @@ public:
         zenith = obj.zenith;
         azimuth = obj.azimuth;
         zFactor = obj.zFactor;
+        interpolationOfEstompage = obj.interpolationOfEstompage;
         this->id = obj.id;
         this->titles= obj.titles;
         this->abstracts = obj.abstracts;
@@ -338,7 +344,17 @@ public:
     inline float getZFactor() {
         return zFactor;
     }
-	
+    /**
+    * \~french
+    * \brief Retourne l'interpolation de l'estompage
+    * \return interpolation de l'estompage
+    * \~english
+    * \brief Return the estompage interpolation
+    * \return the estompage interpolation
+    */
+    inline Interpolation::KernelType getInterpolationOfEstompage() {
+      return Interpolation::fromString(interpolationOfEstompage);
+    }
 	
      /**
      * \~french

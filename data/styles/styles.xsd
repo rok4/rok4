@@ -67,6 +67,8 @@
                                         <xs:attribute name="azimuth" type="xs:decimal" use="required"/>
                                         <!-- Exagération de la pente -->
                                         <xs:attribute name="zFactor" type="xs:decimal" use="required"/>
+                                        <!-- Interpolation -->
+                                        <xs:attribute name="interpolation" type="xs:string" use="required"/>
                                         </xs:complexContent>
                                 </xs:complexType>
                         </xs:element>

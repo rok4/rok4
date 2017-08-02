@@ -64,7 +64,7 @@ public:
     virtual int getline ( float* buffer, int line );
     virtual int getline ( uint8_t* buffer, int line );
     virtual int getline ( uint16_t* buffer, int line );
-    EstompageImage (Image* image, float zenithDeg, float azimuthDeg, float zFactor, float resx, float resy );
+    EstompageImage (int width, int height, int channels, BoundingBox<double> bbox, Image* image, float zenithDeg, float azimuthDeg, float zFactor, float resx, float resy );
     virtual ~EstompageImage();
 };
 

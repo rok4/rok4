@@ -66,8 +66,8 @@ int EstompageImage::getline ( uint8_t* buffer, int line ) {
     return _getline ( buffer, line );
 }
 
-EstompageImage::EstompageImage (Image* image, float zenithDeg, float azimuthDeg, float zFactor , float resx, float resy) :
-    Image ( image->getWidth(), image->getHeight(), 1, image->getBbox() ),
+EstompageImage::EstompageImage (int width, int height, int channels, BoundingBox<double> bbox, Image *image, float zenithDeg, float azimuthDeg, float zFactor , float resx, float resy) :
+    Image ( width, height, channels, bbox ),
     origImage ( image ), estompage ( NULL ), zFactor (zFactor), resx (resx), resy (resy) {
 
     zenith = 90.0 - zenithDeg * DEG_TO_RAD;
@@ -111,7 +111,7 @@ int EstompageImage::getOrigLine ( float* buffer, int line ) {
 
 
 void EstompageImage::generate() {
-    estompage = new uint8_t[origImage->getWidth() * origImage->getHeight()];
+    estompage = new uint8_t[width * height];
     bufferTmp = new float[origImage->getWidth() * 3];
     float* lineBuffer[3];
     lineBuffer[0]= bufferTmp;
@@ -120,42 +120,39 @@ void EstompageImage::generate() {
 
     int line = 0;
     int nextBuffer = 0;
-    getOrigLine ( lineBuffer[0], line );
-    getOrigLine ( lineBuffer[1], line+1 );
-    getOrigLine ( lineBuffer[2], line+2 );
-    generateLine ( line++, lineBuffer[0],lineBuffer[0],lineBuffer[1] );
+    int lineOrig = 0;
+    getOrigLine ( lineBuffer[0], lineOrig++ );
+    getOrigLine ( lineBuffer[1], lineOrig++ );
+    getOrigLine ( lineBuffer[2], lineOrig++ );
     generateLine ( line++, lineBuffer[0],lineBuffer[1],lineBuffer[2] );
-    while ( line < origImage->getHeight() -1 ) {
-        getOrigLine ( lineBuffer[nextBuffer], line+1 );
+
+    while ( line < height ) {
+        getOrigLine ( lineBuffer[nextBuffer], lineOrig++ );
         generateLine ( line++, lineBuffer[ ( nextBuffer+1 ) %3],lineBuffer[ ( nextBuffer+2 ) %3],lineBuffer[nextBuffer] );
         nextBuffer = ( nextBuffer+1 ) %3;
     }
-    generateLine ( line,lineBuffer[nextBuffer], lineBuffer[ ( nextBuffer+1 ) %3],lineBuffer[ ( nextBuffer+1 ) %3] );
     delete[] bufferTmp;
 }
 
 void EstompageImage::generateLine ( int line, float* line1, float* line2, float* line3 ) {
     uint8_t* currentLine = estompage + line * width;
-    int column = 1;
+    int columnOrig = 1;
+    int column = 0;
     double value;
     float dzdx,dzdy,slope,aspect;
     float a,b,c,d,e,f,g,h,i;
 
-    value = 0;
+    while ( column < width ) {
 
-    *currentLine = ( int ) value;
-
-    while ( column < width - 1 ) {
-
-        a = ( * ( line1+column-1 ) );
-        b = ( * ( line1+column ) );
-        c = ( * ( line1+column+1 ) );
-        d = ( * ( line2+column-1 ) );
-        e = ( * ( line2+column ) );
-        f = ( * ( line2+column+1 ) );
-        g = ( * ( line3+column-1 ) );
-        h = ( * ( line3+column ) );
-        i = ( * ( line3+column+1 ) );
+        a = ( * ( line1+columnOrig-1 ) );
+        b = ( * ( line1+columnOrig ) );
+        c = ( * ( line1+columnOrig+1 ) );
+        d = ( * ( line2+columnOrig-1 ) );
+        e = ( * ( line2+columnOrig ) );
+        f = ( * ( line2+columnOrig+1 ) );
+        g = ( * ( line3+columnOrig-1 ) );
+        h = ( * ( line3+columnOrig ) );
+        i = ( * ( line3+columnOrig+1 ) );
 
         dzdx = ((c + 2*f + i) - (a + 2*d + g)) / (8 * resx);
         dzdy = ((g + 2*h + i) - (a + 2*b + c)) / (8 * resy);
@@ -181,11 +178,7 @@ void EstompageImage::generateLine ( int line, float* line1, float* line2, float*
         if (value<0) {value = 0;}
 
         * ( currentLine+ ( column++ ) ) = ( int ) ( value );
-
+        columnOrig++;
     }
-
-    value = 0;
-
-    * ( currentLine+column ) = ( int ) ( value );
 
 }
