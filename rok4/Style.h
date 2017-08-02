@@ -193,7 +193,7 @@ public:
       */
     Style ( const std::string& id,const std::vector<std::string>& titles,
             const std::vector<std::string>& abstracts,const  std::vector<Keyword>& keywords,
-            const std::vector<LegendURL>& legendURLs, Palette& palette ,  Pente& pente, Aspect& aspect,float zenith = 45, float azimuth = 315, float zFactor = 1, std::string inter = "linear" );
+            const std::vector<LegendURL>& legendURLs, Palette& palette ,  Pente& pente, Aspect& aspect,float zenith = 45, float azimuth = -1, float zFactor = 1, std::string inter = "linear" );
 
     /**
       * \~french

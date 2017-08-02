@@ -842,7 +842,12 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
                             if (curImage != NULL) {
                                 //On applique un style à l'image
                                 image = styleImage(curImage, pyrType, bStyle, format, bSize, bPyr);
-                                images.push_back ( image );
+                                if (!image) {
+                                     LOGGER_ERROR("Impossible d'appliquer le style");
+                                    return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
+                                } else {
+                                    images.push_back ( image );
+                                }
                             } else {
                                 LOGGER_ERROR("Impossible de générer la tuile car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile");
                                 return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
@@ -1174,8 +1179,14 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
             if (curImage != NULL) {
                 //On applique un style à l'image
                 image = styleImage(curImage, pyrType, bStyle, format, bSize, bPyr);
-                LOGGER_DEBUG("Apply style");
-                images.push_back ( image );
+                if (!image) {
+                     LOGGER_ERROR("Impossible d'appliquer le style");
+                     state = 1;
+                     return state;
+                } else {
+                    LOGGER_DEBUG("Apply style");
+                    images.push_back ( image );
+                }
             } else {
                 LOGGER_ERROR("Impossible de générer la dalle car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile");
                 state = 1;

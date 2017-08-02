@@ -100,7 +100,7 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
     bool alphaContinuous = false;
     bool noAlpha = false;
     float zenith = 45;
-    float azimuth = 315;
+    float azimuth = -1;
     float zFactor = 1;
     int errorCode;
     std::string algo = "";
