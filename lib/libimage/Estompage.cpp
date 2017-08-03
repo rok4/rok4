@@ -1,5 +1,5 @@
 /*
- * Copyright © (2011-2013) Institut national de l'information
+ * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
  * Géoportail SAV <geop_services@geoportail.fr>
@@ -35,35 +35,31 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-/**
- * \file Style.cpp
- * \~french
- * \brief Implémentation de la classe Style modélisant les styles.
- * \~english
- * \brief Implement the Style Class handling style definition
- */
+#include "Estompage.h"
 
-#include "Style.h"
-#include "Logger.h"
-#include "intl.h"
-#include "config.h"
-
-Style::Style (const std::string& id, const std::vector<std::string>& titles,
-               const std::vector<std::string>& abstracts, const std::vector<Keyword>& keywords,
-               const std::vector<LegendURL>& legendURLs, Palette& palette, Pente& pente,  Aspect& aspect, Estompage &estompage) {
-			   //: id(id), titles(titles),             abstracts(abstracts), keywords(keywords), legendURLs(legendURLs), palette(palette)
-    LOGGER_DEBUG ( _ ( "Nouveau Style : " ) << id );
-    this->id = id.c_str();
-    this->titles= titles;
-    this->abstracts = abstracts;
-    this->keywords = keywords;
-    this->legendURLs = legendURLs;
-    this->palette = palette;
-    this->pente = pente;
-    this->estompage = estompage;
-    this->aspect = aspect;
+Estompage::Estompage() {
+    estompage = true;
+    azimuth = 315;
+    zenith = 45;
+    zFactor = 1;
+    interpolation = "linear";
 }
 
-Style::~Style() {
+Estompage::Estompage(bool est, float azi, float zf, float zen, std::string inter)
+    : estompage (est), azimuth (azi), zFactor (zf), zenith (zen), interpolation (inter) {
 
 }
+
+Estompage::Estompage(const Estompage &obj) {
+    estompage = obj.estompage;
+    azimuth = obj.azimuth;
+    zenith = obj.zenith;
+    zFactor = obj.zFactor;
+    interpolation = obj.interpolation;
+}
+
+Estompage::~Estompage()
+{
+
+}
+

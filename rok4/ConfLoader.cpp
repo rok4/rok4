@@ -99,17 +99,14 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
     bool rgbContinuous = false;
     bool alphaContinuous = false;
     bool noAlpha = false;
-    float zenith = 45;
-    float azimuth = -1;
-    float zFactor = 1;
     int errorCode;
+    float zenith,azimuth,zFactor;
     std::string algo = "";
     std::string unit = "";
     std::string inter = "";
     std::string interOfEst = "";
     int ndslope,mxSlope;
     float ndimg;
-    bool estompage = false;
     float minSlope = 5.0;
 
     /*TiXmlDocument doc(fileName.c_str());
@@ -342,26 +339,34 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
     Palette pal ( colourMap, rgbContinuous, alphaContinuous, noAlpha );
 
     pElem = hRoot.FirstChild ( "estompage" ).Element();
+    Estompage estompage;
+
     if ( pElem ) {
-        estompage = true;
+
         errorCode = pElem->QueryFloatAttribute ( "zenith",&zenith );
         if ( errorCode == TIXML_WRONG_TYPE ) {
             LOGGER_ERROR ( _ ( "Un attribut zenith invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
-            zenith=45;
+            LOGGER_INFO("Pas de zenith defini, 45 par defaut");
+        } else {
+            estompage.setZenith(zenith);
         }
         errorCode = pElem->QueryFloatAttribute ( "azimuth",&azimuth );
         if ( errorCode == TIXML_WRONG_TYPE ) {
             LOGGER_ERROR ( _ ( "Un attribut azimuth invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
-            azimuth=315;
+            LOGGER_INFO("Pas de azimuth defini, 315 par defaut");
+        } else {
+            estompage.setAzimuth(azimuth);
         }
 
         errorCode = pElem->QueryFloatAttribute ( "zFactor",&zFactor );
         if ( errorCode == TIXML_WRONG_TYPE ) {
             LOGGER_ERROR ( _ ( "Un attribut zFactor invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
-            zFactor=1;
+            LOGGER_INFO("Pas de zFactor defini, 1 par defaut");
+        } else {
+            estompage.setZFactor(zFactor);
         }
 
         errorCode = pElem->QueryStringAttribute("interpolation", &interOfEst);
@@ -370,20 +375,23 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
             return NULL;
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
             LOGGER_INFO("Pas d'interpolation defini, 'linear' par defaut");
-            interOfEst = "linear";
         } else {
              if (inter != "linear" && inter != "cubic" && inter != "nn" && inter != "lanczos") {
                 LOGGER_ERROR ("Un attribut interpolation invalide a ete trouve dans la pente du Style " ) << id << ( ", les valeurs possibles sont 'nn','linear','cubic' et 'lanczos'");
                 return NULL;
-            }
+            } else {
+                 estompage.setInterpolation(interOfEst);
+             }
         }
+    } else {
+        estompage.setEstompage(false);
     }
 	
 	//recuperation des informations pour le calcul des pentes
 	pElem = hRoot.FirstChild ( "pente" ).Element();
     Pente pente;
 	
-    if ( pElem && !estompage) {
+    if ( pElem && !estompage.isEstompage()) {
 
         pente.setPente(true);
         
@@ -484,7 +492,7 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
     pElem = hRoot.FirstChild ( "exposition" ).Element();
     Aspect aspect;
 
-    if ( pElem && !estompage && !pente.getPente()) {
+    if ( pElem && !estompage.isEstompage() && !pente.getPente()) {
 
         aspect.setAspect(true);
         errorCode = pElem->QueryStringAttribute("algo", &algo);
@@ -518,7 +526,7 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
     }
 	
 	
-    Style * style = new Style ( id,title,abstract,keyWords,legendURLs,pal,pente,aspect,zenith,azimuth,zFactor,interOfEst);
+    Style * style = new Style ( id,title,abstract,keyWords,legendURLs,pal,pente,aspect,estompage);
     LOGGER_DEBUG ( _ ( "Style Cree" ) );
     return style;
 

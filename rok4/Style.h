@@ -51,6 +51,7 @@
 #include "Keyword.h"
 #include "Palette.h"
 #include "Pente.h"
+#include "Estompage.h"
 #include "Aspect.h"
 #include "Interpolation.h"
 
@@ -145,27 +146,7 @@ private :
      * \~french \brief Définit si un estompage doit être appliqué
      * \~english \brief Define wether the server must compute a relief shadow
      */
-    bool estompage;
-    /**
-     * \~french \brief Azimuth du soleil en degré
-     * \~english \brief Sun's azimuth in degree
-     */
-    float azimuth;
-    /**
-     * \~french \brief Facteur d'éxagération de la pente
-     * \~english \brief Slope exaggeration factor
-     */
-    float zFactor;
-    /**
-     * \~french \brief Zenith du soleil en degré
-     * \~english \brief Sun's zenith in degree
-     */
-    float zenith;
-    /**
-     * \~french \brief Interpolation pour l'estompage
-     * \~english \brief Estompage interpolation
-     */
-    std::string interpolationOfEstompage;
+    Estompage estompage;
 public:
     /**
       * \~french
@@ -193,7 +174,7 @@ public:
       */
     Style ( const std::string& id,const std::vector<std::string>& titles,
             const std::vector<std::string>& abstracts,const  std::vector<Keyword>& keywords,
-            const std::vector<LegendURL>& legendURLs, Palette& palette ,  Pente& pente, Aspect& aspect,float zenith = 45, float azimuth = -1, float zFactor = 1, std::string inter = "linear" );
+            const std::vector<LegendURL>& legendURLs, Palette& palette ,  Pente& pente, Aspect& aspect, Estompage &estompage );
 
     /**
       * \~french
@@ -206,11 +187,7 @@ public:
 
     Style ( const Style &obj) {
 
-        estompage = false;
-        zenith = obj.zenith;
-        azimuth = obj.azimuth;
-        zFactor = obj.zFactor;
-        interpolationOfEstompage = obj.interpolationOfEstompage;
+        this->estompage = obj.estompage;
         this->id = obj.id;
         this->titles= obj.titles;
         this->abstracts = obj.abstracts;
@@ -219,9 +196,6 @@ public:
         this->palette = obj.palette;
         this->pente = obj.pente;
         this->aspect = obj.aspect;
-        if ( obj.azimuth >= 0 && obj.azimuth < 360 ) {
-            this->estompage = true;
-        }
 
     }
 
@@ -306,7 +280,7 @@ public:
      * \return true if it does
      */
     inline bool isEstompage() {
-        return estompage;
+        return estompage.isEstompage();
     }
 
     /**
@@ -318,7 +292,7 @@ public:
      * \return azimuth
      */
     inline float getZenith() {
-        return zenith;
+        return estompage.getZenith();
     }
 
     /**
@@ -330,7 +304,7 @@ public:
      * \return exaggeration factor
      */
     inline float getAzimuth() {
-        return azimuth;
+        return estompage.getAzimuth();
     }
 
     /**
@@ -342,7 +316,7 @@ public:
      * \return value
      */
     inline float getZFactor() {
-        return zFactor;
+        return estompage.getZFactor();
     }
     /**
     * \~french
@@ -353,7 +327,7 @@ public:
     * \return the estompage interpolation
     */
     inline Interpolation::KernelType getInterpolationOfEstompage() {
-      return Interpolation::fromString(interpolationOfEstompage);
+      return estompage.getInterpolation();
     }
 	
      /**
