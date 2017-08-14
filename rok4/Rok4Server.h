@@ -88,8 +88,8 @@ private:
 
 #if BUILD_OBJECT
     /**
-     * \~french \brief Thread de reconnexion des contextes Swift
-     * \~english \brief Swift contexts reconnection thread
+     * \~french \brief Thread de reconnexion des contextes
+     * \~english \brief Contexts reconnection thread
      */
     pthread_t reco_thread;
 #endif

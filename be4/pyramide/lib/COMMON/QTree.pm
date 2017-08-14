@@ -580,7 +580,7 @@ sub computeBranch {
     my @childList = $this->getChildren($node);
     if (scalar @childList == 0){
         if (! $this->computeBottomImage($node)) {
-            ERROR(sprintf "Cannot compute the bottom image : %s",$node->getWorkName());
+            ERROR(sprintf "Cannot compute the bottom image : %s",$node->getWorkBaseName());
             return FALSE;
         }
         return TRUE;
@@ -595,7 +595,7 @@ sub computeBranch {
     }
 
     if (! $this->computeAboveImage($node)) {
-        ERROR(sprintf "Cannot compute the above image : %s", $node->getWorkName());
+        ERROR(sprintf "Cannot compute the above image : %s", $node->getWorkBaseName());
         return FALSE;
     }
 

@@ -223,7 +223,7 @@ sub mergeNtiff {
     my $mNtConfFile = File::Spec->catfile($this->{mntConfDir}, $mNtConfFilename);
     
     if (! open CFGF, ">", $mNtConfFile ) {
-        ERROR(sprintf "Impossible de creer le fichier $mNtConfFile.");
+        ERROR(sprintf "Impossible de creer le fichier $mNtConfFile");
         return ("",-1);
     }
     
