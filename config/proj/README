@@ -1,0 +1,2 @@
+Les fichiers de grilles sont générés à la compilation de proj4 et dépendent de 
+l'architecture cible.
