@@ -1,0 +1,11 @@
+#Rok4 build env
+FROM resin/rpi-raspbian:jessie
+
+#Get build env
+RUN apt-get update && \
+	apt-get install -y build-essential gettext nasm automake cmake xsltproc
+
+
+# Missing file
+ADD http://www.opensource.apple.com/source/clang/clang-137/src/tools/clang/lib/Headers/mm_malloc.h?txt /usr/include/mm_malloc.h
+RUN chmod 777 /usr/include/mm_malloc.h

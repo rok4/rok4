@@ -19,7 +19,7 @@ INSTALL(DIRECTORY "xerces/"
 
 ########################################
 # Paramétrage de la gestion de package CPack
-# Génère un fichier PROJET-VERSION-OS-32/64bit.tar.gz 
+# Génère un fichier PROJET-VERSION-OS-ARCH.tar.gz 
 
-SET(CPACK_SYSTEM_NAME "${CMAKE_SYSTEM_NAME}")
+SET(CPACK_SYSTEM_NAME "${CMAKE_SYSTEM_NAME}-${BUILD_ARCHITECTURE}")
 INCLUDE(CPack)

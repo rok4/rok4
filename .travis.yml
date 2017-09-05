@@ -1,21 +1,22 @@
-language: cpp
-compiler:
-- gcc
-before_install:
-- sudo apt-get update -qq
-- sudo apt-get install -y gettext nasm
-- chmod -R 777 *
+language: bash
+
+services:
+  - docker
+
+env:
+  - ARCH=x86
+#  - ARCH=arm
+
 script:
-- mkdir build target
-- cd build
-- cmake .. -DCMAKE_INSTALL_PREFIX=../target -DBUILD_ROK4=TRUE -DBUILD_BE4=FALSE -DBUILD_DOC=FALSE
-  -DUNITTEST=false -DDEBUG_BUILD=FALSE
-- make package
-- export FILE_TOUPLOAD=$(find ./ -maxdepth 1 -name "Rok4*.tar.gz")
+  - chmod -R 777 *
+  - bash docker/build.sh
+
 deploy:
   provider: releases
   api_key: $GH_TOKEN
-  file: $FILE_TOUPLOAD
+  file_glob: true
+  file: build/*.tar.gz
+  skip_cleanup: true
   on:
     repo: rok4/rok4
     tags: true

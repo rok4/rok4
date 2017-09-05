@@ -122,12 +122,7 @@ INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/install/" DESTINATION . USE_SOURC
 
 ########################################
 # Paramétrage de la gestion de package CPack
-# Génère un fichier PROJET-VERSION-OS-32/64bit.tar.gz 
+# Génère un fichier PROJET-VERSION-OS-ARCH.tar.gz 
 
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-  SET(BUILD_ARCHITECTURE "64bit")
-else()
-  SET(BUILD_ARCHITECTURE "32bit")
-endif()
 SET(CPACK_SYSTEM_NAME "${CMAKE_SYSTEM_NAME}-${BUILD_ARCHITECTURE}")
 INCLUDE(CPack)

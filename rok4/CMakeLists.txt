@@ -24,11 +24,17 @@ set(BUILD_SHARED_LIBS OFF)
 #Build Type si les build types par défaut de CMake ne conviennent pas
 if(DEBUG_BUILD)
   set(CMAKE_BUILD_TYPE debugbuild)
-  set(CMAKE_CXX_FLAGS_DEBUGBUILD "-g -O0 -msse -msse2 -msse3 -lrt")
+  set(CMAKE_CXX_FLAGS_DEBUGBUILD "-g -O0 -lrt")
+  if(TARGET_ARCH EQUAL "i386" OR TARGET_ARCH EQUAL "amd64")
+    set(CMAKE_CXX_FLAGS_DEBUGBUILD "${CMAKE_CXX_FLAGS_DEBUGBUILD} -msse -msse2 -msse3")
+  endif(TARGET_ARCH EQUAL "i386" OR TARGET_ARCH EQUAL "amd64")
   set(CMAKE_C_FLAGS_DEBUGBUILD "-g -std=c99 -lrt")
 else(DEBUG_BUILD)
   set(CMAKE_BUILD_TYPE specificbuild)
-  set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3 -msse -msse2 -msse3 -lrt")
+  set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-O3 -lrt")
+  if(TARGET_ARCH EQUAL "i386" OR TARGET_ARCH EQUAL "amd64")
+    set(CMAKE_CXX_FLAGS_SPECIFICBUILD "${CMAKE_CXX_FLAGS_SPECIFICBUILD} -msse -msse2 -msse3")
+  endif(TARGET_ARCH EQUAL "i386" OR TARGET_ARCH EQUAL "amd64")
   set(CMAKE_C_FLAGS_SPECIFICBUILD "-std=c99 -lrt")
 endif(DEBUG_BUILD)
 
@@ -171,12 +177,7 @@ endif(BUILD_DOC)
 
 ########################################
 # Paramétrage de la gestion de package CPack
-# Génère un fichier PROJET-VERSION-OS-32/64bit.tar.gz 
+# Génère un fichier PROJET-VERSION-OS-ARCH.tar.gz 
 
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-  SET(BUILD_ARCHITECTURE "64bit")
-else()
-  SET(BUILD_ARCHITECTURE "32bit")
-endif()
 SET(CPACK_SYSTEM_NAME "${CMAKE_SYSTEM_NAME}-${BUILD_ARCHITECTURE}")
 INCLUDE(CPack)

@@ -1,0 +1,6 @@
+#Rok4 build env
+FROM debian:jessie
+
+#Get build env
+RUN apt-get update && \
+	apt-get install -y build-essential gettext nasm automake cmake xsltproc
