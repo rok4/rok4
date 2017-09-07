@@ -478,11 +478,23 @@ void Rok4Server::buildWMS130Capabilities() {
                     }
                 } else {
                     TiXmlElement * bbEl = new TiXmlElement ( "BoundingBox" );
+
                     bbEl->SetAttribute ( "CRS",childLayer->getBoundingBox().srs );
-                    bbEl->SetAttribute ( "minx",childLayer->getBoundingBox().minx );
-                    bbEl->SetAttribute ( "miny",childLayer->getBoundingBox().miny );
-                    bbEl->SetAttribute ( "maxx",childLayer->getBoundingBox().maxx );
-                    bbEl->SetAttribute ( "maxy",childLayer->getBoundingBox().maxy );
+
+                    os.str ( "" );
+                    os<< std::fixed << std::setprecision ( 9 );
+                    os<<childLayer->getBoundingBox().minx;
+                    bbEl->SetAttribute ( "minx",os.str() );
+                    os.str ( "" );
+                    os<<childLayer->getBoundingBox().miny;
+                    bbEl->SetAttribute ( "miny",os.str() );
+                    os.str ( "" );
+                    os<<childLayer->getBoundingBox().maxx;
+                    bbEl->SetAttribute ( "maxx",os.str() );
+                    os.str ( "" );
+                    os<<childLayer->getBoundingBox().maxy;
+                    bbEl->SetAttribute ( "maxy",os.str() );
+
                     childLayerEl->LinkEndChild ( bbEl );
                 }
                 //MetadataURL
