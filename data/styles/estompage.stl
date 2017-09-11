@@ -22,5 +22,5 @@
                         <alpha>64</alpha>
                 </colour>
         </palette>
-        <estompage angle="315" exaggeration="2.5" center="126"/>
+        <estompage zenith="45" azimuth="315" zFactor="1" interpolation="linear"/>
 </style>

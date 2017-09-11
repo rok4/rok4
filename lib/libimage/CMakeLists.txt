@@ -44,7 +44,7 @@ SET(
     libimage_SRCS Palette.cpp Data.cpp Decoder.cpp Pente.h PenteImage.cpp Aspect.h AspectImage.cpp
     FileImage.cpp Jpeg2000Image.cpp LibtiffImage.cpp LibpngImage.cpp Rok4Image.cpp BilzImage.cpp
     ReprojectedImage.cpp ResampledImage.cpp Kernel.cpp Interpolation.cpp DecimatedImage.cpp
-    MirrorImage.cpp StyledImage.cpp EstompageImage.cpp
+    MirrorImage.cpp StyledImage.cpp EstompageImage.cpp Estompage.cpp
     ExtendedCompoundImage.cpp CompoundImage.cpp Line.cpp MergeImage.cpp
     Grid.cpp CRS.cpp TiffEncoder.cpp
     BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp AscEncoder.cpp FileDataSource.cpp PaletteConfig.cpp PaletteDataSource.cpp
