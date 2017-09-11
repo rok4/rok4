@@ -480,12 +480,7 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
         for (lv = server->getLayerList().begin();lv != server->getLayerList().end(); lv++) {
             Layer* lay = new Layer(*lv->second,styleListNew,tmsListNew);
             layerListNew.insert(std::pair<std::string,Layer*> (lv->first,lay));
-
-            //Suppression de l'ancien petit à petit
-            delete lv->second;
-            lv->second = NULL;
         }
-        server->getLayerList().clear();
 
         LOGGER_DEBUG("Lecture du dossier");
 
