@@ -35,37 +35,31 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-#ifndef ESTOMPAGEIMAGE_H
-#define ESTOMPAGEIMAGE_H
+#include "Estompage.h"
 
-#include "Image.h"
+Estompage::Estompage() {
+    estompage = true;
+    azimuth = 315;
+    zenith = 45;
+    zFactor = 1;
+    interpolation = "linear";
+}
 
-class EstompageImage : public Image {
-private:
-    Image* origImage;
-    uint8_t* estompage;
-    float* bufferTmp;
-    float zenith;
-    float azimuth;
-    float resx;
-    float resy;
-    float zFactor;
+Estompage::Estompage(bool est, float azi, float zf, float zen, std::string inter)
+    : estompage (est), azimuth (azi), zFactor (zf), zenith (zen), interpolation (inter) {
 
-    int _getline ( uint8_t* buffer, int line );
-    int _getline ( uint16_t* buffer, int line );
-    int _getline ( float* buffer, int line );
-    int getOrigLine ( uint8_t* buffer, int line );
-    int getOrigLine ( uint16_t* buffer, int line );
-    int getOrigLine ( float* buffer, int line );
-    void generate();
-    void generateLine ( int line, float* line1, float* line2 , float* line3 );
+}
 
-public:
-    virtual int getline ( float* buffer, int line );
-    virtual int getline ( uint8_t* buffer, int line );
-    virtual int getline ( uint16_t* buffer, int line );
-    EstompageImage (int width, int height, int channels, BoundingBox<double> bbox, Image* image, float zenithDeg, float azimuthDeg, float zFactor, float resx, float resy );
-    virtual ~EstompageImage();
-};
+Estompage::Estompage(const Estompage &obj) {
+    estompage = obj.estompage;
+    azimuth = obj.azimuth;
+    zenith = obj.zenith;
+    zFactor = obj.zFactor;
+    interpolation = obj.interpolation;
+}
 
-#endif // ESTOMPAGEIMAGE_H
+Estompage::~Estompage()
+{
+
+}
+

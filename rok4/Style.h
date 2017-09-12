@@ -51,6 +51,7 @@
 #include "Keyword.h"
 #include "Palette.h"
 #include "Pente.h"
+#include "Estompage.h"
 #include "Aspect.h"
 #include "Interpolation.h"
 
@@ -145,22 +146,7 @@ private :
      * \~french \brief Définit si un estompage doit être appliqué
      * \~english \brief Define wether the server must compute a relief shadow
      */
-    bool estompage;
-    /**
-     * \~french \brief Azimuth du soleil en degré
-     * \~english \brief Sun's azimuth in degree
-     */
-    int angle;
-    /**
-     * \~french \brief Facteur d'éxagération de la pente
-     * \~english \brief Slope exaggeration factor
-     */
-    float exaggeration;
-    /**
-     * \~french \brief Valeur d'un pixel de pente nulle
-     * \~english \brief Value of a pixel without slope
-     */
-    uint8_t center;
+    Estompage estompage;
 public:
     /**
       * \~french
@@ -188,7 +174,7 @@ public:
       */
     Style ( const std::string& id,const std::vector<std::string>& titles,
             const std::vector<std::string>& abstracts,const  std::vector<Keyword>& keywords,
-            const std::vector<LegendURL>& legendURLs, Palette& palette ,  Pente& pente, Aspect& aspect,int angle =-1, float exaggeration=1., uint8_t center=0 );
+            const std::vector<LegendURL>& legendURLs, Palette& palette ,  Pente& pente, Aspect& aspect, Estompage &estompage );
 
     /**
       * \~french
@@ -201,10 +187,7 @@ public:
 
     Style ( const Style &obj) {
 
-        estompage = false;
-        angle = obj.angle;
-        exaggeration = obj.exaggeration;
-        center = obj.center;
+        this->estompage = obj.estompage;
         this->id = obj.id;
         this->titles= obj.titles;
         this->abstracts = obj.abstracts;
@@ -213,9 +196,6 @@ public:
         this->palette = obj.palette;
         this->pente = obj.pente;
         this->aspect = obj.aspect;
-        if ( obj.angle >= 0 && obj.angle < 360 ) {
-            this->estompage = true;
-        }
 
     }
 
@@ -300,7 +280,7 @@ public:
      * \return true if it does
      */
     inline bool isEstompage() {
-        return estompage;
+        return estompage.isEstompage();
     }
 
     /**
@@ -311,8 +291,8 @@ public:
      * \brief Return the sun azimuth
      * \return azimuth
      */
-    inline int getAngle() {
-        return angle;
+    inline float getZenith() {
+        return estompage.getZenith();
     }
 
     /**
@@ -323,8 +303,8 @@ public:
      * \brief Return the slope exaggeration
      * \return exaggeration factor
      */
-    inline float getExaggeration() {
-        return exaggeration;
+    inline float getAzimuth() {
+        return estompage.getAzimuth();
     }
 
     /**
@@ -335,10 +315,20 @@ public:
      * \brief Return the value of a pixel without slope
      * \return value
      */
-    inline uint8_t getCenter() {
-        return center;
+    inline float getZFactor() {
+        return estompage.getZFactor();
     }
-	
+    /**
+    * \~french
+    * \brief Retourne l'interpolation de l'estompage
+    * \return interpolation de l'estompage
+    * \~english
+    * \brief Return the estompage interpolation
+    * \return the estompage interpolation
+    */
+    inline Interpolation::KernelType getInterpolationOfEstompage() {
+      return estompage.getInterpolation();
+    }
 	
      /**
      * \~french

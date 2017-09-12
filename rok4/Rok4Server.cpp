@@ -388,7 +388,23 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
     if ( servicesConf.isFullStyleCapable() ) {
         if ( style->isEstompage() ) {
             LOGGER_DEBUG ( _ ( "Estompage" ) );
-            expandedImage = new EstompageImage ( expandedImage,style->getAngle(),style->getExaggeration(), style->getCenter() );
+
+            int error=0;
+            BoundingBox<double> expandedBbox = curImage->getBbox().expand(curImage->getResX(),curImage->getResY(),1);
+            expandedImage = pyr->getbbox(servicesConf,expandedBbox,curImage->getWidth()+2,curImage->getHeight()+2,curImage->getCRS(),style->getInterpolationOfEstompage(),0,error);
+
+            if (expandedImage == 0) {
+                LOGGER_ERROR("expanded Image is NULL");
+                delete curImage;
+                return NULL;
+            }
+
+            expandedImage->setBbox(expandedBbox);
+            expandedImage->setCRS(curImage->getCRS());
+
+            expandedImage = new EstompageImage ( curImage->getWidth(), curImage->getHeight(), curImage->getChannels(),
+                                                 curImage->getBbox(), expandedImage, style->getZenith(), style->getAzimuth(),
+                                                 style->getZFactor(), expandedImage->getResXmeter(),expandedImage->getResYmeter() );
             switch ( pyrType ) {
                 //Only use int8 output whith estompage
             case Rok4Format::TIFF_RAW_FLOAT32 :
@@ -406,6 +422,8 @@ Image *Rok4Server::styleImage(Image *curImage, Rok4Format::eformat_data pyrType,
             default:
                 break;
             }
+
+            delete curImage;
         }
 
         if (expandedImage->getChannels() == 1 && style->isPente()){
@@ -824,7 +842,12 @@ DataSource *Rok4Server::getTileOnDemand(Layer* L, std::string tileMatrix, int ti
                             if (curImage != NULL) {
                                 //On applique un style à l'image
                                 image = styleImage(curImage, pyrType, bStyle, format, bSize, bPyr);
-                                images.push_back ( image );
+                                if (!image) {
+                                     LOGGER_ERROR("Impossible d'appliquer le style");
+                                    return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
+                                } else {
+                                    images.push_back ( image );
+                                }
                             } else {
                                 LOGGER_ERROR("Impossible de générer la tuile car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile");
                                 return new SERDataSource( new ServiceException ( "",OWS_NOAPPLICABLE_CODE,_ ( "Impossible de repondre a la requete" ),"wmts" ) );
@@ -1156,8 +1179,14 @@ int Rok4Server::createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, i
             if (curImage != NULL) {
                 //On applique un style à l'image
                 image = styleImage(curImage, pyrType, bStyle, format, bSize, bPyr);
-                LOGGER_DEBUG("Apply style");
-                images.push_back ( image );
+                if (!image) {
+                     LOGGER_ERROR("Impossible d'appliquer le style");
+                     state = 1;
+                     return state;
+                } else {
+                    LOGGER_DEBUG("Apply style");
+                    images.push_back ( image );
+                }
             } else {
                 LOGGER_ERROR("Impossible de générer la dalle car l'une des basedPyramid du layer "+L->getTitle()+" ne renvoit pas de tuile");
                 state = 1;

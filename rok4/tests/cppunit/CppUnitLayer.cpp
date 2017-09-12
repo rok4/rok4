@@ -137,7 +137,8 @@ void CppUnitLayer::setUp() {
     palette0->buildPalettePNG();
     Pente pente;
     Aspect aspect;
-    style = new Style ( id0,titles0,abstracts0,keyWords,legendURLs0,*palette0,pente,aspect  );
+    Estompage estompage;
+    style = new Style ( id0,titles0,abstracts0,keyWords,legendURLs0,*palette0,pente,aspect,estompage  );
     styleslayer.push_back(style);
     idlayer = "Id of the layer";
     titlelayer = "Title of the layer";
