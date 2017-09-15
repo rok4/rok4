@@ -61,6 +61,7 @@
 
 // GREG
 #include "Message.h"
+#include "Rok4Image.h"
 // GREG
 
 
@@ -369,20 +370,18 @@ DataSource* Level::getEncodedTile ( int x, int y ) { // TODO: return 0 sur des c
         //on stocke une tuile et non une dalle
         std::string path=getPath ( x, y, 1, 1 );
         LOGGER_DEBUG ( path );
-        StoreDataSourceFactory SDSF;
-        return SDSF.createStoreDataSource( path.c_str(),maxTileSize,Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );
+        return new StoreDataSource ( path,maxTileSize,Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );
 
     } else {
 
         //on stocke une dalle
         // Index de la tuile (cf. ordre de rangement des tuiles)
         int n= ( y%tilesPerHeight ) *tilesPerWidth + ( x%tilesPerWidth );
-        // Les index sont stockés à partir de l'octet 2048
-        uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
+        // Les index sont stockés à partir de l'octet ROK4_IMAGE_HEADER_SIZE
+        uint32_t posoff=ROK4_IMAGE_HEADER_SIZE+4*n, possize=ROK4_IMAGE_HEADER_SIZE+tilesPerWidth*tilesPerHeight*4+4*n;
         std::string path=getPath ( x, y, tilesPerWidth, tilesPerHeight);
         LOGGER_DEBUG ( path );
-        StoreDataSourceFactory SDSF;
-        return SDSF.createStoreDataSource( path.c_str(), true, posoff, possize, Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );
+        return new StoreDataSource ( path, posoff, possize, ROK4_IMAGE_HEADER_SIZE + 2*4*tilesPerWidth*tilesPerHeight, Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );
     }
 
 }

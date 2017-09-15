@@ -230,66 +230,90 @@ static uint16_t fromROK4ExtraSample ( ExtraSample::eExtraSample es ) {
 /* ------------------------------------------------------------------------------------------------ */
 /* -------------------------------------------- USINES -------------------------------------------- */
 
-Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( char* name, BoundingBox< double > bbox, double resx, double resy, Context* c ) {
+Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( std::string name, BoundingBox< double > bbox, double resx, double resy, Context* c ) {
 
     int width=0, height=0, channels=0, planarconfig=0, bitspersample=0, sf=0, ph=0, comp=0;
     int tileWidth=0, tileHeight=0;
     
     // On va lire toutes les informations de l'en-tête TIFF à la main, sans passer par la libtiff pour être libre quant au type de stockage de la donnée
     
-    StoreDataSourceFactory sdsf;
-    StoreDataSource* sds = sdsf.createStoreDataSource(name, false, 0, 0, "", c);
+    StoreDataSource* sds = new StoreDataSource(name, 0, ROK4_IMAGE_HEADER_SIZE, "", c);
 
     size_t tmpSize;
-    uint8_t* hdr = sds->getThisData(0,ROK4_IMAGE_HEADER_SIZE);
-    if ( hdr == NULL ) {
+    const uint8_t* hdr = sds->getData(tmpSize);
+    if ( tmpSize < 0 ) {
         LOGGER_ERROR ( "Cannot read header of Rok4Image " << name );
         return NULL;
     }
+    if ( tmpSize < ROK4_IMAGE_HEADER_SIZE ) {
+        std::string originalName (name);
+        char tmpName[tmpSize+1];
+        memcpy((uint8_t*) tmpName, hdr,tmpSize);
+        tmpName[tmpSize] = '\0';
+        name = std::string (tmpName);
+        delete sds;
+
+        LOGGER_DEBUG ( "Dalle symbolique détectée : " << originalName << " référence une autre dalle symbolique " << name );
+
+        sds = new StoreDataSource(name, 0, ROK4_IMAGE_HEADER_SIZE, "", c);
+        hdr = sds->getData(tmpSize);
+
+        if ( tmpSize < 0) {
+            LOGGER_ERROR ( "Erreur lors de la lecture du header et de l'index dans l'objet/fichier " << name );
+            delete sds;
+            return NULL;
+        }
+        if ( tmpSize < ROK4_IMAGE_HEADER_SIZE ) {
+            LOGGER_ERROR ( "Erreur lors de la lecture : une dalle symbolique " << originalName << " référence une autre dalle symbolique " << name );
+            delete sds;
+            return NULL;
+        }
+    }
     
+
     uint8_t* p;
     
     /**************** DIMENSIONS GLOBALES ****************/
-    p = hdr+26;
+    p = ((uint8_t*) hdr)+26;
     width = *((uint32_t*) p);
 
-    p = hdr+38;
+    p = ((uint8_t*) hdr)+38;
     height = *((uint32_t*) p);
 
     /********************** TUILAGE **********************/
 
-    p = hdr+98;
+    p = ((uint8_t*) hdr)+98;
     tileWidth = *((uint32_t*) p);
 
-    p = hdr+110;
+    p = ((uint8_t*) hdr)+110;
     tileHeight = *((uint32_t*) p);
 
     /************ FORMAT DES PIXELS ET CANAUX ************/
-    p = hdr+86;
+    p = ((uint8_t*) hdr)+86;
     channels = *((uint32_t*) p);
 
-    p = hdr+8;
+    p = ((uint8_t*) hdr)+8;
     bitspersample = *((uint16_t*) p);
 
-    p = hdr+74;
+    p = ((uint8_t*) hdr)+74;
     ph = *((uint16_t*) p);
 
-    p = hdr+62;
+    p = ((uint8_t*) hdr)+62;
     comp = *((uint32_t*) p);
     
     // extrasample : facultatif
-    p = hdr+138;
+    p = ((uint8_t*) hdr)+138;
     uint16_t tagEs = *((uint16_t*) p);
     
     ExtraSample::eExtraSample es = ExtraSample::UNKNOWN;
     if (tagEs == TIFFTAG_EXTRASAMPLES) {
-        p = hdr+146;
+        p = ((uint8_t*) hdr)+146;
         es = toROK4ExtraSample(*((uint32_t*) p));
         
-        p = hdr+158;
+        p = ((uint8_t*) hdr)+158;
         sf = *((uint32_t*) p);
     } else if (tagEs == TIFFTAG_SAMPLEFORMAT) {
-        p = hdr+146;
+        p = ((uint8_t*) hdr)+146;
         sf = *((uint32_t*) p);        
     } else {
         LOGGER_ERROR ( "Inconsistent TIFF tag " << tagEs );
@@ -297,7 +321,6 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( char* name, BoundingBox< do
         return NULL;
     }
     
-    delete [] hdr;
     delete sds;
     
     /********************** CONTROLES **************************/
@@ -334,7 +357,7 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( char* name, BoundingBox< do
 }
 
 Rok4Image* Rok4ImageFactory::createRok4ImageToWrite (
-    char* name, BoundingBox<double> bbox, double resx, double resy, int width, int height, int channels,
+    std::string name, BoundingBox<double> bbox, double resx, double resy, int width, int height, int channels,
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
     Compression::eCompression compression, int tileWidth, int tileHeight, Context* c  ) {
 
@@ -398,7 +421,7 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToWrite (
 /* ------------------------------------------------------------------------------------------------ */
 
 Rok4Image::Rok4Image (
-    int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, char* n,
+    int width,int height, double resx, double resy, int channels, BoundingBox<double> bbox, std::string n,
     SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
     Compression::eCompression compression, ExtraSample::eExtraSample es, int tileWidth, int tileHeight, Context* c ) :
 
@@ -407,8 +430,7 @@ Rok4Image::Rok4Image (
     tileWidth (tileWidth), tileHeight(tileHeight), context(c)
 {
 
-    name = new char[IMAGE_MAX_FILENAME_LENGTH];
-    strcpy ( name,n );
+    name = n;
     pixelSize = bitspersample * channels / 8;
 
     tileWidthwise = width/tileWidth;
@@ -451,8 +473,7 @@ uint8_t* Rok4Image::memorizeRawTile ( size_t& size, int tile )
         /* la tuile n'est pas mémorisée, on doit la récupérer et la stocker dans memorizedTiles */
         LOGGER_DEBUG ( "Not memorized tile (" << tile << "). We read, decompress, and memorize it");
 
-        StoreDataSourceFactory sdsf;
-        StoreDataSource* encData = sdsf.createStoreDataSource(name, false, tilesOffset[tile], tilesByteCounts[tile], "", context);
+        StoreDataSource* encData = new StoreDataSource (name.c_str(), tilesOffset[tile], tilesByteCounts[tile], "", context);
 
         DataSource* decData;
         size_t tmpSize;
@@ -514,8 +535,7 @@ int Rok4Image::getEncodedTile ( uint8_t* buf, int tile )
         return 0;
     }
 
-    StoreDataSourceFactory sdsf;
-    StoreDataSource* encData = sdsf.createStoreDataSource(name, false, tilesOffset[tile], tilesByteCounts[tile], "", context);
+    StoreDataSource* encData = new StoreDataSource (name.c_str(), tilesOffset[tile], tilesByteCounts[tile], "", context);
     size_t realSize;
 
     const uint8_t* tmp = encData->getData(realSize);
@@ -622,12 +642,11 @@ bool Rok4Image::loadIndex()
     tilesOffset = new uint32_t[tilesNumber];
     tilesByteCounts = new uint32_t[tilesNumber];
 
-    StoreDataSourceFactory sdsf;
-    StoreDataSource* sds = sdsf.createStoreDataSource(name, false, 0, 0, "", context);
+    StoreDataSource* sds = new StoreDataSource (name, ROK4_IMAGE_HEADER_SIZE, 2 * 4 * tilesNumber, "", context);
 
     size_t tmpSize;
-    uint32_t* index = (uint32_t*) sds->getThisData(ROK4_IMAGE_HEADER_SIZE, 2 * 4 * tilesNumber);
-    if ( index == NULL ) {
+    uint32_t* index = (uint32_t*) sds->getData(tmpSize);
+    if ( tmpSize !=  2 * 4 * tilesNumber ) {
         LOGGER_ERROR ( "Cannot read index of Rok4Image " << name );
         return false;
     }
@@ -637,8 +656,6 @@ bool Rok4Image::loadIndex()
         tilesByteCounts[i] = *(index + tilesNumber + i);
     }
 
-
-    delete [] index;
     delete sds;
 
     return true;
@@ -1146,7 +1163,7 @@ bool Rok4Image::writeTile( int tileCol, int tileRow, uint8_t* data, bool crop )
     if ( size == 0 ) return false;
 
     char tileName[256];
-    sprintf(tileName, "%s_%d_%d", name, tileCol, tileRow);
+    sprintf(tileName, "%s_%d_%d", name.c_str(), tileCol, tileRow);
     LOGGER_DEBUG("Write tile as ceph object " + std::string(tileName));
 
     if (! context->writeFull(Buffer, size, std::string(tileName))) {

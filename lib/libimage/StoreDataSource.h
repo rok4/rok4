@@ -55,6 +55,7 @@
 #include "Data.h"
 #include "Context.h"
 #include <stdlib.h>
+#include <string>
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -66,8 +67,6 @@
  * \li Swift -> SwiftContext
  */
 class StoreDataSource : public DataSource {
-
-friend class StoreDataSourceFactory;
 
 protected:
     /**
@@ -139,6 +138,10 @@ protected:
      */
     Context* context;
 
+    const uint32_t headerIndexSize;
+
+public:
+
     /** \~french
      * \brief Crée un objet StoreDataSource à lecture partielle
      * \details La donnée (tuile) n'est qu'une partie de la source de donnée qui sera lue. On doit passer par l'usine StoreDataSourceFactory.
@@ -157,7 +160,27 @@ protected:
      * \param[in] c Data storage context
      * \param[in] encoding Data encoding
      */
-    StoreDataSource ( const char* name, bool indexToRead, const uint32_t o, const uint32_t s, std::string type, Context* c, std::string encoding);
+    StoreDataSource ( std::string n, const uint32_t o, const uint32_t s, std::string type, Context* c, std::string encoding = "");
+    
+    /** \~french
+     * \brief Crée un objet StoreDataSource à lecture partielle
+     * \details La donnée (tuile) n'est qu'une partie de la source de donnée qui sera lue. On doit passer par l'usine StoreDataSourceFactory.
+     * \param[in] name Nom de la source de donnée
+     * \param[in] posoff Position de l'offset de la tuile
+     * \param[in] possize Position de la taille de la tuile dans la source de donnée
+     * \param[in] type Mime-type de la donnée
+     * \param[in] c Contexte de stockage de la donnée
+     * \param[in] encoding Encodage de la source de donnée
+     ** \~english
+     * \brief Create a StoreDataSource object, for partially reading.
+     * \param[in] name Data source name
+     * \param[in] posoff Position of tile's offset
+     * \param[in] possize Position of tile's size
+     * \param[in] type Data mime-type
+     * \param[in] c Data storage context
+     * \param[in] encoding Data encoding
+     */
+    StoreDataSource (std::string n, const uint32_t po, const uint32_t ps, const uint32_t hisize, std::string type, Context* c, std::string encoding = "");
 
     /** \~french
      * \brief Crée un objet StoreDataSource à lecture complète
@@ -175,10 +198,7 @@ protected:
      * \param[in] c Data storage context
      * \param[in] encoding Data encoding
      */
-    StoreDataSource ( const char* name, const uint32_t maxsize, std::string type, Context* c, std::string encoding);
-
-public:
-
+    StoreDataSource ( std::string name, const uint32_t maxsize, std::string type, Context* c, std::string encoding = "");
 
     /** \~french
      * \brief Récupère la donnée depuis la source
@@ -200,21 +220,6 @@ public:
      * \return Data pointer
      */
     virtual const uint8_t* getData ( size_t &tile_size );
-
-    /** \~french
-     * \brief Récupère le bout de donnée depuis la source
-     * \details On dit où et combien de la donnée on veut lire. Celle ci n'est pas mémorisée. Cette fonction instancie le buffer mais à charge de l'appelant de le supprimer
-     * \param[in] offset À partir d'où on veut lire la donnée
-     * \param[in] size La taille de la donnée que l'on veut lire
-     * \return Un pointeur vers la donnée
-     ** \~english
-     * \brief Get the part of data from the source
-     * \details We precise from where and how many bytes we want to read. Data is not memorized. This function instanciate the buffer but the caller have to delete it.
-     * \param[in] offset From where we want to read
-     * \param[in] size Data size to read
-     * \return Data pointer
-     */
-    virtual uint8_t* getThisData ( const uint32_t offset, const uint32_t size );
 
 
     /**
@@ -263,56 +268,6 @@ public:
         return type;
     }
 
-};
-
-class StoreDataSourceFactory {
-
-public:
-
-    /** \~french
-     * \brief Crée un objet StoreDataSource à lecture partielle
-     * \details La donnée (tuile) n'est qu'une partie de la source de donnée qui sera lue.
-     * \param[in] name Nom de la source de donnée
-     * \param[in] indexToRead Précise si on doit lire la taille et l'offset dans la source ou si ils sont fournis directement
-     * \param[in] o (Position de) l'offset de la tuile
-     * \param[in] s (Position de) la taille de la tuile dans la source de donnée
-     * \param[in] type Mime-type de la donnée
-     * \param[in] c Contexte de stockage de la donnée
-     * \param[in] encoding Encodage de la source de donnée
-     ** \~english
-     * \brief Create a StoreDataSource object, for partially reading.
-     * \param[in] name Data source name
-     * \param[in] indexToRead Precise if offset and size have to be read in source or if it's directly provided
-     * \param[in] o (Position of) tile's offset
-     * \param[in] s (Position of) tile's size
-     * \param[in] type Data mime-type
-     * \param[in] c Data storage context
-     * \param[in] encoding Data encoding
-     */
-    StoreDataSource * createStoreDataSource (
-        const char* name, bool indexToRead, const uint32_t o, const uint32_t s, std::string type ,
-        Context* c, std::string encoding = ""
-    );
-
-    /** \~french
-     * \brief Crée un objet StoreDataSource à lecture complète
-     * \details La donnée (tuile) est la donnée en entier.
-     * \param[in] name Nom de la source de donnée
-     * \param[in] maxsize Position de l'offset de la tuile
-     * \param[in] type Mime-type de la donnée
-     * \param[in] c Contexte de stockage de la donnée
-     * \param[in] encoding Encodage de la source de donnée
-     ** \~english
-     * \brief Create a StoreDataSource object, for full reading
-     * \param[in] name Data source name
-     * \param[in] maxsize Max size read in the data source
-     * \param[in] type Data mime-type
-     * \param[in] c Data storage context
-     * \param[in] encoding Data encoding
-     */
-    StoreDataSource * createStoreDataSource (
-        const char* name, const uint32_t maxsize, std::string type , Context* c, std::string encoding = ""
-    );
 };
 
 #endif // STOREDATASOURCE_H

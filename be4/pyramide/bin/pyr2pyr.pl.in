@@ -62,7 +62,7 @@ Section: pyr2pyr tool
 
 Synopsis:
     (start code)
-    pyr2pyr.pl --conf file.txt
+    perl pyr2pyr.pl --conf file.txt
     (end code)
 
 This tool allow to convert a file ROK4 pyramid into a ceph stored ROK4 pyramid. We can keep the slab storage (tile) or store seperated tiles.

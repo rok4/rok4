@@ -92,7 +92,7 @@ private:
      * \~french \brief Nom de l'image
      * \~english \brief image's name
      */
-    char* name;
+    std::string name;
     /**
      * \~french \brief Photométrie des données (rgb, gray...)
      * \~english \brief Data photometric (rgb, gray...)
@@ -477,7 +477,7 @@ protected:
      * \param[in] context storage's context
      */
     Rok4Image (
-        int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name,
+        int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, std::string name,
         SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression, ExtraSample::eExtraSample es,
         int tileWidth, int tileHeight,
         Context* context
@@ -593,8 +593,10 @@ public:
         for ( int i = 0; i < memorySize; i++ ) if ( memorizedTiles[i] ) delete[] memorizedTiles[i];
         delete[] memorizedTiles;
         delete[] memorizedIndex;
-        delete[] name;
+        delete[] tilesOffset;
+        delete[] tilesByteCounts;
     }
+
 
     /** \~french
      * \brief Sortie des informations sur l'image ROK4
@@ -792,7 +794,7 @@ public:
      * \param[in] context storage context (file, ceph object or swift object)
      * \return a Rok4Image object pointer, NULL if error
      */
-    Rok4Image* createRok4ImageToRead ( char* name, BoundingBox<double> bbox, double resx, double resy, Context* context );
+    Rok4Image* createRok4ImageToRead ( std::string name, BoundingBox<double> bbox, double resx, double resy, Context* context );
 
     /** \~french
      * \brief Crée un objet Rok4Image, pour l'écriture
@@ -838,7 +840,7 @@ public:
      * \return a Rok4Image object pointer, NULL if error
      */
     Rok4Image* createRok4ImageToWrite (
-        char* name, BoundingBox<double> bbox, double resx, double resy, int width, int height, int channels,
+        std::string name, BoundingBox<double> bbox, double resx, double resy, int width, int height, int channels,
         SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
         Compression::eCompression compression, int tileWidth, int tileHeight, Context* context
     );

@@ -337,12 +337,6 @@ sub config {
         return FALSE;
     }
 
-
-    if (! COMMON::ProxyStorage::checkEnvironmentVariables("REDIS")) {
-        ERROR("Environment variable is missing to link ancestor");
-        return FALSE;
-    }
-
     return TRUE;
 }
 

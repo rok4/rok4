@@ -118,6 +118,9 @@ my $ROK4_REDIS_HOST;
 my $ROK4_REDIS_PORT;
 my $ROK4_REDIS_PASSWD;
 
+### General
+my $ROK4_IMAGE_HEADER_SIZE = 2048;
+
 ####################################################################################################
 #                             Group: Controls methods                                              #
 ####################################################################################################
@@ -789,10 +792,6 @@ sub isPresent {
             return FALSE;
         }
 
-        if ($USE_REDIS && redisKeyExists($objectName)) {
-            return TRUE;
-        }
-
         `rados -p $poolName stat $objectName`;
         if ($?) {
             return FALSE;
@@ -1027,10 +1026,9 @@ sub symLink {
         my $realTarget = join("", @rest);
 
         # On vérifie que la dalle CEPH à lier n'est pas un alias, auquel cas on référence le vrai objet (pour éviter des alias en cascade)
-        my $value = redisValueFromKey($realTarget);
-        if (defined $value) {
-            # On a une valeur qui est le vrai nom de l'objet (réellement stocké sur S3)
-            $realTarget = $value;
+        my $value = getSize("CEPH",$targetPath);
+        if ( $value < $ROK4_IMAGE_HEADER_SIZE ) {
+            $realTarget = `rados -p $tPoolName get $realTarget /dev/stdout`;
         }
 
         # On retire le bucket du nom de l'alias à créer
@@ -1042,9 +1040,9 @@ sub symLink {
             return FALSE;
         }
 
-        # On ajoute la paire clé - valeur dans redis : $toPath => $realTarget
-        if (! addKeyValue($toPath, $realTarget)) {
-            ERROR("Cannot symlink (add a key/value in redis) object $realTarget with alias $toPath : $!");
+        `echo -n "$realTarget" | rados -p $toPoolName put $toPath /dev/stdin`;
+        if ($?) {
+            ERROR("Cannot symlink (make a rados put) object $realTarget with alias $toPath : $!");
             return undef;
         }
 
