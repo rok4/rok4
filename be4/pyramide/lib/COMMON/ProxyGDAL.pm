@@ -306,6 +306,25 @@ sub isIntersected {
 }
 
 
+=begin nd
+Function: getUnion
+
+Return union of two geometries. They have to own the same spatial reference
+
+Parameters (list):
+    geom1 - <Geo::OGR::Geometry> - geometry 1
+    geom2 - <Geo::OGR::Geometry> - geometry 2
+
+Returns geometry union
+=cut
+sub getUnion {
+    my $geom1 = shift;
+    my $geom2 = shift;
+
+    return $geom1->Union($geom2);
+}
+
+
 ####################################################################################################
 #                               Group: Spatial Reference functions                                 #
 ####################################################################################################

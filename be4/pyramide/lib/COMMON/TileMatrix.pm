@@ -86,6 +86,8 @@ use warnings;
 use Math::BigFloat;
 use Log::Log4perl qw(:easy);
 
+use COMMON::ProxyGDAL;
+
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
 
@@ -377,6 +379,36 @@ sub indicesToBbox {
     my $yMin = $yMax - $imgGroundHeight;
     
     return ($xMin,$yMin,$xMax,$yMax);
+}
+
+#
+=begin nd
+Function: indicesToGeom
+
+Returns the OGR Geometry from slab's indices.
+
+Parameters (list):
+    col - integer - Image's column
+    row - integer - Image's row
+    tilesPerWidth - integer - Number of tile in the image, widthwise
+    tilesPerHeight - integer - Number of tile in the image, heightwise
+=cut
+sub indicesToGeom {
+    my $this  = shift;
+    my $col     = shift;
+    my $row     = shift;
+    my $tilesPerWidth = shift;
+    my $tilesPerHeight = shift;
+    
+    my $imgGroundWidth = $this->getImgGroundWidth($tilesPerWidth);
+    my $imgGroundHeight = $this->getImgGroundHeight($tilesPerHeight);
+    
+    my $xMin = $this->getTopLeftCornerX + $imgGroundWidth * $col;
+    my $yMax = $this->getTopLeftCornerY - $imgGroundHeight * $row;
+    my $xMax = $xMin + $imgGroundWidth;
+    my $yMin = $yMax - $imgGroundHeight;
+    
+    return COMMON::ProxyGDAL::geometryFromBbox($xMin,$yMin,$xMax,$yMax);
 }
 
 #

@@ -96,7 +96,7 @@ Level::Level ( LevelXML* l, PyramidXML* p ) {
 Level::~Level() {
 
     // les contextes sont dans des contextBooks
-    // ce sont les contextBooks qui se chargent de détruire les contexts
+    // ce sont les contextBooks qui se chargent de détruire les contextes
     // mais ce n'est pas le cas des FILECONTEXT
     if (context) {
         if (context->getType() == FILECONTEXT) delete context;
@@ -119,7 +119,8 @@ Image* Level::getbbox ( ServicesXML* servicesConf, BoundingBox< double > bbox, i
 
     grid->bbox.print();
 
-    if ( ! ( grid->reproject ( dst_crs.getProj4Code(), src_crs.getProj4Code() ) ) ) {     error = 1; // BBox invalid
+    if ( ! ( grid->reproject ( dst_crs.getProj4Code(), src_crs.getProj4Code() ) ) ) {     
+        error = 1; // BBox invalid
         delete grid;
         return 0;
     }

@@ -237,7 +237,7 @@ sub new {
         # Le paramètre est le chemin du descripteur de pyramide, on en tire 'name' et 'desc_path'
         if (! -f $params) {
             ERROR ("XML file does not exist: $params !");
-            return FALSE;
+            return undef;
         }
 
         # Cette pyramide est donc en lecture, on ne tient pas compte d'un éventuel ancêtre (qu'on ne devrait pas avoir)
