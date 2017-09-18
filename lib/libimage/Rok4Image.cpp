@@ -1053,9 +1053,6 @@ bool Rok4Image::writeFinal() {
 
 bool Rok4Image::cleanBuffers() {
 
-    // Nettoyage des attributs propres à l'écriture
-    delete[] tilesOffset;
-    delete[] tilesByteCounts;
     delete[] Buffer;
     if ( compression == Compression::PNG || compression == Compression::DEFLATE ) {
         delete[] zip_buffer;
