@@ -376,8 +376,8 @@ Style* ConfLoader::parseStyle ( TiXmlDocument* doc,std::string fileName,bool ins
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
             LOGGER_INFO("Pas d'interpolation defini, 'linear' par defaut");
         } else {
-             if (inter != "linear" && inter != "cubic" && inter != "nn" && inter != "lanczos") {
-                LOGGER_ERROR ("Un attribut interpolation invalide a ete trouve dans la pente du Style " ) << id << ( ", les valeurs possibles sont 'nn','linear','cubic' et 'lanczos'");
+             if (interOfEst != "linear" && interOfEst != "cubic" && interOfEst != "nn" && interOfEst != "lanczos") {
+                LOGGER_ERROR ("Un attribut interpolation invalide a ete trouve dans l'estompage du Style " ) << id << ( ", les valeurs possibles sont 'nn','linear','cubic' et 'lanczos'");
                 return NULL;
             } else {
                  estompage.setInterpolation(interOfEst);
