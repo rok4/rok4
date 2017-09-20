@@ -830,8 +830,9 @@ Example:
 
 Topic: to
 
-    pool_name - Pool (must already exist). If not, bucket_name mandatory.
-    bucket_name - Bucket (must already exist). If not, pool_name mandatory.
+    pool_name - Pool (must already exist). If not, bucket_name or container_name mandatory.
+    bucket_name - Bucket (must already exist). If not, pool_name or container_name mandatory.
+    container_name - Container (must already exist). If not, pool_name or bucket_name mandatory.
     pyr_name - Pyramid's name, used to prefix objects. Mandatory.
     pyr_desc_path - Directory where new pyramid's descriptor and list are written. Mandatory.
     tiles_storage - Optionnal (only for ceph). If set to "true", slab are divised and tiles are stored separated

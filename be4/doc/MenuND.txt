@@ -42,16 +42,18 @@ Link: BE4 is an integral part of the ROK4 project  (http://www.rok4.org)
 
 Group: Tools  {
     File: BE4  (no auto-title, bin/be4.pl)
-    File: BE4CEPH  (no auto-title, bin/be4ceph.pl)
-    File: BE4S3  (no auto-title, bin/be4s3.pl)
+    File: BE4-CEPH  (no auto-title, bin/be4-ceph.pl)
+    File: BE4-S3  (no auto-title, bin/be4-s3.pl)
+    File: BE4-SWIFT  (no auto-title, bin/be4-swift.pl)
 
     File: JOINCACHE  (no auto-title, bin/joinCache.pl)
+    File: JOINCACHE-CEPH  (no auto-title, bin/joinCache-ceph.pl)
+    File: JOINCACHE-S3  (no auto-title, bin/joinCache-s3.pl)
     
-    File: WMTSALAD  (no auto-title, bin/wmtSalaD.pl)
-
     File: PYR2PYR  (no auto-title, bin/pyr2pyr.pl)
-    
     File: EXPYR  (no auto-title, bin/exPyr.pl)
+
+    File: WMTSALAD  (no auto-title, bin/wmtSalaD.pl)
 
     File: COORD2IMAGE  (no auto-title, bin/coord2image.pl)
     File: CREATE-LAYER  (no auto-title, bin/create-layer.pl)
@@ -68,9 +70,19 @@ Group: Classes  {
         File: PropertiesLoader (no auto-title, lib/BE4/PropertiesLoader.pm)
     }
 
-    Group: BE4CEPH  {
+    Group: BE4-CEPH  {
 
-        File: PropertiesLoader (no auto-title, lib/BE4CEPH/PropertiesLoader.pm)
+        File: PropertiesLoader (no auto-title, lib/BE4-CEPH/PropertiesLoader.pm)
+    }
+
+    Group: BE4-S3  {
+
+        File: PropertiesLoader (no auto-title, lib/BE4-S3/PropertiesLoader.pm)
+    }
+
+    Group: BE4-SWIFT  {
+
+        File: PropertiesLoader (no auto-title, lib/BE4-SWIFT/PropertiesLoader.pm)
     }
 
     Group: JOINCACHE  {

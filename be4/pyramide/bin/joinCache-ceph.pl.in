@@ -728,9 +728,6 @@ Group: Mandatory environment variable
     ROK4_CEPH_USERNAME
     ROK4_CEPH_CLUSTERNAME
 
-    ROK4_REDIS_HOST
-    ROK4_REDIS_PORT
-    ROK4_REDIS_PASSWD
 
 Group: Write a configuration file
 
