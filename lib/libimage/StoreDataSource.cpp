@@ -121,7 +121,6 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
         size = tileSize;
     }
     else if (! readIndex) {
-        LOGGER_ERROR ( "on sait lire avec taille & offset " << name );
         // On a directement la taille et l'offset
         data = new uint8_t[possize];
         int tileSize = context->read(data, posoff, possize, name);
@@ -131,7 +130,6 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
             data = NULL;
             return NULL;
         }
-        LOGGER_ERROR ( "tileSize " << tileSize );
         tile_size = tileSize;
         size = tileSize;
     }
@@ -181,7 +179,6 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
         // Objectif : gerer le cas de fichiers TIFF non conformes aux specs du cache
         // (et qui pourraient indiquer des tailles de tuiles excessives)
 
-        LOGGER_DEBUG ( "tileSize = " << tileSize ) ;
         if ( tileSize > MAX_TILE_SIZE ) {
             LOGGER_ERROR ( "Tuile trop volumineuse dans le fichier/objet " << name ) ;
             delete[] indexheader;
