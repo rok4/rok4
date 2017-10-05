@@ -35,33 +35,47 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-/**
- * \file Style.cpp
- * \~french
- * \brief Implémentation de la classe Style modélisant les styles.
- * \~english
- * \brief Implement the Style Class handling style definition
- */
+class TileMatrixXML;
 
-#include "Style.h"
-#include "Logger.h"
-#include "intl.h"
+#ifndef TMXML_H
+#define TMXML_H
+
+#include <vector>
+#include <string>
+
+#include "DocumentXML.h"
+#include "TileMatrix.h"
+
 #include "config.h"
+#include "intl.h"
 
-Style::Style ( const StyleXML& s ) {
-    LOGGER_DEBUG ( _ ( "Nouveau Style : " ) << s.id );
-    this->id = s.id;
-    this->titles = s.titles;
-    this->abstracts = s.abstracts;
-    this->keywords = s.keywords;
-    this->legendURLs = s.legendURLs;
-    this->palette = s.palette;
-    this->estompage = s.estompage;
-    this->pente = s.pente;
-    this->aspect = s.aspect;
+class TileMatrixXML : public DocumentXML
+{
+    friend class TileMatrix;
 
-}
+    public:
+        TileMatrixXML(std::string tmsId, std::string path, TiXmlElement* levelElement);
+        ~TileMatrixXML() ;
 
-Style::~Style() {
+        std::string getId();
 
-}
+        bool isOk() ;
+
+    protected:
+
+        std::string id;
+        double res;
+        double x0;
+        double y0;
+        int tileW;
+        int tileH;
+        long int matrixW;
+        long int matrixH;
+
+    private:
+
+        bool ok;
+};
+
+#endif // TMXML_H
+

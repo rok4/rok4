@@ -35,33 +35,53 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-/**
- * \file Style.cpp
- * \~french
- * \brief Implémentation de la classe Style modélisant les styles.
- * \~english
- * \brief Implement the Style Class handling style definition
- */
+class StyleXML;
+
+#ifndef STYLEXML_H
+#define STYLEXML_H
+
+#include <vector>
+#include <string>
 
 #include "Style.h"
-#include "Logger.h"
-#include "intl.h"
+#include "ServicesXML.h"
+#include "DocumentXML.h"
+
 #include "config.h"
+#include "intl.h"
 
-Style::Style ( const StyleXML& s ) {
-    LOGGER_DEBUG ( _ ( "Nouveau Style : " ) << s.id );
-    this->id = s.id;
-    this->titles = s.titles;
-    this->abstracts = s.abstracts;
-    this->keywords = s.keywords;
-    this->legendURLs = s.legendURLs;
-    this->palette = s.palette;
-    this->estompage = s.estompage;
-    this->pente = s.pente;
-    this->aspect = s.aspect;
+class StyleXML : public DocumentXML
+{
+    friend class Style;
 
-}
+    public:
+        StyleXML(std::string path, ServicesXML* servicesXML);
+        ~StyleXML();
 
-Style::~Style() {
+        std::string getId() ;
 
-}
+        bool isOk() ;
+        
+    protected:
+
+        std::string id;
+        std::vector<std::string> titles;
+        std::vector<std::string> abstracts;
+        std::vector<Keyword> keywords;
+        std::vector<LegendURL> legendURLs;
+        std::map<double, Colour> colourMap;
+        bool rgbContinuous;
+        bool alphaContinuous;
+        bool noAlpha;
+        Pente pente;
+        Aspect aspect;
+        Estompage estompage;
+        Palette palette;
+
+    private:
+
+        bool ok;
+};
+
+#endif // STYLEXML_H
+

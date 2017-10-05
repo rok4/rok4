@@ -35,33 +35,48 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-/**
- * \file Style.cpp
- * \~french
- * \brief Implémentation de la classe Style modélisant les styles.
- * \~english
- * \brief Implement the Style Class handling style definition
- */
+class TileMatrixSetXML;
 
-#include "Style.h"
-#include "Logger.h"
-#include "intl.h"
+#ifndef TMSXML_H
+#define TMSXML_H
+
+#include <vector>
+#include <string>
+
+#include "Keyword.h"
+#include "CRS.h"
+#include "DocumentXML.h"
+#include "TileMatrix.h"
+#include "TileMatrixSet.h"
+
 #include "config.h"
+#include "intl.h"
 
-Style::Style ( const StyleXML& s ) {
-    LOGGER_DEBUG ( _ ( "Nouveau Style : " ) << s.id );
-    this->id = s.id;
-    this->titles = s.titles;
-    this->abstracts = s.abstracts;
-    this->keywords = s.keywords;
-    this->legendURLs = s.legendURLs;
-    this->palette = s.palette;
-    this->estompage = s.estompage;
-    this->pente = s.pente;
-    this->aspect = s.aspect;
+class TileMatrixSetXML : public DocumentXML
+{
 
-}
+    friend class TileMatrixSet;
 
-Style::~Style() {
+    public:
 
-}
+        TileMatrixSetXML(std::string path);
+        ~TileMatrixSetXML();
+
+        std::string getId() ;
+
+        bool isOk();
+
+    protected:
+        std::string id;
+        std::string title;
+        CRS crs;
+        std::string abstract;
+        std::vector<Keyword> keyWords;
+        std::map<std::string, TileMatrix*> listTM;
+
+    private:
+        bool ok;
+};
+
+#endif // TMSXML_H
+

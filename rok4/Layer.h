@@ -318,81 +318,16 @@ private:
 
 public:
     /**
-     * \~french
-     * \brief Crée un Layer à partir des ses éléments constitutifs
-     * \param[in] id identifiant
-     * \param[in] title titre
-     * \param[in] abstract résumé
-     * \param[in] keyWords liste des mots-clés
-     * \param[in] dataPyramid pyramide de tuiles
-     * \param[in] styles liste des styles, le premier élément est le style par défaut
-     * \param[in] minRes résolution minimale de la couche
-     * \param[in] maxRes résolution maximale de la couche
-     * \param[in] WMSCRSList liste des systèmes de coordonnées authorisés
-     * \param[in] opaque définit si la couche est opaque
-     * \param[in] authority nom de l'entité propriétaire de la couche
-     * \param[in] resampling interpolation utilisée pour reprojeter ou recadrer les tuile
-     * \param[in] geographicBoundingBox emprise des données en coordonnées géographique (WGS84)
-     * \param[in] boundingBox emprise des données dans le système de coordonnées natif
-     * \param[in] metadataURLs liste des métadonnées associées
-     * \param[in] WMSAuthorized autorise le WMS
-     * \param[in] WMTSAuthorized autorise le WMTS
-     * \param[in] getFeatureInfoAvailability autorise le GetfeatureInfo
-     * \param[in] getFeatureInfoType source du GetfeatureInfo
-     * \param[in] getFeatureInfoBaseURL URL du service WMS-V pour le GetfeatureInfo
-     * \param[in] GFIVersion version du service WMS-V pour le GetfeatureInfo
-     * \param[in] GFIService type de service WMS-V pour le GetfeatureInfo
-     * \param[in] GFIQueryLayers
-     * \param[in] GFILayers
-     * \param[in] GFIForceEPSG
-     * \~english
-     * \brief Create a Layer
-     * \param[in] id identifier
-     * \param[in] title title
-     * \param[in] abstract abstract
-     * \param[in] keyWords list of keywords
-     * \param[in] dataPyramid Tile pyramids
-     * \param[in] styles linked styles list, first element is the default style
-     * \param[in] minRes minimal display resolution
-     * \param[in] maxRes maximal display resolution
-     * \param[in] WMSCRSList authorised coordinates systems list
-     * \param[in] opaque whether the layer is opaque
-     * \param[in] authority owner's entitity name
-     * \param[in] resampling interpolation used for resizing and reprojecting tiles
-     * \param[in] geographicBoundingBox data bounding box in geographic coordinates (WGS84)
-     * \param[in] boundingBox data bounding box in native coordinates system
-     * \param[in] metadataURLs linked metadata list
-     * \param[in] WMSAuthorized authorize WMS
-     * \param[in] WMTSAuthorized authorize WMTS
-     * \param[in] getFeatureInfoAvailability authorize GetfeatureInfo operation
-     * \param[in] getFeatureInfoType source of GetfeatureInfo
-     * \param[in] getFeatureInfoBaseURL URL of WMS-V service used by GetfeatureInfo
-     * \param[in] GFIVersion version of WMS-V service used by GetfeatureInfo
-     * \param[in] GFIService type of WMS-V service used by GetfeatureInfo
-     * \param[in] GFIQueryLayers
-     * \param[in] GFILayers
-     * \param[in] GFIForceEPSG
-     */
-    Layer ( std::string id, std::string title, std::string abstract,bool WMSAuthorized, bool WMTSAuthorized,
-            std::vector<Keyword> & keyWords, Pyramid*& dataPyramid,
-            std::vector<Style*> & styles, double minRes, double maxRes,
-            std::vector<CRS> & WMSCRSList, bool opaque, std::string authority,
-            Interpolation::KernelType resampling, GeographicBoundingBoxWMS geographicBoundingBox,
-            BoundingBoxWMS boundingBox, std::vector<MetadataURL>& metadataURLs,
-            bool getFeatureInfoAvailability, std::string getFeatureInfoType,
-            std::string getFeatureInfoBaseURL, std::string GFIVersion,
-            std::string GFIService, std::string GFIQueryLayers, std::string GFILayers, bool GFIForceEPSG)
-        :id ( id ), title ( title ), abstract ( abstract ), WMSAuthorized (WMSAuthorized), WMTSAuthorized (WMTSAuthorized),keyWords ( keyWords ),
-         dataPyramid ( dataPyramid ), styles ( styles ), minRes ( minRes ),
-         maxRes ( maxRes ), WMSCRSList ( WMSCRSList ), opaque ( opaque ),
-         authority ( authority ),resampling ( resampling ),
-         geographicBoundingBox ( geographicBoundingBox ),
-         boundingBox ( boundingBox ), metadataURLs ( metadataURLs ), defaultStyle ( styles.at ( 0 )->getId() ),
-         getFeatureInfoAvailability ( getFeatureInfoAvailability ), getFeatureInfoType ( getFeatureInfoType ),
-         getFeatureInfoBaseURL ( getFeatureInfoBaseURL ), GFIVersion( GFIVersion ), GFIService( GFIService ),
-         GFIQueryLayers ( GFIQueryLayers ), GFILayers ( GFILayers ), GFIForceEPSG ( GFIForceEPSG ){
-
-    }
+    * \~french
+    * Crée un Layer à partir d'un LayerXML
+    * \brief Constructeur
+    * \param[in] s LayerXML contenant les informations
+    * \~english
+    * Create a Layer from a LayerXML
+    * \brief Constructor
+    * \param[in] s LayerXML to get informations
+    */
+    Layer ( const LayerXML& l );
 
     /**
      * \~french

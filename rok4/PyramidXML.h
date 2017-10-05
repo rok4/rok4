@@ -35,33 +35,59 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-/**
- * \file Style.cpp
- * \~french
- * \brief Implémentation de la classe Style modélisant les styles.
- * \~english
- * \brief Implement the Style Class handling style definition
- */
+class PyramidXML;
 
-#include "Style.h"
-#include "Logger.h"
-#include "intl.h"
+#ifndef PYRAMIDXML_H
+#define PYRAMIDXML_H
+
+#include <vector>
+#include <string>
+
+#include "Keyword.h"
+#include "CRS.h"
+#include "TileMatrix.h"
+#include "ServicesXML.h"
+#include "DocumentXML.h"
+#include "ServerXML.h"
+#include "Format.h"
+#include "Level.h"
+
 #include "config.h"
+#include "intl.h"
 
-Style::Style ( const StyleXML& s ) {
-    LOGGER_DEBUG ( _ ( "Nouveau Style : " ) << s.id );
-    this->id = s.id;
-    this->titles = s.titles;
-    this->abstracts = s.abstracts;
-    this->keywords = s.keywords;
-    this->legendURLs = s.legendURLs;
-    this->palette = s.palette;
-    this->estompage = s.estompage;
-    this->pente = s.pente;
-    this->aspect = s.aspect;
+class PyramidXML : public DocumentXML
+{
 
-}
+    friend class Pyramid;
 
-Style::~Style() {
+    public:
 
-}
+        PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* servicesXML, bool times);
+        ~PyramidXML();
+
+        bool isOk() ;
+
+        int getChannels() ;
+        TileMatrixSet* getTMS() ;
+        Rok4Format::eformat_data getFormat() ;
+
+    protected:
+
+        TileMatrixSet *tms;
+        Rok4Format::eformat_data format;
+        int channels;
+        bool allowWMS;
+        std::map<std::string, Level *> levels;
+        Photometric::ePhotometric photo;
+        std::string ndValuesStr;
+        std::vector<int> noDataValues;
+
+        bool isBasedPyramid;
+        bool containOdLevels;
+
+    private:
+        bool ok;
+};
+
+#endif // PYRAMIDXML_H
+

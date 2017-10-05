@@ -35,33 +35,53 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-/**
- * \file Style.cpp
- * \~french
- * \brief Implémentation de la classe Style modélisant les styles.
- * \~english
- * \brief Implement the Style Class handling style definition
- */
 
-#include "Style.h"
-#include "Logger.h"
-#include "intl.h"
-#include "config.h"
+#ifndef DOCUMENTXML_H
+#define DOCUMENTXML_H
 
-Style::Style ( const StyleXML& s ) {
-    LOGGER_DEBUG ( _ ( "Nouveau Style : " ) << s.id );
-    this->id = s.id;
-    this->titles = s.titles;
-    this->abstracts = s.abstracts;
-    this->keywords = s.keywords;
-    this->legendURLs = s.legendURLs;
-    this->palette = s.palette;
-    this->estompage = s.estompage;
-    this->pente = s.pente;
-    this->aspect = s.aspect;
+#include <string>
+#include <libgen.h>
+#include <tinyxml.h>
 
-}
+class DocumentXML
+{
+    
+    public:
 
-Style::~Style() {
+        static const std::string getTextStrFromElem(TiXmlElement* pElem) {
+            const TiXmlNode* child = pElem->FirstChild();
+            if ( child ) {
+                const TiXmlText* childText = child->ToText();
+                if ( childText ) {
+                    return childText->ValueStr();
+                }
+            }
+            return "";
+        }
 
-}
+        
+        DocumentXML(std::string path) {
+            filePath = path;
+
+            char * fileNameChar = ( char * ) malloc ( strlen ( filePath.c_str() ) + 1 );
+            strcpy ( fileNameChar, filePath.c_str() );
+            char * parentDirChar = dirname ( fileNameChar );
+            parentDir = std::string ( parentDirChar );
+            free ( fileNameChar );
+            fileNameChar=NULL;
+            parentDirChar=NULL;
+        }
+
+        ~DocumentXML() {}
+        
+    protected:
+
+        std::string filePath;
+        std::string parentDir;
+
+    private:
+
+};
+
+#endif // DOCUMENTXML_H
+

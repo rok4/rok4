@@ -35,33 +35,71 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-/**
- * \file Style.cpp
- * \~french
- * \brief Implémentation de la classe Style modélisant les styles.
- * \~english
- * \brief Implement the Style Class handling style definition
- */
+class LayerXML;
 
-#include "Style.h"
-#include "Logger.h"
-#include "intl.h"
+#ifndef LAYERXML_H
+#define LAYERXML_H
+
+#include <vector>
+#include <string>
+#include <tinyxml.h>
+
+#include "Layer.h"
+#include "Pyramid.h"
+#include "ServicesXML.h"
+#include "ServerXML.h"
+#include "BoundingBox.h"
+#include "MetadataURL.h"
+#include "DocumentXML.h"
+
 #include "config.h"
+#include "intl.h"
 
-Style::Style ( const StyleXML& s ) {
-    LOGGER_DEBUG ( _ ( "Nouveau Style : " ) << s.id );
-    this->id = s.id;
-    this->titles = s.titles;
-    this->abstracts = s.abstracts;
-    this->keywords = s.keywords;
-    this->legendURLs = s.legendURLs;
-    this->palette = s.palette;
-    this->estompage = s.estompage;
-    this->pente = s.pente;
-    this->aspect = s.aspect;
+class LayerXML : public DocumentXML
+{
+    friend class Layer;
 
-}
+    public:
+        LayerXML(std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML );
+        ~LayerXML();
 
-Style::~Style() {
+        std::string getId();
+        bool isOk();
 
-}
+    protected:
+        std::string id;
+        std::string title;
+        std::string abstract;
+        std::vector<Keyword> keyWords;
+        std::string styleName;
+        std::vector<Style*> styles;
+        double minRes;
+        double maxRes;
+        std::vector<CRS> WMSCRSList;
+        bool opaque;
+        std::string authority;
+        std::string resamplingStr;
+        Interpolation::KernelType resampling;
+        Pyramid* pyramid;
+        GeographicBoundingBoxWMS geographicBoundingBox;
+        BoundingBoxWMS boundingBox;
+        std::vector<MetadataURL> metadataURLs;
+        bool WMSauth;
+        bool WMTSauth;
+        bool times;
+
+        bool getFeatureInfoAvailability;
+        std::string getFeatureInfoType;
+        std::string getFeatureInfoBaseURL;
+        std::string GFIService;
+        std::string GFIVersion;
+        std::string GFIQueryLayers;
+        std::string GFILayers;
+        bool GFIForceEPSG;
+    private:
+
+        bool ok;
+};
+
+#endif // LAYERXML_H
+

@@ -48,13 +48,22 @@
 
 #include <vector>
 #include <string>
-#include "ServicesConf.h"
-#include "Style.h"
-#include "Layer.h"
-#include "TileMatrixSet.h"
-#include "tinyxml.h"
-#include "Rok4Server.h"
 
+#include "intl.h"
+#include "config.h"
+
+#include "ServerXML.h"
+#include "ServicesXML.h"
+
+#include "TileMatrixSet.h"
+#include "TileMatrixSetXML.h"
+
+#include "Style.h"
+#include "StyleXML.h"
+#include "Layer.h"
+#include "LayerXML.h"
+
+#include "WebService.h"
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -71,52 +80,19 @@ public:
     friend class CppUnitConfLoaderStyle;
     friend class CppUnitConfLoaderTMS;
     friend class CppUnitConfLoaderPyramid;
-    friend class CppUnitConfLoaderServicesConf;
     friend class CppUnitConfLoaderTechnicalParam;
 #endif //UNITTEST
     /**
      * \~french
      * \brief Chargement des paramètres du serveur à partir d'un fichier
-     * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
-     * \param[out] logOutput type d'enregistreur d'évenement
-     * \param[out] logFilePrefix préfixe du fichier contenant le journal des évènements
-     * \param[out] logFilePeriod période de rotation des fichiers du journal
-     * \param[out] logLevel niveau de criticité des évènements
-     * \param[out] nbThread nombre de processus léger concurrent
-     * \param[out] supportWMTS support des requêtes de type WMTS
-     * \param[out] supportWMS support des requêtes de type WMS
-     * \param[out] reprojectionCapability support des requêtes avec reprojection
-     * \param[out] servicesConfigFile chemin du fichier de configuration du service
-     * \param[out] layerDir chemin du répertoire contenant les fichiers de Layer
-     * \param[out] tmsDir chemin du répertoire contenant les fichiers de TileMatrixSet
-     * \param[out] styleDir chemin du répertoire contenant les fichiers de Style
-     * \param[out] socket adresse et port d'écoute du serveur, vide si définit par un appel FCGI
-     * \param[out] backlog profondeur de la file d'attente
-     * \param[out] nombre de processus executable en parallele par le serveur
-     * \param[out] proxy
-     * \return faux en cas d'erreur
+     * \param[in] serverConfigFile Nom du fichier d'origine, utilisé comme identifiant
+     * \return un objet ServerXML, contenant toutes les informations (NULL sinon)
      * \~english
      * \brief Load server parameter from a file
-     * \param[in] fileName original filename, used as identifier
-     * \param[out] logOutput type of logger
-     * \param[out] logFilePrefix log file prefix
-     * \param[out] logFilePeriod log file rotation period
-     * \param[out] logLevel log criticity level
-     * \param[out] nbThread concurrent thread number
-     * \param[out] supportWMTS support WMTS request
-     * \param[out] supportWMS support WMS request
-     * \param[out] reprojectionCapability support request with reprojection
-     * \param[out] serverConfigFile path to service configuration file
-     * \param[out] layerDir path to Layer directory
-     * \param[out] tmsDir path to TileMatrixSet directory
-     * \param[out] styleDir path to Style directory
-     * \param[out] socket listening address and port, empty if defined by a FCGI call
-     * \param[out] backlog listen queue depth
-     * \param[out] number of process in parallel
-     * \param[out] proxy
-     * \return false if something went wrong
+     * \param[in] serverConfigFile original filename, used as identifier
+     * \return a ServerXML object, containing all informations, NULL if failure
      */
-    static bool getTechnicalParam (std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int &nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog , int &nbProcess, Proxy &proxy, int &timeKill);
+    static ServerXML* getTechnicalParam (std::string serverConfigFile);
     /**
      * \~french
      * \brief Charges les différents Styles présent dans le répertoire styleDir
@@ -131,7 +107,7 @@ public:
      * \param[in] inspire whether INSPIRE validity rules are enforced
      * \return false if something went wrong
      */
-    static bool buildStylesList ( std::string styleDir, std::map<std::string,Style*> &stylesList,bool inspire );
+    static bool buildStylesList ( ServerXML* serverXML, ServicesXML* servicesXML );
     /**
      * \~french
      * \brief Charges les différents TileMatrixSet présent dans le répertoire tmsDir
@@ -144,7 +120,7 @@ public:
      * \param[out] tmsList set of available TileMatrixSets
      * \return false if something went wrong
      */
-    static bool buildTMSList ( std::string tmsDir,std::map<std::string, TileMatrixSet*> &tmsList );
+    static bool buildTMSList ( ServerXML* serverXML );
     /**
      * \~french
      * \brief Charges les différents Layers présent dans le répertoire layerDir
@@ -167,7 +143,7 @@ public:
      * \param[in] proxy
      * \return false if something went wrong
      */
-    static bool buildLayersList (std::string layerDir, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> &stylesList, std::map<std::string,Layer*> &layers, bool reprojectionCapability, ServicesConf* servicesConf , Proxy proxy);
+    static bool buildLayersList (ServerXML* serverXML, ServicesXML* servicesXML );
     /**
      * \~french
      * \brief Chargement des paramètres des services à partir d'un fichier
@@ -178,24 +154,24 @@ public:
      * \param[in] fileName original filename, used as identifier
      * \return pointer to the newly created ServicesConf, NULL if something went wrong
      */
-    static ServicesConf * buildServicesConf ( std::string servicesConfigFile );
-    void pElem();
+    static ServicesXML* buildServicesConf ( std::string servicesConfigFile );
 
+    
     /**
-    * \~french
-    * \brief Retourne la date de derniere modification d'un fichier
-    * \~english
-    * \brief Return the last modification date of a file
-    */
-    static time_t getLastModifiedDate(std::string file);
-
+     * \~french
+     * \brief Vérifie que le CRS ou un équivalent se trouve dans la liste des CRS autorisés
+     * \~english
+     * \brief Check if the CRS or an equivalent is in the allowed CRS list
+     */
+    static bool isCRSAllowed(std::vector<std::string> restrictedCRSList, std::string crs, std::vector<CRS> equiCRSList);
+    
     /**
-    * \~french
-    * \brief Retourne le contenu d'une balise xml
-    * \~english
-    * \brief Return the content of a xml tag
-    */
-    static std::string getTagContentOfFile(std::string file, std::string tag);
+     * \~french
+     * \brief Retourne la liste des CRS équivalents et valable dans proj4
+     * \~english
+     * \brief Return the list of the equivalents CRS who are Proj4 compatible
+     */
+    static std::vector<CRS> getEqualsCRS(std::vector<std::string> listofequalsCRS, std::string crs);
 
     /**
      * \~french
@@ -215,22 +191,71 @@ public:
 
     /**
      * \~french
-     * \brief Chargement d'une liste de fichiers contenu dans un dossier
+     * \brief Création d'une Pyramide à partir d'un fichier
+     * \param[in] fileName Nom du fichier, utilisé comme identifiant
+     * \param[in] tmsList liste des TileMatrixSet connus
+     * \param[in] tmsList liste des TileMatrixSets connus
+     * \param[in] times vrai si premier appel, faux sinon
+     * \param[in] proxy
+     * \return un pointeur vers la Pyramid nouvellement instanciée, NULL en cas d'erreur
      * \~english
-     * \brief Load file from a directory
+     * \brief Create a new Pyramid from a file
+     * \param[in] fileName filename, used as identifier
+     * \param[in] tmsList known TileMatrixSets
+     * \param[in] times true if first call, false in other cases
+     * \param[in] stylesList available style list
+     * \param[in] proxy
+     * \return pointer to the newly created Pyramid, NULL if something went wrong
      */
-    static std::vector<std::string> listFileFromDir(std::string directory, std::string extension);
+    static Pyramid* buildPyramid (std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML, bool times);
+    /**
+    * \~french
+    * \brief Retourne une pyramide en fonction des paramètres lus dans la configuration
+    * \~english
+    * \brief Return a Pyramid from the configuration
+    */
+    static Pyramid* buildBasedPyramid( TiXmlElement* pElemBP, ServerXML* serverXML, ServicesXML* servicesXML, std::string levelOD, TileMatrixSet* tmsOD, std::string parentDir);
+
+
+    /**
+    * \~french
+    * \brief Retourne un WebService en fonction des paramètres lus dans la configuration
+    * \~english
+    * \brief Return a WebService from the configuration
+    */
+    static WebService *parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Format::eformat_data pyrFormat, Proxy proxy_default, ServicesXML* servicesXML );
     /**
      * \~french
-     * \brief Création d'un TileMatrixSet à partir d'un fichier
-     * \param[in] fileName Nom du fichier, utilisé comme identifiant
-     * \return un pointeur vers le style nouvellement instancié, NULL en cas d'erreur
+     * \brief Test l'existence d'un fichier
      * \~english
-     * \brief Create a new TileMatrixSet from a file
-     * \param[in] fileName filename, used as identifier
-     * \return pointer to the newly created TileMatrixSet, NULL if something went wrong
+     * \brief Test a file
      */
-    static TileMatrixSet* buildTileMatrixSet ( std::string fileName );
+    static bool doesFileExist(std::string file);
+    /**
+     * \~french
+     * \brief Récupère le nom d'un fichier
+     * \~english
+     * \brief Get file name
+     */
+    static std::string getFileName(std::string file, std::string extension);
+    /**
+    * \~french
+    * \brief Retourne la date de derniere modification d'un fichier
+    * \~english
+    * \brief Return the last modification date of a file
+    */
+    static time_t getLastModifiedDate(std::string file);
+
+    /**
+    * \~french
+    * \brief Retourne le contenu d'une balise xml
+    * \~english
+    * \brief Return the content of a xml tag
+    */
+    static std::string getTagContentOfFile(std::string file, std::string tag);
+
+private:
+
     /**
      * \~french
      * \brief Création d'un Style à partir d'un fichier
@@ -243,7 +268,21 @@ public:
      * \param[in] inspire whether INSPIRE validity rules are enforced
      * \return pointer to the newly created Style, NULL if something went wrong
      */
-    static Style* buildStyle ( std::string fileName,bool inspire );
+    static Style* buildStyle ( std::string fileName, ServicesXML* servicesXML);
+    /**
+     * \~french
+     * \brief Création d'un TileMatrixSet à partir d'un fichier
+     * \param[in] fileName Nom du fichier, utilisé comme identifiant
+     * \return un pointeur vers le TileMatrixSet nouvellement instancié, NULL en cas d'erreur
+     * \~english
+     * \brief Create a new TileMatrixSet from a file
+     * \param[in] fileName filename, used as identifier
+     * \return pointer to the newly created TileMatrixSet, NULL if something went wrong
+     */
+    static TileMatrixSet* buildTileMatrixSet ( std::string fileName );
+
+
+
     /**
      * \~french
      * \brief Création d'un Layer à partir d'un fichier
@@ -264,267 +303,7 @@ public:
      * \param[in] proxy
      * \return pointer to the newly created Layer, NULL if something went wrong
      */
-    static Layer * buildLayer (std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> stylesList , bool reprojectionCapability, ServicesConf* servicesConf , Proxy proxy);
-    /**
-     * \~french
-     * \brief Test l'existence d'un fichier
-     * \~english
-     * \brief Test a file
-     */
-    static bool doesFileExist(std::string file);
-    /**
-     * \~french
-     * \brief Récupère le nom d'un fichier
-     * \~english
-     * \brief Get file name
-     */
-    static std::string getFileName(std::string file, std::string extension);
-
-private:
-    /**
-     * \~french
-     * \brief Création d'un Style à partir de sa représentation XML
-     * \param[in] doc Racine du document XML
-     * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
-     * \param[in] inspire définit si les règles de conformité INSPIRE doivent être utilisées
-     * \return un pointeur vers le style nouvellement instancié, NULL en cas d'erreur
-     * \~english
-     * \brief Create a new Style from its XML representation
-     * \param[in] doc XML root
-     * \param[in] fileName original filename, used as identifier
-     * \param[in] inspire whether INSPIRE validity rules are enforced
-     * \return pointer to the newly created Style, NULL if something went wrong
-     */
-    static Style* parseStyle ( TiXmlDocument* doc,std::string fileName,bool inspire );
-    /**
-     * \~french
-     * \brief Création d'un TileMatrixSet à partir de sa représentation XML
-     * \param[in] doc Racine du document XML
-     * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
-     * \return un pointeur vers le TileMatrixSet nouvellement instancié, NULL en cas d'erreur
-     * \~english
-     * \brief Create a new TileMatrixSet from its XML representation
-     * \param[in] doc XML root
-     * \param[in] fileName original filename, used as identifier
-     * \return pointer to the newly created TileMatrixSet, NULL if something went wrong
-     */
-    static TileMatrixSet* parseTileMatrixSet ( TiXmlDocument* doc,std::string fileName );
-    /**
-     * \~french
-     * \brief Création d'une Pyramide à partir de sa représentation XML
-     * \param[in] doc Racine du document XML
-     * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
-     * \param[in] tmsList liste des TileMatrixSets connus
-     * \param[in] times vrai si premier appel, faux sinon
-     * \param[in] stylesList liste des styles disponibles
-     * \param[in] proxy
-     * \return un pointeur vers la Pyramid nouvellement instanciée, NULL en cas d'erreur
-     * \~english
-     * \brief Create a new Pyramid from its XML representation
-     * \param[in] doc XML root
-     * \param[in] fileName original filename, used as identifier
-     * \param[in] tmsList known TileMatrixSets
-     * \param[in] times true if first call, false in other cases
-     * \param[in] stylesList available style list
-     * \param[in] proxy
-     * \return pointer to the newly created Pyramid, NULL if something went wrong
-     */
-    static Pyramid* parsePyramid (TiXmlDocument* doc, std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times , std::map<std::string, Style *> stylesList, Proxy proxy, ServicesConf *serviceConf);
-    /**
-     * \~french
-     * \brief Création d'une Pyramide à partir d'un fichier
-     * \param[in] fileName Nom du fichier, utilisé comme identifiant
-     * \param[in] tmsList liste des TileMatrixSet connus
-     * \param[in] tmsList liste des TileMatrixSets connus
-     * \param[in] times vrai si premier appel, faux sinon
-     * \param[in] proxy
-     * \return un pointeur vers la Pyramid nouvellement instanciée, NULL en cas d'erreur
-     * \~english
-     * \brief Create a new Pyramid from a file
-     * \param[in] fileName filename, used as identifier
-     * \param[in] tmsList known TileMatrixSets
-     * \param[in] times true if first call, false in other cases
-     * \param[in] stylesList available style list
-     * \param[in] proxy
-     * \return pointer to the newly created Pyramid, NULL if something went wrong
-     */
-    static Pyramid* buildPyramid (std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, bool times , std::map<std::string, Style *> stylesList, Proxy proxy, ServicesConf *serviceConf);
-
-    /**
-     * \~french
-     * \brief Suppresion des levels d'une pyramide pour ne garder que celui qui est utile
-     * \param[in] pyramid
-     * \param[in] tileMatrix
-     * \param[in] tileMatrixSet
-     * \return 1 si tout s'est bien passé, 0 sinon
-     * \~english
-     * \brief Delete levels of a pyramid to save the only one which will be used
-     * \param[in] pyramid
-     * \param[in] tileMatrix
-     * \param[in] tileMatrixSet
-     * \return 1 if eveything is ok, 0 else
-     */
-    static int updatePyrLevel(Pyramid* pyr, TileMatrix *tm, TileMatrixSet *tms);
-
-    /**
-     * \~french
-     * \brief Mise à jour des TileMatrixLimits pour un level
-     * \param[in] levelId
-     * \param[in] minCol
-     * \param[in] maxCol
-     * \param[in] minRow
-     * \param[in] maxRow
-     * \param[in] TileMatrix
-     * \param[in] TileMatrixSet
-     * \param[in] bPyramids
-     * \param[in] aLevel
-     * \param[in] specific
-     * \~english
-     * \brief Update TileMatrixLimits
-     * \param[in] levelId
-     * \param[in] minCol
-     * \param[in] maxCol
-     * \param[in] minRow
-     * \param[in] maxRow
-     * \param[in] TileMatrix
-     * \param[in] TileMatrixSet
-     * \param[in] bPyramids
-     * \param[in] aLevel
-     * \param[in] specific
-     */
-    static int updateTileLimits(uint32_t &minTileCol, uint32_t &maxTileCol, uint32_t &minTileRow, uint32_t &maxTileRow, TileMatrix tm, TileMatrixSet *tms, std::vector<Source *> sources);
-
-    /**
-     * \~french
-     * \brief Nettoyage des pointeurs
-     * \param[in] specificPyramids
-     * \param[in] sPyramids
-     * \param[in] specificWebServices
-     * \param[in] sWebServices
-     * \param[in] levels
-     * \~english
-     * \brief Clean pointers
-     * \param[in] specificPyramids
-     * \param[in] sPyramids
-     * \param[in] specificWebServices
-     * \param[in] sWebServices
-     * \param[in] levels
-     */
-    static void cleanParsePyramid(std::map<std::string, std::vector<Source *> > &specificSources, std::vector<Source *> &sSources, std::map<std::string, Level *> &levels);
-
-    /**
-     * \~french
-     * \brief Création d'un Layer à partir de sa représentation XML
-     * \param[in] doc Racine du document XML
-     * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
-     * \param[in] tmsList liste des TileMatrixSets connus
-     * \param[in] stylesList liste des Styles connus
-     * \param[in] reprojectionCapability définit si le serveur est capable de reprojeter des données
-     * \param[in] servicesConf pointeur vers les configurations globales du services
-     * \param[in] proxy
-     * \return un pointeur vers le Layer nouvellement instancié, NULL en cas d'erreur
-     * \~english
-     * \brief Create a new Layer from its XML representation
-     * \param[in] doc XML root
-     * \param[in] fileName original filename, used as identifier
-     * \param[in] tmsList known TileMatrixSets
-     * \param[in] stylesList known Styles
-     * \param[in] reprojectionCapability whether the server can handle reprojection
-     * \param[in] servicesConf global service configuration pointer
-     * \param[in] proxy
-     * \return pointer to the newly created Layer, NULL if something went wrong
-     */
-    static Layer * parseLayer (TiXmlDocument* doc, std::string fileName, std::map<std::string, TileMatrixSet*> &tmsList, std::map<std::string,Style*> stylesList , bool reprojectionCapability, ServicesConf* servicesConf , Proxy proxy);
-    /**
-     * \~french
-     * \brief Chargement des paramètres du serveur à partir de sa représentation XML
-     * \param[in] doc Racine du document XML
-     * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
-     * \param[out] logOutput type d'enregistreur d'évenement
-     * \param[out] logFilePrefix préfixe du fichier contenant le journal des évènements
-     * \param[out] logFilePeriod période de rotation des fichiers du journal
-     * \param[out] logLevel niveau de criticité des évènements
-     * \param[out] nbThread nombre de processus léger concurrent
-     * \param[out] supportWMTS support des requêtes de type WMTS
-     * \param[out] supportWMS support des requêtes de type WMS
-     * \param[out] reprojectionCapability support des requêtes avec reprojection
-     * \param[out] servicesConfigFile chemin du fichier de configuration du service
-     * \param[out] layerDir chemin du répertoire contenant les fichiers de Layer
-     * \param[out] tmsDir chemin du répertoire contenant les fichiers de TileMatrixSet
-     * \param[out] styleDir chemin du répertoire contenant les fichiers de Style
-     * \param[out] socket adresse et port d'écoute du serveur, vide si définit par un appel FCGI
-     * \param[out] backlog profondeur de la file d'attente
-     * \param[out] nombre de processus executable en parallele par le serveur
-     * \param[out] proxy
-     * \return faux en cas d'erreur
-     * \~english
-     * \brief Load server parameter from its XML representation
-     * \param[in] doc XML root
-     * \param[in] fileName original filename, used as identifier
-     * \param[out] logOutput type of logger
-     * \param[out] logFilePrefix log file prefix
-     * \param[out] logFilePeriod log file rotation period
-     * \param[out] logLevel log criticity level
-     * \param[out] nbThread concurrent thread number
-     * \param[out] supportWMTS support WMTS request
-     * \param[out] supportWMS support WMS request
-     * \param[out] reprojectionCapability support request with reprojection
-     * \param[out] serverConfigFile path to service configuration file
-     * \param[out] layerDir path to Layer directory
-     * \param[out] tmsDir path to TileMatrixSet directory
-     * \param[out] styleDir path to Style directory
-     * \param[out] socket listening address and port, empty if defined by a FCGI call
-     * \param[out] backlog listen queue depth
-     * \param[out] number of process in parallel
-     * \param[out] proxy
-     * \return false if something went wrong
-     */
-    static bool parseTechnicalParam (TiXmlDocument* doc, std::string serverConfigFile, LogOutput& logOutput, std::string& logFilePrefix, int& logFilePeriod, LogLevel& logLevel, int& nbThread, bool& supportWMTS, bool& supportWMS, bool& reprojectionCapability, std::string& servicesConfigFile, std::string &layerDir, std::string &tmsDir, std::string &styleDir, std::string& socket, int& backlog , int &nbProcess, Proxy &proxy, int &timeKill);
-    /**
-     * \~french
-     * \brief Chargement des paramètres des services à partir de leur représentation XML
-     * \param[in] doc Racine du document XML
-     * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
-     * \return un pointeur vers le ServicesConf nouvellement instanciée, NULL en cas d'erreur
-     * \~english
-     * \brief Load service parameters from their XML representation
-     * \param[in] doc XML root
-     * \param[in] fileName original filename, used as identifier
-     * \return pointer to the newly created ServicesConf, NULL if something went wrong
-     */
-    static ServicesConf * parseServicesConf ( TiXmlDocument* doc,std::string servicesConfigFile );
-    
-     /**
-     * \~french
-     * \brief Vérifie que le CRS ou un équivalent se trouve dans la liste des CRS autorisés
-     * \~english
-     * \brief Check if the CRS or an equivalent is in the allowed CRS list
-     */
-    static bool isCRSAllowed(std::vector<std::string> restrictedCRSList, std::string crs, std::vector<CRS> equiCRSList);
-    
-     /**
-     * \~french
-     * \brief Retourne la liste des CRS équivalents et valable dans proj4
-     * \~english
-     * \brief Return the list of the equivalents CRS who are Proj4 compatible
-     */
-    static std::vector<CRS> getEqualsCRS(std::vector<std::string> listofequalsCRS, std::string crs);
-
-    /**
-    * \~french
-    * \brief Retourne un WebService en fonction des paramètres lus dans la configuration
-    * \~english
-    * \brief Return a WebService from the configuration
-    */
-   static WebService *parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Format::eformat_data pyrFormat, Proxy proxy_default, ServicesConf *serviceConf);
-
-   /**
-   * \~french
-   * \brief Retourne une pyramide en fonction des paramètres lus dans la configuration
-   * \~english
-   * \brief Return a Pyramid from the configuration
-   */
-  static Pyramid *parseBasedPyramid(TiXmlElement* sPyr, std::map<std::string, TileMatrixSet*> &tmsList, bool timesSpecific, std::map<std::string,Style*> stylesList, std::string parentDir, Proxy proxy, ServicesConf *serviceConf);
+    static Layer * buildLayer (std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML );
 
 };
 

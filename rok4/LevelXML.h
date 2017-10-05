@@ -35,33 +35,69 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-/**
- * \file Style.cpp
- * \~french
- * \brief Implémentation de la classe Style modélisant les styles.
- * \~english
- * \brief Implement the Style Class handling style definition
- */
+class LevelXML;
 
-#include "Style.h"
-#include "Logger.h"
-#include "intl.h"
+#ifndef LEVELXML_H
+#define LEVELXML_H
+
+#include <vector>
+#include <string>
+
+#include "Level.h"
+#include "TileMatrixSet.h"
+#include "DocumentXML.h"
+#include "ServerXML.h"
+#include "Context.h"
+
 #include "config.h"
+#include "intl.h"
 
-Style::Style ( const StyleXML& s ) {
-    LOGGER_DEBUG ( _ ( "Nouveau Style : " ) << s.id );
-    this->id = s.id;
-    this->titles = s.titles;
-    this->abstracts = s.abstracts;
-    this->keywords = s.keywords;
-    this->legendURLs = s.legendURLs;
-    this->palette = s.palette;
-    this->estompage = s.estompage;
-    this->pente = s.pente;
-    this->aspect = s.aspect;
+class LevelXML : public DocumentXML
+{
+    friend class Level;
 
-}
+    public:
+        LevelXML(TiXmlElement* levelElement, std::string path, ServerXML* serverXML, ServicesXML* servicesXML, PyramidXML* pyr, bool times);
+        ~LevelXML();
 
-Style::~Style() {
+        std::string getId();
+        bool isOnDemand();
+        bool isOnFly();
 
-}
+        bool isOk();
+
+    protected:
+
+        //----VARIABLE
+        TileMatrix* tm;
+        std::string id;
+
+        int32_t minTileRow;    
+        int32_t maxTileRow;    
+        int32_t minTileCol;    
+        int32_t maxTileCol;  
+
+        int tilesPerWidth;
+        int tilesPerHeight;
+
+        Context *context;
+
+        std::string baseDir;
+        int pathDepth;
+
+        std::string prefix;
+
+        std::vector<Source*> sSources;
+        // Sans stockage
+        bool onDemand;
+        // Avec stockage
+        bool onFly;
+
+    private:
+
+        bool ok;
+        int calculateTileLimits(PyramidXML* pyrxml);
+};
+
+#endif // LEVELXML_H
+
