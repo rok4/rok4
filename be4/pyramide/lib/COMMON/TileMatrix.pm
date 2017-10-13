@@ -62,7 +62,7 @@ Using:
 
 Attributes:
     id - string - TM identifiant.
-    tms - <TileMatrixSet> - TMS to whom it belong
+    tms - <COMMON::TileMatrixSet> - TMS to whom it belong
     resolution - double - Ground size of a pixel, using unity of the SRS.
     topLeftCornerX - double - X coordinate of the upper left corner for the level, the grid's origin.
     topLeftCornerY - double - Y coordinate of the upper left corner for the level, the grid's origin.
@@ -70,7 +70,7 @@ Attributes:
     tileHeight - integer -  Pixel height of a tile.
     matrixWidth - integer - Number of tile in the grid, widthwise.
     matrixHeight - integer -  Number of tile in the grid, heightwise.
-    targetsTm - <TileMatrix> array - Determine other levels which use this one to be generated. Empty if this level belong to a quad tree <TileMatrixSet>.
+    targetsTm - <COMMON::TileMatrix> array - Determine other levels which use this one to be generated. Empty if this level belong to a quad tree <TileMatrixSet>.
 
 Limits:
     Resolution have to be the same  X and Y wise.
@@ -85,6 +85,8 @@ use warnings;
 
 use Math::BigFloat;
 use Log::Log4perl qw(:easy);
+
+use COMMON::ProxyGDAL;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -129,14 +131,14 @@ See also:
     <_init>
 =cut
 sub new {
-    my $this = shift;
+    my $class = shift;
     my $params = shift;
 
-    my $class= ref($this) || $this;
+    $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above)
-    my $self = {
+    my $this = {
         id             => undef,
-        tms             => undef,
+        tms            => undef,
         resolution     => undef,
         topLeftCornerX => undef,
         topLeftCornerY => undef,
@@ -147,17 +149,16 @@ sub new {
         targetsTm   => [],
     };
 
-    bless($self, $class);
+    bless($this, $class);
 
-    TRACE;
 
     # init. class
-    if (! $self->_init($params)) {
+    if (! $this->_init($params)) {
         ERROR ("One parameter is missing !");
         return undef;
     }
 
-    return $self;
+    return $this;
 }
 
 =begin nd
@@ -176,10 +177,9 @@ Parameters (hash):
     matrixHeight - integer - Grid height, in tile
 =cut
 sub _init {
-    my $self   = shift;
+    my $this   = shift;
     my $params = shift;
 
-    TRACE;
     
     return FALSE if (! defined $params);
     
@@ -194,14 +194,14 @@ sub _init {
     return FALSE if (! exists($params->{matrixHeight}) || ! defined ($params->{matrixHeight}));
     
     # init. params
-    $self->{id} = $params->{id};
-    $self->{resolution} = $params->{resolution};
-    $self->{topLeftCornerX} = $params->{topLeftCornerX};
-    $self->{topLeftCornerY} = $params->{topLeftCornerY};
-    $self->{tileWidth} = $params->{tileWidth};
-    $self->{tileHeight} = $params->{tileHeight};
-    $self->{matrixWidth} = $params->{matrixWidth};
-    $self->{matrixHeight} = $params->{matrixHeight};
+    $this->{id} = $params->{id};
+    $this->{resolution} = $params->{resolution};
+    $this->{topLeftCornerX} = $params->{topLeftCornerX};
+    $this->{topLeftCornerY} = $params->{topLeftCornerY};
+    $this->{tileWidth} = $params->{tileWidth};
+    $this->{tileHeight} = $params->{tileHeight};
+    $this->{matrixWidth} = $params->{matrixWidth};
+    $this->{matrixHeight} = $params->{matrixHeight};
 
     return TRUE;
 }
@@ -219,13 +219,13 @@ Parameters (list):
     tilesPerWidth - integer - Optionnal (1 if undefined)
 =cut
 sub getImgGroundWidth {
-    my $self  = shift;
+    my $this  = shift;
     my $tilesPerWidth = shift;
     
     $tilesPerWidth = 1 if (! defined $tilesPerWidth);
     
-    my $xRes = Math::BigFloat->new($self->getResolution);
-    my $imgGroundWidth = $xRes * $self->getTileWidth * $tilesPerWidth;
+    my $xRes = Math::BigFloat->new($this->getResolution);
+    my $imgGroundWidth = $xRes * $this->getTileWidth * $tilesPerWidth;
     
     return $imgGroundWidth;
 }
@@ -239,13 +239,13 @@ Parameters (list):
     tilesPerHeight - integer - Optionnal (1 if undefined) 
 =cut
 sub getImgGroundHeight {
-    my $self  = shift;
+    my $this  = shift;
     my $tilesPerHeight = shift;
     
     $tilesPerHeight = 1 if (! defined $tilesPerHeight);
     
-    my $yRes = Math::BigFloat->new($self->getResolution);
-    my $imgGroundHeight = $yRes * $self->getTileHeight * $tilesPerHeight;
+    my $yRes = Math::BigFloat->new($this->getResolution);
+    my $imgGroundHeight = $yRes * $this->getTileHeight * $tilesPerHeight;
     
     return $imgGroundHeight;
 }
@@ -260,15 +260,15 @@ Parameters (list):
     tilesPerWidth - integer - Optionnal (1 if undefined) 
 =cut
 sub columnToX {
-    my $self  = shift;
+    my $this  = shift;
     my $col   = shift;
     my $tilesPerWidth = shift;
     
     $tilesPerWidth = 1 if (! defined $tilesPerWidth);
     
-    my $xo  = $self->getTopLeftCornerX;
-    my $rx  = Math::BigFloat->new($self->getResolution);
-    my $width = $self->getTileWidth;
+    my $xo  = $this->getTopLeftCornerX;
+    my $rx  = Math::BigFloat->new($this->getResolution);
+    my $width = $this->getTileWidth;
     
     my $x = $xo + $col * $rx * $width * $tilesPerWidth;
     
@@ -285,15 +285,15 @@ Parameters (list):
     tilesPerHeight - integer - Optionnal (1 if undefined)
 =cut
 sub rowToY {
-    my $self  = shift;
+    my $this  = shift;
     my $row   = shift;
     my $tilesPerHeight = shift;
     
     $tilesPerHeight = 1 if (! defined $tilesPerHeight);
     
-    my $yo = $self->getTopLeftCornerY;
-    my $ry = Math::BigFloat->new($self->getResolution);
-    my $height = $self->getTileHeight;
+    my $yo = $this->getTopLeftCornerY;
+    my $ry = Math::BigFloat->new($this->getResolution);
+    my $height = $this->getTileHeight;
     
     my $y = $yo - ($row * $ry * $height * $tilesPerHeight);
     
@@ -310,15 +310,15 @@ Parameters (list):
     tilesPerWidth - integer - Optionnal (1 if undefined) 
 =cut
 sub xToColumn {
-    my $self  = shift;
+    my $this  = shift;
     my $x     = shift;
     my $tilesPerWidth = shift;
     
     $tilesPerWidth = 1 if (! defined $tilesPerWidth);
     
-    my $xo  = $self->getTopLeftCornerX;
-    my $rx  = Math::BigFloat->new($self->getResolution);
-    my $width = $self->getTileWidth;
+    my $xo  = $this->getTopLeftCornerX;
+    my $rx  = Math::BigFloat->new($this->getResolution);
+    my $width = $this->getTileWidth;
     
     my $col = int(($x - $xo) / ($rx * $width * $tilesPerWidth)) ;
     
@@ -336,15 +336,15 @@ Parameters (list):
     tilesPerHeight - integer - Optionnal (1 if undefined) 
 =cut
 sub yToRow {
-    my $self  = shift;
+    my $this  = shift;
     my $y     = shift;
     my $tilesPerHeight = shift;
     
     $tilesPerHeight = 1 if (! defined $tilesPerHeight);
     
-    my $yo  = $self->getTopLeftCornerY;
-    my $ry  = Math::BigFloat->new($self->getResolution);
-    my $height = $self->getTileHeight;
+    my $yo  = $this->getTopLeftCornerY;
+    my $ry  = Math::BigFloat->new($this->getResolution);
+    my $height = $this->getTileHeight;
     
     my $row = int(($yo - $y) / ($ry * $height * $tilesPerHeight)) ;
     
@@ -353,32 +353,62 @@ sub yToRow {
 
 #
 =begin nd
-Function: indicesToBBox
+Function: indicesToBbox
 
 Returns the BBox from image's indices in a list : (xMin,yMin,xMax,yMax).
 
 Parameters (list):
-    i - integer - Image's column
-    j - integer - Image's row
+    col - integer - Image's column
+    row - integer - Image's row
     tilesPerWidth - integer - Number of tile in the image, widthwise
     tilesPerHeight - integer - Number of tile in the image, heightwise
 =cut
-sub indicesToBBox {
-    my $self  = shift;
-    my $i     = shift;
-    my $j     = shift;
+sub indicesToBbox {
+    my $this  = shift;
+    my $col     = shift;
+    my $row     = shift;
     my $tilesPerWidth = shift;
     my $tilesPerHeight = shift;
     
-    my $imgGroundWidth = $self->getImgGroundWidth($tilesPerWidth);
-    my $imgGroundHeight = $self->getImgGroundHeight($tilesPerHeight);
+    my $imgGroundWidth = $this->getImgGroundWidth($tilesPerWidth);
+    my $imgGroundHeight = $this->getImgGroundHeight($tilesPerHeight);
     
-    my $xMin = $self->getTopLeftCornerX + $imgGroundWidth * $i;
-    my $yMax = $self->getTopLeftCornerY - $imgGroundHeight * $j;
+    my $xMin = $this->getTopLeftCornerX + $imgGroundWidth * $col;
+    my $yMax = $this->getTopLeftCornerY - $imgGroundHeight * $row;
     my $xMax = $xMin + $imgGroundWidth;
     my $yMin = $yMax - $imgGroundHeight;
     
     return ($xMin,$yMin,$xMax,$yMax);
+}
+
+#
+=begin nd
+Function: indicesToGeom
+
+Returns the OGR Geometry from slab's indices.
+
+Parameters (list):
+    col - integer - Image's column
+    row - integer - Image's row
+    tilesPerWidth - integer - Number of tile in the image, widthwise
+    tilesPerHeight - integer - Number of tile in the image, heightwise
+=cut
+sub indicesToGeom {
+    my $this  = shift;
+    my $col     = shift;
+    my $row     = shift;
+    my $tilesPerWidth = shift;
+    my $tilesPerHeight = shift;
+    
+    my $imgGroundWidth = $this->getImgGroundWidth($tilesPerWidth);
+    my $imgGroundHeight = $this->getImgGroundHeight($tilesPerHeight);
+    
+    my $xMin = $this->getTopLeftCornerX + $imgGroundWidth * $col;
+    my $yMax = $this->getTopLeftCornerY - $imgGroundHeight * $row;
+    my $xMax = $xMin + $imgGroundWidth;
+    my $yMin = $yMax - $imgGroundHeight;
+    
+    return COMMON::ProxyGDAL::geometryFromBbox($xMin,$yMin,$xMax,$yMax);
 }
 
 #
@@ -394,40 +424,40 @@ Parameters (list):
     tilesPerHeight - integer - Number of tile in the image, heightwise
 =cut
 sub indicesToTFW {
-    my $self  = shift;
+    my $this  = shift;
     my $i     = shift;
     my $j     = shift;
     my $tilesPerWidth = shift;
     my $tilesPerHeight = shift;
     
-    my $imgGroundWidth = $self->getImgGroundWidth($tilesPerWidth);
-    my $imgGroundHeight = $self->getImgGroundHeight($tilesPerHeight);
+    my $imgGroundWidth = $this->getImgGroundWidth($tilesPerWidth);
+    my $imgGroundHeight = $this->getImgGroundHeight($tilesPerHeight);
 
     my $tfwText = "";
 
-    $tfwText .= sprintf "%s\n", $self->getResolution();
+    $tfwText .= sprintf "%s\n", $this->getResolution();
     $tfwText .= "0\n";
     $tfwText .= "0\n";
-    $tfwText .= sprintf "%s\n", -1 * $self->getResolution();
-    $tfwText .= sprintf "%s\n", $self->getTopLeftCornerX + $imgGroundWidth * $i + 0.5 * $self->getResolution();
-    $tfwText .= sprintf "%s", $self->getTopLeftCornerY - $imgGroundHeight * $j - 0.5 * $self->getResolution();
+    $tfwText .= sprintf "%s\n", -1 * $this->getResolution();
+    $tfwText .= sprintf "%s\n", $this->getTopLeftCornerX + $imgGroundWidth * $i + 0.5 * $this->getResolution();
+    $tfwText .= sprintf "%s", $this->getTopLeftCornerY - $imgGroundHeight * $j - 0.5 * $this->getResolution();
 
     return $tfwText;
 }
 
-#
+
 =begin nd
 Function: bboxToIndices
 
-Returns the extrem indices from a bbox in a list : (iMin,jMin,iMax,jMax).
+Returns the extrem indices from a bbox in a list : ($rowMin, $rowMax, $colMin, $colMax).
 
 Parameters (list):
     xMin,yMin,xMax,yMax - bounding box
-    tilesPerWidth - integer - Number of tile in the image, widthwise
-    tilesPerHeight - integer - Number of tile in the image, heightwise
+    tilesPerWidth - integer - Number of tile in the slab, widthwise
+    tilesPerHeight - integer - Number of tile in the slab, heightwise
 =cut
 sub bboxToIndices {
-    my $self = shift;
+    my $this = shift;
     
     my $xMin = shift;
     my $yMin = shift;
@@ -436,12 +466,12 @@ sub bboxToIndices {
     my $tilesPerWidth = shift;
     my $tilesPerHeight = shift;
     
-    my $iMin = $self->xToColumn($xMin,$tilesPerWidth);
-    my $iMax = $self->xToColumn($xMax,$tilesPerWidth);
-    my $jMin = $self->yToRow($yMax,$tilesPerHeight);
-    my $jMax = $self->yToRow($yMin,$tilesPerHeight);
+    my $rowMin = $this->yToRow($yMax,$tilesPerHeight);
+    my $rowMax = $this->yToRow($yMin,$tilesPerHeight);
+    my $colMin = $this->xToColumn($xMin,$tilesPerWidth);
+    my $colMax = $this->xToColumn($xMax,$tilesPerWidth);
     
-    return ($iMin,$jMin,$iMax,$jMax);
+    return ($rowMin, $rowMax, $colMin, $colMax);
 }
 
 ####################################################################################################
@@ -450,74 +480,80 @@ sub bboxToIndices {
 
 # Function: getID
 sub getID {
-    my $self = shift;
-    return $self->{id}; 
+    my $this = shift;
+    return $this->{id}; 
+}
+
+# Function: getOrder
+sub getOrder {
+    my $this = shift;
+    return $this->{tms}->getOrderfromID($this->{id});
 }
 
 # Function: setTMS
 sub setTMS {
-    my $self = shift;
+    my $this = shift;
     my $tms = shift;
     
     if ( ! defined ($tms) || ref ($tms) ne "COMMON::TileMatrixSet" ) {
         ERROR("We expect to a COMMON::TileMatrixSet object.");
     } else {
-        $self->{tms} = $tms;
+        $this->{tms} = $tms;
     }
 }    
 
 # Function: getResolution
 sub getResolution {
-    my $self = shift;
-    return $self->{resolution}; 
+    my $this = shift;
+    return $this->{resolution}; 
 }
 
 # Function: getTileWidth
 sub getTileWidth {
-    my $self = shift;
-    return $self->{tileWidth}; 
+    my $this = shift;
+    return $this->{tileWidth}; 
 }
 
 # Function: getTileHeight
 sub getTileHeight {
-    my $self = shift;
-    return $self->{tileHeight}; 
+    my $this = shift;
+    return $this->{tileHeight}; 
 }
 
 # Function: getMatrixWidth
 sub getMatrixWidth {
-    my $self = shift;
-    return $self->{matrixWidth}; 
+    my $this = shift;
+    return $this->{matrixWidth}; 
 }
 
 # Function: getMatrixHeight
 sub getMatrixHeight {
-    my $self = shift;
-    return $self->{matrixHeight}; 
+    my $this = shift;
+    return $this->{matrixHeight}; 
 }
 
 # Function: getTopLeftCornerX
 sub getTopLeftCornerX {
-    my $self = shift;
-    return Math::BigFloat->new($self->{topLeftCornerX}); 
+    my $this = shift;
+    return Math::BigFloat->new($this->{topLeftCornerX}); 
 }
 
 # Function: getTopLeftCornerY
 sub getTopLeftCornerY {
-    my $self = shift;
-    return Math::BigFloat->new($self->{topLeftCornerY}); 
+    my $this = shift;
+    return Math::BigFloat->new($this->{topLeftCornerY}); 
 }
 
 # Function: getTargetsTm
 sub getTargetsTm {
-    my $self = shift;
-    return $self->{targetsTm}
+    my $this = shift;
+    return $this->{targetsTm}
 }
 
 # Function: getSRS
 sub getSRS {
-    my $self = shift;
-    return $self->{tms}->getSRS();
+    my $this = shift;
+    return $this->{tms}->getSRS();
 }
 
 =begin nd
@@ -527,9 +563,9 @@ Parameters (list):
     tm - <TileMatrix> - Tile Matrix to add to target ones
 =cut
 sub addTargetTm {
-    my $self = shift;
+    my $this = shift;
     my $tm = shift;
-    push @{$self->{targetsTm}}, $tm;
+    push @{$this->{targetsTm}}, $tm;
 }
 
 ####################################################################################################
@@ -546,20 +582,20 @@ Example:
     (end code)
 =cut
 sub exportForDebug {
-    my $self = shift;
+    my $this = shift;
     
     my $export = "";
     
     $export .= sprintf "\nObject COMMON::TileMatrix :\n";
-    $export .= sprintf "\t ID : %s \n", $self->getID();
-    $export .= sprintf "\t Resolution : %s \n", $self->getResolution();
-    $export .= sprintf "\t Top left corner : %s, %s \n", $self->getTopLeftCornerX(), $self->getTopLeftCornerY();
-    $export .= sprintf "\t Tile width : %s \n", $self->getTileWidth();
-    $export .= sprintf "\t Tile height : %s \n", $self->getTileHeight();
-    $export .= sprintf "\t Matrix width : %s \n", $self->getMatrixWidth();
-    $export .= sprintf "\t Matrix height : %s \n", $self->getMatrixHeight();
-    $export .= sprintf "\t Targets tile matrix IDs (size:%s) :\n", scalar(@{$self->getTargetsTm()});
-    foreach my $tm (@{$self->getTargetsTm()}) {
+    $export .= sprintf "\t ID : %s \n", $this->getID();
+    $export .= sprintf "\t Resolution : %s \n", $this->getResolution();
+    $export .= sprintf "\t Top left corner : %s, %s \n", $this->getTopLeftCornerX(), $this->getTopLeftCornerY();
+    $export .= sprintf "\t Tile width : %s \n", $this->getTileWidth();
+    $export .= sprintf "\t Tile height : %s \n", $this->getTileHeight();
+    $export .= sprintf "\t Matrix width : %s \n", $this->getMatrixWidth();
+    $export .= sprintf "\t Matrix height : %s \n", $this->getMatrixHeight();
+    $export .= sprintf "\t Targets tile matrix IDs (size:%s) :\n", scalar(@{$this->getTargetsTm()});
+    foreach my $tm (@{$this->getTargetsTm()}) {
         $export .= sprintf "\t\t -> %s \n",$tm->getID();
     };
     

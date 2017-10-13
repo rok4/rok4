@@ -8,12 +8,12 @@
     <photometric>rgb</photometric>
     <level>
         <tileMatrix>level_0</tileMatrix>
-        <baseDir>oldPyramid/IMG/0</baseDir>
+        <baseDir>oldPyramid/IMAGE/0</baseDir>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
         <nodata>
-            <filePath>oldPyramid/NDT/0/nd.tif</filePath>
+            <filePath>oldPyramid/NODATA/0/nd.tif</filePath>
         </nodata>
         <TMSLimits>
             <minTileRow>0</minTileRow>
@@ -24,12 +24,12 @@
     </level>
     <level>
         <tileMatrix>level_1</tileMatrix>
-        <baseDir>oldPyramid/IMG/1</baseDir>
+        <baseDir>oldPyramid/IMAGE/1</baseDir>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
         <nodata>
-            <filePath>oldPyramid/NDT/1/nd.tif</filePath>
+            <filePath>oldPyramid/NODATA/1/nd.tif</filePath>
         </nodata>
         <TMSLimits>
             <minTileRow>0</minTileRow>
@@ -40,12 +40,12 @@
     </level>
     <level>
         <tileMatrix>level_2</tileMatrix>
-        <baseDir>oldPyramid/IMG/2</baseDir>
+        <baseDir>oldPyramid/IMAGE/2</baseDir>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
         <nodata>
-            <filePath>oldPyramid/NDT/2/nd.tif</filePath>
+            <filePath>oldPyramid/NODATA/2/nd.tif</filePath>
         </nodata>
         <TMSLimits>
             <minTileRow>0</minTileRow>
@@ -56,12 +56,12 @@
     </level>
     <level>
         <tileMatrix>level_3</tileMatrix>
-        <baseDir>oldPyramid/IMG/3</baseDir>
+        <baseDir>oldPyramid/IMAGE/3</baseDir>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
         <nodata>
-            <filePath>oldPyramid/NDT/3/nd.tif</filePath>
+            <filePath>oldPyramid/NODATA/3/nd.tif</filePath>
         </nodata>
         <TMSLimits>
             <minTileRow>0</minTileRow>
@@ -72,12 +72,12 @@
     </level>
     <level>
         <tileMatrix>level_4</tileMatrix>
-        <baseDir>oldPyramid/IMG/4</baseDir>
+        <baseDir>oldPyramid/IMAGE/4</baseDir>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
         <nodata>
-            <filePath>oldPyramid/NDT/4/nd.tif</filePath>
+            <filePath>oldPyramid/NODATA/4/nd.tif</filePath>
         </nodata>
         <TMSLimits>
             <minTileRow>1</minTileRow>
@@ -88,12 +88,12 @@
     </level>
     <level>
         <tileMatrix>level_5</tileMatrix>
-        <baseDir>oldPyramid/IMG/5</baseDir>
+        <baseDir>oldPyramid/IMAGE/5</baseDir>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
         <nodata>
-            <filePath>oldPyramid/NDT/5/nd.tif</filePath>
+            <filePath>oldPyramid/NODATA/5/nd.tif</filePath>
         </nodata>
         <TMSLimits>
             <minTileRow>3</minTileRow>
@@ -104,12 +104,12 @@
     </level>
     <level>
         <tileMatrix>level_6</tileMatrix>
-        <baseDir>oldPyramid/IMG/6</baseDir>
+        <baseDir>oldPyramid/IMAGE/6</baseDir>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
         <nodata>
-            <filePath>oldPyramid/NDT/6/nd.tif</filePath>
+            <filePath>oldPyramid/NODATA/6/nd.tif</filePath>
         </nodata>
         <TMSLimits>
             <minTileRow>6</minTileRow>
@@ -120,12 +120,12 @@
     </level>
     <level>
         <tileMatrix>level_7</tileMatrix>
-        <baseDir>oldPyramid/IMG/7</baseDir>
+        <baseDir>oldPyramid/IMAGE/7</baseDir>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
         <nodata>
-            <filePath>oldPyramid/NDT/7/nd.tif</filePath>
+            <filePath>oldPyramid/NODATA/7/nd.tif</filePath>
         </nodata>
         <TMSLimits>
             <minTileRow>12</minTileRow>
@@ -136,12 +136,12 @@
     </level>
     <level>
         <tileMatrix>level_8</tileMatrix>
-        <baseDir>oldPyramid/IMG/8</baseDir>
+        <baseDir>oldPyramid/IMAGE/8</baseDir>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
         <nodata>
-            <filePath>oldPyramid/NDT/8/nd.tif</filePath>
+            <filePath>oldPyramid/NODATA/8/nd.tif</filePath>
         </nodata>
         <TMSLimits>
             <minTileRow>24</minTileRow>
@@ -152,12 +152,12 @@
     </level>
     <level>
         <tileMatrix>level_9</tileMatrix>
-        <baseDir>oldPyramid/IMG/9</baseDir>
+        <baseDir>oldPyramid/IMAGE/9</baseDir>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
         <nodata>
-            <filePath>oldPyramid/NDT/9/nd.tif</filePath>
+            <filePath>oldPyramid/NODATA/9/nd.tif</filePath>
         </nodata>
         <TMSLimits>
             <minTileRow>48</minTileRow>
@@ -168,12 +168,12 @@
     </level>
     <level>
         <tileMatrix>level_10</tileMatrix>
-        <baseDir>oldPyramid/IMG/10</baseDir>
+        <baseDir>oldPyramid/IMAGE/10</baseDir>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
         <nodata>
-            <filePath>oldPyramid/NDT/10/nd.tif</filePath>
+            <filePath>oldPyramid/NODATA/10/nd.tif</filePath>
         </nodata>
         <TMSLimits>
             <minTileRow>97</minTileRow>
@@ -184,12 +184,12 @@
     </level>
     <level>
         <tileMatrix>level_11</tileMatrix>
-        <baseDir>oldPyramid/IMG/11</baseDir>
+        <baseDir>oldPyramid/IMAGE/11</baseDir>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
         <nodata>
-            <filePath>oldPyramid/NDT/11/nd.tif</filePath>
+            <filePath>oldPyramid/NODATA/11/nd.tif</filePath>
         </nodata>
         <TMSLimits>
             <minTileRow>195</minTileRow>
@@ -200,12 +200,12 @@
     </level>
     <level>
         <tileMatrix>level_12</tileMatrix>
-        <baseDir>oldPyramid/IMG/12</baseDir>
+        <baseDir>oldPyramid/IMAGE/12</baseDir>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
         <nodata>
-            <filePath>oldPyramid/NDT/12/nd.tif</filePath>
+            <filePath>oldPyramid/NODATA/12/nd.tif</filePath>
         </nodata>
         <TMSLimits>
             <minTileRow>391</minTileRow>
@@ -216,12 +216,12 @@
     </level>
     <level>
         <tileMatrix>level_13</tileMatrix>
-        <baseDir>oldPyramid/IMG/13</baseDir>
+        <baseDir>oldPyramid/IMAGE/13</baseDir>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
         <nodata>
-            <filePath>oldPyramid/NDT/13/nd.tif</filePath>
+            <filePath>oldPyramid/NODATA/13/nd.tif</filePath>
         </nodata>
         <TMSLimits>
             <minTileRow>783</minTileRow>
@@ -232,12 +232,12 @@
     </level>
     <level>
         <tileMatrix>level_14</tileMatrix>
-        <baseDir>oldPyramid/IMG/14</baseDir>
+        <baseDir>oldPyramid/IMAGE/14</baseDir>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
         <nodata>
-            <filePath>oldPyramid/NDT/14/nd.tif</filePath>
+            <filePath>oldPyramid/NODATA/14/nd.tif</filePath>
         </nodata>
         <TMSLimits>
             <minTileRow>1566</minTileRow>
@@ -248,12 +248,12 @@
     </level>
     <level>
         <tileMatrix>level_15</tileMatrix>
-        <baseDir>oldPyramid/IMG/15</baseDir>
+        <baseDir>oldPyramid/IMAGE/15</baseDir>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
         <nodata>
-            <filePath>oldPyramid/NDT/15/nd.tif</filePath>
+            <filePath>oldPyramid/NODATA/15/nd.tif</filePath>
         </nodata>
         <TMSLimits>
             <minTileRow>3132</minTileRow>
@@ -264,12 +264,12 @@
     </level>
     <level>
         <tileMatrix>level_16</tileMatrix>
-        <baseDir>oldPyramid/IMG/16</baseDir>
+        <baseDir>oldPyramid/IMAGE/16</baseDir>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
         <nodata>
-            <filePath>oldPyramid/NDT/16/nd.tif</filePath>
+            <filePath>oldPyramid/NODATA/16/nd.tif</filePath>
         </nodata>
         <TMSLimits>
             <minTileRow>6264</minTileRow>
@@ -280,12 +280,12 @@
     </level>
     <level>
         <tileMatrix>level_17</tileMatrix>
-        <baseDir>oldPyramid/IMG/17</baseDir>
+        <baseDir>oldPyramid/IMAGE/17</baseDir>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
         <nodata>
-            <filePath>oldPyramid/NDT/17/nd.tif</filePath>
+            <filePath>oldPyramid/NODATA/17/nd.tif</filePath>
         </nodata>
         <TMSLimits>
             <minTileRow>12529</minTileRow>
@@ -296,12 +296,12 @@
     </level>
     <level>
         <tileMatrix>level_18</tileMatrix>
-        <baseDir>oldPyramid/IMG/18</baseDir>
+        <baseDir>oldPyramid/IMAGE/18</baseDir>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
         <nodata>
-            <filePath>oldPyramid/NDT/18/nd.tif</filePath>
+            <filePath>oldPyramid/NODATA/18/nd.tif</filePath>
         </nodata>
         <TMSLimits>
             <minTileRow>25058</minTileRow>
@@ -312,12 +312,12 @@
     </level>
     <level>
         <tileMatrix>level_19</tileMatrix>
-        <baseDir>oldPyramid/IMG/19</baseDir>
+        <baseDir>oldPyramid/IMAGE/19</baseDir>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <pathDepth>2</pathDepth>
         <nodata>
-            <filePath>oldPyramid/NDT/19/nd.tif</filePath>
+            <filePath>oldPyramid/NODATA/19/nd.tif</filePath>
         </nodata>
         <TMSLimits>
             <minTileRow>50117</minTileRow>

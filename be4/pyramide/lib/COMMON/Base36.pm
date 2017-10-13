@@ -172,7 +172,7 @@ Parameters (list):
     b36 - string - The base-36 integer to convert.
     
 Example:
-    COMMON::Base36::encodeB10toB36("F4S6") returns 706038.
+    COMMON::Base36::encodeB36toB10("F4S6") returns 706038.
 =cut
 sub encodeB36toB10 {
     my $b36  = shift; # idx in base 36 !

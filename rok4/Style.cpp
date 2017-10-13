@@ -49,7 +49,6 @@
 #include "config.h"
 
 Style::Style ( const StyleXML& s ) {
-    LOGGER_DEBUG ( _ ( "Nouveau Style : " ) << s.id );
     this->id = s.id;
     this->titles = s.titles;
     this->abstracts = s.abstracts;
@@ -60,6 +59,18 @@ Style::Style ( const StyleXML& s ) {
     this->pente = s.pente;
     this->aspect = s.aspect;
 
+}
+
+void Style::update ( const StyleXML& s ) {
+    this->id = s.id;
+    this->titles = s.titles;
+    this->abstracts = s.abstracts;
+    this->keywords = s.keywords;
+    this->legendURLs = s.legendURLs;
+    this->palette = s.palette;
+    this->estompage = s.estompage;
+    this->pente = s.pente;
+    this->aspect = s.aspect;
 }
 
 Style::~Style() {

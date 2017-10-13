@@ -43,6 +43,8 @@
  * \brief Define the Style Class handling style definition
  */
 
+class Style;
+
 #ifndef STYLE_H
 #define STYLE_H
 #include <string>
@@ -54,6 +56,7 @@
 #include "Estompage.h"
 #include "Aspect.h"
 #include "Interpolation.h"
+#include "StyleXML.h"
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -148,6 +151,7 @@ private :
      */
     Estompage estompage;
 public:
+
     /**
     * \~french
     * Crée un Style à partir d'un StyleXML
@@ -159,28 +163,18 @@ public:
     * \param[in] s StyleXML to get informations
     */
     Style ( const StyleXML& s );
+
     /**
-      * \~french
-     * \brief Crée un Style à partir d'un autre
-      * \param[in] obj style
-      * \~english
-     * \brief Create a Style from another
-      * \param[in] obj style
-      */
-
-    Style ( const Style &obj) {
-
-        this->estompage = obj.estompage;
-        this->id = obj.id;
-        this->titles= obj.titles;
-        this->abstracts = obj.abstracts;
-        this->keywords = obj.keywords;
-        this->legendURLs = obj.legendURLs;
-        this->palette = obj.palette;
-        this->pente = obj.pente;
-        this->aspect = obj.aspect;
-
-    }
+    * \~french
+    * Met à jour un Style à partir d'un StyleXML
+    * \brief Mise à jour
+    * \param[in] s StyleXML contenant les informations
+    * \~english
+    * Update a Style from a StyleXML
+    * \brief Update
+    * \param[in] s StyleXML to get informations
+    */
+    void update ( const StyleXML& s );
 
     /**
      * \~french

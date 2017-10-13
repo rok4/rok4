@@ -131,7 +131,7 @@ const uint8_t* JpegDecoder::decode ( DataSource* source, size_t &size ) {
     uint8_t* raw_data = 0;
 
     // Lecture
-    if ( jpeg_read_header ( &cinfo, TRUE ) ==JPEG_HEADER_OK ) {
+    if ( jpeg_read_header ( &cinfo, TRUE ) == JPEG_HEADER_OK ) {
 
         int linesize = cinfo.image_width * cinfo.num_components;
         size = linesize * cinfo.image_height;

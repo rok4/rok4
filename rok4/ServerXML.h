@@ -83,17 +83,23 @@ class ServerXML : public DocumentXML
         std::string getServicesConfigFile() ;
 
         std::string getTmsDir() ;
-        void addTMS(std::string id, TileMatrixSet* t) ;
+        void addTMS(TileMatrixSet* t) ;
+        void removeTMS(std::string id) ;
+        void cleanTMSs(std::vector<std::string> id) ;
         int getNbTMS() ;
         TileMatrixSet* getTMS(std::string id) ;
 
         std::string getStylesDir() ;
-        void addStyle(std::string id, Style* s) ;
+        void addStyle(Style* s) ;
+        void removeStyle(std::string id) ;
+        void cleanStyles(std::vector<std::string> id) ;
         int getNbStyles() ;
         Style* getStyle(std::string id) ;
 
         std::string getLayersDir() ;
-        void addLayer(std::string id, Layer* l) ;
+        void addLayer(Layer* l) ;
+        void removeLayer(std::string id) ;
+        void cleanLayers(std::vector<std::string> id) ;
         int getNbLayers() ;
         Layer* getLayer(std::string id) ;
 

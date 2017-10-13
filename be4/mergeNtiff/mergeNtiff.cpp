@@ -83,7 +83,7 @@
  * \li les images non compatibles et de SRS différents : un passage par la reprojection (encore plus lourd en calcul) est indispensable.
  *
  * Exemple d'appel à la commande :
- * \li pour des ortho-images \~english \li for orthoimage
+ * \li pour des ortho-images \~english \li for ortho-image
  * \~ \code
  * mergeNtiff -f conf.txt -r /home/ign/results/ -c zip -i bicubic -n 255,255,255
  * \endcode

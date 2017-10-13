@@ -28,7 +28,6 @@ Rok4Server.cpp
 Rok4Server.h
 ServiceException.cpp
 ServiceException.h
-ServicesConf.h
 Style.cpp
 Style.h
 TileMatrix.cpp

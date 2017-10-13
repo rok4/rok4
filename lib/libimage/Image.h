@@ -678,7 +678,7 @@ public:
      * \~french
      * \brief Retourne une ligne en entier 16 bits.
      * Les canaux sont entrelacés. ATTENTION : si les données ne sont pas intrinsèquement codées sur des entiers 16 bits, il n'y a pas de conversion (une valeur sur 32 bits occupera 2 "cases" sur 16 bits).
-     * \param[in,out] buffer Tableau contenant au moins 'width * channels * sizeof(sample) * 2' entier sur 16 bits
+     * \param[in,out] buffer Tableau contenant au moins 'width * channels * sizeof(sample)' entier sur 16 bits
      * \param[in] line Indice de la ligne à retourner (0 <= line < height)
      * \return taille utile du buffer, 0 si erreur
      */

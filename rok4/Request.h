@@ -35,6 +35,8 @@
  * knowledge of the CeCILL-C license and that you accept its terms.
  */
 
+class Request;
+
 #ifndef REQUEST_H_
 #define REQUEST_H_
 
@@ -44,7 +46,7 @@
 #include "Data.h"
 #include "CRS.h"
 #include "Layer.h"
-#include "ServicesConf.h"
+#include "ServicesXML.h"
 
 /**
  * \file Request.h
@@ -149,7 +151,7 @@ public:
      * \brief Fetching and validating GetTile request parameters
      * \return NULL or an error message if something went wrong
      */
-    DataSource* getTileParam ( ServicesConf& servicesConf,  std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList, Layer*& layer, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, Style* &style, bool& noDataError );
+    DataSource* getTileParam (ServicesXML* servicesConf,  std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList, Layer*& layer, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, Style* &style);
     /**
      * \~french
      * \brief Récuperation et vérifications des paramètres d'une requête GetMap
@@ -158,7 +160,7 @@ public:
      * \brief Fetching and validating GetTile request parameters
      * \return NULL or an error message if something went wrong
      */
-    DataStream* getMapParam (ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers, BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format, std::vector<Style*>& styles, std::map <std::string, std::string >& format_option , int &dpi);
+    DataStream* getMapParam ( ServicesXML* servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers, BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format, std::vector<Style*>& styles,std::map <std::string, std::string >& format_option , int &dpi );
     /**
      * \~french
      * \brief Récuperation et vérifications des paramètres d'une requête GetCapabilities WMS
@@ -167,7 +169,7 @@ public:
      * \brief Fetching and validating GetTile request parameters
      * \return NULL or an error message if something went wrong
      */
-    DataStream* getCapWMSParam ( ServicesConf& servicesConf, std::string& version );
+    DataStream* getCapWMSParam ( ServicesXML* servicesConf, std::string& version );
     /**
      * \~french
      * \brief Récuperation et vérifications des paramètres d'une requête GetTile WMTS
@@ -176,7 +178,7 @@ public:
      * \brief Fetching and validating GetTile request parameters
      * \return NULL or an error message if something went wrong
      */
-    DataStream* getCapWMTSParam ( ServicesConf& servicesConf, std::string& version );
+    DataStream* getCapWMTSParam ( ServicesXML* servicesConf, std::string& version );
 
     //Greg
     /**
@@ -187,7 +189,7 @@ public:
      * \brief Fetching and validating WMS GetFeatureInfoParam request parameters
      * \return NULL or an error message if something went wrong
      */
-    DataStream* WMSGetFeatureInfoParam (ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers,
+    DataStream* WMSGetFeatureInfoParam (ServicesXML* servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers,
                                      std::vector<Layer*>& query_layers,
                                      BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format,
                                      std::vector<Style*>& styles, std::string& info_format, int& X, int& Y, int& feature_count,std::map <std::string, std::string >& format_option);
@@ -199,9 +201,9 @@ public:
      * \brief Fetching and validating WMTS GetFeatureInfoParam request parameters
      * \return NULL or an error message if something went wrong
      */
-    DataStream* WMTSGetFeatureInfoParam (ServicesConf& servicesConf,  std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList,
+    DataStream* WMTSGetFeatureInfoParam (ServicesXML* servicesConf,  std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList,
                                          Layer*& layer, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, Style* &style,
-                                         bool& noDataError, std::string& info_format, int& X, int& Y);
+                                         std::string& info_format, int& X, int& Y);
     //
 
     /**

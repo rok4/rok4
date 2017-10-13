@@ -40,6 +40,49 @@
 #include <tinyxml.h>
 #include "ServicesXML.h"
 
+
+ServicesXML::ServicesXML (const ServicesXML & obj) {
+    title = obj.title;
+    abstract = obj.abstract;
+    keyWords = obj.keyWords;
+    serviceProvider = obj.serviceProvider;
+    fee = obj.fee;
+    accessConstraint = obj.accessConstraint;
+    postMode = obj.postMode;
+    providerSite = obj.providerSite;
+    individualName = obj.individualName;
+    individualPosition = obj.individualPosition;
+    voice = obj.voice;
+    facsimile = obj.facsimile;
+    addressType = obj.addressType;
+    deliveryPoint = obj.deliveryPoint;
+    city = obj.city;
+    administrativeArea = obj.administrativeArea;
+    postCode = obj.postCode;
+    country = obj.country;
+    electronicMailAddress = obj.electronicMailAddress;
+    name = obj.name;
+    layerLimit = obj.layerLimit;
+    maxWidth = obj.maxWidth;
+    maxHeight = obj.maxHeight;
+    maxTileX = obj.maxTileX;
+    maxTileY = obj.maxTileY;
+    formatList = obj.formatList;
+    infoFormatList = obj.infoFormatList;
+    globalCRSList = obj.globalCRSList;
+    fullStyling = obj.fullStyling;
+    serviceType = obj.serviceType;
+    serviceTypeVersion = obj.serviceTypeVersion;
+    inspire = obj.inspire;
+    doweuselistofequalsCRS = obj.doweuselistofequalsCRS;
+    listofequalsCRS = obj.listofequalsCRS;
+    addEqualsCRS = obj.addEqualsCRS;
+    dowerestrictCRSList = obj.dowerestrictCRSList;
+    restrictedCRSList = obj.restrictedCRSList;
+    mtdWMS = obj.mtdWMS;
+    mtdWMTS = obj.mtdWMTS;
+}
+
 ServicesXML::ServicesXML( std::string servicesConfigFile ) {
     ok = false;
 
@@ -437,6 +480,29 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
     ok = true;
 }
 
+// Check if two CRS are equivalent
+//   A list of equivalent CRS was created during server initialization
+// TODO: return false if servicesconf tells we don't check the equality
+bool ServicesXML::are_the_two_CRS_equal( std::string crs1, std::string crs2 ) {
+    // Could have issues with lowercase name -> we put the CRS in upercase
+    transform(crs1.begin(), crs1.end(), crs1.begin(), toupper);
+    transform(crs2.begin(), crs2.end(), crs2.begin(), toupper);
+    crs1.append(" ");
+    crs2.append(" ");
+    for (int line_number = 0 ; line_number < listofequalsCRS.size() ; line_number++) {
+        std::string line = listofequalsCRS.at(line_number);
+        // We check if the two CRS are on the same line inside the file. If yes then they are equivalent.
+        std::size_t found1 = line.find(crs1);
+        if ( found1 != std::string::npos  )  {
+            std::size_t found2 = line.find(crs2);
+            if ( found2 != std::string::npos  )  {
+                LOGGER_DEBUG ( "The two CRS (source and destination) are equals and were found on line  " << line );
+                return true;
+            }
+        }
+    }
+    return false; // The 2 CRS were not found on the same line inside the list
+}
 
 ServicesXML::~ServicesXML(){ 
     delete mtdWMS;
@@ -489,28 +555,3 @@ bool ServicesXML::getAddEqualsCRS() { return addEqualsCRS; }
 std::vector<std::string> ServicesXML::getListOfEqualsCRS() { return listofequalsCRS; }
 bool ServicesXML::getDoWeRestrictCRSList() { return dowerestrictCRSList; }
 std::vector<std::string> ServicesXML::getRestrictedCRSList() { return restrictedCRSList; }
-
-
-// Check if two CRS are equivalent
-    //   A list of equivalent CRS was created during server initialization
-    // TODO: return false if servicesconf tells we don't check the equality
-    bool ServicesXML::are_the_two_CRS_equal( std::string crs1, std::string crs2 ) {
-        // Could have issues with lowercase name -> we put the CRS in upercase
-        transform(crs1.begin(), crs1.end(), crs1.begin(), toupper);
-        transform(crs2.begin(), crs2.end(), crs2.begin(), toupper);
-        crs1.append(" ");
-        crs2.append(" ");
-        for (int line_number = 0 ; line_number < listofequalsCRS.size() ; line_number++) {
-            std::string line = listofequalsCRS.at(line_number);
-            // We check if the two CRS are on the same line inside the file. If yes then they are equivalent.
-            std::size_t found1 = line.find(crs1);
-            if ( found1 != std::string::npos  )  {
-                std::size_t found2 = line.find(crs2);
-                if ( found2 != std::string::npos  )  {
-                    LOGGER_DEBUG ( "The two CRS (source and destination) are equals and were found on line  " << line );
-                    return true;
-                }
-            }
-        }
-        return false; // The 2 CRS were not found on the same line inside the list
-    }

@@ -51,44 +51,111 @@ Log::Log4perl->easy_init({
 # My tested class
 use COMMON::CheckUtils;
 
-######################## True #######################
 my $test;
 
-$test = (COMMON::CheckUtils::isInteger(-1856164354684)) && (COMMON::CheckUtils::isInteger(+1856684)) && (COMMON::CheckUtils::isInteger(14684)) && (COMMON::CheckUtils::isInteger(0));
-ok($test, "Is a base 10 integer.");
-undef $test;
+######################## isPositiveInt
 
-$test = (COMMON::CheckUtils::isPositiveInt(+1856684)) && (COMMON::CheckUtils::isPositiveInt(14684)) && (COMMON::CheckUtils::isPositiveInt(0));
+$test = COMMON::CheckUtils::isPositiveInt(+1856684);
 ok($test, "Is a positive base 10 integer.");
-undef $test;
+$test = COMMON::CheckUtils::isPositiveInt(14684);
+ok($test, "Is a positive base 10 integer.");
+$test = COMMON::CheckUtils::isPositiveInt(0));
+ok($test, "Is a positive base 10 integer.");
 
-$test = (COMMON::CheckUtils::isStrictPositiveInt(+1856684)) && (COMMON::CheckUtils::isStrictPositiveInt(14684));
+$test = COMMON::CheckUtils::isPositiveInt(0.5);
+ok(! $test, "Is not a positive base 10 integer.");
+$test = COMMON::CheckUtils::isPositiveInt(+0.5);
+ok(! $test, "Is not a positive base 10 integer.");
+$test = COMMON::CheckUtils::isPositiveInt(-0.5);
+ok( !$test, "Is not a positive base 10 integer.");
+$test = COMMON::CheckUtils::isPositiveInt("NAN");
+ok( !$test, "Is not a positive base 10 integer.");
+$test = COMMON::CheckUtils::isPositiveInt(-521));
+ok(! $test, "Is not a positive base 10 integer.");
+
+######################## isStrictPositiveInt
+
+$test = COMMON::CheckUtils::isStrictPositiveInt(+1856684);
 ok($test, "Is a strictly positive base 10 integer.");
-undef $test;
+$test = COMMON::CheckUtils::isStrictPositiveInt(14684));
+ok($test, "Is a strictly positive base 10 integer.");
 
-$test = (COMMON::CheckUtils::isNumber(-1856164354684)) && (COMMON::CheckUtils::isNumber(+1856684)) && (COMMON::CheckUtils::isNumber(14684)) && (COMMON::CheckUtils::isNumber(0)) && (COMMON::CheckUtils::isNumber(0.298)) && (COMMON::CheckUtils::isNumber(-15.8)) && (COMMON::CheckUtils::isNumber(+15.8));
+$test = COMMON::CheckUtils::isStrictPositiveInt(0.5);
+ok(! $test, "Is not a strictly positive base 10 integer.");
+$test = COMMON::CheckUtils::isStrictPositiveInt(+0.5);
+ok(! $test, "Is not a strictly positive base 10 integer.");
+$test = COMMON::CheckUtils::isStrictPositiveInt(-0.5);
+ok(! $test, "Is not a strictly positive base 10 integer.");
+$test = COMMON::CheckUtils::isStrictPositiveInt("NAN");
+ok(! $test, "Is not a strictly positive base 10 integer.");
+$test = COMMON::CheckUtils::isStrictPositiveInt(-521);
+ok(! $test, "Is not a strictly positive base 10 integer.");
+$test = COMMON::CheckUtils::isStrictPositiveInt(0));
+ok(! $test, "Is not a strictly positive base 10 integer.");
+
+######################## isInteger
+
+$test = COMMON::CheckUtils::isInteger(-1856164354684);
+ok($test, "Is a base 10 integer.");
+$test = COMMON::CheckUtils::isInteger(+1856684);
+ok($test, "Is a base 10 integer.");
+$test = COMMON::CheckUtils::isInteger(14684);
+ok($test, "Is a base 10 integer.");
+$test = COMMON::CheckUtils::isInteger(0));
+ok($test, "Is a base 10 integer.");
+
+$test = COMMON::CheckUtils::isInteger(0.5);
+ok(! $test, "Is not a base 10 integer.");
+$test = COMMON::CheckUtils::isInteger(+0.5);
+ok(! $test, "Is not a base 10 integer.");
+$test = COMMON::CheckUtils::isInteger(-0.5);
+ok(! $test, "Is not a base 10 integer.");
+$test = COMMON::CheckUtils::isInteger("NAN"));
+ok(! $test, "Is not a base 10 integer.");
+
+######################## isNumber
+
+$test = COMMON::CheckUtils::isNumber(-1856164354684);
 ok($test, "Is a base 10 number.");
-undef $test;
+$test = COMMON::CheckUtils::isNumber(+1856684);
+ok($test, "Is a base 10 number.");
+$test = COMMON::CheckUtils::isNumber(14684);
+ok($test, "Is a base 10 number.");
+$test = COMMON::CheckUtils::isNumber(0);
+ok($test, "Is a base 10 number.");
+$test = COMMON::CheckUtils::isNumber(0.298);
+ok($test, "Is a base 10 number.");
+$test = COMMON::CheckUtils::isNumber(-15.8);
+ok($test, "Is a base 10 number.");
+$test = COMMON::CheckUtils::isNumber(+15.8));
+ok($test, "Is a base 10 number.");
 
+$test = COMMON::CheckUtils::isNumber("NAN") && !COMMON::CheckUtils::isNumber("4F2A11");
+ok(! $test, "Is not a base 10 number.");
 
-####################### False #######################
+######################## isBbox
 
-$test = (!COMMON::CheckUtils::isInteger(0.5)) && (!COMMON::CheckUtils::isInteger(+0.5)) && (!COMMON::CheckUtils::isInteger(-0.5)) && (!COMMON::CheckUtils::isInteger("NAN"));
-ok($test, "Is not a base 10 integer.");
-undef $test;
+$test = COMMON::CheckUtils::isBbox("452.3,-89,9856,+45.369"));
+ok($test, "Is a bbox.");
 
-$test = (!COMMON::CheckUtils::isPositiveInt(0.5)) && (!COMMON::CheckUtils::isPositiveInt(+0.5)) && (!COMMON::CheckUtils::isPositiveInt(-0.5)) && (!COMMON::CheckUtils::isPositiveInt("NAN")) && (!COMMON::CheckUtils::isPositiveInt(-521));
-ok($test, "Is not a positive base 10 integer.");
-undef $test;
+$test = COMMON::CheckUtils::isInteger("idsjfhg,oeziurh,uydcsq,iuerhg");
+ok(! $test, "Is not a bbox (not numbers)");
+$test = COMMON::CheckUtils::isInteger("452.3,-89,9856");
+ok(! $test, "Is not a bbox (not 4 numbers)");
+$test = COMMON::CheckUtils::isInteger("9856,-89,452.3,+45.369");
+ok(! $test, "Is not a bbox (min > max)");
 
-$test = (!COMMON::CheckUtils::isStrictPositiveInt(0.5)) && (!COMMON::CheckUtils::isStrictPositiveInt(+0.5)) && (!COMMON::CheckUtils::isStrictPositiveInt(-0.5)) && (!COMMON::CheckUtils::isStrictPositiveInt("NAN")) && (!COMMON::CheckUtils::isStrictPositiveInt(-521)) && (!COMMON::CheckUtils::isStrictPositiveInt(0));
-ok($test, "Is not a strictly positive base 10 integer.");
-undef $test;
+######################## isEmpty
 
-$test = !COMMON::CheckUtils::isNumber("NAN") && !COMMON::CheckUtils::isNumber("4F2A11");
-ok($test, "Is not a base 10 number.");
-undef $test;
+$test = COMMON::CheckUtils::isEmpty(undef));
+ok($test, "undef is empty.");
+$test = COMMON::CheckUtils::isEmpty(""));
+ok($test, "'' is empty.");
 
+$test = COMMON::CheckUtils::isEmpty(0));
+ok(! $test, "0 is not empty.");
+$test = COMMON::CheckUtils::isEmpty({}));
+ok(! $test, "{} is not empty.");
 
 ######################## End ########################
 

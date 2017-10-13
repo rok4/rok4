@@ -76,7 +76,7 @@ TileMatrixSetXML::TileMatrixSetXML(std::string path ) : DocumentXML(path)
             idEnd=filePath.size();
         }
     }
-    id=filePath.substr ( idBegin+1, idEnd-idBegin-1 );
+    id = filePath.substr ( idBegin+1, idEnd-idBegin-1 );
 
     // Récupération du CRS
 

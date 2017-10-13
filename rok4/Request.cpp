@@ -52,7 +52,6 @@
 #include <vector>
 #include <cstdio>
 #include "tinyxml.h"
-#include "tinystr.h"
 #include "config.h"
 #include <algorithm>
 #include "intl.h"
@@ -255,7 +254,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
         LOGGER_DEBUG ( _ ( "No Layer" ) );
         return;
     }
-    parameters.insert ( std::pair<std::string, std::string> ( "layer", pElem->GetTextStr() ) );
+    parameters.insert ( std::pair<std::string, std::string> ( "layer", DocumentXML::getTextStrFromElem(pElem) ) );
 
     //Style
     pElem = pElem->NextSiblingElement();
@@ -264,7 +263,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
         LOGGER_DEBUG ( _ ( "No Style" ) );
         return;
     }
-    parameters.insert ( std::pair<std::string, std::string> ( "style", pElem->GetTextStr() ) );
+    parameters.insert ( std::pair<std::string, std::string> ( "style", DocumentXML::getTextStrFromElem(pElem) ) );
 
     //Format
     pElem = pElem->NextSiblingElement();
@@ -273,7 +272,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
         LOGGER_DEBUG ( _ ( "No Format" ) );
         return;
     }
-    parameters.insert ( std::pair<std::string, std::string> ( "format", pElem->GetTextStr() ) );
+    parameters.insert ( std::pair<std::string, std::string> ( "format", DocumentXML::getTextStrFromElem(pElem) ) );
 
     //DimensionNameValue name="NAME" OPTIONAL
     pElem = pElem->NextSiblingElement();
@@ -283,7 +282,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
             LOGGER_DEBUG ( _ ( "No Name attribute" ) );
             continue;
         } else {
-            parameters.insert ( std::pair<std::string, std::string> ( dimensionName, pElem->GetTextStr() ) );
+            parameters.insert ( std::pair<std::string, std::string> ( dimensionName, DocumentXML::getTextStrFromElem(pElem) ) );
         }
         pElem = pElem->NextSiblingElement();
     }
@@ -293,7 +292,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
         LOGGER_DEBUG ( _ ( "No TileMatrixSet" ) );
         return;
     }
-    parameters.insert ( std::pair<std::string, std::string> ( "tilematrixset", pElem->GetTextStr() ) );
+    parameters.insert ( std::pair<std::string, std::string> ( "tilematrixset", DocumentXML::getTextStrFromElem(pElem) ) );
 
     //TileMatrix
     pElem = pElem->NextSiblingElement();
@@ -301,7 +300,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
         LOGGER_DEBUG ( _ ( "No TileMatrix" ) );
         return;
     }
-    parameters.insert ( std::pair<std::string, std::string> ( "tilematrix", pElem->GetTextStr() ) );
+    parameters.insert ( std::pair<std::string, std::string> ( "tilematrix", DocumentXML::getTextStrFromElem(pElem) ) );
 
     //TileRow
     pElem = pElem->NextSiblingElement();
@@ -309,14 +308,14 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
         LOGGER_DEBUG ( _ ( "No TileRow" ) );
         return;
     }
-    parameters.insert ( std::pair<std::string, std::string> ( "tilerow", pElem->GetTextStr() ) );
+    parameters.insert ( std::pair<std::string, std::string> ( "tilerow", DocumentXML::getTextStrFromElem(pElem) ) );
     //TileCol
     pElem = pElem->NextSiblingElement();
     if ( !pElem && pElem->ValueStr().find ( "TileCol" ) ==std::string::npos && !pElem->GetText() ) {
         LOGGER_DEBUG ( _ ( "No TileCol" ) );
         return;
     }
-    parameters.insert ( std::pair<std::string, std::string> ( "tilecol", pElem->GetTextStr() ) );
+    parameters.insert ( std::pair<std::string, std::string> ( "tilecol", DocumentXML::getTextStrFromElem(pElem) ) );
 
     pElem = pElem->NextSiblingElement();
     // "VendorOption"
@@ -325,7 +324,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
             LOGGER_DEBUG ( _ ( "VendorOption" ) );
             std::string vendorOpt = pElem->Attribute ( "name" );
             std::transform ( vendorOpt.begin(), vendorOpt.end(), vendorOpt.begin(), ::tolower );
-            parameters.insert ( std::pair<std::string, std::string> ( vendorOpt, ( pElem->GetText() ?pElem->GetTextStr() :"true" ) ) );
+            parameters.insert ( std::pair<std::string, std::string> ( vendorOpt, ( pElem->GetText() ?DocumentXML::getTextStrFromElem(pElem) :"true" ) ) );
         }
         pElem =  pElem->NextSiblingElement();
     }
@@ -440,7 +439,7 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
         return;
     }
 
-    parameters.insert ( std::pair<std::string, std::string> ( "crs", pElem->GetTextStr() ) );
+    parameters.insert ( std::pair<std::string, std::string> ( "crs", DocumentXML::getTextStrFromElem(pElem) ) );
 
     //BoundingBox
 
@@ -549,7 +548,7 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
     pElem = pElem->NextSiblingElement();
     if ( pElem ) {
         if ( pElem->ValueStr().find ( "Exceptions" ) !=std::string::npos && pElem->GetText() ) {
-            parameters.insert ( std::pair<std::string, std::string> ( "exceptions", pElem->GetTextStr() ) );
+            parameters.insert ( std::pair<std::string, std::string> ( "exceptions", DocumentXML::getTextStrFromElem(pElem) ) );
             pElem = pElem->NextSiblingElement();
         }
     }
@@ -557,7 +556,7 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
     //Time
     if ( pElem ) {
         if ( pElem->ValueStr().find ( "Time" ) !=std::string::npos && pElem->GetText() ) {
-            parameters.insert ( std::pair<std::string, std::string> ( "time", pElem->GetTextStr() ) );
+            parameters.insert ( std::pair<std::string, std::string> ( "time", DocumentXML::getTextStrFromElem(pElem) ) );
             pElem = pElem->NextSiblingElement();
         }
     }
@@ -576,20 +575,20 @@ void parseGetMapPost ( TiXmlHandle& hGetMap, std::map< std::string, std::string 
                 if ( !pElem && pElem->ValueStr().find ( "Min" ) ==std::string::npos && !pElem->GetText() ) {
                     return;
                 }
-                elevation.append ( pElem->GetTextStr() );
+                elevation.append ( DocumentXML::getTextStrFromElem(pElem) );
                 elevation.append ( "/" );
                 pElem = pElem->NextSiblingElement();
                 if ( !pElem && pElem->ValueStr().find ( "Max" ) ==std::string::npos && !pElem->GetText() ) {
                     return;
                 }
-                elevation.append ( pElem->GetTextStr() );
+                elevation.append ( DocumentXML::getTextStrFromElem(pElem) );
 
             } else if ( pElem->ValueStr().find ( "Value" ) !=std::string::npos ) {
                 while ( pElem && pElem->GetText() ) {
                     if ( elevation.size() >0 ) {
                         elevation.append ( "," );
                     }
-                    elevation.append ( pElem->GetTextStr() );
+                    elevation.append ( DocumentXML::getTextStrFromElem(pElem) );
                     pElem = pElem->NextSiblingElement ( pElem->ValueStr() );
                 }
             }
@@ -741,13 +740,13 @@ std::string Request::getParam ( std::string paramName ) {
     return it->second;
 }
 
-DataSource* Request::getTileParam ( ServicesConf& servicesConf, std::map< std::string, TileMatrixSet* >& tmsList, std::map< std::string, Layer* >& layerList, Layer*& layer, std::string& tileMatrix, int& tileCol, int& tileRow, std::string& format, Style*& style, bool& noDataError ) {
+DataSource* Request::getTileParam ( ServicesXML* servicesConf, std::map< std::string, TileMatrixSet* >& tmsList, std::map< std::string, Layer* >& layerList, Layer*& layer, std::string& tileMatrix, int& tileCol, int& tileRow, std::string& format, Style*& style) {
     // VERSION
     std::string version=getParam ( "version" );
     if ( version=="" )
         return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre VERSION absent." ),"wmts" ) );
-    if ( version.find ( servicesConf.getServiceTypeVersion() ) ==std::string::npos )
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Valeur du parametre VERSION invalide (doit contenir " ) +servicesConf.getServiceTypeVersion() +_ ( ")" ),"wmts" ) );
+    if ( version.find ( servicesConf->getServiceTypeVersion() ) ==std::string::npos )
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Valeur du parametre VERSION invalide (doit contenir " ) +servicesConf->getServiceTypeVersion() +_ ( ")" ),"wmts" ) );
     // LAYER
     std::string str_layer=getParam ( "layer" );
     if ( str_layer == "" )
@@ -766,7 +765,7 @@ DataSource* Request::getTileParam ( ServicesConf& servicesConf, std::map< std::s
     std::map<std::string, TileMatrixSet*>::iterator tms = tmsList.find ( str_tms );
     if ( tms == tmsList.end() )
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "TileMatrixSet " ) +str_tms+_ ( " inconnu." ),"wmts" ) );
-    std::string tmsLayer = layer->getDataPyramid()->getTms().getCrs().getProj4Code();
+    std::string tmsLayer = layer->getDataPyramid()->getTms()->getCrs().getProj4Code();
     if ( tms->second->getCrs().getProj4Code() != tmsLayer )
         return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre TILEMATRIXSET différent de celui de la couche demandée. TILEMATRIXSET devrait être " ) +tmsLayer,"wmts" ) );
     layer = it->second;
@@ -775,9 +774,9 @@ DataSource* Request::getTileParam ( ServicesConf& servicesConf, std::map< std::s
     if ( tileMatrix == "" )
         return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre TILEMATRIX absent." ),"wmts" ) );
 
-    std::map<std::string, TileMatrix>* pList=tms->second->getTmList();
-    std::map<std::string, TileMatrix>::iterator tm = pList->find ( tileMatrix );
-    if ( tm==pList->end() )
+    std::map<std::string, TileMatrix*>* pList=tms->second->getTmList();
+    std::map<std::string, TileMatrix*>::iterator tm = pList->find ( tileMatrix );
+    if ( tm == pList->end() )
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "TileMatrix " ) +tileMatrix+_ ( " inconnu pour le TileMatrixSet " ) +str_tms,"wmts" ) );
 
     // TILEROW
@@ -815,40 +814,14 @@ DataSource* Request::getTileParam ( ServicesConf& servicesConf, std::map< std::s
     }
     if ( ! ( style ) )
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le style " ) +styleName+_ ( " n'est pas gere pour la couche " ) +str_layer,"wmts" ) );
-    //Nodata Error
-    noDataError = hasParam ( "nodataashttpstatus" );
+
+
 
     return NULL;
 
 }
 
-
-/* *
- * \~french
- * \brief Découpe une chaîne de caractères selon un délimiteur
- * \param[in] str la chaîne à découper
- * \param[in] delim le délimiteur
- * \param[in,out] results la liste contenant les parties de la chaîne
- * \~english
- * \brief Split a string using a specified delimitor
- * \param[in] str the string to split
- * \param[in] delim the delimitor
- * \param[in,out] results the list with the splited string
- */
-/*void stringSplit ( std::string str, std::string delim, std::vector<std::string> &results ) {
-    int cutAt;
-    while ( ( cutAt = str.find_first_of ( delim ) ) != str.npos ) {
-        if ( cutAt > 0 ) {
-            results.push_back ( str.substr ( 0,cutAt ) );
-        }
-        str = str.substr ( cutAt+1 );
-    }
-    if ( str.length() > 0 ) {
-        results.push_back ( str );
-    }
-}*/
-
-DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers,
+DataStream* Request::getMapParam ( ServicesXML* servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers,
                                    BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format,
                                    std::vector<Style*>& styles, std::map< std::string, std::string >& format_option,int& dpi ) {
     // VERSION
@@ -871,7 +844,7 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
     //Split layer Element
     std::vector<std::string> layersString = split ( str_layer,',' );
     LOGGER_DEBUG ( _ ( "Nombre de couches demandees =" ) << layersString.size() );
-    if ( layersString.size() > servicesConf.getLayerLimit() ) {
+    if ( layersString.size() > servicesConf->getLayerLimit() ) {
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le nombre de couche demande excede la valeur du LayerLimit." ),"wms" ) );
     }
     std::vector<std::string>::iterator itLayer = layersString.begin();
@@ -895,7 +868,7 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre WIDTH n'est pas une valeur entiere." ),"wms" ) );
     if ( width<0 )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre WIDTH est negative." ),"wms" ) );
-    if ( width>servicesConf.getMaxWidth() )
+    if ( width>servicesConf->getMaxWidth() )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre WIDTH est superieure a la valeur maximum autorisee par le service." ),"wms" ) );
     // HEIGHT
     std::string strHeight=getParam ( "height" );
@@ -906,7 +879,7 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre HEIGHT n'est pas une valeur entiere." ),"wms" ) ) ;
     if ( height<0 )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre HEIGHT est negative." ),"wms" ) );
-    if ( height>servicesConf.getMaxHeight() )
+    if ( height>servicesConf->getMaxHeight() )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre HEIGHT est superieure a la valeur maximum autorisee par le service." ),"wms" ) );
     // CRS
     std::string str_crs;
@@ -926,8 +899,8 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
     crs.setRequestCode ( str_crs );
     bool crsNotFound = true;
     unsigned int k;
-    for ( k=0; k<servicesConf.getGlobalCRSList()->size(); k++ )
-        if ( crs.cmpRequestCode ( servicesConf.getGlobalCRSList()->at ( k ).getRequestCode() ) ) {
+    for ( k=0; k<servicesConf->getGlobalCRSList()->size(); k++ )
+        if ( crs.cmpRequestCode ( servicesConf->getGlobalCRSList()->at ( k ).getRequestCode() ) ) {
             crsNotFound = false;
             break;
         }
@@ -949,11 +922,11 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
     if ( format == "" )
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre FORMAT absent." ),"wms" ) );
 
-    for ( k=0; k<servicesConf.getFormatList()->size(); k++ ) {
-        if ( servicesConf.getFormatList()->at ( k ) ==format )
+    for ( k=0; k<servicesConf->getFormatList()->size(); k++ ) {
+        if ( servicesConf->getFormatList()->at ( k ) ==format )
             break;
     }
-    if ( k==servicesConf.getFormatList()->size() )
+    if ( k==servicesConf->getFormatList()->size() )
         return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Format " ) +format+_ ( " non gere par le service." ),"wms" ) );
 
     // BBOX
@@ -1103,7 +1076,7 @@ DataStream* Request::getMapParam ( ServicesConf& servicesConf, std::map< std::st
 }
 
 // Parameters for WMS GetCapabilities
-DataStream* Request::getCapWMSParam ( ServicesConf& servicesConf, std::string& version ) {
+DataStream* Request::getCapWMSParam ( ServicesXML* servicesConf, std::string& version ) {
     if ( service.compare ( "wms" ) !=0 ) {
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le service " ) +service+_ ( " est inconnu pour ce serveur." ),"wms" ) );
     }
@@ -1162,7 +1135,7 @@ DataStream* Request::getCapWMSParam ( ServicesConf& servicesConf, std::string& v
 }
 
 // Parameters for WMTS GetCapabilities
-DataStream* Request::getCapWMTSParam ( ServicesConf& servicesConf, std::string& version ) {
+DataStream* Request::getCapWMTSParam ( ServicesXML* servicesConf, std::string& version ) {
     if ( service.compare ( "wmts" ) !=0 ) {
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le service " ) +service+_ ( " est inconnu pour ce serveur." ),"wmts" ) );
     }
@@ -1172,10 +1145,10 @@ DataStream* Request::getCapWMTSParam ( ServicesConf& servicesConf, std::string& 
     }
     version=getParam ( "version" );
     if ( version=="" ) {
-        version=servicesConf.getServiceTypeVersion();
+        version=servicesConf->getServiceTypeVersion();
         return NULL;
     }
-    if ( version.compare ( servicesConf.getServiceTypeVersion() ) !=0 )
+    if ( version.compare ( servicesConf->getServiceTypeVersion() ) !=0 )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Valeur du parametre VERSION invalide (1.0.0 disponible seulement)" ),"wmts" ) );
 
     return NULL;
@@ -1206,7 +1179,7 @@ bool Request::doesPathFinishWith(std::string word) {
 }
 
 // Parameters for WMS GetFeatureInfo
-DataStream* Request::WMSGetFeatureInfoParam (ServicesConf& servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers,
+DataStream* Request::WMSGetFeatureInfoParam (ServicesXML* servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers,
                                           std::vector<Layer*>& query_layers,
                                           BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format,
                                           std::vector<Style*>& styles, std::string& info_format, int& X, int& Y, int& feature_count,std::map <std::string, std::string >& format_option){
@@ -1336,11 +1309,11 @@ DataStream* Request::WMSGetFeatureInfoParam (ServicesConf& servicesConf, std::ma
     if ( info_format == "" ){
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre INFO_FORMAT vide." ),"wms" ) );
     }else{
-        for ( k=0; k<servicesConf.getInfoFormatList()->size(); k++ ) {
-            if ( servicesConf.getInfoFormatList()->at ( k ) ==info_format )
+        for ( k=0; k<servicesConf->getInfoFormatList()->size(); k++ ) {
+            if ( servicesConf->getInfoFormatList()->at ( k ) ==info_format )
                 break;
         }
-        if ( k==servicesConf.getInfoFormatList()->size() )
+        if ( k==servicesConf->getInfoFormatList()->size() )
             return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Info_Format " ) +info_format+_ ( " non gere par le service." ),"wms" ) );
     }
 
@@ -1348,11 +1321,10 @@ DataStream* Request::WMSGetFeatureInfoParam (ServicesConf& servicesConf, std::ma
     return NULL;
 }
 
-DataStream* Request::WMTSGetFeatureInfoParam (ServicesConf& servicesConf,  std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList,
-                                     Layer*& layer, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, Style* &style,
-                                     bool& noDataError, std::string& info_format, int& X, int& Y) {
+DataStream* Request::WMTSGetFeatureInfoParam (ServicesXML* servicesConf,  std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList,
+                                     Layer*& layer, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, Style* &style, std::string& info_format, int& X, int& Y) {
 
-    DataSource* getTileError = getTileParam(servicesConf, tmsList, layerList, layer, tileMatrix, tileCol, tileRow, format, style, noDataError);
+    DataSource* getTileError = getTileParam(servicesConf, tmsList, layerList, layer, tileMatrix, tileCol, tileRow, format, style);
     
     if (getTileError) {
         return new DataStreamFromDataSource(getTileError);
@@ -1367,11 +1339,11 @@ DataStream* Request::WMTSGetFeatureInfoParam (ServicesConf& servicesConf,  std::
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre INFOFORMAT vide." ),"wmts" ) );
     }else{
         unsigned int k;
-        for ( k=0; k<servicesConf.getInfoFormatList()->size(); k++ ) {
-            if ( servicesConf.getInfoFormatList()->at ( k ) ==info_format )
+        for ( k=0; k<servicesConf->getInfoFormatList()->size(); k++ ) {
+            if ( servicesConf->getInfoFormatList()->at ( k ) ==info_format )
                 break;
         }
-        if ( k==servicesConf.getInfoFormatList()->size() )
+        if ( k==servicesConf->getInfoFormatList()->size() )
             return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Info_Format " ) +info_format+_ ( " non gere par le service." ),"wmts" ) );
     }
 
@@ -1382,7 +1354,7 @@ DataStream* Request::WMTSGetFeatureInfoParam (ServicesConf& servicesConf,  std::
     X=atoi ( strX.c_str() );
     if ( X<0 )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre I est negative." ),"wmts" ) );
-    if ( X> layer->getDataPyramid()->getLevels().find(tileMatrix)->second->getTm().getTileW()-1 )
+    if ( X> layer->getDataPyramid()->getLevels().find(tileMatrix)->second->getTm()->getTileW()-1 )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre I est superieure a la largeur de la tuile (width)." ),"wmts" ) );
 
 
@@ -1393,7 +1365,7 @@ DataStream* Request::WMTSGetFeatureInfoParam (ServicesConf& servicesConf,  std::
     Y=atoi ( strY.c_str() );
     if ( Y<0 )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre J est negative." ),"wmts" ) );
-    if ( Y> layer->getDataPyramid()->getLevels().find(tileMatrix)->second->getTm().getTileH()-1 )
+    if ( Y> layer->getDataPyramid()->getLevels().find(tileMatrix)->second->getTm()->getTileH()-1 )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre J est superieure a la hauteur de la tuile (height)." ),"wmts" ) );
 
 

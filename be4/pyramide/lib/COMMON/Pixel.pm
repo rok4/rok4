@@ -71,6 +71,8 @@ use warnings;
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
 
+use COMMON::Array;
+
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
 
@@ -85,30 +87,21 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-# Constant: PIXEL
-# Define allowed values for attributes bitspersample, sampleformat, photometric and samplesperpixel.
-my %PIXEL;
+# Constant: BITSPERSAMPLES
+# Define allowed values for attributes bitspersample
+my @BITSPERSAMPLES = (1,8,32);
 
-# Constant: DEFAULT
-# Define default values for attribute photometric.
-my %DEFAULT;
+# Constant: PHOTOMETRICS
+# Define allowed values for attributes photometric
+my @PHOTOMETRICS = ('rgb','gray','mask');
 
-################################################################################
+# Constant: SAMPLESPERPIXELS
+# Define allowed values for attributes samplesperpixel
+my @SAMPLESPERPIXELS = (1,2,3,4);
 
-BEGIN {}
-INIT {
-    %PIXEL = (
-        bitspersample     => [1,8,32],
-        sampleformat      => ['uint','float'],
-        photometric       => ['rgb','gray','mask'],
-        samplesperpixel   => [1,2,3,4],
-    );
-
-    %DEFAULT = (
-        photometric => 'rgb',
-    );
-}
-END {}
+# Constant: SAMPLEFORMATS
+# Define allowed values for attributes sampleformat
+my @SAMPLEFORMATS = ('uint','float');
 
 ####################################################################################################
 #                                        Group: Constructors                                       #
@@ -126,21 +119,19 @@ Parameters (hash):
     samplesperpixel - integer - Number of channels.
 =cut
 sub new {
-    my $this = shift;
+    my $class = shift;
     my $params = shift;
 
-    my $class= ref($this) || $this;
+    $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above)
-    my $self = {
+    my $this = {
         photometric => undef,
         sampleformat => undef,
         bitspersample => undef,
         samplesperpixel => undef,
     };
 
-    bless($self, $class);
-
-    TRACE;
+    bless($this, $class);
 
     # All attributes have to be present in parameters and defined
 
@@ -149,150 +140,56 @@ sub new {
         ERROR ("'sampleformat' required !");
         return undef;
     } else {
-        if (! $self->isSampleFormat($params->{sampleformat})) {
+        if (! defined COMMON::Array::isInArray($params->{sampleformat}, @SAMPLEFORMATS)) {
             ERROR (sprintf "Unknown 'sampleformat' : %s !",$params->{sampleformat});
             return undef;
         }
     }
-    $self->{sampleformat} = $params->{sampleformat};
+    $this->{sampleformat} = $params->{sampleformat};
 
     ### Samples per pixel : REQUIRED
     if (! exists $params->{samplesperpixel} || ! defined $params->{samplesperpixel}) {
         ERROR ("'samplesperpixel' required !");
         return undef;
     } else {
-        if (! $self->isSamplesPerPixel($params->{samplesperpixel})) {
+        if (! defined COMMON::Array::isInArray($params->{samplesperpixel}, @SAMPLESPERPIXELS)) {
             ERROR (sprintf "Unknown 'samplesperpixel' : %s !",$params->{samplesperpixel});
             return undef;
         }
     }
-    $self->{samplesperpixel} = int($params->{samplesperpixel});
+    $this->{samplesperpixel} = int($params->{samplesperpixel});
 
     ### Photometric :  REQUIRED
-    if (! exists $params->{photometric} || ! defined $params->{bitspersample}) {
-        ERROR ("'bitspersample' required !");
+    if (! exists $params->{photometric} || ! defined $params->{photometric}) {
+        ERROR ("'photometric' required !");
         return undef;
     } else {
-        if (! $self->isPhotometric($params->{photometric})) {
+        if (! defined COMMON::Array::isInArray($params->{photometric}, @PHOTOMETRICS)) {
             ERROR (sprintf "Unknown 'photometric' : %s !",$params->{photometric});
             return undef;
         }
     }
-    $self->{photometric} = $params->{photometric};
+    $this->{photometric} = $params->{photometric};
 
     ### Bits per sample : REQUIRED
     if (! exists $params->{bitspersample} || ! defined $params->{bitspersample}) {
         ERROR ("'bitspersample' required !");
         return undef;
     } else {
-        if (! $self->isBitsPerSample($params->{bitspersample})) {
+        if (! defined COMMON::Array::isInArray($params->{bitspersample}, @BITSPERSAMPLES)) {
             ERROR (sprintf "Unknown 'bitspersample' : %s !",$params->{bitspersample});
             return undef;
         }
     }
-    $self->{bitspersample} = int($params->{bitspersample});
+    $this->{bitspersample} = int($params->{bitspersample});
 
     # If image own one-bit sample, conversion will be done, so it's like a 8-bit image
-    if ($self->{bitspersample} == 1) {
+    if ($this->{bitspersample} == 1) {
         INFO("We have a one-bit pixel, we memorize an 8-bit pixel because on fly conversion will be done");
-        $self->{bitspersample} = 8;
+        $this->{bitspersample} = 8;
     }
 
-    return $self;
-}
-
-####################################################################################################
-#                             Group: Attributes' testers                                           #
-####################################################################################################
-
-=begin nd
-Function: isSampleFormat
-
-Tests if sample format value is allowed.
-
-Parameters (list):
-    sampleformat - string - Sample format value to test
-=cut
-sub isSampleFormat {
-    my $self = shift;
-    my $sampleformat = shift;
-
-    TRACE;
-
-    return FALSE if (! defined $sampleformat);
-
-    foreach (@{$PIXEL{sampleformat}}) {
-        return TRUE if ($sampleformat eq $_);
-    }
-    return FALSE;
-}
-
-=begin nd
-Function: isBitsPerSample
-
-Tests if bits per sample value is allowed.
-
-Parameters (list):
-    bitspersample - string - Bits per sample value to test
-=cut
-sub isBitsPerSample {
-    my $self = shift;
-    my $bitspersample = shift;
-
-    TRACE;
-
-    return FALSE if (! defined $bitspersample);
-
-    foreach (@{$PIXEL{bitspersample}}) {
-        if ($bitspersample eq $_) {
-            return TRUE;
-        }
-    }
-    return FALSE;
-}
-
-=begin nd
-Function: isPhotometric
-
-Tests if photometric value is allowed.
-
-Parameters (list):
-    photometric - string - Photometric value to test
-=cut
-sub isPhotometric {
-    my $self = shift;
-    my $photometric = shift;
-
-    TRACE;
-
-    return FALSE if (! defined $photometric);
-
-    foreach (@{$PIXEL{photometric}}) {
-        return TRUE if ($photometric eq $_);
-    }
-    return FALSE;
-}
-
-=begin nd
-Function: isSamplesPerPixel
-
-Tests if samples per pixel value is allowed.
-
-Parameters (list):
-    samplesperpixel - string - Samples per pixel value to test
-=cut
-sub isSamplesPerPixel {
-    my $self = shift;
-    my $samplesperpixel = shift;
-
-    TRACE;
-
-    return FALSE if (! defined $samplesperpixel);
-
-    foreach (@{$PIXEL{samplesperpixel}}) {
-        return TRUE if ($samplesperpixel eq $_);
-    }
-    return FALSE;
+    return $this;
 }
 
 ####################################################################################################
@@ -301,38 +198,38 @@ sub isSamplesPerPixel {
 
 # Function: getPhotometric
 sub getPhotometric {
-    my $self = shift;
-    return $self->{photometric};
+    my $this = shift;
+    return $this->{photometric};
 }
 
 # Function: getSampleFormat
 sub getSampleFormat {
-    my $self = shift;
-    return $self->{sampleformat};
+    my $this = shift;
+    return $this->{sampleformat};
 }
 
 # Function: getBitsPerSample
 sub getBitsPerSample {
-    my $self = shift;
-    return $self->{bitspersample};
+    my $this = shift;
+    return $this->{bitspersample};
 }
 
 # Function: getSamplesPerPixel
 sub getSamplesPerPixel {
-    my $self = shift;
-    return $self->{samplesperpixel};
+    my $this = shift;
+    return $this->{samplesperpixel};
 }
 
 # Function: equals
 sub equals {
-    my $self = shift;
+    my $this = shift;
     my $other = shift;
 
     return (
-        $self->{samplesperpixel} eq $other->getSamplesPerPixel() &&
-        $self->{sampleformat} eq $other->getSampleFormat() &&
-        $self->{photometric} eq $other->getPhotometric() &&
-        $self->{bitspersample} eq $other->getBitsPerSample()
+        $this->{samplesperpixel} eq $other->getSamplesPerPixel() &&
+        $this->{sampleformat} eq $other->getSampleFormat() &&
+        $this->{photometric} eq $other->getPhotometric() &&
+        $this->{bitspersample} eq $other->getBitsPerSample()
     );
 }
 
@@ -345,10 +242,10 @@ Parameters (list):
     other - <COMMON::Pixel> - Destination pixel for conversion to test
 =cut
 sub convertible {
-    my $self = shift;
+    my $this = shift;
     my $other = shift;
 
-    if ($self->equals($other)) {
+    if ($this->equals($other)) {
         return TRUE;
     }
 
@@ -380,20 +277,20 @@ sub convertible {
     # }
     # -------------------------------------------------------------------------------------------------
 
-    if ($self->getSampleFormat() eq "float" || $other->getSampleFormat() eq "float") {
+    if ($this->getSampleFormat() eq "float" || $other->getSampleFormat() eq "float") {
         # aucune conversion pour des canaux flottant
         return FALSE;
     }
 
-    if ($self->getSampleFormat() ne $other->getSampleFormat()) {
+    if ($this->getSampleFormat() ne $other->getSampleFormat()) {
         return FALSE;
     }
 
-    if ($self->getBitsPerSample() != $other->getBitsPerSample()) {
+    if ($this->getBitsPerSample() != $other->getBitsPerSample()) {
         return FALSE;
     }
 
-    if ($self->getBitsPerSample() != 8) {
+    if ($this->getBitsPerSample() != 8) {
         return FALSE;
     }
 
@@ -419,15 +316,15 @@ Example:
     (end code)
 =cut
 sub exportForDebug {
-    my $self = shift ;
+    my $this = shift ;
     
     my $export = "";
     
     $export .= "\nObject COMMON::Pixel :\n";
-    $export .= sprintf "\t Bits per sample : %s\n", $self->{bitspersample};
-    $export .= sprintf "\t Photometric : %s\n", $self->{photometric};
-    $export .= sprintf "\t Sample format : %s\n", $self->{sampleformat};
-    $export .= sprintf "\t Samples per pixel : %s\n", $self->{samplesperpixel};
+    $export .= sprintf "\t Bits per sample : %s\n", $this->{bitspersample};
+    $export .= sprintf "\t Photometric : %s\n", $this->{photometric};
+    $export .= sprintf "\t Sample format : %s\n", $this->{sampleformat};
+    $export .= sprintf "\t Samples per pixel : %s\n", $this->{samplesperpixel};
     
     return $export;
 }

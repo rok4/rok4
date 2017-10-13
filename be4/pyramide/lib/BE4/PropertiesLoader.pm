@@ -46,37 +46,12 @@ Using:
     (start code)
     use BE4::PropertiesLoader;
 
-    my $proptxt << EOF
-        [section 1]
-        param1=value1
-        param2=value2
-        [section 2]
-        ; param21=value21
-        ; param22=value22
-    EOF
-
-    open FILE, ">", $propfile;
-    printf FILE "%s",  $proptxt;
-    close FILE;
-
-    my $objprop = BE4::PropertiesLoader->new($propfile);
-
-    # {section 1 => {...}, section 2 => {...}}
-    my $config     = $objprop->getAllProperties();
-
-    my @sections   = $objprop->getSections();  # [section 1, section 2]
-    my @parameters = $objprop->getKeyParameters("section 1"); # [param1, param2]
-    my @values     = $objprop->getValueParameters("section 1"); # [value1, value2]
-
-    # {param1=>value1, param2=>value2}
-    my $config_section = $objprop->getPropertiesBySection("section 1");
-    ...
+    my $config = BE4::PropertiesLoader->new("/home/ign/file.txt");
     (end code)
 
 Attributes:
-    CFGFILE - string - Configuration file path
-    HDLFILE - <Config::IniFiles> - Configuration reader
-    CFGPARAMS - hash - File properties (sections...)
+    cfgFile - string - Configuration file path
+    cfgObject - <COMMON::Config> - Configuration reader
 =cut
 
 ################################################################################
@@ -89,7 +64,7 @@ use warnings;
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
 
-use Config::IniFiles;
+use COMMON::Config;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -117,36 +92,33 @@ END {}
 
 # Function: new
 sub new {
-  my $this = shift;
+    my $class = shift;
+    my $filepath = shift;
 
-  my $class= ref($this) || $this;
-  # IMPORTANT : if modification, think to update natural documentation (just above)
-  my $self = {
-    CFGFILE   => undef,
-    HDLFILE   => undef,
-    CFGPARAMS => {},
-  };
+    $class = ref($class) || $class;
+    # IMPORTANT : if modification, think to update natural documentation (just above)
+    my $this = {
+        cfgFile   => $filepath,
+        cfgObject => undef
+    };
 
-  bless($self, $class);
-  
-  TRACE;
-  
-  # init. class
-  return undef if (! $self->_initParams(@_));
-  return undef if (! $self->_initCfg());
-  
-  return $self;
+    bless($this, $class);
+
+    # init. class
+    return undef if (! $this->_init());
+    return undef if (! $this->_check());
+
+    return $this;
 }
 
-# Function: _initParams
-sub _initParams {
-    my $self = shift;
-    my $file = shift;
+# Function: _init
+sub _init {
+    my $this = shift;
 
-    TRACE;
+    my $file = $this->{cfgFile};
     
     if (! defined $file || $file eq "") {
-        ERROR ("Parameter : properties ?");
+        ERROR ("Filepath undefined");
         return FALSE;
     }
     
@@ -155,141 +127,61 @@ sub _initParams {
         ERROR (sprintf "File properties '%s' doesn't exist !?", $file);
         return FALSE;
     }
-    $self->{CFGFILE} = $file;
+
+    # load properties 
+    my $cfg = COMMON::Config->new({
+        'filepath' => $file,
+        'format' => "INI"
+    });
+
+    if (! defined $cfg) {
+        ERROR ("Can not load properties !");
+        return FALSE;
+    }
+
+    $this->{cfgObject} = $cfg;
     
     return TRUE;
 }
 
-# Function: _initCfg
-sub _initCfg {
-  my $self = shift;
+# Function: _init
+sub _check {
+    my $this = shift;
 
-  TRACE;
-  
-  return FALSE if (! $self->LoadProperties($self->{CFGFILE}));
-  
-  return TRUE;
+    if ($this->{cfgObject}->isSection("pyramid") != 2) {
+        ERROR("'pyramid' section is missing");
+        return FALSE;
+    }
+
+    if ($this->{cfgObject}->isSection("datasource") != 2) {
+        ERROR("'datasource' section is missing");
+        return FALSE;
+    }
+
+    if ($this->{cfgObject}->isSection("process") != 2) {
+        ERROR("'process' section is missing");
+        return FALSE;
+    }
+    
+    return TRUE;
 }
 
-####################################################################################################
-#                                      Group: Loader                                               #
-####################################################################################################
-
-# Function: LoadProperties
-sub LoadProperties {
-  
-  my $self     = shift;
-  my $fileconf = shift;
-
-  TRACE;
-
-  # load properties 
-  my $cfg = Config::IniFiles->new(
-                        -file       => $fileconf,
-                        -allowempty => 0,
-                        -handle_trailing_comment=>1,
-                        );
-    
-  if (! defined $cfg) {
-
-    ERROR ("Can not load properties !");
-    if (scalar (@Config::IniFiles::errors) ) {
-      ERROR ($_) foreach (@Config::IniFiles::errors);
-    }
-    return FALSE;
-  }
-  
-  # save params
-  my $params = $self->{CFGPARAMS};
-  
-  foreach my $section ($cfg->Sections()) {
-    TRACE ("section > $section");
-    foreach my $param ($cfg->Parameters($section)) {
-      if (! defined $param) {
-        $params->{$section} = undef;
-        next;
-      }
-      my $value = $cfg->val( $section, $param);
-      TRACE ("param > $param = $value");
-      if (! defined $value || $value eq "") {
-        $params->{$section}{$param} = undef;
-        next;
-      }
-      $params->{$section}{$param} = $value;
-    }
-  }
-    
-  # save handler
-  $self->{HDLFILE} = $cfg;
-  
-  return TRUE;
-}
 
 ####################################################################################################
 #                                Group: Getters - Setters                                          #
 ####################################################################################################
 
+# Function: getCfgObject
+sub getCfgObject {
+    my $this = shift;
+    return $this->{cfgObject};
+}
+
 # Function: getAllProperties
 sub getAllProperties {
-  my $self = shift;
-  return $self->{CFGPARAMS};
-}
-
-# Function: getPropertiesBySection
-sub getPropertiesBySection {
-  my $self = shift;
-  my $section = shift;
+  my $this = shift;
   
-  return undef if (! defined $section);
-  return undef if (! exists($self->{CFGPARAMS}->{$section}));
-  
-  return $self->{CFGPARAMS}->{$section};
-}
-
-# Function: getSections
-sub getSections {
-  my $self = shift;
-  
-  my @sections;
-  my $param = $self->{CFGPARAMS};
-  foreach (keys %$param) {
-    push @sections, $_;
-  }
-  return @sections;
-}
-
-# Function: getKeyParameters
-sub getKeyParameters {
-  my $self = shift;
-  my $section = shift;
-  
-  return undef if (! defined $section);
-  return undef if (! exists($self->{CFGPARAMS}->{$section}));
-  
-  my @params;
-  my $param = $self->{CFGPARAMS}->{$section};
-  foreach (keys %$param) {
-    push @params, $_;
-  }
-  
-  return @params;
-}
-
-# Function: getValueParameters
-sub getValueParameters {
-  my $self = shift;
-  my $section = shift;
-  
-  return undef if (! defined $section);
-  return undef if (! exists($self->{CFGPARAMS}->{$section}));
-  
-  my @params;
-  my $param = $self->{CFGPARAMS}->{$section};
-  foreach (values %$param) {
-    push @params, $_;
-  }
-  
-  return @params;
+  return $this->{cfgObject}->getConfig();
 }
 
 1;

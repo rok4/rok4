@@ -34,7 +34,6 @@ include(ROK4Dependencies)
 configure_file(be4version.h.in be4version.h ESCAPE_QUOTES @ONLY)
 add_subdirectory(cache2work)
 add_subdirectory(composeNtiff)
-add_subdirectory(createNodata)
 add_subdirectory(decimateNtiff)
 add_subdirectory(manageNodata)
 add_subdirectory(merge4tiff)
@@ -42,7 +41,12 @@ add_subdirectory(mergeNtiff)
 add_subdirectory(overlayNtiff)
 add_subdirectory(pyramide)
 add_subdirectory(work2cache)
-#######################
+
+if(BUILD_OBJECT)
+	add_subdirectory(slab2tiles)
+endif(BUILD_OBJECT)
+
+######################
 
 # Documentation Doxygen
 if(BUILD_DOC)

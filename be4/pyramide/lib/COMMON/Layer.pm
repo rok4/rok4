@@ -202,12 +202,12 @@ See also:
     <_init>
 =cut
 sub new {
-    my $this = shift;
+    my $class = shift;
     my $params = shift;
 
-    my $class= ref($this) || $this;
+    $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above)
-    my $self = {
+    my $this = {
         title            => undef,
         abstract         => "",
         keywordlist      => [],
@@ -224,17 +224,16 @@ sub new {
         pyramid          => undef,
     };
 
-    bless($self, $class);
+    bless($this, $class);
 
-    TRACE;
 
     # init. class
-    if (! $self->_init($params)) {
+    if (! $this->_init($params)) {
         ERROR ("One parameter is missing !");
         return undef;
     }
 
-    return $self;
+    return $this;
 }
 
 =begin nd
@@ -259,10 +258,9 @@ Parameters (hash):
     pyramid - string
 =cut
 sub _init {
-    my $self   = shift;
+    my $this   = shift;
     my $params = shift;
 
-    TRACE;
     
     return FALSE if (! defined $params);
     
@@ -357,21 +355,21 @@ sub _init {
     }
     
     # save
-    $self->{title}     = $params->{title};
-    $self->{pyramid}   = $params->{pyramid};
-    $self->{geo_bbox}  = $params->{geo_bbox};
-    $self->{proj_bbox} = $params->{proj_bbox};
-    $self->{srslist}   = $params->{srslist};
+    $this->{title}     = $params->{title};
+    $this->{pyramid}   = $params->{pyramid};
+    $this->{geo_bbox}  = $params->{geo_bbox};
+    $this->{proj_bbox} = $params->{proj_bbox};
+    $this->{srslist}   = $params->{srslist};
     
-    $self->{keywordlist} = $params->{keywordlist};
-    $self->{authority}   = $params->{authority};
-    $self->{minres}      = $params->{minres};
-    $self->{maxres}      = $params->{maxres};
-    $self->{style}       = $params->{style};
-    $self->{abstract}    = $params->{abstract};
-    $self->{proj}        = $params->{proj};
-    $self->{resampling}  = $params->{resampling};
-    $self->{opaque}      = $params->{opaque};
+    $this->{keywordlist} = $params->{keywordlist};
+    $this->{authority}   = $params->{authority};
+    $this->{minres}      = $params->{minres};
+    $this->{maxres}      = $params->{maxres};
+    $this->{style}       = $params->{style};
+    $this->{abstract}    = $params->{abstract};
+    $this->{proj}        = $params->{proj};
+    $this->{resampling}  = $params->{resampling};
+    $this->{opaque}      = $params->{opaque};
     
     return TRUE;
 }
@@ -420,9 +418,8 @@ Example:
     (end code)
 =cut
 sub exportToXML {
-  my $self = shift;
+  my $this = shift;
   
-  TRACE;
   
   my $string = undef;
   
@@ -438,53 +435,53 @@ sub exportToXML {
   
   my $strlyrtmplt = $doctpl->toString(0);
   
-  my $title    = $self->{title};
+  my $title    = $this->{title};
   $strlyrtmplt =~ s/__TITLE__/$title/;
   
-  my $style    = $self->{style};
+  my $style    = $this->{style};
   $strlyrtmplt =~ s/__STYLE__/$style/;
   
-  my $abstract = $self->{abstract};
+  my $abstract = $this->{abstract};
   $strlyrtmplt =~ s/__ABSTRACT__/$abstract/;
   
-  my $minres   = $self->{minres};
+  my $minres   = $this->{minres};
   $strlyrtmplt =~ s/__MINRES__/$minres/;
-  my $maxres   = $self->{maxres};
+  my $maxres   = $this->{maxres};
   $strlyrtmplt =~ s/__MAXRES__/$maxres/;
   
-  my $opaque   = $self->{opaque};
+  my $opaque   = $this->{opaque};
   $strlyrtmplt =~ s/__OPAQUE__/$opaque/;
   
-  my $resampling = $self->{resampling};
+  my $resampling = $this->{resampling};
   $strlyrtmplt   =~ s/__RESAMPLING__/$resampling/;
   
-  my $pyramid  = $self->{pyramid};
+  my $pyramid  = $this->{pyramid};
   $strlyrtmplt =~ s/__PYRAMID__/$pyramid/;
   
-  my $authority  = $self->{authority};
+  my $authority  = $this->{authority};
   $strlyrtmplt   =~ s/__AUTHORITY__/$authority/;
   
-  my $srs = $self->{proj};
+  my $srs = $this->{proj};
   $strlyrtmplt =~ s/__SRS__/$srs/;
-  my ($minx,$miny,$maxx,$maxy) = @{$self->{proj_bbox}};
+  my ($minx,$miny,$maxx,$maxy) = @{$this->{proj_bbox}};
   $strlyrtmplt =~ s/__MINX__/$minx/;
   $strlyrtmplt =~ s/__MINY__/$miny/;
   $strlyrtmplt =~ s/__MAXX__/$maxx/;
   $strlyrtmplt =~ s/__MAXY__/$maxy/;
   
-  my ($w,$s,$e,$n) = @{$self->{geo_bbox}};
+  my ($w,$s,$e,$n) = @{$this->{geo_bbox}};
   $strlyrtmplt =~ s/__E__/$e/;
   $strlyrtmplt =~ s/__W__/$w/;
   $strlyrtmplt =~ s/__N__/$n/;
   $strlyrtmplt =~ s/__S__/$s/;
   
-  foreach (@{$self->{srslist}}) {
+  foreach (@{$this->{srslist}}) {
     $strlyrtmplt =~ s/<!-- __SRSS__ -->\n/$STRSRSTMPLT/;
     $strlyrtmplt =~ s/__SRS__/$_/;
   }
   $strlyrtmplt =~ s/<!-- __SRSS__ -->\n//;
   
-  foreach (@{$self->{keywordlist}}) {
+  foreach (@{$this->{keywordlist}}) {
     $strlyrtmplt =~ s/<!-- __KEYWORDS__ -->\n/$STRTKTMPLT/;
     $strlyrtmplt =~ s/__KEYWORD__/$_/;
   }

@@ -203,7 +203,6 @@ public:
         if ( dataSource ) {
             dataSource->releaseData();
             delete dataSource;
-            //delete [] rawData;
         }
     }
 

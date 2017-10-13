@@ -37,7 +37,7 @@
 
 #include "Level.h"
 #include "Interpolation.h"
-#include "FileDataSource.h"
+#include "StoreDataSource.h"
 #include "CompoundImage.h"
 #include "ResampledImage.h"
 #include "ReprojectedImage.h"
@@ -51,6 +51,7 @@
 #include "Kernel.h"
 #include <vector>
 #include "Pyramid.h"
+#include "Context.h"
 #include "PaletteDataSource.h"
 #include "Format.h"
 #include "intl.h"
@@ -60,6 +61,7 @@
 
 // GREG
 #include "Message.h"
+#include "Rok4Image.h"
 // GREG
 
 
@@ -67,100 +69,52 @@
 //        Il faudra la changer lorsqu'on aura des images non 8bits.
 
 
+Level::Level ( LevelXML* l, PyramidXML* p ) {
+    tm = l->tm;
+    channels = p->getChannels();
+    baseDir = l->baseDir;
+    sSources = l->sSources;
 
-Level::Level ( TileMatrix tm, int channels, std::string baseDir, int tilesPerWidth,
-               int tilesPerHeight, uint32_t maxTileRow, uint32_t minTileRow,
-               uint32_t maxTileCol, uint32_t minTileCol, int pathDepth,
-               Rok4Format::eformat_data format, std::string noDataFile ) :
-    tm ( tm ), channels ( channels ), baseDir ( baseDir ),
-    tilesPerWidth ( tilesPerWidth ), tilesPerHeight ( tilesPerHeight ),
-    maxTileRow ( maxTileRow ), minTileRow ( minTileRow ), maxTileCol ( maxTileCol ),
-    minTileCol ( minTileCol ), pathDepth ( pathDepth ), format ( format ),noDataFile ( noDataFile ), noDataSource ( NULL ) {
-    noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), Rok4Format::toEncoding ( format ) );
-    noDataSourceProxy = noDataTileSource;
+    tilesPerWidth = l->tilesPerWidth;
+    tilesPerHeight = l->tilesPerHeight;
+
+    maxTileRow = l->maxTileRow;
+    minTileRow = l->minTileRow;
+    maxTileCol = l->maxTileCol;
+    minTileCol = l->minTileCol;
+    onDemand = l->onDemand;
+    onFly = l->onFly;
+
+    pathDepth = l->pathDepth;
+    format = p->getFormat();
+    context = l->context;
+    prefix = l->prefix;
+
+    maxTileSize = tm->getTileH() * tm->getTileW() * channels * Rok4Format::toSizePerChannel(format) * 2;
 }
 
 Level::~Level() {
 
-    delete noDataSourceProxy;
-    noDataSourceProxy = NULL;
-    delete noDataSource;
-    noDataSource = NULL;
-
-}
-
-void Level::setNoData ( const std::string& file ) {
-    noDataFile=file;
-    DataSource* tmpDataSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), Rok4Format::toEncoding ( format ) );
-    if ( noDataTileSource ) {
-        delete noDataTileSource;
+    // les contextes sont dans des contextBooks
+    // ce sont les contextBooks qui se chargent de détruire les contextes
+    // mais ce n'est pas le cas des FILECONTEXT
+    if (context) {
+        if (context->getType() == FILECONTEXT) delete context;
     }
 
-    if ( noDataSource ) {
-        delete noDataSourceProxy;
-        noDataSourceProxy = new DataSourceProxy ( tmpDataSource, *noDataSource );
-    } else {
-        noDataSourceProxy = tmpDataSource;
+    for ( int i = 0; i < sSources.size(); i++ ) {
+        Source* pS = sSources.at(i);
+        delete pS;
     }
 
-    noDataTileSource= tmpDataSource;
-}
-
-
-void Level::setNoDataSource ( DataSource *source ) {
-    if ( noDataSource ) {
-        delete noDataSourceProxy;
-        noDataTileSource = new FileDataSource ( noDataFile.c_str(),2048,2048+4, Rok4Format::toMimeType ( format ), Rok4Format::toEncoding ( format ) );
-    }
-    noDataSource=source;
-    noDataSourceProxy = new DataSourceProxy ( noDataTileSource, *noDataSource );
-}
-
-
-Image* Level::getnodatabbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, int width, int height, Interpolation::KernelType interpolation, int& error ) {
-//     Image* imageout = getNoDataTile (bbox);
-    // On convertit les coordonnées en nombre de pixels depuis l'origine X0,Y0
-    bbox.xmin = ( bbox.xmin - tm.getX0() ) /tm.getRes();
-    bbox.xmax = ( bbox.xmax - tm.getX0() ) /tm.getRes();
-    double tmp = bbox.ymin;
-    bbox.ymin = ( tm.getY0() - bbox.ymax ) /tm.getRes();
-    bbox.ymax = ( tm.getY0() - tmp ) /tm.getRes();
-
-
-    //A VERIFIER !!!!
-    BoundingBox<int64_t> bbox_int ( floor ( bbox.xmin + EPS ),
-                                    floor ( bbox.ymin + EPS ),
-                                    ceil ( bbox.xmax - EPS ),
-                                    ceil ( bbox.ymax - EPS ) );
-
-    // Rappel : les coordonnees de la bbox sont ici en pixels
-    double res_x = ( bbox.xmax - bbox.xmin ) / width;
-    double res_y = ( bbox.ymax - bbox.ymin ) / height;
-
-    //Most efficient
-    interpolation = Interpolation::LINEAR;
-    const Kernel& kk = Kernel::getInstance ( interpolation );
-
-    bbox_int.xmin = floor ( bbox.xmin - kk.size ( res_x ) );
-    bbox_int.xmax = ceil ( bbox.xmax + kk.size ( res_x ) );
-    bbox_int.ymin = floor ( bbox.ymin - kk.size ( res_y ) );
-    bbox_int.ymax = ceil ( bbox.ymax + kk.size ( res_y ) );
-
-    Image* imageout = getNoDataTile ( bbox );
-    if ( !imageout ) {
-        LOGGER_DEBUG ( _ ( "Image invalid !" ) );
-        return 0;
-    }
-
-    LOGGER_DEBUG ( "Top 1" );
-    return new ResampledImage ( imageout, width, height, res_x, res_y, bbox, interpolation, false );
 }
 
 
 /*
  * A REFAIRE
  */
-Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, int width, int height, CRS src_crs, CRS dst_crs, Interpolation::KernelType interpolation, int& error ) {
+Image* Level::getbbox ( ServicesXML* servicesConf, BoundingBox< double > bbox, int width, int height, CRS src_crs, CRS dst_crs, Interpolation::KernelType interpolation, int& error ) {
+
     Grid* grid = new Grid ( width, height, bbox );
 
     grid->bbox.print();
@@ -188,24 +142,24 @@ Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, 
     if ( interpolation >= Interpolation::LANCZOS_2 ) interpolation= Interpolation::LANCZOS_2;
 
     const Kernel& kk = Kernel::getInstance ( interpolation ); // Lanczos_2
-    double ratio_x = ( grid->bbox.xmax - grid->bbox.xmin ) / ( tm.getRes() *double ( width ) );
-    double ratio_y = ( grid->bbox.ymax - grid->bbox.ymin ) / ( tm.getRes() *double ( height ) );
+    double ratio_x = ( grid->bbox.xmax - grid->bbox.xmin ) / ( tm->getRes() *double ( width ) );
+    double ratio_y = ( grid->bbox.ymax - grid->bbox.ymin ) / ( tm->getRes() *double ( height ) );
     double bufx=kk.size ( ratio_x );
     double bufy=kk.size ( ratio_y );
 
     bufx<50?bufx=50:0;
     bufy<50?bufy=50:0; // Pour etre sur de ne pas regresser
-    BoundingBox<int64_t> bbox_int ( floor ( ( grid->bbox.xmin - tm.getX0() ) /tm.getRes() - bufx ),
-                                    floor ( ( tm.getY0() - grid->bbox.ymax ) /tm.getRes() - bufy ),
-                                    ceil ( ( grid->bbox.xmax - tm.getX0() ) /tm.getRes() + bufx ),
-                                    ceil ( ( tm.getY0() - grid->bbox.ymin ) /tm.getRes() + bufy ) );
+    BoundingBox<int64_t> bbox_int ( floor ( ( grid->bbox.xmin - tm->getX0() ) /tm->getRes() - bufx ),
+                                    floor ( ( tm->getY0() - grid->bbox.ymax ) /tm->getRes() - bufy ),
+                                    ceil ( ( grid->bbox.xmax - tm->getX0() ) /tm->getRes() + bufx ),
+                                    ceil ( ( tm->getY0() - grid->bbox.ymin ) /tm->getRes() + bufy ) );
 
     Image* image = getwindow ( servicesConf, bbox_int, error );
     if ( !image ) {
         LOGGER_DEBUG ( _ ( "Image invalid !" ) );
         return 0;
     }
-    image->setBbox ( BoundingBox<double> ( tm.getX0() + tm.getRes() * bbox_int.xmin, tm.getY0() - tm.getRes() * bbox_int.ymax, tm.getX0() + tm.getRes() * bbox_int.xmax, tm.getY0() - tm.getRes() * bbox_int.ymin ) );
+    image->setBbox ( BoundingBox<double> ( tm->getX0() + tm->getRes() * bbox_int.xmin, tm->getY0() - tm->getRes() * bbox_int.ymax, tm->getX0() + tm->getRes() * bbox_int.xmax, tm->getY0() - tm->getRes() * bbox_int.ymin ) );
 
     grid->affine_transform ( 1./image->getResX(), -image->getBbox().xmin/image->getResX() - 0.5,
                              -1./image->getResY(), image->getBbox().ymax/image->getResY() - 0.5 );
@@ -214,14 +168,14 @@ Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, 
 }
 
 
-Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, int width, int height, Interpolation::KernelType interpolation, int& error ) {
+Image* Level::getbbox ( ServicesXML* servicesConf, BoundingBox< double > bbox, int width, int height, Interpolation::KernelType interpolation, int& error ) {
 
     // On convertit les coordonnées en nombre de pixels depuis l'origine X0,Y0
-    bbox.xmin = ( bbox.xmin - tm.getX0() ) /tm.getRes();
-    bbox.xmax = ( bbox.xmax - tm.getX0() ) /tm.getRes();
+    bbox.xmin = ( bbox.xmin - tm->getX0() ) /tm->getRes();
+    bbox.xmax = ( bbox.xmax - tm->getX0() ) /tm->getRes();
     double tmp = bbox.ymin;
-    bbox.ymin = ( tm.getY0() - bbox.ymax ) /tm.getRes();
-    bbox.ymax = ( tm.getY0() - tmp ) /tm.getRes();
+    bbox.ymin = ( tm->getY0() - bbox.ymax ) /tm->getRes();
+    bbox.ymax = ( tm->getY0() - tmp ) /tm->getRes();
 
     //A VERIFIER !!!!
     BoundingBox<int64_t> bbox_int ( floor ( bbox.xmin + EPS ),
@@ -256,8 +210,6 @@ Image* Level::getbbox ( ServicesConf& servicesConf, BoundingBox< double > bbox, 
         LOGGER_DEBUG ( _ ( "Image invalid !" ) );
         return 0;
     }
-
-    LOGGER_DEBUG ( "Top 2" );
     // On affecte la bonne bbox à l'image source afin que la classe de réechantillonnage calcule les bonnes valeurs d'offset
     if (! imageout->setDimensions ( bbox_int.xmax - bbox_int.xmin, bbox_int.ymax - bbox_int.ymin, BoundingBox<double> ( bbox_int ), 1.0, 1.0 ) ) {
         LOGGER_DEBUG ( _ ( "Dimensions invalid !" ) );
@@ -280,13 +232,11 @@ int euclideanDivisionRemainder ( int64_t i, int n ) {
     return r;
 }
 
-Image* Level::getwindow ( ServicesConf& servicesConf, BoundingBox< int64_t > bbox, int& error ) {
-    int tile_xmin=euclideanDivisionQuotient ( bbox.xmin,tm.getTileW() );
-
-    int tile_xmax=euclideanDivisionQuotient ( bbox.xmax -1,tm.getTileW() );
-
+Image* Level::getwindow ( ServicesXML* servicesConf, BoundingBox< int64_t > bbox, int& error ) { 
+    int tile_xmin=euclideanDivisionQuotient ( bbox.xmin,tm->getTileW() );
+    int tile_xmax=euclideanDivisionQuotient ( bbox.xmax -1,tm->getTileW() );
     int nbx = tile_xmax - tile_xmin + 1;
-    if ( nbx >= servicesConf.getMaxTileX() ) {
+    if ( nbx >= servicesConf->getMaxTileX() ) {
         LOGGER_INFO ( _ ( "Too Much Tile on X axis" ) );
         error=2;
         return 0;
@@ -297,17 +247,15 @@ Image* Level::getwindow ( ServicesConf& servicesConf, BoundingBox< int64_t > bbo
         return 0;
     }
 
-    int tile_ymin=euclideanDivisionQuotient ( bbox.ymin,tm.getTileH() );
-
-    int tile_ymax = euclideanDivisionQuotient ( bbox.ymax-1,tm.getTileH() );
-
+    int tile_ymin=euclideanDivisionQuotient ( bbox.ymin,tm->getTileH() );
+    int tile_ymax = euclideanDivisionQuotient ( bbox.ymax-1,tm->getTileH() );
     int nby = tile_ymax - tile_ymin + 1;
-    if ( nby >= servicesConf.getMaxTileY() ) {
+    if ( nby >= servicesConf->getMaxTileY() ) {
         LOGGER_INFO ( _ ( "Too Much Tile on Y axis" ) );
         error=2;
         return 0;
     }
-    if (nbx == 0) {
+    if (nby == 0) {
         LOGGER_INFO("nby = 0");
         error=1;
         return 0;
@@ -315,22 +263,23 @@ Image* Level::getwindow ( ServicesConf& servicesConf, BoundingBox< int64_t > bbo
 
     int left[nbx];
     memset ( left,   0, nbx*sizeof ( int ) );
-    left[0]=euclideanDivisionRemainder ( bbox.xmin,tm.getTileW() );
+    left[0]=euclideanDivisionRemainder ( bbox.xmin,tm->getTileW() );
     int top[nby];
     memset ( top,    0, nby*sizeof ( int ) );
-    top[0]=euclideanDivisionRemainder ( bbox.ymin,tm.getTileH() );
+    top[0]=euclideanDivisionRemainder ( bbox.ymin,tm->getTileH() );
     int right[nbx];
     memset ( right,  0, nbx*sizeof ( int ) );
-    right[nbx - 1] = tm.getTileW() - euclideanDivisionRemainder ( bbox.xmax -1,tm.getTileW() ) -1;
+    right[nbx - 1] = tm->getTileW() - euclideanDivisionRemainder ( bbox.xmax -1,tm->getTileW() ) -1;
     int bottom[nby];
     memset ( bottom, 0, nby*sizeof ( int ) );
-    bottom[nby- 1] = tm.getTileH() - euclideanDivisionRemainder ( bbox.ymax -1,tm.getTileH() ) - 1;
+    bottom[nby- 1] = tm->getTileH() - euclideanDivisionRemainder ( bbox.ymax -1,tm->getTileH() ) - 1;
 
     std::vector<std::vector<Image*> > T ( nby, std::vector<Image*> ( nbx ) );
     for ( int y = 0; y < nby; y++ )
         for ( int x = 0; x < nbx; x++ ) {
             T[y][x] = getTile ( tile_xmin + x, tile_ymin + y, left[x], top[y], right[x], bottom[y] );
         }
+
 
     if ( nbx == 1 && nby == 1 ) return T[0][0];
     else return new CompoundImage ( T );
@@ -343,72 +292,100 @@ Image* Level::getwindow ( ServicesConf& servicesConf, BoundingBox< int64_t > bbo
 static const char* Base36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 /*
- * Recuperation du nom de fichier de la dalle du cache en fonction de son indice
+ * Recuperation du nom de la dalle du cache en fonction de son indice
  */
-std::string Level::getFilePath ( int tilex, int tiley ) {
+std::string Level::getPath ( int tilex, int tiley, int tilesPerW, int tilesPerH ) {
     // Cas normalement filtré en amont (exception WMS/WMTS)
     if ( tilex < 0 || tiley < 0 ) {
         LOGGER_ERROR ( _ ( "Indice de tuile negatif" ) );
         return "";
     }
 
-    int x = tilex / tilesPerWidth;
-    int y = tiley / tilesPerHeight;
+    std::ostringstream convert;
+    int x,y,pos;
 
-    char path[32];
-    path[sizeof ( path ) - 5] = '.';
-    path[sizeof ( path ) - 4] = 't';
-    path[sizeof ( path ) - 3] = 'i';
-    path[sizeof ( path ) - 2] = 'f';
-    path[sizeof ( path ) - 1] = 0;
-    int pos = sizeof ( path ) - 6;
+    x = tilex / tilesPerW;
+    y = tiley / tilesPerH;
 
-    for ( int d = 0; d < pathDepth; d++ ) {
-        ;
-        path[pos--] = Base36[y % 36];
-        path[pos--] = Base36[x % 36];
-        path[pos--] = '/';
-        x = x / 36;
-        y = y / 36;
+
+    switch (context->getType()) {
+        case FILECONTEXT:
+
+            char path[32];
+            path[sizeof ( path ) - 5] = '.';
+            path[sizeof ( path ) - 4] = 't';
+            path[sizeof ( path ) - 3] = 'i';
+            path[sizeof ( path ) - 2] = 'f';
+            path[sizeof ( path ) - 1] = 0;
+            pos = sizeof ( path ) - 6;
+
+            for ( int d = 0; d < pathDepth; d++ ) {
+                path[pos--] = Base36[y % 36];
+                path[pos--] = Base36[x % 36];
+                path[pos--] = '/';
+                x = x / 36;
+                y = y / 36;
+            }
+            do {             
+                path[pos--] = Base36[y % 36];
+                path[pos--] = Base36[x % 36];
+                x = x / 36;
+                y = y / 36;
+            } while ( x || y );
+            path[pos] = '/';
+
+            return baseDir + ( path + pos );
+            break;
+        case CEPHCONTEXT:
+            convert << "_" << x << "_" << y;
+            return prefix + convert.str();
+            break;
+        case S3CONTEXT:
+            convert << "_" << x << "_" << y;
+            return prefix + convert.str();
+            break;
+        case SWIFTCONTEXT:
+            convert << "_" << x << "_" << y;
+            return prefix + convert.str();
+            break;
+        default:
+            return "";
+
     }
-    do {
-        path[pos--] = Base36[y % 36];
-        path[pos--] = Base36[x % 36];
-        x = x / 36;
-        y = y / 36;
-    } while ( x || y );
-    path[pos] = '/';
-
-    return baseDir + ( path + pos );
 }
 
-/*
- * Recuperation du dossier contenant de la dalle du cache en fonction de son indice
- */
 std::string Level::getDirPath ( int tilex, int tiley ) {
 
-    std::string file = getFilePath(tilex,tiley);
+    if (context->getType() == FILECONTEXT) {
+        std::string file = getPath(tilex,tiley, tilesPerWidth, tilesPerHeight);
+        return file.substr(0,file.find_last_of("/"));        
+    } else {
+        LOGGER_ERROR ( _ ( "getDirPath n'a pas de sens dans le cas d'un contexte non fichier" ) );
+        return "";
+    }
 
-    return file.substr(0,file.find_last_of("/"));
-
+    return "";
 }
 
 /*
  * Creation du dossier indiqué par path
  */
-int Level::createDirPath(std::string path) {
+int Level::createDirPath (std::string path) {
 
-    int success;
+    int success = -1;
+    int curDirCreated;
     std::size_t found = path.find_first_of("/");
     std::string currentDir = path.substr(0,found)+"/";
     std::string endOfPath = path.substr(found+1);
 
-    while (found!=std::string::npos) {
-        success = -1;
+    while (found != std::string::npos) {
         found = endOfPath.find_first_of("/");
         currentDir += endOfPath.substr(0,found)+"/";
         endOfPath = endOfPath.substr(found+1);
-        success = mkdir(currentDir.c_str(),ACCESSPERMS);
+        curDirCreated = mkdir(currentDir.c_str(),ACCESSPERMS);
+        if (curDirCreated) {
+            success = 0;
+        }
     }
 
     return success;
@@ -420,19 +397,33 @@ int Level::createDirPath(std::string path) {
  * @return la tuile d'indice (x,y) du niveau
  */
 
-DataSource* Level::getEncodedTile ( int x, int y ) {
-    // TODO: return 0 sur des cas d'erreur..
-    // Index de la tuile (cf. ordre de rangement des tuiles)
-    int n= ( y%tilesPerHeight ) *tilesPerWidth + ( x%tilesPerWidth );
-    // Les index sont stockés à partir de l'octet 2048
-    uint32_t posoff=2048+4*n, possize=2048+4*n +tilesPerWidth*tilesPerHeight*4;
-    std::string path=getFilePath ( x, y );
-    LOGGER_DEBUG ( path );
-    return new FileDataSource ( path.c_str(),posoff,possize,Rok4Format::toMimeType ( format ), Rok4Format::toEncoding( format ) );
+DataSource* Level::getEncodedTile ( int x, int y ) { // TODO: return 0 sur des cas d'erreur..
+    if (tilesPerWidth == 0 && tilesPerHeight == 0) {
+
+        //on stocke une tuile et non une dalle
+        std::string path=getPath ( x, y, 1, 1 );
+        LOGGER_DEBUG ( path );
+        return new StoreDataSource ( path,maxTileSize,Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );
+
+    } else {
+
+        //on stocke une dalle
+        // Index de la tuile (cf. ordre de rangement des tuiles)
+        int n= ( y%tilesPerHeight ) *tilesPerWidth + ( x%tilesPerWidth );
+        // Les index sont stockés à partir de l'octet ROK4_IMAGE_HEADER_SIZE
+        uint32_t posoff=ROK4_IMAGE_HEADER_SIZE+4*n, possize=ROK4_IMAGE_HEADER_SIZE+tilesPerWidth*tilesPerHeight*4+4*n;
+        std::string path=getPath ( x, y, tilesPerWidth, tilesPerHeight);
+        LOGGER_DEBUG ( path );
+        return new StoreDataSource ( path, posoff, possize, ROK4_IMAGE_HEADER_SIZE + 2*4*tilesPerWidth*tilesPerHeight, Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );
+    }
+
 }
 
 DataSource* Level::getDecodedTile ( int x, int y ) {
-    DataSource* encData = new DataSourceProxy ( getEncodedTile ( x, y ),*getEncodedNoDataTile() );
+
+    DataSource* encData = getEncodedTile ( x, y );
+    if (encData == NULL) return 0;
+
     if ( format==Rok4Format::TIFF_RAW_INT8 || format==Rok4Format::TIFF_RAW_FLOAT32 )
         return encData;
     else if ( format==Rok4Format::TIFF_JPG_INT8 )
@@ -449,41 +440,27 @@ DataSource* Level::getDecodedTile ( int x, int y ) {
     return 0;
 }
 
-DataSource* Level::getDecodedNoDataTile() {
-    DataSource* encData = new DataSourceProxy ( new FileDataSource ( "",0,0,"" ),*getEncodedNoDataTile() );
-    if ( format==Rok4Format::TIFF_RAW_INT8 || format==Rok4Format::TIFF_RAW_FLOAT32 )
-        return encData;
-    else if ( format==Rok4Format::TIFF_JPG_INT8 )
-        return new DataSourceDecoder<JpegDecoder> ( encData );
-    else if ( format==Rok4Format::TIFF_PNG_INT8 )
-        return new DataSourceDecoder<PngDecoder> ( encData );
-    else if ( format==Rok4Format::TIFF_LZW_INT8 || format == Rok4Format::TIFF_LZW_FLOAT32 )
-        return new DataSourceDecoder<LzwDecoder> ( encData );
-    else if ( format==Rok4Format::TIFF_ZIP_INT8 || format == Rok4Format::TIFF_ZIP_FLOAT32 )
-        return new DataSourceDecoder<DeflateDecoder> ( encData );
-    else if ( format==Rok4Format::TIFF_PKB_INT8 || format == Rok4Format::TIFF_PKB_FLOAT32 )
-        return new DataSourceDecoder<PackBitsDecoder> ( encData );
-    LOGGER_ERROR ( _ ( "Type d'encodage inconnu : " ) <<format );
-    return 0;
-}
 
-DataSource* Level::getEncodedNoDataTile() {
-    LOGGER_DEBUG ( _ ( "Tile : " ) << noDataFile );
-    return noDataSourceProxy;
-}
+DataSource* Level::getTile (int x, int y) {
 
-DataSource* Level::getTile ( int x, int y , DataSource* errorDataSource ) {
-    DataSource* source=getEncodedTile ( x, y );
-    DataSource* ndSource = ( errorDataSource?errorDataSource:noDataSourceProxy );
+    DataSource* source = getEncodedTile ( x, y );
+    if (source == NULL) return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "wmts" ) );
+
     size_t size;
+    if (source->getData ( size ) == NULL) return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "wmts" ) );
 
-    if ( ( format==Rok4Format::TIFF_RAW_INT8 || format == Rok4Format::TIFF_LZW_INT8 || format==Rok4Format::TIFF_LZW_FLOAT32 || format==Rok4Format::TIFF_ZIP_INT8 || format == Rok4Format::TIFF_ZIP_FLOAT32 || format==Rok4Format::TIFF_PKB_FLOAT32 || format==Rok4Format::TIFF_PKB_INT8 ) && source!=0 && source->getData ( size ) !=0 ) {
+    if ( format == Rok4Format::TIFF_RAW_INT8 || format == Rok4Format::TIFF_LZW_INT8 ||
+         format == Rok4Format::TIFF_LZW_FLOAT32 || format == Rok4Format::TIFF_ZIP_INT8 ||
+         format == Rok4Format::TIFF_ZIP_FLOAT32 || format == Rok4Format::TIFF_PKB_FLOAT32 ||
+         format == Rok4Format::TIFF_PKB_INT8
+        )
+    {
         LOGGER_DEBUG ( _ ( "GetTile Tiff" ) );
-        TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource ( source,format,channels,tm.getTileW(), tm.getTileH() );
-        return new DataSourceProxy ( fullTiffDS,*ndSource );
+        TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource ( source,format,channels,tm->getTileW(), tm->getTileH() );
+        return fullTiffDS;
     }
 
-    return new DataSourceProxy ( source, *ndSource );
+    return source;
 }
 
 Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom ) {
@@ -491,63 +468,27 @@ Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom )
     LOGGER_DEBUG ( _ ( "GetTile Image" ) );
     if ( format==Rok4Format::TIFF_RAW_FLOAT32 || format == Rok4Format::TIFF_LZW_FLOAT32 || format == Rok4Format::TIFF_ZIP_FLOAT32 || format == Rok4Format::TIFF_PKB_FLOAT32 )
         pixel_size=4;
-    return new ImageDecoder ( getDecodedTile ( x,y ), tm.getTileW(), tm.getTileH(), channels,
-                              BoundingBox<double> ( tm.getX0() + x * tm.getTileW() * tm.getRes() + left * tm.getRes(),
-                                      tm.getY0() - ( y+1 ) * tm.getTileH() * tm.getRes() + bottom * tm.getRes(),
-                                      tm.getX0() + ( x+1 ) * tm.getTileW() * tm.getRes() - right * tm.getRes(),
-                                      tm.getY0() - y * tm.getTileH() * tm.getRes() - top * tm.getRes() ),
+    return new ImageDecoder ( getDecodedTile ( x,y ), tm->getTileW(), tm->getTileH(), channels,
+                              BoundingBox<double> ( tm->getX0() + x * tm->getTileW() * tm->getRes() + left * tm->getRes(),
+                                      tm->getY0() - ( y+1 ) * tm->getTileH() * tm->getRes() + bottom * tm->getRes(),
+                                      tm->getX0() + ( x+1 ) * tm->getTileW() * tm->getRes() - right * tm->getRes(),
+                                      tm->getY0() - y * tm->getTileH() * tm->getRes() - top * tm->getRes() ),
                               left, top, right, bottom, pixel_size );
 }
 
-Image* Level::getNoDataTile ( BoundingBox<double> bbox ) {
-    int pixel_size=1;
-    LOGGER_DEBUG ( _ ( "GetTile Image" ) );
-    if ( format==Rok4Format::TIFF_RAW_FLOAT32 || format == Rok4Format::TIFF_LZW_FLOAT32 || format == Rok4Format::TIFF_ZIP_FLOAT32 || format == Rok4Format::TIFF_PKB_FLOAT32 )
-        pixel_size=4;
-    return new ImageDecoder ( getDecodedNoDataTile() , tm.getTileW(), tm.getTileH(), channels,
-                              bbox, 0, 0, 0, 0, pixel_size );
-}
 
-int* Level::getNoDataValue ( int* nodatavalue ) {
-    DataSource *nd =  getDecodedNoDataTile();
-
-    size_t size;
-    const uint8_t * buffer = nd->getData ( size );
-    if ( buffer ) {
-        if ( format == Rok4Format::TIFF_RAW_FLOAT32 || format == Rok4Format::TIFF_LZW_FLOAT32 || format == Rok4Format::TIFF_ZIP_FLOAT32 || format == Rok4Format::TIFF_PKB_FLOAT32 ) {
-            const float* fbuf = ( const float* ) buffer;
-            for ( int pixel = 0; pixel < this->channels; pixel++ ) {
-                * ( nodatavalue + pixel )  = ( int ) * ( fbuf + pixel );
-            }
-        } else {
-            for ( int pixel = 0; pixel < this->channels; pixel++ ) {
-                * ( nodatavalue + pixel )  = * ( buffer + pixel );
-            }
-        }
-    } else {
-        for (int pixel = 0; pixel < this->channels; pixel++) {
-            *(nodatavalue + pixel)  = 0;
-        }
-    }
-    delete nd;
-    return nodatavalue;
-}
-
-BoundingBox<double> Level::tileIndicesToSlabBbox(int tileCol, int tileRow) {
+BoundingBox<double> Level::tileIndicesToSlabBbox (int tileCol, int tileRow) {
 
     //Variables utilisees
     double Col, Row, xmin, ymin, xmax, ymax, xo, yo, resolution;
     int tileH, tileW,TilePerWidth, TilePerHeight;
 
-    //Récupération du TileMatrix demandé
-    TileMatrix tm = getTm();
-
     //Récupération des paramètres associés
-    resolution = tm.getRes();
-    xo = tm.getX0();
-    yo = tm.getY0();
-    tileH = tm.getTileH();
-    tileW = tm.getTileW();
+    resolution = tm->getRes();
+    xo = tm->getX0();
+    yo = tm->getY0();
+    tileH = tm->getTileH();
+    tileW = tm->getTileW();
     TilePerWidth = getTilesPerWidth();
     TilePerHeight = getTilesPerHeight();
 
@@ -565,21 +506,18 @@ BoundingBox<double> Level::tileIndicesToSlabBbox(int tileCol, int tileRow) {
 
 }
 
-BoundingBox<double> Level::tileIndicesToTileBbox(int tileCol, int tileRow) {
+BoundingBox<double> Level::tileIndicesToTileBbox (int tileCol, int tileRow) {
 
     //Variables utilisees
     double Col, Row, xmin, ymin, xmax, ymax, xo, yo, resolution;
     int tileH, tileW;
 
-    //calcul de la bbox
-    TileMatrix tm = getTm();
-
     //Récupération des paramètres associés
-    resolution = tm.getRes();
-    xo = tm.getX0();
-    yo = tm.getY0();
-    tileH = tm.getTileH();
-    tileW = tm.getTileW();
+    resolution = tm->getRes();
+    xo = tm->getX0();
+    yo = tm->getY0();
+    tileH = tm->getTileH();
+    tileW = tm->getTileW();
 
     Row = double(tileRow);
     Col = double(tileCol);
@@ -593,27 +531,25 @@ BoundingBox<double> Level::tileIndicesToTileBbox(int tileCol, int tileRow) {
 
 }
 
-int Level::getSlabWidth() {
+int Level::getSlabWidth () {
 
     int TilePerWidth = getTilesPerWidth();
-    TileMatrix tm = getTm();
-    int width = tm.getTileW();
+    int width = tm->getTileW();
 
     return width*TilePerWidth;
 
 }
 
-int Level::getSlabHeight() {
+int Level::getSlabHeight () {
 
     int TilePerHeight = getTilesPerHeight();
-    TileMatrix tm = getTm();
-    int height = tm.getTileH();
+    int height = tm->getTileH();
 
     return height*TilePerHeight;
 
 }
 
-BoundingBox<double> Level::TMLimitsToBbox() {
+BoundingBox<double> Level::TMLimitsToBbox () {
 
     int bPMinCol,bPMaxCol,bPMinRow,bPMaxRow;
     double xo,yo,res,tileW,tileH,xmin,xmax,ymin,ymax;
@@ -624,11 +560,11 @@ BoundingBox<double> Level::TMLimitsToBbox() {
     bPMaxRow = getMaxTileRow();
 
     //On récupère d'autres informations sur le TM
-    xo = getTm().getX0();
-    yo = getTm().getY0();
-    res = getTm().getRes();
-    tileW = getTm().getTileW();
-    tileH = getTm().getTileH();
+    xo = tm->getX0();
+    yo = tm->getY0();
+    res = tm->getRes();
+    tileW = tm->getTileW();
+    tileH = tm->getTileH();
 
     //On transforme en bbox
     xmin = bPMinCol * tileW * res + xo;
@@ -641,14 +577,23 @@ BoundingBox<double> Level::TMLimitsToBbox() {
 
 }
 
-void Level::updateNoDataTile(std::vector<int> noDataValues) {
-
-    if (noDataTileSource) {
-        delete noDataTileSource;
-        noDataTileSource = NULL;
-    }
-
-    noDataTileSource = new EmptyDataSource(channels,noDataValues,tm.getTileW(),tm.getTileH(),format);
-    noDataSourceProxy = noDataTileSource;
-
-}
+TileMatrix* Level::getTm () { return tm; }
+Rok4Format::eformat_data Level::getFormat () { return format; }
+int Level::getChannels () { return channels; }
+int Level::getMaxTileSize () { return maxTileSize; }
+uint32_t Level::getMaxTileRow () { return maxTileRow; }
+uint32_t Level::getMinTileRow () { return minTileRow; }
+uint32_t Level::getMaxTileCol () { return maxTileCol; }
+uint32_t Level::getMinTileCol () { return minTileCol; }
+void Level::setMaxTileRow (uint32_t mm ) { maxTileRow = mm; }
+void Level::setMinTileRow (uint32_t mm ) { minTileRow = mm; }
+void Level::setMaxTileCol (uint32_t mm ) { maxTileCol = mm; }
+void Level::setMinTileCol (uint32_t mm ) { minTileCol = mm; }
+double Level::getRes () { return tm->getRes(); }
+std::string Level::getId () { return tm->getId(); }
+uint32_t Level::getTilesPerWidth () { return tilesPerWidth; }
+uint32_t Level::getTilesPerHeight () { return tilesPerHeight; }
+Context* Level::getContext () { return context; }
+bool Level::isOnDemand() { return onDemand; }
+bool Level::isOnFly() { return onFly; }
+std::vector<Source*> Level::getSources() { return sSources; }

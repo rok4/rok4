@@ -70,10 +70,6 @@ my $pyramid = BE4::Pyramid->new({
     pyr_desc_path => $Bin."/../../pyramid",
     pyr_name_new => "newPyramid",
 
-    dir_image => "IMAGE",
-    dir_nodata => "NODATA",
-    dir_metadata => "METADATA",
-
     pyr_level_bottom => "19",
 
     compression => "raw",
@@ -97,7 +93,7 @@ my $forest = COMMON::Forest->new($pyramid,$DSL,{
     path_temp => $Bin."/../../temp/",
     path_temp_common => $Bin."/../../temp/",
     path_shell => $Bin."/../../temp",
-});
+}, "FS");
 
 ok (defined $forest, "Forest Object containing QTree created");
 
@@ -141,8 +137,8 @@ $forest = COMMON::Forest->new($pyramid,$DSL,{
     job_number => 16,
     path_temp => $Bin."/../../temp/",
     path_temp_common => $Bin."/../../temp/",
-    path_shell => $Bin."/../../temp",
-});
+    path_shell => $Bin."/../../temp"
+}, "FS");
 
 ok (defined $forest, "Forest Object containing Graph created");
 

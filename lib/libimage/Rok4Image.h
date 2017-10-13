@@ -59,6 +59,8 @@
 #include "zlib.h"
 #include <jpeglib.h>
 #include "FileImage.h"
+#include "Context.h"
+#include "StoreDataSource.h"
 
 #define ROK4_IMAGE_HEADER_SIZE 2048
 #define JPEG_BLOC_SIZE 16
@@ -80,11 +82,50 @@
  *
  * Toutes les spécifications sont disponible à [cette adresse](http://www.rok4.org/documentation/specifications-pyramides-dimage).
  */
-class Rok4Image : public FileImage {
+class Rok4Image : public Image {
 
     friend class Rok4ImageFactory;
 
 private:
+
+    /**
+     * \~french \brief Nom de l'image
+     * \~english \brief image's name
+     */
+    std::string name;
+    /**
+     * \~french \brief Photométrie des données (rgb, gray...)
+     * \~english \brief Data photometric (rgb, gray...)
+     */
+    Photometric::ePhotometric photometric;
+    /**
+     * \~french \brief type de l'éventuel canal supplémentaire
+     * \details En écriture ou dans les traitements, on considère que les canaux ne sont pas prémultipliés par la valeur d'alpha.
+     * En lecture, on accepte des images pour lesquelles l'alpha est associé. On doit donc mémoriser cette information et convertir à la volée lors de la lecture des données.
+     * \~english \brief extra sample type (if exists)
+     */
+    ExtraSample::eExtraSample esType;
+    /**
+     * \~french \brief Compression des données (jpeg, packbits...)
+     * \~english \brief Data compression (jpeg, packbits...)
+     */
+    Compression::eCompression compression;
+    /**
+     * \~french \brief Format des canaux
+     * \~english \brief Sample format
+     */
+    SampleFormat::eSampleFormat sampleformat;
+    /**
+     * \~french \brief Nombre de bits par canal
+     * \~english \brief Number of bits per sample
+     */
+    int bitspersample;
+    
+    /**
+     * \~french \brief Taille d'un pixel en octet
+     * \~english \brief Byte pixel's size
+     */
+    int pixelSize;
 
     /**************************** Pour la lecture ****************************/
 
@@ -125,8 +166,16 @@ private:
      * \~english \brief Raw byte size of a tile
      */
     int rawTileSize;
+    
+
+    /**
+     * \~french \brief Contexte de stockage de l'image ROK4
+     * \~english \brief Image's storage context
+     */    
+    Context* context;
 
     /**************************** Pour la lecture ****************************/
+    
     /**
      * \~french \brief Nombre de tuiles mémorisées
      * \~english \brief Number of memorized tiles
@@ -182,12 +231,6 @@ private:
     uint32_t *tilesByteCounts;
 
     /**
-     * \~french \brief Flux d'écriture de l'image ROK4
-     * \~english \brief Stream used to write the ROK4 image
-     */
-    std::ofstream output;
-
-    /**
      * \~french \brief Taille du buffer #Buffer temporaire contenant la tuile à écrire (dans writeTile), compressée
      * \~english \brief Temporary buffer #Buffer size, containing the compressed tile to write
      */
@@ -225,6 +268,15 @@ private:
      */
     struct jpeg_error_mgr jerr;
 
+
+    /**
+     * \~french \brief Charge l'index des tuiles de l'image ROK4 à lire
+     * \return VRAI en cas de succès, FAUX sinon
+     * \~english \brief Load index of ROK4 image to read
+     * \return TRUE if success, FALSE otherwise
+     */
+    bool loadIndex();
+
     /**
      * \~french \brief Écrit l'en-tête TIFF de l'image ROK4
      * \details L'en-tête est de taille fixe (ROK4_IMAGE_HEADER_SIZE) et contient toutes les métadonnées sur l'image. Elle ne sera pas lue par le serveur ROK4 (c'est pourquoi sa taille doit être fixe), mais permet de lire l'image avec un logiciel autre (avoir une image TIFF respectant les spécifications).
@@ -232,7 +284,31 @@ private:
      * \~english \brief Write the ROK4 image's TIFF header
      * \return TRUE if success, FALSE otherwise
      */
-    bool prepare();
+    bool writeHeader();
+    /**
+     * \~french \brief Finalise l'écriture de l'image ROK4
+     * \details Cela comprend l'écriture des index et tailles des tuiles
+     * \return VRAI en cas de succès, FAUX sinon
+     * \~english \brief End the ROK4 image's writting
+     * \return TRUE if success, FALSE otherwise
+     */
+    bool writeFinal();
+
+    /**
+     * \~french \brief Prépare les buffers pour les éventuelles compressions
+     * \return VRAI en cas de succès, FAUX sinon
+     * \~english \brief Prepare buffers for compressions
+     * \return TRUE if success, FALSE otherwise
+     */
+    bool prepareBuffers();
+    /**
+     * \~french \brief Nettoie les buffers de fonctionnement
+     * \return VRAI en cas de succès, FAUX sinon
+     * \~english \brief Clean temporary buffers
+     * \return TRUE if success, FALSE otherwise
+     */
+    bool cleanBuffers();
+
     /**
      * \~french \brief Écrit une tuile de l'image ROK4
      * \details L'écriture tiendra compte de la compression voulue #compression. Les tuiles doivent être écrites dans l'ordre (de gauche à droite, de haut en bas).
@@ -247,14 +323,24 @@ private:
      * \return TRUE if success, FALSE otherwise
      */
     bool writeTile ( int tileInd, uint8_t *data, bool crop = false );
+
     /**
-     * \~french \brief Finalise l'écriture de l'image ROK4
-     * \details Cela comprend l'écriture des index et tailles des tuiles, ainsi que le nettoyage des buffers utilisés
+     * \~french \brief Écrit une tuile indépendante en tant qu'objet Ceph
+     * \details Le nom de l'objet/tuile sera #name _ col _ row
+     * \param[in] tileCol colonne de la tuile à écrire
+     * \param[in] tileRow ligne de la tuile à écrire
+     * \param[in] data données brutes (sans compression) à écrire
+     * \param[in] crop option pour le jpeg (voir #emptyWhiteBlock)
      * \return VRAI en cas de succès, FAUX sinon
-     * \~english \brief End the ROK4 image's writting
+     * \~english \brief Write a ROK4 tile as a ceph object
+     * \param[in] tileCol tile column
+     * \param[in] tileRow tile row
+     * \param[in] data raw data (no compression) to write
+     * \param[in] crop jpeg option (see #emptyWhiteBlock)
      * \return TRUE if success, FALSE otherwise
      */
-    bool close();
+    bool writeTile( int tileCol, int tileRow, uint8_t* data, bool crop );
+
 
     /**
      * \~french \brief Compresse les données brutes en RAW
@@ -371,6 +457,7 @@ protected:
      * \param[in] esType type du canal supplémentaire, si présent.
      * \param[in] tileWidth largeur en pixel de la tuile
      * \param[in] tileHeight hauteur en pixel de la tuile
+     * \param[in] context contexte de stockage
      ** \~english
      * \brief Create a Rok4Image object, from all attributes
      * \param[in] width image width, in pixel
@@ -387,9 +474,13 @@ protected:
      * \param[in] esType extra sample type
      * \param[in] tileWidth tile's pixel width
      * \param[in] tileHeight tile's pixel height
+     * \param[in] context storage's context
      */
     Rok4Image (
-        int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, char* name, SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression, ExtraSample::eExtraSample es, int tileWidth, int tileHeight
+        int width, int height, double resx, double resy, int channels, BoundingBox< double > bbox, std::string name,
+        SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric, Compression::eCompression compression, ExtraSample::eExtraSample es,
+        int tileWidth, int tileHeight,
+        Context* context
     );
 
 public:
@@ -410,6 +501,86 @@ public:
         );
     }
 
+    
+    /**
+     * \~french
+     * \brief Retourne le type du canal supplémentaire
+     * \return esType
+     * \~english
+     * \brief Return extra sample type
+     * \return esType
+     */
+    inline ExtraSample::eExtraSample getExtraSample() {
+        return esType;
+    }
+    
+    /**
+     * \~french
+     * \brief Modifie le type du canal supplémentaire
+     * \~english
+     * \brief Modify extra sample type
+     */
+    inline void setExtraSample(ExtraSample::eExtraSample es) {
+        esType = es;
+    }
+    /**
+     * \~french
+     * \brief Retourne la compression des données
+     * \return compression
+     * \~english
+     * \brief Return data compression
+     * \return compression
+     */
+    inline Compression::eCompression getCompression() {
+        return compression;
+    }
+
+    /**
+     * \~french
+     * \brief Retourne le format des canaux (entier, flottant)
+     * \return format des canaux
+     * \~english
+     * \brief Return sample format (integer, float)
+     * \return sample format
+     */
+    inline SampleFormat::eSampleFormat getSampleFormat() {
+        return sampleformat;
+    }
+
+    /**
+     * \~french
+     * \brief Retourne le nombre de bits par canal
+     * \return nombre de bits par canal
+     * \~english
+     * \brief Return number of bits per sample
+     * \return number of bits per sample
+     */
+    inline int getBitsPerSample() {
+        return bitspersample;
+    }
+    
+    /**
+     * \~french
+     * \brief Retourne la photométrie des données image (rgb, gray...)
+     * \return photométrie
+     * \~english
+     * \brief Return data photometric (rgb, gray...)
+     * \return photometric
+     */
+    inline Photometric::ePhotometric getPhotometric() {
+        return photometric;
+    }
+
+    /**
+     * \~french
+     * \brief Retourne la taille d'une tuile brute (décompessée)
+     * \~english
+     * \brief Return raw tile size (uncompressed)
+     */
+    int getRawTileSize() {
+        return rawTileSize;
+    }
+
     /**
      * \~french
      * \brief Destructeur par défaut
@@ -422,7 +593,10 @@ public:
         for ( int i = 0; i < memorySize; i++ ) if ( memorizedTiles[i] ) delete[] memorizedTiles[i];
         delete[] memorizedTiles;
         delete[] memorizedIndex;
+        delete[] tilesOffset;
+        delete[] tilesByteCounts;
     }
+
 
     /** \~french
      * \brief Sortie des informations sur l'image ROK4
@@ -432,8 +606,13 @@ public:
     void print() {
         LOGGER_INFO ( "" );
         LOGGER_INFO ( "---------- Rok4Image ------------" );
-        FileImage::print();
+        Image::print();
+        LOGGER_INFO ( "\t- Compression : " << Compression::toString ( compression ) );
+        LOGGER_INFO ( "\t- Photometric : " << Photometric::toString ( photometric ) );
+        LOGGER_INFO ( "\t- Bits per sample : " << bitspersample );
+        LOGGER_INFO ( "\t- Sample format : " << SampleFormat::toString ( sampleformat ) );
         LOGGER_INFO ( "\t- tile width = " << tileWidth << ", tile height = " << tileHeight );
+        LOGGER_INFO ( "\t- Image name : " << name );
         LOGGER_INFO ( "" );
     }
 
@@ -468,7 +647,9 @@ public:
      * \param[in] pIn source des donnée de l'image à écrire
      * \return 0 en cas de succes, -1 sinon
      */
-    int writeImage ( Image* pIn );
+    int writeImage ( Image* pIn ) {
+        return writeImage(pIn, false);
+    }
 
     /**
      * \~french
@@ -479,6 +660,29 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeImage ( Image* pIn, bool crop );
+
+    /**
+     * \~french
+     * \brief Ecrit les tuiles indépendantes sur un cluster Ceph, à partir d'une image source
+     * \details Toutes les informations nécessaires à l'écriture des tuiles sont dans l'objet Rok4Image, sauf les données à écrire. On renseigne cela via une seconde image.
+     *
+     * On précise également les indices (colonne et ligne) de la dalle, ce qui permet de calculer les indices de chaque tuile,  on utilise alors le nom de l'image comme préfixe, et on peut nommer les objets Ceph (<NAME>_<TILECOL>_<TILROW>).
+     *
+     * Exemple :
+     * \li nom : EXEMPLE
+     * \li colonne = 4 et ligne = 7
+     * \li nombre de tuile dans la largeur et dans la hauteur : 2
+     * \li writeTiles entraînera l'écriture de 4 objets sur Ceph (tuiles) : EXEMPLE_8_14, EXEMPLE_8_15, EXEMPLE_9_14, EXEMPLE_9_15
+     *
+     * Cette méthode permet également de préciser s'il on veut "croper". Dans le cas d'une compression JPEG, on peut vouloir "vider" les blocs (16x16 pixels) contenant un pixel blanc.     
+     *
+     * \param[in] pIn source des donnée de l'image à écrire
+     * \param[in] imageCol option de cropage, pour le jpeg
+     * \param[in] imageRow option de cropage, pour le jpeg
+     * \param[in] crop option de cropage, pour le jpeg
+     * \return 0 en cas de succes, -1 sinon
+     */
+    int writeTiles ( Image* pIn, int imageCol, int imageRow, bool crop );
 
     /**
      * \~french
@@ -571,10 +775,11 @@ public:
      * Si les résolutions fournies sont négatives, cela signifie que l'on doit calculer un géoréférencement.
      * Dans ce cas, on prend des résolutions égales à 1 et une bounding box à (0,0,width,height).
      *
-     * \param[in] filename chemin du fichier image
+     * \param[in] name nom de l'image
      * \param[in] bbox emprise rectangulaire de l'image
      * \param[in] resx résolution dans le sens des X.
      * \param[in] resy résolution dans le sens des Y.
+     * \param[in] contexte de stockage (fichier, objet ceph ou objet swift)
      * \return un pointeur d'objet Rok4Image, NULL en cas d'erreur
      ** \~english
      * \brief Create an Rok4Image object, for reading
@@ -582,13 +787,14 @@ public:
      *
      * Negative resolutions leads to georeferencement calculation.
      * Both resolutions will be equals to 1 and the bounding box will be (0,0,width,height).
-     * \param[in] filename path to image file
+     * \param[in] name image's name
      * \param[in] bbox bounding box
      * \param[in] resx X wise resolution.
      * \param[in] resy Y wise resolution.
+     * \param[in] context storage context (file, ceph object or swift object)
      * \return a Rok4Image object pointer, NULL if error
      */
-    Rok4Image* createRok4ImageToRead ( char* filename, BoundingBox<double> bbox, double resx, double resy );
+    Rok4Image* createRok4ImageToRead ( std::string name, BoundingBox<double> bbox, double resx, double resy, Context* context );
 
     /** \~french
      * \brief Crée un objet Rok4Image, pour l'écriture
@@ -596,7 +802,7 @@ public:
      *
      * Si les résolutions fournies sont négatives, cela signifie que l'on doit calculer un géoréférencement.
      * Dans ce cas, on prend des résolutions égales à 1 et une bounding box à (0,0,width,height).
-     * \param[in] filename chemin du fichier image
+     * \param[in] name nom de l'image
      * \param[in] bbox emprise rectangulaire de l'image
      * \param[in] resx résolution dans le sens des X.
      * \param[in] resy résolution dans le sens des Y.
@@ -609,6 +815,7 @@ public:
      * \param[in] compression compression des données
      * \param[in] tileWidth largeur en pixel de la tuile
      * \param[in] tileHeight hauteur en pixel de la tuile
+     * \param[in] contexte de stockage (fichier, objet ceph ou objet swift)
      * \return un pointeur d'objet Rok4Image, NULL en cas d'erreur
      ** \~english
      * \brief Create a Rok4Image object, for writting
@@ -616,7 +823,7 @@ public:
      *
      * Negative resolutions leads to georeferencement calculation.
      * Both resolutions will be equals to 1 and the bounding box will be (0,0,width,height).
-     * \param[in] filename path to image file
+     * \param[in] name image's name
      * \param[in] bbox bounding box
      * \param[in] resx X wise resolution.
      * \param[in] resy Y wise resolution.
@@ -629,12 +836,13 @@ public:
      * \param[in] compression data compression
      * \param[in] tileWidth tile's pixel width
      * \param[in] tileHeight tile's pixel height
+     * \param[in] context storage context (file, ceph object or swift object)
      * \return a Rok4Image object pointer, NULL if error
      */
     Rok4Image* createRok4ImageToWrite (
-        char* filename, BoundingBox<double> bbox, double resx, double resy, int width, int height, int channels,
+        std::string name, BoundingBox<double> bbox, double resx, double resy, int width, int height, int channels,
         SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
-        Compression::eCompression compression, int tileWidth, int tileHeight
+        Compression::eCompression compression, int tileWidth, int tileHeight, Context* context
     );
 };
 

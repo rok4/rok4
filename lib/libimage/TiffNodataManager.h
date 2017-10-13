@@ -354,7 +354,11 @@ bool TiffNodataManager<T>::treatNodata ( char* inputImage, char* outputImage, ch
 
     /*************** Chargement de l'image ***************/
 
-    T *IM  = new T[width * height * samplesperpixel];
+    T *IM = (T*) malloc (width * height * samplesperpixel * sizeof(T));
+    if ( IM == NULL ) {
+        LOGGER_ERROR ( "Cannot allocate a buffer of size " << width * height * samplesperpixel * sizeof(T) << " bytes" );
+        return false;
+    }
 
     LOGGER_DEBUG("We load input image into memory : " << width * height * samplesperpixel * sizeof(T) / 1024 << " kilobytes");
     for ( int h = 0; h < height; h++ ) {
@@ -462,28 +466,28 @@ bool TiffNodataManager<T>::identifyNodataPixels ( T* IM, uint8_t* MSK ) {
     if ( touchEdges ) {
         LOGGER_DEBUG ( "\t...which touch edges" );
         // On utilise la couleur targetValue et on part des bords
-        queue<int> Q;
+        queue<unsigned long long> Q;
 
         // Initialisation : we identify front pixels which are 'targetValue'
-        for ( int pos = 0; pos < width; pos++ ) { // top
+        for ( unsigned long long pos = 0; pos < width; pos++ ) { // top
             if ( isTargetValue ( IM + samplesperpixel * pos ) ) {
                 Q.push ( pos );
                 MSK[pos] = 0;
             }
         }
-        for ( int pos = width* ( height-1 ); pos < width*height; pos++ ) { // bottom
+        for ( unsigned long long pos = width* ( height-1 ); pos < width*height; pos++ ) { // bottom
             if ( isTargetValue ( IM + samplesperpixel * pos ) ) {
                 Q.push ( pos );
                 MSK[pos] = 0;
             }
         }
-        for ( int pos = 0; pos < width*height; pos += width ) { // left
+        for ( unsigned long long pos = 0; pos < width*height; pos += width ) { // left
             if ( isTargetValue ( IM + samplesperpixel * pos ) ) {
                 Q.push ( pos );
                 MSK[pos] = 0;
             }
         }
-        for ( int pos = width -1; pos < width*height; pos+= width ) { // right
+        for ( unsigned long long pos = width -1; pos < width*height; pos+= width ) { // right
             if ( isTargetValue ( IM + samplesperpixel * pos ) ) {
                 Q.push ( pos );
                 MSK[pos] = 0;
@@ -499,9 +503,9 @@ bool TiffNodataManager<T>::identifyNodataPixels ( T* IM, uint8_t* MSK ) {
 
         // while there are 'targetValue' pixels which can propagate, we do it
         while ( !Q.empty() ) {
-            int pos = Q.front();
+            unsigned long long pos = Q.front();
             Q.pop();
-            int newpos;
+            unsigned long long newpos;
             if ( pos % width > 0 ) {
                 newpos = pos - 1;
                 if ( MSK[newpos] && isTargetValue ( IM + newpos*samplesperpixel ) ) {
@@ -536,7 +540,8 @@ bool TiffNodataManager<T>::identifyNodataPixels ( T* IM, uint8_t* MSK ) {
         LOGGER_DEBUG ( "\t..., all pixels in 'target color'" );
         // Tous les pixels de la couleur targetValue sont à considérer comme du nodata
 
-        for ( int i = 0; i < width * height; i++ ) {
+        for ( unsigned long long i = 0; i < width * height; i++ ) {
+
             if ( isTargetValue ( IM+i*samplesperpixel ) ) {
                 containNodata = true;
                 MSK[i] = 0;

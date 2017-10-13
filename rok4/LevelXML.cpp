@@ -202,7 +202,7 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
 
             if (pElemSP->ValueStr() == "webService") {
 
-                WebService* ws = ConfLoader::parseWebService(pElemSP,tms->getCrs(),pyr->getFormat(), serverXML->getProxy());
+                WebService* ws = ConfLoader::parseWebService(pElemSP,tms->getCrs(),pyr->getFormat(), serverXML->getProxy(), servicesXML);
                 if (ws == NULL) {
                     LOGGER_ERROR("Impossible de charger le WebService indique");
                     return;
@@ -493,11 +493,11 @@ int LevelXML::calculateTileLimits(PyramidXML* pyrxml) {
                 bPMaxRow = lv->getMaxTileRow();
 
                 //On récupère d'autres informations sur le TM
-                xo = lv->getTm().getX0();
-                yo = lv->getTm().getY0();
-                res = lv->getTm().getRes();
-                tileW = lv->getTm().getTileW();
-                tileH = lv->getTm().getTileH();
+                xo = lv->getTm()->getX0();
+                yo = lv->getTm()->getY0();
+                res = lv->getTm()->getRes();
+                tileW = lv->getTm()->getTileW();
+                tileH = lv->getTm()->getTileH();
 
                 //On transforme en bbox
                 xmin = bPMinCol * tileW * res + xo;
@@ -509,17 +509,17 @@ int LevelXML::calculateTileLimits(PyramidXML* pyrxml) {
 
 
                 //On reprojette la bbox
-                if (MMbbox.reproject(pyr->getTms().getCrs().getProj4Code(), pyrxml->getTMS->getCrs().getProj4Code()) != 0) {
+                if (MMbbox.reproject(pyr->getTms()->getCrs().getProj4Code(), pyrxml->getTMS()->getCrs().getProj4Code()) != 0) {
                     LOGGER_ERROR("Ne peut pas reprojeter la bbox de base");
                     return 1;
                 }
 
                 //On récupère les Min et Max de Pyr pour ce level dans la nouvelle projection
-                xo = tm.getX0();
-                yo = tm.getY0();
-                res = tm.getRes();
-                tileW = tm.getTileW();
-                tileH = tm.getTileH();
+                xo = tm->getX0();
+                yo = tm->getY0();
+                res = tm->getRes();
+                tileW = tm->getTileW();
+                tileH = tm->getTileH();
 
                 curMinRow = floor((yo - MMbbox.ymax) / (tileW * res));
                 curMinCol = floor((MMbbox.xmin - xo) / (tileH * res));
@@ -577,11 +577,11 @@ int LevelXML::calculateTileLimits(PyramidXML* pyrxml) {
                 BoundingBox<double> MMbbox = wms->getBbox();
 
                 //On récupère les Min et Max de Pyr pour ce level dans la nouvelle projection
-                xo = tm.getX0();
-                yo = tm.getY0();
-                res = tm.getRes();
-                tileW = tm.getTileW();
-                tileH = tm.getTileH();
+                xo = tm->getX0();
+                yo = tm->getY0();
+                res = tm->getRes();
+                tileW = tm->getTileW();
+                tileH = tm->getTileH();
 
                 curMinRow = floor((yo - MMbbox.ymax) / (tileW * res));
                 curMinCol = floor((MMbbox.xmin - xo) / (tileH * res));

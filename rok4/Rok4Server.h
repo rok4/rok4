@@ -53,18 +53,19 @@
 #include <pthread.h>
 #include <map>
 #include <vector>
-#include "ServicesConf.h"
 #include "Layer.h"
+#include <stdio.h>
 #include "TileMatrixSet.h"
-#include "fcgiapp.h"
 #include "ProcessFactory.h"
+#include "fcgiapp.h"
 #include <csignal>
+#include "ServerXML.h"
+#include "ServicesXML.h"
 #include "GetFeatureInfoEncoder.h"
 
-struct Proxy {
-    std::string proxyName;
-    std::string noProxy;
-};
+#if BUILD_OBJECT
+#include "ContextBook.h"
+#endif
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -84,36 +85,27 @@ private:
      * \~english \brief Threads liste
      */
     std::vector<pthread_t> threads;
+
+#if BUILD_OBJECT
+    /**
+     * \~french \brief Thread de reconnexion des contextes
+     * \~english \brief Contexts reconnection thread
+     */
+    pthread_t reco_thread;
+#endif
+
     /**
      * \~french \brief Connecteur sur le flux FCGI
      * \~english \brief FCGI stream connector
      */
     ResponseSender S;
-    /**
-     * \~french \brief Défini si le serveur doit honorer les requêtes WMTS
-     * \~english \brief Define whether WMTS request should be honored
-     */
-    bool supportWMTS;
-    /**
-     * \~french \brief Défini si le serveur doit honorer les requêtes WMS
-     * \~english \brief Define whether WMS request should be honored
-     */
-    bool supportWMS;
+
     /**
      * \~french \brief Défini si le serveur est en cours d'éxécution
      * \~english \brief Define whether the server is running
      */
     volatile bool running;
-    /**
-     * \~french \brief Adresse du socket d'écoute (vide si lancement géré par un tiers)
-     * \~english \brief Listening socket address (empty if lauched in managed mode)
-     */
-    std::string socket;
-    /**
-     * \~french \brief Profondeur de la file d'attente du socket
-     * \~english \brief Socket listen queue depth
-     */
-    int backlog;
+
     /**
      * \~french \brief Identifiant du socket
      * \~english \brief Socket identifier
@@ -124,22 +116,14 @@ private:
      * \~french \brief Configurations globales des services
      * \~english \brief Global services configuration
      */
-    ServicesConf servicesConf;
+    ServicesXML* servicesConf;
+
     /**
-     * \~french \brief Liste des couches disponibles
-     * \~english \brief Available layers list
+     * \~french \brief Configurations globales du serveur
+     * \~english \brief Global server configuration
      */
-    std::map<std::string, Layer*> layerList;
-    /**
-     * \~french \brief Liste des TileMatrixSet disponibles
-     * \~english \brief Available TileMatrixSet list
-     */
-    std::map<std::string, TileMatrixSet*> tmsList;
-    /**
-     * \~french \brief Liste des styles disponibles
-     * \~english \brief Available styles list
-     */
-    std::map<std::string, Style*> styleList;
+    ServerXML* serverConf;
+
     /**
      * \~french \brief Liste des fragments invariants de capabilities prets à être concaténés avec les infos de la requête.
      * \~english \brief Invariant GetCapabilities fragments ready to be concatained with request informations
@@ -150,41 +134,13 @@ private:
      * \~english \brief Invariant GetCapabilities fragments ready to be concatained with request informations
      */
     std::vector<std::string> wmtsCapaFrag;
-    /**
-     * \~french \brief Erreur à retourner en cas de tuile non trouvée (http 404)
-     * \~english \brief Error response in case data tiel is not found (http 404)
-     */
-    DataSource* notFoundError;
+
+
     /**
      * \~french \brief Gestion des processus créés
      * \~english \brief Management of created process
      */
     ProcessFactory *parallelProcess;
-    /**
-    * \~french \brief Proxy utilisé par défaut pour des requêtes WMS
-    * \~english \brief Default proxy used for WMS requests
-    */
-    Proxy proxy;
-    /**
-     * \~french \brief Dossier contenant les TMS
-     * \~english \brief Directory of TMS
-     */
-    std::string tmsDir;
-    /**
-     * \~french \brief Dossier contenant les styles
-     * \~english \brief Directory of styles
-     */
-    std::string styleDir;
-    /**
-     * \~french \brief Dossier contenant les layers
-     * \~english \brief Directory of layers
-     */
-    std::string layDir;
-    /**
-     * \~french \brief Dossier contenant les projections
-     * \~english \brief Directory of proj4
-     */
-    std::string projDir;
 
     /**
      * \~french
@@ -197,6 +153,22 @@ private:
      * \return true if present
      */
     static void* thread_loop ( void* arg );
+
+
+#if BUILD_OBJECT
+    /**
+     * \~french
+     * \brief Boucle principale exécutée par le thread de reconnexion des contextes de lecture #reco_thread
+     * \param[in] arg pointeur vers l'instance de Rok4Server
+     * \return true si présent
+     * \~english
+     * \brief Main event loop executed by reconnection thread #reco_thread
+     * \param[in] arg pointer to the Rok4Server instance
+     * \return true if present
+     */
+    static void* thread_reconnection_loop ( void* arg );
+#endif
+    
     /**
      * \~french
      * \brief Donne le nombre de chiffres après la virgule
@@ -259,6 +231,7 @@ private:
      * \return parameter value or "" if not availlable
      */
     std::string getParam ( std::map<std::string, std::string>& option, std::string paramName );
+
     /**
      * \~french
      * \brief Traitement d'une requête GetMap
@@ -351,7 +324,7 @@ private:
      * \param[in] style style of the resquest
      * \return requested tile
      */
-    DataSource *getTileUsual(Layer* L, std::string format, int tileCol, int tileRow, std::string tileMatrix, DataSource *errorResp, Style *style);
+    DataSource *getTileUsual(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format);
     /**
      * \~french
      * \brief Renvoit une tuile qui vient d'être calculée
@@ -375,6 +348,29 @@ private:
     DataSource *getTileOnDemand(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format);
     /**
      * \~french
+     * \brief Renvoit une tuile qui vient d'être calculée
+     * \param[in] L couche de la requête
+     * \param[in] tileMatrix tilematrix de la requête
+     * \param[in] tileCol indice de colonne de la requête
+     * \param[in] tileRow indice de ligne de la requete
+     * \param[in] style style de la requête
+     * \param[in] format format de la requête
+     * \param[in] errorResp erreur
+     * \return Tuile demandée
+     * \~english
+     * \brief Give a tile compute for the request
+     * \param[in] L layer of the request
+     * \param[in] tileMatrix tilematrix of the request
+     * \param[in] tileCol column index of the request
+     * \param[in] tileRow row index of the request
+     * \param[in] style style of the resquest
+     * \param[in] format format of the request
+     * \param[in] errorResp error
+     * \return requested tile
+     */
+    DataSource *getTileOnFly(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format);
+    /**
+     * \~french
      * \brief Creation d'une dalle concernée par la tuile qui vient d'être calculée
      * \param[in] L couche de la requête
      * \param[in] tileMatrix tilematrix de la requête
@@ -396,29 +392,7 @@ private:
      * \return 0 if ok, else 1
      */
     int createSlabOnFly(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format, std::string path);
-    /**
-     * \~french
-     * \brief Renvoit une tuile qui vient d'être calculée
-     * \param[in] L couche de la requête
-     * \param[in] tileMatrix tilematrix de la requête
-     * \param[in] tileCol indice de colonne de la requête
-     * \param[in] tileRow indice de ligne de la requete
-     * \param[in] style style de la requête
-     * \param[in] format format de la requête
-     * \param[in] errorResp erreur
-     * \return Tuile demandée
-     * \~english
-     * \brief Give a tile compute for the request
-     * \param[in] L layer of the request
-     * \param[in] tileMatrix tilematrix of the request
-     * \param[in] tileCol column index of the request
-     * \param[in] tileRow row index of the request
-     * \param[in] style style of the resquest
-     * \param[in] format format of the request
-     * \param[in] errorResp error
-     * \return requested tile
-     */
-    DataSource *getTileOnFly(Layer* L, std::string tileMatrix, int tileCol, int tileRow, Style *style, std::string format, DataSource *errorResp);
+
 
     /**
      * \~french
@@ -436,18 +410,18 @@ private:
      * \~french Traite les requêtes de type WMS
      * \~english Process WMS request
      */
-    void        processWMS ( Request *request, FCGX_Request&  fcgxRequest );
+    void processWMS ( Request *request, FCGX_Request&  fcgxRequest );
     /**
      * \~french Traite les requêtes de type WMTS
      * \~english Process WMTS request
      */
-    void        processWMTS ( Request *request, FCGX_Request&  fcgxRequest );
+    void processWMTS ( Request *request, FCGX_Request&  fcgxRequest );
     /**
      * \~french Sépare les requêtes de type WMS et WMTS
      * \~english Route WMS and WMTS request
      */
-    void        processRequest ( Request *request, FCGX_Request&  fcgxRequest );
-    
+    void processRequest ( Request *request, FCGX_Request&  fcgxRequest );
+
     DataStream* CommonGetFeatureInfo ( std::string service, Layer* layer, BoundingBox<double> bbox, int width, int height, CRS crs, std::string info_format , int X, int Y, std::string format, int feature_count);
 
 public:
@@ -455,44 +429,53 @@ public:
      * \~french Retourne la configuration des services
      * \~english Return the services configurations
      */
-    ServicesConf& getServicesConf() {
-        return servicesConf;
-    }
+    ServicesXML* getServicesConf() ;
+    /**
+     * \~french Retourne la configuration du serveur
+     * \~english Return the server configuration
+     */
+    ServerXML* getServerConf() ;
+
     /**
      * \~french Retourne la liste des couches
      * \~english Return the layers list
      */
-    std::map<std::string, Layer*>& getLayerList() {
-        return layerList;
-    }
+    std::map<std::string, Layer*>& getLayerList() ;
     /**
      * \~french Retourne la liste des TileMatrixSets
      * \~english Return the TileMatrixSets list
      */
-    std::map<std::string, TileMatrixSet*>& getTmsList() {
-        return tmsList;
-    }
+    std::map<std::string, TileMatrixSet*>& getTmsList() ;
     /**
      * \~french Retourne la liste des styles
      * \~english Return the styles list
      */
-    std::map<std::string, Style*>& getStyleList() {
-        return styleList;
-    }
+    std::map<std::string, Style*>& getStyleList() ;
     /**
      * \~french Retourne les fragments du GetCapabilities WMS
      * \~english Return WMS GetCapabilities fragments
      */
-    std::map<std::string,std::vector<std::string> >& getWmsCapaFrag() {
-        return wmsCapaFrag;
-    }
+    std::map<std::string,std::vector<std::string> >& getWmsCapaFrag() ;
     /**
      * \~french Retourne les fragments du GetCapabilities WMTS
      * \~english Return WMTS GetCapabilities fragments
      */
-    std::vector<std::string>& getWmtsCapaFrag() {
-        return wmtsCapaFrag;
-    }
+    std::vector<std::string>& getWmtsCapaFrag() ;
+
+#if BUILD_OBJECT
+    /**
+     * \~french Retourne l'annuaire de contextes ceph
+     */
+    ContextBook* getCephBook() ;
+    /**
+     * \~french Retourne l'annuaire de contextes s3
+     */
+    ContextBook* getS3Book() ;
+    /**
+     * \~french Retourne l'annuaire de contextes swift
+     */
+    ContextBook* getSwiftBook() ;
+#endif
 
     /**
      * \~french
@@ -504,7 +487,7 @@ public:
      * \param[in] request request representation
      * \return requested image or an error message
      */
-    DataSource *getTile(Request* request );
+    DataSource* getTile ( Request* request );
     /**
      * \~french
      * \brief Traitement d'une requête GetCapabilities WMTS
@@ -570,9 +553,7 @@ public:
      * \brief Get the internal FastCGI socket representation, usefull for configuration reloading.
      * \return the internal FastCGI socket representation
      */
-    int getFCGISocket() {
-        return sock;
-    }
+    int getFCGISocket() ;
 
     /**
      * \~french
@@ -584,9 +565,7 @@ public:
      * \brief Set the internal FastCGI socket representation
      * \param sockFCGI the internal FastCGI socket representation
      */
-    void setFCGISocket ( int sockFCGI ) {
-        sock = sockFCGI;
-    }
+    void setFCGISocket ( int sockFCGI ) ;
     
      /**
      * \~french
@@ -604,9 +583,7 @@ public:
      * \brief Return the server state
      * \return true if running
      */
-    bool isRunning() {
-        return running ;
-    }
+    bool isRunning() ;
     
     /**
      * \~french
@@ -614,9 +591,7 @@ public:
      * \~english
      * \brief to know if the server responde to WMTS request
      */
-    bool isWMTSSupported(){
-            return supportWMTS ;
-    }
+    bool isWMTSSupported();
     
     /**
      * \~french
@@ -624,18 +599,14 @@ public:
      * \~english
      * \brief to know if the server responde to WMS request
      */
-    bool isWMSSupported(){
-            return supportWMS ;
-    }
+    bool isWMSSupported();
     /**
      * \~french
      * \brief Pour savoir si le server honore les requêtes WMTS
      * \~english
      * \brief to know if the server responde to WMTS request
      */
-    void setProxy(Proxy pr){
-            proxy = pr ;
-    }
+    void setProxy(Proxy pr);
 
     /**
      * \~french
@@ -643,94 +614,12 @@ public:
      * \~english
      * \brief Return default proxy
      */
-    Proxy getProxy(){
-            return proxy ;
-    }
-    /**
-     * \~french
-     * \brief Modifier le dossier des tms
-     * \~english
-     * \brief Set tms directory
-     */
-    void setTmsDir(std::string d){
-            tmsDir = d ;
-    }
-
-    /**
-     * \~french
-     * \brief Récupérer le dossier des tms
-     * \~english
-     * \brief Get tms directory
-     */
-    std::string getTmsDir(){
-            return tmsDir ;
-    }
-    /**
-     * \~french
-     * \brief Modifier le dossier des styles
-     * \~english
-     * \brief Set styles directory
-     */
-    void setStylesDir(std::string d){
-            styleDir = d ;
-    }
-
-    /**
-     * \~french
-     * \brief Récupérer le dossier des styles
-     * \~english
-     * \brief Get styles directory
-     */
-    std::string getStylesDir(){
-            return styleDir ;
-    }
-    /**
-     * \~french
-     * \brief Modifier le dossier des layers
-     * \~english
-     * \brief Set layers directory
-     */
-    void setLayersDir(std::string d){
-            layDir = d ;
-    }
-
-    /**
-     * \~french
-     * \brief Récupérer le dossier des layers
-     * \~english
-     * \brief Get layers directory
-     */
-    std::string getLayersDir(){
-            return layDir ;
-    }
-    /**
-     * \~french
-     * \brief Modifier le dossier des proj
-     * \~english
-     * \brief Set proj directory
-     */
-    void setProjDir(std::string d){
-            projDir = d ;
-    }
-
-    /**
-     * \~french
-     * \brief Récupérer le dossier des proj
-     * \~english
-     * \brief Get proj directory
-     */
-    std::string getProjDir(){
-            return projDir ;
-    }
+    Proxy getProxy();
 
     /**
      * \brief Construction du serveur
      */
-    Rok4Server (int nbThread, ServicesConf& servicesConf, std::map<std::string,Layer*> &layerList,
-                 std::map<std::string,TileMatrixSet*> &tmsList, std::map<std::string,Style*> &styleList,
-                std::string socket, int backlog, Proxy proxy, std::string tmsdir, std::string styledir,
-                std::string layerdir, std::string projdir, bool supportWMTS = true, bool supportWMS = true,
-                int nbProcess =1, int timeKill =300);
+    Rok4Server ( ServerXML* serverXML, ServicesXML* servicesXML);
     /**
      * \~french
      * \brief Destructeur par défaut

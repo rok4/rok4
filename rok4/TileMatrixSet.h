@@ -50,6 +50,7 @@
 #include <vector>
 #include <map>
 #include "TileMatrix.h"
+#include "TileMatrixSetXML.h"
 #include "CRS.h"
 #include "Keyword.h"
 
@@ -132,40 +133,33 @@ private:
      * \~french \brief Liste des TileMatrix
      * \~english \brief List of TileMatrix
      */
-    std::map<std::string, TileMatrix> tmList;
+    std::map<std::string, TileMatrix*> tmList;
 public:
     /**
-     * \~french
-     * \brief Crée un TileMatrixSet à partir des ses éléments constitutifs
-     * \param[in] id identifiant
-     * \param[in] title titre
-     * \param[in] abstract résumé
-     * \param[in] keyWords liste des mots-clés
-     * \param[in] crs système de coordonnées associé
-     * \param[in] tmList liste des TileMatrix
-     * \~english
-     * \brief Create a TileMatrixSet
-     * \param[in] id identifier
-     * \param[in] title title
-     * \param[in] abstract abstract
-     * \param[in] keyWords list of keywords
-     * \param[in] crs linked coordinates systems
-     * \param[in] tmList list of TileMatrix
-     */
-    TileMatrixSet ( std::string id, std::string title, std::string abstract, std::vector<Keyword> & keyWords, CRS& crs, std::map<std::string, TileMatrix> & tmList ) :
-        id ( id ), title ( title ), abstract ( abstract ), keyWords ( keyWords ), crs ( crs ), tmList ( tmList ) {}
+    * \~french
+    * Crée un TileMatrixSet à partir d'un TileMatrixSetXML
+    * \brief Constructeur
+    * \param[in] t TileMatrixSetXML contenant les informations
+    * \~english
+    * Create a TileMatrixSet from a TileMatrixSetXML
+    * \brief Constructor
+    * \param[in] t TileMatrixSetXML to get informations
+    */
+    TileMatrixSet ( const TileMatrixSetXML& t );
 
     /**
-     * \~french
-     * Crée un TileMatrixSet à partir d'un autre
-     * \brief Constructeur de copie
-     * \param[in] t TileMatrixSet à copier
-     * \~english
-     * Create a TileMatrixSet from another
-     * \brief Copy Constructor
-     * \param[in] t TileMatrixSet to copy
-     */
-    TileMatrixSet ( const TileMatrixSet& t ) : id ( t.id ),title ( t.title ),abstract ( t.abstract ),keyWords ( t.keyWords ),crs ( t.crs ),tmList (t.tmList) {}
+    * \~french
+    * Met à jour un TMS à partir d'un TileMatrixSetXML
+    * \brief Mise à jour
+    * \param[in] s TileMatrixSetXML contenant les informations
+    * \~english
+    * Update a TMS from a TileMatrixSetXML
+    * \brief Update
+    * \param[in] s TileMatrixSetXML to get informations
+    */
+    void update ( const TileMatrixSetXML& t );
+
+
     /**
      * \~french
      * La comparaison ignore les mots-clés et les TileMatrix
@@ -196,7 +190,20 @@ public:
      * \brief Return the list of TileMatrix
      * \return liste of TileMatrix
      */
-    std::map<std::string, TileMatrix>* getTmList();
+    std::map<std::string, TileMatrix*>* getTmList();
+    /**
+     * \~french
+     * \brief Retourne la TileMatrix
+     * \return TileMatrix
+     * \~english
+     * \brief Return the TileMatrix
+     * \return TileMatrix
+     */
+    TileMatrix* getTm(std::string id);
+
+    std::map<std::string, double> getCorrespondingLevels(std::string level, TileMatrixSet* otherTMS);
+
+
     /**
      * \~french
      * \brief Retourne l'indentifiant
@@ -205,7 +212,7 @@ public:
      * \brief Return the identifier
      * \return identifier
      */
-    std::string getId() const;
+    std::string getId();
     /**
      * \~french
      * \brief Retourne le titre
@@ -214,9 +221,7 @@ public:
      * \brief Return the title
      * \return title
      */
-    std::string getTitle() {
-        return title;
-    }
+    std::string getTitle() ;
     /**
      * \~french
      * \brief Retourne le résumé
@@ -225,9 +230,7 @@ public:
      * \brief Return the abstract
      * \return abstract
      */
-    std::string getAbstract() {
-        return abstract;
-    }
+    std::string getAbstract() ;
     /**
      * \~french
      * \brief Retourne la liste des mots-clés
@@ -236,9 +239,7 @@ public:
      * \brief Return the list of keywords
      * \return keywords
      */
-    std::vector<Keyword>* getKeyWords() {
-        return &keyWords;
-    }
+    std::vector<Keyword>* getKeyWords() ;
     /**
      * \~french
      * \brief Retourne le système de coordonnées utilisé
@@ -247,9 +248,7 @@ public:
      * \brief Return the linked coordinates system
      * \return crs
      */
-    CRS getCrs() const {
-        return crs;
-    }
+    CRS getCrs();
 
     ///\TODO
     int best_scale ( double resolution_x, double resolution_y );
@@ -260,7 +259,7 @@ public:
      * \~english
      * \brief Default destructor
      */
-    ~TileMatrixSet() {}
+    ~TileMatrixSet();
 };
 
 #endif /* TILEMATRIXSET_H_ */

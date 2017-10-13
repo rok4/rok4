@@ -25,12 +25,10 @@ endif(NOT DEFINED ROK4LIBSDIR)
 
 set(BUILD_SHARED_LIBS OFF)
 
-
 #Build Type si les build types par défaut de CMake ne conviennent pas
 #set(CMAKE_BUILD_TYPE specificbuild)
 #set(CMAKE_CXX_FLAGS_SPECIFICBUILD "-g -O0 -msse -msse2 -msse3")
 #set(CMAKE_C_FLAGS_SPECIFICBUILD "")
-
 
 ########################################
 #définition des fichiers sources
@@ -48,11 +46,18 @@ set(DEP_INCLUDE_DIR ${TIFF_INCLUDE_DIR} )
 set(VERSION_TEXT ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Makefile.PL.in ${CMAKE_CURRENT_BINARY_DIR}/src/Makefile.PL @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/be4.pl @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4-ceph.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/be4-ceph.pl @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4-s3.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/be4-s3.pl @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4-swift.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/be4-swift.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/joinCache.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/joinCache.pl @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/joinCache-s3.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/joinCache-s3.pl @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/joinCache-ceph.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/joinCache-ceph.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/create-layer.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/create-layer.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/coord2image.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/coord2image.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/tms-converter-gui.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/tms-converter-gui.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4-simulator.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/be4-simulator.pl @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/exPyr.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/exPyr.pl @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/pyr2pyr.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/pyr2pyr.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/wmtSalaD.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/wmtSalaD.pl @ONLY)
 
 set(ENV{CFLAGS} "-O3")
@@ -79,12 +84,11 @@ if(UNITTEST)
 
     if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/perlunit)
         # Exécution des tests unitaires PerlUnit
-
         FILE(GLOB_RECURSE UnitTests_SRCS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/tests/perlunit/" "PerlUnit*.t")
-        
+
         FOREACH(test ${UnitTests_SRCS})
-            MESSAGE("  - adding test ${test}")
-            ADD_TEST(NAME "${test}" COMMAND perl -I ${CMAKE_CURRENT_BINARY_DIR}/install/lib/perl5 ${CMAKE_CURRENT_BINARY_DIR}/src/tests/perlunit/${test})
+            MESSAGE(" - adding test ${test}")
+            ADD_TEST(NAME "${test}" COMMAND perl -I ${CMAKE_CURRENT_BINARY_DIR}/src/lib/ ${CMAKE_CURRENT_BINARY_DIR}/src/tests/perlunit/${test})
         ENDFOREACH(test)
 
         # Nettoyage du dossier temporaire
@@ -107,9 +111,6 @@ if(BUILD_DOC)
     endif(NATURALDOCS_FOUND)
 
 endif(BUILD_DOC)
-
-#Installe la documentation de base
-INSTALL(FILES QUESTIONS README CHANGES INSTALL FIXME DESTINATION share/doc/${PARENT_PROJECT_NAME}/${PROJECT_NAME})
 
 ########################################
 #Installation dans les répertoires par défauts

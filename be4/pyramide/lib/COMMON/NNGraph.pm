@@ -40,7 +40,7 @@ File: NNGraph.pm
 
 Class: COMMON::NNGraph
 
-Representation of a "nearest neighbour" pyramid : pyramid's image = <COMMON::GraphNode>.
+Representation of a "nearest neighbour" pyramid : pyramid's image = <COMMON::Node>.
 
 (see NNGraphTMS.png)
 
@@ -54,7 +54,7 @@ Organization in the <Forest> scripts' array :
 
 (see script_NNGraph.png)
 
-Link between a node and his children or his father is not trivial. It is calculated and store in the <COMMON::GraphNode> object.
+Link between a node and his children or his father is not trivial. It is calculated and store in the <COMMON::Node> object.
 
 Using:
     (start code)
@@ -70,13 +70,13 @@ Using:
     (end code)
 
 Attributes:
-    forest - <Forest> - Forest which this tree belong to.
-    pyramid - <BE4::Pyramid> - Pyramid linked to this tree.
-    commands - <Commands> - Command to use to generate images.
-    datasource - <DataSource> - Data source to use to define bottom level nodes and generate them.
+    forest - <COMMON::Forest> - Forest which this tree belong to.
+    pyramid - <COMMON::Pyramid> - Pyramid linked to this tree.
+    commands - <COMMON::ShellCommands> - Command to use to generate images.
+    datasource - <COMMON::DataSource> - Data source to use to define bottom level nodes and generate them.
 
     bbox - double array - Datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
-    nodes - <COMMON::GraphNode> hash - Structure is:
+    nodes - <COMMON::Node> hash - Structure is:
         (start code)
         level1 => {
            c1_r2 => n1,
@@ -88,7 +88,7 @@ Attributes:
 
         cX : node's column
         rX : node's row
-        nX : COMMON::GraphNode
+        nX : <COMMON::Node>
         (end code)
         
     bottomID - string - Bottom level identifiant
@@ -109,8 +109,10 @@ use Data::Dumper;
 
 # My Module
 use COMMON::DataSource;
-use COMMON::GraphNode;
+use COMMON::Node;
 use COMMON::ProxyGDAL;
+use COMMON::Array;
+use COMMON::ShellCommands;
 
 use Log::Log4perl qw(:easy);
 
@@ -147,18 +149,18 @@ NNGraph constructor. Bless an instance.
 Parameters (list):
     objForest - <Forest> - Forest which this tree belong to
     objSrc - <DataSource> - Datasource which determine bottom level nodes
-    objPyr - <BE4::Pyramid> - Pyramid linked to this tree
+    objPyr - <COMMON::Pyramid> - Pyramid linked to this tree
     objCommands - <Commands> - Commands to use to generate pyramid's images
 
 See also:
     <_init>, <_load>
 =cut
 sub new {
-    my $this = shift;
+    my $class = shift;
 
-    my $class= ref($this) || $this;
+    $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
-    my $self = {
+    my $this = {
         # in
         forest    => undef,
         pyramid    => undef,
@@ -171,16 +173,14 @@ sub new {
         topID    => undef,
     };
 
-    bless($self, $class);
-
-    TRACE;
+    bless($this, $class);
 
     # init. class
-    return undef if (! $self->_init(@_));
+    return undef if (! $this->_init(@_));
     # load 
-    return undef if (! $self->_load());
+    return undef if (! $this->_load());
 
-    return $self;
+    return $this;
 }
 
 =begin nd
@@ -189,19 +189,17 @@ Function: _init
 Checks and stores informations.
 
 Parameters (list):
-    objForest - <Forest> - Forest which this tree belong to
-    objSrc - <DataSource> - Data source which determine bottom level nodes
-    objPyr - <BE4::Pyramid> - Pyramid linked to this tree
-    objCommands - <Commands> - Commands to use to generate pyramid's images
+    objForest - <COMMON::Forest> - Forest which this tree belong to
+    objSrc - <COMMON::DataSource> - Data source which determine bottom level nodes
+    objPyr - <COMMON::Pyramid> - Pyramid linked to this tree
+    objCommands - <COMMON::ShellCommands> - Commands to use to generate pyramid's images
 =cut
 sub _init {
-    my $self = shift;
+    my $this = shift;
     my $objForest  = shift;
     my $objSrc  = shift;
     my $objPyr  = shift;
     my $objCommands  = shift;
-
-    TRACE;
 
     # mandatory parameters !
     if (! defined $objForest || ref ($objForest) ne "COMMON::Forest") {
@@ -212,20 +210,20 @@ sub _init {
         ERROR("Can not load DataSource !");
         return FALSE;
     }
-    if (! defined $objPyr || ref ($objPyr) ne "BE4::Pyramid") {
+    if (! defined $objPyr || ref ($objPyr) ne "COMMON::Pyramid") {
         ERROR("Can not load Pyramid !");
         return FALSE;
     }
-    if (! defined $objCommands || ref ($objCommands) ne "BE4::Commands") {
+    if (! defined $objCommands || ref ($objCommands) ne "COMMON::ShellCommands") {
         ERROR("Can not load Commands !");
         return FALSE;
     }
 
     # init. params    
-    $self->{forest} = $objForest; 
-    $self->{pyramid} = $objPyr;
-    $self->{datasource} = $objSrc; 
-    $self->{commands} = $objCommands;    
+    $this->{forest} = $objForest; 
+    $this->{pyramid} = $objPyr;
+    $this->{datasource} = $objSrc; 
+    $this->{commands} = $objCommands;    
 
     return TRUE;
 }
@@ -236,19 +234,17 @@ Function: _load
 Determines all nodes from the bottom level to the top level, thanks to the data source.
 =cut
 sub _load {
-    my $self = shift;
-
-    TRACE;
+    my $this = shift;
 
     # initialisation pratique:
-    my $tms = $self->{pyramid}->getTileMatrixSet;
-    my $src = $self->{datasource};
-    my $tilesPerWidth = $self->{pyramid}->getTilesPerWidth();
-    my $tilesPerHeight = $self->{pyramid}->getTilesPerHeight();
+    my $tms = $this->{pyramid}->getTileMatrixSet;
+    my $src = $this->{datasource};
+    my $tilesPerWidth = $this->{pyramid}->getTilesPerWidth();
+    my $tilesPerHeight = $this->{pyramid}->getTilesPerHeight();
     
     # récupération d'information dans la source de données
-    $self->{topID} = $self->{datasource}->getTopID;
-    $self->{bottomID} = $self->{datasource}->getBottomID;
+    $this->{topID} = $this->{datasource}->getTopID;
+    $this->{bottomID} = $this->{datasource}->getBottomID;
 
     # initialisation de la transfo de coord du srs des données initiales vers
     # le srs de la pyramide. Si les srs sont identiques on laisse undef.
@@ -263,16 +259,16 @@ sub _load {
     }
 
     # identifier les noeuds du niveau de base à mettre à jour et les associer aux images sources:
-    if (! $self->identifyBottomNodes($ct)) {
+    if (! $this->identifyBottomNodes($ct)) {
         ERROR(sprintf "Cannot determine bottom tiles for the level %s",$src->getBottomID);
         return FALSE;
     }
 
     INFO(sprintf "Number of cache images to the bottom level (%s) : %d",
-         $self->{bottomID},scalar keys(%{$self->{nodes}{$self->{bottomID}}}));
+         $this->{bottomID},scalar keys(%{$this->{nodes}{$this->{bottomID}}}));
     
     # identifier les noeuds des niveaux supérieurs
-    if (! $self->identifyAboveNodes) {
+    if (! $this->identifyAboveNodes) {
         ERROR(sprintf "Cannot determine above levels' tiles.");
         return FALSE;
     }
@@ -293,19 +289,17 @@ Parameters (list):
     ct - <Geo::OSR::CoordinateTransformation> - To convert data extent or images' bbox.
 =cut
 sub identifyBottomNodes {
-    my $self = shift;
+    my $this = shift;
     my $ct = shift;
     
-    TRACE();
-    
-    my $bottomID = $self->{bottomID};
-    my $tm = $self->{pyramid}->getTileMatrixSet->getTileMatrix($bottomID);
+    my $bottomID = $this->{bottomID};
+    my $tm = $this->{pyramid}->getTileMatrixSet->getTileMatrix($bottomID);
     if (! defined $tm) {
-        ERROR(sprintf "Impossible de récupérer le TM à partir de %s (bottomID) et du TMS : %s.",$bottomID,$self->getPyramid()->getTileMatrixSet()->exportForDebug());
+        ERROR(sprintf "Impossible de récupérer le TM à partir de %s (bottomID) et du TMS : %s.",$bottomID,$this->getPyramid()->getTileMatrixSet()->exportForDebug());
         return FALSE;
     };
-    my $datasource = $self->{datasource};
-    my ($TPW,$TPH) = ($self->{pyramid}->getTilesPerWidth,$self->{pyramid}->getTilesPerHeight);
+    my $datasource = $this->{datasource};
+    my ($TPW,$TPH) = ($this->{pyramid}->getTilesPerWidth,$this->{pyramid}->getTilesPerHeight);
     
     if ($datasource->hasImages) {
         # We have real data as source. Images determine bottom tiles
@@ -318,61 +312,60 @@ sub identifyBottomNodes {
                 return FALSE;
             }
             
-            $self->updateBBox($bbox[0], $bbox[1], $bbox[2], $bbox[3]);
+            $this->updateBBox(@bbox);
             
             # On divise les coord par la taille des dalles de cache pour avoir les indices min et max en x et y
-            my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices($bbox[0],$bbox[1],$bbox[2],$bbox[3],$TPW,$TPH);
+            my ($rowMin, $rowMax, $colMin, $colMax) = $tm->bboxToIndices(@bbox,$TPW,$TPH);
             
-            for (my $i = $iMin; $i<= $iMax; $i++){
-                for (my $j = $jMin; $j<= $jMax; $j++){
-                    my $nodeKey = sprintf "%s_%s", $i, $j;
+            for (my $col = $colMin; $col<= $colMax; $col++){
+                for (my $row = $rowMin; $row<= $rowMax; $row++){
+                    my $nodeKey = sprintf "%s_%s", $col, $row;
 
-                    if ($datasource->hasHarvesting) {
+                    if ( $datasource->hasHarvesting() ) {
                         # we use WMS service to generate this leaf
-                        if (exists $self->{nodes}->{$bottomID}->{$nodeKey}) {
+                        if (exists $this->{nodes}->{$bottomID}->{$nodeKey}) {
                             # This Node already exists
                             next;
                         }
                         # Create a new Node
-                        my $node = COMMON::GraphNode->new({
-                            i => $i,
-                            j => $j,
+                        my $node = COMMON::Node->new({
+                            col => $col,
+                            row => $row,
                             tm => $tm,
-                            graph => $self,
+                            graph => $this,
+                            type => $this->{forest}->getStorageType()
                         });
                         if (! defined $node) { 
-                            ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.",
-                                  $self->{bottomID}, $i, $j);
+                            ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $this->{bottomID}, $col, $row);
                             return FALSE;
                         }
-                        $self->{nodes}->{$bottomID}->{$nodeKey} = $node;
+                        $this->{nodes}->{$bottomID}->{$nodeKey} = $node;
                     } else {
                         # we use images to generate this leaf
-                        if (exists $self->{nodes}->{$bottomID}->{$nodeKey}) {
-                            # This Node already exists
-                            # We add this GeoImage to this node
-                            $self->{nodes}->{$bottomID}->{$nodeKey}->addGeoImages($objImg);
-                            next;
+                        if (! exists $this->{nodes}->{$bottomID}->{$nodeKey}) {
+
+                            # Create a new Node
+                            my $node = COMMON::Node->new({
+                                col => $col,
+                                row => $row,
+                                tm => $tm,
+                                graph => $this,
+                                type => $this->{forest}->getStorageType()
+                            });
+                            if (! defined $node) { 
+                                ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $this->{bottomID}, $col, $row);
+                                return FALSE;
+                            }
+                            
+                            $this->{nodes}->{$bottomID}->{$nodeKey} = $node;
                         }
-                        # Create a new Node
-                        my $node = COMMON::GraphNode->new({
-                            i => $i,
-                            j => $j,
-                            tm => $tm,
-                            graph => $self,
-                        });
-                        if (! defined $node) { 
-                            ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.",
-                                  $self->{bottomID}, $i, $j);
-                            return FALSE;
-                        }
-                        $node->addGeoImages($objImg);
-                        $self->{nodes}->{$bottomID}->{$nodeKey} = $node;
+
+                        $this->{nodes}->{$bottomID}->{$nodeKey}->addGeoImages($objImg);
                     }
                 }
             }
         }
-    } elsif (defined $datasource->getExtent) {
+    } elsif (defined $datasource->getExtent() ) {
         # We have just a WMS service as source. We use extent to determine bottom tiles
         my $convertExtent = COMMON::ProxyGDAL::getConvertedGeometry($datasource->getExtent(), $ct);
         if (! defined $convertExtent) {
@@ -380,40 +373,38 @@ sub identifyBottomNodes {
             return FALSE;
         }
 
-        my @convBbox = COMMON::ProxyGDAL::getBbox($convertExtent); # (xmin,xmax,ymin,ymax)
-        DEBUG("BBox convertie de l'extent de datasource @convBbox");
-        
-        $self->updateBBox($convBbox[0],$convBbox[2],$convBbox[1],$convBbox[3]);
-        
-        my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices($convBbox[0],$convBbox[2],$convBbox[1],$convBbox[3],$TPW,$TPH);
-        
-        for (my $i = $iMin; $i <= $iMax; $i++) {
-            for (my $j = $jMin; $j <= $jMax; $j++) {
-                my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBBox($i,$j,$TPW,$TPH);
+        # Pour éviter de balayer une bbox trop grande, on récupère la bbox de chaque partie de la - potentiellement multi - géométrie
+        my $bboxes = COMMON::ProxyGDAL::getBboxes($convertExtent);
 
-                my $WKTtile = sprintf "POLYGON((%s %s,%s %s,%s %s,%s %s,%s %s))",
-                    $xmin,$ymin,
-                    $xmin,$ymax,
-                    $xmax,$ymax,
-                    $xmax,$ymin,
-                    $xmin,$ymin;
+        foreach my $bb (@{$bboxes}) {
+        
+            $this->updateBBox(@{$bb});
 
-                my $OGRtile = COMMON::ProxyGDAL::geometryFromWKT($WKTtile);
+            my ($rowMin, $rowMax, $colMin, $colMax) = $tm->bboxToIndices(@{$bb},$TPW,$TPH);
+            
+            for (my $col = $colMin; $col<= $colMax; $col++){
+                for (my $row = $rowMin; $row<= $rowMax; $row++){
+            
+                    my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBbox($col, $row, $TPW, $TPH);
 
-                if (COMMON::ProxyGDAL::isIntersected($OGRtile, $convertExtent)) {
-                    my $nodeKey = sprintf "%s_%s", $i, $j;
-                    # Create a new Node
-                    my $node = COMMON::GraphNode->new({
-                        i => $i,
-                        j => $j,
-                        tm => $tm,
-                        graph => $self,
-                    });
-                    if (! defined $node) { 
-                        ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $self->{bottomID}, $i, $j);
-                        return FALSE;
+                    my $OGRtile = COMMON::ProxyGDAL::geometryFromBbox($xmin,$ymin,$xmax,$ymax);
+
+                    if (COMMON::ProxyGDAL::isIntersected($OGRtile, $convertExtent)) {
+                        my $nodeKey = sprintf "%s_%s", $col, $row;
+                        # Create a new Node
+                        my $node = COMMON::Node->new({
+                            col => $col,
+                            row => $row,
+                            tm => $tm,
+                            graph => $this,
+                            type => $this->{forest}->getStorageType()
+                        });
+                        if (! defined $node) { 
+                            ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $this->{bottomID}, $col, $row);
+                            return FALSE;
+                        }
+                        $this->{nodes}->{$bottomID}->{$nodeKey} = $node;
                     }
-                    $self->{nodes}->{$bottomID}->{$nodeKey} = $node;
                 }
             }
         }
@@ -429,34 +420,35 @@ sub identifyBottomNodes {
         while (my $line = <LISTIN>) {
             chomp($line);
             
-            my ($i, $j) = split(/,/, $line);
+            my ($col, $row) = split(/,/, $line);
             
-            my $nodeKey = sprintf "%s_%s", $i, $j;
+            my $nodeKey = sprintf "%s_%s", $col, $row;
             
-            if (exists $self->{nodes}->{$bottomID}->{$nodeKey}) {
+            if (exists $this->{nodes}->{$bottomID}->{$nodeKey}) {
                 # This Node already exists
                 next;
             }
             
-            my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBBox($i,$j,$TPW,$TPH);
+            my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBbox($col,$row,$TPW,$TPH);
 
-            $self->updateBBox($xmin,$ymin,$xmax,$ymax);
+            $this->updateBBox($xmin,$ymin,$xmax,$ymax);
             
             # Create a new Node
-            my $node = COMMON::GraphNode->new({
-                i => $i,
-                j => $j,
+            my $node = COMMON::Node->new({
+                col => $col,
+                row => $row,
                 tm => $tm,
-                graph => $self,
+                graph => $this,
+                type => $this->{forest}->getStorageType()
             });
             if (! defined $node) { 
-                ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $self->{bottomID}, $i, $j);
+                ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $this->{bottomID}, $col, $row);
                 return FALSE;
             }
-            $self->{nodes}->{$bottomID}->{$nodeKey} = $node;
+            $this->{nodes}->{$bottomID}->{$nodeKey} = $node;
         }
         
-        close(LISTIN);        
+        close(LISTIN);
     }
   
     return TRUE;  
@@ -476,22 +468,22 @@ When we load the TMS, we precise links between different levels (source and targ
 (see aboveNodes_NNGraph.png)
 =cut
 sub identifyAboveNodes {
-    my $self = shift;
+    my $this = shift;
     
     # initialisation pratique:
-    my $tms = $self->{pyramid}->getTileMatrixSet;
-    my $src = $self->{datasource};
-    my $tilesPerWidth = $self->{pyramid}->getTilesPerWidth();
-    my $tilesPerHeight = $self->{pyramid}->getTilesPerHeight();
+    my $tms = $this->{pyramid}->getTileMatrixSet;
+    my $src = $this->{datasource};
+    my $tilesPerWidth = $this->{pyramid}->getTilesPerWidth();
+    my $tilesPerHeight = $this->{pyramid}->getTilesPerHeight();
     
     # Calcul des branches à partir des feuilles
     for (my $k = $src->getBottomOrder; $k <= $src->getTopOrder; $k++){
 
         my $levelID = $tms->getIDfromOrder($k);
         # pyramid's limits update : we store data's limits in the pyramid's levels
-        $self->{pyramid}->updateTMLimits($levelID,@{$self->{bbox}});
+        $this->{pyramid}->updateTMLimits($levelID,@{$this->{bbox}});
         # si un niveau est vide on a une erreur
-        if ($self->isLevelEmpty($levelID)) {
+        if ($this->isLevelEmpty($levelID)) {
             ERROR (sprintf "The level %s has no nodes. Invalid use of TMS for nearest neighbour interpolation.",$levelID);
             return FALSE;
         }
@@ -504,35 +496,39 @@ sub identifyAboveNodes {
         # on n'a plus rien à calculer, on sort
         last if ($k == $src->getTopOrder );
 
-        foreach my $node ( $self->getNodesOfLevel($levelID) ) {
+        foreach my $node ( $this->getNodesOfLevel($levelID) ) {
             
             # On récupère la BBOX du noeud pour calculer les noeuds cibles
             my ($xMin,$yMin,$xMax,$yMax) = $node->getBBox();
             
             foreach my $targetTm (@targetsTm) {
                 next if ($tms->getOrderfromID($targetTm->getID()) > $src->getTopOrder());
-                my ($iMin, $jMin, $iMax, $jMax) = $targetTm->bboxToIndices(
-                    $xMin,$yMin,$xMax,$yMax,$tilesPerWidth,$tilesPerHeight);
                 
-                for (my $i = $iMin; $i < $iMax + 1; $i++){
-                    for (my $j = $jMin ; $j < $jMax +1 ; $j++) {
+                my ($rowMin, $rowMax, $colMin, $colMax) = $targetTm->bboxToIndices(
+                    $xMin,$yMin,$xMax,$yMax,
+                    $tilesPerWidth,$tilesPerHeight
+                );
+                
+                for (my $col = $colMin; $col<= $colMax; $col++){
+                    for (my $row = $rowMin; $row<= $rowMax; $row++){
 
-                        my $idxkey = sprintf "%s_%s",$i,$j;
+                        my $idxkey = sprintf "%s_%s",$col,$row;
                         my $newnode = undef;
-                        if (! defined $self->{nodes}->{$targetTm->getID}->{$idxkey}) {
-                            $newnode = new COMMON::GraphNode({
-                                i => $i,
-                                j => $j,
+                        if (! defined $this->{nodes}->{$targetTm->getID}->{$idxkey}) {
+                            $newnode = new COMMON::Node({
+                                col => $col,
+                                row => $row,
                                 tm => $targetTm,
-                                graph => $self,
+                                graph => $this,
+                                type => $this->{forest}->getStorageType()
                             });
                             ## intersection avec la bbox des données initiales
-                            if ( $newnode->isBboxIntersectingNodeBbox($self->getBbox())) {
-                                $self->{nodes}->{$targetTm->getID()}->{$idxkey} = $newnode ;
+                            if ( $newnode->isBboxIntersectingNodeBbox($this->getBbox())) {
+                                $this->{nodes}->{$targetTm->getID()}->{$idxkey} = $newnode ;
                                 $newnode->addNodeSources($node); 
                             }
                         } else {
-                            $newnode = $self->{nodes}->{$targetTm->getID()}->{$idxkey};
+                            $newnode = $this->{nodes}->{$targetTm->getID()}->{$idxkey};
                             $newnode->addNodeSources($node); 
                         }             
                     }
@@ -542,7 +538,7 @@ sub identifyAboveNodes {
         }
 
         DEBUG(sprintf "Number of cache images by level (%s) : %d",
-              $levelID, scalar keys(%{$self->{nodes}->{$levelID}}));
+              $levelID, scalar keys(%{$this->{nodes}->{$levelID}}));
     }
 
     return TRUE;  
@@ -559,10 +555,10 @@ Only one step:
     - browse graph and write commands in different scripts.
 =cut
 sub computeYourself {
-    my $self = shift;
+    my $this = shift;
     
-    my $src = $self->{datasource};
-    my $tms = $self->getPyramid()->getTileMatrixSet();
+    my $src = $this->{datasource};
+    my $tms = $this->getPyramid()->getTileMatrixSet();
   
    #Initialisation
    my $Finisher_Index = 0;
@@ -570,9 +566,9 @@ sub computeYourself {
    for(my $i = $src->getBottomOrder; $i <= $src->getTopOrder; $i++) {
        # boucle sur tous les noeuds du niveau
        my $levelID = $tms->getIDfromOrder($i);
-       foreach my $node ($self->getNodesOfLevel($levelID)) {
+       foreach my $node ($this->getNodesOfLevel($levelID)) {
            # on détermine dans quel script on l'écrit en se basant sur les poids
-           my @ScriptsOfLevel = $self->getScriptsOfLevel($levelID);
+           my @ScriptsOfLevel = $this->getScriptsOfLevel($levelID);
            my @WeightsOfLevel = map {$_->getWeight();} @ScriptsOfLevel ;
            my $script_index = COMMON::Array::minArrayIndex(0,@WeightsOfLevel);
            my $script = $ScriptsOfLevel[$script_index];
@@ -580,9 +576,9 @@ sub computeYourself {
            $node->setScript($script);
            # on détermine le script à ecrire
            my ($c,$w) ;
-           if ($self->getDataSource->hasHarvesting) {
+           if ($this->getDataSource->hasHarvesting) {
                 # Datasource has a WMS service : we have to use it
-                ($c,$w) = $self->{commands}->wms2work($node,$self->getDataSource->getHarvesting);
+                ($c,$w) = $this->{commands}->wms2work($node,$this->getDataSource->getHarvesting);
                 if (! defined $c) {
                     ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName());
                     return FALSE;
@@ -590,14 +586,14 @@ sub computeYourself {
            } else {
                 if ($i == $src->getBottomOrder) {
                     # on utilise mergeNtiff pour le niveau du bas (à partir des images sources)
-                    ($c,$w) = $self->{commands}->mergeNtiff($node);
+                    ($c,$w) = $this->{commands}->mergeNtiff($node);
                     if ($w == -1) {
                         ERROR(sprintf "Cannot compose mergeNtiff command for the node %s.",$node->getWorkBaseName());
                         return FALSE;
                     }
                 } else {
                     # on utilise decimateNtiff pour les niveaux supérieurs, par décimation d'un niveau inférieur
-                    ($c,$w) = $self->{commands}->decimateNtiff($node);
+                    ($c,$w) = $this->{commands}->decimateNtiff($node);
                     if ($w == -1) {
                         ERROR(sprintf "Cannot compose decimateNtiff command for the node %s.",$node->getWorkBaseName());
                         return FALSE;
@@ -611,12 +607,12 @@ sub computeYourself {
                    
            # final script with all work2cache commands
            # on ecrit dans chacun des scripts de manière tournante
-           my $finisher = $self->getForest()->getScript($Finisher_Index);
-           ($c,$w) = $self->{commands}->work2cache($node,"\${ROOT_TMP_DIR}/".$node->getScript()->getID());
+           my $finisher = $this->getForest()->getScript($Finisher_Index);
+           ($c,$w) = $this->{commands}->work2cache($node,"\${ROOT_TMP_DIR}/".$node->getScript()->getID());
            # on ecrit la commande dans le fichier
            $finisher->write($c);
            #on met à jour l'index
-           if ($Finisher_Index == $self->getForest()->getSplitNumber() - 1) {
+           if ($Finisher_Index == $this->getForest()->getSplitNumber() - 1) {
                $Finisher_Index = 0;
            } else {
                $Finisher_Index ++;
@@ -624,8 +620,6 @@ sub computeYourself {
 
        }
    }
-    
-    TRACE;
     
     return TRUE;
 };
@@ -641,7 +635,7 @@ Parameters (list):
     j - integer - Row of the node we want to know if it is in the quad tree.
 =cut
 sub containsNode {
-    my $self = shift;
+    my $this = shift;
     my $level = shift;
     my $i = shift;
     my $j = shift;
@@ -649,7 +643,7 @@ sub containsNode {
     return FALSE if (! defined $level || ! defined $i || ! defined $j);
     
     my $nodeKey = $i."_".$j;
-    return (exists $self->{nodes}->{$level}->{$nodeKey});
+    return (exists $this->{nodes}->{$level}->{$nodeKey});
 }
 
 ####################################################################################################
@@ -658,56 +652,56 @@ sub containsNode {
 
 # Function: getPyramid
 sub getPyramid {
-    my $self = shift;
-    return $self->{pyramid};
+    my $this = shift;
+    return $this->{pyramid};
 }
 
 # Function: getForest
 sub getForest {
-    my $self = shift;
-    return $self->{forest};
+    my $this = shift;
+    return $this->{forest};
 }
 
 # Function: getDataSource
 sub getDataSource {
-    my $self = shift;
-    return $self->{datasource};
+    my $this = shift;
+    return $this->{datasource};
 }
 
 # Function: getTopID
 sub getTopID {
-    my $self = shift;
-    return $self->{topID};
+    my $this = shift;
+    return $this->{topID};
 }
 
 # Function: getBottomID
 sub getBottomID {
-    my $self = shift;
-    return $self->{bottomID};
+    my $this = shift;
+    return $this->{bottomID};
 }
 
 # Function: getTopOrder
 sub getTopOrder {
-    my $self = shift;
-    return $self->{pyramid}->getTileMatrixSet->getOrderfromID($self->{topID});
+    my $this = shift;
+    return $this->{pyramid}->getTileMatrixSet->getOrderfromID($this->{topID});
 }
 
 # Function: getBottomOrder
 sub getBottomOrder {
-    my $self = shift;
-    return $self->{pyramid}->getTileMatrixSet->getOrderfromID($self->{bottomID});
+    my $this = shift;
+    return $this->{pyramid}->getTileMatrixSet->getOrderfromID($this->{bottomID});
 }
 
 =begin nd
 Function: getNodesOfLevel
 
-Returns a <COMMON::GraphNode> array, contaning all nodes of the provided level.
+Returns a <COMMON::Node> array, contaning all nodes of the provided level.
 
 Parameters (list):
     level - string - Level ID whose we want all nodes.
 =cut
 sub getNodesOfLevel {
-    my $self = shift;
+    my $this = shift;
     my $levelID= shift;
     
     if (! defined $levelID) {
@@ -715,7 +709,7 @@ sub getNodesOfLevel {
         return undef;
     }
     
-    return values (%{$self->{nodes}->{$levelID}});
+    return values (%{$this->{nodes}->{$levelID}});
 }
 
 =begin nd
@@ -727,7 +721,7 @@ Parameters (list):
     level - string - Level ID
 =cut
 sub isLevelEmpty {
-    my $self = shift;
+    my $this = shift;
     my $levelID= shift;
     
     if (! defined $levelID) {
@@ -735,20 +729,20 @@ sub isLevelEmpty {
         return undef;
     }
     
-    return FALSE if (scalar(keys(%{$self->{nodes}->{$levelID}})) > 0) ;
+    return FALSE if (scalar(keys(%{$this->{nodes}->{$levelID}})) > 0) ;
     return TRUE;
 }
 
 # Function: getNodesOfTopLevel
 sub getNodesOfTopLevel {
-    my $self = shift;
-    return $self->getNodesOfLevel($self->{topID});
+    my $this = shift;
+    return $this->getNodesOfLevel($this->{topID});
 }
 
 # Function: getBbox
 sub getBbox {
-    my $self =shift;
-    return ($self->{bbox}[0],$self->{bbox}[1],$self->{bbox}[2],$self->{bbox}[3]);
+    my $this =shift;
+    return ($this->{bbox}[0],$this->{bbox}[1],$this->{bbox}[2],$this->{bbox}[3]);
 }
 
 =begin nd
@@ -760,15 +754,13 @@ Parameters (list):
     xmin, ymin, xmax, ymax - double - New coordinates to compare with current bbox.
 =cut
 sub updateBBox {
-    my $self = shift;
+    my $this = shift;
     my ($xmin,$ymin,$xmax,$ymax) = @_;
-
-    TRACE();
     
-    if (! defined $self->{bbox}[0] || $xmin < $self->{bbox}[0]) {$self->{bbox}[0] = $xmin;}
-    if (! defined $self->{bbox}[1] || $ymin < $self->{bbox}[1]) {$self->{bbox}[1] = $ymin;}
-    if (! defined $self->{bbox}[2] || $xmax > $self->{bbox}[2]) {$self->{bbox}[2] = $xmax;}
-    if (! defined $self->{bbox}[3] || $ymax > $self->{bbox}[3]) {$self->{bbox}[3] = $ymax;}
+    if (! defined $this->{bbox}[0] || $xmin < $this->{bbox}[0]) {$this->{bbox}[0] = $xmin;}
+    if (! defined $this->{bbox}[1] || $ymin < $this->{bbox}[1]) {$this->{bbox}[1] = $ymin;}
+    if (! defined $this->{bbox}[2] || $xmax > $this->{bbox}[2]) {$this->{bbox}[2] = $xmax;}
+    if (! defined $this->{bbox}[3] || $ymax > $this->{bbox}[3]) {$this->{bbox}[3] = $ymax;}
 }
 
 =begin nd
@@ -780,17 +772,17 @@ Parameters (list):
     level - string - Level identifiant, whose scripts we want.
 =cut
 sub getScriptsOfLevel {
-    my $self = shift;
+    my $this = shift;
     my $levelID = shift;
-    my $order =  $self->getPyramid()->getOrderfromID($levelID);
+    my $order =  $this->getPyramid()->getOrderfromID($levelID);
     
-    my $numberOfScriptByLevel = $self->getForest()->getSplitNumber();
-    my $numberOfFinisher = $self->getForest()->getSplitNumber();
+    my $numberOfScriptByLevel = $this->getForest()->getSplitNumber();
+    my $numberOfFinisher = $this->getForest()->getSplitNumber();
     
-    my $start_index = $numberOfFinisher + ($order - $self->getBottomOrder) * $numberOfScriptByLevel ;
+    my $start_index = $numberOfFinisher + ($order - $this->getBottomOrder) * $numberOfScriptByLevel ;
     my $end_index = $start_index + $numberOfScriptByLevel - 1;
 
-    return @{$self->getForest()->getScripts()}[$start_index .. $end_index];
+    return @{$this->getForest()->getScripts()}[$start_index .. $end_index];
 };
 
 ####################################################################################################
@@ -807,10 +799,10 @@ Example:
     (end code)
 =cut
 sub exportForDebug {
-    my $self = shift ;
+    my $this = shift ;
     
-    my $src = $self->getDataSource;
-    my $tms = $self->getPyramid->getTileMatrixSet;
+    my $src = $this->getDataSource();
+    my $tms = $this->getPyramid->getTileMatrixSet();
     
     my $output = "";
     
@@ -818,7 +810,7 @@ sub exportForDebug {
    for (my $i = $src->getBottomOrder; $i <= $src->getTopOrder; $i++) {
        $output .= sprintf "Description du niveau '%s' : \n",$i;
        # boucle sur tous les noeuds du niveau
-       foreach my $node ( $self->getNodesOfLevel($tms->getIDfromOrder($i))) {
+       foreach my $node ( $this->getNodesOfLevel($tms->getIDfromOrder($i))) {
          $output .= sprintf "\tNoeud : %s_%s ; TM Résolution : %s ; Calculé à partir de : \n",$node->getCol(),$node->getRow(),$node->getTM()->getResolution();
          foreach my $node_sup ( @{$node->getNodeSources()} ) {
              #print Dumper ($node_sup);

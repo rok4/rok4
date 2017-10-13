@@ -38,7 +38,7 @@
 #include "StyleXML.h"
 
 
-StyleXML::StyleXML(std::string path, ServicesXML* servicesXML) : DocumentXML ( path )
+StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
 {
     ok = false;
 
@@ -52,7 +52,6 @@ StyleXML::StyleXML(std::string path, ServicesXML* servicesXML) : DocumentXML ( p
 
     /********************** Default values */
 
-    bool inspire = servicesXML->isInspire();
     id ="";
     rgbContinuous = false;
     alphaContinuous = false;
@@ -66,6 +65,7 @@ StyleXML::StyleXML(std::string path, ServicesXML* servicesXML) : DocumentXML ( p
     float ndimg;
     float minSlope = 5.0;
 
+    int errorCode;
 
     /********************** Parse */
 
@@ -321,13 +321,13 @@ StyleXML::StyleXML(std::string path, ServicesXML* servicesXML) : DocumentXML ( p
         errorCode = pElem->QueryStringAttribute("interpolation", &interOfEst);
         if ( errorCode == TIXML_WRONG_TYPE ) {
             LOGGER_ERROR ( _ ( "Un attribut interpolation invalide a ete trouve dans l'estompage du Style " ) << id <<_ ( " : il est invalide!!" ) );
-            return NULL;
+            return;
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
             LOGGER_INFO("Pas d'interpolation defini, 'linear' par defaut");
         } else {
              if (interOfEst != "linear" && interOfEst != "cubic" && interOfEst != "nn" && interOfEst != "lanczos") {
                 LOGGER_ERROR ("Un attribut interpolation invalide a ete trouve dans l'estompage du Style " ) << id << ( ", les valeurs possibles sont 'nn','linear','cubic' et 'lanczos'");
-                return NULL;
+                return;
             } else {
                  estompage.setInterpolation(interOfEst);
              }
@@ -347,13 +347,13 @@ StyleXML::StyleXML(std::string path, ServicesXML* servicesXML) : DocumentXML ( p
         
         if ( errorCode == TIXML_WRONG_TYPE ) {
             LOGGER_ERROR ( _ ( "Un attribut algo invalide a ete trouve dans la pente du Style " ) << id <<_ ( " : il est invalide!!" ) );
-            return NULL;
+            return;
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
             LOGGER_INFO("Pas d'algo defini, H par defaut");
         } else {
             if (algo != "H" && algo != "Z") {
                 LOGGER_ERROR ("Un attribut algo invalide a ete trouve dans la pente du Style " ) << id << ( ", la valeur possible est H");
-                return NULL;
+                return;
             }
             pente.setAlgo(algo);
         }
@@ -362,13 +362,13 @@ StyleXML::StyleXML(std::string path, ServicesXML* servicesXML) : DocumentXML ( p
         errorCode = pElem->QueryStringAttribute("unit", &unit);
         if ( errorCode == TIXML_WRONG_TYPE ) {
             LOGGER_ERROR ( _ ( "Un attribut unit invalide a ete trouve dans la pente du Style " ) << id <<_ ( " : il est invalide!!" ) );
-            return NULL;
+            return;
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
             LOGGER_INFO("Pas d'unit defini, 'degree' par defaut");
         } else {
              if (unit != "degree" && unit != "pourcent") {
                 LOGGER_ERROR ("Un attribut unit invalide a ete trouve dans la pente du Style " ) << id << ( ", la valeur possible est 'degree' or 'pourcent'");
-                return NULL;
+                return;
             }
             pente.setUnit(unit);
         }
@@ -377,13 +377,13 @@ StyleXML::StyleXML(std::string path, ServicesXML* servicesXML) : DocumentXML ( p
         errorCode = pElem->QueryStringAttribute("interpolation", &inter);
         if ( errorCode == TIXML_WRONG_TYPE ) {
             LOGGER_ERROR ( _ ( "Un attribut interpolation invalide a ete trouve dans la pente du Style " ) << id <<_ ( " : il est invalide!!" ) );
-            return NULL;
+            return;
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
             LOGGER_INFO("Pas d'interpolation defini, 'linear' par defaut");
         } else {
              if (inter != "linear" && inter != "cubic" && inter != "nn" && inter != "lanczos") {
                 LOGGER_ERROR ("Un attribut interpolation invalide a ete trouve dans la pente du Style " ) << id << ( ", les valeurs possibles sont 'nn','linear','cubic' et 'lanczos'");
-                return NULL;
+                return;
             }
             pente.setInterpolation(inter);
         }
@@ -392,13 +392,13 @@ StyleXML::StyleXML(std::string path, ServicesXML* servicesXML) : DocumentXML ( p
         errorCode = pElem->QueryIntAttribute("slopeNoData", &ndslope);
         if ( errorCode == TIXML_WRONG_TYPE ) {
             LOGGER_ERROR ( _ ( "Un attribut slopeNoData invalide a ete trouve dans la pente du Style " ) << id <<_ ( " : il est invalide!!" ) );
-            return NULL;
+            return;
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
             LOGGER_INFO("Pas de slopeNoData defini, '0' par defaut");
         } else {
              if (ndslope < 0 || ndslope > 255) {
                 LOGGER_ERROR ("Un attribut ndslope invalide a ete trouve dans la pente du Style " ) << id << ( ", les valeurs possibles sont entre 0 et 255");
-                return NULL;
+                return;
             }
             pente.setSlopeNoData(ndslope);
         }
@@ -407,7 +407,7 @@ StyleXML::StyleXML(std::string path, ServicesXML* servicesXML) : DocumentXML ( p
         errorCode = pElem->QueryFloatAttribute("imageNoData", &ndimg);
         if ( errorCode == TIXML_WRONG_TYPE ) {
             LOGGER_ERROR ( _ ( "Un attribut imageNoData invalide a ete trouve dans la pente du Style " ) << id <<_ ( " : il est invalide!!" ) );
-            return NULL;
+            return;
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
             LOGGER_INFO("Pas de imageNoData defini, '-99999' par defaut");
         } else {
@@ -417,7 +417,7 @@ StyleXML::StyleXML(std::string path, ServicesXML* servicesXML) : DocumentXML ( p
         errorCode = pElem->QueryIntAttribute("maxSlope", &mxSlope);
         if ( errorCode == TIXML_WRONG_TYPE ) {
             LOGGER_ERROR ( _ ( "Un attribut maxSlope invalide a ete trouve dans la pente du Style " ) << id <<_ ( " : il est invalide!!" ) );
-            return NULL;
+            return;
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
             if (unit == "degree") {
                 LOGGER_INFO("Pas de maxSlope defini, '90' par defaut");
@@ -429,7 +429,7 @@ StyleXML::StyleXML(std::string path, ServicesXML* servicesXML) : DocumentXML ( p
         } else {
              if (mxSlope < 0 || mxSlope > 255) {
                 LOGGER_ERROR ("Un attribut maxSlope invalide a ete trouve dans la pente du Style " ) << id << ( ", les valeurs possibles sont entre 0 et 255");
-                return NULL;
+                return;
             }
             pente.setMaxSlope(mxSlope);
         }
@@ -446,14 +446,14 @@ StyleXML::StyleXML(std::string path, ServicesXML* servicesXML) : DocumentXML ( p
         
          if ( errorCode == TIXML_WRONG_TYPE ) {
             LOGGER_ERROR ( _ ( "Un attribut algo invalide a ete trouve dans l'exposition du Style " ) << id <<_ ( " : il est invalide!!" ) );
-            return NULL;
+            return;
         } else if ( errorCode == TIXML_NO_ATTRIBUTE ) {
             LOGGER_INFO("Pas d'algo defini, 'H' par defaut");
             algo = "H";
         } else {
             if (algo != "H") {
                 LOGGER_ERROR ("Un attribut algo invalide a ete trouve dans l'exposition du Style " ) << id << ( ", la valeur possible est H");
-                return NULL;
+                return;
             }
         }
         aspect.setAlgo(algo);

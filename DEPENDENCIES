@@ -90,7 +90,7 @@ So packages list is
 
 This two commands should be enough:
 
-    apt install libfile-copy-link-perl libgdal-perl libhttp-message-perl liblog-log4perl-perl libperl5.22 libperl5.22 or libdigest-sha-perl libwww-perl libxml-libxml-perl perl-base perl-modules-5.22 perl-modules-5.22 or libmath-bigint-perl perl-tk
+    apt install libfile-copy-link-perl libgdal-perl libhttp-message-perl liblog-log4perl-perl libperl5.22 libperl5.22 libdigest-sha-perl libwww-perl libxml-libxml-perl perl-base perl-modules-5.22 perl-modules-5.22 libmath-bigint-perl perl-tk
 
 #    cpan Tk::EntryCheck File::Map XML::Hash
 

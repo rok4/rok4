@@ -43,7 +43,8 @@ Section: BE4-SIMULATOR tool
 
 Synopsis:
     (start code)
-    perl be4-simulator.pl --tms=file --wkt=file --dims=NxM,N'xM' --levels=I,J,K [--lists=directory]
+    be4-simulator.pl --tms=file --wkt=file --dims=NxM,N'xM' --levels=I,J,K [--lists=directory]
+    be4-simulator.pl --tms /home/ign/TILEMATRIXSETS/PM.tms --wkt multipolygon.wkt --dims=8x8 --levels=18,17,16 --lists ./
     (end code)
 =cut
 
@@ -69,6 +70,7 @@ use lib "$Bin/../lib/perl5";
 # My module
 use COMMON::TileMatrixSet;
 use COMMON::ProxyGDAL;
+use COMMON::Base36;
 
 ################################################################################
 # Constantes
@@ -93,6 +95,7 @@ Contains be4-simulator call options :
     levels - To precise calculated levels 
     dims - To precise dimensions of image to compare
     lists - To precise the directory to write images' lists
+    listPaths - To precise to write slabs' path and not just slabs' indices
     
 =cut
 my %options =
@@ -106,6 +109,7 @@ my %options =
     "wkt" => undef,
     "levels" => undef,
     "lists" => undef,
+    "listPaths" => undef,
     "dims" => undef
 );
 
@@ -179,6 +183,7 @@ sub init {
         "wkt=s" => \$options{wkt},
         "levels=s" => \$options{levels},
         "lists=s" => \$options{lists},
+        "listPaths" => \$options{listPaths},
         "dims=s" => \$options{dims}
     ) or do {
         printf "Unappropriate usage\n";
@@ -265,7 +270,7 @@ sub doIt {
     }
     close(SHAPE);
     
-    my $ogrShape = COMMON::ProxyGDAL::geometryFromWKT($wktShape);
+    my $ogrShape = COMMON::ProxyGDAL::geometryFromString("WKT", $wktShape);
 
     if (! defined $ogrShape) {
         ERROR(sprintf "Cannot create a Geometry from the string : %s.",$wktShape);
@@ -328,16 +333,11 @@ sub doIt {
 
                 DEBUG("Bbox $curBbox / $nbbboxes");
             
-                my $xmin = $bb->[0];
-                my $ymin = $bb->[2];
-                my $xmax = $bb->[1];
-                my $ymax = $bb->[3];
-
-                my ($iMin, $jMin, $iMax, $jMax) = $tm->bboxToIndices($xmin,$ymin,$xmax,$ymax,$width,$height);
+                my ($rowMin, $rowMax, $colMin, $colMax) = $tm->bboxToIndices(@{$bb},$width,$height);
                 
-                for (my $i = $iMin; $i <= $iMax; $i++) {
-                    for (my $j = $jMin; $j <= $jMax; $j++) {
-                        my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBBox($i,$j,$width,$height);
+                for (my $col = $colMin; $col <= $colMax; $col++) {
+                    for (my $row = $rowMin; $row <= $rowMax; $row++) {
+                        my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBbox($col,$row,$width,$height);
 
                         my $WKTtile = sprintf "POLYGON((%s %s,%s %s,%s %s,%s %s,%s %s))",
                             $xmin,$ymin,
@@ -346,12 +346,17 @@ sub doIt {
                             $xmax,$ymin,
                             $xmin,$ymin;
 
-                        my $OGRtile = COMMON::ProxyGDAL::geometryFromWKT($WKTtile);
+                        my $OGRtile = COMMON::ProxyGDAL::geometryFromString("WKT", $WKTtile);
 
                         if (COMMON::ProxyGDAL::isIntersected($OGRtile, $ogrShape)) {
                             $nbImages++;
                             if (defined $options{lists}) {
-                                print OUT "$i,$j\n";
+                                if ($options{listPaths}) {
+                                    my $path = COMMON::Base36::indicesToB36Path($col, $row, 3);
+                                    print OUT "$level/$path.tif\n";
+                                } else {
+                                    print OUT "$col,$row\n";
+                                }
                             }
                         }
 

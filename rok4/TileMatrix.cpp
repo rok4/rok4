@@ -77,6 +77,17 @@ std::string TileMatrix::getId()  {
 
 TileMatrix::TileMatrix ( const TileMatrix& t ) : id ( t.id ), res ( t.res ),x0 ( t.x0 ),y0 ( t.y0 ),tileW ( t.tileW ),tileH ( t.tileH ),matrixW ( t.matrixW ),matrixH ( t.matrixH ) {}
 
+TileMatrix::TileMatrix ( const TileMatrixXML& t ) {
+    this->id = t.id;
+    this->res = t.res;
+    this->x0 = t.x0;
+    this->y0 = t.y0;
+    this->tileW = t.tileW;
+    this->tileH = t.tileH;
+    this->matrixW = t.matrixW;
+    this->matrixH = t.matrixH;
+}
+
 TileMatrix& TileMatrix::operator= ( const TileMatrix& other ) {
 
     this->id = other.id;
@@ -105,7 +116,5 @@ bool TileMatrix::operator!= ( const TileMatrix& other ) const {
     return ! ( *this == other );
 }
 
-TileMatrix::~TileMatrix() {
-
-}
+TileMatrix::~TileMatrix() { }
 

@@ -132,27 +132,27 @@ Returns:
     
 =cut
 sub new() {
-    my $this = shift;
+    my $class = shift;
     my $params = shift;
 
-    my $class= ref($this) || $this;
+    $class = ref($class) || $class;
 
-    $params->{type}='pyr';
+    $params->{type} = 'pyr';
 
     # IMPORTANT : if modification, think to update natural documentation (just above)
-    my $self = $class->SUPER::new($params);
-    $self->{file} = undef;
-    $self->{style} = undef;
-    $self->{transparent} = undef;
+    my $this = $class->SUPER::new($params);
+    $this->{file} = undef;
+    $this->{style} = undef;
+    $this->{transparent} = undef;
 
-    bless($self, $class);
+    bless($this, $class);
 
-    if (!$self->_init($params)) {
+    if (!$this->_init($params)) {
         ERROR("Could not load pyramid source.");
         return undef;
     }
 
-    return $self;
+    return $this;
 }
 
 =begin nd
@@ -188,32 +188,32 @@ Returns:
     
 =cut
 sub _init() {
-    my $self = shift;
+    my $this = shift;
     my $params = shift;
 
-    return FALSE if(!$self->SUPER::_init($params));
+    return FALSE if(!$this->SUPER::_init($params));
 
     if (!exists $params->{file} || !defined $params->{file}) {
         ERROR("A pyramid descriptor's file path must be passed to load a pyramid source.");
         return FALSE;
     }
 
-    $self->{file} = $params->{file};
+    $this->{file} = $params->{file};
     if (exists $params->{style} && defined $params->{style} && $params->{style} ne '') {
-        $self->{style} = $params->{style};
+        $this->{style} = $params->{style};
     } else {
-        $self->{style} = "normal";
+        $this->{style} = "normal";
     }
     if (exists $params->{transparent} && defined $params->{transparent} && $params->{transparent} ne '') {
         if ($params->{transparent} =~ m/\A(1|t|true)\z/i) {
-            $self->{transparent} = "true";
+            $this->{transparent} = "true";
         } elsif ($params->{transparent} =~ m/\A(0|f|false)\z/i) {
-            $self->{transparent} = "false";
+            $this->{transparent} = "false";
         } else {
             WARN(sprintf "Unhandled value for 'transparent' attribute : %s. Ignoring it.", $params->{transparent});
         }
     } else {
-        $self->{transparent} = "false";
+        $this->{transparent} = "false";
     }
 
     return TRUE;
@@ -244,15 +244,15 @@ Returns:
 
 =cut
 sub writeInXml() {
-    my $self = shift;
+    my $this = shift;
     my $xmlDoc = shift;
     my $sourcesNode = shift;
 
     my $basedPyramidEl = $xmlDoc->createElement("basedPyramid");
     $sourcesNode->appendChild($basedPyramidEl);
-    $basedPyramidEl->appendTextChild("file", $self->{file});
-    $basedPyramidEl->appendTextChild("style", $self->{style});
-    $basedPyramidEl->appendTextChild("transparent", $self->{transparent});
+    $basedPyramidEl->appendTextChild("file", $this->{file});
+    $basedPyramidEl->appendTextChild("style", $this->{style});
+    $basedPyramidEl->appendTextChild("transparent", $this->{transparent});
 
     return TRUE;
 }

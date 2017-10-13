@@ -77,6 +77,7 @@ use lib "$Bin/../lib/perl5";
 
 # My module
 use COMMON::TileMatrixSet ;
+use COMMON::ProxyGDAL ;
 use COMMON::Base36 ;
 
 ###################################################################################################
@@ -245,11 +246,11 @@ sub coord2image {
 
     my $txt = "Level : $level, Coordinates : $x, $y \n";
 
-    my ($colMin,$rowMin,$colMax,$rowMax) = $tm->bboxToIndices($x, $y, $x, $y, 1, 1);
+    my ($rowMin, $rowMax, $colMin, $colMax) = $tm->bboxToIndices($x, $y, $x, $y, 1, 1);
 
     $txt .= "Tile's indices : $colMin, $rowMin \n";
 
-    ($colMin,$rowMin,$colMax,$rowMax) = $tm->bboxToIndices($x, $y, $x, $y, $widthEntry->get(), $heightEntry->get());
+    ($rowMin, $rowMax, $colMin, $colMax) = $tm->bboxToIndices($x, $y, $x, $y, $widthEntry->get(), $heightEntry->get());
 
     $txt .= "Slab's indices : $colMin, $rowMin \n";
 
@@ -338,11 +339,11 @@ sub bbox2images {
 
     my $txt = "Level : $level, Coordinates : $xmin, $ymin -> $xmax, $ymax \n";
 
-    my ($colMin,$rowMin,$colMax,$rowMax) = $tm->bboxToIndices($xmin, $ymin, $xmax, $ymax, 1, 1);
+    my ($rowMin, $rowMax, $colMin, $colMax) = $tm->bboxToIndices($xmin, $ymin, $xmax, $ymax, 1, 1);
 
     $txt .= "Tiles' indices : \n \t column : $colMin -> $colMax \n \t row : $rowMin -> $rowMax \n";
 
-    ($colMin,$rowMin,$colMax,$rowMax) = $tm->bboxToIndices($xmin, $ymin, $xmax, $ymax, $widthEntry->get(), $heightEntry->get());
+    ($rowMin, $rowMax, $colMin, $colMax) = $tm->bboxToIndices($xmin, $ymin, $xmax, $ymax, $widthEntry->get(), $heightEntry->get());
 
     $txt .= "Slabs' indices : \n \t column : $colMin -> $colMax \n \t row : $rowMin -> $rowMax \n";
 
@@ -494,7 +495,7 @@ sub slab2getmap {
     my $txt = "Level : $level\n";
     $txt .= "Slab's indices : $col, $row \n";
 
-    my ($xMin,$yMin,$xMax,$yMax) = $tm->indicesToBBox($col, $row, $widthEntry->get(), $heightEntry->get());
+    my ($xMin,$yMin,$xMax,$yMax) = $tm->indicesToBbox($col, $row, $widthEntry->get(), $heightEntry->get());
 
     my $w = $tm->getTileWidth() * $widthEntry->get();
     my $h = $tm->getTileHeight() * $heightEntry->get();
@@ -619,6 +620,143 @@ sub addTFW {
 
 
         $onglet5Text->insert('end', $char);
+    }
+}
+
+###################################################################################################
+####################################### List -> calculate WKT #####################################
+###################################################################################################
+
+### Interface
+
+my $onglet6 = $ongletsNoteBook->add('onglet6', -label => 'List -> calculate WKT');
+$onglet6->configure( -background => 'white');
+
+my $onglet6ParamsFrame= $onglet6->Frame(-background =>  'white')->pack( -fill => 'both' );
+my $onglet6ResultFrame= $onglet6->Frame(-background =>  'white')->pack( -fill => 'both', -expand => 1 ); 
+my $onglet6Text = $onglet6ResultFrame->ROText( )->pack( -side => 'left', -fill => 'both', -expand => 1);
+
+$onglet6ParamsFrame->Label( -background =>  'white',  -text => "List's path = " )->pack( -side => 'left');
+
+my $onglet6PathEntry = $onglet6ParamsFrame->Entry( )->pack( -side => 'left', -fill => 'both', -expand => 1);
+
+my $listdirButton = $onglet6ParamsFrame->Button(
+    -text => 'Browse...',
+    -command => \&openListPathBrowser,
+) ->pack( -side => 'left', -fill => 'both');
+
+$onglet6ParamsFrame->Button(
+    -text => 'Calculate...',
+    -command => \&calculateWKTs,
+) ->pack( -side => 'left', -fill => 'x');
+
+
+### Fonctions
+
+sub openListPathBrowser {
+
+    my $fileDialog = $mainWindow->FileSelect(-directory => $ENV{'HOME'});
+
+    my $path = $fileDialog->Show();
+
+    if (defined $path ) {
+        $onglet6PathEntry->delete(0, length($onglet6PathEntry->get()));
+        $onglet6PathEntry->insert(0, $path);
+    }
+}
+
+sub calculateWKTs {
+    $onglet6Text->selectAll();
+    $onglet6Text->deleteSelected();
+
+    my $error = validateGlobals();
+    if (defined $error) {
+        $onglet6Text->insert('end', "ERROR: $error");
+        return;
+    }
+
+    my $listPath = $onglet6PathEntry->get();
+    if ( ! defined $listPath || ! -f $listPath ) {
+        $onglet6Text->insert('end', "ERROR: List path undefined or does not exist");
+
+        return;
+    }
+
+    my $dirList = File::Basename::dirname($listPath);
+    my $nbLignes = `wc -l $listPath | cut -d' ' -f1`;
+    my $prog = 0;
+    my $done = 0;
+    my $geomsByLevel = {};
+
+    $onglet6Text->insert('end', "INFO: Go\n");
+    $onglet6Text->insert('end', "INFO: 0");
+    open(IN, "<$listPath") or do {
+        $onglet6Text->insert('end', "ERROR: Cannot open $listPath to read in it");
+        return;        
+    };
+
+    while (my $line = <IN>) {
+        chomp($line);
+
+        
+        my @path = split('/', $line);
+        if (scalar @path < 4) {
+            $onglet6Text->insert('end', "\nERROR : paths in the list must be like [<path>/]<level>/<XY>/<XY>/<XY>.tif");
+            return;
+        }
+
+        my $level = $path[-4];
+        my $end = join('/', @path[-3..-1]);
+        $end =~ s/\..*$//;
+        my ($col, $row) = COMMON::Base36::b36PathToIndices($end);
+        if ( ! defined $col || ! defined $row ) {
+            $onglet6Text->insert('end', "\nERROR : cannot convert path to slab indices for path $line");
+            return;
+        }
+
+        my $tm = $tmsObject->getTileMatrix($level);
+
+        if ( ! defined $tm ) {
+            $onglet6Text->insert('end', "\nERROR: Tile matrix with ID $level doesn't exist (for path $line)");
+            return;
+        } 
+
+        my $geom = $tm->indicesToGeom($col, $row, $widthEntry->get(), $heightEntry->get());
+
+        if (! defined $geom) {
+            $onglet6Text->insert('end', "\nERROR: Cannot get geometry from slab indices ($line)");
+            return;
+        }
+
+        if (exists $geomsByLevel->{$level}) {
+            $geomsByLevel->{$level} = COMMON::ProxyGDAL::getUnion($geomsByLevel->{$level},$geom);
+        } else {
+            $geomsByLevel->{$level} = $geom;
+        }
+
+        $done++;
+
+        my $char = "";
+        my $old = $prog;
+
+        $prog = int(100 * $done / $nbLignes);
+
+        if ($prog != $old) {
+            if ($prog % 10 == 0) {
+                $char = $prog;
+            } else {
+                $char = ".";
+            }
+        }
+
+        $onglet6Text->insert('end', $char);
+    }
+
+    foreach my $l (keys (%{$geomsByLevel})) {
+        my $wktPath = "$dirList/extent_$l.wkt";
+        open(OUT, ">$wktPath");
+        print OUT $geomsByLevel->{$l}->ExportToWkt();
+        close(OUT);
     }
 }
 

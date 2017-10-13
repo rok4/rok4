@@ -54,7 +54,7 @@ Using:
     (end code)
 
 Attributes:
-    pixel - <Pixel> - Components of a nodata pixel.
+    pixel - <COMMON::Pixel> - Components of a nodata pixel.
 
     value - string - Contains one integer value per sample, in decimal format, separated by comma. For 8 bits unsigned integer, value must be between 0 and 255. For 32 bits float, an integer is expected too, but can be negative.
     Example : "255,255,255" (white) for images whithout alpha sample, "-99999" for a DTM.
@@ -68,7 +68,6 @@ use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
-use File::Spec::Link;
 use File::Basename;
 use File::Spec;
 use File::Path;
@@ -88,7 +87,6 @@ our @EXPORT      = qw();
 # Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
-use constant CREATE_NODATA => "createNodata";
 
 # Constant: HEX2DEC
 # Define conversion from hedecimal to decimal number.
@@ -135,24 +133,23 @@ Parameters (hash):
     value - string - Optionnal, value (color) to use when no input data
 =cut
 sub new {
-    my $this = shift;
+    my $class = shift;
     my $params = shift;
     
-    my $class= ref($this) || $this;
+    $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above)
-    my $self = {
+    my $this = {
         pixel           => undef,
         value           => undef,
     };
     
-    bless($self, $class);
+    bless($this, $class);
     
-    TRACE;
     
     # init. class
-    return undef if (! $self->_init($params));
+    return undef if (! $this->_init($params));
     
-    return $self;
+    return $this;
 }
 
 =begin nd
@@ -167,10 +164,9 @@ Parameters (hash):
     value - string - Optionnal, value (color) to use when no input data
 =cut
 sub _init {
-    my $self = shift;
+    my $this = shift;
     my $params = shift;
 
-    TRACE;
     
     return FALSE if (! defined $params);
     
@@ -183,19 +179,19 @@ sub _init {
         ERROR ("Parameter 'pixel' required !");
         return FALSE;
     }
-    $self->{pixel} = $params->{pixel};
+    $this->{pixel} = $params->{pixel};
 
     ### Value
     # For nodata value, it has to be coherent with bitspersample/sampleformat :
     #       - 32/float -> an integer in decimal format (-99999 for a DTM for example)
     #       - 8/uint -> a uint in decimal format (255 for example)
     if (! exists $params->{value} || ! defined ($params->{value})) {
-        if ($self->{pixel}->getBitsPerSample == 32 && $self->{pixel}->getSampleFormat eq 'float') {
+        if ($this->{pixel}->getBitsPerSample == 32 && $this->{pixel}->getSampleFormat eq 'float') {
             WARN ("Parameter 'nodata value' has not been set. The default value is -99999 per sample");
-            $params->{value} .= '-99999' . ',-99999'x($self->{pixel}->getSamplesPerPixel - 1);
-        } elsif ($self->{pixel}->getBitsPerSample == 8 && $self->{pixel}->getSampleFormat eq 'uint') {
+            $params->{value} .= '-99999' . ',-99999'x($this->{pixel}->getSamplesPerPixel - 1);
+        } elsif ($this->{pixel}->getBitsPerSample == 8 && $this->{pixel}->getSampleFormat eq 'uint') {
             WARN ("Parameter 'nodata value' has not been set. The default value is 255 per sample");
-            $params->{value} = '255' . ',255'x($self->{pixel}->getSamplesPerPixel - 1);
+            $params->{value} = '255' . ',255'x($this->{pixel}->getSamplesPerPixel - 1);
         } else {
             ERROR ("sampleformat/bitspersample not supported !");
             return FALSE;
@@ -204,15 +200,15 @@ sub _init {
         $params->{value} =~ s/ //g;
 
         # On garde la possibilité de traiter une valeur fournie en héxadécimal
-        if ($self->{pixel}->getBitsPerSample == 8 &&
-            $self->{pixel}->getSampleFormat eq 'uint' &&
+        if ($this->{pixel}->getBitsPerSample == 8 &&
+            $this->{pixel}->getSampleFormat eq 'uint' &&
             ( $params->{value} !~ m/^[0-9,]+$/ || $params->{value} =~ m/^0[0-9A-F]+$/ ) ) {
 
             WARN (sprintf "Nodata value in hexadecimal format (%s) is deprecated, use decimal format instead !",
                 $params->{value});
             
             # nodata is supplied in hexadecimal format, we convert it
-            my $valueDec = $self->hexToDec($params->{value});
+            my $valueDec = $this->hexToDec($params->{value});
             if (! defined $valueDec) {
                 ERROR (sprintf "Incorrect value for nodata in hexadecimal format '%s' ! Unable to convert",
                     $params->{value});
@@ -223,19 +219,19 @@ sub _init {
         }
         
         my @nodata = split(/,/,$params->{value},-1);
-        if (scalar @nodata != $self->{pixel}->getSamplesPerPixel) {
+        if (scalar @nodata != $this->{pixel}->getSamplesPerPixel) {
             ERROR (sprintf "Incorrect parameter nodata (%s) : we need one value per sample (%s), separated by ',' !",
-                $params->{value},$self->{pixel}->getSamplesPerPixel);
+                $params->{value},$this->{pixel}->getSamplesPerPixel);
             return FALSE;
         }
 
         foreach my $value (@nodata) {
-            if ($self->{pixel}->getBitsPerSample == 32 && $self->{pixel}->getSampleFormat eq 'float') {
+            if ($this->{pixel}->getBitsPerSample == 32 && $this->{pixel}->getSampleFormat eq 'float') {
                 if ( $value !~ m/^[-+]?[0-9]+$/ ) {
                     ERROR (sprintf "Incorrect value for nodata for a float32 pixel's format (%s) !",$value);
                     return FALSE;
                 }
-            } elsif ($self->{pixel}->getBitsPerSample == 8 && $self->{pixel}->getSampleFormat eq 'uint') {
+            } elsif ($this->{pixel}->getBitsPerSample == 8 && $this->{pixel}->getSampleFormat eq 'uint') {
                 if ( $value !~ m/^[0-9]+$/ ) {
                     ERROR (sprintf "Incorrect value for nodata for a uint8 pixel's in decimal format '%s' !",$value);
                     return FALSE;
@@ -251,7 +247,7 @@ sub _init {
         }
     }
     
-    $self->{value} = $params->{value};
+    $this->{value} = $params->{value};
 
     return TRUE;
 }
@@ -262,72 +258,14 @@ sub _init {
 
 # Function: getValue
 sub getValue {
-    my $self = shift;
-    return $self->{value};
+    my $this = shift;
+    return $this->{value};
 }
 
-=begin nd
-Function: getNodataFilename
-
-Returns the name of the nodata tile : nd.tif
-=cut
-sub getNodataFilename {
-    my $self = shift;
-    return "nd.tif";
-}
-
-####################################################################################################
-#                                    Group: Commands                                               #
-####################################################################################################
-
-=begin nd
-Function: createNodata
-
-Compose the command to create a nodata tile and execute it. The tile's name is given by the method getNodataName.
-
-Returns TRUE if the nodata tile is succefully written, FALSE otherwise.
-
-Parameters (list):
-    nodataDirPath - string - complete absolute directory path, where to write the nodata tile ("/path/to/write/")
-    width - integer - Width in pixel of the tile
-    height - integer - Height in pixel of the tile
-    compression - string - Compression to apply to the nodata tile
-=cut
-sub createNodata {
-    my $self = shift;
-    my $nodataDirPath = shift;
-    my $width = shift;
-    my $height = shift;
-    my $compression = shift;
-    
-    TRACE();
-    
-    my $nodataFilePath = File::Spec->catfile($nodataDirPath,$self->getNodataFilename());
-    
-    my $cmd = sprintf ("%s -n %s",CREATE_NODATA, $self->{value});
-    $cmd .= sprintf ( " -c %s", $compression);
-    $cmd .= sprintf ( " -p %s", $self->{pixel}->getPhotometric);
-    $cmd .= sprintf ( " -t %s %s",$width,$height);
-    $cmd .= sprintf ( " -b %s", $self->{pixel}->getBitsPerSample);
-    $cmd .= sprintf ( " -s %s", $self->{pixel}->getSamplesPerPixel);
-    $cmd .= sprintf ( " -a %s", $self->{pixel}->getSampleFormat);
-    $cmd .= sprintf ( " %s", $nodataFilePath);
-
-    if (! -d $nodataDirPath) {
-        # create folders
-        eval { mkpath([$nodataDirPath]); };
-        if ($@) {
-            ERROR(sprintf "Can not create the nodata directory '%s' : %s !", $nodataDirPath , $@);
-            return FALSE;
-        }
-    }
-    
-    if (! system($cmd) == 0) {
-        ERROR (sprintf "The command to create a nodata tile is incorrect : '%s'",$cmd);
-        return FALSE;
-    }
-
-    return TRUE; 
+# Function: getPixel
+sub getPixel {
+    my $this = shift;
+    return $this->{pixel};
 }
 
 ####################################################################################################
@@ -346,7 +284,7 @@ Example:
     hexToDec("7BFF0300") = "123,255,3,0"
 =cut
 sub hexToDec {
-    my $self = shift;
+    my $this = shift;
     my $hex = shift;
 
     if (length($hex) % 2 != 0) {
@@ -394,12 +332,12 @@ Example:
     (end code)
 =cut
 sub exportForDebug {
-    my $self = shift ;
+    my $this = shift ;
     
     my $export = "";
     
     $export .= "\nObject COMMON::NoData :\n";
-    $export .= sprintf "\t Value : %s\n", $self->{value};
+    $export .= sprintf "\t Value : %s\n", $this->{value};
     
     return $export;
 }

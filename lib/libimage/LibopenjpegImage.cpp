@@ -130,13 +130,6 @@ LibopenjpegImage* LibopenjpegImageFactory::createLibopenjpegImageToRead ( char* 
         return NULL;
     }
 
-    l_stream = opj_stream_create_default_file_stream ( file,1 );
-    if ( !l_stream ) {
-        std::fclose ( file );
-        LOGGER_ERROR ( "Unable to create the stream (to read) for the JPEG2000 file " << filename );
-        return NULL;
-    }
-
     // Récupération du format du JPEG2000 (magic code) pour savoir quel codec utiliser pour la décompression
     unsigned char * magic_code = ( unsigned char * ) malloc ( 12 );
 
@@ -146,8 +139,8 @@ LibopenjpegImage* LibopenjpegImageFactory::createLibopenjpegImageToRead ( char* 
         LOGGER_ERROR ( "Unable to read the magic code for the JPEG2000 file " << filename );
         return NULL;
     }
-    // On remet le pointeur du fichier source au début
-    std::fseek ( file, 0, SEEK_SET );
+
+    std::fclose ( file );
 
     // Format MAGIC Code
     if ( memcmp ( magic_code, JP2_RFC3745_MAGIC, 12 ) == 0 || memcmp ( magic_code, JP2_MAGIC, 4 ) == 0 ) {
@@ -158,9 +151,7 @@ LibopenjpegImage* LibopenjpegImageFactory::createLibopenjpegImageToRead ( char* 
         LOGGER_DEBUG ( "Ok, use format J2K !" );
     } else {
         LOGGER_ERROR ( "Unhandled format for the JPEG2000 file " << filename );
-        std::fclose ( file );
         free ( magic_code );
-        opj_stream_destroy ( l_stream );
         return NULL;
     }
 
@@ -175,18 +166,21 @@ LibopenjpegImage* LibopenjpegImageFactory::createLibopenjpegImageToRead ( char* 
     /* Setup the decoder decoding parameters using user parameters */
     if ( !opj_setup_decoder ( l_codec, &parameters ) ) {
         LOGGER_ERROR ( "Unable to setup the decoder for the JPEG2000 file " << filename );
-        opj_stream_destroy ( l_stream );
-        std::fclose ( file );
         opj_destroy_codec ( l_codec );
         return NULL;
     }
 
+    l_stream = opj_stream_create_default_file_stream ( filename,1 );
+    if ( !l_stream ) {
+        std::fclose ( file );
+        LOGGER_ERROR ( "Unable to create the stream (to read) for the JPEG2000 file " << filename );
+        return NULL;
+    }
 
     /* Read the main header of the codestream and if necessary the JP2 boxes*/
     if ( ! opj_read_header ( l_stream, l_codec, &image ) ) {
         LOGGER_ERROR ( "Unable to read the header for the JPEG2000 file " << filename );
         opj_stream_destroy ( l_stream );
-        std::fclose ( file );
         opj_destroy_codec ( l_codec );
         opj_image_destroy ( image );
         return NULL;
@@ -241,13 +235,11 @@ LibopenjpegImage* LibopenjpegImageFactory::createLibopenjpegImageToRead ( char* 
         opj_destroy_codec ( l_codec );
         opj_stream_destroy ( l_stream );
         opj_image_destroy ( image );
-        fclose ( file );
         return NULL;
     }
 
     opj_destroy_codec ( l_codec );
     opj_stream_destroy ( l_stream );
-    fclose ( file );
 
     /******************** CRÉATION DE L'OBJET ******************/
 

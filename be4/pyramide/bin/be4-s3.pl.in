@@ -1,0 +1,1012 @@
+#!/usr/bin/env perl
+# Copyright © (2011) Institut national de l'information
+#                    géographique et forestière 
+# 
+# Géoportail SAV <geop_services@geoportail.fr>
+# 
+# This software is a computer program whose purpose is to publish geographic
+# data using OGC WMS and WMTS protocol.
+# 
+# This software is governed by the CeCILL-C license under French law and
+# abiding by the rules of distribution of free software.  You can  use, 
+# modify and/ or redistribute the software under the terms of the CeCILL-C
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "http://www.cecill.info". 
+# 
+# As a counterpart to the access to the source code and  rights to copy,
+# modify and redistribute granted by the license, users are provided only
+# with a limited warranty  and the software's author,  the holder of the
+# economic rights,  and the successive licensors  have only  limited
+# liability. 
+# 
+# In this respect, the user's attention is drawn to the risks associated
+# with loading,  using,  modifying and/or developing or reproducing the
+# software by the user in light of its specific status of free software,
+# that may mean  that it is complicated to manipulate,  and  that  also
+# therefore means  that it is reserved for developers  and  experienced
+# professionals having in-depth computer knowledge. Users are therefore
+# encouraged to load and test the software's suitability as regards their
+# requirements in conditions enabling the security of their systems and/or 
+# data to be ensured and,  more generally, to use and operate it in the 
+# same conditions as regards security. 
+# 
+# The fact that you are presently reading this means that you have had
+# 
+# knowledge of the CeCILL-C license and that you accept its terms.
+
+################################################################################
+
+=begin nd
+File: be4-s3.pl
+
+Section: BE4-S3 tool
+
+Synopsis:
+    (start code)
+    perl be4-s3.pl --conf=path
+    (end code)
+
+Tool allowing to generate a pyramid of tiled TIFF images, several resolutions, with compression (lossless or lossy) from several data sources, georeferenced image (ortho, scan, ...) or WMS service. Output format respects WMS/WMTS server ROK4.
+
+This tool write scripts, to execute to obtain the pyramid in a S3 bucket.
+
+(see be4s3_general.png)
+
+2 types of generation :
+    - create a new pyramid with data
+    - create a pyramid from an ancestor one (update)
+
+2 data source type :
+    - images
+    - WMS service
+
+=cut
+
+################################################################################
+
+use warnings;
+use strict;
+
+use POSIX qw(locale_h);
+
+use Getopt::Long;
+
+use Data::Dumper;
+local $Data::Dumper::Maxdepth = 2;
+
+use File::Basename;
+use File::Spec;
+use File::Path;
+use Cwd;
+
+use Log::Log4perl qw(:easy);
+
+# My search module
+use FindBin qw($Bin);
+use lib "$Bin/../lib/perl5";
+
+# My module
+use BE4S3::PropertiesLoader;
+use COMMON::Pyramid;
+use COMMON::DataSourceLoader;
+use COMMON::Forest;
+use COMMON::Array;
+use COMMON::CheckUtils;
+
+################################################################################
+# Constantes
+use constant TRUE  => 1;
+use constant FALSE => 0;
+
+my @UPDATESMODES = ( "slink", "copy", "inject" );
+
+################################################################################
+# Pas de bufferisation des sorties.
+$|=1;
+
+####################################################################################################
+#                                       Group: Variables                                           #
+####################################################################################################
+
+# Variable: version
+my $VERSION = '@VERSION_TEXT@';
+
+=begin nd
+Variable: options
+
+Contains be4-s3 call options :
+
+    version - To obtain the command's version
+    help - To obtain the command's help
+    usage - To obtain the command's usage
+    properties - Configuration file
+=cut
+my %options =
+(
+    "version"    => 0,
+    "help"       => 0,
+    "usage"      => 0,
+    
+    # Configuration
+    "properties"  => undef, # file properties params (mandatory) !
+    
+    # Only for maintenance !
+    "test" => 0,
+);
+
+=begin nd
+Variable: this
+
+All parameters by section :
+
+    logger - Can be null
+    datasource - 
+    pyramid -
+    process - 
+=cut
+my %this =
+(
+    params => {
+        logger        => undef,
+        datasource    => undef,
+        pyramid       => undef,
+        process       => undef
+    },
+);
+
+####################################################################################################
+#                                         Group: Functions                                         #
+####################################################################################################
+
+=begin nd
+Function: main
+
+Main method.
+
+See Also:
+    <init>, <config>, <doIt>
+=cut
+sub main {
+    printf("BE4-S3: version [%s]\n",$VERSION);
+    # message
+    my $message = undef;
+
+    # initialization
+    ALWAYS("> Initialization");
+    if (! main::init()) {
+        $message = "ERROR INITIALIZATION !";
+        printf STDERR "%s\n", $message;
+        exit 1;
+    }
+
+    $message = "BEGIN";
+    printf STDOUT "%s\n", $message;
+
+    # configuration
+    ALWAYS("> Configuration");
+    if (! main::config()) {
+        $message = "ERROR CONFIGURATION !";
+        printf STDERR "%s\n", $message;
+        exit 2;
+    }
+
+    # execution
+    ALWAYS("> Execution");
+    if (! main::doIt()) {
+        $message = "ERROR EXECUTION !";
+        printf STDERR "%s\n", $message;
+        exit 3;
+    }
+
+    $message = "END";
+    printf STDOUT "%s\n", $message;
+}
+
+=begin nd
+Function: init
+
+Checks options and initializes the default logger. Check properties file (mandatory).
+=cut
+sub init {
+  
+    # init Getopt
+    local $ENV{POSIXLY_CORRECT} = 1;
+    
+    Getopt::Long::config qw(
+        default
+        no_autoabbrev
+        no_getopt_compat
+        require_order
+        bundling
+        no_ignorecase
+        permute
+    );
+
+    # init Options
+    GetOptions(
+        "help|h" => sub {
+            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-s3-pl.html\n" ;
+            exit 0;
+        },
+        "version|v" => sub { exit 0; },
+        "usage" => sub {
+            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-s3-pl.html\n" ;
+            exit 0;
+        },
+        
+        "properties|conf=s" => \$options{properties}
+    ) or do {
+        printf "Unappropriate usage\n";
+        printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-s3-pl.html\n";
+        exit -1;
+    };
+  
+    # logger by default at runtime
+    Log::Log4perl->easy_init({
+        level => $WARN,
+        layout => '%5p : %m (%M) %n'
+    });
+
+    # We make path absolute
+
+    # properties : mandatory !
+    if (! defined $options{properties} || $options{properties} eq "") {
+        ERROR("Option 'properties' not defined !");
+        return FALSE;
+    }
+    my $fproperties = File::Spec->rel2abs($options{properties});
+    $options{properties} = $fproperties;
+    
+    return TRUE;
+}
+
+=begin nd
+Function: config
+
+Loads properties files and merge parameters. We also check environment variable (object storage configuration).
+
+See Also:
+    <checkParams>
+=cut
+sub config {
+
+    ###################
+    ALWAYS(">>> Load Properties ...");
+    
+    my $fprop = $options{properties};
+    my $objProp = BE4S3::PropertiesLoader->new($fprop);
+    
+    if (! defined $objProp) {
+        ERROR("Can not load properties !");
+        return FALSE;
+    }
+  
+    # save params properties
+    my %params = $objProp->getAllProperties();
+    $this{params} = \%params;
+
+    # logger
+    my $logger = $this{params}->{logger};
+    if (defined $logger) {
+    
+        my @args;
+        
+        my $layout= '%5p : %m (%M) %n';
+
+        my $level = $logger->{log_level};
+        $level = "WARN" if (! defined $level);
+
+        my $out;
+        my $logfile = $logger->{log_file};
+        if (defined $logfile) {
+            if (exists $logger->{log_path} && defined $logger->{log_path}) {
+                $logfile = File::Spec->catfile($logger->{log_path}, $logfile);
+            }
+            $out = ">>$logfile";
+        } else {
+            $out = "STDOUT";
+        }
+        
+        # add the param logger by default (user settings !)
+        push @args, {
+            file   => $out,
+            level  => $level,
+            layout => $layout,
+        };
+        
+        if ($out ne "STDOUT") {
+            # add the param logger to the STDOUT
+            push @args, {
+                file   => "STDOUT",
+                level  => $level,
+                layout => $layout,
+            },
+        }
+
+        Log::Log4perl->easy_init(@args);
+    }
+
+    # Environment variables
+
+    if (! COMMON::ProxyStorage::checkEnvironmentVariables("S3")) {
+        ERROR("Environment variable is missing for a S3 storage");
+        return FALSE;
+    }
+    
+    return TRUE;
+}
+
+=begin nd
+Function: writeListAndReferences
+=cut
+sub writeListAndReferences {
+    my $forest = shift;
+    my $newpyr = shift;
+    my $ancestor = shift;
+    my $force = shift;
+
+    if (! defined $force) {
+        $force = FALSE;     
+    }
+
+    my $updateMode = $this{params}->{pyramid}->{update_mode};
+
+    if ($newpyr->{type} eq "READ") {
+        ERROR("Cannot write list of 'read' pyramid");
+        return FALSE;        
+    }
+
+    if (defined $ancestor && ref ($ancestor) ne "COMMON::Pyramid" ) {
+        ERROR(sprintf "Ancestor, if provided, have to be a COMMON::Pyramid ! ");
+        return FALSE;
+    }
+
+    my $newListPath = $newpyr->getListFile();
+    my $newListPathTmp = "$newListPath.tmp";
+
+    if (! $force  && -f $newListPath) {
+        ERROR(sprintf "New pyramid list ('%s') exist, can not overwrite it ! ", $newListPath);
+        return FALSE;
+    }
+
+    my $dir = File::Basename::dirname($newListPath);
+    if (! -d $dir) {
+        eval { mkpath([$dir]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the pyramid list directory '%s' : %s !", $dir , $@);
+            return FALSE;
+        }
+    }
+    
+    # La racine de la pyramide est un nom de bucket dans le cas S3
+    my $containerName = $newpyr->getDataBucket();
+    
+    if (! defined $ancestor) {
+        # Pas d'ancêtre, on doit juste écrire l'en tête : le dossier propre à cette pyramide ou le nom du conteneur objet
+
+        my $NEWLIST;
+
+        if (! open $NEWLIST, ">", $newListPath) {
+            ERROR(sprintf "Cannot open new pyramid list file (write) : %s",$newListPath);
+            return FALSE;
+        }
+
+        print $NEWLIST "0=$containerName\n";
+        print $NEWLIST "#\n";
+        close $NEWLIST;
+
+        return TRUE
+    }
+
+    ############################## RÉFÉRENCEMENT DES OBJETS DE L'ANCÊTRE #######################################
+
+    if ($updateMode eq "slink" && ! COMMON::ProxyStorage::checkEnvironmentVariables("REDIS")) {
+        ERROR("Environment variable is missing to link ancestor");
+        return FALSE;
+    }
+
+    my $newPyrName = $newpyr->getName();
+    my $ancestorPyrName = $ancestor->getName();
+
+    # On a un ancêtre, il va falloir en référencer toutes les dalles
+
+    if (! defined $forest || ref ($forest) ne "COMMON::Forest" ) {
+        ERROR(sprintf "We need a COMMON::Forest to write pyramid list ! ");
+        return FALSE;
+    }
+
+    # On va lire la liste de l'ancêtre
+    my $ancestorListPath = $ancestor->getListFile();
+    my $OLDLIST;
+    
+    if (! open $OLDLIST, "<", $ancestorListPath) {
+        ERROR("Cannot open old pyramid list file (read) : $ancestorListPath");
+        return FALSE;
+    }
+    
+    while( my $line = <$OLDLIST> ) {
+        chomp $line;
+
+        ############# ON ZAPPE JUSTE LE HEADER #############
+
+        if ($line eq "#") {
+            last;
+        }
+    }
+
+    my $NEWLIST;
+
+    if ($updateMode eq "inject") {
+        # En mode injection, il ne faut pas écrire directement le fichier de la nouvelle pyramide, car c'est celui de l'ancêtre
+        if (! open $NEWLIST, ">", $newListPathTmp) {
+            ERROR("Cannot open temporary (inject mode) new pyramid list file (write) : $newListPathTmp");
+            return FALSE;
+        }
+    } else {
+        # Sinon, on peut directement écrire dans le fichier liste final de la nouvelle pyramide
+        if (! open $NEWLIST, ">", $newListPath) {
+            ERROR("Cannot open new pyramid list file (write) : $newListPath");
+            return FALSE;
+        }
+    }
+
+    print $NEWLIST "0=$containerName\n";
+    print $NEWLIST "#\n";
+    
+    while( my $line = <$OLDLIST> ) {
+        chomp $line;
+        
+        # Une ligne du fichier c'est
+        # Cas objet : 0/PYRAMID_IMG_15_15656_5423
+        my @parts = split("/", $line);
+        # La première partie est donc toujours l'index du bucket, déjà connu
+        shift(@parts);
+
+        # Dans le cas d'un stockage objet, on a un nom d'objet de la forme BLA_BLA_DATATYPE_LEVEL_COL_ROW
+        # DATATYPE vaut MSK ou IMG
+        my @p = split("_", join("", @parts));
+        my $col = $p[-2];
+        my $row = $p[-1];
+        my $level = $p[-3];
+        my $dataType = $p[-4];
+
+        # Dans le cas objet, la racine est seulement le conteneur, il faut aussi remplacer le nom de la pyramide qui est contenu dans le nom de l'objet
+        my $ancestorSlab = $line;
+        $ancestorSlab =~ s/^[0-9]+/$containerName/;
+        my $newSlab = $line;
+        $newSlab =~ s/^[0-9]+\/$ancestorPyrName/$containerName\/$newPyrName/;
+
+        if (! $newpyr->ownMasks() && $dataType eq "MSK") {
+            # On ne veut pas des masques dans la pyramide finale, donc on ne lie pas ceux de l'ancienne pyramide
+            next;
+        }
+
+        if (! exists $newpyr->{levels}->{$level}) {
+            # La dalle appartient à un niveau qui n'est pas voulu dans la nouvelle pyramide
+            next;
+        }
+
+        if ($updateMode eq "slink") {
+            if (! defined COMMON::ProxyStorage::symLink("S3", $ancestorSlab, "S3", $newSlab)) {
+                ERROR("The ancestor slab '$ancestorSlab' cannot be referenced by sym link in the new pyramid");
+                return FALSE;
+            }
+        }
+        elsif ($updateMode eq "copy") {
+            if (! COMMON::ProxyStorage::copy("S3", $ancestorSlab, "S3", $newSlab)) {
+                ERROR("The ancestor slab '$ancestorSlab' cannot be referenced by copy in the new pyramid");
+                return FALSE;
+            }
+        }
+        
+        if (! $forest->containsNode($level,$col,$row)) {
+            # This image is not in the forest, it won't be modified by this generation.
+            # We add it now to the list (real file path)
+
+            # slink : we print the name of the slab in the old pyramid
+            # else : object is duplicate, we put the name of the slab in the new pyramid
+            if ($updateMode eq 'slink' || $updateMode eq 'inject') {
+                print $NEWLIST "$line\n";
+            } else {
+                my $slab = $newSlab;
+                $slab =~ s/^$containerName/0/;
+                print $NEWLIST "$slab\n";
+            }
+        }
+        
+    }
+    
+    close $OLDLIST;
+    close $NEWLIST;
+
+    if ($updateMode eq "inject") {
+        # On peut maintenant mettre le nouveau fichier liste à la place de l'ancien
+        DEBUG("Inject mode: $newListPathTmp -> $newListPath");
+        `mv $newListPathTmp $newListPath`;
+    }
+    
+    return TRUE;
+}
+
+=begin nd
+Function: doIt
+
+Steps in order, using parameters :
+    - create the Pyramid object : <COMMON::Pyramid::new>
+    - update the Pyramid object with the TMS : <COMMON::Pyramid::bindTileMatrixSet>
+    - load data sources : <COMMON::DataSourceLoader::new>
+    - update data sources with the levels : <COMMON::DataSourceLoader::updateDataSources>
+    - create the pyramid's levels : <COMMON::Pyramid::addLevel>
+    - create the Forest object : <COMMON::Forest::new>
+    - write the pyramid's list : <writeListAndReferences>
+    - write the pyramid's descriptor : <COMMON::Pyramid::writeDescriptor>
+    - compute trees (write scripts) : <COMMON::Forest::computeGraphs>
+=cut
+sub doIt {
+
+    #######################
+    # link to parameters
+    my $params = $this{params};
+    
+    #######################
+    # objects to implemented
+    
+    my $objAncestorPyramid = undef;
+    my $objPyramid = undef;
+    my $objDSL = undef;
+    my $objForest = undef;
+
+    #######################
+    # if ancestor, read it
+
+    if (exists $params->{pyramid}->{pyr_name_old} && defined $params->{pyramid}->{pyr_name_old}) {
+    
+        ALWAYS(">>> Load an ancestor pyramid ...");
+
+        if (! exists $params->{pyramid}->{pyr_desc_path_old} || ! defined $params->{pyramid}->{pyr_desc_path_old}) {
+            ERROR("If ancestor pyramid, we need the 'pyr_desc_path_old' parameter with 'pyr_name_old'");
+            return FALSE;
+        }
+
+        if (! defined $params->{pyramid}->{update_mode} || $params->{pyramid}->{update_mode} eq "") {
+            ERROR("If ancestor pyramid, we need the 'update_mode' parameter");
+            return FALSE;
+        }
+
+        my $updateMode = $params->{pyramid}->{update_mode} ;
+        if (! defined COMMON::Array::isInArray($updateMode, @UPDATESMODES) ) {
+            ERROR("Update mode '$updateMode' is not allowed for FILE pyramids");
+            return FALSE;
+        }
+
+        my $ancestorDescriptor = File::Spec->catdir($params->{pyramid}->{pyr_desc_path_old}, $params->{pyramid}->{pyr_name_old});
+        $ancestorDescriptor .= ".pyr" if ($ancestorDescriptor !~ m/\.pyr/i);
+
+        $objAncestorPyramid = COMMON::Pyramid->new("DESCRIPTOR", $ancestorDescriptor );
+        if (! defined $objAncestorPyramid) {
+            ERROR("Cannot load ancestor pyramid !");
+            return FALSE;
+        }
+
+        if (! $objAncestorPyramid->bindTileMatrixSet($params->{pyramid}->{tms_path})) {
+            ERROR("Cannot bind TMS to ancestor pyramid !");
+            return FALSE;
+        }
+
+        if ($objAncestorPyramid->getStorageType() ne "S3") {
+            ERROR("Ancestor pyramid have to be a S3 pyramid !");
+            return FALSE;
+        }
+
+        # Dans le cas de l'injection, on veut que la nouvelle pyramide soit écrite sur l'ancienne
+        # On va donc modifier le nom et les emplacements pour mettre les mêmes que ceux de l'ancêtre
+
+        if ($updateMode eq "inject") {
+            WARN("'inject' update mode is selected, ancestor is modified, without possible rollback.");
+            $params->{pyramid}->{pyr_desc_path} = $objAncestorPyramid->getDescriptorDir();
+            $params->{pyramid}->{pyr_data_bucket_name} = $objAncestorPyramid->getDataBucket();
+            $params->{pyramid}->{pyr_name_new} = $objAncestorPyramid->getName();
+        }
+    }
+
+    #######################
+    # create a pyramid
+    
+    ALWAYS(">>> Load the new pyramid ...");
+    
+    $objPyramid = COMMON::Pyramid->new("VALUES", $params->{pyramid}, $objAncestorPyramid );
+    if (! defined $objPyramid) {
+        ERROR("Cannot create output Pyramid !");
+        return FALSE;
+    }
+
+    if ($objPyramid->getStorageType() ne "S3") {
+        ERROR("New pyramid have to be a S3 pyramid !");
+        return FALSE;
+    }
+
+    if (! $objPyramid->bindTileMatrixSet($params->{pyramid}->{tms_path})) {
+        ERROR("Cannot bind TMS to output Pyramid !");
+        return FALSE;
+    }
+
+    my $objTMS = $objPyramid->getTileMatrixSet();
+    
+    #######################
+    # load data source
+    
+    ALWAYS(">>> Load Data Source ...");
+
+    $objDSL = COMMON::DataSourceLoader->new($params->{datasource});
+    if (! defined $objDSL) {
+        ERROR("Cannot load data sources !");
+        return FALSE;
+    }
+
+    # update datasources top/bottom levels !
+    my ($bottomOrder,$topOrder) = $objDSL->updateDataSources($objTMS, $params->{pyramid}->{pyr_level_top});
+    if ($bottomOrder == -1) {
+        ERROR("Cannot determine top and bottom levels, from data sources.");
+        return FALSE;
+    }
+    
+    #######################
+    # add levels to pyramid
+    
+    ALWAYS(">>> Determine levels ...");
+    
+    # Create all level between the bottom and the top
+    for (my $order = $bottomOrder; $order <= $topOrder; $order++) {
+
+        my $ID = $objTMS->getIDfromOrder($order);
+        if (! defined $ID) {
+            ERROR(sprintf "Cannot identify ID for the order %s !", $order);
+            return FALSE;
+        }
+
+        if (! $objPyramid->addLevel($ID, $objAncestorPyramid) ) {
+            ERROR("Cannot add level $ID");
+            return FALSE;            
+        }
+    }
+    
+    # we cannot write the pyramid descriptor and cache now. We need data's limits, calculated by graphs.
+  
+    #######################
+    # create forest : load graphs
+    
+    ALWAYS(">>> Load Forest ...");
+  
+    $objForest = COMMON::Forest->new(
+        $objPyramid,
+        $objDSL,
+        $params->{process},
+        "S3"
+    );
+  
+    if (! defined $objForest) {
+        ERROR("Can not load the forest !");
+        return FALSE;
+    }
+
+    #######################
+
+    my $force = FALSE;
+    if (defined $objAncestorPyramid && $this{params}->{pyramid}->{update_mode} eq "inject") {
+        $force = TRUE;
+    }
+
+    #######################
+    # write the pyramid list
+    
+    ALWAYS(">>> Write the pyramid's list ...");
+
+    if ( ! writeListAndReferences($objForest, $objPyramid, $objAncestorPyramid, $force) ) {
+        ERROR("Can not write Pyramid list and reference ancestor if exist !");
+        return FALSE;
+    }
+    
+    #######################
+    # write the pyramid descriptor
+
+    ALWAYS(">>> Write the pyramid's descriptor ...");
+
+    if ( ! $objPyramid->writeDescriptor($force) ) {
+        ERROR("Can not write Pyramid file !");
+        return FALSE;
+    }
+  
+    #######################
+    # compute graphs
+    
+    ALWAYS(">>> Compute forest ...");
+    
+    if (! $objForest->computeGraphs()) {
+        ERROR("Can not compute forest !");
+        return FALSE;
+    }
+    
+    DEBUG(sprintf "FOREST (debug export) = %s", $objForest->exportForDebug);
+    
+    return TRUE;
+}
+
+################################################################################
+
+BEGIN {}
+INIT {}
+
+main;
+exit 0;
+
+END {}
+
+################################################################################
+
+1;
+__END__
+
+=begin nd
+Section: Details
+
+Group: Command's options
+
+    --help - Display the link to the technic documentation.
+
+    --usage - Display the link to the technic documentation.
+
+    --version - Display the tool version.
+
+    --conf=path - Path to configuration file of the pyramid. This option is mandatory.
+
+Group: Mandatory environment variable
+
+    ROK4_S3_URL
+    ROK4_S3_KEY
+    ROK4_S3_SECRETKEY
+
+    ROK4_REDIS_PORT
+    ROK4_REDIS_PASSWD
+    ROK4_REDIS_HOST
+
+Group: Write a configuration file
+
+A file configuration can be composed of sections and parameters following :
+
+    (start code)
+    [ section ]
+    parameter = value
+    ;comments
+    (end code)
+
+In a data source configuration, sections are level ID, from which the data source is used.
+
+Group: BE4-S3 global configuration file
+
+Properties by section.
+
+Topic: logger
+
+    log_path - Directory path where to write log_file
+    
+    log_file - Path to print too output (in addition to STDOUT). Log file path : *log_path/log_file*
+
+    log_level - Define importance level from which we print messages. From less to more important : DEBUG - INFO - WARN - ERROR - ALWAYS (WARN by default).
+
+Example:
+    (start code)
+    [ logger ]
+    log_path = /var/log
+    log_file = be4s3_log_yyyy-mm-dd.txt
+    log_level = INFO
+    (end code)
+
+Topic: datasource
+
+    filepath_conf - Complete file path to configuration file for data sources (*/home/ign/SOURCE/sources.txt*)
+
+Example:
+    (start code)
+    [ datasource ]
+    filepath_conf = /home/IGN/sources.txt
+    (end code)
+
+Topic: pyramid
+
+For more informations about properties, see <BE4S3::Pyramid>.
+
+    pyr_name_new - Name of the new pyramid, used to name the descriptor, the pyramid's list, the temporary directory and prefix the Ceph objects. Mandatory.
+    pyr_desc_path - Directory path, where to write the descriptor and the list. Mandatory.
+    pyr_data_bucket_name - Mandatory.
+
+    pyr_name_old - Ancestor's name. If this parameter is present, generation is an update.
+    pyr_desc_path_old - Directory path where to find the ancestor's descriptor.
+    update_mode - Possible values :
+        slink, copy : existing pyramid, the way the new cache will reference the ancestor's cache.
+        inject : no new pyramid. The old one is updated. CAUTION : old pyramid is irreversibly modified
+
+    compression - Possible values : raw, jpg, zip, lzw, png, pkb. PNG compression is not an official compression for tiff format (just readable by rok4). Default : raw.
+
+    compressionoption - Possible values : none and crop. Crop option have to be used with compression 'jpg'. Blocks which contain a white pixel are filled with white, to keep a pure white, in spite of compression. Default : none.
+
+    color - The color is a string and contain on value per sample, in decimal format, seperated by comma. For 8 bits unsigned integer, value must be between 0 and 255. For 32 bits float, an integer is expected too, but can be negative.
+    Example : "255,255,255" (white) for images whithout alpha sample, "-99999" for a DTM.
+
+    image_width, image_height - Number a tile in the cache image (slab), widthwise and heightwise. 16 * 16 for example. Mandatory.
+
+    bitspersample - Possible values : 8, 32. Have to be the same as source. Mandatory.
+
+    sampleformat - Possible values : uint, float. Have to be the same as source. Mandatory.
+
+    samplesperpixel - Possible values : 1, 3, 4. Have to be the same as source. Mandatory.
+
+    photometric - Possible values : gray, rgb. Have to be consistent with the samples per pixel. 1 -> gray and 3,4 -> rgb. Default : rgb.
+
+    interpolation - Possible values : nn, linear, bicubic, lanczos. Interpolation used to resampled images (in mergeNtiff). Nodata pixel are excluded by the interpolation if we use masks. Default : bicubic.
+
+    tms_name - TMS file name, with extension *.tms*. Mandatory.
+
+    tms_path - Directory, where to find the TMS file. Mandatory.
+
+    pyr_level_top - Optionnal. If we don't want pyramid to be generated to the TMS top level, we can force the top level. It have to be consistent with base levels in the data sources configuration file.
+
+    export_masks - An option is used to precise if we want to write masks in the final pyramid. So we can use masks but not export them (they may be useless for a pyramid which wont be never updated). Only values "true" and "TRUE" lead to masks' export. Optionnal, FALSE by default.
+
+Examples:
+    (start code)
+    [ pyramid ]
+    tms_name            = PM.tms
+    tms_path = /home/ign/TILEMATRIXSETS
+
+    pyr_data_bucket_name = PYRAMIDS
+    pyr_desc_path = /home/ign/PYRAMIDS
+    pyr_name_new = S3_DALLE
+
+    pyr_level_top = 5
+
+    compression         = zip
+    image_width         = 8
+    image_height        = 8
+    tiles_storage = FALSE
+    bitspersample       = 8
+    sampleformat        = uint
+    photometric         = rgb
+    samplesperpixel     = 3
+    interpolation       = bicubic
+
+    color               = 0,255,0
+
+    (end code)
+
+Topic: process
+
+For more informations about properties, see <COMMON::Forest> and <COMMON::Commands>.
+
+    job_number - Level of parallelization for scripts. Distribution details are different according to the kind of graph (see <COMMON::QTree> and <COMMON::Graph>). Mandatory.
+
+    path_temp - Temporary directory path proper to each script : temporary files are written in *path_temp/pyr_name_new/SCRIPT_ID*.
+
+    path_temp_common - Common temporary directory path : temporary files which have to be shared between several scripts are written in *path_temp_common/pyr_name_new/COMMON*. Mandatory.
+
+    path_shell - Directory path, to write scripts in. Scripts are named in like manner for all generation. That's why the path_shell must be specific to the generation (contains the name of the pyramid for example). Mandatory.
+
+    use_masks - To avoid some problems (data removing), we can use mask during generation, to know precisely where is data, in images. This behaviour make process longer, that's why default behaviour is without mask. Only values "true" and "TRUE" lead to masks' use. Optionnal, FALSE by default.
+
+Example:
+    (start code)
+    [ process ]
+    path_temp = /tmp/PRIVATE/
+    path_temp_common = /tmp/COMMON/
+    path_shell  = /home/IGN/SCRIPT/ORTHO
+    job_number = 16
+    (end code)
+
+Group: Paths in brief
+
+    - Descriptor file : *pyr_desc_path/pyr_name.pyr*
+    - List file: *pyr_desc_path/pyr_name.list*
+    - TMS file: *tms_path/tms_name*
+    - Scripts: *path_shell/SCRIPT_X.sh*
+    - Temporary directory: *path_temp/pyr_name_new/SCRIPT_X*
+    - Common temporary directory: *path_temp_common/pyr_name_new/COMMON*
+
+Group: DataSource configuration
+
+For more informations about datasource properties loading, see <COMMON::DataSourceLoader> and <COMMON::DataSource>.
+
+Topic: For all types
+
+    srs - The images' or the extent's SRS. Mandatory.
+
+Topic: For an image source
+
+For more informations about properties, see <COMMON::ImageSource>.
+    
+    path_image - Directory path, where to find georeferenced images to use to generate the cache. Subdirectory are authorized and browsed.
+    preprocess_command  - string - command to call to preprocess source images (optionnal)
+    preprocess_opt_beg  - string - command arguments placed between the command and the source file (optionnal even with a command specified)
+    preprocess_opt_mid  - string - command arguments placed between the source file and the target file (optionnal even with a command specified)
+    preprocess_opt_end  - string - command arguments placed after the target file (optionnal even with a command specified)
+    preprocess_tmp_dir  - string - directory in which preprocessed images will be created. Mandatory if a preprocessing command is given.
+
+Topic: For a WMS source
+
+For more informations about properties, see <COMMON::Harvesting>.
+    
+    wms_layer - Resource to harvest.
+
+    wms_url - URL of rok4.
+
+    wms_version - 1.3.0
+
+    wms_request - Kind of request : "getMap".
+
+    wms_format - Format of the harvested image.
+
+    wms_style - Optionnal.
+
+    wms_transparent - TRUE or FALSE. Optionnal.
+
+    max_width, max_height - If not defined, images will be harvested all-in-one. If defined, requested image size will have to be a multiple of this size.
+
+    min_size - Used to remove too small harvested images (filled with nodata), in byte. Optionnal.
+
+    wms_bgcolor - Format : 0xFFFFFF. Optionnal.
+
+    extent - Area where we have to harvest. It can be a bbox "xmin,ymin,xmax,ymax" or the path of a file which contains a geometry in WKT format. Mandatory if no georeferenced image to define extent (path_image is not present).
+    
+    list - Path to a file, containing a list of images' indices (I,J) to harvest. It could replace an extent.
+
+Examples:
+    (start code)
+    
+    [ 14 ]
+    ; We use a WMS service and we have to know extent to harvest. Georeferenced images are used to define this extent.
+    path_image          = /home/IGN/DATA/ORTHO_LAMB93
+    srs                 = IGNF:LAMB93
+
+    wms_layer   = WMS_ORTHO
+    wms_url     = http://localhost/rok4
+    wms_version = 1.3.0
+    wms_request = getMap
+    wms_format  = image/tiff
+
+    [ 17 ]
+    ; No georeferenced images, we use a WMS service and we have to know extent to harvest. Extent's SRS is supplied too.
+    srs = IGNF:WGS84G
+    extent = /home/IGN/Polygon.txt
+
+    wms_layer   = ORTHO
+    wms_url     = http://localhost/rok4
+    wms_version = 1.3.0
+    wms_request = getMap
+    wms_format  = image/png
+    wms_style  = line
+    wms_bgcolor  = 0x80BBDA
+    wms_transparent  = true
+    max_width = 2048
+    max_height = 1024
+
+    [ 18 ]
+    ; Georeferenced images
+    srs = EPSG:3857
+    path_image = /home/IGN/DATA/ORTHO_PM
+    (end code)
+    
+    [ 19 ]
+    ; Georeferenced images with preprocessing command
+    srs = EPSG:3857
+    path_image = /home/IGN/DATA/ORTHO_PM
+    preprocess_command = composite
+    preprocess_opt_beg = -watermark 50x50 -gravity center
+    preprocess_opt_mid = grayscale_watermark_img.ext
+    (end code)
+
+Group: Externals tools
+
+Scripts' execution needs following tools:
+
+    - pngcheck
+    - wget
+    
+=cut

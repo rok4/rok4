@@ -127,7 +127,7 @@ my %DEFAULT;
 BEGIN {}
 INIT {
     %WMS = (
-        wms_format => ['image/png','image/tiff','image/x-bil;bits=32','image/tiff&format_options=compression:deflate','image/tiff&format_options=compression:lzw','image/tiff&format_options=compression:packbits','image/tiff&format_options=compression:raw'],
+        wms_format => ['image/png','image/tiff','image/jpeg','image/x-bil;bits=32','image/tiff&format_options=compression:deflate','image/tiff&format_options=compression:lzw','image/tiff&format_options=compression:packbits','image/tiff&format_options=compression:raw'],
     );
 
     %DEFAULT = (
@@ -161,12 +161,12 @@ See also:
     <_init>
 =cut
 sub new {
-    my $this = shift;
+    my $class = shift;
     my $params = shift;
 
-    my $class= ref($this) || $this;
+    $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
-    my $self = {
+    my $this = {
         URL      => undef,
         VERSION  => undef,
         REQUEST  => undef,
@@ -178,14 +178,13 @@ sub new {
         max_height => undef
     };
 
-    bless($self, $class);
+    bless($this, $class);
 
-    TRACE;
 
     # init. class
-    return undef if (! $self->_init($params));
+    return undef if (! $this->_init($params));
 
-    return $self;
+    return $this;
 }
 
 =begin nd
@@ -207,18 +206,16 @@ Parameters (hash):
     max_height - integer - Optionnal.
 =cut
 sub _init {
-    my $self   = shift;
+    my $this   = shift;
     my $params = shift;
-
-    TRACE;
     
     return FALSE if (! defined $params);
     
     # 'max_width' and 'max_height' are optionnal, but if one is defined, the other must be defined
     if (exists($params->{max_width}) && defined ($params->{max_width})) {
-        $self->{max_width} = $params->{max_width};
+        $this->{max_width} = $params->{max_width};
         if (exists($params->{max_height}) && defined ($params->{max_height})) {
-            $self->{max_height} = $params->{max_height};
+            $this->{max_height} = $params->{max_height};
         } else {
             ERROR("If parameter 'max_width' is defined, parameter 'max_height' must be defined !");
             return FALSE ;
@@ -233,7 +230,7 @@ sub _init {
     # OPTIONS
     if (exists($params->{wms_style}) && defined ($params->{wms_style})) {
         # "STYLES=" is always present in the options
-        $self->{OPTIONS} .= $params->{wms_style};
+        $this->{OPTIONS} .= $params->{wms_style};
     }
     
     my $hasBGcolor = FALSE;
@@ -243,7 +240,7 @@ sub _init {
             ERROR("Parameter 'wms_bgcolor' must be to format '0x' + 6 numbers in hexadecimal format.");
             return FALSE ;
         }
-        $self->{OPTIONS} .= "&BGCOLOR=".$params->{wms_bgcolor};
+        $this->{OPTIONS} .= "&BGCOLOR=".$params->{wms_bgcolor};
         $hasBGcolor = TRUE;
     }
     
@@ -252,18 +249,18 @@ sub _init {
             ERROR(sprintf "Parameter 'wms_transparent' have to be 'TRUE' or 'FALSE' (%s).",$params->{wms_transparent});
             return FALSE ;
         }
-        $self->{OPTIONS} .= "&TRANSPARENT=".uc($params->{wms_transparent});
+        $this->{OPTIONS} .= "&TRANSPARENT=".uc($params->{wms_transparent});
     }
     
     if (! exists($params->{min_size}) || ! defined ($params->{min_size})) {
-        $self->{min_size} = $DEFAULT{min_size};
-        INFO(sprintf "Default value for 'min_size' : %s", $self->{min_size});
+        $this->{min_size} = $DEFAULT{min_size};
+        INFO(sprintf "Default value for 'min_size' : %s", $this->{min_size});
     } else {
         if (int($params->{min_size}) <= 0) {
             ERROR("If 'min_size' is given, it must be strictly positive.");
             return FALSE ;
         }
-        $self->{min_size} = int($params->{min_size});
+        $this->{min_size} = int($params->{min_size});
     }
 
     # Other parameters are mandatory
@@ -288,7 +285,7 @@ sub _init {
         ERROR("Parameter 'wms_format' is required !");
         return FALSE ;
     }
-    if (! $self->isWmsFormat($params->{wms_format})) {
+    if (! $this->isWmsFormat($params->{wms_format})) {
         ERROR("Parameter 'wms_format' is not valid !");
         return FALSE ;
     }
@@ -309,11 +306,11 @@ sub _init {
     }
     
     # init. params    
-    $self->{URL} = $params->{wms_url};
-    $self->{VERSION} = $params->{wms_version};
-    $self->{REQUEST} = $params->{wms_request};
-    $self->{FORMAT} = $params->{wms_format};
-    $self->{LAYERS} = $params->{wms_layer};
+    $this->{URL} = $params->{wms_url};
+    $this->{VERSION} = $params->{wms_version};
+    $this->{REQUEST} = $params->{wms_request};
+    $this->{FORMAT} = $params->{wms_format};
+    $this->{LAYERS} = $params->{wms_layer};
 
     return TRUE;
 }
@@ -351,11 +348,10 @@ Example:
     (end code)
 =cut
 sub doRequestUrl {
-    my $self = shift;
+    my $this = shift;
 
     my $args = shift;
 
-    TRACE;
 
     my $srs       = $args->{srs}          || ( ERROR ("'srs' parameter required !") && return undef );
     my $bbox      = $args->{bbox}         || ( ERROR ("'bbox' parameter required !") && return undef );
@@ -371,11 +367,11 @@ sub doRequestUrl {
     my ($xmin, $ymin, $xmax, $ymax)  = @{$bbox};
 
     my $url = sprintf ("http://%s?LAYERS=%s&SERVICE=WMS&VERSION=%s&REQUEST=%s&FORMAT=%s&CRS=%s",
-                        $self->getURL(),
-                        $self->getLayers(),
-                        $self->getVersion(),
-                        $self->getRequest(),
-                        $self->getFormat(),
+                        $this->getURL(),
+                        $this->getLayers(),
+                        $this->getVersion(),
+                        $this->getRequest(),
+                        $this->getFormat(),
                         $srs);
 
     if ($inversion) {
@@ -384,7 +380,7 @@ sub doRequestUrl {
         $url .= sprintf ("&BBOX=%s,%s,%s,%s", $xmin, $ymin, $xmax, $ymax);
     }
 
-    $url .= sprintf ("&WIDTH=%s&HEIGHT=%s&%s", $image_width, $image_height, $self->getOptions);
+    $url .= sprintf ("&WIDTH=%s&HEIGHT=%s&%s", $image_width, $image_height, $this->getOptions);
 
     return $url;
 }
@@ -439,11 +435,10 @@ Example:
     (end code)
 =cut
 sub getCommandWms2work {
-    my $self = shift;
+    my $this = shift;
 
     my $args = shift;
 
-    TRACE;
 
     my $dir = $args->{dir} || ( ERROR ("'dir' parameter required !") && return (undef, undef) );
     my $srs = $args->{srs} || ( ERROR ("'srs' parameter required !") && return (undef, undef) );
@@ -466,31 +461,31 @@ sub getCommandWms2work {
     my $groundHeight = $xmax-$xmin;
     my $groundWidth = $ymax-$ymin;
     
-    if (defined $self->{max_width} && $self->{max_width} < $max_width) {
-        if ($max_width % $self->{max_width} != 0) {
+    if (defined $this->{max_width} && $this->{max_width} < $max_width) {
+        if ($max_width % $this->{max_width} != 0) {
             ERROR(sprintf "Max harvested width (%s) is not a divisor of the image's width (%s) in the request."
-                  ,$self->{max_width},$max_width);
+                  ,$this->{max_width},$max_width);
             return (undef, undef);
         }
-        $imagePerWidth = int($max_width/$self->{max_width});
+        $imagePerWidth = int($max_width/$this->{max_width});
         $groundWidth /= $imagePerWidth;
-        $max_width = $self->{max_width};
+        $max_width = $this->{max_width};
     }
     
-    if (defined $self->{max_height} && $self->{max_height} < $max_height) {
-        if ($max_height % $self->{max_height} != 0) {
+    if (defined $this->{max_height} && $this->{max_height} < $max_height) {
+        if ($max_height % $this->{max_height} != 0) {
             ERROR(sprintf "Max harvested height (%s) is not a divisor of the image's height (%s) in the request."
-                  ,$self->{max_height},$max_height);
+                  ,$this->{max_height},$max_height);
             return (undef, undef);
         }
-        $imagePerHeight = int($max_height/$self->{max_height});
+        $imagePerHeight = int($max_height/$this->{max_height});
         $groundHeight /= $imagePerHeight;
-        $max_height = $self->{max_height};
+        $max_height = $this->{max_height};
     }
     
     my $URL = sprintf ("http://%s?LAYERS=%s&SERVICE=WMS&VERSION=%s&REQUEST=%s&FORMAT=%s&CRS=%s&WIDTH=%s&HEIGHT=%s&%s",
-                    $self->getURL, $self->getLayers, $self->getVersion, $self->getRequest, $self->getFormat,
-                    $srs, $max_width, $max_height, $self->getOptions);
+                    $this->getURL, $this->getLayers, $this->getVersion, $this->getRequest, $this->getFormat,
+                    $srs, $max_width, $max_height, $this->getOptions);
     my $BBoxesAsString = "\"";
     for (my $i = 0; $i < $imagePerHeight; $i++) {
         for (my $j = 0; $j < $imagePerWidth; $j++) {
@@ -515,9 +510,12 @@ sub getCommandWms2work {
     my $format = undef;
     
     # Extension des images moissonnées
-    if ($self->getFormat eq "image/png") {
+    if ($this->getFormat eq "image/png") {
         $format = "png";
         $cmd .= " \"png\"";
+    } elsif ($this->getFormat eq "image/jpeg") {
+        $format = "jpeg";
+        $cmd .= " \"jpeg\"";
     } else {
         $format = "tif";
         $cmd .= " \"tif\"";
@@ -535,7 +533,7 @@ sub getCommandWms2work {
     }
     
     $cmd .= sprintf " \"%s %s\"",$imagePerWidth,$imagePerHeight;
-    $cmd .= sprintf " \"%s\"",$self->{min_size};
+    $cmd .= sprintf " \"%s\"",$this->{min_size};
 
     $cmd .= " \"$URL\"";
     $cmd .= " \$BBOXES\n";
@@ -556,10 +554,8 @@ Parameters (list):
     wmsformat - string - Format value to test
 =cut
 sub isWmsFormat {
-    my $self = shift;
+    my $this = shift;
     my $wmsformat = shift;
-
-    TRACE;
 
     return FALSE if (! defined $wmsformat);
 
@@ -576,38 +572,38 @@ sub isWmsFormat {
 
 # Function: getURL
 sub getURL {
-    my $self = shift;
-    return $self->{URL};
+    my $this = shift;
+    return $this->{URL};
 }
 
 # Function: getVersion
 sub getVersion {
-    my $self = shift;
-    return $self->{VERSION};
+    my $this = shift;
+    return $this->{VERSION};
 }
 
 # Function: getRequest
 sub getRequest {
-  my $self = shift;
-  return $self->{REQUEST};
+  my $this = shift;
+  return $this->{REQUEST};
 }
 
 # Function: getFormat
 sub getFormat {
-    my $self = shift;
-    return $self->{FORMAT};
+    my $this = shift;
+    return $this->{FORMAT};
 }
 
 # Function: getLayers
 sub getLayers {
-    my $self = shift;
-    return $self->{LAYERS};
+    my $this = shift;
+    return $this->{LAYERS};
 }
 
 # Function: getOptions
 sub getOptions {
-    my $self = shift;
-    return $self->{OPTIONS};
+    my $this = shift;
+    return $this->{OPTIONS};
 }
 
 ####################################################################################################
@@ -624,22 +620,22 @@ Example:
     (end code)
 =cut
 sub exportForDebug {
-    my $self = shift ;
+    my $this = shift ;
     
     my $export = "";
     
     $export .= "\nObject COMMON::Harvesting :\n";
-    $export .= sprintf "\t URL : %s\n",$self->{URL};
-    $export .= sprintf "\t VERSION : %s\n",$self->{VERSION};
-    $export .= sprintf "\t REQUEST : %s\n",$self->{REQUEST};
-    $export .= sprintf "\t FORMAT : %s\n",$self->{FORMAT};
-    $export .= sprintf "\t LAYERS : %s\n",$self->{LAYERS};
-    $export .= sprintf "\t OPTIONS : %s\n",$self->{OPTIONS};
+    $export .= sprintf "\t URL : %s\n",$this->{URL};
+    $export .= sprintf "\t VERSION : %s\n",$this->{VERSION};
+    $export .= sprintf "\t REQUEST : %s\n",$this->{REQUEST};
+    $export .= sprintf "\t FORMAT : %s\n",$this->{FORMAT};
+    $export .= sprintf "\t LAYERS : %s\n",$this->{LAYERS};
+    $export .= sprintf "\t OPTIONS : %s\n",$this->{OPTIONS};
 
     $export .= "\t Limits : \n";
-    $export .= sprintf "\t\t- Size min : %s\n",$self->{min_size};
-    $export .= sprintf "\t\t- Max width (in pixel) : %s\n",$self->{max_width};
-    $export .= sprintf "\t\t- Max height (in pixel) : %s\n",$self->{max_height};
+    $export .= sprintf "\t\t- Size min : %s\n",$this->{min_size};
+    $export .= sprintf "\t\t- Max width (in pixel) : %s\n",$this->{max_width};
+    $export .= sprintf "\t\t- Max height (in pixel) : %s\n",$this->{max_height};
     
     return $export;
 }

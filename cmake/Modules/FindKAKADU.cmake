@@ -4,8 +4,7 @@
 # If it's found it sets KAKADU_FOUND to TRUE
 # and following variables are set:
 #    JPEG2000_INCLUDE_DIR
-#    KAKADU_LIBRARY_1
-#    KAKADU_LIBRARY_2
+#    KAKADU_LIBRARY
 
 FIND_PATH(JPEG2000_INCLUDE_DIR kdu_utils.h
 # On cherche kdu_utils.h et pas jp2.h pour ne pas tomber sur le jp2.h de la lib openjpeg
@@ -18,23 +17,13 @@ FIND_PATH(JPEG2000_INCLUDE_DIR kdu_utils.h
     NO_CMAKE_SYSTEM_PATH
 )
 
-FIND_LIBRARY(KAKADU_LIBRARY_1 NAME libkdu_aux.a PATHS 
+FIND_LIBRARY(KAKADU_LIBRARY NAME libkdu_a64R.so PATHS 
     ${KDU_LIBRARY_PATH}
     /usr/local/lib 
     /usr/lib 
     c:/msys/local/lib
     C:/dev/cpp/libkakadu/src
 )
-
-FIND_LIBRARY(KAKADU_LIBRARY_2 NAME libkdu.a PATHS 
-    ${KDU_LIBRARY_PATH}
-    /usr/local/lib 
-    /usr/lib 
-    c:/msys/local/lib
-    C:/dev/cpp/libkakadu/src
-)
-
-MESSAGE(STATUS ${KDU_LIBRARY_PATH})
 
 INCLUDE( "FindPackageHandleStandardArgs" )
-FIND_PACKAGE_HANDLE_STANDARD_ARGS( "Kakadu" DEFAULT_MSG JPEG2000_INCLUDE_DIR KAKADU_LIBRARY_1 KAKADU_LIBRARY_2 )
+FIND_PACKAGE_HANDLE_STANDARD_ARGS( "Kakadu" DEFAULT_MSG JPEG2000_INCLUDE_DIR KAKADU_LIBRARY )

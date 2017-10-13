@@ -56,37 +56,28 @@
 #include "config.h"
 #include "EmptyImage.h"
 
-Pyramid::Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4Format::eformat_data format,
-                   int channels, bool onDemand, bool onFly, std::vector<int> nd)
-    : Source(PYRAMID),levels ( levels ), tms ( tms ), format ( format ), channels ( channels ),
-      onDemand ( onDemand ), onFly (onFly) {
+Pyramid::Pyramid (PyramidXML* p) : Source(PYRAMID) {
+    levels = p->levels;
+    tms = p->tms;
+    format = p->format;
+    photo = p->photo;
+    channels = p->channels;
+
+    transparent = false;
+
+    ndValues = new int[p->noDataValues.size()];
+    for (int i = 0; i < p->noDataValues.size(); i++) {
+        ndValues[i] = p->noDataValues.at(i);
+    }
+
+    isBasedPyramid = p->isBasedPyramid;
+    containOdLevels = p->containOdLevels;
+
 
     std::map<std::string, Level*>::iterator itLevel;
     double minRes= DBL_MAX;
     double maxRes= DBL_MIN;
     for ( itLevel=levels.begin(); itLevel!=levels.end(); itLevel++ ) {
-        //Empty Source as fallback
-        DataSource* noDataSource;
-        DataStream* nodatastream;
-
-        if ( format==Rok4Format::TIFF_JPG_INT8 ) {
-            nodatastream = new JPEGEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ) );
-        } else if ( format==Rok4Format::TIFF_PNG_INT8 ) {
-            nodatastream = new PNGEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ) );
-        } else if ( format==Rok4Format::TIFF_RAW_FLOAT32 ) {
-            nodatastream = new BilEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ) );
-        } else {
-            nodatastream = TiffEncoder::getTiffEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ), format );
-        }
-        if ( nodatastream ) {
-            noDataSource = new BufferedDataSource ( *nodatastream );
-            delete nodatastream;
-            nodatastream = NULL;
-        } else {
-            LOGGER_ERROR ( "Format non pris en charge : "<< Rok4Format::toString ( format ) );
-        }
-        itLevel->second->setNoDataSource ( noDataSource );
-
 
         //Determine Higher and Lower Levels
         double d = itLevel->second->getRes();
@@ -99,121 +90,6 @@ Pyramid::Pyramid (std::map<std::string, Level*> &levels, TileMatrixSet tms, Rok4
             highestLevel = itLevel->second;
         }
     }
-    noData = new int[channels];
-    for (int i = 0; i < channels ; i++) {
-        noData[i] = nd[i];
-    }
-
-}
-
-Pyramid::Pyramid (const Pyramid &obj, std::map<std::string, TileMatrixSet *> &tmsList): Source(PYRAMID), tms (obj.tms) {
-
-    std::map<std::string, Level*>::iterator itLevel;
-    double minRes= DBL_MAX;
-    double maxRes= DBL_MIN;
-
-    this->channels = obj.channels;
-    this->format = obj.format;
-    this->onDemand = obj.onDemand;
-    this->onFly = obj.onFly;
-    this->style = obj.style;
-    this->transparent = obj.transparent;
-
-    for (std::map<std::string,Level* >::const_iterator lv = obj.levels.begin();lv != obj.levels.end(); lv++) {
-        Level* lev = new Level(*lv->second);
-        levels.insert(std::pair<std::string,Level*> (lv->first,lev));
-    }
-
-    noData = new int[channels];
-    for (int i = 0; i < channels ; i++) {
-        noData[i] = obj.noData[i];
-    }
-
-
-    for ( itLevel=levels.begin(); itLevel!=levels.end(); itLevel++ ) {
-        //Empty Source as fallback
-        DataSource* noDataSource;
-        DataStream* nodatastream;
-
-        if ( format==Rok4Format::TIFF_JPG_INT8 ) {
-            nodatastream = new JPEGEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ) );
-        } else if ( format==Rok4Format::TIFF_PNG_INT8 ) {
-            nodatastream = new PNGEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ) );
-        } else if ( format==Rok4Format::TIFF_RAW_FLOAT32 ) {
-            nodatastream = new BilEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ) );
-        } else {
-            nodatastream = TiffEncoder::getTiffEncoder ( new ImageDecoder ( 0, itLevel->second->getTm().getTileW(), itLevel->second->getTm().getTileH(), channels ), format );
-        }
-        if ( nodatastream ) {
-            noDataSource = new BufferedDataSource ( *nodatastream );
-            delete nodatastream;
-            nodatastream = NULL;
-        } else {
-            LOGGER_ERROR ( "Format non pris en charge : "<< Rok4Format::toString ( format ) );
-        }
-        itLevel->second->setNoDataSource ( noDataSource );
-
-
-        //Determine Higher and Lower Levels
-        double d = itLevel->second->getRes();
-        if ( minRes > d ) {
-            minRes = d;
-            lowestLevel = itLevel->second;
-        }
-        if ( maxRes < d ) {
-            maxRes = d;
-            highestLevel = itLevel->second;
-        }
-    }
-
-    std::map<std::string,TileMatrixSet*>::iterator is;
-
-    std::string oldName = obj.tms.getId();
-    for (is = tmsList.begin(); is != tmsList.end(); is++) {
-        if (is->second->getId() == oldName) {
-            break;
-        }
-    }
-    if (is != tmsList.end()) {
-        this->tms = *(is->second);
-    } else {
-        //TODO
-    }
-
-    //TODO: gérer le cas où il n'y aucun tms de disponible
-    // cas à gérer en amont de ce constructeur
-
-}
-
-
-DataSource* Pyramid::getTile ( int x, int y, std::string tmId, DataSource* errorDataSource ) {
-
-    std::map<std::string, Level*>::const_iterator itLevel=levels.find ( tmId );
-    if ( itLevel==levels.end() ) {
-        if ( errorDataSource ) { // NoData Error
-            return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * errorDataSource );
-        }
-        DataSource * noDataSource;
-
-        //Pick the nearest available level for NoData
-        std::map<std::string, TileMatrix>::iterator itTM;
-        double askedRes;
-
-        itTM = getTms().getTmList()->find ( tmId );
-        if ( itTM==getTms().getTmList()->end() ) {
-            //return the lowest Level available
-            noDataSource = getLowestLevel()->getEncodedNoDataTile();
-        } else {
-            askedRes = itTM->second.getRes();
-
-            noDataSource = ( askedRes > getLowestLevel()->getRes() ? getHighestLevel()->getEncodedNoDataTile() : getLowestLevel()->getEncodedNoDataTile() );
-
-        }
-        return new DataSourceProxy ( new FileDataSource ( "",0,0,"" ), * ( noDataSource ) );
-
-    }
-
-    return itLevel->second->getTile ( x, y, errorDataSource );
 
 }
 
@@ -251,24 +127,14 @@ std::string Pyramid::best_level ( double resolution_x, double resolution_y, bool
 }
 
 
-Level * Pyramid::getFirstLevel() {
-    std::map<std::string, Level*>::iterator it ( levels.begin() );
-    return it->second;
-}
-
-TileMatrixSet Pyramid::getTms() {
-    return tms;
-}
-
-
-Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int dpi, int& error ) {
+Image* Pyramid::getbbox ( ServicesXML* servicesXML, BoundingBox<double> bbox, int width, int height, CRS dst_crs, Interpolation::KernelType interpolation, int dpi, int& error ) {
 
     // On calcule la résolution de la requete dans le crs source selon une diagonale de l'image
     double resolution_x, resolution_y;
 
-    LOGGER_DEBUG ( "source tms.getCRS() is " << tms.getCrs().getProj4Code() << " and destination dst_crs is " << dst_crs.getProj4Code() );
+    LOGGER_DEBUG ( "source tms->getCRS() is " << tms->getCrs().getProj4Code() << " and destination dst_crs is " << dst_crs.getProj4Code() );
 
-    if ( (tms.getCrs() == dst_crs) || (are_the_two_CRS_equal( tms.getCrs().getProj4Code(), dst_crs.getProj4Code(), servicesConf.getListOfEqualsCRS() ) ) ) {
+    if ( tms->getCrs() == dst_crs || servicesXML->are_the_two_CRS_equal( tms->getCrs().getProj4Code(), dst_crs.getProj4Code() ) ) {
         resolution_x = ( bbox.xmax - bbox.xmin ) / width;
         resolution_y = ( bbox.ymax - bbox.ymin ) / height;
     } else {
@@ -276,7 +142,7 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
 
 
         LOGGER_DEBUG ( _ ( "debut pyramide" ) );
-        if ( !grid->reproject ( dst_crs.getProj4Code(),getTms().getCrs().getProj4Code() ) ) {
+        if ( !grid->reproject ( dst_crs.getProj4Code(),tms->getCrs().getProj4Code() ) ) {
             // BBOX invalide
             delete grid;
             error=1;
@@ -303,26 +169,26 @@ Image* Pyramid::getbbox ( ServicesConf& servicesConf, BoundingBox<double> bbox, 
     std::string l = best_level ( resolution_x, resolution_y, false );
     LOGGER_DEBUG ( _ ( "best_level=" ) << l << _ ( " resolution requete=" ) << resolution_x << " " << resolution_y );
 
-    if ( (tms.getCrs() == dst_crs) || (are_the_two_CRS_equal( tms.getCrs().getProj4Code(), dst_crs.getProj4Code(), servicesConf.getListOfEqualsCRS() ) ) ) {
-        return levels[l]->getbbox ( servicesConf, bbox, width, height, interpolation, error );
+    if ( tms->getCrs() == dst_crs || servicesXML->are_the_two_CRS_equal( tms->getCrs().getProj4Code(), dst_crs.getProj4Code() ) ) {
+        return levels[l]->getbbox ( servicesXML, bbox, width, height, interpolation, error );
     } else {
-        return createReprojectedImage(l, bbox, dst_crs, servicesConf, width, height, interpolation, error);
+        return createReprojectedImage(l, bbox, dst_crs, servicesXML, width, height, interpolation, error);
     }
 
 }
 
-Image * Pyramid::createReprojectedImage(std::string l, BoundingBox<double> bbox, CRS dst_crs, ServicesConf& servicesConf, int width, int height, Interpolation::KernelType interpolation, int error) {
+Image * Pyramid::createReprojectedImage(std::string l, BoundingBox<double> bbox, CRS dst_crs, ServicesXML* servicesXML, int width, int height, Interpolation::KernelType interpolation, int error) {
 
     if ( dst_crs.validateBBox ( bbox ) ) {
-        return levels[l]->getbbox ( servicesConf, bbox, width, height, tms.getCrs(), dst_crs, interpolation, error );
+        return levels[l]->getbbox ( servicesXML, bbox, width, height, tms->getCrs(), dst_crs, interpolation, error );
     } else {
         BoundingBox<double> cropBBox = dst_crs.cropBBox ( bbox );
-        return createExtendedCompoundImage(l,bbox,cropBBox,dst_crs,servicesConf,width,height,interpolation,error);
+        return createExtendedCompoundImage(l,bbox,cropBBox,dst_crs,servicesXML,width,height,interpolation,error);
     }
 
 }
 
-Image *Pyramid::createExtendedCompoundImage(std::string l, BoundingBox<double> bbox, BoundingBox<double> cropBBox,CRS dst_crs, ServicesConf& servicesConf, int width, int height, Interpolation::KernelType interpolation, int error){
+Image *Pyramid::createExtendedCompoundImage(std::string l, BoundingBox<double> bbox, BoundingBox<double> cropBBox,CRS dst_crs, ServicesXML* servicesXML, int width, int height, Interpolation::KernelType interpolation, int error){
 
     ExtendedCompoundImageFactory facto;
     std::vector<Image*> images;
@@ -372,7 +238,7 @@ Image *Pyramid::createExtendedCompoundImage(std::string l, BoundingBox<double> b
             LOGGER_DEBUG ( _ ( "BBox decoupe incorrect" ) );
             tmp = 0;
         } else if ( newWidth > 0 && newHeigth > 0 ) {
-            tmp = levels[l]->getbbox ( servicesConf, cropBBox, newWidth, newHeigth, tms.getCrs(), dst_crs, interpolation, cropError );
+            tmp = levels[l]->getbbox ( servicesXML, cropBBox, newWidth, newHeigth, tms->getCrs(), dst_crs, interpolation, cropError );
         }
         if ( tmp != 0 ) {
             LOGGER_DEBUG ( _ ( "Image decoupe valide" ) );
@@ -380,21 +246,17 @@ Image *Pyramid::createExtendedCompoundImage(std::string l, BoundingBox<double> b
         }
     }
 
-    int ndvalue[this->channels];
-    memset(ndvalue,0,this->channels*sizeof(int));
-    levels[l]->getNoDataValue(ndvalue);
-
     if ( images.empty() ) {
-        EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
+        EmptyImage* fond = new EmptyImage(width, height, channels, ndValues);
         fond->setBbox(bbox);
         return fond;
     }
 
-    return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,ndvalue,0 );
+    return facto.createExtendedCompoundImage ( width,height,channels,bbox,images,ndValues,0 );
 
 }
 
-Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst_crs, ServicesConf& servicesConf, int width, int height, Interpolation::KernelType interpolation, int error){
+Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst_crs, ServicesXML* servicesXML, int width, int height, Interpolation::KernelType interpolation, int error){
 
     LOGGER_INFO ( "Create Based Slab " );
     //variables
@@ -408,21 +270,21 @@ Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst
     }
 
     //on met les deux bbox dans le même système de projection
-    if ((are_the_two_CRS_equal( tms.getCrs().getProj4Code(), dst_crs.getProj4Code(), servicesConf.getListOfEqualsCRS() ) ) ) {
+    if ( servicesXML->are_the_two_CRS_equal( tms->getCrs().getProj4Code(), dst_crs.getProj4Code() ) ) {
         LOGGER_DEBUG ( "Les deux CRS sont équivalents " );
     } else {
         LOGGER_DEBUG ( "Conversion de la bbox demandee et de la bbox des donnees en EPSG:4326 " );
-        if (askBbox.reproject(dst_crs.getProj4Code(),"epsg:4326") !=0 || dataBbox.reproject(tms.getCrs().getProj4Code(),"epsg:4326") != 0) {
+        if (askBbox.reproject(dst_crs.getProj4Code(),"epsg:4326") !=0 || dataBbox.reproject(tms->getCrs().getProj4Code(),"epsg:4326") != 0) {
             LOGGER_ERROR("Ne peut pas reprojeter les bbox");
             return NULL;
         }
     }
 
     //on compare les deux bbox
-    if (tms.getCrs() == dst_crs) {
+    if (tms->getCrs() == dst_crs) {
         //elles sont identiques
         LOGGER_DEBUG ( "Les deux bbox sont identiques " );
-        return createReprojectedImage(l, bbox, dst_crs, servicesConf, width, height, interpolation, error);
+        return createReprojectedImage(l, bbox, dst_crs, servicesXML, width, height, interpolation, error);
     } else {
         if (askBbox.containsInside(dataBbox)) {
             //les données sont a l'intérieur de la bbox demandée
@@ -431,25 +293,22 @@ Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst
                 LOGGER_ERROR("Ne peut pas reprojeter la bbox des données");
                 return NULL;
             }
-            return createExtendedCompoundImage(l,bbox,dataBbox,dst_crs,servicesConf,width,height,interpolation,error);
+            return createExtendedCompoundImage(l,bbox,dataBbox,dst_crs,servicesXML,width,height,interpolation,error);
 
         } else {
 
             if (dataBbox.containsInside(askBbox)) {
                 //la bbox demandée est plus petite que les données disponibles
                 LOGGER_DEBUG ("la bbox demandée est plus petite que les données disponibles");
-                return createReprojectedImage(l, bbox, dst_crs, servicesConf, width, height, interpolation, error);
+                return createReprojectedImage(l, bbox, dst_crs, servicesXML, width, height, interpolation, error);
 
             } else {
 
                 if (!dataBbox.intersects(askBbox)) {
                     //les deux ne s'intersectent pas donc on renvoit une image de nodata
                     LOGGER_DEBUG ("les deux ne s'intersectent pas donc on renvoit une image de nodata");
-                    int ndvalue[this->channels];
-                    memset(ndvalue,0,this->channels*sizeof(int));
-                    levels[l]->getNoDataValue(ndvalue);
 
-                    EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
+                    EmptyImage* fond = new EmptyImage(width, height, channels, ndValues);
                     fond->setBbox(bbox);
                     return fond;
 
@@ -461,7 +320,7 @@ Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst
                         LOGGER_ERROR("Ne peut pas reprojeter la bbox partielle");
                         return NULL;
                     }
-                    return createExtendedCompoundImage(l,bbox,partBbox,dst_crs,servicesConf,width,height,interpolation,error);
+                    return createExtendedCompoundImage(l,bbox,partBbox,dst_crs,servicesXML,width,height,interpolation,error);
                 }
 
             }
@@ -474,67 +333,20 @@ Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst
 
 }
 
-
-Image *Pyramid::NoDataOnDemand(std::string bLevel, BoundingBox<double> bbox) {
-
-    return levels[bLevel]->getNoDataTile(bbox);
-
-}
 
 Pyramid::~Pyramid() {
     std::map<std::string, DataSource*>::iterator itDataSource;
     /*for ( itDataSource=noDataSources.begin(); itDataSource!=noDataSources.end(); itDataSource++ )
         delete ( *itDataSource ).second;*/
 
+    delete[] ndValues;
+
     std::map<std::string, Level*>::iterator iLevel;
     for ( iLevel=levels.begin(); iLevel!=levels.end(); iLevel++ )
-        delete ( *iLevel ).second;
-
-    delete [] noData;
+        delete iLevel->second;
 
 }
 
-PyramidOnDemand::~PyramidOnDemand() {
-
-    if (specificSources.size() != 0) {
-        for ( std::map<std::string,std::vector<Source*> >::iterator lv = specificSources.begin(); lv != specificSources.end(); lv++) {
-
-            if (lv->second.size() != 0) {
-                for ( std::vector<int>::size_type i = 0; i != lv->second.size(); i++) {
-                    delete lv->second[i];
-                    lv->second[i] = NULL;
-                }
-                lv->second.clear();
-            }
-        }
-        specificSources.clear();
-    }
-
-}
-
-// Check if two CRS are equivalent
-//   A list of equivalent CRS was created during server initialization
-// TODO: return false if servicesconf tells we don't check the equality
-bool Pyramid::are_the_two_CRS_equal( std::string crs1, std::string crs2, std::vector<std::string> listofequalsCRS ) {
-    // Could have issues with lowercase name -> we put the CRS in upercase
-    transform(crs1.begin(), crs1.end(), crs1.begin(), toupper);
-    transform(crs2.begin(), crs2.end(), crs2.begin(), toupper);
-    crs1.append(" ");
-    crs2.append(" ");
-    for (int line_number = 0 ; line_number < listofequalsCRS.size() ; line_number++) {
-        std::string line = listofequalsCRS.at(line_number);
-        // We check if the two CRS are on the same line inside the file. If yes then they are equivalent.
-        std::size_t found1 = line.find(crs1);
-        if ( found1 != std::string::npos  )  {
-            std::size_t found2 = line.find(crs2);
-            if ( found2 != std::string::npos  )  {
-                LOGGER_DEBUG ( "The two CRS (source and destination) are equals and were found on line  " << line );
-                return true;
-            }
-        }
-    }
-    return false; // The 2 CRS were not found on the same line inside the list
-}
 
 Compression::eCompression Pyramid::getSampleCompression() {
     Compression::eCompression cpn = Compression::UNKNOWN;
@@ -600,23 +412,65 @@ int Pyramid::getBitsPerSample() {
 
 }
 
-std::vector<Source *> PyramidOnDemand::getSourcesOfLevel( std::string lv) {
-
-    std::vector<Source*> bSrc;
-
-    bSrc = getSources().find(lv)->second;
-
-    return bSrc;
+Level* Pyramid::getHighestLevel() { return highestLevel; }
+Level* Pyramid::getLowestLevel() { return lowestLevel; }
+Level * Pyramid::getFirstLevel() {
+    std::map<std::string, Level*>::iterator it ( levels.begin() );
+    return it->second;
+}
+TileMatrixSet* Pyramid::getTms() { return tms; }
+std::map<std::string, Level*>& Pyramid::getLevels() { return levels; }
+Level* Pyramid::getLevel(std::string id) {
+    std::map<std::string, Level*>::iterator it= levels.find ( id );
+    if ( it == levels.end() ) {
+        return NULL;
+    }
+    return it->second;
 }
 
-Photometric::ePhotometric PyramidOnFly::getPhotometry(){
-    if (photo == Photometric::UNKNOWN) {
-        if (getChannels() == 1) {
-            return Photometric::GRAY;
-        } else {
-            return Photometric::RGB;
-        }
+Level* Pyramid::getUniqueLevel() {
+    if (! isBasedPyramid) {
+        // Cette fonction est pour les pyramides de base, pour lesquelles on a gardé un seul niveau
+        return NULL;
     }
 
-    return photo;
+    // Dans le cas d'une pyramide de base à un niveau, highestLevel et lowestLevel sont ce niveau
+    return highestLevel;
 }
+
+void Pyramid::setUniqueLevel(std::string id) {
+    if (! isBasedPyramid) {
+        // Cette fonction est pour les pyramides de base, pour lesquelles on ne garde qu'un seul niveau
+    }
+    std::map<std::string, Level*>::iterator uniqueLev= levels.find ( id );
+    if ( uniqueLev == levels.end() ) {
+        highestLevel = NULL;
+        lowestLevel = NULL;
+        return;
+    }
+
+    highestLevel = uniqueLev->second;
+    lowestLevel = uniqueLev->second;
+
+    return;
+}
+
+void Pyramid::removeLevel(std::string id) {
+
+    std::map<std::string, Level*>::iterator lv = levels.find(id);
+    delete lv->second;
+    lv->second = NULL;
+    levels.erase(lv);
+
+}
+void Pyramid::setLevels(std::map<std::string, Level*>& lv) { levels = lv; }
+Rok4Format::eformat_data Pyramid::getFormat() { return format; }
+Photometric::ePhotometric Pyramid::getPhotometric() { return photo; }
+int Pyramid::getChannels() { return channels; }
+bool Pyramid::getContainOdLevels(){ return containOdLevels; }
+bool Pyramid::getTransparent(){ return transparent; }
+void Pyramid::setTransparent (bool tr) { transparent = tr; }
+Style* Pyramid::getStyle(){ return style; }
+void Pyramid::setStyle (Style * st) { style = st; }
+int* Pyramid::getNdValues() { return ndValues; }
+int Pyramid::getFirstNdValues () { return ndValues[0]; }

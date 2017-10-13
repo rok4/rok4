@@ -48,6 +48,8 @@
 
 #include <string>
 
+#include "TileMatrixXML.h"
+
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
@@ -118,30 +120,7 @@ private:
      */
     long int matrixH;
 public:
-    /**
-     * \~french
-     * \brief Crée un TileMatrix à partir des ses éléments constitutifs
-     * \param[in] id identifiant
-     * \param[in] res résolution des tuiles
-     * \param[in] x0 abscisse du point en haut à gauche dans le système de coordonnées associé.
-     * \param[in] y0 ordonnée du point en haut à gauche dans le système de coordonnées associé.
-     * \param[in] tileW largeur d'une tuile
-     * \param[in] tileH longueur d'une tuile
-     * \param[in] matrixW nombre de tuiles dans la matrice en largeur
-     * \param[in] matrixH nombre de tuiles dans la matrice en longueur
-     * \~english
-     * \brief Create a TileMatrix
-     * \param[in] id identifier
-     * \param[in] res tiles resolution
-     * \param[in] x0 x-coordinate of the top right corner in the linked coordinate system.
-     * \param[in] y0 y-coordinate of the top right corner in the linked coordinate system.
-     * \param[in] tileW tile width
-     * \param[in] tileH tile height
-     * \param[in] matrixW tiles number in the matrix width
-     * \param[in] matrixH tiles number in the matrix height
-     */
-    TileMatrix ( std::string id,double res,double x0,double y0,int tileW, int tileH,long int matrixW, long int matrixH ) :
-        id ( id ), res ( res ), x0 ( x0 ), y0 ( y0 ), tileW ( tileW ), tileH ( tileH ), matrixW ( matrixW ), matrixH ( matrixH ) {}
+
     /**
     * \~french
     * Crée un TileMatrix à partir d'un autre
@@ -153,6 +132,18 @@ public:
     * \param[in] t TileMatrix to copy
     */
     TileMatrix ( const TileMatrix& t );
+
+    /**
+    * \~french
+    * Crée un TileMatrix à partir d'un TileMatrixXML
+    * \brief Constructeur
+    * \param[in] t TileMatrixXML contenant les informations
+    * \~english
+    * Create a TileMatrix from a TileMatrixXML
+    * \brief Constructor
+    * \param[in] t TileMatrixXML to get informations
+    */
+    TileMatrix ( const TileMatrixXML& t );
 
     /**
      * \~french

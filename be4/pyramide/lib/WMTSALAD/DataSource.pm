@@ -54,7 +54,7 @@ Using:
 
     _init {
         ...
-        $self->SUPER->_init( {type => "WMS", level => 7, order => 0});
+        $this->SUPER->_init( {type => "WMS", level => 7, order => 0});
         ...
     }    
     (end code)
@@ -100,8 +100,7 @@ my @SRC_TYPE = ("WMS", "pyr");
 ################################################################################
 
 BEGIN {}
-INIT {
-}
+INIT {}
 END {}
 
 ####################################################################################################
@@ -125,21 +124,21 @@ Returns:
     
 =cut
 sub new() {
-    my $this = shift;
+    my $class = shift;
     my $params = shift;
 
-    my $class= ref($this) || $this;
+    $class = ref($class) || $class;
 
     # IMPORTANT : if modification, think to update natural documentation (just above)
-    my $self = {
+    my $this = {
         type => undef,
         level => undef,
         order => undef,
     };
 
-    bless($self, $class);
+    bless($this, $class);
 
-    return $self;
+    return $this;
 }
 
 =begin nd
@@ -170,14 +169,14 @@ Returns:
     
 =cut
 sub _init() {
-    my $self = shift;
+    my $this = shift;
     my $params = shift;
 
     # Tests type
     if (!exists $params->{type} || !defined $params->{type}) {
         ERROR("Data source's type is undefined.");
         return FALSE;
-    } elsif (!$self->isKnownType($params->{type})) {
+    } elsif (! defined COMMON::Array::isInArray($params->{type}, @SRC_TYPE)) {
         ERROR(sprintf "Unrecognized data source's type : %s.", $params->{type});
         return FALSE;
     }
@@ -196,50 +195,12 @@ sub _init() {
     }
 
     # Initializes
-    $self->{type} = $params->{type};
-    $self->{level} = $params->{level};
-    $self->{order} = $params->{order};
+    $this->{type} = $params->{type};
+    $this->{level} = $params->{level};
+    $this->{order} = $params->{order};
 
     return TRUE;
 }
-
-
-####################################################################################################
-#                                        Group: Tests                                              #
-####################################################################################################
-
-=begin nd
-
-Function: isKnownType
-
-Tests if the given type is recognized.
-
-Using:
-    (start code)
-    my $answer = $dataSource->isKnownType( $type );
-    (end code)
-
-Parameter:
-    type - string - the type to test
-
-Returns:
-    1 (TRUE) if the type is recognized, 0 (FALSE) if not.
-
-=cut
-sub isKnownType {
-    my $self = shift;
-    my $type = shift;
-
-    return FALSE if (!defined $type);
-
-    foreach (@SRC_TYPE) {
-        return TRUE if ((lc $type) eq (lc $_));
-    }
-
-    return FALSE;
-}
-
-
 
 ####################################################################################################
 #                                        Group: Output                                             #

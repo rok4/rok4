@@ -3,8 +3,14 @@ project(Rok4)
 
 #définit la version du projet
 #Lecture de la version de ROK4 dans le fichier du projet
-FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/README version_line REGEX "ROK4.*[0-9]+\\.[0-9]+\\.[0-9]+(-SNAPSHOT)?")
+FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/README version_line REGEX "ROK4.*[0-9]+\\.[0-9]+\\.[0-9]+(-[A-Za-z]+)?")
 STRING(SUBSTRING ${version_line} 15 -1 version)
+if( ${version} STREQUAL "0.0.0" )
+    if( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/pom.xml )
+        FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/pom.xml version_line REGEX "<!--TAG_VERSION-->")
+        STRING(REGEX REPLACE "[ ]*<version>([0-9]+\\.[0-9]+\\.[0-9]+(-[A-Za-z]+)?)</version>[ ]*<!--TAG_VERSION-->[ ]*" "\\1" version "${version_line}" )
+    endif( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/pom.xml )
+endif( ${version} STREQUAL "0.0.0" )
 
 STRING(REPLACE "." ";" ROK4_VERSION ${version})
 list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
@@ -43,6 +49,11 @@ endif(NOT DEFINED BUILD_ROK4)
 if(NOT DEFINED BUILD_BE4)
   set(BUILD_BE4 TRUE CACHE BOOL "Build BE4")
 endif(NOT DEFINED BUILD_BE4)
+
+if(NOT DEFINED BUILD_OBJECT)
+  set(BUILD_OBJECT FALSE CACHE BOOL "Build Object storage")
+  set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
+endif(NOT DEFINED BUILD_OBJECT)
 
 if(NOT DEFINED KDU_USE)
   set(KDU_USE FALSE CACHE BOOL "Build libimage using kakadu (to read JPEG 2000)")

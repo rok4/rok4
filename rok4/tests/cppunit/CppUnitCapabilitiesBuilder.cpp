@@ -121,7 +121,7 @@ protected:
     bool dowerestrictCRSList;
     std::vector<std::string> listofequalsCRS;
     std::vector<std::string> restrictedCRSList;
-    ServicesConf* services_conf;
+    ServicesXML* services_conf;
 
 
     // One style
@@ -185,12 +185,10 @@ protected:
     Palette* palette0;
     Style* style;
     Layer* layer;
+    ContextBook *sbook;
+    ContextBook *cbook;
     TileMatrixSet* onematrixset;
     Proxy proxy;
-    std::string tmsDir;
-    std::string projDir;
-    std::string layDir;
-    std::string styleDir;
     Rok4Server* myrok4server;
 
 };
@@ -207,11 +205,7 @@ void CppUnitCapabilitiesBuilder::setUp() {
     country, electronicMailAddress, postMode, fullStyling, inspire, serviceType, serviceTypeVersion = "", "", false, false, false, "", "3.3.3";
     MetadataURL mtdMWS = MetadataURL ( "simple", metadataUrlWMS,metadataMediaTypeWMS );
     MetadataURL mtdWMTS = MetadataURL ( "simple", metadataUrlWMTS,metadataMediaTypeWMTS );
-    services_conf = new ServicesConf ( name, title, abstract, keyWords,serviceProvider, fee,
-                                      accessConstraint, layerLimit, maxWidth, maxHeight, maxTileX, maxTileY, formatList, infoFormatList , globalCRSList , serviceType, serviceTypeVersion,
-                                      providerSite, individualName, individualPosition, voice, facsimile,
-                                      addressType, deliveryPoint, city, administrativeArea, postCode, country,
-                                      electronicMailAddress, mtdMWS, mtdWMTS, listofequalsCRS, restrictedCRSList, postMode, fullStyling, inspire, doweuselistofequalsCRS, addEqualsCRS, dowerestrictCRSList);
+    services_conf = new ServicesXML ( "" );
     // Load Layerlist - Rok4Server 3rd argument
     id0 = "zero";
     titles0.push_back("title0");
@@ -229,10 +223,7 @@ void CppUnitCapabilitiesBuilder::setUp() {
     }
     palette0 = new Palette ( colours,false,false,false );
     palette0->buildPalettePNG();
-    Pente pente;
-    Aspect aspect;
-    Estompage estompage;
-    style = new Style ( id0,titles0,abstracts0,keyWords,legendURLs0,*palette0,pente,aspect,estompage  );
+    style = new Style ( id0,titles0,abstracts0,keyWords,legendURLs0,*palette0 );
     styleslayer.push_back(style);
     
     getFeatureInfoAvailability = false;
@@ -272,15 +263,12 @@ void CppUnitCapabilitiesBuilder::setUp() {
     backlog = 0; // 7th arg
     supportWMS = true; // 9th arg
     supportWMTS = false; // If true -> seg fault for the test 8th arg
+    cbook = NULL;
+    sbook = NULL;
     nbProcess = 1;
     proxy.proxyName = "";
     proxy.noProxy = "";
-    tmsDir = "tileMatrixSet";
-    styleDir = "styles";
-    layDir = "layers";
-    projDir = "proj";
-    myrok4server = new Rok4Server(nbThread, *services_conf, layerlist, mytilematrixset, stylelist,
-                                  socket, backlog, proxy, tmsDir, styleDir, layDir, projDir, supportWMTS, supportWMS, nbProcess);
+    myrok4server = new Rok4Server(nbThread, *services_conf, layerlist, mytilematrixset, stylelist, socket, backlog, cbook,sbook, proxy,supportWMTS, supportWMS, nbProcess);
 
 }
 

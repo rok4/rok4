@@ -114,20 +114,11 @@ bool parseCommandLine ( int argc, char* argv[], char* server_config_file, int* n
 * @param[in] arg : pointeur sur le fichier de configuration du serveur
 */
 
-void* processThread ( void* arg ) {
+void* processThread ( void* server ) {
     // Initialisation du serveur
 
-    pthread_mutex_lock ( &mutex_rok4 );
-    void* server=rok4InitServer ( ( char* ) arg );
-    pthread_mutex_unlock ( &mutex_rok4 );
-
-    if ( server==0 ) {
-        fprintf ( stdout,"Impossible d'initialiser le serveur\n" );
-        return 0;
-    }
-    fprintf ( stdout,"Serveur initialise\n" );
-
     // Traitement des requetes
+    /*
     while ( !feof ( requestFile ) ) {
         char query[400],host[400],script[400];
         memset ( query,'\0',400 );
@@ -161,7 +152,7 @@ void* processThread ( void* arg ) {
         else if ( strcmp ( request->operationType,"gettile" ) ==0 ) {
             // TileReferences
             TileRef* tileRef = malloc(sizeof(TileRef));
-            tileRef->filename = 0;
+            tileRef->name = 0;
             tileRef->posoff = 0;
             tileRef->possize = 0;
             tileRef->type = 0;
@@ -176,7 +167,7 @@ void* processThread ( void* arg ) {
                 rok4FlushTileRef(tileRef);
                 rok4DeleteResponse ( error );
             } else {
-                fprintf ( stdout,"\tfilename : %s\noff=%d\nsize=%d\ntype=%s\n",tileRef->filename,tileRef->posoff,tileRef->possize,tileRef->type );
+                fprintf ( stdout,"\tfilename : %s\noff=%d\nsize=%d\ntype=%s\n",tileRef->name,tileRef->posoff,tileRef->possize,tileRef->type );
                 if ( strcmp ( tileRef->type,"image/tiff" ) ==0 ) {
                     TiffHeader* header=rok4GetTiffHeader ( tileRef->width,tileRef->height,tileRef->channels );
                     fprintf ( stdout,"\tw=%d h=%d c=%d\n\theader=",tileRef->width,tileRef->height,tileRef->channels );
@@ -221,9 +212,8 @@ void* processThread ( void* arg ) {
         }
         rok4DeleteRequest ( request );
     }
+    */
 
-    // Extinction du serveur
-    rok4KillServer ( server );
 
     return 0;
 }
@@ -249,14 +239,33 @@ int main ( int argc, char* argv[] ) {
         return -1;
     }
 
+    void* server=rok4InitServer ( server_config_file );
+
+    if ( server==0 ) {
+        fprintf ( stdout,"Impossible d'initialiser le serveur\n" );
+        return 0;
+    }
+    fprintf ( stdout,"Serveur initialise\n" );
+
     pthread_t* threads= ( pthread_t* ) malloc ( nb_threads*sizeof ( pthread_t ) );
     int i;
     for ( i = 0; i < nb_threads; i++ ) {
-        pthread_create ( & ( threads[i] ), NULL, processThread, ( void* ) server_config_file );
+        pthread_create ( & ( threads[i] ), NULL, processThread, server );
     }
-    for ( i = 0; i < nb_threads; i++ )
+    printf("--------------- Threads créés\n");
+    for ( i = 0; i < nb_threads; i++ ) {
+        printf("--------------- Lancement thread %d\n", i);
         pthread_join ( threads[i], NULL );
+    }
 
+    printf("--------------- Threads nettoyés\n");
     free ( threads );
+
+
+    printf("--------------- Kill server\n");
+    // Extinction du serveur
+    rok4KillServer ( server );
+
+
     return 0;
 }

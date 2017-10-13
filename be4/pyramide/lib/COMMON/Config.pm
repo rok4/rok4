@@ -51,8 +51,11 @@ Using:
     (end code)
 
 Attributes:
+    filePath - string - Path to the configuration file
+    fileFormat - string - Configuration format : INI
+    configuration - string hash - Configuration stored in string hash, with section and sub section, with orders
+    rawConfiguration - string hash - Configuration stored in string hash, with section and sub section, without orders
     
-
 Limitations:
     
 =cut
@@ -70,10 +73,11 @@ my $VERSION = '0.1';
 
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
-use List::Util qw(min max);
 use Scalar::Util qw/reftype/;
 
-  # inheritance
+use COMMON::Array;
+
+# inheritance
 our @ISA;
 use parent 'Exporter';
 
@@ -81,13 +85,14 @@ our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
 our @EXPORT      = qw();
 
-
-
 ################################################################################
 # Constants
 use constant TRUE  => 1;
 use constant FALSE => 0;
-use constant FILE_FORMATS => qw(INI);
+
+# Constant: FILEFORMATS
+# Define allowed values for configuration format
+my @FILEFORMATS = ('INI');
 
 ################################################################################
 
@@ -95,24 +100,24 @@ BEGIN {}
 INIT {}
 END {}
 
-
 ################################################################################
 #                             Group: Constructors                              #
 ################################################################################
 
 sub new {
-	my $this = shift;
-	my $parms = shift;
+    my $class = shift;
+    my $parms = shift;
     
-    my $class= ref($this) || $this;
+    $class = ref($class) || $class;
 
-	my $self = {
-        "filePath" => undef,
-        "fileFormat" => undef,
-        "configuration" => {},
+    my $this = {
+        filePath => undef,
+        fileFormat => undef,
+        configuration => {},
+        rawConfiguration => {},
     };
-
-	bless($self, $class);
+    
+    bless($this, $class);
 
     DEBUG(sprintf "COMMON::Config->new called with parameters : %s", Dumper($parms));
     if (! defined $parms || ! keys %{$parms} > 0) {
@@ -126,7 +131,7 @@ sub new {
     # Read the mandatory configuration file's path parameter 
     if (defined ($value = delete $parms->{'filepath'})) {
         DEBUG(sprintf "Given configuration file's path : '%s'", $value);
-        $self->{"filePath"} = $value;
+        $this->{filePath} = $value;
     } else {
         ERROR("Cannot use COMMON::Config->new whithout a valid 'filepath' parameter.");
         return undef;
@@ -136,27 +141,26 @@ sub new {
 
     # Check the format in which the configuration file is written
     $value = delete $parms->{'format'};
-    if ( (defined $value) && ($self->_isKnownFormat($value)) ) {
-        DEBUG(sprintf "Given configuration file's format : '%s'", $value);
-        $self->{"fileFormat"} = uc($value);
-    } elsif ( ! defined $value) {
+
+    if ( ! defined $value) {
         INFO("No format defined for the configuration file. Switching to default INI-like format ('INI').");
-        $self->{"fileFormat"} = "INI";
-    } else {
+        $value = "INI";
+    }
+    
+    if ( ! defined COMMON::Array::isInArray(uc($value), @FILEFORMATS) ) {
+        ERROR("Unknown file format: $value");
         return undef;
     }
+    $this->{fileFormat} = uc($value);
 
-    my $loaded = FALSE;
-    if ($self->{"fileFormat"} eq "INI") {
-        $loaded = $self->_loadINI();
+    if ($this->{fileFormat} eq "INI") {
+        if (! $this->_loadINI() ) {
+            ERROR("Configuration file wasn't properly loaded.");
+            return undef;
+        }
     }
 
-    if ($loaded) {
-        return $self;
-    } else {
-        ERROR("Configuration file wasn't properly loaded.");
-        return undef;
-    }
+    return $this;
 }
 
 =begin nd
@@ -166,10 +170,10 @@ Read line by line (order is important), no library is used.
 
 =cut
 sub _loadINI {
-    my $self = shift;
+    my $this = shift;
 
 
-    my $filepath = $self->{"filePath"};
+    my $filepath = $this->{filePath};
     my $fileHandle = undef;
 
     unless (open($fileHandle, "<", $filepath)){
@@ -190,25 +194,25 @@ sub _loadINI {
         if ($l =~ m/^\[([\w-]*)\]$/) {
             $l =~ s/[\[\]]//g;
 
-            if (exists $self->{"configuration"}->{$l}) {
+            if (exists $this->{configuration}->{$l}) {
                 ERROR (sprintf "A section is defined twice in the configuration : section '%s'", $l);
                 return FALSE;
             }
             $currentSection = $l;
             $currentSubSection = undef; # Resetting subsection as section changes
-            $self->{"configuration"}->{$currentSection}->{'_props'} = []; # Array of properties name, to index their order
+            $this->{configuration}->{$currentSection}->{'_props'} = []; # Array of properties name, to index their order
             next;
         }
 
         if ($l =~ m/^\[\[([\w-]*)\]\]$/) {
             $l =~ s/[\[\]]//g;
 
-            if (exists $self->{"configuration"}->{$currentSection}->{$l}) {
+            if (exists $this->{configuration}->{$currentSection}->{$l}) {
                 ERROR (sprintf "A subsection is defined twice in the configuration : section '%s', subsection '%s'", $currentSection, $l);
                 return FALSE;
             }
             $currentSubSection = $l;            
-            $self->{"configuration"}->{$currentSection}->{$currentSubSection}->{'_props'} = []; # Array of properties name, to index their order
+            $this->{configuration}->{$currentSection}->{$currentSubSection}->{'_props'} = []; # Array of properties name, to index their order
             next;
         }
 
@@ -224,22 +228,24 @@ sub _loadINI {
         }
 
         if (! defined $currentSubSection) {
-            if (exists $self->{"configuration"}->{$currentSection}->{$prop[0]}) {
+            if (exists $this->{configuration}->{$currentSection}->{$prop[0]}) {
                 ERROR (sprintf "A property is defined twice in the configuration : section %s, parameter %s", $currentSection, $prop[0]);
                 return FALSE;
             }            
-            $self->{"configuration"}->{$currentSection}->{$prop[0]} = $prop[1]; 
-            push (@{$self->{"configuration"}->{$currentSection}->{'_props'}}, $prop[0]);
+            $this->{configuration}->{$currentSection}->{$prop[0]} = $prop[1];
+            push (@{$this->{configuration}->{$currentSection}->{'_props'}}, $prop[0]);
+
+            $this->{rawConfiguration}->{$currentSection}->{$prop[0]} = $prop[1];
         } else {
-            if (defined $self->{"configuration"}->{$currentSection}->{$currentSubSection}->{$prop[0]}) {
+            if (defined $this->{configuration}->{$currentSection}->{$currentSubSection}->{$prop[0]}) {
                 ERROR (sprintf "A property is defined twice in the configuration : section %s, subsection %s parameter %s", $currentSection, $currentSubSection, $prop[0]);
                 return FALSE;
-            }            
-            $self->{"configuration"}->{$currentSection}->{$currentSubSection}->{$prop[0]} = $prop[1];
-            push (@{$self->{"configuration"}->{$currentSection}->{$currentSubSection}->{'_props'}}, $prop[0]);
+            }
+            $this->{configuration}->{$currentSection}->{$currentSubSection}->{$prop[0]} = $prop[1];
+            push (@{$this->{configuration}->{$currentSection}->{$currentSubSection}->{'_props'}}, $prop[0]);
+            
+            $this->{rawConfiguration}->{$currentSection}->{$currentSubSection}->{$prop[0]} = $prop[1];
         }
-        
-
     }
 
     close $fileHandle;
@@ -252,39 +258,6 @@ sub _loadINI {
 ################################################################################
 #                                Group: Tester                                 #
 ################################################################################
-
-=begin nd
-Function: _isKnownFormat
-
-Checks configuration file's format. Possible values: 'INI'.
-
-Syntax: _isKnownFormat( format )
-
-Parameters (list):
-    format - string - format's name
-=cut
-sub _isKnownFormat {
-    my $self = shift;
-    my $format = shift;
-
-    TRACE;
-
-    return FALSE if (! defined $format);
-
-    my $allowedFormats = "";
-    my $count = 0;
-    my @formats = FILE_FORMATS();
-    foreach (@formats) {
-        return TRUE if (uc($format) eq $_);
-        $count++;
-        $allowedFormats .= ($count < scalar @formats) ? "'$_', " : "'$_'.";
-    }
-
-    ERROR (sprintf "COMMON::Config cannot read Configuration file format '%s'."
-       ." The implemented file formats are : %s", uc($format), $allowedFormats);
-    return FALSE;
-}
-
 
 =begin_nd
 Function: isSection
@@ -300,7 +273,7 @@ Returns:
     0 if sectionName is nothing (or sectionName is undefined), 1 if sectionName is a properties, 2 if sectionName is a section
 =cut
 sub isSection {
-    my $self = shift;
+    my $this = shift;
     my $sectionName = shift;
 
     if (! defined $sectionName) {
@@ -308,11 +281,11 @@ sub isSection {
         return 0;
     }
 
-    if (! exists $self->{'configuration'}->{$sectionName}) {
+    if (! exists $this->{configuration}->{$sectionName}) {
         return 0;
     }
 
-    if (! defined reftype($self->{'configuration'}->{$sectionName}) || reftype($self->{'configuration'}->{$sectionName}) ne 'HASH') {
+    if (! defined reftype($this->{configuration}->{$sectionName}) || reftype($this->{configuration}->{$sectionName}) ne 'HASH') {
         return 1;
     }
 
@@ -334,7 +307,7 @@ Returns:
     0 if subSectionName is nothing (or subSectionName is undefined or sectionName is undefined), 1 if subSectionName is a properties, 2 if subSectionName is a sub section
 =cut
 sub isSubSection {
-    my $self = shift;
+    my $this = shift;
     my $sectionName = shift;
     my $subSectionName = shift;
 
@@ -348,17 +321,17 @@ sub isSubSection {
         return 0;
     }
 
-    if ($self->isSection($sectionName) != 2) {
+    if ($this->isSection($sectionName) != 2) {
         return 0;
     }
 
-    if (! exists $self->{'configuration'}->{$sectionName}->{$subSectionName}) {
+    if (! exists $this->{configuration}->{$sectionName}->{$subSectionName}) {
         return 0;
     }
 
     if (
-        ! defined reftype($self->{'configuration'}->{$sectionName}->{$subSectionName}) || 
-        reftype($self->{'configuration'}->{$sectionName}->{$subSectionName}) ne 'HASH'
+        ! defined reftype($this->{configuration}->{$sectionName}->{$subSectionName}) || 
+        reftype($this->{configuration}->{$sectionName}->{$subSectionName}) ne 'HASH'
         ) {
         return 1;
     }
@@ -382,7 +355,7 @@ Returns:
     TRUE if properties exists and is defined, FALSE otherwise
 =cut
 sub isProperty {
-    my $self = shift;
+    my $this = shift;
     my $parms = shift;
 
     if (! exists $parms->{section} || ! defined $parms->{section}) {
@@ -399,9 +372,9 @@ sub isProperty {
 
     if (exists $parms->{subsection} && defined $parms->{subsection}) {
         my $subsec = $parms->{subsection};
-        return (exists $self->{'configuration'}->{$sec}->{$subsec}->{$prop} && defined $self->{'configuration'}->{$sec}->{$subsec}->{$prop});
+        return (exists $this->{configuration}->{$sec}->{$subsec}->{$prop} && defined $this->{configuration}->{$sec}->{$subsec}->{$prop});
     } else {
-        return (exists $self->{'configuration'}->{$sec}->{$prop} && defined $self->{'configuration'}->{$sec}->{$prop});
+        return (exists $this->{configuration}->{$sec}->{$prop} && defined $this->{configuration}->{$sec}->{$prop});
     }
 }
 
@@ -420,7 +393,7 @@ Parameters (list):
     section - string - section's name
 =cut
 sub getSection {
-    my $self = shift;
+    my $this = shift;
     my $section = shift;
 
     if(! defined $section) {
@@ -428,12 +401,12 @@ sub getSection {
         return undef;
     }
 
-    if ($self->isSection($section) != 2) {
+    if ($this->isSection($section) != 2) {
         ERROR("'$section' is not a section");
         return undef;
     }
 
-    my $refSectionHash = $self->{"configuration"}->{$section};
+    my $refSectionHash = $this->{configuration}->{$section};
     my %sectionHash = %{$refSectionHash};
 
     return %sectionHash;
@@ -452,7 +425,7 @@ Parameters (list):
     subSection - string - subsection's name
 =cut
 sub getSubSection {
-    my $self = shift;
+    my $this = shift;
     my $section = shift;
     my $subSection = shift;
 
@@ -466,12 +439,12 @@ sub getSubSection {
         return undef;
     }
 
-    if ($self->isSubSection($section, $subSection) != 2) {
+    if ($this->isSubSection($section, $subSection) != 2) {
         ERROR("'$section.$subSection' is not a subsection");
         return undef;
     }
 
-    my $refSubSectionHash = $self->{"configuration"}->{$section}->{$subSection};
+    my $refSubSectionHash = $this->{configuration}->{$section}->{$subSection};
     my %subSectionHash = %{$refSubSectionHash};
 
     return %subSectionHash;
@@ -491,10 +464,10 @@ Parameters (hash):
     'property' => propertyName - string - the property to get
 =cut
 sub getProperty {
-    my $self = shift;
+    my $this = shift;
     my $parms = shift;
 
-    if (! $self->isProperty($parms)) {
+    if (! $this->isProperty($parms)) {
         return undef;
     }
 
@@ -503,9 +476,40 @@ sub getProperty {
 
     if (exists $parms->{subsection} && defined $parms->{subsection}) {
         my $subsec = $parms->{subsection};
-        return $self->{"configuration"}->{$sec}->{$subsec}->{$prop};
+        return $this->{configuration}->{$sec}->{$subsec}->{$prop};
     } else {
-        return $self->{"configuration"}->{$sec}->{$prop};
+        return $this->{configuration}->{$sec}->{$prop};
+    }
+}
+
+=begin nd
+Function: setProperty
+
+Store the value of a property in a section or a section-subsection pair.
+
+Syntax: setProperty({ 'section' => sectionName, 'property' => propertyName [, 'subsection' => subSectionName], 'value' = value })
+
+Parameters (hash):
+    'section' => sectionName - string - section's name
+    'subsection' => subSectionName - string - subsection's name (optionnal)
+    'property' => propertyName - string - the property to set
+    'value' => propertyName - string - the value to set
+=cut
+sub setProperty {
+    my $this = shift;
+    my $parms = shift;
+
+    my $sec = $parms->{section};
+    my $prop = $parms->{property};
+    my $val = $parms->{value};
+
+    if (exists $parms->{subsection} && defined $parms->{subsection}) {
+        my $subsec = $parms->{subsection};
+        $this->{configuration}->{$sec}->{$subsec}->{$prop} = $val;
+        $this->{rawConfiguration}->{$sec}->{$subsec}->{$prop} = $val;
+    } else {
+        $this->{configuration}->{$sec}->{$prop} = $val;
+        $this->{rawConfiguration}->{$sec}->{$prop} = $val;
     }
 }
 
@@ -518,11 +522,11 @@ Syntax: getSections()
   
 =cut
 sub getSections {
-    my $self = shift;
+    my $this = shift;
 
     my @sections;
-    foreach my $item (keys %{$self->{"configuration"}}) {
-        if ( $self->isSection($item) == 2 ) {
+    foreach my $item (keys %{$this->{configuration}}) {
+        if ( $this->isSection($item) == 2 ) {
             push (@sections, $item);
         }
     }
@@ -541,17 +545,17 @@ Parameters (list):
 
 =cut
 sub getSubSections {
-    my $self = shift;
+    my $this = shift;
     my $section = shift;
 
-    if ($self->isSection($section) != 2) {
+    if ($this->isSection($section) != 2) {
         ERROR("'$section' is not a section, cannot obtain list of subsections in");
         return undef;
     } 
 
     my @subSections;
-    foreach my $item (keys %{$self->{"configuration"}->{$section}}) {
-        if ( $self->isSubSection($section, $item) == 2 ) {
+    foreach my $item (keys %{$this->{configuration}->{$section}}) {
+        if ( $this->isSubSection($section, $item) == 2 ) {
             push (@subSections, $item);
         }
     }
@@ -572,22 +576,22 @@ Parameters (list):
     subsection - string - subsection's name (optionnal)   
 =cut
 sub getProperties {
-    my $self = shift;
+    my $this = shift;
     my $section = shift;
     my $subsection = shift;
 
     if (defined $subsection) {
-        if ($self->isSubSection($section, $subsection) != 2) {
+        if ($this->isSubSection($section, $subsection) != 2) {
             ERROR("'$section.$subsection' is not a subsection, cannot obtain list of properties in");
             return undef;
         }
-        return @{$self->{"configuration"}->{$section}->{$subsection}->{'_props'}};
+        return @{$this->{configuration}->{$section}->{$subsection}->{'_props'}};
     } else {
-        if ($self->isSection($section) != 2) {
+        if ($this->isSection($section) != 2) {
             ERROR("'$section' is not a section, cannot obtain list of properties in");
             return undef;
         }
-        return @{$self->{"configuration"}->{$section}->{'_props'}};
+        return @{$this->{configuration}->{$section}->{'_props'}};
     }
 }
 
@@ -600,11 +604,22 @@ Syntax: getConfig()
  
 =cut
 sub getConfig {
-    my $self = shift;
+    my $this = shift;
 
-    my $refConfig = $self->{'configuration'};
+    my $refConfig = $this->{configuration};
     my %hashConfig = %{$refConfig};
     return %hashConfig;
+}
+
+=begin nd
+Function: getRawConfig
+
+Returns a hash reference of the the part of the COMMON::Config object that actually contains the raw configuration (without order).
+=cut
+sub getRawConfig {
+    my $this = shift;
+
+    return $this->{'rawConfiguration'};
 }
 
 

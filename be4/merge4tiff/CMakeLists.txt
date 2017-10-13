@@ -81,7 +81,7 @@ if(UNITTEST)
   "tests/cppunit/CppUnit*.cpp" )
     ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} tests/cppunit/main.cpp ${UnitTests_SRCS} )
     #Bibliothèque à lier (ajouter la cible (executable/library) du projet
-    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
+    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_RADOS_LIBS_INIT} ${CMAKE_OPENSSL_LIBS_INIT}  ${CMAKE_DL_LIBS})
     FOREACH(test ${UnitTests_SRCS})
           MESSAGE("  - adding test ${test}")
           GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
@@ -89,10 +89,6 @@ if(UNITTEST)
     ENDFOREACH(test)
   endif(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/cppunit)
 endif(UNITTEST)
-
-########################################
-#Installe la documentation de base
-INSTALL(FILES LICENCE README DESTINATION share/doc/${PARENT_PROJECT_NAME}/${PROJECT_NAME})
 
 ########################################
 #Installation dans les répertoires par défauts

@@ -47,12 +47,22 @@
 #include <cstdlib>
 #include <iostream>
 #include <string.h>
-#include "tiffio.h"
-#include "Format.h"
 #include "Logger.h"
+#include <curl/curl.h>
+#include "Format.h"
+#include "CurlPool.h"
 #include "Rok4Image.h"
+#include "FileContext.h"
 #include "FileImage.h"
 #include "../be4version.h"
+
+
+#if BUILD_OBJECT
+#include "CephPoolContext.h"
+#include "SwiftContext.h"
+#include "S3Context.h"
+#include "RedisAliasManager.h"
+#endif
 
 /**
  * \~french
@@ -60,11 +70,11 @@
  * \details L'affichage se fait dans la sortie d'erreur
  * \~ \code
  * cache2work version X.X.X
- * 
+ *
  * Convert a ROK4 pyramid's TIFF image to untiled TIFF image
- * 
+ *
  * Usage: cache2work <INPUT FILE> [-c <VAL>] <OUTPUT FILE>
- * 
+ *
  * Parameters:
  *      -c output compression : default value : none
  *              raw     no compression
@@ -73,10 +83,14 @@
  *              lzw     Lempel-Ziv & Welch encoding
  *              pkb     PackBits encoding
  *              zip     Deflate encoding
+ *     -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object
+ *     -bucket S3 bucket where data is. INPUT FILE is interpreted as a S3 object
+ *     -container Swift container where data is. INPUT FILE is interpreted as a Swift object name
+ *     -ks in Swift storage case, activate keystone authentication
  *     -d debug logger activation
- * 
+ *
  * Example
- *      createNodata JpegTiled.tif -c zip ZipUntiled.tif
+ *      cache2work JpegTiled.tif -c zip ZipUntiled.tif
  * \endcode
  */
 void usage() {
@@ -85,7 +99,7 @@ void usage() {
 
                   "Convert a ROK4 pyramid's TIFF image to untiled TIFF image\n\n" <<
 
-                  "Usage: cache2work <INPUT FILE> [-c <VAL>] <OUTPUT FILE>\n\n" <<
+                  "Usage: cache2work <INPUT FILE> [-c <VAL>] <OUTPUT FILE> [-pool <VAL>]\n\n" <<
 
                   "Parameters:\n" <<
                   "     -c output compression : default value : none\n" <<
@@ -95,6 +109,14 @@ void usage() {
                   "             lzw     Lempel-Ziv & Welch encoding\n" <<
                   "             pkb     PackBits encoding\n" <<
                   "             zip     Deflate encoding\n" <<
+
+#if BUILD_OBJECT
+                  "    -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object\n" <<
+                  "    -bucket S3 bucket where data is. INPUT FILE is interpreted as a S3 object\n" <<
+                  "    -container Swift container where data is. INPUT FILE is interpreted as a Swift object name\n" <<
+                  "    -ks in Swift storage case, activate keystone authentication\n" <<
+#endif
+
                   "    -d debug logger activation\n\n" <<
 
                   "Example\n" <<
@@ -130,9 +152,13 @@ void error ( std::string message, int errorCode ) {
  */
 int main ( int argc, char **argv )
 {
+
     char* input = 0, *output = 0;
     Compression::eCompression compression = Compression::NONE;
     bool debugLogger=false;
+
+    char *pool = 0, *container = 0, *bucket = 0;
+    bool keystone = false;
 
     /* Initialisation des Loggers */
     Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
@@ -148,6 +174,35 @@ int main ( int argc, char **argv )
     logw.setf ( std::ios::fixed,std::ios::floatfield );
 
     for ( int i = 1; i < argc; i++ ) {
+
+#if BUILD_OBJECT
+        if ( !strcmp ( argv[i],"-pool" ) ) {
+            if ( ++i == argc ) {
+                error("Error in -pool option", -1);
+            }
+            pool = argv[i];
+            continue;
+        }
+        if ( !strcmp ( argv[i],"-bucket" ) ) {
+            if ( ++i == argc ) {
+                error("Error in -bucket option", -1);
+            }
+            bucket = argv[i];
+            continue;
+        }
+        if ( !strcmp ( argv[i],"-container" ) ) {
+            if ( ++i == argc ) {
+                error("Error in -container option", -1);
+            }
+            container = argv[i];
+            continue;
+        }
+        if ( !strcmp ( argv[i],"-ks" ) ) {
+            keystone = true;
+            continue;
+        }
+#endif
+
         if ( argv[i][0] == '-' ) {
             switch ( argv[i][1] ) {
             case 'h': // help
@@ -182,7 +237,7 @@ int main ( int argc, char **argv )
             if ( input == 0 ) input = argv[i];
             else if ( output == 0 ) output = argv[i];
             else {
-                error ("Argument must specify ONE input file and ONE output file", -1);
+                error ("Argument must specify ONE input file/object and ONE output file", -1);
             }
         }
     }
@@ -196,16 +251,68 @@ int main ( int argc, char **argv )
     }
 
     if ( input == 0 || output == 0 ) {
-        error ("Argument must specify one input file and one output file", -1);
+        error ("Argument must specify one input file/object and one output file", -1);
+    }
+
+    Context* context;
+
+#if BUILD_OBJECT
+    // Dans le cas objet, on a besoin d'un gestionnaire d'alias
+    AliasManager* am = NULL;
+
+    if ( pool != 0 ) {
+        LOGGER_DEBUG( std::string("Input is an object in the Ceph pool ") + pool);
+        context = new CephPoolContext(pool);
+        am = new RedisAliasManager();
+        if (am->isOk()) {
+            if (! am->connect()) {
+                error("RedisAliasManager impossible à connecter", 1);
+            }
+            context->setAliasManager(am);
+        }
+    } else if (bucket != 0) {
+        LOGGER_DEBUG( std::string("Input is an object in the S3 bucket ") + bucket);
+        curl_global_init(CURL_GLOBAL_ALL);
+        context = new S3Context(bucket);
+        am = new RedisAliasManager();
+        if (am->isOk()) {
+            if (! am->connect()) {
+                error("RedisAliasManager impossible à connecter", 1);
+            }
+            context->setAliasManager(am);
+        }
+    } else if (container != 0) {
+        LOGGER_DEBUG( std::string("Input is an object in the Swift container ") + container);
+        curl_global_init(CURL_GLOBAL_ALL);
+        context = new SwiftContext(container, keystone);
+        am = new RedisAliasManager();
+        if (am->isOk()) {
+            if (! am->connect()) {
+                error("RedisAliasManager impossible à connecter", 1);
+            }
+            context->setAliasManager(am);
+        }
+    } else {
+#endif
+
+        LOGGER_DEBUG("Input is a file in a file system");
+        context = new FileContext("");
+
+#if BUILD_OBJECT
+    }
+#endif
+
+    if (! context->connection()) {
+        error("Unable to connect context", -1);
     }
 
     Rok4ImageFactory R4IF;
-    Rok4Image* rok4image = R4IF.createRok4ImageToRead(input, BoundingBox<double>(0.,0.,0.,0.), 0., 0.);
+    Rok4Image* rok4image = R4IF.createRok4ImageToRead(input, BoundingBox<double>(0.,0.,0.,0.), 0., 0., context);
     if (rok4image == NULL) {
         acc->stop();
         acc->destroy();
         delete acc;
-        error (std::string("Cannot create ROK4 image to read ") + input, -1);
+        error (std::string("Cannot create ROK4 image to read ") + input, 1);
     }
 
     FileImageFactory FIF;
@@ -219,9 +326,10 @@ int main ( int argc, char **argv )
         acc->stop();
         acc->destroy();
         delete acc;
+        delete context;
         error (std::string("Cannot create image to write ") + output, -1);
     }
-    
+
     LOGGER_DEBUG ( "Write" );
     if (outputImage->writeImage(rok4image) < 0) {
         delete rok4image;
@@ -229,14 +337,29 @@ int main ( int argc, char **argv )
         acc->stop();
         acc->destroy();
         delete acc;
+        delete context;
         error("Cannot write image", -1);
     }
 
+    LOGGER_DEBUG ( "Clean" );
+    // Nettoyage
     delete rok4image;
     delete outputImage;
     acc->stop();
     acc->destroy();
     delete acc;
+    delete context;
+
+#if BUILD_OBJECT
+    if (am != NULL) {
+        delete am;
+    }
+
+    if (container != 0 || bucket != 0) {
+        CurlPool::cleanCurlPool();
+        curl_global_cleanup();
+    }
+#endif
 
     return 0;
 }

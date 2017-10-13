@@ -71,7 +71,6 @@ use POSIX qw(locale_h);
 use Log::Log4perl qw(:easy);
 use Getopt::Long;
 use File::Basename;
-use Pod::Usage;
 use Cwd;
 
 # My search module
@@ -81,6 +80,8 @@ use lib "$Bin/../lib/perl5";
 # My module
 use COMMON::TileMatrixSet;
 use COMMON::Layer;
+use COMMON::Pyramid;
+use COMMON::Level;
 
 ################################################################################
 # Constantes
@@ -274,100 +275,36 @@ sub doIt {
 
     my @keyword;
 
-    # read xml pyramid
-    my $parser  = XML::LibXML->new();
-    my $xmltree =  eval { $parser->parse_file($options{pyramid}); };
+    my $pyramid = COMMON::Pyramid->new("DESCRIPTOR", $options{pyramid});
 
-    if (! defined ($xmltree) || $@) {
-        ERROR (sprintf "Can not read the XML file Pyramid : %s !", $@);
+    if (! defined $pyramid) {
+        ERROR("Cannot create the Pyramid object");
         return FALSE;
     }
 
-    my $root = $xmltree->getDocumentElement;
-
-    ## TMS
-    my $tmsname = $root->findnodes('tileMatrixSet')->to_literal;
-    if ($tmsname eq '') {
-        ERROR (sprintf "Can not determine parameter 'tileMatrixSet' in the XML file Pyramid !");
+    if (! $pyramid->bindTileMatrixSet($options{"tms-path"})) {
+        ERROR("Can not bind the TMS to the pyramid");
         return FALSE;
     }
 
-    my $tmsFilePath = File::Spec->catfile($options{"tms-path"},$tmsname.".tms");
-    my $objTMS  = COMMON::TileMatrixSet->new($tmsFilePath);
-    if (! defined $objTMS) {
-        ERROR (sprintf "Can not create object TileMatrixSet from this path : %s ",$tmsFilePath);
-        return FALSE;
-    }
+    my $objTMS = $pyramid->getTileMatrixSet();
 
-    push @keyword, $tmsname;
-
-    # NODATA
-    my $nodata = $root->findnodes('nodataValue')->to_literal;
-    if ($nodata ne '') {
-        push @keyword, $nodata;
-    }
-
-    # PHOTOMETRIC
-    my $photometric = $root->findnodes('photometric')->to_literal;
-    if ($photometric ne '') {
-        push @keyword, $photometric;
-    }
-
-    # INTERPOLATION
-    my $interpolation = $root->findnodes('interpolation')->to_literal;
-    if ($interpolation ne '') {
-        push @keyword, $interpolation;
-    }
-
-    # FORMAT
-    my $format = $root->findnodes('format')->to_literal;
-    if ($format ne '') {
-        push @keyword, $format;
-    }
-
-    # SAMPLESPERPIXEL
-    my $samplesperpixel = $root->findnodes('channels')->to_literal;
-    if ($samplesperpixel ne '') {
-        push @keyword, "Samples per pixel: $samplesperpixel";
-    }
-
-    # load pyramid level to determine the top and bottom, and bbox
-    my @levels = $root->getElementsByTagName('level');
-
-    # global informations
-    my $level = $levels[0];
-    my $tilesPerWidth = $level->findvalue('tilesPerWidth');
-    if ($tilesPerWidth ne '') {
-        push @keyword, "Tiles per width: $tilesPerWidth";
-    }
-    my $tilesPerHeight = $level->findvalue('tilesPerHeight');
-    if ($tilesPerHeight ne '') {
-        push @keyword, "Tiles per height: $tilesPerHeight";
-    }
-    my $dirdepth = $level->findvalue('pathDepth');
-    if ($dirdepth ne '') {
-        push @keyword, "Directory depth: $dirdepth";
-    }
+    push @keyword, $pyramid->getTileMatrixSet()->getName();
 
     my $bottomID = undef;
     my $bottomOrder = undef;
     my $topID = undef;
     my $topOrder = undef;
-    my ($imin,$imax,$jmin,$jmax);
+    my ($rowMin, $rowMax, $colMin, $colMax);
 
-    foreach my $v (@levels) {
-        my $ID = $v->findvalue('tileMatrix');
-        my $order = $objTMS->getOrderfromID($ID);
+    foreach my $v ($pyramid->getLevels()) {
+        my $order = $v->getOrder();
+        my $ID = $v->getID();
 
         if (! defined $bottomOrder || $order < $bottomOrder) {
             $bottomOrder = $order;
             $bottomID = $ID;
-            ($imin,$imax,$jmin,$jmax) = (
-                $v->findvalue('TMSLimits/minTileCol'),
-                $v->findvalue('TMSLimits/maxTileCol'),
-                $v->findvalue('TMSLimits/minTileRow'),
-                $v->findvalue('TMSLimits/maxTileRow')
-            );
+            ($rowMin, $rowMax, $colMin, $colMax) = $v->getLimits();
         }
 
         if (! defined $topOrder || $order > $topOrder) {
@@ -378,10 +315,10 @@ sub doIt {
 
     my $bottomTM = $objTMS->getTileMatrix($bottomID);
 
-    my $xmin = $bottomTM->columnToX($imin);
-    my $ymax = $bottomTM->rowToY($jmin);
-    my $xmax = $bottomTM->columnToX($imax+1);
-    my $ymin = $bottomTM->rowToY($jmax+1);
+    my $xmin = $bottomTM->columnToX($colMin);
+    my $ymax = $bottomTM->rowToY($rowMin);
+    my $xmax = $bottomTM->columnToX($colMax+1);
+    my $ymin = $bottomTM->rowToY($rowMax+1);
 
     ALWAYS(sprintf "BBOX (%s) : xmin %s xmax %s ymin %s ymax %s", $objTMS->getSRS(), $xmin, $xmax, $ymin, $ymax);
 
@@ -397,6 +334,7 @@ sub doIt {
     push @lstsrs, "IGNF:WGS84G";
     push @lstsrs, "EPSG:3857";
     push @lstsrs, "EPSG:4258";
+    push @lstsrs, "EPSG:4326";
 
     # TODO informatif...
     my $minres=$bottomTM->getResolution();

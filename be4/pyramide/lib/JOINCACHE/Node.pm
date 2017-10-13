@@ -46,16 +46,15 @@ Using:
     (start code)
     use JOINCACHE::Node
 
-    my $node = COMMON::GraphNode->new(51, 756, "12", 2);
+    my $node = JOINCACHE::Node->new(51, 756, "12", 2);
     (end code)
 
 Attributes:
     i - integer - Column
     j - integer - Row
     level - string - Level's identifiant
-    pyramidName - string - Relative path of this node in the pyramid (generated from i,j). Example : "00/12/L5.tif"
     code - string - Commands to execute to generate this node (to write in a script)
-    script - <Script> - Script in which the node will be generated
+    script - <COMMON::Script> - Script in which the node will be generated
     sources - hash array - Source images from which this node is generated. One image source :
 |               img - string - Absolute path to the image
 |               msk - string - Absolute path to the associated mask (optionnal)
@@ -71,9 +70,12 @@ use warnings;
 
 use Log::Log4perl qw(:easy);
 
-use File::Spec ;
-use Data::Dumper ;
-use COMMON::Base36 ;
+use File::Spec;
+use Data::Dumper;
+
+use COMMON::Base36;
+use COMMON::ProxyGDAL;
+
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -105,38 +107,35 @@ Constructor: new
 Node constructor. Bless an instance.
 
 Parameters (list):
-    i - integer - Node's column
-    j - integer - Node's row
     level - string - Node's level ID
-    dirDepth - integer - Depth, to determine the base-36 path
+    col - integer - Node's column
+    row - integer - Node's row
 
 See also:
     <_init>
 =cut
 sub new {
-    my $this = shift;
-    my @params = @_;
+    my $class = shift;
+    my $params = shift;
     
-    my $class= ref($this) || $this;
+    $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above)
-    my $self = {
-        i => undef,
-        j => undef,
+    my $this = {
+        col => undef,
+        row => undef,
         level => undef,
-        pyramidName => undef,
         code => '',
         script => undef,
         sources => [],
     };
     
-    bless($self, $class);
-    
-    TRACE;
+    bless($this, $class);
     
     # init. class
-    return undef if (! $self->_init(@params));
+    return undef if (! $this->_init($params));
+    return undef if (! $this->_load($params));
     
-    return $self;
+    return $this;
 }
 
 =begin nd
@@ -145,46 +144,130 @@ Function: _init
 Check and store node's attributes values. Initialize weights to 0. Calculate the pyramid's relative path, from indices, thanks to <Base36::indicesToB36Path>.
 
 Parameters (list):
-    i - integer - Node's column
-    j - integer - Node's row
     level - string - Node's level ID
-    dirDepth - integer - Depth, to determine the base-36 path
+    col - integer - Node's column
+    row - integer - Node's row
 =cut
 sub _init {
-    my $self = shift;
-    my $i = shift;
-    my $j = shift;
-    my $level = shift;
-    my $dirDepth = shift;
-    
-    TRACE;
+    my $this = shift;
+    my $params = shift;
     
     # mandatory parameters !
-    if (! defined $i) {
-        ERROR("Node's column is undefined !");
-        return FALSE;
-    }
-    if (! defined $j) {
-        ERROR("Node's row is undefined !");
-        return FALSE;
-    }
-    if (! defined $level) {
+    if (! exists $params->{level} || ! defined $params->{level}) {
         ERROR("Node's level is undefined !");
         return FALSE;
     }
-    if (! defined $dirDepth) {
-        ERROR("dirDepth is undefined !");
+    if (! exists $params->{col} || ! defined $params->{col}) {
+        ERROR("Node's column is undefined !");
+        return FALSE;
+    }
+    if (! exists $params->{row} || ! defined $params->{row}) {
+        ERROR("Node's row is undefined !");
         return FALSE;
     }
     
     # init. params
-    $self->{i} = $i;
-    $self->{j} = $j;
-    $self->{level} = $level;
-    $self->{code} = '';
+    $this->{col} = $params->{col};
+    $this->{row} = $params->{row};
+    $this->{level} = $params->{level};    
     
-    $self->{pyramidName} = COMMON::Base36::indicesToB36Path( $i, $j, $dirDepth+1).".tif";
-    
+    return TRUE;
+}
+
+sub _load {
+    my $this = shift;
+    my $params = shift;
+
+    if (! exists $params->{sourcePyramids} || ! defined $params->{sourcePyramids}) {
+        ERROR("Source pyramids is undefined !");
+        return FALSE;
+    }
+    if (! exists $params->{mainSourceIndice} || ! defined $params->{mainSourceIndice}) {
+        ERROR("Main source's indice is undefined !");
+        return FALSE;
+    }
+    if (! exists $params->{mergeMethod} || ! defined $params->{mergeMethod}) {
+        ERROR("Merge Method indice is undefined !");
+        return FALSE;
+    }
+
+    if (! exists $params->{useMasks} || ! defined $params->{useMasks}) {
+        $params->{useMasks} = FALSE;
+    }
+
+    my $mainLevel = $params->{sourcePyramids}->[$params->{mainSourceIndice}]->{pyr}->getLevel($this->{level});
+
+    # On vérifie que cette dalle appartient bien à l'étendue de la source principale
+
+    my @slabBBOX = $mainLevel->slabIndicesToBbox($this->{col}, $this->{row});
+    my $slabOGR = COMMON::ProxyGDAL::geometryFromBbox(@slabBBOX);
+
+    if (! COMMON::ProxyGDAL::isIntersected($slabOGR, $params->{sourcePyramids}->[$params->{mainSourceIndice}]->{extent})) {
+        return TRUE;
+    }
+
+    # On traite séparément le cas de la source principale (la plus prioritaire car :
+    #   - on sait que la dalle cherchée appartient à la bbox de cette source (vérifiée juste au dessus)
+    #   - si on ne trouve pas la dalle pour cette source, on arrête là. On reviendra éventuellement sur cette dalle après
+    #   - si la méthode de fusion est REPLACE, on ne va pas chercher plus loin
+
+    my $imageSlab = $mainLevel->getSlabPath("IMAGE", $this->{col}, $this->{row}, TRUE);
+
+    if ( COMMON::ProxyStorage::isPresent($params->{sourcePyramids}->[$params->{mainSourceIndice}]->{pyr}->getStorageType(), $imageSlab) ) {
+        # L'image existe, voyons également si elle a un masque associé
+        my %sourceSlab = (
+            img => $imageSlab,
+            sourcePyramid => $params->{sourcePyramids}->[$params->{mainSourceIndice}]->{pyr}
+        );
+
+        if ($params->{useMasks} && $mainLevel->ownMasks()) {
+
+            my $maskSlab = $mainLevel->getSlabPath("MASK", $this->{col}, $this->{row}, TRUE);
+            if ( COMMON::ProxyStorage::isPresent($params->{sourcePyramids}->[$params->{mainSourceIndice}]->{pyr}->getStorageType(), $maskSlab) ) {
+                $sourceSlab{msk} = $maskSlab;
+            }
+        }
+
+        push @{$this->{sources}}, \%sourceSlab;
+    } else {
+        return TRUE;
+    }
+
+    if ($params->{mergeMethod} eq 'REPLACE') {
+        return TRUE;
+    }
+
+    for (my $ind = $params->{mainSourceIndice} + 1; $ind < scalar @{$params->{sourcePyramids}}; $ind++) {
+        my $sourceLevel = $params->{sourcePyramids}->[$ind]->{pyr}->getLevel($this->{level});
+
+        @slabBBOX = $sourceLevel->slabIndicesToBbox($this->{col}, $this->{row});
+        $slabOGR = COMMON::ProxyGDAL::geometryFromBbox(@slabBBOX);
+
+        if (! COMMON::ProxyGDAL::isIntersected($slabOGR, $params->{sourcePyramids}->[$ind]->{extent})) {
+            next;
+        }
+
+        my $imageSlab = $sourceLevel->getSlabPath("IMAGE", $this->{col}, $this->{row}, TRUE);
+
+        if ( COMMON::ProxyStorage::isPresent($params->{sourcePyramids}->[$ind]->{pyr}->getStorageType(), $imageSlab) ) {
+            # L'image existe, voyons également si elle a un masque associé
+            my %sourceSlab = (
+                img => $imageSlab,
+                sourcePyramid => $params->{sourcePyramids}->[$ind]->{pyr}
+            );
+
+            if ($params->{useMasks} && $sourceLevel->ownMasks()) {
+
+                my $maskSlab = $sourceLevel->getSlabPath("MASK", $this->{col}, $this->{row}, TRUE);
+                if ( COMMON::ProxyStorage::isPresent($params->{sourcePyramids}->[$ind]->{pyr}->getStorageType(), $maskSlab) ) {
+                    $sourceSlab{msk} = $maskSlab;
+                }
+            }
+
+            push @{$this->{sources}}, \%sourceSlab;
+        }
+    }
+
     return TRUE;
 }
 
@@ -194,32 +277,20 @@ sub _init {
 
 # Function: getColumn
 sub getColumn {
-    my $self = shift;
-    return $self->{i};
+    my $this = shift;
+    return $this->{col};
 }
 
 # Function: getRow
 sub getRow {
-    my $self = shift;
-    return $self->{j};
+    my $this = shift;
+    return $this->{row};
 }
 
 # Function: getLevel
 sub getLevel {
-    my $self = shift;
-    return $self->{level};
-}
-
-# Function: getPyramidName
-sub getPyramidName {
-    my $self = shift;
-    return $self->{pyramidName};
-}
-
-# Function: getScript
-sub getScript {
-    my $self = shift;
-    return $self->{script}
+    my $this = shift;
+    return $this->{level};
 }
 
 =begin nd
@@ -231,13 +302,13 @@ Parameters (list):
     additionnalText - string - Optionnal, can be undefined, text to add after the own code.
 =cut
 sub writeInScript {
-    my $self = shift;
+    my $this = shift;
     my $additionnalText = shift;
 
-    my $text = $self->{code};
+    my $text = $this->{code};
     $text .= $additionnalText if (defined $additionnalText);
 
-    $self->{script}->write($text);
+    $this->{script}->write($text);
 }
 
 =begin nd
@@ -247,53 +318,53 @@ Parameters (list):
     script - <Script> - Script to set.
 =cut
 sub setScript {
-    my $self = shift;
+    my $this = shift;
     my $script = shift;
 
-    if (! defined $script || ref ($script) ne "JOINCACHE::Script") {
-        ERROR("We expect to have a JOINCACHE::Script object.");
+    if (! defined $script || ref ($script) ne "COMMON::Script") {
+        ERROR("We expect to have a COMMON::Script object.");
     }
 
-    $self->{script} = $script;
+    $this->{script} = $script;
 }
 
 =begin nd
 Function: getWorkBaseName
 
-Returns the work image base name (no extension) : "level_col_row", or "level_col_row_suffix" if defined.
+Returns the work image base name (no extension) : "level_col_row", or "level_col_row_suffix" if suffix is defined.
 
 Parameters (list):
-    prefix - string - Optionnal, suffix to add to the work name
+    suffix - string - Optionnal, suffix to add to the work name
 =cut
 sub getWorkBaseName {
-    my $self = shift;
+    my $this = shift;
     my $suffix = shift;
     
-    # si un prefixe est précisé
-    return (sprintf "%s_%s_%s_%s", $self->{level}, $self->{i}, $self->{j}, $suffix) if (defined $suffix);
-    # si pas de prefixe
-    return (sprintf "%s_%s_%s", $self->{level}, $self->{i}, $self->{j});
+    # si un suffix est précisé
+    return (sprintf "%s_%s_%s_%s", $this->{level}, $this->{col}, $this->{row}, $suffix) if (defined $suffix);
+    # si pas de suffix
+    return (sprintf "%s_%s_%s", $this->{level}, $this->{col}, $this->{row});
 }
 
 =begin nd
 Function: getWorkName
 
-Returns the work image name : "level_col_row.tif", or "level_col_row_suffix.tif" if defined.
+Returns the work image name : "level_col_row.tif", or "level_col_row_suffix.tif" if suffix is defined.
 
 Parameters (list):
     prefix - string - Optionnal, suffix to add to the work name
 =cut
 sub getWorkName {
-    my $self = shift;
+    my $this = shift;
     my $suffix = shift;
     
-    return $self->getWorkBaseName($suffix).".tif";
+    return $this->getWorkBaseName($suffix).".tif";
 }
 
 # Function: getSources
 sub getSources {
-    my $self = shift;
-    return $self->{sources};
+    my $this = shift;
+    return $this->{sources};
 }
 
 =begin nd
@@ -304,38 +375,20 @@ Parameters (list):
 
 Returns
     A source image, as an hash :
-|               img - string - Absolute path to the image
-|               msk - string - Absolute path to the associated mask (optionnal)
-|               sourcePyramid - <COMMON::SourcePyramid> - Pyramid which image belong to
+|               img - string - Path to the image (object or file)
+|               msk - string - Path to the associated mask (optionnal, object or file)
+|               sourcePyramid - <COMMON::Pyramid> - Pyramid which image belong to
 =cut
 sub getSource {
-    my $self = shift;
+    my $this = shift;
     my $ind = shift;
-    return $self->{sources}->[$ind];
+    return $this->{sources}->[$ind];
 }
 
 # Function: getSourcesNumber
 sub getSourcesNumber {
-    my $self = shift;
-    return scalar @{$self->{sources}};
-}
-
-=begin nd
-Function: addSource
-
-Parameters (list):
-    image - hash reference - Source images to add
-|               img - string - Absolute path to the image
-|               msk - string - Absolute path to the associated mask (optionnal)
-|               sourcePyramid - <COMMON::SourcePyramid> - Pyramid which image belong to
-=cut
-sub addSource {
-    my $self = shift;
-    my $image = shift;
-    
-    push @{$self->{sources}}, $image;
-    
-    return TRUE;
+    my $this = shift;
+    return scalar @{$this->{sources}};
 }
 
 =begin nd
@@ -345,69 +398,15 @@ Parameters (list):
     code - string - Code to set.
 =cut
 sub setCode {
-    my $self = shift;
+    my $this = shift;
     my $code = shift;
-    $self->{code} = $code;
+    $this->{code} = $code;
 }
 
-# Function: getScriptID
-sub getScriptID {
-    my $self = shift;
-    return $self->{script}->getID;
-}
-
-####################################################################################################
-#                                Group: Export methods                                             #
-####################################################################################################
-
-=begin nd
-Function: exportForOntConf
-
-Export attributes of the Node for overlayNtiff configuration file : /path/to/image.tif[ path/to/mask.tif]. Provided paths will be written as is, so can be relative or absolute (or use environment variables).
-
-Parameters (list):
-    imagePath - string - Path to the image, have to be defined
-    maskPath - string - Path to the associated mask, can be undefined
-=cut
-sub exportForOntConf {
-    my $self = shift;
-    my $imagePath = shift;
-    my $maskPath = shift;
-
-    my $output = "$imagePath";
-    if (defined $maskPath) {
-        $output .= " $maskPath";
-    }
-
-    return $output."\n";
-}
-
-=begin nd
-Function: exportForDebug
-
-Returns all image's components. Useful for debug.
-
-Example:
-    (start code)
-    (end code)
-=cut
-sub exportForDebug {
-    my $self = shift ;
-    
-    my $output = "";
-    
-    $output .= sprintf "Object JOINCACHE::Node :\n";
-    $output .= sprintf "\tLevel : %s\n",$self->{level};
-    $output .= sprintf "\tColumn : %s\n",$self->getColumn();
-    $output .= sprintf "\tRow : %s\n",$self->getRow();
-    if (defined $self->getScript()) {
-        $output .= sprintf "\tScript ID : %s\n",$self->getScriptID();
-    } else {
-        $output .= sprintf "\tScript undefined.\n";
-    }
-    $output .= sprintf "\t %s sources\n", scalar @{$self->{sources}};
-    
-    return $output;
+# Function: getScript
+sub getScript {
+    my $this = shift;
+    return $this->{script};
 }
 
 1;

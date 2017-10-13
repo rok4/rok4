@@ -1,5 +1,0 @@
-Title: Library BE4 : global view
-
-Group: UML classes diagram
-
-(see be4_classes_simple.png)

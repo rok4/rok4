@@ -55,7 +55,7 @@ Attributes:
     filename - string - Just the image name, with file extension (XXXXX_YYYYY.tif).
     filepath - string - The directory which contain the image (/home/ign/DATA)
     maskCompletePath - string - Complete path of associated mask, if exists (undef otherwise).
-    imgSrc - ImageSource - Image source to whom the image belong
+    srs - string - Projection of image
     xmin - double - Bottom left corner X coordinate.
     ymin - double - Bottom left corner Y coordinate.
     xmax - double - Top right corner X coordinate.
@@ -78,6 +78,7 @@ use warnings;
 
 use Log::Log4perl qw(:easy);
 use Geo::GDAL;
+use Data::Dumper;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -110,22 +111,24 @@ GeoImage constructor. Bless an instance.
 
 Parameters (list):
     completePath - string - Complete path to the image file.
+    srs - string - Projection of georeferenced image
 
 See also:
     <_init>
 =cut
 sub new {
-    my $this = shift;
+    my $class = shift;
     my $completePath = shift;
+    my $srs = shift;
 
-    my $class= ref($this) || $this;
+    $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above)
-    my $self = {
+    my $this = {
         completePath => undef,
         filename => undef,
         filepath => undef,
         maskCompletePath => undef,
-        imgSrc => undef,
+        srs => undef,
         xmin => undef,
         ymax => undef,
         xmax => undef,
@@ -135,17 +138,15 @@ sub new {
         xcenter => undef,
         ycenter => undef,
         height  => undef,
-        width   => undef,
+        width   => undef
     };
 
-    bless($self, $class);
-
-    TRACE;
+    bless($this, $class);
 
     # init. class
-    return undef if (! $self->_init($completePath));
+    return undef if (! $this->_init($completePath, $srs));
 
-    return $self;
+    return $this;
 }
 
 =begin nd
@@ -157,34 +158,37 @@ Search a potential associated data mask : A file with the same base name but the
 
 Parameters (list):
     completePath - string - Complete path to the image file.
+    srs - string - Projection of georeferenced image
 =cut
 sub _init {
-    my $self   = shift;
+    my $this   = shift;
     my $completePath = shift;
+    my $srs = shift;
 
-    TRACE;
-    
     return FALSE if (! defined $completePath);
+    return FALSE if (! defined $srs);
+
+    $this->{srs} = $srs;
     
     if (! -f $completePath) {
-      ERROR ("File doesn't exist !");
-      return FALSE;
+        ERROR ("File doesn't exist !");
+        return FALSE;
     }
     
     # init. params    
-    $self->{completePath} = $completePath;
+    $this->{completePath} = $completePath;
         
     my $maskPath = $completePath;
     $maskPath =~ s/\.[a-zA-Z0-9]+$/\.msk/;
     
     if (-f $maskPath) {
         INFO(sprintf "We have a mask associated to the image '%s' :\t%s",$completePath,$maskPath);
-        $self->{maskCompletePath} = $maskPath;
+        $this->{maskCompletePath} = $maskPath;
     }
     
     #
-    $self->{filepath} = File::Basename::dirname($completePath);
-    $self->{filename} = File::Basename::basename($completePath);
+    $this->{filepath} = File::Basename::dirname($completePath);
+    $this->{filename} = File::Basename::basename($completePath);
 
     return TRUE;
 }
@@ -200,18 +204,18 @@ Extracts and calculates all GeoImage attributes' values, using GDAL library (see
 
 Image parameters are checked (sample per pixel, bits per sample...) and returned by the function. <ImageSource> can verify if all images own same components and the compatibility with be4's configuration.
 
-Returns
+Returns:
     a list : (bitspersample,photometric,sampleformat,samplesperpixel), an empty list if error.
 =cut
 sub computeInfo {
-    my $self = shift;
+    my $this = shift;
 
-    my $image = $self->{filename};
+    my $image = $this->{filename};
 
     DEBUG(sprintf "compute '%s'", $image);
 
     my $dataset;
-    eval { $dataset= Geo::GDAL::Open($self->{completePath}, 'ReadOnly'); };
+    eval { $dataset= Geo::GDAL::Open($this->{completePath}, 'ReadOnly'); };
     if ($@) {
         ERROR (sprintf "Can not open image ('%s') : '%s' !", $image, $@);
         return ();
@@ -229,17 +233,6 @@ sub computeInfo {
     my @Interpretation;
 
     foreach my $objBand ($dataset->Bands()) {
-
-        # FIXME undefined !
-        # TRACE (sprintf "NoDataValue         :%s", $objBand->GetNoDataValue());
-        # TRACE (sprintf "NoDataValue         :%s", $objBand->NoDataValue());
-
-        # ie Float32,  GrayIndex,          , , .
-        # ie Byte,     (Red|Green|Blue)Band, , .
-        # ie Byte,     GrayIndex,          , , .
-        # ie UInt32,   GrayIndex,          , , .
-        # Byte, UInt16, Int16, UInt32, Int32, Float32, Float64, CInt16, CInt32, CFloat32, or CFloat64
-        # Undefined GrayIndex PaletteIndex RedBand GreenBand BlueBand AlphaBand HueBand SaturationBand LightnessBand CyanBand MagentaBand YellowBand BlackBand
 
         push @Interpretation, lc $objBand->ColorInterpretation();
 
@@ -310,16 +303,16 @@ sub computeInfo {
     my ($xmin, $dx, $rx, $ymax, $ry, $ndy)= @$refgeo;
 
     # FIXME : precision ?
-    $self->{xmin} = sprintf "%.12f", $xmin;
-    $self->{xmax} = sprintf "%.12f", $xmin + $dx*$dataset->{RasterXSize};
-    $self->{ymin} = sprintf "%.12f", $ymax + $ndy*$dataset->{RasterYSize};
-    $self->{ymax} = sprintf "%.12f", $ymax;
-    $self->{xres} = sprintf "%.12f", $dx;      # $rx null ?
-    $self->{yres} = sprintf "%.12f", abs($ndy);# $ry null ?
-    $self->{xcenter}   = sprintf "%.12f", $xmin + $dx*$dataset->{RasterXSize}/2.0;
-    $self->{ycenter}   = sprintf "%.12f", $ymax + $ndy*$dataset->{RasterYSize}/2.0;
-    $self->{height} = $dataset->{RasterYSize};
-    $self->{width}  = $dataset->{RasterXSize};
+    $this->{xmin} = sprintf "%.12f", $xmin;
+    $this->{xmax} = sprintf "%.12f", $xmin + $dx*$dataset->{RasterXSize};
+    $this->{ymin} = sprintf "%.12f", $ymax + $ndy*$dataset->{RasterYSize};
+    $this->{ymax} = sprintf "%.12f", $ymax;
+    $this->{xres} = sprintf "%.12f", $dx;      # $rx null ?
+    $this->{yres} = sprintf "%.12f", abs($ndy);# $ry null ?
+    $this->{xcenter}   = sprintf "%.12f", $xmin + $dx*$dataset->{RasterXSize}/2.0;
+    $this->{ycenter}   = sprintf "%.12f", $ymax + $ndy*$dataset->{RasterYSize}/2.0;
+    $this->{height} = $dataset->{RasterYSize};
+    $this->{width}  = $dataset->{RasterXSize};
 
     if (! (defined $bitspersample && defined $photometric && defined $sampleformat && defined $samplesperpixel)) {
         ERROR ("The format of this image ('$image') is not handled by be4 !");
@@ -341,19 +334,17 @@ Parameters (list):
 Returns the onverted (according to the given CoordinateTransformation) image bbox as a double array [xMin, yMin, xMax, yMax], [0,0,0,0] if error.
 =cut
 sub convertBBox {
-  my $self = shift;
+  my $this = shift;
   my $ct = shift;
-  
-  TRACE;
   
   my @BBox = [0,0,0,0];
 
   if (! defined($ct)){
-    $BBox[0] = Math::BigFloat->new($self->getXmin());
-    $BBox[1] = Math::BigFloat->new($self->getYmin());
-    $BBox[2] = Math::BigFloat->new($self->getXmax());
-    $BBox[3] = Math::BigFloat->new($self->getYmax());
-    DEBUG (sprintf "BBox (xmin,ymin,xmax,ymax) to '%s' : %s - %s - %s - %s", $self->getName(),
+    $BBox[0] = Math::BigFloat->new($this->getXmin());
+    $BBox[1] = Math::BigFloat->new($this->getYmin());
+    $BBox[2] = Math::BigFloat->new($this->getXmax());
+    $BBox[3] = Math::BigFloat->new($this->getYmax());
+    DEBUG (sprintf "BBox (xmin,ymin,xmax,ymax) to '%s' : %s - %s - %s - %s", $this->getName(),
         $BBox[0], $BBox[1], $BBox[2], $BBox[3]);
     return @BBox;
   }
@@ -372,20 +363,20 @@ sub convertBBox {
   # methode 2.  
   # my ($xmin,$ymin,$xmax,$ymax);
   my $step = 7;
-  my $dx= ($self->getXmax() - $self->getXmin())/(1.0*$step);
-  my $dy= ($self->getYmax() - $self->getYmin())/(1.0*$step);
+  my $dx= ($this->getXmax() - $this->getXmin())/(1.0*$step);
+  my $dy= ($this->getYmax() - $this->getYmin())/(1.0*$step);
   my @polygon= ();
   for my $i (@{[0..$step-1]}) {
-    push @polygon, [$self->getXmin()+$i*$dx, $self->getYmin()];
+    push @polygon, [$this->getXmin()+$i*$dx, $this->getYmin()];
   }
   for my $i (@{[0..$step-1]}) {
-    push @polygon, [$self->getXmax(), $self->getYmin()+$i*$dy];
+    push @polygon, [$this->getXmax(), $this->getYmin()+$i*$dy];
   }
   for my $i (@{[0..$step-1]}) {
-    push @polygon, [$self->getXmax()-$i*$dx, $self->getYmax()];
+    push @polygon, [$this->getXmax()-$i*$dx, $this->getYmax()];
   }
   for my $i (@{[0..$step-1]}) {
-    push @polygon, [$self->getXmin(), $self->getYmax()-$i*$dy];
+    push @polygon, [$this->getXmin(), $this->getYmax()-$i*$dy];
   }
 
   my ($xmin_reproj, $ymin_reproj, $xmax_reproj, $ymax_reproj);
@@ -418,7 +409,7 @@ sub convertBBox {
   $BBox[2] = Math::BigFloat->new($xmax_reproj + $margeX);
   $BBox[3] = Math::BigFloat->new($ymax_reproj + $margeY);
   
-  DEBUG (sprintf "BBox (xmin,ymin,xmax,ymax) to '%s' (with proj) : %s ; %s ; %s ; %s", $self->getName(), $BBox[0], $BBox[1], $BBox[2], $BBox[3]);
+  DEBUG (sprintf "BBox (xmin,ymin,xmax,ymax) to '%s' (with proj) : %s ; %s ; %s ; %s", $this->getName(), $BBox[0], $BBox[1], $BBox[2], $BBox[3]);
   
   return @BBox;
 }
@@ -452,23 +443,23 @@ Example:
     (end code)
 =cut
 sub getInfo {
-    my $self = shift;
+    my $this = shift;
 
     TRACE;
 
     return (
-        $self->{filename},
-        $self->{filepath},
-        $self->{xmin},
-        $self->{ymax},
-        $self->{xmax},
-        $self->{ymin},
-        $self->{xres},
-        $self->{yres},
-        $self->{xcenter},
-        $self->{ycenter},
-        $self->{height},
-        $self->{width},
+        $this->{filename},
+        $this->{filepath},
+        $this->{xmin},
+        $this->{ymax},
+        $this->{xmax},
+        $this->{ymin},
+        $this->{xres},
+        $this->{yres},
+        $this->{xcenter},
+        $this->{ycenter},
+        $this->{height},
+        $this->{width},
     );
 }
 
@@ -478,32 +469,18 @@ Function: getBBox
 Return the image's bbox as a double array [xMin, yMin, xMax, yMax], source SRS.
 =cut
 sub getBBox {
-  my $self = shift;
-
-  TRACE;
+  my $this = shift;
   
   my @bbox;
 
-  push @bbox, ($self->{xmin},$self->{ymin},$self->{xmax},$self->{ymax});
+  push @bbox, ($this->{xmin},$this->{ymin},$this->{xmax},$this->{ymax});
   
   return @bbox;
 }
 
-# Function: setImageSource
-sub setImageSource {
-    my $self = shift;
-    my $imgSrc = shift;
-
-    if (! defined ($imgSrc) || ref ($imgSrc) ne "COMMON::ImageSource") {
-        ERROR("We expect to a COMMON::ImageSource object.");
-    } else {
-        $self->{imgSrc} = $imgSrc;
-    }
-}
-
 # Function: setImagePath
 sub setImagePath {
-  my $self = shift;
+  my $this = shift;
   my $imagePath = shift;
 
   if (! defined $imagePath) {
@@ -511,9 +488,9 @@ sub setImagePath {
     return FALSE; 
   }
 
-  $self->{completePath} = $imagePath;
-  $self->{filepath} = File::Basename::dirname($imagePath);
-  $self->{filename} = File::Basename::basename($imagePath);
+  $this->{completePath} = $imagePath;
+  $this->{filepath} = File::Basename::dirname($imagePath);
+  $this->{filename} = File::Basename::basename($imagePath);
 
   return TRUE;
 }
@@ -521,44 +498,44 @@ sub setImagePath {
 
 # Function: getXmin
 sub getXmin {
-  my $self = shift;
-  return $self->{xmin};
+  my $this = shift;
+  return $this->{xmin};
 }
 
 # Function: getYmin
 sub getYmin {
-  my $self = shift;
-  return $self->{ymin};
+  my $this = shift;
+  return $this->{ymin};
 }
 
 # Function: getXmax
 sub getXmax {
-  my $self = shift;
-  return $self->{xmax};
+  my $this = shift;
+  return $this->{xmax};
 }
 
 # Function: getYmax
 sub getYmax {
-  my $self = shift;
-  return $self->{ymax};
+  my $this = shift;
+  return $this->{ymax};
 }
 
 # Function: getXres
 sub getXres {
-  my $self = shift;
-  return $self->{xres};  
+  my $this = shift;
+  return $this->{xres};  
 }
 
 # Function: getYres
 sub getYres {
-  my $self = shift;
-  return $self->{yres};  
+  my $this = shift;
+  return $this->{yres};  
 }
 
 # Function: getName
 sub getName {
-  my $self = shift;
-  return $self->{filename}; 
+  my $this = shift;
+  return $this->{filename}; 
 }
 
 ####################################################################################################
@@ -578,24 +555,18 @@ Parameter:
     useMasks - boolean - Specify if we want to export mask (if present). TRUE by default.
 =cut
 sub exportForMntConf {
-    my $self = shift;
+    my $this = shift;
     my $useMasks = shift;
     $useMasks = TRUE if (! defined $useMasks);
 
-    TRACE;
-
-    my $output = sprintf "IMG %s", $self->{completePath};
-
-    if (defined $self->{imgSrc}) {
-        $output .= sprintf "\t%s", $self->{imgSrc}->getSRS();
-    }
+    my $output = sprintf "IMG %s\t%s", $this->{completePath}, $this->{srs};
 
     $output .= sprintf "\t%s\t%s\t%s\t%s\t%s\t%s\n",
-        $self->{xmin}, $self->{ymax}, $self->{xmax}, $self->{ymin},
-        $self->{xres}, $self->{yres};
+        $this->{xmin}, $this->{ymax}, $this->{xmax}, $this->{ymin},
+        $this->{xres}, $this->{yres};
         
-    if ($useMasks && defined $self->{maskCompletePath}) {
-        $output .= sprintf "MSK %s\n", $self->{maskCompletePath};
+    if ($useMasks && defined $this->{maskCompletePath}) {
+        $output .= sprintf "MSK %s\n", $this->{maskCompletePath};
     }
 
     return $output;
@@ -615,7 +586,7 @@ sub exportForDebug {
     
     my $export = "";
     
-    $export .= sprintf "\nObject COMMON::GeoImage :\n";
+    $export .= sprintf "\nObject BE4::GeoImage :\n";
     $export .= sprintf "\t Image path : %s\n",$self->{completePath};
     $export .= sprintf "\t Mask path : %s\n",$self->{maskCompletePath} if (defined $self->{maskCompletePath});
 

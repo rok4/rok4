@@ -68,7 +68,7 @@ ok (! defined $error, "Wrong path detected");
 
 undef $error;
 
-my $error = COMMON::ImageSource->new({
+$error = COMMON::ImageSource->new({
     path_image => $Bin."/../../wrong/path/"
 });
 ok (! defined $error, "Missing SRS detected");

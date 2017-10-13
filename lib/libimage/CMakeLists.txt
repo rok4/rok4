@@ -41,14 +41,17 @@ endif(DEBUG_BUILD)
 CONFIGURE_FILE(Jpeg2000_library_config.h.in Jpeg2000_library_config.h ESCAPE_QUOTES @ONLY)
 
 SET(
-    libimage_SRCS Palette.cpp Data.cpp Decoder.cpp Pente.h PenteImage.cpp Aspect.h AspectImage.cpp
+    libimage_SRCS Palette.cpp Data.cpp Decoder.cpp PenteImage.cpp AspectImage.cpp
     FileImage.cpp Jpeg2000Image.cpp LibtiffImage.cpp LibpngImage.cpp Rok4Image.cpp BilzImage.cpp
     ReprojectedImage.cpp ResampledImage.cpp Kernel.cpp Interpolation.cpp DecimatedImage.cpp
     MirrorImage.cpp StyledImage.cpp EstompageImage.cpp Estompage.cpp
     ExtendedCompoundImage.cpp CompoundImage.cpp Line.cpp MergeImage.cpp
     Grid.cpp CRS.cpp TiffEncoder.cpp
-    BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp AscEncoder.cpp FileDataSource.cpp PaletteConfig.cpp PaletteDataSource.cpp
-    Format.cpp TiffHeaderDataSource.cpp EmptyDataSource.cpp ConvertedChannelsImage.cpp
+    BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp AscEncoder.cpp 
+    ContextBook.cpp CephPoolContext.cpp SwiftContext.cpp S3Context.cpp FileContext.cpp CurlPool.cpp 
+    PaletteConfig.cpp PaletteDataSource.cpp
+    Format.cpp TiffHeaderDataSource.cpp StoreDataSource.cpp
+    EmptyDataSource.cpp ConvertedChannelsImage.cpp
 )
 
 # OPTION : 'sources' JPEG2000
@@ -67,19 +70,23 @@ ADD_LIBRARY(image STATIC ${libimage_SRCS})
 
 INCLUDE(ROK4Dependencies)
 
-SET(DEP_INCLUDE_DIR ${JPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${LZW_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${PKB_INCLUDE_DIR} ${JPEG2000_INCLUDE_DIR})
+SET(DEP_INCLUDE_DIR ${TURBOJPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${LZW_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${PKB_INCLUDE_DIR} ${JPEG2000_INCLUDE_DIR} ${OPENSSL_INCLUDE_DIR} ${CURL_INCLUDE_DIR})
+
+IF(BUILD_OBJECT)
+  SET(DEP_INCLUDE_DIR ${DEP_INCLUDE_DIR} ${HIREDIS_INCLUDE_DIR} ${RADOS_INCLUDE_DIR})
+ENDIF(BUILD_OBJECT)
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${DEP_INCLUDE_DIR})
 
 ########################################
 # Listes des bibliothèques à liées avec l'éxecutable
-SET(DEP_LIBRARY logger proj jpeg zlib tiff lzw pkb png jpeg2000)
+SET(DEP_LIBRARY logger proj turbojpeg jpeg zlib tiff lzw pkb png jpeg2000 curl openssl crypto)
 
-IF(KDU_USE)
-    SET(DEP_LIBRARY ${DEP_LIBRARY} jpeg2000_plus)
-ENDIF(KDU_USE)
+IF(BUILD_OBJECT)
+  SET(DEP_LIBRARY ${DEP_LIBRARY} rados hiredis)
+ENDIF(BUILD_OBJECT)
 
-TARGET_LINK_LIBRARIES(image ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+TARGET_LINK_LIBRARIES(image ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_RADOS_LIBS_INIT} ${CMAKE_OPENSSL_LIBS_INIT} )
 
 ########################################
 # Gestion des tests unitaires (CPPUnit)
@@ -98,7 +105,7 @@ if(UNITTEST)
     FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "tests/cppunit/CppUnit*.cpp" )
     ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} tests/cppunit/main.cpp ${UnitTests_SRCS} tests/cppunit/TimedTestListener.cpp tests/cppunit/XmlTimedTestOutputterHook.cpp )
     #Bibliothèque à lier (ajouter la cible (executable/library) du projet
-    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit image ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
+    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit image ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_RADOS_LIBS_INIT} ${CMAKE_OPENSSL_LIBS_INIT}  ${CMAKE_DL_LIBS})
     FOREACH(test ${UnitTests_SRCS})
           MESSAGE("  - adding test ${test}")
           GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)

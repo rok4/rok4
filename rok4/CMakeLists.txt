@@ -39,52 +39,46 @@ configure_file(config.h.in config.h ESCAPE_QUOTES @ONLY)
 
 add_subdirectory(po)
 
-set(rok4core_SRCS  GetFeatureInfoEncoder.cpp MetadataURL.cpp ResourceLocator.cpp LegendURL.cpp Style.cpp CapabilitiesBuilder.cpp ConfLoader.cpp Layer.cpp Level.cpp Message.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TileMatrix.cpp TileMatrixSet.cpp Rok4Api.cpp Keyword.cpp Rok4Server.cpp ProcessFactory.cpp WebService.cpp Source.cpp)
+set(rok4core_SRCS  GetFeatureInfoEncoder.cpp MetadataURL.cpp ResourceLocator.cpp LegendURL.cpp Style.cpp CapabilitiesBuilder.cpp ConfLoader.cpp Layer.cpp Level.cpp Message.cpp Pyramid.cpp Request.cpp ResponseSender.cpp ServiceException.cpp TileMatrix.cpp TileMatrixSet.cpp Rok4Api.cpp Keyword.cpp Rok4Server.cpp ProcessFactory.cpp WebService.cpp Source.cpp
+TileMatrixSetXML.cpp TileMatrixXML.cpp ServerXML.cpp ServicesXML.cpp LayerXML.cpp StyleXML.cpp PyramidXML.cpp LevelXML.cpp)
 set(rok4server_SRCS main.cpp )
-set(rok4apitest_SRCS test_api.c )
+#set(rok4apitest_SRCS test_api.c )
+#set(rok4commandtest_SRCS test_command.cpp )
 
 
 add_library(rok4core STATIC ${rok4core_SRCS})
 
 add_executable(rok4 ${rok4server_SRCS})
-add_executable(test_api ${rok4apitest_SRCS})
+#add_executable(test_api ${rok4apitest_SRCS})
+#add_executable(test_command ${rok4commandtest_SRCS})
 
 
 ########################################
 #Définition des dépendances.
 include(ROK4Dependencies)
 
-set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${JPEG_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${CURL_INCLUDE_DIR})
+set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${CURL_INCLUDE_DIR})
+
+
+if(BUILD_OBJECT)
+    set (DEP_INCLUDE_DIR ${DEP_INCLUDE_DIR} ${HIREDIS_INCLUDE_DIR})
+endif(BUILD_OBJECT)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
 #Listes des bibliothèques à lier avec l'éxecutable à mettre à jour
-set(DEP_LIBRARY fcgi tinyxml logger image proj jpeg zlib tiff png curl)
+set(DEP_LIBRARY fcgi tinyxml logger image proj zlib tiff png curl)
 
-#Liste des bibiliothèques à lier avaec l'executable à cause des options de curl
-if(CURL_OPTIONS) 
-  list(APPEND DEP_LIBRARY ${CURL_SUP_LIBRARIES_NAMES})
-  include_directories(${CURL_SUP_LIBRARIES_INCLUDES})
-  list(LENGTH CURL_SUP_LIBRARIES_NAMES number_name)
-  list(LENGTH CURL_SUP_LIBRARIES_PATHS number_path)
-  if(${number_name} EQUAL ${number_path})
-    math(EXPR number_name "${number_name}-1")
-    foreach(element RANGE ${number_name})
-      list(GET CURL_SUP_LIBRARIES_NAMES ${element} name)
-      list(GET CURL_SUP_LIBRARIES_PATHS ${element} path)
-      add_library(${name} UNKNOWN IMPORTED)
-      set_property(TARGET ${name} PROPERTY IMPORTED_LOCATION ${path})
-    endforeach(element RANGE ${number_name})
-  else(${number_name} EQUAL ${number_path})
-    message(FATAL_ERROR "Problem with Curl options - The number of Curl library's names (${number_name}) are different of the number of paths (${number_path})")
-  endif(${number_name} EQUAL ${number_path})
-endif(CURL_OPTIONS)
+if(BUILD_OBJECT)
+    set (DEP_LIBRARY ${DEP_LIBRARY} hiredis)
+endif(BUILD_OBJECT)
 
-target_link_libraries(rok4core ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(rok4core ${DEP_LIBRARY} )
 target_link_libraries(rok4 rok4core)
-target_link_libraries(test_api rok4core)
+#target_link_libraries(test_api rok4core)
+#target_link_libraries(test_command rok4core)
 
-set_target_properties(test_api PROPERTIES LINKER_LANGUAGE C)
+#set_target_properties(test_api PROPERTIES LINKER_LANGUAGE C)
 
 ########################################
 # Gestion des tests unitaires (CPPUnit)
@@ -103,7 +97,7 @@ if(UNITTEST)
     FILE(GLOB UnitTests_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "tests/cppunit/CppUnit*.cpp" )
     ADD_EXECUTABLE(UnitTester-${PROJECT_NAME} tests/cppunit/main.cpp ${UnitTests_SRCS} tests/cppunit/TimedTestListener.cpp tests/cppunit/XmlTimedTestOutputterHook.cpp )
     #Bibliothèque à lier (ajouter la cible (executable/library) du projet
-    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit rok4core ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
+    TARGET_LINK_LIBRARIES(UnitTester-${PROJECT_NAME} cppunit rok4core ${DEP_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_RADOS_LIBS_INIT} ${CMAKE_OPENSSL_LIBS_INIT}  ${CMAKE_DL_LIBS})
     FOREACH(test ${UnitTests_SRCS})
           MESSAGE("  - adding test ${test}")
           GET_FILENAME_COMPONENT(TestName ${test} NAME_WE)
@@ -147,7 +141,7 @@ endif(BUILD_DOC)
 
 #Installe les différentes sortie du projet (projet, projetcore ou UnitTester-${PROJECT_NAME})
 # ici uniquement "projet"
-INSTALL(TARGETS rok4 rok4core 
+INSTALL(TARGETS rok4 rok4core
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib

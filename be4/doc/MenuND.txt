@@ -4,7 +4,7 @@ Format: 1.51
 Title: BE4
 SubTitle: Perl tools and libraries
 
-Footer: (C) 2013 BE4 - (R) IGN 2012
+Footer: (C) 2016 BE4 - (R) IGN 2012
 Timestamp: Updated month day, year
 #   m     - One or two digit month.  January is "1"
 #   mm    - Always two digit month.  January is "01"
@@ -41,121 +41,108 @@ Timestamp: Updated month day, year
 Link: BE4 is an integral part of the ROK4 project  (http://www.rok4.org)
 
 Group: Tools  {
+    File: BE4  (no auto-title, bin/be4.pl)
+    File: BE4-CEPH  (no auto-title, bin/be4-ceph.pl)
+    File: BE4-S3  (no auto-title, bin/be4-s3.pl)
+    File: BE4-SWIFT  (no auto-title, bin/be4-swift.pl)
 
-   File: BE4  (no auto-title, bin/be4.pl)
-   File: COORD2IMAGE  (no auto-title, bin/coord2image.pl)
-   File: CREATE-LAYER  (no auto-title, bin/create-layer.pl)
-   File: JOINCACHE  (no auto-title, bin/joinCache.pl)
-   File: WMTSALAD  (no auto-title, bin/wmtSalaD.pl)
-   }  # Group: Tools
+    File: JOINCACHE  (no auto-title, bin/joinCache.pl)
+    File: JOINCACHE-CEPH  (no auto-title, bin/joinCache-ceph.pl)
+    File: JOINCACHE-S3  (no auto-title, bin/joinCache-s3.pl)
+    
+    File: PYR2PYR  (no auto-title, bin/pyr2pyr.pl)
+    File: EXPYR  (no auto-title, bin/exPyr.pl)
+
+    File: WMTSALAD  (no auto-title, bin/wmtSalaD.pl)
+
+    File: COORD2IMAGE  (no auto-title, bin/coord2image.pl)
+    File: CREATE-LAYER  (no auto-title, bin/create-layer.pl)
+    File: BE4-SIMULATOR  (no auto-title, bin/be4-simulator.pl)
+    File: TMS-CONVERTER-GUI  (no auto-title, bin/tms-converter-gui.pl)
+}
 
 Group: Classes  {
 
-   Group: BE4  {
+    Group: BE4  {
 
-      File: Global  (no auto-title, lib/BE4.txt)
+        File: Global  (no auto-title, lib/BE4.txt)
 
-      Group: Sources  {
+        File: PropertiesLoader (no auto-title, lib/BE4/PropertiesLoader.pm)
+    }
 
-         File: DataSourceLoader  (no auto-title, lib/BE4/DataSourceLoader.pm)
-         File: DataSource  (no auto-title, lib/BE4/DataSource.pm)
-         File: Harvesting  (no auto-title, lib/BE4/Harvesting.pm)
-         File: ImageSource  (no auto-title, lib/BE4/ImageSource.pm)
-         File: GeoImage  (no auto-title, lib/BE4/GeoImage.pm)
-         }  # Group: Sources
+    Group: BE4-CEPH  {
 
-      Group: For generation  {
+        File: PropertiesLoader (no auto-title, lib/BE4-CEPH/PropertiesLoader.pm)
+    }
 
-         File: Forest  (no auto-title, lib/BE4/Forest.pm)
-         File: Graph  (no auto-title, lib/BE4/Graph.pm)
-         File: QTree  (no auto-title, lib/BE4/QTree.pm)
-         File: Node  (no auto-title, lib/BE4/Node.pm)
-         File: Commands  (no auto-title, lib/BE4/Commands.pm)
-         File: Script  (no auto-title, lib/BE4/Script.pm)
-         }  # Group: For generation
+    Group: BE4-S3  {
 
-      Group: About pyramid  {
+        File: PropertiesLoader (no auto-title, lib/BE4-S3/PropertiesLoader.pm)
+    }
 
-         File: Level  (no auto-title, lib/BE4/Level.pm)
-         File: NoData  (no auto-title, lib/BE4/NoData.pm)
-         File: Pixel  (no auto-title, lib/BE4/Pixel.pm)
-         File: Pyramid  (no auto-title, lib/BE4/Pyramid.pm)
-         File: PyrImageSpec  (no auto-title, lib/BE4/PyrImageSpec.pm)
-         File: TileMatrix  (no auto-title, lib/BE4/TileMatrix.pm)
-         File: TileMatrixSet  (no auto-title, lib/BE4/TileMatrixSet.pm)
-         }  # Group: About pyramid
+    Group: BE4-SWIFT  {
 
-      Group: Utils  {
+        File: PropertiesLoader (no auto-title, lib/BE4-SWIFT/PropertiesLoader.pm)
+    }
 
-         File: Array  (no auto-title, lib/BE4/Array.pm)
-         File: Base36  (no auto-title, lib/BE4/Base36.pm)
-         File: PropertiesLoader  (no auto-title, lib/BE4/PropertiesLoader.pm)
-         File: Layer  (no auto-title, lib/BE4/Layer.pm)
-         }  # Group: Utils
+    Group: JOINCACHE  {
 
-      }  # Group: BE4
+        File: Global  (no auto-title, lib/JOINCACHE.txt)
 
-   Group: JOINCACHE  {
+        File: Node (no auto-title, lib/JOINCACHE/Node.pm)
+        File: Process (no auto-title, lib/JOINCACHE/Process.pm)
+        File: PropertiesLoader (no auto-title, lib/JOINCACHE/PropertiesLoader.pm)
+        File: Script (no auto-title, lib/JOINCACHE/Script.pm)
 
-      File: Global  (no auto-title, lib/JOINCACHE.txt)
+    }
 
-      Group: Sources  {
+    Group: WMTSALAD  {
+        File: Pyramid  (no auto-title, lib/WMTSALAD/Pyramid.pm)
+        File: DataSource  (no auto-title, lib/WMTSALAD/DataSource.pm)
+        File: WmsSource  (no auto-title, lib/WMTSALAD/WmsSource.pm)
+        File: PyrSource  (no auto-title, lib/WMTSALAD/PyrSource.pm)
+    }
 
-         File: SourcePyramid  (no auto-title, lib/JOINCACHE/SourcePyramid.pm)
-         File: SourceLevel  (no auto-title, lib/JOINCACHE/SourceLevel.pm)
-         }  # Group: Sources
+    Group: COMMON  {
+    
+        File: Array (no auto-title, lib/COMMON/Array.pm)
+        File: Base36 (no auto-title, lib/COMMON/Base36.pm)
+        File: Commands (no auto-title, lib/COMMON/Commands.pm)
+        File: Config (no auto-title, lib/COMMON/Config.pm)
+        File: DataSourceLoader (no auto-title, lib/COMMON/DataSourceLoader.pm)
+        File: DataSource (no auto-title, lib/COMMON/DataSource.pm)
+        File: Forest (no auto-title, lib/COMMON/Forest.pm)
+        File: GeoImage (no auto-title, lib/COMMON/GeoImage.pm)
+        File: GraphNode (no auto-title, lib/COMMON/GraphNode.pm)
+        File: GraphScript (no auto-title, lib/COMMON/GraphScript.pm)
+        File: Harvesting (no auto-title, lib/COMMON/Harvesting.pm)
+        File: ImageSource (no auto-title, lib/COMMON/ImageSource.pm)
+        File: Layer (no auto-title, lib/COMMON/Layer.pm)
+        File: NNGraph (no auto-title, lib/COMMON/NNGraph.pm)
+        File: NoData (no auto-title, lib/COMMON/NoData.pm)
+        File: Pixel (no auto-title, lib/COMMON/Pixel.pm)
+        File: ProxyGDAL (no auto-title, lib/COMMON/ProxyGDAL.pm)
+        File: PyrImageSpec (no auto-title, lib/COMMON/PyrImageSpec.pm)
+        File: QTree (no auto-title, lib/COMMON/QTree.pm)
+        File: SourceLevel (no auto-title, lib/COMMON/SourceLevel.pm)
+        File: SourcePyramid (no auto-title, lib/COMMON/SourcePyramid.pm)
+        File: TileMatrix (no auto-title, lib/COMMON/TileMatrix.pm)
+        File: TileMatrixSet (no auto-title, lib/COMMON/TileMatrixSet.pm)
+    }
 
-      Group: For generation  {
+    Group: PYR2PYR  {
 
-         File: Process  (no auto-title, lib/JOINCACHE/Process.pm)
-         File: Script  (no auto-title, lib/JOINCACHE/Script.pm)
-         File: Node  (no auto-title, lib/JOINCACHE/Node.pm)
-         }  # Group: For generation
-         
-      Group: Utils  {
+        File: PropertiesLoader (no auto-title, lib/PYR2PYR/PropertiesLoader.pm)
+    }
 
-         File: PropertiesLoader.pm  (lib/JOINCACHE/PropertiesLoader.pm)
-         }  # Group: Utils
-
-      }  # Group: JOINCACHE
-
-
-      Group: WMTSALAD  {
-
-      File: Global  (no auto-title, lib/BE4.txt)
-
-      Group: Sources  {
-
-         File: DataSource  (no auto-title, lib/WMTSALAD/DataSource.pm)
-         File: WmsSource  (no auto-title, lib/WMTSALAD/WmsSource.pm)
-         File: PyrSource  (no auto-title, lib/WMTSALAD/PyrSource.pm)
-         }  # Group: Sources
-
-      Group: About pyramid  {
-
-         File: NoData  (no auto-title, lib/BE4/NoData.pm)
-         File: Pixel  (no auto-title, lib/BE4/Pixel.pm)
-         File: Pyramid  (no auto-title, lib/WMTSALAD/Pyramid.pm)
-         File: TileMatrix  (no auto-title, lib/BE4/TileMatrix.pm)
-         File: TileMatrixSet  (no auto-title, lib/BE4/TileMatrixSet.pm)
-         }  # Group: About pyramid
-
-      Group: Utils  {
-
-         File: Config  (no auto-title, lib/COMMON/Config.pm)
-         }  # Group: Utils
-
-      }  # Group: WMTSALAD
-
-   }  # Group: Classes
+}
 
 Group: Index  {
-
-   Index: Everything
-   Class Index: Classes
-   File Index: Files
-   Function Index: Functions
-   Variable Index: Variables
-   Constant Index: Constants
-   }  # Group: Index
+    Index: Everything
+    Class Index: Classes
+    File Index: Files
+    Function Index: Functions
+    Variable Index: Variables
+    Constant Index: Constants
+}
 

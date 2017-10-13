@@ -55,7 +55,7 @@ Using:
 
 Attributes:
     FILEPATH_DATACONF - string - Path to the specific datasources configuration file.
-    dataSources - <DataSource> array - Data sources ensemble. Can contain just one element.
+    dataSources - <COMMON::DataSource> array - Data sources ensemble. Can contain just one element.
 
 Limitations:
     Metadata managing not yet implemented.
@@ -113,31 +113,29 @@ See also:
     <_init>, <_load>
 =cut
 sub new {
-    my $this = shift;
+    my $class = shift;
     my $datasource = shift;
 
-    my $class= ref($this) || $this;
+    $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above)
-    my $self = {
+    my $this = {
         FILEPATH_DATACONF => undef,
         dataSources  => []
     };
 
-    bless($self, $class);
-
-    TRACE;
+    bless($this, $class);
 
     # init. class
-    return undef if (! $self->_init($datasource));
+    return undef if (! $this->_init($datasource));
 
     # load. class
-    if (defined $self->{FILEPATH_DATACONF}) {
-        return undef if (! $self->_load());
+    if (defined $this->{FILEPATH_DATACONF}) {
+        return undef if (! $this->_load());
     }
     
-    INFO (sprintf "Data sources number : %s",scalar @{$self->{dataSources}});
+    INFO (sprintf "Data sources number : %s",scalar @{$this->{dataSources}});
 
-    return $self;
+    return $this;
 }
 
 =begin nd
@@ -150,10 +148,9 @@ Parameters (list):
 |               filepath_conf - string - Path to the data sources configuration file
 =cut
 sub _init {
-    my $self   = shift;
+    my $this   = shift;
     my $datasource = shift;
 
-    TRACE;
     
     return FALSE if (! defined $datasource);
     
@@ -165,7 +162,7 @@ sub _init {
         ERROR (sprintf "Data's configuration file ('%s') doesn't exist !",$datasource->{filepath_conf});
         return FALSE;
     }
-    $self->{FILEPATH_DATACONF} = $datasource->{filepath_conf};
+    $this->{FILEPATH_DATACONF} = $datasource->{filepath_conf};
 
     return TRUE;
 }
@@ -176,28 +173,30 @@ Function: _load
 Reads the specific data sources configuration file and creates corresponding <DataSource> objects.
 =cut
 sub _load {
-    my $self   = shift;
+    my $this   = shift;
 
-    TRACE;
 
-    my $propLoader = BE4::PropertiesLoader->new($self->{FILEPATH_DATACONF});
+    my $propLoader = COMMON::Config->new({
+        'filepath' => $this->{FILEPATH_DATACONF},
+        'format' => "INI"
+    });
 
     if (! defined $propLoader) {
         ERROR("Can not load sources' properties !");
         return FALSE;
     }
 
-    my $sourcesProperties = $propLoader->getAllProperties();
+    my %sourcesProperties = $propLoader->getConfig();
 
-    if (! defined $sourcesProperties) {
+    if (! scalar keys %sourcesProperties) {
         ERROR("All parameters properties of sources are empty !");
         return FALSE;
     }
 
-    my $sources = $self->{dataSources};
+    my $sources = $this->{dataSources};
     my $nbSources = 0;
 
-    while( my ($level,$params) = each(%$sourcesProperties) ) {
+    while( my ($level,$params) = each(%sourcesProperties) ) {
         my $datasource = COMMON::DataSource->new($level,$params);
         if (! defined $datasource) {
             ERROR(sprintf "Cannot create a DataSource object for the base level %s",$level);
@@ -242,12 +241,10 @@ Parameters:
 Returns the global bottom and top order, in a integer list : (bottomOrder,topOrder), (-1,-1) if failure.
 =cut
 sub updateDataSources {
-    my $self = shift;
+    my $this = shift;
     my $TMS = shift;
     my $topID = shift;
 
-    TRACE();
-    
     if (! defined $TMS || ref ($TMS) ne "COMMON::TileMatrixSet") {
         ERROR("We need a TileMatrixSet object to update data sources");
         return (-1, -1);
@@ -278,7 +275,7 @@ sub updateDataSources {
     my $bottomID = undef;
     my $bottomOrder = undef;
     
-    foreach my $datasource (@{$self->{dataSources}}) {
+    foreach my $datasource (@{$this->{dataSources}}) {
         my $dsBottomID = $datasource->getBottomID;
         my $dsBottomOrder = $TMS->getOrderfromID($dsBottomID);
         if (! defined $dsBottomOrder) {
@@ -306,16 +303,16 @@ sub updateDataSources {
     
     ######## DETERMINE FOR EACH DATASOURCE TOP/BOTTOM LEVELS ########
     
-    @{$self->{dataSources}} = sort {$a->getBottomOrder <=> $b->getBottomOrder} ( @{$self->{dataSources}});
+    @{$this->{dataSources}} = sort {$a->getBottomOrder <=> $b->getBottomOrder} ( @{$this->{dataSources}});
     
-    for (my $i = 0; $i < scalar @{$self->{dataSources}} -1; $i++) {
-        my $dsTopOrder = $self->{dataSources}[$i+1]->getBottomOrder - 1;
-        $self->{dataSources}[$i]->setTopOrder($dsTopOrder);
-        $self->{dataSources}[$i]->setTopID($TMS->getIDfromOrder($dsTopOrder));
+    for (my $i = 0; $i < scalar @{$this->{dataSources}} -1; $i++) {
+        my $dsTopOrder = $this->{dataSources}[$i+1]->getBottomOrder - 1;
+        $this->{dataSources}[$i]->setTopOrder($dsTopOrder);
+        $this->{dataSources}[$i]->setTopID($TMS->getIDfromOrder($dsTopOrder));
     }
     
-    $self->{dataSources}[-1]->setTopID($topID);
-    $self->{dataSources}[-1]->setTopOrder($TMS->getOrderfromID($topID));
+    $this->{dataSources}[-1]->setTopID($topID);
+    $this->{dataSources}[-1]->setTopOrder($TMS->getOrderfromID($topID));
     
     if ($topOrder < $bottomOrder) {
         ERROR("Pas bon ça : c'est sens dessus dessous ($topOrder - $topID < $bottomOrder - $bottomID)");
@@ -332,22 +329,22 @@ sub updateDataSources {
 
 # Function: getDataSources
 sub getDataSources {
-    my $self = shift;
-    return $self->{dataSources}; 
+    my $this = shift;
+    return $this->{dataSources}; 
 }
 
 # Function: getNumberDataSources
 sub getNumberDataSources {
-    my $self = shift;
-    return scalar @{$self->{dataSources}}; 
+    my $this = shift;
+    return scalar @{$this->{dataSources}}; 
 }
 
 # Function: getPixelFromSources
 sub getPixelFromSources {
-    my $self = shift;
+    my $this = shift;
 
     my $pixel = undef;
-    foreach my $source (@{$self->{dataSources}}) {
+    foreach my $source (@{$this->{dataSources}}) {
         if (! $source->hasImages()) {next;}
 
         my $tmpPixel = $source->getPixel();
@@ -385,13 +382,13 @@ Example:
     (end code)
 =cut
 sub exportForDebug {
-    my $self = shift ;
+    my $this = shift ;
     
     my $export = "";
     
     $export .= sprintf "\n Object COMMON::DataSourceLoader :\n";
-    $export .= sprintf "\t Configuration file :%s\n", $self->{FILEPATH_DATACONF};
-    $export .= sprintf "\t Sources number : %s\n", scalar @{$self->{dataSources}};
+    $export .= sprintf "\t Configuration file : %s\n", $this->{FILEPATH_DATACONF};
+    $export .= sprintf "\t Sources number : %s\n", scalar @{$this->{dataSources}};
     
     return $export;
 }

@@ -340,6 +340,8 @@ eformat_data fromMimeType ( std::string mime );
 
 std::string toEncoding ( eformat_data format );
 
+int toSizePerChannel( eformat_data format );
+
 int getPixelSize ( eformat_data format );
 
 }

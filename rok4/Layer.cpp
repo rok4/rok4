@@ -47,7 +47,10 @@
 #include "Pyramid.h"
 #include "Logger.h"
 
- Layer::Layer ( const LayerXML& l ) {
+GeographicBoundingBoxWMS::GeographicBoundingBoxWMS() {}
+BoundingBoxWMS::BoundingBoxWMS() {}
+
+Layer::Layer ( const LayerXML& l ) {
     this->id = l.id;
     this->title = l.title;
     this->abstract = l.abstract;
@@ -55,6 +58,12 @@
     this->WMTSAuthorized = l.WMTSauth;
     this->keyWords = l.keyWords;
     this->dataPyramid = l.pyramid;
+    // Si la pyramide contient un niveau à la demande ou à la volée, on n'authorize pas le WMS 
+    // car c'est un cas non géré dans les processus de reponse du serveur
+    if (this->dataPyramid->getContainOdLevels()) {
+        this->WMSAuthorized = false;
+    }
+
     this->styles = l.styles;
     this->minRes = l.minRes;
     this->maxRes = l.maxRes;
@@ -78,11 +87,47 @@
     this->GFIForceEPSG = l.GFIForceEPSG;
 }
 
-DataSource* Layer::gettile ( int x, int y, std::string tmId, DataSource* errorDataSource ) {
-    return dataPyramid->getTile ( x, y, tmId, errorDataSource );
+void Layer::update ( const LayerXML& l ) {
+    this->id = l.id;
+    this->title = l.title;
+    this->abstract = l.abstract;
+    this->WMSAuthorized = l.WMSauth;
+    this->WMTSAuthorized = l.WMTSauth;
+    this->keyWords = l.keyWords;
+
+    delete this->dataPyramid; 
+    this->dataPyramid = l.pyramid;
+    // Si la pyramide contient un niveau à la demande ou à la volée, on n'authorize pas le WMS 
+    // car c'est un cas non géré dans les processus de reponse du serveur
+    if (this->dataPyramid->getContainOdLevels()) {
+        this->WMSAuthorized = false;
+    }
+
+    this->styles = l.styles;
+    this->minRes = l.minRes;
+    this->maxRes = l.maxRes;
+
+    this->WMSCRSList = l.WMSCRSList;
+    this->opaque = l.opaque;
+    this->authority = l.authority;
+    this->resampling = l.resampling;
+    this->geographicBoundingBox = l.geographicBoundingBox;
+    this->boundingBox = l.boundingBox;
+    this->metadataURLs = l.metadataURLs;
+
+    this->getFeatureInfoAvailability = l.getFeatureInfoAvailability;
+    this->getFeatureInfoType = l.getFeatureInfoType;
+    this->getFeatureInfoBaseURL = l.getFeatureInfoBaseURL;
+    this->GFIVersion = l.GFIVersion;
+
+    this->GFIService = l.GFIService;
+    this->GFIQueryLayers = l.GFIQueryLayers;
+    this->GFILayers = l.GFILayers;
+    this->GFIForceEPSG = l.GFIForceEPSG;
+
 }
 
-Image* Layer::getbbox (ServicesConf& servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, int dpi, int& error ) {
+Image* Layer::getbbox (ServicesXML* servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, int dpi, int& error ) {
     error=0;
     return dataPyramid->getbbox (servicesConf, bbox, width, height, dst_crs, resampling, dpi, error );
 }
@@ -101,3 +146,30 @@ Layer::~Layer() {
 
     delete dataPyramid;
 }
+
+
+std::string Layer::getAbstract() { return abstract; }
+bool Layer::getWMSAuthorized() { return WMSAuthorized; }
+bool Layer::getWMTSAuthorized() { return WMTSAuthorized; }
+std::string Layer::getAuthority() { return authority; }
+std::vector<Keyword>* Layer::getKeyWords() { return &keyWords; }
+double Layer::getMaxRes() { return maxRes; }
+double Layer::getMinRes() { return minRes; }
+bool Layer::getOpaque() { return opaque; }
+Pyramid* Layer::getDataPyramid() { return dataPyramid; }
+Interpolation::KernelType Layer::getResampling() { return resampling; }
+std::string Layer::getDefaultStyle() { return defaultStyle; }
+std::vector<Style*> Layer::getStyles() { return styles; }
+std::string Layer::getTitle() { return title; }
+std::vector<CRS> Layer::getWMSCRSList() { return WMSCRSList; }
+GeographicBoundingBoxWMS Layer::getGeographicBoundingBox() { return geographicBoundingBox; }
+BoundingBoxWMS Layer::getBoundingBox() { return boundingBox; }
+std::vector<MetadataURL> Layer::getMetadataURLs() { return metadataURLs; }
+bool Layer::isGetFeatureInfoAvailable() { return getFeatureInfoAvailability; }
+std::string Layer::getGFIType() { return getFeatureInfoType; }
+std::string Layer::getGFIBaseUrl() { return getFeatureInfoBaseURL; }
+std::string Layer::getGFILayers() { return GFILayers; }
+std::string Layer::getGFIQueryLayers() { return GFIQueryLayers; }
+std::string Layer::getGFIService() { return GFIService; }
+std::string Layer::getGFIVersion() { return GFIVersion; }
+bool Layer::getGFIForceEPSG() { return GFIForceEPSG; }

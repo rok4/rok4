@@ -156,7 +156,7 @@ void shutdownServer ( int signum ) {
 
 /**
  * \~french
- * \brief Retourne l'emplacement des fichier de tranduction
+ * \brief Retourne l'emplacement des fichier de traduction
  * \return repertoire des traductions
  * \~english
  * \brief Return the translation files path
@@ -241,11 +241,10 @@ int main ( int argc, char** argv ) {
        
         if ( firstStart ) {
             lastReload = time(NULL);
-             W=rok4InitServer ( serverConfigFile.c_str() );
+            W = rok4InitServer ( serverConfigFile.c_str() );
             if ( !W ) {
                 return 1;
             }
-
             W->initFCGI();
             firstStart = false;
         } else {
@@ -256,6 +255,9 @@ int main ( int argc, char** argv ) {
             }
             W->setFCGISocket ( sock );
         }
+#if BUILD_OBJECT
+        rok4ConnectObjectContext(W);
+#endif
 
         // Remove Event Lock
         defer_signal--;
@@ -270,6 +272,9 @@ int main ( int argc, char** argv ) {
             LOGGER_INFO ( _ ( "Extinction du serveur ROK4" ) );
             W->killFCGI();
         }
+#if BUILD_OBJECT
+        rok4DisconnectObjectContext(W);
+#endif
         rok4KillServer ( W );
         rok4ReloadLogger();
     }

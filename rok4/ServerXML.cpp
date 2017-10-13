@@ -299,6 +299,8 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
 
 #if BUILD_OBJECT
 
+    /************************************ PARTIE OBJET ************************************/
+
     pElem=hRoot.FirstChild ( "reconnectionFrequency" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
         std::cerr<<_ ( "Pas de reconnectionFrequency => reconnectionFrequency = " ) << DEFAULT_RECONNECTION_FREQUENCY<<std::endl;
@@ -307,8 +309,6 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         std::cerr<<_ ( "Le reconnectionFrequency [" ) << DocumentXML::getTextStrFromElem(pElem) <<_ ( "] is not an integer." ) <<std::endl;
         return;
     }
-
-    /************************************ PARTIE OBJET ************************************/
 
     pElem = hRoot.FirstChild ( "cephContext" ).Element();
     if ( pElem) {
@@ -576,8 +576,8 @@ LogLevel ServerXML::getLogLevel() {return logLevel;}
 std::string ServerXML::getServicesConfigFile() {return servicesConfigFile;}
 
 std::string ServerXML::getTmsDir() {return tmsDir;}
-void ServerXML::addTMS(std::string id, TileMatrixSet* t) {
-    tmsList.insert ( std::pair<std::string, TileMatrixSet *> ( id, t ) );
+void ServerXML::addTMS(TileMatrixSet* t) {
+    tmsList.insert ( std::pair<std::string, TileMatrixSet *> ( t->getId(), t ) );
 }
 int ServerXML::getNbTMS() {
     return tmsList.size();
@@ -589,11 +589,30 @@ TileMatrixSet* ServerXML::getTMS(std::string id) {
     }
     return tmsIt->second;
 }
+void ServerXML::removeTMS(std::string id) {
+    std::map<std::string, TileMatrixSet*>::iterator itTms= tmsList.find ( id );
+    if ( itTms != tmsList.end() ) {
+        delete itTms->second;
+        tmsList.erase(itTms);
+    }
+}
+void ServerXML::cleanTMSs(std::vector<std::string> ids) {
+    std::map<std::string, TileMatrixSet*>::iterator itTms;
+    for ( itTms = tmsList.begin(); itTms != tmsList.end(); itTms++ ) {
+
+        if (find (ids.begin(), ids.end(), itTms->first) == ids.end()) {
+            LOGGER_DEBUG ( _ ( "TMS supprimé : " ) << itTms->first );
+            // Le TMS n'est pas présent dans la liste d'ids fournie, on le supprime
+            delete itTms->second;
+            tmsList.erase(itTms);
+        }
+    }
+}
 
 
 std::string ServerXML::getStylesDir() {return styleDir;}
-void ServerXML::addStyle(std::string id, Style* s) {
-    stylesList.insert ( std::pair<std::string, Style *> ( id, s ) );
+void ServerXML::addStyle(Style* s) {
+    stylesList.insert ( std::pair<std::string, Style *> ( s->getId(), s ) );
 }
 int ServerXML::getNbStyles() {
     return stylesList.size();
@@ -605,20 +624,58 @@ Style* ServerXML::getStyle(std::string id) {
     }
     return styleIt->second;
 }
+void ServerXML::removeStyle(std::string id) {
+    std::map<std::string, Style*>::iterator styleIt= stylesList.find ( id );
+    if ( styleIt != stylesList.end() ) {
+        delete styleIt->second;
+        stylesList.erase(styleIt);
+    }
+}
+void ServerXML::cleanStyles(std::vector<std::string> ids) {
+    std::map<std::string, Style*>::iterator itSty;
+    for ( itSty = stylesList.begin(); itSty != stylesList.end(); itSty++ ) {
+
+        if (find (ids.begin(), ids.end(), itSty->first) == ids.end()) {
+            LOGGER_DEBUG ( _ ( "Style supprimé : " ) << itSty->first );
+            // Le style n'est pas présent dans la liste d'ids fournie, on le supprime
+            delete itSty->second;
+            stylesList.erase(itSty);
+        }
+    }
+}
 
 std::string ServerXML::getLayersDir() {return layerDir;}
-void ServerXML::addLayer(std::string id, Layer* l) {
-    layersList.insert ( std::pair<std::string, Layer *> ( id, l ) );
+void ServerXML::addLayer(Layer* l) {
+    layersList.insert ( std::pair<std::string, Layer *> ( l->getId(), l ) );
 }
 int ServerXML::getNbLayers() {
     return layersList.size();
 }
 Layer* ServerXML::getLayer(std::string id) {
-    std::map<std::string, Layer*>::iterator layIt= layersList.find ( id );
-    if ( layIt == layersList.end() ) {
+    std::map<std::string, Layer*>::iterator itLay = layersList.find ( id );
+    if ( itLay == layersList.end() ) {
         return NULL;
     }
-    return layIt->second;
+    return itLay->second;
+}
+void ServerXML::removeLayer(std::string id) {
+    std::map<std::string, Layer*>::iterator itLay = layersList.find ( id );
+    if ( itLay != layersList.end() ) {
+        delete itLay->second;
+        layersList.erase(itLay);
+    }
+}
+void ServerXML::cleanLayers(std::vector<std::string> ids) {
+    std::map<std::string, Layer*>::iterator itLay;
+    for ( itLay = layersList.begin(); itLay != layersList.end(); itLay++ ) {
+
+        if (find (ids.begin(), ids.end(), itLay->first) == ids.end()) {
+            LOGGER_DEBUG ( _ ( "Layer supprimé : " ) << itLay->first );
+            // Le layer n'est pas présent dans la liste d'ids fournie, on le supprime
+            delete itLay->second;
+            layersList.erase(itLay);
+        }
+    }
 }
 
 #if BUILD_OBJECT

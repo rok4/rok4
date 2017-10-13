@@ -44,7 +44,6 @@ class StyleXML;
 #include <string>
 
 #include "Style.h"
-#include "ServicesXML.h"
 #include "DocumentXML.h"
 
 #include "config.h"
@@ -55,7 +54,7 @@ class StyleXML : public DocumentXML
     friend class Style;
 
     public:
-        StyleXML(std::string path, ServicesXML* servicesXML);
+        StyleXML(std::string path, bool inspire);
         ~StyleXML();
 
         std::string getId() ;

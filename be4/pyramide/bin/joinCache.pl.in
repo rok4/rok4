@@ -73,18 +73,16 @@ use strict;
 use POSIX qw(locale_h);
 
 use Getopt::Long;
-use Pod::Usage;
 
 use Data::Dumper;
+local $Data::Dumper::Maxdepth = 2;
 use Math::BigFloat;
-use File::Spec::Link;
 use File::Basename;
 use File::Spec;
 use File::Path;
 use Cwd;
 
 use Log::Log4perl qw(:easy);
-use XML::LibXML;
 
 # My search module
 use FindBin qw($Bin);
@@ -93,12 +91,14 @@ use lib "$Bin/../lib/perl5";
 # My module
 use COMMON::TileMatrixSet;
 use COMMON::TileMatrix;
-use BE4::Pyramid;
-use COMMON::Base36;
-use JOINCACHE::PropertiesLoader;
-use JOINCACHE::Process;
-use COMMON::SourcePyramid;
+use COMMON::Pyramid;
+use COMMON::Level;
+use COMMON::ShellCommands;
+use COMMON::Script;
+
 use JOINCACHE::Node;
+use JOINCACHE::PropertiesLoader;
+
 
 ################################################################################
 # Constantes
@@ -142,34 +142,36 @@ Variable: this
 Informations are treated, interpreted and store in this hash, using JOINCACHE classes :
 
     propertiesLoader - <JOINCACHE::PropertiesLoader> - Contains all raw informations
-    pyramid - <BE4::Pyramid> - Final pyramid's components and tools
+    pyramid - <COMMON::Pyramid> - Output pyramid
     process - <JOINCACHE::Process> - Compute the final pyramid
     bboxes - array hash - Defines identifiants with associated validated bounding boxes (as array)
-    sourcePyramids - <COMMON::SourcePyramid> hash - Key is the descriptor's path. We have an complete and without repetition list of source pyramids.
+    sourcePyramids - <COMMON::Pyramid> hash - Key is the descriptor's path. We have an complete and without repetition list of source pyramids.
     composition - hash - Contain validate and pre-treated composition :
 |       level_id => priority => {
 |               extremTiles => [colMin, rowMin, colMax, rowMax],
-|               extremImages => [colMin, rowMin, colMax, rowMax], # = extremTiles / (number of tiles in the dimension)
+|               extremSlabs => [colMin, rowMin, colMax, rowMax], # = extremTiles / (number of tiles in the dimension)
 |               sourcePyramid => <COMMON::SourcePyramid>
 |       }
-    doneImages - boolean hash - To memorize already done tiles, we use this hash, containing "I_J => TRUE".
+    doneSlabs - boolean hash - To memorize already done tiles, we use this hash, containing "I_J => TRUE".
 =cut
 my %this =
 (
     propertiesLoader => undef,
 
     pyramid => undef,
-    process => undef,
 
-    bboxes => undef,
-    sourcePyramids => {},
+    commands => undef,
+    mergeMethod => undef,
+    scripts => [],
+    currentScript => undef,
 
     composition => undef,
 
-    doneImages => {},
+    listStream => undef,
+    roots => {},
+
+    doneSlabs => {}
 );
-
-
 
 ####################################################################################################
 #                                         Group: Functions                                         #
@@ -262,7 +264,7 @@ sub init {
   
     # logger by default at runtime
     Log::Log4perl->easy_init({
-        level => $WARN,
+        level => "WARN",
         layout => '%5p : %m (%M) %n'
     });
 
@@ -291,8 +293,7 @@ sub config {
 
     ALWAYS(">>> Load Properties ...");
 
-    my $fprop = $options{properties};
-    my $objProp = JOINCACHE::PropertiesLoader->new($fprop);
+    my $objProp = JOINCACHE::PropertiesLoader->new($options{properties});
     
     if (! defined $objProp) {
         FATAL("Can not load specific properties !");
@@ -303,51 +304,8 @@ sub config {
 
     ###################
 
-    return FALSE if (! main::checkParams());
-
-    return TRUE;
-}
-
-=begin nd
-Function: checkParams
-
-Check is basic: sections have not to be empty
-=cut
-sub checkParams {
-
-    ###################
-    # check parameters
-
-    my $pyramid = $this{propertiesLoader}->getPyramidSection();
     my $logger = $this{propertiesLoader}->getLoggerSection();
-    my $composition = $this{propertiesLoader}->getCompositionSection();
-    my $bboxes = $this{propertiesLoader}->getBboxesSection();
-    my $process = $this{propertiesLoader}->getProcessSection();
-
-    # pyramid
-    if (! defined $pyramid) {
-        ERROR ("Section [pyramid] can not be empty !");
-        return FALSE;
-    }
-
-    # composition
-    if (! defined $composition) {
-        ERROR ("Section [composition] can not be empty !");
-        return FALSE;
-    }
-
-    # bboxes
-    if (! defined $bboxes) {
-        ERROR ("Section [bboxes] can not be empty !");
-        return FALSE;
-    }
-
-    # process
-    if (! defined $process) {
-        ERROR ("Section [process] can not be empty !");
-        return FALSE;
-    }
-
+    
     # logger
     if (defined $logger) {
         my @args;
@@ -374,7 +332,6 @@ sub checkParams {
 
     return TRUE;
 }
-
 ####################################################################################################
 #                                 Group: Validation methods                                        #
 ####################################################################################################
@@ -382,71 +339,86 @@ sub checkParams {
 =begin nd
 Function: validate
 
-Validates all components, checks consistency. Use classes <BE4::Pyramid>, <JOINCACHE::Process>.
+Validates all components, checks consistency and create scripts. Use classes <COMMON::Pyramid>, <COMMON::Script> and <COMMON::ShellCommands>.
 
 See Also:
-    <validateSourcePyramids>, <validateBboxes>, <validateComposition>
+    <validateSourcePyramids>
 =cut
 sub validate {
 
     ##################
 
-    ALWAYS(">>> Create the BE4::Pyramid object ...");
+    ALWAYS(">>> Create the output COMMON::Pyramid object ...");
 
     my $pyramidSection = $this{propertiesLoader}->getPyramidSection();
 
-    my $objPyramid = BE4::Pyramid->new($pyramidSection);
+    my $objPyramid = COMMON::Pyramid->new("VALUES", $pyramidSection);
 
     if (! defined $objPyramid) {
-        ERROR ("Cannot create the BE4::Pyramid object !");
+        ERROR ("Cannot create the COMMON::Pyramid object for the output pyramid !");
         return FALSE;
     }
 
-    DEBUG(sprintf "FINAL PYRAMID (debug export) = %s", $objPyramid->exportForDebug);
+    if ($objPyramid->getStorageType() ne "FILE") {
+        ERROR ("JoinCache only handle FILE output pyramid");
+        return FALSE;
+    }
+    
+    if (! $objPyramid->bindTileMatrixSet($pyramidSection->{tms_path})) {
+        ERROR("Cannot bind TMS to output pyramid");
+        return FALSE;
+    }
 
     $this{pyramid} = $objPyramid;
 
-    ##################
+    ################## Process
 
-    ALWAYS(">>> Create the JOINCACHE::Process object ...");
+    ALWAYS(">>> Create the COMMON::Script objects ...");
 
     my $processSection = $this{propertiesLoader}->getProcessSection();
-    my $objProcess = JOINCACHE::Process->new($objPyramid,$processSection);
 
-    if (! defined $objProcess) {
-        ERROR ("Cannot create the JOINCACHE::Process object !");
+    $this{mergeMethod} = $processSection->{merge_method};
+
+    $this{commands} = COMMON::ShellCommands->new($this{pyramid}, $processSection->{use_masks}, $this{mergeMethod});
+    if (! defined $this{commands}) {
+        ERROR ("Can not load Commands !");
         return FALSE;
     }
 
-    DEBUG(sprintf "PROCESS (debug export) = %s", $objProcess->exportForDebug);
+    my $configuredFunctions = $this{commands}->getConfiguredFunctions();
 
-    $this{process} = $objProcess;
+    for (my $i = 1; $i <= $processSection->{job_number}; $i++ ) {
+        my $script = COMMON::Script->new({
+            id => "SCRIPT_$i",
+            tempDir => $processSection->{path_temp},
+            commonTempDir => $processSection->{path_temp_common},
+            scriptDir => $processSection->{path_shell},
+            executedAlone => FALSE
+        });
+
+        if (! defined $script) {
+            ERROR ("Cannot create the COMMON::Script object !");
+            return FALSE;
+        }
+
+        $script->prepare($this{pyramid}, $configuredFunctions);
+
+        push(@{$this{scripts}}, $script);
+    }
+    $this{currentScript} = 0;
 
     ##################
 
     ALWAYS(">>> Validate source pyramids ...");
 
-    if (! main::validateSourcePyramids()) {
+    if (! main::validateSourcePyramids($pyramidSection->{tms_path})) {
         ERROR ("Some source pyramids are not valid !");
         return FALSE;
     }
 
     ##################
-    # load bounding boxes
-    ALWAYS(">>> Validate bounding boxes ...");
 
-    if (! main::validateBboxes()) {
-        ERROR ("Some bboxes are not valid !");
-        return FALSE;
-    }
-
-    ##################
-
-    ALWAYS(">>> Validate composition");
-    if (! main::validateComposition()) {
-        ERROR ("Cannot validate composition !");
-        return FALSE;
-    }
+    $this{composition} = $this{propertiesLoader}->getCompositionSection();
 
     ##################
 
@@ -460,122 +432,25 @@ sub validate {
 =begin nd
 Function: validateSourcePyramids
 
-For each pyramid in composition, we create a <COMMON::SourcePyramid> object and we control attributes (<COMMON::SourcePyramid::loadAndCheck>), reading pyramid's descriptor. TMS, tiles per width, tiles per height and directory depth have to be the same for every one.
+For each source pyramid (<COMMON::Pyramid>), we bind the TMS (<COMMON::Pyramid::bindTileMatrixSet>) and we check its compatibility with the output pyramid (<COMMON::Pyramid::checkCompatibility>)
 =cut
 sub validateSourcePyramids {
+    my $tms_path = shift;
 
-    my %sourcePyramids = %{$this{propertiesLoader}->getSourcePyramids()};
+    my $sourcePyramids = $this{propertiesLoader}->getSourcePyramids();
+    my $composition = $this{propertiesLoader}->getCompositionSection();
 
-    foreach my $pyr (keys %sourcePyramids) {
+    foreach my $sourcePyramid (values %{$sourcePyramids}) {
 
-        my $sourcePyramid = COMMON::SourcePyramid->new($pyr);
-        if (! defined $sourcePyramid) {
-            ERROR ("Cannot create the SourcePyramid object");
+        if (! $sourcePyramid->bindTileMatrixSet($tms_path)) {
+            ERROR("Cannot bind TMS to source pyramid " . $sourcePyramid->getName());
             return FALSE;
         }
 
-        if (! $sourcePyramid->loadAndCheck($this{pyramid}) ) {
-            ERROR ("Cannot load the source pyramid's attributes or they are not consistent");
+        if ($sourcePyramid->checkCompatibility($this{pyramid}) == 0) {
+            ERROR (sprintf "Source pyramid (%s) and output pyramid are not compatible", $sourcePyramid->getName());
             return FALSE;
         }
-
-        DEBUG(sprintf "SOURCE PYRAMID (debug export) = %s", $sourcePyramid->exportForDebug);
-
-        $this{sourcePyramids}->{$pyr} = $sourcePyramid;
-    }
-
-    return TRUE;
-}
-
-=begin nd
-Function: validateBboxes
-
-For each bbox, we parse string to store values in array and we control consistency (min < max).
-=cut
-sub validateBboxes {
-
-    my %bboxes = %{$this{propertiesLoader}->getBboxesSection()};
-
-    while( my ($bboxId,$bbox) = each(%bboxes) ) {
-
-        if ($bbox !~ m/([+-]?\d+(\.\d+)?),([+-]?\d+(\.\d+)?),([+-]?\d+(\.\d+)?),([+-]?\d+(\.\d+)?)/) {
-            ERROR (sprintf "The bbox with id '%s' is not valid (%s).
-                Must be 'xmin,ymin,xmax,ymax', to decimal format.",$bboxId,$bbox);
-            return FALSE;
-        }
-
-        my @bboxArray = split(/,/,$bbox,-1);
-        if (!($bboxArray[0] < $bboxArray[2] && $bboxArray[1] < $bboxArray[3])) {
-            ERROR (sprintf "The bbox with id '%s' is not valid (%s). Max is not greater than min !",$bboxId,$bbox);
-            return FALSE;
-        }
-
-        DEBUG("BBOX (debug export) = ID : $bboxId");
-        DEBUG("\t $bbox");
-
-        # we store the controlled BBOX in %this
-        @{$this{bboxes}->{$bboxId}} = @bboxArray;
-    }
-
-    return TRUE;
-}
-
-=begin nd
-Function: validateComposition
-
-Validates each source in the composition.
-    - levelId have to be in the TMS
-    - bboxId have to be defined in the 'bboxes' section (and is interpreted)
-    - used level have to be present in the pyramid
-
-We store too pyramid's format (phtomoetric, samples per pixel...).
-=cut
-sub validateComposition {
-
-    TRACE;
-
-    my %composition = %{$this{propertiesLoader}->getCompositionSection()};
-    my $TMS = $this{pyramid}->getTileMatrixSet;
-
-    while( my ($levelId,$sources) = each(%composition) ) {
-
-        my $TM = $TMS->getTileMatrix($levelId);
-
-        if (! defined $TM) {
-            ERROR (sprintf "A level id (%s) from the configuration file is not in the TMS !",$levelId);
-            return FALSE;
-        }
-
-        while( my ($priority,$source) = each(%$sources) ) {
-            if (! exists $this{bboxes}->{$source->{bbox}}) {
-                ERROR (sprintf "A bbox id (%s) from the composition is not define in the 'bboxes' section !", $source->{bbox});
-                return FALSE;
-            }
-
-            my $sourcePyr = $this{sourcePyramids}->{$source->{pyr}};
-
-            if (! $sourcePyr->hasLevel($levelId)) {
-                ERROR (sprintf "The pyramid '%s' is used for the level %s but has not it !", $source->{pyr},$levelId);
-                return FALSE;
-            }
-
-            my @BBOX = @{$this{bboxes}->{$source->{bbox}}};
-
-            # on remplace le chemin vers le descripteur de la pyramide source par le dossier contenant les images (pour ce niveau)
-            $this{composition}->{$levelId}->{$priority}->{sourcePyramid} = $sourcePyr;
-
-            # on convertit les coordonnées de la bbox en indices des tuiles, en accord avec le tile matrix associé
-            my @bboxIndices = $TM->bboxToIndices($BBOX[0],$BBOX[1],$BBOX[2],$BBOX[3],1,1); # ($iMin,$jMin,$iMax,$jMax)
-            
-            $sourcePyr->getLevel($levelId)->intersectBboxIndices(\@bboxIndices);
-
-            @{$this{composition}->{$levelId}->{$priority}->{extremTiles}} = @bboxIndices;
-            @{$this{composition}->{$levelId}->{$priority}->{extremImages}} = main::tileToImage(@bboxIndices);
-        }
-
-        DEBUG("COMPOSITION (debug export) = level ID : $levelId");
-        DEBUG(sprintf "\t %s source(s)", scalar keys %{$sources});
-
     }
 
     return TRUE;
@@ -594,250 +469,258 @@ For each level, for each source pyramid :
     - Identify present images (in the wanted bounding box : <tileToImage>)
     - Work has already been made ? Next
     - Else search it in the other source pyramids with an lower priority : <searchImage>
-    - Treat source(s) : <JOINCACHE::Process::treatImage>
+    - Treat source(s) : <JOINCACHE::Process::treatNode>
 
 =cut
 sub doIt {
 
-    TRACE();
-
     ALWAYS(">>> Browse source pyramids");
 
-    my $composition = $this{composition};
-    my $bboxes = $this{bboxes};
     my $pyramid = $this{pyramid};
+    my $TPW = $pyramid->getTilesPerWidth();
+    my $TPH = $pyramid->getTilesPerHeight();
     my $TMS = $pyramid->getTileMatrixSet();
 
-    while( my ($levelId,$sources) = each(%$composition) ) {
-        INFO(sprintf "Level %s",$levelId);
+    my $listFile = $pyramid->getListFile();
+    my $STREAM;
+    if (! open $STREAM, ">", $listFile) {
+        ERROR(sprintf "Cannot open output pyramid list file (write) : %s",$listFile);
+        return FALSE;
+    }
+    $this{listStream} = $STREAM;
 
-        # Extrems :
-        #    - Image : ($IMIN,$JMIN,$IMAX,$JMAX)
-        #    - Tiles (for the Level object : ($imin,$jmin,$imax,$jmax)
+    # On stocke la racine de la pyramide de sortie avec l'index 0
+    $this{roots}->{$pyramid->getDataDir()} = 0;
 
-        my $priority = 1;
+    while( my ($level,$sources) = each(%{$this{composition}}) ) {
+        INFO(sprintf "Level %s",$level);
 
-        # base dir image
-        my $imageDir = File::Spec->catdir($pyramid->getNewDataDir, $pyramid->getDirImage, $levelId);
-        # base dir nodata
-        my $nodataDir = File::Spec->catdir($pyramid->getNewDataDir, $pyramid->getDirNodata, $levelId);
-        # mask dir nodata
-        my $maskDir = undef;
-        if ($pyramid->ownMasks()) {
-            $maskDir = File::Spec->catdir($pyramid->getNewDataDir, $pyramid->getDirMask, $levelId);
-        }
-
-        # tuiles extrêmes pour ce niveau
-        my ($imin,$jmin,$imax,$jmax);
-
-        while( exists $sources->{$priority}) {
-            my $source = $sources->{$priority};
-
-            my @extremTiles = @{$source->{extremTiles}};
-            # we update extrems tiles
-            if (! defined $imin || $extremTiles[0] < $imin) {$imin = $extremTiles[0];}
-            if (! defined $jmin || $extremTiles[1] < $jmin) {$jmin = $extremTiles[1];}
-            if (! defined $imax || $extremTiles[2] > $imax) {$imax = $extremTiles[2];}
-            if (! defined $jmax || $extremTiles[3] > $jmax) {$jmax = $extremTiles[3];}
-
-            INFO(sprintf "Priority %s : pyramid %s",$priority,$source->{sourcePyramid}->getImageDirectory($levelId));
-
-            my ($IMIN,$JMIN,$IMAX,$JMAX) = @{$source->{extremImages}};
-
-            DEBUG("Images' extrem indices : $IMIN,$JMIN,$IMAX,$JMAX");
-
-            for (my $I = $IMIN; $I <= $IMAX; $I++) {
-                for (my $J = $JMIN; $J <= $JMAX; $J++) {
-
-                    my $imageKey = $I."_".$J;
-
-                    if (exists $this{doneImages}->{$imageKey}) {
-                        # Image already treated
-                        next;
-                    }
-
-                    my $node = JOINCACHE::Node->new($I, $J, $levelId, $this{pyramid}->getDirDepth);
-                    if (! defined $node) {
-                        ERROR(sprintf "Cannot create the node %s,%s", $I, $J);
-                        return FALSE;
-                    }
-
-                    main::searchImage($node, $priority);
-
-                    if ($node->getSourcesNumber() == 0) {
-                        # Pas de source pour cette image, pour cette priorité
-                        next;
-                    }
-
-                    if (! $this{process}->treatImage($node)) {
-                        ERROR(sprintf "Cannot generate the node %s", $node->exportForDebug());
-                        return FALSE;
-                    }
-
-                    $this{doneImages}->{$imageKey} = TRUE;
-                }
-            }
-            $priority++;
-        }
-
-        my $levelOrder = $TMS->getOrderfromID($levelId);
-        my $objLevel = BE4::Level->new({
-            id => $levelId,
-            order => $levelOrder,
-            dir_image => $imageDir,
-            dir_nodata => $nodataDir,
-            dir_mask => $maskDir,
-            size => [$pyramid->getTilesPerWidth,$pyramid->getTilesPerHeight],
-            dir_depth => $pyramid->getDirDepth,
-            limits => [$jmin,$jmax,$imin,$imax],
-        });
-
-        if (! defined $objLevel) {
-            ERROR(sprintf "Can not create the pyramid Level object for the level '%s'", $levelId);
+        if (! $pyramid->addLevel($level)) {
+            ERROR("Cannot add level $level to output pyramid");
             return FALSE;
         }
 
-        DEBUG(sprintf "FINAL PYRAMID LEVEL (debug export) = %s", $objLevel->exportForDebug);
+        my $tm = $pyramid->getTileMatrixSet()->getTileMatrix($level);
 
-        $pyramid->addLevel($levelId, $objLevel);
+        my $nSource = 0;
+        foreach my $source (@{$sources}) {
 
-        delete $this{doneImages};
+            # On récupère le niveau concerné dans la pyramide source en cours de traitement
+
+            foreach my $bb (@{$source->{bboxes}}) {
+
+                my ($ROWMIN, $ROWMAX, $COLMIN, $COLMAX) = $pyramid->getLevel($level)->bboxToSlabIndices(@{$bb});
+
+                DEBUG("Slabs' extrem indices : ROWS: $ROWMIN -> $ROWMAX, COLS: $COLMIN -> $COLMAX");
+
+                for (my $COL = $COLMIN; $COL <= $COLMAX; $COL++) {
+                    for (my $ROW = $ROWMIN; $ROW <= $ROWMAX; $ROW++) {
+
+                        my $slabKey = $COL."_".$ROW;
+
+                        if (exists $this{doneSlabs}->{$slabKey}) {
+                            # Image already treated
+                            next;
+                        }
+
+                        my $node = JOINCACHE::Node->new({
+                            level => $level,
+                            col => $COL,
+                            row => $ROW,
+                            sourcePyramids => $sources,
+                            mainSourceIndice => $nSource,
+                            useMasks => $this{commands}->useMasks(),
+                            mergeMethod => $this{mergeMethod}
+                        });
+                        if (! defined $node) {
+                            ERROR(sprintf "Cannot create the node %s,%s", $COL, $ROW);
+                            return FALSE;
+                        }
+
+                        if ($node->getSourcesNumber() == 0) {
+                            # Pas de source pour cette image, pour cette priorité
+                            next;
+                        }
+
+                        if (! main::treatNode($node)) {
+                            ERROR(sprintf "Cannot generate the node %s", Dumper($node));
+                            return FALSE;
+                        }
+
+                        $pyramid->getLevel($level)->updateLimitsFromSlab($COL, $ROW);
+                        $this{doneSlabs}->{$slabKey} = TRUE;
+                    }
+                }
+            }
+            $nSource++;
+        }
+
+        delete $this{doneSlabs};
     }
 
-    $this{process}->closeStreams();
+    close($STREAM);
 
-    if (! $this{process}->writeRootsInList()) {
-        ERROR(sprintf "Cannot write the header in the cache list file : %s", $this{pyramid}->getNewListFile);
+    # On ferme tous les scripts
+    foreach my $s (@{$this{scripts}}) {
+        $s->close();
+    }
+
+    if (! main::writeRootsInList()) {
+        ERROR(sprintf "Cannot write the header in the cache list file : %s", $this{pyramid}->getListFile());
         return FALSE;
     }
-
 
     # writting pyramid's configuration file
     ALWAYS(">>> Write pyramid's descriptor");
-    if (! $this{pyramid}->writeConfPyramid) {
+    if (! $this{pyramid}->writeDescriptor()) {
         ERROR("Can not write Pyramid file !");
-        return FALSE;
-    }
-
-    # writting pyramid's cache (nodata tiles)
-    ALWAYS(">>> Write pyramid's cache");
-    if (! $this{pyramid}->writeCachePyramid) {
-        ERROR("Can not write Pyramid Cache !");
         return FALSE;
     }
 
     return TRUE;
 }
 
-
-####################################################################################################
-#                                       Group: Utils                                               #
-####################################################################################################
-
-
-=begin nd
-Function: searchImage
-
-Search a tile in source pyramids with a lower priority.
-
-Parameters (list):
-    levelId - string - Level in which we serach tiles
-    basePriority - integer - Source's priority from which we search tiles
-    i,j - integer - Searched tile's indices
-    images - array reference - To store other found source images
-=cut
-sub searchImage {
+sub treatNode {
     my $node = shift;
-    my $basePriority = shift;
-    
-    my $I = $node->getColumn();
-    my $J = $node->getRow();
-    my $levelId = $node->getLevel();
-    my $path = $node->getPyramidName();
 
-    TRACE();
-    
-    my $sources = $this{composition}->{$levelId};
-    my $priority = $basePriority;
-    my $base36path = $node->getPyramidName();
+    my $finalImageEnd = $this{pyramid}->getLevel($node->getLevel())->getSlabPath("IMAGE", $node->getColumn(), $node->getRow(), FALSE);
+    my $finalImage = $this{pyramid}->getLevel($node->getLevel())->getSlabPath("IMAGE", $node->getColumn(), $node->getRow(), TRUE);
 
-    # On traite séparément le cas de la source principale (la plus prioritaire car :
-    #   - on sait que la dalle cherchée appartient à la bbox de cette source (vérifiée dans la fonction appellante
-    #   - si on ne trouve pas la dalle pour cette source, on arrête là. On reviendra éventuellement sur cette dalle après
-    #   - si la méthode de fusion est REPLACE, on ne va pas chercher plus loin
-    my $source = $sources->{$priority};
-    my $sourceImagePath = File::Spec->catfile($source->{sourcePyramid}->getImageDirectory($levelId),$path);
+    my $finalMask = undef;
+    my $finalMaskEnd = undef;
+    if ($this{pyramid}->ownMasks()) {
+        $finalMaskEnd = $this{pyramid}->getLevel($node->getLevel())->getSlabPath("MASK", $node->getColumn(), $node->getRow(), FALSE);
+        $finalMask = $this{pyramid}->getLevel($node->getLevel())->getSlabPath("MASK", $node->getColumn(), $node->getRow(), TRUE);
+    }
 
-    if (-f $sourceImagePath) {
-        # L'image existe, voyons également si elle a un masque associé
-        my %sourceImage = ( img => $sourceImagePath, sourcePyramid => $source->{sourcePyramid} );
+    # On affecte le script courant au noeud. Le script courant n'est pas incrémenté dans le cas d'un lien, car rien n'est écrit dans le script.
+    $node->setScript($this{scripts}->[$this{currentScript}]);
 
-        my $dirMask = $source->{sourcePyramid}->getMaskDirectory($levelId);
-        if (defined $dirMask && $this{process}->useMasks()) {
-            my $sourceMaskPath = File::Spec->catfile($dirMask,$path);
-            if (-f $sourceMaskPath) {
-                $sourceImage{msk} = $sourceMaskPath;
+    if ($node->getSourcesNumber() == 1) {
+        my $sourceImage = $node->getSource(0);
+
+        if ($this{pyramid}->checkCompatibility($sourceImage->{sourcePyramid}) == 2) {
+            # We can just make a symbolic link, no code in a script
+
+            my $linkedFile = COMMON::ProxyStorage::symLink(
+                $sourceImage->{sourcePyramid}->getStorageType(), $sourceImage->{img},
+                $this{pyramid}->getStorageType(), $finalImage
+            );
+
+            if (! defined $linkedFile) {
+                ERROR(sprintf "The ancestor image slab '%s' cannot be referenced by sym link in the new pyramid", $sourceImage->{img});
+                return FALSE;
             }
+
+            main::storeInList($finalImageEnd, $linkedFile);
+            
+        } else {
+            # We have just one source image, but it is not compatible with the final cache
+            # We need to transform it.
+            if ( ! $this{commands}->overlayNtiff($node, $this{pyramid}) ) {
+                ERROR(sprintf "Cannot transform the image");
+                return FALSE;
+            }
+
+            main::storeInList($finalImageEnd, $finalImage);
+            
+            $this{currentScript} = ($this{currentScript}+1)%(scalar(@{$this{scripts}}));
+        }
+
+        # Export éventuel du masque : il est forcément dans le bon format, on peut donc le lier.
+        if (exists $sourceImage->{msk} && defined $finalMask) {
+            # We can just make a symbolic link, no code in a script
+
+            my $linkedFile = COMMON::ProxyStorage::symLink(
+                $sourceImage->{sourcePyramid}->getStorageType(), $sourceImage->{msk},
+                $this{pyramid}->getStorageType(), $finalMask
+            );
+
+            if (! defined $linkedFile ) {
+                ERROR(sprintf "The ancestor mask slab '%s' cannot be referenced by sym link in the new pyramid", $sourceImage->{msk});
+                return FALSE;
+            }
+            
+            main::storeInList($finalMaskEnd, $linkedFile);
         }
         
-        $node->addSource(\%sourceImage);
     } else {
-        return;
-    }
-
-    if ($this{process}->getMergeMethod() eq 'REPLACE') {
-        return;
-    }
-
-    $priority++;
-
-    # On cherche maintenant cette dalle dans les sources moins prioritaires
-    while( exists $sources->{$priority}) {
-        $source = $sources->{$priority};
-        my ($IMIN,$JMIN,$IMAX,$JMAX) = @{$source->{extremImages}};
-
-        # La dalle appartient-elle à la BBOX de cette source ?
-        if ($I < $IMIN || $I > $IMAX || $J < $JMIN || $J > $JMAX) {
-            $priority++;
-            next;
+        # We have several images, we merge them
+        if ( ! $this{commands}->overlayNtiff($node, $this{pyramid}) ) {
+            ERROR(sprintf "Cannot merge the images");
+            return FALSE;
         }
+        $this{currentScript} = ($this{currentScript}+1)%(scalar(@{$this{scripts}}));
 
-        my $sourceImagePath = File::Spec->catfile($source->{sourcePyramid}->getImageDirectory($levelId),$path);
+        main::storeInList($finalImageEnd, $finalImage);
 
-        if (-f $sourceImagePath) {
-            # L'image existe, voyons également si elle a un masque associé
-            my %sourceImage = ( img => $sourceImagePath, sourcePyramid => $source->{sourcePyramid} );
-            
-            my $dirMask = $source->{sourcePyramid}->getMaskDirectory($levelId);
-            if (defined $dirMask && $this{process}->useMasks()) {
-                my $sourceMaskPath = File::Spec->catfile($dirMask,$path);
-                if (-f $sourceMaskPath) {
-                    $sourceImage{msk} = $sourceMaskPath;
-                }
-            }
-            
-            $node->addSource(\%sourceImage);
+        if (defined $finalMask) {
+            main::storeInList($finalMaskEnd, $finalMask);
         }
-
-        $priority++;
     }
+
+    return TRUE;
+}
+
+####################################################################################################
+#                                   Group: List methods                                            #
+####################################################################################################
+
+=begin nd
+Function: storeInList
+
+Writes slab's path in the pyramid's content list and store the root.
+
+Parameters:
+    slabPathEnd - string - End of the slab path (without root).
+    slabPath - string - Full slab path, to store in the file list (with indexed root).
+=cut
+sub storeInList {
+    my $slabPathEnd = shift;
+    my $slabPath = shift;
+
+    my $root = $slabPath;
+    $root =~ s/\/$slabPathEnd//;
+
+    my $rootID;
+    if (exists $this{roots}->{$root}) {
+        $rootID = $this{roots}->{$root};
+    } else {
+        $rootID = scalar (keys %{$this{roots}}) + 1;
+        $this{roots}->{$root} = $rootID;
+    }
+
+    my $STREAM = $this{listStream};
+    printf $STREAM "%s\n", "$rootID/$slabPathEnd";
 }
 
 =begin nd
-Function: tileToImage
+Function: writeRootsInList
 
-A pyramid's image can contain several tiles. We convert tiles indices into image indices, dividing by tiles per width or tiles per height.
-
-Parameters (list):
-    extremTiles - array - Extrem tiles, to convert into extrem images
+Write roots at the top of the cache list.
 =cut
-sub tileToImage {
-    my @extremTiles = @_;
+sub writeRootsInList {
 
-    return (int($extremTiles[0]/$this{pyramid}->getTilesPerWidth()),
-            int($extremTiles[1]/$this{pyramid}->getTilesPerHeight()),
-            int($extremTiles[2]/$this{pyramid}->getTilesPerWidth()),
-            int($extremTiles[3]/$this{pyramid}->getTilesPerHeight()) );
+    my $listFile = $this{pyramid}->getListFile();
+
+    # We write at the top of the list file, caches' roots, using Tie library
+
+    my @LIST;
+    if (! tie @LIST, 'Tie::File', $listFile) {
+        ERROR("Cannot open '$listFile' with Tie librairy");
+        return FALSE;
+    }
+
+    unshift @LIST, "#\n";
+    while( my ($root,$rootID) = each( %{$this{roots}} ) ) {
+        if ($rootID == 0) {next;}
+        unshift @LIST, "$rootID=$root\n";
+    }
+
+    # Root of the new cache (first position)
+    unshift @LIST,(sprintf "0=%s\n", $this{pyramid}->getDataDir());
+
+    untie @LIST;
 }
 
 ################################################################################
@@ -916,8 +799,6 @@ For more informations about properties, see <BE4::Pyramid>.
 
     dir_depth - Image's depth from the level directory. depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif. Mandatory. Have to be the same in the source pyramids.
 
-    dir_image, dir_nodata, dir_mask - Names of subdirectories in the pyramid, in *pyr_data_path/pyr_name/* Default : IMAGE, NODATA, MASK.
-
     export_masks - An option is used to precise if we want to write masks in the final pyramid. So we can use masks but not export them (they may be useless for a pyramid which wont be never updated). Only values "true" and "TRUE" lead to masks' export. Optionnal, FALSE by default.
 
     tms_name - TMS file name, with extension *.tms*. Mandatory. Have to be the same in the source pyramids.
@@ -938,9 +819,6 @@ Examples:
     image_width = 16
     image_height = 16
 
-    dir_image = IMAGE
-    dir_nodata = NODATA
-    dir_mask = MASK
     export_masks = TRUE
 
     compression         = png
