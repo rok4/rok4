@@ -54,6 +54,22 @@ WebService::WebService(std::string url, std::string proxy="", std::string noProx
     responseType = "";
 }
 
+WebService::WebService(WebService* obj) : Source(WEBSERVICE) {
+
+    url = obj->url;
+    proxy = obj->proxy;
+    noProxy = obj->noProxy;
+    timeout = obj->timeout;
+    retry = obj->retry;
+    interval = obj->interval;
+    user = obj->user;
+    pwd = obj->pwd;
+    referer = obj->referer;
+    userAgent = obj->userAgent;
+    responseType = obj->responseType;
+
+}
+
 
 WebService::~WebService() {
 

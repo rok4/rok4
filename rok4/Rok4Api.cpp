@@ -154,38 +154,22 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
     return new Rok4Server ( serverXML, servicesXML );
 }
 
-Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, time_t lastReload ) {
+Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServer, time_t lastReload ) {
 
-/*
-    time_t lastModServerConf,lastMod;
-    LogOutput logOutputNew;
-    int nbThreadNew,logFilePeriodNew,backlogNew, nbProcessNew,timeKillNew;
-    LogLevel logLevelNew;
-    bool supportWMTSNew,supportWMSNew,reprojectionCapabilityNew;
-    Proxy proxyNew;
-    std::string strServerConfigFile=serverConfigFile,strLogFileprefixNew,strServicesConfigFileNew,
-            strLayerDirNew,strTmsDirNew,strStyleDirNew,socketNew,fileName;
-
-    std::vector<std::string> listOfFile;
-    char* projDir = getenv("PROJ_LIB");
-    std::string projDirstr(projDir);
+    std::string strServerConfigFile = serverConfigFile;
 
     LOGGER_DEBUG("Rechargement de la conf");
     //--- server.conf
     LOGGER_DEBUG("Rechargement du server.conf");
 
-    lastModServerConf = ConfLoader::getLastModifiedDate(strServerConfigFile);
+    time_t lastModServerConf = ConfLoader::getLastModifiedDate(strServerConfigFile);
 
-    //on n'est obligé de le recharger pour avoir des informations qui ne sont pas accessible dans l'objet Rok4Server
-    if ( !ConfLoader::getTechnicalParam ( strServerConfigFile, logOutputNew, strLogFileprefixNew, logFilePeriodNew,
-                                          logLevelNew, nbThreadNew, supportWMTSNew, supportWMSNew, reprojectionCapabilityNew,
-                                          strServicesConfigFileNew, strLayerDirNew, strTmsDirNew, strStyleDirNew, socketNew,
-                                          backlogNew, nbProcessNew, proxyNew,timeKillNew ) ) {
-        std::cerr << "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " << strServerConfigFile << std::endl;
+    ServerXML* newServerXML = ConfLoader::buildServerConf(strServerConfigFile);
+    if ( ! newServerXML->isOk() ) {
+        std::cerr<<_ ( "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " ) <<strServerConfigFile<<std::endl;
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
         return NULL;
     }
-
 
     if (lastModServerConf > lastReload) {
         //fichier modifié, on recharge particulièrement le logger et on doit vérifier que les fichiers et dossiers
@@ -201,256 +185,170 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
 
     //--- service.conf
     LOGGER_DEBUG("Rechargement du service.conf et des fichiers associes (listofequalcrs.txt et restrictedcrslist.txt)");
-
-    delete sc;
-    sc = NULL;
-
-    sc = ConfLoader::buildServicesConf ( strServicesConfigFileNew );
-    if ( sc==NULL ) {
-        LOGGER_FATAL ( "Impossible d'interpreter le fichier de conf " << strServicesConfigFileNew );
-        LOGGER_FATAL ( "Extinction du serveur ROK4" );
+    // Construction des parametres de service
+    ServicesXML* newServicesXML = ConfLoader::buildServicesConf ( newServerXML->getServicesConfigFile() );
+    if ( ! newServicesXML->isOk() ) {
+        LOGGER_FATAL ( _ ( "Impossible d'interpreter le fichier de conf " ) << newServerXML->getServicesConfigFile() );
+        LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
         return NULL;
     }
 
 
+
+    time_t lastMod;
+    std::vector<std::string> listOfFile;
+    std::string fileName;
+
     //--- TMS
     LOGGER_DEBUG("Rechargement des TMS");
 
-    std::map<std::string,TileMatrixSet* > tmsListNew;
+    if (newServerXML->getTmsDir() != oldServer->getServerConf()->getTmsDir()) {
+        // Le dossier des TMS a changé
+        // on recharge tout comme à l'initialisation
+        
+        LOGGER_DEBUG("Rechargement complet du nouveau dossier" << newServerXML->getTmsDir());
 
-    if (strTmsDirNew != server->getTmsDir()) {
-        //on recharge tout comme à l'initialisation
-
-        if ( !ConfLoader::buildTMSList ( strTmsDirNew,tmsListNew ) ) {
-            LOGGER_FATAL ( "Impossible de charger la conf des TileMatrix" );
-            LOGGER_FATAL ( "Extinction du serveur ROK4" );
+        if ( ! ConfLoader::buildTMSList ( newServerXML ) ) {
+            LOGGER_FATAL ( _ ( "Impossible de charger la conf des TileMatrix" ) );
+            LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
             sleep ( 1 );    // Pour laisser le temps au logger pour se vider
             return NULL;
         }
 
     } else {
+
         //Copie de l'ancien serveur
         std::map<std::string,TileMatrixSet* >::iterator lv;
 
-        for (lv = server->getTmsList().begin();lv != server->getTmsList().end(); lv++) {
-            TileMatrixSet* tms = new TileMatrixSet(*lv->second);
-            tmsListNew.insert(std::pair<std::string,TileMatrixSet*> (lv->first,tms));
+        for (lv = oldServer->getTmsList().begin(); lv != oldServer->getTmsList().end(); lv++) {
+            TileMatrixSet* tms = new TileMatrixSet(lv->second);
+            newServerXML->addTMS(tms);
         }
 
         //Lecture du dossier et chargement de ce qui a changé
-        listOfFile = ConfLoader::listFileFromDir(strTmsDirNew, ".tms");
+        listOfFile = ConfLoader::listFileFromDir(newServerXML->getTmsDir(), ".tms");
+        std::vector<std::string> listOfFileNames;
 
         if (listOfFile.size() != 0) {
             for (unsigned i=0; i<listOfFile.size(); i++) {
                 lastMod = ConfLoader::getLastModifiedDate(listOfFile[i]);
+                fileName = ConfLoader::getFileName(listOfFile[i],".tms");
+                listOfFileNames.push_back(fileName);
 
                 if (lastMod > lastReload) {
                     //fichier modifié, on le recharge
                     TileMatrixSet* tms = ConfLoader::buildTileMatrixSet ( listOfFile[i] );
 
+                    // Que le TMS soit correct ou non, on supprime l'ancien de la liste
+                    newServerXML->removeTMS(fileName);
+
                     if (tms != NULL) {
-                        lv = tmsListNew.find(tms->getId());
-                        if (lv != tmsListNew.end()){
-                            delete lv->second;
-                            tmsListNew.erase(lv);
-                            tmsListNew.insert(std::pair<std::string,TileMatrixSet*> (tms->getId(),tms));
-                        } else {
-                            //nouveau fichier
-                            tmsListNew.insert(std::pair<std::string,TileMatrixSet*> (tms->getId(),tms));
-                        }
+                        newServerXML->addTMS(tms);
                     } else {
                         LOGGER_ERROR("Impossible de charger " << listOfFile[i]);
-
-                        fileName = ConfLoader::getFileName(listOfFile[i],".stl");
-                        lv = tmsListNew.find(fileName);
-                        if (lv != tmsListNew.end()){
-                            delete lv->second;
-                            tmsListNew.erase(lv);
-                        } else {
-                            //rien à faire
-                        }
                     }
 
                 } else {
                     //fichier non modifié
-
-                    fileName = ConfLoader::getFileName(listOfFile[i],".tms");
-
-                    lv = tmsListNew.find(fileName);
-
-                    if (lv == tmsListNew.end()) {
-                        //on l'inclue
-                        TileMatrixSet* tms = ConfLoader::buildTileMatrixSet ( listOfFile[i] );
-                        if (tms != NULL) {
-                            tmsListNew.insert(std::pair<std::string,TileMatrixSet*> (tms->getId(),tms));
-                        } else {
-                            LOGGER_ERROR("Impossible de charger le TileMatrixSet " << listOfFile[i]);
-                        }
-                    } else {
-
+                    if (newServerXML->getTMS(fileName) == NULL) {
+                        // mais qui n'était pas là au dernier chargement, ce n'est pas normal
+                        LOGGER_WARN("TMS nouveau alors que le fichier était là au dernier rechargement de conf ?!?!");
                     }
-
                 }
-
             }
         } else {
             //aucun fichier dans le dossier
-            LOGGER_FATAL ( "Aucun fichier .tms dans le dossier " << strTmsDirNew );
+            LOGGER_FATAL ( "Aucun fichier .tms dans le dossier " << newServerXML->getTmsDir() );
             sleep ( 1 );    // Pour laisser le temps au logger pour se vider
             return NULL;
         }
 
-        //pour chaque entrée du std::map on regarde s'il y a bien un fichier correspondant
-        // si ce n'est pas le cas, on le supprime de la map
-        std::vector<std::string> to_delete;
-
-        for (lv = tmsListNew.begin();lv != tmsListNew.end(); lv++) {
-            std::string name = strTmsDirNew + "/" + lv->first + ".tms";
-            if (!ConfLoader::doesFileExist(name)) {
-                //le fichier a été supprimé donc on supprime de la map
-                to_delete.push_back(lv->first);
-            } else {
-                //tout va bien
-            }
-        }
-
-        for (std::vector<int>::size_type i = 0; i != to_delete.size(); i++) {
-            lv = tmsListNew.find(to_delete[i]);
-            delete lv->second;
-            lv->second = NULL;
-            tmsListNew.erase(lv);
-        }
-
+        // On supprime de la liste des TMS tous ceux dont l'id ne se retrouve pas dans la liste des noms de fichiers
+        newServerXML->cleanTMSs(listOfFileNames);
     }
 
-    //--- Styles
-    LOGGER_DEBUG("Rechargement des Styles");
+    //--- STYLES
+    LOGGER_DEBUG("Rechargement des styles");
 
-    std::map<std::string,Style* > styleListNew;
+    if (newServerXML->getStylesDir() != oldServer->getServerConf()->getStylesDir()) {
+        // Le dossier des styles a changé
+        // on recharge tout comme à l'initialisation
+        
+        LOGGER_DEBUG("Rechargement complet du nouveau dossier" << newServerXML->getStylesDir());
 
-    if (strStyleDirNew != server->getStylesDir()) {
-        //on recharge tout comme à l'initialisation
-
-        if ( !ConfLoader::buildStylesList ( strStyleDirNew,styleListNew, sc->isInspire() ) ) {
-            LOGGER_FATAL ( "Impossible de charger la conf des Styles" );
-            LOGGER_FATAL ( "Extinction du serveur ROK4" );
+        if ( ! ConfLoader::buildStylesList ( newServerXML, newServicesXML ) ) {
+            LOGGER_FATAL ( _ ( "Impossible de charger la conf des styles" ) );
+            LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
             sleep ( 1 );    // Pour laisser le temps au logger pour se vider
             return NULL;
         }
 
     } else {
+
         //Copie de l'ancien serveur
         std::map<std::string,Style* >::iterator lv;
 
-        for (lv = server->getStyleList().begin();lv != server->getStyleList().end(); lv++) {
-            Style* stl = new Style(*lv->second);
-            styleListNew.insert(std::pair<std::string,Style*> (lv->first,stl));
+        for (lv = oldServer->getStylesList().begin(); lv != oldServer->getStylesList().end(); lv++) {
+            Style* sty = new Style(lv->second);
+            newServerXML->addStyle(sty);
         }
 
-
         //Lecture du dossier et chargement de ce qui a changé
-        listOfFile = ConfLoader::listFileFromDir(strStyleDirNew, ".stl");
+        listOfFile = ConfLoader::listFileFromDir(newServerXML->getStylesDir(), ".stl");
+        std::vector<std::string> listOfFileNames;
 
         if (listOfFile.size() != 0) {
             for (unsigned i=0; i<listOfFile.size(); i++) {
                 lastMod = ConfLoader::getLastModifiedDate(listOfFile[i]);
+                fileName = ConfLoader::getFileName(listOfFile[i],".stl");
+                listOfFileNames.push_back(fileName);
 
                 if (lastMod > lastReload) {
                     //fichier modifié, on le recharge
-                    Style* stl = ConfLoader::buildStyle ( listOfFile[i], sc->isInspire() );
+                    Style* sty = ConfLoader::buildStyle ( listOfFile[i], newServicesXML );
 
-                    if (stl != NULL) {
-                        lv = styleListNew.find(stl->getId());
-                        if (lv != styleListNew.end()){
-                            delete lv->second;
-                            styleListNew.erase(lv);
-                            styleListNew.insert(std::pair<std::string,Style*> (stl->getId(),stl));
-                        } else {
-                            //nouveau fichier
-                            styleListNew.insert(std::pair<std::string,Style*> (stl->getId(),stl));
-                        }
+                    // Que le style soit correct ou non, on supprime l'ancien de la liste
+                    newServerXML->removeStyle(fileName);
+
+                    if (sty != NULL) {
+                        newServerXML->addStyle(sty);
                     } else {
                         LOGGER_ERROR("Impossible de charger " << listOfFile[i]);
-
-                        fileName = ConfLoader::getFileName(listOfFile[i],".stl");
-                        lv = styleListNew.find(fileName);
-                        if (lv != styleListNew.end()){
-                            delete lv->second;
-                            styleListNew.erase(lv);
-                        } else {
-                            //rien à faire
-                        }
                     }
 
                 } else {
                     //fichier non modifié
-
-                    fileName = ConfLoader::getFileName(listOfFile[i],".stl");
-
-                    lv = styleListNew.find(fileName);
-
-                    if (lv == styleListNew.end()) {
-                        //on l'inclue
-                        Style* stl = ConfLoader::buildStyle ( listOfFile[i], sc->isInspire() );
-                        if (stl != NULL) {
-                            styleListNew.insert(std::pair<std::string,Style*> (stl->getId(),stl));
-                        } else {
-                            LOGGER_ERROR("Impossible de charger le style " << listOfFile[i]);
-                        }
-                    } else {
-
+                    if (newServerXML->getStyle(fileName) == NULL) {
+                        // mais qui n'était pas là au dernier chargement, ce n'est pas normal
+                        LOGGER_WARN("Style nouveau alors que le fichier était là au dernier rechargement de conf ?!?!");
                     }
-
                 }
-
             }
         } else {
             //aucun fichier dans le dossier
-            LOGGER_FATAL ( "Aucun fichier .stl dans le dossier " << strStyleDirNew );
+            LOGGER_FATAL ( "Aucun fichier .stl dans le dossier " << newServerXML->getStylesDir() );
             sleep ( 1 );    // Pour laisser le temps au logger pour se vider
             return NULL;
         }
 
-        //pour chaque entrée du std::map on regarde s'il y a bien un fichier correspondant
-        // si ce n'est pas le cas, on le supprime de la map
-        std::vector<std::string> to_delete;
-
-        for (lv = styleListNew.begin();lv != styleListNew.end(); lv++) {
-            std::string name = strStyleDirNew + "/" + lv->first + ".stl";
-            if (!ConfLoader::doesFileExist(name)) {
-                //le fichier a été supprimé donc on supprime de la map
-                to_delete.push_back(lv->first);
-            } else {
-                //tout va bien
-            }
-        }
-
-        for (std::vector<int>::size_type i = 0; i != to_delete.size(); i++) {
-            lv = styleListNew.find(to_delete[i]);
-            delete lv->second;
-            lv->second = NULL;
-            styleListNew.erase(lv);
-        }
-
+        // On supprime de la liste des styles tous ceux dont l'id ne se retrouve pas dans la liste des noms de fichiers
+        newServerXML->cleanStyles(listOfFileNames);
     }
-
-
 
 
     //--- Layers
     LOGGER_DEBUG("Rechargement des Layers");
 
-    std::map<std::string,Layer* > layerListNew;
+    if (newServerXML->getLayersDir() != oldServer->getServerConf()->getLayersDir()) {
+        // Le dossier des layers a changé
+        // on recharge tout comme à l'initialisation
 
+        LOGGER_DEBUG("Rechargement complet du nouveau dossier" << newServerXML->getLayersDir());
 
-    if (strLayerDirNew != server->getLayersDir()) {
-        //on recharge tout comme à l'initialisation
-        LOGGER_DEBUG("Rechargement complet du nouveau dossier" << strLayerDirNew);
-
-        if ( !ConfLoader::buildLayersList ( strLayerDirNew,tmsListNew, styleListNew,layerListNew,reprojectionCapabilityNew,sc,proxyNew ) ) {
-            LOGGER_FATAL ( "Impossible de charger la conf des Layers" );
-            LOGGER_FATAL ( "Extinction du serveur ROK4" );
+        if ( ! ConfLoader::buildLayersList ( newServerXML, newServicesXML ) ) {
+            LOGGER_FATAL ( _ ( "Impossible de charger la conf des Layers" ) );
+            LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
             sleep ( 1 );    // Pour laisser le temps au logger pour se vider
             return NULL;
         }
@@ -461,154 +359,83 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* server, 
         //Copie de l'ancien serveur
         std::map<std::string,Layer* >::iterator lv;
 
-        for (lv = server->getLayerList().begin();lv != server->getLayerList().end(); lv++) {
-            Layer* lay = new Layer(*lv->second,styleListNew,tmsListNew);
-            layerListNew.insert(std::pair<std::string,Layer*> (lv->first,lay));
+        for (lv = oldServer->getLayerList().begin(); lv != oldServer->getLayerList().end(); lv++) {
+            Layer* lay = new Layer(lv->second, newServerXML->getStylesList(), newServerXML->getTmsList() );
+            newServerXML->addLayer(lay);
         }
 
         LOGGER_DEBUG("Lecture du dossier");
 
         //Lecture du dossier et chargement de ce qui a changé
-        listOfFile = ConfLoader::listFileFromDir(strLayerDirNew, ".lay");
+        listOfFile = ConfLoader::listFileFromDir(newServerXML->getLayersDir(), ".lay");
+        std::vector<std::string> listOfFileNames;
 
         if (listOfFile.size() != 0) {
             for (unsigned i=0; i<listOfFile.size(); i++) {
-                LOGGER_DEBUG("Rechargement du layer " << listOfFile[i]);
-
                 lastMod = ConfLoader::getLastModifiedDate(listOfFile[i]);
+                fileName = ConfLoader::getFileName(listOfFile[i],".lay");
+                listOfFileNames.push_back(fileName);
 
                 if (lastMod > lastReload) {
                     //fichier modifié, on le recharge
-                    LOGGER_DEBUG("Fichier layer modifie");
-                    Layer* lay = ConfLoader::buildLayer ( listOfFile[i], tmsListNew, styleListNew, reprojectionCapabilityNew, sc, proxyNew );
+                    Layer* lay = ConfLoader::buildLayer ( listOfFile[i], newServerXML, newServicesXML );
+
+                    // Que le layer soit correct ou non, on supprime l'ancien de la liste
+                    newServerXML->removeLayer(fileName);
 
                     if (lay != NULL) {
-                        lv = layerListNew.find(lay->getId());
-                        if (lv != layerListNew.end()){
-                            delete lv->second;
-                            layerListNew.erase(lv);
-                            layerListNew.insert(std::pair<std::string,Layer*> (lay->getId(),lay));
-                        } else {
-                            //nouveau fichier
-                            layerListNew.insert(std::pair<std::string,Layer*> (lay->getId(),lay));
-                        }
+                        newServerXML->addLayer(lay);
                     } else {
-                        LOGGER_ERROR("Impossible de charger le layer " << listOfFile[i]);
-
-                        fileName = ConfLoader::getFileName(listOfFile[i],".lay");
-                        lv = layerListNew.find(fileName);
-                        if (lv != layerListNew.end()){
-                            delete lv->second;
-                            layerListNew.erase(lv);
-                        } else {
-                            //rien à faire
-                        }
+                        LOGGER_ERROR("Impossible de charger " << listOfFile[i]);
                     }
 
                 } else {
                     //fichier non modifié
                     LOGGER_DEBUG("Fichier layer non modifie");
-                    fileName = ConfLoader::getFileName(listOfFile[i],".lay");
-
-                    lv = layerListNew.find(fileName);
-
-                    if (lv == layerListNew.end()) {
-                        LOGGER_DEBUG("Ajout de ce nouveau layer");
-                        //on l'inclue
-                        Layer* lay = ConfLoader::buildLayer ( listOfFile[i], tmsListNew, styleListNew, reprojectionCapabilityNew, sc, proxyNew );
-                        if (lay != NULL) {
-                            layerListNew.insert(std::pair<std::string,Layer*> (lay->getId(),lay));
-                        } else {
-                            LOGGER_ERROR("Impossible de charger le layer " << listOfFile[i]);
-                        }
+                    Layer* lay = newServerXML->getLayer(fileName);
+                    if (lay == NULL) {
+                        // mais qui n'était pas là au dernier chargement, ce n'est pas normal
+                        LOGGER_WARN("Layer nouveau alors que le fichier était là au dernier rechargement de conf ?!?!");
                     } else {
 
                         //on teste si le .pyr a changé
-                        std::string strPyrFile = ConfLoader::getTagContentOfFile(listOfFile[i],"pyramid");
+                        std::string strPyrFile = lay->getDataPyramidFilePath();
 
-                        if (strPyrFile != "") {
-                            LOGGER_DEBUG("Verification du fichier pyr" << strPyrFile);
-                            lastMod = ConfLoader::getLastModifiedDate(strPyrFile);
+                        LOGGER_DEBUG("Verification du fichier pyr" << strPyrFile);
+                        lastMod = ConfLoader::getLastModifiedDate(strPyrFile);
 
-                            if (lastMod > lastReload) {
-                                //fichier modifié
-                                Layer* lay = ConfLoader::buildLayer ( listOfFile[i], tmsListNew, styleListNew, reprojectionCapabilityNew, sc, proxyNew );
+                        if (lastMod > lastReload) {
+                            // fichier modifié
+                            Layer* lay = ConfLoader::buildLayer ( listOfFile[i], newServerXML, newServicesXML );
 
-                                if (lay != NULL) {
-                                    lv = layerListNew.find(lay->getId());
-                                    if (lv != layerListNew.end()){
-                                        layerListNew.erase(lv);
-                                        layerListNew.insert(std::pair<std::string,Layer*> (lay->getId(),lay));
-                                    } else {
-                                        //nouveau fichier
-                                        layerListNew.insert(std::pair<std::string,Layer*> (lay->getId(),lay));
-                                    }
-                                } else {
-                                    LOGGER_ERROR("Impossible de charger le layer " << listOfFile[i]);
-                                }
+                            newServerXML->removeLayer(fileName);
 
+                            if (lay != NULL) {
+                                newServerXML->addLayer(lay);
                             } else {
-                                //fichier non modifié, super on ne fait rien
-                                LOGGER_DEBUG("Rien a faire");
+                                LOGGER_ERROR("Impossible de charger le layer " << listOfFile[i]);
                             }
-
-
-                        } else {
-                            //impossible de récupérer le nom du fichier .pyr, tant pis...
-                            LOGGER_ERROR("Impossible de charger la pyramide " << strPyrFile);
                         }
-
                     }
-
-
-
                 }
 
             }
         } else {
             //aucun fichier dans le dossier
-            LOGGER_FATAL ( "Aucun fichier .lay dans le dossier " << strLayerDirNew );
+            LOGGER_FATAL ( "Aucun fichier .lay dans le dossier " << newServerXML->getLayersDir() );
             sleep ( 1 );    // Pour laisser le temps au logger pour se vider
             return NULL;
         }
 
-        LOGGER_DEBUG("Verification des layers a supprimer");
-        //pour chaque entrée du std::map on regarde s'il y a bien un fichier correspondant
-        // si ce n'est pas le cas, on le supprime de la map
-        std::vector<std::string> to_delete;
-
-        for (lv = layerListNew.begin();lv != layerListNew.end(); lv++) {
-            std::string name = strLayerDirNew + "/" + lv->first + ".lay";
-            if (!ConfLoader::doesFileExist(name)) {
-                //le fichier a été supprimé donc on supprime de la map
-                to_delete.push_back(lv->first);
-            } else {
-                //tout va bien
-            }
-        }
-
-        LOGGER_DEBUG("Suppression des layers");
-
-        for (std::vector<int>::size_type i = 0; i != to_delete.size(); i++) {
-            LOGGER_DEBUG("Suppression du layer " << to_delete[i]);
-            lv = layerListNew.find(to_delete[i]);
-            delete lv->second;
-            lv->second = NULL;
-            layerListNew.erase(lv);
-        }
-
+        // On supprime de la liste des layers tous ceux dont l'id ne se retrouve pas dans la liste des noms de fichiers
+        newServerXML->cleanLayers(listOfFileNames);
     }
 
     LOGGER_DEBUG("Arret du logger");
     Logger::stopLogger();
     LOGGER_DEBUG("Logger arrete");
 
-    return new Rok4Server ( nbThreadNew, *sc, layerListNew, tmsListNew, styleListNew,
-                            socketNew, backlogNew, proxyNew, strTmsDirNew, strStyleDirNew, strLayerDirNew, projDirstr,
-                            supportWMTSNew, supportWMSNew, nbProcessNew,timeKillNew );
-
-*/
-    return server;
+    return new Rok4Server ( newServerXML, newServicesXML );
 }
 
 /**

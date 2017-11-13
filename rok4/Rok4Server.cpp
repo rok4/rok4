@@ -1551,7 +1551,7 @@ ServicesXML* Rok4Server::getServicesConf() { return servicesConf; }
 ServerXML* Rok4Server::getServerConf() { return serverConf; }
 std::map<std::string, Layer*>& Rok4Server::getLayerList() { return serverConf->layersList; }
 std::map<std::string, TileMatrixSet*>& Rok4Server::getTmsList() { return serverConf->tmsList; }
-std::map<std::string, Style*>& Rok4Server::getStyleList() { return serverConf->stylesList; }
+std::map<std::string, Style*>& Rok4Server::getStylesList() { return serverConf->stylesList; }
 std::map<std::string,std::vector<std::string> >& Rok4Server::getWmsCapaFrag() { return wmsCapaFrag; }
 std::vector<std::string>& Rok4Server::getWmtsCapaFrag() { return wmtsCapaFrag; }
 

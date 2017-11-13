@@ -77,12 +77,11 @@ ServicesXML* ConfLoader::buildServicesConf ( std::string servicesConfigFile ) {
 /********************************************** STYLES ****************************************************/
 /**********************************************************************************************************/
 
-bool ConfLoader::buildStylesList ( ServerXML* serverXML, ServicesXML* servicesXML, time_t lastReload) {
+bool ConfLoader::buildStylesList ( ServerXML* serverXML, ServicesXML* servicesXML ) {
     LOGGER_INFO ( _ ( "CHARGEMENT DES STYLES" ) );
 
     // lister les fichier du repertoire styleDir
     std::vector<std::string> styleFiles;
-    std::vector<std::string> styleNames;
     std::string styleDir = serverXML->getStylesDir();
     std::string styleFileName;
     struct dirent *fileEntry;
@@ -93,9 +92,8 @@ bool ConfLoader::buildStylesList ( ServerXML* serverXML, ServicesXML* servicesXM
     }
     while ( ( fileEntry = readdir ( dir ) ) ) {
         styleFileName = fileEntry->d_name;
-        if ( styleFileName.rfind ( ".stl" ) == styleFileName.size() - 4 ) {
+        if ( styleFileName.rfind ( ".stl" ) ==styleFileName.size()-4 ) {
             styleFiles.push_back ( styleDir+"/"+styleFileName );
-            styleNames.push_back ( styleFileName.substr ( 0, styleFileName.size() - 4 ) );
         }
     }
     closedir ( dir );
@@ -107,70 +105,18 @@ bool ConfLoader::buildStylesList ( ServerXML* serverXML, ServicesXML* servicesXM
         return false;
     }
 
-    // On peut vouloir recharger tous les styles. Dans ce cas, on commence par tous les supprimer
-    if (lastReload == 0) {
-        serverXML->cleanStyles(std::vector<std::string>());
-    }
-
-    for ( unsigned int i = 0; i < styleFiles.size(); i++ ) {
-
-        Style * style = serverXML->getStyle(styleNames[i]);
-
-        if (style == NULL) {
-            LOGGER_DEBUG ( _ ( "Nouveau Style : " ) << styleNames[i] );
-            // On doit charger ce nouveau style
-            StyleXML styXML(styleFiles[i], servicesXML->isInspire());
-            if ( ! styXML.isOk() ) {
-                LOGGER_ERROR ( _ ( "Ne peut charger le style: " ) << styleFiles[i] );
-                continue;
-            }
-            // On vérifie que le nom du fichier corresponde bien à l'ID trouvé à l'intérieur, car on va les utiliser indifféremment
-            if (styXML.getId() != styleNames[i]) {
-                LOGGER_ERROR ( _ ( "Identifiant != nom du fichier, on en veut pas : " ) << styleFiles[i] );
-                continue;
-            }
-
-            style = new Style(styXML);
+    // generer les styles decrits par les fichiers.
+    for ( unsigned int i=0; i<styleFiles.size(); i++ ) {
+        Style * style;
+        style = buildStyle ( styleFiles[i], servicesXML );
+        if ( style ) {
             serverXML->addStyle ( style );
-
         } else {
-            // Ce style existe déjà, à savoir s'il a été modifié depuis son dernier chargement
-
-            struct stat sb;
-            int result = stat(styleFiles[i].c_str(), &sb);
-
-            if (result == 0 && *(&sb.st_mtim.tv_sec) > lastReload) {
-                LOGGER_DEBUG ( _ ( "Style mis à jour : " ) << styleNames[i] );
-                // On doit recharger ce style puisqu'il a changé
-
-                StyleXML styXML(styleFiles[i], servicesXML->isInspire());
-                if ( ! styXML.isOk() ) {
-                    LOGGER_ERROR ( _ ( "Ne peut charger le style: " ) << styleFiles[i] );
-                    // On n'arrive pas à charger la nouvelle version de ce style, on doit le retirer des styles disponibles
-                    serverXML->removeStyle(styleNames[i]);
-                    continue;
-                }
-                // On vérifie que le nom du fichier corresponde bien à l'ID trouvé à l'intérieur, car on va les utiliser indifféremment
-                if (styXML.getId() != styleNames[i]) {
-                    LOGGER_ERROR ( _ ( "Identifiant != nom du fichier, on en veut pas : " ) << styleFiles[i] );
-                    // La nouvelle version de ce style n'est pas cohérente, on doit le retirer des styles disponibles
-                    serverXML->removeStyle(styleNames[i]);
-                    continue;
-                }
-
-                // On met à jour le style
-                style->update(styXML);
-
-            } else {
-                LOGGER_DEBUG ( _ ( "Style inchangé : " ) << styleNames[i] );
-            }
+            LOGGER_ERROR ( _ ( "Ne peut charger le style: " ) << styleFiles[i] );
         }
     }
 
-    // On supprime les éventuels anciens styles chargés qui ne sont plus dans les configurations
-    serverXML->cleanStyles(styleNames);
-
-    if ( serverXML->getNbStyles() == 0 ) {
+    if ( serverXML->getNbStyles() ==0 ) {
         LOGGER_FATAL ( _ ( "Aucun Style n'a pu etre charge!" ) );
         return false;
     }
@@ -180,17 +126,34 @@ bool ConfLoader::buildStylesList ( ServerXML* serverXML, ServicesXML* servicesXM
     return true;
 }
 
+Style* ConfLoader::buildStyle ( std::string fileName, ServicesXML* servicesXML ) {
+    StyleXML styXML(fileName, servicesXML);
+
+    if ( ! styXML.isOk() ) {
+        return NULL;
+    }
+
+    std::string name = getFileName(fileName, ".stl");
+
+    // On vérifie que le nom du fichier corresponde bien à l'ID trouvé à l'intérieur, car on va les utiliser indifféremment
+    if (styXML.getId() != name) {
+        LOGGER_ERROR ( _ ( "Identifiant != nom du fichier, on en veut pas : " ) << fileName );
+        return NULL;
+    }
+
+    return new Style(styXML);
+}
+
 
 /**********************************************************************************************************/
 /*********************************************** TMS ******************************************************/
 /**********************************************************************************************************/
 
-bool ConfLoader::buildTMSList ( ServerXML* serverXML, time_t lastReload ) {
+bool ConfLoader::buildTMSList ( ServerXML* serverXML ) {
     LOGGER_INFO ( _ ( "CHARGEMENT DES TMS" ) );
 
     // lister les fichier du repertoire tmsDir
     std::vector<std::string> tmsFiles;
-    std::vector<std::string> tmsNames;
     std::string tmsFileName;
     std::string tmsDir = serverXML->getTmsDir();
     struct dirent *fileEntry;
@@ -201,68 +164,31 @@ bool ConfLoader::buildTMSList ( ServerXML* serverXML, time_t lastReload ) {
     }
     while ( ( fileEntry = readdir ( dir ) ) ) {
         tmsFileName = fileEntry->d_name;
-        if ( tmsFileName.rfind ( ".tms" ) == tmsFileName.size() - 4 ) {
-            tmsFiles.push_back ( tmsDir + "/" + tmsFileName );
-            tmsNames.push_back ( tmsFileName.substr ( 0, tmsFileName.size() - 4 ) );
+        if ( tmsFileName.rfind ( ".tms" ) ==tmsFileName.size()-4 ) {
+            tmsFiles.push_back ( tmsDir+"/"+tmsFileName );
         }
     }
     closedir ( dir );
 
     if ( tmsFiles.empty() ) {
+        // FIXME:
+        // Aucun TMS presents. Ce n'est pas necessairement grave si le serveur
+        // ne sert pas pour le WMTS et qu'on exploite pas de cache tuile.
+        // Cependant pour le moment (07/2010) on ne gere que des caches tuiles
         LOGGER_FATAL ( _ ( "Aucun fichier *.tms dans le repertoire " ) << tmsDir );
         return false;
-    }    
-
-    // On peut vouloir recharger tous les styles. Dans ce cas, on commence par tous les supprimer
-    if (lastReload == 0) {
-        serverXML->cleanTMSs(std::vector<std::string>());
     }
 
+    // generer les TMS decrits par les fichiers.
     for ( unsigned int i=0; i<tmsFiles.size(); i++ ) {
-
-        TileMatrixSet* tms = serverXML->getTMS(tmsNames[i]);
-
-        if (tms == NULL) {
-            LOGGER_DEBUG ( _ ( "Nouveau TMS : " ) << tmsNames[i] );
-            // On doit charger ce nouveau style
-            TileMatrixSetXML tmsXML(tmsFiles[i]);
-            if ( ! tmsXML.isOk() ) {
-                LOGGER_ERROR ( _ ( "Ne peut charger le TMS: " ) << tmsFiles[i] );
-                continue;
-            }
-
-            tms = new TileMatrixSet(tmsXML);
+        TileMatrixSet * tms;
+        tms = buildTileMatrixSet ( tmsFiles[i] );
+        if ( tms ) {
             serverXML->addTMS ( tms );
-
         } else {
-            // Ce TMS existe déjà, à savoir s'il a été modifié depuis son dernier chargement
-
-            struct stat sb;
-            int result = stat(tmsFiles[i].c_str(), &sb);
-
-            if (result == 0 && *(&sb.st_mtim.tv_sec) > lastReload) {
-                LOGGER_DEBUG ( _ ( "TMS mis à jour : " ) << tmsNames[i] );
-                // On doit recharger ce TMS puisqu'il a changé
-
-                TileMatrixSetXML tmsXML(tmsFiles[i]);
-                if ( ! tmsXML.isOk() ) {
-                    LOGGER_ERROR ( _ ( "Ne peut charger le TMS: " ) << tmsFiles[i] );
-                    // On n'arrive pas à charger la nouvelle version de ce TMS, on doit le retirer des TMS disponibles
-                    serverXML->removeTMS(tmsNames[i]);
-                    continue;
-                }
-
-                // On met à jour le TMS
-                tms->update(tmsXML);
-
-            } else {
-                LOGGER_DEBUG ( _ ( "TMS inchangé : " ) << tmsNames[i] );
-            }
+            LOGGER_ERROR ( _ ( "Ne peut charger le tms: " ) << tmsFiles[i] );
         }
     }
-
-    // On supprime les éventuels anciens TMS chargés qui ne sont plus dans les configurations
-    serverXML->cleanTMSs(tmsNames);
 
     if ( serverXML->getNbTMS() ==0 ) {
         LOGGER_FATAL ( _ ( "Aucun TMS n'a pu etre charge!" ) );
@@ -274,16 +200,25 @@ bool ConfLoader::buildTMSList ( ServerXML* serverXML, time_t lastReload ) {
     return true;
 }
 
+TileMatrixSet* ConfLoader::buildTileMatrixSet ( std::string fileName ) {
+    TileMatrixSetXML tmsXML(fileName);
+
+    if ( ! tmsXML.isOk() ) {
+        return NULL;
+    }
+
+    return new TileMatrixSet(tmsXML);
+}
+
 /**********************************************************************************************************/
 /********************************************* LAYERS *****************************************************/
 /**********************************************************************************************************/
 
-bool ConfLoader::buildLayersList ( ServerXML* serverXML, ServicesXML* servicesXML, time_t lastReload ) {
+bool ConfLoader::buildLayersList ( ServerXML* serverXML, ServicesXML* servicesXML ) {
 
     LOGGER_INFO ( _ ( "CHARGEMENT DES LAYERS" ) );
     // lister les fichier du repertoire layerDir
     std::vector<std::string> layerFiles;
-    std::vector<std::string> layerNames;
     std::string layerDir = serverXML->getLayersDir();
     std::string layerFileName;
     struct dirent *fileEntry;
@@ -294,9 +229,8 @@ bool ConfLoader::buildLayersList ( ServerXML* serverXML, ServicesXML* servicesXM
     }
     while ( ( fileEntry = readdir ( dir ) ) ) {
         layerFileName = fileEntry->d_name;
-        if ( layerFileName.rfind ( ".lay" ) == layerFileName.size() - 4 ) {
+        if ( layerFileName.rfind ( ".lay" ) == layerFileName.size()-4 ) {
             layerFiles.push_back ( layerDir+"/"+layerFileName );
-            layerNames.push_back ( layerFileName.substr ( 0, layerFileName.size() - 4 ) );
         }
     }
     closedir ( dir );
@@ -305,59 +239,18 @@ bool ConfLoader::buildLayersList ( ServerXML* serverXML, ServicesXML* servicesXM
         LOGGER_ERROR ( _ ( "Aucun fichier *.lay dans le repertoire " ) << layerDir );
         LOGGER_ERROR ( _ ( "Le serveur n'a aucune donnees à servir. Dommage..." ) );
         //return false;
-    }    
-
-    // On peut vouloir recharger tous les styles. Dans ce cas, on commence par tous les supprimer
-    if (lastReload == 0) {
-        serverXML->cleanLayers(std::vector<std::string>());
     }
 
+    // generer les Layers decrits par les fichiers.
     for ( unsigned int i=0; i<layerFiles.size(); i++ ) {
-
-        Layer* lay = serverXML->getLayer(layerFiles[i]);
-
-        if (lay == NULL) {
-            LOGGER_DEBUG ( _ ( "Nouvelle couche : " ) << layerFiles[i] );
-            // On doit charger cette nouvelle couche
-            LayerXML layXML(layerFiles[i], serverXML, servicesXML);
-            if ( ! layXML.isOk() ) {
-                LOGGER_ERROR ( _ ( "Ne peut charger la couche: " ) << layerFiles[i] );
-                continue;
-            }
-
-            lay = new Layer(layXML);
-            serverXML->addLayer ( lay );
-
+        Layer * layer;
+        layer = buildLayer ( layerFiles[i], serverXML, servicesXML );
+        if ( layer ) {
+            serverXML->addLayer ( layer );
         } else {
-            // Cette couche existe déjà, à savoir s'il a été modifié depuis son dernier chargement
-
-            struct stat sb;
-            int result = stat(layerFiles[i].c_str(), &sb);
-
-            if (result == 0 && *(&sb.st_mtim.tv_sec) > lastReload) {
-                LOGGER_DEBUG ( _ ( "Couche mise à jour : " ) << layerFiles[i] );
-                // On doit recharger cette couche puisqu'il a changé
-
-                LayerXML layXML(layerFiles[i], serverXML, servicesXML);
-                if ( ! layXML.isOk() ) {
-                    LOGGER_ERROR ( _ ( "Ne peut charger la couche : " ) << layerFiles[i] );
-                    // On n'arrive pas à charger la nouvelle version de cette couche, on doit le retirer des couches disponibles
-                    serverXML->removeLayer(layerFiles[i]);
-                    continue;
-                }
-
-                // On met à jour la couche
-                lay->update(layXML);
-
-            } else {
-                LOGGER_DEBUG ( _ ( "Couche inchangée : " ) << layerFiles[i] );
-            }
+            LOGGER_ERROR ( _ ( "Ne peut charger le layer: " ) << layerFiles[i] );
         }
     }
-
-    // On supprime les éventuelles anciennes couches chargées qui ne sont plus dans les configurations
-    serverXML->cleanLayers(layerFiles);
-
 
     if ( serverXML->getNbLayers() ==0 ) {
         LOGGER_ERROR ( _ ( "Aucun layer n'a pu etre charge!" ) );
@@ -366,6 +259,16 @@ bool ConfLoader::buildLayersList ( ServerXML* serverXML, ServicesXML* servicesXM
 
     LOGGER_INFO ( _ ( "NOMBRE DE LAYERS CHARGES : " ) << serverXML->getNbLayers() );
     return true;
+}
+
+Layer * ConfLoader::buildLayer ( std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML ) {
+
+    LayerXML layerXML(fileName, serverXML, servicesXML );
+    if ( ! layerXML.isOk() ) {
+        return NULL;
+    }
+
+    return new Layer(layerXML);
 }
 
 /**********************************************************************************************************/

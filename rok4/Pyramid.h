@@ -361,7 +361,7 @@ public:
      * \param[in] obj pyramid
      * \param[in] tmsList available tms list
      */
-    Pyramid (const Pyramid &obj, std::map<std::string, TileMatrixSet *> &tmsList);
+    Pyramid (Pyramid *obj, std::map<std::string, TileMatrixSet *> tmsList);
 
     /**
      * \~french \brief Destructeur

@@ -445,7 +445,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
     pElem=hRoot.FirstChild ( "pyramid" ).Element();
     if ( pElem && pElem->GetText() ) {
 
-        std::string pyramidFilePath ( DocumentXML::getTextStrFromElem(pElem) );
+        pyramidFilePath = std::string( DocumentXML::getTextStrFromElem(pElem) );
         //Relative Path
         if ( pyramidFilePath.compare ( 0,2,"./" ) ==0 ) {
             pyramidFilePath.replace ( 0,1,parentDir );
@@ -454,7 +454,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
             pyramidFilePath.insert ( 0,parentDir );
         }
         pyramid = ConfLoader::buildPyramid ( pyramidFilePath, serverXML, servicesXML, true);
-        if ( !pyramid ) {
+        if ( ! pyramid ) {
             LOGGER_ERROR ( _ ( "La pyramide " ) << pyramidFilePath << _ ( " ne peut etre chargee" ) );
             return;
         }

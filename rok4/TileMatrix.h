@@ -131,7 +131,7 @@ public:
     * \brief Copy Constructor
     * \param[in] t TileMatrix to copy
     */
-    TileMatrix ( const TileMatrix& t );
+    TileMatrix ( TileMatrix* t );
 
     /**
     * \~french

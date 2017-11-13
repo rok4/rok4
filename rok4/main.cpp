@@ -129,7 +129,7 @@ void reloadConfig ( int signum ) {
         reload = true;
         std::cout<< _ ( "Rechargement du serveur rok4" ) << "["<< getpid() <<"]" <<std::endl;
         time_t tmpTime = time(NULL);
-        Wtmp=rok4ReloadServer ( serverConfigFile.c_str(), W, lastReload );
+        Wtmp = rok4ReloadServer ( serverConfigFile.c_str(), W, lastReload );
         if ( !Wtmp ){
             std::cout<< _ ( "Erreur lors du rechargement du serveur rok4" ) << "["<< getpid() <<"]" <<std::endl;
             return;

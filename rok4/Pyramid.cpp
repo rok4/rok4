@@ -93,6 +93,56 @@ Pyramid::Pyramid (PyramidXML* p) : Source(PYRAMID) {
 
 }
 
+Pyramid::Pyramid (Pyramid* obj, std::map<std::string, TileMatrixSet *> tmsList): Source(PYRAMID) {
+    format = obj->format;
+    photo = obj->photo;
+    channels = obj->channels;
+    transparent = obj->transparent;
+
+    isBasedPyramid = obj->isBasedPyramid;
+    containOdLevels = obj->containOdLevels;
+
+    ndValues = new int[channels];
+    for (int i = 0; i < channels; i++) {
+        ndValues[i] = obj->ndValues[i];
+    }
+
+    // On récupère bien le pointeur vers le nouveau TMS (celui de la nouvelle liste)
+    std::map<std::string, TileMatrixSet*>::iterator tmsIt = tmsList.find ( obj->tms->getId() );
+    if ( tmsIt == tmsList.end() ) {
+        LOGGER_ERROR ( "Une pyramide clonée reference un TMS [" << obj->tms->getId() << "] qui n'existe plus." );
+        return;
+        // Tester la nullité du TMS en sortie pour faire remonter l'erreur
+    } else {
+        tms = tmsIt->second;
+    }
+
+    std::map<std::string, Level*>::iterator itLevel;
+
+    // On clone bien tous les niveaux
+    for ( itLevel = obj->levels.begin(); itLevel != obj->levels.end(); itLevel++ ) {
+        Level* levObj = new Level(itLevel->second, tms, tmsList);
+        levels.insert ( std::pair<std::string, Level*> ( levObj->getId(), levObj ) );
+    }
+
+    double minRes= DBL_MAX;
+    double maxRes= DBL_MIN;
+    for ( itLevel = levels.begin(); itLevel != levels.end(); itLevel++ ) {
+
+        //Determine Higher and Lower Levels
+        double d = itLevel->second->getRes();
+        if ( minRes > d ) {
+            minRes = d;
+            lowestLevel = itLevel->second;
+        }
+        if ( maxRes < d ) {
+            maxRes = d;
+            highestLevel = itLevel->second;
+        }
+    }
+
+}
+
 std::string Pyramid::best_level ( double resolution_x, double resolution_y, bool onDemand ) {
 
     // TODO: A REFAIRE !!!!

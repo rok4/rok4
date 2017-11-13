@@ -83,6 +83,7 @@ class ServerXML : public DocumentXML
         std::string getServicesConfigFile() ;
 
         std::string getTmsDir() ;
+        std::map<std::string, TileMatrixSet*> getTmsList() ;
         void addTMS(TileMatrixSet* t) ;
         void removeTMS(std::string id) ;
         void cleanTMSs(std::vector<std::string> id) ;
@@ -90,6 +91,7 @@ class ServerXML : public DocumentXML
         TileMatrixSet* getTMS(std::string id) ;
 
         std::string getStylesDir() ;
+        std::map<std::string, Style*> getStylesList() ;
         void addStyle(Style* s) ;
         void removeStyle(std::string id) ;
         void cleanStyles(std::vector<std::string> id) ;
@@ -149,18 +151,22 @@ class ServerXML : public DocumentXML
          * \~english \brief Available layers list
          */
         std::map<std::string, Layer*> layersList;
+
         std::string tmsDir;
         /**
          * \~french \brief Liste des TileMatrixSet disponibles
          * \~english \brief Available TileMatrixSet list
          */
         std::map<std::string,TileMatrixSet*> tmsList;
+
         std::string styleDir;
         /**
          * \~french \brief Liste des styles disponibles
          * \~english \brief Available styles list
          */
         std::map<std::string, Style*> stylesList;
+
+        std::string projDir;
 
         /**
          * \~french \brief Adresse du socket d'écoute (vide si lancement géré par un tiers)

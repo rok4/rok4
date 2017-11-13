@@ -61,16 +61,18 @@ Style::Style ( const StyleXML& s ) {
 
 }
 
-void Style::update ( const StyleXML& s ) {
-    this->id = s.id;
-    this->titles = s.titles;
-    this->abstracts = s.abstracts;
-    this->keywords = s.keywords;
-    this->legendURLs = s.legendURLs;
-    this->palette = s.palette;
-    this->estompage = s.estompage;
-    this->pente = s.pente;
-    this->aspect = s.aspect;
+Style::Style ( Style* obj) {
+
+    id = obj->id;
+    titles= obj->titles;
+    abstracts = obj->abstracts;
+    keywords = obj->keywords;
+    legendURLs = obj->legendURLs;
+    palette = obj->palette;
+    estompage = obj->estompage;
+    pente = obj->pente;
+    aspect = obj->aspect;
+
 }
 
 Style::~Style() {

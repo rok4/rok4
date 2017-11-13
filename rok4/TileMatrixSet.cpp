@@ -62,18 +62,18 @@ TileMatrixSet::TileMatrixSet ( const TileMatrixSetXML& t ) {
     tmList = t.listTM;
 }
 
-void TileMatrixSet::update ( const TileMatrixSetXML& t ) {
-    id = t.id;
-    title = t.title;
-    abstract = t.abstract;
-    keyWords = t.keyWords;
-    crs = t.crs;
+TileMatrixSet::TileMatrixSet ( TileMatrixSet* t ) {
+    id = t->id;
+    title = t->title;
+    abstract = t->abstract;
+    keyWords = t->keyWords;
+    crs = t->crs;
 
     std::map<std::string, TileMatrix*>::iterator itTM;
-    for ( itTM=tmList.begin(); itTM != tmList.end(); itTM++ )
-        delete itTM->second;
-
-    tmList = t.listTM;
+    for ( itTM = t->tmList.begin(); itTM != t->tmList.end(); itTM++ ) {
+        TileMatrix* tmObj = new TileMatrix(itTM->second);
+        tmList.insert ( std::pair<std::string, TileMatrix*> ( tmObj->getId(), tmObj ) );
+    }
 }
 
 std::map<std::string, double> TileMatrixSet::getCorrespondingLevels(std::string levelIn, TileMatrixSet* otherTMS) {

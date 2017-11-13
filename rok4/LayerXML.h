@@ -80,6 +80,7 @@ class LayerXML : public DocumentXML
         std::string authority;
         std::string resamplingStr;
         Interpolation::KernelType resampling;
+        std::string pyramidFilePath;
         Pyramid* pyramid;
         GeographicBoundingBoxWMS geographicBoundingBox;
         BoundingBoxWMS boundingBox;

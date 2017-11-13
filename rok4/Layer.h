@@ -158,7 +158,13 @@ private:
      * \~english \brief Tile pyramid
      */
     Pyramid* dataPyramid;
-    // TODO Rajouter une metadataPyramid
+
+    /**
+     * \~french \brief Chemin du descripteur de pyramide
+     * \~english \brief Pyramid descriptor path
+     */    
+    std::string dataPyramidFilePath;
+
     /**
      * \~french \brief Identifiant du style par défaut
      * \~english \brief default style identifier
@@ -270,16 +276,18 @@ public:
     Layer ( const LayerXML& l );
 
     /**
-    * \~french
-    * Met à jour un Layer à partir d'un LayerXML
-    * \brief Mise à jour
-    * \param[in] s LayerXML contenant les informations
-    * \~english
-    * Update a Layer from a LayerXML
-    * \brief Update
-    * \param[in] s LayerXML to get informations
-    */
-    void update ( const LayerXML& l );
+     * \~french
+     * \brief Crée un Layer à partir des ses éléments constitutifs
+     * \param[in] obj layer
+     * \param[in] styleList liste des styles disponibles
+     * \param[in] tmsList liste des tms disponibles
+     * \~english
+     * \brief Create a Layer
+     * \param[in] obj layer
+     * \param[in] styleList available style list
+     * \param[in] tmsList available tms list
+     */
+    Layer (Layer* obj, std::map<std::string,Style*> styleList, std::map<std::string,TileMatrixSet*> tmsList);
 
     /**
      * \~french
@@ -399,6 +407,15 @@ public:
      * \return pyramid
      */
     Pyramid* getDataPyramid() ;
+    /**
+     * \~french
+     * \brief Retourne le chemin du descripteur de pyramide
+     * \return pyramide
+     * \~english
+     * \brief Return the pyramid descriptor path
+     * \return pyramid
+     */
+    std::string getDataPyramidFilePath() ;
     /**
      * \~french
      * \brief Retourne l'interpolation utilisée

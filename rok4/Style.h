@@ -150,6 +150,7 @@ private :
      * \~english \brief Define wether the server must compute a relief shadow
      */
     Estompage estompage;
+
 public:
 
     /**
@@ -166,15 +167,13 @@ public:
 
     /**
     * \~french
-    * Met à jour un Style à partir d'un StyleXML
-    * \brief Mise à jour
-    * \param[in] s StyleXML contenant les informations
+    * Crée un Style à partir d'un autre
+    * \param[in] s Style à cloner
     * \~english
-    * Update a Style from a StyleXML
-    * \brief Update
-    * \param[in] s StyleXML to get informations
+    * Create a Style from another
+    * \param[in] s Style to clone
     */
-    void update ( const StyleXML& s );
+    Style ( Style* obj);
 
     /**
      * \~french

@@ -450,7 +450,7 @@ public:
      * \~french Retourne la liste des styles
      * \~english Return the styles list
      */
-    std::map<std::string, Style*>& getStyleList() ;
+    std::map<std::string, Style*>& getStylesList() ;
     /**
      * \~french Retourne les fragments du GetCapabilities WMS
      * \~english Return WMS GetCapabilities fragments

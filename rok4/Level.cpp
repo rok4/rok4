@@ -52,6 +52,7 @@
 #include <vector>
 #include "Pyramid.h"
 #include "Context.h"
+#include "FileContext.h"
 #include "PaletteDataSource.h"
 #include "Format.h"
 #include "intl.h"
@@ -92,6 +93,46 @@ Level::Level ( LevelXML* l, PyramidXML* p ) {
 
     maxTileSize = tm->getTileH() * tm->getTileW() * channels * Rok4Format::toSizePerChannel(format) * 2;
 }
+
+Level::Level ( Level* obj, TileMatrixSet* tms, std::map<std::string, TileMatrixSet *> tmsList) {
+    // On met bien l'adresse du nouveau TileMatrix, et pas celui dans le Level cloné (issu de l'ancienne liste de TMS)
+    tm = tms->getTm(obj->tm->getId());
+    channels = obj->channels;
+    baseDir = obj->baseDir;
+
+    // On clone bien toutes les sources
+    for ( int i = 0; i < obj->sSources.size(); i++ ) {
+        if (obj->sSources.at(i)->getType() == PYRAMID) {
+            Pyramid* pS = new Pyramid(reinterpret_cast<Pyramid*>(obj->sSources.at(i)), tmsList);
+            sSources.push_back(pS);
+        } else if (obj->sSources.at(i)->getType() == WEBSERVICE) {
+            WebService* pS = new WebService(reinterpret_cast<WebService*>(obj->sSources.at(i)));
+            sSources.push_back(pS);
+        }
+    }
+
+    tilesPerWidth = obj->tilesPerWidth;
+    tilesPerHeight = obj->tilesPerHeight;
+
+    maxTileRow = obj->maxTileRow;
+    minTileRow = obj->minTileRow;
+    maxTileCol = obj->maxTileCol;
+    minTileCol = obj->minTileCol;
+    onDemand = obj->onDemand;
+    onFly = obj->onFly;
+
+    pathDepth = obj->pathDepth;
+    format = obj->format;
+    if (obj->context->getType() == FILECONTEXT) {
+        context = new FileContext("");
+    } else {
+        context = obj->context;
+    }
+    prefix = obj->prefix;
+
+    maxTileSize = obj->maxTileSize;
+}
+
 
 Level::~Level() {
 

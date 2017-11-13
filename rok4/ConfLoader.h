@@ -107,7 +107,22 @@ public:
      * \param[in] inspire whether INSPIRE validity rules are enforced
      * \return false if something went wrong
      */
-    static bool buildStylesList ( ServerXML* serverXML, ServicesXML* servicesXML, time_t lastReload = 0);
+    static bool buildStylesList ( ServerXML* serverXML, ServicesXML* servicesXML);
+
+    /**
+     * \~french
+     * \brief Création d'un Style à partir d'un fichier
+     * \param[in] fileName Nom du fichier, utilisé comme identifiant
+     * \param[in] inspire définit si les règles de conformité INSPIRE doivent être utilisées
+     * \return un pointeur vers le Style nouvellement instancié, NULL en cas d'erreur
+     * \~english
+     * \brief Create a new Style from a file
+     * \param[in] fileName filename, used as identifier
+     * \param[in] inspire whether INSPIRE validity rules are enforced
+     * \return pointer to the newly created Style, NULL if something went wrong
+     */
+    static Style* buildStyle ( std::string fileName, ServicesXML* servicesXML);
+
     /**
      * \~french
      * \brief Charges les différents TileMatrixSet présent dans le répertoire tmsDir
@@ -120,7 +135,20 @@ public:
      * \param[out] tmsList set of available TileMatrixSets
      * \return false if something went wrong
      */
-    static bool buildTMSList ( ServerXML* serverXML, time_t lastReload = 0 );
+    static bool buildTMSList ( ServerXML* serverXML);
+
+    /**
+     * \~french
+     * \brief Création d'un TileMatrixSet à partir d'un fichier
+     * \param[in] fileName Nom du fichier, utilisé comme identifiant
+     * \return un pointeur vers le TileMatrixSet nouvellement instancié, NULL en cas d'erreur
+     * \~english
+     * \brief Create a new TileMatrixSet from a file
+     * \param[in] fileName filename, used as identifier
+     * \return pointer to the newly created TileMatrixSet, NULL if something went wrong
+     */
+    static TileMatrixSet* buildTileMatrixSet ( std::string fileName );
+
     /**
      * \~french
      * \brief Charges les différents Layers présent dans le répertoire layerDir
@@ -143,7 +171,31 @@ public:
      * \param[in] proxy
      * \return false if something went wrong
      */
-    static bool buildLayersList (ServerXML* serverXML, ServicesXML* servicesXML, time_t lastReload = 0 );
+    static bool buildLayersList (ServerXML* serverXML, ServicesXML* servicesXML );
+
+    /**
+     * \~french
+     * \brief Création d'un Layer à partir d'un fichier
+     * \param[in] fileName Nom du fichier d'origine, utilisé comme identifiant
+     * \param[in] tmsList liste des TileMatrixSets connus
+     * \param[in] stylesList liste des Styles connus
+     * \param[in] reprojectionCapability définit si le serveur est capable de reprojeter des données
+     * \param[in] servicesConf pointeur vers les configurations globales du services
+     * \param[in] proxy
+     * \return un pointeur vers le Layer nouvellement instancié, NULL en cas d'erreur
+     * \~english
+     * \brief Create a new Layer from a file
+     * \param[in] fileName original filename, used as identifier
+     * \param[in] tmsList known TileMatrixSets
+     * \param[in] stylesList known Styles
+     * \param[in] reprojectionCapability whether the server can handle reprojection
+     * \param[in] servicesConf global service configuration pointer
+     * \param[in] proxy
+     * \return pointer to the newly created Layer, NULL if something went wrong
+     */
+    static Layer * buildLayer (std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML );
+
+
     /**
      * \~french
      * \brief Chargement des paramètres des services à partir d'un fichier

@@ -148,17 +148,16 @@ public:
     TileMatrixSet ( const TileMatrixSetXML& t );
 
     /**
-    * \~french
-    * Met à jour un TMS à partir d'un TileMatrixSetXML
-    * \brief Mise à jour
-    * \param[in] s TileMatrixSetXML contenant les informations
-    * \~english
-    * Update a TMS from a TileMatrixSetXML
-    * \brief Update
-    * \param[in] s TileMatrixSetXML to get informations
-    */
-    void update ( const TileMatrixSetXML& t );
-
+     * \~french
+     * Crée un TileMatrixSet à partir d'un autre
+     * \brief Constructeur de copie
+     * \param[in] t TileMatrixSet à copier
+     * \~english
+     * Create a TileMatrixSet from another
+     * \brief Copy Constructor
+     * \param[in] t TileMatrixSet to copy
+     */
+    TileMatrixSet ( TileMatrixSet* t );
 
     /**
      * \~french

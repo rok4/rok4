@@ -57,6 +57,7 @@ Layer::Layer ( const LayerXML& l ) {
     this->WMSAuthorized = l.WMSauth;
     this->WMTSAuthorized = l.WMTSauth;
     this->keyWords = l.keyWords;
+    this->dataPyramidFilePath = l.pyramidFilePath;
     this->dataPyramid = l.pyramid;
     // Si la pyramide contient un niveau à la demande ou à la volée, on n'authorize pas le WMS 
     // car c'est un cas non géré dans les processus de reponse du serveur
@@ -87,44 +88,58 @@ Layer::Layer ( const LayerXML& l ) {
     this->GFIForceEPSG = l.GFIForceEPSG;
 }
 
-void Layer::update ( const LayerXML& l ) {
-    this->id = l.id;
-    this->title = l.title;
-    this->abstract = l.abstract;
-    this->WMSAuthorized = l.WMSauth;
-    this->WMTSAuthorized = l.WMTSauth;
-    this->keyWords = l.keyWords;
+Layer::Layer (Layer* obj, std::map<std::string,Style*> styleList, std::map<std::string,TileMatrixSet*> tmsList) {
+    id = obj->id;
+    title = obj->title;
+    abstract = obj->abstract;
+    WMSAuthorized = obj->WMSAuthorized;
+    WMTSAuthorized = obj->WMTSAuthorized;
+    keyWords = obj->keyWords;
+    dataPyramidFilePath = obj->dataPyramidFilePath;
 
-    delete this->dataPyramid; 
-    this->dataPyramid = l.pyramid;
-    // Si la pyramide contient un niveau à la demande ou à la volée, on n'authorize pas le WMS 
-    // car c'est un cas non géré dans les processus de reponse du serveur
-    if (this->dataPyramid->getContainOdLevels()) {
-        this->WMSAuthorized = false;
+    minRes = obj->minRes;
+    maxRes = obj->maxRes;
+
+    WMSCRSList = obj->WMSCRSList;
+    opaque = obj->opaque;
+    authority = obj->authority;
+    resampling = obj->resampling;
+    geographicBoundingBox = obj->geographicBoundingBox;
+    boundingBox = obj->boundingBox;
+    metadataURLs = obj->metadataURLs;
+
+    getFeatureInfoAvailability = obj->getFeatureInfoAvailability;
+    getFeatureInfoType = obj->getFeatureInfoType;
+    getFeatureInfoBaseURL = obj->getFeatureInfoBaseURL;
+    GFIVersion = obj->GFIVersion;
+
+    GFIService = obj->GFIService;
+    GFIQueryLayers = obj->GFIQueryLayers;
+    GFILayers = obj->GFILayers;
+    GFIForceEPSG = obj->GFIForceEPSG;
+
+    // On met à jour les pointeurs des styles avec ceux de la nouvelle liste
+    std::map<std::string,Style*>::iterator is;
+    for (unsigned i = 0 ; i < obj->styles.size(); i++) {
+
+        // On récupère bien le pointeur vers le nouveau TMS (celui de la nouvelle liste)
+        is = styleList.find ( obj->styles.at(i)->getId() );
+        if ( is == styleList.end() ) {
+            LOGGER_ERROR ( "Une couche clonée reference un style [" << obj->styles.at(i)->getId() << "] qui n'existe plus." );
+            return;
+            // Tester la nullité de la pyramide de donnée en sortie pour faire remonter l'erreur
+        } else {
+            styles.push_back(is->second);
+        }
     }
 
-    this->styles = l.styles;
-    this->minRes = l.minRes;
-    this->maxRes = l.maxRes;
+    // On clone la pyramide de données
+    dataPyramid = new Pyramid(obj->dataPyramid, tmsList);
 
-    this->WMSCRSList = l.WMSCRSList;
-    this->opaque = l.opaque;
-    this->authority = l.authority;
-    this->resampling = l.resampling;
-    this->geographicBoundingBox = l.geographicBoundingBox;
-    this->boundingBox = l.boundingBox;
-    this->metadataURLs = l.metadataURLs;
-
-    this->getFeatureInfoAvailability = l.getFeatureInfoAvailability;
-    this->getFeatureInfoType = l.getFeatureInfoType;
-    this->getFeatureInfoBaseURL = l.getFeatureInfoBaseURL;
-    this->GFIVersion = l.GFIVersion;
-
-    this->GFIService = l.GFIService;
-    this->GFIQueryLayers = l.GFIQueryLayers;
-    this->GFILayers = l.GFILayers;
-    this->GFIForceEPSG = l.GFIForceEPSG;
-
+    // Détection d'erreurs
+    if (dataPyramid->getTms() == NULL) {
+        // à voir koikonfé
+    }
 }
 
 Image* Layer::getbbox (ServicesXML* servicesConf, BoundingBox<double> bbox, int width, int height, CRS dst_crs, int dpi, int& error ) {
@@ -137,12 +152,6 @@ std::string Layer::getId() {
 }
 
 Layer::~Layer() {
-
-    /*for (int i = 0 ; i < WMSCRSList.size() ; i++) {
-        CRS* tmp = WMSCRSList.at(i);
-        delete tmp;
-    }
-    WMSCRSList.clear();*/
 
     delete dataPyramid;
 }
@@ -157,6 +166,7 @@ double Layer::getMaxRes() { return maxRes; }
 double Layer::getMinRes() { return minRes; }
 bool Layer::getOpaque() { return opaque; }
 Pyramid* Layer::getDataPyramid() { return dataPyramid; }
+std::string Layer::getDataPyramidFilePath() { return dataPyramidFilePath; }
 Interpolation::KernelType Layer::getResampling() { return resampling; }
 std::string Layer::getDefaultStyle() { return defaultStyle; }
 std::vector<Style*> Layer::getStyles() { return styles; }

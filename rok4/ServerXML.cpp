@@ -246,9 +246,8 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
     } else {
         styleDir = DocumentXML::getTextStrFromElem(pElem);
     }
-    // Definition de la variable PROJ_LIB à partir de la configuration
-    std::string projDir;
 
+    // Definition de la variable PROJ_LIB à partir de la configuration
     bool absolut=true;
     pElem=hRoot.FirstChild ( "projConfigDir" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
@@ -576,6 +575,7 @@ LogLevel ServerXML::getLogLevel() {return logLevel;}
 std::string ServerXML::getServicesConfigFile() {return servicesConfigFile;}
 
 std::string ServerXML::getTmsDir() {return tmsDir;}
+std::map<std::string, TileMatrixSet*> ServerXML::getTmsList() {return tmsList;}
 void ServerXML::addTMS(TileMatrixSet* t) {
     tmsList.insert ( std::pair<std::string, TileMatrixSet *> ( t->getId(), t ) );
 }
@@ -611,6 +611,7 @@ void ServerXML::cleanTMSs(std::vector<std::string> ids) {
 
 
 std::string ServerXML::getStylesDir() {return styleDir;}
+std::map<std::string, Style*> ServerXML::getStylesList() {return stylesList;}
 void ServerXML::addStyle(Style* s) {
     stylesList.insert ( std::pair<std::string, Style *> ( s->getId(), s ) );
 }
