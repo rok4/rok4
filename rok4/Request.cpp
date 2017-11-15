@@ -1017,7 +1017,7 @@ DataStream* Request::getMapParam ( ServicesXML* servicesConf, std::map< std::str
         }
     }
     std::vector<std::string> stylesString = split ( str_styles,',' );
-    LOGGER_DEBUG ( _ ( "Nombre de styles demandes =" ) << layers.size() );
+    LOGGER_DEBUG ( _ ( "Nombre de styles demandes =" ) << stylesString.size() );
     if ( stylesString.size() != layersString.size() ) {
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre STYLES incomplet." ),"wms" ) );
     }

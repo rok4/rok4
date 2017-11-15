@@ -66,6 +66,7 @@ Layer::Layer ( const LayerXML& l ) {
     }
 
     this->styles = l.styles;
+    this->defaultStyle = l.styles[0]->getId();
     this->minRes = l.minRes;
     this->maxRes = l.maxRes;
 
@@ -132,6 +133,7 @@ Layer::Layer (Layer* obj, std::map<std::string,Style*> styleList, std::map<std::
             styles.push_back(is->second);
         }
     }
+    defaultStyle = styles[0]->getId();
 
     // On clone la pyramide de données
     dataPyramid = new Pyramid(obj->dataPyramid, tmsList);
