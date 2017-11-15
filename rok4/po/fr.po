@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2017-11-10 20:32+0100\n"
+"POT-Creation-Date: 2017-11-15 10:25+0000\n"
 "PO-Revision-Date: 2014-01-28 09:36+0100\n"
 "Last-Translator: \n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -109,9 +109,8 @@ msgid "Aucun fichier *.tms dans le repertoire "
 msgstr "Aucun fichier *.tms dans le répertoire "
 
 #: ConfLoader.cpp:189
-#, fuzzy
 msgid "Ne peut charger le tms: "
-msgstr "Ne peut charger le style: "
+msgstr "Ne peut charger le tms: "
 
 #: ConfLoader.cpp:194
 msgid "Aucun TMS n'a pu etre charge!"
@@ -271,9 +270,9 @@ msgstr "Rechargement de la configuration"
 msgid "Rechargement de la configuration"
 msgstr "Rechargement de la configuration"
 
-#: main.cpp:272 Rok4Api.cpp:123 Rok4Api.cpp:131 Rok4Api.cpp:139 Rok4Api.cpp:147
-#: Rok4Api.cpp:192 Rok4Api.cpp:214 Rok4Api.cpp:282 Rok4Api.cpp:351
-#: Rok4Api.cpp:446
+#: main.cpp:272 Rok4Api.cpp:127 Rok4Api.cpp:135 Rok4Api.cpp:143 Rok4Api.cpp:151
+#: Rok4Api.cpp:196 Rok4Api.cpp:218 Rok4Api.cpp:286 Rok4Api.cpp:355
+#: Rok4Api.cpp:450
 msgid "Extinction du serveur ROK4"
 msgstr "Extinction du serveur ROK4"
 
@@ -862,7 +861,7 @@ msgstr "Fin de la réponse"
 msgid "Nombre incorrect d'octets ecrits dans le flux de sortie"
 msgstr "Nombre incorrect d'octets écrits dans le flux de sortie"
 
-#: Rok4Api.cpp:82 Rok4Api.cpp:169
+#: Rok4Api.cpp:86 Rok4Api.cpp:173
 msgid ""
 "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du "
 "serveur "
@@ -870,40 +869,40 @@ msgstr ""
 "ERREUR FATALE : Impossible d'interpréter le fichier de configuration du "
 "serveur "
 
-#: Rok4Api.cpp:112
+#: Rok4Api.cpp:116
 msgid "Envoi des messages dans la sortie du logger"
 msgstr "Envoi des messages dans la sortie du logger"
 
-#: Rok4Api.cpp:113
+#: Rok4Api.cpp:117
 msgid "*** DEBUT DU FONCTIONNEMENT DU LOGGER ***"
 msgstr "*** DEBUT DU FONCTIONNEMENT DU LOGGER ***"
 
-#: Rok4Api.cpp:116
+#: Rok4Api.cpp:120
 msgid "*** NOUVEAU CLIENT DU LOGGER ***"
 msgstr "*** NOUVEAU CLIENT DU LOGGER ***"
 
-#: Rok4Api.cpp:122 Rok4Api.cpp:191
+#: Rok4Api.cpp:126 Rok4Api.cpp:195
 msgid "Impossible d'interpreter le fichier de conf "
 msgstr "Impossible d'interpréter le fichier de conf "
 
-#: Rok4Api.cpp:130 Rok4Api.cpp:213
+#: Rok4Api.cpp:134 Rok4Api.cpp:217
 msgid "Impossible de charger la conf des TileMatrix"
 msgstr "Impossible de charger la configuration des TileMatrix"
 
-#: Rok4Api.cpp:138
+#: Rok4Api.cpp:142
 msgid "Impossible de charger la conf des Styles"
 msgstr "Impossible de charger la configuration des Styles"
 
-#: Rok4Api.cpp:146
+#: Rok4Api.cpp:150
 msgid "Impossible de charger la conf des Layers/pyramides"
 msgstr "Impossible de charger la configuration des couches/pyramides"
 
-#: Rok4Api.cpp:281
+#: Rok4Api.cpp:285
 #, fuzzy
 msgid "Impossible de charger la conf des styles"
 msgstr "Impossible de charger la configuration des Styles"
 
-#: Rok4Api.cpp:350
+#: Rok4Api.cpp:354
 #, fuzzy
 msgid "Impossible de charger la conf des Layers"
 msgstr "Impossible de charger la configuration des Styles"
@@ -1028,64 +1027,6 @@ msgstr " n'est pas prise en charge par ce serveur."
 msgid "L'operation "
 msgstr "L'opération "
 
-#~ msgid "Nouveau Style : "
-#~ msgstr "Nouveau Style : "
-
-#, fuzzy
-#~ msgid "Nouveau TMS : "
-#~ msgstr "Nouveau Style : "
-
-#, fuzzy
-#~ msgid "Ne peut charger le TMS: "
-#~ msgstr "Ne peut charger le tms: "
-
-#, fuzzy
-#~ msgid "Nouvelle couche : "
-#~ msgstr "Nombre de couches =  "
-
-#, fuzzy
-#~ msgid "Ne peut charger la couche: "
-#~ msgstr "Ne peut charger le style: "
-
-#, fuzzy
-#~ msgid "Style mis à jour : "
-#~ msgstr "Élément Style terminé"
-
-#, fuzzy
-#~ msgid "Style inchangé : "
-#~ msgstr "Élément Style terminé"
-
-#, fuzzy
-#~ msgid "TMS mis à jour : "
-#~ msgstr "Élément Style terminé"
-
-#, fuzzy
-#~ msgid "TMS inchangé : "
-#~ msgstr "Élément Style terminé"
-
-#, fuzzy
-#~ msgid "Couche mise à jour : "
-#~ msgstr "Élément Style terminé"
-
-#, fuzzy
-#~ msgid "Ne peut charger la couche : "
-#~ msgstr "Ne peut charger le tms: "
-
-#, fuzzy
-#~ msgid "Couche inchangée : "
-#~ msgstr "Élément Style terminé"
-
-#, fuzzy
-#~ msgid "Le parametre REQUEST n'est pas renseigné."
-#~ msgstr "La valeur du paramètre HEIGHT n'est pas une valeur entière."
-
-#, fuzzy
-#~ msgid "Le parametre SERVICE n'est pas renseigné."
-#~ msgstr "La valeur du paramètre HEIGHT n'est pas une valeur entière."
-
-#~ msgid "Tile : "
-#~ msgstr "Tuile : "
-
 #~ msgid "     Ajout du Style "
 #~ msgstr "Ajout du style "
 
@@ -1186,11 +1127,102 @@ msgstr "L'opération "
 #~ msgid "Un attribut center invalide a ete trouve dans l'estompage du Style "
 #~ msgstr "Un attribut center invalide a été trouvé dans l'estompage du Style "
 
+#, fuzzy
+#~ msgid "Un attribut algo invalide a ete trouve dans la pente du Style "
+#~ msgstr "Un attribut value invalide a été trouvé dans la palette du Style "
+
+#, fuzzy
+#~ msgid "Un attribut unit invalide a ete trouve dans la pente du Style "
+#~ msgstr "Un attribut value invalide a été trouvé dans la palette du Style "
+
+#, fuzzy
+#~ msgid ""
+#~ "Un attribut interpolation invalide a ete trouve dans la pente du Style "
+#~ msgstr "Un attribut value invalide a été trouvé dans la palette du Style "
+
+#, fuzzy
+#~ msgid ""
+#~ "Un attribut slopeNoData invalide a ete trouve dans la pente du Style "
+#~ msgstr "Un attribut value invalide a été trouvé dans la palette du Style "
+
+#, fuzzy
+#~ msgid ""
+#~ "Un attribut imageNoData invalide a ete trouve dans la pente du Style "
+#~ msgstr "Un attribut value invalide a été trouvé dans la palette du Style "
+
+#, fuzzy
+#~ msgid "Un attribut maxSlope invalide a ete trouve dans la pente du Style "
+#~ msgstr "Un attribut value invalide a été trouvé dans la palette du Style "
+
+#, fuzzy
+#~ msgid "Un attribut algo invalide a ete trouve dans l'exposition du Style "
+#~ msgstr "Un attribut angle invalide a été trouvé dans l'estompage du Style "
+
 #~ msgid "Style Cree"
 #~ msgstr "Style créé"
 
 #~ msgid "                Ne peut pas charger le fichier "
 #~ msgstr "                Ne peut pas charger le fichier "
+
+#~ msgid "     Ajout du TMS "
+#~ msgstr "     Ajout du TMS "
+
+#~ msgid "            La racine n'est pas un tileMatrixSet."
+#~ msgstr "            La racine n'est pas un tileMatrixSet."
+
+#~ msgid " pas de crs!!"
+#~ msgstr " pas de crs!!"
+
+#~ msgid ", TileMatrix "
+#~ msgstr ", TileMatrix "
+
+#~ msgid " sans resolution!!"
+#~ msgstr " sans resolution!!"
+
+#~ msgid ": La resolution est inexploitable."
+#~ msgstr ": La resolution est inexploitable."
+
+#~ msgid " sans topLeftCornerX!!"
+#~ msgstr " sans topLeftCornerX!!"
+
+#~ msgid ": Le topLeftCornerX est inexploitable."
+#~ msgstr ": Le topLeftCornerX est inexploitable."
+
+#~ msgid " sans topLeftCornerY!!"
+#~ msgstr " sans topLeftCornerY!!"
+
+#~ msgid ": Le topLeftCornerY est inexploitable."
+#~ msgstr ": Le topLeftCornerY est inexploitable."
+
+#~ msgid " sans tileWidth!!"
+#~ msgstr " sans tileWidth!!"
+
+#~ msgid ": Le tileWidth est inexploitable."
+#~ msgstr ": Le tileWidth est inexploitable."
+
+#~ msgid " sans tileHeight!!"
+#~ msgstr " sans tileHeight!!"
+
+#~ msgid ": Le tileHeight est inexploitable."
+#~ msgstr ": Le tileHeight est inexploitable."
+
+#~ msgid " sans MatrixWidth!!"
+#~ msgstr " sans MatrixWidth!!"
+
+#~ msgid ": Le MatrixWidth est inexploitable."
+#~ msgstr ": Le MatrixWidth est inexploitable."
+
+#~ msgid " sans matrixHeight!!"
+#~ msgstr " sans matrixHeight!!"
+
+#~ msgid ", tileMatrix "
+#~ msgstr ", tileMatrix "
+
+#~ msgid ": Le matrixHeight est inexploitable."
+#~ msgstr ": Le matrixHeight est inexploitable."
+
+#~ msgid "Aucun tileMatrix trouve dans le tileMatrixSet"
+#~ msgstr "Aucun tileMatrix trouvé dans le tileMatrixSet"
 
 #~ msgid "             Ajout de la pyramide : "
 #~ msgstr "             Ajout de la pyramide : "
@@ -1259,11 +1291,8 @@ msgstr "L'opération "
 #~ msgid " Level "
 #~ msgstr " Level "
 
-#~ msgid ": Pas de pathDepth !!"
-#~ msgstr ": Pas de pathDepth !!"
-
-#~ msgid ": pathDepth=["
-#~ msgstr ": pathDepth=["
+#~ msgid " sans baseDir!!"
+#~ msgstr " sans baseDir!!"
 
 #~ msgid ": Pas de tilesPerWidth !!"
 #~ msgstr ": Pas de tilesPerWidth !!"
@@ -1276,6 +1305,12 @@ msgstr "L'opération "
 
 #~ msgid ": tilesPerHeight=["
 #~ msgstr ": tilesPerHeight=["
+
+#~ msgid ": Pas de pathDepth !!"
+#~ msgstr ": Pas de pathDepth !!"
+
+#~ msgid ": pathDepth=["
+#~ msgstr ": pathDepth=["
 
 #~ msgid ": no minTileRow in TMSLimits element !!"
 #~ msgstr ": pas de minTileRow dans l'élément TMSLimits !!"
@@ -1313,15 +1348,11 @@ msgstr "L'opération "
 #~ msgid ": maxTileCol=["
 #~ msgstr ": maxTileCol=["
 
-#, fuzzy
-#~ msgid " specifiant une tuile NoData impossible a ouvrir"
-#~ msgstr " spécifiant une tuile NoData sans chemin"
-
 #~ msgid " specifiant une tuile NoData sans chemin"
 #~ msgstr " spécifiant une tuile NoData sans chemin"
 
 #, fuzzy
-#~ msgid " specifiant une tuile NoData sans nom"
+#~ msgid " specifiant une tuile NoData impossible a ouvrir"
 #~ msgstr " spécifiant une tuile NoData sans chemin"
 
 #~ msgid "Aucun level n'a pu etre charge pour la pyramide "
@@ -1467,136 +1498,6 @@ msgstr "L'opération "
 #~ msgid " : not compatible with INSPIRE!!"
 #~ msgstr " : non compatible INSPIRE !!"
 
-#~ msgid " La racine n'est pas un servicesConf."
-#~ msgstr " La racine n'est pas un servicesConf."
-
-#~ msgid "Requete POST autorisee"
-#~ msgstr "Requête POST autorisée"
-
-#~ msgid "Le layerLimit est inexploitable:["
-#~ msgstr "Le layerLimit est inexploitable:["
-
-#~ msgid "Le maxWidth est inexploitable:["
-#~ msgstr "Le maxWidth est inexploitable:["
-
-#~ msgid "Le maxHeight est inexploitable:["
-#~ msgstr "Le maxHeight est inexploitable:["
-
-#~ msgid "Le maxTileX est inexploitable:["
-#~ msgstr "Le maxTileX est inexploitable:["
-
-#~ msgid "Le maxTileY est inexploitable:["
-#~ msgstr "Le maxTileY est inexploitable:["
-
-#~ msgid "le format d'image ["
-#~ msgstr "le format d'image ["
-
-#~ msgid "] n'est pas un type MIME"
-#~ msgstr "] n'est pas un type MIME"
-
-#~ msgid "Pas de reprojection pour les CRS equivalents"
-#~ msgstr "Pas de reprojection pour les CRS équivalents"
-
-#~ msgid "Ajout automatique des CRS equivalents"
-#~ msgstr "Ajout automatique des CRS équivalents"
-
-#~ msgid "Liste restreinte de CRS à partir du fichier "
-#~ msgstr "Construction de la liste restreinte de CRS à partir du fichier "
-
-#~ msgid "The CRS ["
-#~ msgstr "Le CRS ["
-
-#~ msgid "Adding global CRS "
-#~ msgstr "Ajout du CRS global "
-
-#, fuzzy
-#~ msgid "Already present in global CRS list "
-#~ msgstr " déjà présent dans la liste des CRS globaux"
-
-#~ msgid "Adding equivalent global CRS ["
-#~ msgstr "Ajout du CRS global équivalent ["
-
-#~ msgid "Forbiden global CRS "
-#~ msgstr "CRS global interdit "
-
-#~ msgid "CRS:84 not found -> adding global CRS CRS:84"
-#~ msgstr "CRS:84 absent -> ajout du CRS global CRS:84"
-
-#~ msgid "] of [CRS:84]"
-#~ msgstr "] de [CRS:84]"
-
-#~ msgid "Utilisation des styles pour tous les formats"
-#~ msgstr "Utilisation des styles pour tous les formats"
-
-#~ msgid "Utilisation du mode Inspire"
-#~ msgstr "Utilisation du mode INSPIRE"
-
-#~ msgid "Metadata element incorrect"
-#~ msgstr "Metadata élement incorrect"
-
-#~ msgid "Construction de la configuration des services depuis "
-#~ msgstr "Construction de la configuration des services depuis "
-
-#~ msgid "     Ajout du TMS "
-#~ msgstr "     Ajout du TMS "
-
-#~ msgid "            La racine n'est pas un tileMatrixSet."
-#~ msgstr "            La racine n'est pas un tileMatrixSet."
-
-#~ msgid " pas de crs!!"
-#~ msgstr " pas de crs!!"
-
-#~ msgid ", TileMatrix "
-#~ msgstr ", TileMatrix "
-
-#~ msgid " sans resolution!!"
-#~ msgstr " sans resolution!!"
-
-#~ msgid ": La resolution est inexploitable."
-#~ msgstr ": La resolution est inexploitable."
-
-#~ msgid " sans topLeftCornerX!!"
-#~ msgstr " sans topLeftCornerX!!"
-
-#~ msgid ": Le topLeftCornerX est inexploitable."
-#~ msgstr ": Le topLeftCornerX est inexploitable."
-
-#~ msgid " sans topLeftCornerY!!"
-#~ msgstr " sans topLeftCornerY!!"
-
-#~ msgid ": Le topLeftCornerY est inexploitable."
-#~ msgstr ": Le topLeftCornerY est inexploitable."
-
-#~ msgid " sans tileWidth!!"
-#~ msgstr " sans tileWidth!!"
-
-#~ msgid ": Le tileWidth est inexploitable."
-#~ msgstr ": Le tileWidth est inexploitable."
-
-#~ msgid " sans tileHeight!!"
-#~ msgstr " sans tileHeight!!"
-
-#~ msgid ": Le tileHeight est inexploitable."
-#~ msgstr ": Le tileHeight est inexploitable."
-
-#~ msgid " sans MatrixWidth!!"
-#~ msgstr " sans MatrixWidth!!"
-
-#~ msgid ": Le MatrixWidth est inexploitable."
-#~ msgstr ": Le MatrixWidth est inexploitable."
-
-#~ msgid " sans matrixHeight!!"
-#~ msgstr " sans matrixHeight!!"
-
-#~ msgid ", tileMatrix "
-#~ msgstr ", tileMatrix "
-
-#~ msgid ": Le matrixHeight est inexploitable."
-#~ msgstr ": Le matrixHeight est inexploitable."
-
-#~ msgid "Aucun tileMatrix trouve dans le tileMatrixSet"
-#~ msgstr "Aucun tileMatrix trouvé dans le tileMatrixSet"
-
 #~ msgid " La racine n'est pas un serverConf."
 #~ msgstr " La racine n'est pas un serverConf."
 
@@ -1697,11 +1598,93 @@ msgstr "L'opération "
 #~ msgid "Pas d'element <serverBackLog> valeur par defaut : 0"
 #~ msgstr "Pas d'élément <serverBackLog> valeur par défaut : 0"
 
+#~ msgid " La racine n'est pas un servicesConf."
+#~ msgstr " La racine n'est pas un servicesConf."
+
+#~ msgid "Requete POST autorisee"
+#~ msgstr "Requête POST autorisée"
+
+#~ msgid "Le layerLimit est inexploitable:["
+#~ msgstr "Le layerLimit est inexploitable:["
+
+#~ msgid "Le maxWidth est inexploitable:["
+#~ msgstr "Le maxWidth est inexploitable:["
+
+#~ msgid "Le maxHeight est inexploitable:["
+#~ msgstr "Le maxHeight est inexploitable:["
+
+#~ msgid "Le maxTileX est inexploitable:["
+#~ msgstr "Le maxTileX est inexploitable:["
+
+#~ msgid "Le maxTileY est inexploitable:["
+#~ msgstr "Le maxTileY est inexploitable:["
+
+#~ msgid "le format d'image ["
+#~ msgstr "le format d'image ["
+
+#, fuzzy
+#~ msgid "] n'est pas un type MIME pris en charge"
+#~ msgstr "] n'est pas un type MIME"
+
+#~ msgid "Pas de reprojection pour les CRS equivalents"
+#~ msgstr "Pas de reprojection pour les CRS équivalents"
+
+#~ msgid "Ajout automatique des CRS equivalents"
+#~ msgstr "Ajout automatique des CRS équivalents"
+
+#~ msgid "Liste restreinte de CRS à partir du fichier "
+#~ msgstr "Construction de la liste restreinte de CRS à partir du fichier "
+
+#~ msgid "The CRS ["
+#~ msgstr "Le CRS ["
+
+#~ msgid "Adding global CRS "
+#~ msgstr "Ajout du CRS global "
+
+#, fuzzy
+#~ msgid "Already present in global CRS list "
+#~ msgstr " déjà présent dans la liste des CRS globaux"
+
+#~ msgid "Adding equivalent global CRS ["
+#~ msgstr "Ajout du CRS global équivalent ["
+
+#~ msgid "Forbiden global CRS "
+#~ msgstr "CRS global interdit "
+
+#~ msgid "CRS:84 not found -> adding global CRS CRS:84"
+#~ msgstr "CRS:84 absent -> ajout du CRS global CRS:84"
+
+#~ msgid "] of [CRS:84]"
+#~ msgstr "] de [CRS:84]"
+
+#~ msgid "Utilisation des styles pour tous les formats"
+#~ msgstr "Utilisation des styles pour tous les formats"
+
+#~ msgid "Utilisation du mode Inspire"
+#~ msgstr "Utilisation du mode INSPIRE"
+
+#~ msgid "Metadata element incorrect"
+#~ msgstr "Metadata élement incorrect"
+
 #~ msgid "Chargement des parametres techniques depuis "
 #~ msgstr "Chargement des paramètres techniques depuis "
 
-#~ msgid " sans baseDir!!"
-#~ msgstr " sans baseDir!!"
+#~ msgid "Construction de la configuration des services depuis "
+#~ msgstr "Construction de la configuration des services depuis "
+
+#~ msgid "Tile : "
+#~ msgstr "Tuile : "
+
+#, fuzzy
+#~ msgid "Le parametre REQUEST n'est pas renseigné."
+#~ msgstr "La valeur du paramètre HEIGHT n'est pas une valeur entière."
+
+#, fuzzy
+#~ msgid "Le parametre SERVICE n'est pas renseigné."
+#~ msgstr "La valeur du paramètre HEIGHT n'est pas une valeur entière."
+
+#~ msgid "Nouveau Style : "
+#~ msgstr "Nouveau Style : "
 
 #, fuzzy
 #~ msgid "Parametre BBOX incorrect : présence de NaN."

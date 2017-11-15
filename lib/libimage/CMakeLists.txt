@@ -48,7 +48,7 @@ SET(
     ExtendedCompoundImage.cpp CompoundImage.cpp Line.cpp MergeImage.cpp
     Grid.cpp CRS.cpp TiffEncoder.cpp
     BilEncoder.cpp JPEGEncoder.cpp PNGEncoder.cpp AscEncoder.cpp 
-    ContextBook.cpp CephPoolContext.cpp SwiftContext.cpp S3Context.cpp FileContext.cpp CurlPool.cpp 
+     FileContext.cpp CurlPool.cpp 
     PaletteConfig.cpp PaletteDataSource.cpp
     Format.cpp TiffHeaderDataSource.cpp StoreDataSource.cpp
     EmptyDataSource.cpp ConvertedChannelsImage.cpp
@@ -62,6 +62,10 @@ ELSE(KDU_USE)
   # OPTION : 'sources' OPENJPEG
   SET(libimage_SRCS ${libimage_SRCS} LibopenjpegImage.cpp)
 ENDIF(KDU_USE)
+
+IF(BUILD_OBJECT)
+  SET(libimage_SRCS ${libimage_SRCS} ContextBook.cpp CephPoolContext.cpp SwiftContext.cpp S3Context.cpp)
+ENDIF(BUILD_OBJECT)
 
 ADD_LIBRARY(image STATIC ${libimage_SRCS})
 

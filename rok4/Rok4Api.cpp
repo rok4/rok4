@@ -59,7 +59,11 @@
 #include "TileMatrix.h"
 #include "intl.h"
 #include "Context.h"
+
+#if BUILD_OBJECT
 #include "ContextBook.h"
+#endif
+
 #include <cfloat>
 #include <libintl.h>
 #include "ServerXML.h"

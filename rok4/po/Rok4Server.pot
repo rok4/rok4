@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2017-11-10 20:32+0100\n"
+"POT-Creation-Date: 2017-11-15 10:25+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -262,9 +262,9 @@ msgstr ""
 msgid "Rechargement de la configuration"
 msgstr ""
 
-#: main.cpp:272 Rok4Api.cpp:123 Rok4Api.cpp:131 Rok4Api.cpp:139 Rok4Api.cpp:147
-#: Rok4Api.cpp:192 Rok4Api.cpp:214 Rok4Api.cpp:282 Rok4Api.cpp:351
-#: Rok4Api.cpp:446
+#: main.cpp:272 Rok4Api.cpp:127 Rok4Api.cpp:135 Rok4Api.cpp:143 Rok4Api.cpp:151
+#: Rok4Api.cpp:196 Rok4Api.cpp:218 Rok4Api.cpp:286 Rok4Api.cpp:355
+#: Rok4Api.cpp:450
 msgid "Extinction du serveur ROK4"
 msgstr ""
 
@@ -806,45 +806,45 @@ msgstr ""
 msgid "Nombre incorrect d'octets ecrits dans le flux de sortie"
 msgstr ""
 
-#: Rok4Api.cpp:82 Rok4Api.cpp:169
+#: Rok4Api.cpp:86 Rok4Api.cpp:173
 msgid ""
 "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du "
 "serveur "
 msgstr ""
 
-#: Rok4Api.cpp:112
+#: Rok4Api.cpp:116
 msgid "Envoi des messages dans la sortie du logger"
 msgstr ""
 
-#: Rok4Api.cpp:113
+#: Rok4Api.cpp:117
 msgid "*** DEBUT DU FONCTIONNEMENT DU LOGGER ***"
 msgstr ""
 
-#: Rok4Api.cpp:116
+#: Rok4Api.cpp:120
 msgid "*** NOUVEAU CLIENT DU LOGGER ***"
 msgstr ""
 
-#: Rok4Api.cpp:122 Rok4Api.cpp:191
+#: Rok4Api.cpp:126 Rok4Api.cpp:195
 msgid "Impossible d'interpreter le fichier de conf "
 msgstr ""
 
-#: Rok4Api.cpp:130 Rok4Api.cpp:213
+#: Rok4Api.cpp:134 Rok4Api.cpp:217
 msgid "Impossible de charger la conf des TileMatrix"
 msgstr ""
 
-#: Rok4Api.cpp:138
+#: Rok4Api.cpp:142
 msgid "Impossible de charger la conf des Styles"
 msgstr ""
 
-#: Rok4Api.cpp:146
+#: Rok4Api.cpp:150
 msgid "Impossible de charger la conf des Layers/pyramides"
 msgstr ""
 
-#: Rok4Api.cpp:281
+#: Rok4Api.cpp:285
 msgid "Impossible de charger la conf des styles"
 msgstr ""
 
-#: Rok4Api.cpp:350
+#: Rok4Api.cpp:354
 msgid "Impossible de charger la conf des Layers"
 msgstr ""
 

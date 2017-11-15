@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2017-11-10 20:32+0100\n"
+"POT-Creation-Date: 2017-11-15 10:25+0000\n"
 "PO-Revision-Date: 2013-02-18 17:49+0100\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -109,9 +109,8 @@ msgid "Aucun fichier *.tms dans le repertoire "
 msgstr ""
 
 #: ConfLoader.cpp:189
-#, fuzzy
 msgid "Ne peut charger le tms: "
-msgstr "Can't load the file"
+msgstr ""
 
 #: ConfLoader.cpp:194
 msgid "Aucun TMS n'a pu etre charge!"
@@ -138,9 +137,8 @@ msgid "Le serveur n'a aucune donnees à servir. Dommage..."
 msgstr ""
 
 #: ConfLoader.cpp:251
-#, fuzzy
 msgid "Ne peut charger le layer: "
-msgstr "Can't load the file"
+msgstr ""
 
 #: ConfLoader.cpp:256
 msgid "Aucun layer n'a pu etre charge!"
@@ -274,9 +272,9 @@ msgstr "Reloading configuration"
 msgid "Rechargement de la configuration"
 msgstr "Reloading configuration"
 
-#: main.cpp:272 Rok4Api.cpp:123 Rok4Api.cpp:131 Rok4Api.cpp:139 Rok4Api.cpp:147
-#: Rok4Api.cpp:192 Rok4Api.cpp:214 Rok4Api.cpp:282 Rok4Api.cpp:351
-#: Rok4Api.cpp:446
+#: main.cpp:272 Rok4Api.cpp:127 Rok4Api.cpp:135 Rok4Api.cpp:143 Rok4Api.cpp:151
+#: Rok4Api.cpp:196 Rok4Api.cpp:218 Rok4Api.cpp:286 Rok4Api.cpp:355
+#: Rok4Api.cpp:450
 msgid "Extinction du serveur ROK4"
 msgstr "Shutdown the ROK4 server"
 
@@ -822,46 +820,46 @@ msgstr ""
 msgid "Nombre incorrect d'octets ecrits dans le flux de sortie"
 msgstr ""
 
-#: Rok4Api.cpp:82 Rok4Api.cpp:169
+#: Rok4Api.cpp:86 Rok4Api.cpp:173
 msgid ""
 "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du "
 "serveur "
 msgstr ""
 
-#: Rok4Api.cpp:112
+#: Rok4Api.cpp:116
 msgid "Envoi des messages dans la sortie du logger"
 msgstr "Sending message to the logger"
 
-#: Rok4Api.cpp:113
+#: Rok4Api.cpp:117
 msgid "*** DEBUT DU FONCTIONNEMENT DU LOGGER ***"
 msgstr "*** LOGGER INITIALISED ***"
 
-#: Rok4Api.cpp:116
+#: Rok4Api.cpp:120
 msgid "*** NOUVEAU CLIENT DU LOGGER ***"
 msgstr "*** NEW LOGGER CLIENT ***"
 
-#: Rok4Api.cpp:122 Rok4Api.cpp:191
+#: Rok4Api.cpp:126 Rok4Api.cpp:195
 msgid "Impossible d'interpreter le fichier de conf "
 msgstr ""
 
-#: Rok4Api.cpp:130 Rok4Api.cpp:213
+#: Rok4Api.cpp:134 Rok4Api.cpp:217
 msgid "Impossible de charger la conf des TileMatrix"
 msgstr ""
 
-#: Rok4Api.cpp:138
+#: Rok4Api.cpp:142
 msgid "Impossible de charger la conf des Styles"
 msgstr ""
 
-#: Rok4Api.cpp:146
+#: Rok4Api.cpp:150
 msgid "Impossible de charger la conf des Layers/pyramides"
 msgstr ""
 
-#: Rok4Api.cpp:281
+#: Rok4Api.cpp:285
 #, fuzzy
 msgid "Impossible de charger la conf des styles"
 msgstr "Root element not availlable."
 
-#: Rok4Api.cpp:350
+#: Rok4Api.cpp:354
 #, fuzzy
 msgid "Impossible de charger la conf des Layers"
 msgstr "Root element not availlable."
@@ -983,41 +981,6 @@ msgstr ""
 msgid "L'operation "
 msgstr ""
 
-#, fuzzy
-#~ msgid "Ne peut charger la couche: "
-#~ msgstr "Can't load the file"
-
-#, fuzzy
-#~ msgid "Style mis à jour : "
-#~ msgstr "Style completed:"
-
-#, fuzzy
-#~ msgid "Style inchangé : "
-#~ msgstr "Style completed:"
-
-#, fuzzy
-#~ msgid "TMS mis à jour : "
-#~ msgstr "Style completed:"
-
-#, fuzzy
-#~ msgid "TMS inchangé : "
-#~ msgstr "Style completed:"
-
-#, fuzzy
-#~ msgid "Couche mise à jour : "
-#~ msgstr "Style completed:"
-
-#, fuzzy
-#~ msgid "Ne peut charger la couche : "
-#~ msgstr "Can't load the file"
-
-#, fuzzy
-#~ msgid "Couche inchangée : "
-#~ msgstr "Style completed:"
-
-#~ msgid "Tile : "
-#~ msgstr "Tile : "
-
 #~ msgid "     Ajout du Style "
 #~ msgstr "     Adding Style  "
 
@@ -1116,11 +1079,102 @@ msgstr ""
 #~ msgid "Un attribut center invalide a ete trouve dans l'estompage du Style "
 #~ msgstr "An invalid center attribute was found in the estompage definition: "
 
+#, fuzzy
+#~ msgid "Un attribut algo invalide a ete trouve dans la pente du Style "
+#~ msgstr "An invalid value attribute was found in the palette definition: "
+
+#, fuzzy
+#~ msgid "Un attribut unit invalide a ete trouve dans la pente du Style "
+#~ msgstr "An invalid value attribute was found in the palette definition: "
+
+#, fuzzy
+#~ msgid ""
+#~ "Un attribut interpolation invalide a ete trouve dans la pente du Style "
+#~ msgstr "An invalid value attribute was found in the palette definition: "
+
+#, fuzzy
+#~ msgid ""
+#~ "Un attribut slopeNoData invalide a ete trouve dans la pente du Style "
+#~ msgstr "An invalid value attribute was found in the palette definition: "
+
+#, fuzzy
+#~ msgid ""
+#~ "Un attribut imageNoData invalide a ete trouve dans la pente du Style "
+#~ msgstr "An invalid value attribute was found in the palette definition: "
+
+#, fuzzy
+#~ msgid "Un attribut maxSlope invalide a ete trouve dans la pente du Style "
+#~ msgstr "An invalid value attribute was found in the palette definition: "
+
+#, fuzzy
+#~ msgid "Un attribut algo invalide a ete trouve dans l'exposition du Style "
+#~ msgstr "An invalid angle attribute was found in the estompage definition: "
+
 #~ msgid "Style Cree"
 #~ msgstr "Style created"
 
 #~ msgid "                Ne peut pas charger le fichier "
 #~ msgstr "                File cannot be loaded "
+
+#~ msgid "     Ajout du TMS "
+#~ msgstr "     Adding TMS "
+
+#~ msgid "            La racine n'est pas un tileMatrixSet."
+#~ msgstr "            The root element is not a TileMatrixSet."
+
+#~ msgid " pas de crs!!"
+#~ msgstr "no CRS !!"
+
+#~ msgid ", TileMatrix "
+#~ msgstr ", TileMatrix "
+
+#~ msgid " sans resolution!!"
+#~ msgstr "without resolution !"
+
+#~ msgid ": La resolution est inexploitable."
+#~ msgstr ": the resolution is unusable."
+
+#~ msgid " sans topLeftCornerX!!"
+#~ msgstr "without topLeftCornerX"
+
+#~ msgid ": Le topLeftCornerX est inexploitable."
+#~ msgstr ": the topLeftCornerX is unusable."
+
+#~ msgid " sans topLeftCornerY!!"
+#~ msgstr " without topLeftCornerY!!"
+
+#~ msgid ": Le topLeftCornerY est inexploitable."
+#~ msgstr ": the topLeftCornerY is unusable."
+
+#~ msgid " sans tileWidth!!"
+#~ msgstr " without tileWidth!!"
+
+#~ msgid ": Le tileWidth est inexploitable."
+#~ msgstr ": the tileWidth is unusable."
+
+#~ msgid " sans tileHeight!!"
+#~ msgstr "without tileHeight!!"
+
+#~ msgid ": Le tileHeight est inexploitable."
+#~ msgstr ": the tileHeight is unusable."
+
+#~ msgid " sans MatrixWidth!!"
+#~ msgstr "without MatrixWidth!!"
+
+#~ msgid ": Le MatrixWidth est inexploitable."
+#~ msgstr ": the MatrixWidth is unusable."
+
+#~ msgid " sans matrixHeight!!"
+#~ msgstr "without matrixHeight!!"
+
+#~ msgid ", tileMatrix "
+#~ msgstr ", tileMatrix "
+
+#~ msgid ": Le matrixHeight est inexploitable."
+#~ msgstr ": the matrixHeight is unusable."
+
+#~ msgid "Aucun tileMatrix trouve dans le tileMatrixSet"
+#~ msgstr "No tileMatrix found in the TileMatrixSet"
 
 #~ msgid "             Ajout de la pyramide : "
 #~ msgstr "             Adding pyramid : "
@@ -1183,11 +1237,8 @@ msgstr ""
 #~ msgid " Level "
 #~ msgstr " Level "
 
-#~ msgid ": Pas de pathDepth !!"
-#~ msgstr ": No pathDepth !!"
-
-#~ msgid ": pathDepth=["
-#~ msgstr ": pathDepth=["
+#~ msgid " sans baseDir!!"
+#~ msgstr " without baseDir!!"
 
 #~ msgid ": Pas de tilesPerWidth !!"
 #~ msgstr ": No tilesPerWidth!!"
@@ -1200,6 +1251,12 @@ msgstr ""
 
 #~ msgid ": tilesPerHeight=["
 #~ msgstr ": tilesPerHeight=["
+
+#~ msgid ": Pas de pathDepth !!"
+#~ msgstr ": No pathDepth !!"
+
+#~ msgid ": pathDepth=["
+#~ msgstr ": pathDepth=["
 
 #~ msgid ": no minTileRow in TMSLimits element !!"
 #~ msgstr ": no minTileRow in TMSLimits element !!"
@@ -1237,15 +1294,11 @@ msgstr ""
 #~ msgid ": maxTileCol=["
 #~ msgstr ": maxTileCol=["
 
-#, fuzzy
-#~ msgid " specifiant une tuile NoData impossible a ouvrir"
-#~ msgstr " specifying a NoData tile without path"
-
 #~ msgid " specifiant une tuile NoData sans chemin"
 #~ msgstr " specifying a NoData tile without path"
 
 #, fuzzy
-#~ msgid " specifiant une tuile NoData sans nom"
+#~ msgid " specifiant une tuile NoData impossible a ouvrir"
 #~ msgstr " specifying a NoData tile without path"
 
 #~ msgid "Aucun level n'a pu etre charge pour la pyramide "
@@ -1370,79 +1423,19 @@ msgstr ""
 #~ msgstr "No opaque => opaque = "
 
 #, fuzzy
-#~ msgid "Already present in global CRS list "
-#~ msgstr " already present in global CRS list"
-
-#~ msgid "     Ajout du TMS "
-#~ msgstr "     Adding TMS "
-
-#~ msgid "            La racine n'est pas un tileMatrixSet."
-#~ msgstr "            The root element is not a TileMatrixSet."
-
-#~ msgid " pas de crs!!"
-#~ msgstr "no CRS !!"
-
-#~ msgid ", TileMatrix "
-#~ msgstr ", TileMatrix "
-
-#~ msgid " sans resolution!!"
-#~ msgstr "without resolution !"
-
-#~ msgid ": La resolution est inexploitable."
-#~ msgstr ": the resolution is unusable."
-
-#~ msgid " sans topLeftCornerX!!"
-#~ msgstr "without topLeftCornerX"
-
-#~ msgid ": Le topLeftCornerX est inexploitable."
-#~ msgstr ": the topLeftCornerX is unusable."
-
-#~ msgid " sans topLeftCornerY!!"
-#~ msgstr " without topLeftCornerY!!"
-
-#~ msgid ": Le topLeftCornerY est inexploitable."
-#~ msgstr ": the topLeftCornerY is unusable."
-
-#~ msgid " sans tileWidth!!"
-#~ msgstr " without tileWidth!!"
-
-#~ msgid ": Le tileWidth est inexploitable."
-#~ msgstr ": the tileWidth is unusable."
-
-#~ msgid " sans tileHeight!!"
-#~ msgstr "without tileHeight!!"
-
-#~ msgid ": Le tileHeight est inexploitable."
-#~ msgstr ": the tileHeight is unusable."
-
-#~ msgid " sans MatrixWidth!!"
-#~ msgstr "without MatrixWidth!!"
-
-#~ msgid ": Le MatrixWidth est inexploitable."
-#~ msgstr ": the MatrixWidth is unusable."
-
-#~ msgid " sans matrixHeight!!"
-#~ msgstr "without matrixHeight!!"
-
-#~ msgid ", tileMatrix "
-#~ msgstr ", tileMatrix "
-
-#~ msgid ": Le matrixHeight est inexploitable."
-#~ msgstr ": the matrixHeight is unusable."
-
-#~ msgid "Aucun tileMatrix trouve dans le tileMatrixSet"
-#~ msgstr "No tileMatrix found in the TileMatrixSet"
-
-#, fuzzy
 #~ msgid "Pas de nbProcess=> nbProcess = "
 #~ msgstr "] No channels, using default value ="
 
-#~ msgid " sans baseDir!!"
-#~ msgstr " without baseDir!!"
+#, fuzzy
+#~ msgid "] n'est pas un type MIME pris en charge"
+#~ msgstr "] is not handled."
 
 #, fuzzy
-#~ msgid "] n'est pas un integer."
-#~ msgstr "] is not handled."
+#~ msgid "Already present in global CRS list "
+#~ msgstr " already present in global CRS list"
+
+#~ msgid "Tile : "
+#~ msgstr "Tile : "
 
 #, fuzzy
 #~ msgid " for level "
