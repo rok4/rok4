@@ -59,6 +59,7 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
 
     onDemand = false;
     onFly = false;
+    bool onDir = false;
 
     //----
 
@@ -92,6 +93,7 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
 
     if ( pElem && pElem->GetText()) {
 
+        onDir = true;
         baseDir = pElem->GetText() ;
         //Relative Path
         if ( baseDir.compare ( 0,2,"./" ) == 0 ) {
@@ -216,12 +218,12 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
 
 
 #if ! BUILD_OBJECT
-    else {
+    else if (!onDir) {
         LOGGER_ERROR("Level " << id << " sans indication de stockage et pas à la demande. Precisez un baseDir");
         return;
     }
 #else
-    else if (context == NULL) {
+    else if (!onDir) {
         // Je suis sur une pyramide normale, et je n'ai a priori pas de base dir donc de stockage fichier
         // Il me faut un stockage objet
 
