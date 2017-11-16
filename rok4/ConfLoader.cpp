@@ -326,7 +326,6 @@ Pyramid* ConfLoader::buildBasedPyramid (
     }
 
     // On commence par charger toute la pyramide
-
     Pyramid* basedPyramid = buildPyramid ( basedPyramidFilePath, serverXML, servicesXML, false );
 
     if ( ! basedPyramid) {
@@ -379,11 +378,17 @@ Pyramid* ConfLoader::buildBasedPyramid (
         return NULL;
     }
 
-    // On va pouvoir ne garder que le niveau utile dans la pyramide de base
-    std::map<std::string, Level*>::iterator itLev = basedPyramid->getLevels().begin();
-    for ( itLev; itLev != basedPyramid->getLevels().end(); itLev++ ) {
-        if (itLev->first != bestLevel->getId()) basedPyramid->removeLevel(itLev->first);
+    std::vector<std::string> to_delete;
+    std::map<std::string, Level*>::iterator lv = basedPyramid->getLevels().begin();
+    for ( ; lv != basedPyramid->getLevels().end(); lv++) {
+        if (lv->second->getId() != bestLevel->getId()) {
+            to_delete.push_back(lv->second->getId());
+        }
     }
+    for (std::vector<int>::size_type i = 0; i != to_delete.size(); i++) {
+        basedPyramid->removeLevel(to_delete[i]);
+    }
+
     basedPyramid->setUniqueLevel(bestLevel->getId());
 
     return basedPyramid;
