@@ -127,15 +127,13 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
             return;
         }
 
-        if ( context == NULL ) {
+        if ( ! onDir ) {
             LOGGER_ERROR ( "OnFly level have to own a basedir and pathdepth to store images" );
             return;
         }
 
         TiXmlElement* pElemS=hLvl.FirstChild ( "sources" ).Element();
-        if (pElemS) {
-
-        } else {
+        if (pElemS == NULL) {
             LOGGER_ERROR ( "OnFly level need sources" );
             return;
         }
@@ -178,9 +176,7 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
             return;
         }
         TiXmlElement* pElemS=hLvl.FirstChild ( "sources" ).Element();
-        if (pElemS) {
-
-        } else {
+        if (pElemS == NULL) {
             LOGGER_ERROR ( "OnDemand level need sources" );
             return;
         }
@@ -218,12 +214,12 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
 
 
 #if ! BUILD_OBJECT
-    else if (!onDir) {
+    else if (! onDir) {
         LOGGER_ERROR("Level " << id << " sans indication de stockage et pas à la demande. Precisez un baseDir");
         return;
     }
 #else
-    else if (!onDir) {
+    else if (! onDir) {
         // Je suis sur une pyramide normale, et je n'ai a priori pas de base dir donc de stockage fichier
         // Il me faut un stockage objet
 

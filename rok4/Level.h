@@ -146,7 +146,7 @@ public:
 
     /** D */
     Level ( LevelXML* l, PyramidXML* p );
-    Level ( Level* obj, TileMatrixSet* tms, std::map<std::string, TileMatrixSet *> tmsList );
+    Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms );
 
     /*
      * Destructeur

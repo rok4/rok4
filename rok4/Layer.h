@@ -287,7 +287,7 @@ public:
      * \param[in] styleList available style list
      * \param[in] tmsList available tms list
      */
-    Layer (Layer* obj, std::map<std::string,Style*> styleList, std::map<std::string,TileMatrixSet*> tmsList);
+    Layer (Layer* obj, ServerXML* sxml);
 
     /**
      * \~french

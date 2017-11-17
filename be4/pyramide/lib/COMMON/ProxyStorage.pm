@@ -1028,7 +1028,7 @@ sub symLink {
         # On vérifie que la dalle CEPH à lier n'est pas un alias, auquel cas on référence le vrai objet (pour éviter des alias en cascade)
         my $value = getSize("CEPH",$targetPath);
         if ( $value < $ROK4_IMAGE_HEADER_SIZE ) {
-            $realTarget = `rados -p $tPoolName get $realTarget /dev/stdout`;
+            $realTarget = `rados -p $tPoolName get $realTarget /proc/\$\$/fd/1`;
         }
 
         # On retire le bucket du nom de l'alias à créer

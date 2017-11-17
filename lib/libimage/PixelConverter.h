@@ -212,14 +212,15 @@ public:
      */
     template<typename T>
     void convertLine ( T* bufferto, T* bufferfrom ) {
-
+        
         T defaultAlpha;
         if (sizeof(T) == 1) {
             defaultAlpha = (T) 255;
+        } else if (sizeof(T) == 2) {
+            defaultAlpha = (T) 65535;
         } else {
             defaultAlpha = (T) 1;
         }
-
 
         /********************** Depuis 1 canal ********************/
         if ( inSamplesPerPixel == 1) {

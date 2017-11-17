@@ -74,7 +74,6 @@ use List::Util qw(min max);
 
 # My module
 use COMMON::DataSource;
-use BE4::PropertiesLoader;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);

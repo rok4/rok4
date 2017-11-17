@@ -189,12 +189,6 @@ public:
 
     void removeLevel(std::string id) ;
 
-
-    /**
-     * \~french \brief Attribue les niveaux
-     * \~english \brief Set the levels
-     */
-    void setLevels(std::map<std::string, Level*>& lv) ;
     /**
      * \~french \brief Récupère le format
      * \return format
@@ -361,7 +355,7 @@ public:
      * \param[in] obj pyramid
      * \param[in] tmsList available tms list
      */
-    Pyramid (Pyramid *obj, std::map<std::string, TileMatrixSet *> tmsList);
+    Pyramid (Pyramid *obj, ServerXML* sxml);
 
     /**
      * \~french \brief Destructeur

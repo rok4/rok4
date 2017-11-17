@@ -181,6 +181,8 @@ Parameters (list):
 
     ancestor - <COMMON::Pyramid> - Optionnal, to provide if we want to use parameters from ancestor 
 
+    pixelIn - <COMMON::Pixel> - Optionnal, to provide if we want determine output format from input data and not from configuration
+
 See also:
     <_readDescriptor>, <_load>
 =cut
@@ -189,6 +191,7 @@ sub new {
     my $type = shift;
     my $params = shift;
     my $ancestor = shift;
+    my $pixelIn = shift;
 
     $class = ref($class) || $class;
 
@@ -322,7 +325,7 @@ sub new {
 
     }
 
-    if ( ! $this->_load($params,$ancestor) ) {return undef;}
+    if ( ! $this->_load($params,$ancestor,$pixelIn) ) {return undef;}
 
     return $this;
 }
@@ -334,6 +337,7 @@ sub _load {
     my $this   = shift;
     my $params = shift;
     my $ancestor = shift;
+    my $pixelIn = shift;
 
     if (! defined $params ) {
         ERROR ("Parameters argument required (null) !");
@@ -390,7 +394,7 @@ sub _load {
         $this->{image_height} = $params->{image_height};
 
         # PyrImageSpec
-        my $pyrImgSpec = COMMON::PyrImageSpec->new($params);
+        my $pyrImgSpec = COMMON::PyrImageSpec->new($params, $pixelIn);
 
         if (! defined $pyrImgSpec) {
             ERROR ("Can not load specification of pyramid's images !");

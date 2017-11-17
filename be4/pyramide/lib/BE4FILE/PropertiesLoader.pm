@@ -38,15 +38,15 @@
 =begin nd
 File: PropertiesLoader.pm
 
-Class: BE4::PropertiesLoader
+Class: BE4FILE::PropertiesLoader
 
 Reads a configuration file, to sIniFiles* format
 
 Using:
     (start code)
-    use BE4::PropertiesLoader;
+    use BE4FILE::PropertiesLoader;
 
-    my $config = BE4::PropertiesLoader->new("/home/ign/file.txt");
+    my $config = BE4FILE::PropertiesLoader->new("/home/ign/file.txt");
     (end code)
 
 Attributes:
@@ -56,7 +56,7 @@ Attributes:
 
 ################################################################################
 
-package BE4::PropertiesLoader;
+package BE4FILE::PropertiesLoader;
 
 use strict;
 use warnings;

@@ -47,7 +47,7 @@ Using:
     use COMMON::ImageSource;
 
     # ImageSource object creation
-    my $objImageSource = BE4::XXX->new({
+    my $objImageSource = COMMON::ImageSource->new({
         path_image => "/home/ign/DATA",
         path_metadata=> "/home/ign/METADATA",
     });
@@ -292,11 +292,9 @@ sub computeImageSource {
             return FALSE;
         }
 
-        # images reading and analysis
-        my @imageInfo = $objGeoImage->computeInfo();
-        #  @imageInfo = [ bitspersample , photometric , sampleformat , samplesperpixel ]
-        if (! @imageInfo) {
-            ERROR ("Can not read image info ('$filepath') !");
+        # On récupère les informations géométriques AVANT prétraitement, car elles seront potentiellement perdues (GeoTIFF -> TIFF)
+        if (! $objGeoImage->computeGeometryInfo()) {
+            ERROR ("Can not read image geometry info ('$filepath') !");
             return FALSE;
         }
 
@@ -309,14 +307,20 @@ sub computeImageSource {
             make_path(File::Basename::dirname($prePsFilePath));
 
             DEBUG("Calling command :\n$commandCall");
-            if (! system($commandCall) == 0) {
+            if ( system($commandCall) != 0 ) {
                 ERROR (sprintf "Unable to preprocess image '%s'.\nFailed command : %s\nDid you call an existing executable ? Stack trace : %s", $filepath, $commandCall, $?);
                 return FALSE;
             }
-            if(! $objGeoImage->setImagePath($prePsFilePath)){
-                ERROR(sprintf "Could not change image path '%s' to preprocessed image path '%s'.", $imgPath, $prePsFilePath);
-                return FALSE;
-            }
+
+            $objGeoImage->setImagePath($prePsFilePath);
+        }
+
+        # On récupère les caractéristiques de l'image APRÈS traitement, car c'est sur ces images que nous allons travailler
+        my @imageInfo = $objGeoImage->computeInfo();
+        #  @imageInfo = [ bitspersample , photometric , sampleformat , samplesperpixel ]
+        if (scalar @imageInfo == 0) {
+            ERROR ("Can not read image info ('$filepath') !");
+            return FALSE;
         }
 
         if (! defined $bps) {

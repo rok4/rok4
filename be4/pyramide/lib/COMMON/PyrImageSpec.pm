@@ -48,9 +48,6 @@ Using:
 
     # PyrImageSpec object creation
 
-    # Basic constructor
-    my $objPIS = COMMON::PyrImageSpec->new($pyramidParams, );
-
     # From a code
     my $objPIS = COMMON::PyrImageSpec->new({
         formatCode => "TIFF_RAW_INT8",
@@ -247,7 +244,7 @@ sub _load {
 
         INFO(
             "One pixel parameter is missing (photometric, sampleformat, bitspersample ".
-            "or samplesperpixel), we pick information from image source"
+            "or samplesperpixel), we pick all information from image source"
         );
 
         $params->{samplesperpixel} = $pixelIn->getSamplesPerPixel();

@@ -198,16 +198,16 @@ sub _init {
 ####################################################################################################
 
 =begin nd
-Function: computeInfo
+Function: computeImageInfo
 
-Extracts and calculates all GeoImage attributes' values, using GDAL library (see <Details>).
+Extracts and calculates all image attributes' values, using GDAL library (see <Details>).
 
 Image parameters are checked (sample per pixel, bits per sample...) and returned by the function. <ImageSource> can verify if all images own same components and the compatibility with be4's configuration.
 
 Returns:
     a list : (bitspersample,photometric,sampleformat,samplesperpixel), an empty list if error.
 =cut
-sub computeInfo {
+sub computeImageInfo {
     my $this = shift;
 
     my $image = $this->{filename};
@@ -293,10 +293,46 @@ sub computeInfo {
 
     DEBUG(sprintf "Format image : bps %s, photo %s, sf %s, spp %s", $bitspersample, $photometric, $sampleformat, $samplesperpixel);
 
+    if (! (defined $bitspersample && defined $photometric && defined $sampleformat && defined $samplesperpixel)) {
+        ERROR ("The format of this image ('$image') is not handled by be4 !");
+        return ();
+    }
+    
+    return ($bitspersample,$photometric,$sampleformat,$samplesperpixel);
+    
+}
+
+=begin nd
+Function: computeGeometryInfo
+
+Extracts and calculates all geometric attributes' values, using GDAL library (see <Details>).
+
+Returns:
+    TRUE if success, FALSE if error.
+=cut
+sub computeGeometryInfo {
+    my $this = shift;
+
+    my $image = $this->{filename};
+
+    DEBUG(sprintf "compute '%s'", $image);
+
+    my $dataset;
+    eval { $dataset= Geo::GDAL::Open($this->{completePath}, 'ReadOnly'); };
+    if ($@) {
+        ERROR (sprintf "Can not open image ('%s') : '%s' !", $image, $@);
+        return FALSE;
+    }
+
+    my $driver = $dataset->GetDriver();
+    my $code   = $driver->{ShortName};
+    # FIXME : type of driver ?
+    DEBUG (sprintf "use driver '%s'.", $code);
+
     my $refgeo = $dataset->GetGeoTransform();
     if (! defined ($refgeo) || scalar (@$refgeo) != 6) {
-        ERROR ("Can not found parameters of image ('$image') !");
-        return ();
+        ERROR ("Can not found geometric parameters of image ('$image') !");
+        return FALSE;
     }
 
     # forced formatting string !
@@ -313,14 +349,8 @@ sub computeInfo {
     $this->{ycenter}   = sprintf "%.12f", $ymax + $ndy*$dataset->{RasterYSize}/2.0;
     $this->{height} = $dataset->{RasterYSize};
     $this->{width}  = $dataset->{RasterXSize};
-
-    if (! (defined $bitspersample && defined $photometric && defined $sampleformat && defined $samplesperpixel)) {
-        ERROR ("The format of this image ('$image') is not handled by be4 !");
-        return ();
-    }
     
-    return ($bitspersample,$photometric,$sampleformat,$samplesperpixel);
-    
+    return TRUE;
 }
 
 =begin nd
@@ -331,7 +361,7 @@ Not just convert corners, but 7 points on each side, to determine reprojected bb
 Parameters (list):
     ct - <Geo::OSR::CoordinateTransformation> - To convert bbox. Can be undefined (no reprojection).
 
-Returns the onverted (according to the given CoordinateTransformation) image bbox as a double array [xMin, yMin, xMax, yMax], [0,0,0,0] if error.
+Returns the converted (according to the given CoordinateTransformation) image bbox as a double array [xMin, yMin, xMax, yMax], [0,0,0,0] if error.
 =cut
 sub convertBBox {
   my $this = shift;
@@ -419,51 +449,6 @@ sub convertBBox {
 ####################################################################################################
 
 =begin nd
-Function: getInfo
-
-Returns all image's geo informations in a list.
-
-Example:
-    (start code)
-    # GeoImage information getter
-    my (
-        $filename,
-        $filepath,
-        $xmin,
-        $ymax,
-        $xmax,
-        $ymin,
-        $xres,
-        $yres,
-        $xcenter,
-        $ycenter,
-        $height,
-        $width
-    ) = $objGeoImage->getInfo();
-    (end code)
-=cut
-sub getInfo {
-    my $this = shift;
-
-    TRACE;
-
-    return (
-        $this->{filename},
-        $this->{filepath},
-        $this->{xmin},
-        $this->{ymax},
-        $this->{xmax},
-        $this->{ymin},
-        $this->{xres},
-        $this->{yres},
-        $this->{xcenter},
-        $this->{ycenter},
-        $this->{height},
-        $this->{width},
-    );
-}
-
-=begin nd
 Function: getBBox
 
 Return the image's bbox as a double array [xMin, yMin, xMax, yMax], source SRS.
@@ -480,19 +465,12 @@ sub getBBox {
 
 # Function: setImagePath
 sub setImagePath {
-  my $this = shift;
-  my $imagePath = shift;
+    my $this = shift;
+    my $imagePath = shift;
 
-  if (! defined $imagePath) {
-    ERROR("Cannot set image path to 'undef'.");
-    return FALSE; 
-  }
-
-  $this->{completePath} = $imagePath;
-  $this->{filepath} = File::Basename::dirname($imagePath);
-  $this->{filename} = File::Basename::basename($imagePath);
-
-  return TRUE;
+    $this->{completePath} = $imagePath;
+    $this->{filepath} = File::Basename::dirname($imagePath);
+    $this->{filename} = File::Basename::basename($imagePath);
 }
 
 

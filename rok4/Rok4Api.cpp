@@ -256,8 +256,15 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
                 } else {
                     //fichier non modifié
                     if (newServerXML->getTMS(fileName) == NULL) {
-                        // mais qui n'était pas là au dernier chargement, ce n'est pas normal
-                        LOGGER_WARN("TMS nouveau alors que le fichier était là au dernier rechargement de conf ?!?!");
+                        // mais qui n'était pas là au dernier chargement
+                        // ça peut arriver lors d'une copie ou d'un déplacement du fichier (les dates ne sont pas modifiées)
+                        TileMatrixSet* tms = ConfLoader::buildTileMatrixSet ( listOfFile[i] );
+
+                        if (tms != NULL) {
+                            newServerXML->addTMS(tms);
+                        } else {
+                            LOGGER_ERROR("Impossible de charger " << listOfFile[i]);
+                        }
                     }
                 }
             }
@@ -324,8 +331,15 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
                 } else {
                     //fichier non modifié
                     if (newServerXML->getStyle(fileName) == NULL) {
-                        // mais qui n'était pas là au dernier chargement, ce n'est pas normal
-                        LOGGER_WARN("Style nouveau alors que le fichier était là au dernier rechargement de conf ?!?!");
+                        // mais qui n'était pas là au dernier chargement
+                        // ça peut arriver lors d'une copie ou d'un déplacement du fichier (les dates ne sont pas modifiées)
+                        Style* sty = ConfLoader::buildStyle ( listOfFile[i], newServicesXML );
+
+                        if (sty != NULL) {
+                            newServerXML->addStyle(sty);
+                        } else {
+                            LOGGER_ERROR("Impossible de charger " << listOfFile[i]);
+                        }
                     }
                 }
             }
@@ -364,8 +378,13 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
         std::map<std::string,Layer* >::iterator lv;
 
         for (lv = oldServer->getLayerList().begin(); lv != oldServer->getLayerList().end(); lv++) {
-            Layer* lay = new Layer(lv->second, newServerXML->getStylesList(), newServerXML->getTmsList() );
-            newServerXML->addLayer(lay);
+            Layer* lay = new Layer(lv->second, newServerXML );
+            if (lay->getDataPyramid() == NULL) {
+                LOGGER_ERROR("Impossible de cloner le layer " << lv->first);
+                delete lay;
+            } else {
+                newServerXML->addLayer(lay);
+            }
         }
 
         LOGGER_DEBUG("Lecture du dossier");
@@ -398,8 +417,15 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
                     LOGGER_DEBUG("Fichier layer non modifie");
                     Layer* lay = newServerXML->getLayer(fileName);
                     if (lay == NULL) {
-                        // mais qui n'était pas là au dernier chargement, ce n'est pas normal
-                        LOGGER_WARN("Layer nouveau alors que le fichier était là au dernier rechargement de conf ?!?!");
+                        // mais qui n'était pas là au dernier chargement
+                        // ça peut arriver lors d'une copie ou d'un déplacement du fichier (les dates ne sont pas modifiées)
+                        Layer* l = ConfLoader::buildLayer ( listOfFile[i], newServerXML, newServicesXML );
+
+                        if (l != NULL) {
+                            newServerXML->addLayer(l);
+                        } else {
+                            LOGGER_ERROR("Impossible de charger " << listOfFile[i]);
+                        }
                     } else {
 
                         //on teste si le .pyr a changé

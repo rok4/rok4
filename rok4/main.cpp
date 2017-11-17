@@ -249,7 +249,8 @@ int main ( int argc, char** argv ) {
             firstStart = false;
         } else {
             std::cout<< _ ( "Mise a jour de la configuration" ) << "["<< getpid() <<"]" <<std::endl;
-            if ( Wtmp ){
+            if ( Wtmp ) {
+                std::cout<< _ ( "Bascule des serveurs" ) << "["<< getpid() <<"]" <<std::endl;
                 W = Wtmp;
                 Wtmp = 0;
             }

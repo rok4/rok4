@@ -93,7 +93,7 @@ Pyramid::Pyramid (PyramidXML* p) : Source(PYRAMID) {
 
 }
 
-Pyramid::Pyramid (Pyramid* obj, std::map<std::string, TileMatrixSet *> tmsList): Source(PYRAMID) {
+Pyramid::Pyramid (Pyramid* obj, ServerXML* sxml): Source(PYRAMID) {
     format = obj->format;
     photo = obj->photo;
     channels = obj->channels;
@@ -108,20 +108,25 @@ Pyramid::Pyramid (Pyramid* obj, std::map<std::string, TileMatrixSet *> tmsList):
     }
 
     // On récupère bien le pointeur vers le nouveau TMS (celui de la nouvelle liste)
-    std::map<std::string, TileMatrixSet*>::iterator tmsIt = tmsList.find ( obj->tms->getId() );
-    if ( tmsIt == tmsList.end() ) {
+    tms = sxml->getTMS (obj->tms->getId());
+    if ( tms == NULL ) {
         LOGGER_ERROR ( "Une pyramide clonée reference un TMS [" << obj->tms->getId() << "] qui n'existe plus." );
         return;
         // Tester la nullité du TMS en sortie pour faire remonter l'erreur
-    } else {
-        tms = tmsIt->second;
     }
 
     std::map<std::string, Level*>::iterator itLevel;
 
     // On clone bien tous les niveaux
     for ( itLevel = obj->levels.begin(); itLevel != obj->levels.end(); itLevel++ ) {
-        Level* levObj = new Level(itLevel->second, tms, tmsList);
+        Level* levObj = new Level(itLevel->second, sxml, tms);
+        if (levObj->getContext() == NULL) {
+            LOGGER_ERROR ( "Impossible de cloner le niveau " << itLevel->first );
+            tms = NULL;
+            // Tester la nullité du TMS en sortie pour faire remonter l'erreur
+            return;
+        }
+
         levels.insert ( std::pair<std::string, Level*> ( levObj->getId(), levObj ) );
     }
 
@@ -385,9 +390,6 @@ Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst
 
 
 Pyramid::~Pyramid() {
-    std::map<std::string, DataSource*>::iterator itDataSource;
-    /*for ( itDataSource=noDataSources.begin(); itDataSource!=noDataSources.end(); itDataSource++ )
-        delete ( *itDataSource ).second;*/
 
     delete[] ndValues;
 
@@ -513,7 +515,6 @@ void Pyramid::removeLevel(std::string id) {
     levels.erase(lv);
 
 }
-void Pyramid::setLevels(std::map<std::string, Level*>& lv) { levels = lv; }
 Rok4Format::eformat_data Pyramid::getFormat() { return format; }
 Photometric::ePhotometric Pyramid::getPhotometric() { return photo; }
 int Pyramid::getChannels() { return channels; }

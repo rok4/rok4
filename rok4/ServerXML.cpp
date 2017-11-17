@@ -533,9 +533,6 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
 /*********************** DESTRUCTOR ********************/
 
 ServerXML::~ServerXML(){ 
-    std::map<std::string, DataSource*>::iterator itDataSource;
-    /*for ( itDataSource=noDataSources.begin(); itDataSource!=noDataSources.end(); itDataSource++ )
-        delete ( *itDataSource ).second;*/
 
     // Les TMS
     std::map<std::string, TileMatrixSet*>::iterator itTMS;

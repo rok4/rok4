@@ -94,16 +94,22 @@ Level::Level ( LevelXML* l, PyramidXML* p ) {
     maxTileSize = tm->getTileH() * tm->getTileW() * channels * Rok4Format::toSizePerChannel(format) * 2;
 }
 
-Level::Level ( Level* obj, TileMatrixSet* tms, std::map<std::string, TileMatrixSet *> tmsList) {
+Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
     // On met bien l'adresse du nouveau TileMatrix, et pas celui dans le Level cloné (issu de l'ancienne liste de TMS)
     tm = tms->getTm(obj->tm->getId());
+
+    if (tm == NULL) {
+        LOGGER_ERROR ( "Un niveau de pyramide cloné reference un niveau de TMS [" << obj->tm->getId() << "] qui n'existe plus." );
+        return;
+    }
+
     channels = obj->channels;
     baseDir = obj->baseDir;
 
     // On clone bien toutes les sources
     for ( int i = 0; i < obj->sSources.size(); i++ ) {
         if (obj->sSources.at(i)->getType() == PYRAMID) {
-            Pyramid* pS = new Pyramid(reinterpret_cast<Pyramid*>(obj->sSources.at(i)), tmsList);
+            Pyramid* pS = new Pyramid(reinterpret_cast<Pyramid*>(obj->sSources.at(i)), sxml);
             sSources.push_back(pS);
         } else if (obj->sSources.at(i)->getType() == WEBSERVICE) {
             WebService* pS = new WebService(reinterpret_cast<WebService*>(obj->sSources.at(i)));
@@ -123,11 +129,38 @@ Level::Level ( Level* obj, TileMatrixSet* tms, std::map<std::string, TileMatrixS
 
     pathDepth = obj->pathDepth;
     format = obj->format;
-    if (obj->context->getType() == FILECONTEXT) {
-        context = new FileContext("");
-    } else {
-        context = obj->context;
+
+    context = NULL;
+    switch ( obj->context->getType() ) {
+        case FILECONTEXT :
+            context = new FileContext("");
+            break;
+        case CEPHCONTEXT :
+            if (sxml->getCephContextBook() != NULL) {
+                context = sxml->getCephContextBook()->addContext(obj->context->getTray());
+            } else {
+                LOGGER_ERROR ( "L'utilisation d'un cephContext necessite de preciser les informations de connexions dans le server.conf");
+                return;
+            }
+            break;
+        case S3CONTEXT :
+            if (sxml->getS3ContextBook() != NULL) {
+                context = sxml->getS3ContextBook()->addContext(obj->context->getTray());
+            } else {
+                LOGGER_ERROR ( "L'utilisation d'un s3Context necessite de preciser les informations de connexions dans le server.conf");
+                return;
+            }
+            break;
+        case SWIFTCONTEXT :
+            if (sxml->getSwiftContextBook() != NULL) {
+                context = sxml->getSwiftContextBook()->addContext(obj->context->getTray());
+            } else {
+                LOGGER_ERROR ( "L'utilisation d'un swiftContext necessite de preciser les informations de connexions dans le server.conf");
+                return;
+            }
+            break;
     }
+
     prefix = obj->prefix;
 
     maxTileSize = obj->maxTileSize;

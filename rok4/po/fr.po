@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2017-11-15 10:25+0000\n"
+"POT-Creation-Date: 2017-11-16 15:49+0100\n"
 "PO-Revision-Date: 2014-01-28 09:36+0100\n"
 "Last-Translator: \n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -198,44 +198,44 @@ msgstr " ou fichier vide"
 msgid "] of ["
 msgstr "] de ["
 
-#: Level.cpp:200 Level.cpp:251
+#: Level.cpp:233 Level.cpp:284
 msgid "Image invalid !"
 msgstr "Image invalide !"
 
-#: Level.cpp:256
+#: Level.cpp:289
 msgid "Dimensions invalid !"
 msgstr "Dimensions invalides !"
 
-#: Level.cpp:281
+#: Level.cpp:314
 msgid "Too Much Tile on X axis"
 msgstr "Trop de tuile sur l'axe X"
 
-#: Level.cpp:295
+#: Level.cpp:328
 msgid "Too Much Tile on Y axis"
 msgstr "Trop de tuile sur l'axe Y"
 
-#: Level.cpp:341
+#: Level.cpp:374
 msgid "Indice de tuile negatif"
 msgstr "Indice de tuile négatif"
 
-#: Level.cpp:404
+#: Level.cpp:437
 msgid "getDirPath n'a pas de sens dans le cas d'un contexte non fichier"
 msgstr ""
 
-#: Level.cpp:480
+#: Level.cpp:513
 msgid "Type d'encodage inconnu : "
 msgstr "Type d'encodage inconnu : "
 
-#: Level.cpp:488 Level.cpp:491 Rok4Server.cpp:764 Rok4Server.cpp:773
+#: Level.cpp:521 Level.cpp:524 Rok4Server.cpp:764 Rok4Server.cpp:773
 #: Rok4Server.cpp:935
 msgid "No data found"
 msgstr "Aucune donnée"
 
-#: Level.cpp:499
+#: Level.cpp:532
 msgid "GetTile Tiff"
 msgstr "GetTile Tiff"
 
-#: Level.cpp:509
+#: Level.cpp:542
 msgid "GetTile Image"
 msgstr "GetTile Image"
 
@@ -266,57 +266,61 @@ msgstr "Lancement du serveur ROK4"
 msgid "Mise a jour de la configuration"
 msgstr "Rechargement de la configuration"
 
-#: main.cpp:269
+#: main.cpp:253
+msgid "Bascule des serveurs"
+msgstr ""
+
+#: main.cpp:270
 msgid "Rechargement de la configuration"
 msgstr "Rechargement de la configuration"
 
-#: main.cpp:272 Rok4Api.cpp:127 Rok4Api.cpp:135 Rok4Api.cpp:143 Rok4Api.cpp:151
-#: Rok4Api.cpp:196 Rok4Api.cpp:218 Rok4Api.cpp:286 Rok4Api.cpp:355
-#: Rok4Api.cpp:450
+#: main.cpp:273 Rok4Api.cpp:127 Rok4Api.cpp:135 Rok4Api.cpp:143 Rok4Api.cpp:151
+#: Rok4Api.cpp:196 Rok4Api.cpp:218 Rok4Api.cpp:293 Rok4Api.cpp:369
+#: Rok4Api.cpp:476
 msgid "Extinction du serveur ROK4"
 msgstr "Extinction du serveur ROK4"
 
-#: Pyramid.cpp:194
+#: Pyramid.cpp:199
 msgid "debut pyramide"
 msgstr "début pyramide"
 
-#: Pyramid.cpp:201
+#: Pyramid.cpp:206
 msgid "fin pyramide"
 msgstr "fin pyramide"
 
-#: Pyramid.cpp:220
+#: Pyramid.cpp:225
 msgid "best_level="
 msgstr "Meilleur niveau :"
 
-#: Pyramid.cpp:220
+#: Pyramid.cpp:225
 msgid " resolution requete="
 msgstr " resolution de la requête="
 
-#: Pyramid.cpp:245
+#: Pyramid.cpp:250
 msgid "BBox en dehors de la definition du CRS"
 msgstr "Emprise demandée en dehors de la zone de définition du CRS"
 
-#: Pyramid.cpp:249 Pyramid.cpp:288
+#: Pyramid.cpp:254 Pyramid.cpp:293
 msgid "BBox decoupe incorrect"
 msgstr "Emprise découpée incorrecte"
 
-#: Pyramid.cpp:281
+#: Pyramid.cpp:286
 msgid "New Width = "
 msgstr " Nouvelle largeur = "
 
-#: Pyramid.cpp:281
+#: Pyramid.cpp:286
 msgid "New Height = "
 msgstr "Nouvelle hauteur = "
 
-#: Pyramid.cpp:282
+#: Pyramid.cpp:287
 msgid "ratio_x = "
 msgstr "Ratio en X = "
 
-#: Pyramid.cpp:282
+#: Pyramid.cpp:287
 msgid "ratio_y = "
 msgstr "Ratio en Y ="
 
-#: Pyramid.cpp:294
+#: Pyramid.cpp:299
 msgid "Image decoupe valide"
 msgstr "Image découpée invalide !"
 
@@ -897,12 +901,12 @@ msgstr "Impossible de charger la configuration des Styles"
 msgid "Impossible de charger la conf des Layers/pyramides"
 msgstr "Impossible de charger la configuration des couches/pyramides"
 
-#: Rok4Api.cpp:285
+#: Rok4Api.cpp:292
 #, fuzzy
 msgid "Impossible de charger la conf des styles"
 msgstr "Impossible de charger la configuration des Styles"
 
-#: Rok4Api.cpp:354
+#: Rok4Api.cpp:368
 #, fuzzy
 msgid "Impossible de charger la conf des Layers"
 msgstr "Impossible de charger la configuration des Styles"

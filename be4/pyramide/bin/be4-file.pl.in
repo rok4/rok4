@@ -39,11 +39,11 @@
 =begin nd
 File: be4.pl
 
-Section: BE4 tool
+Section: BE4-FILE tool
 
 Synopsis:
     (start code)
-    perl be4.pl --conf=path [ --env=path ]
+    perl be4-file.pl --conf=path [ --env=path ]
     # All parameters of the --env config file can be overided by --conf config file parameter
     (end code)
 
@@ -87,7 +87,7 @@ use FindBin qw($Bin);
 use lib "$Bin/../lib/perl5";
 
 # My module
-use BE4::PropertiesLoader;
+use BE4FILE::PropertiesLoader;
 use COMMON::Pyramid;
 use COMMON::DataSourceLoader;
 use COMMON::Forest;
@@ -144,11 +144,7 @@ All parameters by section :
 
     logger - Can be null
     datasource - 
-    harvesting - Deprecated, use *datasource* section instead.
-    pyramid - 
-    tilematrixset - Can be in *pyramid* section
-    nodata - Can be in *pyramid* section
-    tile - Can be in *pyramid* section
+    pyramid -
     process - 
 =cut
 my %this =
@@ -157,10 +153,7 @@ my %this =
         logger        => undef,
         datasource    => undef,
         pyramid       => undef,
-        tilematrixset => undef,
-        nodata        => undef,
-        tile          => undef,
-        process       => undef,
+        process       => undef
     },
 );
 
@@ -291,7 +284,7 @@ sub config {
     ALWAYS(">>> Load Properties ...");
     
     my $fprop = $options{properties};
-    my $objProp = BE4::PropertiesLoader->new($fprop);
+    my $objProp = BE4FILE::PropertiesLoader->new($fprop);
     
     if (! defined $objProp) {
         ERROR("Can not load specific properties !");
@@ -685,13 +678,16 @@ sub writeListAndReferences {
 Function: doIt
 
 Steps in order, using parameters :
-    - create the Pyramid object : <BE4::Pyramid::new>
-    - load data sources : <BE4::DataSourceLoader::new>
-    - update levels for this Pyramid object : <BE4::Pyramid::updateLevels>
-    - create the Forest object : <BE4::Forest::new>
-    - write (initialization) the pyramid's directories tree and its list : <BE4::Pyramid::writeCachePyramid> and <BE4::Pyramid::writeListPyramid>
-    - write the pyramid's descriptor : <BE4::Pyramid::writeConfPyramid>
-    - compute trees (write scripts) : <BE4::Forest::computeGraphs>
+    - load ancestor pryamid if exists : <COMMON::Pyramid::new>
+    - load data sources : <COMMON::DataSourceLoader::new>
+    - create the Pyramid object : <COMMON::Pyramid::new>
+    - update the Pyramid object with the TMS : <COMMON::Pyramid::bindTileMatrixSet>
+    - update data sources with the levels : <COMMON::DataSourceLoader::updateDataSources>
+    - create the pyramid's levels : <COMMON::Pyramid::addLevel>
+    - create the Forest object : <COMMON::Forest::new>
+    - write the pyramid's list : <writeListAndReferences>
+    - write the pyramid's descriptor : <COMMON::Pyramid::writeDescriptor>
+    - compute trees (write scripts) : <COMMON::Forest::computeGraphs>
 =cut
 sub doIt {
 
@@ -706,13 +702,83 @@ sub doIt {
     my $objPyramid = undef;
     my $objDSL = undef;
     my $objForest = undef;
+
+    #######################
+    # if ancestor, read it
+
+    if (exists $params->{pyramid}->{pyr_name_old} && defined $params->{pyramid}->{pyr_name_old}) {
     
+        ALWAYS(">>> Load an ancestor pyramid ...");
+
+        if (! exists $params->{pyramid}->{pyr_desc_path_old} || ! defined $params->{pyramid}->{pyr_desc_path_old}) {
+            ERROR("If ancestor pyramid, we need the 'pyr_desc_path_old' parameter with 'pyr_name_old'");
+            return FALSE;
+        }
+
+        if (! defined $params->{pyramid}->{update_mode} || $params->{pyramid}->{update_mode} eq "") {
+            ERROR("If ancestor pyramid, we need the 'update_mode' parameter");
+            return FALSE;
+        }
+
+        my $updateMode = $params->{pyramid}->{update_mode} ;
+        if (! defined COMMON::Array::isInArray($updateMode, @UPDATESMODES) ) {
+            ERROR("Update mode '$updateMode' is not allowed for FILE pyramids");
+            return FALSE;
+        }
+
+        my $ancestorDescriptor = File::Spec->catdir($params->{pyramid}->{pyr_desc_path_old}, $params->{pyramid}->{pyr_name_old});
+        $ancestorDescriptor .= ".pyr" if ($ancestorDescriptor !~ m/\.pyr/i);
+
+        $objAncestorPyramid = COMMON::Pyramid->new("DESCRIPTOR", $ancestorDescriptor );
+        if (! defined $objAncestorPyramid) {
+            ERROR("Cannot load ancestor pyramid !");
+            return FALSE;
+        }
+
+        if (! $objAncestorPyramid->bindTileMatrixSet($params->{pyramid}->{tms_path})) {
+            ERROR("Cannot bind TMS to ancestor pyramid !");
+            return FALSE;
+        }
+
+        if ($objAncestorPyramid->getStorageType() ne "FILE") {
+            ERROR("Ancestor pyramid have to be a FILE pyramid !");
+            return FALSE;
+        }
+
+        # Dans le cas de l'injection, on veut que la nouvelle pyramide soit écrite sur l'ancienne
+        # On va donc modifier le nom et les emplacements pour mettre les mêmes que ceux de l'ancêtre
+
+        if ($updateMode eq "inject") {
+            WARN("'inject' update mode is selected, ancestor is modified, without possible rollback.");
+            $params->{pyramid}->{pyr_desc_path} = $objAncestorPyramid->getDescriptorDir();
+            $params->{pyramid}->{pyr_data_path} = $objAncestorPyramid->getDataRoot();
+            $params->{pyramid}->{pyr_name_new} = $objAncestorPyramid->getName();
+        }
+    }
+    
+    #######################
+    # load data source
+    
+    ALWAYS(">>> Load Data Source ...");
+
+    $objDSL = COMMON::DataSourceLoader->new($params->{datasource});
+    if (! defined $objDSL) {
+        ERROR("Cannot load data sources !");
+        return FALSE;
+    }
+    
+    my ($ok, $pixelIn) = $objDSL->getPixelFromSources();
+    if (! $ok) {
+        ERROR("Cannot extract ONE pixel information from sources");
+        return FALSE;
+    }
+
     #######################
     # create a pyramid
     
     ALWAYS(">>> Load the new pyramid ...");
     
-    $objPyramid = BE4::Pyramid->new( $params->{pyramid}, $params->{process}->{path_temp} );
+    $objPyramid = COMMON::Pyramid->new("VALUES", $params->{pyramid}, $objAncestorPyramid, $pixelIn );
     if (! defined $objPyramid) {
         ERROR("Cannot create output Pyramid !");
         return FALSE;
@@ -729,17 +795,6 @@ sub doIt {
     }
 
     my $objTMS = $objPyramid->getTileMatrixSet();
-    
-    #######################
-    # load data source
-    
-    ALWAYS(">>> Load Data Source ...");
-
-    $objDSL = BE4::DataSourceLoader->new($params->{datasource},$params->{harvesting},$params->{pyramid}->{pyr_level_bottom});
-    if (! defined $objDSL) {
-        ERROR("Cannot load data sources !");
-        return FALSE;
-    }
 
     # update datasources top/bottom levels !
     my ($bottomOrder,$topOrder) = $objDSL->updateDataSources($objTMS, $params->{pyramid}->{pyr_level_top});
@@ -923,21 +978,21 @@ For more informations about properties, see <BE4::Pyramid>.
     color - The color is a string and contain on value per sample, in decimal format, seperated by comma. For 8 bits unsigned integer, value must be between 0 and 255. For 32 bits float, an integer is expected too, but can be negative.
     Example : "255,255,255" (white) for images whithout alpha sample, "-99999" for a DTM.
 
-    image_width, image_height - Number a tile in the cache image (slab), widthwise and heightwise. 16 * 16 for example. Mandatory.
+    image_width, image_height - Number a tile in the cache image (slab), widthwise and heightwise. 16 * 16 for example. Mandatory if no ancestor.
 
-    bitspersample - Possible values : 8, 32. Have to be the same as source. Mandatory.
+    bitspersample - Possible values : 8, 32. Have to be the same as source. Mandatory if no ancestor and no images input.
 
-    sampleformat - Possible values : uint, float. Have to be the same as source. Mandatory.
+    sampleformat - Possible values : uint, float. Have to be the same as source. Mandatory if no ancestor and no images input.
 
-    samplesperpixel - Possible values : 1, 3, 4. Have to be the same as source. Mandatory.
+    samplesperpixel - Possible values : 1, 3, 4. Have to be the same as source. Mandatory if no ancestor and no images input.
 
     photometric - Possible values : gray, rgb. Have to be consistent with the samples per pixel. 1 -> gray and 3,4 -> rgb. Default : rgb.
 
     interpolation - Possible values : nn, linear, bicubic, lanczos. Interpolation used to resampled images (in mergeNtiff). Nodata pixel are excluded by the interpolation if we use masks. Default : bicubic.
 
-    dir_depth - Image's depth from the level directory. depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif. Mandatory.
+    dir_depth - Image's depth from the level directory. depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif. Mandatory if no ancestor.
 
-    tms_name - TMS file name, with extension *.tms*. Mandatory.
+    tms_name - TMS file name, with extension *.tms*. Mandatory if no ancestor.
 
     tms_path - Directory, where to find the TMS file. Mandatory.
 
@@ -975,9 +1030,9 @@ Examples:
 
 Topic: process
 
-For more informations about properties, see <BE4::Forest> and <BE4::Commands>.
+For more informations about properties, see <COMMON::Forest> and <COMMON::Commands>.
 
-    job_number - Level of parallelization for scripts. Distribution details are different according to the kind of graph (see <BE4::QTree> and <BE4::Graph>). Mandatory.
+    job_number - Level of parallelization for scripts. Distribution details are different according to the kind of graph (see <COMMON::QTree> and <COMMON::Graph>). Mandatory.
 
     path_temp - Temporary directory path proper to each script : temporary files are written in *path_temp/pyr_name_new/SCRIPT_ID*.
 

@@ -329,15 +329,9 @@ sub computeGlobalInfo {
     # Bounding polygon
     if (defined $this->{imageSource}) {
         # We have real images for source, bbox will be calculated from them.
-        my ($xmin,$ymin,$xmax,$ymax);
 
         my @BBOX = $this->{imageSource}->computeBBox();
-        $xmin = $BBOX[0] if (! defined $xmin || $xmin > $BBOX[0]);
-        $ymin = $BBOX[1] if (! defined $ymin || $ymin > $BBOX[1]);
-        $xmax = $BBOX[2] if (! defined $xmax || $xmax < $BBOX[2]);
-        $ymax = $BBOX[3] if (! defined $ymax || $ymax < $BBOX[3]);
-
-        $this->{extent} = sprintf "%s,%s,%s,%s",$xmin,$ymin,$xmax,$ymax;
+        $this->{extent} = sprintf "%s,%s,%s,%s", $BBOX[0], $BBOX[1], $BBOX[2], $BBOX[3];
     }
     
     if (defined $this->{extent}) {
@@ -347,11 +341,12 @@ sub computeGlobalInfo {
 
         $this->{extent} =~ s/ //;
         my @limits = split (/,/,$this->{extent},-1);
-
+        
+        my $extent;
         if (scalar @limits == 4) {
             # user supplied a BBOX
-            $this->{extent} = COMMON::ProxyGDAL::geometryFromString("BBOX", $this->{extent});
-            if (! defined $this->{extent}) {
+            $extent = COMMON::ProxyGDAL::geometryFromString("BBOX", $this->{extent});
+            if (! defined $extent) {
                 ERROR(sprintf "Cannot create a OGR geometry from the bbox %s", $this->{extent});
                 return FALSE ;
             }
@@ -359,12 +354,13 @@ sub computeGlobalInfo {
         }
         else {
             # user supplied a file which contains bounding polygon
-            $this->{extent} = COMMON::ProxyGDAL::geometryFromFile($this->{extent});
-            if (! defined $this->{extent}) {
+            $extent = COMMON::ProxyGDAL::geometryFromFile($this->{extent});
+            if (! defined $extent) {
                 ERROR(sprintf "Cannot create a OGR geometry from the file %s", $this->{extent});
                 return FALSE ;
             }
         }
+        $this->{extent} = $extent;
 
         my ($xmin,$ymin,$xmax,$ymax) = COMMON::ProxyGDAL::getBbox($this->{extent});
 

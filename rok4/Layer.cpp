@@ -89,7 +89,7 @@ Layer::Layer ( const LayerXML& l ) {
     this->GFIForceEPSG = l.GFIForceEPSG;
 }
 
-Layer::Layer (Layer* obj, std::map<std::string,Style*> styleList, std::map<std::string,TileMatrixSet*> tmsList) {
+Layer::Layer (Layer* obj, ServerXML* sxml) {
     id = obj->id;
     title = obj->title;
     abstract = obj->abstract;
@@ -120,27 +120,28 @@ Layer::Layer (Layer* obj, std::map<std::string,Style*> styleList, std::map<std::
     GFIForceEPSG = obj->GFIForceEPSG;
 
     // On met à jour les pointeurs des styles avec ceux de la nouvelle liste
-    std::map<std::string,Style*>::iterator is;
     for (unsigned i = 0 ; i < obj->styles.size(); i++) {
 
         // On récupère bien le pointeur vers le nouveau TMS (celui de la nouvelle liste)
-        is = styleList.find ( obj->styles.at(i)->getId() );
-        if ( is == styleList.end() ) {
+        Style* s = sxml->getStyle ( obj->styles.at(i)->getId() );
+        if ( s == NULL ) {
             LOGGER_ERROR ( "Une couche clonée reference un style [" << obj->styles.at(i)->getId() << "] qui n'existe plus." );
             return;
             // Tester la nullité de la pyramide de donnée en sortie pour faire remonter l'erreur
         } else {
-            styles.push_back(is->second);
+            styles.push_back(s);
         }
     }
     defaultStyle = styles[0]->getId();
 
     // On clone la pyramide de données
-    dataPyramid = new Pyramid(obj->dataPyramid, tmsList);
+    dataPyramid = new Pyramid(obj->dataPyramid, sxml);
 
     // Détection d'erreurs
     if (dataPyramid->getTms() == NULL) {
-        // à voir koikonfé
+        delete dataPyramid;
+        dataPyramid = NULL;
+        return;
     }
 }
 
