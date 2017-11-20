@@ -135,6 +135,7 @@ Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
         case FILECONTEXT :
             context = new FileContext("");
             break;
+#if BUILD_OBJECT
         case CEPHCONTEXT :
             if (sxml->getCephContextBook() != NULL) {
                 context = sxml->getCephContextBook()->addContext(obj->context->getTray());
@@ -159,6 +160,7 @@ Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
                 return;
             }
             break;
+#endif
     }
 
     prefix = obj->prefix;
