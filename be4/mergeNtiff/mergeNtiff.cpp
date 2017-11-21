@@ -609,11 +609,11 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
     /********************** LA SORTIE : CRÉATION *************************/
 
     if (samplesperpixel == 1) {
-      photometric = Photometric::GRAY;
+        photometric = Photometric::GRAY;
     } else if (samplesperpixel == 2) {
-      photometric = Photometric::GRAY;
+        photometric = Photometric::GRAY;
     } else {
-      photometric = Photometric::RGB;
+        photometric = Photometric::RGB;
     }
 
     CRS outCrs ( outStringCRS );

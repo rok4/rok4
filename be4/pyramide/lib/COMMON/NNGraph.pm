@@ -683,13 +683,13 @@ sub getBottomID {
 # Function: getTopOrder
 sub getTopOrder {
     my $this = shift;
-    return $this->{pyramid}->getTileMatrixSet->getOrderfromID($this->{topID});
+    return $this->{pyramid}->getTileMatrixSet()->getOrderfromID($this->{topID});
 }
 
 # Function: getBottomOrder
 sub getBottomOrder {
     my $this = shift;
-    return $this->{pyramid}->getTileMatrixSet->getOrderfromID($this->{bottomID});
+    return $this->{pyramid}->getTileMatrixSet()->getOrderfromID($this->{bottomID});
 }
 
 =begin nd
@@ -774,12 +774,12 @@ Parameters (list):
 sub getScriptsOfLevel {
     my $this = shift;
     my $levelID = shift;
-    my $order =  $this->getPyramid()->getOrderfromID($levelID);
+    my $order =  $this->getPyramid()->getTileMatrixSet()->getOrderfromID($levelID);
     
     my $numberOfScriptByLevel = $this->getForest()->getSplitNumber();
     my $numberOfFinisher = $this->getForest()->getSplitNumber();
     
-    my $start_index = $numberOfFinisher + ($order - $this->getBottomOrder) * $numberOfScriptByLevel ;
+    my $start_index = $numberOfFinisher + ($order - $this->getBottomOrder()) * $numberOfScriptByLevel ;
     my $end_index = $start_index + $numberOfScriptByLevel - 1;
 
     return @{$this->getForest()->getScripts()}[$start_index .. $end_index];

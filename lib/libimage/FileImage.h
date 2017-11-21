@@ -69,11 +69,11 @@
  * 
  * <TABLE>
  * <TR><TH>Format</TH><TH>Classe</TH><TH>Extensions détectées</TH><TH>En lecture</TH><TH>En écriture</TH><TH>Librairie utilisée</TH></TR>
- * <TR><TD>TIFF</TD><TD>LibtiffImage</TD><TD>.tif, .tiff, .TIF, .TIFF</TD><TD>Format de canal : entiers 8 bits, 16 bits et floattant 32 bits</TD><TD>Format de canal : entiers 8 bits, 16 bits et floattant 32 bits</TD><TD>Libtiff 3.8.2</TD></TR>
- * <TR><TD>PNG</TD><TD>LibpngImage</TD><TD>.png, .PNG</TD><TD>Format de canal : entiers 1,2,4 et 8 bits</TD><TD>Non</TD><TD>Libpng 1.6.2</TD></TR>
- * <TR><TD>ROK4</TD><TD>Rok4Image</TD><TD>non filtré sur l'extension</TD><TD>Format de canal : entiers 8 bits, 16 bits et floattant 32 bits</TD><TD>Format de canal : entiers 8 bits, 16 bits et floattant 32 bits</TD><TD>Libtiff 3.8.2. Format TIFF particulier, propre au projet ROK4</TD></TR>
- * <TR><TD>JPEG2000</TD><TD>Jpeg2000Image</TD><TD>.jp2, .JP2</TD><TD>Format de canal : selon la librairie</TD><TD>Non</TD><TD>Openjpeg 2.0.0 ou Kakadu 6.4.1</TD></TR>
- * <TR><TD>BIL</TD><TD>BilzImage</TD><TD>.bil, .BIL, .zbil, .ZBIL</TD><TD>Format de canal : entiers 8 bits, 16 bits et floattant 32 bits</TD><TD>Non</TD><TD>Zlib 1.2.5 pour la décompression</TD></TR>
+ * <TR><TD>TIFF</TD><TD>LibtiffImage</TD><TD>.tif, .tiff, .TIF, .TIFF</TD><TD>Format de canal : entiers 8 bits, 16 bits et floattant 32 bits</TD><TD>Format de canal : entiers 8 bits, 16 bits et floattant 32 bits</TD><TD>Libtiff</TD></TR>
+ * <TR><TD>PNG</TD><TD>LibpngImage</TD><TD>.png, .PNG</TD><TD>Format de canal : entiers 1,2,4 et 8 bits</TD><TD>Non</TD><TD>Libpng</TD></TR>
+ * <TR><TD>PNG</TD><TD>LibjpegImage</TD><TD>.jpg, .JPG, .jpeg, .JPEG</TD><TD>Format de canal : entiers 8 bits</TD><TD>Non</TD><TD>Libjpeg</TD></TR>
+ * <TR><TD>JPEG2000</TD><TD>Jpeg2000Image</TD><TD>.jp2, .JP2</TD><TD>Format de canal : selon la librairie</TD><TD>Non</TD><TD>Openjpeg ou Kakadu</TD></TR>
+ * <TR><TD>BIL</TD><TD>BilzImage</TD><TD>.bil, .BIL, .zbil, .ZBIL</TD><TD>Format de canal : entiers 8 bits, 16 bits et floattant 32 bits</TD><TD>Non</TD><TD>Zlib pour la décompression</TD></TR>
  * </TABLE>
  * 
  * Tous les canaux doivent evoir le même format.
@@ -175,6 +175,9 @@ protected:
         if (sizeof(T) == 1) {
             // pour les entiers sur 8 bits
             coeff = (T) 255;
+        } else if (sizeof(T) == 2) {
+            // pour les entiers sur 16 bits
+            coeff = (T) 65535;
         } else {
             coeff = (T) 1;
         }
@@ -189,7 +192,7 @@ protected:
                 continue;
             }
             if (alpha == 0) {
-                // Transperence complète
+                // Transparence complète
                 memset(pix, 0, channels);
                 continue;
             }

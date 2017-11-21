@@ -839,7 +839,7 @@ For more informations about properties, see <BE4S3::Pyramid>.
     color - The color is a string and contain on value per sample, in decimal format, seperated by comma. For 8 bits unsigned integer, value must be between 0 and 255. For 32 bits float, an integer is expected too, but can be negative.
     Example : "255,255,255" (white) for images whithout alpha sample, "-99999" for a DTM.
 
-    image_width, image_height - Number a tile in the cache image (slab), widthwise and heightwise. 16 * 16 for example. Mandatory if no ancestor.
+    image_width, image_height - Number a tile in the cache image (slab), widthwise and heightwise. 16 if not provided and no ancestor.
 
     bitspersample - Possible values : 8, 32. Have to be the same as source. Mandatory if no ancestor and no images input.
 

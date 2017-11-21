@@ -91,7 +91,6 @@ my $updatePyr = BE4::Pyramid->new({
     pyr_name_new => "updatePyramid",
     pyr_level_bottom => 19,
 
-    pyr_data_path_old => $Bin."/../../pyramid",
     pyr_desc_path_old => $Bin."/../../pyramid",
     pyr_name_old => "oldPyramid",
 
@@ -122,7 +121,6 @@ my $badUpdatePyr = BE4::Pyramid->new({
     pyr_name_new => "updatePyramid",
     pyr_level_bottom => 19,
 
-    pyr_data_path_old => $Bin."/../../pyramid",
     pyr_desc_path_old => $Bin."/../../pyramid",
     pyr_name_old => "badOldPyramid",
 });

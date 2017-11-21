@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2017-11-16 15:49+0100\n"
+"POT-Creation-Date: 2017-11-21 16:22+0100\n"
 "PO-Revision-Date: 2013-02-18 17:49+0100\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -157,87 +157,87 @@ msgstr "the pyramid ["
 msgid " can't be loaded because information are missing"
 msgstr ""
 
-#: ConfLoader.cpp:333
+#: ConfLoader.cpp:332
 #, fuzzy
 msgid "La pyramide source "
 msgstr "the pyramid ["
 
-#: ConfLoader.cpp:333
+#: ConfLoader.cpp:332
 msgid " ne peut etre chargee"
 msgstr ""
 
-#: ConfLoader.cpp:347
+#: ConfLoader.cpp:346
 msgid "Style "
 msgstr "Style "
 
-#: ConfLoader.cpp:347
+#: ConfLoader.cpp:346
 msgid "non defini"
 msgstr "undefined"
 
-#: ConfLoader.cpp:675
+#: ConfLoader.cpp:680
 msgid "Construction de la liste des CRS equivalents depuis "
 msgstr ""
 
-#: ConfLoader.cpp:699 ConfLoader.cpp:766
+#: ConfLoader.cpp:704 ConfLoader.cpp:771
 #, fuzzy
 msgid "The Equivalent CRS ["
 msgstr "         Adding CRS "
 
-#: ConfLoader.cpp:699 ConfLoader.cpp:766
+#: ConfLoader.cpp:704 ConfLoader.cpp:771
 msgid "] is not present in Proj4"
 msgstr ""
 
-#: ConfLoader.cpp:721
+#: ConfLoader.cpp:726
 msgid "Ne peut pas charger le fichier "
 msgstr "Can't load the file"
 
-#: ConfLoader.cpp:721
+#: ConfLoader.cpp:726
 msgid " ou fichier vide"
 msgstr ""
 
-#: ConfLoader.cpp:766
+#: ConfLoader.cpp:771
 msgid "] of ["
 msgstr ""
 
-#: Level.cpp:233 Level.cpp:284
+#: Level.cpp:238 Level.cpp:289
 msgid "Image invalid !"
 msgstr "Image invalid !"
 
-#: Level.cpp:289
+#: Level.cpp:294
 #, fuzzy
 msgid "Dimensions invalid !"
 msgstr "Image invalid !"
 
-#: Level.cpp:314
+#: Level.cpp:319
 msgid "Too Much Tile on X axis"
 msgstr "Too Much Tile on X axis"
 
-#: Level.cpp:328
+#: Level.cpp:333
 msgid "Too Much Tile on Y axis"
 msgstr "Too Much Tile on Y axis"
 
-#: Level.cpp:374
+#: Level.cpp:379
 msgid "Indice de tuile negatif"
 msgstr ""
 
-#: Level.cpp:437
+#: Level.cpp:442
 msgid "getDirPath n'a pas de sens dans le cas d'un contexte non fichier"
 msgstr ""
 
-#: Level.cpp:513
+#: Level.cpp:524
 msgid "Type d'encodage inconnu : "
 msgstr ""
 
-#: Level.cpp:521 Level.cpp:524 Rok4Server.cpp:764 Rok4Server.cpp:773
+#: Level.cpp:532 Level.cpp:535 Rok4Server.cpp:764 Rok4Server.cpp:773
 #: Rok4Server.cpp:935
 msgid "No data found"
 msgstr ""
 
-#: Level.cpp:532
+#: Level.cpp:543
 msgid "GetTile Tiff"
 msgstr "GetTile Tiff"
 
-#: Level.cpp:542
+#: Level.cpp:553
 msgid "GetTile Image"
 msgstr "GetTile Image"
 
@@ -282,47 +282,47 @@ msgstr "Reloading configuration"
 msgid "Extinction du serveur ROK4"
 msgstr "Shutdown the ROK4 server"
 
-#: Pyramid.cpp:199
+#: Pyramid.cpp:198
 msgid "debut pyramide"
 msgstr ""
 
-#: Pyramid.cpp:206
+#: Pyramid.cpp:205
 msgid "fin pyramide"
 msgstr ""
 
-#: Pyramid.cpp:225
+#: Pyramid.cpp:224
 msgid "best_level="
 msgstr ""
 
-#: Pyramid.cpp:225
+#: Pyramid.cpp:224
 msgid " resolution requete="
 msgstr ""
 
-#: Pyramid.cpp:250
+#: Pyramid.cpp:249
 msgid "BBox en dehors de la definition du CRS"
 msgstr ""
 
-#: Pyramid.cpp:254 Pyramid.cpp:293
+#: Pyramid.cpp:253 Pyramid.cpp:292
 msgid "BBox decoupe incorrect"
 msgstr ""
 
-#: Pyramid.cpp:286
+#: Pyramid.cpp:285
 msgid "New Width = "
 msgstr ""
 
-#: Pyramid.cpp:286
+#: Pyramid.cpp:285
 msgid "New Height = "
 msgstr ""
 
-#: Pyramid.cpp:287
+#: Pyramid.cpp:286
 msgid "ratio_x = "
 msgstr ""
 
-#: Pyramid.cpp:287
+#: Pyramid.cpp:286
 msgid "ratio_y = "
 msgstr ""
 
-#: Pyramid.cpp:299
+#: Pyramid.cpp:298
 msgid "Image decoupe valide"
 msgstr ""
 

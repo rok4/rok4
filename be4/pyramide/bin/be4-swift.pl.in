@@ -833,6 +833,7 @@ For more informations about properties, see <BE4SWIFT::Pyramid>.
     pyr_name_new - Name of the new pyramid, used to name the descriptor, the pyramid's list, the temporary directory and prefix the Ceph objects. Mandatory.
     pyr_desc_path - Directory path, where to write the descriptor and the list. Mandatory.
     pyr_data_container_name - Mandatory.
+    keystone_connection - Force Swift authentication with keystone. Default value : false
 
     pyr_name_old - Ancestor's name. If this parameter is present, generation is an update.
     pyr_desc_path_old - Directory path where to find the ancestor's descriptor.
@@ -847,7 +848,7 @@ For more informations about properties, see <BE4SWIFT::Pyramid>.
     color - The color is a string and contain on value per sample, in decimal format, seperated by comma. For 8 bits unsigned integer, value must be between 0 and 255. For 32 bits float, an integer is expected too, but can be negative.
     Example : "255,255,255" (white) for images whithout alpha sample, "-99999" for a DTM.
 
-    image_width, image_height - Number a tile in the cache image (slab), widthwise and heightwise. 16 * 16 for example. Mandatory if no ancestor.
+    image_width, image_height - Number a tile in the cache image (slab), widthwise and heightwise. 16 if not provided and no ancestor.
 
     bitspersample - Possible values : 8, 32. Have to be the same as source. Mandatory if no ancestor and no images input.
 

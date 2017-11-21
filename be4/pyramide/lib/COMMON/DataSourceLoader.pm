@@ -399,7 +399,7 @@ __END__
 
 Group: details
 
-Configuration file exmaples.
+Configuration file examples.
 
 _In the be4 configuration, section *datasource* (multidata.conf)_
     (start code)

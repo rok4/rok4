@@ -297,13 +297,13 @@ sub _load {
         # Boucle sur les levels et sur le nb de scripts/jobs
         # On commence par les finishers
         # On continue avec les autres scripts, par level
-        for (my $i = $this->{pyramid}->getBottomOrder - 1; $i <= $this->{pyramid}->getTopOrder; $i++) {
-            for (my $j = 1; $j <= $this->getSplitNumber; $j++) {
+        for (my $i = $this->{pyramid}->getBottomOrder() - 1; $i <= $this->{pyramid}->getTopOrder(); $i++) {
+            for (my $j = 1; $j <= $this->getSplitNumber(); $j++) {
                 my $scriptID;
                 if ($i == $this->{pyramid}->getBottomOrder - 1) {
                     $scriptID = sprintf "SCRIPT_FINISHER_%s", $j;
                 } else {
-                    my $levelID = $this->getPyramid()->getIDfromOrder($i);
+                    my $levelID = $this->getPyramid()->getTileMatrixSet()->getIDfromOrder($i);
                     $scriptID = sprintf "LEVEL_%s_SCRIPT_%s", $levelID, $j;
                 }
 

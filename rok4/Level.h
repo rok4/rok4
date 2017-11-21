@@ -41,6 +41,7 @@ class Level;
 #define LEVEL_H
 
 #include "Image.h"
+#include "EmptyImage.h"
 #include "BoundingBox.h"
 #include "TileMatrix.h"
 #include "Data.h"
@@ -80,6 +81,8 @@ private:
     bool onDemand;
     // Avec stockage
     bool onFly;
+
+    int* nodataValue;
 
     DataSource* getEncodedTile ( int x, int y );
     DataSource* getDecodedTile ( int x, int y );

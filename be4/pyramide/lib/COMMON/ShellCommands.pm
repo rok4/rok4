@@ -1346,9 +1346,12 @@ sub getConfiguredFunctions {
         ######## work2cache ########
 
         # pour les images    
-        my $conf_w2c = sprintf "-c %s -t %s %s",
+        my $conf_w2c = sprintf "-c %s -t %s %s -s %s -b %s -a %s",
             $this->{pyramid}->getImageSpec()->getCompression,
-            $this->{pyramid}->getTileMatrixSet()->getTileWidth(), $this->{pyramid}->getTileMatrixSet()->getTileHeight();
+            $this->{pyramid}->getTileMatrixSet()->getTileWidth(), $this->{pyramid}->getTileMatrixSet()->getTileHeight(),
+            $this->{pyramid}->getImageSpec()->getPixel()->getSamplesPerPixel(),
+            $this->{pyramid}->getImageSpec()->getPixel()->getBitsPerSample(),
+            $this->{pyramid}->getImageSpec()->getPixel()->getSampleFormat();
 
         if ($this->{pyramid}->getImageSpec()->getCompressionOption() eq 'crop') {
             $conf_w2c .= " -crop";
@@ -1384,11 +1387,10 @@ sub getConfiguredFunctions {
         ######## mergeNtiff ########
         # work compression : deflate
 
-        my $conf_mNt = sprintf "-c zip -i %s -s %s -b %s -p %s -a %s -n %s",
+        my $conf_mNt = sprintf "-c zip -i %s -s %s -b %s -a %s -n %s",
             $this->{pyramid}->getImageSpec()->getInterpolation(),
             $this->{pyramid}->getImageSpec()->getPixel()->getSamplesPerPixel(),
             $this->{pyramid}->getImageSpec()->getPixel()->getBitsPerSample(),
-            $this->{pyramid}->getImageSpec()->getPixel()->getPhotometric(),
             $this->{pyramid}->getImageSpec()->getPixel()->getSampleFormat(),
             $this->{pyramid}->getNodata()->getValue();
 
@@ -1404,9 +1406,12 @@ sub getConfiguredFunctions {
 
         ######## merge4tiff ########
         # work compression : deflate
-        my $conf_m4t = sprintf "-c zip -g %s -n %s", 
+        my $conf_m4t = sprintf "-c zip -g %s -n %s -s %s -b %s -a %s", 
             $this->{pyramid}->getImageSpec()->getGamma(),
-            $this->{pyramid}->getNodata()->getValue();
+            $this->{pyramid}->getNodata()->getValue(),
+            $this->{pyramid}->getImageSpec()->getPixel()->getSamplesPerPixel(),
+            $this->{pyramid}->getImageSpec()->getPixel()->getBitsPerSample(),
+            $this->{pyramid}->getImageSpec()->getPixel()->getSampleFormat();
 
         $functions .= $M4TFUNCTION;
         $functions =~ s/__m4t__/$conf_m4t/g;
@@ -1414,10 +1419,12 @@ sub getConfiguredFunctions {
         ######## work2cache ########
 
         # pour les images    
-        my $conf_w2c = sprintf "-c %s -t %s %s",
+        my $conf_w2c = sprintf "-c %s -t %s %s -s %s -b %s -a %s",
             $this->{pyramid}->getImageSpec()->getCompression,
-            $this->{pyramid}->getTileMatrixSet()->getTileWidth(), $this->{pyramid}->getTileMatrixSet()->getTileHeight();
-
+            $this->{pyramid}->getTileMatrixSet()->getTileWidth(), $this->{pyramid}->getTileMatrixSet()->getTileHeight(),
+            $this->{pyramid}->getImageSpec()->getPixel()->getSamplesPerPixel(),
+            $this->{pyramid}->getImageSpec()->getPixel()->getBitsPerSample(),
+            $this->{pyramid}->getImageSpec()->getPixel()->getSampleFormat();
         if ($this->{pyramid}->getImageSpec()->getCompressionOption() eq 'crop') {
             $conf_w2c .= " -crop";
         }

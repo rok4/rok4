@@ -595,7 +595,7 @@ Parameters (list):
     type - string - "IMAGE" ou "MASK"
     col - integer - Slab column
     row - integer - Slab row
-    full - boolean - In file storage case, precise if we want full path or juste the end (without data root). In object storage case, precise if we want full path (with the container name) or juste the object name.
+    full - boolean - In file storage case, precise if we want full path or juste the end (without data root). In object storage case, precise if we want full path (with the container name) or just the object name.
 =cut
 sub getSlabPath {
     my $this = shift;

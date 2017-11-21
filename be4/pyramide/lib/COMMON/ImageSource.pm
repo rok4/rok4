@@ -316,7 +316,7 @@ sub computeImageSource {
         }
 
         # On récupère les caractéristiques de l'image APRÈS traitement, car c'est sur ces images que nous allons travailler
-        my @imageInfo = $objGeoImage->computeInfo();
+        my @imageInfo = $objGeoImage->computeImageInfo();
         #  @imageInfo = [ bitspersample , photometric , sampleformat , samplesperpixel ]
         if (scalar @imageInfo == 0) {
             ERROR ("Can not read image info ('$filepath') !");

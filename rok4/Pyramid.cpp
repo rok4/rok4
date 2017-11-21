@@ -48,7 +48,6 @@
 #include "AscEncoder.h"
 #include "ExtendedCompoundImage.h"
 #include "Format.h"
-#include "EmptyImage.h"
 #include "TiffEncoder.h"
 #include "Level.h"
 #include <cfloat>

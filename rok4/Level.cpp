@@ -45,7 +45,6 @@
 #include "Decoder.h"
 #include "TiffEncoder.h"
 #include "TiffHeaderDataSource.h"
-#include "EmptyDataSource.h"
 #include <cmath>
 #include "Logger.h"
 #include "Kernel.h"
@@ -92,6 +91,7 @@ Level::Level ( LevelXML* l, PyramidXML* p ) {
     prefix = l->prefix;
 
     maxTileSize = tm->getTileH() * tm->getTileW() * channels * Rok4Format::toSizePerChannel(format) * 2;
+    nodataValue = p->getNoDataValues();
 }
 
 Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
@@ -169,6 +169,10 @@ Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
     prefix = obj->prefix;
 
     maxTileSize = obj->maxTileSize;
+    nodataValue = new int[channels];
+    for (int i = 0; i < channels; ++i) {
+        nodataValue[i] = obj->nodataValue[i];
+    }
 }
 
 
@@ -186,6 +190,7 @@ Level::~Level() {
         delete pS;
     }
 
+    delete[] nodataValue;
 }
 
 
@@ -354,11 +359,11 @@ Image* Level::getwindow ( ServicesXML* servicesConf, BoundingBox< int64_t > bbox
     bottom[nby- 1] = tm->getTileH() - euclideanDivisionRemainder ( bbox.ymax -1,tm->getTileH() ) - 1;
 
     std::vector<std::vector<Image*> > T ( nby, std::vector<Image*> ( nbx ) );
-    for ( int y = 0; y < nby; y++ )
+    for ( int y = 0; y < nby; y++ ) {
         for ( int x = 0; x < nbx; x++ ) {
             T[y][x] = getTile ( tile_xmin + x, tile_ymin + y, left[x], top[y], right[x], bottom[y] );
         }
-
+    }
 
     if ( nbx == 1 && nby == 1 ) return T[0][0];
     else return new CompoundImage ( T );
@@ -503,6 +508,12 @@ DataSource* Level::getDecodedTile ( int x, int y ) {
     DataSource* encData = getEncodedTile ( x, y );
     if (encData == NULL) return 0;
 
+    size_t size;
+    if (encData->getData ( size ) == NULL) {
+        delete encData;
+        return 0;
+    }
+
     if ( format==Rok4Format::TIFF_RAW_INT8 || format==Rok4Format::TIFF_RAW_FLOAT32 )
         return encData;
     else if ( format==Rok4Format::TIFF_JPG_INT8 )
@@ -547,12 +558,32 @@ Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom )
     LOGGER_DEBUG ( _ ( "GetTile Image" ) );
     if ( format==Rok4Format::TIFF_RAW_FLOAT32 || format == Rok4Format::TIFF_LZW_FLOAT32 || format == Rok4Format::TIFF_ZIP_FLOAT32 || format == Rok4Format::TIFF_PKB_FLOAT32 )
         pixel_size=4;
-    return new ImageDecoder ( getDecodedTile ( x,y ), tm->getTileW(), tm->getTileH(), channels,
-                              BoundingBox<double> ( tm->getX0() + x * tm->getTileW() * tm->getRes() + left * tm->getRes(),
-                                      tm->getY0() - ( y+1 ) * tm->getTileH() * tm->getRes() + bottom * tm->getRes(),
-                                      tm->getX0() + ( x+1 ) * tm->getTileW() * tm->getRes() - right * tm->getRes(),
-                                      tm->getY0() - y * tm->getTileH() * tm->getRes() - top * tm->getRes() ),
-                              left, top, right, bottom, pixel_size );
+
+    DataSource* ds = getDecodedTile ( x,y );
+
+    BoundingBox<double> bb ( 
+        tm->getX0() + x * tm->getTileW() * tm->getRes() + left * tm->getRes(),
+        tm->getY0() - ( y+1 ) * tm->getTileH() * tm->getRes() + bottom * tm->getRes(),
+        tm->getX0() + ( x+1 ) * tm->getTileW() * tm->getRes() - right * tm->getRes(),
+        tm->getY0() - y * tm->getTileH() * tm->getRes() - top * tm->getRes()
+    );
+
+    if (ds == 0) {
+        // On crée une image monochrome (valeur fournie dans la pyramide) de la taille qu'aurait du avoir la tuile demandée
+        EmptyImage* ei = new EmptyImage(
+            tm->getTileW() - left - right, // width
+            tm->getTileH() - top - bottom, // height
+            channels,
+            nodataValue
+        );
+        ei->setBbox(bb);
+        return ei;
+    } else {
+        return new ImageDecoder (
+            ds, tm->getTileW(), tm->getTileH(), channels, bb,
+            left, top, right, bottom, pixel_size
+        );
+    }
 }
 
 

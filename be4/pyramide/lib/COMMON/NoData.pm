@@ -88,35 +88,10 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-# Constant: HEX2DEC
-# Define conversion from hedecimal to decimal number.
-my %HEX2DEC;
-
 ################################################################################
 
 BEGIN {}
-
-INIT {
-    %HEX2DEC = (
-        0 => 0,
-        1 => 1,
-        2 => 2,
-        3 => 3,
-        4 => 4,
-        5 => 5,
-        6 => 6,
-        7 => 7,
-        8 => 8,
-        9 => 9,
-        A => 10,
-        B => 11,
-        C => 12,
-        D => 13,
-        E => 14,
-        F => 15,
-    );
-}
-
+INIT {}
 END {}
 
 ####################################################################################################
@@ -198,28 +173,9 @@ sub _init {
         }
     } else {
         $params->{value} =~ s/ //g;
-
-        # On garde la possibilité de traiter une valeur fournie en héxadécimal
-        if ($this->{pixel}->getBitsPerSample == 8 &&
-            $this->{pixel}->getSampleFormat eq 'uint' &&
-            ( $params->{value} !~ m/^[0-9,]+$/ || $params->{value} =~ m/^0[0-9A-F]+$/ ) ) {
-
-            WARN (sprintf "Nodata value in hexadecimal format (%s) is deprecated, use decimal format instead !",
-                $params->{value});
-            
-            # nodata is supplied in hexadecimal format, we convert it
-            my $valueDec = $this->hexToDec($params->{value});
-            if (! defined $valueDec) {
-                ERROR (sprintf "Incorrect value for nodata in hexadecimal format '%s' ! Unable to convert",
-                    $params->{value});
-                return FALSE;
-            }
-            WARN (sprintf "Nodata value in hexadecimal format have been converted : %s ",$valueDec);
-            $params->{value} = $valueDec;
-        }
         
-        my @nodata = split(/,/,$params->{value},-1);
-        if (scalar @nodata != $this->{pixel}->getSamplesPerPixel) {
+        my @nodata = split(/,/, $params->{value}, -1);
+        if (scalar @nodata != $this->{pixel}->getSamplesPerPixel() ) {
             ERROR (sprintf "Incorrect parameter nodata (%s) : we need one value per sample (%s), separated by ',' !",
                 $params->{value},$this->{pixel}->getSamplesPerPixel);
             return FALSE;
@@ -266,56 +222,6 @@ sub getValue {
 sub getPixel {
     my $this = shift;
     return $this->{pixel};
-}
-
-####################################################################################################
-#                                    Group: Conversion                                             #
-####################################################################################################
-
-=begin nd
-Function: hexToDec
-
-From a color value in hexadecimal format (string), convert in decimal format (string). Different samples are separated by comma. Input string must have an even length (one sample <=> 2 character).
-
-Parameters (list):
-    hex - string - Color value to hexadecimal format : white -> FFFFFF
-
-Example:
-    hexToDec("7BFF0300") = "123,255,3,0"
-=cut
-sub hexToDec {
-    my $this = shift;
-    my $hex = shift;
-
-    if (length($hex) % 2 != 0) {
-        ERROR ("Length of an hexadecimal nodata must be even");
-        return undef;
-    }
-
-    my $dec = "";
-
-    my $i = 0;
-    while ($i < length($hex)) {
-        $dec .= "," if ($i > 1);
-
-        if (! exists $HEX2DEC{substr($hex,$i,1)} ) {
-            ERROR (sprintf "A character in not valid in the hexadecimal value of nodata : %s", substr($hex,$i,1));
-            return undef;
-        }
-        
-        if (! exists $HEX2DEC{substr($hex,$i+1,1)} ) {
-            ERROR (sprintf "A character in not valid in the hexadecimal value of nodata : %s",substr($hex,$i,1));
-            return undef;
-        }
-        
-        my $b1 = $HEX2DEC{substr($hex,$i,1)};
-        my $b0 = $HEX2DEC{substr($hex,$i+1,1)};
-        $dec .= $b0 + 16*$b1;
-
-        $i += 2;
-    }
-
-    return $dec;
 }
 
 ####################################################################################################

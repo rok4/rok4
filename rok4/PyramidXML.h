@@ -68,6 +68,7 @@ class PyramidXML : public DocumentXML
         bool isOk() ;
 
         int getChannels() ;
+        int* getNoDataValues() ;
         TileMatrixSet* getTMS() ;
         Rok4Format::eformat_data getFormat() ;
 

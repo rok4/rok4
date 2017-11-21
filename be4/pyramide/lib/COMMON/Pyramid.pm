@@ -157,6 +157,14 @@ our @EXPORT = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
+# Constant: DEFAULT
+# Define default values for attributes dir_depth, image_width and image_height.
+my %DEFAULT = (
+    dir_depth => 2,
+    image_width => 16,
+    image_height => 16
+);
+
 ################################################################################
 
 BEGIN {}
@@ -365,8 +373,8 @@ sub _load {
 
         # dir_depth
         if ($this->{storage_type} eq "FILE" && (! exists $params->{dir_depth} || ! defined $params->{dir_depth})) {
-            ERROR ("The parameter 'dir_depth' is required!");
-            return undef;
+            $params->{dir_depth} = $DEFAULT{dir_depth};
+            INFO(sprintf "Default value for 'dir_depth' : %s", $params->{dir_depth});
         }
         $this->{dir_depth} = $params->{dir_depth};
 
@@ -381,15 +389,15 @@ sub _load {
         
         # image_width
         if (! exists $params->{image_width} || ! defined $params->{image_width}) {
-            ERROR ("The parameter 'image_width' is required!");
-            return FALSE;
+            $params->{image_width} = $DEFAULT{image_width};
+            INFO(sprintf "Default value for 'image_width' : %s", $params->{image_width});
         }
         $this->{image_width} = $params->{image_width};
 
         # image_height
         if (! exists $params->{image_height} || ! defined $params->{image_height}) {
-            ERROR ("The parameter 'image_height' is required!");
-            return FALSE;
+            $params->{image_height} = $DEFAULT{image_height};
+            INFO(sprintf "Default value for 'image_height' : %s", $params->{image_height});
         }
         $this->{image_height} = $params->{image_height};
 
@@ -1004,6 +1012,36 @@ sub getLevel {
     my $this = shift;
     my $level = shift;
     return $this->{levels}->{$level};
+}
+
+# Function: getBottomOrder
+sub getBottomOrder {
+    my $this = shift;
+
+    my $order = undef;
+    while (my ($levelID, $level) = each(%{$this->{levels}})) {
+        my $o = $level->getOrder();
+        if (! defined $order || $o < $order) {
+            $order = $o;
+        }
+    }
+
+    return $order;
+}
+
+# Function: getTopOrder
+sub getTopOrder {
+    my $this = shift;
+
+    my $order = undef;
+    while (my ($levelID, $level) = each(%{$this->{levels}})) {
+        my $o = $level->getOrder();
+        if (! defined $order || $o > $order) {
+            $order = $o;
+        }
+    }
+
+    return $order;
 }
 
 # Function: getLevels

@@ -68,7 +68,7 @@ class EmptyImage : public Image {
 
 public:
 
-    /** Constructeur */
+    /** Constructeurs */
     EmptyImage ( int width, int height, int channels, int* _color ) : Image ( width, height, channels ) {
         color = new int[channels];
         for ( int c = 0; c < channels; c++ ) color[c] = _color[c];

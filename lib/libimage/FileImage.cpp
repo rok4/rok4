@@ -54,6 +54,7 @@
 #include "Utils.h"
 #include "LibtiffImage.h"
 #include "LibpngImage.h"
+#include "LibjpegImage.h"
 #include "Jpeg2000Image.h"
 #include "BilzImage.h"
 
@@ -110,6 +111,14 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
 
         LibpngImageFactory LPIF;
         return LPIF.createLibpngImageToRead ( name, bbox, resx, resy );
+    }
+
+    /********************** JPEG ********************/
+    else if ( strncmp ( pch+1, "jpg", 3 ) == 0 || strncmp ( pch+1, "jpeg", 4 ) == 0 || strncmp ( pch+1, "JPEG", 4 ) == 0 || strncmp ( pch+1, "JPG", 3 ) == 0 ) {
+        LOGGER_DEBUG ( "JPEG image to read : " << name );
+        
+        LibjpegImageFactory JPGIF;
+        return JPGIF.createLibjpegImageToRead ( name, bbox, resx, resy );
     }
 
     /******************* JPEG 2000 ******************/

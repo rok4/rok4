@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2017-11-16 15:49+0100\n"
+"POT-Creation-Date: 2017-11-21 16:22+0100\n"
 "PO-Revision-Date: 2014-01-28 09:36+0100\n"
 "Last-Translator: \n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -157,85 +157,85 @@ msgstr "La pyramide ["
 msgid " can't be loaded because information are missing"
 msgstr ""
 
-#: ConfLoader.cpp:333
+#: ConfLoader.cpp:332
 #, fuzzy
 msgid "La pyramide source "
 msgstr "La pyramide ["
 
-#: ConfLoader.cpp:333
+#: ConfLoader.cpp:332
 msgid " ne peut etre chargee"
 msgstr " ne peut être chargée"
 
-#: ConfLoader.cpp:347
+#: ConfLoader.cpp:346
 msgid "Style "
 msgstr "Style "
 
-#: ConfLoader.cpp:347
+#: ConfLoader.cpp:346
 msgid "non defini"
 msgstr "non défini"
 
-#: ConfLoader.cpp:675
+#: ConfLoader.cpp:680
 msgid "Construction de la liste des CRS equivalents depuis "
 msgstr "Construction de la liste des CRS équivalents depuis le fichier "
 
-#: ConfLoader.cpp:699 ConfLoader.cpp:766
+#: ConfLoader.cpp:704 ConfLoader.cpp:771
 msgid "The Equivalent CRS ["
 msgstr "Le CRS équivalent ["
 
-#: ConfLoader.cpp:699 ConfLoader.cpp:766
+#: ConfLoader.cpp:704 ConfLoader.cpp:771
 msgid "] is not present in Proj4"
 msgstr "] n'est pas présent dans Proj4"
 
-#: ConfLoader.cpp:721
+#: ConfLoader.cpp:726
 msgid "Ne peut pas charger le fichier "
 msgstr "                Ne peut pas charger le fichier "
 
-#: ConfLoader.cpp:721
+#: ConfLoader.cpp:726
 msgid " ou fichier vide"
 msgstr " ou fichier vide"
 
-#: ConfLoader.cpp:766
+#: ConfLoader.cpp:771
 msgid "] of ["
 msgstr "] de ["
 
-#: Level.cpp:233 Level.cpp:284
+#: Level.cpp:238 Level.cpp:289
 msgid "Image invalid !"
 msgstr "Image invalide !"
 
-#: Level.cpp:289
+#: Level.cpp:294
 msgid "Dimensions invalid !"
 msgstr "Dimensions invalides !"
 
-#: Level.cpp:314
+#: Level.cpp:319
 msgid "Too Much Tile on X axis"
 msgstr "Trop de tuile sur l'axe X"
 
-#: Level.cpp:328
+#: Level.cpp:333
 msgid "Too Much Tile on Y axis"
 msgstr "Trop de tuile sur l'axe Y"
 
-#: Level.cpp:374
+#: Level.cpp:379
 msgid "Indice de tuile negatif"
 msgstr "Indice de tuile négatif"
 
-#: Level.cpp:437
+#: Level.cpp:442
 msgid "getDirPath n'a pas de sens dans le cas d'un contexte non fichier"
 msgstr ""
 
-#: Level.cpp:513
+#: Level.cpp:524
 msgid "Type d'encodage inconnu : "
 msgstr "Type d'encodage inconnu : "
 
-#: Level.cpp:521 Level.cpp:524 Rok4Server.cpp:764 Rok4Server.cpp:773
+#: Level.cpp:532 Level.cpp:535 Rok4Server.cpp:764 Rok4Server.cpp:773
 #: Rok4Server.cpp:935
 msgid "No data found"
 msgstr "Aucune donnée"
 
-#: Level.cpp:532
+#: Level.cpp:543
 msgid "GetTile Tiff"
 msgstr "GetTile Tiff"
 
-#: Level.cpp:542
+#: Level.cpp:553
 msgid "GetTile Image"
 msgstr "GetTile Image"
 
@@ -280,47 +280,47 @@ msgstr "Rechargement de la configuration"
 msgid "Extinction du serveur ROK4"
 msgstr "Extinction du serveur ROK4"
 
-#: Pyramid.cpp:199
+#: Pyramid.cpp:198
 msgid "debut pyramide"
 msgstr "début pyramide"
 
-#: Pyramid.cpp:206
+#: Pyramid.cpp:205
 msgid "fin pyramide"
 msgstr "fin pyramide"
 
-#: Pyramid.cpp:225
+#: Pyramid.cpp:224
 msgid "best_level="
 msgstr "Meilleur niveau :"
 
-#: Pyramid.cpp:225
+#: Pyramid.cpp:224
 msgid " resolution requete="
 msgstr " resolution de la requête="
 
-#: Pyramid.cpp:250
+#: Pyramid.cpp:249
 msgid "BBox en dehors de la definition du CRS"
 msgstr "Emprise demandée en dehors de la zone de définition du CRS"
 
-#: Pyramid.cpp:254 Pyramid.cpp:293
+#: Pyramid.cpp:253 Pyramid.cpp:292
 msgid "BBox decoupe incorrect"
 msgstr "Emprise découpée incorrecte"
 
-#: Pyramid.cpp:286
+#: Pyramid.cpp:285
 msgid "New Width = "
 msgstr " Nouvelle largeur = "
 
-#: Pyramid.cpp:286
+#: Pyramid.cpp:285
 msgid "New Height = "
 msgstr "Nouvelle hauteur = "
 
-#: Pyramid.cpp:287
+#: Pyramid.cpp:286
 msgid "ratio_x = "
 msgstr "Ratio en X = "
 
-#: Pyramid.cpp:287
+#: Pyramid.cpp:286
 msgid "ratio_y = "
 msgstr "Ratio en Y ="
 
-#: Pyramid.cpp:299
+#: Pyramid.cpp:298
 msgid "Image decoupe valide"
 msgstr "Image découpée invalide !"
 

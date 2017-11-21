@@ -228,6 +228,13 @@ PyramidXML::~PyramidXML(){
 }
 
 bool PyramidXML::isOk() { return ok; }
+int* PyramidXML::getNoDataValues() {
+    int* nd = new int[channels];
+    for (int i=0;i<channels;i++) {
+        nd[i] = noDataValues.at(i);
+    }
+    return nd;
+}
 int PyramidXML::getChannels() { return channels; }
 TileMatrixSet* PyramidXML::getTMS() { return tms; }
 Rok4Format::eformat_data PyramidXML::getFormat() {return format; }

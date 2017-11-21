@@ -514,16 +514,18 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
             std::cerr<<("Impossible de connecter le gestionnaire d'alias") <<std::endl;
             return;
         }
+    } else {
+        am = NULL;
+    }
 
-        if (swiftBook) {
-            swiftBook->setAliasManager(am);
-        }
-        if (cephBook) {
-            cephBook->setAliasManager(am);
-        }
-        if (s3Book) {
-            s3Book->setAliasManager(am);
-        }
+    if (swiftBook) {
+        swiftBook->setAliasManager(am);
+    }
+    if (cephBook) {
+        cephBook->setAliasManager(am);
+    }
+    if (s3Book) {
+        s3Book->setAliasManager(am);
     }
 #endif
 
@@ -554,9 +556,15 @@ ServerXML::~ServerXML(){
         delete am;
     }
 
-    delete cephBook;
-    delete s3Book;
-    delete swiftBook;
+    if (cephBook != NULL) {
+        delete cephBook;
+    }
+    if (s3Book != NULL) {
+        delete s3Book;
+    }
+    if (swiftBook != NULL) {
+        delete swiftBook;
+    }
 #endif
 }
 
