@@ -131,36 +131,39 @@ Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
     format = obj->format;
 
     context = NULL;
-    switch ( obj->context->getType() ) {
-        case FILECONTEXT :
-            context = new FileContext("");
-            break;
+
+    if (obj->context != NULL) {
+        switch ( obj->context->getType() ) {
+            case FILECONTEXT :
+                context = new FileContext("");
+                break;
 #if BUILD_OBJECT
-        case CEPHCONTEXT :
-            if (sxml->getCephContextBook() != NULL) {
-                context = sxml->getCephContextBook()->addContext(obj->context->getTray());
-            } else {
-                LOGGER_ERROR ( "L'utilisation d'un cephContext necessite de preciser les informations de connexions dans le server.conf");
-                return;
-            }
-            break;
-        case S3CONTEXT :
-            if (sxml->getS3ContextBook() != NULL) {
-                context = sxml->getS3ContextBook()->addContext(obj->context->getTray());
-            } else {
-                LOGGER_ERROR ( "L'utilisation d'un s3Context necessite de preciser les informations de connexions dans le server.conf");
-                return;
-            }
-            break;
-        case SWIFTCONTEXT :
-            if (sxml->getSwiftContextBook() != NULL) {
-                context = sxml->getSwiftContextBook()->addContext(obj->context->getTray());
-            } else {
-                LOGGER_ERROR ( "L'utilisation d'un swiftContext necessite de preciser les informations de connexions dans le server.conf");
-                return;
-            }
-            break;
+            case CEPHCONTEXT :
+                if (sxml->getCephContextBook() != NULL) {
+                    context = sxml->getCephContextBook()->addContext(obj->context->getTray());
+                } else {
+                    LOGGER_ERROR ( "L'utilisation d'un cephContext necessite de preciser les informations de connexions dans le server.conf");
+                    return;
+                }
+                break;
+            case S3CONTEXT :
+                if (sxml->getS3ContextBook() != NULL) {
+                    context = sxml->getS3ContextBook()->addContext(obj->context->getTray());
+                } else {
+                    LOGGER_ERROR ( "L'utilisation d'un s3Context necessite de preciser les informations de connexions dans le server.conf");
+                    return;
+                }
+                break;
+            case SWIFTCONTEXT :
+                if (sxml->getSwiftContextBook() != NULL) {
+                    context = sxml->getSwiftContextBook()->addContext(obj->context->getTray());
+                } else {
+                    LOGGER_ERROR ( "L'utilisation d'un swiftContext necessite de preciser les informations de connexions dans le server.conf");
+                    return;
+                }
+                break;
 #endif
+        }
     }
 
     prefix = obj->prefix;
