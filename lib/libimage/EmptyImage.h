@@ -75,11 +75,12 @@ public:
     }
 
     virtual int getline ( uint8_t *buffer, int line ) {
+
         for ( int i = 0; i < width; i++ )
             for ( int c = 0; c < channels; c++ )
                 buffer[channels*i + c] = ( uint8_t ) color[c];
             
-        return width * channels * sizeof(uint8_t);
+        return width * channels;
     };
     
     virtual int getline ( uint16_t *buffer, int line ) {
@@ -87,20 +88,35 @@ public:
             for ( int c = 0; c < channels; c++ )
                 buffer[channels*i + c] = ( uint16_t ) color[c];
             
-        return width * channels * sizeof(uint16_t);
+        return width * channels;
     };
     
     virtual int getline ( float *buffer, int line ) {
+
         for ( int i = 0; i < width; i++ )
             for ( int c = 0; c < channels; c++ )
                 buffer[channels*i + c] = ( float ) color[c];
             
-        return width * channels * sizeof(float);
+        return width * channels;
     };
 
     virtual ~EmptyImage() {
         delete[] color;
     };
+
+    /** \~french
+     * \brief Sortie des informations sur l'image
+     ** \~english
+     * \brief File image description output
+     */
+    void print() {
+        LOGGER_INFO ( "" );
+        LOGGER_INFO ( "---------- EmptyImage ------------" );
+        Image::print();
+        LOGGER_INFO ( "\t- Nodata color : " );
+        for ( int c = 0; c < channels; c++ )
+            LOGGER_INFO ( "\t\t" << color[c] );
+    }
 };
 
 #endif

@@ -555,9 +555,15 @@ public:
      */
     bool isCompatibleWith ( Image* pImage ) {
 
-        if ( crs.isDefine() && pImage->getCRS().isDefine() && crs != pImage->getCRS() ) return false;
+        if ( crs.isDefine() && pImage->getCRS().isDefine() && crs != pImage->getCRS() ) {
+            LOGGER_DEBUG ( "Different CRS" );
+            return false;
+        }
 
-        if ( channels != pImage->getChannels() ) return false;
+        if ( getChannels() != pImage->getChannels() ) {
+            LOGGER_DEBUG ( "Different channels" );
+            return false;
+        }
 
         double epsilon_x=__min ( getResX(), pImage->getResX() ) /1000.;
         double epsilon_y=__min ( getResY(), pImage->getResY() ) /1000.;
@@ -571,11 +577,11 @@ public:
             return false;
         }
 
-        if ( fabs ( getPhaseX()-pImage->getPhaseX() ) > 0.01 && fabs ( getPhaseX()-pImage->getPhaseX() ) < 0.99 ) {
+        if ( fabs ( getPhaseX()-pImage->getPhaseX() ) > 0.001 && fabs ( getPhaseX()-pImage->getPhaseX() ) < 0.999 ) {
             LOGGER_DEBUG ( "Different X phasis : " << getPhaseX() << " and " << pImage->getPhaseX() );
             return false;
         }
-        if ( fabs ( getPhaseY()-pImage->getPhaseY() ) > 0.01 && fabs ( getPhaseY()-pImage->getPhaseY() ) < 0.99 ) {
+        if ( fabs ( getPhaseY()-pImage->getPhaseY() ) > 0.001 && fabs ( getPhaseY()-pImage->getPhaseY() ) < 0.999 ) {
             LOGGER_DEBUG ( "Different Y phasis : " << getPhaseY() << " and " << pImage->getPhaseY() );
             return false;
         }

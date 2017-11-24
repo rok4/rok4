@@ -723,7 +723,7 @@ int sortImages ( std::vector<FileImage*> ImageIn, std::vector<std::vector<Image*
 /**
  * \~french
  * \brief Modifie le rectangle englobant pour le rendre en phase avec l'image
- * \details Les 4 valeurs du rectangle englobant seront modifiée (au minimum) afin d'avoir les mêmes phases que celles de l'image fournie. Cependant, l'étendue finale ser incluse dans celle initiale (pas d'agrandissement de la bounding box).
+ * \details Les 4 valeurs du rectangle englobant seront modifiée (au minimum) afin d'avoir les mêmes phases que celles de l'image fournie. Cependant, l'étendue finale sera incluse dans celle initiale (pas d'agrandissement de la bounding box).
  *
  * \param[in] pImage image avec laquelle la bounding box doit être mise en phase
  * \param[in,out] bbox rectangle englobant à mettre en phase
@@ -746,7 +746,7 @@ void makePhase ( Image* pImage, BoundingBox<double> *bbox ) {
         phi += 1.0;
     }
 
-    if ( fabs ( phi-phaseX ) > 0.01 && fabs ( phi-phaseX ) < 0.99 ) {
+    if ( fabs ( phi-phaseX ) > 0.0001 && fabs ( phi-phaseX ) < 0.9999 ) {
         phaseDiff = phaseX - phi;
         if ( phaseDiff < 0. ) {
             phaseDiff += 1.0;
@@ -760,7 +760,7 @@ void makePhase ( Image* pImage, BoundingBox<double> *bbox ) {
         phi += 1.0;
     }
 
-    if ( fabs ( phi-phaseX ) > 0.01 && fabs ( phi-phaseX ) < 0.99 ) {
+    if ( fabs ( phi-phaseX ) > 0.0001 && fabs ( phi-phaseX ) < 0.9999 ) {
         phaseDiff = phaseX - phi;
         if ( phaseDiff > 0. ) {
             phaseDiff -= 1.0;
@@ -774,7 +774,7 @@ void makePhase ( Image* pImage, BoundingBox<double> *bbox ) {
         phi += 1.0;
     }
 
-    if ( fabs ( phi-phaseY ) > 0.01 && fabs ( phi-phaseY ) < 0.99 ) {
+    if ( fabs ( phi-phaseY ) > 0.0001 && fabs ( phi-phaseY ) < 0.9999 ) {
         phaseDiff = phaseY - phi;
         if ( phaseDiff < 0. ) {
             phaseDiff += 1.0;
@@ -788,7 +788,7 @@ void makePhase ( Image* pImage, BoundingBox<double> *bbox ) {
         phi += 1.0;
     }
 
-    if ( fabs ( phi-phaseY ) > 0.01 && fabs ( phi-phaseY ) < 0.99 ) {
+    if ( fabs ( phi-phaseY ) > 0.0001 && fabs ( phi-phaseY ) < 0.9999 ) {
         phaseDiff = phaseY - phi;
         if ( phaseDiff > 0. ) {
             phaseDiff -= 1.0;
@@ -903,7 +903,7 @@ bool reprojectImages ( FileImage* pImageOut, ExtendedCompoundImage* pECI, Reproj
     std::string to_srs = pImageOut->getCRS().getProj4Code();
 
     /******** Conversion de la bbox source dans le srs de sortie ********/
-    /******************* et calcul des ration des résolutions ***********/
+    /******************* et calcul des ratios des résolutions ***********/
 
     /* On fait particulièrement attention à ne considérer que la partie valide de la bbox source
      * c'est à dire la partie incluse dans l'espace de définition du SRS
@@ -919,7 +919,7 @@ bool reprojectImages ( FileImage* pImageOut, ExtendedCompoundImage* pECI, Reproj
     }
 
     /* On valcule les résolutions de l'image source "équivalente" dans le SRS de destination, pour pouvoir calculer le ratio
-     * des réolutions pour la taille des miroirs */
+     * des résolutions pour la taille des miroirs */
     double resx_calc = (cropSourceBbox.xmax - cropSourceBbox.xmin) / double(cropWidth);
     double resy_calc = (cropSourceBbox.ymax - cropSourceBbox.ymin) / double(cropHeight);
 

@@ -659,30 +659,6 @@ int LibtiffImage::writeImage ( uint8_t* buffer) {
         print();
         return -1;        
     }
-    
-    /* else if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) {
-        uint16_t* buf_t = new uint16_t[width * channels];
-        for ( int line = 0; line < height; line++ ) {
-            convert ( buf_t, buffer + line * width * channels, width * channels );
-            if ( TIFFWriteScanline ( tif, buf_t, line, 0 ) < 0 ) {
-                LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
-                return -1;
-            }
-        }
-
-        delete []  buf_t ;
-    } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
-        float* buf_f = new float[width * channels];
-        for ( int line = 0; line < height; line++ ) {
-            convert ( buf_f, buffer + line * width * channels, width * channels );
-            if ( TIFFWriteScanline ( tif, buf_f, line, 0 ) < 0 ) {
-                LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
-                return -1;
-            }
-        }
-
-        delete []  buf_f ;
-    }*/
 
     return 0;
 }

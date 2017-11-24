@@ -243,6 +243,7 @@ Image* Level::getbbox ( ServicesXML* servicesConf, BoundingBox< double > bbox, i
         LOGGER_DEBUG ( _ ( "Image invalid !" ) );
         return 0;
     }
+
     image->setBbox ( BoundingBox<double> ( tm->getX0() + tm->getRes() * bbox_int.xmin, tm->getY0() - tm->getRes() * bbox_int.ymax, tm->getX0() + tm->getRes() * bbox_int.xmax, tm->getY0() - tm->getRes() * bbox_int.ymin ) );
 
     grid->affine_transform ( 1./image->getResX(), -image->getBbox().xmin/image->getResX() - 0.5,
@@ -270,7 +271,7 @@ Image* Level::getbbox ( ServicesXML* servicesConf, BoundingBox< double > bbox, i
     if ( bbox_int.xmax - bbox_int.xmin == width && bbox_int.ymax - bbox_int.ymin == height &&
             bbox.xmin - bbox_int.xmin < EPS && bbox_int.xmax - bbox.xmax < EPS &&
             bbox.ymin - bbox_int.ymin < EPS && bbox_int.ymax - bbox.ymax < EPS ) {
-        /* L'image demandée est en phase et à les mêmes résolutions que les images du niveau
+        /* L'image demandée est en phase et a les mêmes résolutions que les images du niveau
          *   => pas besoin de réechantillonnage */
         return getwindow ( servicesConf, bbox_int, error );
     }
@@ -294,6 +295,7 @@ Image* Level::getbbox ( ServicesXML* servicesConf, BoundingBox< double > bbox, i
         LOGGER_DEBUG ( _ ( "Image invalid !" ) );
         return 0;
     }
+
     // On affecte la bonne bbox à l'image source afin que la classe de réechantillonnage calcule les bonnes valeurs d'offset
     if (! imageout->setDimensions ( bbox_int.xmax - bbox_int.xmin, bbox_int.ymax - bbox_int.ymin, BoundingBox<double> ( bbox_int ), 1.0, 1.0 ) ) {
         LOGGER_DEBUG ( _ ( "Dimensions invalid !" ) );
