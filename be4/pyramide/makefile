@@ -32,6 +32,7 @@ buildbin: \
 ./bin/joinCache-ceph.pl \
 ./bin/coord2image.pl \
 ./bin/tms-converter-gui.pl \
+./bin/sup-pyr.pl \
 ./bin/pyr2pyr.pl \
 ./bin/create-layer.pl \
 ./bin/exPyr.pl \

@@ -58,6 +58,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/tms-converter-gui.pl.in ${CMAKE_C
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4-simulator.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/be4-simulator.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/exPyr.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/exPyr.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/pyr2pyr.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/pyr2pyr.pl @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/sup-pyr.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/sup-pyr.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/wmtSalaD.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/wmtSalaD.pl @ONLY)
 
 set(ENV{CFLAGS} "-O3")

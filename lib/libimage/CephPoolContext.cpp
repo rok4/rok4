@@ -119,9 +119,7 @@ int CephPoolContext::read(uint8_t* data, int offset, int size, std::string name)
    
     LOGGER_DEBUG("Ceph read : " << size << " bytes (from the " << offset << " one) in the object " << name);
 
-    LOGGER_INFO("CEPH READ START (" << size << ") " << pthread_self());
     int readSize = rados_read(io_ctx, name.c_str(), (char*) data, size, offset);
-    LOGGER_INFO("CEPH READ END (" << size << ") " << pthread_self());
 
     if (readSize < 0) {
         LOGGER_ERROR ( "Unable to read " << size << " bytes (from the " << offset << " one) in the object " << name );

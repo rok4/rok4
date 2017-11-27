@@ -517,6 +517,7 @@ sub computeYourself {
     
     # ----------------------- WEIGHT AND CODE ---------------------------
     # Pondération de l'arbre en fonction des opérations à réaliser et écriture des commandes dans les noeuds
+    DEBUG ("Compilation des branches depuis les noeuds du niveau le plus haut");
     foreach my $topNode (@topLevelNodes) {
         if (! $this->computeBranch($topNode)) {
             ERROR(sprintf "Can not weight the node of the top level '%s'!", $topNode->getWorkBaseName);
@@ -528,6 +529,8 @@ sub computeYourself {
     # Détermination du cutLevel optimal et répartition des noeuds sur les jobs,
     # en tenant compte du fait qu'ils peuvent déjà contenir du travail, du fait
     # de la pluralité des arbres à traiter.
+
+    DEBUG ("Calcul du niveau de coupure");
     
     $this->shareNodesOnJobs();
 

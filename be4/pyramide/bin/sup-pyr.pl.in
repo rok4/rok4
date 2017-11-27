@@ -1,0 +1,375 @@
+#!/usr/bin/env perl
+# Copyright © (2011) Institut national de l'information
+#                    géographique et forestière
+#
+# Géoportail SAV <geop_services@geoportail.fr>
+#
+# This software is a computer program whose purpose is to publish geographic
+# data using OGC WMS and WMTS protocol.
+#
+# This software is governed by the CeCILL-C license under French law and
+# abiding by the rules of distribution of free software.  You can  use,
+# modify and/ or redistribute the software under the terms of the CeCILL-C
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "http://www.cecill.info".
+#
+# As a counterpart to the access to the source code and  rights to copy,
+# modify and redistribute granted by the license, users are provided only
+# with a limited warranty  and the software's author,  the holder of the
+# economic rights,  and the successive licensors  have only  limited
+# liability.
+#
+# In this respect, the user's attention is drawn to the risks associated
+# with loading,  using,  modifying and/or developing or reproducing the
+# software by the user in light of its specific status of free software,
+# that may mean  that it is complicated to manipulate,  and  that  also
+# therefore means  that it is reserved for developers  and  experienced
+# professionals having in-depth computer knowledge. Users are therefore
+# encouraged to load and test the software's suitability as regards their
+# requirements in conditions enabling the security of their systems and/or
+# data to be ensured and,  more generally, to use and operate it in the
+# same conditions as regards security.
+#
+# The fact that you are presently reading this means that you have had
+#
+# knowledge of the CeCILL-C license and that you accept its terms.
+
+################################################################################
+
+=begin nd
+File: sup-pyr.pl
+
+Section: SUP-PYR tool
+
+Synopsis:
+    (start code)
+    sup-pyr.pl --pyr=file [--full]
+    (end code)
+=cut
+
+################################################################################
+
+use warnings;
+use strict;
+
+use POSIX qw(locale_h);
+
+# Module
+use Log::Log4perl qw(:easy);
+use Getopt::Long;
+use Cwd;
+
+# My search module
+use FindBin qw($Bin);
+use lib "$Bin/../lib/perl5";
+
+# My module
+use COMMON::Pyramid;
+use COMMON::ProxyStorage;
+
+################################################################################
+# Constantes
+use constant TRUE  => 1;
+use constant FALSE => 0;
+
+################################################################################
+# Version
+my $VERSION = '@VERSION_TEXT@';
+
+=begin nd
+Variable: options
+
+Contains sup-pyr call options :
+
+    version - To obtain the command's version
+    help - To obtain the command's help
+    usage - To obtain the command's usage
+    
+    pyr - To precise the pyramid's descriptor file
+    full - To precise if we want to remove the pyramid's descriptor file and list file too
+    
+=cut
+my %options =
+(
+    "version"    => 0,
+    "help"       => 0,
+    "usage"      => 0,
+
+    # Mandatory
+    "pyr"  => undef,
+    # Optionnal
+    "full"  => FALSE
+);
+
+####################################################################################################
+#                                         Group: Functions                                         #
+####################################################################################################
+
+=begin nd
+Function: main
+
+Main method.
+
+See Also:
+    <init>, <doIt>
+=cut
+sub main {
+    printf("SUP-PYR : version [%s]\n",$VERSION);
+
+    print STDOUT "BEGIN\n";
+
+    # initialization
+    ALWAYS("> Initialization");
+    if (! main::init()) {
+        print STDERR "ERROR INITIALIZATION !\n";
+        exit 1;
+    }
+
+    # execution
+    ALWAYS("> Execution");
+    if (! main::doIt()) {
+        print STDERR "ERROR EXECUTION !\n";
+        exit 5;
+    }
+
+    print STDOUT "END\n";
+}
+
+=begin nd
+Function: init
+
+Checks and stores options, initializes the default logger. Checks TMS directory and the pyramid's descriptor file.
+=cut
+sub init {
+
+    # init Getopt
+    local $ENV{POSIXLY_CORRECT} = 1;
+
+    Getopt::Long::config qw(
+        default
+        no_autoabbrev
+        no_getopt_compat
+        require_order
+        bundling
+        no_ignorecase
+        permute
+    );
+
+    # init Options
+    GetOptions(
+        "help|h" => sub {
+            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/sup-pyr-pl.html\n" ;
+            exit 0;
+        },
+        "version|v" => sub { exit 0; },
+        "usage" => sub {
+            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/sup-pyr-pl.html\n" ;
+            exit 0;
+        },
+        
+        "pyr=s" => \$options{pyr},
+        "full" => \$options{full}
+    ) or do {
+        printf "Unappropriate usage\n";
+        printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/sup-pyr-pl.html\n";
+        exit -1;
+    };
+    
+    # logger by default at runtime
+    Log::Log4perl->easy_init({
+        level => "INFO",
+        layout => '%5p : %m (%M) %n'
+    });
+    
+    ############# PYR
+    if (! defined $options{pyr} || $options{pyr} eq "") {
+        ERROR("Option 'pyr' not defined !");
+        return FALSE;
+    }
+
+    my $pyrFile = File::Spec->rel2abs($options{pyr});
+
+    if (! -f $pyrFile) {
+        ERROR(sprintf "Pyramid's descriptor file does not exist : %s", $pyrFile);
+        return FALSE;
+    }
+    $options{pyr} = $pyrFile;
+    
+    ############# FULL
+
+    if ($options{full} == 1) {
+        INFO("We ask for a full removal");
+        $options{full} = TRUE;
+    }
+
+    return TRUE;
+}
+
+####################################################################################################
+#                                 Group: Process methods                                           #
+####################################################################################################
+
+=begin nd
+Function: doIt
+
+Use classes :
+    - <ProxyStorage::remove>
+=cut
+sub doIt {
+
+    my $objPyramid = COMMON::Pyramid->new("DESCRIPTOR", $options{pyr} );
+    if (! defined $objPyramid) {
+        ERROR("Cannot load pyramid to delete !");
+        return FALSE;
+    }
+
+    my $storageType = $objPyramid->getStorageType();
+    my $pyramidName = $objPyramid->getName();
+
+    my $issue = FALSE;
+
+    my $listFile = $options{pyr};
+    $listFile =~ s/\.pyr$/\.list/;
+
+    if ($storageType eq "FILE") {
+        # Dans le cas fichier, on supprime un dossier tout simplement pour les données, pas besoin de fichier list
+        INFO("Suppression de la pyramide FICHIER $pyramidName");
+
+        my $dataDir = $objPyramid->getDataDir();
+
+        INFO("Suppression du dossier de données $dataDir");
+        if (! ProxyStorage::remove("FILE", $dataDir)) {
+            WARN("Impossible de supprimer le dossier $dataDir");
+            $issue = TRUE;
+        }
+
+        if ($options{full} && ! $issue) {
+
+            # On supprime maintenant le descripteur et la liste
+            INFO("Suppression du descripteur de pyramide ".$options{pyr});
+            if (! ProxyStorage::remove("FILE", $options{pyr})) {
+                WARN("Impossible de supprimer le descripteur de pyramide ".$options{pyr});
+                return FALSE;
+            }
+
+            if (-f $listFile) {
+                WARN("Suppression de la liste $listFile");
+                if (! ProxyStorage::remove("FILE", $listFile)) {
+                    ERROR("Impossible de supprimer la liste $listFile");
+                    return FALSE;
+                }
+            }
+        }
+
+        return TRUE
+    }
+
+    # On est dans le cas d'un stockage objet : CEPH, S3 ou SWIFT
+    INFO("Suppression de la pyramide $storageType $pyramidName");
+
+    my $dataTray = $objPyramid->getDataRoot();
+
+    # Le fichier liste doit exister pour pouvoir faire la suppression de la pyramide
+
+    if (! -f $listFile) {
+        ERROR("Pyramid's list file does not exist : $listFile");
+        return FALSE;
+    }
+
+    my $LIST;
+    if (! open $LIST, "<", $listFile) {
+        ERROR("Cannot open pyramid list file (read) : $listFile");
+        return FALSE;
+    }
+    
+    while( my $line = <$LIST> ) {
+        chomp $line;
+
+        ############# ON ZAPPE JUSTE LE HEADER #############
+
+        if ($line eq "#") {
+            last;
+        }
+    }    
+
+    while( my $line = <$LIST> ) {
+        chomp $line;
+
+        # Une ligne du fichier c'est
+        # Cas objet : 0/PYRAMID_IMG_15_15656_5423
+        my @parts = split("/", $line);
+        # La première partie est donc toujours l'index du conteneur, déjà connu
+        shift(@parts);
+
+        # Dans le cas d'un stockage objet, on a un nom d'objet de la forme PYRAMID_NAME_DATATYPE_LEVEL_COL_ROW
+        # DATATYPE vaut MSK ou IMG
+        my @p = split("_", join("", @parts));
+
+        my $row = pop(@p);
+        my $col = pop(@p);
+        my $level = pop(@p);
+        my $dataType = pop(@p);
+
+        # Le nom de pyramide est potentiellement celui d'une pyramide ancêtre qu'on a référencé par objet symbolique
+        # Dans notre cas on veut bien sur supprimer l'objet symbolique et non la dalle dans la pyramide ancêtre
+        # On va donc reconstruire le nom de la dalle dans la pyramide que l'on veut supprimer, en remettant son nom
+
+        my $slab = "${dataTray}/${pyramidName}_${dataType}_${level}_${col}_${row}";
+        if (! COMMON::ProxyStorage::remove($storageType, $slab)) {
+            WARN("Impossible de supprimer la dalle $storageType $slab");
+            $issue = TRUE;
+        }
+    }
+
+    close($LIST);
+
+    if ($options{full} && ! $issue) {
+        # On supprime maintenant le descripteur et la liste
+        INFO("Suppression du descripteur de pyramide ".$options{pyr});
+        if (! COMMON::ProxyStorage::remove("FILE", $options{pyr})) {
+            ERROR("Impossible de supprimer le descripteur de pyramide ".$options{pyr});
+            return FALSE;
+        }
+
+        if (-f $listFile) {
+            INFO("Suppression de la liste $listFile");
+            if (! COMMON::ProxyStorage::remove("FILE", $listFile)) {
+                ERROR("Impossible de supprimer la liste $listFile");
+                return FALSE;
+            }
+        }
+    }
+
+    return TRUE;
+}
+
+################################################################################
+
+BEGIN {}
+INIT {}
+
+main;
+exit 0;
+
+END {}
+
+################################################################################
+
+1;
+__END__
+
+=begin nd
+Section: Details
+
+Group: Command's options
+
+    --help - Display the link to the technic documentation.
+
+    --usage - Display the link to the technic documentation.
+
+    --version - Display the tool version.
+
+    --pyr - Pyramid's descriptor file. Mandatory.
+
+    --full - Optionnal, to remove descriptor and list file too
+=cut

@@ -363,7 +363,10 @@ sub _load {
         $this->{tms} = $ancestor->getTileMatrixSet()->getName();
         $this->{image_width} = $ancestor->getTilesPerWidth();
         $this->{image_height} = $ancestor->getTilesPerHeight();
+
         $this->{pyrImgSpec} = $ancestor->getImageSpec();
+        $this->{pyrImgSpec}->setCompressionOption($params->{compressionoption});
+
         $this->{nodata} = $ancestor->getNodata();
 
         if (defined $ancestor->getDirDepth()) {

@@ -131,10 +131,7 @@ my %options =
     
     # Configuration
     "properties"  => undef, # file properties params (mandatory) !
-    "environment" => undef, # file environment be4 params (optional) !
-    
-    # Only for maintenance !
-    "test" => 0,
+    "environment" => undef  # file environment be4 params (optional) !
 );
 
 =begin nd

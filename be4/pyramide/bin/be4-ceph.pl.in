@@ -43,7 +43,8 @@ Section: BE4-CEPH tool
 
 Synopsis:
     (start code)
-    perl be4-ceph.pl --conf=path
+    perl be4-ceph.pl --conf=path [ --env=path ]
+    # All parameters of the --env config file can be overided by --conf config file parameter
     (end code)
 
 Tool allowing to generate a pyramid of tiled TIFF images, several resolutions, with compression (lossless or lossy) from several data sources, georeferenced image (ortho, scan, ...) or WMS service. Output format respects WMS/WMTS server ROK4.
@@ -129,9 +130,7 @@ my %options =
     
     # Configuration
     "properties"  => undef, # file properties params (mandatory) !
-    
-    # Only for maintenance !
-    "test" => 0,
+    "environment" => undef  # file environment be4 params (optional) !
 );
 
 =begin nd
@@ -205,7 +204,7 @@ sub main {
 =begin nd
 Function: init
 
-Checks options and initializes the default logger. Check properties file (mandatory).
+Checks options and initializes the default logger. Check environment file (optionnal) and properties file (mandatory).
 =cut
 sub init {
   
@@ -234,7 +233,8 @@ sub init {
             exit 0;
         },
         
-        "properties|conf=s" => \$options{properties}
+        "properties|conf=s" => \$options{properties},
+        "environment|env=s" => \$options{environment}
     ) or do {
         printf "Unappropriate usage\n";
         printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-ceph-pl.html\n";
@@ -256,6 +256,12 @@ sub init {
     }
     my $fproperties = File::Spec->rel2abs($options{properties});
     $options{properties} = $fproperties;
+
+    # env : optional !
+    if (defined $options{environment} && $options{environment} ne "") {
+        my $fenvironment = File::Spec->rel2abs($options{environment});
+        $options{environment} = $fenvironment;
+    }
     
     return TRUE;
 }
@@ -263,7 +269,7 @@ sub init {
 =begin nd
 Function: config
 
-Loads properties files and merge parameters. We also check environment variable (object storage configuration).
+Loads environment and properties files and merge parameters. Those in the properties file have priority over those in the environment file. We also check environment variable (object storage configuration).
 
 See Also:
     <checkParams>
@@ -277,13 +283,90 @@ sub config {
     my $objProp = BE4CEPH::PropertiesLoader->new($fprop);
     
     if (! defined $objProp) {
-        ERROR("Can not load properties !");
+        ERROR("Can not load specific properties !");
+        return FALSE;
+    }
+    
+    my %props = $objProp->getAllProperties();
+    
+    if (! scalar keys %props) {
+        ERROR("All parameters properties are empty !");
+        return FALSE;
+    }
+
+    ###################
+
+    my $hashref;
+
+    ###################
+    ALWAYS(">>> Treat optionnal environment ...");
+
+    my $fenv = undef;
+    $fenv = $options{environment} if (defined $options{environment} && $options{environment} ne "");
+
+    if (defined $fenv) {
+        my $objEnv = COMMON::Config->new({
+            'filepath' => $fenv,
+            'format' => "INI"
+        });
+
+        if (! defined $objEnv) {
+            ERROR("Can not load environment properties !");
+            return FALSE;
+        }
+
+        my $envs = $objEnv->getRawConfig();
+
+        if (! scalar keys %{$envs}) {
+            ERROR("All parameters environment are empty !");
+            return FALSE;
+        }
+        
+        foreach (keys %{$this{params}}) {
+            my $href = { map %$_, grep ref $_ eq 'HASH', ($envs->{$_}, $props{$_}) };
+            $hashref->{$_} = $href;
+        }
+    } else {
+        foreach (keys %{$this{params}}) {
+            my $href = { map %$_, grep ref $_ eq 'HASH', ($props{$_}) };
+            $hashref->{$_} = $href;
+        }
+    }
+
+    ###################
+
+    if (! defined $hashref) {
+        ERROR("Can not merge all parameters of properties !");
         return FALSE;
     }
   
     # save params properties
-    my %params = $objProp->getAllProperties();
-    $this{params} = \%params;
+    $this{params} = $hashref;
+    
+    ###################
+    # check parameters
+    
+    my $pyramid     = $this{params}->{pyramid};       #
+    my $datasource  = $this{params}->{datasource};    #
+    my $process     = $this{params}->{process};       # 
+    
+    # pyramid
+    if (! defined $pyramid) {
+        ERROR("Parameters Pyramid can not be null !");
+        return FALSE;
+    }
+    
+    # datasource
+    if (! defined $datasource) {
+        ERROR("Parameters Datasource can not be null !");
+        return FALSE;
+    }
+    
+    # process
+    if (! defined $process) {
+        ERROR("Parameters Process can not be null !");
+        return FALSE;
+    }
 
     # logger
     my $logger = $this{params}->{logger};
@@ -364,7 +447,7 @@ sub writeListAndReferences {
     my $newListPath = $newpyr->getListFile();
     my $newListPathTmp = "$newListPath.tmp";
 
-    if (! $force  && -f $newListPath) {
+    if (! $force && -f $newListPath) {
         ERROR(sprintf "New pyramid list ('%s') exist, can not overwrite it ! ", $newListPath);
         return FALSE;
     }

@@ -792,7 +792,7 @@ sub isPresent {
             return FALSE;
         }
 
-        `rados -p $poolName stat $objectName`;
+        `rados -p $poolName stat $objectName 1>/dev/null 2>/dev/null`;
         if ($?) {
             return FALSE;
         }
@@ -976,6 +976,35 @@ sub getSize {
 }
 
 ####################################################################################################
+#                               Group: Delete methods                                              #
+####################################################################################################
+
+=begin nd
+Function: remove
+
+Remove the file/object provided
+=cut
+sub remove {
+    my $type = shift;
+    my $path = shift;
+
+    if ($type eq "FILE") {
+        `rm -r $path`;
+        if ($? == 0) {return TRUE};
+    }
+    elsif ($type eq "CEPH") {
+
+        my ($poolName, @rest) = split("/", $path);
+        my $objectName = join("", @rest);
+
+        `rados -p $poolName rm $objectName`;
+        if ($? == 0) {return TRUE};
+    }
+
+    return FALSE;
+}
+
+####################################################################################################
 #                               Group: Link methods                                                #
 ####################################################################################################
 
@@ -1028,7 +1057,7 @@ sub symLink {
         # On vérifie que la dalle CEPH à lier n'est pas un alias, auquel cas on référence le vrai objet (pour éviter des alias en cascade)
         my $value = getSize("CEPH",$targetPath);
         if ( $value < $ROK4_IMAGE_HEADER_SIZE ) {
-            $realTarget = `rados -p $tPoolName get $realTarget /proc/\$\$/fd/1`;
+            $realTarget = `rados -p $tPoolName get $realTarget /dev/stdout`;
         }
 
         # On retire le bucket du nom de l'alias à créer

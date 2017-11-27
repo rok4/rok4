@@ -362,6 +362,16 @@ sub getCompressionOption {
     return $this->{compressionoption};
 }
 
+# Function: setCompressionOption
+sub setCompressionOption {
+    my $this = shift;
+    my $co = shift;
+
+    if (defined $co && defined COMMON::Array::isInArray($co, @COMPRESSIONOPTIONS)) {
+        $this->{compressionoption} = $co;
+    }
+}
+
 # Function: getFormatCode
 sub getFormatCode {
     my $this = shift;
