@@ -587,6 +587,10 @@ sub cache2work {
 use constant WORK2CACHE_W => 1;
 
 my $S3_W2CFUNCTION = <<'W2CFUNCTION';
+BackupListFile () {
+    echo "List file back up to do"
+}
+
 StoreSlab () {
     local level=$1
     local workDir=$2
@@ -630,6 +634,10 @@ StoreSlab () {
 W2CFUNCTION
 
 my $SWIFT_W2CFUNCTION = <<'W2CFUNCTION';
+BackupListFile () {
+    echo "List file back up to do"
+}
+
 StoreSlab () {
     local level=$1
     local workDir=$2
@@ -674,6 +682,11 @@ W2CFUNCTION
 
 
 my $CEPH_W2CFUNCTION = <<'W2CFUNCTION';
+BackupListFile () {
+    local objectName=`basename ${LIST_FILE}`
+    rados -p ${PYR_POOL} put ${objectName} ${LIST_FILE}
+}
+
 StoreSlab () {
     local level=$1
     local workDir=$2
@@ -783,6 +796,10 @@ W2CFUNCTION
 
 
 my $FILE_W2CFUNCTION = <<'W2CFUNCTION';
+BackupListFile () {
+    cp ${LIST_FILE} ${PYR_DIR}/
+}
+
 StoreSlab () {
     local level=$1
     local workDir=$2

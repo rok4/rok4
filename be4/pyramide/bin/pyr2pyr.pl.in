@@ -314,7 +314,7 @@ sub addSubElm {
 
 
 
-my $BASHFUNCTIONS_CEPH   = <<'FUNCTIONS';
+my $BASHFUNCTIONS_CEPH = <<'FUNCTIONS';
 
 StoreTiles () {
     local fullPath=$1
@@ -353,7 +353,7 @@ StoreSlab () {
 
 FUNCTIONS
 
-my $BASHFUNCTIONS_S3   = <<'FUNCTIONS';
+my $BASHFUNCTIONS_S3 = <<'FUNCTIONS';
 
 HOST=$(echo ${ROK4_S3_URL} | sed 's!.*://!!' | sed 's!:[0-9]\+$!!')
 
@@ -384,7 +384,7 @@ StoreSlab () {
 
 FUNCTIONS
 
-my $BASHFUNCTIONS_SWIFT   = <<'FUNCTIONS';
+my $BASHFUNCTIONS_SWIFT = <<'FUNCTIONS';
 
 StoreSlab () {
 

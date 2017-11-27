@@ -786,6 +786,8 @@ sub checkCompatibility {
 
 =begin nd
 Function: writeDescriptor
+
+Back up it at the end
 =cut
 sub writeDescriptor {
     my $this = shift;
@@ -835,8 +837,55 @@ sub writeDescriptor {
 
     close(FILE);
 
+    $this->backupDescriptor();
+
     return TRUE
 }
+
+
+=begin nd
+Function: backupDescriptor
+
+Pyramid's descriptor is stored into the object storage with data. Nothing done if FILE storage
+
+This file have to be written before calling this function
+=cut
+sub backupDescriptor {
+    my $this = shift;
+
+    my $descFile = $this->getDescriptorFile();
+
+    if ($this->{storage_type} eq "FILE") {
+        INFO("On ne sauvegarde pas le descripteur de pyramide en mode fichier car des chemins sont en relatif et n'ont pas de sens si le fichier est ailleurs");
+    } else {
+        my $backupDescFile = sprintf "%s/%s.pyr", $this->getDataRoot(), $this->getName();
+        COMMON::ProxyStorage::copy("FILE", $descFile, $this->{storage_type}, $backupDescFile);
+    }
+}
+
+
+=begin nd
+Function: backupList
+
+Pyramid's list is stored into the data storage : in the data directory or in the object tray
+
+This file have to be written before calling this function
+=cut
+sub backupList {
+    my $this = shift;
+
+    my $listFile = $this->getListFile();
+
+    my $backupList;
+    if ($this->{storage_type} eq "FILE") {
+        $backupList = sprintf "%s/%s.list", $this->getDataDir(), $this->getName();
+    } else {
+        $backupList = sprintf "%s/%s.list", $this->getDataRoot(), $this->getName();
+    }
+
+    COMMON::ProxyStorage::copy("FILE", $listFile, $this->{storage_type}, $backupList);
+}
+
 
 ####################################################################################################
 #                                Group: Common getters                                             #

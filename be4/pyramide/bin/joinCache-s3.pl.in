@@ -582,6 +582,8 @@ sub doIt {
 
     close($STREAM);
 
+    $this{pyramid}->backupList();
+
     # On ferme tous les scripts
     foreach my $s (@{$this{scripts}}) {
         $s->close();

@@ -419,7 +419,7 @@ sub computeGraphs {
     }
     
     foreach my $script (@{$this->{scripts}}) {
-        $script->close;
+        $script->close();
     }
     
     return TRUE;
