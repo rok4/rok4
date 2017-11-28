@@ -1231,8 +1231,10 @@ size_t Rok4Image::computePngTile ( uint8_t *buffer, uint8_t *data ) {
     * ( ( uint32_t* ) ( buffer+16 ) ) = bswap_32 ( tileWidth );
     * ( ( uint32_t* ) ( buffer+20 ) ) = bswap_32 ( tileHeight );
     if ( channels == 1 ) {
-        buffer[25] = 0;    // gray
-    } else if ( channels == 3 ) {
+        buffer[25] = 0;    // GRAY
+    } else if ( channels == 2 ) {
+        buffer[25] = 4;    // GRAYA
+    }else if ( channels == 3 ) {
         buffer[25] = 2;    // RGB
     } else if ( channels == 4 ) {
         buffer[25] = 6;    // RGBA

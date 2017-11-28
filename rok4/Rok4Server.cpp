@@ -783,8 +783,6 @@ DataSource* Rok4Server::getTile ( Request* request ) {
         tileSource = getTileUsual(L, tileMatrix, tileCol, tileRow, style, format) ;
     }
 
-    LOGGER_INFO("GET TILE END () " << pthread_self());
-
     return tileSource;
 
 }

@@ -219,8 +219,7 @@ const uint8_t* PngDecoder::decode ( DataSource* source, size_t &size ) {
         return 0;
         break;
     case 4: // Gray + Alpha
-        channels = 2; //ERROR
-        return 0;
+        channels = 2;
         break;
     case 6: //RGBA
         channels = 4;

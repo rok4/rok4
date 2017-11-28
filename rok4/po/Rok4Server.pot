@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2017-11-24 14:16+0100\n"
+"POT-Creation-Date: 2017-11-28 11:03+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -193,44 +193,44 @@ msgstr ""
 msgid "] of ["
 msgstr ""
 
-#: Level.cpp:243 Level.cpp:298
+#: Level.cpp:243 Level.cpp:295
 msgid "Image invalid !"
 msgstr ""
 
-#: Level.cpp:304
+#: Level.cpp:301
 msgid "Dimensions invalid !"
 msgstr ""
 
-#: Level.cpp:346
+#: Level.cpp:326
 msgid "Too Much Tile on X axis"
 msgstr ""
 
-#: Level.cpp:360
+#: Level.cpp:340
 msgid "Too Much Tile on Y axis"
 msgstr ""
 
-#: Level.cpp:408
+#: Level.cpp:386
 msgid "Indice de tuile negatif"
 msgstr ""
 
-#: Level.cpp:471
+#: Level.cpp:449
 msgid "getDirPath n'a pas de sens dans le cas d'un contexte non fichier"
 msgstr ""
 
-#: Level.cpp:553
+#: Level.cpp:531
 msgid "Type d'encodage inconnu : "
 msgstr ""
 
-#: Level.cpp:561 Level.cpp:564 Rok4Server.cpp:764 Rok4Server.cpp:773
-#: Rok4Server.cpp:935
+#: Level.cpp:539 Level.cpp:542 Rok4Server.cpp:764 Rok4Server.cpp:773
+#: Rok4Server.cpp:933
 msgid "No data found"
 msgstr ""
 
-#: Level.cpp:572
+#: Level.cpp:550
 msgid "GetTile Tiff"
 msgstr ""
 
-#: Level.cpp:582
+#: Level.cpp:560
 msgid "GetTile Image"
 msgstr ""
 
@@ -660,11 +660,11 @@ msgstr ""
 msgid "La valeur du parametre DPI est negative."
 msgstr ""
 
-#: Request.cpp:1081 Request.cpp:1140 Rok4Server.cpp:1544
+#: Request.cpp:1081 Request.cpp:1140 Rok4Server.cpp:1542
 msgid "Le service "
 msgstr ""
 
-#: Request.cpp:1081 Request.cpp:1140 Rok4Server.cpp:1544
+#: Request.cpp:1081 Request.cpp:1140 Rok4Server.cpp:1542
 msgid " est inconnu pour ce serveur."
 msgstr ""
 
@@ -896,16 +896,16 @@ msgstr ""
 msgid "Probleme dans les parametres de la requete getMap"
 msgstr ""
 
-#: Rok4Server.cpp:391 Rok4Server.cpp:1378
+#: Rok4Server.cpp:391 Rok4Server.cpp:1376
 msgid "bbox invalide"
 msgstr ""
 
-#: Rok4Server.cpp:394 Rok4Server.cpp:1381
+#: Rok4Server.cpp:394 Rok4Server.cpp:1379
 msgid "bbox trop grande"
 msgstr ""
 
-#: Rok4Server.cpp:397 Rok4Server.cpp:412 Rok4Server.cpp:884 Rok4Server.cpp:914
-#: Rok4Server.cpp:930 Rok4Server.cpp:946 Rok4Server.cpp:1384
+#: Rok4Server.cpp:397 Rok4Server.cpp:412 Rok4Server.cpp:882 Rok4Server.cpp:912
+#: Rok4Server.cpp:928 Rok4Server.cpp:944 Rok4Server.cpp:1382
 msgid "Impossible de repondre a la requete"
 msgstr ""
 
@@ -929,39 +929,39 @@ msgstr ""
 msgid "Probleme dans les parametres de la requete getTile"
 msgstr ""
 
-#: Rok4Server.cpp:1325 Rok4Server.cpp:1348
+#: Rok4Server.cpp:1323 Rok4Server.cpp:1346
 msgid "Probleme dans les parametres de la requete getFeatureInfo"
 msgstr ""
 
-#: Rok4Server.cpp:1423
+#: Rok4Server.cpp:1421
 msgid "Erreur interne."
 msgstr ""
 
-#: Rok4Server.cpp:1428
+#: Rok4Server.cpp:1426
 msgid "Info_format non "
 msgstr ""
 
-#: Rok4Server.cpp:1428
+#: Rok4Server.cpp:1426
 msgid " supporté par la couche "
 msgstr ""
 
-#: Rok4Server.cpp:1485
+#: Rok4Server.cpp:1483
 msgid "Internal server error"
 msgstr ""
 
-#: Rok4Server.cpp:1493
+#: Rok4Server.cpp:1491
 msgid "GFI depuis un SQL non géré."
 msgstr ""
 
-#: Rok4Server.cpp:1495
+#: Rok4Server.cpp:1493
 msgid "ERRORRRRRR !"
 msgstr ""
 
-#: Rok4Server.cpp:1508 Rok4Server.cpp:1512 Rok4Server.cpp:1526
-#: Rok4Server.cpp:1530
+#: Rok4Server.cpp:1506 Rok4Server.cpp:1510 Rok4Server.cpp:1524
+#: Rok4Server.cpp:1528
 msgid " n'est pas prise en charge par ce serveur."
 msgstr ""
 
-#: Rok4Server.cpp:1512
+#: Rok4Server.cpp:1510
 msgid "L'operation "
 msgstr ""
