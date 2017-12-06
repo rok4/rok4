@@ -419,7 +419,7 @@ sub gettile2image {
     $txt .= "Tile's indices : $x, $y \n";
 
     $x = int($x / $widthEntry->get());
-    $x = int($y / $heightEntry->get());
+    $y = int($y / $heightEntry->get());
     $txt .= "Slab's indices : $x, $y \n";
 
     my $image_path = COMMON::Base36::indicesToB36Path($x, $y, 3);
