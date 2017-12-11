@@ -156,8 +156,6 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
             LOGGER_DEBUG ( "Dalle symbolique détectée : " << originalName << " référence une autre dalle symbolique " << name );
 
             int realSize = context->read(indexheader, 0, headerIndexSize, name);
-            LOGGER_ERROR ( "On est dans le cas d'un objet symbolique " << name );
-            LOGGER_ERROR ( "name = " << name  << " originalName = " << originalName);
 
             if ( realSize < 0) {
                 LOGGER_ERROR ( "Erreur lors de la lecture du header et de l'index dans l'objet/fichier " << name );
