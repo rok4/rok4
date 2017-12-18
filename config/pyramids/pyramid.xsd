@@ -9,11 +9,9 @@
                 <!-- nombre de canaux utilisés dans les images (et tuiles) -->
                 <xs:element name="channels" type="xs:positiveInteger"/>
                 <!-- valeur du nodata, cohérent avec le nombre de canaux -->
-                <!-- nécessaire pour une pyramide à la demande avec génération (couleur de la tuile de noData) -->
-                <xs:element name="nodataValue" type="xs:string" minOccurs="0"/>
-                <xs:element name="interpolation" type="imageInterpolation" minOccurs="0"/>
-                <!-- nécessaire pour une pyramide à la demande avec génération -->
-                <xs:element name="photometric" type="imagePhotometric" minOccurs="0"/>
+                <xs:element name="nodataValue" type="xs:string"/>
+                <xs:element name="interpolation" type="imageInterpolation"/>
+                <xs:element name="photometric" type="imagePhotometric"/>
 
                 <xs:element name="level" minOccurs="1" maxOccurs="unbounded">
                     <xs:complexType>
@@ -105,16 +103,12 @@
 			                </xs:element>
                             <!-- informations sur les masques -->
                             <xs:element name="mask" type="maskContent" minOccurs="0"/>
-                            <!-- informations sur les métadonnées -->
-                            <xs:element name="metadata" type="metadataContent" minOccurs="0"/>
                             <!-- nombre de tuiles par dalle en largeur-->
                             <xs:element name="tilesPerWidth"  type="xs:positiveInteger"/>
                             <!-- nombre de tuiles par dalles en hauteur -->
                             <xs:element name="tilesPerHeight" type="xs:positiveInteger"/>
                             <!-- profondeur de l'arborescence du cache entre la racine et les fichiers images -->
                             <xs:element name="pathDepth" type="xs:nonNegativeInteger"/>
-                            <!-- informations sur la tuile de nodata -->
-                            <xs:element name="nodata" type="nodataContent"/>
                             <!-- le bloc facultatif décrivant l'emprise du level dans le tileMatrix -->
                             <xs:element ref="TMSLimits" minOccurs="0" maxOccurs="1"/>
                         </xs:sequence>
@@ -124,16 +118,6 @@
             </xs:sequence>
         </xs:complexType>
     </xs:element>
-    
-    <xs:complexType name="metadataContent">
-        <xs:sequence>
-            <!-- repertoire racine des données du level pour les métadonnées-->
-            <xs:element name="baseDir"        type="xs:string"/>
-            <!-- format des masques de métadonnées du cache -->
-            <xs:element name="format"         type="imageFormat"/>
-        </xs:sequence>
-        <xs:attribute name="type"        type="metadataType"/>
-    </xs:complexType>
 
     <xs:complexType name="maskContent">
         <xs:sequence>
@@ -143,14 +127,6 @@
             <xs:element name="format"         type="maskFormat"/>
         </xs:sequence>
     </xs:complexType>
-    
-    <xs:complexType name="nodataContent">
-        <xs:sequence>
-            <!-- chemin vers la dalle contenant la tuile de NoData-->
-            <xs:element name="filePath"        type="xs:string"/>
-        </xs:sequence>
-    </xs:complexType>
-
 
     <!-- liste des formats autorisés pour les images du cache -->
     <xs:simpleType name="imageFormat">

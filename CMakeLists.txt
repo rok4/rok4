@@ -99,72 +99,68 @@ else(DEB_PACKAGE)
   set(CPACK_GENERATOR "TGZ")
 endif(DEB_PACKAGE)
 
-
-
-
 if(NOT DEFINED USE_SYSTEM_LIB)
   set(USE_SYSTEM_LIB FALSE)
 endif(NOT DEFINED USE_SYSTEM_LIB)
 
-#Options passed to curl and used to compile it 
-# EX: --with-ssl[=PATH/TO/LIBSSL]
-if(NOT DEFINED CURL_OPTIONS)
-  set(CURL_OPTIONS "" CACHE STRING "NO CURL OPTIONS USED")
-endif(NOT DEFINED CURL_OPTIONS)
 
-#Path of libraries already installed on the computer
-#It concerns libraries used bu curl (like libssl)
-#But Rok4 need to know where find it
-#EX: PATH/TO/LIBSSL.a ou .so
-if(NOT DEFINED CURL_SUP_LIBRARIES_PATHS)
-  set(CURL_SUP_LIBRARIES_PATHS "" CACHE STRING "NO CURL PATHS USED")
-endif(NOT DEFINED CURL_SUP_LIBRARIES_PATHS)
+######################################## DOCUMENTATION
 
-#Name of libraries already installed on the computer
-#It concerns libraries used bu curl (like libssl)
-#But Rok4 need to know where find it
-#EX: ssl
-if(NOT DEFINED CURL_SUP_LIBRARIES_NAMES)
-  set(CURL_SUP_LIBRARIES_NAMES "" CACHE STRING "NO CURL NAMES USED")
-endif(NOT DEFINED CURL_SUP_LIBRARIES_NAMES)
+if(BUILD_DOC)
 
-#Include direectories of libraries already installed on the computer
-#It concerns libraries used bu curl (like libssl)
-#But Rok4 need to know where find it
-#EX: PATH/TO/INCLUDE/DIRECTORY
-if(NOT DEFINED CURL_SUP_LIBRARIES_INCLUDES)
-  set(CURL_SUP_LIBRARIES_INCLUDES "" CACHE STRING "NO CURL INCLUDES USED")
-endif(NOT DEFINED CURL_SUP_LIBRARIES_INCLUDES)
+  add_custom_target(doc)
 
-#Options passed to curl and used to compile it 
-# EX: --with-ssl[=PATH/TO/LIBSSL]
-if(NOT DEFINED CURL_OPTIONS)
-  set(CURL_OPTIONS "" CACHE STRING "NO CURL OPTIONS USED")
-endif(NOT DEFINED CURL_OPTIONS)
+  # Documentation Doxygen
 
-#Path of libraries already installed on the computer
-#It concerns libraries used bu curl (like libssl)
-#But Rok4 need to know where find it
-#EX: PATH/TO/LIBSSL.a ou .so
-if(NOT DEFINED CURL_SUP_LIBRARIES_PATHS)
-  set(CURL_SUP_LIBRARIES_PATHS "" CACHE STRING "NO CURL PATHS USED")
-endif(NOT DEFINED CURL_SUP_LIBRARIES_PATHS)
+  FILE(GLOB dox_configs ${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile.*.in)
+  if(dox_configs)
+    find_package(Doxygen)
+    if(DOXYGEN_FOUND)
+      
+      MESSAGE("-- Detecting documentation language")
+      FOREACH(doxconf ${dox_configs})
+          STRING(LENGTH ${doxconf} doxconf_length)
+          MATH( EXPR doxconf_pos "${doxconf_length} - 5")
+          STRING(SUBSTRING ${doxconf} ${doxconf_pos} 2 doxconf_lang)
+          MESSAGE("  - adding ${doxconf_lang}")
+          set (doxconf_out ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.${doxconf_lang})
+          configure_file(${doxconf} ${doxconf_out} @ONLY)
+          FILE(STRINGS ${doxconf_out} doxconf_outdir_line REGEX "OUTPUT_DIRECTORY.*=.*$")
+          STRING(REGEX REPLACE "OUTPUT_DIRECTORY.*= *" "" doxconf_outdir ${doxconf_outdir_line})
+          add_custom_target(doc-${doxconf_lang}
+             mkdir -p ${doxconf_outdir}
+             COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.${doxconf_lang} 
+             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+             COMMENT "Generating API documentation with Doxygen" VERBATIM)
+          add_dependencies(doc doc-${doxconf_lang})
+      ENDFOREACH(doxconf)
+    endif(DOXYGEN_FOUND)
+  endif(dox_configs)
 
-#Name of libraries already installed on the computer
-#It concerns libraries used bu curl (like libssl)
-#But Rok4 need to know where find it
-#EX: ssl
-if(NOT DEFINED CURL_SUP_LIBRARIES_NAMES)
-  set(CURL_SUP_LIBRARIES_NAMES "" CACHE STRING "NO CURL NAMES USED")
-endif(NOT DEFINED CURL_SUP_LIBRARIES_NAMES)
+  # Documentation NaturalDocs
+  if(BUILD_BE4)
+    find_package(NaturalDocs)
+    if(NATURALDOCS_FOUND)
 
-#Include direectories of libraries already installed on the computer
-#It concerns libraries used bu curl (like libssl)
-#But Rok4 need to know where find it
-#EX: PATH/TO/INCLUDE/DIRECTORY
-if(NOT DEFINED CURL_SUP_LIBRARIES_INCLUDES)
-  set(CURL_SUP_LIBRARIES_INCLUDES "" CACHE STRING "NO CURL INCLUDES USED")
-endif(NOT DEFINED CURL_SUP_LIBRARIES_INCLUDES)
+        MESSAGE("  - adding Natuladocs")
+        add_custom_command(OUTPUT make_naturaldocs_command 
+          COMMAND mkdir -p ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/Natural/Html 
+          COMMAND mkdir -p ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/Natural/NaturalDocs 
+          COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/docs/MenuND.txt ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/Natural/NaturalDocs/Menu.txt
+          COMMAND naturaldocs -r --input ./ --exclude-input blib/ -img ${CMAKE_CURRENT_SOURCE_DIR}/docs/images --no-auto-group --documented-only --output HTML ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/Natural/Html --project ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/Natural/NaturalDocs
+          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/be4/pyramide/src/)
+
+        add_custom_target(make_naturaldocs_target DEPENDS make_naturaldocs_command)
+
+        add_dependencies(doc make_naturaldocs_target)
+
+    endif(NATURALDOCS_FOUND)
+  endif(BUILD_BE4)
+
+  # Installation
+  INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/target/docs/"  DESTINATION share/doc/)
+
+endif(BUILD_DOC)
     
 ##################################################################################
 
@@ -181,25 +177,21 @@ MESSAGE(STATUS "Building Be4 generation toolchain")
 endif(BUILD_BE4)
 
 if(DEB_PACKAGE)
-#Installe les fichiers de configurations
-INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/config/"
-  DESTINATION /etc/rok4/config)
-#Installe les fichiers de données
-INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/data/"
-  DESTINATION /var/rok4/data)
-#Installe les fichiers de service
-INSTALL(FILES "${CMAKE_CURRENT_SOURCE_DIR}/service/rok4"
-  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
-  DESTINATION /etc/init.d)
+
+  #Installe les fichiers de configurations
+  INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/config/" DESTINATION /etc/rok4/config)
+  #Installe les fichiers de service
+  INSTALL(FILES "${CMAKE_CURRENT_SOURCE_DIR}/service/rok4" 
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
+    DESTINATION /etc/init.d)
+
 else(DEB_PACKAGE)
-#Installe les fichiers de configurations
-INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/config/"
-  DESTINATION etc/rok4/config)
-#Installe les fichiers de données
-INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/data/"
-  DESTINATION var/rok4/data)
-#Installe les fichiers de service
-INSTALL(FILES "${CMAKE_CURRENT_SOURCE_DIR}/service/rok4"
-  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
-  DESTINATION etc/init.d)
+
+  #Installe les fichiers de configurations
+  INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/config/" DESTINATION etc/rok4/config)
+  #Installe les fichiers de service
+  INSTALL(FILES "${CMAKE_CURRENT_SOURCE_DIR}/service/rok4"
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
+    DESTINATION etc/init.d)
+
 endif(DEB_PACKAGE)

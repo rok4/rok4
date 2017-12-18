@@ -5,11 +5,6 @@
 
 BE4_BIN=$(BE4_ENV)/bin
 BE4_LIB=$(BE4_ENV)/lib
-BE4_CONF=$(BE4_ENV)/config/be4
-BE4_HTML=$(BE4_ENV)/share/doc/Be4/html
-BE4_DOC=$(BE4_ENV)/share/doc/Be4
-BE4_MAN=$(BE4_ENV)/man
-BE4_SHARE=$(BE4_ENV)/share
 
 all: pyramid
 
@@ -64,38 +59,12 @@ builddir:
 	@(if [ ! -d $(BE4_LIB) ] ; then \
                 install -d $(BE4_LIB) ;\
         fi)
-	@(if [ ! -d $(BE4_CONF) ] ; then \
-                install -d $(BE4_CONF) ;\
-        fi)
-	@(if [ ! -d $(BE4_MAN) ] ; then \
-                install -d $(BE4_MAN) ;\
-        fi)
-	@(if [ ! -d $(BE4_HTML) ] ; then \
-                install -d $(BE4_HTML) ;\
-        fi)
 
 buildinstall:
 	@( cd . && make -f Makefile install ) ;
 
 test:
 	@( cd . && make -f Makefile test ) ;
-
-doc: buildnatural.doc
-
-%.doc: %
-	@ echo "> Ok, Doc $* !" ;
-
-buildnatural:
-	@( if [ ! -d docs/Natural/Html ] ; then \
-                install -d docs/Natural/Html ;\
-		install -d docs/Natural/NaturalDocs ;\
-	fi)
-	@( if [ -f $(BE4_SRC)/../doc/MenuND.txt ] ; then \
-		cp $(BE4_SRC)/../doc/MenuND.txt ./docs/Natural/NaturalDocs/Menu.txt ;\
-	fi)
-	@( naturaldocs -r --input ./ --exclude-input ./blib/ -img $(BE4_SRC)/../doc/images --no-auto-group --documented-only --output HTML ./docs/Natural/Html --project ./docs/Natural/NaturalDocs ) ;
-	@( echo "> Ok, NaturalDocs !" ) ;
-
 
 clean:
 	@( if [ -d docs/Natural/Html ] ; then \
@@ -124,20 +93,14 @@ help:
 	@echo " sub target ():"
 	@echo "    make buildinstall- ."
 	@echo "    make builddir    - ."
-	@echo "    make buildnatural- ."
 	@echo "    make buildbin    - ."
 	@echo "    make builddir    - ."
-	@echo "    make buildconf   - ."
 	@echo "    make buildlib    - ."
 	@echo " "
 	@echo " Information install :"
 	@echo " "
 	@echo "     prefix      : $(BE4_ENV)"
 	@echo "     bin         : $(BE4_BIN)" 
-	@echo "     lib         : $(BE4_LIB)" 
-	@echo "     config/be4  : $(BE4_CONF)"
-	@echo "     share       : $(BE4_SHARE)"
-	@echo "     man         : $(BE4_MAN)"
-	@echo "     html        : $(BE4_HTML)"
+	@echo "     lib         : $(BE4_LIB)"
 	@echo " "
 

@@ -19,12 +19,6 @@ if(NOT DEFINED BUILD_DEPENDENCIES)
   set(BUILD_DEPENDENCIES TRUE BOOL)
 endif(NOT DEFINED BUILD_DEPENDENCIES)
 
-if(NOT DEFINED BUILD_DOC)
-  set(BUILD_DOC TRUE BOOL)
-  set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
-  include(DoxygenConfig)
-endif(NOT DEFINED BUILD_DOC)
-
 if(UNITTEST)
   enable_testing()
 endif(UNITTEST)
@@ -45,10 +39,3 @@ add_subdirectory(work2cache)
 if(BUILD_OBJECT)
 	add_subdirectory(slab2tiles)
 endif(BUILD_OBJECT)
-
-######################
-
-# Documentation Doxygen
-if(BUILD_DOC)
-    include(DoxygenConfig)
-endif(BUILD_DOC)

@@ -130,11 +130,6 @@ if(UNITTEST)
 endif(UNITTEST)
 
 ########################################
-#Documentation Doxygen
-#Utilisation du fichier 
-if(BUILD_DOC)
-    include(DoxygenConfig)
-endif(BUILD_DOC)
 
 INSTALL(FILES LICENCE README DESTINATION doc/${PROJECT_NAME})
 

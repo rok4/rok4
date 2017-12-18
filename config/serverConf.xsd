@@ -1,67 +1,67 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
-	<xs:element name="serverConf">
-		<xs:complexType>
-			<xs:sequence>
-			<!-- Liste outputs de log disponibles -->
-			<xs:simpleType name="logOutputType">
-                                <xs:restriction base="xs:string">
-                                        <xs:enumeration value="rolling_file"/>
-                                        <xs:enumeration value="static_file"/>
-                                        <xs:enumeration value="standard_output_stream_for_errors"/>
-                                </xs:restriction>
-                        </xs:simpleType>
-			<!-- Sortie des logs (rolling_file|standard_output_stream) -->
-                        <xs:element name="logOutput"         type="logOutputType"/>
-			<!-- Prefixe des fichiers de log -->
-        		<xs:element name="logFilePrefix"    type="xs:string"/>
-			<!-- Periode de validite des fichiers de log (en secondes) -->
-			<xs:element name="logFilePeriod"    type="xs:positiveInteger"/>
-			<!-- Liste des niveaux de log disponibles -->
-			<xs:simpleType name="logLevelType">
-				<xs:restriction base="xs:string">
-                        		<xs:enumeration value="fatal"/>
-                        		<xs:enumeration value="error"/>
-                        		<xs:enumeration value="warn"/>
-                        		<xs:enumeration value="info"/>
-					<xs:enumeration value="debug"/>
-                		</xs:restriction>
-			</xs:simpleType>
-			<!-- Niveau maximum des log -->
-			<xs:element name="logLevel"         type="logLevelType"/>
-			<!-- Nombre de threads exploités pour l'ecoute et le calcul -->
-			<xs:element name="nbThread"         type="xs:positiveInteger"/>
-			<!-- Nombre de processus exploités pour le calcul des dalles dans le WMTS à la demande -->
-			<xs:element name="nbProcess"         type="xs:positiveInteger"/>
-			<!-- Temps, en secondes, accordé pour le calcul des dalles dans le WMTS à la demande -->
-			<xs:element name="timeForProcess"         type="xs:positiveInteger"/>
-            <!-- Active le serveur WMTS -->
-            <xs:element name="WMTSSupport"               type="xs:boolean"/>
-            <!-- Active le serveur WMS -->
-            <xs:element name="WMSSupport"               type="xs:boolean"/>
-			<!-- Capacite a reprojeter -->
-			<xs:element name="reprojectionCapability"        	type="xs:boolean"/>
-			<!-- Fichier contenant les parametres de service -->
-			<xs:element name="servicesConf"         type="xs:string"/>
-			<!-- adresse du proxy, utilisable pour le WMTSOD et le GFI -->
-			<xs:element name="proxy"         type="xs:string"/>
-            <xs:element name="noProxy"         type="xs:string"/>
-			<!-- Répertoire des configs des styles -->
-			<xs:element name="styleDir"         type="xs:string"/>
-			<!-- Répertoire des configs des layers -->
-			<xs:element name="layerDir"         type="xs:string"/>
-			<!-- Répertoire des configs des tileMatrixSet -->
-			<xs:element name="tileMatrixSetDir" type="xs:string"/>
-                        <!-- Répertoire des configs de la bibliothèque Proj -->
-			<xs:element name="projConfigDir" type="xs:string"/>
+    <xs:element name="serverConf">
+        <xs:complexType>
+            <xs:sequence>
+                <!-- Liste outputs de log disponibles -->
+                <xs:simpleType name="logOutputType">
+                    <xs:restriction base="xs:string">
+                        <xs:enumeration value="rolling_file"/>
+                        <xs:enumeration value="static_file"/>
+                        <xs:enumeration value="standard_output_stream_for_errors"/>
+                    </xs:restriction>
+                </xs:simpleType>
+                <!-- Sortie des logs (rolling_file|standard_output_stream) -->
+                <xs:element name="logOutput"         type="logOutputType"/>
+                <!-- Prefixe des fichiers de log -->
+                <xs:element name="logFilePrefix"    type="xs:string"/>
+                <!-- Periode de validite des fichiers de log (en secondes) -->
+                <xs:element name="logFilePeriod"    type="xs:positiveInteger"/>
+                <!-- Liste des niveaux de log disponibles -->
+                <xs:simpleType name="logLevelType">
+                    <xs:restriction base="xs:string">
+                        <xs:enumeration value="fatal"/>
+                        <xs:enumeration value="error"/>
+                        <xs:enumeration value="warn"/>
+                        <xs:enumeration value="info"/>
+                        <xs:enumeration value="debug"/>
+                    </xs:restriction>
+                </xs:simpleType>
+                <!-- Niveau maximum des log -->
+                <xs:element name="logLevel"         type="logLevelType"/>
+                <!-- Nombre de threads exploités pour l'ecoute et le calcul -->
+                <xs:element name="nbThread"         type="xs:positiveInteger"/>
+                <!-- Nombre de processus exploités pour le calcul des dalles dans le WMTS à la demande -->
+                <xs:element name="nbProcess"         type="xs:positiveInteger"/>
+                <!-- Temps, en secondes, accordé pour le calcul des dalles dans le WMTS à la demande -->
+                <xs:element name="timeForProcess"         type="xs:positiveInteger"/>
+                <!-- Active le serveur WMTS -->
+                <xs:element name="WMTSSupport"               type="xs:boolean"/>
+                <!-- Active le serveur WMS -->
+                <xs:element name="WMSSupport"               type="xs:boolean"/>
+                <!-- Capacite a reprojeter -->
+                <xs:element name="reprojectionCapability"           type="xs:boolean"/>
+                <!-- Fichier contenant les parametres de service -->
+                <xs:element name="servicesConf"         type="xs:string"/>
+                <!-- adresse du proxy, utilisable pour le WMTSOD et le GFI -->
+                <xs:element name="proxy"         type="xs:string"/>
+                <xs:element name="noProxy"         type="xs:string"/>
+                <!-- Répertoire des configs des styles -->
+                <xs:element name="styleDir"         type="xs:string"/>
+                <!-- Répertoire des configs des layers -->
+                <xs:element name="layerDir"         type="xs:string"/>
+                <!-- Répertoire des configs des tileMatrixSet -->
+                <xs:element name="tileMatrixSetDir" type="xs:string"/>
+                <!-- Répertoire des configs de la bibliothèque Proj -->
+                <xs:element name="projConfigDir" type="xs:string"/>
             <!-- Chemin d'écoute du serveur FCGI dans le cas d'une socket UNIX "/var/run/rok4sock"
                  Ou (ip d'écoute) deux point suivi d'un numéro de port "127.0.0.1:9000" ou ":9000" 
                  Doit être vide pour une utilisation avec Apache ou Spawn-Fcgi-->
-            <xs:element name="serverPath" type="xs:string"/>
-            <!-- Configuration de la socket FCGI, DOC : backlog is the listen queue depth used in the listen() call -->
-            <xs:element name="serverBackLog" type="xs:nonNegativeInteger"/>
-			</xs:sequence>
-		</xs:complexType>
-	</xs:element>
+                 <xs:element name="serverPath" type="xs:string"/>
+                 <!-- Configuration de la socket FCGI, DOC : backlog is the listen queue depth used in the listen() call -->
+                 <xs:element name="serverBackLog" type="xs:nonNegativeInteger"/>
+             </xs:sequence>
+         </xs:complexType>
+     </xs:element>
 
-</xs:schema>
+ </xs:schema>

@@ -118,23 +118,6 @@ endif(UNITTEST)
 
 
 ########################################
-#Documentation Doxygen
-#Utilisation du fichier 
-if(BUILD_DOC)
-include(DoxygenConfig)
-# find_package(Doxygen)
-# if(DOXYGEN_FOUND)
-# configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-# add_custom_target(doc ALL
-# ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-# WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-# COMMENT "Generating API documentation with Doxygen" VERBATIM
-# )
-# endif(DOXYGEN_FOUND)
-endif(BUILD_DOC)
-
-
-########################################
 #Installation dans les répertoires par défauts
 #Pour installer dans le répertoire /opt/projet :
 #cmake -DCMAKE_INSTALL_PREFIX=/opt/projet 
@@ -149,19 +132,10 @@ INSTALL(TARGETS rok4 rok4core
 
 #Installe les différents headers nécessaires
 #FILE(GLOB headers "${CMAKE_CURRENT_SOURCE_DIR}/*.hxx" "${CMAKE_CURRENT_SOURCE_DIR}/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp")
-INSTALL(FILES Rok4Api.h
-  DESTINATION include)
+INSTALL(FILES Rok4Api.h DESTINATION include)
 
 #Installe la documentation
-INSTALL(FILES README LICENCE
-  DESTINATION share/doc/${PROJECT_NAME})
-
-if(BUILD_DOC)
-if(DOXYGEN_FOUND)
-INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
-  DESTINATION share/doc/${PROJECT_NAME})
-endif(DOXYGEN_FOUND)
-endif(BUILD_DOC)
+INSTALL(FILES README LICENCE DESTINATION share/doc/${PROJECT_NAME})
 
 ########################################
 # Paramétrage de la gestion de package CPack

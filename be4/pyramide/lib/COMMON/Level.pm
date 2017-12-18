@@ -686,7 +686,7 @@ sub getSlabPath {
 =begin nd
 Function: getFromSlabPath
 
-Extarct column and row from a slab path
+Extract column and row from a slab path
 
 Parameter (list):
     path - string - Path to decode, to obtain slab's column and row
