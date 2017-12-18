@@ -28,8 +28,9 @@ Pour que cette pyramide soit diffusée par ROK4SERVER, on va créer un descripte
 
 ![Logo Rok4](./docs/images/LAY_PYR.png)
 
-* Pour avoir des précisions sur la partir [BE4](be4/README.md)
-* Pour avoir des précisions sur la partir [ROK4SERVER](rok4/README.md)
+* Pour avoir des précisions sur la partie [BE4](be4/README.md)
+* Pour avoir des précisions sur la partie [ROK4SERVER](rok4/README.md)
+* Pour avoir les spécifications d'une [PYRAMIDE](docs/Specification_pyramide_ROK4.md)
 
 # Compiler et installer le projet ROK4
 
@@ -167,5 +168,3 @@ make doc
 make test
 sudo make install
 ```
-
-Documentation

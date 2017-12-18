@@ -69,7 +69,7 @@ Il est possible de stocker les masques en parallèle de la donnée. Les masques 
 
 ## Le descripteur de pyramide
 
-Le descripteur de pyramide est un fichier XML (extension .pyr) contenant toutes les informations nécessaires au serveur ROK4 pour exploiter la pyramide. Elles sont également utilisées lorsque l'on utilise les outils BE4 pour mettre à jour une pyramide : on récupère ainsi les caractéristiques de la pyramide pour utiliser les mêmes.
+Le descripteur de pyramide est un fichier XML (extension .pyr), au nom de la pyramide et contenant toutes les informations nécessaires au serveur ROK4 pour exploiter la pyramide. Elles sont également utilisées lorsque l'on utilise les outils BE4 pour mettre à jour une pyramide : on récupère ainsi les caractéristiques de la pyramide pour utiliser les mêmes.
 
 ### Informations globales
 
@@ -254,3 +254,89 @@ Le PNG a une particularité : la compression correspond à du Deflate, mais on 
 Voici la structure globale d'une image de la pyramide ROK4, dalle contenant N tuiles.
 
 ![Arborescence fichier](./images/SPECIFICATION_PYRAMIDE/TiffRecapitulatif.png)
+
+### Les références
+
+Lors de la création d'une pyramide de mise à jour, on ne va potentiellement pas recopier toutes les données de la version précédente, mais simplement les référencer à l'aide de liens symbolique en stockage fichier ou d'objets symboliques (objet contenant simplement le nom de l'objet cible) en stockage objet. Cela est mis en place par les outils BE4 mais est complètement transparent pour ROK4SERVER qui se contente de lire UNE pyramide.
+
+## Le fichier liste
+
+Le fichier liste est un fichier texte (extension .list) au nom de la pyramide et situé à côté du descripteur de pyramide. Il contient la liste de toutes les dalles de données et masques que contient la pyramide. Si certaines dalles ne sont que des références dans la pyramide (liens/objets symboliques), c'est le nom du fichier/objet cible qui est listé (appartenant à la structure d'une autre pyramide).
+
+Ce fichier est uniquement utilisé par les outils BE4, pour connaître sans avoir à parcourir la pyramide son contenu exact (indispensable lors d'une mise à jour).
+
+Le fichier liste est en deux parties, séparées par un dièse :
+* L'en-tête permet de lister et d'indexer les pyramides référencées, c'est-à-dire contenant au moins une des dalles listées. L'index 0 sera pour la pyramide elle même. Ces index sont utiliser dans la liste des dalles pour "factoriser" les racines des pyramides (conteneur dans le cas objet, dossier racine de la pyramide dans le cas fichier).
+* La liste des dalles (données et masques)
+
+Exemple de liste pour un stockage fichier
+
+```
+0=/home/ign/PYRAMIDS/PYRAMID_V2
+1=/home/ign/PYRAMIDS/PYRAMID_V1
+#
+1/IMAGE/19/04/RR/R2.tif
+1/IMAGE/19/04/RR/R3.tif
+1/IMAGE/19/04/RR/S1.tif
+1/IMAGE/19/04/RR/T1.tif
+1/IMAGE/19/04/RR/U0.tif
+1/IMAGE/19/04/RR/U1.tif
+1/IMAGE/19/04/RR/S2.tif
+1/IMAGE/19/04/RR/T2.tif
+1/IMAGE/19/04/RR/S3.tif
+1/IMAGE/19/04/RR/T3.tif
+1/IMAGE/19/04/RR/U2.tif
+1/IMAGE/18/02/DD/VJ.tif
+1/IMAGE/17/01/66/XR.tif
+1/IMAGE/16/00/3L/GD.tif
+1/IMAGE/18/02/DD/WI.tif
+1/IMAGE/18/02/DD/XI.tif
+0/IMAGE/19/04/VZ/JV.tif
+0/IMAGE/19/04/VZ/FY.tif
+0/IMAGE/19/04/VZ/FZ.tif
+0/IMAGE/19/04/VZ/GX.tif
+0/IMAGE/19/04/VZ/HX.tif
+0/IMAGE/19/04/VZ/IW.tif
+0/IMAGE/19/04/VZ/JW.tif
+0/IMAGE/19/04/VZ/IX.tif
+0/IMAGE/19/04/VZ/JX.tif
+0/IMAGE/19/04/VZ/GY.tif
+0/IMAGE/19/04/VZ/HY.tif
+0/IMAGE/19/04/VZ/GZ.tif
+0/IMAGE/19/04/VZ/HZ.tif
+0/IMAGE/19/04/VZ/IY.tif
+0/IMAGE/19/04/VZ/JY.tif
+0/IMAGE/19/04/VZ/IZ.tif
+0/IMAGE/19/04/VZ/JZ.tif
+```
+
+Exemple de liste pour un stockage objet
+
+```
+0=PYRAMIDS
+#
+0/PYRAMID_V2_IMG_11_65_42
+0/PYRAMID_V2_MSK_11_65_42
+0/PYRAMID_V2_IMG_11_65_43
+0/PYRAMID_V2_MSK_11_65_43
+0/PYRAMID_V2_IMG_11_66_42
+0/PYRAMID_V2_MSK_11_66_42
+0/PYRAMID_V2_IMG_11_67_42
+0/PYRAMID_V2_MSK_11_67_42
+0/PYRAMID_V2_IMG_11_66_43
+0/PYRAMID_V2_MSK_11_66_43
+0/PYRAMID_V2_IMG_11_67_43
+0/PYRAMID_V2_MSK_11_67_43
+0/PYRAMID_V2_IMG_11_65_44
+0/PYRAMID_V2_MSK_11_65_44
+0/PYRAMID_V1_IMG_11_61_42
+0/PYRAMID_V1_MSK_11_61_42
+0/PYRAMID_V1_IMG_11_61_43
+0/PYRAMID_V1_MSK_11_61_43
+0/PYRAMID_V1_IMG_11_62_42
+0/PYRAMID_V1_MSK_11_62_42
+0/PYRAMID_V1_IMG_11_63_42
+0/PYRAMID_V1_MSK_11_63_42
+0/PYRAMID_V1_IMG_11_62_43
+0/PYRAMID_V1_MSK_11_62_43
+```
