@@ -16,6 +16,8 @@ BE4 est un ensemble de scripts de traitement permettant la préparation et la tr
 * http://www.geoportail.gouv.fr [@Geoportail](https://twitter.com/Geoportail)
 * http://www.rok4.org
 
+ROK4 Version : 2.0.0
+
 # Fonctionnement général
 
 Les données dans la pyramide d'images sont tuilées selon un quadrillage défini dans le TileMatrixSet (plusieurs sont fournis dans le projet).
@@ -34,45 +36,48 @@ Pour que cette pyramide soit diffusée par ROK4SERVER, on va créer un descripte
 
 # Compiler et installer le projet ROK4
 
-La compilation du projet n’a pour le moment été validée que sous GNU/Linux. Le projet utilise des pthreads (threads POSIX).
+La compilation du projet n’a pour le moment été validée que sous GNU/Linux (Debian 8 et Centos 7). Le projet utilise des pthreads (threads POSIX).
 
 ## L'environnement de compilation
 
-Pour la partie C++ : `sudo apt install build-essential cmake`
+Pour la partie C++ :
+* Debian : `sudo apt install build-essential cmake`
+* Centos : `yum install make cmake gcc gcc-c++`
 
-Pour la partie Perl : `sudo apt install perl perl-base`
+Pour la partie Perl :
+* Debian : `sudo apt install perl perl-base`
+* Centos : `yum install perl perl-CPAN`
 
 ## Les librairies
 
 ### C++
 
+Pour centos, il est nécessaire d'ajouter un dépôt pour avoir accès aux paquets nécessaires : `yum install -y epel-release`
+
 Les paquets (`Debian`|`Centos`) à installer sont :
-* (`gettext`|) pour l'internationalisation des logs
-* (`libtinyxml-dev`|) pour la lecture des configuration XML
-* (`zlib1g-dev`|) pour la compression ZIP
-* (`libtiff5-dev`|) pour la lecture et écriture des images TIFF
-* (`libpng16-dev`|) pour la lecture des images PNG
-* (`libcurl4-openssl-dev`|) et (`libssl-dev`|) pour l'envoi de requête HTTP(S)
-* (`libturbojpeg`|) et (`libjpeg`|) pour la lecture des images JPEG
-* (`libopenjp2-7-dev`|) pour la lecture des images JPEG2000 si Kakadu n'est pas utilisé
+* (`gettext`|`gettext`) pour l'internationalisation des logs
+* (`libtinyxml-dev`|`tinyxml-devel`) pour la lecture des configuration XML
+* (`zlib1g-dev`|`zlib-devel`) pour la compression ZIP
+* (`libtiff5-dev`|`libtiff-devel`) pour la lecture et écriture des images TIFF
+* (`libpng16-dev`|`libpng-devel`) pour la lecture des images PNG
+* (`libcurl4-openssl-dev`|`libcurl-devel`) et (`libssl-dev`|`openssl-devel`) pour l'envoi de requête HTTP(S)
+* (`libturbojpeg`|`turbojpeg-devel`) et (`libjpeg`|`libjpeg-turbo-devel`) pour la lecture des images JPEG
+* (`libopenjp2-7-dev`|`openjpeg2-devel`) pour la lecture des images JPEG2000 si Kakadu n'est pas utilisé
 * (`libc6-dev`|) pour les l'utilisation de thread POSIX
 
 Si la gestion du stockage objet est voulue :
-* (`librados-dev`|) pour la lecture et l'écriture d'objets sur un cluster Ceph
-* (`libhiredis-dev`|) pour l'utilisation d'une base Redis pour l'alias d'objets
+* (`librados-dev`|`librados2-devel`) pour la lecture et l'écriture d'objets sur un cluster Ceph
+* (`libhiredis-dev`|`hiredis-devel`) pour l'utilisation d'une base Redis pour l'alias d'objets
 
 ### Perl
 
-Les librairies Perl sont installable via l'outil CPAN : `cpan Lib::Perl` (en sudo pour une installation système). Certaines des libraries utilisées sont installée avec le paquet `perl-base`
+Les librairies Perl sont installable via l'outil CPAN : `cpan Lib::Perl` (en sudo pour une installation système). Certaines des librairies utilisées sont installées avec le paquet `perl-base`
 
 * Data::Dumper
 * Digest::SHA
 * ExtUtils::MakeMaker
 * File::Map
 * FindBin
-* Geo::GDAL
-* Geo::OGR
-* Geo::OSR
 * HTTP::Request
 * HTTP::Request::Common
 * HTTP::Response
@@ -83,6 +88,15 @@ Les librairies Perl sont installable via l'outil CPAN : `cpan Lib::Perl` (en sud
 * Tie::File
 * XML::LibXML
 
+On installe les librairies Perl GDAL via le paquet :
+* Debian : `apt install libgdal-perl`
+* Centos : `yum install gdal-perl`
+
+Soit :
+```
+cpan Data::Dumper Digest::SHA ExtUtils::MakeMaker File::Map FindBin Geo::GDAL Geo::OGR Geo::OSR HTTP::Request HTTP::Request::Common HTTP::Response Log::Log4perl LWP::UserAgent Math::BigFloat Test::More Tie::File XML::LibXML
+```
+
 Si volonté d'utiliser l'outil graphique `tms-converter-gui.pl` :
 * Tk
 * Tk::EntryCheck
@@ -91,6 +105,11 @@ Si volonté d'utiliser l'outil graphique `tms-converter-gui.pl` :
 * Tk::NoteBook
 * Tk::ROText
 * Tk::Table
+
+Soit :
+```
+cpan Tk Tk::EntryCheck Tk::FileSelect Tk::LabFrame Tk::NoteBook Tk::ROText Tk::Table
+```
 
 Pour savoir où sont cherchées les librairies, exécuter `env -i perl -V`.
 
@@ -137,7 +156,7 @@ make [install|package]`
 
 #### Gestion du stockage objet
 
-`BUILD_OBJECT (BOOL)` : Il est possible de stocker les pyramides d'images dans des systèmes de stockage objet. Sont gérés CEPH, S3 et SWIFT. Cela implique d'avoir préalablement installé les librairies librados et hiredis. Valeur par défaut : `FALSE`   
+`BUILD_OBJECT (BOOL)` : Il est possible de stocker les pyramides d'images dans des systèmes de stockage objet. Sont gérés CEPH, S3 et SWIFT. Cela implique d'avoir préalablement installé les librairies librados et hiredis. Ne pas mettre TRUE mais `1` pour que ce soit bien interprété lors de la compilation dans le code. Valeur par défaut : `0`   
 
 #### Utilisation de Kakadu
 

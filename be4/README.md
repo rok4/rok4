@@ -29,8 +29,8 @@ Afin de paralléliser le travail de génération, certains outils Perl vont avoi
 
 | Outil         | Description                                                                                       | Utilisée par les outils BE4 |
 | ------------- | ------------------------------------------------------------------------------------------------- | --------------------------- |
-| cache2work    | Convertit une dalle de pyramide en une timage de travail (compression zip et non tuilée)          | be4-X, joinCache-X          |
-| composeNtiff  | Convertit une mosaïque régulière d'image en une seule images                                      | be4-X                       |
+| cache2work    | Convertit une dalle de pyramide en une image de travail (compression zip et non tuilée)           | be4-X, joinCache-X          |
+| composeNtiff  | Convertit une mosaïque régulière d'images en une seule images                                     | be4-X                       |
 | decimateNtiff | Génère une image à partir de plusieurs par décimation (on ne garde qu'un 1 pixel sur N)           | be4-X                       |
 | manageNodata  | Génère un masque associé ou modifie les couleurs de donnée et nodata à partir d'une couleur cible |                             |
 | merge4tiff    | Génère une image à partir de 4 (2x2) de même dimensions en moyennant les pixels 4 par 4           | be4-X                       |
