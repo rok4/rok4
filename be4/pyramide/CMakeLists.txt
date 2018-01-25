@@ -106,8 +106,8 @@ endif(UNITTEST)
 INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/install/" DESTINATION . USE_SOURCE_PERMISSIONS)
 
 # Création des liens pour garder les appels à be4.pl et joinCache.pl corrects
-INSTALL(CODE "execute_process(COMMAND ln -s be4-file.pl ${CMAKE_INSTALL_PREFIX}/bin/be4.pl)")
-INSTALL(CODE "execute_process(COMMAND ln -s joinCache-file.pl ${CMAKE_INSTALL_PREFIX}/bin/joinCache.pl)")
+INSTALL(CODE "execute_process(COMMAND ln -sf be4-file.pl ${CMAKE_INSTALL_PREFIX}/bin/be4.pl)")
+INSTALL(CODE "execute_process(COMMAND ln -sf joinCache-file.pl ${CMAKE_INSTALL_PREFIX}/bin/joinCache.pl)")
 
 ########################################
 # Paramétrage de la gestion de package CPack

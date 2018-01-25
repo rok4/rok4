@@ -139,7 +139,7 @@ make [install|package]`
 
 `CMAKE_INSTALL_PREFIX (PATH)` : Dossier d'installation de ROK4. Valeur par défaut : `/usr/local`
 
-`DEP_PATH (PATH)` : Path to compiled and installed ROK4 dependencies  Valeur par défaut : ./target
+`DEP_PATH (PATH)` : Path to compiled and installed ROK4 dependencies  Valeur par défaut : `./target`
 
 `BUILD_DEPENDENCIES (BOOL)` : Compilation des dépendances manquantes de ROK4. Elles sont installées avec ROK4. Valeur par défaut : `TRUE`
 

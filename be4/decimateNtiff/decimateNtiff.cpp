@@ -146,11 +146,10 @@ bool debugLogger=false;
  * \~ \code
  * decimateNtiff version X.X.X
  *
- * Usage: decimateNtiff -f <FILE> [-r <DIR>] -c <VAL> -a <VAL> -i <VAL> -n <VAL> -s <VAL> -b <VAL> -p <VAL>
+ * Usage: decimateNtiff -f <FILE> -c <VAL> -n <VAL> 
  *
  * Parameters:
  *      -f configuration file : list of output and source images and masks
- *      -r root : root directory for output files, have to end with a '/'
  *      -c output compression :
  *              raw     no compression
  *              none    no compression
@@ -158,27 +157,10 @@ bool debugLogger=false;
  *              lzw     Lempel-Ziv & Welch encoding
  *              pkb     PackBits encoding
  *              zip     Deflate encoding
- *      -a sample format : uint (unsigned integer) or float
- *      -i interpolation : used for resampling :
- *              nn      nearest neighbor
- *              linear
- *              bicubic
- *              lanczos lanczos 3
  *      -n nodata value, one interger per sample, seperated with comma. Examples
  *              -99999 for DTM
  *              255,255,255 for orthophotography
- *      -s samples per pixel : 1, 3 or 4
- *      -b bits per sample : 8 (for unsigned 8-bit integer) or 32 (for 32-bit float)
- *      -p photometric :
- *              gray    min is black
- *              rgb     for image with alpha too
  *      -d debug logger activation
- *
- * Examples
- *      - for orthophotography
- *      decimateNtiff -f conf.txt -c zip -i bicubic -s 3 -b 8 -p rgb -a uint -n 255,255,255
- *      - for DTM
- *      decimateNtiff -f conf.txt -c zip -i nn -s 1 -b 32 -p gray -a float -n -99999
  * \endcode
  */
 void usage() {
@@ -201,13 +183,7 @@ void usage() {
                   "            -99999 for DTM\n" <<
                   "            255,255,255 for orthophotography\n" <<
                   "    -d debug logger activation\n" <<
-                  "    -h help\n\n" <<
-
-                  "Examples\n" <<
-                  "    - for orthophotography\n" <<
-                  "    decimateNtiff -f conf.txt -c zip -i bicubic -s 3 -b 8 -p rgb -a uint -n 255,255,255\n" <<
-                  "    - for DTM\n" <<
-                  "    decimateNtiff -f conf.txt -c zip -i nn -s 1 -b 32 -p gray -a float -n -99999\n\n" );
+                  "    -h help\n\n" );
 }
 
 /**

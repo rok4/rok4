@@ -40,3 +40,7 @@ Afin de paralléliser le travail de génération, certains outils Perl vont avoi
 | work2cache    | Convertit une image de travail en dalle de pyramide                                               | be4-X, joinCache-X          |
 
 Plus de détails dans les dossiers des outils.
+
+Voici la légende utilisée pour identifié le format des images dans les documentations par commande :
+
+![Logo Be4](../../docs/images/BE4/formats.png)
