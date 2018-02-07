@@ -125,16 +125,6 @@ IF(BUILD_OBJECT)
       message(FATAL_ERROR "Cannot find extern library librados")
     endif(RADOS_FOUND)
   endif(NOT TARGET rados)
-
-  if(NOT TARGET hiredis)
-    find_package(Hiredis)
-    if(HIREDIS_FOUND)
-      add_library(hiredis SHARED IMPORTED)
-      set_property(TARGET hiredis PROPERTY IMPORTED_LOCATION ${HIREDIS_LIBRARY})
-    else(HIREDIS_FOUND)
-      message(FATAL_ERROR "Cannot find extern library hiredis")
-    endif(HIREDIS_FOUND)
-  endif(NOT TARGET hiredis)
 ENDIF(BUILD_OBJECT)
 
 ###################################################### Extern libraries, static

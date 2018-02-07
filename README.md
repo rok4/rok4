@@ -67,7 +67,6 @@ Les paquets (`Debian`|`Centos`) à installer sont :
 
 Si la gestion du stockage objet est voulue :
 * (`librados-dev`|`librados2-devel`) pour la lecture et l'écriture d'objets sur un cluster Ceph
-* (`libhiredis-dev`|`hiredis-devel`) pour l'utilisation d'une base Redis pour l'alias d'objets
 
 ### Perl
 
@@ -156,7 +155,7 @@ make [install|package]`
 
 #### Gestion du stockage objet
 
-`BUILD_OBJECT (BOOL)` : Il est possible de stocker les pyramides d'images dans des systèmes de stockage objet. Sont gérés CEPH, S3 et SWIFT. Cela implique d'avoir préalablement installé les librairies librados et hiredis. Ne pas mettre TRUE mais `1` pour que ce soit bien interprété lors de la compilation dans le code. Valeur par défaut : `0`   
+`BUILD_OBJECT (BOOL)` : Il est possible de stocker les pyramides d'images dans des systèmes de stockage objet. Sont gérés CEPH, S3 et SWIFT. Cela implique d'avoir préalablement installé la librairie librados. Ne pas mettre TRUE mais `1` pour que ce soit bien interprété lors de la compilation dans le code. Valeur par défaut : `0`   
 
 #### Utilisation de Kakadu
 

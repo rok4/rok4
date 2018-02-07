@@ -619,7 +619,7 @@ sub treatNode {
             );
 
             if (! defined $aliasedObject) {
-                ERROR(sprintf "The ancestor image slab '%s' cannot be aliased (redis key value) in the new pyramid", $sourceImage->{img});
+                ERROR(sprintf "The ancestor image slab '%s' cannot be aliased in the new pyramid", $sourceImage->{img});
                 return FALSE;
             }
 
@@ -648,7 +648,7 @@ sub treatNode {
             );
 
             if (! defined $aliasedObject) {
-                ERROR(sprintf "The ancestor mask slab '%s' cannot be aliased (redis key value) in the new pyramid", $sourceImage->{msk});
+                ERROR(sprintf "The ancestor mask slab '%s' cannot be aliased in the new pyramid", $sourceImage->{msk});
                 return FALSE;
             }
 

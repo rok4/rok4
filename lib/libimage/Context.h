@@ -50,7 +50,6 @@
 
 #include <stdint.h>// pour uint8_t
 #include "Logger.h"
-#include "AliasManager.h"
 #include <string.h>
 #include <sstream>
 
@@ -81,46 +80,12 @@ protected:
     bool connected;
 
     /**
-     * \~french \brief Gestionnaire d'alias, pour convertir les noms de fichier/objet
-     * \~english \brief Alias manager to convert file/object name
-     */
-    AliasManager* am;
-
-    /**
      * \~french \brief Crée un objet Context
      * \~english \brief Create a Context object
      */
-    Context () : connected(false) { am = NULL; }
+    Context () : connected(false) {  }
 
 public:
-
-    /**
-     * \~french
-     * \brief Précise le gestionnaire d'alias
-     * \~english
-     * \brief Set the alias manager
-     */
-    void setAliasManager(AliasManager* a) {
-        am = a;
-    }
-
-    /**
-     * \~french
-     * \brief Convertit le nom grâce au gestionnaire d'alias si présent
-     */
-    std::string convertName(std::string name) {
-        if (am != NULL) {
-            bool ex;
-            std::string realName = am->getAliasedName(name, &ex);
-            if (! ex) {
-                return name;
-            } else {
-                return realName;
-            }
-        } else {
-            return name;
-        }
-    }
 
     /**
      * \~french \brief Connecte le contexte

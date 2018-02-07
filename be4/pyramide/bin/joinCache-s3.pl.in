@@ -337,12 +337,6 @@ sub config {
         return FALSE;
     }
 
-
-    if (! COMMON::ProxyStorage::checkEnvironmentVariables("REDIS")) {
-        ERROR("Environment variable is missing to link ancestor");
-        return FALSE;
-    }
-
     return TRUE;
 }
 
@@ -625,7 +619,7 @@ sub treatNode {
             );
 
             if (! defined $aliasedObject) {
-                ERROR(sprintf "The ancestor image slab '%s' cannot be aliased (redis key value) in the new pyramid", $sourceImage->{img});
+                ERROR(sprintf "The ancestor image slab '%s' cannot be aliased in the new pyramid", $sourceImage->{img});
                 return FALSE;
             }
 
@@ -654,7 +648,7 @@ sub treatNode {
             );
 
             if (! defined $aliasedObject) {
-                ERROR(sprintf "The ancestor mask slab '%s' cannot be aliased (redis key value) in the new pyramid", $sourceImage->{msk});
+                ERROR(sprintf "The ancestor mask slab '%s' cannot be aliased in the new pyramid", $sourceImage->{msk});
                 return FALSE;
             }
 
@@ -735,10 +729,6 @@ Group: Mandatory environment variable
     ROK4_S3_URL
     ROK4_S3_KEY
     ROK4_S3_SECRETKEY
-
-    ROK4_REDIS_HOST
-    ROK4_REDIS_PORT
-    ROK4_REDIS_PASSWD
 
 Group: Write a configuration file
 

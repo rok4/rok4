@@ -30,12 +30,6 @@
         <key>hfkjfhskfhksf</key>
         <secretKey>kjhjhKJhkjhkJHKJhkjMLGfkjhGJ</secretKey>
     </s3Context>
-
-    <redisAliasManager>
-        <host>localhost</host>
-        <passwd>mypassword</passwd>
-        <port>6379</port>
-	</redisAliasManager>
 	-->
 
 	<!-- Niveau maximum des logs (fatal|error|warn|info|debug) -->

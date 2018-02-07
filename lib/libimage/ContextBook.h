@@ -123,12 +123,6 @@ private:
      */
     std::string swift_passwd;
 
-    /**
-     * \~french \brief Gestionnaire d'alias, pour convertir les noms de fichier/objet
-     * \~english \brief Alias manager to convert file/object name
-     */
-    AliasManager* am;
-
 public:
 
     /**
@@ -193,16 +187,6 @@ public:
      * \param[in] keystone In Swift case, precise if we want a keystone authentication, ignored else
      */
     Context * addContext(std::string tray, bool keystone = false);
-
-    /**
-     * \~french
-     * \brief Précise le gestionnaire d'alias
-     * \~english
-     * \brief Set the alias manager
-     */
-    void setAliasManager(AliasManager* a) {
-        am = a;
-    }
 
     /**
      * \~french

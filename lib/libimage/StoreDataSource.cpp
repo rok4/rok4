@@ -67,8 +67,6 @@ StoreDataSource::StoreDataSource (std::string n, const uint32_t o, const uint32_
     readFull = false;
     readIndex = false;
     alreadyTried = false;
-
-    name = context->convertName(name);
 }
 
 StoreDataSource::StoreDataSource (std::string n, const uint32_t po, const uint32_t ps, const uint32_t hisize, std::string type, Context* c, std::string encoding ) :
@@ -79,8 +77,6 @@ StoreDataSource::StoreDataSource (std::string n, const uint32_t po, const uint32
     readFull = false;
     readIndex = true;
     alreadyTried = false;
-
-    name = context->convertName(name);
 }
 
 StoreDataSource::StoreDataSource (std::string n, const uint32_t maxsize, std::string type, Context* c, std::string encoding ) :
@@ -91,8 +87,6 @@ StoreDataSource::StoreDataSource (std::string n, const uint32_t maxsize, std::st
     readFull = true;
     readIndex = false;
     alreadyTried = false;
-
-    name = context->convertName(name);
 }
 
 /*

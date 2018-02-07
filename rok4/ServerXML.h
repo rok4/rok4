@@ -55,7 +55,6 @@ struct Proxy;
 #include "Rok4Server.h"
 
 #if BUILD_OBJECT
-#include "RedisAliasManager.h"
 #include "ContextBook.h"
 #endif
 
@@ -199,8 +198,6 @@ class ServerXML : public DocumentXML
         ContextBook* cephBook;
         ContextBook* s3Book;
         ContextBook* swiftBook;
-
-        AliasManager* am;
 #endif
 
         int nbProcess;

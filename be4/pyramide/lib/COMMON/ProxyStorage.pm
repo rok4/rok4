@@ -112,12 +112,6 @@ my $ROK4_SWIFT_ACCOUNT;
 my $ROK4_KEYSTONE_DOMAINID;
 my $ROK4_KEYSTONE_PROJECTID;
 
-### Redis
-my $USE_REDIS = FALSE;
-my $ROK4_REDIS_HOST;
-my $ROK4_REDIS_PORT;
-my $ROK4_REDIS_PASSWD;
-
 ### General
 my $ROK4_IMAGE_HEADER_SIZE = 2048;
 
@@ -201,25 +195,6 @@ sub checkEnvironmentVariables {
 
         $UA = LWP::UserAgent->new();
         $UA->ssl_opts(verify_hostname => 0);
-    } elsif ($type eq "REDIS") {
-        
-        if (! defined $ENV{ROK4_REDIS_HOST}) {
-            ERROR("Environment variable ROK4_REDIS_HOST is not defined");
-            return FALSE;
-        }
-        if (! defined $ENV{ROK4_REDIS_PORT}) {
-            ERROR("Environment variable ROK4_REDIS_PORT is not defined");
-            return FALSE;
-        }
-        if (! defined $ENV{ROK4_REDIS_PASSWD}) {
-            ERROR("Environment variable ROK4_REDIS_PASSWD is not defined");
-            return FALSE;
-        }
-
-        $USE_REDIS = TRUE;
-        $ROK4_REDIS_HOST = $ENV{ROK4_REDIS_HOST};
-        $ROK4_REDIS_PORT = $ENV{ROK4_REDIS_PORT};
-        $ROK4_REDIS_PASSWD = $ENV{ROK4_REDIS_PASSWD};
     }
 
     return TRUE;
@@ -687,46 +662,6 @@ sub copy {
     return FALSE;
 }
 
-####################################################################################################
-#                               Group: Redis methods                                               #
-####################################################################################################
-
-sub redisValueFromKey {
-    my $key = shift;
-
-    my $redisValue = `redis-cli -h $ROK4_REDIS_HOST -p $ROK4_REDIS_PORT -a $ROK4_REDIS_PASSWD GET $key`;
-    chomp($redisValue);
-
-    if ($redisValue ne "") {
-        return $redisValue;
-    } else {
-        return undef;
-    }
-}
-
-sub addKeyValue {
-    my $key = shift;
-    my $value = shift;
-
-    my $ret = `redis-cli -h $ROK4_REDIS_HOST -p $ROK4_REDIS_PORT -a $ROK4_REDIS_PASSWD SET $key $value`;
-    chomp($ret);
-    if ($ret ne "OK") {
-        ERROR("REDIS: $ret");
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
-sub redisKeyExists {
-    my $key = shift;
-
-    my $redisPresent = `redis-cli -h $ROK4_REDIS_HOST -p $ROK4_REDIS_PORT -a $ROK4_REDIS_PASSWD EXISTS $key | cut -d' ' -f1`;
-    chomp($redisPresent);
-
-    return ($redisPresent eq "1");
-}
-
 
 ####################################################################################################
 #                               Group: Test methods                                                #
@@ -782,7 +717,6 @@ sub isPresent {
         return FALSE;
     }
     elsif ($type eq "CEPH") {
-        # On interroge la base REDIS puis le S3
 
         my ($poolName, @rest) = split("/", $path);
         my $objectName = join("", @rest);
@@ -800,7 +734,6 @@ sub isPresent {
         return TRUE;
     }
     elsif ($type eq "S3") {
-        # On interroge la base REDIS puis le S3
 
         my ($bucketName, @rest) = split("/", $path);
         my $objectName = join("", @rest);
@@ -808,10 +741,6 @@ sub isPresent {
         if (! defined $bucketName || ! defined $objectName) {
             ERROR("S3 path is not valid (<bucketName>/<objectName>) : $path");
             return FALSE;
-        }
-
-        if ($USE_REDIS && redisKeyExists($objectName)) {
-            return TRUE;
         }
 
         my $resource = "/$bucketName/$objectName";
@@ -840,7 +769,6 @@ sub isPresent {
         }
     }
     elsif ($type eq "SWIFT") {
-        # On interroge la base REDIS puis le SWIFT
 
         my ($containerName, @rest) = split("/", $path);
         my $objectName = join("", @rest);
@@ -848,10 +776,6 @@ sub isPresent {
         if (! defined $containerName || ! defined $objectName) {
             ERROR("SWIFT path is not valid (<containerName>/<objectName>) : $path");
             return FALSE;
-        }
-
-        if ($USE_REDIS && redisKeyExists($objectName)) {
-            return TRUE;
         }
 
         my $context = "/$containerName/$objectName";
@@ -1065,7 +989,7 @@ sub symLink {
         $toPath = join("", @rest);
 
         if ($tPoolName ne $toPoolName) {
-            ERROR("CEPH link (redis key-value) is not possible between different pool: $toPoolName/toPath -> X $targetPath");
+            ERROR("CEPH link (symbolic object) is not possible between different pool: $toPoolName/toPath -> X $targetPath");
             return FALSE;
         }
 
@@ -1078,62 +1002,12 @@ sub symLink {
         return "$tPoolName/$realTarget";
     }
     elsif ($targetType eq "S3" && $toType eq "S3") {
-        my ($tBucketName, @rest) = split("/", $targetPath);
-        my $realTarget = join("", @rest);
-
-        # On vérifie que la dalle S3 à lier n'est pas un alias, auquel cas on référence le vrai objet (pour éviter des alias en cascade)
-
-        my $value = redisValueFromKey($realTarget);
-        if (defined $value) {
-            # On a une valeur qui est le vrai nom de l'objet (réellement stocké sur S3)
-            $realTarget = $value;
-        }
-
-        # On retire le bucket du nom de l'alias à créer
-        (my $toBucketName, @rest) = split("/", $toPath);
-        $toPath = join("", @rest);
-
-        if ($tBucketName ne $toBucketName) {
-            ERROR("S3 link (redis key-value) is not possible between different pool: $toBucketName/toPath -> X $targetPath");
-            return FALSE;
-        }
-
-        # On ajoute la paire clé - valeur dans redis : $toPath => $realTarget
-        if (! addKeyValue($toPath, $realTarget)) {
-            ERROR("Cannot symlink (add a key/value in redis) object $realTarget with alias $toPath : $!");
-            return undef;
-        }
-
-        return "$tBucketName/$realTarget";
+        ERROR("Cannot symlink for S3 storage");
+        return undef;
     }
     elsif ($targetType eq "SWIFT" && $toType eq "SWIFT") {
-        my ($tContainerName, @rest) = split("/", $targetPath);
-        my $realTarget = join("", @rest);
-
-        # On vérifie que la dalle SWIFT à lier n'est pas un alias, auquel cas on référence le vrai objet (pour éviter des alias en cascade)
-
-        my $value = redisValueFromKey($realTarget);
-        if (defined $value) {
-            # On a une valeur qui est le vrai nom de l'objet (réellement stocké sur SWIFT)
-            $realTarget = $value;
-        }
-
-        # On retire le bucket du nom de l'alias à créer
-        (my $toContainerName, @rest) = split("/", $toPath);
-        $toPath = join("", @rest);
-
-        if ($tContainerName ne $toContainerName) {
-            ERROR("SWIFT link (redis key-value) is not possible between different container: $toContainerName/toPath -> X $targetPath");
-            return FALSE;
-        }
-
-        # On ajoute la paire clé - valeur dans redis : $toPath => $realTarget
-        if (! addKeyValue($toPath, $realTarget)) {
-            ERROR("Cannot symlink (add a key/value in redis) object $realTarget with alias $toPath : $!");
-            return undef;
-        }
-
-        return "$tContainerName/$realTarget";
+        ERROR("Cannot symlink for S3 storage");
+        return undef;
     }
 
     ERROR("Symlink can only be done between two file/path using the same storage type (and not $toType -> $targetType)");

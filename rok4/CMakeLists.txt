@@ -61,7 +61,7 @@ set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${LOGGER_INCLUDE_DI
 
 
 if(BUILD_OBJECT)
-    set (DEP_INCLUDE_DIR ${DEP_INCLUDE_DIR} ${HIREDIS_INCLUDE_DIR})
+    set (DEP_INCLUDE_DIR ${DEP_INCLUDE_DIR})
 endif(BUILD_OBJECT)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
@@ -70,7 +70,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 set(DEP_LIBRARY fcgi tinyxml logger image proj zlib tiff png curl)
 
 if(BUILD_OBJECT)
-    set (DEP_LIBRARY ${DEP_LIBRARY} hiredis)
+    set (DEP_LIBRARY ${DEP_LIBRARY})
 endif(BUILD_OBJECT)
 
 target_link_libraries(rok4core ${DEP_LIBRARY} )
