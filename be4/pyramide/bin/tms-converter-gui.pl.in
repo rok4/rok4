@@ -875,7 +875,7 @@ sub calculateGettiles {
             $level = $obj[-3];
             $col = $obj[-2];
             $row = $obj[-1];
-        } elsif (scalar @path >= 4) {
+        } elsif (scalar @path >= 5) {
             # On est dans le cas d'une liste d'une pyramide fichier
             $level = $path[-4];
             my $end = join('/', @path[-3..-1]);
@@ -886,8 +886,7 @@ sub calculateGettiles {
                 return;
             }
         } else {
-            $onglet7Text->insert('end', "\nERROR : paths in the list must be like <root>/<type>/<level>/<XY>/<XY>/<XY>.tif or <root>/<pyrname>_<type>_<level>_<X>_<Y>");
-            return;
+            next;
         }
 
         my $i = $widthEntry->get() * $col + int($widthEntry->get() / 2);
