@@ -63,6 +63,7 @@ use HTTP::Request::Common;
 use HTTP::Response;
 use LWP::UserAgent;
 use File::Basename;
+use Ceph::Rados;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -83,6 +84,8 @@ use constant FALSE => 0;
 my @STORAGETYPES = ("FILE", "CEPH", "S3", "SWIFT");
 
 my $UA;
+my $CLUSTER;
+my %IOS = ();
 
 ### CEPH
 
@@ -144,8 +147,18 @@ sub checkEnvironmentVariables {
         }
 
         $ROK4_CEPH_CONFFILE = $ENV{ROK4_CEPH_CONFFILE};
+
         $ROK4_CEPH_USERNAME = $ENV{ROK4_CEPH_USERNAME};
+        my $un = $ROK4_CEPH_USERNAME;
+        $un =~ s/^client\.//;
+
         $ROK4_CEPH_CLUSTERNAME = $ENV{ROK4_CEPH_CLUSTERNAME};
+
+        $CLUSTER = Ceph::Rados->new($un);
+        $CLUSTER->set_config_file($ROK4_CEPH_CONFFILE);
+        $CLUSTER->connect();
+
+        return TRUE;
 
         
     } elsif ($type eq "SWIFT") {
@@ -304,6 +317,22 @@ sub getSwiftToken {
     return TRUE;
 }
 
+=begin nd
+Function: getCephPoolContext
+
+Return connected io context for the provided pool. Create it if not exists.
+=cut
+sub getCephPoolContext {
+    my $pool = shift;
+
+    if (! exists $IOS{$pool}) {
+        $IOS{$pool} = $CLUSTER->io($pool);
+    }
+
+    return $IOS{$pool};
+}
+
+
 ####################################################################################################
 #                               Group: Copy methods                                                #
 ####################################################################################################
@@ -346,9 +375,20 @@ sub copy {
                 return FALSE;
             }
 
-            `rados -p $poolName put $objectName $fromPath`;
-            if ($?) {
-                ERROR("Cannot upload file '$fromPath' to CEPH object $objectName (pool $poolName): $!");
+            my $io = getCephPoolContext($poolName);
+
+            my $FILE;
+            open($FILE, "<$fromPath") or do {
+                ERROR("Cannot open file '$fromPath' to upload in Ceph");
+                return FALSE;
+            };
+
+            eval { $io->write_handle($objectName, $FILE) };
+
+            close($FILE);
+
+            if ($@) {
+                ERROR("Cannot upload file '$fromPath' to CEPH object $objectName (pool $poolName): $@");
                 return FALSE;
             }
 
@@ -432,7 +472,15 @@ sub copy {
     }
     elsif ($fromType eq "CEPH") { ############################################ CEPH
         if ($toType eq "FILE") {
-            my ($poolName, @rest) = split("/", $fromPath);
+
+            # On regarde si c'est un objet symbolique, pour copier le vrai objet
+            my $realFromPath = getRealData("CEPH", $fromPath);
+            if ( ! defined $realFromPath ) {
+                ERROR("Objet to download '$fromPath' does not exists");
+                return undef;
+            }
+
+            my ($poolName, @rest) = split("/", $realFromPath);
             my $objectName = join("", @rest);
 
             if (! defined $poolName || ! defined $objectName) {
@@ -448,15 +496,38 @@ sub copy {
                 return FALSE;
             }
 
-            `rados -p $poolName get $objectName $toPath`;
-            if ($?) {
-                ERROR("Cannot download CEPH object $objectName (pool $poolName) into file '$fromPath': $!");
+
+            my $io = getCephPoolContext($poolName);
+
+            my $FILE;
+            open($FILE, ">$toPath") or do {
+                ERROR("Cannot open file '$toPath' to download from Ceph");
+                return FALSE;
+            };
+
+            eval { $io->read_handle($objectName, $FILE) };
+
+            close($FILE);
+
+            if ($@) {
+                ERROR("Cannot download CEPH object $fromPath into file '$toPath': $@");
+                if ($realFromPath ne $fromPath) {
+                    ERROR("'$fromPath' is a symbolic objet which references '$realFromPath' which does not exist (broken link ?)")
+                }
                 return FALSE;
             }
 
             return TRUE;
         }
         elsif ($toType eq "CEPH") {
+
+            # On regarde si c'est un objet symbolique, pour copier le vrai objet
+            my $realFromPath = getRealData("CEPH", $fromPath);
+            if ( ! defined $realFromPath ) {
+                ERROR("Objet to copy '$fromPath' does not exists");
+                return undef;
+            }
+
             my ($fromPool, @from) = split("/", $fromPath);
             my $fromObjectName = join("", @from);
 
@@ -726,8 +797,12 @@ sub isPresent {
             return FALSE;
         }
 
-        `rados -p $poolName stat $objectName 1>/dev/null 2>/dev/null`;
-        if ($?) {
+        my $io = getCephPoolContext($poolName);
+
+        my ($len, $mtime);
+        eval { ($len, $mtime) = $io->stat($objectName) };
+
+        if ($@) {
             return FALSE;
         }
 
@@ -793,6 +868,64 @@ sub isPresent {
     }
 
     return FALSE;
+}
+
+
+=begin nd
+Function: getRealData
+
+Return the target if file/object is a symbolic file/object, and return the provided file/object if real. Return undef if file/object does not exist.
+=cut
+sub getRealData {
+    my $type = shift;
+    my $path = shift;
+
+    if ($type eq "FILE") {
+
+        if (! -e $path) {
+            return undef;
+        }
+        elsif (-f $path && ! -l $path) {
+            return $path;
+        }
+        elsif (-f $path && -l $path) {
+            my $realTarget = File::Spec::Link->full_resolve( File::Spec::Link->linked($path) );
+            return $realTarget;
+        }
+    }
+    elsif ($type eq "CEPH") {
+
+        my ($poolName, @rest) = split("/", $path);
+        my $objectName = join("", @rest);
+
+        if (! defined $poolName || ! defined $objectName) {
+            ERROR("CEPH path is not valid (<poolName>/<objectName>) : $path");
+            return undef;
+        }
+
+        my $io = getCephPoolContext($poolName);
+
+        my $value = getSize("CEPH",$path);
+
+        if ( ! defined $value ) {
+            return undef;
+        }
+
+        if ( $value < $ROK4_IMAGE_HEADER_SIZE ) {
+            my $realTarget = $io->read($objectName);
+            return "$poolName/$realTarget";
+        } else {
+            return $path;
+        }
+    }
+    elsif ($type eq "S3") {
+        return $path;
+    }
+    elsif ($type eq "SWIFT") {
+        return $path;
+    }
+
+    return undef;
 }
 
 ####################################################################################################
@@ -887,13 +1020,17 @@ sub getSize {
             return undef;
         }
 
-        my $ret = `rados -p $poolName stat $objectName`;
-        if ($?) {
+        my $io = getCephPoolContext($poolName);
+
+        my ($len, $mtime);
+        eval { ($len, $mtime) = $io->stat($objectName) };
+
+        if ($@) {
             ERROR("Cannot stat CEPH object $objectName (pool $poolName): $!");
             return undef;
         }
 
-        return (split(/ /, $ret))[-1];
+        return $len;
     }
 
     return undef;
@@ -914,15 +1051,18 @@ sub remove {
 
     if ($type eq "FILE") {
         `rm -r $path`;
-        if ($? == 0) {return TRUE};
+        if ($? == 0) {return TRUE;}
     }
     elsif ($type eq "CEPH") {
 
         my ($poolName, @rest) = split("/", $path);
         my $objectName = join("", @rest);
 
-        `rados -p $poolName rm $objectName`;
-        if ($? == 0) {return TRUE};
+        my $io = getCephPoolContext($poolName);
+
+        eval { $io->remove($objectName) };
+
+        if (! $@) {return TRUE;}
     }
 
     return FALSE;
@@ -952,50 +1092,47 @@ sub symLink {
             return undef;
         }
 
-        my $relativeTargetPath;
-        my $realTargetPath;
-        if (-f $targetPath && ! -l $targetPath) {
-            $relativeTargetPath = File::Spec->abs2rel($targetPath,$dir);
-            $realTargetPath = $targetPath;
-        }
-        elsif (-f $targetPath && -l $targetPath) {
-            $realTargetPath = File::Spec::Link->full_resolve( File::Spec::Link->linked($targetPath) );
-            $relativeTargetPath = File::Spec->abs2rel($realTargetPath, $dir);
-        } else {
-            ERROR(sprintf "The tile '%s' (to symlink) is not a file or a link in '%s' !", basename($targetPath), dirname($targetPath));
+        my $realTargetPath = getRealData("FILE", $targetPath);
+        if ( ! defined $realTargetPath ) {
+            ERROR(sprintf "The file '%s' (to symlink) is not a file or a link in '%s' !", basename($targetPath), dirname($targetPath));
             return undef;
         }
 
+        my $relativeTargetPath = File::Spec->abs2rel($realTargetPath,$dir);
+
         my $result = eval { symlink ($relativeTargetPath, $toPath); };
         if (! $result) {
-            ERROR (sprintf "The tile '%s' can not be linked by '%s' (%s) ?", $targetPath, $toPath, $!);
+            ERROR (sprintf "The file '%s' can not be linked by '%s' (%s) ?", $targetPath, $toPath, $!);
             return undef;
         }
 
         return $realTargetPath;
     }
     elsif ($targetType eq "CEPH" && $toType eq "CEPH") {
-        my ($tPoolName, @rest) = split("/", $targetPath);
-        my $realTarget = join("", @rest);
 
         # On vérifie que la dalle CEPH à lier n'est pas un alias, auquel cas on référence le vrai objet (pour éviter des alias en cascade)
-        my $value = getSize("CEPH",$targetPath);
-        if ( $value < $ROK4_IMAGE_HEADER_SIZE ) {
-            $realTarget = `rados -p $tPoolName get $realTarget /dev/stdout`;
+        my $realTarget = getRealData("CEPH", $targetPath);
+        if ( ! defined $realTarget ) {
+            ERROR("Objet to link '$targetPath' does not exists");
+            return undef;
         }
 
-        # On retire le bucket du nom de l'alias à créer
+        my ($tPoolName, @rest) = split("/", $realTarget);
+        $realTarget = join("", @rest);
+
         (my $toPoolName, @rest) = split("/", $toPath);
         $toPath = join("", @rest);
 
         if ($tPoolName ne $toPoolName) {
             ERROR("CEPH link (symbolic object) is not possible between different pool: $toPoolName/toPath -> X $targetPath");
-            return FALSE;
+            return undef;
         }
 
-        `echo -n "$realTarget" | rados -p $toPoolName put $toPath /dev/stdin`;
-        if ($?) {
-            ERROR("Cannot symlink (make a rados put) object $realTarget with alias $toPath : $!");
+        my $io = getCephPoolContext($tPoolName);
+        eval { $io->write_data($toPath, "$realTarget") };
+
+        if ($@) {
+            ERROR("Cannot symlink (make a rados put) object $realTarget with alias $toPath : $@");
             return undef;
         }
 

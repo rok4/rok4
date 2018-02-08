@@ -101,6 +101,13 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
     }
 
     alreadyTried = true;
+
+    // il se peut que le contexte ne soit pas connecté, auquel cas on sort directement sans donnée
+    if (! context->isConnected()) {
+        data = NULL;
+        return NULL;
+    }
+
     if (readFull) {
         // On retourne tout l'objet
         data = new uint8_t[maxsize];

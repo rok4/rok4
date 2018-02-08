@@ -99,10 +99,17 @@ public:
      * \~english \brief Precise if provided object exists in this context
      * \param[in] name Object's name whose existency is asked
      */
-    
     bool exists(std::string name) {
         uint8_t test;
         return (read(&test, 0, 1, name) == 1);
+    }
+
+    /**
+     * \~french \brief Précise si le contexte est connecté
+     * \~english \brief Precise if context is connected
+     */
+    bool isConnected() {
+        return connected;
     }
 
     /**
