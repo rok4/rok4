@@ -53,6 +53,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/joinCache-file.pl.in ${CMAKE_CURR
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/joinCache-s3.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/joinCache-s3.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/joinCache-ceph.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/joinCache-ceph.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/create-layer.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/create-layer.pl @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/create-list.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/create-list.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/coord2image.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/coord2image.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/tms-converter-gui.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/tms-converter-gui.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4-simulator.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/be4-simulator.pl @ONLY)

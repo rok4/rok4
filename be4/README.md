@@ -22,6 +22,7 @@ Afin de paralléliser le travail de génération, certains outils Perl vont avoi
 | tms-converter-gui.pl | Convertit des coordonnées, requêtes getTile en indices/chemin de dalles et tuiles et réciproquement                                                                                     | non              | oui                 |
 | wmtSalaD.pl          | Génère une pyramide à la demande                                                                                                                                                        | non              | non                 |
 | create-layer.pl      | Génère le descripteur de couche à partir du descripteur de pyramide                                                                                                                     | non              | non                 |
+| create-list.pl      | Génère le fichier liste à partir d'un répertoire contenant des images ROK4                                                                                                                     | non              | non                 |
 | be4-simulator.pl     | Renseigne le nombre de dalle que contiendrait une pyramide à partir de la géométrie de la couverture des données et de la taille de dalle voulue                                        | non              | non                 |
 
 

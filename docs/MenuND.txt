@@ -58,6 +58,7 @@ Group: Tools  {
 
     File: COORD2IMAGE  (no auto-title, bin/coord2image.pl)
     File: CREATE-LAYER  (no auto-title, bin/create-layer.pl)
+    File: CREATE-LIST  (no auto-title, bin/create-list.pl)
     File: BE4-SIMULATOR  (no auto-title, bin/be4-simulator.pl)
     File: TMS-CONVERTER-GUI  (no auto-title, bin/tms-converter-gui.pl)
 }
