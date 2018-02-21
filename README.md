@@ -75,6 +75,7 @@ Les librairies Perl sont installable via l'outil CPAN : `cpan Lib::Perl` (en sud
 * Data::Dumper
 * Digest::SHA
 * ExtUtils::MakeMaker
+* File::Find::Rule
 * File::Map
 * FindBin
 * HTTP::Request
@@ -93,7 +94,7 @@ On installe les librairies Perl GDAL via le paquet :
 
 Soit :
 ```
-cpan Data::Dumper Digest::SHA ExtUtils::MakeMaker File::Map FindBin Geo::GDAL Geo::OGR Geo::OSR HTTP::Request HTTP::Request::Common HTTP::Response Log::Log4perl LWP::UserAgent Math::BigFloat Test::More Tie::File XML::LibXML
+cpan Data::Dumper Digest::SHA ExtUtils::MakeMaker File::Find::Rule File::Map FindBin Geo::GDAL Geo::OGR Geo::OSR HTTP::Request HTTP::Request::Common HTTP::Response Log::Log4perl LWP::UserAgent Math::BigFloat Test::More Tie::File XML::LibXML
 ```
 
 Si volonté d'utiliser l'outil graphique `tms-converter-gui.pl` :
