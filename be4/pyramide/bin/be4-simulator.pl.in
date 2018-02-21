@@ -300,6 +300,7 @@ sub doIt {
             
         foreach my $level (@levels) {
             
+            my %LIST;
             if (defined $options{lists}) {
                 my $fileOutName = basename($options{wkt});
                 $fileOutName =~ s/\.[^\.]+$//;
@@ -349,14 +350,11 @@ sub doIt {
                         my $OGRtile = COMMON::ProxyGDAL::geometryFromString("WKT", $WKTtile);
 
                         if (COMMON::ProxyGDAL::isIntersected($OGRtile, $ogrShape)) {
-                            $nbImages++;
-                            if (defined $options{lists}) {
-                                if ($options{listPaths}) {
-                                    my $path = COMMON::Base36::indicesToB36Path($col, $row, 3);
-                                    print OUT "$level/$path.tif\n";
-                                } else {
-                                    print OUT "$col,$row\n";
-                                }
+                            if (defined $options{lists} && $options{listPaths}) {
+                                my $path = COMMON::Base36::indicesToB36Path($col, $row, 3);
+                                $LIST{"$level/$path.tif"} = 1;
+                            } else {
+                                $LIST{"$col,$row"} = 1;
                             }
                         }
 
@@ -366,9 +364,12 @@ sub doIt {
                 $curBbox++;
             }
             
-            INFO("\t Level $level : $nbImages (pixel dimension of an image $imageWidth x $imageHeight)");
+            INFO(sprintf "\t Level $level : %s (pixel dimension of an image $imageWidth x $imageHeight)", scalar(keys(%LIST)));
             
             if (defined $options{lists}) {
+                foreach my $key (keys %LIST) {
+                    print OUT "$key\n";
+                }
                 close(OUT);
             }
         }

@@ -190,11 +190,11 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
 
         Style* sty = serverXML->getStyle(styleName);
         if ( sty == NULL ) {
-            LOGGER_ERROR ( _ ( "Style " ) << styleName << _ ( "non defini" ) );
+            LOGGER_ERROR ( _ ( "Style " ) << styleName << _ ( " non defini" ) );
             continue;
         }
 
-        if ( sty->getId().compare ( DEFAULT_STYLE_INSPIRE_ID ) ==0 ) {
+        if ( sty->getId().compare ( DEFAULT_STYLE_INSPIRE_ID ) == 0 ) {
             inspireStyleName = styleName;
         }
         styles.push_back ( sty );
@@ -207,7 +207,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
 
         Style* sty = serverXML->getStyle(inspireStyleName);
         if ( sty == NULL ) {
-            LOGGER_ERROR ( _ ( "Style " ) << styleName << _ ( "non defini" ) );
+            LOGGER_ERROR ( _ ( "Style " ) << inspireStyleName << _ ( "non defini" ) );
             return;
         }
         styles.insert ( styles.begin(), sty );
