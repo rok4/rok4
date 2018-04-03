@@ -117,9 +117,12 @@ void* Rok4Server::thread_loop ( void* arg ) {
             if ( rc != -4 ) { // Cas différent du redémarrage
                 LOGGER_ERROR ( _ ( "FCGX_InitRequest renvoie le code d'erreur" ) << rc );
             }
-            //std::cerr <<"FCGX_InitRequest renvoie le code d'erreur" << rc << std::endl;
+            std::cerr <<"FCGX_InitRequest renvoie le code d'erreur" << rc << std::endl;
             break;
         }
+
+        LOGGER_DEBUG("Thread " << pthread_self() << " traite une requete");
+
         //DEBUG: La boucle suivante permet de lister les valeurs dans fcgxRequest.envp
         /*char **p;
         for (p = fcgxRequest.envp; *p; ++p) {
@@ -163,6 +166,8 @@ void* Rok4Server::thread_loop ( void* arg ) {
 
         FCGX_Finish_r ( &fcgxRequest );
         FCGX_Free ( &fcgxRequest,1 );
+
+        LOGGER_DEBUG("Thread " << pthread_self() << " en a fini avec la requete");
 
         server->parallelProcess->checkCurrentPid();
 
@@ -256,8 +261,10 @@ void Rok4Server::initFCGI() {
 }
 
 void Rok4Server::killFCGI() {
+    /*
     FCGX_CloseSocket ( sock );
     FCGX_Close();
+    */
 }
 
 void Rok4Server::run(sig_atomic_t signal_pending) {

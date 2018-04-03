@@ -12,6 +12,7 @@ use Digest::SHA;
 use ExtUtils::MakeMaker;
 use File::Basename;
 use File::Copy;
+use File::Find::Rule;
 use File::Map qw(map_file);
 use File::Path;
 use File::Path qw(make_path);
@@ -32,6 +33,8 @@ use POSIX qw(locale_h);
 use Scalar::Util qw/reftype/;
 use Test::More;
 use Tie::File;
+use XML::LibXML;
+
 
 # use Tk;
 # use Tk::EntryCheck;
@@ -40,4 +43,3 @@ use Tie::File;
 # use Tk::NoteBook;
 # use Tk::ROText;
 # use Tk::Table;
-# use XML::LibXML;

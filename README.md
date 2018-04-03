@@ -55,6 +55,7 @@ Pour la partie Perl :
 Pour centos, il est nécessaire d'ajouter un dépôt pour avoir accès aux paquets nécessaires : `yum install -y epel-release`
 
 Les paquets (`Debian`|`Centos`) à installer sont :
+* (`libfcgi-dev`|`fcgi-devel`) pour que le serveur ROK4 gère les requêtes
 * (`gettext`|`gettext`) pour l'internationalisation des logs
 * (`libtinyxml-dev`|`tinyxml-devel`) pour la lecture des configuration XML
 * (`zlib1g-dev`|`zlib-devel`) pour la compression ZIP
