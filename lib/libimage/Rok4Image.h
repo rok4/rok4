@@ -64,6 +64,7 @@
 
 #define ROK4_IMAGE_HEADER_SIZE 2048
 #define JPEG_BLOC_SIZE 16
+// TODO Définir la signature et sa taille
 
 /**
  * \author Institut national de l'information géographique et forestière

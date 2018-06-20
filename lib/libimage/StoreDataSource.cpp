@@ -146,6 +146,9 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
         }
 
         if ( realSize < ROK4_IMAGE_HEADER_SIZE ) {
+
+            // TODO : Tester la signature d'un objet symbolique
+
             // On est dans le cas d'un objet symbolique
 
             std::string originalName (name);

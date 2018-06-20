@@ -246,6 +246,10 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( std::string name, BoundingB
         return NULL;
     }
     if ( tmpSize < ROK4_IMAGE_HEADER_SIZE ) {
+
+        // TODO : Tester la signature d'un objet symbolique
+
+
         std::string originalName (name);
         char tmpName[tmpSize+1];
         memcpy((uint8_t*) tmpName, hdr,tmpSize);

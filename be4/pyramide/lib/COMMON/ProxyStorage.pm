@@ -117,6 +117,7 @@ my $ROK4_KEYSTONE_PROJECTID;
 
 ### General
 my $ROK4_IMAGE_HEADER_SIZE = 2048;
+# TODO Définir la signature et sa taille
 
 ####################################################################################################
 #                             Group: Controls methods                                              #
@@ -912,7 +913,11 @@ sub getRealData {
         }
 
         if ( $value < $ROK4_IMAGE_HEADER_SIZE ) {
+
             my $realTarget = $io->read($objectName);
+
+            # TODO : Tester la signature d'un objet symbolique
+
             return "$poolName/$realTarget";
         } else {
             return $path;
@@ -1129,6 +1134,8 @@ sub symLink {
         }
 
         my $io = getCephPoolContext($tPoolName);
+
+        # TODO Précéder le nom de la cible de la signature
         eval { $io->write_data($toPath, "$realTarget") };
 
         if ($@) {
