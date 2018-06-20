@@ -176,7 +176,7 @@ sub openTmsBrowser {
 
 sub validateGlobals {
 
-    $tmsObject = COMMON::TileMatrixSet->new($tmsFileName);
+    $tmsObject = COMMON::TileMatrixSet->new($tmsFileName, 1);
     if (! defined $tmsObject) {
         return "TMS not valid";
     }
