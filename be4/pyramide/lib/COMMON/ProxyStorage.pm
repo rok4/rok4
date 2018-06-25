@@ -117,7 +117,9 @@ my $ROK4_KEYSTONE_PROJECTID;
 
 ### General
 my $ROK4_IMAGE_HEADER_SIZE = 2048;
-# TODO Définir la signature et sa taille
+# Signature d'un objet CEPH LIEN et sa taille
+use constant ROK4_SYMLINK_SIGNATURE_SIZE => 7;
+use constant ROK4_SYMLINK_SIGNATURE => "SYMLINK";
 
 ####################################################################################################
 #                             Group: Controls methods                                              #
@@ -916,8 +918,10 @@ sub getRealData {
 
             my $realTarget = $io->read($objectName);
 
-            # TODO : Tester la signature d'un objet symbolique
-
+            # Dans le cas d'un objet Ceph lien, on vérifie que la signature existe bien dans le header
+            if () {
+                ROK4_SYMLINK_SIGNATURE_SIZE
+            }
             return "$poolName/$realTarget";
         } else {
             return $path;
@@ -1135,7 +1139,7 @@ sub symLink {
 
         my $io = getCephPoolContext($tPoolName);
 
-        # TODO Précéder le nom de la cible de la signature
+        $toPath = ROK4_SYMLINK_SIGNATURE . toPath;
         eval { $io->write_data($toPath, "$realTarget") };
 
         if ($@) {
