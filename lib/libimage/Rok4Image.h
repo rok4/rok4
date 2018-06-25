@@ -63,8 +63,9 @@
 #include "StoreDataSource.h"
 
 #define ROK4_IMAGE_HEADER_SIZE 2048
+#define ROK4_SYMLINK_SIGNATURE_SIZE 7
+#define ROK4_SYMLINK_SIGNATURE "SYMLINK"
 #define JPEG_BLOC_SIZE 16
-// TODO Définir la signature et sa taille
 
 /**
  * \author Institut national de l'information géographique et forestière
