@@ -919,10 +919,14 @@ sub getRealData {
             my $realTarget = $io->read($objectName);
 
             # Dans le cas d'un objet Ceph lien, on vérifie que la signature existe bien dans le header
-            if () {
-                ROK4_SYMLINK_SIGNATURE_SIZE
+            if (index($realTarget, ROK4_SYMLINK_SIGNATURE) != -1) {
+                ERROR("CEPH object is not a valid SYMLINK object : $path");
+                return undef;                
             }
+            
+            $realTarget = substr $realTarget, ROK4_SYMLINK_SIGNATURE_SIZE;
             return "$poolName/$realTarget";
+
         } else {
             return $path;
         }
