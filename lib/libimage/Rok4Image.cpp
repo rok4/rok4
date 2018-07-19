@@ -256,9 +256,9 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( std::string name, BoundingB
 
 
         std::string originalName (name);
-        char tmpName[tmpSize+1];
-        memcpy((uint8_t*) tmpName, hdr+ROK4_SYMLINK_SIGNATURE_SIZE,tmpSize);
-        tmpName[tmpSize] = '\0';
+        char tmpName[tmpSize-ROK4_SYMLINK_SIGNATURE_SIZE+1];
+        memcpy((uint8_t*) tmpName, hdr+ROK4_SYMLINK_SIGNATURE_SIZE,tmpSize-ROK4_SYMLINK_SIGNATURE_SIZE);
+        tmpName[tmpSize-ROK4_SYMLINK_SIGNATURE_SIZE] = '\0';
         name = std::string (tmpName);
         delete sds;
 

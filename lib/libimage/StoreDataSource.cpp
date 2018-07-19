@@ -156,9 +156,9 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
 
             // On est dans le cas d'un objet symbolique
             std::string originalName (name);
-            char tmpName[realSize+1];
-            memcpy((uint8_t*) tmpName, indexheader+ROK4_SYMLINK_SIGNATURE_SIZE,realSize);
-            tmpName[realSize] = '\0';
+            char tmpName[realSize-ROK4_SYMLINK_SIGNATURE_SIZE+1];
+            memcpy((uint8_t*) tmpName, indexheader+ROK4_SYMLINK_SIGNATURE_SIZE,realSize-ROK4_SYMLINK_SIGNATURE_SIZE);
+            tmpName[realSize-ROK4_SYMLINK_SIGNATURE_SIZE] = '\0';
             name = std::string (tmpName);
 
             LOGGER_DEBUG ( "Dalle symbolique détectée : " << originalName << " référence une autre dalle symbolique " << name );

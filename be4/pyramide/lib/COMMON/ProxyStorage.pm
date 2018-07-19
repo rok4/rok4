@@ -1143,8 +1143,8 @@ sub symLink {
 
         my $io = getCephPoolContext($tPoolName);
 
-        $toPath = ROK4_SYMLINK_SIGNATURE . toPath;
-        eval { $io->write_data($toPath, "$realTarget") };
+        my $symlink_content = ROK4_SYMLINK_SIGNATURE . $realTarget;
+        eval { $io->write_data($toPath, "$symlink_content" ) };
 
         if ($@) {
             ERROR("Cannot symlink (make a rados put) object $realTarget with alias $toPath : $@");
