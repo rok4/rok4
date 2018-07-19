@@ -248,7 +248,7 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( std::string name, BoundingB
     if ( tmpSize < ROK4_IMAGE_HEADER_SIZE ) {
 
         // S'il s'agit potentiellement d'un objet lien, on verifie d'abord que la signature de ce type d'objet est bien presente dans le header
-        if ( strncmp(hdr, ROK4_SYMLINK_SIGNATURE, ROK4_SYMLINK_SIGNATURE_SIZE) != 0 ) {
+        if ( strncmp((char*) hdr, ROK4_SYMLINK_SIGNATURE, ROK4_SYMLINK_SIGNATURE_SIZE) != 0 ) {
             LOGGER_ERROR ( "Erreur lors de la lecture du header, l'objet " << name << " ne correspond pas à un objet lien " );
             delete[] hdr;
             return NULL;

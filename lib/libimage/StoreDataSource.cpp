@@ -148,7 +148,7 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
         if ( realSize < ROK4_IMAGE_HEADER_SIZE ) {
 
             // Dans le cas d'un header de type objet lien, on verifie d'abord que la signature concernée est bien presente dans le header de l'objet
-            if ( strncmp(indexheader, ROK4_SYMLINK_SIGNATURE, ROK4_SYMLINK_SIGNATURE_SIZE) != 0 ) {
+            if ( strncmp((char*) indexheader, ROK4_SYMLINK_SIGNATURE, ROK4_SYMLINK_SIGNATURE_SIZE) != 0 ) {
                 LOGGER_ERROR ( "Erreur lors de la lecture du header, l'objet " << name << " ne correspond pas à un objet lien " );
                 delete[] indexheader;
                 return NULL;

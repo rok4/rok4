@@ -62,7 +62,7 @@ Les paquets (`Debian`|`Centos`) à installer sont :
 * (`libtiff5-dev`|`libtiff-devel`) pour la lecture et écriture des images TIFF
 * (`libpng16-dev`|`libpng-devel`) pour la lecture des images PNG
 * (`libcurl4-openssl-dev`|`libcurl-devel`) et (`libssl-dev`|`openssl-devel`) pour l'envoi de requête HTTP(S)
-* (`libturbojpeg`|`turbojpeg-devel`) et (`libjpeg`|`libjpeg-turbo-devel`) pour la lecture des images JPEG
+* (`libturbojpeg0-dev`|`turbojpeg-devel`) et (`libjpeg`|`libjpeg-turbo-devel`) pour la lecture des images JPEG
 * (`libopenjp2-7-dev`|`openjpeg2-devel`) pour la lecture des images JPEG2000 si Kakadu n'est pas utilisé
 * (`libc6-dev`|) pour les l'utilisation de thread POSIX
 
@@ -73,6 +73,7 @@ Si la gestion du stockage objet est voulue :
 
 Les librairies Perl sont installable via l'outil CPAN : `cpan Lib::Perl` (en sudo pour une installation système). Certaines des librairies utilisées sont installées avec le paquet `perl-base`
 
+* Ceph::Rados;
 * Data::Dumper
 * Digest::SHA
 * ExtUtils::MakeMaker
@@ -95,7 +96,7 @@ On installe les librairies Perl GDAL via le paquet :
 
 Soit :
 ```
-cpan Data::Dumper Digest::SHA ExtUtils::MakeMaker File::Find::Rule File::Map FindBin Geo::GDAL Geo::OGR Geo::OSR HTTP::Request HTTP::Request::Common HTTP::Response Log::Log4perl LWP::UserAgent Math::BigFloat Test::More Tie::File XML::LibXML
+cpan Data::Dumper Digest::SHA ExtUtils::MakeMaker File::Find::Rule File::Map FindBin Geo::GDAL Geo::OGR Geo::OSR HTTP::Request HTTP::Request::Common HTTP::Response Log::Log4perl LWP::UserAgent Math::BigFloat Test::More Tie::File XML::LibXML Ceph::Rados;
 ```
 
 Si volonté d'utiliser l'outil graphique `tms-converter-gui.pl` :

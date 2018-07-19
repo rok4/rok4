@@ -6,6 +6,8 @@
 use strict;
 use warnings;
 use AutoLoader qw(AUTOLOAD);
+
+use Ceph::Rados;
 use Cwd;
 use Data::Dumper;
 use Digest::SHA;
