@@ -124,20 +124,28 @@ public:
      */
     std::string path;
     /**
-     * \~french \brief Type de service (WMS,WMTS)
-     * \~english \brief Service type (WMS,WMTS)
+     * \~french \brief Nombre de paramètre dans la requête
+     * \~english \brief Query parametrs number
      */
-    std::string service;
-    /**
-     * \~french \brief Nom au sens OGC de la requête effectuée
-     * \~english \brief OGC request name
-     */
-    std::string request;
+    int paramNumber;
     /**
      * \~french \brief Protocole de la requête (http,https)
      * \~english \brief Request protocol (http,https)
      */
     std::string scheme;
+    /**
+     * \~french \brief Nom au sens OGC de la requête effectuée
+     * \~english \brief OGC request name
+     */
+    std::string request;
+    /*
+     * \~french \brief Type de service (WMS,WMTS)
+     * \~english \brief Service type (WMS,WMTS)
+     * \~french \brief Nombre de paramètre dans la requête
+     * \~english \brief Query parametrs number
+     */
+    std::string service;
+
     /**
      * \~french \brief Liste des paramètres de la requête
      * \~english \brief Request parameters list
@@ -228,6 +236,20 @@ public:
      * \return bool
      */
     bool doesPathFinishWith(std::string word);
+
+    void print() {
+        LOGGER_INFO("hostName = " << hostName);
+        LOGGER_INFO("path = " << path);
+        LOGGER_INFO("paramNumber = " << paramNumber);
+        LOGGER_INFO("scheme = " << scheme);
+        LOGGER_INFO("request = " << request);
+
+        std::map<std::string, std::string>::iterator itQP;
+        for ( itQP = params.begin(); itQP != params.end(); itQP++ ) {
+            LOGGER_INFO("\t" << itQP->first << " = " << itQP->second);
+        }
+
+    }
     /**
      * \~french
      * \brief Constructeur d'une requête de type GET
@@ -260,6 +282,7 @@ public:
      * \param postContent the http POST Content
      */
     Request ( char* strquery, char* hostName, char* path, char* https, std::string postContent );
+
     /**
      * \~french
      * \brief Destructeur par défaut

@@ -417,6 +417,11 @@ private:
      */
     void processWMTS ( Request *request, FCGX_Request&  fcgxRequest );
     /**
+     * \~french Traite les requêtes de type TMS
+     * \~english Process TMS request
+     */
+    void processTMS ( Request *request, FCGX_Request&  fcgxRequest );
+    /**
      * \~french Sépare les requêtes de type WMS et WMTS
      * \~english Route WMS and WMTS request
      */
@@ -592,6 +597,14 @@ public:
      * \brief to know if the server responde to WMTS request
      */
     bool isWMTSSupported();
+
+    /**
+     * \~french
+     * \brief Pour savoir si le server honore les requêtes TMS
+     * \~english
+     * \brief to know if the server responde to TMS request
+     */
+    bool isTMSSupported();
     
     /**
      * \~french

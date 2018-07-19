@@ -34,10 +34,12 @@
 
 	<!-- Niveau maximum des logs (fatal|error|warn|info|debug) -->
 	<logLevel>debug</logLevel>
-        <!-- Active le serveur WMTS -->
-        <WMTSSupport>true</WMTSSupport>
-        <!-- Active le serveur WMS -->
-        <WMSSupport>true</WMSSupport>
+    <!-- Active le serveur WMTS -->
+    <WMTSSupport>true</WMTSSupport>
+    <!-- Active le serveur TMS -->
+    <WTSSupport>true</WTSSupport>
+    <!-- Active le serveur WMS -->
+    <WMSSupport>true</WMSSupport>
 	<!-- Capacite du serveur pour les reprojections -->
 	<reprojectionCapability>true</reprojectionCapability>
 	<!-- Fichier contenant les parametres de service -->
@@ -48,12 +50,12 @@
 	<styleDir>../config/styles</styleDir>
 	<!-- Répertoire contenant les confs des TMS -->
 	<tileMatrixSetDir>../config/tileMatrixSet</tileMatrixSetDir>
-        <!-- Répertoire contenant les registres proj4 -->
-        <projConfigDir>../config/proj</projConfigDir>
-        <!-- Chemin d'écoute du serveur FCGI dans le cas d'une socket UNIX "/var/run/rok4sock"
-             Ou (ip d'écoute) deux point suivi d'un numéro de port "127.0.0.1:9000" ou ":9000" 
-             Doit être vide pour une utilisation avec Apache ou Spawn-Fcgi-->
-        <serverPort></serverPort>
-        <!-- Configuration de la socket FCGI, DOC : backlog is the listen queue depth used in the listen() call -->
-        <serverBackLog>0</serverBackLog>
+    <!-- Répertoire contenant les registres proj4 -->
+    <projConfigDir>../config/proj</projConfigDir>
+    <!-- Chemin d'écoute du serveur FCGI dans le cas d'une socket UNIX "/var/run/rok4sock"
+         Ou (ip d'écoute) deux point suivi d'un numéro de port "127.0.0.1:9000" ou ":9000" 
+         Doit être vide pour une utilisation avec Apache ou Spawn-Fcgi-->
+    <serverPort></serverPort>
+    <!-- Configuration de la socket FCGI, DOC : backlog is the listen queue depth used in the listen() call -->
+    <serverBackLog>0</serverBackLog>
 </serverConf>

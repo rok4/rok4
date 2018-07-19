@@ -192,6 +192,20 @@ const char *eformat_mime[] = {
     "image/tiff"
 };
 
+const char *eformat_extension[] = {
+    "UNKNOWN",
+    "tif",
+    "jpeg",
+    "png",
+    "tif",
+    "tif",
+    "tif",
+    "tif",
+    "tif",
+    "tif",
+    "tif"
+};
+
 const char *eformat_encoding[] = {
     "",
     "",
@@ -221,6 +235,10 @@ std::string toString ( eformat_data format ) {
 
 std::string toMimeType ( eformat_data format ) {
     return std::string ( eformat_mime[format] );
+}
+
+std::string toExtension ( eformat_data format ) {
+    return std::string ( eformat_extension[format] );
 }
 
 eformat_data fromMimeType ( std::string mime ) {

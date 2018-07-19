@@ -639,7 +639,7 @@ void parsePostContent ( std::string content, std::map< std::string, std::string 
 
 }
 
-Request::Request ( char* strquery, char* hostName, char* path, char* https ) : hostName ( hostName ),path ( path ),service ( "" ),request ( "" ),scheme ( "http://" ) {
+Request::Request ( char* strquery, char* hostName, char* path, char* https ) : hostName ( hostName ),path ( path ),service ( "" ),request ( "" ),scheme ( "http://" ), paramNumber(0) {
     LOGGER_DEBUG ( "QUERY="<<strquery );
     if ( https )
         scheme = ( strcmp ( https,"on" ) == 0 || strcmp ( https,"ON" ) ==0?"https://":"http://" );
@@ -664,6 +664,7 @@ Request::Request ( char* strquery, char* hostName, char* path, char* https ) : h
         } else {
             params.insert ( std::pair<std::string, std::string> ( key, value ) );
         }
+        paramNumber++;
     }
     /*LOGGER_DEBUG("GET Params :");
     std::map<std::string, std::string>::iterator it;
@@ -673,7 +674,7 @@ Request::Request ( char* strquery, char* hostName, char* path, char* https ) : h
 }
 
 
-Request::Request ( char* strquery, char* hostName, char* path, char* https, std::string postContent ) : hostName ( hostName ),path ( path ),service ( "" ),request ( "" ),scheme ( "" ) {
+Request::Request ( char* strquery, char* hostName, char* path, char* https, std::string postContent ) : hostName ( hostName ),path ( path ),service ( "" ),request ( "" ),scheme ( "" ), paramNumber(0) {
     LOGGER_DEBUG ( "QUERY="<<strquery );
     scheme = ( https?"https://":"http://" );
     //url_decode(strquery);
@@ -756,7 +757,7 @@ DataSource* Request::getTileParam ( ServicesXML* servicesConf, std::map< std::st
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +str_layer+_ ( " inconnu." ),"wmts" ) );
     layer = it->second;
     if (layer->getWMTSAuthorized() == false){
-	return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +str_layer+_ ( " inconnu " ),"wms" ) );
+	   return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +str_layer+_ ( " inconnu " ),"wmts" ) );
     }
     // TILEMATRIXSET
     std::string str_tms=getParam ( "tilematrixset" );

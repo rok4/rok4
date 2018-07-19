@@ -39,6 +39,8 @@
                 <xs:element name="WMTSSupport"               type="xs:boolean"/>
                 <!-- Active le serveur WMS -->
                 <xs:element name="WMSSupport"               type="xs:boolean"/>
+                <!-- Active le serveur TMS -->
+                <xs:element name="TMSSupport"               type="xs:boolean"/>
                 <!-- Capacite a reprojeter -->
                 <xs:element name="reprojectionCapability"           type="xs:boolean"/>
                 <!-- Fichier contenant les parametres de service -->

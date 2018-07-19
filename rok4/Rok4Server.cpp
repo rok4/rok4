@@ -1518,6 +1518,124 @@ void Rok4Server::processWMTS ( Request* request, FCGX_Request&  fcgxRequest ) {
     }
 }
 
+
+void Rok4Server::processTMS ( Request* request, FCGX_Request&  fcgxRequest ) {
+
+    std::stringstream ss(request->path);
+    std::string token;
+    char delim = '/';
+    int tmsVersionPos = -1;
+    std::vector<std::string> pathParts;
+    while (std::getline(ss, token, delim)) {
+        LOGGER_INFO("'"+token+"'");
+        if (token == "1.0.0") {
+            tmsVersionPos = pathParts.size();
+        }
+        pathParts.push_back(token);
+    }
+
+    if (tmsVersionPos == -1) {
+        // La version n'a pas été rencontrée, on n'est pas dans le cas TMS => erreur
+        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation n'est pas prise en charge par ce serveur." ),"wmts" ) ),&fcgxRequest );
+        return;
+    }
+
+    if (tmsVersionPos == pathParts.size() - 1) {
+        // la version est en dernière position, on veut le "GetCapabilities" TMS
+        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation n'est pas prise en charge par ce serveur." ),"wmts" ) ),&fcgxRequest );
+        return;
+    }
+
+    else if (tmsVersionPos == pathParts.size() - 2) {
+        // la version est en avant dernière position, on veut le détail de la couche
+        std::string layerName = pathParts.at(tmsVersionPos + 1);
+
+        Layer* L = serverConf->getLayer(layerName);
+        if (L == NULL) {
+            S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +layerName+_ ( " inconnu." ),"tms" ) ),&fcgxRequest );
+            return;
+        }
+        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation n'est pas prise en charge par ce serveur." ),"wmts" ) ),&fcgxRequest );
+        return;
+    }
+
+    else if (tmsVersionPos == pathParts.size() - 5) {
+        // on requête une tuile
+
+        // La couche
+        std::string layerName = pathParts.at(tmsVersionPos + 1);
+        Layer* L = serverConf->getLayer(layerName);
+        if (L == NULL) {
+            S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +layerName+_ ( " inconnu." ),"tms" ) ),&fcgxRequest );
+            return;
+        }
+        if (! L->getWMTSAuthorized()){
+           S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +layerName+_ ( " inconnu " ),"tms" ) ),&fcgxRequest );
+        }
+
+        // Le niveau
+        std::string tileMatrix = pathParts.at(tmsVersionPos + 2);
+        Level* level = L->getDataPyramid()->getLevel(tileMatrix);
+        if (level == NULL) {
+            // On est hors niveau -> erreur
+            S.sendresponse ( new SERDataStream ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "tms" ) ),&fcgxRequest );
+        }
+
+
+        int tileCol = std::stoi(pathParts.at(tmsVersionPos + 3));
+        
+        std::string tileRowWithExtension = pathParts.at(tmsVersionPos + 4);
+        std::string tileRowString;
+        std::string extension;
+        delim = '.';
+        ss = std::stringstream(tileRowWithExtension);
+        std::getline(ss, tileRowString, delim);
+        std::getline(ss, extension, delim);
+
+        int tileRow = std::stoi(tileRowString);
+
+        // Le format : on vérifie la cohérence de l'extension avec le format des données
+        if ( extension.compare ( Rok4Format::toExtension ( ( L->getDataPyramid()->getFormat() ) ) ) !=0 ) {
+            S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "L'extension " ) +extension+_ ( " n'est pas gere pour la couche " ) +layerName,"tms" ) ),&fcgxRequest );
+        }
+        std::string format = Rok4Format::toMimeType ( ( L->getDataPyramid()->getFormat() ) );
+
+
+        // Le style
+        Style* style = serverConf->getStyle(L->getDefaultStyle());
+
+
+        // La tuile
+        if (tileRow < level->getMinTileRow() || tileRow > level->getMaxTileRow()
+                || tileCol < level->getMinTileCol() || tileCol > level->getMaxTileCol()) {
+            // On est hors tuiles -> erreur
+            S.sendresponse ( new SERDataStream ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "tms" ) ),&fcgxRequest );
+            return;
+        }
+
+        DataSource* tileSource;
+        if (level->isOnFly()) {
+            tileSource = getTileOnFly(L, tileMatrix, tileCol, tileRow, style, format);
+        }
+        else if (level->isOnDemand()) {
+            tileSource = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
+        }
+        else {
+            tileSource = getTileUsual(L, tileMatrix, tileCol, tileRow, style, format) ;
+        }
+
+        S.sendresponse (tileSource, &fcgxRequest);
+        return;
+    }
+
+    else {
+        // le format de la requête n'est pas géré
+        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation n'est pas prise en charge par ce serveur." ),"tms" ) ),&fcgxRequest );
+        return;
+    }
+
+}
+
 void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
     //le capabilities est présent pour une compatibilité avec le WMS 1.1.1
     if ( request->request == "getcapabilities" || request->request == "capabilities") {
@@ -1537,16 +1655,19 @@ void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
 }
 
 void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest ) {
-    if ( serverConf->supportWMTS && request->service == "wmts" && (request->doesPathFinishWith("wmts") || !request->doesPathFinishWith("wms"))) {
+    if ( serverConf->supportWMTS && request->service == "wmts") {
         processWMTS ( request, fcgxRequest );
-        //Service is not mandatory in GetMap request in WMS 1.3.0 and GetFeatureInfo
-        //le map est présent pour une compatibilité avec le WMS 1.1.1
-    } else if ( serverConf->supportWMS && ( request->service=="wms" || request->request == "getmap" || request->request == "map") && (request->doesPathFinishWith("wms") || !request->doesPathFinishWith("wmts"))) {
+    }
+    //Service is not mandatory in GetMap request in WMS 1.3.0 and GetFeatureInfo
+    //le map est présent pour une compatibilité avec le WMS 1.1.1
+    else if ( serverConf->supportWMS && ( request->service=="wms" || request->request == "getmap" || request->request == "map") ) {
         processWMS ( request, fcgxRequest );
-    } else if ( request->service == "" ) {
-        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, ( "Le parametre SERVICE n'est pas renseigne." ) ,"xxx" ) ),&fcgxRequest );
-    } else {
-        S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le service " ) +request->service+_ ( " est inconnu pour ce serveur." ),"wmts" ) ),&fcgxRequest );
+    }
+    else if ( serverConf->supportTMS && request->paramNumber == 0) {
+        processTMS ( request, fcgxRequest );
+    }
+    else {
+        S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le service est inconnu pour ce serveur." ),"wmts" ) ),&fcgxRequest );
     }
 }
 
@@ -1571,5 +1692,6 @@ void Rok4Server::setFCGISocket ( int sockFCGI ) { sock = sockFCGI; }
 bool Rok4Server::isRunning() { return running ; }
 bool Rok4Server::isWMTSSupported(){ return serverConf->supportWMTS ; }
 bool Rok4Server::isWMSSupported(){ return serverConf->supportWMS ; }
+bool Rok4Server::isTMSSupported(){ return serverConf->supportTMS ; }
 void Rok4Server::setProxy(Proxy pr){ serverConf->proxy = pr ; }
 Proxy Rok4Server::getProxy(){ return serverConf->proxy ; }
