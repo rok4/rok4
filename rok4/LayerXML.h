@@ -87,6 +87,7 @@ class LayerXML : public DocumentXML
         std::vector<MetadataURL> metadataURLs;
         bool WMSauth;
         bool WMTSauth;
+        bool TMSauth;
         bool times;
 
         bool getFeatureInfoAvailability;

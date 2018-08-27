@@ -88,8 +88,11 @@ class ServicesXML
         unsigned int getMaxTileY() const ;
         std::string getName() const ;
         std::vector<std::string>* getFormatList() ;
+        bool isInFormatList(std::string f) ;
         std::vector<std::string>* getInfoFormatList() ;
+        bool isInInfoFormatList(std::string f) ;
         std::vector<CRS>* getGlobalCRSList() ;
+        bool isInGlobalCRSList(CRS* c) ;
         bool isFullStyleCapable() ;
         // WMTS
         std::string getServiceType() ;
@@ -99,7 +102,7 @@ class ServicesXML
         MetadataURL* getWMSMetadataURL() ;
         MetadataURL* getWMTSMetadataURL() ;
         // CRS
-        bool getDoWeUseListOfEqualsCRS() ;
+        bool getDoWeUseListOfEqualsCRS();       
         bool getAddEqualsCRS() ;
         std::vector<std::string> getListOfEqualsCRS() ;
         bool getDoWeRestrictCRSList() ;

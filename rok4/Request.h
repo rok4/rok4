@@ -52,8 +52,10 @@ class Request;
  * \file Request.h
  * \~french
  * \brief Définition de la classe Request, analysant les requêtes HTTP
+ * \details Définition de la classe Request et des namespaces RequestType et ServiceType
  * \~english
  * \brief Define the Request Class analysing HTTP requests
+ * \details Define class Request and namespaces RequestType and ServiceType
  */
 
 /**
@@ -89,6 +91,86 @@ private:
      * \param[in,out] src URLs
      */
     void url_decode ( char *src );
+
+    /**
+     * \~french
+     * \brief Identification du service et de la requête
+     * \~english
+     * \brief Service and request type identification
+     */
+    void determineServiceAndRequest();
+
+public:
+
+/**
+     * \~french \brief Énumération des types de requête
+     * \~english \brief Available request type
+     */
+    enum eRequestType {
+        REQUEST_UNKNOWN,
+        REQUEST_MISSING,
+        GETSERVICES,
+        GETCAPABILITIES,
+        GETLAYER,
+        GETMAP,
+        GETTILE,
+        GETFEATUREINFO,
+        GETVERSION
+    };
+
+    static const char* const requesttype_name[];
+
+    /**
+     * \~french \brief Conversion d'un type de requête vers une chaîne de caractères
+     * \param[in] rt type de requête à convertir
+     * \return la chaîne de caractère nommant le type de requête
+     * \~english \brief Convert a request type to a string
+     * \param[in] rt request type to convert
+     * \return string namming the request type
+     */
+    static std::string toString ( eRequestType rt ) {
+        return std::string ( requesttype_name[rt] );
+    }
+
+    /**
+     * \~french \brief Énumération des services
+     * \~english \brief Available services
+     */
+    enum eServiceType {
+        SERVICE_UNKNOWN,
+        SERVICE_MISSING,
+        WMTS,
+        WMS,
+        TMS
+    };
+
+    static const char* const servicetype_name[];
+
+    /**
+     * \~french \brief Conversion d'un type de service vers une chaîne de caractères
+     * \param[in] st type de service à convertir
+     * \return la chaîne de caractère nommant le type de service
+     * \~english \brief Convert a service type to a string
+     * \param[in] st service type to convert
+     * \return string namming the service type
+     */
+    static std::string toString ( eServiceType st ) {
+        return std::string ( servicetype_name[st] );
+    }
+
+    /**
+     * \~french
+     * \brief Transforme la chaîne de caractères en minuscule
+     * \param[in,out] str la chaîne
+     * \~english
+     * \brief Translate the string to lower case
+     * \param[in,out] str the string
+     */
+    static void toLowerCase ( char* str ) {
+        if ( str ) for ( int i = 0; str[i]; i++ ) str[i] = tolower ( str[i] );
+    }
+
+
     /**
      * \~french
      * \brief Test de la présence d'un paramètre dans la requête
@@ -112,7 +194,6 @@ private:
      */
     std::string getParam ( std::string paramName );
 
-public:
     /**
      * \~french \brief Nom de domaine de la requête
      * \~english \brief Request domain name
@@ -124,11 +205,6 @@ public:
      */
     std::string path;
     /**
-     * \~french \brief Nombre de paramètre dans la requête
-     * \~english \brief Query parametrs number
-     */
-    int paramNumber;
-    /**
      * \~french \brief Protocole de la requête (http,https)
      * \~english \brief Request protocol (http,https)
      */
@@ -137,118 +213,25 @@ public:
      * \~french \brief Nom au sens OGC de la requête effectuée
      * \~english \brief OGC request name
      */
-    std::string request;
+    eRequestType request;
     /*
-     * \~french \brief Type de service (WMS,WMTS)
-     * \~english \brief Service type (WMS,WMTS)
-     * \~french \brief Nombre de paramètre dans la requête
-     * \~english \brief Query parametrs number
+     * \~french \brief Type de service (WMS,WMTS,TMS)
+     * \~english \brief Service type (WMS,WMTS,TMS)
      */
-    std::string service;
+    eServiceType service;
 
     /**
      * \~french \brief Liste des paramètres de la requête
      * \~english \brief Request parameters list
      */
     std::map<std::string, std::string> params;
-    /**
-     * \~french
-     * \brief Récuperation et vérifications des paramètres d'une requête GetTile
-     * \return message d'erreur en cas d'erreur, NULL sinon
-     * \~english
-     * \brief Fetching and validating GetTile request parameters
-     * \return NULL or an error message if something went wrong
-     */
-    DataSource* getTileParam (ServicesXML* servicesConf,  std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList, Layer*& layer, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, Style* &style);
-    /**
-     * \~french
-     * \brief Récuperation et vérifications des paramètres d'une requête GetMap
-     * \return message d'erreur en cas d'erreur, NULL sinon
-     * \~english
-     * \brief Fetching and validating GetTile request parameters
-     * \return NULL or an error message if something went wrong
-     */
-    DataStream* getMapParam ( ServicesXML* servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers, BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format, std::vector<Style*>& styles,std::map <std::string, std::string >& format_option , int &dpi );
-    /**
-     * \~french
-     * \brief Récuperation et vérifications des paramètres d'une requête GetCapabilities WMS
-     * \return message d'erreur en cas d'erreur, NULL sinon
-     * \~english
-     * \brief Fetching and validating GetTile request parameters
-     * \return NULL or an error message if something went wrong
-     */
-    DataStream* getCapWMSParam ( ServicesXML* servicesConf, std::string& version );
-    /**
-     * \~french
-     * \brief Récuperation et vérifications des paramètres d'une requête GetTile WMTS
-     * \return message d'erreur en caspa d'erreur, NULL sinon
-     * \~english
-     * \brief Fetching and validating GetTile request parameters
-     * \return NULL or an error message if something went wrong
-     */
-    DataStream* getCapWMTSParam ( ServicesXML* servicesConf, std::string& version );
-
-    //Greg
-    /**
-     * \~french
-     * \brief Récuperation et vérifications des paramètres d'une requête GetFeatureInfoParam WMS
-     * \return message d'erreur en cas d'erreur, NULL sinon
-     * \~english
-     * \brief Fetching and validating WMS GetFeatureInfoParam request parameters
-     * \return NULL or an error message if something went wrong
-     */
-    DataStream* WMSGetFeatureInfoParam (ServicesXML* servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers,
-                                     std::vector<Layer*>& query_layers,
-                                     BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format,
-                                     std::vector<Style*>& styles, std::string& info_format, int& X, int& Y, int& feature_count,std::map <std::string, std::string >& format_option);
-    /**
-     * \~french
-     * \brief Récuperation et vérifications des paramètres d'une requête GetFeatureInfoParam WMTS
-     * \return message d'erreur en cas d'erreur, NULL sinon
-     * \~english
-     * \brief Fetching and validating WMTS GetFeatureInfoParam request parameters
-     * \return NULL or an error message if something went wrong
-     */
-    DataStream* WMTSGetFeatureInfoParam (ServicesXML* servicesConf,  std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList,
-                                         Layer*& layer, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, Style* &style,
-                                         std::string& info_format, int& X, int& Y);
-    //
-
-    /**
-     * \~french
-     * \brief Précise si le path contient un mot
-     * \param word
-     * \return bool
-     * \~english
-     * \brief Precise if the path contains a word
-     * \param word
-     * \return bool
-     */
-    bool doesPathContain(std::string word);
-    /**
-     * \~french
-     * \brief Précise si le path finit avec un mot précisé
-     * \param word
-     * \return bool
-     * \~english
-     * \brief Precise if the path finish with a word
-     * \param word
-     * \return bool
-     */
-    bool doesPathFinishWith(std::string word);
 
     void print() {
         LOGGER_INFO("hostName = " << hostName);
         LOGGER_INFO("path = " << path);
-        LOGGER_INFO("paramNumber = " << paramNumber);
         LOGGER_INFO("scheme = " << scheme);
-        LOGGER_INFO("request = " << request);
-
-        std::map<std::string, std::string>::iterator itQP;
-        for ( itQP = params.begin(); itQP != params.end(); itQP++ ) {
-            LOGGER_INFO("\t" << itQP->first << " = " << itQP->second);
-        }
-
+        LOGGER_INFO("service = " << toString(service));
+        LOGGER_INFO("request = " <<     toString(request));
     }
     /**
      * \~french

@@ -59,6 +59,17 @@ class DocumentXML
             return "";
         }
 
+        /**
+         * \~french Construit un noeud xml simple (de type text)
+         * \~english Create a simple XML text node
+         */
+        static TiXmlElement* buildTextNode ( std::string elementName, std::string value ) {
+            TiXmlElement * elem = new TiXmlElement ( elementName );
+            TiXmlText * text = new TiXmlText ( value );
+            elem->LinkEndChild ( text );
+            return elem;
+        }
+
         
         DocumentXML(std::string path) {
             filePath = path;

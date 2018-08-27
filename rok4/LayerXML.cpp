@@ -65,6 +65,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
 
     WMSauth = true;
     WMTSauth = true;
+    TMSauth = true;
 
     getFeatureInfoAvailability = false;
     getFeatureInfoType = "";
@@ -113,6 +114,9 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
 
     pElem=hRoot.FirstChild ( "WMSAuthorized" ).Element();
     if ( pElem && pElem->GetText() && DocumentXML::getTextStrFromElem(pElem)=="false") WMSauth= false;
+
+    pElem=hRoot.FirstChild ( "TMSAuthorized" ).Element();
+    if ( pElem && pElem->GetText() && DocumentXML::getTextStrFromElem(pElem)=="false") TMSauth= false;
 
     pElem=hRoot.FirstChild ( "WMTSAuthorized" ).Element();
     if ( pElem && pElem->GetText() && DocumentXML::getTextStrFromElem(pElem)=="false") WMTSauth= false;
@@ -459,7 +463,6 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
             return;
         }
     } else {
-        // FIXME: pas forcement critique si on a un cache d'une autre nature (jpeg2000 par exemple).
         LOGGER_ERROR ( _ ( "Aucune pyramide associee au layer " ) << filePath );
         return;
     }

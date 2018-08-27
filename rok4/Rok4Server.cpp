@@ -110,7 +110,6 @@ void* Rok4Server::thread_loop ( void* arg ) {
 
     while ( server->isRunning() ) {
         std::string content;
-        bool postRequest;
 
         int rc;
         if ( ( rc=FCGX_Accept_r ( &fcgxRequest ) ) < 0 ) {
@@ -129,10 +128,13 @@ void* Rok4Server::thread_loop ( void* arg ) {
             LOGGER_DEBUG((char*)*p);
         }*/
 
+
+        bool postRequest = false;
+        if (server->servicesConf->isPostEnabled() && strcmp ( FCGX_GetParam ( "REQUEST_METHOD",fcgxRequest.envp ),"POST" ) == 0) {
+            postRequest = true;
+        }
+
         Request* request;
-
-        postRequest = ( server->servicesConf->isPostEnabled() ?strcmp ( FCGX_GetParam ( "REQUEST_METHOD",fcgxRequest.envp ),"POST" ) ==0:false );
-
         if ( postRequest ) { // Post Request
             char* contentBuffer = ( char* ) malloc ( sizeof ( char ) *200 );
             while ( FCGX_GetLine ( contentBuffer,200,fcgxRequest.in ) ) {
@@ -141,26 +143,27 @@ void* Rok4Server::thread_loop ( void* arg ) {
             free ( contentBuffer );
             contentBuffer= NULL;
             LOGGER_DEBUG ( _ ( "Request Content :" ) << std::endl << content );
-            request = new Request ( FCGX_GetParam ( "QUERY_STRING", fcgxRequest.envp ),
-                                    FCGX_GetParam ( "HTTP_HOST", fcgxRequest.envp ),
-                                    FCGX_GetParam ( "SCRIPT_NAME", fcgxRequest.envp ),
-                                    FCGX_GetParam ( "HTTPS", fcgxRequest.envp ),
-                                    content );
-
-
-
+            request = new Request (
+                FCGX_GetParam ( "QUERY_STRING", fcgxRequest.envp ),
+                FCGX_GetParam ( "HTTP_HOST", fcgxRequest.envp ),
+                FCGX_GetParam ( "SCRIPT_NAME", fcgxRequest.envp ),
+                FCGX_GetParam ( "HTTPS", fcgxRequest.envp ),
+                content
+            );
         } else { // Get Request
 
             /* On espère récupérer le nom du host tel qu'il est exprimé dans la requete avec HTTP_HOST.
              * De même, on espère récupérer le path tel qu'exprimé dans la requête avec SCRIPT_NAME.
              */
 
-            request = new Request ( FCGX_GetParam ( "QUERY_STRING", fcgxRequest.envp ),
-                                    FCGX_GetParam ( "HTTP_HOST", fcgxRequest.envp ),
-                                    FCGX_GetParam ( "SCRIPT_NAME", fcgxRequest.envp ),
-                                    FCGX_GetParam ( "HTTPS", fcgxRequest.envp )
-                                  );
+            request = new Request ( 
+                FCGX_GetParam ( "QUERY_STRING", fcgxRequest.envp ),
+                FCGX_GetParam ( "HTTP_HOST", fcgxRequest.envp ),
+                FCGX_GetParam ( "SCRIPT_NAME", fcgxRequest.envp ),
+                FCGX_GetParam ( "HTTPS", fcgxRequest.envp )
+            );
         }
+
         server->processRequest ( request, fcgxRequest );
         delete request;
 
@@ -233,6 +236,10 @@ Rok4Server::Rok4Server (  ServerXML* serverXML, ServicesXML* servicesXML) {
         LOGGER_DEBUG ( _ ( "Build WMTS Capabilities" ) );
         buildWMTSCapabilities();
     }
+    if ( serverConf->supportTMS ) {
+        LOGGER_DEBUG ( _ ( "Build TMS Capabilities" ) );
+        buildTMSCapabilities();
+    }
     //initialize processFactory
     if (serverConf->nbProcess > MAX_NB_PROCESS) {
         serverConf->nbProcess = MAX_NB_PROCESS;
@@ -303,69 +310,6 @@ void Rok4Server::terminate() {
     CurlPool::cleanCurlPool();
 }
 
-bool Rok4Server::hasParam ( std::map<std::string, std::string>& option, std::string paramName ) {
-    std::map<std::string, std::string>::iterator it = option.find ( paramName );
-    if ( it == option.end() ) {
-        return false;
-    }
-    return true;
-}
-
-std::string Rok4Server::getParam ( std::map<std::string, std::string>& option, std::string paramName ) {
-    std::map<std::string, std::string>::iterator it = option.find ( paramName );
-    if ( it == option.end() ) {
-        return "";
-    }
-    return it->second;
-}
-
-DataStream* Rok4Server::WMSGetCapabilities ( Request* request ) {
-    if ( ! serverConf->supportWMS ) {
-        // Return Error
-    }
-    std::string version;
-    DataStream* errorResp = request->getCapWMSParam ( servicesConf,version );
-    if ( errorResp ) {
-        LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getCapabilities" ) );
-        return errorResp;
-    }
-
-    /* concaténation des fragments invariant de capabilities en intercalant les
-     * parties variables dépendantes de la requête */
-    std::string capa;
-    std::vector<std::string> capaFrag;
-    std::map<std::string,std::vector<std::string> >::iterator it = wmsCapaFrag.find(version);
-    capaFrag = it->second;
-    capa = capaFrag[0] + request->scheme + request->hostName;
-    for ( int i=1; i < capaFrag.size()-1; i++ ) {
-        capa = capa + capaFrag[i] + request->scheme + request->hostName + request->path + "?";
-    }
-    capa = capa + capaFrag.back();
-
-    return new MessageDataStream ( capa,"text/xml" );
-}
-
-DataStream* Rok4Server::WMTSGetCapabilities ( Request* request ) {
-    if ( ! serverConf->supportWMTS ) {
-        // Return Error
-    }
-    std::string version;
-    DataStream* errorResp = request->getCapWMTSParam ( servicesConf,version );
-    if ( errorResp ) {
-        LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getCapabilities" ) );
-        return errorResp;
-    }
-
-    /* concaténation des fragments invariant de capabilities en intercalant les
-      * parties variables dépendantes de la requête */
-    std::string capa = "";
-    for ( int i=0; i < wmtsCapaFrag.size()-1; i++ ) {
-        capa = capa + wmtsCapaFrag[i] + request->scheme + request->hostName + request->path +"?";
-    }
-    capa = capa + wmtsCapaFrag.back();
-
-    return new MessageDataStream ( capa,"application/xml" );
-}
 
 DataStream* Rok4Server::getMap ( Request* request ) {
     std::vector<Layer*> layers;
@@ -379,7 +323,7 @@ DataStream* Rok4Server::getMap ( Request* request ) {
 
 
     // Récupération des paramètres
-    DataStream* errorResp = request->getMapParam ( servicesConf, serverConf->layersList, layers, bbox, width, height, crs, format ,styles, format_option, dpi );
+    DataStream* errorResp = getMapParamWMS ( request, layers, bbox, width, height, crs, format ,styles, format_option, dpi );
     if ( errorResp ) {
         LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getMap" ) );
         return errorResp;
@@ -757,10 +701,15 @@ DataSource* Rok4Server::getTile ( Request* request ) {
     Style* style=0;
 
     // Récupération des parametres de la requete
-    DataSource* errorResp = request->getTileParam ( servicesConf, serverConf->tmsList, serverConf->layersList, L, tileMatrix, tileCol, tileRow, format, style );
+    DataSource* errorResp;
+    if (request->service == Request::eServiceType::WMTS) {
+        errorResp = getTileParamWMTS ( request, L, tileMatrix, tileCol, tileRow, format, style );
+    } else {
+        // TMS
+        errorResp = getTileParamTMS ( request, L, tileMatrix, tileCol, tileRow, format, style );
+    }
 
     if ( errorResp ) {
-        LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getTile" ) );
         return errorResp;
     }
     errorResp = NULL;
@@ -1325,7 +1274,7 @@ DataStream* Rok4Server::WMSGetFeatureInfo ( Request* request ) {
     std::map <std::string, std::string > format_option;
     //exception ?
 
-    DataStream* errorResp = request->WMSGetFeatureInfoParam (servicesConf, serverConf->layersList, layers, query_layers, bbox, width, height, crs, format, styles, info_format, X, Y, feature_count, format_option);
+    DataStream* errorResp = getFeatureInfoParamWMS (request, layers, query_layers, bbox, width, height, crs, format, styles, info_format, X, Y, feature_count, format_option);
     if ( errorResp ) {
         LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getFeatureInfo" ) );
         return errorResp;
@@ -1347,8 +1296,7 @@ DataStream* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
 
     LOGGER_DEBUG("Verification des parametres de la requete");
 
-    DataStream* errorResp = request->WMTSGetFeatureInfoParam (servicesConf, serverConf->tmsList, serverConf->layersList, layer, tileMatrix, tileCol, tileRow, format,
-                                                              style, info_format, X, Y);
+    DataStream* errorResp = getFeatureInfoParamWMTS (request, layer, tileMatrix, tileCol, tileRow, format, style, info_format, X, Y);
     if ( errorResp ) {
         LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getFeatureInfo" ) );
         return errorResp;
@@ -1503,168 +1451,67 @@ DataStream* Rok4Server::CommonGetFeatureInfo ( std::string service, Layer* layer
 
 
 void Rok4Server::processWMTS ( Request* request, FCGX_Request&  fcgxRequest ) {
-    if ( request->request == "getcapabilities" ) {
+    if ( request->request == Request::eRequestType::GETCAPABILITIES ) {
         S.sendresponse ( WMTSGetCapabilities ( request ),&fcgxRequest );
-    } else if ( request->request == "gettile" ) {
+    } else if ( request->request == Request::eRequestType::GETTILE ) {
         S.sendresponse ( getTile ( request ), &fcgxRequest );
-    } else if ( request->request == "getfeatureinfo") {
+    } else if ( request->request == Request::eRequestType::GETFEATUREINFO) {
         S.sendresponse ( WMTSGetFeatureInfo ( request ), &fcgxRequest );
-    } else if ( request->request == "getversion" ) {
-        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wmts" ) ),&fcgxRequest );
-    } else if ( request->request == "" ) {
+    } else if ( request->request == Request::eRequestType::GETVERSION ) {
+        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->getParam("request")+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wmts" ) ),&fcgxRequest );
+    } else if ( request->request == Request::eRequestType::REQUEST_MISSING ) {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, ( "Le parametre REQUEST n'est pas renseigne." ) ,"wmts" ) ),&fcgxRequest );
     } else {
-        S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ),"wmts" ) ),&fcgxRequest );
+        S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "L'operation " ) +request->getParam("request")+_ ( " n'est pas prise en charge par ce serveur." ),"wmts" ) ),&fcgxRequest );
     }
 }
 
 
 void Rok4Server::processTMS ( Request* request, FCGX_Request&  fcgxRequest ) {
 
-    std::stringstream ss(request->path);
-    std::string token;
-    char delim = '/';
-    int tmsVersionPos = -1;
-    std::vector<std::string> pathParts;
-    while (std::getline(ss, token, delim)) {
-        LOGGER_INFO("'"+token+"'");
-        if (token == "1.0.0") {
-            tmsVersionPos = pathParts.size();
-        }
-        pathParts.push_back(token);
+    if ( request->request == Request::eRequestType::GETCAPABILITIES ) {
+        S.sendresponse ( TMSGetCapabilities ( request ),&fcgxRequest );
+    } else if ( request->request == Request::eRequestType::GETSERVICES ) {
+        S.sendresponse ( TMSGetServices ( request ),&fcgxRequest );
+    } else if ( request->request == Request::eRequestType::GETTILE ) {
+        S.sendresponse ( getTile ( request ), &fcgxRequest );
+    } else if ( request->request == Request::eRequestType::GETLAYER ) {
+        S.sendresponse ( TMSGetLayer ( request ), &fcgxRequest );
+    } else {
+        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, std::string ( "L'operation n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"tms" ) ),&fcgxRequest );
     }
-
-    if (tmsVersionPos == -1) {
-        // La version n'a pas été rencontrée, on n'est pas dans le cas TMS => erreur
-        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation n'est pas prise en charge par ce serveur." ),"wmts" ) ),&fcgxRequest );
-        return;
-    }
-
-    if (tmsVersionPos == pathParts.size() - 1) {
-        // la version est en dernière position, on veut le "GetCapabilities" TMS
-        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation n'est pas prise en charge par ce serveur." ),"wmts" ) ),&fcgxRequest );
-        return;
-    }
-
-    else if (tmsVersionPos == pathParts.size() - 2) {
-        // la version est en avant dernière position, on veut le détail de la couche
-        std::string layerName = pathParts.at(tmsVersionPos + 1);
-
-        Layer* L = serverConf->getLayer(layerName);
-        if (L == NULL) {
-            S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +layerName+_ ( " inconnu." ),"tms" ) ),&fcgxRequest );
-            return;
-        }
-        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation n'est pas prise en charge par ce serveur." ),"wmts" ) ),&fcgxRequest );
-        return;
-    }
-
-    else if (tmsVersionPos == pathParts.size() - 5) {
-        // on requête une tuile
-
-        // La couche
-        std::string layerName = pathParts.at(tmsVersionPos + 1);
-        Layer* L = serverConf->getLayer(layerName);
-        if (L == NULL) {
-            S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +layerName+_ ( " inconnu." ),"tms" ) ),&fcgxRequest );
-            return;
-        }
-        if (! L->getWMTSAuthorized()){
-           S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +layerName+_ ( " inconnu " ),"tms" ) ),&fcgxRequest );
-        }
-
-        // Le niveau
-        std::string tileMatrix = pathParts.at(tmsVersionPos + 2);
-        Level* level = L->getDataPyramid()->getLevel(tileMatrix);
-        if (level == NULL) {
-            // On est hors niveau -> erreur
-            S.sendresponse ( new SERDataStream ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "tms" ) ),&fcgxRequest );
-        }
-
-
-        int tileCol = std::stoi(pathParts.at(tmsVersionPos + 3));
-        
-        std::string tileRowWithExtension = pathParts.at(tmsVersionPos + 4);
-        std::string tileRowString;
-        std::string extension;
-        delim = '.';
-        ss = std::stringstream(tileRowWithExtension);
-        std::getline(ss, tileRowString, delim);
-        std::getline(ss, extension, delim);
-
-        int tileRow = std::stoi(tileRowString);
-
-        // Le format : on vérifie la cohérence de l'extension avec le format des données
-        if ( extension.compare ( Rok4Format::toExtension ( ( L->getDataPyramid()->getFormat() ) ) ) !=0 ) {
-            S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "L'extension " ) +extension+_ ( " n'est pas gere pour la couche " ) +layerName,"tms" ) ),&fcgxRequest );
-        }
-        std::string format = Rok4Format::toMimeType ( ( L->getDataPyramid()->getFormat() ) );
-
-
-        // Le style
-        Style* style = serverConf->getStyle(L->getDefaultStyle());
-
-
-        // La tuile
-        if (tileRow < level->getMinTileRow() || tileRow > level->getMaxTileRow()
-                || tileCol < level->getMinTileCol() || tileCol > level->getMaxTileCol()) {
-            // On est hors tuiles -> erreur
-            S.sendresponse ( new SERDataStream ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "tms" ) ),&fcgxRequest );
-            return;
-        }
-
-        DataSource* tileSource;
-        if (level->isOnFly()) {
-            tileSource = getTileOnFly(L, tileMatrix, tileCol, tileRow, style, format);
-        }
-        else if (level->isOnDemand()) {
-            tileSource = getTileOnDemand(L, tileMatrix, tileCol, tileRow, style, format);
-        }
-        else {
-            tileSource = getTileUsual(L, tileMatrix, tileCol, tileRow, style, format) ;
-        }
-
-        S.sendresponse (tileSource, &fcgxRequest);
-        return;
-    }
-
-    else {
-        // le format de la requête n'est pas géré
-        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation n'est pas prise en charge par ce serveur." ),"tms" ) ),&fcgxRequest );
-        return;
-    }
-
 }
 
 void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
     //le capabilities est présent pour une compatibilité avec le WMS 1.1.1
-    if ( request->request == "getcapabilities" || request->request == "capabilities") {
+    if ( request->request == Request::eRequestType::GETCAPABILITIES) {
         S.sendresponse ( WMSGetCapabilities ( request ),&fcgxRequest );
-        //le map est présent pour une compatibilité avec le WMS 1.1.1
-    } else if ( request->request == "getmap" || request->request == "map") {
+    } else if ( request->request == Request::eRequestType::GETMAP) {
         S.sendresponse ( getMap ( request ), &fcgxRequest );
-    } else if ( request->request == "getfeatureinfo") {
+    } else if ( request->request == Request::eRequestType::GETFEATUREINFO) {
         S.sendresponse ( WMSGetFeatureInfo ( request ), &fcgxRequest );
-    } else if ( request->request == "getversion" ) {
-        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wms" ) ),&fcgxRequest );
-    } else if ( request->request == "" ) {
+    } else if ( request->request == Request::eRequestType::GETVERSION ) {
+        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->getParam("request")+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wms" ) ),&fcgxRequest );
+    } else if ( request->request == Request::eRequestType::REQUEST_MISSING ) {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, ( "Le parametre REQUEST n'est pas renseigne." ) ,"wms" ) ),&fcgxRequest );
     } else {
-        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->request+_ ( " n'est pas prise en charge par ce serveur." ),"wms" ) ),&fcgxRequest );
+        S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->getParam("request")+_ ( " n'est pas prise en charge par ce serveur." ),"wms" ) ),&fcgxRequest );
     }
 }
 
 void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest ) {
-    if ( serverConf->supportWMTS && request->service == "wmts") {
+
+    if ( serverConf->supportWMTS && request->service == Request::eServiceType::WMTS) {
         processWMTS ( request, fcgxRequest );
     }
-    //Service is not mandatory in GetMap request in WMS 1.3.0 and GetFeatureInfo
-    //le map est présent pour une compatibilité avec le WMS 1.1.1
-    else if ( serverConf->supportWMS && ( request->service=="wms" || request->request == "getmap" || request->request == "map") ) {
+    else if ( serverConf->supportWMS && request->service == Request::eServiceType::WMS ) {
         processWMS ( request, fcgxRequest );
     }
-    else if ( serverConf->supportTMS && request->paramNumber == 0) {
+    else if ( serverConf->supportTMS && request->service == Request::eServiceType::TMS) {
         processTMS ( request, fcgxRequest );
+    }
+    else if ( serverConf->supportTMS && request->service == Request::eServiceType::SERVICE_MISSING) {
+        S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Le service est manquant" ),"wmts" ) ),&fcgxRequest );
     }
     else {
         S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le service est inconnu pour ce serveur." ),"wmts" ) ),&fcgxRequest );
