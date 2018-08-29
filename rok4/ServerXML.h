@@ -114,6 +114,7 @@ class ServerXML : public DocumentXML
         int getNbThreads() ;
         std::string getSocket() ;
         bool getSupportWMTS() ;
+        bool getSupportTMS() ;
         bool getSupportWMS() ;
         bool getReprojectionCapability() ;
         int getBacklog() ;
@@ -137,6 +138,11 @@ class ServerXML : public DocumentXML
          * \~english \brief Define whether WMTS request should be honored
          */
         bool supportWMTS;
+        /**
+         * \~french \brief Défini si le serveur doit honorer les requêtes TMS
+         * \~english \brief Define whether TMS request should be honored
+         */
+        bool supportTMS;
         /**
          * \~french \brief Défini si le serveur doit honorer les requêtes WMS
          * \~english \brief Define whether WMS request should be honored

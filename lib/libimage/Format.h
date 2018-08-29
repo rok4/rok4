@@ -329,6 +329,16 @@ std::string toString ( eformat_data format );
 std::string toMimeType ( eformat_data format );
 
 /**
+ * \~french \brief Conversion d'un format vers une chaîne de caractère (extension)
+ * \param[in] format format à convertir
+ * \return extension du format
+ * \~english \brief Convert a format to a string (extension)
+ * \param[in] format format to convert
+ * \return extension of the format
+ */
+std::string toExtension ( eformat_data format );
+
+/**
  * \~french \brief Conversion d'une chaîne de caractère (type MIME) vers un format
  * \param[in] type MIME du format
  * \return format format

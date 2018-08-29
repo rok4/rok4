@@ -56,6 +56,7 @@
 #include "Layer.h"
 #include <stdio.h>
 #include "TileMatrixSet.h"
+#include "DocumentXML.h"
 #include "ProcessFactory.h"
 #include "fcgiapp.h"
 #include <csignal>
@@ -134,6 +135,11 @@ private:
      * \~english \brief Invariant GetCapabilities fragments ready to be concatained with request informations
      */
     std::vector<std::string> wmtsCapaFrag;
+    /**
+     * \~french \brief Liste des fragments invariants de capabilities prets à être concaténés avec les infos de la requête.
+     * \~english \brief Invariant GetCapabilities fragments ready to be concatained with request informations
+     */
+    std::vector<std::string> tmsCapaFrag;
 
 
     /**
@@ -172,10 +178,12 @@ private:
     /**
      * \~french
      * \brief Donne le nombre de chiffres après la virgule
+     * \details 3.14 -> 2, 1.0001 -> 4, le maximum est 10
      * \param[in] arg un double
      * \return int valeur
      * \~english
      * \brief Give the number of decimal places
+     * \details 3.14 -> 2, 1.0001 -> 4, maximum is 10
      * \param[in] arg a double
      * \return int value
      */
@@ -204,45 +212,96 @@ private:
      * \brief Build the invariant fragments of the WMTS GetCapabilities
      */
     void buildWMTSCapabilities();
+    /**
+     * \~french
+     * \brief Construit les fragments invariants du getCapabilities TMS
+     * \~english
+     * \brief Build the invariant fragments of the TMS GetCapabilities
+     */
+    void buildTMSCapabilities();
 
     /**
      * \~french
-     * \brief Test de la présence d'un paramètre dans la requête
-     * \param[in] option liste des paramètres
-     * \param[in] paramName nom du paramètre à tester
-     * \return true si présent
+     * \brief Récuperation et vérifications des paramètres d'une requête GetTile
+     * \return message d'erreur en cas d'erreur, NULL sinon
      * \~english
-     * \brief Test if the request contain a specific parameter
-     * \param[in] option parameter list
-     * \param[in] paramName parameter to test
-     * \return true if present
+     * \brief Fetching and validating GetTile request parameters
+     * \return NULL or an error message if something went wrong
      */
-    bool hasParam ( std::map<std::string, std::string>& option, std::string paramName );
-    /**
-     * \~french
-     * \brief Récupération de la valeur d'un paramètre dans la requête
-     * \param[in] option liste des paramètres
-     * \param[in] paramName nom du paramètre
-     * \return valeur du parametre ou "" si non présent
-     * \~english
-     * \brief Fetch a specific parameter value in the request
-     * \param[in] option parameter list
-     * \param[in] paramName parameter name
-     * \return parameter value or "" if not availlable
-     */
-    std::string getParam ( std::map<std::string, std::string>& option, std::string paramName );
+    DataSource* getTileParamWMTS ( Request* request, Layer*& layer, std::string& str_tileMatrix, int& tileCol, int& tileRow, std::string& format, Style*& style);
 
     /**
      * \~french
-     * \brief Traitement d'une requête GetMap
-     * \param[in] request représentation de la requête
-     * \return image demandé ou un message d'erreur
+     * \brief Récuperation et vérifications des paramètres d'une requête de tuile en TMS
+     * \return message d'erreur en cas d'erreur, NULL sinon
      * \~english
-     * \brief Process a GetMap request
-     * \param[in] request request representation
-     * \return requested image or an error message
+     * \brief Fetching and validating get tile TMS request parameters
+     * \return NULL or an error message if something went wrong
      */
-    DataStream* getMap ( Request* request );
+    DataSource* getTileParamTMS ( Request* request, Layer*& layer, std::string& str_tileMatrix, int& tileCol, int& tileRow, std::string& format, Style*& style);
+
+    /**
+     * \~french
+     * \brief Récuperation et vérifications des paramètres d'une requête GetMap
+     * \return message d'erreur en cas d'erreur, NULL sinon
+     * \~english
+     * \brief Fetching and validating GetTile request parameters
+     * \return NULL or an error message if something went wrong
+     */
+    DataStream* getMapParamWMS ( Request* request, std::vector<Layer*>& layers, BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format, std::vector<Style*>& styles, std::map< std::string, std::string >& format_option,int& dpi);
+    /**
+     * \~french
+     * \brief Récuperation et vérifications des paramètres d'une requête GetCapabilities WMS
+     * \return message d'erreur en cas d'erreur, NULL sinon
+     * \~english
+     * \brief Fetching and validating GetTile request parameters
+     * \return NULL or an error message if something went wrong
+     */
+    DataStream* getCapParamWMS ( Request* request, std::string& version );
+    /**
+     * \~french
+     * \brief Récuperation et vérifications des paramètres d'une requête GetTile WMTS
+     * \return message d'erreur en caspa d'erreur, NULL sinon
+     * \~english
+     * \brief Fetching and validating GetTile request parameters
+     * \return NULL or an error message if something went wrong
+     */
+    DataStream* getCapParamWMTS ( Request* request, std::string& version );
+    /**
+     * \~french
+     * \brief Récuperation et vérifications des paramètres d'une requête GetLayer TMS
+     * \return message d'erreur en caspa d'erreur, NULL sinon
+     * \~english
+     * \brief Fetching and validating GetLayer TMS request parameters
+     * \return NULL or an error message if something went wrong
+     */
+    DataStream* getLayerParamTMS ( Request* request, Layer*& layer, std::string& url );
+
+    //Greg
+    /**
+     * \~french
+     * \brief Récuperation et vérifications des paramètres d'une requête GetFeatureInfoParam WMS
+     * \return message d'erreur en cas d'erreur, NULL sinon
+     * \~english
+     * \brief Fetching and validating WMS GetFeatureInfoParam request parameters
+     * \return NULL or an error message if something went wrong
+     */
+    DataStream* getFeatureInfoParamWMS (
+        Request* request, std::vector<Layer*>& layers, std::vector<Layer*>& query_layers,
+        BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format,
+        std::vector<Style*>& styles, std::string& info_format, int& X, int& Y, int& feature_count,std::map <std::string, std::string >& format_option
+    );
+    /**
+     * \~french
+     * \brief Récuperation et vérifications des paramètres d'une requête GetFeatureInfoParam WMTS
+     * \return message d'erreur en cas d'erreur, NULL sinon
+     * \~english
+     * \brief Fetching and validating WMTS GetFeatureInfoParam request parameters
+     * \return NULL or an error message if something went wrong
+     */
+    DataStream* getFeatureInfoParamWMTS ( Request* request, Layer*& layer, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, Style* &style, std::string& info_format, int& X, int& Y);
+
+
     /**
      * \~french
      * \brief Applique un style à une image
@@ -405,6 +464,100 @@ private:
      * \return response stream
      */
     DataStream* WMSGetCapabilities ( Request* request );
+    /**
+     * \~french
+     * \brief Traitement d'une requête GetCapabilities WMTS
+     * \param[in] request représentation de la requête
+     * \return flux de la réponse
+     * \~english
+     * \brief Process a GetCapabilities WMTS request
+     * \param[in] request request representation
+     * \return response stream
+     */
+    DataStream* WMTSGetCapabilities ( Request* request );
+    /**
+     * \~french
+     * \brief Traitement d'une requête GetCapabilities TMS
+     * \param[in] request représentation de la requête
+     * \return flux de la réponse
+     * \~english
+     * \brief Process a GetCapabilities TMS request
+     * \param[in] request request representation
+     * \return response stream
+     */
+    DataStream* TMSGetCapabilities ( Request* request );
+    /**
+     * \~french
+     * \brief Traitement d'une requête GetServices TMS
+     * \param[in] request représentation de la requête
+     * \return flux de la réponse
+     * \~english
+     * \brief Process a GetServices TMS request
+     * \param[in] request request representation
+     * \return response stream
+     */
+    DataStream* TMSGetServices ( Request* request );
+    /**
+     * \~french
+     * \brief Traitement d'une requête GetLayer TMS
+     * \param[in] request représentation de la requête
+     * \return flux de la réponse
+     * \~english
+     * \brief Process a GetLayer TMS request
+     * \param[in] request request representation
+     * \return response stream
+     */
+    DataStream* TMSGetLayer ( Request* request );
+
+
+    /**
+     * \~french
+     * \brief Traitement d'une requête GetMap
+     * \param[in] request représentation de la requête
+     * \return image demandé ou un message d'erreur
+     * \~english
+     * \brief Process a GetMap request
+     * \param[in] request request representation
+     * \return requested image or an error message
+     */
+    DataStream* getMap ( Request* request );
+
+    /**
+     * \~french
+     * \brief Traitement d'une requête GetTile
+     * \param[in] request représentation de la requête
+     * \return image demandé ou un message d'erreur
+     * \~english
+     * \brief Process a GetTile request
+     * \param[in] request request representation
+     * \return requested image or an error message
+     */
+    DataSource* getTile ( Request* request );
+
+    /**
+     * \~french
+     * \brief Traitement d'une requête GetFeatureInfo WMS
+     * \param[in] request représentation de la requête
+     * \return flux de la réponse
+     * \~english
+     * \brief Process a GetFeatureInfo WMS request
+     * \param[in] request request representation
+     * \return response stream
+     */
+    DataStream* WMSGetFeatureInfo ( Request* request );
+    /**
+     * \~french
+     * \brief Traitement d'une requête GetFeatureInfo WMTS
+     * \param[in] request représentation de la requête
+     * \return flux de la réponse
+     * \~english
+     * \brief Process a GetFeatureInfo WMTS request
+     * \param[in] request request representation
+     * \return response stream
+     */
+    DataStream* WMTSGetFeatureInfo ( Request* request );
+
+    DataStream* CommonGetFeatureInfo ( std::string service, Layer* layer, BoundingBox<double> bbox, int width, int height, CRS crs, std::string info_format , int X, int Y, std::string format, int feature_count);
 
     /**
      * \~french Traite les requêtes de type WMS
@@ -417,13 +570,100 @@ private:
      */
     void processWMTS ( Request *request, FCGX_Request&  fcgxRequest );
     /**
+     * \~french Traite les requêtes de type TMS
+     * \~english Process TMS request
+     */
+    void processTMS ( Request *request, FCGX_Request&  fcgxRequest );
+    /**
      * \~french Sépare les requêtes de type WMS et WMTS
      * \~english Route WMS and WMTS request
      */
     void processRequest ( Request *request, FCGX_Request&  fcgxRequest );
 
-    DataStream* CommonGetFeatureInfo ( std::string service, Layer* layer, BoundingBox<double> bbox, int width, int height, CRS crs, std::string info_format , int X, int Y, std::string format, int feature_count);
+    /**
+     * \~french
+     * \brief Découpe une chaîne de caractères selon un délimiteur
+     * \param[in] s la chaîne à découper
+     * \param[in] delim le délimiteur
+     * \return la liste contenant les parties de la chaîne
+     * \~english
+     * \brief Split a string using a specified delimitor
+     * \param[in] s the string to split
+     * \param[in] delim the delimitor
+     * \return the list with the splited string
+     */
+    static std::vector<std::string> split ( const std::string &s, char delim ) {
+        std::vector<std::string> elems;
+        std::stringstream ss ( s );
+        std::string item;
+        while ( std::getline ( ss, item, delim ) ) {
+            elems.push_back ( item );
+        }
+        return elems;
+    }
 
+    /**
+     * \~french Conversion d'un entier en une chaîne de caractère
+     * \~english Convert an integer in a character string
+     */
+    static std::string numToStr ( long int i ) {
+        std::ostringstream strstr;
+        strstr << i;
+        return strstr.str();
+    }
+
+    /**
+     * \~french Conversion d'un flottant en une chaîne de caractères
+     * \~english Convert a float in a character string
+     */
+    static std::string doubleToStr ( long double d ) {
+        std::ostringstream strstr;
+        strstr.setf ( std::ios::fixed,std::ios::floatfield );
+        strstr.precision ( 16 );
+        strstr << d;
+        return strstr.str();
+    }
+
+
+    /**
+     * \~french
+     * \brief Test de la présence d'un paramètre dans la requête
+     * \param[in] option liste des paramètres
+     * \param[in] paramName nom du paramètre à tester
+     * \return true si présent
+     * \~english
+     * \brief Test if the request contain a specific parameter
+     * \param[in] option parameter list
+     * \param[in] paramName parameter to test
+     * \return true if present
+     */
+    static bool hasParam ( std::map<std::string, std::string>& option, std::string paramName ) {
+        std::map<std::string, std::string>::iterator it = option.find ( paramName );
+        if ( it == option.end() ) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * \~french
+     * \brief Récupération de la valeur d'un paramètre dans la requête
+     * \param[in] option liste des paramètres
+     * \param[in] paramName nom du paramètre
+     * \return valeur du parametre ou "" si non présent
+     * \~english
+     * \brief Fetch a specific parameter value in the request
+     * \param[in] option parameter list
+     * \param[in] paramName parameter name
+     * \return parameter value or "" if not availlable
+     */
+    static std::string getParam ( std::map<std::string, std::string>& option, std::string paramName ) {
+        std::map<std::string, std::string>::iterator it = option.find ( paramName );
+        if ( it == option.end() ) {
+            return "";
+        }
+        return it->second;
+    }
 public:
     /**
      * \~french Retourne la configuration des services
@@ -476,52 +716,6 @@ public:
      */
     ContextBook* getSwiftBook() ;
 #endif
-
-    /**
-     * \~french
-     * \brief Traitement d'une requête GetTile
-     * \param[in] request représentation de la requête
-     * \return image demandé ou un message d'erreur
-     * \~english
-     * \brief Process a GetTile request
-     * \param[in] request request representation
-     * \return requested image or an error message
-     */
-    DataSource* getTile ( Request* request );
-    /**
-     * \~french
-     * \brief Traitement d'une requête GetCapabilities WMTS
-     * \param[in] request représentation de la requête
-     * \return flux de la réponse
-     * \~english
-     * \brief Process a GetCapabilities WMTS request
-     * \param[in] request request representation
-     * \return response stream
-     */
-    DataStream* WMTSGetCapabilities ( Request* request );
-
-    /**
-     * \~french
-     * \brief Traitement d'une requête GetFeatureInfo WMS
-     * \param[in] request représentation de la requête
-     * \return flux de la réponse
-     * \~english
-     * \brief Process a GetFeatureInfo WMS request
-     * \param[in] request request representation
-     * \return response stream
-     */
-    DataStream* WMSGetFeatureInfo ( Request* request );
-    /**
-     * \~french
-     * \brief Traitement d'une requête GetFeatureInfo WMTS
-     * \param[in] request représentation de la requête
-     * \return flux de la réponse
-     * \~english
-     * \brief Process a GetFeatureInfo WMTS request
-     * \param[in] request request representation
-     * \return response stream
-     */
-    DataStream* WMTSGetFeatureInfo ( Request* request );
 
     /**
      * \~french
@@ -592,6 +786,14 @@ public:
      * \brief to know if the server responde to WMTS request
      */
     bool isWMTSSupported();
+
+    /**
+     * \~french
+     * \brief Pour savoir si le server honore les requêtes TMS
+     * \~english
+     * \brief to know if the server responde to TMS request
+     */
+    bool isTMSSupported();
     
     /**
      * \~french

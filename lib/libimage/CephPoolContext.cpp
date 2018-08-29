@@ -124,6 +124,10 @@ int CephPoolContext::read(uint8_t* data, int offset, int size, std::string name)
    
     LOGGER_DEBUG("Ceph read : " << size << " bytes (from the " << offset << " one) in the object " << name);
 
+    if (! connected) {
+        LOGGER_ERROR("Try to read using the unconnected ceph pool context " << pool_name);
+        return -1;
+    }
     int readSize = rados_read(io_ctx, name.c_str(), (char*) data, size, offset);
 
     if (readSize < 0) {

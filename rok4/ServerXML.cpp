@@ -164,6 +164,20 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         }
     }
 
+    pElem=hRoot.FirstChild ( "TMSSupport" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        std::cerr<<_ ( "Pas de TMSSupport => supportTMS = true" ) <<std::endl;
+        supportTMS = true;
+    } else {
+        std::string strReprojection ( pElem->GetText() );
+        if ( strReprojection=="true" ) supportTMS=true;
+        else if ( strReprojection=="false" ) supportTMS=false;
+        else {
+            std::cerr<<_ ( "Le TMSSupport [" ) << DocumentXML::getTextStrFromElem(pElem) <<_ ( "] n'est pas un booleen." ) <<std::endl;
+            return;
+        }
+    }
+
     pElem=hRoot.FirstChild ( "WMSSupport" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
         std::cerr<<_ ( "Pas de WMSSupport => supportWMS = true" ) <<std::endl;
@@ -192,8 +206,8 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         proxy.noProxy = DocumentXML::getTextStrFromElem(pElem);
     }
 
-    if ( !supportWMS && !supportWMTS ) {
-        std::cerr<<_ ( "WMTS et WMS desactives, extinction du serveur" ) <<std::endl;
+    if ( !supportWMS && !supportWMTS && !supportTMS ) {
+        std::cerr<<_ ( "WMTS, TMS et WMS desactives, extinction du serveur" ) <<std::endl;
         return;
     }
 
@@ -621,6 +635,7 @@ int ServerXML::getReconnectionFrequency() {return reconnectionFrequency;}
 int ServerXML::getNbThreads() {return nbThread;}
 std::string ServerXML::getSocket() {return socket;}
 bool ServerXML::getSupportWMTS() {return supportWMTS;}
+bool ServerXML::getSupportTMS() {return supportTMS;}
 bool ServerXML::getSupportWMS() {return supportWMS;}
 int ServerXML::getBacklog() {return backlog;}
 Proxy ServerXML::getProxy() {return proxy;}
