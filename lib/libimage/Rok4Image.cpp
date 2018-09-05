@@ -988,7 +988,9 @@ bool Rok4Image::writeHeader()
     * ( ( uint32_t* ) ( p ) ) = 0;
     p += 4;
 
-    context->write((uint8_t*) header, 0, ROK4_IMAGE_HEADER_SIZE, std::string(name));
+    if (context->write((uint8_t*) header, 0, ROK4_IMAGE_HEADER_SIZE, std::string(name)) < 0) {
+        return false;
+    }
 
     return true;
 }
