@@ -906,7 +906,7 @@ int Rok4Image::writeTiles ( Image* pIn, int imageCol, int imageRow, bool crop )
 bool Rok4Image::writeHeader()
 {
     if (! context->openToWrite(name)) {
-        LOGGER_ERROR("Unable to open output truc " << name);
+        LOGGER_ERROR("Unable to open output " << name);
         return false;
     }
 
@@ -1054,7 +1054,7 @@ bool Rok4Image::writeFinal() {
     context->write((uint8_t*) tilesOffset, ROK4_IMAGE_HEADER_SIZE, 4 * tilesNumber, std::string(name));
     context->write((uint8_t*) tilesByteCounts, ROK4_IMAGE_HEADER_SIZE + 4 * tilesNumber, 4 * tilesNumber, std::string(name));
 
-    if (! context->closeToWrite()) {
+    if (! context->closeToWrite(name)) {
         LOGGER_ERROR("Unable to close output truc " << name);
         return false;
     }

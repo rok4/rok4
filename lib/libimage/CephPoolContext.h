@@ -195,11 +195,23 @@ public:
     }
     
     int read(uint8_t* data, int offset, int size, std::string name);
+
+    /**
+     * \~french
+     * \brief Écrit de la donnée dans un objet Ceph
+     * \details Les données sont en réalité écrites dans #writingBuffer et seront envoyées dans Ceph lors de l'appel à #closeToWrite
+     */
     bool write(uint8_t* data, int offset, int size, std::string name);
+
+    /**
+     * \~french
+     * \brief Écrit un objet Ceph
+     * \details Les données sont en réalité écrites dans #writingBuffer et seront envoyées dans Ceph lors de l'appel à #closeToWrite
+     */
     bool writeFull(uint8_t* data, int size, std::string name);
 
-    virtual bool openToWrite(std::string name) {return true;}
-    virtual bool closeToWrite() {return true;}
+    virtual bool openToWrite(std::string name);
+    virtual bool closeToWrite(std::string name);
     
 
     virtual void print() {
