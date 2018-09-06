@@ -702,7 +702,7 @@ DataSource* Rok4Server::getTile ( Request* request ) {
 
     // Récupération des parametres de la requete
     DataSource* errorResp;
-    if (request->service == Request::eServiceType::WMTS) {
+    if (request->service == ServiceType::eServiceType::WMTS) {
         errorResp = getTileParamWMTS ( request, L, tileMatrix, tileCol, tileRow, format, style );
     } else {
         // TMS
@@ -1451,15 +1451,15 @@ DataStream* Rok4Server::CommonGetFeatureInfo ( std::string service, Layer* layer
 
 
 void Rok4Server::processWMTS ( Request* request, FCGX_Request&  fcgxRequest ) {
-    if ( request->request == Request::eRequestType::GETCAPABILITIES ) {
+    if ( request->request == RequestType::eRequestType::GETCAPABILITIES ) {
         S.sendresponse ( WMTSGetCapabilities ( request ),&fcgxRequest );
-    } else if ( request->request == Request::eRequestType::GETTILE ) {
+    } else if ( request->request == RequestType::eRequestType::GETTILE ) {
         S.sendresponse ( getTile ( request ), &fcgxRequest );
-    } else if ( request->request == Request::eRequestType::GETFEATUREINFO) {
+    } else if ( request->request == RequestType::eRequestType::GETFEATUREINFO) {
         S.sendresponse ( WMTSGetFeatureInfo ( request ), &fcgxRequest );
-    } else if ( request->request == Request::eRequestType::GETVERSION ) {
+    } else if ( request->request == RequestType::eRequestType::GETVERSION ) {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->getParam("request")+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wmts" ) ),&fcgxRequest );
-    } else if ( request->request == Request::eRequestType::REQUEST_MISSING ) {
+    } else if ( request->request == RequestType::eRequestType::REQUEST_MISSING ) {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, ( "Le parametre REQUEST n'est pas renseigne." ) ,"wmts" ) ),&fcgxRequest );
     } else {
         S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED,_ ( "L'operation " ) +request->getParam("request")+_ ( " n'est pas prise en charge par ce serveur." ),"wmts" ) ),&fcgxRequest );
@@ -1469,13 +1469,13 @@ void Rok4Server::processWMTS ( Request* request, FCGX_Request&  fcgxRequest ) {
 
 void Rok4Server::processTMS ( Request* request, FCGX_Request&  fcgxRequest ) {
 
-    if ( request->request == Request::eRequestType::GETCAPABILITIES ) {
+    if ( request->request == RequestType::eRequestType::GETCAPABILITIES ) {
         S.sendresponse ( TMSGetCapabilities ( request ),&fcgxRequest );
-    } else if ( request->request == Request::eRequestType::GETSERVICES ) {
+    } else if ( request->request == RequestType::eRequestType::GETSERVICES ) {
         S.sendresponse ( TMSGetServices ( request ),&fcgxRequest );
-    } else if ( request->request == Request::eRequestType::GETTILE ) {
+    } else if ( request->request == RequestType::eRequestType::GETTILE ) {
         S.sendresponse ( getTile ( request ), &fcgxRequest );
-    } else if ( request->request == Request::eRequestType::GETLAYER ) {
+    } else if ( request->request == RequestType::eRequestType::GETLAYER ) {
         S.sendresponse ( TMSGetLayer ( request ), &fcgxRequest );
     } else {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, std::string ( "L'operation n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"tms" ) ),&fcgxRequest );
@@ -1484,15 +1484,15 @@ void Rok4Server::processTMS ( Request* request, FCGX_Request&  fcgxRequest ) {
 
 void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
     //le capabilities est présent pour une compatibilité avec le WMS 1.1.1
-    if ( request->request == Request::eRequestType::GETCAPABILITIES) {
+    if ( request->request == RequestType::eRequestType::GETCAPABILITIES) {
         S.sendresponse ( WMSGetCapabilities ( request ),&fcgxRequest );
-    } else if ( request->request == Request::eRequestType::GETMAP) {
+    } else if ( request->request == RequestType::eRequestType::GETMAP) {
         S.sendresponse ( getMap ( request ), &fcgxRequest );
-    } else if ( request->request == Request::eRequestType::GETFEATUREINFO) {
+    } else if ( request->request == RequestType::eRequestType::GETFEATUREINFO) {
         S.sendresponse ( WMSGetFeatureInfo ( request ), &fcgxRequest );
-    } else if ( request->request == Request::eRequestType::GETVERSION ) {
+    } else if ( request->request == RequestType::eRequestType::GETVERSION ) {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->getParam("request")+_ ( " n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"wms" ) ),&fcgxRequest );
-    } else if ( request->request == Request::eRequestType::REQUEST_MISSING ) {
+    } else if ( request->request == RequestType::eRequestType::REQUEST_MISSING ) {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, ( "Le parametre REQUEST n'est pas renseigne." ) ,"wms" ) ),&fcgxRequest );
     } else {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, ( "L'operation " ) +request->getParam("request")+_ ( " n'est pas prise en charge par ce serveur." ),"wms" ) ),&fcgxRequest );
@@ -1501,16 +1501,16 @@ void Rok4Server::processWMS ( Request* request, FCGX_Request&  fcgxRequest ) {
 
 void Rok4Server::processRequest ( Request * request, FCGX_Request&  fcgxRequest ) {
 
-    if ( serverConf->supportWMTS && request->service == Request::eServiceType::WMTS) {
+    if ( serverConf->supportWMTS && request->service == ServiceType::eServiceType::WMTS) {
         processWMTS ( request, fcgxRequest );
     }
-    else if ( serverConf->supportWMS && request->service == Request::eServiceType::WMS ) {
+    else if ( serverConf->supportWMS && request->service == ServiceType::eServiceType::WMS ) {
         processWMS ( request, fcgxRequest );
     }
-    else if ( serverConf->supportTMS && request->service == Request::eServiceType::TMS) {
+    else if ( serverConf->supportTMS && request->service == ServiceType::eServiceType::TMS) {
         processTMS ( request, fcgxRequest );
     }
-    else if ( serverConf->supportTMS && request->service == Request::eServiceType::SERVICE_MISSING) {
+    else if ( serverConf->supportTMS && request->service == ServiceType::eServiceType::SERVICE_MISSING) {
         S.sendresponse ( new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Le service est manquant" ),"wmts" ) ),&fcgxRequest );
     }
     else {

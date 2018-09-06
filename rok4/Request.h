@@ -58,6 +58,62 @@ class Request;
  * \details Define class Request and namespaces RequestType and ServiceType
  */
 
+namespace RequestType {
+    /**
+     * \~french \brief Énumération des types de requête
+     * \~english \brief Available request type
+     */
+    enum eRequestType {
+        REQUEST_UNKNOWN,
+        REQUEST_MISSING,
+        GETSERVICES,
+        GETCAPABILITIES,
+        GETLAYER,
+        GETMAP,
+        GETTILE,
+        GETFEATUREINFO,
+        GETVERSION
+    };
+
+
+    /**
+     * \~french \brief Conversion d'un type de requête vers une chaîne de caractères
+     * \param[in] rt type de requête à convertir
+     * \return la chaîne de caractère nommant le type de requête
+     * \~english \brief Convert a request type to a string
+     * \param[in] rt request type to convert
+     * \return string namming the request type
+     */
+    static std::string toString ( eRequestType rt );
+
+}
+
+
+namespace ServiceType {
+    /**
+     * \~french \brief Énumération des services
+     * \~english \brief Available services
+     */
+    enum eServiceType {
+        SERVICE_UNKNOWN,
+        SERVICE_MISSING,
+        WMTS,
+        WMS,
+        TMS
+    };
+
+    /**
+     * \~french \brief Conversion d'un type de service vers une chaîne de caractères
+     * \param[in] st type de service à convertir
+     * \return la chaîne de caractère nommant le type de service
+     * \~english \brief Convert a service type to a string
+     * \param[in] st service type to convert
+     * \return string namming the service type
+     */
+    static std::string toString ( eServiceType st );
+}
+
+
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
@@ -101,62 +157,6 @@ private:
     void determineServiceAndRequest();
 
 public:
-
-/**
-     * \~french \brief Énumération des types de requête
-     * \~english \brief Available request type
-     */
-    enum eRequestType {
-        REQUEST_UNKNOWN,
-        REQUEST_MISSING,
-        GETSERVICES,
-        GETCAPABILITIES,
-        GETLAYER,
-        GETMAP,
-        GETTILE,
-        GETFEATUREINFO,
-        GETVERSION
-    };
-
-    static const char* const requesttype_name[];
-
-    /**
-     * \~french \brief Conversion d'un type de requête vers une chaîne de caractères
-     * \param[in] rt type de requête à convertir
-     * \return la chaîne de caractère nommant le type de requête
-     * \~english \brief Convert a request type to a string
-     * \param[in] rt request type to convert
-     * \return string namming the request type
-     */
-    static std::string toString ( eRequestType rt ) {
-        return std::string ( requesttype_name[rt] );
-    }
-
-    /**
-     * \~french \brief Énumération des services
-     * \~english \brief Available services
-     */
-    enum eServiceType {
-        SERVICE_UNKNOWN,
-        SERVICE_MISSING,
-        WMTS,
-        WMS,
-        TMS
-    };
-
-    static const char* const servicetype_name[];
-
-    /**
-     * \~french \brief Conversion d'un type de service vers une chaîne de caractères
-     * \param[in] st type de service à convertir
-     * \return la chaîne de caractère nommant le type de service
-     * \~english \brief Convert a service type to a string
-     * \param[in] st service type to convert
-     * \return string namming the service type
-     */
-    static std::string toString ( eServiceType st ) {
-        return std::string ( servicetype_name[st] );
-    }
 
     /**
      * \~french
@@ -213,12 +213,12 @@ public:
      * \~french \brief Nom au sens OGC de la requête effectuée
      * \~english \brief OGC request name
      */
-    eRequestType request;
+    RequestType::eRequestType request;
     /*
      * \~french \brief Type de service (WMS,WMTS,TMS)
      * \~english \brief Service type (WMS,WMTS,TMS)
      */
-    eServiceType service;
+    ServiceType::eServiceType service;
 
     /**
      * \~french \brief Liste des paramètres de la requête
