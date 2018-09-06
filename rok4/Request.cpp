@@ -634,19 +634,19 @@ void Request::determineServiceAndRequest() {
         // Dans le cas du TMS, on n'a pas de paramètres.
         // On va donc admettre qu'en l'absence total de paramètres, on est implicitement en TMS
         if (params.size() == 0) {
-            service = ServiceType::eServiceType::TMS;
+            service = ServiceType::TMS;
         }
     } else {
         std::string str_service = it->second;
         std::transform(str_service.begin(), str_service.end(), str_service.begin(), ::tolower);
         if (str_service == "wms") {
-            service = ServiceType::eServiceType::WMS;
+            service = ServiceType::WMS;
         }
         else if (str_service == "wmts") {
-            service = ServiceType::eServiceType::WMTS;
+            service = ServiceType::WMTS;
         }
         else if (str_service != "") {
-            service = ServiceType::eServiceType::SERVICE_UNKNOWN;
+            service = ServiceType::SERVICE_UNKNOWN;
         }
     }
 
@@ -662,8 +662,8 @@ void Request::determineServiceAndRequest() {
         // On va donc admettre qu'en l'absence total de paramètres, on est implicitement en TMS
         // C'est la profondeur du path à partir de la version 1.0.0 qui va permettre d'identifier
         // le tpye de requête
-        if (params.size() == 0 && service == ServiceType::eServiceType::TMS) {
-            service = ServiceType::eServiceType::TMS;
+        if (params.size() == 0 && service == ServiceType::TMS) {
+            service = ServiceType::TMS;
                 
             std::stringstream ss(path);
             std::string token;
@@ -682,84 +682,84 @@ void Request::determineServiceAndRequest() {
                 // La version n'a pas été rencontrée, on n'est pas dans le cas d'une consultation TMS
                 // On va alors considérer que l'on veut la liste des services disponibles sur ce serveur
                 // On reste en TMS comme service
-                request = RequestType::eRequestType::GETSERVICES;
+                request = RequestType::GETSERVICES;
             }
 
             else if (tmsVersionPos == pathParts.size() - 1) {
                 // la version est en dernière position, on veut le "GetCapabilities" TMS
-                request = RequestType::eRequestType::GETCAPABILITIES;
+                request = RequestType::GETCAPABILITIES;
             }
 
             else if (tmsVersionPos == pathParts.size() - 2) {
                 // la version est en avant dernière position, on veut le détail de la couche
-                request = RequestType::eRequestType::GETLAYER;
+                request = RequestType::GETLAYER;
             }
 
             else if (tmsVersionPos == pathParts.size() - 5) {
                 // on requête une tuile
-                request = RequestType::eRequestType::GETTILE;
+                request = RequestType::GETTILE;
             } else {
                 // La profondeur de requête ne permet pas de savoir l'action demandée -> ERREUR
-                request = RequestType::eRequestType::REQUEST_UNKNOWN;
+                request = RequestType::REQUEST_UNKNOWN;
             }
         }
     } else {
         std::string str_request = it->second;
         std::transform(str_request.begin(), str_request.end(), str_request.begin(), ::tolower);
         if (str_request == "getmap" || str_request == "map") {
-            if (service != ServiceType::eServiceType::SERVICE_UNKNOWN && service != ServiceType::eServiceType::WMS) {
+            if (service != ServiceType::SERVICE_UNKNOWN && service != ServiceType::WMS) {
                 // On a une requête getmap avec un service qui ne le gère pas
-                request = RequestType::eRequestType::REQUEST_UNKNOWN;
+                request = RequestType::REQUEST_UNKNOWN;
             } else {
                 // On confirme le service WMS (potentiellement non connu dans le cas 1.1.1)
-                service = ServiceType::eServiceType::WMS;
-                request = RequestType::eRequestType::GETMAP;
+                service = ServiceType::WMS;
+                request = RequestType::GETMAP;
             }
         }
         else if (str_request == "gettile") {
-            if (service != ServiceType::eServiceType::WMTS) {
+            if (service != ServiceType::WMTS) {
                 // On a une requête gettile avec un service inconnu, ou qui ne le gère pas,
                 // ou pas comme ça (TMS)
-                request = RequestType::eRequestType::REQUEST_UNKNOWN;
+                request = RequestType::REQUEST_UNKNOWN;
             } else {
-                request = RequestType::eRequestType::GETTILE;
+                request = RequestType::GETTILE;
             }
         }
         else if (str_request == "getfeatureinfo") {
-            if (service != ServiceType::eServiceType::WMS && service != ServiceType::eServiceType::WMTS) {
+            if (service != ServiceType::WMS && service != ServiceType::WMTS) {
                 // On a une requête getfeatureinfo avec un service inconnu ou qui ne le gère pas
-                request = RequestType::eRequestType::REQUEST_UNKNOWN;
+                request = RequestType::REQUEST_UNKNOWN;
             } else {
-                request = RequestType::eRequestType::GETFEATUREINFO;
+                request = RequestType::GETFEATUREINFO;
             }
         }
         else if (str_request == "getcapabilities" || str_request == "capabilities") {
-            if (service != ServiceType::eServiceType::WMTS && service != ServiceType::eServiceType::WMS) {
+            if (service != ServiceType::WMTS && service != ServiceType::WMS) {
                 // On a une requête getcapabilities avec un service inconnu, 
                 // ou qui ne le gère pas, ou pas comme ça (TMS)
-                request = RequestType::eRequestType::REQUEST_UNKNOWN;
+                request = RequestType::REQUEST_UNKNOWN;
             } else {
-                request = RequestType::eRequestType::GETCAPABILITIES;
+                request = RequestType::GETCAPABILITIES;
             }
         }
         else if (str_request == "getversion") {
-            if (service != ServiceType::eServiceType::WMTS && service != ServiceType::eServiceType::WMS) {
+            if (service != ServiceType::WMTS && service != ServiceType::WMS) {
                 // On a une requête getcapabilities avec un service inconnu, 
                 // ou qui ne le gère pas, ou pas comme ça (TMS)
-                request = RequestType::eRequestType::REQUEST_UNKNOWN;
+                request = RequestType::REQUEST_UNKNOWN;
             } else {
-                request = RequestType::eRequestType::GETVERSION;
+                request = RequestType::GETVERSION;
             }
         }
         else if (str_request != "") {
-            request = RequestType::eRequestType::REQUEST_UNKNOWN;
+            request = RequestType::REQUEST_UNKNOWN;
         }
 
     }
 }
 
 Request::Request ( char* strquery, char* hostName, char* path, char* https ) : 
-    hostName ( hostName ),path ( path ), service(ServiceType::eServiceType::SERVICE_MISSING), request(RequestType::eRequestType::REQUEST_MISSING)
+    hostName ( hostName ),path ( path ), service(ServiceType::SERVICE_MISSING), request(RequestType::REQUEST_MISSING)
 {
     LOGGER_DEBUG ( "QUERY="<<strquery );
     if ( https && (strcmp ( https,"on" ) == 0 || strcmp ( https,"ON" ) ==0) ){
@@ -788,7 +788,7 @@ Request::Request ( char* strquery, char* hostName, char* path, char* https ) :
 
 
 Request::Request ( char* strquery, char* hostName, char* path, char* https, std::string postContent ) : 
-    hostName ( hostName ),path ( path ), service(ServiceType::eServiceType::SERVICE_MISSING), request(RequestType::eRequestType::REQUEST_MISSING)
+    hostName ( hostName ),path ( path ), service(ServiceType::SERVICE_MISSING), request(RequestType::REQUEST_MISSING)
 {
     LOGGER_DEBUG ( "QUERY="<<strquery );
     if ( https && (strcmp ( https,"on" ) == 0 || strcmp ( https,"ON" ) ==0) ){
