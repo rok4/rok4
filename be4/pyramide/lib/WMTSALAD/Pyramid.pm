@@ -736,7 +736,7 @@ sub _checkProperties {
     }
 
     my $pyr_data_path = $propCfg->getProperty({section => 'pyramid', property => 'pyr_data_path'});
-    if ($persistent && ! defined $pyr_data_path) {
+    if ((defined $persistent) && ($persistent =~ m/\A(1|t|true)\z/i) && ! defined $pyr_data_path) {
         ERROR ("The parameter 'pyr_data_path' is required for a persistent / 'on demand' pyramid!");
         return FALSE;
     }
@@ -979,7 +979,7 @@ sub writeConfPyramid {
         $rootEl->appendChild($levelEl);
         $levelEl->appendTextChild("tileMatrix", $lvlId);
         
-        if ($this->{persistent}) {
+        if (exists $this->{persistent} && defined $this->{persistent} && $this->{persistent} == TRUE) {
             my $imageBaseDir = File::Spec->catfile($this->{pyr_data_path}, $this->{pyr_name}, "IMAGE", $lvlId);
             $levelEl->appendTextChild("onFly", "true");
             $levelEl->appendTextChild("baseDir", $imageBaseDir);
@@ -1049,7 +1049,7 @@ sub writeCachePyramid {
         # Create folders for data, if they don't exist
 
         # Data folder created only if the pyramid is defined as persistent
-        if ($this->{persistent} == TRUE) {
+        if (exists $this->{persistent} && defined $this->{persistent} && $this->{persistent} == TRUE) {
             ### DATA
             my $imageBaseDir = File::Spec->catfile($this->{pyr_data_path}, $this->{pyr_name}, "IMAGE", $lvlId);
 
