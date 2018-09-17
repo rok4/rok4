@@ -93,6 +93,7 @@ bool CephPoolContext::connection() {
     ret = rados_conf_read_file(cluster, conf_file.c_str());
     if (ret < 0) {
         LOGGER_ERROR( "Couldn't read the Ceph configuration file! error " << ret );
+        LOGGER_ERROR (strerror(-ret));
         LOGGER_ERROR( "Configuration file : " << conf_file );
         return false;
     }
@@ -132,6 +133,7 @@ int CephPoolContext::read(uint8_t* data, int offset, int size, std::string name)
 
     if (readSize < 0) {
         LOGGER_ERROR ( "Unable to read " << size << " bytes (from the " << offset << " one) in the object " << name );
+        LOGGER_ERROR (strerror(-readSize));
     }
 
     return readSize;
@@ -147,7 +149,6 @@ bool CephPoolContext::write(uint8_t* data, int offset, int size, std::string nam
         LOGGER_ERROR("No writing buffer for the name " << name);
         return false;
     }
-    LOGGER_DEBUG("old length: " << it1->second->size());
    
     // Calcul de la taille finale et redimensionnement éventuel du vector
     if (it1->second->size() < size + offset) {
@@ -155,7 +156,6 @@ bool CephPoolContext::write(uint8_t* data, int offset, int size, std::string nam
     }
 
     memcpy(&((*(it1->second))[0]) + offset, data, size);
-    LOGGER_DEBUG("new length: " << it1->second->size());
 
     return true;
 }
@@ -220,6 +220,7 @@ bool CephPoolContext::closeToWrite(std::string name) {
     int err = rados_write_full(io_ctx,name.c_str(), &((*(it1->second))[0]), it1->second->size());
     if (err < 0) {
         LOGGER_ERROR ( "Unable to flush " << it1->second->size() << " bytes in the object " << name );
+        LOGGER_ERROR (strerror(-err));
         return false;
     }
 
