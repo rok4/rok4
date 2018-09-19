@@ -585,7 +585,7 @@ sub doIt {
         DEBUG("Done with this level.");
     }
 
-    close($STREAM) or ERROR(sprintf "Failed closing the string : %s\nErreur = %s\nCode = %s", Dumper($STREAM), $!, $?);
+    close($STREAM) or ERROR(sprintf "Failed closing the stream : %s\nErreur = %s\nCode = %s", Dumper($STREAM), $!, $?);
 
     $this{pyramid}->backupList();
 
