@@ -521,9 +521,13 @@ sub doIt {
         my $nSource = 0;
         foreach my $source (@{$sources}) {
 
+            DEBUG(sprintf "Source : %s", Dumper($source));
+
             # On récupère le niveau concerné dans la pyramide source en cours de traitement
 
             foreach my $bb (@{$source->{bboxes}}) {
+
+                DEBUG(sprintf "Extent : %s", Dumper($bb));
 
                 my ($ROWMIN, $ROWMAX, $COLMIN, $COLMAX) = $pyramid->getLevel($level)->bboxToSlabIndices(@{$bb});
 
@@ -533,9 +537,11 @@ sub doIt {
                     for (my $ROW = $ROWMIN; $ROW <= $ROWMAX; $ROW++) {
 
                         my $slabKey = $COL."_".$ROW;
+                        DEBUG(sprintf "Slab (col_row) : %s", $slabKey);
 
                         if (exists $this{doneSlabs}->{$slabKey}) {
                             # Image already treated
+                            DEBUG("This slab exists. --> next!");
                             next;
                         }
 
@@ -555,6 +561,7 @@ sub doIt {
 
                         if ($node->getSourcesNumber() == 0) {
                             # Pas de source pour cette image, pour cette priorité
+                            DEBUG("No source for this slab - priority pair. --> next!");
                             next;
                         }
 
@@ -565,22 +572,26 @@ sub doIt {
 
                         $pyramid->getLevel($level)->updateLimitsFromSlab($COL, $ROW);
                         $this{doneSlabs}->{$slabKey} = TRUE;
+                        DEBUG("Done with this slab.");
                     }
                 }
+                DEBUG("Done with this extent.");
             }
             $nSource++;
+            DEBUG("Done with this source.");
         }
 
         delete $this{doneSlabs};
+        DEBUG("Done with this level.");
     }
 
-    close($STREAM);
+    close($STREAM) or ERROR(sprintf "Failed closing the string : %s\nErreur = %s\nCode = %s", Dumper($STREAM), $!, $?);
 
     $this{pyramid}->backupList();
 
     # On ferme tous les scripts
     foreach my $s (@{$this{scripts}}) {
-        $s->close();
+        $s->close() or ERROR(sprintf "Failed closing the script : %s\nErreur = %s\nCode = %s", Dumper($s), $!, $?);
     }
 
     # writting pyramid's configuration file

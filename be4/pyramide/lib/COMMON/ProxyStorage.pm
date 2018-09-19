@@ -328,9 +328,7 @@ Return connected io context for the provided pool. Create it if not exists.
 sub getCephPoolContext {
     my $pool = shift;
 
-    if (! exists $IOS{$pool}) {
-        $IOS{$pool} = $CLUSTER->io($pool);
-    }
+    $IOS{$pool} = $CLUSTER->io($pool);
 
     return $IOS{$pool};
 }
@@ -780,17 +778,25 @@ sub isPresent {
     my $type = shift;
     my $path = shift;
 
+    DEBUG("Checking if item of type '$type' and path '$path' is present.");
+
     if ($type eq "FILE") {
+        DEBUG("File type.");
         if (-f $path) {
+            DEBUG("File '$path' exists.");
             return TRUE;
         }
         if (-d $path) {
+            DEBUG("Directory '$path' exists.");
             return TRUE;
         }
+        DEBUG("No file nor directory at path '$path'.");
 
         return FALSE;
     }
     elsif ($type eq "CEPH") {
+
+        DEBUG("CEPH object type.");
 
         my ($poolName, @rest) = split("/", $path);
         my $objectName = join("", @rest);
@@ -799,19 +805,43 @@ sub isPresent {
             ERROR("CEPH path is not valid (<poolName>/<objectName>) : $path");
             return FALSE;
         }
+        DEBUG("Looking for object '$objectName' in pool '$poolName'.");
+
+        $CLUSTER=undef;
+        $IOS{$poolName}=undef;
+        my $un = $ROK4_CEPH_USERNAME;
+        $un =~ s/^client\.//;
+        $CLUSTER = Ceph::Rados->new($un);
+        $CLUSTER->set_config_file($ROK4_CEPH_CONFFILE);
+        $CLUSTER->connect();
 
         my $io = getCephPoolContext($poolName);
-
-        my ($len, $mtime);
-        eval { ($len, $mtime) = $io->stat($objectName) };
-
-        if ($@) {
+        if (!defined $io) { 
+            ERROR("CEPH context is undefined");
             return FALSE;
         }
+        DEBUG("CEPH context retrieved.");
 
+        my ($len, $mtime);
+        eval { 
+            DEBUG("Calling 'rados_stat($objectName)'");
+            ($len, $mtime) = $io->stat($objectName);
+            DEBUG("(length, mtime) = ($len, $mtime)");
+        } or do {
+            ERROR(sprintf "Error : %s", $@);
+            ERROR(sprintf "Error type array %s", Dumper(\%!));            
+            ERROR(sprintf "Error code : %s (raw value : %s)", $?>>8, $?);
+            ERROR(sprintf "Signal : %s", $? & 127);
+            ERROR(sprintf "Is there a core-dump ? %s", $? & 128);
+            ERROR("Error while checking object.");
+            return FALSE;
+        };
+        
+        DEBUG("The object exists.");
         return TRUE;
     }
     elsif ($type eq "S3") {
+        DEBUG("S3 object type.");
 
         my ($bucketName, @rest) = split("/", $path);
         my $objectName = join("", @rest);
@@ -847,6 +877,7 @@ sub isPresent {
         }
     }
     elsif ($type eq "SWIFT") {
+        DEBUG("Swift object type.");
 
         my ($containerName, @rest) = split("/", $path);
         my $objectName = join("", @rest);
