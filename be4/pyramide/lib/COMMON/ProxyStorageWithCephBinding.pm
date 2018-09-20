@@ -63,6 +63,7 @@ use HTTP::Request::Common;
 use HTTP::Response;
 use LWP::UserAgent;
 use File::Basename;
+use Ceph::Rados;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -83,6 +84,8 @@ use constant FALSE => 0;
 my @STORAGETYPES = ("FILE", "CEPH", "S3", "SWIFT");
 
 my $UA;
+my $CLUSTER;
+my %IOS = ();
 
 ### CEPH
 
@@ -147,8 +150,18 @@ sub checkEnvironmentVariables {
         }
 
         $ROK4_CEPH_CONFFILE = $ENV{ROK4_CEPH_CONFFILE};
+
         $ROK4_CEPH_USERNAME = $ENV{ROK4_CEPH_USERNAME};
+        my $un = $ROK4_CEPH_USERNAME;
+        $un =~ s/^client\.//;
+
         $ROK4_CEPH_CLUSTERNAME = $ENV{ROK4_CEPH_CLUSTERNAME};
+
+        $CLUSTER = Ceph::Rados->new($un);
+        $CLUSTER->set_config_file($ROK4_CEPH_CONFFILE);
+        $CLUSTER->connect();
+
+        return TRUE;
 
         
     } elsif ($type eq "SWIFT") {
@@ -307,6 +320,20 @@ sub getSwiftToken {
     return TRUE;
 }
 
+=begin nd
+Function: getCephPoolContext
+
+Return connected io context for the provided pool. Create it if not exists.
+=cut
+sub getCephPoolContext {
+    my $pool = shift;
+
+    $IOS{$pool} = $CLUSTER->io($pool);
+
+    return $IOS{$pool};
+}
+
+
 ####################################################################################################
 #                               Group: Copy methods                                                #
 ####################################################################################################
@@ -349,9 +376,20 @@ sub copy {
                 return FALSE;
             }
 
-            `rados -p $poolName put $objectName $fromPath`;
-            if ($?) {
-                ERROR("Cannot upload file '$fromPath' to CEPH object $objectName (pool $poolName): $!");
+            my $io = getCephPoolContext($poolName);
+
+            my $FILE;
+            open($FILE, "<$fromPath") or do {
+                ERROR("Cannot open file '$fromPath' to upload in Ceph");
+                return FALSE;
+            };
+
+            eval { $io->write_handle($objectName, $FILE) };
+
+            close($FILE);
+
+            if ($@) {
+                ERROR("Cannot upload file '$fromPath' to CEPH object $objectName (pool $poolName): $@");
                 return FALSE;
             }
 
@@ -459,7 +497,19 @@ sub copy {
                 return FALSE;
             }
 
-            `rados -p $poolName get $objectName $toPath`;
+
+            my $io = getCephPoolContext($poolName);
+
+            my $FILE;
+            open($FILE, ">$toPath") or do {
+                ERROR("Cannot open file '$toPath' to download from Ceph");
+                return FALSE;
+            };
+
+            eval { $io->read_handle($objectName, $FILE) };
+
+            close($FILE);
+
             if ($@) {
                 ERROR("Cannot download CEPH object $fromPath into file '$toPath': $@");
                 if ($realFromPath ne $fromPath) {
@@ -757,12 +807,37 @@ sub isPresent {
         }
         DEBUG("Looking for object '$objectName' in pool '$poolName'.");
 
-        `rados -p $poolName stat $objectName 1>/dev/null 2>/dev/null`;
-        if ($?) {
+        $CLUSTER=undef;
+        $IOS{$poolName}=undef;
+        my $un = $ROK4_CEPH_USERNAME;
+        $un =~ s/^client\.//;
+        $CLUSTER = Ceph::Rados->new($un);
+        $CLUSTER->set_config_file($ROK4_CEPH_CONFFILE);
+        $CLUSTER->connect();
+
+        my $io = getCephPoolContext($poolName);
+        if (!defined $io) { 
+            ERROR("CEPH context is undefined");
             return FALSE;
         }
-        DEBUG("The object exists.");
+        DEBUG("CEPH context retrieved.");
 
+        my ($len, $mtime);
+        eval { 
+            DEBUG("Calling 'rados_stat($objectName)'");
+            ($len, $mtime) = $io->stat($objectName);
+            DEBUG("(length, mtime) = ($len, $mtime)");
+        } or do {
+            ERROR(sprintf "Error : %s", $@);
+            ERROR(sprintf "Error type array %s", Dumper(\%!));            
+            ERROR(sprintf "Error code : %s (raw value : %s)", $?>>8, $?);
+            ERROR(sprintf "Signal : %s", $? & 127);
+            ERROR(sprintf "Is there a core-dump ? %s", $? & 128);
+            ERROR("Error while checking object.");
+            return FALSE;
+        };
+        
+        DEBUG("The object exists.");
         return TRUE;
     }
     elsif ($type eq "S3") {
@@ -862,6 +937,8 @@ sub getRealData {
             return undef;
         }
 
+        my $io = getCephPoolContext($poolName);
+
         my $value = getSize("CEPH",$path);
 
         if ( ! defined $value ) {
@@ -870,8 +947,7 @@ sub getRealData {
 
         if ( $value < $ROK4_IMAGE_HEADER_SIZE ) {
 
-            my $realTarget = `rados -p $poolName get $objectName /dev/stdout`;
-            chomp $realTarget;
+            my $realTarget = $io->read($objectName);
 
             # Dans le cas d'un objet Ceph lien, on vérifie que la signature existe bien dans le header
             if (index($realTarget, ROK4_SYMLINK_SIGNATURE) != -1) {
@@ -988,13 +1064,17 @@ sub getSize {
             return undef;
         }
 
-        my $ret = `rados -p $poolName stat $objectName`;
+        my $io = getCephPoolContext($poolName);
+
+        my ($len, $mtime);
+        eval { ($len, $mtime) = $io->stat($objectName) };
+
         if ($@) {
             ERROR("Cannot stat CEPH object $objectName (pool $poolName): $!");
             return undef;
         }
 
-        return (split(/ /, $ret))[-1];
+        return $len;
     }
 
     return undef;
@@ -1022,7 +1102,10 @@ sub remove {
         my ($poolName, @rest) = split("/", $path);
         my $objectName = join("", @rest);
 
-        `rados -p $poolName rm $objectName`;
+        my $io = getCephPoolContext($poolName);
+
+        eval { $io->remove($objectName) };
+
         if (! $@) {return TRUE;}
     }
 
@@ -1089,8 +1172,10 @@ sub symLink {
             return undef;
         }
 
+        my $io = getCephPoolContext($tPoolName);
+
         my $symlink_content = ROK4_SYMLINK_SIGNATURE . $realTarget;
-        eval { `echo -n "$symlink_content" | rados -p $toPoolName put $toPath /dev/stdin` };
+        eval { $io->write_data($toPath, "$symlink_content" ) };
 
         if ($@) {
             ERROR("Cannot symlink (make a rados put) object $realTarget with alias $toPath : $@");
