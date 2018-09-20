@@ -551,8 +551,7 @@ sub writeListAndReferences {
         # Dans le cas objet, la racine est seulement le conteneur, il faut aussi remplacer le nom de la pyramide qui est contenu dans le nom de l'objet
         my $ancestorSlab = $line;
         $ancestorSlab =~ s/^[0-9]+/$containerName/;
-        my $newSlab = $line;
-        $newSlab =~ s/^[0-9]+\/$ancestorPyrName/$containerName\/$newPyrName/;
+        my $newSlab = "${containerName}/${newPyrName}_${dataType}_${level}_${col}_${row}";
 
         if (! $newpyr->ownMasks() && $dataType eq "MSK") {
             # On ne veut pas des masques dans la pyramide finale, donc on ne lie pas ceux de l'ancienne pyramide
