@@ -36,21 +36,21 @@
 ################################################################################
 
 =begin nd
-File: ProxyStorage.pm
+File: ProxyStorageWithCephBinding.pm
 
-Class: COMMON::ProxyStorage
+Class: COMMON::ProxyStorageWithCephBinding
 
 Proxy to manipulate different storage types : object or file, we can copy, reference or remove from one to another
 
 Using:
     (start code)
-    use COMMON::ProxyStorage;
+    use COMMON::ProxyStorageWithCephBinding;
     (end code)
 =cut
 
 ################################################################################
 
-package COMMON::ProxyStorage;
+package COMMON::ProxyStorageWithCephBinding;
 
 use strict;
 use warnings;
