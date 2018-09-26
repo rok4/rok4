@@ -166,58 +166,167 @@ namespace Rok4Format {
 
 const char *eformat_name[] = {
     "UNKNOWN",
+
     "TIFF_RAW_INT8",
     "TIFF_JPG_INT8",
     "TIFF_PNG_INT8",
     "TIFF_LZW_INT8",
     "TIFF_ZIP_INT8",
     "TIFF_PKB_INT8",
+
     "TIFF_RAW_FLOAT32",
     "TIFF_LZW_FLOAT32",
     "TIFF_ZIP_FLOAT32",
-    "TIFF_PKB_FLOAT32"
+    "TIFF_PKB_FLOAT32",
+
+    "TIFF_PBF"
+};
+
+const bool eformat_israster[] = {
+    false,
+
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+
+    true,
+    true,
+    true,
+    true,
+
+    false
+};
+
+const int eformat_channelsize[] = {
+    -1,
+
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    
+    4,
+    4,
+    4,
+    4,
+
+    -1
 };
 
 const char *eformat_mime[] = {
     "UNKNOWN",
+
     "image/tiff",
     "image/jpeg",
     "image/png",
     "image/tiff",
     "image/tiff",
     "image/tiff",
+
     "image/x-bil;bits=32",
     "image/tiff",
     "image/x-bil;bits=32",
-    "image/tiff"
+    "image/tiff",
+
+    "application/octet-stream"
 };
 
 const char *eformat_extension[] = {
     "UNKNOWN",
+
     "tif",
     "jpeg",
     "png",
     "tif",
     "tif",
     "tif",
+
     "tif",
     "tif",
     "tif",
-    "tif"
+    "tif",
+
+    "pbf"
 };
 
 const char *eformat_encoding[] = {
     "",
+
     "",
     "",
     "",
     "",
     "",
     "",
+
     "",
     "",
     "deflate",
+    "",
+
     ""
+};
+
+
+const Compression::eCompression eformat_compression[] = {
+    Compression::UNKNOWN,
+
+    Compression::NONE,
+    Compression::JPEG,
+    Compression::PNG,
+    Compression::LZW,
+    Compression::DEFLATE,
+    Compression::PACKBITS,
+
+    Compression::NONE,
+    Compression::LZW,
+    Compression::DEFLATE,
+    Compression::PACKBITS,
+
+    Compression::UNKNOWN
+};
+
+
+const SampleFormat::eSampleFormat eformat_sampleformat[] = {
+    SampleFormat::UNKNOWN,
+
+    SampleFormat::UINT,
+    SampleFormat::UINT,
+    SampleFormat::UINT,
+    SampleFormat::UINT,
+    SampleFormat::UINT,
+    SampleFormat::UINT,
+
+    SampleFormat::FLOAT,
+    SampleFormat::FLOAT,
+    SampleFormat::FLOAT,
+    SampleFormat::FLOAT,
+
+    SampleFormat::UNKNOWN
+};
+
+
+const int eformat_bitspersample[] = {
+    -1,
+
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+
+    32,
+    32,
+    32,
+    32,
+
+    -1
 };
 
 eformat_data fromString ( std::string strFormat ) {
@@ -231,6 +340,22 @@ eformat_data fromString ( std::string strFormat ) {
 
 std::string toString ( eformat_data format ) {
     return std::string ( eformat_name[format] );
+}
+
+bool isRaster ( eformat_data format ) {
+    return eformat_israster[format];
+}
+
+Compression::eCompression getCompression ( eformat_data format ) {
+    return eformat_compression[format];
+}
+
+SampleFormat::eSampleFormat getSampleFormat ( eformat_data format ) {
+    return eformat_sampleformat[format];
+}
+
+int getBitsPerSample ( eformat_data format ) {
+    return eformat_bitspersample[format];
 }
 
 std::string toMimeType ( eformat_data format ) {
@@ -254,33 +379,8 @@ std::string toEncoding ( eformat_data format ) {
     return std::string ( eformat_encoding[format] );
 }
 
-int toSizePerChannel ( eformat_data format ) {
-    if (format >= 7) {
-        return 4;
-    } else {
-        return 1;
-    }
-}
-
-int getPixelSize ( eformat_data format ) {
-
-    // selon le type des images source : 1=uint8_t   2=uint16_t    4=float
-    int pixel = 1;
-    if (format == Rok4Format::UNKNOWN) {
-        pixel = 1;
-    }
-    if (format == Rok4Format::TIFF_RAW_INT8 || format == Rok4Format::TIFF_JPG_INT8
-            || format == Rok4Format::TIFF_PNG_INT8 || format == Rok4Format::TIFF_LZW_INT8
-            || format == Rok4Format::TIFF_ZIP_INT8 || format == Rok4Format::TIFF_PKB_INT8) {
-        pixel = 1;
-    }
-    if (format == Rok4Format::TIFF_RAW_FLOAT32 || format == Rok4Format::TIFF_LZW_FLOAT32
-            || format == Rok4Format::TIFF_ZIP_FLOAT32 || format == Rok4Format::TIFF_PKB_FLOAT32) {
-        pixel = 4;
-    }
-
-    return pixel;
-
+int getChannelSize ( eformat_data format ) {
+    return eformat_channelsize[format];
 }
 
 }

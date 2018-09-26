@@ -391,10 +391,10 @@ int ImageDecoder::getDataline ( uint8_t* buffer, int line ) {
 }
 
 int ImageDecoder::getDataline ( uint16_t* buffer, int line ) {
-    if ( pixel_size==1 )
+    if ( channel_size==1 )
         // Conversion uint8 -> uintt16
         convert ( buffer, rawData + ( ( margin_top + line ) * source_width + margin_left ) * channels, width * channels );
-    else if ( pixel_size==2 )
+    else if ( channel_size==2 )
         // Donnée demandée dans le format d'origine
         memcpy ( buffer,rawData + ( ( margin_top + line ) * source_width + margin_left ) * channels*sizeof ( uint16_t ),width * channels*sizeof ( uint16_t ) );
 
@@ -402,13 +402,13 @@ int ImageDecoder::getDataline ( uint16_t* buffer, int line ) {
 }
 
 int ImageDecoder::getDataline ( float* buffer, int line ) {
-    if ( pixel_size==1 )
+    if ( channel_size==1 )
         // Conversion uint8 -> float
         convert ( buffer, rawData + ( ( margin_top + line ) * source_width + margin_left ) * channels, width * channels );
-    else if ( pixel_size==2 )
+    else if ( channel_size==2 )
         // Conversion uint16 -> float
         convert ( buffer, rawData + ( ( margin_top + line ) * source_width + margin_left ) * channels*sizeof ( uint16_t ), width * channels );
-    else if ( pixel_size==4 )
+    else if ( channel_size==4 )
         // Donnée demandée dans le format d'origine
         memcpy ( buffer,rawData + ( ( margin_top + line ) * source_width + margin_left ) * channels*sizeof ( float ),width * channels*sizeof ( float ) );
 

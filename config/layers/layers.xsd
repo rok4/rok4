@@ -71,8 +71,6 @@
                 </xs:complexType>
             </xs:element>
             <!--  -->
-            <xs:element name="opaque" type="xs:boolean"/>
-            <!--  -->
             <xs:element name="authority" type="xs:string"/>
             <!-- Identifiant de l’algo de rééchantillonage (spécifique ROK4) -->
             <xs:element name="resampling" type="xs:string"/>

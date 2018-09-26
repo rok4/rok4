@@ -272,31 +272,27 @@ namespace Rok4Format {
  */
 enum eformat_data {
     UNKNOWN = 0,
-    // Les formats entiers en premier
+
     TIFF_RAW_INT8 = 1,
     TIFF_JPG_INT8 = 2,
     TIFF_PNG_INT8 = 3,
     TIFF_LZW_INT8 = 4,
     TIFF_ZIP_INT8 = 5,
     TIFF_PKB_INT8 = 6,
-    // Les formats flottant doivent bien être à partir d'ici (et corriger eformat_float si le nombre de format entier augmente)
+
     TIFF_RAW_FLOAT32 = 7,
     TIFF_LZW_FLOAT32 = 8,
     TIFF_ZIP_FLOAT32 = 9,
-    TIFF_PKB_FLOAT32 = 10
+    TIFF_PKB_FLOAT32 = 10,
+
+    TIFF_PBF = 11
 };
 
 /**
  * \~french \brief Nombre de formats disponibles
  * \~english \brief Number of available formats
  */
-const int eformat_size = 10;
-
-/**
- * \~french \brief Indice du premier format flottant dans l'énumération
- * \~english \brief First float format indice into enumeration
- */
-const int eformat_float = 7;
+const int eformat_size = 11;
 
 /**
  * \~french \brief Conversion d'une chaîne de caractère vers un format
@@ -307,6 +303,39 @@ const int eformat_float = 7;
  * \return the binding format, UNKNOWN (0) if string is not recognized
  */
 eformat_data fromString ( std::string strFormat );
+
+
+/**
+ * \~french \brief Dit si un format est raster ou non
+ * \param[in] format format à connaître
+ * \~english \brief Say if a format is raster format
+ * \param[in] format format to know
+ */
+bool isRaster ( eformat_data format );
+
+/**
+ * \~french \brief Donne la compression du format
+ * \param[in] format format à connaître
+ * \~english \brief Precise format's compression
+ * \param[in] format format to know
+ */
+Compression::eCompression getCompression ( eformat_data format );
+
+/**
+ * \~french \brief Donne le format des canaux du format
+ * \param[in] format format à connaître
+ * \~english \brief Precise format's sample format
+ * \param[in] format format to know
+ */
+SampleFormat::eSampleFormat getSampleFormat ( eformat_data format );
+
+/**
+ * \~french \brief Donne la le nombre de bits par canal du format
+ * \param[in] format format à connaître
+ * \~english \brief Precise format's bits per sample
+ * \param[in] format format to know
+ */
+int getBitsPerSample ( eformat_data format );
 
 /**
  * \~french \brief Conversion d'un format vers une chaîne de caractère
@@ -350,9 +379,7 @@ eformat_data fromMimeType ( std::string mime );
 
 std::string toEncoding ( eformat_data format );
 
-int toSizePerChannel( eformat_data format );
-
-int getPixelSize ( eformat_data format );
+int getChannelSize ( eformat_data format );
 
 }
 

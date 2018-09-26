@@ -139,7 +139,7 @@ private:
     int margin_top;
     int margin_left;
 
-    int pixel_size; // type des images source : 1=uint8_t   2=uint16_t    4=float
+    int channel_size; // type des images source : 1=uint8_t   2=uint16_t    4=float
 
     // La donnee brute (source) est de type uint8_t
     const uint8_t* rawData;
@@ -178,14 +178,14 @@ private:
 public:
     ImageDecoder ( DataSource* dataSource, int source_width, int source_height, int channels,
                    BoundingBox<double> bbox = BoundingBox<double> ( 0.,0.,0.,0. ),
-                   int margin_left = 0, int margin_top = 0, int margin_right = 0, int margin_bottom = 0, int pixel_size=1 ) :
+                   int margin_left = 0, int margin_top = 0, int margin_right = 0, int margin_bottom = 0, int channel_size=1 ) :
         Image ( source_width - margin_left - margin_right, source_height - margin_top - margin_bottom, channels, bbox ),
         dataSource ( dataSource ),
         source_width ( source_width ),
         source_height ( source_height ),
         margin_top ( margin_top ),
         margin_left ( margin_left ),
-        pixel_size ( pixel_size ),
+        channel_size ( channel_size ),
         rawData ( 0 ) {}
 
     /* Implémentation de l'interface Image */

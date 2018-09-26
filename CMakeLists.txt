@@ -40,11 +40,11 @@ if(NOT DEFINED BUILD_DEPENDENCIES)
 endif(NOT DEFINED BUILD_DEPENDENCIES)
 
 if(NOT DEFINED BUILD_ROK4)
-  set(BUILD_ROK4 TRUE CACHE BOOL "Build Rok4")
+  set(BUILD_ROK4 TRUE CACHE BOOL "Build Rok4Server")
 endif(NOT DEFINED BUILD_ROK4)
 
 if(NOT DEFINED BUILD_BE4)
-  set(BUILD_BE4 TRUE CACHE BOOL "Build BE4")
+  set(BUILD_BE4 TRUE CACHE BOOL "Build Rok4Generation")
 endif(NOT DEFINED BUILD_BE4)
 
 if(NOT DEFINED BUILD_OBJECT)
@@ -101,6 +101,8 @@ if(NOT DEFINED USE_SYSTEM_LIB)
 endif(NOT DEFINED USE_SYSTEM_LIB)
 
 
+configure_file(rok4version.h.in rok4version.h ESCAPE_QUOTES @ONLY)
+
 ######################################## DOCUMENTATION
 
 if(BUILD_DOC)
@@ -145,7 +147,7 @@ if(BUILD_DOC)
           COMMAND mkdir -p ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/Natural/NaturalDocs 
           COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/docs/MenuND.txt ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/Natural/NaturalDocs/Menu.txt
           COMMAND naturaldocs -r --input ./ --exclude-input blib/ -img ${CMAKE_CURRENT_SOURCE_DIR}/docs/images --no-auto-group --documented-only --output HTML ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/Natural/Html --project ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/Natural/NaturalDocs
-          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/be4/pyramide/src/)
+          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/rok4generation/main/src/)
 
         add_custom_target(make_naturaldocs_target DEPENDS make_naturaldocs_command)
 
@@ -165,12 +167,12 @@ include(${Rok4_SOURCE_DIR}/cmake/Modules/ROK4Dependencies.cmake)
 
 if(BUILD_ROK4)
 MESSAGE(STATUS "Building ROK4 Server")
-  add_subdirectory(rok4)
+  add_subdirectory(rok4server)
 endif(BUILD_ROK4)
 
 if(BUILD_BE4)
-MESSAGE(STATUS "Building Be4 generation toolchain")
-  add_subdirectory(be4)
+MESSAGE(STATUS "Building generation tools")
+  add_subdirectory(rok4generation)
 endif(BUILD_BE4)
 
 if(DEB_PACKAGE)
