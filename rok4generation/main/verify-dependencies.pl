@@ -7,7 +7,6 @@ use strict;
 use warnings;
 use AutoLoader qw(AUTOLOAD);
 
-use Ceph::Rados;
 use Cwd;
 use Data::Dumper;
 use Digest::SHA;
@@ -18,7 +17,7 @@ use File::Find::Rule;
 use File::Map qw(map_file);
 use File::Path;
 use File::Path qw(make_path);
-use File::Spec ;
+use File::Spec;
 use File::Spec;
 use FindBin qw($Bin);
 use Geo::GDAL;

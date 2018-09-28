@@ -62,8 +62,8 @@ Attributes:
     extents - hash - Defines identifiants with associated extents (as OGR Geometry)
     composition - hash - Defines source pyramids for each level, extent, and order
 |       level_id => [
-|           { extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]] pyr => COMMON::Pyramid}
-|           { extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]] pyr => COMMON::Pyramid}
+|           { extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]] pyr => COMMON::PyramidRaster}
+|           { extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]] pyr => COMMON::PyramidRaster}
 |       ]
     sourcePyramids - string hash - Key is the descriptor's path. Just undefined values, to list used pyramids.
     process - hash - Generation parameters
@@ -305,9 +305,9 @@ sub readCompositionLine {
 
         if (! exists $this->{sourcePyramids}->{$pyr}) {
             # we have a new source pyramid, but not yet information about
-            $objPyramid = COMMON::Pyramid->new("DESCRIPTOR", $pyr);
+            $objPyramid = COMMON::PyramidRaster->new("DESCRIPTOR", $pyr);
             if (! defined $objPyramid) {
-                ERROR ("Cannot create the COMMON::Pyramid object from source pyramid's descriptor: $pyr ($levelId,$extentId)");
+                ERROR ("Cannot create the COMMON::PyramidRaster object from source pyramid's descriptor: $pyr ($levelId,$extentId)");
                 return FALSE;
             }
             $this->{sourcePyramids}->{$pyr} = $objPyramid;

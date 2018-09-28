@@ -64,7 +64,7 @@ use FindBin qw($Bin);
 use lib "$Bin/../lib/perl5";
 
 # My module
-use COMMON::Pyramid;
+use COMMON::PyramidRaster;
 use COMMON::ProxyStorage;
 
 ################################################################################
@@ -217,7 +217,7 @@ Use classes :
 =cut
 sub doIt {
 
-    my $objPyramid = COMMON::Pyramid->new("DESCRIPTOR", $options{pyr} );
+    my $objPyramid = COMMON::PyramidRaster->new("DESCRIPTOR", $options{pyr} );
     if (! defined $objPyramid) {
         ERROR("Cannot load pyramid to delete !");
         return FALSE;

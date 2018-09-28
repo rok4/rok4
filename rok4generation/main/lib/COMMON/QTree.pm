@@ -79,8 +79,8 @@ Using:
 
 Attributes:
     forest - <COMMON::Forest> - Forest which this tree belong to.
-    pyramid - <COMMON::Pyramid> - Pyramid linked to this tree.
-    commands - <COMMON::ShellCommands> - Command to use to generate images.
+    pyramid - <COMMON::PyramidRaster> - Pyramid linked to this tree.
+    commands - <COMMON::ShellCommandsRaster> - Command to use to generate images.
     datasource - <COMMON::DataSource> - Data source to use to define bottom level nodes and generate them.
 
     bbox - double array - Datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
@@ -116,9 +116,9 @@ use Data::Dumper;
 
 use COMMON::DataSource;
 use COMMON::Node;
-use COMMON::Pyramid;
+use COMMON::PyramidRaster;
 use COMMON::Array;
-use COMMON::ShellCommands;
+use COMMON::ShellCommandsRaster;
 
 use Log::Log4perl qw(:easy);
 
@@ -154,8 +154,8 @@ QTree constructor. Bless an instance.
 Parameters (list):
     objForest - <COMMON::Forest> - Forest which this tree belong to
     objSrc - <COMMON::DataSource> - Datasource which determine bottom level nodes
-    objPyr - <COMMON::Pyramid> - Pyramid linked to this tree
-    objCommands - <COMMON::ShellCommands> - Commands to use to generate pyramid's images
+    objPyr - <COMMON::PyramidRaster> or <COMMON::PyramidVector> - Pyramid linked to this tree
+    objCommands - <COMMON::ShellCommandsRaster> or <COMMON::ShellCommandsVector> - Commands to use to generate pyramid's images
 
 See also:
     <_init>, <_load>
@@ -195,12 +195,12 @@ sub new {
         ERROR("We need a COMMON::DataSource to create a QTree");
         return FALSE;
     }
-    if (! defined $objPyr || ref ($objPyr) ne "COMMON::Pyramid") {
-        ERROR("We need a COMMON::Pyramid to create a QTree");
+    if (! defined $objPyr || (ref ($objPyr) ne "COMMON::PyramidRaster" && ref ($objPyr) ne "COMMON::PyramidVector")) {
+        ERROR("We need a COMMON::PyramidRaster to create a QTree");
         return FALSE;
     }
-    if (! defined $objCommands || ref ($objCommands) ne "COMMON::ShellCommands") {
-        ERROR("We need a COMMON::ShellCommands to create a QTree");
+    if (! defined $objCommands || (ref ($objCommands) ne "COMMON::ShellCommandsRaster" && ref ($objCommands) ne "COMMON::ShellCommandsVector")) {
+        ERROR("We need a COMMON::ShellCommandsRaster to create a QTree");
         return FALSE;
     }
 
@@ -491,7 +491,7 @@ sub identifyAboveNodes {
               $levelID, scalar keys(%{$this->{nodes}{$levelID}}));
     }
     
-    return TRUE;  
+    return TRUE;
 }
 
 ####################################################################################################

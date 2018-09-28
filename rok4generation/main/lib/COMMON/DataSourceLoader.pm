@@ -119,6 +119,7 @@ sub new {
     # IMPORTANT : if modification, think to update natural documentation (just above)
     my $this = {
         FILEPATH_DATACONF => undef,
+        type => undef,
         dataSources  => []
     };
 
@@ -194,6 +195,7 @@ sub _load {
 
     my $sources = $this->{dataSources};
     my $nbSources = 0;
+    my $type = undef;
 
     while( my ($level,$params) = each(%sourcesProperties) ) {
         my $datasource = COMMON::DataSource->new($level,$params);
@@ -201,6 +203,14 @@ sub _load {
             ERROR(sprintf "Cannot create a DataSource object for the base level %s",$level);
             return FALSE;
         }
+
+        if (defined $this->{type} && $type ne $datasource->getType()) {
+            ERROR("All data sources must have the same type, RASTER or VECTOR");
+            return FALSE;
+        } else {
+            $this->{type} = $datasource->getType();
+        }
+
         push @{$sources}, $datasource;
         $nbSources++;
     }
@@ -326,6 +336,12 @@ sub updateDataSources {
 #                                Group: Getters - Setters                                          #
 ####################################################################################################
 
+# Function: getType
+sub getType {
+    my $this = shift;
+    return $this->{type}; 
+}
+
 # Function: getDataSources
 sub getDataSources {
     my $this = shift;
@@ -341,6 +357,11 @@ sub getNumberDataSources {
 # Function: getPixelFromSources
 sub getPixelFromSources {
     my $this = shift;
+
+    if ($this->{type} ne "RASTER") {
+        ERROR("Pixel specifications cannot be extract from not RASTER sources");
+        return (FALSE, undef);
+    }
 
     my $pixel = undef;
     foreach my $source (@{$this->{dataSources}}) {
@@ -387,6 +408,7 @@ sub exportForDebug {
     
     $export .= sprintf "\n Object COMMON::DataSourceLoader :\n";
     $export .= sprintf "\t Configuration file : %s\n", $this->{FILEPATH_DATACONF};
+    $export .= sprintf "\t Sources type : %s\n", $this->{type};
     $export .= sprintf "\t Sources number : %s\n", scalar @{$this->{dataSources}};
     
     return $export;

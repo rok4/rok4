@@ -38,18 +38,18 @@
 =begin nd
 File: PyrImageSpec.pm
 
-Class: COMMON::PyrImageSpec
+Class: COMMON::PyramidRasterSpec
 
 Store all image's components.
 
 Using:
     (start code)
-    use COMMON::PyrImageSpec;
+    use COMMON::PyramidRasterSpec;
 
     # PyrImageSpec object creation
 
     # Basic constructor
-    my $objPIS = COMMON::PyrImageSpec->new({
+    my $objPIS = COMMON::PyramidRasterSpec->new({
         compression => "raw",
         sampleformat => "uint",
         bitspersample => 8,
@@ -73,7 +73,7 @@ Attributes:
 
 ################################################################################
 
-package COMMON::PyrImageSpec;
+package COMMON::PyramidRasterSpec;
 
 use strict;
 use warnings;
@@ -395,7 +395,7 @@ Returns all image's components. Useful for debug.
 
 Example:
     (start code)
-    Object COMMON::PyrImageSpec :
+    Object COMMON::PyramidRasterSpec :
          Global information :
                 - Compression : raw
                 - Compression option : none
@@ -415,7 +415,7 @@ sub exportForDebug {
     
     my $export = "";
     
-    $export .= "\nObject COMMON::PyrImageSpec :\n";
+    $export .= "\nObject COMMON::PyramidRasterSpec :\n";
     $export .= "\t Global information : \n";
     $export .= sprintf "\t\t- Compression : %s\n", $this->{compression};
     $export .= sprintf "\t\t- Compression option : %s\n", $this->{compressionoption};

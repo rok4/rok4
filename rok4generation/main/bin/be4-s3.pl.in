@@ -87,7 +87,7 @@ use lib "$Bin/../lib/perl5";
 
 # My module
 use BE4S3::PropertiesLoader;
-use COMMON::Pyramid;
+use COMMON::PyramidRaster;
 use COMMON::DataSourceLoader;
 use COMMON::Forest;
 use COMMON::Array;
@@ -356,8 +356,8 @@ sub writeListAndReferences {
         return FALSE;        
     }
 
-    if (defined $ancestor && ref ($ancestor) ne "COMMON::Pyramid" ) {
-        ERROR(sprintf "Ancestor, if provided, have to be a COMMON::Pyramid ! ");
+    if (defined $ancestor && ref ($ancestor) ne "COMMON::PyramidRaster" ) {
+        ERROR(sprintf "Ancestor, if provided, have to be a COMMON::PyramidRaster ! ");
         return FALSE;
     }
 
@@ -527,15 +527,15 @@ sub writeListAndReferences {
 Function: doIt
 
 Steps in order, using parameters :
-    - load ancestor pryamid if exists : <COMMON::Pyramid::new>
+    - load ancestor pryamid if exists : <COMMON::PyramidRaster::new>
     - load data sources : <COMMON::DataSourceLoader::new>
-    - create the Pyramid object : <COMMON::Pyramid::new>
-    - update the Pyramid object with the TMS : <COMMON::Pyramid::bindTileMatrixSet>
+    - create the Pyramid object : <COMMON::PyramidRaster::new>
+    - update the Pyramid object with the TMS : <COMMON::PyramidRaster::bindTileMatrixSet>
     - update data sources with the levels : <COMMON::DataSourceLoader::updateDataSources>
-    - create the pyramid's levels : <COMMON::Pyramid::addLevel>
+    - create the pyramid's levels : <COMMON::PyramidRaster::addLevel>
     - create the Forest object : <COMMON::Forest::new>
     - write the pyramid's list : <writeListAndReferences>
-    - write the pyramid's descriptor : <COMMON::Pyramid::writeDescriptor>
+    - write the pyramid's descriptor : <COMMON::PyramidRaster::writeDescriptor>
     - compute trees (write scripts) : <COMMON::Forest::computeGraphs>
 =cut
 sub doIt {
@@ -578,7 +578,7 @@ sub doIt {
         my $ancestorDescriptor = File::Spec->catdir($params->{pyramid}->{pyr_desc_path_old}, $params->{pyramid}->{pyr_name_old});
         $ancestorDescriptor .= ".pyr" if ($ancestorDescriptor !~ m/\.pyr/i);
 
-        $objAncestorPyramid = COMMON::Pyramid->new("DESCRIPTOR", $ancestorDescriptor );
+        $objAncestorPyramid = COMMON::PyramidRaster->new("DESCRIPTOR", $ancestorDescriptor );
         if (! defined $objAncestorPyramid) {
             ERROR("Cannot load ancestor pyramid !");
             return FALSE;
@@ -627,7 +627,7 @@ sub doIt {
     
     ALWAYS(">>> Load the new pyramid ...");
     
-    $objPyramid = COMMON::Pyramid->new("VALUES", $params->{pyramid}, $objAncestorPyramid, $pixelIn );
+    $objPyramid = COMMON::PyramidRaster->new("VALUES", $params->{pyramid}, $objAncestorPyramid, $pixelIn );
     if (! defined $objPyramid) {
         ERROR("Cannot create output Pyramid !");
         return FALSE;
@@ -682,8 +682,7 @@ sub doIt {
     $objForest = COMMON::Forest->new(
         $objPyramid,
         $objDSL,
-        $params->{process},
-        "S3"
+        $params->{process}
     );
   
     if (! defined $objForest) {

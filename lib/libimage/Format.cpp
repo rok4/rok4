@@ -179,7 +179,7 @@ const char *eformat_name[] = {
     "TIFF_ZIP_FLOAT32",
     "TIFF_PKB_FLOAT32",
 
-    "TIFF_PBF"
+    "TIFF_PBF_MVT"
 };
 
 const bool eformat_israster[] = {

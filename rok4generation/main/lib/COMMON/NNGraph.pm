@@ -71,8 +71,8 @@ Using:
 
 Attributes:
     forest - <COMMON::Forest> - Forest which this tree belong to.
-    pyramid - <COMMON::Pyramid> - Pyramid linked to this tree.
-    commands - <COMMON::ShellCommands> - Command to use to generate images.
+    pyramid - <COMMON::PyramidRaster> - Pyramid linked to this tree.
+    commands - <COMMON::ShellCommandsRaster> - Command to use to generate images.
     datasource - <COMMON::DataSource> - Data source to use to define bottom level nodes and generate them.
 
     bbox - double array - Datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
@@ -112,7 +112,7 @@ use COMMON::DataSource;
 use COMMON::Node;
 use COMMON::ProxyGDAL;
 use COMMON::Array;
-use COMMON::ShellCommands;
+use COMMON::ShellCommandsRaster;
 
 use Log::Log4perl qw(:easy);
 
@@ -149,7 +149,7 @@ NNGraph constructor. Bless an instance.
 Parameters (list):
     objForest - <Forest> - Forest which this tree belong to
     objSrc - <DataSource> - Datasource which determine bottom level nodes
-    objPyr - <COMMON::Pyramid> - Pyramid linked to this tree
+    objPyr - <COMMON::PyramidRaster> - Pyramid linked to this tree
     objCommands - <Commands> - Commands to use to generate pyramid's images
 
 See also:
@@ -191,8 +191,8 @@ Checks and stores informations.
 Parameters (list):
     objForest - <COMMON::Forest> - Forest which this tree belong to
     objSrc - <COMMON::DataSource> - Data source which determine bottom level nodes
-    objPyr - <COMMON::Pyramid> - Pyramid linked to this tree
-    objCommands - <COMMON::ShellCommands> - Commands to use to generate pyramid's images
+    objPyr - <COMMON::PyramidRaster> - Pyramid linked to this tree
+    objCommands - <COMMON::ShellCommandsRaster> - Commands to use to generate pyramid's images
 =cut
 sub _init {
     my $this = shift;
@@ -210,11 +210,11 @@ sub _init {
         ERROR("Can not load DataSource !");
         return FALSE;
     }
-    if (! defined $objPyr || ref ($objPyr) ne "COMMON::Pyramid") {
+    if (! defined $objPyr || ref ($objPyr) ne "COMMON::PyramidRaster") {
         ERROR("Can not load Pyramid !");
         return FALSE;
     }
-    if (! defined $objCommands || ref ($objCommands) ne "COMMON::ShellCommands") {
+    if (! defined $objCommands || ref ($objCommands) ne "COMMON::ShellCommandsRaster") {
         ERROR("Can not load Commands !");
         return FALSE;
     }

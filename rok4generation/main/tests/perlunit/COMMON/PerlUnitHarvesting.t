@@ -72,32 +72,6 @@ is ($objHarvesting->getOptions, "STYLES=line&BGCOLOR=0xFFFFFF", "Correct options
 
 ######################################################
 
-# Test on request functions
-
-my $request = $objHarvesting->doRequestUrl({
-    srs =>"IGNF:LAMB93",
-    inversion => 0,
-    bbox => [0,200,1000,1200],
-    width => 500,
-    height => 600
-});
-
-is ($request, "http://localhost/wmts/rok4?LAYERS=BDD_WLD_WM&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/png&CRS=IGNF:LAMB93&BBOX=0,200,1000,1200&WIDTH=500&HEIGHT=600&STYLES=line&BGCOLOR=0xFFFFFF",
-    "Well formated request");
-
-$request = $objHarvesting->doRequestUrl({
-    srs =>"IGNF:LAMB93",
-    inversion => 1,
-    bbox => [0,200,1000,1200],
-    width => 500,
-    height => 600
-});
-
-is ($request, "http://localhost/wmts/rok4?LAYERS=BDD_WLD_WM&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/png&CRS=IGNF:LAMB93&BBOX=200,0,1200,1000&WIDTH=500&HEIGHT=600&STYLES=line&BGCOLOR=0xFFFFFF",
-    "Well formated request with coordinates inversion");
-
-######################################################
-
 # Bad parameters
 
 my $objBadHarvesting = COMMON::Harvesting->new({

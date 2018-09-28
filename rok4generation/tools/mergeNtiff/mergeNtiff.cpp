@@ -530,7 +530,7 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
         crs.setRequestCode ( stringCRS );
 
         if ( ! crs.validateBBox ( bbox ) ) {
-            LOGGER_DEBUG("Warning : the input image's (" << imageFileName << ") bbox (" << bbox.toString() << ") is not included in the srs (" << stringCRS << ") definition extent");
+            LOGGER_DEBUG("The input image's (" << imageFileName << ") bbox (" << bbox.toString() << ") is not included in the srs (" << stringCRS << ") definition extent");
         }
 
         FileImage* pImage=factory.createImageToRead ( imageFileName, bbox, resx, resy );
@@ -853,7 +853,7 @@ bool resampleImages ( FileImage* pImageOut, ExtendedCompoundImage* pECI, Resampl
     int height_dst = int ( ( bbox_dst.ymax-bbox_dst.ymin ) / resy_dst + 0.5 );
 
     if ( width_dst <= 0 || height_dst <= 0 ) {
-        LOGGER_WARN ( "A ResampledImage's dimension would have been null" );
+        LOGGER_DEBUG ( "A ResampledImage's dimension would have been null" );
         return true;
     }
 
@@ -952,7 +952,7 @@ bool reprojectImages ( FileImage* pImageOut, ExtendedCompoundImage* pECI, Reproj
     int height_dst = int ( ( BBOX_dst.ymax - BBOX_dst.ymin ) / resy_dst + 0.5 );
 
     if ( width_dst <= 0 || height_dst <= 0 ) {
-        LOGGER_WARN ( "A ReprojectedImage's dimension would have been null" );
+        LOGGER_DEBUG ( "A ReprojectedImage's dimension would have been null" );
         return true;
     }
 
@@ -1096,7 +1096,7 @@ int mergeTabImages ( FileImage* pImageOut, // Sortie
             }
 
             if ( pResampledImage == NULL ) {
-                LOGGER_WARN ( "No resampled image to add" );
+                LOGGER_DEBUG ( "No resampled image to add" );
             } else {
                 pOverlayedImages.push_back ( pResampledImage );
             }
@@ -1113,7 +1113,7 @@ int mergeTabImages ( FileImage* pImageOut, // Sortie
             }
 
             if ( pReprojectedImage == NULL ) {
-                LOGGER_WARN ( "No reprojected image to add" );
+                LOGGER_DEBUG ( "No reprojected image to add" );
             } else {
                 pOverlayedImages.push_back ( pReprojectedImage );
             }

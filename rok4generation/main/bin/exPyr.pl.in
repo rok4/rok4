@@ -85,7 +85,7 @@ use lib "$Bin/../lib/perl5";
 
 # My module
 use COMMON::CheckUtils;
-use COMMON::Pyramid;
+use COMMON::PyramidRaster;
 use EXPYR::PropertiesLoader;
 
 ################################################################################
@@ -314,7 +314,7 @@ sub doIt {
 
     # On récupère la première pyramide pour configurer celle de sortie
     my $first = $levels[0];
-    my $tmpSrcPyr = COMMON::Pyramid->new("DESCRIPTOR", $this{params}->{datasource}->{$first}->{desc_file});
+    my $tmpSrcPyr = COMMON::PyramidRaster->new("DESCRIPTOR", $this{params}->{datasource}->{$first}->{desc_file});
     if (! defined $tmpSrcPyr) {
         ERROR("Can not load a source pyramid (level $first) to obtain reference parameters !");
         return FALSE;
@@ -328,7 +328,7 @@ sub doIt {
     my $tpw = $tmpSrcPyr->getTilesPerWidth();
     my $tph = $tmpSrcPyr->getTilesPerHeight();
 
-    my $dstPyramid = COMMON::Pyramid->new("VALUES", {
+    my $dstPyramid = COMMON::PyramidRaster->new("VALUES", {
         pyr_data_path => $this{params}->{pyramid}->{pyr_data_path},
         pyr_desc_path => $this{params}->{pyramid}->{pyr_desc_path},
         pyr_name_new => $this{params}->{pyramid}->{pyr_name},
@@ -378,7 +378,7 @@ sub doIt {
         INFO("\t Extent: ".$source->{extent});
 
         # Load the source pyramid and check usability
-        $loadedSources->{$level}->{pyramid} = COMMON::Pyramid->new("DESCRIPTOR", $source->{desc_file});
+        $loadedSources->{$level}->{pyramid} = COMMON::PyramidRaster->new("DESCRIPTOR", $source->{desc_file});
         if (! defined $loadedSources->{$level}->{pyramid}) {
             ERROR("Can not load the source pyramid (level $level)");
             return FALSE;

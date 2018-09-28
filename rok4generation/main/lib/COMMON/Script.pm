@@ -360,7 +360,7 @@ Function: prepare
 Write script's header, which contains environment variables: the script ID, path to work directory, cache... And functions to factorize code.
 
 Parameters (list):
-    pyramid - <COMMON::Pyramid> or <BE4CEPH::Pyramid> or <BE4S3::Pyramid> - Pyramid to generate.
+    pyramid - <COMMON::PyramidRaster> or <BE4CEPH::Pyramid> or <BE4S3::Pyramid> - Pyramid to generate.
     functions - string - Configured functions, used in the script (mergeNtiff, wget...).
 
 Example:

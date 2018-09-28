@@ -80,8 +80,8 @@ use lib "$Bin/../lib/perl5";
 # My module
 use COMMON::TileMatrixSet;
 use COMMON::Layer;
-use COMMON::Pyramid;
-use COMMON::Level;
+use COMMON::PyramidRaster;
+use COMMON::LevelRaster;
 
 ################################################################################
 # Constantes
@@ -275,7 +275,7 @@ sub doIt {
 
     my @keyword;
 
-    my $pyramid = COMMON::Pyramid->new("DESCRIPTOR", $options{pyramid});
+    my $pyramid = COMMON::PyramidRaster->new("DESCRIPTOR", $options{pyramid});
 
     if (! defined $pyramid) {
         ERROR("Cannot create the Pyramid object");

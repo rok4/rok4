@@ -146,6 +146,7 @@ use List::Util qw(min max);
 # My module
 use COMMON::ImageSource;
 use COMMON::Harvesting;
+use COMMON::DatabaseSource;
 use COMMON::ProxyGDAL;
 
 require Exporter;
@@ -204,7 +205,9 @@ sub new {
         # Image source
         imageSource => undef,
         # Harvesting
-        harvesting => undef
+        harvesting => undef,
+        # Database
+        databaseSource => undef
     };
 
     bless($this, $class);
@@ -303,9 +306,20 @@ sub _load {
         }
     }
     $this->{harvesting} = $harvesting;
+
+    # DatabaseSource is optionnal, but if we have 'db_host' parameter, we suppose that we have others
+    my $database = undef;
+    if (exists $params->{db_host}) {
+        $harvesting = COMMON::DatabaseSource->new($params);
+        if (! defined $harvesting) {
+            ERROR("Cannot create the DatabaseSource object");
+            return FALSE;
+        }
+    }
+    $this->{databaseSource} = $database;
     
-    if (! defined $harvesting && ! defined $imagesource) {
-        ERROR("A data source must have a ImageSource OR a Harvesting !");
+    if (! defined $harvesting && ! defined $imagesource && ! defined $database) {
+        ERROR("A data source must have a ImageSource OR a Harvesting OR a DatabaseSource !");
         return FALSE;
     }
     
@@ -401,6 +415,17 @@ sub getSRS {
     return $this->{srs};
 }
 
+# Function: getType
+sub getType {
+    my $this = shift;
+
+    if (defined $this->{databaseSource} && ! defined $this->{harvesting}) {
+        return "VECTOR";
+    } else {
+        return "RASTER";
+    }
+}
+
 # Function: getExtent
 sub getExtent {
     my $this = shift;
@@ -419,6 +444,12 @@ sub getHarvesting {
     return $this->{harvesting};
 }
 
+# Function: getDatabaseSource
+sub getDatabaseSource {
+    my $this = shift;
+    return $this->{databaseSource};
+}
+
 # Function: getImages
 sub getImages {
     my $this = shift;
@@ -435,6 +466,12 @@ sub hasImages {
 sub hasHarvesting {
     my $this = shift;
     return (defined $this->{harvesting});
+}
+
+# Function: hasDatabase
+sub hasDatabase {
+    my $this = shift;
+    return (defined $this->{databaseSource});
 }
 
 # Function: getBottomID
@@ -534,6 +571,7 @@ sub exportForDebug {
     $export .= sprintf "\t\t- SRS : %s\n",$this->{srs};
     $export .= "\t\t- We have images\n" if (defined $this->{imageSource});
     $export .= "\t\t- We have a WMS service\n" if (defined $this->{harvesting});
+    $export .= "\t\t- We have a database\n" if (defined $this->{databaseSource});
     
     if (defined $this->{bbox}) {
         $export .= "\t\t Bbox :\n";

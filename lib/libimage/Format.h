@@ -285,7 +285,7 @@ enum eformat_data {
     TIFF_ZIP_FLOAT32 = 9,
     TIFF_PKB_FLOAT32 = 10,
 
-    TIFF_PBF = 11
+    TIFF_PBF_MVT = 11
 };
 
 /**

@@ -38,7 +38,7 @@
 =begin nd
 File: Commands.pm
 
-Class: COMMON::ShellCommands
+Class: COMMON::ShellCommandsRaster
 
 Configure and assemble commands used to generate pyramid's images.
 
@@ -48,17 +48,17 @@ All schemes in this page respect this legend :
 
 Using:
     (start code)
-    use COMMON::ShellCommands;
+    use COMMON::ShellCommandsRaster;
 
     # Commands object creation
-    my $objCommands = COMMON::ShellCommands->new(
+    my $objCommands = COMMON::ShellCommandsRaster->new(
         $objPyramid, # BE4S3::Pyramid object
         TRUE, # useMasks
     );
     (end code)
 
 Attributes:
-    pyramid - <COMMON::Pyramid> - Output pyramid to generate.
+    pyramid - <COMMON::PyramidRaster> - Output pyramid to generate.
     mntConfDir - string - Directory, where to write mergeNtiff configuration files.
     dntConfDir - string - Directory, where to write decimateNtiff configuration files.
     mergeMethod - string - Optionnal. If present we know that pyramid's generation tool is JOINCACHE, and mergeMethod is used by ovelayNtiff
@@ -67,7 +67,7 @@ Attributes:
 
 ################################################################################
 
-package COMMON::ShellCommands;
+package COMMON::ShellCommandsRaster;
 
 use strict;
 use warnings;
@@ -104,7 +104,7 @@ Constructor: new
 ShellCommands constructor. Bless an instance.
 
 Parameters (list):
-    pyr - <COMMON::Pyramid> - Image pyramid to generate
+    pyr - <COMMON::PyramidRaster> - Image pyramid to generate
     useMasks - string - Do we want use masks to generate images ?
 =cut
 sub new {
@@ -125,7 +125,7 @@ sub new {
 
     bless($this, $class);
 
-    if (! defined $pyramid || ref ($pyramid) ne "COMMON::Pyramid") {
+    if (! defined $pyramid || ref ($pyramid) ne "COMMON::PyramidRaster") {
         ERROR("Can not load Pyramid !");
         return undef;
     }
@@ -1535,7 +1535,7 @@ sub exportForDebug {
 
     my $export = "";
 
-    $export .= "\nObject COMMON::ShellCommands :\n";
+    $export .= "\nObject COMMON::ShellCommandsRaster :\n";
     $export .= "\t Use masks\n" if $this->{useMasks};
     $export .= "\t Doesn't use masks\n" if (! $this->{useMasks});
     $export .= "\t Export masks\n" if $this->{pyramid}->ownMasks();

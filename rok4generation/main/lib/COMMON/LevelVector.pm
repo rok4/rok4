@@ -38,16 +38,16 @@
 =begin nd
 File: Level.pm
 
-Class: COMMON::Level
+Class: COMMON::LevelVector
 
 Describe a level in a pyramid.
 
 Using:
     (start code)
-    use COMMON::Level;
+    use COMMON::LevelVector;
 
     # From values
-    my $valuesLevel = COMMON::Level->new("VALUES",{
+    my $valuesLevel = COMMON::LevelVector->new("VALUES",{
         id => "12",
         tm => $tms->getTileMatrix("12"),
         size => [16, 16],
@@ -57,7 +57,7 @@ Using:
     });
 
     # From XML element
-    my $xmlLevel = COMMON::Level->new("XML", $xmlElement);
+    my $xmlLevel = COMMON::LevelVector->new("XML", $xmlElement);
     $xmlLevel->bindTileMatrix($tms)
 
     (end code)
@@ -87,7 +87,7 @@ Attributes:
 
 ################################################################################
 
-package COMMON::Level;
+package COMMON::LevelVector;
 
 use strict;
 use warnings;
@@ -160,6 +160,8 @@ sub new {
         size => [],
         limits => undef, # rowMin,rowMax,colMin,colMax
 
+        tables => undef,
+
         # ABOUT PYRAMID
         desc_path => undef,
 
@@ -228,7 +230,7 @@ sub new {
             return FALSE;
         }
     } else {
-        ERROR ("Cannot identify the storage type for the COMMON::Level");
+        ERROR ("Cannot identify the storage type for the COMMON::LevelVector");
         return undef;
     }
 
@@ -458,12 +460,6 @@ sub getDirImage {
     return $this->{dir_image};
 }
 
-# Function: getDirImage
-sub getDirMask {
-    my $this = shift;
-    return $this->{dir_mask};
-}
-
 # Function: getDirsInfo
 sub getDirsInfo {
     my $this = shift;
@@ -543,6 +539,12 @@ sub getOrder {
     return $this->{order};
 }
 
+# Function: getTables
+sub getTables {
+    my $this = shift;
+    return $this->{tables};
+}
+
 # Function: getTileMatrix
 sub getTileMatrix {
     my $this = shift;
@@ -578,12 +580,6 @@ sub slabIndicesToBbox {
     my $row = shift;
 
     return $this->{tm}->indicesToBbox($col, $row, $this->{size}->[0], $this->{size}->[1]);
-}
-
-# Function: ownMasks
-sub ownMasks {
-    my $this = shift;
-    return (defined $this->{dir_mask} || defined $this->{prefix_mask});
 }
 
 =begin nd
@@ -853,18 +849,13 @@ Parameter:
 =cut
 sub exportToXML {
     my $this = shift;
-    my $tiles_storage = shift;
 
     my $string = "    <level>\n";
     $string .= sprintf "        <tileMatrix>%s</tileMatrix>\n", $this->{id};
 
-    if ($tiles_storage) {
-        $string .= "        <tilesPerWidth>0</tilesPerWidth>\n";
-        $string .= "        <tilesPerHeight>0</tilesPerHeight>\n";
-    } else {
-        $string .= sprintf "        <tilesPerWidth>%s</tilesPerWidth>\n", $this->{size}->[0];
-        $string .= sprintf "        <tilesPerHeight>%s</tilesPerHeight>\n", $this->{size}->[1];
-    }
+    $string .= sprintf "        <tilesPerWidth>%s</tilesPerWidth>\n", $this->{size}->[0];
+    $string .= sprintf "        <tilesPerHeight>%s</tilesPerHeight>\n", $this->{size}->[1];
+
     $string .= "        <TMSLimits>\n";
 
     if (defined $this->{limits}->[0]) {
@@ -886,41 +877,29 @@ sub exportToXML {
     }
     elsif ($this->{type} eq "S3") {
         $string .= sprintf "        <imagePrefix>%s</imagePrefix>\n", $this->{prefix_image};
-        $string .= "        <s3Context>\n";
+        $string .=         "        <s3Context>\n";
         $string .= sprintf "            <bucketName>%s</bucketName>\n", $this->{bucket_name};
-        $string .= "        </s3Context>\n";
+        $string .=         "        </s3Context>\n";
     }
     elsif ($this->{type} eq "SWIFT") {
         $string .= sprintf "        <imagePrefix>%s</imagePrefix>\n", $this->{prefix_image};
-        $string .= "        <swiftContext>\n";
+        $string .=         "        <swiftContext>\n";
         $string .= sprintf "            <containerName>%s</containerName>\n", $this->{container_name};
 
         if ($this->{keystone_connection}) {
-            $string .= "            <keystoneConnection>TRUE</keystoneConnection>\n";
+            $string .=     "            <keystoneConnection>TRUE</keystoneConnection>\n";
         }
 
-        $string .= "        </swiftContext>\n";
+        $string .=         "        </swiftContext>\n";
     }
     elsif ($this->{type} eq "CEPH") {
         $string .= sprintf "        <imagePrefix>%s</imagePrefix>\n", $this->{prefix_image};
-        $string .= "        <cephContext>\n";
+        $string .=         "        <cephContext>\n";
         $string .= sprintf "            <poolName>%s</poolName>\n", $this->{pool_name};
-        $string .= "        </cephContext>\n";
+        $string .=         "        </cephContext>\n";
     }
 
-    if ($this->ownMasks()) {
-        $string .=  "        <mask>\n";
-
-        if (defined $this->{dir_mask}) {
-            $string .= sprintf "            <baseDir>%s</baseDir>\n", File::Spec->abs2rel($this->{dir_mask}, $this->{desc_path});
-        }
-        elsif (defined $this->{prefix_mask}) {
-            $string .= sprintf "            <maskPrefix>%s</maskPrefix>\n", $this->{prefix_mask};
-        }
-
-        $string .=  "            <format>TIFF_ZIP_INT8</format>\n";
-        $string .=  "        </mask>\n";
-    }
+    # TODO export des tables et attributs
 
 
     $string .= "    </level>\n";

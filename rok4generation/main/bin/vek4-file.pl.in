@@ -37,20 +37,21 @@
 ################################################################################
 
 =begin nd
-File: be4-swift.pl
+File: be4.pl
 
-Section: BE4-SWIFT tool
+Section: BE4-FILE tool
 
 Synopsis:
     (start code)
-    perl be4-swift.pl --conf=path
+    perl be4-file.pl --conf=path [ --env=path ]
+    # All parameters of the --env config file can be overided by --conf config file parameter
     (end code)
 
-Tool allowing to generate a pyramid of tiled TIFF images, several resolutions, with compression (lossless or lossy) from several data sources, georeferenced image (ortho, scan, ...) or WMS service. Output format respects WMS/WMTS server ROK4.
+Tool allowing to generate a pyramid of tiled TIFF images, several resolutions, with compression (lossless or lossy) from serveral data sources, georeferenced image (ortho, scan, ...) or WMS service. Output format respects WMS/WMTS server ROK4.
 
-This tool write scripts, to execute to obtain the pyramid in a SWIFT container.
+This tool write scripts, to execute to obtain the pyramid.
 
-(see be4swift_general.png)
+(see be4_general.png)
 
 2 types of generation :
     - create a new pyramid with data
@@ -86,7 +87,7 @@ use FindBin qw($Bin);
 use lib "$Bin/../lib/perl5";
 
 # My module
-use BE4SWIFT::PropertiesLoader;
+use BE4FILE::PropertiesLoader;
 use COMMON::PyramidRaster;
 use COMMON::DataSourceLoader;
 use COMMON::Forest;
@@ -98,7 +99,7 @@ use COMMON::CheckUtils;
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-my @UPDATESMODES = ( "slink", "copy", "inject" );
+my @UPDATESMODES = ( "slink", "hlink", "copy", "inject" );
 
 ################################################################################
 # Pas de bufferisation des sorties.
@@ -114,12 +115,13 @@ my $VERSION = '@VERSION_TEXT@';
 =begin nd
 Variable: options
 
-Contains be4-swift call options :
+Contains be4 call options :
 
     version - To obtain the command's version
     help - To obtain the command's help
     usage - To obtain the command's usage
     properties - Configuration file
+    environment - Environment file
 =cut
 my %options =
 (
@@ -129,9 +131,7 @@ my %options =
     
     # Configuration
     "properties"  => undef, # file properties params (mandatory) !
-    
-    # Only for maintenance !
-    "test" => 0,
+    "environment" => undef  # file environment be4 params (optional) !
 );
 
 =begin nd
@@ -167,7 +167,7 @@ See Also:
     <init>, <config>, <doIt>
 =cut
 sub main {
-    printf("BE4-SWIFT: version [%s]\n",$VERSION);
+    printf("BE4: version [%s]\n",$VERSION);
     # message
     my $message = undef;
 
@@ -205,7 +205,7 @@ sub main {
 =begin nd
 Function: init
 
-Checks options and initializes the default logger. Check properties file (mandatory).
+Checks options and initializes the default logger. Check environment file (optionnal) and properties file (mandatory).
 =cut
 sub init {
   
@@ -225,19 +225,20 @@ sub init {
     # init Options
     GetOptions(
         "help|h" => sub {
-            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-swift-pl.html\n" ;
+            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-pl.html\n" ;
             exit 0;
         },
         "version|v" => sub { exit 0; },
         "usage" => sub {
-            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-swift-pl.html\n" ;
+            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-pl.html\n" ;
             exit 0;
         },
         
-        "properties|conf=s" => \$options{properties}
+        "properties|conf=s" => \$options{properties},
+        "environment|env=s" => \$options{environment}
     ) or do {
         printf "Unappropriate usage\n";
-        printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-swift-pl.html\n";
+        printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-pl.html\n";
         exit -1;
     };
   
@@ -257,13 +258,19 @@ sub init {
     my $fproperties = File::Spec->rel2abs($options{properties});
     $options{properties} = $fproperties;
     
+    # env : optional !
+    if (defined $options{environment} && $options{environment} ne "") {
+        my $fenvironment = File::Spec->rel2abs($options{environment});
+        $options{environment} = $fenvironment;
+    }
+    
     return TRUE;
 }
 
 =begin nd
 Function: config
 
-Loads properties files and merge parameters. We also check environment variable (object storage configuration).
+Loads environment and properties files and merge parameters. Those in the properties file have priority over those in the environment file.
 
 See Also:
     <checkParams>
@@ -274,37 +281,110 @@ sub config {
     ALWAYS(">>> Load Properties ...");
     
     my $fprop = $options{properties};
-    my $objProp = BE4SWIFT::PropertiesLoader->new($fprop);
+    my $objProp = BE4FILE::PropertiesLoader->new($fprop);
     
     if (! defined $objProp) {
-        ERROR("Can not load properties !");
+        ERROR("Can not load specific properties !");
+        return FALSE;
+    }
+    
+    my %props = $objProp->getAllProperties();
+    
+    if (! scalar keys %props) {
+        ERROR("All parameters properties are empty !");
+        return FALSE;
+    }
+
+    ###################
+
+    my $hashref;
+
+    ###################
+    ALWAYS(">>> Treat optionnal environment ...");
+
+    my $fenv = undef;
+    $fenv = $options{environment} if (defined $options{environment} && $options{environment} ne "");
+
+    if (defined $fenv) {
+        my $objEnv = COMMON::Config->new({
+            'filepath' => $fenv,
+            'format' => "INI"
+        });
+
+        if (! defined $objEnv) {
+            ERROR("Can not load environment properties !");
+            return FALSE;
+        }
+
+        my $envs = $objEnv->getRawConfig();
+
+        if (! scalar keys %{$envs}) {
+            ERROR("All parameters environment are empty !");
+            return FALSE;
+        }
+        
+        foreach (keys %{$this{params}}) {
+            my $href = { map %$_, grep ref $_ eq 'HASH', ($envs->{$_}, $props{$_}) };
+            $hashref->{$_} = $href;
+        }
+    } else {
+        foreach (keys %{$this{params}}) {
+            my $href = { map %$_, grep ref $_ eq 'HASH', ($props{$_}) };
+            $hashref->{$_} = $href;
+        }
+    }
+
+    ###################
+
+    if (! defined $hashref) {
+        ERROR("Can not merge all parameters of properties !");
         return FALSE;
     }
   
     # save params properties
-    my %params = $objProp->getAllProperties();
-    $this{params} = \%params;
-
+    $this{params} = $hashref;
+    
+    ###################
+    # check parameters
+    
+    my $pyramid     = $this{params}->{pyramid};       # 
+    my $logger      = $this{params}->{logger};        # 
+    my $datasource  = $this{params}->{datasource};    #
+    my $process     = $this{params}->{process};       # 
+    
+    # pyramid
+    if (! defined $pyramid) {
+        ERROR("Parameters Pyramid can not be null !");
+        return FALSE;
+    }
+    
+    # datasource
+    if (! defined $datasource) {
+        ERROR("Parameters Datasource can not be null !");
+        return FALSE;
+    }
+    
+    # process
+    if (! defined $process) {
+        ERROR("Parameters Process can not be null !");
+        return FALSE;
+    }
+    
     # logger
-    my $logger = $this{params}->{logger};
     if (defined $logger) {
     
         my @args;
         
         my $layout= '%5p : %m (%M) %n';
-
         my $level = $logger->{log_level};
-        $level = "WARN" if (! defined $level);
-
-        my $out;
-        my $logfile = $logger->{log_file};
-        if (defined $logfile) {
-            if (exists $logger->{log_path} && defined $logger->{log_path}) {
-                $logfile = File::Spec->catfile($logger->{log_path}, $logfile);
-            }
-            $out = ">>$logfile";
-        } else {
-            $out = "STDOUT";
+        my $out   = sprintf (">>%s", File::Spec->catfile($logger->{log_path}, $logger->{log_file}))
+            if (! COMMON::CheckUtils::isEmpty($logger->{log_path}) && ! COMMON::CheckUtils::isEmpty($logger->{log_file}));
+        
+        $out   = "STDOUT" if (! defined $out);
+        $level = "WARN"   if (! defined $level);
+        
+        if ($level =~ /(ALL|DEBUG)/) {
+            $layout = '%5p : %m (%M) %n';
         }
         
         # add the param logger by default (user settings !)
@@ -322,17 +402,13 @@ sub config {
                 layout => $layout,
             },
         }
-
-        Log::Log4perl->easy_init(@args);
+        Log::Log4perl->easy_init(@args); 
     }
-
-    # Environment variables
-
-    if (! COMMON::ProxyStorage::checkEnvironmentVariables("SWIFT")) {
-        ERROR("Environment variable is missing for a Swift storage");
-        return FALSE;
-    }
-
+    
+    # save
+    $this{params}->{pyramid} = $pyramid;
+    $this{params}->{logger}  = $logger;
+    
     return TRUE;
 }
 
@@ -378,8 +454,8 @@ sub writeListAndReferences {
         }
     }
     
-    # La racine de la pyramide est un nom de container dans le cas SWIFT
-    my $containerName = $newpyr->getDataContainer();
+    # La racine de la pyramide est un dossier dans le cas fichier
+    my $newRoot = $newpyr->getDataDir();
     
     if (! defined $ancestor) {
         # Pas d'ancêtre, on doit juste écrire l'en tête : le dossier propre à cette pyramide ou le nom du conteneur objet
@@ -391,17 +467,14 @@ sub writeListAndReferences {
             return FALSE;
         }
 
-        print $NEWLIST "0=$containerName\n";
+        print $NEWLIST "0=$newRoot\n";
         print $NEWLIST "#\n";
         close $NEWLIST;
 
         return TRUE
     }
 
-    ############################## RÉFÉRENCEMENT DES OBJETS DE L'ANCÊTRE #######################################
-
-    my $newPyrName = $newpyr->getName();
-    my $ancestorPyrName = $ancestor->getName();
+    ############################## RÉFÉRENCEMENT DES FICHIERS DE L'ANCÊTRE #######################################
 
     # On a un ancêtre, il va falloir en référencer toutes les dalles
 
@@ -419,14 +492,25 @@ sub writeListAndReferences {
         return FALSE;
     }
     
+    my %ancestorRoots;
+    my %ancestorRootsUse;
     while( my $line = <$OLDLIST> ) {
         chomp $line;
-
-        ############# ON ZAPPE JUSTE LE HEADER #############
-
         if ($line eq "#") {
+            # separator between caches' roots and images
             last;
         }
+        
+        $line =~ s/\s+//g; # we remove all spaces
+        my @Root = split(/=/,$line,-1);
+        
+        if (scalar @Root != 2) {
+            ERROR(sprintf "Wrong formatted pyramid list (root definition) : %s",$line);
+            return FALSE;
+        }
+        
+        $ancestorRoots{$Root[0]} = $Root[1];
+        $ancestorRootsUse{$Root[0]} = 0;
     }
 
     my $NEWLIST;
@@ -444,34 +528,24 @@ sub writeListAndReferences {
             return FALSE;
         }
     }
-
-    print $NEWLIST "0=$containerName\n";
-    print $NEWLIST "#\n";
     
     while( my $line = <$OLDLIST> ) {
         chomp $line;
         
         # Une ligne du fichier c'est
-        # Cas objet : 0/PYRAMID_IMG_15_15656_5423
+        # Cas fichier : 0/IMAGE/15/AB/CD/EF.tif
         my @parts = split("/", $line);
-        # La première partie est donc toujours l'index du container, déjà connu
-        shift(@parts);
+        # La première partie est donc toujours l'index de la racine, qui est soit un dossier
+        my $rootIndex = shift(@parts);
 
-        # Dans le cas d'un stockage objet, on a un nom d'objet de la forme BLA_BLA_DATATYPE_LEVEL_COL_ROW
-        # DATATYPE vaut MSK ou IMG
-        my @p = split("_", join("", @parts));
-        my $col = $p[-2];
-        my $row = $p[-1];
-        my $level = $p[-3];
-        my $dataType = $p[-4];
+        # Dans le cas d'un stockage fichier, le premier élément du chemin est maintenant le type de donnée
+        my $dataType = shift(@parts);
+        # et le suivant est le niveau
+        my $level = shift(@parts);
 
-        # Dans le cas objet, la racine est seulement le conteneur, il faut aussi remplacer le nom de la pyramide qui est contenu dans le nom de l'objet
-        my $ancestorSlab = $line;
-        $ancestorSlab =~ s/^[0-9]+/$containerName/;
-        
-        my $newSlab = "${containerName}/${newPyrName}_${dataType}_${level}_${col}_${row}";
+        # Dans le cas fichier, seule la racine est à remplacer par celle de la nouvelle pyramide : donc c'est bon, $newSlab est correct
 
-        if (! $newpyr->ownMasks() && $dataType eq "MSK") {
+        if (! $newpyr->ownMasks() && $dataType eq "MASK") {
             # On ne veut pas des masques dans la pyramide finale, donc on ne lie pas ceux de l'ancienne pyramide
             next;
         }
@@ -480,15 +554,34 @@ sub writeListAndReferences {
             # La dalle appartient à un niveau qui n'est pas voulu dans la nouvelle pyramide
             next;
         }
+        
+        my ($col,$row) = $newpyr->{levels}->{$level}->getFromSlabPath($line);
+
+        if (! exists $ancestorRoots{$rootIndex}) {
+            ERROR(sprintf "Old pyramid list ($ancestorListPath) uses an undefined root ID : %s", $rootIndex);
+            return FALSE;
+        }
+
+        my $rootValue = $ancestorRoots{$rootIndex};
+        my $ancestorSlab = $line;
+        $ancestorSlab =~ s/^[0-9]+/$rootValue/;
+        my $newSlab = $line;
+        $newSlab =~ s/^[0-9]+/$newRoot/;
 
         if ($updateMode eq "slink") {
-            if (! defined COMMON::ProxyStorage::symLink("SWIFT", $ancestorSlab, "SWIFT", $newSlab)) {
+            if (! defined COMMON::ProxyStorage::symLink("FILE", $ancestorSlab, "FILE", $newSlab)) {
                 ERROR("The ancestor slab '$ancestorSlab' cannot be referenced by sym link in the new pyramid");
                 return FALSE;
             }
         }
+        elsif ($updateMode eq "hlink") {
+            if (! COMMON::ProxyStorage::hardLink("FILE", $ancestorSlab, "FILE", $newSlab)) {
+                ERROR("The ancestor slab '$ancestorSlab' cannot be referenced by hard link in the new pyramid");
+                return FALSE;
+            }
+        }
         elsif ($updateMode eq "copy") {
-            if (! COMMON::ProxyStorage::copy("SWIFT", $ancestorSlab, "SWIFT", $newSlab)) {
+            if (! COMMON::ProxyStorage::copy("FILE", $ancestorSlab, "FILE", $newSlab)) {
                 ERROR("The ancestor slab '$ancestorSlab' cannot be referenced by copy in the new pyramid");
                 return FALSE;
             }
@@ -497,22 +590,77 @@ sub writeListAndReferences {
         if (! $forest->containsNode($level,$col,$row)) {
             # This image is not in the forest, it won't be modified by this generation.
             # We add it now to the list (real file path)
-
-            # slink : we print the name of the slab in the old pyramid
-            # else : object is duplicate, we put the name of the slab in the new pyramid
-            if ($updateMode eq 'slink' || $updateMode eq 'inject') {
+            my $slab = $line;
+            $slab =~ s/^[0-9]+\///;
+            # On retire l'index de la racine :
+            # - On le rajoute incrémenté de 1 dans le cas d'un chaînage slink
+            #   Ex :
+            #      Dans la liste de l'ancêtre, on avait 12/<Chemin ou nom de l'objet de la dalle>
+            #      Dans la nouvelle liste, on aura 13/<Chemin ou nom de l'objet de la dalle>
+            #   Ainsi on libère l'index 0 pour les dalles propre à la nouvelle pyramide
+            # - On met zéro sinon, la dalle étant importée dans la nouvelle pyramide (pas de dépendance avec l'ancêtre)
+            if ($updateMode eq 'slink') {
+                printf $NEWLIST "%s/$slab\n", $rootIndex + 1;
+            } elsif ($updateMode eq 'inject') {
+                # Dans le cas injectif, on a laissé le fichier ou lien tel quel, on remet donc la ligne telle quelle
                 print $NEWLIST "$line\n";
             } else {
-                my $slab = $newSlab;
-                $slab =~ s/^$containerName/0/;
-                print $NEWLIST "$slab\n";
+                print $NEWLIST "0/$slab\n";
             }
+            # Root is used : we incremente its counter
+            $ancestorRootsUse{$rootIndex}++;
         }
         
     }
     
     close $OLDLIST;
     close $NEWLIST;
+
+    # Now, we can write binding between ID and root, testing counter.
+    # We write at the top of the list file, caches' roots, using Tie library
+    my @NEWLISTHDR;
+
+    if ($updateMode eq "inject") {
+        # En mode injection, il ne faut pas écrire directement le fichier de la nouvelle pyramide, car c'est celui de l'ancêtre
+
+        if (! tie @NEWLISTHDR, 'Tie::File', $newListPathTmp) {
+            ERROR("Cannot write the header of the new pyramid list file : $newListPathTmp");
+            return FALSE;
+        }
+    } else {
+        # Sinon, on peut directement écrire dans le fichier liste final de la nouvelle pyramide
+
+        if (! tie @NEWLISTHDR, 'Tie::File', $newListPath) {
+            ERROR("Cannot write the header of the new pyramid list file : $newListPath");
+            return FALSE;
+        }
+    }
+
+    unshift @NEWLISTHDR,"#\n";
+    
+    if ($updateMode eq 'slink') {
+        while ( my ($rootID,$root) = each(%ancestorRoots) ) {
+            if ($ancestorRootsUse{$rootID} > 0) {
+                # Used roots are written in the header, incremented
+                unshift @NEWLISTHDR,(sprintf "%s=%s", $rootID + 1, $root);
+            }
+        }
+    }
+    elsif ($updateMode eq 'inject') {
+        while ( my ($rootID,$root) = each(%ancestorRoots) ) {
+            if ($rootID == 0) {
+                # La racine de la nouvelle pyramide (= l'ancienne) sera ajoutée après, pour être en première ligne
+                next;
+            }
+            if ($ancestorRootsUse{$rootID} > 0) {
+                # Used roots are written in the header, like in the ancestor
+                unshift @NEWLISTHDR,(sprintf "%s=%s", $rootID, $root);
+            }
+        }
+    }
+    
+    unshift @NEWLISTHDR,"0=$newRoot\n";
+    untie @NEWLISTHDR;
 
     if ($updateMode eq "inject") {
         # On peut maintenant mettre le nouveau fichier liste à la place de l'ancien
@@ -578,7 +726,7 @@ sub doIt {
         my $ancestorDescriptor = File::Spec->catdir($params->{pyramid}->{pyr_desc_path_old}, $params->{pyramid}->{pyr_name_old});
         $ancestorDescriptor .= ".pyr" if ($ancestorDescriptor !~ m/\.pyr/i);
 
-        $objAncestorPyramid = COMMON::PyramidRaster->new("DESCRIPTOR", $ancestorDescriptor );
+        $objAncestorPyramid = COMMON::PyramidVector->new("DESCRIPTOR", $ancestorDescriptor );
         if (! defined $objAncestorPyramid) {
             ERROR("Cannot load ancestor pyramid !");
             return FALSE;
@@ -589,8 +737,8 @@ sub doIt {
             return FALSE;
         }
 
-        if ($objAncestorPyramid->getStorageType() ne "SWIFT") {
-            ERROR("Ancestor pyramid have to be a SWIFT pyramid !");
+        if ($objAncestorPyramid->getStorageType() ne "FILE") {
+            ERROR("Ancestor pyramid have to be a FILE pyramid !");
             return FALSE;
         }
 
@@ -600,11 +748,11 @@ sub doIt {
         if ($updateMode eq "inject") {
             WARN("'inject' update mode is selected, ancestor is modified, without possible rollback.");
             $params->{pyramid}->{pyr_desc_path} = $objAncestorPyramid->getDescriptorDir();
-            $params->{pyramid}->{pyr_data_container_name} = $objAncestorPyramid->getDataContainer();
+            $params->{pyramid}->{pyr_data_path} = $objAncestorPyramid->getDataRoot();
             $params->{pyramid}->{pyr_name_new} = $objAncestorPyramid->getName();
         }
     }
-
+    
     #######################
     # load data source
     
@@ -615,33 +763,20 @@ sub doIt {
         ERROR("Cannot load data sources !");
         return FALSE;
     }
-    
-    my ($ok, $pixelIn) = $objDSL->getPixelFromSources();
-    if (! $ok) {
-        ERROR("Cannot extract ONE pixel information from sources");
-        return FALSE;
-    }
 
     #######################
     # create a pyramid
     
     ALWAYS(">>> Load the new pyramid ...");
     
-    $objPyramid = COMMON::PyramidRaster->new("VALUES", $params->{pyramid}, $objAncestorPyramid, $pixelIn );
+    $objPyramid = COMMON::PyramidVector->new("VALUES", $params->{pyramid}, $objAncestorPyramid );
     if (! defined $objPyramid) {
         ERROR("Cannot create output Pyramid !");
         return FALSE;
     }
 
-    if ($objPyramid->getStorageType() ne "SWIFT") {
-        ERROR("New pyramid have to be a SWIFT pyramid !");
-        return FALSE;
-    }
-
-    # Get swift token
-
-    if (! COMMON::ProxyStorage::getSwiftToken($objPyramid->keystoneConnection())) {
-        ERROR("Cannot get swift token");
+    if ($objPyramid->getStorageType() ne "FILE") {
+        ERROR("New pyramid have to be a FILE pyramid !");
         return FALSE;
     }
 
@@ -734,7 +869,7 @@ sub doIt {
         return FALSE;
     }
     
-    DEBUG(sprintf "FOREST (debug export) = %s", $objForest->exportForDebug);
+    DEBUG(sprintf "FOREST (debug export) = %s", $objForest->exportForDebug());
     
     return TRUE;
 }
@@ -767,12 +902,7 @@ Group: Command's options
 
     --conf=path - Path to configuration file of the pyramid. This option is mandatory.
 
-Group: Mandatory environment variable
-
-    ROK4_SWIFT_AUTHURL
-    ROK4_SWIFT_ACCOUNT
-    ROK4_SWIFT_USER
-    ROK4_SWIFT_PASSWD
+    --env=path - Path to environment file of all pyramid, it's the common configuration. This option is optional. By default, the file configuration of install is used.
 
 Group: Write a configuration file
 
@@ -786,7 +916,7 @@ A file configuration can be composed of sections and parameters following :
 
 In a data source configuration, sections are level ID, from which the data source is used.
 
-Group: BE4-SWIFT global configuration file
+Group: BE4 global configuration file
 
 Properties by section.
 
@@ -802,7 +932,7 @@ Example:
     (start code)
     [ logger ]
     log_path = /var/log
-    log_file = be4swift_log_yyyy-mm-dd.txt
+    log_file = be4_log_yyyy-mm-dd.txt
     log_level = INFO
     (end code)
 
@@ -818,17 +948,16 @@ Example:
 
 Topic: pyramid
 
-For more informations about properties, see <BE4SWIFT::Pyramid>.
+For more informations about properties, see <BE4::Pyramid>.
 
-    pyr_name_new - Name of the new pyramid, used to name the descriptor, the pyramid's list, the temporary directory and prefix the Ceph objects. Mandatory.
-    pyr_desc_path - Directory path, where to write the descriptor and the list. Mandatory.
-    pyr_data_container_name - Mandatory.
-    keystone_connection - Force Swift authentication with keystone. Default value : false
+    pyr_name_new - Name of the new pyramid, used to name the descriptor, the pyramid's list, the data directory and the temporary directory.
+    pyr_desc_path - Directory path, where to write the descriptor. Mandatory.
+    pyr_data_path - Directory path, where to write the cache. Mandatory.
 
-    pyr_name_old - Ancestor's name. If this parameter is present, generation is an update.
-    pyr_desc_path_old - Directory path where to find the ancestor's descriptor.
+    pyr_name_old - If existing pyramid, its name. If this parameter is present, generation is an update.
+    pyr_desc_path_old - If existing pyramid, directory path where to find the descriptor.
     update_mode - Possible values :
-        slink, copy : existing pyramid, the way the new cache will reference the ancestor's cache.
+        slink, hlink, copy : existing pyramid, the way the new cache will reference the ancestor's cache.
         inject : no new pyramid. The old one is updated. CAUTION : old pyramid is irreversibly modified
 
     compression - Possible values : raw, jpg, zip, lzw, png, pkb. PNG compression is not an official compression for tiff format (just readable by rok4). Default : raw.
@@ -844,11 +973,13 @@ For more informations about properties, see <BE4SWIFT::Pyramid>.
 
     sampleformat - Possible values : uint, float. Have to be the same as source. Mandatory if no ancestor and no images input.
 
-    samplesperpixel - Possible values : 1, 3, 4. Have to be the same as source. Mandatory if no ancestor and no images input.
+    samplesperpixel - Possible values : 1, 2, 3, 4. Have to be the same as source. Mandatory if no ancestor and no images input.
 
-    photometric - Possible values : gray, rgb. Have to be consistent with the samples per pixel. 1 -> gray and 3,4 -> rgb. Default : rgb.
+    photometric - Possible values : gray, rgb. Have to be consistent with the samples per pixel. 1,2 -> gray and 3,4 -> rgb. Default : rgb.
 
     interpolation - Possible values : nn, linear, bicubic, lanczos. Interpolation used to resampled images (in mergeNtiff). Nodata pixel are excluded by the interpolation if we use masks. Default : bicubic.
+
+    dir_depth - Image's depth from the level directory. depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif. 2 if not provided and no ancestor.
 
     tms_name - TMS file name, with extension *.tms*. Mandatory if no ancestor.
 
@@ -861,27 +992,29 @@ For more informations about properties, see <BE4SWIFT::Pyramid>.
 Examples:
     (start code)
     [ pyramid ]
-    tms_name            = PM.tms
-    tms_path = /home/ign/TILEMATRIXSETS
+    pyr_data_path = /home/IGN/PYRAMIDS
+    pyr_desc_path = /home/IGN/DESCRIPTOR
+    pyr_name_new = ORTHO
+    pyr_level_bottom = 19
+    
+    tms_name = LAMB93_10cm.tms
+    tms_path = /home/IGN/TMS
 
-    pyr_data_container_name = PYRAMIDS
-    pyr_desc_path = /home/ign/PYRAMIDS
-    pyr_name_new = SWIFT_DALLE
+    dir_depth = 2
+    image_width = 16
+    image_height = 16
 
-    pyr_level_top = 5
-
-    compression         = zip
-    image_width         = 8
-    image_height        = 8
-    tiles_storage = FALSE
+    export_masks = TRUE
+    
+    compression         = png
     bitspersample       = 8
     sampleformat        = uint
     photometric         = rgb
     samplesperpixel     = 3
     interpolation       = bicubic
 
-    color               = 0,255,0
-
+    ; red as nodata color
+    color               = 255,0,0 
     (end code)
 
 Topic: process
@@ -911,6 +1044,7 @@ Group: Paths in brief
 
     - Descriptor file : *pyr_desc_path/pyr_name.pyr*
     - List file: *pyr_desc_path/pyr_name.list*
+    - Cache directory: *pyr_data_path/pyr_name/*
     - TMS file: *tms_path/tms_name*
     - Scripts: *path_shell/SCRIPT_X.sh*
     - Temporary directory: *path_temp/pyr_name_new/SCRIPT_X*

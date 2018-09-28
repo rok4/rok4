@@ -58,7 +58,7 @@ Attributes:
     sources - hash array - Source images from which this node is generated. One image source :
 |               img - string - Absolute path to the image
 |               msk - string - Absolute path to the associated mask (optionnal)
-|               sourcePyramid - <COMMON::Pyramid> - Pyramid which image belong to
+|               sourcePyramid - <COMMON::PyramidRaster> - Pyramid which image belong to
 =cut
 
 ################################################################################
@@ -388,7 +388,7 @@ Returns
     A source image, as an hash :
 |               img - string - Path to the image (object or file)
 |               msk - string - Path to the associated mask (optionnal, object or file)
-|               sourcePyramid - <COMMON::Pyramid> - Pyramid which image belong to
+|               sourcePyramid - <COMMON::PyramidRaster> - Pyramid which image belong to
 =cut
 sub getSource {
     my $this = shift;
