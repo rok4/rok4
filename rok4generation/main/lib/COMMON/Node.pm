@@ -472,6 +472,16 @@ sub setCode {
     $this->{code} = $code;
 }
 
+# Function: getUpperLeftTile
+sub getUpperLeftTile {
+    my $this = shift;
+
+    return (
+        $this->{col} * $this->{graph}->getPyramid()->getTilesPerWidth(),
+        $this->{row} * $this->{graph}->getPyramid()->getTilesPerHeight()
+    );
+}
+
 # Function: getBBox
 sub getBBox {
     my $this = shift;
@@ -479,8 +489,8 @@ sub getBBox {
     my @Bbox = $this->{tm}->indicesToBbox(
         $this->{col},
         $this->{row},
-        $this->{graph}->getPyramid->getTilesPerWidth,
-        $this->{graph}->getPyramid->getTilesPerHeight
+        $this->{graph}->getPyramid()->getTilesPerWidth(),
+        $this->{graph}->getPyramid()->getTilesPerHeight()
     );
     
     return @Bbox;

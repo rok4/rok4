@@ -88,7 +88,9 @@ use COMMON::NNGraph;
 use COMMON::Array;
 
 use COMMON::ShellCommandsRaster;
+use COMMON::ShellCommandsVector;
 use COMMON::PyramidRaster;
+use COMMON::PyramidVector;
 use COMMON::Script;
 use COMMON::DataSourceLoader;
 use COMMON::DataSource;
@@ -207,7 +209,7 @@ sub _load {
 
     ######### TESTS DE TYPE ###########
 
-    if (ref ($pyramid) eq "COMMON::PyramidVector") {
+    if (ref ($this->{pyramid}) eq "COMMON::PyramidVector") {
         if ($DSL->getType() ne "VECTOR") {
             ERROR("Datasources must have VECTOR type to generate a vector pyramid");
             return FALSE;
@@ -217,7 +219,7 @@ sub _load {
             return FALSE;
         }
     }
-    elsif (ref ($pyramid) eq "COMMON::PyramidRaster") {
+    elsif (ref ($this->{pyramid}) eq "COMMON::PyramidRaster") {
         if ($DSL->getType() ne "RASTER") {
             ERROR("Datasources must have RASTER type to generate a raster pyramid");
             return FALSE;
@@ -258,14 +260,14 @@ sub _load {
 
     ############# PROCESS #############
 
-    if (ref ($pyramid) eq "COMMON::PyramidVector") {
+    if (ref ($this->{pyramid}) eq "COMMON::PyramidVector") {
         $this->{commands} = COMMON::ShellCommandsVector->new($this->{pyramid});
         if (! defined $this->{commands}) {
             ERROR ("Can not load Vector Commands !");
             return FALSE;
         }
     }
-    elsif (ref ($pyramid) eq "COMMON::PyramidRaster") {
+    elsif (ref ($this->{pyramid}) eq "COMMON::PyramidRaster") {
         $this->{commands} = COMMON::ShellCommandsRaster->new($this->{pyramid}, $params_process->{use_masks});
         if (! defined $this->{commands}) {
             ERROR ("Can not load Raster Commands !");
@@ -348,7 +350,7 @@ sub _load {
     
     ######## PROCESS (suite) #########
 
-    if (ref ($pyramid) eq "COMMON::PyramidRaster") {
+    if (ref ($this->{pyramid}) eq "COMMON::PyramidRaster") {
         $this->{commands}->setConfDir($this->{scripts}[0]->getMntConfDir(), $this->{scripts}[0]->getDntConfDir());
     }
     

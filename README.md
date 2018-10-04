@@ -73,8 +73,8 @@ Si la gestion du stockage objet est voulue :
 
 Les librairies Perl sont installable via l'outil CPAN : `cpan Lib::Perl` (en sudo pour une installation système). Certaines des librairies utilisées sont installées avec le paquet `perl-base`
 
-* Ceph::Rados;
 * Data::Dumper
+* DBD::Pg
 * Digest::SHA
 * ExtUtils::MakeMaker
 * File::Find::Rule
@@ -96,7 +96,7 @@ On installe les librairies Perl GDAL via le paquet :
 
 Soit :
 ```
-cpan Data::Dumper Digest::SHA ExtUtils::MakeMaker File::Find::Rule File::Map FindBin Geo::GDAL Geo::OGR Geo::OSR HTTP::Request HTTP::Request::Common HTTP::Response Log::Log4perl LWP::UserAgent Math::BigFloat Test::More Tie::File XML::LibXML Ceph::Rados
+cpan DBD::Pg Data::Dumper Digest::SHA ExtUtils::MakeMaker File::Find::Rule File::Map FindBin Geo::GDAL Geo::OGR Geo::OSR HTTP::Request HTTP::Request::Common HTTP::Response Log::Log4perl LWP::UserAgent Math::BigFloat Test::More Tie::File XML::LibXML
 ```
 
 Si volonté d'utiliser l'outil graphique `tms-converter-gui.pl` :

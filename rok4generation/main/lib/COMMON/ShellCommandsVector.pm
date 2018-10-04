@@ -122,23 +122,27 @@ sub new {
 }
 
 ####################################################################################################
-#                                        Group: OGR 2 OGR                                          #
+#                                        Group: MAKE JSONS                                         #
 ####################################################################################################
 
-# Constant: OGR2OGR_W
-use constant OGR2OGR_W => 1;
+# Constant: MAKEJSONS_W
+use constant MAKEJSONS_W => 1;
 
-my $MAKETILES = <<'FUNCTION';
-Ogr2ogrs () {
+my $MAKEJSONS = <<'FUNCTION';
+MakeJsons () {
     local bbox=$1
     local dburl=$2
     shift 2
+
+    mkdir -p ${TMP_DIR}/jsons/
+    rm ${TMP_DIR}/jsons/*.json
 
     for i in `seq 1 $#`;
     do
         tablename=$1
         jsonname="${tablename}.json"
-        ogr2ogr -f "GeoJSON" -spat $bbox "$jsonname" $dburl $tablename
+        ogr2ogr -f "GeoJSON" -spat $bbox "${TMP_DIR}/jsons/$jsonname" PG:"$dburl" $tablename
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         shift
     done
     
@@ -146,33 +150,32 @@ Ogr2ogrs () {
 FUNCTION
 
 =begin nd
-Function: makeTiles
-
-Use the 'MergeNtiff' bash function. Write a configuration file, with sources.
-
-(see mergeNtiff.png)
+Function: makeJsons
 
 Parameters (list):
-    node - <Node> - Node to generate thanks to a 'mergeNtiff' command.
+    node - <Node> - Top node to generate thanks to a 'tippecanoe' command.
+    databaseSource - <COMMON::DatabaseSource> - To use to extract vector data.
     
 Example:
-|    MergeNtiff 19_397_3134.txt
+|    MakeJsons 
 
 Returns:
     An array (code, weight), ("",-1) if error.
 =cut
-sub makeTiles {
+sub makeJsons {
     my $this = shift;
     my $node = shift;
+    my $databaseSource = shift;
     
-    my ($c, $w);
-    my ($code, $weight) = ("",MERGENTIFF_W);
+    my ($code, $weight) = ("",MAKEJSONS_W);
+
+    $code = $databaseSource->getCommandMakeJsons($node->getBBox());
 
     return ($code,$weight);
 }
 
 ####################################################################################################
-#                                        Group: MakeTiles                                          #
+#                                        Group: MAKE TILES                                         #
 ####################################################################################################
 
 # Constant: MAKETILES_W
@@ -180,23 +183,23 @@ use constant MAKETILES_W => 1;
 
 my $MAKETILES = <<'FUNCTION';
 MakeTiles () {
-    tippecanoe __tpc__
-    rm dossier
+
+    mkdir -p ${TMP_DIR}/pbfs/
+    rm -r ${TMP_DIR}/pbfs/*
+
+    tippecanoe __tpc__ --no-tile-compression -Z ${TOP_LEVEL} -z ${BOTTOM_LEVEL} -e ${TMP_DIR}/pbfs/  ${TMP_DIR}/jsons/*.json
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 FUNCTION
 
 =begin nd
 Function: makeTiles
 
-Use the 'MergeNtiff' bash function. Write a configuration file, with sources.
-
-(see mergeNtiff.png)
-
 Parameters (list):
-    node - <Node> - Node to generate thanks to a 'mergeNtiff' command.
+    node - <Node> - Top node to generate thanks to a 'tippecanoe' command.
     
 Example:
-|    MergeNtiff 19_397_3134.txt
+|    MakeTiles
 
 Returns:
     An array (code, weight), ("",-1) if error.
@@ -206,7 +209,9 @@ sub makeTiles {
     my $node = shift;
     
     my ($c, $w);
-    my ($code, $weight) = ("",MERGENTIFF_W);
+    my ($code, $weight) = ("",MAKETILES_W);
+
+    $code = "MakeTiles\n";
 
     return ($code,$weight);
 }
@@ -224,7 +229,13 @@ BackupListFile () {
 }
 
 StoreSlab () {
-    pbf2cache __p2c__
+    local level=$1
+    local ulcol=$2
+    local ulrow=$3
+    local imgName=$4
+
+    pbf2cache __p2c__ -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow -bucket ${PYR_BUCKET} $imgName
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 P2CFUNCTION
 
@@ -235,7 +246,13 @@ BackupListFile () {
 
 
 StoreSlab () {
-    pbf2cache __p2c__
+    local level=$1
+    local ulcol=$2
+    local ulrow=$3
+    local imgName=$4
+
+    pbf2cache __p2c__ -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow -container ${PYR_CONTAINER} $imgName
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 P2CFUNCTION
 
@@ -248,7 +265,13 @@ BackupListFile () {
 
 
 StoreSlab () {
-    pbf2cache __p2c__
+    local level=$1
+    local ulcol=$2
+    local ulrow=$3
+    local imgName=$4
+
+    pbf2cache __p2c__ -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow -pool ${PYR_POOL} $imgName
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 P2CFUNCTION
 
@@ -260,23 +283,27 @@ BackupListFile () {
 
 
 StoreSlab () {
-    pbf2cache __p2c__
+    local level=$1
+    local ulcol=$2
+    local ulrow=$3
+    local imgName=$4
+
+    local dir=`dirname ${PYR_DIR}/$imgName`
+    if [ ! -d $dir ] ; then mkdir -p $dir ; fi
+
+    pbf2cache __p2c__ -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow ${PYR_DIR}/$imgName
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 P2CFUNCTION
 
 =begin nd
 Function: pbf2cache
 
-Copy image from work directory to cache and transform it (tiled and compressed) thanks to the 'PBF2CACHE' bash function (PBF2CACHE).
-
-(see PBF2CACHE.png)
-
 Example:
-|    PBF2CACHE ${TMP_DIR}/19_395_3137.tif IMAGE/19/02/AF/Z5.tif
+|    StoreSlab 10 6534 9086 IMAGE/10/...
 
 Parameter:
-    node - <Node> - Node whose image have to be transfered in the cache.
-    workDir - string - Work image directory, can be an environment variable.
+    node - <Node> - Node whose image have to be transfered in the cache from PBF tiles (generated by tippecanoe).
 
 Returns:
     An array (code, weight), ("",-1) if error.
@@ -286,9 +313,11 @@ sub pbf2cache {
     my $node = shift;
     
     my $cmd = "";
-    my $weight = 0;
-    
+    my $weight = PBF2CACHE_W;
 
+    my $pyrName = $this->{pyramid}->getSlabPath("IMAGE", $node->getLevel(), $node->getCol(), $node->getRow(), FALSE);
+    $cmd = sprintf "StoreSlab %s %s %s %s\n", $node->getLevel(), $node->getUpperLeftTile(), $pyrName;
+    
     return ($cmd,$weight);
 }
 
@@ -307,27 +336,23 @@ sub getConfiguredFunctions {
 
     my $functions = "";
 
-    ######## OGR2OGRS #########
+    ######## MAKEJSONS ########
 
-    my $conf_o2o = ""
-
-    $functions .= $OGR2OGRS;
-
-    $functions =~ s/__o2o__/$conf_o2o/g;
+    $functions .= $MAKEJSONS;
 
     ######## MAKETILES ########
 
-    my $conf_p2c = ""
+    my $conf_tpc = sprintf "-s %s", $this->{pyramid}->getTileMatrixSet()->getSRS();
 
     $functions .= $MAKETILES;
 
-    $functions =~ s/__tpc__/$conf_p2c/g;
+    $functions =~ s/__tpc__/$conf_tpc/g;
 
     ######## PBF2CACHE ########
 
     # pour les images    
     my $conf_p2c = sprintf "-t %s %s",
-        $this->{pyramid}->getTileMatrixSet()->getTileWidth(), $this->{pyramid}->getTileMatrixSet()->getTileHeight();
+        $this->{pyramid}->getTilesPerWidth(), $this->{pyramid}->getTilesPerHeight();
 
     # Selon le type de stockage, on a une version différente des fonctions de stockage final
     if ($this->{pyramid}->getStorageType() eq "FILE") {

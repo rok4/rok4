@@ -95,6 +95,88 @@ private:
      * \~english \brief image's name
      */
     std::string name;
+
+    /**
+     * \~french \brief Contexte de stockage de l'image ROK4
+     * \~english \brief Image's storage context
+     */    
+    Context* context;
+
+    /**
+     * \~french \brief Nombre de tuile dans le sens de la largeur
+     * \~english \brief Number of tiles, widthwise
+     */
+    int tileWidthwise;
+    /**
+     * \~french \brief Nombre de tuile dans le sens de la hauteur
+     * \~english \brief Number of tiles, heightwise
+     */
+    int tileHeightwise;
+    /**
+     * \~french \brief Nombre de tuile dans l'image
+     * \~english \brief Number of tiles
+     */
+    int tilesNumber;
+
+    
+    /******* Pour l'écriture *******/
+    
+    /**
+     * \~french \brief Position du pointeur dans le fichier en cours d'écriture
+     * \~english \brief Pointer position in opened written file
+     */
+    uint32_t position;
+
+    /**
+     * \~french \brief Adresse du début de chaque tuile dans le fichier
+     * \~english \brief Tile's start address, in the file
+     */
+    uint32_t *tilesOffset;
+    /**
+     * \~french \brief Taille de chaque tuile dans le fichier
+     * \~english \brief Tile's size, in the file
+     */
+    uint32_t *tilesByteCounts;
+
+
+    /**
+     * \~french \brief Écrit l'en-tête TIFF de l'image ROK4
+     * \details L'en-tête est de taille fixe (ROK4_IMAGE_HEADER_SIZE) et contient toutes les métadonnées sur l'image. Elle ne sera pas lue par le serveur ROK4 (c'est pourquoi sa taille doit être fixe), mais permet de lire l'image avec un logiciel autre (avoir une image TIFF respectant les spécifications).
+     * \return VRAI en cas de succès, FAUX sinon
+     * \~english \brief Write the ROK4 image's TIFF header
+     * \return TRUE if success, FALSE otherwise
+     */
+    bool writeHeader();
+    /**
+     * \~french \brief Finalise l'écriture de l'image ROK4
+     * \details Cela comprend l'écriture des index et tailles des tuiles
+     * \return VRAI en cas de succès, FAUX sinon
+     * \~english \brief End the ROK4 image's writting
+     * \return TRUE if success, FALSE otherwise
+     */
+    bool writeFinal();
+
+    /**
+     * \~french \brief Prépare les buffers pour les éventuelles compressions
+     * \return VRAI en cas de succès, FAUX sinon
+     * \~english \brief Prepare buffers for compressions
+     * \return TRUE if success, FALSE otherwise
+     */
+    bool prepareBuffers();
+    /**
+     * \~french \brief Nettoie les buffers de fonctionnement
+     * \return VRAI en cas de succès, FAUX sinon
+     * \~english \brief Clean temporary buffers
+     * \return TRUE if success, FALSE otherwise
+     */
+    bool cleanBuffers();
+
+
+    /**************************** VECTEUR (Ecriture uniquement) ****************************/
+
+    bool isVector;
+
+    /**************************** RASTER (Lecture et écriture) ****************************/
     /**
      * \~french \brief Photométrie des données (rgb, gray...)
      * \~english \brief Data photometric (rgb, gray...)
@@ -128,9 +210,6 @@ private:
      * \~english \brief Byte pixel's size
      */
     int pixelSize;
-
-    /**************************** Pour la lecture ****************************/
-
     /**
      * \~french \brief Largeur d'une tuile de l'image en pixel
      * \~english \brief Image's tile width, in pixel
@@ -141,21 +220,9 @@ private:
      * \~english \brief Image's tile height, in pixel
      */
     int tileHeight;
-    /**
-     * \~french \brief Nombre de tuile dans le sens de la largeur
-     * \~english \brief Number of tiles, widthwise
-     */
-    int tileWidthwise;
-    /**
-     * \~french \brief Nombre de tuile dans le sens de la hauteur
-     * \~english \brief Number of tiles, heightwise
-     */
-    int tileHeightwise;
-    /**
-     * \~french \brief Nombre de tuile dans l'image
-     * \~english \brief Number of tiles
-     */
-    int tilesNumber;
+
+
+    /******* Pour la lecture *******/
 
     /**
      * \~french \brief Taille brut en octet d'une ligne d'une tuile
@@ -168,16 +235,7 @@ private:
      * \~english \brief Raw byte size of a tile
      */
     int rawTileSize;
-    
 
-    /**
-     * \~french \brief Contexte de stockage de l'image ROK4
-     * \~english \brief Image's storage context
-     */    
-    Context* context;
-
-    /**************************** Pour la lecture ****************************/
-    
     /**
      * \~french \brief Nombre de tuiles mémorisées
      * \~english \brief Number of memorized tiles
@@ -213,63 +271,6 @@ private:
      */
     uint8_t* memorizeRawTile ( size_t& size, int tile );
 
-    /**************************** Pour l'écriture ****************************/
-    
-    /**
-     * \~french \brief Position du pointeur dans le fichier en cours d'écriture
-     * \~english \brief Pointer position in opened written file
-     */
-    uint32_t position;
-
-    /**
-     * \~french \brief Adresse du début de chaque tuile dans le fichier
-     * \~english \brief Tile's start address, in the file
-     */
-    uint32_t *tilesOffset;
-    /**
-     * \~french \brief Taille de chaque tuile dans le fichier
-     * \~english \brief Tile's size, in the file
-     */
-    uint32_t *tilesByteCounts;
-
-    /**
-     * \~french \brief Taille du buffer #Buffer temporaire contenant la tuile à écrire (dans writeTile), compressée
-     * \~english \brief Temporary buffer #Buffer size, containing the compressed tile to write
-     */
-    size_t BufferSize;
-    
-    /**
-     * \~french \brief Buffer temporaire contenant la tuile à écrire (dans writeTile), compressée
-     * \~english \brief Buffer size, containing the compressed tile to write
-     */
-    uint8_t* Buffer;
-
-    /**
-     * \~french \brief Buffer utilisé par la zlib
-     * \details Pour les compressions PNG et DEFLATE uniquement
-     * \~english \brief Buffer used by zlib
-     */
-    uint8_t* zip_buffer;
-    /**
-     * \~french \brief Flux utilisé par la zlib
-     * \details Pour les compressions PNG et DEFLATE uniquement
-     * \~english \brief Stream used by zlib
-     */
-    z_stream zstream;
-    
-    /**
-     * \~french \brief Structure d'informations, utilisée par la libjpeg
-     * \details Pour la compression JPEG uniquement
-     * \~english \brief Informations structure used by libjpeg
-     */
-    struct jpeg_compress_struct cinfo;
-    /**
-     * \~french \brief Structure d'erreur utilisée par la libjpeg
-     * \details Pour la compression JPEG uniquement
-     * \~english \brief Error structure used by libjpeg
-     */
-    struct jpeg_error_mgr jerr;
-
 
     /**
      * \~french \brief Charge l'index des tuiles de l'image ROK4 à lire
@@ -278,70 +279,6 @@ private:
      * \return TRUE if success, FALSE otherwise
      */
     bool loadIndex();
-
-    /**
-     * \~french \brief Écrit l'en-tête TIFF de l'image ROK4
-     * \details L'en-tête est de taille fixe (ROK4_IMAGE_HEADER_SIZE) et contient toutes les métadonnées sur l'image. Elle ne sera pas lue par le serveur ROK4 (c'est pourquoi sa taille doit être fixe), mais permet de lire l'image avec un logiciel autre (avoir une image TIFF respectant les spécifications).
-     * \return VRAI en cas de succès, FAUX sinon
-     * \~english \brief Write the ROK4 image's TIFF header
-     * \return TRUE if success, FALSE otherwise
-     */
-    bool writeHeader();
-    /**
-     * \~french \brief Finalise l'écriture de l'image ROK4
-     * \details Cela comprend l'écriture des index et tailles des tuiles
-     * \return VRAI en cas de succès, FAUX sinon
-     * \~english \brief End the ROK4 image's writting
-     * \return TRUE if success, FALSE otherwise
-     */
-    bool writeFinal();
-
-    /**
-     * \~french \brief Prépare les buffers pour les éventuelles compressions
-     * \return VRAI en cas de succès, FAUX sinon
-     * \~english \brief Prepare buffers for compressions
-     * \return TRUE if success, FALSE otherwise
-     */
-    bool prepareBuffers();
-    /**
-     * \~french \brief Nettoie les buffers de fonctionnement
-     * \return VRAI en cas de succès, FAUX sinon
-     * \~english \brief Clean temporary buffers
-     * \return TRUE if success, FALSE otherwise
-     */
-    bool cleanBuffers();
-
-    /**
-     * \~french \brief Écrit une tuile de l'image ROK4
-     * \details L'écriture tiendra compte de la compression voulue #compression. Les tuiles doivent être écrites dans l'ordre (de gauche à droite, de haut en bas).
-     * \param[in] tileInd indice de la tuile à écrire
-     * \param[in] data données brutes (sans compression) à écrire
-     * \param[in] crop option pour le jpeg (voir #emptyWhiteBlock)
-     * \return VRAI en cas de succès, FAUX sinon
-     * \~english \brief Write a ROK4 image's tile
-     * \param[in] tileInd tile indice
-     * \param[in] data raw data (no compression) to write
-     * \param[in] crop jpeg option (see #emptyWhiteBlock)
-     * \return TRUE if success, FALSE otherwise
-     */
-    bool writeTile ( int tileInd, uint8_t *data, bool crop = false );
-
-    /**
-     * \~french \brief Écrit une tuile indépendante en tant qu'objet Ceph
-     * \details Le nom de l'objet/tuile sera #name _ col _ row
-     * \param[in] tileCol colonne de la tuile à écrire
-     * \param[in] tileRow ligne de la tuile à écrire
-     * \param[in] data données brutes (sans compression) à écrire
-     * \param[in] crop option pour le jpeg (voir #emptyWhiteBlock)
-     * \return VRAI en cas de succès, FAUX sinon
-     * \~english \brief Write a ROK4 tile as a ceph object
-     * \param[in] tileCol tile column
-     * \param[in] tileRow tile row
-     * \param[in] data raw data (no compression) to write
-     * \param[in] crop jpeg option (see #emptyWhiteBlock)
-     * \return TRUE if success, FALSE otherwise
-     */
-    bool writeTile( int tileCol, int tileRow, uint8_t* data, bool crop );
 
 
     /**
@@ -441,9 +378,96 @@ private:
     template<typename T>
     int _getline ( T* buffer, int line );
 
+    /******* Pour l'écriture *******/
+
+    /**
+     * \~french \brief Taille du buffer #Buffer temporaire contenant la tuile à écrire (dans writeTile), compressée
+     * \~english \brief Temporary buffer #Buffer size, containing the compressed tile to write
+     */
+    size_t BufferSize;
+    
+    /**
+     * \~french \brief Buffer temporaire contenant la tuile à écrire (dans writeTile), compressée
+     * \~english \brief Buffer size, containing the compressed tile to write
+     */
+    uint8_t* Buffer;
+
+    /**
+     * \~french \brief Buffer utilisé par la zlib
+     * \details Pour les compressions PNG et DEFLATE uniquement
+     * \~english \brief Buffer used by zlib
+     */
+    uint8_t* zip_buffer;
+    /**
+     * \~french \brief Flux utilisé par la zlib
+     * \details Pour les compressions PNG et DEFLATE uniquement
+     * \~english \brief Stream used by zlib
+     */
+    z_stream zstream;
+    
+    /**
+     * \~french \brief Structure d'informations, utilisée par la libjpeg
+     * \details Pour la compression JPEG uniquement
+     * \~english \brief Informations structure used by libjpeg
+     */
+    struct jpeg_compress_struct cinfo;
+    /**
+     * \~french \brief Structure d'erreur utilisée par la libjpeg
+     * \details Pour la compression JPEG uniquement
+     * \~english \brief Error structure used by libjpeg
+     */
+    struct jpeg_error_mgr jerr;
+
+
+    /**
+     * \~french \brief Écrit une tuile de l'image ROK4 raster
+     * \details L'écriture tiendra compte de la compression voulue #compression. Les tuiles doivent être écrites dans l'ordre (de gauche à droite, de haut en bas).
+     * \param[in] tileInd indice de la tuile à écrire
+     * \param[in] data données brutes (sans compression) à écrire
+     * \param[in] crop option pour le jpeg (voir #emptyWhiteBlock)
+     * \return VRAI en cas de succès, FAUX sinon
+     * \~english \brief Write a raster ROK4 image's tile
+     * \param[in] tileInd tile indice
+     * \param[in] data raw data (PBF) to write
+     * \param[in] crop JPEG option to empty white blocks
+     * \return TRUE if success, FALSE otherwise
+     */
+    bool writeTile ( int tileInd, uint8_t *data, bool crop = false );
+
+    /**
+     * \~french \brief Écrit une tuile de l'image ROK4 vecteur
+     * \param[in] tileInd indice de la tuile à écrire
+     * \param[in] data données brutes (sans compression) à écrire
+     * \param[in] pbfpath chemin vers la tuile PBF à écrire dans la dalle
+     * \return VRAI en cas de succès, FAUX sinon
+     * \~english \brief Write a vector ROK4 image's tile
+     * \param[in] tileInd tile indice
+     * \param[in] pbfpath path to PBF tile to write in the slab
+     * \return TRUE if success, FALSE otherwise
+     */
+    bool writeTile( int tileInd, char* pbfpath ) ;
+
+    /**
+     * \~french \brief Écrit une tuile indépendante en tant qu'objet Ceph
+     * \details Le nom de l'objet/tuile sera #name _ col _ row
+     * \param[in] tileCol colonne de la tuile à écrire
+     * \param[in] tileRow ligne de la tuile à écrire
+     * \param[in] data données brutes (sans compression) à écrire
+     * \param[in] crop option pour le jpeg (voir #emptyWhiteBlock)
+     * \return VRAI en cas de succès, FAUX sinon
+     * \~english \brief Write a ROK4 tile as a ceph object
+     * \param[in] tileCol tile column
+     * \param[in] tileRow tile row
+     * \param[in] data raw data (no compression) to write
+     * \param[in] crop jpeg option (see #emptyWhiteBlock)
+     * \return TRUE if success, FALSE otherwise
+     */
+    bool writeTile( int tileCol, int tileRow, uint8_t* data, bool crop );
+
+
 protected:
     /** \~french
-     * \brief Crée un objet Rok4Image à partir de tous ses éléments constitutifs
+     * \brief Crée un objet Rok4Image raster à partir de tous ses éléments constitutifs
      * \details Ce constructeur est protégé afin de n'être appelé que par l'usine Rok4ImageFactory, qui fera différents tests et calculs.
      * \param[in] width largeur de l'image en pixel
      * \param[in] height hauteur de l'image en pixel
@@ -461,7 +485,7 @@ protected:
      * \param[in] tileHeight hauteur en pixel de la tuile
      * \param[in] context contexte de stockage
      ** \~english
-     * \brief Create a Rok4Image object, from all attributes
+     * \brief Create a raster Rok4Image object, from all attributes
      * \param[in] width image width, in pixel
      * \param[in] height image height, in pixel
      * \param[in] resx X wise resolution
@@ -484,6 +508,12 @@ protected:
         int tileWidth, int tileHeight,
         Context* context
     );
+    /** \~french
+     * \brief Crée un objet Rok4Image vecteur à partir de tous ses éléments constitutifs
+     ** \~english
+     * \brief Create a vector Rok4Image object, from all attributes
+     */
+    Rok4Image ( std::string name, int tilePerWidth, int tilePerHeight, Context* context );
 
 public:
     
@@ -503,6 +533,15 @@ public:
         );
     }
 
+    /**
+     * \~french
+     * \brief Précise si l'image ROK4 est de type vecteur
+     * \~english
+     * \brief Precise if the ROK4 image is vector kind
+     */
+    inline bool isVectorSlab() {
+        return isVector;
+    }
     
     /**
      * \~french
@@ -592,9 +631,11 @@ public:
      * \details We remove read buffer and TIFF interface
      */
     ~Rok4Image() {
-        for ( int i = 0; i < memorySize; i++ ) if ( memorizedTiles[i] ) delete[] memorizedTiles[i];
-        delete[] memorizedTiles;
-        delete[] memorizedIndex;
+        if (! isVector) {
+            for ( int i = 0; i < memorySize; i++ ) if ( memorizedTiles[i] ) delete[] memorizedTiles[i];
+            delete[] memorizedTiles;
+            delete[] memorizedIndex;
+        }
         delete[] tilesOffset;
         delete[] tilesByteCounts;
     }
@@ -685,6 +726,8 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeTiles ( Image* pIn, int imageCol, int imageRow, bool crop );
+
+    int writePbfTiles ( int ulTileCol, int ulTileRow, char* rootDirectory );
 
     /**
      * \~french
@@ -845,6 +888,16 @@ public:
         std::string name, BoundingBox<double> bbox, double resx, double resy, int width, int height, int channels,
         SampleFormat::eSampleFormat sampleformat, int bitspersample, Photometric::ePhotometric photometric,
         Compression::eCompression compression, int tileWidth, int tileHeight, Context* context
+    );
+
+
+    /** \~french
+     * \brief Crée un objet Rok4Image vecteur, pour l'écriture
+     ** \~english
+     * \brief Create a vecteor Rok4Image object, for writting
+     */
+    Rok4Image* createRok4ImageToWrite (
+        std::string name, int tilePerWidth, int tilePerHeight, Context* context
     );
 };
 

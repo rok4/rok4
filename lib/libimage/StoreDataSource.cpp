@@ -191,6 +191,13 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
             return NULL;
         }
 
+
+        if ( tileSize == 0 ) {
+            LOGGER_DEBUG ( "Tuile non présente dans la dalle (taille nulle) " << name ) ;
+            delete[] indexheader;
+            return NULL;
+        }
+
         // Lecture de la tuile
         data = new uint8_t[tileSize];
         if (context->read(data, tileOffset, tileSize, name) < 0) {

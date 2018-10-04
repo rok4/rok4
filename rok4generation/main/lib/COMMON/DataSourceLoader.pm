@@ -195,7 +195,6 @@ sub _load {
 
     my $sources = $this->{dataSources};
     my $nbSources = 0;
-    my $type = undef;
 
     while( my ($level,$params) = each(%sourcesProperties) ) {
         my $datasource = COMMON::DataSource->new($level,$params);
@@ -204,7 +203,7 @@ sub _load {
             return FALSE;
         }
 
-        if (defined $this->{type} && $type ne $datasource->getType()) {
+        if (defined $this->{type} && $this->{type} ne $datasource->getType()) {
             ERROR("All data sources must have the same type, RASTER or VECTOR");
             return FALSE;
         } else {
@@ -346,6 +345,21 @@ sub getType {
 sub getDataSources {
     my $this = shift;
     return $this->{dataSources}; 
+}
+
+# Function: getDataSource
+sub getDataSource {
+    my $this = shift;
+    my $order = shift;
+
+
+    foreach my $datasource (@{$this->{dataSources}}) {
+        if ($order >= $datasource->getBottomOrder() && $order <= $datasource->getTopOrder()) {
+            return $datasource;
+        }
+    }
+
+    return undef; 
 }
 
 # Function: getNumberDataSources

@@ -258,6 +258,24 @@ DataStream* Rok4Server::TMSGetLayer ( Request* request ) {
     return new MessageDataStream ( res.str(),"application/xml" );
 }
 
+DataStream* Rok4Server::TMSGetLayerMetadata ( Request* request ) {
+
+    Layer* layer;
+    std::string serviceURL;
+    DataStream* errorResp = getLayerParamTMS(request, layer, serviceURL);
+
+    if ( errorResp ) {
+        return errorResp;
+    }
+    errorResp = NULL;
+
+
+    std::ostringstream res;
+    res << "{}";
+
+    return new MessageDataStream ( res.str(),"application/json" );
+}
+
 DataStream* Rok4Server::TMSGetCapabilities ( Request* request ) {
 
 

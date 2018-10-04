@@ -182,13 +182,13 @@ void error ( std::string message, int errorCode ) {
 
 /**
  ** \~french
- * \brief Fonction principale de l'outil createNodata
+ * \brief Fonction principale de l'outil work2cache
  * \details Tout est contenu dans cette fonction. Le "cropage" se fait grâce à la classe TiffNodataManager, et le tuilage / compression est géré Rok4Image
  * \param[in] argc nombre de paramètres
  * \param[in] argv tableau des paramètres
  * \return code de retour, 0 en cas de succès, -1 sinon
  ** \~english
- * \brief Main function for tool createNodata
+ * \brief Main function for tool work2cache
  * \details All instructions are in this function. the crop is handled by the class TiffNodataManager and Rok4Image make image tiled and compressed.
  * \param[in] argc parameters number
  * \param[in] argv parameters array

@@ -69,6 +69,7 @@ namespace RequestType {
         GETSERVICES,
         GETCAPABILITIES,
         GETLAYER,
+        GETLAYERMETADATA,
         GETMAP,
         GETTILE,
         GETFEATUREINFO,

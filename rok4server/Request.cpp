@@ -65,6 +65,7 @@ namespace RequestType {
         "GetServices",
         "GetCapabilities",
         "GetLayer",
+        "GetLayerMetadata",
         "GetMap",
         "GetTile",
         "GetFeatureInfo",
@@ -663,15 +664,12 @@ void Request::determineServiceAndRequest() {
         // C'est la profondeur du path à partir de la version 1.0.0 qui va permettre d'identifier
         // le tpye de requête
         if (params.size() == 0 && service == ServiceType::TMS) {
-            service = ServiceType::TMS;
-                
             std::stringstream ss(path);
             std::string token;
             char delim = '/';
             int tmsVersionPos = -1;
             std::vector<std::string> pathParts;
             while (std::getline(ss, token, delim)) {
-                LOGGER_INFO("'"+token+"'");
                 if (token == "1.0.0") {
                     tmsVersionPos = pathParts.size();
                 }
@@ -693,6 +691,11 @@ void Request::determineServiceAndRequest() {
             else if (tmsVersionPos == pathParts.size() - 2) {
                 // la version est en avant dernière position, on veut le détail de la couche
                 request = RequestType::GETLAYER;
+            }
+
+            else if (tmsVersionPos == pathParts.size() - 3 && pathParts.back() == "metadata.json") {
+                // la version est en avant dernière position, on veut le détail de la couche
+                request = RequestType::GETLAYERMETADATA;
             }
 
             else if (tmsVersionPos == pathParts.size() - 5) {

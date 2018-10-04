@@ -95,6 +95,10 @@ Level::Level ( LevelXML* l, PyramidXML* p ) {
         maxTileSize = tm->getTileH() * tm->getTileW() * channels * Rok4Format::getChannelSize(format) * 2;
         nodataValue = p->getNoDataValues();
     } else {
+        onDemand = false;
+        onFly = false;
+        channels = 0;
+        maxTileSize = 0;
         tables = l->tables;
     }
     

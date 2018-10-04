@@ -273,6 +273,18 @@ sub _loadValues {
         ERROR ("The parameter 'size' is required");
         return FALSE;
     }
+
+    if (! exists($params->{tables})) {
+        ERROR ("The parameter 'tables' is required");
+        return FALSE;
+    }
+    $this->{tables} = $params->{tables};
+
+    if (exists $params->{oldtables}) {
+        # Faire la fusion à la main pour être sur de qui écrase 
+        $this->{tables} = { $params->{tables}, $params->{oldtables} }
+    }
+
     # check values
     if (! scalar ($params->{size})){
         ERROR("List empty to 'size' !");
@@ -284,6 +296,7 @@ sub _loadValues {
         $params->{limits} = [undef, undef, undef, undef];
     }
     $this->{limits} = $params->{limits};
+
 
     # STOCKAGE    
     if ( exists $params->{dir_depth} ) {
@@ -380,6 +393,20 @@ sub _loadXML {
     if (! defined $this->{limits}->[0] || $this->{limits}->[0] eq "") {
         ERROR ("Cannot extract extrem tiles from the XML level");
         return FALSE;
+    }
+
+    my @tables = $levelRoot->getElementsByTagName('table');
+    foreach my $t (@tables) {
+
+        my $tablename = $t->findvalue('name');
+
+        my @atts = $t->getElementsByTagName('attribute');
+        foreach my $a (@atts) {
+            my $attname = $a->findvalue('name');
+            my $atttype = $a->findvalue('type');
+
+            $this->{tables}->{$tablename}->{$attname} = $atttype;
+        }
     }
 
     # CAS FICHIER
@@ -832,7 +859,21 @@ Example:
             <baseDir>./BDORTHO/MASK/level_5/</baseDir>
         </mask>
         <pathDepth>2</pathDepth>
-
+        <table>
+            <name>batiment</name>
+            <attribute>
+                <name>hauteur</name>
+                <type>integer</type>
+            </attribute>
+            <attribute>
+                <name>type</name>
+                <type>varchar</type>
+            </attribute>
+            <attribute>
+                <name>surface</name>
+                <type>double</type>
+            </attribute>
+        </table>
         <tilesPerWidth>16</tilesPerWidth>
         <tilesPerHeight>16</tilesPerHeight>
         <TMSLimits>
@@ -899,7 +940,17 @@ sub exportToXML {
         $string .=         "        </cephContext>\n";
     }
 
-    # TODO export des tables et attributs
+    foreach my $table (keys(%{$this->{tables}})) {
+        $string .=     "        <table>\n";
+        $string .=     "            <name>$table</name>\n";
+        while (my ($att, $type) = each(%{$this->{tables}->{$table}})) {
+            $string .= "            <attribute>\n";
+            $string .= "                <name>$att</name>\n";
+            $string .= "                <type>$type</type>\n";
+            $string .= "            </attribute>\n";
+        }
+        $string .=     "        </table>\n";
+    }
 
 
     $string .= "    </level>\n";

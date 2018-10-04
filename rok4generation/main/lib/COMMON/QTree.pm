@@ -535,7 +535,7 @@ sub computeYourself {
     $this->shareNodesOnJobs();
 
     if (! defined $this->{cutLevelID}) {
-        ERROR("Impssible to determine the cut level !");
+        ERROR("Impossible to determine the cut level !");
         return FALSE;
     }
     INFO (sprintf "CutLevel : %s", $this->{cutLevelID});
@@ -568,6 +568,8 @@ Recursive method, which allow to browse tree downward.
     - the node belong to the bottom level -> <computeBottomImage>
     - the node does not belong to the bottom level -> <computeBranch> on each child, then <computeAboveImage>
 
+In the vector case, a node of the top level is computed with one call to tippecanoe
+
 Parameters (list):
     node - <COMMON::Node> - Node to compute.
 =cut
@@ -578,34 +580,69 @@ sub computeBranch {
 
     my $weight = 0;
 
-    
     my $res = '';
     my @childList = $this->getChildren($node);
-    if (scalar @childList == 0){
-        if (! $this->computeBottomImage($node)) {
-            ERROR(sprintf "Cannot compute the bottom image : %s",$node->getWorkBaseName());
+
+    if (ref ($this->{pyramid}) eq "COMMON::PyramidVector") {
+        # En vecteur, un noeud du niveau du haut lance un tippecanoe qui va générer 
+        # toutes les tuiles jusqu'au niveau du bas. On parcours ensuite tous les noeuds de la branche
+        # pour lancer la mise en dalle ROK4
+
+        if ($node->getLevel() eq $this->getTopID()) {
+            # Tippecanoe + pbf2cache
+            if (! $this->computeTopImage($node)) {
+                ERROR(sprintf "Cannot compute the top image : %s",$node->getWorkBaseName());
+                return FALSE;
+            }
+        } else {
+            # pbf2cache
+            if (! $this->computeBelowImage($node)) {
+                ERROR(sprintf "Cannot compute the bellow image : %s",$node->getWorkBaseName());
+                return FALSE;
+            }
+        }
+
+        foreach my $n (@childList) {
+            
+            if (! $this->computeBranch($n)) {
+                ERROR(sprintf "Cannot compute the branch from node %s", $node->getWorkBaseName());
+                return FALSE;
+            }
+            $weight += $n->getAccumulatedWeight;
+        }
+
+        $node->setAccumulatedWeight($weight);
+
+    }
+    elsif (ref ($this->{pyramid}) eq "COMMON::PyramidRaster") {
+        if (scalar @childList == 0){
+            if (! $this->computeBottomImage($node)) {
+                ERROR(sprintf "Cannot compute the bottom image : %s",$node->getWorkBaseName());
+                return FALSE;
+            }
+            return TRUE;
+        }
+        foreach my $n (@childList) {
+            
+            if (! $this->computeBranch($n)) {
+                ERROR(sprintf "Cannot compute the branch from node %s", $node->getWorkBaseName());
+                return FALSE;
+            }
+            $weight += $n->getAccumulatedWeight;
+        }
+
+        if (! $this->computeAboveImage($node)) {
+            ERROR(sprintf "Cannot compute the above image : %s", $node->getWorkBaseName());
             return FALSE;
         }
-        return TRUE;
-    }
-    foreach my $n (@childList) {
-        
-        if (! $this->computeBranch($n)) {
-            ERROR(sprintf "Cannot compute the branch from node %s", $node->getWorkBaseName());
-            return FALSE;
-        }
-        $weight += $n->getAccumulatedWeight;
-    }
 
-    if (! $this->computeAboveImage($node)) {
-        ERROR(sprintf "Cannot compute the above image : %s", $node->getWorkBaseName());
-        return FALSE;
+        $node->setAccumulatedWeight($weight);
     }
-
-    $node->setAccumulatedWeight($weight);
 
     return TRUE;
 }
+
+#### Fonctionnement RASTER
 
 =begin nd
 Function: computeBottomImage
@@ -634,7 +671,7 @@ sub computeBottomImage {
     my $weight  = 0;
     my $code  = "\n";
     
-    if ($this->getDataSource->hasHarvesting) {
+    if ($this->getDataSource()->hasHarvesting()) {
         # Datasource has a WMS service : we have to use it
         ($c,$w) = $this->{commands}->wms2work($node,$this->getDataSource->getHarvesting());
         if (! defined $c) {
@@ -708,6 +745,87 @@ sub computeAboveImage {
     return TRUE;
 }
 
+#### Fonctionnement VECTEUR
+
+=begin nd
+Function: computeTopImage
+
+Parameters (list):
+    node - <COMMON::Node> - Top level's node, to treat.
+    
+=cut
+sub computeTopImage {
+    
+    my $this = shift;
+    my $node = shift;
+
+    
+    # Temporary weight and code
+    my ($c,$w);
+    # Final weight and code
+    my $weight  = 0;
+    my $code  = "\n";
+     
+    ($c,$w) = $this->{commands}->makeJsons($node, $this->getDataSource()->getDatabaseSource());
+    if ($w == -1) {
+        ERROR(sprintf "Cannot compose ogr2ogrs command for the node %s.",$node->getWorkBaseName());
+        return FALSE;
+    }
+    $code .= $c;
+    $weight += $w;
+
+    ($c,$w) = $this->{commands}->makeTiles($node);
+    if ($w == -1) {
+        ERROR(sprintf "Cannot compose tippecanoe command for the node %s.",$node->getWorkBaseName());
+        return FALSE;
+    }
+    $code .= $c;
+    $weight += $w;
+
+    ($c,$w) = $this->{commands}->pbf2cache($node);
+    $code .= $c;
+    $weight += $w;
+
+    $node->setOwnWeight($weight);
+    $node->setAccumulatedWeight(0);
+    $node->setCode($code);
+
+    return TRUE;
+}
+
+=begin nd
+Function: computeBelowImage
+
+Parameters (list):
+    node - <COMMON::Node> - Below level's node, to treat.
+=cut
+sub computeBelowImage {
+    
+    my $this = shift;
+    my $node = shift;
+
+
+    # Temporary weight and code
+    my ($c,$w);
+    # Final weight and code
+    my $weight  = 0;
+    my $code  = "\n";
+    
+    # Maintenant on constitue la liste des images à passer à pbf2cache.
+    ($c,$w) = $this->{commands}->pbf2cache($node);
+    if ($w == -1) {
+        ERROR(sprintf "Cannot compose pbf2cache command for the node %s.",$node->getWorkBaseName);
+        return FALSE;
+    }
+    $code .= $c;
+    $weight += $w;
+
+    $node->setOwnWeight($weight);
+    $node->setCode($code);
+
+    return TRUE;
+}
+
 ####################################################################################################
 #                                   Group: Writer methods                                          #
 ####################################################################################################
@@ -725,24 +843,40 @@ sub writeCode {
     my $node = shift;
 
 
+    if (ref ($this->{pyramid}) eq "COMMON::PyramidRaster") {
 
-    my @childList = $this->getChildren($node);
+        my @childList = $this->getChildren($node);
 
-    # Le noeud est une feuille
-    if (scalar @childList == 0){
-        $node->writeInScript();
-        return TRUE;
-    }
-
-    # Le noeud a des enfants
-    foreach my $n (@childList) {
-        if ($n->getLevel() ne $this->getCutLevelID()) {
-            $n->setScript($node->getScript());
+        # Le noeud est une feuille
+        if (scalar @childList == 0){
+            $node->writeInScript();
+            return TRUE;
         }
-        $this->writeCode($n);
+
+        # Le noeud a des enfants
+        foreach my $n (@childList) {
+            if ($n->getLevel() ne $this->getCutLevelID()) {
+                $n->setScript($node->getScript());
+            }
+            $this->writeCode($n);
+        }
+        
+        $node->writeInScript();
     }
-    
-    $node->writeInScript();
+    elsif (ref ($this->{pyramid}) eq "COMMON::PyramidVector") {
+
+        $node->writeInScript();
+
+        my @childList = $this->getChildren($node);
+
+        # Le noeud a des enfants
+        foreach my $n (@childList) {
+            if ($n->getLevel() ne $this->getCutLevelID()) {
+                $n->setScript($node->getScript());
+            }
+            $this->writeCode($n);
+        }
+    }
 
     return TRUE;
 }
@@ -765,13 +899,15 @@ For each level:
 The cut level could be the bottom level (splits only generate bottom level nodes) or the top level (finisher script do nothing).
 
 To manipulate weights array, we use the tool class <Array>.
+
+In the vector case, cut level is always the top level, what ever weights.
 =cut
 sub shareNodesOnJobs {
     my $this = shift;
 
-
     my $tms = $this->{pyramid}->getTileMatrixSet;
     my $splitNumber = $this->{forest}->getSplitNumber;
+
     
     my $optimalWeight = undef;
     my $cutLevelID = undef;
@@ -785,8 +921,15 @@ sub shareNodesOnJobs {
     foreach my $node (@topLevelNodeList) {
         $wholeTreeWeight += $node->getAccumulatedWeight;
     }
+
+
+    my $firstOrder = $this->getBottomOrder();
+    if (ref ($this->{pyramid}) eq "COMMON::PyramidVector") {
+        # En vecteur, on force le choix du cut level au niveau du haut en ne testant que celui là.
+        $firstOrder = $this->getTopOrder();
+    }
     
-    for (my $i = $this->getBottomOrder(); $i <= $this->getTopOrder(); $i++) {
+    for (my $i = $firstOrder; $i <= $this->getTopOrder(); $i++) {
         my $levelID = $tms->getIDfromOrder($i);
         my @levelNodeList = $this->getNodesOfLevel($levelID);
         

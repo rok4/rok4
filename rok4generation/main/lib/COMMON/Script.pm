@@ -360,7 +360,7 @@ Function: prepare
 Write script's header, which contains environment variables: the script ID, path to work directory, cache... And functions to factorize code.
 
 Parameters (list):
-    pyramid - <COMMON::PyramidRaster> or <BE4CEPH::Pyramid> or <BE4S3::Pyramid> - Pyramid to generate.
+    pyramid - <COMMON::PyramidRaster> or <COMMON::PyramidVector> - Pyramid to generate.
     functions - string - Configured functions, used in the script (mergeNtiff, wget...).
 
 Example:
@@ -379,9 +379,11 @@ sub prepare {
     $code .= sprintf ("COMMON_TMP_DIR=\"%s\"\n", $this->{commonTempDir});
     $code .= sprintf ("ROOT_TMP_DIR=\"%s\"\n", dirname($this->{tempDir}));
     $code .= sprintf ("TMP_DIR=\"%s\"\n", $this->{tempDir});
-    $code .= sprintf ("MNT_CONF_DIR=\"%s\"\n", $this->{mntConfDir});
-    $code .= sprintf ("DNT_CONF_DIR=\"%s\"\n", $this->{dntConfDir});
-    $code .= sprintf ("ONT_CONF_DIR=\"%s\"\n", $this->{ontConfDir});
+    if (ref ($pyramid) eq "COMMON::PyramidRaster") {
+        $code .= sprintf ("MNT_CONF_DIR=\"%s\"\n", $this->{mntConfDir});
+        $code .= sprintf ("DNT_CONF_DIR=\"%s\"\n", $this->{dntConfDir});
+        $code .= sprintf ("ONT_CONF_DIR=\"%s\"\n", $this->{ontConfDir});
+    }
     $code .= sprintf ("LIST_FILE=\"%s\"\n", $pyramid->getListFile() );
 
     if ($pyramid->getStorageType() eq "FILE") {

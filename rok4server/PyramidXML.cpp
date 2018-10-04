@@ -109,7 +109,7 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
 
     format = Rok4Format::fromString ( formatStr );
     if ( ! ( format ) ) {
-        LOGGER_ERROR ( filePath << _ ( "Le format [" ) << formatStr <<_ ( "] n'est pas gere." ) );
+        LOGGER_ERROR ( _ ("Le format [" ) << formatStr <<_ ( "] n'est pas gere." ) );
         return;
     }
     //----

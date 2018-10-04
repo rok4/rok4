@@ -292,7 +292,7 @@ enum eformat_data {
  * \~french \brief Nombre de formats disponibles
  * \~english \brief Number of available formats
  */
-const int eformat_size = 11;
+const int eformat_size = 12;
 
 /**
  * \~french \brief Conversion d'une chaîne de caractère vers un format

@@ -61,6 +61,8 @@
 #include <iostream>
 #include <string>
 #include <algorithm>
+#include <iostream>
+#include <fstream>
 
 /* ------------------------------------------------------------------------------------------------ */
 /* ------------------------- Fonctions pour le manager de sortie de la libjpeg -------------------- */
@@ -425,6 +427,12 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToWrite (
 
 }
 
+Rok4Image* Rok4ImageFactory::createRok4ImageToWrite (
+    std::string name, int tilePerWidth, int tilePerHeight, Context* c  ) {
+
+    return new Rok4Image ( name, tilePerWidth, tilePerHeight, c );
+}
+
 /* ------------------------------------------------------------------------------------------------ */
 /* ----------------------------------------- CONSTRUCTEUR ----------------------------------------- */
 /* ------------------------------------------------------------------------------------------------ */
@@ -435,7 +443,7 @@ Rok4Image::Rok4Image (
     Compression::eCompression compression, ExtraSample::eExtraSample es, int tileWidth, int tileHeight, Context* c ) :
 
     Image ( width, height, channels, resx, resy, bbox),
-    sampleformat ( sampleformat ), bitspersample ( bitspersample ), photometric ( photometric ), compression ( compression ), esType(es),
+    isVector(false), sampleformat ( sampleformat ), bitspersample ( bitspersample ), photometric ( photometric ), compression ( compression ), esType(es),
     tileWidth (tileWidth), tileHeight(tileHeight), context(c)
 {
 
@@ -462,12 +470,33 @@ Rok4Image::Rok4Image (
 
 }
 
+Rok4Image::Rok4Image ( std::string n, int tpw, int tph, Context* c ) :
+
+    Image ( 1, 1, 0, 1.0, 1.0, BoundingBox<double> ( 0.0, 0.0, 1.0, 1.0 )),
+    isVector ( true ), context(c),
+    sampleformat ( SampleFormat::UNKNOWN ), bitspersample ( 0 ), photometric ( Photometric::UNKNOWN ), 
+    compression ( Compression::UNKNOWN ), esType(ExtraSample::UNKNOWN),
+    tileWidth (tileWidth), tileHeight(tileHeight)
+{
+
+    name = n;
+
+    tileWidthwise = tpw;
+    tileHeightwise = tph;
+    tilesNumber = tileWidthwise * tileHeightwise;
+
+    pixelSize = 0;
+    rawTileSize = 0;
+    rawTileLineSize = 0;
+}
+
 /* ------------------------------------------------------------------------------------------------ */
 /* ------------------------------------------- LECTURE -------------------------------------------- */
 /* ------------------------------------------------------------------------------------------------ */
 
 uint8_t* Rok4Image::memorizeRawTile ( size_t& size, int tile )
 {    
+
     if ( tile < 0 || tile >= tilesNumber ) {
         LOGGER_ERROR ( "Unvalid tile's indice (" << tile << "). Have to be between 0 and " << tilesNumber-1 );
         size = 0;
@@ -677,6 +706,11 @@ bool Rok4Image::loadIndex()
 /** \todo Écriture d'images ROK4 en JPEG gris */
 int Rok4Image::writeImage ( Image* pIn, bool crop )
 {
+    if (isVector) {
+        LOGGER_ERROR("Write image like that is not possible for vector slab");
+        return -1;
+    }
+
     if (compression != Compression::JPEG && crop) {
         LOGGER_WARN("Crop option is reserved for JPEG compression");
         crop = false;
@@ -794,6 +828,12 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
 
 int Rok4Image::writeTiles ( Image* pIn, int imageCol, int imageRow, bool crop )
 {
+
+    if (isVector) {
+        LOGGER_ERROR("Write tiles separatly is not possible for vector slab");
+        return -1;
+    }
+
     if (compression != Compression::JPEG && crop) {
         LOGGER_WARN("Crop option is reserved for JPEG compression");
         crop = false;
@@ -903,6 +943,53 @@ int Rok4Image::writeTiles ( Image* pIn, int imageCol, int imageRow, bool crop )
     return 0;
 }
 
+int Rok4Image::writePbfTiles ( int ulTileCol, int ulTileRow, char* rootDirectory )
+{
+
+    if (! isVector) {
+        LOGGER_ERROR("Write PBF tiles in a slab is possible only for vector ROK4 slabs");
+        return -1;
+    }
+
+    
+    if (! writeHeader()) {
+        LOGGER_ERROR("Cannot write the ROK4 images header for " << name);
+        return -1;
+    }
+
+    if (! prepareBuffers()) {
+        LOGGER_ERROR("Cannot initialize buffers for " << name);
+        return -1;
+    }
+
+    char pbfpath [512];
+    for (int row = 0; row < tileHeightwise; row++) {
+        for ( int col = 0; col < tileWidthwise; col++ ) {
+            // Constitution du chemin de la tuile PBF à écrire en l'état dans la dalle
+            sprintf (pbfpath, "%s/%d/%d.pbf", rootDirectory, ulTileCol + col, ulTileRow + row);
+            LOGGER_DEBUG("Slabization of pbf tile " << pbfpath);
+
+            if (! writeTile(row * tileWidthwise + col, pbfpath)) {
+                LOGGER_ERROR("Error writting PBF tile " << pbfpath);
+                return -1;
+            }
+        }   
+    }
+
+
+    if (! writeFinal()) {
+        LOGGER_ERROR("Cannot close the ROK4 images (write index) for " << name);
+        return -1;
+    }
+
+    if (! cleanBuffers()) {
+        LOGGER_ERROR("Cannot clean buffers for " << name);
+        return -1;
+    }
+
+    return 0;
+}
+
 bool Rok4Image::writeHeader()
 {
     if (! context->openToWrite(name)) {
@@ -920,68 +1007,99 @@ bool Rok4Image::writeHeader()
 
     // write the number of entries in the IFD
 
-    // We can have 4 samples per pixel, each sample with the same size
-    * ( ( uint16_t* ) ( p ) ) = (uint16_t) bitspersample;
-    * ( ( uint16_t* ) ( p + 2 ) ) = (uint16_t) bitspersample;
-    * ( ( uint16_t* ) ( p + 4 ) ) = (uint16_t) bitspersample;
-    * ( ( uint16_t* ) ( p + 6 ) ) = (uint16_t) bitspersample;
-    p += 8;
+    if (isVector) {
+        // We can have 4 samples per pixel, each sample with the same size
+        * ( ( uint16_t* ) ( p ) ) = (uint16_t) 0;
+        * ( ( uint16_t* ) ( p + 2 ) ) = (uint16_t) 0;
+        * ( ( uint16_t* ) ( p + 4 ) ) = (uint16_t) 0;
+        * ( ( uint16_t* ) ( p + 6 ) ) = (uint16_t) 0;
+        p += 8;
 
-    // Number of tags
-    * ( ( uint16_t* ) p ) = 11;
-    if ( photometric == Photometric::YCBCR ) * ( ( uint16_t* ) p ) += 1;
-    if ( channels == 4 || channels == 2 ) * ( ( uint16_t* ) p ) += 1;
-    p += 2;
+        // Number of tags
+        * ( ( uint16_t* ) p ) = 4;
+        p += 2;
 
-    //  Offset of the IFD is here
-    writeTIFFTAG(&p, TIFFTAG_IMAGEWIDTH, TIFF_LONG, 1, width);
-    writeTIFFTAG(&p, TIFFTAG_IMAGELENGTH, TIFF_LONG, 1, height);
+        //  Offset of the IFD is here
+        writeTIFFTAG(&p, TIFFTAG_IMAGEWIDTH, TIFF_LONG, 1, width);
+        writeTIFFTAG(&p, TIFFTAG_IMAGELENGTH, TIFF_LONG, 1, height);
 
-    if ( channels == 1 ) {
-        writeTIFFTAG(&p, TIFFTAG_BITSPERSAMPLE, TIFF_SHORT, 1, bitspersample);
-    } else if ( channels == 2 ) {
-        * ( ( uint16_t* ) ( p ) ) = TIFFTAG_BITSPERSAMPLE;
-        * ( ( uint16_t* ) ( p + 2 ) ) = TIFF_SHORT;
-        * ( ( uint32_t* ) ( p + 4 ) ) = 2;
-        * ( ( uint16_t* ) ( p + 8 ) ) = 8;
-        * ( ( uint16_t* ) ( p + 10 ) )  = 8;
-        p += 12;
+        if ( tilesNumber == 1 ) {
+            /* Dans le cas d'une tuile unique, le champs contient directement la valeur et pas l'adresse de la valeur.
+             * Cependant, étant donnée le mode de foncionnement de Rok4, on doit laisser la valeur au début de l'image.
+             * Voilà pourquoi on ajoute 8 à ROK4_IMAGE_HEADER_SIZE : 4 pour le TileOffset et 4 pour le TileByteCount.
+             */
+            writeTIFFTAG(&p, TIFFTAG_TILEOFFSETS, TIFF_LONG, tilesNumber, ROK4_IMAGE_HEADER_SIZE + 8);
+        } else {
+            writeTIFFTAG(&p, TIFFTAG_TILEOFFSETS, TIFF_LONG, tilesNumber, ROK4_IMAGE_HEADER_SIZE);
+        }
+
+        // Dans le cas d'un tuile unique, on viendra écraser la valeur mise ici avec directement sa taille
+        writeTIFFTAG(&p, TIFFTAG_TILEBYTECOUNTS, TIFF_LONG, tilesNumber, ROK4_IMAGE_HEADER_SIZE + 4 * tilesNumber);
+
     } else {
-        writeTIFFTAG(&p, TIFFTAG_BITSPERSAMPLE, TIFF_SHORT, channels, 8);
-    }
+        // We can have 4 samples per pixel, each sample with the same size
+        * ( ( uint16_t* ) ( p ) ) = (uint16_t) bitspersample;
+        * ( ( uint16_t* ) ( p + 2 ) ) = (uint16_t) bitspersample;
+        * ( ( uint16_t* ) ( p + 4 ) ) = (uint16_t) bitspersample;
+        * ( ( uint16_t* ) ( p + 6 ) ) = (uint16_t) bitspersample;
+        p += 8;
 
-    writeTIFFTAG(&p, TIFFTAG_COMPRESSION, TIFF_SHORT, 1, fromROK4Compression(compression));
-    writeTIFFTAG(&p, TIFFTAG_PHOTOMETRIC, TIFF_SHORT, 1, fromROK4Photometric(photometric));
-    writeTIFFTAG(&p, TIFFTAG_SAMPLESPERPIXEL, TIFF_SHORT, 1, channels);
-    writeTIFFTAG(&p, TIFFTAG_TILEWIDTH, TIFF_LONG, 1, tileWidth);
-    writeTIFFTAG(&p, TIFFTAG_TILELENGTH, TIFF_LONG, 1, tileHeight);
+        // Number of tags
+        * ( ( uint16_t* ) p ) = 11;
+        if ( photometric == Photometric::YCBCR ) * ( ( uint16_t* ) p ) += 1;
+        if ( channels == 4 || channels == 2 ) * ( ( uint16_t* ) p ) += 1;
+        p += 2;
 
-    if ( tilesNumber == 1 ) {
-        /* Dans le cas d'une tuile unique, le champs contient directement la valeur et pas l'adresse de la valeur.
-         * Cependant, étant donnée le mode de foncionnement de Rok4, on doit laisser la valeur au début de l'image.
-         * Voilà pourquoi on ajoute 8 à ROK4_IMAGE_HEADER_SIZE : 4 pour le TileOffset et 4 pour le TileByteCount.
-         */
-        writeTIFFTAG(&p, TIFFTAG_TILEOFFSETS, TIFF_LONG, tilesNumber, ROK4_IMAGE_HEADER_SIZE + 8);
-    } else {
-        writeTIFFTAG(&p, TIFFTAG_TILEOFFSETS, TIFF_LONG, tilesNumber, ROK4_IMAGE_HEADER_SIZE);
-    }
+        //  Offset of the IFD is here
+        writeTIFFTAG(&p, TIFFTAG_IMAGEWIDTH, TIFF_LONG, 1, width);
+        writeTIFFTAG(&p, TIFFTAG_IMAGELENGTH, TIFF_LONG, 1, height);
 
-    // Dans le cas d'un tuile unique, on vidra écraser la valeur mise ici avec directement sa taille
-    writeTIFFTAG(&p, TIFFTAG_TILEBYTECOUNTS, TIFF_LONG, tilesNumber, ROK4_IMAGE_HEADER_SIZE + 4 * tilesNumber);
+        if ( channels == 1 ) {
+            writeTIFFTAG(&p, TIFFTAG_BITSPERSAMPLE, TIFF_SHORT, 1, bitspersample);
+        } else if ( channels == 2 ) {
+            * ( ( uint16_t* ) ( p ) ) = TIFFTAG_BITSPERSAMPLE;
+            * ( ( uint16_t* ) ( p + 2 ) ) = TIFF_SHORT;
+            * ( ( uint32_t* ) ( p + 4 ) ) = 2;
+            * ( ( uint16_t* ) ( p + 8 ) ) = 8;
+            * ( ( uint16_t* ) ( p + 10 ) )  = 8;
+            p += 12;
+        } else {
+            writeTIFFTAG(&p, TIFFTAG_BITSPERSAMPLE, TIFF_SHORT, channels, 8);
+        }
 
-    if ( channels == 4 || channels == 2 ) {
-        writeTIFFTAG(&p, TIFFTAG_EXTRASAMPLES, TIFF_SHORT, 1, fromROK4ExtraSample(esType));
-    }
+        writeTIFFTAG(&p, TIFFTAG_COMPRESSION, TIFF_SHORT, 1, fromROK4Compression(compression));
+        writeTIFFTAG(&p, TIFFTAG_PHOTOMETRIC, TIFF_SHORT, 1, fromROK4Photometric(photometric));
+        writeTIFFTAG(&p, TIFFTAG_SAMPLESPERPIXEL, TIFF_SHORT, 1, channels);
+        writeTIFFTAG(&p, TIFFTAG_TILEWIDTH, TIFF_LONG, 1, tileWidth);
+        writeTIFFTAG(&p, TIFFTAG_TILELENGTH, TIFF_LONG, 1, tileHeight);
 
-    writeTIFFTAG(&p, TIFFTAG_SAMPLEFORMAT, TIFF_SHORT, 1, fromROK4SampleFormat(sampleformat));
+        if ( tilesNumber == 1 ) {
+            /* Dans le cas d'une tuile unique, le champs contient directement la valeur et pas l'adresse de la valeur.
+             * Cependant, étant donnée le mode de foncionnement de Rok4, on doit laisser la valeur au début de l'image.
+             * Voilà pourquoi on ajoute 8 à ROK4_IMAGE_HEADER_SIZE : 4 pour le TileOffset et 4 pour le TileByteCount.
+             */
+            writeTIFFTAG(&p, TIFFTAG_TILEOFFSETS, TIFF_LONG, tilesNumber, ROK4_IMAGE_HEADER_SIZE + 8);
+        } else {
+            writeTIFFTAG(&p, TIFFTAG_TILEOFFSETS, TIFF_LONG, tilesNumber, ROK4_IMAGE_HEADER_SIZE);
+        }
 
-    if ( photometric == Photometric::YCBCR ) {
-        * ( ( uint16_t* ) ( p ) ) = TIFFTAG_YCBCRSUBSAMPLING;
-        * ( ( uint16_t* ) ( p + 2 ) ) = TIFF_SHORT;
-        * ( ( uint32_t* ) ( p + 4 ) ) = 2;
-        * ( ( uint16_t* ) ( p + 8 ) ) = 2;
-        * ( ( uint16_t* ) ( p + 10 ) )  = 2;
-        p += 12;
+        // Dans le cas d'un tuile unique, on vidra écraser la valeur mise ici avec directement sa taille
+        writeTIFFTAG(&p, TIFFTAG_TILEBYTECOUNTS, TIFF_LONG, tilesNumber, ROK4_IMAGE_HEADER_SIZE + 4 * tilesNumber);
+
+        if ( channels == 4 || channels == 2 ) {
+            writeTIFFTAG(&p, TIFFTAG_EXTRASAMPLES, TIFF_SHORT, 1, fromROK4ExtraSample(esType));
+        }
+
+        writeTIFFTAG(&p, TIFFTAG_SAMPLEFORMAT, TIFF_SHORT, 1, fromROK4SampleFormat(sampleformat));
+
+        if ( photometric == Photometric::YCBCR ) {
+            * ( ( uint16_t* ) ( p ) ) = TIFFTAG_YCBCRSUBSAMPLING;
+            * ( ( uint16_t* ) ( p + 2 ) ) = TIFF_SHORT;
+            * ( ( uint32_t* ) ( p + 4 ) ) = 2;
+            * ( ( uint16_t* ) ( p + 8 ) ) = 2;
+            * ( ( uint16_t* ) ( p + 10 ) )  = 2;
+            p += 12;
+        }
     }
 
     // end of IFD
@@ -998,52 +1116,55 @@ bool Rok4Image::writeHeader()
 bool Rok4Image::prepareBuffers()
 {
 
-    int quality = 0;
-    if ( compression == Compression::PNG) quality = 5;
-    if ( compression == Compression::DEFLATE ) quality = 6;
-    if ( compression == Compression::JPEG ) quality = 75;
-
-    // variables initalizations
     tilesOffset = new uint32_t[tilesNumber];
     tilesByteCounts = new uint32_t[tilesNumber];
     memset ( tilesOffset, 0, tilesNumber*4 );
     memset ( tilesByteCounts, 0, tilesNumber*4 );
     position = ROK4_IMAGE_HEADER_SIZE + 8 * tilesNumber;
 
-    BufferSize = 2*rawTileSize;
-    Buffer = new uint8_t[BufferSize];
+    if (! isVector) {
+        int quality = 0;
+        if ( compression == Compression::PNG) quality = 5;
+        if ( compression == Compression::DEFLATE ) quality = 6;
+        if ( compression == Compression::JPEG ) quality = 75;
 
-    //  z compression initalization
-    if ( compression == Compression::PNG || compression == Compression::DEFLATE ) {
-        if ( compression == Compression::PNG ) {
-            // Pour la compression PNG, on a besoin d'un octet par ligne ne plus : un 0 est ajouté au début de chaque ligne, avant la compression
-            zip_buffer = new uint8_t[rawTileSize + tileHeight];
-        } else {
-            zip_buffer = new uint8_t[rawTileSize];            
+        // variables initalizations
+
+        BufferSize = 2*rawTileSize;
+        Buffer = new uint8_t[BufferSize];
+
+        //  z compression initalization
+        if ( compression == Compression::PNG || compression == Compression::DEFLATE ) {
+            if ( compression == Compression::PNG ) {
+                // Pour la compression PNG, on a besoin d'un octet par ligne ne plus : un 0 est ajouté au début de chaque ligne, avant la compression
+                zip_buffer = new uint8_t[rawTileSize + tileHeight];
+            } else {
+                zip_buffer = new uint8_t[rawTileSize];            
+            }
+            zstream.zalloc = Z_NULL;
+            zstream.zfree  = Z_NULL;
+            zstream.opaque = Z_NULL;
+            zstream.data_type = Z_BINARY;
+            deflateInit ( &zstream, quality );
         }
-        zstream.zalloc = Z_NULL;
-        zstream.zfree  = Z_NULL;
-        zstream.opaque = Z_NULL;
-        zstream.data_type = Z_BINARY;
-        deflateInit ( &zstream, quality );
-    }
 
-    if ( compression == Compression::JPEG ) {
-        cinfo.err = jpeg_std_error ( &jerr );
-        jpeg_create_compress ( &cinfo );
+        if ( compression == Compression::JPEG ) {
+            cinfo.err = jpeg_std_error ( &jerr );
+            jpeg_create_compress ( &cinfo );
 
-        cinfo.dest = new jpeg_destination_mgr;
-        cinfo.dest->init_destination = init_destination;
-        cinfo.dest->empty_output_buffer = empty_output_buffer;
-        cinfo.dest->term_destination = term_destination;
+            cinfo.dest = new jpeg_destination_mgr;
+            cinfo.dest->init_destination = init_destination;
+            cinfo.dest->empty_output_buffer = empty_output_buffer;
+            cinfo.dest->term_destination = term_destination;
 
-        cinfo.image_width  = tileWidth;
-        cinfo.image_height = tileHeight;
-        cinfo.input_components = 3;
-        cinfo.in_color_space = JCS_RGB;
+            cinfo.image_width  = tileWidth;
+            cinfo.image_height = tileHeight;
+            cinfo.input_components = 3;
+            cinfo.in_color_space = JCS_RGB;
 
-        jpeg_set_defaults ( &cinfo );
-        jpeg_set_quality ( &cinfo, quality, true );
+            jpeg_set_defaults ( &cinfo );
+            jpeg_set_quality ( &cinfo, quality, true );
+        }
     }
 
     return true;
@@ -1055,7 +1176,7 @@ bool Rok4Image::writeFinal() {
     context->write((uint8_t*) tilesByteCounts, ROK4_IMAGE_HEADER_SIZE + 4 * tilesNumber, 4 * tilesNumber, std::string(name));
 
     if (! context->closeToWrite(name)) {
-        LOGGER_ERROR("Unable to close output truc " << name);
+        LOGGER_ERROR("Unable to close output " << name);
         return false;
     }
 
@@ -1064,19 +1185,22 @@ bool Rok4Image::writeFinal() {
 
 bool Rok4Image::cleanBuffers() {
 
-    delete[] Buffer;
-    if ( compression == Compression::PNG || compression == Compression::DEFLATE ) {
-        delete[] zip_buffer;
-        deflateEnd ( &zstream );
-    }
-    if ( compression == Compression::JPEG ) {
-        delete cinfo.dest;
-        jpeg_destroy_compress ( &cinfo );
+    if (! isVector) {
+        delete[] Buffer;
+        if ( compression == Compression::PNG || compression == Compression::DEFLATE ) {
+            delete[] zip_buffer;
+            deflateEnd ( &zstream );
+        }
+        if ( compression == Compression::JPEG ) {
+            delete cinfo.dest;
+            jpeg_destroy_compress ( &cinfo );
+        }
     }
 
     return true;
 }
 
+// Raster write tile in a slab
 bool Rok4Image::writeTile( int tileInd, uint8_t* data, bool crop )
 {
     
@@ -1084,7 +1208,9 @@ bool Rok4Image::writeTile( int tileInd, uint8_t* data, bool crop )
         LOGGER_ERROR ( "Unvalid tile's indice to write (" << tileInd << "). Have to be between 0 and " << tilesNumber-1 );
         return false;
     }
+
     size_t size;
+
 
     switch ( compression ) {
     case Compression::NONE:
@@ -1132,6 +1258,70 @@ bool Rok4Image::writeTile( int tileInd, uint8_t* data, bool crop )
     return true;
 }
 
+// Vector write tile in a slab
+bool Rok4Image::writeTile( int tileInd, char* pbfpath )
+{
+    
+    if ( tileInd > tilesNumber || tileInd < 0 ) {
+        LOGGER_ERROR ( "Unvalid tile's indice to write (" << tileInd << "). Have to be between 0 and " << tilesNumber-1 );
+        return false;
+    }
+
+    std::ifstream::pos_type data_size;
+    std::vector<char> data;
+    std::ifstream ifs(pbfpath, std::ios::binary|std::ios::ate);
+
+    if (! ifs.is_open()) {
+        LOGGER_DEBUG("Cannot open PBF tile " << pbfpath);
+        data_size = 0;
+    } else {
+
+        data_size = ifs.tellg();
+
+        if (ifs.bad()) {
+            LOGGER_ERROR("Error reading size fo PBF tile " << pbfpath);
+            return false;
+        }
+
+        data.resize(data_size);
+
+        ifs.seekg(0, std::ios::beg);
+        ifs.read(data.data(), data_size);
+
+        if (ifs.bad()) {
+            LOGGER_ERROR("Error reading PBF tile " << pbfpath);
+            return false;
+        }
+
+        ifs.close();
+
+        if ( data_size == 0 ) return false;
+    }
+
+    if ( tilesNumber == 1 ) {
+
+        uint8_t* uint32tab = new uint8_t[sizeof( uint32_t )];
+        *((uint32_t*) uint32tab) = ( uint32_t ) data_size;
+        context->write(uint32tab, 134, 4, std::string(name));
+        delete uint32tab;
+
+    }
+
+    tilesOffset[tileInd] = position;
+    tilesByteCounts[tileInd] = data_size;
+
+    boolean ret = context->write((uint8_t*) data.data(), position, data_size, std::string(name));
+
+    if (! ret) {
+        LOGGER_ERROR("Impossible to write the tile " << tileInd);
+        return false;
+    }
+    position = ( position + data_size + 15 ) & ~15; // Align the next position on 16byte
+
+    return true;
+}
+
+// Raster write tile alone
 bool Rok4Image::writeTile( int tileCol, int tileRow, uint8_t* data, bool crop )
 {
 
@@ -1174,8 +1364,19 @@ bool Rok4Image::writeTile( int tileCol, int tileRow, uint8_t* data, bool crop )
     sprintf(tileName, "%s_%d_%d", name.c_str(), tileCol, tileRow);
     LOGGER_DEBUG("Write tile as ceph object " + std::string(tileName));
 
+
+    if (! context->openToWrite(tileName)) {
+        LOGGER_ERROR("Unable to open output " << tileName);
+        return false;
+    }
+
     if (! context->writeFull(Buffer, size, std::string(tileName))) {
         LOGGER_ERROR("Impossible to write the independent tile " << tileCol << "," << tileRow);
+        return false;
+    }
+
+    if (! context->closeToWrite(tileName)) {
+        LOGGER_ERROR("Unable to close output " << tileName);
         return false;
     }
 

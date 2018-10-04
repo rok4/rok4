@@ -511,6 +511,7 @@ sub addLevel {
     my $this = shift;
     my $level = shift;
     my $ancestor = shift;
+    my $dbs = shift;
 
     if ($this->{type} eq "READ") {
         ERROR("Cannot add level to 'read' pyramid");
@@ -531,7 +532,9 @@ sub addLevel {
             size => [$this->{image_width}, $this->{image_height}],
 
             dir_data => $this->getDataDir(),
-            dir_depth => $this->{dir_depth}
+            dir_depth => $this->{dir_depth},
+
+            tables => $dbs->getTables()
         };
     }
     elsif (defined $this->{data_pool}) {
@@ -542,7 +545,9 @@ sub addLevel {
             size => [$this->{image_width}, $this->{image_height}],
 
             prefix => $this->{name},
-            pool_name => $this->{data_pool}
+            pool_name => $this->{data_pool},
+
+            tables => $dbs->getTables()
         };
     }
     elsif (defined $this->{data_bucket}) {
@@ -553,7 +558,9 @@ sub addLevel {
             size => [$this->{image_width}, $this->{image_height}],
 
             prefix => $this->{name},
-            bucket_name => $this->{data_bucket}
+            bucket_name => $this->{data_bucket},
+
+            tables => $dbs->getTables()
         };
     }
     elsif (defined $this->{data_container}) {
@@ -565,7 +572,9 @@ sub addLevel {
 
             prefix => $this->{name},
             container_name => $this->{data_container},
-            keystone_connection => $this->{keystone_connection}
+            keystone_connection => $this->{keystone_connection},
+
+            tables => $dbs->getTables()
         };
     }
 
@@ -575,6 +584,7 @@ sub addLevel {
         if (defined $ancestorLevel) {
             my ($rowMin,$rowMax,$colMin,$colMax) = $ancestorLevel->getLimits();
             $levelParams->{limits} = [$rowMin,$rowMax,$colMin,$colMax];
+            $levelParams->{oldtables} = $ancestorLevel->getTables();
         }
     }
 

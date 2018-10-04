@@ -1027,7 +1027,7 @@ Example:
 
 Parameters (list):
     node - <COMMON::GraphNode> - Node whose image have to be harvested.
-    harvesting - <Harvesting> - To use to harvest image.
+    harvesting - <COMMON::Harvesting> - To use to harvest image.
 
 Returns:
     An array (code, weight), (undef,WGET_W) if error.

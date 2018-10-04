@@ -100,6 +100,8 @@ use warnings;
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
 
+use COMMON::Database;
+
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
 
@@ -125,7 +127,7 @@ BEGIN {}
 INIT {
     %DEFAULT = (
         db_port => 5432,
-        db_schema => public
+        db_schema => "public"
     );
 }
 END {}
@@ -167,7 +169,8 @@ sub new {
         schemaname   => undef,
         username => undef,
         password => undef,
-        tables    => []
+        tablenames => [],
+        tables => {}
     };
 
     bless($this, $class);
@@ -175,6 +178,7 @@ sub new {
 
     # init. class
     return undef if (! $this->_init($params));
+    return undef if (! $this->_load());
 
     return $this;
 }
@@ -229,25 +233,25 @@ sub _init {
         ERROR("Parameter 'db_host' is required !");
         return FALSE ;
     }
-    $this->{host} =~ $params->{db_host};
+    $this->{host} = $params->{db_host};
     # DBNAME
     if (! exists($params->{db_name}) || ! defined ($params->{db_name})) {
         ERROR("Parameter 'db_name' is required !");
         return FALSE ;
     }
-    $this->{dbname} =~ $params->{db_name};
+    $this->{dbname} = $params->{db_name};
     # USERNAME
     if (! exists($params->{db_user}) || ! defined ($params->{db_user})) {
         ERROR("Parameter 'db_user' is required !");
         return FALSE ;
     }
-    $this->{username} =~ $params->{db_user};
+    $this->{username} = $params->{db_user};
     # PASSWORD
     if (! exists($params->{db_pwd}) || ! defined ($params->{db_pwd})) {
         ERROR("Parameter 'db_pwd' is required !");
         return FALSE ;
     }
-    $this->{password} =~ $params->{db_pwd};
+    $this->{password} = $params->{db_pwd};
 
     # TABLES
     if (! exists($params->{db_tables}) || ! defined ($params->{db_tables})) {
@@ -261,14 +265,46 @@ sub _init {
         if ($t eq '') {
             next;
         }
-        push(@{$this->{tables}}, $t);
+        push(@{$this->{tablenames}}, $t);
     }
 
-    if (scalar(@{$this->{tables}}) == 0) {
+    if (scalar(@{$this->{tablenames}}) == 0) {
         ERROR("Parameter 'db_tables' contains no table name");
         return FALSE ;
     }
     
+    return TRUE;
+}
+
+sub _load {
+    my $this   = shift;
+
+    my $database = COMMON::Database->new(
+        $this->{dbname},
+        $this->{host},
+        $this->{port},
+        $this->{username},
+        $this->{password}
+    );
+
+    if (! defined $database) {
+        ERROR( "Cannot connect database to extract attributes and type for tables" );
+        return FALSE;
+    }
+
+    foreach my $t (@{$this->{tablenames}}) {
+        my $atts = $database->get_attributes_hash($this->{schemaname}, $t);
+
+        if (! defined $atts) {
+            ERROR( sprintf "Cannot get attributes of table %s.%s", $this->{schemaname}, $t );
+            return FALSE;
+        }
+
+        $this->{tables}->{$t} = $atts;
+    }
+
+    $database->disconnect();
+
     return TRUE;
 }
 
@@ -277,23 +313,23 @@ sub _init {
 ####################################################################################################
 
 =begin nd
-Function: getCommandOgr2ogrs
+Function: getCommandMakeJsons
 
 =cut
-sub getCommandOgr2ogrs {
+sub getCommandMakeJsons {
     my $this = shift;
-    my $bbox = shift;
+    my $bbox = join(" ", @_);
 
-    my $dburl = sprintf "PG:\"dbname=%s user=%s password=%s\"",
+    my $dburl = sprintf "dbname=%s user=%s password=%s",
         $this->{dbname}, $this->{username}, $this->{password};
 
-    my $cmd = "Ogr2ogrs \"$bbox\" \"$dburl\"";
+    my $cmd = "MakeJsons \"$bbox\" \"$dburl\"";
 
-    foreach my $t (@{$this->{tables}}) {
+    foreach my $t (@{$this->{tablenames}}) {
         $cmd .= sprintf " %s.$t", $this->{schemaname};
     }
 
-    return $cmd;
+    return "$cmd\n";
 }
 
 ####################################################################################################

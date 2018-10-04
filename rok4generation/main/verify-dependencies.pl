@@ -9,6 +9,7 @@ use AutoLoader qw(AUTOLOAD);
 
 use Cwd;
 use Data::Dumper;
+use DBD::Pg;
 use Digest::SHA;
 use ExtUtils::MakeMaker;
 use File::Basename;
