@@ -97,6 +97,9 @@ class ServicesXML
         // WMTS
         std::string getServiceType() ;
         std::string getServiceTypeVersion() ;
+        // TMS
+        std::string getStyleURL() ;
+
         bool isInspire() ;
 
         MetadataURL* getWMSMetadataURL() ;
@@ -151,6 +154,10 @@ class ServicesXML
         //WMTS
         std::string serviceType;
         std::string serviceTypeVersion;
+
+        //TMS (vecteur)
+        std::string styleURL;
+
 
         //INSPIRE
         bool inspire;

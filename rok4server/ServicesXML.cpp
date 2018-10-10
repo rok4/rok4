@@ -418,6 +418,9 @@ ServicesXML::ServicesXML( std::string servicesConfigFile ) {
     }
 
 
+    pElem=hRoot.FirstChild ( "styleURL" ).Element();
+    if ( pElem && pElem->GetText() ) styleURL = DocumentXML::getTextStrFromElem(pElem);
+
     std::string metadataUrlWMS;
     std::string metadataMediaTypeWMS;
     std::string metadataUrlWMTS;
@@ -603,6 +606,8 @@ bool ServicesXML::isFullStyleCapable() { return fullStyling; }
 std::string ServicesXML::getServiceType() { return serviceType; }
 std::string ServicesXML::getServiceTypeVersion() { return serviceTypeVersion; }
 bool ServicesXML::isInspire() { return inspire; }
+// TMS
+std::string ServicesXML::getStyleURL() { return styleURL; }
 
 MetadataURL* ServicesXML::getWMSMetadataURL() { return mtdWMS; }
 MetadataURL* ServicesXML::getWMTSMetadataURL() { return mtdWMTS; }

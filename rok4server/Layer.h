@@ -189,6 +189,9 @@ private:
      */
     std::vector<MetadataURL> metadataURLs;
 
+    /******************* PYRAMIDE VECTEUR ********************/
+    std::string metadataJson;
+
     
     /******************* PYRAMIDE RASTER *********************/
 
@@ -462,6 +465,23 @@ public:
      * \return title
      */
     std::string getTitle() ;
+
+    /**
+     * \~french
+     * \brief Retourne les métadonnées en JSON (vecteur)
+     * \return metadonnée
+     * \~english
+     * \brief Return the JSON metadata (vector)
+     * \return metadata
+     */
+    std::string getMetadataJSON() ;
+    /**
+     * \~french
+     * \brief Mémorise les métadonnées en JSON (vecteur)
+     * \~english
+     * \brief Memorize the JSON metadata (vector)
+     */
+    void setMetadataJSON(std::string mjson) ;
     /**
      * \~french
      * \brief Retourne la liste des systèmes de coordonnées authorisés

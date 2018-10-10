@@ -809,7 +809,7 @@ sub writeDescriptor {
         return FALSE;
     }
 
-    if (! open FILE, ">", $descPath ){
+    if (! open FILE, ">:encoding(UTF-8)", $descPath ){
         ERROR(sprintf "Cannot open the pyramid descriptor %s to write",$descPath);
         return FALSE;
     }

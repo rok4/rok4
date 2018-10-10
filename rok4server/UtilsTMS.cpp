@@ -56,6 +56,7 @@
 #include "TileMatrixSet.h"
 #include "Pyramid.h"
 #include "intl.h"
+#include "config.h"
 
 
 DataSource* Rok4Server::getTileParamTMS ( Request* request, Layer*& layer, std::string& str_tileMatrix, int& tileCol, int& tileRow, std::string& format, Style*& style) {
@@ -228,21 +229,8 @@ DataStream* Rok4Server::TMSGetLayer ( Request* request ) {
     res << "  <TileSets profile=\"none\">\n";
 
     int order = 0;
-    std::map<std::string, Level*> layerLevelList = layer->getDataPyramid()->getLevels();
 
-    // On va déclarer un comparateur pour lire les niveaux dans l'ordre des résolutions décroissante
-    typedef std::function<bool(std::pair<std::string, Level*>, std::pair<std::string, Level*>)> Comparator;
-    Comparator compFunctor =
-            [](std::pair<std::string, Level*> elem1 ,std::pair<std::string, Level*> elem2)
-            {
-                return elem1.second->getRes() > elem2.second->getRes();
-            };
- 
-    // Declaring a set that will store the pairs using above comparision logic
-    std::set<std::pair<std::string, Level*>, Comparator> orderedLevels(
-            layerLevelList.begin(), layerLevelList.end(), compFunctor);
-
-    std::map<std::string, Level*>::iterator itLevelList ( layerLevelList.begin() );
+    std::set<std::pair<std::string, Level*>, ComparatorLevel> orderedLevels = layer->getDataPyramid()->getOrderedLevels(false);
 
     for (std::pair<std::string, Level*> element : orderedLevels) {
         Level * level = element.second;
@@ -269,9 +257,91 @@ DataStream* Rok4Server::TMSGetLayerMetadata ( Request* request ) {
     }
     errorResp = NULL;
 
+    // Si on l'a déjà calculé :
+    if (layer->getMetadataJSON() != "") {
+        return new MessageDataStream ( layer->getMetadataJSON(),"application/json" );
+    }
+
+
+    std::set<std::pair<std::string, Level*>, ComparatorLevel> orderedLevels = layer->getDataPyramid()->getOrderedLevels(true);
+
+    int order = 0;
+    std::string minzoom, maxzoom;
+
+    std::vector<std::string> tablesNames;
+    std::map<std::string, std::string> tablesLong;
+    std::map<std::string, Table*> tablesShort;
+    std::map<std::string, std::string> mins;
+    std::map<std::string, std::string> maxs;
+
+    for (std::pair<std::string, Level*> element : orderedLevels) {
+        Level * level = element.second;
+
+        if (order == 0) {
+            // Le premier niveau lu est le plus détaillé, on va l'utiliser pour définir plusieurs choses
+            maxzoom = level->getId();
+        }
+        // Zooms min et max
+        minzoom = level->getId();
+
+        std::vector<Table>* levelTables = level->getTables();
+        for (int i = 0; i < levelTables->size(); i++) {
+            std::string t = levelTables->at(i).getName();
+            std::map<std::string, std::string>::iterator it = mins.find ( t );
+            if ( it == mins.end() ) {
+                tablesNames.push_back(t);
+                tablesLong.insert ( std::pair<std::string, std::string> ( t, levelTables->at(i).getMetadataJsonLong() ) );
+                tablesShort.insert ( std::pair<std::string, Table*> ( t, &(levelTables->at(i)) ) );
+                maxs.insert ( std::pair<std::string, std::string> ( t, maxzoom ) );
+                mins.insert ( std::pair<std::string, std::string> ( t, minzoom ) );
+            } else {
+                it->second = minzoom;
+            }
+
+        }
+
+        order++;
+    }
 
     std::ostringstream res;
-    res << "{}";
+    std::string jsondesc;
+    res << "{\n";
+    res << "  \"name\": \"" << layer->getId() << "\",\n";
+    res << "  \"description\": \"" << layer->getAbstract() << "\",\n";
+    res << "  \"minzoom\": \"" << minzoom << "\",\n";
+    res << "  \"maxzoom\": \"" << maxzoom << "\",\n";
+
+    res << "  \"center\": \"" <<
+        ((layer->getBoundingBox().maxx + layer->getBoundingBox().minx) / 2.) << "," << 
+        ((layer->getBoundingBox().maxy + layer->getBoundingBox().miny) / 2.) << "\",\n";
+
+    res << "  \"bounds\": \"" << layer->getBoundingBox().minx << "," << 
+        layer->getBoundingBox().miny << "," << 
+        layer->getBoundingBox().maxx << "," << 
+        layer->getBoundingBox().maxy << "\",\n";
+
+    res << "  \"format\": \"" << Rok4Format::toExtension ( ( layer->getDataPyramid()->getFormat() ) ) << "\",\n";
+    res << "  \"generator\": \"vek4 " << ROK4_VERSION << "\",\n";
+
+    res << "  \"tilestats\": {\n";
+    res << "    \"layerCount\": " << tablesLong.size() << ",\n";
+    res << "    \"layers\": [\n";
+    for (int i = 0; i < tablesNames.size(); i++) {
+        if (i != 0) res << ",\n";
+        res << "      " << tablesLong.at(tablesNames.at(i));
+    }
+    res << "\n    ]\n";
+    res << "  },\n";
+
+    res << "  \"vector_layers\": [\n";
+    for (int i = 0; i < tablesNames.size(); i++) {
+        if (i != 0) res << ",\n";
+        res << "      " << tablesShort.at(tablesNames.at(i))->getMetadataJsonShort(maxs.at(tablesNames.at(i)),mins.at(tablesNames.at(i)));
+    }
+    res << "\n  ]\n";
+    res << "}\n";
+
+    layer->setMetadataJSON(res.str());
 
     return new MessageDataStream ( res.str(),"application/json" );
 }
@@ -336,6 +406,7 @@ void Rok4Server::buildTMSCapabilities() {
     tmsCapaTemplate += "<TileMapService version=\"1.0.0\" services=\"" + pathTag + "\">\n";
     tmsCapaTemplate += "  <Title>" + servicesConf->getTitle() + "</Title>\n";
     tmsCapaTemplate += "  <Abstract>" + servicesConf->getAbstract() + "</Abstract>\n";
+    tmsCapaTemplate += "  <StyleURL>" + servicesConf->getStyleURL() + "</StyleURL>\n";
     tmsCapaTemplate += "  <TileMaps>\n";
 
     std::map<std::string, Layer*>::iterator itLay ( serverConf->layersList.begin() ), itLayEnd ( serverConf->layersList.end() );
@@ -347,6 +418,7 @@ void Rok4Server::buildTMSCapabilities() {
             tmsCapaTemplate += "      title=\"" + lay->getTitle() + "\" \n";
             tmsCapaTemplate += "      srs=\"" + lay->getDataPyramid()->getTms()->getCrs().getRequestCode() + "\" \n";
             tmsCapaTemplate += "      profile=\"none\" \n";
+            tmsCapaTemplate += "      extension=\"" + Rok4Format::toExtension ( ( lay->getDataPyramid()->getFormat() ) ) + "\" \n";
             tmsCapaTemplate += "      href=\"" + pathTag + "/" + lay->getId() + "\" />\n";
         }
     }

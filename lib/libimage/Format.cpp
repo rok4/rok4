@@ -233,7 +233,7 @@ const char *eformat_mime[] = {
     "image/x-bil;bits=32",
     "image/tiff",
 
-    "application/octet-stream"
+    "application/x-protobuf"
 };
 
 const char *eformat_extension[] = {

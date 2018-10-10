@@ -338,7 +338,10 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
     /******************* PYRAMIDE VECTEUR *********************/
     
     for ( pElem=hLvl.FirstChild ( "table" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "table" ) ) {
+
         TiXmlHandle hElem ( pElem );
+
+        // Nom de l'attribut
         TiXmlElement *pElemTable = hElem.FirstChild ( "name" ).Element();
         if ( !pElemTable ) {
             LOGGER_ERROR ( filePath <<_ ( " Level " ) << id << _ ( ": table without name !!" ) );
@@ -348,13 +351,26 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
             LOGGER_ERROR ( filePath <<_ ( " Level " ) << id << _ ( ": table with empty name !!" ) );
             return;
         }
-
         std::string tableName  = std::string( pElemTable->GetText() );
+
+        // Type de géométrie
+        pElemTable = hElem.FirstChild ( "geometry" ).Element();
+        if ( !pElemTable ) {
+            LOGGER_ERROR ( filePath <<_ ( " Level " ) << id << _ ( ": table without geometry !!" ) );
+            return;
+        }
+        if ( !pElemTable->GetText() ) {
+            LOGGER_ERROR ( filePath <<_ ( " Level " ) << id << _ ( ": table with empty geometry !!" ) );
+            return;
+        }
+        std::string geometry  = std::string( pElemTable->GetText() );
+        
+
         std::vector<Attribute> atts;
-
-
         for ( pElemTable=hElem.FirstChild ( "attribute" ).Element(); pElemTable; pElemTable=pElemTable->NextSiblingElement ( "attribute" ) ) {
             TiXmlHandle hElemTable ( pElemTable );
+
+            // Nom de l'attribut
             TiXmlElement *pElemAtt = hElemTable.FirstChild ( "name" ).Element();
             if ( !pElemAtt ) {
                 LOGGER_ERROR ( filePath <<_ ( " Level " ) << id << _ ( ": attribute without name !!" ) );
@@ -367,6 +383,7 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
 
             std::string attName  = std::string( pElemAtt->GetText() );
 
+            // Type de l'attribut
             pElemAtt = hElemTable.FirstChild ( "type" ).Element();
             if ( !pElemAtt ) {
                 LOGGER_ERROR ( filePath <<_ ( " Level " ) << id << _ ( ": attribute without type !!" ) );
@@ -376,14 +393,46 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
                 LOGGER_ERROR ( filePath <<_ ( " Level " ) << id << _ ( ": attribute with empty type !!" ) );
                 return;
             }
-
             std::string attType  = std::string( pElemAtt->GetText() );
 
-            atts.push_back(Attribute(attName, attType));
+            // Count distinct de l'attribut
+            pElemAtt = hElemTable.FirstChild ( "count" ).Element();
+            if ( !pElemAtt ) {
+                LOGGER_ERROR ( filePath <<_ ( " Level " ) << id << _ ( ": attribute without count !!" ) );
+                return;
+            }
+            if ( !pElemAtt->GetText() ) {
+                LOGGER_ERROR ( filePath <<_ ( " Level " ) << id << _ ( ": attribute with empty count !!" ) );
+                return;
+            }
+            std::string attCount  = std::string( pElemAtt->GetText() );
+
+            // Valeurs de l'attribut
+            pElemAtt = hElemTable.FirstChild ( "values" ).Element();
+            std::string attValues = "";
+            if ( pElemAtt && pElemAtt->GetText() ) {
+                attValues = std::string( pElemAtt->GetText() );
+            }
+
+            // Min de l'attribut
+            pElemAtt = hElemTable.FirstChild ( "min" ).Element();
+            std::string attMin = "";
+            if ( pElemAtt && pElemAtt->GetText() ) {
+                attMin = std::string( pElemAtt->GetText() );
+            }
+
+            // Max de l'attribut
+            pElemAtt = hElemTable.FirstChild ( "max" ).Element();
+            std::string attMax = "";
+            if ( pElemAtt && pElemAtt->GetText() ) {
+                attMax = std::string( pElemAtt->GetText() );
+            }
+
+            atts.push_back(Attribute(attName, attType, attCount, attValues, attMin, attMax));
 
         }
 
-        tables.push_back(Table(tableName, atts));
+        tables.push_back(Table(tableName, geometry, atts));
     }
 
     /******************* PARTIE COMMUNE *********************/

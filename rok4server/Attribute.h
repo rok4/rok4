@@ -47,19 +47,70 @@ class Attribute
 {
 
     public:
-        Attribute(std::string n, std::string t) {
+        Attribute(std::string n, std::string t, std::string c, std::string v, std::string mn, std::string mx) {
             name = n;
             type = t;
+            count = c;
+            values = v;
+            min = mn;
+            max = mx;
+            metadataJson = "";
         };
         ~Attribute(){};
 
         std::string getName() {return name;}
         std::string getType() {return type;}
+        std::string getValues() {return values;}
+        std::string getCount() {return count;}
+        std::string getMin() {return min;}
+        std::string getMax() {return max;}
+
+        std::string getMetadataJson() {
+            if (metadataJson != "") return metadataJson;
+            /*
+            {
+                "attribute": "gid",
+                "count": 1,
+                "max": 49,
+                "min": 49,
+                "type": "number",
+                "values": [
+                    49
+                ]
+            }
+            */
+
+            std::ostringstream res;
+            res << "{\"attribute\":\"" << name << "\"";
+            res << ",\"count\":\"" << count << "\"";
+            res << ",\"type\":\"" << type << "\"";
+
+            if (min != "") {
+                res << ",\"min\":" << min;
+            }
+            if (max != "") {
+                res << ",\"max\":" << max;
+            }
+
+            if (values != "") {
+                res << ",\"values\":[" << values << "]";
+            }
+
+            res << "}";
+
+            metadataJson = res.str();
+            return metadataJson;
+        }
 
     private:
 
         std::string name;
         std::string type;
+        std::string values;
+        std::string count;
+        std::string min;
+        std::string max;
+        std::string metadataJson;
 };
 
 #endif // ATTRIBUTE_H

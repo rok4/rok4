@@ -101,6 +101,7 @@ use Log::Log4perl qw(:easy);
 use Data::Dumper;
 
 use COMMON::Database;
+use COMMON::Array;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -293,14 +294,43 @@ sub _load {
     }
 
     foreach my $t (@{$this->{tablenames}}) {
-        my $atts = $database->get_attributes_hash($this->{schemaname}, $t);
 
+        $this->{tables}->{$t} = {
+            geometry => undef,
+            attributes => { }
+        };
+
+        my $atts = $database->get_attributes_hash($this->{schemaname}, $t);
         if (! defined $atts) {
             ERROR( sprintf "Cannot get attributes of table %s.%s", $this->{schemaname}, $t );
             return FALSE;
         }
 
-        $this->{tables}->{$t} = $atts;
+        my ($geomname, $geomtype) = $database->get_geometry_column($this->{schemaname}, $t);
+
+        while (my ($attname, $atttype) = each (%{$atts})) {
+            if ($attname eq $geomname) {next;}
+            $this->{tables}->{$t}->{attributes}->{$attname} = {
+                type => $atttype
+            };
+
+            my $count = $database->get_distinct_values_count($this->{schemaname}, $t, $attname);
+            $this->{tables}->{$t}->{attributes}->{$attname}->{count} = $count;
+
+            my @numerics = ("integer", "real", "double precision", "numeric");
+            if (defined COMMON::Array::isInArray($atttype, @numerics)) {
+                my ($min, $max) = $database->get_min_max_values($this->{schemaname}, $t, $attname);
+                $this->{tables}->{$t}->{attributes}->{$attname}->{min} = $min;
+                $this->{tables}->{$t}->{attributes}->{$attname}->{max} = $max;
+            }
+
+            elsif ($count <= 50) {
+                my @distincts = $database->get_distinct_values($this->{schemaname}, $t, $attname);
+                $this->{tables}->{$t}->{attributes}->{$attname}->{values} = \@distincts;
+            }
+        }
+
+        $this->{tables}->{$t}->{geometry} = $geomtype;
     }
 
     $database->disconnect();
@@ -320,13 +350,13 @@ sub getCommandMakeJsons {
     my $this = shift;
     my $bbox = join(" ", @_);
 
-    my $dburl = sprintf "dbname=%s user=%s password=%s",
-        $this->{dbname}, $this->{username}, $this->{password};
+    my $dburl = sprintf "host=%s dbname=%s user=%s password=%s schemas=%s port=%s",
+        $this->{host}, $this->{dbname}, $this->{username}, $this->{password}, $this->{schemaname}, $this->{port};
 
     my $cmd = "MakeJsons \"$bbox\" \"$dburl\"";
 
     foreach my $t (@{$this->{tablenames}}) {
-        $cmd .= sprintf " %s.$t", $this->{schemaname};
+        $cmd .= " $t";
     }
 
     return "$cmd\n";

@@ -280,11 +280,6 @@ sub _loadValues {
     }
     $this->{tables} = $params->{tables};
 
-    if (exists $params->{oldtables}) {
-        # Faire la fusion à la main pour être sur de qui écrase 
-        $this->{tables} = { $params->{tables}, $params->{oldtables} }
-    }
-
     # check values
     if (! scalar ($params->{size})){
         ERROR("List empty to 'size' !");
@@ -399,13 +394,40 @@ sub _loadXML {
     foreach my $t (@tables) {
 
         my $tablename = $t->findvalue('name');
+        my $geometry = $a->findvalue('geometry');
+
+        $this->{tables}->{$tablename} = {
+            geometry => $geometry,
+            attributes => {}
+        };
 
         my @atts = $t->getElementsByTagName('attribute');
         foreach my $a (@atts) {
             my $attname = $a->findvalue('name');
             my $atttype = $a->findvalue('type');
+            my $min = $a->findvalue('min');
+            my $max = $a->findvalue('max');
+            my $count = $a->findvalue('count');
+            my $values = $a->findvalue('values');
 
-            $this->{tables}->{$tablename}->{$attname} = $atttype;
+            $this->{tables}->{$tablename}->{attributes}->{$attname} = {
+                type => $atttype,
+                count => $count
+            };
+
+            if (defined $min && $min ne "") {
+                $this->{tables}->{$tablename}->{attributes}->{$attname}->{min} = $min;
+            }
+
+            if (defined $max && $max ne "") {
+                $this->{tables}->{$tablename}->{attributes}->{$attname}->{max} = $max;
+            }
+
+            if (defined $values && $values ne "") {
+                $values = s/^"//g;
+                $values = s/"$//g;
+                $this->{tables}->{$tablename}->{attributes}->{$attname}->{values} = split(/","/, $values);
+            }
         }
     }
 
@@ -943,10 +965,22 @@ sub exportToXML {
     foreach my $table (keys(%{$this->{tables}})) {
         $string .=     "        <table>\n";
         $string .=     "            <name>$table</name>\n";
-        while (my ($att, $type) = each(%{$this->{tables}->{$table}})) {
+        $string .= sprintf "            <geometry>%s</geometry>\n", $this->{tables}->{$table}->{geometry};
+        while (my ($att, $hash) = each(%{$this->{tables}->{$table}->{attributes}})) {
             $string .= "            <attribute>\n";
             $string .= "                <name>$att</name>\n";
-            $string .= "                <type>$type</type>\n";
+            $string .= sprintf "                <type>%s</type>\n", $hash->{type};
+            $string .= sprintf "                <count>%s</count>\n", $hash->{count};
+
+            if (exists $hash->{min}) {
+                $string .= sprintf "                <min>%s</min>\n", $hash->{min};
+                $string .= sprintf "                <max>%s</max>\n", $hash->{max};
+            }
+
+            if (exists $hash->{values} && scalar @{$hash->{values}} != 0) {
+                $string .= sprintf "                <values>\"%s\"</values>\n", join("\",\"", @{$hash->{values}});
+            }
+
             $string .= "            </attribute>\n";
         }
         $string .=     "        </table>\n";

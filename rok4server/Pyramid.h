@@ -42,6 +42,8 @@ class Pyramid;
 
 #include <string>
 #include <map>
+#include <set>
+#include <functional>
 #include "Level.h"
 #include "PyramidXML.h"
 #include "TileMatrixSet.h"
@@ -51,6 +53,9 @@ class Pyramid;
 #include <Interpolation.h>
 #include "WebService.h"
 #include "Source.h"
+
+typedef std::function<bool(std::pair<std::string, Level*>, std::pair<std::string, Level*>)> ComparatorLevel;
+
 
 /**
 * @class Pyramid
@@ -180,6 +185,14 @@ public:
      * \return List of level
      */
     std::map<std::string, Level*>& getLevels() ;
+
+    /**
+     * \~french \brief Récupère les niveaux ordonnés par résolution décroissante
+     * \return Liste de level
+     * \~english \brief Get the levels ordered
+     * \return List of level
+     */
+    std::set<std::pair<std::string, Level*>, ComparatorLevel> getOrderedLevels(bool asc) ;
 
     Level* getLevel(std::string id) ;
 

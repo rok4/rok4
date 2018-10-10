@@ -725,4 +725,5 @@ uint32_t Level::getTilesPerHeight () { return tilesPerHeight; }
 Context* Level::getContext () { return context; }
 bool Level::isOnDemand() { return onDemand; }
 bool Level::isOnFly() { return onFly; }
+std::vector<Table>* Level::getTables() { return &tables; }
 std::vector<Source*> Level::getSources() { return sSources; }

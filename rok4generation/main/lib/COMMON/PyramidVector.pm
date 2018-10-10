@@ -584,7 +584,6 @@ sub addLevel {
         if (defined $ancestorLevel) {
             my ($rowMin,$rowMax,$colMin,$colMax) = $ancestorLevel->getLimits();
             $levelParams->{limits} = [$rowMin,$rowMax,$colMin,$colMax];
-            $levelParams->{oldtables} = $ancestorLevel->getTables();
         }
     }
 
@@ -689,7 +688,7 @@ sub writeDescriptor {
         return FALSE;
     }
 
-    if (! open FILE, ">", $descPath ){
+    if (! open FILE, ">:encoding(UTF-8)", $descPath ){
         ERROR(sprintf "Cannot open the pyramid descriptor %s to write",$descPath);
         return FALSE;
     }

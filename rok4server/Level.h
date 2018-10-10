@@ -119,6 +119,7 @@ public:
     uint32_t getTilesPerWidth() ;
     uint32_t getTilesPerHeight() ;
     std::vector<Source*> getSources() ;
+    std::vector<Table>* getTables() ;
 
     std::string getPath (int tilex, int tiley , int tilesPerW, int tilesPerH);
     std::string getDirPath ( int tilex, int tiley );

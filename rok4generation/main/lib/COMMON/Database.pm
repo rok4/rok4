@@ -863,19 +863,20 @@ Function: get_geometry_column_name
 Paramètre(s) (liste):
     schema_name - string - Nom du schéma dans lequel on veut connaître la colonne géométrique
     table_name - string - Nom de la table dans laquelle on veut connaître la colonne géométrique
+
 Retourne
-    le nom de la colonne géométrique, undef si pas de colonne géométrique dans la table
+    le nom de la colonne géométrique et son type, undef si pas de colonne géométrique dans la table
 =cut
-sub get_geometry_column_name {
+sub get_geometry_column {
     my $this = shift;
     my $schema_name = shift;
     my $table_name = shift;
 
-    my $sql = "SELECT f_geometry_column FROM geometry_columns WHERE f_table_schema = '$schema_name' AND f_table_name = '$table_name';";
+    my $sql = "SELECT f_geometry_column, type FROM geometry_columns WHERE f_table_schema = '$schema_name' AND f_table_name = '$table_name';";
 
     my @line = $this->select_one_row($sql);
 
-    return $line[0];
+    return ($line[0], $line[1]);
 }
 
 =begin nd
@@ -982,7 +983,7 @@ sub get_tables_array {
 }
 
 =begin nd
-Function: get_attributes_hash
+Function: get_distinct_values
 
 Paramètre(s) (liste):
     schema_name - string - Nom du schéma dans lequel on veut les valeurs distincte prises par l'attibut
@@ -1012,10 +1013,62 @@ sub get_distinct_values {
     my @array;
 
     foreach my $val (@{$att_values}) {
-        push @array, $val->[0];
+        if (defined $val->[0]) {
+            push @array, $val->[0];
+        }
     }
 
     return @array;
+}
+
+=begin nd
+Function: get_min_max_values
+
+Paramètre(s) (liste):
+    schema_name - string - Nom du schéma dans lequel on veut les valeurs min et max de l'attribut
+    table_name - string - Nom de la table dans laquelle on veut les valeurs min et max de l'attribut
+    att_name - string - Nom de l'attribut dont on veut les valeurs min et max
+
+Retourne
+    le min et le max des valeurs de l'attribut
+=cut
+sub get_min_max_values {
+    my $this = shift;
+    my $schema_name = shift;
+    my $table_name = shift;
+    my $att_name = shift;
+
+    my $sql = sprintf "SELECT min($att_name), max($att_name) FROM $schema_name.$table_name;";
+
+    my @line = $this->select_one_row($sql);
+
+    return ($line[0], $line[1]);
+
+}
+
+=begin nd
+Function: get_distinct_values_count
+
+Paramètre(s) (liste):
+    schema_name - string - Nom du schéma dans lequel on veut le nombre de valeurs distinctes prises par l'attibut
+    table_name - string - Nom de la table dans laquelle on veut le nombre de valeurs distinctes prises par l'attibut
+    att_name - string - Nom de l'attribut dont on veut le nombre de valeurs distinctes
+
+Retourne
+    le nombre de valeurs distinctes prises par l'attribut
+=cut
+sub get_distinct_values_count {
+    my $this = shift;
+    my $schema_name = shift;
+    my $table_name = shift;
+    my $att_name = shift;
+
+    my $sql = sprintf "SELECT count(*) FROM (SELECT DISTINCT $att_name FROM $schema_name.$table_name) as tmp;";
+
+    my @line = $this->select_one_row($sql);
+
+    return $line[0];
+
 }
 
 =begin nd

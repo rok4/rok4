@@ -48,19 +48,82 @@ class Table
 {
 
     public:
-        Table(std::string n, std::vector<Attribute> atts) {
+        Table(std::string n, std::string g, std::vector<Attribute> atts) {
             name = n;
+            geometry = g;
             attributes = atts;
+            metadataJsonLong = "";
+            metadataJsonShort = "";
         }
         ~Table(){};
 
         std::string getName() {return name;}
+        std::string getGeometry() {return geometry;}
         std::vector<Attribute> getAttributes() {return attributes;}
+        std::string getMetadataJsonLong() {
+            if (metadataJsonLong != "") return metadataJsonLong;
+            /*
+            {
+                "attributeCount": 8,
+                "attributes": [...],
+                "geometry": "Polygon",
+                "layer": "filter"
+            }
+            */
+
+            std::ostringstream res;
+            res << "{\"layer\":\"" << name << "\"";
+            res << ",\"geometry\":\"" << geometry << "\"";
+            res << ",\"attributeCount\":\"" << attributes.size() << "\"";
+            res << ",\"attributes\":[";
+            for (int i = 0; i < attributes.size(); i++) {
+                if (i != 0) {
+                    res << ",";
+                }
+                res << attributes.at(i).getMetadataJson();
+            }
+            res << "]}";
+
+            metadataJsonLong = res.str();
+            return metadataJsonLong;
+        }
+        std::string getMetadataJsonShort(std::string max, std::string min) {
+            if (metadataJsonShort != "") return metadataJsonShort;
+            /*
+            {
+                "fields": {
+                    "genre": "String"
+                },
+                "id": "limite_administrative_simp",
+                "maxzoom": 18,
+                "minzoom": 13
+            }
+            */
+
+            std::ostringstream res;
+            res << "{\"id\":\"" << name << "\"";
+            res << ",\"maxzoom\":\"" << max << "\"";
+            res << ",\"minzoom\":\"" << min << "\"";
+            res << ",\"fields\":{";
+            for (int i = 0; i < attributes.size(); i++) {
+                if (i != 0) {
+                    res << ",";
+                }
+                res << "\"" << attributes.at(i).getName() << "\": \"" << attributes.at(i).getType() << "\"";
+            }
+            res << "}}";
+
+            metadataJsonShort = res.str();
+            return metadataJsonShort;
+        }
 
     private:
 
         std::string name;
+        std::string geometry;
         std::vector<Attribute> attributes;
+        std::string metadataJsonLong;
+        std::string metadataJsonShort;
 };
 
 #endif // ATTRIBUTE_H

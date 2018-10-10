@@ -64,6 +64,7 @@ Layer::Layer ( const LayerXML& l ) {
     this->geographicBoundingBox = l.geographicBoundingBox;
     this->boundingBox = l.boundingBox;
     this->metadataURLs = l.metadataURLs;
+    this->metadataJson = "";
 
     if (Rok4Format::isRaster(this->dataPyramid->getFormat())) {
 
@@ -110,6 +111,7 @@ Layer::Layer (Layer* obj, ServerXML* sxml) {
     geographicBoundingBox = obj->geographicBoundingBox;
     boundingBox = obj->boundingBox;
     metadataURLs = obj->metadataURLs;
+    metadataJson = "";
 
     // On clone la pyramide de données
     dataPyramid = new Pyramid(obj->dataPyramid, sxml);
@@ -193,6 +195,8 @@ Style* Layer::getStyle(std::string id) {
     return NULL;
 }
 std::string Layer::getTitle() { return title; }
+std::string Layer::getMetadataJSON() { return metadataJson; }
+void Layer::setMetadataJSON(std::string mjson) { metadataJson = mjson; }
 std::vector<CRS> Layer::getWMSCRSList() { return WMSCRSList; }
 bool Layer::isInWMSCRSList(CRS* c) {
     for ( unsigned int k = 0; k < WMSCRSList.size(); k++ ) {
