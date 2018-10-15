@@ -308,21 +308,23 @@ DataStream* Rok4Server::TMSGetLayerMetadata ( Request* request ) {
     res << "{\n";
     res << "  \"name\": \"" << layer->getId() << "\",\n";
     res << "  \"description\": \"" << layer->getAbstract() << "\",\n";
-    res << "  \"minzoom\": \"" << minzoom << "\",\n";
-    res << "  \"maxzoom\": \"" << maxzoom << "\",\n";
+    res << "  \"minzoom\": " << minzoom << ",\n";
+    res << "  \"maxzoom\": " << maxzoom << ",\n";
+    res << "  \"crs\": \"" << layer->getDataPyramid()->getTms()->getCrs().getRequestCode() << "\",\n";
 
-    res << "  \"center\": \"" <<
-        ((layer->getBoundingBox().maxx + layer->getBoundingBox().minx) / 2.) << "," << 
-        ((layer->getBoundingBox().maxy + layer->getBoundingBox().miny) / 2.) << "\",\n";
+    res << std::fixed << "  \"center\": [" <<
+        ((layer->getGeographicBoundingBox().maxx + layer->getGeographicBoundingBox().minx) / 2.) << "," << 
+        ((layer->getGeographicBoundingBox().maxy + layer->getGeographicBoundingBox().miny) / 2.) << "],\n";
 
-    res << "  \"bounds\": \"" << layer->getBoundingBox().minx << "," << 
-        layer->getBoundingBox().miny << "," << 
-        layer->getBoundingBox().maxx << "," << 
-        layer->getBoundingBox().maxy << "\",\n";
+    res << std::fixed << "  \"bounds\": [" << 
+        layer->getGeographicBoundingBox().minx << "," << 
+        layer->getGeographicBoundingBox().miny << "," << 
+        layer->getGeographicBoundingBox().maxx << "," << 
+        layer->getGeographicBoundingBox().maxy << 
+    "],\n";
 
     res << "  \"format\": \"" << Rok4Format::toExtension ( ( layer->getDataPyramid()->getFormat() ) ) << "\",\n";
-    res << "  \"generator\": \"vek4 " << ROK4_VERSION << "\",\n";
-
+    res << "  \"tiles\":[\"" << serviceURL << "/" << layer->getId() << "/{z}/{x}/{y}." << Rok4Format::toExtension ( ( layer->getDataPyramid()->getFormat() ) ) << "\"],\n";
     res << "  \"tilestats\": {\n";
     res << "    \"layerCount\": " << tablesLong.size() << ",\n";
     res << "    \"layers\": [\n";
