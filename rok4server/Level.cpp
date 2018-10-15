@@ -208,7 +208,7 @@ Level::~Level() {
         delete pS;
     }
 
-    delete[] nodataValue;
+    if (Rok4Format::isRaster(format)) delete[] nodataValue;
 }
 
 

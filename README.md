@@ -16,7 +16,7 @@ BE4 est un ensemble de scripts de traitement permettant la préparation et la tr
 * http://www.geoportail.gouv.fr [@Geoportail](https://twitter.com/Geoportail)
 * http://www.rok4.org
 
-ROK4 Version : 2.2.1-DEVELOP
+ROK4 Version : 3.0.0-VECTOR
 
 # Fonctionnement général
 
@@ -62,7 +62,7 @@ Les paquets (`Debian`|`Centos`) à installer sont :
 * (`libtiff5-dev`|`libtiff-devel`) pour la lecture et écriture des images TIFF
 * (`libpng16-dev`|`libpng-devel`) pour la lecture des images PNG
 * (`libcurl4-openssl-dev`|`libcurl-devel`) et (`libssl-dev`|`openssl-devel`) pour l'envoi de requête HTTP(S)
-* (`libturbojpeg0-dev`|`turbojpeg-devel`) et (`libjpeg`|`libjpeg-turbo-devel`) pour la lecture des images JPEG
+* (`libturbojpeg0-dev`|`turbojpeg-devel`) et (`libjpeg-dev`|`libjpeg-turbo-devel`) pour la lecture des images JPEG
 * (`libopenjp2-7-dev`|`openjpeg2-devel`) pour la lecture des images JPEG2000 si Kakadu n'est pas utilisé
 * (`libc6-dev`|) pour les l'utilisation de thread POSIX
 

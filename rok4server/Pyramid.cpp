@@ -406,7 +406,7 @@ Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst
 
 Pyramid::~Pyramid() {
 
-    delete[] ndValues;
+    if (Rok4Format::isRaster(format)) delete[] ndValues;
 
     std::map<std::string, Level*>::iterator iLevel;
     for ( iLevel=levels.begin(); iLevel!=levels.end(); iLevel++ )

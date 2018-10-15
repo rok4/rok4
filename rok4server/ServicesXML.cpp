@@ -540,6 +540,7 @@ bool ServicesXML::are_the_two_CRS_equal( std::string crs1, std::string crs2 ) {
 ServicesXML::~ServicesXML(){ 
     delete mtdWMS;
     delete mtdWMTS;
+    delete mtdTMS;
 }
 
 bool ServicesXML::isOk() { return ok; }
