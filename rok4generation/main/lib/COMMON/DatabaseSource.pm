@@ -127,8 +127,9 @@ my %DEFAULT;
 BEGIN {}
 INIT {
     %DEFAULT = (
-        db_port => 5432,
-        db_schema => "public"
+        port => 5432,
+        schema => "public",
+        attributes => "*"
     );
 }
 END {}
@@ -190,17 +191,7 @@ Function: _init
 Checks and stores attributes' values.
 
 Parameters (hash):
-    wms_layer - string - Layer to harvest.
-    wms_url - string - WMS server url.
-    wms_version - string - WMS version.
-    wms_request - string - Request's type.
-    wms_format - string - Result's format.
-    wms_bgcolor - string - Optionnal. Hexadecimal red-green-blue colour value for the background color (white = "0xFFFFFF").
-    wms_transparent - boolean - Optionnal.
-    wms_style - string - Optionnal.
-    min_size - integer - Optionnal. 0 by default
-    max_width - integer - Optionnal.
-    max_height - integer - Optionnal.
+
 =cut
 sub _init {
     my $this   = shift;
@@ -209,68 +200,77 @@ sub _init {
     return FALSE if (! defined $params);
     
     # PORT    
-    if (! exists($params->{db_port}) || ! defined ($params->{db_port})) {
-        $this->{db_port} = $DEFAULT{db_port};
-        INFO(sprintf "Default value for 'db_port' : %s", $this->{db_port});
+    if (! exists($params->{db}->{port}) || ! defined ($params->{db}->{port})) {
+        $this->{db_port} = $DEFAULT{port};
+        INFO(sprintf "Default value for 'db.port' : %s", $this->{port});
     } else {
-        if (int($params->{db_port}) <= 0) {
-            ERROR("If 'db_port' is given, it must be strictly positive.");
+        if (int($params->{db}->{port}) <= 0) {
+            ERROR("If 'db.port' is given, it must be strictly positive.");
             return FALSE ;
         }
-        $this->{port} = int($params->{db_port});
-    }
-
-    # SCHEMA    
-    if (! exists($params->{db_schema}) || ! defined ($params->{db_schema})) {
-        $this->{db_schema} = $DEFAULT{db_schema};
-        INFO(sprintf "Default value for 'db_schema' : %s", $this->{db_schema});
-    } else {
-        $this->{schemaname} = $params->{db_schema};
+        $this->{port} = int($params->{db}->{port});
     }
 
     # Other parameters are mandatory
     # HOST
-    if (! exists($params->{db_host}) || ! defined ($params->{db_host})) {
-        ERROR("Parameter 'db_host' is required !");
+    if (! exists($params->{db}->{host}) || ! defined ($params->{db}->{host})) {
+        ERROR("Parameter 'db.host' is required !");
         return FALSE ;
     }
-    $this->{host} = $params->{db_host};
-    # DBNAME
-    if (! exists($params->{db_name}) || ! defined ($params->{db_name})) {
-        ERROR("Parameter 'db_name' is required !");
+    $this->{host} = $params->{db}->{host};
+    # DATABASE
+    if (! exists($params->{db}->{database}) || ! defined ($params->{db}->{database})) {
+        ERROR("Parameter 'db.database' is required !");
         return FALSE ;
     }
-    $this->{dbname} = $params->{db_name};
+    $this->{dbname} = $params->{db}->{database};
     # USERNAME
-    if (! exists($params->{db_user}) || ! defined ($params->{db_user})) {
-        ERROR("Parameter 'db_user' is required !");
+    if (! exists($params->{db}->{user}) || ! defined ($params->{db}->{user})) {
+        ERROR("Parameter 'db.user' is required !");
         return FALSE ;
     }
-    $this->{username} = $params->{db_user};
+    $this->{username} = $params->{db}->{user};
     # PASSWORD
-    if (! exists($params->{db_pwd}) || ! defined ($params->{db_pwd})) {
-        ERROR("Parameter 'db_pwd' is required !");
+    if (! exists($params->{db}->{password}) || ! defined ($params->{db}->{password})) {
+        ERROR("Parameter 'db.password' is required !");
         return FALSE ;
     }
-    $this->{password} = $params->{db_pwd};
+    $this->{password} = $params->{db}->{password};
 
     # TABLES
-    if (! exists($params->{db_tables}) || ! defined ($params->{db_tables})) {
-        ERROR("Parameter 'db_tables' is required !");
+    if (! exists($params->{tables}) || ! defined ($params->{tables})) {
+        ERROR("Parameter 'tables' is required !");
+        return FALSE ;
+    }
+    if (! ref($params->{tables}) eq "ARRAY") {
+        ERROR("Parameter 'tables' have to be an array");
         return FALSE ;
     }
 
-    $params->{db_tables} =~ s/ //;
-    my @tables = split (/,/,$params->{db_tables},-1);
-    foreach my $t (@tables) {
-        if ($t eq '') {
-            next;
+    foreach my $t (@{$params->{tables}}) {
+        if (! exists($t->{native_name}) || ! defined ($t->{native_name})) {
+            ERROR("Parameter 'native_name' is required for a table !");
+            return FALSE ;
         }
-        push(@{$this->{tablenames}}, $t);
+        if (! exists($t->{final_name}) || ! defined ($t->{final_name})) {
+            $t->{final_name} = $t->{native_name};
+        }
+        if (! exists($t->{schema}) || ! defined ($t->{schema})) {
+            $t->{schema} = $DEFAULT{schema};
+        }
+        if (! exists($t->{attributes}) || ! defined ($t->{attributes})) {
+            $t->{attributes} = $DEFAULT{attributes};
+        }
+        if (! exists($t->{filter}) || ! defined ($t->{filter})) {
+            $t->{filter} = "";
+        }
+
+        push(@{$this->{tablenames}}, sprintf ("%s.%s", $t->{native_name}, $t->{schema}));
+        $this->{tables}->{sprintf ("%s.%s", $t->{schema}, $t->{native_name})} = $t;
     }
 
     if (scalar(@{$this->{tablenames}}) == 0) {
-        ERROR("Parameter 'db_tables' contains no table name");
+        ERROR("Parameter 'tables' contains no table");
         return FALSE ;
     }
     
@@ -293,44 +293,56 @@ sub _load {
         return FALSE;
     }
 
-    foreach my $t (@{$this->{tablenames}}) {
+    while ( my ($table, $hash) = each(%{$this->{tables}})) {
 
-        $this->{tables}->{$t} = {
-            geometry => undef,
-            attributes => { }
-        };
-
-        my $atts = $database->get_attributes_hash($this->{schemaname}, $t);
-        if (! defined $atts) {
-            ERROR( sprintf "Cannot get attributes of table %s.%s", $this->{schemaname}, $t );
+        if (! $database->is_table_exist($hash->{schema}, $hash->{native_name})) {
+            ERROR("Table $table does not exist");
             return FALSE;
         }
 
-        my ($geomname, $geomtype) = $database->get_geometry_column($this->{schemaname}, $t);
+        my ($geomname, $geomtype) = $database->get_geometry_column($hash->{schema}, $hash->{native_name});
+        $hash->{geometry} = {
+            type => $geomtype,
+            name => $geomname
+        };
 
-        while (my ($attname, $atttype) = each (%{$atts})) {
-            if ($attname eq $geomname) {next;}
-            $this->{tables}->{$t}->{attributes}->{$attname} = {
-                type => $atttype
+        my $native_atts = $database->get_attributes_hash($hash->{schema}, $hash->{native_name});
+        
+        if ($hash->{attributes} eq "*") {
+            $hash->{attributes} = join(",", keys(%{$native_atts}));
+        }
+
+        my @asked_atts = split(/,/, $hash->{attributes});
+
+        $hash->{attributes_analysis} = {};
+        foreach my $a (@asked_atts) {
+            if (! exists $native_atts->{$a}) {
+                ERROR("Attribute $a is not present in table $table");
+                return FALSE;
+            }
+
+            if ($a eq $geomname) {next;}
+
+            $hash->{attributes_analysis}->{$a} = {
+                type => $native_atts->{$a}
             };
 
-            my $count = $database->get_distinct_values_count($this->{schemaname}, $t, $attname);
-            $this->{tables}->{$t}->{attributes}->{$attname}->{count} = $count;
+            my $count = $database->get_distinct_values_count($hash->{schema}, $hash->{native_name}, $a);
+            $hash->{attributes_analysis}->{$a}->{count} = $count;
 
             my @numerics = ("integer", "real", "double precision", "numeric");
-            if (defined COMMON::Array::isInArray($atttype, @numerics)) {
-                my ($min, $max) = $database->get_min_max_values($this->{schemaname}, $t, $attname);
-                $this->{tables}->{$t}->{attributes}->{$attname}->{min} = $min;
-                $this->{tables}->{$t}->{attributes}->{$attname}->{max} = $max;
+            if (defined COMMON::Array::isInArray($native_atts->{$a}, @numerics)) {
+                my ($min, $max) = $database->get_min_max_values($hash->{schema}, $hash->{native_name}, $a);
+                $hash->{attributes_analysis}->{$a}->{min} = $min;
+                $hash->{attributes_analysis}->{$a}->{max} = $max;
             }
 
             elsif ($count <= 50) {
-                my @distincts = $database->get_distinct_values($this->{schemaname}, $t, $attname);
-                $this->{tables}->{$t}->{attributes}->{$attname}->{values} = \@distincts;
+                my @distincts = $database->get_distinct_values($hash->{schema}, $hash->{native_name}, $a);
+                $hash->{attributes_analysis}->{$a}->{values} = \@distincts;
             }
         }
 
-        $this->{tables}->{$t}->{geometry} = $geomtype;
     }
 
     $database->disconnect();
@@ -348,15 +360,23 @@ Function: getCommandMakeJsons
 =cut
 sub getCommandMakeJsons {
     my $this = shift;
+
     my $bbox = join(" ", @_);
+    my $dburl = sprintf "host=%s dbname=%s user=%s password=%s port=%s",
+        $this->{host}, $this->{dbname}, $this->{username}, $this->{password}, $this->{port};
 
-    my $dburl = sprintf "host=%s dbname=%s user=%s password=%s schemas=%s port=%s",
-        $this->{host}, $this->{dbname}, $this->{username}, $this->{password}, $this->{schemaname}, $this->{port};
+    my $cmd = "";
+    while (my ($table, $hash) = each(%{$this->{tables}})) {
+        my $sql = sprintf "SELECT %s,%s FROM $table", 
+            join(",", keys(%{$hash->{attributes_analysis}})), 
+            $hash->{geometry}->{name};
+            
+        if ($hash->{filter} ne "") {
+            $sql .= sprintf " WHERE %s", $hash->{filter};
+        }
 
-    my $cmd = "MakeJsons \"$bbox\" \"$dburl\"";
+        $cmd .= sprintf "MakeJson \"$bbox\" \"$dburl\" \"$sql\" %s \n", $hash->{final_name};
 
-    foreach my $t (@{$this->{tablenames}}) {
-        $cmd .= " $t";
     }
 
     return "$cmd\n";

@@ -73,6 +73,7 @@ use Data::Dumper;
 use List::Util qw(min max);
 
 # My module
+use COMMON::Config;
 use COMMON::DataSource;
 
 require Exporter;
@@ -176,10 +177,20 @@ sub _load {
     my $this   = shift;
 
 
-    my $propLoader = COMMON::Config->new({
-        'filepath' => $this->{FILEPATH_DATACONF},
-        'format' => "INI"
-    });
+    my $propLoader;
+
+    if ($this->{FILEPATH_DATACONF} =~ m/\.json$/) {
+        # 4ALAMO use JSON for datasource configuration file
+        $propLoader = COMMON::Config->new({
+            'filepath' => $this->{FILEPATH_DATACONF},
+            'format' => "JSON"
+        });
+    } else {
+        $propLoader = COMMON::Config->new({
+            'filepath' => $this->{FILEPATH_DATACONF},
+            'format' => "INI"
+        });
+    }
 
     if (! defined $propLoader) {
         ERROR("Can not load sources' properties !");
@@ -193,7 +204,6 @@ sub _load {
         return FALSE;
     }
 
-    my $sources = $this->{dataSources};
     my $nbSources = 0;
 
     while( my ($level,$params) = each(%sourcesProperties) ) {
@@ -210,11 +220,10 @@ sub _load {
             $this->{type} = $datasource->getType();
         }
 
-        push @{$sources}, $datasource;
-        $nbSources++;
+        push @{$this->{dataSources}}, $datasource;
     }
 
-    if ($nbSources == 0) {
+    if (scalar(@{$this->{dataSources}}) == 0) {
         ERROR ("No source !");
         return FALSE;
     }

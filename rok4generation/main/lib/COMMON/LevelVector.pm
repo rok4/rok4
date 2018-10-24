@@ -963,12 +963,12 @@ sub exportToXML {
     }
 
     foreach my $table (keys(%{$this->{tables}})) {
-        $string .=     "        <table>\n";
-        $string .=     "            <name>$table</name>\n";
-        $string .= sprintf "            <geometry>%s</geometry>\n", $this->{tables}->{$table}->{geometry};
-        while (my ($att, $hash) = each(%{$this->{tables}->{$table}->{attributes}})) {
-            $string .= "            <attribute>\n";
-            $string .= "                <name>$att</name>\n";
+        $string .=         "        <table>\n";
+        $string .= sprintf "            <name>%s</name>\n", $this->{tables}->{$table}->{final_name};
+        $string .= sprintf "            <geometry>%s</geometry>\n", $this->{tables}->{$table}->{geometry}->{type};
+        while (my ($att, $hash) = each(%{$this->{tables}->{$table}->{attributes_analysis}})) {
+            $string .=     "            <attribute>\n";
+            $string .=     "                <name>$att</name>\n";
             $string .= sprintf "                <type>%s</type>\n", $hash->{type};
             $string .= sprintf "                <count>%s</count>\n", $hash->{count};
 

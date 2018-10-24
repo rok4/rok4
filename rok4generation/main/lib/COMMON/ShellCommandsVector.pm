@@ -125,27 +125,20 @@ sub new {
 #                                        Group: MAKE JSONS                                         #
 ####################################################################################################
 
-# Constant: MAKEJSONS_W
-use constant MAKEJSONS_W => 1;
+# Constant: MAKEJSON_W
+use constant MAKEJSON_W => 1;
 
-my $MAKEJSONS = <<'FUNCTION';
-MakeJsons () {
+my $MAKEJSON = <<'FUNCTION';
+
+mkdir -p ${TMP_DIR}/jsons/
+MakeJson () {
     local bbox=$1
     local dburl=$2
-    shift 2
+    local sql=$3
+    local output=$4 
 
-    mkdir -p ${TMP_DIR}/jsons/
-    rm ${TMP_DIR}/jsons/*.json
-
-    for i in `seq 1 $#`;
-    do
-        tablename=$1
-        jsonname="${tablename}.json"
-        ogr2ogr -f "GeoJSON" -spat $bbox "${TMP_DIR}/jsons/$jsonname" PG:"$dburl" $tablename
-        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-        shift
-    done
-    
+    ogr2ogr -f "GeoJSON" -spat $bbox -sql "$sql" ${TMP_DIR}/jsons/${output}.json PG:"$dburl"
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi     
 }
 FUNCTION
 
@@ -155,9 +148,6 @@ Function: makeJsons
 Parameters (list):
     node - <Node> - Top node to generate thanks to a 'tippecanoe' command.
     databaseSource - <COMMON::DatabaseSource> - To use to extract vector data.
-    
-Example:
-|    MakeJsons 
 
 Returns:
     An array (code, weight), ("",-1) if error.
@@ -167,7 +157,7 @@ sub makeJsons {
     my $node = shift;
     my $databaseSource = shift;
     
-    my ($code, $weight) = ("",MAKEJSONS_W);
+    my ($code, $weight) = ("",MAKEJSON_W);
 
     $code = $databaseSource->getCommandMakeJsons($node->getBBox());
 
@@ -182,13 +172,16 @@ sub makeJsons {
 use constant MAKETILES_W => 1;
 
 my $MAKETILES = <<'FUNCTION';
+
+mkdir -p ${TMP_DIR}/pbfs/
 MakeTiles () {
 
-    mkdir -p ${TMP_DIR}/pbfs/
     rm -r ${TMP_DIR}/pbfs/*
 
     tippecanoe __tpc__ --no-tile-compression -Z ${TOP_LEVEL} -z ${BOTTOM_LEVEL} -e ${TMP_DIR}/pbfs/  ${TMP_DIR}/jsons/*.json
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    if [ $? != 0 ] ; then echo $0; fi
+
+    rm ${TMP_DIR}/jsons/*.json
 }
 FUNCTION
 
@@ -338,7 +331,7 @@ sub getConfiguredFunctions {
 
     ######## MAKEJSONS ########
 
-    $functions .= $MAKEJSONS;
+    $functions .= $MAKEJSON;
 
     ######## MAKETILES ########
 

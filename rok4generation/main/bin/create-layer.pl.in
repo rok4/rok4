@@ -81,7 +81,9 @@ use lib "$Bin/../lib/perl5";
 use COMMON::TileMatrixSet;
 use COMMON::Layer;
 use COMMON::PyramidRaster;
+use COMMON::PyramidVector;
 use COMMON::LevelRaster;
+use COMMON::LevelVector;
 
 ################################################################################
 # Constantes
@@ -278,8 +280,14 @@ sub doIt {
     my $pyramid = COMMON::PyramidRaster->new("DESCRIPTOR", $options{pyramid});
 
     if (! defined $pyramid) {
-        ERROR("Cannot create the Pyramid object");
-        return FALSE;
+
+        # Est-elle vecteur ?
+        $pyramid = COMMON::PyramidVector->new("DESCRIPTOR", $options{pyramid});
+
+        if (! defined $pyramid) {
+            ERROR("Cannot create the Pyramid object (neither raster nor vector)");
+            return FALSE;
+        }
     }
 
     if (! $pyramid->bindTileMatrixSet($options{"tms-path"})) {
@@ -357,22 +365,38 @@ sub doIt {
     my $pyrName = File::Basename::basename($options{pyramid});
     $pyrName =~ s/\.(pyr|PYR)$//;
 
-    my $params = {
-        title            => $pyrName,
-        abstract         => "Couche utilisant le descripteur de pyramide $pyrName.pyr",
-        keywordlist      => \@keyword,
-        style            => $options{style},
-        minres           => $minres,
-        maxres           => $maxres,
-        opaque           => $options{opaque},
-        authority        => $auth,
-        srslist          => \@lstsrs,
-        resampling       => $options{resampling},
-        geo_bbox         => [$bgx,$bgy,$hdx,$hdy],
-        proj             => $srs,
-        proj_bbox        => [$xmin,$ymin,$xmax,$ymax],
-        pyramid          => $options{pyramid},
-    };
+    my $params;
+    if (ref ($pyramid) eq "COMMON::PyramidRaster") {
+        $params = {
+            title            => $pyrName,
+            abstract         => "Couche utilisant le descripteur de pyramide $pyrName.pyr",
+            keywordlist      => \@keyword,
+            style            => $options{style},
+            minres           => $minres,
+            maxres           => $maxres,
+            opaque           => $options{opaque},
+            authority        => $auth,
+            srslist          => \@lstsrs,
+            resampling       => $options{resampling},
+            geo_bbox         => [$bgx,$bgy,$hdx,$hdy],
+            proj             => $srs,
+            proj_bbox        => [$xmin,$ymin,$xmax,$ymax],
+            pyramid          => $options{pyramid},
+        };
+    } else {
+        $params = {
+            title            => $pyrName,
+            abstract         => "Couche utilisant le descripteur de pyramide $pyrName.pyr",
+            keywordlist      => \@keyword,
+            minres           => $minres,
+            maxres           => $maxres,
+            authority        => $auth,
+            geo_bbox         => [$bgx,$bgy,$hdx,$hdy],
+            proj             => $srs,
+            proj_bbox        => [$xmin,$ymin,$xmax,$ymax],
+            pyramid          => $options{pyramid},
+        };
+    }
 
     my $objLayer = COMMON::Layer->new($params);
 

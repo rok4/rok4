@@ -18,7 +18,7 @@ buildlib:
 
 buildbin: \
 ./bin/be4-file.pl \
-./bin/vek4-file.pl \
+./bin/4alamo-file.pl \
 ./bin/be4-ceph.pl \
 ./bin/be4-s3.pl \
 ./bin/be4-swift.pl \

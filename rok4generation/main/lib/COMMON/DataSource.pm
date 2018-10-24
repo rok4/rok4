@@ -307,9 +307,9 @@ sub _load {
     }
     $this->{harvesting} = $harvesting;
 
-    # DatabaseSource is optionnal, but if we have 'db_host' parameter, we suppose that we have others
+    # DatabaseSource is optionnal, but if we have 'db' parameter, we suppose that we have others
     my $database = undef;
-    if (exists $params->{db_host}) {
+    if (exists $params->{db}) {
         $database = COMMON::DatabaseSource->new($params);
         if (! defined $database) {
             ERROR("Cannot create the DatabaseSource object");

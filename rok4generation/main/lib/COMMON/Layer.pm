@@ -118,22 +118,20 @@ my $STRLYRTMPLT   = <<"TLYR";
     <keywordList>
     <!-- __KEYWORDS__ -->
 </keywordList>
-    <style>__STYLE__</style>
+    __STYLE__
     <EX_GeographicBoundingBox>
         <westBoundLongitude>__W__</westBoundLongitude>
         <eastBoundLongitude>__E__</eastBoundLongitude>
         <southBoundLatitude>__S__</southBoundLatitude>
         <northBoundLatitude>__N__</northBoundLatitude>
     </EX_GeographicBoundingBox>
-    <WMSCRSList>
-    <!-- __SRSS__ -->
-</WMSCRSList>
+    __SRSS__
     <boundingBox CRS="__SRS__" minx="__MINX__" miny="__MINY__" maxx="__MAXX__" maxy="__MAXY__"/>
     <minRes>__MINRES__</minRes>
     <maxRes>__MAXRES__</maxRes>
-    <opaque>__OPAQUE__</opaque>
+    __OPAQUE__
     <authority>__AUTHORITY__</authority>
-    <resampling>__RESAMPLING__</resampling>
+    __RESAMPLING__
     <pyramid>__PYRAMID__</pyramid>
 </layer>
 TLYR
@@ -148,8 +146,7 @@ TK
 # Constant: STRSRSTMPLT
 # Define the template XML for the SRS part of a layer.
 my $STRSRSTMPLT = <<"TSRS";
-    <WMSCRS>__SRS__</WMSCRS>
-    <!-- __SRSS__ -->
+        <WMSCRS>__SRS__</WMSCRS>
 TSRS
 
 # Constant: DEFAULT
@@ -287,10 +284,6 @@ sub _init {
         return FALSE;
     }
     
-    if (! scalar (@{$params->{srslist}})){
-        ERROR("list empty to 'srslist' !");
-        return FALSE;
-    }
     
     # parameters optional or by default !
     if (! exists($params->{proj}) || ! defined ($params->{proj})) {
@@ -303,11 +296,6 @@ sub _init {
         INFO(sprintf "Default value for 'abstract' : %s", $params->{abstract});
     }
 
-    if (! exists($params->{style}) || ! defined ($params->{style})) {
-        $params->{style} = $DEFAULT{style};
-        INFO(sprintf "Default value for 'style' : %s", $params->{style});
-    }
-
     if (! exists($params->{minres}) || ! defined ($params->{minres})) {
         $params->{minres} = $DEFAULT{minres};
         INFO(sprintf "Default value for 'minres' : %s", $params->{minres});
@@ -318,20 +306,12 @@ sub _init {
         INFO(sprintf "Default value for 'maxres' : %s", $params->{maxres});
     }
 
-    if (! exists($params->{resampling}) || ! defined ($params->{resampling})) {
-        $params->{resampling} = $DEFAULT{resampling};
-        INFO(sprintf "Default value for 'resampling' : %s", $params->{resampling});
-    }
 
     if (! exists($params->{authority}) || ! defined ($params->{authority})) {
         $params->{authority} = $DEFAULT{authority};
         INFO(sprintf "Default value for 'authority' : %s", $params->{authority});
     }
 
-    if (! exists($params->{opaque}) || ! defined ($params->{opaque})) {
-        $params->{opaque} = $DEFAULT{opaque};
-        INFO(sprintf "Default value for 'opaque' : %s", $params->{opaque});
-    }
     
     if (! exists($params->{keywordlist}) || ! defined ($params->{keywordlist})) {
         $params->{keywordlist} = $DEFAULT{keywordlist};
@@ -437,10 +417,11 @@ sub exportToXML {
   
   my $title    = $this->{title};
   $strlyrtmplt =~ s/__TITLE__/$title/;
-  
-  my $style    = $this->{style};
+
+  my $style = $this->{style};
+  if (! defined $style) {$style = "";} else {$style = "<style>$style</style>";}
   $strlyrtmplt =~ s/__STYLE__/$style/;
-  
+
   my $abstract = $this->{abstract};
   $strlyrtmplt =~ s/__ABSTRACT__/$abstract/;
   
@@ -450,9 +431,11 @@ sub exportToXML {
   $strlyrtmplt =~ s/__MAXRES__/$maxres/;
   
   my $opaque   = $this->{opaque};
+  if (! defined $opaque) {$opaque = "";} else {$opaque = "<opaque>$opaque</opaque>";}
   $strlyrtmplt =~ s/__OPAQUE__/$opaque/;
   
   my $resampling = $this->{resampling};
+  if (! defined $resampling) {$resampling = "";} else {$resampling = "<resampling>$resampling</resampling>";}
   $strlyrtmplt   =~ s/__RESAMPLING__/$resampling/;
   
   my $pyramid  = $this->{pyramid};
@@ -475,11 +458,18 @@ sub exportToXML {
   $strlyrtmplt =~ s/__N__/$n/;
   $strlyrtmplt =~ s/__S__/$s/;
   
-  foreach (@{$this->{srslist}}) {
-    $strlyrtmplt =~ s/<!-- __SRSS__ -->\n/$STRSRSTMPLT/;
-    $strlyrtmplt =~ s/__SRS__/$_/;
+
+  my $srsliststring = "";
+  if (defined $this->{srslist}){
+    $srsliststring .= "<WMSCRSList>\n";
+    foreach (@{$this->{srslist}}) {
+      $srsliststring .= $STRSRSTMPLT;
+      $srsliststring =~ s/__SRS__/$_/;
+    }
+    $srsliststring .= "    </WMSCRSList>\n";
   }
-  $strlyrtmplt =~ s/<!-- __SRSS__ -->\n//;
+
+  $strlyrtmplt =~ s/__SRSS__/$srsliststring/;
   
   foreach (@{$this->{keywordlist}}) {
     $strlyrtmplt =~ s/<!-- __KEYWORDS__ -->\n/$STRTKTMPLT/;

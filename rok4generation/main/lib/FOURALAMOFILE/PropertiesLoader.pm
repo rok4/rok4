@@ -56,7 +56,7 @@ Attributes:
 
 ################################################################################
 
-package VEK4FILE::PropertiesLoader;
+package FOURALAMOFILE::PropertiesLoader;
 
 use strict;
 use warnings;

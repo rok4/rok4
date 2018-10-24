@@ -67,13 +67,10 @@ package COMMON::Config;
 use strict;
 use warnings;
 
-use vars qw($VERSION);
-
-my $VERSION = '0.1';
-
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
 use Scalar::Util qw/reftype/;
+use JSON::Parse qw(assert_valid_json parse_json);
 
 use COMMON::Array;
 
@@ -92,7 +89,7 @@ use constant FALSE => 0;
 
 # Constant: FILEFORMATS
 # Define allowed values for configuration format
-my @FILEFORMATS = ('INI');
+my @FILEFORMATS = ('INI', 'JSON');
 
 ################################################################################
 
@@ -125,7 +122,6 @@ sub new {
         return undef;
     }
 
-    my $key = undef;
     my $value = undef;
 
     # Read the mandatory configuration file's path parameter 
@@ -136,7 +132,6 @@ sub new {
         ERROR("Cannot use COMMON::Config->new whithout a valid 'filepath' parameter.");
         return undef;
     }
-    $key = undef;
     $value = undef;
 
     # Check the format in which the configuration file is written
@@ -155,6 +150,12 @@ sub new {
 
     if ($this->{fileFormat} eq "INI") {
         if (! $this->_loadINI() ) {
+            ERROR("Configuration file wasn't properly loaded.");
+            return undef;
+        }
+    }
+    elsif ($this->{fileFormat} eq "JSON") {
+        if (! $this->_loadJSON() ) {
             ERROR("Configuration file wasn't properly loaded.");
             return undef;
         }
@@ -254,6 +255,39 @@ sub _loadINI {
 }
 
 
+=begin nd
+Function: _loadJSON
+
+Parse JSON file using library.
+
+=cut
+sub _loadJSON {
+    my $this = shift;
+
+    my $filepath = $this->{filePath};
+    my $json_text = do {
+        open(my $json_fh, "<", $this->{filePath}) or do {
+            ERROR(sprintf "Cannot open JSON file : %s (%s)", $this->{filePath}, $! );
+            return FALSE;
+        };
+        local $/;
+        <$json_fh>
+    };
+
+    eval {
+        assert_valid_json ($json_text);
+    };
+    if ($@) {
+        ERROR("File $filepath is not a valid JSON");
+        ERROR($@);
+        return FALSE;
+    }
+
+    $this->{rawConfiguration} = parse_json ($json_text);
+
+    return TRUE;
+}
+
 
 ################################################################################
 #                                Group: Tester                                 #
@@ -275,6 +309,11 @@ Returns:
 sub isSection {
     my $this = shift;
     my $sectionName = shift;
+
+    if ($this->{fileFormat} ne "INI") {
+        ERROR("isSection is implemented only for INI configuration format");
+        return 0;
+    }
 
     if (! defined $sectionName) {
         ERROR("No section name provided");
@@ -321,6 +360,11 @@ sub isSubSection {
         return 0;
     }
 
+    if ($this->{fileFormat} ne "INI") {
+        ERROR("isSubSection is implemented only for INI configuration format");
+        return 0;
+    }
+
     if ($this->isSection($sectionName) != 2) {
         return 0;
     }
@@ -357,6 +401,11 @@ Returns:
 sub isProperty {
     my $this = shift;
     my $parms = shift;
+
+    if ($this->{fileFormat} ne "INI") {
+        ERROR("isProperty is implemented only for INI configuration format");
+        return FALSE;
+    }
 
     if (! exists $parms->{section} || ! defined $parms->{section}) {
         ERROR("No section name provided");
@@ -395,6 +444,11 @@ Parameters (list):
 sub getSection {
     my $this = shift;
     my $section = shift;
+
+    if ($this->{fileFormat} ne "INI") {
+        ERROR("getSection is implemented only for INI configuration format");
+        return undef;
+    }
 
     if(! defined $section) {
         ERROR("Wrong argument number : syntax = getSection('section_name')");
@@ -439,6 +493,11 @@ sub getSubSection {
         return undef;
     }
 
+    if ($this->{fileFormat} ne "INI") {
+        ERROR("getSubSection is implemented only for INI configuration format");
+        return undef;
+    }
+
     if ($this->isSubSection($section, $subSection) != 2) {
         ERROR("'$section.$subSection' is not a subsection");
         return undef;
@@ -466,6 +525,11 @@ Parameters (hash):
 sub getProperty {
     my $this = shift;
     my $parms = shift;
+
+    if ($this->{fileFormat} ne "INI") {
+        ERROR("getProperty is implemented only for INI configuration format");
+        return undef;
+    }
 
     if (! $this->isProperty($parms)) {
         return undef;
@@ -499,6 +563,10 @@ sub setProperty {
     my $this = shift;
     my $parms = shift;
 
+    if ($this->{fileFormat} ne "INI") {
+        ERROR("setProperty is implemented only for INI configuration format");
+    }
+
     my $sec = $parms->{section};
     my $prop = $parms->{property};
     my $val = $parms->{value};
@@ -524,6 +592,11 @@ Syntax: getSections()
 sub getSections {
     my $this = shift;
 
+    if ($this->{fileFormat} ne "INI") {
+        ERROR("getSections is implemented only for INI configuration format");
+        return ();
+    }
+
     my @sections;
     foreach my $item (keys %{$this->{configuration}}) {
         if ( $this->isSection($item) == 2 ) {
@@ -547,6 +620,11 @@ Parameters (list):
 sub getSubSections {
     my $this = shift;
     my $section = shift;
+
+    if ($this->{fileFormat} ne "INI") {
+        ERROR("getSubSections is implemented only for INI configuration format");
+        return ();
+    }
 
     if ($this->isSection($section) != 2) {
         ERROR("'$section' is not a section, cannot obtain list of subsections in");
@@ -580,6 +658,11 @@ sub getProperties {
     my $section = shift;
     my $subsection = shift;
 
+    if ($this->{fileFormat} ne "INI") {
+        ERROR("getProperties is implemented only for INI configuration format");
+        return ();
+    }
+
     if (defined $subsection) {
         if ($this->isSubSection($section, $subsection) != 2) {
             ERROR("'$section.$subsection' is not a subsection, cannot obtain list of properties in");
@@ -606,9 +689,14 @@ Syntax: getConfig()
 sub getConfig {
     my $this = shift;
 
-    my $refConfig = $this->{configuration};
-    my %hashConfig = %{$refConfig};
-    return %hashConfig;
+    my $refConfig;
+    if ($this->{fileFormat} eq "JSON") {
+        $refConfig = $this->{rawConfiguration};
+    } else {
+        $refConfig = $this->{configuration};
+    }
+
+    return %{$refConfig};
 }
 
 =begin nd
@@ -619,7 +707,7 @@ Returns a hash reference of the the part of the COMMON::Config object that actua
 sub getRawConfig {
     my $this = shift;
 
-    return $this->{'rawConfiguration'};
+    return $this->{rawConfiguration};
 }
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 # S'obtient avec :
-# ack -h "^use [A-Z]" ./ | grep -v -E "JOINCACHE|COMMON|BE4|WMTSALAD|EXPYR"| sed -r "s#;.+#;#" | sed "s# ;#;#" | sort | uniq
+# ack -h "^use [A-Z]" ./ | grep -v -E "JOINCACHE|COMMON|BE4|WMTSALAD|EXPYR|FOURALAMO"| sed -r "s#;.+#;#" | sed "s# ;#;#" | sort | uniq
 
 use strict;
 use warnings;
@@ -27,6 +27,7 @@ use Geo::OSR;
 use Getopt::Long;
 use HTTP::Request;
 use HTTP::Response;
+use JSON::Parse;
 use List::Util qw(min max);
 use Log::Log4perl qw(:easy);
 use LWP::UserAgent;

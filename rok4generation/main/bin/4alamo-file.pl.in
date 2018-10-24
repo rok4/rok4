@@ -39,27 +39,26 @@
 =begin nd
 File: be4.pl
 
-Section: BE4-FILE tool
+Section: 4ALAMO-FILE tool
 
 Synopsis:
     (start code)
-    perl be4-file.pl --conf=path [ --env=path ]
+    perl 4alamo-file.pl --conf=path [ --env=path ]
     # All parameters of the --env config file can be overided by --conf config file parameter
     (end code)
 
-Tool allowing to generate a pyramid of tiled TIFF images, several resolutions, with compression (lossless or lossy) from serveral data sources, georeferenced image (ortho, scan, ...) or WMS service. Output format respects WMS/WMTS server ROK4.
+Tool allowing to generate a veteor pyramid of TIFF images containing mapbox vector tiles, several scales, from serveral databases sources (PostgreSQL). Pyramid can be broadcast with Rok4server using TMS.
 
 This tool write scripts, to execute to obtain the pyramid.
 
-(see be4_general.png)
+(see 4alamofile_general.png)
 
 2 types of generation :
     - create a new pyramid with data
     - create a pyramid from an ancestor one (update)
 
-2 data source type :
-    - images
-    - WMS service
+1 data source type :
+    - PostgreSQL database
 
 =cut
 
@@ -87,7 +86,7 @@ use FindBin qw($Bin);
 use lib "$Bin/../lib/perl5";
 
 # My module
-use VEK4FILE::PropertiesLoader;
+use FOURALAMOFILE::PropertiesLoader;
 use COMMON::PyramidVector;
 use COMMON::DataSourceLoader;
 use COMMON::Forest;
@@ -167,7 +166,7 @@ See Also:
     <init>, <config>, <doIt>
 =cut
 sub main {
-    printf("BE4: version [%s]\n",$VERSION);
+    printf("4ALAMO-FILE: version [%s]\n",$VERSION);
     # message
     my $message = undef;
 
@@ -225,12 +224,12 @@ sub init {
     # init Options
     GetOptions(
         "help|h" => sub {
-            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-pl.html\n" ;
+            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/4alamo-file-pl.html\n" ;
             exit 0;
         },
         "version|v" => sub { exit 0; },
         "usage" => sub {
-            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-pl.html\n" ;
+            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/4alamo-file-pl.html\n" ;
             exit 0;
         },
         
@@ -238,7 +237,7 @@ sub init {
         "environment|env=s" => \$options{environment}
     ) or do {
         printf "Unappropriate usage\n";
-        printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-pl.html\n";
+        printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/4alamo-file-pl.html\n";
         exit -1;
     };
   
@@ -281,7 +280,7 @@ sub config {
     ALWAYS(">>> Load Properties ...");
     
     my $fprop = $options{properties};
-    my $objProp = VEK4FILE::PropertiesLoader->new($fprop);
+    my $objProp = FOURALAMOFILE::PropertiesLoader->new($fprop);
     
     if (! defined $objProp) {
         ERROR("Can not load specific properties !");
