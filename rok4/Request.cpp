@@ -56,6 +56,44 @@
 #include <algorithm>
 #include "intl.h"
 
+
+namespace RequestType {
+
+    const char* const requesttype_name[] = {
+        "UNKNOWN",
+        "MISSING",
+        "GetServices",
+        "GetCapabilities",
+        "GetLayer",
+        "GetMap",
+        "GetTile",
+        "GetFeatureInfo",
+        "GetVersion"
+    };
+
+    std::string toString ( RequestType::eRequestType rt ) {
+        return std::string ( requesttype_name[rt] );
+    }
+}
+
+namespace ServiceType {
+
+    const char* const servicetype_name[] = {
+        "MISSING",
+        "UNKNOWN",
+        "WMTS",
+        "WMS",
+        "TMS"
+    };
+
+    std::string toString ( ServiceType::eServiceType st ) {
+        return std::string ( servicetype_name[st] );
+    }
+}
+
+
+
+
 /**
  * \~french
  * \brief Convertit un caractère héxadécimal (0-9, A-Z, a-z) en décimal
@@ -79,47 +117,6 @@ char hex2int ( unsigned char hex ) {
 
     return hex;
 }
-
-/**
- * \~french
- * \brief Découpe une chaîne de caractères selon un délimiteur
- * \param[in] s la chaîne à découper
- * \param[in] delim le délimiteur
- * \param[in,out] elems la liste contenant les parties de la chaîne
- * \return la liste contenant les parties de la chaîne
- * \~english
- * \brief Split a string using a specified delimitor
- * \param[in] s the string to split
- * \param[in] delim the delimitor
- * \param[in,out] elems the list with the splited string
- * \return the list with the splited string
- */
-std::vector<std::string> &split ( const std::string &s, char delim, std::vector<std::string> &elems ) {
-    std::stringstream ss ( s );
-    std::string item;
-    while ( std::getline ( ss, item, delim ) ) {
-        elems.push_back ( item );
-    }
-    return elems;
-}
-
-/**
- * \~french
- * \brief Découpe une chaîne de caractères selon un délimiteur
- * \param[in] s la chaîne à découper
- * \param[in] delim le délimiteur
- * \return la liste contenant les parties de la chaîne
- * \~english
- * \brief Split a string using a specified delimitor
- * \param[in] s the string to split
- * \param[in] delim the delimitor
- * \return the list with the splited string
- */
-std::vector<std::string> split ( const std::string &s, char delim ) {
-    std::vector<std::string> elems;
-    return split ( s, delim, elems );
-}
-
 
 void Request::url_decode ( char *src ) {
     unsigned char high, low;
@@ -154,17 +151,7 @@ void Request::url_decode ( char *src ) {
 
     *dst = '\0';
 }
-/**
- * \~french
- * \brief Transforme la chaîne de caractères en minuscule
- * \param[in,out] str la chaîne
- * \~english
- * \brief Translate the string to lower case
- * \param[in,out] str the string
- */
-void toLowerCase ( char* str ) {
-    if ( str ) for ( int i = 0; str[i]; i++ ) str[i] = tolower ( str[i] );
-}
+
 /**
  * \~french
  * \brief Supprime l'espace de nom (la partie avant :) de la balise XML
@@ -259,7 +246,7 @@ void parseGetTilePost ( TiXmlHandle& hGetTile, std::map< std::string, std::strin
     //Style
     pElem = pElem->NextSiblingElement();
 
-    if ( !pElem && pElem->ValueStr().find ( "Style" ) ==std::string::npos && !pElem->GetText() ) {
+    if ( !pElem && pElem->ValueStr().find ( "Style" ) == std::string::npos && !pElem->GetText() ) {
         LOGGER_DEBUG ( _ ( "No Style" ) );
         return;
     }
@@ -639,10 +626,148 @@ void parsePostContent ( std::string content, std::map< std::string, std::string 
 
 }
 
-Request::Request ( char* strquery, char* hostName, char* path, char* https ) : hostName ( hostName ),path ( path ),service ( "" ),request ( "" ),scheme ( "http://" ) {
+void Request::determineServiceAndRequest() {
+
+    // SERVICE
+    std::map<std::string, std::string>::iterator it = params.find ( "service" );
+    if ( it == params.end() ) {
+        // Dans le cas du TMS, on n'a pas de paramètres.
+        // On va donc admettre qu'en l'absence total de paramètres, on est implicitement en TMS
+        if (params.size() == 0) {
+            service = ServiceType::TMS;
+        }
+    } else {
+        std::string str_service = it->second;
+        std::transform(str_service.begin(), str_service.end(), str_service.begin(), ::tolower);
+        if (str_service == "wms") {
+            service = ServiceType::WMS;
+        }
+        else if (str_service == "wmts") {
+            service = ServiceType::WMTS;
+        }
+        else if (str_service != "") {
+            service = ServiceType::SERVICE_UNKNOWN;
+        }
+    }
+
+    // Il y a un cas où le service n'a pas été identifié mais doit pourtant être reconnu
+    // En WMS 1.1.1, on peut ne pas mettre le service et la requête map ou getamp suffit
+    // On identifiera donc le service dans la partie sur la requête
+
+    // REQUETE
+    // On teste également la cohérence de la requête avec le service
+    it = params.find ( "request" );
+    if ( it == params.end() ) {
+        // Dans le cas du TMS, on n'a pas de paramètres.
+        // On va donc admettre qu'en l'absence total de paramètres, on est implicitement en TMS
+        // C'est la profondeur du path à partir de la version 1.0.0 qui va permettre d'identifier
+        // le tpye de requête
+        if (params.size() == 0 && service == ServiceType::TMS) {
+            service = ServiceType::TMS;
+                
+            std::stringstream ss(path);
+            std::string token;
+            char delim = '/';
+            int tmsVersionPos = -1;
+            std::vector<std::string> pathParts;
+            while (std::getline(ss, token, delim)) {
+                LOGGER_INFO("'"+token+"'");
+                if (token == "1.0.0") {
+                    tmsVersionPos = pathParts.size();
+                }
+                pathParts.push_back(token);
+            }
+
+            if (tmsVersionPos == -1) {
+                // La version n'a pas été rencontrée, on n'est pas dans le cas d'une consultation TMS
+                // On va alors considérer que l'on veut la liste des services disponibles sur ce serveur
+                // On reste en TMS comme service
+                request = RequestType::GETSERVICES;
+            }
+
+            else if (tmsVersionPos == pathParts.size() - 1) {
+                // la version est en dernière position, on veut le "GetCapabilities" TMS
+                request = RequestType::GETCAPABILITIES;
+            }
+
+            else if (tmsVersionPos == pathParts.size() - 2) {
+                // la version est en avant dernière position, on veut le détail de la couche
+                request = RequestType::GETLAYER;
+            }
+
+            else if (tmsVersionPos == pathParts.size() - 5) {
+                // on requête une tuile
+                request = RequestType::GETTILE;
+            } else {
+                // La profondeur de requête ne permet pas de savoir l'action demandée -> ERREUR
+                request = RequestType::REQUEST_UNKNOWN;
+            }
+        }
+    } else {
+        std::string str_request = it->second;
+        std::transform(str_request.begin(), str_request.end(), str_request.begin(), ::tolower);
+        if (str_request == "getmap" || str_request == "map") {
+            if (service != ServiceType::SERVICE_UNKNOWN && service != ServiceType::WMS) {
+                // On a une requête getmap avec un service qui ne le gère pas
+                request = RequestType::REQUEST_UNKNOWN;
+            } else {
+                // On confirme le service WMS (potentiellement non connu dans le cas 1.1.1)
+                service = ServiceType::WMS;
+                request = RequestType::GETMAP;
+            }
+        }
+        else if (str_request == "gettile") {
+            if (service != ServiceType::WMTS) {
+                // On a une requête gettile avec un service inconnu, ou qui ne le gère pas,
+                // ou pas comme ça (TMS)
+                request = RequestType::REQUEST_UNKNOWN;
+            } else {
+                request = RequestType::GETTILE;
+            }
+        }
+        else if (str_request == "getfeatureinfo") {
+            if (service != ServiceType::WMS && service != ServiceType::WMTS) {
+                // On a une requête getfeatureinfo avec un service inconnu ou qui ne le gère pas
+                request = RequestType::REQUEST_UNKNOWN;
+            } else {
+                request = RequestType::GETFEATUREINFO;
+            }
+        }
+        else if (str_request == "getcapabilities" || str_request == "capabilities") {
+            if (service != ServiceType::WMTS && service != ServiceType::WMS) {
+                // On a une requête getcapabilities avec un service inconnu, 
+                // ou qui ne le gère pas, ou pas comme ça (TMS)
+                request = RequestType::REQUEST_UNKNOWN;
+            } else {
+                request = RequestType::GETCAPABILITIES;
+            }
+        }
+        else if (str_request == "getversion") {
+            if (service != ServiceType::WMTS && service != ServiceType::WMS) {
+                // On a une requête getcapabilities avec un service inconnu, 
+                // ou qui ne le gère pas, ou pas comme ça (TMS)
+                request = RequestType::REQUEST_UNKNOWN;
+            } else {
+                request = RequestType::GETVERSION;
+            }
+        }
+        else if (str_request != "") {
+            request = RequestType::REQUEST_UNKNOWN;
+        }
+
+    }
+}
+
+Request::Request ( char* strquery, char* hostName, char* path, char* https ) : 
+    hostName ( hostName ),path ( path ), service(ServiceType::SERVICE_MISSING), request(RequestType::REQUEST_MISSING)
+{
     LOGGER_DEBUG ( "QUERY="<<strquery );
-    if ( https )
-        scheme = ( strcmp ( https,"on" ) == 0 || strcmp ( https,"ON" ) ==0?"https://":"http://" );
+    if ( https && (strcmp ( https,"on" ) == 0 || strcmp ( https,"ON" ) ==0) ){
+        scheme = "https://";
+    } else {
+        scheme = "http://";
+    }
+
     url_decode ( strquery );
 
     for ( int pos = 0; strquery[pos]; ) {
@@ -654,75 +779,35 @@ Request::Request ( char* strquery, char* hostName, char* path, char* https ) : h
         if ( strquery[pos] ) strquery[pos++] = 0; // on met un 0 à la fin du char* value
 
         toLowerCase ( key );
-
-        if ( strcmp ( key,"service" ) ==0 ) {
-            toLowerCase ( value );
-            service = value;
-        } else if ( strcmp ( key,"request" ) ==0 ) {
-            toLowerCase ( value );
-            request = value;
-        } else {
-            params.insert ( std::pair<std::string, std::string> ( key, value ) );
-        }
+        params.insert ( std::pair<std::string, std::string> ( key, value ) );
     }
-    /*LOGGER_DEBUG("GET Params :");
-    std::map<std::string, std::string>::iterator it;
-    for (it=params.begin();it!=params.end();it++) {
-        LOGGER_DEBUG(it->first << " = " << it->second);
-    }*/
+
+    determineServiceAndRequest();
+
 }
 
 
-Request::Request ( char* strquery, char* hostName, char* path, char* https, std::string postContent ) : hostName ( hostName ),path ( path ),service ( "" ),request ( "" ),scheme ( "" ) {
+Request::Request ( char* strquery, char* hostName, char* path, char* https, std::string postContent ) : 
+    hostName ( hostName ),path ( path ), service(ServiceType::SERVICE_MISSING), request(RequestType::REQUEST_MISSING)
+{
     LOGGER_DEBUG ( "QUERY="<<strquery );
-    scheme = ( https?"https://":"http://" );
-    //url_decode(strquery);
+    if ( https && (strcmp ( https,"on" ) == 0 || strcmp ( https,"ON" ) ==0) ){
+        scheme = "https://";
+    } else {
+        scheme = "http://";
+    }
 
-    /*for (int pos = 0; strquery[pos];) {
-        char* key = strquery + pos;
-        for (;strquery[pos] && strquery[pos] != '=' && strquery[pos] != '&'; pos++); // on trouve le premier "=", "&" ou 0
-        char* value = strquery + pos;
-        for (;strquery[pos] && strquery[pos] != '&'; pos++); // on trouve le suivant "&" ou 0
-        if (*value == '=') *value++ = 0; // on met un 0 à la place du '=' entre key et value
-        if (strquery[pos]) strquery[pos++] = 0; // on met un 0 à la fin du char* value
-
-        toLowerCase(key);
-
-        if (strcmp(key,"service")==0) {
-            toLowerCase(value);
-            service = value;
-        } else if (strcmp(key,"request")==0) {
-            toLowerCase(value);
-            request = value;
-        } else {
-            params.insert(std::pair<std::string, std::string> (key, value));
-        }
-    }*/
     if ( !postContent.empty() ) {
         parsePostContent ( postContent,params );
-        //DEBUG
+    }
 
-    }
-    /*LOGGER_DEBUG("POST Params :");
-    std::map<std::string, std::string>::iterator it;
-    for (it=params.begin();it!=params.end();it++) {
-        LOGGER_DEBUG(it->first << " = " << it->second);
-    }*/
-    std::map<std::string, std::string>::iterator it = params.find ( "service" );
-    if ( it != params.end() ) {
-        service = it->second;
-    }
-    it = params.find ( "request" );
-    if ( it != params.end() ) {
-        request = it->second;
-    }
+    determineServiceAndRequest();
 
 }
 
 
 Request::~Request() {}
 
-// Test if a parameter is part of the request
 bool Request::hasParam ( std::string paramName ) {
     std::map<std::string, std::string>::iterator it = params.find ( paramName );
     if ( it == params.end() ) {
@@ -731,7 +816,6 @@ bool Request::hasParam ( std::string paramName ) {
     return true;
 }
 
-// Get value for a parameter in the request
 std::string Request::getParam ( std::string paramName ) {
     std::map<std::string, std::string>::iterator it = params.find ( paramName );
     if ( it == params.end() ) {
@@ -739,636 +823,4 @@ std::string Request::getParam ( std::string paramName ) {
     }
     return it->second;
 }
-
-DataSource* Request::getTileParam ( ServicesXML* servicesConf, std::map< std::string, TileMatrixSet* >& tmsList, std::map< std::string, Layer* >& layerList, Layer*& layer, std::string& tileMatrix, int& tileCol, int& tileRow, std::string& format, Style*& style) {
-    // VERSION
-    std::string version=getParam ( "version" );
-    if ( version=="" )
-        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre VERSION absent." ),"wmts" ) );
-    if ( version.find ( servicesConf->getServiceTypeVersion() ) ==std::string::npos )
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Valeur du parametre VERSION invalide (doit contenir " ) +servicesConf->getServiceTypeVersion() +_ ( ")" ),"wmts" ) );
-    // LAYER
-    std::string str_layer=getParam ( "layer" );
-    if ( str_layer == "" )
-        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre LAYER absent." ),"wmts" ) );
-    std::map<std::string, Layer*>::iterator it = layerList.find ( str_layer );
-    if ( it == layerList.end() )
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +str_layer+_ ( " inconnu." ),"wmts" ) );
-    layer = it->second;
-    if (layer->getWMTSAuthorized() == false){
-	return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +str_layer+_ ( " inconnu " ),"wms" ) );
-    }
-    // TILEMATRIXSET
-    std::string str_tms=getParam ( "tilematrixset" );
-    if ( str_tms == "" )
-        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre TILEMATRIXSET absent." ),"wmts" ) );
-    std::map<std::string, TileMatrixSet*>::iterator tms = tmsList.find ( str_tms );
-    if ( tms == tmsList.end() )
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "TileMatrixSet " ) +str_tms+_ ( " inconnu." ),"wmts" ) );
-    std::string tmsLayer = layer->getDataPyramid()->getTms()->getCrs().getProj4Code();
-    if ( tms->second->getCrs().getProj4Code() != tmsLayer )
-        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre TILEMATRIXSET différent de celui de la couche demandée. TILEMATRIXSET devrait être " ) +tmsLayer,"wmts" ) );
-    layer = it->second;
-    // TILEMATRIX
-    tileMatrix=getParam ( "tilematrix" );
-    if ( tileMatrix == "" )
-        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre TILEMATRIX absent." ),"wmts" ) );
-
-    std::map<std::string, TileMatrix*>* pList=tms->second->getTmList();
-    std::map<std::string, TileMatrix*>::iterator tm = pList->find ( tileMatrix );
-    if ( tm == pList->end() )
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "TileMatrix " ) +tileMatrix+_ ( " inconnu pour le TileMatrixSet " ) +str_tms,"wmts" ) );
-
-    // TILEROW
-    std::string strTileRow=getParam ( "tilerow" );
-    if ( strTileRow == "" )
-        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre TILEROW absent." ),"wmts" ) );
-    if ( sscanf ( strTileRow.c_str(),"%d",&tileRow ) !=1 )
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre TILEROW est incorrecte." ),"wmts" ) );
-    // TILECOL
-    std::string strTileCol=getParam ( "tilecol" );
-    if ( strTileCol == "" )
-        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre TILECOL absent." ),"wmts" ) );
-    if ( sscanf ( strTileCol.c_str(),"%d",&tileCol ) !=1 )
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre TILECOL est incorrecte." ),"wmts" ) );
-    // FORMAT
-
-    format=getParam ( "format" );
-
-    LOGGER_DEBUG ( _ ( "format requete : " ) << format << _ ( " format pyramide : " ) << Rok4Format::toMimeType ( ( layer->getDataPyramid()->getFormat() ) ) );
-    if ( format == "" )
-        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre FORMAT absent." ),"wmts" ) );
-    // TODO : la norme exige la presence du parametre format. Elle ne precise pas que le format peut differer de la tuile, ce que ce service ne gere pas
-    if ( format.compare ( Rok4Format::toMimeType ( ( layer->getDataPyramid()->getFormat() ) ) ) !=0 )
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le format " ) +format+_ ( " n'est pas gere pour la couche " ) +str_layer,"wmts" ) );
-    //Style
-    std::string styleName=getParam ( "style" );
-    if ( styleName == "" )
-        return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre STYLE absent." ),"wmts" ) );
-    // TODO : Nom de style : inspire_common:DEFAULT en mode Inspire sinon default
-    if ( layer->getStyles().size() != 0 ) {
-        for ( unsigned int i=0; i < layer->getStyles().size(); i++ ) {
-            if ( styleName == layer->getStyles() [i]->getId() )
-                style=layer->getStyles() [i];
-        }
-    }
-    if ( ! ( style ) )
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le style " ) +styleName+_ ( " n'est pas gere pour la couche " ) +str_layer,"wmts" ) );
-
-
-
-    return NULL;
-
-}
-
-DataStream* Request::getMapParam ( ServicesXML* servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers,
-                                   BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format,
-                                   std::vector<Style*>& styles, std::map< std::string, std::string >& format_option,int& dpi ) {
-    // VERSION
-    std::string version=getParam ( "version" );
-    if ( version=="" ) {
-        //---- WMS 1.1.1
-        //le parametre version est prioritaire sur wmtver
-        version = getParam("wmtver");
-        if ( version=="") {
-            return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre VERSION absent." ),"wms" ) );
-        }
-        //----
-    }
-    if ( version!="1.3.0" && version!="1.1.1")
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Valeur du parametre VERSION invalide (1.1.1 et 1.3.0 disponibles seulement))" ),"wms" ) );
-    // LAYER
-    std::string str_layer=getParam ( "layers" );
-    if ( str_layer == "" )
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre LAYERS absent." ),"wms" ) );
-    //Split layer Element
-    std::vector<std::string> layersString = split ( str_layer,',' );
-    LOGGER_DEBUG ( _ ( "Nombre de couches demandees =" ) << layersString.size() );
-    if ( layersString.size() > servicesConf->getLayerLimit() ) {
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le nombre de couche demande excede la valeur du LayerLimit." ),"wms" ) );
-    }
-    std::vector<std::string>::iterator itLayer = layersString.begin();
-    for ( ; itLayer != layersString.end(); itLayer++ ) {
-        std::map<std::string, Layer*>::iterator it = layerList.find ( *itLayer );
-        if ( it == layerList.end() )
-            return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_DEFINED,_ ( "Layer " ) +*itLayer+_ ( " inconnu." ),"wms" ) );
-	Layer* lay = it->second;
-	if (lay->getWMSAuthorized() == false){
-	    return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +*itLayer+_ ( " unknown " ),"wms" ) );
-	}
-        layers.push_back ( it->second );
-    }
-    LOGGER_DEBUG ( _ ( "Nombre de couches =" ) << layers.size() );
-    // WIDTH
-    std::string strWidth=getParam ( "width" );
-    if ( strWidth == "" )
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre WIDTH absent." ),"wms" ) );
-    width=atoi ( strWidth.c_str() );
-    if ( width == 0 || width == INT_MAX || width == INT_MIN )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre WIDTH n'est pas une valeur entiere." ),"wms" ) );
-    if ( width<0 )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre WIDTH est negative." ),"wms" ) );
-    if ( width>servicesConf->getMaxWidth() )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre WIDTH est superieure a la valeur maximum autorisee par le service." ),"wms" ) );
-    // HEIGHT
-    std::string strHeight=getParam ( "height" );
-    if ( strHeight == "" )
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre HEIGHT absent." ),"wms" ) );
-    height=atoi ( strHeight.c_str() );
-    if ( height == 0 || height == INT_MAX || height == INT_MIN )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre HEIGHT n'est pas une valeur entiere." ),"wms" ) ) ;
-    if ( height<0 )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre HEIGHT est negative." ),"wms" ) );
-    if ( height>servicesConf->getMaxHeight() )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre HEIGHT est superieure a la valeur maximum autorisee par le service." ),"wms" ) );
-    // CRS
-    std::string str_crs;
-    if (version == "1.3.0") {
-        str_crs=getParam ( "crs" );
-	 if ( str_crs == "" )
-	  return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre CRS absent." ),"wms" ) );
-    } else {
-        //---- WMS 1.1.1
-        str_crs=getParam ( "srs" );
-	 if ( str_crs == "" )
-	  return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre SRS absent." ),"wms" ) );
-        //----
-    }
-   
-    // Existence du CRS dans la liste de CRS des layers
-    crs.setRequestCode ( str_crs );
-    bool crsNotFound = true;
-    unsigned int k;
-    for ( k=0; k<servicesConf->getGlobalCRSList()->size(); k++ )
-        if ( crs.cmpRequestCode ( servicesConf->getGlobalCRSList()->at ( k ).getRequestCode() ) ) {
-            crsNotFound = false;
-            break;
-        }
-    if ( crsNotFound ) {
-        for ( unsigned int j = 0; j < layers.size() ; j++ ) {
-            for ( k=0; k<layers.at ( j )->getWMSCRSList().size(); k++ )
-                if ( crs.cmpRequestCode ( layers.at ( j )->getWMSCRSList().at ( k ).getRequestCode() ) ) {
-                    crsNotFound = false;
-                    break;
-                }
-            if ( crsNotFound )
-                return new SERDataStream ( new ServiceException ( "",WMS_INVALID_CRS,_ ( "CRS " ) +str_crs+_ ( " (equivalent PROJ4 " ) +crs.getProj4Code() +_ ( " ) inconnu pour le layer " ) +layersString.at ( j ) +".","wms" ) );
-        }
-
-    }
-
-    // FORMAT
-    format=getParam ( "format" );
-    if ( format == "" )
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre FORMAT absent." ),"wms" ) );
-
-    for ( k=0; k<servicesConf->getFormatList()->size(); k++ ) {
-        if ( servicesConf->getFormatList()->at ( k ) ==format )
-            break;
-    }
-    if ( k==servicesConf->getFormatList()->size() )
-        return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Format " ) +format+_ ( " non gere par le service." ),"wms" ) );
-
-    // BBOX
-    std::string strBbox=getParam ( "bbox" );
-    if ( strBbox == "" )
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre BBOX absent." ),"wms" ) );
-    std::vector<std::string> coords = split ( strBbox,',' );
-
-    if ( coords.size() !=4 )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Parametre BBOX incorrect." ),"wms" ) );
-    double bb[4];
-    for ( int i = 0; i < 4; i++ ) {
-        if ( sscanf ( coords[i].c_str(),"%lf",&bb[i] ) !=1 )
-            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Parametre BBOX incorrect." ),"wms" ) );
-    //Test NaN values
-    if (bb[i]!=bb[i])
-      return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Parametre BBOX incorrect." ),"wms" ) );
-    }
-    if ( bb[0]>=bb[2] || bb[1]>=bb[3] )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Parametre BBOX incorrect." ),"wms" ) );
-    bbox.xmin=bb[0];
-    bbox.ymin=bb[1];
-    bbox.xmax=bb[2];
-    bbox.ymax=bb[3];
-    // L'ordre des coordonnees (X,Y) de chque coin de la bbox doit suivre l'ordre des axes du CS associe au SRS
-    // Implementation MapServer : l'ordre des axes est inverse pour les CRS de l'EPSG compris entre 4000 et 5000
-    /*if (crs.getAuthority()=="EPSG" || crs.getAuthority()=="epsg") {
-        int code=atoi(crs.getIdentifier().c_str());
-        if (code>=4000 && code<5000){
-                bbox.xmin=bb[1];
-                        bbox.ymin=bb[0];
-                        bbox.xmax=bb[3];
-                        bbox.ymax=bb[2];
-        }
-    }*/
-
-    // Data are stored in Long/Lat, Geographical system need to be inverted in EPSG registry
-    if ( ( crs.getAuthority() =="EPSG" || crs.getAuthority() =="epsg" ) && crs.isLongLat() && version == "1.3.0" ) {
-        bbox.xmin=bb[1];
-        bbox.ymin=bb[0];
-        bbox.xmax=bb[3];
-        bbox.ymax=bb[2];
-    }
-
-//     if ( !(hasParam("disable_bbox_crs_check")) && !(crs.validateBBox(bbox))) {
-//         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_("Parametre BBOX invalide pour le CRS ")+str_crs+_("."),"wms" ) );
-//     }
-//     // Hypothese : les resolutions en X ET en Y doivent etre dans la plage de valeurs
-//
-//     // Resolution en x et y en unites du CRS demande
-//     double resx= ( bbox.xmax-bbox.xmin ) /width, resy= ( bbox.ymax-bbox.ymin ) /height;
-//
-    //double resx= ( bbox.xmax-bbox.xmin ) /width, resy= ( bbox.ymax-bbox.ymin ) /height;
-
-    // Resolution en x et y en m
-    // Hypothese : les CRS en geographiques sont en degres
-    /*if ( crs.isLongLat() ) {
-        resx*=111319;
-        resy*=111319;
-    }*/
-
-    // Le serveur ne doit pas renvoyer d'exception
-    // Cf. WMS 1.3.0 - 7.2.4.6.9
-
-    /*double epsilon=0.0000001;   // Gestion de la precision de la division
-    if ( resx>0. )
-        if ( resx+epsilon<layer->getMinRes() ||resy+epsilon<layer->getMinRes() ) {
-            ;//return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La resolution de l'image est inferieure a la resolution minimum.","wms"));
-        }
-    if ( resy>0. )
-        if ( resx>layer->getMaxRes() +epsilon||resy>layer->getMaxRes() +epsilon )
-            ;//return new SERDataStream(new ServiceException("",OWS_INVALID_PARAMETER_VALUE,"La resolution de l'image est superieure a la resolution maximum.","wms"));
-    */
-    // EXCEPTION
-    std::string str_exception=getParam ( "exception" );
-    if ( str_exception!=""&&str_exception!="XML" )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Format d'exception " ) +str_exception+_ ( " non pris en charge" ),"wms" ) );
-
-    //STYLES
-    if ( ! ( hasParam ( "styles" ) ) )
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre STYLES absent." ),"wms" ) );
-    std::string str_styles=getParam ( "styles" );
-    if ( str_styles == "" ) {
-        str_styles.append ( layers.at ( 0 )->getDefaultStyle() );
-        for ( int i = 1;  i < layers.size(); i++ ) {
-            str_styles.append ( "," );
-            str_styles.append ( layers.at ( i )->getDefaultStyle() );
-        }
-    }
-    std::vector<std::string> stylesString = split ( str_styles,',' );
-    LOGGER_DEBUG ( _ ( "Nombre de styles demandes =" ) << stylesString.size() );
-    if ( stylesString.size() != layersString.size() ) {
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre STYLES incomplet." ),"wms" ) );
-    }
-    for ( int k = 0 ; k  < stylesString.size(); k++ ) {
-
-        if ( layers.at ( k )->getStyles().size() != 0 ) {
-            for ( unsigned int i=0; i < layers.at ( k )->getStyles().size(); i++ ) {
-                if ( stylesString.at ( k ) == "" ) {
-                    stylesString.at ( k ).append ( layers.at ( k )->getDefaultStyle() );
-                }
-                if ( stylesString.at ( k ) == layers.at ( k )->getStyles() [i]->getId() ) {
-                    styles.push_back ( layers.at ( k )->getStyles() [i] );
-                }
-            }
-        }
-
-        if ( styles.size() < k+1 )
-            return new SERDataStream ( new ServiceException ( "",WMS_STYLE_NOT_DEFINED,_ ( "Le style " ) +stylesString.at ( k ) +_ ( " n'est pas gere pour la couche " ) +layersString.at ( k ),"wms" ) );
-    }
-
-    //DPI
-    std::string strDPI = getParam("dpi");
-    if (strDPI != "") {
-        dpi = atoi(strDPI.c_str());
-        if ( dpi == 0 || dpi == INT_MAX || dpi == INT_MIN ) {
-            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre DPI n'est pas une valeur entiere." ),"wms" ) );
-        }
-        if ( dpi<0 ) {
-            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre DPI est negative." ),"wms" ) );
-        }
-
-    } else {
-        dpi = 0;
-    }
-
-    std::string formatOptionString= getParam ( "format_options" ).c_str();
-    char* formatOptionChar = new char[formatOptionString.size() +1];
-    memset ( formatOptionChar,0,formatOptionString.size() +1 );
-    memcpy ( formatOptionChar,formatOptionString.c_str(),formatOptionString.size() );
-
-    for ( int pos = 0; formatOptionChar[pos]; ) {
-        char* key = formatOptionChar + pos;
-        for ( ; formatOptionChar[pos] && formatOptionChar[pos] != ':' && formatOptionChar[pos] != ';'; pos++ ); // on trouve le premier "=", "&" ou 0
-        char* value = formatOptionChar + pos;
-        for ( ; formatOptionChar[pos] && formatOptionChar[pos] != ';'; pos++ ); // on trouve le suivant "&" ou 0
-        if ( *value == ':' ) *value++ = 0; // on met un 0 à la place du '=' entre key et value
-        if ( formatOptionChar[pos] ) formatOptionChar[pos++] = 0; // on met un 0 à la fin du char* value
-
-        toLowerCase ( key );
-        toLowerCase ( value );
-        format_option.insert ( std::pair<std::string, std::string> ( key, value ) );
-    }
-    delete[] formatOptionChar;
-    formatOptionChar=NULL;
-    return NULL;
-}
-
-// Parameters for WMS GetCapabilities
-DataStream* Request::getCapWMSParam ( ServicesXML* servicesConf, std::string& version ) {
-    if ( service.compare ( "wms" ) !=0 ) {
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le service " ) +service+_ ( " est inconnu pour ce serveur." ),"wms" ) );
-    }
-    std::string location = getParam("location");
-    if (location !="") {
-        path = location;
-    }
-    version=getParam ( "version" );
-    if ( version=="" ) {
-        //---- WMS 1.1.1
-        //le parametre version est prioritaire sur wmtver
-        version = getParam("wmtver");
-        if ( version=="") {
-            version = "1.3.0";
-            return NULL;
-        }
-        //----
-    }
-    //Do we have the requested version ?
-    if ( version == "1.3.0" || version == "1.1.1" )
-	return NULL;
     
-    // Version number negotiation for WMS (should not be done for WMTS)
-    // Ref: http://cite.opengeospatial.org/OGCTestData/wms/1.1.1/spec/wms1.1.1.html#basic_elements.version.negotiation
-    // - Version higher than supported version: send the highest supported version
-    // - Version lower than supported version: send the lowest supported version
-    // - "If a version unknow to the server is requested, the server shall send the highest version less than the requested version." => 1.1.1
-    // We compare the different values of the version number (l=left, m=middle, r=right)
-    // Versions supported:
-    std::string high_version = "1.3.0";
-    int high_version_l = high_version[0]-48; //-48 is because of ASCII table, numbers start at position 48
-    int high_version_m = high_version[2]-48;
-    int high_version_r = high_version[4]-48;
-    std::string low_version = "1.1.1";
-    int low_version_l = low_version[0]-48;
-    int low_version_m = low_version[2]-48;
-    int low_version_r = low_version[4]-48;
-    // Getting the request values to compare
-    int request_l = version[0]-48;
-    int request_m = version[2]-48;
-    int request_r = version[4]-48;
-    // We check the numbers from left to right
-    if ( request_l > high_version_l || ( request_l == high_version_l && request_m > high_version_m ) || ( request_l == high_version_l && request_m == high_version_m && request_r > high_version_r ) ) {
-        // Version asked is higher than supported version
-        version = high_version;
-        return NULL;
-    }
-    //if ( request_l < low_version_l || ( request_l == low_version_l && request_m < low_version_m ) || ( request_l == low_version_l && request_m == low_version_m && request_r < low_version_r ) ) {
-        // Version asked is lower than supported version
-        version = low_version;
-        return NULL;
-    //}
-
-    if ( version!="1.3.0" && version!="1.1.1")
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Valeur du parametre VERSION invalide (1.1.1 et 1.3.0 disponibles seulement))" ),"wms" ) );
-}
-
-// Parameters for WMTS GetCapabilities
-DataStream* Request::getCapWMTSParam ( ServicesXML* servicesConf, std::string& version ) {
-    if ( service.compare ( "wmts" ) !=0 ) {
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le service " ) +service+_ ( " est inconnu pour ce serveur." ),"wmts" ) );
-    }
-    std::string location = getParam("location");
-    if (location !="") {
-        path = location;
-    }
-    version=getParam ( "version" );
-    if ( version=="" ) {
-        version=servicesConf->getServiceTypeVersion();
-        return NULL;
-    }
-    if ( version.compare ( servicesConf->getServiceTypeVersion() ) !=0 )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Valeur du parametre VERSION invalide (1.0.0 disponible seulement)" ),"wmts" ) );
-
-    return NULL;
-}
-
-bool Request::doesPathContain(std::string word) {
-    std::size_t found = path.find(word);
-    if (found!=std::string::npos) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-bool Request::doesPathFinishWith(std::string word) {
-    std::size_t found = path.find_last_of("/");
-    if (found!=std::string::npos) {
-        if (path.substr(found+1) == word)
-        {
-            return true;
-        } else {
-            return false;
-        }
-
-    } else {
-        return false;
-    }
-}
-
-// Parameters for WMS GetFeatureInfo
-DataStream* Request::WMSGetFeatureInfoParam (ServicesXML* servicesConf, std::map< std::string, Layer* >& layerList, std::vector<Layer*>& layers,
-                                          std::vector<Layer*>& query_layers,
-                                          BoundingBox< double >& bbox, int& width, int& height, CRS& crs, std::string& format,
-                                          std::vector<Style*>& styles, std::string& info_format, int& X, int& Y, int& feature_count,std::map <std::string, std::string >& format_option){
-
-    int dpi;
-    DataStream* getMapError = getMapParam(servicesConf,layerList,layers, bbox,width,height,crs,format,styles,format_option,dpi);
-    
-    if (getMapError) {
-	return getMapError;
-    }
-    
-    // VERSION
-    std::string version=getParam ( "version" );
-    if ( version=="" ) {
-        //le parametre version est prioritaire sur wmtver
-        version = getParam("wmtver");
-	// Pas de verification car déjà fait dans getMapParam
-    }
-    
-    // QUERY_LAYERS
-    std::string str_query_layer=getParam ( "query_layers" );
-    if ( str_query_layer == "" )
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre QUERY_LAYERS absent." ),"wms" ) );
-    //Split layer Element
-    std::vector<std::string> queryLayersString = split ( str_query_layer,',' );
-    LOGGER_DEBUG ( _ ( "Nombre de couches demandees =" ) << queryLayersString.size() );
-    if ( queryLayersString.size() > 1 ) {
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le nombre de couche interrogée est limité à 1." ),"wms" ) );
-    }
-    std::vector<std::string>::iterator itQueryLayer = queryLayersString.begin();
-    for ( ; itQueryLayer != queryLayersString.end(); itQueryLayer++ ) {
-        std::map<std::string, Layer*>::iterator it = layerList.find ( *itQueryLayer );
-        if ( it == layerList.end() )
-            return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_DEFINED,_ ( "Query_Layer " ) +*itQueryLayer+_ ( " inconnu." ),"wms" ) );
-	Layer* lay = it->second;
-	
-	bool querylay_is_in_layer = false;
-	std::vector<Layer*>::iterator itLay = layers.begin();
-	for ( ; itLay != layers.end(); itLay++ ){
-	    if (*itLay == lay){
-	      querylay_is_in_layer = true;
-	      break;
-	    }
-	}
-	if (querylay_is_in_layer == false){
-	  return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Query_Layer " ) +*itQueryLayer+_ ( " absent de layer." ),"wms" ) );
-	}
-	
-	if (lay->isGetFeatureInfoAvailable() == false){
-	  return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_QUERYABLE,_ ( "Query_Layer " ) +*itQueryLayer+_ ( " non interrogeable." ),"wms" ) );
-	}
-        query_layers.push_back ( it->second );
-    }
-    LOGGER_DEBUG ( _ ( "Nombre de couches requetées =" ) << query_layers.size() );
-
-
-    // FEATURE_COUNT (facultative)
-    std::string strFeatureCount=getParam ( "feature_count" );
-    if ( strFeatureCount == "" ){
-        feature_count=1;
-    }else{
-        feature_count=atoi ( strFeatureCount.c_str() );
-        if ( feature_count == 0 || feature_count == INT_MAX || feature_count == INT_MIN )
-            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre FEATURE_COUNT n'est pas une valeur entiere." ),"wms" ) ) ;
-        if ( feature_count<0 )
-            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre FEATURE_COUNT est negative." ),"wms" ) );
-    }
-
-
-    // X
-    if (version == "1.1.1") {
-      // version 1.1.1
-      std::string strX=getParam ( "x" );
-      if ( strX == "" ) {
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre X absent." ),"wms" ) );
-      }
-      X=atoi ( strX.c_str() );
-      if ( X<0 )
-	return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre X est negative." ),"wms" ) );
-      if ( X>width )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre X est superieure a la largeur fournie (width)." ),"wms" ) );
-    } else {
-      // version 1.3.0
-      std::string strX=getParam ( "i" );
-      if ( strX == "" ) {
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre I absent." ),"wms" ) );
-      }
-      X=atoi ( strX.c_str() );
-      if ( X<0 )
-	return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre I est negative." ),"wms" ) );
-      if ( X>width )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre I est superieure a la largeur fournie (width)." ),"wms" ) );
-    } 
-    
-    
-   
-
-    // Y
-    if (version == "1.1.1") {
-      // version 1.1.1
-      std::string strY=getParam ( "y" );
-      if ( strY == "" ) {
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre Y absent." ),"wms" ) );
-      }
-      Y=atoi ( strY.c_str() );
-      if ( Y<0 )
-	return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre Y est negative." ),"wms" ) );
-      if ( Y>height )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre Y est superieure a la largeur fournie (height)." ),"wms" ) );
-    } else {
-      // version 1.3.0
-      std::string strY=getParam ( "j" );
-      if ( strY == "" ) {
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre J absent." ),"wms" ) );
-      }
-      Y=atoi ( strY.c_str() );
-      if ( Y<0 )
-	return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre J est negative." ),"wms" ) );
-      if ( Y>height )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre J est superieure a la largeur fournie (height)." ),"wms" ) );
-    } 
-    
-    
-    // INFO_FORMAT (facultative)
-    unsigned int k;
-    info_format=getParam ( "info_format" );
-    if ( info_format == "" ){
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre INFO_FORMAT vide." ),"wms" ) );
-    }else{
-        for ( k=0; k<servicesConf->getInfoFormatList()->size(); k++ ) {
-            if ( servicesConf->getInfoFormatList()->at ( k ) ==info_format )
-                break;
-        }
-        if ( k==servicesConf->getInfoFormatList()->size() )
-            return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Info_Format " ) +info_format+_ ( " non gere par le service." ),"wms" ) );
-    }
-
-   
-    return NULL;
-}
-
-DataStream* Request::WMTSGetFeatureInfoParam (ServicesXML* servicesConf,  std::map<std::string,TileMatrixSet*>& tmsList, std::map<std::string, Layer*>& layerList,
-                                     Layer*& layer, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, Style* &style, std::string& info_format, int& X, int& Y) {
-
-    DataSource* getTileError = getTileParam(servicesConf, tmsList, layerList, layer, tileMatrix, tileCol, tileRow, format, style);
-    
-    if (getTileError) {
-        return new DataStreamFromDataSource(getTileError);
-    }
-    if (layer->isGetFeatureInfoAvailable() == false) {
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +layer->getId()+_ ( " non interrogeable." ),"wmts" ) );   
-    }
-    
-    // INFO_FORMAT (facultative)
-    info_format=getParam ( "infoformat" );
-    if ( info_format == "" ){
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre INFOFORMAT vide." ),"wmts" ) );
-    }else{
-        unsigned int k;
-        for ( k=0; k<servicesConf->getInfoFormatList()->size(); k++ ) {
-            if ( servicesConf->getInfoFormatList()->at ( k ) ==info_format )
-                break;
-        }
-        if ( k==servicesConf->getInfoFormatList()->size() )
-            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Info_Format " ) +info_format+_ ( " non gere par le service." ),"wmts" ) );
-    }
-
-    // X
-    std::string strX=getParam ( "i" );
-    if ( strX == "" )
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre I absent." ),"wmts" ) );
-    X=atoi ( strX.c_str() );
-    if ( X<0 )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre I est negative." ),"wmts" ) );
-    if ( X> layer->getDataPyramid()->getLevels().find(tileMatrix)->second->getTm()->getTileW()-1 )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre I est superieure a la largeur de la tuile (width)." ),"wmts" ) );
-
-
-    // Y
-    std::string strY=getParam ( "j" );
-    if ( strY == "" )
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre J absent." ),"wmts" ) );
-    Y=atoi ( strY.c_str() );
-    if ( Y<0 )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre J est negative." ),"wmts" ) );
-    if ( Y> layer->getDataPyramid()->getLevels().find(tileMatrix)->second->getTm()->getTileH()-1 )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre J est superieure a la hauteur de la tuile (height)." ),"wmts" ) );
-
-
-    return NULL;
-}
-//

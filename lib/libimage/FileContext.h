@@ -126,7 +126,7 @@ public:
      * \~french \brief Ferme le flux #output
      * \~english \brief Close stream #output
      */
-    virtual bool closeToWrite() {
+    virtual bool closeToWrite(std::string name) {
         output.close();
         if (output.fail()) {
             return false;

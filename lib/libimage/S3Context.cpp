@@ -253,31 +253,91 @@ int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
     return chunk.size;
 }
 
-bool S3Context::writeFromFile(std::string fileName, std::string objectName) {
-    LOGGER_DEBUG("Write file '" << fileName << "' as a S3 object '" << objectName << "'");
+bool S3Context::write(uint8_t* data, int offset, int size, std::string name) {
+    LOGGER_DEBUG("S3 write : " << size << " bytes (from the " << offset << " one) in the writing buffer " << name);
 
-    struct stat file_info;
-    FILE *fileToUpload;
-    fileToUpload = fopen(fileName.c_str(), "rb");
+    std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
+    if ( it1 == writingBuffers.end() ) {
+        // pas de buffer pour ce nom d'objet
+        LOGGER_ERROR("No writing buffer for the name " << name);
+        return false;
+    }
+    LOGGER_DEBUG("old length: " << it1->second->size());
+   
+    // Calcul de la taille finale et redimensionnement éventuel du vector
+    if (it1->second->size() < size + offset) {
+        it1->second->resize(size + offset);
+    }
 
-    if(! fileToUpload) {
-        LOGGER_ERROR("Cannot open the file to upload " << fileName);
+    memcpy(&((*(it1->second))[0]) + offset, data, size);
+    LOGGER_DEBUG("new length: " << it1->second->size());
+
+    return true;
+}
+
+bool S3Context::writeFull(uint8_t* data, int size, std::string name) {
+    LOGGER_DEBUG("S3 write : " << size << " bytes (one shot) in the writing buffer " << name);
+
+    std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
+    if ( it1 == writingBuffers.end() ) {
+        // pas de buffer pour ce nom d'objet
+        LOGGER_ERROR("No S3 writing buffer for the name " << name);
         return false;
     }
 
-    if(fstat(fileno(fileToUpload), &file_info) != 0) {
-        LOGGER_ERROR("Cannot obtain the file's size' to upload " << fileName);
+    it1->second->clear();
+
+    it1->second->resize(size);
+    memcpy(&((*(it1->second))[0]), data, size);
+
+    return true;
+}
+
+eContextType S3Context::getType() {
+    return S3CONTEXT;
+}
+
+std::string S3Context::getTypeStr() {
+    return "S3Context";
+}
+
+std::string S3Context::getTray() {
+    return bucket_name;
+}
+
+
+bool S3Context::openToWrite(std::string name) {
+
+    std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
+    if ( it1 != writingBuffers.end() ) {
+        LOGGER_ERROR("A S3 writing buffer already exists for the name " << name);
+        return false;
+
+    } else {
+        writingBuffers.insert ( std::pair<std::string,std::vector<char>*>(name, new std::vector<char>()) );
+    }
+
+    return true;
+}
+
+
+bool S3Context::closeToWrite(std::string name) {
+
+
+    std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
+    if ( it1 == writingBuffers.end() ) {
+        LOGGER_ERROR("The S3 writing buffer with name " << name << "does not exist, cannot flush it");
         return false;
     }
-    LOGGER_DEBUG("Size to upload " << file_info.st_size);
 
+
+    LOGGER_DEBUG("Write buffered " << it1->second->size() << " bytes in the S3 object " << name);
 
     CURLcode res;
     struct curl_slist *list = NULL;
     CURL* curl = CurlPool::getCurlEnv();
-    //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
-    std::string fullUrl = url + "/" + bucket_name + "/" + objectName;
+    std::string fullUrl = url + "/" + bucket_name + "/" + name;
 
     time_t current;
     char gmt_time[40];
@@ -286,7 +346,7 @@ bool S3Context::writeFromFile(std::string fileName, std::string objectName) {
     strftime( gmt_time, sizeof(gmt_time), "%a, %d %b %Y %T %z", gmtime(&current) );
 
     std::string content_type = "application/octet-stream";
-    std::string resource = "/" + bucket_name + "/" + objectName;
+    std::string resource = "/" + bucket_name + "/" + name;
     std::string stringToSign = "PUT\n\n" + content_type + "\n" + std::string(gmt_time) + "\n" + resource;
     std::string signature = getAuthorizationHeader(stringToSign);
 
@@ -305,7 +365,7 @@ bool S3Context::writeFromFile(std::string fileName, std::string objectName) {
     list = curl_slist_append(list, ct);
 
     char cl[50];
-    sprintf(cl, "Content-Length: %d", file_info.st_size);
+    sprintf(cl, "Content-Length: %d", it1->second->size());
     list = curl_slist_append(list, cl);
 
     std::string ex = "Expect:";
@@ -318,17 +378,16 @@ bool S3Context::writeFromFile(std::string fileName, std::string objectName) {
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
     curl_easy_setopt(curl, CURLOPT_URL, fullUrl.c_str());
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-    curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
-    curl_easy_setopt(curl, CURLOPT_PUT, 1L);
-    curl_easy_setopt(curl, CURLOPT_READDATA, fileToUpload);
-    curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE, (curl_off_t)file_info.st_size);
+    curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, &((*(it1->second))[0]));
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, it1->second->size());
 
     res = curl_easy_perform(curl);
     curl_slist_free_all(list);
 
 
     if( CURLE_OK != res) {
-        LOGGER_ERROR("Cannot upload the file " << fileName);
+        LOGGER_ERROR ( "Unable to flush " << it1->second->size() << " bytes in the object " << name );
         LOGGER_ERROR(curl_easy_strerror(res));
         return false;
     }
@@ -336,25 +395,14 @@ bool S3Context::writeFromFile(std::string fileName, std::string objectName) {
     long http_code = 0;
     curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
     if (http_code < 200 || http_code > 299) {
-        LOGGER_ERROR("Cannot upload the file " << fileName);
+        LOGGER_ERROR ( "Unable to flush " << it1->second->size() << " bytes in the object " << name );
         LOGGER_ERROR("Response HTTP code : " << http_code);
         return false;
     }
 
-
-    fclose(fileToUpload);
+    LOGGER_DEBUG("Erase the flushed buffer");
+    delete it1->second;
+    writingBuffers.erase(it1);
 
     return true;
-}
-
-eContextType S3Context::getType() {
-    return S3CONTEXT;
-}
-
-std::string S3Context::getTypeStr() {
-    return "S3Context";
-}
-
-std::string S3Context::getTray() {
-    return bucket_name;
 }

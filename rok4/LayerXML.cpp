@@ -65,6 +65,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
 
     WMSauth = true;
     WMTSauth = true;
+    TMSauth = true;
 
     getFeatureInfoAvailability = false;
     getFeatureInfoType = "";
@@ -113,6 +114,9 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
 
     pElem=hRoot.FirstChild ( "WMSAuthorized" ).Element();
     if ( pElem && pElem->GetText() && DocumentXML::getTextStrFromElem(pElem)=="false") WMSauth= false;
+
+    pElem=hRoot.FirstChild ( "TMSAuthorized" ).Element();
+    if ( pElem && pElem->GetText() && DocumentXML::getTextStrFromElem(pElem)=="false") TMSauth= false;
 
     pElem=hRoot.FirstChild ( "WMTSAuthorized" ).Element();
     if ( pElem && pElem->GetText() && DocumentXML::getTextStrFromElem(pElem)=="false") WMTSauth= false;
@@ -190,11 +194,11 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
 
         Style* sty = serverXML->getStyle(styleName);
         if ( sty == NULL ) {
-            LOGGER_ERROR ( _ ( "Style " ) << styleName << _ ( "non defini" ) );
+            LOGGER_ERROR ( _ ( "Style " ) << styleName << _ ( " non defini" ) );
             continue;
         }
 
-        if ( sty->getId().compare ( DEFAULT_STYLE_INSPIRE_ID ) ==0 ) {
+        if ( sty->getId().compare ( DEFAULT_STYLE_INSPIRE_ID ) == 0 ) {
             inspireStyleName = styleName;
         }
         styles.push_back ( sty );
@@ -207,7 +211,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
 
         Style* sty = serverXML->getStyle(inspireStyleName);
         if ( sty == NULL ) {
-            LOGGER_ERROR ( _ ( "Style " ) << styleName << _ ( "non defini" ) );
+            LOGGER_ERROR ( _ ( "Style " ) << inspireStyleName << _ ( "non defini" ) );
             return;
         }
         styles.insert ( styles.begin(), sty );
@@ -459,7 +463,6 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
             return;
         }
     } else {
-        // FIXME: pas forcement critique si on a un cache d'une autre nature (jpeg2000 par exemple).
         LOGGER_ERROR ( _ ( "Aucune pyramide associee au layer " ) << filePath );
         return;
     }

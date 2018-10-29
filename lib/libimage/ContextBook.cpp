@@ -77,8 +77,6 @@ ContextBook::ContextBook(eContextType type, std::string s1, std::string s2, std:
             ceph_conf = s3;
             break;
     }
-
-    am = NULL;
 }
 
 Context * ContextBook::addContext(std::string tray, bool keystone)
@@ -105,8 +103,6 @@ Context * ContextBook::addContext(std::string tray, bool keystone)
             default :
                 return NULL;
         }
-
-        if (am != NULL) ctx->setAliasManager(am);
 
         //on ajoute au book
         book.insert ( std::pair<std::string,Context*>(tray,ctx) );

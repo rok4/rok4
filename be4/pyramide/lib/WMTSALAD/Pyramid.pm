@@ -276,7 +276,7 @@ sub _loadProperties {
     return FALSE if(! $this->_checkProperties($cfg));
 
     # Tile Matrix Set    
-    my $TMS = COMMON::TileMatrixSet->new(File::Spec->catfile($refFileContent->{pyramid}->{tms_path},$refFileContent->{pyramid}->{tms_name}));
+    my $TMS = COMMON::TileMatrixSet->new(File::Spec->catfile($refFileContent->{pyramid}->{tms_path},$refFileContent->{pyramid}->{tms_name}), TRUE);
     $this->{tileMatrixSet} = $TMS ;
 
     # Image format
@@ -736,8 +736,8 @@ sub _checkProperties {
     }
 
     my $pyr_data_path = $propCfg->getProperty({section => 'pyramid', property => 'pyr_data_path'});
-    if (! defined $pyr_data_path) {
-        ERROR ("The parameter 'pyr_data_path' is required!");
+    if ((defined $persistent) && ($persistent =~ m/\A(1|t|true)\z/i) && ! defined $pyr_data_path) {
+        ERROR ("The parameter 'pyr_data_path' is required for a persistent / 'on demand' pyramid!");
         return FALSE;
     }
 
@@ -905,7 +905,9 @@ sub exportForDebug {
     
     my $pyr_dump = "\n  pyr_name => ".$this->{pyr_name};
     $pyr_dump .= "\n  pyr_desc_path => ".$this->{pyr_desc_path};
-    $pyr_dump .= "\n  pyr_data_path => ".$this->{pyr_data_path};
+    if (exists $this->{pyr_data_path} && defined $this->{pyr_data_path}) {
+        $pyr_dump .= "\n  pyr_data_path => ".$this->{pyr_data_path};
+    }
     $pyr_dump .= "\n  dir_depth => ".$this->{dir_depth};
     $pyr_dump .= "\n  persistent => ".$this->{persistent};
     $pyr_dump .= "\n  image_width => ".$this->{image_width};
@@ -977,7 +979,7 @@ sub writeConfPyramid {
         $rootEl->appendChild($levelEl);
         $levelEl->appendTextChild("tileMatrix", $lvlId);
         
-        if ($this->{persistent}) {
+        if (exists $this->{persistent} && defined $this->{persistent} && $this->{persistent} == TRUE) {
             my $imageBaseDir = File::Spec->catfile($this->{pyr_data_path}, $this->{pyr_name}, "IMAGE", $lvlId);
             $levelEl->appendTextChild("onFly", "true");
             $levelEl->appendTextChild("baseDir", $imageBaseDir);
@@ -1047,7 +1049,7 @@ sub writeCachePyramid {
         # Create folders for data, if they don't exist
 
         # Data folder created only if the pyramid is defined as persistent
-        if ($this->{persistent} == TRUE) {
+        if (exists $this->{persistent} && defined $this->{persistent} && $this->{persistent} == TRUE) {
             ### DATA
             my $imageBaseDir = File::Spec->catfile($this->{pyr_data_path}, $this->{pyr_name}, "IMAGE", $lvlId);
 

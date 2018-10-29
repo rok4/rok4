@@ -30,6 +30,7 @@ buildbin: \
 ./bin/sup-pyr.pl \
 ./bin/pyr2pyr.pl \
 ./bin/create-layer.pl \
+./bin/create-list.pl \
 ./bin/exPyr.pl \
 ./bin/wmtSalaD.pl
 

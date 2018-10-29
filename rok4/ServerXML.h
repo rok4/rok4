@@ -55,7 +55,6 @@ struct Proxy;
 #include "Rok4Server.h"
 
 #if BUILD_OBJECT
-#include "RedisAliasManager.h"
 #include "ContextBook.h"
 #endif
 
@@ -115,6 +114,7 @@ class ServerXML : public DocumentXML
         int getNbThreads() ;
         std::string getSocket() ;
         bool getSupportWMTS() ;
+        bool getSupportTMS() ;
         bool getSupportWMS() ;
         bool getReprojectionCapability() ;
         int getBacklog() ;
@@ -138,6 +138,11 @@ class ServerXML : public DocumentXML
          * \~english \brief Define whether WMTS request should be honored
          */
         bool supportWMTS;
+        /**
+         * \~french \brief Défini si le serveur doit honorer les requêtes TMS
+         * \~english \brief Define whether TMS request should be honored
+         */
+        bool supportTMS;
         /**
          * \~french \brief Défini si le serveur doit honorer les requêtes WMS
          * \~english \brief Define whether WMS request should be honored
@@ -199,8 +204,6 @@ class ServerXML : public DocumentXML
         ContextBook* cephBook;
         ContextBook* s3Book;
         ContextBook* swiftBook;
-
-        AliasManager* am;
 #endif
 
         int nbProcess;

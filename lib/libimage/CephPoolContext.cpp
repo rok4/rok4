@@ -93,6 +93,7 @@ bool CephPoolContext::connection() {
     ret = rados_conf_read_file(cluster, conf_file.c_str());
     if (ret < 0) {
         LOGGER_ERROR( "Couldn't read the Ceph configuration file! error " << ret );
+        LOGGER_ERROR (strerror(-ret));
         LOGGER_ERROR( "Configuration file : " << conf_file );
         return false;
     }
@@ -124,10 +125,15 @@ int CephPoolContext::read(uint8_t* data, int offset, int size, std::string name)
    
     LOGGER_DEBUG("Ceph read : " << size << " bytes (from the " << offset << " one) in the object " << name);
 
+    if (! connected) {
+        LOGGER_ERROR("Try to read using the unconnected ceph pool context " << pool_name);
+        return -1;
+    }
     int readSize = rados_read(io_ctx, name.c_str(), (char*) data, size, offset);
 
     if (readSize < 0) {
         LOGGER_ERROR ( "Unable to read " << size << " bytes (from the " << offset << " one) in the object " << name );
+        LOGGER_ERROR (strerror(-readSize));
     }
 
     return readSize;
@@ -135,26 +141,39 @@ int CephPoolContext::read(uint8_t* data, int offset, int size, std::string name)
 
 
 bool CephPoolContext::write(uint8_t* data, int offset, int size, std::string name) {
-    LOGGER_DEBUG("Ceph write : " << size << " bytes (from the " << offset << " one) in the object " << name);
+    LOGGER_DEBUG("Ceph write : " << size << " bytes (from the " << offset << " one) in the writing buffer " << name);
 
-    int err = rados_write(io_ctx, name.c_str(), (char*) data, size, offset);
-
-    if (err < 0) {
-        LOGGER_ERROR ( "Unable to start to write " << size << " bytes (from the " << offset << " one) in the object " << name );
+    std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
+    if ( it1 == writingBuffers.end() ) {
+        // pas de buffer pour ce nom d'objet
+        LOGGER_ERROR("No writing buffer for the name " << name);
         return false;
     }
+   
+    // Calcul de la taille finale et redimensionnement éventuel du vector
+    if (it1->second->size() < size + offset) {
+        it1->second->resize(size + offset);
+    }
+
+    memcpy(&((*(it1->second))[0]) + offset, data, size);
 
     return true;
 }
 
 bool CephPoolContext::writeFull(uint8_t* data, int size, std::string name) {
-    LOGGER_DEBUG("Ceph write : " << size << " bytes (one shot) in the object " << name);
+    LOGGER_DEBUG("Ceph write : " << size << " bytes (one shot) in the writing buffer " << name);
 
-    int err = rados_write_full(io_ctx,name.c_str(), (char*) data, size);
-    if (err < 0) {
-        LOGGER_ERROR ( "Unable to write " << size << " bytes (one shot) in the object " << name );
+    std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
+    if ( it1 == writingBuffers.end() ) {
+        // pas de buffer pour ce nom d'objet
+        LOGGER_ERROR("No Ceph writing buffer for the name " << name);
         return false;
     }
+
+    it1->second->clear();
+
+    it1->second->resize(size);
+    memcpy(&((*(it1->second))[0]), data, size);
 
     return true;
 }
@@ -169,4 +188,45 @@ std::string CephPoolContext::getTypeStr() {
 
 std::string CephPoolContext::getTray() {
     return pool_name;
+}
+
+bool CephPoolContext::openToWrite(std::string name) {
+
+    std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
+    if ( it1 != writingBuffers.end() ) {
+        LOGGER_ERROR("A Ceph writing buffer already exists for the name " << name);
+        return false;
+
+    } else {
+        writingBuffers.insert ( std::pair<std::string,std::vector<char>*>(name, new std::vector<char>()) );
+    }
+
+    return true;
+}
+
+
+bool CephPoolContext::closeToWrite(std::string name) {
+
+
+    std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
+    if ( it1 == writingBuffers.end() ) {
+        LOGGER_ERROR("The Ceph writing buffer with name " << name << "does not exist, cannot flush it");
+        return false;
+    }
+
+
+    LOGGER_DEBUG("Write buffered " << it1->second->size() << " bytes in the ceph object " << name);
+
+    int err = rados_write_full(io_ctx,name.c_str(), &((*(it1->second))[0]), it1->second->size());
+    if (err < 0) {
+        LOGGER_ERROR ( "Unable to flush " << it1->second->size() << " bytes in the object " << name );
+        LOGGER_ERROR (strerror(-err));
+        return false;
+    }
+
+    LOGGER_DEBUG("Erase the flushed buffer");
+    delete it1->second;
+    writingBuffers.erase(it1);
+
+    return true;
 }

@@ -1,6 +1,5 @@
 # List of files which contain translatable strings.
 
-CapabilitiesBuilder.cpp
 ConfLoader.cpp
 ConfLoader.h
 Layer.cpp

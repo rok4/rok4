@@ -539,8 +539,35 @@ unsigned int ServicesXML::getMaxTileX() const { return maxTileX; }
 unsigned int ServicesXML::getMaxTileY() const { return maxTileY; }
 std::string ServicesXML::getName() const { return name; }
 std::vector<std::string>* ServicesXML::getFormatList() { return &formatList; }
+bool ServicesXML::isInFormatList(std::string f) {
+    for ( unsigned int k = 0; k < formatList.size(); k++ ) {
+        if ( formatList.at(k) == f ) {
+            return true;
+        }
+    }
+    return false;
+}
 std::vector<std::string>* ServicesXML::getInfoFormatList() { return &infoFormatList; }
+bool ServicesXML::isInInfoFormatList(std::string f) {
+    for ( unsigned int k = 0; k < infoFormatList.size(); k++ ) {
+        if ( infoFormatList.at(k) == f ) {
+            return true;
+        }
+    }
+    return false;
+}
+
 std::vector<CRS>* ServicesXML::getGlobalCRSList() { return &globalCRSList; }
+bool ServicesXML::isInGlobalCRSList(CRS* c) {
+    for ( unsigned int k = 0; k < globalCRSList.size(); k++ ) {
+        if ( c->cmpRequestCode ( globalCRSList.at (k).getRequestCode() ) ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 bool ServicesXML::isFullStyleCapable() { return fullStyling; }
 // WMTS
 std::string ServicesXML::getServiceType() { return serviceType; }

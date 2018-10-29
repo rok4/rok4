@@ -56,6 +56,7 @@ Layer::Layer ( const LayerXML& l ) {
     this->abstract = l.abstract;
     this->WMSAuthorized = l.WMSauth;
     this->WMTSAuthorized = l.WMTSauth;
+    this->TMSAuthorized = l.TMSauth;
     this->keyWords = l.keyWords;
     this->dataPyramidFilePath = l.pyramidFilePath;
     this->dataPyramid = l.pyramid;
@@ -162,6 +163,7 @@ Layer::~Layer() {
 
 std::string Layer::getAbstract() { return abstract; }
 bool Layer::getWMSAuthorized() { return WMSAuthorized; }
+bool Layer::getTMSAuthorized() { return TMSAuthorized; }
 bool Layer::getWMTSAuthorized() { return WMTSAuthorized; }
 std::string Layer::getAuthority() { return authority; }
 std::vector<Keyword>* Layer::getKeyWords() { return &keyWords; }
@@ -173,8 +175,24 @@ std::string Layer::getDataPyramidFilePath() { return dataPyramidFilePath; }
 Interpolation::KernelType Layer::getResampling() { return resampling; }
 std::string Layer::getDefaultStyle() { return defaultStyle; }
 std::vector<Style*> Layer::getStyles() { return styles; }
+Style* Layer::getStyle(std::string id) {
+    for ( unsigned int i = 0; i < styles.size(); i++ ) {
+        if ( id == styles[i]->getId() )
+            return styles[i];
+    }
+    return NULL;
+}
 std::string Layer::getTitle() { return title; }
 std::vector<CRS> Layer::getWMSCRSList() { return WMSCRSList; }
+bool Layer::isInWMSCRSList(CRS* c) {
+    for ( unsigned int k = 0; k < WMSCRSList.size(); k++ ) {
+        if ( c->cmpRequestCode ( WMSCRSList.at (k).getRequestCode() ) ) {
+            return true;
+        }
+    }
+    return false;
+}
+
 GeographicBoundingBoxWMS Layer::getGeographicBoundingBox() { return geographicBoundingBox; }
 BoundingBoxWMS Layer::getBoundingBox() { return boundingBox; }
 std::vector<MetadataURL> Layer::getMetadataURLs() { return metadataURLs; }

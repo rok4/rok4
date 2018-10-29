@@ -16,7 +16,7 @@ BE4 est un ensemble de scripts de traitement permettant la préparation et la tr
 * http://www.geoportail.gouv.fr [@Geoportail](https://twitter.com/Geoportail)
 * http://www.rok4.org
 
-ROK4 Version : 2.0.0
+ROK4 Version : 2.2.2
 
 # Fonctionnement général
 
@@ -31,7 +31,7 @@ Pour que cette pyramide soit diffusée par ROK4SERVER, on va créer un descripte
 ![Logo Rok4](./docs/images/LAY_PYR.png)
 
 * Pour avoir des précisions sur la partie [BE4](be4/README.md)
-* Pour avoir des précisions sur la partie [ROK4SERVER](rok4/README.md)
+* Pour avoir des précisions sur la partie [ROK4SERVER](rok4/README.md), son déploiement et son utilisation
 * Pour avoir les spécifications d'une [PYRAMIDE](docs/Specification_pyramide_ROK4.md)
 
 # Compiler et installer le projet ROK4
@@ -55,27 +55,29 @@ Pour la partie Perl :
 Pour centos, il est nécessaire d'ajouter un dépôt pour avoir accès aux paquets nécessaires : `yum install -y epel-release`
 
 Les paquets (`Debian`|`Centos`) à installer sont :
+* (`libfcgi-dev`|`fcgi-devel`) pour que le serveur ROK4 gère les requêtes
 * (`gettext`|`gettext`) pour l'internationalisation des logs
 * (`libtinyxml-dev`|`tinyxml-devel`) pour la lecture des configuration XML
 * (`zlib1g-dev`|`zlib-devel`) pour la compression ZIP
 * (`libtiff5-dev`|`libtiff-devel`) pour la lecture et écriture des images TIFF
 * (`libpng16-dev`|`libpng-devel`) pour la lecture des images PNG
 * (`libcurl4-openssl-dev`|`libcurl-devel`) et (`libssl-dev`|`openssl-devel`) pour l'envoi de requête HTTP(S)
-* (`libturbojpeg`|`turbojpeg-devel`) et (`libjpeg`|`libjpeg-turbo-devel`) pour la lecture des images JPEG
+* (`libturbojpeg0-dev`|`turbojpeg-devel`) et (`libjpeg`|`libjpeg-turbo-devel`) pour la lecture des images JPEG
 * (`libopenjp2-7-dev`|`openjpeg2-devel`) pour la lecture des images JPEG2000 si Kakadu n'est pas utilisé
 * (`libc6-dev`|) pour les l'utilisation de thread POSIX
 
 Si la gestion du stockage objet est voulue :
 * (`librados-dev`|`librados2-devel`) pour la lecture et l'écriture d'objets sur un cluster Ceph
-* (`libhiredis-dev`|`hiredis-devel`) pour l'utilisation d'une base Redis pour l'alias d'objets
 
 ### Perl
 
 Les librairies Perl sont installable via l'outil CPAN : `cpan Lib::Perl` (en sudo pour une installation système). Certaines des librairies utilisées sont installées avec le paquet `perl-base`
 
+* Ceph::Rados;
 * Data::Dumper
 * Digest::SHA
 * ExtUtils::MakeMaker
+* File::Find::Rule
 * File::Map
 * FindBin
 * HTTP::Request
@@ -94,7 +96,7 @@ On installe les librairies Perl GDAL via le paquet :
 
 Soit :
 ```
-cpan Data::Dumper Digest::SHA ExtUtils::MakeMaker File::Map FindBin Geo::GDAL Geo::OGR Geo::OSR HTTP::Request HTTP::Request::Common HTTP::Response Log::Log4perl LWP::UserAgent Math::BigFloat Test::More Tie::File XML::LibXML
+cpan Data::Dumper Digest::SHA ExtUtils::MakeMaker File::Find::Rule File::Map FindBin Geo::GDAL Geo::OGR Geo::OSR HTTP::Request HTTP::Request::Common HTTP::Response Log::Log4perl LWP::UserAgent Math::BigFloat Test::More Tie::File XML::LibXML Ceph::Rados
 ```
 
 Si volonté d'utiliser l'outil graphique `tms-converter-gui.pl` :
@@ -156,7 +158,7 @@ make [install|package]`
 
 #### Gestion du stockage objet
 
-`BUILD_OBJECT (BOOL)` : Il est possible de stocker les pyramides d'images dans des systèmes de stockage objet. Sont gérés CEPH, S3 et SWIFT. Cela implique d'avoir préalablement installé les librairies librados et hiredis. Ne pas mettre TRUE mais `1` pour que ce soit bien interprété lors de la compilation dans le code. Valeur par défaut : `0`   
+`BUILD_OBJECT (BOOL)` : Il est possible de stocker les pyramides d'images dans des systèmes de stockage objet. Sont gérés CEPH, S3 et SWIFT. Cela implique d'avoir préalablement installé la librairie librados. Ne pas mettre TRUE mais `1` pour que ce soit bien interprété lors de la compilation dans le code. Valeur par défaut : `0`   
 
 #### Utilisation de Kakadu
 

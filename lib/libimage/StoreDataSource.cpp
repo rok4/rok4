@@ -67,8 +67,6 @@ StoreDataSource::StoreDataSource (std::string n, const uint32_t o, const uint32_
     readFull = false;
     readIndex = false;
     alreadyTried = false;
-
-    name = context->convertName(name);
 }
 
 StoreDataSource::StoreDataSource (std::string n, const uint32_t po, const uint32_t ps, const uint32_t hisize, std::string type, Context* c, std::string encoding ) :
@@ -79,8 +77,6 @@ StoreDataSource::StoreDataSource (std::string n, const uint32_t po, const uint32
     readFull = false;
     readIndex = true;
     alreadyTried = false;
-
-    name = context->convertName(name);
 }
 
 StoreDataSource::StoreDataSource (std::string n, const uint32_t maxsize, std::string type, Context* c, std::string encoding ) :
@@ -91,8 +87,6 @@ StoreDataSource::StoreDataSource (std::string n, const uint32_t maxsize, std::st
     readFull = true;
     readIndex = false;
     alreadyTried = false;
-
-    name = context->convertName(name);
 }
 
 /*
@@ -107,6 +101,13 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
     }
 
     alreadyTried = true;
+
+    // il se peut que le contexte ne soit pas connecté, auquel cas on sort directement sans donnée
+    if (! context->isConnected()) {
+        data = NULL;
+        return NULL;
+    }
+
     if (readFull) {
         // On retourne tout l'objet
         data = new uint8_t[maxsize];
@@ -145,12 +146,19 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
         }
 
         if ( realSize < ROK4_IMAGE_HEADER_SIZE ) {
-            // On est dans le cas d'un objet symbolique
 
+            // Dans le cas d'un header de type objet lien, on verifie d'abord que la signature concernée est bien presente dans le header de l'objet
+            if ( strncmp((char*) indexheader, ROK4_SYMLINK_SIGNATURE, ROK4_SYMLINK_SIGNATURE_SIZE) != 0 ) {
+                LOGGER_ERROR ( "Erreur lors de la lecture du header, l'objet " << name << " ne correspond pas à un objet lien " );
+                delete[] indexheader;
+                return NULL;
+            }
+
+            // On est dans le cas d'un objet symbolique
             std::string originalName (name);
-            char tmpName[realSize+1];
-            memcpy((uint8_t*) tmpName, indexheader,realSize);
-            tmpName[realSize] = '\0';
+            char tmpName[realSize-ROK4_SYMLINK_SIGNATURE_SIZE+1];
+            memcpy((uint8_t*) tmpName, indexheader+ROK4_SYMLINK_SIGNATURE_SIZE,realSize-ROK4_SYMLINK_SIGNATURE_SIZE);
+            tmpName[realSize-ROK4_SYMLINK_SIGNATURE_SIZE] = '\0';
             name = std::string (tmpName);
 
             LOGGER_DEBUG ( "Dalle symbolique détectée : " << originalName << " référence une autre dalle symbolique " << name );

@@ -149,6 +149,11 @@ private:
      */
     bool WMTSAuthorized;
     /**
+     * \~french \brief Autorisé le TMS pour ce layer
+     * \~english \brief Authorized TMS for this layer
+     */
+    bool TMSAuthorized;
+    /**
      * \~french \brief Liste des mots-clés
      * \~english \brief List of keywords
      */
@@ -345,6 +350,15 @@ public:
     bool getWMSAuthorized() ;
     /**
      * \~french
+     * \brief Retourne le droit d'utiliser un service TMS
+     * \return TMSAuthorized
+     * \~english
+     * \brief Return the right to use TMS
+     * \return TMSAuthorized
+     */
+    bool getTMSAuthorized() ;
+    /**
+     * \~french
      * \brief Retourne le droit d'utiliser un service WMTS
      * \return WMTSAuthorized
      * \~english
@@ -445,6 +459,16 @@ public:
     std::vector<Style*> getStyles() ;
     /**
      * \~french
+     * \brief Retourne le style associé à la couche
+     * \return le style si associé, NULL sinon
+     * \~english
+     * \brief Return the associated style
+     * \return the style if present, NULL otherwise
+     */
+    Style* getStyle(std::string id) ;
+
+    /**
+     * \~french
      * \brief Retourne le titre
      * \return titre
      * \~english
@@ -461,6 +485,16 @@ public:
      * \return CRS list
      */
     std::vector<CRS> getWMSCRSList() ;
+
+    /**
+     * \~french
+     * \brief Teste la présence du CRS dans la liste
+     * \return Présent ou non
+     * \~english
+     * \brief Test if CRS is in the CRS list
+     * \return Present or not
+     */
+    bool isInWMSCRSList(CRS* c) ;
     /**
      * \~french
      * \brief Retourne l'emprise des données en coordonnées géographique (WGS84)

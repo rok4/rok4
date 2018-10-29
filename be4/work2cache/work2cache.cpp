@@ -54,7 +54,6 @@
  *
  * Vision libimage : FileImage -> Rok4Image
  *
- * Dans le cas d'un stockage sur Swift ou S3, on va commencer par écrire l'image ROK4 finale dans un fichier pour la téléverser en une fois après.
  * \~ \code
  * work2cache input.tif -c zip -p rgb -t 100 100 -b 8 -a uint -s 3 output.tif
  * \endcode
@@ -368,13 +367,6 @@ int main ( int argc, char **argv ) {
     Context* context;
 
 #if BUILD_OBJECT
-    // Dans le cas d'un stockage sur Swift ou S3, on a tout de même besoin d'un contexte fichier pour écrire l'image au format final
-    // et pouvoir la téléverser en une fois
-    // Pour cela ,on utilise deux contextes, et un nom de fichier temporaire = input.obj
-    SwiftContext* contextSwift;
-    S3Context* contextS3;
-    char swiftName[256];
-    char s3Name[256];
 
     if ( pool != 0 ) {
         onCeph = true;
@@ -391,38 +383,15 @@ int main ( int argc, char **argv ) {
         curl_global_init(CURL_GLOBAL_ALL);
 
         LOGGER_DEBUG( std::string("Output is an object in the S3 bucket ") + bucket);
-        contextS3 = new S3Context(bucket);
-        if (! contextS3->connection()) {
-            error("Unable to connect S3 context", -1);
-        }
-        context = new FileContext("");
+        context = new S3Context(bucket);
 
-        // On sauvegarde le nom final de l'objet Swift à créer
-        strcpy ( s3Name, output );
-        // output devient le nom du fichier temporaire à écrire
-        strcpy(output, input);
-        strcat(output, ".obj");
-
-        LOGGER_DEBUG("Temporary file path for S3 storage : " << string(output));
     } else if (container != 0) {
         onSwift = true;
 
         curl_global_init(CURL_GLOBAL_ALL);
 
-        LOGGER_DEBUG( std::string("Output is an object in the Swift container ") + container);
-        contextSwift = new SwiftContext(container, keystone);
-        if (! contextSwift->connection()) {
-            error("Unable to connect Swift context", -1);
-        }
-        context = new FileContext("");
-
-        // On sauvegarde le nom final de l'objet Swift à créer
-        strcpy ( swiftName, output );
-        // output devient le nom du fichier temporaire à écrire
-        strcpy(output, input);
-        strcat(output, ".obj");
-
-        LOGGER_DEBUG("Temporary file path for Swift storage : " << string(output));
+        LOGGER_DEBUG( std::string("Output is an object in the Swift bucket ") + container);
+        context = new SwiftContext(container);
     } else {
 #endif
 
@@ -470,7 +439,7 @@ int main ( int argc, char **argv ) {
         error("Cannot read the source image", -1);
     }
 
-    // On regarde si on a tout précisé en sortie, pour voir si des conversions sont possibles
+    // On regarde si on a tout précisé en sortie, pour voir si des conversions sont demandées et possibles
     if (sampleformat != SampleFormat::UNKNOWN && bitspersample != 0 && samplesperpixel !=0) {
         outputProvided = true;
         // La photométrie est déduite du nombre de canaux
@@ -531,37 +500,12 @@ int main ( int argc, char **argv ) {
 #if BUILD_OBJECT
     }
 
-    if (onSwift) {
-        LOGGER_DEBUG("Swift upload");
-        if (! contextSwift->writeFromFile(string(output), string(swiftName))) {
-            error("Cannot upload ROK4 image into Swift", -1);
-        }
-
-        // Nettoyage spécial
-        if ( remove( output ) != 0 ) {
-            LOGGER_WARN("Cannot remove temporary file (for Swift upload) " << output);
-        } else {
-            LOGGER_DEBUG(output << " removed");
-        }
+    if (onSwift || onS3) {
+        // Un environnement CURL a été créé et utilisé, il faut le nettoyer
         CurlPool::cleanCurlPool();
         curl_global_cleanup();
-        delete contextSwift;
-    } else if (onS3) {
-        LOGGER_DEBUG("S3 upload");
-        if (! contextS3->writeFromFile(string(output), string(s3Name))) {
-            error("Cannot upload ROK4 image into S3", -1);
-        }  
-
-        // Nettoyage spécial
-        if ( remove( output ) != 0 ) {
-            LOGGER_WARN("Cannot remove temporary file (for S3 upload) " << output);
-        } else {
-            LOGGER_DEBUG(output << " removed");
-        }
-        CurlPool::cleanCurlPool();
-        curl_global_cleanup();
-        delete contextS3;      
     }
+
 #endif
 
     LOGGER_DEBUG ( "Clean" );

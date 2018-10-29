@@ -246,10 +246,19 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( std::string name, BoundingB
         return NULL;
     }
     if ( tmpSize < ROK4_IMAGE_HEADER_SIZE ) {
+
+        // S'il s'agit potentiellement d'un objet lien, on verifie d'abord que la signature de ce type d'objet est bien presente dans le header
+        if ( strncmp((char*) hdr, ROK4_SYMLINK_SIGNATURE, ROK4_SYMLINK_SIGNATURE_SIZE) != 0 ) {
+            LOGGER_ERROR ( "Erreur lors de la lecture du header, l'objet " << name << " ne correspond pas à un objet lien " );
+            delete[] hdr;
+            return NULL;
+        }
+
+
         std::string originalName (name);
-        char tmpName[tmpSize+1];
-        memcpy((uint8_t*) tmpName, hdr,tmpSize);
-        tmpName[tmpSize] = '\0';
+        char tmpName[tmpSize-ROK4_SYMLINK_SIGNATURE_SIZE+1];
+        memcpy((uint8_t*) tmpName, hdr+ROK4_SYMLINK_SIGNATURE_SIZE,tmpSize-ROK4_SYMLINK_SIGNATURE_SIZE);
+        tmpName[tmpSize-ROK4_SYMLINK_SIGNATURE_SIZE] = '\0';
         name = std::string (tmpName);
         delete sds;
 
@@ -897,7 +906,7 @@ int Rok4Image::writeTiles ( Image* pIn, int imageCol, int imageRow, bool crop )
 bool Rok4Image::writeHeader()
 {
     if (! context->openToWrite(name)) {
-        LOGGER_ERROR("Unable to open output truc " << name);
+        LOGGER_ERROR("Unable to open output " << name);
         return false;
     }
 
@@ -979,7 +988,9 @@ bool Rok4Image::writeHeader()
     * ( ( uint32_t* ) ( p ) ) = 0;
     p += 4;
 
-    context->write((uint8_t*) header, 0, ROK4_IMAGE_HEADER_SIZE, std::string(name));
+    if (context->write((uint8_t*) header, 0, ROK4_IMAGE_HEADER_SIZE, std::string(name)) < 0) {
+        return false;
+    }
 
     return true;
 }
@@ -1043,7 +1054,7 @@ bool Rok4Image::writeFinal() {
     context->write((uint8_t*) tilesOffset, ROK4_IMAGE_HEADER_SIZE, 4 * tilesNumber, std::string(name));
     context->write((uint8_t*) tilesByteCounts, ROK4_IMAGE_HEADER_SIZE + 4 * tilesNumber, 4 * tilesNumber, std::string(name));
 
-    if (! context->closeToWrite()) {
+    if (! context->closeToWrite(name)) {
         LOGGER_ERROR("Unable to close output truc " << name);
         return false;
     }

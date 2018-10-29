@@ -117,6 +117,8 @@ See also:
 sub new {
     my $class = shift;
     my $params = shift;
+
+    DEBUG("Creating node.");
     
     $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above)
@@ -132,9 +134,16 @@ sub new {
     bless($this, $class);
     
     # init. class
-    return undef if (! $this->_init($params));
-    return undef if (! $this->_load($params));
+    if (! $this->_init($params)) {
+        ERROR("Node initialization failed.");
+        return undef;
+    }
+    if (! $this->_load($params)){
+        ERROR("Node loading failed.");
+        return undef ;
+    }
     
+    DEBUG("Node created.");
     return $this;
 }
 
@@ -169,7 +178,9 @@ sub _init {
     # init. params
     $this->{col} = $params->{col};
     $this->{row} = $params->{row};
-    $this->{level} = $params->{level};    
+    $this->{level} = $params->{level};
+
+    DEBUG(sprintf ("Node's parameters : %s", Dumper($this)));   
     
     return TRUE;
 }

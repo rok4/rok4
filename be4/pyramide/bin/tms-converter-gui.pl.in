@@ -176,7 +176,7 @@ sub openTmsBrowser {
 
 sub validateGlobals {
 
-    $tmsObject = COMMON::TileMatrixSet->new($tmsFileName);
+    $tmsObject = COMMON::TileMatrixSet->new($tmsFileName, 1);
     if (! defined $tmsObject) {
         return "TMS not valid";
     }
@@ -752,12 +752,169 @@ sub calculateWKTs {
         $onglet6Text->insert('end', $char);
     }
 
+    $onglet6Text->insert('end', "DONE !");
+
+    close(IN);
+
     foreach my $l (keys (%{$geomsByLevel})) {
         my $wktPath = "$dirList/extent_$l.wkt";
         open(OUT, ">$wktPath");
         print OUT $geomsByLevel->{$l}->ExportToWkt();
         close(OUT);
     }
+}
+
+###################################################################################################
+####################################### List -> getTile list ######################################
+###################################################################################################
+
+### Interface
+
+my $onglet7 = $ongletsNoteBook->add('onglet7', -label => 'List -> getTile list');
+$onglet7->configure( -background => 'white');
+
+my $onglet7ParamsFrame= $onglet7->Frame(-background =>  'white')->pack( -fill => 'both' );
+my $onglet7ResultFrame= $onglet7->Frame(-background =>  'white')->pack( -fill => 'both', -expand => 1 ); 
+my $onglet7Text = $onglet7ResultFrame->ROText( )->pack( -side => 'left', -fill => 'both', -expand => 1);
+
+$onglet7ParamsFrame->Label( -background =>  'white',  -text => "List's path = " )->pack( -side => 'left');
+
+my $onglet7PathEntry = $onglet7ParamsFrame->Entry( )->pack( -side => 'left', -fill => 'both', -expand => 1);
+
+my $ratioLabel = $onglet7ParamsFrame->Label( -background =>  'white',  -text => 'Ratio : 1/' )->pack( -side => 'left'); 
+my $ratioEntry = $onglet7ParamsFrame->EntryCheck(-pattern => qr/\d/)->pack( -side => 'left', -fill => 'both');
+$ratioEntry->insert(0, '1');
+
+my $listdirButton2 = $onglet7ParamsFrame->Button(
+    -text => 'Browse...',
+    -command => \&openListPathBrowser2,
+) ->pack( -side => 'left', -fill => 'both');
+
+$onglet7ParamsFrame->Button(
+    -text => 'Calculate...',
+    -command => \&calculateGettiles,
+) ->pack( -side => 'left', -fill => 'x');
+
+
+### Fonctions
+
+sub openListPathBrowser2 {
+
+    my $fileDialog = $mainWindow->FileSelect(-directory => $ENV{'HOME'});
+
+    my $path = $fileDialog->Show();
+
+    if (defined $path ) {
+        $onglet7PathEntry->delete(0, length($onglet7PathEntry->get()));
+        $onglet7PathEntry->insert(0, $path);
+    }
+}
+
+sub calculateGettiles {
+    $onglet7Text->selectAll();
+    $onglet7Text->deleteSelected();
+
+    my $error = validateGlobals();
+    if (defined $error) {
+        $onglet7Text->insert('end', "ERROR: $error");
+        return;
+    }
+    my $ratio = $ratioEntry->get();
+
+    my $listPath = $onglet7PathEntry->get();
+    if ( ! defined $listPath || ! -f $listPath ) {
+        $onglet7Text->insert('end', "ERROR: List path undefined or does not exist");
+
+        return;
+    }
+
+    my $dirList = File::Basename::dirname($listPath);
+    my $nbLignes = `wc -l $listPath | cut -d' ' -f1`;
+    my $prog = 0;
+    my $done = 0;
+
+    $onglet7Text->insert('end', "INFO: Go\n");
+    $onglet7Text->insert('end', "INFO: 0");
+    open(IN, "<$listPath") or do {
+        $onglet7Text->insert('end', "ERROR: Cannot open $listPath to read in it");
+        return;        
+    };
+
+
+    my $gettilesPath = "$dirList/gettiles.txt";
+    open(OUT, ">$gettilesPath") or do {
+        $onglet7Text->insert('end', "ERROR: Cannot open $gettilesPath to write in it");
+        return;        
+    };
+
+    # On zappe l'en tête
+    while (my $line = <IN>) {
+        chomp($line);
+        if ($line eq "#") {
+            last;
+        }
+    }
+
+    while (my $line = <IN>) {
+        chomp($line);
+
+        if ($done % $ratio != 0) {
+            $done++;
+            next;
+        }
+        
+        my @path = split('/', $line);
+
+        my $level;
+        my $col;
+        my $row;
+
+        if (scalar @path == 2) {
+            # On est dans le cas d'une liste d'une pyramide objet
+            my @obj = split("_", $path[1]);
+            $level = $obj[-3];
+            $col = $obj[-2];
+            $row = $obj[-1];
+        } elsif (scalar @path >= 5) {
+            # On est dans le cas d'une liste d'une pyramide fichier
+            $level = $path[-4];
+            my $end = join('/', @path[-3..-1]);
+            $end =~ s/\..*$//;
+            ($col, $row) = COMMON::Base36::b36PathToIndices($end);
+            if ( ! defined $col || ! defined $row ) {
+                $onglet7Text->insert('end', "\nERROR : cannot convert path to slab indices for path $line");
+                return;
+            }
+        } else {
+            next;
+        }
+
+        my $i = $widthEntry->get() * $col + int($widthEntry->get() / 2);
+        my $j = $heightEntry->get() * $row + int($heightEntry->get() / 2);
+        print OUT "TILEMATRIX=$level&TILECOL=$i&TILEROW=$j\n";
+
+        $done++;
+
+        my $char = "";
+        my $old = $prog;
+
+        $prog = int(100 * $done / $nbLignes);
+
+        if ($prog != $old) {
+            if ($prog % 10 == 0) {
+                $char = $prog;
+            } else {
+                $char = ".";
+            }
+        }
+
+        $onglet7Text->insert('end', $char);
+    }
+
+    $onglet7Text->insert('end', "DONE !");
+
+    close(IN);
+    close(OUT);
 }
 
 

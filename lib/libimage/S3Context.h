@@ -159,36 +159,18 @@ public:
     /**
      * \~french
      * \brief Écrit de la donnée dans un objet S3
-     * \warning Pas d'implémentation de l'écriture depuis un buffer, retourne systématiquement une erreur
+     * \details Les données sont en réalité écrites dans #writingBuffer et seront envoyées dans S3 lors de l'appel à #closeToWrite
      */
-    bool write(uint8_t* data, int offset, int size, std::string name) {
-        LOGGER_ERROR("Can't write a S3 object from buffer");
-        return false;
-    }
+    bool write(uint8_t* data, int offset, int size, std::string name);
     /**
      * \~french
      * \brief Écrit un objet S3
-     * \warning Pas d'implémentation de l'écriture depuis un buffer, retourne systématiquement une erreur
+     * \details Les données sont en réalité écrites dans #writingBuffer et seront envoyées dans S3 lors de l'appel à #closeToWrite
      */
-    bool writeFull(uint8_t* data, int size, std::string name) {
-        LOGGER_ERROR("Can't write a S3 object from buffer");
-        return false;
-    }
+    bool writeFull(uint8_t* data, int size, std::string name);
 
-    /**
-     * \~french
-     * \brief Écrit un objet S3 depuis un fichier
-     * \param[in] fileName Nom du fichier à téléverser dans S3
-     * \param[in] objectName Nom de l'objet S3
-     * \~english
-     * \brief Écrit un objet S3 depuis un fichier
-     * \param[in] fileName File path to upload into S3
-     * \param[in] objectName S3 object's name
-     */
-    bool writeFromFile(std::string fileName, std::string objectName);
-
-    virtual bool openToWrite(std::string name) {return true;}
-    virtual bool closeToWrite() {return true;}
+    virtual bool openToWrite(std::string name);
+    virtual bool closeToWrite(std::string name);
 
 
     virtual void print() {

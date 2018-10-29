@@ -321,72 +321,42 @@ int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
     return chunk.size;
 }
 
-bool SwiftContext::writeFromFile(std::string fileName, std::string objectName) {
+bool SwiftContext::write(uint8_t* data, int offset, int size, std::string name) {
+    LOGGER_DEBUG("Swift write : " << size << " bytes (from the " << offset << " one) in the writing buffer " << name);
 
-    if (! connected) {
-        LOGGER_ERROR("Impossible d'écrire via un contexte non connecté");
-        return -1;
+    std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
+    if ( it1 == writingBuffers.end() ) {
+        // pas de buffer pour ce nom d'objet
+        LOGGER_ERROR("No writing buffer for the name " << name);
+        return false;
+    }
+    LOGGER_DEBUG("old length: " << it1->second->size());
+   
+    // Calcul de la taille finale et redimensionnement éventuel du vector
+    if (it1->second->size() < size + offset) {
+        it1->second->resize(size + offset);
     }
 
-    LOGGER_DEBUG("Write file '" << fileName << "' as a Swift object '" << objectName << "'");
+    memcpy(&((*(it1->second))[0]) + offset, data, size);
+    LOGGER_DEBUG("new length: " << it1->second->size());
 
-    struct stat file_info;
-    FILE *fileToUpload;
-    fileToUpload = fopen(fileName.c_str(), "rb");
+    return true;
+}
 
-    if(! fileToUpload) {
-        LOGGER_ERROR("Cannot open the file to upload " << fileName);
+bool SwiftContext::writeFull(uint8_t* data, int size, std::string name) {
+    LOGGER_DEBUG("Swift write : " << size << " bytes (one shot) in the writing buffer " << name);
+
+    std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
+    if ( it1 == writingBuffers.end() ) {
+        // pas de buffer pour ce nom d'objet
+        LOGGER_ERROR("No Swift writing buffer for the name " << name);
         return false;
     }
 
-    if(fstat(fileno(fileToUpload), &file_info) != 0) {
-        LOGGER_ERROR("Cannot obtain the file's size' to upload " << fileName);
-        return false;
-    }
-    LOGGER_DEBUG("Size to upload " << file_info.st_size);
+    it1->second->clear();
 
-
-    CURLcode res;
-    struct curl_slist *list = NULL;
-    CURL* curl = CurlPool::getCurlEnv();
-
-    // On constitue le header
-
-    std::string fullUrl;
-    fullUrl = public_url + "/" + container_name + "/" + objectName;
-
-    list = curl_slist_append(list, token.c_str());
-
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
-    curl_easy_setopt(curl, CURLOPT_URL, fullUrl.c_str());
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-    curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
-    curl_easy_setopt(curl, CURLOPT_READDATA, fileToUpload);
-    curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE, (curl_off_t)file_info.st_size);
-
-    res = curl_easy_perform(curl);
-
-    if( CURLE_OK != res) {
-        LOGGER_ERROR("Cannot upload the file " << fileName);
-        LOGGER_ERROR(curl_easy_strerror(res));
-        curl_slist_free_all(list);
-        curl_easy_cleanup(curl);
-        return false;
-    }
-
-    long http_code = 0;
-    curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
-    if (http_code < 200 || http_code > 299) {
-        LOGGER_ERROR("Cannot upload the file " << fileName);
-        LOGGER_ERROR("Response HTTP code : " << http_code);
-        curl_slist_free_all(list);
-        curl_easy_cleanup(curl);
-        return false;
-    }
-
-    curl_slist_free_all(list);
-
-    fclose(fileToUpload);
+    it1->second->resize(size);
+    memcpy(&((*(it1->second))[0]), data, size);
 
     return true;
 }
@@ -401,4 +371,83 @@ std::string SwiftContext::getTypeStr() {
 
 std::string SwiftContext::getTray() {
     return container_name;
+}
+
+
+bool SwiftContext::openToWrite(std::string name) {
+
+    std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
+    if ( it1 != writingBuffers.end() ) {
+        LOGGER_ERROR("A Swift writing buffer already exists for the name " << name);
+        return false;
+
+    } else {
+        writingBuffers.insert ( std::pair<std::string,std::vector<char>*>(name, new std::vector<char>()) );
+    }
+
+    return true;
+}
+
+
+bool SwiftContext::closeToWrite(std::string name) {
+
+
+    std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
+    if ( it1 == writingBuffers.end() ) {
+        LOGGER_ERROR("The Swift writing buffer with name " << name << "does not exist, cannot flush it");
+        return false;
+    }
+
+
+    LOGGER_DEBUG("Write buffered " << it1->second->size() << " bytes in the Swift object " << name);
+
+
+    CURLcode res;
+    struct curl_slist *list = NULL;
+    CURL* curl = CurlPool::getCurlEnv();
+
+    // On constitue le header
+
+    std::string fullUrl;
+    fullUrl = public_url + "/" + container_name + "/" + name;
+
+    list = curl_slist_append(list, token.c_str());
+
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
+    curl_easy_setopt(curl, CURLOPT_URL, fullUrl.c_str());
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, &((*(it1->second))[0]));
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, it1->second->size());
+
+    res = curl_easy_perform(curl);
+
+    if( CURLE_OK != res) {
+        LOGGER_ERROR ( "Unable to flush " << it1->second->size() << " bytes in the object " << name );
+        LOGGER_ERROR(curl_easy_strerror(res));
+        curl_slist_free_all(list);
+        curl_easy_cleanup(curl);
+        return false;
+    }
+
+    long http_code = 0;
+    curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
+    if (http_code < 200 || http_code > 299) {
+        LOGGER_ERROR ( "Unable to flush " << it1->second->size() << " bytes in the object " << name );
+        LOGGER_ERROR("Response HTTP code : " << http_code);
+        curl_slist_free_all(list);
+        curl_easy_cleanup(curl);
+        return false;
+    }
+
+    curl_slist_free_all(list);
+
+
+
+
+    LOGGER_DEBUG("Erase the flushed buffer");
+    delete it1->second;
+    writingBuffers.erase(it1);
+
+    return true;
 }

@@ -263,8 +263,16 @@ int main ( int argc, char **argv ) {
 
             int realSize = sourceImage->getEncodedTile(tile, tileInd);
 
+            if (! contextOutput->openToWrite(std::string(tileName))) {
+                LOGGER_ERROR("Unable to open output " << std::string(tileName));
+                return -1;
+            }
             if (! contextOutput->writeFull(tile, realSize, std::string(tileName))) {
                 LOGGER_ERROR("Error writting full tile " << tileColUL + x << "," << tileRowUL + y);
+                return -1;
+            }
+            if (! contextOutput->closeToWrite(std::string(tileName))) {
+                LOGGER_ERROR("Unable to close output " << std::string(tileName));
                 return -1;
             }
         }

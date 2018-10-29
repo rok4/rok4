@@ -48,9 +48,9 @@
 #ifndef CONTEXT_H
 #define CONTEXT_H
 
+#include <map>
 #include <stdint.h>// pour uint8_t
 #include "Logger.h"
-#include "AliasManager.h"
 #include <string.h>
 #include <sstream>
 
@@ -75,52 +75,24 @@ class Context {
 protected:
 
     /**
+     * \~french \brief Buffers pour les écitures différées
+     * \~english \brief Postponed writings buffers
+     */
+    std::map<std::string, std::vector<char>*> writingBuffers;
+
+    /**
      * \~french \brief Précise si le contexte est connecté
      * \~english \brief Precise if context is connected
      */
     bool connected;
 
     /**
-     * \~french \brief Gestionnaire d'alias, pour convertir les noms de fichier/objet
-     * \~english \brief Alias manager to convert file/object name
-     */
-    AliasManager* am;
-
-    /**
      * \~french \brief Crée un objet Context
      * \~english \brief Create a Context object
      */
-    Context () : connected(false) { am = NULL; }
+    Context () : connected(false) {  }
 
 public:
-
-    /**
-     * \~french
-     * \brief Précise le gestionnaire d'alias
-     * \~english
-     * \brief Set the alias manager
-     */
-    void setAliasManager(AliasManager* a) {
-        am = a;
-    }
-
-    /**
-     * \~french
-     * \brief Convertit le nom grâce au gestionnaire d'alias si présent
-     */
-    std::string convertName(std::string name) {
-        if (am != NULL) {
-            bool ex;
-            std::string realName = am->getAliasedName(name, &ex);
-            if (! ex) {
-                return name;
-            } else {
-                return realName;
-            }
-        } else {
-            return name;
-        }
-    }
 
     /**
      * \~french \brief Connecte le contexte
@@ -134,10 +106,17 @@ public:
      * \~english \brief Precise if provided object exists in this context
      * \param[in] name Object's name whose existency is asked
      */
-    
     bool exists(std::string name) {
         uint8_t test;
         return (read(&test, 0, 1, name) == 1);
+    }
+
+    /**
+     * \~french \brief Précise si le contexte est connecté
+     * \~english \brief Precise if context is connected
+     */
+    bool isConnected() {
+        return connected;
     }
 
     /**
@@ -184,18 +163,18 @@ public:
 
     /**
      * \~french \brief Prépare l'objet en écriture
-     * \details Cela est utile dans le cas de l'écriture d'un fichier. On ne veut pas ouvrir et fermer le flux à chaque écriture partielle. Pour les autres type de contexte, rien ne sera fait dans cette fonction
      * \param[in] name Nom de l'objet dans lequel on va vouloir écrire
      * \~english \brief Write data in the named object
-     * \details It is usefull to write a file. We don't want to open the stream for each partially writting. For other context type, nothing done in this function.
      * \param[in] name Object's name we want to write into
      */
     virtual bool openToWrite(std::string name) = 0;
     /**
      * \~french \brief Termine l'écriture d'un objet
-     * \~english \brief Stop the writting
+     * \param[in] name Nom de l'objet dans lequel on a voulu écrire
+     * \~english \brief Stop the writing
+     * \param[in] name Object's name we wanted to write into
      */
-    virtual bool closeToWrite() = 0;
+    virtual bool closeToWrite(std::string name) = 0;
 
     /**
      * \~french \brief Retourne le type du contexte
@@ -236,7 +215,12 @@ public:
      * \~french \brief Destructeur
      * \~english \brief Destructor
      */
-    virtual ~Context() {}
+    virtual ~Context() {
+        std::map<std::string,std::vector<char>*>::iterator it;
+        for (it = writingBuffers.begin(); it != writingBuffers.end(); ++it) {
+            delete it->second;
+        }
+    }
 };
 
 #endif

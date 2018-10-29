@@ -164,6 +164,20 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         }
     }
 
+    pElem=hRoot.FirstChild ( "TMSSupport" ).Element();
+    if ( !pElem || ! ( pElem->GetText() ) ) {
+        std::cerr<<_ ( "Pas de TMSSupport => supportTMS = true" ) <<std::endl;
+        supportTMS = true;
+    } else {
+        std::string strReprojection ( pElem->GetText() );
+        if ( strReprojection=="true" ) supportTMS=true;
+        else if ( strReprojection=="false" ) supportTMS=false;
+        else {
+            std::cerr<<_ ( "Le TMSSupport [" ) << DocumentXML::getTextStrFromElem(pElem) <<_ ( "] n'est pas un booleen." ) <<std::endl;
+            return;
+        }
+    }
+
     pElem=hRoot.FirstChild ( "WMSSupport" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
         std::cerr<<_ ( "Pas de WMSSupport => supportWMS = true" ) <<std::endl;
@@ -192,8 +206,8 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         proxy.noProxy = DocumentXML::getTextStrFromElem(pElem);
     }
 
-    if ( !supportWMS && !supportWMTS ) {
-        std::cerr<<_ ( "WMTS et WMS desactives, extinction du serveur" ) <<std::endl;
+    if ( !supportWMS && !supportWMTS && !supportTMS ) {
+        std::cerr<<_ ( "WMTS, TMS et WMS desactives, extinction du serveur" ) <<std::endl;
         return;
     }
 
@@ -456,77 +470,6 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         swiftBook = NULL;
     }
 
-    // ALIAS MANAGER
-
-    pElem = hRoot.FirstChild ( "redisAliasManager" ).Element();
-    if ( pElem ) {
-
-        std::string redisHost;
-        std::string redisPwd;
-        int redisPort;
-
-        TiXmlElement* pElemRedis = hRoot.FirstChild ( "redisAliasManager" ).FirstChild ( "host" ).Element();
-        if ( !pElemRedis  || ! ( pElemRedis->GetText() ) ) {
-            char* url = getenv ("ROK4_REDIS_HOST");
-            if (url == NULL) {
-                std::cerr<< ("L'utilisation d'un RedisAliasManager necessite de preciser un HOST" ) <<std::endl;
-                return;
-            } else {
-                redisHost.assign(url);
-            }
-        } else {
-            redisHost = pElemRedis->GetText();
-        }
-
-        pElemRedis = hRoot.FirstChild ( "redisAliasManager" ).FirstChild ( "passwd" ).Element();
-        if ( !pElemRedis  || ! ( pElemRedis->GetText() ) ) {
-            char* pwd = getenv ("ROK4_REDIS_PASSWD");
-            if (pwd == NULL) {
-                std::cerr<< ("L'utilisation d'un RedisAliasManager necessite de preciser un PASSWD" ) <<std::endl;
-                return;
-            } else {
-                redisPwd.assign(pwd);
-            }
-        } else {
-            redisPwd = pElemRedis->GetText();
-        }
-
-        pElemRedis = hRoot.FirstChild ( "redisAliasManager" ).FirstChild ( "port" ).Element();
-        if ( !pElemRedis  || ! ( pElemRedis->GetText() ) ) {
-            char* po = getenv ("ROK4_REDIS_PORT");
-            if (po == NULL) {
-                std::cerr<< ("L'utilisation d'un RedisAliasManager necessite de preciser un PORT" ) <<std::endl;
-                return;
-            } else {
-                redisPort = std::atoi(po);
-            }
-        } else {
-            redisPort = std::atoi(pElemRedis->GetText());
-        }
-
-        am = new RedisAliasManager(redisHost, redisPort, redisPwd);
-        if (! am->isOk()) {
-            std::cerr<<("RedisAliasManager impossible à créer") <<std::endl;
-            return ;
-        }
-
-        if (! am->connect() ) {
-            std::cerr<<("Impossible de connecter le gestionnaire d'alias") <<std::endl;
-            return;
-        }
-    } else {
-        am = NULL;
-    }
-
-    if (swiftBook) {
-        swiftBook->setAliasManager(am);
-    }
-    if (cephBook) {
-        cephBook->setAliasManager(am);
-    }
-    if (s3Book) {
-        s3Book->setAliasManager(am);
-    }
 #endif
 
     ok = true;
@@ -552,9 +495,6 @@ ServerXML::~ServerXML(){
         delete itLay->second;
 
 #if BUILD_OBJECT
-    if (am != NULL) {
-        delete am;
-    }
 
     if (cephBook != NULL) {
         delete cephBook;
@@ -695,6 +635,7 @@ int ServerXML::getReconnectionFrequency() {return reconnectionFrequency;}
 int ServerXML::getNbThreads() {return nbThread;}
 std::string ServerXML::getSocket() {return socket;}
 bool ServerXML::getSupportWMTS() {return supportWMTS;}
+bool ServerXML::getSupportTMS() {return supportTMS;}
 bool ServerXML::getSupportWMS() {return supportWMS;}
 int ServerXML::getBacklog() {return backlog;}
 Proxy ServerXML::getProxy() {return proxy;}

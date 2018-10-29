@@ -61,7 +61,6 @@
 #include "CephPoolContext.h"
 #include "SwiftContext.h"
 #include "S3Context.h"
-#include "RedisAliasManager.h"
 #endif
 
 /**
@@ -257,41 +256,18 @@ int main ( int argc, char **argv )
     Context* context;
 
 #if BUILD_OBJECT
-    // Dans le cas objet, on a besoin d'un gestionnaire d'alias
-    AliasManager* am = NULL;
 
     if ( pool != 0 ) {
         LOGGER_DEBUG( std::string("Input is an object in the Ceph pool ") + pool);
         context = new CephPoolContext(pool);
-        am = new RedisAliasManager();
-        if (am->isOk()) {
-            if (! am->connect()) {
-                error("RedisAliasManager impossible à connecter", 1);
-            }
-            context->setAliasManager(am);
-        }
     } else if (bucket != 0) {
         LOGGER_DEBUG( std::string("Input is an object in the S3 bucket ") + bucket);
         curl_global_init(CURL_GLOBAL_ALL);
         context = new S3Context(bucket);
-        am = new RedisAliasManager();
-        if (am->isOk()) {
-            if (! am->connect()) {
-                error("RedisAliasManager impossible à connecter", 1);
-            }
-            context->setAliasManager(am);
-        }
     } else if (container != 0) {
         LOGGER_DEBUG( std::string("Input is an object in the Swift container ") + container);
         curl_global_init(CURL_GLOBAL_ALL);
         context = new SwiftContext(container, keystone);
-        am = new RedisAliasManager();
-        if (am->isOk()) {
-            if (! am->connect()) {
-                error("RedisAliasManager impossible à connecter", 1);
-            }
-            context->setAliasManager(am);
-        }
     } else {
 #endif
 
@@ -351,10 +327,6 @@ int main ( int argc, char **argv )
     delete context;
 
 #if BUILD_OBJECT
-    if (am != NULL) {
-        delete am;
-    }
-
     if (container != 0 || bucket != 0) {
         CurlPool::cleanCurlPool();
         curl_global_cleanup();

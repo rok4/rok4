@@ -205,6 +205,7 @@ public:
      * \param[in] crs_code CRS identifier
      */
     void setRequestCode ( std::string crs );
+
     /**
      * \~french
      * \brief Compare le code fournit lors de la création du CRS avec la chaîne
