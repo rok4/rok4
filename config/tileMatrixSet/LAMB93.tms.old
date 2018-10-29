@@ -1,5 +1,5 @@
 <tileMatrixSet>
-        <crs>IGNF:UTM01SW84</crs>
+        <crs>IGNF:LAMB93</crs>
         <tileMatrix>
                 <id>0</id>
                 <resolution>209715.2</resolution>
@@ -9,7 +9,6 @@
                 <tileHeight>256</tileHeight>
                 <matrixWidth>1</matrixWidth>
                 <matrixHeight>1</matrixHeight>
-
         </tileMatrix>
         <tileMatrix>
                 <id>1</id>
@@ -49,7 +48,7 @@
                 <tileWidth>256</tileWidth>
                 <tileHeight>256</tileHeight>
                 <matrixWidth>1</matrixWidth>
-                <matrixHeight>3</matrixHeight>
+                <matrixHeight>4</matrixHeight>
         </tileMatrix>
         <tileMatrix>
                 <id>5</id>
@@ -59,7 +58,7 @@
                 <tileWidth>256</tileWidth>
                 <tileHeight>256</tileHeight>
                 <matrixWidth>1</matrixWidth>
-                <matrixHeight>5</matrixHeight>
+                <matrixHeight>7</matrixHeight>
         </tileMatrix>
         <tileMatrix>
                 <id>6</id>
@@ -68,8 +67,8 @@
                 <topLeftCornerY> 12000000 </topLeftCornerY>
                 <tileWidth>256</tileWidth>
                 <tileHeight>256</tileHeight>
-                <matrixWidth>1</matrixWidth>
-                <matrixHeight>10</matrixHeight>
+                <matrixWidth>2</matrixWidth>
+                <matrixHeight>13</matrixHeight>
         </tileMatrix>
         <tileMatrix>
                 <id>7</id>
@@ -78,8 +77,8 @@
                 <topLeftCornerY> 12000000 </topLeftCornerY>
                 <tileWidth>256</tileWidth>
                 <tileHeight>256</tileHeight>
-                <matrixWidth>2</matrixWidth>
-                <matrixHeight>20</matrixHeight>
+                <matrixWidth>4</matrixWidth>
+                <matrixHeight>26</matrixHeight>
         </tileMatrix>
         <tileMatrix>
                 <id>8</id>
@@ -88,8 +87,8 @@
                 <topLeftCornerY> 12000000 </topLeftCornerY>
                 <tileWidth>256</tileWidth>
                 <tileHeight>256</tileHeight>
-                <matrixWidth>3</matrixWidth>
-                <matrixHeight>40</matrixHeight>
+                <matrixWidth>7</matrixWidth>
+                <matrixHeight>52</matrixHeight>
         </tileMatrix>
         <tileMatrix>
                 <id>9</id>
@@ -98,8 +97,8 @@
                 <topLeftCornerY> 12000000 </topLeftCornerY>
                 <tileWidth>256</tileWidth>
                 <tileHeight>256</tileHeight>
-                <matrixWidth>6</matrixWidth>
-                <matrixHeight>79</matrixHeight>
+                <matrixWidth>13</matrixWidth>
+                <matrixHeight>103</matrixHeight>
         </tileMatrix>
         <tileMatrix>
                 <id>10</id>
@@ -108,8 +107,8 @@
                 <topLeftCornerY> 12000000 </topLeftCornerY>
                 <tileWidth>256</tileWidth>
                 <tileHeight>256</tileHeight>
-                <matrixWidth>11</matrixWidth>
-                <matrixHeight>158</matrixHeight>
+                <matrixWidth>25</matrixWidth>
+                <matrixHeight>206</matrixHeight>
         </tileMatrix>
         <tileMatrix>
                 <id>11</id>
@@ -118,8 +117,8 @@
                 <topLeftCornerY> 12000000 </topLeftCornerY>
                 <tileWidth>256</tileWidth>
                 <tileHeight>256</tileHeight>
-                <matrixWidth>22</matrixWidth>
-                <matrixHeight>316</matrixHeight>
+                <matrixWidth>50</matrixWidth>
+                <matrixHeight>411</matrixHeight>
         </tileMatrix>
         <tileMatrix>
                 <id>12</id>
@@ -128,8 +127,8 @@
                 <topLeftCornerY> 12000000 </topLeftCornerY>
                 <tileWidth>256</tileWidth>
                 <tileHeight>256</tileHeight>
-                <matrixWidth>44</matrixWidth>
-                <matrixHeight>631</matrixHeight>
+                <matrixWidth>99</matrixWidth>
+                <matrixHeight>822</matrixHeight>
         </tileMatrix>
         <tileMatrix>
                 <id>13</id>
@@ -138,8 +137,8 @@
                 <topLeftCornerY> 12000000 </topLeftCornerY>
                 <tileWidth>256</tileWidth>
                 <tileHeight>256</tileHeight>
-                <matrixWidth>88</matrixWidth>
-                <matrixHeight>1261</matrixHeight>
+                <matrixWidth>197</matrixWidth>
+                <matrixHeight>1643</matrixHeight>
         </tileMatrix>
         <tileMatrix>
                 <id>14</id>
@@ -148,8 +147,8 @@
                 <topLeftCornerY> 12000000 </topLeftCornerY>
                 <tileWidth>256</tileWidth>
                 <tileHeight>256</tileHeight>
-                <matrixWidth>175</matrixWidth>
-                <matrixHeight>2522</matrixHeight>
+                <matrixWidth>394</matrixWidth>
+                <matrixHeight>3285</matrixHeight>
         </tileMatrix>
         <tileMatrix>
                 <id>15</id>
@@ -158,8 +157,8 @@
                 <topLeftCornerY> 12000000 </topLeftCornerY>
                 <tileWidth>256</tileWidth>
                 <tileHeight>256</tileHeight>
-                <matrixWidth>351</matrixWidth>
-                <matrixHeight>5042</matrixHeight>
+                <matrixWidth>788</matrixWidth>
+                <matrixHeight>6569</matrixHeight>
         </tileMatrix>
         <tileMatrix>
                 <id>16</id>
@@ -168,8 +167,8 @@
                 <topLeftCornerY> 12000000 </topLeftCornerY>
                 <tileWidth>256</tileWidth>
                 <tileHeight>256</tileHeight>
-                <matrixWidth>703</matrixWidth>
-                <matrixHeight>10085</matrixHeight>
+                <matrixWidth>1575</matrixWidth>
+                <matrixHeight>13138</matrixHeight>
         </tileMatrix>
         <tileMatrix>
                 <id>17</id>
@@ -178,8 +177,8 @@
                 <topLeftCornerY> 12000000 </topLeftCornerY>
                 <tileWidth>256</tileWidth>
                 <tileHeight>256</tileHeight>
-                <matrixWidth>1406</matrixWidth>
-                <matrixHeight>20169</matrixHeight>
+                <matrixWidth>3150</matrixWidth>
+                <matrixHeight>26276</matrixHeight>
         </tileMatrix>
         <tileMatrix>
                 <id>18</id>
@@ -188,8 +187,8 @@
                 <topLeftCornerY> 12000000 </topLeftCornerY>
                 <tileWidth>256</tileWidth>
                 <tileHeight>256</tileHeight>
-                <matrixWidth>2812</matrixWidth>
-                <matrixHeight>40337</matrixHeight>
+                <matrixWidth>6300</matrixWidth>
+                <matrixHeight>52552</matrixHeight>
         </tileMatrix>
         <tileMatrix>
                 <id>19</id>
@@ -198,8 +197,8 @@
                 <topLeftCornerY> 12000000 </topLeftCornerY>
                 <tileWidth>256</tileWidth>
                 <tileHeight>256</tileHeight>
-                <matrixWidth>5624</matrixWidth>
-                <matrixHeight>80674</matrixHeight>
+                <matrixWidth>12600</matrixWidth>
+                <matrixHeight>105102</matrixHeight>
         </tileMatrix>
         <tileMatrix>
                 <id>20</id>
@@ -208,8 +207,8 @@
                 <topLeftCornerY> 12000000 </topLeftCornerY>
                 <tileWidth>256</tileWidth>
                 <tileHeight>256</tileHeight>
-                <matrixWidth>11248</matrixWidth>
-                <matrixHeight>161348</matrixHeight>
+                <matrixWidth>25200</matrixWidth>
+                <matrixHeight>210205</matrixHeight>
         </tileMatrix>
         <tileMatrix>
                 <id>21</id>
@@ -218,7 +217,7 @@
                 <topLeftCornerY> 12000000 </topLeftCornerY>
                 <tileWidth>256</tileWidth>
                 <tileHeight>256</tileHeight>
-                <matrixWidth>22495</matrixWidth>
-                <matrixHeight>322695</matrixHeight>
+                <matrixWidth>50400</matrixWidth>
+                <matrixHeight>420409</matrixHeight>
         </tileMatrix>
 </tileMatrixSet>

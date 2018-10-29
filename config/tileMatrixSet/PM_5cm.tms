@@ -221,4 +221,14 @@
                 <matrixWidth>2097152</matrixWidth>
                 <matrixHeight>2097152</matrixHeight>
         </tileMatrix>
+        <tileMatrix>
+                <id>22</id>
+                <resolution>0.0373227677173712</resolution>
+                <topLeftCornerX>-20037508.3427892480</topLeftCornerX>
+                <topLeftCornerY>20037508.3427892480</topLeftCornerY>
+                <tileWidth>256</tileWidth>
+                <tileHeight>256</tileHeight>
+                <matrixWidth>4194304</matrixWidth>
+                <matrixHeight>4194304</matrixHeight>
+        </tileMatrix>
 </tileMatrixSet>

@@ -1,5 +1,5 @@
 <tileMatrixSet>
-	<crs>EPSG:4326</crs>
+	<crs>IGNF:WGS84G</crs>
 	<tileMatrix>
 		<id>0</id>
 		<resolution>0.703125</resolution>
@@ -12,7 +12,7 @@
 	</tileMatrix>
 	<tileMatrix>
 		<id>1</id>
-		<resolution>0.33515625</resolution>
+		<resolution>0.3515625</resolution>
 		<topLeftCornerX>-180</topLeftCornerX>
 		<topLeftCornerY>90</topLeftCornerY>
 		<tileWidth>256</tileWidth>
@@ -129,75 +129,5 @@
                 <tileHeight>256</tileHeight>
                 <matrixWidth>8192</matrixWidth>
                 <matrixHeight>4096</matrixHeight>
-        </tileMatrix>
-	<tileMatrix>
-                <id>13</id>
-                <resolution>0.0000858306884765625</resolution>
-                <topLeftCornerX>-180</topLeftCornerX>
-                <topLeftCornerY>90</topLeftCornerY>
-                <tileWidth>256</tileWidth>
-                <tileHeight>256</tileHeight>
-                <matrixWidth>16384</matrixWidth>
-                <matrixHeight>8192</matrixHeight>
-        </tileMatrix>
-        <tileMatrix>
-                <id>14</id>
-                <resolution>0.00004291534423828125</resolution>
-                <topLeftCornerX>-180</topLeftCornerX>
-                <topLeftCornerY>90</topLeftCornerY>
-                <tileWidth>256</tileWidth>
-                <tileHeight>256</tileHeight>
-                <matrixWidth>32768</matrixWidth>
-                <matrixHeight>16384</matrixHeight>
-        </tileMatrix>
-        <tileMatrix>
-                <id>15</id>
-                <resolution>0.000021457672119140625</resolution>
-                <topLeftCornerX>-180</topLeftCornerX>
-                <topLeftCornerY>90</topLeftCornerY>
-                <tileWidth>256</tileWidth>
-                <tileHeight>256</tileHeight>
-                <matrixWidth>65536</matrixWidth>
-                <matrixHeight>32768</matrixHeight>
-        </tileMatrix>
-	<tileMatrix>
-                <id>16</id>
-                <resolution>0.0000107288360595703125</resolution>
-                <topLeftCornerX>-180</topLeftCornerX>
-                <topLeftCornerY>90</topLeftCornerY>
-                <tileWidth>256</tileWidth>
-                <tileHeight>256</tileHeight>
-                <matrixWidth>131072</matrixWidth>
-                <matrixHeight>65536</matrixHeight>
-        </tileMatrix>
-	<tileMatrix>
-                <id>17</id>
-                <resolution>0.00000536441802978515625</resolution>
-                <topLeftCornerX>-180</topLeftCornerX>
-                <topLeftCornerY>90</topLeftCornerY>
-                <tileWidth>256</tileWidth>
-                <tileHeight>256</tileHeight>
-                <matrixWidth>262144</matrixWidth>
-                <matrixHeight>131072</matrixHeight>
-        </tileMatrix>
-	<tileMatrix>
-                <id>18</id>
-                <resolution>0.000002682209014892578125</resolution>
-                <topLeftCornerX>-180</topLeftCornerX>
-                <topLeftCornerY>90</topLeftCornerY>
-                <tileWidth>256</tileWidth>
-                <tileHeight>256</tileHeight>
-                <matrixWidth>524288</matrixWidth>
-                <matrixHeight>262144</matrixHeight>
-        </tileMatrix>
-        <tileMatrix>
-                <id>19</id>
-                <resolution>0.0000013411045074462890625</resolution>
-                <topLeftCornerX>-180</topLeftCornerX>
-                <topLeftCornerY>90</topLeftCornerY>
-                <tileWidth>256</tileWidth>
-                <tileHeight>256</tileHeight>
-                <matrixWidth>1048576</matrixWidth>
-                <matrixHeight>524288</matrixHeight>
         </tileMatrix>
 </tileMatrixSet>
