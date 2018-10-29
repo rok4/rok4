@@ -174,8 +174,8 @@ public:
         int calcHeight = lround ( ( bounding_box.ymax - bounding_box.ymin ) / ( resolution_y ) );
 
         if ( calcWidth != w || calcHeight != h ) {
-            LOGGER_DEBUG ( "Warning: height is " << h << " and calculation give " << calcHeight );
-            LOGGER_DEBUG ( "Warning: width is " << w << " and calculation give " << calcWidth );
+            LOGGER_WARN ( "Warning: height is " << h << " and calculation give " << calcHeight );
+            LOGGER_WARN ( "Warning: width is " << w << " and calculation give " << calcWidth );
             return false;
         }
         
