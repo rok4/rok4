@@ -654,7 +654,10 @@ DataStream* Rok4Server::getFeatureInfoParamWMTS ( Request* request, Layer*& laye
     std::string strX = request->getParam ( "i" );
     if ( strX == "" )
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre I absent." ),"wmts" ) );
-    X=atoi ( strX.c_str() );
+    char c;
+    if (sscanf(strX.c_str(), "%d%c", &X, &c) != 1) {
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre I n'est pas un entier." ),"wmts" ) );
+    }
     if ( X<0 )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre I est negative." ),"wmts" ) );
     if ( X> layer->getDataPyramid()->getLevels().find(tileMatrix)->second->getTm()->getTileW()-1 )
@@ -665,7 +668,10 @@ DataStream* Rok4Server::getFeatureInfoParamWMTS ( Request* request, Layer*& laye
     std::string strY = request->getParam ( "j" );
     if ( strY == "" )
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre J absent." ),"wmts" ) );
-    Y=atoi ( strY.c_str() );
+
+    if (sscanf(strY.c_str(), "%d%c", &Y, &c) != 1) {
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre J n'est pas un entier." ),"wmts" ) );
+    }
     if ( Y<0 )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre J est negative." ),"wmts" ) );
     if ( Y> layer->getDataPyramid()->getLevels().find(tileMatrix)->second->getTm()->getTileH()-1 )

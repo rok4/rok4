@@ -84,7 +84,7 @@ namespace RequestType {
      * \param[in] rt request type to convert
      * \return string namming the request type
      */
-    static std::string toString ( eRequestType rt );
+    std::string toString ( eRequestType rt );
 
 }
 
@@ -110,7 +110,7 @@ namespace ServiceType {
      * \param[in] st service type to convert
      * \return string namming the service type
      */
-    static std::string toString ( eServiceType st );
+    std::string toString ( eServiceType st );
 }
 
 
@@ -230,8 +230,8 @@ public:
         LOGGER_INFO("hostName = " << hostName);
         LOGGER_INFO("path = " << path);
         LOGGER_INFO("scheme = " << scheme);
-        LOGGER_INFO("service = " << toString(service));
-        LOGGER_INFO("request = " <<     toString(request));
+        LOGGER_INFO("service = " << ServiceType::toString(service));
+        LOGGER_INFO("request = " << RequestType::toString(request));
     }
     /**
      * \~french

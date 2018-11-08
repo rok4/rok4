@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2018-09-06 16:44+0200\n"
+"POT-Creation-Date: 2018-11-08 16:27+0100\n"
 "PO-Revision-Date: 2014-01-28 09:36+0100\n"
 "Last-Translator: \n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -601,12 +601,12 @@ msgstr " n'est pas prise en charge par ce serveur."
 msgid "L'operation "
 msgstr "L'opération "
 
-#: Rok4Server.cpp:1514
+#: Rok4Server.cpp:1516
 #, fuzzy
 msgid "Le service est manquant"
 msgstr "Le service "
 
-#: Rok4Server.cpp:1517
+#: Rok4Server.cpp:1519
 #, fuzzy
 msgid "Le service est inconnu pour ce serveur."
 msgstr " est inconnu pour ce serveur."

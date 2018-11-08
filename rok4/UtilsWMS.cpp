@@ -353,7 +353,10 @@ DataStream* Rok4Server::getFeatureInfoParamWMS (
     if ( strX == "" ) {
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre X/I absent." ),"wms" ) );
     }
-    X=atoi ( strX.c_str() );
+    char c;
+    if (sscanf(strX.c_str(), "%d%c", &X, &c) != 1) {
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre X/I n'est pas un entier." ),"wms" ) );
+    }
     if ( X<0 )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre X/I est negative." ),"wms" ) );
     if ( X>width )
@@ -372,7 +375,9 @@ DataStream* Rok4Server::getFeatureInfoParamWMS (
     if ( strY == "" ) {
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre J/Y absent." ),"wms" ) );
     }
-    Y = atoi ( strY.c_str() );
+    if (sscanf(strY.c_str(), "%d%c", &Y, &c) != 1) {
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre J/Y n'est pas un entier." ),"wms" ) );
+    }
     if ( Y<0 )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre J/Y est negative." ),"wms" ) );
     if ( Y>height )

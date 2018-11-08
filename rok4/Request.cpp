@@ -71,7 +71,7 @@ namespace RequestType {
         "GetVersion"
     };
 
-    std::string toString ( RequestType::eRequestType rt ) {
+    std::string toString ( eRequestType rt ) {
         return std::string ( requesttype_name[rt] );
     }
 }
@@ -86,7 +86,7 @@ namespace ServiceType {
         "TMS"
     };
 
-    std::string toString ( ServiceType::eServiceType st ) {
+    std::string toString ( eServiceType st ) {
         return std::string ( servicetype_name[st] );
     }
 }
@@ -671,7 +671,6 @@ void Request::determineServiceAndRequest() {
             int tmsVersionPos = -1;
             std::vector<std::string> pathParts;
             while (std::getline(ss, token, delim)) {
-                LOGGER_INFO("'"+token+"'");
                 if (token == "1.0.0") {
                     tmsVersionPos = pathParts.size();
                 }

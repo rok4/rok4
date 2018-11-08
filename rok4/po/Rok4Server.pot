@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2018-09-06 16:44+0200\n"
+"POT-Creation-Date: 2018-11-08 16:27+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -584,10 +584,10 @@ msgstr ""
 msgid "L'operation "
 msgstr ""
 
-#: Rok4Server.cpp:1514
+#: Rok4Server.cpp:1516
 msgid "Le service est manquant"
 msgstr ""
 
-#: Rok4Server.cpp:1517
+#: Rok4Server.cpp:1519
 msgid "Le service est inconnu pour ce serveur."
 msgstr ""
