@@ -954,7 +954,7 @@ Example:
 
 Topic: pyramid
 
-For more informations about properties, see <BE4::Pyramid>.
+For more informations about properties, see <COMMON::PyramidRaster>.
 
     pyr_name_new - Name of the new pyramid, used to name the descriptor, the pyramid's list, the data directory and the temporary directory.
     pyr_desc_path - Directory path, where to write the descriptor. Mandatory.
@@ -1152,7 +1152,7 @@ Group: Externals tools
 
 Scripts' execution needs following tools:
 
-    - pngcheck
+    - gdalinfo
     - wget
     
 =cut

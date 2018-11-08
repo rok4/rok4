@@ -36,11 +36,11 @@
 ################################################################################
 
 =begin nd
-File: Pyramid.pm
+File: PyramidRaster.pm
 
 Class: COMMON::PyramidRaster
 
-Store all informations about a pyramid, whatever the storage type.
+Store all informations about a raster pyramid, whatever the storage type.
 
 Using:
     (start code)

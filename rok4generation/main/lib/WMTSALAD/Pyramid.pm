@@ -1069,6 +1069,7 @@ sub writeCachePyramid {
 }
 
 1;
+__END__
 
 =begin nd
 

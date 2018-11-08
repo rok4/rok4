@@ -50,8 +50,8 @@ Using:
     (end code)
 
 Attributes:
-    i - integer - Column
-    j - integer - Row
+    col - integer - Column
+    row - integer - Row
     level - string - Level's identifiant
     code - string - Commands to execute to generate this node (to write in a script)
     script - <COMMON::Script> - Script in which the node will be generated

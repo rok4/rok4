@@ -8,7 +8,7 @@ WriteMakefile(
     NAME        => "Rok4-Generation-main",
     DISTNAME    => "Rok4-Generation-main",
     # install to INSTALL_BASE/bin
-    EXE_FILES   => ['bin/be4-file.pl', 'bin/4alamo-file.pl', 'bin/joinCache-file.pl', 'bin/joinCache-s3.pl', 'bin/joinCache-ceph.pl', 'bin/create-list.pl', 'bin/create-layer.pl', 'bin/coord2image.pl', 'bin/be4-simulator.pl', 'bin/be4-ceph.pl', 'bin/be4-s3.pl', 'bin/be4-swift.pl','bin/exPyr.pl', 'bin/pyr2pyr.pl', 'bin/sup-pyr.pl', 'bin/wmtSalaD.pl', 'bin/tms-converter-gui.pl'],
+    EXE_FILES   => ['bin/be4-file.pl', 'bin/4alamo-file.pl', 'bin/joinCache-file.pl', 'bin/joinCache-s3.pl', 'bin/joinCache-ceph.pl', 'bin/create-list.pl', 'bin/create-layer.pl', 'bin/coord2image.pl', 'bin/be4-simulator.pl', 'bin/be4-ceph.pl', 'bin/be4-s3.pl', 'bin/be4-swift.pl','bin/ex-pyr.pl', 'bin/pyr2pyr.pl', 'bin/sup-pyr.pl', 'bin/wmtSalaD.pl', 'bin/tms-converter-gui.pl'],
     PMLIBDIRS   => ['lib/BE4FILE', 'lib/FOURALAMOFILE', 'lib/JOINCACHE', 'lib/COMMON', 'lib/BE4CEPH', 'lib/BE4S3', 'lib/BE4SWIFT', 'lib/PYR2PYR', 'lib/WMTSALAD', 'lib/EXPYR'],
     # modules that are needed to run your module
     PREREQ_PM   => {

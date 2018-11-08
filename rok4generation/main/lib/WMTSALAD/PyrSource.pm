@@ -44,9 +44,7 @@ Using:
     (start code)
     use WMTSALAD::PyrSource;
 
-    my $pyrSource = WMTSALAD::PyrSource->new( { 
-        level => 7,
-        order => 0,
+    my $pyrSource = WMTSALAD::PyrSource->new( {
         file => "/path/to/source_pyramid.pyr",
         style => "normal",
         transparent => "true",
@@ -56,14 +54,9 @@ Using:
     (end code)
 
 Attributes:
-    level - string - the level ID for this source in the tile matrix sytem (TMS) (inherited from <WMTSALAD::DataSource>
-    order - positive integer (starts at 0) - the priority order for this source at this level (inherited from <WMTSALAD::DataSource>
     file - string - Path to the source pyramid's descriptor file
     style - string - The style to apply to source images when streaming them (default : normal)
     transparent - boolean - Another style parameter, whose name is explicit (default : false)
-
-Related:
-    <WMTSALAD::DataSource> - Mother class
     
 =cut
 
@@ -78,7 +71,10 @@ use Log::Log4perl qw(:easy);
 use Data::Dumper;
 use XML::LibXML;
 
-use parent qw(WMTSALAD::DataSource Exporter);
+require Exporter;
+use AutoLoader qw(AUTOLOAD);
+
+our @ISA = qw(Exporter);
 
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
@@ -104,24 +100,20 @@ END {}
 
 Constructor: new
 
-<WMTSALAD::PyrSource's> constructor.
+<WMTSALAD::PyrSource> constructor.
 
 Using:
     (start code)
-    my $pyrSource = WMTSALAD::PyrSource->new( { 
-        level => 7,
-        order => 0,
+    my $pyrSource = WMTSALAD::PyrSource->new( {
         file => "/path/to/source_pyramid.pyr",
         style => "normal",
-        transparent => "true",
+        transparent => "true"
     } );
     (end code)
 
 Parameters:
     params - hash reference, containing the following properties :
         {
-            level - string - the level ID for this source in the tile matrix sytem (TMS)
-            order - positive integer (starts at 0) - the priority order for this source at this level 
             file - string - Path to the source pyramid's descriptor file
             style - string - The style to apply to source images when streaming them (default : normal)
             transparent - boolean - Another style parameter, whose name is explicit (default : false)
@@ -131,23 +123,21 @@ Returns:
     The newly created PyrSource object. 'undef' in case of failure.
     
 =cut
-sub new() {
+sub new {
     my $class = shift;
     my $params = shift;
 
     $class = ref($class) || $class;
-
-    $params->{type} = 'pyr';
-
     # IMPORTANT : if modification, think to update natural documentation (just above)
-    my $this = $class->SUPER::new($params);
-    $this->{file} = undef;
-    $this->{style} = undef;
-    $this->{transparent} = undef;
+    my $this = {
+        file => undef,
+        style => undef,
+        transparent => undef
+    };
 
     bless($this, $class);
 
-    if (!$this->_init($params)) {
+    if (! $this->_init($params)) {
         ERROR("Could not load pyramid source.");
         return undef;
     }
@@ -159,14 +149,12 @@ sub new() {
 
 Function: _init
 
-<WMTSALAD::PyrSource's> initializer. Checks parameters passed to 'new', 
+<WMTSALAD::PyrSource> initializer. Checks parameters passed to 'new', 
 then load them in the new PyrSource object.
 
 Using:
     (start code)
-    my loadSucces = pyrSource->_init( { 
-        level => 7,
-        order => 0,
+    my loadSucces = pyrSource->_init( {
         file => "/path/to/source_pyramid.pyr",
         style => "normal",
         transparent => true,
@@ -176,8 +164,6 @@ Using:
 Parameters:
     params - hash reference, containing the following properties :
         {
-            level - string - the level ID for this source in the tile matrix sytem (TMS)
-            order - positive integer (starts at 0) - the priority order for this source at this level 
             file - string - Path to the source pyramid's descriptor file
             style - string - The style to apply to source images when streaming them (default : normal)
             transparent - boolean - Another style parameter, whose name is explicit (default : false)
@@ -187,16 +173,19 @@ Returns:
     1 (TRUE) in case of success, 0 (FALSE) in case of failure.
     
 =cut
-sub _init() {
+sub _init {
     my $this = shift;
     my $params = shift;
-
-    return FALSE if(!$this->SUPER::_init($params));
 
     if (!exists $params->{file} || !defined $params->{file}) {
         ERROR("A pyramid descriptor's file path must be passed to load a pyramid source.");
         return FALSE;
     }
+    if (! -e $params->{file}) {
+        ERROR("Thé pyramid descriptor's does not exists: ".$params->{file});
+        return FALSE;
+    }
+
 
     $this->{file} = $params->{file};
     if (exists $params->{style} && defined $params->{style} && $params->{style} ne '') {
@@ -232,18 +221,18 @@ Writes the 'basedPyramid' element node in the pyramid descriptor file. This func
 
 Using:
     (start code)
-    $pyrSource->writeInXml(xmlDocument, parentNode);
+    $pyrSource->writeInXml(xmlDocument, sourcesNode);
     (end code)
 
 Parameters:
     xmlDocument - <XML::LibXML::Document> - The xml document where the 'basedPyramid' node will be written. (i.e. the interface for the descriptor file)
-    parentNode - <XML::LibXML::Element> - The parent node where the 'basedPyramid' element will be nested. (ex: the 'sources' element node)
+    sourcesNode - <XML::LibXML::Element> - The parent node where the 'basedPyramid' element will be nested. (ex: the 'sources' element node)
 
 Returns:
     1 (TRUE) if success. 0 (FALSE) if an error occured.
 
 =cut
-sub writeInXml() {
+sub writeInXml {
     my $this = shift;
     my $xmlDoc = shift;
     my $sourcesNode = shift;
@@ -259,3 +248,4 @@ sub writeInXml() {
 
 
 1;
+__END__

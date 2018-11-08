@@ -818,7 +818,7 @@ Example:
 
 Topic: pyramid
 
-For more informations about properties, see <BE4SWIFT::Pyramid>.
+For more informations about properties, see <COMMON::PyramidRaster>.
 
     pyr_name_new - Name of the new pyramid, used to name the descriptor, the pyramid's list, the temporary directory and prefix the Ceph objects. Mandatory.
     pyr_desc_path - Directory path, where to write the descriptor and the list. Mandatory.
@@ -1012,7 +1012,7 @@ Group: Externals tools
 
 Scripts' execution needs following tools:
 
-    - pngcheck
+    - gdalinfo
     - wget
     
 =cut

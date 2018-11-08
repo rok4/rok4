@@ -37,9 +37,9 @@
 ################################################################################
 
 =begin nd
-File: exPyr.pl
+File: ex-pyr.pl
 
-Section: EXPYR tool
+Section: EX-PYR tool
 
 Synopsis:
     (start code)
@@ -47,15 +47,15 @@ Synopsis:
     (end code)
 
 Tool allowing to extract a sub pyramid from one or more existing pyramids (one for each level).
-User can define if the new pyramid's tiles are just symbolic links to source pyramids tiles (default),
-hard links or copies of these tiles.
+User can define if the new pyramid's slabs are just symbolic links to source pyramids slabs (default),
+hard links or copies of these slabs.
 
 Source pyramids must have the same :
     - TMS
     - directory depth
     - format code
     - channels
-    - tiles number (heigthwise and widthwise)
+    - slab's tiles number (heigthwise and widthwise)
 
 =cut
 
@@ -118,7 +118,7 @@ my %options =
 (
     "version"    => 0,
     "help"       => "Documentation can be found in the generated html documentation or inside the script files.\n",
-    "usage"      => "perl exPyr.pl <options>\n".
+    "usage"      => "perl ex-pyr.pl <options>\n".
                     "List of available options :\n".
                     "  --properties=<file> | -conf <file> : configuration file for the generation\n".
                     "  --usage : prints this message\n".
@@ -158,7 +158,7 @@ See Also:
     <init>, <config>, <doIt>
 =cut
 sub main {
-    printf("EXPYR: version [%s]\n",$VERSION);
+    printf("EX-PYR: version [%s]\n",$VERSION);
 
     # initialization
     ALWAYS("> Initialization");

@@ -582,13 +582,6 @@ Examples:
     [[ 0 ]]
     file = be4/pyramide/tests/pyramid/oldPyramid.pyr
     (end code)
-
-Group: Externals tools
-
-Scripts' execution needs following tools:
-
-    - pngcheck
-    - wget
     
 =cut
 

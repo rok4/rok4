@@ -65,6 +65,7 @@ use lib "$Bin/../lib/perl5";
 
 # My module
 use COMMON::PyramidRaster;
+use COMMON::PyramidVector;
 use COMMON::ProxyStorage;
 
 ################################################################################
@@ -217,11 +218,18 @@ Use classes :
 =cut
 sub doIt {
 
-    my $objPyramid = COMMON::PyramidRaster->new("DESCRIPTOR", $options{pyr} );
-    if (! defined $objPyramid) {
-        ERROR("Cannot load pyramid to delete !");
-        return FALSE;
+    my $objPyramid = COMMON::PyramidRaster->new("DESCRIPTOR", $options{pyramid});
+    if (! defined $pyramid) {
+
+        # Est-elle vecteur ?
+        $objPyramid = COMMON::PyramidVector->new("DESCRIPTOR", $options{pyramid});
+
+        if (! defined $pyramid) {
+            ERROR("Cannot load pyramid to delete  (neither raster nor vector)");
+            return FALSE;
+        }
     }
+
 
     my $storageType = $objPyramid->getStorageType();
     my $pyramidName = $objPyramid->getName();

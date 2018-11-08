@@ -55,7 +55,6 @@ Using:
 
 Attributes:
     PATHIMG - string - Path to images directory.
-    PATHMTD - string - Path to metadata directory. NOT IMPLEMENTED.
     images - <COMMON::GeoImage> array - Georeferenced images' ensemble, found in PATHIMG and subdirectories
     srs - string - SRS of the georeferenced images
     bestResX - double - Best X resolution among all images.
@@ -143,7 +142,6 @@ sub new {
     # IMPORTANT : if modification, think to update natural documentation (just above)
     my $this = {
         PATHIMG => undef,
-        PATHMTD => undef,
         #
         images  => [],
         srs => undef,

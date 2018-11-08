@@ -40,7 +40,7 @@ File: Database.pm
 
 Class: COMMON::Database
 
-Request a PostgreSQL database.
+Allow to request a PostgreSQL database.
 
 Using:
     (start code)
@@ -51,7 +51,15 @@ Using:
     (end code)
 
 Attributes:
-    dbname - string - 
+    dbname - string - database name
+    host - string - PostgreSQL server host
+    port - integer - PostgreSQL server port
+    username - string - PostgreSQL server user
+    password - string - PostgreSQL server user's password
+
+    connection - DBI database - PostgreSQL connection, use to execute requests
+
+    current_results - DBI statement - Use to manage big results
 =cut
 
 ################################################################################
@@ -90,13 +98,26 @@ END {}
 #                                        Group: Constructors                                       #
 ####################################################################################################
 
+=begin nd
+Constructor: new
+
+Database constructor. Bless an instance. Connect the DBI object
+
+Parameters (list):
+    dbname - string - database name
+    host - string - PostgreSQL server host
+    port - integer - PostgreSQL server port
+    username - string - PostgreSQL server user
+    password - string - PostgreSQL server user's password
+
+=cut
 sub new {
     my $class = shift;
 
     my ( $dbname, $host, $port, $username, $password ) = @_;
 
     if (! defined $dbname) {
-        ERROR("Paramètres de connexion à fournir");
+        ERROR("Parameters de connexion à fournir");
         return undef;   
     }
 
@@ -128,25 +149,29 @@ sub new {
         return undef;        
     };
 
-    INFO("Connexion à la base OK");
-    INFO("\t nom : $dbname");
-    INFO("\t url : $host:$port");
-    INFO("\t utilisateur : $username");
+    DEBUG("Connexion à la base OK");
+    DEBUG("\t nom : $dbname");
+    DEBUG("\t url : $host:$port");
+    DEBUG("\t utilisateur : $username");
 
     return $this;
 }
 
+=begin nd
+Function: disconnect
+
+Return
+    0 if success, 1 if failure
+=cut
 sub disconnect {
     my $this = shift;
 
     if ( $this->{connection}->{AutoCommit} == 0 ) {
-        WARN("Une transaction est en cours au moment de la déconnexion : on la rollbacke");
+        WARN("Open transaction, we rollback it before disconnection");
         $this->rollback_transaction();
     }
 
-    DEBUG("Deconnexion demandée");
     $this->{connection}->disconnect() or return 1;
-    DEBUG(" Deconnexion effectuée");
 
     return 0;
 }
@@ -155,50 +180,68 @@ sub disconnect {
 #                                   Group: Gestion des transactions                                #
 ####################################################################################################
 
+=begin nd
+Function: start_transaction
+
+Commit already open transaction.
+
+Return
+    TRUE if success, FALSE if failure
+=cut
 sub start_transaction {
     my $this = shift;
 
     if ( $this->{connection}->{AutoCommit} == 0 ) {
-        WARN("Une transaction est déjà en cours. Commit de cette dernière");
+        WARN("A transaction is already open, we commit it");
         $this->commit_transaction();
     }
 
     $this->{connection}->begin_work() or do {
-        ERROR("Impossible de démarrer une transaction");
+        ERROR("Cannot open a transaction");
         return FALSE;
     };
 
-    DEBUG("Transaction démarrée");
     return TRUE;
 }
 
+=begin nd
+Function: commit_transaction
+
+Return
+    TRUE if success, FALSE if failure
+=cut
 sub commit_transaction {
     my $this = shift;
 
     if ( $this->{connection}->{AutoCommit} == 1 ) {
-        WARN("Aucune transaction en cours. Commit annulé");
+        WARN("No open transaction to commit");
         return TRUE;
     }
 
     $this->{connection}->commit() or do {
-        ERROR("Impossible de commiter la transaction en cours");
+        ERROR("Cannot commit the open transaction");
         return FALSE;
     };
 
-    DEBUG("Transaction commitée");
     return TRUE;
 }
 
+=begin nd
+Function: rollback_transaction
+
+Return
+    TRUE if success, FALSE if failure
+=cut
 sub rollback_transaction {
     my $this = shift;
 
     if ( $this->{connection}->{AutoCommit} == 1 ) {
-        WARN("Aucune transaction en cours. Rollback annulé");
+        WARN("No open transaction to rollback");
         return TRUE;
     }
 
     $this->{connection}->rollback() or do {
-        ERROR("Impossible de rollbacker la transaction en cours");
+        ERROR("Cannot rollback the open transaction");
         return FALSE;
     };
 
@@ -207,29 +250,29 @@ sub rollback_transaction {
 }
 
 ####################################################################################################
-#                                      Group: Exécuteurs de requêtes                               #
+#                                      Group: Requests executors                                   #
 ####################################################################################################
 
 =begin nd
 Function: select_one_row
 
-Paramètre(s) (liste):
-    sql - string - Requête à exécuter
+Parameter (list):
+    sql - string - Request to execute
 
-Retourne
-    Un tableau correspondant à la première ligne en cas de succès, undef en cas d'échec ou d'absence de résultat
+Return
+    If success, first result as array, undef if filaure or no result
 =cut
 sub select_one_row {
     my $this = shift;
     my $sql = shift;
 
     my $sth = $this->{connection}->prepare($sql) or do {
-        ERROR("Impossible de préparer la requête SELECT ONE ROW : $sql");
+        ERROR("Cannot prepare the request SELECT ONE ROW : $sql");
         return undef;
     };
 
     $sth->execute() or do {
-        ERROR("Impossible d'exécuter la requête SELECT ONE ROW : $sql");
+        ERROR("Cannot execute the request SELECT ONE ROW : $sql");
         return undef;
     };
 
@@ -241,7 +284,7 @@ sub select_one_row {
     }
 
     $sth->finish() or do {
-        ERROR("Impossible de clore la requête SELECT ONE ROW : $sql");
+        ERROR("Cannot close the request SELECT ONE ROW : $sql");
         return undef;
     };
 
@@ -251,10 +294,10 @@ sub select_one_row {
 =begin nd
 Function: select_all_row
 
-Paramètre(s) (liste):
-    sql - string - Requête à exécuter
+Parameter (list):
+    sql - string - Request to execute
 
-Retourne
+Return
     Une référence sur un tableau de référence à des tableaux correspondant à tous les résultats en cas de succès, undef en cas d'échec ou d'absence de résultat
 =cut
 sub select_all_row {
@@ -262,24 +305,24 @@ sub select_all_row {
     my $sql = shift;
 
     my $sth = $this->{connection}->prepare($sql) or do {
-        ERROR("Impossible de préparer la requête SELECT ALL ROW : $sql");
+        ERROR("Cannot prepare the request SELECT ALL ROW : $sql");
         return undef;
     };
 
     $sth->execute() or do {
-        ERROR("Impossible d'exécuter la requête SELECT ALL ROW : $sql");
+        ERROR("Cannot execute the request SELECT ALL ROW : $sql");
         return undef;
     };
 
     my $rows = $sth->fetchall_arrayref();
 
     if (defined $sth->err) {
-        ERROR("Problème lors de la récupération des résultats de la requête SELECT ALL ROW : $sql");
+        ERROR("Cannot get results of the request SELECT ALL ROW : $sql");
         return undef;
     }
 
     $sth->finish() or do {
-        ERROR("Impossible de clore la requête SELECT ALL ROW : $sql");
+        ERROR("Cannot close the request SELECT ALL ROW : $sql");
         return undef;
     };
 
@@ -289,11 +332,11 @@ sub select_all_row {
 =begin nd
 Function: select_many_row
 
-Paramètre(s) (liste):
-    sql - string - Requête à exécuter
+Parameter (list):
+    sql - string - Request to execute
 
-Retourne
-    0 si la requête a bien été exécutée et le résultat gardé en mémoire, 1 sinon
+Return
+    0 if success and the result is memorized, 1 otherwise
 =cut
 sub select_many_row {
     my $this = shift;
@@ -301,19 +344,19 @@ sub select_many_row {
 
     if ( defined $this->{current_results} ) {
         $this->{current_results}->finish() or do {
-            ERROR("Impossible de clore la requête en cours en mémoire SELECT MANY ROW");
+            ERROR("Cannot close current memorizedresult SELECT MANY ROW");
             return 1;
         };
     }
 
     $this->{current_results} = $this->{connection}->prepare($sql) or do {
-        ERROR("Impossible de préparer la requête SELECT MANY ROW : $sql");
+        ERROR("Cannot prepare the request SELECT MANY ROW : $sql");
         return 1;
     };
 
 
     $this->{current_results}->execute() or do {
-        ERROR("Impossible d'exécuter la requête SELECT MANY ROW : $sql");
+        ERROR("Cannot execute the request SELECT MANY ROW : $sql");
         return 1;
     };
 
@@ -323,8 +366,8 @@ sub select_many_row {
 =begin nd
 Function: next_row
 
-Retourne
-    Un tableau correspondant à la ligne suivante dans le résultat gardé en mémoire, undef en cas d'échec ou d'absence de résultat
+Return
+    Next line of memorized results as array, undef if failure or no result
 =cut
 sub next_row {
     my $this = shift;
@@ -333,14 +376,14 @@ sub next_row {
         my @raw = $this->{current_results}->fetchrow_array();
 
         if (defined $this->{current_results}->err ) {
-            DEBUG("Problème de lecture dans les résultats de la requête : " . $this->{current_results}->errstr);
+            DEBUG("Cannot read next line in the memorized results : " . $this->{current_results}->errstr);
             return undef;
         }
 
         return @raw;
     }
     else {
-        WARN(" Aucune requête n'est en cours");
+        WARN("No current memorized results");
         return undef;
     }
 }
@@ -348,8 +391,8 @@ sub next_row {
 =begin nd
 Function: next_row
 
-Retourne
-    Une référence d'un hash correspondant à la ligne suivante dans le résultat gardé en mémoire, undef en cas d'échec ou d'absence de résultat
+Return
+    Next line of memorized results as hash reference, undef if failure or no result
 =cut
 sub next_row_as_hashref {
     my $this = shift;
@@ -365,7 +408,7 @@ sub next_row_as_hashref {
         return $refHash;
     }
     else {
-        WARN("Aucune requête n'est en cours");
+        WARN("No current memorized results");
         return undef;
     }
 }
@@ -373,28 +416,28 @@ sub next_row_as_hashref {
 =begin nd
 Function: execute_without_return
 
-Paramètre(s) (liste):
-    sql - string - Requête à exécuter
+Parameter (list):
+    sql - string - Request to execute
 
-Retourne
-    0 si la requête a été exécutée avec succès, 1 sinon
+Return
+    0 if success, 1 if failure
 =cut
 sub execute_without_return {
     my $this = shift;
     my $sql = shift;
 
     my $sth = $this->{connection}->prepare($sql) or do {
-        ERROR("Impossible de préparer la requête SANS RETOUR : $sql");
+        ERROR("Cannot prepare the requestSANS RETOUR : $sql");
         return 1;
     };
 
     $sth->execute() or do {
-        ERROR("Impossible d'exécuter la requête SANS RETOUR : $sql");
+        ERROR("Cannot execute the requestSANS RETOUR : $sql");
         return 1;
     };
 
     $sth->finish() or do {
-        ERROR("Impossible de clore la requête SANS RETOUR : $sql");
+        ERROR("Cannot close the request SANS RETOUR : $sql");
         return 1;
     };
 
@@ -404,12 +447,12 @@ sub execute_without_return {
 =begin nd
 Function: run_sql_dump
 
-Paramètre(s) (liste):
-    schema_name - string - Schéma principal dans lequel exécuter le fichier SQL
-    sql_file - string - Fichier SQL à exécuter
+Parameters (list):
+    schema_name - string - Schema name in which the file have to be execute
+    sql_file - string - SQL script to execute
 
-Retourne
-    0 si l'exécution est en succès, 1 sinon
+Return
+    0 if success, 1 if failure
 =cut
 sub run_sql_dump {
     my $this = shift;
@@ -426,12 +469,12 @@ sub run_sql_dump {
 
     my $cmd_psql = "PGOPTIONS='-c search_path=$schema_name,public' psql -v ON_ERROR_STOP=1 -q -f $sql_file";
 
-    DEBUG(" Appel à la commande : " . $cmd_psql);
+    DEBUG("Call : " . $cmd_psql);
 
     my @logs = `$cmd_psql`;
 
     if ( $? != 0 ) {
-        ERROR("Erreur lors de l'exécution du fichier SQL : " . $sql_file);
+        ERROR("Cannot execute the SQL script : " . $sql_file);
         ERROR(Dumper(\@logs));
         return 1;
     }
@@ -446,11 +489,11 @@ sub run_sql_dump {
 =begin nd
 Function: is_schema_exist
 
-Paramètre(s) (liste):
-    schema_name - string - Schéma dont l'existence doit être testée
+Parameter (list):
+    schema_name - string - Schema to test
 
-Retourne
-    TRUE (1) si le schéma existe, FALSE (0) sinon
+Return
+    TRUE if schema exists, FALSE otherwise
 =cut
 sub is_schema_exist {
     my $this = shift;
@@ -466,14 +509,14 @@ sub is_schema_exist {
 }
 
 =begin nd
-Function: is_schema_exist
+Function: is_table_exist
 
-Paramètre(s) (liste):
-    schema_name - string - Schéma dans lequel l'existence de la table doit être testée
-    table_name - string - Table dont l'existence doit être testée
+Parameters (list):
+    schema_name - string - Schema where to test the table
+    table_name - string - Table to tests
 
-Retourne
-    TRUE (1) si la table existe, FALSE (0) sinon
+Return
+    TRUE if table exists, FALSE otherwise
 =cut
 sub is_table_exist {
     my $this = shift;
@@ -484,20 +527,32 @@ sub is_table_exist {
     ( my $table_exist ) = $this->select_one_row($sql);
     if ( $table_exist != 0 ) {
         return TRUE;
-    } else {
-        return FALSE;
     }
+
+    $sql = "SELECT count(*) FROM pg_views WHERE schemaname = '$schema_name' AND viewname = '$table_name';";
+    ( $table_exist ) = $this->select_one_row($sql);
+    if ( $table_exist != 0 ) {
+        return TRUE;
+    }
+
+    $sql = "SELECT count(*) FROM pg_matviews WHERE schemaname = '$schema_name' AND matviewname = '$table_name';";
+    ( $table_exist ) = $this->select_one_row($sql);
+    if ( $table_exist != 0 ) {
+        return TRUE;
+    }
+
+    return FALSE;
 }
 
 =begin nd
 Function: is_table_empty
 
-Paramètre(s) (liste):
-    schema_name - string - Schéma dans lequel le contenu de la table doit être testé
-    table_name - string - Table dont le contenu doit être testé
+Parameters (list):
+    schema_name - string - Schema where to test the table
+    table_name - string - Table to tests
 
-Retourne
-    TRUE (1) si la table est vide, FALSE (0) sinon
+Return
+    TRUE if table is empty, FALSE otherwise
 =cut
 sub is_table_empty {
     my $this = shift;
@@ -516,13 +571,13 @@ sub is_table_empty {
 =begin nd
 Function: is_column_exist
 
-Paramètre(s) (liste):
-    schema_name - string - Schéma dans lequel l'existence de la colonne doit être testée
-    table_name - string - Table dans laquelle l'existence de la colonne doit être testée
-    column_name - string - Colonne dont l'existence doit être testée
+Parameters (list):
+    schema_name - string - Schema where to test the table's column
+    table_name - string - Table where to tests the column
+    column_name - string - Column to test
 
-Retourne
-    TRUE (1) si la colonne existe, FALSE (0) sinon
+Return
+    TRUE if column exists, FALSE otherwise
 =cut
 sub is_column_exist {
     my $this = shift;
@@ -546,11 +601,11 @@ sub is_column_exist {
 =begin nd
 Function: create_schema
 
-Paramètre(s) (liste):
-    schema_name - string - Nom du schéma à créer
+Parameter (list):
+    schema_name - string - Schema to create
 
-Retourne
-    0 si le schéma a été créé avec succès, 1 sinon
+Return
+    0 if schema is created, 1 otherwise
 =cut
 sub create_schema {
     my $this = shift;
@@ -566,15 +621,15 @@ sub create_schema {
 =begin nd
 Function: add_column_to_table
 
-Paramètres (liste):
-    schema_name - string - Schéma dans lequel créer une colonne
-    table_name - string - Table dans laquelle créer une colonne
-    attribute_name - string - Nom de la colonne à créer
-    attribute_type - string - Type de la colonne à créer
-    default_value - string - Valeur par défaut de la colonne à créer (optionnel)
+Parameters (list):
+    schema_name - string - Schema in which the column have to be created
+    table_name - string - Table in which the column have to be created
+    attribute_name - string - Column name to create
+    attribute_type - string - Column type to create
+    default_value - string - New column default value (optionnal)
 
-Retourne
-    0 si la colonne a été ajoutée avec succès, 1 sinon
+Return
+    0 if column is created, 1 otherwise
 =cut
 sub add_column_to_table {
     my $this = shift;
@@ -585,7 +640,7 @@ sub add_column_to_table {
     my $default_value = shift;
 
     if ( ! defined $schema_name || ! defined $table_name || ! defined $attribute_name || ! defined $attribute_type ) {
-        $this->{logger}->log( "ERROR", "Il manque des paramètres pour ajouter une colonne à une table");
+        ERROR("Missing parameters to create a new column");
         return 1;
     }
 
@@ -603,11 +658,11 @@ sub add_column_to_table {
 =begin nd
 Function: drop_schema_and_inherits
 
-Paramètre(s) (liste):
-    schema_name - string - Nom du schéma à supprimer, avec ses éventuels héritages
+Parameter (list):
+    schema_name - string - Schema to remove, including inherits
 
-Retourne
-    0 si le schéma a été supprimé avec succès, 1 sinon
+Return
+    0 if schema is droped, 1 otherwise
 =cut
 sub drop_schema_and_inherits {
 
@@ -615,13 +670,13 @@ sub drop_schema_and_inherits {
     my $schema_name = shift;
 
     if ( ! defined $schema_name ) {
-        ERROR("Il manque le nom du schéma à supprimer");
+        ERROR("Schema to remove is missing");
         return 1;
     }
 
     # Is the schema exist in the database ?
     if ( $this->is_schema_exist() ) {
-        WARN("Le schéma à supprimer ($schema_name) n'existe pas");
+        WARN("Schema to remove does not exists");
         return 0;
     }
 
@@ -631,7 +686,7 @@ sub drop_schema_and_inherits {
     my $sql = "SELECT DISTINCT f_table_name FROM geometry_columns WHERE f_table_schema = '$schema_name';";
     ( my @geometricTables ) = @{ $this->select_all_row($sql) };
 
-    INFO("Il existe " . scalar @geometricTables . " tables géométriques dans le schéma");
+    DEBUG(scalar @geometricTables . " tables in the schema to remove");
 
     foreach my $table (@geometricTables) {
 
@@ -646,17 +701,14 @@ sub drop_schema_and_inherits {
 
         ( my @linkedTables ) = @{ $this->select_all_row($sql) };
 
-        INFO((sprintf "Il existe %s tables liées à la  table %s", scalar @linkedTables, $table->[0]));
+        INFO((sprintf "%s tables liked to table %s", scalar @linkedTables, $table->[0]));
 
         for my $subtable (@linkedTables) {
 
             $sql = sprintf "ALTER TABLE %s NO INHERIT %s.%s", $subtable->[0], $schema_name, $table->[0];
 
             if ( $this->execute_without_return($sql) ) {
-                $this->{logger}->log(
-                    "ERROR",
-                    (sprintf "Erreur lors de la suppression du lien de %s depuis %s", $table->[0], $subtable->[0])
-                );
+                ERROR(sprintf "Cannot remove the link between %s and %s", $table->[0], $subtable->[0]);
                 $this->rollback_transaction();
                 return 1;
             }
@@ -665,7 +717,7 @@ sub drop_schema_and_inherits {
 
     # Delete schéma
     if ( $this->drop_schema( $schema_name, "true" ) ) {
-        ERROR("Erreur lors de la suppression du schema " . $schema_name);
+        ERROR("Cannot remove the schema " . $schema_name);
         $this->rollback_transaction();
         return 1;
     }
@@ -678,12 +730,12 @@ sub drop_schema_and_inherits {
 =begin nd
 Function: drop_schema
 
-Paramètre(s) (liste):
-    schema_name - string - Nom du schéma à supprimer
-    cascade - string - Si 'true', la suppression du schéma est appelée en mode cascade (optionnel, false par défaut)
+Parameters (list):
+    schema_name - string - Schema to remove
+    cascade - string - If 'true', drop cascade is called (false if not provided)
 
-Retourne
-    0 si le schéma a été supprimé avec succès, 1 sinon
+Return
+    0 if schema is droped, 1 otherwise
 =cut
 sub drop_schema {
     my $this = shift;
@@ -723,13 +775,13 @@ sub drop_schema {
 =begin nd
 Function: revoke_schema_permissions
 
-Paramètre(s) (liste):
-    schema_name - string - Nom du schéma sur lequel supprimer des droits
-    username - string - Utilisateur à qui enlever des droits
-    permissions - string - Droits à supprimer
+Parameters (list):
+    schema_name - string - Schema for which rights have to be removed
+    username - string - User who loses rights
+    permissions - string - Rights to lose
 
-Retourne
-    0 si les droits ont été supprimés avec succès, 1 sinon
+Return
+    0 if success, 1 otherwise
 =cut
 sub revoke_schema_permissions {
     my $this = shift;
@@ -747,13 +799,13 @@ sub revoke_schema_permissions {
 =begin nd
 Function: grant_schema_permissions
 
-Paramètre(s) (liste):
-    schema_name - string - Nom du schéma sur lequel ajouter des droits
-    username - string - Utilisateur à qui ajouter des droits
-    permissions - string - Droits à ajouter
+Parameters (list):
+    schema_name - string - Schema for which rights have to be added
+    username - string - User who wins rights
+    permissions - string - Rights to win
 
-Retourne
-    0 si les droits ont été ajoutés avec succès, 1 sinon
+Return
+    0 if success, 1 otherwise
 =cut
 sub grant_schema_permissions {
     my $this = shift;
@@ -771,13 +823,13 @@ sub grant_schema_permissions {
 =begin nd
 Function: set_permissions_on_tables_from_schema
 
-Paramètre(s) (liste):
-    schema_name - string - Nom du schéma dans lequel mettre les droits sur toutes les tables
-    username - string - Utilisateur à qui mettre les droits sur toutes les tables
-    permissions - string - Droits à donner. Optionnel : si non défini, tous les droits sont supprimés sur toutes les tables
+Parameters (list):
+    schema_name - string - Schema for which rights have to be set for all tables
+    username - string - User concerned by rights
+    permissions - string - Rights to set. If undefined, all rights are removed for all tables in the schema
 
-Retourne
-    0 si les droits ont été mis avec succès, 1 sinon
+Return
+    0 if success, 1 otherwise
 =cut
 sub set_permissions_on_tables_from_schema {
     my $this = shift;
@@ -806,13 +858,13 @@ sub set_permissions_on_tables_from_schema {
 =begin nd
 Function: revoke_all_permissions_on_table
 
-Paramètre(s) (liste):
-    schema_name - string - Nom du schéma dans lequel supprimer tous les droits sur la table
-    table_name - string - Nom de la table sur laquelle supprimer tous les droits
-    username - string - Utilisateur à qui supprimer tous les droits sur la table
+Parameters (list):
+    schema_name - string - Schema for which rights have to be removed
+    table_name - string - Table for which rights have to be removed
+    username - string - User who loses rights
 
-Retourne
-    0 si les droits ont été supprimés avec succès, 1 sinon
+Return
+    0 if success, 1 otherwise
 =cut
 sub revoke_all_permissions_on_table {
     my $this = shift;
@@ -830,14 +882,14 @@ sub revoke_all_permissions_on_table {
 =begin nd
 Function: grant_table_permissions
 
-Paramètre(s) (liste):
-    schema_name - string - Nom du schéma dans lequel ajouter les droits sur la tables
-    table_name - string - Nom de la table sur laquelle ajouter les droits
-    username - string - Utilisateur à qui ajouter les droits sur la table
-    permissions - string - Droits à ajouter
+Parameters (list):
+    schema_name - string - Schema for which rights have to be added
+    table_name - string - Table for which rights have to be added
+    username - string - User who wins rights
+    permissions - string - Rights to win
 
-Retourne
-    0 si les droits ont été supprimés avec succès, 1 sinon
+Return
+    0 if success, 1 otherwise
 =cut
 sub grant_table_permissions {
     my $this = shift;
@@ -858,14 +910,14 @@ sub grant_table_permissions {
 ####################################################################################################
 
 =begin nd
-Function: get_geometry_column_name
+Function: get_geometry_column
 
-Paramètre(s) (liste):
-    schema_name - string - Nom du schéma dans lequel on veut connaître la colonne géométrique
-    table_name - string - Nom de la table dans laquelle on veut connaître la colonne géométrique
+Parameter (list):
+    schema_name - string - Schema in which we want to know the geometry column
+    table_name - string - Table for which we want to know the geometry column
 
-Retourne
-    le nom de la colonne géométrique et son type, undef si pas de colonne géométrique dans la table
+Return (array)
+    Geometry coumn name and its type, undef if no geometry column for this table
 =cut
 sub get_geometry_column {
     my $this = shift;
@@ -876,32 +928,33 @@ sub get_geometry_column {
 
     my @line = $this->select_one_row($sql);
 
+    if (scalar(@line) == 0) {
+        return (undef, undef);
+    }
+
     return ($line[0], $line[1]);
 }
 
 =begin nd
 Function: get_attributes_list
 
-Paramètre(s) (liste):
-    schema_name - string - Nom du schéma dans lequel on veut la liste des attributs
-    table_name - string - Nom de la table dont on veut la liste des attributs
+Parameter (list):
+    schema_name - string - Schema in which we want the attribute list
+    table_name - string - Table for which we want the attribute list
 
-Retourne
-    une chaîne de caractères correpondant à la liste des attributs de la table séparés par des virgules, undef en cas d'échec
+Return
+    Attributes list as a string (attributes separated by comma), undef if failure
 =cut
 sub get_attributes_list {
     my $this = shift;
     my $schema_name = shift;
     my $table_name = shift;
 
-    my $sql = "SELECT column_name FROM information_schema.columns WHERE table_schema = '$schema_name' AND table_name = '$table_name' ORDER BY ordinal_position;";
+    my $sql = "SELECT a.attname FROM pg_attribute a JOIN pg_class t on a.attrelid = t.oid JOIN pg_namespace s on t.relnamespace = s.oid WHERE a.attnum > 0  AND NOT a.attisdropped AND t.relname = '$table_name' AND s.nspname = '$schema_name' ORDER BY a.attnum;";
 
     my $atts = $this->select_all_row($sql);
     if ( ! defined $atts) {
-        $this->{logger}->log(
-            "ERROR", 
-            (sprintf "Échec de la requête pour lister les attributs de la table %s.%s", $schema_name, $table_name)
-        );
+        ERROR("Cannot list attributes for the table $schema_name.$table_name");
         return undef;
     }
 
@@ -917,26 +970,23 @@ sub get_attributes_list {
 =begin nd
 Function: get_attributes_hash
 
-Paramètre(s) (liste):
-    schema_name - string - Nom du schéma dans lequel on veut la liste des attributs
-    table_name - string - Nom de la table dont on veut la liste des attributs
+Parameter (list):
+    schema_name - string - Schema in which we want the attribute list
+    table_name - string - Table for which we want the attribute list
 
-Retourne
-    une référence de hash dont les clés sont les attributs de la table, undef en cas d'échec
+Return
+    Attributes list as a hash reference, undef if failure
 =cut
 sub get_attributes_hash {
     my $this = shift;
     my $schema_name = shift;
     my $table_name = shift;
 
-    my $sql = "SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = '$schema_name' AND table_name = '$table_name' ORDER BY ordinal_position;";
+    my $sql = "SELECT a.attname, pg_catalog.format_type(a.atttypid, a.atttypmod) FROM pg_attribute a JOIN pg_class t on a.attrelid = t.oid JOIN pg_namespace s on t.relnamespace = s.oid WHERE a.attnum > 0  AND NOT a.attisdropped AND t.relname = '$table_name' AND s.nspname = '$schema_name' ORDER BY a.attnum;";
 
     my $atts = $this->select_all_row($sql);
     if ( ! defined $atts) {
-        $this->{logger}->log( 
-            "ERROR",
-            (sprintf "Échec de la requête pour lister les attributs de la table %s.%s", $schema_name, $table_name)
-        );
+        ERROR("Cannot list attributes for the table $schema_name.$table_name");
         return undef;
     }
 
@@ -952,11 +1002,11 @@ sub get_attributes_hash {
 =begin nd
 Function: get_tables_array
 
-Paramètre(s) (liste):
-    schema_name - string - Nom du schéma dont on veut la liste des tables
+Parameter (list):
+    schema_name - string - Schema for which we want to list the tables
 
-Retourne
-    un tableau listant les tables dans le schéma
+Return
+    Table list as array, undef if failure
 =cut
 sub get_tables_array {
     my $this = shift;
@@ -966,10 +1016,7 @@ sub get_tables_array {
 
     my $tables = $this->select_all_row($sql);
     if ( ! defined $tables) {
-        $this->{logger}->log(
-            "ERROR",
-            (sprintf "Échec de la requête pour lister les tables du schéma %s", $schema_name)
-        );
+        ERROR("Cannot list tables of schema $schema_name");
         return undef;
     }
 
@@ -985,13 +1032,13 @@ sub get_tables_array {
 =begin nd
 Function: get_distinct_values
 
-Paramètre(s) (liste):
-    schema_name - string - Nom du schéma dans lequel on veut les valeurs distincte prises par l'attibut
-    table_name - string - Nom de la table dans laquelle on veut les valeurs distincte prises par l'attibut
-    att_name - string - Nom de l'attribut dont on veut les valeurs disinctes
+Parameter (list):
+    schema_name - string - Schema in which list distinct values
+    table_name - string - Table in which list distinct values
+    att_name - string - Attribute for which we want to list distinct values
 
-Retourne
-    un tableau des valeurs distinctes prises par l'attribut, un tableau vide en cas d'échec
+Return
+    Distinct values in an array, an empty array if failure
 =cut
 sub get_distinct_values {
     my $this = shift;
@@ -1003,10 +1050,7 @@ sub get_distinct_values {
 
     my $att_values = $this->select_all_row($sql);
     if ( ! defined $att_values) {
-        $this->{logger}->log(
-            "ERROR",
-            (sprintf "Échec de la requête pour lister les valeurs de l'attribut %s de la table %s.%s", $att_name, $schema_name, $table_name)
-        );
+        ERROR("Cannot list distinct values of $att_name in $schema_name.$table_name");
         return ();
     }
 
@@ -1024,13 +1068,13 @@ sub get_distinct_values {
 =begin nd
 Function: get_min_max_values
 
-Paramètre(s) (liste):
-    schema_name - string - Nom du schéma dans lequel on veut les valeurs min et max de l'attribut
-    table_name - string - Nom de la table dans laquelle on veut les valeurs min et max de l'attribut
-    att_name - string - Nom de l'attribut dont on veut les valeurs min et max
+Parameter (list):
+    schema_name - string - Schema in which determine min and max
+    table_name - string - Table in which determine min and max
+    att_name - string - Attribute for which we want to determine min and max
 
-Retourne
-    le min et le max des valeurs de l'attribut
+Return
+    An array (min, max)
 =cut
 sub get_min_max_values {
     my $this = shift;
@@ -1049,13 +1093,13 @@ sub get_min_max_values {
 =begin nd
 Function: get_distinct_values_count
 
-Paramètre(s) (liste):
-    schema_name - string - Nom du schéma dans lequel on veut le nombre de valeurs distinctes prises par l'attibut
-    table_name - string - Nom de la table dans laquelle on veut le nombre de valeurs distinctes prises par l'attibut
-    att_name - string - Nom de l'attribut dont on veut le nombre de valeurs distinctes
+Parameter (list):
+    schema_name - string - Schema in which count distinct values
+    table_name - string - Table in which count distinct values
+    att_name - string - Attribute for which we want to count distinct values
 
-Retourne
-    le nombre de valeurs distinctes prises par l'attribut
+Return
+    Distinct values count
 =cut
 sub get_distinct_values_count {
     my $this = shift;
@@ -1074,28 +1118,25 @@ sub get_distinct_values_count {
 =begin nd
 Function: get_schema_size
 
-Paramètre(s) (liste):
-    schema_name - string - Nom du schéma dont on veut la taille complète (+ index)
+Parameter (list):
+    schema_name - string - Schema for which we want size
 
-Retourne
-    la taille du schéma, -1 en cas d'erreur
+Return
+    size of the schema, -1 if failure
 =cut
 sub get_schema_size {
     my $this = shift;
     my $schema_name = shift;
 
     my $sql = "SELECT sum(t.table_size) FROM (
-                    SELECT pg_total_relation_size(pg_catalog.pg_class.oid) as table_size FROM pg_catalog.pg_class
-                    JOIN pg_catalog.pg_namespace ON relnamespace = pg_catalog.pg_namespace.oid
-                    WHERE pg_catalog.pg_namespace.nspname = '$schema_name') t";
+        SELECT pg_total_relation_size(pg_catalog.pg_class.oid) as table_size FROM pg_catalog.pg_class
+        JOIN pg_catalog.pg_namespace ON relnamespace = pg_catalog.pg_namespace.oid
+        WHERE pg_catalog.pg_namespace.nspname = '$schema_name') t";
 
     my @row  = $this->select_one_row($sql);
     my $size = $row[0];
     if ( $size eq "" ) {
-        $this->{logger}->log(
-            "ERROR",
-            "Erreur durant la récupération de la taille du schema $schema_name"
-        );
+        ERROR("Cannot get size of schema $schema_name");
         return -1;
     }
 

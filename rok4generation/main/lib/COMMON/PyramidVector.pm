@@ -36,11 +36,11 @@
 ################################################################################
 
 =begin nd
-File: Pyramid.pm
+File: PyramidVector.pm
 
 Class: COMMON::PyramidVector
 
-Store all informations about a pyramid, whatever the storage type.
+Store all informations about a vector pyramid, whatever the storage type.
 
 Using:
     (start code)
@@ -81,6 +81,7 @@ Using:
     (end code)
 
 Attributes:
+    type - string - READ (pyramid load from a descriptor) or WRITE ("new" pyramid, create from values)
 
     name - string - Pyramid's name
     desc_path - string - Directory in which we write the pyramid's descriptor
@@ -90,7 +91,7 @@ Attributes:
     image_height - integer - Number of tile in an pyramid's image, heightwise.
 
     tms - <COMMON::TileMatrixSet> - Pyramid's images will be cutted according to this TMS grid.
-    levels - <COMMON::LevelRaster> hash - Key is the level ID, the value is the <COMMON::LevelRaster> object. Define levels present in the pyramid.
+    levels - <COMMON::LevelVector> hash - Key is the level ID, the value is the <COMMON::LevelVector> object. Define levels present in the pyramid.
 
     storage_type - string - Storage type of data : FILE, S3, SWIFT or CEPH
 
@@ -797,12 +798,6 @@ sub keystoneConnection {
     return $this->{keystone_connection};
 }
 
-# Function: storeTiles
-sub storeTiles {
-    my $this = shift;
-    return $this->{tiles_storage};
-}
-
 # Function: getName
 sub getName {
     my $this = shift;    
@@ -839,17 +834,6 @@ sub getTileMatrixSet {
     return $this->{tms};
 }
 
-# Function: getImageSpec
-sub getImageSpec {
-    my $this = shift;
-    return $this->{pyrImgSpec};
-}
-
-# Function: getNodata
-sub getNodata {
-    my $this = shift;
-    return $this->{nodata};
-}
 
 =begin nd
 Function: getSlabPath

@@ -36,11 +36,11 @@
 ################################################################################
 
 =begin nd
-File: Level.pm
+File: LevelRaster.pm
 
 Class: COMMON::LevelRaster
 
-Describe a level in a pyramid.
+Describe a level in a raster pyramid.
 
 Using:
     (start code)
@@ -81,6 +81,9 @@ Attributes:
     prefix_mask - string - Prefix used to name the mask objects, in CEPH or S3 storage (contains the pyramid's name and the level's id)
 
     bucket_name - string - Name of the (existing) S3 bucket, where to store data if S3 storage type
+
+    container_name - string - Name of the (existing) SWIFT container, where to store data if SWIFT storage type
+    keystone_connection - boolean - For swift storage, keystone authentication or not ?
 
     pool_name - string - Name of the (existing) CEPH pool, where to store data if CEPH storage type
 =cut

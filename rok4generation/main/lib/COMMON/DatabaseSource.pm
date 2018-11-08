@@ -50,44 +50,63 @@ Using:
 
     # DatabaseSource object creation
     my $objDatabaseSource = COMMON::DatabaseSource->new({
-        db_host   => "ORTHO_RAW_LAMB93_PARIS_OUEST",
-        db_     => "http://localhost/wmts/rok4",
-        wms_version => "1.3.0",
-        wms_request => "getMap",
-        wms_format  => "image/tiff"
+        "db" => {
+            "host" => "postgis.ign.fr",
+            "port" => "5433",
+            "database" => "geobase",
+            "user" => "ign",
+            "password" => "pwd"
+        },
+        "tables" => [
+            {
+                "schema" => "bdtopo",
+                "native_name" => "limite_administrative_simp",
+                "attributes" => "nom"
+            },
+            {
+                "schema" => "bdtopo",
+                "native_name" => "pai_sante_simp",
+                "final_name" => "sante",
+                "attributes" => "name",
+                "filter" => "urgence = '1'"
+            }
+        ]
     });
 
-    OR
-
-    # Image width and height defined, style, transparent and background color (for a WMS vector)
-
-    # DatabaseSource object creation
-    my $objDatabaseSource = COMMON::DatabaseSource->new({
-        wms_layer   => "BDD_WLD_WM",
-        wms_url     => "http://localhost/wmts/rok4",
-        wms_version => "1.3.0",
-        wms_request => "getMap",
-        wms_format  => "image/png",
-        wms_bgcolor => "0xFFFFFF",
-        wms_transparent  => "FALSE",
-        wms_style  => "line",
-        max_width  => 1024,
-        max_height  => 1024
-    });
     (end code)
 
 Attributes:
-    URL - string -  Left part of a WMS request, before the *?*.
-    VERSION - string - Parameter *VERSION* of a WMS request : "1.3.0".
-    REQUEST - string - Parameter *REQUEST* of a WMS request : "getMap"
-    FORMAT - string - Parameter *FORMAT* of a WMS request : "image/tiff"
-    LAYERS - string - Layer name to harvest, parameter *LAYERS* of a WMS request.
-    OPTIONS - string - Contains style, background color and transparent parameters : STYLES=line&BGCOLOR=0xFFFFFF&TRANSPARENT=FALSE for example. If background color is defined, transparent must be 'FALSE'.
-    min_size - integer - Used to remove too small harvested images (full of nodata), in bytes. Can be zero (no limit).
-    max_width - integer - Max image's pixel width which will be harvested, can be undefined (no limit).
-    max_height - integer - Max image's pixel height which will be harvested, can be undefined (no limit).
-
-If *max_width* and *max_height* are not defined, images will be harvested all-in-one. If defined, requested image size have to be a multiple of this size.
+    host - string - postgis server host
+    port - integer - postgis server port
+    dbname - string - postgis database name
+    username - string - postgis server user
+    password - string - postgis server user's password
+    tables - hash - all informations about wanted tables
+|       {
+|           "schema_name.table" => {
+|               "schema" => "schema_name",
+|               "native_name" => "table",
+|               "final_name" => "public_name",
+|               "attributes" => "att1,att2",
+|               "geometry" => {
+|                   "type" => "MULTIPOLYGON",
+|                   "name" => "the_geom",
+|               },
+|               "attributes_analysis" => {
+|                   att1 => {
+|                       "type" => "float",
+|                       "count" => "1034",
+|                       "min" => "1.02",
+|                       "max" => "1654.9",
+|                   },
+|                   att2 => {
+|                       "type" => "varchar",
+|                       "count" => "2",
+|                       "values" => ['yes', 'no'],
+|                   }
+|               }
+|           }
+|       }
 =cut
 
 ################################################################################
@@ -129,7 +148,7 @@ INIT {
     %DEFAULT = (
         port => 5432,
         schema => "public",
-        attributes => "*"
+        attributes => ""
     );
 }
 END {}
@@ -144,19 +163,32 @@ Constructor: new
 DatabaseSource constructor. Bless an instance.
 
 Parameters (hash):
-    wms_layer - string - Layer to harvest.
-    wms_url - string - WMS server url.
-    wms_version - string - WMS version.
-    wms_request - string - Request's type.
-    wms_format - string - Result's format.
-    wms_bgcolor - string - Optionnal. Hexadecimal red-green-blue colour value for the background color (white = "0xFFFFFF").
-    wms_transparent - boolean - Optionnal.
-    wms_style - string - Optionnal.
-    min_size - integer - Optionnal. 0 by default
-    max_width - integer - Optionnal.
-    max_height - integer - Optionnal.
+|   {
+|       "db" => {
+|           "host" => "postgis.ign.fr",
+|           "port" => "5433",
+|           "database" => "geobase",
+|           "user" => "ign",
+|           "password" => "pwd"
+|       },
+|       "tables" => [
+|           {
+|               "schema" => "bdtopo",
+|               "native_name" => "limite_administrative_simp",
+|               "attributes" => "nom"
+|           },
+|           {
+|               "schema" => "bdtopo",
+|               "native_name" => "pai_sante_simp",
+|               "final_name" => "sante",
+|               "attributes" => "name",
+|               "filter" => "urgence = '1'"
+|           }
+|       ]
+|   }
+
 See also:
-    <_init>
+    <_init>, <_load>
 =cut
 sub new {
     my $class = shift;
@@ -165,13 +197,11 @@ sub new {
     $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $this = {
-        host      => undef,
-        port  => undef,
-        dbname  => undef,
-        schemaname   => undef,
+        host => undef,
+        port => undef,
+        dbname => undef,
         username => undef,
         password => undef,
-        tablenames => [],
         tables => {}
     };
 
@@ -191,7 +221,29 @@ Function: _init
 Checks and stores attributes' values.
 
 Parameters (hash):
-
+|   {
+|       "db" => {
+|           "host" => "postgis.ign.fr",
+|           "port" => "5433",
+|           "database" => "geobase",
+|           "user" => "ign",
+|           "password" => "pwd"
+|       },
+|       "tables" => [
+|           {
+|               "schema" => "bdtopo",
+|               "native_name" => "limite_administrative_simp",
+|               "attributes" => "nom"
+|           },
+|           {
+|               "schema" => "bdtopo",
+|               "native_name" => "pai_sante_simp",
+|               "final_name" => "sante",
+|               "attributes" => "name",
+|               "filter" => "urgence = '1'"
+|           }
+|       ]
+|   }
 =cut
 sub _init {
     my $this   = shift;
@@ -201,7 +253,7 @@ sub _init {
     
     # PORT    
     if (! exists($params->{db}->{port}) || ! defined ($params->{db}->{port})) {
-        $this->{db_port} = $DEFAULT{port};
+        $this->{port} = $DEFAULT{port};
         INFO(sprintf "Default value for 'db.port' : %s", $this->{port});
     } else {
         if (int($params->{db}->{port}) <= 0) {
@@ -265,11 +317,10 @@ sub _init {
             $t->{filter} = "";
         }
 
-        push(@{$this->{tablenames}}, sprintf ("%s.%s", $t->{native_name}, $t->{schema}));
         $this->{tables}->{sprintf ("%s.%s", $t->{schema}, $t->{native_name})} = $t;
     }
 
-    if (scalar(@{$this->{tablenames}}) == 0) {
+    if (scalar(keys %{$this->{tables}}) == 0) {
         ERROR("Parameter 'tables' contains no table");
         return FALSE ;
     }
@@ -277,6 +328,11 @@ sub _init {
     return TRUE;
 }
 
+=begin nd
+Function: _load
+
+Analyse tables and attributes connecting to the database
+=cut
 sub _load {
     my $this   = shift;
 
@@ -294,13 +350,18 @@ sub _load {
     }
 
     while ( my ($table, $hash) = each(%{$this->{tables}})) {
-
+        DEBUG("Récupération d'informations sur $table");
         if (! $database->is_table_exist($hash->{schema}, $hash->{native_name})) {
             ERROR("Table $table does not exist");
             return FALSE;
         }
 
         my ($geomname, $geomtype) = $database->get_geometry_column($hash->{schema}, $hash->{native_name});
+        if (! defined $geomname) {
+            ERROR("No geometry column in table $table");
+            return FALSE;
+        }
+
         $hash->{geometry} = {
             type => $geomtype,
             name => $geomname
@@ -316,6 +377,8 @@ sub _load {
 
         $hash->{attributes_analysis} = {};
         foreach my $a (@asked_atts) {
+            if ($a eq "") {next;}
+
             if (! exists $native_atts->{$a}) {
                 ERROR("Attribute $a is not present in table $table");
                 return FALSE;
@@ -355,8 +418,15 @@ sub _load {
 ####################################################################################################
 
 =begin nd
-Function: getCommandMakeJsons
+Function: getCommandsMakeJson
 
+Return the commands (one per table to export) to call to export data in GeoJson
+
+Example:
+    (start code)
+    MakeJson "273950.309374068154368 6203017.719398627074048 293518.188615073275904 6222585.598639632195584" "host=postgis.ign.fr dbname=bdtopo user=ign password=PWD port=5432" "SELECT geometry FROM bdtopo_2018.vegetation WHERE type='oaks'" vegetation
+    MakeJson "273950.309374068154368 6203017.719398627074048 293518.188615073275904 6222585.598639632195584" "host=postgis.ign.fr dbname=bdtopo user=ign password=PWD port=5432" "SELECT geometry FROM bdtopo_2018.roads WHERE type='highway'" roads
+    (end code)
 =cut
 sub getCommandMakeJsons {
     my $this = shift;
@@ -367,9 +437,17 @@ sub getCommandMakeJsons {
 
     my $cmd = "";
     while (my ($table, $hash) = each(%{$this->{tables}})) {
-        my $sql = sprintf "SELECT %s,%s FROM $table", 
-            join(",", keys(%{$hash->{attributes_analysis}})), 
-            $hash->{geometry}->{name};
+
+        my $sql = "";
+        if (scalar(keys %{$hash->{attributes_analysis}}) != 0) {
+            $sql = sprintf "SELECT %s,%s FROM $table", 
+                join(",", keys(%{$hash->{attributes_analysis}})), 
+                $hash->{geometry}->{name};
+        } else {
+            # Cas où l'on ne veut aucun attribut sauf la géométrie
+            $sql = sprintf "SELECT %s FROM $table",
+                $hash->{geometry}->{name};
+        }
             
         if ($hash->{filter} ne "") {
             $sql .= sprintf " WHERE %s", $hash->{filter};
@@ -392,6 +470,12 @@ sub getTables {
     return $this->{tables};
 }
 
+
+# Function: getTablesNumber
+sub getTablesNumber {
+    my $this = shift;
+    return scalar(keys %{$this->{tables}});
+}
 
 1;
 __END__

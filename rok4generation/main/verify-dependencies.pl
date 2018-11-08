@@ -9,6 +9,7 @@ use AutoLoader qw(AUTOLOAD);
 
 use Cwd;
 use Data::Dumper;
+use DBI;
 use DBD::Pg;
 use Digest::SHA;
 use ExtUtils::MakeMaker;
@@ -34,6 +35,7 @@ use LWP::UserAgent;
 use Math::BigFloat;
 use POSIX qw(locale_h);
 use Scalar::Util qw/reftype/;
+use Term::ProgressBar;
 use Test::More;
 use Tie::File;
 use XML::LibXML;

@@ -55,10 +55,9 @@ Using:
 
 Attributes:
     FILEPATH_DATACONF - string - Path to the specific datasources configuration file.
+    type - string - Data type of all data source, RASTER or VECTOR  
     dataSources - <COMMON::DataSource> array - Data sources ensemble. Can contain just one element.
 
-Limitations:
-    Metadata managing not yet implemented.
 =cut
 
 ################################################################################
@@ -171,7 +170,7 @@ sub _init {
 =begin nd
 Function: _load
 
-Reads the specific data sources configuration file and creates corresponding <DataSource> objects.
+Reads the specific data sources configuration file and creates corresponding <COMMON:DataSource> objects.
 =cut
 sub _load {
     my $this   = shift;
@@ -252,7 +251,7 @@ Example (with 2 data sources) :
 There are no superposition between data sources.
 
 Parameters:
-    TMS - <TileMatrixSet> - To know levels' orders
+    TMS - <COMMON::TileMatrixSet> - To know levels' orders
     topID - string - Optionnal, from the *pyramid* section in the configuration file
     
 Returns the global bottom and top order, in a integer list : (bottomOrder,topOrder), (-1,-1) if failure.
@@ -444,7 +443,7 @@ __END__
 
 Group: details
 
-Configuration file examples.
+Configuration file examples (WMS harvesting).
 
 _In the be4 configuration, section *datasource* (multidata.conf)_
     (start code)

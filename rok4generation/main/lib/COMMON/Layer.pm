@@ -70,7 +70,7 @@ Using:
 Attributes:
     title - string - Layer's name.
     abstract - string - Abstract, to resume the layer content.
-    keywordlist  - string array - List of keywords.
+    keywordlist - string array - List of keywords.
     style - string - Layer's style.
     minres - float - Minimal resolution of the pyramid.
     maxres - float - Maximal resolution of the pyramid.
@@ -160,10 +160,8 @@ INIT {
     %DEFAULT = (
         abstract         => "",
         keywordlist      => [],
-        style            => "normal",
         minres           => 0.0,
         maxres           => 0.0,
-        opaque           => 1,
         authority        => "IGNF",
         resampling       => "lanczos_4",
     );    
@@ -239,20 +237,20 @@ Function: _init
 Check and store layer's attributes values.
 
 Parameters (hash):
-    title - string
+    title - string - Mandatory
     abstract - string - Optionnal, empty string by default.
     keywordlist - string array - Optionnal, empty array by default.
-    style - string - Optionnal, "normal" by default.
+    style - string - Optionnal (only for raster pyramid)
     minres - float - Optionnal, 0.0 by default.
     maxres - float - Optionnal, 0.0 by default.
     opaque - boolean - Optionnal, 1 by default.
     authority - string - Optionnal, "IGNF" by default.
-    srslist - string array
+    srslist - string array - Optionnal (only for raster pyramid)
     resampling - string - Optionnal, "lanczos_4" by default.
-    geo_bbox - double array
+    geo_bbox - double array - Mandatory
     proj - string - Optionnal, first element of srslist by default.
-    proj_bbox - double array
-    pyramid - string
+    proj_bbox - double array - Mandatory
+    pyramid - string - Mandatory
 =cut
 sub _init {
     my $this   = shift;
@@ -315,7 +313,7 @@ sub _init {
     
     if (! exists($params->{keywordlist}) || ! defined ($params->{keywordlist})) {
         $params->{keywordlist} = $DEFAULT{keywordlist};
-        INFO(sprintf "Default value for 'opaque' : %s", Dumper($params->{keywordlist}));
+        INFO(sprintf "Default value for 'keywordlist' : %s", Dumper($params->{keywordlist}));
     }
     
     # test

@@ -74,6 +74,7 @@ Si la gestion du stockage objet est voulue :
 Les librairies Perl sont installable via l'outil CPAN : `cpan Lib::Perl` (en sudo pour une installation système). Certaines des librairies utilisées sont installées avec le paquet `perl-base`
 
 * Data::Dumper
+* DBI
 * DBD::Pg
 * Digest::SHA
 * ExtUtils::MakeMaker
@@ -87,6 +88,7 @@ Les librairies Perl sont installable via l'outil CPAN : `cpan Lib::Perl` (en sud
 * Log::Log4perl
 * LWP::UserAgent
 * Math::BigFloat
+* Term::ProgressBar
 * Test::More
 * Tie::File
 * XML::LibXML
@@ -97,7 +99,7 @@ On installe les librairies Perl GDAL via le paquet :
 
 Soit :
 ```
-cpan DBD::Pg Data::Dumper Digest::SHA ExtUtils::MakeMaker File::Find::Rule File::Map FindBin Geo::GDAL Geo::OGR Geo::OSR HTTP::Request HTTP::Request::Common HTTP::Response JSON::Parse Log::Log4perl LWP::UserAgent Math::BigFloat Test::More Tie::File XML::LibXML
+cpan DBI DBD::Pg Data::Dumper Digest::SHA ExtUtils::MakeMaker File::Find::Rule File::Map FindBin Geo::GDAL Geo::OGR Geo::OSR HTTP::Request HTTP::Request::Common HTTP::Response JSON::Parse Log::Log4perl LWP::UserAgent Math::BigFloat Term::ProgressBar Test::More Tie::File XML::LibXML
 ```
 
 Si volonté d'utiliser l'outil graphique `tms-converter-gui.pl` :
@@ -117,6 +119,14 @@ cpan Tk Tk::EntryCheck Tk::FileSelect Tk::LabFrame Tk::NoteBook Tk::ROText Tk::T
 Pour savoir où sont cherchées les librairies, exécuter `env -i perl -V`.
 
 Pour vérifier que toutes les librairies nécessaires sont installées, exécuter le script `perl be4/pyramide/verify-dependencies.pl`.
+
+## Les commandes externes
+
+Les outils suivant sont nécessaires aux outils de génération :
+* gdalinfo (be4)
+* wget (be4)
+* ogr2ogr (4alamo)
+* tippecanoe (4alamo)
 
 ## La documentation
 

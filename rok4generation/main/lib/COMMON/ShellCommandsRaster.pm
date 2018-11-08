@@ -36,11 +36,11 @@
 ################################################################################
 
 =begin nd
-File: Commands.pm
+File: ShellCommandsRaster.pm
 
 Class: COMMON::ShellCommandsRaster
 
-Configure and assemble commands used to generate pyramid's images.
+Configure and assemble commands used to generate raster pyramid's slabs.
 
 All schemes in this page respect this legend :
 
@@ -126,7 +126,7 @@ sub new {
     bless($this, $class);
 
     if (! defined $pyramid || ref ($pyramid) ne "COMMON::PyramidRaster") {
-        ERROR("Can not load Pyramid !");
+        ERROR("Input is not a PyramidRaster object");
         return undef;
     }
     $this->{pyramid} = $pyramid;

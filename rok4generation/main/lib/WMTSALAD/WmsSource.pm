@@ -45,8 +45,6 @@ Using:
     use WMTSALAD::WmsSource;
 
     my wmsSource = WMTSALAD::WmsSource->new( {
-        level               =>  7,
-        order               =>  0,
         wms_url             =>  "http://target.server.net/wms"
         wms_timeout         =>  60
         wms_retry           =>  10
@@ -64,8 +62,6 @@ Using:
     (end code)
 
 Attributes:
-    level - string - the level ID for this source in the tile matrix sytem (TMS) (inherited from <WMTSALAD::DataSource>
-    order - positive integer (starts at 0) - the priority order for this source at this level (inherited from <WMTSALAD::DataSource>
     url - string - WMS server's URL
     proxy - string - proxy's URL (opt)
     timeout - int - waiting time before timeout, in seconds (opt)
@@ -84,9 +80,6 @@ Attributes:
     nodata - string - value of the no_data / background color
     extent - string - data bounding box, in the following format : minx,miny,maxx,maxxy
     option - string - WMS request options (opt)
-
-Related:
-    <WMTSALAD::DataSource> - Mother class
     
 =cut
 
@@ -100,11 +93,13 @@ use warnings;
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
 use XML::LibXML;
+use COMMON::Array;
 use COMMON::CheckUtils;
 
 require Exporter;
+use AutoLoader qw(AUTOLOAD);
 
-use parent qw(WMTSALAD::DataSource Exporter);
+our @ISA = qw(Exporter);
 
 our %EXPORT_TAGS = ( 'all' => [ qw() ] );
 our @EXPORT_OK   = ( @{$EXPORT_TAGS{'all'}} );
@@ -115,31 +110,25 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-# Constant: WMS
-# Define allowed values for attributes wms_format and wms_version.
-my %WMS;
+
+# Constant: WMSVERSION
+# Define allowed values for attribute wms_version
+my @WMSVERSION = ('1.1.1', '1.3.0');
+
+# Constant: WMSFORMAT
+# Define allowed values for attribute wms_format
+my @WMSFORMAT = ('image/png','image/jpeg');
+# 'image/x-bil;bits=32',
+# 'image/tiff',
+# 'image/tiff&format_options=compression:deflate',
+# 'image/tiff&format_options=compression:lzw',
+# 'image/tiff&format_options=compression:packbits',
+# 'image/tiff&format_options=compression:raw'
 
 ################################################################################
 
 BEGIN {}
-INIT {
-    %WMS = (
-        format => [
-            'image/png',
-            'image/jpeg',
-            # 'image/x-bil;bits=32',
-            # 'image/tiff',
-            # 'image/tiff&format_options=compression:deflate',
-            # 'image/tiff&format_options=compression:lzw',
-            # 'image/tiff&format_options=compression:packbits',
-            # 'image/tiff&format_options=compression:raw'
-        ],
-        version => [
-            '1.1.1', 
-            '1.3.0'
-        ],
-    );
-}
+INIT {}
 END {}
 
 ####################################################################################################
@@ -156,8 +145,6 @@ Constructor: new
 Using:
     (start code)
     my wmsSource = WMTSALAD::WmsSource->new( {
-        level               =>  7,
-        order               =>  0,
         wms_url             =>  "http://target.server.net/wms"
         wms_timeout         =>  60
         wms_retry           =>  10
@@ -175,8 +162,6 @@ Using:
 Parameters:
     params - hash reference, containing the following properties :
         {
-            level - string - the level ID for this source in the tile matrix sytem (TMS) (inherited from <WMTSALAD::DataSource>
-            order - positive integer (starts at 0) - the priority order for this source at this level (inherited from <WMTSALAD::DataSource>
             wms_url - string - WMS server's URL
             wms_proxy - string - proxy's URL (opt)
             wms_timeout - int - waiting time before timeout, in seconds (opt)
@@ -201,7 +186,7 @@ Returns:
     The newly created WmsSource object. 'undef' in case of failure.
     
 =cut
-sub new() {
+sub new {
     my $class = shift;
     my $params = shift;
 
@@ -212,25 +197,26 @@ sub new() {
 
     $params->{type} = 'WMS';
 
-    my $this = $class->SUPER::new($params);
-        $this->{url} = undef;
-        $this->{proxy} = undef;
-        $this->{timeout} = undef;
-        $this->{retry} = undef;
-        $this->{interval} = undef;
-        $this->{user} = undef;
-        $this->{password} = undef;
-        $this->{referer} = undef;
-        $this->{userAgent} = undef;
-        $this->{version} = undef;
-        $this->{layers} = undef;
-        $this->{styles} = undef;
-        $this->{crs} = undef;
-        $this->{format} = undef;
-        $this->{channels} = undef;
-        $this->{nodata} = undef;
-        $this->{extent} = undef;
-        $this->{option} = undef;
+    my $this = {
+        url => undef,
+        proxy => undef,
+        timeout => undef,
+        retry => undef,
+        interval => undef,
+        user => undef,
+        password => undef,
+        referer => undef,
+        userAgent => undef,
+        version => undef,
+        layers => undef,
+        styles => undef,
+        crs => undef,
+        format => undef,
+        channels => undef,
+        nodata => undef,
+        extent => undef,
+        option => undef
+    };
 
     bless($this, $class);
 
@@ -252,8 +238,6 @@ then load them in the new WmsSource object.
 Using:
     (start code)
     _init( {
-        level               =>  7,
-        order               =>  0,
         wms_url             =>  "http://target.server.net/wms"
         wms_timeout         =>  60
         wms_retry           =>  10
@@ -271,8 +255,6 @@ Using:
 Parameters:
     params - hash reference, containing the following properties :
         {
-            level - string - the level ID for this source in the tile matrix sytem (TMS) (inherited from <WMTSALAD::DataSource>
-            order - positive integer (starts at 0) - the priority order for this source at this level (inherited from <WMTSALAD::DataSource>
             wms_url - string - WMS server's URL
             wms_proxy - string - proxy's URL (opt)
             wms_timeout - int - waiting time before timeout, in seconds (opt)
@@ -297,11 +279,9 @@ Returns:
     TRUE in case of success, FALSE in case of failure.
     
 =cut
-sub _init() {
+sub _init {
     my $this = shift;
     my $params = shift;
-
-    return FALSE if(!$this->SUPER::_init($params));
 
     foreach my $key (keys %{$params}) {
         chomp $params->{$key};
@@ -322,7 +302,7 @@ sub _init() {
     if (!exists $params->{wms_version} || !defined $params->{wms_version} || $params->{wms_version} eq '') {
         ERROR("Undefined WMS protocol version.");
         return FALSE;
-    } elsif (! $this->isWmsVersion($params->{wms_version})) {
+    } elsif (! defined COMMON::Array::isInArray($params->{wms_version}, @WMSVERSION)) {
         return FALSE;
     }
     $this->{version} = $params->{wms_version};
@@ -454,7 +434,7 @@ sub _init() {
 
     ## wms_format - (opt)
     if (exists $params->{wms_format} && defined $params->{wms_format} && $params->{wms_format} ne '') {
-        if (! $this->isWmsFormat($params->{wms_format})) {
+        if (! defined COMMON::Array::isInArray($params->{wms_format}, @WMSFORMAT)) {
             return FALSE;
         }
         $this->{format} = $params->{wms_format};
@@ -467,60 +447,6 @@ sub _init() {
 
 
     return TRUE;
-}
-
-####################################################################################################
-#                                        Group: Tests                                              #
-####################################################################################################
-
-=begin nd
-Function: isWmsFormat
-
-Tests if format value is allowed.
-
-Parameters (list):
-    wmsformat - string - Format value to test
-=cut
-sub isWmsFormat {
-    my $this = shift;
-    my $wmsformat = shift;
-
-    TRACE;
-
-    return FALSE if (! defined $wmsformat);
-
-    foreach (@{$WMS{format}}) {
-        return TRUE if ($wmsformat eq $_);
-    }
-    ERROR (sprintf "Unknown 'wms_format' (%s).",$wmsformat);
-    return FALSE;
-}
-
-=begin nd
-Function: isWmsVersion
-
-Tests if WMS version value is allowed.
-
-Parameters (list):
-    wmsversion - string - Version value to test
-=cut
-sub isWmsVersion {
-
-    my $this = shift;
-    my $wmsversion = shift;
-
-    TRACE;
-
-    if (! defined $wmsversion) {
-        ERROR("Undefined 'wms_version'.");
-        return FALSE;
-    }
-
-    foreach (@{$WMS{version}}) {
-        return TRUE if ($wmsversion eq $_);
-    }
-    ERROR (sprintf "Unknown or unsupported 'wms_version' (%s).",$wmsversion);
-    return FALSE;
 }
 
 
@@ -547,7 +473,7 @@ Returns:
     1 (TRUE) if success. 0 (FALSE) if an error occured.
 
 =cut
-sub writeInXml() {
+sub writeInXml {
     my $this = shift;
     my $xmlDoc = shift;
     my $sourcesNode = shift;
@@ -585,3 +511,4 @@ sub writeInXml() {
 }
 
 1;
+__END__

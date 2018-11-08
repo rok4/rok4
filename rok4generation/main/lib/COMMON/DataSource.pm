@@ -126,10 +126,8 @@ Attributes:
     bbox - double array - Data source bounding box, in the previous SRS : [xmin,ymin,xmax,ymax].
 
     imageSource - <COMMON::ImageSource> - Georeferenced images' source.
-    harvesting - <COMMON::Harvesting> - WMS server. If it is useless, it will be remove.
-
-Limitations:
-    Metadata managing not yet implemented.
+    harvesting - <COMMON::Harvesting> - WMS server.
+    databaseSource - <COMMON::DatabaseSource> - PostgreSQL server.
 =cut
 
 ################################################################################
@@ -416,6 +414,12 @@ sub getSRS {
 }
 
 # Function: getType
+
+=begin nd
+Function: getType
+
+A datasource with a database source and no harvesting source will be considered as a VECTOR source. It's a raster source otherwise
+=cut
 sub getType {
     my $this = shift;
 

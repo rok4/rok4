@@ -88,19 +88,19 @@ use constant TRUE  => 1;
 use constant FALSE => 0;
 
 # Constant: BITSPERSAMPLES
-# Define allowed values for attributes bitspersample
+# Define allowed values for attribute bitspersample
 my @BITSPERSAMPLES = (1,8,32);
 
 # Constant: PHOTOMETRICS
-# Define allowed values for attributes photometric
+# Define allowed values for attribute photometric
 my @PHOTOMETRICS = ('rgb','gray','mask');
 
 # Constant: SAMPLESPERPIXELS
-# Define allowed values for attributes samplesperpixel
+# Define allowed values for attribute samplesperpixel
 my @SAMPLESPERPIXELS = (1,2,3,4);
 
 # Constant: SAMPLEFORMATS
-# Define allowed values for attributes sampleformat
+# Define allowed values for attribute sampleformat
 my @SAMPLEFORMATS = ('uint','float');
 
 ####################################################################################################

@@ -36,7 +36,7 @@
 ################################################################################
 
 =begin nd
-File: PyrImageSpec.pm
+File: PyramidRasterSpec.pm
 
 Class: COMMON::PyramidRasterSpec
 

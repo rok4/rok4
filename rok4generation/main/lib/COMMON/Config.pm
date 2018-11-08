@@ -43,16 +43,22 @@ Class: COMMON::Config
 
 Using:
     (start code)
-    # load properties 
-    my $cfg = COMMON::Config->new({
+    # load properties from INI file
+    my $cfgINI = COMMON::Config->new({
         'filepath' => "/mon/fichier/de/configuration.txt",
         'format' => "INI"
+    });
+
+    # load properties from INI file
+    my $cfgJSON = COMMON::Config->new({
+        'filepath' => "/mon/fichier/de/configuration.json",
+        'format' => "JSON"
     });
     (end code)
 
 Attributes:
     filePath - string - Path to the configuration file
-    fileFormat - string - Configuration format : INI
+    fileFormat - string - Configuration format : INI, JSON
     configuration - string hash - Configuration stored in string hash, with section and sub section, with orders
     rawConfiguration - string hash - Configuration stored in string hash, with section and sub section, without orders
     
@@ -101,9 +107,21 @@ END {}
 #                             Group: Constructors                              #
 ################################################################################
 
+=begin nd
+Constructor: new
+
+Config constructor. Bless an instance.
+
+Parameters (hash):
+    filepath - string - Configuration file path
+    format - string - File format, INI or JSON
+
+See also:
+    <_loadINI>, <_loadJSON>
+=cut
 sub new {
     my $class = shift;
-    my $parms = shift;
+    my $params = shift;
     
     $class = ref($class) || $class;
 
@@ -116,8 +134,8 @@ sub new {
     
     bless($this, $class);
 
-    DEBUG(sprintf "COMMON::Config->new called with parameters : %s", Dumper($parms));
-    if (! defined $parms || ! keys %{$parms} > 0) {
+    DEBUG(sprintf "COMMON::Config->new called with parameters : %s", Dumper($params));
+    if (! defined $params || ! keys %{$params} > 0) {
         ERROR("COMMON::Config->new cannot be called without arguments.");
         return undef;
     }
@@ -125,7 +143,7 @@ sub new {
     my $value = undef;
 
     # Read the mandatory configuration file's path parameter 
-    if (defined ($value = delete $parms->{'filepath'})) {
+    if (defined ($value = delete $params->{'filepath'})) {
         DEBUG(sprintf "Given configuration file's path : '%s'", $value);
         $this->{filePath} = $value;
     } else {
@@ -135,7 +153,7 @@ sub new {
     $value = undef;
 
     # Check the format in which the configuration file is written
-    $value = delete $parms->{'format'};
+    $value = delete $params->{'format'};
 
     if ( ! defined $value) {
         INFO("No format defined for the configuration file. Switching to default INI-like format ('INI').");
@@ -391,36 +409,36 @@ Checks if the given name really matches a properties.
 Syntax: isProperty ({ 'section' => sectionName, 'property' => propertyName [, 'subsection' => subSectionName] })
 
 Parameters (hash):
-    'section' => sectionName - string - section's name
-    'subsection' => subSectionName - string - subsection's name (optionnal)
-    'property' => propertyName - string - the property to check
+    section - string - section's name
+    subsection - string - subsection's name (optionnal)
+    property - string - the property to check
 
 Returns:
     TRUE if properties exists and is defined, FALSE otherwise
 =cut
 sub isProperty {
     my $this = shift;
-    my $parms = shift;
+    my $params = shift;
 
     if ($this->{fileFormat} ne "INI") {
         ERROR("isProperty is implemented only for INI configuration format");
         return FALSE;
     }
 
-    if (! exists $parms->{section} || ! defined $parms->{section}) {
+    if (! exists $params->{section} || ! defined $params->{section}) {
         ERROR("No section name provided");
         return FALSE;
     }
-    my $sec = $parms->{section};
+    my $sec = $params->{section};
     
-    if (! exists $parms->{property} || ! defined $parms->{property}) {
+    if (! exists $params->{property} || ! defined $params->{property}) {
         ERROR("No property name provided");
         return FALSE;
     }
-    my $prop = $parms->{property};
+    my $prop = $params->{property};
 
-    if (exists $parms->{subsection} && defined $parms->{subsection}) {
-        my $subsec = $parms->{subsection};
+    if (exists $params->{subsection} && defined $params->{subsection}) {
+        my $subsec = $params->{subsection};
         return (exists $this->{configuration}->{$sec}->{$subsec}->{$prop} && defined $this->{configuration}->{$sec}->{$subsec}->{$prop});
     } else {
         return (exists $this->{configuration}->{$sec}->{$prop} && defined $this->{configuration}->{$sec}->{$prop});
@@ -518,28 +536,28 @@ Returns the value of a property in a section or a section-subsection pair.
 Syntax: getProperty({ 'section' => sectionName, 'property' => propertyName [, 'subsection' => subSectionName] })
 
 Parameters (hash):
-    'section' => sectionName - string - section's name
-    'subsection' => subSectionName - string - subsection's name (optionnal)
-    'property' => propertyName - string - the property to get
+    section - string - section's name
+    subsection - string - subsection's name (optionnal)
+    property - string - the property to get
 =cut
 sub getProperty {
     my $this = shift;
-    my $parms = shift;
+    my $params = shift;
 
     if ($this->{fileFormat} ne "INI") {
         ERROR("getProperty is implemented only for INI configuration format");
         return undef;
     }
 
-    if (! $this->isProperty($parms)) {
+    if (! $this->isProperty($params)) {
         return undef;
     }
 
-    my $sec = $parms->{section};
-    my $prop = $parms->{property};
+    my $sec = $params->{section};
+    my $prop = $params->{property};
 
-    if (exists $parms->{subsection} && defined $parms->{subsection}) {
-        my $subsec = $parms->{subsection};
+    if (exists $params->{subsection} && defined $params->{subsection}) {
+        my $subsec = $params->{subsection};
         return $this->{configuration}->{$sec}->{$subsec}->{$prop};
     } else {
         return $this->{configuration}->{$sec}->{$prop};
@@ -554,25 +572,25 @@ Store the value of a property in a section or a section-subsection pair.
 Syntax: setProperty({ 'section' => sectionName, 'property' => propertyName [, 'subsection' => subSectionName], 'value' = value })
 
 Parameters (hash):
-    'section' => sectionName - string - section's name
-    'subsection' => subSectionName - string - subsection's name (optionnal)
-    'property' => propertyName - string - the property to set
-    'value' => propertyName - string - the value to set
+    section - string - section's name
+    subsection - string - subsection's name (optionnal)
+    property - string - the property to set
+    value - string - the value to set
 =cut
 sub setProperty {
     my $this = shift;
-    my $parms = shift;
+    my $params = shift;
 
     if ($this->{fileFormat} ne "INI") {
         ERROR("setProperty is implemented only for INI configuration format");
     }
 
-    my $sec = $parms->{section};
-    my $prop = $parms->{property};
-    my $val = $parms->{value};
+    my $sec = $params->{section};
+    my $prop = $params->{property};
+    my $val = $params->{value};
 
-    if (exists $parms->{subsection} && defined $parms->{subsection}) {
-        my $subsec = $parms->{subsection};
+    if (exists $params->{subsection} && defined $params->{subsection}) {
+        my $subsec = $params->{subsection};
         $this->{configuration}->{$sec}->{$subsec}->{$prop} = $val;
         $this->{rawConfiguration}->{$sec}->{$subsec}->{$prop} = $val;
     } else {
@@ -682,6 +700,8 @@ sub getProperties {
 Function: getConfig
 
 Returns a hash copy of the the part of the COMMON::Config object that actually contains the configuration.
+
+In JSON case, we return the raw configuration.
 
 Syntax: getConfig()
  

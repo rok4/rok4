@@ -36,15 +36,16 @@
 ################################################################################
 
 =begin nd
-File: Level.pm
+File: LevelVector.pm
 
 Class: COMMON::LevelVector
 
-Describe a level in a pyramid.
+Describe a level in a vector pyramid.
 
 Using:
     (start code)
     use COMMON::LevelVector;
+    use COMMON::DatabaseSource;
 
     # From values
     my $valuesLevel = COMMON::LevelVector->new("VALUES",{
@@ -53,7 +54,9 @@ Using:
         size => [16, 16],
 
         prefix => "TOTO_",
-        bucket_name => "MyBucket"
+        bucket_name => "MyBucket",
+
+        tables => $objDatabaseSource->getTables()
     });
 
     # From XML element
@@ -71,16 +74,19 @@ Attributes:
     size - integer array - Number of tile in one image for this level, widthwise and heightwise : [width, height].
     limits - integer array - Extrems columns and rows for the level (Extrems tiles which contains data) : [rowMin,rowMax,colMin,colMax]
 
+    tables - string hash - Informations about tables included in the level.
+
     desc_path - string - Directory path of the pyramid's descriptor containing this level
 
     dir_depth - integer - Number of subdirectories from the level root to the image if FILE storage type : depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif
     dir_image - string - Directory in which we write the pyramid's images if FILE storage type
-    dir_mask - string - Directory in which we write the pyramid's masks if FILE storage type
 
     prefix_image - string - Prefix used to name the image objects, in CEPH or S3 storage (contains the pyramid's name and the level's id)
-    prefix_mask - string - Prefix used to name the mask objects, in CEPH or S3 storage (contains the pyramid's name and the level's id)
 
     bucket_name - string - Name of the (existing) S3 bucket, where to store data if S3 storage type
+    
+    container_name - string - Name of the (existing) SWIFT container, where to store data if SWIFT storage type
+    keystone_connection - boolean - For swift storage, keystone authentication or not ?
 
     pool_name - string - Name of the (existing) CEPH pool, where to store data if CEPH storage type
 =cut
@@ -168,11 +174,9 @@ sub new {
         # CAS FICHIER
         dir_depth => undef,
         dir_image => undef,
-        dir_mask => undef,
 
         # CAS OBJET
         prefix_image => undef,
-        prefix_mask => undef,
         #    - S3
         bucket_name => undef,
         #    - SWIFT
@@ -314,17 +318,10 @@ sub _loadValues {
 
         $this->{dir_image} = File::Spec->catdir($params->{dir_data}, "IMAGE", $this->{id});
 
-        if (exists $params->{hasMask} && defined $params->{hasMask}) {
-            $this->{dir_mask} = File::Spec->catdir($params->{dir_data}, "MASK", $this->{id});
-        }
     }
     elsif ( exists $params->{prefix} ) {
         # CAS OBJET
         $this->{prefix_image} = sprintf "%s_IMG_%s", $params->{prefix}, $this->{id};
-
-        if (exists $params->{hasMask} && defined $params->{hasMask} && $params->{hasMask} ) {
-            $this->{prefix_mask} = sprintf "%s_MSK_%s", $params->{prefix}, $this->{id};
-        }
 
         if ( exists $params->{bucket_name} ) {
             # CAS S3
@@ -437,11 +434,6 @@ sub _loadXML {
     
     if (defined $dirimg && $dirimg ne "" ) {
         $this->{dir_image} = File::Spec->rel2abs(File::Spec->rel2abs( $dirimg , $this->{desc_path} ) );
-        
-        my $dirmsk = $levelRoot->findvalue('mask/baseDir');
-        if (defined $dirmsk && $dirmsk ne "" ) {
-            $this->{dir_mask} = File::Spec->rel2abs(File::Spec->rel2abs( $dirmsk , $this->{desc_path} ) );
-        }
 
         $this->{dir_depth} = $levelRoot->findvalue('pathDepth');
         if (! defined $this->{dir_depth} || $this->{dir_depth} eq "" ) {
@@ -451,11 +443,6 @@ sub _loadXML {
     }
     elsif (defined $imgprefix && $imgprefix ne "" ) {
         $this->{prefix_image} = $imgprefix;
-
-        my $mskprefix = $levelRoot->findvalue('mask/maskPrefix');
-        if (defined $mskprefix && $mskprefix ne "" ) {
-            $this->{prefix_mask} = $mskprefix;
-        }
 
         my $pool = $levelRoot->findvalue('cephContext/poolName');
         my $bucket = $levelRoot->findvalue('s3Context/bucketName');
@@ -637,7 +624,7 @@ Function: getSlabPath
 Returns the theoric slab path (file path or object name)
 
 Parameters (list):
-    type - string - "IMAGE" ou "MASK"
+    type - string - "IMAGE"
     col - integer - Slab column
     row - integer - Slab row
     full - boolean - In file storage case, precise if we want full path or juste the end (without data root). In object storage case, precise if we want full path (with the container name) or just the object name.
@@ -649,10 +636,6 @@ sub getSlabPath {
     my $row = shift;
     my $full = shift;
 
-    if ($type eq "MASK" && ! $this->ownMasks()) {
-        return undef;
-    }
-
     if ($this->{type} eq "FILE") {
         my $b36 = COMMON::Base36::indicesToB36Path($col, $row, $this->{dir_depth} + 1);
 
@@ -661,12 +644,6 @@ sub getSlabPath {
                 return File::Spec->catdir("IMAGE", $this->{id}, "$b36.tif");
             }
             return File::Spec->catdir($this->{dir_image}, "$b36.tif");
-        }
-        elsif ($type eq "MASK") {
-            if (defined $full && ! $full) {
-                return File::Spec->catdir("MASK", $this->{id}, "$b36.tif");
-            }
-            return File::Spec->catdir($this->{dir_mask}, "$b36.tif");
         }
         else {
             return undef;
@@ -679,12 +656,6 @@ sub getSlabPath {
             }
             return sprintf "%s/%s_%s_%s", $this->{bucket_name}, $this->{prefix_image}, $col, $row;
         }
-        elsif ($type eq "MASK") {
-            if (defined $full && ! $full) {
-                return sprintf "%s_%s_%s", $this->{prefix_mask}, $col, $row;
-            }
-            return sprintf "%s/%s_%s_%s", $this->{bucket_name}, $this->{prefix_mask}, $col, $row;
-        }
         else {
             return undef;
         }
@@ -696,12 +667,6 @@ sub getSlabPath {
             }
             return sprintf "%s/%s_%s_%s", $this->{container_name}, $this->{prefix_image}, $col, $row;
         }
-        elsif ($type eq "MASK") {
-            if (defined $full && ! $full) {
-                return sprintf "%s_%s_%s", $this->{prefix_mask}, $col, $row;
-            }
-            return sprintf "%s/%s_%s_%s", $this->{container_name}, $this->{prefix_mask}, $col, $row;
-        }
         else {
             return undef;
         }
@@ -712,12 +677,6 @@ sub getSlabPath {
                 return sprintf "%s_%s_%s", $this->{prefix_image}, $col, $row;
             }
             return sprintf "%s/%s_%s_%s", $this->{pool_name}, $this->{prefix_image}, $col, $row;
-        }
-        elsif ($type eq "MASK") {
-            if (defined $full && ! $full) {
-                return sprintf "%s_%s_%s", $this->{prefix_mask}, $col, $row;
-            }
-            return sprintf "%s/%s_%s_%s", $this->{pool_name}, $this->{prefix_mask}, $col, $row;
         }
         else {
             return undef;
@@ -877,9 +836,6 @@ Example:
         <tileMatrix>level_5</tileMatrix>
 
         <baseDir>./BDORTHO/IMAGE/level_5/</baseDir>
-        <mask>
-            <baseDir>./BDORTHO/MASK/level_5/</baseDir>
-        </mask>
         <pathDepth>2</pathDepth>
         <table>
             <name>batiment</name>
