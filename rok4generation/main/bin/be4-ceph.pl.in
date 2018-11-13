@@ -87,7 +87,7 @@ use FindBin qw($Bin);
 use lib "$Bin/../lib/perl5";
 
 # My module
-use BE4CEPH::PropertiesLoader;
+use BE4::PropertiesLoader;
 use COMMON::PyramidRaster;
 use COMMON::DataSourceLoader;
 use COMMON::Forest;
@@ -280,7 +280,7 @@ sub config {
     ALWAYS(">>> Load Properties ...");
     
     my $fprop = $options{properties};
-    my $objProp = BE4CEPH::PropertiesLoader->new($fprop);
+    my $objProp = BE4::PropertiesLoader->new($fprop);
     
     if (! defined $objProp) {
         ERROR("Can not load specific properties !");
@@ -347,6 +347,7 @@ sub config {
     # check parameters
     
     my $pyramid     = $this{params}->{pyramid};       #
+    my $logger      = $this{params}->{logger};        # 
     my $datasource  = $this{params}->{datasource};    #
     my $process     = $this{params}->{process};       # 
     
@@ -369,25 +370,20 @@ sub config {
     }
 
     # logger
-    my $logger = $this{params}->{logger};
     if (defined $logger) {
     
         my @args;
         
         my $layout= '%5p : %m (%M) %n';
-
         my $level = $logger->{log_level};
+        my $out   = sprintf (">>%s", File::Spec->catfile($logger->{log_path}, $logger->{log_file}))
+            if (! COMMON::CheckUtils::isEmpty($logger->{log_path}) && ! COMMON::CheckUtils::isEmpty($logger->{log_file}));
+
+        $out   = "STDOUT" if (! defined $out);
         $level = "WARN" if (! defined $level);
 
-        my $out;
-        my $logfile = $logger->{log_file};
-        if (defined $logfile) {
-            if (exists $logger->{log_path} && defined $logger->{log_path}) {
-                $logfile = File::Spec->catfile($logger->{log_path}, $logfile);
-            }
-            $out = ">>$logfile";
-        } else {
-            $out = "STDOUT";
+        if ($level =~ /(ALL|DEBUG)/) {
+            $layout = '%5p : %m (%M) %n';
         }
         
         # add the param logger by default (user settings !)
@@ -405,7 +401,6 @@ sub config {
                 layout => $layout,
             },
         }
-
         Log::Log4perl->easy_init(@args);
     }
 
@@ -508,6 +503,7 @@ sub writeListAndReferences {
         ############# ON ZAPPE JUSTE LE HEADER #############
 
         if ($line eq "#") {
+            # separator between caches' roots and images
             last;
         }
     }
@@ -558,7 +554,7 @@ sub writeListAndReferences {
             next;
         }
 
-        if (! exists $newpyr->{levels}->{$level}) {
+        if (! defined $newpyr->getLevel($level)) {
             # La dalle appartient à un niveau qui n'est pas voulu dans la nouvelle pyramide
             next;
         }

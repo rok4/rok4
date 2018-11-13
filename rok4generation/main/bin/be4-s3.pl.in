@@ -86,7 +86,7 @@ use FindBin qw($Bin);
 use lib "$Bin/../lib/perl5";
 
 # My module
-use BE4S3::PropertiesLoader;
+use BE4::PropertiesLoader;
 use COMMON::PyramidRaster;
 use COMMON::DataSourceLoader;
 use COMMON::Forest;
@@ -274,7 +274,7 @@ sub config {
     ALWAYS(">>> Load Properties ...");
     
     my $fprop = $options{properties};
-    my $objProp = BE4S3::PropertiesLoader->new($fprop);
+    my $objProp = BE4::PropertiesLoader->new($fprop);
     
     if (! defined $objProp) {
         ERROR("Can not load properties !");
@@ -476,7 +476,7 @@ sub writeListAndReferences {
             next;
         }
 
-        if (! exists $newpyr->{levels}->{$level}) {
+        if (! defined $newpyr->getLevel($level)) {
             # La dalle appartient à un niveau qui n'est pas voulu dans la nouvelle pyramide
             next;
         }

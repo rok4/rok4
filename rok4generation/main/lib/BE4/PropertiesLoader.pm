@@ -38,15 +38,15 @@
 =begin nd
 File: PropertiesLoader.pm
 
-Class: BE4SWIFT::PropertiesLoader
+Class: BE4::PropertiesLoader
 
-Reads a configuration file, and controls it
+Reads a configuration file, to *IniFiles* format
 
 Using:
     (start code)
-    use BE4SWIFT::PropertiesLoader;
+    use BE4::PropertiesLoader;
 
-    my $config = BE4SWIFT::PropertiesLoader->new("/home/ign/file.txt");
+    my $config = BE4::PropertiesLoader->new("/home/ign/file.txt");
     (end code)
 
 Attributes:
@@ -56,7 +56,7 @@ Attributes:
 
 ################################################################################
 
-package BE4SWIFT::PropertiesLoader;
+package BE4::PropertiesLoader;
 
 use strict;
 use warnings;
@@ -165,6 +165,7 @@ sub _check {
     
     return TRUE;
 }
+
 
 ####################################################################################################
 #                                Group: Getters - Setters                                          #

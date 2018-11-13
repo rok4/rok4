@@ -18,11 +18,28 @@ Log::Log4perl->easy_init({
 
 ##############################################################################################
 
+## Paramètres
+
 my $perl_directory = $ARGV[0];
 if (! -d $perl_directory) {
     ERROR("$perl_directory is not a directory");
-    exot(1);
+    exit(1);
 }
+
+my $output_directory = $ARGV[1];
+if (! defined $output_directory) {
+    ERROR("Output directory is not defined");
+    exit(1);
+}
+
+##############################################################################################
+
+# Création des dossiers
+
+`mkdir -p $output_directory/dots`;
+`mkdir -p $output_directory/pngs`;
+
+##############################################################################################
 
 my $libraries = {};
 my @pms = `find $perl_directory -name "*.pm"`;
@@ -35,7 +52,7 @@ foreach my $pm (@pms) {
     my $attributes_documented = {};
     my $documented = 0;
     my $attributes_used = {};
-    my $functions = {};
+    my $functions = [];
     while (my $line = <IN>) {
         chomp($line);
         if ($line =~ m/^package (\S+);$/) {
@@ -70,8 +87,8 @@ foreach my $pm (@pms) {
                 $attributes_used->{$1} = 1;
             }
         }
-        if ($line =~ m/^sub (\S+) /) {
-            $functions->{$1} = 1;
+        if ($line =~ m/^sub ([^\s{]+) ?/) {
+            push(@{$functions}, $1);
         }
     }
 
@@ -84,8 +101,6 @@ foreach my $pm (@pms) {
         ERROR("No package name defined in $pm");
         next;
     }
-
-
     
     close(IN);
 
@@ -110,8 +125,39 @@ foreach my $pm (@pms) {
         file => $pm,
         namespace => $1,
         class => $2,
-        attributes => $attributes_used
+        attributes => $attributes_used,
+        functions => $functions
     };
 }
 
-INFO(Dumper($libraries));
+while (my ($package, $lib) = each (%{$libraries})) {
+    my $attributes = "";
+    while (my ($att, $type) = each(%{$lib->{attributes}})) {
+        $type =~ s/</\\</g;
+        $type =~ s/>/\\>/g;
+        $attributes .= "+ $att: $type\\l";
+    }
+    my $functions = "";
+    foreach my $fun (@{$lib->{functions}}) {
+        if ($fun =~ m/^_/) {next;}
+        $functions .= "+ $fun(...)\\l";
+    }
+
+    my $basename = $package;
+    $basename =~ s/::/_/;
+    my $dot_file = "$output_directory/dots/$basename.dot";
+    my $png_file = "$output_directory/pngs/$basename.png";
+
+    my $file = $dot_file;
+    open(OUT, ">$file") or die "Cannot open '$file' to write in it";
+    
+    print OUT "digraph $basename {\n";
+    print OUT "    node[shape=record,style=filled,fillcolor=gray95]\n";
+    print OUT "    edge[dir=back, arrowtail=empty]\n";
+    print OUT "    ${basename} [label = \"{$package|$attributes|$functions}\"]\n";
+    print OUT "}\n";
+
+    close(OUT);
+
+    `dot -Tpng $dot_file -o $png_file`;
+}

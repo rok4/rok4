@@ -38,15 +38,15 @@
 =begin nd
 File: PropertiesLoader.pm
 
-Class: BE4S3::PropertiesLoader
+Class: FOURALAMO::PropertiesLoader
 
-Reads a configuration file, and controls it
+Reads a configuration file, to sIniFiles* format
 
 Using:
     (start code)
-    use BE4S3::PropertiesLoader;
+    use FOURALAMO::PropertiesLoader;
 
-    my $config = BE4S3::PropertiesLoader->new("/home/ign/file.txt");
+    my $config = FOURALAMO::PropertiesLoader->new("/home/ign/file.txt");
     (end code)
 
 Attributes:
@@ -56,7 +56,7 @@ Attributes:
 
 ################################################################################
 
-package BE4S3::PropertiesLoader;
+package FOURALAMO::PropertiesLoader;
 
 use strict;
 use warnings;
@@ -165,6 +165,7 @@ sub _check {
     
     return TRUE;
 }
+
 
 ####################################################################################################
 #                                Group: Getters - Setters                                          #
