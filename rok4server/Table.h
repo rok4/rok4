@@ -53,42 +53,16 @@ class Table
             geometry = g;
             attributes = atts;
             metadataJsonLong = "";
-            metadataJsonShort = "";
+            metadataJson = "";
         }
         ~Table(){};
 
         std::string getName() {return name;}
         std::string getGeometry() {return geometry;}
         std::vector<Attribute> getAttributes() {return attributes;}
-        std::string getMetadataJsonLong() {
-            if (metadataJsonLong != "") return metadataJsonLong;
-            /*
-            {
-                "attributeCount": 8,
-                "attributes": [...],
-                "geometry": "Polygon",
-                "layer": "filter"
-            }
-            */
 
-            std::ostringstream res;
-            res << "{\"layer\":\"" << name << "\"";
-            res << ",\"geometry\":\"" << geometry << "\"";
-            res << ",\"attributeCount\":\"" << attributes.size() << "\"";
-            res << ",\"attributes\":[";
-            for (int i = 0; i < attributes.size(); i++) {
-                if (i != 0) {
-                    res << ",";
-                }
-                res << attributes.at(i).getMetadataJson();
-            }
-            res << "]}";
-
-            metadataJsonLong = res.str();
-            return metadataJsonLong;
-        }
-        std::string getMetadataJsonShort(std::string max, std::string min) {
-            if (metadataJsonShort != "") return metadataJsonShort;
+        std::string getMetadataJson(std::string max, std::string min) {
+            if (metadataJson != "") return metadataJson;
             /*
             {
                 "fields": {
@@ -102,19 +76,21 @@ class Table
 
             std::ostringstream res;
             res << "{\"id\":\"" << name << "\"";
+            res << ",\"geometry\":\"" << geometry << "\"";
             res << ",\"maxzoom\":\"" << max << "\"";
             res << ",\"minzoom\":\"" << min << "\"";
+            res << ",\"filedsCount\":\"" << attributes.size() << "\"";
             res << ",\"fields\":{";
             for (int i = 0; i < attributes.size(); i++) {
                 if (i != 0) {
                     res << ",";
                 }
-                res << "\"" << attributes.at(i).getName() << "\": \"" << attributes.at(i).getType() << "\"";
+                res << "\"" << attributes.at(i).getName() << "\":" << attributes.at(i).getMetadataJson();
             }
             res << "}}";
 
-            metadataJsonShort = res.str();
-            return metadataJsonShort;
+            metadataJson = res.str();
+            return metadataJson;
         }
 
     private:
@@ -123,7 +99,7 @@ class Table
         std::string geometry;
         std::vector<Attribute> attributes;
         std::string metadataJsonLong;
-        std::string metadataJsonShort;
+        std::string metadataJson;
 };
 
 #endif // ATTRIBUTE_H

@@ -269,8 +269,7 @@ DataStream* Rok4Server::TMSGetLayerMetadata ( Request* request ) {
     std::string minzoom, maxzoom;
 
     std::vector<std::string> tablesNames;
-    std::map<std::string, std::string> tablesLong;
-    std::map<std::string, Table*> tablesShort;
+    std::map<std::string, Table*> tablesInfos;
     std::map<std::string, std::string> mins;
     std::map<std::string, std::string> maxs;
 
@@ -290,8 +289,7 @@ DataStream* Rok4Server::TMSGetLayerMetadata ( Request* request ) {
             std::map<std::string, std::string>::iterator it = mins.find ( t );
             if ( it == mins.end() ) {
                 tablesNames.push_back(t);
-                tablesLong.insert ( std::pair<std::string, std::string> ( t, levelTables->at(i).getMetadataJsonLong() ) );
-                tablesShort.insert ( std::pair<std::string, Table*> ( t, &(levelTables->at(i)) ) );
+                tablesInfos.insert ( std::pair<std::string, Table*> ( t, &(levelTables->at(i)) ) );
                 maxs.insert ( std::pair<std::string, std::string> ( t, maxzoom ) );
                 mins.insert ( std::pair<std::string, std::string> ( t, minzoom ) );
             } else {
@@ -325,20 +323,11 @@ DataStream* Rok4Server::TMSGetLayerMetadata ( Request* request ) {
 
     res << "  \"format\": \"" << Rok4Format::toExtension ( ( layer->getDataPyramid()->getFormat() ) ) << "\",\n";
     res << "  \"tiles\":[\"" << serviceURL << "/" << layer->getId() << "/{z}/{x}/{y}." << Rok4Format::toExtension ( ( layer->getDataPyramid()->getFormat() ) ) << "\"],\n";
-    res << "  \"tilestats\": {\n";
-    res << "    \"layerCount\": " << tablesLong.size() << ",\n";
-    res << "    \"layers\": [\n";
-    for (int i = 0; i < tablesNames.size(); i++) {
-        if (i != 0) res << ",\n";
-        res << "      " << tablesLong.at(tablesNames.at(i));
-    }
-    res << "\n    ]\n";
-    res << "  },\n";
 
     res << "  \"vector_layers\": [\n";
     for (int i = 0; i < tablesNames.size(); i++) {
         if (i != 0) res << ",\n";
-        res << "      " << tablesShort.at(tablesNames.at(i))->getMetadataJsonShort(maxs.at(tablesNames.at(i)),mins.at(tablesNames.at(i)));
+        res << "      " << tablesInfos.at(tablesNames.at(i))->getMetadataJson(maxs.at(tablesNames.at(i)),mins.at(tablesNames.at(i)));
     }
     res << "\n  ]\n";
     res << "}\n";
