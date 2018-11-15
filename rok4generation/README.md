@@ -1,12 +1,12 @@
-![Logo Be4](../docs/images/BE4/be4.png)
+![Logo ROK4GENERATION](../docs/images/rok4generation.png)
 
 La suite d'outils ROK4GENERATION permet de générer, mettre à jour, composer, supprimer ou extraire des pyramide raster ou vecteur. Ces outils sont écrits en Perl. Le travail de génération peut nécessiter l'utilisation d'outils de traitement d'images (réechantillonnage, reprojection, décimation, composition) écrits en C++.
-
-Afin de paralléliser le travail de génération, certains outils Perl vont avoir pour fonction d'identifier le travail à faire, de le partager équitablement et d'écrire des scripts Shell. C'est alors l'exécution de ces scripts Shell qui vont calculer et écrire les dalles de la pyramide.
 
 ## Outils principaux
 
 Écrits en Perl.
+
+Quand un outil est dit parallélisable, c'est qu'il identifie le travail à faire, le partage équitablement et écrit les scripts Shell (nombre configurable). C'est alors l'exécution de ces scripts qui fait réellement le travail (calcul de dalles, copie de pyramide...).
 
 ### Génération de pyramide raster
 
@@ -110,21 +110,37 @@ Parallélisable.
 
 Outil : `be4-simulator.pl`
 
+À partir d'un TileMatrixSet et d'une géométrie (fournie en WKT dans un fichier), cet outil calcule les dalles à générer par niveau et peut en imprimer la liste. Cela permet de quantifier le travail qu'une génération BE4 aurait à faire. Le fichier listant les dalles est utilisable par BE4 comme définition de l'étendue à générer (à la place de extent dans la configuration des datasources).
+
 #### Création d'un descripteur de couche
 
 Outil : `create-layer.pl`
+
+Cet outil génère un descripteur de couche pour ROK4SERVER à partir du descripteur de pyramide et du dossier des TileMatrixSets. Il est basique (titre, nom de couche, résumé par défaut) mais fonctionnel. La couche utilisera alors la pyramide en entrée dans sa globalité.
 
 #### Création du fichier liste d'une pyramide
 
 Outil : `create-list.pl`
 
+Cet outil génère le fichier liste pour une pyramide qui n'en aurait pas, à partir du dossier des données.
+
+Stockage géré : FICHIER
+
 #### Identification d'une dalle à partir de coordonnées
 
 Outil : `coord2image.pl`
 
+Ce outil détermine le chemin de la dalle fichier contenant le point renseigné par ses coordonnées. On précise le nombre de tuiles dans une dalle et le niveau de la pyramide voulu.
+
+Stockage géré : FICHIER
+
 #### Interface de conversions diverses
 
 Outil : `tms-converter-gui.pl`
+
+Cet outil propose plusieurs conversions entre requêtes WMS/WMTS, coordonnées, chemin de dalles fichier...
+
+![Interface de tms-converter-gui](../docs/images/ROK4GENERATION/tms-converter-gui.png)
 
 
 ## Outils de manipulation
@@ -135,7 +151,7 @@ Plus de détails dans les dossiers des outils.
 
 Voici la légende utilisée pour identifié le format des images dans les documentations par commande :
 
-![Logo Be4](../../docs/images/BE4/formats.png)
+![Formats](../../docs/images/ROK4GENERATION/formats.png)
 
 ### Manipulation raster
 

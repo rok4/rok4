@@ -720,7 +720,6 @@ DataSource* Rok4Server::getTile ( Request* request ) {
         return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "wmts" ) );
     }
 
-
     DataSource* tileSource;
 
     if (tileRow < level->getMinTileRow() || tileRow > level->getMaxTileRow()

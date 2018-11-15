@@ -10,10 +10,11 @@
 | Pyramide | Donnée image prédécoupée et précalculée, dans une projection, à différentes résolutions (niveaux), utilisée par une couche ROK4SERVER |
 | Niveau | Partie d’une pyramide, contenant des images homogènes en résolution (l'identifiant et la résolution du niveau sont définis dans le Tile Matrix Set) |
 | Tuile | Unité de donnée élementaire manipulé par ROK4SERVER, image appartenant à un niveau de pyramide dont les dimensions pixels sont définis dans le Tile Matrix (la tuile est la donnée demandée lors d'un GetTile en WMTS) |
-| Dalle | Un fichier ou objet image constituant une pyramide de donnée, contenant une ou plusieurs tuiles contiguës d'un niveau |
+| Dalle | Un fichier ou objet constituant une pyramide de donnée, contenant une ou plusieurs tuiles contiguës d'un niveau |
 | Résolution | Dimensions de l'emprise au sol (dans l'unité du SRS) d'un pixel |
 | WMS | Web Map Service : [référence OGC](http://www.opengeospatial.org/standards/wms) |
 | WMTS | Web Map Tiling Standard : [référence OGC](http://www.opengeospatial.org/standards/wmts) |
+| TMS | Tile Map Service : [référence OSGEO](https://wiki.osgeo.org/wiki/Tile_Map_Service_Specification) |
 
 # Le Tile Matrix Set
 
@@ -37,7 +38,7 @@ Un TM possède un identifiant (chaîne de caractères) unique dans le TMS. Les r
 
 ![Tile Matrix](./images/SPECIFICATION_PYRAMIDE/TileMatrix.png)
 
-Ce découpage de l'espace en tuile permet de se localiser grâce à des indices (principe du WMTS). Ainsi, une tuile peut être identifiée avec :
+Ce découpage de l'espace en tuile permet de se localiser grâce à des indices (principe du WMTS et du Tile Map Service). Ainsi, une tuile peut être identifiée avec :
 * son niveau
 * son indice de colonne (0 pour la première en partant de la gauche)
 * son indice de ligne (0 pour la première en partant du haut)
@@ -46,56 +47,60 @@ On peut passer des coordonnées aux indices facilement. Cette conversion est uti
 
 # La pyramide
 
-Une pyramide est constituée d’un ensemble de niveaux dont les images de donnée sont toutes dans un SRS donné et de mêmes caractéristiques. Chaque niveau de la pyramide correspond à un Tile Matrix, une résolution, et les données de ce niveaux, les tuiles, sont calées sur ce quadrillage.
+Une pyramide est constituée d’un ensemble de niveaux. Chaque niveau de la pyramide correspond à un Tile Matrix, une résolution.
 
-Les tuiles sont stockées, individuellement ou regroupées par contiguïté, dans des dalles qui donnent un fichier ou un objet. L'usage courant veut que l'on regroupe les tuiles dans des dalles afin de limiter le nombre de fichiers/objets.
+Une pyramide peut être de trois types :
+* Les pyramides raster : pyramide contenant de la donnée image. Utilisée par ROK4SERVER, elle peut être diffusée en WMS, WMTS et TMS. ROK4SERVER sait interpréter la donnée contenue dans cette pyramide et peut la réechantillonner, la reprojeter, y appliquer un style.
+* Les pyramides vecteur : pyramide contenant de la donnée vecteur. Utilisée par ROK4SERVER, elle ne peut être diffusée qu'en TMS. ROK4SERVER ne sait pas interpréter la donnée contenue dans les tuiles et ne peut alors que les retourner telles qu'elles sont stockées.
+* Les pyramides raster à la demande : pyramide ne contenant pas de données mais simplement un descripteur. Utilisée par ROK4SERVER, elle ne peut être diffusée qu'en WMTS. Une pyramide à la demande va pour chaque niveau préciser la source de données que ROK4SERVER doit utiliser pour répondre aux requêtes. Vu de l'extérieur, le but est qu'un utilisateur interrogeant ROK4SERVER en WMTS ne sache pas qu'une pyramide à la demande se cache derrière.
+
+Quand la pyramide contient des tuiles, elles sont regroupées par contiguïté en dalles, stockées en tant que fichier ou objet (Ceph, S3 ou Swift).
 
 ![Dalle](./images/SPECIFICATION_PYRAMIDE/Dalle.png "Dalle de 3 tuiles sur 2")
 
-## Caractéristiques des images de données
+## Caractéristiques des données
 
-Les caractéristiques d'une image sont :
+Les caractéristiques globales d'une pyramide raster, à la demande ou non, sont :
 * le nombre de canaux par pixel
 * le nombre de bits par canal
 * la photométrie (rgb, gray...)
 * le format des canaux
 * la compression des images (aucun, jpeg, lzw, packbit...)
 
-Elles doivent être les mêmes pour toutes les images de données de tous les niveaux d'une pyramide. Ces informations sont présentes dans le descripteur de pyramide.
+Les caractéristiques globales d'une pyramide vecteur sont :
+* le format de la donnée : Mapbox Vector Tile conditionné en PBF.
+
+Ces caractéristiques sont valables pour l'ensemble de la pyramide.
+
+## Les sources
+
+Pour une pyramide raster à la demande, on va pour chaque niveau donner toutes les informations nécessaire à ROK4SERVER pour qu'il puisse constituer la réponse à la requête WMTS GetTile : soit une pyramide raster contenant vraiment de la donnée, soit un service WMS à interroger.
+
+## Les tables
+
+Pour une pyramide vecteur, on va préciser les tables et leurs attributs présentes dans les données, et ce par niveau. On aura également des informations sur les valeurs prises par les attributs.
 
 ## Les masques
 
-Il est possible de stocker les masques en parallèle de la donnée. Les masques sont des images aux même dimensions que les images de données et permettent de distinguer précisément les pixels de données de ceux de nodata. Les masques sont des images à 1 canal sur 8 bits, compressé en deflate (zip). La valeur 0 signifie que le pixel correspondant dans l'image de données est du nodata, les valeurs de 1 à 255 signifient qu'il s'agit de donnée.
+Il est possible de stocker les masques en parallèle de la donnée dans le cas d'une pyramide raster. Les masques sont des images aux même dimensions que les images de données et permettent de distinguer précisément les pixels de données de ceux de nodata. Les masques sont des images à 1 canal sur 8 bits, compressé en deflate (zip). La valeur 0 signifie que le pixel correspondant dans l'image de données est du nodata, les valeurs de 1 à 255 signifient qu'il s'agit de donnée.
 
 ## Le descripteur de pyramide
 
-Le descripteur de pyramide est un fichier XML (extension .pyr), au nom de la pyramide et contenant toutes les informations nécessaires au serveur ROK4 pour exploiter la pyramide. Elles sont également utilisées lorsque l'on utilise les outils BE4 pour mettre à jour une pyramide : on récupère ainsi les caractéristiques de la pyramide pour utiliser les mêmes.
+Le descripteur de pyramide est un fichier XML (extension .pyr), au nom de la pyramide et contenant toutes les informations nécessaires à ROK4SERVER pour exploiter la pyramide (présentées au dessus). Elles sont également utilisées lorsque l'on utilise les outils ROK4GENERATION pour manipuler une pyramide : on récupère ainsi les caractéristiques de la pyramide pour utiliser les mêmes.
+
+Selon le type de la pyramide, les informations présentes dans le descripteur sont différentes
 
 ### Informations globales
 
-Toutes ces informations sont obligatoires :
-* Le nom du TMS associé à la pyramide
-* Le format des images : code contenant les informations 'format du canal' et 'compression' selon la règle `TIFF_<compression>_<type du canal><nombre de bits par canal>`. Les valeurs gérées sont :
-	* TIFF_RAW_INT8
-	* TIFF_RAW_FLOAT32
-	* TIFF_LZW_INT8
-	* TIFF_LZW_FLOAT32
-	* TIFF_ZIP_INT8
-	* TIFF_ZIP_FLOAT32
-	* TIFF_PKB_INT8
-	* TIFF_PKB_FLOAT32
-	* TIFF_PNG_INT8
-	* TIFF_JPG_INT8
-* Le nombre de canaux des images
-* La valeur du nodata (optionnel) : renseignée en décimal, un entier par canal, séparés une virgule. Exemples : 255,255,255 (blanc) pour des images en rgb, -99999 pour des images MNT (gray).
-* L'interpolation utilisée pour la génération de la pyramide : les valeurs possibles sont :
-	* nn (nearest neighbour)
-	* linear
-	* bicubic
-	* lanczos
-* La photométrie des images
-
-Extrait d'un descripteur de pyramide pour du MNT :
+| Type de pyramide                                          | Raster, à la demande ou non                                                                                                                                                 | Vecteur        |
+|-----------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------|
+| Nom du TMS associé                                        | Présent                                                                                                                                                                     | Présent        |
+| Format<br>(contient la compression et le format des données) | TIFF_RAW_INT8<br>TIFF_RAW_FLOAT32<br>TIFF_LZW_INT8<br>TIFF_LZW_FLOAT32<br>TIFF_ZIP_INT8<br>TIFF_ZIP_FLOAT32<br>TIFF_PKB_INT8<br>TIFF_PKB_FLOAT32<br>TIFF_PNG_INT8<br>TIFF_JPG_INT8 | TIFF_PBF_MVT |
+| Le nombre de canaux des données                           | Présent                                                                                                                                                                     | Absent         |
+| La valeur du nodata                                       | Présent                                                                                                                                                                     | Absent         |
+| L'interpolation utilisée à la génération                  | Présent                                                                                                                                                                     | Absent         |
+| La photométrie des données                                | Présent                                                                                                                                                                     | Absent         |
+Extrait d'un descripteur de pyramide raster, pour du MNT :
 
 ```xml
 <tileMatrixSet>RGM04UTM38S_10cm</tileMatrixSet>
@@ -110,66 +115,174 @@ On notera que le SRS n'est pas renseigné, il l'est indirectement via le TMS.
 
 ### Informations par niveau
 
-Les niveaux sont renseignés dans l'ordre, du plus haut (moins résolu) au plus bas (meilleure résolution).
+Les niveaux sont renseignés dans l'ordre, du plus haut (moins résolu) au plus bas (meilleure résolution). Les informations suivantes sont présentes pour les 3 types de pyramides :
 * L'identifiant du Tile Matrix : code unique du niveau, identique à celui dans le TMS.
 * Le nombre de tuiles, dans la hauteur et dans la largeur, dans une dalle.
 * Les indices des tuiles extrêmes pour ce niveau : au-delà, on sait d'avance qu'il n'y aura pas de données
+
+#### Pyramide raster
+
 * Les informations sur le stockage des données et éventuellement des masques :
 	* En mode "fichier" : les dossiers "racine" pour ce niveau, en relatif par rapport à l'emplacement du descripteur et la profondeur de l'arborescence (nombre de sous dossier) à partir de la racine du niveau.
-	* En mode "objet" : les préfixes utilisés pour le nommage des dalles, le conteneur objet et dans le cas Swift, le type d'authentification. Les informations générale sur le cluster (URL, user...) sont stockées dans des variables d'environnement ou dans la configuration du serveur ROK4.
+	* En mode "objet" : les préfixes utilisés pour le nommage des dalles, le conteneur objet et dans le cas Swift, le type d'authentification. Les informations générale sur le cluster (URL, user...) sont stockées dans des variables d'environnement ou dans la configuration de ROK4SERVER.
 
-Extrait d'un descripteur de pyramide pour un niveau avec masques stocké en fichier :
+Exemple de niveau d'une pyramide raster avec masques stocké dans un pool Ceph :
 
 ```xml
 <level>
-    <tileMatrix>level-19</tileMatrix>
+    <tileMatrix>4</tileMatrix>
     <tilesPerWidth>16</tilesPerWidth>
     <tilesPerHeight>16</tilesPerHeight>
     <TMSLimits>
-        <minTileRow>8291</minTileRow>
-        <maxTileRow>8393</maxTileRow>
-        <minTileCol>1213</minTileCol>
-        <maxTileCol>1301</maxTileCol>
+        <minTileRow>5</minTileRow>
+        <maxTileRow>5</maxTileRow>
+        <minTileCol>7</minTileCol>
+        <maxTileCol>8</maxTileCol>
     </TMSLimits>
-    <baseDir>chemin relatif/PYRAMID-NAME/IMAGE/level-19</baseDir>
+    <imagePrefix>SCAN1000_IMG_4</imagePrefix>
+    <cephContext>
+        <poolName>PYRAMIDS</poolName>
+    </cephContext>
     <mask>
-        <baseDir>chemin relatif/PYRAMID-NAME/MASK/level-19</baseDir>
+        <maskPrefix>SCAN1000_MSK_4</maskPrefix>
+        <format>TIFF_ZIP_INT8</format>
     </mask>
-    <pathDepth>2</pathDepth>
 </level>
 ```
 
-Extrait d'un descripteur de pyramide pour un niveau avec masques stocké en objet :
+#### Pyramide raster à la demande
+
+* Les informations sur le stockage des données (optionnel) : en précisant un dossier de stockage pour le niveau, on précise à ROK4SERVER qu'il doit calculer la dalle et la stocker lors de la requête d'une tuile de cette dalle. Cela permet de mémoriser le résultat pour être plus rapide à répondre aux requêtes suivantes qui concerneraient cette dalle. Ce stockage est forcément en mode fichier.
+* Les sources :
+    * Soit le chemin vers le descripteur de la pyramide à utiliser, un style à appliquer et une éventuelle transparence
+    * Soit l'URL d'un service WMS et tous les paramètres nécessaires (version, style...)
+
+Exemple de niveau d'une pyramide raster à la demande sans stockage avec une source WMS :
 
 ```xml
 <level>
-		<tileMatrix>level-19</tileMatrix>
-		<tilesPerWidth>16</tilesPerWidth>
-		<tilesPerHeight>16</tilesPerHeight>
+    <tileMatrix>7</tileMatrix>
+    <onDemand>true</onDemand>
+    <sources>
+        <webService>
+            <url>wxs.ign.fr/r/wms</url>
+            <timeout>60</timeout>
+            <retry>10</retry>
+            <wms>
+                <version>1.3.0</version>
+                <layers>LAYER</layers>
+                <styles>normal</styles>
+                <crs>EPSG:2154</crs>
+                <format>image/jpeg</format>
+                <channels>3</channels>
+                <noDataValue>255,255,255</noDataValue>
+                <bbox minx="640000" miny="6840000" maxx="680000" maxy="6870000"/>
+            </wms>
+        </webService>
+    </sources>
+    <tilesPerWidth>16</tilesPerWidth>
+    <tilesPerHeight>16</tilesPerHeight>
     <TMSLimits>
-        <minTileRow>8291</minTileRow>
-        <maxTileRow>8393</maxTileRow>
-        <minTileCol>1213</minTileCol>
-        <maxTileCol>1301</maxTileCol>
+        <minTileRow>24</minTileRow>
+        <maxTileRow>24</maxTileRow>
+        <minTileCol>3</minTileCol>
+        <maxTileCol>3</maxTileCol>
     </TMSLimits>
-		<imagePrefix>PYRAMID-NAME_IMG_level-19</imagePrefix>
-		<maskPrefix>PYRAMID-NAME_MSK_level-19</maskPrefix>
-		<!-- Si stockage CEPH -->
-		<cephContext>
-				<poolName>PYRAMIDS</poolName>
-		</cephContext>
-		<!-- Si stockage S3 -->
-		<s3Context>
-				<bucketName>PYRAMIDS</bucketName>
-		</s3Context>
-		<!-- Si stockage SWIFT -->
-		<swiftContext>
-				<containerName>PYRAMIDS</containerName>
-				<!-- Si authentification Keystone -->
-				<keystoneConnection>TRUE</keystoneConnection>
-		</swiftContext>
 </level>
 ```
+
+Exemple de niveau d'une pyramide raster à la demande avec stockage avec une pyramide source :
+
+```xml
+<level>
+    <tileMatrix>7</tileMatrix>
+    <onDemand>true</onDemand>
+    <onFly>true</onFly>
+    <baseDir>PYRAMIDE_OD/IMAGE/12</baseDir>
+    <pathDepth>2</pathDepth>
+    <sources>
+        <basedPyramid>
+            <file>/home/ign/PYRAMIDS/SCAN1000.pyr</file>
+            <style>normal</style>
+            <transparent>false</transparent>
+        </basedPyramid>
+    </sources>
+    <tilesPerWidth>16</tilesPerWidth>
+    <tilesPerHeight>16</tilesPerHeight>
+    <TMSLimits>
+        <minTileRow>24</minTileRow>
+        <maxTileRow>24</maxTileRow>
+        <minTileCol>3</minTileCol>
+        <maxTileCol>3</maxTileCol>
+    </TMSLimits>
+</level>
+```
+
+#### Pyramide vecteur
+
+* Les informations sur le stockage des données :
+	* En mode "fichier" : les dossiers "racine" pour ce niveau, en relatif par rapport à l'emplacement du descripteur et la profondeur de l'arborescence (nombre de sous dossier) à partir de la racine du niveau.
+	* En mode "objet" : les préfixes utilisés pour le nommage des dalles, le conteneur objet et dans le cas Swift, le type d'authentification. Les informations générale sur le cluster (URL, user...) sont stockées dans des variables d'environnement ou dans la configuration de ROK4SERVER.
+* Les informations sur les tables et leurs attributs dans les données de ce niveau : on va potentiellement détailler les valeurs distinctes prises si il y en a moins de 50, et donner le minimum et le maximum pour les attributs numériques.
+
+Exemple de niveau d'une pyramide vecteur stocké dans un dossier :
+
+``` xml
+<level>
+    <tileMatrix>12</tileMatrix>
+    <tilesPerWidth>16</tilesPerWidth>
+    <tilesPerHeight>16</tilesPerHeight>
+    <TMSLimits>
+        <minTileRow>1369</minTileRow>
+        <maxTileRow>1530</maxTileRow>
+        <minTileCol>1989</minTileCol>
+        <maxTileCol>2156</maxTileCol>
+    </TMSLimits>
+    <baseDir>VEK4_INDEP_LIMADMCOMPLETE/IMAGE/12</baseDir>
+    <pathDepth>2</pathDepth>
+    <table>
+        <name>regions</name>
+        <geometry>MULTIPOLYGON</geometry>
+        <attribute>
+            <name>nom_reg</name>
+            <type>character varying</type>
+            <count>18</count>
+            <values>"AQUITAINE-LIMOUSIN-POITOU-CHARENTES","MARTINIQUE","GUYANE","CORSE","BOURGOGNE-FRANCHE-COMTE","GUADELOUPE","NORD-PAS-DE-CALAIS-PICARDIE","NORMANDIE","LANGUEDOC-ROUSSILLON-MIDI-PYRENEES","CENTRE-VAL DE LOIRE","MAYOTTE","ALSACE-CHAMPAGNE-ARDENNE-LORRAINE","AUVERGNE-RHONE-ALPES","ILE-DE-FRANCE","LA REUNION","PROVENCE-ALPES-COTE D'AZUR","PAYS DE LA LOIRE","BRETAGNE"</values>
+        </attribute>
+        <attribute>
+            <name>code_reg</name>
+            <type>character varying</type>
+            <count>18</count>
+            <values>"93","53","02","94","03","24","01","06","11","52","04","27","28","44","32","75","84","76"</values>
+        </attribute>
+    </table>
+    <table>
+        <name>departements</name>
+        <geometry>MULTIPOLYGON</geometry>
+        <attribute>
+            <name>nom_chf</name>
+            <type>character varying</type>
+            <count>101</count>
+        </attribute>
+        <attribute>
+            <name>id_geofla</name>
+            <type>character varying</type>
+            <count>96</count>
+        </attribute>
+        <attribute>
+            <name>code_dept</name>
+            <type>character varying</type>
+            <count>97</count>
+        </attribute>
+        <attribute>
+            <name>nom_dept</name>
+            <type>character varying</type>
+            <count>101</count>
+        </attribute>
+    </table>
+</level>
+```
+
 
 ## L'architecture de stockage
 

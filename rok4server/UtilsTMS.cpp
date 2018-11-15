@@ -159,7 +159,7 @@ DataStream* Rok4Server::getLayerParamTMS ( Request* request, Layer*& layer, std:
     while (std::getline(ss, token, delim)) {
         if (tmsVersionPos == -1) {
             // On n'a pas encore rencontré la version (c'est peut-être ce morceau là)
-            // On ajoute doncà notre URL
+            // On ajoute donc à notre URL
             url += token + "/";
         }
         if (token == "1.0.0") {

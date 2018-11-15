@@ -1,4 +1,4 @@
-![Logo Rok4](./docs/images/ROK4.png)
+![Logo Rok4](./docs/images/rok4.png)
 
 ROK4 est un projet open-source (sous licence CeCILL-C) développé par les équipes du projet Géoportail de l’Institut National de l’Information Géographique et Forestière. Il contient un serveur (ROK4SERVER), écrit en C++, permettant la diffusion de données images géo-référencées, et une suite d'outils (BE4) permettant de préparer les données utilisées par le serveur.
 

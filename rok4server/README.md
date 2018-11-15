@@ -1,4 +1,4 @@
-
+![Logo ROK4SERVER](../docs/images/rok4server.png)
 
 ## Utiliser ROK4SERVER via NGINX
 
