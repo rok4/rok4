@@ -287,10 +287,10 @@ Exemple de niveau d'une pyramide vecteur stocké dans un dossier :
 ## L'architecture de stockage
 
 Le serveur ROK4 accède toujours aux données par tuile (via ses indices) :
-* en WMTS, on ne demande qu'une tuile
+* en WMTS et TMS, on ne demande qu'une tuile
 * en WMS, à partir de la zone demandée, on liste les tuiles sources nécessaires à la constitution de l'image à retourner
 
-BE4 et ROK4SERVER se mettent donc d'accord sur la façon d'agencer les données :
+ROK4GENERATION et ROK4SERVER se mettent donc d'accord sur la façon d'agencer les données :
 * Le découpage en tuile est défini par le TMS (comme vu plus haut)
 * Le regroupement en dalle est défini dans le descripteur de pyramide : des indices de la tuile, par division euclidienne, on obtient les indices de la dalle, en partant du coin supérieur gauche définit dans le TMS.
 * Reste l'emplacement de stockage de la dalle, que nous allons décrire maintenant
@@ -300,39 +300,48 @@ On note les indices avec la colonne en premier : (_colonne_, _ligne_)
 
 ### En mode fichier
 
-Toutes les images, que ce soit les données ou les masques, sont dans un dossier portant le même nom que le descripteur. Elles sont cependant séparées dans des sous arborescences parallèles.
+Toutes les dalles, que ce soit les données ou les masques, sont dans un dossier portant le même nom que le descripteur. Elles sont cependant séparées dans des sous arborescences parallèles :
 
-![Arborescence fichier](./images/SPECIFICATION_PYRAMIDE/Arborescence-fichier.png)
+* /pyramid/directory/<Pyramid's name>/IMAGE/<level>/...
+* /pyramid/directory/<Pyramid's name>/IMAGE/<level>/...
 
 Repartons des indices de la tuile voulue (414, 3134) avec des dalles de 16 tuiles par 16 tuiles : on veut donc accéder à la dalle (25,195). Ces indices sont ensuite convertis en base 36 (avec les chiffres dans cet ordre : 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ) : (24,195) donne ('P', '5F')
 
 On peut être amené à ajouter des 0 pour forcer la longueur de l'écriture en base 36, pour s'adapter à la profondeur d'arborescence voulue ou avoir la même longueur pour les 2 indices. Avec une profondeur d'arborescence de 2, les indices vont être découpés en 3 parties (les deux niveaux de dossier + le nom du fichier). On a donc besoin d'avoir des indices en base 36 sur au moins 3 chiffre : ('00P', '05F'). On obtient le chemin suivant, en relatif à partir de la racine du niveau (que ce soit la donnée ou le masque) : `00/05/PF.tif`. Soit un chemin complet :
-* pour la dalle de donnée : `PYRAMID-NAME/IMAGE/level-19/00/05/PF.tif`
-* pour la dalle de masque : `PYRAMID-NAME/MASK/level-19/00/05/PF.tif`
+* pour la dalle de donnée : `/pyramid/directory/<Pyramid's name>/IMAGE/<level>/00/05/PF.tif`
+* pour la dalle de masque : `/pyramid/directory/<Pyramid's name>/MASK/<level>/00/05/PF.tif`
 
-Dans un cas où l'écriture en base 36 nécessite plus de chiffres qu'il n'y a de parties dans le chemin, c'est le premier dossier qui contiendra plus de chiffres : ('C4C3C2C1C0','L4L3L2L1L0') donnera C4C3C2L4L3L2/C1L1/C0L0.tif.
+Dans un cas où l'écriture en base 36 nécessite plus de chiffres qu'il n'y a de parties dans le chemin, c'est le premier dossier qui contiendra plus de chiffres : ('C4C3C2C1C0','L4L3L2L1L0') donnera C4L4C3L3C2L2/C1L1/C0L0.tif.
 
 Avec cette manière de ranger les données, un dossier de l'arborescence contiendra des dalles contiguës.
+
+Pour les pyramides à la demande sans stokage, il n'y a aucune dalle appartenant à la pyramide. Lorsqu'elle est à la demande avec stockage, seules les dalles de données sont générées, uniquement en mode fichier et elles sont rangées également de cette manière.
 
 ### En mode objet
 
 En mode objet, le nommage est beaucoup plus simple car on utilise directement les indices de dalle en base 10. Si on reprend la dalle précédente (24,195), on aura les objets suivants :
-* pour la dalle de donnée : `PYRAMID-NAME_IMG_level-19_24_195`
-* pour la dalle de masque : `PYRAMID-NAME_MSK_level-19_24_195`
+* pour la dalle de donnée : `<Pyramid's name>_IMG_<level>_24_195`
+* pour la dalle de masque : `<Pyramid's name>_MSK_<level>_24_195`
 
 ## La structure d'une dalle
 
-Les images sont au format TIFF ([Tagged Image File Format](http://partners.adobe.com/public/developer/en/tiff/TIFF6.pdf)). Ce dernier offre de nombreuse possibilité de stockage des données. Le concept principal est de renseigner les différentes informations via des « tags », des champs ([liste des tags](http://www.awaresystems.be/imaging/tiff/tifftags/search.html)).  On peut ainsi préciser les nombres de canaux, leur format et taille, la photométrie, la structure des données, toute sorte de métadonnées, rendant possible l'interprétation de l'image par les programmes. Ce document n'a par pour but de reprendre les spécifications du format TIFF, mais de voir globalement les possibilités et préciser celles exploitées.
+Les dalles sont utilise le conteneur TIFF ([Tagged Image File Format](http://partners.adobe.com/public/developer/en/tiff/TIFF6.pdf)). Ce dernier offre de nombreuse possibilité de stockage des données. Le concept principal est de renseigner les différentes informations via des « tags », des champs ([liste des tags](http://www.awaresystems.be/imaging/tiff/tifftags/search.html)).
+
+Dans le cas d'une dalle vecteur, TIFF sert uniquement de conteneur et aucune information propre aux données raster n'est donnée. On a alors une dalle uniquement utilisable par les outils ROK4. Seule la possibilité de tuilage des données qu'offre le TIFF est utilisée.
+
+Dans le cas d'une dalle raster, on peut préciser les nombres de canaux, leur format et taille, la photométrie, la structure des données, toute sorte de métadonnées, rendant possible l'interprétation de l'image par les programmes.
+
+Ce document n'a par pour but de reprendre les spécifications du format TIFF, mais de voir globalement les possibilités et préciser celles exploitées.
 
 ### L'en-tête
 
-On retrouve dans cette partie toutes les informations sur le fichier que les logiciels vont utiliser pour afficher l'image.
+On retrouve dans cette partie toutes les informations sur le fichier que les logiciels vont utiliser pour afficher la dalle dans le cas du raster.
 
-![Arborescence fichier](./images/SPECIFICATION_PYRAMIDE/TiffEnTete.png)
+![En-tête TIFF](./images/SPECIFICATION_PYRAMIDE/TiffEnTete.png)
 
 Par exemple, l'étiquette _imageWidth_ (256), de type _Long_ (4), une seule valeur sur 32 bits, elle tient donc sans passer par une adresse : 4096. Ce qui donne en héxadécimal, little endian : `00 01   04 00   01 00 00 00   00 10 00 00`
 
-Cependant, ROK4 a déjà connaissance de ces métadonnées car stockées dans le descripteur de pyramide et le TMS. On peut donc gagner du temps en ignorant cet en-tête. C'est pourquoi celle-ci fait toujours 2048 octets, dont la majorité n'est pas exploitée.
+Cependant, ROK4SERVER a déjà connaissance de ces métadonnées car stockées dans le descripteur de pyramide et le TMS. On peut donc gagner du temps en ignorant cet en-tête. C'est pourquoi celle-ci fait toujours 2048 octets, dont la majorité n'est pas exploitée.
 
 On va enfin trouver dans cet en-tête les informations sur le tuilage, ou plutôt sur l'endroit où ces informations sont stockées (adresses et tailles).
 
@@ -340,11 +349,11 @@ On va enfin trouver dans cet en-tête les informations sur le tuilage, ou plutô
 
 #### Le tuilage
 
-Le format TIFF permet de stocker les images par bloc, ceci dans le but d’accéder efficacement à toutes les parties de l’image. On peut ainsi accéder à chaque tuile contenue dans l'image (dalle) facilement. On conserve bien dans la structure de l'image le découpage en tuile. Chaque tuile est indépendante des autres, formant une image à part entière, moins l'en-tête. Elles sont enregistrées de gauche à droite puis de haut en bas.
+Le format TIFF permet de stocker les données par bloc, ceci dans le but d’accéder efficacement à toutes les parties de la dalle. On peut ainsi accéder à chaque tuile contenue dans la dalle directement, sans lire depuis le début. On conserve bien dans la structure de la dalle le découpage en tuile. Chaque tuile est indépendante des autres, formant un fichier à part entière, moins l'en-tête. Elles sont enregistrées de gauche à droite puis de haut en bas.
 
-Pour ce faire, on renseigne l'adresse de début (_TileOffsets_) sur 4 octets et la taille en octet (_TileByteCounts_) sur 4 octets de chaque tuile. Ces valeurs sont stockées à partir de 2048 octets, ce sont les premières valeurs lues par le serveur ROK4.
+Pour ce faire, on renseigne l'adresse de début (_TileOffsets_) sur 4 octets et la taille en octet (_TileByteCounts_) sur 4 octets de chaque tuile. Ces valeurs sont stockées à partir de 2048 octets, ce sont les premières valeurs lues par ROK4SERVER.
 
-![Arborescence fichier](./images/SPECIFICATION_PYRAMIDE/TiffDonnees.png)
+![Index des tuiles](./images/SPECIFICATION_PYRAMIDE/TiffDonnees.png)
 
 L'en-tête contient les étiquettes :
 * TileOffsets : tag 324, type Long, on aura N valeurs, et celles-ci ne tenant pas toutes sur 4 octets, on donne l'adresse à laquelle ces valeurs commencent (ici 2048)
@@ -352,34 +361,40 @@ L'en-tête contient les étiquettes :
 
 De cette manière, que ce soit ROK4 en étêtant de 2048 octets, ou les autres programmes, le tuilage est compris.
 
-#### La compression
+#### La compression (cas raster)
 
-Le format TIFF permet de nombreuse compression des données. Cette compression est effectuée sur chaque tuile. ROK4 va comprendre l'absence de compression et les compressions :
+Le format TIFF permet officiellement de nombreuses compressions pour des données raster. Cette compression est effectuée sur chaque tuile. ROK4SERVER, pour des données raster, va comprendre l'absence de compression et les compressions :
 * sans pertes : LZW, PNG, PackBits, Deflate
 * avec pertes : JPEG
 
-Le PNG a une particularité : la compression correspond à du Deflate, mais on veut que ROK4 puisse retourner facilement des tuiles de PNG, avec l'en-tête. Dans ce cas, les dalles ne sont pas lisible par d'autres applications que ROK4.
+Le PNG a une particularité : la compression correspond à du Deflate, mais on veut que ROK4SERVER puisse retourner facilement des tuiles de PNG, avec l'en-tête. Dans ce cas, les dalles ne sont pas lisible par d'autres applications que ROK4. Les tuiles stockées contiennent chacune leur en-tête afin de pouvoir être renvoyées directement.
 
-![Arborescence fichier](./images/SPECIFICATION_PYRAMIDE/TiffPNG.png)
+![Dalle PNG](./images/SPECIFICATION_PYRAMIDE/TiffPNG.png)
+
+#### Cas vecteur
+
+Le stockage de données vecteur dans des dalles TIFF est un fonctionnement propre au projet ROK4. Cette façon de faire permet d'exploiter tout le fonctionnement mis en place pour le raster afin de diffuser des tuiles vecteur. ROK4SERVER ne sait pas interpréter les tuiles, et se contente de les lires dans les dalles et de les renvoyer lorsqu'elles sont requêtées en TMS.
+
+Concrètement, ce sont les tuiles au format Mapbox Vector Tile empaquetées en PBF, générées par l'outil [Tippecanoe](https://github.com/mapbox/tippecanoe), qui sont regroupées et encapsulées dans une dalle TIFF. Ce fonctionnement rejoint celui du PNG pour les données raster.
 
 #### Récapitulatif
 
-Voici la structure globale d'une image de la pyramide ROK4, dalle contenant N tuiles.
+Voici la structure globale d'une dalle de la pyramide ROK4, dalle contenant N tuiles.
 
-![Arborescence fichier](./images/SPECIFICATION_PYRAMIDE/TiffRecapitulatif.png)
+![Récapitulatif d'une dalle](./images/SPECIFICATION_PYRAMIDE/TiffRecapitulatif.png)
 
 ### Les références
 
-Lors de la création d'une pyramide de mise à jour, on ne va potentiellement pas recopier toutes les données de la version précédente, mais simplement les référencer à l'aide de liens symbolique en stockage fichier ou d'objets symboliques (objet contenant simplement le nom de l'objet cible) en stockage objet. Cela est mis en place par les outils BE4 mais est complètement transparent pour ROK4SERVER qui se contente de lire UNE pyramide.
+Lors de la création d'une pyramide de mise à jour, on ne va potentiellement pas recopier toutes les données de la version précédente, mais simplement les référencer à l'aide de liens symbolique en stockage fichier ou d'objets symboliques (objet contenant simplement le nom de l'objet cible) en stockage objet. Cela est mis en place par les outils ROK4GENERATION mais est transparent pour ROK4SERVER qui se contente de lire UNE pyramide.
 
 ## Le fichier liste
 
 Le fichier liste est un fichier texte (extension .list) au nom de la pyramide et situé à côté du descripteur de pyramide. Il contient la liste de toutes les dalles de données et masques que contient la pyramide. Si certaines dalles ne sont que des références dans la pyramide (liens/objets symboliques), c'est le nom du fichier/objet cible qui est listé (appartenant à la structure d'une autre pyramide).
 
-Ce fichier est uniquement utilisé par les outils BE4, pour connaître sans avoir à parcourir la pyramide son contenu exact (indispensable lors d'une mise à jour).
+Ce fichier est uniquement utilisé par les outils ROK4GENERATION, pour connaître sans avoir à parcourir la pyramide son contenu exact (indispensable lors d'une mise à jour). Dans le cas du stockage objet, où aucun parcours n'est possible, ce fichier est particulièrement précieux puisqu'il ne peut pas être facilement regénéré avec l'outil `create-list`.
 
 Le fichier liste est en deux parties, séparées par un dièse :
-* L'en-tête permet de lister et d'indexer les pyramides référencées, c'est-à-dire contenant au moins une des dalles listées. L'index 0 sera pour la pyramide elle même. Ces index sont utiliser dans la liste des dalles pour "factoriser" les racines des pyramides (conteneur dans le cas objet, dossier racine de la pyramide dans le cas fichier).
+* L'en-tête permet de lister et d'indexer les pyramides référencées, c'est-à-dire contenant au moins une des dalles listées. L'index 0 sera pour la pyramide elle même. Ces index sont utilisés dans la liste des dalles pour "factoriser" les racines des pyramides (conteneur dans le cas objet, dossier racine de la pyramide dans le cas fichier).
 * La liste des dalles (données et masques)
 
 Exemple de liste pour un stockage fichier

@@ -1,14 +1,16 @@
 ![Logo Rok4](./docs/images/rok4.png)
 
-ROK4 est un projet open-source (sous licence CeCILL-C) développé par les équipes du projet Géoportail de l’Institut National de l’Information Géographique et Forestière. Il contient un serveur (ROK4SERVER), écrit en C++, permettant la diffusion de données images géo-référencées, et une suite d'outils (BE4) permettant de préparer les données utilisées par le serveur.
+ROK4 est un projet open-source (sous licence CeCILL-C) développé par les équipes du projet Géoportail de l’Institut National de l’Information Géographique et Forestière. Il contient un serveur (ROK4SERVER), écrit en C++, permettant la diffusion de données images géo-référencées, et une suite d'outils (ROK4GENERATION) permettant de préparer les données utilisées par le serveur.
 
-Le serveur implémente les standards ouverts de l’Open Geospatial Consortium (OGC) WMS 1.3.0 et WMTS 1.0.0. Il est utilisé pour l’intégralité de la diffusion des flux images de la dernière version du Géoportail. Répondant aux besoins de diffusion image de l’IGN, ROK4SERVER vise deux objectifs principaux :
-* L’utilisation d’un cache de données raster unique permettant de servir indifféremment des flux WMS et WMTS
+Le serveur implémente les standards ouverts de l’Open Geospatial Consortium (OGC) WMS 1.3.0 et WMTS 1.0.0, ainsi que le TMS (Tile Map Service). Il est utilisé pour l’intégralité de la diffusion des flux images et vecteur tuilé de la dernière version du Géoportail. Répondant aux besoins de diffusion image de l’IGN, ROK4SERVER vise deux objectifs principaux :
+* L’utilisation d’un cache de données raster unique permettant de servir indifféremment des flux WMS, WMTS et TMS
 * Des performances de traitement d’image et de diffusion accrues
+* La diffusion de tuiles vecteur telles qu'elles sont stockées, sans transformation (TMS uniquement)
+* La présentation en WMTS d'une pyramide non calculée, à partir d'autres pyramides ou de services WMS.
 
-BE4 est un ensemble de scripts de traitement permettant la préparation et la transformation de données images géo-référencées vers le format de cache raster utilisé par ROK4.
+![Services ROK4SERVER](./docs/images/rok4-grand-public.png)
 
-![Logo Rok4](./docs/images/visuel_presentation.jpg)
+ROK4GENERATION est un ensemble de scripts de traitement permettant la préparation et la transformation de données géo-référencées vers le format de pyramide raster (potentiellement à la demande) et vecteur utilisé par ROK4.
 
 * Compilation sur travis-ci : [![Build Status](https://travis-ci.org/rok4/rok4.svg?branch=release)](https://travis-ci.org/rok4/rok4)
 * Rejoindre le chat Gitter : [![Join the chat at https://gitter.im/rok4/rok4](https://badges.gitter.im/rok4/rok4.svg)](https://gitter.im/rok4/rok4?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -20,23 +22,23 @@ ROK4 Version : 3.0.0-VECTOR
 
 # Fonctionnement général
 
-Les données dans la pyramide d'images sont tuilées selon un quadrillage défini dans le TileMatrixSet (plusieurs sont fournis dans le projet).
+Les données dans la pyramide sont tuilées selon un quadrillage défini dans le TileMatrixSet (plusieurs sont fournis dans le projet).
 
-![Logo Rok4](./docs/images/ROK4_BE4_TMS.png)
+![Logo Rok4](./docs/images/rok4-generation-server.png)
 
-La pyramide produite par les outils BE4 est décrite à travers un fichier, le descripteur de pyramide, qui va préciser le TMS utilisé pour découper les données, les caractéristiques des images, les différents niveaux de résolutions.
+La pyramide produite par les outils ROK4GENERATION est décrite à travers un fichier, le descripteur de pyramide, qui va préciser le TMS utilisé pour découper les données, les caractéristiques des données images ou vecteur, les sources pour une pyramide à la demande, les différents niveaux de résolutions.
 
 Pour que cette pyramide soit diffusée par ROK4SERVER, on va créer un descripteur de couche, qui va contenir à la fois des informations propres au serveur (nom, titre et résumé de la couche, styles...) mais aussi référencer le descripteur de la pyramide à diffuser.
 
-![Logo Rok4](./docs/images/LAY_PYR.png)
+![Logo Rok4](./docs/images/rok4server-layer-pyramid.png)
 
-* Pour avoir des précisions sur la partie [BE4](be4/README.md)
-* Pour avoir des précisions sur la partie [ROK4SERVER](rok4/README.md), son déploiement et son utilisation
+* Pour avoir des précisions sur la partie [ROK4GENERATION](rok4generation/README.md)
+* Pour avoir des précisions sur la partie [ROK4SERVER](rok4server/README.md), son déploiement et son utilisation
 * Pour avoir les spécifications d'une [PYRAMIDE](docs/Specification_pyramide_ROK4.md)
 
 # Compiler et installer le projet ROK4
 
-La compilation du projet n’a pour le moment été validée que sous GNU/Linux (Debian 8 et Centos 7). Le projet utilise des pthreads (threads POSIX).
+La compilation du projet n’a pour le moment été validée que sous GNU/Linux (Debian 8 et 9 et Centos 7). Le projet utilise des pthreads (threads POSIX).
 
 ## L'environnement de compilation
 
