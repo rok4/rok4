@@ -1,5 +1,14 @@
 ![Logo ROK4SERVER](../docs/images/rok4server.png)
 
+<!-- TOC START min:1 max:3 link:true update:true -->
+    - [Utiliser ROK4SERVER via NGINX](#utiliser-rok4server-via-nginx)
+        - [Configuration de ROK4SERVER](#configuration-de-rok4server)
+        - [Lancement de ROK4SERVER en mode statique](#lancement-de-rok4server-en-mode-statique)
+        - [Installation de NGINX](#installation-de-nginx)
+        - [Configuration de NGINX](#configuration-de-nginx)
+
+<!-- TOC END -->
+
 ## Utiliser ROK4SERVER via NGINX
 
 ROK4SERVER est lancé en mode statique et NGINX interprète et redirige les requêtes sur le bon port.

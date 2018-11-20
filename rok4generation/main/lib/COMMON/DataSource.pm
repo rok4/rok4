@@ -253,7 +253,7 @@ Parameters (list):
             max_width - string
             max_height - string
     (end code)
-    This hash is directly and entirely relayed to <ImageSource::new> (even though only common and harvesting parts will be used) and harvesting part is directly relayed to <Harvesting::new> (see parameters' meaning).
+    This hash is directly and entirely relayed to <ImageSource::new> (even though only common and harvesting parts will be used) and harvesting part is directly relayed to <COMMON::Harvesting::new> (see parameters' meaning).
 =cut
 sub _load {
     my $this   = shift;

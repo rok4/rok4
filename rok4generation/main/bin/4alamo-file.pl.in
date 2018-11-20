@@ -51,15 +51,16 @@ Tool allowing to generate a veteor pyramid of TIFF images containing mapbox vect
 
 This tool write scripts, to execute to obtain the pyramid.
 
-(see 4alamofile_general.png)
-
-2 types of generation :
-    - create a new pyramid with data
-    - create a pyramid from an ancestor one (update)
+Possibility to provided an ancestor pyramid to update
 
 1 data source type :
     - PostgreSQL database
 
+Step 1:
+(see 4alamo_part1.png)
+
+Step 2:
+(see 4alamo_part2.png)
 =cut
 
 ################################################################################

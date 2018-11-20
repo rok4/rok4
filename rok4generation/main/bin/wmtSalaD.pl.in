@@ -49,11 +49,9 @@ perl wmtSalaD.pl --conf=path --dsrc=path
 Tool creating a pyramid descriptor specific to Rok4's 'WMTS on demand' service.
 It also initiate the directories tree.
 
-(see be4_general.png)
-
 2 types of generation :
     - only create the descriptor file (on demand pyramid without cache)
-    - creates the descriptor and the directories trees for images and masks cache.
+    - creates the descriptor and the directories trees for cached slabs.
 
 2 data source type :
     - existing Rok4 pyramids (normal ones, with its cache)

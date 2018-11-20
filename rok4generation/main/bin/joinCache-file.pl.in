@@ -52,8 +52,6 @@ Tool allowing to merge pyramids, using the same TMS. Merge method (if an image i
     - alphatop : alpha blending method
     - top : like replace, but more clever (we can avoid to remove data with nodata thanks to the masks)
 
-(see joinCache_general.png)
-
 Source pyramids could have different :
     - compression
     - number of samples per pixel
@@ -61,8 +59,13 @@ Source pyramids could have different :
 Source pyramids must have the same :
     - TMS
     - directory depth
-    - sample format (unsigned 8-bit integer)
-    - number of bits per sample
+    - sample format and number of bits per sample (unsigned 8-bit integer)
+
+Step 1:
+(see joinCache_part1.png)
+
+Step 2:
+(see joinCache_part2.png)
 =cut
 
 ################################################################################
@@ -143,15 +146,16 @@ Informations are treated, interpreted and store in this hash, using JOINCACHE cl
 
     propertiesLoader - <JOINCACHE::PropertiesLoader> - Contains all raw informations
     pyramid - <COMMON::PyramidRaster> - Output pyramid
-    process - <JOINCACHE::Process> - Compute the final pyramid
-    bboxes - array hash - Defines identifiants with associated validated bounding boxes (as array)
-    sourcePyramids - <COMMON::PyramidRaster> hash - Key is the descriptor's path. We have an complete and without repetition list of source pyramids.
-    composition - hash - Contain validate and pre-treated composition :
-|       level_id => priority => {
-|               extremTiles => [colMin, rowMin, colMax, rowMax],
-|               extremSlabs => [colMin, rowMin, colMax, rowMax], # = extremTiles / (number of tiles in the dimension)
-|               sourcePyramid => <COMMON::SourcePyramid>
-|       }
+    commands - <COMMON::ShellCommandsRaster> - Commands to configure and use to generate slabs to merge
+    mergeMethod - string - Method to use merge slabs when several sources
+    scripts - <COMMON::Script> array - Split scripts to use to generate slabs to merge
+    currentScript - integer - Script index to use for the next task (round robin share)
+    composition - hash - Defines source pyramids for each level, extent, and order
+|       level_id => [
+|           { extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]], pyr => COMMON::PyramidRaster}
+|           { extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]], pyr => COMMON::PyramidRaster}
+|       ]
+    listStream - file stream - Open file stream to write the new pyramid list
     doneSlabs - boolean hash - To memorize already done tiles, we use this hash, containing "I_J => TRUE".
 =cut
 my %this =
@@ -332,6 +336,7 @@ sub config {
 
     return TRUE;
 }
+
 ####################################################################################################
 #                                 Group: Validation methods                                        #
 ####################################################################################################
@@ -360,7 +365,7 @@ sub validate {
     }
 
     if ($objPyramid->getStorageType() ne "FILE") {
-        ERROR ("JoinCache only handle FILE output pyramid");
+        ERROR ("JoinCache-File only handle FILE output pyramid");
         return FALSE;
     }
     
@@ -438,7 +443,6 @@ sub validateSourcePyramids {
     my $tms_path = shift;
 
     my $sourcePyramids = $this{propertiesLoader}->getSourcePyramids();
-    my $composition = $this{propertiesLoader}->getCompositionSection();
 
     foreach my $sourcePyramid (values %{$sourcePyramids}) {
 
@@ -469,7 +473,7 @@ For each level, for each source pyramid :
     - Identify present images (in the wanted bounding box : <tileToImage>)
     - Work has already been made ? Next
     - Else search it in the other source pyramids with an lower priority : <searchImage>
-    - Treat source(s) : <JOINCACHE::Process::treatNode>
+    - Treat source(s) : <main::treatNode>
 
 =cut
 sub doIt {
@@ -482,6 +486,16 @@ sub doIt {
     my $TMS = $pyramid->getTileMatrixSet();
 
     my $listFile = $pyramid->getListFile();
+    my $dir = File::Basename::dirname($listFile);
+
+    if (! -d $dir) {
+        eval { mkpath([$dir]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the output pyramid list directory '%s' : %s !", $dir , $@);
+            return FALSE;
+        }
+    }
+
     my $STREAM;
     if (! open $STREAM, ">", $listFile) {
         ERROR(sprintf "Cannot open output pyramid list file (write) : %s",$listFile);
@@ -599,6 +613,7 @@ sub treatNode {
     $node->setScript($this{scripts}->[$this{currentScript}]);
 
     if ($node->getSourcesNumber() == 1) {
+
         my $sourceImage = $node->getSource(0);
 
         if ($this{pyramid}->checkCompatibility($sourceImage->{sourcePyramid}) == 2) {
@@ -610,7 +625,7 @@ sub treatNode {
             );
 
             if (! defined $linkedFile) {
-                ERROR(sprintf "The ancestor image slab '%s' cannot be referenced by sym link in the new pyramid", $sourceImage->{img});
+                ERROR(sprintf "The ancestor image slab '%s' cannot be referenced by symbolic link in the new pyramid", $sourceImage->{img});
                 return FALSE;
             }
 
@@ -858,24 +873,24 @@ Example:
     use_masks = TRUE
     (end code)
 
-Topic: bboxes
+Topic: extents
 
-We define several bouding boxes and we attribute them an identifiant. This identifiatn will be used in the *composition* section to precise the extent where the source pyramid is used. If we use an undefined identifiant, an error will occure.
+We define several extents (bouding boxes or a file with WKT geometry) and we attribute them an identifiant. This identifiatn will be used in the *composition* section to precise the extent where the source pyramid is used. If we use an undefined identifiant, an error will occure.
 
 Format : ID = xmin,ymin,xmax,ymax , ID is a basic string, without space and coordinates are in the TMS' SRS.
 
 Example:
     (start code)
-    [ bboxes ]
+    [ extents ]
     PARIS = 640000,6858000,658000,6867000
-    FXX = 0,6100000,1200000,7200000
+    FXX = /home/IGN/fxx.wkt
     (end code)
     
 Topic: composition
 
 We say : "For this level, for this extent, I want to use images present in this source images' pyramid"
 
-Format : LevelID.BboxId = pyrPath1,pyrPath2 , BboxId have to be defined in *bboxes* section, LevelId have to be present in the TMS and in used pyramids.
+Format : LevelID.ExtentId = pyrPath1,pyrPath2 , ExtentId have to be defined in *extents* section, LevelId have to be present in the TMS and in used pyramids.
 
 Order in 'composition' is important, a triplet will take precedence over the next triplets for a same level. We define priority like this.
 
@@ -897,12 +912,5 @@ Group: Paths in brief
     - Scripts: *path_shell/SCRIPT_X.sh*
     - Temporary directory: *path_temp/pyr_name_new/SCRIPT_X*
     - Common temporary directory: *path_temp_common/pyr_name_new/COMMON*
-
-Group: Externals tools
-
-Scripts' execution needs following tools:
-
-    - montage (imagemagick)
-    - tiffcp (libtiff)
 
 =cut

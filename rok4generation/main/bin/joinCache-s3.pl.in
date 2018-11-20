@@ -52,8 +52,6 @@ Tool allowing to merge pyramids stored on S3 object system, using the same TMS. 
     - alphatop : alpha blending method
     - top : like replace, but more clever (we can avoid to remove data with nodata thanks to the masks)
 
-(see joinCache_general.png)
-
 Source pyramids could have different :
     - compression
     - number of samples per pixel
@@ -61,8 +59,13 @@ Source pyramids could have different :
 Source pyramids must have the same :
     - TMS
     - directory depth
-    - sample format (unsigned 8-bit integer)
-    - number of bits per sample
+    - sample format and number of bits per sample (unsigned 8-bit integer)
+
+Step 1:
+(see joinCache_part1.png)
+
+Step 2:
+(see joinCache_part2.png)
 =cut
 
 ################################################################################
@@ -149,8 +152,8 @@ Informations are treated, interpreted and store in this hash, using JOINCACHE cl
     currentScript - integer - Script index to use for the next task (round robin share)
     composition - hash - Defines source pyramids for each level, extent, and order
 |       level_id => [
-|           { extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]] pyr => COMMON::PyramidRaster}
-|           { extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]] pyr => COMMON::PyramidRaster}
+|           { extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]], pyr => COMMON::PyramidRaster}
+|           { extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]], pyr => COMMON::PyramidRaster}
 |       ]
     listStream - file stream - Open file stream to write the new pyramid list
     doneSlabs - boolean hash - To memorize already done tiles, we use this hash, containing "I_J => TRUE".
@@ -852,7 +855,7 @@ Topic: composition
 
 We say : "For this level, for this extent, I want to use images present in this source images' pyramid"
 
-Format : LevelID.BboxId = pyrPath1,pyrPath2 , BboxId have to be defined in *extents* section, LevelId have to be present in the TMS and in used pyramids.
+Format : LevelID.ExtentId = pyrPath1,pyrPath2 , ExtentId have to be defined in *extents* section, LevelId have to be present in the TMS and in used pyramids.
 
 Order in 'composition' is important, a triplet will take precedence over the next triplets for a same level. We define priority like this.
 

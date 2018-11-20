@@ -91,8 +91,6 @@
  * \~ \code
  * mergeNtiff -f conf.txt -c zip -i nn -n -99999
  * \endcode
- ** \~french
- * \todo Permettre l'ajout ou la suppression à la volée d'un canal alpha
  */
 
 #include <proj_api.h>
@@ -321,7 +319,7 @@ int parseCommandLine ( int argc, char** argv ) {
                 }
                 break;
 
-            /****************** OPTIONNEL, POUR FORCER DES CONVERSION **********************/
+            /****************** OPTIONNEL, POUR FORCER DES CONVERSIONS **********************/
             case 's': // samplesperpixel
                 if ( i++ >= argc ) {
                     LOGGER_ERROR ( "Error in option -s" );

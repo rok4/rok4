@@ -174,6 +174,10 @@ private:
 
     /**************************** VECTEUR (Ecriture uniquement) ****************************/
 
+    /**
+     * \~french \brief Précise si la donnée est de type vecteur
+     * \~english \brief Precis if vector data
+     */    
     bool isVector;
 
     /**************************** RASTER (Lecture et écriture) ****************************/
@@ -435,12 +439,12 @@ private:
     bool writeTile ( int tileInd, uint8_t *data, bool crop = false );
 
     /**
-     * \~french \brief Écrit une tuile de l'image ROK4 vecteur
+     * \~french \brief Écrit une tuile de la dalle ROK4 vecteur
      * \param[in] tileInd indice de la tuile à écrire
      * \param[in] data données brutes (sans compression) à écrire
      * \param[in] pbfpath chemin vers la tuile PBF à écrire dans la dalle
      * \return VRAI en cas de succès, FAUX sinon
-     * \~english \brief Write a vector ROK4 image's tile
+     * \~english \brief Write a vector ROK4 slab's tile
      * \param[in] tileInd tile indice
      * \param[in] pbfpath path to PBF tile to write in the slab
      * \return TRUE if success, FALSE otherwise
@@ -727,6 +731,15 @@ public:
      */
     int writeTiles ( Image* pIn, int imageCol, int imageRow, bool crop );
 
+    /**
+     * \~french
+     * \brief Ecrit une dalle ROK4 vecteur, à partir des tuiles PBF
+     * \details Toutes les tuiles nécessaires sont contenues dans le dossier #rootDirectory, avec le chemin rootDirectory/column/row.pbf
+     * \param[in] ulTileCol Indice de colonne de la tuile supérieure gauche
+     * \param[in] ulTileRow Indice de ligne de la tuile supérieure gauche
+     * \param[in] rootDirectory Dossier contenant les tuiles PBF
+     * \return 0 en cas de succes, -1 sinon
+     */
     int writePbfTiles ( int ulTileCol, int ulTileRow, char* rootDirectory );
 
     /**

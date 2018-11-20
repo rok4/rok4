@@ -20,17 +20,35 @@ ROK4GENERATION est un ensemble de scripts de traitement permettant la préparati
 
 ROK4 Version : 3.0.0-VECTOR
 
+<!-- TOC START min:1 max:3 link:true update:true -->
+- [Fonctionnement général](#fonctionnement-général)
+- [Compiler et installer le projet ROK4](#compiler-et-installer-le-projet-rok4)
+    - [L'environnement de compilation](#lenvironnement-de-compilation)
+    - [Les librairies](#les-librairies)
+        - [C++](#c)
+        - [Perl](#perl)
+    - [Les commandes externes](#les-commandes-externes)
+    - [La documentation](#la-documentation)
+    - [La compilation et l'installation](#la-compilation-et-linstallation)
+        - [Instructions](#instructions)
+        - [Options de compilation](#options-de-compilation)
+        - [Exemple](#exemple)
+
+<!-- TOC END -->
+
+
+
 # Fonctionnement général
 
 Les données dans la pyramide sont tuilées selon un quadrillage défini dans le TileMatrixSet (plusieurs sont fournis dans le projet).
 
-![Logo Rok4](./docs/images/rok4-generation-server.png)
+![ROK4SERVER et ROK4GENERATION](./docs/images/rok4-generation-server.png)
 
 La pyramide produite par les outils ROK4GENERATION est décrite à travers un fichier, le descripteur de pyramide, qui va préciser le TMS utilisé pour découper les données, les caractéristiques des données images ou vecteur, les sources pour une pyramide à la demande, les différents niveaux de résolutions.
 
 Pour que cette pyramide soit diffusée par ROK4SERVER, on va créer un descripteur de couche, qui va contenir à la fois des informations propres au serveur (nom, titre et résumé de la couche, styles...) mais aussi référencer le descripteur de la pyramide à diffuser.
 
-![Logo Rok4](./docs/images/rok4server-layer-pyramid.png)
+![Chargement de ROK4SERVER](./docs/images/rok4server-layer-pyramid.png)
 
 * Pour avoir des précisions sur la partie [ROK4GENERATION](rok4generation/README.md)
 * Pour avoir des précisions sur la partie [ROK4SERVER](rok4server/README.md), son déploiement et son utilisation
