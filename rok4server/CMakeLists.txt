@@ -135,7 +135,7 @@ INSTALL(TARGETS rok4 rok4core
 INSTALL(FILES Rok4Api.h DESTINATION include)
 
 #Installe la documentation
-INSTALL(FILES README LICENCE DESTINATION share/doc/${PROJECT_NAME})
+INSTALL(FILES LICENCE DESTINATION share/doc/${PROJECT_NAME})
 
 ########################################
 # Paramétrage de la gestion de package CPack

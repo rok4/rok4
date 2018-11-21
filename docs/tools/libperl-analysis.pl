@@ -1,4 +1,5 @@
 #/usr/bin/perl
+# 
 
 use strict;
 use warnings;
@@ -36,8 +37,42 @@ if (! defined $output_directory) {
 
 # Création des dossiers
 
-`mkdir -p $output_directory/dots`;
-`mkdir -p $output_directory/pngs`;
+`mkdir -p $output_directory`;
+
+##############################################################################################
+
+my $binaries = {};
+my @pls = `find $perl_directory -name "*.pl.in"`;
+foreach my $pl (@pls) {
+    chomp($pl);
+    open(IN, "<$pl") or die "Cannot open '$pl' to read in it";
+    
+    my $bin = File::Basename::basename($pl);
+    $bin =~ s/.pl.in//;
+    my $functions = [];
+    my $called_constructors = {};
+
+    while (my $line = <IN>) {
+        chomp($line);
+
+        if ($line =~ m/([A-Za-z0-9::]+)->new/) {
+            $called_constructors->{$1} = 1;
+        }
+        if ($line =~ m/^sub ([^\s{]+) ?/) {
+            push(@{$functions}, $1);
+        }
+    }
+    
+    close(IN);
+
+    INFO("Binary $bin");
+
+    $binaries->{$bin} = {
+        file => $pl,
+        functions => $functions,
+        called_constructors => $called_constructors
+    };
+}
 
 ##############################################################################################
 
@@ -53,6 +88,8 @@ foreach my $pm (@pms) {
     my $documented = 0;
     my $attributes_used = {};
     my $functions = [];
+    my $called_constructors = {};
+    # my $called_class_methods = {};
     while (my $line = <IN>) {
         chomp($line);
         if ($line =~ m/^package (\S+);$/) {
@@ -82,12 +119,18 @@ foreach my $pm (@pms) {
                 }
             }
         }
-        if ($line =~ m/\$this->\{([^\}]+)\}/) {
+        if (defined $package && $line =~ m/\$this->\{([^\}]+)\}/) {
             if ($1 !~ m/^\$/) {
                 $attributes_used->{$1} = 1;
             }
         }
-        if ($line =~ m/^sub ([^\s{]+) ?/) {
+        if (defined $package && $line =~ m/([A-Za-z0-9::]+)->new/) {
+            $called_constructors->{$1} = 1;
+        }
+        # if ($line =~ m/([A-Za-z0-9]+::[A-Za-z0-9]+)::([A-Za-z0-9_-]+)/) {
+        #     push(@{$called_class_methods->{$1}}, $2);
+        # }
+        if (defined $package && $line =~ m/^sub ([^\s{]+) ?/) {
             push(@{$functions}, $1);
         }
     }
@@ -126,11 +169,39 @@ foreach my $pm (@pms) {
         namespace => $1,
         class => $2,
         attributes => $attributes_used,
-        functions => $functions
+        functions => $functions,
+        called_constructors => $called_constructors,
+        caller_constructors => {}
+        # called_class_methods => $called_class_methods,
+        # caller_class_methods => []
     };
 }
 
+##############################################################################################
+
+# On refait une passe sur les libs et bins pour ajouter les appelants de son constructeur et des méthodes de classe
+
 while (my ($package, $lib) = each (%{$libraries})) {
+    foreach my $called (keys %{$lib->{called_constructors}}) {
+        if (exists $libraries->{$called}) {
+            $libraries->{$called}->{caller_constructors}->{libs}->{$package} = 1;
+        }
+    }
+}
+
+while (my ($bin, $binary) = each (%{$binaries})) {
+    foreach my $called (keys %{$binary->{called_constructors}}) {
+        if (exists $libraries->{$called}) {
+            $libraries->{$called}->{caller_constructors}->{bins}->{$bin} = 1;
+        }
+    }
+}
+
+##############################################################################################
+
+# Pour chaque lib on dessine le diagrame de classe
+while (my ($package, $lib) = each (%{$libraries})) {
+    INFO("Diagram for $package");
     my $attributes = "";
     while (my ($att, $type) = each(%{$lib->{attributes}})) {
         $type =~ s/</\\</g;
@@ -145,16 +216,32 @@ while (my ($package, $lib) = each (%{$libraries})) {
 
     my $basename = $package;
     $basename =~ s/::/_/;
-    my $dot_file = "$output_directory/dots/$basename.dot";
-    my $png_file = "$output_directory/pngs/$basename.png";
+    my $dot_file = "tmp.dot";
+    my $png_file = "$output_directory/$basename.png";
 
     my $file = $dot_file;
     open(OUT, ">$file") or die "Cannot open '$file' to write in it";
     
     print OUT "digraph $basename {\n";
     print OUT "    node[shape=record,style=filled,fillcolor=gray95]\n";
-    print OUT "    edge[dir=back, arrowtail=empty]\n";
+    print OUT "    edge[]\n";
     print OUT "    ${basename} [label = \"{$package|$attributes|$functions}\"]\n";
+
+    foreach my $caller (keys %{$lib->{caller_constructors}->{libs}}) {
+        my $bn = $caller;
+        $bn =~ s/::/_/g;
+        print OUT "    ${bn} [label = \"{$caller}\"]\n";
+        print OUT "    ${bn} -> ${basename}\n";
+    }
+
+    foreach my $caller (keys %{$lib->{caller_constructors}->{bins}}) {
+        my $bn = $caller;
+        $bn =~ s/-/_/g;
+        $bn =~ s/^(\d)/a$1/;
+        print OUT "    ${bn} [shape=ellipse, label = \"$caller\"]\n";
+        print OUT "    ${bn} -> ${basename}\n";
+    }
+
     print OUT "}\n";
 
     close(OUT);
