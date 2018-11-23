@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2018-09-06 16:44+0200\n"
+"POT-Creation-Date: 2018-11-21 18:11+0100\n"
 "PO-Revision-Date: 2013-02-18 17:49+0100\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -26,7 +26,7 @@ msgstr "LOADING STYLES"
 msgid "Le repertoire des Styles "
 msgstr ""
 
-#: ConfLoader.cpp:90 ConfLoader.cpp:162 ConfLoader.cpp:227
+#: ConfLoader.cpp:90 ConfLoader.cpp:154 ConfLoader.cpp:219
 msgid " n'est pas accessible."
 msgstr ""
 
@@ -46,110 +46,106 @@ msgstr ""
 msgid "NOMBRE DE STYLES CHARGES : "
 msgstr "NUMBER OF LOADED STYLES: "
 
-#: ConfLoader.cpp:140
-msgid "Identifiant != nom du fichier, on en veut pas : "
-msgstr ""
-
-#: ConfLoader.cpp:153
+#: ConfLoader.cpp:145
 msgid "CHARGEMENT DES TMS"
 msgstr "LOADING TMS"
 
-#: ConfLoader.cpp:162
+#: ConfLoader.cpp:154
 msgid "Le repertoire des TMS "
 msgstr ""
 
-#: ConfLoader.cpp:178
+#: ConfLoader.cpp:170
 msgid "Aucun fichier *.tms dans le repertoire "
 msgstr ""
 
-#: ConfLoader.cpp:189
+#: ConfLoader.cpp:181
 msgid "Ne peut charger le tms: "
 msgstr ""
 
-#: ConfLoader.cpp:194
+#: ConfLoader.cpp:186
 msgid "Aucun TMS n'a pu etre charge!"
 msgstr ""
 
-#: ConfLoader.cpp:198
+#: ConfLoader.cpp:190
 msgid "NOMBRE DE TMS CHARGES : "
 msgstr "NUMBER OF LOADED TMS: "
 
-#: ConfLoader.cpp:219
+#: ConfLoader.cpp:211
 msgid "CHARGEMENT DES LAYERS"
 msgstr "LOADING LAYERS"
 
-#: ConfLoader.cpp:227
+#: ConfLoader.cpp:219
 msgid "Le repertoire "
 msgstr ""
 
-#: ConfLoader.cpp:239
+#: ConfLoader.cpp:231
 msgid "Aucun fichier *.lay dans le repertoire "
 msgstr ""
 
-#: ConfLoader.cpp:240
+#: ConfLoader.cpp:232
 msgid "Le serveur n'a aucune donnees à servir. Dommage..."
 msgstr ""
 
-#: ConfLoader.cpp:251
+#: ConfLoader.cpp:243
 msgid "Ne peut charger le layer: "
 msgstr ""
 
-#: ConfLoader.cpp:256
+#: ConfLoader.cpp:248
 msgid "Aucun layer n'a pu etre charge!"
 msgstr ""
 
-#: ConfLoader.cpp:260
+#: ConfLoader.cpp:252
 msgid "NOMBRE DE LAYERS CHARGES : "
 msgstr "NUMBER OF LOADED LAYERS: "
 
-#: ConfLoader.cpp:312
+#: ConfLoader.cpp:304
 #, fuzzy
 msgid "Source Pyramid: "
 msgstr "the pyramid ["
 
-#: ConfLoader.cpp:312
+#: ConfLoader.cpp:304
 msgid " can't be loaded because information are missing"
 msgstr ""
 
-#: ConfLoader.cpp:332
+#: ConfLoader.cpp:324
 #, fuzzy
 msgid "La pyramide source "
 msgstr "the pyramid ["
 
-#: ConfLoader.cpp:332
+#: ConfLoader.cpp:324
 msgid " ne peut etre chargee"
 msgstr ""
 
-#: ConfLoader.cpp:346
+#: ConfLoader.cpp:338
 msgid "Style "
 msgstr "Style "
 
-#: ConfLoader.cpp:346
+#: ConfLoader.cpp:338
 msgid "non defini"
 msgstr "undefined"
 
-#: ConfLoader.cpp:680
+#: ConfLoader.cpp:672
 msgid "Construction de la liste des CRS equivalents depuis "
 msgstr ""
 
-#: ConfLoader.cpp:704 ConfLoader.cpp:771
+#: ConfLoader.cpp:696 ConfLoader.cpp:763
 #, fuzzy
 msgid "The Equivalent CRS ["
 msgstr "         Adding CRS "
 
-#: ConfLoader.cpp:704 ConfLoader.cpp:771
+#: ConfLoader.cpp:696 ConfLoader.cpp:763
 msgid "] is not present in Proj4"
 msgstr ""
 
-#: ConfLoader.cpp:726
+#: ConfLoader.cpp:718
 msgid "Ne peut pas charger le fichier "
 msgstr "Can't load the file"
 
-#: ConfLoader.cpp:726
+#: ConfLoader.cpp:718
 msgid " ou fichier vide"
 msgstr ""
 
-#: ConfLoader.cpp:771
+#: ConfLoader.cpp:763
 msgid "] of ["
 msgstr ""
 

@@ -133,14 +133,6 @@ Style* ConfLoader::buildStyle ( std::string fileName, ServicesXML* servicesXML )
         return NULL;
     }
 
-    std::string name = getFileName(fileName, ".stl");
-
-    // On vérifie que le nom du fichier corresponde bien à l'ID trouvé à l'intérieur, car on va les utiliser indifféremment
-    if (styXML.getId() != name) {
-        LOGGER_ERROR ( _ ( "Identifiant != nom du fichier, on en veut pas : " ) << fileName );
-        return NULL;
-    }
-
     return new Style(styXML);
 }
 

@@ -64,6 +64,7 @@ class StyleXML : public DocumentXML
     protected:
 
         std::string id;
+        std::string identifier;
         std::vector<std::string> titles;
         std::vector<std::string> abstracts;
         std::vector<Keyword> keywords;

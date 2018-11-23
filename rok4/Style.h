@@ -106,10 +106,17 @@ class Style;
 class Style {
 private :
     /**
+     * \~french \brief Identifiant interne du style
+     * \details C'est le nom du fichier de style, sans extension. Il est utilisé dans les descripteurs de couches.
+     * \~english \brief Internal style identifier
+     * \details It's the style file name without extension. It used in layers' descriptors
+     */
+    std::string id;
+    /**
      * \~french \brief Identifiant WMS/WMTS du style
      * \~english \brief WMS/WMTS style identifier
      */
-    std::string id;
+    std::string identifier;
     /**
      * \~french \brief Liste des titres
      * \~english \brief List of titles
@@ -178,13 +185,25 @@ public:
     /**
      * \~french
      * \brief Retourne l'identifiant du style
-     * \return identifiant
+     * \return id
      * \~english
      * \brief Return the style's identifier
-     * \return identifier
+     * \return id
      */
     inline std::string getId() {
         return id;
+    }
+
+    /**
+     * \~french
+     * \brief Retourne l'identifiant public du style
+     * \return identifier
+     * \~english
+     * \brief Return the public style's identifier
+     * \return identifier
+     */
+    inline std::string getIdentifier() {
+        return identifier;
     }
 
     /**

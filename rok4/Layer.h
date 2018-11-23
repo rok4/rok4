@@ -441,10 +441,10 @@ public:
     Interpolation::KernelType getResampling() ;
     /**
      * \~french
-     * \brief Retourne le style par défaut associé à la couche
-     * \return identifiant de style
+     * \brief Retourne le style par défaut associé à la couche (identifiant public)
+     * \return identifier de style
      * \~english
-     * \brief Return the layer's default style
+     * \brief Return the layer's default style (public identifier)
      * \return style identifier
      */
     std::string getDefaultStyle() ;
@@ -459,13 +459,23 @@ public:
     std::vector<Style*> getStyles() ;
     /**
      * \~french
-     * \brief Retourne le style associé à la couche
+     * \brief Retourne le style associé à la couche (identifiant interne)
      * \return le style si associé, NULL sinon
      * \~english
-     * \brief Return the associated style
+     * \brief Return the associated style (internal identifier)
      * \return the style if present, NULL otherwise
      */
     Style* getStyle(std::string id) ;
+
+    /**
+     * \~french
+     * \brief Retourne le style associé à la couche (identifiant public)
+     * \return le style si associé, NULL sinon
+     * \~english
+     * \brief Return the associated style (public identifier)
+     * \return the style if present, NULL otherwise
+     */
+    Style* getStyleByIdentifier(std::string identifier) ;
 
     /**
      * \~french

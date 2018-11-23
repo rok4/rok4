@@ -122,7 +122,7 @@ DataSource* Rok4Server::getTileParamWMTS ( Request* request, Layer*& layer, std:
     if ( str_style == "" )
         return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre STYLE absent." ),"wmts" ) );
     // TODO : Nom de style : inspire_common:DEFAULT en mode Inspire sinon default
-    style = layer->getStyle(str_style);
+    style = layer->getStyleByIdentifier(str_style);
 
     if ( ! ( style ) )
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le style " ) +str_style+_ ( " n'est pas gere pour la couche " ) +str_layer,"wmts" ) );
@@ -447,7 +447,7 @@ void Rok4Server::buildWMTSCapabilities() {
                         styleEl->LinkEndChild ( kwlEl );
                     }
 
-                    styleEl->LinkEndChild ( DocumentXML::buildTextNode ( "ows:Identifier", style->getId() ) );
+                    styleEl->LinkEndChild ( DocumentXML::buildTextNode ( "ows:Identifier", style->getIdentifier() ) );
                     for ( j=0 ; j < style->getLegendURLs().size(); ++j ) {
                         LegendURL legendURL = style->getLegendURLs() [j];
                         TiXmlElement* legendURLEl = new TiXmlElement ( "LegendURL" );
