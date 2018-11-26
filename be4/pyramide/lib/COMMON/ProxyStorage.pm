@@ -874,7 +874,7 @@ sub getRealData {
             chomp $realTarget;
 
             # Dans le cas d'un objet Ceph lien, on vérifie que la signature existe bien dans le header
-            if (index($realTarget, ROK4_SYMLINK_SIGNATURE) != -1) {
+            if (index($realTarget, ROK4_SYMLINK_SIGNATURE) == -1) {
                 ERROR("CEPH object is not a valid SYMLINK object : $path");
                 return undef;
             }
@@ -1104,7 +1104,7 @@ sub symLink {
         return undef;
     }
     elsif ($targetType eq "SWIFT" && $toType eq "SWIFT") {
-        ERROR("Cannot symlink for S3 storage");
+        ERROR("Cannot symlink for SWIFT storage");
         return undef;
     }
 

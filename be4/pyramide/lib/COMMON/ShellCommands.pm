@@ -79,6 +79,7 @@ use Data::Dumper;
 
 use COMMON::Harvesting;
 use COMMON::Node;
+use COMMON::ProxyStorage;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -330,6 +331,18 @@ W2CFUNCTION
 
 
 my $JC_CEPH_W2CFUNCTION = <<'W2CFUNCTION';
+LinkSlab () {
+    local target=$1
+    local link=$2
+
+    # On retire le pool des entrées
+    target=`echo -n "$target" | sed "s#${PYR_POOL}/##"`
+    link=`echo -n "$link" | sed "s#${PYR_POOL}/##"`
+
+    echo -n "SYMLINK#${target}" | rados -p ${PYR_POOL} put $link /dev/stdin
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+
 StoreSlab () {
     local workImgName=$1
     local imgName=$2
@@ -361,6 +374,14 @@ W2CFUNCTION
 
 
 my $JC_FILE_W2CFUNCTION = <<'W2CFUNCTION';
+LinkSlab () {
+    local target=$1
+    local link=$2
+
+    ln -s $target $link
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+
 StoreSlab () {
 
     local workImgName=$1
@@ -400,6 +421,31 @@ Cache2work () {
 
 W2CFUNCTION
 
+
+=begin nd
+Function: linkSlab
+
+Parameters (list):
+    node - <JOINCACHE::Node> - Node to treat
+=cut
+sub linkSlab {
+    my $this = shift;
+    my $storageType = shift;
+    my $node = shift;
+    my $target = shift;
+    my $link = shift;
+
+    my $realTarget = COMMON::ProxyStorage::getRealData($storageType, $target);
+    if ( ! defined $realTarget ) {
+        ERROR(sprintf "'$target' (to symlink) is not a file/object or a link", );
+        return undef;
+    }
+
+    $node->setCode("LinkSlab $realTarget $link\n");
+    $node->writeInScript();
+
+    return $realTarget;
+}
 
 =begin nd
 Function: overlayNtiff

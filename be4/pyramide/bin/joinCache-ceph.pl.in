@@ -622,19 +622,16 @@ sub treatNode {
         my $sourceImage = $node->getSource(0);
 
         if ($this{pyramid}->checkCompatibility($sourceImage->{sourcePyramid}) == 2) {
-            # We can just make a symbolic link, no code in a script
-
-            my $aliasedObject = COMMON::ProxyStorage::symLink(
-                $sourceImage->{sourcePyramid}->getStorageType(), $sourceImage->{img},
-                $this{pyramid}->getStorageType(), $finalImage
-            );
-
-            if (! defined $aliasedObject) {
-                ERROR(sprintf "The ancestor image slab '%s' cannot be aliased in the new pyramid", $sourceImage->{img});
+            # We can just make a symbolic link, in a script
+            my $aliasedObject = $this{commands}->linkSlab("CEPH", $node, $sourceImage->{img}, $finalImage);
+            if ( ! defined $aliasedObject ) {
+                ERROR(sprintf "Cannot link the image");
                 return FALSE;
             }
 
             main::storeInList($aliasedObject);
+            
+            $this{currentScript} = ($this{currentScript}+1)%(scalar(@{$this{scripts}}));
             
         } else {
             # We have just one source image, but it is not compatible with the final cache
@@ -651,19 +648,16 @@ sub treatNode {
 
         # Export éventuel du masque : il est forcément dans le bon format, on peut donc le lier.
         if (exists $sourceImage->{msk} && defined $finalMask) {
-            # We can just make a symbolic link, no code in a script
-
-            my $aliasedObject = COMMON::ProxyStorage::symLink(
-                $sourceImage->{sourcePyramid}->getStorageType(), $sourceImage->{msk},
-                $this{pyramid}->getStorageType(), $finalMask
-            );
-
-            if (! defined $aliasedObject) {
-                ERROR(sprintf "The ancestor mask slab '%s' cannot be aliased in the new pyramid", $sourceImage->{msk});
+            # We can just make a symbolic link, in a script
+            my $aliasedObject = $this{commands}->linkSlab("CEPH", $node, $sourceImage->{msk}, $finalMask);
+            if ( ! defined $aliasedObject ) {
+                ERROR(sprintf "Cannot link the image");
                 return FALSE;
             }
 
             main::storeInList($aliasedObject);
+            
+            $this{currentScript} = ($this{currentScript}+1)%(scalar(@{$this{scripts}}));
         }
         
     } else {
