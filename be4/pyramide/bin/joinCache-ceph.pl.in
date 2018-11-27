@@ -458,6 +458,13 @@ sub validateSourcePyramids {
             ERROR (sprintf "Source pyramid (%s) and output pyramid are not compatible", $sourcePyramid->getName());
             return FALSE;
         }
+
+        if (! $sourcePyramid->loadList()) {
+            ERROR("Cannot cache content list for source pyramid " . $sourcePyramid->getName());
+            return FALSE;
+        }
+
+        INFO($sourcePyramid->getCachedListStats());
     }
 
     return TRUE;
@@ -521,13 +528,9 @@ sub doIt {
         my $nSource = 0;
         foreach my $source (@{$sources}) {
 
-            DEBUG(sprintf "Source : %s", Dumper($source));
-
             # On récupère le niveau concerné dans la pyramide source en cours de traitement
 
             foreach my $bb (@{$source->{bboxes}}) {
-
-                DEBUG(sprintf "Extent : %s", Dumper($bb));
 
                 my ($ROWMIN, $ROWMAX, $COLMIN, $COLMAX) = $pyramid->getLevel($level)->bboxToSlabIndices(@{$bb});
 
@@ -541,7 +544,6 @@ sub doIt {
 
                         if (exists $this{doneSlabs}->{$slabKey}) {
                             # Image already treated
-                            DEBUG("This slab exists. --> next!");
                             next;
                         }
 
@@ -561,7 +563,6 @@ sub doIt {
 
                         if ($node->getSourcesNumber() == 0) {
                             # Pas de source pour cette image, pour cette priorité
-                            DEBUG("No source for this slab - priority pair. --> next!");
                             next;
                         }
 
@@ -572,17 +573,13 @@ sub doIt {
 
                         $pyramid->getLevel($level)->updateLimitsFromSlab($COL, $ROW);
                         $this{doneSlabs}->{$slabKey} = TRUE;
-                        DEBUG("Done with this slab.");
                     }
                 }
-                DEBUG("Done with this extent.");
             }
             $nSource++;
-            DEBUG("Done with this source.");
         }
 
         delete $this{doneSlabs};
-        DEBUG("Done with this level.");
     }
 
     close($STREAM) or ERROR(sprintf "Failed closing the stream : %s\nErreur = %s\nCode = %s", Dumper($STREAM), $!, $?);
@@ -618,18 +615,13 @@ sub treatNode {
     $node->setScript($this{scripts}->[$this{currentScript}]);
 
     if ($node->getSourcesNumber() == 1) {
-
         my $sourceImage = $node->getSource(0);
 
         if ($this{pyramid}->checkCompatibility($sourceImage->{sourcePyramid}) == 2) {
             # We can just make a symbolic link, in a script
-            my $aliasedObject = $this{commands}->linkSlab("CEPH", $node, $sourceImage->{img}, $finalImage);
-            if ( ! defined $aliasedObject ) {
-                ERROR(sprintf "Cannot link the image");
-                return FALSE;
-            }
-
-            main::storeInList($aliasedObject);
+            $this{commands}->linkSlab($node, $sourceImage->{img}, $finalImage);
+            
+            main::storeInList($sourceImage->{img});
             
             $this{currentScript} = ($this{currentScript}+1)%(scalar(@{$this{scripts}}));
             
@@ -649,13 +641,9 @@ sub treatNode {
         # Export éventuel du masque : il est forcément dans le bon format, on peut donc le lier.
         if (exists $sourceImage->{msk} && defined $finalMask) {
             # We can just make a symbolic link, in a script
-            my $aliasedObject = $this{commands}->linkSlab("CEPH", $node, $sourceImage->{msk}, $finalMask);
-            if ( ! defined $aliasedObject ) {
-                ERROR(sprintf "Cannot link the image");
-                return FALSE;
-            }
+            $this{commands}->linkSlab($node, $sourceImage->{msk}, $finalMask);
 
-            main::storeInList($aliasedObject);
+            main::storeInList($sourceImage->{msk});
             
             $this{currentScript} = ($this{currentScript}+1)%(scalar(@{$this{scripts}}));
         }

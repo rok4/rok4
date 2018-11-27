@@ -222,20 +222,20 @@ sub _load {
     #   - si on ne trouve pas la dalle pour cette source, on arrête là. On reviendra éventuellement sur cette dalle après
     #   - si la méthode de fusion est REPLACE, on ne va pas chercher plus loin
 
-    my $imageSlab = $mainLevel->getSlabPath("IMAGE", $this->{col}, $this->{row}, TRUE);
-
-    if ( COMMON::ProxyStorage::isPresent($params->{sourcePyramids}->[$params->{mainSourceIndice}]->{pyr}->getStorageType(), $imageSlab) ) {
+    my $pyr = $params->{sourcePyramids}->[$params->{mainSourceIndice}]->{pyr};
+    my $imgPath = $pyr->containSlab("IMAGE", $this->{level}, $this->{col}, $this->{row});
+    if ( defined $imgPath ) {
         # L'image existe, voyons également si elle a un masque associé
         my %sourceSlab = (
-            img => $imageSlab,
+            img => $imgPath,
             sourcePyramid => $params->{sourcePyramids}->[$params->{mainSourceIndice}]->{pyr}
         );
 
         if ($params->{useMasks} && $mainLevel->ownMasks()) {
 
-            my $maskSlab = $mainLevel->getSlabPath("MASK", $this->{col}, $this->{row}, TRUE);
-            if ( COMMON::ProxyStorage::isPresent($params->{sourcePyramids}->[$params->{mainSourceIndice}]->{pyr}->getStorageType(), $maskSlab) ) {
-                $sourceSlab{msk} = $maskSlab;
+            my $mskPath = $pyr->containSlab("MASK", $this->{level}, $this->{col}, $this->{row});
+            if ( defined $mskPath ) {
+                $sourceSlab{msk} = $mskPath;
             }
         }
 
@@ -249,7 +249,8 @@ sub _load {
     }
 
     for (my $ind = $params->{mainSourceIndice} + 1; $ind < scalar @{$params->{sourcePyramids}}; $ind++) {
-        my $sourceLevel = $params->{sourcePyramids}->[$ind]->{pyr}->getLevel($this->{level});
+        $pyr = $params->{sourcePyramids}->[$ind]->{pyr};
+        my $sourceLevel = $pyr->getLevel($this->{level});
 
         @slabBBOX = $sourceLevel->slabIndicesToBbox($this->{col}, $this->{row});
         $slabOGR = COMMON::ProxyGDAL::geometryFromBbox(@slabBBOX);
@@ -258,20 +259,20 @@ sub _load {
             next;
         }
 
-        my $imageSlab = $sourceLevel->getSlabPath("IMAGE", $this->{col}, $this->{row}, TRUE);
-
-        if ( COMMON::ProxyStorage::isPresent($params->{sourcePyramids}->[$ind]->{pyr}->getStorageType(), $imageSlab) ) {
+        
+        my $imgPath = $pyr->containSlab("IMAGE", $this->{level}, $this->{col}, $this->{row});
+        if ( defined $imgPath ) {
             # L'image existe, voyons également si elle a un masque associé
             my %sourceSlab = (
-                img => $imageSlab,
+                img => $imgPath,
                 sourcePyramid => $params->{sourcePyramids}->[$ind]->{pyr}
             );
 
             if ($params->{useMasks} && $sourceLevel->ownMasks()) {
 
-                my $maskSlab = $sourceLevel->getSlabPath("MASK", $this->{col}, $this->{row}, TRUE);
-                if ( COMMON::ProxyStorage::isPresent($params->{sourcePyramids}->[$ind]->{pyr}->getStorageType(), $maskSlab) ) {
-                    $sourceSlab{msk} = $maskSlab;
+                my $mskPath = $pyr->containSlab("MASK", $this->{level}, $this->{col}, $this->{row});
+                if ( defined $mskPath ) {
+                    $sourceSlab{msk} = $mskPath;
                 }
             }
 

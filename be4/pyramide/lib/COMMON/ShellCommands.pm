@@ -430,21 +430,12 @@ Parameters (list):
 =cut
 sub linkSlab {
     my $this = shift;
-    my $storageType = shift;
     my $node = shift;
     my $target = shift;
     my $link = shift;
 
-    my $realTarget = COMMON::ProxyStorage::getRealData($storageType, $target);
-    if ( ! defined $realTarget ) {
-        ERROR(sprintf "'$target' (to symlink) is not a file/object or a link", );
-        return undef;
-    }
-
-    $node->setCode("LinkSlab $realTarget $link\n");
+    $node->setCode("LinkSlab $target $link\n");
     $node->writeInScript();
-
-    return $realTarget;
 }
 
 =begin nd

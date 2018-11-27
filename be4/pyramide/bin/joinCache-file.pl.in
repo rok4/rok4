@@ -438,7 +438,6 @@ sub validateSourcePyramids {
     my $tms_path = shift;
 
     my $sourcePyramids = $this{propertiesLoader}->getSourcePyramids();
-    my $composition = $this{propertiesLoader}->getCompositionSection();
 
     foreach my $sourcePyramid (values %{$sourcePyramids}) {
 
@@ -451,6 +450,13 @@ sub validateSourcePyramids {
             ERROR (sprintf "Source pyramid (%s) and output pyramid are not compatible", $sourcePyramid->getName());
             return FALSE;
         }
+
+        if (! $sourcePyramid->loadList()) {
+            ERROR("Cannot cache content list for source pyramid " . $sourcePyramid->getName());
+            return FALSE;
+        }
+
+        INFO($sourcePyramid->getCachedListStats());
     }
 
     return TRUE;
@@ -469,7 +475,7 @@ For each level, for each source pyramid :
     - Identify present images (in the wanted bounding box : <tileToImage>)
     - Work has already been made ? Next
     - Else search it in the other source pyramids with an lower priority : <searchImage>
-    - Treat source(s) : <JOINCACHE::Process::treatNode>
+    - Treat source(s) : <main::treatNode>
 
 =cut
 sub doIt {
@@ -482,6 +488,16 @@ sub doIt {
     my $TMS = $pyramid->getTileMatrixSet();
 
     my $listFile = $pyramid->getListFile();
+    my $dir = File::Basename::dirname($listFile);
+
+    if (! -d $dir) {
+        eval { mkpath([$dir]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the output pyramid list directory '%s' : %s !", $dir , $@);
+            return FALSE;
+        }
+    }
+
     my $STREAM;
     if (! open $STREAM, ">", $listFile) {
         ERROR(sprintf "Cannot open output pyramid list file (write) : %s",$listFile);
@@ -603,13 +619,9 @@ sub treatNode {
 
         if ($this{pyramid}->checkCompatibility($sourceImage->{sourcePyramid}) == 2) {
             # We can just make a symbolic link, in a script
-            my $aliasedObject = $this{commands}->linkSlab("FILE", $node, $sourceImage->{img}, $finalImage);
-            if ( ! defined $aliasedObject ) {
-                ERROR(sprintf "Cannot link the image");
-                return FALSE;
-            }
+            $this{commands}->linkSlab($node, $sourceImage->{img}, $finalImage);
 
-            main::storeInList($aliasedObject);
+            main::storeInList($finalImageEnd, $sourceImage->{img});
             
             $this{currentScript} = ($this{currentScript}+1)%(scalar(@{$this{scripts}}));
             
@@ -629,13 +641,9 @@ sub treatNode {
         # Export éventuel du masque : il est forcément dans le bon format, on peut donc le lier.
         if (exists $sourceImage->{msk} && defined $finalMask) {
             # We can just make a symbolic link, in a script
-            my $aliasedObject = $this{commands}->linkSlab("FILE", $node, $sourceImage->{msk}, $finalMask);
-            if ( ! defined $aliasedObject ) {
-                ERROR(sprintf "Cannot link the image");
-                return FALSE;
-            }
+            $this{commands}->linkSlab($node, $sourceImage->{msk}, $finalMask);
 
-            main::storeInList($aliasedObject);
+            main::storeInList($finalMaskEnd, $sourceImage->{msk});
             
             $this{currentScript} = ($this{currentScript}+1)%(scalar(@{$this{scripts}}));
         }
