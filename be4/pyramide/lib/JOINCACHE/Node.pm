@@ -211,7 +211,7 @@ sub _load {
     # On vérifie que cette dalle appartient bien à l'étendue de la source principale
     # Si c'est une bbox qui était fournie comme extent, on va économiser un intersect GDAL couteux
 
-    if ($params->{sourcePyramids}->[$params->{mainSourceIndice}]->{extent} eq "WKTFILE") {
+    if ($params->{sourcePyramids}->[$params->{mainSourceIndice}]->{provided} eq "WKTFILE") {
         my @slabBBOX = $mainLevel->slabIndicesToBbox($this->{col}, $this->{row});
         my $slabOGR = COMMON::ProxyGDAL::geometryFromBbox(@slabBBOX);
 
@@ -222,7 +222,7 @@ sub _load {
     # Dans le cas d'une bbox fournie pour la source principale, la dalle y appartient forcément
 
     # On traite séparément le cas de la source principale (la plus prioritaire car :
-    #   - on sait que la dalle cherchée appartient à la bbox de cette source (vérifiée juste au dessus)
+    #   - on sait que la dalle cherchée appartient à l'extent de cette source (vérifiée juste au dessus)
     #   - si on ne trouve pas la dalle pour cette source, on arrête là. On reviendra éventuellement sur cette dalle après
     #   - si la méthode de fusion est REPLACE, on ne va pas chercher plus loin
 

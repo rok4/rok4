@@ -398,8 +398,8 @@ sub _check {
                 return FALSE;
             }
             $source->{bboxes} = $this->{extents}->{$source->{extent}}->{bboxes};
-            $source->{extent} = $this->{extents}->{$source->{extent}}->{extent};
             $source->{provided} = $this->{extents}->{$source->{extent}}->{provided};
+            $source->{extent} = $this->{extents}->{$source->{extent}}->{extent};
             $source->{pyr} = $this->{sourcePyramids}->{$source->{pyr}};
         }
     }
