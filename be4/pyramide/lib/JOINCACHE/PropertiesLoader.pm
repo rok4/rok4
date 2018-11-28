@@ -62,8 +62,8 @@ Attributes:
     extents - hash - Defines identifiants with associated extents (as OGR Geometry)
     composition - hash - Defines source pyramids for each level, extent, and order
 |       level_id => [
-|           { extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]] pyr => COMMON::Pyramid}
-|           { extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]] pyr => COMMON::Pyramid}
+|           { provided => "BBOX", extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]] pyr => COMMON::Pyramid}
+|           { provided => "WKTFILE", extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]] pyr => COMMON::Pyramid}
 |       ]
     sourcePyramids - string hash - Key is the descriptor's path. Just undefined values, to list used pyramids.
     process - hash - Generation parameters
@@ -217,6 +217,7 @@ sub _load {
 
         if ($currentSection eq 'extents') {
             # On lit une 'extent', on va directement la convertir en géométrie OGR
+            # Cependant, on mémorise si c'est une bbox ou un WKT qui est fourni pour optimisé le calcul (ne pas faire d'intersect GDAL, coûteux)
             if (exists $this->{$currentSection}->{$key}) {
                 ERROR ("A property is defined twice in the configuration : section $currentSection, parameter $key");
                 return FALSE;
@@ -232,7 +233,7 @@ sub _load {
                     ERROR("Cannot load extent with ID $key");
                     return FALSE ;
                 }
-
+                $this->{extents}->{$key}->{provided} = "BBOX";
             }
             else {
                 # user supplied a file which contains bounding polygon
@@ -242,6 +243,7 @@ sub _load {
                     ERROR("Cannot load extent with ID $key");
                     return FALSE ;
                 }
+                $this->{extents}->{$key}->{provided} = "WKTFILE";
             }
 
             $this->{extents}->{$key}->{bboxes} = COMMON::ProxyGDAL::getBboxes($this->{extents}->{$key}->{extent});
@@ -397,6 +399,7 @@ sub _check {
             }
             $source->{bboxes} = $this->{extents}->{$source->{extent}}->{bboxes};
             $source->{extent} = $this->{extents}->{$source->{extent}}->{extent};
+            $source->{provided} = $this->{extents}->{$source->{extent}}->{provided};
             $source->{pyr} = $this->{sourcePyramids}->{$source->{pyr}};
         }
     }

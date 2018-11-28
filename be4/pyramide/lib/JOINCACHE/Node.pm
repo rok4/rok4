@@ -209,13 +209,17 @@ sub _load {
     my $mainLevel = $params->{sourcePyramids}->[$params->{mainSourceIndice}]->{pyr}->getLevel($this->{level});
 
     # On vérifie que cette dalle appartient bien à l'étendue de la source principale
+    # Si c'est une bbox qui était fournie comme extent, on va économiser un intersect GDAL couteux
 
-    my @slabBBOX = $mainLevel->slabIndicesToBbox($this->{col}, $this->{row});
-    my $slabOGR = COMMON::ProxyGDAL::geometryFromBbox(@slabBBOX);
+    if ($params->{sourcePyramids}->[$params->{mainSourceIndice}]->{extent} eq "WKTFILE") {
+        my @slabBBOX = $mainLevel->slabIndicesToBbox($this->{col}, $this->{row});
+        my $slabOGR = COMMON::ProxyGDAL::geometryFromBbox(@slabBBOX);
 
-    if (! COMMON::ProxyGDAL::isIntersected($slabOGR, $params->{sourcePyramids}->[$params->{mainSourceIndice}]->{extent})) {
-        return TRUE;
+        if (! COMMON::ProxyGDAL::isIntersected($slabOGR, $params->{sourcePyramids}->[$params->{mainSourceIndice}]->{extent})) {
+            return TRUE;
+        }
     }
+    # Dans le cas d'une bbox fournie pour la source principale, la dalle y appartient forcément
 
     # On traite séparément le cas de la source principale (la plus prioritaire car :
     #   - on sait que la dalle cherchée appartient à la bbox de cette source (vérifiée juste au dessus)
@@ -252,11 +256,22 @@ sub _load {
         $pyr = $params->{sourcePyramids}->[$ind]->{pyr};
         my $sourceLevel = $pyr->getLevel($this->{level});
 
-        @slabBBOX = $sourceLevel->slabIndicesToBbox($this->{col}, $this->{row});
-        $slabOGR = COMMON::ProxyGDAL::geometryFromBbox(@slabBBOX);
+        if ($params->{sourcePyramids}->[$ind]->{provided} eq "WKTFILE") {
+            my @slabBBOX = $sourceLevel->slabIndicesToBbox($this->{col}, $this->{row});
+            my $slabOGR = COMMON::ProxyGDAL::geometryFromBbox(@slabBBOX);
 
-        if (! COMMON::ProxyGDAL::isIntersected($slabOGR, $params->{sourcePyramids}->[$ind]->{extent})) {
-            next;
+            if (! COMMON::ProxyGDAL::isIntersected($slabOGR, $params->{sourcePyramids}->[$ind]->{extent})) {
+                next;
+            }
+        } else {
+            # Extent était une bbox, on va pouvoir plus simplement vérifier les coordonnées des dalles sans passer par GDAL
+            # bboxes dans la source contient forcément une seule bbox, celle fournie.
+
+            my ($ROWMIN, $ROWMAX, $COLMIN, $COLMAX) = $sourceLevel->bboxToSlabIndices(@{$params->{sourcePyramids}->[$ind]->{bboxes}->[0]});
+
+            if ($this->{col} < $COLMIN || $this->{col} > $COLMAX || $this->{row} < $ROWMIN || $this->{row} > $ROWMAX) {
+                next;
+            }
         }
 
         
