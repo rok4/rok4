@@ -218,8 +218,16 @@ sub _load {
         if (! COMMON::ProxyGDAL::isIntersected($slabOGR, $params->{sourcePyramids}->[$params->{mainSourceIndice}]->{extent})) {
             return TRUE;
         }
+    } else {
+        # Extent était une bbox, on va pouvoir plus simplement vérifier les coordonnées des dalles sans passer par GDAL
+        # bboxes dans la source contient forcément une seule bbox, celle fournie.
+
+        my ($ROWMIN, $ROWMAX, $COLMIN, $COLMAX) = @{$params->{sourcePyramids}->[$params->{mainSourceIndice}]->{extrem_slabs}};
+
+        if ($this->{col} < $COLMIN || $this->{col} > $COLMAX || $this->{row} < $ROWMIN || $this->{row} > $ROWMAX) {
+            next TRUE;
+        }
     }
-    # Dans le cas d'une bbox fournie pour la source principale, la dalle y appartient forcément
 
     # On traite séparément le cas de la source principale (la plus prioritaire car :
     #   - on sait que la dalle cherchée appartient à l'extent de cette source (vérifiée juste au dessus)
@@ -267,7 +275,7 @@ sub _load {
             # Extent était une bbox, on va pouvoir plus simplement vérifier les coordonnées des dalles sans passer par GDAL
             # bboxes dans la source contient forcément une seule bbox, celle fournie.
 
-            my ($ROWMIN, $ROWMAX, $COLMIN, $COLMAX) = $sourceLevel->bboxToSlabIndices(@{$params->{sourcePyramids}->[$ind]->{bboxes}->[0]});
+            my ($ROWMIN, $ROWMAX, $COLMIN, $COLMAX) = @{$params->{sourcePyramids}->[$ind]->{extrem_slabs}};
 
             if ($this->{col} < $COLMIN || $this->{col} > $COLMAX || $this->{row} < $ROWMIN || $this->{row} > $ROWMAX) {
                 next;

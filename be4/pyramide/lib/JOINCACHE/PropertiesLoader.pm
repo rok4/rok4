@@ -62,8 +62,8 @@ Attributes:
     extents - hash - Defines identifiants with associated extents (as OGR Geometry)
     composition - hash - Defines source pyramids for each level, extent, and order
 |       level_id => [
-|           { provided => "BBOX", extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]] pyr => COMMON::Pyramid}
-|           { provided => "WKTFILE", extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]] pyr => COMMON::Pyramid}
+|           { provided => "BBOX", extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]], bbox => [bbox globale], pyr => COMMON::Pyramid}
+|           { provided => "WKTFILE", extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]], bbox => [bbox globale], pyr => COMMON::Pyramid}
 |       ]
     sourcePyramids - string hash - Key is the descriptor's path. Just undefined values, to list used pyramids.
     process - hash - Generation parameters
@@ -251,6 +251,8 @@ sub _load {
                 ERROR("Cannot calculate bboxes from the extent for level $key - $value");
                 return FALSE;
             }
+            my @a = COMMON::ProxyGDAL::getBbox($this->{extents}->{$key}->{extent});
+            $this->{extents}->{$key}->{bbox} = \@a;
 
 
         }
@@ -398,6 +400,7 @@ sub _check {
                 return FALSE;
             }
             $source->{bboxes} = $this->{extents}->{$source->{extent}}->{bboxes};
+            $source->{bbox} = $this->{extents}->{$source->{extent}}->{bbox};
             $source->{provided} = $this->{extents}->{$source->{extent}}->{provided};
             $source->{extent} = $this->{extents}->{$source->{extent}}->{extent};
             $source->{pyr} = $this->{sourcePyramids}->{$source->{pyr}};
@@ -435,7 +438,7 @@ sub getCompositionSection {
     return $this->{composition};
 }
 
-# Function: getBboxesSection
+# Function: getExtentsSection
 sub getExtentsSection {
     my $this = shift;
     return $this->{extents};

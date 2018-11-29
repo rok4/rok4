@@ -464,6 +464,7 @@ sub validateSourcePyramids {
             return FALSE;
         }
 
+        INFO($sourcePyramid->getName());
         INFO($sourcePyramid->getCachedListStats());
     }
 
@@ -480,10 +481,10 @@ Function: doIt
 We browse all source pyramids to identify images to generate. 
 
 For each level, for each source pyramid :
-    - Identify present images (in the wanted bounding box : <tileToImage>)
+    - Identify present images in the extent
     - Work has already been made ? Next
-    - Else search it in the other source pyramids with an lower priority : <searchImage>
-    - Treat source(s) : <main::treatNode>
+    - Else search it in the other source pyramids with an lower priority
+    - Treat the Node
 
 =cut
 sub doIt {
@@ -525,57 +526,59 @@ sub doIt {
 
         my $tm = $pyramid->getTileMatrixSet()->getTileMatrix($level);
 
+        # On fait une première passe sur les sources pour calculer les indices extrêmes des dalles pour ce niveau pour l'extent de la source
+        foreach my $source (@{$sources}) {
+            my @a = $source->{pyr}->getLevel($level)->bboxToSlabIndices(@{$source->{bbox}});
+            $source->{extrem_slabs} = \@a;
+        }
+
         my $nSource = 0;
         foreach my $source (@{$sources}) {
 
-            # On récupère le niveau concerné dans la pyramide source en cours de traitement
+            # On va boucler sur toutes les dalles de ce niveau dans cette source, et on vérifiera qu'elle appartient bien à l'extent
 
-            foreach my $bb (@{$source->{bboxes}}) {
+            my $slabsHash = $source->{pyr}->getLevelSlabs($level);
+            # Hash de la forme { IMAGE => {COL_ROW => pool/slab_object_name} }
 
-                my ($ROWMIN, $ROWMAX, $COLMIN, $COLMAX) = $pyramid->getLevel($level)->bboxToSlabIndices(@{$bb});
+            while (my ($slabKey, $slabPath) = each(%{$slabsHash->{IMAGE}})) {
 
-                DEBUG("Slabs' extrem indices : ROWS: $ROWMIN -> $ROWMAX, COLS: $COLMIN -> $COLMAX");
-
-                for (my $COL = $COLMIN; $COL <= $COLMAX; $COL++) {
-                    for (my $ROW = $ROWMIN; $ROW <= $ROWMAX; $ROW++) {
-
-                        my $slabKey = $COL."_".$ROW;
-                        DEBUG(sprintf "Slab (col_row) : %s", $slabKey);
-
-                        if (exists $this{doneSlabs}->{$slabKey}) {
-                            # Image already treated
-                            next;
-                        }
-
-                        my $node = JOINCACHE::Node->new({
-                            level => $level,
-                            col => $COL,
-                            row => $ROW,
-                            sourcePyramids => $sources,
-                            mainSourceIndice => $nSource,
-                            useMasks => $this{commands}->useMasks(),
-                            mergeMethod => $this{mergeMethod}
-                        });
-                        if (! defined $node) {
-                            ERROR(sprintf "Cannot create the node %s,%s", $COL, $ROW);
-                            return FALSE;
-                        }
-
-                        if ($node->getSourcesNumber() == 0) {
-                            # Pas de source pour cette image, pour cette priorité
-                            next;
-                        }
-
-                        if (! main::treatNode($node)) {
-                            ERROR(sprintf "Cannot generate the node %s", Dumper($node));
-                            return FALSE;
-                        }
-
-                        $pyramid->getLevel($level)->updateLimitsFromSlab($COL, $ROW);
-                        $this{doneSlabs}->{$slabKey} = TRUE;
-                    }
+                if (exists $this{doneSlabs}->{$slabKey}) {
+                    # Image already treated
+                    next;
                 }
+
+                my ($COL, $ROW) = split(/_/, $slabKey);
+
+                my $node = JOINCACHE::Node->new({
+                    level => $level,
+                    col => $COL,
+                    row => $ROW,
+                    sourcePyramids => $sources,
+                    mainSourceIndice => $nSource,
+                    useMasks => $this{commands}->useMasks(),
+                    mergeMethod => $this{mergeMethod}
+                });
+
+                if (! defined $node) {
+                    ERROR(sprintf "Cannot create the node %s,%s", $COL, $ROW);
+                    return FALSE;
+                }
+
+                if ($node->getSourcesNumber() == 0) {
+                    # Pas de source pour cette image, pour cette priorité
+                    next;
+                }
+
+                if (! main::treatNode($node)) {
+                    ERROR(sprintf "Cannot generate the node %s", Dumper($node));
+                    return FALSE;
+                }
+
+                $pyramid->getLevel($level)->updateLimitsFromSlab($COL, $ROW);
+                $this{doneSlabs}->{$slabKey} = TRUE;
+
             }
+
             $nSource++;
         }
 

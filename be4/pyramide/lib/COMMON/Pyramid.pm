@@ -1260,17 +1260,24 @@ sub loadList {
             $type = $objectTypeConverter{$p[-4]};
         }
         
-        my $key = "${type}_${level}_${col}_${row}";
-        if (exists $this->{cachedList}->{$key}) {
-            WARN("The list contains twice the same slab : $key");
+        if (exists $this->{cachedList}->{$level}->{$type}->{"${col}_${row}"}) {
+            WARN("The list contains twice the same slab : $type, $level, $col, $row");
         }
-        $this->{cachedList}->{$key} = $fullline;
+        $this->{cachedList}->{$level}->{$type}->{"${col}_${row}"} = $fullline;
     }
 
     close(LIST);
 
     return TRUE;
 }
+
+
+sub getLevelSlabs {
+    my $this = shift;
+    my $level = shift;
+
+    return $this->{cachedList}->{$level};
+} 
 
 
 sub containSlab {
@@ -1281,7 +1288,7 @@ sub containSlab {
     my $row = shift;
 
     my $key = "${type}_${level}_${col}_${row}";
-    return $this->{cachedList}->{$key};
+    return $this->{cachedList}->{$level}->{$type}->{"${col}_${row}"};
     # undef if not exists
 } 
 
@@ -1289,8 +1296,12 @@ sub containSlab {
 sub getCachedListStats {
     my $this = shift;
 
-    my $ret = sprintf "%s slabs\n", scalar(keys %{$this->{cachedList}});
-    $ret .= sprintf "%s bytes\n", total_size($this->{cachedList});
+    my $nb = scalar(keys %{$this->{cachedList}});
+    my $size = total_size($this->{cachedList});
+
+    my $ret = "Stats :\n\t $size bytes\n";
+    # $ret .= "\t $size bytes\n";
+    # $ret .= sprintf "\t %s bytes per cached slab\n", $size / $nb;
 
     return $ret;
 } 
