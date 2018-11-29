@@ -626,8 +626,6 @@ sub treatNode {
             
             main::storeInList($sourceImage->{img});
             
-            $this{currentScript} = ($this{currentScript}+1)%(scalar(@{$this{scripts}}));
-            
         } else {
             # We have just one source image, but it is not compatible with the final cache
             # We need to transform it.
@@ -637,8 +635,6 @@ sub treatNode {
             }
 
             main::storeInList($finalImage);
-            
-            $this{currentScript} = ($this{currentScript}+1)%(scalar(@{$this{scripts}}));
         }
 
         # Export éventuel du masque : il est forcément dans le bon format, on peut donc le lier.
@@ -647,8 +643,6 @@ sub treatNode {
             $this{commands}->linkSlab($node, $sourceImage->{msk}, $finalMask);
 
             main::storeInList($sourceImage->{msk});
-            
-            $this{currentScript} = ($this{currentScript}+1)%(scalar(@{$this{scripts}}));
         }
         
     } else {
@@ -657,7 +651,6 @@ sub treatNode {
             ERROR(sprintf "Cannot merge the images");
             return FALSE;
         }
-        $this{currentScript} = ($this{currentScript}+1)%(scalar(@{$this{scripts}}));
 
         main::storeInList($finalImage);
 
@@ -665,6 +658,8 @@ sub treatNode {
             main::storeInList($finalMask);
         }
     }
+    
+    $this{currentScript} = ($this{currentScript}+1)%(scalar(@{$this{scripts}}));
 
     return TRUE;
 }
