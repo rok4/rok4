@@ -16,7 +16,7 @@ BE4 est un ensemble de scripts de traitement permettant la préparation et la tr
 * http://www.geoportail.gouv.fr [@Geoportail](https://twitter.com/Geoportail)
 * http://www.rok4.org
 
-ROK4 Version : 2.3.2-DEVELOP
+ROK4 Version : 2.4.0-FEATURE-JOINCACHE-LIST
 
 # Fonctionnement général
 
