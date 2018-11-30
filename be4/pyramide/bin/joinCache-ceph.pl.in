@@ -459,6 +459,11 @@ sub validateSourcePyramids {
             return FALSE;
         }
 
+        if ($sourcePyramid->getDataPool() ne $this{pyramid}->getDataPool() ) {
+            ERROR (sprintf "Source pyramid (%s) and output pyramid are not on the same pool", $sourcePyramid->getName());
+            return FALSE;
+        }
+
         if (! $sourcePyramid->loadList()) {
             ERROR("Cannot cache content list for source pyramid " . $sourcePyramid->getName());
             return FALSE;
