@@ -98,10 +98,10 @@ bool CephPoolContext::connection() {
         return false;
     }
 
-    // On met les timeout à 10 secondes
-    rados_conf_set(cluster, "client_mount_timeout", "10");
-    rados_conf_set(cluster, "rados_mon_op_timeout", "10");
-    rados_conf_set(cluster, "rados_osd_op_timeout", "10");
+    // On met les timeout à 10 minutes
+    rados_conf_set(cluster, "client_mount_timeout", "600");
+    rados_conf_set(cluster, "rados_mon_op_timeout", "600");
+    rados_conf_set(cluster, "rados_osd_op_timeout", "600");
 
     ret = rados_connect(cluster);
     if (ret < 0) {
