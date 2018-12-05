@@ -225,7 +225,7 @@ sub _load {
         my ($ROWMIN, $ROWMAX, $COLMIN, $COLMAX) = @{$params->{sourcePyramids}->[$params->{mainSourceIndice}]->{extrem_slabs}};
 
         if ($this->{col} < $COLMIN || $this->{col} > $COLMAX || $this->{row} < $ROWMIN || $this->{row} > $ROWMAX) {
-            next TRUE;
+            return TRUE;
         }
     }
 
