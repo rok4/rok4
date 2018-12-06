@@ -391,81 +391,96 @@ int parseCommandLine ( int argc, char** argv ) {
  * \param[out] resy résolution en Y de l'image lue (et de son masque)
  * \return code de retour, 0 en cas de succès, -1 si la fin du fichier est atteinte, 1 en cas d'erreur
  */
-int readFileLine ( std::ifstream& file, char* imageFileName, bool* hasMask, char* maskFileName, std::string* crs, BoundingBox<double>* bbox, double* resx, double* resy ) {
-    std::string str;
-    char tmpPath[IMAGE_MAX_FILENAME_LENGTH];
+bool loadConfiguration ( 
+    std::vector<bool>* masks, 
+    std::vector<char* >* paths, 
+    std::vector<std::string>* srss, 
+    std::vector<BoundingBox<double> >* bboxes,
+    std::vector<double>* resxs,
+    std::vector<double>* resys
+) {
+
+    std::ifstream file;
     int rootLength = strlen ( outImagesRoot );
 
-    memset ( imageFileName, 0, IMAGE_MAX_FILENAME_LENGTH );
-    memset ( maskFileName, 0, IMAGE_MAX_FILENAME_LENGTH );
+    file.open ( imageListFilename );
+    if ( ! file.is_open() ) {
+        LOGGER_ERROR ( "Impossible d'ouvrir le fichier " << imageListFilename );
+        return -1;
+    }
 
-    while ( str.empty() ) {
-        if ( file.eof() ) {
-            LOGGER_DEBUG ( "Configuration file end reached" );
-            return -1;
+    while ( file.good() ) {
+        char tmpPath[IMAGE_MAX_FILENAME_LENGTH];
+        char tmpCRS[20];
+        char line[2*IMAGE_MAX_FILENAME_LENGTH];
+        memset ( line, 0, 2*IMAGE_MAX_FILENAME_LENGTH );
+        memset ( tmpPath, 0, IMAGE_MAX_FILENAME_LENGTH );
+        memset ( tmpCRS, 0, 20 );
+
+        char type[3];
+        std::string crs;
+        BoundingBox<double> bb(0.,0.,0.,0.);
+        double resx, resy;
+        bool isMask;
+
+        file.getline(line, 2*IMAGE_MAX_FILENAME_LENGTH);
+        LOGGER_DEBUG(line);  
+        if ( strlen(line) == 0 ) {
+            continue;
         }
-        std::getline ( file,str );
-    }
+        int nb = std::sscanf ( line,"%s %s %s %lf %lf %lf %lf %lf %lf", type, tmpPath, tmpCRS, &bb.xmin, &bb.ymax, &bb.xmax, &bb.ymin, &resx, &resy );
+        if ( nb == 9 && memcmp ( type,"IMG",3 ) == 0) {
+            // On lit la ligne d'une image
+            crs.assign ( tmpCRS );
+            isMask = false;
+        }
+        else if ( nb == 2 && memcmp ( type,"MSK",3 ) == 0) {
+            // On lit la ligne d'un masque
+            isMask = true;
 
-    int pos;
-    int nb;
-
-    char type[3];
-    char tmpCRS[20];
-
-    if ( ( nb = std::sscanf ( str.c_str(),"%s %s %s %lf %lf %lf %lf %lf %lf",
-                              type, tmpPath, tmpCRS, &bbox->xmin, &bbox->ymax, &bbox->xmax, &bbox->ymin, resx, resy ) ) == 9 ) {
-        if ( memcmp ( type,"IMG",3 ) ) {
-            LOGGER_ERROR ( "We have to read an image information at first." );
-            return 1;
+            if (masks->size() == 0 || masks->back()) {
+                // La première ligne ne peut être un masque et on ne peut pas avoir deux masques à la suite
+                LOGGER_ERROR ( "A MSK line have to follow an IMG line" );
+                LOGGER_ERROR ( "\t line : " << line );   
+                return false;             
+            }
+        }
+        else {
+            LOGGER_ERROR ( "We have to read 9 values for IMG or 2 for MSK" );
+            LOGGER_ERROR ( "\t line : " << line );
+            return false;
         }
 
-        pos = file.tellg();
-    } else {
-        LOGGER_ERROR ( "We have to read 9 values, we have " << nb );
-        LOGGER_ERROR ( "\t line : " << str );
-        return 1;
-    }
+        char* path = (char*) malloc(IMAGE_MAX_FILENAME_LENGTH);
+        memset ( path, 0, IMAGE_MAX_FILENAME_LENGTH );
 
-    crs->assign ( tmpCRS );
-
-    if ( ! strncmp ( tmpPath,"?",1 ) ) {
-        strcpy ( imageFileName,outImagesRoot );
-        strcpy ( & ( imageFileName[rootLength] ),& ( tmpPath[1] ) );
-    } else {
-        strcpy ( imageFileName,tmpPath );
-    }
-
-    str.clear();
-
-    // Récupération d'un éventuel masque
-    while ( str.empty() ) {
-        if ( file.eof() ) {
-            *hasMask = false;
-            return 0;
-        }
-        std::getline ( file,str );
-    }
-
-    if ( ( std::sscanf ( str.c_str(),"%s %s", type, tmpPath ) ) != 2 || memcmp ( type,"MSK",3 ) ) {
-        /* La ligne ne correspond pas au masque associé à l'image lue juste avant.
-         * C'est en fait l'image suivante (ou une erreur). On doit donc remettre le
-         * pointeur de manière à ce que cette ligne soit lue au prochain appel de
-         * readFileLine.
-         */
-        *hasMask = false;
-        file.seekg ( pos );
-    } else {
         if ( ! strncmp ( tmpPath,"?",1 ) ) {
-            strcpy ( maskFileName,outImagesRoot );
-            strcpy ( & ( maskFileName[rootLength] ),& ( tmpPath[1] ) );
+            strcpy ( path, outImagesRoot );
+            strcpy ( & ( path[rootLength] ),& ( tmpPath[1] ) );
         } else {
-            strcpy ( maskFileName,tmpPath );
+            strcpy ( path,tmpPath );
         }
-        *hasMask = true;
+
+        // On ajoute tout ça dans les vecteurs
+        masks->push_back(isMask);
+        paths->push_back(path);
+        srss->push_back(crs);
+        bboxes->push_back(bb);
+        resxs->push_back(resx);
+        resys->push_back(resy);
+
     }
 
-    return 0;
+    if (file.eof()) {
+        LOGGER_DEBUG("Fin du fichier de configuration atteinte");
+        file.close();
+        return true;
+    } else {
+        LOGGER_ERROR("Failure reading the configuration file " << imageListFilename);
+        file.close();
+        return false;
+    }
+
 }
 
 /**
@@ -481,69 +496,67 @@ int readFileLine ( std::ifstream& file, char* imageFileName, bool* hasMask, char
  */
 int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<FileImage*>* pImageIn ) {
 
-    // Ouverture du fichier texte listant les images
-    std::ifstream file;
 
-    file.open ( imageListFilename );
-    if ( !file ) {
-        LOGGER_ERROR ( "Impossible d'ouvrir le fichier " << imageListFilename );
+    std::vector<bool> masks;
+    std::vector<char*> paths;
+    std::vector<std::string> srss;
+    std::vector<BoundingBox<double> > bboxes;
+    std::vector<double> resxs;
+    std::vector<double> resys;
+
+    if (! loadConfiguration(&masks, &paths, &srss, &bboxes, &resxs, &resys) ) {
+        LOGGER_ERROR ( "Cannot load configuration file " << imageListFilename );
         return -1;
     }
 
-
-    /********************** LA SORTIE : LECTURE *************************/
-    /* On récupère les informations mais on ne crée pas l'objet image. Pour cela, on attend de lire les images en entrée pour avoir les caractéristiques */
-    char outImageFileName[IMAGE_MAX_FILENAME_LENGTH];
-    char outMaskFileName[IMAGE_MAX_FILENAME_LENGTH];
-    BoundingBox<double> outBbox ( 0.,0.,0.,0. );
-    bool outHasMask;
-    std::string outStringCRS;
-    double outresx, outresy;
-    if ( readFileLine ( file, outImageFileName, &outHasMask, outMaskFileName, &outStringCRS, &outBbox,&outresx,&outresy ) ) {
-        LOGGER_ERROR ( "Erreur lecture des premieres lignes du fichier de parametres: " << imageListFilename );
+    // On doit avoir au moins deux lignes, trois si on a un masque de sortie
+    if (masks.size() < 2 || (masks.size() == 2 && masks.back()) ) {
+        LOGGER_ERROR ( "We have no input images in configuration file " << imageListFilename );
         return -1;
     }
 
-    /****************** LES ENTRÉES : LECTURE & CRÉATION ******************/
-    char imageFileName[IMAGE_MAX_FILENAME_LENGTH];
-    char maskFileName[IMAGE_MAX_FILENAME_LENGTH];
-    BoundingBox<double> bbox ( 0.,0.,0.,0. );
-    int width, height;
-    bool hasMask;
-    std::string stringCRS;
-    double resx, resy;
+    // On va charger les images en entrée en premier pour avoir certaines informations
+    int firstInput = 1;
+    if (masks.at(1)) {
+        // La deuxième ligne est le masque de sortie
+        firstInput = 2;
+    }
+
+    /****************** LES ENTRÉES : CRÉATION ******************/
+
     FileImageFactory factory;
     int nbImgsIn = 0;
 
-    int out=0;
-    while ( ( out = readFileLine ( file, imageFileName, &hasMask, maskFileName, &stringCRS, &bbox, &resx, &resy ) ) == 0 ) {
-
-        CRS crs;
+    for ( int i = firstInput; i < masks.size(); i++ ) {
 
         nbImgsIn++;
+        LOGGER_DEBUG("Input " << nbImgsIn);
 
-        if ( resx == 0. || resy == 0.) {
+        if ( resxs.at(i) == 0. || resys.at(i) == 0.) {
             LOGGER_ERROR ( "Source image " << nbImgsIn << " is not valid (resolutions)" );
             return -1;
         }
 
-        crs.setRequestCode ( stringCRS );
+        CRS crs;
+        crs.setRequestCode ( srss.at(i) );
 
-        if ( ! crs.validateBBox ( bbox ) ) {
-            LOGGER_DEBUG("Warning : the input image's (" << imageFileName << ") bbox (" << bbox.toString() << ") is not included in the srs (" << stringCRS << ") definition extent");
+        if ( ! crs.validateBBox ( bboxes.at(i) ) ) {
+            LOGGER_DEBUG("Warning : the input image's (" << paths.at(i) << ") bbox (" << bboxes.at(i).toString() << ") is not included in the srs (" << srss.at(i) << ") definition extent");
         }
 
-        FileImage* pImage=factory.createImageToRead ( imageFileName, bbox, resx, resy );
+        FileImage* pImage=factory.createImageToRead ( paths.at(i), bboxes.at(i), resxs.at(i), resys.at(i) );
         if ( pImage == NULL ) {
-            LOGGER_ERROR ( "Impossible de creer une image a partir de " << imageFileName );
+            LOGGER_ERROR ( "Impossible de creer une image a partir de " << paths.at(i) );
             return -1;
         }
         pImage->setCRS ( crs );
+        delete paths.at(i);
 
-        if ( hasMask ) {
-            FileImage* pMask=factory.createImageToRead ( maskFileName, bbox, resx, resy );
+        if ( i+1 < masks.size() && masks.at(i+1) ) {
+            i++;
+            FileImage* pMask=factory.createImageToRead ( paths.at(i), bboxes.at(i), resxs.at(i), resys.at(i) );
             if ( pMask == NULL ) {
-                LOGGER_ERROR ( "Impossible de creer un masque a partir de " << maskFileName );
+                LOGGER_ERROR ( "Impossible de creer un masque a partir de " << paths.at(i) );
                 return -1;
             }
             pMask->setCRS ( crs );
@@ -552,6 +565,7 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
                 LOGGER_ERROR ( "Cannot add mask to the input FileImage" );
                 return -1;
             }
+            delete paths.at(i);
         }
 
         pImageIn->push_back ( pImage );
@@ -591,14 +605,6 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
         }
     }
 
-    if ( out != -1 ) {
-        LOGGER_ERROR ( "Erreur lecture du fichier de parametres: " << imageListFilename );
-        return -1;
-    }
-
-    // Fermeture du fichier
-    file.close();
-
     if ( pImageIn->size() == 0 ) {
         LOGGER_ERROR ( "Erreur lecture du fichier de parametres '" << imageListFilename << "' : pas de données en entrée." );
         return -1;
@@ -616,37 +622,39 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
         photometric = Photometric::RGB;
     }
 
-    CRS outCrs ( outStringCRS );
+    CRS outCrs ( srss.at(0) );
 
     // Arrondi a la valeur entiere la plus proche
-    width = lround ( ( outBbox.xmax - outBbox.xmin ) / ( outresx ) );
-    height = lround ( ( outBbox.ymax - outBbox.ymin ) / ( outresy ) );
+    int width = lround ( ( bboxes.at(0).xmax - bboxes.at(0).xmin ) / ( resxs.at(0) ) );
+    int height = lround ( ( bboxes.at(0).ymax - bboxes.at(0).ymin ) / ( resys.at(0) ) );
 
     *ppImageOut = factory.createImageToWrite (
-        outImageFileName, outBbox, outresx, outresy, width, height,
+        paths.at(0), bboxes.at(0), resxs.at(0), resys.at(0), width, height,
         samplesperpixel, sampleformat, bitspersample, photometric, compression
     );
 
     if ( *ppImageOut == NULL ) {
-        LOGGER_ERROR ( "Impossible de creer l'image " << imageFileName );
+        LOGGER_ERROR ( "Impossible de creer l'image " << paths.at(0) );
         return -1;
     }
 
     ( *ppImageOut )->setCRS ( outCrs );
+    delete paths.at(0);
 
-    if ( outHasMask ) {
+    if ( firstInput == 2 ) {
 
         *ppMaskOut = factory.createImageToWrite (
-            outMaskFileName, outBbox,outresx, outresy, width, height,
+            paths.at(1), bboxes.at(0), resxs.at(0), resys.at(0), width, height,
             1, SampleFormat::UINT, 8, Photometric::MASK, Compression::DEFLATE
         );
 
         if ( *ppMaskOut == NULL ) {
-            LOGGER_ERROR ( "Impossible de creer le masque " << outMaskFileName );
+            LOGGER_ERROR ( "Impossible de creer le masque " << paths.at(1) );
             return -1;
         }
 
         ( *ppMaskOut )->setCRS ( outCrs );
+        delete paths.at(1);
     }
 
     if (debugLogger) ( *ppImageOut )->print();
