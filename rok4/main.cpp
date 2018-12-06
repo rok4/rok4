@@ -271,7 +271,6 @@ int main ( int argc, char** argv ) {
             sock = W->getFCGISocket();
         } else {
             LOGGER_INFO ( _ ( "Extinction du serveur ROK4" ) );
-            W->killFCGI();
         }
 #if BUILD_OBJECT
         rok4DisconnectObjectContext(W);

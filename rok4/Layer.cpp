@@ -96,6 +96,7 @@ Layer::Layer (Layer* obj, ServerXML* sxml) {
     abstract = obj->abstract;
     WMSAuthorized = obj->WMSAuthorized;
     WMTSAuthorized = obj->WMTSAuthorized;
+    TMSAuthorized = obj->TMSAuthorized;
     keyWords = obj->keyWords;
     dataPyramidFilePath = obj->dataPyramidFilePath;
 

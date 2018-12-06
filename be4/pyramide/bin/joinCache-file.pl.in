@@ -143,15 +143,17 @@ Informations are treated, interpreted and store in this hash, using JOINCACHE cl
 
     propertiesLoader - <JOINCACHE::PropertiesLoader> - Contains all raw informations
     pyramid - <COMMON::Pyramid> - Output pyramid
-    process - <JOINCACHE::Process> - Compute the final pyramid
-    bboxes - array hash - Defines identifiants with associated validated bounding boxes (as array)
-    sourcePyramids - <COMMON::Pyramid> hash - Key is the descriptor's path. We have an complete and without repetition list of source pyramids.
-    composition - hash - Contain validate and pre-treated composition :
-|       level_id => priority => {
-|               extremTiles => [colMin, rowMin, colMax, rowMax],
-|               extremSlabs => [colMin, rowMin, colMax, rowMax], # = extremTiles / (number of tiles in the dimension)
-|               sourcePyramid => <COMMON::SourcePyramid>
-|       }
+    commands - <COMMON::ShellCommands> - Commands to configure and use to generate slabs to merge
+    mergeMethod - string - Method to use merge slabs when several sources
+    scripts - <COMMON::Script> array - Split scripts to use to generate slabs to merge
+    currentScript - integer - Script index to use for the next task (round robin share)
+    composition - hash - Defines source pyramids for each level, extent, and order
+|       level_id => [
+|           { extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]] pyr => COMMON::Pyramid}
+|           { extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]] pyr => COMMON::Pyramid}
+|       ]
+    listStream - file stream - Open file stream to write the new pyramid list
+    roots - hash - Used source pyramids roots (for the list)
     doneSlabs - boolean hash - To memorize already done tiles, we use this hash, containing "I_J => TRUE".
 =cut
 my %this =
@@ -361,7 +363,7 @@ sub validate {
     }
 
     if ($objPyramid->getStorageType() ne "FILE") {
-        ERROR ("JoinCache only handle FILE output pyramid");
+        ERROR ("JoinCache-File only handle FILE output pyramid");
         return FALSE;
     }
     

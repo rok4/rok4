@@ -733,13 +733,6 @@ public:
     void initFCGI();
     /**
      * \~french
-     * \brief Détruit le socket FastCGI
-     * \~english
-     * \brief Destroy the FastCGI Socket
-     */
-    void killFCGI();
-    /**
-     * \~french
      * Utilisé pour le rechargement de la configuration du serveur
      * \brief Retourne la représentation interne du socket FastCGI
      * \return la représentation interne du socket
