@@ -114,7 +114,7 @@ void* Rok4Server::thread_loop ( void* arg ) {
         int rc;
         if ( ( rc=FCGX_Accept_r ( &fcgxRequest ) ) < 0 ) {
             if ( rc == -4 ) { // Cas du redémarrage
-                LOGGER_INFO ( _ ( "Redémarrage : FCGX_InitRequest renvoie le code d'erreur " ) << rc );
+                LOGGER_DEBUG ( _ ( "Redémarrage : FCGX_InitRequest renvoie le code d'erreur " ) << rc );
             } else {
                 LOGGER_ERROR ( _ ( "FCGX_InitRequest renvoie le code d'erreur " ) << rc );
                 std::cerr <<"FCGX_InitRequest renvoie le code d'erreur " << rc << std::endl;
@@ -124,13 +124,6 @@ void* Rok4Server::thread_loop ( void* arg ) {
         }
 
         LOGGER_DEBUG("Thread " << pthread_self() << " traite une requete");
-
-        //DEBUG: La boucle suivante permet de lister les valeurs dans fcgxRequest.envp
-        /*char **p;
-        for (p = fcgxRequest.envp; *p; ++p) {
-            LOGGER_DEBUG((char*)*p);
-        }*/
-
 
         bool postRequest = false;
         if (server->servicesConf->isPostEnabled() && strcmp ( FCGX_GetParam ( "REQUEST_METHOD",fcgxRequest.envp ),"POST" ) == 0) {

@@ -303,7 +303,7 @@ DataStream* Rok4Server::getFeatureInfoParamWMS (
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le nombre de couche interrogée est limité à 1." ),"wms" ) );
     }
 
-    for (unsigned u1; u1 < queryLayersString.size(); u1++) {
+    for (unsigned u1 = 0; u1 < queryLayersString.size(); u1++) {
 
         Layer* lay = serverConf->getLayer(queryLayersString.at(u1));
         if ( lay == NULL )
@@ -311,10 +311,10 @@ DataStream* Rok4Server::getFeatureInfoParamWMS (
     
         bool querylay_is_in_layer = false;
         std::vector<Layer*>::iterator itLay = layers.begin();
-        for (unsigned int u2 ; u2 < layers.size(); u2++ ){
-            if (lay->getId() == layers.at(u2)->getId() ){
-              querylay_is_in_layer = true;
-              break;
+        for (unsigned int u2 = 0 ; u2 < layers.size(); u2++ ){
+            if ( lay->getId() == layers.at(u2)->getId() ) {
+                querylay_is_in_layer = true;
+                break;
             }
         }
         if (querylay_is_in_layer == false){
