@@ -50,6 +50,7 @@
 
 Style::Style ( const StyleXML& s ) {
     this->id = s.id;
+    this->identifier = s.identifier;
     this->titles = s.titles;
     this->abstracts = s.abstracts;
     this->keywords = s.keywords;
@@ -64,6 +65,7 @@ Style::Style ( const StyleXML& s ) {
 Style::Style ( Style* obj) {
 
     id = obj->id;
+    identifier = obj->identifier;
     titles= obj->titles;
     abstracts = obj->abstracts;
     keywords = obj->keywords;

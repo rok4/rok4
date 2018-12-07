@@ -198,7 +198,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
             continue;
         }
 
-        if ( sty->getId().compare ( DEFAULT_STYLE_INSPIRE_ID ) == 0 ) {
+        if ( sty->getIdentifier().compare ( DEFAULT_STYLE_INSPIRE_ID ) == 0 ) {
             inspireStyleName = styleName;
         }
         styles.push_back ( sty );

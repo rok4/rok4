@@ -1,0 +1,125 @@
+<tileMatrixSet>
+	<crs>EPSG::2056</crs>
+	<title>TileMatrix using 0.28mm</title>
+	<abstract>The tile matrix set that has scale values calculated based on the dpi defined by OGC specification (dpi assumes 0.28mm as the physical distance of a pixel).</abstract>
+	<tileMatrix>
+		<id>0</id>
+		<resolution>135.466937601</resolution>
+		<topLeftCornerX> 2462122.16 </topLeftCornerX>
+		<topLeftCornerY> 1160775.62 </topLeftCornerY>
+		<tileWidth>512</tileWidth>
+		<tileHeight>512</tileHeight>
+		<matrixWidth>1</matrixWidth>
+		<matrixHeight>1</matrixHeight>
+	</tileMatrix>
+	<tileMatrix>
+		<id>1</id>
+		<resolution>67.7334688</resolution>
+		<topLeftCornerX> 2462122.16 </topLeftCornerX>
+		<topLeftCornerY> 1160775.62 </topLeftCornerY>
+		<tileWidth>512</tileWidth>
+		<tileHeight>512</tileHeight>
+		<matrixWidth>2</matrixWidth>
+		<matrixHeight>2</matrixHeight>
+	</tileMatrix>
+	<tileMatrix>
+		<id>2</id>
+		<resolution>33.8667344</resolution>
+		<topLeftCornerX> 2462122.16 </topLeftCornerX>
+		<topLeftCornerY> 1160775.62 </topLeftCornerY>
+		<tileWidth>512</tileWidth>
+		<tileHeight>512</tileHeight>
+		<matrixWidth>3</matrixWidth>
+		<matrixHeight>3</matrixHeight>
+	</tileMatrix>
+	<tileMatrix>
+		<id>3</id>
+		<resolution>16.9333672</resolution>
+		<topLeftCornerX> 2462122.16 </topLeftCornerX>
+		<topLeftCornerY> 1160775.62 </topLeftCornerY>
+		<tileWidth>512</tileWidth>
+		<tileHeight>512</tileHeight>
+		<matrixWidth>6</matrixWidth>
+		<matrixHeight>6</matrixHeight>
+	</tileMatrix>
+	<tileMatrix>
+		<id>4</id>
+		<resolution>8.4666836</resolution>
+		<topLeftCornerX> 2462122.16 </topLeftCornerX>
+		<topLeftCornerY> 1160775.62 </topLeftCornerY>
+		<tileWidth>512</tileWidth>
+		<tileHeight>512</tileHeight>
+		<matrixWidth>12</matrixWidth>
+		<matrixHeight>12</matrixHeight>
+	</tileMatrix>
+	<tileMatrix>
+		<id>5</id>
+		<resolution>4.2333418</resolution>
+		<topLeftCornerX> 2462122.16 </topLeftCornerX>
+		<topLeftCornerY> 1160775.62 </topLeftCornerY>
+		<tileWidth>512</tileWidth>
+		<tileHeight>512</tileHeight>
+		<matrixWidth>24</matrixWidth>
+		<matrixHeight>24</matrixHeight>
+	</tileMatrix>
+	<tileMatrix>
+		<id>6</id>
+		<resolution>2.1166709</resolution>
+		<topLeftCornerX> 2462122.16 </topLeftCornerX>
+		<topLeftCornerY> 1160775.62 </topLeftCornerY>
+		<tileWidth>512</tileWidth>
+		<tileHeight>512</tileHeight>
+		<matrixWidth>48</matrixWidth>
+		<matrixHeight>48</matrixHeight>
+	</tileMatrix>
+	<tileMatrix>
+		<id>7</id>
+		<resolution>1.05833545</resolution>
+		<topLeftCornerX> 2462122.16 </topLeftCornerX>
+		<topLeftCornerY> 1160775.62 </topLeftCornerY>
+		<tileWidth>512</tileWidth>
+		<tileHeight>512</tileHeight>
+		<matrixWidth>95</matrixWidth>
+		<matrixHeight>95</matrixHeight>
+	</tileMatrix>
+	<tileMatrix>
+		<id>8</id>
+		<resolution>0.529167725</resolution>
+		<topLeftCornerX> 2462122.16 </topLeftCornerX>
+		<topLeftCornerY> 1160775.62 </topLeftCornerY>
+		<tileWidth>512</tileWidth>
+		<tileHeight>512</tileHeight>
+		<matrixWidth>189</matrixWidth>
+		<matrixHeight>190</matrixHeight>
+	</tileMatrix>
+	<tileMatrix>
+		<id>9</id>
+		<resolution>0.264583863</resolution>
+		<topLeftCornerX> 2462122.16 </topLeftCornerX>
+		<topLeftCornerY> 1160775.62 </topLeftCornerY>
+		<tileWidth>512</tileWidth>
+		<tileHeight>512</tileHeight>
+		<matrixWidth>377</matrixWidth>
+		<matrixHeight>379</matrixHeight>
+	</tileMatrix>
+	<tileMatrix>
+		<id>10</id>
+		<resolution>0.132291931</resolution>
+		<topLeftCornerX> 2462122.16 </topLeftCornerX>
+		<topLeftCornerY> 1160775.62 </topLeftCornerY>
+		<tileWidth>512</tileWidth>
+		<tileHeight>512</tileHeight>
+		<matrixWidth>753</matrixWidth>
+		<matrixHeight>758</matrixHeight>
+	</tileMatrix>
+	<tileMatrix>
+		<id>11</id>
+		<resolution>0.066145966</resolution>
+		<topLeftCornerX> 2462122.16 </topLeftCornerX>
+		<topLeftCornerY> 1160775.62 </topLeftCornerY>
+		<tileWidth>512</tileWidth>
+		<tileHeight>512</tileHeight>
+		<matrixWidth>1506</matrixWidth>
+		<matrixHeight>1515</matrixHeight>
+	</tileMatrix>
+</tileMatrixSet>

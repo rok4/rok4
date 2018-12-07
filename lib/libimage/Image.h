@@ -55,7 +55,7 @@
 #include <typeinfo>
 #include "BoundingBox.h"
 #include "CRS.h"
-#include "math.h"
+#include <cmath>
 
 #define METER_PER_DEG 111319.492
 
@@ -174,8 +174,8 @@ public:
         int calcHeight = lround ( ( bounding_box.ymax - bounding_box.ymin ) / ( resolution_y ) );
 
         if ( calcWidth != w || calcHeight != h ) {
-            LOGGER_DEBUG ( "Warning: height is " << h << " and calculation give " << calcHeight );
-            LOGGER_DEBUG ( "Warning: width is " << w << " and calculation give " << calcWidth );
+            LOGGER_WARN ( "Warning: height is " << h << " and calculation give " << calcHeight );
+            LOGGER_WARN ( "Warning: width is " << w << " and calculation give " << calcWidth );
             return false;
         }
         
@@ -253,7 +253,7 @@ public:
         double calcWidth = (box.xmax - box.xmin) / rx;
         double calcHeight = (box.ymax - box.ymin) / ry;
         
-        if ( abs(calcWidth - w) > 10E-3 || abs(calcHeight - h) > 10E-3) return false;
+        if ( std::abs(calcWidth - w) > 10E-3 || std::abs(calcHeight - h) > 10E-3) return false;
         
         width = w;
         height = h;

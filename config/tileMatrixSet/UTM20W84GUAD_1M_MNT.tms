@@ -1,6 +1,6 @@
 <tileMatrixSet>
-	<crs>IGNF:LAMB93</crs>
-	<tileMatrix>
+	<crs>IGNF:UTM20W84GUAD</crs>
+    <tileMatrix>
 		<id>0</id>
 		<resolution>1000</resolution>
 		<topLeftCornerX>-500</topLeftCornerX>
@@ -8,7 +8,7 @@
 		<tileWidth>256</tileWidth>
 		<tileHeight>256</tileHeight>
 		<matrixWidth>4</matrixWidth>
-		<matrixHeight>23</matrixHeight>
+		<matrixHeight>50</matrixHeight>
 	</tileMatrix>
 	<tileMatrix>
 		<id>1</id>
@@ -18,7 +18,7 @@
 		<tileWidth>256</tileWidth>
 		<tileHeight>256</tileHeight>
 		<matrixWidth>8</matrixWidth>
-		<matrixHeight>46</matrixHeight>
+		<matrixHeight>100</matrixHeight>
 	</tileMatrix>
 	<tileMatrix>
 		<id>2</id>
@@ -28,7 +28,7 @@
 		<tileWidth>256</tileWidth>
 		<tileHeight>256</tileHeight>
 		<matrixWidth>16</matrixWidth>
-		<matrixHeight>92</matrixHeight>
+		<matrixHeight>200</matrixHeight>
 	</tileMatrix>
 	<tileMatrix>
 		<id>3</id>
@@ -38,7 +38,7 @@
 		<tileWidth>256</tileWidth>
 		<tileHeight>256</tileHeight>
 		<matrixWidth>40</matrixWidth>
-		<matrixHeight>230</matrixHeight>
+		<matrixHeight>500</matrixHeight>
 	</tileMatrix>
 	<tileMatrix>
 		<id>4</id>
@@ -48,7 +48,7 @@
 		<tileWidth>256</tileWidth>
 		<tileHeight>256</tileHeight>
 		<matrixWidth>54</matrixWidth>
-		<matrixHeight>307</matrixHeight>
+		<matrixHeight>667</matrixHeight>
 	</tileMatrix>
 	<tileMatrix>
 		<id>5</id>
@@ -58,7 +58,7 @@
 		<tileWidth>256</tileWidth>
 		<tileHeight>256</tileHeight>
 		<matrixWidth>80</matrixWidth>
-		<matrixHeight>460</matrixHeight>
+		<matrixHeight>1000</matrixHeight>
 	</tileMatrix>
 	<tileMatrix>
 		<id>6</id>
@@ -68,7 +68,7 @@
 		<tileWidth>256</tileWidth>
 		<tileHeight>256</tileHeight>
 		<matrixWidth>160</matrixWidth>
-		<matrixHeight>920</matrixHeight>
+		<matrixHeight>2000</matrixHeight>
 	</tileMatrix>
 	<tileMatrix>
 		<id>7</id>
@@ -78,7 +78,7 @@
 		<tileWidth>256</tileWidth>
 		<tileHeight>256</tileHeight>
 		<matrixWidth>800</matrixWidth>
-		<matrixHeight>4600</matrixHeight>
+		<matrixHeight>10000</matrixHeight>
 	</tileMatrix>
 	<tileMatrix>
 		<id>8</id>
@@ -88,6 +88,6 @@
 		<tileWidth>256</tileWidth>
 		<tileHeight>256</tileHeight>
 		<matrixWidth>4000</matrixWidth>
-		<matrixHeight>23000</matrixHeight>
+		<matrixHeight>50000</matrixHeight>
 	</tileMatrix>
 </tileMatrixSet>

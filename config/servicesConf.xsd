@@ -12,7 +12,7 @@
                 <!-- Qui fournit le service -->
                 <xs:element name="serviceProvider" type="xs:string"/>
                 <!-- Provider site url -->
-                <xs:element name="providerSite" type="xs:string">
+                <xs:element name="providerSite" type="xs:string"/>
                 <!-- Des mots clefs -->
                 <xs:element name="keywordList">
                     <xs:complexType>
@@ -30,7 +30,7 @@
                     </xs:complexType>
                 </xs:element>
                  <!-- Autoriser les requête POST -->
-                 <xs:element name="postMode" type="xs:boolean" minOccurs="0" default="false">
+                 <xs:element name="postMode" type="xs:boolean" minOccurs="0" default="false"/>
                 <!-- Info relative à la facturation du service -->
                 <xs:element name="fee" type="xs:string"/>
                 <!-- Info sur les contraintes d’accès -->
@@ -85,7 +85,7 @@
                     </xs:complexType>
                 </xs:element>
 		
-		<xs:element name="globalCRSList">
+        		<xs:element name="globalCRSList">
                     <xs:complexType>
                     <xs:sequence>
                         <xs:element name="crs" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
@@ -93,7 +93,7 @@
                     </xs:complexType>
                 </xs:element>
                 <!-- Active la gestion lourdes des styles (fonctionne avec tous les formats d'image) sinon uniquement palette PNG -->
-		<xs:element name="fullStylingCapability" type="xs:boolean" minOccurs="0" default="false">
+        		<xs:element name="fullStylingCapability" type="xs:boolean" minOccurs="0" default="false"/>
                 <!-- Paramètres spécifiques WMTS -->
                 <!-- Type de service -->
                 <xs:element name="serviceType" type="xs:string"/>
@@ -101,7 +101,7 @@
                 <xs:element name="serviceTypeVersion" type="xs:string"/>
                 <!-- Paramètre INSPIRE -->
                 <!-- Activation du mode Inspire -->
-                <xs:element name="inspire" type="xs:boolean" default="false">
+                <xs:element name="inspire" type="xs:boolean" default="false"/>
                 <!-- Service Metadata -->
                 <xs:element name="metadataWMS">
                     <xs:complexType>
@@ -121,7 +121,7 @@
                 </xs:element>
                 <!-- Paramètre CRS -->
                 <!-- Activation du mode qui evite les reprojections lorsque le CRS source et le CRS de destination sont equivalents -->
-                <xs:element name="avoidEqualsCRSReprojection" type="xs:boolean" default="false">
+                <xs:element name="avoidEqualsCRSReprojection" type="xs:boolean" default="false"/>               
             </xs:sequence>
         </xs:complexType>
     </xs:element>

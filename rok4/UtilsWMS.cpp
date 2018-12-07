@@ -226,7 +226,7 @@ DataStream* Rok4Server::getMapParamWMS (
             vector_styles.at (k) = layers.at ( k )->getDefaultStyle();
         }
 
-        Style* s = layers.at ( k )->getStyle(vector_styles.at ( k ));
+        Style* s = layers.at ( k )->getStyleByIdentifier(vector_styles.at ( k ));
         if ( s == NULL )
             return new SERDataStream ( new ServiceException ( "",WMS_STYLE_NOT_DEFINED,_ ( "Le style " ) +vector_styles.at ( k ) +_ ( " n'est pas gere pour la couche " ) +vector_layers.at ( k ),"wms" ) );
 
@@ -885,7 +885,7 @@ void Rok4Server::buildWMS130Capabilities() {
                     for ( unsigned int i=0; i < childLayer->getStyles().size(); i++ ) {
                         TiXmlElement * styleEl= new TiXmlElement ( "Style" );
                         Style* style = childLayer->getStyles() [i];
-                        styleEl->LinkEndChild ( DocumentXML::buildTextNode ( "Name", style->getId().c_str() ) );
+                        styleEl->LinkEndChild ( DocumentXML::buildTextNode ( "Name", style->getIdentifier().c_str() ) );
                         int j;
                         for ( j=0 ; j < style->getTitles().size(); ++j ) {
                             styleEl->LinkEndChild ( DocumentXML::buildTextNode ( "Title", style->getTitles() [j].c_str() ) );
@@ -1350,7 +1350,7 @@ void Rok4Server::buildWMS111Capabilities() {
                     for ( unsigned int i=0; i < childLayer->getStyles().size(); i++ ) {
                         TiXmlElement * styleEl= new TiXmlElement ( "Style" );
                         Style* style = childLayer->getStyles() [i];
-                        styleEl->LinkEndChild ( DocumentXML::buildTextNode ( "Name", style->getId().c_str() ) );
+                        styleEl->LinkEndChild ( DocumentXML::buildTextNode ( "Name", style->getIdentifier().c_str() ) );
                         int j;
                         for ( j=0 ; j < style->getTitles().size(); ++j ) {
                             styleEl->LinkEndChild ( DocumentXML::buildTextNode ( "Title", style->getTitles() [j].c_str() ) );
