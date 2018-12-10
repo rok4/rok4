@@ -551,10 +551,10 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
         }
         pImage->setCRS ( crs );
         delete paths.at(i);
-
+        
         if ( i+1 < masks.size() && masks.at(i+1) ) {
-            i++;
-            FileImage* pMask=factory.createImageToRead ( paths.at(i), bboxes.at(i), resxs.at(i), resys.at(i) );
+            
+            FileImage* pMask=factory.createImageToRead ( paths.at(i+1), bboxes.at(i), resxs.at(i), resys.at(i) );
             if ( pMask == NULL ) {
                 LOGGER_ERROR ( "Impossible de creer un masque a partir de " << paths.at(i) );
                 return -1;
@@ -566,6 +566,7 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
                 return -1;
             }
             delete paths.at(i);
+            i++;
         }
 
         pImageIn->push_back ( pImage );
