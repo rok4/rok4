@@ -565,8 +565,8 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
                 LOGGER_ERROR ( "Cannot add mask to the input FileImage" );
                 return -1;
             }
-            delete paths.at(i);
             i++;
+            delete paths.at(i);
         }
 
         pImageIn->push_back ( pImage );
