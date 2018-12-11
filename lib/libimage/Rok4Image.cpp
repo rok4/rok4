@@ -241,7 +241,7 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( std::string name, BoundingB
 
     size_t tmpSize;
     const uint8_t* hdr = sds->getData(tmpSize);
-    if ( tmpSize < 0 ) {
+    if ( hdr == NULL ) {
         LOGGER_ERROR ( "Cannot read header of Rok4Image " << name );
         return NULL;
     }
@@ -267,7 +267,7 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( std::string name, BoundingB
         sds = new StoreDataSource(name, 0, ROK4_IMAGE_HEADER_SIZE, "", c);
         hdr = sds->getData(tmpSize);
 
-        if ( tmpSize < 0) {
+        if ( hdr == NULL) {
             LOGGER_ERROR ( "Erreur lors de la lecture du header et de l'index dans l'objet/fichier " << name );
             delete sds;
             return NULL;
@@ -505,6 +505,10 @@ uint8_t* Rok4Image::memorizeRawTile ( size_t& size, int tile )
              *       - des tuiles en PNG, format propre à ROK4
              * Pour distinguer les deux cas (pas le même décodeur), on va tester la présence d'un en-tête PNG */
             const uint8_t* header = encData->getData(tmpSize);
+            if (header == NULL) {
+                LOGGER_ERROR ( "Cannot read header to discrimine PNG and DEFLATE" );
+                return NULL;
+            }
             if (memcmp(PNG_HEADER, header, 8)) {
                 decData = new DataSourceDecoder<DeflateDecoder> ( encData );
             } else {
@@ -548,6 +552,10 @@ int Rok4Image::getEncodedTile ( uint8_t* buf, int tile )
     size_t realSize;
 
     const uint8_t* tmp = encData->getData(realSize);
+    if (tmp == NULL) {
+        LOGGER_ERROR ( "Cannot read encoded tile (" << tile << ").");
+        return 0;
+    }
     memcpy(buf, tmp, realSize);
     delete encData;
 

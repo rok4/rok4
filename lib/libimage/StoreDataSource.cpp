@@ -112,27 +112,27 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
         // On retourne tout l'objet
         data = new uint8_t[maxsize];
         int tileSize = context->read(data, 0, maxsize, name);
-        tile_size = tileSize;
-        size = tileSize;
         if (tileSize < 0) {
             LOGGER_ERROR ( "Erreur lors de la lecture de la tuile = objet " << name );
             delete[] data;
             data = NULL;
             return NULL;
         }
+        tile_size = tileSize;
+        size = tileSize;
     }
     else if (! readIndex) {
         // On a directement la taille et l'offset
         data = new uint8_t[possize];
         int tileSize = context->read(data, posoff, possize, name);
-        tile_size = tileSize;
-        size = tileSize;
         if (tileSize < 0) {
             LOGGER_ERROR ( "Erreur lors de la lecture de la tuile dans l'objet (sans passer par l'index) " << name );
             delete[] data;
             data = NULL;
             return NULL;
         }
+        tile_size = tileSize;
+        size = tileSize;
     }
     else {
 

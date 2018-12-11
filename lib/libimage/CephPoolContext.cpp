@@ -99,9 +99,9 @@ bool CephPoolContext::connection() {
     }
 
     // On met les timeout à 10 minutes
-    rados_conf_set(cluster, "client_mount_timeout", "600");
-    rados_conf_set(cluster, "rados_mon_op_timeout", "600");
-    rados_conf_set(cluster, "rados_osd_op_timeout", "600");
+    rados_conf_set(cluster, "client_mount_timeout", "60");
+    rados_conf_set(cluster, "rados_mon_op_timeout", "60");
+    rados_conf_set(cluster, "rados_osd_op_timeout", "60");
 
     ret = rados_connect(cluster);
     if (ret < 0) {
@@ -129,11 +129,24 @@ int CephPoolContext::read(uint8_t* data, int offset, int size, std::string name)
         LOGGER_ERROR("Try to read using the unconnected ceph pool context " << pool_name);
         return -1;
     }
-    int readSize = rados_read(io_ctx, name.c_str(), (char*) data, size, offset);
 
-    if (readSize < 0) {
-        LOGGER_ERROR ( "Unable to read " << size << " bytes (from the " << offset << " one) in the object " << name );
-        LOGGER_ERROR (strerror(-readSize));
+    int readSize;
+    int tentative = 1;
+    while(tentative <= 10) {
+        readSize = rados_read(io_ctx, name.c_str(), (char*) data, size, offset);
+        if (readSize < 0) {
+            LOGGER_WARN ( "Try " << tentative );
+            LOGGER_WARN ( "Unable to read " << size << " bytes (from the " << offset << " one) in the object " << name );
+            LOGGER_WARN (strerror(-readSize));
+        } else {
+            break;
+        }
+
+        tentative++;
+    }
+
+    if (tentative == 11) {
+        LOGGER_ERROR ( "Unable to read after 10 tries" );
     }
 
     return readSize;
@@ -217,16 +230,28 @@ bool CephPoolContext::closeToWrite(std::string name) {
 
     LOGGER_DEBUG("Write buffered " << it1->second->size() << " bytes in the ceph object " << name);
 
-    int err = rados_write_full(io_ctx,name.c_str(), &((*(it1->second))[0]), it1->second->size());
-    if (err < 0) {
-        LOGGER_ERROR ( "Unable to flush " << it1->second->size() << " bytes in the object " << name );
-        LOGGER_ERROR (strerror(-err));
-        return false;
+    int tentative = 1;
+    while(tentative <= 10) {
+        int err = rados_write_full(io_ctx,name.c_str(), &((*(it1->second))[0]), it1->second->size());
+        if (err < 0) {
+            LOGGER_WARN ( "Try " << tentative );
+            LOGGER_WARN ( "Unable to flush " << it1->second->size() << " bytes in the object " << name );
+            LOGGER_WARN (strerror(-err));
+        } else {
+            break;
+        }
+
+        tentative++;
     }
 
-    LOGGER_DEBUG("Erase the flushed buffer");
-    delete it1->second;
-    writingBuffers.erase(it1);
+    if (tentative == 11) {
+        LOGGER_ERROR ( "Unable to write after 10 tries" );
+        return false;
+    } else {
+        LOGGER_DEBUG ( "Erase the flushed buffer" );
+        delete it1->second;
+        writingBuffers.erase(it1);
 
-    return true;
+        return true;
+    }
 }
