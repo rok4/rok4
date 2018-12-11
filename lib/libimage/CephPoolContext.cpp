@@ -132,13 +132,23 @@ int CephPoolContext::read(uint8_t* data, int offset, int size, std::string name)
 
     int readSize;
     int tentative = 1;
+    bool error = false;
     while(tentative <= 10) {
         readSize = rados_read(io_ctx, name.c_str(), (char*) data, size, offset);
+
         if (readSize < 0) {
-            LOGGER_WARN ( "Try " << tentative );
-            LOGGER_WARN ( "Unable to read " << size << " bytes (from the " << offset << " one) in the object " << name );
-            LOGGER_WARN (strerror(-readSize));
+            error = true;
+            // Seul le timeout donne lieu à une nouvelle tentative
+            if (readSize == -ETIMEDOUT) {
+                LOGGER_WARN ( "Try " << tentative << " timed out, waiting 1 minute and try again" );
+            } else {
+                LOGGER_ERROR ( "Try " << tentative << " failed" );
+                LOGGER_ERROR ("Error code: " << readSize );
+                LOGGER_ERROR (strerror(-readSize));
+                break;
+            }
         } else {
+            error = false;
             break;
         }
 
@@ -146,8 +156,8 @@ int CephPoolContext::read(uint8_t* data, int offset, int size, std::string name)
         sleep(60);
     }
 
-    if (tentative == 11) {
-        LOGGER_ERROR ( "Unable to read after 10 tries" );
+    if (error) {
+        LOGGER_ERROR ( "Unable to read " << size << " bytes (from the " << offset << " one) in the object " << name  << " after " << tentative << " tries" );
     }
 
     return readSize;
