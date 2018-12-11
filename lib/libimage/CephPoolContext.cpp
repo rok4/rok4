@@ -143,6 +143,7 @@ int CephPoolContext::read(uint8_t* data, int offset, int size, std::string name)
         }
 
         tentative++;
+        sleep(60);
     }
 
     if (tentative == 11) {
@@ -242,6 +243,7 @@ bool CephPoolContext::closeToWrite(std::string name) {
         }
 
         tentative++;
+        sleep(60);
     }
 
     if (tentative == 11) {
