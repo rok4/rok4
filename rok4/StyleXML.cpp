@@ -95,6 +95,10 @@ StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
         return;
     }
     identifier = DocumentXML::getTextStrFromElem(pElem);
+    if ( Request::containForbiddenChars(identifier) ) {
+        LOGGER_ERROR ( _ ( "Style " ) << filePath <<_ ( " : l'identifiant contient des caracteres interdits" ) );
+        return;
+    }
 
     for ( pElem=hRoot.FirstChild ( "Title" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "Title" ) ) {
         

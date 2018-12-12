@@ -664,7 +664,7 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
 
 std::vector<std::string> ConfLoader::loadListEqualsCRS(){
     // Build the list (vector of string) of equals CRS from a file given in parameter
-    char * fileCRS = "/listofequalscrs.txt";
+    const char * fileCRS = "/listofequalscrs.txt";
     char * dirCRS = getenv ( "PROJ_LIB" ); // Get path from config
     char namebuffer[100];
     strcpy(namebuffer, dirCRS);

@@ -104,6 +104,12 @@ DataStream* Rok4Server::getMapParamWMS (
     }
 
     for (unsigned int i = 0 ; i < vector_layers.size(); i++ ) {
+        if ( Request::containForbiddenChars(vector_layers.at(i)) ) {
+            // On a détecté un caractère interdit, on ne met pas le layer fourni dans la réponse pour éviter une injection
+            LOGGER_WARN("Forbidden char detected in WMS layers: " << vector_layers.at(i));
+            return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_DEFINED,_ ( "Layer inconnu." ),"wms" ) );
+        }
+
         Layer* lay = serverConf->getLayer(vector_layers.at(i));
         if ( lay == NULL || ! lay->getWMSAuthorized())
             return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_DEFINED,_ ( "Layer " ) +vector_layers.at(i)+_ ( " inconnu." ),"wms" ) );
@@ -148,6 +154,12 @@ DataStream* Rok4Server::getMapParamWMS (
         if ( str_crs == "" )
             return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre SRS absent." ),"wms" ) );
     }
+
+    if ( Request::containForbiddenChars(str_crs) ) {
+        // On a détecté un caractère interdit, on ne met pas le crs fourni dans la réponse pour éviter une injection
+        LOGGER_WARN("Forbidden char detected in WMS crs: " << str_crs);
+        return new SERDataStream ( new ServiceException ( "",WMS_INVALID_CRS,_ ( "CRS  inconnu" ),"wms" ) );
+    }
    
     // Existence du CRS dans la liste globale de CRS ou de chaque layers
     crs.setRequestCode ( str_crs );
@@ -163,6 +175,12 @@ DataStream* Rok4Server::getMapParamWMS (
     if ( format == "" )
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre FORMAT absent." ),"wms" ) );
 
+    if ( Request::containForbiddenChars(format) ) {
+        // On a détecté un caractère interdit, on ne met pas le format fourni dans la réponse pour éviter une injection
+        LOGGER_WARN("Forbidden char detected in WMS format: " << format);
+        return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Format non gere par le service." ),"wms" ) );
+    }
+
     if ( ! servicesConf->isInFormatList(format) )
         return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Format " ) +format+_ ( " non gere par le service." ),"wms" ) );
 
@@ -172,7 +190,7 @@ DataStream* Rok4Server::getMapParamWMS (
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre BBOX absent." ),"wms" ) );
     std::vector<std::string> coords = split ( strBbox,',' );
 
-    if ( coords.size() !=4 )
+    if ( coords.size() != 4 )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Parametre BBOX incorrect." ),"wms" ) );
     double bb[4];
     for ( int i = 0; i < 4; i++ ) {
@@ -200,8 +218,16 @@ DataStream* Rok4Server::getMapParamWMS (
 
     // EXCEPTION
     std::string str_exception = request->getParam ( "exception" );
-    if ( str_exception != "" && str_exception != "XML" )
+    if ( str_exception != "" && str_exception != "XML" ) {
+
+        if ( Request::containForbiddenChars(str_exception) ) {
+            // On a détecté un caractère interdit, on ne met pas le str_exception fourni dans la réponse pour éviter une injection
+            LOGGER_WARN("Forbidden char detected in WMS exception: " << str_exception);
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Format d'exception non pris en charge" ),"wms" ) );
+        }
+
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Format d'exception " ) +str_exception+_ ( " non pris en charge" ),"wms" ) );
+    }
 
     //STYLES
     if ( ! request->hasParam ( "styles" ) )
@@ -224,6 +250,13 @@ DataStream* Rok4Server::getMapParamWMS (
     for ( int k = 0 ; k  < vector_styles.size(); k++ ) {
         if ( vector_styles.at ( k ) == "" ) {
             vector_styles.at (k) = layers.at ( k )->getDefaultStyle();
+        }
+
+
+        if ( Request::containForbiddenChars(vector_styles.at ( k )) ) {
+            // On a détecté un caractère interdit, on ne met pas le style fourni dans la réponse pour éviter une injection
+            LOGGER_WARN("Forbidden char detected in WMS styles: " << vector_styles.at ( k ));
+            return new SERDataStream ( new ServiceException ( "",WMS_STYLE_NOT_DEFINED,_ ( "Le style n'est pas gere pour la couche " ) +vector_layers.at ( k ),"wms" ) );
         }
 
         Style* s = layers.at ( k )->getStyleByIdentifier(vector_styles.at ( k ));
@@ -305,6 +338,11 @@ DataStream* Rok4Server::getFeatureInfoParamWMS (
 
     for (unsigned u1 = 0; u1 < queryLayersString.size(); u1++) {
 
+        if ( Request::containForbiddenChars(queryLayersString.at(u1))) {
+            LOGGER_WARN("Forbidden char detected in WMS query_layer : " << queryLayersString.at(u1));
+            return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_DEFINED,_ ( "Query_Layer inconnu." ),"wms" ) );
+        }
+
         Layer* lay = serverConf->getLayer(queryLayersString.at(u1));
         if ( lay == NULL )
             return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_DEFINED,_ ( "Query_Layer " ) +queryLayersString.at(u1)+_ ( " inconnu." ),"wms" ) );
@@ -318,11 +356,11 @@ DataStream* Rok4Server::getFeatureInfoParamWMS (
             }
         }
         if (querylay_is_in_layer == false){
-          return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Query_Layer " ) +queryLayersString.at(u1)+_ ( " absent de layer." ),"wms" ) );
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Query_Layer " ) +queryLayersString.at(u1)+_ ( " absent de layer." ),"wms" ) );
         }
     
         if (lay->isGetFeatureInfoAvailable() == false){
-          return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_QUERYABLE,_ ( "Query_Layer " ) +queryLayersString.at(u1)+_ ( " non interrogeable." ),"wms" ) );
+            return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_QUERYABLE,_ ( "Query_Layer " ) +queryLayersString.at(u1)+_ ( " non interrogeable." ),"wms" ) );
         }
         query_layers.push_back ( lay );
     }
@@ -391,6 +429,10 @@ DataStream* Rok4Server::getFeatureInfoParamWMS (
     if ( info_format == "" ){
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre INFO_FORMAT vide." ),"wms" ) );
     } else {
+        if ( Request::containForbiddenChars(info_format)) {
+            LOGGER_WARN("Forbidden char detected in WMS info_format: " << info_format);
+            return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Info_Format non gere par le service." ),"wms" ) );
+        }
         if ( ! servicesConf->isInInfoFormatList(info_format) )
             return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Info_Format " ) +info_format+_ ( " non gere par le service." ),"wms" ) );
     }

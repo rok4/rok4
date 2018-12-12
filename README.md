@@ -16,7 +16,7 @@ BE4 est un ensemble de scripts de traitement permettant la préparation et la tr
 * http://www.geoportail.gouv.fr [@Geoportail](https://twitter.com/Geoportail)
 * http://www.rok4.org
 
-ROK4 Version : 2.6.0-DEVELOP
+ROK4 Version : 2.7.0-DEVELOP
 
 # Fonctionnement général
 
@@ -164,7 +164,7 @@ make [install|package]`
 
 Kakadu est une librairie propriétaire de manipulation d'images JPEG2000. Par défaut c'est OpenJpeg, libre, qui est utilisé.
 
-`KDU_USE (BOOL)` : Active l'utilisation de Kakadu pour la lecture du JPEG2000. Valeur par défaut : `FALSE`
+`KDU_USE (BOOL)` : Active l'utilisation de Kakadu pour la lecture du JPEG2000. Ne pas mettre TRUE mais `1` pour que ce soit bien interprété lors de la compilation dans le code. Valeur par défaut : `0`   
 
 `KDU_LIBRARY_PATH (STRING)` : Si kakadu est utilisé, il est possible de fournir le chemin d'un dossier où chercher la librairie (les fichiers libkdu.a et libkdu_aux.a). Les headers sont embarqués dans le projet ROK4 . Valeur par défaut : `/usr/kakadu-6.4`
 

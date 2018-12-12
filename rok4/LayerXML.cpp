@@ -106,6 +106,12 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
     }
     id=filePath.substr ( idBegin+1, idEnd-idBegin-1 );
 
+    if ( Request::containForbiddenChars(id) ) {
+        LOGGER_ERROR ( _ ( "Layer " ) << id <<_ ( " : l'identifiant de la couche contient des caracteres interdits" ) );
+        return;
+    }
+
+
     pElem=hRoot.FirstChild ( "title" ).Element();
     if ( pElem && pElem->GetText() ) title= DocumentXML::getTextStrFromElem(pElem);
 

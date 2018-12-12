@@ -36,6 +36,7 @@
  */
 
 #include "TileMatrixXML.h"
+#include "Request.h"
 
 
 TileMatrixXML::TileMatrixXML(std::string tmsId, std::string path, TiXmlElement* levelElement) : DocumentXML(path)
@@ -49,6 +50,11 @@ TileMatrixXML::TileMatrixXML(std::string tmsId, std::string path, TiXmlElement* 
         return;
     }
     id = std::string(pElemTM->GetText());
+
+    if ( Request::containForbiddenChars(id) ) {
+        LOGGER_ERROR ( _ ( "TileMatrixSet " ) << tmsId <<_ ( ", un TileMatrix contient des caracteres interdits" ) );
+        return;
+    }
 
     pElemTM = hTM.FirstChild ( "resolution" ).Element();
     if ( !pElemTM || ! ( pElemTM->GetText() ) ) {
