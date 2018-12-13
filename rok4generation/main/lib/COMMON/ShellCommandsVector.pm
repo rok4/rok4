@@ -158,7 +158,7 @@ sub makeJsons {
     my $node = shift;
     my $databaseSource = shift;
 
-    my $code = $databaseSource->getCommandsMakeJson($node->getBBox());
+    my $code = $databaseSource->getCommandMakeJsons($node->getBBox());
 
     return ($code, MAKEJSON_W * $databaseSource->getTablesNumber());
 }
@@ -177,7 +177,14 @@ MakeTiles () {
 
     rm -r ${TMP_DIR}/pbfs/*
 
-    tippecanoe __tpc__ --no-tile-compression -Z ${TOP_LEVEL} -z ${BOTTOM_LEVEL} -e ${TMP_DIR}/pbfs/  ${TMP_DIR}/jsons/*.json
+    local ndetail=12
+    let sum=${BOTTOM_LEVEL}+$ndetail
+
+    if [[ "$sum" -gt 32 ]] ; then
+        let ndetail=32-${BOTTOM_LEVEL}
+    fi
+
+    tippecanoe -s EPSG:3857 --no-tile-compression --full-detail $ndetail -Z ${TOP_LEVEL} -z ${BOTTOM_LEVEL} -e ${TMP_DIR}/pbfs/  ${TMP_DIR}/jsons/*.json
     if [ $? != 0 ] ; then echo $0; fi
 
     rm ${TMP_DIR}/jsons/*.json
