@@ -1,5 +1,5 @@
 <tileMatrixSet>
-	<crs>epsg:4326</crs>
+	<crs>EPSG:4326</crs>
 	<tileMatrix>
 		<id>0</id>
 		<resolution>0.703125</resolution>
@@ -179,5 +179,25 @@
                 <tileHeight>256</tileHeight>
                 <matrixWidth>262144</matrixWidth>
                 <matrixHeight>131072</matrixHeight>
+        </tileMatrix>
+	<tileMatrix>
+                <id>18</id>
+                <resolution>0.000002682209014892578125</resolution>
+                <topLeftCornerX>-180</topLeftCornerX>
+                <topLeftCornerY>90</topLeftCornerY>
+                <tileWidth>256</tileWidth>
+                <tileHeight>256</tileHeight>
+                <matrixWidth>524288</matrixWidth>
+                <matrixHeight>262144</matrixHeight>
+        </tileMatrix>
+        <tileMatrix>
+                <id>19</id>
+                <resolution>0.0000013411045074462890625</resolution>
+                <topLeftCornerX>-180</topLeftCornerX>
+                <topLeftCornerY>90</topLeftCornerY>
+                <tileWidth>256</tileWidth>
+                <tileHeight>256</tileHeight>
+                <matrixWidth>1048576</matrixWidth>
+                <matrixHeight>524288</matrixHeight>
         </tileMatrix>
 </tileMatrixSet>

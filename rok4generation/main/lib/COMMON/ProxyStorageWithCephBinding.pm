@@ -36,7 +36,7 @@
 ################################################################################
 
 =begin nd
-File: ProxyStorage.pm
+File: ProxyStorageWithCephBinding.pm
 
 Class: COMMON::ProxyStorageWithCephBinding
 

@@ -16,7 +16,6 @@ WriteMakefile(
         'bin/4alamo-file.pl',
         'bin/4alamo-ceph.pl',
         'bin/joinCache-file.pl',
-        'bin/joinCache-s3.pl',
         'bin/joinCache-ceph.pl',
         'bin/create-list.pl',
         'bin/create-layer.pl',

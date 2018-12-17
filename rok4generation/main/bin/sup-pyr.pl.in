@@ -269,7 +269,7 @@ sub doIt {
             }
         }
 
-        return TRUE
+        return TRUE;
     }
 
     # On est dans le cas d'un stockage objet : CEPH, S3 ou SWIFT

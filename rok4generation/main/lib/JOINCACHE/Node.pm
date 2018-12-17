@@ -209,33 +209,45 @@ sub _load {
     my $mainLevel = $params->{sourcePyramids}->[$params->{mainSourceIndice}]->{pyr}->getLevel($this->{level});
 
     # On vérifie que cette dalle appartient bien à l'étendue de la source principale
+    # Si c'est une bbox qui était fournie comme extent, on va économiser un intersect GDAL couteux
 
-    my @slabBBOX = $mainLevel->slabIndicesToBbox($this->{col}, $this->{row});
-    my $slabOGR = COMMON::ProxyGDAL::geometryFromBbox(@slabBBOX);
+    if ($params->{sourcePyramids}->[$params->{mainSourceIndice}]->{provided} eq "WKTFILE") {
+        my @slabBBOX = $mainLevel->slabIndicesToBbox($this->{col}, $this->{row});
+        my $slabOGR = COMMON::ProxyGDAL::geometryFromBbox(@slabBBOX);
 
-    if (! COMMON::ProxyGDAL::isIntersected($slabOGR, $params->{sourcePyramids}->[$params->{mainSourceIndice}]->{extent})) {
-        return TRUE;
+        if (! COMMON::ProxyGDAL::isIntersected($slabOGR, $params->{sourcePyramids}->[$params->{mainSourceIndice}]->{extent})) {
+            return TRUE;
+        }
+    } else {
+        # Extent était une bbox, on va pouvoir plus simplement vérifier les coordonnées des dalles sans passer par GDAL
+        # bboxes dans la source contient forcément une seule bbox, celle fournie.
+
+        my ($ROWMIN, $ROWMAX, $COLMIN, $COLMAX) = @{$params->{sourcePyramids}->[$params->{mainSourceIndice}]->{extrem_slabs}};
+
+        if ($this->{col} < $COLMIN || $this->{col} > $COLMAX || $this->{row} < $ROWMIN || $this->{row} > $ROWMAX) {
+            return TRUE;
+        }
     }
 
     # On traite séparément le cas de la source principale (la plus prioritaire car :
-    #   - on sait que la dalle cherchée appartient à la bbox de cette source (vérifiée juste au dessus)
+    #   - on sait que la dalle cherchée appartient à l'extent de cette source (vérifiée juste au dessus)
     #   - si on ne trouve pas la dalle pour cette source, on arrête là. On reviendra éventuellement sur cette dalle après
     #   - si la méthode de fusion est REPLACE, on ne va pas chercher plus loin
 
-    my $imageSlab = $mainLevel->getSlabPath("IMAGE", $this->{col}, $this->{row}, TRUE);
-
-    if ( COMMON::ProxyStorage::isPresent($params->{sourcePyramids}->[$params->{mainSourceIndice}]->{pyr}->getStorageType(), $imageSlab) ) {
+    my $pyr = $params->{sourcePyramids}->[$params->{mainSourceIndice}]->{pyr};
+    my $imgPath = $pyr->containSlab("IMAGE", $this->{level}, $this->{col}, $this->{row});
+    if ( defined $imgPath ) {
         # L'image existe, voyons également si elle a un masque associé
         my %sourceSlab = (
-            img => $imageSlab,
+            img => $imgPath,
             sourcePyramid => $params->{sourcePyramids}->[$params->{mainSourceIndice}]->{pyr}
         );
 
         if ($params->{useMasks} && $mainLevel->ownMasks()) {
 
-            my $maskSlab = $mainLevel->getSlabPath("MASK", $this->{col}, $this->{row}, TRUE);
-            if ( COMMON::ProxyStorage::isPresent($params->{sourcePyramids}->[$params->{mainSourceIndice}]->{pyr}->getStorageType(), $maskSlab) ) {
-                $sourceSlab{msk} = $maskSlab;
+            my $mskPath = $pyr->containSlab("MASK", $this->{level}, $this->{col}, $this->{row});
+            if ( defined $mskPath ) {
+                $sourceSlab{msk} = $mskPath;
             }
         }
 
@@ -249,29 +261,41 @@ sub _load {
     }
 
     for (my $ind = $params->{mainSourceIndice} + 1; $ind < scalar @{$params->{sourcePyramids}}; $ind++) {
-        my $sourceLevel = $params->{sourcePyramids}->[$ind]->{pyr}->getLevel($this->{level});
+        $pyr = $params->{sourcePyramids}->[$ind]->{pyr};
+        my $sourceLevel = $pyr->getLevel($this->{level});
 
-        @slabBBOX = $sourceLevel->slabIndicesToBbox($this->{col}, $this->{row});
-        $slabOGR = COMMON::ProxyGDAL::geometryFromBbox(@slabBBOX);
+        if ($params->{sourcePyramids}->[$ind]->{provided} eq "WKTFILE") {
+            my @slabBBOX = $sourceLevel->slabIndicesToBbox($this->{col}, $this->{row});
+            my $slabOGR = COMMON::ProxyGDAL::geometryFromBbox(@slabBBOX);
 
-        if (! COMMON::ProxyGDAL::isIntersected($slabOGR, $params->{sourcePyramids}->[$ind]->{extent})) {
-            next;
+            if (! COMMON::ProxyGDAL::isIntersected($slabOGR, $params->{sourcePyramids}->[$ind]->{extent})) {
+                next;
+            }
+        } else {
+            # Extent était une bbox, on va pouvoir plus simplement vérifier les coordonnées des dalles sans passer par GDAL
+            # bboxes dans la source contient forcément une seule bbox, celle fournie.
+
+            my ($ROWMIN, $ROWMAX, $COLMIN, $COLMAX) = @{$params->{sourcePyramids}->[$ind]->{extrem_slabs}};
+
+            if ($this->{col} < $COLMIN || $this->{col} > $COLMAX || $this->{row} < $ROWMIN || $this->{row} > $ROWMAX) {
+                next;
+            }
         }
 
-        my $imageSlab = $sourceLevel->getSlabPath("IMAGE", $this->{col}, $this->{row}, TRUE);
-
-        if ( COMMON::ProxyStorage::isPresent($params->{sourcePyramids}->[$ind]->{pyr}->getStorageType(), $imageSlab) ) {
+        
+        my $imgPath = $pyr->containSlab("IMAGE", $this->{level}, $this->{col}, $this->{row});
+        if ( defined $imgPath ) {
             # L'image existe, voyons également si elle a un masque associé
             my %sourceSlab = (
-                img => $imageSlab,
+                img => $imgPath,
                 sourcePyramid => $params->{sourcePyramids}->[$ind]->{pyr}
             );
 
             if ($params->{useMasks} && $sourceLevel->ownMasks()) {
 
-                my $maskSlab = $sourceLevel->getSlabPath("MASK", $this->{col}, $this->{row}, TRUE);
-                if ( COMMON::ProxyStorage::isPresent($params->{sourcePyramids}->[$ind]->{pyr}->getStorageType(), $maskSlab) ) {
-                    $sourceSlab{msk} = $maskSlab;
+                my $mskPath = $pyr->containSlab("MASK", $this->{level}, $this->{col}, $this->{row});
+                if ( defined $mskPath ) {
+                    $sourceSlab{msk} = $mskPath;
                 }
             }
 

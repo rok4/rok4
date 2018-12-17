@@ -69,7 +69,7 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
     pch = strrchr ( name,'.' );
 
     if (pch == NULL) {
-        LOGGER_ERROR ( "Cannto find the dot to determine extension and driver: " << name );
+        LOGGER_ERROR ( "Cannot find the dot to determine extension and driver: " << name );
         return NULL;
     }
 

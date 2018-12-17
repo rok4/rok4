@@ -82,7 +82,7 @@ Les paquets (`Debian`|`Centos`) à installer sont :
 * (`libtiff5-dev`|`libtiff-devel`) pour la lecture et écriture des images TIFF
 * (`libpng16-dev`|`libpng-devel`) pour la lecture des images PNG
 * (`libcurl4-openssl-dev`|`libcurl-devel`) et (`libssl-dev`|`openssl-devel`) pour l'envoi de requête HTTP(S)
-* (`libturbojpeg0-dev`|`turbojpeg-devel`) et (`libjpeg-dev`|`libjpeg-turbo-devel`) pour la lecture des images JPEG
+* (`libturbojpeg0-dev`|`turbojpeg-devel`) et (`libjpeg`|`libjpeg-turbo-devel`) pour la lecture des images JPEG
 * (`libopenjp2-7-dev`|`openjpeg2-devel`) pour la lecture des images JPEG2000 si Kakadu n'est pas utilisé
 * (`libc6-dev`|) pour les l'utilisation de thread POSIX
 
@@ -195,7 +195,7 @@ make [install|package]`
 
 Kakadu est une librairie propriétaire de manipulation d'images JPEG2000. Par défaut c'est OpenJpeg, libre, qui est utilisé.
 
-`KDU_USE (BOOL)` : Active l'utilisation de Kakadu pour la lecture du JPEG2000. Valeur par défaut : `FALSE`
+`KDU_USE (BOOL)` : Active l'utilisation de Kakadu pour la lecture du JPEG2000. Ne pas mettre TRUE mais `1` pour que ce soit bien interprété lors de la compilation dans le code. Valeur par défaut : `0`   
 
 `KDU_LIBRARY_PATH (STRING)` : Si kakadu est utilisé, il est possible de fournir le chemin d'un dossier où chercher la librairie (les fichiers libkdu.a et libkdu_aux.a). Les headers sont embarqués dans le projet ROK4 . Valeur par défaut : `/usr/kakadu-6.4`
 

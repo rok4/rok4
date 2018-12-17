@@ -230,7 +230,6 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
 
         pElem = hLvl.FirstChild ( "cephContext" ).Element();
         if ( pElem ) {
-
             std::string poolName;
 
             TiXmlElement* pElemCephContext = pElem->FirstChildElement("poolName");

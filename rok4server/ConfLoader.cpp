@@ -133,14 +133,6 @@ Style* ConfLoader::buildStyle ( std::string fileName, ServicesXML* servicesXML )
         return NULL;
     }
 
-    std::string name = getFileName(fileName, ".stl");
-
-    // On vérifie que le nom du fichier corresponde bien à l'ID trouvé à l'intérieur, car on va les utiliser indifféremment
-    if (styXML.getId() != name) {
-        LOGGER_ERROR ( _ ( "Identifiant != nom du fichier, on en veut pas : " ) << fileName );
-        return NULL;
-    }
-
     return new Style(styXML);
 }
 
@@ -672,7 +664,7 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
 
 std::vector<std::string> ConfLoader::loadListEqualsCRS(){
     // Build the list (vector of string) of equals CRS from a file given in parameter
-    char * fileCRS = "/listofequalscrs.txt";
+    const char * fileCRS = "/listofequalscrs.txt";
     char * dirCRS = getenv ( "PROJ_LIB" ); // Get path from config
     char namebuffer[100];
     strcpy(namebuffer, dirCRS);

@@ -36,6 +36,7 @@
  */
 
 #include "StyleXML.h"
+#include "ConfLoader.h"
 
 
 StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
@@ -50,9 +51,13 @@ StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
 
     LOGGER_INFO ( _ ( "     Ajout du Style " ) << filePath );
 
+
+    /********************** ID = nom du fichier sans extension */
+
+    id = ConfLoader::getFileName(filePath, ".stl");
+
     /********************** Default values */
 
-    id ="";
     rgbContinuous = false;
     alphaContinuous = false;
     noAlpha = false;
@@ -89,7 +94,11 @@ StyleXML::StyleXML(std::string path, bool inspire) : DocumentXML ( path )
         LOGGER_ERROR ( _ ( "Style " ) << filePath <<_ ( " pas de d'identifiant!!" ) );
         return;
     }
-    id = DocumentXML::getTextStrFromElem(pElem);
+    identifier = DocumentXML::getTextStrFromElem(pElem);
+    if ( Request::containForbiddenChars(identifier) ) {
+        LOGGER_ERROR ( _ ( "Style " ) << filePath <<_ ( " : l'identifiant contient des caracteres interdits" ) );
+        return;
+    }
 
     for ( pElem=hRoot.FirstChild ( "Title" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "Title" ) ) {
         

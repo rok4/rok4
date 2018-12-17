@@ -62,8 +62,8 @@ Attributes:
     extents - hash - Defines identifiants with associated extents (as OGR Geometry)
     composition - hash - Defines source pyramids for each level, extent, and order
 |       level_id => [
-|           { extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]] pyr => COMMON::PyramidRaster}
-|           { extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]] pyr => COMMON::PyramidRaster}
+|           { provided => "BBOX", extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]], bbox => [bbox globale], pyr => COMMON::PyramidRaster}
+|           { provided => "WKTFILE", extent => OGR::Geometry, bboxes => [[bbox1], [bbox2]], bbox => [bbox globale], pyr => COMMON::PyramidRaster}
 |       ]
     sourcePyramids - string hash - Key is the descriptor's path. Just undefined values, to list used pyramids.
     process - hash - Generation parameters
@@ -217,6 +217,7 @@ sub _load {
 
         if ($currentSection eq 'extents') {
             # On lit une 'extent', on va directement la convertir en géométrie OGR
+            # Cependant, on mémorise si c'est une bbox ou un WKT qui est fourni pour optimisé le calcul (ne pas faire d'intersect GDAL, coûteux)
             if (exists $this->{$currentSection}->{$key}) {
                 ERROR ("A property is defined twice in the configuration : section $currentSection, parameter $key");
                 return FALSE;
@@ -232,7 +233,7 @@ sub _load {
                     ERROR("Cannot load extent with ID $key");
                     return FALSE ;
                 }
-
+                $this->{extents}->{$key}->{provided} = "BBOX";
             }
             else {
                 # user supplied a file which contains bounding polygon
@@ -242,6 +243,7 @@ sub _load {
                     ERROR("Cannot load extent with ID $key");
                     return FALSE ;
                 }
+                $this->{extents}->{$key}->{provided} = "WKTFILE";
             }
 
             $this->{extents}->{$key}->{bboxes} = COMMON::ProxyGDAL::getBboxes($this->{extents}->{$key}->{extent});
@@ -249,6 +251,8 @@ sub _load {
                 ERROR("Cannot calculate bboxes from the extent for level $key - $value");
                 return FALSE;
             }
+            my @a = COMMON::ProxyGDAL::getBbox($this->{extents}->{$key}->{extent});
+            $this->{extents}->{$key}->{bbox} = \@a;
 
 
         }
@@ -305,9 +309,9 @@ sub readCompositionLine {
 
         if (! exists $this->{sourcePyramids}->{$pyr}) {
             # we have a new source pyramid, but not yet information about
-            $objPyramid = COMMON::PyramidRaster->new("DESCRIPTOR", $pyr);
+            $objPyramid = COMMON::Pyramid->new("DESCRIPTOR", $pyr);
             if (! defined $objPyramid) {
-                ERROR ("Cannot create the COMMON::PyramidRaster object from source pyramid's descriptor: $pyr ($levelId,$extentId)");
+                ERROR ("Cannot create the COMMON::Pyramid object from source pyramid's descriptor: $pyr ($levelId,$extentId)");
                 return FALSE;
             }
             $this->{sourcePyramids}->{$pyr} = $objPyramid;
@@ -396,6 +400,8 @@ sub _check {
                 return FALSE;
             }
             $source->{bboxes} = $this->{extents}->{$source->{extent}}->{bboxes};
+            $source->{bbox} = $this->{extents}->{$source->{extent}}->{bbox};
+            $source->{provided} = $this->{extents}->{$source->{extent}}->{provided};
             $source->{extent} = $this->{extents}->{$source->{extent}}->{extent};
             $source->{pyr} = $this->{sourcePyramids}->{$source->{pyr}};
         }
@@ -432,7 +438,7 @@ sub getCompositionSection {
     return $this->{composition};
 }
 
-# Function: getBboxesSection
+# Function: getExtentsSection
 sub getExtentsSection {
     my $this = shift;
     return $this->{extents};

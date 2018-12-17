@@ -95,6 +95,7 @@ use lib "$Bin/../lib/perl5";
 use COMMON::Base36;
 use XML::LibXML;
 use PYR2PYR::PropertiesLoader;
+use COMMON::Pyramid;
 
 ################################################################################
 # Constantes
@@ -114,6 +115,23 @@ my %options =
 
     # Mandatory
     "conf"  => undef,
+);
+
+=begin nd
+Variable: HANDLEDCONVERSION
+
+Define handled storage type conversion : if $HANDLEDCONVERSION{fromStorageType}->{toStorageType} exists, it's handled
+
+=cut
+my %HANDLEDCONVERSION = (
+    "FILE" => {
+        "CEPH" => 1,
+        "SWIFT" => 1,
+        "S3" => 1
+    },
+    "CEPH" => {
+        "CEPH" => 1
+    }
 );
 
 =begin nd
@@ -327,7 +345,7 @@ StoreTiles () {
     let jmin=$row*${TPH}
     let jmax=$row*${TPH}+${TPH}-1
                  
-    slab2tiles $fullPath -pool ${POOL_NAME} -ij $col $row -t ${TPW} ${TPH} $prefix_objName
+    slab2tiles $fullPath -pool ${POOL_NAME_DST} -ij $col $row -t ${TPW} ${TPH} $prefix_objName
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
 
@@ -340,11 +358,18 @@ StoreTiles () {
 }
 
 
+GetSlab () {
+    local objName=$1
+  
+    rados -p ${POOL_NAME_SRC} get $objName ${TMP_FILE} 
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+
 StoreSlab () {
     local fullPath=$1
     local objName=$2
   
-    rados -p ${POOL_NAME} put $objName $fullPath 
+    rados -p ${POOL_NAME_DST} put $objName $fullPath 
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 
     echo "0/${objName}" >> ${TMP_LIST_FILE}
@@ -435,6 +460,10 @@ sub doIt {
     my $follow_links = 1;
     my $store_tiles = 0;
     my $script_index = 0;
+    my $from_storage_type = undef;
+    my $from_pool_name = undef; # seulement si pyr2pyr CEPH -> CEPH
+    my $from_pyr_name = undef; # seulement si pyr2pyr CEPH -> CEPH
+    my $to_pyr_name = undef; # seulement si pyr2pyr CEPH -> CEPH
     my $to_storage_type = undef;
     my $containerName = undef;
 
@@ -501,6 +530,27 @@ sub doIt {
     my $tpw;
     my $tph;
 
+    ## Pour connaître le type de stockage de la pyramide source
+    my $srcPyramid = COMMON::Pyramid->new("DESCRIPTOR", $params->{from}->{pyr_desc_file} );
+    if (! defined $srcPyramid) {
+        ERROR("Cannot load source pyramid !");
+        return FALSE;
+    }
+    $from_storage_type = $srcPyramid->getStorageType();
+
+    ## On teste si les types de stockage source et destination sont gérés
+    if (! exists $HANDLEDCONVERSION{$from_storage_type}->{$to_storage_type}) {
+        ERROR("Conversion from $from_storage_type to $to_storage_type is not handled");
+        return FALSE;
+    }
+
+    if ($from_storage_type eq "CEPH") {
+        $from_pool_name = $srcPyramid->getDataRoot();
+        $from_pyr_name = $srcPyramid->getName();
+        $to_pyr_name = $params->{to}->{pyr_name};
+    }
+
+    ## On convertit le descripteur vers la nouvelle pyramide
     my $parser = XML::LibXML->new;
     my $doc    = $parser->parse_file($params->{from}->{pyr_desc_file}) or do {
         ERROR(sprintf "Erreur d'ouverture du fichier pyr (%s) !", $params->{from}->{pyr_desc_file});
@@ -512,48 +562,61 @@ sub doIt {
     foreach my $level (@levelsList) {
         my $id = ($level->findnodes("tileMatrix"))[0]->textContent;
 
-        my ($depthnode) = $level->findnodes("pathDepth");
-        $level->removeChild($depthnode);
+        if ($from_storage_type eq "FILE") {
 
-        my ($nodatanode) = $level->findnodes("nodata");
-        $level->removeChild($nodatanode);
+            my ($depthnode) = $level->findnodes("pathDepth");
+            $level->removeChild($depthnode);
 
-        if ( $store_tiles ) {
-            my $tpw_node = ($level->findnodes("tilesPerWidth"))[0];
-            $tpw = ($level->findnodes("tilesPerWidth"))[0]->textContent;
-            my $tph_node = ($level->findnodes("tilesPerHeight"))[0];
-            $tph = ($level->findnodes("tilesPerHeight"))[0]->textContent;
+            my ($nodatanode) = $level->findnodes("nodata");
+            $level->removeChild($nodatanode);
 
-            $level->removeChild($tpw_node);
-            $level->removeChild($tph_node);
+            if ( $store_tiles ) {
+                my $tpw_node = ($level->findnodes("tilesPerWidth"))[0];
+                $tpw = ($level->findnodes("tilesPerWidth"))[0]->textContent;
+                my $tph_node = ($level->findnodes("tilesPerHeight"))[0];
+                $tph = ($level->findnodes("tilesPerHeight"))[0]->textContent;
 
-            addSubElm($doc, $level, "tilesPerWidth", '0');
-            addSubElm($doc, $level, "tilesPerHeight", '0');
+                $level->removeChild($tpw_node);
+                $level->removeChild($tph_node);
+
+                addSubElm($doc, $level, "tilesPerWidth", '0');
+                addSubElm($doc, $level, "tilesPerHeight", '0');
+            }
+
+            my ($baseDir) = $level->findnodes("baseDir");
+            $level->removeChild($baseDir);
+
+            my ($masknode) = $level->findnodes("mask");
+            if (defined $masknode) {
+                addSubElm($doc, $masknode, "maskPrefix", "${pyrName}_MSK_$id");
+                my ($maskfilenode) = $level->findnodes("mask/baseDir");
+                $masknode->removeChild($maskfilenode);
+            }
+
+            if ( $to_storage_type eq "CEPH" ) {
+                my $cephcontext = $level->addNewChild('', "cephContext");
+                addSubElm($doc, $cephcontext, "poolName", $containerName);
+            }
+            elsif ( $to_storage_type eq "S3" ) {
+                my $s3context = $level->addNewChild('', "s3Context");
+                addSubElm($doc, $s3context, "bucketName", $containerName);
+            }        
+            elsif ( $to_storage_type eq "SWIFT" ) {
+                my $swiftcontext = $level->addNewChild('', "swiftContext");
+                addSubElm($doc, $swiftcontext, "containerName", $containerName);
+            }
+            addSubElm($doc, $level, "imagePrefix", "${pyrName}_IMG_$id");
         }
+        elsif ($from_storage_type eq "CEPH") {
 
-        my ($baseDir) = $level->findnodes("baseDir");
-        $level->removeChild($baseDir);
-
-        my ($masknode) = $level->findnodes("mask");
-        if (defined $masknode) {
-            addSubElm($doc, $masknode, "maskPrefix", "${pyrName}_MSK_$id");
-            my ($maskfilenode) = $level->findnodes("mask/baseDir");
-            $masknode->removeChild($maskfilenode);
+            if ( $to_storage_type eq "CEPH" ) {
+                # Dans le cas de CEPH -> CEPH, on va juste changer le pool
+                my ($oldcephcontext) = $level->findnodes("cephContext");
+                $level->removeChild($oldcephcontext);
+                my $newcephcontext = $level->addNewChild('', "cephContext");
+                addSubElm($doc, $newcephcontext, "poolName", $containerName);
+            }
         }
-
-        if ( $to_storage_type eq "CEPH" ) {
-            my $cephcontext = $level->addNewChild('', "cephContext");
-            addSubElm($doc, $cephcontext, "poolName", $containerName);
-        }
-        elsif ( $to_storage_type eq "S3" ) {
-            my $s3context = $level->addNewChild('', "s3Context");
-            addSubElm($doc, $s3context, "bucketName", $containerName);
-        }        
-        elsif ( $to_storage_type eq "SWIFT" ) {
-            my $swiftcontext = $level->addNewChild('', "swiftContext");
-            addSubElm($doc, $swiftcontext, "containerName", $containerName);
-        }
-        addSubElm($doc, $level, "imagePrefix", "${pyrName}_IMG_$id");
 
         $level->normalize;
 
@@ -584,6 +647,7 @@ sub doIt {
         my $STREAM;
         my $list = "${path_temp}/SCRIPT_$i.list";
         my $file = "${path_temp}/SCRIPT_$i.sh";
+        my $tmpfile = "${path_temp}/SCRIPT_$i.tmp";
         if ( ! (open $STREAM,">", $file )) {
             ERROR(sprintf "Can not open stream to '%s' !", $file);
             return FALSE;
@@ -591,15 +655,20 @@ sub doIt {
         push(@streams, $STREAM);
         print $STREAM "#!/bin/bash\n\n";
         print $STREAM "TMP_LIST_FILE=$list\n";
+        print $STREAM "TMP_FILE=$tmpfile\n";
         print $STREAM "SECONDS=0\n";
         if ( $to_storage_type eq "CEPH" ) {
-            print $STREAM "POOL_NAME=$containerName\n";
+            print $STREAM "POOL_NAME_DST=$containerName\n";
         }
         elsif ( $to_storage_type eq "S3" ) {
             print $STREAM "BUCKET_NAME=$containerName\n";
         }        
         elsif ( $to_storage_type eq "SWIFT" ) {
             print $STREAM "CONTAINER_NAME=$containerName\n";
+        }
+
+        if ( $from_storage_type eq "CEPH" ) {
+            print $STREAM "POOL_NAME_SRC=$from_pool_name\n";
         }
         if ( $store_tiles ) {
             print $STREAM "TPW=$tpw\n";
@@ -674,55 +743,69 @@ sub doIt {
     while (my $line = <FILE>) {
 
         chomp $line;
+        my $cmd = "";
+        if ($from_storage_type eq "FILE") {
+            my @path = split('/',$line);
+            if ( $path[0] ne "0" && $path[1] ne "NODATA" && ! $follow_links ) {
+                next;
+            }
+            $path[0] = $roots{$path[0]};
+            my $fullPath = File::Spec->catfile(@path);
+            my $level = $path[2];
+            my $col;
+            my $row;
 
-        my @path = split('/',$line);
-        if ( $path[0] ne "0" && $path[1] ne "NODATA" && ! $follow_links ) {
-            next;
+            my $objName;
+            my $prefix_objName;
+
+            if ($path[1] eq "NODATA") {
+                next;
+            }
+
+            if ($path[1] eq "MASK") {
+                my $a = $path[3];
+                my $b = $path[4];
+                my $c = $path[5];
+                $c =~ s/\.tif//;
+
+                ($col, $row) = COMMON::Base36::b36PathToIndices("$a/$b/$c");
+                $objName = sprintf("%s_MSK_%s_%s_%s", $params->{to}->{pyr_name}, $level, $col, $row);
+                $prefix_objName = sprintf("%s_MSK_%s", $params->{to}->{pyr_name}, $level);
+            }
+
+            if ($path[1] eq "IMAGE") {
+                my $a = $path[3];
+                my $b = $path[4];
+                my $c = $path[5];
+                $c =~ s/\.tif//;
+
+                ($col, $row) = COMMON::Base36::b36PathToIndices("$a/$b/$c");
+                $objName = sprintf("%s_IMG_%s_%s_%s", $params->{to}->{pyr_name}, $level, $col, $row);
+                $prefix_objName = sprintf("%s_IMG_%s", $params->{to}->{pyr_name}, $level);
+
+            }
+
+            if ( $store_tiles && defined($col) ) {
+                $cmd = sprintf("StoreTiles %s %s %s %s\n", $fullPath, $col, $row, $prefix_objName);
+                DEBUG($cmd);
+            }
+            else {
+                $cmd = sprintf("StoreSlab %s %s\n", $fullPath, $objName);
+                DEBUG($cmd);
+            }
+
         }
-        $path[0] = $roots{$path[0]};
-        my $fullPath = File::Spec->catfile(@path);
-        my $level = $path[2];
-        my $col;
-        my $row;
+        elsif ($from_storage_type eq "CEPH") {
+            my $fromObjectName = $line;
+            $fromObjectName =~ s/^0\///;
 
-        my $objName;
-        my $prefix_objName;
+            my $toObjectName = $line;
+            $toObjectName =~ s/^0\/$from_pyr_name/$to_pyr_name/;
 
-        if ($path[1] eq "NODATA") {
-            next;
-        }
 
-        if ($path[1] eq "MASK") {
-            my $a = $path[3];
-            my $b = $path[4];
-            my $c = $path[5];
-            $c =~ s/\.tif//;
+            $cmd = sprintf("GetSlab %s\n", $fromObjectName);
+            $cmd .= sprintf("StoreSlab \$\{TMP_FILE\} %s\n", $toObjectName);
 
-            ($col, $row) = COMMON::Base36::b36PathToIndices("$a/$b/$c");
-            $objName = sprintf("%s_MSK_%s_%s_%s", $params->{to}->{pyr_name}, $level, $col, $row);
-            $prefix_objName = sprintf("%s_MSK_%s", $params->{to}->{pyr_name}, $level);
-        }
-
-        if ($path[1] eq "IMAGE") {
-            my $a = $path[3];
-            my $b = $path[4];
-            my $c = $path[5];
-            $c =~ s/\.tif//;
-
-            ($col, $row) = COMMON::Base36::b36PathToIndices("$a/$b/$c");
-            $objName = sprintf("%s_IMG_%s_%s_%s", $params->{to}->{pyr_name}, $level, $col, $row);
-            $prefix_objName = sprintf("%s_IMG_%s", $params->{to}->{pyr_name}, $level);
-
-        }
-
-        my $cmd;
-        if ( $store_tiles && defined($col) ) {
-            $cmd = sprintf("StoreTiles %s %s %s %s\n", $fullPath, $col, $row, $prefix_objName);
-            DEBUG($cmd);
-        }
-        else {
-            $cmd = sprintf("StoreSlab %s %s\n", $fullPath, $objName);
-            DEBUG($cmd);
         }
 
         my $stream = $streams[$script_index];

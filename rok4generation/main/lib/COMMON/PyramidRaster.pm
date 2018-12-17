@@ -117,6 +117,8 @@ Attributes:
 
     data_pool - string - Name of the (existing) CEPH pool, where to store data if CEPH storage type
     tiles_storage - boolean - Precise if tiles are stored independently if CEPH storage type
+
+    cachedList - string hash - If loaded, list content in an hash.
 =cut
 
 ################################################################################
@@ -135,6 +137,7 @@ use File::Path;
 use File::Copy;
 use Tie::File;
 use Cwd;
+use Devel::Size qw(size total_size);
 
 use Data::Dumper;
 
@@ -236,7 +239,9 @@ sub new {
 
         # Pyramide CEPH
         data_pool => undef,
-        tiles_storage => FALSE
+        tiles_storage => FALSE,
+
+        cachedList => {}
     };
 
     bless($this, $class);
@@ -897,25 +902,6 @@ sub ownMasks {
     return $this->{own_masks};
 }
 
-# Function: getDataRoot
-sub getDataRoot {
-    my $this = shift;
-
-    if (defined $this->{data_path}) {
-        return $this->{data_path};
-    }
-    elsif (defined $this->{data_pool}) {
-        return $this->{data_pool};
-    }
-    elsif (defined $this->{data_bucket}) {
-        return $this->{data_bucket};
-    }
-    elsif (defined $this->{data_container}) {
-        return $this->{data_container};
-    }
-    return undef;
-}
-
 # Function: keystoneConnection
 sub keystoneConnection {
     my $this = shift;
@@ -982,7 +968,7 @@ Function: getSlabPath
 Returns the theoric slab path, undef if the level is not present in the pyramid
 
 Parameters (list):
-    type - string - IMGAGE, MASK
+    type - string - IMAGE, MASK
     level - string - Level ID
     col - integer - Slab column
     row - integer - Slab row
@@ -1132,6 +1118,25 @@ sub getStorageType {
     return $this->{storage_type};
 }
 
+# Function: getDataRoot
+sub getDataRoot {
+    my $this = shift;
+
+    if (defined $this->{data_path}) {
+        return $this->{data_path};
+    }
+    elsif (defined $this->{data_pool}) {
+        return $this->{data_pool};
+    }
+    elsif (defined $this->{data_bucket}) {
+        return $this->{data_bucket};
+    }
+    elsif (defined $this->{data_container}) {
+        return $this->{data_container};
+    }
+    return undef;
+}
+
 ### FILE
 
 # Function: getDataDir
@@ -1170,6 +1175,136 @@ sub getDataPool {
     return $this->{data_pool};
 }
 
+####################################################################################################
+#                                     Group: List tools                                            #
+####################################################################################################
+
+sub loadList {
+    my $this = shift;
+
+    my $listFile = $this->getListFile();
+
+    if (! open LIST, "<", $listFile) {
+        ERROR("Cannot open pyramid list file (to load content in cache) : $listFile");
+        return FALSE;
+    }
+
+    # Dans le cas objet, pour passer du type présent dans le nom de l'objet au type générique
+    my %objectTypeConverter = (
+        MSK => "MASK",
+        IMG => "IMAGE"
+    );
+
+    # Lecture des racines
+    my %roots;
+    while( my $line = <LIST> ) {
+        chomp $line;
+
+        if ($line eq "#") {
+            # separator between caches' roots and images
+            last;
+        }
+        
+        $line =~ s/\s+//g; # we remove all spaces
+        my @tmp = split(/=/,$line,-1);
+        
+        if (scalar @tmp != 2) {
+            ERROR(sprintf "Wrong formatted pyramid list (root definition) : %s",$line);
+            return FALSE;
+        }
+        
+        $roots{$tmp[0]} = $tmp[1];
+    }
+
+    while( my $line = <LIST> ) {
+        chomp $line;
+
+        # On reconstitue le chemin complet à l'aide des racines de l'index
+        $line =~ m/^(\d+)\/.+/;
+        my $index = $1;
+        my $root = $roots{$index};
+        my $fullline = $line;
+        $fullline =~ s/^(\d+)/$root/;
+
+        # On va vouloir déterminer le niveau, la colonne et la ligne de la dalle, ainsi que le type (IMAGE ou MASK)
+        # Cette extraction diffère selon que l'on est en mode fichier ou objet
+
+        my ($type, $level, $col, $row);
+
+        # Cas fichier
+        if ($this->getStorageType() eq "FILE") {
+            # Une ligne du fichier c'est
+            # Cas fichier : 0/IMAGE/15/AB/CD/EF.tif
+            my @parts = split("/", $line);
+            # La première partie est toujours l'index de la racine, déjà traitée
+            shift(@parts);
+            # Dans le cas d'un stockage fichier, le premier élément du chemin est maintenant le type de donnée
+            $type = shift(@parts);
+            # et le suivant est le niveau
+            $level = shift(@parts);
+
+            ($col,$row) = $this->{levels}->{$level}->getFromSlabPath($line);
+
+        }
+        # Cas objet
+        else {
+            # Une ligne du fichier c'est
+            # Cas objet : 0/PYRAMID_IMG_15_15656_5423
+
+            # Dans le cas d'un stockage objet, on a un nom d'objet de la forme BLA/BLA_BLA_DATATYPE_LEVEL_COL_ROW
+            # DATATYPE vaut MSK ou IMG, à convertir en MASK ou IMAGE
+            my @p = split("_",$line);
+            $col = $p[-2];
+            $row = $p[-1];
+            $level = $p[-3];
+            $type = $objectTypeConverter{$p[-4]};
+        }
+        
+        if (exists $this->{cachedList}->{$level}->{$type}->{"${col}_${row}"}) {
+            WARN("The list contains twice the same slab : $type, $level, $col, $row");
+        }
+        $this->{cachedList}->{$level}->{$type}->{"${col}_${row}"} = $fullline;
+    }
+
+    close(LIST);
+
+    return TRUE;
+}
+
+
+sub getLevelSlabs {
+    my $this = shift;
+    my $level = shift;
+
+    return $this->{cachedList}->{$level};
+} 
+
+
+sub containSlab {
+    my $this = shift;
+    my $type = shift;
+    my $level = shift;
+    my $col = shift;
+    my $row = shift;
+
+    my $key = "${type}_${level}_${col}_${row}";
+    return $this->{cachedList}->{$level}->{$type}->{"${col}_${row}"};
+    # undef if not exists
+} 
+
+
+sub getCachedListStats {
+    my $this = shift;
+
+    my $nb = scalar(keys %{$this->{cachedList}});
+    my $size = total_size($this->{cachedList});
+
+    my $ret = "Stats :\n\t $size bytes\n";
+    # $ret .= "\t $size bytes\n";
+    # $ret .= sprintf "\t %s bytes per cached slab\n", $size / $nb;
+
+    return $ret;
+} 
 
 1;
 __END__

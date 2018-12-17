@@ -104,7 +104,7 @@ void hangleSIGALARM(int id) {
 void* Rok4Server::thread_loop ( void* arg ) {
     Rok4Server* server = ( Rok4Server* ) ( arg );
     FCGX_Request fcgxRequest;
-    if ( FCGX_InitRequest ( &fcgxRequest, server->sock, FCGI_FAIL_ACCEPT_ON_INTR ) !=0 ) {
+    if ( FCGX_InitRequest ( &fcgxRequest, server->sock, FCGI_FAIL_ACCEPT_ON_INTR ) != 0 ) {
         LOGGER_FATAL ( _ ( "Le listener FCGI ne peut etre initialise" ) );
     }
 
@@ -113,21 +113,17 @@ void* Rok4Server::thread_loop ( void* arg ) {
 
         int rc;
         if ( ( rc=FCGX_Accept_r ( &fcgxRequest ) ) < 0 ) {
-            if ( rc != -4 ) { // Cas différent du redémarrage
-                LOGGER_ERROR ( _ ( "FCGX_InitRequest renvoie le code d'erreur" ) << rc );
+            if ( rc == -4 ) { // Cas du redémarrage
+                LOGGER_DEBUG ( _ ( "Redémarrage : FCGX_InitRequest renvoie le code d'erreur " ) << rc );
+            } else {
+                LOGGER_ERROR ( _ ( "FCGX_InitRequest renvoie le code d'erreur " ) << rc );
+                std::cerr <<"FCGX_InitRequest renvoie le code d'erreur " << rc << std::endl;
             }
-            std::cerr <<"FCGX_InitRequest renvoie le code d'erreur" << rc << std::endl;
+            
             break;
         }
 
         LOGGER_DEBUG("Thread " << pthread_self() << " traite une requete");
-
-        //DEBUG: La boucle suivante permet de lister les valeurs dans fcgxRequest.envp
-        /*char **p;
-        for (p = fcgxRequest.envp; *p; ++p) {
-            LOGGER_DEBUG((char*)*p);
-        }*/
-
 
         bool postRequest = false;
         if (server->servicesConf->isPostEnabled() && strcmp ( FCGX_GetParam ( "REQUEST_METHOD",fcgxRequest.envp ),"POST" ) == 0) {
@@ -175,6 +171,7 @@ void* Rok4Server::thread_loop ( void* arg ) {
         server->parallelProcess->checkCurrentPid();
 
     }
+
     LOGGER_DEBUG ( _ ( "Extinction du thread" ) );
     Logger::stopLogger();
     return 0;
@@ -186,14 +183,6 @@ void* Rok4Server::thread_reconnection_loop ( void* arg ) {
     Rok4Server* server = ( Rok4Server* ) ( arg );
 
     while ( server->isRunning() ) {
-
-/*
-        for (int i = 0; i < server->getServerConf()->getReconnectionFrequency(); ++i)
-        {
-            sleep(60);
-            CurlPool::printNumCurls();
-        }
-*/
 
         sleep(server->getServerConf()->getReconnectionFrequency() * 60);
 
@@ -267,13 +256,6 @@ void Rok4Server::initFCGI() {
     }
 }
 
-void Rok4Server::killFCGI() {
-    /*
-    FCGX_CloseSocket ( sock );
-    FCGX_Close();
-    */
-}
-
 void Rok4Server::run(sig_atomic_t signal_pending) {
     running = true;
 
@@ -298,13 +280,13 @@ void Rok4Server::run(sig_atomic_t signal_pending) {
 
 void Rok4Server::terminate() {
     running = false;
-    //FCGX_ShutdownPending();
+
     // Terminate FCGI Thread
     for ( int i = 0; i < threads.size(); i++ ) {
-        pthread_kill ( threads[i], SIGPIPE );
+        pthread_kill ( threads[i], SIGQUIT );
     }
 #if BUILD_OBJECT
-    pthread_kill ( reco_thread, SIGPIPE );
+    pthread_kill ( reco_thread, SIGQUIT );
 #endif
 
     CurlPool::cleanCurlPool();

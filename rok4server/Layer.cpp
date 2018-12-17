@@ -75,7 +75,7 @@ Layer::Layer ( const LayerXML& l ) {
         }
 
         this->styles = l.styles;
-        this->defaultStyle = l.styles[0]->getId();
+        this->defaultStyle = l.styles[0]->getIdentifier();
         this->minRes = l.minRes;
         this->maxRes = l.maxRes;
 
@@ -111,7 +111,6 @@ Layer::Layer (Layer* obj, ServerXML* sxml) {
     geographicBoundingBox = obj->geographicBoundingBox;
     boundingBox = obj->boundingBox;
     metadataURLs = obj->metadataURLs;
-    metadataJson = "";
 
     // On clone la pyramide de données
     dataPyramid = new Pyramid(obj->dataPyramid, sxml);
@@ -155,7 +154,7 @@ Layer::Layer (Layer* obj, ServerXML* sxml) {
                 styles.push_back(s);
             }
         }
-        defaultStyle = styles[0]->getId();
+        defaultStyle = styles[0]->getIdentifier();
     }
 }
 
@@ -194,6 +193,15 @@ Style* Layer::getStyle(std::string id) {
     }
     return NULL;
 }
+
+Style* Layer::getStyleByIdentifier(std::string identifier) {
+    for ( unsigned int i = 0; i < styles.size(); i++ ) {
+        if ( identifier == styles[i]->getIdentifier() )
+            return styles[i];
+    }
+    return NULL;
+}
+
 std::string Layer::getTitle() { return title; }
 std::string Layer::getMetadataJSON() { return metadataJson; }
 void Layer::setMetadataJSON(std::string mjson) { metadataJson = mjson; }

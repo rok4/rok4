@@ -85,7 +85,7 @@ namespace RequestType {
      * \param[in] rt request type to convert
      * \return string namming the request type
      */
-    static std::string toString ( eRequestType rt );
+    std::string toString ( eRequestType rt );
 
 }
 
@@ -111,7 +111,7 @@ namespace ServiceType {
      * \param[in] st service type to convert
      * \return string namming the service type
      */
-    static std::string toString ( eServiceType st );
+    std::string toString ( eServiceType st );
 }
 
 
@@ -174,6 +174,24 @@ public:
 
     /**
      * \~french
+     * \brief Recherche des caractères interdits pour éviter l'injection
+     * \param[in] str la chaîne
+     * \~english
+     * \brief Search forbidden chars to avoid code injection
+     * \param[in] str the string
+     */
+    static bool containForbiddenChars ( std::string str ) {
+        const char* forbidden = "<>";
+        
+        for ( int i = 0; forbidden[i]; i++ )
+            if (str.find(forbidden[i]) != std::string::npos)
+                return true;
+
+        return false;
+    }
+
+    /**
+     * \~french
      * \brief Test de la présence d'un paramètre dans la requête
      * \param[in] paramName nom du paramètre à tester
      * \return true si présent
@@ -231,8 +249,8 @@ public:
         LOGGER_INFO("hostName = " << hostName);
         LOGGER_INFO("path = " << path);
         LOGGER_INFO("scheme = " << scheme);
-        LOGGER_INFO("service = " << toString(service));
-        LOGGER_INFO("request = " <<     toString(request));
+        LOGGER_INFO("service = " << ServiceType::toString(service));
+        LOGGER_INFO("request = " << RequestType::toString(request));
     }
     /**
      * \~french

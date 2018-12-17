@@ -106,6 +106,12 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
     }
     id=filePath.substr ( idBegin+1, idEnd-idBegin-1 );
 
+    if ( Request::containForbiddenChars(id) ) {
+        LOGGER_ERROR ( _ ( "Layer " ) << id <<_ ( " : l'identifiant de la couche contient des caracteres interdits" ) );
+        return;
+    }
+
+
     pElem=hRoot.FirstChild ( "title" ).Element();
     if ( pElem && pElem->GetText() ) title= DocumentXML::getTextStrFromElem(pElem);
 
@@ -355,7 +361,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
                 continue;
             }
 
-            if ( sty->getId().compare ( DEFAULT_STYLE_INSPIRE_ID ) == 0 ) {
+        if ( sty->getIdentifier().compare ( DEFAULT_STYLE_INSPIRE_ID ) == 0 ) {
                 inspireStyleName = styleName;
             }
             styles.push_back ( sty );
@@ -379,6 +385,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
             LOGGER_ERROR ( _ ( "Pas de Style defini, Layer non valide" ) );
             return;
         }
+
         pElem = hRoot.FirstChild ( "minRes" ).Element();
         if ( !pElem || ! ( pElem->GetText() ) ) {
             minRes=0.;

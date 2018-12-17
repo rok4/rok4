@@ -96,6 +96,12 @@ DataSource* Rok4Server::getTileParamTMS ( Request* request, Layer*& layer, std::
 
     // La couche
     std::string str_layer = pathParts.at(tmsVersionPos + 1);
+
+    if ( Request::containForbiddenChars(str_layer)) {
+        LOGGER_WARN("Forbidden char detected in TMS layer: " << str_layer);
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer inconnu." ),"tms" ) );
+    }
+
     layer = serverConf->getLayer(str_layer);
 
     if ( layer == NULL || ! layer->getTMSAuthorized() )
@@ -103,8 +109,15 @@ DataSource* Rok4Server::getTileParamTMS ( Request* request, Layer*& layer, std::
 
 
     // Le niveau
-    str_tileMatrix = pathParts.at(tmsVersionPos + 2);
     TileMatrixSet* tms = layer->getDataPyramid()->getTms();
+
+    str_tileMatrix = pathParts.at(tmsVersionPos + 2);
+
+    if ( Request::containForbiddenChars(str_tileMatrix)) {
+        LOGGER_WARN("Forbidden char detected in TMS tileMatrix: " << str_tileMatrix);
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "TileMatrix inconnu pour le TileMatrixSet " ) +tms->getId(),"wmts" ) );
+    }
+
     if ( tms->getTm(str_tileMatrix) == NULL )
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "TileMatrix " ) +str_tileMatrix+_ ( " inconnu pour le TileMatrixSet " ) +tms->getId(),"wmts" ) );
 
@@ -133,6 +146,11 @@ DataSource* Rok4Server::getTileParamTMS ( Request* request, Layer*& layer, std::
 
     if ( extension == "" )
         return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Extension absente." ),"tms" ) );
+
+    if ( Request::containForbiddenChars(extension)) {
+        LOGGER_WARN("Forbidden char detected in TMS extension: " << extension);
+        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "L'extension n'est pas gere pour la couche " ) +str_layer,"tms" ) );
+    }
 
     if ( extension.compare ( Rok4Format::toExtension ( ( layer->getDataPyramid()->getFormat() ) ) ) != 0 ) {
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "L'extension " ) +extension+_ ( " n'est pas gere pour la couche " ) +str_layer,"tms" ) );
@@ -183,6 +201,12 @@ DataStream* Rok4Server::getLayerParamTMS ( Request* request, Layer*& layer, std:
 
     // La couche
     std::string str_layer = pathParts.at(tmsVersionPos + 1);
+
+    if ( Request::containForbiddenChars(str_layer)) {
+        LOGGER_WARN("Forbidden char detected in TMS layer: " << str_layer);
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer inconnu." ),"tms" ) );
+    }
+
     layer = serverConf->getLayer(str_layer);
 
     if ( layer == NULL || ! layer->getTMSAuthorized() ) {

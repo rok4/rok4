@@ -72,7 +72,7 @@ namespace RequestType {
         "GetVersion"
     };
 
-    std::string toString ( RequestType::eRequestType rt ) {
+    std::string toString ( eRequestType rt ) {
         return std::string ( requesttype_name[rt] );
     }
 }
@@ -87,7 +87,7 @@ namespace ServiceType {
         "TMS"
     };
 
-    std::string toString ( ServiceType::eServiceType st ) {
+    std::string toString ( eServiceType st ) {
         return std::string ( servicetype_name[st] );
     }
 }

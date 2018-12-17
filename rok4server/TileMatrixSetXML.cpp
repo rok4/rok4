@@ -37,6 +37,7 @@
 
 #include "TileMatrixSetXML.h"
 #include "TileMatrixXML.h"
+#include "Request.h"
 
 TileMatrixSetXML::TileMatrixSetXML(std::string path ) : DocumentXML(path)
 {
@@ -77,6 +78,11 @@ TileMatrixSetXML::TileMatrixSetXML(std::string path ) : DocumentXML(path)
         }
     }
     id = filePath.substr ( idBegin+1, idEnd-idBegin-1 );
+
+    if ( Request::containForbiddenChars(id) ) {
+        LOGGER_ERROR ( _ ( "TileMatrixSet " ) << id <<_ ( " : l'identifiant du TMS contient des caracteres interdits" ) );
+        return;
+    }
 
     // Récupération du CRS
 
