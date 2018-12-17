@@ -493,6 +493,14 @@ sub bindTileMatrixSet {
         return FALSE;
     }
 
+    # Une pyramide vecteur ne peux être faite que sur un TMS Quadtree 3857 ou 4326 (limites de tippecanoe)
+    if ( !(uc($this->{tms}->getSRS()) eq "EPSG:3857" && $this->{tms}->isQTree()) && 
+        !(uc($this->{tms}->getSRS()) eq "EPSG:4326" && $this->{tms}->isQTree()))
+    {
+        ERROR("TMS ($tmsFile) is not handled for a vector pyramid (tippecanoe)");
+        return FALSE;
+    }
+
     # 2 : Lier le TileMatrix à chaque niveau de la pyramide
     while (my ($id, $level) = each(%{$this->{levels}}) ) {
         if (! $level->bindTileMatrix($this->{tms})) {

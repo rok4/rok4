@@ -1017,8 +1017,8 @@ For more informations about datasource properties loading, see <COMMON::DataSour
 A datasource configuration to generate a vector pyramid is a JSON file. Structure is:
 
 |   level
-|       srs: Mandatory if extent is provided, and it is its projection
-|       extent: Bbox or wkt file path, area to generate
+|       srs: Mandatory if extent is provided, and it is its projection and considered as data source projection
+|       extent: Bbox or wkt file path, area to generate, in the previous projection
 |       db:
 |           host: postgis server host. Mandatory
 |           port: postgis server port. 5432 if not provided

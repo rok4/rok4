@@ -88,6 +88,9 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
+# Cache for requests
+my $CACHE;
+
 ################################################################################
 
 BEGIN {}
@@ -124,6 +127,7 @@ sub new {
     $class = ref($class) || $class;
 
     my $this = {
+        id => "$dbname,$host,$port,$username,$password",
 
         dbname => $dbname,
         host => $host,
@@ -133,7 +137,7 @@ sub new {
 
         connection => undef,
 
-        current_results => undef
+        current_results => undef,
     };
 
     bless($this, $class);
@@ -1030,42 +1034,6 @@ sub get_tables_array {
 }
 
 =begin nd
-Function: get_distinct_values
-
-Parameter (list):
-    schema_name - string - Schema in which list distinct values
-    table_name - string - Table in which list distinct values
-    att_name - string - Attribute for which we want to list distinct values
-
-Return
-    Distinct values in an array, an empty array if failure
-=cut
-sub get_distinct_values {
-    my $this = shift;
-    my $schema_name = shift;
-    my $table_name = shift;
-    my $att_name = shift;
-
-    my $sql = sprintf "SELECT DISTINCT $att_name FROM $schema_name.$table_name;";
-
-    my $att_values = $this->select_all_row($sql);
-    if ( ! defined $att_values) {
-        ERROR("Cannot list distinct values of $att_name in $schema_name.$table_name");
-        return ();
-    }
-
-    my @array;
-
-    foreach my $val (@{$att_values}) {
-        if (defined $val->[0]) {
-            push @array, $val->[0];
-        }
-    }
-
-    return @array;
-}
-
-=begin nd
 Function: get_min_max_values
 
 Parameter (list):
@@ -1082,10 +1050,15 @@ sub get_min_max_values {
     my $table_name = shift;
     my $att_name = shift;
 
+    if (exists $CACHE->{$this->{id}}->{get_min_max_values}->{$schema_name}->{$table_name}->{$att_name}) {
+        return @{$CACHE->{$this->{id}}->{get_min_max_values}->{$schema_name}->{$table_name}->{$att_name}};
+    }
+
     my $sql = sprintf "SELECT min($att_name), max($att_name) FROM $schema_name.$table_name;";
 
     my @line = $this->select_one_row($sql);
 
+    $CACHE->{$this->{id}}->{get_distinct_values_count}->{$schema_name}->{$table_name}->{$att_name} = [$line[0], $line[1]];
     return ($line[0], $line[1]);
 
 }
@@ -1107,12 +1080,58 @@ sub get_distinct_values_count {
     my $table_name = shift;
     my $att_name = shift;
 
+    if (exists $CACHE->{$this->{id}}->{get_distinct_values_count}->{$schema_name}->{$table_name}->{$att_name}) {
+        return $CACHE->{$this->{id}}->{get_distinct_values_count}->{$schema_name}->{$table_name}->{$att_name};
+    }
+
     my $sql = sprintf "SELECT count(*) FROM (SELECT DISTINCT $att_name FROM $schema_name.$table_name) as tmp;";
 
     my @line = $this->select_one_row($sql);
 
+    $CACHE->{$this->{id}}->{get_distinct_values_count}->{$schema_name}->{$table_name}->{$att_name} = $line[0];
     return $line[0];
+}
 
+
+=begin nd
+Function: get_distinct_values
+
+Parameter (list):
+    schema_name - string - Schema in which list distinct values
+    table_name - string - Table in which list distinct values
+    att_name - string - Attribute for which we want to list distinct values
+
+Return
+    Distinct values in an array, an empty array if failure
+=cut
+sub get_distinct_values {
+    my $this = shift;
+    my $schema_name = shift;
+    my $table_name = shift;
+    my $att_name = shift;
+
+    if (exists $CACHE->{$this->{id}}->{get_distinct_values}->{$schema_name}->{$table_name}->{$att_name}) {
+        return @{$CACHE->{$this->{id}}->{get_distinct_values}->{$schema_name}->{$table_name}->{$att_name}};
+    }
+
+    my $sql = sprintf "SELECT DISTINCT $att_name FROM $schema_name.$table_name;";
+
+    my $att_values = $this->select_all_row($sql);
+    if ( ! defined $att_values) {
+        ERROR("Cannot list distinct values of $att_name in $schema_name.$table_name");
+        return ();
+    }
+
+    my @array;
+
+    foreach my $val (@{$att_values}) {
+        if (defined $val->[0]) {
+            push @array, $val->[0];
+        }
+    }
+
+    $CACHE->{$this->{id}}->{get_distinct_values}->{$schema_name}->{$table_name}->{$att_name} = \@array;
+    return @array;
 }
 
 =begin nd

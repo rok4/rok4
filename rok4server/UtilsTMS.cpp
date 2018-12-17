@@ -260,6 +260,8 @@ DataStream* Rok4Server::TMSGetLayer ( Request* request ) {
         Level * level = element.second;
         tm = layer->getDataPyramid()->getTms()->getTm(level->getId());
         res << "    <TileSet href=\"" << serviceURL << "/" << layer->getId() << "/" << tm->getId() << 
+            "\" minrow=\"" << level->getMinTileRow() << "\" maxrow=\"" << level->getMaxTileRow() << 
+            "\" mincol=\"" << level->getMinTileCol() << "\" maxcol=\"" << level->getMaxTileCol() <<
             "\" units-per-pixel=\"" << tm->getRes() << "\" order=\"" << order << "\" />\n";
         order++;
     }

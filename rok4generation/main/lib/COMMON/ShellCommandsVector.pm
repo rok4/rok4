@@ -128,12 +128,13 @@ my $MAKEJSON = <<'FUNCTION';
 
 mkdir -p ${TMP_DIR}/jsons/
 MakeJson () {
-    local bbox=$1
-    local dburl=$2
-    local sql=$3
-    local output=$4 
+    local srcsrs=$1
+    local bbox=$2
+    local dburl=$3
+    local sql=$4
+    local output=$5
 
-    ogr2ogr -f "GeoJSON" -spat $bbox -sql "$sql" ${TMP_DIR}/jsons/${output}.json PG:"$dburl"
+    ogr2ogr -s_srs $srcsrs -f "GeoJSON" __o2o__ -spat $bbox -sql "$sql" ${TMP_DIR}/jsons/${output}.json PG:"$dburl"
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi     
 }
 FUNCTION
@@ -184,7 +185,7 @@ MakeTiles () {
         let ndetail=32-${BOTTOM_LEVEL}
     fi
 
-    tippecanoe -s EPSG:3857 --no-tile-compression --full-detail $ndetail -Z ${TOP_LEVEL} -z ${BOTTOM_LEVEL} -e ${TMP_DIR}/pbfs/  ${TMP_DIR}/jsons/*.json
+    tippecanoe __tpc__ --no-tile-compression --full-detail $ndetail -Z ${TOP_LEVEL} -z ${BOTTOM_LEVEL} -e ${TMP_DIR}/pbfs/  ${TMP_DIR}/jsons/*.json
     if [ $? != 0 ] ; then echo $0; fi
 
     rm ${TMP_DIR}/jsons/*.json
@@ -334,7 +335,13 @@ sub getConfiguredFunctions {
 
     ######## MAKEJSONS ########
 
+    my $conf_o2o = sprintf "-a_srs %s -t_srs %s", 
+        $this->{pyramid}->getTileMatrixSet()->getSRS(), 
+        $this->{pyramid}->getTileMatrixSet()->getSRS();
+
     $functions .= $MAKEJSON;
+
+    $functions =~ s/__o2o__/$conf_o2o/g;
 
     ######## MAKETILES ########
 

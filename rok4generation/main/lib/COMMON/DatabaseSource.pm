@@ -164,6 +164,7 @@ DatabaseSource constructor. Bless an instance.
 
 Parameters (hash):
 |   {
+|       "srs" => "EPSG:4326",
 |       "db" => {
 |           "host" => "postgis.ign.fr",
 |           "port" => "5433",
@@ -202,6 +203,7 @@ sub new {
         dbname => undef,
         username => undef,
         password => undef,
+        srs => undef,
         tables => {}
     };
 
@@ -222,6 +224,7 @@ Checks and stores attributes' values.
 
 Parameters (hash):
 |   {
+|       "srs" => "EPSG:4326",
 |       "db" => {
 |           "host" => "postgis.ign.fr",
 |           "port" => "5433",
@@ -250,7 +253,13 @@ sub _init {
     my $params = shift;
     
     return FALSE if (! defined $params);
-    
+    # SRS
+    if (! exists($params->{srs}) || ! defined $params->{srs}) {
+        ERROR("Parameter 'srs' is required !");
+        return FALSE ;
+    }
+    $this->{srs} = uc($params->{srs});
+
     # PORT    
     if (! exists($params->{db}->{port}) || ! defined ($params->{db}->{port})) {
         $this->{port} = $DEFAULT{port};
@@ -453,7 +462,7 @@ sub getCommandMakeJsons {
             $sql .= sprintf " WHERE %s", $hash->{filter};
         }
 
-        $cmd .= sprintf "MakeJson \"$bbox\" \"$dburl\" \"$sql\" %s \n", $hash->{final_name};
+        $cmd .= sprintf "MakeJson \"%s\" \"$bbox\" \"$dburl\" \"$sql\" %s \n", $this->{srs}, $hash->{final_name};
 
     }
 
