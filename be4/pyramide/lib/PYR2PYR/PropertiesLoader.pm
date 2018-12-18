@@ -189,26 +189,24 @@ sub _check {
 
 
     if (! $this->{cfgObject}->isProperty({property=>"pyr_name",section=>"to"})) {
-       ERROR("'pyr_name' property is missing");
+        ERROR("'pyr_name' property is missing");
         return FALSE; 
     }
     if (! $this->{cfgObject}->isProperty({property=>"pyr_desc_path",section=>"to"})) {
-       ERROR("'pyr_desc_path' property is missing");
+        ERROR("'pyr_desc_path' property is missing");
         return FALSE; 
     }
 
 
     if (! $this->{cfgObject}->isProperty({property=>"job_number",section=>"process"})) {
-       ERROR("'job_number' property is missing");
+        ERROR("'job_number' property is missing");
         return FALSE; 
     }
     if (! $this->{cfgObject}->isProperty({property=>"path_temp",section=>"process"})) {
-       ERROR("'path_temp' property is missing");
+        ERROR("'path_temp' property is missing");
         return FALSE; 
     }
 
-
-    
     return TRUE;
 }
 
