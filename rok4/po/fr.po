@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2018-12-12 11:37+0100\n"
+"POT-Creation-Date: 2018-12-20 18:07+0100\n"
 "PO-Revision-Date: 2014-01-28 09:36+0100\n"
 "Last-Translator: \n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -181,11 +181,11 @@ msgstr "Type d'encodage inconnu : "
 msgid "No data found"
 msgstr "Aucune donnée"
 
-#: Level.cpp:550
+#: Level.cpp:549
 msgid "GetTile Tiff"
 msgstr "GetTile Tiff"
 
-#: Level.cpp:560
+#: Level.cpp:559
 msgid "GetTile Image"
 msgstr "GetTile Image"
 

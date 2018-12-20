@@ -209,7 +209,7 @@ sub init {
     # init Options
     GetOptions(
         "help|h" => sub {
-            printf "pyr2pYr.pl --conf=<conf_file>\n";
+            printf "pyr2pyr.pl --conf=<conf_file>\n";
             exit 0;
         },
         "usage" => sub {
@@ -370,6 +370,7 @@ StoreSlab () {
     local objName=$2
 
     size=`stat -c "%s" $fullPath`
+    if [ $? != 0 ] ; then echo "$fullPath n'existe pas, on passe" ; return; fi
     if [ "$size" -le "$SLAB_LIMIT" ] ; then
         return
     fi
@@ -393,6 +394,7 @@ StoreSlab () {
     local objName=$2
 
     size=`stat -c "%s" $fullPath`
+    if [ $? != 0 ] ; then echo "$fullPath n'existe pas, on passe" ; return; fi
     if [ "$size" -le "$SLAB_LIMIT" ] ; then
         return
     fi
@@ -427,6 +429,7 @@ StoreSlab () {
     local objName=$2
 
     size=`stat -c "%s" $fullPath`
+    if [ $? != 0 ] ; then echo "$fullPath n'existe pas, on passe" ; return; fi
     if [ "$size" -le "$SLAB_LIMIT" ] ; then
         return
     fi

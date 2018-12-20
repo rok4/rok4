@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2018-12-12 11:37+0100\n"
+"POT-Creation-Date: 2018-12-20 18:07+0100\n"
 "PO-Revision-Date: 2013-02-18 17:49+0100\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -183,11 +183,11 @@ msgstr ""
 msgid "No data found"
 msgstr ""
 
-#: Level.cpp:550
+#: Level.cpp:549
 msgid "GetTile Tiff"
 msgstr "GetTile Tiff"
 
-#: Level.cpp:560
+#: Level.cpp:559
 msgid "GetTile Image"
 msgstr "GetTile Image"
 
