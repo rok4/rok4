@@ -261,6 +261,69 @@ sub coord2image {
     $onglet1Text->insert('end',$txt);
 }
 
+###################################################################################################
+####################################### Slab indices -> TFW #######################################
+###################################################################################################
+
+### Interface
+
+my $onglet8 = $ongletsNoteBook->add('onglet8', -label => 'Slab indices -> TFW');
+$onglet8->configure( -background => 'white');
+my $onglet8ParamsFrame= $onglet8->Frame(-background =>  'white')->pack( -fill => 'both' ); 
+my $onglet8ResultFrame= $onglet8->Frame(-background =>  'white')->pack( -fill => 'both', -expand => 1 ); 
+my $onglet8Text = $onglet8ResultFrame->ROText( )->pack( -side => 'left', -fill => 'both', -expand => 1);
+
+$onglet8ParamsFrame->Label( -background =>  'white',  -text => 'Level = ' )->pack( -side => 'left'); 
+my $onglet8LevelEntry = $onglet8ParamsFrame->EntryCheck(-pattern => qr/\d/)->pack( -side => 'left', -fill => 'x');
+$onglet8ParamsFrame->Label( -background =>  'white',  -text => ', COL = ' )->pack( -side => 'left'); 
+my $onglet8XEntry = $onglet8ParamsFrame->EntryCheck(-pattern => qr/[-\.\d]/)->pack( -side => 'left', -fill => 'x');
+$onglet8ParamsFrame->Label( -background =>  'white',  -text => ', ROW = ' )->pack( -side => 'left'); 
+my $onglet8YEntry = $onglet8ParamsFrame->EntryCheck(-pattern => qr/[-\.\d]/)->pack( -side => 'left', -fill => 'x');
+$onglet8ParamsFrame->Label( -background =>  'white',  -text => '  ' )->pack( -side => 'left', -expand => 1); 
+$onglet8ParamsFrame->Button(
+    -text => 'Calculate...',
+    -command => \&indices2tfw,
+) ->pack( -side => 'left', -fill => 'x');
+
+
+### Fonction
+
+sub indices2tfw {
+    $onglet8Text->selectAll();
+    $onglet8Text->deleteSelected();
+
+    my $error = validateGlobals();
+    if (defined $error) {
+        $onglet8Text->insert('end', "ERROR: $error");
+        return;
+    }
+
+    my $col = $onglet8XEntry->get();
+    my $row = $onglet8YEntry->get();
+    my $level = $onglet8LevelEntry->get();
+
+    if ( $col eq "" || $row eq "" || $level eq "" ) {
+        $onglet8Text->insert('end', "ERROR: Indices or level undefined");
+        return;
+    } 
+
+    my $tm = $tmsObject->getTileMatrix($level);
+    if ( ! defined $tm ) {
+        $onglet8Text->insert('end', "ERROR: Tile matrix with ID $level doesn't exist");
+        return;
+    } 
+
+    my $txt = "Level : $level, Indices : $col, $row \n";
+
+    my ($xMin,$yMin,$xMax,$yMax) = $tm->indicesToBbox($col, $row, $widthEntry->get(), $heightEntry->get());
+
+    my $res = $tm->getResolution();
+
+    $txt .= sprintf "%s\n0\n0\n-%s\n",$res, $res;
+    $txt .= sprintf "%s\n%s\n", $xMin + $res / 2, $yMax - $res / 2;
+
+    $onglet8Text->insert('end',$txt);
+}
 
 
 ###################################################################################################
