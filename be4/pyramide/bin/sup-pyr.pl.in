@@ -87,6 +87,7 @@ Contains sup-pyr call options :
     
     pyr - To precise the pyramid's descriptor file
     full - To precise if we want to remove the pyramid's descriptor file and list file too
+    stop - To precise if we have to stop when an error is occured
     
 =cut
 my %options =
@@ -98,7 +99,8 @@ my %options =
     # Mandatory
     "pyr"  => undef,
     # Optionnal
-    "full"  => FALSE
+    "full"  => FALSE,
+    "stop"  => FALSE
 );
 
 ####################################################################################################
@@ -168,7 +170,8 @@ sub init {
         },
         
         "pyr=s" => \$options{pyr},
-        "full" => \$options{full}
+        "full" => \$options{full},
+        "stop" => \$options{stop}
     ) or do {
         printf "Unappropriate usage\n";
         printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/sup-pyr-pl.html\n";
@@ -200,6 +203,13 @@ sub init {
     if ($options{full} == 1) {
         INFO("We ask for a full removal");
         $options{full} = TRUE;
+    }
+    
+    ############# STOP
+
+    if ($options{stop} == 1) {
+        INFO("We ask stopping to first error");
+        $options{stop} = TRUE;
     }
 
     return TRUE;
@@ -241,6 +251,9 @@ sub doIt {
         if (! ProxyStorage::remove("FILE", $dataDir)) {
             WARN("Impossible de supprimer le dossier $dataDir");
             $issue = TRUE;
+            if ($option{stop}) {
+                return FALSE;
+            }
         }
 
         if ($options{full} && ! $issue) {
@@ -318,6 +331,10 @@ sub doIt {
         if (! COMMON::ProxyStorage::remove($storageType, $slab)) {
             WARN("Impossible de supprimer la dalle $storageType $slab");
             $issue = TRUE;
+            if ($option{stop}) {
+                close($LIST);
+                return FALSE;
+            }
         }
     }
 
@@ -372,4 +389,6 @@ Group: Command's options
     --pyr - Pyramid's descriptor file. Mandatory.
 
     --full - Optionnal, to remove descriptor and list file too
+
+    --stop - Optionnal, to stop when first error occur
 =cut

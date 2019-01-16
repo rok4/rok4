@@ -95,6 +95,7 @@ Contains be4-simulator call options :
     levels - To precise calculated levels 
     dims - To precise dimensions of image to compare
     lists - To precise the directory to write images' lists
+    sql - To activate SQL slab creation
     listPaths - To precise to write slabs' path and not just slabs' indices
     
 =cut
@@ -110,6 +111,7 @@ my %options =
     "levels" => undef,
     "lists" => undef,
     "listPaths" => undef,
+    "sql" => undef,
     "dims" => undef
 );
 
@@ -184,6 +186,7 @@ sub init {
         "levels=s" => \$options{levels},
         "lists=s" => \$options{lists},
         "listPaths" => \$options{listPaths},
+        "sqls=s" => \$options{sqls},
         "dims=s" => \$options{dims}
     ) or do {
         printf "Unappropriate usage\n";
@@ -234,6 +237,17 @@ sub init {
         $options{lists} = $dir;
     } else {
         $options{lists} = undef;
+    }
+    
+    ############# SQLS
+    if (defined $options{sqls} && $options{sqls} ne "") {
+        my $dir = File::Spec->rel2abs($options{sqls});
+        if (! -d $dir) {
+            `mkdir -p $dir`;
+        }
+        $options{sqls} = $dir;
+    } else {
+        $options{sqls} = undef;
     }
 
     return TRUE;
@@ -295,6 +309,21 @@ sub doIt {
     foreach my $dims (@dimensions) {
         
         my ($width, $height) = split(/x/, $dims);
+
+        if (defined $options{sqls}) {
+            my $fileOutName = basename($options{wkt});
+            $fileOutName =~ s/\.[^\.]+$//;
+            $fileOutName .= sprintf "_%s_%s-%s.sql", $objTMS->getName(), $width, $height;
+            my $filepath = File::Spec->catdir($options{sqls}, $fileOutName);
+            if (! open(SQL, ">$filepath")) {
+                ERROR("Impossible d'ouvrir le fichier $filepath");
+                return FALSE;
+            }
+
+            print SQL "BEGIN;\nCREATE TABLE slabs (level integer, col integer, row integer, path varchar(64), generate date, geom GEOMETRY(POLYGON, 0), CONSTRAINT slabs_pkey PRIMARY KEY (level, col, row));\n";
+
+            print SQL "INSERT INTO slabs VALUES ";
+        }
         
         INFO("For tile dimensions $width x $height");
             
@@ -306,11 +335,12 @@ sub doIt {
                 $fileOutName =~ s/\.[^\.]+$//;
                 $fileOutName .= sprintf "_%s_%s-%s_$level.list", $objTMS->getName(), $width, $height;
                 my $filepath = File::Spec->catdir($options{lists}, $fileOutName);
-                if (! open(OUT, ">$filepath")) {
+                if (! open(LIST, ">$filepath")) {
                     ERROR("Impossible d'ouvrir le fichier $filepath");
                     return FALSE;
                 }
             }
+
             
             my $tm = $objTMS->getTileMatrix($level);
             if (! defined $tm) {
@@ -350,12 +380,8 @@ sub doIt {
                         my $OGRtile = COMMON::ProxyGDAL::geometryFromString("WKT", $WKTtile);
 
                         if (COMMON::ProxyGDAL::isIntersected($OGRtile, $ogrShape)) {
-                            if (defined $options{lists} && $options{listPaths}) {
-                                my $path = COMMON::Base36::indicesToB36Path($col, $row, 3);
-                                $LIST{"$level/$path.tif"} = 1;
-                            } else {
-                                $LIST{"$col,$row"} = 1;
-                            }
+                            my $path = COMMON::Base36::indicesToB36Path($col, $row, 3);
+                            $LIST{"$col,$row"} = "$level/$path.tif";
                         }
 
                     }
@@ -368,9 +394,27 @@ sub doIt {
             
             if (defined $options{lists}) {
                 foreach my $key (keys %LIST) {
-                    print OUT "$key\n";
+                    if ($options{listPaths}) {
+                        printf LIST "%s\n", $LIST{$key};
+                    } else {
+                        print LIST "$key\n";
+                    }
                 }
-                close(OUT);
+                close(LIST);
+            }
+
+            if (defined $options{sqls}) {
+                my $string = "";
+                foreach my $key (keys %LIST) {
+                    my ($col,$row) = split(/,/, $key);
+                    my $geom = $tm->indicesToGeom($col,$row,$width,$height);
+
+                    $string .= sprintf "\n($level, $col, $row, '%s', NULL, ST_GeomFromText('%s')),", $LIST{$key}, COMMON::ProxyGDAL::getWkt($geom);
+                }
+                chop($string);
+                $string .= ";\nEND;";
+                print  SQL $string;
+                close(SQL); 
             }
         }
     }
