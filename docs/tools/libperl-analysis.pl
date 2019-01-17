@@ -199,7 +199,7 @@ while (my ($bin, $binary) = each (%{$binaries})) {
 
 ##############################################################################################
 
-# Pour chaque lib on dessine le diagrame de classe
+# Pour chaque lib on dessine le diagramme de classe
 while (my ($package, $lib) = each (%{$libraries})) {
     INFO("Diagram for $package");
     my $attributes = "";

@@ -561,8 +561,7 @@ DataSource* Level::getTile (int x, int y) {
 
     if ( format == Rok4Format::TIFF_RAW_INT8 || format == Rok4Format::TIFF_LZW_INT8 ||
          format == Rok4Format::TIFF_LZW_FLOAT32 || format == Rok4Format::TIFF_ZIP_INT8 ||
-         format == Rok4Format::TIFF_ZIP_FLOAT32 || format == Rok4Format::TIFF_PKB_FLOAT32 ||
-         format == Rok4Format::TIFF_PKB_INT8
+         format == Rok4Format::TIFF_PKB_FLOAT32 || format == Rok4Format::TIFF_PKB_INT8
         )
     {
         LOGGER_DEBUG ( _ ( "GetTile Tiff" ) );

@@ -137,7 +137,7 @@ sub new {
 
         connection => undef,
 
-        current_results => undef,
+        current_results => undef
     };
 
     bless($this, $class);

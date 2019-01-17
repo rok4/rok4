@@ -209,7 +209,7 @@ sub init {
     # init Options
     GetOptions(
         "help|h" => sub {
-            printf "pyr2pYr.pl --conf=<conf_file>\n";
+            printf "pyr2pyr.pl --conf=<conf_file>\n";
             exit 0;
         },
         "usage" => sub {
@@ -368,6 +368,12 @@ GetSlab () {
 StoreSlab () {
     local fullPath=$1
     local objName=$2
+
+    size=`stat -c "%s" $fullPath`
+    if [ $? != 0 ] ; then echo "$fullPath n'existe pas, on passe" ; return; fi
+    if [ "$size" -le "$SLAB_LIMIT" ] ; then
+        return
+    fi
   
     rados -p ${POOL_NAME_DST} put $objName $fullPath 
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
@@ -386,6 +392,12 @@ StoreSlab () {
 
     local fullPath=$1
     local objName=$2
+
+    size=`stat -c "%s" $fullPath`
+    if [ $? != 0 ] ; then echo "$fullPath n'existe pas, on passe" ; return; fi
+    if [ "$size" -le "$SLAB_LIMIT" ] ; then
+        return
+    fi
     
     resource="/${BUCKET_NAME}/${objName}"
     contentType="application/octet-stream"
@@ -415,6 +427,12 @@ StoreSlab () {
 
     local fullPath=$1
     local objName=$2
+
+    size=`stat -c "%s" $fullPath`
+    if [ $? != 0 ] ; then echo "$fullPath n'existe pas, on passe" ; return; fi
+    if [ "$size" -le "$SLAB_LIMIT" ] ; then
+        return
+    fi
     
     TOKEN=$(curl -s -ik \
         -H "Content-Type: application/json" \
@@ -467,10 +485,17 @@ sub doIt {
     my $to_storage_type = undef;
     my $containerName = undef;
 
+    my $slabLimit = undef;
 
     # Test des parametres
     if ( exists $params->{from}->{follow_links} && defined $params->{from}->{follow_links} && uc($params->{from}->{follow_links}) eq "FALSE") {
         $follow_links = 0;
+    }
+
+    if ( defined $params->{process}->{slab_limit} ) {
+        $slabLimit = int($params->{process}->{slab_limit});
+    } else {
+        $slabLimit = 0;
     }
 
     if ( defined $params->{to}->{pool_name} ) {
@@ -568,7 +593,9 @@ sub doIt {
             $level->removeChild($depthnode);
 
             my ($nodatanode) = $level->findnodes("nodata");
-            $level->removeChild($nodatanode);
+            if (defined $nodatanode) {
+                $level->removeChild($nodatanode);
+            }
 
             if ( $store_tiles ) {
                 my $tpw_node = ($level->findnodes("tilesPerWidth"))[0];
@@ -656,6 +683,7 @@ sub doIt {
         print $STREAM "#!/bin/bash\n\n";
         print $STREAM "TMP_LIST_FILE=$list\n";
         print $STREAM "TMP_FILE=$tmpfile\n";
+        print $STREAM "SLAB_LIMIT=$slabLimit\n";
         print $STREAM "SECONDS=0\n";
         if ( $to_storage_type eq "CEPH" ) {
             print $STREAM "POOL_NAME_DST=$containerName\n";
@@ -674,7 +702,6 @@ sub doIt {
             print $STREAM "TPW=$tpw\n";
             print $STREAM "TPH=$tph\n";
         }
-        print $STREAM "TMP_LIST_FILE=$list\n";
         print $STREAM "date\n";
         if ( $to_storage_type eq "CEPH" ) {
             print $STREAM $BASHFUNCTIONS_CEPH;
@@ -933,6 +960,8 @@ Topic: process
 
     job_number - Level of parallelization for scripts. Mandatory.
     path_temp - Scripts and temporary lists are written in this directory. Mandatory.
+    slab_limit - Size below which slab is not pushed. Optionnal.
+
 
 Example:
     (start code)

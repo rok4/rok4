@@ -19,7 +19,7 @@
 
 # PATH should only include /usr/* if it runs after the mountnfs.sh script
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
-DESC="Rok4, a WMS/WMTS server"
+DESC="Rok4, a WMS/WMTS/TMS server"
 NAME=rok4
 DAEMON=/usr/bin/$NAME
 DAEMON_ARGS="-f /etc/rok4/config/server.conf.default"

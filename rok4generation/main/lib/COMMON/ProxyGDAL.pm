@@ -215,6 +215,24 @@ sub geometryFromBbox {
 ####################################################################################################
 
 =begin nd
+Function: getWkt
+
+Return the geometry as WKT
+
+Parameters (list):
+    geom - <Geo::OGR::Geometry> - OGR geometry object
+
+Return (list):
+    the WKT string
+=cut
+sub getWkt {
+    my $geom = shift;
+
+    return $geom->ExportToWkt();
+}
+
+
+=begin nd
 Function: getBbox
 
 Return the bbox from a OGR geometry object
