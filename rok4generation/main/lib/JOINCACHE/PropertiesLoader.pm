@@ -309,9 +309,9 @@ sub readCompositionLine {
 
         if (! exists $this->{sourcePyramids}->{$pyr}) {
             # we have a new source pyramid, but not yet information about
-            $objPyramid = COMMON::Pyramid->new("DESCRIPTOR", $pyr);
+            $objPyramid = COMMON::PyramidRaster->new("DESCRIPTOR", $pyr);
             if (! defined $objPyramid) {
-                ERROR ("Cannot create the COMMON::Pyramid object from source pyramid's descriptor: $pyr ($levelId,$extentId)");
+                ERROR ("Cannot create the COMMON::PyramidRaster object from source pyramid's descriptor: $pyr ($levelId,$extentId)");
                 return FALSE;
             }
             $this->{sourcePyramids}->{$pyr} = $objPyramid;

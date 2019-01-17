@@ -696,7 +696,7 @@ sub storeInList {
     if (exists $this{roots}->{$root}) {
         $rootID = $this{roots}->{$root};
     } else {
-        $rootID = scalar (keys %{$this{roots}}) + 1;
+        $rootID = scalar (keys %{$this{roots}});
         $this{roots}->{$root} = $rootID;
     }
 

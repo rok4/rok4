@@ -378,6 +378,9 @@ LinkSlab () {
     local target=$1
     local link=$2
 
+    mkdir -p $(dirname $link)
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+
     ln -s $target $link
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
