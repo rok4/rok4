@@ -194,16 +194,6 @@ sub new {
     $this->{ontConfDir} = File::Spec->catfile($this->{commonTempDir},"overlayNtiff");
 
     ########## Tests et création de l'ensemble des dossiers
-    
-    # Temporary directory
-    if (! -d $this->{tempDir}) {
-        DEBUG (sprintf "Create the temporary directory '%s' !", $this->{tempDir});
-        eval { mkpath([$this->{tempDir}]); };
-        if ($@) {
-            ERROR(sprintf "Can not create the temporary directory '%s' : %s !", $this->{tempDir}, $@);
-            return undef;
-        }
-    }
 
     # Common directory
     if (! -d $this->{commonTempDir}) {
@@ -418,6 +408,9 @@ sub prepare {
 
     $code .= "# Fonctions\n";
     $code .= "$functions\n";
+
+    $code .= "# Création du dossier temporaire\n";
+    $code .= "mkdir -p \${TMP_DIR}\n\n";
 
     $code .= "# Création de la liste temporaire\n";
     $code .= "if [ ! -f \"\${TMP_LIST_FILE}\" ] ; then touch \${TMP_LIST_FILE} ; fi\n\n";
