@@ -11,6 +11,7 @@ use Cwd;
 use Data::Dumper;
 use DBI;
 use DBD::Pg;
+use Devel::Size;
 use Digest::SHA;
 use ExtUtils::MakeMaker;
 use File::Basename;

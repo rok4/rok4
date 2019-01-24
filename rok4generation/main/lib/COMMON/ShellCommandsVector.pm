@@ -233,6 +233,7 @@ StoreSlab () {
 
     pbf2cache __p2c__ -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow -bucket ${PYR_BUCKET} $imgName
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    echo "0/$imgName" >> ${TMP_LIST_FILE}
 }
 P2CFUNCTION
 
@@ -250,6 +251,7 @@ StoreSlab () {
 
     pbf2cache __p2c__ -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow -container ${PYR_CONTAINER} $imgName
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    echo "0/$imgName" >> ${TMP_LIST_FILE}
 }
 P2CFUNCTION
 
@@ -269,6 +271,7 @@ StoreSlab () {
 
     pbf2cache __p2c__ -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow -pool ${PYR_POOL} $imgName
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    echo "0/$imgName" >> ${TMP_LIST_FILE}
 }
 P2CFUNCTION
 
@@ -290,6 +293,7 @@ StoreSlab () {
 
     pbf2cache __p2c__ -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow ${PYR_DIR}/$imgName
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    echo "0/$imgName" >> ${TMP_LIST_FILE}
 }
 P2CFUNCTION
 

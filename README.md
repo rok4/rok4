@@ -96,6 +96,7 @@ Les librairies Perl sont installable via l'outil CPAN : `cpan Lib::Perl` (en sud
 * Data::Dumper
 * DBI
 * DBD::Pg
+* Devel::Size
 * Digest::SHA
 * ExtUtils::MakeMaker
 * File::Find::Rule
@@ -113,13 +114,13 @@ Les librairies Perl sont installable via l'outil CPAN : `cpan Lib::Perl` (en sud
 * Tie::File
 * XML::LibXML
 
-On installe les librairies Perl GDAL via le paquet :
-* Debian : `apt install libgdal-perl`
-* Centos : `yum install gdal-perl`
+On installe les librairies Perl GDAL via le paquet et la librairie pour le driver PostgreSQL :
+* Debian : `apt install libgdal-perl libpq-dev`
+* Centos : `yum install gdal-perl libpqxx-devel`
 
 Soit :
 ```
-cpan DBI DBD::Pg Data::Dumper Digest::SHA ExtUtils::MakeMaker File::Find::Rule File::Map FindBin Geo::GDAL Geo::OGR Geo::OSR HTTP::Request HTTP::Request::Common HTTP::Response JSON::Parse Log::Log4perl LWP::UserAgent Math::BigFloat Term::ProgressBar Test::More Tie::File XML::LibXML
+cpan DBI DBD::Pg Data::Dumper Devel::Size Digest::SHA ExtUtils::MakeMaker File::Find::Rule File::Map FindBin Geo::GDAL Geo::OGR Geo::OSR HTTP::Request HTTP::Request::Common HTTP::Response JSON::Parse Log::Log4perl LWP::UserAgent Math::BigFloat Term::ProgressBar Test::More Tie::File XML::LibXML
 ```
 
 Si volonté d'utiliser l'outil graphique `tms-converter-gui.pl` :
