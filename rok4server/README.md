@@ -1,19 +1,19 @@
 ![Logo ROK4SERVER](../docs/images/rok4server.png)
 
 <!-- TOC START min:1 max:3 link:true update:true -->
-    - [Utiliser ROK4SERVER via NGINX](#utiliser-rok4server-via-nginx)
-        - [Configuration de ROK4SERVER](#configuration-de-rok4server)
-        - [Lancement de ROK4SERVER en mode statique](#lancement-de-rok4server-en-mode-statique)
-        - [Installation de NGINX](#installation-de-nginx)
-        - [Configuration de NGINX](#configuration-de-nginx)
+- [Utiliser ROK4SERVER via NGINX](#utiliser-rok4server-via-nginx)
+    - [Configurer et lancer ROK4SERVER en mode statique](#configurer-et-lancer-rok4server-en-mode-statique)
+    - [Installer et configurer NGINX](#installer-et-configurer-nginx)
+- [Utiliser ROK4SERVER via APACHE](#utiliser-rok4server-via-apache)
+- [Accès aux capacités du serveur](#accès-aux-capacités-du-serveur)
 
 <!-- TOC END -->
 
-## Utiliser ROK4SERVER via NGINX
+# Utiliser ROK4SERVER via NGINX
 
 ROK4SERVER est lancé en mode statique et NGINX interprète et redirige les requêtes sur le bon port.
 
-### Configuration de ROK4SERVER
+## Configurer et lancer ROK4SERVER en mode statique
 
 Dans le fichier `server.conf`, on précise le port d'écoute :
 
@@ -29,8 +29,6 @@ On configure les logs de manière à les retrouver dans un fichier par jour :
 <logFilePeriod>86400</logFilePeriod>
 ```
 
-### Lancement de ROK4SERVER en mode statique
-
 La ligne de commande permettant de lancer ROK4 comme instance autonome est la suivante :
 ```
 rok4 -f /chemin/vers/fichier/server.conf &
@@ -41,11 +39,10 @@ Il se peut que votre instance autonome ROK4 se lance en français (cela dépend 
 LANG=en rok4 -f /chemin/vers/fichier/server.conf &
 ```
 
-### Installation de NGINX
+## Installer et configurer NGINX
 
-`apt install nginx` ou `yum install nginx`
-
-### Configuration de NGINX
+* Sous Debian : `apt install nginx`
+* Sous Centos : `yum install nginx`
 
 Remplacer le fichier `default` présent dans le répertoire `/etc/nginx/sites-enabled` par le contenu suivant :
 
@@ -60,11 +57,7 @@ server {
     access_log /var/log/rok4_access.log;
     error_log /var/log/rok4_error.log;
 
-    location /wmts {
-        fastcgi_pass rok4;
-        include fastcgi_params;
-    }
-    location /wms {
+    location /rok4 {
         fastcgi_pass rok4;
         include fastcgi_params;
     }
@@ -73,6 +66,14 @@ server {
 
 On redémarre nginx : `systemctl restart nginx`
 
-Le service WMS est disponible à l’adresse suivante : http://localhost/wms?request=GetCapabilities&service=WMS
+# Utiliser ROK4SERVER via APACHE
 
-Le service WMTS est disponible à l’adresse suivante : http://localhost/wmtsrequest=GetCapabilities&service=WMTS
+
+# Accès aux capacités du serveur
+
+L'URL "racine" de ROK4SERVER liste les différents services et getCapabilities : http://localhost/tms
+
+On redémarre nginx : `systemctl restart nginx`
+* WMS : http://localhost/rok4?request=GetCapabilities&service=WMS
+* WMTS : http://localhost/rok4?request=GetCapabilities&service=WMTS
+* TMS : http://localhost/rok4/1.0.0

@@ -466,7 +466,78 @@ sub transformPoint {
     return ($p->[0], $p->[1]);
 }
 
+=begin nd
+Function: convertBBox
 
+Not just convert corners, but 7 points on each side, to determine reprojected bbox. Use OSR library.
+
+Parameters (list):
+    ct - <Geo::OSR::CoordinateTransformation> - To convert bbox. Can be undefined (no reprojection).
+
+Returns the converted (according to the given CoordinateTransformation) bbox as a double array (xMin, yMin, xMax, yMax), (0,0,0,0) if error.
+=cut
+sub convertBBox {
+    my $ct = shift;
+    my @bbox = @_;
+
+    if (! defined($ct)){
+        $bbox[0] = Math::BigFloat->new($bbox[0]);
+        $bbox[1] = Math::BigFloat->new($bbox[1]);
+        $bbox[2] = Math::BigFloat->new($bbox[2]);
+        $bbox[3] = Math::BigFloat->new($bbox[3]);
+        return @bbox;
+    }
+    
+    # my ($xmin,$ymin,$xmax,$ymax);
+    my $step = 10;
+    my $dx = ($bbox[2] - $bbox[0]) / (1.0 * $step);
+    my $dy = ($bbox[3] - $bbox[1]) / (1.0 * $step);
+    my @polygon = ();
+    for my $i (@{[0..$step-1]}) { # bas du polygone, de gauche à droite
+        push @polygon, [$bbox[0]+$i*$dx, $bbox[1]]; 
+    }
+    for my $i (@{[0..$step-1]}) { # côté droit du polygone de haut en bas
+        push @polygon, [$bbox[2], $bbox[1]+$i*$dy]; 
+    }
+    for my $i (@{[0..$step-1]}) { # haut du polygone, de droite à gauche
+        push @polygon, [$bbox[2]-$i*$dx, $bbox[3]];
+    }
+    for my $i (@{[0..$step-1]}) { # côté gauche du polygon de haut en bas
+        push @polygon, [$bbox[0], $bbox[3]-$i*$dy];
+    }
+
+    my ($xmin_reproj, $ymin_reproj, $xmax_reproj, $ymax_reproj);
+    for my $i (@{[0..$#polygon]}) {
+        # FIXME: il faut absoluement tester les erreurs ici:
+        #        les transformations WGS84G vers PM ne sont pas possible au dela de 85.05°.
+
+        my ($tx, $ty) = COMMON::ProxyGDAL::transformPoint($polygon[$i][0], $polygon[$i][1], $ct);
+        if (! defined $tx) {
+            ERROR(sprintf "Impossible to transform point (%s,%s). Probably limits are reached !",$polygon[$i][0],$polygon[$i][1]);
+            return (0,0,0,0);
+        }
+
+        if ($i == 0) {
+            $xmin_reproj = $xmax_reproj = $tx;
+            $ymin_reproj = $ymax_reproj = $ty;
+        } else {
+            $xmin_reproj = $tx if $tx < $xmin_reproj;
+            $ymin_reproj = $ty if $ty < $ymin_reproj;
+            $xmax_reproj = $tx if $tx > $xmax_reproj;
+            $ymax_reproj = $ty if $ty > $ymax_reproj;
+        }
+    }
+
+    my $margeX = ($xmax_reproj - $xmin_reproj) * 0.02; # FIXME: la taille de la marge est arbitraire!!
+    my $margeY = ($ymax_reproj - $ymax_reproj) * 0.02; # FIXME: la taille de la marge est arbitraire!!
+
+    $bbox[0] = Math::BigFloat->new($xmin_reproj - $margeX);
+    $bbox[1] = Math::BigFloat->new($ymin_reproj - $margeY);
+    $bbox[2] = Math::BigFloat->new($xmax_reproj + $margeX);
+    $bbox[3] = Math::BigFloat->new($ymax_reproj + $margeY);
+
+    return @bbox;
+}
 
 1;
 __END__

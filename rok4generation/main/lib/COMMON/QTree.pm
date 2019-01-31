@@ -83,6 +83,9 @@ Attributes:
     commands - <COMMON::ShellCommandsRaster> or <COMMON::ShellCommandsVector> - Command to use to generate images.
     datasource - <COMMON::DataSource> - Data source to use to define bottom level nodes and generate them.
 
+    ct_source_pyramid - <Geo::OSR::CoordinateTransformation> - Coordinate transformation from datasource srs to pyramid srs
+    ct_pyramid_source - <Geo::OSR::CoordinateTransformation> - Coordinate transformation from pyramid srs to datasource srs
+
     bbox - double array - Datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
     nodes - <COMMON::Node> hash - Structure is:
         (start code)
@@ -175,6 +178,9 @@ sub new {
         pyramid    => undef,
         commands    => undef,
         datasource => undef,
+        # ct
+        ct_source_pyramid => undef,
+        ct_pyramid_source => undef,
         # out
         bbox => [],
         nodes => {},
@@ -232,20 +238,24 @@ sub _load {
     $this->{topID} = $this->{datasource}->getTopID;
     $this->{bottomID} = $this->{datasource}->getBottomID;
 
-    # initialisation de la transfo de coord du srs des données initiales vers
-    # le srs de la pyramide. Si les srs sont identiques on laisse undef.
-    my $ct = undef;
+    # initialisation des transformations de coordonnées datasource <-> pyramide
+    # Si les srs sont identiques on laisse undef.
     
     if ($tms->getSRS() ne $src->getSRS()){
-        $ct = COMMON::ProxyGDAL::coordinateTransformationFromSpatialReference($src->getSRS(), $tms->getSRS());
-        if (! defined $ct) {
+        $this->{ct_source_pyramid} = COMMON::ProxyGDAL::coordinateTransformationFromSpatialReference($src->getSRS(), $tms->getSRS());
+        if (! defined $this->{ct_source_pyramid}) {
             ERROR(sprintf "Cannot instanciate the coordinate transformation object %s->%s", $src->getSRS(), $tms->getSRS());
+            return FALSE;
+        }
+        $this->{ct_pyramid_source} = COMMON::ProxyGDAL::coordinateTransformationFromSpatialReference($tms->getSRS(), $src->getSRS());
+        if (! defined $this->{ct_pyramid_source}) {
+            ERROR(sprintf "Cannot instanciate the coordinate transformation object %s->%s", $tms->getSRS(), $src->getSRS());
             return FALSE;
         }
     }
 
     # identifier les noeuds du niveau de base à mettre à jour et les associer aux images sources:
-    if ( ! $this->identifyBottomNodes($ct) ) {
+    if ( ! $this->identifyBottomNodes() ) {
         ERROR(sprintf "Cannot determine bottom tiles for the level %s",$src->getBottomID);
         return FALSE;
     }
@@ -271,12 +281,9 @@ Function: identifyBottomNodes
 
 Calculate all nodes in bottom level concerned by the datasource (tiles which touch the data source extent or provided in a file).
 
-Parameters (list):
-    ct - <Geo::OSR::CoordinateTransformation> - To convert data extent or images' bbox.
 =cut
 sub identifyBottomNodes {
     my $this = shift;
-    my $ct = shift;
     
     my $bottomID = $this->{bottomID};
     my $tm = $this->{pyramid}->getTileMatrixSet->getTileMatrix($bottomID);
@@ -292,7 +299,7 @@ sub identifyBottomNodes {
         my @images = $datasource->getImages();
         foreach my $objImg (@images){
             # On reprojette l'emprise si nécessaire
-            my @bbox = $objImg->convertBBox($ct); # [xMin, yMin, xMax, yMax]
+            my @bbox = COMMON::ProxyGDAL::convertBBox($this->{ct_source_pyramid}, $objImg->getBBox()); # (xMin, yMin, xMax, yMax)
             if ($bbox[0] == 0 && $bbox[2] == 0) {
                 ERROR(sprintf "Impossible to compute BBOX for the image '%s'. Probably limits are reached !", $objImg->getName());
                 return FALSE;
@@ -353,7 +360,7 @@ sub identifyBottomNodes {
         }
     } elsif (defined $datasource->getExtent() ) {
         # We have just a WMS service as source. We use extent to determine bottom tiles
-        my $convertExtent = COMMON::ProxyGDAL::getConvertedGeometry($datasource->getExtent(), $ct);
+        my $convertExtent = COMMON::ProxyGDAL::getConvertedGeometry($datasource->getExtent(), $this->{ct_source_pyramid});
         if (! defined $convertExtent) {
             ERROR(sprintf "Cannot convert extent for the datasource");
             return FALSE;
@@ -1004,6 +1011,12 @@ sub getDataSource {
 sub getPyramid {
     my $this = shift;
     return $this->{pyramid};
+}
+
+# Function: getCoordTransPyramidDatasource
+sub getCoordTransPyramidDatasource {
+    my $this = shift;
+    return $this->{ct_pyramid_source};
 }
 
 # Function: getCutLevelID

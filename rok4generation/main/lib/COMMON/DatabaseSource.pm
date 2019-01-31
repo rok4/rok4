@@ -81,6 +81,7 @@ Attributes:
     dbname - string - postgis database name
     username - string - postgis server user
     password - string - postgis server user's password
+    srs - string - data coordinates' system
     tables - hash - all informations about wanted tables
 |       {
 |           "schema_name.table" => {

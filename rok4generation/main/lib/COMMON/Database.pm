@@ -51,6 +51,7 @@ Using:
     (end code)
 
 Attributes:
+    id - string - Connection identifier, concatenation of following values, used to caching results.
     dbname - string - database name
     host - string - PostgreSQL server host
     port - integer - PostgreSQL server port

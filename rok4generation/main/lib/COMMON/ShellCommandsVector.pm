@@ -159,7 +159,10 @@ sub makeJsons {
     my $node = shift;
     my $databaseSource = shift;
 
-    my $code = $databaseSource->getCommandMakeJsons($node->getBBox());
+    my $code = $databaseSource->getCommandMakeJsons(COMMON::ProxyGDAL::convertBBox(
+        $node->getGraph()->getCoordTransPyramidDatasource(),
+        $node->getBBox()
+    ));
 
     return ($code, MAKEJSON_W * $databaseSource->getTablesNumber());
 }
