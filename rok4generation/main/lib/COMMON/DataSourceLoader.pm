@@ -40,6 +40,8 @@ File: DataSourceLoader.pm
 
 Class: COMMON::DataSourceLoader
 
+(see COMMON_DataSourceLoader.png)
+
 Loads, validates and manages data sources. Data sources informations are read from a specific configuration file.
 
 Using:

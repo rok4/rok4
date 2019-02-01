@@ -40,6 +40,8 @@ File: Node.pm
 
 Class: COMMON::Node
 
+(see COMMON_Node.png)
+
 Descibe a node of a <COMMON::QTree> or a <COMMON::NNGraph>. Allow different storage (FileSystem, Ceph, Swift).
 
 Using:

@@ -40,6 +40,8 @@ File: ShellCommandsVector.pm
 
 Class: COMMON::ShellCommandsVector
 
+(see COMMON_ShellCommandsVector.png)
+
 Configure and assemble commands used to generate vector pyramid's slabs.
 
 Using:

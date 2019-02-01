@@ -40,6 +40,8 @@ File: PyramidRaster.pm
 
 Class: COMMON::PyramidRaster
 
+(see COMMON_PyramidRaster.png)
+
 Store all informations about a raster pyramid, whatever the storage type.
 
 Using:

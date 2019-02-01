@@ -40,6 +40,8 @@ File: Harvesting.pm
 
 Class: COMMON::Harvesting
 
+(see COMMON_Harvesting.png)
+
 Stores parameters and builds WMS request.
 
 Using:
@@ -53,7 +55,6 @@ Using:
         wms_layer   => "ORTHO_RAW_LAMB93_PARIS_OUEST",
         wms_url     => "http://localhost/wmts/rok4",
         wms_version => "1.3.0",
-        wms_request => "getMap",
         wms_format  => "image/tiff"
     });
 
@@ -66,7 +67,6 @@ Using:
         wms_layer   => "BDD_WLD_WM",
         wms_url     => "http://localhost/wmts/rok4",
         wms_version => "1.3.0",
-        wms_request => "getMap",
         wms_format  => "image/png",
         wms_bgcolor => "0xFFFFFF",
         wms_transparent  => "FALSE",
@@ -79,7 +79,6 @@ Using:
 Attributes:
     URL - string -  Left part of a WMS request, before the *?*.
     VERSION - string - Parameter *VERSION* of a WMS request : "1.3.0".
-    REQUEST - string - Parameter *REQUEST* of a WMS request : "getMap"
     FORMAT - string - Parameter *FORMAT* of a WMS request : "image/tiff"
     LAYERS - string - Layer name to harvest, parameter *LAYERS* of a WMS request.
     OPTIONS - string - Contains style, background color and transparent parameters : STYLES=line&BGCOLOR=0xFFFFFF&TRANSPARENT=FALSE for example. If background color is defined, transparent must be 'FALSE'.
@@ -149,7 +148,6 @@ Parameters (hash):
     wms_layer - string - Layer to harvest.
     wms_url - string - WMS server url.
     wms_version - string - WMS version.
-    wms_request - string - Request's type.
     wms_format - string - Result's format.
     wms_bgcolor - string - Optionnal. Hexadecimal red-green-blue colour value for the background color (white = "0xFFFFFF").
     wms_transparent - boolean - Optionnal.
@@ -169,7 +167,6 @@ sub new {
     my $this = {
         URL      => undef,
         VERSION  => undef,
-        REQUEST  => undef,
         FORMAT   => undef,
         LAYERS    => undef,
         OPTIONS    => "STYLES=",
@@ -196,7 +193,6 @@ Parameters (hash):
     wms_layer - string - Layer to harvest.
     wms_url - string - WMS server url.
     wms_version - string - WMS version.
-    wms_request - string - Request's type.
     wms_format - string - Result's format.
     wms_bgcolor - string - Optionnal. Hexadecimal red-green-blue colour value for the background color (white = "0xFFFFFF").
     wms_transparent - boolean - Optionnal.
@@ -275,11 +271,6 @@ sub _init {
         ERROR("Parameter 'wms_version' is required !");
         return FALSE ;
     }
-    # REQUEST
-    if (! exists($params->{wms_request}) || ! defined ($params->{wms_request})) {
-        ERROR("Parameter 'wms_request' is required !");
-        return FALSE ;
-    }
     # FORMAT
     if (! exists($params->{wms_format}) || ! defined ($params->{wms_format})) {
         ERROR("Parameter 'wms_format' is required !");
@@ -308,7 +299,6 @@ sub _init {
     # init. params    
     $this->{URL} = $params->{wms_url};
     $this->{VERSION} = $params->{wms_version};
-    $this->{REQUEST} = $params->{wms_request};
     $this->{FORMAT} = $params->{wms_format};
     $this->{LAYERS} = $params->{wms_layer};
 
@@ -417,8 +407,8 @@ sub getCommandWms2work {
         $max_height = $this->{max_height};
     }
     
-    my $URL = sprintf ("http://%s?LAYERS=%s&SERVICE=WMS&VERSION=%s&REQUEST=%s&FORMAT=%s&CRS=%s&WIDTH=%s&HEIGHT=%s&%s",
-                    $this->getURL, $this->getLayers, $this->getVersion, $this->getRequest, $this->getFormat,
+    my $URL = sprintf ("http://%s?LAYERS=%s&SERVICE=WMS&VERSION=%s&REQUEST=GetMap&FORMAT=%s&CRS=%s&WIDTH=%s&HEIGHT=%s&%s",
+                    $this->getURL, $this->getLayers, $this->getVersion, $this->getFormat,
                     $srs, $max_width, $max_height, $this->getOptions);
     my $BBoxesAsString = "\"";
     for (my $i = 0; $i < $imagePerHeight; $i++) {
@@ -516,12 +506,6 @@ sub getVersion {
     return $this->{VERSION};
 }
 
-# Function: getRequest
-sub getRequest {
-  my $this = shift;
-  return $this->{REQUEST};
-}
-
 # Function: getFormat
 sub getFormat {
     my $this = shift;
@@ -561,7 +545,6 @@ sub exportForDebug {
     $export .= "\nObject COMMON::Harvesting :\n";
     $export .= sprintf "\t URL : %s\n",$this->{URL};
     $export .= sprintf "\t VERSION : %s\n",$this->{VERSION};
-    $export .= sprintf "\t REQUEST : %s\n",$this->{REQUEST};
     $export .= sprintf "\t FORMAT : %s\n",$this->{FORMAT};
     $export .= sprintf "\t LAYERS : %s\n",$this->{LAYERS};
     $export .= sprintf "\t OPTIONS : %s\n",$this->{OPTIONS};

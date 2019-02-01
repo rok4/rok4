@@ -40,6 +40,8 @@ File: LevelVector.pm
 
 Class: COMMON::LevelVector
 
+(see COMMON_LevelVector.png)
+
 Describe a level in a vector pyramid.
 
 Using:

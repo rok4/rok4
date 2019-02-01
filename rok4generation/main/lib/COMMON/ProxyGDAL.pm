@@ -40,6 +40,8 @@ File: ProxyGDAL.pm
 
 Class: COMMON::ProxyGDAL
 
+(see COMMON_ProxyGDAL.png)
+
 Proxy to use different versions of GDAL transparently
 
 Using:

@@ -40,6 +40,8 @@ File: NNGraph.pm
 
 Class: COMMON::NNGraph
 
+(see COMMON_NNGraph.png)
+
 Representation of a "nearest neighbour" pyramid : pyramid's image = <COMMON::Node>.
 
 (see NNGraphTMS.png)

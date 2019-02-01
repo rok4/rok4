@@ -40,6 +40,8 @@ File: Pixel.pm
 
 Class: COMMON::Pixel
 
+(see COMMON_Pixel.png)
+
 Store all pixel's intrinsic components.
 
 Using:

@@ -40,6 +40,8 @@ File: DataSource.pm
 
 Class: COMMON::DataSource
 
+(see COMMON_DataSource.png)
+
 Manage a data source, physical (image files) or virtual (WMS server) or both.
 
 Using:
@@ -233,7 +235,6 @@ Parameters (list):
 
             # image source part
             path_image          - string
-            path_metadata       - string
             preprocess_command  - string
             preprocess_opt_beg  - string
             preprocess_opt_mid  - string

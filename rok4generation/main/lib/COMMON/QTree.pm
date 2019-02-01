@@ -40,6 +40,8 @@ File: QTree.pm
 
 Class: COMMON::QTree
 
+(see COMMON_QTree.png)
+
 Representation of a quad tree image pyramid : pyramid's image = <COMMON::Node>
 
 (see QTreeTMS.png)

@@ -40,6 +40,8 @@ File: PyramidRasterSpec.pm
 
 Class: COMMON::PyramidRasterSpec
 
+(see COMMON_PyramidRasterSpec.png)
+
 Store all image's components.
 
 Using:

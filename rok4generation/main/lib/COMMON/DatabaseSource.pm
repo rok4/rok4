@@ -40,6 +40,8 @@ File: DatabaseSource.pm
 
 Class: COMMON::DatabaseSource
 
+(see COMMON_DatabaseSource.png)
+
 Stores parameters and builds WMS request.
 
 Using:

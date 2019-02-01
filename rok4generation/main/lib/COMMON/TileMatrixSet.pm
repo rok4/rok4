@@ -40,6 +40,8 @@ File: TileMatrixSet.pm
 
 Class: COMMON::TileMatrixSet
 
+(see COMMON_TileMatrixSet.png)
+
 Load and store all information about a Tile Matrix Set. A Tile Matrix Set is a XML file which describe a grid for several levels.
 
 (see TileMatrixSet.png)

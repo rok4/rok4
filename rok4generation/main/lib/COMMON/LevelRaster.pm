@@ -40,6 +40,8 @@ File: LevelRaster.pm
 
 Class: COMMON::LevelRaster
 
+(see COMMON_LevelRaster.png)
+
 Describe a level in a raster pyramid.
 
 Using:

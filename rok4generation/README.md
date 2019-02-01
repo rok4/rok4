@@ -50,7 +50,7 @@ Quand un outil est dit parallélisable, c'est qu'il identifie le travail à fair
 
 Outils : `be4-file.pl`, `be4-ceph.pl`, `be4-s3.pl`, `be4-swift.pl`
 
-Les outils BE4 génèrent une pyramide raster à partir d'images géoréférencées ou d'un service WMS. Ils permettent de mettre à jour une pyramide raster existante. Si des images sont en entrée, elles peuvent être converties à la volée dans le format de la pyamide en sortie
+Les outils BE4 génèrent une pyramide raster à partir d'images géoréférencées ou d'un service WMS. Ils permettent de mettre à jour une pyramide raster existante. Si des images sont en entrée, elles peuvent être converties à la volée dans le format de la pyramide en sortie.
 
 Stockage gérés : FICHIER, CEPH, S3, SWIFT
 
@@ -76,6 +76,7 @@ _Étape 2 (QTree)_
 _Étape 2 (NNGraph)_
 ![BE4 étape 2 NNGraph](../docs/images/ROK4GENERATION/be4_part2_nngraph.png)
 
+[Détails](./main/bin/be4.md)
 
 ### La suite JOINCACHE
 
@@ -130,6 +131,8 @@ _Étape 1_
 
 _Étape 2_
 ![4ALAMO étape 2](../docs/images/ROK4GENERATION/4alamo_part2.png)
+
+[Détails](./main/bin/4alamo.md)
 
 ## Gestion des pyramides
 

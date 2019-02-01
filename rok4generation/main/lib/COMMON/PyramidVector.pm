@@ -40,6 +40,8 @@ File: PyramidVector.pm
 
 Class: COMMON::PyramidVector
 
+(see COMMON_PyramidVector.png)
+
 Store all informations about a vector pyramid, whatever the storage type.
 
 Using:

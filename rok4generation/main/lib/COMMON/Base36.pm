@@ -40,6 +40,8 @@ File: Base36.pm
 
 Class: COMMON::Base36
 
+(see COMMON_Base36.png)
+
 Base 36 converting tools. Do not instanciate.
 
 Using:

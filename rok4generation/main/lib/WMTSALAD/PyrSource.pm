@@ -40,6 +40,8 @@ File: PyrSource.pm
 
 Class: WMTSALAD::PyrSource
 
+(see WMTSALAD_PyrSource.png)
+
 Using:
     (start code)
     use WMTSALAD::PyrSource;

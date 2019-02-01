@@ -156,7 +156,7 @@ bool debugLogger=false;
  *              X = [1..4] or X = b
  *      -d debug logger activation
  *
- * If bitspersample, sampleformat or samplesperpixel is not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.
+ * If bitspersample, sampleformat or samplesperpixel are not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.
  *
  * Examples
  *      - without mask, with background image
@@ -203,7 +203,7 @@ void usage() {
                   "     -s samples per pixel : (1, 2, 3 or 4)\n" <<
                   "     -d debug logger activation\n\n" <<
 
-                  "If bitspersample, sampleformat or samplesperpixel is not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.\n\n" <<
+                  "If bitspersample, sampleformat or samplesperpixel are not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.\n\n" <<
 
                   "Examples\n" <<
                   "     - without mask, with background image\n" <<

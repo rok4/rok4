@@ -35,6 +35,16 @@
 #
 ################################################################################
 
+=begin nd
+File: CheckUtils.pm
+
+Class: COMMON::CheckUtils
+
+(see COMMON_CheckUtils.png)
+=cut
+
+################################################################################
+
 package COMMON::CheckUtils;
 
 use strict;

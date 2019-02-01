@@ -40,6 +40,8 @@ File: Database.pm
 
 Class: COMMON::Database
 
+(see COMMON_Database.png)
+
 Allow to request a PostgreSQL database.
 
 Using:

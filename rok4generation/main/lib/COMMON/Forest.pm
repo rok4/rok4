@@ -40,6 +40,8 @@ File: Forest.pm
 
 Class: COMMON::Forest
 
+(see COMMON_Forest.png)
+
 Creates and manages all graphs, <NNGraph> and <QTree>.
 
 (see forest.png)

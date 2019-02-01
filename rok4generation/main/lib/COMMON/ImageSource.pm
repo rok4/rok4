@@ -40,6 +40,8 @@ File: ImageSource.pm
 
 Class: COMMON::ImageSource
 
+(see COMMON_ImageSource.png)
+
 Define a data source, with georeferenced image directory.
 
 Using:
@@ -67,14 +69,6 @@ Attributes:
         |_ [3] command arguments placed after the target file (optionnal even with a command specified)
     preprocess_tmp_dir - string - directory in which preprocessed images will be created. Mandatory if a preprocessing command is given.
         |_ command call structure : command[0] [command[1]] PATHIMG/img.ext [command[2]] preprocess_tmp_dir/img.ext [command[3]]
-
-Limitations:
-
-Constraint on the input format of images :
-    TIFF (extensions .tif, .TIF, .tiff and .TIFF)
-    PNG (extensions .png, .PNG)
-    JPEG2000 (extensions .jp2, .JP2)
-    BIL (extensions .bil, .BIL, .zbil, .ZBIL)
     
 =cut
 

@@ -40,6 +40,8 @@ File: ShellCommandsRaster.pm
 
 Class: COMMON::ShellCommandsRaster
 
+(see COMMON_ShellCommandsRaster.png)
+
 Configure and assemble commands used to generate raster pyramid's slabs.
 
 All schemes in this page respect this legend :

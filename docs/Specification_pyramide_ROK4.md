@@ -1,3 +1,33 @@
+<!-- TOC depthFrom:1 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
+
+- [Glossaire](#glossaire)
+- [Le Tile Matrix Set](#le-tile-matrix-set)
+- [La pyramide](#la-pyramide)
+	- [Caractéristiques des données](#caractristiques-des-donnes)
+	- [Les sources](#les-sources)
+	- [Les tables](#les-tables)
+	- [Les masques](#les-masques)
+	- [Le descripteur de pyramide](#le-descripteur-de-pyramide)
+		- [Informations globales](#informations-globales)
+		- [Informations par niveau](#informations-par-niveau)
+			- [Pyramide raster](#pyramide-raster)
+			- [Pyramide raster à la demande](#pyramide-raster-la-demande)
+			- [Pyramide vecteur](#pyramide-vecteur)
+	- [L'architecture de stockage](#larchitecture-de-stockage)
+		- [En mode fichier](#en-mode-fichier)
+		- [En mode objet](#en-mode-objet)
+	- [La structure d'une dalle](#la-structure-dune-dalle)
+		- [L'en-tête](#len-tte)
+		- [Les données](#les-donnes)
+			- [Le tuilage](#le-tuilage)
+			- [La compression (cas raster)](#la-compression-cas-raster)
+			- [Cas vecteur](#cas-vecteur)
+			- [Récapitulatif](#rcapitulatif)
+		- [Les références](#les-rfrences)
+	- [Le fichier liste](#le-fichier-liste)
+
+<!-- /TOC -->
+
 # Glossaire
 
 | Vocabulaire | Définition |
@@ -402,7 +432,7 @@ Exemple de liste pour un stockage fichier
 ```
 0=/home/ign/PYRAMIDS/PYRAMID_V2
 1=/home/ign/PYRAMIDS/PYRAMID_V1
-#
+\#
 1/IMAGE/19/04/RR/R2.tif
 1/IMAGE/19/04/RR/R3.tif
 1/IMAGE/19/04/RR/S1.tif
@@ -442,7 +472,7 @@ Exemple de liste pour un stockage objet
 
 ```
 0=PYRAMIDS
-#
+\#
 0/PYRAMID_V2_IMG_11_65_42
 0/PYRAMID_V2_MSK_11_65_42
 0/PYRAMID_V2_IMG_11_65_43
