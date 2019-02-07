@@ -1,0 +1,2909 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="210mm"
+   height="297mm"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.48.3.1 r9886"
+   sodipodi:docname="TIFF.svg">
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.90509668"
+     inkscape:cx="370.10561"
+     inkscape:cy="216.5236"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="true"
+     inkscape:snap-bbox="true"
+     inkscape:snap-bbox-midpoints="true"
+     inkscape:window-width="1280"
+     inkscape:window-height="934"
+     inkscape:window-x="1278"
+     inkscape:window-y="32"
+     inkscape:window-maximized="1"
+     inkscape:object-nodes="false"
+     inkscape:snap-smooth-nodes="false"
+     inkscape:object-paths="false"
+     inkscape:snap-object-midpoints="true"
+     inkscape:snap-midpoints="false"
+     inkscape:snap-nodes="true"
+     inkscape:snap-grids="true"
+     inkscape:snap-bbox-edge-midpoints="true"
+     inkscape:bbox-nodes="true"
+     inkscape:bbox-paths="true"
+     inkscape:snap-global="true">
+    <inkscape:grid
+       type="xygrid"
+       id="grid2985" />
+  </sodipodi:namedview>
+  <defs
+     id="defs4">
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="Arrow1Mend"
+       style="overflow:visible;">
+      <path
+         id="path4863"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt;"
+         transform="scale(0.4) rotate(180) translate(10,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Lend"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="Arrow1Lend"
+       style="overflow:visible;">
+      <path
+         id="path4017"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt;"
+         transform="scale(0.8) rotate(180) translate(12.5,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="StopL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="StopL"
+       style="overflow:visible">
+      <path
+         id="path4183"
+         d="M 0.0,5.65 L 0.0,-5.65"
+         style="fill:none;fill-opacity:0.75000000;fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt"
+         transform="scale(0.8)" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       inkscape:stockid="InfiniteLineStart"
+       id="InfiniteLineStart"
+       refX="0"
+       refY="0"
+       orient="auto">
+      <g
+         id="g4258"
+         style="fill:#000000"
+         transform="translate(-13,0)">
+        <circle
+           d="M 3.8,0 C 3.8,0.44182781 3.4418278,0.80000001 3,0.80000001 2.5581722,0.80000001 2.2,0.44182781 2.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4260"
+           r="0.8"
+           cy="0"
+           cx="3" />
+        <circle
+           d="M 7.3,0 C 7.3,0.44182781 6.9418278,0.80000001 6.5,0.80000001 6.0581722,0.80000001 5.7,0.44182781 5.7,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4262"
+           r="0.8"
+           cy="0"
+           cx="6.5" />
+        <circle
+           d="M 10.8,0 C 10.8,0.44182781 10.441828,0.80000001 10,0.80000001 9.5581722,0.80000001 9.2,0.44182781 9.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.441828,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4264"
+           r="0.8"
+           cy="0"
+           cx="10" />
+      </g>
+    </marker>
+    <marker
+       style="overflow:visible"
+       inkscape:stockid="InfiniteLineEnd"
+       id="InfiniteLineEnd"
+       refX="0"
+       refY="0"
+       orient="auto">
+      <g
+         id="g4249"
+         style="fill:#000000">
+        <circle
+           id="circle4251"
+           r="0.8"
+           cy="0"
+           cx="3" />
+        <circle
+           id="circle4253"
+           r="0.8"
+           cy="0"
+           cx="6.5" />
+        <circle
+           id="circle4255"
+           r="0.8"
+           cy="0"
+           cx="10" />
+      </g>
+    </marker>
+    <marker
+       style="overflow:visible"
+       inkscape:stockid="InfiniteLineStart"
+       id="InfiniteLineStart-6"
+       refX="0"
+       refY="0"
+       orient="auto">
+      <g
+         id="g4258-3"
+         style="fill:#000000"
+         transform="translate(-13,0)">
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="3"
+           d="M 3.8,0 C 3.8,0.44182781 3.4418278,0.80000001 3,0.80000001 2.5581722,0.80000001 2.2,0.44182781 2.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4260-3"
+           r="0.80000001"
+           cy="0"
+           cx="3" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="6.5"
+           d="M 7.3,0 C 7.3,0.44182781 6.9418278,0.80000001 6.5,0.80000001 6.0581722,0.80000001 5.7,0.44182781 5.7,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4262-4"
+           r="0.80000001"
+           cy="0"
+           cx="6.5" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="10"
+           d="M 10.8,0 C 10.8,0.44182781 10.441828,0.80000001 10,0.80000001 9.5581722,0.80000001 9.2,0.44182781 9.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.441828,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4264-9"
+           r="0.80000001"
+           cy="0"
+           cx="10" />
+      </g>
+    </marker>
+    <marker
+       style="overflow:visible"
+       inkscape:stockid="InfiniteLineStart"
+       id="InfiniteLineStart-8"
+       refX="0"
+       refY="0"
+       orient="auto">
+      <g
+         id="g4258-6"
+         style="fill:#000000"
+         transform="translate(-13,0)">
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="3"
+           d="M 3.8,0 C 3.8,0.44182781 3.4418278,0.80000001 3,0.80000001 2.5581722,0.80000001 2.2,0.44182781 2.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4260-5"
+           r="0.80000001"
+           cy="0"
+           cx="3" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="6.5"
+           d="M 7.3,0 C 7.3,0.44182781 6.9418278,0.80000001 6.5,0.80000001 6.0581722,0.80000001 5.7,0.44182781 5.7,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4262-0"
+           r="0.80000001"
+           cy="0"
+           cx="6.5" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="10"
+           d="M 10.8,0 C 10.8,0.44182781 10.441828,0.80000001 10,0.80000001 9.5581722,0.80000001 9.2,0.44182781 9.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.441828,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4264-6"
+           r="0.80000001"
+           cy="0"
+           cx="10" />
+      </g>
+    </marker>
+    <marker
+       style="overflow:visible"
+       inkscape:stockid="InfiniteLineStart"
+       id="marker5443"
+       refX="0"
+       refY="0"
+       orient="auto">
+      <g
+         id="g5445"
+         style="fill:#000000"
+         transform="translate(-13,0)">
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="3"
+           d="M 3.8,0 C 3.8,0.44182781 3.4418278,0.80000001 3,0.80000001 2.5581722,0.80000001 2.2,0.44182781 2.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle5447"
+           r="0.80000001"
+           cy="0"
+           cx="3" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="6.5"
+           d="M 7.3,0 C 7.3,0.44182781 6.9418278,0.80000001 6.5,0.80000001 6.0581722,0.80000001 5.7,0.44182781 5.7,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle5449"
+           r="0.80000001"
+           cy="0"
+           cx="6.5" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="10"
+           d="M 10.8,0 C 10.8,0.44182781 10.441828,0.80000001 10,0.80000001 9.5581722,0.80000001 9.2,0.44182781 9.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.441828,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle5451"
+           r="0.80000001"
+           cy="0"
+           cx="10" />
+      </g>
+    </marker>
+    <marker
+       style="overflow:visible"
+       inkscape:stockid="InfiniteLineEnd"
+       id="InfiniteLineEnd-9"
+       refX="0"
+       refY="0"
+       orient="auto">
+      <g
+         id="g4249-4"
+         style="fill:#000000">
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="3"
+           id="circle4251-9"
+           r="0.80000001"
+           cy="0"
+           cx="3" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="6.5"
+           id="circle4253-0"
+           r="0.80000001"
+           cy="0"
+           cx="6.5" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="10"
+           id="circle4255-0"
+           r="0.80000001"
+           cy="0"
+           cx="10" />
+      </g>
+    </marker>
+    <marker
+       inkscape:stockid="StopL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="StopL-0"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4183-5"
+         d="M 0,5.65 0,-5.65"
+         style="fill:none;stroke:#000000;stroke-width:1pt"
+         transform="scale(0.8,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="StopL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker6552"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path6554"
+         d="M 0,5.65 0,-5.65"
+         style="fill:none;stroke:#000000;stroke-width:1pt"
+         transform="scale(0.8,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="StopL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="StopL-5"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4183-7"
+         d="M 0,5.65 0,-5.65"
+         style="fill:none;stroke:#000000;stroke-width:1pt"
+         transform="scale(0.8,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="StopL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker6590"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path6592"
+         d="M 0,5.65 0,-5.65"
+         style="fill:none;stroke:#000000;stroke-width:1pt"
+         transform="scale(0.8,0.8)" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       inkscape:stockid="InfiniteLineStart"
+       id="InfiniteLineStart-3"
+       refX="0"
+       refY="0"
+       orient="auto">
+      <g
+         id="g4258-8"
+         style="fill:#000000"
+         transform="translate(-13,0)">
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="3"
+           d="M 3.8,0 C 3.8,0.44182781 3.4418278,0.80000001 3,0.80000001 2.5581722,0.80000001 2.2,0.44182781 2.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4260-9"
+           r="0.80000001"
+           cy="0"
+           cx="3" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="6.5"
+           d="M 7.3,0 C 7.3,0.44182781 6.9418278,0.80000001 6.5,0.80000001 6.0581722,0.80000001 5.7,0.44182781 5.7,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4262-3"
+           r="0.80000001"
+           cy="0"
+           cx="6.5" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="10"
+           d="M 10.8,0 C 10.8,0.44182781 10.441828,0.80000001 10,0.80000001 9.5581722,0.80000001 9.2,0.44182781 9.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.441828,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4264-3"
+           r="0.80000001"
+           cy="0"
+           cx="10" />
+      </g>
+    </marker>
+    <marker
+       style="overflow:visible"
+       inkscape:stockid="InfiniteLineStart"
+       id="marker3225"
+       refX="0"
+       refY="0"
+       orient="auto">
+      <g
+         id="g3227"
+         style="fill:#000000"
+         transform="translate(-13,0)">
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="3"
+           d="M 3.8,0 C 3.8,0.44182781 3.4418278,0.80000001 3,0.80000001 2.5581722,0.80000001 2.2,0.44182781 2.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle3229"
+           r="0.80000001"
+           cy="0"
+           cx="3" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="6.5"
+           d="M 7.3,0 C 7.3,0.44182781 6.9418278,0.80000001 6.5,0.80000001 6.0581722,0.80000001 5.7,0.44182781 5.7,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle3231"
+           r="0.80000001"
+           cy="0"
+           cx="6.5" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="10"
+           d="M 10.8,0 C 10.8,0.44182781 10.441828,0.80000001 10,0.80000001 9.5581722,0.80000001 9.2,0.44182781 9.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.441828,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle3233"
+           r="0.80000001"
+           cy="0"
+           cx="10" />
+      </g>
+    </marker>
+    <marker
+       style="overflow:visible"
+       inkscape:stockid="InfiniteLineStart"
+       id="marker3235"
+       refX="0"
+       refY="0"
+       orient="auto">
+      <g
+         id="g3237"
+         style="fill:#000000"
+         transform="translate(-13,0)">
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="3"
+           d="M 3.8,0 C 3.8,0.44182781 3.4418278,0.80000001 3,0.80000001 2.5581722,0.80000001 2.2,0.44182781 2.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle3239"
+           r="0.80000001"
+           cy="0"
+           cx="3" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="6.5"
+           d="M 7.3,0 C 7.3,0.44182781 6.9418278,0.80000001 6.5,0.80000001 6.0581722,0.80000001 5.7,0.44182781 5.7,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle3241"
+           r="0.80000001"
+           cy="0"
+           cx="6.5" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="10"
+           d="M 10.8,0 C 10.8,0.44182781 10.441828,0.80000001 10,0.80000001 9.5581722,0.80000001 9.2,0.44182781 9.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.441828,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle3243"
+           r="0.80000001"
+           cy="0"
+           cx="10" />
+      </g>
+    </marker>
+    <marker
+       style="overflow:visible"
+       inkscape:stockid="InfiniteLineStart"
+       id="marker3245"
+       refX="0"
+       refY="0"
+       orient="auto">
+      <g
+         id="g3247"
+         style="fill:#000000"
+         transform="translate(-13,0)">
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="3"
+           d="M 3.8,0 C 3.8,0.44182781 3.4418278,0.80000001 3,0.80000001 2.5581722,0.80000001 2.2,0.44182781 2.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle3249"
+           r="0.80000001"
+           cy="0"
+           cx="3" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="6.5"
+           d="M 7.3,0 C 7.3,0.44182781 6.9418278,0.80000001 6.5,0.80000001 6.0581722,0.80000001 5.7,0.44182781 5.7,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle3251"
+           r="0.80000001"
+           cy="0"
+           cx="6.5" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="10"
+           d="M 10.8,0 C 10.8,0.44182781 10.441828,0.80000001 10,0.80000001 9.5581722,0.80000001 9.2,0.44182781 9.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.441828,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle3253"
+           r="0.80000001"
+           cy="0"
+           cx="10" />
+      </g>
+    </marker>
+    <marker
+       style="overflow:visible"
+       inkscape:stockid="InfiniteLineStart"
+       id="InfiniteLineStart-2"
+       refX="0"
+       refY="0"
+       orient="auto">
+      <g
+         id="g4258-33"
+         style="fill:#000000"
+         transform="translate(-13,0)">
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="3"
+           d="M 3.8,0 C 3.8,0.44182781 3.4418278,0.80000001 3,0.80000001 2.5581722,0.80000001 2.2,0.44182781 2.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4260-38"
+           r="0.80000001"
+           cy="0"
+           cx="3" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="6.5"
+           d="M 7.3,0 C 7.3,0.44182781 6.9418278,0.80000001 6.5,0.80000001 6.0581722,0.80000001 5.7,0.44182781 5.7,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4262-1"
+           r="0.80000001"
+           cy="0"
+           cx="6.5" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="10"
+           d="M 10.8,0 C 10.8,0.44182781 10.441828,0.80000001 10,0.80000001 9.5581722,0.80000001 9.2,0.44182781 9.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.441828,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4264-8"
+           r="0.80000001"
+           cy="0"
+           cx="10" />
+      </g>
+    </marker>
+    <marker
+       style="overflow:visible"
+       inkscape:stockid="InfiniteLineStart"
+       id="marker3333"
+       refX="0"
+       refY="0"
+       orient="auto">
+      <g
+         id="g3335"
+         style="fill:#000000"
+         transform="translate(-13,0)">
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="3"
+           d="M 3.8,0 C 3.8,0.44182781 3.4418278,0.80000001 3,0.80000001 2.5581722,0.80000001 2.2,0.44182781 2.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle3337"
+           r="0.80000001"
+           cy="0"
+           cx="3" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="6.5"
+           d="M 7.3,0 C 7.3,0.44182781 6.9418278,0.80000001 6.5,0.80000001 6.0581722,0.80000001 5.7,0.44182781 5.7,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle3339"
+           r="0.80000001"
+           cy="0"
+           cx="6.5" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="10"
+           d="M 10.8,0 C 10.8,0.44182781 10.441828,0.80000001 10,0.80000001 9.5581722,0.80000001 9.2,0.44182781 9.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.441828,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle3341"
+           r="0.80000001"
+           cy="0"
+           cx="10" />
+      </g>
+    </marker>
+    <marker
+       style="overflow:visible"
+       inkscape:stockid="InfiniteLineStart"
+       id="marker3343"
+       refX="0"
+       refY="0"
+       orient="auto">
+      <g
+         id="g3345"
+         style="fill:#000000"
+         transform="translate(-13,0)">
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="3"
+           d="M 3.8,0 C 3.8,0.44182781 3.4418278,0.80000001 3,0.80000001 2.5581722,0.80000001 2.2,0.44182781 2.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle3347"
+           r="0.80000001"
+           cy="0"
+           cx="3" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="6.5"
+           d="M 7.3,0 C 7.3,0.44182781 6.9418278,0.80000001 6.5,0.80000001 6.0581722,0.80000001 5.7,0.44182781 5.7,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle3349"
+           r="0.80000001"
+           cy="0"
+           cx="6.5" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="10"
+           d="M 10.8,0 C 10.8,0.44182781 10.441828,0.80000001 10,0.80000001 9.5581722,0.80000001 9.2,0.44182781 9.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.441828,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle3351"
+           r="0.80000001"
+           cy="0"
+           cx="10" />
+      </g>
+    </marker>
+    <marker
+       style="overflow:visible"
+       inkscape:stockid="InfiniteLineStart"
+       id="marker3353"
+       refX="0"
+       refY="0"
+       orient="auto">
+      <g
+         id="g3355"
+         style="fill:#000000"
+         transform="translate(-13,0)">
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="3"
+           d="M 3.8,0 C 3.8,0.44182781 3.4418278,0.80000001 3,0.80000001 2.5581722,0.80000001 2.2,0.44182781 2.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle3357"
+           r="0.80000001"
+           cy="0"
+           cx="3" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="6.5"
+           d="M 7.3,0 C 7.3,0.44182781 6.9418278,0.80000001 6.5,0.80000001 6.0581722,0.80000001 5.7,0.44182781 5.7,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle3359"
+           r="0.80000001"
+           cy="0"
+           cx="6.5" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="10"
+           d="M 10.8,0 C 10.8,0.44182781 10.441828,0.80000001 10,0.80000001 9.5581722,0.80000001 9.2,0.44182781 9.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.441828,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle3361"
+           r="0.80000001"
+           cy="0"
+           cx="10" />
+      </g>
+    </marker>
+    <marker
+       style="overflow:visible"
+       inkscape:stockid="InfiniteLineStart"
+       id="InfiniteLineStart-29"
+       refX="0"
+       refY="0"
+       orient="auto">
+      <g
+         id="g4258-80"
+         style="fill:#000000"
+         transform="translate(-13,0)">
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="3"
+           d="M 3.8,0 C 3.8,0.44182781 3.4418278,0.80000001 3,0.80000001 2.5581722,0.80000001 2.2,0.44182781 2.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4260-33"
+           r="0.80000001"
+           cy="0"
+           cx="3" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="6.5"
+           d="M 7.3,0 C 7.3,0.44182781 6.9418278,0.80000001 6.5,0.80000001 6.0581722,0.80000001 5.7,0.44182781 5.7,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4262-34"
+           r="0.80000001"
+           cy="0"
+           cx="6.5" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="10"
+           d="M 10.8,0 C 10.8,0.44182781 10.441828,0.80000001 10,0.80000001 9.5581722,0.80000001 9.2,0.44182781 9.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.441828,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4264-5"
+           r="0.80000001"
+           cy="0"
+           cx="10" />
+      </g>
+    </marker>
+    <marker
+       style="overflow:visible"
+       inkscape:stockid="InfiniteLineStart"
+       id="marker4659"
+       refX="0"
+       refY="0"
+       orient="auto">
+      <g
+         id="g4661"
+         style="fill:#000000"
+         transform="translate(-13,0)">
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="3"
+           d="M 3.8,0 C 3.8,0.44182781 3.4418278,0.80000001 3,0.80000001 2.5581722,0.80000001 2.2,0.44182781 2.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4663"
+           r="0.80000001"
+           cy="0"
+           cx="3" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="6.5"
+           d="M 7.3,0 C 7.3,0.44182781 6.9418278,0.80000001 6.5,0.80000001 6.0581722,0.80000001 5.7,0.44182781 5.7,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4665"
+           r="0.80000001"
+           cy="0"
+           cx="6.5" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="10"
+           d="M 10.8,0 C 10.8,0.44182781 10.441828,0.80000001 10,0.80000001 9.5581722,0.80000001 9.2,0.44182781 9.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.441828,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4667"
+           r="0.80000001"
+           cy="0"
+           cx="10" />
+      </g>
+    </marker>
+    <marker
+       style="overflow:visible"
+       inkscape:stockid="InfiniteLineStart"
+       id="marker4669"
+       refX="0"
+       refY="0"
+       orient="auto">
+      <g
+         id="g4671"
+         style="fill:#000000"
+         transform="translate(-13,0)">
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="3"
+           d="M 3.8,0 C 3.8,0.44182781 3.4418278,0.80000001 3,0.80000001 2.5581722,0.80000001 2.2,0.44182781 2.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4673"
+           r="0.80000001"
+           cy="0"
+           cx="3" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="6.5"
+           d="M 7.3,0 C 7.3,0.44182781 6.9418278,0.80000001 6.5,0.80000001 6.0581722,0.80000001 5.7,0.44182781 5.7,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4675"
+           r="0.80000001"
+           cy="0"
+           cx="6.5" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="10"
+           d="M 10.8,0 C 10.8,0.44182781 10.441828,0.80000001 10,0.80000001 9.5581722,0.80000001 9.2,0.44182781 9.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.441828,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4677"
+           r="0.80000001"
+           cy="0"
+           cx="10" />
+      </g>
+    </marker>
+    <marker
+       style="overflow:visible"
+       inkscape:stockid="InfiniteLineStart"
+       id="marker4679"
+       refX="0"
+       refY="0"
+       orient="auto">
+      <g
+         id="g4681"
+         style="fill:#000000"
+         transform="translate(-13,0)">
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="3"
+           d="M 3.8,0 C 3.8,0.44182781 3.4418278,0.80000001 3,0.80000001 2.5581722,0.80000001 2.2,0.44182781 2.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4683"
+           r="0.80000001"
+           cy="0"
+           cx="3" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="6.5"
+           d="M 7.3,0 C 7.3,0.44182781 6.9418278,0.80000001 6.5,0.80000001 6.0581722,0.80000001 5.7,0.44182781 5.7,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4685"
+           r="0.80000001"
+           cy="0"
+           cx="6.5" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="10"
+           d="M 10.8,0 C 10.8,0.44182781 10.441828,0.80000001 10,0.80000001 9.5581722,0.80000001 9.2,0.44182781 9.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.441828,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4687"
+           r="0.80000001"
+           cy="0"
+           cx="10" />
+      </g>
+    </marker>
+    <marker
+       inkscape:stockid="StopL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="StopL-4"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4183-3"
+         d="M 0,5.65 0,-5.65"
+         style="fill:none;stroke:#000000;stroke-width:1pt"
+         transform="scale(0.8,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="StopL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker4764"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4766"
+         d="M 0,5.65 0,-5.65"
+         style="fill:none;stroke:#000000;stroke-width:1pt"
+         transform="scale(0.8,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="StopL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="StopL-6"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4183-9"
+         d="M 0,5.65 0,-5.65"
+         style="fill:none;stroke:#000000;stroke-width:1pt"
+         transform="scale(0.8,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="StopL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker4796"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4798"
+         d="M 0,5.65 0,-5.65"
+         style="fill:none;stroke:#000000;stroke-width:1pt"
+         transform="scale(0.8,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="StopL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="StopL-09"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4183-90"
+         d="M 0,5.65 0,-5.65"
+         style="fill:none;stroke:#000000;stroke-width:1pt"
+         transform="scale(0.8,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="StopL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker4828"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4830"
+         d="M 0,5.65 0,-5.65"
+         style="fill:none;stroke:#000000;stroke-width:1pt"
+         transform="scale(0.8,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Mend-5"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4863-3"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Mend-6"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4863-9"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1MendT"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="Arrow1MendT"
+       style="overflow:visible;">
+      <path
+         id="path5566"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         style="stroke:#ff0000;stroke-width:1.0pt;fill:#ff0000;fill-rule:evenodd"
+         transform="scale(0.4) rotate(180) translate(10,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1MendC"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="Arrow1MendC"
+       style="overflow:visible;">
+      <path
+         id="path5569"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         style="stroke:#008000;stroke-width:1.0pt;fill:#008000;fill-rule:evenodd"
+         transform="scale(0.4) rotate(180) translate(10,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="StopLQ"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="StopLQ"
+       style="overflow:visible">
+      <path
+         id="path5572"
+         d="M 0.0,5.65 L 0.0,-5.65"
+         style="stroke-width:1.0pt;fill-rule:evenodd;stroke:#800000;fill-opacity:0.75000000;fill:none"
+         transform="scale(0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="StopLp"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="StopLp"
+       style="overflow:visible">
+      <path
+         id="path5575"
+         d="M 0.0,5.65 L 0.0,-5.65"
+         style="stroke-width:1.0pt;fill-rule:evenodd;stroke:#800000;fill-opacity:0.75000000;fill:none"
+         transform="scale(0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1MendB"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="Arrow1MendB"
+       style="overflow:visible;">
+      <path
+         id="path5578"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         style="stroke:#0000ff;stroke-width:1.0pt;fill:#0000ff;fill-rule:evenodd"
+         transform="scale(0.4) rotate(180) translate(10,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="StopLO"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="StopLO"
+       style="overflow:visible">
+      <path
+         id="path5581"
+         d="M 0.0,5.65 L 0.0,-5.65"
+         style="stroke-width:1.0pt;fill-rule:evenodd;stroke:#808000;fill-opacity:0.75000000;fill:none"
+         transform="scale(0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="StopL0"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="StopL0"
+       style="overflow:visible">
+      <path
+         id="path5584"
+         d="M 0.0,5.65 L 0.0,-5.65"
+         style="stroke-width:1.0pt;fill-rule:evenodd;stroke:#808000;fill-opacity:0.75000000;fill:none"
+         transform="scale(0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="StopLn"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="StopLn"
+       style="overflow:visible">
+      <path
+         id="path5587"
+         d="M 0.0,5.65 L 0.0,-5.65"
+         style="stroke-width:1.0pt;fill-rule:evenodd;stroke:#000080;fill-opacity:0.75000000;fill:none"
+         transform="scale(0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="StopLL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="StopLL"
+       style="overflow:visible">
+      <path
+         id="path5590"
+         d="M 0.0,5.65 L 0.0,-5.65"
+         style="stroke-width:1.0pt;fill-rule:evenodd;stroke:#000080;fill-opacity:0.75000000;fill:none"
+         transform="scale(0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1MendB"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1MendB-2"
+       style="overflow:visible">
+      <path
+         id="path5578-2"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill:#0000ff;fill-rule:evenodd;stroke:#0000ff;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)"
+         inkscape:connector-curvature="0" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1MendBg"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="Arrow1MendBg"
+       style="overflow:visible;">
+      <path
+         id="path6167"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt;fill:#000000"
+         transform="scale(0.4) rotate(180) translate(10,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1MendBg"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1MendBg-7"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path6167-0"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill:#000000;fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       inkscape:stockid="InfiniteLineStart"
+       id="InfiniteLineStart-0"
+       refX="0"
+       refY="0"
+       orient="auto">
+      <g
+         id="g4258-4"
+         style="fill:#000000"
+         transform="translate(-13,0)">
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="3"
+           d="M 3.8,0 C 3.8,0.44182781 3.4418278,0.80000001 3,0.80000001 2.5581722,0.80000001 2.2,0.44182781 2.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4260-2"
+           r="0.80000001"
+           cy="0"
+           cx="3" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="6.5"
+           d="M 7.3,0 C 7.3,0.44182781 6.9418278,0.80000001 6.5,0.80000001 6.0581722,0.80000001 5.7,0.44182781 5.7,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4262-9"
+           r="0.80000001"
+           cy="0"
+           cx="6.5" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="10"
+           d="M 10.8,0 C 10.8,0.44182781 10.441828,0.80000001 10,0.80000001 9.5581722,0.80000001 9.2,0.44182781 9.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.441828,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle4264-0"
+           r="0.80000001"
+           cy="0"
+           cx="10" />
+      </g>
+    </marker>
+    <marker
+       style="overflow:visible"
+       inkscape:stockid="InfiniteLineStart"
+       id="marker6802"
+       refX="0"
+       refY="0"
+       orient="auto">
+      <g
+         id="g6804"
+         style="fill:#000000"
+         transform="translate(-13,0)">
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="3"
+           d="M 3.8,0 C 3.8,0.44182781 3.4418278,0.80000001 3,0.80000001 2.5581722,0.80000001 2.2,0.44182781 2.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle6806"
+           r="0.80000001"
+           cy="0"
+           cx="3" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="6.5"
+           d="M 7.3,0 C 7.3,0.44182781 6.9418278,0.80000001 6.5,0.80000001 6.0581722,0.80000001 5.7,0.44182781 5.7,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle6808"
+           r="0.80000001"
+           cy="0"
+           cx="6.5" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="10"
+           d="M 10.8,0 C 10.8,0.44182781 10.441828,0.80000001 10,0.80000001 9.5581722,0.80000001 9.2,0.44182781 9.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.441828,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle6810"
+           r="0.80000001"
+           cy="0"
+           cx="10" />
+      </g>
+    </marker>
+    <marker
+       style="overflow:visible"
+       inkscape:stockid="InfiniteLineStart"
+       id="marker6812"
+       refX="0"
+       refY="0"
+       orient="auto">
+      <g
+         id="g6814"
+         style="fill:#000000"
+         transform="translate(-13,0)">
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="3"
+           d="M 3.8,0 C 3.8,0.44182781 3.4418278,0.80000001 3,0.80000001 2.5581722,0.80000001 2.2,0.44182781 2.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle6816"
+           r="0.80000001"
+           cy="0"
+           cx="3" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="6.5"
+           d="M 7.3,0 C 7.3,0.44182781 6.9418278,0.80000001 6.5,0.80000001 6.0581722,0.80000001 5.7,0.44182781 5.7,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle6818"
+           r="0.80000001"
+           cy="0"
+           cx="6.5" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="10"
+           d="M 10.8,0 C 10.8,0.44182781 10.441828,0.80000001 10,0.80000001 9.5581722,0.80000001 9.2,0.44182781 9.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.441828,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle6820"
+           r="0.80000001"
+           cy="0"
+           cx="10" />
+      </g>
+    </marker>
+    <marker
+       style="overflow:visible"
+       inkscape:stockid="InfiniteLineStart"
+       id="marker6822"
+       refX="0"
+       refY="0"
+       orient="auto">
+      <g
+         id="g6824"
+         style="fill:#000000"
+         transform="translate(-13,0)">
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="3"
+           d="M 3.8,0 C 3.8,0.44182781 3.4418278,0.80000001 3,0.80000001 2.5581722,0.80000001 2.2,0.44182781 2.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle6826"
+           r="0.80000001"
+           cy="0"
+           cx="3" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="6.5"
+           d="M 7.3,0 C 7.3,0.44182781 6.9418278,0.80000001 6.5,0.80000001 6.0581722,0.80000001 5.7,0.44182781 5.7,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.4418278,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle6828"
+           r="0.80000001"
+           cy="0"
+           cx="6.5" />
+        <circle
+           sodipodi:ry="0.80000001"
+           sodipodi:rx="0.80000001"
+           sodipodi:cy="0"
+           sodipodi:cx="10"
+           d="M 10.8,0 C 10.8,0.44182781 10.441828,0.80000001 10,0.80000001 9.5581722,0.80000001 9.2,0.44182781 9.2,0 c 0,-0.44182781 0.3581722,-0.80000001 0.8,-0.80000001 0.441828,0 0.8,0.3581722 0.8,0.80000001 z"
+           id="circle6830"
+           r="0.80000001"
+           cy="0"
+           cx="10" />
+      </g>
+    </marker>
+    <marker
+       inkscape:stockid="StopL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="StopL-3"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4183-55"
+         d="M 0,5.65 0,-5.65"
+         style="fill:none;stroke:#000000;stroke-width:1pt"
+         transform="scale(0.8,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="StopL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker6940"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path6942"
+         d="M 0,5.65 0,-5.65"
+         style="fill:none;stroke:#000000;stroke-width:1pt"
+         transform="scale(0.8,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="StopL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="StopL-06"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4183-95"
+         d="M 0,5.65 0,-5.65"
+         style="fill:none;stroke:#000000;stroke-width:1pt"
+         transform="scale(0.8,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="StopL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker7037"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path7039"
+         d="M 0,5.65 0,-5.65"
+         style="fill:none;stroke:#000000;stroke-width:1pt"
+         transform="scale(0.8,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="StopL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="StopL-38"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4183-78"
+         d="M 0,5.65 0,-5.65"
+         style="fill:none;stroke:#000000;stroke-width:1pt"
+         transform="scale(0.8,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="StopL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker7069"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path7071"
+         d="M 0,5.65 0,-5.65"
+         style="fill:none;stroke:#000000;stroke-width:1pt"
+         transform="scale(0.8,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="StopL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="StopL-091"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4183-57"
+         d="M 0,5.65 0,-5.65"
+         style="fill:none;stroke:#000000;stroke-width:1pt"
+         transform="scale(0.8,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="StopL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker7101"
+       style="overflow:visible">
+      <path
+         inkscape:connector-curvature="0"
+         id="path7103"
+         d="M 0,5.65 0,-5.65"
+         style="fill:none;stroke:#000000;stroke-width:1pt"
+         transform="scale(0.8,0.8)" />
+    </marker>
+  </defs>
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Calque 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect2989"
+       width="100"
+       height="50"
+       x="130"
+       y="102.36218"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <rect
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect2989-5"
+       width="50"
+       height="50"
+       x="230"
+       y="102.36218"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <rect
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect2989-5-5"
+       width="50"
+       height="50"
+       x="280"
+       y="102.36218"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <rect
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect2989-5-2"
+       width="200"
+       height="50"
+       x="330"
+       y="102.36218"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="110"
+       y="92.362183"
+       id="text3034"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="110"
+         y="92.362183"
+         id="tspan3038"
+         style="font-size:10px">Ordre des bits dans le fichier</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="179.55078"
+       y="117.61609"
+       id="text3074"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         id="tspan3076"
+         x="179.55078"
+         y="117.61609"
+         style="font-size:10px;text-align:center;text-anchor:middle">4949 (II)</tspan><tspan
+         sodipodi:role="line"
+         x="179.55078"
+         y="130.11609"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan3080">little endian</tspan><tspan
+         sodipodi:role="line"
+         x="179.55078"
+         y="142.61609"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan3078">plus faible en 1er</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="254.63867"
+       y="131.07312"
+       id="text3074-2"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="254.63867"
+         y="131.07312"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan3078-6">42</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="304.63867"
+       y="131.00232"
+       id="text3074-2-2"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="304.63867"
+         y="131.00232"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan3078-6-6">00</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="430"
+       y="124.07117"
+       id="text3074-9"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="430"
+         y="124.07117"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan3078-2">adresse (numéro du premier octet)</tspan><tspan
+         sodipodi:role="line"
+         x="430"
+         y="136.57117"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan3167">du premier Image File Directory (IFD)</tspan></text>
+    <rect
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect2989-3"
+       width="100"
+       height="50"
+       x="130"
+       y="212.36218"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <rect
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect2989-5-2-4"
+       width="200"
+       height="50"
+       x="520"
+       y="212.36218"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="180"
+       y="232.36218"
+       id="text3074-6"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="180"
+         y="232.36218"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan3078-29">nombre d'entrées</tspan><tspan
+         sodipodi:role="line"
+         x="180"
+         y="244.86218"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan3234">dans l'IFD</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="616"
+       y="232.36218"
+       id="text3074-9-4"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="616"
+         y="232.36218"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan3167-2">adresse de l'IFD suivant</tspan><tspan
+         sodipodi:role="line"
+         x="616"
+         y="244.86218"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan3238">00 00 00 00 si dernier IFD</tspan></text>
+    <g
+       id="g5512"
+       transform="translate(-10,80)"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212">
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path3240"
+         d="m 404.48864,132.36218 c 59.21591,0 65.79545,0 125.01136,0"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#InfiniteLineStart);marker-mid:none" />
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path3240-9"
+         d="m 378.17046,132.36218 -138.17046,0"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#InfiniteLineStart);marker-mid:none" />
+    </g>
+    <g
+       id="g5516"
+       transform="translate(-10,80)"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212">
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path3240-5"
+         d="m 404.48864,182.36218 c 59.21591,0 65.79545,0 125.01136,0"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#InfiniteLineStart);marker-mid:none" />
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path3240-9-4"
+         d="m 378.17046,182.36218 -138.17046,0"
+         style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#InfiniteLineStart);marker-mid:none" />
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="374.7207"
+       y="232.36218"
+       id="text3074-9-2"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="374.7207"
+         y="232.36218"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan3167-5">entrées (12 octets par entrée)</tspan><tspan
+         sodipodi:role="line"
+         x="374.7207"
+         y="244.86218"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan5520">doivent être triées dans l'ordre croissant des étiquettes</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.99999994px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#StopL);marker-end:url(#StopL)"
+       d="m 230,282.36218 289.5,0"
+       id="path5524"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="320.64844"
+       y="296.29041"
+       id="text5942"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         id="tspan5944"
+         x="320.64844"
+         y="296.29041"
+         style="font-size:10px">12 * nombre d'entrée</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Lend)"
+       d="m 420,152.36218 c 0,25 -250,20 -290,20 -40,0 -40,10 -40,30 0,20 0,35 20,35 10,0 10,0 10,0 l 5,0"
+       id="path5965"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cssscc"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#InfiniteLineEnd)"
+       d="m 620,262.36218 c 0,25 30,30 70,30 5,0 20,0 20,0"
+       id="path6178"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="csc"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <rect
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect2989-9"
+       width="100"
+       height="50"
+       x="130"
+       y="332.36218"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <rect
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect2989-5-3"
+       width="100"
+       height="50"
+       x="230"
+       y="332.36218"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <rect
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect2989-5-2-5"
+       width="200"
+       height="50"
+       x="330"
+       y="332.36218"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="179.77539"
+       y="360.95837"
+       id="text3074-1"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="179.77539"
+         y="360.95837"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan6454">Étiquette</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="429.51416"
+       y="361.09021"
+       id="text3074-9-6"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="429.51416"
+         y="361.09021"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan3167-8">Nombre de valeur</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="280.28076"
+       y="359.96716"
+       id="text3074-1-1"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="280.28076"
+         y="359.96716"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan6454-8">Type</tspan></text>
+    <rect
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect2989-5-2-5-8"
+       width="200"
+       height="50"
+       x="530"
+       y="332.36218"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="630.20752"
+       y="354.84021"
+       id="text3074-9-6-1"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="630.20752"
+         y="354.84021"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan3167-8-3">Valeur si elle tient sur 4 octets</tspan><tspan
+         sodipodi:role="line"
+         x="630.20752"
+         y="367.34021"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan6505">Adresse des valeurs sinon</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.99999994px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#StopL);marker-end:url(#StopL)"
+       d="m 130.25,72.008179 399.24999,0"
+       id="path5524-7"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="309.58691"
+       y="66.002319"
+       id="text5942-4"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         id="tspan5944-7"
+         x="309.58691"
+         y="66.002319"
+         style="font-size:10px">8 octets</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.99999994px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#StopL);marker-end:url(#StopL)"
+       d="m 130,402.36218 599.00001,0"
+       id="path5524-7-0"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="403.73535"
+       y="429.78406"
+       id="text5942-4-8"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         id="tspan5944-7-8"
+         x="403.73535"
+         y="429.78406"
+         style="font-size:10px">12 octets</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="36.602539"
+       y="364.21863"
+       id="text6616"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         id="tspan6618"
+         x="36.602539"
+         y="364.21863">Entrée</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="36.602539"
+       y="239.65222"
+       id="text6616-3"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         id="tspan6618-7"
+         x="36.602539"
+         y="239.65222">IFD</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="36.602539"
+       y="129.81824"
+       id="text6616-2"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffEnTete.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         id="tspan6618-9"
+         x="36.602539"
+         y="129.81824">Header</tspan></text>
+    <rect
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect2989-5-2-5-0"
+       width="99.756096"
+       height="25"
+       x="130"
+       y="487.36218"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#ff0000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="179.96106"
+       y="497.29041"
+       id="text3074-9-6-8"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="179.96106"
+         y="497.29041"
+         style="font-size:10px;text-align:center;text-anchor:middle;fill:#ff0000"
+         id="tspan3167-8-5">Adresse de début</tspan><tspan
+         sodipodi:role="line"
+         x="179.96106"
+         y="509.79041"
+         style="font-size:10px;text-align:center;text-anchor:middle;fill:#ff0000"
+         id="tspan3168">de la tuile 1</tspan></text>
+    <rect
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect2989-5-2-5-0-0"
+       width="99.756096"
+       height="25"
+       x="230"
+       y="487.36218"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#0000ff;fill-opacity:1;stroke:none;font-family:Sans"
+       x="279.96106"
+       y="497.29037"
+       id="text3074-9-6-8-5"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="279.96106"
+         y="497.29037"
+         style="font-size:10px;text-align:center;text-anchor:middle;fill:#0000ff"
+         id="tspan3167-8-5-4">Adresse de début</tspan><tspan
+         sodipodi:role="line"
+         x="279.96106"
+         y="509.79041"
+         style="font-size:10px;text-align:center;text-anchor:middle;fill:#0000ff"
+         id="tspan3168-5">de la tuile 2</tspan></text>
+    <rect
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect2989-5-2-5-0-00"
+       width="99.756096"
+       height="25"
+       x="430"
+       y="487.36215"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#008000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="479.96106"
+       y="497.29034"
+       id="text3074-9-6-8-58"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="479.96106"
+         y="497.29034"
+         style="font-size:10px;text-align:center;text-anchor:middle;fill:#008000"
+         id="tspan3167-8-5-1">Adresse de début</tspan><tspan
+         sodipodi:role="line"
+         x="479.96106"
+         y="509.79034"
+         style="font-size:10px;text-align:center;text-anchor:middle;fill:#008000"
+         id="tspan3168-7">de la tuile N</tspan></text>
+    <g
+       id="g5512-7"
+       transform="matrix(0.34342354,0,0,1,247.57026,354.99997)"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212">
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path3240-4"
+         d="m 404.48864,132.36218 c 59.21591,0 65.79545,0 125.01136,0"
+         style="fill:none;stroke:#000000;stroke-width:1.70641613px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#InfiniteLineStart);marker-mid:none" />
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path3240-9-3"
+         d="m 359.96699,132.36218 -119.96699,0"
+         style="fill:none;stroke:#000000;stroke-width:1.70641613px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#InfiniteLineStart);marker-mid:none" />
+    </g>
+    <g
+       id="g5516-5"
+       transform="matrix(0.34342354,0,0,1,247.57026,329.99997)"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212">
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path3240-5-5"
+         d="m 404.48864,182.36218 c 59.21591,0 65.79545,0 125.01136,0"
+         style="fill:none;stroke:#000000;stroke-width:1.70641613px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#InfiniteLineStart);marker-mid:none" />
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path3240-9-4-3"
+         d="m 359.96699,182.36218 -119.96699,0"
+         style="fill:none;stroke:#000000;stroke-width:1.70641613px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#InfiniteLineStart);marker-mid:none" />
+    </g>
+    <rect
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect2989-5-2-5-0-8"
+       width="99.756096"
+       height="25"
+       x="530"
+       y="487.36212"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#800000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="580.34924"
+       y="497.34015"
+       id="text3074-9-6-8-6"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="580.34924"
+         y="497.34015"
+         style="font-size:10px;text-align:center;text-anchor:middle;fill:#800000"
+         id="tspan3168-6">Taille de la</tspan><tspan
+         sodipodi:role="line"
+         x="580.34924"
+         y="509.84015"
+         style="font-size:10px;text-align:center;text-anchor:middle;fill:#800000"
+         id="tspan3464">tuile 1</tspan></text>
+    <rect
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect2989-5-2-5-0-0-4"
+       width="99.756096"
+       height="25"
+       x="130"
+       y="562.36218"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <rect
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect2989-5-2-5-0-00-9"
+       width="99.756096"
+       height="25"
+       x="330"
+       y="562.36218"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <g
+       id="g5512-7-9"
+       transform="matrix(0.34546115,0,0,1,147.07833,429.99997)"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212">
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path3240-4-5"
+         d="m 404.48864,132.36218 c 59.21591,0 65.79545,0 125.01136,0"
+         style="fill:none;stroke:#000000;stroke-width:1.70137632px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#InfiniteLineStart);marker-mid:none" />
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path3240-9-3-9"
+         d="m 359.96699,132.36218 -119.96699,0"
+         style="fill:none;stroke:#000000;stroke-width:1.70137632px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#InfiniteLineStart);marker-mid:none" />
+    </g>
+    <g
+       id="g5516-5-4"
+       transform="matrix(0.34546115,0,0,1,147.07833,404.99997)"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212">
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path3240-5-5-2"
+         d="m 404.48864,182.36218 c 59.21591,0 65.79545,0 125.01136,0"
+         style="fill:none;stroke:#000000;stroke-width:1.70137632px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#InfiniteLineStart);marker-mid:none" />
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path3240-9-4-3-3"
+         d="m 359.96699,182.36218 -119.96699,0"
+         style="fill:none;stroke:#000000;stroke-width:1.70137632px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#InfiniteLineStart);marker-mid:none" />
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000080;fill-opacity:1;stroke:none;font-family:Sans"
+       x="180.34924"
+       y="572.34021"
+       id="text3074-9-6-8-6-9"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="180.34924"
+         y="572.34021"
+         style="font-size:10px;text-align:center;text-anchor:middle;fill:#000080"
+         id="tspan3168-6-9">Taille de la</tspan><tspan
+         sodipodi:role="line"
+         x="180.34924"
+         y="584.84021"
+         style="font-size:10px;text-align:center;text-anchor:middle;fill:#000080"
+         id="tspan3464-2">tuile 2</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#808000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="380.34924"
+       y="572.34021"
+       id="text3074-9-6-8-6-3"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="380.34924"
+         y="572.34021"
+         style="font-size:10px;text-align:center;text-anchor:middle;fill:#808000"
+         id="tspan3168-6-5">Taille de la</tspan><tspan
+         sodipodi:role="line"
+         x="380.34924"
+         y="584.84021"
+         style="font-size:10px;text-align:center;text-anchor:middle;fill:#808000"
+         id="tspan3464-4">tuile N</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="530.47852"
+       y="578.59021"
+       id="text3074-9-6-8-6-3-8"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="530.47852"
+         y="578.59021"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan3464-4-7">Tuile 1</tspan></text>
+    <g
+       id="g4573"
+       transform="matrix(2,0,0,1,-290,14.99997)"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212">
+      <path
+         sodipodi:nodetypes="cccccccc"
+         inkscape:connector-curvature="0"
+         id="path4544"
+         d="m 395,547.36218 -35,0 0,25 35.17857,0 m 29.82143,0 35,0 0,-25 -34.82143,0"
+         style="fill:none;stroke:#000000;stroke-width:0.70710677px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path4546"
+         d="m 395,547.36218 30,0"
+         style="fill:none;stroke:#000000;stroke-width:0.70710677;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:1.41421356, 0.70710678, 0.35355339, 0.70710678;stroke-dashoffset:0" />
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path4546-3"
+         d="m 395,572.36218 30,0"
+         style="fill:none;stroke:#000000;stroke-width:0.70710677;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:1.41421356, 0.70710678, 0.35355339, 0.70710678;stroke-dashoffset:0" />
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="238.01758"
+       y="643.59021"
+       id="text3074-9-6-8-6-3-8-2"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="238.01758"
+         y="643.59021"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan3464-4-7-0">Tuile 2</tspan></text>
+    <g
+       id="g4573-7"
+       transform="matrix(2.15,0,0,1,-644,79.999973)"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212">
+      <path
+         sodipodi:nodetypes="cccccccc"
+         inkscape:connector-curvature="0"
+         id="path4544-4"
+         d="m 395,547.36218 -35,0 0,25 35.17857,0 m 29.82143,0 35,0 0,-25 -34.82143,0"
+         style="fill:none;stroke:#000000;stroke-width:0.68199432px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path4546-2"
+         d="m 395,547.36218 30,0"
+         style="fill:none;stroke:#000000;stroke-width:0.68199432;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:1.36398868, 0.68199434, 0.34099717, 0.68199434;stroke-dashoffset:0" />
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path4546-3-3"
+         d="m 395,572.36218 30,0"
+         style="fill:none;stroke:#000000;stroke-width:0.68199432;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:1.36398868, 0.68199434, 0.34099717, 0.68199434;stroke-dashoffset:0" />
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="510.50537"
+       y="643.59021"
+       id="text3074-9-6-8-6-3-8-2-9"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="510.50537"
+         y="643.59021"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan3464-4-7-0-9">Tuile N</tspan></text>
+    <g
+       id="g4573-7-5"
+       transform="matrix(2.4,0,0,1,-474,79.999973)"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212">
+      <path
+         sodipodi:nodetypes="cccccccc"
+         inkscape:connector-curvature="0"
+         id="path4544-4-2"
+         d="m 395,547.36218 -35,0 0,25 35.17857,0 m 29.82143,0 35,0 0,-25 -34.82143,0"
+         style="fill:none;stroke:#000000;stroke-width:0.6454972px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path4546-2-8"
+         d="m 395,547.36218 30,0"
+         style="fill:none;stroke:#000000;stroke-width:0.6454972;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:1.29099445, 0.64549722, 0.32274861, 0.64549722;stroke-dashoffset:0" />
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path4546-3-3-5"
+         d="m 395,572.36218 30,0"
+         style="fill:none;stroke:#000000;stroke-width:0.6454972;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:1.29099445, 0.64549722, 0.32274861, 0.64549722;stroke-dashoffset:0" />
+    </g>
+    <g
+       id="g5512-7-98"
+       transform="matrix(0.15544042,0,0,1,307.6943,494.99997)"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212">
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path3240-4-4"
+         d="m 404.48864,132.36218 c 59.21591,0 65.79545,0 125.01136,0"
+         style="fill:none;stroke:#000000;stroke-width:2.53640151px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#InfiniteLineStart);marker-mid:none" />
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path3240-9-3-7"
+         d="m 344.40888,132.36218 -104.40888,0"
+         style="fill:none;stroke:#000000;stroke-width:2.53640151px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#InfiniteLineStart);marker-mid:none" />
+    </g>
+    <g
+       id="g5516-5-2"
+       transform="matrix(0.15544042,0,0,1,307.6943,469.99997)"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212">
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path3240-5-5-4"
+         d="m 404.48864,182.36218 c 59.21591,0 65.79545,0 125.01136,0"
+         style="fill:none;stroke:#000000;stroke-width:2.53640151px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#InfiniteLineStart);marker-mid:none" />
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path3240-9-4-3-4"
+         d="m 344.40888,182.36218 -104.40888,0"
+         style="fill:none;stroke:#000000;stroke-width:2.53640151px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#InfiniteLineStart);marker-mid:none" />
+    </g>
+    <path
+       style="fill:none;stroke:#000080;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#StopLn);marker-end:url(#StopLL)"
+       d="m 130.5,662.36215 214.5,0"
+       id="path5524-7-0-0"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <path
+       style="fill:none;stroke:#808000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#StopLO);marker-end:url(#StopL0)"
+       d="m 389.99999,662.36215 239.99999,0"
+       id="path5524-7-0-0-1"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <path
+       style="fill:none;stroke:#800000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#StopLQ);marker-end:url(#StopLp)"
+       d="m 429.99999,597.36215 200.00002,0"
+       id="path5524-7-0-0-1-4"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <path
+       style="fill:none;stroke:#ff0000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1MendT)"
+       d="m 430,542.36215 0,15"
+       id="path4848"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <path
+       style="fill:none;stroke:#008000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1MendC)"
+       d="m 390,607.36215 0,15"
+       id="path4848-2"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <path
+       style="fill:none;stroke:#0000ff;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1MendB)"
+       d="m 130,607.36215 0,15"
+       id="path4848-9"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1MendBg)"
+       d="m 130,462.86215 0,14.18604"
+       id="path4848-9-8"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="114.69238"
+       y="455.73032"
+       id="text6579"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         id="tspan6581"
+         x="114.69238"
+         y="455.73032"
+         style="font-size:12px">2048</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.99999994px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1MendBg)"
+       d="m 530,462.36215 0,15"
+       id="path4848-9-8-5"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="494.46289"
+       y="455.73032"
+       id="text6579-5"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         id="tspan6581-2"
+         x="494.46289"
+         y="455.73032"
+         style="font-size:12px">2048 + 4*N</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="387.8916"
+       y="537.73035"
+       id="text6579-5-1"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffDonnees.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         id="tspan6581-2-7"
+         x="387.8916"
+         y="537.73035"
+         style="font-size:12px">2048 + 2*4*N</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="250.50537"
+       y="786.09021"
+       id="text3074-9-6-8-6-3-8-2-9-4"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffPNG.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="250.50537"
+         y="786.09021"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan3464-4-7-0-9-8">Tuile 1</tspan></text>
+    <g
+       id="g4573-7-5-6"
+       transform="matrix(2.4,0,0,1.5769233,-734,-100.49752)"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffPNG.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212">
+      <path
+         sodipodi:nodetypes="cccccccc"
+         inkscape:connector-curvature="0"
+         id="path4544-4-2-1"
+         d="m 395,547.36218 -35,0 0,25 35.17857,0 m 29.82143,0 35,0 0,-25 -34.82143,0"
+         style="fill:none;stroke:#000000;stroke-width:0.51403075px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path4546-2-8-0"
+         d="m 395,547.36218 30,0"
+         style="fill:none;stroke:#000000;stroke-width:0.51403075;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:1.02806149, 0.51403074, 0.25701537, 0.51403074;stroke-dashoffset:0" />
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path4546-3-3-5-8"
+         d="m 395,572.36218 30,0"
+         style="fill:none;stroke:#000000;stroke-width:0.51403075;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:1.02806149, 0.51403074, 0.25701537, 0.51403074;stroke-dashoffset:0" />
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="490.50537"
+       y="786.09021"
+       id="text3074-9-6-8-6-3-8-2-9-4-0"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffPNG.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="490.50537"
+         y="786.09021"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan3464-4-7-0-9-8-1">Tuile 2</tspan></text>
+    <g
+       id="g4573-7-5-6-9"
+       transform="matrix(2.4,0,0,1.5769233,-494,-100.49752)"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffPNG.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212">
+      <path
+         sodipodi:nodetypes="cccccccc"
+         inkscape:connector-curvature="0"
+         id="path4544-4-2-1-3"
+         d="m 395,547.36218 -35,0 0,25 35.17857,0 m 29.82143,0 35,0 0,-25 -34.82143,0"
+         style="fill:none;stroke:#000000;stroke-width:0.51403075px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path4546-2-8-0-2"
+         d="m 395,547.36218 30,0"
+         style="fill:none;stroke:#000000;stroke-width:0.51403075;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:1.02806149, 0.51403074, 0.25701537, 0.51403074;stroke-dashoffset:0" />
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path4546-3-3-5-8-2"
+         d="m 395,572.36218 30,0"
+         style="fill:none;stroke:#000000;stroke-width:0.51403075;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:1.02806149, 0.51403074, 0.25701537, 0.51403074;stroke-dashoffset:0" />
+    </g>
+    <rect
+       style="fill:#ff7f2a;fill-opacity:1;fill-rule:evenodd;stroke:#aa4400;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect6700"
+       width="54"
+       height="29"
+       x="135.5"
+       y="767.86218"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffPNG.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="162.27539"
+       y="780.04041"
+       id="text6702"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffPNG.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         id="tspan6704"
+         x="162.27539"
+         y="780.04041"
+         style="font-size:10px">En-tête</tspan><tspan
+         sodipodi:role="line"
+         x="162.27539"
+         y="792.54041"
+         id="tspan6706"
+         style="font-size:10px">PNG</tspan></text>
+    <rect
+       style="fill:#ff7f2a;fill-opacity:1;fill-rule:evenodd;stroke:#aa4400;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect6700-0"
+       width="54"
+       height="29"
+       x="375"
+       y="767.36218"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffPNG.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="401.77539"
+       y="779.54041"
+       id="text6702-4"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffPNG.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         id="tspan6704-7"
+         x="401.77539"
+         y="779.54041"
+         style="font-size:10px">En-tête</tspan><tspan
+         sodipodi:role="line"
+         x="401.77539"
+         y="792.04041"
+         id="tspan6706-6"
+         style="font-size:10px">PNG</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 130,807.36218 c 0,5 114.01942,0.0971 115,5 l 1,5 1,-5 c 0.98058,-4.9029 123,0 123,-5"
+       id="path6737"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cscsc"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffPNG.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 370,807.36218 c 0,5 114.01942,0.0971 115,5 l 1,5 1,-5 c 0.98058,-4.9029 123,0 123,-5"
+       id="path6737-2"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cscsc"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffPNG.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="245"
+       y="832.36218"
+       id="text6757"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffPNG.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         id="tspan6759"
+         x="245"
+         y="832.36218"
+         style="font-size:11px;text-align:center;text-anchor:middle">Image au format PNG,</tspan><tspan
+         sodipodi:role="line"
+         x="245"
+         y="846.11218"
+         style="font-size:11px;text-align:center;text-anchor:middle"
+         id="tspan6761">conforme et indépendante</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="490"
+       y="832.36218"
+       id="text6757-5"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffPNG.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         id="tspan6759-9"
+         x="490"
+         y="832.36218"
+         style="font-size:11px;text-align:center;text-anchor:middle">Image au format PNG,</tspan><tspan
+         sodipodi:role="line"
+         x="490"
+         y="846.11218"
+         style="font-size:11px;text-align:center;text-anchor:middle"
+         id="tspan6761-3">conforme et indépendante</tspan></text>
+    <rect
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect2989-9-7"
+       width="200.5"
+       height="49"
+       x="89.064079"
+       y="912.86218"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffRecapitulatif.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <rect
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect2989-5-3-0"
+       width="100.43591"
+       height="49"
+       x="289.56409"
+       y="912.86218"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffRecapitulatif.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="145.57823"
+       y="941.48438"
+       id="text3074-1-7"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffRecapitulatif.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="145.57823"
+         y="941.48438"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan6454-7">En-tête</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="240.26123"
+       y="929.95984"
+       id="text3074-9-6-5"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffRecapitulatif.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="240.26123"
+         y="929.95984"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan3167-8-8">TileOffsets</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="240"
+       y="952.36218"
+       id="text3074-1-1-7"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffRecapitulatif.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="240"
+         y="952.36218"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan6454-8-0">TileByteCounts</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="616.24463"
+       y="940.32117"
+       id="text3074-9-6-1-2"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffRecapitulatif.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="616.24463"
+         y="940.32117"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan6505-6">Tuiles (données compressées)</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.99999994px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#StopL);marker-end:url(#StopL)"
+       d="m 89.564078,992.7764 199.000002,0"
+       id="path5524-7-0-8"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffRecapitulatif.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="309.19836"
+       y="1006.3965"
+       id="text5942-4-8-0"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffRecapitulatif.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         id="tspan5944-7-8-1"
+         x="309.19836"
+         y="1006.3965"
+         style="font-size:10px">4*N octets</tspan></text>
+    <rect
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect2989-5-3-0-6"
+       width="99.5"
+       height="49"
+       x="390"
+       y="912.86218"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffRecapitulatif.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#StopL);marker-end:url(#StopL)"
+       d="m 289.56408,992.7564 99.00001,0"
+       id="path5524-7-0-8-6"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffRecapitulatif.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#StopL);marker-end:url(#StopL)"
+       d="m 389.56407,992.7364 99.93591,0"
+       id="path5524-7-0-8-6-3"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffRecapitulatif.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="169.19835"
+       y="1006.3965"
+       id="text5942-4-8-0-6"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffRecapitulatif.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         id="tspan5944-7-8-1-2"
+         x="169.19835"
+         y="1006.3965"
+         style="font-size:10px">2048 octets</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="410.06506"
+       y="1007.6147"
+       id="text5942-4-8-0-0"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffRecapitulatif.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         id="tspan5944-7-8-1-8"
+         x="410.06506"
+         y="1007.6147"
+         style="font-size:10px">4*N octets</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="339.28479"
+       y="935.23438"
+       id="text3074-1-1-7-6"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffRecapitulatif.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="339.28479"
+         y="935.23438"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan6454-8-0-7">Adresses</tspan><tspan
+         sodipodi:role="line"
+         x="339.28479"
+         y="947.73438"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan7184">des tuiles</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:20px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="439.03479"
+       y="935.34021"
+       id="text3074-1-1-7-6-0"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffRecapitulatif.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212"><tspan
+         sodipodi:role="line"
+         x="439.03479"
+         y="935.34021"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan6454-8-0-7-3">Tailles</tspan><tspan
+         sodipodi:role="line"
+         x="439.03479"
+         y="947.84021"
+         style="font-size:10px;text-align:center;text-anchor:middle"
+         id="tspan7184-3">des tuiles</tspan></text>
+    <g
+       id="g4573-7-5-6-9-6"
+       transform="matrix(2.5159572,0,0,1.9599883,-415.7446,-159.96114)"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffRecapitulatif.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212">
+      <path
+         sodipodi:nodetypes="cccccccc"
+         inkscape:connector-curvature="0"
+         id="path4544-4-2-1-3-0"
+         d="m 395,547.36218 -35,0 0,25 35.17857,0 m 29.82143,0 35,0 0,-25 -34.82143,0"
+         style="fill:none;stroke:#000000;stroke-width:0.45032039px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path4546-2-8-0-2-8"
+         d="m 395,547.36218 30,0"
+         style="fill:none;stroke:#000000;stroke-width:0.45032039;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:0.9006408, 0.4503204, 0.22516019, 0.4503204;stroke-dashoffset:0" />
+      <path
+         sodipodi:nodetypes="cc"
+         inkscape:connector-curvature="0"
+         id="path4546-3-3-5-8-2-6"
+         d="m 395,572.36218 30,0"
+         style="fill:none;stroke:#000000;stroke-width:0.45032039;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:0.9006408, 0.4503204, 0.22516019, 0.4503204;stroke-dashoffset:0" />
+    </g>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Mend-6)"
+       d="m 240,917.36218 c 10,-15 15,-20 25,-20 10,0 25,0 25,10 0,5 0,5 0,5"
+       id="path7599"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cssc"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffRecapitulatif.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Mend-6)"
+       d="m 240,957.36218 c 5,10 10,20 25,20 15,0 90,0 100,0 10,0 25,0 25,-10 0,-5 0,-5 0,-5"
+       id="path7961"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="csssc"
+       inkscape:export-filename="/home/theo/Images/BE4/Général/TiffRecapitulatif.png"
+       inkscape:export-xdpi="212"
+       inkscape:export-ydpi="212" />
+  </g>
+</svg>

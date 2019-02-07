@@ -82,6 +82,12 @@ filepath_conf = /home/IGN/SOURCE/sources.json
 | FILE             | dir_depth               | Nombre de sous-dossiers utilisé dans l'arborescence pour stocker les dalles | `2` si pas d'ancêtre             |
 | CEPH             | pyr_data_pool_name      |                                                                             | obligatoire                      |
 
+Dans le cas du stockage objet, certaines variables d'environnement doivent être définies sur les machines d'exécution :
+* CEPH
+    - ROK4_CEPH_CONFFILE
+    - ROK4_CEPH_USERNAME
+    - ROK4_CEPH_CLUSTERNAME
+
 ##### Cas d'une pyramide ancêtre
 
 | Paramètre         | Description                                                                              | Obligatoire ou valeur par défaut          |
@@ -143,7 +149,7 @@ Pour générer une pyramide vecteur, il faut renseigner pour chaque niveau de co
 ### Paramètres
 
 * `Identifiant du niveau` : correpondant à ceux du TMS utilisé.
-    - `extent` : étendue sur laquelle on veut calculer la pyramide, soit un rectangle englobant (de la forme `xmin,ymin,xmax,ymax`), soit le chemin vers un fichier contenant une géométrie WKT
+    - `extent` : étendue sur laquelle on veut calculer la pyramide, soit un rectangle englobant (de la forme `xmin,ymin,xmax,ymax`), soit le chemin vers un fichier contenant une géométrie WKT, GeoJSON ou GML
     - `srs` : projection de l'étendue fournie, ainsi que celle des données en base
     - `db`
         - `host` : hôte du serveur PostgreSQL contenant la base de données

@@ -82,7 +82,7 @@ _Étape 2 (NNGraph)_
 
 Outils : `joinCache-file.pl`, `joinCache-ceph.pl`, `joinCache-s3.pl`
 
-Les outils JOINCACHE génèrent une pyramide raster à partir d'autres pyramide raster compatibles (dalles de même dimensions, canaux au même format). La composition se fait verticalement (choix des pyramides sources par niveau) et horizontalement (choix des pyramides source par zone au sein d'un niveau). La fusion de plusieurs dalles sources peut se faire selon plusieurs méthodes (masque, alpha top, multiplication)
+Les outils JOINCACHE génèrent une pyramide raster à partir d'autres pyramide raster compatibles (même TMS, dalles de même dimensions, canaux au même format). La composition se fait verticalement (choix des pyramides sources par niveau) et horizontalement (choix des pyramides source par zone au sein d'un niveau). La fusion de plusieurs dalles sources peut se faire selon plusieurs méthodes (masque, alpha top, multiplication)
 
 Stockage gérés : FICHIER, CEPH, S3
 
@@ -99,6 +99,8 @@ _Étape 1_
 
 _Étape 2_
 ![JOINCACHE étape 2](../docs/images/ROK4GENERATION/joinCache_part2.png)
+
+[Détails](./main/bin/joincache.md)
 
 ## Génération de pyramide à la demande
 
