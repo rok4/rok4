@@ -299,3 +299,5 @@ Outil : `pbf2cache`
 Cet outil écrit une dalle à partir des tuiles PBF rangées par coordonnées (<dossier racine>/x/y.pbf). La dalle écrite est au format ROK4, c'est-à-dire un fichier TIFF, dont les données sont tuilées : le TIFF ne sert que de conteneurs pour regrouper les tuiles PBF. L'en-tête est de taille fixe (2048 octets).
 
 ![pbf2cache](../docs/images/ROK4GENERATION/tools/pbf2cache.png)
+
+[Détails](./tools/pbf2cache/README.md)
