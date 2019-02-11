@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2018-12-19 18:22+0100\n"
+"POT-Creation-Date: 2019-02-11 14:37+0100\n"
 "PO-Revision-Date: 2014-01-28 09:36+0100\n"
 "Last-Translator: \n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -529,16 +529,16 @@ msgstr "Écoute sur "
 msgid "Probleme dans les parametres de la requete getMap"
 msgstr "Problème dans les paramètres de la requête getMap"
 
-#: Rok4Server.cpp:324 Rok4Server.cpp:1313
+#: Rok4Server.cpp:324 Rok4Server.cpp:1321
 msgid "bbox invalide"
 msgstr "La BoundingBox demandée est invalide"
 
-#: Rok4Server.cpp:327 Rok4Server.cpp:1316
+#: Rok4Server.cpp:327 Rok4Server.cpp:1324
 msgid "bbox trop grande"
 msgstr "La BoundingBox demandée est trop grande"
 
 #: Rok4Server.cpp:330 Rok4Server.cpp:345 Rok4Server.cpp:820 Rok4Server.cpp:850
-#: Rok4Server.cpp:866 Rok4Server.cpp:882 Rok4Server.cpp:1319
+#: Rok4Server.cpp:866 Rok4Server.cpp:882 Rok4Server.cpp:1327
 msgid "Impossible de repondre a la requete"
 msgstr "Impossible de répondre a la requête"
 
@@ -562,53 +562,58 @@ msgstr "Le format ["
 msgid " ne peut etre traite"
 msgstr " ne peut être traité"
 
-#: Rok4Server.cpp:1261 Rok4Server.cpp:1283
+#: Rok4Server.cpp:1261 Rok4Server.cpp:1284
 #, fuzzy
 msgid "Probleme dans les parametres de la requete getFeatureInfo"
 msgstr "Problème dans les paramètres de la requête getMap"
 
-#: Rok4Server.cpp:1358
+#: Rok4Server.cpp:1294
+#, fuzzy
+msgid "niveau invalide"
+msgstr "La BoundingBox demandée est invalide"
+
+#: Rok4Server.cpp:1366
 #, fuzzy
 msgid "Erreur interne."
 msgstr "Erreur inconnue"
 
-#: Rok4Server.cpp:1363
+#: Rok4Server.cpp:1371
 #, fuzzy
 msgid "Info_format non "
 msgstr "Format "
 
-#: Rok4Server.cpp:1363
+#: Rok4Server.cpp:1371
 #, fuzzy
 msgid " supporté par la couche "
 msgstr " n'est pas géré pour la couche "
 
-#: Rok4Server.cpp:1420
+#: Rok4Server.cpp:1428
 msgid "Internal server error"
 msgstr ""
 
-#: Rok4Server.cpp:1428
+#: Rok4Server.cpp:1436
 msgid "GFI depuis un SQL non géré."
 msgstr ""
 
-#: Rok4Server.cpp:1430
+#: Rok4Server.cpp:1438
 msgid "ERRORRRRRR !"
 msgstr ""
 
-#: Rok4Server.cpp:1443 Rok4Server.cpp:1447 Rok4Server.cpp:1476
-#: Rok4Server.cpp:1480
+#: Rok4Server.cpp:1451 Rok4Server.cpp:1455 Rok4Server.cpp:1484
+#: Rok4Server.cpp:1488
 msgid " n'est pas prise en charge par ce serveur."
 msgstr " n'est pas prise en charge par ce serveur."
 
-#: Rok4Server.cpp:1447
+#: Rok4Server.cpp:1455
 msgid "L'operation "
 msgstr "L'opération "
 
-#: Rok4Server.cpp:1496
+#: Rok4Server.cpp:1504
 #, fuzzy
 msgid "Le service est manquant"
 msgstr "Le service "
 
-#: Rok4Server.cpp:1499
+#: Rok4Server.cpp:1507
 #, fuzzy
 msgid "Le service est inconnu pour ce serveur."
 msgstr " est inconnu pour ce serveur."

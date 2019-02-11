@@ -1279,13 +1279,16 @@ DataStream* Rok4Server::WMTSGetFeatureInfo ( Request* request ) {
     LOGGER_DEBUG("Verification des parametres de la requete");
 
     DataStream* errorResp = getFeatureInfoParamWMTS (request, layer, tileMatrix, tileCol, tileRow, format, style, info_format, X, Y);
+    
     if ( errorResp ) {
         LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getFeatureInfo" ) );
         return errorResp;
     }
     Pyramid* pyr = layer->getDataPyramid();
-    std::map<std::string, Level*>::iterator lv = pyr->getLevels().find(tileMatrix);
-    Level* level = lv->second;
+
+    // On a déjà vérifié dans getFeatureInfoParamWMTS que la pyramide possédait bien ce niveau
+    Level* level = pyr->getLevel(tileMatrix);
+
     BoundingBox<double> bbox = level->tileIndicesToTileBbox(tileCol,tileRow) ;
     int height = level->getTm()->getTileH();
     int width = level->getTm()->getTileW();

@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2018-12-19 18:22+0100\n"
+"POT-Creation-Date: 2019-02-11 14:37+0100\n"
 "PO-Revision-Date: 2013-02-18 17:49+0100\n"
 "Last-Translator: Alexandre Viard <alexandre.viard@ign.fr>\n"
 "Language-Team: French <geop_services@geoportail.fr>\n"
@@ -527,16 +527,16 @@ msgstr "Listening on "
 msgid "Probleme dans les parametres de la requete getMap"
 msgstr ""
 
-#: Rok4Server.cpp:324 Rok4Server.cpp:1313
+#: Rok4Server.cpp:324 Rok4Server.cpp:1321
 msgid "bbox invalide"
 msgstr ""
 
-#: Rok4Server.cpp:327 Rok4Server.cpp:1316
+#: Rok4Server.cpp:327 Rok4Server.cpp:1324
 msgid "bbox trop grande"
 msgstr ""
 
 #: Rok4Server.cpp:330 Rok4Server.cpp:345 Rok4Server.cpp:820 Rok4Server.cpp:850
-#: Rok4Server.cpp:866 Rok4Server.cpp:882 Rok4Server.cpp:1319
+#: Rok4Server.cpp:866 Rok4Server.cpp:882 Rok4Server.cpp:1327
 msgid "Impossible de repondre a la requete"
 msgstr ""
 
@@ -560,49 +560,54 @@ msgstr ""
 msgid " ne peut etre traite"
 msgstr ""
 
-#: Rok4Server.cpp:1261 Rok4Server.cpp:1283
+#: Rok4Server.cpp:1261 Rok4Server.cpp:1284
 msgid "Probleme dans les parametres de la requete getFeatureInfo"
 msgstr ""
 
-#: Rok4Server.cpp:1358
+#: Rok4Server.cpp:1294
+#, fuzzy
+msgid "niveau invalide"
+msgstr ": invalid !"
+
+#: Rok4Server.cpp:1366
 msgid "Erreur interne."
 msgstr ""
 
-#: Rok4Server.cpp:1363
+#: Rok4Server.cpp:1371
 #, fuzzy
 msgid "Info_format non "
 msgstr "No Format"
 
-#: Rok4Server.cpp:1363
+#: Rok4Server.cpp:1371
 msgid " supporté par la couche "
 msgstr ""
 
-#: Rok4Server.cpp:1420
+#: Rok4Server.cpp:1428
 msgid "Internal server error"
 msgstr ""
 
-#: Rok4Server.cpp:1428
+#: Rok4Server.cpp:1436
 msgid "GFI depuis un SQL non géré."
 msgstr ""
 
-#: Rok4Server.cpp:1430
+#: Rok4Server.cpp:1438
 msgid "ERRORRRRRR !"
 msgstr ""
 
-#: Rok4Server.cpp:1443 Rok4Server.cpp:1447 Rok4Server.cpp:1476
-#: Rok4Server.cpp:1480
+#: Rok4Server.cpp:1451 Rok4Server.cpp:1455 Rok4Server.cpp:1484
+#: Rok4Server.cpp:1488
 msgid " n'est pas prise en charge par ce serveur."
 msgstr ""
 
-#: Rok4Server.cpp:1447
+#: Rok4Server.cpp:1455
 msgid "L'operation "
 msgstr ""
 
-#: Rok4Server.cpp:1496
+#: Rok4Server.cpp:1504
 msgid "Le service est manquant"
 msgstr ""
 
-#: Rok4Server.cpp:1499
+#: Rok4Server.cpp:1507
 msgid "Le service est inconnu pour ce serveur."
 msgstr ""
 
@@ -680,9 +685,6 @@ msgstr ""
 
 #~ msgid "Aucun Title trouve dans le Style"
 #~ msgstr "No Title found in the Style"
-
-#~ msgid " : il est invalide!!"
-#~ msgstr ": invalid !"
 
 #~ msgid "Aucun Abstract trouve dans le Style"
 #~ msgstr "No Abstract found in the Style"

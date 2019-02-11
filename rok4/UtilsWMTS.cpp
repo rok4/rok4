@@ -633,6 +633,7 @@ DataStream* Rok4Server::getCapParamWMTS ( Request* request, std::string& version
 DataStream* Rok4Server::getFeatureInfoParamWMTS ( Request* request, Layer*& layer, std::string &tileMatrix, int &tileCol, int &tileRow, std::string  &format, Style* &style, std::string& info_format, int& X, int& Y) {
 
     DataSource* getTileError = getTileParamWMTS(request, layer, tileMatrix, tileCol, tileRow, format, style);
+
     
     if (getTileError) {
         return new DataStreamFromDataSource(getTileError);
@@ -640,14 +641,21 @@ DataStream* Rok4Server::getFeatureInfoParamWMTS ( Request* request, Layer*& laye
     if (layer->isGetFeatureInfoAvailable() == false) {
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +layer->getId()+_ ( " non interrogeable." ),"wmts" ) );   
     }
+
     
-    // INFO_FORMAT (facultative)
+    // INFO_FORMAT
     info_format = request->getParam ( "infoformat" );
     if ( info_format == "" ){
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre INFOFORMAT vide." ),"wmts" ) );
     }else{
         if ( ! servicesConf->isInInfoFormatList(info_format) )
             return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Info_Format " ) +info_format+_ ( " non gere par le service." ),"wmts" ) );
+    }
+
+
+    // Comme on va utiliser le niveau requêté pour contrôler les valeurs de I et J, on vérifie bien son existence
+    if (layer->getDataPyramid()->getLevel(tileMatrix) == NULL) {
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre TILEMATRIX n'est pas valide pour cette couche." ),"wmts" ) );
     }
 
     // X
@@ -660,7 +668,7 @@ DataStream* Rok4Server::getFeatureInfoParamWMTS ( Request* request, Layer*& laye
     }
     if ( X<0 )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre I est negative." ),"wmts" ) );
-    if ( X> layer->getDataPyramid()->getLevels().find(tileMatrix)->second->getTm()->getTileW()-1 )
+    if ( X> layer->getDataPyramid()->getLevel(tileMatrix)->getTm()->getTileW()-1 )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre I est superieure a la largeur de la tuile (width)." ),"wmts" ) );
 
 
@@ -674,9 +682,8 @@ DataStream* Rok4Server::getFeatureInfoParamWMTS ( Request* request, Layer*& laye
     }
     if ( Y<0 )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre J est negative." ),"wmts" ) );
-    if ( Y> layer->getDataPyramid()->getLevels().find(tileMatrix)->second->getTm()->getTileH()-1 )
+    if ( Y> layer->getDataPyramid()->getLevel(tileMatrix)->getTm()->getTileH()-1 )
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre J est superieure a la hauteur de la tuile (height)." ),"wmts" ) );
-
 
     return NULL;
 }
