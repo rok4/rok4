@@ -1,0 +1,645 @@
+#!/usr/bin/env perl
+# Copyright © (2011) Institut national de l'information
+#                    géographique et forestière
+#
+# Géoportail SAV <geop_services@geoportail.fr>
+#
+# This software is a computer program whose purpose is to publish geographic
+# data using OGC WMS and WMTS protocol.
+#
+# This software is governed by the CeCILL-C license under French law and
+# abiding by the rules of distribution of free software.  You can  use,
+# modify and/ or redistribute the software under the terms of the CeCILL-C
+# license as circulated by CEA, CNRS and INRIA at the following URL
+# "http://www.cecill.info".
+#
+# As a counterpart to the access to the source code and  rights to copy,
+# modify and redistribute granted by the license, users are provided only
+# with a limited warranty  and the software's author,  the holder of the
+# economic rights,  and the successive licensors  have only  limited
+# liability.
+#
+# In this respect, the user's attention is drawn to the risks associated
+# with loading,  using,  modifying and/or developing or reproducing the
+# software by the user in light of its specific status of free software,
+# that may mean  that it is complicated to manipulate,  and  that  also
+# therefore means  that it is reserved for developers  and  experienced
+# professionals having in-depth computer knowledge. Users are therefore
+# encouraged to load and test the software's suitability as regards their
+# requirements in conditions enabling the security of their systems and/or
+# data to be ensured and,  more generally, to use and operate it in the
+# same conditions as regards security.
+#
+# The fact that you are presently reading this means that you have had
+#
+# knowledge of the CeCILL-C license and that you accept its terms.
+
+################################################################################
+
+=begin nd
+File: tms-toolbox.pl
+=cut
+
+################################################################################
+
+use warnings;
+use strict;
+
+use POSIX qw(locale_h);
+
+# Module
+use Log::Log4perl qw(:easy);
+use Getopt::Long;
+use File::Basename;
+use Cwd;
+use Term::ProgressBar;
+
+# My search module
+use FindBin qw($Bin);
+use lib "$Bin/../lib/perl5";
+
+# My module
+use COMMON::TileMatrixSet;
+use COMMON::CheckUtils;
+use COMMON::Base36;
+use COMMON::ProxyGDAL;
+
+################################################################################
+# Constantes
+use constant TRUE  => 1;
+use constant FALSE => 0;
+
+################################################################################
+# Version
+my $VERSION = '@VERSION_TEXT@';
+
+=begin nd
+Variable: options
+
+Contains tms-toolbox call options :
+
+    version - To obtain the command's version
+    help - To obtain the command's help
+    usage - To obtain the command's usage
+
+=cut
+my %options =
+(
+    "version"    => 0,
+    "help"       => 0,
+    "usage"      => 0,
+
+    # Mandatory
+    "from" => undef,
+    "to" => undef,
+    "tms" => undef,
+
+    # Optionnal
+    "slabsize" => undef,
+    "level" => undef
+
+);
+
+################################################################################
+
+####################################################################################################
+#                                         Group: Functions                                         #
+####################################################################################################
+
+=begin nd
+Function: main
+
+Main method.
+
+See Also:
+    <init>, <doIt>
+=cut
+sub main {
+    printf("TMS-TOOLBOX : version [%s]\n",$VERSION);
+
+    print STDOUT "BEGIN\n";
+
+    # initialization
+    ALWAYS("> Initialization");
+    if (! main::init()) {
+        print STDERR "ERROR INITIALIZATION !\n";
+        exit 1;
+    }
+
+    # execution
+    ALWAYS("> Execution");
+    if (! main::doIt()) {
+        print STDERR "ERROR EXECUTION !\n";
+        exit 5;
+    }
+
+    print STDOUT "END\n";
+}
+
+=begin nd
+Function: parseFromTo
+=cut
+sub parseFromTo {
+    my $string = shift;
+    my $parsed = {};
+
+
+    if ($string =~ m/^([^:]+)(:(\S+))?$/) {
+        $parsed->{type} = $1;
+        my $value = $3;
+
+        #################### SLAB_INDICES_LIST
+
+        if ($parsed->{type} eq "SLAB_INDICES_LIST") {
+            if (! defined $value) {
+                ERROR("Value have to respect format SLAB_INDICES_LIST:<FILE PATH>");
+                return undef;                
+            }
+
+            $parsed->{path} = $value;
+        }
+
+        #################### GEOM_FILE
+
+        elsif ($parsed->{type} eq "GEOM_FILE") {
+
+            if (! defined $value) {
+                ERROR("Value have to respect format GEOM_FILE:<FILE PATH>");
+                return undef;                
+            }
+
+            $parsed->{path} = $value;
+        }
+
+        #################### SQL_FILE
+
+        elsif ($parsed->{type} eq "SQL_FILE") {
+
+            if (! defined $value) {
+                ERROR("Value have to respect format SQL_FILE:<FILE PATH>");
+                return undef;                
+            }
+
+            $parsed->{path} = $value;
+        }
+        #################### POINT
+
+        elsif ($parsed->{type} eq "POINT") {
+            if (defined $value && $value =~ m/([^,]+),(\S+)/) {
+                $parsed->{x} = $1;
+                $parsed->{y} = $2;
+
+                if (! COMMON::CheckUtils::isNumber($parsed->{x}) || ! COMMON::CheckUtils::isNumber($parsed->{y})) {
+                    ERROR("Value have to respect format POINT:<FLOAT>,<FLOAT>");
+                    return undef;
+                }
+            } else {
+                ERROR("Value have to respect format POINT:<FLOAT>,<FLOAT>");
+                return undef;
+            }
+        }
+
+        #################### SLAB_INFO
+
+        elsif ($parsed->{type} eq "SLAB_INFO") {
+
+            if (! defined $value) {
+                $parsed->{storage} = "FILE";
+                $parsed->{depth} = 2;
+            } else {
+
+                my @params = split(/:/, $value);
+
+                if (scalar(@params) == 1) {
+                    $parsed->{storage} = $params[0];
+                    if ($parsed->{storage} eq "FILE") {
+                        $parsed->{depth} = 2;
+                    }
+                }
+                elsif (scalar(@params) == 2) {
+                    if ($params[0] ne "FILE") {
+                        ERROR("Cannot parse 'SLAB_INFO' string");
+                        return undef;
+                    }
+                    $parsed->{storage} = "FILE";
+                    if (! COMMON::CheckUtils::isStrictPositiveInt($params[1])) {
+                        ERROR("Cannot parse 'SLAB_INFO' string");
+                        return undef;
+                    }
+                    $parsed->{depth} = $params[1];
+                }
+                else {
+                    ERROR("Cannot parse 'SLAB_INFO' string");
+                    return undef;
+                }
+            }
+        }
+
+        #################### TILE_INFO
+
+        elsif ($parsed->{type} eq "TILE_INFO") {
+            if (defined $value) {
+                ERROR("Value have to respect format TILE_INFO");
+                return undef;                
+            }            
+        }
+
+        #################### GETMAP_PARAMS
+
+        elsif ($parsed->{type} eq "GETMAP_PARAMS") {
+
+            if (! defined $value) {
+                ERROR("Value have to respect format GETMAP_PARAMS:<FILE PATH>");
+                return undef;                
+            }
+
+            $parsed->{path} = $value;
+        } else {
+            ERROR(sprintf "Unknown type '%s'", $parsed->{type});
+            return undef;
+        }
+    }
+
+    else {
+        ERROR("Cannot determine type");
+        return undef;
+    }
+
+    return $parsed;
+}
+
+=begin nd
+Function: init
+=cut
+sub init {
+
+    # init Getopt
+    local $ENV{POSIXLY_CORRECT} = 1;
+
+    Getopt::Long::config qw(
+        default
+        no_autoabbrev
+        no_getopt_compat
+        require_order
+        bundling
+        no_ignorecase
+        permute
+    );
+
+    # init Options
+    GetOptions(
+        "help|h" => sub {
+            printf "Help\n" ;
+            exit 0;
+        },
+        "version|v" => sub { exit 0; },
+        "usage" => sub {
+            printf "Help\n" ;
+            exit 0;
+        },
+        
+        # Obligatoire
+        "tms=s" => \$options{tms},
+        "slabsize=s" => \$options{slabsize},
+        "level=s" => \$options{level},
+        "from=s" => \$options{from},
+        "to=s" => \$options{to}
+    ) or do {
+        printf "Unappropriate usage\n";
+        printf "Help\n";
+        exit -1;
+    };
+    
+    # logger by default at runtime
+    Log::Log4perl->easy_init({
+        level => $INFO,
+        layout => '%5p : %m (%M) %n'
+    });
+
+    ############# tms
+    if (! defined $options{"tms"} || $options{"tms"} eq "") {
+        ERROR("Option 'tms' not defined !");
+        return FALSE;
+    }
+
+    my $tms = COMMON::TileMatrixSet->new($options{"tms"});
+    if (! defined $tms) {
+        ERROR("Cannot create a TileMatrixSet object from the file ".$options{"tms"});
+        return FALSE;
+    }
+    $options{"tms"} = $tms;
+
+    ############# slabsize
+    if (defined $options{"slabsize"} && $options{"slabsize"} ne "") {
+        if ($options{"slabsize"} =~ m/^(\d+)x(\d+)$/) {
+            $options{"slabsize"} = [$1, $2];
+        } else {
+            ERROR("Option 'slabsize' have to respect format <integer>x<integer>");
+            return FALSE;
+        }
+    } else {
+        $options{"slabsize"} = undef;
+    }
+
+    ############# level
+    if (defined $options{"level"} && $options{"level"} ne "") {
+        if (! defined $options{tms}->getTileMatrix($options{"level"})) {
+            ERROR(sprintf "Level %s does not exist in the provided TMS", $options{"level"});
+            return FALSE;
+        } else {
+            $options{"level"} = $options{tms}->getTileMatrix($options{"level"});
+        }
+    } else {
+        $options{"level"} = undef;
+    }
+
+
+    ############# from
+    if (! defined $options{"from"} || $options{"from"} eq "") {
+        ERROR("Option 'from' not defined !");
+        return FALSE;
+    }
+
+    $options{"from"} = parseFromTo($options{"from"});
+    if (! defined $options{"from"}) {
+        ERROR("Cannot parse 'from' string");
+        return FALSE;
+    }
+
+    ############# to
+    if (! defined $options{"to"} || $options{"to"} eq "") {
+        ERROR("Option 'to' not defined !");
+        return FALSE;
+    }
+
+    $options{"to"} = parseFromTo($options{"to"});
+    if (! defined $options{"to"}) {
+        ERROR("Cannot parse 'to' string");
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+####################################################################################################
+#                                 Group: Process methods                                           #
+####################################################################################################
+
+=begin nd
+Function: doIt
+=cut
+sub doIt {
+    
+    # ---------------------------------------------------------------------------------------------
+    if ($options{from}->{type} eq "SLAB_INDICES_LIST" && $options{to}->{type} eq "GETMAP_PARAMS") {
+
+        if (! defined $options{"level"}) {
+            ERROR("Option 'level' is mandatory for conversion SLAB_INDICES_LIST -> GETMAP_PARAMS");
+            return FALSE;
+        }
+        if (! defined $options{"slabsize"}) {
+            ERROR("Option 'slabsize' is mandatory for conversion SLAB_INDICES_LIST -> GETMAP_PARAMS");
+            return FALSE;
+        }
+
+        my $filein = $options{from}->{path};
+        open(IN, "<$filein") or do {
+            ERROR("Cannot open $filein to read in it");
+            return FALSE;
+        };
+
+        my $fileout = $options{to}->{path};
+        if (-e $fileout) {
+            ERROR("File $fileout exists, we don't overrided it");
+            return undef;
+        }
+        open(OUT, ">$fileout") or do {
+            ERROR("Cannot open $fileout to write in it");
+            return FALSE;
+        };
+                
+        my $width = $options{"level"}->getTileWidth() * $options{"slabsize"}->[0];
+        my $height = $options{"level"}->getTileHeight() * $options{"slabsize"}->[1];
+        my $projection = $options{"tms"}->getSRS();
+        my $inversion = $options{"tms"}->getInversion();
+        my $memory = {};
+        my $complete = `wc -l $filein | cut -d' ' -f1`;
+        chomp($complete);
+        my $progress = Term::ProgressBar->new({name => 'GetMap wrtting...', count => $complete, remove => 1});
+        my $done = 0;
+        my $next = 0;
+        while (my $line = <IN>) {
+            chomp($line);
+            my ($COL, $ROW) = split(/,/, $line);
+            if (! exists $memory->{$COL}->{$ROW}) {
+                $memory->{$COL}->{$ROW} = 1;
+                my ($xMin,$yMin,$xMax,$yMax) = $options{"level"}->indicesToBbox($COL, $ROW, $options{"slabsize"}->[0], $options{"slabsize"}->[1]);
+                if ($inversion) {
+                    printf OUT "WIDTH=$width&HEIGHT=$height&BBOX=$yMin,$xMin,$yMax,$xMax&CRS=$projection\n", ;
+                } else {
+                    printf OUT "WIDTH=$width&HEIGHT=$height&BBOX=$xMin,$yMin,$xMax,$yMax&CRS=$projection\n", ;
+                }
+            }
+
+            $done++;
+
+            if ($done >= $next) {
+                $next = $progress->update($done);
+            }
+        }
+
+        $progress->update($complete);
+        
+        close(OUT);
+        close(IN);
+    }
+
+
+    # ---------------------------------------------------------------------------------------------
+    elsif ($options{from}->{type} eq "GEOM_FILE" && ($options{to}->{type} eq "SLAB_INDICES_LIST" || $options{to}->{type} eq "SQL_FILE")) {
+
+
+        if (! defined $options{"level"}) {
+            ERROR("Option 'level' is mandatory for conversion GEOM_FILE -> ".$options{to}->{type});
+            return FALSE;
+        }
+        if (! defined $options{"slabsize"}) {
+            ERROR("Option 'slabsize' is mandatory for conversion GEOM_FILE -> ".$options{to}->{type});
+            return FALSE;
+        }
+
+        my $geom = COMMON::ProxyGDAL::geometryFromFile($options{from}->{path});
+        if (! defined $geom) {
+            ERROR("Cannot load geometry from file");
+            return FALSE;
+        }
+        my $bboxes = COMMON::ProxyGDAL::getBboxes($geom);
+
+        my $fileout = $options{to}->{path};
+        if (-e $fileout) {
+            ERROR("File $fileout exists, we don't overrided it");
+            return undef;
+        }
+        open(OUT, ">$fileout") or do {
+            ERROR("Cannot open $fileout to write in it");
+            return FALSE;
+        };
+
+        if ($options{to}->{type} eq "SQL_FILE") {
+            print OUT "COPY slabs (level, col, row, geom) FROM stdin;\n";
+        }
+
+        my @extrema;
+        my $complete = 0;
+
+        for (my $i = 0; $i < scalar(@{$bboxes}); $i++) {
+            my @ext = $options{"level"}->bboxToIndices(@{$bboxes->[$i]}, $options{"slabsize"}->[0], $options{"slabsize"}->[1]);
+            $complete += ( ($ext[1] - $ext[0] + 1)*($ext[3] - $ext[2] + 1) );
+            push(@extrema, \@ext);
+        }
+
+        my $progress = Term::ProgressBar->new({name => 'Slab indices list wrtting...', count => $complete, remove => 1});
+        my $done = 0;
+        my $next = 0;
+        my $memory = {};
+
+        for (my $i = 0; $i < scalar(@{$bboxes}); $i++) {
+        
+            my ($rowMin, $rowMax, $colMin, $colMax) = @{$extrema[$i]};
+            
+            for (my $col = $colMin; $col <= $colMax; $col++) {
+                for (my $row = $rowMin; $row <= $rowMax; $row++) {
+                    $done++;
+                    if (exists $memory->{$col}->{$row}) { next; }
+                    $memory->{$col}->{$row} = 1;
+
+                    my ($xmin,$ymin,$xmax,$ymax) = $options{"level"}->indicesToBbox($col,$row,$options{"slabsize"}->[0], $options{"slabsize"}->[1]);
+
+                    my $WKTslab = sprintf "POLYGON((%s %s,%s %s,%s %s,%s %s,%s %s))",
+                        $xmin,$ymin,
+                        $xmin,$ymax,
+                        $xmax,$ymax,
+                        $xmax,$ymin,
+                        $xmin,$ymin;
+
+                    my $OGRslab = COMMON::ProxyGDAL::geometryFromString("WKT", $WKTslab);
+
+                    if (COMMON::ProxyGDAL::isIntersected($OGRslab, $geom)) {
+                        if ($options{to}->{type} eq "SQL_FILE") {
+                            printf OUT "%s\t%s\t%s\t%s\n", 
+                                $options{"level"}->getID(),
+                                $col, $row,
+                                COMMON::ProxyGDAL::getWkb($OGRslab);
+                        }
+                        elsif ($options{to}->{type} eq "SLAB_INDICES_LIST") {
+                            print OUT "$col,$row\n";
+                        }
+                    }
+
+                    
+
+                    if ($done >= $next) {
+                        $next = $progress->update($done);
+                    }
+
+                }
+            }
+        }
+
+        if ($options{to}->{type} eq "SQL_FILE") {
+            print OUT "\\.\n\n";
+        }  
+
+    }
+
+
+    # ---------------------------------------------------------------------------------------------
+    elsif ($options{from}->{type} eq "POINT" && $options{to}->{type} eq "SLAB_INFO") {
+        if (! defined $options{"slabsize"}) {
+            ERROR("Option 'slabsize' is mandatory for conversion POINT -> SLAB_INFO");
+            return FALSE;
+        }
+
+        if (defined $options{"level"}) {
+            my $ID = $options{"level"}->getID();
+            my $COL = $options{"level"}->xToColumn($options{from}->{x}, $options{"slabsize"}->[0]);
+            my $ROW = $options{"level"}->yToRow($options{from}->{y}, $options{"slabsize"}->[1]);
+
+            my $storage = "";
+            if ($options{to}->{storage} eq "FILE") {
+                my $b36 = COMMON::Base36::indicesToB36Path($COL, $ROW, $options{to}->{depth} + 1);
+                $storage = "$ID/$b36.tif";
+            } else {
+                $storage = "${ID}_${COL}_${ROW}";
+            }
+
+            INFO("Level $ID : slab indices ($COL,$ROW), storage $storage");
+        } else {
+            my @levels = $options{tms}->getTileMatrixByArray();
+
+            foreach my $tm (@levels) {
+                my $ID = $tm->getID();
+                my $COL = $tm->xToColumn($options{from}->{x}, $options{"slabsize"}->[0]);
+                my $ROW = $tm->yToRow($options{from}->{y}, $options{"slabsize"}->[1]);
+
+                my $storage = "";
+                if ($options{to}->{storage} eq "FILE") {
+                    my $b36 = COMMON::Base36::indicesToB36Path($COL, $ROW, $options{to}->{depth} + 1);
+                    $storage = "$ID/$b36.tif";
+                } else {
+                    $storage = "${ID}_${COL}_${ROW}";
+                }
+
+                INFO("Level $ID : slab indices ($COL,$ROW), storage $storage");
+            }
+        }
+    }
+
+
+    # ---------------------------------------------------------------------------------------------
+    elsif ($options{from}->{type} eq "POINT" && $options{to}->{type} eq "TILE_INFO") {
+
+        if (defined $options{"level"}) {
+            my $ID = $options{"level"}->getID();
+            my $COL = $options{"level"}->xToColumn($options{from}->{x});
+            my $ROW = $options{"level"}->yToRow($options{from}->{y});
+            
+            INFO("Level $ID : tile indices ($COL,$ROW)");
+        } else {
+
+            my @levels = $options{tms}->getTileMatrixByArray();
+
+            foreach my $tm (@levels) {
+                my $ID = $tm->getID();
+                my $COL = $tm->xToColumn($options{from}->{x});
+                my $ROW = $tm->yToRow($options{from}->{y});
+                
+                INFO("Level $ID : tile indices ($COL,$ROW)");
+            }
+        }
+    }
+
+
+    # ---------------------------------------------------------------------------------------------
+    else {
+        ERROR(sprintf "%s -> %s is not handled", $options{from}->{type}, $options{to}->{type});
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+################################################################################
+
+BEGIN {}
+INIT {}
+
+main;
+exit 0;
+
+END {}
+
+################################################################################
+
+1;
+__END__

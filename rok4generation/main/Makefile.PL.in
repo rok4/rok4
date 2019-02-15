@@ -19,13 +19,12 @@ WriteMakefile(
         'bin/joinCache-ceph.pl',
         'bin/create-list.pl',
         'bin/create-layer.pl',
-        'bin/coord2image.pl',
-        'bin/be4-simulator.pl',
         'bin/ex-pyr.pl',
         'bin/pyr2pyr.pl',
         'bin/sup-pyr.pl',
         'bin/wmtSalaD.pl',
-        'bin/tms-converter-gui.pl'
+        'bin/tms-converter-gui.pl',
+        'bin/tms-toolbox.pl'
     ],
     PMLIBDIRS   => [
         'lib/BE4',

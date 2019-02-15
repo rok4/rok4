@@ -18,7 +18,7 @@ La suite d'outils ROK4GENERATION permet de générer, mettre à jour, composer, 
         - [Simulation des dalles à générer](#simulation-des-dalles-à-générer)
         - [Création d'un descripteur de couche](#création-dun-descripteur-de-couche)
         - [Création du fichier liste d'une pyramide](#création-du-fichier-liste-dune-pyramide)
-        - [Identification d'une dalle à partir de coordonnées](#identification-dune-dalle-à-partir-de-coordonnées)
+        - [Convertisseur TMS](#convertisseur-tms)
         - [Interface de conversions diverses](#interface-de-conversions-diverses)
 - [Outils de manipulation](#outils-de-manipulation)
     - [Manipulation raster](#manipulation-raster)
@@ -189,13 +189,11 @@ Cet outil génère le fichier liste pour une pyramide qui n'en aurait pas, à pa
 
 Stockage géré : FICHIER
 
-### Identification d'une dalle à partir de coordonnées
+### Convertisseur TMS
 
-Outil : `coord2image.pl`
+Outil : `tms-toolbox.pl`
 
-Ce outil détermine le chemin de la dalle fichier contenant le point renseigné par ses coordonnées. On précise le nombre de tuiles dans une dalle et le niveau de la pyramide voulu.
-
-Stockage géré : FICHIER
+Ce outil permet de réaliser de nombreuses conversion entre indices de dalles, de tuiles, requêtes getTile ou getMap, liste de fichiers, géométrie WKT... grâce au TMS utilisé (ne nécessite pas de pyramide).
 
 ### Interface de conversions diverses
 

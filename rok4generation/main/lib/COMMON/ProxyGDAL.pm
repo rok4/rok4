@@ -233,6 +233,23 @@ sub getWkt {
     return $geom->ExportToWkt();
 }
 
+=begin nd
+Function: getWkb
+
+Return the geometry as WKB
+
+Parameters (list):
+    geom - <Geo::OGR::Geometry> - OGR geometry object
+
+Return (list):
+    the WKB string
+=cut
+sub getWkb {
+    my $geom = shift;
+
+    return $geom->AsHEXWKB();
+}
+
 
 =begin nd
 Function: getBbox

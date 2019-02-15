@@ -320,9 +320,7 @@ sub doIt {
                 return FALSE;
             }
 
-            print SQL "BEGIN;\nCREATE TABLE slabs (level integer, col integer, row integer, path varchar(64), generate date, geom GEOMETRY(POLYGON, 0), CONSTRAINT slabs_pkey PRIMARY KEY (level, col, row));\n";
-
-            print SQL "INSERT INTO slabs VALUES ";
+            print OUT "COPY slabs (level, col, row, path, generate, geom) FROM stdin;\n";
         }
         
         INFO("For tile dimensions $width x $height");
