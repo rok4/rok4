@@ -256,13 +256,6 @@ sub computeImageSource {
 
     my $badRefCtrl = 0;
 
-    my $bps = undef;
-    my $sf = undef;
-    my $ph = undef;
-    my $spp = undef;
-
-    my $bestResX = undef;
-    my $bestResY = undef;
     my $ppsPath = undef;
     my $isPreProcessed = FALSE;
 
@@ -284,12 +277,6 @@ sub computeImageSource {
             return FALSE;
         }
 
-        # On récupère les informations géométriques AVANT prétraitement, car elles seront potentiellement perdues (GeoTIFF -> TIFF)
-        if (! $objGeoImage->computeGeometryInfo()) {
-            ERROR ("Can not read image geometry info ('$filepath') !");
-            return FALSE;
-        }
-
         if ($isPreProcessed == TRUE) {
             $prePsFilePath = $filepath;
             $prePsFilePath =~ s/$imgPath/$ppsPath/;
@@ -308,58 +295,37 @@ sub computeImageSource {
         }
 
         # On récupère les caractéristiques de l'image APRÈS traitement, car c'est sur ces images que nous allons travailler
-        my @imageInfo = $objGeoImage->computeImageInfo();
-        #  @imageInfo = [ bitspersample , photometric , sampleformat , samplesperpixel ]
-        if (scalar @imageInfo == 0) {
+        my $pix = $objGeoImage->getImageInfo();
+        if (! defined $pix) {
             ERROR ("Can not read image info ('$filepath') !");
             return FALSE;
         }
 
-        if (! defined $bps) {
+        if (! defined $this->{pixel}) {
             # we read the first image, components are empty. This first image will be the reference.
-            $bps = $imageInfo[0];
-            $ph = $imageInfo[1];
-            $sf = $imageInfo[2];
-            $spp = $imageInfo[3];
+            $this->{pixel} = $pix;
         } else {
             # we have already values. We must have the same components for all images
-            if (! ($bps eq $imageInfo[0] && $ph eq $imageInfo[1] &&
-                    $sf eq $imageInfo[2] && $spp eq $imageInfo[3])) {
+            if (! $pix->equals($this->{pixel})) {
                 ERROR ("All images must have same components. This image ('$filepath') is different !");
                 return FALSE;
             }
         }
 
-        if ($objGeoImage->getXmin() == 0  && $objGeoImage->getYmax == 0) {
+        if ($objGeoImage->getXmin() == 0  && $objGeoImage->getYmax() == 0) {
             $badRefCtrl++;
             if ($badRefCtrl>1){
                 WARN (sprintf "More than one image are at 0,0 position. Probably lost of georef file (tfw,...) for file : %s", $filepath);
             }
         }
 
-        my $xRes = $objGeoImage->getXres();
-        my $yRes = $objGeoImage->getYres();
-
-        $bestResX = $xRes if (! defined $bestResX || $xRes < $bestResX);
-        $bestResY = $yRes if (! defined $bestResY || $yRes < $bestResY);
+        $this->{bestResX} = $objGeoImage->getXres() if (! defined $this->{bestResX} || $objGeoImage->getXres() < $this->{bestResX});
+        $this->{bestResY} = $objGeoImage->getYres() if (! defined $this->{bestResY} || $objGeoImage->getYres() < $this->{bestResY});
 
         push @$lstGeoImages, $objGeoImage;
     }
 
-    $this->{pixel} = COMMON::Pixel->new({
-        bitspersample => $bps,
-        photometric => $ph,
-        sampleformat => $sf,
-        samplesperpixel => $spp
-    });
-    if (! defined $this->{pixel}) {
-        ERROR ("Can not create Pixel object for DataSource !");
-        return FALSE;
-    }
-    $this->{bestResX} = $bestResX;
-    $this->{bestResY} = $bestResY;
-
-    if (!defined $lstGeoImages || ! scalar @$lstGeoImages) {
+    if (! defined $lstGeoImages || ! scalar @$lstGeoImages) {
         ERROR (sprintf "Can not found image source in '%s' !",$this->{PATHIMG});
         return FALSE;
     }
@@ -402,7 +368,7 @@ sub getListImages {
             push @{$search->{images}}, $_  foreach(@{$newsearch->{images}});
         }
 
-        # Si le fichier n'a pas l'extension TIFF, JP2 ou PNG, on ne le traite pas
+        # Si le fichier n'a pas l'extension TIFF, JP2, BIL, ZBIL ou PNG, on ne le traite pas
         next if ( $entry !~ /.*\.(tif|TIF|tiff|TIFF)$/ && $entry !~ /.*\.(png|PNG)$/ && $entry !~ /.*\.(jp2|JP2)$/ && $entry !~ /.*\.(bil|BIL|zbil|ZBIL)$/);
 
         # On a à faire à un fichier avec l'extension TIFF/PNG/JPEG2000/BIL, on l'ajoute au tableau
@@ -424,13 +390,13 @@ sub computeBBox {
 
     my $lstGeoImages = $this->{images};
 
-    my ($xmin,$ymin,$xmax,$ymax) = $lstGeoImages->[0]->getBBox;
+    my ($xmin,$ymin,$xmax,$ymax) = $lstGeoImages->[0]->getBBox();
 
     foreach my $objImage (@$lstGeoImages) {
-        $xmin = min($xmin, $objImage->getXmin);
-        $xmax = max($xmax, $objImage->getXmax);
-        $ymin = min($ymin, $objImage->getYmin);
-        $ymax = max($ymax, $objImage->getYmax);
+        $xmin = min($xmin, $objImage->getXmin());
+        $xmax = max($xmax, $objImage->getXmax());
+        $ymin = min($ymin, $objImage->getYmin());
+        $ymax = max($ymax, $objImage->getYmax());
     }
 
     return ($xmin,$ymin,$xmax,$ymax);

@@ -93,6 +93,7 @@ Using:
 
 Attributes:
     type - string - READ (pyramid load from a descriptor) or WRITE ("new" pyramid, create from values)
+    own_ancestor - boolean - Precise if pyramid own an ancestor (only for new pyramid)
 
     name - string - Pyramid's name
     desc_path - string - Directory in which we write the pyramid's descriptor
@@ -212,6 +213,7 @@ sub new {
 
     my $this = {
         type => undef,
+        own_ancestor => FALSE,
 
         name => undef,
         desc_path => undef,
@@ -367,6 +369,8 @@ sub _load {
     if (defined $ancestor) {
         INFO("We have an ancestor, all parameters are picked from this pyramid");
         # les valeurs sont récupérées de l'ancêtre pour s'assurer la cohérence
+        $this->{own_ancestor} = TRUE;
+
         $this->{tms} = $ancestor->getTileMatrixSet()->getName();
         $this->{image_width} = $ancestor->getTilesPerWidth();
         $this->{image_height} = $ancestor->getTilesPerHeight();
@@ -897,6 +901,12 @@ sub backupList {
 ####################################################################################################
 #                                Group: Common getters                                             #
 ####################################################################################################
+
+# Function: ownAncestor
+sub ownAncestor {
+    my $this = shift;
+    return $this->{own_ancestor};
+}
 
 # Function: ownMasks
 sub ownMasks {

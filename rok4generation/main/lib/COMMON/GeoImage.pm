@@ -64,8 +64,6 @@ Attributes:
     ymax - double - Top right corner Y coordinate.
     xres - double - X wise resolution (in SRS unity).
     yres - double - Y wise resolution (in SRS unity).
-    xcenter - double - Center X coordinate.
-    ycenter - double - Center Y coordinate.
     height - integer - Pixel height.
     width - integer - Pixel width.
     
@@ -79,7 +77,6 @@ use strict;
 use warnings;
 
 use Log::Log4perl qw(:easy);
-use Geo::GDAL;
 use Data::Dumper;
 
 require Exporter;
@@ -137,8 +134,6 @@ sub new {
         ymin => undef,
         xres => undef,
         yres => undef,
-        xcenter => undef,
-        ycenter => undef,
         height  => undef,
         width   => undef
     };
@@ -192,6 +187,23 @@ sub _init {
     $this->{filepath} = File::Basename::dirname($completePath);
     $this->{filename} = File::Basename::basename($completePath);
 
+    my $geo = COMMON::ProxyGDAL::getGeoreferencement($completePath);
+    if (! defined $geo) {
+        ERROR ("Cannot extract georeferencement from $completePath");
+        return FALSE;        
+    }
+
+    $this->{xmin} = $geo->{bbox}->[0];
+    $this->{ymin} = $geo->{bbox}->[1];
+    $this->{xmax} = $geo->{bbox}->[2];
+    $this->{ymax} = $geo->{bbox}->[3];
+
+    $this->{xres} = $geo->{resolutions}->[0];
+    $this->{yres} = $geo->{resolutions}->[1];
+
+    $this->{width} = $geo->{dimensions}->[0];
+    $this->{height} = $geo->{dimensions}->[1];
+
     return TRUE;
 }
 
@@ -200,159 +212,17 @@ sub _init {
 ####################################################################################################
 
 =begin nd
-Function: computeImageInfo
+Function: getImageInfo
 
-Extracts and calculates all image attributes' values, using GDAL library (see <Details>).
-
-Image parameters are checked (sample per pixel, bits per sample...) and returned by the function. <ImageSource> can verify if all images own same components and the compatibility with be4's configuration.
+Get image's pixel informations, using GDAL library (see <COMMON::ProxyGDAL::getPixel>).
 
 Returns:
-    a list : (bitspersample,photometric,sampleformat,samplesperpixel), an empty list if error.
+    a <COMMON::Pixel> object, undefined if failure
 =cut
-sub computeImageInfo {
+sub getImageInfo {
     my $this = shift;
 
-    my $image = $this->{filename};
-
-    DEBUG(sprintf "compute '%s'", $image);
-
-    my $dataset;
-    eval { $dataset= Geo::GDAL::Open($this->{completePath}, 'ReadOnly'); };
-    if ($@) {
-        ERROR (sprintf "Can not open image ('%s') : '%s' !", $image, $@);
-        return ();
-    }
-
-    my $driver = $dataset->GetDriver();
-    my $code   = $driver->{ShortName};
-    # FIXME : type of driver ?
-    DEBUG (sprintf "use driver '%s'.", $code);
-
-    my $i = 0;
-
-    my $DataType       = undef;
-    my $Band           = undef;
-    my @Interpretation;
-
-    foreach my $objBand ($dataset->Bands()) {
-
-        push @Interpretation, lc $objBand->ColorInterpretation();
-
-        if (!defined $DataType) {
-            $DataType = lc $objBand->DataType();
-        } else {
-            if (! (lc $objBand->DataType() eq $DataType)) {
-                ERROR (sprintf "DataType is not the same (%s and %s) for all band in this image !", lc $objBand->DataType(), $DataType);
-                return ();
-            }
-        }
-        
-        $i++;
-    }
-
-    $Band = $i;
-
-    my $bitspersample = undef;
-    my $photometric = undef;
-    my $sampleformat = undef;
-    my $samplesperpixel = undef;
-
-    if ($DataType eq "byte") {
-        $bitspersample = 8;
-        $sampleformat  = "uint";
-    }
-    else {
-        ($sampleformat, $bitspersample) = ($DataType =~ /(\w+)(\d{2})/);
-    }
-
-    if ($Band == 3) {
-        foreach (@Interpretation) {
-            last if ($_ !~ m/(red|green|blue)band/);
-        }
-        $photometric     = "rgb";
-        $samplesperpixel = 3;
-    }
-
-    if ($Band == 4) {
-        foreach (@Interpretation) {
-            last if ($_ !~ m/(red|green|blue|alpha)band/);
-        }
-        $photometric     = "rgb";
-        $samplesperpixel = 4;
-    }
-
-    if ($Band == 1) {
-        if ($Interpretation[0] eq "grayindex") {
-            $photometric     = "gray";
-            $samplesperpixel = 1;
-        }
-        if ($Interpretation[0] eq "paletteindex") {
-            $photometric     = "gray";
-            $samplesperpixel = 1;
-            $bitspersample = 1;
-        }
-    }
-
-    DEBUG(sprintf "Format image : bps %s, photo %s, sf %s, spp %s", $bitspersample, $photometric, $sampleformat, $samplesperpixel);
-
-    if (! (defined $bitspersample && defined $photometric && defined $sampleformat && defined $samplesperpixel)) {
-        ERROR ("The format of this image ('$image') is not handled by be4 !");
-        return ();
-    }
-    
-    return ($bitspersample,$photometric,$sampleformat,$samplesperpixel);
-    
-}
-
-=begin nd
-Function: computeGeometryInfo
-
-Extracts and calculates all geometric attributes' values, using GDAL library (see <Details>).
-
-Returns:
-    TRUE if success, FALSE if error.
-=cut
-sub computeGeometryInfo {
-    my $this = shift;
-
-    my $image = $this->{filename};
-
-    DEBUG(sprintf "compute '%s'", $image);
-
-    my $dataset;
-    eval { $dataset= Geo::GDAL::Open($this->{completePath}, 'ReadOnly'); };
-    if ($@) {
-        ERROR (sprintf "Can not open image ('%s') : '%s' !", $image, $@);
-        return FALSE;
-    }
-
-    my $driver = $dataset->GetDriver();
-    my $code   = $driver->{ShortName};
-    # FIXME : type of driver ?
-    DEBUG (sprintf "use driver '%s'.", $code);
-
-    my $refgeo = $dataset->GetGeoTransform();
-    if (! defined ($refgeo) || scalar (@$refgeo) != 6) {
-        ERROR ("Can not found geometric parameters of image ('$image') !");
-        return FALSE;
-    }
-
-    # forced formatting string !
-    my ($xmin, $dx, $rx, $ymax, $ry, $ndy)= @$refgeo;
-
-    # FIXME : precision ?
-    $this->{xmin} = sprintf "%.12f", $xmin;
-    $this->{xmax} = sprintf "%.12f", $xmin + $dx*$dataset->{RasterXSize};
-    $this->{ymin} = sprintf "%.12f", $ymax + $ndy*$dataset->{RasterYSize};
-    $this->{ymax} = sprintf "%.12f", $ymax;
-    $this->{xres} = sprintf "%.12f", $dx;      # $rx null ?
-    $this->{yres} = sprintf "%.12f", abs($ndy);# $ry null ?
-    $this->{xcenter}   = sprintf "%.12f", $xmin + $dx*$dataset->{RasterXSize}/2.0;
-    $this->{ycenter}   = sprintf "%.12f", $ymax + $ndy*$dataset->{RasterYSize}/2.0;
-    $this->{height} = $dataset->{RasterYSize};
-    $this->{width}  = $dataset->{RasterXSize};
-    
-    return TRUE;
+    return COMMON::ProxyGDAL::getPixel($this->{completePath});    
 }
 
 ####################################################################################################
@@ -366,12 +236,7 @@ Return the image's bbox as a double array [xMin, yMin, xMax, yMax], source SRS.
 =cut
 sub getBBox {
   my $this = shift;
-  
-  my @bbox;
-
-  push @bbox, ($this->{xmin},$this->{ymin},$this->{xmax},$this->{ymax});
-  
-  return @bbox;
+  return ($this->{xmin},$this->{ymin},$this->{xmax},$this->{ymax});
 }
 
 # Function: setImagePath
@@ -498,80 +363,3 @@ sub exportForDebug {
 
 1;
 __END__
-
-=begin nd
-
-Group: Details
-
-Use the binding Perl of Gdal
-
-Sample with gdalinfo:
-    (start code)
-    GDAL 1.7.2, released 2010/04/23
-
-    ~$ gdalinfo  image.png
-
-    Driver: PNG/Portable Network Graphics
-    Files: image.png
-    Size is 316, 261
-    Coordinate System is `'
-    Metadata:
-    Software=Shutter
-    Image Structure Metadata:
-    INTERLEAVE=PIXEL
-    Corner Coordinates:
-    Upper Left  (    0.0,    0.0)
-    Lower Left  (    0.0,  261.0)
-    Upper Right (  316.0,    0.0)
-    Lower Right (  316.0,  261.0)
-    Center      (  158.0,  130.5)
-    Band 1 Block=316x1 Type=Byte, ColorInterp=Red
-    Band 2 Block=316x1 Type=Byte, ColorInterp=Green
-    Band 3 Block=316x1 Type=Byte, ColorInterp=Blue
-
-
-    ~$ gdalinfo  image.tif
-    (...)
-    Metadata:
-    TIFFTAG_IMAGEDESCRIPTION=
-    TIFFTAG_SOFTWARE=Adobe Photoshop CS2 Windows
-    TIFFTAG_DATETIME=2007:03:15 11:17:17
-    TIFFTAG_XRESOLUTION=600
-    TIFFTAG_YRESOLUTION=600
-    TIFFTAG_RESOLUTIONUNIT=2 (pixels/inch)
-    Image Structure Metadata:
-    INTERLEAVE=PIXEL
-    (...)
-    Upper Left  (  440720.000, 3751320.000) (117d38'28.21"W, 33d54'8.47"N)
-    Lower Left  (  440720.000, 3720600.000) (117d38'20.79"W, 33d37'31.04"N)
-    Upper Right (  471440.000, 3751320.000) (117d18'32.07"W, 33d54'13.08"N)
-    Lower Right (  471440.000, 3720600.000) (117d18'28.50"W, 33d37'35.61"N)
-    Center      (  456080.000, 3735960.000) (117d28'27.39"W, 33d45'52.46"N)
-
-    ~$ gdalinfo image.tif
-
-    Driver: GTiff/GeoTIFF
-    Files: image.tif
-         image.tfw
-    Size is 5000, 5000
-    Coordinate System is `'
-    Origin = (937500.000000000000000,6541000.000000000000000)
-    Pixel Size = (0.100000000000000,-0.100000000000000)
-    Metadata:
-    TIFFTAG_XRESOLUTION=100
-    TIFFTAG_YRESOLUTION=100
-    TIFFTAG_RESOLUTIONUNIT=3 (pixels/cm)
-    Image Structure Metadata:
-    INTERLEAVE=PIXEL
-    Corner Coordinates:
-    Upper Left  (  937500.000, 6541000.000) 
-    Lower Left  (  937500.000, 6540500.000) 
-    Upper Right (  938000.000, 6541000.000) 
-    Lower Right (  938000.000, 6540500.000) 
-    Center      (  937750.000, 6540750.000) 
-    Band 1 Block=5000x1 Type=Byte, ColorInterp=Red
-    Band 2 Block=5000x1 Type=Byte, ColorInterp=Green
-    Band 3 Block=5000x1 Type=Byte, ColorInterp=Blue
-    (end code)
-
-=cut

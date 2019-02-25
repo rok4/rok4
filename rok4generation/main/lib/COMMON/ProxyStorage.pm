@@ -730,25 +730,19 @@ sub isPresent {
     my $type = shift;
     my $path = shift;
 
-    DEBUG("Checking if item of type '$type' and path '$path' is present.");
+    DEBUG("$type $path isPresent ?");
 
     if ($type eq "FILE") {
-        DEBUG("File type.");
         if (-f $path) {
-            DEBUG("File '$path' exists.");
             return TRUE;
         }
         if (-d $path) {
-            DEBUG("Directory '$path' exists.");
             return TRUE;
         }
-        DEBUG("No file nor directory at path '$path'.");
 
         return FALSE;
     }
     elsif ($type eq "CEPH") {
-
-        DEBUG("CEPH object type.");
 
         my ($poolName, @rest) = split("/", $path);
         my $objectName = join("", @rest);
@@ -757,18 +751,15 @@ sub isPresent {
             ERROR("CEPH path is not valid (<poolName>/<objectName>) : $path");
             return FALSE;
         }
-        DEBUG("Looking for object '$objectName' in pool '$poolName'.");
 
         `rados -p $poolName stat $objectName 1>/dev/null 2>/dev/null`;
         if ($?) {
             return FALSE;
         }
-        DEBUG("The object exists.");
 
         return TRUE;
     }
     elsif ($type eq "S3") {
-        DEBUG("S3 object type.");
 
         my ($bucketName, @rest) = split("/", $path);
         my $objectName = join("", @rest);
@@ -804,7 +795,6 @@ sub isPresent {
         }
     }
     elsif ($type eq "SWIFT") {
-        DEBUG("Swift object type.");
 
         my ($containerName, @rest) = split("/", $path);
         my $objectName = join("", @rest);

@@ -363,6 +363,161 @@ sub getUnion {
 
 
 ####################################################################################################
+#                               Group: Georeferenced images functions                              #
+####################################################################################################
+
+
+=begin nd
+Function: getGeoreferencement
+
+Return the georeferencement (bbox, resolution) from an image
+
+Parameters (list):
+    filepath - string - Path of the referenced image
+
+Return (hash reference):
+{
+    dimensions => [width, height],
+    resolutions => [xres, yres],
+    bbox => [xmin, ymin, xmax, ymax]
+}
+
+    undefined if failure
+=cut
+sub getGeoreferencement {
+    my $filepath = shift;
+
+    my $dataset;
+    eval { $dataset= Geo::GDAL::Open($filepath, 'ReadOnly'); };
+    if ($@) {
+        ERROR (sprintf "Can not open image ('%s') : '%s' !", $filepath, $@);
+        return undef;
+    }
+
+    my $refgeo = $dataset->GetGeoTransform();
+    if (! defined ($refgeo) || scalar (@$refgeo) != 6) {
+        ERROR ("Can not found geometric parameters of image ('$filepath') !");
+        return undef;
+    }
+
+    # forced formatting string !
+    my ($xmin, $dx, $rx, $ymax, $ry, $ndy)= @$refgeo;
+
+    my $res = {
+        dimensions => [$dataset->{RasterXSize}, $dataset->{RasterYSize}],
+        resolutions => [sprintf("%.12f", $dx), sprintf("%.12f", abs($ndy))],
+        bbox => [
+            sprintf("%.12f", $xmin),
+            sprintf("%.12f", $ymax + $ndy*$dataset->{RasterYSize}),
+            sprintf("%.12f", $xmin + $dx*$dataset->{RasterXSize}),
+            sprintf("%.12f", $ymax)
+        ],
+    };
+    
+    return $res;
+}
+
+
+=begin nd
+Function: getPixel
+
+Return the pixel informations from an image
+
+Parameters (list):
+    filepath - string - Path of the image
+
+Return (list):
+    a <COMMON::Pixel> object, undefined if failure
+=cut
+sub getPixel {
+    my $filepath = shift;
+
+    my $dataset;
+    eval { $dataset= Geo::GDAL::Open($filepath, 'ReadOnly'); };
+    if ($@) {
+        ERROR (sprintf "Can not open image ('%s') : '%s' !", $filepath, $@);
+        return undef;
+    }
+
+    my $i = 0;
+
+    my $DataType       = undef;
+    my $Band           = undef;
+    my @Interpretation;
+
+    foreach my $objBand ($dataset->Bands()) {
+
+        push @Interpretation, lc $objBand->ColorInterpretation();
+
+        if (!defined $DataType) {
+            $DataType = lc $objBand->DataType();
+        } else {
+            if (! (lc $objBand->DataType() eq $DataType)) {
+                ERROR (sprintf "DataType is not the same (%s and %s) for all band in this image !", lc $objBand->DataType(), $DataType);
+                return undef;
+            }
+        }
+        
+        $i++;
+    }
+
+    $Band = $i;
+
+    my $bitspersample = undef;
+    my $photometric = undef;
+    my $sampleformat = undef;
+    my $samplesperpixel = undef;
+
+    if ($DataType eq "byte") {
+        $bitspersample = 8;
+        $sampleformat  = "uint";
+    }
+    else {
+        ($sampleformat, $bitspersample) = ($DataType =~ /(\w+)(\d{2})/);
+    }
+
+    if ($Band == 3) {
+        foreach (@Interpretation) {
+            last if ($_ !~ m/(red|green|blue)band/);
+        }
+        $photometric     = "rgb";
+        $samplesperpixel = 3;
+    }
+
+    if ($Band == 4) {
+        foreach (@Interpretation) {
+            last if ($_ !~ m/(red|green|blue|alpha)band/);
+        }
+        $photometric     = "rgb";
+        $samplesperpixel = 4;
+    }
+
+    if ($Band == 1) {
+        if ($Interpretation[0] eq "grayindex") {
+            $photometric     = "gray";
+            $samplesperpixel = 1;
+        }
+        if ($Interpretation[0] eq "paletteindex") {
+            $photometric     = "gray";
+            $samplesperpixel = 1;
+            $bitspersample = 1;
+        }
+    }
+
+    if (! (defined $bitspersample && defined $photometric && defined $sampleformat && defined $samplesperpixel)) {
+        ERROR ("The format of this image ('$filepath') is not handled by be4 !");
+        return undef;
+    }
+    
+    return COMMON::Pixel->new({
+        bitspersample => $bitspersample,
+        photometric => $photometric,
+        sampleformat => $sampleformat,
+        samplesperpixel => $samplesperpixel
+    });
+}
+
+####################################################################################################
 #                               Group: Spatial Reference functions                                 #
 ####################################################################################################
 
@@ -388,7 +543,7 @@ sub spatialReferenceFromSRS {
             eval { $sr = Geo::OSR::SpatialReference->new(Proj4 => '+init='.lc($srs).' +wktext'); };
             if ($@) {
                 ERROR("$@");
-                ERROR (sprintf "Impossible to initialize the final spatial coordinate system (%s) to know if coordinates have to be reversed !\n",$srs);
+                ERROR (sprintf "Impossible to initialize the spatial coordinate system (%s) to know if coordinates have to be reversed !\n",$srs);
                 return undef;
             }
         }
@@ -401,7 +556,7 @@ sub spatialReferenceFromSRS {
             eval { $sr->ImportFromProj4('+init='.lc($srs).' +wktext'); };
             if ($@) {
                 ERROR("$@");
-                ERROR (sprintf "Impossible to initialize the final spatial coordinate system (%s) to know if coordinates have to be reversed !\n",$srs);
+                ERROR (sprintf "Impossible to initialize the spatial coordinate system (%s) to know if coordinates have to be reversed !\n",$srs);
                 return undef;
             }
         }

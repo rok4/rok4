@@ -84,6 +84,7 @@ Using:
 
 Attributes:
     type - string - READ (pyramid load from a descriptor) or WRITE ("new" pyramid, create from values)
+    own_ancestor - boolean - Precise if pyramid own an ancestor (only for new pyramid)
 
     name - string - Pyramid's name
     desc_path - string - Directory in which we write the pyramid's descriptor
@@ -192,6 +193,7 @@ sub new {
 
     my $this = {
         type => undef,
+        own_ancestor => FALSE,
 
         name => undef,
         desc_path => undef,
@@ -335,6 +337,8 @@ sub _load {
     if (defined $ancestor) {
         INFO("We have an ancestor, all parameters are picked from this pyramid");
         # les valeurs sont récupérées de l'ancêtre pour s'assurer la cohérence
+        $this->{own_ancestor} = TRUE;
+        
         $this->{tms} = $ancestor->getTileMatrixSet()->getName();
         $this->{image_width} = $ancestor->getTilesPerWidth();
         $this->{image_height} = $ancestor->getTilesPerHeight();
@@ -777,6 +781,12 @@ sub backupList {
 #                                Group: Common getters                                             #
 ####################################################################################################
 
+# Function: ownAncestor
+sub ownAncestor {
+    my $this = shift;
+    return $this->{own_ancestor};
+}
+
 # Function: getFormatCode
 sub getFormatCode {
     my $this = shift;
@@ -1038,6 +1048,136 @@ sub getDataPool {
     my $this = shift;    
     return $this->{data_pool};
 }
+####################################################################################################
+#                                     Group: List tools                                            #
+####################################################################################################
+
+sub loadList {
+    my $this = shift;
+
+    my $listFile = $this->getListFile();
+
+    if (! open LIST, "<", $listFile) {
+        ERROR("Cannot open pyramid list file (to load content in cache) : $listFile");
+        return FALSE;
+    }
+
+    # Dans le cas objet, pour passer du type présent dans le nom de l'objet au type générique
+    my %objectTypeConverter = (
+        MSK => "MASK",
+        IMG => "IMAGE"
+    );
+
+    # Lecture des racines
+    my %roots;
+    while( my $line = <LIST> ) {
+        chomp $line;
+
+        if ($line eq "#") {
+            # separator between caches' roots and images
+            last;
+        }
+        
+        $line =~ s/\s+//g; # we remove all spaces
+        my @tmp = split(/=/,$line,-1);
+        
+        if (scalar @tmp != 2) {
+            ERROR(sprintf "Wrong formatted pyramid list (root definition) : %s",$line);
+            return FALSE;
+        }
+        
+        $roots{$tmp[0]} = $tmp[1];
+    }
+
+    while( my $line = <LIST> ) {
+        chomp $line;
+
+        # On reconstitue le chemin complet à l'aide des racines de l'index
+        $line =~ m/^(\d+)\/.+/;
+        my $index = $1;
+        my $root = $roots{$index};
+        my $fullline = $line;
+        $fullline =~ s/^(\d+)/$root/;
+
+        # On va vouloir déterminer le niveau, la colonne et la ligne de la dalle, ainsi que le type (IMAGE ou MASK)
+        # Cette extraction diffère selon que l'on est en mode fichier ou objet
+
+        my ($type, $level, $col, $row);
+
+        # Cas fichier
+        if ($this->getStorageType() eq "FILE") {
+            # Une ligne du fichier c'est
+            # Cas fichier : 0/IMAGE/15/AB/CD/EF.tif
+            my @parts = split("/", $line);
+            # La première partie est toujours l'index de la racine, déjà traitée
+            shift(@parts);
+            # Dans le cas d'un stockage fichier, le premier élément du chemin est maintenant le type de donnée
+            $type = shift(@parts);
+            # et le suivant est le niveau
+            $level = shift(@parts);
+
+            ($col,$row) = $this->{levels}->{$level}->getFromSlabPath($line);
+
+        }
+        # Cas objet
+        else {
+            # Une ligne du fichier c'est
+            # Cas objet : 0/PYRAMID_IMG_15_15656_5423
+
+            # Dans le cas d'un stockage objet, on a un nom d'objet de la forme BLA/BLA_BLA_DATATYPE_LEVEL_COL_ROW
+            # DATATYPE vaut MSK ou IMG, à convertir en MASK ou IMAGE
+            my @p = split("_",$line);
+            $col = $p[-2];
+            $row = $p[-1];
+            $level = $p[-3];
+            $type = $objectTypeConverter{$p[-4]};
+        }
+        
+        if (exists $this->{cachedList}->{$level}->{$type}->{"${col}_${row}"}) {
+            WARN("The list contains twice the same slab : $type, $level, $col, $row");
+        }
+        $this->{cachedList}->{$level}->{$type}->{"${col}_${row}"} = $fullline;
+    }
+
+    close(LIST);
+
+    return TRUE;
+}
+
+
+sub getLevelSlabs {
+    my $this = shift;
+    my $level = shift;
+
+    return $this->{cachedList}->{$level};
+} 
+
+
+sub containSlab {
+    my $this = shift;
+    my $type = shift;
+    my $level = shift;
+    my $col = shift;
+    my $row = shift;
+
+    my $key = "${type}_${level}_${col}_${row}";
+    return $this->{cachedList}->{$level}->{$type}->{"${col}_${row}"};
+    # undef if not exists
+} 
+
+
+sub getCachedListStats {
+    my $this = shift;
+
+    my $nb = scalar(keys %{$this->{cachedList}});
+    my $size = total_size($this->{cachedList});
+
+    my $ret = "Stats :\n\t $size bytes\n";
+    # $ret .= "\t $size bytes\n";
+    # $ret .= sprintf "\t %s bytes per cached slab\n", $size / $nb;
+
+    return $ret;
+} 
 
 
 1;

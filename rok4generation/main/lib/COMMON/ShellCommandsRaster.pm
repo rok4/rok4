@@ -203,7 +203,7 @@ sub mergeNtiff {
     # correspondant dans la nouvelle pyramide.
     # On fait de même avec le masque de donnée associé, s'il existe.
     my $imgBg = $this->{pyramid}->getSlabPath("IMAGE", $node->getLevel(), $node->getCol(), $node->getRow(), TRUE);
-    if ( COMMON::ProxyStorage::isPresent($node->getStorageType(), $imgBg) ) {
+    if ($this->{pyramid}->ownAncestor() && COMMON::ProxyStorage::isPresent($node->getStorageType(), $imgBg) ) {
         $node->addBgImage();
         
         my $maskBg = $this->{pyramid}->getSlabPath("MASK", $node->getLevel(), $node->getCol(), $node->getRow(), TRUE);
@@ -1208,7 +1208,7 @@ sub merge4tiff {
     my ($c, $w);
     my ($code, $weight) = ("",MERGE4TIFF_W);
     
-    my @childList = $node->getChildren;
+    my @childList = $node->getChildren();
 
     # Si elle existe, on copie la dalle de la pyramide de base dans le repertoire de travail 
     # en la convertissant du format cache au format de travail: c'est notre image de fond.
@@ -1216,7 +1216,7 @@ sub merge4tiff {
     # correspondant dans la nouvelle pyramide.
     # On fait de même avec le masque de donnée associé, s'il existe.
     my $imgBg = $this->{pyramid}->getSlabPath("IMAGE", $node->getLevel(), $node->getCol(), $node->getRow(), TRUE);
-    if ( COMMON::ProxyStorage::isPresent($node->getStorageType(), $imgBg) && ($this->{useMasks} || scalar @childList != 4) ) {
+    if ($this->{pyramid}->ownAncestor() && ($this->{useMasks} || scalar @childList != 4) && COMMON::ProxyStorage::isPresent($node->getStorageType(), $imgBg) ) {
         $node->addBgImage();
         
         my $maskBg = $this->{pyramid}->getSlabPath("MASK", $node->getLevel(), $node->getCol(), $node->getRow(), TRUE);
