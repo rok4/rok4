@@ -123,20 +123,6 @@ Soit :
 cpan DBI DBD::Pg Data::Dumper Devel::Size Digest::SHA ExtUtils::MakeMaker File::Find::Rule File::Map FindBin Geo::GDAL Geo::OGR Geo::OSR HTTP::Request HTTP::Request::Common HTTP::Response JSON::Parse Log::Log4perl LWP::UserAgent Math::BigFloat Term::ProgressBar Test::More Tie::File XML::LibXML
 ```
 
-Si volonté d'utiliser l'outil graphique `tms-converter-gui.pl` :
-* Tk
-* Tk::EntryCheck
-* Tk::FileSelect
-* Tk::LabFrame
-* Tk::NoteBook
-* Tk::ROText
-* Tk::Table
-
-Soit :
-```
-cpan Tk Tk::EntryCheck Tk::FileSelect Tk::LabFrame Tk::NoteBook Tk::ROText Tk::Table
-```
-
 Pour savoir où sont cherchées les librairies, exécuter `env -i perl -V`.
 
 Pour vérifier que toutes les librairies nécessaires sont installées, exécuter le script `perl be4/pyramide/verify-dependencies.pl`.

@@ -216,40 +216,6 @@ sub geometryFromBbox {
 #                               Group: Geometry tools                                              #
 ####################################################################################################
 
-=begin nd
-Function: getWkt
-
-Return the geometry as WKT
-
-Parameters (list):
-    geom - <Geo::OGR::Geometry> - OGR geometry object
-
-Return (list):
-    the WKT string
-=cut
-sub getWkt {
-    my $geom = shift;
-
-    return $geom->ExportToWkt();
-}
-
-=begin nd
-Function: getWkb
-
-Return the geometry as WKB
-
-Parameters (list):
-    geom - <Geo::OGR::Geometry> - OGR geometry object
-
-Return (list):
-    the WKB string
-=cut
-sub getWkb {
-    my $geom = shift;
-
-    return $geom->AsHEXWKB();
-}
-
 
 =begin nd
 Function: getBbox
@@ -359,6 +325,138 @@ sub getUnion {
     my $geom2 = shift;
 
     return $geom1->Union($geom2);
+}
+
+####################################################################################################
+#                               Group: Export tools                                                #
+####################################################################################################
+
+=begin nd
+Function: getWkt
+
+Return the geometry as WKT
+
+Parameters (list):
+    geom - <Geo::OGR::Geometry> - OGR geometry object
+
+Return (list):
+    the WKT string
+=cut
+sub getWkt {
+    my $geom = shift;
+
+    return $geom->ExportToWkt();
+}
+
+=begin nd
+Function: getJson
+
+Return the geometry as JSON
+
+Parameters (list):
+    geom - <Geo::OGR::Geometry> - OGR geometry object
+
+Return (list):
+    the JSON string
+=cut
+sub getJson {
+    my $geom = shift;
+
+    return $geom->ExportToJson();
+}
+
+=begin nd
+Function: getGml
+
+Return the geometry as GML
+
+Parameters (list):
+    geom - <Geo::OGR::Geometry> - OGR geometry object
+
+Return (list):
+    the GML string
+=cut
+sub getGml {
+    my $geom = shift;
+
+    return $geom->ExportToGML();
+}
+
+=begin nd
+Function: getKml
+
+Return the geometry as KML
+
+Parameters (list):
+    geom - <Geo::OGR::Geometry> - OGR geometry object
+
+Return (list):
+    the KML string
+=cut
+sub getKml {
+    my $geom = shift;
+
+    return $geom->ExportToKML();
+}
+
+=begin nd
+Function: getWkb
+
+Return the geometry as hexadecimal WKB
+
+Parameters (list):
+    geom - <Geo::OGR::Geometry> - OGR geometry object
+
+Return (list):
+    the WKB string
+=cut
+sub getWkb {
+    my $geom = shift;
+
+    return $geom->AsHEXWKB();
+}
+
+
+=begin nd
+Function: exportFile
+
+Write geometry into a file. Detect format from extension.
+
+Parameters (list):
+    geom - <Geo::OGR::Geometry> - OGR geometry object
+    path - string - Path to file to write
+
+Return (list):
+    TRUE if success, FALSE if failure
+=cut
+sub exportFile {
+    my $geom = shift;
+    my $path = shift;
+
+    open(OUT, ">$path") or do {
+        ERROR("Cannot open $path to write in it");
+        return FALSE;
+    };
+
+    if ($path =~ m/\.kml$/) {
+        print OUT getKml($geom);
+    }
+    elsif ($path =~ m/\.gml$/) {
+        print OUT getGml($geom);
+    }
+    elsif ($path =~ m/\.json$/) {
+        print OUT getJson($geom);
+    }
+    elsif ($path =~ m/\.wkb$/) {
+        print OUT getWkb($geom);
+    }
+    else {
+        print OUT getWkt($geom);
+    }
+    
+    close(OUT);
+
+    return TRUE;
 }
 
 

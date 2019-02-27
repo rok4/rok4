@@ -6,7 +6,7 @@
 
 ### Commandes
 
-* `tms-toolbox.pl --tms <FILE PATH> [--slabsize <INT>x<INT>] [--level <STRING>] --from <STRING> --to <STRING> [--help|--usage|--version]`
+* `tms-toolbox.pl --tms <FILE PATH> [--slabsize <INT>x<INT>] [--storage FILE[:<INT>]|CEPH|S3|SWIFT] [--level <STRING>] [--ratio <INT>] --from <STRING> --to <STRING> [--help|--usage|--version]`
 
 ### Options
 
@@ -14,35 +14,45 @@
 * `--usage` Affiche le lien vers la documentation utilisateur de l'outil et quitte
 * `--version` Affiche la version de l'outil et quitte
 * `--tms <file path>` TMS à utiliser
+* `--level <string>` Niveau du TMS à considérer
+* `--storage FILE[:<integer>]|CEPH|S3|SWIFT` Stockage, type et éventuellement profondeur d'arborescence. `FILE:2` par défaut.
+* `--ratio <integer>` ratio à appliquer pour certaines conversion. `1` par défaut.
 * `--slabsize <integer>x<integer>` Nombre de tuiles, en largeur et en hauteur, dans la dalle
 * `--from <string>` Données en entrée du convertisseur
 * `--to <string>` Données en sortie du convertisseur
 
 ## Entrées et sorties
 
-Les possibilités sont :
-* `SLAB_INDICES_LIST:<FILE PATH>` :
-    - `<LEVEL>` est l'identifiant du niveau (issu du TMS) des dalles dont les indices sont listés
-    - `<FILE PATH>` est le chemin vers la liste des dalles, où chaque ligne est de la forme `COL,ROW`. Doit exister si en entrée, ne doit pas exister si en sortie.
-* `GETMAP_PARAMS:<FILE PATH>`
-    - `<FILE PATH>` est le chemin vers la liste des paramètres GetMap, une ligne = un GetMap. Doit exister si en entrée, ne doit pas exister si en sortie.
-* `GEOM_FILE:<FILE PATH>`
-    - `<FILE PATH>` est le chemin vers le fichier contenant la géométrie en WKT, GeoJSON ou GML.
-* `SQL_FILE:<FILE PATH>`
-    - `<FILE PATH>` est le chemin vers le fichier SQL contenant l'insertion de ligne par COPY FROM STDIN.
-* `POINT:<X>,<Y>` : coordonnées d'un point
-* `SLAB_INFO` : uniquement en sortie, indices et chemin d'une dalle pour chaque niveau du TMS. Plusieurs possibilités
-    - `SLAB_INFO` : stockage fichier, avec une profondeur d'arborescence de 2
-    - `SLAB_INFO:<STORAGE TYPE>` : on précise le type de stockage (FILE, CEPH, S3 ou SWIFT). Si FILE, la profondeur est de 2
-    - `SLAB_INFO:FILE:<DEPTH>` : on précise la profondeur d'arborescence pour le stockage fichier (nombre entier strictement positif)
-* `TILE_INFO` : uniquement en sortie, indices de tuile pour chaque niveau du TMS
+| Types                              | Entrée | Sortie | Description                                                                         |
+| ---------------------------------- | ------ | ------ | ----------------------------------------------------------------------------------- |
+| `PYRAMID_LIST:<FILE PATH>`         | x      |        | Fichier liste d'une pyramide                                                        |
+| `SLAB_INDICES_LIST:<FILE PATH>`    | x      | x      | Fichier listant des indices de dalles `COL,ROW`                                     |
+| `GEOM_FILE:<FILE PATH>`            | x      | x      | Fichier contenant une géométrie en GML, KML, JSON ou WKT (filtrage sur l'extention) |
+| `SQL_FILE:<FILE PATH>`             |        | x      | Fichier SQL d'insertion de dalles (level, col, row, geom) dans la table slabs       |
+| `TFW_FILE:<FILE PATH>`             |        | x      | Fichier TFW de géoréférencement                                                     |
+| `POINT:<X>,<Y>`                    | x      |        | Coordonnées d'un point                                                              |
+| `BBOX:<XMIN>,<YMIN>,<XMAX>,<YMAX>` | x      |        | Rectangle englobant                                                                 |
+| `SLAB_INDICES:<COL>,<ROW>`         | x      |        | Indice de dalle, colonne et ligne                                                   |
+| `TILE_INDICES:<COL>,<ROW>`         | x      |        | Indice de tuile, colonne et ligne                                                   |
+| `SLAB_INFO`                        |        | x      | Indices et informations de stockage d'une dalle, pour un ou plusieurs niveaux       |
+| `TILE_INFO`                        |        | x      | Indices d'une tuile, pour un ou plusieurs niveaux                                   |
+| `GETMAP_PARAMS_LIST:<FILE PATH>`   |        | x      | Fichier listant les paramètres d'un GetMap WMS WIDTH, HEIGHT, CRS et BBOX           |
+| `GETTILE_PARAMS_LIST:<FILE PATH>`  |        | x      | Fichier listant les paramètres d'un GetTile WMTS TILEMATRIX, TILECOL et TILEROW     |
+
+Pour les paramètres avec <FILE PATH>, le fichier doit exister si en entrée, et ne doit pas exister si en sortie.
 
 ## Conversions possibles
 
-| Entrée            | Sortie            | Description                                                                                                                                                               |
-| ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| SLAB_INDICES_LIST | GETMAP_PARAMS     | Chaque indice de dalle est convertit en paramètres GetMap WIDTH, HEIGHT, CRS et BBOX                                                                                      |
-| POINT             | SLAB_INFO         | Affiche les indices de la dalle contenant le point, ainsi que le chemin de la dalle fichier ou  le suffixe de la dalle objet, pour chaque niveau si pas de niveau précisé |
-| POINT             | TILE_INFO         | Affiche les indices de la tuile contenant le point, pour chaque niveau si pas de niveau précisé                                                                           |
-| GEOM_FILE         | SLAB_INDICES_LIST | Génère la liste des indices des dalles intersectant la géométrie fournie pour le niveau précisé                                                                           |
-| GEOM_FILE         | SQL_FILE          | Génère le script SQL insérant une ligne par dalle intersectant la géométrie fournie pour le niveau fourni, sans la création de la table `slabs`                           |
+| Entrée            | Sortie              | Options obligatoires | Options facultatives |
+| ----------------- | ------------------- | -------------------- | -------------------- |
+| SLAB_INDICES_LIST | GETMAP_PARAMS_LIST  | level, slabsize      | ratio                |
+| PYRAMID_LIST      | GETTILE_PARAMS_LIST | level, slabsize      | ratio                |
+| PYRAMID_LIST      | GEOM_FILE           | level, slabsize      |                      |
+| GEOM_FILE         | SLAB_INDICES_LIST   | level, slabsize      |                      |
+| GEOM_FILE         | SQL_FILE            |                      |                      |
+| BBOX              | SLAB_INDICES_LIST   | level, slabsize      |                      |
+| BBOX              | SQL_FILE            | level, slabsize      |                      |
+| SLAB_INDICES      | TFW_FILE            | level, slabsize      |                      |
+| TILE_INDICES      | SLAB_INFO           | level, slabsize      | storage              |
+| POINT             | SLAB_INFO           | slabsize             | level, storage       | 
+| POINT             | TILE_INFO           |                      | level                |

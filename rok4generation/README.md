@@ -15,11 +15,9 @@ La suite d'outils ROK4GENERATION permet de générer, mettre à jour, composer, 
         - [Extraction de pyramide](#extraction-de-pyramide)
         - [Transfert de pyramide](#transfert-de-pyramide)
     - [Les outils de débogage](#les-outils-de-débogage)
-        - [Simulation des dalles à générer](#simulation-des-dalles-à-générer)
         - [Création d'un descripteur de couche](#création-dun-descripteur-de-couche)
         - [Création du fichier liste d'une pyramide](#création-du-fichier-liste-dune-pyramide)
         - [Convertisseur TMS](#convertisseur-tms)
-        - [Interface de conversions diverses](#interface-de-conversions-diverses)
 - [Outils de manipulation](#outils-de-manipulation)
     - [Manipulation raster](#manipulation-raster)
         - [Passage au format de travail d'une dalle ROK4](#passage-au-format-de-travail-dune-dalle-rok4)
@@ -169,12 +167,6 @@ Parallélisable.
 
 ## Les outils de débogage
 
-### Simulation des dalles à générer
-
-Outil : `be4-simulator.pl`
-
-À partir d'un TileMatrixSet et d'une géométrie (fournie en WKT dans un fichier), cet outil calcule les dalles à générer par niveau et peut en imprimer la liste. Cela permet de quantifier le travail qu'une génération BE4 aurait à faire. Le fichier listant les dalles est utilisable par BE4 comme définition de l'étendue à générer (à la place de extent dans la configuration des datasources).
-
 ### Création d'un descripteur de couche
 
 Outil : `create-layer.pl`
@@ -194,14 +186,6 @@ Stockage géré : FICHIER
 Outil : `tms-toolbox.pl`
 
 Ce outil permet de réaliser de nombreuses conversion entre indices de dalles, de tuiles, requêtes getTile ou getMap, liste de fichiers, géométrie WKT... grâce au TMS utilisé (ne nécessite pas de pyramide).
-
-### Interface de conversions diverses
-
-Outil : `tms-converter-gui.pl`
-
-Cet outil propose plusieurs conversions entre requêtes WMS/WMTS, coordonnées, chemin de dalles fichier...
-
-![Interface de tms-converter-gui](../docs/images/ROK4GENERATION/tms-converter-gui.png)
 
 
 # Outils de manipulation

@@ -380,11 +380,9 @@ sub identifyBottomNodes {
             for (my $col = $colMin; $col<= $colMax; $col++){
                 for (my $row = $rowMin; $row<= $rowMax; $row++){
             
-                    my ($xmin,$ymin,$xmax,$ymax) = $tm->indicesToBbox($col, $row, $TPW, $TPH);
+                    my $OGRslab = $tm->indicesToGeom($col, $row, $TPW, $TPH);
 
-                    my $OGRtile = COMMON::ProxyGDAL::geometryFromBbox($xmin,$ymin,$xmax,$ymax);
-
-                    if (COMMON::ProxyGDAL::isIntersected($OGRtile, $convertExtent)) {
+                    if (COMMON::ProxyGDAL::isIntersected($OGRslab, $convertExtent)) {
                         my $nodeKey = sprintf "%s_%s", $col, $row;
                         # Create a new Node
                         my $node = COMMON::Node->new({

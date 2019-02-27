@@ -55,7 +55,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/joinCache-file.pl.in ${CMAKE_CURR
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/joinCache-ceph.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/joinCache-ceph.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/create-layer.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/create-layer.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/create-list.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/create-list.pl @ONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/tms-converter-gui.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/tms-converter-gui.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/tms-toolbox.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/tms-toolbox.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/ex-pyr.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/ex-pyr.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/pyr2pyr.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/pyr2pyr.pl @ONLY)

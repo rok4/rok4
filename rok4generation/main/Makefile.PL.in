@@ -23,7 +23,6 @@ WriteMakefile(
         'bin/pyr2pyr.pl',
         'bin/sup-pyr.pl',
         'bin/wmtSalaD.pl',
-        'bin/tms-converter-gui.pl',
         'bin/tms-toolbox.pl'
     ],
     PMLIBDIRS   => [
