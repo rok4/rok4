@@ -21,6 +21,7 @@ La suite d'outils ROK4GENERATION permet de générer, mettre à jour, composer, 
 - [Outils de manipulation](#outils-de-manipulation)
     - [Manipulation raster](#manipulation-raster)
         - [Passage au format de travail d'une dalle ROK4](#passage-au-format-de-travail-dune-dalle-rok4)
+        - [Contrôle d'une image de travail](#contrôle-dune-image-de-travail)
         - [Fusion d'un dallage d'images](#fusion-dun-dallage-dimages)
         - [Décimation d'une image](#décimation-dune-image)
         - [Gestion du nodata](#gestion-du-nodata)
@@ -33,7 +34,6 @@ La suite d'outils ROK4GENERATION permet de générer, mettre à jour, composer, 
         - [Écriture d'une dalle vecteur](#écriture-dune-dalle-vecteur)
 
 <!-- TOC END -->
-
 
 
 # Outils principaux
@@ -207,6 +207,14 @@ Outil : `cache2work`
 Cet outil transforme une dalle ROK4 raster en une image TIFF de même dimension mais non tuilée et potentiellement non compressée. Il est utilisé lorsque l'on veut retravailler une dalle d'une pyramide.
 
 ![cache2work](../docs/images/ROK4GENERATION/tools/cache2work.png)   
+
+### Contrôle d'une image de travail
+
+Outil : `checkWork`
+
+Cet outil prend seulement une image en entrée et tente de la lire. Cela permet de détecter d'éventuelles erreurs.
+
+[Détails](./tools/checkWork/README.md)
 
 ### Fusion d'un dallage d'images
 
