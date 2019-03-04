@@ -9,7 +9,7 @@ Cet outil écrit une dalle à partir des tuiles PBF rangées par coordonnées (`
 `pbf2cache -r <DIRECTORY> -t <VAL> <VAL> -ultile <VAL> <VAL> <OUTPUT FILE/OBJECT> [-pool <POOL NAME>|-bucket <BUCKET NAME>|-container <CONTAINER NAME> [-ks]] [-d]`
 
 * `-r <DIRECTORY>` : dossier contenant l'arborescence de tuiles PBF
-* `-t  <VAL> <VAL>` : nombre de tuiles dans une dalle, en largeur et en hauteur
+* `-t <VAL> <VAL>` : nombre de tuiles dans une dalle, en largeur et en hauteur
 * `-ultile <VAL> <VAL>` : indice de la tuile en haut à gauche dans la dalle
 * `-d` : activation des logs de niveau DEBUG
 * `-pool <POOL NAME>` : précise le nom du pool CEPH dans lequel écrire la dalle

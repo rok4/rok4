@@ -29,6 +29,7 @@ include(ROK4Dependencies)
 add_subdirectory(main/)
 
 add_subdirectory(tools/cache2work)
+add_subdirectory(tools/checkWork)
 add_subdirectory(tools/composeNtiff)
 add_subdirectory(tools/decimateNtiff)
 add_subdirectory(tools/manageNodata)

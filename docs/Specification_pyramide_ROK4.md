@@ -415,7 +415,7 @@ Voici la structure globale d'une dalle de la pyramide ROK4, dalle contenant N tu
 
 ### Les références
 
-Lors de la création d'une pyramide de mise à jour, on ne va potentiellement pas recopier toutes les données de la version précédente, mais simplement les référencer à l'aide de liens symbolique en stockage fichier ou d'objets symboliques (objet contenant simplement le nom de l'objet cible) en stockage objet. Cela est mis en place par les outils ROK4GENERATION mais est transparent pour ROK4SERVER qui se contente de lire UNE pyramide.
+Lors de la création d'une pyramide de mise à jour, on ne va potentiellement pas recopier toutes les données de la version précédente, mais simplement les référencer à l'aide de liens symbolique en stockage fichier ou d'objets symboliques (objet contenant simplement le nom de l'objet cible précédé de la signature `SYMLINK#`) en stockage objet. Cela est mis en place par les outils ROK4GENERATION mais est transparent pour ROK4SERVER qui se contente de lire UNE pyramide.
 
 ## Le fichier liste
 
