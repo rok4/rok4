@@ -40,11 +40,11 @@ File: QTree.pm
 
 Class: COMMON::QTree
 
-(see COMMON_QTree.png)
+(see ROK4GENERATION/libperlauto/COMMON_QTree.png)
 
 Representation of a quad tree image pyramid : pyramid's image = <COMMON::Node>
 
-(see QTreeTMS.png)
+(see ROK4GENERATION/QTreeTMS.png)
 
 To generate this kind of graph, we use :
     - *jobNumber* scripts : to generate and format image from the bottom level to the cut level.
@@ -54,7 +54,7 @@ To generate this kind of graph, we use :
 
 Organization in the <COMMON::Forest> scripts' array :
 
-(see script_QTree.png)
+(see ROK4GENERATION/script_QTree.png)
 
 As a tree, a node has just one parent. As a QUAD tree, the parent belong to the above level and a node has 4 children at most.
 
@@ -452,7 +452,7 @@ Function: identifyAboveNodes
 
 Calculate all nodes in above levels. We generate a above level node if one or more children are generated.
 
-(see aboveNodes_QTree.png)
+(see ROK4GENERATION/aboveNodes_QTree.png)
 =cut
 sub identifyAboveNodes {
     my $this = shift;
@@ -512,7 +512,7 @@ Determine codes and weights for each node of the current QTree, and share work o
 
 Three steps:
     - we add weights (own and accumulated) and commands for each node : <computeBranch>
-    (see weights.png)
+    (see ROK4GENERATION/weights.png)
     - we determine the cut level, to distribute fairly work : <shareNodesOnJobs>. For a vector pyramid, cut level is always top level.
     - we write commands in the script associated to the node : <writeBranchCode> and <writeTopCode>
 =cut
@@ -910,7 +910,7 @@ sub writeCode {
 Function: shareNodesOnJobs
 
 Determine the cutLevel to optimize sharing into scripts and execution time.
-(see scripts.png)
+(see ROK4GENERATION/scripts.png)
 
 For each level:
     - we sort nodes by descending accumulated weight

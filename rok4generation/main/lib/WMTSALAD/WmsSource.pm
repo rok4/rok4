@@ -40,7 +40,7 @@ File: WmsSource.pm
 
 Class: WMTSALAD::WmsSource
 
-(see WMTSALAD_WmsSource.png)
+(see ROK4GENERATION/libperlauto/WMTSALAD_WmsSource.png)
 
 Using:
     (start code)

@@ -40,7 +40,7 @@ File: CheckUtils.pm
 
 Class: COMMON::CheckUtils
 
-(see COMMON_CheckUtils.png)
+(see ROK4GENERATION/libperlauto/COMMON_CheckUtils.png)
 =cut
 
 ################################################################################

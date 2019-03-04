@@ -41,8 +41,8 @@ Timestamp: Updated month day, year
 Link: BE4 is an integral part of the ROK4 project  (http://www.rok4.org)
 
 Group: Tools  {
-    File: BE4-FILE  (no auto-title, bin/4alamo-file.pl)
-    File: BE4-CEPH  (no auto-title, bin/4alamo-ceph.pl)
+    File: 4ALAMO-FILE  (no auto-title, bin/4alamo-file.pl)
+    File: 4ALAMO-CEPH  (no auto-title, bin/4alamo-ceph.pl)
 
     File: BE4-FILE  (no auto-title, bin/be4-file.pl)
     File: BE4-CEPH  (no auto-title, bin/be4-ceph.pl)
@@ -53,16 +53,14 @@ Group: Tools  {
     File: JOINCACHE-CEPH  (no auto-title, bin/joinCache-ceph.pl)
     
     File: PYR2PYR  (no auto-title, bin/pyr2pyr.pl)
-    File: EXPYR  (no auto-title, bin/exPyr.pl)
+    File: EXPYR  (no auto-title, bin/ex-pyr.pl)
     File: SUP-PYR  (no auto-title, bin/sup-pyr.pl)
 
     File: WMTSALAD  (no auto-title, bin/wmtSalaD.pl)
 
-    File: COORD2IMAGE  (no auto-title, bin/coord2image.pl)
     File: CREATE-LAYER  (no auto-title, bin/create-layer.pl)
     File: CREATE-LIST  (no auto-title, bin/create-list.pl)
-    File: BE4-SIMULATOR  (no auto-title, bin/be4-simulator.pl)
-    File: TMS-CONVERTER-GUI  (no auto-title, bin/tms-converter-gui.pl)
+    File: TMS-TOOLBOX  (no auto-title, bin/tms-toolbox.pl)
 }
 
 Group: Classes  {
@@ -103,7 +101,7 @@ Group: Classes  {
 
     Group: BE4  {
 
-        File: PropertiesLoader (no auto-title, lib/BE4FILE/PropertiesLoader.pm)
+        File: PropertiesLoader (no auto-title, lib/BE4/PropertiesLoader.pm)
     }
 
     Group: JOINCACHE  {

@@ -40,7 +40,7 @@ File: PyramidVector.pm
 
 Class: COMMON::PyramidVector
 
-(see COMMON_PyramidVector.png)
+(see ROK4GENERATION/libperlauto/COMMON_PyramidVector.png)
 
 Store all informations about a vector pyramid, whatever the storage type.
 
@@ -107,6 +107,8 @@ Attributes:
     keystone_connection - boolean - For swift storage, keystone authentication or not ?
 
     data_pool - string - Name of the (existing) CEPH pool, where to store data if CEPH storage type
+
+    cachedList - string hash - If loaded, list content in an hash.
 =cut
 
 ################################################################################

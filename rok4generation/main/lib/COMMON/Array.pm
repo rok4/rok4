@@ -40,7 +40,7 @@ File: Array.pm
 
 Class: COMMON::Array
 
-(see COMMON_Array.png)
+(see ROK4GENERATION/libperlauto/COMMON_Array.png)
 
 Provides functions to compute the max value or the min index of an array. Do not instanciate.
 

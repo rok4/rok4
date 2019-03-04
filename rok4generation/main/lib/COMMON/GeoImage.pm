@@ -40,7 +40,7 @@ File: GeoImage.pm
 
 Class: COMMON::GeoImage
 
-(see COMMON_GeoImage.png)
+(see ROK4GENERATION/libperlauto/COMMON_GeoImage.png)
 
 Describes a georeferenced image and enable to know its components.
 

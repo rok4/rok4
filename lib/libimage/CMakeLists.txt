@@ -130,10 +130,6 @@ if(UNITTEST)
 endif(UNITTEST)
 
 ########################################
-
-INSTALL(FILES LICENCE README DESTINATION doc/${PROJECT_NAME})
-
-########################################
 #Installation dans les répertoires par défauts
 #Pour installer dans le répertoire /opt/projet :
 #cmake -DCMAKE_INSTALL_PREFIX=/opt/projet 

@@ -40,7 +40,7 @@ File: PropertiesLoader.pm
 
 Class: FOURALAMO::PropertiesLoader
 
-(see FOURALAMO_PropertiesLoader.png)
+(see ROK4GENERATION/libperlauto/FOURALAMO_PropertiesLoader.png)
 
 Reads a configuration file, to sIniFiles* format
 

@@ -40,7 +40,7 @@ File: PyramidRasterSpec.pm
 
 Class: COMMON::PyramidRasterSpec
 
-(see COMMON_PyramidRasterSpec.png)
+(see ROK4GENERATION/libperlauto/COMMON_PyramidRasterSpec.png)
 
 Store all image's components.
 

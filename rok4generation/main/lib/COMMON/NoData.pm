@@ -40,7 +40,7 @@ File: NoData.pm
 
 Class: COMMON::NoData
 
-(see COMMON_NoData.png)
+(see ROK4GENERATION/libperlauto/COMMON_NoData.png)
 
 Define Nodata informations and tools.
 

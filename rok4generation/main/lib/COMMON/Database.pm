@@ -40,7 +40,7 @@ File: Database.pm
 
 Class: COMMON::Database
 
-(see COMMON_Database.png)
+(see ROK4GENERATION/libperlauto/COMMON_Database.png)
 
 Allow to request a PostgreSQL database.
 

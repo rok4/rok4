@@ -40,13 +40,13 @@ File: ShellCommandsRaster.pm
 
 Class: COMMON::ShellCommandsRaster
 
-(see COMMON_ShellCommandsRaster.png)
+(see ROK4GENERATION/libperlauto/COMMON_ShellCommandsRaster.png)
 
 Configure and assemble commands used to generate raster pyramid's slabs.
 
 All schemes in this page respect this legend :
 
-(see formats.png)
+(see ROK4GENERATION/tools/formats.png)
 
 Using:
     (start code)
@@ -179,7 +179,7 @@ Function: mergeNtiff
 
 Use the 'MergeNtiff' bash function. Write a configuration file, with sources.
 
-(see mergeNtiff.png)
+(see ROK4GENERATION/tools/mergeNtiff.png)
 
 Parameters (list):
     node - <Node> - Node to generate thanks to a 'mergeNtiff' command.
@@ -583,7 +583,7 @@ Function: cache2work
 
 Copy slab from cache to work directory and transform (work format : untiled, zip-compression). Use the 'Cache2work' bash function.
 
-(see cache2work.png)
+(see ROK4GENERATION/tools/cache2work.png)
     
 Examples:
     (start code)
@@ -899,7 +899,7 @@ Function: work2cache
 
 Copy image from work directory to cache and transform it (tiled and compressed) thanks to the 'Work2cache' bash function (work2cache).
 
-(see work2cache.png)
+(see ROK4GENERATION/tools/work2cache.png)
 
 Example:
 |    Work2cache ${TMP_DIR}/19_395_3137.tif IMAGE/19/02/AF/Z5.tif
@@ -1196,7 +1196,7 @@ Use the 'Merge4tiff' bash function.
 |              =  resultImg
 |     i3  i4
 
-(see merge4tiff.png)
+(see ROK4GENERATION/tools/merge4tiff.png)
 
 Parameters (list):
     node - <COMMON::GraphNode> - Node to generate thanks to a 'merge4tiff' command.
@@ -1292,7 +1292,7 @@ Function: decimateNtiff
 
 Use the 'decimateNtiff' bash function. Write a configuration file, with sources.
 
-(see decimateNtiff.png)
+(see ROK4GENERATION/toolsdecimateNtiff.png)
 
 Parameters (list):
     node - <Node> - Node to generate thanks to a 'decimateNtiff' command.

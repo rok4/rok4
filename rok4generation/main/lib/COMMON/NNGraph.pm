@@ -40,11 +40,11 @@ File: NNGraph.pm
 
 Class: COMMON::NNGraph
 
-(see COMMON_NNGraph.png)
+(see ROK4GENERATION/libperlauto/COMMON_NNGraph.png)
 
 Representation of a "nearest neighbour" pyramid : pyramid's image = <COMMON::Node>.
 
-(see NNGraphTMS.png)
+(see ROK4GENERATION/NNGraphTMS.png)
 
 To generate this kind of graph, we use :
     - *jobNumber* scripts by level : to generate image to work format.
@@ -54,7 +54,7 @@ To generate this kind of graph, we use :
 
 Organization in the <Forest> scripts' array :
 
-(see script_NNGraph.png)
+(see ROK4GENERATION/script_NNGraph.png)
 
 Link between a node and his children or his father is not trivial. It is calculated and store in the <COMMON::Node> object.
 
@@ -467,11 +467,11 @@ Calculate all nodes in above levels. We generate a above level node if one or mo
 
 We have to use "nearest neighbour" interpolation with this kinf of graph. So (beacause pixel's center are aligned), we keep the value from the below level. Goal is to always have values from source data, no average.
 
-(see aboveNodes_NNGraph_2.png)
+(see ROK4GENERATION/aboveNodes_NNGraph_2.png)
 
 When we load the TMS, we precise links between different levels (source and targets). For each level, we identify above nodes (thanks to bounding boxes) which will be generated from the node. We store all this parent-child relations.
 
-(see aboveNodes_NNGraph.png)
+(see ROK4GENERATION/aboveNodes_NNGraph.png)
 =cut
 sub identifyAboveNodes {
     my $this = shift;

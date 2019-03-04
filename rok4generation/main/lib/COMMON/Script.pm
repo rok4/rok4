@@ -40,7 +40,7 @@ File: Script.pm
 
 Class: COMMON::Script
 
-(see COMMON_Script.png)
+(see ROK4GENERATION/libperlauto/COMMON_Script.png)
 
 Describe a script, its weight and allowed to write in.
 

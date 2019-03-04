@@ -40,7 +40,7 @@ File: DatabaseSource.pm
 
 Class: COMMON::DatabaseSource
 
-(see COMMON_DatabaseSource.png)
+(see ROK4GENERATION/libperlauto/COMMON_DatabaseSource.png)
 
 Stores parameters and builds WMS request.
 

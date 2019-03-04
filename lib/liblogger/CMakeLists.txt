@@ -56,11 +56,6 @@ add_library(${PROJECT_NAME} STATIC ${${PROJECT_NAME}_SRCS})
 
 include(ROK4Dependencies)
 
-#set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TINYXML_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
-
-#Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
-#set(DEP_LIBRARY fcgi tinyxml logger image proj zlib tiff)
-
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
 target_link_libraries(${PROJECT_NAME} ${DEP_LIBRARY})
@@ -104,22 +99,6 @@ if(UNITTEST)
 endif(UNITTEST)
 
 ########################################
-#Documentation Doxygen
-#Utilisation du fichier 
-if(BUILD_DOC)
-find_package(Doxygen)
-if(DOXYGEN_FOUND)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-add_custom_target(doc ALL
-${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-COMMENT "Generating API documentation with Doxygen" VERBATIM
-)
-endif(DOXYGEN_FOUND)
-endif(BUILD_DOC)
-
-
-########################################
 #Installation dans les répertoires par défauts
 #Pour installer dans le répertoire /opt/projet :
 #cmake -DCMAKE_INSTALL_PREFIX=/opt/projet 
@@ -136,20 +115,6 @@ INSTALL(TARGETS ${PROJECT_NAME}
 FILE(GLOB headers-${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/*.hxx" "${CMAKE_CURRENT_SOURCE_DIR}/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp")
 INSTALL(FILES ${headers-${PROJECT_NAME}}
   DESTINATION include)
-
-#Installe la documentation
-INSTALL(FILES README 
-  DESTINATION doc/${PROJECT_NAME})
-if(BUILD_DOC)
-if(DOXYGEN_FOUND)
-INSTALL(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
-  DESTINATION doc/${PROJECT_NAME})
-endif(DOXYGEN_FOUND)
-endif(BUILD_DOC)
-INSTALL(FILES LICENCE
-    DESTINATION doc/${PROJECT_NAME})
-
-
 
 ########################################
 # Paramétrage de la gestion de package CPack

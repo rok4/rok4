@@ -40,7 +40,7 @@ File: PyrSource.pm
 
 Class: WMTSALAD::PyrSource
 
-(see WMTSALAD_PyrSource.png)
+(see ROK4GENERATION/libperlauto/WMTSALAD_PyrSource.png)
 
 Using:
     (start code)

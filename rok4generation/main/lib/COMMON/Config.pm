@@ -40,7 +40,7 @@ File: Config.pm
 
 Class: COMMON::Config
 
-(see COMMON_Config.png)
+(see ROK4GENERATION/libperlauto/COMMON_Config.png)
 
 Using:
     (start code)

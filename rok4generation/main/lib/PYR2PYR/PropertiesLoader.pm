@@ -40,7 +40,7 @@ File: PropertiesLoader.pm
 
 Class: PYR2PYR::PropertiesLoader
 
-(see PYR2PYR_PropertiesLoader.png)
+(see ROK4GENERATION/libperlauto/PYR2PYR_PropertiesLoader.png)
 
 Reads a configuration file, to IniFiles format
 

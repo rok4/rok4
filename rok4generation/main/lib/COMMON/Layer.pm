@@ -40,7 +40,7 @@ File: Layer.pm
 
 Class: COMMON::Layer
 
-(see COMMON_Layer.png)
+(see ROK4GENERATION/libperlauto/COMMON_Layer.png)
 
 Describe a layer for a ROK4 server.
 

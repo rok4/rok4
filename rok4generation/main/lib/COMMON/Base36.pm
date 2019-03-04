@@ -40,7 +40,7 @@ File: Base36.pm
 
 Class: COMMON::Base36
 
-(see COMMON_Base36.png)
+(see ROK4GENERATION/libperlauto/COMMON_Base36.png)
 
 Base 36 converting tools. Do not instanciate.
 

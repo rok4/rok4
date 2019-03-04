@@ -40,17 +40,17 @@ File: TileMatrixSet.pm
 
 Class: COMMON::TileMatrixSet
 
-(see COMMON_TileMatrixSet.png)
+(see ROK4GENERATION/libperlauto/COMMON_TileMatrixSet.png)
 
 Load and store all information about a Tile Matrix Set. A Tile Matrix Set is a XML file which describe a grid for several levels.
 
-(see TileMatrixSet.png)
+(see ROK4GENERATION/TileMatrixSet.png)
 
 We tell the difference between :
     - quad tree TMS : resolutions go by tows and borders are aligned. To generate a pyramid which is based on this kind of TMS, we use <QTree>
-    (see QTreeTMS.png)
+    (see ROK4GENERATION/QTreeTMS.png)
     - "nearest neighbour" TMS : centers are aligned (used for DTM generations, with a "nearest neighbour" interpolation). To generate a pyramid which is based on this kind of TMS, we use <Graph>
-    (see NNGraphTMS.png)
+    (see ROK4GENERATION/NNGraphTMS.png)
 
 Using:
     (start code)

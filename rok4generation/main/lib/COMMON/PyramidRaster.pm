@@ -40,7 +40,7 @@ File: PyramidRaster.pm
 
 Class: COMMON::PyramidRaster
 
-(see COMMON_PyramidRaster.png)
+(see ROK4GENERATION/libperlauto/COMMON_PyramidRaster.png)
 
 Store all informations about a raster pyramid, whatever the storage type.
 

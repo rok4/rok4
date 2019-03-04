@@ -40,7 +40,7 @@ File: ImageSource.pm
 
 Class: COMMON::ImageSource
 
-(see COMMON_ImageSource.png)
+(see ROK4GENERATION/libperlauto/COMMON_ImageSource.png)
 
 Define a data source, with georeferenced image directory.
 

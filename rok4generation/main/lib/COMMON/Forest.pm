@@ -40,11 +40,11 @@ File: Forest.pm
 
 Class: COMMON::Forest
 
-(see COMMON_Forest.png)
+(see ROK4GENERATION/libperlauto/COMMON_Forest.png)
 
 Creates and manages all graphs, <NNGraph> and <QTree>.
 
-(see forest.png)
+(see ROK4GENERATION/forest.png)
 
 We have several kinds of graphs and their using have to be transparent for the forest. That's why we must define functions for all graph's types (as an interface) :
     - computeYourself() : <NNGraph::computeYourself>, <QTree::computeYourself>

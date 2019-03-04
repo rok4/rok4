@@ -134,9 +134,6 @@ INSTALL(TARGETS rok4 rok4core
 #FILE(GLOB headers "${CMAKE_CURRENT_SOURCE_DIR}/*.hxx" "${CMAKE_CURRENT_SOURCE_DIR}/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp")
 INSTALL(FILES Rok4Api.h DESTINATION include)
 
-#Installe la documentation
-INSTALL(FILES LICENCE DESTINATION share/doc/${PROJECT_NAME})
-
 ########################################
 # Paramétrage de la gestion de package CPack
 # Génère un fichier PROJET-VERSION-OS-32/64bit.tar.gz 

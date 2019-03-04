@@ -40,7 +40,7 @@ File: PropertiesLoader.pm
 
 Class: JOINCACHE::PropertiesLoader
 
-(see JOINCACHE_PropertiesLoader.png)
+(see ROK4GENERATION/libperlauto/JOINCACHE_PropertiesLoader.png)
 
 Reads a configuration file for joinCache, respect the IniFiles format, but consider order. Possible sections are limited :
     - logger

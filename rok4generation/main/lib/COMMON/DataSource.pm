@@ -40,7 +40,7 @@ File: DataSource.pm
 
 Class: COMMON::DataSource
 
-(see COMMON_DataSource.png)
+(see ROK4GENERATION/libperlauto/COMMON_DataSource.png)
 
 Manage a data source, physical (image files) or virtual (WMS server) or both.
 
@@ -224,7 +224,7 @@ Function: _load
 
 Sorts parameters, relays to concerned constructors and stores results.
 
-(see datasource.png)
+(see ROK4GENERATION/datasource.png)
 
 Parameters (list):
     level - string - Base level (bottom) for this data source.

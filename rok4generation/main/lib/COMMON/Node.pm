@@ -40,9 +40,9 @@ File: Node.pm
 
 Class: COMMON::Node
 
-(see COMMON_Node.png)
+(see ROK4GENERATION/libperlauto/COMMON_Node.png)
 
-Descibe a node of a <COMMON::QTree> or a <COMMON::NNGraph>. Allow different storage (FileSystem, Ceph, Swift).
+Describe a node of a <COMMON::QTree> or a <COMMON::NNGraph>. Allow different storage (FileSystem, Ceph, Swift).
 
 Using:
     (start code)

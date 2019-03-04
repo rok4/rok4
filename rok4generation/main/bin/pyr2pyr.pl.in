@@ -67,7 +67,7 @@ Synopsis:
 
 This tool allow to convert a file ROK4 pyramid into a ceph stored ROK4 pyramid. We can keep the slab storage (tile) or store seperated tiles.
 
-(see pyr2pyr_general.png)
+(see ROK4GENERATION/pyr2pyr_general.png)
 
 =cut
 

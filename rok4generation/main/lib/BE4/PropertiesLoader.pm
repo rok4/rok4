@@ -40,7 +40,7 @@ File: PropertiesLoader.pm
 
 Class: BE4::PropertiesLoader
 
-(see BE4_PropertiesLoader.png)
+(see ROK4GENERATION/libperlauto/BE4_PropertiesLoader.png)
 
 Reads a configuration file, to *IniFiles* format
 

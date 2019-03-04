@@ -40,7 +40,7 @@ File: PropertiesLoader.pm
 
 Class: EXPYR::PropertiesLoader
 
-(see EXPYR_PropertiesLoader.png)
+(see ROK4GENERATION/libperlauto/EXPYR_PropertiesLoader.png)
 
 Stores all information about the pyramid extraction.
 

@@ -46,11 +46,6 @@
 #include <iostream>
 #include <string.h>
 #include "Logger.h"
-#include <curl/curl.h>
-#include "Format.h"
-#include "CurlPool.h"
-#include "Rok4Image.h"
-#include "FileContext.h"
 #include "FileImage.h"
 #include "../../../rok4version.h"
 

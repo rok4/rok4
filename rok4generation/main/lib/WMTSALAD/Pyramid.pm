@@ -40,7 +40,7 @@ File: Pyramid.pm
 
 Class: WMTSALAD::Pyramid
 
-(see WMTSALAD_Pyramid.png)
+(see ROK4GENERATION/libperlauto/WMTSALAD_Pyramid.png)
 
 Stores all information about the pyramid to generate. Also write the descriptor file and, if needed, initiates the directories tree for the cache.
 

@@ -40,7 +40,7 @@ File: Harvesting.pm
 
 Class: COMMON::Harvesting
 
-(see COMMON_Harvesting.png)
+(see ROK4GENERATION/libperlauto/COMMON_Harvesting.png)
 
 Stores parameters and builds WMS request.
 
