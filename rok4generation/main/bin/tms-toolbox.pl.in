@@ -196,6 +196,7 @@ sub parseFromTo {
             }
 
             $parsed->{path} = $value;
+            $parsed->{noadd} = 1;
         }
 
         #################### SQL_FILE
@@ -220,6 +221,7 @@ sub parseFromTo {
             }
 
             $parsed->{path} = $value;
+            $parsed->{noadd} = 1;
         }
 
         #################### POINT
@@ -329,7 +331,11 @@ sub parseFromTo {
             }
 
             $parsed->{path} = $value;
-        } else {
+        }
+
+        ####################
+
+        else {
             ERROR(sprintf "Unknown type '%s'", $parsed->{type});
             return undef;
         }
@@ -376,6 +382,7 @@ sub init {
         "tms=s" => \$options{tms},
         "slabsize=s" => \$options{slabsize},
         "storage=s" => \$options{storage},
+        "add" => \$options{add},
         "level=s" => \$options{level},
         "ratio=s" => \$options{ratio},
         "from=s" => \$options{from},
@@ -398,7 +405,7 @@ sub init {
         return FALSE;
     }
 
-    my $tms = COMMON::TileMatrixSet->new($options{"tms"});
+    my $tms = COMMON::TileMatrixSet->new($options{"tms"}, TRUE);
     if (! defined $tms) {
         ERROR("Cannot create a TileMatrixSet object from the file ".$options{"tms"});
         return FALSE;
@@ -515,8 +522,13 @@ sub init {
         return FALSE;
     }
 
-    if (exists $options{to}->{path} && -e $options{to}->{path}) {
-        ERROR(sprintf "Output file %s have not to exist, we don't override", $options{to}->{path});
+    if (exists $options{to}->{path} && $options{add} && exists $options{to}->{noadd}) {
+        ERROR(sprintf "Option --add is not authorized for ", $options{to}->{type});
+        return FALSE;
+    }
+
+    if (exists $options{to}->{path} && ! $options{add} && -e $options{to}->{path}) {
+        ERROR(sprintf "Output file %s have not to exist, we don't override if no option --add", $options{to}->{path});
         return FALSE;
     }
 
@@ -536,8 +548,10 @@ Available conversions :
     PYRAMID_LIST -> GEOM_FILE : level, slabsize
     GEOM_FILE -> SLAB_INDICES_LIST : level, slabsize
     GEOM_FILE -> SQL_FILE : level, slabsize
+    GEOM_FILE -> GETTILE_PARAMS_LIST : level, slabsize
     BBOX -> SLAB_INDICES_LIST : level, slabsize
     BBOX -> SQL_FILE : level, slabsize
+    BBOX -> GETTILE_PARAMS_LIST : level, slabsize
     SLAB_INDICES -> TFW_FILE : level, slabsize
     TILE_INDICES -> SLAB_INFO : level, slabsize
     POINT -> SLAB_INFO : slabsize[, level]
@@ -564,10 +578,17 @@ sub doIt {
         };
 
         my $fileout = $options{to}->{path};
-        open(OUT, ">$fileout") or do {
-            ERROR("Cannot open $fileout to write in it");
-            return FALSE;
-        };
+        if ($options{add}) {
+            open(OUT, ">>$fileout") or do {
+                ERROR("Cannot open $fileout to write more in it");
+                return FALSE;
+            };
+        } else {
+            open(OUT, ">$fileout") or do {
+                ERROR("Cannot open $fileout to write in it");
+                return FALSE;
+            }; 
+        }
                 
         my $width = $options{"level"}->getTileWidth() * $options{"slabsize"}->[0];
         my $height = $options{"level"}->getTileHeight() * $options{"slabsize"}->[1];
@@ -624,14 +645,21 @@ sub doIt {
         };
 
         my $fileout = $options{to}->{path};
-        open(OUT, ">$fileout") or do {
-            ERROR("Cannot open $fileout to write in it");
-            return FALSE;
-        };
+        if ($options{add}) {
+            open(OUT, ">>$fileout") or do {
+                ERROR("Cannot open $fileout to write more in it");
+                return FALSE;
+            };
+        } else {
+            open(OUT, ">$fileout") or do {
+                ERROR("Cannot open $fileout to write in it");
+                return FALSE;
+            }; 
+        }
                 
         my $complete = `wc -l $filein | cut -d' ' -f1`;
         chomp($complete);
-        my $progress = Term::ProgressBar->new({name => 'GetMap writting...', count => $complete, remove => 1});
+        my $progress = Term::ProgressBar->new({name => 'GetTile writting...', count => $complete, remove => 1});
         my $done = 0;
         my $slabs = 0;
         my $next = 0;
@@ -810,7 +838,7 @@ sub doIt {
     }
 
     # ---------------------------------------------------------------------------------------------
-    elsif ($options{from}->{type} eq "GEOM_FILE" && ($options{to}->{type} eq "SLAB_INDICES_LIST" || $options{to}->{type} eq "SQL_FILE")) {
+    elsif ($options{from}->{type} eq "GEOM_FILE" && ($options{to}->{type} eq "SLAB_INDICES_LIST" || $options{to}->{type} eq "SQL_FILE" || $options{to}->{type} eq "GETTILE_PARAMS_LIST")) {
 
 
         if (! defined $options{"level"}) {
@@ -825,10 +853,18 @@ sub doIt {
         my $bboxes = COMMON::ProxyGDAL::getBboxes($options{from}->{geom});
 
         my $fileout = $options{to}->{path};
-        open(OUT, ">$fileout") or do {
-            ERROR("Cannot open $fileout to write in it");
-            return FALSE;
-        };
+
+        if ($options{add}) {
+            open(OUT, ">>$fileout") or do {
+                ERROR("Cannot open $fileout to write more in it");
+                return FALSE;
+            };
+        } else {
+            open(OUT, ">$fileout") or do {
+                ERROR("Cannot open $fileout to write in it");
+                return FALSE;
+            }; 
+        }
 
         if ($options{to}->{type} eq "SQL_FILE") {
             print OUT "COPY slabs (level, col, row, geom) FROM stdin;\n";
@@ -843,7 +879,7 @@ sub doIt {
             push(@extrema, \@ext);
         }
 
-        my $progress = Term::ProgressBar->new({name => 'Slab indices list writting...', count => $complete, remove => 1});
+        my $progress = Term::ProgressBar->new({name => 'Writting...', count => $complete, remove => 1});
         my $done = 0;
         my $next = 0;
         my $memory = {};
@@ -870,6 +906,11 @@ sub doIt {
                         elsif ($options{to}->{type} eq "SLAB_INDICES_LIST") {
                             print OUT "$col,$row\n";
                         }
+                        elsif ($options{to}->{type} eq "GETTILE_PARAMS_LIST") {
+                            my $c = $col * $options{"slabsize"}->[0] + int(rand($options{"slabsize"}->[0]));
+                            my $r = $row * $options{"slabsize"}->[1] + int(rand($options{"slabsize"}->[1]));
+                            printf OUT "TILEMATRIX=%s&TILCOL=$c&TILEROW=$r\n", $options{"level"}->getID();
+                        }
                     }
 
                     if ($done >= $next) {
@@ -888,7 +929,7 @@ sub doIt {
     }
 
     # ---------------------------------------------------------------------------------------------
-    elsif ($options{from}->{type} eq "BBOX" && ($options{to}->{type} eq "SLAB_INDICES_LIST" || $options{to}->{type} eq "SQL_FILE")) {
+    elsif ($options{from}->{type} eq "BBOX" && ($options{to}->{type} eq "SLAB_INDICES_LIST" || $options{to}->{type} eq "SQL_FILE" || $options{to}->{type} eq "GETTILE_PARAMS_LIST")) {
 
 
         if (! defined $options{"level"}) {
@@ -901,10 +942,17 @@ sub doIt {
         }
 
         my $fileout = $options{to}->{path};
-        open(OUT, ">$fileout") or do {
-            ERROR("Cannot open $fileout to write in it");
-            return FALSE;
-        };
+        if ($options{add}) {
+            open(OUT, ">>$fileout") or do {
+                ERROR("Cannot open $fileout to write more in it");
+                return FALSE;
+            };
+        } else {
+            open(OUT, ">$fileout") or do {
+                ERROR("Cannot open $fileout to write in it");
+                return FALSE;
+            }; 
+        }
 
         if ($options{to}->{type} eq "SQL_FILE") {
             print OUT "COPY slabs (level, col, row, geom) FROM stdin;\n";
@@ -931,6 +979,11 @@ sub doIt {
                 }
                 elsif ($options{to}->{type} eq "SLAB_INDICES_LIST") {
                     print OUT "$col,$row\n";
+                }
+                elsif ($options{to}->{type} eq "GETTILE_PARAMS_LIST") {
+                    my $c = $col * $options{"slabsize"}->[0] + int(rand($options{"slabsize"}->[0]));
+                    my $r = $row * $options{"slabsize"}->[1] + int(rand($options{"slabsize"}->[1]));
+                    printf OUT "TILEMATRIX=%s&TILCOL=$c&TILEROW=$r\n", $options{"level"}->getID();
                 }
 
                 if ($done >= $next) {
