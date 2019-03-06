@@ -140,18 +140,20 @@ DataSource* Rok4Server::getTileParamWMTS ( Request* request, Layer*& layer, std:
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le format " ) +format+_ ( " n'est pas gere pour la couche " ) +str_layer,"wmts" ) );
 
     //Style
+
     std::string str_style = request->getParam ( "style" );
     if ( str_style == "" )
         return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre STYLE absent." ),"wmts" ) );
     // TODO : Nom de style : inspire_common:DEFAULT en mode Inspire sinon default
-    style = layer->getStyleByIdentifier(str_style);
 
-    if ( ! ( style ) )
-        return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le style " ) +str_style+_ ( " n'est pas gere pour la couche " ) +str_layer,"wmts" ) );
+    if (Rok4Format::isRaster(layer->getDataPyramid()->getFormat())) {
+        style = layer->getStyleByIdentifier(str_style);
 
+        if ( ! ( style ) )
+            return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le style " ) +str_style+_ ( " n'est pas gere pour la couche " ) +str_layer,"wmts" ) );
+    }
 
     return NULL;
-
 }
 
 // Prepare WMTS GetCapabilities fragments

@@ -1,10 +1,10 @@
 Format: 1.51
 
 
-Title: BE4
+Title: ROK4GENERATION
 SubTitle: Perl tools and libraries
 
-Footer: (C) 2016 BE4 - (R) IGN 2012
+Footer: (C) 2019 ROK4 - (R) IGN 2012
 Timestamp: Updated month day, year
 #   m     - One or two digit month.  January is "1"
 #   mm    - Always two digit month.  January is "01"
@@ -38,7 +38,7 @@ Timestamp: Updated month day, year
 # --------------------------------------------------------------------------
 
 
-Link: BE4 is an integral part of the ROK4 project  (http://www.rok4.org)
+Link: ROK4GENERATION is the tools part of the ROK4 project  (http://www.rok4.org)
 
 Group: Tools  {
     File: 4ALAMO-FILE  (no auto-title, bin/4alamo-file.pl)

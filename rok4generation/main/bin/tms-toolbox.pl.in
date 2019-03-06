@@ -727,7 +727,7 @@ sub doIt {
             my $col = $COL * $options{"slabsize"}->[0] + int(rand($options{"slabsize"}->[0]));
             my $row = $ROW * $options{"slabsize"}->[1] + int(rand($options{"slabsize"}->[1]));
 
-            print OUT "TILEMATRIX=$level&TILCOL=$col&TILEROW=$row\n";
+            print OUT "TILEMATRIX=$level&TILECOL=$col&TILEROW=$row\n";
 
         }
 
@@ -909,7 +909,7 @@ sub doIt {
                         elsif ($options{to}->{type} eq "GETTILE_PARAMS_LIST") {
                             my $c = $col * $options{"slabsize"}->[0] + int(rand($options{"slabsize"}->[0]));
                             my $r = $row * $options{"slabsize"}->[1] + int(rand($options{"slabsize"}->[1]));
-                            printf OUT "TILEMATRIX=%s&TILCOL=$c&TILEROW=$r\n", $options{"level"}->getID();
+                            printf OUT "TILEMATRIX=%s&TILECOL=$c&TILEROW=$r\n", $options{"level"}->getID();
                         }
                     }
 
@@ -983,7 +983,7 @@ sub doIt {
                 elsif ($options{to}->{type} eq "GETTILE_PARAMS_LIST") {
                     my $c = $col * $options{"slabsize"}->[0] + int(rand($options{"slabsize"}->[0]));
                     my $r = $row * $options{"slabsize"}->[1] + int(rand($options{"slabsize"}->[1]));
-                    printf OUT "TILEMATRIX=%s&TILCOL=$c&TILEROW=$r\n", $options{"level"}->getID();
+                    printf OUT "TILEMATRIX=%s&TILECOL=$c&TILEROW=$r\n", $options{"level"}->getID();
                 }
 
                 if ($done >= $next) {

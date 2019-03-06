@@ -92,9 +92,9 @@ Layer::Layer ( const LayerXML& l ) {
         this->resampling = l.resampling;
 
     } else {
-        // Une pyramide vecteur n'est diffusée qu'en TMS
+        // Une pyramide vecteur n'est diffusée qu'en WMTS et TMS et le GFI n'est pas possible
         this->WMSAuthorized = false;
-        this->WMTSAuthorized = false;
+        this->getFeatureInfoAvailability = false;
     }
 }
 
