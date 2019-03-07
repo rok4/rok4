@@ -147,7 +147,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
         LOGGER_ERROR ( _ ( "Pas de geographicBoundingBox = " ) );
         return;
     } else {
-            // westBoundLongitude
+        // westBoundLongitude
         pElem = hRoot.FirstChild ( "EX_GeographicBoundingBox" ).FirstChild ( "westBoundLongitude" ).Element();
         if ( !pElem  || ! ( pElem->GetText() ) ) {
             LOGGER_ERROR ( _ ( "Pas de westBoundLongitude" ) );
@@ -157,7 +157,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
             LOGGER_ERROR ( _ ( "Le westBoundLongitude est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
             return;
         }
-            // southBoundLatitude
+        // southBoundLatitude
         pElem = hRoot.FirstChild ( "EX_GeographicBoundingBox" ).FirstChild ( "southBoundLatitude" ).Element();
         if ( !pElem || ! ( pElem->GetText() ) ) {
             LOGGER_ERROR ( _ ( "Pas de southBoundLatitude" ) );

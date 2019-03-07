@@ -65,11 +65,6 @@ La ligne de commande permettant de lancer ROK4 comme instance autonome est la su
 rok4 -f /chemin/vers/fichier/server.conf &
 ```
 
-Il se peut que votre instance autonome ROK4 se lance en français (cela dépend de votre configuration). Cela pose un problème lors de la lecture des nombres décimaux par exemple (confusion point et virgule). Il est donc conseillé de lancer la commande suivante :
-```
-LANG=en rok4 -f /chemin/vers/fichier/server.conf &
-```
-
 On redémarre nginx : `systemctl restart nginx`
 
 # Utiliser ROK4SERVER via APACHE

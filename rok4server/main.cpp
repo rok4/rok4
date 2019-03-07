@@ -201,7 +201,13 @@ int main ( int argc, char** argv ) {
     sa.sa_handler = shutdownServer;
     sigaction ( SIGUSR1, &sa,0 );
 
-    setlocale ( LC_ALL,"" );
+    // On n'utilise pas la locale pour les numériques, pour garder le point comme séparateur de décimale
+    //setlocale ( LC_ALL,"" );
+    setlocale ( LC_COLLATE,"" );
+    setlocale ( LC_CTYPE,"" );
+    setlocale ( LC_MONETARY,"" );
+    setlocale ( LC_TIME,"" );
+
     //  textdomain("Rok4Server");
     bindtextdomain ( DOMAINNAME, getlocalepath().c_str() );
 

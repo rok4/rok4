@@ -283,11 +283,6 @@ DataStream* Rok4Server::TMSGetLayerMetadata ( Request* request ) {
     }
     errorResp = NULL;
 
-    // Si on l'a déjà calculé :
-    if (layer->getMetadataJSON() != "") {
-        return new MessageDataStream ( layer->getMetadataJSON(),"application/json" );
-    }
-
 
     std::set<std::pair<std::string, Level*>, ComparatorLevel> orderedLevels = layer->getDataPyramid()->getOrderedLevels(true);
 
@@ -348,17 +343,18 @@ DataStream* Rok4Server::TMSGetLayerMetadata ( Request* request ) {
     "],\n";
 
     res << "  \"format\": \"" << Rok4Format::toExtension ( ( layer->getDataPyramid()->getFormat() ) ) << "\",\n";
-    res << "  \"tiles\":[\"" << serviceURL << "/" << layer->getId() << "/{z}/{x}/{y}." << Rok4Format::toExtension ( ( layer->getDataPyramid()->getFormat() ) ) << "\"],\n";
+    res << "  \"tiles\":[\"" << serviceURL << "/" << layer->getId() << "/{z}/{x}/{y}." << Rok4Format::toExtension ( ( layer->getDataPyramid()->getFormat() ) ) << "\"]";
 
-    res << "  \"vector_layers\": [\n";
-    for (int i = 0; i < tablesNames.size(); i++) {
-        if (i != 0) res << ",\n";
-        res << "      " << tablesInfos.at(tablesNames.at(i))->getMetadataJson(maxs.at(tablesNames.at(i)),mins.at(tablesNames.at(i)));
+
+    if (! Rok4Format::isRaster(layer->getDataPyramid()->getFormat())) {
+        res << ",\n  \"vector_layers\": [\n";
+        for (int i = 0; i < tablesNames.size(); i++) {
+            if (i != 0) res << ",\n";
+            res << "      " << tablesInfos.at(tablesNames.at(i))->getMetadataJson(maxs.at(tablesNames.at(i)),mins.at(tablesNames.at(i)));
+        }
+        res << "\n  ]";
     }
-    res << "\n  ]\n";
-    res << "}\n";
-
-    layer->setMetadataJSON(res.str());
+    res << "\n}\n";
 
     return new MessageDataStream ( res.str(),"application/json" );
 }

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2019-03-06 11:24+0100\n"
+"POT-Creation-Date: 2019-03-07 16:27+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -198,27 +198,27 @@ msgstr ""
 msgid "Erreur lors du rechargement du serveur rok4"
 msgstr ""
 
-#: main.cpp:224
+#: main.cpp:230
 msgid "Erreur sur l'option -f"
 msgstr ""
 
-#: main.cpp:240
+#: main.cpp:246
 msgid "Lancement du serveur rok4"
 msgstr ""
 
-#: main.cpp:251
+#: main.cpp:257
 msgid "Mise a jour de la configuration"
 msgstr ""
 
-#: main.cpp:253
+#: main.cpp:259
 msgid "Bascule des serveurs"
 msgstr ""
 
-#: main.cpp:270
+#: main.cpp:276
 msgid "Rechargement de la configuration"
 msgstr ""
 
-#: main.cpp:273 Rok4Api.cpp:127 Rok4Api.cpp:135 Rok4Api.cpp:143 Rok4Api.cpp:151
+#: main.cpp:279 Rok4Api.cpp:127 Rok4Api.cpp:135 Rok4Api.cpp:143 Rok4Api.cpp:151
 #: Rok4Api.cpp:196 Rok4Api.cpp:218 Rok4Api.cpp:293 Rok4Api.cpp:369
 #: Rok4Api.cpp:476
 msgid "Extinction du serveur ROK4"

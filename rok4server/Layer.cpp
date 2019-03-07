@@ -64,7 +64,6 @@ Layer::Layer ( const LayerXML& l ) {
     this->geographicBoundingBox = l.geographicBoundingBox;
     this->boundingBox = l.boundingBox;
     this->metadataURLs = l.metadataURLs;
-    this->metadataJson = "";
 
     if (Rok4Format::isRaster(this->dataPyramid->getFormat())) {
 
@@ -203,8 +202,6 @@ Style* Layer::getStyleByIdentifier(std::string identifier) {
 }
 
 std::string Layer::getTitle() { return title; }
-std::string Layer::getMetadataJSON() { return metadataJson; }
-void Layer::setMetadataJSON(std::string mjson) { metadataJson = mjson; }
 std::vector<CRS> Layer::getWMSCRSList() { return WMSCRSList; }
 bool Layer::isInWMSCRSList(CRS* c) {
     for ( unsigned int k = 0; k < WMSCRSList.size(); k++ ) {
