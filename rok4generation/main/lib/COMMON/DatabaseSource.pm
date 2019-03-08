@@ -443,7 +443,17 @@ Example:
 sub getCommandMakeJsons {
     my $this = shift;
 
-    my $bbox = join(" ", @_);
+    my @bbox = @_;
+
+    #On va agrandir la bbox de 5% pour être sur de tout avoir
+    my $w = ($bbox[2] - $bbox[0])*0.05;
+    my $h = ($bbox[3] - $bbox[1])*0.05;
+    $bbox[0] -= $w;
+    $bbox[2] += $w;
+    $bbox[1] -= $h;
+    $bbox[3] += $h;
+
+    my $bbox_string = join(" ", @bbox);
     my $dburl = sprintf "host=%s dbname=%s user=%s password=%s port=%s",
         $this->{host}, $this->{dbname}, $this->{username}, $this->{password}, $this->{port};
 
@@ -465,7 +475,7 @@ sub getCommandMakeJsons {
             $sql .= sprintf " WHERE %s", $hash->{filter};
         }
 
-        $cmd .= sprintf "MakeJson \"%s\" \"$bbox\" \"$dburl\" \"$sql\" %s \n", $this->{srs}, $hash->{final_name};
+        $cmd .= sprintf "MakeJson \"%s\" \"$bbox_string\" \"$dburl\" \"$sql\" %s \n", $this->{srs}, $hash->{final_name};
 
     }
 

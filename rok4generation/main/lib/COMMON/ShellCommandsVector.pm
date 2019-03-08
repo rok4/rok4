@@ -136,7 +136,7 @@ MakeJson () {
     local sql=$4
     local output=$5
 
-    ogr2ogr -s_srs $srcsrs -f "GeoJSON" __o2o__ -spat $bbox -sql "$sql" ${TMP_DIR}/jsons/${output}.json PG:"$dburl"
+    ogr2ogr -s_srs $srcsrs -f "GeoJSON" __o2o__ -clipsrc $bbox -sql "$sql" ${TMP_DIR}/jsons/${output}.json PG:"$dburl"
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi     
 }
 FUNCTION
