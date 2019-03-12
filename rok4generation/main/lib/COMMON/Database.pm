@@ -1061,7 +1061,7 @@ sub get_min_max_values {
 
     my @line = $this->select_one_row($sql);
 
-    $CACHE->{$this->{id}}->{get_distinct_values_count}->{$schema_name}->{$table_name}->{$att_name} = [$line[0], $line[1]];
+    $CACHE->{$this->{id}}->{get_min_max_values}->{$schema_name}->{$table_name}->{$att_name} = [$line[0], $line[1]];
     return ($line[0], $line[1]);
 
 }
