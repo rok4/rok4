@@ -132,11 +132,12 @@ mkdir -p ${TMP_DIR}/jsons/
 MakeJson () {
     local srcsrs=$1
     local bbox=$2
-    local dburl=$3
-    local sql=$4
-    local output=$5
+    local bbox_ext=$3
+    local dburl=$4
+    local sql=$5
+    local output=$6
 
-    ogr2ogr -s_srs $srcsrs -f "GeoJSON" __o2o__ -clipsrc $bbox -sql "$sql" ${TMP_DIR}/jsons/${output}.json PG:"$dburl"
+    ogr2ogr -s_srs $srcsrs -f "GeoJSON" __o2o__ -clipsrc $bbox_ext -spat $bbox -sql "$sql" ${TMP_DIR}/jsons/${output}.json PG:"$dburl"
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi     
 }
 FUNCTION

@@ -474,13 +474,26 @@ sub isQTree {
 Function: getTileMatrixByArray
 
 Returns the tile matrix array in the ascending resolution order.
+
+Parameters (list):
+    fromLevelID - string - Optionnal, level ID from which we return levels.
 =cut
 sub getTileMatrixByArray {
     my $this = shift;
+    my $fromLevelID = shift;
+
+    if (! defined $fromLevelID || ! exists $this->{tileMatrix}->{$fromLevelID}) {
+        $fromLevelID = $this->{bottomID};
+    }
 
     my @levels;
 
+    my $add = FALSE;
     foreach my $k (sort {$a->getResolution() <=> $b->getResolution()} (values %{$this->{tileMatrix}})) {
+        if (! $add && $k->getID() ne "$fromLevelID") {
+            next;
+        }
+        $add = TRUE;
         push @levels, $k;
     }
 

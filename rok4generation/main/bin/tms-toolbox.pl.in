@@ -76,12 +76,7 @@ my $VERSION = '@VERSION_TEXT@';
 =begin nd
 Variable: options
 
-Contains tms-toolbox call options :
-
-    version - To obtain the command's version
-    help - To obtain the command's help
-    usage - To obtain the command's usage
-
+Contains tms-toolbox call options
 =cut
 my %options =
 (
@@ -97,8 +92,9 @@ my %options =
     # Optionnal
     "storage" => undef,
     "slabsize" => undef,
-    "level" => undef
-
+    "level" => undef,
+    "add" => undef,
+    "above" => undef
 );
 
 ################################################################################
@@ -138,48 +134,66 @@ sub main {
 }
 
 =begin nd
-Function: parseFromTo
+Variable: intputs_outputs
 
-Available types :
-    PYRAMID_LIST:<FILE PATH>
-    SLAB_INDICES_LIST:<FILE PATH>
-    GEOM_FILE:<FILE PATH>
-    SQL_FILE:<FILE PATH>
-    TFW_FILE:<FILE PATH>
-    POINT:<X>,<Y>
-    BBOX:<XMIN>,<YMIN>,<XMAX>,<YMAX>
-    SLAB_INDICES:<COL>,<ROW>
-    TILE_INDICES:<COL>,<ROW>
-    SLAB_INFO
-    TILE_INFO
-    GETMAP_PARAMS_LIST:<FILE PATH>
-    GETTILE_PARAMS_LIST:<FILE PATH>
+Hash containing authorized types, input or output
+=cut
+my %intputs_outputs = (
+    BBOX => 1,
+    BBOXES_LIST => 1,
+    GEOM_FILE => 1,
+    GETMAP_PARAMS_LIST => 1,
+    GETTILE_PARAMS_LIST => 1,
+    POINT => 1,
+    PYRAMID_LIST => 1,
+    SLAB_INDICES => 1,
+    SLAB_INDICES_LIST => 1,
+    SLAB_INFO => 1,
+    SLAB_PATHS_LIST => 1,
+    SLABS_COUNT => 1,
+    SQL_FILE => 1,
+    TFW_FILE => 1,
+    TILE_INDICES => 1,
+    TILE_INFO => 1
+);
+
+=begin nd
+Function: parseFromTo
 =cut
 sub parseFromTo {
     my $string = shift;
     my $parsed = {};
 
-
     if ($string =~ m/^([^:]+)(:(\S+))?$/) {
         $parsed->{type} = $1;
         my $value = $3;
 
-        #################### PYRAMID_LIST
-
-        if ($parsed->{type} eq "PYRAMID_LIST") {
-            if (! defined $value) {
-                ERROR("Value have to respect format PYRAMID_LIST:<FILE PATH>");
-                return undef;                
-            }
-
-            $parsed->{path} = $value;
+        if (! exists $intputs_outputs{$parsed->{type}}) {
+            ERROR(sprintf "Unknown type '%s'", $parsed->{type});
+            return undef;
         }
 
-        #################### SLAB_INDICES_LIST
+        #################### BBOX
 
-        elsif ($parsed->{type} eq "SLAB_INDICES_LIST") {
+        elsif ($parsed->{type} eq "BBOX") {
+            if (defined $value) {
+                if (! COMMON::CheckUtils::isBbox($value)) {
+                    ERROR("Value have to respect format BBOX:<XMIN>,<YMIN>,<XMAX>,<YMAX>");
+                    return undef;
+                }
+                my @bb = split(/,/,$value);
+                $parsed->{bbox} = \@bb;
+            } else {
+                ERROR("Value have to respect format BBOX:<XMIN>,<YMIN>,<XMAX>,<YMAX>");
+                return undef;
+            }
+        }
+
+        #################### BBOXES_LIST
+
+        elsif ($parsed->{type} eq "BBOXES_LIST") {
             if (! defined $value) {
-                ERROR("Value have to respect format SLAB_INDICES_LIST:<FILE PATH>");
+                ERROR("Value have to respect format BBOXES_LIST:<FILE PATH>");
                 return undef;                
             }
 
@@ -199,29 +213,28 @@ sub parseFromTo {
             $parsed->{noadd} = 1;
         }
 
-        #################### SQL_FILE
+        #################### GETMAP_PARAMS_LIST
 
-        elsif ($parsed->{type} eq "SQL_FILE") {
+        elsif ($parsed->{type} eq "GETMAP_PARAMS_LIST") {
 
             if (! defined $value) {
-                ERROR("Value have to respect format SQL_FILE:<FILE PATH>");
+                ERROR("Value have to respect format GETMAP_PARAMS_LIST:<FILE PATH>");
                 return undef;                
             }
 
             $parsed->{path} = $value;
         }
 
-        #################### TFW_FILE
+        #################### GETTILE_PARAMS_LIST
 
-        elsif ($parsed->{type} eq "TFW_FILE") {
+        elsif ($parsed->{type} eq "GETTILE_PARAMS_LIST") {
 
             if (! defined $value) {
-                ERROR("Value have to respect format TFW_FILE:<FILE PATH>");
+                ERROR("Value have to respect format GETTILE_PARAMS_LIST:<FILE PATH>");
                 return undef;                
             }
 
             $parsed->{path} = $value;
-            $parsed->{noadd} = 1;
         }
 
         #################### POINT
@@ -241,20 +254,15 @@ sub parseFromTo {
             }
         }
 
-        #################### BBOX
+        #################### PYRAMID_LIST
 
-        elsif ($parsed->{type} eq "BBOX") {
-            if (defined $value) {
-                if (! COMMON::CheckUtils::isBbox($value)) {
-                    ERROR("Value have to respect format BBOX:<XMIN>,<YMIN>,<XMAX>,<YMAX>");
-                    return undef;
-                }
-                my @bb = split(/,/,$value);
-                $parsed->{bbox} = \@bb;
-            } else {
-                ERROR("Value have to respect format BBOX:<XMIN>,<YMIN>,<XMAX>,<YMAX>");
-                return undef;
+        elsif ($parsed->{type} eq "PYRAMID_LIST") {
+            if (! defined $value) {
+                ERROR("Value have to respect format PYRAMID_LIST:<FILE PATH>");
+                return undef;                
             }
+
+            $parsed->{path} = $value;
         }
 
         #################### SLAB_INDICES
@@ -274,6 +282,58 @@ sub parseFromTo {
             }
         }
 
+        #################### SLAB_INDICES_LIST
+
+        elsif ($parsed->{type} eq "SLAB_INDICES_LIST") {
+            if (! defined $value) {
+                ERROR("Value have to respect format SLAB_INDICES_LIST:<FILE PATH>");
+                return undef;                
+            }
+
+            $parsed->{path} = $value;
+        }
+
+        #################### SLAB_INFO
+
+        elsif ($parsed->{type} eq "SLAB_INFO") {
+            if (defined $value) {
+                ERROR("Value have to respect format SLAB_INFO");
+                return undef;                
+            }
+        }
+
+        #################### SLAB_PATHS_LIST
+
+        elsif ($parsed->{type} eq "SLAB_PATHS_LIST") {
+            if (! defined $value) {
+                ERROR("Value have to respect format SLAB_PATHS_LIST:<FILE PATH>");
+                return undef;                
+            }
+
+            $parsed->{path} = $value;
+        }
+
+        #################### SLABS_COUNT
+
+        elsif ($parsed->{type} eq "SLABS_COUNT") {
+            if (defined $value) {
+                ERROR("Value have to respect format SLABS_COUNT");
+                return undef;                
+            }
+        }
+
+        #################### SQL_FILE
+
+        elsif ($parsed->{type} eq "SQL_FILE") {
+
+            if (! defined $value) {
+                ERROR("Value have to respect format SQL_FILE:<FILE PATH>");
+                return undef;                
+            }
+
+            $parsed->{path} = $value;
+        }
+
         #################### TILE_INDICES
 
         elsif ($parsed->{type} eq "TILE_INDICES") {
@@ -291,15 +351,6 @@ sub parseFromTo {
             }
         }
 
-        #################### SLAB_INFO
-
-        elsif ($parsed->{type} eq "SLAB_INFO") {
-            if (defined $value) {
-                ERROR("Value have to respect format SLAB_INFO");
-                return undef;                
-            }
-        }
-
         #################### TILE_INFO
 
         elsif ($parsed->{type} eq "TILE_INFO") {
@@ -309,35 +360,17 @@ sub parseFromTo {
             }            
         }
 
-        #################### GETTILE_PARAMS_LIST
+        #################### TFW_FILE
 
-        elsif ($parsed->{type} eq "GETTILE_PARAMS_LIST") {
+        elsif ($parsed->{type} eq "TFW_FILE") {
 
             if (! defined $value) {
-                ERROR("Value have to respect format GETTILE_PARAMS_LIST:<FILE PATH>");
+                ERROR("Value have to respect format TFW_FILE:<FILE PATH>");
                 return undef;                
             }
 
             $parsed->{path} = $value;
-        }
-
-        #################### GETMAP_PARAMS_LIST
-
-        elsif ($parsed->{type} eq "GETMAP_PARAMS_LIST") {
-
-            if (! defined $value) {
-                ERROR("Value have to respect format GETMAP_PARAMS_LIST:<FILE PATH>");
-                return undef;                
-            }
-
-            $parsed->{path} = $value;
-        }
-
-        ####################
-
-        else {
-            ERROR(sprintf "Unknown type '%s'", $parsed->{type});
-            return undef;
+            $parsed->{noadd} = 1;
         }
     }
 
@@ -383,6 +416,7 @@ sub init {
         "slabsize=s" => \$options{slabsize},
         "storage=s" => \$options{storage},
         "add" => \$options{add},
+        "above" => \$options{above},
         "level=s" => \$options{level},
         "ratio=s" => \$options{ratio},
         "from=s" => \$options{from},
@@ -540,36 +574,51 @@ sub init {
 ####################################################################################################
 
 =begin nd
-Function: doIt
+Variable: conversions
 
-Available conversions :
-    SLAB_INDICES_LIST -> GETMAP_PARAMS_LIST : level, slabsize[, ratio]
-    PYRAMID_LIST -> GETTILE_PARAMS_LIST : level, slabsize[, ratio]
-    PYRAMID_LIST -> GEOM_FILE : level, slabsize
-    GEOM_FILE -> SLAB_INDICES_LIST : level, slabsize
-    GEOM_FILE -> SQL_FILE : level, slabsize
-    GEOM_FILE -> GETTILE_PARAMS_LIST : level, slabsize
-    BBOX -> SLAB_INDICES_LIST : level, slabsize
-    BBOX -> SQL_FILE : level, slabsize
-    BBOX -> GETTILE_PARAMS_LIST : level, slabsize
-    SLAB_INDICES -> TFW_FILE : level, slabsize
-    TILE_INDICES -> SLAB_INFO : level, slabsize
-    POINT -> SLAB_INFO : slabsize[, level]
-    POINT -> TILE_INFO : [level]
+Hash reference containing all available conversions and mandatory options
+=cut
+my $conversions = {
+                 BBOX => { GETTILE_PARAMS_LIST => ["level","slabsize"] },
+                 BBOX => { SLAB_INDICES_LIST   => ["level","slabsize"] },
+                 BBOX => { SQL_FILE            => ["level","slabsize"] },
+          BBOXES_LIST => { SLAB_INDICES_LIST   => ["level","slabsize"] },
+            GEOM_FILE => { GETTILE_PARAMS_LIST => ["level","slabsize"] },
+            GEOM_FILE => { SLAB_INDICES_LIST   => ["level","slabsize"] },
+            GEOM_FILE => { SLABS_COUNT         => ["level","slabsize"] },
+            GEOM_FILE => { SQL_FILE            => ["level","slabsize"] },
+                POINT => { SLAB_INFO           => ["slabsize"] },
+                POINT => { TILE_INFO           => [] },
+         PYRAMID_LIST => { GEOM_FILE           => ["level","slabsize"] },
+         PYRAMID_LIST => { GETTILE_PARAMS_LIST => ["slabsize"] },
+         SLAB_INDICES => { TFW_FILE            => ["level","slabsize"] },
+    SLAB_INDICES_LIST => { GETMAP_PARAMS_LIST  => ["level","slabsize"] },
+    SLAB_INDICES_LIST => { SLAB_PATHS_LIST     => ["level","slabsize"] },
+         TILE_INDICES => { SLAB_INFO           => ["level","slabsize"] }
+};
+
+=begin nd
+Function: doIt
 =cut
 sub doIt {
+
+    # Conversions autorisées ?
+    if (! exists $conversions->{$options{from}->{type}}->{$options{to}->{type}}) {
+        ERROR(sprintf "%s -> %s is not handled", $options{from}->{type}, $options{to}->{type});
+        return FALSE;
+    }
     
+    # Paramètres obligatoires présents ?
+    my @mandatories = @{$conversions->{$options{from}->{type}}->{$options{to}->{type}}};
+    foreach my $m (@mandatories) {
+        if (! defined $options{$m}) {
+            ERROR(sprintf "Option '$m' is mandatory for conversion %s -> %s", $options{from}->{type}, $options{to}->{type});
+            return FALSE;
+        }
+    }
+
     # ---------------------------------------------------------------------------------------------
     if ($options{from}->{type} eq "SLAB_INDICES_LIST" && $options{to}->{type} eq "GETMAP_PARAMS_LIST") {
-
-        if (! defined $options{"level"}) {
-            ERROR("Option 'level' is mandatory for conversion SLAB_INDICES_LIST -> GETMAP_PARAMS_LIST");
-            return FALSE;
-        }
-        if (! defined $options{"slabsize"}) {
-            ERROR("Option 'slabsize' is mandatory for conversion SLAB_INDICES_LIST -> GETMAP_PARAMS_LIST");
-            return FALSE;
-        }
 
         my $filein = $options{from}->{path};
         open(IN, "<$filein") or do {
@@ -630,13 +679,156 @@ sub doIt {
         close(IN);
     }
 
-    # ---------------------------------------------------------------------------------------------
-    elsif ($options{from}->{type} eq "PYRAMID_LIST" && $options{to}->{type} eq "GETTILE_PARAMS_LIST") {
 
-        if (! defined $options{"slabsize"}) {
-            ERROR("Option 'slabsize' is mandatory for conversion PYRAMID_LIST -> GETMAP_PARAMS_LIST");
+    # ---------------------------------------------------------------------------------------------
+    elsif ($options{from}->{type} eq "SLAB_INDICES_LIST" && $options{to}->{type} eq "SLAB_PATHS_LIST") {
+
+        if (! $options{tms}->isQTree()) {
+            ERROR("Only QTRee TMS are handled for conversion SLAB_INDICES_LIST -> SLAB_PATHS_LIST");
             return FALSE;
         }
+
+        my $filein = $options{from}->{path};
+        open(IN, "<$filein") or do {
+            ERROR("Cannot open $filein to read in it");
+            return FALSE;
+        };
+
+        my $fileout = $options{to}->{path};
+        if ($options{add}) {
+            open(OUT, ">>$fileout") or do {
+                ERROR("Cannot open $fileout to write more in it");
+                return FALSE;
+            };
+        } else {
+            open(OUT, ">$fileout") or do {
+                ERROR("Cannot open $fileout to write in it");
+                return FALSE;
+            }; 
+        }
+
+        my $baseLevel = $options{level}->getID();
+        my @aboveLevels;
+        if ($options{above}) {
+            @aboveLevels = $options{tms}->getTileMatrixByArray($baseLevel);
+        }
+        
+        my $memory = {};
+        my $complete = `wc -l $filein | cut -d' ' -f1`;
+        chomp($complete);
+        my $progress = Term::ProgressBar->new({name => "Slabs' paths writting...", count => $complete, remove => 1});
+        my $done = 0;
+        my $next = 0;
+
+        while (my $line = <IN>) {
+            chomp($line);
+            $done++;
+
+            if ($done >= $next) {
+                $next = $progress->update($done);
+            }
+
+            my ($COL, $ROW) = split(/,/, $line);
+            if (! exists $memory->{$baseLevel}->{$COL}->{$ROW}) {
+                $memory->{$baseLevel}->{$COL}->{$ROW} = 1;
+                if ($options{storage}->{type} eq "FILE") {
+                    my $b36 = COMMON::Base36::indicesToB36Path($COL, $ROW, $options{storage}->{depth} + 1);
+                    print OUT "$baseLevel/$b36.tif\n";
+                } else {
+                    print OUT "${baseLevel}_${COL}_${ROW}\n";
+                }
+            }
+
+            if ($options{above}) {
+                for (my $i = 1; $i < scalar(@aboveLevels); $i++) {
+                    my $levelID = $aboveLevels[$i]->getID();
+                    $COL = int($COL / 2);
+                    $ROW = int($ROW / 2);
+
+                    if (! exists $memory->{$levelID}->{$COL}->{$ROW}) {
+                        $memory->{$levelID}->{$COL}->{$ROW} = 1;
+                        if ($options{storage}->{type} eq "FILE") {
+                            my $b36 = COMMON::Base36::indicesToB36Path($COL, $ROW, $options{storage}->{depth} + 1);
+                            print OUT "$levelID/$b36.tif\n";
+                        } else {
+                            print OUT "${levelID}_${COL}_${ROW}\n";
+                        }
+                    }
+                }
+            }
+        }
+
+        $progress->update($complete);
+        
+        close(OUT);
+        close(IN);
+    }
+    
+    # ---------------------------------------------------------------------------------------------
+    elsif ($options{from}->{type} eq "BBOXES_LIST" && $options{to}->{type} eq "SLAB_INDICES_LIST") {
+
+        my $filein = $options{from}->{path};
+        open(IN, "<$filein") or do {
+            ERROR("Cannot open $filein to read in it");
+            return FALSE;
+        };
+
+        my $fileout = $options{to}->{path};
+        if ($options{add}) {
+            open(OUT, ">>$fileout") or do {
+                ERROR("Cannot open $fileout to write more in it");
+                return FALSE;
+            };
+        } else {
+            open(OUT, ">$fileout") or do {
+                ERROR("Cannot open $fileout to write in it");
+                return FALSE;
+            }; 
+        }
+
+        my $memory = {};
+        my $complete = `wc -l $filein | cut -d' ' -f1`;
+        chomp($complete);
+        my $progress = Term::ProgressBar->new({name => "Slabs' indices writting...", count => $complete, remove => 1});
+        my $done = 0;
+        my $next = 0;
+
+        while (my $line = <IN>) {
+            chomp($line);
+            $done++;
+
+            if ($done >= $next) {
+                $next = $progress->update($done);
+            }
+
+            $line =~ s/\s//g;
+            if (! COMMON::CheckUtils::isBbox($line)) {
+                WARN("Line $. : '$line' is not a bbox");
+                next;
+            }
+            my @bb = split(/,/,$line);
+
+            my ($rowMin, $rowMax, $colMin, $colMax) = $options{"level"}->bboxToIndices(@bb, $options{"slabsize"}->[0], $options{"slabsize"}->[1]);
+            
+            for (my $col = $colMin; $col <= $colMax; $col++) {
+                for (my $row = $rowMin; $row <= $rowMax; $row++) {
+                    if (! exists $memory->{$col}->{$row}) {
+                        print OUT "$col,$row\n";
+                        $memory->{$col}->{$row} = 1;
+                    }
+                }
+            }
+
+        }
+
+        $progress->update($complete);
+        
+        close(OUT);
+        close(IN);
+    }
+
+    # ---------------------------------------------------------------------------------------------
+    elsif ($options{from}->{type} eq "PYRAMID_LIST" && $options{to}->{type} eq "GETTILE_PARAMS_LIST") {
 
         my $filein = $options{from}->{path};
         open(IN, "<$filein") or do {
@@ -740,15 +932,6 @@ sub doIt {
     # ---------------------------------------------------------------------------------------------
     elsif ($options{from}->{type} eq "PYRAMID_LIST" && $options{to}->{type} eq "GEOM_FILE") {
 
-        if (! defined $options{"level"}) {
-            ERROR("Option 'level' is mandatory for conversion PYRAMID_LIST -> GEOM_FILE");
-            return FALSE;
-        }
-        if (! defined $options{"slabsize"}) {
-            ERROR("Option 'slabsize' is mandatory for conversion PYRAMID_LIST -> GEOM_FILE");
-            return FALSE;
-        }
-
         my $filein = $options{from}->{path};
         open(IN, "<$filein") or do {
             ERROR("Cannot open $filein to read in it");
@@ -840,16 +1023,6 @@ sub doIt {
     # ---------------------------------------------------------------------------------------------
     elsif ($options{from}->{type} eq "GEOM_FILE" && ($options{to}->{type} eq "SLAB_INDICES_LIST" || $options{to}->{type} eq "SQL_FILE" || $options{to}->{type} eq "GETTILE_PARAMS_LIST")) {
 
-
-        if (! defined $options{"level"}) {
-            ERROR("Option 'level' is mandatory for conversion GEOM_FILE -> ".$options{to}->{type});
-            return FALSE;
-        }
-        if (! defined $options{"slabsize"}) {
-            ERROR("Option 'slabsize' is mandatory for conversion GEOM_FILE -> ".$options{to}->{type});
-            return FALSE;
-        }
-
         my $bboxes = COMMON::ProxyGDAL::getBboxes($options{from}->{geom});
 
         my $fileout = $options{to}->{path};
@@ -929,17 +1102,54 @@ sub doIt {
     }
 
     # ---------------------------------------------------------------------------------------------
+    elsif ($options{from}->{type} eq "GEOM_FILE" && $options{to}->{type} eq "SLABS_COUNT") {
+
+        my $bboxes = COMMON::ProxyGDAL::getBboxes($options{from}->{geom});
+
+        my @extrema;
+        my $complete = 0;
+
+        for (my $i = 0; $i < scalar(@{$bboxes}); $i++) {
+            my @ext = $options{"level"}->bboxToIndices(@{$bboxes->[$i]}, $options{"slabsize"}->[0], $options{"slabsize"}->[1]);
+            $complete += ( ($ext[1] - $ext[0] + 1)*($ext[3] - $ext[2] + 1) );
+            push(@extrema, \@ext);
+        }
+
+        my $progress = Term::ProgressBar->new({name => 'Counting...', count => $complete, remove => 1});
+        my $done = 0;
+        my $next = 0;
+        my $memory = {};
+        my $count = 0;
+
+        for (my $i = 0; $i < scalar(@{$bboxes}); $i++) {
+        
+            my ($rowMin, $rowMax, $colMin, $colMax) = @{$extrema[$i]};
+            
+            for (my $col = $colMin; $col <= $colMax; $col++) {
+                for (my $row = $rowMin; $row <= $rowMax; $row++) {
+                    $done++;
+
+                    if (exists $memory->{$col}->{$row}) { next; }
+                    $memory->{$col}->{$row} = 1;
+
+                    my $OGRslab = $options{"level"}->indicesToGeom($col,$row,$options{"slabsize"}->[0], $options{"slabsize"}->[1]);
+
+                    if (COMMON::ProxyGDAL::isIntersected($OGRslab, $options{from}->{geom})) {
+                        $count++;
+                    }
+
+                    if ($done >= $next) {
+                        $next = $progress->update($done);
+                    }
+                }
+            }
+        }
+
+        INFO(sprintf "Level %s : $count slabs", $options{"level"}->getID());
+    }
+
+    # ---------------------------------------------------------------------------------------------
     elsif ($options{from}->{type} eq "BBOX" && ($options{to}->{type} eq "SLAB_INDICES_LIST" || $options{to}->{type} eq "SQL_FILE" || $options{to}->{type} eq "GETTILE_PARAMS_LIST")) {
-
-
-        if (! defined $options{"level"}) {
-            ERROR("Option 'level' is mandatory for conversion GEOM_FILE -> ".$options{to}->{type});
-            return FALSE;
-        }
-        if (! defined $options{"slabsize"}) {
-            ERROR("Option 'slabsize' is mandatory for conversion GEOM_FILE -> ".$options{to}->{type});
-            return FALSE;
-        }
 
         my $fileout = $options{to}->{path};
         if ($options{add}) {
@@ -1002,14 +1212,6 @@ sub doIt {
 
     # ---------------------------------------------------------------------------------------------
     elsif ($options{from}->{type} eq "SLAB_INDICES" && $options{to}->{type} eq "TFW_FILE") {
-        if (! defined $options{"slabsize"}) {
-            ERROR("Option 'slabsize' is mandatory for conversion SLAB_INDICES -> TFW_FILE");
-            return FALSE;
-        }
-        if (! defined $options{"level"}) {
-            ERROR("Option 'level' is mandatory for conversion SLAB_INDICES -> TFW_FILE");
-            return FALSE;
-        }
 
         my $fileout = $options{to}->{path};
         open(OUT, ">$fileout") or do {
@@ -1032,14 +1234,6 @@ sub doIt {
 
     # ---------------------------------------------------------------------------------------------
     elsif ($options{from}->{type} eq "TILE_INDICES" && $options{to}->{type} eq "SLAB_INFO") {
-        if (! defined $options{"slabsize"}) {
-            ERROR("Option 'slabsize' is mandatory for conversion SLAB_INDICES -> TFW_FILE");
-            return FALSE;
-        }
-        if (! defined $options{"level"}) {
-            ERROR("Option 'level' is mandatory for conversion SLAB_INDICES -> TFW_FILE");
-            return FALSE;
-        }
 
         my $ID = $options{"level"}->getID();
         my $COL = int($options{from}->{col} / $options{"slabsize"}->[0]);
@@ -1058,10 +1252,6 @@ sub doIt {
 
     # ---------------------------------------------------------------------------------------------
     elsif ($options{from}->{type} eq "POINT" && $options{to}->{type} eq "SLAB_INFO") {
-        if (! defined $options{"slabsize"}) {
-            ERROR("Option 'slabsize' is mandatory for conversion POINT -> SLAB_INFO");
-            return FALSE;
-        }
 
         if (defined $options{"level"}) {
             my $ID = $options{"level"}->getID();
@@ -1119,12 +1309,6 @@ sub doIt {
                 INFO("Level $ID : tile indices ($COL,$ROW)");
             }
         }
-    }
-
-    # ---------------------------------------------------------------------------------------------
-    else {
-        ERROR(sprintf "%s -> %s is not handled", $options{from}->{type}, $options{to}->{type});
-        return FALSE;
     }
 
     return TRUE;

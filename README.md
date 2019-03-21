@@ -125,7 +125,7 @@ cpan DBI DBD::Pg Data::Dumper Devel::Size Digest::SHA ExtUtils::MakeMaker File::
 
 Pour savoir où sont cherchées les librairies, exécuter `env -i perl -V`.
 
-Pour vérifier que toutes les librairies nécessaires sont installées, exécuter le script `perl be4/pyramide/verify-dependencies.pl`.
+Pour vérifier que toutes les librairies nécessaires sont installées, exécuter le script `perl rok4generation/main/verify-dependencies.pl`.
 
 ## Les commandes externes
 
@@ -159,13 +159,13 @@ make [install|package]`
 
 `CMAKE_INSTALL_PREFIX (PATH)` : Dossier d'installation de ROK4. Valeur par défaut : `/usr/local`
 
-`DEP_PATH (PATH)` : Path to compiled and installed ROK4 dependencies  Valeur par défaut : `./target`
+`DEP_PATH (PATH)` : Path to compiled and installed ROK4 dependencies. Valeur par défaut : `./target`
 
 `BUILD_DEPENDENCIES (BOOL)` : Compilation des dépendances manquantes de ROK4. Elles sont installées avec ROK4. Valeur par défaut : `TRUE`
 
 `BUILD_ROK4 (BOOL)` : Compilation de la partie ROK4SERVER. Valeur par défaut : `TRUE`
 
-`BUILD_BE4 (BOOL)` : Compilation de la partie BE4  Valeur par défaut : `TRUE`
+`BUILD_BE4 (BOOL)` : Compilation de la partie ROK4GENERATION Valeur par défaut : `TRUE`
 
 `BUILD_DOC (BOOL)` : Compilation de la documentation automatique (Doxygen et Naturaldocs). Crée la cible de compilation `make doc` à faire avant `make install`. Valeur par défaut : `TRUE`
 

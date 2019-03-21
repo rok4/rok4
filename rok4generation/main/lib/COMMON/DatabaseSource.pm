@@ -445,15 +445,19 @@ sub getCommandMakeJsons {
 
     my @bbox = @_;
 
+    my @bbox_extended = @bbox;
+
     #On va agrandir la bbox de 5% pour être sur de tout avoir
     my $w = ($bbox[2] - $bbox[0])*0.05;
     my $h = ($bbox[3] - $bbox[1])*0.05;
-    $bbox[0] -= $w;
-    $bbox[2] += $w;
-    $bbox[1] -= $h;
-    $bbox[3] += $h;
+    $bbox_extended[0] -= $w;
+    $bbox_extended[2] += $w;
+    $bbox_extended[1] -= $h;
+    $bbox_extended[3] += $h;
 
+    my $bbox_ext_string = join(" ", @bbox_extended);
     my $bbox_string = join(" ", @bbox);
+
     my $dburl = sprintf "host=%s dbname=%s user=%s password=%s port=%s",
         $this->{host}, $this->{dbname}, $this->{username}, $this->{password}, $this->{port};
 
@@ -475,7 +479,7 @@ sub getCommandMakeJsons {
             $sql .= sprintf " WHERE %s", $hash->{filter};
         }
 
-        $cmd .= sprintf "MakeJson \"%s\" \"$bbox_string\" \"$dburl\" \"$sql\" %s \n", $this->{srs}, $hash->{final_name};
+        $cmd .= sprintf "MakeJson \"%s\" \"$bbox_string\" \"$bbox_ext_string\" \"$dburl\" \"$sql\" %s \n", $this->{srs}, $hash->{final_name};
 
     }
 
