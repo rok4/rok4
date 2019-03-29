@@ -87,12 +87,28 @@ protected:
     bool connected;
 
     /**
+     * \~french \brief Nombre de tentatives pour une lecture
+     * \~english \brief Attempts number to read
+     */
+    int attempts;
+
+    /**
      * \~french \brief Crée un objet Context
      * \~english \brief Create a Context object
      */
-    Context () : connected(false) {  }
+    Context () : connected(false), attempts(1) {  }
 
 public:
+
+
+    /**
+     * \~french \brief Modifie le nombre de tentative
+     * \~english \brief Change attempts number
+     */
+    void setAttempts (int a) {
+        if (a < 1) a = 1;
+        attempts = a;
+    }
 
     /**
      * \~french \brief Connecte le contexte

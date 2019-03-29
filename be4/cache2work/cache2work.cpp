@@ -260,6 +260,7 @@ int main ( int argc, char **argv )
     if ( pool != 0 ) {
         LOGGER_DEBUG( std::string("Input is an object in the Ceph pool ") + pool);
         context = new CephPoolContext(pool);
+        context->setAttempts(10);
     } else if (bucket != 0) {
         LOGGER_DEBUG( std::string("Input is an object in the S3 bucket ") + bucket);
         curl_global_init(CURL_GLOBAL_ALL);
