@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2019-02-11 14:37+0100\n"
+"POT-Creation-Date: 2019-03-29 11:35+0100\n"
 "PO-Revision-Date: 2014-01-28 09:36+0100\n"
 "Last-Translator: \n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -529,16 +529,16 @@ msgstr "Écoute sur "
 msgid "Probleme dans les parametres de la requete getMap"
 msgstr "Problème dans les paramètres de la requête getMap"
 
-#: Rok4Server.cpp:324 Rok4Server.cpp:1321
+#: Rok4Server.cpp:324 Rok4Server.cpp:1316
 msgid "bbox invalide"
 msgstr "La BoundingBox demandée est invalide"
 
-#: Rok4Server.cpp:327 Rok4Server.cpp:1324
+#: Rok4Server.cpp:327 Rok4Server.cpp:1319
 msgid "bbox trop grande"
 msgstr "La BoundingBox demandée est trop grande"
 
 #: Rok4Server.cpp:330 Rok4Server.cpp:345 Rok4Server.cpp:820 Rok4Server.cpp:850
-#: Rok4Server.cpp:866 Rok4Server.cpp:882 Rok4Server.cpp:1327
+#: Rok4Server.cpp:866 Rok4Server.cpp:882 Rok4Server.cpp:1322
 msgid "Impossible de repondre a la requete"
 msgstr "Impossible de répondre a la requête"
 
@@ -567,56 +567,55 @@ msgstr " ne peut être traité"
 msgid "Probleme dans les parametres de la requete getFeatureInfo"
 msgstr "Problème dans les paramètres de la requête getMap"
 
-#: Rok4Server.cpp:1294
-#, fuzzy
-msgid "niveau invalide"
-msgstr "La BoundingBox demandée est invalide"
-
-#: Rok4Server.cpp:1366
+#: Rok4Server.cpp:1361
 #, fuzzy
 msgid "Erreur interne."
 msgstr "Erreur inconnue"
 
-#: Rok4Server.cpp:1371
+#: Rok4Server.cpp:1366
 #, fuzzy
 msgid "Info_format non "
 msgstr "Format "
 
-#: Rok4Server.cpp:1371
+#: Rok4Server.cpp:1366
 #, fuzzy
 msgid " supporté par la couche "
 msgstr " n'est pas géré pour la couche "
 
-#: Rok4Server.cpp:1428
+#: Rok4Server.cpp:1423
 msgid "Internal server error"
 msgstr ""
 
-#: Rok4Server.cpp:1436
+#: Rok4Server.cpp:1431
 msgid "GFI depuis un SQL non géré."
 msgstr ""
 
-#: Rok4Server.cpp:1438
+#: Rok4Server.cpp:1433
 msgid "ERRORRRRRR !"
 msgstr ""
 
-#: Rok4Server.cpp:1451 Rok4Server.cpp:1455 Rok4Server.cpp:1484
-#: Rok4Server.cpp:1488
+#: Rok4Server.cpp:1446 Rok4Server.cpp:1450 Rok4Server.cpp:1479
+#: Rok4Server.cpp:1483
 msgid " n'est pas prise en charge par ce serveur."
 msgstr " n'est pas prise en charge par ce serveur."
 
-#: Rok4Server.cpp:1455
+#: Rok4Server.cpp:1450
 msgid "L'operation "
 msgstr "L'opération "
 
-#: Rok4Server.cpp:1504
+#: Rok4Server.cpp:1499
 #, fuzzy
 msgid "Le service est manquant"
 msgstr "Le service "
 
-#: Rok4Server.cpp:1507
+#: Rok4Server.cpp:1502
 #, fuzzy
 msgid "Le service est inconnu pour ce serveur."
 msgstr " est inconnu pour ce serveur."
+
+#, fuzzy
+#~ msgid "niveau invalide"
+#~ msgstr "La BoundingBox demandée est invalide"
 
 #~ msgid "Liste de layers vide"
 #~ msgstr "La liste des layers est vide"
