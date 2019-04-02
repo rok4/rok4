@@ -51,7 +51,6 @@
 #include <stdlib.h>
 
 CephPoolContext::CephPoolContext (std::string cluster, std::string user, std::string conf, std::string pool) : Context(), cluster_name(cluster), user_name(user), conf_file(conf), pool_name(pool) {
-
 }
 
 CephPoolContext::CephPoolContext (std::string pool) : Context(), pool_name(pool) {
@@ -131,18 +130,18 @@ int CephPoolContext::read(uint8_t* data, int offset, int size, std::string name)
     }
 
     int readSize;
-    int tentative = 1;
+    int attempt = 1;
     bool error = false;
-    while(tentative <= 10) {
+    while(attempt <= attempts) {
         readSize = rados_read(io_ctx, name.c_str(), (char*) data, size, offset);
 
         if (readSize < 0) {
             error = true;
             // Seul le timeout donne lieu à une nouvelle tentative
             if (readSize == -ETIMEDOUT) {
-                LOGGER_WARN ( "Try " << tentative << " timed out, waiting 1 minute and try again" );
+                LOGGER_WARN ( "Try " << attempt << " timed out" );
             } else {
-                LOGGER_ERROR ( "Try " << tentative << " failed" );
+                LOGGER_ERROR ( "Try " << attempt << " failed" );
                 LOGGER_ERROR ("Error code: " << readSize );
                 LOGGER_ERROR (strerror(-readSize));
                 break;
@@ -152,12 +151,11 @@ int CephPoolContext::read(uint8_t* data, int offset, int size, std::string name)
             break;
         }
 
-        tentative++;
-        sleep(60);
+        attempt++;
     }
 
     if (error) {
-        LOGGER_ERROR ( "Unable to read " << size << " bytes (from the " << offset << " one) in the object " << name  << " after " << tentative << " tries" );
+        LOGGER_ERROR ( "Unable to read " << size << " bytes (from the " << offset << " one) in the object " << name  << " after " << attempt << " tries" );
     }
 
     return readSize;
