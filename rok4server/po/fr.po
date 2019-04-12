@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2019-03-07 16:27+0100\n"
+"POT-Creation-Date: 2019-04-12 11:18+0200\n"
 "PO-Revision-Date: 2014-01-28 09:36+0100\n"
 "Last-Translator: \n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -148,44 +148,44 @@ msgstr " ou fichier vide"
 msgid "] of ["
 msgstr "] de ["
 
-#: Level.cpp:243 Level.cpp:295
+#: Level.cpp:262 Level.cpp:314
 msgid "Image invalid !"
 msgstr "Image invalide !"
 
-#: Level.cpp:301
+#: Level.cpp:320
 msgid "Dimensions invalid !"
 msgstr "Dimensions invalides !"
 
-#: Level.cpp:326
+#: Level.cpp:345
 msgid "Too Much Tile on X axis"
 msgstr "Trop de tuile sur l'axe X"
 
-#: Level.cpp:340
+#: Level.cpp:359
 msgid "Too Much Tile on Y axis"
 msgstr "Trop de tuile sur l'axe Y"
 
-#: Level.cpp:386
+#: Level.cpp:405
 msgid "Indice de tuile negatif"
 msgstr "Indice de tuile négatif"
 
-#: Level.cpp:449
+#: Level.cpp:468
 msgid "getDirPath n'a pas de sens dans le cas d'un contexte non fichier"
 msgstr ""
 
-#: Level.cpp:531
+#: Level.cpp:550
 msgid "Type d'encodage inconnu : "
 msgstr "Type d'encodage inconnu : "
 
-#: Level.cpp:539 Level.cpp:542 Rok4Server.cpp:702 Rok4Server.cpp:711
-#: Rok4Server.cpp:871
+#: Level.cpp:558 Level.cpp:561 Rok4Server.cpp:702 Rok4Server.cpp:710
+#: Rok4Server.cpp:870
 msgid "No data found"
 msgstr "Aucune donnée"
 
-#: Level.cpp:549
+#: Level.cpp:568
 msgid "GetTile Tiff"
 msgstr "GetTile Tiff"
 
-#: Level.cpp:559
+#: Level.cpp:578
 msgid "GetTile Image"
 msgstr "GetTile Image"
 
@@ -203,194 +203,194 @@ msgstr "Lancement du serveur ROK4"
 msgid "Erreur lors du rechargement du serveur rok4"
 msgstr "Lancement du serveur ROK4"
 
-#: main.cpp:224
+#: main.cpp:230
 msgid "Erreur sur l'option -f"
 msgstr "Erreur sur l'option -f"
 
-#: main.cpp:240
+#: main.cpp:246
 msgid "Lancement du serveur rok4"
 msgstr "Lancement du serveur ROK4"
 
-#: main.cpp:251
+#: main.cpp:257
 #, fuzzy
 msgid "Mise a jour de la configuration"
 msgstr "Rechargement de la configuration"
 
-#: main.cpp:253
+#: main.cpp:259
 msgid "Bascule des serveurs"
 msgstr ""
 
-#: main.cpp:270
+#: main.cpp:276
 msgid "Rechargement de la configuration"
 msgstr "Rechargement de la configuration"
 
-#: main.cpp:273 Rok4Api.cpp:127 Rok4Api.cpp:135 Rok4Api.cpp:143 Rok4Api.cpp:151
+#: main.cpp:279 Rok4Api.cpp:127 Rok4Api.cpp:135 Rok4Api.cpp:143 Rok4Api.cpp:151
 #: Rok4Api.cpp:196 Rok4Api.cpp:218 Rok4Api.cpp:293 Rok4Api.cpp:369
 #: Rok4Api.cpp:476
 msgid "Extinction du serveur ROK4"
 msgstr "Extinction du serveur ROK4"
 
-#: Pyramid.cpp:198
+#: Pyramid.cpp:214
 msgid "debut pyramide"
 msgstr "début pyramide"
 
-#: Pyramid.cpp:205
+#: Pyramid.cpp:221
 msgid "fin pyramide"
 msgstr "fin pyramide"
 
-#: Pyramid.cpp:224
+#: Pyramid.cpp:240
 msgid "best_level="
 msgstr "Meilleur niveau :"
 
-#: Pyramid.cpp:224
+#: Pyramid.cpp:240
 msgid " resolution requete="
 msgstr " resolution de la requête="
 
-#: Pyramid.cpp:249
+#: Pyramid.cpp:265
 msgid "BBox en dehors de la definition du CRS"
 msgstr "Emprise demandée en dehors de la zone de définition du CRS"
 
-#: Pyramid.cpp:253 Pyramid.cpp:292
+#: Pyramid.cpp:269 Pyramid.cpp:308
 msgid "BBox decoupe incorrect"
 msgstr "Emprise découpée incorrecte"
 
-#: Pyramid.cpp:285
+#: Pyramid.cpp:301
 msgid "New Width = "
 msgstr " Nouvelle largeur = "
 
-#: Pyramid.cpp:285
+#: Pyramid.cpp:301
 msgid "New Height = "
 msgstr "Nouvelle hauteur = "
 
-#: Pyramid.cpp:286
+#: Pyramid.cpp:302
 msgid "ratio_x = "
 msgstr "Ratio en X = "
 
-#: Pyramid.cpp:286
+#: Pyramid.cpp:302
 msgid "ratio_y = "
 msgstr "Ratio en Y ="
 
-#: Pyramid.cpp:298
+#: Pyramid.cpp:314
 msgid "Image decoupe valide"
 msgstr "Image découpée invalide !"
 
-#: Request.cpp:183
+#: Request.cpp:184
 msgid "Parse GetCapabilities Request"
 msgstr "Parse GetCapabilities Request"
 
-#: Request.cpp:192 Request.cpp:226
+#: Request.cpp:193 Request.cpp:227
 msgid "No service attribute"
 msgstr "pas d'attribut service"
 
-#: Request.cpp:201 Request.cpp:233 Request.cpp:356
+#: Request.cpp:202 Request.cpp:234 Request.cpp:357
 msgid "No version attribute"
 msgstr "pas d'attribut version"
 
-#: Request.cpp:218
+#: Request.cpp:219
 msgid "Parse GetTile Request"
 msgstr "Parse GetTile Request"
 
-#: Request.cpp:241
+#: Request.cpp:242
 msgid "No Layer"
 msgstr "Pas de Couche"
 
-#: Request.cpp:250
+#: Request.cpp:251
 msgid "No Style"
 msgstr "Pas de style"
 
-#: Request.cpp:259
+#: Request.cpp:260
 msgid "No Format"
 msgstr "Pas de format"
 
-#: Request.cpp:269
+#: Request.cpp:270
 msgid "No Name attribute"
 msgstr "Pas d'attribut Name"
 
-#: Request.cpp:279
+#: Request.cpp:280
 msgid "No TileMatrixSet"
 msgstr "Pas de TileMatrixSet"
 
-#: Request.cpp:287
+#: Request.cpp:288
 msgid "No TileMatrix"
 msgstr "Pas de TileMatrix"
 
-#: Request.cpp:295
+#: Request.cpp:296
 msgid "No TileRow"
 msgstr "Pas de TileRow"
 
-#: Request.cpp:302
+#: Request.cpp:303
 msgid "No TileCol"
 msgstr "Pas de TileCol"
 
-#: Request.cpp:311
+#: Request.cpp:312
 msgid "VendorOption"
 msgstr "VendorOption"
 
-#: Request.cpp:343
+#: Request.cpp:344
 msgid "Parse GetMap Request"
 msgstr "Parse GetMap Request"
 
-#: Request.cpp:365
+#: Request.cpp:366
 msgid "No StyledLayerDescriptor"
 msgstr "Pas de StyledLayerDescriptor"
 
-#: Request.cpp:370
+#: Request.cpp:371
 msgid "Empty StyledLayerDescriptor"
 msgstr "StyledLayerDescriptor vide"
 
-#: Request.cpp:386
+#: Request.cpp:387
 msgid "NamedLayer without Name"
 msgstr "NamedLayer sans Name"
 
-#: Request.cpp:399
+#: Request.cpp:400
 msgid "NamedLayer without NamedStyle, use default style"
 msgstr "NamedLayer sans NamedStyle, utilisation du style par défaut"
 
-#: Request.cpp:405
+#: Request.cpp:406
 msgid "NamedStyle without Name"
 msgstr "NamedStyle sans Name"
 
-#: Request.cpp:414
+#: Request.cpp:415
 msgid "StyledLayerDescriptor without NamedLayer"
 msgstr "StyledLayerDescriptor sans NamedLayer"
 
-#: Request.cpp:425
+#: Request.cpp:426
 msgid "No CRS"
 msgstr "Pas de CRS"
 
-#: Request.cpp:435
+#: Request.cpp:436
 msgid "No BoundingBox"
 msgstr "pas de BoundingBox"
 
-#: Request.cpp:443 Request.cpp:453
+#: Request.cpp:444 Request.cpp:454
 msgid "BoundingBox Invalid"
 msgstr "BoundingBox Invalide"
 
-#: Request.cpp:465
+#: Request.cpp:466
 msgid "No Output"
 msgstr "Pas de Output"
 
-#: Request.cpp:470
+#: Request.cpp:471
 msgid "Output Invalid no Size"
 msgstr "Output Invalide ; pas de Size"
 
-#: Request.cpp:475
+#: Request.cpp:476
 msgid "Output Invalid, Width incorrect"
 msgstr "Output Invalide, Width incorrecte"
 
-#: Request.cpp:489
+#: Request.cpp:490
 msgid "Output Invalid no Format"
 msgstr "Output Invalide pas de Format"
 
-#: Request.cpp:556
+#: Request.cpp:557
 msgid "Elevation incorrect"
 msgstr "Elevation incorrecte"
 
-#: Request.cpp:606
+#: Request.cpp:607
 msgid "POST request with invalid content"
 msgstr "requête POST avec du contenu invalide"
 
-#: Request.cpp:611
+#: Request.cpp:612
 msgid "Cannot retrieve XML root element"
 msgstr "Impossible de récupérer l'élément racine du XML"
 
@@ -529,16 +529,16 @@ msgstr "Écoute sur "
 msgid "Probleme dans les parametres de la requete getMap"
 msgstr "Problème dans les paramètres de la requête getMap"
 
-#: Rok4Server.cpp:324 Rok4Server.cpp:1316
+#: Rok4Server.cpp:324 Rok4Server.cpp:1312
 msgid "bbox invalide"
 msgstr "La BoundingBox demandée est invalide"
 
-#: Rok4Server.cpp:327 Rok4Server.cpp:1319
+#: Rok4Server.cpp:327 Rok4Server.cpp:1315
 msgid "bbox trop grande"
 msgstr "La BoundingBox demandée est trop grande"
 
-#: Rok4Server.cpp:330 Rok4Server.cpp:345 Rok4Server.cpp:820 Rok4Server.cpp:850
-#: Rok4Server.cpp:866 Rok4Server.cpp:882 Rok4Server.cpp:1322
+#: Rok4Server.cpp:330 Rok4Server.cpp:345 Rok4Server.cpp:819 Rok4Server.cpp:849
+#: Rok4Server.cpp:865 Rok4Server.cpp:881 Rok4Server.cpp:1318
 msgid "Impossible de repondre a la requete"
 msgstr "Impossible de répondre a la requête"
 
@@ -562,53 +562,53 @@ msgstr "Le format ["
 msgid " ne peut etre traite"
 msgstr " ne peut être traité"
 
-#: Rok4Server.cpp:1261 Rok4Server.cpp:1284
+#: Rok4Server.cpp:1260 Rok4Server.cpp:1282
 #, fuzzy
 msgid "Probleme dans les parametres de la requete getFeatureInfo"
 msgstr "Problème dans les paramètres de la requête getMap"
 
-#: Rok4Server.cpp:1361
+#: Rok4Server.cpp:1357
 #, fuzzy
 msgid "Erreur interne."
 msgstr "Erreur inconnue"
 
-#: Rok4Server.cpp:1366
+#: Rok4Server.cpp:1362
 #, fuzzy
 msgid "Info_format non "
 msgstr "Format "
 
-#: Rok4Server.cpp:1366
+#: Rok4Server.cpp:1362
 #, fuzzy
 msgid " supporté par la couche "
 msgstr " n'est pas géré pour la couche "
 
-#: Rok4Server.cpp:1423
+#: Rok4Server.cpp:1419
 msgid "Internal server error"
 msgstr ""
 
-#: Rok4Server.cpp:1431
+#: Rok4Server.cpp:1427
 msgid "GFI depuis un SQL non géré."
 msgstr ""
 
-#: Rok4Server.cpp:1433
+#: Rok4Server.cpp:1429
 msgid "ERRORRRRRR !"
 msgstr ""
 
-#: Rok4Server.cpp:1446 Rok4Server.cpp:1450 Rok4Server.cpp:1479
-#: Rok4Server.cpp:1483
+#: Rok4Server.cpp:1442 Rok4Server.cpp:1446 Rok4Server.cpp:1477
+#: Rok4Server.cpp:1481
 msgid " n'est pas prise en charge par ce serveur."
 msgstr " n'est pas prise en charge par ce serveur."
 
-#: Rok4Server.cpp:1450
+#: Rok4Server.cpp:1446
 msgid "L'operation "
 msgstr "L'opération "
 
-#: Rok4Server.cpp:1499
+#: Rok4Server.cpp:1497
 #, fuzzy
 msgid "Le service est manquant"
 msgstr "Le service "
 
-#: Rok4Server.cpp:1502
+#: Rok4Server.cpp:1500
 #, fuzzy
 msgid "Le service est inconnu pour ce serveur."
 msgstr " est inconnu pour ce serveur."

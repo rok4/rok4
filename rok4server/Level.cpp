@@ -121,6 +121,12 @@ Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
     for ( int i = 0; i < obj->sSources.size(); i++ ) {
         if (obj->sSources.at(i)->getType() == PYRAMID) {
             Pyramid* pS = new Pyramid(reinterpret_cast<Pyramid*>(obj->sSources.at(i)), sxml);
+            if (pS->getTms() == NULL) {
+                LOGGER_ERROR("Impossible de cloner la pyramide source pour ce niveau");
+                tm == NULL;
+                // Tester la nullité du TM en sortie pour faire remonter l'erreur
+                return;
+            }
             sSources.push_back(pS);
         } else if (obj->sSources.at(i)->getType() == WEBSERVICE) {
             WebService* pS = new WebService(reinterpret_cast<WebService*>(obj->sSources.at(i)));
@@ -179,7 +185,6 @@ Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
     }
 
     prefix = obj->prefix;
-
 
     if (Rok4Format::isRaster(format)) {
         maxTileSize = obj->maxTileSize;

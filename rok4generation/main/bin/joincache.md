@@ -1,4 +1,4 @@
-# 4ALAMO
+# JOINCACHE
 
 [Vue générale](../../README.md#la-suite-joincache)
 
@@ -23,8 +23,6 @@ La configuration principale est au format INI :
 [ section ]
 parameter = value
 ```
-
-Il est possible d'utiliser une configuration d'environnement, au même format, dont les valeurs seront surchargées par celles dans la configuration principale.
 
 ### Section `logger`
 

@@ -107,6 +107,20 @@ Pyramid::Pyramid (PyramidXML* p) : Source(PYRAMID) {
 Pyramid::Pyramid (Pyramid* obj, ServerXML* sxml): Source(PYRAMID) {
     format = obj->format;
 
+    if (Rok4Format::isRaster(format)) {
+        photo = obj->photo;
+        channels = obj->channels;
+        transparent = obj->transparent;
+
+        isBasedPyramid = obj->isBasedPyramid;
+        containOdLevels = obj->containOdLevels;
+
+        ndValues = new int[channels];
+        for (int i = 0; i < channels; i++) {
+            ndValues[i] = obj->ndValues[i];
+        }
+    }
+
     // On récupère bien le pointeur vers le nouveau TMS (celui de la nouvelle liste)
     tms = sxml->getTMS (obj->tms->getId());
     if ( tms == NULL ) {
@@ -115,13 +129,12 @@ Pyramid::Pyramid (Pyramid* obj, ServerXML* sxml): Source(PYRAMID) {
         // Tester la nullité du TMS en sortie pour faire remonter l'erreur
     }
 
-
     std::map<std::string, Level*>::iterator itLevel;
 
     // On clone bien tous les niveaux
     for ( itLevel = obj->levels.begin(); itLevel != obj->levels.end(); itLevel++ ) {
         Level* levObj = new Level(itLevel->second, sxml, tms);
-        if (levObj->getContext() == NULL) {
+        if (levObj->getTm() == NULL) {
             LOGGER_ERROR ( "Impossible de cloner le niveau " << itLevel->first );
             tms = NULL;
             // Tester la nullité du TMS en sortie pour faire remonter l'erreur
@@ -146,21 +159,6 @@ Pyramid::Pyramid (Pyramid* obj, ServerXML* sxml): Source(PYRAMID) {
             highestLevel = itLevel->second;
         }
     }
-
-    if (Rok4Format::isRaster(format)) {
-        photo = obj->photo;
-        channels = obj->channels;
-        transparent = obj->transparent;
-
-        isBasedPyramid = obj->isBasedPyramid;
-        containOdLevels = obj->containOdLevels;
-
-        ndValues = new int[channels];
-        for (int i = 0; i < channels; i++) {
-            ndValues[i] = obj->ndValues[i];
-        }
-    }
-
 }
 
 std::string Pyramid::best_level ( double resolution_x, double resolution_y, bool onDemand ) {
@@ -406,7 +404,9 @@ Image *Pyramid::createBasedSlab(std::string l, BoundingBox<double> bbox, CRS dst
 
 Pyramid::~Pyramid() {
 
-    if (Rok4Format::isRaster(format)) delete[] ndValues;
+    if (Rok4Format::isRaster(format)) {
+        delete[] ndValues;
+    }
 
     std::map<std::string, Level*>::iterator iLevel;
     for ( iLevel=levels.begin(); iLevel!=levels.end(); iLevel++ )

@@ -116,6 +116,7 @@ Layer::Layer (Layer* obj, ServerXML* sxml) {
 
     // Détection d'erreurs
     if (dataPyramid->getTms() == NULL) {
+        LOGGER_ERROR("Impossible de cloner la pyramide");
         delete dataPyramid;
         dataPyramid = NULL;
         return;

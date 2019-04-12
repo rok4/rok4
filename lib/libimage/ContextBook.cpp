@@ -91,7 +91,7 @@ Context * ContextBook::addContext(std::string tray, bool keystone)
         //ce contenant n'est pas encore connecté, on va créer la connexion
 
         switch(contextType) {
-            case CEPHCONTEXT : 
+            case CEPHCONTEXT :
                 ctx = new CephPoolContext(ceph_name, ceph_user, ceph_conf, tray);
                 break;
             case S3CONTEXT : 

@@ -56,6 +56,7 @@ Parallélisable.
 
 Outils internes utilisés :
 * cache2work
+* checkWork
 * composeNtiff
 * decimateNtiff
 * merge4tiff
@@ -63,7 +64,6 @@ Outils internes utilisés :
 * work2cache
 
 Outils externes utilisés :
-* gdalinfo
 * wget
 
 _Étape 1_
@@ -119,7 +119,6 @@ Stockage gérés : FICHIER, CEPH
 Parallélisable.
 
 Outils internes utilisés :
-* cache2work
 * pbf2cache
 
 Outils externes utilisés :
@@ -152,7 +151,6 @@ Cet outil génère une pyramide fichier par extraction géographique de pyramide
 
 Stockage gérés : FICHIER, CEPH, S3, SWIFT
 
-Type de pyramide : raster
 
 ### Transfert de pyramide
 
@@ -160,8 +158,9 @@ Outil : `pyr2pyr.pl`
 
 Cet outil copie une pyramide d'un stockage à un autre.
 
-Stockage géré en entrée : FICHIER
-Stockages gérés en sortie : CEPH, S3, SWIFT
+Conversions possibles : 
+* FICHIER -> CEPH, S3, SWIFT
+* CEPH -> CEPH
 
 Parallélisable.
 
