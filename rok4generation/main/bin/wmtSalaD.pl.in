@@ -85,6 +85,7 @@ use lib "$Bin/../lib/perl5";
 # My module
 use COMMON::Config;
 use WMTSALAD::Pyramid;
+use COMMON::CheckUtils;
 
 ################################################################################
 # Constants
@@ -138,7 +139,7 @@ Function: main
 Main method.
 
 See Also:
-    <init>, <loadLogger>
+    <init>, <config>
 =cut
 sub main {
     printf("WMTSALAD: version [%s]\n",$VERSION);
@@ -156,7 +157,7 @@ sub main {
     # configuration
     ALWAYS("> Configuration");
     # logger configuration (if needed)
-    if (! main::loadLogger()) {
+    if (! main::config()) {
         $message = "LOGGER CONFIGURATION ERROR !";
         printf STDERR "%s\n", $message;
         exit 1;
@@ -259,13 +260,33 @@ sub init {
 }
 
 =begin nd
-Function: loadLogger
+Function: config
 
-Configure the logger based on the [logger] section in the properties file.
+Loads properties file and configure the logger based on the [logger] section in the properties file.
 =cut
-sub loadLogger {
+sub config {
 
-    my $propertiesCfg = COMMON::Config->new({'filepath' => $options{properties}, 'format' => 'INI'});
+    ###################
+    ALWAYS(">>> Load Properties ...");
+
+    my $propertiesCfg = COMMON::Config->new({
+        'filepath' => $options{properties},
+        'format' => 'INI'}
+    );
+        
+    if (! defined $propertiesCfg) {
+        ERROR("Can not load properties !");
+        return FALSE;
+    }
+
+    my %props = $propertiesCfg->getConfigurationCopy();
+
+    if (! scalar keys %props) {
+        ERROR("All parameters properties are empty !");
+        return FALSE;
+    }
+
+    # logger
 
     if ($propertiesCfg->isSection('logger')) {
         my %logger = $propertiesCfg->getSection('logger');
@@ -277,7 +298,7 @@ sub loadLogger {
         
         my $layout= '%5p : %m (%M) %n';
         my $level = $logger{log_level};
-        if (! main::IsEmpty($logger{log_path}) && ! main::IsEmpty($logger{log_file})) {
+        if (! COMMON::CheckUtils::IsEmpty($logger{log_path}) && ! COMMON::CheckUtils::IsEmpty($logger{log_file})) {
             DEBUG(sprintf "Creating log path : File::Path::make_path(%s, %s) ", $logger{log_path}, {mode => 0755});
             File::Path::make_path($logger{log_path}, {mode => 0755}) or ERROR(sprintf "Could not create path '%s'.", $logger{log_path});
             $out   = sprintf (">>%s", File::Spec->catfile($logger{log_path}, $logger{log_file}));
@@ -310,30 +331,6 @@ sub loadLogger {
 
     return TRUE;
 }
-
-
-
-
-=begin nd
-Function: IsEmpty
-
-Precises if an hash or a reference can be considered as empty.
-
-Parameters (list):
-    value - var - Variable to test
-=cut
-sub IsEmpty {
-
-  my $value = shift;
-  
-  return FALSE if (ref($value) eq "HASH");
-  return TRUE  if (! defined $value);
-  return TRUE  if ($value eq "");
-  return FALSE;
-}
-
-
-
 
 ################################################################################
 

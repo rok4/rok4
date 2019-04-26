@@ -38,25 +38,6 @@
 
 =begin nd
 File: ex-pyr.pl
-
-Section: EX-PYR tool
-
-Synopsis:
-    (start code)
-
-    (end code)
-
-Tool allowing to extract a sub pyramid from one or more existing pyramids (one for each level).
-User can define if the new pyramid's slabs are just symbolic links to source pyramids slabs (default),
-hard links or copies of these slabs.
-
-Source pyramids must have the same :
-    - TMS
-    - directory depth
-    - format code
-    - channels
-    - slab's tiles number (heigthwise and widthwise)
-
 =cut
 
 ################################################################################
@@ -117,19 +98,11 @@ Contains exPyr call options :
 my %options =
 (
     "version"    => 0,
-    "help"       => "Documentation can be found in the generated html documentation or inside the script files.\n",
-    "usage"      => "perl ex-pyr.pl <options>\n".
-                    "List of available options :\n".
-                    "  --properties=<file> | -conf <file> : configuration file for the generation\n".
-                    "  --usage : prints this message\n".
-                    "  --version | -v : prints the tool's version\n".
-                    "  --help | -h : for now, only prints a clue to find the documentation\n",
+    "help"       => 0,
+    "usage"      => 0,
     
     # Configuration
     "properties"  => undef, # datasource and output properties file (mandatory) !
-    
-    # Only for maintenance !
-    "test" => 0,
 );
 
 =begin nd
@@ -209,19 +182,19 @@ sub init {
     # init Options
     GetOptions(
         "help|h" => sub {
-            printf ($options{"help"});
+            printf "See documentation here: \n" ;
             exit 0;
         },
         "version|v" => sub { exit 0; },
         "usage" => sub {
-            printf ($options{"usage"});
+            printf "See documentation here: \n" ;
             exit 0;
         },
         
         "properties|conf=s" => \$options{properties},       
     ) or do {
         printf "Unappropriate usage\n";
-        printf ($options{"usage"});
+        printf "See documentation here: \n" ;
         exit -1;
     };
   
@@ -234,7 +207,7 @@ sub init {
     # We make path absolute
 
     # properties : mandatory !
-    if ((! defined $options{properties}) || ($options{properties} eq "")) {
+    if (! defined $options{properties} || $options{properties} eq "") {
         ERROR("Option 'properties' not defined !");
         return FALSE;
     }
@@ -511,98 +484,3 @@ END {}
 
 1;
 __END__
-
-=begin nd
-Section: Details
-
-Group: Command's options
-
---help - Display the link to the technic documentation.
-
---usage - Display the link to the technic documentation.
-
---version - Display the tool version.
-
---conf=path - Path to configuration file of the pyramid. This option is mandatory.
-
---env=path - Path to environment file of all pyramid, it's the common configuration. This option is optional. By default, the file configuration of install is used.
-
-Group: Write a configuration file
-
-Topic: general syntax
-
-A file configuration can be composed of sections, parameters, and also subsections for section 'datasource' following :
-
-(start code)
-[ section ]
-[[ subsection ]]
-parameter = value
-;comments
-(end code)
-
-Topic: logger
-
-log_path - Directory path where to write log_file
-log_file - Path to print too output (in addition to STDOUT). Log file path : *log_path/log_file*
-log_level - Define importance level from which we print messages. From less to more important : DEBUG - INFO - WARN - ERROR - ALWAYS (WARN by default).
-
-Example:
-(start code)
-[ logger ]
-log_path = /var/log
-log_file = be4_log_yyyy-mm-dd.txt
-log_level = INFO
-(end code)
-
-Topic: pyramid
-
-For more informations about properties, see <EXPYR::Pyramid>.
-
-pyr_name - Name of the new pyramid, used to name the descriptor, the pyramid's list, the data directory and the temporary directory.
-pyr_data_path - Directory path, where to write the cache. Mandatory.
-pyr_desc_path - Directory path, where to write the descriptor. Mandatory.
-extract_mode - The type of pyramid extraction, i.e. of files linking. Possible values : 'slink' (symbolic link, default value), 'hlink' (hard link), 'copy'
-
-Examples:
-(start code)
-[ pyramid ]
-pyr_data_path = /home/user/PYRAMIDS
-pyr_desc_path = /home/user/DESCRIPTOR
-pyr_name = ORTHO
-extract_mode = hlink
-(end code)
-
-Topic: datasource
-
-Defines which sources images are to be used. We must define for each desired level the path to the source pyramid's descriptor file, and an extent.
-Order does not matter, neither does the continuity between levels. Exactly one source is given for each defined level.
-
-This sections makes use of subsection, according to the following syntax.
-(start code)
-[ datasource ]
-[[ level_ID ]]
-desc_file = 
-extent =
-(end code) 
-
-level_ID - string -  level's ID in the pyramid's tile matrix set, i.e. tile matrix's ID
-desc_file - string - path to the source pyramid's descriptor file
-extent - string - extent to intersect with source pyramid's corresponding level to select images to extract. Can be either a bounding box or a path to a WKT file.
-Example:
-(start code)
-[ datasource ]
-[[ 8 ]]
-desc_file = /home/user/DESCRIPTOR/source1.pyr
-extent = -1,40,2,43
-
-[[ 10 ]]
-desc_file = /home/user/DESCRIPTOR/source2.pyr
-extent = /home/user/EXTENTS/extent.wkt
-(end code)
-
-Group: Paths in brief
-
-- Descriptor file : *pyr_desc_path/pyr_name.pyr*
-- TMS file: *tms_path/tms_name*
-
-=cut

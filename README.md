@@ -93,6 +93,7 @@ Si la gestion du stockage objet est voulue :
 
 Les librairies Perl sont installable via l'outil CPAN : `cpan Lib::Perl` (en sudo pour une installation système). Certaines des librairies utilisées sont installées avec le paquet `perl-base`
 
+* Config::INI::Reader
 * Data::Dumper
 * DBI
 * DBD::Pg
@@ -120,7 +121,7 @@ On installe les librairies Perl GDAL via le paquet et la librairie pour le drive
 
 Soit :
 ```
-cpan DBI DBD::Pg Data::Dumper Devel::Size Digest::SHA ExtUtils::MakeMaker File::Find::Rule File::Map FindBin Geo::GDAL Geo::OGR Geo::OSR HTTP::Request HTTP::Request::Common HTTP::Response JSON::Parse Log::Log4perl LWP::UserAgent Math::BigFloat Term::ProgressBar Test::More Tie::File XML::LibXML
+cpan Config::INI::Reader DBI DBD::Pg Data::Dumper Devel::Size Digest::SHA ExtUtils::MakeMaker File::Find::Rule File::Map FindBin Geo::GDAL Geo::OGR Geo::OSR HTTP::Request HTTP::Request::Common HTTP::Response JSON::Parse Log::Log4perl LWP::UserAgent Math::BigFloat Term::ProgressBar Test::More Tie::File XML::LibXML
 ```
 
 Pour savoir où sont cherchées les librairies, exécuter `env -i perl -V`.

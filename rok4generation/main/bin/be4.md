@@ -6,8 +6,10 @@
 
 ### Commandes
 
-* `be4-file --conf /home/IGN/conf.txt [--env /home/IGN/env.txt] [--help|--usage|--version]`
-* `be4-ceph --conf /home/IGN/conf.txt [--env /home/IGN/env.txt] [--help|--usage|--version]`
+* `be4-file.pl --conf /home/IGN/conf.txt [--env /home/IGN/env.txt] [--help|--usage|--version]`
+* `be4-ceph.pl --conf /home/IGN/conf.txt [--env /home/IGN/env.txt] [--help|--usage|--version]`
+* `be4-s3.pl --conf /home/IGN/conf.txt [--help|--usage|--version]`
+* `be4-swift.pl --conf /home/IGN/conf.txt [--help|--usage|--version]`
 
 ### Options
 
@@ -15,7 +17,7 @@
 * `--usage` Affiche le lien vers la documentation utilisateur de l'outil et quitte
 * `--version` Affiche la version de l'outil et quitte
 * `--conf <file path>` Execute l'outil en prenant en compte ce fichier de configuration principal
-* `--env <file path>` Execute l'outil en prenant en compte ce fichier d'environnement'
+* `--env <file path>` Execute l'outil en prenant en compte ce fichier d'environnement
 
 ## La configuration principale
 
@@ -210,7 +212,7 @@ Pour générer une pyramide raster, il faut renseigner pour chaque niveau de cou
 | preprocess_opt_beg | Définit les options à mettre avant le fichier en entrée à la commande de prétraitement                         |                                  |
 | preprocess_opt_mid | Définit les options à mettre entre le fichier en entrée et le fichier en sortie à la commande de prétraitement |                                  |
 | preprocess_opt_end | Définit les options à mettre après le fichier en sortie à la commande de prétraitement                         |                                  |
-| preprocess_tmp_dir | Dossier dans lequel écrire les images prétraitées                                                              |                                  |
+| preprocess_tmp_dir | Dossier dans lequel écrire les images prétraitées                                                              | obligatoire                      |
 
 Les images géoréférencées retenues sont les fichiers :
 * TIFF (extensions .tif, .TIF, .tiff and .TIFF)

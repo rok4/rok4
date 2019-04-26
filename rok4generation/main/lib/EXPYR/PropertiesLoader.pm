@@ -100,8 +100,6 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-my @MODES = ("slink", "hlink", "copy");
-
 ################################################################################
 
 BEGIN {}
@@ -191,17 +189,6 @@ sub _check {
     if (! $this->{cfgObject}->isProperty({ 'section' => "pyramid", 'property' => "tms_path"}) ) {
         ERROR("'pyramid.tms_path' property is missing");
         return FALSE;
-    }
-
-    if (! $this->{cfgObject}->isProperty({ 'section' => "pyramid", 'property' => "extract_mode"}) ) {
-        $this->{cfgObject}->setProperty({ section => "pyramid", property => "extract_mode", value => "slink"})
-    } else {
-        my $mode = $this->{cfgObject}->getProperty({ section => "pyramid", property => "extract_mode"});
-        if (! defined COMMON::Array::isInArray($mode, @MODES) ) {
-            ERROR("Unvalid value for 'pyramid.extract_mode' property: $mode");
-            ERROR("Possible values are @MODES");
-            return FALSE;
-        }
     }
 
     # Datasource section

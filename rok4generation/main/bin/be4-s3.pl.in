@@ -321,11 +321,6 @@ sub writeListAndReferences {
     my $forest = shift;
     my $newpyr = shift;
     my $ancestor = shift;
-    my $force = shift;
-
-    if (! defined $force) {
-        $force = FALSE;     
-    }
 
     my $updateMode = $this{params}->{pyramid}->{update_mode};
 
@@ -341,11 +336,6 @@ sub writeListAndReferences {
 
     my $newListPath = $newpyr->getListFile();
     my $newListPathTmp = "$newListPath.tmp";
-
-    if (! $force  && -f $newListPath) {
-        ERROR(sprintf "New pyramid list ('%s') exist, can not overwrite it ! ", $newListPath);
-        return FALSE;
-    }
 
     my $dir = File::Basename::dirname($newListPath);
     if (! -d $dir) {
@@ -531,6 +521,10 @@ sub doIt {
     my $objForest = undef;
 
     #######################
+
+    my $force = FALSE;
+
+    #######################
     # if ancestor, read it
 
     if (exists $params->{pyramid}->{pyr_name_old} && defined $params->{pyramid}->{pyr_name_old}) {
@@ -580,6 +574,7 @@ sub doIt {
             $params->{pyramid}->{pyr_desc_path} = $objAncestorPyramid->getDescriptorDir();
             $params->{pyramid}->{pyr_data_bucket_name} = $objAncestorPyramid->getDataBucket();
             $params->{pyramid}->{pyr_name_new} = $objAncestorPyramid->getName();
+            $force = TRUE;
         }
     }
     
@@ -623,6 +618,11 @@ sub doIt {
 
     if (! $objPyramid->bindTileMatrixSet($params->{pyramid}->{tms_path})) {
         ERROR("Cannot bind TMS to output Pyramid !");
+        return FALSE;
+    }
+
+    if (! $force && -f $objPyramid->getListFile()) {
+        ERROR(sprintf "New pyramid list ('%s') exist, can not overwrite it ! ", $objPyramid->getListFile());
         return FALSE;
     }
 
@@ -674,18 +674,11 @@ sub doIt {
     }
 
     #######################
-
-    my $force = FALSE;
-    if (defined $objAncestorPyramid && $this{params}->{pyramid}->{update_mode} eq "inject") {
-        $force = TRUE;
-    }
-
-    #######################
     # write the pyramid list
     
     ALWAYS(">>> Write the pyramid's list ...");
 
-    if ( ! writeListAndReferences($objForest, $objPyramid, $objAncestorPyramid, $force) ) {
+    if ( ! writeListAndReferences($objForest, $objPyramid, $objAncestorPyramid) ) {
         ERROR("Can not write Pyramid list and reference ancestor if exist !");
         return FALSE;
     }

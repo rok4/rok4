@@ -198,7 +198,7 @@ sub _load {
         return FALSE;
     }
 
-    my %sourcesProperties = $propLoader->getConfig();
+    my %sourcesProperties = $propLoader->getConfigurationCopy();
 
     if (! scalar keys %sourcesProperties) {
         ERROR("All parameters properties of sources are empty !");
