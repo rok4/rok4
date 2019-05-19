@@ -40,12 +40,3 @@ use Term::ProgressBar;
 use Test::More;
 use Tie::File;
 use XML::LibXML;
-
-
-# use Tk;
-# use Tk::EntryCheck;
-# use Tk::FileSelect;
-# use Tk::LabFrame;
-# use Tk::NoteBook;
-# use Tk::ROText;
-# use Tk::Table;

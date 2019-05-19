@@ -149,6 +149,7 @@ my %intputs_outputs = (
     SLAB_INDICES => 1,
     SLAB_INDICES_LIST => 1,
     SLAB_INFO => 1,
+    SLAB_PATH => 1,
     SLAB_PATHS_LIST => 1,
     SLABS_COUNT => 1,
     SQL_FILE => 1,
@@ -302,6 +303,17 @@ sub parseFromTo {
             }
         }
 
+        #################### SLAB_PATH
+
+        elsif ($parsed->{type} eq "SLAB_PATH") {
+            if (! defined $value) {
+                ERROR("Value have to respect format SLAB_PATH:<FILE PATH>");
+                return undef;                
+            }
+
+            $parsed->{slab_path} = $value;
+        }
+
         #################### SLAB_PATHS_LIST
 
         elsif ($parsed->{type} eq "SLAB_PATHS_LIST") {
@@ -446,6 +458,11 @@ sub init {
     }
     $options{"tms"} = $tms;
 
+    if ($options{"above"} && ! $tms->isQTree()) {
+        ERROR("Option 'above' only works for QTREE TMS");
+        return FALSE;
+    }
+
     ############# slabsize
     if (defined $options{"slabsize"} && $options{"slabsize"} ne "") {
         if ($options{"slabsize"} =~ m/^(\d+)x(\d+)$/) {
@@ -579,21 +596,22 @@ Variable: conversions
 Hash reference containing all available conversions and mandatory options
 =cut
 my $conversions = {
-                 BBOX => { GETTILE_PARAMS_LIST => ["level","slabsize"] },
-                 BBOX => { SLAB_INDICES_LIST   => ["level","slabsize"] },
-                 BBOX => { SQL_FILE            => ["level","slabsize"] },
+                 BBOX => { GETTILE_PARAMS_LIST => ["level","slabsize"] ,
+                           SLAB_INDICES_LIST   => ["level","slabsize"] ,
+                           SQL_FILE            => ["level","slabsize"] },
           BBOXES_LIST => { SLAB_INDICES_LIST   => ["level","slabsize"] },
-            GEOM_FILE => { GETTILE_PARAMS_LIST => ["level","slabsize"] },
-            GEOM_FILE => { SLAB_INDICES_LIST   => ["level","slabsize"] },
-            GEOM_FILE => { SLABS_COUNT         => ["level","slabsize"] },
-            GEOM_FILE => { SQL_FILE            => ["level","slabsize"] },
-                POINT => { SLAB_INFO           => ["slabsize"] },
-                POINT => { TILE_INFO           => [] },
-         PYRAMID_LIST => { GEOM_FILE           => ["level","slabsize"] },
-         PYRAMID_LIST => { GETTILE_PARAMS_LIST => ["slabsize"] },
+            GEOM_FILE => { GETTILE_PARAMS_LIST => ["level","slabsize"] ,
+                           SLAB_INDICES_LIST   => ["level","slabsize"] ,
+                           SLABS_COUNT         => ["level","slabsize"] ,
+                           SQL_FILE            => ["level","slabsize"] },
+                POINT => { SLAB_INFO           => ["slabsize"],
+                           TILE_INFO           => [] },
+         PYRAMID_LIST => { GEOM_FILE           => ["level","slabsize"] ,
+                           GETTILE_PARAMS_LIST => ["slabsize"] },
          SLAB_INDICES => { TFW_FILE            => ["level","slabsize"] },
-    SLAB_INDICES_LIST => { GETMAP_PARAMS_LIST  => ["level","slabsize"] },
-    SLAB_INDICES_LIST => { SLAB_PATHS_LIST     => ["level","slabsize"] },
+    SLAB_INDICES_LIST => { GETMAP_PARAMS_LIST  => ["level","slabsize"] ,
+                           SLAB_PATHS_LIST     => ["level","slabsize"] },
+            SLAB_PATH => { GEOM_FILE           => ["level","slabsize"] },
          TILE_INDICES => { SLAB_INFO           => ["level","slabsize"] }
 };
 
@@ -927,6 +945,50 @@ sub doIt {
         
         close(OUT);
         close(IN);
+    }
+    
+    # ---------------------------------------------------------------------------------------------
+    elsif ($options{from}->{type} eq "SLAB_PATH" && $options{to}->{type} eq "GEOM_FILE") {
+
+        my ($col,$row);
+
+        # Cas fichier
+        if ($options{storage}->{type} eq "FILE") {
+            # Cas fichier : .../AB/CD/EF.tif
+            my @parts = split("/", $options{from}->{slab_path});
+
+            my @slab = ();
+            for (my $i = 0; $i < $options{storage}->{depth} + 1; $i++) {
+                my $p = pop(@parts);
+                unshift(@slab, $p);
+            }
+
+            my $path = join("/", @slab);
+            $path =~ s/(\.tif|\.tiff|\.TIF|\.TIFF)//;
+            ($col,$row) = COMMON::Base36::b36PathToIndices($path);
+        }
+        # Cas objet
+        else {
+            # Une ligne du fichier c'est
+            # Cas objet : 0/PYRAMID_IMG_15_15656_5423
+            # On a un nom d'objet de la forme BLA/BLA_BLA_DATATYPE_LEVEL_COL_ROW
+            # DATATYPE vaut MSK ou IMG
+            my @p = split("_", $options{from}->{slab_path});
+            $col = $p[-2];
+            $row = $p[-1];
+        }
+
+        my $geometry = $options{"level"}->indicesToGeom($col, $row, $options{"slabsize"}->[0], $options{"slabsize"}->[1]);
+
+        if (! defined $geometry) {
+            ERROR("Cannot calculate geometry from slab indices");
+            return FALSE;
+        }
+
+        if (! COMMON::ProxyGDAL::exportFile($geometry, $options{to}->{path})) {
+            ERROR("Cannot write geometry into ".$options{to}->{path});
+            return FALSE;
+        }
     }
 
     # ---------------------------------------------------------------------------------------------

@@ -6,8 +6,8 @@
 
 ### Commandes
 
-* `be4-file --conf /home/IGN/conf.txt [--env /home/IGN/env.txt] [--help|--usage|--version]`
-* `be4-ceph --conf /home/IGN/conf.txt [--env /home/IGN/env.txt] [--help|--usage|--version]`
+* `be4-file.pl --conf /home/IGN/conf.txt [--env /home/IGN/env.txt] [--help|--usage|--version]`
+* `be4-ceph.pl --conf /home/IGN/conf.txt [--env /home/IGN/env.txt] [--help|--usage|--version]`
 
 ### Options
 

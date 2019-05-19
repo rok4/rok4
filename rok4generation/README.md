@@ -172,13 +172,17 @@ Outil : `create-layer.pl`
 
 Cet outil génère un descripteur de couche pour ROK4SERVER à partir du descripteur de pyramide et du dossier des TileMatrixSets. Il est basique (titre, nom de couche, résumé par défaut) mais fonctionnel. La couche utilisera alors la pyramide en entrée dans sa globalité.
 
+[Détails](./main/bin/create-layer.md)
+
 ### Création du fichier liste d'une pyramide
 
 Outil : `create-list.pl`
 
-Cet outil génère le fichier liste pour une pyramide qui n'en aurait pas, à partir du dossier des données.
+Cet outil génère le fichier liste pour une pyramide fichier qui n'en aurait pas, à partir du dossier des données.
 
 Stockage géré : FICHIER
+
+[Détails](./main/bin/create-list.md)
 
 ### Convertisseur TMS
 

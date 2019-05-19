@@ -82,7 +82,6 @@ Contains create-list call options :
     
     imagedir - To precise the directory containing images
     list-path - To precise the list file to create
-    verbose - To log out many informations
 =cut
 my %options =
 (
@@ -94,8 +93,7 @@ my %options =
     "imagedir"  => undef,
 
     # Optionnal (with default values)
-    "list-path" => cwd . "/output.list",
-    "verbose" => FALSE,
+    "list-path" => cwd . "/output.list"
 
 );
 
@@ -121,7 +119,7 @@ sub main {
         exit 1;
     }
     
-    printf("CREATE-LIST : version [%s]\n",$VERSION) if ($options{verbose});
+    printf("CREATE-LIST : version [%s]\n",$VERSION);
 
     # execution
     if (! main::doIt()) {
@@ -165,10 +163,7 @@ sub init {
         },
         
         "imagedir=s" => \$options{imagedir},
-        "list-path=s" => \$options{"list-path"},
-        "verbose" => sub {
-            $options{verbose} = TRUE,
-        },
+        "list-path=s" => \$options{"list-path"}
     ) or do {
         printf "Unappropriate usage\n";
         printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/create-list-pl.html\n";
@@ -207,7 +202,7 @@ We list all the files .tif in IMAGEDIR. Then we create a list file.
 =cut
 sub doIt {
 
-    my @types = ("IMAGE", "MASK", "NODATA");
+    my @types = ("IMAGE", "MASK");
     my $count = 0;
     my ($imagedirectory) = realpath(File::Find::Rule
         ->directory()
@@ -292,22 +287,3 @@ END {}
 
 1;
 __END__
-
-=begin nd
-Section: Details
-
-Group: Command's options
-
-    --help - Display the link to the technic documentation.
-
-    --usage - Display the link to the technic documentation.
-
-    --version - Display the tool version.
-
-    --imagedir - The folder containing images to create the list file. Mandatory.
-    
-    --list-path - The file list to create. Optionnal.
-    
-    --verbose - To log out many informations. Optionnal. No verbose by default
-
-=cut
