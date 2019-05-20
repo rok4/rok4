@@ -283,10 +283,7 @@ sub config {
     $fenv = $options{environment} if (defined $options{environment} && $options{environment} ne "");
 
     if (defined $fenv) {
-        my $objEnv = COMMON::Config->new({
-            'filepath' => $fenv,
-            'format' => "INI"
-        });
+        my $objEnv = COMMON::Config->new($fenv);
 
         if (! defined $objEnv) {
             ERROR("Can not load environment properties !");

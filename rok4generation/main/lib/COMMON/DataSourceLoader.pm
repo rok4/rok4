@@ -178,20 +178,7 @@ sub _load {
     my $this   = shift;
 
 
-    my $propLoader;
-
-    if ($this->{FILEPATH_DATACONF} =~ m/\.json$/) {
-        # 4ALAMO use JSON for datasource configuration file
-        $propLoader = COMMON::Config->new({
-            'filepath' => $this->{FILEPATH_DATACONF},
-            'format' => "JSON"
-        });
-    } else {
-        $propLoader = COMMON::Config->new({
-            'filepath' => $this->{FILEPATH_DATACONF},
-            'format' => "INI"
-        });
-    }
+    my $propLoader = COMMON::Config->new($this->{FILEPATH_DATACONF}
 
     if (! defined $propLoader) {
         ERROR("Can not load sources' properties !");

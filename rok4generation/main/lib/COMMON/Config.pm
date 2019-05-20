@@ -45,25 +45,19 @@ Class: COMMON::Config
 Using:
     (start code)
     # load properties from INI file
-    my $cfgINI = COMMON::Config->new({
-        'filepath' => "/mon/fichier/de/configuration.txt",
-        'format' => "INI"
-    });
+    my $cfgINI = COMMON::Config->new("/mon/fichier/de/configuration.txt");
 
     # load properties from INI file
-    my $cfgJSON = COMMON::Config->new({
-        'filepath' => "/mon/fichier/de/configuration.json",
-        'format' => "JSON"
-    });
+    my $cfgJSON = COMMON::Config->new("/mon/fichier/de/configuration.json");
     (end code)
 
 Attributes:
     filePath - string - Path to the configuration file
     fileFormat - string - Configuration format : INI, JSON
-    configuration - string hash - Configuration stored in string hash, with section and sub section, with orders
-    rawConfiguration - string hash - Configuration stored in string hash, with section and sub section, without orders
+    configuration - string hash - Configuration stored in string hash, with section and sub section
     
 Limitations:
+    A JSON configuration have to own the extension .json
     
 =cut
 
@@ -95,10 +89,6 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-# Constant: FILEFORMATS
-# Define allowed values for configuration format
-my @FILEFORMATS = ('INI', 'JSON');
-
 ################################################################################
 
 BEGIN {}
@@ -114,16 +104,15 @@ Constructor: new
 
 Config constructor. Bless an instance.
 
-Parameters (hash):
+Parameters (list):
     filepath - string - Configuration file path
-    format - string - File format, INI or JSON
 
 See also:
     <_loadINI>, <_loadJSON>
 =cut
 sub new {
     my $class = shift;
-    my $params = shift;
+    my $filepath = shift;
     
     $class = ref($class) || $class;
 
@@ -136,30 +125,24 @@ sub new {
     bless($this, $class);
 
     # filepath
-    if (! exists $params->{'filepath'} || ! defined $params->{'filepath'}) {
+    if (! defined $filepath) {
         ERROR("Cannot use COMMON::Config->new whithout a 'filepath' parameter.");
         return undef;
     }
     
-    if ( ! -e  $params->{'filepath'}) {
+    if ( ! -e  $filepath) {
         ERROR(sprintf "Config file %s does not exists", $params->{'filepath'});
         return undef;
     }
-    $this->{file} = $params->{'filepath'};
+    $this->{file} = $filepath;
 
     # format
-    if (! exists $params->{'format'} || ! defined $params->{'format'}) {
-        ERROR("Cannot use COMMON::Config->new whithout a 'format' parameter.");
-        return undef;
-    }
-    
-    if ( ! defined COMMON::Array::isInArray(uc($params->{'format'}), @FILEFORMATS) ) {
-        ERROR("Unknown file format: ".$params->{'format'});
-        return undef;
-    }
 
-    $this->{format} = $params->{'format'};
-
+    if ($this->{file} =~ /\.json$/i) {
+        $this->{format} = "JSON";
+    } else {
+        $this->{format} = "INI";
+    }
 
     # load
     if ($this->{format} eq "INI") {

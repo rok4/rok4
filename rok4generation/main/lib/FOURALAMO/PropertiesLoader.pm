@@ -131,10 +131,7 @@ sub _init {
     }
 
     # load properties 
-    my $cfg = COMMON::Config->new({
-        'filepath' => $file,
-        'format' => "INI"
-    });
+    my $cfg = COMMON::Config->new($file);
 
     if (! defined $cfg) {
         ERROR ("Can not load properties !");
