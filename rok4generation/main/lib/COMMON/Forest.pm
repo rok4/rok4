@@ -363,13 +363,13 @@ sub _load {
         # Creation of QTree or NNGraph object
         my $graph = undef;
         if ($isQTree) {
-            $graph = COMMON::QTree->new($this, $datasource, $this->{pyramid}, $this->{commands});
+            $graph = COMMON::QTree->new($this, $datasource);
         } else {
-            $graph = COMMON::NNGraph->new($this,$datasource, $this->{pyramid}, $this->{commands});
+            $graph = COMMON::NNGraph->new($this, $datasource);
         };
                 
         if (! defined $graph) {
-            ERROR(sprintf "Can not create a graph for datasource with bottom level %s !",$datasource->getBottomID);
+            ERROR(sprintf "Can not create a graph for datasource with bottom level %s !",$datasource->getBottomID());
             return FALSE;
         }
         
@@ -454,6 +454,12 @@ sub getGraphs {
 sub getStorageType {
     my $this = shift;
     return $this->{pyramid}->getStorageType(); 
+}
+
+# Function: getCommands
+sub getCommands {
+    my $this = shift;
+    return $this->{commands}; 
 }
 
 # Function: getPyramid

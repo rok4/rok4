@@ -71,7 +71,7 @@ Using:
     use COMMON::QTree;
 
     # QTree object creation
-    my $objQTree = COMMON::QTree->new($objForest, $objDataSource, $objPyramid, $objCommands);
+    my $objQTree = COMMON::QTree->new($objForest, $objDataSource);
 
     ...
 
@@ -122,8 +122,10 @@ use Data::Dumper;
 use COMMON::DataSource;
 use COMMON::Node;
 use COMMON::PyramidRaster;
+use COMMON::PyramidVector;
 use COMMON::Array;
 use COMMON::ShellCommandsRaster;
+use COMMON::ShellCommandsVector;
 
 use Log::Log4perl qw(:easy);
 
@@ -159,8 +161,6 @@ QTree constructor. Bless an instance.
 Parameters (list):
     objForest - <COMMON::Forest> - Forest which this tree belong to
     objSrc - <COMMON::DataSource> - Datasource which determine bottom level nodes
-    objPyr - <COMMON::PyramidRaster> or <COMMON::PyramidVector> - Pyramid linked to this tree
-    objCommands - <COMMON::ShellCommandsRaster> or <COMMON::ShellCommandsVector> - Commands to use to generate pyramid's images
 
 See also:
     <_init>, <_load>
@@ -169,8 +169,6 @@ sub new {
     my $class = shift;
     my $objForest = shift;
     my $objSrc = shift;
-    my $objPyr = shift;
-    my $objCommands = shift;
 
     $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above)
@@ -203,20 +201,12 @@ sub new {
         ERROR("We need a COMMON::DataSource to create a QTree");
         return FALSE;
     }
-    if (! defined $objPyr || (ref ($objPyr) ne "COMMON::PyramidRaster" && ref ($objPyr) ne "COMMON::PyramidVector")) {
-        ERROR("We need a COMMON::PyramidRaster to create a QTree");
-        return FALSE;
-    }
-    if (! defined $objCommands || (ref ($objCommands) ne "COMMON::ShellCommandsRaster" && ref ($objCommands) ne "COMMON::ShellCommandsVector")) {
-        ERROR("We need a COMMON::ShellCommandsRaster to create a QTree");
-        return FALSE;
-    }
 
     # init. params   
     $this->{forest} = $objForest; 
-    $this->{pyramid} = $objPyr;
+    $this->{pyramid} = $objForest->getPyramid();
     $this->{datasource} = $objSrc; 
-    $this->{commands} = $objCommands;
+    $this->{commands} = $objForest->getCommands();
 
     # load 
     return undef if (! $this->_load());

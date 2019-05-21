@@ -19,7 +19,6 @@ WriteMakefile(
         'bin/joinCache-ceph.pl',
         'bin/create-list.pl',
         'bin/create-layer.pl',
-        'bin/ex-pyr.pl',
         'bin/pyr2pyr.pl',
         'bin/sup-pyr.pl',
         'bin/wmtSalaD.pl',

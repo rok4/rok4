@@ -30,7 +30,6 @@ buildbin: \
 ./bin/pyr2pyr.pl \
 ./bin/create-layer.pl \
 ./bin/create-list.pl \
-./bin/ex-pyr.pl \
 ./bin/wmtSalaD.pl
 
 	@(for p in $^ ; do \
