@@ -133,6 +133,18 @@ char imageListFilename[256];
 /** \~french Valeur de nodata sour forme de chaîne de caractère (passée en paramètre de la commande) */
 char strnodata[256];
 
+/** \~french A-t-on précisé le format en sortie, c'est à dire les 3 informations samplesperpixel, bitspersample et sampleformat */
+bool outputProvided = false;
+/** \~french Nombre de canaux par pixel, pour l'image en sortie */
+uint16_t samplesperpixel = 0;
+/** \~french Nombre de bits occupé par un canal, pour l'image en sortie */
+uint16_t bitspersample = 0;
+/** \~french Format du canal (entier, flottant, signé ou non...), pour l'image en sortie */
+SampleFormat::eSampleFormat sampleformat = SampleFormat::UNKNOWN;
+
+/** \~french Photométrie (rgb, gray), déduit du nombre de canaux */
+Photometric::ePhotometric photometric;
+
 /** \~french Compression de l'image de sortie */
 Compression::eCompression compression;
 
@@ -160,7 +172,13 @@ bool debugLogger=false;
  *      -n nodata value, one interger per sample, seperated with comma. Examples
  *              -99999 for DTM
  *              255,255,255 for orthophotography
+ *      -a sample format : (float or uint)
+ *      -b bits per sample : (8 or 32)
+ *      -s samples per pixel : (1, 2, 3 or 4)
  *      -d debug logger activation
+ *
+ * If bitspersample, sampleformat or samplesperpixel are not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.
+ *
  * \endcode
  */
 void usage() {
@@ -182,8 +200,12 @@ void usage() {
                   "    -n nodata value, one interger per sample, seperated with comma. Examples\n" <<
                   "            -99999 for DTM\n" <<
                   "            255,255,255 for orthophotography\n" <<
-                  "    -d debug logger activation\n" <<
-                  "    -h help\n\n" );
+                  "    -a sample format : (float or uint)\n" <<
+                  "    -b bits per sample : (8 or 32)\n" <<
+                  "    -s samples per pixel : (1, 2, 3 or 4)\n" <<
+                  "    -d debug logger activation\n\n" <<
+
+                  "If bitspersample, sampleformat or samplesperpixel are not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.\n\n");
 }
 
 /**
@@ -248,6 +270,48 @@ int parseCommandLine ( int argc, char** argv ) {
                     return -1;
                 }
                 break;
+
+            /****************** OPTIONNEL, POUR FORCER DES CONVERSIONS **********************/
+            case 's': // samplesperpixel
+                if ( i++ >= argc ) {
+                    LOGGER_ERROR ( "Error in option -s" );
+                    return -1;
+                }
+                if ( strncmp ( argv[i], "1",1 ) == 0 ) samplesperpixel = 1 ;
+                else if ( strncmp ( argv[i], "2",1 ) == 0 ) samplesperpixel = 2 ;
+                else if ( strncmp ( argv[i], "3",1 ) == 0 ) samplesperpixel = 3 ;
+                else if ( strncmp ( argv[i], "4",1 ) == 0 ) samplesperpixel = 4 ;
+                else {
+                    LOGGER_ERROR ( "Unknown value for option -s : " << argv[i] );
+                    return -1;
+                }
+                break;
+            case 'b': // bitspersample
+                if ( i++ >= argc ) {
+                    LOGGER_ERROR ( "Error in option -b" );
+                    return -1;
+                }
+                if ( strncmp ( argv[i], "8",1 ) == 0 ) bitspersample = 8 ;
+                else if ( strncmp ( argv[i], "32",2 ) == 0 ) bitspersample = 32 ;
+                else {
+                    LOGGER_ERROR ( "Unknown value for option -b : " << argv[i] );
+                    return -1;
+                }
+                break;
+            case 'a': // sampleformat
+                if ( i++ >= argc ) {
+                    LOGGER_ERROR ( "Error in option -a" );
+                    return -1;
+                }
+                if ( strncmp ( argv[i],"uint",4 ) == 0 ) sampleformat = SampleFormat::UINT ;
+                else if ( strncmp ( argv[i],"float",5 ) == 0 ) sampleformat = SampleFormat::FLOAT;
+                else {
+                    LOGGER_ERROR ( "Unknown value for option -a : " << argv[i] );
+                    return -1;
+                }
+                break;
+            /*******************************************************************************/
+
             default:
                 LOGGER_ERROR ( "Unknown option : -" << argv[i][1] );
                 return -1;
@@ -260,85 +324,94 @@ int parseCommandLine ( int argc, char** argv ) {
     return 0;
 }
 
-
 /**
  * \~french
- * \brief Lit une ligne (ou deux si présence d'un masque) du fichier de configuration
+ * \brief Lit l'ensemble de la configuration
  * \details On parse la ligne courante du fichier de configuration, en stockant les valeurs dans les variables fournies. On saute les lignes vides. On lit ensuite la ligne suivante :
  * \li si elle correspond à un masque, on complète les informations
  * \li si elle ne correspond pas à un masque, on recule le pointeur
  *
- * \param[in,out] file flux de lecture vers le fichier de configuration
- * \param[out] imageFileName chemin de l'image lu dans le fichier de configuration
- * \param[out] hasMask précise si l'image possède un masque
- * \param[out] maskFileName chemin du masque lu dans le fichier de configuration
- * \param[out] bbox rectangle englobant de l'image lue (et de son masque)
- * \param[out] resx résolution en X de l'image lue (et de son masque)
- * \param[out] resy résolution en Y de l'image lue (et de son masque)
- * \return code de retour, 0 en cas de succès, -1 si la fin du fichier est atteinte, 1 en cas d'erreur
+ * \param[in,out] masks Indicateurs de présence d'un masque
+ * \param[in,out] paths Chemins des images
+ * \param[in,out] bboxes Rectangles englobant des images
+ * \param[in,out] resxs Résolution en x des images
+ * \param[in,out] resys Résolution en y des images
+ * \return true en cas de succès, false si échec
  */
-int readFileLine ( std::ifstream& file, char* imageFileName, bool* hasMask, char* maskFileName, BoundingBox<double>* bbox, double* resx, double* resy ) {
-    std::string str;
-    char tmpPath[IMAGE_MAX_FILENAME_LENGTH];
+bool loadConfiguration ( 
+    std::vector<bool>* masks, 
+    std::vector<char* >* paths, 
+    std::vector<BoundingBox<double> >* bboxes,
+    std::vector<double>* resxs,
+    std::vector<double>* resys
+) {
 
-    memset ( imageFileName, 0, IMAGE_MAX_FILENAME_LENGTH );
-    memset ( maskFileName, 0, IMAGE_MAX_FILENAME_LENGTH );
+    std::ifstream file;
 
-    while ( str.empty() ) {
-        if ( file.eof() ) {
-            LOGGER_DEBUG ( "Configuration file end reached" );
-            return -1;
-        }
-        std::getline ( file,str );
+    file.open ( imageListFilename );
+    if ( ! file.is_open() ) {
+        LOGGER_ERROR ( "Impossible d'ouvrir le fichier " << imageListFilename );
+        return false;
     }
 
-    int pos;
-    int nb;
+    while ( file.good() ) {
+        char line[2*IMAGE_MAX_FILENAME_LENGTH];
+        memset ( line, 0, 2*IMAGE_MAX_FILENAME_LENGTH );
+        char* path = (char*) malloc(IMAGE_MAX_FILENAME_LENGTH);
+        memset ( path, 0, IMAGE_MAX_FILENAME_LENGTH );
 
-    char type[3];
+        char type[3];
+        BoundingBox<double> bb(0.,0.,0.,0.);
+        double resx, resy;
+        bool isMask;
 
-    if ( ( nb = std::sscanf ( str.c_str(),"%s %s %lf %lf %lf %lf %lf %lf", type, tmpPath, &bbox->xmin, &bbox->ymax, &bbox->xmax, &bbox->ymin, resx, resy ) ) == 8 ) {
-        if ( memcmp ( type,"IMG", 3 ) ) {
-            LOGGER_ERROR ( "We have to read an image information at first." );
-            return 1;
+        file.getline(line, 2*IMAGE_MAX_FILENAME_LENGTH);
+        LOGGER_DEBUG(line);  
+        if ( strlen(line) == 0 ) {
+            continue;
+        }
+        int nb = std::sscanf ( line,"%s %s %lf %lf %lf %lf %lf %lf", type, path, &bb.xmin, &bb.ymax, &bb.xmax, &bb.ymin, &resx, &resy );
+        if ( nb == 8 && memcmp ( type,"IMG",3 ) == 0) {
+            // On lit la ligne d'une image
+            isMask = false;
+        }
+        else if ( nb == 2 && memcmp ( type,"MSK",3 ) == 0) {
+            // On lit la ligne d'un masque
+            isMask = true;
+
+            if (masks->size() == 0 || masks->back()) {
+                // La première ligne ne peut être un masque et on ne peut pas avoir deux masques à la suite
+                LOGGER_ERROR ( "A MSK line have to follow an IMG line" );
+                LOGGER_ERROR ( "\t line : " << line );   
+                return false;             
+            }
+        }
+        else {
+            LOGGER_ERROR ( "We have to read 8 values for IMG or 2 for MSK" );
+            LOGGER_ERROR ( "\t line : " << line );
+            return false;
         }
 
-        pos = file.tellg();
+        // On ajoute tout ça dans les vecteurs
+        masks->push_back(isMask);
+        paths->push_back(path);
+        bboxes->push_back(bb);
+        resxs->push_back(resx);
+        resys->push_back(resy);
+
+    }
+
+    if (file.eof()) {
+        LOGGER_DEBUG("Fin du fichier de configuration atteinte");
+        file.close();
+        return true;
     } else {
-        LOGGER_ERROR ( "We have to read 8 values, we have " << nb );
-        LOGGER_ERROR ( "line : " << str );
-        return 1;
+        LOGGER_ERROR("Failure reading the configuration file " << imageListFilename);
+        file.close();
+        return false;
     }
-
-    strcpy ( imageFileName,tmpPath );
-
-    str.clear();
-
-    // Récupération d'un éventuel masque
-    while ( str.empty() ) {
-        if ( file.eof() ) {
-            *hasMask = false;
-            return 0;
-        }
-        pos = file.tellg();
-        std::getline ( file,str );
-    }
-
-    if ( ( std::sscanf ( str.c_str(),"%s %s", type, tmpPath ) ) != 2 || memcmp ( type,"MSK",3 ) ) {
-        /* La ligne ne correspond pas au masque associé à l'image lue juste avant.
-         * C'est en fait l'image suivante (ou une erreur). On doit donc remettre le
-         * pointeur de manière à ce que cette ligne soit lue au prochain appel de
-         * readFileLine.
-         */
-        *hasMask = false;
-        file.seekg ( pos );
-    } else {
-        strcpy ( maskFileName,tmpPath );
-        *hasMask = true;
-    }
-
-    return 0;
 }
+
 
 /**
  * \~french
@@ -353,54 +426,58 @@ int readFileLine ( std::ifstream& file, char* imageFileName, bool* hasMask, char
  */
 int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<FileImage*>* pImagesIn ) {
     
-    char imageFileName[IMAGE_MAX_FILENAME_LENGTH];
-    char maskFileName[IMAGE_MAX_FILENAME_LENGTH];
-    BoundingBox<double> bbox ( 0.,0.,0.,0. );
-    int width, height;
-    bool hasMask;
-    double resx, resy;
-    
-    // Information sur l'image de sortie : on ne peut pas la créer directement car nous
-    // n'avons pas les informations à récupérer dans les images en entrée (canaux...)
-    char outputImageFileName[IMAGE_MAX_FILENAME_LENGTH];
-    char outputMaskFileName[IMAGE_MAX_FILENAME_LENGTH];
-    BoundingBox<double> outputBbox ( 0.,0.,0.,0. );    
-    int outputWidth, outputHeight;
-    bool outputHasMask;
-    double outputResx, outputResy;
-    
+    std::vector<bool> masks;
+    std::vector<char*> paths;
+    std::vector<BoundingBox<double> > bboxes;
+    std::vector<double> resxs;
+    std::vector<double> resys;
+
+    if (! loadConfiguration(&masks, &paths, &bboxes, &resxs, &resys) ) {
+        LOGGER_ERROR ( "Cannot load configuration file " << imageListFilename );
+        return -1;
+    }
+
+    // On doit avoir au moins deux lignes, trois si on a un masque de sortie
+    if (masks.size() < 2 || (masks.size() == 2 && masks.back()) ) {
+        LOGGER_ERROR ( "We have no input images in configuration file " << imageListFilename );
+        return -1;
+    }
+
+    // On va charger les images en entrée en premier pour avoir certaines informations
+    int firstInput = 1;
+    if (masks.at(1)) {
+        // La deuxième ligne est le masque de sortie
+        firstInput = 2;
+    }
+    /****************** LES ENTRÉES : CRÉATION ******************/
+
     FileImageFactory factory;
+    int nbImgsIn = 0;
 
-    // Ouverture du fichier texte listant les images
-    std::ifstream file;
+    for ( int i = firstInput; i < masks.size(); i++ ) {
+        LOGGER_DEBUG("image " << paths.at(i));
 
-    file.open ( imageListFilename );
-    if ( !file ) {
-        LOGGER_ERROR ( "Impossible d'ouvrir le fichier " << imageListFilename );
-        return -1;
-    }
+        nbImgsIn++;
+        LOGGER_DEBUG("Input " << nbImgsIn);
 
-    // ************* Informations de l'image de sortie dans le fichier de configuration ************
-    
-    if ( readFileLine ( file, outputImageFileName, &outputHasMask, outputMaskFileName, &outputBbox, &outputResx, &outputResy ) ) {
-        LOGGER_ERROR ( "Erreur lecture des premieres lignes du fichier de parametres: " << imageListFilename );
-        return -1;
-    }
-
-    // ************* Création des images en entrée à partir du fichier de configuration ************
-    int out=0;
-    while ( ( out = readFileLine ( file, imageFileName, &hasMask, maskFileName, &bbox, &resx, &resy ) ) == 0 ) {
-
-        FileImage* pImage=factory.createImageToRead ( imageFileName, bbox, resx, resy );
-        if ( pImage == NULL ) {
-            LOGGER_ERROR ( "Impossible de creer une image a lire a partir de " << imageFileName );
+        if ( resxs.at(i) == 0. || resys.at(i) == 0.) {
+            LOGGER_ERROR ( "Source image " << nbImgsIn << " is not valid (resolutions)" );
             return -1;
         }
 
-        if ( hasMask ) {
-            FileImage* pMask=factory.createImageToRead ( maskFileName, bbox, resx, resy );
+        FileImage* pImage=factory.createImageToRead ( paths.at(i), bboxes.at(i), resxs.at(i), resys.at(i) );
+        if ( pImage == NULL ) {
+            LOGGER_ERROR ( "Impossible de creer une image a partir de " << paths.at(i) );
+            return -1;
+        }
+
+        delete paths.at(i);
+
+        if ( i+1 < masks.size() && masks.at(i+1) ) {
+            
+            FileImage* pMask=factory.createImageToRead ( paths.at(i+1), bboxes.at(i), resxs.at(i), resys.at(i) );
             if ( pMask == NULL ) {
-                LOGGER_ERROR ( "Impossible de creer un masque a lire a partir de " << maskFileName );
+                LOGGER_ERROR ( "Impossible de creer un masque a partir de " << paths.at(i) );
                 return -1;
             }
 
@@ -408,57 +485,121 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
                 LOGGER_ERROR ( "Cannot add mask to the input FileImage" );
                 return -1;
             }
+            i++;
+            delete paths.at(i);
         }
 
         pImagesIn->push_back ( pImage );
-    }
 
-    if ( out != -1 ) {
-        LOGGER_ERROR ( "Erreur lecture du fichier de parametres: " << imageListFilename );
-        return -1;
-    }
+        /* On vérifie que le format des canaux est le même pour toutes les images en entrée :
+         *     - sampleformat
+         *     - bitspersample
+         *     - samplesperpixel
+         */
 
-    // Fermeture du fichier
-    file.close();
-    
-    // *************************** Création de l'image de sortie *************************
-
-    // Arrondi a la valeur entiere la plus proche
-    outputWidth = lround ( ( outputBbox.xmax - outputBbox.xmin ) / ( outputResx ) );
-    outputHeight = lround ( ( outputBbox.ymax - outputBbox.ymin ) / ( outputResy ) );
-    
-    *ppImageOut = factory.createImageToWrite (
-        outputImageFileName, outputBbox,outputResx, outputResy, outputWidth, outputHeight,
-        pImagesIn->at(0)->getChannels(), pImagesIn->at(0)->getSampleFormat(), 
-        pImagesIn->at(0)->getBitsPerSample(), pImagesIn->at(0)->getPhotometric(),
-        pImagesIn->at(0)->getCompression()
-    );
-    
-    
-    if ( *ppImageOut == NULL ) {
-        LOGGER_ERROR ( "Impossible de creer l'image de sortie " << imageFileName );
-        return -1;
-    }
-    
-
-    if ( hasMask ) {
-        *ppMaskOut = factory.createImageToWrite (
-            outputMaskFileName, outputBbox, outputResx, outputResy, outputWidth, outputHeight,
-            1, SampleFormat::UINT, 8, Photometric::MASK, Compression::DEFLATE
-        );
-
-        if ( *ppMaskOut == NULL ) {
-            LOGGER_ERROR ( "Impossible de creer le masque " << maskFileName );
-            return -1;
+        if (! outputProvided && nbImgsIn == 1) {
+            /* On n'a pas précisé de format en sortie, on va donc utiliser celui des entrées
+             * On veut donc avoir le même format pour toutes les entrées
+             * On lit la première image en entrée, qui sert de référence
+             * L'image en sortie sera à ce format
+             */
+            bitspersample = pImage->getBitsPerSample();
+            samplesperpixel = pImage->getChannels();
+            sampleformat = pImage->getSampleFormat();
+        } else if (! outputProvided) {
+            // On doit avoir le même format pour tout le monde
+            if (bitspersample != pImage->getBitsPerSample()) {
+                LOGGER_ERROR("We don't provided output format, so all inputs have to own the same" );
+                LOGGER_ERROR("The first image and the " << nbImgsIn << " one don't have the same number of bits per sample" );
+                LOGGER_ERROR(bitspersample << " != " << pImage->getBitsPerSample() );
+            }
+            if (samplesperpixel != pImage->getChannels()) {
+                LOGGER_ERROR("We don't provided output format, so all inputs have to own the same" );
+                LOGGER_ERROR("The first image and the " << nbImgsIn << " one don't have the same number of samples per pixel" );
+                LOGGER_ERROR(samplesperpixel << " != " << pImage->getChannels() );
+            }
+            if (sampleformat != pImage->getSampleFormat()) {
+                LOGGER_ERROR("We don't provided output format, so all inputs have to own the same" );
+                LOGGER_ERROR("The first image and the " << nbImgsIn << " one don't have the same sample format" );
+                LOGGER_ERROR(sampleformat << " != " << pImage->getSampleFormat() );
+            }
         }
     }
 
     if ( pImagesIn->size() == 0 ) {
         LOGGER_ERROR ( "Erreur lecture du fichier de parametres '" << imageListFilename << "' : pas de données en entrée." );
         return -1;
+    } else {
+        LOGGER_DEBUG( nbImgsIn << " image(s) en entrée" );
+    }
+
+    /********************** LA SORTIE : CRÉATION *************************/
+
+    if (samplesperpixel == 1) {
+        photometric = Photometric::GRAY;
+    } else if (samplesperpixel == 2) {
+        photometric = Photometric::GRAY;
+    } else {
+        photometric = Photometric::RGB;
+    }
+
+    // Arrondi a la valeur entiere la plus proche
+    int width = lround ( ( bboxes.at(0).xmax - bboxes.at(0).xmin ) / ( resxs.at(0) ) );
+    int height = lround ( ( bboxes.at(0).ymax - bboxes.at(0).ymin ) / ( resys.at(0) ) );
+
+    *ppImageOut = factory.createImageToWrite (
+        paths.at(0), bboxes.at(0), resxs.at(0), resys.at(0), width, height,
+        samplesperpixel, sampleformat, bitspersample, photometric, compression
+    );
+
+    if ( *ppImageOut == NULL ) {
+        LOGGER_ERROR ( "Impossible de creer l'image " << paths.at(0) );
+        return -1;
+    }
+
+    delete paths.at(0);
+
+    if ( firstInput == 2 ) {
+
+        *ppMaskOut = factory.createImageToWrite (
+            paths.at(1), bboxes.at(0), resxs.at(0), resys.at(0), width, height,
+            1, SampleFormat::UINT, 8, Photometric::MASK, Compression::DEFLATE
+        );
+
+        if ( *ppMaskOut == NULL ) {
+            LOGGER_ERROR ( "Impossible de creer le masque " << paths.at(1) );
+            return -1;
+        }
+
+        delete paths.at(1);
+    }
+
+    if (debugLogger) ( *ppImageOut )->print();
+
+    return 0;
+}
+
+int addConverters(std::vector<FileImage*> ImageIn) {
+    if (! outputProvided) {
+        // On n'a pas précisé de format en sortie, donc toutes les images doivent avoir le même
+        // Et la sortie a aussi ce format, donc pas besoin de convertisseur
+
+        return 0;
+    }
+
+    for ( std::vector<FileImage*>::iterator itImg = ImageIn.begin(); itImg < ImageIn.end(); itImg++ ) {
+
+        if ( ! ( *itImg )->addConverter ( sampleformat, bitspersample, samplesperpixel ) ) {
+            LOGGER_ERROR("Cannot add converter for an input image");
+            ( *itImg )->print();
+            return -1;
+        }
+
+        if (debugLogger) ( *itImg )->print();
     }
 
     return 0;
+
 }
 
 /**
@@ -504,35 +645,6 @@ int sortImages ( std::vector<FileImage*> ImagesIn, std::vector<std::vector<Image
     if (pTabImageIn->size() == 2) {
         if (pTabImageIn->at(0).size() != 1) {
             LOGGER_ERROR("If a background image is present, no another consistent image with it (one image pack)");
-            return -1;
-        }
-    }
-
-    return 0;
-}
-
-/**
- * \~french
- * \brief Contrôle la cohérence des images en entrée (même caractéristiques)
- * \param[in] ImagesIn images en entrée
- * \return code de retour, 0 si réussi, -1 sinon
- * \todo Contrôler les éventuels masques
- */
-int checkImages ( std::vector<FileImage*>& ImagesIn ) {
-    
-    int bps = ImagesIn.at ( 0 )->getBitsPerSample();
-    int spp = ImagesIn.at ( 0 )->getChannels();
-    int sf = ImagesIn.at ( 0 )->getSampleFormat();
-    int photometric = ImagesIn.at ( 0 )->getPhotometric(); 
-    
-    for ( int i = 1; i < ImagesIn.size(); i++ ) {
-        if ( ImagesIn.at ( i )->getBitsPerSample() != bps || ImagesIn.at ( i )->getSampleFormat() != sf ||
-             ImagesIn.at ( i )->getChannels() != spp || ImagesIn.at ( i )->getPhotometric() != photometric) {
-                        
-            LOGGER_ERROR ( "All input images must have same components" );
-            ImagesIn.at ( 0 )->print();
-            LOGGER_ERROR ( "not consistent with" );
-            ImagesIn.at ( i )->print();
             return -1;
         }
     }
@@ -683,10 +795,21 @@ int main ( int argc, char **argv ) {
         logd.setf ( std::ios::fixed,std::ios::floatfield );
     }
 
+    // On regarde si on a tout précisé en sortie, pour voir si des conversions sont possibles
+    if (sampleformat != SampleFormat::UNKNOWN && bitspersample != 0 && samplesperpixel !=0) {
+      outputProvided = true;
+    }
+
     LOGGER_DEBUG ( "Load" );
     // Chargement des images
     if ( loadImages ( &pImageOut, &pMaskOut, &ImagesIn ) < 0 ) {
         error ( "Echec chargement des images",-1 );
+    }
+
+    LOGGER_DEBUG ( "Add converters" );
+    // Ajout des modules de conversion aux images en entrée
+    if ( addConverters ( ImagesIn ) < 0 ) {
+        error ( "Echec ajout des convertisseurs", -1 );
     }
     
     // Conversion string->int[] du paramètre nodata
@@ -705,12 +828,6 @@ int main ( int argc, char **argv ) {
             error ( "Error with option -n : a value for nodata is missing",-1 );
         }
         nodata[i] = atoi ( charValue );
-    }
-
-    LOGGER_DEBUG ( "Check images" );
-    // Controle des images
-    if ( checkImages ( ImagesIn ) < 0 ) {
-        error ( "Echec controle des images en entrée",-1 );
     }
 
     LOGGER_DEBUG ( "Sort" );
