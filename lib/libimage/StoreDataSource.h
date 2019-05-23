@@ -76,13 +76,6 @@ protected:
     std::string name;
 
     /**
-     * \~french \brief Précise si la source de donnée doit être lue en entier, ou seulement en partie
-     * \~english \brief Precise if data source have to be read entirely or just a part
-     */
-    bool readFull;
-
-
-    /**
      * \~french \brief Précise si l'index et la taille de la tuile doivent êtr elus ou is nous les avons directement
      * \~english \brief Precise if tile's offset and size have to be read or if we have thme directly
      */

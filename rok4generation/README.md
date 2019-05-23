@@ -143,15 +143,6 @@ Cet outil supprime une pyramide à partir de son descripteur. Pour une pyramide 
 
 Stockage gérés : FICHIER, CEPH, S3, SWIFT
 
-### Extraction de pyramide
-
-Outil : `ex-pyr.pl`
-
-Cet outil génère une pyramide fichier par extraction géographique de pyramides sources. Il est possible de préciser des pyramides différentes pour chaque niveau.
-
-Stockage gérés : FICHIER, CEPH, S3, SWIFT
-
-
 ### Transfert de pyramide
 
 Outil : `pyr2pyr.pl`
@@ -266,14 +257,6 @@ Outil : `overlayNtiff`
 Cet outil génère une image à partir de plusieurs images de même dimension par superposition. Le calcul est fait pixel par pixel à partir de ceux sources avec le choix du mode : par transparence, par multiplication, en tenant compte des masques associés... Cet outil est utilisé lors de générations JOINCACHE lorsque plusieurs dalles de différentes pyramides sont trouvées pour une même dalle en sortie.
 
 ![overlayNtiff](../docs/images/ROK4GENERATION/tools/overlayNtiff.png)
-
-### Stockage final en tuiles indépendantes
-
-Outil : `slab2tiles`
-
-Cet outil stocke une dalle de travail en tuiles indépendantes au lieu d'une seule dalle tuilée. Cet outil n'est disponible qu'avec un stockage Ceph.
-
-![slab2tiles](../docs/images/ROK4GENERATION/tools/slab2tiles.png)
 
 ### Stockage final en dalle
 

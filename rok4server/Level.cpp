@@ -505,27 +505,16 @@ int Level::createDirPath (std::string path) {
 /*
  * @return la tuile d'indice (x,y) du niveau
  */
-
 DataSource* Level::getEncodedTile ( int x, int y ) { // TODO: return 0 sur des cas d'erreur..
-    if (tilesPerWidth == 0 && tilesPerHeight == 0) {
 
-        //on stocke une tuile et non une dalle
-        std::string path=getPath ( x, y, 1, 1 );
-        LOGGER_DEBUG ( path );
-        return new StoreDataSource ( path,maxTileSize,Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );
-
-    } else {
-
-        //on stocke une dalle
-        // Index de la tuile (cf. ordre de rangement des tuiles)
-        int n= ( y%tilesPerHeight ) *tilesPerWidth + ( x%tilesPerWidth );
-        // Les index sont stockés à partir de l'octet ROK4_IMAGE_HEADER_SIZE
-        uint32_t posoff=ROK4_IMAGE_HEADER_SIZE+4*n, possize=ROK4_IMAGE_HEADER_SIZE+tilesPerWidth*tilesPerHeight*4+4*n;
-        std::string path=getPath ( x, y, tilesPerWidth, tilesPerHeight);
-        LOGGER_DEBUG ( path );
-        return new StoreDataSource ( path, posoff, possize, ROK4_IMAGE_HEADER_SIZE + 2*4*tilesPerWidth*tilesPerHeight, Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );
-    }
-
+    //on stocke une dalle
+    // Index de la tuile (cf. ordre de rangement des tuiles)
+    int n= ( y%tilesPerHeight ) *tilesPerWidth + ( x%tilesPerWidth );
+    // Les index sont stockés à partir de l'octet ROK4_IMAGE_HEADER_SIZE
+    uint32_t posoff=ROK4_IMAGE_HEADER_SIZE+4*n, possize=ROK4_IMAGE_HEADER_SIZE+tilesPerWidth*tilesPerHeight*4+4*n;
+    std::string path=getPath ( x, y, tilesPerWidth, tilesPerHeight);
+    LOGGER_DEBUG ( path );
+    return new StoreDataSource ( path, posoff, possize, ROK4_IMAGE_HEADER_SIZE + 2*4*tilesPerWidth*tilesPerHeight, Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );
 }
 
 DataSource* Level::getDecodedTile ( int x, int y ) {

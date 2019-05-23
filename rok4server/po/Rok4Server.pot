@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2019-04-12 11:18+0200\n"
+"POT-Creation-Date: 2019-05-21 17:17+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -145,44 +145,44 @@ msgstr ""
 msgid "] of ["
 msgstr ""
 
-#: Level.cpp:262 Level.cpp:314
+#: Level.cpp:266 Level.cpp:318
 msgid "Image invalid !"
 msgstr ""
 
-#: Level.cpp:320
+#: Level.cpp:324
 msgid "Dimensions invalid !"
 msgstr ""
 
-#: Level.cpp:345
+#: Level.cpp:349
 msgid "Too Much Tile on X axis"
 msgstr ""
 
-#: Level.cpp:359
+#: Level.cpp:363
 msgid "Too Much Tile on Y axis"
 msgstr ""
 
-#: Level.cpp:405
+#: Level.cpp:409
 msgid "Indice de tuile negatif"
 msgstr ""
 
-#: Level.cpp:468
+#: Level.cpp:472
 msgid "getDirPath n'a pas de sens dans le cas d'un contexte non fichier"
 msgstr ""
 
-#: Level.cpp:550
+#: Level.cpp:543
 msgid "Type d'encodage inconnu : "
 msgstr ""
 
-#: Level.cpp:558 Level.cpp:561 Rok4Server.cpp:702 Rok4Server.cpp:710
+#: Level.cpp:551 Level.cpp:554 Rok4Server.cpp:702 Rok4Server.cpp:710
 #: Rok4Server.cpp:870
 msgid "No data found"
 msgstr ""
 
-#: Level.cpp:568
+#: Level.cpp:561
 msgid "GetTile Tiff"
 msgstr ""
 
-#: Level.cpp:578
+#: Level.cpp:571
 msgid "GetTile Image"
 msgstr ""
 
@@ -224,47 +224,47 @@ msgstr ""
 msgid "Extinction du serveur ROK4"
 msgstr ""
 
-#: Pyramid.cpp:214
+#: Pyramid.cpp:212
 msgid "debut pyramide"
 msgstr ""
 
-#: Pyramid.cpp:221
+#: Pyramid.cpp:219
 msgid "fin pyramide"
 msgstr ""
 
-#: Pyramid.cpp:240
+#: Pyramid.cpp:238
 msgid "best_level="
 msgstr ""
 
-#: Pyramid.cpp:240
+#: Pyramid.cpp:238
 msgid " resolution requete="
 msgstr ""
 
-#: Pyramid.cpp:265
+#: Pyramid.cpp:263
 msgid "BBox en dehors de la definition du CRS"
 msgstr ""
 
-#: Pyramid.cpp:269 Pyramid.cpp:308
+#: Pyramid.cpp:267 Pyramid.cpp:306
 msgid "BBox decoupe incorrect"
 msgstr ""
 
-#: Pyramid.cpp:301
+#: Pyramid.cpp:299
 msgid "New Width = "
 msgstr ""
 
-#: Pyramid.cpp:301
+#: Pyramid.cpp:299
 msgid "New Height = "
 msgstr ""
 
-#: Pyramid.cpp:302
+#: Pyramid.cpp:300
 msgid "ratio_x = "
 msgstr ""
 
-#: Pyramid.cpp:302
+#: Pyramid.cpp:300
 msgid "ratio_y = "
 msgstr ""
 
-#: Pyramid.cpp:314
+#: Pyramid.cpp:312
 msgid "Image decoupe valide"
 msgstr ""
 

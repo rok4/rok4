@@ -770,70 +770,6 @@ StoreSlab () {
         fi
     fi
 }
-StoreTiles () {
-    local level=$1
-    local workDir=$2
-    local workImgName=$3
-    local imgName=$4
-
-    shift 4
-
-    local imgI=$1
-    local imgJ=$2
-    local tilesW=$3
-    local tilesH=$4
-
-    shift 4
-
-    local workMskName=$1
-    local mskName=$2
-    
-    let imin=$imgI*$tilesW
-    let imax=$imgI*$tilesW+$tilesW-1
-    let jmin=$imgJ*$tilesH
-    let jmax=$imgJ*$tilesH+$tilesH-1
-    
-    if [[ ! ${RM_IMGS[$workDir/$workImgName]} ]] ; then
-             
-        work2cache $workDir/$workImgName __w2cI__ -ij $imgI $imgJ -pool ${PYR_POOL} $imgName
-        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-        
-        for i in `seq $imin $imax` ; do 
-            for j in `seq $jmin $jmax` ; do 
-                echo "0/${imgName}_${i}_${j}" >> ${TMP_LIST_FILE}
-                if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-            done
-        done
-        
-        if [ "$level" == "$TOP_LEVEL" ] ; then
-            rm $workDir/$workImgName
-        elif [ "$level" == "$CUT_LEVEL" ] ; then
-            mv $workDir/$workImgName ${COMMON_TMP_DIR}/
-        fi
-        
-        if [ $workMskName ] ; then
-            
-            if [ $mskName ] ; then
-                    
-                work2cache $workDir/$workMskName __w2cM__ -ij $imgI $imgJ -pool ${PYR_POOL} $mskName
-                if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-                for i in `seq $imin $imax` ; do 
-                    for j in `seq $jmin $jmax` ; do 
-                        echo "0/${mskName}_${i}_${j}" >> ${TMP_LIST_FILE}
-                        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-                    done
-                done
-                
-            fi
-            
-            if [ "$level" == "$TOP_LEVEL" ] ; then
-                rm $workDir/$workMskName
-            elif [ "$level" == "$CUT_LEVEL" ] ; then
-                mv $workDir/$workMskName ${COMMON_TMP_DIR}/
-            fi
-        fi
-    fi
-}
 W2CFUNCTION
 
 
@@ -921,57 +857,28 @@ sub work2cache {
     
     #### Export de l'image
 
-    if ($this->{pyramid}->storeTiles()) {
-        # Je suis forcément en stockage objet
+    # Le stockage peut être objet ou fichier
+    my $pyrName = $this->{pyramid}->getSlabPath("IMAGE", $node->getLevel(), $node->getCol(), $node->getRow(), FALSE);
+    
+    $cmd .= sprintf ("StoreSlab %s %s %s %s", $node->getLevel, $workDir, $node->getWorkImageName(TRUE), $pyrName);
+    $weight += WORK2CACHE_W;
+    
+    #### Export du masque, si présent
 
-        my $pyrName = sprintf "%s_IMG_%s", $this->{pyramid}->getName(), $node->getLevel();
+    if ($node->getWorkMaskName()) {
+        # On a un masque de travail : on le précise pour qu'il soit potentiellement déplacé dans le temporaire commun ou supprimé
+        $cmd .= sprintf (" %s", $node->getWorkMaskName(TRUE));
         
-        $cmd .= sprintf "StoreTiles %s %s %s %s %s %s %s %s",
-            $node->getLevel, $workDir, $node->getWorkImageName(TRUE), $pyrName,
-            $node->getCol, $node->getRow, $this->{pyramid}->getTilesPerWidth, $this->{pyramid}->getTilesPerHeight;
-
-        $weight += WORK2CACHE_W;
-        
-        #### Export du masque, si présent
-
-        if ($node->getWorkMaskName()) {
-            # On a un masque de travail : on le précise pour qu'il soit potentiellement déplacé dans le temporaire commun ou supprimé
-            $cmd .= sprintf (" %s", $node->getWorkMaskName(TRUE));
+        # En plus, on veut exporter les masques dans la pyramide, on en précise donc l'emplacement final
+        if ( $this->{pyramid}->ownMasks() ) {
+            $pyrName = $this->{pyramid}->getSlabPath("MASK", $node->getLevel(), $node->getCol(), $node->getRow(), FALSE);
             
-            # En plus, on veut exporter les masques dans la pyramide, on en précise donc l'emplacement final
-            if ( $this->{pyramid}->ownMasks() ) {
-                $pyrName = sprintf "%s_MSK_%s", $this->{pyramid}->getName(), $node->getLevel();
-                
-                $cmd .= sprintf (" %s", $pyrName);
-                $weight += WORK2CACHE_W;
-            }        
-        }
-        
-        $cmd .= "\n";
-    } else {
-        # Le stockage peut être objet ou fichier
-        my $pyrName = $this->{pyramid}->getSlabPath("IMAGE", $node->getLevel(), $node->getCol(), $node->getRow(), FALSE);
-        
-        $cmd .= sprintf ("StoreSlab %s %s %s %s", $node->getLevel, $workDir, $node->getWorkImageName(TRUE), $pyrName);
-        $weight += WORK2CACHE_W;
-        
-        #### Export du masque, si présent
-
-        if ($node->getWorkMaskName()) {
-            # On a un masque de travail : on le précise pour qu'il soit potentiellement déplacé dans le temporaire commun ou supprimé
-            $cmd .= sprintf (" %s", $node->getWorkMaskName(TRUE));
-            
-            # En plus, on veut exporter les masques dans la pyramide, on en précise donc l'emplacement final
-            if ( $this->{pyramid}->ownMasks() ) {
-                $pyrName = $this->{pyramid}->getSlabPath("MASK", $node->getLevel(), $node->getCol(), $node->getRow(), FALSE);
-                
-                $cmd .= sprintf (" %s", $pyrName);
-                $weight += WORK2CACHE_W;
-            }        
-        }
-        
-        $cmd .= "\n";
+            $cmd .= sprintf (" %s", $pyrName);
+            $weight += WORK2CACHE_W;
+        }        
     }
+    
+    $cmd .= "\n";
 
     return ($cmd,$weight);
 }

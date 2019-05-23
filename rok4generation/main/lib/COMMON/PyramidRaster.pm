@@ -119,7 +119,6 @@ Attributes:
     keystone_connection - boolean - For swift storage, keystone authentication or not ?
 
     data_pool - string - Name of the (existing) CEPH pool, where to store data if CEPH storage type
-    tiles_storage - boolean - Precise if tiles are stored independently if CEPH storage type
 
     cachedList - string hash - If loaded, list content in an hash.
 =cut
@@ -243,7 +242,6 @@ sub new {
 
         # Pyramide CEPH
         data_pool => undef,
-        tiles_storage => FALSE,
 
         cachedList => {}
     };
@@ -328,11 +326,6 @@ sub new {
             #### CAS D'UNE PYRAMIDE CEPH
             $this->{storage_type} = "CEPH";
             $this->{data_pool} = $params->{pyr_data_pool_name};
-
-            if (exists $params->{tiles_storage} && defined $params->{tiles_storage} && uc($params->{tiles_storage}) eq "TRUE") {
-                $this->{tiles_storage} = $params->{tiles_storage};
-            }
-
         }
 
         else {
@@ -839,7 +832,7 @@ sub writeDescriptor {
 
     for (my $i = scalar @orderedLevels - 1; $i >= 0; $i--) {
         # we write levels in pyramid's descriptor from the top to the bottom
-        $string .= $orderedLevels[$i]->exportToXML($this->storeTiles());
+        $string .= $orderedLevels[$i]->exportToXML();
     }
 
     $string .= "</Pyramid>";
@@ -918,12 +911,6 @@ sub ownMasks {
 sub keystoneConnection {
     my $this = shift;
     return $this->{keystone_connection};
-}
-
-# Function: storeTiles
-sub storeTiles {
-    my $this = shift;
-    return $this->{tiles_storage};
 }
 
 # Function: getName

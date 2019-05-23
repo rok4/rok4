@@ -12,14 +12,11 @@ Par défaut, on ne précise pas les caractéristique de l'image en sortie (nombr
 
 La taille de tuile précisée doit être cohérente avec la taille totale de la dalle (doit être un diviseur des dimensions totales).
 
-Dans le cas d'un stockage CEPH, il est possible de stocker non pas une dalle mais de stocker chaque tuile séparément, en dehors du conteneur TIFF.
-
 ### Utilisation
 
 * Stockage fichier sans conversion : work2cache input.tif -c png -t 256 256 output.tif
 * Stockage fichier avec conversion : work2cache input.tif -c png -t 256 256 -a uint -b 8 -s 1 output.tif
 * Stockage CEPH sans conversion : work2cache input.tif -pool PYRAMIDS -c png -t 256 256 output.tif
-* Stockage CEPH en tuiles indépendantes sans conversion : work2cache input.tif -pool PYRAMIDS -ij 10 17 -c png -t 256 256 output.tif
 * Stockage S3 sans conversion : work2cache input.tif -bucket PYRAMIDS -c png -t 256 256 output.tif
 * Stockage SWIFT sans conversion : work2cache input.tif -container PYRAMIDS -c png -t 256 256 output.tif
 * Stockage SWIFT sans conversion avec authentification keystone : work2cache input.tif -container PYRAMIDS -ks -c png -t 256 256 output.tif

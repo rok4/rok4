@@ -334,30 +334,6 @@ sub addSubElm {
 
 my $BASHFUNCTIONS_CEPH = <<'FUNCTIONS';
 
-StoreTiles () {
-    local fullPath=$1
-    local col=$2
-    local row=$3
-    local prefix_objName=$4
-
-    let imin=$col*${TPW}
-    let imax=$col*${TPW}+${TPW}-1
-    let jmin=$row*${TPH}
-    let jmax=$row*${TPH}+${TPH}-1
-                 
-    slab2tiles $fullPath -pool ${POOL_NAME_DST} -ij $col $row -t ${TPW} ${TPH} $prefix_objName
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-        
-
-    for i in `seq $imin $imax` ; do 
-        for j in `seq $jmin $jmax` ; do 
-            echo "${prefix_objName}_${i}_${j}" >> ${TMP_LIST_FILE}
-            if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-        done
-    done
-}
-
-
 GetSlab () {
     local objName=$1
   
@@ -476,7 +452,6 @@ sub doIt {
     # link to parameters
     my $params = $this{params};
     my $follow_links = 1;
-    my $store_tiles = 0;
     my $script_index = 0;
     my $from_storage_type = undef;
     my $from_pool_name = undef; # seulement si pyr2pyr CEPH -> CEPH
@@ -515,16 +490,6 @@ sub doIt {
         return FALSE;
     }
 
-    ### We want to store tiles separatly ?
-    if ( exists $params->{to}->{tiles_storage} && defined $params->{to}->{tiles_storage} && uc($params->{to}->{tiles_storage}) eq "TRUE" ) {
-        if ( $to_storage_type ne "CEPH" ) {
-            ERROR("Tile storage only handled for ceph");
-            return FALSE;
-        }
-        INFO("We store tiles on ceph separately");
-        $store_tiles = 1;
-    }
-    
     my $pyrName = $params->{to}->{pyr_name};
     my $job_number = $params->{process}->{job_number};
     my $path_temp = $params->{process}->{path_temp};
@@ -595,19 +560,6 @@ sub doIt {
             my ($nodatanode) = $level->findnodes("nodata");
             if (defined $nodatanode) {
                 $level->removeChild($nodatanode);
-            }
-
-            if ( $store_tiles ) {
-                my $tpw_node = ($level->findnodes("tilesPerWidth"))[0];
-                $tpw = ($level->findnodes("tilesPerWidth"))[0]->textContent;
-                my $tph_node = ($level->findnodes("tilesPerHeight"))[0];
-                $tph = ($level->findnodes("tilesPerHeight"))[0]->textContent;
-
-                $level->removeChild($tpw_node);
-                $level->removeChild($tph_node);
-
-                addSubElm($doc, $level, "tilesPerWidth", '0');
-                addSubElm($doc, $level, "tilesPerHeight", '0');
             }
 
             my ($baseDir) = $level->findnodes("baseDir");
@@ -697,10 +649,6 @@ sub doIt {
 
         if ( $from_storage_type eq "CEPH" ) {
             print $STREAM "POOL_NAME_SRC=$from_pool_name\n";
-        }
-        if ( $store_tiles ) {
-            print $STREAM "TPW=$tpw\n";
-            print $STREAM "TPH=$tph\n";
         }
         print $STREAM "date\n";
         if ( $to_storage_type eq "CEPH" ) {
@@ -812,10 +760,6 @@ sub doIt {
 
             }
 
-            if ( $store_tiles && defined($col) ) {
-                $cmd = sprintf("StoreTiles %s %s %s %s\n", $fullPath, $col, $row, $prefix_objName);
-                DEBUG($cmd);
-            }
             else {
                 $cmd = sprintf("StoreSlab %s %s\n", $fullPath, $objName);
                 DEBUG($cmd);
@@ -945,7 +889,6 @@ Topic: to
     container_name - Container (must already exist). If not, pool_name or bucket_name mandatory.
     pyr_name - Pyramid's name, used to prefix objects. Mandatory.
     pyr_desc_path - Directory where new pyramid's descriptor and list are written. Mandatory.
-    tiles_storage - Optionnal (only for ceph). If set to "true", slab are divised and tiles are stored separated
 
 Example:
     (start code)
@@ -953,7 +896,6 @@ Example:
     pool_name=PYRAMIDS
     pyr_name=MONDE12FEUILLES_JPG_PM_TILE
     pyr_desc_path=/home/visiteur/PYR2PYR/
-    tiles_storage=TRUE
     (end code)
 
 Topic: process

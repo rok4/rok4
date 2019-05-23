@@ -460,8 +460,8 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
         return;
     }
 
-    if ((tilesPerHeight == 0 || tilesPerWidth == 0) && tables.size() != 0) {
-        LOGGER_ERROR ( filePath <<_ ( " Level " ) << id <<_ ( ": vector data cannot be stored outside a slab" ) );
+    if (tilesPerHeight == 0 || tilesPerWidth == 0) {
+        LOGGER_ERROR ( filePath <<_ ( " Level " ) << id <<_ ( ": slab tiles size have to be non zero integers" ) );
         return;
     }
 

@@ -871,64 +871,64 @@ Parameter:
 sub exportToXML {
     my $this = shift;
 
-    my $string = "    <level>\n";
-    $string .= sprintf "        <tileMatrix>%s</tileMatrix>\n", $this->{id};
+    my $string =                   "    <level>\n";
+    $string .= sprintf             "        <tileMatrix>%s</tileMatrix>\n", $this->{id};
 
-    $string .= sprintf "        <tilesPerWidth>%s</tilesPerWidth>\n", $this->{size}->[0];
-    $string .= sprintf "        <tilesPerHeight>%s</tilesPerHeight>\n", $this->{size}->[1];
+    $string .= sprintf             "        <tilesPerWidth>%s</tilesPerWidth>\n", $this->{size}->[0];
+    $string .= sprintf             "        <tilesPerHeight>%s</tilesPerHeight>\n", $this->{size}->[1];
 
-    $string .= "        <TMSLimits>\n";
+    $string .=                     "        <TMSLimits>\n";
 
     if (defined $this->{limits}->[0]) {
-        $string .= sprintf "            <minTileRow>%s</minTileRow>\n", $this->{limits}->[0];
-        $string .= sprintf "            <maxTileRow>%s</maxTileRow>\n", $this->{limits}->[1];
-        $string .= sprintf "            <minTileCol>%s</minTileCol>\n", $this->{limits}->[2];
-        $string .= sprintf "            <maxTileCol>%s</maxTileCol>\n", $this->{limits}->[3];
+        $string .= sprintf         "            <minTileRow>%s</minTileRow>\n", $this->{limits}->[0];
+        $string .= sprintf         "            <maxTileRow>%s</maxTileRow>\n", $this->{limits}->[1];
+        $string .= sprintf         "            <minTileCol>%s</minTileCol>\n", $this->{limits}->[2];
+        $string .= sprintf         "            <maxTileCol>%s</maxTileCol>\n", $this->{limits}->[3];
     } else {
-        $string .= "            <minTileRow>0</minTileRow>\n";
-        $string .= "            <maxTileRow>0</maxTileRow>\n";
-        $string .= "            <minTileCol>0</minTileCol>\n";
-        $string .= "            <maxTileCol>0</maxTileCol>\n";
+        $string .=                 "            <minTileRow>0</minTileRow>\n";
+        $string .=                 "            <maxTileRow>0</maxTileRow>\n";
+        $string .=                 "            <minTileCol>0</minTileCol>\n";
+        $string .=                 "            <maxTileCol>0</maxTileCol>\n";
     }
-    $string .= "        </TMSLimits>\n";
+    $string .=                     "        </TMSLimits>\n";
 
     if ($this->{type} eq "FILE") {
-        $string .= sprintf "        <baseDir>%s</baseDir>\n", File::Spec->abs2rel($this->{dir_image}, $this->{desc_path});
-        $string .= sprintf "        <pathDepth>%s</pathDepth>\n", $this->{dir_depth};
+        $string .= sprintf         "        <baseDir>%s</baseDir>\n", File::Spec->abs2rel($this->{dir_image}, $this->{desc_path});
+        $string .= sprintf         "        <pathDepth>%s</pathDepth>\n", $this->{dir_depth};
     }
     elsif ($this->{type} eq "S3") {
-        $string .= sprintf "        <imagePrefix>%s</imagePrefix>\n", $this->{prefix_image};
-        $string .=         "        <s3Context>\n";
-        $string .= sprintf "            <bucketName>%s</bucketName>\n", $this->{bucket_name};
-        $string .=         "        </s3Context>\n";
+        $string .= sprintf         "        <imagePrefix>%s</imagePrefix>\n", $this->{prefix_image};
+        $string .=                 "        <s3Context>\n";
+        $string .= sprintf         "            <bucketName>%s</bucketName>\n", $this->{bucket_name};
+        $string .=                 "        </s3Context>\n";
     }
     elsif ($this->{type} eq "SWIFT") {
-        $string .= sprintf "        <imagePrefix>%s</imagePrefix>\n", $this->{prefix_image};
-        $string .=         "        <swiftContext>\n";
-        $string .= sprintf "            <containerName>%s</containerName>\n", $this->{container_name};
+        $string .= sprintf         "        <imagePrefix>%s</imagePrefix>\n", $this->{prefix_image};
+        $string .=                 "        <swiftContext>\n";
+        $string .= sprintf         "            <containerName>%s</containerName>\n", $this->{container_name};
 
         if ($this->{keystone_connection}) {
-            $string .=     "            <keystoneConnection>TRUE</keystoneConnection>\n";
+            $string .=             "            <keystoneConnection>TRUE</keystoneConnection>\n";
         }
 
-        $string .=         "        </swiftContext>\n";
+        $string .=                 "        </swiftContext>\n";
     }
     elsif ($this->{type} eq "CEPH") {
-        $string .= sprintf "        <imagePrefix>%s</imagePrefix>\n", $this->{prefix_image};
-        $string .=         "        <cephContext>\n";
-        $string .= sprintf "            <poolName>%s</poolName>\n", $this->{pool_name};
-        $string .=         "        </cephContext>\n";
+        $string .= sprintf         "        <imagePrefix>%s</imagePrefix>\n", $this->{prefix_image};
+        $string .=                 "        <cephContext>\n";
+        $string .= sprintf         "            <poolName>%s</poolName>\n", $this->{pool_name};
+        $string .=                 "        </cephContext>\n";
     }
 
     foreach my $table (keys(%{$this->{tables}})) {
-        $string .=         "        <table>\n";
-        $string .= sprintf "            <name>%s</name>\n", $this->{tables}->{$table}->{final_name};
-        $string .= sprintf "            <geometry>%s</geometry>\n", $this->{tables}->{$table}->{geometry}->{type};
+        $string .=                 "        <table>\n";
+        $string .= sprintf         "            <name>%s</name>\n", $this->{tables}->{$table}->{final_name};
+        $string .= sprintf         "            <geometry>%s</geometry>\n", $this->{tables}->{$table}->{geometry}->{type};
         while (my ($att, $hash) = each(%{$this->{tables}->{$table}->{attributes_analysis}})) {
-            $string .=     "            <attribute>\n";
-            $string .=     "                <name>$att</name>\n";
-            $string .= sprintf "                <type>%s</type>\n", $hash->{type};
-            $string .= sprintf "                <count>%s</count>\n", $hash->{count};
+            $string .=             "            <attribute>\n";
+            $string .=             "                <name>$att</name>\n";
+            $string .= sprintf     "                <type>%s</type>\n", $hash->{type};
+            $string .= sprintf     "                <count>%s</count>\n", $hash->{count};
 
             if (exists $hash->{min}) {
                 $string .= sprintf "                <min>%s</min>\n", $hash->{min};
@@ -939,13 +939,13 @@ sub exportToXML {
                 $string .= sprintf "                <values>\"%s\"</values>\n", join("\",\"", @{$hash->{values}});
             }
 
-            $string .= "            </attribute>\n";
+            $string .=             "            </attribute>\n";
         }
-        $string .=     "        </table>\n";
+        $string .=                 "        </table>\n";
     }
 
 
-    $string .= "    </level>\n";
+    $string .=                     "    </level>\n";
 
     return $string;
 }
