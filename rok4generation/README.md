@@ -12,7 +12,7 @@ La suite d'outils ROK4GENERATION permet de générer, mettre à jour, composer, 
         - [La suite 4ALAMO](#la-suite-4alamo)
     - [Gestion des pyramides](#gestion-des-pyramides)
         - [Suppression de pyramide](#suppression-de-pyramide)
-        - [Extraction de pyramide](#extraction-de-pyramide)
+        - [Réecriture d'une tête de pyramide](#réecriture-dune-tête-de-pyramide)
         - [Transfert de pyramide](#transfert-de-pyramide)
     - [Les outils de débogage](#les-outils-de-débogage)
         - [Création d'un descripteur de couche](#création-dun-descripteur-de-couche)
@@ -28,7 +28,6 @@ La suite d'outils ROK4GENERATION permet de générer, mettre à jour, composer, 
         - [Sous réechantillonnage de 4 images](#sous-réechantillonnage-de-4-images)
         - [Réechantillonnage et reprojection d'images](#réechantillonnage-et-reprojection-dimages)
         - [Superposition d'images](#superposition-dimages)
-        - [Stockage final en tuiles indépendantes](#stockage-final-en-tuiles-indépendantes)
         - [Stockage final en dalle](#stockage-final-en-dalle)
     - [Manipulation vecteur](#manipulation-vecteur)
         - [Écriture d'une dalle vecteur](#écriture-dune-dalle-vecteur)
@@ -50,7 +49,7 @@ Outils : `be4-file.pl`, `be4-ceph.pl`, `be4-s3.pl`, `be4-swift.pl`
 
 Les outils BE4 génèrent une pyramide raster à partir d'images géoréférencées ou d'un service WMS. Ils permettent de mettre à jour une pyramide raster existante. Si des images sont en entrée, elles peuvent être converties à la volée dans le format de la pyramide en sortie.
 
-Stockage gérés : FICHIER, CEPH, S3, SWIFT
+Stockages gérés : FICHIER, CEPH, S3, SWIFT
 
 Parallélisable.
 
@@ -82,7 +81,7 @@ Outils : `joinCache-file.pl`, `joinCache-ceph.pl`, `joinCache-s3.pl`
 
 Les outils JOINCACHE génèrent une pyramide raster à partir d'autres pyramide raster compatibles (même TMS, dalles de même dimensions, canaux au même format). La composition se fait verticalement (choix des pyramides sources par niveau) et horizontalement (choix des pyramides source par zone au sein d'un niveau). La fusion de plusieurs dalles sources peut se faire selon plusieurs méthodes (masque, alpha top, multiplication)
 
-Stockage gérés : FICHIER, CEPH, S3
+Stockages gérés : FICHIER, CEPH, S3
 
 Parallélisable.
 
@@ -114,7 +113,7 @@ Outils : `4alamo-file.pl`, `4alamo-ceph.pl`
 
 Les outils 4ALAMO génèrent une pyramide vecteur à partir d'une base de données PostgreSQL. Ils permettent de mettre à jour une pyramide vecteur existante.
 
-Stockage gérés : FICHIER, CEPH
+Stockages gérés : FICHIER, CEPH
 
 Parallélisable.
 
@@ -141,7 +140,33 @@ Outil : `sup-pyr.pl`
 
 Cet outil supprime une pyramide à partir de son descripteur. Pour une pyramide stockée en fichier, il suffit de supprimer le dossier des données. Dans le cas de stockage objet, le fichier liste est parcouru et les dalles sont supprimées une par une.
 
-Stockage gérés : FICHIER, CEPH, S3, SWIFT
+Stockages gérés : FICHIER, CEPH, S3, SWIFT
+
+
+### Réecriture d'une tête de pyramide
+
+Outil : `4head.pl`
+
+Cet outil permet de regénérer des niveaux de la pyramide en partant d'un de ses niveaux. La pyramide est modifiée et sa liste, qui fait foi en terme de contenu de la pyramide, est mise à jour pour toujours correspondre au contenu final de la pyramide. L'outil perl modifie la liste et génère un script shell dont l'exécution modifiera les dalles de la pyramide. Seuls les niveaux entre celui de référence (non inclus) et le niveau du haut fournis (inclus) sont modifiés.
+
+Stockages gérés : FICHIER, CEPH, S3, SWIFT
+
+Types de pyramides gérés : RASTER QTREE
+
+#### Commandes
+
+* `4head.pl --pyr /home/ign/PYRAMID.pyr --tmsdir /home/ign/TMS/ --reference-level 19 --top-level 4 --tmp /home/ign/tmp/ [--help|--usage|--version]`
+
+#### Options
+
+* `--help` Affiche le lien vers la documentation utilisateur de l'outil et quitte
+* `--usage` Affiche le lien vers la documentation utilisateur de l'outil et quitte
+* `--version` Affiche la version de l'outil et quitte
+* `--pyr` Précise le chemin vers le descripteur de la pyramide à modifier
+* `--tmsdir` Précise le dossier contenant au moins le TMS utilisé par la pyramide à modifier
+* `--reference-level` Précise le niveau de la pyramide d'où partir pour regénérer les niveaux supérieurs
+* `--top-level` Précise le niveau jusqu'auquel regénérer les dalles
+* `--tmp` Précise un dossier à utiliser comme espace temporaire de génération
 
 ### Transfert de pyramide
 
@@ -149,7 +174,7 @@ Outil : `pyr2pyr.pl`
 
 Cet outil copie une pyramide d'un stockage à un autre.
 
-Conversions possibles : 
+Conversions possibles :
 * FICHIER -> CEPH, S3, SWIFT
 * CEPH -> CEPH
 

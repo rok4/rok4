@@ -500,11 +500,11 @@ sub identifyAboveNodes {
                             ## intersection avec la bbox des données initiales
                             if ( $newnode->isBboxIntersectingNodeBbox($this->getBbox())) {
                                 $this->{nodes}->{$targetTm->getID()}->{$idxkey} = $newnode ;
-                                $newnode->addNodeSources($node); 
+                                $newnode->addSourceNodes($node); 
                             }
                         } else {
                             $newnode = $this->{nodes}->{$targetTm->getID()}->{$idxkey};
-                            $newnode->addNodeSources($node); 
+                            $newnode->addSourceNodes($node); 
                         }             
                     }
                 }
@@ -793,7 +793,7 @@ sub exportForDebug {
        # boucle sur tous les noeuds du niveau
        foreach my $node ( $this->getNodesOfLevel($tms->getIDfromOrder($i))) {
          $output .= sprintf "\tNoeud : %s_%s ; TM Résolution : %s ; Calculé à partir de : \n",$node->getCol(),$node->getRow(),$node->getTM()->getResolution();
-         foreach my $node_sup ( @{$node->getNodeSources()} ) {
+         foreach my $node_sup ( @{$node->getSourceNodes()} ) {
              #print Dumper ($node_sup);
              $output .= sprintf "\t\t Noeud :%s_%s , TM Resolution : %s\n",$node_sup->getCol(),$node_sup->getRow(),$node_sup->getTM()->getResolution();
          }

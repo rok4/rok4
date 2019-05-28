@@ -47,6 +47,7 @@ set(VERSION_TEXT ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.$
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Makefile.PL.in ${CMAKE_CURRENT_BINARY_DIR}/src/Makefile.PL @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/4alamo-file.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/4alamo-file.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/4alamo-ceph.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/4alamo-ceph.pl @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/4head.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/4head.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4-file.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/be4-file.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4-ceph.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/be4-ceph.pl @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/be4-s3.pl.in ${CMAKE_CURRENT_BINARY_DIR}/src/bin/be4-s3.pl @ONLY)

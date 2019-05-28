@@ -221,7 +221,9 @@ sub new {
         keystone_connection => FALSE,
 
         # Pyramide CEPH
-        data_pool => undef
+        data_pool => undef,
+
+        cachedList => {}
     };
 
     bless($this, $class);
@@ -897,28 +899,28 @@ sub getTilesPerHeight {
 }
 
 =begin nd
-Function: getCacheImageSize
+Function: getSlabSize
 
 Returns the pyramid's image's pixel width and height as the double list (width, height), for a given level.
 
 Parameters (list):
     level - string - Level ID
 =cut
-sub getCacheImageSize {
+sub getSlabSize {
     my $this = shift;
     my $level = shift;
-    return ($this->getCacheImageWidth($level), $this->getCacheImageHeight($level));
+    return ($this->getSlabWidth($level), $this->getSlabHeight($level));
 }
 
 =begin nd
-Function: getCacheImageWidth
+Function: getSlabWidth
 
 Returns the pyramid's image's pixel width, for a given level.
 
 Parameters (list):
     level - string - Level ID
 =cut
-sub getCacheImageWidth {
+sub getSlabWidth {
     my $this = shift;
     my $level = shift;
 
@@ -926,14 +928,14 @@ sub getCacheImageWidth {
 }
 
 =begin nd
-Function: getCacheImageHeight
+Function: getSlabHeight
 
 Returns the pyramid's image's pixel height, for a given level.
 
 Parameters (list):
     level - string - Level ID
 =cut
-sub getCacheImageHeight {
+sub getSlabHeight {
     my $this = shift;
     my $level = shift;
 
@@ -1050,6 +1052,7 @@ sub getDataPool {
     my $this = shift;    
     return $this->{data_pool};
 }
+
 ####################################################################################################
 #                                     Group: List tools                                            #
 ####################################################################################################

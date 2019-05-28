@@ -23,6 +23,7 @@ buildbin: \
 ./bin/be4-swift.pl \
 ./bin/4alamo-file.pl \
 ./bin/4alamo-ceph.pl \
+./bin/4head.pl \
 ./bin/joinCache-file.pl \
 ./bin/joinCache-ceph.pl \
 ./bin/tms-toolbox.pl \

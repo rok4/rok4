@@ -989,8 +989,8 @@ sub wms2work {
     my $node = shift;
     my $harvesting = shift;
 
-    my @imgSize = $this->{pyramid}->getCacheImageSize($node->getLevel); # ie size tile image in pixel !
-    my $tms     = $this->{pyramid}->getTileMatrixSet;
+    my @imgSize = $this->{pyramid}->getSlabSize($node->getLevel); # ie size tile image in pixel !
+    my $tms     = $this->{pyramid}->getTileMatrixSet();
     
     my $nodeName = $node->getWorkImageName();
     
@@ -1255,8 +1255,8 @@ sub decimateNtiff {
     printf CFGF $node->exportForDntConf(TRUE, $node->getScript()->getTempDir()."/");
     
     #   - Les noeuds sources (NNGraph)
-    foreach my $nodesource ( @{$node->getNodeSources()} ) {
-        printf CFGF "%s", $nodesource->exportForDntConf(FALSE, $nodesource->getScript()->getTempDir()."/");
+    foreach my $sourceNode ( @{$node->getSourceNodes()} ) {
+        printf CFGF "%s", $sourceNode->exportForDntConf(FALSE, $sourceNode->getScript()->getTempDir()."/");
     }
     
     close CFGF;
