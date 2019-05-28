@@ -159,7 +159,7 @@ PushSlab () {
     local output=$2
     local options=$3
         
-    work2cache $input -bucket ${PYR_BUCKET} $output ${options}
+    work2cache ${TMP_DIR}/$input -bucket ${PYR_BUCKET} $output ${options}
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 SLABFUNCTIONS
@@ -178,7 +178,7 @@ PushSlab () {
     local output=$2
     local options=$3
         
-    work2cache $input -container ${PYR_CONTAINER} ${KEYSTONE_OPTION} $output ${options}
+    work2cache ${TMP_DIR}/$input -container ${PYR_CONTAINER} ${KEYSTONE_OPTION} $output ${options}
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi   
 }
 SLABFUNCTIONS
@@ -197,7 +197,7 @@ PushSlab () {
     local output=$2
     local options=$3
         
-    work2cache $input -pool ${PYR_POOL} $output ${options}
+    work2cache ${TMP_DIR}/$input -pool ${PYR_POOL} $output ${options}
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi    
 }
 SLABFUNCTIONS

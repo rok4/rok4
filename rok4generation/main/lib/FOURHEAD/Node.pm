@@ -224,7 +224,7 @@ sub writeCode {
             $this->{workImageFilename};
 
         if ($pyramid->ownMasks()) {
-            printf $STREAM, "PullSlab %s %s\n", 
+            printf $STREAM "PullSlab %s %s\n", 
                 $pyramid->getSlabPath("MASK", $this->{level}, $this->{col}, $this->{row}, FALSE),
                 $this->{workMaskFilename};
         }

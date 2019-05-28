@@ -1410,12 +1410,12 @@ sub flushCachedList {
             # Cas objet
             else {
                 my $path = $slabPath;
-                $path =~ s/^\d+\///;
+                $path =~ s/^[^\/]+\///;
                 printf LIST "0/$path\n";
 
                 if (exists $this->{cachedList}->{$l}->{MASK}->{$slabKey}) {
                     my $path = $this->{cachedList}->{$l}->{MASK}->{$slabKey};
-                    $path =~ s/^\d+\///;
+                    $path =~ s/^[^\/]+\///;
                     printf LIST "0/$path\n";
                 }
             }
