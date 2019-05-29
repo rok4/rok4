@@ -43,7 +43,7 @@ Section: 4HEAD tool
 
 Synopsis:
     (start code)
-    4head.pl --pyr <FILE> --tmsdir <DIRECTORY> --reference-level <LEVEL ID> --top-level <LEVEL ID>
+    4head.pl --pyr <FILE> --tmsdir <DIRECTORY> --reference-level <LEVEL ID> --top-level <LEVEL ID> --tmp <DIRECTORY>
     (end code)
 =cut
 
@@ -170,7 +170,7 @@ sub init {
         },
         "version|v" => sub { exit 0; },
         "usage" => sub {
-            printf "4head.pl --pyr <FILE> --tmsdir <DIRECTORY> --reference-level <LEVEL ID> --top-level <LEVEL ID> --tmp <DIRECTORY\n" ;
+            printf "4head.pl --pyr <FILE> --tmsdir <DIRECTORY> --reference-level <LEVEL ID> --top-level <LEVEL ID> --tmp <DIRECTORY>\n" ;
             exit 0;
         },
         
@@ -181,7 +181,7 @@ sub init {
         "top-level=s" => \$options{"top-level"},
     ) or do {
         printf "Unappropriate usage\n";
-        printf "4head.pl --pyr <FILE> --tmsdir <DIRECTORY> --reference-level <LEVEL ID> --top-level <LEVEL ID> --tmp <DIRECTORY\n";
+        printf "4head.pl --pyr <FILE> --tmsdir <DIRECTORY> --reference-level <LEVEL ID> --top-level <LEVEL ID> --tmp <DIRECTORY>\n";
         exit -1;
     };
     
@@ -266,8 +266,8 @@ sub init {
         return FALSE;
     }
     
-    if (! defined $options{pyr}->getTileMatrixSet()->getTileMatrix($options{"top-level"})) {
-        ERROR("Provided top level is not a level ID of the pyramid's TMS");
+    if (! defined $options{pyr}->getLevel($options{"reference-level"})) {
+        ERROR("Provided top level is not a level ID of the pyramid");
         return FALSE;
     }
 
