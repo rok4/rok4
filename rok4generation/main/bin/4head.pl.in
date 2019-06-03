@@ -266,7 +266,7 @@ sub init {
         return FALSE;
     }
     
-    if (! defined $options{pyr}->getLevel($options{"reference-level"})) {
+    if (! defined $options{pyr}->getLevel($options{"top-level"})) {
         ERROR("Provided top level is not a level ID of the pyramid");
         return FALSE;
     }
