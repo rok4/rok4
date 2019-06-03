@@ -121,6 +121,8 @@ Attributes:
     data_pool - string - Name of the (existing) CEPH pool, where to store data if CEPH storage type
 
     cachedList - string hash - If loaded, list content in an hash.
+    listCached - boolean - Precise if the list has been loaded
+    cachedListModified - boolean - Precise if cached list has been modified
 =cut
 
 ################################################################################
@@ -1181,6 +1183,14 @@ sub getDataPool {
 #                                     Group: List tools                                            #
 ####################################################################################################
 
+=begin nd
+Function: loadList
+
+Read the list and store content in an hash as following :
+|   level => {
+|       col_row => full slab path (file or object)
+|   }
+=cut
 sub loadList {
     my $this = shift;
 
@@ -1286,6 +1296,14 @@ sub loadList {
 }
 
 
+=begin nd
+Function: getLevelSlabs
+
+Returns the cached list content for one level.
+
+Parameters (list):
+    level - string - Identifiant of the asked level
+=cut
 sub getLevelSlabs {
     my $this = shift;
     my $level = shift;
@@ -1294,6 +1312,17 @@ sub getLevelSlabs {
 } 
 
 
+=begin nd
+Function: containSlab
+
+Precises if the provided slab belongs to the pyramid, using the cached list. Returns the full slab path if present, undef otherwise
+
+Parameters (list):
+    type - strong - IMAGE or MASK
+    level - string - Identifiant of the asked level
+    col - integer - Column indice
+    row - integer - Row indice
+=cut
 sub containSlab {
     my $this = shift;
     my $type = shift;
@@ -1306,6 +1335,17 @@ sub containSlab {
 } 
 
 
+=begin nd
+Function: modifySlab
+
+Replace the full slab path with the local full path. This modification can be made persistent with <flushCachedList>.
+
+Parameters (list):
+    type - strong - IMAGE or MASK
+    level - string - Identifiant of the asked level
+    col - integer - Column indice
+    row - integer - Row indice
+=cut
 sub modifySlab {
     my $this = shift;
     my $type = shift;
@@ -1328,6 +1368,17 @@ sub modifySlab {
 }
 
 
+=begin nd
+Function: deleteSlab
+
+Delete the slab path from the cached list. This modification can be made persistent with <flushCachedList>.
+
+Parameters (list):
+    type - strong - IMAGE or MASK
+    level - string - Identifiant of the asked level
+    col - integer - Column indice
+    row - integer - Row indice
+=cut
 sub deleteSlab {
     my $this = shift;
     my $type = shift;
@@ -1341,6 +1392,11 @@ sub deleteSlab {
 }
 
 
+=begin nd
+Function: flushCachedList
+
+Save cached list in the original file. If no modification, do nothing.
+=cut
 sub flushCachedList {
     my $this = shift;
 
@@ -1445,6 +1501,11 @@ sub flushCachedList {
     return TRUE;
 } 
 
+=begin nd
+Function: getCachedListStats
+
+Prints the memory size of the cached list hash.
+=cut
 sub getCachedListStats {
     my $this = shift;
 
@@ -1457,6 +1518,7 @@ sub getCachedListStats {
 
     return $ret;
 } 
+
 
 1;
 __END__
