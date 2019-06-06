@@ -563,11 +563,30 @@ sub getBelowLevelID {
     my $this = shift;
     my $ID= shift;
 
+    return undef if ($ID == $this->{bottomID});
 
     return undef if (! exists $this->{levelsBind}->{$ID});
     my $order = $this->{levelsBind}->{$ID};
-    return undef if ($order == 0);
     return $this->getIDfromOrder($order-1);
+}
+
+=begin nd
+Function: getAboveLevelID
+
+Returns the tile matrix ID above the given tile matrix (ID).
+
+Parameters (list):
+    ID - string - Level identifiant, whose above level ID we want.
+=cut
+sub getAboveLevelID {
+    my $this = shift;
+    my $ID= shift;
+
+    return undef if ($ID == $this->{topID});
+
+    return undef if (! exists $this->{levelsBind}->{$ID});
+    my $order = $this->{levelsBind}->{$ID};
+    return $this->getIDfromOrder($order+1);
 }
 
 =begin nd

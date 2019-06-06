@@ -46,13 +46,14 @@ Using:
     (start code)
     use WMTSALAD::PyrSource;
 
-    my $pyrSource = WMTSALAD::PyrSource->new( {
-        file => "/path/to/source_pyramid.pyr",
-        style => "normal",
-        transparent => "true",
-    } );
-
-    $pyrSource->writeInXml();    
+    my $pyrSource = WMTSALAD::PyrSource->new(
+        "VALUES",
+        {
+            file => "/path/to/source_pyramid.pyr",
+            style => "normal",
+            transparent => "true",
+        }
+    );   
     (end code)
 
 Attributes:
@@ -99,34 +100,13 @@ END {}
 
 
 =begin nd
-
 Constructor: new
 
-<WMTSALAD::PyrSource> constructor.
-
-Using:
-    (start code)
-    my $pyrSource = WMTSALAD::PyrSource->new( {
-        file => "/path/to/source_pyramid.pyr",
-        style => "normal",
-        transparent => "true"
-    } );
-    (end code)
-
-Parameters:
-    params - hash reference, containing the following properties :
-        {
-            file - string - Path to the source pyramid's descriptor file
-            style - string - The style to apply to source images when streaming them (default : normal)
-            transparent - boolean - Another style parameter, whose name is explicit (default : false)
-        }
-
-Returns:
-    The newly created PyrSource object. 'undef' in case of failure.
-    
+<WMTSALAD::PyrSource> constructor.  
 =cut
 sub new {
     my $class = shift;
+    my $type = shift;
     my $params = shift;
 
     $class = ref($class) || $class;
@@ -139,9 +119,16 @@ sub new {
 
     bless($this, $class);
 
-    if (! $this->_init($params)) {
-        ERROR("Could not load pyramid source.");
-        return undef;
+    if ($type eq "XML") {
+        if ( ! $this->_loadXML($params) ) {
+            ERROR("Cannot load PyrSource from XML");
+            return undef;
+        }
+    } else {
+        if (! $this->_loadValues($params)) {
+            ERROR ("Cannot load PyrSource from values");
+            return undef;
+        }
     }
 
     return $this;
@@ -149,42 +136,25 @@ sub new {
 
 =begin nd
 
-Function: _init
-
-<WMTSALAD::PyrSource> initializer. Checks parameters passed to 'new', 
-then load them in the new PyrSource object.
-
-Using:
-    (start code)
-    my loadSucces = pyrSource->_init( {
-        file => "/path/to/source_pyramid.pyr",
-        style => "normal",
-        transparent => true,
-    } )
-    (end code)
+Function: _loadValues
 
 Parameters:
-    params - hash reference, containing the following properties :
-        {
-            file - string - Path to the source pyramid's descriptor file
-            style - string - The style to apply to source images when streaming them (default : normal)
-            transparent - boolean - Another style parameter, whose name is explicit (default : false)
-        }
+    params - string hash - All attributes values
 
 Returns:
     1 (TRUE) in case of success, 0 (FALSE) in case of failure.
     
 =cut
-sub _init {
+sub _loadValues {
     my $this = shift;
     my $params = shift;
 
-    if (!exists $params->{file} || !defined $params->{file}) {
+    if (! exists $params->{file} || ! defined $params->{file}) {
         ERROR("A pyramid descriptor's file path must be passed to load a pyramid source.");
         return FALSE;
     }
     if (! -e $params->{file}) {
-        ERROR("Thé pyramid descriptor's does not exists: ".$params->{file});
+        ERROR("The pyramid descriptor's does not exists: ".$params->{file});
         return FALSE;
     }
 
@@ -211,41 +181,57 @@ sub _init {
 }
 
 
+=begin nd
+Function: _loadXML
+    sourceRoot - <XML::LibXML::Element> - XML node of the pyramid source (from the pyramid's descriptor)
+=cut
+sub _loadXML {
+    my $this   = shift;
+    my $sourceRoot = shift;
+
+    $this->{file} = $sourceRoot->findvalue('file');
+    if (! defined $this->{file} || $this->{file} eq "" ) {
+        ERROR ("Cannot extract 'file' from the XML level source");
+        return FALSE;
+    }
+    if (! -e $this->{file}) {
+        ERROR("The pyramid descriptor's does not exists: ".$this->{file});
+        return FALSE;
+    }
+
+    $this->{style} = $sourceRoot->findvalue('style');
+    if (! defined $this->{style} || $this->{style} eq "" ) {
+        ERROR ("Cannot extract 'style' from the XML level source");
+        return FALSE;
+    }
+
+    $this->{transparent} = $sourceRoot->findvalue('transparent');
+    if (! defined $this->{transparent} || $this->{transparent} eq "" ) {
+        ERROR ("Cannot extract 'transparent' from the XML level source");
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+
 ####################################################################################################
 #                                        Group: Output                                             #
 ####################################################################################################
 
 =begin nd
-
-Function: writeInXml
-
-Writes the 'basedPyramid' element node in the pyramid descriptor file. This function needs to know where to write (see parameters).
-
-Using:
-    (start code)
-    $pyrSource->writeInXml(xmlDocument, sourcesNode);
-    (end code)
-
-Parameters:
-    xmlDocument - <XML::LibXML::Document> - The xml document where the 'basedPyramid' node will be written. (i.e. the interface for the descriptor file)
-    sourcesNode - <XML::LibXML::Element> - The parent node where the 'basedPyramid' element will be nested. (ex: the 'sources' element node)
-
-Returns:
-    1 (TRUE) if success. 0 (FALSE) if an error occured.
-
+Function: exportToXML
 =cut
-sub writeInXml {
+sub exportToXML {
     my $this = shift;
-    my $xmlDoc = shift;
-    my $sourcesNode = shift;
 
-    my $basedPyramidEl = $xmlDoc->createElement("basedPyramid");
-    $sourcesNode->appendChild($basedPyramidEl);
-    $basedPyramidEl->appendTextChild("file", $this->{file});
-    $basedPyramidEl->appendTextChild("style", $this->{style});
-    $basedPyramidEl->appendTextChild("transparent", $this->{transparent});
+    my $string =       "            <basedPyramid>\n";
+    $string .= sprintf "                <file>%s</file>\n", $this->{file};
+    $string .= sprintf "                <style>%s</style>\n", $this->{style};
+    $string .= sprintf "                <transparent>%s</transparent>\n", $this->{transparent};
+    $string .=         "            </basedPyramid>\n";
 
-    return TRUE;
+    return $string;
 }
 
 

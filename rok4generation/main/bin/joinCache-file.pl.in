@@ -509,7 +509,7 @@ sub doIt {
             # On va boucler sur toutes les dalles de ce niveau dans cette source, et on vérifiera qu'elle appartient bien à l'extent
 
             my $slabsHash = $source->{pyr}->getLevelSlabs($level);
-            # Hash de la forme { IMAGE => {COL_ROW => pool/slab_object_name} }
+            # Hash de la forme { IMAGE => {COL_ROW => file path} }
 
             while (my ($slabKey, $slabPath) = each(%{$slabsHash->{IMAGE}})) {
 

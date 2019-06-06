@@ -47,32 +47,20 @@ Describe a level in a raster pyramid.
 Using:
     (start code)
     use COMMON::LevelRasterOD;
-
-    # From values
-    my $valuesLevel = COMMON::LevelRasterOD->new("VALUES",{
-        id => "12",
-        tm => $tms->getTileMatrix("12"),
-        size => [16, 16]
-    });
-
-    # From XML element
-    my $xmlLevel = COMMON::LevelRasterOD->new("XML", $xmlElement);
-    $xmlLevel->bindTileMatrix($tms)
-
     (end code)
 
 Attributes:
     id - string - Level identifiant.
     order - integer - Level order (ascending resolution)
     tm - <COMMON::TileMatrix> - Binding Tile Matrix to this level
-
-    size - integer array - Number of tile in one image for this level, widthwise and heightwise : [width, height].
     limits - integer array - Extrems columns and rows for the level (Extrems tiles which contains data) : [rowMin,rowMax,colMin,colMax]
+    sources - <WMTSALAD::PyrSource> or <WMTSALAD::WmsSource> array - Sources to use for this level
 
     desc_path - string - Directory path of the pyramid's descriptor containing this level
 
     dir_depth - integer - Number of subdirectories from the level root to the image if FILE storage type : depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif
-    dir_image - string - Directory in which we write the pyramid's images if FILE storage type
+    size - integer array - Number of tile in one image for this level, widthwise and heightwise : [width, height].
+    dir_image - string - Directory in which we write the pyramid's images if FILE storage type   
 =cut
 
 ################################################################################
@@ -99,7 +87,9 @@ our @EXPORT      = qw();
 
 use COMMON::TileMatrix;
 use COMMON::TileMatrixSet;
-use COMMON::Base36;
+
+use WMTSALAD::WmsSource;
+use WMTSALAD::PyrSource;
 
 ################################################################################
 # Constantes
@@ -145,20 +135,18 @@ sub new {
         id => undef,
         order => undef,
         tm => undef,
-        persistent => FALSE,
 
-        size => [],
         limits => undef, # rowMin,rowMax,colMin,colMax
 
-        datasource => [],
+        sources => [],
 
         # ABOUT PYRAMID
         desc_path => undef,
 
-        # STOCKAGE FICHIER
+        # SI STOCKAGE FICHIER
+        size => [undef, undef],
         dir_depth => undef,
-        dir_image => undef,
-        dir_mask => undef
+        dir_image => undef
     };
     
     bless($this, $class);
@@ -180,44 +168,12 @@ sub new {
             return undef;
         }
     }
-    
-    # STOCKAGE TYPE AND ENVIRONMENT VARAIBLES CONTROLS
-    if ( defined $this->{dir_depth} ) {
-        $this->{type} = "FILE";
-    }
-    elsif ( defined $this->{bucket_name} ) {
-        $this->{type} = "S3";
-
-        if (! COMMON::ProxyStorage::checkEnvironmentVariables("S3")) {
-            ERROR("Environment variable is missing for a S3 storage");
-            return FALSE;
-        }
-    }
-    elsif ( defined $this->{pool_name} ) {
-        $this->{type} = "CEPH";
-
-        if (! COMMON::ProxyStorage::checkEnvironmentVariables("CEPH")) {
-            ERROR("Environment variable is missing for a CEPH storage");
-            return FALSE;
-        }
-    }
-    elsif ( defined $this->{container_name} ) {
-        $this->{type} = "SWIFT";
-
-        if (! COMMON::ProxyStorage::checkEnvironmentVariables("SWIFT")) {
-            ERROR("Environment variable is missing for a SWIFT storage");
-            return FALSE;
-        }
-    } else {
-        ERROR ("Cannot identify the storage type for the COMMON::LevelRasterOD");
-        return undef;
-    }
 
     return $this;
 }
 
 =begin nd
-Function: _initValues
+Function: _loadValues
 
 Check and store level's attributes values.
 
@@ -230,13 +186,6 @@ sub _loadValues {
   
     return FALSE if (! defined $params);
     
-    # PARTIE COMMUNE
-    if (! exists($params->{id})) {
-        ERROR ("The parameter 'id' is required");
-        return FALSE;
-    }
-    $this->{id} = $params->{id};
-
     if (! exists($params->{tm})) {
         ERROR ("The parameter 'tm' is required");
         return FALSE;
@@ -247,80 +196,61 @@ sub _loadValues {
     }
     $this->{tm} = $params->{tm};
     $this->{order} = $params->{tm}->getOrder();
+    $this->{id} = $params->{tm}->getID();
 
-    if (! exists($params->{size})) {
-        ERROR ("The parameter 'size' is required");
+    if (! exists($params->{persistent}) || ! defined $params->{persistent}) {
+        ERROR ("The parameter 'persistent' is required");
+        return FALSE;
+    }
+
+    if (! exists($params->{limits})) {
+        ERROR ("The parameter 'limits' is required");
         return FALSE;
     }
     # check values
-    if (! scalar ($params->{size})){
-        ERROR("List empty to 'size' !");
+    if (scalar (@{$params->{limits}}) != 4){
+        ERROR("List for 'limits' have to be [rowMin,rowMax,colMin,colMax] !");
         return FALSE;
-    }
-    $this->{size} = $params->{size};
-    
-    if (! exists($params->{limits}) || ! defined($params->{limits})) {
-        $params->{limits} = [undef, undef, undef, undef];
     }
     $this->{limits} = $params->{limits};
 
-    # STOCKAGE    
-    if ( exists $params->{dir_depth} ) {
-        # CAS FICHIER
-        if (! exists($params->{dir_depth})) {
-            ERROR ("The parameter 'dir_depth' is required");
-            return FALSE;
-        }
-        if (! $params->{dir_depth}){
-            ERROR("Value not valid for 'dir_depth' (0 or undef) !");
-            return FALSE;
-        }
-        $this->{dir_depth} = $params->{dir_depth};
 
-        if (! exists($params->{dir_data})) {
-            ERROR ("The parameter 'dir_data' is required");
+    if (! exists($params->{sources}) || ! defined $params->{sources}) {
+        ERROR ("The parameter 'sources' is required");
+        return FALSE;
+    }
+    $this->{sources} = $params->{sources};
+
+    # Si stockage, il faut :
+    # - dir_data
+    # - dir_depth
+    # - size ( = [ image_width, image_height ] )
+    if ($params->{persistent}) {
+
+        if (! exists($params->{dir_data}) || ! defined $params->{dir_data}) {
+            ERROR ("If persistent, the parameter 'dir_data' is required");
             return FALSE;
         }
-
 
         $this->{dir_image} = File::Spec->catdir($params->{dir_data}, "IMAGE", $this->{id});
 
-        if (exists $params->{hasMask} && defined $params->{hasMask}) {
-            $this->{dir_mask} = File::Spec->catdir($params->{dir_data}, "MASK", $this->{id});
-        }
-    }
-    elsif ( exists $params->{prefix} ) {
-        # CAS OBJET
-        $this->{prefix_image} = sprintf "%s_IMG_%s", $params->{prefix}, $this->{id};
-
-        if (exists $params->{hasMask} && defined $params->{hasMask} && $params->{hasMask} ) {
-            $this->{prefix_mask} = sprintf "%s_MSK_%s", $params->{prefix}, $this->{id};
+        if (! exists($params->{dir_depth}) || ! defined $params->{dir_depth}) {
+            ERROR ("If persistent, the parameter 'dir_depth' is required");
+            return FALSE;
         }
 
-        if ( exists $params->{bucket_name} ) {
-            # CAS S3
-            $this->{bucket_name} = $params->{bucket_name};
+        $this->{dir_depth} = $params->{dir_depth};
+
+        if (! exists($params->{size})) {
+            ERROR ("If persistent, the parameter 'size' is required");
+            return FALSE;
         }
-        elsif ( exists $params->{pool_name} ) {
-            # CAS CEPH
-            $this->{pool_name} = $params->{pool_name};
+        # check values
+        if (! scalar (@{$params->{size}})){
+            ERROR("List empty for 'size' !");
+            return FALSE;
         }
-        elsif ( exists $params->{container_name} ) {
-            # CAS SWIFT
-            $this->{container_name} = $params->{container_name};
-            
-            if ( exists $params->{keystone_connection} && defined $params->{keystone_connection} && $params->{keystone_connection}) {
-                $this->{keystone_connection} = TRUE;                
-            }
-        }
-        else {
-            ERROR("No container name (bucket or pool or container) for object storage for the level");
-            return FALSE;        
-        }
-    }
-    else {
-        ERROR("No storage (neither file nor object) for the level");
-        return FALSE;        
+        $this->{size} = $params->{size};
     }
 
     return TRUE;
@@ -344,12 +274,6 @@ sub _loadXML {
         return FALSE;
     }
 
-    $this->{size} = [ $levelRoot->findvalue('tilesPerWidth'), $levelRoot->findvalue('tilesPerHeight') ];
-    if (! defined $this->{size}->[0] || $this->{size}->[0] eq "" ) {
-        ERROR ("Cannot extract image's tilesize from the XML level");
-        return FALSE;
-    }
-
     $this->{limits} = [
         $levelRoot->findvalue('TMSLimits/minTileRow'),
         $levelRoot->findvalue('TMSLimits/maxTileRow'),
@@ -361,56 +285,62 @@ sub _loadXML {
         return FALSE;
     }
 
-    # CAS FICHIER
-    my $dirimg = $levelRoot->findvalue('baseDir');
-    my $imgprefix = $levelRoot->findvalue('imagePrefix');
-    
-    if (defined $dirimg && $dirimg ne "" ) {
-        $this->{dir_image} = File::Spec->rel2abs(File::Spec->rel2abs( $dirimg , $this->{desc_path} ) );
+    if (defined $levelRoot->findvalue('onFly') && $levelRoot->findvalue('onFly') eq "true") {
         
-        my $dirmsk = $levelRoot->findvalue('mask/baseDir');
-        if (defined $dirmsk && $dirmsk ne "" ) {
-            $this->{dir_mask} = File::Spec->rel2abs(File::Spec->rel2abs( $dirmsk , $this->{desc_path} ) );
+        my $dirimg = $levelRoot->findvalue('baseDir');
+        if (! defined $dirimg || $dirimg eq "" ) {
+            ERROR ("Cannot extract 'baseDir' from an onFly level");
+            return FALSE;
         }
+        $this->{dir_image} = File::Spec->rel2abs(File::Spec->rel2abs( $dirimg , $this->{desc_path} ) );
 
         $this->{dir_depth} = $levelRoot->findvalue('pathDepth');
         if (! defined $this->{dir_depth} || $this->{dir_depth} eq "" ) {
-            ERROR ("Cannot extract 'pathDepth' from the XML level");
+            ERROR ("Cannot extract 'pathDepth' from an onFly level");
+            return FALSE;
+        }
+
+        $this->{size} = [$levelRoot->findvalue('tilesPerWidth'), $levelRoot->findvalue('tilesPerHeight')];
+        if (! defined $this->{size}->[0] || ! defined $this->{size}->[1] ) {
+            ERROR ("Cannot extract 'tilesPerWidth' and 'tilesPerHeight' from an onFly level");
             return FALSE;
         }
     }
-    elsif (defined $imgprefix && $imgprefix ne "" ) {
-        $this->{prefix_image} = $imgprefix;
 
-        my $mskprefix = $levelRoot->findvalue('mask/maskPrefix');
-        if (defined $mskprefix && $mskprefix ne "" ) {
-            $this->{prefix_mask} = $mskprefix;
-        }
+    elsif (! defined $levelRoot->findvalue('onDemand') || $levelRoot->findvalue('onDemand') ne "true") {
+        ERROR("The level is neither onDemand, nor onFly.");
+        return FALSE;
+    }
 
-        my $pool = $levelRoot->findvalue('cephContext/poolName');
-        my $bucket = $levelRoot->findvalue('s3Context/bucketName');
-        my $container = $levelRoot->findvalue('swiftContext/containerName');
+    my $sourcesNode = $levelRoot->findnodes('sources')->[0];
 
-        if ( defined $bucket && $bucket ne "" ) {
-            # CAS S3
-            $this->{bucket_name} = $bucket;
+    if (! defined $sourcesNode) {
+        ERROR("A level onFly or onDemand have to own a 'sources' part");
+        return FALSE;
+    }
+
+    foreach my $s ($sourcesNode->getChildrenByTagName('*')) {
+        my $name = $s->nodeName;
+        
+        my $source = undef;
+
+        if ($name eq "webService") {
+            $source = WMTSALAD::WmsSource->new("XML", $s);
         }
-        elsif ( defined $pool && $pool ne "" ) {
-            # CAS CEPH
-            $this->{pool_name} = $pool;
-        }
-        elsif ( defined $container && $container ne "" ) {
-            # CAS SWIFT
-            $this->{container_name} = $container;
-            my $ks = $levelRoot->findvalue('swiftContext/keystoneConnection');
-            if ( defined $ks && uc($ks) eq "TRUE" ) {
-                $this->{keystone_connection} = TRUE;
-            }
+        elsif ($name eq "basedPyramid") {
+            $source = WMTSALAD::PyrSource->new("XML", $s);
         }
         else {
-            ERROR("No container name (bucket or pool) for object storage for the level");
-            return FALSE;        
+            ERROR("A source have to be webService or basedPyramid, '$name' is unknown");
+            return FALSE;
         }
+
+        if (! defined $source) {
+            ERROR("Cannot create a source from the XML element");
+            return FALSE;
+        }
+
+        push(@{$this->{sources}}, $source);
     }
 
     return TRUE;
@@ -420,92 +350,21 @@ sub _loadXML {
 #                                Group: Getters - Setters                                          #
 ####################################################################################################
 
-
 # Function: getID
 sub getID {
     my $this = shift;
     return $this->{id};
 }
 
-# Function: getDirDepth
-sub getDirDepth {
+=begin nd
+method: isPersistent
+=cut
+sub isPersistent {
     my $this = shift;
-    return $this->{dir_depth};
-}
-
-# Function: getDirImage
-sub getDirImage {
-    my $this = shift;
-    return $this->{dir_image};
-}
-
-# Function: getDirImage
-sub getDirMask {
-    my $this = shift;
-    return $this->{dir_mask};
-}
-
-# Function: getDirsInfo
-sub getDirsInfo {
-    my $this = shift;
-
-    if ($this->{type} ne "FILE") {
-        return (undef, undef);
+    if (defined $this->{dir_image}) {
+        return TRUE;
     }
-
-    my @dirs = File::Spec->splitdir($this->{dir_image});
-    pop(@dirs);pop(@dirs);pop(@dirs);
-    my $dir_data = File::Spec->catdir(@dirs);
-
-    return ($this->{dir_depth}, $dir_data);
-}
-# Function: getS3Info
-sub getS3Info {
-    my $this = shift;
-
-    if ($this->{type} ne "S3") {
-        return undef;
-    }
-
-    return $this->{bucket_name};
-}
-# Function: getSwiftInfo
-sub getSwiftInfo {
-    my $this = shift;
-
-    if ($this->{type} ne "SWIFT") {
-        return undef;
-    }
-
-    return ($this->{container_name}, $this->{keystone_connection});
-}
-# Function: getCephInfo
-sub getCephInfo {
-    my $this = shift;
-
-    if ($this->{type} ne "CEPH") {
-        return undef;
-    }
-
-    return $this->{pool_name};
-}
-
-# Function: getStorageType
-sub getStorageType {
-    my $this = shift;
-    return $this->{type};
-}
-
-# Function: getImageWidth
-sub getImageWidth {
-    my $this = shift;
-    return $this->{size}->[0];
-}
-
-# Function: getImageHeight
-sub getImageHeight {
-    my $this = shift;
-    return $this->{size}->[1];
+    return FALSE;
 }
 
 =begin nd
@@ -524,179 +383,28 @@ sub getOrder {
     return $this->{order};
 }
 
-# Function: getTileMatrix
-sub getTileMatrix {
+# Function: getImageWidth
+sub getImageWidth {
     my $this = shift;
-    return $this->{tm};
+    return $this->{size}->[0];
 }
 
-=begin nd
-Function: bboxToSlabIndices
-
-Returns the extrem slab's indices from a bbox in a list : ($rowMin, $rowMax, $colMin, $colMax).
-
-Parameters (list):
-    xMin,yMin,xMax,yMax - bounding box
-=cut
-sub bboxToSlabIndices {
+# Function: getImageHeight
+sub getImageHeight {
     my $this = shift;
-    my @bbox = @_;
-
-    return $this->{tm}->bboxToIndices(@bbox, $this->{size}->[0], $this->{size}->[1]);
+    return $this->{size}->[1];
 }
 
-=begin nd
-Function: slabIndicesToBbox
 
-Returns the bounding box from the slab's column and row.
-
-Parameters (list):
-    col,row - Slab's column and row
-=cut
-sub slabIndicesToBbox {
+# Function: getDirsInfo
+sub getDirsInfo {
     my $this = shift;
-    my $col = shift;
-    my $row = shift;
 
-    return $this->{tm}->indicesToBbox($col, $row, $this->{size}->[0], $this->{size}->[1]);
-}
+    my @dirs = File::Spec->splitdir($this->{dir_image});
+    pop(@dirs);pop(@dirs);pop(@dirs);
+    my $dir_data = File::Spec->catdir(@dirs);
 
-# Function: ownMasks
-sub ownMasks {
-    my $this = shift;
-    return (defined $this->{dir_mask} || defined $this->{prefix_mask});
-}
-
-=begin nd
-Function: getSlabPath
-
-Returns the theoric slab path (file path or object name)
-
-Parameters (list):
-    type - string - "IMAGE" ou "MASK"
-    col - integer - Slab column
-    row - integer - Slab row
-    full - boolean - In file storage case, precise if we want full path or juste the end (without data root). In object storage case, precise if we want full path (with the container name) or just the object name.
-=cut
-sub getSlabPath {
-    my $this = shift;
-    my $type = shift;
-    my $col = shift;
-    my $row = shift;
-    my $full = shift;
-
-    if ($type eq "MASK" && ! $this->ownMasks()) {
-        return undef;
-    }
-
-    if ($this->{type} eq "FILE") {
-        my $b36 = COMMON::Base36::indicesToB36Path($col, $row, $this->{dir_depth} + 1);
-
-        if ($type eq "IMAGE") {
-            if (defined $full && ! $full) {
-                return File::Spec->catdir("IMAGE", $this->{id}, "$b36.tif");
-            }
-            return File::Spec->catdir($this->{dir_image}, "$b36.tif");
-        }
-        elsif ($type eq "MASK") {
-            if (defined $full && ! $full) {
-                return File::Spec->catdir("MASK", $this->{id}, "$b36.tif");
-            }
-            return File::Spec->catdir($this->{dir_mask}, "$b36.tif");
-        }
-        else {
-            return undef;
-        }
-    }
-    elsif ($this->{type} eq "S3") {
-        if ($type eq "IMAGE") {
-            if (defined $full && ! $full) {
-                return sprintf "%s_%s_%s", $this->{prefix_image}, $col, $row;
-            }
-            return sprintf "%s/%s_%s_%s", $this->{bucket_name}, $this->{prefix_image}, $col, $row;
-        }
-        elsif ($type eq "MASK") {
-            if (defined $full && ! $full) {
-                return sprintf "%s_%s_%s", $this->{prefix_mask}, $col, $row;
-            }
-            return sprintf "%s/%s_%s_%s", $this->{bucket_name}, $this->{prefix_mask}, $col, $row;
-        }
-        else {
-            return undef;
-        }
-    }    
-    elsif ($this->{type} eq "SWIFT") {
-        if ($type eq "IMAGE") {
-            if (defined $full && ! $full) {
-                return sprintf "%s_%s_%s", $this->{prefix_image}, $col, $row;
-            }
-            return sprintf "%s/%s_%s_%s", $this->{container_name}, $this->{prefix_image}, $col, $row;
-        }
-        elsif ($type eq "MASK") {
-            if (defined $full && ! $full) {
-                return sprintf "%s_%s_%s", $this->{prefix_mask}, $col, $row;
-            }
-            return sprintf "%s/%s_%s_%s", $this->{container_name}, $this->{prefix_mask}, $col, $row;
-        }
-        else {
-            return undef;
-        }
-    }
-    elsif ($this->{type} eq "CEPH") {
-        if ($type eq "IMAGE") {
-            if (defined $full && ! $full) {
-                return sprintf "%s_%s_%s", $this->{prefix_image}, $col, $row;
-            }
-            return sprintf "%s/%s_%s_%s", $this->{pool_name}, $this->{prefix_image}, $col, $row;
-        }
-        elsif ($type eq "MASK") {
-            if (defined $full && ! $full) {
-                return sprintf "%s_%s_%s", $this->{prefix_mask}, $col, $row;
-            }
-            return sprintf "%s/%s_%s_%s", $this->{pool_name}, $this->{prefix_mask}, $col, $row;
-        }
-        else {
-            return undef;
-        }
-    } else {
-        return undef;
-    }
-
-}
-
-=begin nd
-Function: getFromSlabPath
-
-Extract column and row from a slab path
-
-Parameter (list):
-    path - string - Path to decode, to obtain slab's column and row
-
-Returns:
-    Integers' list, (col, row)
-=cut
-sub getFromSlabPath {
-    my $this = shift;
-    my $path = shift;
-
-    if ($this->{type} eq "FILE") {
-        # 1 on ne garde que la partie finale propre à l'indexation de la dalle
-        my @parts = split("/", $path);
-
-        my @finalParts;
-        for (my $i = -1 - $this->{dir_depth}; $i < 0; $i++) {
-            push(@finalParts, $parts[$i]);
-        }
-        # 2 on enlève l'extension
-        $path = join("/", @finalParts);
-        $path =~ s/(\.tif|\.tiff|\.TIF|\.TIFF)//;
-        return COMMON::Base36::b36PathToIndices($path);
-
-    } else {
-        my @parts = split("_", $path);
-        return ($parts[-2], $parts[-1]);
-    }
-
+    return ($this->{dir_depth}, $dir_data);
 }
 
 =begin nd
@@ -716,20 +424,6 @@ sub updateLimits {
     if (! defined $this->{limits}->[2] || $colMin < $this->{limits}->[2]) {$this->{limits}->[2] = $colMin;}
     if (! defined $this->{limits}->[3] || $colMax > $this->{limits}->[3]) {$this->{limits}->[3] = $colMax;}
 }
-
-=begin nd
-method: updateLimitsFromSlab
-=cut
-sub updateLimitsFromSlab {
-    my $this = shift;
-    my ($col,$row) = @_;
-
-    $this->updateLimits(
-        $row * $this->{size}->[1], $row * $this->{size}->[1] + ($this->{size}->[1] - 1),
-        $col * $this->{size}->[0], $col * $this->{size}->[0] + ($this->{size}->[0] - 1)
-    );
-}
-
 
 =begin nd
 method: updateLimitsFromBbox
@@ -776,27 +470,6 @@ sub bindTileMatrix {
     return TRUE;
 }
 
-####################################################################################################
-#                                  Group: BBOX tools                                               #
-####################################################################################################
-
-=begin nd
-Function: intersectBboxIndices
-
-Intersects provided indices bbox with the extrem tiles of this source level. Provided list is directly modified.
-
-Parameters (list):
-    bbox - list reference - Bounding box to intersect with the level's limits : (colMin,rowMin,colMax,rowMax).
-=cut
-sub intersectBboxIndices {
-    my $this = shift;
-    my $bbox = shift;
-
-    $bbox->[0] = max($bbox->[0], $this->{limits}[2]);
-    $bbox->[1] = max($bbox->[1], $this->{limits}[0]);
-    $bbox->[2] = min($bbox->[2], $this->{limits}[3]);
-    $bbox->[3] = min($bbox->[3], $this->{limits}[1]);
-}
 
 ####################################################################################################
 #                                Group: Export methods                                             #
@@ -808,103 +481,97 @@ method: exportToXML
 Export Level's attributes in XML format.
 
 Example:
+    Niveau sans stockage, source pyramide
     (start code)
     <level>
-        <tileMatrix>level_5</tileMatrix>
-
-        <baseDir>./BDORTHO/IMAGE/level_5/</baseDir>
-        <mask>
-            <baseDir>./BDORTHO/MASK/level_5/</baseDir>
-        </mask>
-        <pathDepth>2</pathDepth>
-
-        <tilesPerWidth>16</tilesPerWidth>
-        <tilesPerHeight>16</tilesPerHeight>
+        <tileMatrix>6</tileMatrix>
+        <onDemand>true</onDemand>
         <TMSLimits>
-            <minTileRow>365</minTileRow>
-            <maxTileRow>368</maxTileRow>
-            <minTileCol>1026</minTileCol>
-            <maxTileCol>1035</maxTileCol>
+            <minTileRow>12</minTileRow>
+            <maxTileRow>12</maxTileRow>
+            <minTileCol>1</minTileCol>
+            <maxTileCol>1</maxTileCol>
         </TMSLimits>
+        <sources>
+            <basedPyramid>
+                <file>/home/ign/PYRAMIDS/SOURCE.pyr</file>
+                <style>normal</style>
+                <transparent>false</transparent>
+            </basedPyramid>
+        </sources>
+    </level>
+    (end code)
+    Niveau sans stockage, source pyramide
+    (start code)
+    <level>
+        <tileMatrix>6</tileMatrix>
+        <onDemand>true</onDemand>
+        <TMSLimits>
+            <minTileRow>12</minTileRow>
+            <maxTileRow>12</maxTileRow>
+            <minTileCol>1</minTileCol>
+            <maxTileCol>1</maxTileCol>
+        </TMSLimits>
+        <sources>
+            <webService>
+                <url>wms.ign.fr</url>
+                <timeout>60</timeout>
+                <retry>10</retry>
+                <wms>
+                    <version>1.3.0</version>
+                    <layers>LAYER</layers>
+                    <styles>normal</styles>
+                    <channels>3</channels>
+                    <noDataValue>255,255,255</noDataValue>
+                    <bbox minx=640000 miny=6840000 maxx=680000 maxy=6870000 />
+                    <crs>EPSG:2154</crs>
+                    <format>image/jpeg</format>
+                </wms>
+            </webService>
+        </sources>
     </level>
     (end code)
 
-Parameter:
-    tiles_storage - boolean - If tiles are stored individually, we put 0 for tilesPerWidth and tilesPerHeight
 =cut
 sub exportToXML {
     my $this = shift;
-    my $tiles_storage = shift;
 
-    my $string = "    <level>\n";
-    $string .= sprintf "        <tileMatrix>%s</tileMatrix>\n", $this->{id};
+    my $string =               "    <level>\n";
+    $string .= sprintf         "        <tileMatrix>%s</tileMatrix>\n", $this->{id};
 
-    if ($tiles_storage) {
-        $string .= "        <tilesPerWidth>0</tilesPerWidth>\n";
-        $string .= "        <tilesPerHeight>0</tilesPerHeight>\n";
+    if (defined $this->{dir_image}) {
+        $string .=             "        <onFly>true</onFly>\n";
+        $string .= sprintf     "        <tilesPerWidth>%s</tilesPerWidth>\n", $this->{size}->[0];
+        $string .= sprintf     "        <tilesPerHeight>%s</tilesPerHeight>\n", $this->{size}->[1];
+        $string .= sprintf     "        <baseDir>%s</baseDir>\n", File::Spec->abs2rel($this->{dir_image}, $this->{desc_path});
+        $string .= sprintf     "        <pathDepth>%s</pathDepth>\n", $this->{dir_depth};
+
     } else {
-        $string .= sprintf "        <tilesPerWidth>%s</tilesPerWidth>\n", $this->{size}->[0];
-        $string .= sprintf "        <tilesPerHeight>%s</tilesPerHeight>\n", $this->{size}->[1];
+        $string .=             "        <onDemand>true</onDemand>\n";
     }
-    $string .= "        <TMSLimits>\n";
 
+    $string .=                 "        <TMSLimits>\n";
     if (defined $this->{limits}->[0]) {
-        $string .= sprintf "            <minTileRow>%s</minTileRow>\n", $this->{limits}->[0];
-        $string .= sprintf "            <maxTileRow>%s</maxTileRow>\n", $this->{limits}->[1];
-        $string .= sprintf "            <minTileCol>%s</minTileCol>\n", $this->{limits}->[2];
-        $string .= sprintf "            <maxTileCol>%s</maxTileCol>\n", $this->{limits}->[3];
+        $string .= sprintf     "            <minTileRow>%s</minTileRow>\n", $this->{limits}->[0];
+        $string .= sprintf     "            <maxTileRow>%s</maxTileRow>\n", $this->{limits}->[1];
+        $string .= sprintf     "            <minTileCol>%s</minTileCol>\n", $this->{limits}->[2];
+        $string .= sprintf     "            <maxTileCol>%s</maxTileCol>\n", $this->{limits}->[3];
     } else {
-        $string .= "            <minTileRow>0</minTileRow>\n";
-        $string .= "            <maxTileRow>0</maxTileRow>\n";
-        $string .= "            <minTileCol>0</minTileCol>\n";
-        $string .= "            <maxTileCol>0</maxTileCol>\n";
+        $string .=             "            <minTileRow>0</minTileRow>\n";
+        $string .=             "            <maxTileRow>0</maxTileRow>\n";
+        $string .=             "            <minTileCol>0</minTileCol>\n";
+        $string .=             "            <maxTileCol>0</maxTileCol>\n";
     }
-    $string .= "        </TMSLimits>\n";
+    $string .=                 "        </TMSLimits>\n";
 
-    if ($this->{type} eq "FILE") {
-        $string .= sprintf "        <baseDir>%s</baseDir>\n", File::Spec->abs2rel($this->{dir_image}, $this->{desc_path});
-        $string .= sprintf "        <pathDepth>%s</pathDepth>\n", $this->{dir_depth};
+    $string .=                 "        <sources>\n";
+
+    foreach my $s (@{$this->{sources}}) {
+        $string .= $s->exportToXML();
     }
-    elsif ($this->{type} eq "S3") {
-        $string .= sprintf "        <imagePrefix>%s</imagePrefix>\n", $this->{prefix_image};
-        $string .= "        <s3Context>\n";
-        $string .= sprintf "            <bucketName>%s</bucketName>\n", $this->{bucket_name};
-        $string .= "        </s3Context>\n";
-    }
-    elsif ($this->{type} eq "SWIFT") {
-        $string .= sprintf "        <imagePrefix>%s</imagePrefix>\n", $this->{prefix_image};
-        $string .= "        <swiftContext>\n";
-        $string .= sprintf "            <containerName>%s</containerName>\n", $this->{container_name};
+    $string .=                 "        </sources>\n";
 
-        if ($this->{keystone_connection}) {
-            $string .= "            <keystoneConnection>TRUE</keystoneConnection>\n";
-        }
-
-        $string .= "        </swiftContext>\n";
-    }
-    elsif ($this->{type} eq "CEPH") {
-        $string .= sprintf "        <imagePrefix>%s</imagePrefix>\n", $this->{prefix_image};
-        $string .= "        <cephContext>\n";
-        $string .= sprintf "            <poolName>%s</poolName>\n", $this->{pool_name};
-        $string .= "        </cephContext>\n";
-    }
-
-    if ($this->ownMasks()) {
-        $string .=  "        <mask>\n";
-
-        if (defined $this->{dir_mask}) {
-            $string .= sprintf "            <baseDir>%s</baseDir>\n", File::Spec->abs2rel($this->{dir_mask}, $this->{desc_path});
-        }
-        elsif (defined $this->{prefix_mask}) {
-            $string .= sprintf "            <maskPrefix>%s</maskPrefix>\n", $this->{prefix_mask};
-        }
-
-        $string .=  "            <format>TIFF_ZIP_INT8</format>\n";
-        $string .=  "        </mask>\n";
-    }
-
-
-    $string .= "    </level>\n";
+    $string .=                 "    </level>\n";
 
     return $string;
 }

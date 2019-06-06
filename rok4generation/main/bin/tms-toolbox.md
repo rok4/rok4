@@ -36,7 +36,8 @@
 | `SLAB_INDICES:<COL>,<ROW>`         | x      |           | Indice de dalle, colonne et ligne                                                   |
 | `SLAB_INDICES_LIST:<FILE PATH>`    | x      | x (--add) | Fichier listant des indices de dalles `COL,ROW`                                     |
 | `SLAB_INFO`                        |        | x         | Indices et informations de stockage d'une dalle, pour un ou plusieurs niveaux       |
-| `SLAB_PATH_LIST:<FILE PATH>`       | x      | x (--add) | Fichier listant des suffixes de stockage de dalles                                  |
+| `SLAB_PATH:<STORAGE NAME>`         | x      |           | Nom de stockage de la dalle, fichier pou objet, contenant au moins les indices      |
+| `SLAB_PATHS_LIST:<FILE PATH>`      | x      | x (--add) | Fichier listant des suffixes de stockage de dalles                                  |
 | `SLABS_COUNT`                      |        | x         | Nombre de dalles                                                                    |
 | `SQL_FILE:<FILE PATH>`             |        | x (--add) | Fichier SQL d'insertion de dalles (level, col, row, geom) dans la table slabs       |
 | `TFW_FILE:<FILE PATH>`             |        | x         | Fichier TFW de géoréférencement                                                     |
@@ -64,4 +65,5 @@ Pour les paramètres avec <FILE PATH>, le fichier doit exister si en entrée, et
 | SLAB_INDICES      | TFW_FILE            | level, slabsize      |                      |
 | SLAB_INDICES_LIST | GETMAP_PARAMS_LIST  | level, slabsize      | ratio                |
 | SLAB_INDICES_LIST | SLAB_PATH_LIST      | level, slabsize      | above                |
+| SLAB_PATH         | GEOM_FILE           | level, slabsize      | storage              |
 | TILE_INDICES      | SLAB_INFO           | level, slabsize      | storage              |

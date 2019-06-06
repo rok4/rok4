@@ -178,7 +178,7 @@ sub _load {
     my $this   = shift;
 
 
-    my $propLoader = COMMON::Config->new($this->{FILEPATH_DATACONF}
+    my $propLoader = COMMON::Config->new($this->{FILEPATH_DATACONF});
 
     if (! defined $propLoader) {
         ERROR("Can not load sources' properties !");

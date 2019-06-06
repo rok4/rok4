@@ -38,7 +38,4 @@ add_subdirectory(tools/mergeNtiff)
 add_subdirectory(tools/overlayNtiff)
 add_subdirectory(tools/work2cache)
 add_subdirectory(tools/pbf2cache)
-if(BUILD_OBJECT)
-    add_subdirectory(tools/slab2tiles)
-endif(BUILD_OBJECT)
 

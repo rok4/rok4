@@ -33,11 +33,11 @@ Il est possible d'utiliser une configuration d'environnement, au même format, d
 
 #### Paramètres
 
-| Paramètre | Description | Obligatoire ou valeur par défaut |
-| --------- | ----------- | -------------------------------- |
+| Paramètre | Description                                                                                                                                                                                          | Obligatoire ou valeur par défaut |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
 | log_path  | Dossier dans lequel écrire les logs. Les logs ne sont pas écrits dans un fichier si ce paramètre n'est pas fourni.                                                                                   |                                  |
 | log_file  | Fichier dans lequel écrire les logs, en plus de la sortie standard. Les logs ne sont pas écrits dans un fichier si ce paramètre n'est pas fourni. Le fichier écrit sera donc `<log_path>/<log_file>` |                                  |
-| log_level | Niveau de log : DEBUG - INFO - WARN - ERROR - ALWAYS                                                                                                                                                 | `WARN`                             |
+| log_level | Niveau de log : DEBUG - INFO - WARN - ERROR - ALWAYS                                                                                                                                                 | `WARN`                           |
 
 
 #### Exemple

@@ -6,8 +6,8 @@
 
 ### Commandes
 
-* `4alamo-file --conf /home/IGN/conf.txt [--env /home/IGN/env.txt] [--help|--usage|--version]`
-* `4alamo-ceph --conf /home/IGN/conf.txt [--env /home/IGN/env.txt] [--help|--usage|--version]`
+* `4alamo-file.pl --conf /home/IGN/conf.txt [--env /home/IGN/env.txt] [--help|--usage|--version]`
+* `4alamo-ceph.pl --conf /home/IGN/conf.txt [--env /home/IGN/env.txt] [--help|--usage|--version]`
 
 ### Options
 

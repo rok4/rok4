@@ -438,31 +438,33 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
 
     //----TILEPERWIDTH
 
-    pElem = hLvl.FirstChild ( "tilesPerWidth" ).Element();
-    if ( !pElem || ! ( pElem->GetText() ) ) {
-        LOGGER_ERROR ( filePath <<_ ( " Level " ) << id << _ ( ": Pas de tilesPerWidth !!" ) );
-        return;
-    }
-    if ( !sscanf ( pElem->GetText(),"%d",&tilesPerWidth ) ) {
-        LOGGER_ERROR ( filePath <<_ ( " Level " ) << id <<_ ( ": tilesPerWidth=[" ) << pElem->GetText() <<_ ( "] is not an integer." ) );
-        return;
-    }
-    //----
+    if (! onDemand) {
+        pElem = hLvl.FirstChild ( "tilesPerWidth" ).Element();
+        if ( !pElem || ! ( pElem->GetText() ) ) {
+            LOGGER_ERROR ( filePath <<_ ( " Level " ) << id << _ ( ": Pas de tilesPerWidth !!" ) );
+            return;
+        }
+        if ( !sscanf ( pElem->GetText(),"%d",&tilesPerWidth ) ) {
+            LOGGER_ERROR ( filePath <<_ ( " Level " ) << id <<_ ( ": tilesPerWidth=[" ) << pElem->GetText() <<_ ( "] is not an integer." ) );
+            return;
+        }
+        //----
 
-    //----TILEPERHEIGHT
-    pElem = hLvl.FirstChild ( "tilesPerHeight" ).Element();
-    if ( !pElem || ! ( pElem->GetText() ) ) {
-        LOGGER_ERROR ( filePath <<_ ( " Level " ) << id << _ ( ": Pas de tilesPerHeight !!" ) );
-        return;
-    }
-    if ( !sscanf ( pElem->GetText(),"%d",&tilesPerHeight ) ) {
-        LOGGER_ERROR ( filePath <<_ ( " Level " ) << id <<_ ( ": tilesPerHeight=[" ) << pElem->GetText() <<_ ( "] is not an integer." ) );
-        return;
-    }
+        //----TILEPERHEIGHT
+        pElem = hLvl.FirstChild ( "tilesPerHeight" ).Element();
+        if ( !pElem || ! ( pElem->GetText() ) ) {
+            LOGGER_ERROR ( filePath <<_ ( " Level " ) << id << _ ( ": Pas de tilesPerHeight !!" ) );
+            return;
+        }
+        if ( !sscanf ( pElem->GetText(),"%d",&tilesPerHeight ) ) {
+            LOGGER_ERROR ( filePath <<_ ( " Level " ) << id <<_ ( ": tilesPerHeight=[" ) << pElem->GetText() <<_ ( "] is not an integer." ) );
+            return;
+        }
 
-    if ((tilesPerHeight == 0 || tilesPerWidth == 0) && tables.size() != 0) {
-        LOGGER_ERROR ( filePath <<_ ( " Level " ) << id <<_ ( ": vector data cannot be stored outside a slab" ) );
-        return;
+        if (tilesPerHeight == 0 || tilesPerWidth == 0) {
+            LOGGER_ERROR ( filePath <<_ ( " Level " ) << id <<_ ( ": slab tiles size have to be non zero integers" ) );
+            return;
+        }
     }
 
     //----TMSLIMITS

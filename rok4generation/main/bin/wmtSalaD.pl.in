@@ -84,8 +84,11 @@ use lib "$Bin/../lib/perl5";
 
 # My module
 use COMMON::Config;
-use WMTSALAD::Pyramid;
 use COMMON::CheckUtils;
+use COMMON::PyramidRasterOD;
+
+use WMTSALAD::PyrSource;
+use WMTSALAD::WmsSource;
 
 ################################################################################
 # Constants
@@ -121,11 +124,8 @@ my %options =
     "usage"      => 0,
     
     # Configuration
-    "properties"  => undef, # file properties params (mandatory) !
-    "datasources" => undef, # file environment be4 params (optional) !
-    
-    # Only for maintenance !
-    "test" => 0,
+    "properties"  => undef, # main properties file (mandatory)
+    "datasources" => undef # datasources properties file (mandatory)
 );
 
 
@@ -133,13 +133,14 @@ my %options =
 #                                         Group: Functions                                         #
 ####################################################################################################
 
+
 =begin nd
 Function: main
 
 Main method.
 
 See Also:
-    <init>, <config>
+    <init>, <config>, <doIt>
 =cut
 sub main {
     printf("WMTSALAD: version [%s]\n",$VERSION);
@@ -149,50 +150,38 @@ sub main {
     # initialization
     ALWAYS("> Initialization");
     if (! main::init()) {
-        $message = "INITIALIZATION ERROR !";
-        printf STDERR "%s\n", $message;
-        exit 1;
-    }
-
-    # configuration
-    ALWAYS("> Configuration");
-    # logger configuration (if needed)
-    if (! main::config()) {
-        $message = "LOGGER CONFIGURATION ERROR !";
+        $message = "ERROR INITIALIZATION !";
         printf STDERR "%s\n", $message;
         exit 1;
     }
 
     $message = "BEGIN";
     printf STDOUT "%s\n", $message;
-    
 
-    # pyramid object creation    
-    my $objPyramid = WMTSALAD::Pyramid->new($options{properties}, $options{datasources});
-    if (! defined $objPyramid ) {
-        $message = "PYRAMID OBJECT CREATION ERROR !";
+    # configuration
+    ALWAYS("> Configuration");
+    if (! main::config()) {
+        $message = "ERROR CONFIGURATION !";
         printf STDERR "%s\n", $message;
-        exit 1;        
+        exit 2;
     }
 
     # execution
     ALWAYS("> Execution");
-    # Pyramid writing
-    if (! $objPyramid->writeConfPyramid()) {
-        $message = "PYRAMID DESCRIPTOR CREATION ERROR !";
+    if (! main::doIt()) {
+        $message = "ERROR EXECUTION !";
         printf STDERR "%s\n", $message;
-        exit 1;                
+        exit 3;
     }
 
     $message = "END";
     printf STDOUT "%s\n", $message;
 }
 
-
 =begin nd
 Function: init
 
-Checks options and initializes the default logger.
+Checks options and initializes the default logger. Check properties file (mandatory).
 =cut
 sub init {
   
@@ -212,23 +201,20 @@ sub init {
     # init Options
     GetOptions(
         "help|h" => sub {
-            # printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-pl.html\n" ;
-            printf ("Documentation coming soon.");
+            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-s3-pl.html\n" ;
             exit 0;
         },
         "version|v" => sub { exit 0; },
         "usage" => sub {
-            # printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-pl.html\n" ;
-            printf ("Documentation coming soon.");
+            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-s3-pl.html\n" ;
             exit 0;
         },
         
         "properties|conf=s" => \$options{properties},
-        "datasources|dsrc=s" => \$options{datasources},        
+        "datasources|dsrc=s" => \$options{datasources}
     ) or do {
         printf "Unappropriate usage\n";
-        # printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-pl.html\n";
-        printf ("Documentation coming soon.");
+        printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-s3-pl.html\n";
         exit -1;
     };
   
@@ -241,74 +227,68 @@ sub init {
     # We make path absolute
 
     # properties : mandatory !
-    if ((! defined $options{properties}) || ($options{properties} eq "")) {
+    if (! defined $options{properties} || $options{properties} eq "") {
         ERROR("Option 'properties' not defined !");
         return FALSE;
     }
-    my $fproperties = File::Spec->rel2abs($options{properties});
-    $options{properties} = $fproperties;
-    
+    $options{properties} = File::Spec->rel2abs($options{properties});
+    if (! -e $options{properties}) {
+        ERROR ("Main properties file does not exists !");
+        return FALSE;
+    }
+
     # datasources : mandatory !
-    if ((!defined $options{datasources}) || ($options{datasources} eq "")) {
+    if (! defined $options{datasources} || $options{datasources} eq "") {
         ERROR("Option 'datasources' not defined !");
         return FALSE;
     }
-    my $fdatasources = File::Spec->rel2abs($options{datasources});
-    $options{datasources} = $fdatasources;    
+    $options{datasources} = File::Spec->rel2abs($options{datasources});
+    if (! -e $options{datasources}) {
+        ERROR ("Datasources properties file does not exists !");
+        return FALSE;
+    }
     
     return TRUE;
 }
 
 =begin nd
 Function: config
-
-Loads properties file and configure the logger based on the [logger] section in the properties file.
 =cut
 sub config {
 
     ###################
-    ALWAYS(">>> Load Properties ...");
 
-    my $propertiesCfg = COMMON::Config->new({
-        'filepath' => $options{properties},
-        'format' => 'INI'}
-    );
-        
-    if (! defined $propertiesCfg) {
-        ERROR("Can not load properties !");
+    $options{properties} = COMMON::Config->new($options{properties}, "CUSTOM");
+
+    if (! defined $options{properties}) {
+        ERROR ("Can not load properties !");
         return FALSE;
     }
 
-    my %props = $propertiesCfg->getConfigurationCopy();
+    INFO(Dumper($options{properties}));
 
-    if (! scalar keys %props) {
-        ERROR("All parameters properties are empty !");
-        return FALSE;
-    }
+    my %properties = $options{properties}->getConfigurationCopy();
 
     # logger
-
-    if ($propertiesCfg->isSection('logger')) {
-        my %logger = $propertiesCfg->getSection('logger');
-
-        # logger
-        
+    my $logger = $properties{logger};
+    if (defined $logger) {
+    
         my @args;
-        my $out;
         
         my $layout= '%5p : %m (%M) %n';
-        my $level = $logger{log_level};
-        if (! COMMON::CheckUtils::IsEmpty($logger{log_path}) && ! COMMON::CheckUtils::IsEmpty($logger{log_file})) {
-            DEBUG(sprintf "Creating log path : File::Path::make_path(%s, %s) ", $logger{log_path}, {mode => 0755});
-            File::Path::make_path($logger{log_path}, {mode => 0755}) or ERROR(sprintf "Could not create path '%s'.", $logger{log_path});
-            $out   = sprintf (">>%s", File::Spec->catfile($logger{log_path}, $logger{log_file}));
-        }
-        
-        $out   = "STDOUT" if (! defined $out);
-        $level = "WARN"   if (! defined $level);
-        
-        if ($level =~ /(ALL|DEBUG)/) {
-            $layout = '%5p : %m (%M) %n';
+
+        my $level = $logger->{log_level};
+        $level = "WARN" if (! defined $level);
+
+        my $out;
+        my $logfile = $logger->{log_file};
+        if (defined $logfile) {
+            if (exists $logger->{log_path} && defined $logger->{log_path}) {
+                $logfile = File::Spec->catfile($logger->{log_path}, $logfile);
+            }
+            $out = ">>$logfile";
+        } else {
+            $out = "STDOUT";
         }
         
         # add the param logger by default (user settings !)
@@ -326,9 +306,161 @@ sub config {
                 layout => $layout,
             },
         }
-        Log::Log4perl->easy_init(@args) or return FALSE; 
+
+        Log::Log4perl->easy_init(@args);
     }
 
+    # pyramid
+    if (! exists $properties{pyramid}) {
+        ERROR("No pyramid section in the main configuration file");
+        return FALSE;
+    }
+
+    ###################
+
+    $options{datasources} = COMMON::Config->new($options{datasources}, "CUSTOM");
+
+    if (! defined $options{datasources}) {
+        ERROR ("Can not load datasources !");
+        return FALSE;
+    }
+    
+    return TRUE;
+}
+
+
+=begin nd
+Function: doIt
+=cut
+sub doIt {
+
+    my %properties = $options{properties}->getConfigurationCopy();
+
+
+    my $objPyramid = COMMON::PyramidRasterOD->new("VALUES", $properties{pyramid});
+    if (! defined $objPyramid) {
+        ERROR ("Can not create a pyramid from section 'pyramid'");
+        return FALSE;
+    }
+    
+    if (! $objPyramid->bindTileMatrixSet($properties{pyramid}->{tms_path})) {
+        ERROR("Cannot bind TMS to output Pyramid !");
+        return FALSE;
+    }
+
+    my $tms = $objPyramid->getTileMatrixSet();
+    
+    #######################
+    
+    ALWAYS(">>> Load Data Source ...");
+
+    my %datasources = $options{datasources}->getConfigurationCopy();
+
+    foreach my $section (keys(%datasources)) {
+
+        if (! exists $datasources{$section}->{"lv_bottom"} || ! exists $datasources{$section}->{"lv_top"}) {
+            ERROR(sprintf "Levels range ('lv_bottom', 'lv_top') properties missing in section '%s'", $section);
+            return FALSE;
+        }
+
+        my $bottomId = $datasources{$section}->{"lv_bottom"};
+        my $topId = $datasources{$section}->{"lv_top"};
+
+        if (! defined $tms->getTileMatrix($bottomId)) {
+            ERROR(
+                sprintf "No tile matrix with id '%s' exists in tile matrix set '%s'. (section '%s', field 'lv_bottom')", 
+                $bottomId, $tms->getName(), $section
+            );
+            return FALSE;
+        }
+
+        if (! defined $tms->getTileMatrix($topId)) {
+            ERROR(
+                sprintf "No tile matrix with id '%s' exists in tile matrix set '%s'. (section '%s', field 'lv_top')", 
+                $topId, $tms->getName(), $section
+            );
+            return FALSE;
+        }
+
+        my $bottomOrder = $tms->getOrderfromID($bottomId);
+        my $topOrder = $tms->getOrderfromID($topId);
+
+        if ($bottomOrder > $topOrder) {
+            ERROR(sprintf "In section '%s', using TMS '%s', 'lv_bottom' ID '%s' corresponds to a higher level than 'lv_top' ID '%s'.", $section, $tms->getName(), $bottomId, $topId);
+            return FALSE;
+        }
+
+        if (! exists $datasources{$section}->{"extent"}) {
+            ERROR("Undefined extent in section '$section'");
+            return FALSE;
+        }
+
+        if (! COMMON::CheckUtils::isBbox($datasources{$section}->{"extent"})) {
+            ERROR("Extent in section '$section' is not a valid bbox");
+            return FALSE;
+        }
+
+        # Load sources
+        my $sourceIndex = 1;
+        my @sources;
+        while(defined $options{datasources}->whatIs($section, $sourceIndex) && $options{datasources}->whatIs($section, $sourceIndex) eq "HASH") {
+            my $source = $datasources{$section}->{$sourceIndex};
+            my $s = undef;
+            if (exists $source->{file}) {
+                $s = WMTSALAD::PyrSource->new("VALUES", $source);
+                if (! defined $s) {
+                    ERROR("Cannot load the pyramid source $sourceIndex in section $section");
+                    return FALSE
+                }
+            }
+            elsif (exists $source->{wms_url}) {
+                $s = WMTSALAD::WmsSource->new("VALUES", $source);
+                if (! defined $s) {
+                    ERROR("Cannot load the wms source $sourceIndex in section $section");
+                    return FALSE
+                }
+            }
+            else {
+                ERROR("Cannot determine source type of source $sourceIndex in section $section ");
+                return FALSE;
+            }
+            push(@sources, $s);
+            $sourceIndex++;
+        }
+
+        if (scalar @sources == 0) {
+            ERROR("Error in section '$section' : An on-demand pyramid cannot have a defined level without any data source.");
+            return FALSE;
+        }
+
+        # On va maintenant ajouter les niveaux à la pyramide pour cette section, entre le bottom et le top
+
+        for (my $order = $bottomOrder; $order <= $topOrder; $order++) {
+
+            my $ID = $tms->getIDfromOrder($order);
+            if (! defined $ID) {
+                ERROR(sprintf "Cannot identify TMS level ID for the order %s !", $order);
+                return FALSE;
+            }
+
+            if (! $objPyramid->addLevel($ID, $datasources{$section}->{"extent"}, \@sources) ) {
+                ERROR("Cannot add level $ID");
+                return FALSE;            
+            }
+        }
+    }
+
+    
+    #######################
+    
+    ALWAYS(">>> Write descriptor ...");
+
+    if (! $objPyramid->writeDescriptor()) {
+        ERROR("Cannot write pyramid's descriptor");
+        return FALSE;
+    }
+    
+    
     return TRUE;
 }
 
@@ -346,237 +478,3 @@ END {}
 
 1;
 __END__
-
-
-=begin nd
-Section: Details
-
-Group: Command's options
-
-    --help - Display the link to the technic documentation.
-
-    --usage - Display the link to the technic documentation.
-
-    --version - Display the tool version.
-
-    --conf=path - Path to configuration file of the pyramid (aka. 'properties file'). This option is mandatory.
-
-    --dsrc=path - Path to configuration file for data sources (aka. 'datasources file'). This option is also mandatory.
-
-Group: Write a properties file
-
-A properties file can be composed of sections and parameters following :
-
-    (start code)
-    [ section ]
-    parameter = value
-    ;comments
-    (end code)
-
-Group: BE4 global configuration file
-
-Properties by section.
-
-Topic: logger
-
-    log_path - Directory path where to write log_file
-    
-    log_file - Path to print too output (in addition to STDOUT). Log file path : *log_path/log_file*
-
-    log_level - Define importance level from which we print messages. From less to more important : DEBUG - INFO - WARN - ERROR - ALWAYS (WARN by default).
-
-'log_path' and 'log_file' need each other. If one is omitted, the other is ignored. The section itself can be omitted (along with its parameters, of course).
-
-Example:
-    (start code)
-    [ logger ]
-    log_path = /var/log
-    log_file = be4_log_yyyy-mm-dd.txt
-    log_level = INFO
-    (end code)
-
-Topic: pyramid
-
-For more informations about properties, see <WMTSALAD::Pyramid>.
-
-    pyr_name - Name of the new pyramid, used to name the descriptor, and the data directory.
-    pyr_data_path - Directory path, where to write the cache. Mandatory.
-    pyr_desc_path - Directory path, where to write the descriptor. Mandatory.
-
-    color - The color is a string and contain on value per sample, in decimal format, seperated by comma. For 8 bits unsigned integer, value must be between 0 and 255. For 32 bits float, an integer is expected too, but can be negative.
-    Example : "255,255,255" (white) for images whithout alpha sample, "-99999" for a DTM.
-
-    image_width, image_height - Number a tile in the cache image, widthwise and heightwise. 16 * 16 for example. Mandatory.
-
-    compression - Possible values : raw, jpg, zip, lzw, png, pkb. PNG compression is not an official compression for tiff format (just readable by rok4). Default : raw.
-    bitspersample - Possible values : 8, 32. Have to be the same as source. Mandatory.
-    sampleformat - Possible values : uint, int (alias for 'uint'), float. Mandatory.
-
-    samplesperpixel - Possible values : 1, 2, 3, 4. Mandatory.
-
-    photometric - Possible values : gray, rgb. Have to be consistent with the samples per pixel. 1,2 -> gray and 3,4 -> rgb.
-    interpolation - Possible values : nn, linear, bicubic, lanczos. Interpolation used to resampled images (in mergeNtiff). Nodata pixel are excluded by the interpolation if we use masks. Default : bicubic.
-
-    dir_depth - Image's depth from the level directory. depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif. Mandatory.
-
-    persistent -  boolean value. If false, only the descriptor will be created. Default : false.
-
-    tms_name - TMS file name, with extension *.tms*. Mandatory.
-    tms_path - Directory, where to find the TMS file. Mandatory.
-
-Examples:
-    (start code)
-    [ pyramid ]
-    persistent = true
-
-    pyr_name = TEST-OD-PYR
-    pyr_data_path = be4/pyramide/tests/WMTSalaD/generated/
-    pyr_desc_path = be4/pyramide/tests/WMTSalaD/generated/
-
-    tms_name = PM.tms
-    tms_path = data/tileMatrixSet/
-
-    image_width = 16
-    image_height = 16
-
-    dir_depth = 2
-
-    compression = jpg
-    bitspersample = 8
-    sampleformat = int
-    samplesperpixel = 3
-    photometric = rgb
-    interpolation = bicubic
-
-    color = 255,255,255
-    (end code)
-
-
-Group: Paths in brief
-
-    - Descriptor file : *pyr_desc_path/pyr_name.pyr*
-    - Cache directory: *pyr_data_path/pyr_name/*
-    -- Images drectory: *pyr_data_path/pyr_name/dir_image*
-    - TMS file: *tms_path/tms_name*
-
-
-Group: Write a datatasources file
-
-A datasources file is composed of sections, subsections and parameters following :
-
-    (start code)
-    [ section ]
-    parameter = value 
-    [[ subsection ]]
-    parameter = value    
-    ;comments
-    (end code)
-
-
-Group: Datasources configuration
-
-For more informations about datasources configuration loading, see <WMTSALAD::Pyramid> and <WMTSALAD::DataSource>.
-
-Topic: Level range sections
-
-Each section represents a level range. The sources for every level of this range will have the same configuration.
-Section's name must be unique and use only characters from the following class: [a-zA-Z0-9_-].
-The name '_props' is reserved. Aside from that, do what you want (you are however advised to use meaningful names to identify ranges)
-The structure is the following :
-    (start code)
-    [ section ]
-    lv_top = x
-    lv_bottom = y
-    [[ 0 ]]
-    ... Highest priority source description ...
-    [[ 1 ]]
-    ... Following source description ...
-    (end code)
-
-Subsections must be unique in the section, and must be positive integer. 
-They define the sources display priority : highest priorities will be placed above lower ones.
-Note that each subsection matches only one source.
-
-    - lv_top : ID, in the new pyramid's TMS, of the top level for this range
-    - lv_bottom : ID, in the new pyramid's TMS, of the bottom level for this range
-
-Next topics tell how to describe sources (meaning the content under the priority subsections)
-
-Topic: For pyramid descriptor source
-
-For more informations about properties, see <WMTSALAD::PyrSource>.
-    
-    file - Path to the source pyramid's descriptor file. Mandatory
-    style - the style to apply to the data to display it. Default : normal
-    transparent - Boolean. Wether this source's nodata will be displayed as transparent. Default : false
-
-Topic: For a WMS source
-
-For more informations about properties, see <WMTSALAD::WmsSource>.
-
-    wms_url - URL of the WMS server. Mandatory
-
-    wms_version - Version for the WMS protocol. Allowed values are '1.1.1' and '1.3.0'. Mandatory
-    
-    wms_layers - Resources to harvest. Layer names separated by commas. Mandatory
-    wms_styles - Styles associated to layers. Style names separated by comma. The order must match wms_layers's order. Mandatory 
-
-    wms_nodata - Background color. Format : 0xFFFFFF. Mandatory.
-    wms_channels - Number of samples per pixel. Mandatory
-
-    wms_extent - Coordinates for the bbox, separated by commas. Format : xMin,yMin,xMax,yMax. Mandatory
-    wms_crs - Coordinates system. Optionnal
-
-    wms_timeout - Positive integer. Waiting time before time out. Optionnal 
-    wms_retry - Positive integer. Number of tries after a first timeout. Optionnal
-    wms_interval - Positive integer. Interval between tries. Optionnal
-
-    wms_proxy - Optionnal
-    wms_user - Optionnal
-    wms_password - Optionnal
-    wms_referer - Optionnal
-    wms_userAgent - Optionnal
-
-    wms_format - Format of the harvested image. Optionnal
-
-    wms_option - List of options, as it will appear in the request. Optionnal
-
-    Note that you are strongly advised to use the same color (adapted to the image format and number of channels) for the WMS source's nodata and the output pyramid's nodata.
-
-Examples:
-    (start code)
-    [ level_range_19_11 ]
-    lv_bottom = 19
-    lv_top = 11
-    extent = -770850,4929770,1279780,6783830
-
-    [[ 0 ]]
-    file = be4/pyramide/tests/pyramid/oldPyramid.pyr
-    style = style1
-    transparent = false
-
-    [[ 1 ]]
-    wms_url             =  http://target.server.net/wms
-    wms_timeout         =  60
-    wms_retry           =  10
-    wms_version         =  1.3.0
-    wms_layers          =  LAYER_1,LAYER_2,LAYER_3
-    wms_styles          =  STYLE_FOR_LAYER_1,STYLE_FOR_LAYER_2,STYLE_FOR_LAYER_3
-    wms_format          =  image/png
-    wms_crs             =  EPSG:2154
-    wms_extent          =  634500,6855000,636800,6857700
-    wms_channels        =  3
-    wms_nodata          =  0xFFA2FA
-
-    [ level_range_9_6 ]
-    lv_bottom = 9
-    lv_top = 6
-    extent = -770850,4929770,1279780,6783830
-
-
-    [[ 0 ]]
-    file = be4/pyramide/tests/pyramid/oldPyramid.pyr
-    (end code)
-    
-=cut
-

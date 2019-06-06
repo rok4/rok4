@@ -15,11 +15,11 @@ WriteMakefile(
         'bin/be4-swift.pl',
         'bin/4alamo-file.pl',
         'bin/4alamo-ceph.pl',
+        'bin/4head.pl',
         'bin/joinCache-file.pl',
         'bin/joinCache-ceph.pl',
         'bin/create-list.pl',
         'bin/create-layer.pl',
-        'bin/ex-pyr.pl',
         'bin/pyr2pyr.pl',
         'bin/sup-pyr.pl',
         'bin/wmtSalaD.pl',
@@ -28,6 +28,7 @@ WriteMakefile(
     PMLIBDIRS   => [
         'lib/BE4',
         'lib/FOURALAMO',
+        'lib/FOURHEAD',
         'lib/JOINCACHE',
         'lib/COMMON',
         'lib/PYR2PYR',
@@ -66,5 +67,6 @@ WriteMakefile(
         "Math::BigFloat"   => 0,
         #
         "Test::More"   => 0,
+        "Ceph::Rados" => 0
     }
 );

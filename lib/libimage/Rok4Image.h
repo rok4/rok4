@@ -710,29 +710,6 @@ public:
 
     /**
      * \~french
-     * \brief Ecrit les tuiles indépendantes sur un cluster Ceph, à partir d'une image source
-     * \details Toutes les informations nécessaires à l'écriture des tuiles sont dans l'objet Rok4Image, sauf les données à écrire. On renseigne cela via une seconde image.
-     *
-     * On précise également les indices (colonne et ligne) de la dalle, ce qui permet de calculer les indices de chaque tuile,  on utilise alors le nom de l'image comme préfixe, et on peut nommer les objets Ceph (<NAME>_<TILECOL>_<TILROW>).
-     *
-     * Exemple :
-     * \li nom : EXEMPLE
-     * \li colonne = 4 et ligne = 7
-     * \li nombre de tuile dans la largeur et dans la hauteur : 2
-     * \li writeTiles entraînera l'écriture de 4 objets sur Ceph (tuiles) : EXEMPLE_8_14, EXEMPLE_8_15, EXEMPLE_9_14, EXEMPLE_9_15
-     *
-     * Cette méthode permet également de préciser s'il on veut "croper". Dans le cas d'une compression JPEG, on peut vouloir "vider" les blocs (16x16 pixels) contenant un pixel blanc.     
-     *
-     * \param[in] pIn source des donnée de l'image à écrire
-     * \param[in] imageCol option de cropage, pour le jpeg
-     * \param[in] imageRow option de cropage, pour le jpeg
-     * \param[in] crop option de cropage, pour le jpeg
-     * \return 0 en cas de succes, -1 sinon
-     */
-    int writeTiles ( Image* pIn, int imageCol, int imageRow, bool crop );
-
-    /**
-     * \~french
      * \brief Ecrit une dalle ROK4 vecteur, à partir des tuiles PBF
      * \details Toutes les tuiles nécessaires sont contenues dans le dossier #rootDirectory, avec le chemin rootDirectory/column/row.pbf
      * \param[in] ulTileCol Indice de colonne de la tuile supérieure gauche

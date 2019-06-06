@@ -57,7 +57,7 @@ Attributes:
     configuration - string hash - Configuration stored in string hash, with section and sub section
     
 Limitations:
-    A JSON configuration have to own the extension .json
+    A JSON configuration have to own the extension .json, or we have to provide th e format
     
 =cut
 
@@ -89,6 +89,10 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
+# Constant: FORMATS
+# Define allowed values for format
+my @FORMATS = ('JSON','INI','CUSTOM');
+
 ################################################################################
 
 BEGIN {}
@@ -106,6 +110,7 @@ Config constructor. Bless an instance.
 
 Parameters (list):
     filepath - string - Configuration file path
+    format - string - Optionnal, force format if provided
 
 See also:
     <_loadINI>, <_loadJSON>
@@ -113,6 +118,7 @@ See also:
 sub new {
     my $class = shift;
     my $filepath = shift;
+    my $format = shift;
     
     $class = ref($class) || $class;
 
@@ -131,17 +137,25 @@ sub new {
     }
     
     if ( ! -e  $filepath) {
-        ERROR(sprintf "Config file %s does not exists", $params->{'filepath'});
+        ERROR(sprintf "Config file %s does not exists", $filepath);
         return undef;
     }
     $this->{file} = $filepath;
 
     # format
 
-    if ($this->{file} =~ /\.json$/i) {
-        $this->{format} = "JSON";
+    if (! defined $format) {
+        if ($this->{file} =~ /\.json$/i) {
+            $this->{format} = "JSON";
+        } else {
+            $this->{format} = "INI";
+        }
     } else {
-        $this->{format} = "INI";
+        if (! defined COMMON::Array::isInArray($format, @FORMATS)) {
+            ERROR ("Unknown 'format' : $format");
+            return undef;
+        }
+        $this->{format} = $format;
     }
 
     # load
@@ -166,6 +180,79 @@ sub new {
         }
 
         $this->{configuration} = parse_json ($json_text);
+    }
+    elsif ($this->{format} eq "CUSTOM") {
+
+        my $file = $this->{file};
+        open(CONF, "<$file") or do {
+            ERROR(sprintf "Cannot open to read CUSTOM config file : %s (%s)", $this->{file});
+            return undef;
+        };
+
+
+        my $currentSection = undef;
+        my $currentSubSection = undef;
+        
+        while (my $line = <CONF>) {
+            chomp($line);
+            $line =~ s/\s+//g; # we remove all spaces
+            $line =~ s/;\S*//; # we remove comments
+
+            if ($line eq "") {
+                next;
+            }
+
+            if ($line =~ m/^\[[^\[\]]+\]$/) {
+                $line =~ s/[\[\]]//g;
+
+                if (exists $this->{configuration}->{$line}) {
+                    ERROR ("A section is defined twice in the configuration : section '$line'");
+                    return undef;
+                }
+                $currentSection = $line;
+                $currentSubSection = undef; # Resetting subsection as section changes
+                next;
+            }
+
+            if ($line =~ m/^\[\[[^\[\]]+\]\]$/) {
+                $line =~ s/[\[\]]//g;
+
+                if (exists $this->{configuration}->{$currentSection}->{$line}) {
+                    ERROR ("A subsection is defined twice in the configuration : section '$currentSection', subsection '$line'");
+                    return undef;
+                }
+                $currentSubSection = $line;
+                next;
+            }
+
+            if (! defined $currentSection) {
+                ERROR ("A property must always be in a section ($line)");
+                return undef;
+            }
+
+            my @prop = split(/=/,$line,-1);
+
+            if (scalar @prop != 2 || $prop[0] eq '' || $prop[1] eq '') {
+                ERROR ("A line is invalid ($line). Must be prop = val");
+                return undef;
+            }
+
+            if (! defined $currentSubSection) {
+                if (exists $this->{configuration}->{$currentSection}->{$prop[0]}) {
+                    ERROR (sprintf "A property is defined twice in the configuration : section %s, parameter %s", $currentSection, $prop[0]);
+                    return undef;
+                }
+                $this->{configuration}->{$currentSection}->{$prop[0]} = $prop[1];
+            } else {
+                if (defined $this->{configuration}->{$currentSection}->{$currentSubSection}->{$prop[0]}) {
+                    ERROR (sprintf "A property is defined twice in the configuration : section %s, subsection %s parameter %s", $currentSection, $currentSubSection, $prop[0]);
+                    return undef;
+                }
+                $this->{configuration}->{$currentSection}->{$currentSubSection}->{$prop[0]} = $prop[1];
+            }
+        }
+        
+        close(CONF);
     }
 
     return $this;
@@ -244,7 +331,6 @@ Function: getCopy
 =cut
 sub getConfigurationReference {
     my $this = shift;
-
     return $this->{configuration};
 }
 

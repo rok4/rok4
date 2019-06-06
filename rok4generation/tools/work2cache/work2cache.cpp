@@ -106,7 +106,6 @@ int white[4] = {255,255,255,255};
  *              png     Non-official TIFF compression, each tile is an independant PNG image (with PNG header)
  *      -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size
  *      -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object
- *      -ij image indices : for object storage, if we want to store one tile = one object, to know tile indices
  *      -container Swift container where data is. Then OUTPUT FILE is interpreted as a Swift object name
  *      -ks in Swift storage case, activate keystone authentication
  *      -bucket S3 bucket where data is. Then OUTPUT FILE is interpreted as a S3 object name
@@ -146,7 +145,6 @@ void usage() {
 
 #if BUILD_OBJECT
                   "     -pool Ceph pool where data is. Then OUTPUT FILE is interpreted as a Ceph object ID\n" <<
-                  "     -ij image indices : for object storage, if we want to store one tile = one object, to know tile indices\n"
                   "     -container Swift container where data is. Then OUTPUT FILE is interpreted as a Swift object name\n" <<
                   "     -ks in Swift storage case, activate keystone authentication\n" <<
                   "     -bucket S3 bucket where data is. Then OUTPUT FILE is interpreted as a S3 object name\n" <<
@@ -215,10 +213,7 @@ int main ( int argc, char **argv ) {
     bool onCeph = false;
     bool onSwift = false;
     bool onS3 = false;
-    bool tilesOnCeph = false;
     bool keystone = false;
-    int imageI = -1;
-    int imageJ = -1;
 #endif
 
     /* Initialisation des Loggers */
@@ -254,12 +249,6 @@ int main ( int argc, char **argv ) {
                 error("Error in -bucket option", -1);
             }
             bucket = argv[i];
-            continue;
-        }
-        if ( !strcmp ( argv[i],"-ij" ) ) {
-            if ( i+2 >= argc ) { error("Error in -ij option", -1 ); }
-            imageI = atoi ( argv[++i] );
-            imageJ = atoi ( argv[++i] );
             continue;
         }
         if ( !strcmp ( argv[i],"-container" ) ) {
@@ -373,10 +362,6 @@ int main ( int argc, char **argv ) {
 
         LOGGER_DEBUG( std::string("Output is an object in the Ceph pool ") + pool);
         context = new CephPoolContext(pool);
-
-        if (imageI >= 0 && imageJ >= 0) {
-            tilesOnCeph = true;
-        }
     } else if (bucket != 0) {
         onS3 = true;
 
@@ -485,20 +470,12 @@ int main ( int argc, char **argv ) {
     }
 
     LOGGER_DEBUG ( "Write" );
-#if BUILD_OBJECT
-    if (onCeph && tilesOnCeph) {
-        if (rok4Image->writeTiles(sourceImage, imageI, imageJ, crop) < 0) {
-            error("Cannot write ROK4 tiles on ceph", -1);
-        }
-    } else {
-#endif
 
-        if (rok4Image->writeImage(sourceImage, crop) < 0) {
-            error("Cannot write ROK4 image", -1);
-        }
-
-#if BUILD_OBJECT
+    if (rok4Image->writeImage(sourceImage, crop) < 0) {
+        error("Cannot write ROK4 image", -1);
     }
+
+#if BUILD_OBJECT
 
     if (onSwift || onS3) {
         // Un environnement CURL a été créé et utilisé, il faut le nettoyer

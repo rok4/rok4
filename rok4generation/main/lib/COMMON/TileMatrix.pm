@@ -182,7 +182,6 @@ sub _init {
     my $this   = shift;
     my $params = shift;
 
-    
     return FALSE if (! defined $params);
     
     # parameters mandatory !       
@@ -197,6 +196,12 @@ sub _init {
     
     # init. params
     $this->{id} = $params->{id};
+    if ($this->{id} =~ m/_/) {
+        ERROR("A TMS level id have not to containan underscore");
+        return FALSE;
+    }
+
+
     $this->{resolution} = $params->{resolution};
     $this->{topLeftCornerX} = $params->{topLeftCornerX};
     $this->{topLeftCornerY} = $params->{topLeftCornerY};

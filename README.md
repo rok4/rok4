@@ -18,7 +18,7 @@ ROK4GENERATION est un ensemble de scripts de traitement permettant la préparati
 * http://www.geoportail.gouv.fr [@Geoportail](https://twitter.com/Geoportail)
 * http://www.rok4.org
 
-ROK4 Version : 3.0.0-DEVELOP
+ROK4 Version : 3.1.0
 
 <!-- TOC START min:1 max:3 link:true update:true -->
 - [Fonctionnement général](#fonctionnement-général)
@@ -131,7 +131,6 @@ Pour vérifier que toutes les librairies nécessaires sont installées, exécute
 ## Les commandes externes
 
 Les outils suivant sont nécessaires aux outils de génération :
-* gdalinfo (be4)
 * wget (be4)
 * ogr2ogr (4alamo)
 * tippecanoe (4alamo)

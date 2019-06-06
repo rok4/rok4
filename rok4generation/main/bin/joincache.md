@@ -6,8 +6,8 @@
 
 ### Commandes
 
-* `joinCache-file --conf /home/IGN/conf.txt [--help|--usage|--version]`
-* `joinCache-ceph --conf /home/IGN/conf.txt [--help|--usage|--version]`
+* `joinCache-file.pl --conf /home/IGN/conf.txt [--help|--usage|--version]`
+* `joinCache-ceph.pl --conf /home/IGN/conf.txt [--help|--usage|--version]`
 
 ### Options
 

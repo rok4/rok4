@@ -47,48 +47,6 @@ Store all informations about a raster pyramid, whatever the storage type.
 Using:
     (start code)
     use COMMON::PyramidRasterOD;
-
-    # To create a new FILE pyramid, "to write"
-    my $newPyramid = COMMON::PyramidRasterOD->new("VALUES", {
-        pyr_desc_path => "/path/to/descriptors/directory",
-        pyr_name_new => "TOTO",
-
-        tms_name => "PM",
-
-        image_width => 16,
-        image_height => 16,
-
-        pyr_data_path => "/path/to/data/directory",
-        dir_depth => 2,
-
-        interpolation => "linear",
-        color => "255,255,255",
-
-        compression => "jpg",
-        photometric => "rgb",
-        sampleformat => "uint",
-        bitspersample => 8,
-        samplesperpixel => 3
-    });
-
-    if (! defined $newPyramid) {
-        ERROR("Cannot create the new file pyramid");
-    }
-
-    if (! $newPyramid->bindTileMatrixSet("/path/to/tms/directory")) {
-        ERROR("Can not bind the TMS to new file pyramid");
-    }
-
-    # To load an existing pyramid, "to read"
-    my $readPyramid = COMMON::PyramidRasterOD->new("DESCRIPTOR", "/path/to/an/existing/pyramid.pyr");
-
-    if (! defined $readPyramid) {
-        ERROR("Cannot load the pyramid");
-    }
-
-    if (! $readPyramid->bindTileMatrixSet("/path/to/tms/directory")) {
-        ERROR("Can not bind the TMS to loaded pyramid");
-    }
     (end code)
 
 Attributes:
@@ -103,11 +61,11 @@ Attributes:
     pyrImgSpec - <COMMON::PyramidRasterSpec> - Pyramid's image's components
     tms - <COMMON::TileMatrixSet> - Pyramid's images will be cutted according to this TMS grid.
     nodata - <COMMON::NoData> - Information about nodata (like its value)
-    levels - <COMMON::LevelRaster> hash - Key is the level ID, the value is the <COMMON::LevelRaster> object. Define levels present in the pyramid.
+    levels - <COMMON::LevelRasterOD> hash - Key is the level ID, the value is the <COMMON::LevelRasterOD> object. Define levels present in the pyramid.
 
     persistent - boolean - Precise if we want to store slabs generated on fly
-    data_path - string - Directory in which we write the pyramid's data if FILE storage type
-    dir_depth - integer - Number of subdirectories from the level root to the image if FILE storage type : depth = 2 => /.../LevelID/SUB1/SUB2/IMG.tif
+    data_path - string - Directory in which we write the pyramid's data if storage
+    dir_depth - integer - Number of subdirectories from the level root to the image if storage
 
 =cut
 
@@ -131,7 +89,7 @@ use Devel::Size qw(size total_size);
 
 use Data::Dumper;
 
-use COMMON::LevelRaster;
+use COMMON::LevelRasterOD;
 use COMMON::NoData;
 use COMMON::PyramidRasterSpec;
 use COMMON::ProxyStorage;
@@ -198,10 +156,6 @@ sub new {
         name => undef,
         desc_path => undef,
 
-        # OUT
-        image_width  => undef,
-        image_height => undef,
-
         pyrImgSpec => undef,
         tms => undef,
         nodata => undef,
@@ -210,6 +164,8 @@ sub new {
         # Si stockage (forcément fichier)
         persistent => FALSE,
         data_path => undef,
+        image_width  => undef,
+        image_height => undef,
         dir_depth => undef
     };
 
@@ -246,7 +202,7 @@ sub new {
         # Cette pyramide est donc une nouvelle pyramide, à écrire
         $this->{type} = "WRITE";
 
-        # Pyramid pyr_name_new, desc path
+        # Pyramid pyr_name, desc path
         if (! exists $params->{pyr_name} || ! defined $params->{pyr_name}) {
             ERROR ("The parameter 'pyr_name' is required!");
             return undef;
@@ -259,17 +215,6 @@ sub new {
             return undef;
         }
         $this->{desc_path} = File::Spec->rel2abs($params->{pyr_desc_path});
-
-
-        if (! exists $params->{pyr_data_path} || ! defined $params->{pyr_data_path}) {
-            ERROR ("The parameter 'pyr_data_path' is required!");
-            return undef;
-        }
-        $this->{data_path} = File::Spec->rel2abs($params->{pyr_data_path});
-
-        if (exists $params->{persistent} && uc($params->{persistent}) eq "TRUE") {
-            $this->{persistent} = TRUE;
-        }
     }
 
     if ( ! $this->_load($params) ) {return undef;}
@@ -289,12 +234,6 @@ sub _load {
         return FALSE;
     }
 
-    # dir_depth
-    if (! exists $params->{dir_depth} || ! defined $params->{dir_depth})) {
-        $params->{dir_depth} = $DEFAULT{dir_depth};
-        INFO(sprintf "Default value for 'dir_depth' : %s", $params->{dir_depth});
-    }
-    $this->{dir_depth} = $params->{dir_depth};
 
     # TMS
     if (! exists $params->{tms_name} || ! defined $params->{tms_name}) {
@@ -304,21 +243,35 @@ sub _load {
     # On chargera l'objet TMS plus tard on ne mémorise pour le moment que son nom.
     $this->{tms} = $params->{tms_name};
     $this->{tms} =~ s/\.TMS$//i;
+
+
+    if (exists $params->{persistent} && uc($params->{persistent}) eq "TRUE") {
+        $this->{persistent} = TRUE;
+
+        if (! exists $params->{pyr_data_path} || ! defined $params->{pyr_data_path}) {
+            ERROR ("The parameter 'pyr_data_path' is required!");
+            return undef;
+        }
+        $this->{data_path} = File::Spec->rel2abs($params->{pyr_data_path});
+
+        if (! exists $params->{dir_depth} || ! defined $params->{dir_depth}) {
+            ERROR ("The parameter 'dir_depth' is required!");
+            return undef;
+        }
+        $this->{dir_depth} = $params->{dir_depth};
+
+        # image_width
+        if (exists $params->{image_width} && defined $params->{image_width}) {
+            $this->{image_width} = $params->{image_width};
+        }
+        
+        # image_height
+        if (exists $params->{image_height} && defined $params->{image_height}) {
+            $this->{image_height} = $params->{image_height};
+        }
+    }
+
     
-    # image_width
-    if (! exists $params->{image_width} || ! defined $params->{image_width}) {
-        $params->{image_width} = $DEFAULT{image_width};
-        INFO(sprintf "Default value for 'image_width' : %s", $params->{image_width});
-    }
-    $this->{image_width} = $params->{image_width};
-
-    # image_height
-    if (! exists $params->{image_height} || ! defined $params->{image_height}) {
-        $params->{image_height} = $DEFAULT{image_height};
-        INFO(sprintf "Default value for 'image_height' : %s", $params->{image_height});
-    }
-    $this->{image_height} = $params->{image_height};
-
     # PyrImageSpec
     my $pyrImgSpec = COMMON::PyramidRasterSpec->new($params);
 
@@ -432,7 +385,8 @@ sub _readDescriptor {
     my @levels = $root->getElementsByTagName('level');
 
     my $oneLevelId;
-    my $storageType = undef;
+    my $persistent;
+
     foreach my $v (@levels) {
 
         my $tagtm = $v->findvalue('tileMatrix');
@@ -443,42 +397,24 @@ sub _readDescriptor {
             return FALSE;
         }
 
-        # On vérifie que tous les niveaux ont le même type de stockage
-        if(defined $storageType && $objLevel->getStorageType() ne $storageType) {
-            ERROR(sprintf "All level have to own the same storage type (%s -> %s != %s)", $tagtm, $objLevel->getStorageType(), $storageType);
+        # On vérifie que les niveaux sont tous persistents ou aucun
+        if(defined $persistent && $objLevel->isPersistent() != $persistent) {
+            ERROR("All level have to be onFly or onDemand");
             return FALSE;
         }
-        $storageType = $objLevel->getStorageType();
+        $persistent = $objLevel->isPersistent();
 
         $this->{levels}->{$tagtm} = $objLevel;
 
         $oneLevelId = $tagtm;
-
-        # same for each level
     }
 
     if (defined $oneLevelId) {
-        $params->{image_width}  = $this->{levels}->{$oneLevelId}->getImageWidth();
-        $params->{image_height} = $this->{levels}->{$oneLevelId}->getImageHeight();
-
-        if ($this->{levels}->{$oneLevelId}->ownMasks()) {
-            $params->{export_masks} = "TRUE";
-        }
-        $this->{storage_type} = $storageType;
-
-        if ($storageType eq "FILE") {
-            my ($dd, $dp) = $this->{levels}->{$oneLevelId}->getDirsInfo();
-            $params->{dir_depth} = $dd;
-            $this->{data_path} = $dp;
-        }
-        elsif ($storageType eq "S3") {
-            $this->{data_bucket} = $this->{levels}->{$oneLevelId}->getS3Info();
-        }
-        elsif ($storageType eq "SWIFT") {
-            ($this->{data_container}, $this->{keystone_connection}) = $this->{levels}->{$oneLevelId}->getSwiftInfo();
-        }
-        elsif ($storageType eq "CEPH") {
-            $this->{data_pool} = $this->{levels}->{$oneLevelId}->getCephInfo();
+        if ($persistent) {
+            $params->{persistent} = "TRUE";
+            $params->{image_width}  = $this->{levels}->{$oneLevelId}->getImageWidth();
+            $params->{image_height} = $this->{levels}->{$oneLevelId}->getImageHeight();
+            ($params->{dir_depth}, $params->{pyr_data_path}) = $this->{levels}->{$oneLevelId}->getDirsInfo();
         }
 
     } else {
@@ -489,6 +425,29 @@ sub _readDescriptor {
 
     return TRUE;
 }
+
+####################################################################################################
+#                                Group: Common getters                                             #
+####################################################################################################
+
+# Function: getDataDir
+sub getDataDir {
+    my $this = shift;    
+    return File::Spec->catfile($this->{data_path}, $this->{name});
+}
+
+# Function: getLevels
+sub getLevels {
+    my $this = shift;
+    return values %{$this->{levels}};
+}
+
+# Function: getTileMatrixSet
+sub getTileMatrixSet {
+    my $this = shift;
+    return $this->{tms};
+}
+
 
 ####################################################################################################
 #                                        Group: Update pyramid                                     #
@@ -504,7 +463,7 @@ sub bindTileMatrixSet {
 
     # 1 : Créer l'objet TileMatrixSet
     my $tmsFile = File::Spec->catdir($tmsPath, $this->{tms}.".tms");
-    $this->{tms} = COMMON::TileMatrixSet->new($tmsFile);
+    $this->{tms} = COMMON::TileMatrixSet->new($tmsFile, TRUE);
     if (! defined $this->{tms}) {
         ERROR("Cannot create a TileMatrixSet object from the file $tmsFile");
         return FALSE;
@@ -528,7 +487,8 @@ Function: addLevel
 sub addLevel {
     my $this = shift;
     my $level = shift;
-    my $ancestor = shift;
+    my $extent = shift;
+    my $sources = shift;
 
     if ($this->{type} eq "READ") {
         ERROR("Cannot add level to 'read' pyramid");
@@ -540,67 +500,36 @@ sub addLevel {
         return FALSE;
     }
 
-    my $levelParams = {};
-    if (defined $this->{data_path}) {
-        # On doit ajouter un niveau stockage fichier
-        $levelParams = {
-            id => $level,
-            tm => $this->{tms}->getTileMatrix($level),
-            size => [$this->{image_width}, $this->{image_height}],
+    my @bbox = split (',', $extent);
+    my @limits = $this->{tms}->getTileMatrix($level)->bboxToIndices(@bbox, 1, 1);
 
+    my $levelParams = {};
+    if ($this->{persistent}) {
+        # On doit ajouter un niveau avec stockage fichier
+        $levelParams = {
+            persistent => $this->{persistent},
+
+            tm => $this->{tms}->getTileMatrix($level),
+            limits => \@limits,
+            sources => $sources,
+
+            size => [$this->{image_width}, $this->{image_height}],
             dir_data => $this->getDataDir(),
             dir_depth => $this->{dir_depth}
         };
     }
-    elsif (defined $this->{data_pool}) {
-        # On doit ajouter un niveau stockage ceph
+    else {
+        # On doit ajouter un niveau sans stockage
         $levelParams = {
-            id => $level,
-            tm => $this->{tms}->getTileMatrix($level),
-            size => [$this->{image_width}, $this->{image_height}],
+            persistent => $this->{persistent},
 
-            prefix => $this->{name},
-            pool_name => $this->{data_pool}
-        };
-    }
-    elsif (defined $this->{data_bucket}) {
-        # On doit ajouter un niveau stockage s3
-        $levelParams = {
-            id => $level,
             tm => $this->{tms}->getTileMatrix($level),
-            size => [$this->{image_width}, $this->{image_height}],
-
-            prefix => $this->{name},
-            bucket_name => $this->{data_bucket}
-        };
-    }
-    elsif (defined $this->{data_container}) {
-        # On doit ajouter un niveau stockage swift
-        $levelParams = {
-            id => $level,
-            tm => $this->{tms}->getTileMatrix($level),
-            size => [$this->{image_width}, $this->{image_height}],
-
-            prefix => $this->{name},
-            container_name => $this->{data_container},
-            keystone_connection => $this->{keystone_connection}
+            limits => \@limits,
+            sources => $sources
         };
     }
 
-    if ($this->{own_masks}) {
-        $levelParams->{hasMask} = TRUE;
-    }
-
-    # Niveau ancêtre, potentiellement non défini, pour en reprendre les limites
-    if (defined $ancestor) {
-        my $ancestorLevel = $ancestor->getLevel($level);
-        if (defined $ancestorLevel) {
-            my ($rowMin,$rowMax,$colMin,$colMax) = $ancestorLevel->getLimits();
-            $levelParams->{limits} = [$rowMin,$rowMax,$colMin,$colMax];
-        }
-    }
-
-    $this->{levels}->{$level} = COMMON::LevelRaster->new("VALUES", $levelParams, $this->{desc_path});
+    $this->{levels}->{$level} = COMMON::LevelRasterOD->new("VALUES", $levelParams, $this->{desc_path});
 
     if (! defined $this->{levels}->{$level}) {
         ERROR("Cannot create a Level object for level $level");
@@ -622,78 +551,11 @@ sub updateTMLimits {
 }
 
 ####################################################################################################
-#                                      Group: Pyramids comparison                                  #
-####################################################################################################
-
-=begin nd
-Function: checkCompatibility
-
-We control values, in order to have the same as the final pyramid.
-
-Compatibility = it's possible to convert (different compression or samples per pixel).
-
-Equals = all format's parameters are the same (not the content).
-
-Return 0 if pyramids is not consistent, 1 if compatibility but not equals, 2 if equals
-
-Parameters (list):
-    other - <COMMON::PyramidRasterOD> - Pyramid to compare
-=cut
-sub checkCompatibility {
-    my $this = shift;
-    my $other = shift;
-
-    if ($this->getStorageType() ne $other->getStorageType()) {
-        return 0;
-    }
-
-    if ($this->getStorageType() eq "FILE") {
-        if ($this->getDirDepth() != $other->getDirDepth()) {
-            return 0;
-        }
-    }
-
-    if ($this->getTilesPerWidth() != $other->getTilesPerWidth()) {
-        return 0;
-    }
-    if ($this->getTilesPerHeight() != $other->getTilesPerHeight()) {
-        return 0;
-    }
-
-    if ($this->getTileMatrixSet()->getName() ne $other->getTileMatrixSet()->getName()) {
-        return 0;
-    }
-
-    if ($this->getImageSpec()->getPixel()->getSampleFormat() ne $other->getImageSpec()->getPixel()->getSampleFormat()) {
-        return 0;
-    }
-    if ($this->getImageSpec()->getPixel()->getBitsPerSample() ne $other->getImageSpec()->getPixel()->getBitsPerSample()) {
-        return 0;
-    }
-
-    # Photometric; samplesperpixel et compression peuvent être différent, on garde la compatibilité
-    if ($this->getImageSpec()->getPixel()->getPhotometric() ne $other->getImageSpec()->getPixel()->getPhotometric()) {
-        return 1;
-    }
-    if ($this->getImageSpec()->getPixel()->getSamplesPerPixel() ne $other->getImageSpec()->getPixel()->getSamplesPerPixel()) {
-        return 1;
-    }
-    if ($this->getImageSpec()->getCompression() ne $other->getImageSpec()->getCompression()) {
-        return 1;
-    }
-
-    return 2;
-}
-
-####################################################################################################
 #                                      Group: Write functions                                     #
 ####################################################################################################
 
-
 =begin nd
 Function: writeDescriptor
-
-Back up it at the end
 =cut
 sub writeDescriptor {
     my $this = shift;
@@ -734,7 +596,7 @@ sub writeDescriptor {
 
     for (my $i = scalar @orderedLevels - 1; $i >= 0; $i--) {
         # we write levels in pyramid's descriptor from the top to the bottom
-        $string .= $orderedLevels[$i]->exportToXML($this->storeTiles());
+        $string .= $orderedLevels[$i]->exportToXML();
     }
 
     $string .= "</Pyramid>";
@@ -743,475 +605,8 @@ sub writeDescriptor {
 
     close(FILE);
 
-    $this->backupDescriptor();
-
     return TRUE
 }
-
-
-=begin nd
-Function: backupDescriptor
-
-Pyramid's descriptor is stored into the object storage with data. Nothing done if FILE storage
-
-This file have to be written before calling this function
-=cut
-sub backupDescriptor {
-    my $this = shift;
-
-    my $descFile = $this->getDescriptorFile();
-
-    if ($this->{storage_type} eq "FILE") {
-        INFO("On ne sauvegarde pas le descripteur de pyramide en mode fichier car des chemins sont en relatif et n'ont pas de sens si le fichier est ailleurs");
-    } else {
-        my $backupDescFile = sprintf "%s/%s.pyr", $this->getDataRoot(), $this->getName();
-        COMMON::ProxyStorage::copy("FILE", $descFile, $this->{storage_type}, $backupDescFile);
-    }
-}
-
-
-=begin nd
-Function: backupList
-
-Pyramid's list is stored into the data storage : in the data directory or in the object tray
-
-This file have to be written before calling this function
-=cut
-sub backupList {
-    my $this = shift;
-
-    my $listFile = $this->getListFile();
-
-    my $backupList;
-    if ($this->{storage_type} eq "FILE") {
-        $backupList = sprintf "%s/%s.list", $this->getDataDir(), $this->getName();
-    } else {
-        $backupList = sprintf "%s/%s.list", $this->getDataRoot(), $this->getName();
-    }
-
-    COMMON::ProxyStorage::copy("FILE", $listFile, $this->{storage_type}, $backupList);
-}
-
-
-####################################################################################################
-#                                Group: Common getters                                             #
-####################################################################################################
-
-# Function: ownAncestor
-sub ownAncestor {
-    my $this = shift;
-    return $this->{own_ancestor};
-}
-
-# Function: ownMasks
-sub ownMasks {
-    my $this = shift;
-    return $this->{own_masks};
-}
-
-# Function: keystoneConnection
-sub keystoneConnection {
-    my $this = shift;
-    return $this->{keystone_connection};
-}
-
-# Function: storeTiles
-sub storeTiles {
-    my $this = shift;
-    return $this->{tiles_storage};
-}
-
-# Function: getName
-sub getName {
-    my $this = shift;    
-    return $this->{name};
-}
-
-# Function: getDescriptorFile
-sub getDescriptorFile {
-    my $this = shift;    
-    return File::Spec->catfile($this->{desc_path}, $this->{name}.".pyr");
-}
-
-# Function: getDescriptorDir
-sub getDescriptorDir {
-    my $this = shift;    
-    return $this->{desc_path};
-}
-
-# Function: getListFile
-sub getListFile {
-    my $this = shift;
-    
-    if (! defined $this->{content_path}) {
-        $this->{content_path} = File::Spec->catfile($this->{desc_path}, $this->{name}.".list");
-    }
-    
-    return $this->{content_path};
-}
-
-
-# Function: getTileMatrixSet
-sub getTileMatrixSet {
-    my $this = shift;
-    return $this->{tms};
-}
-
-# Function: getImageSpec
-sub getImageSpec {
-    my $this = shift;
-    return $this->{pyrImgSpec};
-}
-
-# Function: getNodata
-sub getNodata {
-    my $this = shift;
-    return $this->{nodata};
-}
-
-=begin nd
-Function: getSlabPath
-
-Returns the theoric slab path, undef if the level is not present in the pyramid
-
-Parameters (list):
-    type - string - IMAGE, MASK
-    level - string - Level ID
-    col - integer - Slab column
-    row - integer - Slab row
-    full - boolean - In file storage case, precise if we want full path or juste the end (without data root)
-=cut
-sub getSlabPath {
-    my $this = shift;
-    my $type = shift;
-    my $level = shift;
-    my $col = shift;
-    my $row = shift;
-    my $full = shift;
-
-    if (! exists $this->{levels}->{$level}) {
-        return undef;
-    }
-
-    return $this->{levels}->{$level}->getSlabPath($type, $col, $row, $full);
-}
-
-# Function: getTilesPerWidth
-sub getTilesPerWidth {
-    my $this = shift;
-    return $this->{image_width};
-}
-
-# Function: getTilesPerHeight
-sub getTilesPerHeight {
-    my $this = shift;
-    return $this->{image_height};
-}
-
-=begin nd
-Function: getCacheImageSize
-
-Returns the pyramid's image's pixel width and height as the double list (width, height), for a given level.
-
-Parameters (list):
-    level - string - Level ID
-=cut
-sub getCacheImageSize {
-    my $this = shift;
-    my $level = shift;
-    return ($this->getCacheImageWidth($level), $this->getCacheImageHeight($level));
-}
-
-=begin nd
-Function: getCacheImageWidth
-
-Returns the pyramid's image's pixel width, for a given level.
-
-Parameters (list):
-    level - string - Level ID
-=cut
-sub getCacheImageWidth {
-    my $this = shift;
-    my $level = shift;
-
-    return $this->{image_width} * $this->{tms}->getTileWidth($level);
-}
-
-=begin nd
-Function: getCacheImageHeight
-
-Returns the pyramid's image's pixel height, for a given level.
-
-Parameters (list):
-    level - string - Level ID
-=cut
-sub getCacheImageHeight {
-    my $this = shift;
-    my $level = shift;
-
-    return $this->{image_height} * $this->{tms}->getTileHeight($level);
-}
-
-# Function: getLevel
-sub getLevel {
-    my $this = shift;
-    my $level = shift;
-    return $this->{levels}->{$level};
-}
-
-# Function: getBottomOrder
-sub getBottomOrder {
-    my $this = shift;
-
-    my $order = undef;
-    while (my ($levelID, $level) = each(%{$this->{levels}})) {
-        my $o = $level->getOrder();
-        if (! defined $order || $o < $order) {
-            $order = $o;
-        }
-    }
-
-    return $order;
-}
-
-# Function: getTopOrder
-sub getTopOrder {
-    my $this = shift;
-
-    my $order = undef;
-    while (my ($levelID, $level) = each(%{$this->{levels}})) {
-        my $o = $level->getOrder();
-        if (! defined $order || $o > $order) {
-            $order = $o;
-        }
-    }
-
-    return $order;
-}
-
-# Function: getLevels
-sub getLevels {
-    my $this = shift;
-    return values %{$this->{levels}};
-}
-
-=begin nd
-Function: hasLevel
-
-Precises if the provided level exists in the pyramid.
-
-Parameters (list):
-    levelID - string - Identifiant of the asked level
-=cut
-sub hasLevel {
-    my $this = shift;
-    my $levelID = shift;
-
-    if (defined $levelID && exists $this->{levels}->{$levelID}) {
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-
-####################################################################################################
-#                                Group: Storage getters                                            #
-####################################################################################################
-
-# Function: getStorageType
-sub getStorageType {
-    my $this = shift;
-    return $this->{storage_type};
-}
-
-# Function: getDataRoot
-sub getDataRoot {
-    my $this = shift;
-
-    if (defined $this->{data_path}) {
-        return $this->{data_path};
-    }
-    elsif (defined $this->{data_pool}) {
-        return $this->{data_pool};
-    }
-    elsif (defined $this->{data_bucket}) {
-        return $this->{data_bucket};
-    }
-    elsif (defined $this->{data_container}) {
-        return $this->{data_container};
-    }
-    return undef;
-}
-
-### FILE
-
-# Function: getDataDir
-sub getDataDir {
-    my $this = shift;    
-    return File::Spec->catfile($this->{data_path}, $this->{name});
-}
-
-# Function: getDirDepth
-sub getDirDepth {
-    my $this = shift;
-    return $this->{dir_depth};
-}
-
-### S3
-
-# Function: getDataBucket
-sub getDataBucket {
-    my $this = shift;    
-    return $this->{data_bucket};
-}
-
-### SWIFT
-
-# Function: getDataContainer
-sub getDataContainer {
-    my $this = shift;    
-    return $this->{data_container};
-}
-
-### CEPH
-
-# Function: getDataPool
-sub getDataPool {
-    my $this = shift;    
-    return $this->{data_pool};
-}
-
-####################################################################################################
-#                                     Group: List tools                                            #
-####################################################################################################
-
-sub loadList {
-    my $this = shift;
-
-    my $listFile = $this->getListFile();
-
-    if (! open LIST, "<", $listFile) {
-        ERROR("Cannot open pyramid list file (to load content in cache) : $listFile");
-        return FALSE;
-    }
-
-    # Dans le cas objet, pour passer du type présent dans le nom de l'objet au type générique
-    my %objectTypeConverter = (
-        MSK => "MASK",
-        IMG => "IMAGE"
-    );
-
-    # Lecture des racines
-    my %roots;
-    while( my $line = <LIST> ) {
-        chomp $line;
-
-        if ($line eq "#") {
-            # separator between caches' roots and images
-            last;
-        }
-        
-        $line =~ s/\s+//g; # we remove all spaces
-        my @tmp = split(/=/,$line,-1);
-        
-        if (scalar @tmp != 2) {
-            ERROR(sprintf "Wrong formatted pyramid list (root definition) : %s",$line);
-            return FALSE;
-        }
-        
-        $roots{$tmp[0]} = $tmp[1];
-    }
-
-    while( my $line = <LIST> ) {
-        chomp $line;
-
-        # On reconstitue le chemin complet à l'aide des racines de l'index
-        $line =~ m/^(\d+)\/.+/;
-        my $index = $1;
-        my $root = $roots{$index};
-        my $fullline = $line;
-        $fullline =~ s/^(\d+)/$root/;
-
-        # On va vouloir déterminer le niveau, la colonne et la ligne de la dalle, ainsi que le type (IMAGE ou MASK)
-        # Cette extraction diffère selon que l'on est en mode fichier ou objet
-
-        my ($type, $level, $col, $row);
-
-        # Cas fichier
-        if ($this->getStorageType() eq "FILE") {
-            # Une ligne du fichier c'est
-            # Cas fichier : 0/IMAGE/15/AB/CD/EF.tif
-            my @parts = split("/", $line);
-            # La première partie est toujours l'index de la racine, déjà traitée
-            shift(@parts);
-            # Dans le cas d'un stockage fichier, le premier élément du chemin est maintenant le type de donnée
-            $type = shift(@parts);
-            # et le suivant est le niveau
-            $level = shift(@parts);
-
-            ($col,$row) = $this->{levels}->{$level}->getFromSlabPath($line);
-
-        }
-        # Cas objet
-        else {
-            # Une ligne du fichier c'est
-            # Cas objet : 0/PYRAMID_IMG_15_15656_5423
-
-            # Dans le cas d'un stockage objet, on a un nom d'objet de la forme BLA/BLA_BLA_DATATYPE_LEVEL_COL_ROW
-            # DATATYPE vaut MSK ou IMG, à convertir en MASK ou IMAGE
-            my @p = split("_",$line);
-            $col = $p[-2];
-            $row = $p[-1];
-            $level = $p[-3];
-            $type = $objectTypeConverter{$p[-4]};
-        }
-        
-        if (exists $this->{cachedList}->{$level}->{$type}->{"${col}_${row}"}) {
-            WARN("The list contains twice the same slab : $type, $level, $col, $row");
-        }
-        $this->{cachedList}->{$level}->{$type}->{"${col}_${row}"} = $fullline;
-    }
-
-    close(LIST);
-
-    return TRUE;
-}
-
-
-sub getLevelSlabs {
-    my $this = shift;
-    my $level = shift;
-
-    return $this->{cachedList}->{$level};
-} 
-
-
-sub containSlab {
-    my $this = shift;
-    my $type = shift;
-    my $level = shift;
-    my $col = shift;
-    my $row = shift;
-
-    my $key = "${type}_${level}_${col}_${row}";
-    return $this->{cachedList}->{$level}->{$type}->{"${col}_${row}"};
-    # undef if not exists
-} 
-
-
-sub getCachedListStats {
-    my $this = shift;
-
-    my $nb = scalar(keys %{$this->{cachedList}});
-    my $size = total_size($this->{cachedList});
-
-    my $ret = "Stats :\n\t $size bytes\n";
-    # $ret .= "\t $size bytes\n";
-    # $ret .= sprintf "\t %s bytes per cached slab\n", $size / $nb;
-
-    return $ret;
-} 
 
 1;
 __END__

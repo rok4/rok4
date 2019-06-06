@@ -12,7 +12,7 @@ La suite d'outils ROK4GENERATION permet de générer, mettre à jour, composer, 
         - [La suite 4ALAMO](#la-suite-4alamo)
     - [Gestion des pyramides](#gestion-des-pyramides)
         - [Suppression de pyramide](#suppression-de-pyramide)
-        - [Extraction de pyramide](#extraction-de-pyramide)
+        - [Réecriture d'une tête de pyramide](#réecriture-dune-tête-de-pyramide)
         - [Transfert de pyramide](#transfert-de-pyramide)
     - [Les outils de débogage](#les-outils-de-débogage)
         - [Création d'un descripteur de couche](#création-dun-descripteur-de-couche)
@@ -28,7 +28,6 @@ La suite d'outils ROK4GENERATION permet de générer, mettre à jour, composer, 
         - [Sous réechantillonnage de 4 images](#sous-réechantillonnage-de-4-images)
         - [Réechantillonnage et reprojection d'images](#réechantillonnage-et-reprojection-dimages)
         - [Superposition d'images](#superposition-dimages)
-        - [Stockage final en tuiles indépendantes](#stockage-final-en-tuiles-indépendantes)
         - [Stockage final en dalle](#stockage-final-en-dalle)
     - [Manipulation vecteur](#manipulation-vecteur)
         - [Écriture d'une dalle vecteur](#écriture-dune-dalle-vecteur)
@@ -50,7 +49,7 @@ Outils : `be4-file.pl`, `be4-ceph.pl`, `be4-s3.pl`, `be4-swift.pl`
 
 Les outils BE4 génèrent une pyramide raster à partir d'images géoréférencées ou d'un service WMS. Ils permettent de mettre à jour une pyramide raster existante. Si des images sont en entrée, elles peuvent être converties à la volée dans le format de la pyramide en sortie.
 
-Stockage gérés : FICHIER, CEPH, S3, SWIFT
+Stockages gérés : FICHIER, CEPH, S3, SWIFT
 
 Parallélisable.
 
@@ -82,7 +81,7 @@ Outils : `joinCache-file.pl`, `joinCache-ceph.pl`, `joinCache-s3.pl`
 
 Les outils JOINCACHE génèrent une pyramide raster à partir d'autres pyramide raster compatibles (même TMS, dalles de même dimensions, canaux au même format). La composition se fait verticalement (choix des pyramides sources par niveau) et horizontalement (choix des pyramides source par zone au sein d'un niveau). La fusion de plusieurs dalles sources peut se faire selon plusieurs méthodes (masque, alpha top, multiplication)
 
-Stockage gérés : FICHIER, CEPH, S3
+Stockages gérés : FICHIER, CEPH, S3
 
 Parallélisable.
 
@@ -106,6 +105,8 @@ Outil : `wmtSalaD.pl`
 
 Une pyramide à la demande ne contient pas de données à la génération. Cela consiste en un simple descripteur de pyramide renseignant les sources à utiliser pour répondre aux requêtes WMTS.
 
+[Détails](./main/bin/wmtsalad.md)
+
 ## Génération de pyramide vecteur
 
 ### La suite 4ALAMO
@@ -114,7 +115,7 @@ Outils : `4alamo-file.pl`, `4alamo-ceph.pl`
 
 Les outils 4ALAMO génèrent une pyramide vecteur à partir d'une base de données PostgreSQL. Ils permettent de mettre à jour une pyramide vecteur existante.
 
-Stockage gérés : FICHIER, CEPH
+Stockages gérés : FICHIER, CEPH
 
 Parallélisable.
 
@@ -141,16 +142,33 @@ Outil : `sup-pyr.pl`
 
 Cet outil supprime une pyramide à partir de son descripteur. Pour une pyramide stockée en fichier, il suffit de supprimer le dossier des données. Dans le cas de stockage objet, le fichier liste est parcouru et les dalles sont supprimées une par une.
 
-Stockage gérés : FICHIER, CEPH, S3, SWIFT
+Stockages gérés : FICHIER, CEPH, S3, SWIFT
 
-### Extraction de pyramide
 
-Outil : `ex-pyr.pl`
+### Réecriture d'une tête de pyramide
 
-Cet outil génère une pyramide fichier par extraction géographique de pyramides sources. Il est possible de préciser des pyramides différentes pour chaque niveau.
+Outil : `4head.pl`
 
-Stockage gérés : FICHIER, CEPH, S3, SWIFT
+Cet outil permet de regénérer des niveaux de la pyramide en partant d'un de ses niveaux. La pyramide est modifiée et sa liste, qui fait foi en terme de contenu de la pyramide, est mise à jour pour toujours correspondre au contenu final de la pyramide. L'outil perl modifie la liste et génère un script shell dont l'exécution modifiera les dalles de la pyramide. Seuls les niveaux entre celui de référence (non inclus) et le niveau du haut fournis (inclus) sont modifiés.
 
+Stockages gérés : FICHIER, CEPH, S3, SWIFT
+
+Types de pyramides gérés : RASTER QTREE
+
+#### Commandes
+
+* `4head.pl --pyr /home/ign/PYRAMID.pyr --tmsdir /home/ign/TMS/ --reference-level 19 --top-level 4 --tmp /home/ign/tmp/ [--help|--usage|--version]`
+
+#### Options
+
+* `--help` Affiche le lien vers la documentation utilisateur de l'outil et quitte
+* `--usage` Affiche le lien vers la documentation utilisateur de l'outil et quitte
+* `--version` Affiche la version de l'outil et quitte
+* `--pyr` Précise le chemin vers le descripteur de la pyramide à modifier
+* `--tmsdir` Précise le dossier contenant au moins le TMS utilisé par la pyramide à modifier
+* `--reference-level` Précise le niveau de la pyramide d'où partir pour regénérer les niveaux supérieurs
+* `--top-level` Précise le niveau jusqu'auquel regénérer les dalles
+* `--tmp` Précise un dossier à utiliser comme espace temporaire de génération
 
 ### Transfert de pyramide
 
@@ -158,7 +176,7 @@ Outil : `pyr2pyr.pl`
 
 Cet outil copie une pyramide d'un stockage à un autre.
 
-Conversions possibles : 
+Conversions possibles :
 * FICHIER -> CEPH, S3, SWIFT
 * CEPH -> CEPH
 
@@ -172,13 +190,17 @@ Outil : `create-layer.pl`
 
 Cet outil génère un descripteur de couche pour ROK4SERVER à partir du descripteur de pyramide et du dossier des TileMatrixSets. Il est basique (titre, nom de couche, résumé par défaut) mais fonctionnel. La couche utilisera alors la pyramide en entrée dans sa globalité.
 
+[Détails](./main/bin/create-layer.md)
+
 ### Création du fichier liste d'une pyramide
 
 Outil : `create-list.pl`
 
-Cet outil génère le fichier liste pour une pyramide qui n'en aurait pas, à partir du dossier des données.
+Cet outil génère le fichier liste pour une pyramide fichier qui n'en aurait pas, à partir du dossier des données.
 
 Stockage géré : FICHIER
+
+[Détails](./main/bin/create-list.md)
 
 ### Convertisseur TMS
 
@@ -262,14 +284,6 @@ Outil : `overlayNtiff`
 Cet outil génère une image à partir de plusieurs images de même dimension par superposition. Le calcul est fait pixel par pixel à partir de ceux sources avec le choix du mode : par transparence, par multiplication, en tenant compte des masques associés... Cet outil est utilisé lors de générations JOINCACHE lorsque plusieurs dalles de différentes pyramides sont trouvées pour une même dalle en sortie.
 
 ![overlayNtiff](../docs/images/ROK4GENERATION/tools/overlayNtiff.png)
-
-### Stockage final en tuiles indépendantes
-
-Outil : `slab2tiles`
-
-Cet outil stocke une dalle de travail en tuiles indépendantes au lieu d'une seule dalle tuilée. Cet outil n'est disponible qu'avec un stockage Ceph.
-
-![slab2tiles](../docs/images/ROK4GENERATION/tools/slab2tiles.png)
 
 ### Stockage final en dalle
 

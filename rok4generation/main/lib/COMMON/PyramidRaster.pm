@@ -119,9 +119,10 @@ Attributes:
     keystone_connection - boolean - For swift storage, keystone authentication or not ?
 
     data_pool - string - Name of the (existing) CEPH pool, where to store data if CEPH storage type
-    tiles_storage - boolean - Precise if tiles are stored independently if CEPH storage type
 
     cachedList - string hash - If loaded, list content in an hash.
+    listCached - boolean - Precise if the list has been loaded
+    cachedListModified - boolean - Precise if cached list has been modified
 =cut
 
 ################################################################################
@@ -243,9 +244,11 @@ sub new {
 
         # Pyramide CEPH
         data_pool => undef,
-        tiles_storage => FALSE,
 
-        cachedList => {}
+        # Cached list
+        cachedList => {},
+        listCached => FALSE,
+        cachedListModified => FALSE
     };
 
     bless($this, $class);
@@ -328,11 +331,6 @@ sub new {
             #### CAS D'UNE PYRAMIDE CEPH
             $this->{storage_type} = "CEPH";
             $this->{data_pool} = $params->{pyr_data_pool_name};
-
-            if (exists $params->{tiles_storage} && defined $params->{tiles_storage} && uc($params->{tiles_storage}) eq "TRUE") {
-                $this->{tiles_storage} = $params->{tiles_storage};
-            }
-
         }
 
         else {
@@ -837,7 +835,7 @@ sub writeDescriptor {
 
     for (my $i = scalar @orderedLevels - 1; $i >= 0; $i--) {
         # we write levels in pyramid's descriptor from the top to the bottom
-        $string .= $orderedLevels[$i]->exportToXML($this->storeTiles());
+        $string .= $orderedLevels[$i]->exportToXML();
     }
 
     $string .= "</Pyramid>";
@@ -916,12 +914,6 @@ sub ownMasks {
 sub keystoneConnection {
     my $this = shift;
     return $this->{keystone_connection};
-}
-
-# Function: storeTiles
-sub storeTiles {
-    my $this = shift;
-    return $this->{tiles_storage};
 }
 
 # Function: getName
@@ -1012,28 +1004,28 @@ sub getTilesPerHeight {
 }
 
 =begin nd
-Function: getCacheImageSize
+Function: getSlabSize
 
 Returns the pyramid's image's pixel width and height as the double list (width, height), for a given level.
 
 Parameters (list):
     level - string - Level ID
 =cut
-sub getCacheImageSize {
+sub getSlabSize {
     my $this = shift;
     my $level = shift;
-    return ($this->getCacheImageWidth($level), $this->getCacheImageHeight($level));
+    return ($this->getSlabWidth($level), $this->getSlabHeight($level));
 }
 
 =begin nd
-Function: getCacheImageWidth
+Function: getSlabWidth
 
 Returns the pyramid's image's pixel width, for a given level.
 
 Parameters (list):
     level - string - Level ID
 =cut
-sub getCacheImageWidth {
+sub getSlabWidth {
     my $this = shift;
     my $level = shift;
 
@@ -1041,14 +1033,14 @@ sub getCacheImageWidth {
 }
 
 =begin nd
-Function: getCacheImageHeight
+Function: getSlabHeight
 
 Returns the pyramid's image's pixel height, for a given level.
 
 Parameters (list):
     level - string - Level ID
 =cut
-sub getCacheImageHeight {
+sub getSlabHeight {
     my $this = shift;
     my $level = shift;
 
@@ -1189,8 +1181,26 @@ sub getDataPool {
 #                                     Group: List tools                                            #
 ####################################################################################################
 
+=begin nd
+Function: loadList
+
+Read the list and store content in an hash as following :
+|   level => {
+|       col_row => full slab path (file or object)
+|   }
+=cut
 sub loadList {
     my $this = shift;
+
+    if ($this->{cachedListModified}) {
+        ERROR("Cached list have been modified, we don't erase this modification loading the list from the file");
+        return FALSE;
+    }
+
+    if ($this->{listCached}) {
+        DEBUG("List have already been loaded");
+        return TRUE;
+    }
 
     my $listFile = $this->getListFile();
 
@@ -1278,10 +1288,20 @@ sub loadList {
 
     close(LIST);
 
+    $this->{listCached} = TRUE;
+
     return TRUE;
 }
 
 
+=begin nd
+Function: getLevelSlabs
+
+Returns the cached list content for one level.
+
+Parameters (list):
+    level - string - Identifiant of the asked level
+=cut
 sub getLevelSlabs {
     my $this = shift;
     my $level = shift;
@@ -1290,6 +1310,17 @@ sub getLevelSlabs {
 } 
 
 
+=begin nd
+Function: containSlab
+
+Precises if the provided slab belongs to the pyramid, using the cached list. Returns the full slab path if present, undef otherwise
+
+Parameters (list):
+    type - strong - IMAGE or MASK
+    level - string - Identifiant of the asked level
+    col - integer - Column indice
+    row - integer - Row indice
+=cut
 sub containSlab {
     my $this = shift;
     my $type = shift;
@@ -1297,12 +1328,182 @@ sub containSlab {
     my $col = shift;
     my $row = shift;
 
-    my $key = "${type}_${level}_${col}_${row}";
     return $this->{cachedList}->{$level}->{$type}->{"${col}_${row}"};
     # undef if not exists
 } 
 
 
+=begin nd
+Function: modifySlab
+
+Replace the full slab path with the local full path. This modification can be made persistent with <flushCachedList>.
+
+Parameters (list):
+    type - strong - IMAGE or MASK
+    level - string - Identifiant of the asked level
+    col - integer - Column indice
+    row - integer - Row indice
+=cut
+sub modifySlab {
+    my $this = shift;
+    my $type = shift;
+    my $level = shift;
+    my $col = shift;
+    my $row = shift;
+
+    my $path = $this->getSlabPath($type, $level, $col, $row, TRUE);
+
+    if (! $this->{listCached}) {
+        ERROR("We cannot modified cached list beacuse the list have not been loaded");
+        return FALSE;
+    }
+
+    $this->{cachedListModified} = TRUE;
+
+    $this->{cachedList}->{$level}->{$type}->{"${col}_${row}"} = $path;
+
+    return TRUE;
+}
+
+
+=begin nd
+Function: deleteSlab
+
+Delete the slab path from the cached list. This modification can be made persistent with <flushCachedList>.
+
+Parameters (list):
+    type - strong - IMAGE or MASK
+    level - string - Identifiant of the asked level
+    col - integer - Column indice
+    row - integer - Row indice
+=cut
+sub deleteSlab {
+    my $this = shift;
+    my $type = shift;
+    my $level = shift;
+    my $col = shift;
+    my $row = shift;
+
+    delete $this->{cachedList}->{$level}->{$type}->{"${col}_${row}"};
+
+    return TRUE;
+}
+
+
+=begin nd
+Function: flushCachedList
+
+Save cached list in the original file. If no modification, do nothing.
+=cut
+sub flushCachedList {
+    my $this = shift;
+
+    if (! $this->{listCached}) {
+        ERROR("We cannot flush an unloaded list");
+        return FALSE;
+    }
+
+    if (! $this->{cachedListModified}) {
+        WARN("The cached list have not been modified, it's useless to flush it");
+        return TRUE;
+    }
+
+    my $listFile = $this->getListFile();
+
+    if (! open LIST, ">", $listFile) {
+        ERROR("Cannot open pyramid list file (to flush cached content) : $listFile");
+        return FALSE;
+    }
+
+    my %roots = ();
+
+    if ($this->{storage_type} eq "FILE") {
+        $roots{$this->getDataDir()} = 0;
+    } else {
+        $roots{$this->getDataRoot()} = 0;
+    }
+
+    foreach my $l (keys(%{$this->{cachedList}})) {
+        while (my ($slabKey, $slabPath) = each(%{$this->{cachedList}->{$l}->{IMAGE}})) {
+
+            my ($COL, $ROW) = split(/_/, $slabKey);
+
+            # Cas fichier
+            if ($this->{storage_type} eq "FILE") {
+
+                my $pathEnd = $this->getSlabPath("IMAGE", $l, $COL, $ROW, FALSE);
+                my $root = $slabPath;
+                $root =~ s/\/$pathEnd$//;
+                
+                my $rootInd;
+
+                if (! exists $roots{$root}) {
+                    $rootInd = scalar(keys(%roots));
+                    $roots{$root} = $rootInd;
+                } else {
+                    $rootInd = $roots{$root};
+                }
+
+                printf LIST "$rootInd/$pathEnd\n";
+
+                if (exists $this->{cachedList}->{$l}->{MASK}->{$slabKey}) {
+                    $pathEnd = $this->getSlabPath("IMAGE", $l, $COL, $ROW, FALSE);
+                    $root = $this->{cachedList}->{$l}->{MASK}->{$slabKey};
+                    $root =~ s/\/pathEnd//;
+                    
+                    if (! exists $roots{$root}) {
+                        $rootInd = scalar(keys(%roots));
+                        $roots{$root} = $rootInd;
+                    } else {
+                        $rootInd = $roots{$root};
+                    }
+
+                    printf LIST "$rootInd/$pathEnd\n";
+                }
+            }
+            # Cas objet
+            else {
+                my $path = $slabPath;
+                $path =~ s/^[^\/]+\///;
+                printf LIST "0/$path\n";
+
+                if (exists $this->{cachedList}->{$l}->{MASK}->{$slabKey}) {
+                    my $path = $this->{cachedList}->{$l}->{MASK}->{$slabKey};
+                    $path =~ s/^[^\/]+\///;
+                    printf LIST "0/$path\n";
+                }
+            }
+        }
+    }
+
+    close(LIST);
+
+    # On va pouvoir écrire les racines maintenant
+    my @LISTHDR;
+
+    if (! tie @LISTHDR, 'Tie::File', $listFile) {
+        ERROR("Cannot flush the header of the cache list : $listFile");
+        return FALSE;
+    }
+
+    unshift @LISTHDR,"#\n";
+    
+    while ( my ($root,$rootInd) = each(%roots) ) {
+        unshift @LISTHDR,(sprintf "%s=%s", $rootInd, $root);
+    }
+    
+    untie @LISTHDR;
+
+    $this->{cachedListModified} = FALSE;
+
+    return TRUE;
+} 
+
+=begin nd
+Function: getCachedListStats
+
+Prints the memory size of the cached list hash.
+=cut
 sub getCachedListStats {
     my $this = shift;
 
@@ -1315,6 +1516,7 @@ sub getCachedListStats {
 
     return $ret;
 } 
+
 
 1;
 __END__

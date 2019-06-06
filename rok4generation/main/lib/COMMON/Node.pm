@@ -84,7 +84,7 @@ Attributes:
     code - string - Commands to execute to generate this node (to write in a script)
     script - <COMMON::Script> - Script in which the node will be generated
 
-    nodeSources - <COMMON::Node> array - Nodes from which this node is generated (working for <COMMON::NNGraph>)
+    sourceNodes - <COMMON::Node> array - Nodes from which this node is generated (working for <COMMON::NNGraph>)
     geoImages - <COMMON::GeoImage> array - Source images from which this node (if it belongs to the tree's bottom level) is generated (working for <COMMON::QTree>)
 =cut
 
@@ -156,7 +156,7 @@ sub new {
         script => undef,
 
         # Sources pour générer ce noeud
-        nodeSources => [],
+        sourceNodes => [],
         geoImages => [],
 
         bgImageBasename => undef,
@@ -420,10 +420,10 @@ sub getGraph {
     return $this->{graph};
 }
 
-# Function: getNodeSources
-sub getNodeSources {
+# Function: getSourceNodes
+sub getSourceNodes {
     my $this = shift;
-    return $this->{nodeSources};
+    return $this->{sourceNodes};
 }
 
 # Function: getGeoImages
@@ -433,16 +433,16 @@ sub getGeoImages {
 }
 
 =begin nd
-Function: addNodeSources
+Function: addSourceNodes
 
 Parameters (list):
     nodes - <COMMON::Node> array - Source nodes to add
 =cut
-sub addNodeSources {
+sub addSourceNodes {
     my $this = shift;
     my @nodes = shift;
     
-    push(@{$this->getNodeSources()},@nodes);
+    push(@{$this->getSourceNodes()},@nodes);
     
     return TRUE;
 }

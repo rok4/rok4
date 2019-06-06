@@ -63,7 +63,7 @@ Using:
     use COMMON::NNGraph;
 
     # NNGraph object creation
-    my $objNNGraph = COMMON::QTree->new($objForest, $objDataSource, $objPyramid, $objCommands);
+    my $objNNGraph = COMMON::QTree->new($objForest, $objDataSource);
 
     ...
 
@@ -154,14 +154,14 @@ NNGraph constructor. Bless an instance.
 Parameters (list):
     objForest - <Forest> - Forest which this tree belong to
     objSrc - <DataSource> - Datasource which determine bottom level nodes
-    objPyr - <COMMON::PyramidRaster> - Pyramid linked to this tree
-    objCommands - <Commands> - Commands to use to generate pyramid's images
 
 See also:
     <_init>, <_load>
 =cut
 sub new {
     my $class = shift;
+    my $objForest = shift;
+    my $objSrc = shift;
 
     $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
@@ -183,32 +183,6 @@ sub new {
 
     bless($this, $class);
 
-    # init. class
-    return undef if (! $this->_init(@_));
-    # load 
-    return undef if (! $this->_load());
-
-    return $this;
-}
-
-=begin nd
-Function: _init
-
-Checks and stores informations.
-
-Parameters (list):
-    objForest - <COMMON::Forest> - Forest which this tree belong to
-    objSrc - <COMMON::DataSource> - Data source which determine bottom level nodes
-    objPyr - <COMMON::PyramidRaster> - Pyramid linked to this tree
-    objCommands - <COMMON::ShellCommandsRaster> - Commands to use to generate pyramid's images
-=cut
-sub _init {
-    my $this = shift;
-    my $objForest  = shift;
-    my $objSrc  = shift;
-    my $objPyr  = shift;
-    my $objCommands  = shift;
-
     # mandatory parameters !
     if (! defined $objForest || ref ($objForest) ne "COMMON::Forest") {
         ERROR("Can not load Forest !");
@@ -218,22 +192,17 @@ sub _init {
         ERROR("Can not load DataSource !");
         return FALSE;
     }
-    if (! defined $objPyr || ref ($objPyr) ne "COMMON::PyramidRaster") {
-        ERROR("Can not load Pyramid !");
-        return FALSE;
-    }
-    if (! defined $objCommands || ref ($objCommands) ne "COMMON::ShellCommandsRaster") {
-        ERROR("Can not load Commands !");
-        return FALSE;
-    }
 
     # init. params    
     $this->{forest} = $objForest; 
-    $this->{pyramid} = $objPyr;
+    $this->{pyramid} = $objForest->getPyramid();
     $this->{datasource} = $objSrc; 
-    $this->{commands} = $objCommands;    
+    $this->{commands} = $objForest->getCommands(); 
 
-    return TRUE;
+    # load 
+    return undef if (! $this->_load());
+
+    return $this;
 }
 
 =begin nd
@@ -531,11 +500,11 @@ sub identifyAboveNodes {
                             ## intersection avec la bbox des données initiales
                             if ( $newnode->isBboxIntersectingNodeBbox($this->getBbox())) {
                                 $this->{nodes}->{$targetTm->getID()}->{$idxkey} = $newnode ;
-                                $newnode->addNodeSources($node); 
+                                $newnode->addSourceNodes($node); 
                             }
                         } else {
                             $newnode = $this->{nodes}->{$targetTm->getID()}->{$idxkey};
-                            $newnode->addNodeSources($node); 
+                            $newnode->addSourceNodes($node); 
                         }             
                     }
                 }
@@ -824,7 +793,7 @@ sub exportForDebug {
        # boucle sur tous les noeuds du niveau
        foreach my $node ( $this->getNodesOfLevel($tms->getIDfromOrder($i))) {
          $output .= sprintf "\tNoeud : %s_%s ; TM Résolution : %s ; Calculé à partir de : \n",$node->getCol(),$node->getRow(),$node->getTM()->getResolution();
-         foreach my $node_sup ( @{$node->getNodeSources()} ) {
+         foreach my $node_sup ( @{$node->getSourceNodes()} ) {
              #print Dumper ($node_sup);
              $output .= sprintf "\t\t Noeud :%s_%s , TM Resolution : %s\n",$node_sup->getCol(),$node_sup->getRow(),$node_sup->getTM()->getResolution();
          }

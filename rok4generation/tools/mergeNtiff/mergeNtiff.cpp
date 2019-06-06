@@ -319,7 +319,7 @@ int parseCommandLine ( int argc, char** argv ) {
                 }
                 break;
 
-            /****************** OPTIONNEL, POUR FORCER DES CONVERSION **********************/
+            /****************** OPTIONNEL, POUR FORCER DES CONVERSIONS **********************/
             case 's': // samplesperpixel
                 if ( i++ >= argc ) {
                     LOGGER_ERROR ( "Error in option -s" );
@@ -374,20 +374,18 @@ int parseCommandLine ( int argc, char** argv ) {
 
 /**
  * \~french
- * \brief Lit une ligne (ou deux si présence d'un masque) du fichier de configuration
+ * \brief Lit l'ensemble de la configuration
  * \details On parse la ligne courante du fichier de configuration, en stockant les valeurs dans les variables fournies. On saute les lignes vides. On lit ensuite la ligne suivante :
  * \li si elle correspond à un masque, on complète les informations
  * \li si elle ne correspond pas à un masque, on recule le pointeur
  *
- * \param[in,out] file flux de lecture vers le fichier de configuration
- * \param[out] imageFileName chemin de l'image lu dans le fichier de configuration
- * \param[out] hasMask précise si l'image possède un masque
- * \param[out] maskFileName chemin du masque lu dans le fichier de configuration
- * \param[out] crs SRS du rectangle englobant
- * \param[out] bbox rectangle englobant de l'image lue (et de son masque)
- * \param[out] resx résolution en X de l'image lue (et de son masque)
- * \param[out] resy résolution en Y de l'image lue (et de son masque)
- * \return code de retour, 0 en cas de succès, -1 si la fin du fichier est atteinte, 1 en cas d'erreur
+ * \param[in,out] masks Indicateurs de présence d'un masque
+ * \param[in,out] paths Chemins des images
+ * \param[in,out] srss Systèmes de coordonnées des images
+ * \param[in,out] bboxes Rectangles englobant des images
+ * \param[in,out] resxs Résolution en x des images
+ * \param[in,out] resys Résolution en y des images
+ * \return true en cas de succès, false si échec
  */
 bool loadConfiguration ( 
     std::vector<bool>* masks, 
@@ -404,7 +402,7 @@ bool loadConfiguration (
     file.open ( imageListFilename );
     if ( ! file.is_open() ) {
         LOGGER_ERROR ( "Impossible d'ouvrir le fichier " << imageListFilename );
-        return -1;
+        return false;
     }
 
     while ( file.good() ) {
@@ -478,7 +476,6 @@ bool loadConfiguration (
         file.close();
         return false;
     }
-
 }
 
 /**

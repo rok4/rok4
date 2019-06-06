@@ -80,10 +80,7 @@ use lib "$Bin/../lib/perl5";
 # My module
 use COMMON::TileMatrixSet;
 use COMMON::Layer;
-use COMMON::PyramidRaster;
-use COMMON::PyramidVector;
-use COMMON::LevelRaster;
-use COMMON::LevelVector;
+use COMMON::ProxyPyramid;
 
 ################################################################################
 # Constantes
@@ -277,18 +274,14 @@ sub doIt {
 
     my @keyword;
 
-    my $pyramid = COMMON::PyramidRaster->new("DESCRIPTOR", $options{pyramid});
+    my $pyramid = COMMON::ProxyPyramid::load($options{pyramid});
 
     if (! defined $pyramid) {
-
-        # Est-elle vecteur ?
-        $pyramid = COMMON::PyramidVector->new("DESCRIPTOR", $options{pyramid});
-
-        if (! defined $pyramid) {
-            ERROR("Cannot create the Pyramid object (neither raster nor vector)");
-            return FALSE;
-        }
+        ERROR("Cannot create the Pyramid object (neither raster nor vector nor raster on demand)");
+        return FALSE;
     }
+
+    ALWAYS("Pyramid's type : ".ref ($pyramid));
 
     if (! $pyramid->bindTileMatrixSet($options{"tms-path"})) {
         ERROR("Can not bind the TMS to the pyramid");
@@ -366,7 +359,7 @@ sub doIt {
     $pyrName =~ s/\.(pyr|PYR)$//;
 
     my $params;
-    if (ref ($pyramid) eq "COMMON::PyramidRaster") {
+    if (ref ($pyramid) eq "COMMON::PyramidRaster" || ref ($pyramid) eq "COMMON::PyramidRasterOD") {
         $params = {
             title            => $pyrName,
             abstract         => "Couche utilisant le descripteur de pyramide $pyrName.pyr",
