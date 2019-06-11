@@ -144,6 +144,18 @@ Cet outil supprime une pyramide à partir de son descripteur. Pour une pyramide 
 
 Stockages gérés : FICHIER, CEPH, S3, SWIFT
 
+#### Commande
+
+`sup-pyr.pl --pyr=file [--full] [--help|--usage|--version]`
+
+#### Options
+
+* `--help` Affiche le lien vers la documentation utilisateur de l'outil et quitte
+* `--usage` Affiche le lien vers la documentation utilisateur de l'outil et quitte
+* `--version` Affiche la version de l'outil et quitte
+* `--pyr` Précise le chemin vers le descripteur de la pyramide à supprimer
+* `--full` Précise si on supprime également le fichier liste et le descripteur de la pyramide à la fin
+
 
 ### Réecriture d'une tête de pyramide
 
@@ -155,9 +167,9 @@ Stockages gérés : FICHIER, CEPH, S3, SWIFT
 
 Types de pyramides gérés : RASTER QTREE
 
-#### Commandes
+#### Commande
 
-* `4head.pl --pyr /home/ign/PYRAMID.pyr --tmsdir /home/ign/TMS/ --reference-level 19 --top-level 4 --tmp /home/ign/tmp/ [--help|--usage|--version]`
+`4head.pl --pyr /home/ign/PYRAMID.pyr --tmsdir /home/ign/TMS/ --reference-level 19 --top-level 4 --tmp /home/ign/tmp/ [--help|--usage|--version]`
 
 #### Options
 
