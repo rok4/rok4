@@ -35,6 +35,7 @@ add_subdirectory(mergeNtiff)
 add_subdirectory(overlayNtiff)
 add_subdirectory(pyramide)
 add_subdirectory(work2cache)
+add_subdirectory(checkWork)
 
 if(BUILD_OBJECT)
 	add_subdirectory(slab2tiles)

@@ -1002,7 +1002,10 @@ Wms2work () {
             wget --no-verbose -O $nameImg "$url&BBOX=$1"
 
             if [ $? == 0 ] ; then
-                if gdalinfo $nameImg 1>/dev/null ; then break ; fi
+                checkWork $nameImg 2>/dev/null
+                if [ $? == 0 ] ; then
+                    break
+                fi
             fi
             
             echo "Failure $count : wait for $wait_delay s"
