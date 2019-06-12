@@ -27,5 +27,5 @@ if [ $errors != 0 ] ; then
     exit 1
 else
     echo "$TOOL tested without error"
-    echo 0
+    exit 0
 fi

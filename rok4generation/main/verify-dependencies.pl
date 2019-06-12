@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 # S'obtient avec :
-# ack -h "^use [A-Z]" ./ | grep -v -E "JOINCACHE|COMMON|BE4|WMTSALAD|EXPYR|FOURALAMO|PYR2PYR"| sed -r "s#;.+#;#" | sed "s# ;#;#" | sort | uniq
+# ack -h "^use [A-Z]" ./ | grep -v -E "JOINCACHE|COMMON|BE4|WMTSALAD|FOURALAMO|PYR2PYR|FOURHEAD"| sed -r "s#;.+#;#" | sed "s# ;#;#" | sort | uniq
 
 use strict;
 use warnings;

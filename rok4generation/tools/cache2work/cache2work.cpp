@@ -63,63 +63,38 @@
 #include "S3Context.h"
 #endif
 
+/** \~french Message d'usage de la commande cache2work */
+std::string help = std::string("\ncache2work version ") + std::string(ROK4_VERSION) + "\n\n"
+
+    "Convert a ROK4 pyramid's TIFF image to untiled TIFF image\n\n" 
+
+    "Usage: cache2work <INPUT FILE> [-c <VAL>] <OUTPUT FILE> [-pool <VAL>]\n\n" 
+
+    "Parameters:\n"
+    "     -h display this output"
+    "     -c output compression : default value : none\n"
+    "             raw     no compression\n"
+    "             none    no compression\n"
+    "             jpg     Jpeg encoding\n"
+    "             lzw     Lempel-Ziv & Welch encoding\n"
+    "             pkb     PackBits encoding\n"
+    "             zip     Deflate encoding\n"
+    "    -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object (ONLY IF OBJECT COMPILATION)\n"
+    "    -bucket S3 bucket where data is. INPUT FILE is interpreted as a S3 object (ONLY IF OBJECT COMPILATION)\n"
+    "    -container Swift container where data is. INPUT FILE is interpreted as a Swift object name (ONLY IF OBJECT COMPILATION)\n"
+    "    -ks in Swift storage case, activate keystone authentication (ONLY IF OBJECT COMPILATION)\n"
+    "    -d debug logger activation\n\n"
+
+    "Example\n"
+    "     cache2work JpegTiled.tif -c zip ZipUntiled.tif\n";
+
 /**
  * \~french
- * \brief Affiche l'utilisation et les différentes options de la commande cache2work
- * \details L'affichage se fait dans la sortie d'erreur
- * \~ \code
- * cache2work version X.X.X
- *
- * Convert a ROK4 pyramid's TIFF image to untiled TIFF image
- *
- * Usage: cache2work <INPUT FILE> [-c <VAL>] <OUTPUT FILE>
- *
- * Parameters:
- *      -c output compression : default value : none
- *              raw     no compression
- *              none    no compression
- *              jpg     Jpeg encoding
- *              lzw     Lempel-Ziv & Welch encoding
- *              pkb     PackBits encoding
- *              zip     Deflate encoding
- *     -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object
- *     -bucket S3 bucket where data is. INPUT FILE is interpreted as a S3 object
- *     -container Swift container where data is. INPUT FILE is interpreted as a Swift object name
- *     -ks in Swift storage case, activate keystone authentication
- *     -d debug logger activation
- *
- * Example
- *      cache2work JpegTiled.tif -c zip ZipUntiled.tif
- * \endcode
+ * \brief Affiche l'utilisation et les différentes options de la commande cache2work #help
+ * \details L'affichage se fait dans le niveau de logger INFO
  */
 void usage() {
-
-    LOGGER_INFO ( "\ncache2work version " << ROK4_VERSION << "\n\n" <<
-
-                  "Convert a ROK4 pyramid's TIFF image to untiled TIFF image\n\n" <<
-
-                  "Usage: cache2work <INPUT FILE> [-c <VAL>] <OUTPUT FILE> [-pool <VAL>]\n\n" <<
-
-                  "Parameters:\n" <<
-                  "     -c output compression : default value : none\n" <<
-                  "             raw     no compression\n" <<
-                  "             none    no compression\n" <<
-                  "             jpg     Jpeg encoding\n" <<
-                  "             lzw     Lempel-Ziv & Welch encoding\n" <<
-                  "             pkb     PackBits encoding\n" <<
-                  "             zip     Deflate encoding\n" <<
-
-#if BUILD_OBJECT
-                  "    -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object\n" <<
-                  "    -bucket S3 bucket where data is. INPUT FILE is interpreted as a S3 object\n" <<
-                  "    -container Swift container where data is. INPUT FILE is interpreted as a Swift object name\n" <<
-                  "    -ks in Swift storage case, activate keystone authentication\n" <<
-#endif
-
-                  "    -d debug logger activation\n\n" <<
-
-                  "Example\n" <<
-                  "     cache2work JpegTiled.tif -c zip ZipUntiled.tif\n" );
+    LOGGER_INFO (help);
 }
 
 /**

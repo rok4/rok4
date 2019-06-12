@@ -63,47 +63,30 @@
     #include "CephPoolContext.h"
 #endif
 
+/** \~french Message d'usage de la commande pbf2cache */
+std::string help = std::string("\npbf2cache version ") + std::string(ROK4_VERSION) + "\n\n"
+
+    "Make image tiled and compressed, in TIFF format, respecting ROK4 specifications.\n\n"
+
+    "Usage: pbf2cache -r <DIRECTORY> -t <VAL> <VAL> -ultile <VAL> <VAL> <OUTPUT FILE/OBJECT> [-d]\n\n"
+
+    "Parameters:\n"
+    "     -r directory containing the PBF tiles : tile I,J is stored to path <DIRECTORY>/I/J.pbf\n"
+    "     -t number of tiles in the slab : widthwise and heightwise.\n"
+    "     -ultile upper left tile indices\n"
+    "     -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object (ONLY IF OBJECT COMPILATION)\n"
+    "     -container Swift container where data is. Then OUTPUT FILE is interpreted as a Swift object name (ONLY IF OBJECT COMPILATION)\n"
+    "     -ks in Swift storage case, activate keystone authentication (ONLY IF OBJECT COMPILATION)\n"
+    "     -bucket S3 bucket where data is. Then OUTPUT FILE is interpreted as a S3 object name (ONLY IF OBJECT COMPILATION)\n"
+    "     -d debug logger activation\n\n";
 
 /**
  * \~french
- * \brief Affiche l'utilisation et les différentes options de la commande pbf2cache
+ * \brief Affiche l'utilisation et les différentes options de la commande pbf2cache #help
  * \details L'affichage se fait dans le niveau de logger INFO
- * \~ \code
- * pbf2cache version X.Y.Z
- *
- * Make image tiled and compressed, in TIFF format, respecting ROK4 specifications.
- * 
- * Usage: pbf2cache -r <DIRECTORY> -t <VAL> <VAL> -ultile <VAL> <VAL> <OUTPUT FILE/OBJECT> [-d]
- * 
- * Parameters:
- *      -r directory containing the PBF tiles : tile I,J is stored to path <DIRECTORY>/I/J.pbf
- *      -t number of tiles in the slab : widthwise and heightwise.
- *      -ultile upper left tile indices
- *      -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object
- *      -container Swift container where data is. Then OUTPUT FILE is interpreted as a Swift object name
- *      -ks in Swift storage case, activate keystone authentication
- *      -bucket S3 bucket where data is. Then OUTPUT FILE is interpreted as a S3 object name
- *      -d debug logger activation
- * \endcode
  */
 void usage() {
-    LOGGER_INFO ("\twork2cache version " << ROK4_VERSION << "\n\n" <<
-
-                 "Make image tiled and compressed, in TIFF format, respecting ROK4 specifications.\n\n"<<
-
-                 "Usage: pbf2cache -r <DIRECTORY> -t <VAL> <VAL> -ultile <VAL> <VAL> <OUTPUT FILE/OBJECT> [-d]\n\n"<<
-
-                 "Parameters:\n"<<
-                 "     -r directory containing the PBF tiles : tile I,J is stored to path <DIRECTORY>/I/J.pbf\n"<<
-                 "     -t number of tiles in the slab : widthwise and heightwise.\n"<<
-                 "     -ultile upper left tile indices\n"<<
-#if BUILD_OBJECT
-                 "     -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object\n"<<
-                 "     -container Swift container where data is. Then OUTPUT FILE is interpreted as a Swift object name\n"<<
-                 "     -ks in Swift storage case, activate keystone authentication\n"<<
-                 "     -bucket S3 bucket where data is. Then OUTPUT FILE is interpreted as a S3 object name\n"<<
-#endif
-                 "     -d debug logger activation\n\n");
+    LOGGER_INFO (help);
 }
 
 /**

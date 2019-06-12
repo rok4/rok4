@@ -32,8 +32,7 @@ WriteMakefile(
         'lib/JOINCACHE',
         'lib/COMMON',
         'lib/PYR2PYR',
-        'lib/WMTSALAD',
-        'lib/EXPYR'
+        'lib/WMTSALAD'
     ],
     # modules that are needed to run your module
     PREREQ_PM   => {
@@ -66,7 +65,6 @@ WriteMakefile(
         #
         "Math::BigFloat"   => 0,
         #
-        "Test::More"   => 0,
-        "Ceph::Rados" => 0
+        "Test::More"   => 0
     }
 );

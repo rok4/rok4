@@ -106,26 +106,36 @@ sub load {
         return undef;
     }
 
-    my $log = get_logger("COMMON::PyramidVector");
-    $log->level($OFF);
-    $log = get_logger("COMMON::LevelVector");
-    $log->level($OFF);
+
+    my $logPyr = get_logger("COMMON::PyramidRasterOD");
+    my $logLev = get_logger("COMMON::LevelRasterOD");
+
+    my $LOGLEVEL = $logPyr->level();
+
+    $logPyr->level($OFF);
+    $logLev->level($OFF);
+    my $pyramid = COMMON::PyramidRasterOD->new("DESCRIPTOR", $path);
+    $logPyr->level($LOGLEVEL);
+    $logLev->level($LOGLEVEL);
+    if (defined $pyramid) { return $pyramid; }
+
+    $logPyr = get_logger("COMMON::PyramidRaster");
+    $logLev = get_logger("COMMON::LevelRaster");
+    $logPyr->level($OFF);
+    $logLev->level($OFF);
+    $pyramid = COMMON::PyramidRaster->new("DESCRIPTOR", $path);
+    $logPyr->level($LOGLEVEL);
+    $logLev->level($LOGLEVEL);
+    if (defined $pyramid) { return $pyramid; }
+
+
+    $logPyr = get_logger("COMMON::PyramidVector");
+    $logLev = get_logger("COMMON::LevelVector");
+    $logPyr->level($OFF);
+    $logLev->level($OFF);
     $pyramid = COMMON::PyramidVector->new("DESCRIPTOR", $path);
-    if (defined $pyramid) { return $pyramid; }
-
-    $log = get_logger("COMMON::PyramidRasterOD");
-    $log->level($OFF);
-    $log = get_logger("COMMON::LevelRasterOD");
-    $log->level($OFF);
-    $pyramid = COMMON::PyramidRasterOD->new("DESCRIPTOR", $path);
-    if (defined $pyramid) { return $pyramid; }
-
-
-    $log = get_logger("COMMON::PyramidRaster");
-    $log->level($OFF);
-    $log = get_logger("COMMON::LevelRaster");
-    $log->level($OFF);
-    my $pyramid = COMMON::PyramidRaster->new("DESCRIPTOR", $path);
+    $logPyr->level($LOGLEVEL);
+    $logLev->level($LOGLEVEL);
     if (defined $pyramid) { return $pyramid; }
 
     return undef;
