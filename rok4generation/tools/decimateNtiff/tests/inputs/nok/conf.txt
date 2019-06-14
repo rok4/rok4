@@ -1,0 +1,4 @@
+IMG ./outputs/test_nok_compatible.tif 0.125 99.125 99.125 0.125 1 1
+IMG ./inputs/ok/01.jpg 0 100 50 50 0.25 0.25
+IMG ./inputs/ok/02.jpg 50 100 100 50 0.25 0.25
+IMG ./inputs/ok/bg.tif 0.125 99.125 99.125 0.125 1 1

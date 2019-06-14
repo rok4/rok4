@@ -52,12 +52,9 @@ Using:
     (end code)
 
 Attributes:
-    filePath - string - Path to the configuration file
-    fileFormat - string - Configuration format : INI, JSON
+    file - string - Path to the configuration file
+    format - string - Configuration format : INI, JSON or CUSTOM
     configuration - string hash - Configuration stored in string hash, with section and sub section
-    
-Limitations:
-    A JSON configuration have to own the extension .json, or we have to provide th e format
     
 =cut
 
@@ -264,19 +261,6 @@ sub new {
 #                                Group: Tester                                 #
 ################################################################################
 
-# isSection
-# isSubSection
-# isProperty
-# getSection
-# getSubSection
-# getProperty
-# setProperty
-# getSections
-# getSubSections
-# getProperties
-# getConfig
-# getRawConfig
-
 =begin_nd
 Function: whatIs
 =cut
@@ -287,7 +271,7 @@ sub whatIs {
     my $depth = scalar(@path);
 
     if ($depth == 0) {
-        if (! defined $this->{configuration}) {return undef}
+        if (! defined $this->{configuration}) {return "UNDEF"}
         if (! defined reftype($this->{configuration})) {return "SCALAR"}
         return reftype($this->{configuration})
     }
@@ -296,11 +280,11 @@ sub whatIs {
 
     for (my $d = 0; $d < $depth; $d++) {
 
-        if (! defined reftype($sub) || reftype($sub) ne "HASH") {return undef};
+        if (! defined reftype($sub) || reftype($sub) ne "HASH") {return "UNDEF"};
 
         my $p = $path[$d];
 
-        if (! exists $sub->{$p}) {return undef};
+        if (! exists $sub->{$p}) {return "UNDEF"};
 
         if ($d == $depth - 1) {
             # On lit le dernier niveau voulu

@@ -1,7 +1,15 @@
-# checkWork
+# CHECKWORK
 
-Cet outil tente d'ouvrir en lecture l'image fournie avec les librairies utilisées par l'ensemble des autres outils. Cela permet de détecter des erreurs qui feraient échouer les appels suivants.
+[Vue générale](../../README.md#contrôle-dune-image-de-travail)
+
+Cet outil prend seulement une image en entrée et tente de la lire. Cela permet de détecter d'éventuelles erreurs.
 
 ## Usage
 
-`checkWork <IMAGE PATH>`
+`checkWork <INPUT FILE> [-h]`
+
+* `-h` : Affiche l'aide
+
+## Exemple
+
+* `checkWork /home/IGN/source.tif`

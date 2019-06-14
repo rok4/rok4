@@ -1,0 +1,3 @@
+outputs/test_ok_alphatop.tif
+inputs/delete.png
+inputs/find.png

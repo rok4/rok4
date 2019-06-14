@@ -147,17 +147,17 @@ sub _init {
 sub _check {
     my $this = shift;
 
-    if (! defined $this->{cfgObject}->whatIs("pyramid") || $this->{cfgObject}->whatIs("pyramid") ne "HASH") {
+    if ($this->{cfgObject}->whatIs("pyramid") ne "HASH") {
         ERROR("'pyramid' section is missing");
         return FALSE;
     }
 
-    if (! defined $this->{cfgObject}->whatIs("datasource") || $this->{cfgObject}->whatIs("datasource") ne "HASH") {
+    if ($this->{cfgObject}->whatIs("datasource") ne "HASH") {
         ERROR("'datasource' section is missing");
         return FALSE;
     }
 
-    if (! defined $this->{cfgObject}->whatIs("process") || $this->{cfgObject}->whatIs("process") ne "HASH") {
+    if ($this->{cfgObject}->whatIs("process") ne "HASH") {
         ERROR("'process' section is missing");
         return FALSE;
     }

@@ -245,7 +245,7 @@ public:
      * \return CRS identifier
      */
     bool inline isDefine() {
-        return ( proj4Code.compare ( NO_PROJ4_CODE ) == 0 );
+        return ! ( proj4Code.compare ( NO_PROJ4_CODE ) == 0 );
     }
 
     /**

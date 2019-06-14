@@ -403,7 +403,7 @@ sub doIt {
         # Load sources
         my $sourceIndex = 1;
         my @sources;
-        while(defined $options{datasources}->whatIs($section, $sourceIndex) && $options{datasources}->whatIs($section, $sourceIndex) eq "HASH") {
+        while($options{datasources}->whatIs($section, $sourceIndex) eq "HASH") {
             my $source = $datasources{$section}->{$sourceIndex};
             my $s = undef;
             if (exists $source->{file}) {

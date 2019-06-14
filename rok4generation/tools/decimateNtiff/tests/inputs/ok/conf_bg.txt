@@ -1,0 +1,6 @@
+IMG ./outputs/test_ok_scan1000_bg_i.tif 0.125 99.125 99.125 0.125 1 1
+IMG ./inputs/ok/bg.tif 0.125 99.125 99.125 0.125 1 1
+IMG ./inputs/ok/01.jpg 0 100 50 50 0.25 0.25
+IMG ./inputs/ok/02.jpg 50 100 100 50 0.25 0.25
+IMG ./inputs/ok/03.jpg 0 50 50 0 0.25 0.25
+MSK ./inputs/ok/03m.tif

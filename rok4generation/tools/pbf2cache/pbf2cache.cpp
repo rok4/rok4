@@ -40,9 +40,6 @@
  * \author Institut national de l'information géographique et forestière
  * \~french \brief Consitution d'une dalle vecteur ROK4 à partir des tuiles PBF
  * \~english \brief Build a vector ROK4 slab from PBD tiles
- * \~ \code
- * pbf2cache -t 16 16 -r /home/rok4/pbfs/15 -ultile 6587 1245 output.tif
- * \endcode
  */
 
 #include <cstdlib>

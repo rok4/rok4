@@ -1,0 +1,5 @@
+IMG ./outputs/test_ok_mask_i.tif EPSG:3857 0.125 99.125 99.125 0.125 1 1
+IMG ./inputs/01.jpg EPSG:3857 0 100 50 50 0.25 0.25
+IMG ./inputs/02.jpg EPSG:3857 50 100 100 50 0.25 0.25
+IMG ./inputs/03.jpg EPSG:3857 0 50 50 0 0.25 0.25
+IMG ./inputs/03m.tif EPSG:3857 50 50 100 0 0.25 0.25

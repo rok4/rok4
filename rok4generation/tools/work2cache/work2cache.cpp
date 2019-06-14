@@ -42,21 +42,7 @@
  * \~english \brief Image formatting, according to ROK4 specifications
  * \~french \details Le serveur ROK4 s'attend à trouver dans une pyramide d'images des images au format TIFF, tuilées, potentiellement compressées, avec une en-tête de taille fixe (2048 octets). C'est cet outil, via l'utilisation de la classe TiledTiffWriter, qui va "mettre au normes" les images.
  *
- * Les compressions disponibles sont :
- * \li Aucune
- * \li JPEG
- * \li Deflate
- * \li PackBits
- * \li LZW
- * \li PNG. Cette compression a la particularité de ne pas être un standard du TIFF. Une image dans ce format, propre à ROK4, contient des tuiles qui sont des images PNG indépendantes, avec les en-têtes PNG. Cela permet de renvoyer sans traitement une tuile au format PNG. Ce fonctionnement est calqué sur le format TIFF/JPEG.
- *
- * On va également définir la taille des tuiles, qui doit être cohérente avec la taille de l'image entière (on veut un nombre de tuiles entier).
- *
  * Vision libimage : FileImage -> Rok4Image
- *
- * \~ \code
- * work2cache input.tif -c zip -p rgb -t 100 100 -b 8 -a uint -s 3 output.tif
- * \endcode
  */
 
 #include <cstdlib>
@@ -84,85 +70,48 @@ int fastWhite[4] = {254,254,254,255};
 /** \~french Blanc, en RGBA. Utilisé pour supprimer le blanc pur des données quand l'option "crop" est active */
 int white[4] = {255,255,255,255};
 
+/** \~french Message d'usage de la commande work2cache */
+std::string help = std::string("\nwork2cache version ") + std::string(ROK4_VERSION) + "\n\n"
+
+    "Make image tiled and compressed, in TIFF format, respecting ROK4 specifications.\n\n"
+
+    "Usage: work2cache -c <VAL> -t <VAL> <VAL> <INPUT FILE> <OUTPUT FILE> [-crop]\n\n"
+
+    "Parameters:\n"
+    "     -c output compression :\n"
+    "             raw     no compression\n"
+    "             none    no compression\n"
+    "             jpg     Jpeg encoding\n"
+    "             lzw     Lempel-Ziv & Welch encoding\n"
+    "             pkb     PackBits encoding\n"
+    "             zip     Deflate encoding\n"
+    "             png     Non-official TIFF compression, each tile is an independant PNG image (with PNG header)\n"
+    "     -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size\n"
+    "     -pool Ceph pool where data is. Then OUTPUT FILE is interpreted as a Ceph object ID (ONLY IF OBJECT COMPILATION)\n"
+    "     -container Swift container where data is. Then OUTPUT FILE is interpreted as a Swift object name (ONLY IF OBJECT COMPILATION)\n"
+    "     -ks in Swift storage case, activate keystone authentication (ONLY IF OBJECT COMPILATION)\n"
+    "     -bucket S3 bucket where data is. Then OUTPUT FILE is interpreted as a S3 object name (ONLY IF OBJECT COMPILATION)\n"
+    "     -crop : blocks (used by JPEG compression) wich contain a white pixel are filled with white\n"
+    "     -a sample format : (float or uint)\n"
+    "     -b bits per sample : (8 or 32)\n"
+    "     -s samples per pixel : (1, 2, 3 or 4)\n"
+    "     -d : debug logger activation\n\n"
+
+    "If bitspersample, sampleformat or samplesperpixel are not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.\n\n"
+
+    "Examples\n"
+    "     - for orthophotography\n"
+    "     work2cache input.tif -c png -t 256 256 output.tif\n"
+    "     - for DTM\n"
+    "     work2cache input.tif -c zip -t 256 256 output.tif\n\n";
+
 /**
  * \~french
- * \brief Affiche l'utilisation et les différentes options de la commande work2cache
+ * \brief Affiche l'utilisation et les différentes options de la commande work2cache #help
  * \details L'affichage se fait dans le niveau de logger INFO
- * \~ \code
- * work2cache version X.Y.Z
- *
- * Make image tiled and compressed, in TIFF format, respecting ROK4 specifications.
- * 
- * Usage: work2cache -c <VAL> -t <VAL> <VAL> <INPUT FILE> <OUTPUT FILE> [-crop] [-a <VAL> -b <VAL> -s <VAL>]
- * 
- * Parameters:
- *      -c output compression :
- *              raw     no compression
- *              none    no compression
- *              jpg     Jpeg encoding
- *              lzw     Lempel-Ziv & Welch encoding
- *              pkb     PackBits encoding
- *              zip     Deflate encoding
- *              png     Non-official TIFF compression, each tile is an independant PNG image (with PNG header)
- *      -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size
- *      -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object
- *      -container Swift container where data is. Then OUTPUT FILE is interpreted as a Swift object name
- *      -ks in Swift storage case, activate keystone authentication
- *      -bucket S3 bucket where data is. Then OUTPUT FILE is interpreted as a S3 object name
- *      -crop : blocks (used by JPEG compression) wich contain a white pixel are filled with white
- *      -a sample format : (float or uint)
- *      -b bits per sample : (8 or 32)
- *      -s samples per pixel : (1, 2, 3 or 4)
- *      -d debug logger activation
- *
- * If bitspersample, sampleformat or samplesperpixel are not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.
- * 
- * Examples
- *      - for orthophotography
- *      work2cache input.tif -c png -t 256 256 output.tif
- *      - for DTM
- *      work2cache input.tif -c zip -t 256 256 output.tif
- * 
- * \endcode
  */
 void usage() {
-    LOGGER_INFO ( "\twork2cache version " << ROK4_VERSION << "\n\n" <<
-
-                  "Make image tiled and compressed, in TIFF format, respecting ROK4 specifications.\n\n" <<
-
-                  "Usage: work2cache -c <VAL> -t <VAL> <VAL> <INPUT FILE> <OUTPUT FILE> [-crop]\n\n" <<
-
-                  "Parameters:\n" <<
-                  "     -c output compression :\n" <<
-                  "             raw     no compression\n" <<
-                  "             none    no compression\n" <<
-                  "             jpg     Jpeg encoding\n" <<
-                  "             lzw     Lempel-Ziv & Welch encoding\n" <<
-                  "             pkb     PackBits encoding\n" <<
-                  "             zip     Deflate encoding\n" <<
-                  "             png     Non-official TIFF compression, each tile is an independant PNG image (with PNG header)\n" <<
-                  "     -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size\n" <<
-
-#if BUILD_OBJECT
-                  "     -pool Ceph pool where data is. Then OUTPUT FILE is interpreted as a Ceph object ID\n" <<
-                  "     -container Swift container where data is. Then OUTPUT FILE is interpreted as a Swift object name\n" <<
-                  "     -ks in Swift storage case, activate keystone authentication\n" <<
-                  "     -bucket S3 bucket where data is. Then OUTPUT FILE is interpreted as a S3 object name\n" <<
-#endif
-
-                  "     -crop : blocks (used by JPEG compression) wich contain a white pixel are filled with white\n" <<
-                  "     -a sample format : (float or uint)\n" <<
-                  "     -b bits per sample : (8 or 32)\n" <<
-                  "     -s samples per pixel : (1, 2, 3 or 4)\n" <<
-                  "     -d : debug logger activation\n\n" <<
-
-                  "If bitspersample, sampleformat or samplesperpixel are not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.\n\n" <<
-
-                  "Examples\n" <<
-                  "     - for orthophotography\n" <<
-                  "     work2cache input.tif -c png -t 256 256 output.tif\n" <<
-                  "     - for DTM\n" <<
-                  "     work2cache input.tif -c zip -t 256 256 output.tif\n\n" );
+    LOGGER_INFO (help);
 }
 
 /**

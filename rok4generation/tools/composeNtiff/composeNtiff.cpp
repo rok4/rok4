@@ -40,37 +40,6 @@
  * \author Institut national de l'information géographique et forestière
  * \~french \brief Montage de N images TIFF aux mêmes dimensions et caractéristiques
  * \~english \brief Monte N TIFF images with same dimensions and attributes
- *
- * \details Ce programme est destine à assemblé des images issu d'un moissonnage en plusieurs fois d'une dalle
- *
- * Les images en entrée et celle en sortie ont les mêmes composantes.
- * 
- * Les formats des canaux gérés sont :
- * \li entier non signé sur 8 bits
- * \li flottant sur 32 bits
- *
- * On doit préciser en paramètre de la commande :
- * \li le nombre d'images dans le sens de la largeur et de la hauteur
- * \li Un dossier contenant toute les images à assembler (l'ordre d'assemblage sera l'ordre des fichiers dans le dossier.
- * Exemple : pour une composition 2x3
- * \~ \code{dossier d'images}
- * IMAGE1.tif
- * IMAGE2.tif
- * IMAGE3.tif
- * IMAGE4.tif
- * IMAGE5.tif
- * IMAGE6.tif
- * \endcode
- * \~ \code{Image finale}
- *           |
- *    IMAGE1 | IMAGE2
- *    -------+-------
- *           |
- *    IMAGE3 | IMAGE4
- *    -------+-------
- *           |
- *    IMAGE5 | IMAGE6
- * \endcode
  */
 
 #include <iostream>
@@ -108,55 +77,35 @@ char* outputImage = 0;
 /** \~french Activation du niveau de log debug. Faux par défaut */
 bool debugLogger=false;
 
+/** \~french Message d'usage de la commande pbf2cache */
+std::string help = std::string("\ncomposeNtiff version ") + std::string(ROK4_VERSION) + "\n\n"
+    "Monte N TIFF image, forming a regular grid\n\n"
+
+    "Usage: composeNtiff -s <DIRECTORY> -g <VAL> <VAL> -c <VAL> <OUTPUT FILE>\n\n"
+
+    "Parameters:\n"
+    "     -s source directory. All file into have to be images. If too much images are present, first are used.\n"
+    "     -c output compression : default value : none\n"
+    "             raw     no compression\n"
+    "             none    no compression\n"
+    "             jpg     Jpeg encoding\n"
+    "             lzw     Lempel-Ziv & Welch encoding\n"
+    "             pkb     PackBits encoding\n"
+    "             zip     Deflate encoding\n"
+    "     -g number of images, widthwise and heightwise, to compose the final image\n"
+    "     -d debug logger activation\n\n"
+
+    "Example\n"
+    "     composeNtiff -s /home/ign/sources -g 10 10 -c zip output.tif\n\n";
+    
 
 /**
  * \~french
- * \brief Affiche l'utilisation et les différentes options de la commande composeNtiff
+ * \brief Affiche l'utilisation et les différentes options de la commande composeNtiff #help
  * \details L'affichage se fait dans le niveau de logger INFO
- * \~ \code
- * composeNtiff version X.Y.Z
- *
- * Monte N TIFF image, forming a regular grid
- *
- * Usage: composeNtiff <DIRECTORY> -c <VAL> -g <VAL> <VAL> <OUTPUT FILE>
- *
- * Parameters:
- *      -s sources directory. All file into  have to be images. If too much images are present, first are used.
- *      -c output compression : default value : none
- *              raw     no compression
- *              none    no compression
- *              jpg     Jpeg encoding
- *              lzw     Lempel-Ziv & Welch encoding
- *              pkb     PackBits encoding
- *              zip     Deflate encoding
- *      -g number of images, widthwise and heightwise, to compose the final image
- *      -d debug logger activation
- *
- * Example
- *      composeNtiff -d /home/ign/sources -g 10 10 -c zip output.tif
- * \endcode
  */
 void usage() {
-    LOGGER_INFO ( "\ncomposeNtiff version " << ROK4_VERSION << "\n\n" <<
-
-                  "Monte N TIFF image, forming a regular grid\n\n" <<
-
-                  "Usage: composeNtiff -s <DIRECTORY> -g <VAL> <VAL> -c <VAL> <OUTPUT FILE>\n\n" <<
-
-                  "Parameters:\n" <<
-                  "     -s source directory. All file into have to be images. If too much images are present, first are used.\n" <<
-                  "     -c output compression : default value : none\n" <<
-                  "             raw     no compression\n" <<
-                  "             none    no compression\n" <<
-                  "             jpg     Jpeg encoding\n" <<
-                  "             lzw     Lempel-Ziv & Welch encoding\n" <<
-                  "             pkb     PackBits encoding\n" <<
-                  "             zip     Deflate encoding\n" <<
-                  "     -g number of images, widthwise and heightwise, to compose the final image\n" <<
-                  "     -d debug logger activation\n\n" <<
- 
-                  "Example\n" <<
-                  "     composeNtiff -s /home/ign/sources -g 10 10 -c zip output.tif\n\n" );
+    LOGGER_INFO (help);
 }
 
 /**

@@ -41,56 +41,14 @@
  * \~french \brief Création d'une image TIFF géoréférencée à partir de n images sources géoréférencées
  * \~english \brief Create one georeferenced TIFF image from several georeferenced images
  * \~ \image html mergeNtiff.png \~french
- * \details Les images en entrée peuvent :
- * \li être de différentes résolutions
- * \li ne pas couvrir entièrement l'emprise de l'image de sortie
- * \li être recouvrantes entre elles
- * \li être dans des systèmes spatiaux différents
- *
- * Les images en entrée peuvent avoir un format de canaux différents si on précise celui en sortie : une conversion à la volée sera alors effctuée, selon les possibilités de PixelConverter. Si toutes les images ont le même format, on peut ne pas préciser celui de sortie et il sera le même qu'en entrée.
- *
- * Les formats des canaux gérés sont :
- * \li entier non signé sur 8 bits
- * \li flottant sur 32 bits
- *
- * On doit préciser en paramètre de la commande :
- * \li Un fichier texte contenant l'image finale, puis les images sources, avec leur georeferencement (resolution, emprise, SRS). On peut trouver également les masques associés aux images.
- * Format d'une ligne du fichier : \code<TYPE> <CHEMIN> <CRS> <XMIN> <YMAX> <XMAX> <YMIN> <RESX> <RESY>\endcode
- * Le chemin peut contenir un point d'interrogation comme premier caractère, cela voudra dire qu'on veut utiliser la racine placée en paramètre (option -r). Si celle-ci n'est pas précisée, le point d'interrogation est juste supprimé.
- * Exemple de configuration :
- * \~ \code{.txt}
- * IMG ?IMAGE.tif               EPSG:2154       -499    1501    1501    -499    2       2
- * MSK ?MASK.tif
- * IMG sources/imagefond.tif    EPSG:2154       -499    1501    1501    -499    4       4
- * MSK sources/maskfond.tif
- * IMG sources/image1.tif       IGNF:LAMB93     0       1000    1000    0       1       1
- * IMG sources/image2.tif       IGNF:LAMB93     500     1500    1500    500     1       1
- * MSK sources/mask2.tif
- * \endcode
- * \~french
- * \li On peut préciser une racine (un répertoire) à ajouter au chemin de l'image de sortie (et de son masque). Le chemin du répertoire doit finir par le séparateur de dossier (slash en linux).
- * \li La compression de l'image de sortie
- * \li Le mode d'interpolation
- * \li La valeur de non-donnée
  *
  * La légende utilisée dans tous les schémas de la documentation de ce fichier sera la suivante
- *
  * \~ \image html mergeNtiff_legende.png \~french
  *
  * Pour réaliser la fusion des images en entrée, on traite différemment :
  * \li les images qui sont superposables à l'image de sortie (même SRS, mêmes résolutions, mêmes phases) : on parle alors d'images compatibles, pas de réechantillonnage nécessaire.
  * \li les images non compatibles mais de même SRS : un passage par le réechantillonnage (plus lourd en calcul) est indispensable.
  * \li les images non compatibles et de SRS différents : un passage par la reprojection (encore plus lourd en calcul) est indispensable.
- *
- * Exemple d'appel à la commande :
- * \li pour des ortho-images \~english \li for ortho-image
- * \~ \code
- * mergeNtiff -f conf.txt -r /home/ign/results/ -c zip -i bicubic -n 255,255,255
- * \endcode
- * \~french \li pour du MNT \~english \li for DTM
- * \~ \code
- * mergeNtiff -f conf.txt -c zip -i nn -n -99999
- * \endcode
  */
 
 #include <proj_api.h>
@@ -155,84 +113,51 @@ Interpolation::KernelType interpolation = Interpolation::CUBIC;
 /** \~french Activation du niveau de log debug. Faux par défaut */
 bool debugLogger=false;
 
+/** \~french Message d'usage de la commande mergeNtiff */
+std::string help = std::string("\nmergeNtiff version ") + std::string(ROK4_VERSION) + "\n\n"
+
+    "Create one georeferenced TIFF image from several georeferenced TIFF images.\n\n"
+
+    "Usage: mergeNtiff -f <FILE> [-r <DIR>] -c <VAL> -i <VAL> -n <VAL> [-a <VAL> -s <VAL> -b <VAL>]\n"
+
+    "Parameters:\n"
+    "    -f configuration file : list of output and source images and masks\n"
+    "    -r output root : root directory for output files, have to end with a '/'\n"
+    "    -c output compression :\n"
+    "            raw     no compression\n"
+    "            none    no compression\n"
+    "            jpg     Jpeg encoding\n"
+    "            lzw     Lempel-Ziv & Welch encoding\n"
+    "            pkb     PackBits encoding\n"
+    "            zip     Deflate encoding\n"
+    "    -i interpolation : used for resampling :\n"
+    "            nn nearest neighbor\n"
+    "            linear\n"
+    "            bicubic\n"
+    "            lanczos lanczos 3\n"
+    "    -n nodata value, one interger per sample, seperated with comma. Examples\n"
+    "            -99999 for DTM\n"
+    "            255,255,255 for orthophotography\n"
+    "    -a sample format : (float or uint)\n"
+    "    -b bits per sample : (8 or 32)\n"
+    "    -s samples per pixel : (1, 2, 3 or 4)\n"
+    "    -d debug logger activation\n\n"
+
+    "If bitspersample, sampleformat or samplesperpixel are not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.\n\n"
+
+    "Examples\n"
+    "    - for orthophotography\n"
+    "    mergeNtiff -f conf.txt -c zip -i bicubic -n 255,255,255\n"
+    "    - for DTM\n"
+    "    mergeNtiff -f conf.txt -c zip -i nn -s 1 -b 32 -p gray -a float -n -99999\n\n";
+
 /**
  * \~french
- * \brief Affiche l'utilisation et les différentes options de la commande mergeNtiff
+ * \brief Affiche l'utilisation et les différentes options de la commande mergeNtiff #help
  * \details L'affichage se fait dans le niveau de logger INFO
- * \~ \code
- * mergeNtiff version X.X.X
- *
- * Usage: mergeNtiff -f <FILE> [-r <DIR>] -c <VAL> -i <VAL> -n <VAL> [-a <VAL> -b <VAL> -s <VAL>]
- *
- * Parameters:
- *      -f configuration file : list of output and source images and masks
- *      -r root : root directory for output files, have to end with a '/'
- *      -c output compression :
- *              raw     no compression
- *              none    no compression
- *              jpg     Jpeg encoding
- *              lzw     Lempel-Ziv & Welch encoding
- *              pkb     PackBits encoding
- *              zip     Deflate encoding
- *      -i interpolation : used for resampling :
- *              nn      nearest neighbor
- *              linear
- *              bicubic
- *              lanczos lanczos 3
- *      -n nodata value, one interger per sample, seperated with comma. Examples
- *              -99999 for DTM
- *              255,255,255 for orthophotography
- *      -a sample format : (float or uint)
- *      -b bits per sample : (8 or 32)
- *      -s samples per pixel : (1, 2, 3 or 4)
- *      -d debug logger activation
- *
- * If bitspersample, sampleformat or samplesperpixel are not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.
- *
- * Examples
- *      - for orthophotography
- *      mergeNtiff -f conf.txt -c zip -i bicubic -s 3 -b 8 -a uint -n 255,255,255
- *      - for DTM
- *      mergeNtiff -f conf.txt -c zip -i nn -s 1 -b 32 -a float -n -99999
- * \endcode
  */
 void usage() {
-    LOGGER_INFO ( "\nmergeNtiff version " << ROK4_VERSION << "\n\n" <<
-
-                  "Create one georeferenced TIFF image from several georeferenced TIFF images.\n\n" <<
-
-                  "Usage: mergeNtiff -f <FILE> [-r <DIR>] -c <VAL> -a <VAL> -i <VAL> -n <VAL> -s <VAL> -b <VAL> -p <VAL>\n" <<
-
-                  "Parameters:\n" <<
-                  "    -f configuration file : list of output and source images and masks\n" <<
-                  "    -r output root : root directory for output files, have to end with a '/'\n" <<
-                  "    -c output compression :\n" <<
-                  "            raw     no compression\n" <<
-                  "            none    no compression\n" <<
-                  "            jpg     Jpeg encoding\n" <<
-                  "            lzw     Lempel-Ziv & Welch encoding\n" <<
-                  "            pkb     PackBits encoding\n" <<
-                  "            zip     Deflate encoding\n" <<
-                  "    -i interpolation : used for resampling :\n" <<
-                  "            nn      nearest neighbor\n" <<
-                  "            linear\n" <<
-                  "            bicubic\n" <<
-                  "            lanczos lanczos 3\n" <<
-                  "    -n nodata value, one interger per sample, seperated with comma. Examples\n" <<
-                  "            -99999 for DTM\n" <<
-                  "            255,255,255 for orthophotography\n" <<
-                  "    -a sample format : (float or uint)\n" <<
-                  "    -b bits per sample : (8 or 32)\n" <<
-                  "    -s samples per pixel : (1, 2, 3 or 4)\n" <<
-                  "    -d debug logger activation\n\n" <<
-
-                  "If bitspersample, sampleformat or samplesperpixel are not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.\n\n" <<
-
-                  "Examples\n" <<
-                  "    - for orthophotography\n" <<
-                  "    mergeNtiff -f conf.txt -c zip -i bicubic -n 255,255,255\n" <<
-                  "    - for DTM\n" <<
-                  "    mergeNtiff -f conf.txt -c zip -i nn -s 1 -b 32 -p gray -a float -n -99999\n\n" );
+    LOGGER_INFO (help);
 }
 
 /**
@@ -420,7 +345,6 @@ bool loadConfiguration (
         bool isMask;
 
         file.getline(line, 2*IMAGE_MAX_FILENAME_LENGTH);
-        LOGGER_DEBUG(line);  
         if ( strlen(line) == 0 ) {
             continue;
         }
@@ -1074,6 +998,7 @@ int mergeTabImages ( FileImage* pImageOut, // Sortie
             LOGGER_ERROR ( "Impossible d'assembler les images" );
             return -1;
         }
+        pECI->setCRS ( TabImageIn.at ( i ).at ( 0 )->getCRS() );
 
         ExtendedCompoundMask* pECMI = new ExtendedCompoundMask ( pECI );
         pECMI->setCRS ( TabImageIn.at ( i ).at ( 0 )->getCRS() );
@@ -1084,6 +1009,7 @@ int mergeTabImages ( FileImage* pImageOut, // Sortie
 
         if ( pImageOut->isCompatibleWith ( pECI ) ) {
             LOGGER_DEBUG ( "\t is compatible" );
+            pECI->print();
             /* les images sources et finale ont la meme resolution et la meme phase
              * on aura donc pas besoin de reechantillonnage.*/
             pOverlayedImages.push_back ( pECI );

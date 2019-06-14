@@ -79,66 +79,38 @@ using namespace std;
 #include <string.h>
 #include "../../../rok4version.h"
 
+/** \~french Message d'usage de la commande manageNodata */
+std::string help = std::string("\nmanageNodata version ") + std::string(ROK4_VERSION) + "\n\n"
+
+        "Manage nodata pixel color in a TIFF file, byte samples\n\n"
+
+        "Usage: manageNodata -target <VAL> [-tolerance <VAL>] [-touch-edges] -format <VAL> [-nodata <VAL>] [-data <VAL>] <INPUT FILE> [<OUTPUT FILE>] [-mask-out <VAL>]\n\n"
+
+        "Colors are provided in decimal format, one integer value per sample\n"
+        "Parameters:\n"
+        "      -target         color to consider as nodata / modify\n"
+        "      -tolerance      a positive integer, to define a delta for target value's comparison\n"
+        "      -touche-edges   method to identify nodata pixels (all 'target value' pixels or just those at the edges\n"
+        "      -data           new color for data pixel which contained target color\n"
+        "      -nodata         new color for nodata pixel\n"
+        "      -mask-out       path to the mask to write\n"
+        "      -format         image's samples' format : uint8 or float32\n"
+        "      -channels       samples per pixel,number of samples in provided colors\n"
+        "      -d              debug logger activation\n\n"
+
+        "Examples :\n"
+        "      - to keep pure white for nodata, and write a new image :\n"
+        "              manageNodata -target 255,255,255 -touch-edges -data 254,254,254 input_image.tif output_image.tif -channels 3 -format uint8\n"
+        "      - to write the associated mask (all '-99999' pixels are nodata, with a tolerance):\n"
+        "              manageNodata -target -99999 -tolerance 10 input_image.tif -mask-out mask.tif -channels 1 -format float32\n\n";
+    
 /**
  * \~french
- * \brief Affiche l'utilisation et les différentes options de la commande manageNodata
+ * \brief Affiche l'utilisation et les différentes options de la commande manageNodata #help
  * \details L'affichage se fait dans la sortie d'erreur
- *
- * \~ \code
- * manageNodata version X.X.X
- *
- * Manage nodata pixel color in a TIFF file
- *
- * Usage: manageNodata -target <VAL> [-tolerance <VAL>] [-touch-edges] -format <VAL> [-nodata <VAL>] [-data <VAL>] <INPUT FILE> [<OUTPUT FILE>] [-mask-out <VAL>]
- *
- * Colors are provided in decimal format, one integer value per sample
- * Parameters:
- *      -target         color to consider as nodata / modify
- *      -tolerance      a positive integer, to define a delta for target value's comparison
- *      -touche-edges   method to identify nodata pixels (all "target value" pixels or just those at the edges
- *      -data           new color for data pixel which contained target color
- *      -nodata         new color for nodata pixel
- *      -mask-out       path to the mask to write
- *      -format         image's samples' format : uint8 or float32
- *      -channels       samples per pixel,number of samples in provided colors
- *      -d              debug logger activation
- *
- * Examples :
- *      - to keep pure white for nodata, and write a new image :
- *              manageNodata -target 255,255,255 -touch-edges -data 254,254,254 input_image.tif output_image.tif -channels 3 -format uint8
- *      - to write the associated mask (all '-99999' pixels are nodata, with a tolerance):
- *              manageNodata -target -99999 -tolerance 10 input_image.tif -mask-out mask.tif -channels 1 -format float32
- * \endcode
  */
 void usage() {
-
-    LOGGER_INFO (
-
-        "\nmanageNodata version " << ROK4_VERSION << "\n\n" <<
-
-        "Manage nodata pixel color in a TIFF file, byte samples\n\n" <<
-
-        "Usage: manageNodata -target <VAL> [-tolerance <VAL>] [-touch-edges] -format <VAL> [-nodata <VAL>] [-data <VAL>] <INPUT FILE> [<OUTPUT FILE>] [-mask-out <VAL>]\n\n" <<
-
-        "Colors are provided in decimal format, one integer value per sample\n" <<
-        "Parameters:\n" <<
-        "      -target         color to consider as nodata / modify\n" <<
-        "      -tolerance      a positive integer, to define a delta for target value's comparison\n" <<
-        "      -touche-edges   method to identify nodata pixels (all 'target value' pixels or just those at the edges\n" <<
-        "      -data           new color for data pixel which contained target color\n" <<
-        "      -nodata         new color for nodata pixel\n" <<
-        "      -mask-out       path to the mask to write\n" <<
-        "      -format         image's samples' format : uint8 or float32\n" <<
-        "      -channels       samples per pixel,number of samples in provided colors\n" <<
-        "      -d              debug logger activation\n\n" <<
-
-        "Examples :\n" <<
-        "      - to keep pure white for nodata, and write a new image :\n" <<
-        "              manageNodata -target 255,255,255 -touch-edges -data 254,254,254 input_image.tif output_image.tif -channels 3 -format uint8\n" <<
-        "      - to write the associated mask (all '-99999' pixels are nodata, with a tolerance):\n" <<
-        "              manageNodata -target -99999 -tolerance 10 input_image.tif -mask-out mask.tif -channels 1 -format float32\n\n"
-
-    );
+    LOGGER_INFO (help);
 }
 
 /**

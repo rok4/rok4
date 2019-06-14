@@ -41,27 +41,6 @@
  * \~french \brief Sous echantillonage de 4 images disposées en carré, avec utilisation possible de fond et de masques de données
  * \~english \brief Four images subsampling, formed a square, might use a background and data masks
  * \~ \image html merge4tiff.png
- * \~french \details les images doivent avoir la disposition suivante , mais les 4 ne sont pas forcément présentes :
- * \code
- *    image1 | image2
- *    -------+-------
- *    image3 | image4
- * \endcode
- * Les caractéristiques suivantes doivent être les mêmes pour les 4 images, le fond et seront celles de l'image de sortie :
- * \li largeur et hauteur en pixel
- *
- * Si les images en entrée peuvent être de différents formats (selon les implémentations de la classe FileImage), l'image de sortie est au format TIFF.
- *
- * Les masques doivent avoir la même taille que les images mais sont à un canal entier non signé sur 8 bits.
- * Exemple d'appel à la commande :
- * \~french \li sans masque, avec une image de fond \~english \li without mask, with background image
- * \~ \code
- * merge4tiff -g 1 -n 255,255,255 -c zip -b backgroundImage.png -i1 image1.png -i3 image3.png imageOut.tif
- * \endcode
- * \~french \li avec masque, sans image de fond \~english \li with mask, without background image
- * \~ \code
- * merge4tiff -g 1 -n 255,255,255 -c zip -i1 image1.tif -m1 mask1.tif -i3 image3.tif -m3 mask3.tif -mo maskOut.tif -io imageOut.tif
- * \endcode
  */
 
 #include "tiffio.h"
@@ -120,97 +99,59 @@ Photometric::ePhotometric photometric;
 /** \~french Activation du niveau de log debug. Faux par défaut */
 bool debugLogger=false;
 
+/** \~french Message d'usage de la commande merge4tiff */
+std::string help = std::string("\ncache2work version ") + std::string(ROK4_VERSION) + "\n\n"
+
+    "Four images subsampling, formed a square, might use a background and data masks\n\n"
+
+    "Usage: merge4tiff [-g <VAL>] -n <VAL> [-c <VAL>] [-iX <FILE> [-mX<FILE>]] -io <FILE> [-mo <FILE>]\n\n"
+
+    "Parameters:\n"
+    "     -g gamma float value, to dark (0 < g < 1) or brighten (1 < g) 8-bit integer images' subsampling\n"
+    "     -n nodata value, one interger per sample, seperated with comma. Examples\n"
+    "             -99999 for DTM\n"
+    "             255,255,255 for orthophotography\n"
+    "     -c output compression :\n"
+    "             raw     no compression\n"
+    "             none    no compression\n"
+    "             jpg     Jpeg encoding\n"
+    "             lzw     Lempel-Ziv & Welch encoding\n"
+    "             pkb     PackBits encoding\n"
+    "             zip     Deflate encoding\n\n"
+
+    "     -io output image\n"
+    "     -mo output mask (optionnal)\n\n"
+
+    "     -iX input images\n"
+    "             X = [1..4]      give input image position\n"
+    "                     image1 | image2\n"
+    "                     -------+-------\n"
+    "                     image3 | image4\n\n"
+
+    "             X = b           background image\n"
+    "     -mX input associated masks (optionnal)\n"
+    "             X = [1..4] or X = b\n"
+    "     -a sample format : (float or uint)\n"
+    "     -b bits per sample : (8 or 32)\n"
+    "     -s samples per pixel : (1, 2, 3 or 4)\n"
+    "     -d debug logger activation\n\n"
+
+    "If bitspersample, sampleformat or samplesperpixel are not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.\n\n"
+
+    "Examples\n"
+    "     - without mask, with background image\n"
+    "     merge4tiff -g 1 -n 255,255,255 -c zip -ib backgroundImage.tif -i1 image1.tif -i3 image3.tif -io imageOut.tif\n\n"
+
+    "     - with mask, without background image\n"
+    "     merge4tiff -g 1 -n 255,255,255 -c zip -i1 image1.tif -m1 mask1.tif -i3 image3.tif -m3 mask3.tif -mo maskOut.tif  -io imageOut.tif\n";
+
 /**
  * \~french
- * \brief Affiche l'utilisation et les différentes options de la commande merge4tiff
+ * \brief Affiche l'utilisation et les différentes options de la commande merge4tiff # help
  * \details L'affichage se fait dans le niveau de logger INFO
- * \~ \code
- * merge4tiff version X.X.X
- *
- * Usage: merge4tiff [-g <VAL>] -n <VAL> [-c <VAL>] [-iX <FILE> [-mX<FILE>]] -io <FILE> [-mo <FILE>] [-a <VAL> -b <VAL> -s <VAL>]
- *
- * Parameters:
- *      -g gamma float value, to dark (0 < g < 1) or brighten (1 < g) 8-bit integer images' subsampling
- *      -n nodata value, one interger per sample, seperated with comma. Examples
- *              -99999 for DTM
- *              255,255,255 for orthophotography
- *      -c output compression :
- *              raw     no compression
- *              none    no compression
- *              jpg     Jpeg encoding
- *              lzw     Lempel-Ziv & Welch encoding
- *              pkb     PackBits encoding
- *              zip     Deflate encoding
- *
- *      -io output image
- *      -mo output mask (optionnal)
- *
- *      -iX input images
- *              X = [1..4]      give input image position
- *                      image1 | image2
- *                      -------+-------
- *                      image3 | image4
- *
- *              X = b           background image
- *      -mX input associated masks (optionnal)
- *              X = [1..4] or X = b
- *      -d debug logger activation
- *
- * If bitspersample, sampleformat or samplesperpixel are not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.
- *
- * Examples
- *      - without mask, with background image
- *      merge4tiff -g 1 -n 255,255,255 -c zip -b backgroundImage.tif -i1 image1.tif -i3 image3.tif imageOut.tif
- *
- *      - with mask, without background image
- *      merge4tiff -g 1 -n 255,255,255 -c zip -i1 image1.tif -m1 mask1.tif -i3 image3.tif -m3 mask3.tif -mo maskOut.tif  -io imageOut.tif
- * \endcode
  */
 void usage() {
-    LOGGER_INFO ( "\nmerge4tiff version " << ROK4_VERSION << "\n\n" <<
-
-                  "Four images subsampling, formed a square, might use a background and data masks\n\n" <<
-
-                  "Usage: merge4tiff [-g <VAL>] -n <VAL> [-c <VAL>] [-iX <FILE> [-mX<FILE>]] -io <FILE> [-mo <FILE>]\n\n" <<
-
-                  "Parameters:\n" <<
-                  "     -g gamma float value, to dark (0 < g < 1) or brighten (1 < g) 8-bit integer images' subsampling\n" <<
-                  "     -n nodata value, one interger per sample, seperated with comma. Examples\n" <<
-                  "             -99999 for DTM\n" <<
-                  "             255,255,255 for orthophotography\n" <<
-                  "     -c output compression :\n" <<
-                  "             raw     no compression\n" <<
-                  "             none    no compression\n" <<
-                  "             jpg     Jpeg encoding\n" <<
-                  "             lzw     Lempel-Ziv & Welch encoding\n" <<
-                  "             pkb     PackBits encoding\n" <<
-                  "             zip     Deflate encoding\n\n" <<
-
-                  "     -io output image\n" <<
-                  "     -mo output mask (optionnal)\n\n" <<
-
-                  "     -iX input images\n" <<
-                  "             X = [1..4]      give input image position\n" <<
-                  "                     image1 | image2\n" <<
-                  "                     -------+-------\n" <<
-                  "                     image3 | image4\n\n" <<
-
-                  "             X = b           background image\n" <<
-                  "     -mX input associated masks (optionnal)\n" <<
-                  "             X = [1..4] or X = b\n" <<
-                  "     -a sample format : (float or uint)\n" <<
-                  "     -b bits per sample : (8 or 32)\n" <<
-                  "     -s samples per pixel : (1, 2, 3 or 4)\n" <<
-                  "     -d debug logger activation\n\n" <<
-
-                  "If bitspersample, sampleformat or samplesperpixel are not provided, those 3 informations are read from the image sources (all have to own the same). If 3 are provided, conversion may be done.\n\n" <<
-
-                  "Examples\n" <<
-                  "     - without mask, with background image\n" <<
-                  "     merge4tiff -g 1 -n 255,255,255 -c zip -ib backgroundImage.tif -i1 image1.tif -i3 image3.tif imageOut.tif\n\n" <<
-
-                  "     - with mask, without background image\n" <<
-                  "     merge4tiff -g 1 -n 255,255,255 -c zip -i1 image1.tif -m1 mask1.tif -i3 image3.tif -m3 mask3.tif -mo maskOut.tif  -io imageOut.tif\n" );
+    LOGGER_INFO (help);
 }
 
 /**

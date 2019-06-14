@@ -40,45 +40,6 @@
  * \author Institut national de l'information géographique et forestière
  * \~french \brief Fusion de N images aux mêmes dimensions, selon différentes méthodes
  * \~english \brief Merge N images with same dimensions, according to different merge methods
- *
- * \details Ce programme est destine à être utilisé dans la chaîne de génération de cache joinCache. Il est appele pour calculer les dalles avec plusieurs sources. Les formats des images gérés, en lecture ou en écriture sont détaillé dans la documentation de FileImage.
- *
- * Les images en entrée et celle en sortie peuvent :
- * \li avoir des nombres de canaux différents
- *
- * Les images en entrée et celle en sortie doivent avoir les même composantes suivantes :
- * \li hauteur et largeur en pixels
- * \li format des canaux
- *
- * Les formats des canaux gérés sont :
- * \li entier non signé sur 8 bits
- * \li flottant sur 32 bits
- *
- * On doit préciser en paramètre de la commande :
- * \li Un fichier texte contenant l'image finale, puis les images sources. On peut trouver également les masques associés aux images. L'ordre a de l'importance, les premières images sources seront considérées comme allant en dessous, quelque soit la méthode utilisée pour la fusion.
- * Format d'une ligne du fichier : \code<CHEMIN DE L'IMAGE> [<CHEMIN DU MASQUE ASSOCIÉ>]\endcode
- * Exemple de configuration :
- * \~ \code{.txt}
- * IMAGE.tif MASK.tif
- * sources/image1.tif  sources/mask1.tif
- * sources/image2.png
- * \endcode
- * \~french
- * \li La compression de l'image de sortie
- * \li La méthode de fusion
- * \li Le nombre de canaux par pixel en sortie
- * \li La valeur à considérer comme transparente
- * \li la valeur à utiliser comme fond
- *
- * Les méthodes de fusion disponibles sont :
- * \~
- * \li ALPHATOP
- * \image html merge_transparency.png
- * \li MULTIPLY
- * \image html merge_multiply.png
- * \li TOP
- * \image html merge_mask.png
- * \~french
  */
 
 #include <iostream>
@@ -121,79 +82,49 @@ int* background;
 /** \~french Activation du niveau de log debug. Faux par défaut */
 bool debugLogger=false;
 
+
+/** \~french Message d'usage de la commande overlayNtiff */
+std::string help = std::string("\noverlayNtiff version ") + std::string(ROK4_VERSION) + "\n\n"
+
+    "Create one TIFF image, from several images with same dimensions, with different available merge methods.\n"
+    "Sources and output image can have different numbers of samples per pixel. The sample type have to be the same for all sources and will be the output one\n\n"
+
+    "Usage: overlayNtiff -f <FILE> -m <VAL> -c <VAL> -s <VAL> -p <VAL [-n <VAL>] -b <VAL>\n"
+
+    "Parameters:\n"
+    "    -f configuration file : list of output and source images and masks\n"
+    "    -c output compression :\n"
+    "            raw     no compression\n"
+    "            none    no compression\n"
+    "            jpg     Jpeg encoding\n"
+    "            lzw     Lempel-Ziv & Welch encoding\n"
+    "            pkb     PackBits encoding\n"
+    "            zip     Deflate encoding\n"
+    "    -t value to consider as transparent, 3 integers, separated with comma. Optionnal\n"
+    "    -b value to use as background, one integer per output sample, separated with comma\n"
+    "    -m merge method : used to merge input images, associated masks are always used if provided :\n"
+    "            ALPHATOP       images are merged by alpha blending\n"
+    "            MULTIPLY       samples are multiplied one by one\n"
+    "            TOP            only the top data pixel is kept\n"
+    "    -s output samples per pixel : 1, 2, 3 or 4\n"
+    "    -p output photometric :\n"
+    "            gray    min is black\n"
+    "            rgb     for image with alpha too\n"
+    "    -d debug logger activation\n\n"
+
+    "Examples\n"
+    "    - for gray orthophotography, with transparency (white is transparent)\n"
+    "    overlayNtiff -f conf.txt -m ALPHATOP -s 1 -c zip -p gray -t 255,255,255 -b 0\n"
+    "    - for DTM, considering masks only\n"
+    "    overlayNtiff -f conf.txt -m TOP -s 1 -c zip -p gray -b -99999\n\n";
+
 /**
  * \~french
- * \brief Affiche l'utilisation et les différentes options de la commande overlayNtiff
+ * \brief Affiche l'utilisation et les différentes options de la commande overlayNtiff #help
  * \details L'affichage se fait dans le niveau de logger INFO
- * \~ \code
- * overlayNtiff version X.X.X
- *
- * Create one TIFF image, from several images with same dimensions, with different available merge methods.
- * Sources and output image can have different numbers of samples per pixel. The sample type have to be the same for all sources and will be the output one
- *
- * Usage: overlayNtiff -f <FILE> -m <VAL> -c <VAL> -s <VAL> -p <VAL [-t <VAL>] -b <VAL>
- * Parameters:
- *     -f configuration file : list of output and source images and masks
- *     -c output compression :
- *             raw     no compression
- *             none    no compression
- *             jpg     Jpeg encoding
- *             lzw     Lempel-Ziv & Welch encoding
- *             pkb     PackBits encoding
- *             zip     Deflate encoding
- *     -t value to consider as transparent, 3 integers, separated with comma. Optionnal
- *     -b value to use as background, one integer per output sample, separated with comma.
- *     -m merge method : used to merge input images, associated masks are always used if provided :
- *             ALPHATOP       images are merged by alpha blending
- *             MULTIPLY       samples are multiplied one by one
- *             TOP            only the top data pixel is kept
- *     -s samples per pixel : 1, 3 or 4
- *     -p photometric :
- *             gray    min is black
- *             rgb     for image with alpha too
- *      -d debug logger activation
- *
- * Examples
- *     - for gray orthophotography, with transparency (white is transparent)
- *     overlayNtiff -f conf.txt -m ALPHATOP -s 1 -c zip -p gray -t 255,255,255 -b 0
- *     - for DTM, considering masks only
- *     overlayNtiff -f conf.txt -m TOP -s 1 -c zip -p gray -b -99999
- * \endcode
  */
 void usage() {
-    LOGGER_INFO ( "\noverlayNtiff version " << ROK4_VERSION << "\n\n" <<
-
-                  "Create one TIFF image, from several images with same dimensions, with different available merge methods.\n" <<
-                  "Sources and output image can have different numbers of samples per pixel. The sample type have to be the same for all sources and will be the output one\n\n" <<
-
-                  "Usage: overlayNtiff -f <FILE> -m <VAL> -c <VAL> -s <VAL> -p <VAL [-n <VAL>] -b <VAL>\n" <<
-
-                  "Parameters:\n" <<
-                  "    -f configuration file : list of output and source images and masks\n" <<
-                  "    -c output compression :\n" <<
-                  "            raw     no compression\n" <<
-                  "            none    no compression\n" <<
-                  "            jpg     Jpeg encoding\n" <<
-                  "            lzw     Lempel-Ziv & Welch encoding\n" <<
-                  "            pkb     PackBits encoding\n" <<
-                  "            zip     Deflate encoding\n" <<
-                  "    -t value to consider as transparent, 3 integers, separated with comma. Optionnal\n" <<
-                  "    -b value to use as background, one integer per output sample, separated with comma\n" <<
-                  "    -m merge method : used to merge input images, associated masks are always used if provided :\n" <<
-                  "            ALPHATOP       images are merged by alpha blending\n" <<
-                  "            MULTIPLY       samples are multiplied one by one\n" <<
-                  "            TOP            only the top data pixel is kept\n" <<
-                  "    -s output samples per pixel : 1, 2, 3 or 4\n" <<
-                  "    -p output photometric :\n" <<
-                  "            gray    min is black\n" <<
-                  "            rgb     for image with alpha too\n" <<
-                  "    -d debug logger activation\n\n" <<
-
-                  "Examples\n" <<
-                  "    - for gray orthophotography, with transparency (white is transparent)\n" <<
-                  "    overlayNtiff -f conf.txt -m ALPHATOP -s 1 -c zip -p gray -t 255,255,255 -b 0\n" <<
-                  "    - for DTM, considering masks only\n" <<
-                  "    overlayNtiff -f conf.txt -m TOP -s 1 -c zip -p gray -b -99999\n\n" );
+    LOGGER_INFO (help);
 }
 
 /**
