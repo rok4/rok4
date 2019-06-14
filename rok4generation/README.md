@@ -239,7 +239,9 @@ Outil : `cache2work`
 
 Cet outil transforme une dalle ROK4 raster en une image TIFF de même dimension mais non tuilée et potentiellement non compressée. Il est utilisé lorsque l'on veut retravailler une dalle d'une pyramide.
 
-![cache2work](../docs/images/ROK4GENERATION/tools/cache2work.png)   
+![cache2work](../docs/images/ROK4GENERATION/tools/cache2work.png)  
+
+[Détails](./tools/cache2work/README.md) 
 
 ### Contrôle d'une image de travail
 
@@ -257,6 +259,8 @@ Cet outil fusionne plusieurs images disposées en un dallage régulier en une se
 
 ![composeNtiff](../docs/images/ROK4GENERATION/tools/composeNtiff.png)
 
+[Détails](./tools/composeNtiff/README.md)
+
 ### Décimation d'une image
 
 Outil : `decimateNtiff`
@@ -264,6 +268,8 @@ Outil : `decimateNtiff`
 Cet outil génère une image à partir de plusieurs image en phase entre elles (même résolution et même décalage) en ne gardant qu'un pixel sur N. Cet outil est utilisé pour générer une dalle d'un niveau à partir de dalles d'un niveau inférieur dans le cas d'une pyramide utilisant un TileMatrixSet "plus proche voisin" (une valeur de la donnée source n'est pas interpolée et se retrouve dans les niveaux supérieurs).
 
 ![decimateNtiff](../docs/images/ROK4GENERATION/tools/decimateNtiff.png)
+
+[Détails](./tools/decimateNtiff/README.md)
 
 ### Gestion du nodata
 
@@ -273,6 +279,8 @@ Cet outil permet d'identifier et de modifier une couleur dans une image considé
 
 ![manageNodata](../docs/images/ROK4GENERATION/tools/manageNodata.png)
 
+[Détails](./tools/manageNodata/README.md)
+
 ### Sous réechantillonnage de 4 images
 
 Outil : `merge4tiff`
@@ -280,6 +288,8 @@ Outil : `merge4tiff`
 Cet outil génère une image à partir 4 images de même dimension disposées en carré, en moyennant les pixels 4 par 4. L'image en sortie a les dimensions des images en entrée. Il est possible de préciser une valeur de gamma pour exagérer les contrastes. Cet outil est utilisé pour générer une dalle d'un niveau à partir du niveau inférieur dans le cas d'une pyramide utilisant un TileMatrixSet de type Quad Tree.
 
 ![merge4tiff](../docs/images/ROK4GENERATION/tools/merge4tiff.png)
+
+[Détails](./tools/merge4tiff/README.md)
 
 ### Réechantillonnage et reprojection d'images
 
@@ -289,6 +299,8 @@ Cet outil génère une image, définie par son rectangle englobant, sa projectio
 
 ![mergeNtiff](../docs/images/ROK4GENERATION/tools/mergeNtiff.png)
 
+[Détails](./tools/mergeNtiff/README.md)
+
 ### Superposition d'images
 
 Outil : `overlayNtiff`
@@ -297,6 +309,8 @@ Cet outil génère une image à partir de plusieurs images de même dimension pa
 
 ![overlayNtiff](../docs/images/ROK4GENERATION/tools/overlayNtiff.png)
 
+[Détails](./tools/overlayNtiff/README.md)
+
 ### Stockage final en dalle
 
 Outil : `work2cache`
@@ -304,6 +318,8 @@ Outil : `work2cache`
 Cet outil génère une dalle au format ROK4 à partir d'une image au format de travail. Une dalle ROK4 est une image TIFF dont les données sont tuilées, et avec un en-tête de taille fixe (2048 octets).
 
 ![work2cache](../docs/images/ROK4GENERATION/tools/work2cache.png)
+
+[Détails](./tools/work2cache/README.md)
 
 ## Manipulation vecteur
 
