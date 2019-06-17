@@ -631,11 +631,6 @@ sub addLevel {
     my $level = shift;
     my $ancestor = shift;
 
-    if ($this->{type} eq "READ") {
-        ERROR("Cannot add level to 'read' pyramid");
-        return FALSE;        
-    }
-
     if (exists $this->{levels}->{$level}) {
         ERROR("Cannot add level $level in pyramid : already exists");
         return FALSE;
@@ -804,15 +799,10 @@ sub writeDescriptor {
         $force = FALSE;     
     }
 
-    if ($this->{type} eq "READ") {
-        ERROR("Cannot write descriptor of 'read' pyramid");
-        return FALSE;        
-    }
-
     my $descPath = File::Spec->catdir($this->{desc_path}, $this->{name}.".pyr");
 
     if (! $force && -f $descPath) {
-        ERROR("New pyramid descriptor ('$descPath') exist, can not overwrite it !");
+        ERROR("Pyramid descriptor ('$descPath') exist, can not overwrite it !");
         return FALSE;
     }
 
@@ -1361,6 +1351,9 @@ sub modifySlab {
     $this->{cachedListModified} = TRUE;
 
     $this->{cachedList}->{$level}->{$type}->{"${col}_${row}"} = $path;
+
+    # Mise à jour des limites
+    $this->{levels}->{$level}->updateLimitsFromSlab($col, $row);
 
     return TRUE;
 }

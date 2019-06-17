@@ -44,6 +44,8 @@ Group: Tools  {
     File: 4ALAMO-FILE  (no auto-title, bin/4alamo-file.pl)
     File: 4ALAMO-CEPH  (no auto-title, bin/4alamo-ceph.pl)
 
+    File: 4HEAD  (no auto-title, bin/4head.pl)
+
     File: BE4-FILE  (no auto-title, bin/be4-file.pl)
     File: BE4-CEPH  (no auto-title, bin/be4-ceph.pl)
     File: BE4-S3  (no auto-title, bin/be4-s3.pl)
@@ -53,7 +55,6 @@ Group: Tools  {
     File: JOINCACHE-CEPH  (no auto-title, bin/joinCache-ceph.pl)
     
     File: PYR2PYR  (no auto-title, bin/pyr2pyr.pl)
-    File: EXPYR  (no auto-title, bin/ex-pyr.pl)
     File: SUP-PYR  (no auto-title, bin/sup-pyr.pl)
 
     File: WMTSALAD  (no auto-title, bin/wmtSalaD.pl)
@@ -81,14 +82,17 @@ Group: Classes  {
         File: ImageSource (no auto-title, lib/COMMON/ImageSource.pm)
         File: Layer (no auto-title, lib/COMMON/Layer.pm)
         File: LevelRaster (no auto-title, lib/COMMON/LevelRaster.pm)
+        File: LevelRasterOD (no auto-title, lib/COMMON/LevelRasterOD.pm)
         File: LevelVector (no auto-title, lib/COMMON/LevelVector.pm)
         File: NNGraph (no auto-title, lib/COMMON/NNGraph.pm)
         File: NoData (no auto-title, lib/COMMON/NoData.pm)
         File: Node (no auto-title, lib/COMMON/Node.pm)
         File: Pixel (no auto-title, lib/COMMON/Pixel.pm)
         File: ProxyGDAL (no auto-title, lib/COMMON/ProxyGDAL.pm)
+        File: ProxyPyramid (no auto-title, lib/COMMON/ProxyPyramid.pm)
         File: ProxyStorage (no auto-title, lib/COMMON/ProxyStorage.pm)
         File: PyramidRaster (no auto-title, lib/COMMON/PyramidRaster.pm)
+        File: PyramidRasterOD (no auto-title, lib/COMMON/PyramidRasterOD.pm)
         File: PyramidRasterSpec (no auto-title, lib/COMMON/PyramidRasterSpec.pm)
         File: PyramidVector (no auto-title, lib/COMMON/PyramidVector.pm)
         File: QTree (no auto-title, lib/COMMON/QTree.pm)
@@ -115,8 +119,13 @@ Group: Classes  {
         File: PropertiesLoader (no auto-title, lib/FOURALAMO/PropertiesLoader.pm)
     }
 
+    Group: FOURHEAD  {
+
+        File: Node (no auto-title, lib/FOURALAMO/Node.pm)
+        File: Shell (no auto-title, lib/FOURALAMO/Shell.pm)
+    }
+
     Group: WMTSALAD  {
-        File: Pyramid  (no auto-title, lib/WMTSALAD/Pyramid.pm)
         File: WmsSource  (no auto-title, lib/WMTSALAD/WmsSource.pm)
         File: PyrSource  (no auto-title, lib/WMTSALAD/PyrSource.pm)
     }
@@ -124,11 +133,6 @@ Group: Classes  {
     Group: PYR2PYR  {
 
         File: PropertiesLoader (no auto-title, lib/PYR2PYR/PropertiesLoader.pm)
-    }
-
-    Group: EXPYR  {
-
-        File: PropertiesLoader (no auto-title, lib/EXPYR/PropertiesLoader.pm)
     }
 
 }

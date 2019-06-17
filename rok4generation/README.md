@@ -161,7 +161,7 @@ Stockages gérés : FICHIER, CEPH, S3, SWIFT
 
 Outil : `4head.pl`
 
-Cet outil permet de regénérer des niveaux de la pyramide en partant d'un de ses niveaux. La pyramide est modifiée et sa liste, qui fait foi en terme de contenu de la pyramide, est mise à jour pour toujours correspondre au contenu final de la pyramide. L'outil perl modifie la liste et génère un script shell dont l'exécution modifiera les dalles de la pyramide. Seuls les niveaux entre celui de référence (non inclus) et le niveau du haut fournis (inclus) sont modifiés.
+Cet outil permet de regénérer des niveaux de la pyramide en partant d'un de ses niveaux. La pyramide est modifiée et sa liste, qui fait foi en terme de contenu de la pyramide, est mise à jour pour toujours correspondre au contenu final de la pyramide. L'outil perl modifie la liste et le descripteur et génère un script shell dont l'exécution modifiera les dalles de la pyramide. Seuls les niveaux entre celui de référence (non inclus) et le niveau du haut fournis (inclus) sont modifiés. Potentiellement des nouveaux niveaux sont ajoutés (lorsque l'outil est utilisé pour construire la tête de la pyramide qui n'existait pas).
 
 Stockages gérés : FICHIER, CEPH, S3, SWIFT
 

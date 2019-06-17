@@ -265,11 +265,6 @@ sub init {
         ERROR("Option 'top-level' not defined !");
         return FALSE;
     }
-    
-    if (! defined $options{pyr}->getLevel($options{"top-level"})) {
-        ERROR("Provided top level is not a level ID of the pyramid");
-        return FALSE;
-    }
 
     $options{"top-level"} = $options{pyr}->getTileMatrixSet()->getTileMatrix($options{"top-level"});
 
@@ -315,7 +310,7 @@ sub doIt {
 
     my @referenceNodes = ();
 
-    # Nodification des dalles du niveau de référence
+    # Modification des dalles du niveau de référence
 
     foreach my $slab (keys(%{$referenceLevelSlabs->{IMAGE}})) {
 
@@ -333,6 +328,15 @@ sub doIt {
                 level => $referenceID
             })
         );
+    }
+
+    # Création des niveaux qui n'existeraient pas dans la pyramide à modifier
+    for (my $levelOrder = $referenceOrder + 1; $levelOrder <= $topOrder; $levelOrder++) {
+        my $levelID = $tms->getIDfromOrder($levelOrder);
+
+        if (defined $options{pyr}->getLevel($levelID)) {next;}
+
+        $options{pyr}->addLevel($levelID);
     }
 
     # Création de l'arbre des noeuds (dalles) à regénérer
@@ -369,7 +373,6 @@ sub doIt {
             $childNode = $regeneratedNodes->{$levelID}->{"${col}_$row"};
         }
 
-
     }
 
     # Écriture dans le script des commandes de regénération des dalles
@@ -389,10 +392,17 @@ sub doIt {
 
     close($STREAM);
 
+    # Écrire le nouveau descripteur
+
+    if (! $options{pyr}->writeDescriptor(TRUE)) {
+        ERROR("Cannot overwrite the pyramid descriptor");
+        return FALSE;
+    }
+
     # Écrire la nouvelle liste
 
     if (! $options{pyr}->flushCachedList()) {
-        ERROR("Cannot write the cached list");
+        ERROR("Cannot overwrite the pyramid list");
         return FALSE;
     }
 
