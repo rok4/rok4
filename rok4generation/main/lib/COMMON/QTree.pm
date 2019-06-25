@@ -82,7 +82,6 @@ Using:
 Attributes:
     forest - <COMMON::Forest> - Forest which this tree belong to.
     pyramid - <COMMON::PyramidRaster> or <COMMON::PyramidVector> - Pyramid linked to this tree.
-    commands - <COMMON::ShellCommandsRaster> or <COMMON::ShellCommandsVector> - Command to use to generate images.
     datasource - <COMMON::DataSource> - Data source to use to define bottom level nodes and generate them.
 
     ct_source_pyramid - <Geo::OSR::CoordinateTransformation> - Coordinate transformation from datasource srs to pyramid srs
@@ -124,8 +123,9 @@ use COMMON::Node;
 use COMMON::PyramidRaster;
 use COMMON::PyramidVector;
 use COMMON::Array;
-use COMMON::ShellCommandsRaster;
-use COMMON::ShellCommandsVector;
+
+use BE4::Shell;
+use FOURALAMO::Shell;
 
 use Log::Log4perl qw(:easy);
 
@@ -174,9 +174,8 @@ sub new {
     # IMPORTANT : if modification, think to update natural documentation (just above)
     my $this = {
         # in
-        forest    => undef,
-        pyramid    => undef,
-        commands    => undef,
+        forest => undef,
+        pyramid => undef,
         datasource => undef,
         # ct
         ct_source_pyramid => undef,
@@ -185,9 +184,9 @@ sub new {
         bbox => [],
         nodes => {},
         # levels
-        cutLevelID    => undef,
+        cutLevelID => undef,
         bottomID => undef,
-        topID    => undef,
+        topID => undef,
     };
 
     bless($this, $class);
@@ -206,7 +205,6 @@ sub new {
     $this->{forest} = $objForest; 
     $this->{pyramid} = $objForest->getPyramid();
     $this->{datasource} = $objSrc; 
-    $this->{commands} = $objForest->getCommands();
 
     # load 
     return undef if (! $this->_load());
@@ -251,9 +249,6 @@ sub _load {
         ERROR(sprintf "Cannot determine bottom tiles for the level %s",$src->getBottomID);
         return FALSE;
     }
-
-    INFO(sprintf "Number of cache images to the bottom level (%s) : %d",
-        $this->{bottomID},scalar keys(%{$this->{nodes}{$this->{bottomID}}}));
 
     # identifier les noeuds des niveaux supérieurs
     if ( ! $this->identifyAboveNodes() ) {
@@ -452,40 +447,39 @@ sub identifyAboveNodes {
     my $src = $this->{datasource};
     
     # Calcul des branches à partir des feuilles
-    for (my $i = $src->getBottomOrder; $i <= $src->getTopOrder; $i++){
+    for (my $i = $src->getBottomOrder(); $i <= $src->getTopOrder(); $i++){
         my $levelID = $tms->getIDfromOrder($i);
 
         # pyramid's limits update : we store data's limits in the pyramid's levels
         $this->{pyramid}->updateTMLimits($levelID, @{$this->{bbox}});
+        DEBUG(sprintf "Number of cache images by level (%s) : %d", $levelID, scalar keys(%{$this->{nodes}{$levelID}}));
+
+        if ($i == $src->getTopOrder()) { last; }
+
+        # On va calculer les noeuds du niveau du dessus
+        my $aboveLevelID = $tms->getIDfromOrder($i+1);
 
         foreach my $node ($this->getNodesOfLevel($levelID)) {
-            
-            if ($i != $src->getTopOrder) {
-                my $aboveLevelID = $tms->getIDfromOrder($i+1);
-                my $parentNodeKey = int($node->getCol/2)."_".int($node->getRow/2);
-                if (exists $this->{nodes}->{$aboveLevelID}->{$parentNodeKey}) {
-                    # This Node already exists
-                    next;
-                }
-                # Create a new Node
-                my $node = COMMON::Node->new({
-                    col => int($node->getCol/2),
-                    row => int($node->getRow/2),
-                    tm => $tms->getTileMatrix($aboveLevelID),
-                    graph => $this,
-                    type => $this->{forest}->getStorageType()
-                });
-                if (! defined $node) { 
-                    ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.",
-                          $aboveLevelID, int($node->getRow/2), int($node->getRow/2));
-                    return FALSE;
-                }
-                $this->{nodes}->{$aboveLevelID}->{$parentNodeKey} = $node;
+                        
+            my $parentNodeKey = int($node->getCol/2)."_".int($node->getRow/2);
+            if (exists $this->{nodes}->{$aboveLevelID}->{$parentNodeKey}) {
+                # This Node already exists
+                next;
             }
+            # Create a new Node
+            my $node = COMMON::Node->new({
+                col => int($node->getCol/2),
+                row => int($node->getRow/2),
+                tm => $tms->getTileMatrix($aboveLevelID),
+                graph => $this,
+                type => $this->{forest}->getStorageType()
+            });
+            if (! defined $node) { 
+                ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $aboveLevelID, int($node->getRow/2), int($node->getRow/2));
+                return FALSE;
+            }
+            $this->{nodes}->{$aboveLevelID}->{$parentNodeKey} = $node;
         }
-
-        DEBUG(sprintf "Number of cache images by level (%s) : %d",
-              $levelID, scalar keys(%{$this->{nodes}{$levelID}}));
     }
     
     return TRUE;
@@ -517,7 +511,7 @@ sub computeYourself {
     DEBUG ("Compilation des branches depuis les noeuds du niveau le plus haut");
     foreach my $topNode (@topLevelNodes) {
         if (! $this->computeBranch($topNode)) {
-            ERROR(sprintf "Can not weight the node of the top level '%s'!", $topNode->getWorkBaseName);
+            ERROR(sprintf "Can not weight the node of the top level '%s'!", $topNode->getWorkBaseName());
             return FALSE;
         }
     }
@@ -546,7 +540,7 @@ sub computeYourself {
     # -------------------------- WRITTING -------------------------------
     
     foreach my $topNode (@topLevelNodes) {
-        if ($this->getTopID ne $this->getCutLevelID) {
+        if ($this->getTopID() ne $this->getCutLevelID()) {
             $topNode->setScript($this->getScriptFinisher());
         }
         
@@ -588,7 +582,7 @@ sub computeBranch {
         # pour lancer la mise en dalle ROK4
 
         if ($node->getLevel() eq $this->getTopID()) {
-            # Tippecanoe + pbf2cache
+            # ogr2ogr + tippecanoe + pbf2cache
             if (! $this->computeTopImage($node)) {
                 ERROR(sprintf "Cannot compute the top image : %s",$node->getWorkBaseName());
                 return FALSE;
@@ -607,7 +601,7 @@ sub computeBranch {
                 ERROR(sprintf "Cannot compute the branch from node %s", $node->getWorkBaseName());
                 return FALSE;
             }
-            $weight += $n->getAccumulatedWeight;
+            $weight += $n->getAccumulatedWeight();
         }
 
         $node->setAccumulatedWeight($weight);
@@ -627,7 +621,7 @@ sub computeBranch {
                 ERROR(sprintf "Cannot compute the branch from node %s", $node->getWorkBaseName());
                 return FALSE;
             }
-            $weight += $n->getAccumulatedWeight;
+            $weight += $n->getAccumulatedWeight();
         }
 
         if (! $this->computeAboveImage($node)) {
@@ -649,10 +643,10 @@ Function: computeBottomImage
 Treats a bottom node for a raster pyramid : determine code or weight.
 
 2 cases:
-    - images as data -> <COMMON::ShellCommandsRaster::mergeNtiff>
-    - WMS service as data -> <COMMON::ShellCommandsRaster::wms2work>
+    - images as data -> <BE4::Shell::mergeNtiff>
+    - WMS service as data -> <BE4::Shell::wms2work>
 
-Then the work image is formatted and move to the final place thanks to <COMMON::ShellCommandsRaster::work2cache>.
+Then the work image is formatted and move to the final place thanks to <BE4::Shell::work2cache>.
 
 Parameters (list):
     node - <COMMON::Node> - Bottom level's node, to treat.
@@ -672,17 +666,17 @@ sub computeBottomImage {
     
     if ($this->getDataSource()->hasHarvesting()) {
         # Datasource has a WMS service : we have to use it
-        ($c,$w) = $this->{commands}->wms2work($node,$this->getDataSource->getHarvesting());
+        ($c,$w) = BE4::Shell::wms2work($node, $this->getDataSource()->getHarvesting());
         if (! defined $c) {
-            ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName());
+            ERROR(sprintf "Cannot harvest image for node %s", $node->getWorkBaseName());
             return FALSE;
         }
         
         $code .= $c;
         $weight += $w;
     } else {    
-        ($c,$w) = $this->{commands}->mergeNtiff($node);
-        if ($w == -1) {
+        ($c,$w) = BE4::Shell::mergeNtiff($node);
+        if (! defined $c) {
             ERROR(sprintf "Cannot compose mergeNtiff command for the node %s.",$node->getWorkBaseName());
             return FALSE;
         }
@@ -690,7 +684,7 @@ sub computeBottomImage {
         $weight += $w;
     }
 
-    ($c,$w) = $this->{commands}->work2cache($node, "\${TMP_DIR}");
+    ($c,$w) = BE4::Shell::work2cache($node);
     $code .= $c;
     $weight += $w;
 
@@ -706,9 +700,9 @@ Function: computeAboveImage
 
 Treats an above node for a raster pyramid (different to the bottom level) : determine code or weight.
 
-To generate an above node, we use <COMMON::ShellCommandsRaster::merge4tiff> with children.
+To generate an above node, we use <BE4::Shell::merge4tiff> with children.
 
-Then the work image is formatted and move to the final place thanks to <COMMON::ShellCommandsRaster::work2cache>.
+Then the work image is formatted and move to the final place thanks to <BE4::Shell::work2cache>.
 
 Parameters (list):
     node - <COMMON::Node> - Above level's node, to treat.
@@ -726,15 +720,15 @@ sub computeAboveImage {
     my $code  = "\n";
     
     # Maintenant on constitue la liste des images à passer à merge4tiff.
-    ($c,$w) = $this->{commands}->merge4tiff($node);
-    if ($w == -1) {
+    ($c,$w) = BE4::Shell::merge4tiff($node);
+    if (! defined $c) {
         ERROR(sprintf "Cannot compose merge4tiff command for the node %s.",$node->getWorkBaseName);
         return FALSE;
     }
     $code .= $c;
     $weight += $w;
 
-    ($c,$w) = $this->{commands}->work2cache($node,"\${TMP_DIR}");
+    ($c,$w) = BE4::Shell::work2cache($node);
     $code .= $c;
     $weight += $w;
 
@@ -771,23 +765,23 @@ sub computeTopImage {
     my $weight  = 0;
     my $code  = "\n";
      
-    ($c,$w) = $this->{commands}->makeJsons($node, $this->getDataSource()->getDatabaseSource());
-    if ($w == -1) {
+    ($c,$w) = FOURALAMO::Shell::makeJsons($node, $this->getDataSource()->getDatabaseSource());
+    if (! defined $c) {
         ERROR(sprintf "Cannot compose ogr2ogrs command for the node %s.",$node->getWorkBaseName());
         return FALSE;
     }
     $code .= $c;
     $weight += $w;
 
-    ($c,$w) = $this->{commands}->makeTiles($node);
-    if ($w == -1) {
+    ($c,$w) = FOURALAMO::Shell::makeTiles($node);
+    if (! defined $c) {
         ERROR(sprintf "Cannot compose tippecanoe command for the node %s.",$node->getWorkBaseName());
         return FALSE;
     }
     $code .= $c;
     $weight += $w;
 
-    ($c,$w) = $this->{commands}->pbf2cache($node);
+    ($c,$w) = FOURALAMO::Shell::pbf2cache($node);
     $code .= $c;
     $weight += $w;
 
@@ -819,9 +813,9 @@ sub computeBelowImage {
     my $code  = "\n";
     
     # Maintenant on constitue la liste des images à passer à pbf2cache.
-    ($c,$w) = $this->{commands}->pbf2cache($node);
-    if ($w == -1) {
-        ERROR(sprintf "Cannot compose pbf2cache command for the node %s.",$node->getWorkBaseName);
+    ($c,$w) = FOURALAMO::Shell::pbf2cache($node);
+    if (! defined $c) {
+        ERROR(sprintf "Cannot compose pbf2cache command for the node %s.",$node->getWorkBaseName());
         return FALSE;
     }
     $code .= $c;
@@ -923,7 +917,6 @@ sub shareNodesOnJobs {
     my $optimalWeight = undef;
     my $cutLevelID = undef;
     
-    my @INIT_WEIGHTS = undef;
     my @jobsWeights = undef;
 
     # calcul du poids total de l'arbre : c'est la somme des poids cumulé des noeuds du topLevel

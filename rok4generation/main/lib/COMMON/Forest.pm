@@ -64,7 +64,6 @@ Using:
 
 Attributes:
     pyramid - <COMMON::PyramidRaster> or <COMMON::PyramidVector> - Images' pyramid to generate, thanks to one or several graphs.
-    commands - <COMMON::ShellCommandsRaster> or <COMMON::ShellCommandsVector> - To compose generation commands (mergeNtiff, work2cache...).
     graphs - <COMMON::QTree> or <COMMON::NNGraph> array - Graphs composing the forest, one per data source.
     scripts - <COMMON::Script> array - Scripts, whose execution generate the images' pyramid.
     splitNumber - integer - Number of script used for work parallelization.
@@ -89,8 +88,9 @@ use COMMON::QTree;
 use COMMON::NNGraph;
 use COMMON::Array;
 
-use COMMON::ShellCommandsRaster;
-use COMMON::ShellCommandsVector;
+use BE4::Shell;
+use FOURALAMO::Shell;
+
 use COMMON::PyramidRaster;
 use COMMON::PyramidVector;
 use COMMON::Script;
@@ -148,7 +148,6 @@ sub new {
     # IMPORTANT : if modification, think to update natural documentation (just above)
     my $this = {
         pyramid     => undef,
-        commands    => undef,
         graphs      => [],
         scripts     => [],
         splitNumber => undef
@@ -185,7 +184,7 @@ sub new {
 =begin nd
 Function: _load
 
-Creates a <COMMON::NNGraph> or a <COMMON::QTree> object per data source and a <COMMON::ShellCommandsRaster> or <COMMON::ShellCommandsVector> object. Using a QTree is faster but it does'nt match all cases.
+Creates a <COMMON::NNGraph> or a <COMMON::QTree> object per data source. Using a QTree is faster but it does'nt match all cases.
 
 All differences between different kinds of graphs are handled in respective classes, in order to be imperceptible for users.
 
@@ -260,27 +259,22 @@ sub _load {
     $tempDir = File::Spec->catdir($tempDir,$this->{pyramid}->getName() );
     $commonTempDir = File::Spec->catdir($commonTempDir,$this->{pyramid}->getName() );
 
-    ############# PROCESS #############
+    ############# SHELL #############
 
-    if (ref ($this->{pyramid}) eq "COMMON::PyramidVector") {
-        $this->{commands} = COMMON::ShellCommandsVector->new($this->{pyramid});
-        if (! defined $this->{commands}) {
-            ERROR ("Can not load Vector Commands !");
+    my $scriptInit = undef;
+    if (ref ($this->{pyramid}) eq "COMMON::PyramidRaster") {
+        # Si on génère une pyramide raster, c'est que nous utilisons l'outil BE4, et des variables sont à initialiser dans la librairie des commandes Shell pour BE4
+        if (! BE4::Shell::setGlobals($commonTempDir, $params_process->{use_masks})) {
+            ERROR ("Impossible d'initialiser la librairie des commandes Shell pour BE4");
             return FALSE;
         }
-    }
-    elsif (ref ($this->{pyramid}) eq "COMMON::PyramidRaster") {
-        $this->{commands} = COMMON::ShellCommandsRaster->new($this->{pyramid}, $params_process->{use_masks});
-        if (! defined $this->{commands}) {
-            ERROR ("Can not load Raster Commands !");
-            return FALSE;
-        }
+        $scriptInit = BE4::Shell::getScriptInitialization($this->{pyramid});
+    } else {
+        $scriptInit = FOURALAMO::Shell::getScriptInitialization($this->{pyramid});
     }
     
     ############# SCRIPTS #############
     # We create COMMON::Script objects and initialize them (header)
-
-    my $functions = $this->{commands}->getConfiguredFunctions();
 
     if ($isQTree) {
         #### QTREE CASE
@@ -297,12 +291,10 @@ sub _load {
             my $script = COMMON::Script->new({
                 id => $scriptID,
                 tempDir => $tempDir,
-                commonTempDir => $commonTempDir,
                 scriptDir => $scriptDir,
-                executedAlone => $executedAlone
+                executedAlone => $executedAlone,
+                initialisation => $scriptInit
             });
-
-            $script->prepare($this->{pyramid}, $functions);
 
             push @{$this->{scripts}}, $script;
         }
@@ -310,27 +302,18 @@ sub _load {
         #### GRAPH CASE
 
         # Boucle sur les levels et sur le nb de scripts/jobs
-        # On commence par les finishers
         # On continue avec les autres scripts, par level
-        for (my $i = $this->{pyramid}->getBottomOrder() - 1; $i <= $this->{pyramid}->getTopOrder(); $i++) {
+        for (my $i = $this->{pyramid}->getBottomOrder(); $i <= $this->{pyramid}->getTopOrder(); $i++) {
             for (my $j = 1; $j <= $this->getSplitNumber(); $j++) {
-                my $scriptID;
-                if ($i == $this->{pyramid}->getBottomOrder - 1) {
-                    $scriptID = sprintf "SCRIPT_FINISHER_%s", $j;
-                } else {
-                    my $levelID = $this->getPyramid()->getTileMatrixSet()->getIDfromOrder($i);
-                    $scriptID = sprintf "LEVEL_%s_SCRIPT_%s", $levelID, $j;
-                }
+                my $scriptID = sprintf "LEVEL_%s_SCRIPT_%s", $this->getPyramid()->getTileMatrixSet()->getIDfromOrder($i), $j;
 
                 my $script = COMMON::Script->new({
                     id => $scriptID,
                     tempDir => $tempDir,
-                    commonTempDir => $commonTempDir,
                     scriptDir => $scriptDir,
-                    executedAlone => FALSE
+                    executedAlone => FALSE,
+                    initialisation => $scriptInit
                 });
-
-                $script->prepare($this->{pyramid}, $functions);
 
                 push @{$this->{scripts}},$script;
             }
@@ -340,20 +323,12 @@ sub _load {
         my $script = COMMON::Script->new({
             id => "SCRIPT_FINISHER",
             tempDir => $tempDir,
-            commonTempDir => $commonTempDir,
             scriptDir => $scriptDir,
-            executedAlone => TRUE
+            executedAlone => TRUE,
+            initialisation => $scriptInit
         });
 
-        $script->prepare($this->{pyramid}, $functions);
-
         push @{$this->{scripts}},$script;
-    }
-    
-    ######## PROCESS (suite) #########
-
-    if (ref ($this->{pyramid}) eq "COMMON::PyramidRaster") {
-        $this->{commands}->setConfDir($this->{scripts}[0]->getMntConfDir(), $this->{scripts}[0]->getDntConfDir());
     }
     
     ############# GRAPHS #############
@@ -369,7 +344,7 @@ sub _load {
         };
                 
         if (! defined $graph) {
-            ERROR(sprintf "Can not create a graph for datasource with bottom level %s !",$datasource->getBottomID());
+            ERROR(sprintf "Can not create a graph for datasource with bottom level %s !", $datasource->getBottomID());
             return FALSE;
         }
         
@@ -456,12 +431,6 @@ sub getStorageType {
     return $this->{pyramid}->getStorageType(); 
 }
 
-# Function: getCommands
-sub getCommands {
-    my $this = shift;
-    return $this->{commands}; 
-}
-
 # Function: getPyramid
 sub getPyramid {
     my $this = shift;
@@ -497,7 +466,7 @@ sub getWeightOfScript {
     my $this = shift;
     my $ind = shift;
     
-    return $this->{scripts}[$ind]->getWeight;
+    return $this->{scripts}[$ind]->getWeight();
 }
 
 =begin nd

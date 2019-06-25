@@ -543,6 +543,7 @@ int main ( int argc, char **argv ) {
         }
     }
 
+    Logger::stopLogger();
     acc->stop();
     acc->destroy();
     delete acc;

@@ -781,6 +781,7 @@ int main ( int argc, char **argv ) {
 
     LOGGER_DEBUG ( "Clean" );
     // Nettoyage
+    Logger::stopLogger();
     acc->stop();
     acc->destroy();
     delete acc;

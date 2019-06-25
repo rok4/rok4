@@ -261,6 +261,24 @@ sub isBboxIntersectingNodeBbox {
 #                                Group: Getters - Setters                                          #
 ####################################################################################################
 
+# Function: getSlabPath
+sub getSlabPath {
+    my $this = shift;
+    my $type = shift;
+    my $full = shift;
+
+    return $this->{graph}->getPyramid()->getSlabPath($type, $this->getLevel(), $this->getCol(), $this->getRow(), $full);
+}
+
+
+# Function: getSlabSize
+sub getSlabSize {
+    my $this = shift;
+
+    return $this->{graph}->getPyramid()->getSlabSize($this->getLevel());
+}
+
+
 # Function: getScript
 sub getScript {
     my $this = shift;
@@ -563,6 +581,34 @@ Warning:
 sub getChildren {
     my $this = shift;
     return $this->{graph}->getChildren($this);
+}
+
+
+
+# Function: isCutLevelNode
+sub isCutLevelNode {
+    my $this = shift;
+
+    if (ref($this->{graph}) ne "COMMON::QTree") {
+        return FALSE;
+    }
+
+    if ($this->{graph}->getCutLevelID() eq $this->getLevel()) {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+# Function: isTopLevelNode
+sub isTopLevelNode {
+    my $this = shift;
+
+    if ($this->{graph}->getTopID() eq $this->getLevel()) {
+        return TRUE;
+    }
+
+    return FALSE;
 }
 
 ####################################################################################################

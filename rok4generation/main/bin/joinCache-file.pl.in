@@ -68,10 +68,10 @@ use COMMON::TileMatrixSet;
 use COMMON::TileMatrix;
 use COMMON::PyramidRaster;
 use COMMON::LevelRaster;
-use COMMON::ShellCommandsRaster;
 use COMMON::Script;
 
 use JOINCACHE::Node;
+use JOINCACHE::Shell;
 use JOINCACHE::PropertiesLoader;
 
 
@@ -118,8 +118,8 @@ Informations are treated, interpreted and store in this hash, using JOINCACHE cl
 
     propertiesLoader - <JOINCACHE::PropertiesLoader> - Contains all raw informations
     pyramid - <COMMON::PyramidRaster> - Output pyramid
-    commands - <COMMON::ShellCommandsRaster> - Commands to configure and use to generate slabs to merge
     mergeMethod - string - Method to use merge slabs when several sources
+    useMasks - boolean - do we use masks to generate slabs
     scripts - <COMMON::Script> array - Split scripts to use to generate slabs to merge
     currentScript - integer - Script index to use for the next task (round robin share)
     composition - hash - Defines source pyramids for each level, extent, and order
@@ -137,8 +137,8 @@ my %this =
 
     pyramid => undef,
 
-    commands => undef,
     mergeMethod => undef,
+    useMasks => undef,
     scripts => [],
     currentScript => undef,
 
@@ -317,7 +317,7 @@ sub config {
 =begin nd
 Function: validate
 
-Validates all components, checks consistency and create scripts. Use classes <COMMON::PyramidRaster>, <COMMON::Script> and <COMMON::ShellCommandsRaster>.
+Validates all components, checks consistency and create scripts. Use classes <COMMON::PyramidRaster>, <COMMON::Script>
 
 See Also:
     <validateSourcePyramids>
@@ -357,29 +357,31 @@ sub validate {
 
     $this{mergeMethod} = $processSection->{merge_method};
 
-    $this{commands} = COMMON::ShellCommandsRaster->new($this{pyramid}, $processSection->{use_masks}, $this{mergeMethod});
-    if (! defined $this{commands}) {
-        ERROR ("Can not load Commands !");
-        return FALSE;
+    if (exists $processSection->{use_masks} && defined $processSection->{use_masks} && uc($processSection->{use_masks}) eq "TRUE") {
+        $this{useMasks} = TRUE;
+    } else {
+        $this{useMasks} = FALSE;
     }
 
-    my $configuredFunctions = $this{commands}->getConfiguredFunctions();
+    if (! JOINCACHE::Shell::setGlobals($processSection->{path_temp_common}, $processSection->{merge_method})) {
+        ERROR ("Impossible d'initialiser la librairie des commandes Shell pour JOINCACHE");
+        return FALSE;
+    }
+    my $scriptInit = JOINCACHE::Shell::getScriptInitialization($this{pyramid});
 
     for (my $i = 1; $i <= $processSection->{job_number}; $i++ ) {
         my $script = COMMON::Script->new({
             id => "SCRIPT_$i",
             tempDir => $processSection->{path_temp},
-            commonTempDir => $processSection->{path_temp_common},
             scriptDir => $processSection->{path_shell},
-            executedAlone => FALSE
+            executedAlone => FALSE,
+            initialisation => $scriptInit
         });
 
         if (! defined $script) {
             ERROR ("Cannot create the COMMON::Script object !");
             return FALSE;
         }
-
-        $script->prepare($this{pyramid}, $configuredFunctions);
 
         push(@{$this{scripts}}, $script);
     }
@@ -524,9 +526,10 @@ sub doIt {
                     level => $level,
                     col => $COL,
                     row => $ROW,
+                    pyramid => $pyramid,
                     sourcePyramids => $sources,
                     mainSourceIndice => $nSource,
-                    useMasks => $this{commands}->useMasks(),
+                    useMasks => $this{useMasks},
                     mergeMethod => $this{mergeMethod}
                 });
 
@@ -583,14 +586,14 @@ sub doIt {
 sub treatNode {
     my $node = shift;
 
-    my $finalImageEnd = $this{pyramid}->getLevel($node->getLevel())->getSlabPath("IMAGE", $node->getColumn(), $node->getRow(), FALSE);
-    my $finalImage = $this{pyramid}->getLevel($node->getLevel())->getSlabPath("IMAGE", $node->getColumn(), $node->getRow(), TRUE);
+    my $finalImageEnd = $node->getSlabPath("IMAGE", FALSE);
+    my $finalImage = $node->getSlabPath("IMAGE", TRUE);
 
     my $finalMask = undef;
     my $finalMaskEnd = undef;
     if ($this{pyramid}->ownMasks()) {
-        $finalMaskEnd = $this{pyramid}->getLevel($node->getLevel())->getSlabPath("MASK", $node->getColumn(), $node->getRow(), FALSE);
-        $finalMask = $this{pyramid}->getLevel($node->getLevel())->getSlabPath("MASK", $node->getColumn(), $node->getRow(), TRUE);
+        $finalMaskEnd = $node->getSlabPath("MASK", FALSE);
+        $finalMask = $node->getSlabPath("MASK", TRUE);
     }
 
     # On affecte le script courant au noeud. Le script courant n'est pas incrémenté dans le cas d'un lien, car rien n'est écrit dans le script.
@@ -602,14 +605,14 @@ sub treatNode {
 
         if ($this{pyramid}->checkCompatibility($sourceImage->{sourcePyramid}) == 2) {
             # We can just make a symbolic link, in a script
-            $this{commands}->linkSlab($node, $sourceImage->{img}, $finalImage);
+            JOINCACHE::Shell::linkSlab($node, $sourceImage->{img}, $finalImage);
 
             main::storeInList($finalImageEnd, $sourceImage->{img});
             
         } else {
             # We have just one source image, but it is not compatible with the final cache
-            # We need to transform it.
-            if ( ! $this{commands}->overlayNtiff($node, $this{pyramid}) ) {
+            # We need to transform it (pull push).
+            if ( ! JOINCACHE::Shell::convert($node) ) {
                 ERROR(sprintf "Cannot transform the image");
                 return FALSE;
             }
@@ -620,14 +623,14 @@ sub treatNode {
         # Export éventuel du masque : il est forcément dans le bon format, on peut donc le lier.
         if (exists $sourceImage->{msk} && defined $finalMask) {
             # We can just make a symbolic link, in a script
-            $this{commands}->linkSlab($node, $sourceImage->{msk}, $finalMask);
+            JOINCACHE::Shell::linkSlab($node, $sourceImage->{msk}, $finalMask);
 
             main::storeInList($finalMaskEnd, $sourceImage->{msk});
         }
         
     } else {
         # We have several images, we merge them
-        if ( ! $this{commands}->overlayNtiff($node, $this{pyramid}) ) {
+        if ( ! JOINCACHE::Shell::overlayNtiff($node) ) {
             ERROR(sprintf "Cannot merge the images");
             return FALSE;
         }

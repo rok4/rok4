@@ -99,6 +99,8 @@ use warnings;
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
 
+use COMMON::Array;
+
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
 
@@ -113,27 +115,9 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-# Constant: WMS
-# Define allowed values for attribute wms_format.
-my %WMS;
-
-# Constant: DEFAULT
-# Define default values for attributes.
-my %DEFAULT;
-
-################################################################################
-
-BEGIN {}
-INIT {
-    %WMS = (
-        wms_format => ['image/png','image/tiff','image/jpeg','image/x-bil;bits=32','image/tiff&format_options=compression:deflate','image/tiff&format_options=compression:lzw','image/tiff&format_options=compression:packbits','image/tiff&format_options=compression:raw'],
-    );
-
-    %DEFAULT = (
-        min_size => 0,
-    );
-}
-END {}
+# Constant: FORMATS
+# Define allowed values for attribute wms format
+my @FORMATS = ('image/png','image/tiff','image/jpeg','image/x-bil;bits=32','image/tiff&format_options=compression:deflate','image/tiff&format_options=compression:lzw','image/tiff&format_options=compression:packbits','image/tiff&format_options=compression:raw');
 
 ####################################################################################################
 #                                        Group: Constructors                                       #
@@ -170,7 +154,7 @@ sub new {
         FORMAT   => undef,
         LAYERS    => undef,
         OPTIONS    => "STYLES=",
-        min_size => undef,
+        min_size => 0,
         max_width => undef,
         max_height => undef
     };
@@ -228,16 +212,13 @@ sub _init {
         # "STYLES=" is always present in the options
         $this->{OPTIONS} .= $params->{wms_style};
     }
-    
-    my $hasBGcolor = FALSE;
-    
+        
     if (exists($params->{wms_bgcolor}) && defined ($params->{wms_bgcolor})) {
         if ($params->{wms_bgcolor} !~ m/^0x[a-fA-F0-9]{6}/) {
             ERROR("Parameter 'wms_bgcolor' must be to format '0x' + 6 numbers in hexadecimal format.");
             return FALSE ;
         }
         $this->{OPTIONS} .= "&BGCOLOR=".$params->{wms_bgcolor};
-        $hasBGcolor = TRUE;
     }
     
     if (exists($params->{wms_transparent}) && defined ($params->{wms_transparent})) {
@@ -248,10 +229,7 @@ sub _init {
         $this->{OPTIONS} .= "&TRANSPARENT=".uc($params->{wms_transparent});
     }
     
-    if (! exists($params->{min_size}) || ! defined ($params->{min_size})) {
-        $this->{min_size} = $DEFAULT{min_size};
-        INFO(sprintf "Default value for 'min_size' : %s", $this->{min_size});
-    } else {
+    if (exists($params->{min_size}) && defined ($params->{min_size})) {
         if (int($params->{min_size}) <= 0) {
             ERROR("If 'min_size' is given, it must be strictly positive.");
             return FALSE ;
@@ -276,9 +254,9 @@ sub _init {
         ERROR("Parameter 'wms_format' is required !");
         return FALSE ;
     }
-    if (! $this->isWmsFormat($params->{wms_format})) {
-        ERROR("Parameter 'wms_format' is not valid !");
-        return FALSE ;
+    if (! defined COMMON::Array::isInArray($params->{wms_format}, @FORMATS)) {
+        ERROR (sprintf "Unknown 'wms_format' : %s !",$params->{wms_format});
+        return undef;
     }
     # LAYER
     if (! exists($params->{wms_layer}) || ! defined ($params->{wms_layer})) {
@@ -309,74 +287,44 @@ sub _init {
 #                               Group: Request methods                                             #
 ####################################################################################################
 
+
 =begin nd
-Function: getCommandWms2work
-
-Compose the BBoxes' array and the Wms2work call (bash function), used to obtain wanted image.
-
-Returns:
-    a string list, the command and the harvested image format (tif, png...). (undef, undef) if an error is occured.
-
-Parameters:
-    dir - string - directory, to know the final image location and where to write temporary images
-    srs - string - Bounding box's SRS
-    inversion - boolean - To know if we have to reverse coordinates in the request.
-    bbox - double array - Extent of the harvested image
-    width - integer - Pixel width of the harvested image
-    height - integer - Pixel height of the harvested image
-
-Example:
-    (start code)
-    # Obtain a "Wms2work" command
-    my $cmd = $objHarvesting->getCommandWms2work(
-        dir => "path/image_several_requests",
-        inversion => FALSE,
-        srs => "WGS84",
-        bbox => [10018754.17139461632,-2504688.54284865024,12523442.71424327168,0.00000000512],
-        width => 4096,
-        height => 4096
-    );
-
-    # $cmd =
-    # BBOXES="10018754.17139461632,-626172.13571215872,10644926.30710678016,0.00000000512
-    # 10644926.30710678016,-626172.13571215872,11271098.442818944,0.00000000512
-    # 11271098.442818944,-626172.13571215872,11897270.57853110784,0.00000000512
-    # 11897270.57853110784,-626172.13571215872,12523442.71424327168,0.00000000512
-    # 10018754.17139461632,-1252344.27142432256,10644926.30710678016,-626172.13571215872
-    # 10644926.30710678016,-1252344.27142432256,11271098.442818944,-626172.13571215872
-    # 11271098.442818944,-1252344.27142432256,11897270.57853110784,-626172.13571215872
-    # 11897270.57853110784,-1252344.27142432256,12523442.71424327168,-626172.13571215872
-    # 10018754.17139461632,-1878516.4071364864,10644926.30710678016,-1252344.27142432256
-    # 10644926.30710678016,-1878516.4071364864,11271098.442818944,-1252344.27142432256
-    # 11271098.442818944,-1878516.4071364864,11897270.57853110784,-1252344.27142432256
-    # 11897270.57853110784,-1878516.4071364864,12523442.71424327168,-1252344.27142432256
-    # 10018754.17139461632,-2504688.54284865024,10644926.30710678016,-1878516.4071364864
-    # 10644926.30710678016,-2504688.54284865024,11271098.442818944,-1878516.4071364864
-    # 11271098.442818944,-2504688.54284865024,11897270.57853110784,-1878516.4071364864
-    # 11897270.57853110784,-2504688.54284865024,12523442.71424327168,-1878516.4071364864"
-    #
-    # Wms2work "path/image_several_requests" "png" "tif" "4 4" "250000" "http://localhost/wms-vector?LAYERS=BDD_WLD_WM&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/png&CRS=EPSG:3857&WIDTH=1024&HEIGHT=1024&STYLES=line&BGCOLOR=0x80BBDA&TRANSPARENT=0X80BBDA" $BBOXES
-    (end code)
+Function: getHarvestUrl
 =cut
-sub getCommandWms2work {
+sub getHarvestUrl {
     my $this = shift;
 
-    my $args = shift;
+    my $srs = shift;
+    my $width = shift;
+    my $height = shift;
 
+    my $w = $width;
+    if (defined $this->{max_width} && $this->{max_width} < $width) {$w = $this->{max_width};}
+    my $h = $height;
+    if (defined $this->{max_height} && $this->{max_height} < $height) {$h = $this->{max_height};}
 
-    my $dir = $args->{dir} || ( ERROR ("'dir' parameter required !") && return (undef, undef) );
-    my $srs = $args->{srs} || ( ERROR ("'srs' parameter required !") && return (undef, undef) );
-    my $bbox = $args->{bbox} || ( ERROR ("'bbox' parameter required !") && return (undef, undef) );
-    my $max_width = $args->{width} || ( ERROR ("'width' parameter required !") && return (undef, undef) );
-    my $max_height = $args->{height} || ( ERROR ("'height' parameter required !") && return (undef, undef) );
-    
-    my $inversion = $args->{inversion};
-    if (! defined $inversion) {
-        ERROR ("'inversion' parameter required !");
-        return (undef, undef);
-    }
-    
-    my ($xmin, $ymin, $xmax, $ymax) = @$bbox;
+    return sprintf "http://%s?LAYERS=%s&SERVICE=WMS&VERSION=%s&REQUEST=GetMap&FORMAT=%s&CRS=%s&WIDTH=%s&HEIGHT=%s&%s",
+        $this->getURL(), $this->getLayers(), $this->getVersion(), $this->getFormat(), $srs, $w, $h, $this->getOptions();
+}
+
+=begin nd
+Function: getBboxesList
+
+Determine bboxes' list to harvest, according to slab size, harvesting's limits and coordinates system particluarities
+
+Return:
+    A string array, bboxes as string, empty array if failure
+=cut
+sub getBboxesList {
+    my $this = shift;
+
+    my $xmin = shift;
+    my $ymin = shift;
+    my $xmax = shift;
+    my $ymax = shift;
+    my $width = shift;
+    my $height = shift;
+    my $inversion = shift;
     
     my $imagePerWidth = 1;
     my $imagePerHeight = 1;
@@ -385,109 +333,48 @@ sub getCommandWms2work {
     my $groundHeight = $xmax-$xmin;
     my $groundWidth = $ymax-$ymin;
     
-    if (defined $this->{max_width} && $this->{max_width} < $max_width) {
-        if ($max_width % $this->{max_width} != 0) {
-            ERROR(sprintf "Max harvested width (%s) is not a divisor of the image's width (%s) in the request."
-                  ,$this->{max_width},$max_width);
-            return (undef, undef);
+    if (defined $this->{max_width} && $this->{max_width} < $width) {
+        if ($width % $this->{max_width} != 0) {
+            ERROR(sprintf "Max harvested width (%s) is not a divisor of the image's width (%s) in the request." , $this->{max_width}, $width);
+            return ();
         }
-        $imagePerWidth = int($max_width/$this->{max_width});
+        $imagePerWidth = int($width/$this->{max_width});
         $groundWidth /= $imagePerWidth;
-        $max_width = $this->{max_width};
     }
     
-    if (defined $this->{max_height} && $this->{max_height} < $max_height) {
-        if ($max_height % $this->{max_height} != 0) {
-            ERROR(sprintf "Max harvested height (%s) is not a divisor of the image's height (%s) in the request."
-                  ,$this->{max_height},$max_height);
-            return (undef, undef);
+    if (defined $this->{max_height} && $this->{max_height} < $height) {
+        if ($height % $this->{max_height} != 0) {
+            ERROR(sprintf "Max harvested height (%s) is not a divisor of the image's height (%s) in the request." ,$this->{max_height}, $height);
+            return ();
         }
-        $imagePerHeight = int($max_height/$this->{max_height});
+        $imagePerHeight = int($height/$this->{max_height});
         $groundHeight /= $imagePerHeight;
-        $max_height = $this->{max_height};
     }
     
-    my $URL = sprintf ("http://%s?LAYERS=%s&SERVICE=WMS&VERSION=%s&REQUEST=GetMap&FORMAT=%s&CRS=%s&WIDTH=%s&HEIGHT=%s&%s",
-                    $this->getURL, $this->getLayers, $this->getVersion, $this->getFormat,
-                    $srs, $max_width, $max_height, $this->getOptions);
-    my $BBoxesAsString = "\"";
+    my @bboxes;
     for (my $i = 0; $i < $imagePerHeight; $i++) {
         for (my $j = 0; $j < $imagePerWidth; $j++) {
             if ($inversion) {
-                $BBoxesAsString .= sprintf "%s,%s,%s,%s\n",
-                    $ymax-($i+1)*$groundHeight, $xmin+$j*$groundWidth,
-                    $ymax-$i*$groundHeight, $xmin+($j+1)*$groundWidth;
+                push(
+                    @bboxes,
+                    sprintf ("%s,%s,%s,%s",
+                        $ymax-($i+1)*$groundHeight, $xmin+$j*$groundWidth,
+                        $ymax-$i*$groundHeight, $xmin+($j+1)*$groundWidth
+                    )
+                )
             } else {
-                $BBoxesAsString .= sprintf "%s,%s,%s,%s\n",
-                    $xmin+$j*$groundWidth, $ymax-($i+1)*$groundHeight,
-                    $xmin+($j+1)*$groundWidth, $ymax-$i*$groundHeight;
+                push(
+                    @bboxes,
+                    sprintf ("%s,%s,%s,%s",
+                        $xmin+$j*$groundWidth, $ymax-($i+1)*$groundHeight,
+                        $xmin+($j+1)*$groundWidth, $ymax-$i*$groundHeight
+                    )
+                )
             }
         }
     }
-    $BBoxesAsString .= "\"";
     
-    my $cmd = "BBOXES=$BBoxesAsString\n";
-    
-    $cmd .= "Wms2work";
-    $cmd .= " \"$dir\"";
-    
-    my $format = undef;
-    
-    # Extension des images moissonnées
-    if ($this->getFormat eq "image/png") {
-        $format = "png";
-        $cmd .= " \"png\"";
-    } elsif ($this->getFormat eq "image/jpeg") {
-        $format = "jpeg";
-        $cmd .= " \"jpeg\"";
-    } else {
-        $format = "tif";
-        $cmd .= " \"tif\"";
-    }
-    
-    # Extension de l'image finale
-    if ($imagePerWidth == 1 || $imagePerHeight == 1) {
-        # On moissonne en une seule fois : l'image finale a l'extension de celle moissonnée
-        $cmd .= " \"$format\"";
-    } else {
-        # On moissonne en plusieurs fois, on va donc utiliser composeNtiff pour ré-assempbler les images
-        # L'image finale sera alors en TIFF
-        $format = "tif";
-        $cmd .= " \"tif\"";
-    }
-    
-    $cmd .= sprintf " \"%s %s\"",$imagePerWidth,$imagePerHeight;
-    $cmd .= sprintf " \"%s\"",$this->{min_size};
-
-    $cmd .= " \"$URL\"";
-    $cmd .= " \$BBOXES\n";
-    
-    return ($cmd, $format);
-}
-
-####################################################################################################
-#                             Group: Attributes' testers                                           #
-####################################################################################################
-
-=begin nd
-Function: isWmsFormat
-
-Tests if format value is allowed.
-
-Parameters (list):
-    wmsformat - string - Format value to test
-=cut
-sub isWmsFormat {
-    my $this = shift;
-    my $wmsformat = shift;
-
-    return FALSE if (! defined $wmsformat);
-
-    foreach (@{$WMS{wms_format}}) {
-        return TRUE if ($wmsformat eq $_);
-    }
-    ERROR (sprintf "Unknown 'wms_format' (%s) !",$wmsformat);
-    return FALSE;
+    return ("$imagePerWidth $imagePerHeight", @bboxes);
 }
 
 ####################################################################################################
@@ -510,6 +397,25 @@ sub getVersion {
 sub getFormat {
     my $this = shift;
     return $this->{FORMAT};
+}
+
+# Function: getMinSize
+sub getMinSize {
+    my $this = shift;
+    return $this->{min_size};
+}
+
+# Function: getHarvestExtension
+sub getHarvestExtension {
+    my $this = shift;
+    # Extension des images moissonnées
+    if ($this->{FORMAT} eq "image/png") {
+        return "png";
+    } elsif ($this->{FORMAT} eq "image/jpeg") {
+        return "jpeg";
+    } else {
+        return "tif";
+    }
 }
 
 # Function: getLayers

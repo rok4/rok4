@@ -55,6 +55,7 @@ Attributes:
     col - integer - Column
     row - integer - Row
     level - string - Level's identifiant
+    pyramid - <COMMON::PyramidRaster> - Pyramid which node belong to
     code - string - Commands to execute to generate this node (to write in a script)
     script - <COMMON::Script> - Script in which the node will be generated
     sources - hash array - Source images from which this node is generated. One image source :
@@ -77,6 +78,7 @@ use Data::Dumper;
 
 use COMMON::Base36;
 use COMMON::ProxyGDAL;
+use COMMON::PyramidRaster;
 
 
 require Exporter;
@@ -112,6 +114,7 @@ Parameters (list):
     level - string - Node's level ID
     col - integer - Node's column
     row - integer - Node's row
+    pyramid - <COMMON::PyramidRaster> - Pyramid which node belong to
 
 See also:
     <_init>
@@ -119,8 +122,6 @@ See also:
 sub new {
     my $class = shift;
     my $params = shift;
-
-    DEBUG("Creating node.");
     
     $class = ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above)
@@ -128,6 +129,7 @@ sub new {
         col => undef,
         row => undef,
         level => undef,
+        pyramid => undef,
         code => '',
         script => undef,
         sources => [],
@@ -145,7 +147,6 @@ sub new {
         return undef ;
     }
     
-    DEBUG("Node created.");
     return $this;
 }
 
@@ -176,13 +177,16 @@ sub _init {
         ERROR("Node's row is undefined !");
         return FALSE;
     }
+    if (! exists $params->{pyramid} || ! defined $params->{pyramid}) {
+        ERROR("Node's pyramid is undefined !");
+        return FALSE;
+    }
     
     # init. params
     $this->{col} = $params->{col};
     $this->{row} = $params->{row};
     $this->{level} = $params->{level};
-
-    DEBUG(sprintf ("Node's parameters : %s", Dumper($this)));   
+    $this->{pyramid} = $params->{pyramid};
     
     return TRUE;
 }
@@ -312,8 +316,14 @@ sub _load {
 #                                Group: Getters - Setters                                          #
 ####################################################################################################
 
-# Function: getColumn
-sub getColumn {
+# Function: getPyramid
+sub getPyramid {
+    my $this = shift;
+    return $this->{pyramid};
+}
+
+# Function: getCol
+sub getCol {
     my $this = shift;
     return $this->{col};
 }
@@ -444,6 +454,15 @@ sub setCode {
 sub getScript {
     my $this = shift;
     return $this->{script};
+}
+
+# Function: getSlabPath
+sub getSlabPath {
+    my $this = shift;
+    my $type = shift;
+    my $full = shift;
+
+    return $this->{pyramid}->getSlabPath($type, $this->getLevel(), $this->getCol(), $this->getRow(), $full);
 }
 
 1;

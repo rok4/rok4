@@ -297,6 +297,7 @@ int main ( int argc, char **argv )
     // Nettoyage
     delete rok4image;
     delete outputImage;
+    Logger::stopLogger();
     acc->stop();
     acc->destroy();
     delete acc;

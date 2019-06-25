@@ -1009,7 +1009,6 @@ int mergeTabImages ( FileImage* pImageOut, // Sortie
 
         if ( pImageOut->isCompatibleWith ( pECI ) ) {
             LOGGER_DEBUG ( "\t is compatible" );
-            pECI->print();
             /* les images sources et finale ont la meme resolution et la meme phase
              * on aura donc pas besoin de reechantillonnage.*/
             pOverlayedImages.push_back ( pECI );
@@ -1183,6 +1182,7 @@ int main ( int argc, char **argv ) {
     LOGGER_DEBUG ( "Clean" );
     // Nettoyage
     pj_clear_initcache();
+    Logger::stopLogger();
     acc->stop();
     acc->destroy();
     delete acc;

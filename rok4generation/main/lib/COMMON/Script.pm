@@ -62,10 +62,6 @@ Attributes:
     executedAlone - boolean - If we know a script will be executed ALONE. it can change some working.
     filePath - string - Complete absolute script file path.
     tempDir - string - Directory used to write temporary images.
-    commonTempDir - string - Directory used to write temporary images which have to be shared between different scripts.
-    mntConfDir - string - Directory used to write mergeNtiff configuration files. *mntConfDir* is a subdirectory of *commonTempDir*.
-    dntConfDir - string - Directory used to write decimateNtiff configuration files (used by <COMMON::NNGraph> generation). *dntConfDir* is a subdirectory of *commonTempDir*.
-    ontConfDir - string - Directory used to write overlayNtiff configuration files (used by JoinCache tool). *ontConfDir* is a subdirectory of *commonTempDir*.
     currentweight - integer - Current weight of the script (already written in the file)
     weight - integer - Total weight of the script, according to its content.
     stream - stream - Stream to the script file, to write in.
@@ -116,7 +112,6 @@ Parameters (hash):
     id - string - Identifiant, used to name the file, like 'SCRIPT_1'.
     scriptDir - string - Directory path, where to write the script.
     tempDir - string - Root directory, in which own temporary directory will be created.
-    commonTempDir - string - Common temporary directory, to allowed scripts to share files
     executedAlone - boolean - Optionnal, FALSE by default.
 =cut
 sub new {
@@ -131,10 +126,6 @@ sub new {
         filePath => undef,
 
         tempDir => undef,
-        commonTempDir => undef,
-        mntConfDir => undef,
-        dntConfDir => undef,
-        ontConfDir => undef,
 
         weight => 0,
         currentweight => 0,
@@ -174,71 +165,6 @@ sub new {
         return undef;
     }
     $this->{tempDir} = File::Spec->catdir($params->{tempDir},$this->{id});
-
-    ########## Dossier commun à tous les scripts
-
-    if ( ! exists $params->{commonTempDir} || ! defined $params->{commonTempDir}) {
-        ERROR ("'commonTempDir mandatory to create a Script object !");
-        return undef;
-    }
-    $this->{commonTempDir} = File::Spec->catdir($params->{commonTempDir},"COMMON");
-
-    ########## Dossier des configurations des mergeNtiff pour ce script
-    
-    $this->{mntConfDir} = File::Spec->catfile($this->{commonTempDir},"mergeNtiff");
-    
-    ########## Dossier des configurations des decimateNtiff pour ce script
-    
-    $this->{dntConfDir} = File::Spec->catfile($this->{commonTempDir},"decimateNtiff");
-    
-    ########## Dossier des configurations des overlayNtiff pour ce script
-    
-    $this->{ontConfDir} = File::Spec->catfile($this->{commonTempDir},"overlayNtiff");
-
-    ########## Tests et création de l'ensemble des dossiers
-
-    # Common directory
-    if (! -d $this->{commonTempDir}) {
-        DEBUG (sprintf "Create the common temporary directory '%s' !", $this->{commonTempDir});
-        eval { mkpath([$this->{commonTempDir}]); };
-        if ($@) {
-            ERROR(sprintf "Can not create the common temporary directory '%s' : %s !", $this->{commonTempDir}, $@);
-            return undef;
-        }
-    }
-    
-    # MergeNtiff configurations directory
-    if (! -d $this->{mntConfDir}) {
-        DEBUG (sprintf "Create the MergeNtiff configurations directory '%s' !", $this->{mntConfDir});
-        eval { mkpath([$this->{mntConfDir}]); };
-        if ($@) {
-            ERROR(sprintf "Can not create the MergeNtiff configurations directory '%s' : %s !",
-                $this->{mntConfDir}, $@);
-            return undef;
-        }
-    }
-    
-    # DecimateNtiff configurations directory
-    if (! -d $this->{dntConfDir}) {
-        DEBUG (sprintf "Create the DecimateNtiff configurations directory '%s' !", $this->{dntConfDir});
-        eval { mkpath([$this->{dntConfDir}]); };
-        if ($@) {
-            ERROR(sprintf "Can not create the DecimateNtiff configurations directory '%s' : %s !",
-                $this->{dntConfDir}, $@);
-            return undef;
-        }
-    }
-    
-    # OverlayNtiff configurations directory
-    if (! -d $this->{ontConfDir}) {
-        DEBUG (sprintf "Create the OverlayNtiff configurations directory '%s' !", $this->{ontConfDir});
-        eval { mkpath([$this->{ontConfDir}]); };
-        if ($@) {
-            ERROR(sprintf "Can not create the OverlayNtiff configurations directory '%s' : %s !",
-                $this->{ontConfDir}, $@);
-            return undef;
-        }
-    }
     
     # Script's directory
     if (! -d $params->{scriptDir}) {
@@ -257,6 +183,8 @@ sub new {
         return undef;
     }
     $this->{stream} = $STREAM;
+
+    $this->prepare($params->{initialisation});
 
     return $this;
 }
@@ -284,28 +212,6 @@ sub getTempDir {
     my $this = shift;
     return $this->{tempDir};
 }
-
-# Function: getMntConfDir
-# Returns the mergeNtiff configuration's directory
-sub getMntConfDir {
-    my $this = shift;
-    return $this->{mntConfDir};
-}
-
-# Function: getDntConfDir
-# Returns the decimateNtiff configuration's directory
-sub getDntConfDir {
-    my $this = shift;
-    return $this->{dntConfDir};
-}
-
-# Function: getDntConfDir
-# Returns the overlayNtiff configuration's directory
-sub getOntConfDir {
-    my $this = shift;
-    return $this->{ontConfDir};
-}
-
 
 # Function: getWeight
 # Returns the script's weight
@@ -349,11 +255,7 @@ sub setWeight {
 =begin nd
 Function: prepare
 
-Write script's header, which contains environment variables: the script ID, path to work directory, cache... And functions to factorize code.
-
-Parameters (list):
-    pyramid - <COMMON::PyramidRaster> or <COMMON::PyramidVector> - Pyramid to generate.
-    functions - string - Configured functions, used in the script (mergeNtiff, wget...).
+Write script's header, which contains script's environment variables: the script ID, path to work directory.
 
 Example:
     (start code)
@@ -362,60 +264,27 @@ Example:
 =cut
 sub prepare {
     my $this = shift;
-    my $pyramid = shift;
-    my $functions = shift;
+    my $initialisation = shift;
 
     # definition des variables d'environnement du script
     my $code = sprintf ("# Variables d'environnement\n");
     $code .= sprintf ("SCRIPT_ID=\"%s\"\n", $this->{id});
-    $code .= sprintf ("COMMON_TMP_DIR=\"%s\"\n", $this->{commonTempDir});
     $code .= sprintf ("ROOT_TMP_DIR=\"%s\"\n", dirname($this->{tempDir}));
     $code .= sprintf ("TMP_DIR=\"%s\"\n", $this->{tempDir});
-    if (ref ($pyramid) eq "COMMON::PyramidRaster") {
-        $code .= sprintf ("MNT_CONF_DIR=\"%s\"\n", $this->{mntConfDir});
-        $code .= sprintf ("DNT_CONF_DIR=\"%s\"\n", $this->{dntConfDir});
-        $code .= sprintf ("ONT_CONF_DIR=\"%s\"\n", $this->{ontConfDir});
-    }
-    $code .= sprintf ("LIST_FILE=\"%s\"\n", $pyramid->getListFile() );
-
-    if ($pyramid->getStorageType() eq "FILE") {
-        $code .= sprintf ("PYR_DIR=\"%s\"\n", $pyramid->getDataDir() );
-    }
-    elsif ($pyramid->getStorageType() eq "CEPH") {
-        $code .= sprintf ("PYR_POOL=\"%s\"\n", $pyramid->getDataPool() );
-    }
-    elsif ($pyramid->getStorageType() eq "S3") {
-        $code .= sprintf ("PYR_BUCKET=\"%s\"\n", $pyramid->getDataBucket() );
-    }
-    elsif ($pyramid->getStorageType() eq "SWIFT") {
-        $code .= sprintf ("PYR_CONTAINER=\"%s\"\n", $pyramid->getDataContainer() );
-
-        if ($pyramid->keystoneConnection()) {
-            $code .= "KEYSTONE_OPTION=\"-ks\"\n";
-        } else {
-            $code .= "KEYSTONE_OPTION=\"\"\n";
-        }
-    }
-    else {
-        ERROR("Storage type of new pyramid is not handled");
-        return FALSE;
-    }
 
     my $tmpListFile = File::Spec->catdir($this->{tempDir},"list_".$this->{id}.".txt");
     $code .= sprintf ("TMP_LIST_FILE=\"%s\"\n", $tmpListFile);
     $code .= "\n";
-    
-    $code .= "# Pour mémoriser les dalles supprimées\n";
-    $code .= "declare -A RM_IMGS\n";
-
-    $code .= "# Fonctions\n";
-    $code .= "$functions\n";
 
     $code .= "# Création du dossier temporaire\n";
     $code .= "mkdir -p \${TMP_DIR}\n\n";
 
     $code .= "# Création de la liste temporaire\n";
     $code .= "if [ ! -f \"\${TMP_LIST_FILE}\" ] ; then touch \${TMP_LIST_FILE} ; fi\n\n";
+
+    if (defined $initialisation) {
+        $code .= $initialisation;
+    }
 
     $this->write($code);
 
@@ -459,12 +328,12 @@ sub close {
 
     # On copie la liste temporaire de ce script vers le dossier commun si il existe
     printf $stream "if [ -f \"\${TMP_LIST_FILE}\" ];then\n";
-    printf $stream "\t\necho \"Temporary files list is moving to the common directory\"\n";
-    printf $stream "\tmv \${TMP_LIST_FILE} \${COMMON_TMP_DIR}\n";
-    printf $stream "fi\n";
+    printf $stream "    echo \"Temporary files list is moving to the common directory\"\n";
+    printf $stream "    mv \${TMP_LIST_FILE} \${COMMON_TMP_DIR}\n";
+    printf $stream "fi\n\n";
 
     if ($this->{executedAlone}) {
-        printf $stream "\necho \"Temporary files lists (list_*.txt in the common directory) are added to the global files list, then removed\"\n";
+        printf $stream "echo \"Temporary files lists (list_*.txt in the common directory) are added to the global files list, then removed\"\n";
         printf $stream "cat \${COMMON_TMP_DIR}/list_*.txt >>\${LIST_FILE}\n";
         printf $stream "rm -f \${COMMON_TMP_DIR}/list_*.txt\n";
         printf $stream "BackupListFile\n\n";

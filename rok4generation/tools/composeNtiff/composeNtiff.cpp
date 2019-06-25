@@ -390,6 +390,7 @@ int main ( int argc, char **argv ) {
         error ( "Cannot write the compound image",-1 );
     }
 
+    Logger::stopLogger();
     acc->stop();
     acc->destroy();
     delete acc;

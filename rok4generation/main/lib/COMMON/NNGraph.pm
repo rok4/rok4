@@ -74,7 +74,6 @@ Using:
 Attributes:
     forest - <COMMON::Forest> - Forest which this tree belong to.
     pyramid - <COMMON::PyramidRaster> - Pyramid linked to this tree.
-    commands - <COMMON::ShellCommandsRaster> - Command to use to generate images.
     datasource - <COMMON::DataSource> - Data source to use to define bottom level nodes and generate them.
 
     ct_source_pyramid - <Geo::OSR::CoordinateTransformation> - Coordinate transformation from datasource srs to pyramid srs
@@ -117,7 +116,8 @@ use COMMON::DataSource;
 use COMMON::Node;
 use COMMON::ProxyGDAL;
 use COMMON::Array;
-use COMMON::ShellCommandsRaster;
+
+use BE4::Shell;
 
 use Log::Log4perl qw(:easy);
 
@@ -169,7 +169,6 @@ sub new {
         # in
         forest    => undef,
         pyramid    => undef,
-        commands    => undef,
         datasource => undef,
         # ct
         ct_source_pyramid => undef,
@@ -196,8 +195,7 @@ sub new {
     # init. params    
     $this->{forest} = $objForest; 
     $this->{pyramid} = $objForest->getPyramid();
-    $this->{datasource} = $objSrc; 
-    $this->{commands} = $objForest->getCommands(); 
+    $this->{datasource} = $objSrc;
 
     # load 
     return undef if (! $this->_load());
@@ -241,15 +239,12 @@ sub _load {
 
     # identifier les noeuds du niveau de base à mettre à jour et les associer aux images sources:
     if (! $this->identifyBottomNodes()) {
-        ERROR(sprintf "Cannot determine bottom tiles for the level %s",$src->getBottomID);
+        ERROR(sprintf "Cannot determine bottom tiles for the level %s", $src->getBottomID());
         return FALSE;
     }
-
-    INFO(sprintf "Number of cache images to the bottom level (%s) : %d",
-         $this->{bottomID},scalar keys(%{$this->{nodes}{$this->{bottomID}}}));
     
     # identifier les noeuds des niveaux supérieurs
-    if (! $this->identifyAboveNodes) {
+    if (! $this->identifyAboveNodes()) {
         ERROR(sprintf "Cannot determine above levels' tiles.");
         return FALSE;
     }
@@ -272,11 +267,11 @@ sub identifyBottomNodes {
     my $bottomID = $this->{bottomID};
     my $tm = $this->{pyramid}->getTileMatrixSet->getTileMatrix($bottomID);
     if (! defined $tm) {
-        ERROR(sprintf "Impossible de récupérer le TM à partir de %s (bottomID) et du TMS : %s.",$bottomID,$this->getPyramid()->getTileMatrixSet()->exportForDebug());
+        ERROR(sprintf "Impossible de récupérer le TM à partir de %s (bottomID) et du TMS : %s.", $bottomID, $this->getPyramid()->getTileMatrixSet()->exportForDebug());
         return FALSE;
     };
     my $datasource = $this->{datasource};
-    my ($TPW,$TPH) = ($this->{pyramid}->getTilesPerWidth,$this->{pyramid}->getTilesPerHeight);
+    my ($TPW,$TPH) = ($this->{pyramid}->getTilesPerWidth(),$this->{pyramid}->getTilesPerHeight());
     
     if ($datasource->hasImages) {
         # We have real data as source. Images determine bottom tiles
@@ -446,20 +441,23 @@ sub identifyAboveNodes {
     my $this = shift;
     
     # initialisation pratique:
-    my $tms = $this->{pyramid}->getTileMatrixSet;
+    my $tms = $this->{pyramid}->getTileMatrixSet();
     my $src = $this->{datasource};
     my $tilesPerWidth = $this->{pyramid}->getTilesPerWidth();
     my $tilesPerHeight = $this->{pyramid}->getTilesPerHeight();
     
     # Calcul des branches à partir des feuilles
-    for (my $k = $src->getBottomOrder; $k <= $src->getTopOrder; $k++){
+    for (my $k = $src->getBottomOrder(); $k <= $src->getTopOrder(); $k++){
 
         my $levelID = $tms->getIDfromOrder($k);
+
+        DEBUG(sprintf "Number of cache images by level (%s) : %d", $levelID, scalar keys(%{$this->{nodes}->{$levelID}}));
+
         # pyramid's limits update : we store data's limits in the pyramid's levels
-        $this->{pyramid}->updateTMLimits($levelID,@{$this->{bbox}});
+        $this->{pyramid}->updateTMLimits($levelID, @{$this->{bbox}});
         # si un niveau est vide on a une erreur
         if ($this->isLevelEmpty($levelID)) {
-            ERROR (sprintf "The level %s has no nodes. Invalid use of TMS for nearest neighbour interpolation.",$levelID);
+            ERROR (sprintf "The level %s has no nodes. Invalid use of TMS for nearest neighbour interpolation.", $levelID);
             return FALSE;
         }
         
@@ -469,7 +467,7 @@ sub identifyAboveNodes {
         next if (scalar(@targetsTm) == 0);
                
         # on n'a plus rien à calculer, on sort
-        last if ($k == $src->getTopOrder );
+        last if ($k == $src->getTopOrder() );
 
         foreach my $node ( $this->getNodesOfLevel($levelID) ) {
             
@@ -488,9 +486,10 @@ sub identifyAboveNodes {
                     for (my $row = $rowMin; $row<= $rowMax; $row++){
 
                         my $idxkey = sprintf "%s_%s",$col,$row;
-                        my $newnode = undef;
-                        if (! defined $this->{nodes}->{$targetTm->getID}->{$idxkey}) {
-                            $newnode = new COMMON::Node({
+
+
+                        if (! defined $this->{nodes}->{$targetTm->getID()}->{$idxkey}) {
+                            my $newnode = new COMMON::Node({
                                 col => $col,
                                 row => $row,
                                 tm => $targetTm,
@@ -500,20 +499,16 @@ sub identifyAboveNodes {
                             ## intersection avec la bbox des données initiales
                             if ( $newnode->isBboxIntersectingNodeBbox($this->getBbox())) {
                                 $this->{nodes}->{$targetTm->getID()}->{$idxkey} = $newnode ;
-                                $newnode->addSourceNodes($node); 
+                                $newnode->addSourceNodes($node);
                             }
                         } else {
-                            $newnode = $this->{nodes}->{$targetTm->getID()}->{$idxkey};
-                            $newnode->addSourceNodes($node); 
+                            $this->{nodes}->{$targetTm->getID()}->{$idxkey}->addSourceNodes($node); 
                         }             
                     }
                 }
-
             }
         }
 
-        DEBUG(sprintf "Number of cache images by level (%s) : %d",
-              $levelID, scalar keys(%{$this->{nodes}->{$levelID}}));
     }
 
     return TRUE;  
@@ -535,66 +530,69 @@ sub computeYourself {
     my $src = $this->{datasource};
     my $tms = $this->getPyramid()->getTileMatrixSet();
   
-   #Initialisation
-   my $Finisher_Index = 0;
-   # boucle sur tous les niveaux en partant de ceux du bas
-   for(my $i = $src->getBottomOrder; $i <= $src->getTopOrder; $i++) {
-       # boucle sur tous les noeuds du niveau
-       my $levelID = $tms->getIDfromOrder($i);
-       foreach my $node ($this->getNodesOfLevel($levelID)) {
-           # on détermine dans quel script on l'écrit en se basant sur les poids
-           my @ScriptsOfLevel = $this->getScriptsOfLevel($levelID);
-           my @WeightsOfLevel = map {$_->getWeight();} @ScriptsOfLevel ;
-           my $script_index = COMMON::Array::minArrayIndex(0,@WeightsOfLevel);
-           my $script = $ScriptsOfLevel[$script_index];
-           # on stocke l'information dans l'objet node
-           $node->setScript($script);
-           # on détermine le script à ecrire
-           my ($c,$w) ;
-           if ($this->getDataSource->hasHarvesting) {
-                # Datasource has a WMS service : we have to use it
-                ($c,$w) = $this->{commands}->wms2work($node,$this->getDataSource->getHarvesting);
-                if (! defined $c) {
-                    ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName());
-                    return FALSE;
-                }
-           } else {
-                if ($i == $src->getBottomOrder) {
+    # boucle sur tous les niveaux en partant de ceux du bas
+    for(my $i = $src->getBottomOrder(); $i <= $src->getTopOrder(); $i++) {
+        # boucle sur tous les noeuds du niveau
+        my $levelID = $tms->getIDfromOrder($i);
+
+        foreach my $node ($this->getNodesOfLevel($levelID)) {
+
+            my $code = "";
+            my $weight = 0;
+            my ($c,$w);
+
+            # on détermine dans quel script on l'écrit en se basant sur les poids
+            my @scripts = $this->getScriptsOfLevel($levelID);
+            my @weights = map {$_->getWeight();} @scripts ;
+
+            my $minIndex = COMMON::Array::minArrayIndex(0,@weights);
+            my $script = $scripts[$minIndex];
+            $node->setScript($script);
+            
+            if ($i == $src->getBottomOrder()) {
+                # Le niveau du bas est fait à partir des sources : par moisonnage ou réechantillonnage
+                if ($src->hasHarvesting()) {
+                    # Datasource has a WMS service : we have to use it
+                    ($c,$w) = BE4::Shell::wms2work($node, src->getHarvesting());
+                    if (! defined $c) {
+                        ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName());
+                        return FALSE;
+                    }
+                    $code .= $c;
+                    $weight += $w;
+                } else {
                     # on utilise mergeNtiff pour le niveau du bas (à partir des images sources)
-                    ($c,$w) = $this->{commands}->mergeNtiff($node);
-                    if ($w == -1) {
+                    ($c,$w) = BE4::Shell::mergeNtiff($node);
+                    if (! defined $c) {
                         ERROR(sprintf "Cannot compose mergeNtiff command for the node %s.",$node->getWorkBaseName());
                         return FALSE;
                     }
-                } else {
-                    # on utilise decimateNtiff pour les niveaux supérieurs, par décimation d'un niveau inférieur
-                    ($c,$w) = $this->{commands}->decimateNtiff($node);
-                    if ($w == -1) {
-                        ERROR(sprintf "Cannot compose decimateNtiff command for the node %s.",$node->getWorkBaseName());
-                        return FALSE;
-                    }                    
+                    $code .= $c;
+                    $weight += $w;
                 }
-           }
-           # on met à jour les poids
-           $script->addWeight($w);
-           # on ecrit la commande dans le fichier
-           $script->write($c);
-                   
-           # final script with all work2cache commands
-           # on ecrit dans chacun des scripts de manière tournante
-           my $finisher = $this->getForest()->getScript($Finisher_Index);
-           ($c,$w) = $this->{commands}->work2cache($node,"\${ROOT_TMP_DIR}/".$node->getScript()->getID());
-           # on ecrit la commande dans le fichier
-           $finisher->write($c);
-           #on met à jour l'index
-           if ($Finisher_Index == $this->getForest()->getSplitNumber() - 1) {
-               $Finisher_Index = 0;
-           } else {
-               $Finisher_Index ++;
-           }
+            } else {
+                # un niveau supérieur est fait par décimation d'un niveau inférieur
+                ($c,$w) = BE4::Shell::decimateNtiff($node);
+                if (! defined $c) {
+                    ERROR(sprintf "Cannot compose decimateNtiff command for the node %s.",$node->getWorkBaseName());
+                    return FALSE;
+                }  
+                $code .= $c;
+                $weight += $w;
 
-       }
-   }
+            }
+
+            ($c,$w) = BE4::Shell::work2cache($node);
+            $code .= $c;
+            $weight += $w;
+
+            # on met à jour les poids
+            $script->addWeight($weight);
+            # on ecrit la commande dans le fichier
+            $script->write($code);
+
+        }
+    }
     
     return TRUE;
 };
@@ -605,9 +603,9 @@ Function: containsNode
 Returns a boolean : TRUE if the node belong to this tree, FALSE otherwise (if a parameter is not defined too).
 
 Parameters (list):
-    level - string - Level ID of the node we want to know if it is in the quad tree.
-    i - integer - Column of the node we want to know if it is in the quad tree.
-    j - integer - Row of the node we want to know if it is in the quad tree.
+    level - string - Level ID of the node we want to know if it is in the nngraph.
+    i - integer - Column of the node we want to know if it is in the nngraph.
+    j - integer - Row of the node we want to know if it is in the nngraph.
 =cut
 sub containsNode {
     my $this = shift;
@@ -747,7 +745,7 @@ sub updateBBox {
 =begin nd
 method: getScriptsOfLevel
 
-Returns a <Script> array, used scripts to generate the supllied level.
+Returns a <COMMON::Script> array, used scripts to generate the supllied level.
 
 Parameters (list):
     level - string - Level identifiant, whose scripts we want.
@@ -755,13 +753,12 @@ Parameters (list):
 sub getScriptsOfLevel {
     my $this = shift;
     my $levelID = shift;
+
     my $order =  $this->getPyramid()->getTileMatrixSet()->getOrderfromID($levelID);
-    
-    my $numberOfScriptByLevel = $this->getForest()->getSplitNumber();
-    my $numberOfFinisher = $this->getForest()->getSplitNumber();
-    
-    my $start_index = $numberOfFinisher + ($order - $this->getBottomOrder()) * $numberOfScriptByLevel ;
-    my $end_index = $start_index + $numberOfScriptByLevel - 1;
+    my $splitNumber = $this->getForest()->getSplitNumber();
+
+    my $start_index = ($order - $this->getBottomOrder()) * $splitNumber ;
+    my $end_index = $start_index + $splitNumber - 1;
 
     return @{$this->getForest()->getScripts()}[$start_index .. $end_index];
 };
