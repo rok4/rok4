@@ -393,7 +393,7 @@ sub _loadXML {
     foreach my $t (@tables) {
 
         my $tablename = $t->findvalue('name');
-        my $geometry = $a->findvalue('geometry');
+        my $geometry = $t->findvalue('geometry');
 
         $this->{tables}->{$tablename} = {
             geometry => $geometry,
@@ -423,8 +423,8 @@ sub _loadXML {
             }
 
             if (defined $values && $values ne "") {
-                $values = s/^"//g;
-                $values = s/"$//g;
+                $values =~ s/^"//g;
+                $values =~ s/"$//g;
                 $this->{tables}->{$tablename}->{attributes}->{$attname}->{values} = split(/","/, $values);
             }
         }

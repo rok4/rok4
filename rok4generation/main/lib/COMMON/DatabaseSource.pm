@@ -430,38 +430,29 @@ sub _load {
 ####################################################################################################
 
 =begin nd
-Function: getCommandsMakeJson
+Function: getDatabaseInfos
 
-Return the commands (one per table to export) to call to export data in GeoJson
-
-Example:
-    (start code)
-    MakeJson "273950.309374068154368 6203017.719398627074048 293518.188615073275904 6222585.598639632195584" "host=postgis.ign.fr dbname=bdtopo user=ign password=PWD port=5432" "SELECT geometry FROM bdtopo_2018.vegetation WHERE type='oaks'" vegetation
-    MakeJson "273950.309374068154368 6203017.719398627074048 293518.188615073275904 6222585.598639632195584" "host=postgis.ign.fr dbname=bdtopo user=ign password=PWD port=5432" "SELECT geometry FROM bdtopo_2018.roads WHERE type='highway'" roads
-    (end code)
+Return database url ("host=postgis.ign.fr dbname=bdtopo user=ign password=PWD port=5432") and datasource projection
 =cut
-sub getCommandMakeJsons {
+sub getDatabaseInfos {
     my $this = shift;
 
-    my @bbox = @_;
-
-    my @bbox_extended = @bbox;
-
-    #On va agrandir la bbox de 5% pour être sur de tout avoir
-    my $w = ($bbox[2] - $bbox[0])*0.05;
-    my $h = ($bbox[3] - $bbox[1])*0.05;
-    $bbox_extended[0] -= $w;
-    $bbox_extended[2] += $w;
-    $bbox_extended[1] -= $h;
-    $bbox_extended[3] += $h;
-
-    my $bbox_ext_string = join(" ", @bbox_extended);
-    my $bbox_string = join(" ", @bbox);
-
-    my $dburl = sprintf "host=%s dbname=%s user=%s password=%s port=%s",
+    my $url = sprintf "host=%s dbname=%s user=%s password=%s port=%s",
         $this->{host}, $this->{dbname}, $this->{username}, $this->{password}, $this->{port};
 
-    my $cmd = "";
+    return ($url, $this->{srs});
+}
+
+=begin nd
+Function: getSqlExports
+
+Return a string array : SQL request and associated destination table name
+=cut
+sub getSqlExports {
+    my $this = shift;
+
+    my @sqls;
+
     while (my ($table, $hash) = each(%{$this->{tables}})) {
 
         my $sql = "";
@@ -479,11 +470,10 @@ sub getCommandMakeJsons {
             $sql .= sprintf " WHERE %s", $hash->{filter};
         }
 
-        $cmd .= sprintf "MakeJson \"%s\" \"$bbox_string\" \"$bbox_ext_string\" \"$dburl\" \"$sql\" %s \n", $this->{srs}, $hash->{final_name};
-
+        push(@sqls, $sql, $hash->{final_name});
     }
 
-    return "$cmd\n";
+    return @sqls;
 }
 
 ####################################################################################################

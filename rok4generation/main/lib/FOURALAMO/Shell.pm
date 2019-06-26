@@ -73,6 +73,31 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
+
+####################################################################################################
+#                                     Group: GLOBAL VARIABLES                                      #
+####################################################################################################
+
+my $COMMONTEMPDIR;
+
+sub setGlobals {
+    $COMMONTEMPDIR = shift;
+
+    $COMMONTEMPDIR = File::Spec->catdir($COMMONTEMPDIR,"COMMON");
+
+    # Common directory
+    if (! -d $COMMONTEMPDIR) {
+        DEBUG (sprintf "Create the common temporary directory '%s' !", $COMMONTEMPDIR);
+        eval { mkpath([$COMMONTEMPDIR]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the common temporary directory '%s' : %s !", $COMMONTEMPDIR, $@);
+            return FALSE;
+        }
+    }
+    
+    return TRUE;
+}
+
 ####################################################################################################
 #                                        Group: MAKE JSONS                                         #
 ####################################################################################################
@@ -115,11 +140,33 @@ sub makeJsons {
     my $node = shift;
     my $databaseSource = shift;
 
-    my $code = $databaseSource->getCommandMakeJsons(
-        COMMON::ProxyGDAL::convertBBox( $node->getGraph()->getCoordTransPyramidDatasource(), $node->getBBox())
-    );
+    my ($dburl, $srcSrs) = $databaseSource->getDatabaseInfos();
 
-    return ($code, MAKEJSON_W * $databaseSource->getTablesNumber());
+    my @tables = $databaseSource->getSqlExports();
+
+
+    my @bbox = COMMON::ProxyGDAL::convertBBox( $node->getGraph()->getCoordTransPyramidDatasource(), $node->getBBox());
+
+    # On va agrandir la bbox de 5% pour être sur de tout avoir
+    my @bbox_extended = @bbox;
+    my $w = ($bbox[2] - $bbox[0])*0.05;
+    my $h = ($bbox[3] - $bbox[1])*0.05;
+    $bbox_extended[0] -= $w;
+    $bbox_extended[2] += $w;
+    $bbox_extended[1] -= $h;
+    $bbox_extended[3] += $h;
+
+    my $bbox_ext_string = join(" ", @bbox_extended);
+    my $bbox_string = join(" ", @bbox);
+
+    my $code = "";
+    for (my $i = 0; $i < scalar @tables; $i += 2) {
+        my $sql = $tables[$i];
+        my $dstTableName = $tables[$i+1];
+        $code .= sprintf "MakeJson \"$srcSrs\" \"$bbox_string\" \"$bbox_ext_string\" \"$dburl\" \"$sql\" $dstTableName\n";
+    }
+
+    return ($code, MAKEJSON_W * scalar @tables / 2);
 }
 
 ####################################################################################################
@@ -143,7 +190,7 @@ MakeTiles () {
         let ndetail=32-${BOTTOM_LEVEL}
     fi
 
-    tippecanoe ${TIPPECANOE_OPTIONS} --no-tile-compression --full-detail $ndetail -Z ${TOP_LEVEL} -z ${BOTTOM_LEVEL} -e ${TMP_DIR}/pbfs/  ${TMP_DIR}/jsons/*.json
+    tippecanoe ${TIPPECANOE_OPTIONS} --no-tile-compression --base-zoom ${TOP_LEVEL} --full-detail $ndetail -Z ${TOP_LEVEL} -z ${BOTTOM_LEVEL} -e ${TMP_DIR}/pbfs/  ${TMP_DIR}/jsons/*.json
     if [ $? != 0 ] ; then echo $0; fi
 
     rm ${TMP_DIR}/jsons/*.json
@@ -247,18 +294,20 @@ Function: getScriptInitialization
 
 Parameters (list):
     pyramid - <COMMON::PyramidVector> - Pyramid to generate
-    temp - string - Temporary directory
 
 Returns:
     Global variables and functions to print into script
 =cut
 sub getScriptInitialization {
     my $pyramid = shift;
-    my $temp = shift;
 
-    my $string = sprintf "OGR2OGR_OPTIONS=\"-a_srs %s -t_srs %s\"\n", $pyramid->getTileMatrixSet()->getSRS(), $pyramid->getTileMatrixSet()->getSRS();
 
-    $string .= sprintf "TIPPECANOE_OPTIONS=\"-s %s\"\n", $pyramid->getTileMatrixSet()->getSRS();
+    my $string = sprintf "LIST_FILE=\"%s\"\n", $pyramid->getListFile();
+    $string .= "COMMON_TMP_DIR=\"$COMMONTEMPDIR\"\n";
+
+    $string .= sprintf "OGR2OGR_OPTIONS=\"-a_srs %s -t_srs %s\"\n", $pyramid->getTileMatrixSet()->getSRS(), $pyramid->getTileMatrixSet()->getSRS();
+
+    $string .= sprintf "TIPPECANOE_OPTIONS=\"-s %s -al -ap\"\n", $pyramid->getTileMatrixSet()->getSRS();
 
     $string .= sprintf "PBF2CACHE_OPTIONS=\"-t %s %s\"\n", $pyramid->getTilesPerWidth(), $pyramid->getTilesPerHeight();
 

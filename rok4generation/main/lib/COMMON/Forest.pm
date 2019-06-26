@@ -270,6 +270,10 @@ sub _load {
         }
         $scriptInit = BE4::Shell::getScriptInitialization($this->{pyramid});
     } else {
+        if (! FOURALAMO::Shell::setGlobals($commonTempDir)) {
+            ERROR ("Impossible d'initialiser la librairie des commandes Shell pour 4ALAMO");
+            return FALSE;
+        }
         $scriptInit = FOURALAMO::Shell::getScriptInitialization($this->{pyramid});
     }
     
