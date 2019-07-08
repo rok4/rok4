@@ -242,15 +242,19 @@ sub computeImageSource {
 
     my $lstGeoImages = $this->{images};
 
-    my $search = $this->getListImages($this->{PATHIMG});
-    if (! defined $search) {
-        ERROR ("Can not load data source !");
+
+    my $search = {
+        images => [],
+    };
+
+    if (! $this->getListImages($this->{PATHIMG}, $search)) {
+        ERROR ("Cannot browse image directory !");
         return FALSE;
     }
 
     my @listGeoImagePath = @{$search->{images}};
-    if (! @listGeoImagePath) {
-        ERROR ("Can not load data source !");
+    if (scalar @listGeoImagePath == 0) {
+        ERROR ("No handled image found in ".$this->{PATHIMG});
         return FALSE;
     }
 
@@ -343,39 +347,38 @@ Recursive method to browse a directory and list all handled file. Returns an has
 
 Parameters (list):
     directory - string - Path to directory, to browse.
+    search - hash - Hash reference, to store images' paths.
 =cut  
 sub getListImages {
-    my $this      = shift;
+    my $this = shift;
     my $directory = shift;
-
-    my $search = {
-        images => [],
-    };
+    my $search = shift;
 
     if (! opendir (DIR, $directory)) {
         ERROR("Can not open directory cache (%s) ?",$directory);
-        return undef;
+        return FALSE;
     }
-
-    my $newsearch;
 
     foreach my $entry (readdir DIR) {
         next if ($entry =~ m/^\.{1,2}$/);
 
+        $entry = File::Spec->catdir($directory, $entry);
+
         # Si on a à faire à un dossier, on appelle récursivement la méthode pourle parcourir
-        if ( -d File::Spec->catdir($directory, $entry)) {
-            $newsearch = $this->getListImages(File::Spec->catdir($directory, $entry));
-            push @{$search->{images}}, $_  foreach(@{$newsearch->{images}});
+        if ( -d $entry) {
+            if (! $this->getListImages($entry, $search)) {
+                return FALSE;
+            }
         }
 
         # Si le fichier n'a pas l'extension TIFF, JP2, BIL, ZBIL ou PNG, on ne le traite pas
-        next if ( $entry !~ /.*\.(tif|TIF|tiff|TIFF)$/ && $entry !~ /.*\.(png|PNG)$/ && $entry !~ /.*\.(jp2|JP2)$/ && $entry !~ /.*\.(bil|BIL|zbil|ZBIL)$/);
+        next if ( $entry !~ /.*\.(tif|tiff)$/i && $entry !~ /.*\.(png)$/i && $entry !~ /.*\.(jp2)$/i && $entry !~ /.*\.(bil|zbil)$/i);
 
         # On a à faire à un fichier avec l'extension TIFF/PNG/JPEG2000/BIL, on l'ajoute au tableau
-        push @{$search->{images}}, File::Spec->catfile($directory, $entry);
+        push @{$search->{images}}, $entry;
     }
 
-    return $search;
+    return TRUE;
 }
 
 =begin nd

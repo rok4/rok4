@@ -20,21 +20,26 @@ ROK4GENERATION est un ensemble de scripts de traitement permettant la préparati
 
 ROK4 Version : 3.2.0-DEVELOP
 
-<!-- TOC START min:1 max:3 link:true update:true -->
-- [Fonctionnement général](#fonctionnement-général)
-- [Compiler et installer le projet ROK4](#compiler-et-installer-le-projet-rok4)
-    - [L'environnement de compilation](#lenvironnement-de-compilation)
-    - [Les librairies](#les-librairies)
-        - [C++](#c)
-        - [Perl](#perl)
-    - [Les commandes externes](#les-commandes-externes)
-    - [La documentation](#la-documentation)
-    - [La compilation et l'installation](#la-compilation-et-linstallation)
-        - [Instructions](#instructions)
-        - [Options de compilation](#options-de-compilation)
-        - [Exemple](#exemple)
+<!-- TOC depthFrom:1 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
 
-<!-- TOC END -->
+- [Fonctionnement général](#fonctionnement-gnral)
+- [Compiler et installer le projet ROK4](#compiler-et-installer-le-projet-rok4)
+	- [L'environnement de compilation](#lenvironnement-de-compilation)
+	- [Les librairies](#les-librairies)
+		- [C++](#c)
+		- [Perl](#perl)
+	- [Les commandes externes](#les-commandes-externes)
+	- [La documentation](#la-documentation)
+	- [La compilation et l'installation](#la-compilation-et-linstallation)
+		- [Instructions](#instructions)
+		- [Options de compilation](#options-de-compilation)
+			- [Gestion du stockage objet](#gestion-du-stockage-objet)
+			- [Utilisation de Kakadu](#utilisation-de-kakadu)
+			- [Expérimental](#exprimental)
+		- [Exemple](#exemple)
+		- [Docker](#docker)
+
+<!-- /TOC -->
 
 
 
@@ -207,3 +212,7 @@ make doc
 make test
 sudo make install
 ```
+
+### Docker
+
+Le projet propose les Dockerfile permettant la compilation et l'utilisation de ROK4SERVER au sein d'un conteneur. Des configurations pour docker-compose permettent de télécharger des jeux de données conteneurisés et de tester le serveur. Tous les détails sont dans [ici](docker/README.md).

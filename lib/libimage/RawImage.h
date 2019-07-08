@@ -66,9 +66,11 @@ public:
     }
     virtual int getline ( float *buffer, int line ) {
         buffer = 0;
+        return 0;
     }
     virtual int getline ( uint16_t *buffer, int line ) {
         buffer = 0;
+        return 0;
     }
 
     virtual ~RawImage() {

@@ -280,19 +280,18 @@ int ConvertedChannelsImage::getline ( uint8_t *buffer, int line ) {
     }
 
 
+    return 0;
 
 }
 
 int ConvertedChannelsImage::getline ( uint16_t *buffer, int line ) {
 
-
-
+    return 0;
 }
 
 int ConvertedChannelsImage::getline ( float *buffer, int line ) {
 
-
-
+    return 0;
 }
 
 int ConvertedChannelsImage::greyscale(int r, int g, int b) {

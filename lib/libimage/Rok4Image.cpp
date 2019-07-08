@@ -226,6 +226,7 @@ static uint16_t fromROK4ExtraSample ( ExtraSample::eExtraSample es ) {
     case ExtraSample::UNKNOWN :
         return EXTRASAMPLE_UNSPECIFIED;
     }
+    return EXTRASAMPLE_UNSPECIFIED;
 }
 
 

@@ -182,6 +182,7 @@ private:
         case NODATA:
             return noDataSource;
         }
+        return noDataSource;
     }
 
 public:

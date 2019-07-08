@@ -133,7 +133,7 @@ public:
      * \return true if successful
      * \~ \see libimage : DataSource
      */
-    bool releaseData() {}
+    bool releaseData() {return true;}
     
     unsigned int getLength(){
             return message.length();

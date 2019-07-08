@@ -298,6 +298,13 @@ public:
             return BoundingBox<T> (this->xmin,this->ymin,bbox.xmax,bbox.ymax);
         }
 
+
+        if (this->xmin > bbox.xmin && this->xmax < bbox.xmax && this->ymin > bbox.ymin && this->ymax < bbox.ymax) {
+            return BoundingBox<T> (this->xmin,this->ymin,this->xmax,this->ymax);
+        }
+
+        return BoundingBox<T> (bbox.xmin,bbox.ymin,bbox.xmax,bbox.ymax);
+
     }
 
     /** \~french \brief Récupère la partie utile de la bbox qui appelle la fonction, en fonction de la bbox en parametre

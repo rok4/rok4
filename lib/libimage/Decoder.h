@@ -110,6 +110,7 @@ public:
         if ( encData ) encData->releaseData();
         if ( decData ) delete[] decData;
         decData = 0;
+        return true;
     }
 
     std::string getType() {

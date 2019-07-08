@@ -53,7 +53,7 @@ static const size_t headerSize ( int channel ) {
     case 4:
         return 162;
     }
-
+    return 0;
 }
 
 static const uint8_t TIFF_HEADER_RAW_INT8_GRAY[134]  = {

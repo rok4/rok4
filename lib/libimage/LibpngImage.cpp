@@ -467,6 +467,7 @@ int LibpngImage::getline ( uint8_t* buffer, int line ) {
         memcpy ( buffer, floatline, width * getPixelSize() );
         return width * getPixelSize();
     }
+    return 0;
 }
 
 int LibpngImage::getline ( uint16_t* buffer, int line ) {
@@ -488,6 +489,7 @@ int LibpngImage::getline ( uint16_t* buffer, int line ) {
         memcpy ( buffer, floatline, width*pixelSize );
         return width*pixelSize;
     }
+    return 0;
 }
 
 int LibpngImage::getline ( float* buffer, int line ) {
@@ -508,6 +510,7 @@ int LibpngImage::getline ( float* buffer, int line ) {
     } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) { // float
         return _getline ( buffer, line );
     }
+    return 0;
 }
 
 
