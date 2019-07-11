@@ -120,13 +120,23 @@ Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
     // On clone bien toutes les sources
     for ( int i = 0; i < obj->sSources.size(); i++ ) {
         if (obj->sSources.at(i)->getType() == PYRAMID) {
-            Pyramid* pS = new Pyramid(reinterpret_cast<Pyramid*>(obj->sSources.at(i)), sxml);
+            Pyramid* pOrig = reinterpret_cast<Pyramid*>(obj->sSources.at(i));
+            Pyramid* pS = new Pyramid(pOrig, sxml);
             if (pS->getTms() == NULL) {
                 LOGGER_ERROR("Impossible de cloner la pyramide source pour ce niveau");
                 tm == NULL;
                 // Tester la nullité du TM en sortie pour faire remonter l'erreur
                 return;
             }
+
+            // On récupère bien le pointeur vers le nouveau style (celui de la nouvelle liste)
+            Style* pSt = sxml->getStyle(pOrig->getStyle()->getId());
+            if ( pSt == NULL ) {
+                LOGGER_ERROR ( "Une pyramide source clonée reference un style [" << pOrig->getStyle()->getId() <<  "] qui n'existe plus." );
+                pSt = sxml->getStyle("normal");
+            }
+            pS->setStyle(pSt);
+
             sSources.push_back(pS);
         } else if (obj->sSources.at(i)->getType() == WEBSERVICE) {
             WebService* pS = new WebService(reinterpret_cast<WebService*>(obj->sSources.at(i)));
@@ -154,6 +164,11 @@ Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
         switch ( obj->context->getType() ) {
             case FILECONTEXT :
                 context = new FileContext("");
+                if (! context->connection() ) {
+                    LOGGER_ERROR("Impossible de se connecter aux donnees.");
+                    tm == NULL;
+                    return;
+                }
                 break;
 #if BUILD_OBJECT
             case CEPHCONTEXT :
@@ -161,6 +176,7 @@ Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
                     context = sxml->getCephContextBook()->addContext(obj->context->getTray());
                 } else {
                     LOGGER_ERROR ( "L'utilisation d'un cephContext necessite de preciser les informations de connexions dans le server.conf");
+                    tm == NULL;
                     return;
                 }
                 break;
@@ -169,6 +185,7 @@ Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
                     context = sxml->getS3ContextBook()->addContext(obj->context->getTray());
                 } else {
                     LOGGER_ERROR ( "L'utilisation d'un s3Context necessite de preciser les informations de connexions dans le server.conf");
+                    tm == NULL;
                     return;
                 }
                 break;
@@ -177,6 +194,7 @@ Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
                     context = sxml->getSwiftContextBook()->addContext(obj->context->getTray());
                 } else {
                     LOGGER_ERROR ( "L'utilisation d'un swiftContext necessite de preciser les informations de connexions dans le server.conf");
+                    tm == NULL;
                     return;
                 }
                 break;
