@@ -261,9 +261,6 @@ int main ( int argc, char **argv )
     Rok4ImageFactory R4IF;
     Rok4Image* rok4image = R4IF.createRok4ImageToRead(input, BoundingBox<double>(0.,0.,0.,0.), 0., 0., context);
     if (rok4image == NULL) {
-        acc->stop();
-        acc->destroy();
-        delete acc;
         error (std::string("Cannot create ROK4 image to read ") + input, 1);
     }
 
@@ -275,9 +272,6 @@ int main ( int argc, char **argv )
 
     if (outputImage == NULL) {
         delete rok4image;
-        acc->stop();
-        acc->destroy();
-        delete acc;
         delete context;
         error (std::string("Cannot create image to write ") + output, -1);
     }
@@ -286,9 +280,6 @@ int main ( int argc, char **argv )
     if (outputImage->writeImage(rok4image) < 0) {
         delete rok4image;
         delete outputImage;
-        acc->stop();
-        acc->destroy();
-        delete acc;
         delete context;
         error("Cannot write image", -1);
     }
@@ -298,8 +289,6 @@ int main ( int argc, char **argv )
     delete rok4image;
     delete outputImage;
     Logger::stopLogger();
-    acc->stop();
-    acc->destroy();
     delete acc;
     delete context;
 

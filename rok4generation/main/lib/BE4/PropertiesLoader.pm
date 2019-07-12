@@ -143,7 +143,7 @@ sub _init {
     return TRUE;
 }
 
-# Function: _init
+# Function: _check
 sub _check {
     my $this = shift;
 

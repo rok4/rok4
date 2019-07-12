@@ -47,6 +47,18 @@ Configure and assemble commands used to generate raster pyramid's slabs.
 All schemes in this page respect this legend :
 
 (see ROK4GENERATION/tools/formats.png)
+
+Using:
+    (start code)
+    use JOINCACHE::Shell;
+
+    if (! JOINCACHE::Shell::setGlobals($commonTempDir, $mergeMethod)) {
+        ERROR ("Cannot initialize Shell commands for JOINCACHE");
+        return FALSE;
+    }
+
+    my $scriptInit = JOINCACHE::Shell::getScriptInitialization($pyramid);
+    (end code)
 =cut
 
 ################################################################################
@@ -88,6 +100,11 @@ my $COMMONTEMPDIR;
 my $ONTCONFDIR;
 my $MERGEMETHOD;
 
+=begin nd
+Function: setGlobals
+
+Define and create common working directories
+=cut
 sub setGlobals {
     $COMMONTEMPDIR = shift;
     $MERGEMETHOD = shift;

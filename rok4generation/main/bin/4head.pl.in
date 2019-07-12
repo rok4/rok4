@@ -43,7 +43,7 @@ Section: 4HEAD tool
 
 Synopsis:
     (start code)
-    4head.pl --pyr <FILE> --tmsdir <DIRECTORY> --reference-level <LEVEL ID> --top-level <LEVEL ID> --tmp <DIRECTORY>
+    4head.pl --pyr <FILE> --tmsdir <DIRECTORY> --reference-level <LEVEL ID> --top-level <LEVEL ID> --tmp <DIRECTORY>  --scripts <DIRECTORY>
     (end code)
 =cut
 
@@ -58,6 +58,9 @@ use POSIX qw(locale_h);
 use Log::Log4perl qw(:easy);
 use Getopt::Long;
 use Cwd;
+use List::Util qw(min max);
+use File::Spec;
+use File::Path;
 
 # My search module
 use FindBin qw($Bin);
@@ -92,6 +95,7 @@ Contains 4head call options :
     tmp - The directory to use for temporary files
     reference-level - The level from which above levels are regenerated
     top-level - The level to which above levels are regenerated
+    parallel - Parallelization level. Optionnal
     
 =cut
 my %options =
@@ -105,7 +109,9 @@ my %options =
     "tmsdir"  => undef,
     "tmp"  => undef,
     "reference-level"  => undef,
-    "top-level"  => undef
+    "top-level"  => undef,
+
+    "parallel"  => undef
 );
 
 ####################################################################################################
@@ -165,23 +171,25 @@ sub init {
     # init Options
     GetOptions(
         "help|h" => sub {
-            printf "4head.pl --pyr <FILE> --tmsdir <DIRECTORY> --reference-level <LEVEL ID> --top-level <LEVEL ID> --tmp <DIRECTORY>\n" ;
+            printf "4head.pl --pyr <FILE> --tmsdir <DIRECTORY> --reference-level <LEVEL ID> --top-level <LEVEL ID> --tmp <DIRECTORY>  --scripts <DIRECTORY> [--parallel <INTEGER>]\n" ;
             exit 0;
         },
         "version|v" => sub { exit 0; },
         "usage" => sub {
-            printf "4head.pl --pyr <FILE> --tmsdir <DIRECTORY> --reference-level <LEVEL ID> --top-level <LEVEL ID> --tmp <DIRECTORY>\n" ;
+            printf "4head.pl --pyr <FILE> --tmsdir <DIRECTORY> --reference-level <LEVEL ID> --top-level <LEVEL ID> --tmp <DIRECTORY>  --scripts <DIRECTORY> [--parallel <INTEGER>]\n" ;
             exit 0;
         },
         
         "pyr=s" => \$options{pyr},
         "tmsdir=s" => \$options{tmsdir},
         "tmp=s" => \$options{tmp},
+        "scripts=s" => \$options{scripts},
         "reference-level=s" => \$options{"reference-level"},
         "top-level=s" => \$options{"top-level"},
+        "parallel=s" => \$options{"parallel"},
     ) or do {
         printf "Unappropriate usage\n";
-        printf "4head.pl --pyr <FILE> --tmsdir <DIRECTORY> --reference-level <LEVEL ID> --top-level <LEVEL ID> --tmp <DIRECTORY>\n";
+        printf "4head.pl --pyr <FILE> --tmsdir <DIRECTORY> --reference-level <LEVEL ID> --top-level <LEVEL ID> --tmp <DIRECTORY>  --scripts <DIRECTORY> [--parallel <INTEGER>]\n";
         exit -1;
     };
     
@@ -206,13 +214,31 @@ sub init {
     ############# TMP
 
     if (! defined $options{tmp} || $options{tmp} eq "") {
-        ERROR("Option 'tmsdir' not defined !");
+        ERROR("Option 'tmp' not defined !");
         return FALSE;
     }
 
     if (! -d $options{tmp}) {
-        ERROR(sprintf "Temporary directory does not exist : %s", $options{tmp});
+        eval { mkpath([$options{tmp}]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the temporary directory '%s' : %s !", $options{tmp}, $@);
+            return FALSE;
+        }
+    }
+
+    ############# SCRIPTS
+
+    if (! defined $options{scripts} || $options{scripts} eq "") {
+        ERROR("Option 'scripts' not defined !");
         return FALSE;
+    }
+
+    if (! -d $options{scripts}) {
+        eval { mkpath([$options{scripts}]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the scripts' directory '%s' : %s !", $options{scripts}, $@);
+            return FALSE;
+        }
     }
 
     ############# PYR
@@ -273,6 +299,18 @@ sub init {
         return FALSE;
     }
 
+
+    ############# PARALLEL
+
+    if (! defined $options{"parallel"} || $options{"parallel"} eq "") {
+        $options{"parallel"} = 1;
+    } else {
+        if (! COMMON::CheckUtils::isPositiveInt($options{"parallel"})) {
+            ERROR("Parallel option have to be a positive integer");
+            return FALSE;
+        }        
+    }
+
     return TRUE;
 }
 
@@ -311,7 +349,7 @@ sub doIt {
     my @referenceNodes = ();
 
     # Modification des dalles du niveau de référence
-
+    INFO("List reference level nodes");
     foreach my $slab (keys(%{$referenceLevelSlabs->{IMAGE}})) {
 
         if ($options{pyr}->ownMasks() && ! exists $referenceLevelSlabs->{MASK}->{$slab}) {
@@ -331,6 +369,7 @@ sub doIt {
     }
 
     # Création des niveaux qui n'existeraient pas dans la pyramide à modifier
+    INFO("Add new levels");
     for (my $levelOrder = $referenceOrder + 1; $levelOrder <= $topOrder; $levelOrder++) {
         my $levelID = $tms->getIDfromOrder($levelOrder);
 
@@ -340,7 +379,7 @@ sub doIt {
     }
 
     # Création de l'arbre des noeuds (dalles) à regénérer
-
+    INFO("Identify nodes");
     my $regeneratedNodes = {};
     foreach my $referenceNode (@referenceNodes) {
 
@@ -375,32 +414,65 @@ sub doIt {
 
     }
 
-    # Écriture dans le script des commandes de regénération des dalles
+    # Ouverture des flux d'écriture vers les scripts pour chaque niveau
+    INFO("Open scripts");
+    my $scriptInit = FOURHEAD::Shell::getScriptInitialization($options{pyr}, $options{tmp});
+    my $scripts = {};
+    my $script_nb = $options{"parallel"};
+    for (my $levelOrder = $referenceOrder + 1; $levelOrder <= $topOrder; $levelOrder++) {
+        my $levelID = $tms->getIDfromOrder($levelOrder);
 
-    my $file = "script.sh";
-    my $STREAM;
-    open($STREAM, ">$file") or die "Cannot open '$file' to write in it";
+        $scripts->{$levelID} = {
+            indice => 0,
+            streams => []
+        };
 
-    printf $STREAM "%s\n", FOURHEAD::Shell::getScriptInitialization($options{pyr}, $options{tmp});    
+        for (my $i = 0; $i < $script_nb; $i++) {
+            my $scriptPath = File::Spec->catfile($options{scripts}, "LEVEL_${levelID}_SCRIPT_${i}.sh");
+            my $STREAM;
+            open($STREAM, ">$scriptPath") or do {
+                ERROR("Cannot open '$scriptPath' to write in it");
+                return FALSE;
+            };
+            print $STREAM "$scriptInit\n";
+            push(@{$scripts->{$levelID}->{streams}}, $STREAM);
+        }
 
-    foreach my $topIndice (keys(%{$regeneratedNodes->{$topID}})) {
-
-        my $topNode = $regeneratedNodes->{$topID}->{$topIndice};
-
-        $topNode->writeCode($options{pyr}, $STREAM);
+        $script_nb = max(int($script_nb / 2), 1);
     }
 
-    close($STREAM);
+    # Traitement des noeuds niveau par niveau en partant du bas
+    INFO("Process nodes");
+    my $firstLevel = TRUE;
+    for (my $levelOrder = $referenceOrder + 1; $levelOrder <= $topOrder; $levelOrder++) {
+        my $levelID = $tms->getIDfromOrder($levelOrder);
+
+        foreach my $nodeIndice (keys(%{$regeneratedNodes->{$levelID}})) {
+            my $node = $regeneratedNodes->{$levelID}->{$nodeIndice};
+            $node->writeCode($options{pyr}, $scripts->{$levelID}->{streams}->[$scripts->{$levelID}->{indice}], $firstLevel);
+            # Round robin
+            $scripts->{$levelID}->{indice} = ($scripts->{$levelID}->{indice} + 1) % (scalar(@{$scripts->{$levelID}->{streams}}));
+        }
+        $firstLevel = FALSE;
+    }
+
+    # Fermeture des flux vers les scripts
+    INFO("Close scripts");
+    foreach my $levelID (keys(%{$scripts})) {
+        foreach my $STREAM (@{$scripts->{$levelID}->{streams}}) {
+            close($STREAM);
+        }
+    }
 
     # Écrire le nouveau descripteur
-
+    INFO("Flush descriptor");
     if (! $options{pyr}->writeDescriptor(TRUE)) {
         ERROR("Cannot overwrite the pyramid descriptor");
         return FALSE;
     }
 
     # Écrire la nouvelle liste
-
+    INFO("Flush list");
     if (! $options{pyr}->flushCachedList()) {
         ERROR("Cannot overwrite the pyramid list");
         return FALSE;

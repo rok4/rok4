@@ -46,6 +46,9 @@ Provides functions to generate slab for 4head tool.
 
 Using:
     (start code)
+    use FOURHEAD::Shell;
+
+    my $scriptInit = FOURHEAD::Shell::getScriptInitialization($pyramid);
     (end code)
 =cut
 

@@ -43,6 +43,18 @@ Class: FOURALAMO::Shell
 (see ROK4GENERATION/libperlauto/FOURALAMO_Shell.png)
 
 Configure and assemble commands used to generate vector pyramid's slabs.
+
+Using:
+    (start code)
+    use FOURALAMO::Shell;
+
+    if (! FOURALAMO::Shell::setGlobals($commonTempDir)) {
+        ERROR ("Cannot initialize Shell commands for FOURALAMO");
+        return FALSE;
+    }
+
+    my $scriptInit = FOURALAMO::Shell::getScriptInitialization($pyramid);
+    (end code)
 =cut
 
 ################################################################################
@@ -80,6 +92,11 @@ use constant FALSE => 0;
 
 my $COMMONTEMPDIR;
 
+=begin nd
+Function: setGlobals
+
+Define and create common working directories
+=cut
 sub setGlobals {
     $COMMONTEMPDIR = shift;
 

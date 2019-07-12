@@ -50,6 +50,14 @@ All schemes in this page respect this legend :
 
 Using:
     (start code)
+    use BE4::Shell;
+
+    if (! BE4::Shell::setGlobals($commonTempDir, $useMasks)) {
+        ERROR ("Cannot initialize Shell commands for BE4");
+        return FALSE;
+    }
+
+    my $scriptInit = BE4::Shell::getScriptInitialization($pyramid);
     (end code)
 =cut
 
@@ -92,6 +100,11 @@ my $MNTCONFDIR;
 my $DNTCONFDIR;
 my $USEMASK;
 
+=begin nd
+Function: setGlobals
+
+Define and create common working directories
+=cut
 sub setGlobals {
     $COMMONTEMPDIR = shift;
     $USEMASK = shift;
@@ -177,9 +190,6 @@ Use the 'MergeNtiff' bash function. Write a configuration file, with sources.
 
 Parameters (list):
     node - <Node> - Node to generate thanks to a 'mergeNtiff' command.
-    
-Example:
-|    MergeNtiff 19_397_3134.txt
 
 Returns:
     An array (code, weight), (undef,undef) if error.
@@ -296,10 +306,6 @@ Function: cache2work
 Copy slab from cache to work directory and transform (work format : untiled, zip-compression). Use the 'PullSlab' bash function.
 
 (see ROK4GENERATION/tools/cache2work.png)
-    
-Examples:
-    (start code)
-    (end code)
     
 Parameters (list):
     node - <Node> - Node whose image have to be transfered in the work directory.
@@ -546,9 +552,6 @@ Copy image from work directory to cache and transform it (tiled and compressed) 
 
 (see ROK4GENERATION/tools/work2cache.png)
 
-Example:
-|    PushSlab 19_395_3137.tif IMAGE/19/02/AF/Z5.tif
-
 Parameter:
     node - <Node> - Node whose image have to be transfered in the cache.
 
@@ -659,28 +662,6 @@ HARVESTFUNCTION
 Function: wms2work
 
 Fetch image corresponding to the node thanks to 'wget', in one or more steps at a time. WMS service is described in the current graph's datasource. Use the 'Wms2work' bash function.
-
-Example:
-    (start code)
-    BBOXES="10018754.17139461632,-626172.13571215872,10644926.30710678016,0.00000000512
-    10644926.30710678016,-626172.13571215872,11271098.442818944,0.00000000512
-    11271098.442818944,-626172.13571215872,11897270.57853110784,0.00000000512
-    11897270.57853110784,-626172.13571215872,12523442.71424327168,0.00000000512
-    10018754.17139461632,-1252344.27142432256,10644926.30710678016,-626172.13571215872
-    10644926.30710678016,-1252344.27142432256,11271098.442818944,-626172.13571215872
-    11271098.442818944,-1252344.27142432256,11897270.57853110784,-626172.13571215872
-    11897270.57853110784,-1252344.27142432256,12523442.71424327168,-626172.13571215872
-    10018754.17139461632,-1878516.4071364864,10644926.30710678016,-1252344.27142432256
-    10644926.30710678016,-1878516.4071364864,11271098.442818944,-1252344.27142432256
-    11271098.442818944,-1878516.4071364864,11897270.57853110784,-1252344.27142432256
-    11897270.57853110784,-1878516.4071364864,12523442.71424327168,-1252344.27142432256
-    10018754.17139461632,-2504688.54284865024,10644926.30710678016,-1878516.4071364864
-    10644926.30710678016,-2504688.54284865024,11271098.442818944,-1878516.4071364864
-    11271098.442818944,-2504688.54284865024,11897270.57853110784,-1878516.4071364864
-    11897270.57853110784,-2504688.54284865024,12523442.71424327168,-1878516.4071364864"
-    #
-    Wms2work "15_1254_9865_I" "png" "tif" "250000" "http://localhost/wms-vector?LAYERS=BDD_WLD_WM&SERVICE=WMS&VERSION=1.3.0&REQUEST=getMap&FORMAT=image/png&CRS=EPSG:3857&WIDTH=1024&HEIGHT=1024&STYLES=line&BGCOLOR=0x80BBDA&TRANSPARENT=0X80BBDA" $BBOXES
-    (end code)
 
 Parameters (list):
     node - <COMMON::GraphNode> - Node whose image have to be harvested.

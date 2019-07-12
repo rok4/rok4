@@ -161,7 +161,9 @@ Stockages gérés : FICHIER, CEPH, S3, SWIFT
 
 Outil : `4head.pl`
 
-Cet outil permet de regénérer des niveaux de la pyramide en partant d'un de ses niveaux. La pyramide est modifiée et sa liste, qui fait foi en terme de contenu de la pyramide, est mise à jour pour toujours correspondre au contenu final de la pyramide. L'outil perl modifie la liste et le descripteur et génère un script shell dont l'exécution modifiera les dalles de la pyramide. Seuls les niveaux entre celui de référence (non inclus) et le niveau du haut fournis (inclus) sont modifiés. Potentiellement des nouveaux niveaux sont ajoutés (lorsque l'outil est utilisé pour construire la tête de la pyramide qui n'existait pas).
+Cet outil permet de regénérer des niveaux de la pyramide en partant d'un de ses niveaux. La pyramide est modifiée et sa liste, qui fait foi en terme de contenu de la pyramide, est mise à jour pour toujours correspondre au contenu final de la pyramide. L'outil perl modifie la liste et le descripteur et génère des script shell dont l'exécution modifiera les dalles de la pyramide. Seuls les niveaux entre celui de référence (non inclus) et le niveau du haut fournis (inclus) sont modifiés. Potentiellement des nouveaux niveaux sont ajoutés (lorsque l'outil est utilisé pour construire la tête de la pyramide qui n'existait pas).
+
+Par défaut, l'outil génère un script par niveau à modifier (`LEVEL_<ID>_SCRIPT_<I>.sh`). Si on précise un niveau de parallélisation (via l'option `--parallel`) de N, on aura alors N scripts pour générer le niveau du bas (juste au dessus du niveau de référence), N/2 pour celui d'encore au dessus (au moins 1 script), et ainsi de suite. Tous les scripts pour un niveau peuvent être exécuter en parallèle, mais il faut attendre la fin de tous ces scripts puor lancer ceux du niveau du dessus.
 
 Stockages gérés : FICHIER, CEPH, S3, SWIFT
 
@@ -169,7 +171,7 @@ Types de pyramides gérés : RASTER QTREE
 
 #### Commande
 
-`4head.pl --pyr /home/ign/PYRAMID.pyr --tmsdir /home/ign/TMS/ --reference-level 19 --top-level 4 --tmp /home/ign/tmp/ [--help|--usage|--version]`
+`4head.pl --pyr /home/ign/PYRAMID.pyr --tmsdir /home/ign/TMS/ --reference-level 19 --top-level 4 --tmp /home/ign/tmp/ --scripts /home/ign/scripts/ [--parallel 4] [--help|--usage|--version]`
 
 #### Options
 
@@ -181,6 +183,8 @@ Types de pyramides gérés : RASTER QTREE
 * `--reference-level` Précise le niveau de la pyramide d'où partir pour regénérer les niveaux supérieurs
 * `--top-level` Précise le niveau jusqu'auquel regénérer les dalles
 * `--tmp` Précise un dossier à utiliser comme espace temporaire de génération
+* `--script` Précise un dossier où écrire les scripts
+* `--parallel` Précise le nombre de scripts pour modifier les dalles du niveau au dessus du niveau de référence (Optionnel, 1 par défaut)
 
 ### Transfert de pyramide
 

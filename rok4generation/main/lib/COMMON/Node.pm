@@ -289,16 +289,11 @@ sub getScript {
 Function: writeInScript
 
 Write own code in the associated script.
-
-Parameters (list):
-    additionnalText - string - Optionnal, can be undefined, text to add after the own code.
 =cut
 sub writeInScript {
     my $this = shift;
-    my $additionnalText = shift;
 
     my $text = $this->{code};
-    $text .= $additionnalText if (defined $additionnalText);
     
     $this->{script}->write($text, $this->getOwnWeight());
 }

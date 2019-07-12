@@ -1,5 +1,6 @@
 #!/bin/bash
 TOOL="MERGE4TIFF"
+echo "===== Test $TOOL ====="
 
 SCRIPT=$(readlink -f "$0")
 BASEDIR=$(dirname "$SCRIPT")

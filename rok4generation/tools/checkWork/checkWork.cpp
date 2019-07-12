@@ -145,8 +145,6 @@ int main ( int argc, char **argv )
     // Nettoyage
     delete image;
     Logger::stopLogger();
-    acc->stop();
-    acc->destroy();
     delete acc;
 
     return ret;

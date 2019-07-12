@@ -47,6 +47,9 @@ Using:
     # load properties from INI file
     my $cfgINI = COMMON::Config->new("/mon/fichier/de/configuration.txt");
 
+    # load properties from INI-LIKE file
+    my $cfgINI = COMMON::Config->new("/mon/fichier/de/configuration.txt", "CUSTOM");
+
     # load properties from INI file
     my $cfgJSON = COMMON::Config->new("/mon/fichier/de/configuration.json");
     (end code)
@@ -54,7 +57,7 @@ Using:
 Attributes:
     file - string - Path to the configuration file
     format - string - Configuration format : INI, JSON or CUSTOM
-    configuration - string hash - Configuration stored in string hash, with section and sub section
+    configuration - hash - Configuration stored in hash
     
 =cut
 
@@ -103,14 +106,11 @@ END {}
 =begin nd
 Constructor: new
 
-Config constructor. Bless an instance.
+Config constructor. Bless an instance and load values from file.
 
 Parameters (list):
     filepath - string - Configuration file path
     format - string - Optionnal, force format if provided
-
-See also:
-    <_loadINI>, <_loadJSON>
 =cut
 sub new {
     my $class = shift;
@@ -263,6 +263,11 @@ sub new {
 
 =begin_nd
 Function: whatIs
+
+Return the type of the parameter, defined by its path.
+
+Return:
+    UNDEF if paramtere does not exists, SCALAR for a value parameter, HASH for a section, ARRAY for a list parameter (JSON case)
 =cut
 sub whatIs {
     my $this = shift;
@@ -302,6 +307,8 @@ sub whatIs {
 
 =begin nd
 Function: getConfigurationCopy
+
+Return an hash, copy of the configuration
 =cut
 sub getConfigurationCopy {
     my $this = shift;
@@ -311,7 +318,9 @@ sub getConfigurationCopy {
 
 
 =begin nd
-Function: getCopy
+Function: getConfigurationReference
+
+Return an hash reference, to the configuration (values can be modified)
 =cut
 sub getConfigurationReference {
     my $this = shift;

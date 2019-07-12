@@ -1,5 +1,6 @@
 #!/bin/bash
 TOOL="WORK2CACHE"
+echo "===== Test $TOOL ====="
 
 SCRIPT=$(readlink -f "$0")
 BASEDIR=$(dirname "$SCRIPT")

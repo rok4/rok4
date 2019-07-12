@@ -48,9 +48,10 @@ Using:
     (start code)
     use COMMON::DataSource;
 
-    # DataSource object creation : 3 cases
+    # DataSource object creation : 4 cases (3 raster and 1 vector)
 
-    # Real Data and no harvesting : native SRS and lossless compression
+    # RASTER
+    # An image directory as source
     my $objDataSource = COMMON::DataSource->new(
         "19",
         {
@@ -59,7 +60,7 @@ Using:
         }
     );
 
-    # No Data, just harvesting (here for a WMS vector) 
+    # A WMS service as source, with an extent to harvest
     my $objDataSource = COMMON::DataSource->new(
         "19",
         {
@@ -80,7 +81,7 @@ Using:
         }
     );
     
-    # No Data, just harvesting provided images
+    # A WMS service as source, with the list of slab to harvest
     my $objDataSource = COMMON::DataSource->new(
         "19",
         {
@@ -100,18 +101,29 @@ Using:
             max_height => 1024
         }
     );
-
-    # Real Data and harvesting : reprojection or lossy compression
+    
+    # VECTOR
+    # A database source, with the extent to harvest
     my $objDataSource = COMMON::DataSource->new(
         "19",
         {
-            srs => "IGNF:LAMB93",
-            path_image => "/home/ign/DATA/BDORTHO"
-            wms_layer => "ORTHO_XXX",
-            wms_url => "http://geoportail/wms/",
-            wms_version => "1.3.0",
-            wms_request => "getMap",
-            wms_format => "image/tiff"
+           "srs" => "EPSG:3857",
+           "tables" => [
+              {
+                 "schema" => "limites_administratives",
+                 "native_name" => "region",
+                 "final_name" => "limites",
+                 "attributes" => "*"
+              }
+           ],
+           "db" => {
+              "user" => "ign",
+              "port" => "5432",
+              "password" => "pw",
+              "database" => "ign",
+              "host" => "postgis.ign.fr"
+           },
+           "extent" => "/home/ign/FXX.wkt"
         }
     );
     (end code)

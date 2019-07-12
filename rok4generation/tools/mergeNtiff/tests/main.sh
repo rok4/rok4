@@ -1,5 +1,6 @@
 #!/bin/bash
 TOOL="MERGENTIFF"
+echo "===== Test $TOOL ====="
 
 SCRIPT=$(readlink -f "$0")
 BASEDIR=$(dirname "$SCRIPT")

@@ -192,8 +192,6 @@ sub _load {
         return FALSE;
     }
 
-    my $nbSources = 0;
-
     while( my ($level,$params) = each(%sourcesProperties) ) {
         my $datasource = COMMON::DataSource->new($level,$params);
         if (! defined $datasource) {

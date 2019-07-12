@@ -850,6 +850,8 @@ This file have to be written before calling this function
 sub backupDescriptor {
     my $this = shift;
 
+    INFO("Backup descriptor");
+
     my $descFile = $this->getDescriptorFile();
 
     if ($this->{storage_type} eq "FILE") {

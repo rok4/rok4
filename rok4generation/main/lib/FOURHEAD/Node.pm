@@ -216,29 +216,29 @@ sub writeCode {
     my $this = shift;
     my $pyramid = shift;
     my $STREAM = shift;
+    my $firstLevel = shift;
 
-    if (! $this->{ownSourceNodes}) {
-        # Un noeud sans noeud source est une dalle du niveau de référence, il suffit de la détuiler (avec le masque éventuel)
-        printf $STREAM "PullSlab %s %s\n", 
-            $pyramid->getSlabPath("IMAGE", $this->{level}, $this->{col}, $this->{row}, FALSE),
-            $this->{workImageFilename};
+    if ($firstLevel) {
+        # Le premier niveau est celui juste au dessus de celui de référence
+        # les images en entrée du merge4tiff sont donc des dalles de la pyramide à récupérer
 
-        if ($pyramid->ownMasks()) {
-            printf $STREAM "PullSlab %s %s\n", 
-                $pyramid->getSlabPath("MASK", $this->{level}, $this->{col}, $this->{row}, FALSE),
-                $this->{workMaskFilename};
+        for (my $i = 0; $i < 4; $i++) {
+            my $child = $this->{sourceNodes}->[$i];
+            if (defined $child) {
+                printf $STREAM "PullSlab %s %s\n", 
+                    $pyramid->getSlabPath("IMAGE", $child->{level}, $child->{col}, $child->{row}, FALSE),
+                    $child->{workImageFilename};
+
+                if ($pyramid->ownMasks()) {
+                    printf $STREAM "PullSlab %s %s\n", 
+                        $pyramid->getSlabPath("MASK", $child->{level}, $child->{col}, $this->{row}, FALSE),
+                        $child->{workMaskFilename};
+                }
+            }
         }
-
-        return;
     }
 
-    for (my $i = 0; $i < 4; $i++) {
-        if (defined $this->{sourceNodes}->[$i]) {
-            $this->{sourceNodes}->[$i]->writeCode($pyramid, $STREAM);
-        }
-    }
-
-    # Un noeud avec des noeuds source est une dalle qui doit être générée avec un merge4tiff, et tuilée dans le stockage final (avec le masque éventuel)
+    # La dalle doit être générée avec un merge4tiff, et tuilée dans le stockage final (avec le masque éventuel)
     printf $STREAM "Merge4tiff %s", $this->{workImageFilename};
     if ($pyramid->ownMasks()) {
         printf $STREAM " %s", $this->{workMaskFilename};

@@ -47,10 +47,10 @@ Representation of a "nearest neighbour" pyramid : pyramid's image = <COMMON::Nod
 (see ROK4GENERATION/NNGraphTMS.png)
 
 To generate this kind of graph, we use :
-    - *jobNumber* scripts by level : to generate image to work format.
-    - *jobNumber* scripts : to move image in the final pyramid, with the wanted format (compression...)
+    - *jobNumber* scripts by level : to generate image to work format and push it witrh final format.
+    - one finisher script, to store slabs' list to the final location
 
-=> *jobNumber x (levelNumber + 1)* scripts
+=> *jobNumber x levelNumber + 1* scripts
 
 Organization in the <Forest> scripts' array :
 

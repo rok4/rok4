@@ -97,8 +97,6 @@ Group: Classes  {
         File: PyramidVector (no auto-title, lib/COMMON/PyramidVector.pm)
         File: QTree (no auto-title, lib/COMMON/QTree.pm)
         File: Script (no auto-title, lib/COMMON/Script.pm)
-        File: ShellCommandsRaster (no auto-title, lib/COMMON/ShellCommandsRaster.pm)
-        File: ShellCommandsVector (no auto-title, lib/COMMON/ShellCommandsVector.pm)
         File: TileMatrix (no auto-title, lib/COMMON/TileMatrix.pm)
         File: TileMatrixSet (no auto-title, lib/COMMON/TileMatrixSet.pm)
     }
@@ -106,23 +104,26 @@ Group: Classes  {
     Group: BE4  {
 
         File: PropertiesLoader (no auto-title, lib/BE4/PropertiesLoader.pm)
+        File: Shell (no auto-title, lib/BE4/Shell.pm)
     }
 
     Group: JOINCACHE  {
 
         File: Node (no auto-title, lib/JOINCACHE/Node.pm)
         File: PropertiesLoader (no auto-title, lib/JOINCACHE/PropertiesLoader.pm)
+        File: Shell (no auto-title, lib/JOINCACHE/Shell.pm)
     }
 
     Group: FOURALAMO  {
 
         File: PropertiesLoader (no auto-title, lib/FOURALAMO/PropertiesLoader.pm)
+        File: Shell (no auto-title, lib/FOURALAMO/Shell.pm)
     }
 
     Group: FOURHEAD  {
 
-        File: Node (no auto-title, lib/FOURALAMO/Node.pm)
-        File: Shell (no auto-title, lib/FOURALAMO/Shell.pm)
+        File: Node (no auto-title, lib/FOURHEAD/Node.pm)
+        File: Shell (no auto-title, lib/FOURHEAD/Shell.pm)
     }
 
     Group: WMTSALAD  {

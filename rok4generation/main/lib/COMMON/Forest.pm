@@ -49,7 +49,6 @@ Creates and manages all graphs, <NNGraph> and <QTree>.
 We have several kinds of graphs and their using have to be transparent for the forest. That's why we must define functions for all graph's types (as an interface) :
     - computeYourself() : <NNGraph::computeYourself>, <QTree::computeYourself>
     - containsNode(level, i, j) : <NNGraph::containsNode>, <QTree::containsNode>
-    - exportForDebug() : <NNGraph::exportForDebug>, <QTree::exportForDebug>
 
 Using:
     (start code)
@@ -136,7 +135,7 @@ Parameters (list):
 |               path_shell - string - Script directory
 
 See also:
-    <_init>, <_load>
+    <_load>
 =cut
 sub new {
     my $class = shift;
@@ -303,7 +302,7 @@ sub _load {
             push @{$this->{scripts}}, $script;
         }
     } else {
-        #### GRAPH CASE
+        #### NN GRAPH CASE
 
         # Boucle sur les levels et sur le nb de scripts/jobs
         # On continue avec les autres scripts, par level
