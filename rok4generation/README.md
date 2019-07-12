@@ -165,6 +165,8 @@ Cet outil permet de regénérer des niveaux de la pyramide en partant d'un de se
 
 Par défaut, l'outil génère un script par niveau à modifier (`LEVEL_<ID>_SCRIPT_<I>.sh`). Si on précise un niveau de parallélisation (via l'option `--parallel`) de N, on aura alors N scripts pour générer le niveau du bas (juste au dessus du niveau de référence), N/2 pour celui d'encore au dessus (au moins 1 script), et ainsi de suite. Tous les scripts pour un niveau peuvent être exécuter en parallèle, mais il faut attendre la fin de tous ces scripts puor lancer ceux du niveau du dessus.
 
+Le script `main.sh` permet de lancer proprement tous ces scripts sur la même machine. Il ne permet donc pas de répartir les exécutions sur un pool de machine. L'appel à faire est loggé en fin d'exécution de `4head.pl`. Son utilisation est `main.sh <SCRIPTS DIRECTORY> <BOTTOM LEVEL ID>`.
+
 Stockages gérés : FICHIER, CEPH, S3, SWIFT
 
 Types de pyramides gérés : RASTER QTREE

@@ -218,6 +218,8 @@ sub init {
         return FALSE;
     }
 
+    $options{tmp} = File::Spec->rel2abs($options{tmp});
+
     if (! -d $options{tmp}) {
         eval { mkpath([$options{tmp}]); };
         if ($@) {
@@ -232,6 +234,8 @@ sub init {
         ERROR("Option 'scripts' not defined !");
         return FALSE;
     }
+
+    $options{scripts} = File::Spec->rel2abs($options{scripts});
 
     if (! -d $options{scripts}) {
         eval { mkpath([$options{scripts}]); };
@@ -464,6 +468,18 @@ sub doIt {
         }
     }
 
+    # Écrire le script principal
+    INFO("Write main script");
+    my $scriptPath = File::Spec->catfile($options{scripts}, "main.sh");
+    open(MAIN, ">$scriptPath") or do {
+        ERROR("Cannot open '$scriptPath' to write in it");
+        return FALSE;
+    };
+
+    print MAIN FOURHEAD::Shell::getMainScript();
+
+    close(MAIN);
+
     # Écrire le nouveau descripteur
     INFO("Flush descriptor");
     if (! $options{pyr}->writeDescriptor(TRUE)) {
@@ -477,6 +493,9 @@ sub doIt {
         ERROR("Cannot overwrite the pyramid list");
         return FALSE;
     }
+
+    INFO("To run all script on the same machine, run :");
+    INFO(sprintf "\t bash %s %s %s", $scriptPath, $options{scripts}, $tms->getIDfromOrder($referenceOrder + 1));
 
     return TRUE;
 }
