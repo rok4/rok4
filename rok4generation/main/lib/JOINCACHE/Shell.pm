@@ -377,6 +377,139 @@ sub overlayNtiff {
     return TRUE;
 }
 
+
+####################################################################################################
+#                                     Group: Main function                                         #
+####################################################################################################
+
+my $MAIN_SCRIPT = <<'MAINSCRIPT';
+#!/bin/bash
+
+################### CODES DE RETOUR #############################
+# 0 -> SUCCÈS
+# 1 -> ÉCHEC
+
+#################################################################
+
+scripts_directory="__scripts_directory__"
+if [[ ! -d "$scripts_directory" ]]; then
+    echo "ERREUR $scripts_directory n'existe pas"
+    exit 1
+fi
+
+SPLITS=()
+SPLITS_PIDS=()
+SPLITS_END=()
+SPLITS_EXITCODE=()
+SPLITS_NAME=()
+SPLITS_STATUS=()
+UPLINE=$(tput cuu1)
+ERASELINE=$(tput el)
+TIPEX=""
+
+for (( i = 1; i <= __jobs_number__; i++ )); do
+    SPLITS+=("${scripts_directory}/SCRIPT_${i}.sh")
+    SPLITS_NAME+=("SCRIPT_${i}.sh")
+    SPLITS_END+=("0")
+    SPLITS_EXITCODE+=("0")
+    SPLITS_STATUS+=("En cours")
+    TIPEX="${TIPEX}$UPLINE$ERASELINE"
+done
+
+TIPEX="${TIPEX}\c"
+
+for s in "${SPLITS[@]}"; do
+    (bash $s >$s.log 2>&1) &
+    split_pid=$!
+    SPLITS_PIDS+=("$split_pid")
+done
+
+
+echo "  INFO Attente de la fin des splits JOINCACHE"
+first_time="1"
+while [[ "0" = "0" ]]; do
+    still_one="0"
+    for (( i = 0; i < __jobs_number__; i++ )); do
+        p=${SPLITS_PIDS[$i]}
+        e=${SPLITS_END[$i]}
+
+        if [[ "$e" = "1" ]]; then
+            continue
+        fi
+
+        if [[ $(ps -o s,pid,wchan | grep " $p " | grep -v grep) ]] ; then
+            still_one="1"
+            continue
+        fi
+
+        wait $p
+        if [[ "$?" = "0" ]]; then
+            SPLITS_EXITCODE[$i]="0"
+            SPLITS_STATUS[$i]="Succès"
+        else
+            SPLITS_EXITCODE[$i]=$?
+            SPLITS_STATUS[$i]="Échec"
+        fi
+
+        SPLITS_END[$i]="1"
+    done
+
+    if [[ "$first_time" = "1" ]]; then
+        first_time=0
+    else
+        echo -e "$TIPEX"
+    fi
+
+    for (( i = 0; i < __jobs_number__; i++ )); do
+        n=${SPLITS_NAME[$i]}
+        s=${SPLITS_STATUS[$i]}
+        echo "$n -> $s"
+    done
+
+    if [[ "$still_one" = "0" ]]; then
+        break
+    fi
+
+    sleep 60
+done
+
+for (( i = 0; i < __jobs_number__; i++ )); do
+    c=${SPLITS_EXITCODE[$i]}
+    if [[ "${c}" != "0" ]]; then
+        echo "ERREUR Un split au moins a échoué"
+        exit 1
+    fi
+done
+
+exit 0
+
+MAINSCRIPT
+
+=begin nd
+Function: getMainScript
+
+Get the main script allowing to launch all generation scripts on a same machine.
+
+Parameters (list):
+    scriptsDirectory - string - Path to scripts' directory
+    jobsNumber - integer - Parallelization level
+
+Returns:
+    A shell script
+=cut
+sub getMainScript {
+    my $scriptsDirectory = shift;
+    my $jobsNumber = shift;
+    my $pyramid = shift;
+
+    my $ret = $MAIN_SCRIPT;
+
+    $ret =~ s/__jobs_number__/$jobsNumber/g;
+    $ret =~ s/__scripts_directory__/$scriptsDirectory/g;
+
+    return $ret;
+}
+
 ####################################################################################################
 #                                   Group: Export function                                         #
 ####################################################################################################

@@ -778,6 +778,22 @@ sub doIt {
     }
     
     DEBUG(sprintf "FOREST (debug export) = %s", $objForest->exportForDebug);
+
+    #######################
+    # Écrire le script principal
+    ALWAYS(">>> Write main script");
+    my $scriptPath = File::Spec->catfile($params->{process}->{path_shell}, "main.sh");
+    open(MAIN, ">$scriptPath") or do {
+        ERROR("Cannot open '$scriptPath' to write in it");
+        return FALSE;
+    };
+
+    print MAIN BE4::Shell::getMainScript($params->{process}->{path_shell}, $params->{process}->{job_number}, $objPyramid);
+
+    close(MAIN);
+
+    INFO("To run all scripts on the same machine, run :");
+    INFO("\t bash $scriptPath");
     
     return TRUE;
 }

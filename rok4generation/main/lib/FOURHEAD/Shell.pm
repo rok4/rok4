@@ -216,114 +216,131 @@ my $MAIN_SCRIPT = <<'MAINSCRIPT';
 # 0 -> SUCCÈS
 # 1 -> ÉCHEC
 
-################### ENTRÉES #####################################
+#################################################################
 
-scripts_directory=$1
+scripts_directory="__scripts_directory__"
 if [[ ! -d "$scripts_directory" ]]; then
     echo "ERREUR $scripts_directory n'existe pas"
     exit 1
 fi
 
-first_level=$2
-if [[ -z "$first_level" ]]; then
-    echo "ERREUR le niveau de départ n'est pas défini"
+SPLITS=()
+SPLITS_PIDS=()
+SPLITS_END=()
+SPLITS_EXITCODE=()
+SPLITS_NAME=()
+SPLITS_STATUS=()
+UPLINE=$(tput cuu1)
+ERASELINE=$(tput el)
+TIPEX=""
+
+for (( i = 1; i <= __jobs_number__; i++ )); do
+    SPLITS+=("${scripts_directory}/SCRIPT_${i}.sh")
+    SPLITS_NAME+=("SCRIPT_${i}.sh")
+    SPLITS_END+=("0")
+    SPLITS_EXITCODE+=("0")
+    SPLITS_STATUS+=("En cours")
+    TIPEX="${TIPEX}$UPLINE$ERASELINE"
+done
+
+TIPEX="${TIPEX}\c"
+
+for s in "${SPLITS[@]}"; do
+    (bash $s >$s.log 2>&1) &
+    split_pid=$!
+    SPLITS_PIDS+=("$split_pid")
+done
+
+
+echo "  INFO Attente de la fin des splits 4HEAD"
+first_time="1"
+while [[ "0" = "0" ]]; do
+    still_one="0"
+    for (( i = 0; i < __jobs_number__; i++ )); do
+        p=${SPLITS_PIDS[$i]}
+        e=${SPLITS_END[$i]}
+
+        if [[ "$e" = "1" ]]; then
+            continue
+        fi
+
+        if [[ $(ps -o s,pid,wchan | grep " $p " | grep -v grep) ]] ; then
+            still_one="1"
+            continue
+        fi
+
+        wait $p
+        if [[ "$?" = "0" ]]; then
+            SPLITS_EXITCODE[$i]="0"
+            SPLITS_STATUS[$i]="Succès"
+        else
+            SPLITS_EXITCODE[$i]=$?
+            SPLITS_STATUS[$i]="Échec"
+        fi
+
+        SPLITS_END[$i]="1"
+    done
+
+    if [[ "$first_time" = "1" ]]; then
+        first_time=0
+    else
+        echo -e "$TIPEX"
+    fi
+
+    for (( i = 0; i < __jobs_number__; i++ )); do
+        n=${SPLITS_NAME[$i]}
+        s=${SPLITS_STATUS[$i]}
+        echo "$n -> $s"
+    done
+
+    if [[ "$still_one" = "0" ]]; then
+        break
+    fi
+
+    sleep 60
+done
+
+for (( i = 0; i < __jobs_number__; i++ )); do
+    c=${SPLITS_EXITCODE[$i]}
+    if [[ "${c}" != "0" ]]; then
+        echo "ERREUR Un split au moins a échoué"
+        exit 1
+    fi
+done
+
+echo "  INFO Lancement du finisher 4HEAD"
+
+bash ${scripts_directory}/SCRIPT_FINISHER.sh >${scripts_directory}/SCRIPT_FINISHER.sh.log 2>&1
+if [[ $? != "0" ]]; then
+    echo "ERREUR le finisher a échoué"
     exit 1
 fi
-
-for (( level = $first_level; level >= 0; level-- )); do    
-    SPLITS=($(find $scripts_directory -name "LEVEL_${level}_SCRIPT_*.sh"))
-
-    SPLITS_PIDS=()
-    SPLITS_END=()
-    SPLITS_EXITCODE=()
-    SPLITS_NAME=()
-    SPLITS_STATUS=()
-    UPLINE=$(tput cuu1)
-    ERASELINE=$(tput el)
-    TIPEX=""
-    SPLITS_NUMBER=${#SPLITS[@]}
-    
-    for split in "${SPLITS[@]}"; do
-        SPLITS_NAME+=($(basename $split))
-        SPLITS_END+=("0")
-        SPLITS_EXITCODE+=("0")
-        SPLITS_STATUS+=("En cours")
-        TIPEX="${TIPEX}$UPLINE$ERASELINE"
-    done
-
-    TIPEX="${TIPEX}\c"
-
-    for s in "${SPLITS[@]}"; do
-        (bash $s >$s.log 2>&1) &
-        split_pid=$!
-        SPLITS_PIDS+=("$split_pid")
-    done
-
-
-    echo "  INFO Attente de la fin des splits 4HEAD pour le niveau $level"
-    first_time="1"
-    while [[ "0" = "0" ]]; do
-        still_one="0"
-        for (( i = 0; i < ${SPLITS_NUMBER}; i++ )); do
-            p=${SPLITS_PIDS[$i]}
-            e=${SPLITS_END[$i]}
-
-            if [[ "$e" = "1" ]]; then
-                continue
-            fi
-
-            if [[ $(ps -o s,pid,wchan | grep " $p " | grep -v grep) ]] ; then
-                still_one="1"
-                continue
-            fi
-
-            wait $p
-            if [[ "$?" = "0" ]]; then
-                SPLITS_EXITCODE[$i]="0"
-                SPLITS_STATUS[$i]="Succès"
-            else
-                SPLITS_EXITCODE[$i]=$?
-                SPLITS_STATUS[$i]="Échec"
-            fi
-
-            SPLITS_END[$i]="1"
-        done
-
-        if [[ "$first_time" = "1" ]]; then
-            first_time=0
-        else
-            echo -e "$TIPEX"
-        fi
-
-        for (( i = 0; i < ${SPLITS_NUMBER}; i++ )); do
-            n=${SPLITS_NAME[$i]}
-            s=${SPLITS_STATUS[$i]}
-            echo "$n -> $s"
-        done
-
-        if [[ "$still_one" = "0" ]]; then
-            break
-        fi
-
-        sleep 60
-    done
-
-    for (( i = 0; i < ${SPLITS_NUMBER}; i++ )); do
-        c=${SPLITS_EXITCODE[$i]}
-        if [[ "${c}" != "0" ]]; then
-            echo "ERREUR Un split au moins a échoué"
-            exit 1
-        fi
-    done
-
-done
 
 exit 0
 
 MAINSCRIPT
 
+=begin nd
+Function: getMainScript
+
+Get the main script allowing to launch all generation scripts on a same machine
+
+Parameters (list):
+    scriptsDirectory - string - Path to scripts' directory
+    jobsNumber - integer - Parallelization level
+
+Returns:
+    A shell script
+=cut
 sub getMainScript {
-    return $MAIN_SCRIPT;
+    my $scriptsDirectory = shift;
+    my $jobsNumber = shift;
+
+    my $ret = $MAIN_SCRIPT;
+    $ret =~ s/__scripts_directory__/$scriptsDirectory/;
+    $ret =~ s/__jobs_number__/$jobsNumber/g;
+
+    return $ret;
 }
 
 ####################################################################################################

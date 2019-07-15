@@ -211,34 +211,96 @@ sub addSourceNode {
     return TRUE;
 }
 
-# Function: writeCode
-sub writeCode {
+# Function: treatBelowCut
+sub treatBelowCut {
     my $this = shift;
     my $pyramid = shift;
     my $STREAM = shift;
-    my $firstLevel = shift;
 
-    if ($firstLevel) {
-        # Le premier niveau est celui juste au dessus de celui de référence
-        # les images en entrée du merge4tiff sont donc des dalles de la pyramide à récupérer
+    if (! $this->{ownSourceNodes}) {
+        # Nous sommes sur des noeuds du niveau de référence, il suffit de les mettre au format de travail depuis la pyramide
+        printf $STREAM "PullSlab %s %s\n", 
+            $pyramid->getSlabPath("IMAGE", $this->{level}, $this->{col}, $this->{row}, FALSE),
+            $this->{workImageFilename};
 
-        for (my $i = 0; $i < 4; $i++) {
-            my $child = $this->{sourceNodes}->[$i];
-            if (defined $child) {
-                printf $STREAM "PullSlab %s %s\n", 
-                    $pyramid->getSlabPath("IMAGE", $child->{level}, $child->{col}, $child->{row}, FALSE),
-                    $child->{workImageFilename};
+        if ($pyramid->ownMasks()) {
+            printf $STREAM "PullSlab %s %s\n", 
+                $pyramid->getSlabPath("MASK", $this->{level}, $this->{col}, $this->{row}, FALSE),
+                $this->{workMaskFilename};
+        }
 
-                if ($pyramid->ownMasks()) {
-                    printf $STREAM "PullSlab %s %s\n", 
-                        $pyramid->getSlabPath("MASK", $child->{level}, $child->{col}, $this->{row}, FALSE),
-                        $child->{workMaskFilename};
-                }
-            }
+        return;
+    }
+
+    # Nous sommes sur un noeud à regénérer grâce à un merge4tiff (et à pousser dans la pyramide)
+    # Il faut d'abord écrire le code pour les noeuds enfant
+
+    for (my $i = 0; $i < 4; $i++) {
+        if (defined $this->{sourceNodes}->[$i]) {
+            $this->{sourceNodes}->[$i]->treatBelowCut($pyramid, $STREAM);
         }
     }
 
-    # La dalle doit être générée avec un merge4tiff, et tuilée dans le stockage final (avec le masque éventuel)
+    printf $STREAM "Merge4tiff %s", $this->{workImageFilename};
+    if ($pyramid->ownMasks()) {
+        printf $STREAM " %s", $this->{workMaskFilename};
+    } else {
+        print $STREAM " 0";
+    }
+    
+    for (my $i = 0; $i < 4; $i++) {
+        if (defined $this->{sourceNodes}->[$i]) {
+            printf $STREAM " %s", $this->{sourceNodes}->[$i]->getWorkImageFilename();
+            if ($pyramid->ownMasks()) {
+                printf $STREAM " %s", $this->{sourceNodes}->[$i]->getWorkMaskFilename();
+            } else {
+                print $STREAM " 0";
+            }
+        } else {
+            print $STREAM " 0 0";
+        }
+    }
+    print $STREAM "\n";
+
+    printf $STREAM "PushSlab %s %s \"\${WORK2CACHE_IMAGE_OPTIONS}\"\n",
+        $this->{workImageFilename},
+        $pyramid->getSlabPath("IMAGE", $this->{level}, $this->{col}, $this->{row}, FALSE);
+        
+
+    $pyramid->modifySlab("IMAGE", $this->{level}, $this->{col}, $this->{row});
+
+    if ($pyramid->ownMasks()) {
+        printf $STREAM "PushSlab %s %s \"\${WORK2CACHE_MASK_OPTIONS}\"\n",
+            $this->{workImageFilename},
+            $pyramid->getSlabPath("MASK", $this->{level}, $this->{col}, $this->{row}, FALSE);
+
+        $pyramid->modifySlab("MASK", $this->{level}, $this->{col}, $this->{row});
+    }
+
+}
+
+
+# Function: treatAboveCut
+sub treatAboveCut {
+    my $this = shift;
+    my $pyramid = shift;
+    my $STREAM = shift;
+    my $cutId = shift;
+
+    if ($this->{level} eq $cutId) {
+        # Nous sommes sur un noeud du niveau de coupure, il a déjà été traité il n'y a rien à faire
+        return;
+    }
+
+    # Nous sommes sur un noeud à regénérer grâce à un merge4tiff (et à pousser dans la pyramide)
+    # Il faut d'abord écrire le code pour les noeuds enfant
+
+    for (my $i = 0; $i < 4; $i++) {
+        if (defined $this->{sourceNodes}->[$i]) {
+            $this->{sourceNodes}->[$i]->treatAboveCut($pyramid, $STREAM, $cutId);
+        }
+    }
+
     printf $STREAM "Merge4tiff %s", $this->{workImageFilename};
     if ($pyramid->ownMasks()) {
         printf $STREAM " %s", $this->{workMaskFilename};

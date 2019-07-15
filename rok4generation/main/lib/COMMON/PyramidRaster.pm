@@ -1082,6 +1082,14 @@ sub getLevels {
     return values %{$this->{levels}};
 }
 
+
+# Function: getOrderedLevels
+sub getOrderedLevels {
+    my $this = shift;
+
+    return sort {$a->getOrder <=> $b->getOrder} ( values %{$this->{levels}});
+}
+
 =begin nd
 Function: hasLevel
 

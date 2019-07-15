@@ -43,8 +43,8 @@ Section: 4HEAD tool
 
 Synopsis:
     (start code)
-    4head.pl --pyr <FILE> --tmsdir <DIRECTORY> --reference-level <LEVEL ID> --top-level <LEVEL ID> --tmp <DIRECTORY>  --scripts <DIRECTORY>
-    (end code)
+    4head.pl --pyr <FILE> --tmsdir <DIRECTORY> --reference-level <LEVEL ID> --top-level <LEVEL ID> --tmp <DIRECTORY> --scripts <DIRECTORY> --parallel <INTEGER>
+    (end code) 
 =cut
 
 ################################################################################
@@ -418,67 +418,74 @@ sub doIt {
 
     }
 
-    # Ouverture des flux d'écriture vers les scripts pour chaque niveau
+    # Ouverture des flux d'écriture vers les scripts (le finisher est placé à la fin)
     INFO("Open scripts");
     my $scriptInit = FOURHEAD::Shell::getScriptInitialization($options{pyr}, $options{tmp});
-    my $scripts = {};
-    my $script_nb = $options{"parallel"};
-    for (my $levelOrder = $referenceOrder + 1; $levelOrder <= $topOrder; $levelOrder++) {
-        my $levelID = $tms->getIDfromOrder($levelOrder);
+    my @scripts = ();
+    my $splitIndex = 0;
 
-        $scripts->{$levelID} = {
-            indice => 0,
-            streams => []
+    for (my $i = 1; $i <= $options{parallel}; $i++) {
+        my $scriptPath = File::Spec->catfile($options{scripts}, "SCRIPT_${i}.sh");
+        my $STREAM;
+        open($STREAM, ">$scriptPath") or do {
+            ERROR("Cannot open '$scriptPath' to write in it");
+            return FALSE;
         };
-
-        for (my $i = 0; $i < $script_nb; $i++) {
-            my $scriptPath = File::Spec->catfile($options{scripts}, "LEVEL_${levelID}_SCRIPT_${i}.sh");
-            my $STREAM;
-            open($STREAM, ">$scriptPath") or do {
-                ERROR("Cannot open '$scriptPath' to write in it");
-                return FALSE;
-            };
-            print $STREAM "$scriptInit\n";
-            push(@{$scripts->{$levelID}->{streams}}, $STREAM);
-        }
-
-        $script_nb = max(int($script_nb / 2), 1);
+        print $STREAM "$scriptInit\n";
+        push(@scripts, $STREAM);
     }
 
-    # Traitement des noeuds niveau par niveau en partant du bas
-    INFO("Process nodes");
-    my $firstLevel = TRUE;
+    my $scriptPath = File::Spec->catfile($options{scripts}, "SCRIPT_FINISHER.sh");
+    my $STREAM;
+    open($STREAM, ">$scriptPath") or do {
+        ERROR("Cannot open '$scriptPath' to write in it");
+        return FALSE;
+    };
+    print $STREAM "$scriptInit\n";
+    push(@scripts, $STREAM);
+
+    # Recherche du niveau le plus haut qui contient au moins cinq fois plus de noeuds qu'il n'y a de scripts (en partant du bas)
+    my $cutId = undef;
+    my $cutOrder = undef;
     for (my $levelOrder = $referenceOrder + 1; $levelOrder <= $topOrder; $levelOrder++) {
         my $levelID = $tms->getIDfromOrder($levelOrder);
-
-        foreach my $nodeIndice (keys(%{$regeneratedNodes->{$levelID}})) {
-            my $node = $regeneratedNodes->{$levelID}->{$nodeIndice};
-            $node->writeCode($options{pyr}, $scripts->{$levelID}->{streams}->[$scripts->{$levelID}->{indice}], $firstLevel);
-            # Round robin
-            $scripts->{$levelID}->{indice} = ($scripts->{$levelID}->{indice} + 1) % (scalar(@{$scripts->{$levelID}->{streams}}));
+        if (! defined $cutOrder) {
+            $cutOrder = $levelOrder;
+            $cutId = $levelID;
+            next;
         }
-        $firstLevel = FALSE;
+
+        if (scalar(keys(%{$regeneratedNodes->{$levelID}})) < 5 * $options{parallel}) {
+            last;
+        }
+
+        $cutOrder = $levelOrder;
+        $cutId = $levelID;
+    }
+
+    INFO("Cut level = $cutId");
+
+    # Traitement des noeuds du niveau de coupure (et d'en dessous par récurrence)
+    INFO("Process nodes below the cut level");
+    foreach my $nodeIndice (keys(%{$regeneratedNodes->{$cutId}})) {
+        my $node = $regeneratedNodes->{$cutId}->{$nodeIndice};
+        $node->treatBelowCut($options{pyr}, $scripts[$splitIndex]);
+        # Round robin
+        $splitIndex = ($splitIndex + 1) % $options{parallel};
+    }
+
+    # Traitement des noeuds au dessus du niveau de coupure
+    INFO("Process nodes above the cut level");
+    foreach my $nodeIndice (keys(%{$regeneratedNodes->{$topID}})) {
+        my $node = $regeneratedNodes->{$topID}->{$nodeIndice};
+        $node->treatAboveCut($options{pyr}, $scripts[-1], $cutId);
     }
 
     # Fermeture des flux vers les scripts
     INFO("Close scripts");
-    foreach my $levelID (keys(%{$scripts})) {
-        foreach my $STREAM (@{$scripts->{$levelID}->{streams}}) {
-            close($STREAM);
-        }
+    foreach my $STREAM (@scripts) {
+        close($STREAM);
     }
-
-    # Écrire le script principal
-    INFO("Write main script");
-    my $scriptPath = File::Spec->catfile($options{scripts}, "main.sh");
-    open(MAIN, ">$scriptPath") or do {
-        ERROR("Cannot open '$scriptPath' to write in it");
-        return FALSE;
-    };
-
-    print MAIN FOURHEAD::Shell::getMainScript();
-
-    close(MAIN);
 
     # Écrire le nouveau descripteur
     INFO("Flush descriptor");
@@ -494,8 +501,20 @@ sub doIt {
         return FALSE;
     }
 
-    INFO("To run all script on the same machine, run :");
-    INFO(sprintf "\t bash %s %s %s", $scriptPath, $options{scripts}, $tms->getIDfromOrder($referenceOrder + 1));
+    # Écrire le script principal
+    INFO("Write main script");
+    $scriptPath = File::Spec->catfile($options{scripts}, "main.sh");
+    open(MAIN, ">$scriptPath") or do {
+        ERROR("Cannot open '$scriptPath' to write in it");
+        return FALSE;
+    };
+
+    print MAIN FOURHEAD::Shell::getMainScript($options{scripts}, $options{parallel});
+
+    close(MAIN);
+
+    INFO("To run all scripts on the same machine, run :");
+    INFO("\t bash $scriptPath");
 
     return TRUE;
 }

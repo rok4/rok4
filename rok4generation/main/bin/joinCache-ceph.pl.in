@@ -406,11 +406,6 @@ sub validate {
 
     $this{composition} = $this{propertiesLoader}->getCompositionSection();
 
-    ##################
-
-    # configuration has been loaded and controlled (informations have been stored in %this)
-    undef $this{propertiesLoader};
-
     return TRUE;
 
 }
@@ -584,6 +579,21 @@ sub doIt {
         ERROR("Can not write Pyramid file !");
         return FALSE;
     }
+
+    # Écrire le script principal
+    ALWAYS(">>> Write main script");
+    my $scriptPath = File::Spec->catfile($this{propertiesLoader}->getProcessSection()->{path_shell}, "main.sh");
+    open(MAIN, ">$scriptPath") or do {
+        ERROR("Cannot open '$scriptPath' to write in it");
+        return FALSE;
+    };
+
+    print MAIN JOINCACHE::Shell::getMainScript($this{propertiesLoader}->getProcessSection()->{path_shell}, $this{propertiesLoader}->getProcessSection()->{job_number});
+
+    close(MAIN);
+
+    INFO("To run all scripts on the same machine, run :");
+    INFO("\t bash $scriptPath");
 
     return TRUE;
 }
