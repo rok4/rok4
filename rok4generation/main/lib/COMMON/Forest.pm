@@ -148,7 +148,7 @@ sub new {
     my $this = {
         pyramid     => undef,
         graphs      => [],
-        scripts     => [],
+        scripts     => {},
         splitNumber => undef
     };
 
@@ -228,16 +228,15 @@ sub _load {
     
     ######### PARAM PROCESS ###########
     
-    my $splitNumber = $params_process->{job_number};
+    $this->{splitNumber} = $params_process->{job_number};
     my $tempDir = File::Spec->rel2abs($params_process->{path_temp});
     my $commonTempDir = File::Spec->rel2abs($params_process->{path_temp_common});
     my $scriptDir = File::Spec->rel2abs($params_process->{path_shell});
 
-    if (! defined $splitNumber) {
+    if (! defined $this->{splitNumber}) {
         ERROR("Parameter required : 'job_number' in section 'Process' !");
         return FALSE;
     }
-    $this->{splitNumber} = $splitNumber;
 
     if (! defined $tempDir) {
         ERROR("Parameter required : 'path_temp' in section 'Process' !");
@@ -281,57 +280,10 @@ sub _load {
 
     if ($isQTree) {
         #### QTREE CASE
-
-        for (my $i = 0; $i <= $this->getSplitNumber; $i++) {
-            my $scriptID = sprintf "SCRIPT_%s",$i;
-            my $executedAlone = FALSE;
-
-            if ($i == 0) {
-                $scriptID = "SCRIPT_FINISHER";
-                $executedAlone = TRUE;
-            }
-
-            my $script = COMMON::Script->new({
-                id => $scriptID,
-                tempDir => $tempDir,
-                scriptDir => $scriptDir,
-                executedAlone => $executedAlone,
-                initialisation => $scriptInit
-            });
-
-            push @{$this->{scripts}}, $script;
-        }
+        $this->{scripts} = COMMON::QTree::defineScripts($this->{splitNumber}, $scriptInit, $tempDir, $scriptDir);
     } else {
         #### NN GRAPH CASE
-
-        # Boucle sur les levels et sur le nb de scripts/jobs
-        # On continue avec les autres scripts, par level
-        for (my $i = $this->{pyramid}->getBottomOrder(); $i <= $this->{pyramid}->getTopOrder(); $i++) {
-            for (my $j = 1; $j <= $this->getSplitNumber(); $j++) {
-                my $scriptID = sprintf "LEVEL_%s_SCRIPT_%s", $this->getPyramid()->getTileMatrixSet()->getIDfromOrder($i), $j;
-
-                my $script = COMMON::Script->new({
-                    id => $scriptID,
-                    tempDir => $tempDir,
-                    scriptDir => $scriptDir,
-                    executedAlone => FALSE,
-                    initialisation => $scriptInit
-                });
-
-                push @{$this->{scripts}},$script;
-            }
-        }
-
-        # Le SUPER finisher
-        my $script = COMMON::Script->new({
-            id => "SCRIPT_FINISHER",
-            tempDir => $tempDir,
-            scriptDir => $scriptDir,
-            executedAlone => TRUE,
-            initialisation => $scriptInit
-        });
-
-        push @{$this->{scripts}},$script;
+        $this->{scripts} = COMMON::NNGraph::defineScripts($this->{splitNumber}, $scriptInit, $tempDir, $scriptDir, $this->{pyramid});
     }
     
     ############# GRAPHS #############
@@ -407,13 +359,10 @@ sub computeGraphs {
             return FALSE;
         }
         INFO("Graph $graphInd/$graphNumber computed");
-        DEBUG($graph->exportForDebug);
         $graphInd++;
     }
     
-    foreach my $script (@{$this->{scripts}}) {
-        $script->close();
-    }
+    COMMON::QTree::closeScripts($this->{scripts});
     
     return TRUE;
 }
@@ -428,12 +377,6 @@ sub getGraphs {
     return $this->{graphs}; 
 }
 
-# Function: getStorageType
-sub getStorageType {
-    my $this = shift;
-    return $this->{pyramid}->getStorageType(); 
-}
-
 # Function: getPyramid
 sub getPyramid {
     my $this = shift;
@@ -444,53 +387,6 @@ sub getPyramid {
 sub getScripts {
     my $this = shift;
     return $this->{scripts};
-}
-
-=begin nd
-Function: getScript
-
-Parameters (list):
-    ind - integer - Script's indice in the array
-=cut
-sub getScript {
-    my $this = shift;
-    my $ind = shift;
-    
-    return $this->{scripts}[$ind];
-}
-
-=begin nd
-Function: getWeightOfScript
-
-Parameters (list):
-    ind - integer - Script's indice in the array
-=cut 
-sub getWeightOfScript {
-    my $this = shift;
-    my $ind = shift;
-    
-    return $this->{scripts}[$ind]->getWeight();
-}
-
-=begin nd
-Function: setWeightOfScript
-
-Parameters (list):
-    ind - integer - Script's indice in the array
-    weight - integer - Script's weight to set
-=cut
-sub setWeightOfScript {
-    my $this = shift;
-    my $ind = shift;
-    my $weight = shift;
-    
-    $this->{scripts}[$ind]->setWeight($weight);
-}
-
-# Function: getSplitNumber
-sub getSplitNumber {
-    my $this = shift;
-    return $this->{splitNumber};
 }
 
 ####################################################################################################
@@ -517,8 +413,7 @@ sub exportForDebug {
     $export .= sprintf "\t Number of graphs in the forest : %s\n", scalar @{$this->{graphs}};
     
     $export .= "\t Scripts :\n";
-    $export .= sprintf "\t Number of split : %s\n", $this->{splitNumber};
-    $export .= sprintf "\t Number of script : %s\n", scalar @{$this->{scripts}};
+    $export .= sprintf "\t Parallelization level : %s\n", $this->{splitNumber};
     
     return $export;
 }

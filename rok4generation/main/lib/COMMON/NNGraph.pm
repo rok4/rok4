@@ -42,7 +42,7 @@ Class: COMMON::NNGraph
 
 (see ROK4GENERATION/libperlauto/COMMON_NNGraph.png)
 
-Representation of a "nearest neighbour" pyramid : pyramid's image = <COMMON::Node>.
+Representation of a "nearest neighbour" pyramid : pyramid's image = <BE4::Node>.
 
 (see ROK4GENERATION/NNGraphTMS.png)
 
@@ -56,7 +56,7 @@ Organization in the <Forest> scripts' array :
 
 (see ROK4GENERATION/script_NNGraph.png)
 
-Link between a node and his children or his father is not trivial. It is calculated and store in the <COMMON::Node> object.
+Link between a node and his children or his father is not trivial. It is calculated and store in the <BE4::Node> object.
 
 Using:
     (start code)
@@ -72,7 +72,6 @@ Using:
     (end code)
 
 Attributes:
-    forest - <COMMON::Forest> - Forest which this tree belong to.
     pyramid - <COMMON::PyramidRaster> - Pyramid linked to this tree.
     datasource - <COMMON::DataSource> - Data source to use to define bottom level nodes and generate them.
 
@@ -80,7 +79,7 @@ Attributes:
     ct_pyramid_source - <Geo::OSR::CoordinateTransformation> - Coordinate transformation from pyramid srs to datasource srs
 
     bbox - double array - Datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
-    nodes - <COMMON::Node> hash - Structure is:
+    nodes - <BE4::Node> hash - Structure is:
         (start code)
         level1 => {
            c1_r2 => n1,
@@ -92,8 +91,10 @@ Attributes:
 
         cX : node's column
         rX : node's row
-        nX : <COMMON::Node>
+        nX : <BE4::Node>
         (end code)
+
+    scripts - <COMMON::Script> hash - The same for all QTree of the <COMMON::Forest>.
         
     bottomID - string - Bottom level identifiant
     topID - string - Top level identifiant
@@ -113,7 +114,7 @@ use Data::Dumper;
 
 # My Module
 use COMMON::DataSource;
-use COMMON::Node;
+use BE4::Node;
 use COMMON::ProxyGDAL;
 use COMMON::Array;
 
@@ -143,6 +144,88 @@ INIT {}
 END {}
 
 ####################################################################################################
+#                                       Group: Class methods                                       #
+####################################################################################################
+
+
+=begin nd
+Constructor: defineScripts
+
+Create all <COMMON::Script>'s to generate the NNGraph pyramid. They are stored in the <COMMON::Forest> instance.
+
+Parameters (list):
+    splitNumber - integer - Parallelization level
+    scriptInit - string - Shell function to write into each script
+    tempDir - string - Path to personnal script temporary directory
+    scriptDir - string - Path to directory where to write script
+    pyramid - <COMMON::PyramidRaster> - NNGraph Pyramid to generate
+=cut
+sub defineScripts {
+    my $splitNumber = shift;
+    my $scriptInit = shift;
+    my $tempDir = shift;
+    my $scriptDir = shift;
+    my $pyramid = shift;
+
+    my $scripts = {
+        number => $splitNumber,
+        finisher => undef
+    };
+
+    # Boucle sur les levels et sur le nb de scripts/jobs
+    # On continue avec les autres scripts, par level
+    for (my $i = $pyramid->getBottomOrder(); $i <= $pyramid->getTopOrder(); $i++) {
+        my $levelID = $pyramid->getTileMatrixSet()->getIDfromOrder($i);
+        $scripts->{levels}->{$levelID}->{splits} = [];
+        $scripts->{levels}->{$levelID}->{current} = 0;
+        for (my $j = 1; $j <= $splitNumber; $j++) {
+            push(
+                @{$scripts->{levels}->{$levelID}->{splits}},
+                COMMON::Script->new({
+                    id => "LEVEL_${levelID}_SCRIPT_$j",
+                    tempDir => $tempDir,
+                    scriptDir => $scriptDir,
+                    executedAlone => FALSE,
+                    initialisation => $scriptInit
+                })
+            )
+        }
+    }
+
+    # Le SUPER finisher
+    $scripts->{finisher} = COMMON::Script->new({
+        id => "SCRIPT_FINISHER",
+        tempDir => $tempDir,
+        scriptDir => $scriptDir,
+        executedAlone => TRUE,
+        initialisation => $scriptInit
+    });
+
+    return $scripts;
+}
+
+=begin nd
+Constructor: closeScripts
+
+Close all <COMMON::Script>'s stream.
+
+Parameters (list):
+    scripts - <COMMON::Script> hash - Scripts pool to close
+=cut
+sub closeScripts {
+    my $scripts = shift;
+
+    $scripts->{finisher}->close();
+
+    foreach my $level (keys %{$scripts->{levels}}) {
+
+        foreach my $split (@{$scripts->{levels}->{$level}->{splits}}) {
+            $split->close();
+        }
+    }
+}
+
+####################################################################################################
 #                                        Group: Constructors                                       #
 ####################################################################################################
 
@@ -167,7 +250,7 @@ sub new {
     # IMPORTANT : if modification, think to update natural documentation (just above) and pod documentation (bottom)
     my $this = {
         # in
-        forest    => undef,
+        scripts    => undef,
         pyramid    => undef,
         datasource => undef,
         # ct
@@ -193,7 +276,7 @@ sub new {
     }
 
     # init. params    
-    $this->{forest} = $objForest; 
+    $this->{scripts} = $objForest->getScripts(); 
     $this->{pyramid} = $objForest->getPyramid();
     $this->{datasource} = $objSrc;
 
@@ -300,12 +383,11 @@ sub identifyBottomNodes {
                             next;
                         }
                         # Create a new Node
-                        my $node = COMMON::Node->new({
+                        my $node = BE4::Node->new({
                             col => $col,
                             row => $row,
                             tm => $tm,
-                            graph => $this,
-                            type => $this->{forest}->getStorageType()
+                            graph => $this
                         });
                         if (! defined $node) { 
                             ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $this->{bottomID}, $col, $row);
@@ -317,12 +399,11 @@ sub identifyBottomNodes {
                         if (! exists $this->{nodes}->{$bottomID}->{$nodeKey}) {
 
                             # Create a new Node
-                            my $node = COMMON::Node->new({
+                            my $node = BE4::Node->new({
                                 col => $col,
                                 row => $row,
                                 tm => $tm,
-                                graph => $this,
-                                type => $this->{forest}->getStorageType()
+                                graph => $this
                             });
                             if (! defined $node) { 
                                 ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $this->{bottomID}, $col, $row);
@@ -362,12 +443,11 @@ sub identifyBottomNodes {
                     if (COMMON::ProxyGDAL::isIntersected($OGRslab, $convertExtent)) {
                         my $nodeKey = sprintf "%s_%s", $col, $row;
                         # Create a new Node
-                        my $node = COMMON::Node->new({
+                        my $node = BE4::Node->new({
                             col => $col,
                             row => $row,
                             tm => $tm,
-                            graph => $this,
-                            type => $this->{forest}->getStorageType()
+                            graph => $this
                         });
                         if (! defined $node) { 
                             ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $this->{bottomID}, $col, $row);
@@ -404,12 +484,11 @@ sub identifyBottomNodes {
             $this->updateBBox($xmin,$ymin,$xmax,$ymax);
             
             # Create a new Node
-            my $node = COMMON::Node->new({
+            my $node = BE4::Node->new({
                 col => $col,
                 row => $row,
                 tm => $tm,
-                graph => $this,
-                type => $this->{forest}->getStorageType()
+                graph => $this
             });
             if (! defined $node) { 
                 ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $this->{bottomID}, $col, $row);
@@ -469,7 +548,7 @@ sub identifyAboveNodes {
         # on n'a plus rien à calculer, on sort
         last if ($k == $src->getTopOrder() );
 
-        foreach my $node ( $this->getNodesOfLevel($levelID) ) {
+        foreach my $node ( values (%{$this->{nodes}->{$levelID}}) ) {
             
             # On récupère la BBOX du noeud pour calculer les noeuds cibles
             my ($xMin,$yMin,$xMax,$yMax) = $node->getBBox();
@@ -489,12 +568,11 @@ sub identifyAboveNodes {
 
 
                         if (! defined $this->{nodes}->{$targetTm->getID()}->{$idxkey}) {
-                            my $newnode = new COMMON::Node({
+                            my $newnode = new BE4::Node({
                                 col => $col,
                                 row => $row,
                                 tm => $targetTm,
-                                graph => $this,
-                                type => $this->{forest}->getStorageType()
+                                graph => $this
                             });
                             ## intersection avec la bbox des données initiales
                             if ( $newnode->isBboxIntersectingNodeBbox($this->getBbox())) {
@@ -521,8 +599,7 @@ sub identifyAboveNodes {
 =begin nd
 Function: computeYourself
 
-Only one step:
-    - browse graph and write commands in different scripts.
+Browse graph and write commands in different scripts.
 =cut
 sub computeYourself {
     my $this = shift;
@@ -535,62 +612,35 @@ sub computeYourself {
         # boucle sur tous les noeuds du niveau
         my $levelID = $tms->getIDfromOrder($i);
 
-        foreach my $node ($this->getNodesOfLevel($levelID)) {
+        foreach my $node (values (%{$this->{nodes}->{$levelID}})) {
 
-            my $code = "";
-            my $weight = 0;
-            my ($c,$w);
-
-            # on détermine dans quel script on l'écrit en se basant sur les poids
-            my @scripts = $this->getScriptsOfLevel($levelID);
-            my @weights = map {$_->getWeight();} @scripts ;
-
-            my $minIndex = COMMON::Array::minArrayIndex(0,@weights);
-            my $script = $scripts[$minIndex];
-            $node->setScript($script);
+            $node->setScript($this->{scripts}->{levels}->{$levelID}->{splits}->[$this->{scripts}->{levels}->{$levelID}->{current}]);
+            $this->{scripts}->{levels}->{$levelID}->{current} = ($this->{scripts}->{levels}->{$levelID}->{current} + 1) % $this->{scripts}->{number};
             
             if ($i == $src->getBottomOrder()) {
                 # Le niveau du bas est fait à partir des sources : par moisonnage ou réechantillonnage
                 if ($src->hasHarvesting()) {
                     # Datasource has a WMS service : we have to use it
-                    ($c,$w) = BE4::Shell::wms2work($node, src->getHarvesting());
-                    if (! defined $c) {
+                    if (! $node->wms2work(src->getHarvesting())) {
                         ERROR(sprintf "Cannot harvest image for node %s",$node->getWorkBaseName());
                         return FALSE;
                     }
-                    $code .= $c;
-                    $weight += $w;
                 } else {
                     # on utilise mergeNtiff pour le niveau du bas (à partir des images sources)
-                    ($c,$w) = BE4::Shell::mergeNtiff($node);
-                    if (! defined $c) {
+                    if (! $node->mergeNtiff()) {
                         ERROR(sprintf "Cannot compose mergeNtiff command for the node %s.",$node->getWorkBaseName());
                         return FALSE;
                     }
-                    $code .= $c;
-                    $weight += $w;
                 }
             } else {
                 # un niveau supérieur est fait par décimation d'un niveau inférieur
-                ($c,$w) = BE4::Shell::decimateNtiff($node);
-                if (! defined $c) {
+                if (! $node->decimateNtiff()) {
                     ERROR(sprintf "Cannot compose decimateNtiff command for the node %s.",$node->getWorkBaseName());
                     return FALSE;
-                }  
-                $code .= $c;
-                $weight += $w;
-
+                }
             }
 
-            ($c,$w) = BE4::Shell::work2cache($node);
-            $code .= $c;
-            $weight += $w;
-
-            # on met à jour les poids
-            $script->addWeight($weight);
-            # on ecrit la commande dans le fichier
-            $script->write($code);
-
+            $node->work2cache();
         }
     }
     
@@ -627,12 +677,6 @@ sub containsNode {
 sub getPyramid {
     my $this = shift;
     return $this->{pyramid};
-}
-
-# Function: getForest
-sub getForest {
-    my $this = shift;
-    return $this->{forest};
 }
 
 # Function: getDataSource
@@ -672,26 +716,6 @@ sub getBottomOrder {
 }
 
 =begin nd
-Function: getNodesOfLevel
-
-Returns a <COMMON::Node> array, contaning all nodes of the provided level.
-
-Parameters (list):
-    level - string - Level ID whose we want all nodes.
-=cut
-sub getNodesOfLevel {
-    my $this = shift;
-    my $levelID= shift;
-    
-    if (! defined $levelID) {
-        ERROR("Undefined Level");
-        return undef;
-    }
-    
-    return values (%{$this->{nodes}->{$levelID}});
-}
-
-=begin nd
 Function: isLevelEmpty
 
 Returns a boolean, precise if level is empty.
@@ -710,12 +734,6 @@ sub isLevelEmpty {
     
     return FALSE if (scalar(keys(%{$this->{nodes}->{$levelID}})) > 0) ;
     return TRUE;
-}
-
-# Function: getNodesOfTopLevel
-sub getNodesOfTopLevel {
-    my $this = shift;
-    return $this->getNodesOfLevel($this->{topID});
 }
 
 # Function: getBbox
@@ -740,64 +758,6 @@ sub updateBBox {
     if (! defined $this->{bbox}[1] || $ymin < $this->{bbox}[1]) {$this->{bbox}[1] = $ymin;}
     if (! defined $this->{bbox}[2] || $xmax > $this->{bbox}[2]) {$this->{bbox}[2] = $xmax;}
     if (! defined $this->{bbox}[3] || $ymax > $this->{bbox}[3]) {$this->{bbox}[3] = $ymax;}
-}
-
-=begin nd
-method: getScriptsOfLevel
-
-Returns a <COMMON::Script> array, used scripts to generate the supllied level.
-
-Parameters (list):
-    level - string - Level identifiant, whose scripts we want.
-=cut
-sub getScriptsOfLevel {
-    my $this = shift;
-    my $levelID = shift;
-
-    my $order =  $this->getPyramid()->getTileMatrixSet()->getOrderfromID($levelID);
-    my $splitNumber = $this->getForest()->getSplitNumber();
-
-    my $start_index = ($order - $this->getBottomOrder()) * $splitNumber ;
-    my $end_index = $start_index + $splitNumber - 1;
-
-    return @{$this->getForest()->getScripts()}[$start_index .. $end_index];
-};
-
-####################################################################################################
-#                                Group: Export methods                                             #
-####################################################################################################
-
-=begin nd
-Function: exportForDebug
-
-Returns all informations about the "nearest neighbour" graph. Useful for debug.
-
-Example:
-    (start code)
-    (end code)
-=cut
-sub exportForDebug {
-    my $this = shift ;
-    
-    my $src = $this->getDataSource();
-    my $tms = $this->getPyramid->getTileMatrixSet();
-    
-    my $output = "";
-    
-   # boucle sur tous les niveaux en partant de ceux du bas
-   for (my $i = $src->getBottomOrder; $i <= $src->getTopOrder; $i++) {
-       $output .= sprintf "Description du niveau '%s' : \n",$i;
-       # boucle sur tous les noeuds du niveau
-       foreach my $node ( $this->getNodesOfLevel($tms->getIDfromOrder($i))) {
-         $output .= sprintf "\tNoeud : %s_%s ; TM Résolution : %s ; Calculé à partir de : \n",$node->getCol(),$node->getRow(),$node->getTM()->getResolution();
-         foreach my $node_sup ( @{$node->getSourceNodes()} ) {
-             #print Dumper ($node_sup);
-             $output .= sprintf "\t\t Noeud :%s_%s , TM Resolution : %s\n",$node_sup->getCol(),$node_sup->getRow(),$node_sup->getTM()->getResolution();
-         }
-       }
-   }
-   
-   return $output;
 }
 
 1;

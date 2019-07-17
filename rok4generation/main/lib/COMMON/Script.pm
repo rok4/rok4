@@ -62,8 +62,6 @@ Attributes:
     executedAlone - boolean - If we know a script will be executed ALONE. it can change some working.
     filePath - string - Complete absolute script file path.
     tempDir - string - Directory used to write temporary images.
-    currentweight - integer - Current weight of the script (already written in the file)
-    weight - integer - Total weight of the script, according to its content.
     stream - stream - Stream to the script file, to write in.
 =cut
 
@@ -127,10 +125,7 @@ sub new {
 
         tempDir => undef,
 
-        weight => 0,
-        currentweight => 0,
-
-        stream => undef,
+        stream => undef
     };
 
     bless($this, $class);
@@ -213,41 +208,6 @@ sub getTempDir {
     return $this->{tempDir};
 }
 
-# Function: getWeight
-# Returns the script's weight
-sub getWeight {
-    my $this = shift;
-    return $this->{weight};
-}
-
-=begin nd
-Function: addWeight
-Add provided weight to script's weight.
-
-Parameters (list):
-    weight - integer - weight to add to script's one.
-=cut
-sub addWeight {
-    my $this = shift;
-    my $weight = shift;
-    
-    $this->{weight} += $weight;
-}
-
-=begin nd
-Function: setWeight
-Define the script's weight.
-
-Parameters (list):
-    weight - integer - weight to set as script's one.
-=cut
-sub setWeight {
-    my $this = shift;
-    my $weight = shift;
-    
-    $this->{weight} = $weight;
-}
-
 ####################################################################################################
 #                                   Group: Stream methods                                          #
 ####################################################################################################
@@ -257,10 +217,8 @@ Function: prepare
 
 Write script's header, which contains script's environment variables: the script ID, path to work directory.
 
-Example:
-    (start code)
-    (end code)
-
+Parameters (list):
+    initialisation - string - Shell method and variables usefull to generate the pyramid
 =cut
 sub prepare {
     my $this = shift;
@@ -297,24 +255,13 @@ Print text in the script's file, using the opened stream.
 
 Parameters (list):
     text - string - Text to write in file.
-    w - integer - Weight of the instructions to write
 =cut
 sub write {
     my $this = shift;
     my $text = shift;
-    my $w = shift;
     
     my $stream = $this->{stream};
     printf $stream "%s", $text;
-    
-    if ($this->{weight} != 0 && defined $w) {
-        my $oldpercent = int($this->{currentweight}/$this->{weight}*100);
-        $this->{currentweight} += $w;
-        my $newpercent = int($this->{currentweight}/$this->{weight}*100);
-        if ($oldpercent != $newpercent) {
-            print $stream "echo \"------------- Progression : $newpercent%\"\n";
-        }
-    }
 }
 
 # Function: close
@@ -322,9 +269,6 @@ sub close {
     my $this = shift;
     
     my $stream = $this->{stream};
-
-    print $stream "echo \"------------- Progression : COMPLETE\"\n";
-    printf $stream "\necho \"Theorical weight was : %s\"\n", $this->{weight};
 
     # On copie la liste temporaire de ce script vers le dossier commun si il existe
     printf $stream "if [ -f \"\${TMP_LIST_FILE}\" ];then\n";

@@ -42,7 +42,7 @@ Class: COMMON::QTree
 
 (see ROK4GENERATION/libperlauto/COMMON_QTree.png)
 
-Representation of a quad tree image pyramid : pyramid's image = <COMMON::Node>
+Representation of a quad tree image pyramid : pyramid's image = <BE4::Node> or <FOURALAMO::Node>
 
 (see ROK4GENERATION/QTreeTMS.png)
 
@@ -80,7 +80,6 @@ Using:
     (end code)
 
 Attributes:
-    forest - <COMMON::Forest> - Forest which this tree belong to.
     pyramid - <COMMON::PyramidRaster> or <COMMON::PyramidVector> - Pyramid linked to this tree.
     datasource - <COMMON::DataSource> - Data source to use to define bottom level nodes and generate them.
 
@@ -88,7 +87,7 @@ Attributes:
     ct_pyramid_source - <Geo::OSR::CoordinateTransformation> - Coordinate transformation from pyramid srs to datasource srs
 
     bbox - double array - Datasource bbox, [xmin,ymin,xmax,ymax], in TMS' SRS
-    nodes - <COMMON::Node> hash - Structure is:
+    nodes - <BE4::Node> or <FOURALAMO::Node> hash - Structure is:
         (start code)
         level1 => {
            c1_r2 => n1,
@@ -100,8 +99,10 @@ Attributes:
 
         cX : node's column
         rX : node's row
-        nX : COMMON::Node
+        nX : BE4::Node or FOURLAMO::Node
         (end code)
+
+    scripts - <COMMON::Script> hash - The same for all QTree of the <COMMON::Forest>.
 
     cutLevelID - string - Cut level identifiant. To parallelize work, split scripts will generate cache from the bottom to this level. Script finisher will be generate from this above, to top.
     bottomID - string - Bottom level identifiant
@@ -119,7 +120,8 @@ use Math::BigFloat;
 use Data::Dumper;
 
 use COMMON::DataSource;
-use COMMON::Node;
+use BE4::Node;
+use FOURALAMO::Node;
 use COMMON::PyramidRaster;
 use COMMON::PyramidVector;
 use COMMON::Array;
@@ -150,6 +152,75 @@ INIT {}
 END {}
 
 ####################################################################################################
+#                                       Group: Class methods                                       #
+####################################################################################################
+
+=begin nd
+Constructor: defineScripts
+
+Create all <COMMON::Script>'s to generate the QTree pyramid. They are stored in the <COMMON::Forest> instance.
+
+Parameters (list):
+    splitNumber - integer - Parallelization level
+    scriptInit - string - Shell function to write into each script
+    tempDir - string - Path to personnal script temporary directory
+    scriptDir - string - Path to directory where to write script
+=cut
+sub defineScripts {
+    my $splitNumber = shift;
+    my $scriptInit = shift;
+    my $tempDir = shift;
+    my $scriptDir = shift;
+
+    my $scripts = {
+        splits => [],
+        current => 0,
+        number => $splitNumber,
+        finisher => undef
+    };
+
+    for (my $i = 1; $i <= $splitNumber; $i++) {
+        push(
+            @{$scripts->{splits}},
+            COMMON::Script->new({
+                id => "SCRIPT_$i",
+                tempDir => $tempDir,
+                scriptDir => $scriptDir,
+                executedAlone => FALSE,
+                initialisation => $scriptInit
+            })
+        )
+    }
+
+    $scripts->{finisher} = COMMON::Script->new({
+        id => "SCRIPT_FINISHER",
+        tempDir => $tempDir,
+        scriptDir => $scriptDir,
+        executedAlone => TRUE,
+        initialisation => $scriptInit
+    });
+
+    return $scripts;
+}
+
+=begin nd
+Constructor: closeScripts
+
+Close all <COMMON::Script>'s stream.
+
+Parameters (list):
+    scripts - <COMMON::Script> hash - Scripts pool to close
+=cut
+sub closeScripts {
+    my $scripts = shift;
+
+    $scripts->{finisher}->close();
+    foreach my $split (@{$scripts->{splits}}) {
+        $split->close();
+    }
+}
+
+####################################################################################################
 #                                        Group: Constructors                                       #
 ####################################################################################################
 
@@ -174,7 +245,7 @@ sub new {
     # IMPORTANT : if modification, think to update natural documentation (just above)
     my $this = {
         # in
-        forest => undef,
+        scripts => undef,
         pyramid => undef,
         datasource => undef,
         # ct
@@ -202,7 +273,7 @@ sub new {
     }
 
     # init. params   
-    $this->{forest} = $objForest; 
+    $this->{scripts} = $objForest->getScripts(); 
     $this->{pyramid} = $objForest->getPyramid();
     $this->{datasource} = $objSrc; 
 
@@ -225,8 +296,8 @@ sub _load {
     my $src = $this->{datasource};
     
     # récupération d'information dans la source de données
-    $this->{topID} = $this->{datasource}->getTopID;
-    $this->{bottomID} = $this->{datasource}->getBottomID;
+    $this->{topID} = $this->{datasource}->getTopID();
+    $this->{bottomID} = $this->{datasource}->getBottomID();
 
     # initialisation des transformations de coordonnées datasource <-> pyramide
     # Si les srs sont identiques on laisse undef.
@@ -255,6 +326,32 @@ sub _load {
         ERROR(sprintf "Cannot determine above levels' tiles.");
         return FALSE;
     }
+
+    # définir le niveau de coupure
+    my $firstOrder = $this->getBottomOrder();
+    if (ref ($this->{pyramid}) eq "COMMON::PyramidVector") {
+        # En vecteur, on force le choix du cut level au niveau du haut en ne testant que celui là.
+        $this->{cutLevelID} = $this->{topID};
+    } elsif (ref ($this->{pyramid}) eq "COMMON::PyramidRaster") {
+
+        for (my $i = $this->getBottomOrder(); $i <= $this->getTopOrder(); $i++) {
+            my $levelID = $tms->getIDfromOrder($i);
+            
+            if (! defined $this->{cutLevelID}) {
+                $this->{cutLevelID} = $levelID;
+                next;
+            }
+
+            my $levelNodesCount = scalar(keys(%{$this->{nodes}->{$levelID}}));
+
+            if ($levelNodesCount < 5 * $this->{scripts}->{number}) {
+                last;
+            }
+            $this->{cutLevelID} = $levelID;
+        }
+    }
+
+    INFO("Cut level ID : ".$this->{cutLevelID});
          
     return TRUE;
 }
@@ -271,6 +368,13 @@ Calculate all nodes in bottom level concerned by the datasource (tiles which tou
 =cut
 sub identifyBottomNodes {
     my $this = shift;
+
+    my $nodeClass;
+    if (ref ($this->{pyramid}) eq "COMMON::PyramidVector") {
+        $nodeClass = 'FOURALAMO::Node';
+    } elsif(ref ($this->{pyramid}) eq "COMMON::PyramidRaster") {
+        $nodeClass = 'BE4::Node';
+    }
     
     my $bottomID = $this->{bottomID};
     my $tm = $this->{pyramid}->getTileMatrixSet->getTileMatrix($bottomID);
@@ -308,29 +412,29 @@ sub identifyBottomNodes {
                             next;
                         }
                         # Create a new Node
-                        my $node = COMMON::Node->new({
+
+                        my $node = $nodeClass->new({
                             col => $col,
                             row => $row,
                             tm => $tm,
-                            graph => $this,
-                            type => $this->{forest}->getStorageType()
+                            graph => $this
                         });
                         if (! defined $node) { 
                             ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $this->{bottomID}, $col, $row);
                             return FALSE;
-                        }
+                        }                        
+
                         $this->{nodes}->{$bottomID}->{$nodeKey} = $node;
                     } else {
                         # we use images to generate this leaf
                         if (! exists $this->{nodes}->{$bottomID}->{$nodeKey}) {
 
                             # Create a new Node
-                            my $node = COMMON::Node->new({
+                            my $node = $nodeClass->new({
                                 col => $col,
                                 row => $row,
                                 tm => $tm,
-                                graph => $this,
-                                type => $this->{forest}->getStorageType()
+                                graph => $this
                             });
                             if (! defined $node) { 
                                 ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $this->{bottomID}, $col, $row);
@@ -370,12 +474,11 @@ sub identifyBottomNodes {
                     if (COMMON::ProxyGDAL::isIntersected($OGRslab, $convertExtent)) {
                         my $nodeKey = sprintf "%s_%s", $col, $row;
                         # Create a new Node
-                        my $node = COMMON::Node->new({
+                        my $node = $nodeClass->new({
                             col => $col,
                             row => $row,
                             tm => $tm,
-                            graph => $this,
-                            type => $this->{forest}->getStorageType()
+                            graph => $this
                         });
                         if (! defined $node) { 
                             ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $this->{bottomID}, $col, $row);
@@ -412,12 +515,11 @@ sub identifyBottomNodes {
             $this->updateBBox($xmin,$ymin,$xmax,$ymax);
             
             # Create a new Node
-            my $node = COMMON::Node->new({
+            my $node = $nodeClass->new({
                 col => $col,
                 row => $row,
                 tm => $tm,
-                graph => $this,
-                type => $this->{forest}->getStorageType()
+                graph => $this
             });
             if (! defined $node) { 
                 ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $this->{bottomID}, $col, $row);
@@ -441,6 +543,13 @@ Calculate all nodes in above levels. We generate a above level node if one or mo
 =cut
 sub identifyAboveNodes {
     my $this = shift;
+
+    my $nodeClass;
+    if (ref ($this->{pyramid}) eq "COMMON::PyramidVector") {
+        $nodeClass = 'FOURALAMO::Node';
+    } elsif(ref ($this->{pyramid}) eq "COMMON::PyramidRaster") {
+        $nodeClass = 'BE4::Node';
+    }
     
     # initialisation pratique:
     my $tms = $this->{pyramid}->getTileMatrixSet();
@@ -459,7 +568,7 @@ sub identifyAboveNodes {
         # On va calculer les noeuds du niveau du dessus
         my $aboveLevelID = $tms->getIDfromOrder($i+1);
 
-        foreach my $node ($this->getNodesOfLevel($levelID)) {
+        foreach my $node (values (%{$this->{nodes}->{$levelID}})) {
                         
             my $parentNodeKey = int($node->getCol/2)."_".int($node->getRow/2);
             if (exists $this->{nodes}->{$aboveLevelID}->{$parentNodeKey}) {
@@ -467,12 +576,11 @@ sub identifyAboveNodes {
                 next;
             }
             # Create a new Node
-            my $node = COMMON::Node->new({
+            my $node = $nodeClass->new({
                 col => int($node->getCol/2),
                 row => int($node->getRow/2),
                 tm => $tms->getTileMatrix($aboveLevelID),
-                graph => $this,
-                type => $this->{forest}->getStorageType()
+                graph => $this
             });
             if (! defined $node) { 
                 ERROR(sprintf "Cannot create Node for level %s, indices %s,%s.", $aboveLevelID, int($node->getRow/2), int($node->getRow/2));
@@ -502,51 +610,21 @@ Three steps:
 =cut
 sub computeYourself {
     my $this = shift;
+    
+    foreach my $topNode (values (%{$this->{nodes}->{$this->{topID}}})) {
+        if ($this->{topID} eq $this->{cutLevelID}) {
+            $topNode->setScript($this->{scripts}->{splits}->[$this->{scripts}->{current}]);
+            $this->{scripts}->{current} = ($this->{scripts}->{current} + 1) % $this->{scripts}->{number};
+        } else {
+            $topNode->setScript($this->{scripts}->{finisher});
+        }
 
-    
-    my @topLevelNodes = $this->getNodesOfTopLevel;
-    
-    # ----------------------- WEIGHT AND CODE ---------------------------
-    # Pondération de l'arbre en fonction des opérations à réaliser et écriture des commandes dans les noeuds
-    DEBUG ("Compilation des branches depuis les noeuds du niveau le plus haut");
-    foreach my $topNode (@topLevelNodes) {
         if (! $this->computeBranch($topNode)) {
-            ERROR(sprintf "Can not weight the node of the top level '%s'!", $topNode->getWorkBaseName());
+            ERROR(sprintf "Can not compute the node of the top level '%s'!", $topNode->getWorkBaseName());
             return FALSE;
         }
     }
-    
-    # -------------------------- SHARING --------------------------------
-    # Détermination du cutLevel optimal et répartition des noeuds sur les jobs,
-    # en tenant compte du fait qu'ils peuvent déjà contenir du travail, du fait
-    # de la pluralité des arbres à traiter.
 
-    DEBUG ("Calcul du niveau de coupure");
-    
-    $this->shareNodesOnJobs();
-
-    if (! defined $this->{cutLevelID}) {
-        ERROR("Impossible to determine the cut level !");
-        return FALSE;
-    }
-    INFO (sprintf "CutLevel : %s", $this->{cutLevelID});
-
-    # ----------------- PRECISE LEVELS IN SCRIPTS -----------------------
-    my $levelsExport = $this->exportLevelsForScript();
-    for (my $i = 0; $i <= $this->{forest}->getSplitNumber(); $i++) {
-        $this->{forest}->getScript($i)->write($levelsExport);
-    }
-
-    # -------------------------- WRITTING -------------------------------
-    
-    foreach my $topNode (@topLevelNodes) {
-        if ($this->getTopID() ne $this->getCutLevelID()) {
-            $topNode->setScript($this->getScriptFinisher());
-        }
-        
-        $this->writeCode($topNode);
-    }
-    
     return TRUE;
 }
 
@@ -564,16 +642,12 @@ Vector case:
     - the node does not belong to the top level -> <computeBelowImage> then <computeBranch> on each child
 
 Parameters (list):
-    node - <COMMON::Node> - Node to compute.
+    node - <BE4::Node> or <FOURALAMO::Node> - Node to compute.
 =cut
 sub computeBranch {
-    
     my $this = shift;
     my $node = shift;
 
-    my $weight = 0;
-
-    my $res = '';
     my @childList = $this->getChildren($node);
 
     if (ref ($this->{pyramid}) eq "COMMON::PyramidVector") {
@@ -596,15 +670,17 @@ sub computeBranch {
         }
 
         foreach my $n (@childList) {
-            
+            if ($n->getLevel() eq $this->{cutLevelID}) {
+                $n->setScript($this->{scripts}->{splits}->[$this->{scripts}->{current}]);
+                $this->{scripts}->{current} = ($this->{scripts}->{current} + 1) % $this->{scripts}->{number};
+            } else {
+                $n->setScript($node->getScript());
+            }
             if (! $this->computeBranch($n)) {
                 ERROR(sprintf "Cannot compute the branch from node %s", $node->getWorkBaseName());
                 return FALSE;
             }
-            $weight += $n->getAccumulatedWeight();
         }
-
-        $node->setAccumulatedWeight($weight);
 
     }
     elsif (ref ($this->{pyramid}) eq "COMMON::PyramidRaster") {
@@ -616,20 +692,22 @@ sub computeBranch {
             return TRUE;
         }
         foreach my $n (@childList) {
-            
+            if ($n->getLevel() eq $this->{cutLevelID}) {
+                $n->setScript($this->{scripts}->{splits}->[$this->{scripts}->{current}]);
+                $this->{scripts}->{current} = ($this->{scripts}->{current} + 1) % $this->{scripts}->{number};
+            } else {
+                $n->setScript($node->getScript());
+            }
             if (! $this->computeBranch($n)) {
                 ERROR(sprintf "Cannot compute the branch from node %s", $node->getWorkBaseName());
                 return FALSE;
             }
-            $weight += $n->getAccumulatedWeight();
         }
 
         if (! $this->computeAboveImage($node)) {
             ERROR(sprintf "Cannot compute the above image : %s", $node->getWorkBaseName());
             return FALSE;
         }
-
-        $node->setAccumulatedWeight($weight);
     }
 
     return TRUE;
@@ -640,57 +718,36 @@ sub computeBranch {
 =begin nd
 Function: computeBottomImage
 
-Treats a bottom node for a raster pyramid : determine code or weight.
+Treats a bottom node for a raster pyramid : write code.
 
 2 cases:
-    - images as data -> <BE4::Shell::mergeNtiff>
-    - WMS service as data -> <BE4::Shell::wms2work>
+    - images as data -> <BE4::Node::mergeNtiff>
+    - WMS service as data -> <BE4::Node::wms2work>
 
-Then the work image is formatted and move to the final place thanks to <BE4::Shell::work2cache>.
+Then the work image is formatted and move to the final place thanks to <BE4::Node::work2cache>.
 
 Parameters (list):
-    node - <COMMON::Node> - Bottom level's node, to treat.
+    node - <BE4::Node> - Bottom level's node, to treat.
     
 =cut
 sub computeBottomImage {
-    
     my $this = shift;
     my $node = shift;
-
-    
-    # Temporary weight and code
-    my ($c,$w);
-    # Final weight and code
-    my $weight  = 0;
-    my $code  = "\n";
-    
+        
     if ($this->getDataSource()->hasHarvesting()) {
         # Datasource has a WMS service : we have to use it
-        ($c,$w) = BE4::Shell::wms2work($node, $this->getDataSource()->getHarvesting());
-        if (! defined $c) {
+        if (! $node->wms2work($this->getDataSource()->getHarvesting())) {
             ERROR(sprintf "Cannot harvest image for node %s", $node->getWorkBaseName());
             return FALSE;
         }
-        
-        $code .= $c;
-        $weight += $w;
     } else {    
-        ($c,$w) = BE4::Shell::mergeNtiff($node);
-        if (! defined $c) {
+        if (! $node->mergeNtiff()) {
             ERROR(sprintf "Cannot compose mergeNtiff command for the node %s.",$node->getWorkBaseName());
             return FALSE;
         }
-        $code .= $c;
-        $weight += $w;
     }
 
-    ($c,$w) = BE4::Shell::work2cache($node);
-    $code .= $c;
-    $weight += $w;
-
-    $node->setOwnWeight($weight);
-    $node->setAccumulatedWeight(0);
-    $node->setCode($code);
+    $node->work2cache();
 
     return TRUE;
 }
@@ -698,42 +755,27 @@ sub computeBottomImage {
 =begin nd
 Function: computeAboveImage
 
-Treats an above node for a raster pyramid (different to the bottom level) : determine code or weight.
+Treats an above node for a raster pyramid (different to the bottom level) : write code.
 
-To generate an above node, we use <BE4::Shell::merge4tiff> with children.
+To generate an above node, we use <BE4::Node::merge4tiff> with children.
 
-Then the work image is formatted and move to the final place thanks to <BE4::Shell::work2cache>.
+Then the work image is formatted and move to the final place thanks to <BE4::Node::work2cache>.
 
 Parameters (list):
-    node - <COMMON::Node> - Above level's node, to treat.
+    node - <BE4::Node> - Above level's node, to treat.
 =cut
 sub computeAboveImage {
     
     my $this = shift;
     my $node = shift;
-
-
-    # Temporary weight and code
-    my ($c,$w);
-    # Final weight and code
-    my $weight  = 0;
-    my $code  = "\n";
     
     # Maintenant on constitue la liste des images à passer à merge4tiff.
-    ($c,$w) = BE4::Shell::merge4tiff($node);
-    if (! defined $c) {
-        ERROR(sprintf "Cannot compose merge4tiff command for the node %s.",$node->getWorkBaseName);
+    if (! $node->merge4tiff()) {
+        ERROR(sprintf "Cannot compose merge4tiff command for the node %s.",$node->getWorkBaseName());
         return FALSE;
     }
-    $code .= $c;
-    $weight += $w;
 
-    ($c,$w) = BE4::Shell::work2cache($node);
-    $code .= $c;
-    $weight += $w;
-
-    $node->setOwnWeight($weight);
-    $node->setCode($code);
+    $node->work2cache();
 
     return TRUE;
 }
@@ -743,51 +785,32 @@ sub computeAboveImage {
 =begin nd
 Function: computeTopImage
 
-Treats a top node for a vector pyramid : determine code or weight.
+Treats a top node for a vector pyramid : write code.
 
 The call to ogr2ogr extract all data contained in the node. The call to tippecanoe generate all tiles below this node
 
 Finally the call to pbf2cache generate the vector slab.
 
 Parameters (list):
-    node - <COMMON::Node> - Top level's node, to treat.
+    node - <FOURALAMO::Node> - Top level's node, to treat.
     
 =cut
 sub computeTopImage {
     
     my $this = shift;
     my $node = shift;
-
-    
-    # Temporary weight and code
-    my ($c,$w);
-    # Final weight and code
-    my $weight  = 0;
-    my $code  = "\n";
      
-    ($c,$w) = FOURALAMO::Shell::makeJsons($node, $this->getDataSource()->getDatabaseSource());
-    if (! defined $c) {
+    if (! $node->makeJsons($this->getDataSource()->getDatabaseSource())) {
         ERROR(sprintf "Cannot compose ogr2ogrs command for the node %s.",$node->getWorkBaseName());
         return FALSE;
     }
-    $code .= $c;
-    $weight += $w;
 
-    ($c,$w) = FOURALAMO::Shell::makeTiles($node);
-    if (! defined $c) {
+    if (! $node->makeTiles()) {
         ERROR(sprintf "Cannot compose tippecanoe command for the node %s.",$node->getWorkBaseName());
         return FALSE;
     }
-    $code .= $c;
-    $weight += $w;
 
-    ($c,$w) = FOURALAMO::Shell::pbf2cache($node);
-    $code .= $c;
-    $weight += $w;
-
-    $node->setOwnWeight($weight);
-    $node->setAccumulatedWeight(0);
-    $node->setCode($code);
+    $node->pbf2cache();
 
     return TRUE;
 }
@@ -798,186 +821,20 @@ Function: computeBelowImage
 Treats a below node for a vector pyramid : determine code or weight. Tiles have been generated by tippecanoe, we juste have to call pbf2cache to generater the vector slab.
 
 Parameters (list):
-    node - <COMMON::Node> - Below level's node, to treat.
+    node - <FOURALAMO::Node> - Below level's node, to treat.
 =cut
 sub computeBelowImage {
     
     my $this = shift;
     my $node = shift;
-
-
-    # Temporary weight and code
-    my ($c,$w);
-    # Final weight and code
-    my $weight  = 0;
-    my $code  = "\n";
     
     # Maintenant on constitue la liste des images à passer à pbf2cache.
-    ($c,$w) = FOURALAMO::Shell::pbf2cache($node);
-    if (! defined $c) {
+    if (! $node->pbf2cache()) {
         ERROR(sprintf "Cannot compose pbf2cache command for the node %s.",$node->getWorkBaseName());
         return FALSE;
     }
-    $code .= $c;
-    $weight += $w;
-
-    $node->setOwnWeight($weight);
-    $node->setCode($code);
 
     return TRUE;
-}
-
-####################################################################################################
-#                                   Group: Writer methods                                          #
-####################################################################################################
-
-=begin nd
-Function: writeCode
-
-Recursive method, which allow to browse tree (downward) and write commands in associated node's script.
-
-In raster case we write the children code before the parent code.
-
-In vector case we write the parent code before the children code.
-
-Parameters (list):
-    node - <COMMON::Node> - Node whose code is written.
-=cut
-sub writeCode {
-    my $this = shift;
-    my $node = shift;
-
-
-    if (ref ($this->{pyramid}) eq "COMMON::PyramidRaster") {
-
-        my @childList = $this->getChildren($node);
-
-        # Le noeud est une feuille
-        if (scalar @childList == 0){
-            $node->writeInScript();
-            return TRUE;
-        }
-
-        # Le noeud a des enfants
-        foreach my $n (@childList) {
-            if ($n->getLevel() ne $this->getCutLevelID()) {
-                $n->setScript($node->getScript());
-            }
-            $this->writeCode($n);
-        }
-        
-        $node->writeInScript();
-    }
-    elsif (ref ($this->{pyramid}) eq "COMMON::PyramidVector") {
-
-        $node->writeInScript();
-
-        my @childList = $this->getChildren($node);
-
-        # Le noeud a des enfants
-        foreach my $n (@childList) {
-            if ($n->getLevel() ne $this->getCutLevelID()) {
-                $n->setScript($node->getScript());
-            }
-            $this->writeCode($n);
-        }
-    }
-
-    return TRUE;
-}
-
-####################################################################################################
-#                                  Group: Cut level methods                                        #
-####################################################################################################
-
-=begin nd
-Function: shareNodesOnJobs
-
-Determine the cutLevel to optimize sharing into scripts and execution time.
-(see ROK4GENERATION/scripts.png)
-
-For each level:
-    - we sort nodes by descending accumulated weight
-    - we deal nodes on scripts. Not a round robin distribution, but we assign node generation to the lighter script.
-    - we add the heavier weight and the finisher weight : we obtain the worst weight and we memorized it to finally keep the smaller worst weight.
-
-The cut level could be the bottom level (splits only generate bottom level nodes) or the top level (finisher script do nothing).
-
-To manipulate weights array, we use the tool class <Array>.
-
-In the vector case, cut level is always the top level, what ever weights.
-=cut
-sub shareNodesOnJobs {
-    my $this = shift;
-
-    my $tms = $this->{pyramid}->getTileMatrixSet;
-    my $splitNumber = $this->{forest}->getSplitNumber;
-
-    
-    my $optimalWeight = undef;
-    my $cutLevelID = undef;
-    
-    my @jobsWeights = undef;
-
-    # calcul du poids total de l'arbre : c'est la somme des poids cumulé des noeuds du topLevel
-    my $wholeTreeWeight = 0;
-    my @topLevelNodeList = $this->getNodesOfTopLevel;
-    foreach my $node (@topLevelNodeList) {
-        $wholeTreeWeight += $node->getAccumulatedWeight;
-    }
-
-
-    my $firstOrder = $this->getBottomOrder();
-    if (ref ($this->{pyramid}) eq "COMMON::PyramidVector") {
-        # En vecteur, on force le choix du cut level au niveau du haut en ne testant que celui là.
-        $firstOrder = $this->getTopOrder();
-    }
-    
-    for (my $i = $firstOrder; $i <= $this->getTopOrder(); $i++) {
-        my $levelID = $tms->getIDfromOrder($i);
-        my @levelNodeList = $this->getNodesOfLevel($levelID);
-        
-        @levelNodeList = sort {$b->getAccumulatedWeight <=> $a->getAccumulatedWeight} @levelNodeList;
-
-        my @TMP_WEIGHTS;
-        for (my $j = 0; $j <= $splitNumber; $j++) {
-            # On initialise les poids avec ceux des scripts (peuvent ne pas être vides, si multi-sources)
-            $TMP_WEIGHTS[$j] = $this->{forest}->getWeightOfScript($j);
-        }
-        
-        my $finisherWeight = $wholeTreeWeight;
-        
-        for (my $j = 0; $j < scalar @levelNodeList; $j++) {
-            my $scriptInd = COMMON::Array::minArrayIndex(1,@TMP_WEIGHTS);
-            my $nodeWeight = $levelNodeList[$j]->getAccumulatedWeight;
-            $TMP_WEIGHTS[$scriptInd] += $nodeWeight;
-            $finisherWeight -= $nodeWeight;
-            $levelNodeList[$j]->setScript($this->{forest}->getScript($scriptInd));
-        }
-        
-        # on additionne le poids du job le plus "lourd" et le poids du finisher pour quantifier le
-        # pire temps d'exécution
-        $TMP_WEIGHTS[0] += $finisherWeight;
-        my $worstWeight = COMMON::Array::maxArrayValue(1,@TMP_WEIGHTS) + $finisherWeight;
-        
-        DEBUG(sprintf "For the level $levelID, the worst weight is $worstWeight.");
-
-        # on compare ce pire des cas avec celui obtenu jusqu'ici. S'il est plus petit, on garde ce niveau comme
-        # cutLevel (a priori celui qui optimise le temps total de la génération de la pyramide).
-        if (! defined $optimalWeight || $worstWeight < $optimalWeight) {
-            $optimalWeight = $worstWeight;
-            $cutLevelID = $levelID;
-            @jobsWeights = @TMP_WEIGHTS;
-            DEBUG (sprintf "New cutLevel found : %s (worstWeight : %s)",$levelID,$optimalWeight);
-        }
-    }
-    
-    # We store results in array references
-    for (my $i = 0; $i <= $splitNumber; $i++) {
-        $this->{forest}->setWeightOfScript($i,$jobsWeights[$i]);
-    }
-
-    $this->{cutLevelID} = $cutLevelID;
 }
 
 ####################################################################################################
@@ -1017,19 +874,13 @@ sub getTopID {
 # Function: getTopOrder
 sub getTopOrder {
     my $this = shift;
-    return $this->{pyramid}->getTileMatrixSet->getOrderfromID($this->{topID});
+    return $this->{pyramid}->getTileMatrixSet()->getOrderfromID($this->{topID});
 }
 
 # Function: getBottomOrder
 sub getBottomOrder {
     my $this = shift;
-    return $this->{pyramid}->getTileMatrixSet->getOrderfromID($this->{bottomID});
-}
-
-# Function: getScriptFinisher
-sub getScriptFinisher {
-    my $this = shift;
-    return $this->{forest}->getScript(0); 
+    return $this->{pyramid}->getTileMatrixSet()->getOrderfromID($this->{bottomID});
 }
 
 =begin nd
@@ -1076,13 +927,13 @@ sub updateBBox {
 =begin nd
 Function: getPossibleChildren
 
-Returns a <COMMON::Node> array, containing children (length is always 4, with undefined value for children which don't exist), an empty array if the node is a leaf.
+Returns a <BE4::Node> or <FOURALAMO::Node> array, containing children (length is always 4, with undefined value for children which don't exist), an empty array if the node is a leaf.
 
 Warning:
     Do not mistake with <getChildren>
 
 Parameters (list):
-    node - <COMMON::Node> - Node whose we want to know possible children.
+    node - <BE4::Node> or <FOURALAMO::Node> - Node whose we want to know possible children.
 =cut
 sub getPossibleChildren {
     my $this = shift;
@@ -1112,13 +963,13 @@ sub getPossibleChildren {
 =begin nd
 Function: getChildren
 
-Returns a <COMMON::Node> array, containing real children (max length = 4), an empty array if the node is a leaf.
+Returns a <BE4::Node> or <FOURALAMO::Node> array, containing real children (max length = 4), an empty array if the node is a leaf.
 
 Warning:
     Do not mistake with <getPossibleChildren>
 
 Parameters (list):
-    node - <COMMON::Node> - Node whose we want to know children.
+    node - <BE4::Node> or <FOURALAMO::Node> - Node whose we want to know children.
 =cut
 sub getChildren {
     my $this = shift;
@@ -1141,94 +992,6 @@ sub getChildren {
     }
     
     return @res;
-}
-
-=begin nd
-Function: getNodesOfLevel
-
-Returns a <COMMON::Node> array, contaning all nodes of the provided level.
-
-Parameters (list):
-    level - string - Level ID whose we want all nodes.
-=cut
-sub getNodesOfLevel {
-    my $this = shift;
-    my $level = shift;
-    
-    if (! defined $level) {
-        ERROR("Undefined Level");
-        return undef;
-    }
-    
-    return values (%{$this->{nodes}->{$level}});
-}
-
-# Function: getNodesOfTopLevel
-sub getNodesOfTopLevel {
-    my $this = shift;
-    return $this->getNodesOfLevel($this->{topID});
-}
-
-####################################################################################################
-#                                Group: Export methods                                             #
-####################################################################################################
-
-=begin nd
-Function: exportLevelsForScript
-
-Define levels into bash varaiables
-
-Example:
-    (start code)
-    # QTree levels
-    TOP_LEVEL="0"
-    CUT_LEVEL="10"
-    BOTTOM_LEVEL="11"
-    (end code)
-=cut
-sub exportLevelsForScript {
-    my $this = shift ;
-
-    my $code = sprintf ("\n# QTree levels\n");
-    $code .= sprintf ("TOP_LEVEL=\"%s\"\n", $this->{topID});
-    $code .= sprintf ("CUT_LEVEL=\"%s\"\n", $this->{cutLevelID});
-    $code .= sprintf ("BOTTOM_LEVEL=\"%s\"\n", $this->{bottomID});
-
-    return $code;
-}
-
-=begin nd
-Function: exportForDebug
-
-Returns all informations about the quad tree. Useful for debug.
-
-Example:
-    (start code)
-    (end code)
-=cut
-sub exportForDebug {
-    my $this = shift ;
-    
-    my $export = "";
-    
-    $export .= sprintf "\nObject COMMON::QTree :\n";
-    $export .= sprintf "\t Levels ID:\n";
-    $export .= sprintf "\t\t- bottom : %s\n",$this->{bottomID};
-    $export .= sprintf "\t\t- cut : %s\n",$this->{cutLevelID};
-    $export .= sprintf "\t\t- top : %s\n",$this->{topID};
-
-    $export .= sprintf "\t Number of nodes per level :\n";
-    foreach my $level ( keys %{$this->{nodes}} ) {
-        $export .= sprintf "\t\tLevel %s : %s node(s)\n",$level,scalar (keys %{$this->{nodes}->{$level}});
-    }
-    
-    $export .= sprintf "\t Bbox (SRS : %s) :\n",$this->{pyramid}->getTileMatrixSet->getSRS;
-    $export .= sprintf "\t\t- xmin : %s\n",$this->{bbox}[0];
-    $export .= sprintf "\t\t- ymin : %s\n",$this->{bbox}[1];
-    $export .= sprintf "\t\t- xmax : %s\n",$this->{bbox}[2];
-    $export .= sprintf "\t\t- ymax : %s\n",$this->{bbox}[3];
-    
-    return $export;
 }
 
 1;

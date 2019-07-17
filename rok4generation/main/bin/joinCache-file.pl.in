@@ -357,13 +357,7 @@ sub validate {
 
     $this{mergeMethod} = $processSection->{merge_method};
 
-    if (exists $processSection->{use_masks} && defined $processSection->{use_masks} && uc($processSection->{use_masks}) eq "TRUE") {
-        $this{useMasks} = TRUE;
-    } else {
-        $this{useMasks} = FALSE;
-    }
-
-    if (! JOINCACHE::Shell::setGlobals($processSection->{path_temp_common}, $processSection->{merge_method})) {
+    if (! JOINCACHE::Shell::setGlobals($processSection->{path_temp_common}, $processSection->{merge_method}, $processSection->{use_masks})) {
         ERROR ("Impossible d'initialiser la librairie des commandes Shell pour JOINCACHE");
         return FALSE;
     }
@@ -523,9 +517,7 @@ sub doIt {
                     row => $ROW,
                     pyramid => $pyramid,
                     sourcePyramids => $sources,
-                    mainSourceIndice => $nSource,
-                    useMasks => $this{useMasks},
-                    mergeMethod => $this{mergeMethod}
+                    mainSourceIndice => $nSource
                 });
 
                 if (! defined $node) {
@@ -613,16 +605,16 @@ sub treatNode {
 
         my $sourceImage = $node->getSource(0);
 
-        if ($this{pyramid}->checkCompatibility($sourceImage->{sourcePyramid}) == 2) {
+        if ($sourceImage->{compatible}) {
             # We can just make a symbolic link, in a script
-            JOINCACHE::Shell::linkSlab($node, $sourceImage->{img}, $finalImage);
+            $node->linkSlab($sourceImage->{img}, $finalImage);
 
             main::storeInList($finalImageEnd, $sourceImage->{img});
             
         } else {
             # We have just one source image, but it is not compatible with the final cache
             # We need to transform it (pull push).
-            if ( ! JOINCACHE::Shell::convert($node) ) {
+            if ( ! $node->convert() ) {
                 ERROR(sprintf "Cannot transform the image");
                 return FALSE;
             }
@@ -633,14 +625,14 @@ sub treatNode {
         # Export éventuel du masque : il est forcément dans le bon format, on peut donc le lier.
         if (exists $sourceImage->{msk} && defined $finalMask) {
             # We can just make a symbolic link, in a script
-            JOINCACHE::Shell::linkSlab($node, $sourceImage->{msk}, $finalMask);
+            $node->linkSlab($sourceImage->{msk}, $finalMask);
 
             main::storeInList($finalMaskEnd, $sourceImage->{msk});
         }
         
     } else {
         # We have several images, we merge them
-        if ( ! JOINCACHE::Shell::overlayNtiff($node) ) {
+        if ( ! $node->overlayNtiff() ) {
             ERROR(sprintf "Cannot merge the images");
             return FALSE;
         }

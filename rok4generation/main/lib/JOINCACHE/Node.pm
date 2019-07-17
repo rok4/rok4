@@ -56,7 +56,6 @@ Attributes:
     row - integer - Row
     level - string - Level's identifiant
     pyramid - <COMMON::PyramidRaster> - Pyramid which node belong to
-    code - string - Commands to execute to generate this node (to write in a script)
     script - <COMMON::Script> - Script in which the node will be generated
     sources - hash array - Source images from which this node is generated. One image source :
 |               img - string - Absolute path to the image
@@ -79,6 +78,8 @@ use Data::Dumper;
 use COMMON::Base36;
 use COMMON::ProxyGDAL;
 use COMMON::PyramidRaster;
+
+use JOINCACHE::Shell;
 
 
 require Exporter;
@@ -115,6 +116,8 @@ Parameters (list):
     col - integer - Node's column
     row - integer - Node's row
     pyramid - <COMMON::PyramidRaster> - Pyramid which node belong to
+    sourcePyramids - array - Pyramids and limits to use as sources
+    mainSourceIndice - integer - First source indice to use for the node
 
 See also:
     <_init>
@@ -130,9 +133,8 @@ sub new {
         row => undef,
         level => undef,
         pyramid => undef,
-        code => '',
         script => undef,
-        sources => [],
+        sources => []
     };
     
     bless($this, $class);
@@ -203,14 +205,6 @@ sub _load {
         ERROR("Main source's indice is undefined !");
         return FALSE;
     }
-    if (! exists $params->{mergeMethod} || ! defined $params->{mergeMethod}) {
-        ERROR("Merge Method indice is undefined !");
-        return FALSE;
-    }
-
-    if (! exists $params->{useMasks} || ! defined $params->{useMasks}) {
-        $params->{useMasks} = FALSE;
-    }
 
     my $mainLevel = $params->{sourcePyramids}->[$params->{mainSourceIndice}]->{pyr}->getLevel($this->{level});
 
@@ -246,10 +240,10 @@ sub _load {
         # L'image existe, voyons également si elle a un masque associé
         my %sourceSlab = (
             img => $imgPath,
-            sourcePyramid => $params->{sourcePyramids}->[$params->{mainSourceIndice}]->{pyr}
+            compatible => ($this->{pyramid}->checkCompatibility($pyr) == 2)
         );
 
-        if ($params->{useMasks} && $mainLevel->ownMasks()) {
+        if ($JOINCACHE::Shell::USEMASK && $mainLevel->ownMasks()) {
 
             my $mskPath = $pyr->containSlab("MASK", $this->{level}, $this->{col}, $this->{row});
             if ( defined $mskPath ) {
@@ -262,7 +256,7 @@ sub _load {
         return TRUE;
     }
 
-    if ($params->{mergeMethod} eq 'REPLACE') {
+    if ($JOINCACHE::Shell::MERGEMETHOD eq 'REPLACE') {
         return TRUE;
     }
 
@@ -294,10 +288,10 @@ sub _load {
             # L'image existe, voyons également si elle a un masque associé
             my %sourceSlab = (
                 img => $imgPath,
-                sourcePyramid => $params->{sourcePyramids}->[$ind]->{pyr}
+                compatible => ($this->{pyramid}->checkCompatibility($pyr) == 2)
             );
 
-            if ($params->{useMasks} && $sourceLevel->ownMasks()) {
+            if ($JOINCACHE::Shell::USEMASK && $sourceLevel->ownMasks()) {
 
                 my $mskPath = $pyr->containSlab("MASK", $this->{level}, $this->{col}, $this->{row});
                 if ( defined $mskPath ) {
@@ -338,24 +332,6 @@ sub getRow {
 sub getLevel {
     my $this = shift;
     return $this->{level};
-}
-
-=begin nd
-Function: writeInScript
-
-Write own code in the associated script.
-
-Parameters (list):
-    additionnalText - string - Optionnal, can be undefined, text to add after the own code.
-=cut
-sub writeInScript {
-    my $this = shift;
-    my $additionnalText = shift;
-
-    my $text = $this->{code};
-    $text .= $additionnalText if (defined $additionnalText);
-
-    $this->{script}->write($text);
 }
 
 =begin nd
@@ -438,18 +414,6 @@ sub getSourcesNumber {
     return scalar @{$this->{sources}};
 }
 
-=begin nd
-Function: setCode
-
-Parameters (list):
-    code - string - Code to set.
-=cut
-sub setCode {
-    my $this = shift;
-    my $code = shift;
-    $this->{code} = $code;
-}
-
 # Function: getScript
 sub getScript {
     my $this = shift;
@@ -463,6 +427,124 @@ sub getSlabPath {
     my $full = shift;
 
     return $this->{pyramid}->getSlabPath($type, $this->getLevel(), $this->getCol(), $this->getRow(), $full);
+}
+
+####################################################################################################
+#                              Group: Processing functions                                         #
+####################################################################################################
+
+
+=begin nd
+Function: linkSlab
+
+Parameters (list):
+    target - string - Path to slab to link
+    link - string - Path to symbolic slab
+=cut
+sub linkSlab {
+    my $this = shift;
+    my $target = shift;
+    my $link = shift;
+
+    $this->{script}->write("LinkSlab $target $link\n");
+}
+
+
+=begin nd
+Function: convert
+=cut
+sub convert {
+    my $this = shift;
+
+    my $nodeName = $this->getWorkBaseName();
+    my $inNumber = $this->getSourcesNumber();
+
+    my $sourceImage = $this->getSource(0);
+    $this->{script}->write(sprintf "PullSlab %s ${nodeName}_I.tif\n", $sourceImage->{img});
+
+    my $imgCacheName = $this->getSlabPath("IMAGE", FALSE);
+    $this->{script}->write("PushSlab ${nodeName}_I.tif $imgCacheName\n\n");
+    
+    return TRUE;
+}
+
+=begin nd
+Function: overlayNtiff
+
+Write commands in the current script to merge N (N could be 1) images according to the merge method. We use *tiff2rgba* to convert into work format and *overlayNtiff* to merge. Masks are treated if needed. Code is store into the node.
+
+If just one input image, overlayNtiff is used to change the image's properties (samples per pixel for example). Mask is not treated (masks have always the same properties and a symbolic link have been created).
+
+Returns:
+    A boolean, TRUE if success, FALSE otherwise.
+=cut
+sub overlayNtiff {
+    my $this = shift;
+
+    my $nodeName = $this->getWorkBaseName();
+    my $inNumber = $this->getSourcesNumber();
+
+    #### Fichier de configuration ####
+    my $oNtConfFile = File::Spec->catfile($JOINCACHE::Shell::ONTCONFDIR, "$nodeName.txt");
+    
+    if (! open CFGF, ">", $oNtConfFile ) {
+        ERROR(sprintf "Impossible de creer le fichier $oNtConfFile, en écriture.");
+        return FALSE;
+    }
+
+    #### Sorties ####
+
+    my $line = File::Spec->catfile($this->getScript()->getTempDir(), $this->getWorkName("I"));
+    
+    # Pas de masque de sortie si on a juste une image : le masque a été lié symboliquement
+    if ($this->getPyramid()->ownMasks() && $inNumber > 1) {
+        $line .= " " . File::Spec->catfile($this->getScript->getTempDir(), $this->getWorkName("M"));
+    }
+    
+    printf CFGF "$line\n";
+    
+    #### Entrées ####
+    my $inTemplate = $this->getWorkName("*_*");
+
+    for (my $i = $inNumber - 1; $i >= 0; $i--) {
+        # Les images sont dans l'ordre suivant : du dessus vers le dessous
+        # Dans le fichier de configuration de overlayNtiff, elles doivent être dans l'autre sens, d'où la lecture depuis la fin.
+        my $sourceImage = $this->getSource($i);
+
+        my $inImgName = $this->getWorkName($i."_I");
+        my $inImgPath = File::Spec->catfile($this->getScript()->getTempDir(), $inImgName);
+        $this->{script}->write(sprintf "PullSlab %s $inImgName\n", $sourceImage->{img});
+        $line = "$inImgPath";
+
+        if (exists $sourceImage->{msk}) {
+            my $inMskName = $this->getWorkName($i."_M");
+            my $inMskPath = File::Spec->catfile($this->getScript->getTempDir, $inMskName);
+            $this->{script}->write(sprintf "PullSlab %s $inMskName\n", $sourceImage->{msk});
+            $line .= " $inMskPath";
+        }
+
+        printf CFGF "$line\n";
+    }
+
+    close CFGF;
+
+    $this->{script}->write("OverlayNtiff $nodeName.txt $inTemplate\n");
+
+    # Final location writting
+    my $outImgName = $this->getWorkName("I");
+    my $imgCacheName = $this->getSlabPath("IMAGE", FALSE);
+    $this->{script}->write("PushSlab $outImgName $imgCacheName");
+    
+    # Pas de masque à tuiler si on a juste une image : le masque a été lié symboliquement
+    if ($this->getPyramid()->ownMasks() && $inNumber != 1) {
+        my $outMaskName = $this->getWorkName("M");
+        my $mskCacheName = $this->getSlabPath("MASK", FALSE);
+        $this->{script}->write(sprintf (" $outMaskName $mskCacheName"));
+    }
+
+    $this->{script}->write("\n\n");
+    
+    return TRUE;
 }
 
 1;

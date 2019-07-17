@@ -38,15 +38,15 @@
 =begin nd
 File: Node.pm
 
-Class: COMMON::Node
+Class: BE4::Node
 
-(see ROK4GENERATION/libperlauto/COMMON_Node.png)
+(see ROK4GENERATION/libperlauto/BE4_Node.png)
 
 Describe a node of a <COMMON::QTree> or a <COMMON::NNGraph>. Allow different storage (FileSystem, Ceph, Swift).
 
 Using:
     (start code)
-    use COMMON::Node
+    use BE4::Node
 
     my $tm = COMMON::TileMatrix->new(...)
     
@@ -54,12 +54,11 @@ Using:
     #or
     my $graph = COMMON::NNGraph->new(...)
     
-    my $node = COMMON::Node->new({
+    my $node = BE4::Node->new({
         col => 51,
         row => 756,
         tm => $tm,
-        graph => $graph,
-        type => 'FILE'
+        graph => $graph
     });
     (end code)
 
@@ -78,19 +77,17 @@ Attributes:
 
     tm - <COMMON::TileMatrix> - Tile matrix associated to the level which the node belong to.
     graph - <COMMON::NNGraph> or <COMMON::QTree> - Graph which contains the node.
-    w - integer - Own node's weight
-    W - integer - Accumulated weight (own weight + childs' accumulated weights sum)
+    weight - integer - Node's weight (number of nodes in its descendence)
 
-    code - string - Commands to execute to generate this node (to write in a script)
     script - <COMMON::Script> - Script in which the node will be generated
 
-    sourceNodes - <COMMON::Node> array - Nodes from which this node is generated (working for <COMMON::NNGraph>)
+    sourceNodes - <BE4::Node> array - Nodes from which this node is generated (working for <COMMON::NNGraph>)
     geoImages - <COMMON::GeoImage> array - Source images from which this node (if it belongs to the tree's bottom level) is generated (working for <COMMON::QTree>)
 =cut
 
 ################################################################################
 
-package COMMON::Node;
+package BE4::Node;
 
 use strict;
 use warnings;
@@ -100,6 +97,7 @@ use Log::Log4perl qw(:easy);
 use File::Spec ;
 use Data::Dumper ;
 use COMMON::Base36 ;
+use BE4::Shell;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -114,10 +112,6 @@ our @EXPORT      = qw();
 # Constantes
 use constant TRUE  => 1;
 use constant FALSE => 0;
-
-# Constant: STORAGETYPES
-# Define allowed values for attribute storage type.
-my @STORAGETYPES = ("FILE", "CEPH", "S3", "SWIFT");
 
 ####################################################################################################
 #                                        Group: Constructors                                       #
@@ -150,9 +144,7 @@ sub new {
         tm => undef,
         graph => undef,
 
-        w => 0,
-        W => 0,
-        code => '',
+        weight => 1,
         script => undef,
 
         # Sources pour générer ce noeud
@@ -190,21 +182,12 @@ sub new {
         return undef;
     }
 
-    $this->{storageType} = $params->{type};
-    if (! defined $this->{storageType} || ! defined COMMON::Array::isInArray($this->{storageType}, @STORAGETYPES) ) {
-        ERROR("Node's storage type is undef or not valid: ".$this->{storageType});
-        return undef;
-    }
-    
     # init. params    
     $this->{col} = $params->{col};
     $this->{row} = $params->{row};
     $this->{tm} = $params->{tm};
     $this->{graph} = $params->{graph};
-    $this->{w} = 0;
-    $this->{W} = 0;
-    $this->{code} = '';
-
+    $this->{storageType} = $this->{graph}->getPyramid()->getStorageType();
     $this->{workImageBasename} = sprintf "%s_%s_%s_I", $this->getLevel(), $this->{col}, $this->{row};
         
     return $this;
@@ -261,6 +244,25 @@ sub isBboxIntersectingNodeBbox {
 #                                Group: Getters - Setters                                          #
 ####################################################################################################
 
+# Function: getLevel
+sub getLevel {
+    my $this = shift;
+    return $this->{tm}->getID;
+}
+
+# Function: getTM
+sub getTM {
+    my $this = shift;
+    return $this->{tm};
+}
+
+# Function: getGraph
+sub getGraph {
+    my $this = shift;
+    return $this->{graph};
+}
+
+
 # Function: getSlabPath
 sub getSlabPath {
     my $this = shift;
@@ -276,43 +278,6 @@ sub getSlabSize {
     my $this = shift;
 
     return $this->{graph}->getPyramid()->getSlabSize($this->getLevel());
-}
-
-
-# Function: getScript
-sub getScript {
-    my $this = shift;
-    return $this->{script};
-}
-
-=begin nd
-Function: writeInScript
-
-Write own code in the associated script.
-=cut
-sub writeInScript {
-    my $this = shift;
-
-    my $text = $this->{code};
-    
-    $this->{script}->write($text, $this->getOwnWeight());
-}
-
-=begin nd
-Function: setScript
-
-Parameters (list):
-    script - <COMMON::Script> - Script to set.
-=cut
-sub setScript {
-    my $this = shift;
-    my $script = shift;
-    
-    if (! defined $script || ref ($script) ne "COMMON::Script") {
-        ERROR("We expect to a COMMON::Script object.");
-    }
-    
-    $this->{script} = $script; 
 }
 
 # Function: getCol
@@ -331,6 +296,31 @@ sub getRow {
 sub getStorageType {
     my $this = shift;
     return $this->{storageType};
+}
+
+########## scripts 
+
+# Function: getScript
+sub getScript {
+    my $this = shift;
+    return $this->{script};
+}
+
+=begin nd
+Function: setScript
+
+Parameters (list):
+    script - <COMMON::Script> - Script to set.
+=cut
+sub setScript {
+    my $this = shift;
+    my $script = shift;
+    
+    if (! defined $script || ref ($script) ne "COMMON::Script") {
+        ERROR("We expect to a COMMON::Script object.");
+    }
+    
+    $this->{script} = $script; 
 }
 
 ########## work files
@@ -415,24 +405,6 @@ sub getBgMaskName {
     return $this->{bgMaskBasename};
 }
 
-# Function: getLevel
-sub getLevel {
-    my $this = shift;
-    return $this->{tm}->getID;
-}
-
-# Function: getTM
-sub getTM {
-    my $this = shift;
-    return $this->{tm};
-}
-
-# Function: getGraph
-sub getGraph {
-    my $this = shift;
-    return $this->{graph};
-}
-
 # Function: getSourceNodes
 sub getSourceNodes {
     my $this = shift;
@@ -449,7 +421,7 @@ sub getGeoImages {
 Function: addSourceNodes
 
 Parameters (list):
-    nodes - <COMMON::Node> array - Source nodes to add
+    nodes - <BE4::Node> array - Source nodes to add
 =cut
 sub addSourceNodes {
     my $this = shift;
@@ -473,18 +445,6 @@ sub addGeoImages {
     push(@{$this->getGeoImages()},@images);
     
     return TRUE;
-}
-
-=begin nd
-Function: setCode
-
-Parameters (list):
-    code - string - Code to set.
-=cut
-sub setCode {
-    my $this = shift;
-    my $code = shift;
-    $this->{code} = $code;
 }
 
 # Function: getUpperLeftTile
@@ -511,51 +471,10 @@ sub getBBox {
     return @Bbox;
 }
 
-# Function: getOwnWeight
-sub getOwnWeight {
-    my $this = shift;
-    return $this->{w};
-}
-
-# Function: getAccumulatedWeight
-sub getAccumulatedWeight {
-    my $this = shift;
-    return $this->{W};
-}
-
-=begin nd
-Function: setOwnWeight
-
-Parameters (list):
-    weight - integer - Own weight to set
-=cut
-sub setOwnWeight {
-    my $this = shift;
-    my $weight = shift;
-    $this->{w} = $weight;
-}
-
-# Function: getScriptID
-sub getScriptID {
-    my $this = shift;
-    return $this->{script}->getID;
-}
-
-=begin nd
-Function: setAccumulatedWeight
-
-AccumulatedWeight = children's weights sum + own weight = provided weight + already store own weight.
-=cut
-sub setAccumulatedWeight {
-    my $this = shift;
-    my $childrenWeight = shift;
-    $this->{W} = $childrenWeight + $this->getOwnWeight;
-}
-
 =begin nd
 Function: getPossibleChildren
 
-Returns a <COMMON::Node> array, containing children (length is always 4, with undefined value for children which don't exist), an empty array if the node is a leaf.
+Returns a <BE4::Node> array, containing children (length is always 4, with undefined value for children which don't exist), an empty array if the node is a leaf.
 
 Warning:
     Do not mistake with <getChildren>
@@ -568,7 +487,7 @@ sub getPossibleChildren {
 =begin nd
 Function: getChildren
 
-Returns a <COMMON::Node> array, containing real children (max length = 4), an empty array if the node is a leaf.
+Returns a <BE4::Node> array, containing real children (max length = 4), an empty array if the node is a leaf.
 
 Warning:
     Do not mistake with <getPossibleChildren>
@@ -579,6 +498,20 @@ sub getChildren {
 }
 
 
+# Function: isAboveCutLevelNode
+sub isAboveCutLevelNode {
+    my $this = shift;
+
+    if (ref($this->{graph}) ne "COMMON::QTree") {
+        return FALSE;
+    }
+
+    if ($this->{graph}->getCutLevelID() eq $this->getGraph()->getPyramid()->getTileMatrixSet()->getBelowLevelID($this->getLevel())) {
+        return TRUE;
+    }
+
+    return FALSE;
+}
 
 # Function: isCutLevelNode
 sub isCutLevelNode {
@@ -604,6 +537,328 @@ sub isTopLevelNode {
     }
 
     return FALSE;
+}
+
+####################################################################################################
+#                              Group: Processing functions                                         #
+####################################################################################################
+
+=begin nd
+Function: mergeNtiff
+
+Use the 'MergeNtiff' bash function. Write a configuration file, with sources.
+
+(see ROK4GENERATION/tools/mergeNtiff.png)
+
+Returns:
+    TRUE if success, FALSE if failure
+=cut
+sub mergeNtiff {
+    my $this = shift;
+
+    # Si elle existe, on copie la dalle de la pyramide de base dans le repertoire de travail 
+    # en la convertissant du format cache au format de travail: c'est notre image de fond.
+    # Si la dalle de la pyramide de base existe, on a créé un lien, donc il existe un fichier
+    # correspondant dans la nouvelle pyramide.
+    # On fait de même avec le masque de donnée associé, s'il existe.
+    my $imgBg = $this->getSlabPath("IMAGE", TRUE);
+    if ($this->getGraph()->getPyramid()->ownAncestor() && COMMON::ProxyStorage::isPresent($this->getStorageType(), $imgBg) ) {
+        $this->addBgImage();
+        
+        my $maskBg = $this->getSlabPath("MASK", TRUE);
+        
+        if ( $BE4::Shell::USEMASK && defined $maskBg && COMMON::ProxyStorage::isPresent($this->getStorageType(), $maskBg) ) {
+            # On a en plus un masque associé à l'image de fond
+            $this->addBgMask();
+        }
+
+        $this->cache2work();
+    }
+
+    if ($BE4::Shell::USEMASK) {
+        $this->addWorkMask();
+    }
+    
+    my $mNtConfFilename = $this->getWorkBaseName.".txt";
+    my $mNtConfFile = File::Spec->catfile($BE4::Shell::MNTCONFDIR, $mNtConfFilename);
+    
+    if (! open CFGF, ">", $mNtConfFile ) {
+        ERROR(sprintf "Impossible de creer le fichier $mNtConfFile");
+        return FALSE;
+    }
+    
+    # La premiere ligne correspond à la dalle résultat: La version de travail de la dalle à calculer.
+    # Les points d'interrogation permettent de gérer le dossier où écrire les images grâce à une variable
+    # Cet export va également ajouter les fonds (si présents) comme premières sources
+    printf CFGF $this->exportForMntConf(TRUE, "?");
+
+    my $listGeoImg = $this->getGeoImages;
+    foreach my $img (@{$listGeoImg}) {
+        printf CFGF "%s", $img->exportForMntConf($BE4::Shell::USEMASK);
+    }
+    
+    close CFGF;
+    
+    $this->{script}->write("MergeNtiff $mNtConfFilename");
+    $this->{script}->write(sprintf " %s", $this->getBgImageName(TRUE)) if (defined $this->getBgImageName()); # pour supprimer l'image de fond si elle existe
+    $this->{script}->write(sprintf " %s", $this->getBgMaskName(TRUE)) if (defined $this->getBgMaskName()); # pour supprimer le masque de fond si il existe
+    $this->{script}->write("\n");
+
+    return TRUE;
+}
+
+=begin nd
+Function: cache2work
+
+Copy slab from cache to work directory and transform (work format : untiled, zip-compression). Use the 'PullSlab' bash function.
+
+(see ROK4GENERATION/tools/cache2work.png)
+
+Returns:
+    TRUE if success, FALSE if failure
+=cut
+sub cache2work {
+    my $this = shift;
+    
+    #### Rappatriement de l'image de donnée ####
+    
+    $this->{script}->write(sprintf "PullSlab %s %s\n", $this->getSlabPath("IMAGE", FALSE), $this->getBgImageName(TRUE));
+    
+    #### Rappatriement du masque de donnée (si présent) ####
+    
+    if ( defined $this->getBgMaskName() ) {
+        # Un masque est associé à l'image que l'on va utiliser, on doit le mettre également au format de travail
+        $this->{script}->write(sprintf "PullSlab %s %s\n", $this->getSlabPath("MASK", FALSE), $this->getBgMaskName(TRUE));
+    }
+    
+    return TRUE;
+}
+
+=begin nd
+Function: work2cache
+
+Copy image from work directory to cache and transform it (tiled and compressed) thanks to the 'Work2cache' bash function (work2cache).
+
+(see ROK4GENERATION/tools/work2cache.png)
+
+Returns:
+    TRUE if success, FALSE if failure
+=cut
+sub work2cache {
+    my $this = shift;
+    
+    #### Export de l'image
+
+    # Le stockage peut être objet ou fichier
+    my $pyrName = $this->getSlabPath("IMAGE", FALSE);
+
+    my $postAction = "none";
+    if ($this->isCutLevelNode()) {$postAction = "mv";}
+    if ($this->isTopLevelNode()) {$postAction = "rm";}
+
+    $this->{script}->write(sprintf ("PushSlab %s %s %s", $postAction, $this->getWorkImageName(TRUE), $pyrName));
+    
+    #### Export du masque, si présent
+
+    if ($this->getWorkMaskName()) {
+        # On a un masque de travail : on le précise pour qu'il soit potentiellement déplacé dans le temporaire commun ou supprimé
+        $this->{script}->write(sprintf (" %s", $this->getWorkMaskName(TRUE)));
+        
+        # En plus, on veut exporter les masques dans la pyramide, on en précise donc l'emplacement final
+        if ( $this->getGraph()->getPyramid()->ownMasks() ) {
+            $pyrName = $this->getSlabPath("MASK", FALSE);
+            $this->{script}->write(sprintf (" %s", $pyrName));
+        }        
+    }
+    
+    $this->{script}->write("\n");
+
+    return TRUE;
+}
+
+=begin nd
+Function: wms2work
+
+Fetch image corresponding to the node thanks to 'wget', in one or more steps at a time. WMS service is described in the current graph's datasource. Use the 'Wms2work' bash function.
+
+Parameters (list):
+    harvesting - <COMMON::Harvesting> - To use to harvest image.
+
+Returns:
+    TRUE if success, FALSE if failure
+=cut
+sub wms2work {
+    my $this = shift;
+    my $harvesting = shift;
+
+    my ($width, $height) = $this->getSlabSize(); # ie size tile image in pixel !
+    my $tms = $this->getGraph()->getPyramid()->getTileMatrixSet();    
+    my ($xMin, $yMin, $xMax, $yMax) = $this->getBBox();
+
+    # Calcul de la liste des bbox à moissonner
+    my ($grid, @bboxes) = $harvesting->getBboxesList(
+        $xMin, $yMin, $xMax, $yMax, 
+        $width, $height,
+        $tms->getInversion()
+    );
+
+    if (scalar @bboxes == 0) {
+        ERROR("Impossible de calculer la liste des bboxes à moissonner");
+        return FALSE;
+    }
+
+    $this->{script}->write(sprintf "BBOXES=\"%s\"\n", join("\n", @bboxes));
+
+    # Écriture de la commande
+
+    my $finalExtension = $harvesting->getHarvestExtension();
+    if (scalar @bboxes > 1) {
+        $finalExtension = "tif";
+    }
+    $this->setWorkExtension($finalExtension);
+
+    $this->{script}->write(
+        sprintf "Wms2work \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \$BBOXES\n",
+            $this->getWorkImageName(FALSE),
+            $harvesting->getHarvestExtension(), $finalExtension,
+            $harvesting->getMinSize(), $harvesting->getHarvestUrl($tms->getSRS(), $width, $height), $grid
+    );
+    
+    return TRUE;
+}
+
+=begin nd
+Function: merge4tiff
+
+Use the 'Merge4tiff' bash function.
+
+|     i1  i2
+|              =  resultImg
+|     i3  i4
+
+(see ROK4GENERATION/tools/merge4tiff.png)
+
+Returns:
+    TRUE if success, FALSE if failure
+=cut
+sub merge4tiff {
+    my $this = shift;
+    
+    my @childList = $this->getChildren();
+
+    # Si elle existe, on copie la dalle de la pyramide de base dans le repertoire de travail 
+    # en la convertissant du format cache au format de travail: c'est notre image de fond.
+    # Si la dalle de la pyramide de base existe, on a créé un lien, donc il existe un fichier
+    # correspondant dans la nouvelle pyramide.
+    # On fait de même avec le masque de donnée associé, s'il existe.
+
+    my $imgBg = $this->getSlabPath("IMAGE", TRUE);
+    if ($this->getGraph()->getPyramid()->ownAncestor() && ($BE4::Shell::USEMASK || scalar @childList != 4) && COMMON::ProxyStorage::isPresent($this->getStorageType(), $imgBg) ) {
+        $this->addBgImage();
+        
+        my $maskBg = $this->getSlabPath("MASK", TRUE);
+        
+        if ( $BE4::Shell::USEMASK && defined $maskBg && COMMON::ProxyStorage::isPresent($this->getStorageType(), $maskBg) ) {
+            # On a en plus un masque associé à l'image de fond
+            $this->addBgMask();
+        }
+        
+        $this->cache2work();
+    }
+    
+    if ($BE4::Shell::USEMASK) {
+        $this->addWorkMask();
+    } 
+    
+    # We compose the 'Merge4tiff' call
+    #   - the ouput + background
+    $this->{script}->write(sprintf "Merge4tiff %s", $this->exportForM4tConf(TRUE));
+    
+    #   - the children inputs
+    if ($this->isAboveCutLevelNode()) {
+        $this->{script}->write(" \${COMMON_TMP_DIR}");
+    } else {
+        $this->{script}->write(" \${TMP_DIR}");
+    }
+
+    foreach my $childNode ($this->getPossibleChildren()) {
+            
+        if (defined $childNode) {
+            $this->{script}->write($childNode->exportForM4tConf(FALSE));
+        } else {
+            $this->{script}->write(" 0 0");
+        }
+    }
+    
+    $this->{script}->write("\n");
+
+    return TRUE;
+}
+
+=begin nd
+Function: decimateNtiff
+
+Use the 'decimateNtiff' bash function. Write a configuration file, with sources.
+
+(see ROK4GENERATION/toolsdecimateNtiff.png)
+
+Example:
+|    DecimateNtiff 12_26_17.txt
+
+Returns:
+    TRUE if success, FALSE if failure
+=cut
+sub decimateNtiff {
+    my $this = shift;
+
+    # Si elle existe, on copie la dalle de la pyramide de base dans le repertoire de travail 
+    # en la convertissant du format cache au format de travail: c'est notre image de fond.
+    # Si la dalle de la pyramide de base existe, on a créé un lien, donc il existe un fichier
+    # correspondant dans la nouvelle pyramide.
+    # On fait de même avec le masque de donnée associé, s'il existe.
+    my $imgBg = $this->getSlabPath("IMAGE", TRUE);
+    if ($this->getGraph()->getPyramid()->ownAncestor() && COMMON::ProxyStorage::isPresent($this->getStorageType(), $imgBg) ) {
+        $this->addBgImage();
+        
+        my $maskBg = $this->getSlabPath("MASK", TRUE);
+        
+        if ( $BE4::Shell::USEMASK && defined $maskBg && COMMON::ProxyStorage::isPresent($this->getStorageType(), $maskBg) ) {
+            # On a en plus un masque associé à l'image de fond
+            $this->addBgMask();
+        }
+        
+        this->cache2work();
+    }
+    
+    if ($BE4::Shell::USEMASK) {
+        $this->addWorkMask();
+    }
+    
+    my $dntConf = $this->getWorkBaseName().".txt";
+    my $dntConfFile = File::Spec->catfile($BE4::Shell::DNTCONFDIR, $dntConf);
+    
+    if (! open CFGF, ">", $dntConfFile ) {
+        ERROR(sprintf "Impossible de creer le fichier $dntConfFile.");
+        return FALSE;
+    }
+    
+    # La premiere ligne correspond à la dalle résultat: La version de travail de la dalle à calculer.
+    # Cet export va également ajouter les fonds (si présents) comme premières sources
+    printf CFGF $this->exportForDntConf(TRUE, $this->getScript()->getTempDir()."/");
+    
+    #   - Les noeuds sources (NNGraph)
+    foreach my $sourceNode ( @{$this->getSourceNodes()} ) {
+        printf CFGF "%s", $sourceNode->exportForDntConf(FALSE, $sourceNode->getScript()->getTempDir()."/");
+    }
+    
+    close CFGF;
+    
+    $this->{script}->write("DecimateNtiff $dntConf");
+    $this->{script}->write(sprintf " %s", $this->getBgImageName(TRUE)) if (defined $this->getBgImageName()); # pour supprimer l'image de fond si elle existe
+    $this->{script}->write(sprintf " %s", $this->getBgMaskName(TRUE)) if (defined $this->getBgMaskName()); # pour supprimer le masque de fond si il existe
+    $this->{script}->write("\n");
+
+    return TRUE;
 }
 
 ####################################################################################################

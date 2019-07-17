@@ -96,9 +96,10 @@ use constant FALSE => 0;
 #                                     Group: GLOBAL VARIABLES                                      #
 ####################################################################################################
 
-my $COMMONTEMPDIR;
-my $ONTCONFDIR;
-my $MERGEMETHOD;
+our $USEMASK;
+our $COMMONTEMPDIR;
+our $ONTCONFDIR;
+our $MERGEMETHOD;
 
 =begin nd
 Function: setGlobals
@@ -108,6 +109,13 @@ Define and create common working directories
 sub setGlobals {
     $COMMONTEMPDIR = shift;
     $MERGEMETHOD = shift;
+    $USEMASK = shift;
+
+    if (defined $USEMASK && uc($USEMASK) eq "TRUE") {
+        $USEMASK = TRUE;
+    } else {
+        $USEMASK = FALSE;
+    }
 
     $COMMONTEMPDIR = File::Spec->catdir($COMMONTEMPDIR,"COMMON");
     $ONTCONFDIR = File::Spec->catfile($COMMONTEMPDIR,"overlayNtiff");
@@ -248,135 +256,6 @@ PullSlab () {
 }
 
 STORAGEFUNCTIONS
-
-
-=begin nd
-Function: linkSlab
-
-Parameters (list):
-    node - <JOINCACHE::Node> - Node to treat
-=cut
-sub linkSlab {
-    my $node = shift;
-    my $target = shift;
-    my $link = shift;
-
-    $node->setCode("LinkSlab $target $link\n");
-    $node->writeInScript();
-}
-
-
-=begin nd
-Function: convert
-
-Parameters (list):
-    node - <JOINCACHE::Node> - Node to treat
-=cut
-sub convert {
-    my $node = shift;
-
-    my $code = "";
-    my $nodeName = $node->getWorkBaseName();
-    my $inNumber = $node->getSourcesNumber();
-
-    my $sourceImage = $node->getSource(0);
-    $code .= sprintf "PullSlab %s ${nodeName}_I.tif\n", $sourceImage->{img};
-
-    my $imgCacheName = $node->getSlabPath("IMAGE", FALSE);
-    $code .= "PushSlab ${nodeName}_I.tif $imgCacheName\n\n";
-
-    $node->setCode($code);
-    $node->writeInScript();
-    
-    return TRUE;
-}
-
-=begin nd
-Function: overlayNtiff
-
-Write commands in the current script to merge N (N could be 1) images according to the merge method. We use *tiff2rgba* to convert into work format and *overlayNtiff* to merge. Masks are treated if needed. Code is store into the node.
-
-If just one input image, overlayNtiff is used to change the image's properties (samples per pixel for example). Mask is not treated (masks have always the same properties and a symbolic link have been created).
-
-Returns:
-    A boolean, TRUE if success, FALSE otherwise.
-
-Parameters (list):
-    node - <JOINCACHE::Node> - Node to treat
-=cut
-sub overlayNtiff {
-    my $node = shift;
-
-    my $code = "";
-    my $nodeName = $node->getWorkBaseName();
-    my $inNumber = $node->getSourcesNumber();
-
-    #### Fichier de configuration ####
-    my $oNtConfFile = File::Spec->catfile($ONTCONFDIR, "$nodeName.txt");
-    
-    if (! open CFGF, ">", $oNtConfFile ) {
-        ERROR(sprintf "Impossible de creer le fichier $oNtConfFile, en écriture.");
-        return FALSE;
-    }
-
-    #### Sorties ####
-
-    my $line = File::Spec->catfile($node->getScript()->getTempDir(), $node->getWorkName("I"));
-    
-    # Pas de masque de sortie si on a juste une image : le masque a été lié symboliquement
-    if ($node->getPyramid()->ownMasks() && $inNumber > 1) {
-        $line .= " " . File::Spec->catfile($node->getScript->getTempDir(), $node->getWorkName("M"));
-    }
-    
-    printf CFGF "$line\n";
-    
-    #### Entrées ####
-    my $inTemplate = $node->getWorkName("*_*");
-
-    for (my $i = $inNumber - 1; $i >= 0; $i--) {
-        # Les images sont dans l'ordre suivant : du dessus vers le dessous
-        # Dans le fichier de configuration de overlayNtiff, elles doivent être dans l'autre sens, d'où la lecture depuis la fin.
-        my $sourceImage = $node->getSource($i);
-
-        my $inImgName = $node->getWorkName($i."_I");
-        my $inImgPath = File::Spec->catfile($node->getScript()->getTempDir(), $inImgName);
-        $code .= sprintf "PullSlab %s $inImgName\n", $sourceImage->{img};
-        $line = "$inImgPath";
-
-        if (exists $sourceImage->{msk}) {
-            my $inMskName = $node->getWorkName($i."_M");
-            my $inMskPath = File::Spec->catfile($node->getScript->getTempDir, $inMskName);
-            $code .= sprintf "PullSlab %s $inMskName\n", $sourceImage->{msk};
-            $line .= " $inMskPath";
-        }
-
-        printf CFGF "$line\n";
-    }
-
-    close CFGF;
-
-    $code .= "OverlayNtiff $nodeName.txt $inTemplate\n";
-
-    # Final location writting
-    my $outImgName = $node->getWorkName("I");
-    my $imgCacheName = $node->getSlabPath("IMAGE", FALSE);
-    $code .= "PushSlab $outImgName $imgCacheName";
-    
-    # Pas de masque à tuiler si on a juste une image : le masque a été lié symboliquement
-    if ($node->getPyramid()->ownMasks() && $inNumber != 1) {
-        my $outMaskName = $node->getWorkName("M");
-        my $mskCacheName = $node->getSlabPath("MASK", FALSE);
-        $code .= sprintf (" $outMaskName $mskCacheName");
-    }
-
-    $code .= "\n\n";
-
-    $node->setCode($code);
-    $node->writeInScript();
-    
-    return TRUE;
-}
-
 
 ####################################################################################################
 #                                     Group: Main function                                         #

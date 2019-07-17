@@ -95,10 +95,10 @@ use constant FALSE => 0;
 #                                     Group: GLOBAL VARIABLES                                      #
 ####################################################################################################
 
-my $COMMONTEMPDIR;
-my $MNTCONFDIR;
-my $DNTCONFDIR;
-my $USEMASK;
+our $COMMONTEMPDIR;
+our $MNTCONFDIR;
+our $DNTCONFDIR;
+our $USEMASK;
 
 =begin nd
 Function: setGlobals
@@ -156,9 +156,6 @@ sub setGlobals {
 #                                        Group: MERGE N TIFF                                       #
 ####################################################################################################
 
-# Constant: MERGENTIFF_W
-use constant MERGENTIFF_W => 4;
-
 my $MNTFUNCTION = <<'MNTFUNCTION';
 MergeNtiff () {
     local config=$1
@@ -181,84 +178,9 @@ MergeNtiff () {
 }
 MNTFUNCTION
 
-=begin nd
-Function: mergeNtiff
-
-Use the 'MergeNtiff' bash function. Write a configuration file, with sources.
-
-(see ROK4GENERATION/tools/mergeNtiff.png)
-
-Parameters (list):
-    node - <Node> - Node to generate thanks to a 'mergeNtiff' command.
-
-Returns:
-    An array (code, weight), (undef,undef) if error.
-=cut
-sub mergeNtiff {
-    my $node = shift;
-    
-    my ($c, $w);
-    my ($code, $weight) = ("",MERGENTIFF_W);
-
-    # Si elle existe, on copie la dalle de la pyramide de base dans le repertoire de travail 
-    # en la convertissant du format cache au format de travail: c'est notre image de fond.
-    # Si la dalle de la pyramide de base existe, on a créé un lien, donc il existe un fichier
-    # correspondant dans la nouvelle pyramide.
-    # On fait de même avec le masque de donnée associé, s'il existe.
-    my $imgBg = $node->getSlabPath("IMAGE", TRUE);
-    if ($node->getGraph()->getPyramid()->ownAncestor() && COMMON::ProxyStorage::isPresent($node->getStorageType(), $imgBg) ) {
-        $node->addBgImage();
-        
-        my $maskBg = $node->getSlabPath("MASK", TRUE);
-        
-        if ( $USEMASK && defined $maskBg && COMMON::ProxyStorage::isPresent($node->getStorageType(), $maskBg) ) {
-            # On a en plus un masque associé à l'image de fond
-            $node->addBgMask();
-        }
-        
-        ($c,$w) = cache2work($node);
-        $code .= $c;
-        $weight += $w;
-    }
-
-    if ($USEMASK) {
-        $node->addWorkMask();
-    }
-    
-    my $mNtConfFilename = $node->getWorkBaseName.".txt";
-    my $mNtConfFile = File::Spec->catfile($MNTCONFDIR, $mNtConfFilename);
-    
-    if (! open CFGF, ">", $mNtConfFile ) {
-        ERROR(sprintf "Impossible de creer le fichier $mNtConfFile");
-        return (undef,undef);
-    }
-    
-    # La premiere ligne correspond à la dalle résultat: La version de travail de la dalle à calculer.
-    # Les points d'interrogation permettent de gérer le dossier où écrire les images grâce à une variable
-    # Cet export va également ajouter les fonds (si présents) comme premières sources
-    printf CFGF $node->exportForMntConf(TRUE, "?");
-
-    my $listGeoImg = $node->getGeoImages;
-    foreach my $img (@{$listGeoImg}) {
-        printf CFGF "%s", $img->exportForMntConf($USEMASK);
-    }
-    
-    close CFGF;
-    
-    $code .= "MergeNtiff $mNtConfFilename";
-    $code .= sprintf " %s", $node->getBgImageName(TRUE) if (defined $node->getBgImageName()); # pour supprimer l'image de fond si elle existe
-    $code .= sprintf " %s", $node->getBgMaskName(TRUE) if (defined $node->getBgMaskName()); # pour supprimer le masque de fond si il existe
-    $code .= "\n";
-
-    return ($code,$weight);
-}
-
 ####################################################################################################
 #                                        Group: CACHE TO WORK                                      #
 ####################################################################################################
-
-# Constant: CACHE2WORK_W
-use constant CACHE2WORK_W => 1;
 
 my $FILE_C2WFUNCTION = <<'C2WFUNCTION';
 PullSlab () {
@@ -300,52 +222,9 @@ PullSlab () {
 }
 C2WFUNCTION
 
-=begin nd
-Function: cache2work
-
-Copy slab from cache to work directory and transform (work format : untiled, zip-compression). Use the 'PullSlab' bash function.
-
-(see ROK4GENERATION/tools/cache2work.png)
-    
-Parameters (list):
-    node - <Node> - Node whose image have to be transfered in the work directory.
-
-Returns:
-    An array (code, weight), (undef,undef) if error.
-=cut
-sub cache2work {
-    my $node = shift;
-    
-    #### Rappatriement de l'image de donnée ####    
-    my $code = "";
-    my $weight = 0;
-    
-    $code = sprintf "PullSlab %s %s\n",
-        $node->getSlabPath("IMAGE", FALSE),
-        $node->getBgImageName(TRUE);
-
-    $weight = CACHE2WORK_W;
-    
-    #### Rappatriement du masque de donnée (si présent) ####
-    
-    if ( defined $node->getBgMaskName() ) {
-        # Un masque est associé à l'image que l'on va utiliser, on doit le mettre également au format de travail
-        $code .= sprintf "PullSlab %s %s\n", 
-            $node->getSlabPath("MASK", FALSE),
-            $node->getBgMaskName(TRUE);
-
-        $weight += CACHE2WORK_W;
-    }
-    
-    return ($code,$weight);
-}
-
 ####################################################################################################
 #                                        Group: WORK TO CACHE                                      #
 ####################################################################################################
-
-# Constant: WORK2CACHE_W
-use constant WORK2CACHE_W => 1;
 
 my $S3_W2CFUNCTION = <<'W2CFUNCTION';
 BackupListFile () {
@@ -353,7 +232,7 @@ BackupListFile () {
 }
 
 PushSlab () {
-    local level=$1
+    local postAction=$1
     local workImgName=$2
     local imgName=$3
     local workMskName=$4
@@ -367,9 +246,9 @@ PushSlab () {
         echo "0/$imgName" >> ${TMP_LIST_FILE}
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
-        if [ "$level" == "${TOP_LEVEL}" ] ; then
+        if [ "$postAction" == "rm" ] ; then
             rm ${TMP_DIR}/$workImgName
-        elif [ "$level" == "${CUT_LEVEL}" ] ; then
+        elif [ "$postAction" == "mv" ] ; then
             mv ${TMP_DIR}/$workImgName ${COMMON_TMP_DIR}/
         fi
         
@@ -383,9 +262,9 @@ PushSlab () {
                 
             fi
             
-            if [ "$level" == "${TOP_LEVEL}" ] ; then
+            if [ "$postAction" == "rm" ] ; then
                 rm ${TMP_DIR}/$workMskName
-            elif [ "$level" == "${CUT_LEVEL}" ] ; then
+            elif [ "$postAction" == "mv" ] ; then
                 mv ${TMP_DIR}/$workMskName ${COMMON_TMP_DIR}/
             fi
         fi
@@ -399,7 +278,7 @@ BackupListFile () {
 }
 
 PushSlab () {
-    local level=$1
+    local postAction=$1
     local workImgName=$2
     local imgName=$3
     local workMskName=$4
@@ -413,9 +292,9 @@ PushSlab () {
         echo "0/$imgName" >> ${TMP_LIST_FILE}
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
-        if [ "$level" == "${TOP_LEVEL}" ] ; then
+        if [ "$postAction" == "rm" ] ; then
             rm ${TMP_DIR}/$workImgName
-        elif [ "$level" == "${CUT_LEVEL}" ] ; then
+        elif [ "$postAction" == "mv" ] ; then
             mv ${TMP_DIR}/$workImgName ${COMMON_TMP_DIR}/
         fi
         
@@ -429,9 +308,9 @@ PushSlab () {
                 
             fi
             
-            if [ "$level" == "${TOP_LEVEL}" ] ; then
+            if [ "$postAction" == "rm" ] ; then
                 rm ${TMP_DIR}/$workMskName
-            elif [ "$level" == "${CUT_LEVEL}" ] ; then
+            elif [ "$postAction" == "mv" ] ; then
                 mv ${TMP_DIR}/$workMskName ${COMMON_TMP_DIR}/
             fi
         fi
@@ -447,7 +326,7 @@ BackupListFile () {
 }
 
 PushSlab () {
-    local level=$1
+    local postAction=$1
     local workImgName=$2
     local imgName=$3
     local workMskName=$4
@@ -462,9 +341,9 @@ PushSlab () {
         echo "0/$imgName" >> ${TMP_LIST_FILE}
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
-        if [ "$level" == "${TOP_LEVEL}" ] ; then
+        if [ "$postAction" == "rm" ] ; then
             rm ${TMP_DIR}/$workImgName
-        elif [ "$level" == "${CUT_LEVEL}" ] ; then
+        elif [ "$postAction" == "mv" ] ; then
             mv ${TMP_DIR}/$workImgName ${COMMON_TMP_DIR}/
         fi
         
@@ -478,9 +357,9 @@ PushSlab () {
                 
             fi
             
-            if [ "$level" == "${TOP_LEVEL}" ] ; then
+            if [ "$postAction" == "rm" ] ; then
                 rm ${TMP_DIR}/$workMskName
-            elif [ "$level" == "${CUT_LEVEL}" ] ; then
+            elif [ "$postAction" == "mv" ] ; then
                 mv ${TMP_DIR}/$workMskName ${COMMON_TMP_DIR}/
             fi
         fi
@@ -495,7 +374,7 @@ BackupListFile () {
 }
 
 PushSlab () {
-    local level=$1
+    local postAction=$1
     local workImgName=$2
     local imgName=$3
     local workMskName=$4
@@ -514,9 +393,9 @@ PushSlab () {
         echo "0/$imgName" >> ${TMP_LIST_FILE}
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
-        if [ "$level" == "${TOP_LEVEL}" ] ; then
+        if [ "$postAction" == "rm" ] ; then
             rm ${TMP_DIR}/$workImgName
-        elif [ "$level" == "${CUT_LEVEL}" ] ; then
+        elif [ "$postAction" == "mv" ] ; then
             mv ${TMP_DIR}/$workImgName ${COMMON_TMP_DIR}/
         fi
         
@@ -535,9 +414,9 @@ PushSlab () {
                 
             fi
             
-            if [ "$level" == "${TOP_LEVEL}" ] ; then
+            if [ "$postAction" == "rm" ] ; then
                 rm ${TMP_DIR}/$workMskName
-            elif [ "$level" == "${CUT_LEVEL}" ] ; then
+            elif [ "$postAction" == "mv" ] ; then
                 mv ${TMP_DIR}/$workMskName ${COMMON_TMP_DIR}/
             fi
         fi
@@ -545,59 +424,9 @@ PushSlab () {
 }
 W2CFUNCTION
 
-=begin nd
-Function: work2cache
-
-Copy image from work directory to cache and transform it (tiled and compressed) thanks to the 'Work2cache' bash function (work2cache).
-
-(see ROK4GENERATION/tools/work2cache.png)
-
-Parameter:
-    node - <Node> - Node whose image have to be transfered in the cache.
-
-Returns:
-    An array (code, weight), (undef,undef) if error.
-=cut
-sub work2cache {
-    my $node = shift;
-    
-    my $code = "";
-    my $weight = 0;
-    
-    #### Export de l'image
-
-    # Le stockage peut être objet ou fichier
-    my $pyrName = $node->getSlabPath("IMAGE", FALSE);
-    
-    $code .= sprintf ("PushSlab %s %s %s", $node->getLevel, $node->getWorkImageName(TRUE), $pyrName);
-    $weight += WORK2CACHE_W;
-    
-    #### Export du masque, si présent
-
-    if ($node->getWorkMaskName()) {
-        # On a un masque de travail : on le précise pour qu'il soit potentiellement déplacé dans le temporaire commun ou supprimé
-        $code .= sprintf (" %s", $node->getWorkMaskName(TRUE));
-        
-        # En plus, on veut exporter les masques dans la pyramide, on en précise donc l'emplacement final
-        if ( $node->getGraph()->getPyramid()->ownMasks() ) {
-            $pyrName = $node->getSlabPath("MASK", FALSE);
-            
-            $code .= sprintf (" %s", $pyrName);
-            $weight += WORK2CACHE_W;
-        }        
-    }
-    
-    $code .= "\n";
-
-    return ($code,$weight);
-}
-
 ####################################################################################################
 #                                        Group: HARVEST IMAGE                                      #
 ####################################################################################################
-
-# Constant: WGET_W
-use constant WGET_W => 35;
 
 my $HARVESTFUNCTION = <<'HARVESTFUNCTION';
 Wms2work () {
@@ -658,63 +487,9 @@ Wms2work () {
 }
 HARVESTFUNCTION
 
-=begin nd
-Function: wms2work
-
-Fetch image corresponding to the node thanks to 'wget', in one or more steps at a time. WMS service is described in the current graph's datasource. Use the 'Wms2work' bash function.
-
-Parameters (list):
-    node - <COMMON::GraphNode> - Node whose image have to be harvested.
-    harvesting - <COMMON::Harvesting> - To use to harvest image.
-
-Returns:
-    An array (code, weight), (undef,undef) if error.
-=cut
-sub wms2work {
-    my $node = shift;
-    my $harvesting = shift;
-
-    my ($width, $height) = $node->getSlabSize(); # ie size tile image in pixel !
-    my $tms = $node->getGraph()->getPyramid()->getTileMatrixSet();    
-    my ($xMin, $yMin, $xMax, $yMax) = $node->getBBox();
-
-    # Calcul de la liste des bbox à moissonner
-    my ($grid, @bboxes) = $harvesting->getBboxesList(
-        $xMin, $yMin, $xMax, $yMax, 
-        $width, $height,
-        $tms->getInversion()
-    );
-
-    if (scalar @bboxes == 0) {
-        ERROR("Impossible de calculer la liste des bboxes à moissonner");
-        return (undef, undef);
-    }
-
-    my $code = sprintf "BBOXES=\"%s\"\n", join("\n", @bboxes);
-
-    
-    # Écriture de la commande
-
-    my $finalExtension = $harvesting->getHarvestExtension();
-    if (scalar @bboxes > 1) {
-        $finalExtension = "tif";
-    }
-    $node->setWorkExtension($finalExtension);
-
-    $code .= sprintf "Wms2work \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \$BBOXES\n",
-        $node->getWorkImageName(FALSE),
-        $harvesting->getHarvestExtension(), $finalExtension,
-        $harvesting->getMinSize(), $harvesting->getHarvestUrl($tms->getSRS(), $width, $height), $grid;
-    
-    return ($code, WGET_W);
-}
-
 ####################################################################################################
 #                                        Group: MERGE 4 TIFF                                       #
 ####################################################################################################
-
-# Constant: MERGE4TIFF_W
-use constant MERGE4TIFF_W => 1;
 
 my $M4TFUNCTION = <<'M4TFUNCTION';
 Merge4tiff () {
@@ -724,19 +499,11 @@ Merge4tiff () {
     local imgBg=$1
     local mskBg=$2
     shift 2
-    local levelIn=$1
+    local directoryIn=$1
     local imgIn=( 0 $2 $4 $6 $8 )
     local mskIn=( 0 $3 $5 $7 $9 )
     shift 9
-
-    local directoryIn=''
-
-    if [ "$levelIn" == "${CUT_LEVEL}" ] ; then
-        directoryIn=${COMMON_TMP_DIR}
-    else
-        directoryIn=${TMP_DIR}
-    fi   
-
+    
     local forRM=''
 
     # Entrées   
@@ -791,84 +558,9 @@ Merge4tiff () {
 }
 M4TFUNCTION
 
-=begin nd
-Function: merge4tiff
-
-Use the 'Merge4tiff' bash function.
-
-|     i1  i2
-|              =  resultImg
-|     i3  i4
-
-(see ROK4GENERATION/tools/merge4tiff.png)
-
-Parameters (list):
-    node - <COMMON::GraphNode> - Node to generate thanks to a 'merge4tiff' command.
-
-Returns:
-    An array (code, weight), (undef,undef) if error.
-=cut
-sub merge4tiff {
-    my $node = shift;
-    
-    my ($c, $w);
-    my ($code, $weight) = ("",MERGE4TIFF_W);
-    
-    my @childList = $node->getChildren();
-
-    # Si elle existe, on copie la dalle de la pyramide de base dans le repertoire de travail 
-    # en la convertissant du format cache au format de travail: c'est notre image de fond.
-    # Si la dalle de la pyramide de base existe, on a créé un lien, donc il existe un fichier
-    # correspondant dans la nouvelle pyramide.
-    # On fait de même avec le masque de donnée associé, s'il existe.
-
-    my $imgBg = $node->getSlabPath("IMAGE", TRUE);
-    if ($node->getGraph()->getPyramid()->ownAncestor() && ($USEMASK || scalar @childList != 4) && COMMON::ProxyStorage::isPresent($node->getStorageType(), $imgBg) ) {
-        $node->addBgImage();
-        
-        my $maskBg = $node->getSlabPath("MASK", TRUE);
-        
-        if ( $USEMASK && defined $maskBg && COMMON::ProxyStorage::isPresent($node->getStorageType(), $maskBg) ) {
-            # On a en plus un masque associé à l'image de fond
-            $node->addBgMask();
-        }
-        
-        ($c,$w) = cache2work($node);
-        $code .= $c;
-        $weight += $w;
-    }
-    
-    if ($USEMASK) {
-        $node->addWorkMask();
-    }
-    
-    # We compose the 'Merge4tiff' call
-    #   - the ouput + background
-    $code .= sprintf "Merge4tiff %s", $node->exportForM4tConf(TRUE);
-    
-    #   - the children inputs
-    my $inputsLevel = $node->getGraph()->getPyramid()->getTileMatrixSet()->getBelowLevelID($node->getLevel());
-    $code .= " $inputsLevel";
-
-    foreach my $childNode ($node->getPossibleChildren()) {
-            
-        if (defined $childNode) {
-            $code .= $childNode->exportForM4tConf(FALSE);
-        } else {
-            $code .= " 0 0";
-        }
-    }
-    
-    $code .= "\n";
-
-    return ($code,$weight);
-}
-
 ####################################################################################################
 #                                        Group: DECIMATE N TIFF                                    #
 ####################################################################################################
-
-use constant DECIMATENTIFF_W => 3;
 
 my $DNTFUNCTION = <<'DNTFUNCTION';
 DecimateNtiff () {
@@ -890,80 +582,6 @@ DecimateNtiff () {
     fi
 }
 DNTFUNCTION
-
-=begin nd
-Function: decimateNtiff
-
-Use the 'decimateNtiff' bash function. Write a configuration file, with sources.
-
-(see ROK4GENERATION/toolsdecimateNtiff.png)
-
-Parameters (list):
-    node - <Node> - Node to generate thanks to a 'decimateNtiff' command.
-    
-Example:
-|    DecimateNtiff 12_26_17.txt
-
-Returns:
-    An array (code, weight), (undef,undef) if error.
-=cut
-sub decimateNtiff {
-    my $node = shift;
-    
-    my ($c, $w);
-    my ($code, $weight) = ("",DECIMATENTIFF_W);
-
-    # Si elle existe, on copie la dalle de la pyramide de base dans le repertoire de travail 
-    # en la convertissant du format cache au format de travail: c'est notre image de fond.
-    # Si la dalle de la pyramide de base existe, on a créé un lien, donc il existe un fichier
-    # correspondant dans la nouvelle pyramide.
-    # On fait de même avec le masque de donnée associé, s'il existe.
-    my $imgBg = $node->getSlabPath("IMAGE", TRUE);
-    if ($node->getGraph()->getPyramid()->ownAncestor() && COMMON::ProxyStorage::isPresent($node->getStorageType(), $imgBg) ) {
-        $node->addBgImage();
-        
-        my $maskBg = $node->getSlabPath("MASK", TRUE);
-        
-        if ( $USEMASK && defined $maskBg && COMMON::ProxyStorage::isPresent($node->getStorageType(), $maskBg) ) {
-            # On a en plus un masque associé à l'image de fond
-            $node->addBgMask();
-        }
-        
-        ($c,$w) = cache2work($node);
-        $code .= $c;
-        $weight += $w;
-    }
-    
-    if ($USEMASK) {
-        $node->addWorkMask();
-    }
-    
-    my $dntConf = $node->getWorkBaseName().".txt";
-    my $dntConfFile = File::Spec->catfile($DNTCONFDIR, $dntConf);
-    
-    if (! open CFGF, ">", $dntConfFile ) {
-        ERROR(sprintf "Impossible de creer le fichier $dntConfFile.");
-        return (undef,undef);
-    }
-    
-    # La premiere ligne correspond à la dalle résultat: La version de travail de la dalle à calculer.
-    # Cet export va également ajouter les fonds (si présents) comme premières sources
-    printf CFGF $node->exportForDntConf(TRUE, $node->getScript()->getTempDir()."/");
-    
-    #   - Les noeuds sources (NNGraph)
-    foreach my $sourceNode ( @{$node->getSourceNodes()} ) {
-        printf CFGF "%s", $sourceNode->exportForDntConf(FALSE, $sourceNode->getScript()->getTempDir()."/");
-    }
-    
-    close CFGF;
-    
-    $code .= "DecimateNtiff $dntConf";
-    $code .= sprintf " %s", $node->getBgImageName(TRUE) if (defined $node->getBgImageName()); # pour supprimer l'image de fond si elle existe
-    $code .= sprintf " %s", $node->getBgMaskName(TRUE) if (defined $node->getBgMaskName()); # pour supprimer le masque de fond si il existe
-    $code .= "\n";
-
-    return ($code,$weight);
-}
 
 ####################################################################################################
 #                                     Group: Main function                                         #
