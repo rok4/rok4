@@ -12,11 +12,9 @@ Le serveur implémente les standards ouverts de l’Open Geospatial Consortium (
 
 ROK4GENERATION est un ensemble de scripts de traitement permettant la préparation et la transformation de données géo-référencées vers le format de pyramide raster (potentiellement à la demande) et vecteur utilisé par ROK4.
 
-* Compilation sur travis-ci : [![Build Status](https://travis-ci.org/rok4/rok4.svg?branch=release)](https://travis-ci.org/rok4/rok4)
-* Rejoindre le chat Gitter : [![Join the chat at https://gitter.im/rok4/rok4](https://badges.gitter.im/rok4/rok4.svg)](https://gitter.im/rok4/rok4?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+* 
 * http://www.ign.fr [@IGNFrance](https://twitter.com/IGNFrance)
 * http://www.geoportail.gouv.fr [@Geoportail](https://twitter.com/Geoportail)
-* http://www.rok4.org
 
 ROK4 Version : 3.5.0-FEATURE-REFACTOR-SCRIPTING
 

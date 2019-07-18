@@ -96,9 +96,12 @@ use constant FALSE => 0;
 ####################################################################################################
 
 our $COMMONTEMPDIR;
+our $PERSONNALTEMPDIR;
+our $SCRIPTSDIR;
 our $MNTCONFDIR;
 our $DNTCONFDIR;
 our $USEMASK;
+our $PARALLELIZATIONLEVEL;
 
 =begin nd
 Function: setGlobals
@@ -106,7 +109,10 @@ Function: setGlobals
 Define and create common working directories
 =cut
 sub setGlobals {
+    $PARALLELIZATIONLEVEL = shift;
+    $PERSONNALTEMPDIR = shift;
     $COMMONTEMPDIR = shift;
+    $SCRIPTSDIR = shift;
     $USEMASK = shift;
 
     if (defined $USEMASK && uc($USEMASK) eq "TRUE") {
@@ -150,6 +156,16 @@ sub setGlobals {
     }
 
     return TRUE;
+}
+
+# Function: getScriptDirectory
+sub getScriptDirectory {
+    return $SCRIPTSDIR;
+}
+
+# Function: getPersonnalTempDirectory
+sub getPersonnalTempDirectory {
+    return $PERSONNALTEMPDIR;
 }
 
 ####################################################################################################

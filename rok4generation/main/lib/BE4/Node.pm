@@ -68,11 +68,11 @@ Attributes:
 
     storageType - string - Final storage type for the node : "FILE", "CEPH" or "S3"
 
-    bgImageBasename - string - 
-    bgMaskBasename - string - 
+    bgImageBasename - string - <LEVEL>_<COL>_<ROW>_bgI, only defined if the node own a background
+    bgMaskBasename - string - <LEVEL>_<COL>_<ROW>_bgM, only defined if the node own a background with a mask
 
-    workImageBasename - string - 
-    workMaskBasename - string - 
+    workImageBasename - string - <LEVEL>_<COL>_<ROW>_I
+    workMaskBasename - string - <LEVEL>_<COL>_<ROW>_I, only defined if the node own a mask
     workExtension - string - extension of the temporary work image, lower case. Default value : tif.
 
     tm - <COMMON::TileMatrix> - Tile matrix associated to the level which the node belong to.
@@ -81,8 +81,8 @@ Attributes:
 
     script - <COMMON::Script> - Script in which the node will be generated
 
-    sourceNodes - <BE4::Node> array - Nodes from which this node is generated (working for <COMMON::NNGraph>)
-    geoImages - <COMMON::GeoImage> array - Source images from which this node (if it belongs to the tree's bottom level) is generated (working for <COMMON::QTree>)
+    sourceNodes - <BE4::Node> array - Nodes from which this node is generated (usefull for <COMMON::NNGraph>)
+    geoImages - <COMMON::GeoImage> array - Source images from which this node (usefull for bottom level nodes in a <COMMON::QTree> and a <COMMON::NNGraph>)
 =cut
 
 ################################################################################
@@ -247,7 +247,19 @@ sub isBboxIntersectingNodeBbox {
 # Function: getLevel
 sub getLevel {
     my $this = shift;
-    return $this->{tm}->getID;
+    return $this->{tm}->getID();
+}
+
+# Function: getCol
+sub getCol {
+    my $this = shift;
+    return $this->{col};
+}
+
+# Function: getRow
+sub getRow {
+    my $this = shift;
+    return $this->{row};
 }
 
 # Function: getTM
@@ -278,18 +290,6 @@ sub getSlabSize {
     my $this = shift;
 
     return $this->{graph}->getPyramid()->getSlabSize($this->getLevel());
-}
-
-# Function: getCol
-sub getCol {
-    my $this = shift;
-    return $this->{col};
-}
-
-# Function: getRow
-sub getRow {
-    my $this = shift;
-    return $this->{row};
 }
 
 # Function: getStorageType
@@ -325,36 +325,10 @@ sub setScript {
 
 ########## work files
 
-# Function: setWorkExtension
-sub setWorkExtension {
-    my $this = shift;
-    my $ext = shift;
-    
-    $this->{workExtension} = lc($ext);
-}
-
-# Function: addBgImage
+# Function: addWorkMask
 sub addWorkMask {
     my $this = shift;
     $this->{workMaskBasename} = sprintf "%s_%s_%s_M", $this->getLevel, $this->{col}, $this->{row};
-}
-
-# Function: getWorkImageName
-sub getWorkImageName {
-    my $this = shift;
-    my $withExtension = shift;
-    
-    return $this->{workImageBasename}.".".$this->{workExtension} if ($withExtension);
-    return $this->{workImageBasename};
-}
-
-# Function: getWorkMaskName
-sub getWorkMaskName {
-    my $this = shift;
-    my $withExtension = shift;
-    
-    return $this->{workMaskBasename}.".tif" if ($withExtension);
-    return $this->{workMaskBasename};
 }
 
 =begin nd
@@ -376,85 +350,41 @@ sub addBgImage {
     $this->{bgImageBasename} = sprintf "%s_%s_%s_BgI", $this->getLevel, $this->{col}, $this->{row};
 }
 
-# Function: getBgImageName
-sub getBgImageName {
-    my $this = shift;
-    my $withExtension = shift;
-
-    return undef if (! defined $this->{bgImageBasename});
-    
-    return $this->{bgImageBasename}.".tif" if ($withExtension);
-    return $this->{bgImageBasename};
-}
-
 # Function: addBgMask
 sub addBgMask {
     my $this = shift;
 
-    $this->{bgMaskBasename} = sprintf "%s_%s_%s_BgM", $this->getLevel, $this->{col}, $this->{row};
-}
-
-# Function: getBgMaskName
-sub getBgMaskName {
-    my $this = shift;
-    my $withExtension = shift;
-
-    return undef if (! defined $this->{bgMaskBasename});
-    
-    return $this->{bgMaskBasename}.".tif" if ($withExtension);
-    return $this->{bgMaskBasename};
-}
-
-# Function: getSourceNodes
-sub getSourceNodes {
-    my $this = shift;
-    return $this->{sourceNodes};
-}
-
-# Function: getGeoImages
-sub getGeoImages {
-    my $this = shift;
-    return $this->{geoImages};
+    $this->{bgMaskBasename} = sprintf "%s_%s_%s_BgM", $this->getLevel(), $this->{col}, $this->{row};
 }
 
 =begin nd
-Function: addSourceNodes
+Function: addSourceNode
 
 Parameters (list):
-    nodes - <BE4::Node> array - Source nodes to add
+    node - <BE4::Node> - Source node to add
 =cut
-sub addSourceNodes {
+sub addSourceNode {
     my $this = shift;
-    my @nodes = shift;
+    my $node = shift;
     
-    push(@{$this->getSourceNodes()},@nodes);
+    push(@{$this->{sourceNodes}},$node);
     
     return TRUE;
 }
 
 =begin nd
-Function: addGeoImages
+Function: addGeoImage
 
 Parameters (list):
-    images - <GeoImage> array - Source images to add
+    image - <COMMON::GeoImage> - Source image to add
 =cut
-sub addGeoImages {
+sub addGeoImage {
     my $this = shift;
-    my @images = shift;
+    my $image = shift;
     
-    push(@{$this->getGeoImages()},@images);
+    push(@{$this->{geoImages}}, $image);
     
     return TRUE;
-}
-
-# Function: getUpperLeftTile
-sub getUpperLeftTile {
-    my $this = shift;
-
-    return (
-        $this->{col} * $this->{graph}->getPyramid()->getTilesPerWidth(),
-        $this->{row} * $this->{graph}->getPyramid()->getTilesPerHeight()
-    );
 }
 
 # Function: getBBox
@@ -590,18 +520,17 @@ sub mergeNtiff {
     # La premiere ligne correspond à la dalle résultat: La version de travail de la dalle à calculer.
     # Les points d'interrogation permettent de gérer le dossier où écrire les images grâce à une variable
     # Cet export va également ajouter les fonds (si présents) comme premières sources
-    printf CFGF $this->exportForMntConf(TRUE, "?");
+    printf CFGF $this->exportForMntConf();
 
-    my $listGeoImg = $this->getGeoImages;
-    foreach my $img (@{$listGeoImg}) {
-        printf CFGF "%s", $img->exportForMntConf($BE4::Shell::USEMASK);
+    foreach my $img (@{$this->{geoImages}}) {
+        printf CFGF "%s", $img->exportForMntConf();
     }
     
     close CFGF;
     
     $this->{script}->write("MergeNtiff $mNtConfFilename");
-    $this->{script}->write(sprintf " %s", $this->getBgImageName(TRUE)) if (defined $this->getBgImageName()); # pour supprimer l'image de fond si elle existe
-    $this->{script}->write(sprintf " %s", $this->getBgMaskName(TRUE)) if (defined $this->getBgMaskName()); # pour supprimer le masque de fond si il existe
+    $this->{script}->write(sprintf " %s.tif", $this->{bgImageBasename}) if (defined $this->{bgImageBasename}); # pour supprimer l'image de fond si elle existe
+    $this->{script}->write(sprintf " %s.tif", $this->{bgMaskBasename}) if (defined $this->{bgMaskBasename}); # pour supprimer le masque de fond si il existe
     $this->{script}->write("\n");
 
     return TRUE;
@@ -622,13 +551,13 @@ sub cache2work {
     
     #### Rappatriement de l'image de donnée ####
     
-    $this->{script}->write(sprintf "PullSlab %s %s\n", $this->getSlabPath("IMAGE", FALSE), $this->getBgImageName(TRUE));
+    $this->{script}->write(sprintf "PullSlab %s %s.tif\n", $this->getSlabPath("IMAGE", FALSE), $this->{bgImageBasename});
     
     #### Rappatriement du masque de donnée (si présent) ####
     
-    if ( defined $this->getBgMaskName() ) {
+    if ( defined $this->{bgMaskBasename} ) {
         # Un masque est associé à l'image que l'on va utiliser, on doit le mettre également au format de travail
-        $this->{script}->write(sprintf "PullSlab %s %s\n", $this->getSlabPath("MASK", FALSE), $this->getBgMaskName(TRUE));
+        $this->{script}->write(sprintf "PullSlab %s %s.tif\n", $this->getSlabPath("MASK", FALSE), $this->{bgMaskBasename});
     }
     
     return TRUE;
@@ -656,13 +585,13 @@ sub work2cache {
     if ($this->isCutLevelNode()) {$postAction = "mv";}
     if ($this->isTopLevelNode()) {$postAction = "rm";}
 
-    $this->{script}->write(sprintf ("PushSlab %s %s %s", $postAction, $this->getWorkImageName(TRUE), $pyrName));
+    $this->{script}->write(sprintf ("PushSlab %s %s.%s %s", $postAction, $this->{workImageBasename}, $this->{workExtension}, $pyrName));
     
     #### Export du masque, si présent
 
-    if ($this->getWorkMaskName()) {
+    if ($this->{workMaskBasename}) {
         # On a un masque de travail : on le précise pour qu'il soit potentiellement déplacé dans le temporaire commun ou supprimé
-        $this->{script}->write(sprintf (" %s", $this->getWorkMaskName(TRUE)));
+        $this->{script}->write(sprintf (" %s.tif", $this->{workMaskBasename}));
         
         # En plus, on veut exporter les masques dans la pyramide, on en précise donc l'emplacement final
         if ( $this->getGraph()->getPyramid()->ownMasks() ) {
@@ -711,16 +640,15 @@ sub wms2work {
 
     # Écriture de la commande
 
-    my $finalExtension = $harvesting->getHarvestExtension();
+    $this->{workExtension} = $harvesting->getHarvestExtension();
     if (scalar @bboxes > 1) {
-        $finalExtension = "tif";
+        $this->{workExtension} = "tif";
     }
-    $this->setWorkExtension($finalExtension);
 
     $this->{script}->write(
         sprintf "Wms2work \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \$BBOXES\n",
-            $this->getWorkImageName(FALSE),
-            $harvesting->getHarvestExtension(), $finalExtension,
+            $this->{workImageBasename},
+            $harvesting->getHarvestExtension(), $this->{workExtension},
             $harvesting->getMinSize(), $harvesting->getHarvestUrl($tms->getSRS(), $width, $height), $grid
     );
     
@@ -844,18 +772,18 @@ sub decimateNtiff {
     
     # La premiere ligne correspond à la dalle résultat: La version de travail de la dalle à calculer.
     # Cet export va également ajouter les fonds (si présents) comme premières sources
-    printf CFGF $this->exportForDntConf(TRUE, $this->getScript()->getTempDir()."/");
+    printf CFGF $this->exportForDntConf(TRUE, $this->getScript()->getTempDir());
     
     #   - Les noeuds sources (NNGraph)
-    foreach my $sourceNode ( @{$this->getSourceNodes()} ) {
-        printf CFGF "%s", $sourceNode->exportForDntConf(FALSE, $sourceNode->getScript()->getTempDir()."/");
+    foreach my $sourceNode ( @{$this->{sourceNodes}} ) {
+        printf CFGF "%s", $sourceNode->exportForDntConf(FALSE, $sourceNode->getScript()->getTempDir());
     }
     
     close CFGF;
     
     $this->{script}->write("DecimateNtiff $dntConf");
-    $this->{script}->write(sprintf " %s", $this->getBgImageName(TRUE)) if (defined $this->getBgImageName()); # pour supprimer l'image de fond si elle existe
-    $this->{script}->write(sprintf " %s", $this->getBgMaskName(TRUE)) if (defined $this->getBgMaskName()); # pour supprimer le masque de fond si il existe
+    $this->{script}->write(sprintf " %s.tif", $this->{bgImageBasename}) if (defined $this->{bgImageBasename}); # pour supprimer l'image de fond si elle existe
+    $this->{script}->write(sprintf " %s.tif", $this->{bgMaskBasename}) if (defined $this->{bgMaskBasename}); # pour supprimer le masque de fond si il existe
     $this->{script}->write("\n");
 
     return TRUE;
@@ -871,44 +799,33 @@ Function: exportForMntConf
 Export attributes of the Node for mergeNtiff configuration file. Provided paths will be written as is, so can be relative or absolute (or use environment variables).
 
 Masks and backgrounds are always TIFF images.
-
-Parameters (list):
-    exportBg - boolean - Export background files (image + mask) if presents. Considered only for file storage
-    prefix - string - String to add before paths, can be undefined.
 =cut
 sub exportForMntConf {
     my $this = shift;
-    my $exportBg = shift;
-    my $prefix = shift;
-    
-    $prefix = "" if (! defined $prefix);
 
-
-    my @Bbox = $this->getBBox;
+    my @Bbox = $this->getBBox();
     my $output = "";
 
-    $output = sprintf "IMG %s%s.%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-        $prefix, $this->{workImageBasename}, $this->{workExtension},
+    $output = sprintf "IMG ?%s.%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+        $this->{workImageBasename}, $this->{workExtension},
         $this->{tm}->getSRS(),
         $Bbox[0], $Bbox[3], $Bbox[2], $Bbox[1],
         $this->getTM()->getResolution(), $this->getTM()->getResolution();
 
     if (defined $this->{workMaskBasename}) {
-        $output .= sprintf "MSK %s%s.tif\n", $prefix,  $this->{workMaskBasename};
+        $output .= sprintf "MSK ?%s.tif\n",  $this->{workMaskBasename};
     }
 
-    if ($exportBg) {
-        if (defined $this->{bgImageBasename}) {
-            $output .= sprintf "IMG %s%s.tif\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-                $prefix, $this->{bgImageBasename},
-                $this->{tm}->getSRS(),
-                $Bbox[0], $Bbox[3], $Bbox[2], $Bbox[1],
-                $this->getTM()->getResolution(), $this->getTM()->getResolution();
-                
-            if (defined $this->{bgMaskBasename}) {
-                $output .= sprintf "MSK %s%s.tif\n", $prefix, $this->{bgMaskBasename};
-            }        
-        }
+    if (defined $this->{bgImageBasename}) {
+        $output .= sprintf "IMG ?%s.tif\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+            $this->{bgImageBasename},
+            $this->{tm}->getSRS(),
+            $Bbox[0], $Bbox[3], $Bbox[2], $Bbox[1],
+            $this->getTM()->getResolution(), $this->getTM()->getResolution();
+            
+        if (defined $this->{bgMaskBasename}) {
+            $output .= sprintf "MSK ?%s.tif\n", $this->{bgMaskBasename};
+        }        
     }
 
     return $output;
@@ -922,38 +839,35 @@ Export attributes of the Node for decimateNtiff configuration file. Provided pat
 Masks and backgrounds are always TIFF images.
 
 Parameters (list):
-    exportBg - boolean - Export background files (image + mask) if presents. Considered only for file storage
-    prefix - string - String to add before paths, can be undefined.
+    exportBg - boolean - Export background files (image + mask) if presents.
+    directory - string - String to add before paths
 =cut
 sub exportForDntConf {
     my $this = shift;
     my $exportBg = shift;
-    my $prefix = shift;
-    
-    $prefix = "" if (! defined $prefix);
-
+    my $directory = shift;
 
     my @Bbox = $this->getBBox();
     my $output = "";
 
-    $output = sprintf "IMG %s%s.%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-        $prefix, $this->{workImageBasename}, $this->{workExtension},
+    $output = sprintf "IMG %s/%s.%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+        $directory, $this->{workImageBasename}, $this->{workExtension},
         $Bbox[0], $Bbox[3], $Bbox[2], $Bbox[1],
         $this->getTM()->getResolution(), $this->getTM()->getResolution();
 
     if (defined $this->{workMaskBasename}) {
-        $output .= sprintf "MSK %s%s.tif\n", $prefix,  $this->{workMaskBasename};
+        $output .= sprintf "MSK %s/%s.tif\n", $directory,  $this->{workMaskBasename};
     }
     
     if ($exportBg) {
         if (defined $this->{bgImageBasename}) {
-            $output .= sprintf "IMG %s%s.tif\t%s\t%s\t%s\t%s\t%s\t%s\n",
-                $prefix, $this->{bgImageBasename},
+            $output .= sprintf "IMG %s/%s.tif\t%s\t%s\t%s\t%s\t%s\t%s\n",
+                $directory, $this->{bgImageBasename},
                 $Bbox[0], $Bbox[3], $Bbox[2], $Bbox[1],
                 $this->getTM()->getResolution(), $this->getTM()->getResolution();
                 
             if (defined $this->{bgMaskBasename}) {
-                $output .= sprintf "MSK %s%s.tif\n", $prefix, $this->{bgMaskBasename};
+                $output .= sprintf "MSK %s/%s.tif\n", $directory, $this->{bgMaskBasename};
             }        
         }
     }
@@ -967,7 +881,7 @@ Function: exportForM4tConf
 Export work files (output) and eventually background (input) of the Node for the Merge4tiff call line.
 
 Parameters (list):
-    exportBg - boolean - Export background files (image + mask) if presents. Considered only for file storage
+    exportBg - boolean - Export background files (image + mask) if presents.
 =cut
 sub exportForM4tConf {
     my $this = shift;

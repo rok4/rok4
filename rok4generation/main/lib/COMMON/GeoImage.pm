@@ -79,6 +79,8 @@ use warnings;
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
 
+use BE4::Shell;
+
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
 
@@ -299,19 +301,14 @@ sub getName {
 =begin nd
 Function: exportForMntConf
 
-Export a GeoImage object as a string. Output is formated to be used in <Commands::mergeNtiff> configuration.
+Export a GeoImage object as a string. Output is formated to be used in <BE4::Node::mergeNtiff> configuration.
 
 Example:
 |    IMG completePath xmin ymax xmax ymin xres yres
 |    MSK maskCompletePath
-
-Parameter:
-    useMasks - boolean - Specify if we want to export mask (if present). TRUE by default.
 =cut
 sub exportForMntConf {
     my $this = shift;
-    my $useMasks = shift;
-    $useMasks = TRUE if (! defined $useMasks);
 
     my $output = sprintf "IMG %s\t%s", $this->{completePath}, $this->{srs};
 
@@ -319,7 +316,7 @@ sub exportForMntConf {
         $this->{xmin}, $this->{ymax}, $this->{xmax}, $this->{ymin},
         $this->{xres}, $this->{yres};
         
-    if ($useMasks && defined $this->{maskCompletePath}) {
+    if ($BE4::Shell::USEMASK && defined $this->{maskCompletePath}) {
         $output .= sprintf "MSK %s\n", $this->{maskCompletePath};
     }
 

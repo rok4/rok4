@@ -122,6 +122,8 @@ use Data::Dumper;
 use COMMON::DataSource;
 use BE4::Node;
 use FOURALAMO::Node;
+use BE4::Shell;
+use FOURALAMO::Shell;
 use COMMON::PyramidRaster;
 use COMMON::PyramidVector;
 use COMMON::Array;
@@ -161,32 +163,37 @@ Constructor: defineScripts
 Create all <COMMON::Script>'s to generate the QTree pyramid. They are stored in the <COMMON::Forest> instance.
 
 Parameters (list):
-    splitNumber - integer - Parallelization level
     scriptInit - string - Shell function to write into each script
-    tempDir - string - Path to personnal script temporary directory
-    scriptDir - string - Path to directory where to write script
+    pyramid - <COMMON::PyramidRaster> - NNGraph Pyramid to generate
 =cut
 sub defineScripts {
-    my $splitNumber = shift;
     my $scriptInit = shift;
-    my $tempDir = shift;
-    my $scriptDir = shift;
+    my $pyramid = shift;
+
+    my $parallelization;
+    my $shellClass;
+    if (ref ($pyramid) eq "COMMON::PyramidVector") {
+        $parallelization = $FOURALAMO::Shell::PARALLELIZATIONLEVEL;
+        $shellClass = 'FOURALAMO::Shell';
+    } elsif(ref ($pyramid) eq "COMMON::PyramidRaster") {
+        $parallelization = $BE4::Shell::PARALLELIZATIONLEVEL;
+        $shellClass = 'BE4::Shell';
+    }
 
     my $scripts = {
         splits => [],
         current => 0,
-        number => $splitNumber,
+        number => $parallelization,
         finisher => undef
     };
 
-    for (my $i = 1; $i <= $splitNumber; $i++) {
+    for (my $i = 1; $i <= $parallelization; $i++) {
         push(
             @{$scripts->{splits}},
             COMMON::Script->new({
                 id => "SCRIPT_$i",
-                tempDir => $tempDir,
-                scriptDir => $scriptDir,
-                executedAlone => FALSE,
+                finisher => FALSE,
+                shellClass => $shellClass,
                 initialisation => $scriptInit
             })
         )
@@ -194,9 +201,8 @@ sub defineScripts {
 
     $scripts->{finisher} = COMMON::Script->new({
         id => "SCRIPT_FINISHER",
-        tempDir => $tempDir,
-        scriptDir => $scriptDir,
-        executedAlone => TRUE,
+        finisher => TRUE,
+        shellClass => $shellClass,
         initialisation => $scriptInit
     });
 
@@ -444,7 +450,7 @@ sub identifyBottomNodes {
                             $this->{nodes}->{$bottomID}->{$nodeKey} = $node;
                         }
 
-                        $this->{nodes}->{$bottomID}->{$nodeKey}->addGeoImages($objImg);
+                        $this->{nodes}->{$bottomID}->{$nodeKey}->addGeoImage($objImg);
                     }
                 }
             }

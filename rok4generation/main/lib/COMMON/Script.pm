@@ -50,16 +50,15 @@ Using:
 
     my $objC = COMMON::Script->new({
         id => "SCRIPT_1",
-        tempDir => "/home/ign/TMP/",
-        commonTempDir => "/home/ign/TMP/",
-        scriptDir => "/home/ign/SCRIPTS",
-        executedAlone => "FALSE"
+        finisher => "FALSE"
+        shellClass => 'BE4::Shell',
+        initialisation => "echo 'Hello world'"
     });
     (end code)
 
 Attributes:
     id - string - Identifiant, like "SCRIPT_2". It used to name the file and temporary directories.
-    executedAlone - boolean - If we know a script will be executed ALONE. it can change some working.
+    finisher - boolean - If we know a script is the finisher (executed alone at the end). it can change some working.
     filePath - string - Complete absolute script file path.
     tempDir - string - Directory used to write temporary images.
     stream - stream - Stream to the script file, to write in.
@@ -76,6 +75,10 @@ use Log::Log4perl qw(:easy);
 use Data::Dumper;
 use File::Path;
 use File::Basename;
+
+use BE4::Shell;
+use FOURALAMO::Shell;
+use JOINCACHE::Shell;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -108,9 +111,9 @@ Script constructor. Bless an instance.
 
 Parameters (hash):
     id - string - Identifiant, used to name the file, like 'SCRIPT_1'.
-    scriptDir - string - Directory path, where to write the script.
-    tempDir - string - Root directory, in which own temporary directory will be created.
-    executedAlone - boolean - Optionnal, FALSE by default.
+    finisher - boolean - Precise if script is the finisher (executed alone at the end)
+    shellClass - <BE4::Shell> or <FOURALAMO::Shell> or <JOINCACHE::Shell> class - Shell class where some information are stored as class variables
+    initialisation - string - Text to print into script
 =cut
 sub new {
     my $class = shift;
@@ -120,7 +123,7 @@ sub new {
     # IMPORTANT : if modification, think to update natural documentation (just above)
     my $this = {
         id => undef,
-        executedAlone => FALSE,
+        finisher => undef,
         filePath => undef,
 
         tempDir => undef,
@@ -129,7 +132,6 @@ sub new {
     };
 
     bless($this, $class);
-
 
     ########## ID
 
@@ -141,37 +143,40 @@ sub new {
 
     ########## Will be executed alone ?
 
-    if ( exists $params->{executedAlone} && defined $params->{executedAlone} && $params->{executedAlone}) {
-        $this->{executedAlone} = TRUE;
+    if ( ! exists $params->{finisher} || ! defined $params->{finisher}) {
+        ERROR ("'finisher' mandatory to create a Script object !");
+        return undef;
     }
+    $this->{finisher} = $params->{finisher};
+
+    ########## Shell class
+
+    if ( ! exists $params->{shellClass} || ! defined $params->{shellClass}) {
+        ERROR ("'shellClass' mandatory to create a Script object !");
+        return undef;
+    }
+
+    my $shellClass = $params->{shellClass};
 
     ########## Chemin d'écriture du script
-    
-    if ( ! exists $params->{scriptDir} || ! defined $params->{scriptDir}) {
-        ERROR ("'scriptDir' mandatory to create a Script object !");
-        return undef;
-    }
-    $this->{filePath} = File::Spec->catfile($params->{scriptDir},$this->{id}.".sh");
 
-    ########## Dossier temporaire dédié à ce script
-    
-    if ( ! exists $params->{tempDir} || ! defined $params->{tempDir}) {
-        ERROR ("'tempDir' mandatory to create a Script object !");
-        return undef;
-    }
-    $this->{tempDir} = File::Spec->catdir($params->{tempDir},$this->{id});
-    
-    # Script's directory
-    if (! -d $params->{scriptDir}) {
-        DEBUG (sprintf "Create the script directory '%s' !", $params->{scriptDir});
-        eval { mkpath([$params->{scriptDir}]); };
+    $this->{filePath} = File::Spec->catfile($shellClass->getScriptDirectory(), $this->{id}.".sh");
+
+    if (! -d $shellClass->getScriptDirectory()) {
+        DEBUG (sprintf "Create the script directory '%s' !", $shellClass->getScriptDirectory());
+        eval { mkpath([$shellClass->getScriptDirectory()]); };
         if ($@) {
-            ERROR(sprintf "Can not create the script directory '%s' : %s !", $params->{scriptDir}, $@);
+            ERROR(sprintf "Can not create the script directory '%s' : %s !", $shellClass->getScriptDirectory(), $@);
             return undef;
         }
     }
+
+    ########## Dossier temporaire dédié à ce script
     
-    # Open stream
+    $this->{tempDir} = File::Spec->catdir($shellClass->getPersonnalTempDirectory(),$this->{id});
+    
+    
+    ########## Open stream
     my $STREAM;
     if ( ! (open $STREAM,">", $this->{filePath})) {
         ERROR(sprintf "Can not open stream to '%s' !", $this->{filePath});
@@ -193,12 +198,6 @@ sub new {
 sub getID {
     my $this = shift;
     return $this->{id};
-}
-
-# Function: isExecutedAlone
-sub isExecutedAlone {
-    my $this = shift;
-    return $this->{executedAlone};
 }
 
 # Function: getTempDir
@@ -227,7 +226,6 @@ sub prepare {
     # definition des variables d'environnement du script
     my $code = sprintf ("# Variables d'environnement\n");
     $code .= sprintf ("SCRIPT_ID=\"%s\"\n", $this->{id});
-    $code .= sprintf ("ROOT_TMP_DIR=\"%s\"\n", dirname($this->{tempDir}));
     $code .= sprintf ("TMP_DIR=\"%s\"\n", $this->{tempDir});
 
     my $tmpListFile = File::Spec->catdir($this->{tempDir},"list_".$this->{id}.".txt");
@@ -276,7 +274,7 @@ sub close {
     printf $stream "    mv \${TMP_LIST_FILE} \${COMMON_TMP_DIR}\n";
     printf $stream "fi\n\n";
 
-    if ($this->{executedAlone}) {
+    if ($this->{finisher}) {
         printf $stream "echo \"Temporary files lists (list_*.txt in the common directory) are added to the global files list, then removed\"\n";
         printf $stream "cat \${COMMON_TMP_DIR}/list_*.txt >>\${LIST_FILE}\n";
         printf $stream "rm -f \${COMMON_TMP_DIR}/list_*.txt\n";

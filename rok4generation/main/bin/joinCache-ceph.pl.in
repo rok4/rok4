@@ -363,7 +363,7 @@ sub validate {
 
     $this{mergeMethod} = $processSection->{merge_method};
 
-    if (! JOINCACHE::Shell::setGlobals($processSection->{path_temp_common}, $processSection->{merge_method}, $processSection->{use_masks})) {
+    if (! JOINCACHE::Shell::setGlobals($processSection->{job_number}, $processSection->{path_temp}, $processSection->{path_temp_common}, $processSection->{path_shell}, $processSection->{merge_method}, $processSection->{use_masks})) {
         ERROR ("Impossible d'initialiser la librairie des commandes Shell pour JOINCACHE");
         return FALSE;
     }
@@ -372,9 +372,8 @@ sub validate {
     for (my $i = 1; $i <= $processSection->{job_number}; $i++ ) {
         my $script = COMMON::Script->new({
             id => "SCRIPT_$i",
-            tempDir => $processSection->{path_temp},
-            scriptDir => $processSection->{path_shell},
-            executedAlone => FALSE,
+            finisher => FALSE,
+            shellClass => 'JOINCACHE::Shell',
             initialisation => $scriptInit
         });
 

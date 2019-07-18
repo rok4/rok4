@@ -68,7 +68,7 @@ Attributes:
 
     storageType - string - Final storage type for the node : "FILE", "CEPH" or "S3"
 
-    workImageBasename - string - 
+    workImageBasename - string - <LEVEL>_<COL>_<ROW>_I
 
     tm - <COMMON::TileMatrix> - Tile matrix associated to the level which the node belong to.
     graph - <COMMON::NNGraph> or <COMMON::QTree> - Graph which contains the node.
@@ -135,7 +135,7 @@ sub new {
         tm => undef,
         graph => undef,
 
-        w => 1,
+        weight => 1,
         script => undef,
 
         workImageBasename => undef,
@@ -294,56 +294,13 @@ sub getBBox {
 }
 
 =begin nd
-Function: getPossibleChildren
-
-Returns a <FOURALAMO::Node> array, containing children (length is always 4, with undefined value for children which don't exist), an empty array if the node is a leaf.
-
-Warning:
-    Do not mistake with <getChildren>
-=cut
-sub getPossibleChildren {
-    my $this = shift;
-    return $this->{graph}->getPossibleChildren($this);
-}
-
-=begin nd
 Function: getChildren
 
 Returns a <FOURALAMO::Node> array, containing real children (max length = 4), an empty array if the node is a leaf.
-
-Warning:
-    Do not mistake with <getPossibleChildren>
 =cut
 sub getChildren {
     my $this = shift;
     return $this->{graph}->getChildren($this);
-}
-
-
-# Function: isCutLevelNode
-sub isCutLevelNode {
-    my $this = shift;
-
-    if (ref($this->{graph}) ne "COMMON::QTree") {
-        return FALSE;
-    }
-
-    if ($this->{graph}->getCutLevelID() eq $this->getLevel()) {
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-# Function: isTopLevelNode
-sub isTopLevelNode {
-    my $this = shift;
-
-    if ($this->{graph}->getTopID() eq $this->getLevel()) {
-        return TRUE;
-    }
-
-    return FALSE;
 }
 
 ####################################################################################################

@@ -90,7 +90,10 @@ use constant FALSE => 0;
 #                                     Group: GLOBAL VARIABLES                                      #
 ####################################################################################################
 
+our $SCRIPTSDIR;
 our $COMMONTEMPDIR;
+our $PERSONNALTEMPDIR;
+our $PARALLELIZATIONLEVEL;
 
 =begin nd
 Function: setGlobals
@@ -98,7 +101,10 @@ Function: setGlobals
 Define and create common working directories
 =cut
 sub setGlobals {
+    $PARALLELIZATIONLEVEL = shift;
+    $PERSONNALTEMPDIR = shift;
     $COMMONTEMPDIR = shift;
+    $SCRIPTSDIR = shift;
 
     $COMMONTEMPDIR = File::Spec->catdir($COMMONTEMPDIR,"COMMON");
 
@@ -113,6 +119,16 @@ sub setGlobals {
     }
     
     return TRUE;
+}
+
+# Function: getScriptDirectory
+sub getScriptDirectory {
+    return $SCRIPTSDIR;
+}
+
+# Function: getPersonnalTempDirectory
+sub getPersonnalTempDirectory {
+    return $PERSONNALTEMPDIR;
 }
 
 ####################################################################################################

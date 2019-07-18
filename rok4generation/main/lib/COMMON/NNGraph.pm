@@ -115,6 +115,7 @@ use Data::Dumper;
 # My Module
 use COMMON::DataSource;
 use BE4::Node;
+use BE4::Shell;
 use COMMON::ProxyGDAL;
 use COMMON::Array;
 
@@ -154,21 +155,15 @@ Constructor: defineScripts
 Create all <COMMON::Script>'s to generate the NNGraph pyramid. They are stored in the <COMMON::Forest> instance.
 
 Parameters (list):
-    splitNumber - integer - Parallelization level
     scriptInit - string - Shell function to write into each script
-    tempDir - string - Path to personnal script temporary directory
-    scriptDir - string - Path to directory where to write script
     pyramid - <COMMON::PyramidRaster> - NNGraph Pyramid to generate
 =cut
 sub defineScripts {
-    my $splitNumber = shift;
     my $scriptInit = shift;
-    my $tempDir = shift;
-    my $scriptDir = shift;
     my $pyramid = shift;
 
     my $scripts = {
-        number => $splitNumber,
+        number => $BE4::Shell::PARALLELIZATIONLEVEL,
         finisher => undef
     };
 
@@ -178,14 +173,13 @@ sub defineScripts {
         my $levelID = $pyramid->getTileMatrixSet()->getIDfromOrder($i);
         $scripts->{levels}->{$levelID}->{splits} = [];
         $scripts->{levels}->{$levelID}->{current} = 0;
-        for (my $j = 1; $j <= $splitNumber; $j++) {
+        for (my $j = 1; $j <= $BE4::Shell::PARALLELIZATIONLEVEL; $j++) {
             push(
                 @{$scripts->{levels}->{$levelID}->{splits}},
                 COMMON::Script->new({
                     id => "LEVEL_${levelID}_SCRIPT_$j",
-                    tempDir => $tempDir,
-                    scriptDir => $scriptDir,
-                    executedAlone => FALSE,
+                    finisher => FALSE,
+                    shellClass => 'BE4::Shell',
                     initialisation => $scriptInit
                 })
             )
@@ -195,9 +189,8 @@ sub defineScripts {
     # Le SUPER finisher
     $scripts->{finisher} = COMMON::Script->new({
         id => "SCRIPT_FINISHER",
-        tempDir => $tempDir,
-        scriptDir => $scriptDir,
-        executedAlone => TRUE,
+        finisher => TRUE,
+        shellClass => 'BE4::Shell',
         initialisation => $scriptInit
     });
 
@@ -413,7 +406,7 @@ sub identifyBottomNodes {
                             $this->{nodes}->{$bottomID}->{$nodeKey} = $node;
                         }
 
-                        $this->{nodes}->{$bottomID}->{$nodeKey}->addGeoImages($objImg);
+                        $this->{nodes}->{$bottomID}->{$nodeKey}->addGeoImage($objImg);
                     }
                 }
             }
@@ -577,10 +570,10 @@ sub identifyAboveNodes {
                             ## intersection avec la bbox des données initiales
                             if ( $newnode->isBboxIntersectingNodeBbox($this->getBbox())) {
                                 $this->{nodes}->{$targetTm->getID()}->{$idxkey} = $newnode ;
-                                $newnode->addSourceNodes($node);
+                                $newnode->addSourceNode($node);
                             }
                         } else {
-                            $this->{nodes}->{$targetTm->getID()}->{$idxkey}->addSourceNodes($node); 
+                            $this->{nodes}->{$targetTm->getID()}->{$idxkey}->addSourceNode($node); 
                         }             
                     }
                 }

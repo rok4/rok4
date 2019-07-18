@@ -262,13 +262,13 @@ sub _load {
     my $scriptInit = undef;
     if (ref ($this->{pyramid}) eq "COMMON::PyramidRaster") {
         # Si on génère une pyramide raster, c'est que nous utilisons l'outil BE4, et des variables sont à initialiser dans la librairie des commandes Shell pour BE4
-        if (! BE4::Shell::setGlobals($commonTempDir, $params_process->{use_masks})) {
+        if (! BE4::Shell::setGlobals($this->{splitNumber}, $tempDir, $commonTempDir, $scriptDir, $params_process->{use_masks})) {
             ERROR ("Impossible d'initialiser la librairie des commandes Shell pour BE4");
             return FALSE;
         }
         $scriptInit = BE4::Shell::getScriptInitialization($this->{pyramid});
     } else {
-        if (! FOURALAMO::Shell::setGlobals($commonTempDir)) {
+        if (! FOURALAMO::Shell::setGlobals($this->{splitNumber}, $tempDir, $commonTempDir, $scriptDir)) {
             ERROR ("Impossible d'initialiser la librairie des commandes Shell pour 4ALAMO");
             return FALSE;
         }
@@ -280,10 +280,10 @@ sub _load {
 
     if ($isQTree) {
         #### QTREE CASE
-        $this->{scripts} = COMMON::QTree::defineScripts($this->{splitNumber}, $scriptInit, $tempDir, $scriptDir);
+        $this->{scripts} = COMMON::QTree::defineScripts($scriptInit, $this->{pyramid});
     } else {
         #### NN GRAPH CASE
-        $this->{scripts} = COMMON::NNGraph::defineScripts($this->{splitNumber}, $scriptInit, $tempDir, $scriptDir, $this->{pyramid});
+        $this->{scripts} = COMMON::NNGraph::defineScripts($scriptInit, $this->{pyramid});
     }
     
     ############# GRAPHS #############
