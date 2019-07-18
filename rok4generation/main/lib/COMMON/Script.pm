@@ -42,7 +42,7 @@ Class: COMMON::Script
 
 (see ROK4GENERATION/libperlauto/COMMON_Script.png)
 
-Describe a script, its weight and allowed to write in.
+Describe a script and allowed to write in.
 
 Using:
     (start code)

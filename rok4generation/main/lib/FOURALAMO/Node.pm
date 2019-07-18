@@ -72,7 +72,6 @@ Attributes:
 
     tm - <COMMON::TileMatrix> - Tile matrix associated to the level which the node belong to.
     graph - <COMMON::NNGraph> or <COMMON::QTree> - Graph which contains the node.
-    weight - integer - Node's weight (number of nodes in its descendence)
 
     script - <COMMON::Script> - Script in which the node will be generated
 =cut
@@ -135,7 +134,6 @@ sub new {
         tm => undef,
         graph => undef,
 
-        weight => 1,
         script => undef,
 
         workImageBasename => undef,

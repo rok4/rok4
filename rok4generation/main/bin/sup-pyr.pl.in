@@ -161,12 +161,12 @@ sub init {
     # init Options
     GetOptions(
         "help|h" => sub {
-            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/sup-pyr-pl.html\n" ;
+            printf "See documentation here: https://github.com/rok4/rok4\n" ;
             exit 0;
         },
         "version|v" => sub { exit 0; },
         "usage" => sub {
-            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/sup-pyr-pl.html\n" ;
+            printf "See documentation here: https://github.com/rok4/rok4\n" ;
             exit 0;
         },
         
@@ -175,7 +175,7 @@ sub init {
         "stop" => \$options{stop}
     ) or do {
         printf "Unappropriate usage\n";
-        printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/sup-pyr-pl.html\n";
+        printf "See documentation here: https://github.com/rok4/rok4\n";
         exit -1;
     };
     

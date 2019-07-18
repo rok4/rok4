@@ -155,7 +155,7 @@ sub new {
 =begin nd
 Function: _init
 
-Check and store node's attributes values. Initialize weights to 0. Calculate the pyramid's relative path, from indices, thanks to <Base36::indicesToB36Path>.
+Check and store node's attributes values.
 
 Parameters (list):
     level - string - Node's level ID

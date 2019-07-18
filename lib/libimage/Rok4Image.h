@@ -82,7 +82,7 @@
  * Particularité d'une image ROK4 :
  * \li l'en-tête TIFF fait toujours 2048 (ROK4_IMAGE_HEADER) octets. CEla permet au serveur de ne pas lire cette en-tête, et de passer directement aux données.
  *
- * Toutes les spécifications sont disponible à [cette adresse](http://www.rok4.org/documentation/specifications-pyramides-dimage).
+ * Toutes les spécifications sont disponible à [cette adresse](https://github.com/rok4/rok4).
  */
 class Rok4Image : public Image {
 

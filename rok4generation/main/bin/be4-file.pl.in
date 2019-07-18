@@ -202,12 +202,12 @@ sub init {
     # init Options
     GetOptions(
         "help|h" => sub {
-            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-pl.html\n" ;
+            printf "See documentation here: https://github.com/rok4/rok4\n" ;
             exit 0;
         },
         "version|v" => sub { exit 0; },
         "usage" => sub {
-            printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-pl.html\n" ;
+            printf "See documentation here: https://github.com/rok4/rok4\n" ;
             exit 0;
         },
         
@@ -215,7 +215,7 @@ sub init {
         "environment|env=s" => \$options{environment}
     ) or do {
         printf "Unappropriate usage\n";
-        printf "See documentation here: http://www.rok4.org/data/doc/pyramide/Html/files/bin/be4-pl.html\n";
+        printf "See documentation here: https://github.com/rok4/rok4\n";
         exit -1;
     };
   
