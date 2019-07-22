@@ -724,6 +724,63 @@ sub getFromSlabPath {
 
 }
 
+
+=begin nd
+Function: updateStorageInfos
+=cut
+sub updateStorageInfos {
+    my $this = shift;
+    my $params = shift;
+
+    $this->{desc_path} = $params->{desc_path};
+
+    if (exists $params->{dir_depth}) {
+        $this->{type} = "FILE";
+        $this->{dir_depth} = $params->{dir_depth};
+
+        $this->{dir_image} = File::Spec->catdir($params->{dir_data}, "IMAGE", $this->{id});
+
+        $this->{prefix_image} = undef;
+        $this->{bucket_name} = undef;
+        $this->{container_name} = undef;
+        $this->{keystone_connection} = FALSE;
+        $this->{pool_name} = undef;
+    } elsif ( exists $params->{pool_name} ) {
+        $this->{type} = "CEPH";
+        $this->{pool_name} = $params->{pool_name};
+        $this->{prefix_image} = sprintf "%s_IMG_%s", $params->{prefix}, $this->{id};
+        $this->{dir_depth} = undef;
+        $this->{dir_image} = undef;
+        $this->{bucket_name} = undef;
+        $this->{container_name} = undef;
+        $this->{keystone_connection} = FALSE;
+    } elsif ( exists $params->{bucket_name} ) {
+        $this->{type} = "S3";
+        $this->{bucket_name} = $params->{bucket_name};
+        $this->{prefix_image} = sprintf "%s_IMG_%s", $params->{prefix}, $this->{id};
+        $this->{dir_depth} = undef;
+        $this->{dir_image} = undef;
+        $this->{container_name} = undef;
+        $this->{keystone_connection} = FALSE;
+        $this->{pool_name} = undef;
+    } elsif ( exists $params->{container_name} ) {
+        $this->{type} = "SWIFT";
+        $this->{container_name} = $params->{container_name};
+        $this->{prefix_image} = sprintf "%s_IMG_%s", $params->{prefix}, $this->{id};
+        if ( exists $params->{keystone_connection} && defined $params->{keystone_connection} && $params->{keystone_connection}) {
+            $this->{keystone_connection} = TRUE;
+        } else {
+            $this->{keystone_connection} = FALSE;
+        }
+        $this->{dir_depth} = undef;
+        $this->{dir_image} = undef;
+        $this->{bucket_name} = undef;
+        $this->{pool_name} = undef;
+    }
+
+    return TRUE;
+}
+
 =begin nd
 method: updateLimits
 
@@ -948,6 +1005,25 @@ sub exportToXML {
     $string .=                     "    </level>\n";
 
     return $string;
+}
+
+
+####################################################################################################
+#                                   Group: Clone function                                          #
+####################################################################################################
+
+=begin nd
+Function: clone
+
+Clone object.
+=cut
+sub clone {
+    my $this = shift;
+
+    my $clone = { %{ $this } };
+    bless($clone, 'COMMON::LevelVector');
+
+    return $clone;
 }
 
 1;

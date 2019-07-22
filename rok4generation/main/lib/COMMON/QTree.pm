@@ -163,7 +163,7 @@ Create all <COMMON::Script>'s to generate the QTree pyramid. They are stored in 
 
 Parameters (list):
     scriptInit - string - Shell function to write into each script
-    pyramid - <COMMON::PyramidRaster> - NNGraph Pyramid to generate
+    pyramid - <COMMON::PyramidRaster> - NNGraph Pyramid to generate   
 =cut
 sub defineScripts {
     my $scriptInit = shift;

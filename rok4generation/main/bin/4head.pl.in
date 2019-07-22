@@ -418,9 +418,14 @@ sub doIt {
 
     }
 
+    if (! FOURHEAD::Shell::setGlobals($options{parallel}, $options{tmp}, $options{scripts})) {
+        ERROR ("Impossible d'initialiser la librairie des commandes Shell pour FOURHEAD");
+        return FALSE;
+    }
+
     # Ouverture des flux d'écriture vers les scripts (le finisher est placé à la fin)
     INFO("Open scripts");
-    my $scriptInit = FOURHEAD::Shell::getScriptInitialization($options{pyr}, $options{tmp});
+    my $scriptInit = FOURHEAD::Shell::getScriptInitialization($options{pyr});
     my @scripts = ();
     my $splitIndex = 0;
 
@@ -509,7 +514,7 @@ sub doIt {
         return FALSE;
     };
 
-    print MAIN FOURHEAD::Shell::getMainScript($options{scripts}, $options{parallel});
+    print MAIN FOURHEAD::Shell::getMainScript();
 
     close(MAIN);
 

@@ -195,10 +195,19 @@ Outil : `pyr2pyr.pl`
 Cet outil copie une pyramide d'un stockage à un autre.
 
 Conversions possibles :
-* FICHIER -> CEPH, S3, SWIFT
-* CEPH -> CEPH
+* FICHIER -> FICHIER, CEPH, S3, SWIFT
+* CEPH -> CEPH, FICHIER
 
 Parallélisable.
+
+_Étape 1_
+![PYR2PYR étape 1](../docs/images/ROK4GENERATION/pyr2pyr_part1.png)
+
+_Étape 2_
+![PYR2PYR étape 2](../docs/images/ROK4GENERATION/pyr2pyr_part2.png)
+
+[Détails](./main/bin/pyr2pyr.md)
+
 
 ## Les outils de débogage
 
@@ -247,7 +256,7 @@ Cet outil transforme une dalle ROK4 raster en une image TIFF de même dimension 
 
 ![cache2work](../docs/images/ROK4GENERATION/tools/cache2work.png)  
 
-[Détails](./tools/cache2work/README.md) 
+[Détails](./tools/cache2work/README.md)
 
 ### Contrôle d'une image de travail
 

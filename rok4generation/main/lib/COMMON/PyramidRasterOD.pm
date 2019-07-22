@@ -608,5 +608,29 @@ sub writeDescriptor {
     return TRUE
 }
 
+
+####################################################################################################
+#                                   Group: Clone function                                          #
+####################################################################################################
+
+=begin nd
+Function: clone
+
+Clone object. Recursive clone only for levels. Other object attributes are just referenced.
+=cut
+sub clone {
+    my $this = shift;
+    
+    my $clone = { %{ $this } };
+    bless($clone, 'COMMON::PyramidRasterOD');
+    delete $clone->{levels};
+
+    while (my ($id, $level) = each(%{$this->{levels}}) ) {
+        $clone->{levels}->{$id} = $level->clone();
+    }
+
+    return $clone;
+}
+
 1;
 __END__

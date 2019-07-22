@@ -205,7 +205,7 @@ sub new {
         }
     }
     
-    # STOCKAGE TYPE AND ENVIRONMENT VARAIBLES CONTROLS
+    # STOCKAGE TYPE AND ENVIRONMENT VARIABLES CONTROLS
     if ( defined $this->{dir_depth} ) {
         $this->{type} = "FILE";
     }
@@ -723,6 +723,87 @@ sub getFromSlabPath {
 
 }
 
+
+=begin nd
+Function: updateStorageInfos
+=cut
+sub updateStorageInfos {
+    my $this = shift;
+    my $params = shift;
+
+    $this->{desc_path} = $params->{desc_path};
+
+    if (exists $params->{dir_depth}) {
+        $this->{type} = "FILE";
+        $this->{dir_depth} = $params->{dir_depth};
+
+        $this->{dir_image} = File::Spec->catdir($params->{dir_data}, "IMAGE", $this->{id});
+
+        if ($this->ownMasks()) {
+            $this->{dir_mask} = File::Spec->catdir($params->{dir_data}, "MASK", $this->{id});            
+        } else {
+            $this->{dir_mask} = undef;
+        }
+        $this->{prefix_image} = undef;
+        $this->{prefix_mask} = undef;
+        $this->{bucket_name} = undef;
+        $this->{container_name} = undef;
+        $this->{keystone_connection} = FALSE;
+        $this->{pool_name} = undef;
+    } elsif ( exists $params->{pool_name} ) {
+        $this->{type} = "CEPH";
+        $this->{pool_name} = $params->{pool_name};
+        $this->{prefix_image} = sprintf "%s_IMG_%s", $params->{prefix}, $this->{id};
+        if ($this->ownMasks()) {
+            $this->{prefix_mask} = sprintf "%s_MSK_%s", $params->{prefix}, $this->{id};
+        } else {
+            $this->{prefix_mask} = undef;
+        }
+        $this->{dir_depth} = undef;
+        $this->{dir_image} = undef;
+        $this->{dir_mask} = undef;
+        $this->{bucket_name} = undef;
+        $this->{container_name} = undef;
+        $this->{keystone_connection} = FALSE;
+    } elsif ( exists $params->{bucket_name} ) {
+        $this->{type} = "S3";
+        $this->{bucket_name} = $params->{bucket_name};
+        $this->{prefix_image} = sprintf "%s_IMG_%s", $params->{prefix}, $this->{id};
+        if ($this->ownMasks()) {
+            $this->{prefix_mask} = sprintf "%s_MSK_%s", $params->{prefix}, $this->{id};
+        } else {
+            $this->{prefix_mask} = undef;
+        }
+        $this->{dir_depth} = undef;
+        $this->{dir_image} = undef;
+        $this->{dir_mask} = undef;
+        $this->{container_name} = undef;
+        $this->{keystone_connection} = FALSE;
+        $this->{pool_name} = undef;
+    } elsif ( exists $params->{container_name} ) {
+        $this->{type} = "SWIFT";
+        $this->{container_name} = $params->{container_name};
+        $this->{prefix_image} = sprintf "%s_IMG_%s", $params->{prefix}, $this->{id};
+        if ($this->ownMasks()) {
+            $this->{prefix_mask} = sprintf "%s_MSK_%s", $params->{prefix}, $this->{id};
+        } else {
+            $this->{prefix_mask} = undef;
+        }
+        if ( exists $params->{keystone_connection} && defined $params->{keystone_connection} && $params->{keystone_connection}) {
+            $this->{keystone_connection} = TRUE;
+        } else {
+            $this->{keystone_connection} = FALSE;
+        }
+        $this->{dir_depth} = undef;
+        $this->{dir_image} = undef;
+        $this->{dir_mask} = undef;
+        $this->{bucket_name} = undef;
+        $this->{pool_name} = undef;
+    }
+
+    return TRUE;
+}
+
 =begin nd
 method: updateLimits
 
@@ -924,6 +1005,25 @@ sub exportToXML {
     $string .=                 "    </level>\n";
 
     return $string;
+}
+
+
+####################################################################################################
+#                                   Group: Clone function                                          #
+####################################################################################################
+
+=begin nd
+Function: clone
+
+Clone object.
+=cut
+sub clone {
+    my $this = shift;
+
+    my $clone = { %{ $this } };
+    bless($clone, 'COMMON::LevelRaster');
+
+    return $clone;
 }
 
 1;

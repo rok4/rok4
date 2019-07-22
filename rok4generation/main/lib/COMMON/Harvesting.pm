@@ -230,11 +230,11 @@ sub _init {
     }
     
     if (exists($params->{min_size}) && defined ($params->{min_size})) {
-        if (int($params->{min_size}) <= 0) {
+        if (! COMMON::CheckUtils::isPositiveInt($params->{min_size})) {
             ERROR("If 'min_size' is given, it must be strictly positive.");
             return FALSE ;
         }
-        $this->{min_size} = int($params->{min_size});
+        $this->{min_size} = $params->{min_size};
     }
 
     # Other parameters are mandatory

@@ -76,6 +76,27 @@ use constant TRUE  => 1;
 use constant FALSE => 0;
 
 ####################################################################################################
+#                                     Group: GLOBAL VARIABLES                                      #
+####################################################################################################
+
+our $SCRIPTSDIR;
+our $PERSONNALTEMPDIR;
+our $PARALLELIZATIONLEVEL;
+
+=begin nd
+Function: setGlobals
+
+Define and create common working directories
+=cut
+sub setGlobals {
+    $PARALLELIZATIONLEVEL = shift;
+    $PERSONNALTEMPDIR = shift;
+    $SCRIPTSDIR = shift;
+    
+    return TRUE;
+}
+
+####################################################################################################
 #                                  Group: Shell functions                                          #
 ####################################################################################################
 
@@ -325,20 +346,14 @@ Function: getMainScript
 
 Get the main script allowing to launch all generation scripts on a same machine
 
-Parameters (list):
-    scriptsDirectory - string - Path to scripts' directory
-    jobsNumber - integer - Parallelization level
-
 Returns:
     A shell script
 =cut
 sub getMainScript {
-    my $scriptsDirectory = shift;
-    my $jobsNumber = shift;
 
     my $ret = $MAIN_SCRIPT;
-    $ret =~ s/__scripts_directory__/$scriptsDirectory/;
-    $ret =~ s/__jobs_number__/$jobsNumber/g;
+    $ret =~ s/__scripts_directory__/$SCRIPTSDIR/;
+    $ret =~ s/__jobs_number__/$PARALLELIZATIONLEVEL/g;
 
     return $ret;
 }
@@ -352,14 +367,12 @@ Function: getScriptInitialization
 
 Parameters (list):
     pyramid - <COMMON::PyramidRaster> - Pyramid to generate
-    temp - string - Temporary directory
 
 Returns:
     Global variables and functions to print into script
 =cut
 sub getScriptInitialization {
     my $pyramid = shift;
-    my $temp = shift;
 
     my $string = sprintf "WORK2CACHE_IMAGE_OPTIONS=\"-t %s %s -c %s\"\n",
         $pyramid->getTileMatrixSet()->getTileWidth(), $pyramid->getTileMatrixSet()->getTileWidth(),
@@ -372,7 +385,7 @@ sub getScriptInitialization {
         $pyramid->getImageSpec()->getGamma(),
         $pyramid->getNodata()->getValue();
     
-    $string .= "TMP_DIR=$temp\n";
+    $string .= "TMP_DIR=$PERSONNALTEMPDIR\n";
 
     if ($pyramid->getStorageType() eq "FILE") {
         $string .= sprintf "PYR_DIR=%s\n", $pyramid->getDataDir();

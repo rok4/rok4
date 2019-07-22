@@ -91,7 +91,6 @@ our @EXPORT      = qw();
 use constant TRUE  => 1;
 use constant FALSE => 0;
 
-
 ####################################################################################################
 #                                     Group: GLOBAL VARIABLES                                      #
 ####################################################################################################
@@ -385,22 +384,15 @@ Function: getMainScript
 
 Get the main script allowing to launch all generation scripts on a same machine.
 
-Parameters (list):
-    scriptsDirectory - string - Path to scripts' directory
-    jobsNumber - integer - Parallelization level
-
 Returns:
     A shell script
 =cut
 sub getMainScript {
-    my $scriptsDirectory = shift;
-    my $jobsNumber = shift;
-    my $pyramid = shift;
 
     my $ret = $MAIN_SCRIPT;
 
-    $ret =~ s/__jobs_number__/$jobsNumber/g;
-    $ret =~ s/__scripts_directory__/$scriptsDirectory/g;
+    $ret =~ s/__jobs_number__/$PARALLELIZATIONLEVEL/g;
+    $ret =~ s/__scripts_directory__/$SCRIPTSDIR/g;
 
     return $ret;
 }

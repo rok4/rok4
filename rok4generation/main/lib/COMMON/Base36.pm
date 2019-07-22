@@ -61,6 +61,7 @@ package COMMON::Base36;
 use strict;
 use warnings;
 
+use Log::Log4perl qw(:easy);
 use Data::Dumper;
 use List::Util qw(min max);
 
@@ -210,7 +211,7 @@ See also:
 =cut
 sub b36PathToIndices {
     my $path = shift;
-    
+    my $kj = $path;
     my $xB36 = "";
     my $yB36 = "";
     
@@ -225,7 +226,7 @@ sub b36PathToIndices {
     
     my $x = COMMON::Base36::encodeB36toB10($xB36);
     my $y = COMMON::Base36::encodeB36toB10($yB36);
-    
+
     return ($x, $y);
 }
 

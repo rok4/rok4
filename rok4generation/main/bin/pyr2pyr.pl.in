@@ -57,18 +57,6 @@
 
 =begin nd
 File: pyr2pyr.pl
-
-Section: pyr2pyr tool
-
-Synopsis:
-    (start code)
-    perl pyr2pyr.pl --conf file.txt
-    (end code)
-
-This tool allow to convert a file ROK4 pyramid into a ceph stored ROK4 pyramid. We can keep the slab storage (tile) or store seperated tiles.
-
-(see ROK4GENERATION/pyr2pyr_general.png)
-
 =cut
 
 ################################################################################
@@ -93,9 +81,14 @@ use lib "$Bin/../lib/perl5";
 
 # My home-made modules
 use COMMON::Base36;
-use XML::LibXML;
+
 use PYR2PYR::PropertiesLoader;
-use COMMON::Pyramid;
+use PYR2PYR::Shell;
+
+use COMMON::PyramidRaster;
+use COMMON::PyramidVector;
+use COMMON::ProxyPyramid;
+use COMMON::Script;
 
 ################################################################################
 # Constantes
@@ -121,28 +114,32 @@ my %options =
 Variable: HANDLEDCONVERSION
 
 Define handled storage type conversion : if $HANDLEDCONVERSION{fromStorageType}->{toStorageType} exists, it's handled
-
 =cut
 my %HANDLEDCONVERSION = (
     "FILE" => {
         "CEPH" => 1,
-        "SWIFT" => 1,
-        "S3" => 1
+        "FILE" => 1,
+        "S3" => 1,
+        "SWIFT" => 1
     },
     "CEPH" => {
-        "CEPH" => 1
+        "CEPH" => 1,
+        "FILE" => 1
     }
 );
 
 =begin nd
 Variable: this
 
-All parameters by section :
-
+All parameters by section
 =cut
-my %this =
-(
-    params => undef
+my %this = (
+    params => {
+        logger => undef,
+        from => undef,
+        to => undef,
+        process => undef
+    }
 );
 
 ####################################################################################################
@@ -209,11 +206,11 @@ sub init {
     # init Options
     GetOptions(
         "help|h" => sub {
-            printf "pyr2pyr.pl --conf=<conf_file>\n";
+            printf "pyr2pyr.pl --conf <FILE>\n";
             exit 0;
         },
         "usage" => sub {
-            printf "pyr2pYr.pl --conf=<conf_file>\n";
+            printf "pyr2pyr.pl --conf <FILE>\n";
             exit 0;
         },
         
@@ -221,13 +218,13 @@ sub init {
 
     ) or do {
         printf "Unappropriate usage\n";
-        printf "pyr2pYr.pl --conf=<conf_file>\n";
+        printf "pyr2pyr.pl --conf <FILE>\n";
         exit -1;
     };
     
     # logger by default at runtime
     Log::Log4perl->easy_init({
-        level => "INFO",
+        level => $WARN,
         layout => '%5p : %m (%M) %n'
     });
 
@@ -237,15 +234,12 @@ sub init {
         return FALSE;
     }
 
-    my $confFile = File::Spec->rel2abs($options{conf});
+    $options{conf} = File::Spec->rel2abs($options{conf});
 
-    if (! -f $confFile) {
-        ERROR(sprintf "configuration file does not exist : %s", $confFile);
+    if (! -f $options{conf}) {
+        ERROR(sprintf "configuration file does not exist : %s", $options{conf});
         return FALSE;
     }
-    $options{conf} = $confFile;
-    
-
 
     return TRUE;
 }
@@ -264,8 +258,7 @@ sub config {
     ###################
     ALWAYS(">>> Load Properties ...");
     
-    my $fprop = $options{conf};
-    my $objProp = PYR2PYR::PropertiesLoader->new($fprop);
+    my $objProp = PYR2PYR::PropertiesLoader->new($options{conf});
     
     if (! defined $objProp) {
         ERROR("Can not load properties !");
@@ -273,8 +266,7 @@ sub config {
     }
   
     # save params properties
-    my %params = $objProp->getAllProperties();
-    $this{params} = \%params;
+    $this{params} = $objProp->getAllProperties();
 
     # logger
     my $logger = $this{params}->{logger};
@@ -283,19 +275,15 @@ sub config {
         my @args;
         
         my $layout= '%5p : %m (%M) %n';
-
         my $level = $logger->{log_level};
-        $level = "WARN" if (! defined $level);
-
-        my $out;
-        my $logfile = $logger->{log_file};
-        if (defined $logfile) {
-            if (exists $logger->{log_path} && defined $logger->{log_path}) {
-                $logfile = File::Spec->catfile($logger->{log_path}, $logfile);
-            }
-            $out = ">>$logfile";
-        } else {
-            $out = "STDOUT";
+        my $out   = sprintf (">>%s", File::Spec->catfile($logger->{log_path}, $logger->{log_file}))
+            if (! COMMON::CheckUtils::isEmpty($logger->{log_path}) && ! COMMON::CheckUtils::isEmpty($logger->{log_file}));
+        
+        $out   = "STDOUT" if (! defined $out);
+        $level = "WARN"   if (! defined $level);
+        
+        if ($level =~ /(ALL|DEBUG)/) {
+            $layout = '%5p : %m (%M) %n';
         }
         
         # add the param logger by default (user settings !)
@@ -313,502 +301,251 @@ sub config {
                 layout => $layout,
             },
         }
-
         Log::Log4perl->easy_init(@args);
+    }
+
+    # Follow links ?
+    if ( exists $this{params}->{from}->{follow_links} && defined $this{params}->{from}->{follow_links} && uc($this{params}->{from}->{follow_links}) eq "FALSE") {
+        INFO("Links will NOT be followed");
+        $this{params}->{from}->{follow_links} = FALSE;
+    } else {
+        INFO("Links will be followed");
+        $this{params}->{from}->{follow_links} = TRUE;
+    }
+
+    # Slab size filter ?
+    if (exists($this{params}->{process}->{slab_limit}) && defined ($this{params}->{process}->{slab_limit})) {
+        if (! COMMON::CheckUtils::isPositiveInt($this{params}->{process}->{slab_limit})) {
+            ERROR("If 'process.slab_limit' is given, it must be positive.");
+            return FALSE;
+        }
+    } else {
+        $this{params}->{process}->{slab_limit} = 0;
+    }
+
+    # Parallelization level
+    if (exists($this{params}->{process}->{job_number}) && defined ($this{params}->{process}->{job_number})) {
+        if (! COMMON::CheckUtils::isStrictPositiveInt($this{params}->{process}->{job_number})) {
+            ERROR("If 'process.job_number' is given, it must be stricly positive.");
+            return FALSE;
+        }
+    } else {
+        $this{params}->{process}->{job_number} = 1;
     }
     
     return TRUE;
 }
-
-#################
-
-sub addSubElm {
-    my ($doc, $node, $name, $body) = @_;
-    my $subElm = $node->addNewChild('', $name);
-    $subElm->addChild( $doc->createTextNode($body) );
-}
-
-#################
-
-
-
-my $BASHFUNCTIONS_CEPH = <<'FUNCTIONS';
-
-GetSlab () {
-    local objName=$1
-  
-    rados -p ${POOL_NAME_SRC} get $objName ${TMP_FILE} 
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-}
-
-StoreSlab () {
-    local fullPath=$1
-    local objName=$2
-
-    size=`stat -c "%s" $fullPath`
-    if [ $? != 0 ] ; then echo "$fullPath n'existe pas, on passe" ; return; fi
-    if [ "$size" -le "$SLAB_LIMIT" ] ; then
-        return
-    fi
-  
-    rados -p ${POOL_NAME_DST} put $objName $fullPath 
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-
-    echo "0/${objName}" >> ${TMP_LIST_FILE}
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-}
-
-FUNCTIONS
-
-my $BASHFUNCTIONS_S3 = <<'FUNCTIONS';
-
-HOST=$(echo ${ROK4_S3_URL} | sed 's!.*://!!' | sed 's!:[0-9]\+$!!')
-
-StoreSlab () {
-
-    local fullPath=$1
-    local objName=$2
-
-    size=`stat -c "%s" $fullPath`
-    if [ $? != 0 ] ; then echo "$fullPath n'existe pas, on passe" ; return; fi
-    if [ "$size" -le "$SLAB_LIMIT" ] ; then
-        return
-    fi
-    
-    resource="/${BUCKET_NAME}/${objName}"
-    contentType="application/octet-stream"
-    dateValue=`TZ=GMT date -R`
-    stringToSign="PUT\n\n${contentType}\n${dateValue}\n${resource}"
-
-    signature=`echo -en ${stringToSign} | openssl sha1 -hmac ${ROK4_S3_SECRETKEY} -binary | base64`
-
-    curl -k -X PUT -T "${fullPath}" \
-     -H "Host: ${HOST}" \
-     -H "Date: ${dateValue}" \
-     -H "Content-Type: ${contentType}" \
-     -H "Authorization: AWS ${ROK4_S3_KEY}:${signature}" \
-     ${ROK4_S3_URL}${resource}
-
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-
-    echo "0/${objName}" >> ${TMP_LIST_FILE}
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-}
-
-FUNCTIONS
-
-my $BASHFUNCTIONS_SWIFT = <<'FUNCTIONS';
-
-StoreSlab () {
-
-    local fullPath=$1
-    local objName=$2
-
-    size=`stat -c "%s" $fullPath`
-    if [ $? != 0 ] ; then echo "$fullPath n'existe pas, on passe" ; return; fi
-    if [ "$size" -le "$SLAB_LIMIT" ] ; then
-        return
-    fi
-    
-    TOKEN=$(curl -s -ik \
-        -H "Content-Type: application/json" \
-        -XPOST \
-        -d '
-    {   "auth": {
-            "scope": {
-                "project": {"id": "'$ROK4_KEYSTONE_PROJECTID'"}
-            },
-            "identity": {
-                "methods": ["password"],
-                "password": {
-                    "user": {
-                        "domain": {"id": "'$ROK4_KEYSTONE_DOMAINID'"},
-                        "password": "'$ROK4_SWIFT_PASSWD'",
-                        "name": "'$ROK4_SWIFT_USER'"
-                    }
-                }
-            }
-        }
-    }' $ROK4_SWIFT_AUTHURL | grep "X-Subject-Token" | cut -d":" -f2 | tr -cd '[:print:]')
-
-    resource="/${CONTAINER_NAME}/${objName}"
-
-    curl -k -X PUT -T "${fullPath}" \
-     -H "X-Auth-Token: ${TOKEN}" \
-     ${ROK4_SWIFT_PUBLICURL}${resource}
-
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-
-    echo "0/${objName}" >> ${TMP_LIST_FILE}
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-}
-
-FUNCTIONS
 
 sub doIt {
 
+    ############################## LA PYRAMIDE EN ENTRÉE
 
-    ############################## LES PARAMÈTRES
-    # link to parameters
-    my $params = $this{params};
-    my $follow_links = 1;
-    my $script_index = 0;
-    my $from_storage_type = undef;
-    my $from_pool_name = undef; # seulement si pyr2pyr CEPH -> CEPH
-    my $from_pyr_name = undef; # seulement si pyr2pyr CEPH -> CEPH
-    my $to_pyr_name = undef; # seulement si pyr2pyr CEPH -> CEPH
-    my $to_storage_type = undef;
-    my $containerName = undef;
+    my $pyramidFrom = COMMON::ProxyPyramid::load($this{params}->{from}->{pyr_desc_file});
 
-    my $slabLimit = undef;
-
-    # Test des parametres
-    if ( exists $params->{from}->{follow_links} && defined $params->{from}->{follow_links} && uc($params->{from}->{follow_links}) eq "FALSE") {
-        $follow_links = 0;
-    }
-
-    if ( defined $params->{process}->{slab_limit} ) {
-        $slabLimit = int($params->{process}->{slab_limit});
-    } else {
-        $slabLimit = 0;
-    }
-
-    if ( defined $params->{to}->{pool_name} ) {
-        $to_storage_type = "CEPH";
-        $containerName = $params->{to}->{pool_name};
-    }
-    elsif ( defined $params->{to}->{bucket_name} ) {
-        $to_storage_type = "S3";
-        $containerName = $params->{to}->{bucket_name};
-    }    
-    elsif ( defined $params->{to}->{container_name} ) {
-        $to_storage_type = "SWIFT";
-        $containerName = $params->{to}->{container_name};
-    }
-    else {
-        ERROR( "Neither pool_name nor bucket_name nor container_name provided. Not normal");
+    if (! defined $pyramidFrom) {
+        ERROR("Cannot load the source Pyramid object (neither raster nor vector nor raster on demand)");
         return FALSE;
     }
 
-    my $pyrName = $params->{to}->{pyr_name};
-    my $job_number = $params->{process}->{job_number};
-    my $path_temp = $params->{process}->{path_temp};
-    my $listFinal = $params->{to}->{pyr_desc_path} . "/$pyrName.list";
-
-    ############################## LES DOSSIERS
-
-    if (! -d $params->{to}->{pyr_desc_path}) {
-        DEBUG (sprintf "Create the descriptor directory '%s' !", $params->{to}->{pyr_desc_path});
-        eval { mkpath([$params->{to}->{pyr_desc_path}]); };
-        if ($@) {
-            ERROR(sprintf "Can not create the descriptor directory '%s' : %s !", $params->{to}->{pyr_desc_path}, $@);
-            return FALSE;
-        }
-    }
-
-    if (! -d $path_temp) {
-        DEBUG (sprintf "Create the temporary directory '%s' !", $path_temp);
-        eval { mkpath([$path_temp]); };
-        if ($@) {
-            ERROR(sprintf "Can not create the temporary directory '%s' : %s !", $path_temp, $@);
-            return FALSE;
-        }
-    }
-
-    ############################## LE DESCRIPTEUR DE PYRAMIDE
-
-    my $tpw;
-    my $tph;
-
-    ## Pour connaître le type de stockage de la pyramide source
-    my $srcPyramid = COMMON::Pyramid->new("DESCRIPTOR", $params->{from}->{pyr_desc_file} );
-    if (! defined $srcPyramid) {
-        ERROR("Cannot load source pyramid !");
-        return FALSE;
-    }
-    $from_storage_type = $srcPyramid->getStorageType();
-
-    ## On teste si les types de stockage source et destination sont gérés
-    if (! exists $HANDLEDCONVERSION{$from_storage_type}->{$to_storage_type}) {
-        ERROR("Conversion from $from_storage_type to $to_storage_type is not handled");
+    if (ref ($pyramidFrom) eq "COMMON::PyramidRasterOD") {
+        ERROR("pyr2pyr does not handle on demand pyramids (nothing to copy)");
         return FALSE;
     }
 
-    if ($from_storage_type eq "CEPH") {
-        $from_pool_name = $srcPyramid->getDataRoot();
-        $from_pyr_name = $srcPyramid->getName();
-        $to_pyr_name = $params->{to}->{pyr_name};
-    }
-
-    ## On convertit le descripteur vers la nouvelle pyramide
-    my $parser = XML::LibXML->new;
-    my $doc    = $parser->parse_file($params->{from}->{pyr_desc_file}) or do {
-        ERROR(sprintf "Erreur d'ouverture du fichier pyr (%s) !", $params->{from}->{pyr_desc_file});
+    if (! $pyramidFrom->bindTileMatrixSet($this{params}->{from}->{tms_path})) {
+        ERROR("Cannot bind TMS to input pyramid !");
         return FALSE;
-    };
-    my $root = $doc->documentElement();
-
-    my @levelsList = $doc->getElementsByTagName('level');
-    foreach my $level (@levelsList) {
-        my $id = ($level->findnodes("tileMatrix"))[0]->textContent;
-
-        if ($from_storage_type eq "FILE") {
-
-            my ($depthnode) = $level->findnodes("pathDepth");
-            $level->removeChild($depthnode);
-
-            my ($nodatanode) = $level->findnodes("nodata");
-            if (defined $nodatanode) {
-                $level->removeChild($nodatanode);
-            }
-
-            my ($baseDir) = $level->findnodes("baseDir");
-            $level->removeChild($baseDir);
-
-            my ($masknode) = $level->findnodes("mask");
-            if (defined $masknode) {
-                addSubElm($doc, $masknode, "maskPrefix", "${pyrName}_MSK_$id");
-                my ($maskfilenode) = $level->findnodes("mask/baseDir");
-                $masknode->removeChild($maskfilenode);
-            }
-
-            if ( $to_storage_type eq "CEPH" ) {
-                my $cephcontext = $level->addNewChild('', "cephContext");
-                addSubElm($doc, $cephcontext, "poolName", $containerName);
-            }
-            elsif ( $to_storage_type eq "S3" ) {
-                my $s3context = $level->addNewChild('', "s3Context");
-                addSubElm($doc, $s3context, "bucketName", $containerName);
-            }        
-            elsif ( $to_storage_type eq "SWIFT" ) {
-                my $swiftcontext = $level->addNewChild('', "swiftContext");
-                addSubElm($doc, $swiftcontext, "containerName", $containerName);
-            }
-            addSubElm($doc, $level, "imagePrefix", "${pyrName}_IMG_$id");
-        }
-        elsif ($from_storage_type eq "CEPH") {
-
-            if ( $to_storage_type eq "CEPH" ) {
-                # Dans le cas de CEPH -> CEPH, on va juste changer le pool
-                my ($oldcephcontext) = $level->findnodes("cephContext");
-                $level->removeChild($oldcephcontext);
-                my $newcephcontext = $level->addNewChild('', "cephContext");
-                addSubElm($doc, $newcephcontext, "poolName", $containerName);
-            }
-        }
-
-        $level->normalize;
-
     }
 
-    open (PYR_OUT, ">", $params->{to}->{pyr_desc_path} . "/$pyrName.pyr") or do {
-        ERROR(sprintf "Erreur d'ouverture du fichier desc (%s) : %s!", $params->{to}->{pyr_desc_path} . "/$pyrName.pyr", $!);
+    my $pyramidFromName = $pyramidFrom->getName();
+
+    ############################## LA PYRAMIDE EN SORTIE
+
+    # On part d'un clone de la pyramide en entrée
+    my $pyramidTo = $pyramidFrom->clone();
+
+    $pyramidTo->updateStorageInfos($this{params}->{to});
+
+    ############################## LA CONVERSION EST ELLE GÉRÉE
+
+
+    if (! exists $HANDLEDCONVERSION{$pyramidFrom->getStorageType()}->{$pyramidTo->getStorageType()}) {
+        ERROR(sprintf "PYR2PYR %s -> %s not available", $pyramidFrom->getStorageType(), $pyramidTo->getStorageType());
         return FALSE;
-    };
-
-    print PYR_OUT $doc->toString(2);
-    close PYR_OUT;
-
-    # pretty xml
-    my $cmd = sprintf("xmllint --output %s --format %s", $params->{to}->{pyr_desc_path} . "/$pyrName.pyr", $params->{to}->{pyr_desc_path} . "/$pyrName.pyr");
-    my $return = `$cmd`;
-    if ( $? ) {
-        ERROR(sprintf "Impossible de formater le fichier xml (%s) : %s",$params->{to}->{pyr_desc_path} . "/$pyrName.pyr", $return);
     }
+
+    if (! $pyramidTo->writeDescriptor()) {
+        ERROR("Cannot write output pyramid descriptor");
+        return FALSE;
+    }
+
+    ############################## LES COMMANDES SHELL
+
+    if (! PYR2PYR::Shell::setGlobals($this{params}->{process}->{job_number}, $this{params}->{process}->{path_temp}, $this{params}->{process}->{path_temp_common}, $this{params}->{process}->{path_shell}, $this{params}->{process}->{slab_limit})) {
+        ERROR ("Impossible d'initialiser la librairie des commandes Shell pour BE4");
+        return FALSE;
+    }
+    my $scriptInit = PYR2PYR::Shell::getScriptInitialization($pyramidFrom, $pyramidTo);
 
     ############################## LES SCRIPTS
 
-    ### Ouverture des flux et initialisation des N splits
+    my @scripts;
+    my $scriptInd = 0;
+    for (my $i = 1 ; $i <= $this{params}->{process}->{job_number}; $i++) {
 
-    my @scripts_done;
-    my @streams;
-    for (my $i = 1 ; $i < $job_number + 1; $i++){
-        my $STREAM;
-        my $list = "${path_temp}/SCRIPT_$i.list";
-        my $file = "${path_temp}/SCRIPT_$i.sh";
-        my $tmpfile = "${path_temp}/SCRIPT_$i.tmp";
-        if ( ! (open $STREAM,">", $file )) {
-            ERROR(sprintf "Can not open stream to '%s' !", $file);
+        my $s = COMMON::Script->new({
+            id => "SCRIPT_$i",
+            finisher => FALSE,
+            shellClass => 'PYR2PYR::Shell',
+            initialisation => $scriptInit
+        });
+
+        if (! defined $s) {
+            ERROR("Can not create the script $i");
             return FALSE;
         }
-        push(@streams, $STREAM);
-        print $STREAM "#!/bin/bash\n\n";
-        print $STREAM "TMP_LIST_FILE=$list\n";
-        print $STREAM "TMP_FILE=$tmpfile\n";
-        print $STREAM "SLAB_LIMIT=$slabLimit\n";
-        print $STREAM "SECONDS=0\n";
-        if ( $to_storage_type eq "CEPH" ) {
-            print $STREAM "POOL_NAME_DST=$containerName\n";
-        }
-        elsif ( $to_storage_type eq "S3" ) {
-            print $STREAM "BUCKET_NAME=$containerName\n";
-        }        
-        elsif ( $to_storage_type eq "SWIFT" ) {
-            print $STREAM "CONTAINER_NAME=$containerName\n";
-        }
 
-        if ( $from_storage_type eq "CEPH" ) {
-            print $STREAM "POOL_NAME_SRC=$from_pool_name\n";
-        }
-        print $STREAM "date\n";
-        if ( $to_storage_type eq "CEPH" ) {
-            print $STREAM $BASHFUNCTIONS_CEPH;
-        }
-        elsif ( $to_storage_type eq "S3" ) {
-            print $STREAM $BASHFUNCTIONS_S3;
-        }
-        elsif ( $to_storage_type eq "SWIFT" ) {
-            print $STREAM $BASHFUNCTIONS_SWIFT;
-        }
-
-        push(@scripts_done, 0);
+        push(@scripts, $s);
     }
 
-    ### Ouverture et initialisation du finisher
+    my $s = COMMON::Script->new({
+        id => "SCRIPT_FINISHER",
+        finisher => TRUE,
+        shellClass => 'PYR2PYR::Shell',
+        initialisation => $scriptInit
+    });
 
-    my $STREAMFINISHER;
-    my $file = "${path_temp}/SCRIPT_FINISHER.sh";
-    if ( ! (open $STREAMFINISHER,">", $file )) {
-        ERROR(sprintf "Can not open stream to '%s' !", $file);
+    if (! defined $s) {
+        ERROR("Can not create the script finisher");
         return FALSE;
     }
-    print $STREAMFINISHER "#!/bin/bash\n\n";
-    print $STREAMFINISHER "echo '0=${containerName}' > $listFinal\n";
-    print $STREAMFINISHER "echo '#' >> $listFinal\n";
-    print $STREAMFINISHER "cat ${path_temp}/*.list >> $listFinal\n";
 
-    close $STREAMFINISHER;
+    push(@scripts, $s);
 
 
-    ############################## TRAITEMENT DES IMAGES
+    ############################## TRAITEMENT DES DALLES
 
-    my $inputList = $params->{from}->{pyr_list_file};
-    open (FILE, "<", $inputList) or do {
-        ERROR(sprintf "Erreur d'ouverture du fichier list (%s) : %s!", $inputList, $!);
+    my $listFile = $pyramidFrom->getListFile();
+
+    if (! open LIST, "<", $listFile) {
+        ERROR("Cannot open pyramid list file (to load content in cache) : $listFile");
         return FALSE;
-    };
+    }
 
-    ### Récupération des racines
-
-    my $hashLine;
+    # Lecture des racines
     my %roots;
-    while (my $line = <FILE>) {
-
+    my $hashLine;
+    while( my $line = <LIST> ) {
         chomp $line;
+
         if ($line eq "#") {
+            # separator between caches' roots and images
             $hashLine = $.;
             last;
         }
-
-        my ($index,$root) = split('=',$line);
-        $roots{$index} = $root;
+        
+        $line =~ s/\s+//g; # we remove all spaces
+        my @tmp = split(/=/,$line,-1);
+        
+        if (scalar @tmp != 2) {
+            ERROR(sprintf "Wrong formatted input pyramid list (root definition) : %s", $line);
+            return FALSE;
+        }
+        
+        $roots{$tmp[0]} = $tmp[1];
     }
+
+    # Dans le cas objet, pour passer du type présent dans le nom de l'objet au type générique
+    my %objectTypeConverter = (
+        MSK => "MASK",
+        IMG => "IMAGE"
+    );
 
     ### Calcul du nombre d'image à traiter
-    my $wc = `wc -l $inputList | cut -d' ' -f1`;
+    my $wc = `wc -l $listFile | cut -d' ' -f1`;
     chomp($wc);
-
     my $totalImages = $wc - $hashLine;
     INFO("$totalImages image(s) to process");
-    my $totalImagesPerScript = int($totalImages/$job_number);
+    my $totalImagesPerScript = int($totalImages/$this{params}->{process}->{job_number});
     INFO("$totalImagesPerScript image(s) per script to process");
 
-    ### Cephisation image par image
-
-    while (my $line = <FILE>) {
-
+    while( my $line = <LIST> ) {
         chomp $line;
-        my $cmd = "";
-        if ($from_storage_type eq "FILE") {
-            my @path = split('/',$line);
-            if ( $path[0] ne "0" && $path[1] ne "NODATA" && ! $follow_links ) {
-                next;
-            }
-            $path[0] = $roots{$path[0]};
-            my $fullPath = File::Spec->catfile(@path);
-            my $level = $path[2];
-            my $col;
-            my $row;
 
-            my $objName;
-            my $prefix_objName;
+        # On reconstitue le chemin complet à l'aide des racines de l'index
+        $line =~ m/^(\d+)\/.+/;
+        my $index = $1;
+        my $input = $line;
+        $input =~ s/^\d+\///;
 
-            if ($path[1] eq "NODATA") {
-                next;
-            }
+        my ($type, $level, $col, $row);
+        # Cas fichier
+        if ($pyramidFrom->getStorageType() eq "FILE") {
+            # Est ce un lien et doit on le suivre
+            if (! $this{params}->{from}->{follow_links} && $index != 0) {next;}
+            my @p = split("/", $input);
+            # La première partie est le type (IMAGE ou MASK)
+            $type = shift(@p);
+            $level = shift(@p);
 
-            if ($path[1] eq "MASK") {
-                my $a = $path[3];
-                my $b = $path[4];
-                my $c = $path[5];
-                $c =~ s/\.tif//;
-
-                ($col, $row) = COMMON::Base36::b36PathToIndices("$a/$b/$c");
-                $objName = sprintf("%s_MSK_%s_%s_%s", $params->{to}->{pyr_name}, $level, $col, $row);
-                $prefix_objName = sprintf("%s_MSK_%s", $params->{to}->{pyr_name}, $level);
-            }
-
-            if ($path[1] eq "IMAGE") {
-                my $a = $path[3];
-                my $b = $path[4];
-                my $c = $path[5];
-                $c =~ s/\.tif//;
-
-                ($col, $row) = COMMON::Base36::b36PathToIndices("$a/$b/$c");
-                $objName = sprintf("%s_IMG_%s_%s_%s", $params->{to}->{pyr_name}, $level, $col, $row);
-                $prefix_objName = sprintf("%s_IMG_%s", $params->{to}->{pyr_name}, $level);
-
-            }
-
-            else {
-                $cmd = sprintf("StoreSlab %s %s\n", $fullPath, $objName);
-                DEBUG($cmd);
-            }
-
+            ($col,$row) = $pyramidFrom->getLevel($level)->getFromSlabPath($line);
         }
-        elsif ($from_storage_type eq "CEPH") {
-            my $fromObjectName = $line;
-            $fromObjectName =~ s/^0\///;
+        # Cas objet
+        else {
+            # Est ce un lien et doit on le suivre
+            if (! $this{params}->{from}->{follow_links} && $input !~ m/^$pyramidFromName/) {next;}
 
-            my $toObjectName = $line;
-            $toObjectName =~ s/^0\/$from_pyr_name/$to_pyr_name/;
-
-
-            $cmd = sprintf("GetSlab %s\n", $fromObjectName);
-            $cmd .= sprintf("StoreSlab \$\{TMP_FILE\} %s\n", $toObjectName);
-
+            # Dans le cas d'un stockage objet, on a un nom d'objet de la forme BLA/BLA_BLA_DATATYPE_LEVEL_COL_ROW
+            # DATATYPE vaut MSK ou IMG, à convertir en MASK ou IMAGE
+            my @p = split("_",$input);
+            $type = $objectTypeConverter{$p[-4]};
+            $level = $p[-3];
+            $col = $p[-2];
+            $row = $p[-1];
         }
 
-        my $stream = $streams[$script_index];
-        print $stream $cmd;
+        my $output = $pyramidTo->getSlabPath($type, $level, $col, $row, FALSE);
 
-        my $current_progress = int( $scripts_done[$script_index] / $totalImagesPerScript * 100);
-        my $next_progress = int( ($scripts_done[$script_index] + 1) / $totalImagesPerScript * 100);
-
-        if ($next_progress != $current_progress) {
-            $next_progress = 100 if ($next_progress > 100);
-            print $stream "echo \"------------- Progression : $next_progress%\"\n";
-        }
-
-        $scripts_done[$script_index] = $scripts_done[$script_index] + 1;
-        $script_index = ($script_index + 1) % $job_number;
+        $scripts[$scriptInd]->write("ProcessSlab $input $output\n");
+        $scriptInd = ($scriptInd + 1) % $this{params}->{process}->{job_number};
     }
 
-    ############################## FERMETURE DES FLUX
+    close(LIST);
 
-    for (my $i = 0 ; $i < $job_number ; $i++){
-        my $stream = $streams[$i];
-        print $stream "echo \"------------- Progression : COMPLETE\"\n";
-        print $stream "date\n";
-        print $stream "duration=\$SECONDS\n";
-        print $stream "date -u -d @\${duration} +\"%T\"\n";
-        close $stream;
+    ############################## ÉCRITURE DE L'EN TÊTE DE LISTE DANS LE FINISHER
+
+    my $root = "";
+    if ($pyramidTo->getStorageType() eq "FILE") {
+        $root = $pyramidTo->getDataDir();
+    } else {
+        $root = $pyramidTo->getDataRoot();
     }
 
-    close FILE;
+    $scripts[-1]->write("echo '0=$root\n#' >\${LIST_FILE}\n");
+
+    ############################## FERMETURE DES SCRIPTS
+
+    foreach my $s (@scripts) {
+        $s->close();
+    }
+
+    ############################## SCRIPT PRINCIPAL
+
+    ALWAYS(">>> Write main script");
+    my $scriptPath = File::Spec->catfile($this{params}->{process}->{path_shell}, "main.sh");
+    open(MAIN, ">$scriptPath") or do {
+        ERROR("Cannot open '$scriptPath' to write in it");
+        return FALSE;
+    };
+
+    print MAIN PYR2PYR::Shell::getMainScript();
+
+    close(MAIN);
+
+    INFO("To run all scripts on the same machine, run :");
+    INFO("\t bash $scriptPath");
 
     return TRUE;
-
 }
 
 

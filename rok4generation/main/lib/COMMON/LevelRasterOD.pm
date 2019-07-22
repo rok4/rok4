@@ -576,5 +576,24 @@ sub exportToXML {
     return $string;
 }
 
+
+####################################################################################################
+#                                   Group: Clone function                                          #
+####################################################################################################
+
+=begin nd
+Function: clone
+
+Clone object.
+=cut
+sub clone {
+    my $this = shift;
+
+    my $clone = { %{ $this } };
+    bless($clone, 'COMMON::LevelRasterOD');
+
+    return $clone;
+}
+
 1;
 __END__

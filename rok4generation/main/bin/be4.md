@@ -109,6 +109,7 @@ Valeurs pour `color` : les valeur pour chaque canal sont séparées par des virg
 | CEPH             | pyr_data_pool_name      |                                                                             | obligatoire                      |
 | S3               | pyr_data_bucket_name    |                                                                             | obligatoire                      |
 | SWIFT            | pyr_data_container_name |                                                                             | obligatoire                      |
+| SWIFT            | keystone_connection     | Précise si le jeton d'authentification doit être récupéré via keystone      | `FALSE`                          |
 
 Dans le cas du stockage objet, certaines variables d'environnement doivent être définies sur les machines d'exécution :
 * CEPH
@@ -124,6 +125,10 @@ Dans le cas du stockage objet, certaines variables d'environnement doivent être
     - ROK4_SWIFT_ACCOUNT
     - ROK4_SWIFT_USER
     - ROK4_SWIFT_PASSWD
+    - Si connection via keystone
+        - ROK4_KEYSTONE_DOMAINID
+        - ROK4_SWIFT_PUBLICURL
+        - ROK4_KEYSTONE_PROJECTID
 
 ##### Cas d'une pyramide ancêtre
 
@@ -291,8 +296,7 @@ Avec les configurations mises en exemple (pas le service WMS) :
         - `/home/IGN/SCRIPT/SCRIPT_FINISHER.sh`, à exécuter quand tous les splits sont terminés en succès.
     - Si le TMS est un NNGraph
         - par niveau N de la pyramide : `/home/IGN/SCRIPT/LEVEL_N_SCRIPT_1.sh`, `/home/IGN/SCRIPT/LEVEL_N_SCRIPT_2.sh`, exécutables en parallèle et sur des machines différentes, niveau par niveau, en partant du bas.
-        - `/home/IGN/SCRIPT/SCRIPT_FINISHER_1.sh` et `/home/IGN/SCRIPT/SCRIPT_FINISHER_2.sh`, à exécuter quand tous les splits par niveau sont terminés en succès.
         - `/home/IGN/SCRIPT/SCRIPT_FINISHER.sh`, à exécuter quand tous les scripts précédents sont terminés en succès.
 * Le dossier temporaire commun `/mnt/share/COMMON/`
-* Les dossiers temporaires propres à chaque script, `/tmp/BDORTHOHR/LEVEL_N_SCRIPT_1/` et `/tmp/BDORTHOHR/LEVEL_N_SCRIPT_2/` (pour chaque niveau N), `/tmp/BDORTHOHR/SCRIPT_FINISHER_1/`, `/tmp/BDORTHOHR/SCRIPT_FINISHER_2/` et `/tmp/BDORTHOHR/SCRIPT_FINISHER_2/`
+* Les dossiers temporaires propres à chaque script, `/tmp/BDORTHOHR/<SCRIPT ID>/`
 * Dans le cas d'un stockage fichier : le dossier contenant les données de la pyramide `/home/IGN/PYRAMIDS/BDORTHOHR/`

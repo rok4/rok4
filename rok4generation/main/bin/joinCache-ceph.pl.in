@@ -579,7 +579,7 @@ sub doIt {
         return FALSE;
     };
 
-    print MAIN JOINCACHE::Shell::getMainScript($this{propertiesLoader}->getProcessSection()->{path_shell}, $this{propertiesLoader}->getProcessSection()->{job_number});
+    print MAIN JOINCACHE::Shell::getMainScript();
 
     close(MAIN);
 

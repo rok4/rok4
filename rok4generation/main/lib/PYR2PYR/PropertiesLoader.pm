@@ -147,17 +147,17 @@ sub _init {
 sub _check {
     my $this = shift;
 
-    if ($this->{cfgObject}->whatIs("from") != "HASH") {
+    if ($this->{cfgObject}->whatIs("from") ne "HASH") {
         ERROR("'from' section is missing");
         return FALSE;
     }
 
-    if ($this->{cfgObject}->whatIs("to") != "HASH") {
+    if ($this->{cfgObject}->whatIs("to") ne "HASH") {
         ERROR("'to' section is missing");
         return FALSE;
     }
 
-    if ($this->{cfgObject}->whatIs("process") != "HASH") {
+    if ($this->{cfgObject}->whatIs("process") ne "HASH") {
         ERROR("'process' section is missing");
         return FALSE;
     }
@@ -167,28 +167,31 @@ sub _check {
         return FALSE; 
     }
 
-    if ($this->{cfgObject}->whatIs("from", "pyr_list_file") ne "SCALAR") {
-        ERROR("'pyr_list_file' property is missing");
+    if ($this->{cfgObject}->whatIs("from", "tms_path") ne "SCALAR") {
+        ERROR("'tms_path' property is missing");
         return FALSE; 
     }
 
 
-    if ( $this->{cfgObject}->whatIs("to", "pool_name") eq "SCALAR") {
+    if ( $this->{cfgObject}->whatIs("to", "pyr_data_pool_name") eq "SCALAR") {
         INFO("'pool_name' is provided : CEPH push");
     }
-    elsif ( $this->{cfgObject}->whatIs("to", "bucket_name") eq "SCALAR") {
+    elsif ( $this->{cfgObject}->whatIs("to", "pyr_data_path") eq "SCALAR") {
+        INFO("'data_path' is provided : FILE push");
+    }
+    elsif ( $this->{cfgObject}->whatIs("to", "pyr_data_bucket_name") eq "SCALAR") {
         INFO("'bucket_name' is provided : S3 push");
     }
-    elsif ( $this->{cfgObject}->whatIs("to", "container_name") eq "SCALAR") {
+    elsif ( $this->{cfgObject}->whatIs("to", "pyr_data_container_name") eq "SCALAR") {
         INFO("'container_name' is provided : SWIFT push");
     }
     else {
-        ERROR("Neither pool_name nor bucket_name not container_name provided");       
+        ERROR("Neither pyr_data_pool_name nor pyr_data_path nor pyr_data_bucket_name nor pyr_data_container_name provided");       
         return FALSE;
     }
 
 
-    if ($this->{cfgObject}->whatIs("to", "pyr_name") ne "SCALAR") {
+    if ($this->{cfgObject}->whatIs("to", "pyr_name_new") ne "SCALAR") {
         ERROR("'pyr_name' property is missing");
         return FALSE; 
     }
@@ -197,13 +200,18 @@ sub _check {
         return FALSE; 
     }
 
-
-    if ($this->{cfgObject}->whatIs("process", "job_number") ne "SCALAR") {
-        ERROR("'job_number' property is missing");
-        return FALSE; 
-    }
     if ($this->{cfgObject}->whatIs("process", "path_temp") ne "SCALAR") {
         ERROR("'path_temp' property is missing");
+        return FALSE; 
+    }
+
+    if ($this->{cfgObject}->whatIs("process", "path_temp_common") ne "SCALAR") {
+        ERROR("'path_temp_common' property is missing");
+        return FALSE; 
+    }
+
+    if ($this->{cfgObject}->whatIs("process", "path_shell") ne "SCALAR") {
+        ERROR("'path_shell' property is missing");
         return FALSE; 
     }
 
@@ -218,7 +226,7 @@ sub _check {
 sub getAllProperties {
   my $this = shift;
   
-  return $this->{cfgObject}->getConfigurationCopy();
+  return $this->{cfgObject}->getConfigurationReference();
 }
 
 1;

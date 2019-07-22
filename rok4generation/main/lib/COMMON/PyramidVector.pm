@@ -632,6 +632,94 @@ sub updateTMLimits {
     $this->{levels}->{$level}->updateLimitsFromBbox(@bbox);
 }
 
+
+=begin nd
+Function: updateStorageInfos
+=cut
+sub updateStorageInfos {
+    my $this = shift;
+    my $params = shift;
+
+    $this->{name} = $params->{pyr_name_new};
+    $this->{desc_path} = $params->{pyr_desc_path};
+    $this->{content_path} = File::Spec->catfile($this->{desc_path}, $this->{name}.".list");
+
+    my $updateLevelParams = {
+        desc_path => $this->{desc_path}
+    };
+
+    if (defined $params->{pyr_data_path}) {
+        $this->{storage_type} = "FILE";
+        $this->{data_path} = File::Spec->rel2abs($params->{pyr_data_path});
+
+        if ( exists $params->{dir_depth} && defined $params->{dir_depth} && COMMON::CheckUtils::isStrictPositiveInt($params->{dir_depth})) {
+            $this->{dir_depth} = $params->{dir_depth};
+        } else {
+            $this->{dir_depth} = 2;
+        }
+
+        $this->{dir_depth} = $params->{dir_depth};
+
+        $this->{data_bucket} = undef;
+        $this->{data_container} = undef;
+        $this->{data_pool} = undef;
+
+        $updateLevelParams->{dir_depth} = $this->{dir_depth};
+        $updateLevelParams->{dir_data} = $this->getDataDir();
+    }
+    elsif (defined $params->{pyr_data_pool_name}) {
+        $this->{storage_type} = "CEPH";
+        $this->{data_pool} = $params->{pyr_data_pool_name};
+
+        $this->{data_path} = undef;
+        $this->{dir_depth} = undef;
+        $this->{data_bucket} = undef;
+        $this->{data_container} = undef;
+
+        $updateLevelParams->{prefix} = $this->{name};
+        $updateLevelParams->{pool_name} = $this->{data_pool};
+    }
+    elsif (defined $params->{pyr_data_bucket_name}) {
+        $this->{storage_type} = "S3";
+        $this->{data_bucket} = $params->{pyr_data_bucket_name};
+
+        $this->{data_path} = undef;
+        $this->{dir_depth} = undef;
+        $this->{data_container} = undef;
+        $this->{data_pool} = undef;
+
+        $updateLevelParams->{prefix} = $this->{name};
+        $updateLevelParams->{bucket_name} = $this->{data_bucket};
+    }
+    elsif (defined $params->{pyr_data_container_name}) {
+        $this->{storage_type} = "SWIFT";
+        $this->{data_container} = $params->{pyr_data_container_name};
+
+        if ( exists $params->{keystone_connection} && defined $params->{keystone_connection} && uc($params->{keystone_connection}) eq "TRUE" ) {
+            $this->{keystone_connection} = TRUE;
+        } else {
+            $this->{keystone_connection} = FALSE;
+        }
+
+        $this->{data_path} = undef;
+        $this->{dir_depth} = undef;
+        $this->{data_bucket} = undef;
+        $this->{data_pool} = undef;
+
+        $updateLevelParams->{prefix} = $this->{name};
+        $updateLevelParams->{container_name} = $this->{data_container};
+        $updateLevelParams->{keystone_connection} = $this->{keystone_connection};
+    }
+
+
+    while (my ($id, $level) = each(%{$this->{levels}}) ) {
+        if (! $level->updateStorageInfos($updateLevelParams)) {
+            ERROR("Cannot update storage infos for the pyramid's level $id");
+            return FALSE;
+        }
+    }
+}
+
 ####################################################################################################
 #                                      Group: Pyramids comparison                                  #
 ####################################################################################################
@@ -1175,6 +1263,18 @@ sub loadList {
 }
 
 
+
+=begin nd
+Function: getLevelsSlabs
+
+Returns the cached list content for all levels.
+=cut
+sub getLevelsSlabs {
+    my $this = shift;
+
+    return $this->{cachedList};
+} 
+
 =begin nd
 Function: getLevelSlabs
 
@@ -1397,6 +1497,30 @@ sub getCachedListStats {
 
     return $ret;
 } 
+
+
+####################################################################################################
+#                                   Group: Clone function                                          #
+####################################################################################################
+
+=begin nd
+Function: clone
+
+Clone object. Recursive clone only for levels. Other object attributes are just referenced.
+=cut
+sub clone {
+    my $this = shift;
+    
+    my $clone = { %{ $this } };
+    bless($clone, 'COMMON::PyramidVector');
+    delete $clone->{levels};
+
+    while (my ($id, $level) = each(%{$this->{levels}}) ) {
+        $clone->{levels}->{$id} = $level->clone();
+    }
+
+    return $clone;
+}
 
 
 1;

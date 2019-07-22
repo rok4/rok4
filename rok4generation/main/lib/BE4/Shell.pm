@@ -835,8 +835,6 @@ Function: getMainScript
 Get the main script allowing to launch all generation scripts on a same machine. Different script for QTree and NNgraph generation.
 
 Parameters (list):
-    scriptsDirectory - string - Path to scripts' directory
-    jobsNumber - integer - Parallelization level
     pyramid - <COMMON::PyramidRaster> - Pyramid to generate, to know the TMS type and levels
 
 Returns:
@@ -863,8 +861,8 @@ sub getMainScript {
         $ret =~ s/__level_ids__/$stringLevels/g;
     }
 
-    $ret =~ s/__jobs_number__/$jobsNumber/g;
-    $ret =~ s/__scripts_directory__/$scriptsDirectory/g;
+    $ret =~ s/__jobs_number__/$PARALLELIZATIONLEVEL/g;
+    $ret =~ s/__scripts_directory__/$SCRIPTSDIR/g;
 
     return $ret;
 }

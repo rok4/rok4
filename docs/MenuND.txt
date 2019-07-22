@@ -135,6 +135,7 @@ Group: Classes  {
     Group: PYR2PYR  {
 
         File: PropertiesLoader (no auto-title, lib/PYR2PYR/PropertiesLoader.pm)
+        File: Shell (no auto-title, lib/PYR2PYR/Shell.pm)
     }
 
 }
