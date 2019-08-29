@@ -74,7 +74,7 @@ use File::Path;
 use Data::Dumper;
 
 use COMMON::Harvesting;
-use COMMON::Node;
+use BE4::Node;
 use COMMON::ProxyStorage;
 
 require Exporter;

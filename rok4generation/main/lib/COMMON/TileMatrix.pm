@@ -197,7 +197,7 @@ sub _init {
     # init. params
     $this->{id} = $params->{id};
     if ($this->{id} =~ m/_/) {
-        ERROR("A TMS level id have not to containan underscore");
+        ERROR("A TMS level id have not to contain an underscore");
         return FALSE;
     }
 

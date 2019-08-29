@@ -223,31 +223,37 @@ sub init {
 =begin nd
 Function: doIt
 
-Use classes :
+Use functions :
     - <ProxyStorage::remove>
 =cut
 sub doIt {
 
-    my $objPyramid = COMMON::PyramidRaster->new("DESCRIPTOR", $options{pyramid});
-    if (! defined $pyramid) {
+    my $objPyramid = COMMON::ProxyPyramid::load($options{pyramid});
 
-        # Est-elle vecteur ?
-        $objPyramid = COMMON::PyramidVector->new("DESCRIPTOR", $options{pyramid});
-
-        if (! defined $pyramid) {
-            ERROR("Cannot load pyramid to delete  (neither raster nor vector)");
-            return FALSE;
-        }
+    if (! defined $objPyramid) {
+        ERROR("Cannot create the Pyramid object (neither raster nor vector nor raster on demand)");
+        return FALSE;
     }
 
+    ALWAYS("Pyramid's type : ".ref ($objPyramid));
+
+    if (ref ($objPyramid) eq "COMMON::PyramidRasterOD") {
+        # Dans le cas d'une pyramide à la demande, il y a seulement le descripteur de pyramide à supprimer
+        # On ne tient donc pas compte de l'option full
+        INFO("Suppression du descripteur de pyramide ".$options{pyr});
+        if (! ProxyStorage::remove("FILE", $options{pyr})) {
+            WARN("Impossible de supprimer le descripteur de pyramide ".$options{pyr});
+            return FALSE;
+        }
+        return TRUE;
+    }
 
     my $storageType = $objPyramid->getStorageType();
     my $pyramidName = $objPyramid->getName();
 
     my $issue = FALSE;
 
-    my $listFile = $options{pyr};
-    $listFile =~ s/\.pyr$/\.list/;
+    my $listFile = $objPyramid->getListFile();
 
     if ($storageType eq "FILE") {
         # Dans le cas fichier, on supprime un dossier tout simplement pour les données, pas besoin de fichier list
@@ -337,11 +343,14 @@ sub doIt {
 
         my $slab = "${dataTray}/${pyramidName}_${dataType}_${level}_${col}_${row}";
         if (! COMMON::ProxyStorage::remove($storageType, $slab)) {
-            WARN("Impossible de supprimer la dalle $storageType $slab");
+            
             $issue = TRUE;
             if ($option{stop}) {
+                ERROR("Impossible de supprimer la dalle $storageType $slab");
                 close($LIST);
                 return FALSE;
+            } else {
+                WARN("Impossible de supprimer la dalle $storageType $slab");
             }
         }
     }
@@ -382,21 +391,3 @@ END {}
 
 1;
 __END__
-
-=begin nd
-Section: Details
-
-Group: Command's options
-
-    --help - Display the link to the technic documentation.
-
-    --usage - Display the link to the technic documentation.
-
-    --version - Display the tool version.
-
-    --pyr - Pyramid's descriptor file. Mandatory.
-
-    --full - Optionnal, to remove descriptor and list file too
-
-    --stop - Optionnal, to stop when first error occur
-=cut

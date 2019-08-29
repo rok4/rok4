@@ -1,12 +1,14 @@
 #!/usr/bin/perl
 
 # S'obtient avec :
-# ack -h "^use [A-Z]" ./ | grep -v -E "JOINCACHE|COMMON|BE4|WMTSALAD|FOURALAMO|PYR2PYR|FOURHEAD"| sed -r "s#;.+#;#" | sed "s# ;#;#" | sort | uniq
+# ack -h "^use [A-Z]" ./ | grep -v -E "BE4|COMMON|FOURALAMO|FOURHEAD|JOINCACHE|PYR2PYR|WMTSALAD"| sed -r "s#;.+#;#" | sed "s# ;#;#" | sort | uniq
 
 use strict;
 use warnings;
 
 use AutoLoader qw(AUTOLOAD);
+use Ceph::Rados;
+use Config::INI::Reader;
 use Cwd;
 use Cwd qw(realpath cwd);
 use Data::Dumper;
@@ -22,7 +24,7 @@ use File::Find::Rule;
 use File::Map qw(map_file);
 use File::Path;
 use File::Path qw(make_path);
-use File::Spec;
+use File::Spec; 
 use FindBin qw($Bin);
 use Geo::GDAL;
 use Geo::OGR;

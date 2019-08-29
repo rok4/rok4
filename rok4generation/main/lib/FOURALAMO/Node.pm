@@ -68,6 +68,8 @@ Attributes:
 
     storageType - string - Final storage type for the node : "FILE", "CEPH" or "S3"
 
+    weight - integer - Node's weight : 1 + children's weights
+
     workImageBasename - string - <LEVEL>_<COL>_<ROW>_I
 
     tm - <COMMON::TileMatrix> - Tile matrix associated to the level which the node belong to.
@@ -133,6 +135,8 @@ sub new {
         row => undef,
         tm => undef,
         graph => undef,
+
+        weight => 1,
 
         script => undef,
 
@@ -228,6 +232,24 @@ sub getRow {
 sub getStorageType {
     my $this = shift;
     return $this->{storageType};
+}
+
+########## weight 
+
+# Function: getWeight
+sub getWeight {
+    my $this = shift;
+    return $this->{weight};
+}
+
+=begin nd
+Function: incrementWeight
+
+Add one
+=cut
+sub incrementWeight {
+    my $this = shift;
+    $this->{weight}++;
 }
 
 ########## scripts 

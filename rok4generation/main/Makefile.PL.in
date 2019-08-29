@@ -27,10 +27,10 @@ WriteMakefile(
     ],
     PMLIBDIRS   => [
         'lib/BE4',
+        'lib/COMMON',
         'lib/FOURALAMO',
         'lib/FOURHEAD',
         'lib/JOINCACHE',
-        'lib/COMMON',
         'lib/PYR2PYR',
         'lib/WMTSALAD'
     ],

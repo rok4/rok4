@@ -73,8 +73,7 @@ use File::Basename;
 use File::Path;
 use Data::Dumper;
 
-use COMMON::Harvesting;
-use COMMON::Node;
+use JOINCACHE::Node;
 use COMMON::ProxyStorage;
 
 require Exporter;

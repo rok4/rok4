@@ -146,7 +146,7 @@ Stockages gérés : FICHIER, CEPH, S3, SWIFT
 
 #### Commande
 
-`sup-pyr.pl --pyr=file [--full] [--help|--usage|--version]`
+`sup-pyr.pl --pyr=file [--full] [--stop] [--help|--usage|--version]`
 
 #### Options
 
@@ -155,6 +155,7 @@ Stockages gérés : FICHIER, CEPH, S3, SWIFT
 * `--version` Affiche la version de l'outil et quitte
 * `--pyr` Précise le chemin vers le descripteur de la pyramide à supprimer
 * `--full` Précise si on supprime également le fichier liste et le descripteur de la pyramide à la fin
+* `--stop` Précise si on souhaite arrêter la suppression lorsqu'une erreur est rencontrée
 
 
 ### Réecriture d'une tête de pyramide

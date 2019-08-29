@@ -69,7 +69,7 @@ use File::Basename;
 use File::Path;
 use Data::Dumper;
 
-use COMMON::Node;
+use FOURALAMO::Node;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);

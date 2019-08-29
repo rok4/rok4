@@ -939,7 +939,7 @@ Function: getSlabPath
 Returns the theoric slab path, undef if the level is not present in the pyramid
 
 Parameters (list):
-    type - string - IMAGE or MASK
+    type - string - IMAGE
     level - string - Level ID
     col - integer - Slab column
     row - integer - Slab row
@@ -1180,7 +1180,6 @@ sub loadList {
 
     # Dans le cas objet, pour passer du type présent dans le nom de l'objet au type générique
     my %objectTypeConverter = (
-        MSK => "MASK",
         IMG => "IMAGE"
     );
 
@@ -1215,7 +1214,7 @@ sub loadList {
         my $fullline = $line;
         $fullline =~ s/^(\d+)/$root/;
 
-        # On va vouloir déterminer le niveau, la colonne et la ligne de la dalle, ainsi que le type (IMAGE ou MASK)
+        # On va vouloir déterminer le niveau, la colonne et la ligne de la dalle, ainsi que le type (IMAGE)
         # Cette extraction diffère selon que l'on est en mode fichier ou objet
 
         my ($type, $level, $col, $row);
@@ -1241,7 +1240,7 @@ sub loadList {
             # Cas objet : 0/PYRAMID_IMG_15_15656_5423
 
             # Dans le cas d'un stockage objet, on a un nom d'objet de la forme BLA/BLA_BLA_DATATYPE_LEVEL_COL_ROW
-            # DATATYPE vaut MSK ou IMG, à convertir en MASK ou IMAGE
+            # DATATYPE vaut MSK ou IMG, à convertir en IMAGE
             my @p = split("_",$line);
             $col = $p[-2];
             $row = $p[-1];
@@ -1297,7 +1296,7 @@ Function: containSlab
 Precises if the provided slab belongs to the pyramid, using the cached list. Returns the full slab path if present, undef otherwise
 
 Parameters (list):
-    type - strong - IMAGE or MASK
+    type - strong - IMAGE
     level - string - Identifiant of the asked level
     col - integer - Column indice
     row - integer - Row indice
@@ -1320,7 +1319,7 @@ Function: modifySlab
 Replace the full slab path with the local full path. This modification can be made persistent with <flushCachedList>.
 
 Parameters (list):
-    type - strong - IMAGE or MASK
+    type - strong - IMAGE
     level - string - Identifiant of the asked level
     col - integer - Column indice
     row - integer - Row indice
@@ -1353,7 +1352,7 @@ Function: deleteSlab
 Delete the slab path from the cached list. This modification can be made persistent with <flushCachedList>.
 
 Parameters (list):
-    type - strong - IMAGE or MASK
+    type - strong - IMAGE
     level - string - Identifiant of the asked level
     col - integer - Column indice
     row - integer - Row indice
@@ -1426,33 +1425,12 @@ sub flushCachedList {
                 }
 
                 printf LIST "$rootInd/$pathEnd\n";
-
-                if (exists $this->{cachedList}->{$l}->{MASK}->{$slabKey}) {
-                    $pathEnd = $this->getSlabPath("IMAGE", $l, $COL, $ROW, FALSE);
-                    $root = $this->{cachedList}->{$l}->{MASK}->{$slabKey};
-                    $root =~ s/\/pathEnd//;
-                    
-                    if (! exists $roots{$root}) {
-                        $rootInd = scalar(keys(%roots));
-                        $roots{$root} = $rootInd;
-                    } else {
-                        $rootInd = $roots{$root};
-                    }
-
-                    printf LIST "$rootInd/$pathEnd\n";
-                }
             }
             # Cas objet
             else {
                 my $path = $slabPath;
                 $path =~ s/^[^\/]+\///;
                 printf LIST "0/$path\n";
-
-                if (exists $this->{cachedList}->{$l}->{MASK}->{$slabKey}) {
-                    my $path = $this->{cachedList}->{$l}->{MASK}->{$slabKey};
-                    $path =~ s/^[^\/]+\///;
-                    printf LIST "0/$path\n";
-                }
             }
         }
     }

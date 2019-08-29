@@ -2,7 +2,7 @@
 SET(PARENT_PROJECT_NAME ${PROJECT_NAME})
 
 #Défini le nom du projet 
-project(pyramide)
+project(rok4generation-main)
 
 #définit la version du projet : 1.0.0 MAJOR.MINOR.PATCH
 list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
