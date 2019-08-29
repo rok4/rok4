@@ -327,9 +327,6 @@ int parseCommandLine ( int argc, char** argv ) {
 /**
  * \~french
  * \brief Lit l'ensemble de la configuration
- * \details On parse la ligne courante du fichier de configuration, en stockant les valeurs dans les variables fournies. On saute les lignes vides. On lit ensuite la ligne suivante :
- * \li si elle correspond à un masque, on complète les informations
- * \li si elle ne correspond pas à un masque, on recule le pointeur
  *
  * \param[in,out] masks Indicateurs de présence d'un masque
  * \param[in,out] paths Chemins des images
@@ -355,10 +352,12 @@ bool loadConfiguration (
     }
 
     while ( file.good() ) {
+        char tmpPath[IMAGE_MAX_FILENAME_LENGTH];
+        char tmpCRS[20];
         char line[2*IMAGE_MAX_FILENAME_LENGTH];
         memset ( line, 0, 2*IMAGE_MAX_FILENAME_LENGTH );
-        char* path = (char*) malloc(IMAGE_MAX_FILENAME_LENGTH);
-        memset ( path, 0, IMAGE_MAX_FILENAME_LENGTH );
+        memset ( tmpPath, 0, IMAGE_MAX_FILENAME_LENGTH );
+        memset ( tmpCRS, 0, 20 );
 
         char type[3];
         BoundingBox<double> bb(0.,0.,0.,0.);
@@ -370,7 +369,7 @@ bool loadConfiguration (
         if ( strlen(line) == 0 ) {
             continue;
         }
-        int nb = std::sscanf ( line,"%s %s %lf %lf %lf %lf %lf %lf", type, path, &bb.xmin, &bb.ymax, &bb.xmax, &bb.ymin, &resx, &resy );
+        int nb = std::sscanf ( line,"%s %s %lf %lf %lf %lf %lf %lf", type, tmpPath, &bb.xmin, &bb.ymax, &bb.xmax, &bb.ymin, &resx, &resy );
         if ( nb == 8 && memcmp ( type,"IMG",3 ) == 0) {
             // On lit la ligne d'une image
             isMask = false;
@@ -391,6 +390,10 @@ bool loadConfiguration (
             LOGGER_ERROR ( "\t line : " << line );
             return false;
         }
+
+        char* path = (char*) malloc(IMAGE_MAX_FILENAME_LENGTH);
+        memset ( path, 0, IMAGE_MAX_FILENAME_LENGTH );
+        strcpy ( path,tmpPath );
 
         // On ajoute tout ça dans les vecteurs
         masks->push_back(isMask);
