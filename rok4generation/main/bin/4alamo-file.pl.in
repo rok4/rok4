@@ -845,7 +845,7 @@ sub doIt {
         return FALSE;
     };
 
-    print MAIN BE4::Shell::getMainScript($params->{process}->{path_shell}, $params->{process}->{job_number}, $objPyramid);
+    print MAIN FOURALAMO::Shell::getMainScript();
 
     close(MAIN);
 

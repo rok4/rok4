@@ -1230,7 +1230,7 @@ sub doIt {
             print OUT "COPY slabs (level, col, row, geom) FROM stdin;\n";
         }
 
-        my ($rowMin, $rowMax, $colMin, $colMax) = $options{"level"}->bboxToIndices(@{$options{to}->{bbox}}, $options{"slabsize"}->[0], $options{"slabsize"}->[1]);
+        my ($rowMin, $rowMax, $colMin, $colMax) = $options{"level"}->bboxToIndices(@{$options{from}->{bbox}}, $options{"slabsize"}->[0], $options{"slabsize"}->[1]);
         my $complete = ($rowMax - $rowMin + 1)*($colMax - $colMin + 1);
 
         my $progress = Term::ProgressBar->new({name => 'Slab indices list writting...', count => $complete, remove => 1});

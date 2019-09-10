@@ -841,8 +841,6 @@ Returns:
     A shell script
 =cut
 sub getMainScript {
-    my $scriptsDirectory = shift;
-    my $jobsNumber = shift;
     my $pyramid = shift;
 
     my $ret = "";
