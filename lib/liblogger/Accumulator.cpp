@@ -38,6 +38,7 @@
 #include "Accumulator.h"
 #include <time.h>
 #include <errno.h>
+#include <csignal>
 #include "sys/time.h"
 
 

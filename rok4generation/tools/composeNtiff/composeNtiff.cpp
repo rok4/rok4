@@ -391,7 +391,11 @@ int main ( int argc, char **argv ) {
     }
 
     Logger::stopLogger();
-    delete acc;
+    if ( acc ) {
+        acc->stop();
+        acc->destroy();
+        delete acc;
+    }
     delete pCompoundIn;
     delete pImageOut;
 

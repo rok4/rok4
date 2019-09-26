@@ -343,7 +343,11 @@ int main ( int argc, char* argv[] ) {
 
     LOGGER_DEBUG ( "Clean" );
     Logger::stopLogger();
-    delete acc;
+    if ( acc ) {
+        acc->stop();
+        acc->destroy();
+        delete acc;
+    }
     delete[] targetValue;
     delete[] newData;
     delete[] newNodata;

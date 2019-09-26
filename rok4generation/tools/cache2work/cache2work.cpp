@@ -289,7 +289,11 @@ int main ( int argc, char **argv )
     delete rok4image;
     delete outputImage;
     Logger::stopLogger();
-    delete acc;
+    if ( acc ) {
+        acc->stop();
+        acc->destroy();
+        delete acc;
+    }
     delete context;
 
 #if BUILD_OBJECT

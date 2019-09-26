@@ -435,7 +435,7 @@ bool TiffNodataManager<T>::treatNodata ( char* inputImage, char* outputImage, ch
         }
     }
 
-    delete[] IM;
+    free(IM);
     delete[] MSK;
 
     return true;

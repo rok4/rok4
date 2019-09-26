@@ -262,6 +262,12 @@ sub _load {
     my $scriptInit = undef;
     if (ref ($this->{pyramid}) eq "COMMON::PyramidRaster") {
         # Si on génère une pyramide raster, c'est que nous utilisons l'outil BE4, et des variables sont à initialiser dans la librairie des commandes Shell pour BE4
+
+        if ($this->{pyramid}->ownMasks()) {
+            # Si on souhaite avoir des masques dans la pyramide de sortie, il faut les utiliser tout du long des calculs
+            $params_process->{use_masks} = "TRUE";
+        }
+
         if (! BE4::Shell::setGlobals($this->{splitNumber}, $tempDir, $commonTempDir, $scriptDir, $params_process->{use_masks})) {
             ERROR ("Impossible d'initialiser la librairie des commandes Shell pour BE4");
             return FALSE;

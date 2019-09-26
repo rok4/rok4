@@ -357,6 +357,11 @@ sub validate {
 
     $this{mergeMethod} = $processSection->{merge_method};
 
+    if ($objPyramid->ownMasks()) {
+        # Si on souhaite avoir des masques dans la pyramide de sortie, il faut les utiliser tout du long des calculs
+        $processSection->{use_masks} = "TRUE";
+    }
+
     if (! JOINCACHE::Shell::setGlobals($processSection->{job_number}, $processSection->{path_temp}, $processSection->{path_temp_common}, $processSection->{path_shell}, $processSection->{merge_method}, $processSection->{use_masks})) {
         ERROR ("Impossible d'initialiser la librairie des commandes Shell pour JOINCACHE");
         return FALSE;

@@ -1183,7 +1183,11 @@ int main ( int argc, char **argv ) {
     // Nettoyage
     pj_clear_initcache();
     Logger::stopLogger();
-    delete acc;
+    if ( acc ) {
+        acc->stop();
+        acc->destroy();
+        delete acc;
+    }
     delete pECI;
     delete pImageOut;
     delete pMaskOut;

@@ -862,6 +862,10 @@ int main ( int argc, char* argv[] ) {
     delete OUTPUTI;
 
     Logger::stopLogger();
-    delete acc;
+    if ( acc ) {
+        acc->stop();
+        acc->destroy();
+        delete acc;
+    }
 }
 
