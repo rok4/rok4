@@ -577,6 +577,14 @@ sub writeDescriptor {
         return FALSE;
     }
 
+    if (! -d $this->{desc_path}) {
+        eval { mkpath([$this->{desc_path}]); };
+        if ($@) {
+            ERROR(sprintf "Can not create the pyramid descriptor directory '%s' : %s !", $this->{desc_path} , $@);
+            return FALSE;
+        }
+    }
+
     if (! open FILE, ">:encoding(UTF-8)", $descPath ){
         ERROR(sprintf "Cannot open the pyramid descriptor %s to write",$descPath);
         return FALSE;
