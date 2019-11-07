@@ -82,7 +82,6 @@ Pyramid::Pyramid (PyramidXML* p) : Source(PYRAMID) {
         }
         isBasedPyramid = p->isBasedPyramid;
         containOdLevels = p->containOdLevels;
-
     }
 
     std::map<std::string, Level*>::iterator itLevel;
@@ -101,7 +100,6 @@ Pyramid::Pyramid (PyramidXML* p) : Source(PYRAMID) {
             highestLevel = itLevel->second;
         }
     }
-
 }
 
 Pyramid::Pyramid (Pyramid* obj, ServerXML* sxml): Source(PYRAMID) {

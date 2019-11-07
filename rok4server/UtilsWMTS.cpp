@@ -50,6 +50,7 @@
 #include <iomanip>
 #include <vector>
 #include <map>
+#include <set>
 #include <cmath>
 #include "TileMatrixSet.h"
 #include "Pyramid.h"
@@ -507,12 +508,10 @@ void Rok4Server::buildWMTSCapabilities() {
             //tileMatrixSetLimits
             TiXmlElement * tmsLimitsEl = new TiXmlElement ( "TileMatrixSetLimits" );
 
-            std::map<std::string, Level*> layerLevelList = layer->getDataPyramid()->getLevels();
-
-            std::map<std::string, Level*>::iterator itLevelList ( layerLevelList.begin() );
-            std::map<std::string, Level*>::iterator itLevelListEnd ( layerLevelList.end() );
-            for ( ; itLevelList!=itLevelListEnd; ++itLevelList ) {
-                Level * level = itLevelList->second;
+            // Niveaux
+            std::set<std::pair<std::string, Level*>, ComparatorLevel> orderedLevels = layer->getDataPyramid()->getOrderedLevels(false);
+            for (std::pair<std::string, Level*> element : orderedLevels) {
+                Level * level = element.second;
                 TiXmlElement * tmLimitsEl = new TiXmlElement ( "TileMatrixLimits" );
                 tmLimitsEl->LinkEndChild ( DocumentXML::buildTextNode ( "TileMatrix",level->getTm()->getId() ) );
 
@@ -522,10 +521,9 @@ void Rok4Server::buildWMTSCapabilities() {
                 tmLimitsEl->LinkEndChild ( DocumentXML::buildTextNode ( "MaxTileCol",numToStr ( ( level->getMaxTileCol() <0?level->getTm()->getMatrixH() :level->getMaxTileCol() ) ) ) );
                 tmsLimitsEl->LinkEndChild ( tmLimitsEl );
             }
+
             tmsLinkEl->LinkEndChild ( tmsLimitsEl );
-
             layerEl->LinkEndChild ( tmsLinkEl );
-
             contentsEl->LinkEndChild ( layerEl );
         }
 
@@ -567,13 +565,12 @@ void Rok4Server::buildWMTSCapabilities() {
 
 
         tmsEl->LinkEndChild ( DocumentXML::buildTextNode ( "ows:SupportedCRS",tms->getCrs().getRequestCode() ) );
-        std::map<std::string, TileMatrix*>* tmList = tms->getTmList();
-
+        
         // TileMatrix
-        std::map<std::string, TileMatrix*>::iterator itTm ( tmList->begin() ), itTmEnd ( tmList->end() );
-        for ( ; itTm!=itTmEnd; ++itTm ) {
-            TileMatrix* tm =itTm->second;
-            TiXmlElement * tmEl=new TiXmlElement ( "TileMatrix" );
+        std::set<std::pair<std::string, TileMatrix*>, ComparatorTileMatrix> orderedTM = tms->getOrderedTileMatrix(false);
+        for (std::pair<std::string, TileMatrix*> element : orderedTM) {
+            TileMatrix* tm = element.second;
+            TiXmlElement * tmEl = new TiXmlElement ( "TileMatrix" );
             tmEl->LinkEndChild ( DocumentXML::buildTextNode ( "ows:Identifier",tm->getId() ) );
             tmEl->LinkEndChild ( DocumentXML::buildTextNode ( "ScaleDenominator",doubleToStr ( ( long double ) ( tm->getRes() * tms->getCrs().getMetersPerUnit() ) /0.00028 ) ) );
             tmEl->LinkEndChild ( DocumentXML::buildTextNode ( "TopLeftCorner",doubleToStr ( tm->getX0() ) + " " + doubleToStr ( tm->getY0() ) ) );
@@ -583,6 +580,7 @@ void Rok4Server::buildWMTSCapabilities() {
             tmEl->LinkEndChild ( DocumentXML::buildTextNode ( "MatrixHeight",numToStr ( tm->getMatrixH() ) ) );
             tmsEl->LinkEndChild ( tmEl );
         }
+
         contentsEl->LinkEndChild ( tmsEl );
     }
 

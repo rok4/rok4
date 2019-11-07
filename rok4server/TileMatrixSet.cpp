@@ -46,6 +46,18 @@
 
 #include "TileMatrixSet.h"
 
+ComparatorTileMatrix compTMDesc =
+    [](std::pair<std::string, TileMatrix*> elem1 ,std::pair<std::string, TileMatrix*> elem2)
+    {
+        return elem1.second->getRes() > elem2.second->getRes();
+    };
+
+ComparatorTileMatrix compTMAsc =
+    [](std::pair<std::string, TileMatrix*> elem1 ,std::pair<std::string, TileMatrix*> elem2)
+    {
+        return elem1.second->getRes() < elem2.second->getRes();
+    };
+
 std::string TileMatrixSet::getId() {
     return id;
 }
@@ -120,6 +132,16 @@ std::map<std::string, double> TileMatrixSet::getCorrespondingLevels(std::string 
     }
 
     return levelsRatios;
+}
+
+std::set<std::pair<std::string, TileMatrix*>, ComparatorTileMatrix> TileMatrixSet::getOrderedTileMatrix(bool asc) {
+ 
+    if (asc) {
+        return std::set<std::pair<std::string, TileMatrix*>, ComparatorTileMatrix>(tmList.begin(), tmList.end(), compTMAsc);
+    } else {
+        return std::set<std::pair<std::string, TileMatrix*>, ComparatorTileMatrix>(tmList.begin(), tmList.end(), compTMDesc);
+    }
+
 }
 
 bool TileMatrixSet::operator== ( const TileMatrixSet& other ) const {
