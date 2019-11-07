@@ -52,7 +52,9 @@ class Pyramid;
 #include "WebService.h"
 #include "Source.h"
 
-//std::string getMimeType(std::string format);
+
+typedef std::function<bool(std::pair<std::string, Level*>, std::pair<std::string, Level*>)> ComparatorLevel;
+
 
 
 /**
@@ -181,6 +183,15 @@ public:
      * \return List of level
      */
     std::map<std::string, Level*>& getLevels() ;
+
+    /**
+     * \~french \brief Récupère les niveaux ordonnés par résolution décroissante
+     * \return Liste de level
+     * \~english \brief Get the levels ordered
+     * \return List of level
+     */
+    std::set<std::pair<std::string, Level*>, ComparatorLevel> getOrderedLevels(bool asc) ;
+
 
     Level* getLevel(std::string id) ;
 

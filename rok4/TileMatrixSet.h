@@ -49,10 +49,14 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
+#include <functional>
 #include "TileMatrix.h"
 #include "TileMatrixSetXML.h"
 #include "CRS.h"
 #include "Keyword.h"
+
+typedef std::function<bool(std::pair<std::string, TileMatrix*>, std::pair<std::string, TileMatrix*>)> ComparatorTileMatrix;
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -202,6 +206,14 @@ public:
 
     std::map<std::string, double> getCorrespondingLevels(std::string level, TileMatrixSet* otherTMS);
 
+
+    /**
+     * \~french \brief Récupère les niveaux ordonnés par résolution décroissante
+     * \return Liste de level
+     * \~english \brief Get the levels ordered
+     * \return List of level
+     */
+    std::set<std::pair<std::string, TileMatrix*>, ComparatorTileMatrix> getOrderedTileMatrix(bool asc) ;
 
     /**
      * \~french

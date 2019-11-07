@@ -55,6 +55,18 @@
 #include "config.h"
 #include "EmptyImage.h"
 
+ComparatorLevel compLevelDesc =
+    [](std::pair<std::string, Level*> elem1 ,std::pair<std::string, Level*> elem2)
+    {
+        return elem1.second->getRes() > elem2.second->getRes();
+    };
+
+ComparatorLevel compLevelAsc =
+    [](std::pair<std::string, Level*> elem1 ,std::pair<std::string, Level*> elem2)
+    {
+        return elem1.second->getRes() < elem2.second->getRes();
+    };
+
 Pyramid::Pyramid (PyramidXML* p) : Source(PYRAMID) {
     levels = p->levels;
     tms = p->tms;
@@ -119,7 +131,7 @@ Pyramid::Pyramid (Pyramid* obj, ServerXML* sxml): Source(PYRAMID) {
     // On clone bien tous les niveaux
     for ( itLevel = obj->levels.begin(); itLevel != obj->levels.end(); itLevel++ ) {
         Level* levObj = new Level(itLevel->second, sxml, tms);
-        if (levObj->getContext() == NULL) {
+        if (levObj->getTm() == NULL) {
             LOGGER_ERROR ( "Impossible de cloner le niveau " << itLevel->first );
             tms = NULL;
             // Tester la nullité du TMS en sortie pour faire remonter l'erreur
@@ -471,6 +483,17 @@ Level * Pyramid::getFirstLevel() {
 }
 TileMatrixSet* Pyramid::getTms() { return tms; }
 std::map<std::string, Level*>& Pyramid::getLevels() { return levels; }
+
+std::set<std::pair<std::string, Level*>, ComparatorLevel> Pyramid::getOrderedLevels(bool asc) {
+ 
+    if (asc) {
+        return std::set<std::pair<std::string, Level*>, ComparatorLevel>(levels.begin(), levels.end(), compLevelAsc);
+    } else {
+        return std::set<std::pair<std::string, Level*>, ComparatorLevel>(levels.begin(), levels.end(), compLevelDesc);
+    }
+
+}
+
 Level* Pyramid::getLevel(std::string id) {
     std::map<std::string, Level*>::iterator it= levels.find ( id );
     if ( it == levels.end() ) {
