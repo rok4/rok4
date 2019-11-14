@@ -271,7 +271,7 @@ sub treatBelowCut {
 
     if ($pyramid->ownMasks()) {
         printf $STREAM "PushSlab %s %s \"\${WORK2CACHE_MASK_OPTIONS}\"\n",
-            $this->{workImageFilename},
+            $this->{workMaskFilename},
             $pyramid->getSlabPath("MASK", $this->{level}, $this->{col}, $this->{row}, FALSE);
 
         $pyramid->modifySlab("MASK", $this->{level}, $this->{col}, $this->{row});
