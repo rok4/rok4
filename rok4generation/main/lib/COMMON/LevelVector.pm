@@ -396,8 +396,11 @@ sub _loadXML {
         my $geometry = $t->findvalue('geometry');
 
         $this->{tables}->{$tablename} = {
-            geometry => $geometry,
-            attributes => {}
+            geometry => {
+                type => $geometry
+            },
+            final_name => $tablename,
+            attributes_analysis => {}
         };
 
         my @atts = $t->getElementsByTagName('attribute');
@@ -409,23 +412,23 @@ sub _loadXML {
             my $count = $a->findvalue('count');
             my $values = $a->findvalue('values');
 
-            $this->{tables}->{$tablename}->{attributes}->{$attname} = {
+            $this->{tables}->{$tablename}->{attributes_analysis}->{$attname} = {
                 type => $atttype,
                 count => $count
             };
 
             if (defined $min && $min ne "") {
-                $this->{tables}->{$tablename}->{attributes}->{$attname}->{min} = $min;
+                $this->{tables}->{$tablename}->{attributes_analysis}->{$attname}->{min} = $min;
             }
 
             if (defined $max && $max ne "") {
-                $this->{tables}->{$tablename}->{attributes}->{$attname}->{max} = $max;
+                $this->{tables}->{$tablename}->{attributes_analysis}->{$attname}->{max} = $max;
             }
 
             if (defined $values && $values ne "") {
                 $values =~ s/^"//g;
                 $values =~ s/"$//g;
-                $this->{tables}->{$tablename}->{attributes}->{$attname}->{values} = split(/","/, $values);
+                @{$this->{tables}->{$tablename}->{attributes_analysis}->{$attname}->{values}} = split(/","/, $values);
             }
         }
     }
@@ -978,6 +981,7 @@ sub exportToXML {
     }
 
     foreach my $table (keys(%{$this->{tables}})) {
+        ERROR(Dumper($this->{tables}->{$table}));
         $string .=                 "        <table>\n";
         $string .= sprintf         "            <name>%s</name>\n", $this->{tables}->{$table}->{final_name};
         $string .= sprintf         "            <geometry>%s</geometry>\n", $this->{tables}->{$table}->{geometry}->{type};

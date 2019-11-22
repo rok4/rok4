@@ -788,15 +788,10 @@ sub writeDescriptor {
         $force = FALSE;     
     }
 
-    if ($this->{type} eq "READ") {
-        ERROR("Cannot write descriptor of 'read' pyramid");
-        return FALSE;        
-    }
-
     my $descPath = File::Spec->catdir($this->{desc_path}, $this->{name}.".pyr");
 
     if (! $force && -f $descPath) {
-        ERROR("New pyramid descriptor ('$descPath') exist, can not overwrite it !");
+        ERROR("Pyramid descriptor ('$descPath') exist, can not overwrite it !");
         return FALSE;
     }
 
