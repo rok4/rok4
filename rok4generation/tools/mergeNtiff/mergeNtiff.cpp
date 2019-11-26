@@ -1184,8 +1184,6 @@ int main ( int argc, char **argv ) {
     pj_clear_initcache();
     Logger::stopLogger();
     if ( acc ) {
-        acc->stop();
-        acc->destroy();
         delete acc;
     }
     delete pECI;

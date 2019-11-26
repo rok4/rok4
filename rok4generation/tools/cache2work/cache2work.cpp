@@ -290,8 +290,6 @@ int main ( int argc, char **argv )
     delete outputImage;
     Logger::stopLogger();
     if ( acc ) {
-        acc->stop();
-        acc->destroy();
         delete acc;
     }
     delete context;

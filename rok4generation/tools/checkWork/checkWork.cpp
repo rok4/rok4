@@ -146,8 +146,6 @@ int main ( int argc, char **argv )
     delete image;
     Logger::stopLogger();
     if ( acc ) {
-        acc->stop();
-        acc->destroy();
         delete acc;
     }
 
