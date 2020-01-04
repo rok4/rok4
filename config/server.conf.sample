@@ -37,7 +37,7 @@
     <!-- Active le serveur WMTS -->
     <WMTSSupport>true</WMTSSupport>
     <!-- Active le serveur TMS -->
-    <WTSSupport>true</WTSSupport>
+    <TMSSupport>true</TMSSupport>
     <!-- Active le serveur WMS -->
     <WMSSupport>true</WMSSupport>
 	<!-- Capacite du serveur pour les reprojections -->

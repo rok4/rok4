@@ -165,6 +165,8 @@ my $MAKETILES = <<'FUNCTION';
 
 mkdir -p ${TMP_DIR}/pbfs/
 MakeTiles () {
+    local top_level=$1
+    local bottom_level=$2
 
     rm -r ${TMP_DIR}/pbfs/*
 
@@ -175,7 +177,7 @@ MakeTiles () {
         let ndetail=32-${BOTTOM_LEVEL}
     fi
 
-    tippecanoe ${TIPPECANOE_OPTIONS} --no-progress-indicator --no-tile-compression --base-zoom ${TOP_LEVEL} --full-detail $ndetail -Z ${TOP_LEVEL} -z ${BOTTOM_LEVEL} -e ${TMP_DIR}/pbfs/  ${TMP_DIR}/jsons/*.json
+    tippecanoe ${TIPPECANOE_OPTIONS} --no-progress-indicator --no-tile-compression --base-zoom ${top_level} --full-detail $ndetail -Z ${top_level} -z ${bottom_level} -e ${TMP_DIR}/pbfs/  ${TMP_DIR}/jsons/*.json
     if [ $? != 0 ] ; then echo $0; fi
 
     rm ${TMP_DIR}/jsons/*.json

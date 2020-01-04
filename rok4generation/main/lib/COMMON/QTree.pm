@@ -322,7 +322,7 @@ sub _load {
 
     # identifier les noeuds du niveau de base à mettre à jour et les associer aux images sources:
     if ( ! $this->identifyBottomNodes() ) {
-        ERROR(sprintf "Cannot determine bottom tiles for the level %s",$src->getBottomID);
+        ERROR(sprintf "Cannot determine bottom tiles for the level %s",$src->getBottomID());
         return FALSE;
     }
 
@@ -874,6 +874,12 @@ sub getTopID {
 sub getTopOrder {
     my $this = shift;
     return $this->{pyramid}->getTileMatrixSet()->getOrderfromID($this->{topID});
+}
+
+# Function: getBottomID
+sub getBottomID {
+    my $this = shift;
+    return $this->{bottomID};
 }
 
 # Function: getBottomOrder

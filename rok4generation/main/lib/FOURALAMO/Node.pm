@@ -400,7 +400,7 @@ Returns:
 sub makeTiles {
     my $this = shift;
     
-    $this->{script}->write("MakeTiles\n");
+    $this->{script}->write(sprintf "MakeTiles %s %s\n", $this->getGraph()->getTopID(), $this->getGraph()->getBottomID());
 
     return TRUE;
 }
