@@ -477,13 +477,19 @@ Returns the tile matrix array in the ascending resolution order.
 
 Parameters (list):
     fromLevelID - string - Optionnal, level ID from which we return levels.
+    toLevelID - string - Optionnal, level ID to which we return levels.
 =cut
 sub getTileMatrixByArray {
     my $this = shift;
     my $fromLevelID = shift;
+    my $toLevelID = shift;
 
     if (! defined $fromLevelID || ! exists $this->{tileMatrix}->{$fromLevelID}) {
         $fromLevelID = $this->{bottomID};
+    }
+
+    if (! defined $toLevelID || ! exists $this->{tileMatrix}->{$toLevelID}) {
+        $toLevelID = $this->{topID};
     }
 
     my @levels;
@@ -495,6 +501,9 @@ sub getTileMatrixByArray {
         }
         $add = TRUE;
         push @levels, $k;
+        if ($k->getID() eq "$toLevelID") {
+            last;
+        }
     }
 
     return @levels;

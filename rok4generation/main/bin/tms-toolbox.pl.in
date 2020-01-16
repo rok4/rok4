@@ -428,7 +428,7 @@ sub init {
         "slabsize=s" => \$options{slabsize},
         "storage=s" => \$options{storage},
         "add" => \$options{add},
-        "above" => \$options{above},
+        "above=s" => \$options{above},
         "level=s" => \$options{level},
         "ratio=s" => \$options{ratio},
         "from=s" => \$options{from},
@@ -458,7 +458,7 @@ sub init {
     }
     $options{"tms"} = $tms;
 
-    if ($options{"above"} && ! $tms->isQTree()) {
+    if (defined $options{"above"} && $options{"above"} ne "" && ! $tms->isQTree()) {
         ERROR("Option 'above' only works for QTREE TMS");
         return FALSE;
     }
@@ -727,8 +727,8 @@ sub doIt {
 
         my $baseLevel = $options{level}->getID();
         my @aboveLevels;
-        if ($options{above}) {
-            @aboveLevels = $options{tms}->getTileMatrixByArray($baseLevel);
+        if (defined $options{above}) {
+            @aboveLevels = $options{tms}->getTileMatrixByArray($baseLevel, $options{above});
         }
         
         my $memory = {};
@@ -757,7 +757,7 @@ sub doIt {
                 }
             }
 
-            if ($options{above}) {
+            if (defined $options{above}) {
                 for (my $i = 1; $i < scalar(@aboveLevels); $i++) {
                     my $levelID = $aboveLevels[$i]->getID();
                     $COL = int($COL / 2);
