@@ -7,6 +7,17 @@ set(ROK4DEPENDENCIES_FOUND TRUE BOOL)
 
 ###################################################### Extern libraries, shared
 
+
+if(NOT TARGET boostlog)
+  find_package(BoostLog)
+  if(BOOSTLOG_FOUND)
+    add_library(boostlog SHARED IMPORTED)
+    set_property(TARGET boostlog PROPERTY IMPORTED_LOCATION ${BOOSTLOG_LIBRARY})
+  else(BOOSTLOG_FOUND)
+    message(FATAL_ERROR "Cannot find extern library boostlog")
+  endif(BOOSTLOG_FOUND)
+endif(NOT TARGET boostlog)
+
 if(NOT TARGET tinyxml)
   find_package(TinyXML)
   if(TINYXML_FOUND)

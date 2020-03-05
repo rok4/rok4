@@ -50,7 +50,11 @@
 #include <string.h>
 #include "tiffio.h"
 #include "Format.h"
-#include "Logger.h"
+
+#include <boost/log/core.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/expressions.hpp>
+
 #include "FileContext.h"
 #include "FileImage.h"
 #include "CurlPool.h"
@@ -111,7 +115,7 @@ std::string help = std::string("\nwork2cache version ") + std::string(ROK4_VERSI
  * \details L'affichage se fait dans le niveau de logger INFO
  */
 void usage() {
-    LOGGER_INFO (help);
+    BOOST_LOG_TRIVIAL(info) <<  (help);
 }
 
 /**
@@ -121,7 +125,7 @@ void usage() {
  * \param[in] errorCode code de retour
  */
 void error ( std::string message, int errorCode ) {
-    LOGGER_ERROR ( message );
+    BOOST_LOG_TRIVIAL(error) <<  ( message );
     usage();
     sleep ( 1 );
     exit ( errorCode );
@@ -166,17 +170,7 @@ int main ( int argc, char **argv ) {
 #endif
 
     /* Initialisation des Loggers */
-    Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
-
-    Accumulator* acc = new StreamAccumulator();
-    Logger::setAccumulator ( INFO , acc );
-    Logger::setAccumulator ( WARN , acc );
-    Logger::setAccumulator ( ERROR, acc );
-    Logger::setAccumulator ( FATAL, acc );
-
-    std::ostream &logw = LOGGER ( WARN );
-    logw.precision ( 16 );
-    logw.setf ( std::ios::fixed,std::ios::floatfield );
+    boost::log::core::get()->set_filter( boost::log::trivial::severity >= boost::log::trivial::info );
 
     // Récupération des paramètres
     for ( int i = 1; i < argc; i++ ) {
@@ -292,10 +286,7 @@ int main ( int argc, char **argv ) {
 
     if (debugLogger) {
         // le niveau debug du logger est activé
-        Logger::setAccumulator ( DEBUG, acc);
-        std::ostream &logd = LOGGER ( DEBUG );
-        logd.precision ( 16 );
-        logd.setf ( std::ios::fixed,std::ios::floatfield );
+        boost::log::core::get()->set_filter( boost::log::trivial::severity >= boost::log::trivial::debug );
     }
 
     if ( input == 0 || output == 0 ) {
@@ -309,14 +300,14 @@ int main ( int argc, char **argv ) {
     if ( pool != 0 ) {
         onCeph = true;
 
-        LOGGER_DEBUG( std::string("Output is an object in the Ceph pool ") + pool);
+        BOOST_LOG_TRIVIAL(debug) << ( std::string("Output is an object in the Ceph pool ") + pool);
         context = new CephPoolContext(pool);
     } else if (bucket != 0) {
         onS3 = true;
 
         curl_global_init(CURL_GLOBAL_ALL);
 
-        LOGGER_DEBUG( std::string("Output is an object in the S3 bucket ") + bucket);
+        BOOST_LOG_TRIVIAL(debug) << ( std::string("Output is an object in the S3 bucket ") + bucket);
         context = new S3Context(bucket);
 
     } else if (container != 0) {
@@ -324,12 +315,12 @@ int main ( int argc, char **argv ) {
 
         curl_global_init(CURL_GLOBAL_ALL);
 
-        LOGGER_DEBUG( std::string("Output is an object in the Swift bucket ") + container);
+        BOOST_LOG_TRIVIAL(debug) << ( std::string("Output is an object in the Swift bucket ") + container);
         context = new SwiftContext(container);
     } else {
 #endif
 
-        LOGGER_DEBUG("Output is a file in a file system");
+        BOOST_LOG_TRIVIAL(debug) << ("Output is a file in a file system");
         context = new FileContext("");
 
 #if BUILD_OBJECT
@@ -343,13 +334,13 @@ int main ( int argc, char **argv ) {
     FileImageFactory FIF;
 
     if (crop && compression != Compression::JPEG) {
-        LOGGER_WARN("Crop option is reserved for JPEG compression");
+        BOOST_LOG_TRIVIAL(warning) << ("Crop option is reserved for JPEG compression");
         crop = false;
     }
 
     // For jpeg compression with crop option, we have to remove white pixel, to avoid empty bloc in data
     if ( crop ) {
-        LOGGER_DEBUG ( "Open image to read" );
+        BOOST_LOG_TRIVIAL(debug) <<  ( "Open image to read" );
         // On récupère les informations nécessaires pour appeler le nodata manager
         FileImage* tmpSourceImage = FIF.createImageToRead(input);
         int spp = tmpSourceImage->getChannels();
@@ -363,11 +354,11 @@ int main ( int argc, char **argv ) {
                 error ( "Unable to treat white pixels in this image : " + string(input), -1 );
             }
         } else {
-            LOGGER_WARN( "Crop option ignored (only for 8-bit integer images) for the image : " << input);
+            BOOST_LOG_TRIVIAL(warning) << "Crop option ignored (only for 8-bit integer images) for the image : " << input;
         }
     }
 
-    LOGGER_DEBUG ( "Open image to read" );
+    BOOST_LOG_TRIVIAL(debug) <<  ( "Open image to read" );
     FileImage* sourceImage = FIF.createImageToRead(input);
     if (sourceImage == NULL) {
         error("Cannot read the source image", -1);
@@ -418,7 +409,7 @@ int main ( int argc, char **argv ) {
         rok4Image->print();
     }
 
-    LOGGER_DEBUG ( "Write" );
+    BOOST_LOG_TRIVIAL(debug) <<  ( "Write" );
 
     if (rok4Image->writeImage(sourceImage, crop) < 0) {
         error("Cannot write ROK4 image", -1);
@@ -434,11 +425,8 @@ int main ( int argc, char **argv ) {
 
 #endif
 
-    LOGGER_DEBUG ( "Clean" );
-    Logger::stopLogger();
-    if ( acc ) {
-        delete acc;
-    }
+    BOOST_LOG_TRIVIAL(debug) <<  ( "Clean" );
+
     delete sourceImage;
     delete rok4Image;
     delete context;

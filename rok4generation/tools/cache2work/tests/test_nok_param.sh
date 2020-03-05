@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "test nok param"
-cache2work -c jpeg inputs/ORTHOHR.tif outputs/test_nok_param.tif 2>/dev/null
+cache2work -c jpeg inputs/ORTHOHR.tif outputs/test_nok_param.tif 1>/dev/null 2>/dev/null
 if [ $? != 0 ] ; then 
     exit 0
 else

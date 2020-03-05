@@ -45,7 +45,11 @@
 #include <cstdlib>
 #include <iostream>
 #include <string.h>
-#include "Logger.h"
+
+#include <boost/log/core.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/expressions.hpp>
+
 #include "FileImage.h"
 #include "../../../rok4version.h"
 
@@ -61,7 +65,7 @@ std::string help = std::string("\ncheckWork version ") + std::string(ROK4_VERSIO
  * \brief Affiche l'utilisation et les différentes options de la commande checkWork #help
  */
 void usage() {
-    LOGGER_INFO (help);
+    BOOST_LOG_TRIVIAL(info) << help;
 }
 
 /**
@@ -71,7 +75,7 @@ void usage() {
  * \param[in] errorCode code de retour
  */
 void error ( std::string message, int errorCode ) {
-    LOGGER_ERROR ( message );
+    BOOST_LOG_TRIVIAL(error) <<  message ;
     usage();
     sleep ( 1 );
     exit ( errorCode );
@@ -96,17 +100,7 @@ int main ( int argc, char **argv )
     char* input = 0;
 
     /* Initialisation des Loggers */
-    Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
-
-    Accumulator* acc = new StreamAccumulator();
-    Logger::setAccumulator ( INFO , acc );
-    Logger::setAccumulator ( WARN , acc );
-    Logger::setAccumulator ( ERROR, acc );
-    Logger::setAccumulator ( FATAL, acc );
-
-    std::ostream &logw = LOGGER ( WARN );
-    logw.precision ( 16 );
-    logw.setf ( std::ios::fixed,std::ios::floatfield );
+    boost::log::core::get()->set_filter( boost::log::trivial::severity >= boost::log::trivial::info );
 
     for ( int i = 1; i < argc; i++ ) {
         if ( argv[i][0] == '-' ) {
@@ -135,19 +129,15 @@ int main ( int argc, char **argv )
     FileImage* image = FIF.createImageToRead(input);
     int ret;
     if (image == NULL) {
-        LOGGER_ERROR("Image NOK");
+        BOOST_LOG_TRIVIAL(error) << "Image NOK";
         ret = -1;
     } else {
-        LOGGER_INFO("Image OK");
+        BOOST_LOG_TRIVIAL(info) << "Image OK";
         ret = 0;
     }
 
     // Nettoyage
     delete image;
-    Logger::stopLogger();
-    if ( acc ) {
-        delete acc;
-    }
 
     return ret;
 }

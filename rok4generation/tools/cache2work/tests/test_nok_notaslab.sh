@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "test nok not a slab"
-cache2work -c zip inputs/NOTASLAB.tif outputs/test_nok_notaslab.tif 2>/dev/null
+cache2work -c zip inputs/NOTASLAB.tif outputs/test_nok_notaslab.tif 1>/dev/null 2>/dev/null
 if [ $? != 0 ] ; then 
     exit 0
 else

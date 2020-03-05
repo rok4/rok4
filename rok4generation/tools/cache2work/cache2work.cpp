@@ -47,7 +47,11 @@
 #include <cstdlib>
 #include <iostream>
 #include <string.h>
-#include "Logger.h"
+
+#include <boost/log/core.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/expressions.hpp>
+
 #include <curl/curl.h>
 #include "Format.h"
 #include "CurlPool.h"
@@ -94,7 +98,7 @@ std::string help = std::string("\ncache2work version ") + std::string(ROK4_VERSI
  * \details L'affichage se fait dans le niveau de logger INFO
  */
 void usage() {
-    LOGGER_INFO (help);
+    BOOST_LOG_TRIVIAL(info) << help;
 }
 
 /**
@@ -104,7 +108,7 @@ void usage() {
  * \param[in] errorCode code de retour
  */
 void error ( std::string message, int errorCode ) {
-    LOGGER_ERROR ( message );
+    BOOST_LOG_TRIVIAL(error) <<  message ;
     usage();
     sleep ( 1 );
     exit ( errorCode );
@@ -135,17 +139,7 @@ int main ( int argc, char **argv )
     bool keystone = false;
 
     /* Initialisation des Loggers */
-    Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
-
-    Accumulator* acc = new StreamAccumulator();
-    Logger::setAccumulator ( INFO , acc );
-    Logger::setAccumulator ( WARN , acc );
-    Logger::setAccumulator ( ERROR, acc );
-    Logger::setAccumulator ( FATAL, acc );
-
-    std::ostream &logw = LOGGER ( WARN );
-    logw.precision ( 16 );
-    logw.setf ( std::ios::fixed,std::ios::floatfield );
+    boost::log::core::get()->set_filter( boost::log::trivial::severity >= boost::log::trivial::info );
 
     for ( int i = 1; i < argc; i++ ) {
 
@@ -218,10 +212,7 @@ int main ( int argc, char **argv )
 
     if (debugLogger) {
         // le niveau debug du logger est activé
-        Logger::setAccumulator ( DEBUG, acc);
-        std::ostream &logd = LOGGER ( DEBUG );
-        logd.precision ( 16 );
-        logd.setf ( std::ios::fixed,std::ios::floatfield );
+        boost::log::core::get()->set_filter( boost::log::trivial::severity >= boost::log::trivial::debug );
     }
 
     if ( input == 0 || output == 0 ) {
@@ -233,21 +224,21 @@ int main ( int argc, char **argv )
 #if BUILD_OBJECT
 
     if ( pool != 0 ) {
-        LOGGER_DEBUG( std::string("Input is an object in the Ceph pool ") + pool);
+        BOOST_LOG_TRIVIAL(debug) <<  std::string("Input is an object in the Ceph pool ") + pool;
         context = new CephPoolContext(pool);
         context->setAttempts(10);
     } else if (bucket != 0) {
-        LOGGER_DEBUG( std::string("Input is an object in the S3 bucket ") + bucket);
+        BOOST_LOG_TRIVIAL(debug) <<  std::string("Input is an object in the S3 bucket ") + bucket;
         curl_global_init(CURL_GLOBAL_ALL);
         context = new S3Context(bucket);
     } else if (container != 0) {
-        LOGGER_DEBUG( std::string("Input is an object in the Swift container ") + container);
+        BOOST_LOG_TRIVIAL(debug) <<  std::string("Input is an object in the Swift container ") + container;
         curl_global_init(CURL_GLOBAL_ALL);
         context = new SwiftContext(container, keystone);
     } else {
 #endif
 
-        LOGGER_DEBUG("Input is a file in a file system");
+        BOOST_LOG_TRIVIAL(debug) << "Input is a file in a file system";
         context = new FileContext("");
 
 #if BUILD_OBJECT
@@ -276,7 +267,7 @@ int main ( int argc, char **argv )
         error (std::string("Cannot create image to write ") + output, -1);
     }
 
-    LOGGER_DEBUG ( "Write" );
+    BOOST_LOG_TRIVIAL(debug) <<  "Write" ;
     if (outputImage->writeImage(rok4image) < 0) {
         delete rok4image;
         delete outputImage;
@@ -284,14 +275,10 @@ int main ( int argc, char **argv )
         error("Cannot write image", -1);
     }
 
-    LOGGER_DEBUG ( "Clean" );
+    BOOST_LOG_TRIVIAL(debug) <<  "Clean" ;
     // Nettoyage
     delete rok4image;
     delete outputImage;
-    Logger::stopLogger();
-    if ( acc ) {
-        delete acc;
-    }
     delete context;
 
 #if BUILD_OBJECT

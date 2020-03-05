@@ -55,10 +55,10 @@ add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRCS})
 #Définition des dépendances.
 include(ROK4Dependencies)
 
-set(DEP_INCLUDE_DIR ${IMAGE_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
+set(DEP_INCLUDE_DIR ${IMAGE_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${LOGGER_INCLUDE_DIR} ${BOOSTLOG_INCLUDE_DIR} ${ZLIB_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
 
 #Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
-set(DEP_LIBRARY tiff zlib proj logger image)
+set(DEP_LIBRARY tiff zlib proj logger image boostlog -lboost_system)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 

@@ -52,7 +52,11 @@
 #include <fstream>
 #include "tiffio.h"
 #include "tiff.h"
-#include "Logger.h"
+
+#include <boost/log/core.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/expressions.hpp>
+
 #include "LibtiffImage.h"
 #include "MergeImage.h"
 #include "Format.h"
@@ -124,7 +128,7 @@ std::string help = std::string("\noverlayNtiff version ") + std::string(ROK4_VER
  * \details L'affichage se fait dans le niveau de logger INFO
  */
 void usage() {
-    LOGGER_INFO (help);
+    BOOST_LOG_TRIVIAL(info) << help;
 }
 
 /**
@@ -134,8 +138,8 @@ void usage() {
  * \param[in] errorCode code de retour
  */
 void error ( std::string message, int errorCode ) {
-    LOGGER_ERROR ( message );
-    LOGGER_ERROR ( "Configuration file : " << imageListFilename );
+    BOOST_LOG_TRIVIAL(error) <<  message ;
+    BOOST_LOG_TRIVIAL(error) <<  "Configuration file : " << imageListFilename ;
     usage();
     sleep ( 1 );
     exit ( errorCode );
@@ -166,25 +170,25 @@ int parseCommandLine ( int argc, char** argv ) {
                 break;
             case 'f': // Images' list file
                 if ( i++ >= argc ) {
-                    LOGGER_ERROR ( "Error with images' list file (option -f)" );
+                    BOOST_LOG_TRIVIAL(error) <<  "Error with images' list file (option -f)" ;
                     return -1;
                 }
                 strcpy ( imageListFilename,argv[i] );
                 break;
             case 'm': // image merge method
                 if ( i++ >= argc ) {
-                    LOGGER_ERROR ( "Error with merge method (option -m)" );
+                    BOOST_LOG_TRIVIAL(error) <<  "Error with merge method (option -m)" ;
                     return -1;
                 }
                 mergeMethod = Merge::fromString ( argv[i] );
                 if ( mergeMethod == Merge::UNKNOWN ) {
-                    LOGGER_ERROR ( "Unknown value for merge method (option -m) : " << argv[i] );
+                    BOOST_LOG_TRIVIAL(error) <<  "Unknown value for merge method (option -m) : " << argv[i] ;
                     return -1;
                 }
                 break;
             case 's': // samplesperpixel
                 if ( i++ >= argc ) {
-                    LOGGER_ERROR ( "Error with samples per pixel (option -s)" );
+                    BOOST_LOG_TRIVIAL(error) <<  "Error with samples per pixel (option -s)" ;
                     return -1;
                 }
                 if ( strncmp ( argv[i], "1",1 ) == 0 ) samplesperpixel = 1 ;
@@ -192,13 +196,13 @@ int parseCommandLine ( int argc, char** argv ) {
                 else if ( strncmp ( argv[i], "3",1 ) == 0 ) samplesperpixel = 3 ;
                 else if ( strncmp ( argv[i], "4",1 ) == 0 ) samplesperpixel = 4 ;
                 else {
-                    LOGGER_ERROR ( "Unknown value for samples per pixel (option -s) : " << argv[i] );
+                    BOOST_LOG_TRIVIAL(error) <<  "Unknown value for samples per pixel (option -s) : " << argv[i] ;
                     return -1;
                 }
                 break;
             case 'c': // compression
                 if ( i++ >= argc ) {
-                    LOGGER_ERROR ( "Error with compression (option -c)" );
+                    BOOST_LOG_TRIVIAL(error) <<  "Error with compression (option -c)" ;
                     return -1;
                 }
                 if ( strncmp ( argv[i], "raw",3 ) == 0 ) compression = Compression::NONE;
@@ -208,38 +212,38 @@ int parseCommandLine ( int argc, char** argv ) {
                 else if ( strncmp ( argv[i], "jpg",3 ) == 0 ) compression = Compression::JPEG;
                 else if ( strncmp ( argv[i], "lzw",3 ) == 0 ) compression = Compression::LZW;
                 else {
-                    LOGGER_ERROR ( "Unknown value for compression (option -c) : " << argv[i] );
+                    BOOST_LOG_TRIVIAL(error) <<  "Unknown value for compression (option -c) : " << argv[i] ;
                     return -1;
                 }
                 break;
             case 'p': // photometric
                 if ( i++ >= argc ) {
-                    LOGGER_ERROR ( "Error with photometric (option -p)" );
+                    BOOST_LOG_TRIVIAL(error) <<  "Error with photometric (option -p)" ;
                     return -1;
                 }
                 if ( strncmp ( argv[i], "gray",4 ) == 0 ) photometric = Photometric::GRAY;
                 else if ( strncmp ( argv[i], "rgb",3 ) == 0 ) photometric = Photometric::RGB;
                 else {
-                    LOGGER_ERROR ( "Unknown value for photometric (option -p) : " << argv[i] );
+                    BOOST_LOG_TRIVIAL(error) <<  "Unknown value for photometric (option -p) : " << argv[i] ;
                     return -1;
                 }
                 break;
             case 't': // transparent color
                 if ( i++ >= argc ) {
-                    LOGGER_ERROR ( "Error with transparent color (option -t)" );
+                    BOOST_LOG_TRIVIAL(error) <<  "Error with transparent color (option -t)" ;
                     return -1;
                 }
                 strcpy ( strTransparent,argv[i] );
                 break;
             case 'b': // background color
                 if ( i++ >= argc ) {
-                    LOGGER_ERROR ( "Error with background color (option -b)" );
+                    BOOST_LOG_TRIVIAL(error) <<  "Error with background color (option -b)" ;
                     return -1;
                 }
                 strcpy ( strBg,argv[i] );
                 break;
             default:
-                LOGGER_ERROR ( "Unknown option : -" << argv[i][1] );
+                BOOST_LOG_TRIVIAL(error) <<  "Unknown option : -" << argv[i][1] ;
                 return -1;
             }
         }
@@ -247,19 +251,19 @@ int parseCommandLine ( int argc, char** argv ) {
 
     // Merge method control
     if ( mergeMethod == Merge::UNKNOWN ) {
-        LOGGER_ERROR ( "We need to know the merge method (option -m)" );
+        BOOST_LOG_TRIVIAL(error) <<  "We need to know the merge method (option -m)" ;
         return -1;
     }
 
     // Image list file control
     if ( strlen ( imageListFilename ) == 0 ) {
-        LOGGER_ERROR ( "We need to have one images' list (text file, option -f)" );
+        BOOST_LOG_TRIVIAL(error) <<  "We need to have one images' list (text file, option -f)" ;
         return -1;
     }
 
     // Samples per pixel control
     if ( samplesperpixel == 0 ) {
-        LOGGER_ERROR ( "We need to know the number of samples per pixel in the output image (option -s)" );
+        BOOST_LOG_TRIVIAL(error) <<  "We need to know the number of samples per pixel in the output image (option -s)" ;
         return -1;
     }
 
@@ -269,7 +273,7 @@ int parseCommandLine ( int argc, char** argv ) {
         // Transparent interpretation
         char* charValue = strtok ( strTransparent,"," );
         if ( charValue == NULL ) {
-            LOGGER_ERROR ( "Error with option -t : 3 integers values separated by comma" );
+            BOOST_LOG_TRIVIAL(error) <<  "Error with option -t : 3 integers values separated by comma" ;
             return -1;
         }
         int value = atoi ( charValue );
@@ -277,7 +281,7 @@ int parseCommandLine ( int argc, char** argv ) {
         for ( int i = 1; i < 3; i++ ) {
             charValue = strtok ( NULL, "," );
             if ( charValue == NULL ) {
-                LOGGER_ERROR ( "Error with option -t : 3 integers values separated by comma" );
+                BOOST_LOG_TRIVIAL(error) <<  "Error with option -t : 3 integers values separated by comma" ;
                 return -1;
             }
             value = atoi ( charValue );
@@ -291,7 +295,7 @@ int parseCommandLine ( int argc, char** argv ) {
         // Background interpretation
         char* charValue = strtok ( strBg,"," );
         if ( charValue == NULL ) {
-            LOGGER_ERROR ( "Error with option -b : one integer value per final sample separated by comma" );
+            BOOST_LOG_TRIVIAL(error) <<  "Error with option -b : one integer value per final sample separated by comma" ;
             return -1;
         }
         int value = atoi ( charValue );
@@ -300,7 +304,7 @@ int parseCommandLine ( int argc, char** argv ) {
         for ( int i = 1; i < samplesperpixel; i++ ) {
             charValue = strtok ( NULL, "," );
             if ( charValue == NULL ) {
-                LOGGER_ERROR ( "Error with option -b : one integer value per final sample separated by comma" );
+                BOOST_LOG_TRIVIAL(error) <<  "Error with option -b : one integer value per final sample separated by comma" ;
                 return -1;
             }
             value = atoi ( charValue );
@@ -308,7 +312,7 @@ int parseCommandLine ( int argc, char** argv ) {
         }
 
     } else {
-        LOGGER_ERROR ( "We need to know the background value for the output image (option -b)" );
+        BOOST_LOG_TRIVIAL(error) <<  "We need to know the background value for the output image (option -b)" ;
         return -1;
     }
 
@@ -330,7 +334,7 @@ int readFileLine ( std::ifstream& file, char* imageFileName, bool* hasMask, char
 
     while ( str.empty() ) {
         if ( file.eof() ) {
-            LOGGER_DEBUG ( "Configuration file end reached" );
+            BOOST_LOG_TRIVIAL(debug) <<  "Configuration file end reached" ;
             return -1;
         }
         std::getline ( file,str );
@@ -376,13 +380,13 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, MergeImage** ppM
 
     file.open ( imageListFilename );
     if ( !file ) {
-        LOGGER_ERROR ( "Cannot open the file " << imageListFilename );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot open the file " << imageListFilename ;
         return -1;
     }
 
     // Lecture de l'image de sortie
     if ( readFileLine ( file,outputImagePath,&hasOutMask,outputMaskPath ) ) {
-        LOGGER_ERROR ( "Cannot read output image in the file : " << imageListFilename );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot read output image in the file : " << imageListFilename ;
         return -1;
     }
 
@@ -394,7 +398,7 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, MergeImage** ppM
     while ( ( out = readFileLine ( file,inputImagePath,&hasMask,inputMaskPath ) ) == 0 ) {
         FileImage* pImage = FIF.createImageToRead ( inputImagePath );
         if ( pImage == NULL ) {
-            LOGGER_ERROR ( "Cannot create a FileImage from the file " << inputImagePath );
+            BOOST_LOG_TRIVIAL(error) <<  "Cannot create a FileImage from the file " << inputImagePath ;
             return -1;
         }
 
@@ -410,7 +414,7 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, MergeImage** ppM
                     sampleformat != pImage->getSampleFormat() ||
                     width != pImage->getWidth() || height != pImage->getHeight() ) {
 
-                LOGGER_ERROR ( "All input images must have same dimension and sample type" );
+                BOOST_LOG_TRIVIAL(error) <<  "All input images must have same dimension and sample type" ;
                 return -1;
             }
         }
@@ -422,12 +426,12 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, MergeImage** ppM
              */
             FileImage* pMask = FIF.createImageToRead ( inputMaskPath );
             if ( pMask == NULL ) {
-                LOGGER_ERROR ( "Cannot create a FileImage (mask) from the file " << inputMaskPath );
+                BOOST_LOG_TRIVIAL(error) <<  "Cannot create a FileImage (mask) from the file " << inputMaskPath ;
                 return -1;
             }
 
             if ( ! pImage->setMask ( pMask ) ) {
-                LOGGER_ERROR ( "Cannot add mask " << inputMaskPath );
+                BOOST_LOG_TRIVIAL(error) <<  "Cannot add mask " << inputMaskPath ;
                 return -1;
             }
         }
@@ -437,7 +441,7 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, MergeImage** ppM
     }
 
     if ( out != -1 ) {
-        LOGGER_ERROR ( "Failure reading the file " << imageListFilename );
+        BOOST_LOG_TRIVIAL(error) <<  "Failure reading the file " << imageListFilename ;
         return -1;
     }
 
@@ -452,7 +456,7 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, MergeImage** ppM
     MergeMask* pMM = new MergeMask ( *ppMergeIn );
 
     if ( ! ( *ppMergeIn )->setMask ( pMM ) ) {
-        LOGGER_ERROR ( "Cannot add mask to the merged image" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot add mask to the merged image" ;
         return -1;
     }
 
@@ -461,7 +465,7 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, MergeImage** ppM
                   sampleformat, bitspersample, photometric,compression );
 
     if ( *ppImageOut == NULL ) {
-        LOGGER_ERROR ( "Impossible de creer l'image " << outputImagePath );
+        BOOST_LOG_TRIVIAL(error) <<  "Impossible de creer l'image " << outputImagePath ;
         return -1;
     }
 
@@ -470,7 +474,7 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, MergeImage** ppM
                      SampleFormat::UINT, 8, Photometric::MASK, Compression::DEFLATE );
 
         if ( *ppMaskOut == NULL ) {
-            LOGGER_ERROR ( "Impossible de creer le masque " << outputMaskPath );
+            BOOST_LOG_TRIVIAL(error) <<  "Impossible de creer le masque " << outputMaskPath ;
             return -1;
         }
     }
@@ -497,19 +501,9 @@ int main ( int argc, char **argv ) {
     MergeImage* pMergeIn;
 
     /* Initialisation des Loggers */
-    Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
+    boost::log::core::get()->set_filter( boost::log::trivial::severity >= boost::log::trivial::info );
 
-    Accumulator* acc = new StreamAccumulator();
-    Logger::setAccumulator ( INFO , acc );
-    Logger::setAccumulator ( WARN , acc );
-    Logger::setAccumulator ( ERROR, acc );
-    Logger::setAccumulator ( FATAL, acc );
-
-    std::ostream &logw = LOGGER ( WARN );
-    logw.precision ( 16 );
-    logw.setf ( std::ios::fixed,std::ios::floatfield );
-
-    LOGGER_DEBUG ( "Read parameters" );
+    BOOST_LOG_TRIVIAL(debug) <<  "Read parameters" ;
     // Lecture des parametres de la ligne de commande
     if ( parseCommandLine ( argc,argv ) < 0 ) {
         error ( "Cannot parse command line",-1 );
@@ -517,19 +511,16 @@ int main ( int argc, char **argv ) {
 
     // On sait maintenant si on doit activer le niveau de log DEBUG
     if (debugLogger) {
-        Logger::setAccumulator(DEBUG, acc);
-        std::ostream &logd = LOGGER ( DEBUG );
-        logd.precision ( 16 );
-        logd.setf ( std::ios::fixed,std::ios::floatfield );
+        boost::log::core::get()->set_filter( boost::log::trivial::severity >= boost::log::trivial::debug );
     }
 
-    LOGGER_DEBUG ( "Load" );
+    BOOST_LOG_TRIVIAL(debug) <<  "Load" ;
     // Chargement des images
     if ( loadImages ( &pImageOut,&pMaskOut,&pMergeIn ) < 0 ) {
         error ( "Cannot load images from the configuration file",-1 );
     }
 
-    LOGGER_DEBUG ( "Save image" );
+    BOOST_LOG_TRIVIAL(debug) <<  "Save image" ;
     // Enregistrement de l'image fusionnée
     if ( pImageOut->writeImage ( pMergeIn ) < 0 ) {
         error ( "Cannot write the merged image",-1 );
@@ -537,16 +528,12 @@ int main ( int argc, char **argv ) {
 
     // Enregistrement du masque fusionné, si demandé
     if ( pMaskOut != NULL) {
-        LOGGER_DEBUG ( "Save mask" );
+        BOOST_LOG_TRIVIAL(debug) <<  "Save mask" ;
         if ( pMaskOut->writeImage ( pMergeIn->Image::getMask() ) < 0 ) {
             error ( "Cannot write the merged mask",-1 );
         }
     }
 
-    Logger::stopLogger();
-    if ( acc ) {
-        delete acc;
-    }
     delete pMergeIn;
     delete pImageOut;
     delete pMaskOut;
