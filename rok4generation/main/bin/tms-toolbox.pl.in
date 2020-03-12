@@ -142,6 +142,7 @@ my %intputs_outputs = (
     BBOX => 1,
     BBOXES_LIST => 1,
     GEOM_FILE => 1,
+    GEOM => 1,
     GETMAP_PARAMS_LIST => 1,
     GETTILE_PARAMS_LIST => 1,
     POINT => 1,
@@ -212,6 +213,15 @@ sub parseFromTo {
 
             $parsed->{path} = $value;
             $parsed->{noadd} = 1;
+        }
+
+        #################### GEOM
+
+        elsif ($parsed->{type} eq "GEOM") {
+            if (defined $value) {
+                ERROR("Value have to respect format GEOM");
+                return undef;                
+            } 
         }
 
         #################### GETMAP_PARAMS_LIST
@@ -608,7 +618,8 @@ my $conversions = {
                            TILE_INFO           => [] },
          PYRAMID_LIST => { GEOM_FILE           => ["level","slabsize"] ,
                            GETTILE_PARAMS_LIST => ["slabsize"] },
-         SLAB_INDICES => { TFW_FILE            => ["level","slabsize"] },
+         SLAB_INDICES => { TFW_FILE            => ["level","slabsize"], 
+                           GEOM                => ["level","slabsize"] },
     SLAB_INDICES_LIST => { GETMAP_PARAMS_LIST  => ["level","slabsize"] ,
                            SLAB_PATHS_LIST     => ["level","slabsize"] },
             SLAB_PATH => { GEOM_FILE           => ["level","slabsize"] },
@@ -1273,13 +1284,7 @@ sub doIt {
     }
 
     # ---------------------------------------------------------------------------------------------
-    elsif ($options{from}->{type} eq "SLAB_INDICES" && $options{to}->{type} eq "TFW_FILE") {
-
-        my $fileout = $options{to}->{path};
-        open(OUT, ">$fileout") or do {
-            ERROR("Cannot open $fileout to write in it");
-            return FALSE;
-        };
+    elsif ($options{from}->{type} eq "SLAB_INDICES" && ($options{to}->{type} eq "TFW_FILE" || $options{to}->{type} eq "GEOM")) {
 
         my ($xMin,$yMin,$xMax,$yMax) = $options{"level"}->indicesToBbox(
             $options{from}->{col}, $options{from}->{row},
@@ -1288,10 +1293,23 @@ sub doIt {
 
         my $res = $options{"level"}->getResolution();
 
-        printf OUT "%s\n0\n0\n-%s\n", $res, $res;
-        printf OUT "%s\n%s\n", $xMin + $res / 2, $yMax - $res / 2;
+        if ($options{to}->{type} eq "TFW_FILE") {
 
-        close(OUT);
+            my $fileout = $options{to}->{path};
+            open(OUT, ">$fileout") or do {
+                ERROR("Cannot open $fileout to write in it");
+                return FALSE;
+            };
+
+            printf OUT "%s\n0\n0\n-%s\n", $res, $res;
+            printf OUT "%s\n%s\n", $xMin + $res / 2, $yMax - $res / 2;
+
+            close(OUT);
+        } elsif ($options{to}->{type} eq "GEOM") {
+            INFO(COMMON::ProxyGDAL::getWkt(COMMON::ProxyGDAL::geometryFromBbox($xMin,$yMin,$xMax,$yMax)));
+        }
+
+
     }
 
     # ---------------------------------------------------------------------------------------------
