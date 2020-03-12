@@ -2,7 +2,7 @@
 
 [Vue générale](../../README.md#transfert-de-pyramide)
 
-## Usage
+## UsageS
 
 ### Commandes
 

@@ -278,33 +278,54 @@ PushSlab () {
 FUNCTION
 
 my $SWIFT_PUSH = <<'FUNCTION';
-BackupListFile () {
-    local objectName=`basename ${LIST_FILE}`
+RefreshToken (){
 
-    TOKEN=$(curl -s -ik \
-        -H "Content-Type: application/json" \
-        -XPOST \
-        -d '
-    {   "auth": {
-            "scope": {
-                "project": {"id": "'$ROK4_KEYSTONE_PROJECTID'"}
-            },
-            "identity": {
-                "methods": ["password"],
-                "password": {
-                    "user": {
-                        "domain": {"id": "'$ROK4_KEYSTONE_DOMAINID'"},
-                        "password": "'$ROK4_SWIFT_PASSWD'",
-                        "name": "'$ROK4_SWIFT_USER'"
-                    }
-                }
-            }
-        }
-    }' $ROK4_SWIFT_AUTHURL | grep "X-Subject-Token" | cut -d":" -f2 | tr -cd '[:print:]')
+    if [ -z "$SWIFT_TOKEN" ]; then
+        SWIFT_TOKEN=""
+        SWIFT_TOKEN_DATE="0";
+    fi
+
+    tokenAge=$(( $(date +"%s") - ${SWIFT_TOKEN_DATE} ))
+    if [ "$tokenAge" -gt "3600" ]; then
+      
+      SWIFT_TOKEN=$(curl -s -i -k \
+          -H "Content-Type: application/json" \
+          -X POST \
+          -d '
+      {   "auth": {
+              "scope": {
+                  "project": {"id": "'$ROK4_KEYSTONE_PROJECTID'"}
+              },
+              "identity": {
+                  "methods": ["password"],
+                  "password": {
+                      "user": {
+                          "domain": {"name": "'$ROK4_KEYSTONE_DOMAINID'"},
+                          "password": "'$ROK4_SWIFT_PASSWD'",
+                          "name": "'$ROK4_SWIFT_USER'"
+                      }
+                  }
+              }
+          }
+      }' ${ROK4_SWIFT_AUTHURL} | grep "X-Subject-Token" | cut -d":" -f2 | tr -cd '[:print:]')
+      
+      SWIFT_TOKEN_DATE=$(date +"%s")
+
+      export SWIFT_TOKEN
+      export SWIFT_TOKEN_DATE
+    fi
+
+
+}
+BackupListFile () {
+
+    RefreshToken
+
+    local objectName=`basename ${LIST_FILE}`
 
     resource="/${PYR_CONTAINER_DST}/${objectName}"
 
-    curl -k -X PUT -T "${LIST_FILE}"  -H "X-Auth-Token: ${TOKEN}"  ${ROK4_SWIFT_PUBLICURL}${resource}
+    curl -k -X PUT -T "${LIST_FILE}"  -H "X-Auth-Token: ${SWIFT_TOKEN}"  ${ROK4_SWIFT_PUBLICURL}${resource}
 
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
@@ -312,36 +333,17 @@ PushSlab () {
     local input=$1
     local output=$2
 
+    RefreshToken
+
     size=`stat -L -c "%s" ${PYR_DIR_SRC}/$input`
     if [ $? != 0 ] ; then echo "${PYR_DIR_SRC}/$input n'existe pas, on passe" ; return; fi
     if [ "$size" -le "$SLAB_LIMIT" ] ; then
         return
     fi
     
-    TOKEN=$(curl -s -ik \
-        -H "Content-Type: application/json" \
-        -XPOST \
-        -d '
-    {   "auth": {
-            "scope": {
-                "project": {"id": "'$ROK4_KEYSTONE_PROJECTID'"}
-            },
-            "identity": {
-                "methods": ["password"],
-                "password": {
-                    "user": {
-                        "domain": {"id": "'$ROK4_KEYSTONE_DOMAINID'"},
-                        "password": "'$ROK4_SWIFT_PASSWD'",
-                        "name": "'$ROK4_SWIFT_USER'"
-                    }
-                }
-            }
-        }
-    }' $ROK4_SWIFT_AUTHURL | grep "X-Subject-Token" | cut -d":" -f2 | tr -cd '[:print:]')
-
     resource="/${PYR_CONTAINER_DST}/${output}"
 
-    curl -k -X PUT -T "${PYR_DIR_SRC}/$input"  -H "X-Auth-Token: ${TOKEN}"  ${ROK4_SWIFT_PUBLICURL}${resource}
+    curl -k -X PUT -T "${PYR_DIR_SRC}/$input"  -H "X-Auth-Token: ${SWIFT_TOKEN}"  ${ROK4_SWIFT_PUBLICURL}${resource}
 
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 
