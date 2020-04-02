@@ -470,7 +470,7 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
         }
         pImage->setCRS ( crs );
         delete paths.at(i);
-
+        
         if ( i+1 < masks.size() && masks.at(i+1) ) {
             
             FileImage* pMask=factory.createImageToRead ( paths.at(i+1), bboxes.at(i), resxs.at(i), resys.at(i) );
