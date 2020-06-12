@@ -33,6 +33,5 @@ WORKDIR /build
 
 RUN cmake -DCMAKE_INSTALL_PREFIX=/rok4server -DBUILD_OBJECT=1 -DBUILD_DOC=0 -DUNITTEST=0 -DDEBUG_BUILD=0 -DBUILD_BE4=0 /sources/ && make && make install && rm -r /sources
 
-
 EXPOSE 9000
 CMD /rok4server/bin/rok4 -f /confs/server.conf

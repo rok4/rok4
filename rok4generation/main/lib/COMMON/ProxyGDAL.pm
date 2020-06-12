@@ -122,18 +122,22 @@ sub geometryFromString {
     
     my $geom;
 
-    if ($gdalVersion =~ /^2/) {
+    if ($gdalVersion =~ /^2|3/) {
         #version 2.x
         eval { $geom = Geo::OGR::Geometry->new($format => $string); };
+        if ($@) {
+            ERROR(sprintf "String geometry is not valid : %s \n", $@ );
+            return undef;
+        }
     } elsif ($gdalVersion =~ /^1/) {
         #version 1.x
         eval { $geom = Geo::OGR::Geometry->create($format => $string); };
+        if ($@) {
+            ERROR(sprintf "String geometry is not valid : %s \n", $@ );
+            return undef;
+        }
     }
 
-    if ($@) {
-        ERROR(sprintf "String geometry is not valid : %s \n", $@ );
-        return undef;
-    }
 
     return $geom
 }
@@ -634,7 +638,7 @@ sub spatialReferenceFromSRS {
     my $srs = shift;
 
     my $sr;
-    if ($gdalVersion =~ /^2/) {
+    if ($gdalVersion =~ /^2|3/) {
         #version 2.x    
         eval { $sr = Geo::OSR::SpatialReference->new(Proj4 => '+init='.$srs.' +wktext'); };
         if ($@) {

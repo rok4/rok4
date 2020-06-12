@@ -16,7 +16,7 @@ ROK4GENERATION est un ensemble de scripts de traitement permettant la préparati
 * http://www.ign.fr [@IGNFrance](https://twitter.com/IGNFrance)
 * http://www.geoportail.gouv.fr [@Geoportail](https://twitter.com/Geoportail)
 
-ROK4 Version : 3.6.11-DEVELOP
+ROK4 Version : 3.6.12
 
 <!-- TOC depthFrom:1 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
 
@@ -136,7 +136,7 @@ Pour vérifier que toutes les librairies nécessaires sont installées, exécute
 Les outils suivant sont nécessaires aux outils de génération :
 * wget (be4)
 * ogr2ogr (4alamo)
-* tippecanoe (4alamo)
+* tippecanoe (4alamo) : https://github.com/mapbox/tippecanoe.git
 
 ## La documentation
 
