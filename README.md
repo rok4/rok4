@@ -12,11 +12,10 @@ Le serveur implémente les standards ouverts de l’Open Geospatial Consortium (
 
 ROK4GENERATION est un ensemble de scripts de traitement permettant la préparation et la transformation de données géo-référencées vers le format de pyramide raster (potentiellement à la demande) et vecteur utilisé par ROK4.
 
-* 
 * http://www.ign.fr [@IGNFrance](https://twitter.com/IGNFrance)
 * http://www.geoportail.gouv.fr [@Geoportail](https://twitter.com/Geoportail)
 
-ROK4 Version : 3.6.12
+ROK4 Version : 3.7.0
 
 <!-- TOC depthFrom:1 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
 
