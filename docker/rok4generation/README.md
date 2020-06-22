@@ -5,7 +5,7 @@ Outils issus du projet [ROK4](https://github.com/rok4/rok4)
 
 ## Lancement d'une génération de pyramide raster
 
-La configuration d'une génération de pyramide raster est détaillée [ici](../../rok4generation/main/bin/be4.md).
+La configuration d'une génération de pyramide raster est détaillée [ici](https://github.com/rok4/rok4/tree/master/rok4generation).
 
 La génération se fait en 2 temps. Tous les montages permettent la persistence des fichiers entre les deux étapes. La pyramide finale est écrite à la fin des deux étapes dans le dossier output avec les exemples suivant
 

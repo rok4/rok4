@@ -6,7 +6,7 @@ ENV http_proxy=${proxy}
 ENV https_proxy=${proxy}
 ENV ftp_proxy=${proxy}
 
-RUN yum update && yum install -y epel-release centos-release-scl-rh
+RUN yum -y update && yum -y install epel-release centos-release-scl-rh
 
 # Environnement de compilation
 

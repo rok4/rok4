@@ -10,7 +10,7 @@ docker run --publish 9000:9000 rok4/rok4server:<VERSION>-<OS>
 
 ## Configuration personnalisée
 
-Vous pouvez voir les valeurs par défaut se retrouvant dans les deux fichiers de configuration du serveur ROK4 dans le fichier [defaults](./defaults).
+Vous pouvez voir les valeurs par défaut se retrouvant dans les deux fichiers de configuration du serveur ROK4 dans le fichier [defaults](https://github.com/rok4/rok4/blob/master/docker/rok4server/defaults).
 
 Il est possible de surcharger chacune de ces valeurs de configuration via des variables d'environnement. Exemple :
 
