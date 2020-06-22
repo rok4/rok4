@@ -15,7 +15,7 @@ ROK4GENERATION est un ensemble de scripts de traitement permettant la préparati
 * http://www.ign.fr [@IGNFrance](https://twitter.com/IGNFrance)
 * http://www.geoportail.gouv.fr [@Geoportail](https://twitter.com/Geoportail)
 
-ROK4 Version : 3.7.0
+ROK4 Version : 3.7.1
 
 <!-- TOC depthFrom:1 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
 
@@ -154,4 +154,4 @@ sudo make install
 
 ### Docker
 
-Le projet propose les Dockerfile permettant la compilation et l'utilisation du serveur et des outils de génération au sein d'un conteneur. Des configurations pour docker-compose permettent de télécharger des jeux de données conteneurisés et de tester le serveur. Tous les détails sont dans [ici](docker/README.md).
+Le projet propose les Dockerfile permettant la compilation et l'utilisation du serveur et des outils de génération au sein d'un conteneur. Des configurations pour docker-compose permettent de télécharger des jeux de données conteneurisés et de tester le serveur. Tous les détails sont [ici](docker/README.md).

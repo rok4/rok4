@@ -1,5 +1,7 @@
 FROM debian:stretch
 
+ARG proxy=
+
 ENV http_proxy=${proxy}
 ENV https_proxy=${proxy}
 ENV ftp_proxy=${proxy}
@@ -39,6 +41,8 @@ RUN mkdir -p /build
 WORKDIR /build
 
 RUN cmake -DCMAKE_INSTALL_PREFIX=/ -DBUILD_OBJECT=1 -DBUILD_DOC=0 -DUNITTEST=0 -DDEBUG_BUILD=0 -DBUILD_BE4=0 /sources/ && make && make install && rm -r /sources /build
+
+RUN apt remove -y build-essential cmake
 
 WORKDIR /
 

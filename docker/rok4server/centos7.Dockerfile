@@ -1,10 +1,12 @@
 FROM centos:7
 
+ARG proxy=
+
 ENV http_proxy=${proxy}
 ENV https_proxy=${proxy}
 ENV ftp_proxy=${proxy}
 
-RUN yum install -y epel-release centos-release-scl-rh
+RUN yum update && yum install -y epel-release centos-release-scl-rh
 
 # Environnement de compilation
 
@@ -41,6 +43,8 @@ RUN mkdir -p /build
 WORKDIR /build
 
 RUN cmake -DCMAKE_INSTALL_PREFIX=/ -DBUILD_OBJECT=1 -DBUILD_DOC=0 -DUNITTEST=0 -DDEBUG_BUILD=0 -DBUILD_BE4=0 /sources/ && make && make install && rm -r /sources /build
+
+RUN yum -y remove make cmake gcc gcc-c++ devtoolset-7-gcc-c++
 
 WORKDIR /
 
