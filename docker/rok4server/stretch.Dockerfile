@@ -1,4 +1,4 @@
-FROM debian:stretch
+FROM debian:stretch-slim as builder
 
 ARG proxy=
 
@@ -42,7 +42,11 @@ WORKDIR /build
 
 RUN cmake -DCMAKE_INSTALL_PREFIX=/ -DBUILD_OBJECT=1 -DBUILD_DOC=0 -DUNITTEST=0 -DDEBUG_BUILD=0 -DBUILD_BE4=0 /sources/ && make && make install && rm -r /sources /build
 
-RUN apt remove -y build-essential cmake
+RUN apt remove -y build-essential cmake libfcgi-dev libtinyxml-dev libopenjp2-7-dev zlib1g-dev libtiff5-dev libpng-dev libcurl4-openssl-dev libssl-dev libturbojpeg0-dev libjpeg-dev libc6-dev librados-dev
+
+FROM builder
+
+ENV PROJ_LIB=/etc/rok4/config/proj
 
 WORKDIR /
 

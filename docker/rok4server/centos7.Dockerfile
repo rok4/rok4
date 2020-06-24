@@ -1,4 +1,4 @@
-FROM centos:7
+FROM centos:7 as builder
 
 ARG proxy=
 
@@ -44,7 +44,11 @@ WORKDIR /build
 
 RUN cmake -DCMAKE_INSTALL_PREFIX=/ -DBUILD_OBJECT=1 -DBUILD_DOC=0 -DUNITTEST=0 -DDEBUG_BUILD=0 -DBUILD_BE4=0 /sources/ && make && make install && rm -r /sources /build
 
-RUN yum -y remove make cmake gcc gcc-c++ devtoolset-7-gcc-c++
+RUN yum -y remove make cmake gcc gcc-c++ devtoolset-7-gcc-c++ fcgi-devel tinyxml-devel openjpeg2-devel zlib-devel libtiff-devel libpng-devel libcurl-devel openssl-devel turbojpeg-devel libjpeg-turbo-devel librados2-devel
+
+FROM builder
+
+ENV PROJ_LIB=/etc/rok4/config/proj
 
 WORKDIR /
 

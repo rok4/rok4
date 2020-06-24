@@ -2,10 +2,16 @@
 
 Outils issus du projet [ROK4](https://github.com/rok4/rok4)
 
+## Lancement des tests fonctionnels des commandes C++
+
+Les outils testés sont ceux décrits [ici](https://github.com/rok4/rok4/tree/master/rok4generation#outils-de-manipulation)
+
+`docker run --rm --name test-rok4generation-tools rok4/rok4generation:3.7.1-buster`
+
 
 ## Lancement d'une génération de pyramide raster
 
-La configuration d'une génération de pyramide raster est détaillée [ici](https://github.com/rok4/rok4/tree/master/rok4generation).
+La configuration d'une génération de pyramide raster est détaillée [ici](https://github.com/rok4/rok4/tree/master/rok4generation#g%C3%A9n%C3%A9ration-de-pyramide-raster).
 
 La génération se fait en 2 temps. Tous les montages permettent la persistence des fichiers entre les deux étapes. La pyramide finale est écrite à la fin des deux étapes dans le dossier output avec les exemples suivant
 
@@ -82,3 +88,7 @@ docker run --rm \
 	rok4/rok4generation:<VERSION>-<OS> \
 	bash /main.sh
 ```
+
+## Exemples
+
+Des exemples de génération de pyramide sont également disponibles dans le projet GitHub [rok4/docker-rok4-datasets](https://github.com/rok4/docker-rok4-datasets), orientés pour le conditionnement des données en image Docker.

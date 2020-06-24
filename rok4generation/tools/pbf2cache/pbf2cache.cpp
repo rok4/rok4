@@ -295,10 +295,11 @@ int main ( int argc, char **argv ) {
 
     LOGGER_DEBUG ( "Clean" );
     // Nettoyage
-    Logger::stopLogger();
-    if ( acc ) {
-        delete acc;
-    }
+    // Suppression du nettoyage du logger jusqu'à sa refonte
+    // Logger::stopLogger();
+    // if ( acc ) {
+    //     delete acc;
+    // }
     delete rok4Image;
     delete context;
 
