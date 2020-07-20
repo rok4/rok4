@@ -235,9 +235,6 @@ sub prepare {
     $code .= "# Création du dossier temporaire\n";
     $code .= "mkdir -p \${TMP_DIR}\n\n";
 
-    $code .= "# Création de la liste temporaire\n";
-    $code .= "if [ ! -f \"\${TMP_LIST_FILE}\" ] ; then touch \${TMP_LIST_FILE} ; fi\n\n";
-
     if (defined $initialisation) {
         $code .= $initialisation;
     }

@@ -178,11 +178,16 @@ MergeNtiff () {
     local bgI=$2
     local bgM=$3
 
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
     
-    mergeNtiff -f ${MNT_CONF_DIR}/$config -r ${TMP_DIR}/ ${MERGENTIFF_OPTIONS}
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    if [ -f ${MNT_CONF_DIR}/$config ]; then
+        mergeNtiff -f ${MNT_CONF_DIR}/$config -r ${TMP_DIR}/ ${MERGENTIFF_OPTIONS}
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     
-    rm -f ${MNT_CONF_DIR}/$config
+        rm -f ${MNT_CONF_DIR}/$config
+    fi
 
     if [ $bgI ] ; then
         rm -f ${TMP_DIR}/$bgI
@@ -200,6 +205,9 @@ MNTFUNCTION
 
 my $FILE_C2WFUNCTION = <<'C2WFUNCTION';
 PullSlab () {
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
     local input=$1
     local output=$2
 
@@ -210,6 +218,9 @@ C2WFUNCTION
 
 my $S3_C2WFUNCTION = <<'C2WFUNCTION';
 PullSlab () {
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
     local input=$1
     local output=$2
 
@@ -220,6 +231,9 @@ C2WFUNCTION
 
 my $SWIFT_C2WFUNCTION = <<'C2WFUNCTION';
 PullSlab () {
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
     local input=$1
     local output=$2
 
@@ -230,6 +244,9 @@ C2WFUNCTION
 
 my $CEPH_C2WFUNCTION = <<'C2WFUNCTION';
 PullSlab () {
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
     local input=$1
     local output=$2
 
@@ -253,6 +270,19 @@ PushSlab () {
     local imgName=$3
     local workMskName=$4
     local mskName=$5
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${imgName}" == "${last_slab}" ]]; then
+            echo "Last generated image slab found, now we work"
+            work=1
+        elif [[ ! -z $mskName && "${mskName}" == "${last_slab}" ]] ; then
+            echo "Last generated mask slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
     
     if [[ ! ${RM_IMGS[${TMP_DIR}/$workImgName]} ]] ; then
              
@@ -299,6 +329,19 @@ PushSlab () {
     local imgName=$3
     local workMskName=$4
     local mskName=$5
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${imgName}" == "${last_slab}" ]]; then
+            echo "Last generated image slab found, now we work"
+            work=1
+        elif [[ ! -z $mskName && "${mskName}" == "${last_slab}" ]] ; then
+            echo "Last generated mask slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
     
     if [[ ! ${RM_IMGS[${TMP_DIR}/$workImgName]} ]] ; then
              
@@ -347,6 +390,19 @@ PushSlab () {
     local imgName=$3
     local workMskName=$4
     local mskName=$5
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${imgName}" == "${last_slab}" ]]; then
+            echo "Last generated image slab found, now we work"
+            work=1
+        elif [[ ! -z $mskName && "${mskName}" == "${last_slab}" ]] ; then
+            echo "Last generated mask slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
     
     
     if [[ ! ${RM_IMGS[${TMP_DIR}/$workImgName]} ]] ; then
@@ -400,6 +456,19 @@ PushSlab () {
     local imgName=$3
     local workMskName=$4
     local mskName=$5
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${imgName}" == "${last_slab}" ]]; then
+            echo "Last generated image slab found, now we work"
+            work=1
+        elif [[ ! -z $mskName && "${mskName}" == "${last_slab}" ]] ; then
+            echo "Last generated mask slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
         
     if [[ ! ${RM_IMGS[${TMP_DIR}/$workImgName]} ]] ; then
         
@@ -459,9 +528,13 @@ Wms2work () {
     local grid=$6
     shift 6
 
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
+
     local size=0
 
-    mkdir ${TMP_DIR}/harvesting/
+    mkdir -p ${TMP_DIR}/harvesting/
 
     for i in `seq 1 $#`;
     do
@@ -524,6 +597,10 @@ Merge4tiff () {
     local imgIn=( 0 $2 $4 $6 $8 )
     local mskIn=( 0 $3 $5 $7 $9 )
     shift 9
+
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
     
     local forRM=''
 
@@ -588,11 +665,17 @@ DecimateNtiff () {
     local config=$1
     local bgI=$2
     local bgM=$3
+
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
     
-    decimateNtiff -f ${DNT_CONF_DIR}/$config ${DECIMATENTIFF_OPTIONS}
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-    
-    rm -f ${DNT_CONF_DIR}/$config
+    if [ -f ${DNT_CONF_DIR}/$config ]; then
+        decimateNtiff -f ${DNT_CONF_DIR}/$config ${DECIMATENTIFF_OPTIONS}
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        
+        rm -f ${DNT_CONF_DIR}/$config
+    fi
     
     if [ $bgI ] ; then
         rm -f ${TMP_DIR}/$bgI
@@ -857,6 +940,22 @@ sub getMainScript {
 #                                   Group: Export function                                         #
 ####################################################################################################
 
+
+my $WORKTEST = <<'WORKTEST';
+work=1
+
+# Test d'existence de la liste temporaire
+if [[ -f "${TMP_LIST_FILE}" ]] ; then 
+    # La liste existe, ce qui suggère que le script a déjà commencé à tourner
+    # On prend la dernière ligne pour connaître la dernière dalle complètement traitée
+    
+    last_slab=$(tail -n 1 ${TMP_LIST_FILE} | sed "s#^0/##")
+    echo "Script ${SCRIPT_ID} recall, work from slab ${last_slab}"
+    work=0
+fi
+
+WORKTEST
+
 =begin nd
 Function: getScriptInitialization
 
@@ -872,7 +971,9 @@ sub getScriptInitialization {
 
     # Variables
 
-    my $string = sprintf "MERGENTIFF_OPTIONS=\"-c zip -i %s -s %s -b %s -a %s -n %s\"\n",
+    my $string = $WORKTEST;
+
+    $string .= sprintf "MERGENTIFF_OPTIONS=\"-c zip -i %s -s %s -b %s -a %s -n %s\"\n",
         $pyramid->getImageSpec()->getInterpolation(),
         $pyramid->getImageSpec()->getPixel()->getSamplesPerPixel(),
         $pyramid->getImageSpec()->getPixel()->getBitsPerSample(),
