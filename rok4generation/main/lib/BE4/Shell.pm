@@ -436,6 +436,8 @@ PushSlab () {
             fi
         fi
     fi
+
+    print_prog
 }
 W2CFUNCTION
 
@@ -511,6 +513,8 @@ PushSlab () {
             fi
         fi
     fi
+
+    print_prog
 }
 W2CFUNCTION
 
@@ -941,7 +945,21 @@ sub getMainScript {
 ####################################################################################################
 
 
-my $WORKTEST = <<'WORKTEST';
+my $WORKANDPROG = <<'WORKANDPROG';
+
+progression=-1
+progression_file="$0.prog"
+lines_count=$(wc -l $0 | cut -d' ' -f1)
+start_line=0
+
+print_prog () {
+    tmp=$(( (${BASH_LINENO[-2]} - $start_line) * 100 / (${lines_count} - $start_line) ))
+    if [[ "$tmp" != "$progression" ]]; then
+        progression=$tmp
+        echo "$tmp" >$progression_file
+    fi
+}
+
 work=1
 
 # Test d'existence de la liste temporaire
@@ -954,7 +972,7 @@ if [[ -f "${TMP_LIST_FILE}" ]] ; then
     work=0
 fi
 
-WORKTEST
+WORKANDPROG
 
 =begin nd
 Function: getScriptInitialization
@@ -971,7 +989,7 @@ sub getScriptInitialization {
 
     # Variables
 
-    my $string = $WORKTEST;
+    my $string = $WORKANDPROG;
 
     $string .= sprintf "MERGENTIFF_OPTIONS=\"-c zip -i %s -s %s -b %s -a %s -n %s\"\n",
         $pyramid->getImageSpec()->getInterpolation(),
@@ -1059,6 +1077,7 @@ sub getScriptInitialization {
         $string .= $DNTFUNCTION;
     }
 
+    $string .= "start_line=\$LINENO\n";
     $string .= "\n";
 
     return $string;

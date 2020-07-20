@@ -1282,7 +1282,12 @@ Function: loadList
 
 Read the list and store content in an hash as following :
 |   level => {
-|       col_row => full slab path (file or object)
+|       IMAGE => {
+|          col_row => full slab path (file or object)
+|       },
+|       MASK => {
+|          col_row => full slab path (file or object)
+|       }
 |   }
 =cut
 sub loadList {
@@ -1423,7 +1428,7 @@ Function: containSlab
 Precises if the provided slab belongs to the pyramid, using the cached list. Returns the full slab path if present, undef otherwise
 
 Parameters (list):
-    type - strong - IMAGE or MASK
+    type - string - IMAGE or MASK
     level - string - Identifiant of the asked level
     col - integer - Column indice
     row - integer - Row indice
@@ -1446,7 +1451,7 @@ Function: modifySlab
 Replace the full slab path with the local full path. This modification can be made persistent with <flushCachedList>.
 
 Parameters (list):
-    type - strong - IMAGE or MASK
+    type - string - IMAGE or MASK
     level - string - Identifiant of the asked level
     col - integer - Column indice
     row - integer - Row indice
@@ -1482,7 +1487,7 @@ Function: deleteSlab
 Delete the slab path from the cached list. This modification can be made persistent with <flushCachedList>.
 
 Parameters (list):
-    type - strong - IMAGE or MASK
+    type - string - IMAGE or MASK
     level - string - Identifiant of the asked level
     col - integer - Column indice
     row - integer - Row indice

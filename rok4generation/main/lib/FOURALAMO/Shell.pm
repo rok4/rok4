@@ -149,6 +149,10 @@ MakeJson () {
     local sql=$5
     local output=$6
 
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
+
     ogr2ogr -s_srs $srcsrs -f "GeoJSON" ${OGR2OGR_OPTIONS} -clipsrc $bbox_ext -spat $bbox -sql "$sql" ${TMP_DIR}/jsons/${output}.json PG:"$dburl"
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi     
 }
@@ -167,6 +171,10 @@ mkdir -p ${TMP_DIR}/pbfs/
 MakeTiles () {
     local top_level=$1
     local bottom_level=$2
+
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
 
     rm -r ${TMP_DIR}/pbfs/*
 
@@ -205,9 +213,21 @@ PushSlab () {
     local ulrow=$3
     local imgName=$4
 
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${imgName}" == "${last_slab}" ]]; then
+            echo "Last generated image slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
+
     pbf2cache ${PBF2CACHE_OPTIONS} -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow -pool ${PYR_POOL} $imgName
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     echo "0/$imgName" >> ${TMP_LIST_FILE}
+
+    print_prog
 }
 P2CFUNCTION
 
@@ -228,12 +248,24 @@ PushSlab () {
     local ulrow=$3
     local imgName=$4
 
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${imgName}" == "${last_slab}" ]]; then
+            echo "Last generated image slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
+
     local dir=`dirname ${PYR_DIR}/$imgName`
     if [ ! -d $dir ] ; then mkdir -p $dir ; fi
 
     pbf2cache ${PBF2CACHE_OPTIONS} -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow ${PYR_DIR}/$imgName
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     echo "0/$imgName" >> ${TMP_LIST_FILE}
+
+    print_prog
 }
 P2CFUNCTION
 
@@ -363,6 +395,34 @@ sub getMainScript {
 #                                   Group: Export function                                         #
 ####################################################################################################
 
+my $WORKANDPROG = <<'WORKANDPROG';
+progression=-1
+progression_file="$0.prog"
+lines_count=$(wc -l $0 | cut -d' ' -f1)
+start_line=0
+
+print_prog () {
+    tmp=$(( (${BASH_LINENO[-2]} - $start_line) * 100 / (${lines_count} - $start_line) ))
+    if [[ "$tmp" != "$progression" ]]; then
+        progression=$tmp
+        echo "$tmp" >$progression_file
+    fi
+}
+
+work=1
+
+# Test d'existence de la liste temporaire
+if [[ -f "${TMP_LIST_FILE}" ]] ; then 
+    # La liste existe, ce qui suggère que le script a déjà commencé à tourner
+    # On prend la dernière ligne pour connaître la dernière dalle complètement traitée
+    
+    last_slab=$(tail -n 1 ${TMP_LIST_FILE} | sed "s#^0/##")
+    echo "Script ${SCRIPT_ID} recall, work from slab ${last_slab}"
+    work=0
+fi
+
+WORKANDPROG
+
 =begin nd
 Function: getScriptInitialization
 
@@ -375,8 +435,9 @@ Returns:
 sub getScriptInitialization {
     my $pyramid = shift;
 
+    my $string = $WORKANDPROG;
 
-    my $string = sprintf "LIST_FILE=\"%s\"\n", $pyramid->getListFile();
+    $string .= sprintf "LIST_FILE=\"%s\"\n", $pyramid->getListFile();
     $string .= "COMMON_TMP_DIR=\"$COMMONTEMPDIR\"\n";
 
     $string .= sprintf "OGR2OGR_OPTIONS=\"-a_srs %s -t_srs %s\"\n", $pyramid->getTileMatrixSet()->getSRS(), $pyramid->getTileMatrixSet()->getSRS();
@@ -397,6 +458,9 @@ sub getScriptInitialization {
     $string .= $MAKETILES;
     $string .= $MAKEJSON;
 
+    $string .= "start_line=\$LINENO\n";
+    $string .= "\n";
+    
     return $string;
 }
   
