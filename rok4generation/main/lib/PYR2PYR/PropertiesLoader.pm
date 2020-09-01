@@ -192,7 +192,7 @@ sub _check {
 
 
     if ($this->{cfgObject}->whatIs("to", "pyr_name_new") ne "SCALAR") {
-        ERROR("'pyr_name' property is missing");
+        ERROR("'pyr_name_new' property is missing");
         return FALSE; 
     }
     if ($this->{cfgObject}->whatIs("to", "pyr_desc_path") ne "SCALAR") {

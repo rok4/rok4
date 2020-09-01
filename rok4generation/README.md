@@ -205,7 +205,7 @@ Conversions possibles :
 * FICHIER -> FICHIER, CEPH, S3, SWIFT
 * CEPH -> CEPH, FICHIER
 
-Parallélisable.
+Parallélisable, reprise sur erreur, progression.
 
 _Étape 1_
 ![PYR2PYR étape 1](../docs/images/ROK4GENERATION/pyr2pyr_part1.png)

@@ -924,7 +924,7 @@ Parameter (list):
     table_name - string - Table for which we want to know the geometry column
 
 Return (array)
-    Geometry coumn name and its type, undef if no geometry column for this table
+    Geometry column name and its type, undef if no geometry column for this table
 =cut
 sub get_geometry_column {
     my $this = shift;
