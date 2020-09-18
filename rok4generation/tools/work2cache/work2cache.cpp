@@ -47,6 +47,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <fstream>
 #include <string.h>
 #include "tiffio.h"
 #include "Format.h"
@@ -89,6 +90,7 @@ std::string help = std::string("\nwork2cache version ") + std::string(ROK4_VERSI
     "     -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size\n"
     "     -pool Ceph pool where data is. Then OUTPUT FILE is interpreted as a Ceph object ID (ONLY IF OBJECT COMPILATION)\n"
     "     -container Swift container where data is. Then OUTPUT FILE is interpreted as a Swift object name (ONLY IF OBJECT COMPILATION)\n"
+    "     -token path : valid path to a file designed to contain an authentication token for the output storage. This file can be empty but must exist and be both readable and writable by the process. The content will be updated if the token is renewed. (ONLY IF OBJECT COMPILATION)\n"
     "     -ks in Swift storage case, activate keystone authentication (ONLY IF OBJECT COMPILATION)\n"
     "     -bucket S3 bucket where data is. Then OUTPUT FILE is interpreted as a S3 object name (ONLY IF OBJECT COMPILATION)\n"
     "     -crop : blocks (used by JPEG compression) wich contain a white pixel are filled with white\n"
@@ -163,6 +165,8 @@ int main ( int argc, char **argv ) {
     bool onSwift = false;
     bool onS3 = false;
     bool keystone = false;
+    std::string tokenString = '';
+    std::string tokenFilePath = '';
 #endif
 
     /* Initialisation des Loggers */
@@ -205,6 +209,13 @@ int main ( int argc, char **argv ) {
                 error("Error in -container option", -1);
             }
             container = argv[i];
+            continue;
+        }
+        if ( !strcmp ( argv[i],"-token" ) ) {
+            if ( ++i == argc ) {
+                error("Error in -token option", -1);
+            }
+            tokenFilePath = argv[i];
             continue;
         }
         if ( !strcmp ( argv[i],"-ks" ) ) {
@@ -324,8 +335,27 @@ int main ( int argc, char **argv ) {
 
         curl_global_init(CURL_GLOBAL_ALL);
 
-        LOGGER_DEBUG( std::string("Output is an object in the Swift bucket ") + container);
-        context = new SwiftContext(container);
+        LOGGER_DEBUG( std::string("Output is an object in the Swift container ") + container);
+
+        // On initialise le jeton d'authentification à partir du fichier de jeton s'il est fourni.
+        if ( tokenFilePath != '' ) {
+            try {
+                std::fstream tokenFile;
+                tokenFile.open(tokenFilePath, std::ios::in);
+                if ( tokenFile.is_open() ) {
+                    std::string tokenFileLine;
+                    while (std::getline(tokenFile, tokenFileLine)) {
+                        tokenString << tokenFileLine << "\n";
+                    }
+                    tokenFile.close();
+                    LOGGER_DEBUG( std::string("Initial authentication token set to : \n") + tokenString );
+                }
+            } catch (...) {
+                error( "Token file '" + tokenFilePath + "' could not be read.", -1 );
+            }
+        }
+
+        context = new SwiftContext(container, keystone, tokenString);
     } else {
 #endif
 
@@ -427,6 +457,22 @@ int main ( int argc, char **argv ) {
 #if BUILD_OBJECT
 
     if (onSwift || onS3) {
+        // On met à jour le fichier de jeton d'authentification Swift s'il a été fourni
+        if ( onSwift && tokenFilePath != '' ) {
+            tokenString = context->getAuthToken();
+            try {
+                std::fstream tokenFile;
+                tokenFile.open(tokenFilePath, std::ios::out);
+                if ( tokenFile.is_open() ) {
+                    tokenFile << tokenString;
+                    tokenFile.close();
+                    LOGGER_DEBUG( std::string("Token file updated with new token : \n") + tokenString );
+                }
+            } catch (...) {
+                error( "Token file '" + tokenFilePath + "' could not be updated.", -1 );
+            }
+        }
+
         // Un environnement CURL a été créé et utilisé, il faut le nettoyer
         CurlPool::cleanCurlPool();
         curl_global_cleanup();
