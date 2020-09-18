@@ -470,7 +470,7 @@ int loadImages ( FileImage** ppImageOut, FileImage** ppMaskOut, std::vector<File
         }
         pImage->setCRS ( crs );
         delete paths.at(i);
-
+        
         if ( i+1 < masks.size() && masks.at(i+1) ) {
             
             FileImage* pMask=factory.createImageToRead ( paths.at(i+1), bboxes.at(i), resxs.at(i), resys.at(i) );
@@ -1182,10 +1182,11 @@ int main ( int argc, char **argv ) {
     LOGGER_DEBUG ( "Clean" );
     // Nettoyage
     pj_clear_initcache();
-    Logger::stopLogger();
-    if ( acc ) {
-        delete acc;
-    }
+    // Suppression du nettoyage du logger jusqu'à sa refonte
+    // Logger::stopLogger();
+    // if ( acc ) {
+    //     delete acc;
+    // }
     delete pECI;
     delete pImageOut;
     delete pMaskOut;

@@ -1,0 +1,67 @@
+<servicesConf>
+    <!-- Paramètres communs WMS et WMTS -->
+    <title>${SERVICE_TITLE}</title>
+    <abstract>${SERVICE_ABSTRACT}</abstract>
+    <serviceProvider>${SERVICE_PROVIDERNAME}</serviceProvider>
+    <providerSite>${SERVICE_PROVIDERSITE}</providerSite>
+
+    <keywordList>
+        ${SERVICE_KEYWORDS_XML}
+    </keywordList>
+
+    <postMode>false</postMode>
+
+    <fee>${SERVICE_FEE}</fee>
+    <accessConstraint>${SERVICE_ACCESSCONSTRAINT}</accessConstraint>
+    
+    <!--Contact Information-->
+    <individualName>${SERVICE_INDIVIDUALNAME}</individualName>
+    <individualPosition>${SERVICE_INDIVIDUALPOSITION}</individualPosition>
+    <voice>${SERVICE_VOICE}</voice>
+    <facsimile>${SERVICE_FACSIMILE}</facsimile>
+    <addressType>${SERVICE_ADDRESSTYPE}</addressType>
+    <deliveryPoint>${SERVICE_DELIVERYPOINT}</deliveryPoint>
+    <city>${SERVICE_CITY}</city>
+    <administrativeArea>${SERVICE_ADMINISTRATIVEAREA}</administrativeArea>
+    <postCode>${SERVICE_POSTCODE}</postCode>
+    <country>${SERVICE_COUNTRY}</country>
+    <electronicMailAddress>${SERVICE_ELECTRONICMAILADDRESS}</electronicMailAddress>
+
+    <!-- Paramètres spécifiques WMS -->
+    <name>${SERVICE_WMS}</name>
+    <maxWidth>${SERVICE_MAXWIDTH}</maxWidth>
+    <maxHeight>${SERVICE_MAXHEIGHT}</maxHeight>
+    <layerLimit>${SERVICE_LAYERLIMIT}</layerLimit>
+    <maxTileX>${SERVICE_MAXTILEX}</maxTileX>
+    <maxTileY>${SERVICE_MAXTILEY}</maxTileY>
+    <formatList>
+        ${SERVICE_FORMATLIST_XML}
+    </formatList>
+
+    <globalCRSList>
+        ${SERVICE_GLOBALCRSLIST_XML}
+    </globalCRSList>
+    <fullStylingCapability>${SERVICE_FULLYSTYLING}</fullStylingCapability>
+    <!-- Paramètres spécifiques WMTS -->
+    <serviceType>OGC WMTS</serviceType>
+    <serviceTypeVersion>1.0.0</serviceTypeVersion>
+
+    <!-- Paramètre INSPIRE -->
+    <inspire>${SERVICE_INSPIRE}</inspire>
+    <metadataWMS>
+        <url>${SERVICE_METADATAWMS_URL}</url>
+        <mediaType>${SERVICE_METADATAWMS_TYPE}</mediaType>
+    </metadataWMS>
+    <metadataWMTS>
+        <url>${SERVICE_METADATAWMS_URL}</url>
+        <mediaType>${SERVICE_METADATAWMS_TYPE}</mediaType>
+    </metadataWMTS>
+
+    <!-- CRS et WMS -->
+    <!-- pour ne pas effectuer de reprojection pour 2 CRS égaux (ex : IGNF:LAMB93 et EPSG:2154) -->
+    <avoidEqualsCRSReprojection>${SERVICE_AVOIDEQUALSCRSREPROJECTION}</avoidEqualsCRSReprojection>
+    <!-- ajoute automatiquement les CRS équivalents à la liste des CRS globale et aux listes des CRS par layer -->
+    <addEqualsCRS>${SERVICE_ADDEQUALSCRS}</addEqualsCRS>
+    <!-- Fichier contenant la liste des seuls CRS autorisés (si addEqualsCRS est à true ou 1, les CRS équivalents sont aussi autorisés) -->
+    <!--restrictedCRSList>/etc/rok4/config/restrictedCRSList.txt</restrictedCRSList-->
+</servicesConf>

@@ -435,10 +435,11 @@ int main ( int argc, char **argv ) {
 #endif
 
     LOGGER_DEBUG ( "Clean" );
-    Logger::stopLogger();
-    if ( acc ) {
-        delete acc;
-    }
+    // Suppression du nettoyage du logger jusqu'à sa refonte
+    // Logger::stopLogger();
+    // if ( acc ) {
+    //     delete acc;
+    // }
     delete sourceImage;
     delete rok4Image;
     delete context;

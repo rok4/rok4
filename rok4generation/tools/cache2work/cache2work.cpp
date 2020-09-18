@@ -288,10 +288,11 @@ int main ( int argc, char **argv )
     // Nettoyage
     delete rok4image;
     delete outputImage;
-    Logger::stopLogger();
-    if ( acc ) {
-        delete acc;
-    }
+    // Suppression du nettoyage du logger jusqu'à sa refonte
+    // Logger::stopLogger();
+    // if ( acc ) {
+    //     delete acc;
+    // }
     delete context;
 
 #if BUILD_OBJECT

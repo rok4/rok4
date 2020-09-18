@@ -108,8 +108,10 @@ my $ROK4_SWIFT_PASSWD;
 
 my $SWIFT_TOKEN;
 my $ROK4_SWIFT_PUBLICURL;
+
 # swift authentication
 my $ROK4_SWIFT_ACCOUNT;
+
 # keystone authentication
 my $ROK4_KEYSTONE_DOMAINID;
 my $ROK4_KEYSTONE_PROJECTID;
@@ -172,6 +174,39 @@ sub checkEnvironmentVariables {
         $ROK4_SWIFT_USER = $ENV{ROK4_SWIFT_USER};
         $ROK4_SWIFT_AUTHURL = $ENV{ROK4_SWIFT_AUTHURL};
 
+        if ($keystone) {
+            if (! defined $ENV{ROK4_KEYSTONE_DOMAINID}) {
+                ERROR("Environment variable ROK4_KEYSTONE_DOMAINID is not defined");
+                ERROR("We need it for a keystone authentication (swift)");
+                return FALSE;
+            }
+
+            if (! defined $ENV{ROK4_SWIFT_PUBLICURL}) {
+                ERROR("Environment variable ROK4_SWIFT_PUBLICURL is not defined");
+                ERROR("We need it for a keystone authentication (swift)");
+                return FALSE;
+            }
+
+            if (! defined $ENV{ROK4_KEYSTONE_PROJECTID}) {
+                ERROR("Environment variable ROK4_KEYSTONE_PROJECTID is not defined");
+                ERROR("We need it for a keystone authentication (swift)");
+                return FALSE;
+            }
+
+            $ROK4_KEYSTONE_DOMAINID = $ENV{ROK4_KEYSTONE_DOMAINID};
+            $ROK4_KEYSTONE_PROJECTID = $ENV{ROK4_KEYSTONE_PROJECTID};
+            $ROK4_SWIFT_PUBLICURL = $ENV{ROK4_SWIFT_PUBLICURL};
+        } else {
+            
+            if (! defined $ENV{ROK4_SWIFT_ACCOUNT}) {
+                ERROR("Environment variable ROK4_SWIFT_ACCOUNT is not defined");
+                ERROR("We need it for a swift authentication");
+                return FALSE;
+            }
+
+            $ROK4_SWIFT_ACCOUNT = $ENV{ROK4_SWIFT_ACCOUNT};
+        }
+
         $UA = LWP::UserAgent->new();
         $UA->ssl_opts(verify_hostname => 0);
 
@@ -220,28 +255,6 @@ sub getSwiftToken {
 
     if ($keystone) {
 
-        if (! defined $ENV{ROK4_KEYSTONE_DOMAINID}) {
-            ERROR("Environment variable ROK4_KEYSTONE_DOMAINID is not defined");
-            ERROR("We need it for a keystone authentication (swift)");
-            return FALSE;
-        }
-
-        if (! defined $ENV{ROK4_SWIFT_PUBLICURL}) {
-            ERROR("Environment variable ROK4_SWIFT_PUBLICURL is not defined");
-            ERROR("We need it for a keystone authentication (swift)");
-            return FALSE;
-        }
-
-        if (! defined $ENV{ROK4_KEYSTONE_PROJECTID}) {
-            ERROR("Environment variable ROK4_KEYSTONE_PROJECTID is not defined");
-            ERROR("We need it for a keystone authentication (swift)");
-            return FALSE;
-        }
-
-        $ROK4_KEYSTONE_DOMAINID = $ENV{ROK4_KEYSTONE_DOMAINID};
-        $ROK4_KEYSTONE_PROJECTID = $ENV{ROK4_KEYSTONE_PROJECTID};
-        $ROK4_SWIFT_PUBLICURL = $ENV{ROK4_SWIFT_PUBLICURL};
-
         my $json = sprintf "{\"auth\":{\"scope\": { \"project\": {\"id\": \"%s\"}},\"identity\":{\"methods\":[\"password\"],\"password\":{\"user\":{\"domain\":{\"id\":\"%s\"},\"name\":\"%s\",\"password\":\"%s\"}}}}}",
             $ROK4_KEYSTONE_PROJECTID, $ROK4_KEYSTONE_DOMAINID, $ROK4_SWIFT_USER, $ROK4_SWIFT_PASSWD;
 
@@ -267,13 +280,6 @@ sub getSwiftToken {
             return FALSE;
         }
     } else {
-        if (! defined $ENV{ROK4_SWIFT_ACCOUNT}) {
-            ERROR("Environment variable ROK4_SWIFT_ACCOUNT is not defined");
-            ERROR("We need it for a swift authentication");
-            return FALSE;
-        }
-
-        $ROK4_SWIFT_ACCOUNT = $ENV{ROK4_SWIFT_ACCOUNT};
 
         my $request = HTTP::Request::Common::GET(
             $ROK4_SWIFT_AUTHURL

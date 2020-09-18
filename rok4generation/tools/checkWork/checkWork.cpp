@@ -49,19 +49,18 @@
 #include "FileImage.h"
 #include "../../../rok4version.h"
 
-/** \~french Message d'usage de la commande checkWork */
-std::string help = std::string("\ncheckWork version ") + std::string(ROK4_VERSION) + "\n\n"
-    "Control TIFF, JPEG, JPEG2000 or PNG image validity\n\n"
-
-    "Usage: checkWork <INPUT FILE>\n";
-
-    
 /**
  * \~french
- * \brief Affiche l'utilisation et les différentes options de la commande checkWork #help
+ * \brief Affiche l'utilisation et les différentes options de la commande checkWork
  */
 void usage() {
-    LOGGER_INFO (help);
+
+    LOGGER_INFO ( "\ncheckWork version " << ROK4_VERSION << "\n\n" <<
+
+                  "Control TIFF, JPEG, JPEG2000 or PNG image validity\n\n" << 
+
+                  "Usage: checkWork <INPUT FILE>\n"
+                );
 }
 
 /**
@@ -144,10 +143,11 @@ int main ( int argc, char **argv )
 
     // Nettoyage
     delete image;
-    Logger::stopLogger();
-    if ( acc ) {
-        delete acc;
-    }
+    // Suppression du nettoyage du logger jusqu'à sa refonte
+    // Logger::stopLogger();
+    // if ( acc ) {
+    //     delete acc;
+    // }
 
     return ret;
 }

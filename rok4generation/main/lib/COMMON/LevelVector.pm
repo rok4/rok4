@@ -981,7 +981,6 @@ sub exportToXML {
     }
 
     foreach my $table (keys(%{$this->{tables}})) {
-        ERROR(Dumper($this->{tables}->{$table}));
         $string .=                 "        <table>\n";
         $string .= sprintf         "            <name>%s</name>\n", $this->{tables}->{$table}->{final_name};
         $string .= sprintf         "            <geometry>%s</geometry>\n", $this->{tables}->{$table}->{geometry}->{type};

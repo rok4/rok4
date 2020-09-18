@@ -12,11 +12,10 @@ Le serveur implémente les standards ouverts de l’Open Geospatial Consortium (
 
 ROK4GENERATION est un ensemble de scripts de traitement permettant la préparation et la transformation de données géo-référencées vers le format de pyramide raster (potentiellement à la demande) et vecteur utilisé par ROK4.
 
-* 
 * http://www.ign.fr [@IGNFrance](https://twitter.com/IGNFrance)
 * http://www.geoportail.gouv.fr [@Geoportail](https://twitter.com/Geoportail)
 
-ROK4 Version : 3.6.10-DEVELOP
+ROK4 Version : 3.7.2
 
 <!-- TOC depthFrom:1 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
 
@@ -59,84 +58,26 @@ Pour que cette pyramide soit diffusée par ROK4SERVER, on va créer un descripte
 
 # Compiler et installer le projet ROK4
 
-La compilation du projet n’a pour le moment été validée que sous GNU/Linux (Debian 8 et 9 et Centos 7). Le projet utilise des pthreads (threads POSIX).
+La compilation du projet n’a pour le moment été validée que sous GNU/Linux (Debian 9 et 10 et Centos 7). Le projet utilise des pthreads (threads POSIX).
 
 ## L'environnement de compilation
 
-Pour la partie C++ :
-* Debian : `sudo apt install build-essential cmake`
-* Centos : `yum install make cmake gcc gcc-c++`
+Afin de connaître les paquets et librairies à installer, référez vous aux Dockerfiles :
 
-Pour la partie Perl :
-* Debian : `sudo apt install perl perl-base`
-* Centos : `yum install perl perl-CPAN`
-
-## Les librairies
-
-### C++
-
-Pour centos, il est nécessaire d'ajouter un dépôt pour avoir accès aux paquets nécessaires : `yum install -y epel-release`
-
-Les paquets (`Debian`|`Centos`) à installer sont :
-* (`libfcgi-dev`|`fcgi-devel`) pour que le serveur ROK4 gère les requêtes
-* (`gettext`|`gettext`) pour l'internationalisation des logs
-* (`libtinyxml-dev`|`tinyxml-devel`) pour la lecture des configuration XML
-* (`zlib1g-dev`|`zlib-devel`) pour la compression ZIP
-* (`libtiff5-dev`|`libtiff-devel`) pour la lecture et écriture des images TIFF
-* (`libpng16-dev`|`libpng-devel`) pour la lecture des images PNG
-* (`libcurl4-openssl-dev`|`libcurl-devel`) et (`libssl-dev`|`openssl-devel`) pour l'envoi de requête HTTP(S)
-* (`libturbojpeg0-dev`|`turbojpeg-devel`) et (`libjpeg`|`libjpeg-turbo-devel`) pour la lecture des images JPEG
-* (`libopenjp2-7-dev`|`openjpeg2-devel`) pour la lecture des images JPEG2000 si Kakadu n'est pas utilisé
-* (`libc6-dev`|) pour les l'utilisation de thread POSIX
-
-Si la gestion du stockage objet est voulue :
-* (`librados-dev`|`librados2-devel`) pour la lecture et l'écriture d'objets sur un cluster Ceph
-
-### Perl
-
-Les librairies Perl sont installable via l'outil CPAN : `cpan Lib::Perl` (en sudo pour une installation système). Certaines des librairies utilisées sont installées avec le paquet `perl-base`
-
-* Config::INI::Reader
-* Data::Dumper
-* DBI
-* DBD::Pg
-* Devel::Size
-* Digest::SHA
-* ExtUtils::MakeMaker
-* File::Find::Rule
-* File::Map
-* FindBin
-* HTTP::Request
-* HTTP::Request::Common
-* HTTP::Response
-* JSON::Parse
-* Log::Log4perl
-* LWP::UserAgent
-* Math::BigFloat
-* Term::ProgressBar
-* Test::More
-* Tie::File
-* XML::LibXML
-
-On installe les librairies Perl GDAL via le paquet et la librairie pour le driver PostgreSQL :
-* Debian : `apt install libgdal-perl libpq-dev`
-* Centos : `yum install gdal-perl libpqxx-devel`
-
-Soit :
-```
-cpan Config::INI::Reader DBI DBD::Pg Data::Dumper Devel::Size Digest::SHA ExtUtils::MakeMaker File::Find::Rule File::Map FindBin Geo::GDAL Geo::OGR Geo::OSR HTTP::Request HTTP::Request::Common HTTP::Response JSON::Parse Log::Log4perl LWP::UserAgent Math::BigFloat Term::ProgressBar Test::More Tie::File XML::LibXML
-```
-
-Pour savoir où sont cherchées les librairies, exécuter `env -i perl -V`.
-
-Pour vérifier que toutes les librairies nécessaires sont installées, exécuter le script `perl rok4generation/main/verify-dependencies.pl`.
+* Compilation du serveur ROK4 :
+	* [Debian 9](./docker/rok4server/stretch.Dockerfile)
+	* [Debian 10](./docker/rok4server/buster.Dockerfile)
+	* [Centos 7](./docker/rok4server/centos7.Dockerfile)
+	
+* Compilation des outils de génération ROK4 :
+	* [Debian 10](./docker/rok4generation/buster.Dockerfile)
 
 ## Les commandes externes
 
 Les outils suivant sont nécessaires aux outils de génération :
 * wget (be4)
 * ogr2ogr (4alamo)
-* tippecanoe (4alamo)
+* tippecanoe (4alamo) : https://github.com/mapbox/tippecanoe.git
 
 ## La documentation
 
@@ -213,4 +154,4 @@ sudo make install
 
 ### Docker
 
-Le projet propose les Dockerfile permettant la compilation et l'utilisation de ROK4SERVER au sein d'un conteneur. Des configurations pour docker-compose permettent de télécharger des jeux de données conteneurisés et de tester le serveur. Tous les détails sont dans [ici](docker/README.md).
+Le projet propose les Dockerfile permettant la compilation et l'utilisation du serveur et des outils de génération au sein d'un conteneur. Des configurations pour docker-compose permettent de télécharger des jeux de données conteneurisés et de tester le serveur. Tous les détails sont [ici](docker/README.md).

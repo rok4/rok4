@@ -861,9 +861,10 @@ int main ( int argc, char* argv[] ) {
 
     delete OUTPUTI;
 
-    Logger::stopLogger();
-    if ( acc ) {
-        delete acc;
-    }
+    // Suppression du nettoyage du logger jusqu'à sa refonte
+    // Logger::stopLogger();
+    // if ( acc ) {
+    //     delete acc;
+    // }
 }
 

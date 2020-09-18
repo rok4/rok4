@@ -236,6 +236,8 @@ Outil : `tms-toolbox.pl`
 
 Ce outil permet de réaliser de nombreuses conversion entre indices de dalles, de tuiles, requêtes getTile ou getMap, liste de fichiers, géométrie WKT... grâce au TMS utilisé (ne nécessite pas de pyramide).
 
+[Détails](./main/bin/tms-toolbox.md)
+
 
 # Outils de manipulation
 

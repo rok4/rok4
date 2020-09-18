@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<serverConf>
+    <logOutput>standard_output_stream_for_errors</logOutput>
+    <logFilePrefix>/logs</logFilePrefix>
+    <logFilePeriod>3600</logFilePeriod>
+    <logLevel>${SERVER_LOGLEVEL}</logLevel>
+
+    <nbThread>${SERVER_NBTHREAD}</nbThread>
+
+    <WMTSSupport>${SERVER_WMTSSUPPORT}</WMTSSupport>
+    <TMSSupport>${SERVER_TMSSUPPORT}</TMSSupport>
+    <WMSSupport>${SERVER_WMSSUPPORT}</WMSSupport>
+
+    <reprojectionCapability>true</reprojectionCapability>
+    <projConfigDir>/etc/rok4/config/proj</projConfigDir>
+
+    <servicesConfigFile>/etc/rok4/config/services.conf</servicesConfigFile>
+    <styleDir>/etc/rok4/config/styles</styleDir>
+    <tileMatrixSetDir>/etc/rok4/config/tileMatrixSet</tileMatrixSetDir>
+
+    <layerDir>/layers</layerDir>
+
+    <serverPort>:9000</serverPort>
+    <serverBackLog>0</serverBackLog>
+</serverConf>

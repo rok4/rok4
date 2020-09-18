@@ -390,10 +390,11 @@ int main ( int argc, char **argv ) {
         error ( "Cannot write the compound image",-1 );
     }
 
-    Logger::stopLogger();
-    if ( acc ) {
-        delete acc;
-    }
+    // Suppression du nettoyage du logger jusqu'à sa refonte
+    // Logger::stopLogger();
+    // if ( acc ) {
+    //     delete acc;
+    // }
     delete pCompoundIn;
     delete pImageOut;
 
