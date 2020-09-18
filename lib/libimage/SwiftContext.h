@@ -145,7 +145,7 @@ public:
      * \param[in] container Container to use
      * \param[in] ks Keystone connection ?
      */
-    SwiftContext (std::string auth, std::string user, std::string passwd, std::string container, bool ks = false);
+    SwiftContext (std::string auth, std::string user, std::string passwd, std::string container, bool ks = false, std::string auth_token = '');
 
     /**
      * \~french
@@ -171,13 +171,14 @@ public:
      * \param[in] container Container to use
      * \param[in] ks Keystone connection ?
      */
-    SwiftContext (std::string container, bool ks = false);
+    SwiftContext (std::string container, bool ks = false, std::string auth_token = '');
 
     eContextType getType();
     std::string getTypeStr();
     std::string getTray();
           
     int read(uint8_t* data, int offset, int size, std::string name);
+    int read(uint8_t* data, int offset, int size, std::string name, bool second_try);
 
     /**
      * \~french
@@ -207,6 +208,7 @@ public:
 
     virtual bool openToWrite(std::string name);
     virtual bool closeToWrite(std::string name);
+    virtual bool closeToWrite(std::string name, bool second_try);
 
 
     virtual void print() {
@@ -246,6 +248,12 @@ public:
      * \~english \brief Get token #token
      */
     bool connection();
+
+    /**
+     * \~french \brief Returne le jeton d'authentification #token
+     * \~english \brief Returns authentification token #token
+     */
+    std::string getAuthToken();
 
     void closeConnection() {
         connected = false;

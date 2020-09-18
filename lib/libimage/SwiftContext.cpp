@@ -54,13 +54,13 @@
 #include "CurlPool.h"
 #include <time.h>
 
-SwiftContext::SwiftContext (std::string auth, std::string user, std::string passwd, std::string container, bool ks) :
+SwiftContext::SwiftContext (std::string auth, std::string user, std::string passwd, std::string container, bool ks, std::string auth_token) :
     Context(),
-    auth_url(auth),user_name(user), user_passwd(passwd), container_name(container), keystone_connection (ks)
+    auth_url(auth),user_name(user), user_passwd(passwd), container_name(container), keystone_connection (ks), token(auth_token)
 {
 }
 
-SwiftContext::SwiftContext (std::string container, bool ks) : Context(), container_name(container), keystone_connection (ks) {
+SwiftContext::SwiftContext (std::string container, bool ks, std::string auth_token) : Context(), container_name(container), keystone_connection (ks), token(auth_token) {
 
     char* auth = getenv ("ROK4_SWIFT_AUTHURL");
     if (auth == NULL) {
@@ -115,61 +115,64 @@ bool SwiftContext::connection() {
                 public_url.assign(publicu);
             }
 
-            CURLcode res;
-            struct curl_slist *list = NULL;
+            if (token != NULL && token != '') {
 
-            CURL* curl = curl_easy_init();
-            curl_easy_setopt(curl, CURLOPT_URL, auth_url.c_str());
-            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+                CURLcode res;
+                struct curl_slist *list = NULL;
 
-            // On constitue le header
+                CURL* curl = curl_easy_init();
+                curl_easy_setopt(curl, CURLOPT_URL, auth_url.c_str());
+                curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
 
-            char* ct = "Content-Type: application/json";
-            list = curl_slist_append(list, ct);
+                // On constitue le header
 
-            // On constitue le body
+                char* ct = "Content-Type: application/json";
+                list = curl_slist_append(list, ct);
 
-            std::string body = "{ \"auth\": {\"scope\": { \"project\": {\"id\": \""+project_id+"\"}}, ";
-            body += " \"identity\": { \"methods\": [\"password\"], \"password\": { \"user\": { \"domain\": { \"id\": \""+domain_id+"\"},";
-            body += "\"name\": \""+user_name+"\", \"password\": \""+user_passwd+"\" } } } } }";
+                // On constitue le body
 
-            HeaderStruct authHdr;
-            DataStruct chunk;
-            chunk.nbPassage = 0;
-            chunk.data = (char*) malloc(1);
-            chunk.size = 0;
+                std::string body = "{ \"auth\": {\"scope\": { \"project\": {\"id\": \""+project_id+"\"}}, ";
+                body += " \"identity\": { \"methods\": [\"password\"], \"password\": { \"user\": { \"domain\": { \"id\": \""+domain_id+"\"},";
+                body += "\"name\": \""+user_name+"\", \"password\": \""+user_passwd+"\" } } } } }";
 
-            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
-            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body.c_str());
-            curl_easy_setopt(curl, CURLOPT_HEADERDATA, (void*) &authHdr);
-            curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, header_callback);
-            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, data_callback);
-            curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &chunk);
+                HeaderStruct authHdr;
+                DataStruct chunk;
+                chunk.nbPassage = 0;
+                chunk.data = (char*) malloc(1);
+                chunk.size = 0;
 
-            res = curl_easy_perform(curl);
-            if( CURLE_OK != res) {
-                LOGGER_ERROR("Cannot authenticate to Keystone");
-                LOGGER_ERROR(curl_easy_strerror(res));
+                curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
+                curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body.c_str());
+                curl_easy_setopt(curl, CURLOPT_HEADERDATA, (void*) &authHdr);
+                curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, header_callback);
+                curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, data_callback);
+                curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &chunk);
+
+                res = curl_easy_perform(curl);
+                if( CURLE_OK != res) {
+                    LOGGER_ERROR("Cannot authenticate to Keystone");
+                    LOGGER_ERROR(curl_easy_strerror(res));
+                    curl_slist_free_all(list);
+                    curl_easy_cleanup(curl);
+                    return false;
+                }
+
+                long http_code = 0;
+                curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
+                if (http_code < 200 || http_code > 299) {
+                    LOGGER_ERROR("Cannot authenticate to Keystone");
+                    LOGGER_ERROR("Response HTTP code : " << http_code);
+                    curl_slist_free_all(list);
+                    curl_easy_cleanup(curl);
+                    return false;
+                }
+
+                // On récupère le token dans le header de la réponse
+                token = std::string(authHdr.token);
+
                 curl_slist_free_all(list);
                 curl_easy_cleanup(curl);
-                return false;
             }
-
-            long http_code = 0;
-            curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
-            if (http_code < 200 || http_code > 299) {
-                LOGGER_ERROR("Cannot authenticate to Keystone");
-                LOGGER_ERROR("Response HTTP code : " << http_code);
-                curl_slist_free_all(list);
-                curl_easy_cleanup(curl);
-                return false;
-            }
-
-            // On récupère le token dans le header de la réponse
-            token = std::string(authHdr.token);
-
-            curl_slist_free_all(list);
-            curl_easy_cleanup(curl);
 
         } else {
 
@@ -183,72 +186,75 @@ bool SwiftContext::connection() {
                 user_account.assign(account);
             }
 
-            CURLcode res;
-            struct curl_slist *list = NULL;
+            if (token != NULL && token != '') {
 
-            CURL* curl = curl_easy_init();
-            curl_easy_setopt(curl, CURLOPT_URL, auth_url.c_str());
-            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+                CURLcode res;
+                struct curl_slist *list = NULL;
 
-            // On constitue le header et le moyen de récupération des informations (avec les structures de LibcurlStruct)
+                CURL* curl = curl_easy_init();
+                curl_easy_setopt(curl, CURLOPT_URL, auth_url.c_str());
+                curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
 
-            char xUser[256];
-            strcpy(xUser, "X-Storage-User: ");
-            strcat(xUser, user_account.c_str());
-            strcat(xUser, ":");
-            strcat(xUser, user_name.c_str());
+                // On constitue le header et le moyen de récupération des informations (avec les structures de LibcurlStruct)
 
-            char xPass[256];
-            strcpy(xPass, "X-Storage-Pass: ");
-            strcat(xPass, user_passwd.c_str());
+                char xUser[256];
+                strcpy(xUser, "X-Storage-User: ");
+                strcat(xUser, user_account.c_str());
+                strcat(xUser, ":");
+                strcat(xUser, user_name.c_str());
 
-            char xAuthUser[256];
-            strcpy(xAuthUser, "X-Auth-User: ");
-            strcat(xAuthUser, user_account.c_str());
-            strcat(xAuthUser, ":");
-            strcat(xAuthUser, user_name.c_str());
+                char xPass[256];
+                strcpy(xPass, "X-Storage-Pass: ");
+                strcat(xPass, user_passwd.c_str());
 
-            char xAuthKey[256];
-            strcpy(xAuthKey, "X-Auth-Key: ");
-            strcat(xAuthKey, user_passwd.c_str());
+                char xAuthUser[256];
+                strcpy(xAuthUser, "X-Auth-User: ");
+                strcat(xAuthUser, user_account.c_str());
+                strcat(xAuthUser, ":");
+                strcat(xAuthUser, user_name.c_str());
+
+                char xAuthKey[256];
+                strcpy(xAuthKey, "X-Auth-Key: ");
+                strcat(xAuthKey, user_passwd.c_str());
 
 
-            list = curl_slist_append(list, xUser);
-            list = curl_slist_append(list, xPass);        
-            list = curl_slist_append(list, xAuthUser);
-            list = curl_slist_append(list, xAuthKey);
+                list = curl_slist_append(list, xUser);
+                list = curl_slist_append(list, xPass);        
+                list = curl_slist_append(list, xAuthUser);
+                list = curl_slist_append(list, xAuthKey);
 
-            HeaderStruct authHdr;
+                HeaderStruct authHdr;
 
-            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
-            curl_easy_setopt(curl, CURLOPT_HEADERDATA, (void*) &authHdr);
-            curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, header_callback);
+                curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
+                curl_easy_setopt(curl, CURLOPT_HEADERDATA, (void*) &authHdr);
+                curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, header_callback);
 
-            res = curl_easy_perform(curl);
-            if( CURLE_OK != res) {
-                LOGGER_ERROR("Cannot authenticate to Swift");
-                LOGGER_ERROR(curl_easy_strerror(res));
+                res = curl_easy_perform(curl);
+                if( CURLE_OK != res) {
+                    LOGGER_ERROR("Cannot authenticate to Swift");
+                    LOGGER_ERROR(curl_easy_strerror(res));
+                    curl_slist_free_all(list);
+                    curl_easy_cleanup(curl);
+                    return false;
+                }
+
+                long http_code = 0;
+                curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
+                if (http_code < 200 || http_code > 299) {
+                    LOGGER_ERROR("Cannot authenticate to Swift");
+                    LOGGER_ERROR("Response HTTP code : " << http_code);
+                    curl_slist_free_all(list);
+                    curl_easy_cleanup(curl);
+                    return false;
+                }
+
+                // On récupère l'URL publique et le token dans le header de la réponse
+                public_url = std::string(authHdr.url);
+                token = std::string(authHdr.token);
+
                 curl_slist_free_all(list);
                 curl_easy_cleanup(curl);
-                return false;
             }
-
-            long http_code = 0;
-            curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
-            if (http_code < 200 || http_code > 299) {
-                LOGGER_ERROR("Cannot authenticate to Swift");
-                LOGGER_ERROR("Response HTTP code : " << http_code);
-                curl_slist_free_all(list);
-                curl_easy_cleanup(curl);
-                return false;
-            }
-
-            // On récupère l'URL publique et le token dans le header de la réponse
-            public_url = std::string(authHdr.url);
-            token = std::string(authHdr.token);
-
-            curl_slist_free_all(list);
-            curl_easy_cleanup(curl);
         }
 
         connected = true;
@@ -259,6 +265,10 @@ bool SwiftContext::connection() {
 }
 
 int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
+    return this->read(data, offset, size, name, false);
+}
+
+int SwiftContext::read(uint8_t* data, int offset, int size, std::string name, bool second_try) {
 
     if (! connected) {
         LOGGER_ERROR("Impossible de lire via un contexte non connecté");
@@ -302,6 +312,14 @@ int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
     
     curl_slist_free_all(list);
 
+    if ( second_try == false && CURLE_HTTP_RETURNED_ERROR == res) {
+        LOGGER_WARNING("Connection may have expired. Reconnecting.");
+        this->connected = false;
+        this->token = '';
+        this->connection();
+        return this->read(data, offset, size, name, true);
+
+    }
     if( CURLE_OK != res) {
         LOGGER_ERROR("Cannot read data from Swift : " << size << " bytes (from the " << offset << " one) in the object " << name);
         LOGGER_ERROR(curl_easy_strerror(res));
@@ -310,6 +328,15 @@ int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
 
     long http_code = 0;
     curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
+
+    if ( second_try == false && http_code == 403) {
+        LOGGER_WARNING("Connection may have expired. Reconnecting.");
+        this->connected = false;
+        this->token = '';
+        this->connection();
+        return this->read(data, offset, size, name, true);
+
+    }
     if (http_code < 200 || http_code > 299) {
         LOGGER_ERROR("Cannot read data from Swift : " << size << " bytes (from the " << offset << " one) in the object " << name);
         LOGGER_ERROR("Response HTTP code : " << http_code);
@@ -388,8 +415,11 @@ bool SwiftContext::openToWrite(std::string name) {
     return true;
 }
 
-
 bool SwiftContext::closeToWrite(std::string name) {
+    return this->closeToWrite(name, false);
+}
+
+bool SwiftContext::closeToWrite(std::string name, bool second_try) {
 
 
     std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
@@ -422,6 +452,15 @@ bool SwiftContext::closeToWrite(std::string name) {
 
     res = curl_easy_perform(curl);
 
+    if ( second_try == false && CURLE_HTTP_RETURNED_ERROR == res) {
+        LOGGER_WARNING("Connection may have expired. Reconnecting.");
+        curl_slist_free_all(list);
+        curl_easy_cleanup(curl);
+        this->connected = false;
+        this->token = '';
+        this->connection();
+        return this->closeToWrite(name, true);
+    }    
     if( CURLE_OK != res) {
         LOGGER_ERROR ( "Unable to flush " << it1->second->size() << " bytes in the object " << name );
         LOGGER_ERROR(curl_easy_strerror(res));
@@ -432,6 +471,15 @@ bool SwiftContext::closeToWrite(std::string name) {
 
     long http_code = 0;
     curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
+    if ( second_try == false && http_code == 403) {
+        LOGGER_WARNING("Connection may have expired. Reconnecting.");
+        curl_slist_free_all(list);
+        curl_easy_cleanup(curl);
+        this->connected = false;
+        this->token = '';
+        this->connection();
+        return this->closeToWrite(name, true);
+    }
     if (http_code < 200 || http_code > 299) {
         LOGGER_ERROR ( "Unable to flush " << it1->second->size() << " bytes in the object " << name );
         LOGGER_ERROR("Response HTTP code : " << http_code);
@@ -450,4 +498,8 @@ bool SwiftContext::closeToWrite(std::string name) {
     writingBuffers.erase(it1);
 
     return true;
+}
+
+std::string getAuthToken() {
+    return this->token;
 }
