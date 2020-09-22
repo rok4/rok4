@@ -169,10 +169,16 @@ OverlayNtiff () {
     local config=$1
     local inTemplate=$2
 
-    overlayNtiff -f ${ONT_CONF_DIR}/$config ${OVERLAYNTIFF_OPTIONS}
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-    rm -f ${TMP_DIR}/$inTemplate
-    rm -f ${ONT_CONF_DIR}/$config
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
+
+    if [ -f ${MNT_CONF_DIR}/$config ]; then
+        overlayNtiff -f ${ONT_CONF_DIR}/$config ${OVERLAYNTIFF_OPTIONS}
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        rm -f ${TMP_DIR}/$inTemplate
+        rm -f ${ONT_CONF_DIR}/$config
+    fi
 }
 
 ONTFUNCTION
@@ -181,6 +187,10 @@ my $CEPH_STORAGE_FUNCTIONS = <<'STORAGEFUNCTIONS';
 LinkSlab () {
     local target=$1
     local link=$2
+
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
 
     # On retire le pool des entrées
     target=`echo -n "$target" | sed "s#${PYR_POOL}/##"`
@@ -196,6 +206,19 @@ PushSlab () {
     local workMskName=$3
     local mskName=$4
 
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${imgName}" == "${last_slab}" ]]; then
+            echo "Last generated image slab found, now we work"
+            work=1
+        elif [[ ! -z $mskName && "${mskName}" == "${last_slab}" ]] ; then
+            echo "Last generated mask slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
+
     work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} -pool ${PYR_POOL} $imgName
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     rm -f ${TMP_DIR}/$workImgName
@@ -205,11 +228,17 @@ PushSlab () {
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         rm -f ${TMP_DIR}/$workMskName
     fi
+
+    print_prog
 }
 
 PullSlab () {
     local input=$1
     local output=$2
+
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
 
     # On retire le pool du input
     input=`echo -n "$input" | sed "s#${PYR_POOL}/##"`
@@ -225,6 +254,10 @@ LinkSlab () {
     local target=$1
     local link=$2
 
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
+
     mkdir -p $(dirname $link)
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 
@@ -238,6 +271,19 @@ PushSlab () {
     local imgName=$2
     local workMskName=$3
     local mskName=$4
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${imgName}" == "${last_slab}" ]]; then
+            echo "Last generated image slab found, now we work"
+            work=1
+        elif [[ ! -z $mskName && "${mskName}" == "${last_slab}" ]] ; then
+            echo "Last generated mask slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
 
     local dir=`dirname ${PYR_DIR}/$imgName`
 
@@ -259,11 +305,17 @@ PushSlab () {
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         rm -f ${TMP_DIR}/$workMskName
     fi
+
+    print_prog
 }
 
 PullSlab () {
     local input=$1
     local output=$2
+
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
 
     cache2work -c zip $input ${TMP_DIR}/$output
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
@@ -282,6 +334,12 @@ my $MAIN_SCRIPT = <<'MAINSCRIPT';
 # 0 -> SUCCÈS
 # 1 -> ÉCHEC
 
+###################### PARAMÈTRES ###############################
+frequency=60
+if [[ ! -z $1 ]]; then
+    frequency=$1
+fi
+
 #################################################################
 
 scripts_directory="__scripts_directory__"
@@ -296,9 +354,6 @@ SPLITS_END=()
 SPLITS_EXITCODE=()
 SPLITS_NAME=()
 SPLITS_STATUS=()
-UPLINE=$(tput cuu1)
-ERASELINE=$(tput el)
-TIPEX=""
 
 for (( i = 1; i <= __jobs_number__; i++ )); do
     SPLITS+=("${scripts_directory}/SCRIPT_${i}.sh")
@@ -306,10 +361,7 @@ for (( i = 1; i <= __jobs_number__; i++ )); do
     SPLITS_END+=("0")
     SPLITS_EXITCODE+=("0")
     SPLITS_STATUS+=("En cours")
-    TIPEX="${TIPEX}$UPLINE$ERASELINE"
 done
-
-TIPEX="${TIPEX}\c"
 
 for s in "${SPLITS[@]}"; do
     (bash $s >$s.log 2>&1) &
@@ -318,13 +370,14 @@ for s in "${SPLITS[@]}"; do
 done
 
 
-echo "  INFO Attente de la fin des splits JOINCACHE"
+echo "  INFO Attente de la fin des __jobs_number__ splits JOINCACHE"
 first_time="1"
 while [[ "0" = "0" ]]; do
     still_one="0"
     for (( i = 0; i < __jobs_number__; i++ )); do
         p=${SPLITS_PIDS[$i]}
         e=${SPLITS_END[$i]}
+        n=${SPLITS_NAME[$i]}
 
         if [[ "$e" = "1" ]]; then
             continue
@@ -339,31 +392,21 @@ while [[ "0" = "0" ]]; do
         if [[ "$?" = "0" ]]; then
             SPLITS_EXITCODE[$i]="0"
             SPLITS_STATUS[$i]="Succès"
+            echo "$n -> Succès"
         else
             SPLITS_EXITCODE[$i]=$?
             SPLITS_STATUS[$i]="Échec"
+            echo "$n -> Échec"
         fi
 
         SPLITS_END[$i]="1"
-    done
-
-    if [[ "$first_time" = "1" ]]; then
-        first_time=0
-    else
-        echo -e "$TIPEX"
-    fi
-
-    for (( i = 0; i < __jobs_number__; i++ )); do
-        n=${SPLITS_NAME[$i]}
-        s=${SPLITS_STATUS[$i]}
-        echo "$n -> $s"
     done
 
     if [[ "$still_one" = "0" ]]; then
         break
     fi
 
-    sleep 60
+    sleep $frequency
 done
 
 for (( i = 0; i < __jobs_number__; i++ )); do
@@ -400,6 +443,34 @@ sub getMainScript {
 #                                   Group: Export function                                         #
 ####################################################################################################
 
+my $WORKANDPROG = <<'WORKANDPROG';
+progression=-1
+progression_file="$0.prog"
+lines_count=$(wc -l $0 | cut -d' ' -f1)
+start_line=0
+
+print_prog () {
+    tmp=$(( (${BASH_LINENO[-2]} - $start_line) * 100 / (${lines_count} - $start_line) ))
+    if [[ "$tmp" != "$progression" ]]; then
+        progression=$tmp
+        echo "$tmp" >$progression_file
+    fi
+}
+
+work=1
+
+# Test d'existence de la liste temporaire
+if [[ -f "${TMP_LIST_FILE}" ]] ; then 
+    # La liste existe, ce qui suggère que le script a déjà commencé à tourner
+    # On prend la dernière ligne pour connaître la dernière dalle complètement traitée
+    
+    last_slab=$(tail -n 1 ${TMP_LIST_FILE} | sed "s#^0/##")
+    echo "Script ${SCRIPT_ID} recall, work from slab ${last_slab}"
+    work=0
+fi
+
+WORKANDPROG
+
 =begin nd
 Function: getScriptInitialization
 
@@ -414,8 +485,10 @@ sub getScriptInitialization {
 
     # Variables
 
+    my $string = $WORKANDPROG;
+
     # On a précisé une méthode de fusion, on est dans le cas d'un JOINCACHE, on exporte la fonction overlayNtiff
-    my $string = sprintf "OVERLAYNTIFF_OPTIONS=\"-c zip -s %s -p %s -b %s -m $MERGEMETHOD",
+    $string .= sprintf "OVERLAYNTIFF_OPTIONS=\"-c zip -s %s -p %s -b %s -m $MERGEMETHOD",
         $pyramid->getImageSpec()->getPixel()->getSamplesPerPixel(),
         $pyramid->getImageSpec()->getPixel()->getPhotometric(),
         $pyramid->getNodata()->getValue();
@@ -457,6 +530,7 @@ sub getScriptInitialization {
 
     $string .= $ONTFUNCTION;
 
+    $string .= "start_line=\$LINENO\n";
     $string .= "\n";
 
     return $string;

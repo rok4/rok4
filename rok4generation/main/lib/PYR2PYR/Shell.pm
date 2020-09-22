@@ -132,12 +132,26 @@ sub getPersonnalTempDirectory {
 
 my $FILE_PUSH = <<'FUNCTION';
 BackupListFile () {
-    cp ${LIST_FILE} ${PYR_DIR_DST}/
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    bn=$(basename ${LIST_FILE})
+    if [ "$(stat -c "%d:%i" ${LIST_FILE})" != "$(stat -c "%d:%i" ${PYR_DIR_DST}/$bn)" ]; then
+        cp ${LIST_FILE} ${PYR_DIR_DST}/
+    else
+        echo "List file is already locate to the backup destination"
+    fi
 }
 PushSlab () {
     local input=$1
     local output=$2
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${output}" == "${last_slab}" ]]; then
+            echo "Last transfered slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
 
     size=`stat -L -c "%s" ${PYR_DIR_SRC}/$input`
     if [ $? != 0 ] ; then echo "$input n'existe pas, on passe" ; return; fi
@@ -151,7 +165,7 @@ PushSlab () {
     cp ${PYR_DIR_SRC}/$input ${PYR_DIR_DST}/$output 
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 
-    echo "0/${input}" >>${TMP_LIST_FILE}
+    echo "0/${output}" >>${TMP_LIST_FILE}
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 FUNCTION
@@ -159,6 +173,10 @@ FUNCTION
 my $CEPH_PULL_TMP = <<'FUNCTION';
 PullSlab () {
     local input=$1
+
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
   
     rados -p ${PYR_POOL_SRC} get $input ${TMP_DIR}/slab.tmp
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
@@ -170,10 +188,23 @@ PullSlab () {
     local input=$1
     local output=$2
 
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${output}" == "${last_slab}" ]]; then
+            echo "Last transfered slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
+
     local dir=`dirname ${PYR_DIR_DST}/$output`
     if [ ! -d $dir ] ; then mkdir -p $dir ; fi
   
     rados -p ${PYR_POOL_SRC} get $input ${PYR_DIR_DST}/$output 
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+
+    echo "0/${output}" >>${TMP_LIST_FILE}
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 FUNCTION
@@ -187,6 +218,16 @@ BackupListFile () {
 PushSlab () {
     local input=$1
     local output=$2
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${output}" == "${last_slab}" ]]; then
+            echo "Last transfered slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
 
     size=`stat -L -c "%s" ${PYR_DIR_SRC}/$input`
     if [ $? != 0 ] ; then echo "$input n'existe pas, on passe" ; return; fi
@@ -210,6 +251,16 @@ BackupListFile () {
 }
 PushSlab () {
     local output=$1
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${output}" == "${last_slab}" ]]; then
+            echo "Last transfered slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
 
     size=`stat -L -c "%s" ${TMP_DIR}/slab.tmp`
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
@@ -249,6 +300,16 @@ BackupListFile () {
 PushSlab () {
     local input=$1
     local output=$2
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${output}" == "${last_slab}" ]]; then
+            echo "Last transfered slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
 
     size=`stat -L -c "%s" ${PYR_DIR_SRC}/$input`
     if [ $? != 0 ] ; then echo "${PYR_DIR_SRC}/$input n'existe pas, on passe" ; return; fi
@@ -312,6 +373,16 @@ PushSlab () {
     local input=$1
     local output=$2
 
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${output}" == "${last_slab}" ]]; then
+            echo "Last transfered slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
+
     size=`stat -L -c "%s" ${PYR_DIR_SRC}/$input`
     if [ $? != 0 ] ; then echo "${PYR_DIR_SRC}/$input n'existe pas, on passe" ; return; fi
     if [ "$size" -le "$SLAB_LIMIT" ] ; then
@@ -357,6 +428,8 @@ ProcessSlab () {
 
     PullSlab $input
     PushSlab $output
+
+    print_prog
 }
 FUNCTION
 
@@ -366,6 +439,8 @@ ProcessSlab () {
     local output=$2
 
     PushSlab $input $output
+
+    print_prog
 }
 FUNCTION
 
@@ -375,12 +450,42 @@ ProcessSlab () {
     local output=$2
 
     PullSlab $input $output
+
+    print_prog
 }
 FUNCTION
 
 ####################################################################################################
 #                                   Group: Export function                                         #
 ####################################################################################################
+
+my $WORKANDPROG = <<'WORKANDPROG';
+progression=-1
+progression_file="$0.prog"
+lines_count=$(wc -l $0 | cut -d' ' -f1)
+start_line=0
+
+print_prog () {
+    tmp=$(( (${BASH_LINENO[-2]} - $start_line) * 100 / (${lines_count} - $start_line) ))
+    if [[ "$tmp" != "$progression" ]]; then
+        progression=$tmp
+        echo "$tmp" >$progression_file
+    fi
+}
+
+work=1
+
+# Test d'existence de la liste temporaire
+if [[ -f "${TMP_LIST_FILE}" ]] ; then 
+    # La liste existe, ce qui suggère que le script a déjà commencé à tourner
+    # On prend la dernière ligne pour connaître la dernière dalle complètement traitée
+    
+    last_slab=$(tail -n 1 ${TMP_LIST_FILE} | sed "s#^0/##")
+    echo "Script ${SCRIPT_ID} recall, work from slab ${last_slab}"
+    work=0
+fi
+
+WORKANDPROG
 
 =begin nd
 Function: getScriptInitialization
@@ -395,7 +500,9 @@ sub getScriptInitialization {
     my $pyramidFrom = shift;
     my $pyramidTo = shift;
 
-    my $string = "SLAB_LIMIT=$SLABLIMIT\n";
+    my $string = $WORKTEST;
+
+    $string .= "SLAB_LIMIT=$SLABLIMIT\n";
     $string .= "SECONDS=0\n";
 
     if ( $pyramidFrom->getStorageType() eq "CEPH" ) {
@@ -441,6 +548,9 @@ sub getScriptInitialization {
     $string .= sprintf "LIST_FILE=\"%s\"\n", $pyramidTo->getListFile();
     $string .= "COMMON_TMP_DIR=\"$COMMONTEMPDIR\"\n";
 
+    $string .= "start_line=\$LINENO\n";
+    $string .= "\n";
+
     return $string;
 }
 
@@ -454,6 +564,12 @@ my $MAIN_SCRIPT = <<'MAINSCRIPT';
 ################### CODES DE RETOUR #############################
 # 0 -> SUCCÈS
 # 1 -> ÉCHEC
+
+###################### PARAMÈTRES ###############################
+frequency=60
+if [[ ! -z $1 ]]; then
+    frequency=$1
+fi
 
 #################################################################
 
@@ -469,9 +585,6 @@ SPLITS_END=()
 SPLITS_EXITCODE=()
 SPLITS_NAME=()
 SPLITS_STATUS=()
-UPLINE=$(tput cuu1)
-ERASELINE=$(tput el)
-TIPEX=""
 
 for (( i = 1; i <= __jobs_number__; i++ )); do
     SPLITS+=("${scripts_directory}/SCRIPT_${i}.sh")
@@ -479,10 +592,7 @@ for (( i = 1; i <= __jobs_number__; i++ )); do
     SPLITS_END+=("0")
     SPLITS_EXITCODE+=("0")
     SPLITS_STATUS+=("En cours")
-    TIPEX="${TIPEX}$UPLINE$ERASELINE"
 done
-
-TIPEX="${TIPEX}\c"
 
 for s in "${SPLITS[@]}"; do
     (bash $s >$s.log 2>&1) &
@@ -491,13 +601,14 @@ for s in "${SPLITS[@]}"; do
 done
 
 
-echo "  INFO Attente de la fin des splits PYR2PYR"
+echo "  INFO Attente de la fin des __jobs_number__ splits PYR2PYR"
 first_time="1"
 while [[ "0" = "0" ]]; do
     still_one="0"
     for (( i = 0; i < __jobs_number__; i++ )); do
         p=${SPLITS_PIDS[$i]}
         e=${SPLITS_END[$i]}
+        n=${SPLITS_NAME[$i]}
 
         if [[ "$e" = "1" ]]; then
             continue
@@ -512,31 +623,21 @@ while [[ "0" = "0" ]]; do
         if [[ "$?" = "0" ]]; then
             SPLITS_EXITCODE[$i]="0"
             SPLITS_STATUS[$i]="Succès"
+            echo "$n -> Succès"
         else
             SPLITS_EXITCODE[$i]=$?
             SPLITS_STATUS[$i]="Échec"
+            echo "$n -> Échec"
         fi
 
         SPLITS_END[$i]="1"
-    done
-
-    if [[ "$first_time" = "1" ]]; then
-        first_time=0
-    else
-        echo -e "$TIPEX"
-    fi
-
-    for (( i = 0; i < __jobs_number__; i++ )); do
-        n=${SPLITS_NAME[$i]}
-        s=${SPLITS_STATUS[$i]}
-        echo "$n -> $s"
     done
 
     if [[ "$still_one" = "0" ]]; then
         break
     fi
 
-    sleep 60
+    sleep $frequency
 done
 
 for (( i = 0; i < __jobs_number__; i++ )); do

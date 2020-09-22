@@ -543,10 +543,11 @@ int main ( int argc, char **argv ) {
         }
     }
 
-    Logger::stopLogger();
-    if ( acc ) {
-        delete acc;
-    }
+    // Suppression du nettoyage du logger jusqu'à sa refonte
+    // Logger::stopLogger();
+    // if ( acc ) {
+    //     delete acc;
+    // }
     delete pMergeIn;
     delete pImageOut;
     delete pMaskOut;

@@ -30,7 +30,7 @@
 | `BBOX:<XMIN>,<YMIN>,<XMAX>,<YMAX>` | x      |           | Rectangle englobant                                                                 |
 | `BBOXES_LIST:<FILE PATH>`          | x      |           | Fichier listant des rectangle englobants `XMIN,YMIN,XMAX,YMAX`                      |
 | `GEOM_FILE:<FILE PATH>`            | x      | x         | Fichier contenant une géométrie en GML, KML, JSON ou WKT (filtrage sur l'extention) |
-| `GEOM:<FORMAT>`                    | x      | x         | Géométrie au format WKT                                                             |
+| `GEOM         `                    | x      | x         | Géométrie au format WKT                                                             |
 | `GETMAP_PARAMS_LIST:<FILE PATH>`   |        | x (--add) | Fichier listant les paramètres d'un GetMap WMS WIDTH, HEIGHT, CRS et BBOX           |
 | `GETTILE_PARAMS_LIST:<FILE PATH>`  |        | x (--add) | Fichier listant les paramètres d'un GetTile WMTS TILEMATRIX, TILECOL et TILEROW     |
 | `POINT:<X>,<Y>`                    | x      |           | Coordonnées d'un point                                                              |

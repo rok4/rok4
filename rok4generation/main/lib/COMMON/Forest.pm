@@ -368,7 +368,11 @@ sub computeGraphs {
         $graphInd++;
     }
     
-    COMMON::QTree::closeScripts($this->{scripts});
+    if ($this->{pyramid}->getTileMatrixSet()->isQTree()) {
+        COMMON::QTree::closeScripts($this->{scripts});
+    } else {
+        COMMON::NNGraph::closeScripts($this->{scripts});
+    }
     
     return TRUE;
 }

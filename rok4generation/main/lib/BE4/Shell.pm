@@ -178,11 +178,16 @@ MergeNtiff () {
     local bgI=$2
     local bgM=$3
 
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
     
-    mergeNtiff -f ${MNT_CONF_DIR}/$config -r ${TMP_DIR}/ ${MERGENTIFF_OPTIONS}
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    if [ -f ${MNT_CONF_DIR}/$config ]; then
+        mergeNtiff -f ${MNT_CONF_DIR}/$config -r ${TMP_DIR}/ ${MERGENTIFF_OPTIONS}
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     
-    rm -f ${MNT_CONF_DIR}/$config
+        rm -f ${MNT_CONF_DIR}/$config
+    fi
 
     if [ $bgI ] ; then
         rm -f ${TMP_DIR}/$bgI
@@ -200,6 +205,9 @@ MNTFUNCTION
 
 my $FILE_C2WFUNCTION = <<'C2WFUNCTION';
 PullSlab () {
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
     local input=$1
     local output=$2
 
@@ -210,6 +218,9 @@ C2WFUNCTION
 
 my $S3_C2WFUNCTION = <<'C2WFUNCTION';
 PullSlab () {
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
     local input=$1
     local output=$2
 
@@ -220,6 +231,9 @@ C2WFUNCTION
 
 my $SWIFT_C2WFUNCTION = <<'C2WFUNCTION';
 PullSlab () {
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
     local input=$1
     local output=$2
 
@@ -230,6 +244,9 @@ C2WFUNCTION
 
 my $CEPH_C2WFUNCTION = <<'C2WFUNCTION';
 PullSlab () {
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
     local input=$1
     local output=$2
 
@@ -253,6 +270,19 @@ PushSlab () {
     local imgName=$3
     local workMskName=$4
     local mskName=$5
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${imgName}" == "${last_slab}" ]]; then
+            echo "Last generated image slab found, now we work"
+            work=1
+        elif [[ ! -z $mskName && "${mskName}" == "${last_slab}" ]] ; then
+            echo "Last generated mask slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
     
     if [[ ! ${RM_IMGS[${TMP_DIR}/$workImgName]} ]] ; then
              
@@ -299,6 +329,19 @@ PushSlab () {
     local imgName=$3
     local workMskName=$4
     local mskName=$5
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${imgName}" == "${last_slab}" ]]; then
+            echo "Last generated image slab found, now we work"
+            work=1
+        elif [[ ! -z $mskName && "${mskName}" == "${last_slab}" ]] ; then
+            echo "Last generated mask slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
     
     if [[ ! ${RM_IMGS[${TMP_DIR}/$workImgName]} ]] ; then
              
@@ -347,6 +390,19 @@ PushSlab () {
     local imgName=$3
     local workMskName=$4
     local mskName=$5
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${imgName}" == "${last_slab}" ]]; then
+            echo "Last generated image slab found, now we work"
+            work=1
+        elif [[ ! -z $mskName && "${mskName}" == "${last_slab}" ]] ; then
+            echo "Last generated mask slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
     
     
     if [[ ! ${RM_IMGS[${TMP_DIR}/$workImgName]} ]] ; then
@@ -380,13 +436,20 @@ PushSlab () {
             fi
         fi
     fi
+
+    print_prog
 }
 W2CFUNCTION
 
 
 my $FILE_W2CFUNCTION = <<'W2CFUNCTION';
 BackupListFile () {
-    cp ${LIST_FILE} ${PYR_DIR}/
+    bn=$(basename ${LIST_FILE})
+    if [ "$(stat -c "%d:%i" ${LIST_FILE})" != "$(stat -c "%d:%i" ${PYR_DIR}/$bn)" ]; then
+        cp ${LIST_FILE} ${PYR_DIR}/
+    else
+        echo "List file is already locate to the backup destination"
+    fi
 }
 
 PushSlab () {
@@ -395,6 +458,19 @@ PushSlab () {
     local imgName=$3
     local workMskName=$4
     local mskName=$5
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${imgName}" == "${last_slab}" ]]; then
+            echo "Last generated image slab found, now we work"
+            work=1
+        elif [[ ! -z $mskName && "${mskName}" == "${last_slab}" ]] ; then
+            echo "Last generated mask slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
         
     if [[ ! ${RM_IMGS[${TMP_DIR}/$workImgName]} ]] ; then
         
@@ -437,6 +513,8 @@ PushSlab () {
             fi
         fi
     fi
+
+    print_prog
 }
 W2CFUNCTION
 
@@ -454,9 +532,13 @@ Wms2work () {
     local grid=$6
     shift 6
 
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
+
     local size=0
 
-    mkdir ${TMP_DIR}/harvesting/
+    mkdir -p ${TMP_DIR}/harvesting/
 
     for i in `seq 1 $#`;
     do
@@ -519,6 +601,10 @@ Merge4tiff () {
     local imgIn=( 0 $2 $4 $6 $8 )
     local mskIn=( 0 $3 $5 $7 $9 )
     shift 9
+
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
     
     local forRM=''
 
@@ -583,11 +669,17 @@ DecimateNtiff () {
     local config=$1
     local bgI=$2
     local bgM=$3
+
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
     
-    decimateNtiff -f ${DNT_CONF_DIR}/$config ${DECIMATENTIFF_OPTIONS}
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-    
-    rm -f ${DNT_CONF_DIR}/$config
+    if [ -f ${DNT_CONF_DIR}/$config ]; then
+        decimateNtiff -f ${DNT_CONF_DIR}/$config ${DECIMATENTIFF_OPTIONS}
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        
+        rm -f ${DNT_CONF_DIR}/$config
+    fi
     
     if [ $bgI ] ; then
         rm -f ${TMP_DIR}/$bgI
@@ -610,6 +702,12 @@ my $MAIN_SCRIPT_NNGRAPH = <<'MAINSCRIPT';
 # 0 -> SUCCÈS
 # 1 -> ÉCHEC
 
+###################### PARAMÈTRES ###############################
+frequency=60
+if [[ ! -z $1 ]]; then
+    frequency=$1
+fi
+
 #################################################################
 
 scripts_directory="__scripts_directory__"
@@ -626,9 +724,6 @@ for level in __level_ids__ ; do
     SPLITS_EXITCODE=()
     SPLITS_NAME=()
     SPLITS_STATUS=()
-    UPLINE=$(tput cuu1)
-    ERASELINE=$(tput el)
-    TIPEX=""
     
     for (( i = 1; i <= __jobs_number__; i++ )); do
         SPLITS+=("${scripts_directory}/LEVEL_${level}_SCRIPT_${i}.sh")
@@ -636,10 +731,7 @@ for level in __level_ids__ ; do
         SPLITS_END+=("0")
         SPLITS_EXITCODE+=("0")
         SPLITS_STATUS+=("En cours")
-        TIPEX="${TIPEX}$UPLINE$ERASELINE"
     done
-
-    TIPEX="${TIPEX}\c"
 
     for s in "${SPLITS[@]}"; do
         (bash $s >$s.log 2>&1) &
@@ -648,13 +740,14 @@ for level in __level_ids__ ; do
     done
 
 
-    echo "  INFO Attente de la fin des splits BE4 pour le niveau $level"
+    echo "  INFO Attente de la fin des __jobs_number__ splits BE4 pour le niveau $level"
     first_time="1"
     while [[ "0" = "0" ]]; do
         still_one="0"
         for (( i = 0; i < __jobs_number__; i++ )); do
             p=${SPLITS_PIDS[$i]}
             e=${SPLITS_END[$i]}
+            n=${SPLITS_NAME[$i]}
 
             if [[ "$e" = "1" ]]; then
                 continue
@@ -669,31 +762,21 @@ for level in __level_ids__ ; do
             if [[ "$?" = "0" ]]; then
                 SPLITS_EXITCODE[$i]="0"
                 SPLITS_STATUS[$i]="Succès"
+                echo "$n -> Succès"
             else
                 SPLITS_EXITCODE[$i]=$?
                 SPLITS_STATUS[$i]="Échec"
+                echo "$n -> Échec"
             fi
 
             SPLITS_END[$i]="1"
-        done
-
-        if [[ "$first_time" = "1" ]]; then
-            first_time=0
-        else
-            echo -e "$TIPEX"
-        fi
-
-        for (( i = 0; i < __jobs_number__; i++ )); do
-            n=${SPLITS_NAME[$i]}
-            s=${SPLITS_STATUS[$i]}
-            echo "$n -> $s"
         done
 
         if [[ "$still_one" = "0" ]]; then
             break
         fi
 
-        sleep 60
+        sleep $frequency
     done
 
     for (( i = 0; i < __jobs_number__; i++ )); do
@@ -725,6 +808,12 @@ my $MAIN_SCRIPT_QTREE = <<'MAINSCRIPT';
 # 0 -> SUCCÈS
 # 1 -> ÉCHEC
 
+###################### PARAMÈTRES ###############################
+frequency=60
+if [[ ! -z $1 ]]; then
+    frequency=$1
+fi
+
 #################################################################
 
 scripts_directory="__scripts_directory__"
@@ -739,9 +828,6 @@ SPLITS_END=()
 SPLITS_EXITCODE=()
 SPLITS_NAME=()
 SPLITS_STATUS=()
-UPLINE=$(tput cuu1)
-ERASELINE=$(tput el)
-TIPEX=""
 
 for (( i = 1; i <= __jobs_number__; i++ )); do
     SPLITS+=("${scripts_directory}/SCRIPT_${i}.sh")
@@ -749,10 +835,7 @@ for (( i = 1; i <= __jobs_number__; i++ )); do
     SPLITS_END+=("0")
     SPLITS_EXITCODE+=("0")
     SPLITS_STATUS+=("En cours")
-    TIPEX="${TIPEX}$UPLINE$ERASELINE"
 done
-
-TIPEX="${TIPEX}\c"
 
 for s in "${SPLITS[@]}"; do
     (bash $s >$s.log 2>&1) &
@@ -761,13 +844,14 @@ for s in "${SPLITS[@]}"; do
 done
 
 
-echo "  INFO Attente de la fin des splits BE4"
+echo "  INFO Attente de la fin des __jobs_number__ splits BE4"
 first_time="1"
 while [[ "0" = "0" ]]; do
     still_one="0"
     for (( i = 0; i < __jobs_number__; i++ )); do
         p=${SPLITS_PIDS[$i]}
         e=${SPLITS_END[$i]}
+        n=${SPLITS_NAME[$i]}
 
         if [[ "$e" = "1" ]]; then
             continue
@@ -782,31 +866,22 @@ while [[ "0" = "0" ]]; do
         if [[ "$?" = "0" ]]; then
             SPLITS_EXITCODE[$i]="0"
             SPLITS_STATUS[$i]="Succès"
+            echo "$n -> Succès"
+
         else
             SPLITS_EXITCODE[$i]=$?
             SPLITS_STATUS[$i]="Échec"
+            echo "$n -> Échec"
         fi
 
         SPLITS_END[$i]="1"
-    done
-
-    if [[ "$first_time" = "1" ]]; then
-        first_time=0
-    else
-        echo -e "$TIPEX"
-    fi
-
-    for (( i = 0; i < __jobs_number__; i++ )); do
-        n=${SPLITS_NAME[$i]}
-        s=${SPLITS_STATUS[$i]}
-        echo "$n -> $s"
     done
 
     if [[ "$still_one" = "0" ]]; then
         break
     fi
 
-    sleep 60
+    sleep $frequency
 done
 
 for (( i = 0; i < __jobs_number__; i++ )); do
@@ -869,6 +944,36 @@ sub getMainScript {
 #                                   Group: Export function                                         #
 ####################################################################################################
 
+
+my $WORKANDPROG = <<'WORKANDPROG';
+
+progression=-1
+progression_file="$0.prog"
+lines_count=$(wc -l $0 | cut -d' ' -f1)
+start_line=0
+
+print_prog () {
+    tmp=$(( (${BASH_LINENO[-2]} - $start_line) * 100 / (${lines_count} - $start_line) ))
+    if [[ "$tmp" != "$progression" ]]; then
+        progression=$tmp
+        echo "$tmp" >$progression_file
+    fi
+}
+
+work=1
+
+# Test d'existence de la liste temporaire
+if [[ -f "${TMP_LIST_FILE}" ]] ; then 
+    # La liste existe, ce qui suggère que le script a déjà commencé à tourner
+    # On prend la dernière ligne pour connaître la dernière dalle complètement traitée
+    
+    last_slab=$(tail -n 1 ${TMP_LIST_FILE} | sed "s#^0/##")
+    echo "Script ${SCRIPT_ID} recall, work from slab ${last_slab}"
+    work=0
+fi
+
+WORKANDPROG
+
 =begin nd
 Function: getScriptInitialization
 
@@ -884,7 +989,9 @@ sub getScriptInitialization {
 
     # Variables
 
-    my $string = sprintf "MERGENTIFF_OPTIONS=\"-c zip -i %s -s %s -b %s -a %s -n %s\"\n",
+    my $string = $WORKANDPROG;
+
+    $string .= sprintf "MERGENTIFF_OPTIONS=\"-c zip -i %s -s %s -b %s -a %s -n %s\"\n",
         $pyramid->getImageSpec()->getInterpolation(),
         $pyramid->getImageSpec()->getPixel()->getSamplesPerPixel(),
         $pyramid->getImageSpec()->getPixel()->getBitsPerSample(),
@@ -970,6 +1077,7 @@ sub getScriptInitialization {
         $string .= $DNTFUNCTION;
     }
 
+    $string .= "start_line=\$LINENO\n";
     $string .= "\n";
 
     return $string;

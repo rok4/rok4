@@ -2,9 +2,7 @@
 
 Disponible sur [Docker Hub](https://hub.docker.com/u/rok4)
 
-## Compilation
-
-Docker files et images de sortie :
+Dockerfiles et images de sortie :
 * `docker/rok4server/buster.Dockerfile` -> `rok4/rok4server:<VERSION>-buster`
 * `docker/rok4server/stretch.Dockerfile` -> `rok4/rok4server:<VERSION>-stretch`
 * `docker/rok4server/centos7.Dockerfile` -> `rok4/rok4server:<VERSION>-centos7`
@@ -15,10 +13,5 @@ Utilisation du script `build.sh` :
 ./build.sh [--rok4server] [--rok4generation] --os buster|stretch|centos7 [--proxy http://proxy.host:port]
 ```
 
-## Utilisation de la partie serveur
-
-[Détails](./rok4server/README.md)
-
-## Utilisation de la partie outils
-
-[Détails](./rok4generation/README.md)
+[Utilisation de la partie serveur](./rok4server/README.md)
+[Utilisation de la partie outils](./rok4generation/README.md)

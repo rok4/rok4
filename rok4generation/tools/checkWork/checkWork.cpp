@@ -143,10 +143,11 @@ int main ( int argc, char **argv )
 
     // Nettoyage
     delete image;
-    Logger::stopLogger();
-    if ( acc ) {
-        delete acc;
-    }
+    // Suppression du nettoyage du logger jusqu'à sa refonte
+    // Logger::stopLogger();
+    // if ( acc ) {
+    //     delete acc;
+    // }
 
     return ret;
 }

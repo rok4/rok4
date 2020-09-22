@@ -342,10 +342,11 @@ int main ( int argc, char* argv[] ) {
     }
 
     LOGGER_DEBUG ( "Clean" );
-    Logger::stopLogger();
-    if ( acc ) {
-        delete acc;
-    }
+    // Suppression du nettoyage du logger jusqu'à sa refonte
+    // Logger::stopLogger();
+    // if ( acc ) {
+    //     delete acc;
+    // }
     delete[] targetValue;
     delete[] newData;
     delete[] newNodata;
