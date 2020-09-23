@@ -145,7 +145,7 @@ public:
      * \param[in] container Container to use
      * \param[in] ks Keystone connection ?
      */
-    SwiftContext (std::string auth, std::string user, std::string passwd, std::string container, bool ks = false, std::string auth_token = '');
+    SwiftContext (std::string auth, std::string user, std::string passwd, std::string container, bool ks = false, std::string auth_token = "");
 
     /**
      * \~french
@@ -171,7 +171,7 @@ public:
      * \param[in] container Container to use
      * \param[in] ks Keystone connection ?
      */
-    SwiftContext (std::string container, bool ks = false, std::string auth_token = '');
+    SwiftContext (std::string container, bool ks = false, std::string auth_token = "");
 
     eContextType getType();
     std::string getTypeStr();

@@ -165,8 +165,8 @@ int main ( int argc, char **argv ) {
     bool onSwift = false;
     bool onS3 = false;
     bool keystone = false;
-    std::string tokenString = '';
-    std::string tokenFilePath = '';
+    std::string tokenString = "";
+    std::string tokenFilePath = "";
 #endif
 
     /* Initialisation des Loggers */
@@ -338,14 +338,15 @@ int main ( int argc, char **argv ) {
         LOGGER_DEBUG( std::string("Output is an object in the Swift container ") + container);
 
         // On initialise le jeton d'authentification à partir du fichier de jeton s'il est fourni.
-        if ( tokenFilePath != '' ) {
+        if ( tokenFilePath != "" ) {
             try {
                 std::fstream tokenFile;
                 tokenFile.open(tokenFilePath, std::ios::in);
                 if ( tokenFile.is_open() ) {
                     std::string tokenFileLine;
                     while (std::getline(tokenFile, tokenFileLine)) {
-                        tokenString << tokenFileLine << "\n";
+                        tokenString += tokenFileLine;
+                        tokenString +=  "\n";
                     }
                     tokenFile.close();
                     LOGGER_DEBUG( std::string("Initial authentication token set to : \n") + tokenString );
@@ -457,9 +458,17 @@ int main ( int argc, char **argv ) {
 #if BUILD_OBJECT
 
     if (onSwift || onS3) {
+
+        // Un environnement CURL a été créé et utilisé, il faut le nettoyer
+        CurlPool::cleanCurlPool();
+        curl_global_cleanup();
+    }
+
+    if ( onSwift && tokenFilePath != "" ) {
         // On met à jour le fichier de jeton d'authentification Swift s'il a été fourni
-        if ( onSwift && tokenFilePath != '' ) {
-            tokenString = context->getAuthToken();
+        SwiftContext* swiftContext = dynamic_cast<SwiftContext*>(context);
+        if(swiftContext) {
+            tokenString = swiftContext->getAuthToken();
             try {
                 std::fstream tokenFile;
                 tokenFile.open(tokenFilePath, std::ios::out);
@@ -472,10 +481,6 @@ int main ( int argc, char **argv ) {
                 error( "Token file '" + tokenFilePath + "' could not be updated.", -1 );
             }
         }
-
-        // Un environnement CURL a été créé et utilisé, il faut le nettoyer
-        CurlPool::cleanCurlPool();
-        curl_global_cleanup();
     }
 
 #endif
