@@ -105,7 +105,9 @@ my %HANDLEDCONVERSION = (
     },
     "CEPH" => {
         "CEPH" => 1,
-        "FILE" => 1
+        "FILE" => 1,
+        "S3" => 1,
+        "SWIFT" => 1
     }
 );
 
