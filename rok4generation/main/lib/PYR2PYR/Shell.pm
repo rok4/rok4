@@ -143,6 +143,16 @@ PushSlab () {
     local input=$1
     local output=$2
 
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${output}" == "${last_slab}" ]]; then
+            echo "Last transfered slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
+
     size=`stat -L -c "%s" ${PYR_DIR_SRC}/$input`
     if [ $? != 0 ] ; then echo "$input n'existe pas, on passe" ; return; fi
     if [ "$size" -le "$SLAB_LIMIT" ] ; then
@@ -155,7 +165,7 @@ PushSlab () {
     cp ${PYR_DIR_SRC}/$input ${PYR_DIR_DST}/$output 
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 
-    echo "0/${input}" >>${TMP_LIST_FILE}
+    echo "0/${output}" >>${TMP_LIST_FILE}
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 FUNCTION
@@ -163,6 +173,10 @@ FUNCTION
 my $CEPH_PULL_TMP = <<'FUNCTION';
 PullSlab () {
     local input=$1
+
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
   
     rados -p ${PYR_POOL_SRC} get $input ${TMP_DIR}/slab.tmp
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
@@ -174,10 +188,23 @@ PullSlab () {
     local input=$1
     local output=$2
 
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${output}" == "${last_slab}" ]]; then
+            echo "Last transfered slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
+
     local dir=`dirname ${PYR_DIR_DST}/$output`
     if [ ! -d $dir ] ; then mkdir -p $dir ; fi
   
     rados -p ${PYR_POOL_SRC} get $input ${PYR_DIR_DST}/$output 
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+
+    echo "0/${output}" >>${TMP_LIST_FILE}
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 FUNCTION
@@ -191,6 +218,16 @@ BackupListFile () {
 PushSlab () {
     local input=$1
     local output=$2
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${output}" == "${last_slab}" ]]; then
+            echo "Last transfered slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
 
     size=`stat -L -c "%s" ${PYR_DIR_SRC}/$input`
     if [ $? != 0 ] ; then echo "$input n'existe pas, on passe" ; return; fi
@@ -214,6 +251,16 @@ BackupListFile () {
 }
 PushSlab () {
     local output=$1
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${output}" == "${last_slab}" ]]; then
+            echo "Last transfered slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
 
     size=`stat -L -c "%s" ${TMP_DIR}/slab.tmp`
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
@@ -253,6 +300,16 @@ BackupListFile () {
 PushSlab () {
     local input=$1
     local output=$2
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${output}" == "${last_slab}" ]]; then
+            echo "Last transfered slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
 
     size=`stat -L -c "%s" ${PYR_DIR_SRC}/$input`
     if [ $? != 0 ] ; then echo "${PYR_DIR_SRC}/$input n'existe pas, on passe" ; return; fi
@@ -322,6 +379,7 @@ RefreshToken (){
 
 }
 BackupListFile () {
+    local objectName=`basename ${LIST_FILE}`
 
     RefreshToken
 
@@ -336,6 +394,16 @@ BackupListFile () {
 PushSlab () {
     local input=$1
     local output=$2
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${output}" == "${last_slab}" ]]; then
+            echo "Last transfered slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
 
     RefreshToken
 
@@ -363,6 +431,8 @@ ProcessSlab () {
 
     PullSlab $input
     PushSlab $output
+
+    print_prog
 }
 FUNCTION
 
@@ -372,6 +442,8 @@ ProcessSlab () {
     local output=$2
 
     PushSlab $input $output
+
+    print_prog
 }
 FUNCTION
 
@@ -381,12 +453,42 @@ ProcessSlab () {
     local output=$2
 
     PullSlab $input $output
+
+    print_prog
 }
 FUNCTION
 
 ####################################################################################################
 #                                   Group: Export function                                         #
 ####################################################################################################
+
+my $WORKANDPROG = <<'WORKANDPROG';
+progression=-1
+progression_file="$0.prog"
+lines_count=$(wc -l $0 | cut -d' ' -f1)
+start_line=0
+
+print_prog () {
+    tmp=$(( (${BASH_LINENO[-2]} - $start_line) * 100 / (${lines_count} - $start_line) ))
+    if [[ "$tmp" != "$progression" ]]; then
+        progression=$tmp
+        echo "$tmp" >$progression_file
+    fi
+}
+
+work=1
+
+# Test d'existence de la liste temporaire
+if [[ -f "${TMP_LIST_FILE}" ]] ; then 
+    # La liste existe, ce qui suggère que le script a déjà commencé à tourner
+    # On prend la dernière ligne pour connaître la dernière dalle complètement traitée
+    
+    last_slab=$(tail -n 1 ${TMP_LIST_FILE} | sed "s#^0/##")
+    echo "Script ${SCRIPT_ID} recall, work from slab ${last_slab}"
+    work=0
+fi
+
+WORKANDPROG
 
 =begin nd
 Function: getScriptInitialization
@@ -401,7 +503,9 @@ sub getScriptInitialization {
     my $pyramidFrom = shift;
     my $pyramidTo = shift;
 
-    my $string = "SLAB_LIMIT=$SLABLIMIT\n";
+    my $string = $WORKTEST;
+
+    $string .= "SLAB_LIMIT=$SLABLIMIT\n";
     $string .= "SECONDS=0\n";
 
     if ( $pyramidFrom->getStorageType() eq "CEPH" ) {
@@ -446,6 +550,9 @@ sub getScriptInitialization {
 
     $string .= sprintf "LIST_FILE=\"%s\"\n", $pyramidTo->getListFile();
     $string .= "COMMON_TMP_DIR=\"$COMMONTEMPDIR\"\n";
+
+    $string .= "start_line=\$LINENO\n";
+    $string .= "\n";
 
     return $string;
 }
