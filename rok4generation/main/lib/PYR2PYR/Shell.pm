@@ -503,7 +503,7 @@ sub getScriptInitialization {
     my $pyramidFrom = shift;
     my $pyramidTo = shift;
 
-    my $string = $WORKTEST;
+    my $string = $WORKANDPROG;
 
     $string .= "SLAB_LIMIT=$SLABLIMIT\n";
     $string .= "SECONDS=0\n";
