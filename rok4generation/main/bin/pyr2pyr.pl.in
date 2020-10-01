@@ -487,10 +487,14 @@ sub doIt {
             $row = $p[-1];
         }
 
-        my $output = $pyramidTo->getSlabPath($type, $level, $col, $row, FALSE);
+        if ($type ne "NODATA") {
+            my $output = $pyramidTo->getSlabPath($type, $level, $col, $row, FALSE);
 
-        $scripts[$scriptInd]->write("ProcessSlab $input $output\n");
-        $scriptInd = ($scriptInd + 1) % $this{params}->{process}->{job_number};
+            $scripts[$scriptInd]->write("ProcessSlab $input $output\n");
+            $scriptInd = ($scriptInd + 1) % $this{params}->{process}->{job_number};
+        } else {
+            INFO("NODATA tile read for retrocompatibility purposes only, but ignored.");
+        }
     }
 
     close(LIST);
