@@ -796,6 +796,11 @@ sub updateStorageInfos {
         $updateLevelParams->{keystone_connection} = $this->{keystone_connection};
     }
 
+    if (! COMMON::ProxyStorage::checkEnvironmentVariables($this->{storage_type}, $this->{keystone_connection})) {
+        ERROR(sprintf("Environment variable is missing for a %s storage", $this->{storage_type}));
+        return FALSE;
+    }
+    
 
     while (my ($id, $level) = each(%{$this->{levels}}) ) {
         if (! $level->updateStorageInfos($updateLevelParams)) {

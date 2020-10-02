@@ -522,6 +522,16 @@ sub getScriptInitialization {
             $string .= $CEPH_PULL;
             $string .= $PROCESS_PULL;
         } 
+        elsif ( $pyramidTo->getStorageType() eq "S3" ) {
+            $string .= sprintf "PYR_BUCKET_DST=%s\n", $pyramidTo->getDataBucket();
+            $string .= $S3_PUSH;
+            $string .= $PROCESS_PUSH;
+        }        
+        elsif ( $pyramidTo->getStorageType() eq "SWIFT" ) {
+            $string .= sprintf "PYR_CONTAINER_DST=%s\n", $pyramidTo->getDataContainer();
+            $string .= $SWIFT_PUSH;
+            $string .= $PROCESS_PUSH;
+        }
     }
     elsif ( $pyramidFrom->getStorageType() eq "FILE" ) {
         $string .= sprintf "PYR_DIR_SRC=%s\n", $pyramidFrom->getDataDir();
