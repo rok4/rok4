@@ -959,7 +959,7 @@ sub backupDescriptor {
         INFO("On ne sauvegarde pas le descripteur de pyramide en mode fichier car des chemins sont en relatif et n'ont pas de sens si le fichier est ailleurs");
     } else {
         my $backupDescFile = sprintf "%s/%s.pyr", $this->getDataRoot(), $this->getName();
-        COMMON::ProxyStorage::copy("FILE", $descFile, $this->{storage_type}, $backupDescFile);
+        COMMON::ProxyStorage::copy("FILE", $descFile, $this->{storage_type}, $backupDescFile, $this->keystoneConnection());
     }
 }
 
