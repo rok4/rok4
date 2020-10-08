@@ -87,6 +87,7 @@ our $PERSONNALTEMPDIR;
 our $COMMONTEMPDIR;
 our $PARALLELIZATIONLEVEL;
 our $SLABLIMIT;
+our $USE_KEYSTONE;
 
 =begin nd
 Function: setGlobals
@@ -99,6 +100,7 @@ sub setGlobals {
     $COMMONTEMPDIR = shift;
     $SCRIPTSDIR = shift;
     $SLABLIMIT = shift;
+    $USE_KEYSTONE = shift;
 
     $COMMONTEMPDIR = File::Spec->catdir($COMMONTEMPDIR,"COMMON");
     
@@ -338,7 +340,7 @@ PushSlab () {
 }
 FUNCTION
 
-my $SWIFT_PUSH = <<'FUNCTION';
+my $SWIFT_REFRESH_KEYSTONE_TOKEN = <<'FUNCTION';
 RefreshToken (){
 
     if [ -z "$SWIFT_TOKEN" ]; then
@@ -378,6 +380,40 @@ RefreshToken (){
 
 
 }
+FUNCTION
+
+my $SWIFT_REFRESH_SWIFT_TOKEN = <<'FUNCTION';
+RefreshToken (){
+
+    if [ -z "$SWIFT_TOKEN" ]; then
+        SWIFT_TOKEN=""
+        SWIFT_TOKEN_DATE="0";
+    fi
+
+    tokenAge=$(( $(date +"%s") - ${SWIFT_TOKEN_DATE} ))
+    if [ "$tokenAge" -gt "3600" ]; then
+      
+      SWIFT_AUTHSTRING=$(curl -s -i -k \
+          -H "X-Storage-User: '${ROK4_SWIFT_ACCOUNT}':'${ROK4_SWIFT_USER}'");
+          -H "X-Storage-Pass: '${ROK4_SWIFT_PASSWD}'");
+          -H "X-Auth-User: '${ROK4_SWIFT_ACCOUNT}':'${ROK4_SWIFT_USER}'");
+          -H "X-Auth-Key: '${ROK4_SWIFT_PASSWD}'");
+          -X GET \
+          ${ROK4_SWIFT_AUTHURL} | grep "X-Auth-Token" | cut -d":" -f2 | tr -cd '[:print:]')
+      SWIFT_TOKEN=echo ${SWIFT_AUTHSTRING} | grep "X-Auth-Token" | cut -d":" -f2 | tr -cd '[:print:]')
+      ROK4_SWIFT_PUBLICURL=echo ${SWIFT_AUTHSTRING} | grep "X-Storage-Url" | cut -d":" -f2 | tr -cd '[:print:]')
+      
+      SWIFT_TOKEN_DATE=$(date +"%s")
+
+      export SWIFT_TOKEN
+      export SWIFT_TOKEN_DATE
+    fi
+
+
+}
+FUNCTION
+
+my $SWIFT_PUSH = <<'FUNCTION';
 BackupListFile () {
     local objectName=`basename ${LIST_FILE}`
 
@@ -416,6 +452,52 @@ PushSlab () {
     resource="/${PYR_CONTAINER_DST}/${output}"
 
     curl -k -X PUT -T "${PYR_DIR_SRC}/$input"  -H "X-Auth-Token: ${SWIFT_TOKEN}"  ${ROK4_SWIFT_PUBLICURL}${resource}
+
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+
+    echo "0/${output}" >> ${TMP_LIST_FILE}
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+FUNCTION
+
+my $SWIFT_PUSH_TMP = <<'FUNCTION';
+BackupListFile () {
+    local objectName=`basename ${LIST_FILE}`
+
+    RefreshToken
+
+    local objectName=`basename ${LIST_FILE}`
+
+    resource="/${PYR_CONTAINER_DST}/${objectName}"
+
+    curl -k -X PUT -T "${LIST_FILE}"  -H "X-Auth-Token: ${SWIFT_TOKEN}"  ${ROK4_SWIFT_PUBLICURL}${resource}
+
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+PushSlab () {
+    local output=$1
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${output}" == "${last_slab}" ]]; then
+            echo "Last transfered slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
+
+    RefreshToken
+
+    size=`stat -L -c "%s" ${TMP_DIR}/slab.tmp`
+    if [ $? != 0 ] ; then echo "${TMP_DIR}/slab.tmp n'existe pas, on passe" ; return; fi
+    if [ "$size" -le "$SLAB_LIMIT" ] ; then
+        return
+    fi
+    
+    resource="/${PYR_CONTAINER_DST}/${output}"
+
+    curl -k -X PUT -T "${TMP_DIR}/slab.tmp"  -H "X-Auth-Token: ${SWIFT_TOKEN}"  ${ROK4_SWIFT_PUBLICURL}${resource}
 
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 
@@ -529,8 +611,15 @@ sub getScriptInitialization {
         }        
         elsif ( $pyramidTo->getStorageType() eq "SWIFT" ) {
             $string .= sprintf "PYR_CONTAINER_DST=%s\n", $pyramidTo->getDataContainer();
-            $string .= $SWIFT_PUSH;
-            $string .= $PROCESS_PUSH;
+            $string .= $CEPH_PULL_TMP;
+            if ($USE_KEYSTONE) {
+                $string .= $SWIFT_REFRESH_KEYSTONE_TOKEN;
+            }
+            else {
+                $string .= $SWIFT_REFRESH_SWIFT_TOKEN;
+            }
+            $string .= $SWIFT_PUSH_TMP;
+            $string .= $PROCESS_PULL_PUSH;
         }
     }
     elsif ( $pyramidFrom->getStorageType() eq "FILE" ) {
@@ -553,6 +642,12 @@ sub getScriptInitialization {
         }        
         elsif ( $pyramidTo->getStorageType() eq "SWIFT" ) {
             $string .= sprintf "PYR_CONTAINER_DST=%s\n", $pyramidTo->getDataContainer();
+            if ($USE_KEYSTONE) {
+                $string .= $SWIFT_REFRESH_KEYSTONE_TOKEN;
+            }
+            else {
+                $string .= $SWIFT_REFRESH_SWIFT_TOKEN;
+            }
             $string .= $SWIFT_PUSH;
             $string .= $PROCESS_PUSH;
         }

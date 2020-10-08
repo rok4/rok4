@@ -364,8 +364,8 @@ sub doIt {
 
     ############################## LES COMMANDES SHELL
 
-    if (! PYR2PYR::Shell::setGlobals($this{params}->{process}->{job_number}, $this{params}->{process}->{path_temp}, $this{params}->{process}->{path_temp_common}, $this{params}->{process}->{path_shell}, $this{params}->{process}->{slab_limit})) {
-        ERROR ("Impossible d'initialiser la librairie des commandes Shell pour BE4");
+    if (! PYR2PYR::Shell::setGlobals($this{params}->{process}->{job_number}, $this{params}->{process}->{path_temp}, $this{params}->{process}->{path_temp_common}, $this{params}->{process}->{path_shell}, $this{params}->{process}->{slab_limit}, $pyramidTo->keystoneConnection())) {
+        ERROR ("Impossible d'initialiser la librairie des commandes Shell pour PYR2PYR");
         return FALSE;
     }
     my $scriptInit = PYR2PYR::Shell::getScriptInitialization($pyramidFrom, $pyramidTo);

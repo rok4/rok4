@@ -109,6 +109,7 @@ my $ROK4_SWIFT_PASSWD;
 
 my $SWIFT_TOKEN;
 my $ROK4_SWIFT_PUBLICURL;
+my $ROK4_KEYSTONE_IS_USED;
 
 # swift authentication
 my $ROK4_SWIFT_ACCOUNT;
@@ -197,6 +198,7 @@ sub checkEnvironmentVariables {
             $ROK4_KEYSTONE_DOMAINID = $ENV{ROK4_KEYSTONE_DOMAINID};
             $ROK4_KEYSTONE_PROJECTID = $ENV{ROK4_KEYSTONE_PROJECTID};
             $ROK4_SWIFT_PUBLICURL = $ENV{ROK4_SWIFT_PUBLICURL};
+            $ROK4_KEYSTONE_IS_USED = TRUE;
         } else {
             
             if (! defined $ENV{ROK4_SWIFT_ACCOUNT}) {
@@ -204,7 +206,7 @@ sub checkEnvironmentVariables {
                 ERROR("We need it for a swift authentication");
                 return FALSE;
             }
-
+            $ROK4_KEYSTONE_IS_USED = FALSE;
             $ROK4_SWIFT_ACCOUNT = $ENV{ROK4_SWIFT_ACCOUNT};
         }
 
@@ -254,12 +256,12 @@ Function: getSwiftToken
 Return TRUE if swift token (with keystone or not) is valid FALSE otherwise
 =cut
 sub getSwiftToken {
-    my $keystone = shift;
 
     if (! defined($ROK4_SWIFT_USER) || ! defined($ROK4_SWIFT_PASSWD)) {
-        checkEnvironmentVariables("SWIFT", $keystone);
+        ERROR("Cannot get Swift token without user credentials. Please make sure the environment variables were loaded.");
+        return FALSE;
     }
-    if ($keystone) {
+    if ($ROK4_KEYSTONE_IS_USED) {
 
         my $body_object = {
             "auth" => {
@@ -343,6 +345,40 @@ sub getSwiftToken {
     return TRUE;
 }
 
+=begin nd
+Function: sendSwiftRequest
+
+Parameters:
+    $request - HTTP::Request - the request to send to SWIFT
+    $parm1, $parm2, ... - optionnal - Any additionnal parameters for LWP::UserAgent->request()
+
+Send the request to swift once then, in case of failure, refresh the authorization token, then retry.
+
+Returns:
+    HTTP::Response - the last request's response.
+=cut
+sub sendSwiftRequest {
+    my @parameters = shift;
+    # $parameters[0] is the HTTP::Request object
+    $parameters[0]->header('X-Auth-Token' => $SWIFT_TOKEN);
+
+    my $response = $UA->request(@parameters);
+    if (defined($response) && $response->is_success) {
+        return $response;
+    }
+
+    WARNING("Swift request failed once. Refreshing SWIFT token.");
+    if (! getSwiftToken()) {
+        ERROR("Cannot refresh swift token");
+        return $response;
+    }
+
+    INFO("Retrying...");
+    $parameters[0]->header('X-Auth-Token' => $SWIFT_TOKEN);
+    $response = $UA->request(@parameters);
+    return $response;
+}
+
 ####################################################################################################
 #                               Group: Copy methods                                                #
 ####################################################################################################
@@ -357,7 +393,17 @@ sub copy {
     my $fromPath = shift;
     my $toType = shift;
     my $toPath = shift;
-    my $keystone = shift;
+
+    DEBUG("Copying from '$fromType' path '$fromPath', to '$toType' path '$toPath'.");
+    if ($fromType eq 'SWIFT' || $toType eq 'SWIFT') {
+        if($ROK4_KEYSTONE_IS_USED) {
+            DEBUG("Using keystone authentication.");
+        }
+        else {
+            DEBUG("Using SWIFT native authentication.");
+        }
+    }
+    return FALSE;
 
     if ($fromType eq "FILE") { ############################################ FILE
         if ($toType eq "FILE") {
@@ -440,7 +486,7 @@ sub copy {
         }
         elsif ($toType eq "SWIFT") {
             if (! defined ($SWIFT_TOKEN) ) {
-                if (! getSwiftToken($keystone)) {
+                if (! getSwiftToken()) {
                     ERROR("Cannot get swift token");
                     return FALSE;
                 }
@@ -459,32 +505,23 @@ sub copy {
 
             map_file $body, $fromPath;
 
-            for (my $try_count = 0; $try_count < 2; $try_count++) {
-                my $request = HTTP::Request->new(PUT => $ROK4_SWIFT_PUBLICURL.$context);
+            
+            my $request = HTTP::Request->new(PUT => $ROK4_SWIFT_PUBLICURL.$context);
 
-                $request->content($body);
-                $request->header('X-Auth-Token' => $SWIFT_TOKEN);
+            $request->content($body);
 
-                my $response = $UA->request($request);
-                if ($response->is_success) {
-                    return TRUE;
-                } 
-                elsif ($try_count == 0) {
-                    WARNING("Refreshing SWIFT token.");
-                    if (! getSwiftToken($keystone)) {
-                        ERROR("Cannot get swift token");
-                        return FALSE;
-                    }
-                    next;
-                }
-                     else {
-                    ERROR("Cannot upload SWIFT object '$toPath' from file $fromPath");
-                    ERROR("HTTP code: ", $response->code);
-                    ERROR("HTTP message: ", $response->message);
-                    ERROR("HTTP decoded content : ", $response->decoded_content);
-                    return FALSE;
-                }
+            my $response = sendSwiftRequest($request);
+            if ($response->is_success) {
+                return TRUE;
+            } 
+            else {
+                ERROR("Cannot upload SWIFT object '$toPath' from file $fromPath");
+                ERROR("HTTP code: ", $response->code);
+                ERROR("HTTP message: ", $response->message);
+                ERROR("HTTP decoded content : ", $response->decoded_content);
+                return FALSE;
             }
+            
         }
     }
     elsif ($fromType eq "CEPH") { ############################################ CEPH
@@ -565,52 +602,6 @@ sub copy {
         elsif ($toType eq "SWIFT") {
             ERROR("CEPH to SWIFT copy is not implemented.");            
             return FALSE;
-            # if (! defined ($SWIFT_TOKEN) ) {
-            #     if (! getSwiftToken($keystone)) {
-            #         ERROR("Cannot get swift token");
-            #         return FALSE;
-            #     }
-            # }
-            # my ($containerName, @rest) = split("/", $toPath);
-            # my $objectName = join("", @rest);
-
-            # if (! defined $containerName || ! defined $objectName) {
-            #     ERROR("SWIFT path is not valid (<containerName>/<objectName>) : $fromPath");
-            #     return FALSE;
-            # }
-
-            # my $context = "/$containerName/$objectName";
-
-            # my $body;
-
-            # map_file $body, $fromPath;
-
-            # for (my $try_count = 0; $try_count < 2; $try_count++) {
-            #     my $request = HTTP::Request->new(PUT => $ROK4_SWIFT_PUBLICURL.$context);
-
-            #     $request->content($body);
-            #     $request->header('X-Auth-Token' => $SWIFT_TOKEN);
-
-            #     my $response = $UA->request($request);
-            #     if ($response->is_success) {
-            #         return TRUE;
-            #     } 
-            #     elsif ($try_count == 0) {
-            #         WARNING("Refreshing SWIFT token.");
-            #         if (! getSwiftToken($keystone)) {
-            #             ERROR("Cannot get swift token");
-            #             return FALSE;
-            #         }
-            #         next;
-            #     }
-            #          else {
-            #         ERROR("Cannot upload SWIFT object '$toPath' from file $fromPath");
-            #         ERROR("HTTP code: ", $response->code);
-            #         ERROR("HTTP message: ", $response->message);
-            #         ERROR("HTTP decoded content : ", $response->decoded_content);
-            #         return FALSE;
-            #     }
-            # }
         }
     }
     elsif ($fromType eq "S3") { ############################################ S3
@@ -712,7 +703,7 @@ sub copy {
     }
     elsif ($fromType eq "SWIFT") { ############################################ SWIFT
         if (! defined ($SWIFT_TOKEN) ) {
-            if (! getSwiftToken($keystone)) {
+            if (! getSwiftToken()) {
                 ERROR("Cannot get swift token");
                 return FALSE;
             }
@@ -731,8 +722,7 @@ sub copy {
 
             my $request = HTTP::Request->new(GET => $ROK4_SWIFT_PUBLICURL.$context);
 
-            $request->header('X-Auth-Token' => $SWIFT_TOKEN);
-             
+            
             # create folder
             my $dir = File::Basename::dirname($toPath);
             `mkdir -p $dir`;
@@ -741,7 +731,8 @@ sub copy {
                 return FALSE;
             }
 
-            my $response = $UA->request($request, $toPath);
+
+            my $response = sendSwiftRequest($request, $toPath);
             if ($response->is_success) {
                 return TRUE;
             } else {
@@ -775,16 +766,15 @@ sub copy {
             for (my $try_count = 0; $try_count < 2; $try_count++) {
                 my $request = HTTP::Request->new(COPY => $ROK4_SWIFT_PUBLICURL.$context);
 
-                $request->header('X-Auth-Token' => $SWIFT_TOKEN);
                 $request->header('Destination' => "$toContainer/$toObjectName");
 
-                my $response = $UA->request($request);
+                my $response = sendSwiftRequest($request);
                 if ($response->is_success) {
                     return TRUE;
                 } 
                 elsif ($try_count == 0) {
                     WARNING("Refreshing SWIFT token.");
-                    if (! getSwiftToken($keystone)) {
+                    if (! getSwiftToken()) {
                         ERROR("Cannot get swift token");
                         return FALSE;
                     }
@@ -849,7 +839,6 @@ Return TRUE or FALSE
 sub isPresent {
     my $type = shift;
     my $path = shift;
-    my $keystone = shift;
 
     DEBUG("$type $path isPresent ?");
 
