@@ -153,7 +153,7 @@ sub new {
     my $type = shift;
     my $params = shift;
     my $descDirectory = shift;
-    
+
     $class= ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above)
     my $this = {
@@ -228,7 +228,7 @@ sub new {
     elsif ( defined $this->{container_name} ) {
         $this->{type} = "SWIFT";
 
-        if (! COMMON::ProxyStorage::checkEnvironmentVariables("SWIFT")) {
+        if (! COMMON::ProxyStorage::checkEnvironmentVariables("SWIFT", $this->{keystone_connection})) {
             ERROR("Environment variable is missing for a SWIFT storage");
             return FALSE;
         }

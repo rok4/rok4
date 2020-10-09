@@ -320,8 +320,7 @@ sub new {
             #### CAS D'UNE PYRAMIDE SWIFT
             $this->{storage_type} = "SWIFT";
             $this->{data_container} = $params->{pyr_data_container_name};
-
-            if ( exists $params->{keystone_connection} && defined $params->{keystone_connection} && uc($params->{keystone_connection}) eq "TRUE" ) {
+            if ( exists $params->{keystone_connection} && defined $params->{keystone_connection} && (uc($params->{keystone_connection}) eq "TRUE" || $params->{keystone_connection} ==1) ) {
                 $this->{keystone_connection} = TRUE;                
             }
         }

@@ -305,8 +305,19 @@ sub config {
     }
 
     # Environment variables
-
-    if (! COMMON::ProxyStorage::checkEnvironmentVariables("SWIFT")) {
+    my $keystone = FALSE;
+    if (
+        defined(
+            $this{params}->{pyramid}->{keystone_connection} 
+            && (
+                $this{params}->{pyramid}->{keystone_connection} ==1 
+                || uc($this{params}->{pyramid}->{keystone_connection}) eq "TRUE"
+            )
+        )
+    ){
+        $keystone = TRUE;
+    }
+    if (! COMMON::ProxyStorage::checkEnvironmentVariables("SWIFT", $keystone)) {
         ERROR("Environment variable is missing for a Swift storage");
         return FALSE;
     }
