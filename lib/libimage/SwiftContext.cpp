@@ -86,6 +86,8 @@ SwiftContext::SwiftContext (std::string container, bool ks, std::string auth_tok
 
 bool SwiftContext::connection() {
 
+    LOGGER_DEBUG("Status before connection : " << std::endl << "  - connected = " << connected << std::endl << "  - token = " << token);
+
     if (! connected) {
 
         if (keystone_connection) {
@@ -115,7 +117,7 @@ bool SwiftContext::connection() {
                 public_url.assign(publicu);
             }
 
-            if (token != "") {
+            if (token == "") {
 
                 CURLcode res;
                 struct curl_slist *list = NULL;
@@ -186,7 +188,7 @@ bool SwiftContext::connection() {
                 user_account.assign(account);
             }
 
-            if (token != "") {
+            if (token == "") {
 
                 CURLcode res;
                 struct curl_slist *list = NULL;
@@ -260,7 +262,7 @@ bool SwiftContext::connection() {
         connected = true;
 
     }
-
+    LOGGER_DEBUG("Status after connection : " << std::endl << "  - connected = " << connected << std::endl << "  - token = " << token);
     return true;
 }
 
@@ -269,6 +271,7 @@ int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
 }
 
 int SwiftContext::read(uint8_t* data, int offset, int size, std::string name, bool second_try) {
+    LOGGER_DEBUG("SwiftContext::read(.<data>, " << offset << ", " << size << ", " << name << ", " << second_try << ")");
 
     if (! connected) {
         LOGGER_ERROR("Impossible de lire via un contexte non connecté");
@@ -312,28 +315,36 @@ int SwiftContext::read(uint8_t* data, int offset, int size, std::string name, bo
     
     curl_slist_free_all(list);
 
-    if ( second_try == false && CURLE_HTTP_RETURNED_ERROR == res) {
+    if ( second_try == false && (CURLE_HTTP_RETURNED_ERROR == res || CURLE_OK != res)) {
         LOGGER_WARN("Connection may have expired. Reconnecting.");
         this->connected = false;
         this->token = "";
-        this->connection();
+        LOGGER_DEBUG("(CURLE_HTTP_RETURNED_ERROR == res || CURLE_OK != res)");
+        if (! this->connection()) {
+            LOGGER_ERROR("Reconnection attempt failed.");
+        }
+        LOGGER_DEBUG("Successfully reconnected.");
         return this->read(data, offset, size, name, true);
 
     }
     if( CURLE_OK != res) {
         LOGGER_ERROR("Cannot read data from Swift : " << size << " bytes (from the " << offset << " one) in the object " << name);
-        LOGGER_ERROR(curl_easy_strerror(res));
+        LOGGER_ERROR("Curl error : " << curl_easy_strerror(res));
         return -1;
     }
 
     long http_code = 0;
     curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
 
-    if ( second_try == false && http_code == 403) {
+    if ( second_try == false && (http_code == 403 || http_code == 401)) {
         LOGGER_WARN("Connection may have expired. Reconnecting.");
         this->connected = false;
         this->token = "";
-        this->connection();
+        LOGGER_DEBUG("(http_code == 403 || http_code == 401)");
+        if (! this->connection()) {
+            LOGGER_ERROR("Reconnection attempt failed.");
+        }
+        LOGGER_DEBUG("Successfully reconnected.");
         return this->read(data, offset, size, name, true);
 
     }
@@ -420,7 +431,7 @@ bool SwiftContext::closeToWrite(std::string name) {
 }
 
 bool SwiftContext::closeToWrite(std::string name, bool second_try) {
-
+    LOGGER_DEBUG("SwiftContext::closeToWrite(" << name << ", " << second_try << ")");
 
     std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
     if ( it1 == writingBuffers.end() ) {
@@ -452,18 +463,21 @@ bool SwiftContext::closeToWrite(std::string name, bool second_try) {
 
     res = curl_easy_perform(curl);
 
-    if ( second_try == false && CURLE_HTTP_RETURNED_ERROR == res) {
+    if ( second_try == false && (CURLE_HTTP_RETURNED_ERROR == res || CURLE_OK != res)) {
         LOGGER_WARN("Connection may have expired. Reconnecting.");
         curl_slist_free_all(list);
-        curl_easy_cleanup(curl);
         this->connected = false;
         this->token = "";
-        this->connection();
+        LOGGER_DEBUG("(CURLE_HTTP_RETURNED_ERROR == res || CURLE_OK != res)");
+        if (! this->connection()) {
+            LOGGER_ERROR("Reconnection attempt failed.");
+        }
+        LOGGER_DEBUG("Successfully reconnected.");
         return this->closeToWrite(name, true);
     }    
     if( CURLE_OK != res) {
         LOGGER_ERROR ( "Unable to flush " << it1->second->size() << " bytes in the object " << name );
-        LOGGER_ERROR(curl_easy_strerror(res));
+        LOGGER_ERROR("Curl error : " << curl_easy_strerror(res));
         curl_slist_free_all(list);
         curl_easy_cleanup(curl);
         return false;
@@ -471,13 +485,16 @@ bool SwiftContext::closeToWrite(std::string name, bool second_try) {
 
     long http_code = 0;
     curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
-    if ( second_try == false && http_code == 403) {
+    if ( second_try == false && (http_code == 403 || http_code == 401)) {
         LOGGER_WARN("Connection may have expired. Reconnecting.");
         curl_slist_free_all(list);
-        curl_easy_cleanup(curl);
         this->connected = false;
         this->token = "";
-        this->connection();
+        LOGGER_DEBUG("(http_code == 403 || http_code == 401)");
+        if (! this->connection()) {
+            LOGGER_ERROR("Reconnection attempt failed.");
+        }
+        LOGGER_DEBUG("Successfully reconnected.");
         return this->closeToWrite(name, true);
     }
     if (http_code < 200 || http_code > 299) {
