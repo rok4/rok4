@@ -317,10 +317,73 @@ PushSlab () {
     fi
 }
 W2CFUNCTION
+my $SWIFT_KEYSTONE_TOKEN_INITFUNCTION = <<'FUNCTION';
+InitToken (){
+
+    if [ -z "$SWIFT_TOKEN" ]; then
+        SWIFT_TOKEN=""
+    fi
+
+    SWIFT_TOKEN=$(curl -s -i -k \
+        -H "Content-Type: application/json" \
+        -X POST \
+        -d '
+    {   "auth": {
+            "scope": {
+                "project": {"id": "'$ROK4_KEYSTONE_PROJECTID'"}
+            },
+            "identity": {
+                "methods": ["password"],
+                "password": {
+                    "user": {
+                        "domain": {"name": "'$ROK4_KEYSTONE_DOMAINID'"},
+                        "password": "'$ROK4_SWIFT_PASSWD'",
+                        "name": "'$ROK4_SWIFT_USER'"
+                    }
+                }
+            }
+        }
+    }' ${ROK4_SWIFT_AUTHURL} | grep "X-Subject-Token" | cut -d":" -f2 | tr -cd '[:print:]')
+
+    export SWIFT_TOKEN
+    echo $SWIFT_TOKEN > ${TMP_DIR}/auth_token.txt
+
+}
+FUNCTION
+
+my $SWIFT_NATIVE_TOKEN_INITFUNCTION = <<'FUNCTION';
+InitToken (){
+
+    if [ -z "$SWIFT_TOKEN" ]; then
+        SWIFT_TOKEN=""
+    fi
+      
+    SWIFT_AUTHSTRING=$(curl -s -i -k \
+        -H "X-Storage-User: '${ROK4_SWIFT_ACCOUNT}':'${ROK4_SWIFT_USER}'");
+        -H "X-Storage-Pass: '${ROK4_SWIFT_PASSWD}'");
+        -H "X-Auth-User: '${ROK4_SWIFT_ACCOUNT}':'${ROK4_SWIFT_USER}'");
+        -H "X-Auth-Key: '${ROK4_SWIFT_PASSWD}'");
+        -X GET \
+        ${ROK4_SWIFT_AUTHURL}
+    SWIFT_TOKEN=$(echo ${SWIFT_AUTHSTRING} | grep "X-Auth-Token" | cut -d":" -f2 | tr -cd '[:print:]'))
+    ROK4_SWIFT_PUBLICURL=$(echo ${SWIFT_AUTHSTRING} | grep "X-Storage-Url" | cut -d":" -f2 | tr -cd '[:print:]'))
+
+    export SWIFT_TOKEN
+    echo $SWIFT_TOKEN > ${TMP_DIR}/auth_token.txt
+
+}
+FUNCTION
 
 my $SWIFT_W2CFUNCTION = <<'W2CFUNCTION';
 BackupListFile () {
-    echo "List file back up to do"
+    local objectName=`basename ${LIST_FILE}`
+
+    resource="/${PYR_CONTAINER}/${objectName}"
+
+    echo "curl -k -X PUT -T \"${LIST_FILE}\"  -H \"X-Auth-Token: ${SWIFT_TOKEN}\"  \"${ROK4_SWIFT_PUBLICURL}${resource}\""
+    curl -k -X PUT -T "${LIST_FILE}"  -H "X-Auth-Token: ${SWIFT_TOKEN}"  "${ROK4_SWIFT_PUBLICURL}${resource}"
+
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 
 PushSlab () {
@@ -344,8 +407,10 @@ PushSlab () {
     fi
     
     if [[ ! ${RM_IMGS[${TMP_DIR}/$workImgName]} ]] ; then
-             
-        work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} -container ${PYR_CONTAINER} ${KEYSTONE_OPTION} $imgName
+        if [[ ! -f ${TMP_DIR}/auth_token.txt ]] ; then
+            InitToken
+        fi
+        work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} -container ${PYR_CONTAINER} ${KEYSTONE_OPTION} -token ${TMP_DIR}/auth_token.txt $imgName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
         echo "0/$imgName" >> ${TMP_LIST_FILE}
@@ -361,7 +426,7 @@ PushSlab () {
             
             if [ $mskName ] ; then
                     
-                work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} -container ${PYR_CONTAINER} ${KEYSTONE_OPTION} $mskName
+                work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} -container ${PYR_CONTAINER} ${KEYSTONE_OPTION} -token ${TMP_DIR}/auth_token.txt $mskName
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
                 echo "0/$mskName" >> ${TMP_LIST_FILE}
                 
@@ -1065,6 +1130,11 @@ sub getScriptInitialization {
     }
     elsif ($pyramid->getStorageType() eq "SWIFT") {
         $string .= $SWIFT_C2WFUNCTION;
+        if ($pyramid->keystoneConnection()) {
+            $string .= $SWIFT_KEYSTONE_TOKEN_INITFUNCTION;
+        } else {
+            $string .= $SWIFT_NATIVE_TOKEN_INITFUNCTION;
+        }
         $string .= $SWIFT_W2CFUNCTION;
     }
 

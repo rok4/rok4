@@ -346,7 +346,6 @@ int main ( int argc, char **argv ) {
                     std::string tokenFileLine;
                     while (std::getline(tokenFile, tokenFileLine)) {
                         tokenString += tokenFileLine;
-                        tokenString +=  "\n";
                     }
                     tokenFile.close();
                     LOGGER_DEBUG( std::string("Initial authentication token set to : \n") + tokenString );

@@ -399,9 +399,9 @@ RefreshToken (){
           -H "X-Auth-User: '${ROK4_SWIFT_ACCOUNT}':'${ROK4_SWIFT_USER}'");
           -H "X-Auth-Key: '${ROK4_SWIFT_PASSWD}'");
           -X GET \
-          ${ROK4_SWIFT_AUTHURL} | grep "X-Auth-Token" | cut -d":" -f2 | tr -cd '[:print:]')
-      SWIFT_TOKEN=echo ${SWIFT_AUTHSTRING} | grep "X-Auth-Token" | cut -d":" -f2 | tr -cd '[:print:]')
-      ROK4_SWIFT_PUBLICURL=echo ${SWIFT_AUTHSTRING} | grep "X-Storage-Url" | cut -d":" -f2 | tr -cd '[:print:]')
+          ${ROK4_SWIFT_AUTHURL}
+      SWIFT_TOKEN=$(echo ${SWIFT_AUTHSTRING} | grep "X-Auth-Token" | cut -d":" -f2 | tr -cd '[:print:]'))
+      ROK4_SWIFT_PUBLICURL=$(echo ${SWIFT_AUTHSTRING} | grep "X-Storage-Url" | cut -d":" -f2 | tr -cd '[:print:]'))
       
       SWIFT_TOKEN_DATE=$(date +"%s")
 
@@ -419,11 +419,9 @@ BackupListFile () {
 
     RefreshToken
 
-    local objectName=`basename ${LIST_FILE}`
-
     resource="/${PYR_CONTAINER_DST}/${objectName}"
-
-    curl -k -X PUT -T "${LIST_FILE}"  -H "X-Auth-Token: ${SWIFT_TOKEN}"  ${ROK4_SWIFT_PUBLICURL}${resource}
+    echo "curl -k -X PUT -T \"${LIST_FILE}\"  -H \"X-Auth-Token: ${SWIFT_TOKEN}\"  \"${ROK4_SWIFT_PUBLICURL}${resource}\""
+    curl -k -X PUT -T "${LIST_FILE}"  -H "X-Auth-Token: ${SWIFT_TOKEN}"  "${ROK4_SWIFT_PUBLICURL}${resource}"
 
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
@@ -465,8 +463,6 @@ BackupListFile () {
     local objectName=`basename ${LIST_FILE}`
 
     RefreshToken
-
-    local objectName=`basename ${LIST_FILE}`
 
     resource="/${PYR_CONTAINER_DST}/${objectName}"
 

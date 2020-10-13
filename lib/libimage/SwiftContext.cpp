@@ -453,6 +453,9 @@ bool SwiftContext::closeToWrite(std::string name, bool second_try) {
     fullUrl = public_url + "/" + container_name + "/" + name;
 
     list = curl_slist_append(list, token.c_str());
+    std::size_t content_length = it1->second->size();
+    std::string content_length_string = std::to_string(content_length);
+    list = curl_slist_append(list, content_length_string.c_str());
 
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
     curl_easy_setopt(curl, CURLOPT_URL, fullUrl.c_str());
