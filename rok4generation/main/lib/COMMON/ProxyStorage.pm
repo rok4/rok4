@@ -403,7 +403,6 @@ sub copy {
             DEBUG("Using SWIFT native authentication.");
         }
     }
-    return FALSE;
 
     if ($fromType eq "FILE") { ############################################ FILE
         if ($toType eq "FILE") {
@@ -509,7 +508,6 @@ sub copy {
             my $request = HTTP::Request->new(PUT => $ROK4_SWIFT_PUBLICURL.$context);
 
             $request->content($body);
-
             my $response = sendSwiftRequest($request);
             if ($response->is_success) {
                 return TRUE;

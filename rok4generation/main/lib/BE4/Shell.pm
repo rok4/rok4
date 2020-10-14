@@ -343,11 +343,15 @@ InitToken (){
                 }
             }
         }
-    }' ${ROK4_SWIFT_AUTHURL} | grep "X-Subject-Token" | cut -d":" -f2 | tr -cd '[:print:]')
+    }' ${ROK4_SWIFT_AUTHURL} | grep "X-Subject-Token")
+
+    # trailing new line removal
+    SWIFT_TOKEN=${SWIFT_TOKEN//\n/}
 
     export SWIFT_TOKEN
-    echo $SWIFT_TOKEN > ${TMP_DIR}/auth_token.txt
+    echo ${SWIFT_TOKEN} > ${TMP_DIR}/auth_token.txt
 
+    echo "#### ${SWIFT_TOKEN} ####"
 }
 FUNCTION
 
@@ -364,9 +368,13 @@ InitToken (){
         -H "X-Auth-User: '${ROK4_SWIFT_ACCOUNT}':'${ROK4_SWIFT_USER}'");
         -H "X-Auth-Key: '${ROK4_SWIFT_PASSWD}'");
         -X GET \
-        ${ROK4_SWIFT_AUTHURL}
-    SWIFT_TOKEN=$(echo ${SWIFT_AUTHSTRING} | grep "X-Auth-Token" | cut -d":" -f2 | tr -cd '[:print:]'))
-    ROK4_SWIFT_PUBLICURL=$(echo ${SWIFT_AUTHSTRING} | grep "X-Storage-Url" | cut -d":" -f2 | tr -cd '[:print:]'))
+        ${ROK4_SWIFT_AUTHURL})
+    SWIFT_TOKEN=$(echo ${SWIFT_AUTHSTRING} | grep "X-Auth-Token")
+    ROK4_SWIFT_PUBLICURL=$(echo ${SWIFT_AUTHSTRING} | grep "X-Storage-Url" | cut -d":" -f2 | tr -cd '[:print:]')
+
+    # trailing new line removal
+    SWIFT_TOKEN=${SWIFT_TOKEN//\n/}
+    ROK4_SWIFT_PUBLICURL=${ROK4_SWIFT_PUBLICURL//\n/}
 
     export SWIFT_TOKEN
     echo $SWIFT_TOKEN > ${TMP_DIR}/auth_token.txt

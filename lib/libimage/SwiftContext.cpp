@@ -463,6 +463,7 @@ bool SwiftContext::closeToWrite(std::string name, bool second_try) {
     curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, &((*(it1->second))[0]));
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, it1->second->size());
+    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
     res = curl_easy_perform(curl);
 
