@@ -346,12 +346,18 @@ InitToken (){
     }' ${ROK4_SWIFT_AUTHURL} | grep "X-Subject-Token")
 
     # trailing new line removal
-    SWIFT_TOKEN=${SWIFT_TOKEN//\n/}
+    # sed options :
+    #   :a = create label a to jump back.
+    #   N  = append the next line of input into the pattern space.
+    #   $! = if it's not the last line...
+    #       ba = jump back to label a
+    SWIFT_TOKEN=$(echo "$SWIFT_TOKEN" | sed -E '/^[[:space:]]*$/d' | sed -E 's/^[[:space:]]+//g' | sed -E 's/[[:space:]]+$//g' | sed -E ':a;N;$!ba;s/[\n\r]//g' | sed -E 's/X-Subject-Token/X-Auth-Token/')
 
     export SWIFT_TOKEN
     echo ${SWIFT_TOKEN} > ${TMP_DIR}/auth_token.txt
+    sed -E '/^[[:space:]]*$/d' -i ${TMP_DIR}/auth_token.txt
+    sed -E ':a;N;$!ba;s/[\n\r]//g' -i ${TMP_DIR}/auth_token.txt
 
-    echo "#### ${SWIFT_TOKEN} ####"
 }
 FUNCTION
 
@@ -373,11 +379,19 @@ InitToken (){
     ROK4_SWIFT_PUBLICURL=$(echo ${SWIFT_AUTHSTRING} | grep "X-Storage-Url" | cut -d":" -f2 | tr -cd '[:print:]')
 
     # trailing new line removal
-    SWIFT_TOKEN=${SWIFT_TOKEN//\n/}
-    ROK4_SWIFT_PUBLICURL=${ROK4_SWIFT_PUBLICURL//\n/}
+    # sed options :
+    #   :a = create label a to jump back.
+    #   N  = append the next line of input into the pattern space.
+    #   $! = if it's not the last line...
+    #       ba = jump back to label a
+    ROK4_SWIFT_PUBLICURL=$(echo "$ROK4_SWIFT_PUBLICURL" | sed -E '/^[[:space:]]*$/d' | sed -E 's/^[[:space:]]+//g' | sed -E 's/[[:space:]]+$//g' | sed -E ':a;N;$!ba;s/[\n\r]//g')
+    SWIFT_TOKEN=$(echo "$SWIFT_TOKEN" | sed -E '/^[[:space:]]*$/d' | sed -E 's/^[[:space:]]+//g' | sed -E 's/[[:space:]]+$//g' | sed -E ':a;N;$!ba;s/[\n\r]//g')
 
     export SWIFT_TOKEN
+    export ROK4_SWIFT_PUBLICURL
     echo $SWIFT_TOKEN > ${TMP_DIR}/auth_token.txt
+    sed -E '/^[[:space:]]*$/d' -i ${TMP_DIR}/auth_token.txt
+    sed -E ':a;N;$!ba;s/[\n\r]//g' -i ${TMP_DIR}/auth_token.txt
 
 }
 FUNCTION
@@ -388,8 +402,8 @@ BackupListFile () {
 
     resource="/${PYR_CONTAINER}/${objectName}"
 
-    echo "curl -k -X PUT -T \"${LIST_FILE}\"  -H \"X-Auth-Token: ${SWIFT_TOKEN}\"  \"${ROK4_SWIFT_PUBLICURL}${resource}\""
-    curl -k -X PUT -T "${LIST_FILE}"  -H "X-Auth-Token: ${SWIFT_TOKEN}"  "${ROK4_SWIFT_PUBLICURL}${resource}"
+    echo "curl -k -X PUT -T \"${LIST_FILE}\"  -H \"${SWIFT_TOKEN}\"  \"${ROK4_SWIFT_PUBLICURL}${resource}\""
+    curl -k -X PUT -T "${LIST_FILE}"  -H "${SWIFT_TOKEN}"  "${ROK4_SWIFT_PUBLICURL}${resource}"
 
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }

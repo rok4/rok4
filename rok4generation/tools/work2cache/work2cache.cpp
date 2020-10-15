@@ -345,7 +345,41 @@ int main ( int argc, char **argv ) {
                 if ( tokenFile.is_open() ) {
                     std::string tokenFileLine;
                     while (std::getline(tokenFile, tokenFileLine)) {
-                        tokenString += tokenFileLine;
+                        // La syntaxe possible avec comilateur qui prend en charge une version récente du standard C++11 :
+                        // std::string processedLine = std::regex_replace(tokenFileLine, "^[[:space:]]*(.*)[[:space:]]*$", "$1");
+                        // if (processedLine != "") {
+                        //     tokenString += processedLine;
+                        // }
+
+                        // La syntaxe C++98 :
+                        std::string processedLine = tokenFileLine;
+                        boolean end_loop = false;
+                        while ( !end_loop ) {
+                            if (
+                                processedLine.find('\n') == 0
+                                || processedLine.find(' ') == 0
+                                || processedLine.find('\t') == 0
+                                || processedLine.find('\r') == 0
+                            ) {
+                                processedLine.erase(0, 1);
+                            } else {
+                                end_loop = true;
+                            }
+                        }
+                        end_loop = false;
+                        while ( !end_loop ) {
+                            if (
+                                processedLine.rfind('\n') == processedLine.size() - 1
+                                || processedLine.rfind(' ') == processedLine.size() - 1
+                                || processedLine.rfind('\t') == processedLine.size() - 1
+                                || processedLine.rfind('\r') == processedLine.size() - 1
+                            ) {
+                                processedLine.erase(processedLine.size() - 1, 1);
+                            } else {
+                                end_loop = true;
+                            }
+                        }
+                        tokenString += processedLine;
                     }
                     tokenFile.close();
                     LOGGER_DEBUG( std::string("Initial authentication token set to : \n") + tokenString );
