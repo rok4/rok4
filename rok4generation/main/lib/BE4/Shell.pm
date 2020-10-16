@@ -320,9 +320,7 @@ W2CFUNCTION
 my $SWIFT_KEYSTONE_TOKEN_INITFUNCTION = <<'FUNCTION';
 InitToken (){
 
-    if [ -z "$SWIFT_TOKEN" ]; then
-        SWIFT_TOKEN=""
-    fi
+    SWIFT_TOKEN=""
 
     SWIFT_TOKEN=$(curl -s -i -k \
         -H "Content-Type: application/json" \
@@ -364,9 +362,7 @@ FUNCTION
 my $SWIFT_NATIVE_TOKEN_INITFUNCTION = <<'FUNCTION';
 InitToken (){
 
-    if [ -z "$SWIFT_TOKEN" ]; then
-        SWIFT_TOKEN=""
-    fi
+    SWIFT_TOKEN=""
       
     SWIFT_AUTHSTRING=$(curl -s -i -k \
         -H "X-Storage-User: '${ROK4_SWIFT_ACCOUNT}':'${ROK4_SWIFT_USER}'");
@@ -402,10 +398,29 @@ BackupListFile () {
 
     resource="/${PYR_CONTAINER}/${objectName}"
 
-    echo "curl -k -X PUT -T \"${LIST_FILE}\"  -H \"${SWIFT_TOKEN}\"  \"${ROK4_SWIFT_PUBLICURL}${resource}\""
-    curl -k -X PUT -T "${LIST_FILE}"  -H "${SWIFT_TOKEN}"  "${ROK4_SWIFT_PUBLICURL}${resource}"
+    if [[ -s ${TMP_DIR}/auth_token.txt ]]; then
+        SWIFT_TOKEN=$(cat ${TMP_DIR}/auth_token.txt)
+    elif [[ -z "$SWIFT_TOKEN" ]]; then
+        InitToken
+    fi
 
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    attempt="first"
+    while [[ "$attempt" != "end" ]]; do
+        echo "curl -k -X PUT -T \"${LIST_FILE}\"  -H \"${SWIFT_TOKEN}\"  \"${ROK4_SWIFT_PUBLICURL}${resource}\""
+        curl -k -X PUT -T "${LIST_FILE}"  -H "${SWIFT_TOKEN}"  "${ROK4_SWIFT_PUBLICURL}${resource}"
+
+        exit_status=$!
+        if [[ $exit_status -ne 0 && "$attempt" == "first" ]] ; then
+            attempt="second"
+            InitToken
+        elif [[ $exit_status -ne 0 ]] ; then
+            echo "$0 : Erreur lors de la requête (code : $exit_status)" >&2 
+            attempt="end"
+            exit 1
+        else
+            attempt="end"
+        fi
+    done
 }
 
 PushSlab () {
@@ -427,11 +442,17 @@ PushSlab () {
 
         return
     fi
+
+    if [[ -s ${TMP_DIR}/auth_token.txt ]]; then
+        SWIFT_TOKEN=$(cat ${TMP_DIR}/auth_token.txt)
+    elif [[ ! -z "$SWIFT_TOKEN" ]]; then
+        echo "$SWIFT_TOKEN" > ${TMP_DIR}/auth_token.txt
+        sed -E '/^[[:space:]]*$/d' -i ${TMP_DIR}/auth_token.txt
+    else
+        InitToken
+    fi
     
     if [[ ! ${RM_IMGS[${TMP_DIR}/$workImgName]} ]] ; then
-        if [[ ! -f ${TMP_DIR}/auth_token.txt ]] ; then
-            InitToken
-        fi
         work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} -container ${PYR_CONTAINER} ${KEYSTONE_OPTION} -token ${TMP_DIR}/auth_token.txt $imgName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
@@ -1128,6 +1149,10 @@ sub getScriptInitialization {
             $string .= "KEYSTONE_OPTION=\"-ks\"\n";
         } else {
             $string .= "KEYSTONE_OPTION=\"\"\n";
+        }
+        my $SWIFT_TOKEN = COMMON::ProxyStorage::returnSwiftToken();
+        if (defined($SWIFT_TOKEN) && "$SWIFT_TOKEN" ne "") {
+            $string .= sprintf "SWIFT_TOKEN=\"X-Auth-Token: %s\"\n", $SWIFT_TOKEN;
         }
     }
 

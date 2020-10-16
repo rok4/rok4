@@ -21,8 +21,9 @@ La taille de tuile précisée doit être cohérente avec la taille totale de la 
 * `-bucket <BUCKET NAME>` : précise le nom du bucket S3 dans lequel écrire la dalle
 * `-container <CONTAINER NAME>` : précise le nom du conteneur SWIFT dans lequel écrire la dalle
 * `-ks` : dans le cas d'un stockage dans SWIFT, précise si l'on souhaite avoir une authentification keystone
-* `-token <TOKEN FILE PATH>` : précise le chemin vers un fichier accessible en lecture et en écriture, censé contenir un jeton d'authentification swift ou keystone, selon la présence ou non du switch `-ks`.
+* `-token <TOKEN FILE PATH>` : précise un chemin fichier accessible en lecture et en écriture, censé contenir un jeton d'authentification swift ou keystone, selon la présence ou non du switch `-ks`.
     * Si le fichier n'est pas vide, son contenu sera initialement utilisé par l'outil pour s'authentifier sur Swift
+    * Si le fichier n'existe pas, il sera créé vide
     * Dans tous les cas, le contenu sera mis à jour, en fin d'exécution de l'outil, avec le jeton valide le plus récent utilisé lors de l'exécution. (Pour le réutiliser lors de l'exécution suivante.)
 * `-a <FORMAT>` : format des canaux : float, uint
 * `-b <INTEGER>` : nombre de bits pour un canal : 8, 32

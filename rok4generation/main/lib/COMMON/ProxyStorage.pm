@@ -379,6 +379,16 @@ sub sendSwiftRequest {
     return $response;
 }
 
+=begin nd
+Function: returnSwiftToken
+
+Returns the value of the swift token in memory.
+=cut
+sub returnSwiftToken {
+    DEBUG(sprintf("Returning token value : '%s'", $SWIFT_TOKEN));
+    return $SWIFT_TOKEN;
+}
+
 ####################################################################################################
 #                               Group: Copy methods                                                #
 ####################################################################################################

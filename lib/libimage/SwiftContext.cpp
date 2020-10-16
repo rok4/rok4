@@ -336,11 +336,11 @@ int SwiftContext::read(uint8_t* data, int offset, int size, std::string name, bo
     long http_code = 0;
     curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
 
-    if ( second_try == false && (http_code == 403 || http_code == 401)) {
+    if ( second_try == false && (http_code == 403 || http_code == 401 || http_code == 400)) {
         LOGGER_WARN("Connection may have expired. Reconnecting.");
         this->connected = false;
         this->token = "";
-        LOGGER_DEBUG("(http_code == 403 || http_code == 401)");
+        LOGGER_DEBUG("(http_code == 403 || http_code == 401 || http_code == 400)");
         if (! this->connection()) {
             LOGGER_ERROR("Reconnection attempt failed.");
         }
@@ -489,12 +489,12 @@ bool SwiftContext::closeToWrite(std::string name, bool second_try) {
 
     long http_code = 0;
     curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
-    if ( second_try == false && (http_code == 403 || http_code == 401)) {
+    if ( second_try == false && (http_code == 403 || http_code == 401 || http_code == 400)) {
         LOGGER_WARN("Connection may have expired. Reconnecting.");
         curl_slist_free_all(list);
         this->connected = false;
         this->token = "";
-        LOGGER_DEBUG("(http_code == 403 || http_code == 401)");
+        LOGGER_DEBUG("(http_code == 403 || http_code == 401 || http_code == 400)");
         if (! this->connection()) {
             LOGGER_ERROR("Reconnection attempt failed.");
         }

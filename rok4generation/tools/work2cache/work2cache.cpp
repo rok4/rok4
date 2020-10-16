@@ -90,7 +90,7 @@ std::string help = std::string("\nwork2cache version ") + std::string(ROK4_VERSI
     "     -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size\n"
     "     -pool Ceph pool where data is. Then OUTPUT FILE is interpreted as a Ceph object ID (ONLY IF OBJECT COMPILATION)\n"
     "     -container Swift container where data is. Then OUTPUT FILE is interpreted as a Swift object name (ONLY IF OBJECT COMPILATION)\n"
-    "     -token path : valid path to a file designed to contain an authentication token for the output storage. This file can be empty but must exist and be both readable and writable by the process. The content will be updated if the token is renewed. (ONLY IF OBJECT COMPILATION)\n"
+    "     -token path : valid path to a file designed to contain an authentication token for the output storage. This file can be empty or absent from the directory. The content will be updated if the token is renewed. (ONLY IF OBJECT COMPILATION)\n"
     "     -ks in Swift storage case, activate keystone authentication (ONLY IF OBJECT COMPILATION)\n"
     "     -bucket S3 bucket where data is. Then OUTPUT FILE is interpreted as a S3 object name (ONLY IF OBJECT COMPILATION)\n"
     "     -crop : blocks (used by JPEG compression) wich contain a white pixel are filled with white\n"
@@ -337,12 +337,22 @@ int main ( int argc, char **argv ) {
 
         LOGGER_DEBUG( std::string("Output is an object in the Swift container ") + container);
 
-        // On initialise le jeton d'authentification à partir du fichier de jeton s'il est fourni.
+        /* Si un chemin de fichier est fourni pour gérer le jeton d'authentification, deux choix :
+         *     - s'il existe alors son contenu est lu pour en extraire la valeur initiale du jeton. Le résultat peut être une chaîne vide.
+         *     - si le fichier n'existe pas, il est créé, et le jeton est initialisé avec une chaîne vide.
+         */
         if ( tokenFilePath != "" ) {
             try {
                 std::fstream tokenFile;
-                tokenFile.open(tokenFilePath, std::ios::in);
-                if ( tokenFile.is_open() ) {
+
+                tokenFile.open(tokenFilePath, std::fstream::in);
+                if (!tokenFile) {
+                    LOGGER_INFO(std::string("Specified token file " + tokenFilePath + " does not exist. Creating it."));
+                    tokenFile.close();
+                    tokenFile.open(tokenFilePath, std::fstream::out);
+                    tokenFile << "";
+                    tokenFile.close();
+                } else if ( tokenFile.is_open() ) {
                     std::string tokenFileLine;
                     while (std::getline(tokenFile, tokenFileLine)) {
                         // La syntaxe possible avec comilateur qui prend en charge une version récente du standard C++11 :
@@ -382,13 +392,16 @@ int main ( int argc, char **argv ) {
                         tokenString += processedLine;
                     }
                     tokenFile.close();
-                    LOGGER_DEBUG( std::string("Initial authentication token set to : \n") + tokenString );
+                } else {
+                    tokenFile.close();
+                    error("Token file '" + tokenFilePath + "' could not be opened.", -1);
                 }
             } catch (...) {
                 error( "Token file '" + tokenFilePath + "' could not be read.", -1 );
             }
         }
 
+        LOGGER_DEBUG( std::string("Initial authentication token set to : '" + tokenString + "'"));
         context = new SwiftContext(container, keystone, tokenString);
     } else {
 #endif
