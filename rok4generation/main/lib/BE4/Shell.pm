@@ -168,6 +168,86 @@ sub getPersonnalTempDirectory {
     return $PERSONNALTEMPDIR;
 }
 
+
+####################################################################################################
+#                                  Group: SWIFT authentication                                     #
+####################################################################################################
+
+my $SWIFT_KEYSTONE_TOKEN_INITFUNCTION = <<'FUNCTION';
+InitToken (){
+
+    SWIFT_TOKEN=""
+
+    SWIFT_TOKEN=$(curl -s -i -k \
+        -H "Content-Type: application/json" \
+        -X POST \
+        -d '
+    {   "auth": {
+            "scope": {
+                "project": {"id": "'$ROK4_KEYSTONE_PROJECTID'"}
+            },
+            "identity": {
+                "methods": ["password"],
+                "password": {
+                    "user": {
+                        "domain": {"name": "'$ROK4_KEYSTONE_DOMAINID'"},
+                        "password": "'$ROK4_SWIFT_PASSWD'",
+                        "name": "'$ROK4_SWIFT_USER'"
+                    }
+                }
+            }
+        }
+    }' ${ROK4_SWIFT_AUTHURL} | grep "X-Subject-Token")
+
+    # trailing new line removal
+    # sed options :
+    #   :a = create label a to jump back.
+    #   N  = append the next line of input into the pattern space.
+    #   $! = if it's not the last line...
+    #       ba = jump back to label a
+    SWIFT_TOKEN=$(echo "$SWIFT_TOKEN" | sed -E '/^[[:space:]]*$/d' | sed -E 's/^[[:space:]]+//g' | sed -E 's/[[:space:]]+$//g' | sed -E ':a;N;$!ba;s/[\n\r]//g' | sed -E 's/X-Subject-Token/X-Auth-Token/')
+
+    export SWIFT_TOKEN
+    echo ${SWIFT_TOKEN} > ${TMP_DIR}/auth_token.txt
+    sed -E '/^[[:space:]]*$/d' -i ${TMP_DIR}/auth_token.txt
+    sed -E ':a;N;$!ba;s/[\n\r]//g' -i ${TMP_DIR}/auth_token.txt
+
+}
+FUNCTION
+
+my $SWIFT_NATIVE_TOKEN_INITFUNCTION = <<'FUNCTION';
+InitToken (){
+
+    SWIFT_TOKEN=""
+      
+    SWIFT_AUTHSTRING=$(curl -s -i -k \
+        -H "X-Storage-User: '${ROK4_SWIFT_ACCOUNT}':'${ROK4_SWIFT_USER}'");
+        -H "X-Storage-Pass: '${ROK4_SWIFT_PASSWD}'");
+        -H "X-Auth-User: '${ROK4_SWIFT_ACCOUNT}':'${ROK4_SWIFT_USER}'");
+        -H "X-Auth-Key: '${ROK4_SWIFT_PASSWD}'");
+        -X GET \
+        ${ROK4_SWIFT_AUTHURL})
+    SWIFT_TOKEN=$(echo ${SWIFT_AUTHSTRING} | grep "X-Auth-Token")
+    ROK4_SWIFT_PUBLICURL=$(echo ${SWIFT_AUTHSTRING} | grep "X-Storage-Url" | cut -d":" -f2 | tr -cd '[:print:]')
+
+    # trailing new line removal
+    # sed options :
+    #   :a = create label a to jump back.
+    #   N  = append the next line of input into the pattern space.
+    #   $! = if it's not the last line...
+    #       ba = jump back to label a
+    ROK4_SWIFT_PUBLICURL=$(echo "$ROK4_SWIFT_PUBLICURL" | sed -E '/^[[:space:]]*$/d' | sed -E 's/^[[:space:]]+//g' | sed -E 's/[[:space:]]+$//g' | sed -E ':a;N;$!ba;s/[\n\r]//g')
+    SWIFT_TOKEN=$(echo "$SWIFT_TOKEN" | sed -E '/^[[:space:]]*$/d' | sed -E 's/^[[:space:]]+//g' | sed -E 's/[[:space:]]+$//g' | sed -E ':a;N;$!ba;s/[\n\r]//g')
+
+    export SWIFT_TOKEN
+    export ROK4_SWIFT_PUBLICURL
+    echo $SWIFT_TOKEN > ${TMP_DIR}/auth_token.txt
+    sed -E '/^[[:space:]]*$/d' -i ${TMP_DIR}/auth_token.txt
+    sed -E ':a;N;$!ba;s/[\n\r]//g' -i ${TMP_DIR}/auth_token.txt
+
+}
+FUNCTION
+
 ####################################################################################################
 #                                        Group: MERGE N TIFF                                       #
 ####################################################################################################
@@ -237,7 +317,16 @@ PullSlab () {
     local input=$1
     local output=$2
 
-    cache2work -c zip -container ${PYR_CONTAINER} ${KEYSTONE_OPTION} $input ${TMP_DIR}/$output
+    if [[ -s ${TMP_DIR}/auth_token.txt ]]; then
+        SWIFT_TOKEN=$(cat ${TMP_DIR}/auth_token.txt)
+    elif [[ ! -z "$SWIFT_TOKEN" ]]; then
+        echo "$SWIFT_TOKEN" > ${TMP_DIR}/auth_token.txt
+        sed -E '/^[[:space:]]*$/d' -i ${TMP_DIR}/auth_token.txt
+    else
+        InitToken
+    fi
+
+    cache2work -c zip -container ${PYR_CONTAINER} ${KEYSTONE_OPTION} -token ${TMP_DIR}/auth_token.txt $input ${TMP_DIR}/$output
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 C2WFUNCTION
@@ -317,80 +406,6 @@ PushSlab () {
     fi
 }
 W2CFUNCTION
-my $SWIFT_KEYSTONE_TOKEN_INITFUNCTION = <<'FUNCTION';
-InitToken (){
-
-    SWIFT_TOKEN=""
-
-    SWIFT_TOKEN=$(curl -s -i -k \
-        -H "Content-Type: application/json" \
-        -X POST \
-        -d '
-    {   "auth": {
-            "scope": {
-                "project": {"id": "'$ROK4_KEYSTONE_PROJECTID'"}
-            },
-            "identity": {
-                "methods": ["password"],
-                "password": {
-                    "user": {
-                        "domain": {"name": "'$ROK4_KEYSTONE_DOMAINID'"},
-                        "password": "'$ROK4_SWIFT_PASSWD'",
-                        "name": "'$ROK4_SWIFT_USER'"
-                    }
-                }
-            }
-        }
-    }' ${ROK4_SWIFT_AUTHURL} | grep "X-Subject-Token")
-
-    # trailing new line removal
-    # sed options :
-    #   :a = create label a to jump back.
-    #   N  = append the next line of input into the pattern space.
-    #   $! = if it's not the last line...
-    #       ba = jump back to label a
-    SWIFT_TOKEN=$(echo "$SWIFT_TOKEN" | sed -E '/^[[:space:]]*$/d' | sed -E 's/^[[:space:]]+//g' | sed -E 's/[[:space:]]+$//g' | sed -E ':a;N;$!ba;s/[\n\r]//g' | sed -E 's/X-Subject-Token/X-Auth-Token/')
-
-    export SWIFT_TOKEN
-    echo ${SWIFT_TOKEN} > ${TMP_DIR}/auth_token.txt
-    sed -E '/^[[:space:]]*$/d' -i ${TMP_DIR}/auth_token.txt
-    sed -E ':a;N;$!ba;s/[\n\r]//g' -i ${TMP_DIR}/auth_token.txt
-
-}
-FUNCTION
-
-my $SWIFT_NATIVE_TOKEN_INITFUNCTION = <<'FUNCTION';
-InitToken (){
-
-    SWIFT_TOKEN=""
-      
-    SWIFT_AUTHSTRING=$(curl -s -i -k \
-        -H "X-Storage-User: '${ROK4_SWIFT_ACCOUNT}':'${ROK4_SWIFT_USER}'");
-        -H "X-Storage-Pass: '${ROK4_SWIFT_PASSWD}'");
-        -H "X-Auth-User: '${ROK4_SWIFT_ACCOUNT}':'${ROK4_SWIFT_USER}'");
-        -H "X-Auth-Key: '${ROK4_SWIFT_PASSWD}'");
-        -X GET \
-        ${ROK4_SWIFT_AUTHURL})
-    SWIFT_TOKEN=$(echo ${SWIFT_AUTHSTRING} | grep "X-Auth-Token")
-    ROK4_SWIFT_PUBLICURL=$(echo ${SWIFT_AUTHSTRING} | grep "X-Storage-Url" | cut -d":" -f2 | tr -cd '[:print:]')
-
-    # trailing new line removal
-    # sed options :
-    #   :a = create label a to jump back.
-    #   N  = append the next line of input into the pattern space.
-    #   $! = if it's not the last line...
-    #       ba = jump back to label a
-    ROK4_SWIFT_PUBLICURL=$(echo "$ROK4_SWIFT_PUBLICURL" | sed -E '/^[[:space:]]*$/d' | sed -E 's/^[[:space:]]+//g' | sed -E 's/[[:space:]]+$//g' | sed -E ':a;N;$!ba;s/[\n\r]//g')
-    SWIFT_TOKEN=$(echo "$SWIFT_TOKEN" | sed -E '/^[[:space:]]*$/d' | sed -E 's/^[[:space:]]+//g' | sed -E 's/[[:space:]]+$//g' | sed -E ':a;N;$!ba;s/[\n\r]//g')
-
-    export SWIFT_TOKEN
-    export ROK4_SWIFT_PUBLICURL
-    echo $SWIFT_TOKEN > ${TMP_DIR}/auth_token.txt
-    sed -E '/^[[:space:]]*$/d' -i ${TMP_DIR}/auth_token.txt
-    sed -E ':a;N;$!ba;s/[\n\r]//g' -i ${TMP_DIR}/auth_token.txt
-
-}
-FUNCTION
 
 my $SWIFT_W2CFUNCTION = <<'W2CFUNCTION';
 BackupListFile () {
@@ -1048,10 +1063,10 @@ sub getMainScript {
     return $ret;
 }
 
+
 ####################################################################################################
 #                                   Group: Export function                                         #
 ####################################################################################################
-
 
 my $WORKANDPROG = <<'WORKANDPROG';
 
@@ -1176,12 +1191,12 @@ sub getScriptInitialization {
         $string .= $S3_W2CFUNCTION;
     }
     elsif ($pyramid->getStorageType() eq "SWIFT") {
-        $string .= $SWIFT_C2WFUNCTION;
         if ($pyramid->keystoneConnection()) {
             $string .= $SWIFT_KEYSTONE_TOKEN_INITFUNCTION;
         } else {
             $string .= $SWIFT_NATIVE_TOKEN_INITFUNCTION;
         }
+        $string .= $SWIFT_C2WFUNCTION;
         $string .= $SWIFT_W2CFUNCTION;
     }
 

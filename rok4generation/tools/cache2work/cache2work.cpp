@@ -83,6 +83,7 @@ std::string help = std::string("\ncache2work version ") + std::string(ROK4_VERSI
     "    -bucket S3 bucket where data is. INPUT FILE is interpreted as a S3 object (ONLY IF OBJECT COMPILATION)\n"
     "    -container Swift container where data is. INPUT FILE is interpreted as a Swift object name (ONLY IF OBJECT COMPILATION)\n"
     "    -ks in Swift storage case, activate keystone authentication (ONLY IF OBJECT COMPILATION)\n"
+    "     -token path : valid path to a file designed to contain an authentication token for the output storage. This file can be empty or absent from the directory. The content will be updated if the token is renewed. (ONLY IF OBJECT COMPILATION)\n"
     "    -d debug logger activation\n\n"
 
     "Example\n"
@@ -132,7 +133,9 @@ int main ( int argc, char **argv )
     bool debugLogger=false;
 
     char *pool = 0, *container = 0, *bucket = 0;
-    bool keystone = false;
+    bool keystone = false;    
+    std::string tokenString = "";
+    std::string tokenFilePath = "";
 
     /* Initialisation des Loggers */
     Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
@@ -169,6 +172,13 @@ int main ( int argc, char **argv )
                 error("Error in -container option", -1);
             }
             container = argv[i];
+            continue;
+        }
+        if ( !strcmp ( argv[i],"-token" ) ) {
+            if ( ++i == argc ) {
+                error("Error in -token option", -1);
+            }
+            tokenFilePath = argv[i];
             continue;
         }
         if ( !strcmp ( argv[i],"-ks" ) ) {
@@ -243,7 +253,68 @@ int main ( int argc, char **argv )
     } else if (container != 0) {
         LOGGER_DEBUG( std::string("Input is an object in the Swift container ") + container);
         curl_global_init(CURL_GLOBAL_ALL);
-        context = new SwiftContext(container, keystone);
+        if ( tokenFilePath != "" ) {
+            try {
+                std::fstream tokenFile;
+
+                tokenFile.open(tokenFilePath, std::fstream::in);
+                if (!tokenFile) {
+                    LOGGER_INFO(std::string("Specified token file " + tokenFilePath + " does not exist. Creating it."));
+                    tokenFile.close();
+                    tokenFile.open(tokenFilePath, std::fstream::out);
+                    tokenFile << "";
+                    tokenFile.close();
+                } else if ( tokenFile.is_open() ) {
+                    std::string tokenFileLine;
+                    while (std::getline(tokenFile, tokenFileLine)) {
+                        // La syntaxe possible avec comilateur qui prend en charge une version récente du standard C++11 :
+                        // std::string processedLine = std::regex_replace(tokenFileLine, "^[[:space:]]*(.*)[[:space:]]*$", "$1");
+                        // if (processedLine != "") {
+                        //     tokenString += processedLine;
+                        // }
+
+                        // La syntaxe C++98 :
+                        std::string processedLine = tokenFileLine;
+                        boolean end_loop = false;
+                        while ( !end_loop ) {
+                            if (
+                                processedLine.find('\n') == 0
+                                || processedLine.find(' ') == 0
+                                || processedLine.find('\t') == 0
+                                || processedLine.find('\r') == 0
+                            ) {
+                                processedLine.erase(0, 1);
+                            } else {
+                                end_loop = true;
+                            }
+                        }
+                        end_loop = false;
+                        while ( !end_loop ) {
+                            if (
+                                processedLine.rfind('\n') == processedLine.size() - 1
+                                || processedLine.rfind(' ') == processedLine.size() - 1
+                                || processedLine.rfind('\t') == processedLine.size() - 1
+                                || processedLine.rfind('\r') == processedLine.size() - 1
+                            ) {
+                                processedLine.erase(processedLine.size() - 1, 1);
+                            } else {
+                                end_loop = true;
+                            }
+                        }
+                        tokenString += processedLine;
+                    }
+                    tokenFile.close();
+                } else {
+                    tokenFile.close();
+                    error("Token file '" + tokenFilePath + "' could not be opened.", -1);
+                }
+            } catch (...) {
+                error( "Token file '" + tokenFilePath + "' could not be read.", -1 );
+            }
+        }
+
+        LOGGER_DEBUG( std::string("Initial authentication token set to : '" + tokenString + "'"));
+        context = new SwiftContext(container, keystone, tokenString);
     } else {
 #endif
 
@@ -299,6 +370,24 @@ int main ( int argc, char **argv )
     if (container != 0 || bucket != 0) {
         CurlPool::cleanCurlPool();
         curl_global_cleanup();
+    }
+    if ( container != 0 && tokenFilePath != "" ) {
+        // On met à jour le fichier de jeton d'authentification Swift s'il a été fourni
+        SwiftContext* swiftContext = dynamic_cast<SwiftContext*>(context);
+        if(swiftContext) {
+            tokenString = swiftContext->getAuthToken();
+            try {
+                std::fstream tokenFile;
+                tokenFile.open(tokenFilePath, std::ios::out);
+                if ( tokenFile.is_open() ) {
+                    tokenFile << tokenString;
+                    tokenFile.close();
+                    LOGGER_DEBUG( std::string("Token file updated with new token : \n") + tokenString );
+                }
+            } catch (...) {
+                error( "Token file '" + tokenFilePath + "' could not be updated.", -1 );
+            }
+        }
     }
 #endif
 

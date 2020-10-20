@@ -13,7 +13,7 @@ La taille de tuile précisée doit être cohérente avec la taille totale de la 
 
 ## Usage
 
-`work2cache -c <VAL> -t <VAL> <VAL> <INPUT FILE> <OUTPUT FILE/OBJECT> [-pool <POOL NAME>|-bucket <BUCKET NAME>|-container <CONTAINER NAME> [-ks]] [-a <VAL> -s <VAL> -b <VAL>] [-crop]`
+`work2cache -c <VAL> -t <VAL> <VAL> <INPUT FILE> <OUTPUT FILE/OBJECT> [-pool <POOL NAME>|-bucket <BUCKET NAME>|-container <CONTAINER NAME> [-ks] [-token <TOKEN_FILE_PATH>]] [-a <VAL> -s <VAL> -b <VAL>] [-crop]`
 
 * `-c <COMPRESSION>` : compression des données dans l'image TIFF en sortie : jpg, raw (défaut), zip, lzw, pkb, png
 * `-t <INTEGER> <INTEGER>` : taille pixel d'une tuile, enlargeur et hauteur. Doit être un diviseur de la largeur et de la hauteur de l'image en entrée
