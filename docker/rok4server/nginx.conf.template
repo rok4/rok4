@@ -1,0 +1,18 @@
+
+upstream rok4server { server ${ROK4SERVER_HOST}:${ROK4SERVER_PORT}; }
+                                               
+server {
+    listen 80 default_server;
+
+    location /${ROK4SERVER_PREFIX} {
+        fastcgi_pass rok4server;
+        include fastcgi_params;
+    }
+
+    location / {
+        root /usr/share/nginx/html/leaflet/ ;
+        index index.html;
+    
+    }
+
+}

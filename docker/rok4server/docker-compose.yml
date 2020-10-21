@@ -1,0 +1,42 @@
+version: "3"
+services:
+  front:
+    image: nginx
+    ports:
+      - "8888:80"
+    links:
+      - middle
+    environment:
+      - ROK4SERVER_PREFIX=data
+      - ROK4SERVER_HOST=middle
+      - ROK4SERVER_PORT=9000
+    volumes:
+      - ./nginx.conf.template:/etc/nginx/templates/default.conf.template
+      - ./leaflet:/usr/share/nginx/html/leaflet
+
+  middle:
+    image: rok4/rok4server:3.7.2-buster
+    volumes:
+      - volume-limadm:/pyramids/LIMADM
+      - volume-alti:/pyramids/ALTI
+      - volume-ortho:/pyramids/BDORTHO
+
+  data-limadm:
+    image: rok4/dataset:geofla-martinique
+    volumes:
+      - volume-limadm:/pyramids/LIMADM
+
+  data-alti:
+    image: rok4/dataset:bdalti-martinique
+    volumes:
+      - volume-alti:/pyramids/ALTI
+
+  data-ortho:
+    image: rok4/dataset:bdortho5m-martinique
+    volumes:
+      - volume-ortho:/pyramids/BDORTHO
+
+volumes:
+  volume-limadm:
+  volume-alti:
+  volume-ortho:
