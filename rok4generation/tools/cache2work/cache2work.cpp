@@ -364,7 +364,6 @@ int main ( int argc, char **argv )
     // if ( acc ) {
     //     delete acc;
     // }
-    delete context;
 
 #if BUILD_OBJECT
     if (container != 0 || bucket != 0) {
@@ -376,6 +375,8 @@ int main ( int argc, char **argv )
         SwiftContext* swiftContext = dynamic_cast<SwiftContext*>(context);
         if(swiftContext) {
             tokenString = swiftContext->getAuthToken();
+        // if(context) {
+        //     tokenString = context->getAuthToken();
             try {
                 std::fstream tokenFile;
                 tokenFile.open(tokenFilePath, std::ios::out);
@@ -390,6 +391,8 @@ int main ( int argc, char **argv )
         }
     }
 #endif
+
+    delete context;
 
     return 0;
 }
