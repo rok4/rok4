@@ -1000,7 +1000,61 @@ sub getRealData {
         return $path;
     }
     elsif ($type eq "SWIFT") {
-        return $path;
+
+        my ($containerName, @rest) = split("/", $path);
+        my $objectName = join("", @rest);
+
+        if (! defined $containerName || ! defined $objectName) {
+            ERROR("SWIFT path is not valid (<containerName>/<objectName>) : $path");
+            return undef;
+        }
+
+        my $value = getSize("SWIFT",$path);
+
+        if ( ! defined $value ) {
+            return undef;
+        }
+
+        if ( $value < $ROK4_IMAGE_HEADER_SIZE ) {
+
+            my $context = "/$containerName/$objectName";
+
+            my $request;
+            my $response;
+            my $first_try = TRUE;
+            my $end = FALSE;
+            while ($end == FALSE) {
+                $request = HTTP::Request->new(GET => $ROK4_SWIFT_PUBLICURL.$context);
+                $request->header('X-Auth-Token' => $SWIFT_TOKEN);
+                $response = $UA->request($request);
+                if (! $response->is_success && $first_try == TRUE) {
+                    getSwiftToken();
+                    $first_try = FALSE;
+                }
+                elsif (! $response->is_success && $first_try == FALSE) {
+                    $end = TRUE;
+                    return undef;
+                }
+                else {
+                    $end = TRUE;
+                }
+            }
+
+            my $linkContent = $response->content;
+            chomp $linkContent;
+
+            # Dans le cas d'un objet Ceph lien, on vérifie que la signature existe bien dans le header
+            if (index($linkContent, ROK4_SYMLINK_SIGNATURE) == -1) {
+                ERROR("SWIFT object is not a valid SYMLINK object : $path");
+                return undef;
+            }
+
+            $realTarget = substr $linkContent, ROK4_SYMLINK_SIGNATURE_SIZE;
+            return "$containerName/$realTarget";
+
+        } else {
+            return $path;
+        }
     }
 
     return undef;
@@ -1135,6 +1189,35 @@ sub remove {
         `rados -p $poolName rm $objectName`;
         if (! $@) {return TRUE;}
     }
+    elsif ($type eq "SWIFT") {
+
+        my ($containerName, @rest) = split("/", $path);
+        my $objectName = join("", @rest);
+
+        my $context = "/$containerName/$objectName";
+
+        my $request;
+        my $response;
+        my $first_try = TRUE;
+        my $end = FALSE;
+        while ($end == FALSE) {
+            $request = HTTP::Request->new(DELETE => $ROK4_SWIFT_PUBLICURL.$context);
+            $request->header('X-Auth-Token' => $SWIFT_TOKEN);
+            $response = $UA->request($request);
+            if (! $response->is_success && $first_try == TRUE) {
+                getSwiftToken();
+                $first_try = FALSE;
+            }
+            elsif (! $response->is_success && $first_try == FALSE) {
+                $end = TRUE;
+                return FALSE;
+            }
+            else {
+                $end = TRUE;
+                return TRUE;
+            }
+        }
+    }
 
     return FALSE;
 }
@@ -1214,8 +1297,37 @@ sub symLink {
         return undef;
     }
     elsif ($targetType eq "SWIFT" && $toType eq "SWIFT") {
-        ERROR("Cannot symlink for SWIFT storage");
-        return undef;
+
+        # On vérifie que la dalle Swift à lier n'est pas un alias, auquel cas on référence le vrai objet (pour éviter des alias en cascade)
+        my $realTarget = getRealData("SWIFT", $targetPath);
+        if ( ! defined $realTarget ) {
+            ERROR("Objet to link '$targetPath' does not exists");
+            return undef;
+        }
+
+        my ($targetContainerName, @targetRest) = split("/", $realTarget);
+        $realTarget = join("", @targetRest);
+
+        my ($toContainerName, @toRest) = split("/", $toPath);
+        $toPath = join("", @toRest);
+
+        if ($targetContainerName ne $toContainerName) {
+            ERROR("SWIFT link (symbolic object) is not possible between different containers: $toContainerName/$toPath -> X $targetPath");
+            return undef;
+        }
+
+        # TODO : adapter cette partie pour pousser l'objet symbolique sur SWIFT
+        my $symlink_content = ROK4_SYMLINK_SIGNATURE . $realTarget;
+        eval { `echo -n "$symlink_content" | rados -p $toPoolName put $toPath /dev/stdin` };
+
+        if ($@) {
+            ERROR("Cannot symlink (make a rados put) object $realTarget with alias $toPath : $@");
+            return undef;
+        }
+        # END TODO
+
+
+        return "$targetContainerName/$realTarget";
     }
 
     ERROR("Symlink can only be done between two file/path using the same storage type (and not $toType -> $targetType)");

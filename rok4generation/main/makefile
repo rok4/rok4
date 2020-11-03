@@ -14,7 +14,7 @@ pyramid: buildlib.pyr buildbin.pyr
 	@ echo "> Ok, Pyramid $* !" ;
 
 buildlib:
-	@(cd . && perl Makefile.PL PREFIX=$(BE4_ENV) LIB=$(BE4_LIB)/perl5 && make -f Makefile) ;
+	@(cd . && perl Makefile.PL INSTALL_BASE=$(BE4_ENV) LIB=$(BE4_LIB)/perl5 && make -f Makefile) ;
 
 buildbin: \
 ./bin/be4-file.pl \
