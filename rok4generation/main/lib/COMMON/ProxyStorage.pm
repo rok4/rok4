@@ -1049,7 +1049,7 @@ sub getRealData {
                 return undef;
             }
 
-            $realTarget = substr $linkContent, ROK4_SYMLINK_SIGNATURE_SIZE;
+            my $realTarget = substr $linkContent, ROK4_SYMLINK_SIGNATURE_SIZE;
             return "$containerName/$realTarget";
 
         } else {
@@ -1316,16 +1316,32 @@ sub symLink {
             return undef;
         }
 
-        # TODO : adapter cette partie pour pousser l'objet symbolique sur SWIFT
         my $symlink_content = ROK4_SYMLINK_SIGNATURE . $realTarget;
-        eval { `echo -n "$symlink_content" | rados -p $toPoolName put $toPath /dev/stdin` };
 
-        if ($@) {
-            ERROR("Cannot symlink (make a rados put) object $realTarget with alias $toPath : $@");
-            return undef;
+        my $context = "/$toContainerName/$toPath";
+
+        my $request;
+        my $response;
+        my $first_try = TRUE;
+        my $end = FALSE;
+        while ($end == FALSE) {
+            $request = HTTP::Request->new(PUT => $ROK4_SWIFT_PUBLICURL.$context);
+            $request->header('X-Auth-Token' => $SWIFT_TOKEN);
+            $request->content($symlink_content);
+            $response = $UA->request($request);
+            if (! $response->is_success && $first_try == TRUE) {
+                getSwiftToken();
+                $first_try = FALSE;
+            }
+            elsif (! $response->is_success && $first_try == FALSE) {
+                $end = TRUE;
+                ERROR("Cannot symlink (HTTP PUT on SWIFT) object $realTarget with alias $toPath");
+                return undef;
+            }
+            else {
+                $end = TRUE;
+            }
         }
-        # END TODO
-
 
         return "$targetContainerName/$realTarget";
     }
