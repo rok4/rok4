@@ -173,7 +173,7 @@ OverlayNtiff () {
         return
     fi
 
-    if [ -f ${MNT_CONF_DIR}/$config ]; then
+    if [ -f ${ONT_CONF_DIR}/$config ]; then
         overlayNtiff -f ${ONT_CONF_DIR}/$config ${OVERLAYNTIFF_OPTIONS}
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         rm -f ${TMP_DIR}/$inTemplate
@@ -183,6 +183,190 @@ OverlayNtiff () {
 
 ONTFUNCTION
 
+
+my $SWIFT_KEYSTONE_AUTH_FUNCTIONS = <<'AUTHFUNCTIONS';
+InitToken (){
+
+    SWIFT_TOKEN=""
+
+    SWIFT_TOKEN=$(curl -s -i -k \
+        -H "Content-Type: application/json" \
+        -X POST \
+        -d '
+    {   "auth": {
+            "scope": {
+                "project": {"id": "'$ROK4_KEYSTONE_PROJECTID'"}
+            },
+            "identity": {
+                "methods": ["password"],
+                "password": {
+                    "user": {
+                        "domain": {"name": "'$ROK4_KEYSTONE_DOMAINID'"},
+                        "password": "'$ROK4_SWIFT_PASSWD'",
+                        "name": "'$ROK4_SWIFT_USER'"
+                    }
+                }
+            }
+        }
+    }' ${ROK4_SWIFT_AUTHURL} | grep "X-Subject-Token")
+
+    # trailing new line removal
+    # sed options :
+    #   :a = create label a to jump back.
+    #   N  = append the next line of input into the pattern space.
+    #   $! = if it's not the last line...
+    #       ba = jump back to label a
+    SWIFT_TOKEN=$(echo "$SWIFT_TOKEN" | sed -E '/^[[:space:]]*$/d' | sed -E 's/^[[:space:]]+//g' | sed -E 's/[[:space:]]+$//g' | sed -E ':a;N;$!ba;s/[\n\r]//g' | sed -E 's/X-Subject-Token/X-Auth-Token/')
+
+    export SWIFT_TOKEN
+    echo ${SWIFT_TOKEN} > ${TMP_DIR}/auth_token.txt
+    sed -E '/^[[:space:]]*$/d' -i ${TMP_DIR}/auth_token.txt
+    sed -E ':a;N;$!ba;s/[\n\r]//g' -i ${TMP_DIR}/auth_token.txt
+
+}
+CheckTokenFile (){
+    if [[ -s ${TMP_DIR}/auth_token.txt ]]; then
+        SWIFT_TOKEN=$(cat ${TMP_DIR}/auth_token.txt)
+    elif [[ ! -z "$SWIFT_TOKEN" ]]; then
+        echo "$SWIFT_TOKEN" > ${TMP_DIR}/auth_token.txt
+        sed -E '/^[[:space:]]*$/d' -i ${TMP_DIR}/auth_token.txt
+    else
+        InitToken
+    fi
+}
+AUTHFUNCTIONS
+
+my $SWIFT_NATIVE_AUTH_FUNCTIONS = <<'AUTHFUNCTIONS';
+InitToken (){
+
+    SWIFT_TOKEN=""
+      
+    SWIFT_AUTHSTRING=$(curl -s -i -k \
+        -H "X-Storage-User: '${ROK4_SWIFT_ACCOUNT}':'${ROK4_SWIFT_USER}'");
+        -H "X-Storage-Pass: '${ROK4_SWIFT_PASSWD}'");
+        -H "X-Auth-User: '${ROK4_SWIFT_ACCOUNT}':'${ROK4_SWIFT_USER}'");
+        -H "X-Auth-Key: '${ROK4_SWIFT_PASSWD}'");
+        -X GET \
+        ${ROK4_SWIFT_AUTHURL})
+    SWIFT_TOKEN=$(echo ${SWIFT_AUTHSTRING} | grep "X-Auth-Token")
+    ROK4_SWIFT_PUBLICURL=$(echo ${SWIFT_AUTHSTRING} | grep "X-Storage-Url" | cut -d":" -f2 | tr -cd '[:print:]')
+
+    # trailing new line removal
+    # sed options :
+    #   :a = create label a to jump back.
+    #   N  = append the next line of input into the pattern space.
+    #   $! = if it's not the last line...
+    #       ba = jump back to label a
+    ROK4_SWIFT_PUBLICURL=$(echo "$ROK4_SWIFT_PUBLICURL" | sed -E '/^[[:space:]]*$/d' | sed -E 's/^[[:space:]]+//g' | sed -E 's/[[:space:]]+$//g' | sed -E ':a;N;$!ba;s/[\n\r]//g')
+    SWIFT_TOKEN=$(echo "$SWIFT_TOKEN" | sed -E '/^[[:space:]]*$/d' | sed -E 's/^[[:space:]]+//g' | sed -E 's/[[:space:]]+$//g' | sed -E ':a;N;$!ba;s/[\n\r]//g')
+
+    export SWIFT_TOKEN
+    export ROK4_SWIFT_PUBLICURL
+    echo $SWIFT_TOKEN > ${TMP_DIR}/auth_token.txt
+    sed -E '/^[[:space:]]*$/d' -i ${TMP_DIR}/auth_token.txt
+    sed -E ':a;N;$!ba;s/[\n\r]//g' -i ${TMP_DIR}/auth_token.txt
+
+}
+CheckTokenFile (){
+    if [[ -s ${TMP_DIR}/auth_token.txt ]]; then
+        SWIFT_TOKEN=$(cat ${TMP_DIR}/auth_token.txt)
+    elif [[ ! -z "$SWIFT_TOKEN" ]]; then
+        echo "$SWIFT_TOKEN" > ${TMP_DIR}/auth_token.txt
+        sed -E '/^[[:space:]]*$/d' -i ${TMP_DIR}/auth_token.txt
+    else
+        InitToken
+    fi
+}
+AUTHFUNCTIONS
+
+my $SWIFT_STORAGE_FUNCTIONS = <<'STORAGEFUNCTIONS';
+LinkSlab () {
+    local target=$1
+    local link=$2
+
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
+    CheckTokenFile
+
+    # On retire le conteneur des entrées
+    target=`echo -n "$target" | sed "s#${PYR_CONTAINER}/##"`
+    link=`echo -n "$link" | sed "s#${PYR_CONTAINER}/##"`
+
+    resource="/${PYR_CONTAINER}/${link}"
+
+    attempt="first"
+    while [[ "$attempt" != "end" ]]; do
+        echo -n "SYMLINK#${target}" | curl -k -X PUT -T /dev/stdin -H "${SWIFT_TOKEN}" "${ROK4_SWIFT_PUBLICURL}${resource}"
+
+        exit_status=$!
+        if [[ $exit_status -ne 0 && "$attempt" == "first" ]] ; then
+            attempt="second"
+            InitToken
+        elif [[ $exit_status -ne 0 ]] ; then
+            echo "$0 : Erreur lors de la requête (code : $exit_status)" >&2 
+            attempt="end"
+            exit 1
+        else
+            attempt="end"
+        fi
+    done
+
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+
+PushSlab () {
+    local workImgName=$1
+    local imgName=$2
+    local workMskName=$3
+    local mskName=$4
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${imgName}" == "${last_slab}" ]]; then
+            echo "Last generated image slab found, now we work"
+            work=1
+        elif [[ ! -z $mskName && "${mskName}" == "${last_slab}" ]] ; then
+            echo "Last generated mask slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
+
+    CheckTokenFile
+
+    work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} -container ${PYR_CONTAINER} ${KEYSTONE_OPTION} -token ${TMP_DIR}/auth_token.txt $imgName
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    rm -f ${TMP_DIR}/$workImgName
+
+    if [ $workMskName ] ; then
+        work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} -container ${PYR_CONTAINER} ${KEYSTONE_OPTION} -token ${TMP_DIR}/auth_token.txt $mskName
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        rm -f ${TMP_DIR}/$workMskName
+    fi
+
+    print_prog
+}
+
+PullSlab () {
+    local input=$1
+    local output=$2
+
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
+
+    CheckTokenFile
+
+    # On retire le conteneur du input
+    input=`echo -n "$input" | sed "s#${PYR_CONTAINER}/##"`
+
+    cache2work -c zip -container ${PYR_CONTAINER} ${KEYSTONE_OPTION} -token ${TMP_DIR}/auth_token.txt $input ${TMP_DIR}/$output
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+STORAGEFUNCTIONS
+
 my $CEPH_STORAGE_FUNCTIONS = <<'STORAGEFUNCTIONS';
 LinkSlab () {
     local target=$1
@@ -191,6 +375,8 @@ LinkSlab () {
     if [[ "${work}" == "0" ]]; then
         return
     fi
+
+    CheckTokenFile
 
     # On retire le pool des entrées
     target=`echo -n "$target" | sed "s#${PYR_POOL}/##"`
@@ -516,6 +702,18 @@ sub getScriptInitialization {
     elsif ($pyramid->getStorageType() eq "CEPH") {
         $string .= sprintf "PYR_POOL=%s\n", $pyramid->getDataPool();
     }
+    elsif ($pyramid->getStorageType() eq "SWIFT") {
+        $string .= sprintf "PYR_CONTAINER=%s\n", $pyramid->getDataContainer();
+        if ($pyramid->keystoneConnection()) {
+            $string .= "KEYSTONE_OPTION=\"-ks\"\n";
+        } else {
+            $string .= "KEYSTONE_OPTION=\"\"\n";
+        }
+        my $SWIFT_TOKEN = COMMON::ProxyStorage::returnSwiftToken();
+        if (defined($SWIFT_TOKEN) && "$SWIFT_TOKEN" ne "") {
+            $string .= sprintf "SWIFT_TOKEN=\"X-Auth-Token: %s\"\n", $SWIFT_TOKEN;
+        }
+    }
 
     $string .= "COMMON_TMP_DIR=\"$COMMONTEMPDIR\"\n";
 
@@ -526,6 +724,14 @@ sub getScriptInitialization {
     }
     elsif ($pyramid->getStorageType() eq "CEPH") {
         $string .= $CEPH_STORAGE_FUNCTIONS;
+    }
+    elsif ($pyramid->getStorageType() eq "SWIFT") {
+        if ($pyramid->keystoneConnection()) {
+            $string .= $SWIFT_KEYSTONE_AUTH_FUNCTIONS;
+        } else {
+            $string .= $SWIFT_NATIVE_AUTH_FUNCTIONS;
+        }
+        $string .= $SWIFT_STORAGE_FUNCTIONS;
     }
 
     $string .= $ONTFUNCTION;

@@ -26,6 +26,7 @@ buildbin: \
 ./bin/4head.pl \
 ./bin/joinCache-file.pl \
 ./bin/joinCache-ceph.pl \
+./bin/joinCache-swift.pl \
 ./bin/tms-toolbox.pl \
 ./bin/sup-pyr.pl \
 ./bin/pyr2pyr.pl \
