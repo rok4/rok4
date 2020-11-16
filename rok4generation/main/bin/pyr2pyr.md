@@ -92,14 +92,15 @@ Dans le cas du stockage objet, certaines variables d'environnement doivent être
     - ROK4_S3_KEY
     - ROK4_S3_SECRETKEY
 * SWIFT
-    - ROK4_SWIFT_AUTHURL
-    - ROK4_SWIFT_USER
-    - ROK4_SWIFT_PASSWD
-    - Si authentification via Swift
+    * Toujours
+        - ROK4_SWIFT_AUTHURL
+        - ROK4_SWIFT_USER
+        - ROK4_SWIFT_PASSWD
+    * Si authentification native, sans Keystone
         - ROK4_SWIFT_ACCOUNT
-    - Si authentification via keystone
-        - ROK4_KEYSTONE_DOMAINID
+    * Si authentification avec Keystone
         - ROK4_SWIFT_PUBLICURL
+        - ROK4_KEYSTONE_DOMAINID
         - ROK4_KEYSTONE_PROJECTID
 
 #### Exemple (copie vers une pyramide fichier)

@@ -8,6 +8,7 @@
 
 * `joinCache-file.pl --conf /home/IGN/conf.txt [--help|--usage|--version]`
 * `joinCache-ceph.pl --conf /home/IGN/conf.txt [--help|--usage|--version]`
+* `joinCache-swift.pl --conf /home/IGN/conf.txt [--help|--usage|--version]`
 
 ### Options
 
@@ -74,13 +75,26 @@ La pyramide en sortie aura ces caractéristiques et les pyramides sources devron
 |------------------|-------------------------|-----------------------------------------------------------------------------|----------------------------------|
 | FILE             | pyr_data_path           | Dossier racine de stockage des données de la pyramide                       | obligatoire                      |
 | FILE             | dir_depth               | Nombre de sous-dossiers utilisé dans l'arborescence pour stocker les dalles | `2` si pas d'ancêtre             |
-| CEPH             | pyr_data_pool_name      |                                                                             | obligatoire                      |
+| CEPH             | pyr_data_pool_name      | Conteneur de stockage des données de la pyramide sur le cluster Ceph        | obligatoire                      |
+| SWIFT            | pyr_data_container_name | Conteneur de stockage des données de la pyramide sur le cluster Swift       | obligatoire                      |
+| SWIFT            | keystone_connection     | (Booléen) Utilisation de keystone pour l'authentification                   | false par défaut                 |
 
 Dans le cas du stockage objet, certaines variables d'environnement doivent être définies sur les machines d'exécution :
 * CEPH
     - ROK4_CEPH_CONFFILE
     - ROK4_CEPH_USERNAME
     - ROK4_CEPH_CLUSTERNAME
+* SWIFT
+    * Toujours
+        - ROK4_SWIFT_AUTHURL
+        - ROK4_SWIFT_USER
+        - ROK4_SWIFT_PASSWD
+    * Si authentification native, sans Keystone
+        - ROK4_SWIFT_ACCOUNT
+    * Si authentification avec Keystone
+        - ROK4_SWIFT_PUBLICURL
+        - ROK4_KEYSTONE_DOMAINID
+        - ROK4_KEYSTONE_PROJECTID
 
 #### Exemple
 
@@ -176,6 +190,8 @@ Les pyramides sources doivent :
 * utiliser le même TMS que la pyramide de sortie (donc toutes les pyramides manipulées dans cette outil respecte le même TMS)
 * utiliser le même nombre de tuiles par dalle que la pyramide de sortie
 * avoir le même format de canal que la pyramide de sortie (entier sur 8 bits non signé ou flottant sur 32 bits)
+* se trouver sur le même type de stockage (fichier, objet Ceph, objet Swift)
+* se trouver sur le même cluster, dans le cas du stockage objet
 
 #### Exemple
 
