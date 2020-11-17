@@ -29,11 +29,11 @@ parameter = value
 
 #### Paramètres
 
-| Paramètre | Description | Obligatoire ou valeur par défaut |
-| --------- | ----------- | -------------------------------- |
-| log_path  | Dossier dans lequel écrire les logs. Les logs ne sont pas écrits dans un fichier si ce paramètre n'est pas fourni.                                                                                   |                                  |
-| log_file  | Fichier dans lequel écrire les logs, en plus de la sortie standard. Les logs ne sont pas écrits dans un fichier si ce paramètre n'est pas fourni. Le fichier écrit sera donc `<log_path>/<log_file>` |                                  |
-| log_level | Niveau de log : DEBUG - INFO - WARN - ERROR - ALWAYS                                                                                                                                                 | `WARN`                             |
+| Paramètre   | Description | Obligatoire ou valeur par défaut |
+| ----------- | ----------- | -------------------------------- |
+| `log_path`  | Dossier dans lequel écrire les logs. Les logs ne sont pas écrits dans un fichier si ce paramètre n'est pas fourni.                                                                                   |                                  |
+| `log_file`  | Fichier dans lequel écrire les logs, en plus de la sortie standard. Les logs ne sont pas écrits dans un fichier si ce paramètre n'est pas fourni. Le fichier écrit sera donc `<log_path>/<log_file>` |                                  |
+| `log_level` | Niveau de log : DEBUG - INFO - WARN - ERROR - ALWAYS                                                                                                                                                 | `WARN`                             |
 
 
 #### Exemple
@@ -48,53 +48,53 @@ log_level = INFO
 
 #### Paramètres
 
-| Paramètre         | Description                                                                                                                                | Obligatoire ou valeur par défaut |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
-| pyr_name_new      | Nom de la nouvelle pyramide                                                                                                                | obligatoire                      |
-| pyr_desc_path     | Dossier dans le quel écrire le descripteur de pyramide et la liste des dalles                                                              | obligatoire                      |
-| image_width       | Nombre de tuiles dans une dalle dans le sens de la largeur                                                                                 | `16`                             |
-| image_height      | Nombre de tuiles dans une dalle dans le sens de la hauteur                                                                                 | `16`                             |
-| tms_name          | Nom du Tile Matrix Set de la pyramide, avec l'extension `.tms`                                                                             | obligatoire si pas d'ancêtre     |
-| tms_path          | Dossier contenant le TMS                                                                                                                   | obligatoire                      |
-| pyr_level_top     | Niveau du haut de la pyramide, niveau haut du TMS utilisé si non fourni                                                                    |                                  |
-| compression       | Compression des données dans les tuiles                                                                                                    | `raw`                            |
-| compressionoption | Option complémentaire à la compression                                                                                                     | `none`                           |
-| color             | Valeur de nodata, une valeur par canal, cohérent avec son format                                                                           |                                  |
-| bitspersample     | Nombre de bits par canal, `8` ou `32`                                                                                                      |                                  |
-| sampleformat      | Format des canaux, `uint` ou `float`                                                                                                       |                                  |
-| samplesperpixel   | Nombre de canaux : entre 1 et 4                                                                                                            |                                  |
-| photometric       | Interprétation des canaux : `gray` ou `rgb`                                                                                                | `rgb`                            |
-| interpolation     | Interpolation de réechantillonnage utilisée par mergeNtiff : `nn`, `linear`, `bicubic`, `lanczos`                                          | `bicubic`                        |
-| export_masks      | Précise si on souhaite écrire les masques dans la pyramide, force l'utilisation des masques pendant la génération si l'export est souhaité | `FALSE`                          |
+| Paramètre           | Description                                                                                                                                | Obligatoire ou valeur par défaut |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
+| `pyr_name_new`      | Nom de la nouvelle pyramide                                                                                                                | obligatoire                      |
+| `pyr_desc_path`     | Dossier dans le quel écrire le descripteur de pyramide et la liste des dalles                                                              | obligatoire                      |
+| `image_width`       | Nombre de tuiles dans une dalle dans le sens de la largeur                                                                                 | `16`                             |
+| `image_height`      | Nombre de tuiles dans une dalle dans le sens de la hauteur                                                                                 | `16`                             |
+| `tms_name`          | Nom du Tile Matrix Set de la pyramide, avec l'extension `.tms`                                                                             | obligatoire si pas d'ancêtre     |
+| `tms_path`          | Dossier contenant le TMS                                                                                                                   | obligatoire                      |
+| `pyr_level_top`     | Niveau du haut de la pyramide, niveau haut du TMS utilisé si non fourni                                                                    |                                  |
+| `compression`       | Compression des données dans les tuiles                                                                                                    | `raw`                            |
+| `compressionoption` | Option complémentaire à la compression                                                                                                     | `none`                           |
+| `color`             | Valeur de nodata, une valeur par canal, cohérent avec son format                                                                           |                                  |
+| `bitspersample`     | Nombre de bits par canal, `8` ou `32`                                                                                                      |                                  |
+| `sampleformat`      | Format des canaux, `uint` ou `float`                                                                                                       |                                  |
+| `samplesperpixel`   | Nombre de canaux : entre 1 et 4                                                                                                            |                                  |
+| `photometric`       | Interprétation des canaux : `gray` ou `rgb`                                                                                                | `rgb`                            |
+| `interpolation`     | Interpolation de réechantillonnage utilisée par mergeNtiff : `nn`, `linear`, `bicubic`, `lanczos`                                          | `bicubic`                        |
+| `export_masks`      | Précise si on souhaite écrire les masques dans la pyramide, force l'utilisation des masques pendant la génération si l'export est souhaité | `FALSE`                          |
 
 La pyramide en sortie aura ces caractéristiques et les pyramides sources devront en avoir en commun (voir section `composition`).
 
 ##### Stockage de la pyramide
 
-| Type de stockage | Paramètre               | Description                                                                 | Obligatoire ou valeur par défaut |
-|------------------|-------------------------|-----------------------------------------------------------------------------|----------------------------------|
-| FILE             | pyr_data_path           | Dossier racine de stockage des données de la pyramide                       | obligatoire                      |
-| FILE             | dir_depth               | Nombre de sous-dossiers utilisé dans l'arborescence pour stocker les dalles | `2` si pas d'ancêtre             |
-| CEPH             | pyr_data_pool_name      | Conteneur de stockage des données de la pyramide sur le cluster Ceph        | obligatoire                      |
-| SWIFT            | pyr_data_container_name | Conteneur de stockage des données de la pyramide sur le cluster Swift       | obligatoire                      |
-| SWIFT            | keystone_connection     | (Booléen) Utilisation de keystone pour l'authentification                   | false par défaut                 |
+| Type de stockage | Paramètre                 | Description                                                                 | Obligatoire ou valeur par défaut |
+|------------------|---------------------------|-----------------------------------------------------------------------------|----------------------------------|
+| FILE             | `pyr_data_path`           | Dossier racine de stockage des données de la pyramide                       | obligatoire                      |
+| FILE             | `dir_depth`               | Nombre de sous-dossiers utilisé dans l'arborescence pour stocker les dalles | `2` si pas d'ancêtre             |
+| CEPH             | `pyr_data_pool_name`      | Conteneur de stockage des données de la pyramide sur le cluster Ceph        | obligatoire                      |
+| SWIFT            | `pyr_data_container_name` | Conteneur de stockage des données de la pyramide sur le cluster Swift       | obligatoire                      |
+| SWIFT            | `keystone_connection`     | (Booléen) Utilisation de keystone pour l'authentification                   | false par défaut                 |
 
 Dans le cas du stockage objet, certaines variables d'environnement doivent être définies sur les machines d'exécution :
 * CEPH
-    - ROK4_CEPH_CONFFILE
-    - ROK4_CEPH_USERNAME
-    - ROK4_CEPH_CLUSTERNAME
+    - `ROK4_CEPH_CONFFILE`
+    - `ROK4_CEPH_USERNAME`
+    - `ROK4_CEPH_CLUSTERNAME`
 * SWIFT
     * Toujours
-        - ROK4_SWIFT_AUTHURL
-        - ROK4_SWIFT_USER
-        - ROK4_SWIFT_PASSWD
+        - `ROK4_SWIFT_AUTHURL`
+        - `ROK4_SWIFT_USER`
+        - `ROK4_SWIFT_PASSWD`
     * Si authentification native, sans Keystone
-        - ROK4_SWIFT_ACCOUNT
+        - `ROK4_SWIFT_ACCOUNT`
     * Si authentification avec Keystone
-        - ROK4_SWIFT_PUBLICURL
-        - ROK4_KEYSTONE_DOMAINID
-        - ROK4_KEYSTONE_PROJECTID
+        - `ROK4_SWIFT_PUBLICURL`
+        - `ROK4_KEYSTONE_DOMAINID`
+        - `ROK4_KEYSTONE_PROJECTID`
 
 #### Exemple
 
@@ -118,14 +118,14 @@ image_height = 16
 
 #### Paramètres
 
-| Paramètre        | Description                                                                                             | Obligatoire ou valeur par défaut                                 |
-| ---------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| job_number       | Niveau de parallélisation de la génération de la pyramide.                                              | obligatoire                                                      |
-| path_temp        | Dossier temporaire propre à chaque script. Un sous dossier au nom de la pyramide et du script sera créé | obligatoire                                                      |
-| path_temp_common | Dossier temporaire commun à tous les scripts. Un sous dossier COMMON sera créé                          | obligatoire                                                      |
-| path_shell       | Dossier où écrire les scripts                                                                           | obligatoire                                                      |
-| use_masks        | Précise si on souhaite utilisé les masques associés aux données.                                        | `FALSE` si on ne souhaite pas exporter les masques, `TRUE` sinon |
-| merge_method     | Précise comment procéder lorsqu'une même dalle est trouvée dans plusieurs pyramides sources             | obligatoire                                                      |
+| Paramètre          | Description                                                                                             | Obligatoire ou valeur par défaut                                 |
+| ------------------ | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `job_number`       | Niveau de parallélisation de la génération de la pyramide.                                              | obligatoire                                                      |
+| `path_temp`        | Dossier temporaire propre à chaque script. Un sous dossier au nom de la pyramide et du script sera créé | obligatoire                                                      |
+| `path_temp_common` | Dossier temporaire commun à tous les scripts. Un sous dossier COMMON sera créé                          | obligatoire                                                      |
+| `path_shell`       | Dossier où écrire les scripts                                                                           | obligatoire                                                      |
+| `use_masks`        | Précise si on souhaite utilisé les masques associés aux données.                                        | `FALSE` si on ne souhaite pas exporter les masques, `TRUE` sinon |
+| `merge_method`     | Précise comment procéder lorsqu'une même dalle est trouvée dans plusieurs pyramides sources             | obligatoire                                                      |
 
 Valeurs pour `merge_method` :
 * `replace` : seule la dalle dans la pyramide source la plus prioritaire est retenue, ce qui permet éventuellement de faire un lien symbolique

@@ -33,11 +33,11 @@ Il est possible d'utiliser une configuration d'environnement, au même format, d
 
 #### Paramètres
 
-| Paramètre | Description                                                                                                                                                                                          | Obligatoire ou valeur par défaut |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| log_path  | Dossier dans lequel écrire les logs. Les logs ne sont pas écrits dans un fichier si ce paramètre n'est pas fourni.                                                                                   |                                  |
-| log_file  | Fichier dans lequel écrire les logs, en plus de la sortie standard. Les logs ne sont pas écrits dans un fichier si ce paramètre n'est pas fourni. Le fichier écrit sera donc `<log_path>/<log_file>` |                                  |
-| log_level | Niveau de log : DEBUG - INFO - WARN - ERROR - ALWAYS                                                                                                                                                 | `WARN`                           |
+| Paramètre   | Description                                                                                                                                                                                          | Obligatoire ou valeur par défaut |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| `log_path`  | Dossier dans lequel écrire les logs. Les logs ne sont pas écrits dans un fichier si ce paramètre n'est pas fourni.                                                                                   |                                  |
+| `log_file`  | Fichier dans lequel écrire les logs, en plus de la sortie standard. Les logs ne sont pas écrits dans un fichier si ce paramètre n'est pas fourni. Le fichier écrit sera donc `<log_path>/<log_file>` |                                  |
+| `log_level` | Niveau de log : DEBUG - INFO - WARN - ERROR - ALWAYS                                                                                                                                                 | `WARN`                           |
 
 
 #### Exemple
@@ -52,9 +52,9 @@ log_level = INFO
 
 #### Paramètres
 
-| Paramètre     | Description                                                                     | Obligatoire ou valeur par défaut |
-|---------------|---------------------------------------------------------------------------------|----------------------------------|
-| filepath_conf | Chemin vers le fichier de configuration de la source de données (au format INI) | obligatoire                      |
+| Paramètre       | Description                                                                     | Obligatoire ou valeur par défaut |
+|-----------------|---------------------------------------------------------------------------------|----------------------------------|
+| `filepath_conf` | Chemin vers le fichier de configuration de la source de données (au format INI) | obligatoire                      |
 
 #### Exemple
 ```
@@ -66,24 +66,24 @@ filepath_conf = /home/IGN/SOURCE/sources.txt
 
 #### Paramètres
 
-| Paramètre         | Description                                                                                                                                | Obligatoire ou valeur par défaut |
-|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------|
-| pyr_name_new      | Nom de la nouvelle pyramide                                                                                                                | obligatoire                      |
-| pyr_desc_path     | Dossier dans le quel écrire le descripteur de pyramide et la liste des dalles                                                              | obligatoire                      |
-| image_width       | Nombre de tuiles dans une dalle dans le sens de la largeur                                                                                 | `16`                             |
-| image_height      | Nombre de tuiles dans une dalle dans le sens de la hauteur                                                                                 | `16`                             |
-| tms_name          | Nom du Tile Matrix Set de la pyramide, avec l'extension `.tms`                                                                             | obligatoire si pas d'ancêtre     |
-| tms_path          | Dossier contenant le TMS                                                                                                                   | obligatoire                      |
-| pyr_level_top     | Niveau du haut de la pyramide, niveau haut du TMS utilisé si non fourni                                                                    |                                  |
-| compression       | Compression des données dans les tuiles                                                                                                    | `raw`                            |
-| compressionoption | Option complémentaire à la compression                                                                                                     | `none`                           |
-| color             | Valeur de nodata, une valeur par canal, cohérent avec son format                                                                           |                                  |
-| bitspersample     | Nombre de bits par canal, `8` ou `32`                                                                                                      |                                  |
-| sampleformat      | Format des canaux, `uint` ou `float`                                                                                                       |                                  |
-| samplesperpixel   | Nombre de canaux : entre 1 et 4                                                                                                            |                                  |
-| photometric       | Interprétation des canaux : `gray` ou `rgb`                                                                                                | `rgb`                            |
-| interpolation     | Interpolation de réechantillonnage utilisée par mergeNtiff : `nn`, `linear`, `bicubic`, `lanczos`                                          | `bicubic`                        |
-| export_masks      | Précise si on souhaite écrire les masques dans la pyramide, force l'utilisation des masques pendant la génération si l'export est souhaité | `FALSE`                          |
+| Paramètre           | Description                                                                                                                                | Obligatoire ou valeur par défaut |
+|---------------------|--------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------|
+| `pyr_name_new`      | Nom de la nouvelle pyramide                                                                                                                | obligatoire                      |
+| `pyr_desc_path`     | Dossier dans le quel écrire le descripteur de pyramide et la liste des dalles                                                              | obligatoire                      |
+| `image_width`       | Nombre de tuiles dans une dalle dans le sens de la largeur                                                                                 | `16`                             |
+| `image_height`      | Nombre de tuiles dans une dalle dans le sens de la hauteur                                                                                 | `16`                             |
+| `tms_name`          | Nom du Tile Matrix Set de la pyramide, avec l'extension `.tms`                                                                             | obligatoire si pas d'ancêtre     |
+| `tms_path`          | Dossier contenant le TMS                                                                                                                   | obligatoire                      |
+| `pyr_level_top`     | Niveau du haut de la pyramide, niveau haut du TMS utilisé si non fourni                                                                    |                                  |
+| `compression`       | Compression des données dans les tuiles                                                                                                    | `raw`                            |
+| `compressionoption` | Option complémentaire à la compression                                                                                                     | `none`                           |
+| `color`             | Valeur de nodata, une valeur par canal, cohérent avec son format                                                                           |                                  |
+| `bitspersample`     | Nombre de bits par canal, `8` ou `32`                                                                                                      |                                  |
+| `sampleformat`      | Format des canaux, `uint` ou `float`                                                                                                       |                                  |
+| `samplesperpixel`   | Nombre de canaux : entre 1 et 4                                                                                                            |                                  |
+| `photometric`       | Interprétation des canaux : `gray` ou `rgb`                                                                                                | `rgb`                            |
+| `interpolation`     | Interpolation de réechantillonnage utilisée par mergeNtiff : `nn`, `linear`, `bicubic`, `lanczos`                                          | `bicubic`                        |
+| `export_masks`      | Précise si on souhaite écrire les masques dans la pyramide, force l'utilisation des masques pendant la génération si l'export est souhaité | `FALSE`                          |
 
 
 Valeurs pour `compression` :
@@ -102,43 +102,43 @@ Valeurs pour `color` : les valeur pour chaque canal sont séparées par des virg
 
 ##### Stockage de la pyramide
 
-| Type de stockage | Paramètre               | Description                                                                 | Obligatoire ou valeur par défaut |
-|------------------|-------------------------|-----------------------------------------------------------------------------|----------------------------------|
-| FILE             | pyr_data_path           | Dossier racine de stockage des données de la pyramide                       | obligatoire                      |
-| FILE             | dir_depth               | Nombre de sous-dossiers utilisé dans l'arborescence pour stocker les dalles | `2` si pas d'ancêtre             |
-| CEPH             | pyr_data_pool_name      |                                                                             | obligatoire                      |
-| S3               | pyr_data_bucket_name    |                                                                             | obligatoire                      |
-| SWIFT            | pyr_data_container_name |                                                                             | obligatoire                      |
-| SWIFT            | keystone_connection     | Précise si le jeton d'authentification doit être récupéré via keystone      | `FALSE`                          |
+| Type de stockage | Paramètre                 | Description                                                                 | Obligatoire ou valeur par défaut |
+|------------------|---------------------------|-----------------------------------------------------------------------------|----------------------------------|
+| FILE             | `pyr_data_path`           | Dossier racine de stockage des données de la pyramide                       | obligatoire                      |
+| FILE             | `dir_depth`               | Nombre de sous-dossiers utilisé dans l'arborescence pour stocker les dalles | `2` si pas d'ancêtre             |
+| CEPH             | `pyr_data_pool_name`      |                                                                             | obligatoire                      |
+| S3               | `pyr_data_bucket_name`    |                                                                             | obligatoire                      |
+| SWIFT            | `pyr_data_container_name` |                                                                             | obligatoire                      |
+| SWIFT            | `keystone_connection`     | Précise si le jeton d'authentification doit être récupéré via keystone      | `FALSE`                          |
 
 Dans le cas du stockage objet, certaines variables d'environnement doivent être définies sur les machines d'exécution :
 * CEPH
-    - ROK4_CEPH_CONFFILE
-    - ROK4_CEPH_USERNAME
-    - ROK4_CEPH_CLUSTERNAME
+    - `ROK4_CEPH_CONFFILE`
+    - `ROK4_CEPH_USERNAME`
+    - `ROK4_CEPH_CLUSTERNAME`
 * S3
-    - ROK4_S3_URL
-    - ROK4_S3_KEY
-    - ROK4_S3_SECRETKEY
+    - `ROK4_S3_URL`
+    - `ROK4_S3_KEY`
+    - `ROK4_S3_SECRETKEY`
 * SWIFT
     * Toujours
-        - ROK4_SWIFT_AUTHURL
-        - ROK4_SWIFT_USER
-        - ROK4_SWIFT_PASSWD
+        - `ROK4_SWIFT_AUTHURL`
+        - `ROK4_SWIFT_USER`
+        - `ROK4_SWIFT_PASSWD`
     * Si authentification native, sans Keystone
-        - ROK4_SWIFT_ACCOUNT
+        - `ROK4_SWIFT_ACCOUNT`
     * Si authentification avec Keystone
-        - ROK4_SWIFT_PUBLICURL
-        - ROK4_KEYSTONE_DOMAINID
-        - ROK4_KEYSTONE_PROJECTID
+        - `ROK4_SWIFT_PUBLICURL`
+        - `ROK4_KEYSTONE_DOMAINID`
+        - `ROK4_KEYSTONE_PROJECTID`
 
 ##### Cas d'une pyramide ancêtre
 
-| Paramètre         | Description                                                                              | Obligatoire ou valeur par défaut          |
-| ----------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------- |
-| pyr_name_old      | Nom de la pyramide à mettre à jour. La présence de ce paramètre implique une mise à jour |                                           |
-| pyr_desc_path_old | Dossier contenant le descripteur et la liste des dalles de la pyramide à mettre à jour   | obligatoire si `pyr_name_old` est présent |
-| update_mode       | Mode de mise à jour                                                                      | obligatoire si `pyr_name_old` est présent |
+| Paramètre           | Description                                                                              | Obligatoire ou valeur par défaut          |
+| ------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `pyr_name_old`      | Nom de la pyramide à mettre à jour. La présence de ce paramètre implique une mise à jour |                                           |
+| `pyr_desc_path_old` | Dossier contenant le descripteur et la liste des dalles de la pyramide à mettre à jour   | obligatoire si `pyr_name_old` est présent |
+| `update_mode`       | Mode de mise à jour                                                                      | obligatoire si `pyr_name_old` est présent |
 
 Valeurs pour `update_mode` :
 * `slink` : une nouvelle pyramide est créée, et les dalles de la pyramide ancêtre sont référencées avec un lien symbolique ou un objet symbolique
@@ -181,13 +181,13 @@ color               = 255,0,0
 
 #### Paramètres
 
-| Paramètre        | Description                                                                                             | Obligatoire ou valeur par défaut                                 |
-|------------------|---------------------------------------------------------------------------------------------------------|------------------------------------------------------------------|
-| job_number       | Niveau de parallélisation de la génération de la pyramide.                                              | obligatoire                                                      |
-| path_temp        | Dossier temporaire propre à chaque script. Un sous dossier au nom de la pyramide et du script sera créé | obligatoire                                                      |
-| path_temp_common | Dossier temporaire commun à tous les scripts. Un sous dossier COMMON sera créé                          | obligatoire                                                      |
-| path_shell       | Dossier où écrire les scripts                                                                           | obligatoire                                                      |
-| use_masks        | Précise si on souhaite utilisé les masques associés aux données.                                        | `FALSE` si on ne souhaite pas exporter les masques, `TRUE` sinon |
+| Paramètre          | Description                                                                                             | Obligatoire ou valeur par défaut                                 |
+|--------------------|---------------------------------------------------------------------------------------------------------|------------------------------------------------------------------|
+| `job_number`       | Niveau de parallélisation de la génération de la pyramide.                                              | obligatoire                                                      |
+| `path_temp`        | Dossier temporaire propre à chaque script. Un sous dossier au nom de la pyramide et du script sera créé | obligatoire                                                      |
+| `path_temp_common` | Dossier temporaire commun à tous les scripts. Un sous dossier COMMON sera créé                          | obligatoire                                                      |
+| `path_shell`       | Dossier où écrire les scripts                                                                           | obligatoire                                                      |
+| `use_masks`        | Précise si on souhaite utilisé les masques associés aux données.                                        | `FALSE` si on ne souhaite pas exporter les masques, `TRUE` sinon |
 
 
 #### Exemple
@@ -211,15 +211,15 @@ Pour générer une pyramide raster, il faut renseigner pour chaque niveau de cou
 #### Images géoréférencées
 
 
-| Paramètre          | Description                                                                                                    | Obligatoire ou valeur par défaut |
-|--------------------|----------------------------------------------------------------------------------------------------------------|----------------------------------|
-| srs                | Système de coordonnées des images géoréférencées                                                               | obligatoire                      |
-| path_image         | Dossier contenant les images. Les sous-dossier seront parcourus                                                | obligatoire                      |
-| preprocess_command | Permet d'appliquer un prétraitement à chaque image en entrée retenue                                           |                                  |
-| preprocess_opt_beg | Définit les options à mettre avant le fichier en entrée à la commande de prétraitement                         |                                  |
-| preprocess_opt_mid | Définit les options à mettre entre le fichier en entrée et le fichier en sortie à la commande de prétraitement |                                  |
-| preprocess_opt_end | Définit les options à mettre après le fichier en sortie à la commande de prétraitement                         |                                  |
-| preprocess_tmp_dir | Dossier dans lequel écrire les images prétraitées                                                              | obligatoire                      |
+| Paramètre            | Description                                                                                                    | Obligatoire ou valeur par défaut |
+|----------------------|----------------------------------------------------------------------------------------------------------------|----------------------------------|
+| `srs`                | Système de coordonnées des images géoréférencées                                                               | obligatoire                      |
+| `path_image`         | Dossier contenant les images. Les sous-dossier seront parcourus                                                | obligatoire                      |
+| `preprocess_command` | Permet d'appliquer un prétraitement à chaque image en entrée retenue                                           |                                  |
+| `preprocess_opt_beg` | Définit les options à mettre avant le fichier en entrée à la commande de prétraitement                         |                                  |
+| `preprocess_opt_mid` | Définit les options à mettre entre le fichier en entrée et le fichier en sortie à la commande de prétraitement |                                  |
+| `preprocess_opt_end` | Définit les options à mettre après le fichier en sortie à la commande de prétraitement                         |                                  |
+| `preprocess_tmp_dir` | Dossier dans lequel écrire les images prétraitées                                                              | obligatoire                      |
 
 Les images géoréférencées retenues sont les fichiers :
 * TIFF (extensions .tif, .TIF, .tiff and .TIFF)
@@ -233,19 +233,19 @@ Les images géoréférencées retenues sont les fichiers :
 
 L'interrogation du service WMS se fait via des requêtes GetMap en HTTP.
 
-| Paramètre               | Description                                                                                                                                                                     | Obligatoire ou valeur par défaut |
-|-------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------|
-| srs                     | Système de coordonnées de l'étendue éventuellement fournie                                                                                                                      | obligatoire                      |
-| extent                  | Étendue sur laquelle on veut calculer la pyramide, soit un rectangle englobant (de la forme `xmin,ymin,xmax,ymax`), soit le chemin vers un fichier contenant une géométrie WKT, GeoJSON ou GML. |                                  |
-| list                    | Si aucune étendue n'est précisée, il est possible de fournir un fichier contenant la liste des dalles à générer, chaque ligne du fichier étant de la forme `COL,ROW`            |                                  |
-| wms_layer               | Nom de la ou des couches à moissonner                                                                                                                                           | obligatoire                      |
-| wms_url                 | URL du serveur WMS, avec le contexte, sans protocole                                                                                                                            | obligatoire                      |
-| wms_version             |                                                                                                                                                                                 | obligatoire                      |
-| wms_format              | Format des images téléchargées                                                                                                                                                  | obligatoire                      |
-| wms_transparent         | Précise si on souhaite télécharger les images avec de la transparence                                                                                                           | `FALSE`                          |
-| wms_bgcolor             | Couleur de fond à transmettre au service WMS                                                                                                                                    |                                  |
-| max_width et max_height | Ces deux paramètres doivent être précisés ensemble ou pas du tout, et permettent de moissonner en plusieurs fois une dalle. Les valeurs doivent être des diviseurs de la largeur et de la hauteur de la dalle finale                                                      |                                  |
-| min_size                | Permet de supprimer des images moissonnées dont la taille est inférieure ou égale à cette valeur (suppression d'image monochromes en PNG par exemple)                           |                                  |
+| Paramètre              `     | Description                                                                                                                                                                     | Obligatoire ou valeur par défaut |
+|-----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------|
+| `srs`                     | Système de coordonnées de l'étendue éventuellement fournie                                                                                                                      | obligatoire                      |
+| `extent`                  | Étendue sur laquelle on veut calculer la pyramide, soit un rectangle englobant (de la forme `xmin,ymin,xmax,ymax`), soit le chemin vers un fichier contenant une géométrie WKT, GeoJSON ou GML. |                                  |
+| `list`                    | Si aucune étendue n'est précisée, il est possible de fournir un fichier contenant la liste des dalles à générer, chaque ligne du fichier étant de la forme `COL,ROW`            |                                  |
+| `wms_layer`               | Nom de la ou des couches à moissonner                                                                                                                                           | obligatoire                      |
+| `wms_url`                 | URL du serveur WMS, avec le contexte, sans protocole                                                                                                                            | obligatoire                      |
+| `wms_version`             |                                                                                                                                                                                 | obligatoire                      |
+| `wms_format`              | Format des images téléchargées                                                                                                                                                  | obligatoire                      |
+| `wms_transparent`         | Précise si on souhaite télécharger les images avec de la transparence                                                                                                           | `FALSE`                          |
+| `wms_bgcolor`             | Couleur de fond à transmettre au service WMS                                                                                                                                    |                                  |
+| `max_width` et `max_height` | Ces deux paramètres doivent être précisés ensemble ou pas du tout, et permettent de moissonner en plusieurs fois une dalle. Les valeurs doivent être des diviseurs de la largeur et de la hauteur de la dalle finale                                                      |                                  |
+| `min_size`                | Permet de supprimer des images moissonnées dont la taille est inférieure ou égale à cette valeur (suppression d'image monochromes en PNG par exemple)                           |                                  |
 
 Valeurs pour `wms_format` :
 * `image/png`
