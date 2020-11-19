@@ -10,6 +10,7 @@
     </style>
 	<!-- API Leaflet -->
     <script src="leaflet.js"></script>
+    <script src="Leaflet.VectorGrid.bundled.js"></script>
     <link rel="stylesheet" href="leaflet.css" />
     <script>
     window.onload = function () {
@@ -24,15 +25,22 @@
             id: 'BDORTHO'
         });
 
+        var vectorLIMADM = L.vectorGrid.protobuf(server+"/data/1.0.0/LIMADM/{z}/{x}/{y}.pbf", {
+              vectorTileLayerStyles: { },
+              maxNativeZoom: 14
+          })
+
+
         var map = L.map('map',{
             fullscreenControl: true,
             center: [14.61, -61.06],
             zoom: 10,
-            layers: [ortho,martinique]
+            layers: [ortho,martinique,vectorLIMADM]
         });
         L.control.layers({
             "ORTHOPHOTO GEOPORTAIL": ortho,
             "MARTINIQUE": martinique,
+            "LIMITES" : vectorLIMADM,
         }).addTo(map);
     }
     </script>
