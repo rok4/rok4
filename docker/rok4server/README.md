@@ -29,64 +29,11 @@ Afin de tester facilement le serveur, il est possible de lancer une stack compre
 * Un serveur ROK4
 * Des jeux de données, disponible sous forme d'[images](https://hub.docker.com/r/rok4/dataset)
 
-nginx.conf.template
-```
-upstream rok4server { server middle:9000; }
-                                               
-server {
-    listen 80 default_server;
+En étant dans ce dossier, vous pouvez lancer la stack via la commande `docker-compose up`.
 
-    location /${ROKSERVER_PREFIX} {
-        fastcgi_pass rok4server;
-        include fastcgi_params;
-    }
-}
-```
+Les capacités des 3 services rendus (WMS, WMTS et TMS) sont disponibles aux URL :
+* WMS : http://localhost:8082/data?SERVICE=WMS&REQUEST=GetCapabilities&VERSION=1.3.0
+* WMTS : http://localhost:8082/data?SERVICE=WMTS&REQUEST=GetCapabilities&VERSION=1.0.0
+* TMS : http://localhost:8082/data/1.0.0
 
-docker-compose.yaml
-```yaml
-version: "3"
-services:
-  front:
-    image: nginx
-    ports:
-      - "80:80"
-    links:
-      - middle
-    environment:
-      - ROKSERVER_PREFIX=data
-    volumes:
-      - ./nginx.conf.template:/etc/nginx/templates/default.conf.template
-
-  middle:
-    image: rok4/rok4server:<VERSION>-<OS>
-    volumes:
-      - volume-limadm:/pyramids/LIMADM
-      - volume-alti:/pyramids/ALTI
-      - volume-ortho:/pyramids/BDORTHO
-
-  data-limadm:
-    image: rok4/dataset:geofla-martinique
-    volumes:
-      - volume-limadm:/pyramids/LIMADM
-
-  data-alti:
-    image: rok4/dataset:bdalti-martinique
-    volumes:
-      - volume-alti:/pyramids/ALTI
-
-  data-ortho:
-    image: rok4/dataset:bdortho5m-martinique
-    volumes:
-      - volume-ortho:/pyramids/BDORTHO
-
-volumes:
-  volume-limadm:
-  volume-alti:
-  volume-ortho:
-```
-
-Avec ces configurations, les capacités des 3 services rendus (WMS, WMTS et TMS) sont disponibles aux URL :
-* WMS : http://localhost/data?SERVICE=WMS&REQUEST=GetCapabilities&VERSION=1.3.0
-* WMTS : http://localhost/data?SERVICE=WMTS&REQUEST=GetCapabilities&VERSION=1.0.0
-* TMS : http://localhost/data/1.0.0
+Un viewer est disponible à l'URL http://localhost:8082/viewer
