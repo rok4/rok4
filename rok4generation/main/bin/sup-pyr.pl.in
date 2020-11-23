@@ -265,7 +265,7 @@ sub doIt {
         if (! ProxyStorage::remove("FILE", $dataDir)) {
             WARN("Impossible de supprimer le dossier $dataDir");
             $issue = TRUE;
-            if ($option{stop}) {
+            if ($options{stop}) {
                 return FALSE;
             }
         }
@@ -345,7 +345,7 @@ sub doIt {
         if (! COMMON::ProxyStorage::remove($storageType, $slab)) {
             
             $issue = TRUE;
-            if ($option{stop}) {
+            if ($options{stop}) {
                 ERROR("Impossible de supprimer la dalle $storageType $slab");
                 close($LIST);
                 return FALSE;
