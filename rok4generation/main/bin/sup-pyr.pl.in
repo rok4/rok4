@@ -67,6 +67,7 @@ use lib "$Bin/../lib/perl5";
 use COMMON::PyramidRaster;
 use COMMON::PyramidVector;
 use COMMON::ProxyStorage;
+use COMMON::ProxyPyramid;
 
 ################################################################################
 # Constantes
@@ -228,7 +229,7 @@ Use functions :
 =cut
 sub doIt {
 
-    my $objPyramid = COMMON::ProxyPyramid::load($options{pyramid});
+    my $objPyramid = COMMON::ProxyPyramid::load($options{pyr});
 
     if (! defined $objPyramid) {
         ERROR("Cannot create the Pyramid object (neither raster nor vector nor raster on demand)");
