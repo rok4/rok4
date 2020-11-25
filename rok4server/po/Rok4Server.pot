@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
-"Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
+"Report-Msgid-Bugs-To: contact.geoservices@ign.fr\n"
 "POT-Creation-Date: 2019-11-26 14:25+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
