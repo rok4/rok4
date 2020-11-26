@@ -1369,7 +1369,7 @@ DataStream* Rok4Server::CommonGetFeatureInfo ( std::string service, Layer* layer
         
     } else if ( getFeatureInfoType.compare( "EXTERNALWMS" ) == 0 ) {
         LOGGER_DEBUG("GFI sur WMS externe");
-        WebService* myWMSV = new WebService(layer->getGFIBaseUrl(),serverConf->proxy.proxyName,serverConf->proxy.noProxy,1,1,10);
+        WebService* myWMSV = new WebService(layer->getGFIBaseUrl(),1,1,10);
         std::stringstream vectorRequest;
         std::string crsstring = crs.getRequestCode();
         if(layer->getGFIForceEPSG()){
@@ -1526,5 +1526,3 @@ bool Rok4Server::isRunning() { return running ; }
 bool Rok4Server::isWMTSSupported(){ return serverConf->supportWMTS ; }
 bool Rok4Server::isWMSSupported(){ return serverConf->supportWMS ; }
 bool Rok4Server::isTMSSupported(){ return serverConf->supportTMS ; }
-void Rok4Server::setProxy(Proxy pr){ serverConf->proxy = pr ; }
-Proxy Rok4Server::getProxy(){ return serverConf->proxy ; }

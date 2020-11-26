@@ -188,7 +188,6 @@ protected:
     ContextBook *sbook;
     ContextBook *cbook;
     TileMatrixSet* onematrixset;
-    Proxy proxy;
     Rok4Server* myrok4server;
 
 };
@@ -266,9 +265,7 @@ void CppUnitCapabilitiesBuilder::setUp() {
     cbook = NULL;
     sbook = NULL;
     nbProcess = 1;
-    proxy.proxyName = "";
-    proxy.noProxy = "";
-    myrok4server = new Rok4Server(nbThread, *services_conf, layerlist, mytilematrixset, stylelist, socket, backlog, cbook,sbook, proxy,supportWMTS, supportWMS, nbProcess);
+    myrok4server = new Rok4Server(nbThread, *services_conf, layerlist, mytilematrixset, stylelist, socket, backlog, cbook,sbook, supportWMTS, supportWMS, nbProcess);
 
 }
 

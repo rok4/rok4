@@ -806,21 +806,6 @@ public:
      * \brief to know if the server responde to WMS request
      */
     bool isWMSSupported();
-    /**
-     * \~french
-     * \brief Pour savoir si le server honore les requêtes WMTS
-     * \~english
-     * \brief to know if the server responde to WMTS request
-     */
-    void setProxy(Proxy pr);
-
-    /**
-     * \~french
-     * \brief Retourne le proxy par defaut
-     * \~english
-     * \brief Return default proxy
-     */
-    Proxy getProxy();
 
     /**
      * \brief Construction du serveur

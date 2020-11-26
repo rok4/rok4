@@ -160,7 +160,7 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
 
             if (pElemSP->ValueStr() == "webService") {
 
-                WebService* ws = ConfLoader::parseWebService(pElemSP,tms->getCrs(),pyr->getFormat(), serverXML->getProxy(), servicesXML);
+                WebService* ws = ConfLoader::parseWebService(pElemSP,tms->getCrs(),pyr->getFormat(), servicesXML);
                 if (ws == NULL) {
                     LOGGER_ERROR("Impossible de charger le WebService indique");
                     return;
@@ -203,7 +203,7 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
 
             if (pElemSP->ValueStr() == "webService") {
 
-                WebService* ws = ConfLoader::parseWebService(pElemSP,tms->getCrs(),pyr->getFormat(), serverXML->getProxy(), servicesXML);
+                WebService* ws = ConfLoader::parseWebService(pElemSP,tms->getCrs(),pyr->getFormat(), servicesXML);
                 if (ws == NULL) {
                     LOGGER_ERROR("Impossible de charger le WebService indique");
                     return;

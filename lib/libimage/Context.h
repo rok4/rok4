@@ -75,7 +75,7 @@ class Context {
 protected:
 
     /**
-     * \~french \brief Buffers pour les écitures différées
+     * \~french \brief Buffers pour les écritures différées
      * \~english \brief Postponed writings buffers
      */
     std::map<std::string, std::vector<char>*> writingBuffers;

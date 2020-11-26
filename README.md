@@ -15,7 +15,7 @@ ROK4GENERATION est un ensemble de scripts de traitement permettant la préparati
 * http://www.ign.fr [@IGNFrance](https://twitter.com/IGNFrance)
 * http://www.geoportail.gouv.fr [@Geoportail](https://twitter.com/Geoportail)
 
-ROK4 Version : 3.8.0-DEVELOP
+ROK4 Version : 3.8.1-DEVELOP
 
 <!-- TOC depthFrom:1 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
 
@@ -68,7 +68,7 @@ Afin de connaître les paquets et librairies à installer, référez vous aux Do
 	* [Debian 9](./docker/rok4server/stretch.Dockerfile)
 	* [Debian 10](./docker/rok4server/buster.Dockerfile)
 	* [Centos 7](./docker/rok4server/centos7.Dockerfile)
-	
+
 * Compilation des outils de génération ROK4 :
 	* [Debian 10](./docker/rok4generation/buster.Dockerfile)
 
@@ -120,13 +120,13 @@ make [install|package]`
 
 #### Gestion du stockage objet
 
-`BUILD_OBJECT (BOOL)` : Il est possible de stocker les pyramides d'images dans des systèmes de stockage objet. Sont gérés CEPH, S3 et SWIFT. Cela implique d'avoir préalablement installé la librairie librados. Ne pas mettre TRUE mais `1` pour que ce soit bien interprété lors de la compilation dans le code. Valeur par défaut : `0`   
+`BUILD_OBJECT (BOOL)` : Il est possible de stocker les pyramides d'images dans des systèmes de stockage objet. Sont gérés CEPH, S3 et SWIFT. Cela implique d'avoir préalablement installé la librairie librados. Ne pas mettre TRUE mais `1` pour que ce soit bien interprété lors de la compilation dans le code. Valeur par défaut : `0`
 
 #### Utilisation de Kakadu
 
 Kakadu est une librairie propriétaire de manipulation d'images JPEG2000. Par défaut c'est OpenJpeg, libre, qui est utilisé.
 
-`KDU_USE (BOOL)` : Active l'utilisation de Kakadu pour la lecture du JPEG2000. Ne pas mettre TRUE mais `1` pour que ce soit bien interprété lors de la compilation dans le code. Valeur par défaut : `0`   
+`KDU_USE (BOOL)` : Active l'utilisation de Kakadu pour la lecture du JPEG2000. Ne pas mettre TRUE mais `1` pour que ce soit bien interprété lors de la compilation dans le code. Valeur par défaut : `0`
 
 `KDU_LIBRARY_PATH (STRING)` : Si kakadu est utilisé, il est possible de fournir le chemin d'un dossier où chercher la librairie (les fichiers libkdu.a et libkdu_aux.a). Les headers sont embarqués dans le projet ROK4 . Valeur par défaut : `/usr/kakadu-6.4`
 

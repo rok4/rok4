@@ -192,20 +192,6 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         }
     }
 
-    pElem=hRoot.FirstChild ( "proxy" ).Element();
-    if ( !pElem || ! ( pElem->GetText() ) ) {
-        proxy.proxyName = "";
-    } else {
-        proxy.proxyName = DocumentXML::getTextStrFromElem(pElem);
-    }
-
-    pElem=hRoot.FirstChild ( "noProxy" ).Element();
-    if ( !pElem || ! ( pElem->GetText() ) ) {
-        proxy.noProxy = "";
-    } else {
-        proxy.noProxy = DocumentXML::getTextStrFromElem(pElem);
-    }
-
     if ( !supportWMS && !supportWMTS && !supportTMS ) {
         std::cerr<<_ ( "WMTS, TMS et WMS desactives, extinction du serveur" ) <<std::endl;
         return;
@@ -638,6 +624,5 @@ bool ServerXML::getSupportWMTS() {return supportWMTS;}
 bool ServerXML::getSupportTMS() {return supportTMS;}
 bool ServerXML::getSupportWMS() {return supportWMS;}
 int ServerXML::getBacklog() {return backlog;}
-Proxy ServerXML::getProxy() {return proxy;}
 int ServerXML::getTimeKill() {return timeKill;}
 bool ServerXML::getReprojectionCapability() { return reprojectionCapability; }

@@ -36,7 +36,6 @@
  */
 
 class ServerXML;
-struct Proxy;
 
 #ifndef SERVERXML_H
 #define SERVERXML_H
@@ -57,11 +56,6 @@ struct Proxy;
 #if BUILD_OBJECT
 #include "ContextBook.h"
 #endif
-
-struct Proxy {
-    std::string proxyName;
-    std::string noProxy;
-};
 
 
 class ServerXML : public DocumentXML
@@ -118,7 +112,6 @@ class ServerXML : public DocumentXML
         bool getSupportWMS() ;
         bool getReprojectionCapability() ;
         int getBacklog() ;
-        Proxy getProxy() ;
         int getTimeKill() ;
 
     protected:
@@ -207,12 +200,6 @@ class ServerXML : public DocumentXML
 #endif
 
         int nbProcess;
-
-        /**
-         * \~french \brief Proxy utilisé par défaut pour des requêtes WMS
-         * \~english \brief Default proxy used for WMS requests
-         */
-        Proxy proxy;
 
     private:
 
