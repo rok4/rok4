@@ -48,6 +48,15 @@ use Test2::V0 -target => 'COMMON::ProxyStorage';
 use constant TRUE  => 1;
 use constant FALSE => 0;
 use constant INITIAL_ENV => %ENV;
+use constant LOG_METHODS => { # Méthodes à surcharger pour les bouchons sur les appels à Log::Log4perl
+    TRACE => sub { return; },
+    DEBUG => sub { return; },
+    INFO => sub { return; },
+    WARN => sub { return; },
+    ERROR => sub { return; },
+    FATAL => sub { return; },
+    ALWAYS => sub { return; }
+};
 
 sub override_env {
     my $hashref = shift;
@@ -58,35 +67,269 @@ sub override_env {
 sub reset_env {
     %ENV = INITIAL_ENV;
 }
-        
 
+# Tested method : COMMON::ProxyStorage::checkEnvironmentVariables()
 subtest test_checkEnvironmentVariables => sub {
+    # Case : file storage, everything ok
     subtest file_all_ok => sub {
+        # Environment for the test
+        my $main_mock = mock 'COMMON::ProxyStorage' => (
+            track => TRUE,
+            override => LOG_METHODS
+        );
+
+        # Test return value : must be TRUE
         my $method_return = COMMON::ProxyStorage::checkEnvironmentVariables('FILE');
-        is($method_return, TRUE, "checkEnvironmentVariables('FILE') returns TRUE");
+        is( $method_return, TRUE, "checkEnvironmentVariables('FILE') returns TRUE" );
+        # Test calls to logger : must have none
+        my @logging_subs_called = keys( %{$main_mock->sub_tracking()} );
+        is( scalar(@logging_subs_called), 0, "No call to logger." );
+
+        # Reset environment
+        $main_mock = undef;
+
+        done_testing;
     };
+
+    # Case : ceph object storage, everything ok
     subtest ceph_all_ok => sub {
+        # Environment for the test
         my %temp_env = (
             'ROK4_CEPH_CONFFILE' => '/etc/ceph/ceph.conf',
             'ROK4_CEPH_USERNAME' => 'client.admin',
             'ROK4_CEPH_CLUSTERNAME' => 'ceph'
         );
         override_env(\%temp_env);
+        my $main_mock = mock 'COMMON::ProxyStorage' => (
+            track => TRUE,
+            override => LOG_METHODS
+        );
 
+
+        # Test return value : must be TRUE
         my $method_return = COMMON::ProxyStorage::checkEnvironmentVariables('CEPH');
         is($method_return, TRUE, "checkEnvironmentVariables('CEPH') returns TRUE");
-        my %module_scope_vars = COMMON::ProxyStorage::getConfiguration(keys(%temp_env));
-        is(%module_scope_vars, %temp_env, "Module scope variables affectation OK.");   
 
+        # Test module scoped variables : must match environment
+        my %module_scope_vars = COMMON::ProxyStorage::getConfiguration(keys(%temp_env));
+        is(%module_scope_vars, %temp_env, "Module scope variables affectation OK.");
+
+        # Test calls to logger : must have none
+        my @logging_subs_called = keys( %{$main_mock->sub_tracking()} );
+        is( scalar(@logging_subs_called), 0, "No call to logger." );
+
+
+        # Reset environment
         reset_env();
+        $main_mock = undef;
+
+        done_testing;
     };
-    # subtest s3_all_ok => sub {
-    # };
-    # subtest swift_all_ok => sub {
-    #     subtest with_keystone => sub {
-    #     };
-    #     subtest without_keystone => sub {
-    #     };
-    # };  
+
+
+    # Case : s3 object storage, everything ok
+    subtest s3_all_ok => sub {
+        # Environment for the test
+        my %temp_env = (
+            'ROK4_S3_URL' => 'https://url.to.s3_service.com:985',
+            'ROK4_S3_KEY' => 'ThisIsAkey',
+            'ROK4_S3_SECRETKEY' => 'e0b2d012c4aeae33cbf753f3'
+        );
+        override_env(\%temp_env);
+        my $main_mock = mock 'COMMON::ProxyStorage' => (
+            track => TRUE,
+            override => LOG_METHODS
+        );
+        my $UA_mock = mock 'LWP::UserAgent' => (
+            track => TRUE,
+            override_constructor => {
+                new => 'hash'
+            },
+            override => {
+                ssl_opts => sub {
+                    my $self = shift;
+                    $self->{ssl_opts_string} = "SSL options";
+                },
+                env_proxy => sub {
+                    my $self = shift;
+                    $self->{env_proxy_string} = "Proxy = system";
+                }
+            }
+        );
+
+
+        # Test return value : must be TRUE
+        my $method_return = COMMON::ProxyStorage::checkEnvironmentVariables('S3');
+        is($method_return, TRUE, "checkEnvironmentVariables('S3') returns TRUE");
+
+        # Test module scoped variables : must match environment
+        my %expected_vars = (%temp_env, (
+            'ROK4_S3_ENDPOINT_HOST' => 'url.to.s3_service.com'
+        ));
+        my %module_scope_vars = COMMON::ProxyStorage::getConfiguration(keys(%expected_vars));
+        is(%module_scope_vars, %expected_vars, "Module scope variables affectation OK.");
+
+        # Test calls to user agent
+        my $sub_calls_count = [
+            scalar( @{$UA_mock->sub_tracking()->{new}} ),
+            scalar( @{$UA_mock->sub_tracking()->{ssl_opts}} ),
+            scalar( @{$UA_mock->sub_tracking()->{env_proxy}} )
+        ];
+        is( $sub_calls_count, [1, 1, 1], "User agent creation." );
+
+        # Test calls to logger : must have none
+        my @logging_subs_called = keys( %{$main_mock->sub_tracking()} );
+        is( scalar(@logging_subs_called), 0, "No call to logger." );
+
+
+        # Reset environment
+        COMMON::ProxyStorage::resetConfiguration();
+        reset_env();
+        $main_mock = undef;
+        $UA_mock = undef;
+
+        done_testing;
+    };
+
+    # Case : s3 object storage, everything ok
+    subtest swift_all_ok => sub {
+
+        # keystone authentication
+        subtest with_keystone => sub {
+            # Environment for the test
+            my %temp_env = (
+                'ROK4_SWIFT_AUTHURL' => 'https://auth.exemple.com:8080/swift/',
+                'ROK4_SWIFT_USER' => 'swift_user_1',
+                'ROK4_SWIFT_PASSWD' => 'swift_password_1',
+                'ROK4_KEYSTONE_DOMAINID' => 'swift_test_domain',
+                'ROK4_SWIFT_PUBLICURL' => 'https://cluster.swift.com:8081',
+                'ROK4_KEYSTONE_PROJECTID' => 'kzty3tg85bypmtek1dgv2d61'
+            );
+            override_env(\%temp_env);
+            my $main_mock = mock 'COMMON::ProxyStorage' => (
+                track => TRUE,
+                override => LOG_METHODS
+            );
+            my $UA_mock = mock 'LWP::UserAgent' => (
+                track => TRUE,
+                override_constructor => {
+                    new => 'hash'
+                },
+                override => {
+                    ssl_opts => sub {
+                        my $self = shift;
+                        $self->{ssl_opts_string} = "SSL options";
+                    },
+                    env_proxy => sub {
+                        my $self = shift;
+                        $self->{env_proxy_string} = "Proxy = system";
+                    }
+                }
+            );
+
+
+            # Test return value : must be TRUE
+            my $method_return = COMMON::ProxyStorage::checkEnvironmentVariables('SWIFT', TRUE);
+            is($method_return, TRUE, "checkEnvironmentVariables('SWIFT', TRUE) returns TRUE");
+
+            # Test module scoped variables : must match environment
+            my %expected_vars = (%temp_env, (
+                'ROK4_KEYSTONE_IS_USED' => TRUE
+            ));
+            my %module_scope_vars = COMMON::ProxyStorage::getConfiguration(keys(%expected_vars));
+            is(%module_scope_vars, %expected_vars, "Module scope variables affectation OK.");
+
+            # Test calls to user agent
+            my $sub_calls_count = [
+                scalar( @{$UA_mock->sub_tracking()->{new}} ),
+                scalar( @{$UA_mock->sub_tracking()->{ssl_opts}} ),
+                scalar( @{$UA_mock->sub_tracking()->{env_proxy}} )
+            ];
+            is( $sub_calls_count, [1, 1, 1], "User agent creation." );
+
+            # Test calls to logger : must have none
+            my @logging_subs_called = keys( %{$main_mock->sub_tracking()} );
+            is( scalar(@logging_subs_called), 0, "No call to logger." );
+
+
+            # Reset environment
+            COMMON::ProxyStorage::resetConfiguration();
+            reset_env();
+            $main_mock = undef;
+            $UA_mock = undef;
+
+            done_testing;
+        };
+
+        # native authentication
+        subtest without_keystone => sub {
+            # Environment for the test
+            my %temp_env = (
+                'ROK4_SWIFT_AUTHURL' => 'https://auth.exemple.com:8080/swift/',
+                'ROK4_SWIFT_USER' => 'swift_user_1',
+                'ROK4_SWIFT_PASSWD' => 'swift_password_1',
+                'ROK4_SWIFT_ACCOUNT' => 'swift_account_name'
+            );
+            override_env(\%temp_env);
+            my $main_mock = mock 'COMMON::ProxyStorage' => (
+                track => TRUE,
+                override => LOG_METHODS
+            );
+            my $UA_mock = mock 'LWP::UserAgent' => (
+                track => TRUE,
+                override_constructor => {
+                    new => 'hash'
+                },
+                override => {
+                    ssl_opts => sub {
+                        my $self = shift;
+                        $self->{ssl_opts_string} = "SSL options";
+                    },
+                    env_proxy => sub {
+                        my $self = shift;
+                        $self->{env_proxy_string} = "Proxy = system";
+                    }
+                }
+            );
+
+
+            # Test return value : must be TRUE
+            my $method_return = COMMON::ProxyStorage::checkEnvironmentVariables('SWIFT', FALSE);
+            is($method_return, TRUE, "checkEnvironmentVariables('SWIFT', FALSE) returns TRUE");
+
+            # Test module scoped variables : must match environment
+            my %expected_vars = (%temp_env, (
+                'ROK4_KEYSTONE_IS_USED' => FALSE
+            ));
+            my %module_scope_vars = COMMON::ProxyStorage::getConfiguration(keys(%expected_vars));
+            is(%module_scope_vars, %expected_vars, "Module scope variables affectation OK.");
+
+            # Test calls to user agent
+            my $sub_calls_count = [
+                scalar( @{$UA_mock->sub_tracking()->{new}} ),
+                scalar( @{$UA_mock->sub_tracking()->{ssl_opts}} ),
+                scalar( @{$UA_mock->sub_tracking()->{env_proxy}} )
+            ];
+            is( $sub_calls_count, [1, 1, 1], "User agent creation." );
+
+            # Test calls to logger : must have none
+            my @logging_subs_called = keys( %{$main_mock->sub_tracking()} );
+            is( scalar(@logging_subs_called), 0, "No call to logger." );
+
+
+            # Reset environment
+            COMMON::ProxyStorage::resetConfiguration();
+            reset_env();
+            $main_mock = undef;
+            $UA_mock = undef;
+
+            done_testing;
+        };
+
+        done_testing;
+    };
+
+    done_testing;
 };
+
 done_testing;

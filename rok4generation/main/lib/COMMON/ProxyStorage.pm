@@ -85,14 +85,15 @@ use constant FALSE => 0;
 
 my @STORAGETYPES = ("FILE", "CEPH", "S3", "SWIFT");
 
-my $UA;
-
 ## Variables de configuration
 
-my %configuration = (
+use constant INITIAL_CONFIGURATION => (
 
 ### General
     ROK4_IMAGE_HEADER_SIZE => 2048,
+
+### User agent for HTTP(S) requests
+    UA => undef,
 
 ### CEPH
 
@@ -127,6 +128,7 @@ my %configuration = (
 
 
 );
+my %configuration = INITIAL_CONFIGURATION;
 
 
 # Signature d'un objet CEPH LIEN et sa taille
@@ -145,7 +147,6 @@ Return TRUE if all required environment variables for storage are defined FALSE 
 sub checkEnvironmentVariables {
     my $type = shift;
     my $keystone = shift;
-
     if ($type eq "CEPH") {
 
         if (! defined $ENV{ROK4_CEPH_CONFFILE}) {
@@ -219,9 +220,9 @@ sub checkEnvironmentVariables {
             $configuration{ROK4_SWIFT_ACCOUNT} = $ENV{ROK4_SWIFT_ACCOUNT};
         }
 
-        $UA = LWP::UserAgent->new();
-        $UA->ssl_opts(verify_hostname => 0);
-        $UA->env_proxy;
+        $configuration{UA} = LWP::UserAgent->new();
+        $configuration{UA}->ssl_opts(verify_hostname => 0);
+        $configuration{UA}->env_proxy;
 
     } elsif ($type eq "S3") {
         
@@ -246,9 +247,9 @@ sub checkEnvironmentVariables {
         $configuration{ROK4_S3_ENDPOINT_HOST} =~ s/^https?:\/\///;
         $configuration{ROK4_S3_ENDPOINT_HOST} =~ s/:[0-9]+$//;
 
-        $UA = LWP::UserAgent->new();
-        $UA->ssl_opts(verify_hostname => 0);
-        $UA->env_proxy;
+        $configuration{UA} = LWP::UserAgent->new();
+        $configuration{UA}->ssl_opts(verify_hostname => 0);
+        $configuration{UA}->env_proxy;
     }
 
     return TRUE;
@@ -303,7 +304,7 @@ sub getSwiftToken {
             Content => $json
         );
 
-        my $response = $UA->request($request);
+        my $response = $configuration{UA}->request($request);
 
         if (! defined $response || ! $response->is_success() ) {
             ERROR("Cannot get Swift token via Keystone");
@@ -329,7 +330,7 @@ sub getSwiftToken {
         $request->header('X-Auth-User' => "$configuration{ROK4_SWIFT_ACCOUNT}:$configuration{ROK4_SWIFT_USER}");
         $request->header('X-Auth-Key' => "$configuration{ROK4_SWIFT_PASSWD}");
 
-        my $response = $UA->request($request);
+        my $response = $configuration{UA}->request($request);
 
         if (! defined $response || ! $response->is_success() ) {
             ERROR("Cannot get Swift token");
@@ -371,7 +372,7 @@ sub sendSwiftRequest {
     # $parameters[0] is the HTTP::Request object
     $parameters[0]->header('X-Auth-Token' => $configuration{SWIFT_TOKEN});
 
-    my $response = $UA->request(@parameters);
+    my $response = $configuration{UA}->request(@parameters);
     if (defined($response) && $response->is_success) {
         return $response;
     }
@@ -384,7 +385,7 @@ sub sendSwiftRequest {
 
     INFO("Retrying...");
     $parameters[0]->header('X-Auth-Token' => $configuration{SWIFT_TOKEN});
-    $response = $UA->request(@parameters);
+    $response = $configuration{UA}->request(@parameters);
     return $response;
 }
 
@@ -490,7 +491,7 @@ sub copy {
             $request->header('Content-Type' => $contentType);
             $request->header('Authorization' => sprintf ("AWS %s:$signature", $configuration{ROK4_S3_KEY}));
              
-            my $response = $UA->request($request);
+            my $response = $configuration{UA}->request($request);
             if ($response->is_success) {
                 return TRUE;
             }
@@ -658,7 +659,7 @@ sub copy {
                 return FALSE;
             }
 
-            my $response = $UA->request($request, $toPath);
+            my $response = $configuration{UA}->request($request, $toPath);
             if ($response->is_success) {
                 return TRUE;
             } else {
@@ -706,7 +707,7 @@ sub copy {
             $request->header('x-amz-copy-source' => "/$fromBucket/$fromObjectName");
             $request->header('Authorization' => sprintf ("AWS %s:$signature", $configuration{ROK4_S3_KEY}));
 
-            my $response = $UA->request($request, $toPath);
+            my $response = $configuration{UA}->request($request, $toPath);
             if ($response->is_success) {
                 return TRUE;
             } else {
@@ -914,7 +915,7 @@ sub isPresent {
         $request->header('Content-Type' => $contentType);
         $request->header('Authorization' => sprintf ("AWS %s:$signature", $configuration{ROK4_S3_KEY}));
          
-        my $response = $UA->request($request);
+        my $response = $configuration{UA}->request($request);
         if ($response->is_success) {
             return TRUE;
         } else {
@@ -937,7 +938,7 @@ sub isPresent {
 
         $request->header('X-Auth-Token' => $configuration{SWIFT_TOKEN});
 
-        my $response = $UA->request($request);
+        my $response = $configuration{UA}->request($request);
         if ($response->is_success) {
             return TRUE;
         } else {
@@ -1035,7 +1036,7 @@ sub getRealData {
             while ($end == FALSE) {
                 $request = HTTP::Request->new(GET => $configuration{ROK4_SWIFT_PUBLICURL}.$context);
                 $request->header('X-Auth-Token' => $configuration{SWIFT_TOKEN});
-                $response = $UA->request($request);
+                $response = $configuration{UA}->request($request);
                 if (! $response->is_success && $first_try == TRUE) {
                     getSwiftToken();
                     $first_try = FALSE;
@@ -1101,7 +1102,7 @@ sub getSize {
 
         $request->header('X-Auth-Token' => $configuration{SWIFT_TOKEN});
 
-        my $response = $UA->request($request);
+        my $response = $configuration{UA}->request($request);
         if ($response->is_success) {
             return $response->header("Content-Length");
         }
@@ -1140,7 +1141,7 @@ sub getSize {
         $request->header('Content-Type' => $contentType);
         $request->header('Authorization' => sprintf ("AWS %s:$signature", $configuration{ROK4_S3_KEY}));
          
-        my $response = $UA->request($request);
+        my $response = $configuration{UA}->request($request);
         if ($response->is_success) {
             return $response->header("Content-Length");
         }
@@ -1212,7 +1213,7 @@ sub remove {
         while ($end == FALSE) {
             $request = HTTP::Request->new(DELETE => $configuration{ROK4_SWIFT_PUBLICURL}.$context);
             $request->header('X-Auth-Token' => $configuration{SWIFT_TOKEN});
-            $response = $UA->request($request);
+            $response = $configuration{UA}->request($request);
             if (! $response->is_success && $first_try == TRUE) {
                 getSwiftToken();
                 $first_try = FALSE;
@@ -1337,7 +1338,7 @@ sub symLink {
             $request = HTTP::Request->new(PUT => $configuration{ROK4_SWIFT_PUBLICURL}.$context);
             $request->header('X-Auth-Token' => $configuration{SWIFT_TOKEN});
             $request->content($symlink_content);
-            $response = $UA->request($request);
+            $response = $configuration{UA}->request($request);
             if (! $response->is_success && $first_try == TRUE) {
                 getSwiftToken();
                 $first_try = FALSE;
@@ -1408,6 +1409,17 @@ sub hardLink {
 #                                  Group: Accessors                                                #
 ####################################################################################################
 
+=begin nd
+Function: getConfiguration
+
+Get a hash of the module configuration variables.
+
+Parameters:
+    @selection - array - list of keys to filter the hash. If empty, no filter will be applied.
+
+Return:
+    Hash containing the module configuration variables and their values, filtered or not.
+=cut
 sub getConfiguration {
     my @args = @_;
     my %filtered_configuration = ();
@@ -1424,6 +1436,14 @@ sub getConfiguration {
     }    
 };
 
+=begin nd
+Function: resetConfiguration
+
+Resets the module configuration variables to their default values. Designed to be called after a unit test, for isolation purposes.
+=cut
+sub resetConfiguration {
+    %configuration = INITIAL_CONFIGURATION;
+};
 
 1;
 __END__
