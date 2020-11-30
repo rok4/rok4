@@ -77,11 +77,13 @@ subtest test_checkEnvironmentVariables => sub {
             track => TRUE,
             override => LOG_METHODS
         );
+        $main_mock->override('_setConfigurationElement' => sub {});
 
         # Test return value : must be TRUE
         my $method_return = COMMON::ProxyStorage::checkEnvironmentVariables('FILE');
         is( $method_return, TRUE, "checkEnvironmentVariables('FILE') returns TRUE" );
-        # Test calls to logger : must have none
+
+        # Test calls to logger and module configuration setters : must have none
         my @logging_subs_called = keys( %{$main_mock->sub_tracking()} );
         is( scalar(@logging_subs_called), 0, "No call to logger." );
 
@@ -100,10 +102,12 @@ subtest test_checkEnvironmentVariables => sub {
             'ROK4_CEPH_CLUSTERNAME' => 'ceph'
         );
         override_env(\%temp_env);
+        my $override_log_subs = LOG_METHODS;
         my $main_mock = mock 'COMMON::ProxyStorage' => (
             track => TRUE,
-            override => LOG_METHODS
+            override => $override_log_subs
         );
+        $main_mock->override('_setConfigurationElement' => sub {});
 
 
         # Test return value : must be TRUE
@@ -114,10 +118,11 @@ subtest test_checkEnvironmentVariables => sub {
         my %module_scope_vars = COMMON::ProxyStorage::getConfiguration(keys(%temp_env));
         is(%module_scope_vars, %temp_env, "Module scope variables affectation OK.");
 
-        # Test calls to logger : must have none
+        # Test calls (namespace = $main)
         my @logging_subs_called = keys( %{$main_mock->sub_tracking()} );
-        is( scalar(@logging_subs_called), 0, "No call to logger." );
-
+        my $logger_subs = join('|', keys(%{$override_log_subs}));
+        is( scalar(grep(/^($logger_subs)$/, @logging_subs_called)), 0, "No call to logger." );
+        is( scalar(@{$main_mock->sub_tracking()->{_setConfigurationElement}}), 3, "Calls to setter." );
 
         # Reset environment
         reset_env();
@@ -136,10 +141,12 @@ subtest test_checkEnvironmentVariables => sub {
             'ROK4_S3_SECRETKEY' => 'e0b2d012c4aeae33cbf753f3'
         );
         override_env(\%temp_env);
+        my $override_log_subs = LOG_METHODS;
         my $main_mock = mock 'COMMON::ProxyStorage' => (
             track => TRUE,
             override => LOG_METHODS
         );
+        $main_mock->override('_setConfigurationElement' => sub {});
         my $UA_mock = mock 'LWP::UserAgent' => (
             track => TRUE,
             override_constructor => {
@@ -167,19 +174,23 @@ subtest test_checkEnvironmentVariables => sub {
             'ROK4_S3_ENDPOINT_HOST' => 'url.to.s3_service.com'
         ));
         my %module_scope_vars = COMMON::ProxyStorage::getConfiguration(keys(%expected_vars));
-        is(%module_scope_vars, %expected_vars, "Module scope variables affectation OK.");
+        is(%module_scope_vars, %expected_vars, "Module scope variables (except UA) affectation OK.");
 
-        # Test calls to user agent
+        # Test calls (namespace = $main)
+        my @logging_subs_called = keys( %{$main_mock->sub_tracking()} );
+        my $logger_subs = join('|', keys(%{$override_log_subs}));
+        is( scalar(grep(/^($logger_subs)$/, @logging_subs_called)), 0, "No call to logger." );
+        is( scalar(@{$main_mock->sub_tracking()->{_setConfigurationElement}}), 5, "Calls to setter." );
+
+        # Test calls (namespace = LWP::UserAgent)
         my $sub_calls_count = [
             scalar( @{$UA_mock->sub_tracking()->{new}} ),
             scalar( @{$UA_mock->sub_tracking()->{ssl_opts}} ),
             scalar( @{$UA_mock->sub_tracking()->{env_proxy}} )
         ];
         is( $sub_calls_count, [1, 1, 1], "User agent creation." );
-
-        # Test calls to logger : must have none
-        my @logging_subs_called = keys( %{$main_mock->sub_tracking()} );
-        is( scalar(@logging_subs_called), 0, "No call to logger." );
+        my %module_scope_UA_var = COMMON::ProxyStorage::getConfiguration('UA');
+        ok( exists($module_scope_UA_var{'UA'}), "Module scope UA variable affectation OK." );
 
 
         # Reset environment
@@ -206,10 +217,12 @@ subtest test_checkEnvironmentVariables => sub {
                 'ROK4_KEYSTONE_PROJECTID' => 'kzty3tg85bypmtek1dgv2d61'
             );
             override_env(\%temp_env);
+            my $override_log_subs = LOG_METHODS;
             my $main_mock = mock 'COMMON::ProxyStorage' => (
                 track => TRUE,
                 override => LOG_METHODS
             );
+            $main_mock->override('_setConfigurationElement' => sub {});
             my $UA_mock = mock 'LWP::UserAgent' => (
                 track => TRUE,
                 override_constructor => {
@@ -237,7 +250,13 @@ subtest test_checkEnvironmentVariables => sub {
                 'ROK4_KEYSTONE_IS_USED' => TRUE
             ));
             my %module_scope_vars = COMMON::ProxyStorage::getConfiguration(keys(%expected_vars));
-            is(%module_scope_vars, %expected_vars, "Module scope variables affectation OK.");
+            is(%module_scope_vars, %expected_vars, "Module scope variables (except UA) affectation OK.");
+
+            # Test calls (namespace = $main)
+            my @logging_subs_called = keys( %{$main_mock->sub_tracking()} );
+            my $logger_subs = join('|', keys(%{$override_log_subs}));
+            is( scalar(grep(/^($logger_subs)$/, @logging_subs_called)), 0, "No call to logger." );
+            is( scalar(@{$main_mock->sub_tracking()->{_setConfigurationElement}}), 8, "Calls to setter." );
 
             # Test calls to user agent
             my $sub_calls_count = [
@@ -246,10 +265,8 @@ subtest test_checkEnvironmentVariables => sub {
                 scalar( @{$UA_mock->sub_tracking()->{env_proxy}} )
             ];
             is( $sub_calls_count, [1, 1, 1], "User agent creation." );
-
-            # Test calls to logger : must have none
-            my @logging_subs_called = keys( %{$main_mock->sub_tracking()} );
-            is( scalar(@logging_subs_called), 0, "No call to logger." );
+            my %module_scope_UA_var = COMMON::ProxyStorage::getConfiguration('UA');
+            ok( exists($module_scope_UA_var{'UA'}), "Module scope UA variable affectation OK." );
 
 
             # Reset environment
@@ -271,10 +288,12 @@ subtest test_checkEnvironmentVariables => sub {
                 'ROK4_SWIFT_ACCOUNT' => 'swift_account_name'
             );
             override_env(\%temp_env);
+            my $override_log_subs = LOG_METHODS;
             my $main_mock = mock 'COMMON::ProxyStorage' => (
                 track => TRUE,
                 override => LOG_METHODS
             );
+            $main_mock->override('_setConfigurationElement' => sub {});
             my $UA_mock = mock 'LWP::UserAgent' => (
                 track => TRUE,
                 override_constructor => {
@@ -302,7 +321,13 @@ subtest test_checkEnvironmentVariables => sub {
                 'ROK4_KEYSTONE_IS_USED' => FALSE
             ));
             my %module_scope_vars = COMMON::ProxyStorage::getConfiguration(keys(%expected_vars));
-            is(%module_scope_vars, %expected_vars, "Module scope variables affectation OK.");
+            is(%module_scope_vars, %expected_vars, "Module scope variables (except UA) affectation OK.");
+
+            # Test calls (namespace = $main)
+            my @logging_subs_called = keys( %{$main_mock->sub_tracking()} );
+            my $logger_subs = join('|', keys(%{$override_log_subs}));
+            is( scalar(grep(/^($logger_subs)$/, @logging_subs_called)), 0, "No call to logger." );
+            is( scalar(@{$main_mock->sub_tracking()->{_setConfigurationElement}}), 6, "Calls to setter." );
 
             # Test calls to user agent
             my $sub_calls_count = [
@@ -311,10 +336,8 @@ subtest test_checkEnvironmentVariables => sub {
                 scalar( @{$UA_mock->sub_tracking()->{env_proxy}} )
             ];
             is( $sub_calls_count, [1, 1, 1], "User agent creation." );
-
-            # Test calls to logger : must have none
-            my @logging_subs_called = keys( %{$main_mock->sub_tracking()} );
-            is( scalar(@logging_subs_called), 0, "No call to logger." );
+            my %module_scope_UA_var = COMMON::ProxyStorage::getConfiguration('UA');
+            ok( exists($module_scope_UA_var{'UA'}), "Module scope UA variable affectation OK." );
 
 
             # Reset environment
@@ -331,5 +354,21 @@ subtest test_checkEnvironmentVariables => sub {
 
     done_testing;
 };
+
+
+
+# Tested method : COMMON::ProxyStorage::getSwiftToken()
+# subtest test_getSwiftToken => sub {
+#     subtest ok_first_try_with_keystone => sub {
+
+#         done_testing;
+#     };
+
+#     done_testing;
+# };
+
+
+
+
 
 done_testing;

@@ -162,9 +162,9 @@ sub checkEnvironmentVariables {
             return FALSE;
         }
 
-        $configuration{ROK4_CEPH_CONFFILE} = $ENV{ROK4_CEPH_CONFFILE};
-        $configuration{ROK4_CEPH_USERNAME} = $ENV{ROK4_CEPH_USERNAME};
-        $configuration{ROK4_CEPH_CLUSTERNAME} = $ENV{ROK4_CEPH_CLUSTERNAME};
+        _setConfigurationElement('ROK4_CEPH_CONFFILE', $ENV{ROK4_CEPH_CONFFILE});
+        _setConfigurationElement('ROK4_CEPH_USERNAME', $ENV{ROK4_CEPH_USERNAME});
+        _setConfigurationElement('ROK4_CEPH_CLUSTERNAME', $ENV{ROK4_CEPH_CLUSTERNAME});
 
         
     } elsif ($type eq "SWIFT") {
@@ -182,9 +182,9 @@ sub checkEnvironmentVariables {
             return FALSE;
         }
 
-        $configuration{ROK4_SWIFT_PASSWD} = $ENV{ROK4_SWIFT_PASSWD};
-        $configuration{ROK4_SWIFT_USER} = $ENV{ROK4_SWIFT_USER};
-        $configuration{ROK4_SWIFT_AUTHURL} = $ENV{ROK4_SWIFT_AUTHURL};
+        _setConfigurationElement('ROK4_SWIFT_PASSWD', $ENV{ROK4_SWIFT_PASSWD});
+        _setConfigurationElement('ROK4_SWIFT_USER', $ENV{ROK4_SWIFT_USER});
+        _setConfigurationElement('ROK4_SWIFT_AUTHURL', $ENV{ROK4_SWIFT_AUTHURL});
 
         if ($keystone) {
             if (! defined $ENV{ROK4_KEYSTONE_DOMAINID}) {
@@ -205,10 +205,10 @@ sub checkEnvironmentVariables {
                 return FALSE;
             }
 
-            $configuration{ROK4_KEYSTONE_DOMAINID} = $ENV{ROK4_KEYSTONE_DOMAINID};
-            $configuration{ROK4_KEYSTONE_PROJECTID} = $ENV{ROK4_KEYSTONE_PROJECTID};
-            $configuration{ROK4_SWIFT_PUBLICURL} = $ENV{ROK4_SWIFT_PUBLICURL};
-            $configuration{ROK4_KEYSTONE_IS_USED} = TRUE;
+            _setConfigurationElement('ROK4_KEYSTONE_DOMAINID', $ENV{ROK4_KEYSTONE_DOMAINID});
+            _setConfigurationElement('ROK4_KEYSTONE_PROJECTID', $ENV{ROK4_KEYSTONE_PROJECTID});
+            _setConfigurationElement('ROK4_SWIFT_PUBLICURL', $ENV{ROK4_SWIFT_PUBLICURL});
+            _setConfigurationElement('ROK4_KEYSTONE_IS_USED', TRUE);
         } else {
             
             if (! defined $ENV{ROK4_SWIFT_ACCOUNT}) {
@@ -216,13 +216,14 @@ sub checkEnvironmentVariables {
                 ERROR("We need it for a swift authentication");
                 return FALSE;
             }
-            $configuration{ROK4_KEYSTONE_IS_USED} = FALSE;
-            $configuration{ROK4_SWIFT_ACCOUNT} = $ENV{ROK4_SWIFT_ACCOUNT};
+            _setConfigurationElement('ROK4_KEYSTONE_IS_USED', FALSE);
+            _setConfigurationElement('ROK4_SWIFT_ACCOUNT', $ENV{ROK4_SWIFT_ACCOUNT});
         }
 
-        $configuration{UA} = LWP::UserAgent->new();
-        $configuration{UA}->ssl_opts(verify_hostname => 0);
-        $configuration{UA}->env_proxy;
+        my $UA = LWP::UserAgent->new();
+        $UA->ssl_opts(verify_hostname => 0);
+        $UA->env_proxy;
+        _setConfigurationElement('UA', $UA);
 
     } elsif ($type eq "S3") {
         
@@ -239,17 +240,19 @@ sub checkEnvironmentVariables {
             return FALSE;
         }
 
-        $configuration{ROK4_S3_URL} = $ENV{ROK4_S3_URL};
-        $configuration{ROK4_S3_KEY} = $ENV{ROK4_S3_KEY};
-        $configuration{ROK4_S3_SECRETKEY} = $ENV{ROK4_S3_SECRETKEY};
+        _setConfigurationElement('ROK4_S3_URL', $ENV{ROK4_S3_URL});
+        _setConfigurationElement('ROK4_S3_KEY', $ENV{ROK4_S3_KEY});
+        _setConfigurationElement('ROK4_S3_SECRETKEY', $ENV{ROK4_S3_SECRETKEY});
 
-        $configuration{ROK4_S3_ENDPOINT_HOST} = $configuration{ROK4_S3_URL};
-        $configuration{ROK4_S3_ENDPOINT_HOST} =~ s/^https?:\/\///;
-        $configuration{ROK4_S3_ENDPOINT_HOST} =~ s/:[0-9]+$//;
+        my $endpoint_host = _getConfigurationElement('ROK4_S3_URL');
+        $endpoint_host =~ s/^https?:\/\///;
+        $endpoint_host =~ s/:[0-9]+$//;
+        _setConfigurationElement('ROK4_S3_ENDPOINT_HOST', $endpoint_host);
 
-        $configuration{UA} = LWP::UserAgent->new();
-        $configuration{UA}->ssl_opts(verify_hostname => 0);
-        $configuration{UA}->env_proxy;
+        my $UA = LWP::UserAgent->new();
+        $UA->ssl_opts(verify_hostname => 0);
+        $UA->env_proxy;
+        _setConfigurationElement('UA', $UA);
     }
 
     return TRUE;
@@ -267,17 +270,17 @@ Return TRUE if swift token (with keystone or not) is valid FALSE otherwise
 =cut
 sub getSwiftToken {
 
-    if (! defined($configuration{ROK4_SWIFT_USER}) || ! defined($configuration{ROK4_SWIFT_PASSWD})) {
+    if (! defined(_getConfigurationElement('ROK4_SWIFT_USER')) || ! defined(_getConfigurationElement('ROK4_SWIFT_PASSWD'))) {
         ERROR("Cannot get Swift token without user credentials. Please make sure the environment variables were loaded.");
         return FALSE;
     }
-    if ($configuration{ROK4_KEYSTONE_IS_USED}) {
+    if (_getConfigurationElement('ROK4_KEYSTONE_IS_USED')) {
 
         my $body_object = {
             "auth" => {
                 "scope" => {
                     "project" => {
-                        "id" => "$configuration{ROK4_KEYSTONE_PROJECTID}"
+                        "id" => "_getConfigurationElement('ROK4_KEYSTONE_PROJECTID')"
                     }
                 } => undef,
                 "identity" => {
@@ -287,10 +290,10 @@ sub getSwiftToken {
                     "password" => {
                         "user" => {
                             "domain" => {
-                                "id" => "$configuration{ROK4_KEYSTONE_DOMAINID}"
+                                "id" => "_getConfigurationElement('ROK4_KEYSTONE_DOMAINID')"
                             } => undef,
-                            "name" => "$configuration{ROK4_SWIFT_USER}" => undef,
-                            "password" => "$configuration{ROK4_SWIFT_PASSWD}"
+                            "name" => "_getConfigurationElement('ROK4_SWIFT_USER')" => undef,
+                            "password" => "_getConfigurationElement('ROK4_SWIFT_PASSWD')"
                         }
                     }
                 }
@@ -299,12 +302,12 @@ sub getSwiftToken {
         my $json = JSON::to_json($body_object, {utf8 => 1});
 
         my $request = HTTP::Request::Common::POST(
-            $configuration{ROK4_SWIFT_AUTHURL} => undef,
+            _getConfigurationElement('ROK4_SWIFT_AUTHURL') => undef,
             Content_Type => "application/json" => undef,
             Content => $json
         );
 
-        my $response = $configuration{UA}->request($request);
+        my $response = _getConfigurationElement('UA')->request($request);
 
         if (! defined $response || ! $response->is_success() ) {
             ERROR("Cannot get Swift token via Keystone");
@@ -312,9 +315,9 @@ sub getSwiftToken {
             return FALSE;
         }
 
-        $configuration{SWIFT_TOKEN} = $response->header("X-Subject-Token");
+        _setConfigurationElement('SWIFT_TOKEN', $response->header("X-Subject-Token"));
         
-        if (! defined $configuration{SWIFT_TOKEN}) {
+        if (! defined _getConfigurationElement('SWIFT_TOKEN')) {
             ERROR("No token in the keystone authentication response");
             ERROR(Dumper($response));
             return FALSE;
@@ -322,30 +325,30 @@ sub getSwiftToken {
     } else {
 
         my $request = HTTP::Request::Common::GET(
-            $configuration{ROK4_SWIFT_AUTHURL}
+            _getConfigurationElement('ROK4_SWIFT_AUTHURL')
         );
 
-        $request->header('X-Storage-User' => "$configuration{ROK4_SWIFT_ACCOUNT}:$configuration{ROK4_SWIFT_USER}");
-        $request->header('X-Storage-Pass' => "$configuration{ROK4_SWIFT_PASSWD}");
-        $request->header('X-Auth-User' => "$configuration{ROK4_SWIFT_ACCOUNT}:$configuration{ROK4_SWIFT_USER}");
-        $request->header('X-Auth-Key' => "$configuration{ROK4_SWIFT_PASSWD}");
+        $request->header('X-Storage-User' => "_getConfigurationElement('ROK4_SWIFT_ACCOUNT'):_getConfigurationElement('ROK4_SWIFT_USER')");
+        $request->header('X-Storage-Pass' => "_getConfigurationElement('ROK4_SWIFT_PASSWD')");
+        $request->header('X-Auth-User' => "_getConfigurationElement('ROK4_SWIFT_ACCOUNT'):_getConfigurationElement('ROK4_SWIFT_USER')");
+        $request->header('X-Auth-Key' => "_getConfigurationElement('ROK4_SWIFT_PASSWD')");
 
-        my $response = $configuration{UA}->request($request);
+        my $response = _getConfigurationElement('UA')->request($request);
 
         if (! defined $response || ! $response->is_success() ) {
             ERROR("Cannot get Swift token");
             return FALSE;
         }
 
-        $configuration{SWIFT_TOKEN} = $response->header("X-Auth-Token");
-        $configuration{ROK4_SWIFT_PUBLICURL} = $response->header("X-Storage-Url");
+        _setConfigurationElement('SWIFT_TOKEN', $response->header("X-Auth-Token"));
+        _setConfigurationElement('ROK4_SWIFT_PUBLICURL', $response->header("X-Storage-Url"));
         
-        if (! defined $configuration{SWIFT_TOKEN}) {
+        if (! defined _getConfigurationElement('SWIFT_TOKEN')) {
             ERROR("No token in the swift authentication response");
             ERROR(Dumper($response));
             return FALSE;
         }
-        if (! defined $configuration{ROK4_SWIFT_PUBLICURL}) {
+        if (! defined _getConfigurationElement('ROK4_SWIFT_PUBLICURL')) {
             ERROR("No public URL in the swift authentication response");
             ERROR(Dumper($response));
             return FALSE;
@@ -370,9 +373,9 @@ Returns:
 sub sendSwiftRequest {
     my @parameters = shift;
     # $parameters[0] is the HTTP::Request object
-    $parameters[0]->header('X-Auth-Token' => $configuration{SWIFT_TOKEN});
+    $parameters[0]->header('X-Auth-Token' => _getConfigurationElement('SWIFT_TOKEN'));
 
-    my $response = $configuration{UA}->request(@parameters);
+    my $response = _getConfigurationElement('UA')->request(@parameters);
     if (defined($response) && $response->is_success) {
         return $response;
     }
@@ -384,8 +387,8 @@ sub sendSwiftRequest {
     }
 
     INFO("Retrying...");
-    $parameters[0]->header('X-Auth-Token' => $configuration{SWIFT_TOKEN});
-    $response = $configuration{UA}->request(@parameters);
+    $parameters[0]->header('X-Auth-Token' => _getConfigurationElement('SWIFT_TOKEN'));
+    $response = _getConfigurationElement('UA')->request(@parameters);
     return $response;
 }
 
@@ -395,8 +398,8 @@ Function: returnSwiftToken
 Returns the value of the swift token in memory.
 =cut
 sub returnSwiftToken {
-    DEBUG(sprintf("Returning token value : '%s'", $configuration{SWIFT_TOKEN}));
-    return $configuration{SWIFT_TOKEN};
+    DEBUG(sprintf("Returning token value : '%s'", _getConfigurationElement('SWIFT_TOKEN')));
+    return _getConfigurationElement('SWIFT_TOKEN');
 }
 
 ####################################################################################################
@@ -416,7 +419,7 @@ sub copy {
 
     DEBUG("Copying from '$fromType' path '$fromPath', to '$toType' path '$toPath'.");
     if ($fromType eq 'SWIFT' || $toType eq 'SWIFT') {
-        if($configuration{ROK4_KEYSTONE_IS_USED}) {
+        if(_getConfigurationElement('ROK4_KEYSTONE_IS_USED')) {
             DEBUG("Using keystone authentication.");
         }
         else {
@@ -478,20 +481,20 @@ sub copy {
             chomp($dateValue);
             my $stringToSign="PUT\n\n$contentType\n$dateValue\n$resource";
 
-            my $signature = Digest::SHA::hmac_sha1_base64($stringToSign, $configuration{ROK4_S3_SECRETKEY});
+            my $signature = Digest::SHA::hmac_sha1_base64($stringToSign, _getConfigurationElement('ROK4_S3_SECRETKEY'));
             while (length($signature) % 4) {
                 $signature .= '=';
             }
 
             # set custom HTTP request header fields
-            my $request = HTTP::Request->new(PUT => $configuration{ROK4_S3_URL}.$resource);
+            my $request = HTTP::Request->new(PUT => _getConfigurationElement('ROK4_S3_URL').$resource);
             $request->content($body);
-            $request->header('Host' => $configuration{ROK4_S3_ENDPOINT_HOST});
+            $request->header('Host' => _getConfigurationElement('ROK4_S3_ENDPOINT_HOST'));
             $request->header('Date' => $dateValue);
             $request->header('Content-Type' => $contentType);
-            $request->header('Authorization' => sprintf ("AWS %s:$signature", $configuration{ROK4_S3_KEY}));
+            $request->header('Authorization' => sprintf ("AWS %s:$signature", _getConfigurationElement('ROK4_S3_KEY')));
              
-            my $response = $configuration{UA}->request($request);
+            my $response = _getConfigurationElement('UA')->request($request);
             if ($response->is_success) {
                 return TRUE;
             }
@@ -504,7 +507,7 @@ sub copy {
             }
         }
         elsif ($toType eq "SWIFT") {
-            if (! defined ($configuration{SWIFT_TOKEN}) ) {
+            if (! defined (_getConfigurationElement('SWIFT_TOKEN')) ) {
                 if (! getSwiftToken()) {
                     ERROR("Cannot get swift token");
                     return FALSE;
@@ -525,7 +528,7 @@ sub copy {
             map_file $body, $fromPath;
 
             
-            my $request = HTTP::Request->new(PUT => $configuration{ROK4_SWIFT_PUBLICURL}.$context);
+            my $request = HTTP::Request->new(PUT => _getConfigurationElement('ROK4_SWIFT_PUBLICURL').$context);
 
             $request->content($body);
             my $response = sendSwiftRequest($request);
@@ -639,17 +642,17 @@ sub copy {
             chomp($date_gmt);
             my $string_to_sign="GET\n\n$content_type\n$date_gmt\n$context";
 
-            my $signature = Digest::SHA::hmac_sha1_base64($string_to_sign, $configuration{ROK4_S3_SECRETKEY});
+            my $signature = Digest::SHA::hmac_sha1_base64($string_to_sign, _getConfigurationElement('ROK4_S3_SECRETKEY'));
             while (length($signature) % 4) {
                 $signature .= '=';
             }
 
-            my $request = HTTP::Request->new(GET => $configuration{ROK4_S3_URL}.$context);
+            my $request = HTTP::Request->new(GET => _getConfigurationElement('ROK4_S3_URL').$context);
 
-            $request->header('Host' => $configuration{ROK4_S3_ENDPOINT_HOST});
+            $request->header('Host' => _getConfigurationElement('ROK4_S3_ENDPOINT_HOST'));
             $request->header('Date' => $date_gmt);
             $request->header('Content-Type' => $content_type);
-            $request->header('Authorization' => sprintf ("AWS %s:$signature", $configuration{ROK4_S3_KEY}));
+            $request->header('Authorization' => sprintf ("AWS %s:$signature", _getConfigurationElement('ROK4_S3_KEY')));
              
             # create folder
             my $dir = File::Basename::dirname($toPath);
@@ -659,7 +662,7 @@ sub copy {
                 return FALSE;
             }
 
-            my $response = $configuration{UA}->request($request, $toPath);
+            my $response = _getConfigurationElement('UA')->request($request, $toPath);
             if ($response->is_success) {
                 return TRUE;
             } else {
@@ -694,20 +697,20 @@ sub copy {
             chomp($date_gmt);
             my $string_to_sign="PUT\n\n$content_type\n$date_gmt\n$context";
 
-            my $signature = Digest::SHA::hmac_sha1_base64($string_to_sign, $configuration{ROK4_S3_SECRETKEY});
+            my $signature = Digest::SHA::hmac_sha1_base64($string_to_sign, _getConfigurationElement('ROK4_S3_SECRETKEY'));
             while (length($signature) % 4) {
                 $signature .= '=';
             }
 
-            my $request = HTTP::Request->new(PUT => $configuration{ROK4_S3_URL}.$context);
+            my $request = HTTP::Request->new(PUT => _getConfigurationElement('ROK4_S3_URL').$context);
 
-            $request->header('Host' => $configuration{ROK4_S3_ENDPOINT_HOST});
+            $request->header('Host' => _getConfigurationElement('ROK4_S3_ENDPOINT_HOST'));
             $request->header('Date' => $date_gmt);
             $request->header('Content-Type' => $content_type);
             $request->header('x-amz-copy-source' => "/$fromBucket/$fromObjectName");
-            $request->header('Authorization' => sprintf ("AWS %s:$signature", $configuration{ROK4_S3_KEY}));
+            $request->header('Authorization' => sprintf ("AWS %s:$signature", _getConfigurationElement('ROK4_S3_KEY')));
 
-            my $response = $configuration{UA}->request($request, $toPath);
+            my $response = _getConfigurationElement('UA')->request($request, $toPath);
             if ($response->is_success) {
                 return TRUE;
             } else {
@@ -720,7 +723,7 @@ sub copy {
         }
     }
     elsif ($fromType eq "SWIFT") { ############################################ SWIFT
-        if (! defined ($configuration{SWIFT_TOKEN}) ) {
+        if (! defined (_getConfigurationElement('SWIFT_TOKEN')) ) {
             if (! getSwiftToken()) {
                 ERROR("Cannot get swift token");
                 return FALSE;
@@ -738,7 +741,7 @@ sub copy {
 
             my $context = "/$containerName/$objectName";
 
-            my $request = HTTP::Request->new(GET => $configuration{ROK4_SWIFT_PUBLICURL}.$context);
+            my $request = HTTP::Request->new(GET => _getConfigurationElement('ROK4_SWIFT_PUBLICURL').$context);
 
             
             # create folder
@@ -782,7 +785,7 @@ sub copy {
             my $context = "/$fromContainer/$fromObjectName";
 
             for (my $try_count = 0; $try_count < 2; $try_count++) {
-                my $request = HTTP::Request->new(COPY => $configuration{ROK4_SWIFT_PUBLICURL}.$context);
+                my $request = HTTP::Request->new(COPY => _getConfigurationElement('ROK4_SWIFT_PUBLICURL').$context);
 
                 $request->header('Destination' => "$toContainer/$toObjectName");
 
@@ -903,19 +906,19 @@ sub isPresent {
         chomp($dateValue);
         my $stringToSign="HEAD\n\n$contentType\n$dateValue\n$resource";
 
-        my $signature = Digest::SHA::hmac_sha1_base64($stringToSign, $configuration{ROK4_S3_SECRETKEY});
+        my $signature = Digest::SHA::hmac_sha1_base64($stringToSign, _getConfigurationElement('ROK4_S3_SECRETKEY'));
         while (length($signature) % 4) {
             $signature .= '=';
         }
 
         # set custom HTTP request header fields
-        my $request = HTTP::Request->new(HEAD => $configuration{ROK4_S3_URL}.$resource);
-        $request->header('Host' => $configuration{ROK4_S3_ENDPOINT_HOST});
+        my $request = HTTP::Request->new(HEAD => _getConfigurationElement('ROK4_S3_URL').$resource);
+        $request->header('Host' => _getConfigurationElement('ROK4_S3_ENDPOINT_HOST'));
         $request->header('Date' => $dateValue);
         $request->header('Content-Type' => $contentType);
-        $request->header('Authorization' => sprintf ("AWS %s:$signature", $configuration{ROK4_S3_KEY}));
+        $request->header('Authorization' => sprintf ("AWS %s:$signature", _getConfigurationElement('ROK4_S3_KEY')));
          
-        my $response = $configuration{UA}->request($request);
+        my $response = _getConfigurationElement('UA')->request($request);
         if ($response->is_success) {
             return TRUE;
         } else {
@@ -934,11 +937,11 @@ sub isPresent {
 
         my $context = "/$containerName/$objectName";
 
-        my $request = HTTP::Request->new(HEAD => $configuration{ROK4_SWIFT_PUBLICURL}.$context);
+        my $request = HTTP::Request->new(HEAD => _getConfigurationElement('ROK4_SWIFT_PUBLICURL').$context);
 
-        $request->header('X-Auth-Token' => $configuration{SWIFT_TOKEN});
+        $request->header('X-Auth-Token' => _getConfigurationElement('SWIFT_TOKEN'));
 
-        my $response = $configuration{UA}->request($request);
+        my $response = _getConfigurationElement('UA')->request($request);
         if ($response->is_success) {
             return TRUE;
         } else {
@@ -988,7 +991,7 @@ sub getRealData {
             return undef;
         }
 
-        if ( $value < $configuration{ROK4_IMAGE_HEADER_SIZE} ) {
+        if ( $value < _getConfigurationElement('ROK4_IMAGE_HEADER_SIZE') ) {
 
             my $realTarget = `rados -p $poolName get $objectName /dev/stdout`;
             chomp $realTarget;
@@ -1025,7 +1028,7 @@ sub getRealData {
             return undef;
         }
 
-        if ( $value < $configuration{ROK4_IMAGE_HEADER_SIZE} ) {
+        if ( $value < _getConfigurationElement('ROK4_IMAGE_HEADER_SIZE') ) {
 
             my $context = "/$containerName/$objectName";
 
@@ -1034,9 +1037,9 @@ sub getRealData {
             my $first_try = TRUE;
             my $end = FALSE;
             while ($end == FALSE) {
-                $request = HTTP::Request->new(GET => $configuration{ROK4_SWIFT_PUBLICURL}.$context);
-                $request->header('X-Auth-Token' => $configuration{SWIFT_TOKEN});
-                $response = $configuration{UA}->request($request);
+                $request = HTTP::Request->new(GET => _getConfigurationElement('ROK4_SWIFT_PUBLICURL').$context);
+                $request->header('X-Auth-Token' => _getConfigurationElement('SWIFT_TOKEN'));
+                $response = _getConfigurationElement('UA')->request($request);
                 if (! $response->is_success && $first_try == TRUE) {
                     getSwiftToken();
                     $first_try = FALSE;
@@ -1098,11 +1101,11 @@ sub getSize {
 
         my $context = "/$containerName/$objectName";
 
-        my $request = HTTP::Request->new(HEAD => $configuration{ROK4_SWIFT_PUBLICURL}.$context);
+        my $request = HTTP::Request->new(HEAD => _getConfigurationElement('ROK4_SWIFT_PUBLICURL').$context);
 
-        $request->header('X-Auth-Token' => $configuration{SWIFT_TOKEN});
+        $request->header('X-Auth-Token' => _getConfigurationElement('SWIFT_TOKEN'));
 
-        my $response = $configuration{UA}->request($request);
+        my $response = _getConfigurationElement('UA')->request($request);
         if ($response->is_success) {
             return $response->header("Content-Length");
         }
@@ -1129,19 +1132,19 @@ sub getSize {
         chomp($dateValue);
         my $stringToSign="HEAD\n\n$contentType\n$dateValue\n$resource";
 
-        my $signature = Digest::SHA::hmac_sha1_base64($stringToSign, $configuration{ROK4_S3_SECRETKEY});
+        my $signature = Digest::SHA::hmac_sha1_base64($stringToSign, _getConfigurationElement('ROK4_S3_SECRETKEY'));
         while (length($signature) % 4) {
             $signature .= '=';
         }
 
         # set custom HTTP request header fields
-        my $request = HTTP::Request->new(HEAD => $configuration{ROK4_S3_URL}.$resource);
-        $request->header('Host' => $configuration{ROK4_S3_ENDPOINT_HOST});
+        my $request = HTTP::Request->new(HEAD => _getConfigurationElement('ROK4_S3_URL').$resource);
+        $request->header('Host' => _getConfigurationElement('ROK4_S3_ENDPOINT_HOST'));
         $request->header('Date' => $dateValue);
         $request->header('Content-Type' => $contentType);
-        $request->header('Authorization' => sprintf ("AWS %s:$signature", $configuration{ROK4_S3_KEY}));
+        $request->header('Authorization' => sprintf ("AWS %s:$signature", _getConfigurationElement('ROK4_S3_KEY')));
          
-        my $response = $configuration{UA}->request($request);
+        my $response = _getConfigurationElement('UA')->request($request);
         if ($response->is_success) {
             return $response->header("Content-Length");
         }
@@ -1211,9 +1214,9 @@ sub remove {
         my $first_try = TRUE;
         my $end = FALSE;
         while ($end == FALSE) {
-            $request = HTTP::Request->new(DELETE => $configuration{ROK4_SWIFT_PUBLICURL}.$context);
-            $request->header('X-Auth-Token' => $configuration{SWIFT_TOKEN});
-            $response = $configuration{UA}->request($request);
+            $request = HTTP::Request->new(DELETE => _getConfigurationElement('ROK4_SWIFT_PUBLICURL').$context);
+            $request->header('X-Auth-Token' => _getConfigurationElement('SWIFT_TOKEN'));
+            $response = _getConfigurationElement('UA')->request($request);
             if (! $response->is_success && $first_try == TRUE) {
                 getSwiftToken();
                 $first_try = FALSE;
@@ -1335,10 +1338,10 @@ sub symLink {
         my $first_try = TRUE;
         my $end = FALSE;
         while ($end == FALSE) {
-            $request = HTTP::Request->new(PUT => $configuration{ROK4_SWIFT_PUBLICURL}.$context);
-            $request->header('X-Auth-Token' => $configuration{SWIFT_TOKEN});
+            $request = HTTP::Request->new(PUT => _getConfigurationElement('ROK4_SWIFT_PUBLICURL').$context);
+            $request->header('X-Auth-Token' => _getConfigurationElement('SWIFT_TOKEN'));
             $request->content($symlink_content);
-            $response = $configuration{UA}->request($request);
+            $response = _getConfigurationElement('UA')->request($request);
             if (! $response->is_success && $first_try == TRUE) {
                 getSwiftToken();
                 $first_try = FALSE;
@@ -1444,6 +1447,61 @@ Resets the module configuration variables to their default values. Designed to b
 sub resetConfiguration {
     %configuration = INITIAL_CONFIGURATION;
 };
+
+=begin nd
+Function: _getConfigurationElement
+
+Get the requested module configuration variable's value.
+
+Parameters:
+    $key - string - requested variable's name
+
+Return:
+    any - requested variable's value
+=cut
+sub _getConfigurationElement {
+    my @args = @_;
+
+    if (scalar(@_) != 1) {
+        return undef;
+    }
+    elsif (! exists($configuration{$args[0]})) {
+        return undef;
+    }
+    else {
+        return $configuration{$args[0]};
+    }
+};
+
+=begin nd
+Function: _setConfigurationElement
+
+Set the named module configuration variable's value.
+
+Parameters:
+    $key - string - variable's name
+    $value - any - variable's value
+
+Return:
+    TRUE if success, else FALSE
+=cut
+sub _setConfigurationElement {
+    my @args = @_;
+
+    if (scalar(@_) == 2) {
+        $configuration{$args[0]} = $args[1];
+        return TRUE;
+    }
+    else {
+        return FALSE;
+    }
+};
+
+
+
+
+
+
 
 1;
 __END__
