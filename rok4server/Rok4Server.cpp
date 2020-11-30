@@ -186,13 +186,13 @@ void* Rok4Server::thread_reconnection_loop ( void* arg ) {
 
         sleep(server->getServerConf()->getReconnectionFrequency() * 60);
 
-        if (server->getSwiftBook()) {
+        if (server->getObjectBook()) {
             LOGGER_INFO("Reconnexion des contextes Swift");
-            if (! server->getSwiftBook()->reconnectAllContext()) {
+            if (! server->getObjectBook()->reconnectAllContext()) {
                 LOGGER_FATAL ( "Impossible de reconnecter un contexte swift (recuperer un nouveau token)" );
             }
         } else {
-            LOGGER_INFO("Pas d'annuaire Swift");
+            LOGGER_INFO("Pas d'annuaire Objet");
         }
     }
 
@@ -905,7 +905,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
     //---- on verifie certains paramètres pour ne pas effectuer des calculs inutiles
     Level* lev = pyr->getLevel(tileMatrix);
 
-    Spath = lev->getPath(tileCol, tileRow, lev->getTilesPerWidth(), lev->getTilesPerHeight());
+    Spath = lev->getPath(tileCol, tileRow);
     SpathDir = lev->getDirPath(tileCol,tileRow);
     SpathTmp = Spath + ".tmp";
     SpathErr = Spath + ".err";
@@ -1514,11 +1514,7 @@ std::map<std::string, Style*>& Rok4Server::getStylesList() { return serverConf->
 std::map<std::string,std::vector<std::string> >& Rok4Server::getWmsCapaFrag() { return wmsCapaFrag; }
 std::vector<std::string>& Rok4Server::getWmtsCapaFrag() { return wmtsCapaFrag; }
 
-#if BUILD_OBJECT
-ContextBook* Rok4Server::getCephBook() {return serverConf->getCephContextBook();}
-ContextBook* Rok4Server::getS3Book() {return serverConf->getS3ContextBook();}
-ContextBook* Rok4Server::getSwiftBook() {return serverConf->getSwiftContextBook();}
-#endif
+ContextBook* Rok4Server::getObjectBook() {return serverConf->getContextBook();}
 
 int Rok4Server::getFCGISocket() { return sock; }
 void Rok4Server::setFCGISocket ( int sockFCGI ) { sock = sockFCGI; }

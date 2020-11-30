@@ -210,6 +210,12 @@ public:
     virtual std::string getTray() = 0;
 
     /**
+     * \~french \brief Retourne le chemin pour une tuile X/Y relatif à ce contexte
+     * \~english \brief Return the path for a tile (X/Y) in this context
+     */
+    virtual std::string getPath(std::string racine,int x,int y,int pathDepth = 2) = 0;
+
+    /**
      * \~french \brief Sortie des informations sur le contexte
      * \~english \brief Context description output
      */

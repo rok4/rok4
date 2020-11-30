@@ -527,27 +527,11 @@ int rok4ConnectObjectContext(Rok4Server* server) {
 
     int error = 1;
 
-    ContextBook *book = server->getCephBook();
+    ContextBook *book = server->getObjectBook();
+
+    LOGGER_DEBUG("Taille de l'annuaire :" << book->size() );
 
     if (book) {
-        if (!book->connectAllContext()) {
-            return error;
-        }
-    }
-
-    book = server->getS3Book();
-
-    if (book) {
-
-        if (!book->connectAllContext()) {
-            return error;
-        }
-
-    }
-
-    book = server->getSwiftBook();
-
-    if (book != NULL) {
         if (!book->connectAllContext()) {
             return error;
         }
@@ -563,19 +547,7 @@ int rok4ConnectObjectContext(Rok4Server* server) {
 
 void rok4DisconnectObjectContext(Rok4Server* server) {
 
-    ContextBook *book = server->getCephBook();
-
-    if (book) {
-        book->disconnectAllContext();
-    }
-
-    book = server->getSwiftBook();
-
-    if (book) {
-        book->disconnectAllContext();
-    }
-
-    book = server->getS3Book();
+    ContextBook *book = server->getObjectBook();
 
     if (book) {
         book->disconnectAllContext();

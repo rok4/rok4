@@ -54,6 +54,11 @@
 #include "Logger.h"
 #include "Context.h"
 
+#define ROK4_CEPH_USERNAME "ROK4_CEPH_USERNAME"
+#define ROK4_CEPH_CLUSTERNAME "ROK4_CEPH_CLUSTERNAME"
+#define ROK4_CEPH_CONFFILE "ROK4_CEPH_CONFFILE"
+
+
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
@@ -100,21 +105,6 @@ private:
 
 public:
 
-    /**
-     * \~french
-     * \brief Constructeur pour un contexte Ceph
-     * \param[in] name Nom du cluster ceph
-     * \param[in] user Nom de l'utilisateur ceph
-     * \param[in] conf Configuration du cluster ceph
-     * \param[in] pool Pool avec lequel on veut communiquer
-     * \~english
-     * \brief Constructor for Ceph context
-     * \param[in] name Name of ceph cluster
-     * \param[in] user Name of ceph user
-     * \param[in] conf Ceph configuration file
-     * \param[in] pool Pool to use
-     */
-    CephPoolContext (std::string cluster, std::string user, std::string conf, std::string pool);
     /**
      * \~french
      * \brief Constructeur pour un contexte Ceph, avec les valeur par défaut
@@ -193,13 +183,22 @@ public:
     std::string getClusterName () {
         return cluster_name;
     }
-    
+
+    /**
+     * \~french
+     * \brief Lit de la donnée depuis un objet Ceph
+     * \~english
+     * \brief Read data from Ceph object
+     */
     int read(uint8_t* data, int offset, int size, std::string name);
 
     /**
      * \~french
      * \brief Écrit de la donnée dans un objet Ceph
      * \details Les données sont en réalité écrites dans #writingBuffer et seront envoyées dans Ceph lors de l'appel à #closeToWrite
+     * \~english
+     * \brief Write data to  Ceph object
+     * \details Datas are written to #writingBuffer and send at #closeToWrite call
      */
     bool write(uint8_t* data, int offset, int size, std::string name);
 
@@ -207,12 +206,16 @@ public:
      * \~french
      * \brief Écrit un objet Ceph
      * \details Les données sont en réalité écrites dans #writingBuffer et seront envoyées dans Ceph lors de l'appel à #closeToWrite
+     * \~english
+     * \brief Write Ceph object
+     * \details Datas are written to #writingBuffer and send at #closeToWrite call
      */
     bool writeFull(uint8_t* data, int size, std::string name);
 
     virtual bool openToWrite(std::string name);
     virtual bool closeToWrite(std::string name);
     
+    std::string getPath(std::string racine,int x,int y,int pathDepth);
 
     virtual void print() {
         LOGGER_INFO ( "------ Ceph Context -------" );

@@ -296,6 +296,10 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         backlog = 0;
     }
 
+    //on créé systématiquement le contextbook()
+    objectBook = new ContextBook();
+
+
 #if BUILD_OBJECT
 
     /************************************ PARTIE OBJET ************************************/
@@ -307,153 +311,6 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
     } else if ( !sscanf ( pElem->GetText(),"%d",&reconnectionFrequency ) ) {
         std::cerr<<_ ( "Le reconnectionFrequency [" ) << DocumentXML::getTextStrFromElem(pElem) <<_ ( "] is not an integer." ) <<std::endl;
         return;
-    }
-
-    pElem = hRoot.FirstChild ( "cephContext" ).Element();
-    if ( pElem) {
-
-        TiXmlElement* pElemCephContext;
-
-        pElemCephContext = hRoot.FirstChild ( "cephContext" ).FirstChild ( "clusterName" ).Element();
-        if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
-            char* cluster = getenv ("ROK4_CEPH_CLUSTERNAME");
-            if (cluster == NULL) {
-                std::cerr<< ("L'utilisation d'un cephContext necessite de preciser un clusterName" ) <<std::endl;
-                return;
-            } else {
-                cephName.assign(cluster);
-            }
-        } else {
-            cephName = pElemCephContext->GetText();
-        }
-
-        pElemCephContext = hRoot.FirstChild ( "cephContext" ).FirstChild ( "userName" ).Element();
-        if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
-            char* user = getenv ("ROK4_CEPH_USERNAME");
-            if (user == NULL) {
-                std::cerr<< ("L'utilisation d'un cephContext necessite de preciser un userName" ) <<std::endl;
-                return;
-            } else {
-                cephUser.assign(user);
-            }
-        } else {
-            cephUser = pElemCephContext->GetText();
-        }
-
-        pElemCephContext = hRoot.FirstChild ( "cephContext" ).FirstChild ( "confFile" ).Element();
-        if ( !pElemCephContext  || ! ( pElemCephContext->GetText() ) ) {
-            char* conf = getenv ("ROK4_CEPH_CONFFILE");
-            if (conf == NULL) {
-                std::cerr<< ("L'utilisation d'un cephContext necessite de preciser un confFile" ) <<std::endl;
-                return;
-            } else {
-                cephConf.assign(conf);
-            }
-        } else {
-            cephConf = pElemCephContext->GetText();
-        }
-
-        cephBook = new ContextBook(CEPHCONTEXT, cephName, cephUser, cephConf);
-    } else {
-        cephBook = NULL;
-    }
-
-    pElem = hRoot.FirstChild ( "s3Context" ).Element();
-    if ( pElem) {
-
-        TiXmlElement* pElemS3Context;
-
-        pElemS3Context = hRoot.FirstChild ( "s3Context" ).FirstChild ( "url" ).Element();
-        if ( !pElemS3Context  || ! ( pElemS3Context->GetText() ) ) {
-            char* url = getenv ("ROK4_S3_URL");
-            if (url == NULL) {
-                std::cerr<< ("L'utilisation d'un cephContext necessite de preciser une url" ) <<std::endl;
-                return;
-            } else {
-                s3URL.assign(url);
-            }
-        } else {
-            s3URL = pElemS3Context->GetText();
-        }
-
-        pElemS3Context = hRoot.FirstChild ( "s3Context" ).FirstChild ( "key" ).Element();
-        if ( !pElemS3Context  || ! ( pElemS3Context->GetText() ) ) {
-            char* k = getenv ("ROK4_S3_KEY");
-            if (k == NULL) {
-                LOGGER_ERROR ("L'utilisation d'un cephContext necessite de preciser une key" ) <<std::endl;
-                return;
-            } else {
-                s3AccessKey.assign(k);
-            }
-        } else {
-            s3AccessKey = pElemS3Context->GetText();
-        }
-
-        pElemS3Context = hRoot.FirstChild ( "s3Context" ).FirstChild ( "secretKey" ).Element();
-        if ( !pElemS3Context  || ! ( pElemS3Context->GetText() ) ) {
-            char* sk = getenv ("ROK4_S3_SECRETKEY");
-            if (sk == NULL) {
-                std::cerr<< ("L'utilisation d'un cephContext necessite de preciser une secretKey" ) <<std::endl;
-                return;
-            } else {
-                s3SecretKey.assign(sk);
-            }
-        } else {
-            s3SecretKey = pElemS3Context->GetText();
-        }
-
-        s3Book = new ContextBook(S3CONTEXT, s3URL,s3AccessKey,s3SecretKey);
-    } else {
-        s3Book = NULL;
-    }
-
-    pElem = hRoot.FirstChild ( "swiftContext" ).Element();
-    if ( pElem ) {
-
-        TiXmlElement* pElemSwiftContext;
-
-        pElemSwiftContext = hRoot.FirstChild ( "swiftContext" ).FirstChild ( "authUrl" ).Element();
-        if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
-            char* auth = getenv ("ROK4_SWIFT_AUTHURL");
-            if (auth == NULL) {
-                std::cerr<< ("L'utilisation d'un swiftContext necessite de preciser un authUrl" ) <<std::endl;
-                return;
-            } else {
-                swiftAuthUrl.assign(auth);
-            }
-        } else {
-            swiftAuthUrl = pElemSwiftContext->GetText();
-        }
-
-        pElemSwiftContext = hRoot.FirstChild ( "swiftContext" ).FirstChild ( "userName" ).Element();
-        if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
-            char* user = getenv ("ROK4_SWIFT_USER");
-            if (user == NULL) {
-                std::cerr<< ("L'utilisation d'un swiftContext necessite de preciser un userName" ) <<std::endl;
-                return;
-            } else {
-                swiftUserName.assign(user);
-            }
-        } else {
-            swiftUserName = pElemSwiftContext->GetText();
-        }
-
-        pElemSwiftContext = hRoot.FirstChild ( "swiftContext" ).FirstChild ( "userPassword" ).Element();
-        if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
-            char* passwd = getenv ("ROK4_SWIFT_PASSWD");
-            if (passwd == NULL) {
-                std::cerr<< ("L'utilisation d'un swiftContext necessite de preciser un userPassword" ) <<std::endl;
-                return;
-            } else {
-                swiftUserPassword.assign(passwd);
-            }
-        } else {
-            swiftUserPassword = pElemSwiftContext->GetText();
-        }
-
-        swiftBook = new ContextBook(SWIFTCONTEXT, swiftAuthUrl, swiftUserName, swiftUserPassword);
-    } else {
-        swiftBook = NULL;
     }
 
 #endif
@@ -482,15 +339,21 @@ ServerXML::~ServerXML(){
 
 #if BUILD_OBJECT
 
-    if (cephBook != NULL) {
-        delete cephBook;
+    // if (cephBook != NULL) {
+    //     delete cephBook;
+    // }
+    // if (s3Book != NULL) {
+    //     delete s3Book;
+    // }
+    // if (swiftBook != NULL) {
+    //     delete swiftBook;
+    // }
+
+    if (objectBook != NULL) {
+        delete objectBook;
     }
-    if (s3Book != NULL) {
-        delete s3Book;
-    }
-    if (swiftBook != NULL) {
-        delete swiftBook;
-    }
+
+
 #endif
 }
 
@@ -611,9 +474,10 @@ void ServerXML::cleanLayers(std::vector<std::string> ids) {
 }
 
 #if BUILD_OBJECT
-ContextBook* ServerXML::getCephContextBook(){return cephBook;}
-ContextBook* ServerXML::getSwiftContextBook(){return swiftBook;}
-ContextBook* ServerXML::getS3ContextBook(){return s3Book;}
+// ContextBook* ServerXML::getCephContextBook(){return cephBook;}
+// ContextBook* ServerXML::getSwiftContextBook(){return swiftBook;}
+// ContextBook* ServerXML::getS3ContextBook(){return s3Book;}
+ContextBook* ServerXML::getContextBook(){return objectBook;}
 
 int ServerXML::getReconnectionFrequency() {return reconnectionFrequency;}
 #endif

@@ -55,10 +55,22 @@
 #include "Context.h"
 #include "LibcurlStruct.h"
 
+
+#define ROK4_SWIFT_AUTHURL "ROK4_SWIFT_AUTHURL"
+#define ROK4_SWIFT_USER "ROK4_SWIFT_USER"
+#define ROK4_SWIFT_PASSWD "ROK4_SWIFT_PASSWD"
+#define ROK4_KEYSTONE_DOMAINID "ROK4_KEYSTONE_DOMAINID"
+#define ROK4_KEYSTONE_PROJECTID "ROK4_KEYSTONE_PROJECTID"
+#define ROK4_SWIFT_PUBLICURL "ROK4_SWIFT_PUBLICURL"
+#define ROK4_SWIFT_ACCOUNT "ROK4_SWIFT_ACCOUNT"
+
+#ifndef ROK4_SSL_NO_VERIFY
+#define ROK4_SSL_NO_VERIFY "ROK4_SSL_NO_VERIFY"
+#endif
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
- * \brief Création d'un contexte Swift (connexion à un cluster + pool particulier), pour pouvoir récupérer des données stockées sous forme d'objets
+ * \brief Création d'un contexte Swift (connexion à un cluster + conteneur particulier), pour pouvoir récupérer des données stockées sous forme d'objets
  */
 class SwiftContext : public Context{
     
@@ -81,10 +93,10 @@ private:
     std::string user_passwd;
 
     /**
-     * \~french \brief Est ce que la connexion se fait via keystone ?
-     * \~english \brief Keystone connection ?
+     * \~french \brief Est ce que l'authentification se fait via keystone ?
+     * \~english \brief Keystone authentication ?
      */
-    bool keystone_connection;
+    bool keystone_auth;
 
     /**
      * \~french \brief ID de domaine, pour une authentification Keystone
@@ -127,25 +139,14 @@ private:
      */
     std::string token;
 
-public:
-
     /**
-     * \~french
-     * \brief Constructeur pour un contexte Swift
-     * \param[in] auth URL d'authentification
-     * \param[in] user Nom d'utilisateur
-     * \param[in] passwd Mot de passe
-     * \param[in] container Container à utiliser
-     * \param[in] ks Keystone connection ?
-     * \~english
-     * \brief Constructor for Swift context
-     * \param[in] auth Authentication URL
-     * \param[in] user User name
-     * \param[in] passwd User password
-     * \param[in] container Container to use
-     * \param[in] ks Keystone connection ?
+     * \~french \brief  Ne pas vérifier les certificats SSL avec Curl?
+     * \~english \brief Don't verify SSL certificats with Curl ?
      */
-    SwiftContext (std::string auth, std::string user, std::string passwd, std::string container, bool ks = false);
+    bool ssl_no_verify;
+
+
+public:
 
     /**
      * \~french
@@ -156,9 +157,13 @@ public:
      * <TR><TD>auth_url</TD><TD>ROK4_SWIFT_AUTHURL</TD><TD>http://localhost:8080/auth/v1.0</TD>
      * <TR><TD>user_name</TD><TD>ROK4_SWIFT_USER</TD><TD>tester</TD>
      * <TR><TD>user_passwd</TD><TD>ROK4_SWIFT_PASSWD</TD><TD>password</TD>
+     * <TR><TD>keystone_auth</TD><TD>ROK4_KEYSTONE_AUTH</TD><TD>false</TD>
+     * <TR><TD>domain_id</TD><TD>ROK4_KEYSTONE_DOMAINID</TD><TD>false</TD>
+     * <TR><TD>project_id</TD><TD>ROK4_KEYSTONE_PROJECTID</TD><TD>false</TD>
+     * <TR><TD>user_account</TD><TD>ROK4_SWIFT_ACCOUNT</TD><TD>tester</TD>
+     * <TR><TD>public_url</TD><TD>ROK4_SWIFT_PUBLICURL</TD><TD>false</TD>
+     * <TR><TD>ssl_no_verify</TD><TD>ROK4_SSL_NO_VERIFY</TD><TD>false</TD>
      * </TABLE>
-     * \param[in] container Conteneur avec lequel on veut communiquer
-     * \param[in] ks Connexion par keystone ?
      * \~english
      * \brief Constructor for Swift context, with default value
      * \details Values are read in environment variables, or are deulat one
@@ -167,22 +172,37 @@ public:
      * <TR><TD>auth_url</TD><TD>ROK4_SWIFT_AUTHURL</TD><TD>http://localhost:8080/auth/v1.0</TD>
      * <TR><TD>user_name</TD><TD>ROK4_SWIFT_USER</TD><TD>tester</TD>
      * <TR><TD>user_passwd</TD><TD>ROK4_SWIFT_PASSWD</TD><TD>password</TD>
+     * <TR><TD>keystone_auth</TD><TD>ROK4_KEYSTONE_AUTH</TD><TD>false</TD>
+     * <TR><TD>domain_id</TD><TD>ROK4_KEYSTONE_DOMAINID</TD><TD>false</TD>
+     * <TR><TD>project_id</TD><TD>ROK4_KEYSTONE_PROJECTID</TD><TD>false</TD>
+     * <TR><TD>user_account</TD><TD>ROK4_SWIFT_ACCOUNT</TD><TD>tester</TD>
+     * <TR><TD>public_url</TD><TD>ROK4_SWIFT_PUBLICURL</TD><TD>false</TD>
+     * <TR><TD>ssl_no_verify</TD><TD>ROK4_SSL_NO_VERIFY</TD><TD>false</TD>
      * </TABLE>
-     * \param[in] container Container to use
-     * \param[in] ks Keystone connection ?
      */
-    SwiftContext (std::string container, bool ks = false);
+    SwiftContext (std::string cont);
 
     eContextType getType();
     std::string getTypeStr();
     std::string getTray();
           
+
+    /**
+     * \~french
+     * \brief Lit de la donnée depuis un objet Swift
+     * \~english
+     * \brief Read data from Swift object
+     */
+
     int read(uint8_t* data, int offset, int size, std::string name);
 
     /**
      * \~french
      * \brief Écrit de la donnée dans un objet Swift
      * \details Les données sont en réalité écrites dans #writingBuffer et seront envoyées dans Swift lors de l'appel à #closeToWrite
+     * \~english
+     * \brief Write data to  Swift object
+     * \details Datas are written to #writingBuffer and send at #closeToWrite call
      */
     bool write(uint8_t* data, int offset, int size, std::string name);
 
@@ -190,6 +210,9 @@ public:
      * \~french
      * \brief Écrit un objet Swift
      * \details Les données sont en réalité écrites dans #writingBuffer et seront envoyées dans Swift lors de l'appel à #closeToWrite
+     * \~english
+     * \brief Write Swift object
+     * \details Datas are written to #writingBuffer and send at #closeToWrite call
      */
     bool writeFull(uint8_t* data, int size, std::string name);
 
@@ -208,6 +231,9 @@ public:
     virtual bool openToWrite(std::string name);
     virtual bool closeToWrite(std::string name);
 
+
+
+    std::string getPath(std::string racine,int x,int y,int pathDepth);
 
     virtual void print() {
         LOGGER_INFO ( "------ Swift Context -------" );

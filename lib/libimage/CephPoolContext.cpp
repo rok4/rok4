@@ -50,26 +50,24 @@
 #include "CephPoolContext.h"
 #include <stdlib.h>
 
-CephPoolContext::CephPoolContext (std::string cluster, std::string user, std::string conf, std::string pool) : Context(), cluster_name(cluster), user_name(user), conf_file(conf), pool_name(pool) {
-}
 
 CephPoolContext::CephPoolContext (std::string pool) : Context(), pool_name(pool) {
 
-    char* cluster = getenv ("ROK4_CEPH_CLUSTERNAME");
+    char* cluster = getenv (ROK4_CEPH_CLUSTERNAME);
     if (cluster == NULL) {
         cluster_name.assign("ceph");
     } else {
         cluster_name.assign(cluster);
     }
 
-    char* user = getenv ("ROK4_CEPH_USERNAME");
+    char* user = getenv (ROK4_CEPH_USERNAME);
     if (user == NULL) {
         user_name.assign("client.admin");
     } else {
         user_name.assign(user);
     }
 
-    char* conf = getenv ("ROK4_CEPH_CONFFILE");
+    char* conf = getenv (ROK4_CEPH_CONFFILE);
     if (conf == NULL) {
         conf_file.assign("/etc/ceph/ceph.conf");
     } else {
@@ -265,3 +263,9 @@ bool CephPoolContext::closeToWrite(std::string name) {
         return true;
     }
 }
+
+std::string CephPoolContext::getPath(std::string racine,int x,int y,int pathDepth){
+    return racine + "_" + std::to_string(x) + "_" + std::to_string(y);
+}
+
+

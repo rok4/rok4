@@ -99,9 +99,12 @@ class ServerXML : public DocumentXML
         Layer* getLayer(std::string id) ;
 
 #if BUILD_OBJECT
-        ContextBook* getCephContextBook();
-        ContextBook* getS3ContextBook();
-        ContextBook* getSwiftContextBook();
+        //CEOBJECT
+        //ContextBook* getCephContextBook();
+        //ContextBook* getS3ContextBook();
+        //ContextBook* getSwiftContextBook();
+        ContextBook* getContextBook();
+
         int getReconnectionFrequency() ;
 #endif
         
@@ -179,24 +182,18 @@ class ServerXML : public DocumentXML
 
         int timeKill;
 
+
+        /**
+         * \~french \brief Annuaire des contextes de stockage
+         * \~english \brief Storage context's book
+         */
+        ContextBook* objectBook;
+
+
 #if BUILD_OBJECT
-        std::string cephName;
-        std::string cephUser;
-        std::string cephConf;
-
-        std::string s3URL;
-        std::string s3AccessKey;
-        std::string s3SecretKey;
-
-        std::string swiftAuthUrl;
-        std::string swiftUserName;
-        std::string swiftUserPassword;
 
         int reconnectionFrequency;
 
-        ContextBook* cephBook;
-        ContextBook* s3Book;
-        ContextBook* swiftBook;
 #endif
 
         int nbProcess;

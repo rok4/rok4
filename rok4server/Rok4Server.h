@@ -63,10 +63,8 @@
 #include "ServerXML.h"
 #include "ServicesXML.h"
 #include "GetFeatureInfoEncoder.h"
-
-#if BUILD_OBJECT
 #include "ContextBook.h"
-#endif
+
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -713,20 +711,10 @@ public:
      */
     std::vector<std::string>& getWmtsCapaFrag() ;
 
-#if BUILD_OBJECT
     /**
-     * \~french Retourne l'annuaire de contextes ceph
+     * \~french Retourne l'annuaire de contextes 
      */
-    ContextBook* getCephBook() ;
-    /**
-     * \~french Retourne l'annuaire de contextes s3
-     */
-    ContextBook* getS3Book() ;
-    /**
-     * \~french Retourne l'annuaire de contextes swift
-     */
-    ContextBook* getSwiftBook() ;
-#endif
+    ContextBook* getObjectBook() ;
 
     /**
      * \~french
