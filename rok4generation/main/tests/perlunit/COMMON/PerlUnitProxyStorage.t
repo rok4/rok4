@@ -38,6 +38,7 @@ use warnings;
 use COMMON::ProxyStorage;
 
 use Data::Dumper;
+use JSON;
 
 # Import du bundle de test Test2::Suite
 use Test2::V0 -target => 'COMMON::ProxyStorage';
@@ -147,6 +148,10 @@ subtest test_checkEnvironmentVariables => sub {
             override => LOG_METHODS
         );
         $main_mock->override('_setConfigurationElement' => sub {});
+        $main_mock->override('_getConfigurationElement' => sub {
+            my $key = shift;
+            return $temp_env{$key};
+        });
         my $UA_mock = mock 'LWP::UserAgent' => (
             track => TRUE,
             override_constructor => {
@@ -202,7 +207,7 @@ subtest test_checkEnvironmentVariables => sub {
         done_testing;
     };
 
-    # Case : s3 object storage, everything ok
+    # Case : swift object storage, everything ok
     subtest swift_all_ok => sub {
 
         # keystone authentication
@@ -358,14 +363,268 @@ subtest test_checkEnvironmentVariables => sub {
 
 
 # Tested method : COMMON::ProxyStorage::getSwiftToken()
-# subtest test_getSwiftToken => sub {
-#     subtest ok_first_try_with_keystone => sub {
+subtest test_getSwiftToken => sub {
+    subtest ok_first_try_with_keystone => sub {
+        # Environment for the test
+        my %mocked_module_values = (
+            'ROK4_KEYSTONE_IS_USED' => TRUE,
+            'ROK4_SWIFT_AUTHURL' => 'https://auth.exemple.com:8080/swift/',
+            'ROK4_SWIFT_USER' => 'swift_user_1',
+            'ROK4_SWIFT_PASSWD' => 'swift_password_1',
+            'ROK4_KEYSTONE_DOMAINID' => 'swift_test_domain',
+            'ROK4_KEYSTONE_PROJECTID' => 'kzty3tg85bypmtek1dgv2d61',
+            'UA' => undef,            
+            'X-Subject-Token' => 'f0GZyNcnf7_9SDJ31iShwUGzYlLAAlvLN7BQuWHK40YPpqjJ7O7f106ycPnCHYdRxtqQdU8GltNaoxlLk_3PZp4Wv-1r_CurUenWOLsEI-H6NeV65H6oZfPp4VhssTDzEjuk1PfWsVkwSSXBHt69pmPx9UwfMYz0eP7yIagNEz1VIl_uggBb2_PvprJTstQpS'
+        );
+        my $override_log_subs = LOG_METHODS;
 
-#         done_testing;
-#     };
+        ## Mocks
+        my %mocks_hash = ();
 
-#     done_testing;
-# };
+        ### Namespace : $main
+        $mocks_hash{'$main'} = mock 'COMMON::ProxyStorage' => (
+            track => TRUE,
+            override => $override_log_subs
+        );
+        $mocks_hash{'$main'}->override('_setConfigurationElement' => sub {
+            my $key = shift;
+            my $value = shift;
+            $mocked_module_values{$key} = $value;
+            return TRUE;
+        });
+        $mocks_hash{'$main'}->override('_getConfigurationElement' => sub {
+            my $key = shift;
+            return $mocked_module_values{$key};
+        });
+
+        ### Namespace : HTTP::Request::Common
+        $mocks_hash{'HTTP::Request::Common'} = mock 'HTTP::Request::Common' => (
+            track => TRUE,
+            override => {
+                POST => sub {
+                    my $url = shift;
+                    my %params = @_;
+                    my %return_hash = (
+                        'url' => $url,
+                        %params
+                    );
+                    return \%return_hash;
+                }
+            }
+        );
+
+        ### Namespace : HTTP::Response
+        $mocks_hash{'HTTP::Response'} = mock 'HTTP::Response' => (
+            track => TRUE,
+            override_constructor => {
+                new => 'hash'
+            },
+            override => {
+                is_success => sub {
+                    my $self = shift;
+                    return TRUE;
+                }
+            },
+            add => {
+                header => sub {
+                    my $self = shift;
+                    my $key = shift;
+                    return $mocked_module_values{$key};
+                }
+            }
+        );
+
+        ### Namespace : LWP::UserAgent
+        $mocks_hash{'LWP::UserAgent'} = mock 'LWP::UserAgent' => (
+            track => TRUE,
+            override_constructor => {
+                new => 'hash'
+            },            
+            override => {
+                request => sub {
+                    my $self = shift;
+                    return HTTP::Response->new();
+                }
+            }
+        );
+        $mocked_module_values{'UA'} = LWP::UserAgent->new();
+
+
+        # Test return value : must be TRUE
+        my $method_return = COMMON::ProxyStorage::getSwiftToken();
+        is($method_return, TRUE, "getSwiftToken() with keystone returns TRUE");
+
+        # Test calls (namespace  = LWP::UserAgent)
+        is( scalar( @{$mocks_hash{'LWP::UserAgent'}->sub_tracking()->{request}} ), 1, "Request sent." );
+        is( $mocks_hash{'LWP::UserAgent'}->sub_tracking()->{request}[0]{args}[1]{'url'}, $mocked_module_values{'ROK4_SWIFT_AUTHURL'}, "Request URL OK." );
+        my $expected_body_obj = {
+            "auth" => {
+                "scope" => {
+                    "project" => {
+                        "id" => $mocked_module_values{'ROK4_KEYSTONE_PROJECTID'}
+                    }
+                },
+                "identity" => {
+                    "methods" => [
+                        "password"
+                    ],
+                    "password" => {
+                        "user" => {
+                            "domain" => {
+                                "id" => $mocked_module_values{'ROK4_KEYSTONE_DOMAINID'}
+                            },
+                            "name" => $mocked_module_values{'ROK4_SWIFT_USER'},
+                            "password" => $mocked_module_values{'ROK4_SWIFT_PASSWD'}
+                        }
+                    }
+                }
+            }
+        };
+        is( JSON::from_json($mocks_hash{'LWP::UserAgent'}->sub_tracking()->{request}[0]{args}[1]{'Content'}, {utf8 => 1}), $expected_body_obj, "Request body OK." );
+
+        # Test calls (namespace = $main)
+        my @logging_subs_called = keys( %{$mocks_hash{'$main'}->sub_tracking()} );
+        my $logger_subs = join('|', keys(%{$override_log_subs}));
+        is( scalar(grep(/^($logger_subs)$/, @logging_subs_called)), 0, "No call to logger." );
+        is( scalar(@{$mocks_hash{'$main'}->sub_tracking()->{_setConfigurationElement}}), 1, "Calls to setter." );
+        is( $mocks_hash{'$main'}->sub_tracking()->{_setConfigurationElement}[0]{args}, ['SWIFT_TOKEN', $mocked_module_values{'X-Subject-Token'}], "Swift token set as expected." );
+
+
+        # Reset environment
+        COMMON::ProxyStorage::resetConfiguration();
+        reset_env();
+        foreach my $mock (keys(%mocks_hash)) {
+            $mocks_hash{$mock} = undef;
+        }
+
+        done_testing;
+    };
+
+
+    subtest ok_first_try_without_keystone => sub {
+        # Environment for the test
+        my %mocked_module_values = (
+            'ROK4_KEYSTONE_IS_USED' => FALSE,
+            'ROK4_SWIFT_AUTHURL' => 'https://auth.exemple.com:8080/swift/',
+            'ROK4_SWIFT_USER' => 'swift_user_1',
+            'ROK4_SWIFT_PASSWD' => 'swift_password_1',
+            'UA' => undef,            
+            'X-Auth-Token' => 'f0GZyNcnf7_9SDJ31iShwUGzYlLAAlvLN7BQuWHK40YPpqjJ7O7f106ycPnCHYdRxtqQdU8GltNaoxlLk_3PZp4Wv-1r_CurUenWOLsEI-H6NeV65H6oZfPp4VhssTDzEjuk1PfWsVkwSSXBHt69pmPx9UwfMYz0eP7yIagNEz1VIl_uggBb2_PvprJTstQpS',
+            'X-Storage-Url' => 'https://cluster.swift.com:8081'
+        );
+        my $override_log_subs = LOG_METHODS;
+
+        ## Mocks
+        my %mocks_hash = ();
+
+        ### Namespace : $main
+        $mocks_hash{'$main'} = mock 'COMMON::ProxyStorage' => (
+            track => TRUE,
+            override => $override_log_subs
+        );
+        $mocks_hash{'$main'}->override('_setConfigurationElement' => sub {
+            my $key = shift;
+            my $value = shift;
+            $mocked_module_values{$key} = $value;
+            return TRUE;
+        });
+        $mocks_hash{'$main'}->override('_getConfigurationElement' => sub {
+            my $key = shift;
+            return $mocked_module_values{$key};
+        });
+
+        ### Namespace : HTTP::Request::Common
+        $mocks_hash{'HTTP::Request::Common'} = mock 'HTTP::Request::Common' => (
+            track => TRUE,
+            add_constructor => {
+                new => 'hash'
+            },
+            add => {
+                header => sub {
+                    my $self = shift;
+                    my $key = shift;
+                    my $value = shift;
+                    exists($self->{'headers'}->{$key});
+                    $self->{'headers'}->{$key} = $value;
+                    return $self->{'headers'}->{$key};
+                }              
+            },
+            override => {
+                GET => sub {
+                    my $url = shift;
+                    return HTTP::Request::Common::new({'url' => $url});
+                }
+            }
+        );
+
+        ### Namespace : HTTP::Response
+        $mocks_hash{'HTTP::Response'} = mock 'HTTP::Response' => (
+            track => TRUE,
+            override_constructor => {
+                new => 'hash'
+            },
+            override => {
+                is_success => sub {
+                    my $self = shift;
+                    return TRUE;
+                }
+            },
+            add => {
+                header => sub {
+                    my $self = shift;
+                    my $key = shift;
+                    return $mocked_module_values{$key};
+                }
+            }
+        );
+
+        ### Namespace : LWP::UserAgent
+        $mocks_hash{'LWP::UserAgent'} = mock 'LWP::UserAgent' => (
+            track => TRUE,
+            override_constructor => {
+                new => 'hash'
+            },            
+            override => {
+                request => sub {
+                    my $self = shift;
+                    return HTTP::Response->new();
+                }
+            }
+        );
+        $mocked_module_values{'UA'} = LWP::UserAgent->new();
+
+
+        # Test return value : must be TRUE
+        my $method_return = COMMON::ProxyStorage::getSwiftToken();
+        is($method_return, TRUE, "getSwiftToken() without keystone returns TRUE");
+
+        # Test calls (namespace  = LWP::UserAgent)
+        is( scalar( @{$mocks_hash{'LWP::UserAgent'}->sub_tracking()->{request}} ), 1, "Request sent." );
+        is( $mocks_hash{'LWP::UserAgent'}->sub_tracking()->{request}[0]{args}[1]{'url'}, $mocked_module_values{'ROK4_SWIFT_AUTHURL'}, "Request URL OK." );
+        nok( exists($mocks_hash{'LWP::UserAgent'}->sub_tracking()->{request}[0]{args}[1]{'Content'}), "No request body." );
+
+        # Test calls (namespace = $main)
+        my @logging_subs_called = keys( %{$mocks_hash{'$main'}->sub_tracking()} );
+        my $logger_subs = join('|', keys(%{$override_log_subs}));
+        is( scalar(grep(/^($logger_subs)$/, @logging_subs_called)), 0, "No call to logger." );
+        is( scalar(@{$mocks_hash{'$main'}->sub_tracking()->{_setConfigurationElement}}), 2, "Calls to setter." );
+        is( $mocks_hash{'$main'}->sub_tracking()->{_setConfigurationElement}[0]{args}, ['SWIFT_TOKEN', $mocked_module_values{'X-Auth-Token'}], "Swift token set as expected." );
+        is( $mocks_hash{'$main'}->sub_tracking()->{_setConfigurationElement}[0]{args}, ['ROK4_SWIFT_PUBLICURL', $mocked_module_values{'X-Storage-Url'}], "Swift public URL set as expected." );
+
+
+        # Reset environment
+        COMMON::ProxyStorage::resetConfiguration();
+        reset_env();
+        foreach my $mock (keys(%mocks_hash)) {
+            $mocks_hash{$mock} = undef;
+        }
+
+        done_testing;
+
+    };
+
+    done_testing;
+};
 
 
 

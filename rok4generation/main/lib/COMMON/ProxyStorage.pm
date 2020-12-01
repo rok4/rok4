@@ -280,20 +280,20 @@ sub getSwiftToken {
             "auth" => {
                 "scope" => {
                     "project" => {
-                        "id" => "_getConfigurationElement('ROK4_KEYSTONE_PROJECTID')"
+                        "id" => _getConfigurationElement('ROK4_KEYSTONE_PROJECTID')
                     }
-                } => undef,
+                },
                 "identity" => {
                     "methods" => [
                         "password"
-                    ] => undef,
+                    ],
                     "password" => {
                         "user" => {
                             "domain" => {
-                                "id" => "_getConfigurationElement('ROK4_KEYSTONE_DOMAINID')"
-                            } => undef,
-                            "name" => "_getConfigurationElement('ROK4_SWIFT_USER')" => undef,
-                            "password" => "_getConfigurationElement('ROK4_SWIFT_PASSWD')"
+                                "id" => _getConfigurationElement('ROK4_KEYSTONE_DOMAINID')
+                            },
+                            "name" => _getConfigurationElement('ROK4_SWIFT_USER'),
+                            "password" => _getConfigurationElement('ROK4_SWIFT_PASSWD')
                         }
                     }
                 }
@@ -302,8 +302,8 @@ sub getSwiftToken {
         my $json = JSON::to_json($body_object, {utf8 => 1});
 
         my $request = HTTP::Request::Common::POST(
-            _getConfigurationElement('ROK4_SWIFT_AUTHURL') => undef,
-            Content_Type => "application/json" => undef,
+            _getConfigurationElement('ROK4_SWIFT_AUTHURL'),
+            Content_Type => "application/json",
             Content => $json
         );
 
