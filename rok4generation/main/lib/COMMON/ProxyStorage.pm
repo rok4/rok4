@@ -398,8 +398,9 @@ Function: returnSwiftToken
 Returns the value of the swift token in memory.
 =cut
 sub returnSwiftToken {
-    DEBUG(sprintf("Returning token value : '%s'", _getConfigurationElement('SWIFT_TOKEN')));
-    return _getConfigurationElement('SWIFT_TOKEN');
+    my $token = _getConfigurationElement('SWIFT_TOKEN');
+    DEBUG( "Returning token value : ", defined($token) ? "'$token'" : "undef" );
+    return $token;
 }
 
 ####################################################################################################
@@ -1462,7 +1463,7 @@ Return:
 sub _getConfigurationElement {
     my @args = @_;
 
-    if (scalar(@_) != 1) {
+    if (scalar(@args) != 1) {
         return undef;
     }
     elsif (! exists($configuration{$args[0]})) {

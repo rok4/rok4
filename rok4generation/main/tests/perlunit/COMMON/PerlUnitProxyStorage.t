@@ -628,6 +628,178 @@ subtest test_getSwiftToken => sub {
 
 
 
+# Tested method : COMMON::ProxyStorage::sendSwiftRequest()
+subtest test_sendSwiftRequest => sub {
+    subtest ok_first_try => sub {
+
+        # Environment for the test
+        my %mocked_module_values = (
+            'UA' => undef,
+            'SWIFT_TOKEN' => 'f0GZyNcnf7_9SDJ31iShwUGzYlLAAlvLN7BQuWHK40YPpqjJ7O7f106ycPnCHYdRxtqQdU8GltNaoxlLk_3PZp4Wv-1r_CurUenWOLsEI-H6NeV65H6oZfPp4VhssTDzEjuk1PfWsVkwSSXBHt69pmPx9UwfMYz0eP7yIagNEz1VIl_uggBb2_PvprJTstQpS'
+        );
+
+        ## Mocks
+        my %mocks_hash = ();
+        my $override_log_subs = LOG_METHODS;
+
+        ### Namespace : $main
+        $mocks_hash{'$main'} = mock 'COMMON::ProxyStorage' => (
+            track => TRUE,
+            override => $override_log_subs
+        );
+        $mocks_hash{'$main'}->override('_getConfigurationElement' => sub {
+            my $key = shift;
+            return $mocked_module_values{$key};
+        });
+
+        ### Namespace : HTTP::Request
+        $mocks_hash{'HTTP::Request'} = mock 'HTTP::Request' => (
+            track => TRUE,
+            override_constructor => {
+                new => 'hash'
+            },
+            add => {
+                header => sub {
+                    my $self = shift;
+                    my $key = shift;
+                    my $value = shift;
+                    exists($self->{'headers'}->{$key});
+                    $self->{'headers'}->{$key} = $value;
+                    return $self->{'headers'}->{$key};
+                }          
+            }
+        );
+
+        ### Namespace : HTTP::Response
+        $mocks_hash{'HTTP::Response'} = mock 'HTTP::Response' => (
+            track => TRUE,
+            override_constructor => {
+                new => 'hash'
+            },
+            override => {
+                is_success => sub {
+                    my $self = shift;
+                    return TRUE;
+                }
+            }
+        );
+
+        ### Namespace : LWP::UserAgent
+        $mocks_hash{'LWP::UserAgent'} = mock 'LWP::UserAgent' => (
+            track => TRUE,
+            override_constructor => {
+                new => 'hash'
+            },            
+            override => {
+                request => sub {
+                    my $self = shift;
+                    return HTTP::Response->new();
+                }
+            }
+        );
+        $mocked_module_values{'UA'} = LWP::UserAgent->new();
+
+
+        # Test return value
+        my $request = HTTP::Request->new('url' => 'https://cluster.swift.com:8081/kzty3tg85bypmtek1dgv2d61/pyramids');
+        my $method_return = COMMON::ProxyStorage::sendSwiftRequest($request);
+        ok(defined($method_return), 'COMMON::ProxyStorage::sendSwiftRequest($request) returns something.');
+        ok($method_return->is_success(), 'Return is success.');
+
+        # Test calls (namespace  = LWP::UserAgent)
+        is( scalar( @{$mocks_hash{'LWP::UserAgent'}->sub_tracking()->{request}} ), 1, "Request sent." );
+        is( $mocks_hash{'LWP::UserAgent'}->sub_tracking()->{request}[0]{args}[1]->{headers}, {'X-Auth-Token' => $mocked_module_values{'SWIFT_TOKEN'}}, "Request auth token OK." );
+
+        # Test calls (namespace = $main)
+        my @logging_subs_called = keys( %{$mocks_hash{'$main'}->sub_tracking()} );
+        my $logger_subs = join('|', keys(%{$override_log_subs}));
+        is( scalar(grep(/^($logger_subs)$/, @logging_subs_called)), 0, "No call to logger." );
+
+
+        # Reset environment
+        foreach my $mock (keys(%mocks_hash)) {
+            $mocks_hash{$mock} = undef;
+        }
+        COMMON::ProxyStorage::resetConfiguration();
+        reset_env();
+
+        done_testing;
+    };
+
+    done_testing;
+};
+
+
+# Tested method : COMMON::ProxyStorage::returnSwiftToken()
+subtest test_returnSwiftToken => sub {
+    subtest defined_token => sub {
+        # Environment for the test
+        my $swift_token = 'f0GZyNcnf7_9SDJ31iShwUGzYlLAAlvLN7BQuWHK40YPpqjJ7O7f106ycPnCHYdRxtqQdU8GltNaoxlLk_3PZp4Wv-1r_CurUenWOLsEI-H6NeV65H6oZfPp4VhssTDzEjuk1PfWsVkwSSXBHt69pmPx9UwfMYz0eP7yIagNEz1VIl_uggBb2_PvprJTstQpS';
+
+        ## Mocks
+        ### Namespace : $main
+        my $override_log_subs = LOG_METHODS;
+        my $mock_main = mock 'COMMON::ProxyStorage' => (
+            track => TRUE,
+            override => $override_log_subs
+        );
+        $mock_main->override('_getConfigurationElement' => sub {
+            return $swift_token;
+        });
+
+
+        # Test return value
+        my $method_return = COMMON::ProxyStorage::returnSwiftToken();
+        is($method_return, $swift_token, "Correct token returned");
+
+        # Test calls (namespace = $main)
+        my @logging_subs_called = keys( %{$mock_main->sub_tracking()} );
+        my $logger_subs = join('|', keys(%{$override_log_subs}));
+        is( scalar(grep(/^($logger_subs)$/, @logging_subs_called)), 1, "Call to logger." );
+        ok( exists($mock_main->sub_tracking()->{DEBUG}), "Call to DEBUG logger." );
+
+
+        # Reset environment
+        $mock_main = undef;
+        COMMON::ProxyStorage::resetConfiguration();
+    
+        done_testing;
+    };
+
+    subtest undefined_token => sub {
+        # Environment for the test
+        ## Mocks
+        ### Namespace : $main
+        my $override_log_subs = LOG_METHODS;
+        my $mock_main = mock 'COMMON::ProxyStorage' => (
+            track => TRUE,
+            override => $override_log_subs
+        );
+        $mock_main->override('_getConfigurationElement' => sub {
+            return undef;
+        });
+
+
+        # Test return value
+        my $method_return = COMMON::ProxyStorage::returnSwiftToken();
+        is($method_return, undef, "Undefined return.");
+
+        # Test calls (namespace = $main)
+        my @logging_subs_called = keys( %{$mock_main->sub_tracking()} );
+        my $logger_subs = join('|', keys(%{$override_log_subs}));
+        is( scalar(grep(/^($logger_subs)$/, @logging_subs_called)), 1, "Call to logger." );
+        ok( exists($mock_main->sub_tracking()->{DEBUG}), "Call to DEBUG logger." );
+
+
+        # Reset environment
+        $mock_main = undef;
+        COMMON::ProxyStorage::resetConfiguration();
+    
+        done_testing;
+    };
+
+    done_testing;
+};
 
 
 done_testing;
