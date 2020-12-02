@@ -547,12 +547,12 @@ subtest test_getSwiftToken => sub {
                     exists($self->{'headers'}->{$key});
                     $self->{'headers'}->{$key} = $value;
                     return $self->{'headers'}->{$key};
-                }              
+                }          
             },
             override => {
                 GET => sub {
                     my $url = shift;
-                    return HTTP::Request::Common::new({'url' => $url});
+                    return HTTP::Request::Common->new('url' => $url);
                 }
             }
         );
@@ -601,7 +601,7 @@ subtest test_getSwiftToken => sub {
         # Test calls (namespace  = LWP::UserAgent)
         is( scalar( @{$mocks_hash{'LWP::UserAgent'}->sub_tracking()->{request}} ), 1, "Request sent." );
         is( $mocks_hash{'LWP::UserAgent'}->sub_tracking()->{request}[0]{args}[1]{'url'}, $mocked_module_values{'ROK4_SWIFT_AUTHURL'}, "Request URL OK." );
-        nok( exists($mocks_hash{'LWP::UserAgent'}->sub_tracking()->{request}[0]{args}[1]{'Content'}), "No request body." );
+        ok( !exists($mocks_hash{'LWP::UserAgent'}->sub_tracking()->{request}[0]{args}[1]{'Content'}), "No request body." );
 
         # Test calls (namespace = $main)
         my @logging_subs_called = keys( %{$mocks_hash{'$main'}->sub_tracking()} );
@@ -609,15 +609,15 @@ subtest test_getSwiftToken => sub {
         is( scalar(grep(/^($logger_subs)$/, @logging_subs_called)), 0, "No call to logger." );
         is( scalar(@{$mocks_hash{'$main'}->sub_tracking()->{_setConfigurationElement}}), 2, "Calls to setter." );
         is( $mocks_hash{'$main'}->sub_tracking()->{_setConfigurationElement}[0]{args}, ['SWIFT_TOKEN', $mocked_module_values{'X-Auth-Token'}], "Swift token set as expected." );
-        is( $mocks_hash{'$main'}->sub_tracking()->{_setConfigurationElement}[0]{args}, ['ROK4_SWIFT_PUBLICURL', $mocked_module_values{'X-Storage-Url'}], "Swift public URL set as expected." );
+        is( $mocks_hash{'$main'}->sub_tracking()->{_setConfigurationElement}[1]{args}, ['ROK4_SWIFT_PUBLICURL', $mocked_module_values{'X-Storage-Url'}], "Swift public URL set as expected." );
 
 
         # Reset environment
-        COMMON::ProxyStorage::resetConfiguration();
-        reset_env();
         foreach my $mock (keys(%mocks_hash)) {
             $mocks_hash{$mock} = undef;
         }
+        COMMON::ProxyStorage::resetConfiguration();
+        reset_env();
 
         done_testing;
 
