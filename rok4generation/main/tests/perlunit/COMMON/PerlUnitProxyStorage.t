@@ -33,17 +33,13 @@
 #
 # knowledge of the CeCILL-C license and that you accept its terms.
 
+# Note : environment variable 'ROK4_UNITEST_RUN' must be set to 'TRUE' before running this script for it to work.
+
 use strict;
 use warnings;
-use COMMON::ProxyStorage;
 
 use Data::Dumper;
 use JSON;
-
-# Import du bundle de test Test2::Suite
-use Test2::V0 -target => 'COMMON::ProxyStorage';
-
-
 
 # Constantes
 use constant TRUE  => 1;
@@ -59,15 +55,23 @@ use constant LOG_METHODS => { # Méthodes à surcharger pour les bouchons sur le
     ALWAYS => sub { return; }
 };
 
+# Méthodes à surcharger pour les bouchons sur les appels à Log::Log4perl
+my @LOG_METHODS_NAME = ('TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL', 'ALWAYS');
+
+# Import du bundle de test Test2::Suite
+use Test2::V0;
+use COMMON::ProxyStorage;
+
 sub override_env {
     my $hashref = shift;
     foreach my $key (keys %{$hashref}) {
         $ENV{$key} = $hashref->{$key};
     }
-}
+};
+
 sub reset_env {
     %ENV = INITIAL_ENV;
-}
+};
 
 # Tested method : COMMON::ProxyStorage::checkEnvironmentVariables()
 subtest test_checkEnvironmentVariables => sub {
@@ -801,5 +805,62 @@ subtest test_returnSwiftToken => sub {
     done_testing;
 };
 
+# Tested method : COMMON::ProxyStorage::copy()
+subtest test_copy => sub {
+    # La fonction la plus conséquente.
+    # 16 cas sans erreur : {fichier, ceph, s3, swift} -> {fichier, ceph, s3, swift}
+
+    subtest ok_file_to_file => sub {
+        # Environment for the test
+        my %variables = (
+            'fromType' => 'FILE',
+            'fromPath' => '/dir/to/source/s_file.pyr',
+            'toType' => 'FILE',
+            'toPath' => '/dir/to/target/t_file.pyr',
+            'dir' => ''
+        );
+
+        ## Mocks
+        my %mocks_hash = ();
+        my $override_log_subs = LOG_METHODS;
+
+        ### Namespace : COMMON::ProxyStorage
+        $mocks_hash{'*CORE::GLOBAL'} = mock '*CORE::GLOBAL' => (
+            track => TRUE,
+            set => {
+                'readpipe' => sub {
+                    $? = 0;
+                    return "readpipe(@_)";
+                }
+            }
+        );
+
+        ### Namespace : COMMON::ProxyStorage
+        $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
+            track => TRUE,
+            override => $override_log_subs
+        );
+
+        ### Namespace : File::Basename
+        $mocks_hash{'File::Basename'} = mock 'File::Basename' => (
+            track => TRUE,
+            override => {
+                dirname => sub {
+                    return $variables{'dir'};
+                }
+            }
+        );
+
+        my $method_return = COMMON::ProxyStorage::copy($variables{'fromType'}, $variables{'fromPath'}, $variables{'toType'}, $variables{'toPath'});
+
+        print("Calls (*CORE::GLOBAL) : ", Dumper($mocks_hash{'*CORE::GLOBAL'}->call_tracking()));
+        print("Calls (COMMON::ProxyStorage) : ", Dumper($mocks_hash{'COMMON::ProxyStorage'}->call_tracking()));
+        print("Calls (File::Basename) : ", Dumper($mocks_hash{'File::Basename'}->call_tracking()));
+        is($method_return, TRUE, "Returns TRUE.");
+        done_testing;
+    };
+
+    done_testing;
+};
 
 done_testing;

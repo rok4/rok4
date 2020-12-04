@@ -55,6 +55,13 @@ Using:
 package COMMON::ProxyStorage;
 
 use strict;
+
+BEGIN {
+    if ($ENV{'ROK4_UNITEST_RUN'} eq 'TRUE') {
+        *CORE::GLOBAL::readpipe = \&_mock_readpipe;
+    }
+}
+
 use warnings;
 
 use Data::Dumper;
@@ -433,6 +440,7 @@ sub copy {
 
             # create folder
             my $dir = File::Basename::dirname($toPath);
+            `echo "appel test à backticks"`;
             `mkdir -p $dir`;
             if ($?) {
                 ERROR("Cannot create directory '$dir' : $!");
@@ -1496,6 +1504,12 @@ sub _setConfigurationElement {
     else {
         return FALSE;
     }
+};
+
+sub _mock_readpipe {
+    # fonction à surcharger en environnement de test
+    $? = 0;
+    return "_mock_readpipe(@_)";
 };
 
 
