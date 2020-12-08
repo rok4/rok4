@@ -243,7 +243,7 @@ int main ( int argc, char **argv )
     } else if (container != 0) {
         LOGGER_DEBUG( std::string("Input is an object in the Swift container ") + container);
         curl_global_init(CURL_GLOBAL_ALL);
-        context = new SwiftContext(container, keystone);
+        context = new SwiftContext(container);
     } else {
 #endif
 
