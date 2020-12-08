@@ -813,10 +813,10 @@ subtest test_copy => sub {
     subtest ok_file_to_file => sub {
         # Environment for the test
         my %variables = (
-            'fromType' => 'FILE',
-            'fromPath' => '/dir/to/source/s_file.pyr',
-            'toType' => 'FILE',
-            'toPath' => '/dir/to/target/t_file.pyr',
+            'source_type' => 'FILE',
+            'source_path' => '/dir/to/source/s_file.pyr',
+            'target_type' => 'FILE',
+            'target_path' => '/dir/to/target/t_file.pyr',
             'dir' => ''
         );
 
@@ -863,7 +863,7 @@ subtest test_copy => sub {
 
         # Tests
         ## Valeur de retour
-        my $method_return = COMMON::ProxyStorage::copy($variables{'fromType'}, $variables{'fromPath'}, $variables{'toType'}, $variables{'toPath'});
+        my $method_return = COMMON::ProxyStorage::copy($variables{'source_type'}, $variables{'source_path'}, $variables{'target_type'}, $variables{'target_path'});
         is($method_return, TRUE, "Returns TRUE.");
 
         ## Appels au logger
@@ -873,10 +873,76 @@ subtest test_copy => sub {
         ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'DEBUG'}), "At least 1 DEBUG log entry.");
 
         ## Appels aux commandes système
-        ok(exists($mocks_hash{'File::Path'}->sub_tracking()->{'make_path'}), "Création d'une arborescence dossier.");
-        is($mocks_hash{'File::Path'}->sub_tracking()->{'make_path'}[0]{'args'}[0], $variables{'dir'}, "Création du bon dossier.");
-        ok(exists($mocks_hash{'File::Copy'}->sub_tracking()->{'copy'}), "Copie de fichier.");
-        is($mocks_hash{'File::Copy'}->sub_tracking()->{'copy'}[0]{'args'}, [$variables{'fromPath'}, $variables{'toPath'}], "Bonne source et destination.");
+        ok(exists($mocks_hash{'File::Path'}->sub_tracking()->{'make_path'}), "Directory arbroescence created.");
+        is($mocks_hash{'File::Path'}->sub_tracking()->{'make_path'}[0]{'args'}[0], $variables{'dir'}, "Correct directory.");
+        ok(exists($mocks_hash{'File::Copy'}->sub_tracking()->{'copy'}), "File copy.");
+        is($mocks_hash{'File::Copy'}->sub_tracking()->{'copy'}[0]{'args'}, [$variables{'source_path'}, $variables{'target_path'}], "Correct source and target.");
+
+
+        # Reset environment
+        foreach my $mock (keys(%mocks_hash)) {
+            $mocks_hash{$mock} = undef;
+        }
+
+        done_testing;
+    };
+
+    subtest ok_file_to_ceph => sub {
+
+        # Environment for the test
+        my %variables = (
+            'source_type' => 'FILE',
+            'source_path' => '/dir/to/source/s_file.pyr',
+            'target_type' => 'CEPH',
+            'target_pool' => 't_pool',
+            'target_object' =>'t_object'
+        );
+        $variables{'target_path'} = "$variables{'target_pool'}/$variables{'target_object'}";
+
+        ## Mocks
+        my %mocks_hash = ();
+        my $override_log_subs = LOG_METHODS;
+
+        ### Namespace : COMMON::ProxyStorage
+        $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
+            track => TRUE,
+            override => $override_log_subs
+        );
+
+        ### Namespace : *CORE::GLOBAL
+        $mocks_hash{'*CORE::GLOBAL'} = mock '*CORE::GLOBAL' => (
+            track => TRUE,
+            set => {
+                'system' => sub {
+                    $? = 0;
+                    return;
+                }
+            }
+        );
+
+
+        # Tests
+        ## Valeur de retour
+        my $method_return = COMMON::ProxyStorage::copy($variables{'source_type'}, $variables{'source_path'}, $variables{'target_type'}, $variables{'target_path'});
+        is($method_return, TRUE, "Returns TRUE.");
+
+        ## Appels au logger
+        foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE') {
+            ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
+        }
+        ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'DEBUG'}), "At least 1 DEBUG log entry.");
+
+        ## Appels aux commandes système
+        ok(exists($mocks_hash{'*CORE::GLOBAL'}->sub_tracking()->{'system'}), "Call to system command.");
+        is($mocks_hash{'*CORE::GLOBAL'}->sub_tracking()->{'system'}[0]{'args'}[0], "rados", "Correct executable.");
+        is($mocks_hash{'*CORE::GLOBAL'}->sub_tracking()->{'system'}[0]{'args'}[1], "-p $variables{'target_pool'}", "Correct pool.");
+        is($mocks_hash{'*CORE::GLOBAL'}->sub_tracking()->{'system'}[0]{'args'}[2], "put $variables{'target_object'} $variables{'source_path'}", "Correct action.");
+
+
+        # Reset environment
+        foreach my $mock (keys(%mocks_hash)) {
+            $mocks_hash{$mock} = undef;
+        }
 
         done_testing;
     };

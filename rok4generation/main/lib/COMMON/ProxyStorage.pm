@@ -65,6 +65,12 @@ BEGIN {
             $? = 0;
             return "mock readpipe(@_)";
         };
+        no warnings 'once';
+        *CORE::GLOBAL::system = sub {
+            # fonction à surcharger en environnement de test
+            $? = 0;
+            return "mock system(@_)";
+        };
     }
 }
 
@@ -474,7 +480,8 @@ sub copy {
                 return FALSE;
             }
 
-            `rados -p $poolName put $objectName $fromPath`;
+            my @rados_args = ("rados", "-p $poolName", "put $objectName $fromPath");
+            system(@rados_args);
             if ($?) {
                 ERROR("Cannot upload file '$fromPath' to CEPH object $objectName (pool $poolName): $!");
                 return FALSE;
