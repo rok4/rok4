@@ -825,17 +825,6 @@ subtest test_copy => sub {
         my $override_log_subs = LOG_METHODS;
 
         ### Namespace : COMMON::ProxyStorage
-        $mocks_hash{'*CORE::GLOBAL'} = mock '*CORE::GLOBAL' => (
-            track => TRUE,
-            set => {
-                'readpipe' => sub {
-                    $? = 0;
-                    return "readpipe(@_)";
-                }
-            }
-        );
-
-        ### Namespace : COMMON::ProxyStorage
         $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
             track => TRUE,
             override => $override_log_subs
@@ -851,12 +840,44 @@ subtest test_copy => sub {
             }
         );
 
-        my $method_return = COMMON::ProxyStorage::copy($variables{'fromType'}, $variables{'fromPath'}, $variables{'toType'}, $variables{'toPath'});
+        ### Namespace : File::Copy
+        $mocks_hash{'File::Copy'} = mock 'File::Copy' => (
+            track => TRUE,
+            override => {
+                copy => sub {
+                    $? = 0;
+                    return TRUE;
+                }
+            }
+        );
 
-        print("Calls (*CORE::GLOBAL) : ", Dumper($mocks_hash{'*CORE::GLOBAL'}->call_tracking()));
-        print("Calls (COMMON::ProxyStorage) : ", Dumper($mocks_hash{'COMMON::ProxyStorage'}->call_tracking()));
-        print("Calls (File::Basename) : ", Dumper($mocks_hash{'File::Basename'}->call_tracking()));
+        ### Namespace : File::Path
+        $mocks_hash{'File::Path'} = mock 'File::Path' => (
+            track => TRUE,
+            override => {
+                make_path => sub {
+                    return TRUE;
+                }
+            }
+        );
+
+        # Tests
+        ## Valeur de retour
+        my $method_return = COMMON::ProxyStorage::copy($variables{'fromType'}, $variables{'fromPath'}, $variables{'toType'}, $variables{'toPath'});
         is($method_return, TRUE, "Returns TRUE.");
+
+        ## Appels au logger
+        foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE') {
+            ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
+        }
+        ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'DEBUG'}), "At least 1 DEBUG log entry.");
+
+        ## Appels aux commandes système
+        ok(exists($mocks_hash{'File::Path'}->sub_tracking()->{'make_path'}), "Création d'une arborescence dossier.");
+        is($mocks_hash{'File::Path'}->sub_tracking()->{'make_path'}[0]{'args'}[0], $variables{'dir'}, "Création du bon dossier.");
+        ok(exists($mocks_hash{'File::Copy'}->sub_tracking()->{'copy'}), "Copie de fichier.");
+        is($mocks_hash{'File::Copy'}->sub_tracking()->{'copy'}[0]{'args'}, [$variables{'fromPath'}, $variables{'toPath'}], "Bonne source et destination.");
+
         done_testing;
     };
 

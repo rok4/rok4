@@ -55,24 +55,30 @@ Using:
 package COMMON::ProxyStorage;
 
 use strict;
+use warnings;
 
 BEGIN {
-    if ($ENV{'ROK4_UNITEST_RUN'} eq 'TRUE') {
-        *CORE::GLOBAL::readpipe = \&_mock_readpipe;
+    if (exists($ENV{'ROK4_UNITEST_RUN'}) && $ENV{'ROK4_UNITEST_RUN'} eq 'TRUE') {
+        no warnings 'once';
+        *CORE::GLOBAL::readpipe = sub {
+            # fonction à surcharger en environnement de test
+            $? = 0;
+            return "mock readpipe(@_)";
+        };
     }
 }
 
-use warnings;
-
 use Data::Dumper;
 use Digest::SHA;
-use File::Map qw(map_file);
-use HTTP::Request;
-use HTTP::Request::Common;
-use HTTP::Response;
-use LWP::UserAgent;
 use File::Basename;
+use File::Copy ();
+use File::Map qw(map_file);
+use File::Path;
+use HTTP::Request::Common;
+use HTTP::Request;
+use HTTP::Response;
 use JSON;
+use LWP::UserAgent;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -437,24 +443,29 @@ sub copy {
 
     if ($fromType eq "FILE") { ############################################ FILE
         if ($toType eq "FILE") {
+            # File -> File
 
             # create folder
             my $dir = File::Basename::dirname($toPath);
-            `echo "appel test à backticks"`;
-            `mkdir -p $dir`;
-            if ($?) {
-                ERROR("Cannot create directory '$dir' : $!");
+            my $errors_list;
+            File::Path::make_path($dir, {error => \$errors_list});
+            if (defined($errors_list) && scalar(@{$errors_list})) {
+                ERROR("Cannot create directory '$dir' : ", $$errors_list[0]{$dir});
                 return FALSE;
             }
         
-            `cp $fromPath $toPath`;
-            if ($?) {
-                ERROR("Cannot copy from file '$fromPath' to file '$toPath' : $!");
+            my $err_bool = 0;
+            my $err_message = '';
+            File::Copy::copy("$fromPath", "$toPath") or ($err_bool, $err_message) = (1, $!);
+            if ($err_bool) {
+                ERROR("Cannot copy from file '$fromPath' to file '$toPath' : $err_message");
                 return FALSE;
             }
             return TRUE;
         }
         elsif ($toType eq "CEPH") {
+            # File -> Ceph
+
             my ($poolName, @rest) = split("/", $toPath);
             my $objectName = join("", @rest);
 
@@ -472,6 +483,8 @@ sub copy {
             return TRUE;
         }
         elsif ($toType eq "S3") {
+            # File -> S3
+
             my ($bucketName, @rest) = split("/", $toPath);
             my $objectName = join("", @rest);
 
@@ -516,6 +529,8 @@ sub copy {
             }
         }
         elsif ($toType eq "SWIFT") {
+            # File -> Swift
+
             if (! defined (_getConfigurationElement('SWIFT_TOKEN')) ) {
                 if (! getSwiftToken()) {
                     ERROR("Cannot get swift token");
@@ -556,6 +571,7 @@ sub copy {
     }
     elsif ($fromType eq "CEPH") { ############################################ CEPH
         if ($toType eq "FILE") {
+            # Ceph -> File
 
             # On regarde si c'est un objet symbolique, pour copier le vrai objet
             my $realFromPath = getRealData("CEPH", $fromPath);
@@ -592,6 +608,7 @@ sub copy {
             return TRUE;
         }
         elsif ($toType eq "CEPH") {
+            # Ceph -> Ceph
 
             # On regarde si c'est un objet symbolique, pour copier le vrai objet
             my $realFromPath = getRealData("CEPH", $fromPath);
@@ -630,12 +647,14 @@ sub copy {
             return TRUE;
         }
         elsif ($toType eq "SWIFT") {
+            # Ceph -> Swift
             ERROR("CEPH to SWIFT copy is not implemented.");            
             return FALSE;
         }
     }
     elsif ($fromType eq "S3") { ############################################ S3
         if ($toType eq "FILE") {
+            # S3 -> File
 
             my ($bucketName, @rest) = split("/", $fromPath);
             my $objectName = join("", @rest);
@@ -683,6 +702,7 @@ sub copy {
             }
         }
         elsif ($toType eq "S3") {
+            # S3 -> S3
 
             my ($fromBucket, @from) = split("/", $fromPath);
             my $fromObjectName = join("", @from);
@@ -739,6 +759,7 @@ sub copy {
             }
         }
         if ($toType eq "FILE") {
+            # Swift -> File
 
             my ($containerName, @rest) = split("/", $fromPath);
             my $objectName = join("", @rest);
@@ -774,6 +795,7 @@ sub copy {
             }
         }
         elsif ($toType eq "SWIFT") {
+            # Swift -> Swift
 
             my ($fromContainer, @from) = split("/", $fromPath);
             my $fromObjectName = join("", @from);
@@ -1505,17 +1527,6 @@ sub _setConfigurationElement {
         return FALSE;
     }
 };
-
-sub _mock_readpipe {
-    # fonction à surcharger en environnement de test
-    $? = 0;
-    return "_mock_readpipe(@_)";
-};
-
-
-
-
-
 
 
 1;
