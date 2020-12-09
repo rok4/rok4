@@ -19,3 +19,4 @@ target
 .vagrant
 .vagrant.d
 ^install
+.vscode
