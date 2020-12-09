@@ -123,6 +123,7 @@ public:
      * <TR><TD>url</TD><TD>ROK4_S3_URL</TD><TD>localhost:8080</TD>
      * <TR><TD>key</TD><TD>ROK4_S3_KEY</TD><TD>KEY</TD>
      * <TR><TD>secret_key</TD><TD>ROK4_S3_SECRETKEY</TD><TD>SECRETKEY</TD>
+     * <TR><TD>ssl_no_verify</TD><TD>ROK4_SSL_NO_VERIFY</TD><TD>false</TD>
      * </TABLE>
      * \param[in] b Bucket avec lequel on veut communiquer
      * \~english
@@ -133,6 +134,7 @@ public:
      * <TR><TD>url</TD><TD>ROK4_S3_URL</TD><TD>localhost:8080</TD>
      * <TR><TD>key</TD><TD>ROK4_S3_KEY</TD><TD>KEY</TD>
      * <TR><TD>secret_key</TD><TD>ROK4_S3_SECRETKEY</TD><TD>SECRETKEY</TD>
+     * <TR><TD>ssl_no_verify</TD><TD>ROK4_SSL_NO_VERIFY</TD><TD>false</TD>
      * </TABLE>
      * \param[in] b Bucket to use
      */

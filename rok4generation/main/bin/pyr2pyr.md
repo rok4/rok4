@@ -80,7 +80,6 @@ tms_path=/home/IGN/TMS/
 | CEPH             | pyr_data_pool_name      |                                                                             | obligatoire                      |
 | S3               | pyr_data_bucket_name    |                                                                             | obligatoire                      |
 | SWIFT            | pyr_data_container_name |                                                                             | obligatoire                      |
-| SWIFT            | keystone_connection     | Précise si le jeton d'authentification doit être récupéré via keystone      | `FALSE`                          |
 
 Dans le cas du stockage objet, certaines variables d'environnement doivent être définies sur les machines d'exécution :
 * CEPH
@@ -97,7 +96,7 @@ Dans le cas du stockage objet, certaines variables d'environnement doivent être
     - ROK4_SWIFT_PASSWD
     - Si authentification via Swift
         - ROK4_SWIFT_ACCOUNT
-    - Si authentification via keystone
+    - Si authentification via keystone (présence de ROK4_KEYSTONE_DOMAINID)
         - ROK4_KEYSTONE_DOMAINID
         - ROK4_SWIFT_PUBLICURL
         - ROK4_KEYSTONE_PROJECTID

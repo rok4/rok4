@@ -288,7 +288,12 @@ BackupListFile () {
 
     signature=`echo -en ${stringToSign} | openssl sha1 -hmac ${ROK4_S3_SECRETKEY} -binary | base64`
 
-    curl -k -X PUT -T "${LIST_FILE}" \
+    curl_options=""
+    if [[ ! -z $ROK4_SSL_NO_VERIFY ]]; then
+        curl_options="-k"
+    fi
+
+    curl $curl_options -X PUT -T "${LIST_FILE}" \
      -H "Host: ${HOST}" \
      -H "Date: ${dateValue}" \
      -H "Content-Type: ${contentType}" \
@@ -324,7 +329,12 @@ PushSlab () {
 
     signature=`echo -en ${stringToSign} | openssl sha1 -hmac ${ROK4_S3_SECRETKEY} -binary | base64`
 
-    curl -k -X PUT -T "${PYR_DIR_SRC}/$input" \
+    curl_options=""
+    if [[ ! -z $ROK4_SSL_NO_VERIFY ]]; then
+        curl_options="-k"
+    fi
+
+    curl $curl_options -X PUT -T "${PYR_DIR_SRC}/$input" \
      -H "Host: ${HOST}" \
      -H "Date: ${dateValue}" \
      -H "Content-Type: ${contentType}" \
@@ -342,7 +352,12 @@ my $SWIFT_PUSH = <<'FUNCTION';
 BackupListFile () {
     local objectName=`basename ${LIST_FILE}`
 
-    TOKEN=$(curl -s -ik \
+    curl_options=""
+    if [[ ! -z $ROK4_SSL_NO_VERIFY ]]; then
+        curl_options="-k"
+    fi
+
+    TOKEN=$(curl -s -i $curl_options \
         -H "Content-Type: application/json" \
         -XPOST \
         -d '
@@ -365,7 +380,7 @@ BackupListFile () {
 
     resource="/${PYR_CONTAINER_DST}/${objectName}"
 
-    curl -k -X PUT -T "${LIST_FILE}"  -H "X-Auth-Token: ${TOKEN}"  ${ROK4_SWIFT_PUBLICURL}${resource}
+    curl $curl_options -X PUT -T "${LIST_FILE}"  -H "X-Auth-Token: ${TOKEN}"  ${ROK4_SWIFT_PUBLICURL}${resource}
 
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
@@ -388,8 +403,13 @@ PushSlab () {
     if [ "$size" -le "$SLAB_LIMIT" ] ; then
         return
     fi
+
+    curl_options=""
+    if [[ ! -z $ROK4_SSL_NO_VERIFY ]]; then
+        curl_options="-k"
+    fi
     
-    TOKEN=$(curl -s -ik \
+    TOKEN=$(curl -s -i $curl_options \
         -H "Content-Type: application/json" \
         -XPOST \
         -d '
@@ -412,7 +432,7 @@ PushSlab () {
 
     resource="/${PYR_CONTAINER_DST}/${output}"
 
-    curl -k -X PUT -T "${PYR_DIR_SRC}/$input"  -H "X-Auth-Token: ${TOKEN}"  ${ROK4_SWIFT_PUBLICURL}${resource}
+    curl $curl_options -X PUT -T "${PYR_DIR_SRC}/$input"  -H "X-Auth-Token: ${TOKEN}"  ${ROK4_SWIFT_PUBLICURL}${resource}
 
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 
@@ -500,7 +520,7 @@ sub getScriptInitialization {
     my $pyramidFrom = shift;
     my $pyramidTo = shift;
 
-    my $string = $WORKTEST;
+    my $string = $WORKANDPROG;
 
     $string .= "SLAB_LIMIT=$SLABLIMIT\n";
     $string .= "SECONDS=0\n";

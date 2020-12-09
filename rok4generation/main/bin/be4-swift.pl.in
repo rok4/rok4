@@ -618,7 +618,7 @@ sub doIt {
 
     # Get swift token
 
-    if (! COMMON::ProxyStorage::getSwiftToken($objPyramid->keystoneConnection())) {
+    if (! COMMON::ProxyStorage::getSwiftToken()) {
         ERROR("Cannot get swift token");
         return FALSE;
     }

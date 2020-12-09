@@ -82,7 +82,6 @@ std::string help = std::string("\ncache2work version ") + std::string(ROK4_VERSI
     "    -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object (ONLY IF OBJECT COMPILATION)\n"
     "    -bucket S3 bucket where data is. INPUT FILE is interpreted as a S3 object (ONLY IF OBJECT COMPILATION)\n"
     "    -container Swift container where data is. INPUT FILE is interpreted as a Swift object name (ONLY IF OBJECT COMPILATION)\n"
-    "    -ks in Swift storage case, activate keystone authentication (ONLY IF OBJECT COMPILATION)\n"
     "    -d debug logger activation\n\n"
 
     "Example\n"
@@ -132,7 +131,6 @@ int main ( int argc, char **argv )
     bool debugLogger=false;
 
     char *pool = 0, *container = 0, *bucket = 0;
-    bool keystone = false;
 
     /* Initialisation des Loggers */
     Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
@@ -169,10 +167,6 @@ int main ( int argc, char **argv )
                 error("Error in -container option", -1);
             }
             container = argv[i];
-            continue;
-        }
-        if ( !strcmp ( argv[i],"-ks" ) ) {
-            keystone = true;
             continue;
         }
 #endif

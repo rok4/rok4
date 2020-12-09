@@ -79,11 +79,11 @@ SwiftContext::SwiftContext (std::string cont) : Context(),connected(false),ssl_n
     }
 
     if(getenv( ROK4_KEYSTONE_DOMAINID ) != NULL){
-      keystone_auth=true;
+        keystone_auth=true;
     }
 
     if(getenv( ROK4_SSL_NO_VERIFY ) != NULL){
-      ssl_no_verify=true;
+        ssl_no_verify=true;
     }
 
 }
@@ -177,7 +177,6 @@ bool SwiftContext::connection() {
             token = std::string(authHdr.token);
 
             curl_slist_free_all(list);
-            curl_easy_cleanup(curl);
 
         } else {
 
@@ -194,13 +193,11 @@ bool SwiftContext::connection() {
             CURLcode res;
             struct curl_slist *list = NULL;
 
-            CURL* curl = curl_easy_init();
-
-
+            CURL* curl = CurlPool::getCurlEnv();
 
             curl_easy_setopt(curl, CURLOPT_URL, auth_url.c_str());
             if(ssl_no_verify){
-              curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+                curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
             }
 
             // On constitue le header et le moyen de récupération des informations (avec les structures de LibcurlStruct)
@@ -261,7 +258,6 @@ bool SwiftContext::connection() {
             token = std::string(authHdr.token);
 
             curl_slist_free_all(list);
-            curl_easy_cleanup(curl);
         }
 
         connected = true;

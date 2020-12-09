@@ -193,7 +193,7 @@ PullSlab () {
     local input=$1
     local output=$2
 
-    cache2work -c zip -container ${PYR_CONTAINER} ${KEYSTONE_OPTION} $input ${TMP_DIR}/$output
+    cache2work -c zip -container ${PYR_CONTAINER} $input ${TMP_DIR}/$output
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 
@@ -202,7 +202,7 @@ PushSlab () {
     local output=$2
     local options=$3
         
-    work2cache ${TMP_DIR}/$input -container ${PYR_CONTAINER} ${KEYSTONE_OPTION} $output ${options}
+    work2cache ${TMP_DIR}/$input -container ${PYR_CONTAINER} $output ${options}
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi   
 }
 SLABFUNCTIONS
@@ -392,11 +392,6 @@ sub getScriptInitialization {
     }
     elsif ($pyramid->getStorageType() eq "SWIFT") {
         $string .= sprintf "PYR_CONTAINER=%s\n", $pyramid->getDataContainer();
-        if ($pyramid->keystoneConnection()) {
-            $string .= "KEYSTONE_OPTION=\"-ks\"\n";
-        } else {
-            $string .= "KEYSTONE_OPTION=\"\"\n";
-        }
         $string .= $SWIFT_SLABFUNCTIONS;
     }
 

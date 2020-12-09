@@ -157,11 +157,7 @@ public:
      * <TR><TD>auth_url</TD><TD>ROK4_SWIFT_AUTHURL</TD><TD>http://localhost:8080/auth/v1.0</TD>
      * <TR><TD>user_name</TD><TD>ROK4_SWIFT_USER</TD><TD>tester</TD>
      * <TR><TD>user_passwd</TD><TD>ROK4_SWIFT_PASSWD</TD><TD>password</TD>
-     * <TR><TD>keystone_auth</TD><TD>ROK4_KEYSTONE_AUTH</TD><TD>false</TD>
-     * <TR><TD>domain_id</TD><TD>ROK4_KEYSTONE_DOMAINID</TD><TD>false</TD>
-     * <TR><TD>project_id</TD><TD>ROK4_KEYSTONE_PROJECTID</TD><TD>false</TD>
-     * <TR><TD>user_account</TD><TD>ROK4_SWIFT_ACCOUNT</TD><TD>tester</TD>
-     * <TR><TD>public_url</TD><TD>ROK4_SWIFT_PUBLICURL</TD><TD>false</TD>
+     * <TR><TD>domain_id</TD><TD>ROK4_KEYSTONE_DOMAINID</TD><TD></TD>
      * <TR><TD>ssl_no_verify</TD><TD>ROK4_SSL_NO_VERIFY</TD><TD>false</TD>
      * </TABLE>
      * \~english
@@ -172,11 +168,7 @@ public:
      * <TR><TD>auth_url</TD><TD>ROK4_SWIFT_AUTHURL</TD><TD>http://localhost:8080/auth/v1.0</TD>
      * <TR><TD>user_name</TD><TD>ROK4_SWIFT_USER</TD><TD>tester</TD>
      * <TR><TD>user_passwd</TD><TD>ROK4_SWIFT_PASSWD</TD><TD>password</TD>
-     * <TR><TD>keystone_auth</TD><TD>ROK4_KEYSTONE_AUTH</TD><TD>false</TD>
-     * <TR><TD>domain_id</TD><TD>ROK4_KEYSTONE_DOMAINID</TD><TD>false</TD>
-     * <TR><TD>project_id</TD><TD>ROK4_KEYSTONE_PROJECTID</TD><TD>false</TD>
-     * <TR><TD>user_account</TD><TD>ROK4_SWIFT_ACCOUNT</TD><TD>tester</TD>
-     * <TR><TD>public_url</TD><TD>ROK4_SWIFT_PUBLICURL</TD><TD>false</TD>
+     * <TR><TD>domain_id</TD><TD>ROK4_KEYSTONE_DOMAINID</TD><TD></TD>
      * <TR><TD>ssl_no_verify</TD><TD>ROK4_SSL_NO_VERIFY</TD><TD>false</TD>
      * </TABLE>
      */
@@ -262,6 +254,7 @@ public:
      * <TABLE>
      * <TR><TH>Attribut</TH><TH>Variables d'environnement</TH>
      * <TR><TD>domain_id</TD><TD>ROK4_KEYSTONE_DOMAINID</TD>
+     * <TR><TD>project_id</TD><TD>ROK4_KEYSTONE_PROJECTID</TD><TD>false</TD>
      * <TR><TD>public_url</TD><TD>ROK4_SWIFT_PUBLICURL</TD>
      * </TABLE>
      * \li Pour une authentification Swift

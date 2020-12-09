@@ -91,9 +91,8 @@ S3Context::S3Context (std::string b) : Context(),connected(false),ssl_no_verify(
     }
 
     if(getenv( ROK4_SSL_NO_VERIFY ) != NULL){
-      ssl_no_verify=true;
+        ssl_no_verify=true;
     }
-
 }
 
 
