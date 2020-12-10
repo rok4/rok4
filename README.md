@@ -15,16 +15,14 @@ ROK4GENERATION est un ensemble de scripts de traitement permettant la préparati
 * http://www.ign.fr [@IGNFrance](https://twitter.com/IGNFrance)
 * http://www.geoportail.gouv.fr [@Geoportail](https://twitter.com/Geoportail)
 
-ROK4 Version : 3.8.1-DEVELOP
+ROK4 Version : 3.8.1-FEATURE-EV
 
-<!-- TOC depthFrom:1 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
-
-- [Fonctionnement général](#fonctionnement-gnral)
+- [Fonctionnement général](#fonctionnement-général)
+- [Variables d'environnement](#variables-denvironnement)
+	- [Pour le stockage](#pour-le-stockage)
+	- [Pour l'utilisation de CURL](#pour-lutilisation-de-curl)
 - [Compiler et installer le projet ROK4](#compiler-et-installer-le-projet-rok4)
 	- [L'environnement de compilation](#lenvironnement-de-compilation)
-	- [Les librairies](#les-librairies)
-		- [C++](#c)
-		- [Perl](#perl)
 	- [Les commandes externes](#les-commandes-externes)
 	- [La documentation](#la-documentation)
 	- [La compilation et l'installation](#la-compilation-et-linstallation)
@@ -32,13 +30,9 @@ ROK4 Version : 3.8.1-DEVELOP
 		- [Options de compilation](#options-de-compilation)
 			- [Gestion du stockage objet](#gestion-du-stockage-objet)
 			- [Utilisation de Kakadu](#utilisation-de-kakadu)
-			- [Expérimental](#exprimental)
+			- [Expérimental](#expérimental)
 		- [Exemple](#exemple)
 		- [Docker](#docker)
-
-<!-- /TOC -->
-
-
 
 # Fonctionnement général
 
@@ -55,6 +49,42 @@ Pour que cette pyramide soit diffusée par ROK4SERVER, on va créer un descripte
 * Pour avoir des précisions sur la partie [ROK4GENERATION](rok4generation/README.md)
 * Pour avoir des précisions sur la partie [ROK4SERVER](rok4server/README.md), son déploiement et son utilisation
 * Pour avoir les spécifications d'une [PYRAMIDE](docs/Specification_pyramide_ROK4.md)
+
+# Variables d'environnement
+
+Au fonctionnement du serveur et des outils de génération, plusieurs variables d'environnement sont exploitées.
+
+## Pour le stockage
+
+Afin d'utiliser des stockages objets (CEPH, S3 ou SWIFT), le serveur et les outils vont accéder aux différents clusters grâce aux informations stockées dans les variables d'environnement.
+
+* CEPH
+    - ROK4_CEPH_CONFFILE
+    - ROK4_CEPH_USERNAME
+    - ROK4_CEPH_CLUSTERNAME
+* S3
+    - ROK4_S3_URL
+    - ROK4_S3_KEY
+    - ROK4_S3_SECRETKEY
+* SWIFT
+    - ROK4_SWIFT_AUTHURL
+    - ROK4_SWIFT_USER
+    - ROK4_SWIFT_PASSWD
+    - ROK4_SWIFT_PUBLICURL
+    - Si authentification via Swift
+        - ROK4_SWIFT_ACCOUNT
+    - Si connection via keystone (présence de ROK4_KEYSTONE_DOMAINID)
+        - ROK4_KEYSTONE_DOMAINID
+        - ROK4_KEYSTONE_PROJECTID
+
+Dans le cas du stockage SWIFT ou S3, la variable ROK4_SSL_NO_VERIFY est testée, et la vérification des certificats est désactivée si elle est présente.
+
+
+## Pour l'utilisation de CURL
+
+CURL est utilisé à la fois via l'utilitaire en ligne de commande (dans les scripts Shell de génération) et via la librairie dans les parties en C++ (génération ou serveur). Vont être prise en compte les variables d'environnement HTTP_PROXY, HTTPS_PROXY et NO_PROXY
+
+
 
 # Compiler et installer le projet ROK4
 

@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2019-11-26 14:25+0100\n"
+"POT-Creation-Date: 2020-12-09 21:18+0100\n"
 "PO-Revision-Date: 2014-01-28 09:36+0100\n"
 "Last-Translator: \n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -124,68 +124,68 @@ msgstr "Style "
 msgid "non defini"
 msgstr "non défini"
 
-#: ConfLoader.cpp:672
+#: ConfLoader.cpp:658
 msgid "Construction de la liste des CRS equivalents depuis "
 msgstr "Construction de la liste des CRS équivalents depuis le fichier "
 
-#: ConfLoader.cpp:696 ConfLoader.cpp:763
+#: ConfLoader.cpp:682 ConfLoader.cpp:749
 msgid "The Equivalent CRS ["
 msgstr "Le CRS équivalent ["
 
-#: ConfLoader.cpp:696 ConfLoader.cpp:763
+#: ConfLoader.cpp:682 ConfLoader.cpp:749
 msgid "] is not present in Proj4"
 msgstr "] n'est pas présent dans Proj4"
 
-#: ConfLoader.cpp:718
+#: ConfLoader.cpp:704
 msgid "Ne peut pas charger le fichier "
 msgstr "                Ne peut pas charger le fichier "
 
-#: ConfLoader.cpp:718
+#: ConfLoader.cpp:704
 msgid " ou fichier vide"
 msgstr " ou fichier vide"
 
-#: ConfLoader.cpp:763
+#: ConfLoader.cpp:749
 msgid "] of ["
 msgstr "] de ["
 
-#: Level.cpp:284 Level.cpp:336
+#: Level.cpp:247 Level.cpp:299
 msgid "Image invalid !"
 msgstr "Image invalide !"
 
-#: Level.cpp:342
+#: Level.cpp:305
 msgid "Dimensions invalid !"
 msgstr "Dimensions invalides !"
 
-#: Level.cpp:367
+#: Level.cpp:330
 msgid "Too Much Tile on X axis"
 msgstr "Trop de tuile sur l'axe X"
 
-#: Level.cpp:381
+#: Level.cpp:344
 msgid "Too Much Tile on Y axis"
 msgstr "Trop de tuile sur l'axe Y"
 
-#: Level.cpp:427
+#: Level.cpp:385
 msgid "Indice de tuile negatif"
 msgstr "Indice de tuile négatif"
 
-#: Level.cpp:490
+#: Level.cpp:404
 msgid "getDirPath n'a pas de sens dans le cas d'un contexte non fichier"
 msgstr ""
 
-#: Level.cpp:561
+#: Level.cpp:474
 msgid "Type d'encodage inconnu : "
 msgstr "Type d'encodage inconnu : "
 
-#: Level.cpp:569 Level.cpp:572 Rok4Server.cpp:702 Rok4Server.cpp:710
+#: Level.cpp:482 Level.cpp:485 Rok4Server.cpp:702 Rok4Server.cpp:710
 #: Rok4Server.cpp:870
 msgid "No data found"
 msgstr "Aucune donnée"
 
-#: Level.cpp:579
+#: Level.cpp:492
 msgid "GetTile Tiff"
 msgstr "GetTile Tiff"
 
-#: Level.cpp:589
+#: Level.cpp:502
 msgid "GetTile Image"
 msgstr "GetTile Image"
 
@@ -529,16 +529,16 @@ msgstr "Écoute sur "
 msgid "Probleme dans les parametres de la requete getMap"
 msgstr "Problème dans les paramètres de la requête getMap"
 
-#: Rok4Server.cpp:324 Rok4Server.cpp:1312
+#: Rok4Server.cpp:324 Rok4Server.cpp:1315
 msgid "bbox invalide"
 msgstr "La BoundingBox demandée est invalide"
 
-#: Rok4Server.cpp:327 Rok4Server.cpp:1315
+#: Rok4Server.cpp:327 Rok4Server.cpp:1318
 msgid "bbox trop grande"
 msgstr "La BoundingBox demandée est trop grande"
 
 #: Rok4Server.cpp:330 Rok4Server.cpp:345 Rok4Server.cpp:819 Rok4Server.cpp:849
-#: Rok4Server.cpp:865 Rok4Server.cpp:881 Rok4Server.cpp:1318
+#: Rok4Server.cpp:865 Rok4Server.cpp:881 Rok4Server.cpp:1321
 msgid "Impossible de repondre a la requete"
 msgstr "Impossible de répondre a la requête"
 
@@ -562,53 +562,53 @@ msgstr "Le format ["
 msgid " ne peut etre traite"
 msgstr " ne peut être traité"
 
-#: Rok4Server.cpp:1260 Rok4Server.cpp:1282
+#: Rok4Server.cpp:1260 Rok4Server.cpp:1283
 #, fuzzy
 msgid "Probleme dans les parametres de la requete getFeatureInfo"
 msgstr "Problème dans les paramètres de la requête getMap"
 
-#: Rok4Server.cpp:1357
+#: Rok4Server.cpp:1360
 #, fuzzy
 msgid "Erreur interne."
 msgstr "Erreur inconnue"
 
-#: Rok4Server.cpp:1362
+#: Rok4Server.cpp:1365
 #, fuzzy
 msgid "Info_format non "
 msgstr "Format "
 
-#: Rok4Server.cpp:1362
+#: Rok4Server.cpp:1365
 #, fuzzy
 msgid " supporté par la couche "
 msgstr " n'est pas géré pour la couche "
 
-#: Rok4Server.cpp:1419
+#: Rok4Server.cpp:1422
 msgid "Internal server error"
 msgstr ""
 
-#: Rok4Server.cpp:1427
+#: Rok4Server.cpp:1430
 msgid "GFI depuis un SQL non géré."
 msgstr ""
 
-#: Rok4Server.cpp:1429
+#: Rok4Server.cpp:1432
 msgid "ERRORRRRRR !"
 msgstr ""
 
-#: Rok4Server.cpp:1442 Rok4Server.cpp:1446 Rok4Server.cpp:1477
-#: Rok4Server.cpp:1481
+#: Rok4Server.cpp:1445 Rok4Server.cpp:1449 Rok4Server.cpp:1480
+#: Rok4Server.cpp:1484
 msgid " n'est pas prise en charge par ce serveur."
 msgstr " n'est pas prise en charge par ce serveur."
 
-#: Rok4Server.cpp:1446
+#: Rok4Server.cpp:1449
 msgid "L'operation "
 msgstr "L'opération "
 
-#: Rok4Server.cpp:1497
+#: Rok4Server.cpp:1500
 #, fuzzy
 msgid "Le service est manquant"
 msgstr "Le service "
 
-#: Rok4Server.cpp:1500
+#: Rok4Server.cpp:1503
 #, fuzzy
 msgid "Le service est inconnu pour ce serveur."
 msgstr " est inconnu pour ce serveur."

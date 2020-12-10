@@ -105,9 +105,9 @@ my $ROK4_S3_ENDPOINT_HOST = undef;
 my $ROK4_SWIFT_AUTHURL = undef;
 my $ROK4_SWIFT_USER = undef;
 my $ROK4_SWIFT_PASSWD = undef;
+my $ROK4_SWIFT_PUBLICURL = undef;
 
 my $SWIFT_TOKEN = undef;
-my $ROK4_SWIFT_PUBLICURL = undef;
 
 # swift authentication
 my $ROK4_SWIFT_ACCOUNT = undef;
@@ -168,19 +168,18 @@ sub checkEnvironmentVariables {
             ERROR("Environment variable ROK4_SWIFT_PASSWD is not defined");
             return FALSE;
         }
+        if (! defined $ENV{ROK4_SWIFT_PUBLICURL}) {
+            ERROR("Environment variable ROK4_SWIFT_PUBLICURL is not defined");
+            return FALSE;
+        }
 
         $ROK4_SWIFT_PASSWD = $ENV{ROK4_SWIFT_PASSWD};
         $ROK4_SWIFT_USER = $ENV{ROK4_SWIFT_USER};
         $ROK4_SWIFT_AUTHURL = $ENV{ROK4_SWIFT_AUTHURL};
+        $ROK4_SWIFT_PUBLICURL = $ENV{ROK4_SWIFT_PUBLICURL};
 
         if (defined $ENV{ROK4_KEYSTONE_DOMAINID}) {
             ERROR("Environment variable ROK4_KEYSTONE_DOMAINID is defined : keystone authentication");
-
-            if (! defined $ENV{ROK4_SWIFT_PUBLICURL}) {
-                ERROR("Environment variable ROK4_SWIFT_PUBLICURL is not defined");
-                ERROR("We need it for a keystone authentication (swift)");
-                return FALSE;
-            }
 
             if (! defined $ENV{ROK4_KEYSTONE_PROJECTID}) {
                 ERROR("Environment variable ROK4_KEYSTONE_PROJECTID is not defined");
@@ -190,7 +189,6 @@ sub checkEnvironmentVariables {
 
             $ROK4_KEYSTONE_DOMAINID = $ENV{ROK4_KEYSTONE_DOMAINID};
             $ROK4_KEYSTONE_PROJECTID = $ENV{ROK4_KEYSTONE_PROJECTID};
-            $ROK4_SWIFT_PUBLICURL = $ENV{ROK4_SWIFT_PUBLICURL};
         } else {
             
             if (! defined $ENV{ROK4_SWIFT_ACCOUNT}) {
@@ -206,6 +204,15 @@ sub checkEnvironmentVariables {
 
         if (defined $ENV{ROK4_SSL_NO_VERIFY}) {
             $UA->ssl_opts(verify_hostname => 0);
+        }
+        if (defined $ENV{HTTP_PROXY}) {
+            $UA->proxy('http', $ENV{HTTP_PROXY});
+        }
+        if (defined $ENV{HTTPS_PROXY}) {
+            $UA->proxy('https', $ENV{HTTPS_PROXY});
+        }
+        if (defined $ENV{NO_PROXY}) {
+            $UA->no_proxy(split(/,/, $ENV{NO_PROXY}));
         }
 
     } elsif ($type eq "S3") {
@@ -234,6 +241,15 @@ sub checkEnvironmentVariables {
         $UA = LWP::UserAgent->new();
         if (defined $ENV{ROK4_SSL_NO_VERIFY}) {
             $UA->ssl_opts(verify_hostname => 0);
+        }
+        if (defined $ENV{HTTP_PROXY}) {
+            $UA->proxy('http', $ENV{HTTP_PROXY});
+        }
+        if (defined $ENV{HTTPS_PROXY}) {
+            $UA->proxy('https', $ENV{HTTPS_PROXY});
+        }
+        if (defined $ENV{NO_PROXY}) {
+            $UA->no_proxy(split(/,/, $ENV{NO_PROXY}));
         }
     }
 
@@ -297,15 +313,9 @@ sub getSwiftToken {
         }
 
         $SWIFT_TOKEN = $response->header("X-Auth-Token");
-        $ROK4_SWIFT_PUBLICURL = $response->header("X-Storage-Url");
         
         if (! defined $SWIFT_TOKEN) {
             ERROR("No token in the swift authentication response");
-            ERROR(Dumper($response));
-            return FALSE;
-        }
-        if (! defined $ROK4_SWIFT_PUBLICURL) {
-            ERROR("No public URL in the swift authentication response");
             ERROR(Dumper($response));
             return FALSE;
         }

@@ -753,7 +753,7 @@ sub decimateNtiff {
             $this->addBgMask();
         }
         
-        this->cache2work();
+        $this->cache2work();
     }
     
     if ($BE4::Shell::USEMASK) {

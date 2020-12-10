@@ -337,24 +337,10 @@ ServerXML::~ServerXML(){
     for ( itLay=layersList.begin(); itLay!=layersList.end(); itLay++ )
         delete itLay->second;
 
-#if BUILD_OBJECT
-
-    // if (cephBook != NULL) {
-    //     delete cephBook;
-    // }
-    // if (s3Book != NULL) {
-    //     delete s3Book;
-    // }
-    // if (swiftBook != NULL) {
-    //     delete swiftBook;
-    // }
-
     if (objectBook != NULL) {
         delete objectBook;
     }
 
-
-#endif
 }
 
 /******************* GETTERS / SETTERS *****************/

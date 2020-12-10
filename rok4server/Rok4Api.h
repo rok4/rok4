@@ -66,11 +66,6 @@ typedef void Rok4Server;
     void rok4ReloadLogger ();
     void rok4KillLogger ();
 
-#if BUILD_OBJECT
-    int rok4ConnectObjectContext(Rok4Server* server);
-    void rok4DisconnectObjectContext(Rok4Server* server);
-#endif
-
 #ifdef __cplusplus
 }
 #endif

@@ -120,9 +120,7 @@ private:
     
     /**
      * \~french \brief URL de communication avec Swift
-     * \details
-     * \li Authentification keystone : récupéré via la variable d'environnement ROK4_SWIFT_PUBLICURL
-     * \li Authentification Swift : récupéré dans le header de la réponse à la requête de connexion
+     * \details Récupéré via la variable d'environnement ROK4_SWIFT_PUBLICURL
      * \~english \brief Communication URL with Swift
      */
     std::string public_url;
@@ -157,7 +155,8 @@ public:
      * <TR><TD>auth_url</TD><TD>ROK4_SWIFT_AUTHURL</TD><TD>http://localhost:8080/auth/v1.0</TD>
      * <TR><TD>user_name</TD><TD>ROK4_SWIFT_USER</TD><TD>tester</TD>
      * <TR><TD>user_passwd</TD><TD>ROK4_SWIFT_PASSWD</TD><TD>password</TD>
-     * <TR><TD>domain_id</TD><TD>ROK4_KEYSTONE_DOMAINID</TD><TD></TD>
+     * <TR><TD>public_url</TD><TD>ROK4_SWIFT_PUBLICURL</TD><TD>http://localhost:8080/api/v1</TD>
+     * <TR><TD>domain_id</TD><TD>ROK4_KEYSTONE_DOMAINID</TD><TD>Active l'authentification Keystone si présent</TD>
      * <TR><TD>ssl_no_verify</TD><TD>ROK4_SSL_NO_VERIFY</TD><TD>false</TD>
      * </TABLE>
      * \~english
@@ -168,7 +167,8 @@ public:
      * <TR><TD>auth_url</TD><TD>ROK4_SWIFT_AUTHURL</TD><TD>http://localhost:8080/auth/v1.0</TD>
      * <TR><TD>user_name</TD><TD>ROK4_SWIFT_USER</TD><TD>tester</TD>
      * <TR><TD>user_passwd</TD><TD>ROK4_SWIFT_PASSWD</TD><TD>password</TD>
-     * <TR><TD>domain_id</TD><TD>ROK4_KEYSTONE_DOMAINID</TD><TD></TD>
+     * <TR><TD>public_url</TD><TD>ROK4_SWIFT_PUBLICURL</TD><TD>http://localhost:8080/api/v1</TD>
+     * <TR><TD>domain_id</TD><TD>ROK4_KEYSTONE_DOMAINID</TD><TD>Keystone authentication if present</TD>
      * <TR><TD>ssl_no_verify</TD><TD>ROK4_SSL_NO_VERIFY</TD><TD>false</TD>
      * </TABLE>
      */
@@ -255,7 +255,6 @@ public:
      * <TR><TH>Attribut</TH><TH>Variables d'environnement</TH>
      * <TR><TD>domain_id</TD><TD>ROK4_KEYSTONE_DOMAINID</TD>
      * <TR><TD>project_id</TD><TD>ROK4_KEYSTONE_PROJECTID</TD><TD>false</TD>
-     * <TR><TD>public_url</TD><TD>ROK4_SWIFT_PUBLICURL</TD>
      * </TABLE>
      * \li Pour une authentification Swift
      * <TABLE>

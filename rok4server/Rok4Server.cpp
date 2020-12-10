@@ -93,6 +93,8 @@
 #include "AspectImage.h"
 #include "Aspect.h"
 #include "ConvertedChannelsImage.h"
+#include <thread>         // std::this_thread::sleep_for
+#include <chrono>         // std::chrono::second
 
 void hangleSIGALARM(int id) {
     if(id==SIGALRM) {
@@ -177,31 +179,6 @@ void* Rok4Server::thread_loop ( void* arg ) {
     return 0;
 }
 
-
-#if BUILD_OBJECT
-void* Rok4Server::thread_reconnection_loop ( void* arg ) {
-    Rok4Server* server = ( Rok4Server* ) ( arg );
-
-    while ( server->isRunning() ) {
-
-        sleep(server->getServerConf()->getReconnectionFrequency() * 60);
-
-        if (server->getObjectBook()) {
-            LOGGER_INFO("Reconnexion des contextes Swift");
-            if (! server->getObjectBook()->reconnectAllContext()) {
-                LOGGER_FATAL ( "Impossible de reconnecter un contexte swift (recuperer un nouveau token)" );
-            }
-        } else {
-            LOGGER_INFO("Pas d'annuaire Objet");
-        }
-    }
-
-    LOGGER_DEBUG ( _ ( "Extinction du thread de reconnection des contextes" ) );
-    Logger::stopLogger();
-    return 0;
-}
-#endif
-
 Rok4Server::Rok4Server (  ServerXML* serverXML, ServicesXML* servicesXML) {
     
 
@@ -262,9 +239,6 @@ void Rok4Server::run(sig_atomic_t signal_pending) {
     for ( int i = 0; i < threads.size(); i++ ) {
         pthread_create ( & ( threads[i] ), NULL, Rok4Server::thread_loop, ( void* ) this );
     }
-#if BUILD_OBJECT
-    pthread_create ( & reco_thread, NULL, Rok4Server::thread_reconnection_loop, ( void* ) this );
-#endif
     
     if (signal_pending != 0 ) {
         raise( signal_pending );
@@ -272,10 +246,6 @@ void Rok4Server::run(sig_atomic_t signal_pending) {
     
     for ( int i = 0; i < threads.size(); i++ )
         pthread_join ( threads[i], NULL );
-
-#if BUILD_OBJECT
-    pthread_join ( reco_thread, NULL );
-#endif
 }
 
 void Rok4Server::terminate() {
@@ -285,9 +255,6 @@ void Rok4Server::terminate() {
     for ( int i = 0; i < threads.size(); i++ ) {
         pthread_kill ( threads[i], SIGQUIT );
     }
-#if BUILD_OBJECT
-    pthread_kill ( reco_thread, SIGQUIT );
-#endif
 
     CurlPool::cleanCurlPool();
 }

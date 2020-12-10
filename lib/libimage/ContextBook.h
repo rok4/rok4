@@ -145,31 +145,6 @@ public:
 
     /**
      * \~french
-     * \brief Connecte l'ensemble des contextes de l'annuaire
-     * \~english
-     * \brief Connect all contexts
-     */
-    bool connectAllContext();
-
-    /**
-     * \~french
-     * \brief Reconnecte l'ensemble des contextes de l'annuaire
-     * \~english
-     * \brief Reconnect all contexts
-     */
-    bool reconnectAllContext();
-
-    /**
-     * \~french
-     * \brief Deconnecte l'ensemble des contextes de l'annuaire
-     * \~english
-     * \brief Disconnect all contexts
-     */
-    void disconnectAllContext();
-
-
-    /**
-     * \~french
      * \brief Destructeur
      * \~english
      * \brief Destructor

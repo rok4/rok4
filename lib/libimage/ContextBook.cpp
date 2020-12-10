@@ -68,35 +68,34 @@ Context * ContextBook::addContext(eContextType type,std::string tray)
         //
         //on créé le context selon le type de stockage
         switch(type){
-          case SWIFTCONTEXT:
-            ctx = new SwiftContext(tray);
-            break;
-          case CEPHCONTEXT:
-            ctx = new CephPoolContext(tray);
-            break;
-          case S3CONTEXT:
-            ctx = new S3Context(tray);
-            break;
-          case FILECONTEXT:
-            ctx = new FileContext(tray);
-            break;
-          default:
-            //ERREUR
-            LOGGER_ERROR("Ce type de contexte n'est pas géré.");
-            return NULL;
+            case SWIFTCONTEXT:
+                ctx = new SwiftContext(tray);
+                break;
+            case CEPHCONTEXT:
+                ctx = new CephPoolContext(tray);
+                break;
+            case S3CONTEXT:
+                ctx = new S3Context(tray);
+                break;
+            case FILECONTEXT:
+                ctx = new FileContext(tray);
+                break;
+            default:
+                //ERREUR
+                LOGGER_ERROR("Ce type de contexte n'est pas géré.");
+                return NULL;
         }
 
         // on connecte pour vérifier que ce contexte est valide
         if (!(ctx->connection())) {
-          LOGGER_ERROR("Impossible de connecter au contexte");
-          delete ctx;
-          return NULL;
+            LOGGER_ERROR("Impossible de connecter au contexte");
+            delete ctx;
+            return NULL;
         }
 
 
         //LOGGER_DEBUG("On insère ce contexte " << ctx->toString() );
         book.insert(make_pair(key,ctx));
-
 
         return ctx;
     }
@@ -125,49 +124,7 @@ ContextBook::~ContextBook()
     }
 }
 
-
 int ContextBook::size(){
   return book.size();
-}
-
-
-bool ContextBook::connectAllContext()
-{
-    std::map<std::pair<eContextType,std::string>,Context*>::iterator it;
-
-    LOGGER_DEBUG("Connexion à tous les contextes connectables");
-
-    for (it=book.begin(); it!=book.end(); ++it) {
-
-      //Context* context= it->second;
-      if (!(it->second->connection())) {
-          LOGGER_ERROR("Impossible de connecter un contexte");
-      }
-    }
-    return true;
-}
-
-bool ContextBook::reconnectAllContext()
-{
-    std::map<std::pair<eContextType,std::string>,Context*>::iterator it;
-    for (it=book.begin(); it!=book.end(); ++it) {
-        //on se limite aux contextes SWIFT
-        // ? pas sur que ça soit une bonne idée de traiter ça ici...
-        if(it->first.first == SWIFTCONTEXT){
-          it->second->closeConnection();
-          if (!(it->second->connection())) {
-              LOGGER_ERROR("Impossible de reconnecter un contexte");
-          }
-        }
-    }
-    return true;
-}
-
-void ContextBook::disconnectAllContext()
-{
-    std::map<std::pair<eContextType,std::string>,Context*>::iterator it;
-    for (it=book.begin(); it!=book.end(); ++it) {
-        it->second->closeConnection();
-    }
 }
 
