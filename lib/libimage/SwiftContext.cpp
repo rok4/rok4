@@ -55,7 +55,7 @@
 #include <time.h>
 
 
-SwiftContext::SwiftContext (std::string cont) : Context(),container_name(cont){
+SwiftContext::SwiftContext (std::string cont) : Context(),connected(false),ssl_no_verify(false),container_name(cont){
 
     char* auth = getenv (ROK4_SWIFT_AUTHURL);
     if (auth == NULL) {

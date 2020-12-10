@@ -55,7 +55,7 @@
 #include <time.h>
 #include "CurlPool.h"
 
-S3Context::S3Context (std::string b) : Context(), bucket_name(b) {
+S3Context::S3Context (std::string b) : Context(),connected(false),ssl_no_verify(false), bucket_name(b) {
 
     char* u = getenv (ROK4_S3_URL);
     if (u == NULL) {
