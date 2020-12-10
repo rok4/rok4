@@ -55,7 +55,7 @@
 #include <time.h>
 
 
-SwiftContext::SwiftContext (std::string cont) : Context(),connected(false),ssl_no_verify(false),container_name(cont){
+SwiftContext::SwiftContext (std::string cont) : Context(), ssl_no_verify(false), keystone_auth(false), container_name(cont){
 
     char* auth = getenv (ROK4_SWIFT_AUTHURL);
     if (auth == NULL) {
@@ -122,11 +122,10 @@ bool SwiftContext::connection() {
             struct curl_slist *list = NULL;
             CURL* curl = CurlPool::getCurlEnv();
 
-
             curl_easy_setopt(curl, CURLOPT_URL, auth_url.c_str());
 
             if(ssl_no_verify){
-              curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+                curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
             }
 
             // On constitue le header
@@ -295,14 +294,14 @@ int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
     curl_easy_setopt(curl, CURLOPT_URL, fullUrl.c_str());
     if(ssl_no_verify){
-      curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
     }
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, data_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &chunk);
 
-    LOGGER_INFO("SWIFT READ START (" << size << ") " << pthread_self());
+    LOGGER_DEBUG("SWIFT READ START (" << size << ") " << pthread_self());
     res = curl_easy_perform(curl);
-    LOGGER_INFO("SWIFT READ END (" << size << ") " << pthread_self());
+    LOGGER_DEBUG("SWIFT READ END (" << size << ") " << pthread_self());
     
     curl_slist_free_all(list);
 

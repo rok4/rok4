@@ -77,42 +77,45 @@ CephPoolContext::CephPoolContext (std::string pool) : Context(), pool_name(pool)
 
 bool CephPoolContext::connection() {
 
-    uint64_t flags;
-    int ret = 0;
+    if (! connected) {
+        uint64_t flags;
+        int ret = 0;
 
-    ret = rados_create2(&cluster, cluster_name.c_str(), user_name.c_str(), flags);
-    if (ret < 0) {
-        LOGGER_ERROR("Couldn't initialize the cluster handle! error " << ret);
-        return false;
+        ret = rados_create2(&cluster, cluster_name.c_str(), user_name.c_str(), flags);
+        if (ret < 0) {
+            LOGGER_ERROR("Couldn't initialize the cluster handle! error " << ret);
+            return false;
+        }
+
+        ret = rados_conf_read_file(cluster, conf_file.c_str());
+        if (ret < 0) {
+            LOGGER_ERROR( "Couldn't read the Ceph configuration file! error " << ret );
+            LOGGER_ERROR (strerror(-ret));
+            LOGGER_ERROR( "Configuration file : " << conf_file );
+            return false;
+        }
+
+        // On met les timeout à 10 minutes
+        rados_conf_set(cluster, "client_mount_timeout", "60");
+        rados_conf_set(cluster, "rados_mon_op_timeout", "60");
+        rados_conf_set(cluster, "rados_osd_op_timeout", "60");
+
+        ret = rados_connect(cluster);
+        if (ret < 0) {
+            LOGGER_ERROR( "Couldn't connect to cluster! error " << ret );
+            return false;
+        }
+
+        ret = rados_ioctx_create(cluster, pool_name.c_str(), &io_ctx);
+        if (ret < 0) {
+            LOGGER_ERROR( "Couldn't set up ioctx! error " << ret );
+            LOGGER_ERROR( "Pool : " << pool_name );
+            rados_shutdown(cluster);
+            return false;
+        }
+
+        connected = true;
     }
-
-    ret = rados_conf_read_file(cluster, conf_file.c_str());
-    if (ret < 0) {
-        LOGGER_ERROR( "Couldn't read the Ceph configuration file! error " << ret );
-        LOGGER_ERROR (strerror(-ret));
-        LOGGER_ERROR( "Configuration file : " << conf_file );
-        return false;
-    }
-
-    // On met les timeout à 10 minutes
-    rados_conf_set(cluster, "client_mount_timeout", "60");
-    rados_conf_set(cluster, "rados_mon_op_timeout", "60");
-    rados_conf_set(cluster, "rados_osd_op_timeout", "60");
-
-    ret = rados_connect(cluster);
-    if (ret < 0) {
-        LOGGER_ERROR( "Couldn't connect to cluster! error " << ret );
-        return false;
-    }
-
-    ret = rados_ioctx_create(cluster, pool_name.c_str(), &io_ctx);
-    if (ret < 0) {
-        LOGGER_ERROR( "Couldn't set up ioctx! error " << ret );
-        LOGGER_ERROR( "Pool : " << pool_name );
-        return false;
-    }
-
-    connected = true;
 
     return true;
 }

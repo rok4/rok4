@@ -55,7 +55,7 @@
 #include <time.h>
 #include "CurlPool.h"
 
-S3Context::S3Context (std::string b) : Context(),connected(false),ssl_no_verify(false), bucket_name(b) {
+S3Context::S3Context (std::string b) : Context(), ssl_no_verify(false), bucket_name(b) {
 
     char* u = getenv (ROK4_S3_URL);
     if (u == NULL) {
@@ -223,9 +223,9 @@ int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &chunk);
 
 
-    LOGGER_INFO("S3 READ START (" << size << ") " << pthread_self());
+    LOGGER_DEBUG("S3 READ START (" << size << ") " << pthread_self());
     res = curl_easy_perform(curl);
-    LOGGER_INFO("S3 READ END (" << size << ") " << pthread_self());
+    LOGGER_DEBUG("S3 READ END (" << size << ") " << pthread_self());
     
     curl_slist_free_all(list);
 
