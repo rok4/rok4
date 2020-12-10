@@ -506,7 +506,7 @@ sub copy {
 
             my $resource = "/$bucketName/$objectName";
             my $contentType="application/octet-stream";
-            my $dateValue=`TZ=GMT date -R`;
+            my $dateValue=qx(TZ=GMT date -R);
             chomp($dateValue);
             my $stringToSign="PUT\n\n$contentType\n$dateValue\n$resource";
 
