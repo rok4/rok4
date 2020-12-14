@@ -939,10 +939,10 @@ sub isPresent {
         }
 
         my $resource = "/$bucketName/$objectName";
-        my $contentType="application/octet-stream";
-        my $dateValue=`TZ=GMT date -R`;
+        my $contentType = "application/octet-stream";
+        my $dateValue = qx(TZ=GMT date -R);
         chomp($dateValue);
-        my $stringToSign="HEAD\n\n$contentType\n$dateValue\n$resource";
+        my $stringToSign = "HEAD\n\n$contentType\n$dateValue\n$resource";
 
         my $signature = Digest::SHA::hmac_sha1_base64($stringToSign, _getConfigurationElement('ROK4_S3_SECRETKEY'));
         while (length($signature) % 4) {

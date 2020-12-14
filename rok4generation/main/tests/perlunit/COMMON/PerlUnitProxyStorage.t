@@ -54,20 +54,9 @@ use constant LOG_METHODS => { # Méthodes à surcharger pour les bouchons sur le
     FATAL => sub { return; },
     ALWAYS => sub { return; }
 };
-
-# Méthodes à surcharger pour les bouchons sur les appels à Log::Log4perl
 my @LOG_METHODS_NAME = ('TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL', 'ALWAYS');
 
 # Import du bundle de test Test2::Suite
-# my @test2_imports = (
-#     "subtest",
-#     "done_testing",
-#     "ok",
-#     "is",
-#     "isnt",
-#     "like",
-#     "mock"
-# );
 use Test2::V0;
 use COMMON::ProxyStorage;
 
@@ -98,8 +87,8 @@ subtest test_checkEnvironmentVariables => sub {
         is( $method_return, TRUE, "checkEnvironmentVariables('FILE') returns TRUE" );
 
         # Test calls to logger and module configuration setters : must have none
-        my @logging_subs_called = keys( %{$main_mock->sub_tracking()} );
-        is( scalar(@logging_subs_called), 0, "No call to logger." );
+        my @main_subs_called = keys( %{$main_mock->sub_tracking()} );
+        is( scalar(@main_subs_called), 0, "No call to logger." );
 
         # Reset environment
         $main_mock = undef;
@@ -116,10 +105,9 @@ subtest test_checkEnvironmentVariables => sub {
             'ROK4_CEPH_CLUSTERNAME' => 'ceph'
         );
         override_env(\%temp_env);
-        my $override_log_subs = LOG_METHODS;
         my $main_mock = mock 'COMMON::ProxyStorage' => (
             track => TRUE,
-            override => $override_log_subs
+            override => LOG_METHODS
         );
         $main_mock->override('_setConfigurationElement' => sub {});
 
@@ -133,9 +121,9 @@ subtest test_checkEnvironmentVariables => sub {
         is(%module_scope_vars, %temp_env, "Module scope variables affectation OK.");
 
         # Test calls (namespace = $main)
-        my @logging_subs_called = keys( %{$main_mock->sub_tracking()} );
-        my $logger_subs = join('|', keys(%{$override_log_subs}));
-        is( scalar(grep(/^($logger_subs)$/, @logging_subs_called)), 0, "No call to logger." );
+        my @main_subs_called = keys( %{$main_mock->sub_tracking()} );
+        my $logger_subs = join('|', @LOG_METHODS_NAME);
+        is( scalar(grep(/^($logger_subs)$/, @main_subs_called)), 0, "No call to logger." );
         is( scalar(@{$main_mock->sub_tracking()->{_setConfigurationElement}}), 3, "Calls to setter." );
 
         # Reset environment
@@ -155,7 +143,6 @@ subtest test_checkEnvironmentVariables => sub {
             'ROK4_S3_SECRETKEY' => 'e0b2d012c4aeae33cbf753f3'
         );
         override_env(\%temp_env);
-        my $override_log_subs = LOG_METHODS;
         my $main_mock = mock 'COMMON::ProxyStorage' => (
             track => TRUE,
             override => LOG_METHODS
@@ -195,9 +182,9 @@ subtest test_checkEnvironmentVariables => sub {
         is(%module_scope_vars, %expected_vars, "Module scope variables (except UA) affectation OK.");
 
         # Test calls (namespace = $main)
-        my @logging_subs_called = keys( %{$main_mock->sub_tracking()} );
-        my $logger_subs = join('|', keys(%{$override_log_subs}));
-        is( scalar(grep(/^($logger_subs)$/, @logging_subs_called)), 0, "No call to logger." );
+        my @main_subs_called = keys( %{$main_mock->sub_tracking()} );
+        my $logger_subs = join('|', @LOG_METHODS_NAME);
+        is( scalar(grep(/^($logger_subs)$/, @main_subs_called)), 0, "No call to logger." );
         is( scalar(@{$main_mock->sub_tracking()->{_setConfigurationElement}}), 5, "Calls to setter." );
 
         # Test calls (namespace = LWP::UserAgent)
@@ -235,7 +222,6 @@ subtest test_checkEnvironmentVariables => sub {
                 'ROK4_KEYSTONE_PROJECTID' => 'kzty3tg85bypmtek1dgv2d61'
             );
             override_env(\%temp_env);
-            my $override_log_subs = LOG_METHODS;
             my $main_mock = mock 'COMMON::ProxyStorage' => (
                 track => TRUE,
                 override => LOG_METHODS
@@ -271,9 +257,9 @@ subtest test_checkEnvironmentVariables => sub {
             is(%module_scope_vars, %expected_vars, "Module scope variables (except UA) affectation OK.");
 
             # Test calls (namespace = $main)
-            my @logging_subs_called = keys( %{$main_mock->sub_tracking()} );
-            my $logger_subs = join('|', keys(%{$override_log_subs}));
-            is( scalar(grep(/^($logger_subs)$/, @logging_subs_called)), 0, "No call to logger." );
+            my @main_subs_called = keys( %{$main_mock->sub_tracking()} );
+            my $logger_subs = join('|', @LOG_METHODS_NAME);
+            is( scalar(grep(/^($logger_subs)$/, @main_subs_called)), 0, "No call to logger." );
             is( scalar(@{$main_mock->sub_tracking()->{_setConfigurationElement}}), 8, "Calls to setter." );
 
             # Test calls to user agent
@@ -306,7 +292,6 @@ subtest test_checkEnvironmentVariables => sub {
                 'ROK4_SWIFT_ACCOUNT' => 'swift_account_name'
             );
             override_env(\%temp_env);
-            my $override_log_subs = LOG_METHODS;
             my $main_mock = mock 'COMMON::ProxyStorage' => (
                 track => TRUE,
                 override => LOG_METHODS
@@ -342,9 +327,9 @@ subtest test_checkEnvironmentVariables => sub {
             is(%module_scope_vars, %expected_vars, "Module scope variables (except UA) affectation OK.");
 
             # Test calls (namespace = $main)
-            my @logging_subs_called = keys( %{$main_mock->sub_tracking()} );
-            my $logger_subs = join('|', keys(%{$override_log_subs}));
-            is( scalar(grep(/^($logger_subs)$/, @logging_subs_called)), 0, "No call to logger." );
+            my @main_subs_called = keys( %{$main_mock->sub_tracking()} );
+            my $logger_subs = join('|', @LOG_METHODS_NAME);
+            is( scalar(grep(/^($logger_subs)$/, @main_subs_called)), 0, "No call to logger." );
             is( scalar(@{$main_mock->sub_tracking()->{_setConfigurationElement}}), 6, "Calls to setter." );
 
             # Test calls to user agent
@@ -389,7 +374,6 @@ subtest test_getSwiftToken => sub {
             'UA' => undef,            
             'X-Subject-Token' => 'f0GZyNcnf7_9SDJ31iShwUGzYlLAAlvLN7BQuWHK40YPpqjJ7O7f106ycPnCHYdRxtqQdU8GltNaoxlLk_3PZp4Wv-1r_CurUenWOLsEI-H6NeV65H6oZfPp4VhssTDzEjuk1PfWsVkwSSXBHt69pmPx9UwfMYz0eP7yIagNEz1VIl_uggBb2_PvprJTstQpS'
         );
-        my $override_log_subs = LOG_METHODS;
 
         ## Mocks
         my %mocks_hash = ();
@@ -397,7 +381,7 @@ subtest test_getSwiftToken => sub {
         ### Namespace : $main
         $mocks_hash{'$main'} = mock 'COMMON::ProxyStorage' => (
             track => TRUE,
-            override => $override_log_subs
+            override => LOG_METHODS
         );
         $mocks_hash{'$main'}->override('_setConfigurationElement' => sub {
             my $key = shift;
@@ -496,9 +480,9 @@ subtest test_getSwiftToken => sub {
         is( JSON::from_json($mocks_hash{'LWP::UserAgent'}->sub_tracking()->{request}[0]{args}[1]{'Content'}, {utf8 => 1}), $expected_body_obj, "Request body OK." );
 
         # Test calls (namespace = $main)
-        my @logging_subs_called = keys( %{$mocks_hash{'$main'}->sub_tracking()} );
-        my $logger_subs = join('|', keys(%{$override_log_subs}));
-        is( scalar(grep(/^($logger_subs)$/, @logging_subs_called)), 0, "No call to logger." );
+        my @main_subs_called = keys( %{$mocks_hash{'$main'}->sub_tracking()} );
+        my $logger_subs = join('|', @LOG_METHODS_NAME);
+        is( scalar(grep(/^($logger_subs)$/, @main_subs_called)), 0, "No call to logger." );
         is( scalar(@{$mocks_hash{'$main'}->sub_tracking()->{_setConfigurationElement}}), 1, "Calls to setter." );
         is( $mocks_hash{'$main'}->sub_tracking()->{_setConfigurationElement}[0]{args}, ['SWIFT_TOKEN', $mocked_module_values{'X-Subject-Token'}], "Swift token set as expected." );
 
@@ -525,7 +509,6 @@ subtest test_getSwiftToken => sub {
             'X-Auth-Token' => 'f0GZyNcnf7_9SDJ31iShwUGzYlLAAlvLN7BQuWHK40YPpqjJ7O7f106ycPnCHYdRxtqQdU8GltNaoxlLk_3PZp4Wv-1r_CurUenWOLsEI-H6NeV65H6oZfPp4VhssTDzEjuk1PfWsVkwSSXBHt69pmPx9UwfMYz0eP7yIagNEz1VIl_uggBb2_PvprJTstQpS',
             'X-Storage-Url' => 'https://cluster.swift.com:8081'
         );
-        my $override_log_subs = LOG_METHODS;
 
         ## Mocks
         my %mocks_hash = ();
@@ -533,7 +516,7 @@ subtest test_getSwiftToken => sub {
         ### Namespace : $main
         $mocks_hash{'$main'} = mock 'COMMON::ProxyStorage' => (
             track => TRUE,
-            override => $override_log_subs
+            override => LOG_METHODS
         );
         $mocks_hash{'$main'}->override('_setConfigurationElement' => sub {
             my $key = shift;
@@ -617,9 +600,9 @@ subtest test_getSwiftToken => sub {
         ok( !exists($mocks_hash{'LWP::UserAgent'}->sub_tracking()->{request}[0]{args}[1]{'Content'}), "No request body." );
 
         # Test calls (namespace = $main)
-        my @logging_subs_called = keys( %{$mocks_hash{'$main'}->sub_tracking()} );
-        my $logger_subs = join('|', keys(%{$override_log_subs}));
-        is( scalar(grep(/^($logger_subs)$/, @logging_subs_called)), 0, "No call to logger." );
+        my @main_subs_called = keys( %{$mocks_hash{'$main'}->sub_tracking()} );
+        my $logger_subs = join('|', @LOG_METHODS_NAME);
+        is( scalar(grep(/^($logger_subs)$/, @main_subs_called)), 0, "No call to logger." );
         is( scalar(@{$mocks_hash{'$main'}->sub_tracking()->{_setConfigurationElement}}), 2, "Calls to setter." );
         is( $mocks_hash{'$main'}->sub_tracking()->{_setConfigurationElement}[0]{args}, ['SWIFT_TOKEN', $mocked_module_values{'X-Auth-Token'}], "Swift token set as expected." );
         is( $mocks_hash{'$main'}->sub_tracking()->{_setConfigurationElement}[1]{args}, ['ROK4_SWIFT_PUBLICURL', $mocked_module_values{'X-Storage-Url'}], "Swift public URL set as expected." );
@@ -653,12 +636,11 @@ subtest test_sendSwiftRequest => sub {
 
         ## Mocks
         my %mocks_hash = ();
-        my $override_log_subs = LOG_METHODS;
 
         ### Namespace : $main
         $mocks_hash{'$main'} = mock 'COMMON::ProxyStorage' => (
             track => TRUE,
-            override => $override_log_subs
+            override => LOG_METHODS
         );
         $mocks_hash{'$main'}->override('_getConfigurationElement' => sub {
             my $key = shift;
@@ -724,9 +706,9 @@ subtest test_sendSwiftRequest => sub {
         is( $mocks_hash{'LWP::UserAgent'}->sub_tracking()->{request}[0]{args}[1]->{headers}, {'X-Auth-Token' => $mocked_module_values{'SWIFT_TOKEN'}}, "Request auth token OK." );
 
         # Test calls (namespace = $main)
-        my @logging_subs_called = keys( %{$mocks_hash{'$main'}->sub_tracking()} );
-        my $logger_subs = join('|', keys(%{$override_log_subs}));
-        is( scalar(grep(/^($logger_subs)$/, @logging_subs_called)), 0, "No call to logger." );
+        my @main_subs_called = keys( %{$mocks_hash{'$main'}->sub_tracking()} );
+        my $logger_subs = join('|', @LOG_METHODS_NAME);
+        is( scalar(grep(/^($logger_subs)$/, @main_subs_called)), 0, "No call to logger." );
 
 
         # Reset environment
@@ -751,10 +733,9 @@ subtest test_returnSwiftToken => sub {
 
         ## Mocks
         ### Namespace : $main
-        my $override_log_subs = LOG_METHODS;
         my $mock_main = mock 'COMMON::ProxyStorage' => (
             track => TRUE,
-            override => $override_log_subs
+            override => LOG_METHODS
         );
         $mock_main->override('_getConfigurationElement' => sub {
             return $swift_token;
@@ -766,9 +747,9 @@ subtest test_returnSwiftToken => sub {
         is($method_return, $swift_token, "Correct token returned");
 
         # Test calls (namespace = $main)
-        my @logging_subs_called = keys( %{$mock_main->sub_tracking()} );
-        my $logger_subs = join('|', keys(%{$override_log_subs}));
-        is( scalar(grep(/^($logger_subs)$/, @logging_subs_called)), 1, "Call to logger." );
+        my @main_subs_called = keys( %{$mock_main->sub_tracking()} );
+        my $logger_subs = join('|', @LOG_METHODS_NAME);
+        is( scalar(grep(/^($logger_subs)$/, @main_subs_called)), 1, "Call to logger." );
         ok( exists($mock_main->sub_tracking()->{DEBUG}), "Call to DEBUG logger." );
 
 
@@ -783,10 +764,9 @@ subtest test_returnSwiftToken => sub {
         # Environment for the test
         ## Mocks
         ### Namespace : $main
-        my $override_log_subs = LOG_METHODS;
         my $mock_main = mock 'COMMON::ProxyStorage' => (
             track => TRUE,
-            override => $override_log_subs
+            override => LOG_METHODS
         );
         $mock_main->override('_getConfigurationElement' => sub {
             return undef;
@@ -798,9 +778,9 @@ subtest test_returnSwiftToken => sub {
         is($method_return, undef, "Undefined return.");
 
         # Test calls (namespace = $main)
-        my @logging_subs_called = keys( %{$mock_main->sub_tracking()} );
-        my $logger_subs = join('|', keys(%{$override_log_subs}));
-        is( scalar(grep(/^($logger_subs)$/, @logging_subs_called)), 1, "Call to logger." );
+        my @main_subs_called = keys( %{$mock_main->sub_tracking()} );
+        my $logger_subs = join('|', @LOG_METHODS_NAME);
+        is( scalar(grep(/^($logger_subs)$/, @main_subs_called)), 1, "Call to logger." );
         ok( exists($mock_main->sub_tracking()->{DEBUG}), "Call to DEBUG logger." );
 
 
@@ -831,12 +811,11 @@ subtest test_copy => sub {
 
         ## Mocks
         my %mocks_hash = ();
-        my $override_log_subs = LOG_METHODS;
 
         ### Namespace : COMMON::ProxyStorage
         $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
             track => TRUE,
-            override => $override_log_subs
+            override => LOG_METHODS
         );
 
         ### Namespace : File::Basename
@@ -911,12 +890,11 @@ subtest test_copy => sub {
 
         ## Mocks
         my %mocks_hash = ();
-        my $override_log_subs = LOG_METHODS;
 
         ### Namespace : COMMON::ProxyStorage
         $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
             track => TRUE,
-            override => $override_log_subs
+            override => LOG_METHODS
         );
 
         ### Namespace : *CORE::GLOBAL
@@ -979,12 +957,11 @@ subtest test_copy => sub {
 
         ## Mocks
         my %mocks_hash = ();
-        my $override_log_subs = LOG_METHODS;
 
         ### Namespace : COMMON::ProxyStorage
         $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
             track => TRUE,
-            override => $override_log_subs,
+            override => LOG_METHODS,
             override => {
                 '_getConfigurationElement' => sub {
                     my $key = shift;
@@ -1016,8 +993,7 @@ subtest test_copy => sub {
                     my $string = shift;
                     $self->{'body'} = $string;
                     return $self->{'body'}
-                },
-
+                }
             }
         );
 
@@ -1097,6 +1073,95 @@ subtest test_copy => sub {
     };
 
 
+    subtest ok_file_to_swift =>sub {
+        # Environment for the test
+        my %variables = (
+            'source_type'           => 'FILE',
+            'source_path'           => '/dir/to/source/s_file.pyr',
+            'target_type'           => 'SWIFT',
+            'target_container'      => 't_container',
+            'target_object'         => 't_object',
+            'body_content'          => 'This is the body file content.',
+            'ROK4_SWIFT_PUBLICURL'  => 'https://cluster.swift.com:8081',
+            'SWIFT_TOKEN' => 'f0GZyNcnf7_9SDJ31iShwUGzYlLAAlvLN7BQuWHK40YPpqjJ7O7f106ycPnCHYdRxtqQdU8GltNaoxlLk_3PZp4Wv-1r_CurUenWOLsEI-H6NeV65H6oZfPp4VhssTDzEjuk1PfWsVkwSSXBHt69pmPx9UwfMYz0eP7yIagNEz1VIl_uggBb2_PvprJTstQpS'
+        );
+        $variables{'target_path'} = "$variables{'target_container'}/$variables{'target_object'}";
+
+        ## Mocks
+        my %mocks_hash = ();
+
+        ### Namespace : COMMON::ProxyStorage
+        $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
+            track => TRUE,
+            override => LOG_METHODS,
+            override => {
+                '_getConfigurationElement' => sub {
+                    my $key = shift;
+                    return $variables{$key};
+                },
+                'map_file' => sub {
+                    $_[0] = $variables{'body_content'};
+                },
+                'sendSwiftRequest' => sub {
+                    return HTTP::Response->new();
+                }
+            }
+        );
+
+        ### Namespace : HTTP::Request
+        $mocks_hash{'HTTP::Request'} = mock 'HTTP::Request' => (
+            track => TRUE,
+            override_constructor => {
+                new => 'hash'
+            },
+            add => {
+                'content' => sub {
+                    my $self = shift;
+                    my $string = shift;
+                    $self->{'body'} = $string;
+                    return $self->{'body'}
+                }
+            }
+        );
+
+        ### Namespace : HTTP::Response
+        $mocks_hash{'HTTP::Response'} = mock 'HTTP::Response' => (
+            track => TRUE,
+            override_constructor => {
+                new => 'hash'
+            },
+            override => {
+                is_success => sub {
+                    my $self = shift;
+                    return TRUE;
+                }
+            }
+        );
+
+        # Tests
+        ## Valeur de retour
+        my $method_return = COMMON::ProxyStorage::copy($variables{'source_type'}, $variables{'source_path'}, $variables{'target_type'}, $variables{'target_path'});
+        is($method_return, TRUE, "Returns TRUE.");
+
+        ## Appels au logger
+        foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE') {
+            ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
+        }
+        ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'DEBUG'}), "At least 1 DEBUG log entry.");
+
+        ## Appels liés aux requêtes
+        ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'sendSwiftRequest'}), "Request sent.");
+        is($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'sendSwiftRequest'}[0]{'args'}[0]{'PUT'}, "$variables{'ROK4_SWIFT_PUBLICURL'}/$variables{'target_path'}", "Correct URL.");
+        is($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'sendSwiftRequest'}[0]{'args'}[0]{'body'}, $variables{'body_content'}, "Correct body.");
+
+        # Reset environment
+        foreach my $mock (keys(%mocks_hash)) {
+            $mocks_hash{$mock} = undef;
+        }
+
+
+        done_testing;        
+    };
 
     done_testing;
 };
