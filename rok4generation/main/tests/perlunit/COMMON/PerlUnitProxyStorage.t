@@ -1175,7 +1175,9 @@ subtest test_copy => sub {
             override => LOG_METHODS,
             override => {
                 'getRealData' => sub {
-                    return $variables{'source_path'};
+                    my $type = shift;
+                    my $path = shift;
+                    return $path;
                 }
             }
         );
@@ -1225,6 +1227,137 @@ subtest test_copy => sub {
 
         done_testing;     
     };
+
+
+    subtest ok_ceph_to_ceph => sub {
+        # Environment for the test
+        my %variables = (
+            'source_type'           => 'CEPH',
+            'common_pool'           => 'c_pool',
+            'source_object'         => 's_object',
+            'target_type'           => 'CEPH',
+            'target_object'         => 't_object'
+        );
+        $variables{'source_path'} = "$variables{'common_pool'}/$variables{'source_object'}";
+        $variables{'target_path'} = "$variables{'common_pool'}/$variables{'target_object'}";
+
+        ## Mocks
+        my %mocks_hash = ();
+
+        ### Namespace : COMMON::ProxyStorage
+        $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
+            track => TRUE,
+            override => LOG_METHODS,
+            override => {
+                'getRealData' => sub {
+                    my $type = shift;
+                    my $path = shift;
+                    return $path;
+                }
+            }
+        );
+
+        ### Namespace : *CORE::GLOBAL
+        $mocks_hash{'*CORE::GLOBAL'} = mock '*CORE::GLOBAL' => (
+            track => TRUE,
+            set => {
+                'system' => sub {
+                    $? = 0;
+                    return;
+                }
+            }
+        );
+
+
+        # Tests
+        ## Valeur de retour
+        my $method_return = COMMON::ProxyStorage::copy($variables{'source_type'}, $variables{'source_path'}, $variables{'target_type'}, $variables{'target_path'});
+        is($method_return, TRUE, "Returns TRUE.");
+
+        ## Appels au logger
+        foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE') {
+            ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
+        }
+        ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'DEBUG'}), "At least 1 DEBUG log entry.");
+
+        ## Appels système
+        is($mocks_hash{'*CORE::GLOBAL'}->sub_tracking()->{'system'}[0]{'args'}, ["rados", "-p $variables{'common_pool'}", "cp $variables{'source_object'} $variables{'target_object'}"], "Object copy inside ceph pool.");
+
+
+        # Reset environment
+        foreach my $mock (keys(%mocks_hash)) {
+            $mocks_hash{$mock} = undef;
+        }
+
+        done_testing;  
+    };
+
+
+    subtest ok_ceph_to_swift => sub {
+        # Environment for the test
+        my %variables = (
+            'source_type'           => 'CEPH',
+            'source_pool'           => 's_pool',
+            'source_object'         => 's_object',
+            'target_type'           => 'SWIFT',
+            'target_container'      => 't_container',
+            'target_object'         => 't_object',
+            'body_content'          => 'This is the body file content.',
+            'ROK4_SWIFT_PUBLICURL'  => 'https://cluster.swift.com:8081',
+            'SWIFT_TOKEN'           => 'f0GZyNcnf7_9SDJ31iShwUGzYlLAAlvLN7BQuWHK40YPpqjJ7O7f106ycPnCHYdRxtqQdU8GltNaoxlLk_3PZp4Wv-1r_CurUenWOLsEI-H6NeV65H6oZfPp4VhssTDzEjuk1PfWsVkwSSXBHt69pmPx9UwfMYz0eP7yIagNEz1VIl_uggBb2_PvprJTstQpS'
+        );
+        $variables{'source_path'} = "$variables{'source_pool'}/$variables{'source_object'}";
+        $variables{'target_path'} = "$variables{'target_container'}/$variables{'target_object'}";
+
+        ## Mocks
+        my %mocks_hash = ();
+
+        ### Namespace : COMMON::ProxyStorage
+        $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
+            track => TRUE,
+            override => LOG_METHODS,
+            override => {
+                'getRealData' => sub {
+                    my $type = shift;
+                    my $path = shift;
+                    return $path;
+                }
+            }
+        );
+
+        ### Namespace : *CORE::GLOBAL
+        $mocks_hash{'*CORE::GLOBAL'} = mock '*CORE::GLOBAL' => (
+            track => TRUE,
+            set => {
+                'system' => sub {
+                    $? = 0;
+                    return;
+                }
+            }
+        );
+
+        todo 'not_implemented' => sub {
+            # Tests
+            ## Valeur de retour
+            my $method_return = COMMON::ProxyStorage::copy($variables{'source_type'}, $variables{'source_path'}, $variables{'target_type'}, $variables{'target_path'});
+            is($method_return, TRUE, "Returns TRUE.");
+
+            ## Appels au logger
+            foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE') {
+                ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
+            }
+            ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'DEBUG'}), "At least 1 DEBUG log entry.");            
+        };
+
+
+        # Reset environment
+        foreach my $mock (keys(%mocks_hash)) {
+            $mocks_hash{$mock} = undef;
+        }
+
+        done_testing;
+    };
+
 
     done_testing;
 };

@@ -647,7 +647,8 @@ sub copy {
                 return FALSE;
             }
 
-            `rados -p $toPool cp $fromObjectName $toObjectName`;
+            my @rados_args = ("rados", "-p $toPool", "cp $fromObjectName $toObjectName");
+            system(@rados_args);
             if ($?) {
                 ERROR("Cannot copy CEPH object $fromObjectName -> $toObjectName (pool $fromPool): $!");
                 return FALSE;
