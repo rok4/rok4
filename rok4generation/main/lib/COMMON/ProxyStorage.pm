@@ -733,7 +733,7 @@ sub copy {
 
             my $context = "/$toBucket/$toObjectName";
             my $content_type = "application/octet-stream";
-            my $date_gmt = `TZ=GMT date -R`;
+            my $date_gmt = qx(TZ=GMT date -R);
             chomp($date_gmt);
             my $string_to_sign="PUT\n\n$content_type\n$date_gmt\n$context";
 
