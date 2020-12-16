@@ -597,13 +597,15 @@ sub copy {
 
             # create folder
             my $dir = File::Basename::dirname($toPath);
-            `mkdir -p $dir`;
-            if ($?) {
-                ERROR("Cannot create directory '$dir' : $!");
+            my $errors_list;
+            File::Path::make_path($dir, {error => \$errors_list});
+            if (defined($errors_list) && scalar(@{$errors_list})) {
+                ERROR("Cannot create directory '$dir' : ", $$errors_list[0]{$dir});
                 return FALSE;
             }
 
-            `rados -p $poolName get $objectName $toPath`;
+            my @rados_args = ("rados", "-p $poolName", "get $objectName $toPath");
+            system(@rados_args);
             if ($@) {
                 ERROR("Cannot download CEPH object $fromPath into file '$toPath': $@");
                 if ($realFromPath ne $fromPath) {

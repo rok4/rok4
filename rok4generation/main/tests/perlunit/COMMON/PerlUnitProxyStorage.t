@@ -805,9 +805,9 @@ subtest test_copy => sub {
             'source_type' => 'FILE',
             'source_path' => '/dir/to/source/s_file.pyr',
             'target_type' => 'FILE',
-            'target_path' => '/dir/to/target/t_file.pyr',
-            'dir' => ''
+            'target_dir' => '/dir/to/target'
         );
+        $variables{'target_path'} = "$variables{'target_dir'}/t_file.pyr";
 
         ## Mocks
         my %mocks_hash = ();
@@ -816,16 +816,6 @@ subtest test_copy => sub {
         $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
             track => TRUE,
             override => LOG_METHODS
-        );
-
-        ### Namespace : File::Basename
-        $mocks_hash{'File::Basename'} = mock 'File::Basename' => (
-            track => TRUE,
-            override => {
-                dirname => sub {
-                    return $variables{'dir'};
-                }
-            }
         );
 
         ### Namespace : File::Copy
@@ -862,7 +852,7 @@ subtest test_copy => sub {
 
         ## Appels aux commandes système
         ok(exists($mocks_hash{'File::Path'}->sub_tracking()->{'make_path'}), "Directory arbroescence created.");
-        is($mocks_hash{'File::Path'}->sub_tracking()->{'make_path'}[0]{'args'}[0], $variables{'dir'}, "Correct directory.");
+        is($mocks_hash{'File::Path'}->sub_tracking()->{'make_path'}[0]{'args'}[0], $variables{'target_dir'}, "Correct directory.");
         ok(exists($mocks_hash{'File::Copy'}->sub_tracking()->{'copy'}), "File copy.");
         is($mocks_hash{'File::Copy'}->sub_tracking()->{'copy'}[0]{'args'}, [$variables{'source_path'}, $variables{'target_path'}], "Correct source and target.");
 
@@ -1161,6 +1151,79 @@ subtest test_copy => sub {
 
 
         done_testing;        
+    };
+
+
+    subtest ok_ceph_to_file => sub {
+        # Environment for the test
+        my %variables = (
+            'source_type'           => 'CEPH',
+            'source_pool'           => 's_pool',
+            'source_object'         => 's_object',
+            'target_type'           => 'FILE',,
+            'target_dir'           => '/dir/to/target'
+        );
+        $variables{'source_path'} = "$variables{'source_pool'}/$variables{'source_object'}";
+        $variables{'target_path'} = "$variables{'target_dir'}/t_file.pyr";
+
+        ## Mocks
+        my %mocks_hash = ();
+
+        ### Namespace : COMMON::ProxyStorage
+        $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
+            track => TRUE,
+            override => LOG_METHODS,
+            override => {
+                'getRealData' => sub {
+                    return $variables{'source_path'};
+                }
+            }
+        );
+
+        ### Namespace : File::Path
+        $mocks_hash{'File::Path'} = mock 'File::Path' => (
+            track => TRUE,
+            override => {
+                make_path => sub {
+                    return TRUE;
+                }
+            }
+        );
+
+        ### Namespace : *CORE::GLOBAL
+        $mocks_hash{'*CORE::GLOBAL'} = mock '*CORE::GLOBAL' => (
+            track => TRUE,
+            set => {
+                'system' => sub {
+                    $? = 0;
+                    return;
+                }
+            }
+        );
+
+
+        # Tests
+        ## Valeur de retour
+        my $method_return = COMMON::ProxyStorage::copy($variables{'source_type'}, $variables{'source_path'}, $variables{'target_type'}, $variables{'target_path'});
+        is($method_return, TRUE, "Returns TRUE.");
+
+        ## Appels au logger
+        foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE') {
+            ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
+        }
+        ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'DEBUG'}), "At least 1 DEBUG log entry.");
+
+        ## Appels système
+        is($mocks_hash{'File::Path'}->sub_tracking()->{'make_path'}[0]{'args'}[0], $variables{'target_dir'}, "Target directory creation.");
+        is($mocks_hash{'*CORE::GLOBAL'}->sub_tracking()->{'system'}[0]{'args'}, ["rados", "-p $variables{'source_pool'}", "get $variables{'source_object'} $variables{'target_path'}"], "Pulled from ceph.");
+
+
+        # Reset environment
+        foreach my $mock (keys(%mocks_hash)) {
+            $mocks_hash{$mock} = undef;
+        }
+
+        done_testing;     
     };
 
     done_testing;
