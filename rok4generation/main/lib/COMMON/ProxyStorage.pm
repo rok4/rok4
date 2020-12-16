@@ -676,7 +676,7 @@ sub copy {
 
             my $context = "/$bucketName/$objectName";
             my $content_type = "application/octet-stream";
-            my $date_gmt = `TZ=GMT date -R`;
+            my $date_gmt = qx(TZ=GMT date -R);
             chomp($date_gmt);
             my $string_to_sign="GET\n\n$content_type\n$date_gmt\n$context";
 
@@ -694,9 +694,10 @@ sub copy {
              
             # create folder
             my $dir = File::Basename::dirname($toPath);
-            `mkdir -p $dir`;
-            if ($?) {
-                ERROR("Cannot create directory '$dir' : $!");
+            my $errors_list;
+            File::Path::make_path($dir, {error => \$errors_list});
+            if (defined($errors_list) && scalar(@{$errors_list})) {
+                ERROR("Cannot create directory '$dir' : ", $$errors_list[0]{$dir});
                 return FALSE;
             }
 

@@ -1128,6 +1128,7 @@ subtest test_copy => sub {
             }
         );
 
+
         # Tests
         ## Valeur de retour
         my $method_return = COMMON::ProxyStorage::copy($variables{'source_type'}, $variables{'source_path'}, $variables{'target_type'}, $variables{'target_path'});
@@ -1293,6 +1294,76 @@ subtest test_copy => sub {
     };
 
 
+    subtest ok_ceph_to_s3 => sub {
+        # Environment for the test
+        my %variables = (
+            'source_type'           => 'CEPH',
+            'source_pool'           => 's_pool',
+            'source_object'         => 's_object',
+            'target_type'           => 'S3',
+            'target_bucket'         => 't_bucket',
+            'target_object'         => 't_object',
+            'body_content'          => 'This is the body file content.',
+            'date'                  => 'Tue, 08 Dec 2020 15:07:27 +0000',
+            'ROK4_S3_URL'           => 'http://url_to_s3_cluster.net',
+            'ROK4_S3_ENDPOINT_HOST' => 'http://url_to_s3_host.net/endpoint',
+            'ROK4_S3_KEY'           => 'KeyToS3',
+            'ROK4_S3_SECRETKEY'     => 'SecretKeyToS3'
+        );
+        $variables{'target_subpath'} = "prefix$variables{'target_object'}";
+        $variables{'target_path'} = "$variables{'target_bucket'}/$variables{'target_subpath'}";
+        $variables{'source_path'} = "$variables{'source_pool'}/$variables{'source_object'}";
+
+        ## Mocks
+        my %mocks_hash = ();
+
+        ### Namespace : COMMON::ProxyStorage
+        $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
+            track => TRUE,
+            override => LOG_METHODS,
+            override => {
+                'getRealData' => sub {
+                    my $type = shift;
+                    my $path = shift;
+                    return $path;
+                }
+            }
+        );
+
+        ### Namespace : *CORE::GLOBAL
+        $mocks_hash{'*CORE::GLOBAL'} = mock '*CORE::GLOBAL' => (
+            track => TRUE,
+            set => {
+                'system' => sub {
+                    $? = 0;
+                    return;
+                }
+            }
+        );
+
+        todo 'not_implemented' => sub {
+            # Tests
+            ## Valeur de retour
+            my $method_return = COMMON::ProxyStorage::copy($variables{'source_type'}, $variables{'source_path'}, $variables{'target_type'}, $variables{'target_path'});
+            is($method_return, TRUE, "Returns TRUE.");
+
+            ## Appels au logger
+            foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE') {
+                ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
+            }
+            ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'DEBUG'}), "At least 1 DEBUG log entry.");            
+        };
+
+
+        # Reset environment
+        foreach my $mock (keys(%mocks_hash)) {
+            $mocks_hash{$mock} = undef;
+        }
+
+        done_testing;
+    };
+
+
     subtest ok_ceph_to_swift => sub {
         # Environment for the test
         my %variables = (
@@ -1348,6 +1419,150 @@ subtest test_copy => sub {
             }
             ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'DEBUG'}), "At least 1 DEBUG log entry.");            
         };
+
+
+        # Reset environment
+        foreach my $mock (keys(%mocks_hash)) {
+            $mocks_hash{$mock} = undef;
+        }
+
+        done_testing;
+    };
+
+
+    subtest ok_s3_to_file => sub {
+
+        # Environment for the test
+        my %variables = (
+            'source_type'           => 'S3',
+            'source_bucket'         => 's_bucket',
+            'source_object'         => 's_object',
+
+            'target_type'           => 'FILE',
+            'target_dir'           => '/dir/to/source',
+
+            'date'                  => 'Tue, 08 Dec 2020 15:07:27 +0000',
+            'ROK4_S3_URL'           => 'http://url_to_s3_cluster.net',
+            'ROK4_S3_ENDPOINT_HOST' => 'http://url_to_s3_host.net/endpoint',
+            'ROK4_S3_KEY'           => 'KeyToS3',
+            'ROK4_S3_SECRETKEY'     => 'SecretKeyToS3'
+        );
+        $variables{'source_subpath'} = "prefix$variables{'source_object'}";
+        $variables{'source_path'} = "$variables{'source_bucket'}/$variables{'source_subpath'}";
+        $variables{'target_path'} = "$variables{'target_dir'}/s_file.pyr";
+
+
+        ## Mocks
+        my %mocks_hash = ();
+
+        ### Namespace : COMMON::ProxyStorage
+        $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
+            track => TRUE,
+            override => LOG_METHODS,
+            override => {
+                '_getConfigurationElement' => sub {
+                    my $key = shift;
+                    return $variables{$key};
+                }
+            }
+        );
+
+        ### Namespace : HTTP::Request
+        $mocks_hash{'HTTP::Request'} = mock 'HTTP::Request' => (
+            track => TRUE,
+            override_constructor => {
+                new => 'hash'
+            },
+            add => {
+                'header' => sub {
+                    my $self = shift;
+                    my $key = shift;
+                    my $value = shift;
+                    exists($self->{'headers'}->{$key});
+                    $self->{'headers'}->{$key} = $value;
+                    return $self->{'headers'}->{$key};
+                }
+            }
+        );
+
+        ### Namespace : HTTP::Response
+        $mocks_hash{'HTTP::Response'} = mock 'HTTP::Response' => (
+            track => TRUE,
+            override_constructor => {
+                new => 'hash'
+            },
+            override => {
+                is_success => sub {
+                    my $self = shift;
+                    return TRUE;
+                }
+            }
+        );
+
+        ### Namespace : LWP::UserAgent
+        $mocks_hash{'LWP::UserAgent'} = mock 'LWP::UserAgent' => (
+            track => TRUE,
+            override_constructor => {
+                new => 'hash'
+            },            
+            override => {
+                request => sub {
+                    my $self = shift;
+                    return HTTP::Response->new();
+                }
+            }
+        );
+        $variables{'UA'} = LWP::UserAgent->new();
+
+        ### Namespace : *CORE::GLOBAL
+        $mocks_hash{'*CORE::GLOBAL'} = mock '*CORE::GLOBAL' => (
+            track => TRUE,
+            set => {
+                'readpipe' => sub {
+                    $? = 0;
+                    return $variables{'date'};
+                }
+            }
+        );
+
+        ### Namespace : File::Path
+        $mocks_hash{'File::Path'} = mock 'File::Path' => (
+            track => TRUE,
+            override => {
+                make_path => sub {
+                    return TRUE;
+                }
+            }
+        );
+
+
+        # Tests
+        ## Valeur de retour
+        my $method_return = COMMON::ProxyStorage::copy($variables{'source_type'}, $variables{'source_path'}, $variables{'target_type'}, $variables{'target_path'});
+        is($method_return, TRUE, "Returns TRUE.");
+
+        ## Appels au logger
+        foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE') {
+            ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
+        }
+        ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'DEBUG'}), "At least 1 DEBUG log entry.");
+
+        ## Appels système
+        ok(exists($mocks_hash{'*CORE::GLOBAL'}->sub_tracking()->{'readpipe'}), "qx// called");
+        like($mocks_hash{'*CORE::GLOBAL'}->sub_tracking()->{'readpipe'}[0]{'args'}[0], qr/.*date.*/, "Call to shell 'date'");
+        is($mocks_hash{'File::Path'}->sub_tracking()->{'make_path'}[0]{'args'}[0], $variables{'target_dir'}, "Target directory creation.");
+
+
+        ## Appels liés aux requêtes
+        ok(exists($mocks_hash{'LWP::UserAgent'}->sub_tracking()->{'request'}), "Request sent.");
+        is($mocks_hash{'LWP::UserAgent'}->sub_tracking()->{'request'}[0]{'args'}[1]{'GET'}, "$variables{'ROK4_S3_URL'}/$variables{'source_path'}", "Correct URL.");
+        my $expected_request_headers = {
+            'Host' => $variables{'ROK4_S3_ENDPOINT_HOST'},
+            'Date' => $variables{'date'},
+            'Content-Type' => 'application/octet-stream',
+            'Authorization' => qr/AWS $variables{'ROK4_S3_KEY'}:.+=/
+        };
+        like($mocks_hash{'LWP::UserAgent'}->sub_tracking()->{'request'}[0]{'args'}[1]{'headers'}, $expected_request_headers, "Correct headers.");
 
 
         # Reset environment
