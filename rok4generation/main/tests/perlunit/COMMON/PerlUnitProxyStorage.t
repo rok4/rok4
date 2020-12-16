@@ -1150,7 +1150,7 @@ subtest test_copy => sub {
         }
 
 
-        done_testing;        
+        done_testing;
     };
 
 
@@ -1932,6 +1932,97 @@ subtest test_copy => sub {
         }
 
         done_testing;        
+    };
+
+
+    subtest ok_swift_to_file => sub {
+        # Environment for the test
+        my %variables = (
+            'source_type'           => 'SWIFT',
+            'source_container'      => 's_container',
+            'source_object'         => 's_object',
+            'body_content'          => 'This is the body file content.',
+            'ROK4_SWIFT_PUBLICURL'  => 'https://cluster.swift.com:8081',
+            'SWIFT_TOKEN'           => 'f0GZyNcnf7_9SDJ31iShwUGzYlLAAlvLN7BQuWHK40YPpqjJ7O7f106ycPnCHYdRxtqQdU8GltNaoxlLk_3PZp4Wv-1r_CurUenWOLsEI-H6NeV65H6oZfPp4VhssTDzEjuk1PfWsVkwSSXBHt69pmPx9UwfMYz0eP7yIagNEz1VIl_uggBb2_PvprJTstQpS',
+
+            'target_type'           => 'FILE',
+            'target_dir'            => '/dir/to/target'
+        );
+        $variables{'source_path'} = "$variables{'source_container'}/$variables{'source_object'}";
+        $variables{'target_path'} = "$variables{'target_dir'}/t_file.pyr";
+
+        ## Mocks
+        my %mocks_hash = ();
+
+        ### Namespace : COMMON::ProxyStorage
+        $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
+            track => TRUE,
+            override => LOG_METHODS,
+            override => {
+                '_getConfigurationElement' => sub {
+                    my $key = shift;
+                    return $variables{$key};
+                },
+                'sendSwiftRequest' => sub {
+                    return HTTP::Response->new();
+                }
+            }
+        );
+
+        ### Namespace : HTTP::Request
+        $mocks_hash{'HTTP::Request'} = mock 'HTTP::Request' => (
+            track => TRUE,
+            override_constructor => {
+                new => 'hash'
+            }
+        );
+
+        ### Namespace : HTTP::Response
+        $mocks_hash{'HTTP::Response'} = mock 'HTTP::Response' => (
+            track => TRUE,
+            override_constructor => {
+                new => 'hash'
+            },
+            override => {
+                is_success => sub {
+                    my $self = shift;
+                    return TRUE;
+                }
+            }
+        );
+
+        ### Namespace : File::Path
+        $mocks_hash{'File::Path'} = mock 'File::Path' => (
+            track => TRUE,
+            override => {
+                make_path => sub {
+                    return TRUE;
+                }
+            }
+        );
+
+
+        # Tests
+        ## Valeur de retour
+        my $method_return = COMMON::ProxyStorage::copy($variables{'source_type'}, $variables{'source_path'}, $variables{'target_type'}, $variables{'target_path'});
+        is($method_return, TRUE, "Returns TRUE.");
+
+        ## Appels au logger
+        foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE') {
+            ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
+        }
+        ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'DEBUG'}), "At least 1 DEBUG log entry.");
+
+        ## Appels liés aux requêtes
+        is($mocks_hash{'File::Path'}->sub_tracking()->{'make_path'}[0]{'args'}[0], $variables{'target_dir'}, "Target directory creation.");
+        ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'sendSwiftRequest'}), "Request sent.");
+        is($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'sendSwiftRequest'}[0]{'args'}[0]{'GET'}, "$variables{'ROK4_SWIFT_PUBLICURL'}/$variables{'source_path'}", "Correct URL.");
+
+        # Reset environment
+        foreach my $mock (keys(%mocks_hash)) {
+            $mocks_hash{$mock} = undef;
+        }
+        done_testing;
     };
 
 

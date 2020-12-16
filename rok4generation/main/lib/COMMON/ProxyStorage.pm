@@ -787,9 +787,10 @@ sub copy {
             
             # create folder
             my $dir = File::Basename::dirname($toPath);
-            `mkdir -p $dir`;
-            if ($?) {
-                ERROR("Cannot create directory '$dir' : $!");
+            my $errors_list;
+            File::Path::make_path($dir, {error => \$errors_list});
+            if (defined($errors_list) && scalar(@{$errors_list})) {
+                ERROR("Cannot create directory '$dir' : ", $$errors_list[0]{$dir});
                 return FALSE;
             }
 
@@ -925,7 +926,7 @@ sub isPresent {
             return FALSE;
         }
 
-        `rados -p $poolName stat $objectName 1>/dev/null 2>/dev/null`;
+        qx(rados -p $poolName stat $objectName 1>/dev/null 2>/dev/null);
         if ($?) {
             return FALSE;
         }
@@ -1035,7 +1036,7 @@ sub getRealData {
 
         if ( $value < _getConfigurationElement('ROK4_IMAGE_HEADER_SIZE') ) {
 
-            my $realTarget = `rados -p $poolName get $objectName /dev/stdout`;
+            my $realTarget = qx(rados -p $poolName get $objectName /dev/stdout);
             chomp $realTarget;
 
             # Dans le cas d'un objet Ceph lien, on vérifie que la signature existe bien dans le header
@@ -1170,7 +1171,7 @@ sub getSize {
 
         my $resource = "/$bucketName/$objectName";
         my $contentType="application/octet-stream";
-        my $dateValue=`TZ=GMT date -R`;
+        my $dateValue=qx(TZ=GMT date -R);
         chomp($dateValue);
         my $stringToSign="HEAD\n\n$contentType\n$dateValue\n$resource";
 
@@ -1207,7 +1208,7 @@ sub getSize {
             return undef;
         }
 
-        my $ret = `rados -p $poolName stat $objectName`;
+        my $ret = qx(rados -p $poolName stat $objectName);
         if ($@) {
             ERROR("Cannot stat CEPH object $objectName (pool $poolName): $!");
             return undef;
@@ -1233,7 +1234,7 @@ sub remove {
     my $path = shift;
 
     if ($type eq "FILE") {
-        `rm -r $path`;
+        qx(rm -r $path);
         if ($? == 0) {return TRUE;}
     }
     elsif ($type eq "CEPH") {
@@ -1241,7 +1242,7 @@ sub remove {
         my ($poolName, @rest) = split("/", $path);
         my $objectName = join("", @rest);
 
-        `rados -p $poolName rm $objectName`;
+        qx(rados -p $poolName rm $objectName);
         if (! $@) {return TRUE;}
     }
     elsif ($type eq "SWIFT") {
@@ -1295,7 +1296,7 @@ sub symLink {
     if ($targetType eq "FILE" && $toType eq "FILE") {
         # create folder
         my $dir = File::Basename::dirname($toPath);
-        `mkdir -p $dir`;
+        qx(mkdir -p $dir);
         if ($?) {
             ERROR("Cannot create directory '$dir' : $!");
             return undef;
@@ -1338,7 +1339,7 @@ sub symLink {
         }
 
         my $symlink_content = ROK4_SYMLINK_SIGNATURE . $realTarget;
-        eval { `echo -n "$symlink_content" | rados -p $toPoolName put $toPath /dev/stdin` };
+        eval { qx(echo -n "$symlink_content" | rados -p $toPoolName put $toPath /dev/stdin) };
 
         if ($@) {
             ERROR("Cannot symlink (make a rados put) object $realTarget with alias $toPath : $@");
@@ -1420,7 +1421,7 @@ sub hardLink {
 
         # create folder
         my $dir = File::Basename::dirname($toPath);
-        `mkdir -p $dir`;
+        qx(mkdir -p $dir);
         if ($?) {
             ERROR("Cannot create directory '$dir' : $!");
             return FALSE;
@@ -1437,7 +1438,7 @@ sub hardLink {
             return FALSE;
         }
 
-        `ln $targetPath $toPath`;
+        qx(ln $targetPath $toPath);
         if ($?) {
             ERROR("Cannot link (hard) file $targetPath from file $toPath : $!");
             return FALSE;
