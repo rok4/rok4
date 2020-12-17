@@ -371,7 +371,7 @@ subtest test_getSwiftToken => sub {
             'ROK4_SWIFT_PASSWD' => 'swift_password_1',
             'ROK4_KEYSTONE_DOMAINID' => 'swift_test_domain',
             'ROK4_KEYSTONE_PROJECTID' => 'kzty3tg85bypmtek1dgv2d61',
-            'UA' => undef,            
+            'UA' => undef,
             'X-Subject-Token' => 'f0GZyNcnf7_9SDJ31iShwUGzYlLAAlvLN7BQuWHK40YPpqjJ7O7f106ycPnCHYdRxtqQdU8GltNaoxlLk_3PZp4Wv-1r_CurUenWOLsEI-H6NeV65H6oZfPp4VhssTDzEjuk1PfWsVkwSSXBHt69pmPx9UwfMYz0eP7yIagNEz1VIl_uggBb2_PvprJTstQpS'
         );
 
@@ -436,7 +436,7 @@ subtest test_getSwiftToken => sub {
             track => TRUE,
             override_constructor => {
                 new => 'hash'
-            },            
+            },
             override => {
                 request => sub {
                     my $self = shift;
@@ -505,7 +505,7 @@ subtest test_getSwiftToken => sub {
             'ROK4_SWIFT_AUTHURL' => 'https://auth.exemple.com:8080/swift/',
             'ROK4_SWIFT_USER' => 'swift_user_1',
             'ROK4_SWIFT_PASSWD' => 'swift_password_1',
-            'UA' => undef,            
+            'UA' => undef,
             'X-Auth-Token' => 'f0GZyNcnf7_9SDJ31iShwUGzYlLAAlvLN7BQuWHK40YPpqjJ7O7f106ycPnCHYdRxtqQdU8GltNaoxlLk_3PZp4Wv-1r_CurUenWOLsEI-H6NeV65H6oZfPp4VhssTDzEjuk1PfWsVkwSSXBHt69pmPx9UwfMYz0eP7yIagNEz1VIl_uggBb2_PvprJTstQpS',
             'X-Storage-Url' => 'https://cluster.swift.com:8081'
         );
@@ -543,7 +543,7 @@ subtest test_getSwiftToken => sub {
                     exists($self->{'headers'}->{$key});
                     $self->{'headers'}->{$key} = $value;
                     return $self->{'headers'}->{$key};
-                }          
+                }
             },
             override => {
                 GET => sub {
@@ -579,7 +579,7 @@ subtest test_getSwiftToken => sub {
             track => TRUE,
             override_constructor => {
                 new => 'hash'
-            },            
+            },
             override => {
                 request => sub {
                     my $self = shift;
@@ -661,7 +661,7 @@ subtest test_sendSwiftRequest => sub {
                     exists($self->{'headers'}->{$key});
                     $self->{'headers'}->{$key} = $value;
                     return $self->{'headers'}->{$key};
-                }          
+                }
             }
         );
 
@@ -684,7 +684,7 @@ subtest test_sendSwiftRequest => sub {
             track => TRUE,
             override_constructor => {
                 new => 'hash'
-            },            
+            },
             override => {
                 request => sub {
                     my $self = shift;
@@ -756,7 +756,7 @@ subtest test_returnSwiftToken => sub {
         # Reset environment
         $mock_main = undef;
         COMMON::ProxyStorage::resetConfiguration();
-    
+
         done_testing;
     };
 
@@ -787,7 +787,7 @@ subtest test_returnSwiftToken => sub {
         # Reset environment
         $mock_main = undef;
         COMMON::ProxyStorage::resetConfiguration();
-    
+
         done_testing;
     };
 
@@ -1005,7 +1005,7 @@ subtest test_copy => sub {
             track => TRUE,
             override_constructor => {
                 new => 'hash'
-            },            
+            },
             override => {
                 request => sub {
                     my $self = shift;
@@ -1225,7 +1225,7 @@ subtest test_copy => sub {
             $mocks_hash{$mock} = undef;
         }
 
-        done_testing;     
+        done_testing;
     };
 
 
@@ -1289,7 +1289,7 @@ subtest test_copy => sub {
             $mocks_hash{$mock} = undef;
         }
 
-        done_testing;  
+        done_testing;
     };
 
 
@@ -1349,7 +1349,7 @@ subtest test_copy => sub {
             foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE') {
                 ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
             }
-            ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'DEBUG'}), "At least 1 DEBUG log entry.");            
+            ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'DEBUG'}), "At least 1 DEBUG log entry.");
         };
 
 
@@ -1415,7 +1415,7 @@ subtest test_copy => sub {
             foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE') {
                 ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
             }
-            ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'DEBUG'}), "At least 1 DEBUG log entry.");            
+            ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'DEBUG'}), "At least 1 DEBUG log entry.");
         };
 
 
@@ -1501,7 +1501,7 @@ subtest test_copy => sub {
             track => TRUE,
             override_constructor => {
                 new => 'hash'
-            },            
+            },
             override => {
                 request => sub {
                     my $self = shift;
@@ -1573,7 +1573,7 @@ subtest test_copy => sub {
 
     subtest ok_s3_to_ceph => sub {
         # Environment for the test
-        my %variables = (            
+        my %variables = (
             'source_type'           => 'S3',
             'source_bucket'         => 's_bucket',
             'source_object'         => 's_object',
@@ -1641,7 +1641,7 @@ subtest test_copy => sub {
             track => TRUE,
             override_constructor => {
                 new => 'hash'
-            },            
+            },
             override => {
                 request => sub {
                     my $self = shift;
@@ -1676,7 +1676,7 @@ subtest test_copy => sub {
             foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE') {
                 ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
             }
-            ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'DEBUG'}), "At least 1 DEBUG log entry.");            
+            ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'DEBUG'}), "At least 1 DEBUG log entry.");
         };
 
 
@@ -1691,7 +1691,7 @@ subtest test_copy => sub {
 
     subtest ok_s3_to_s3 => sub {
         # Environment for the test
-        my %variables = (            
+        my %variables = (
             'source_type'           => 'S3',
             'source_bucket'         => 's_bucket',
             'source_object'         => 's_object',
@@ -1759,7 +1759,7 @@ subtest test_copy => sub {
             track => TRUE,
             override_constructor => {
                 new => 'hash'
-            },            
+            },
             override => {
                 request => sub {
                     my $self = shift;
@@ -1816,7 +1816,7 @@ subtest test_copy => sub {
 
     subtest ok_s3_to_swift => sub {
         # Environment for the test
-        my %variables = (            
+        my %variables = (
             'source_type'           => 'S3',
             'source_bucket'         => 's_bucket',
             'source_object'         => 's_object',
@@ -1824,7 +1824,7 @@ subtest test_copy => sub {
             'ROK4_S3_URL'           => 'http://url_to_s3_cluster.net',
             'ROK4_S3_ENDPOINT_HOST' => 'http://url_to_s3_host.net/endpoint',
             'ROK4_S3_KEY'           => 'KeyToS3',
-            'ROK4_S3_SECRETKEY'     => 'SecretKeyToS3',,
+            'ROK4_S3_SECRETKEY'     => 'SecretKeyToS3',
             'target_type'           => 'SWIFT',
             'target_container'      => 't_container',
             'target_object'         => 't_object',
@@ -1887,7 +1887,7 @@ subtest test_copy => sub {
             track => TRUE,
             override_constructor => {
                 new => 'hash'
-            },            
+            },
             override => {
                 request => sub {
                     my $self = shift;
@@ -1922,7 +1922,7 @@ subtest test_copy => sub {
             foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE') {
                 ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
             }
-            ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'DEBUG'}), "At least 1 DEBUG log entry.");            
+            ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'DEBUG'}), "At least 1 DEBUG log entry.");
         };
 
 
@@ -1931,7 +1931,7 @@ subtest test_copy => sub {
             $mocks_hash{$mock} = undef;
         }
 
-        done_testing;        
+        done_testing;
     };
 
 
@@ -2013,8 +2013,10 @@ subtest test_copy => sub {
         }
         ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'DEBUG'}), "At least 1 DEBUG log entry.");
 
-        ## Appels liés aux requêtes
+        ## Appels système
         is($mocks_hash{'File::Path'}->sub_tracking()->{'make_path'}[0]{'args'}[0], $variables{'target_dir'}, "Target directory creation.");
+
+        ## Appels liés aux requêtes
         ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'sendSwiftRequest'}), "Request sent.");
         is($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'sendSwiftRequest'}[0]{'args'}[0]{'GET'}, "$variables{'ROK4_SWIFT_PUBLICURL'}/$variables{'source_path'}", "Correct URL.");
 
@@ -2025,6 +2027,213 @@ subtest test_copy => sub {
         done_testing;
     };
 
+    subtest ok_swift_to_ceph => sub {
+        # Environment for the test
+        my %variables = (
+            'source_type'           => 'SWIFT',
+            'source_container'      => 's_container',
+            'source_object'         => 's_object',
+            'ROK4_SWIFT_PUBLICURL'  => 'https://cluster.swift.com:8081',
+            'SWIFT_TOKEN'           => 'f0GZyNcnf7_9SDJ31iShwUGzYlLAAlvLN7BQuWHK40YPpqjJ7O7f106ycPnCHYdRxtqQdU8GltNaoxlLk_3PZp4Wv-1r_CurUenWOLsEI-H6NeV65H6oZfPp4VhssTDzEjuk1PfWsVkwSSXBHt69pmPx9UwfMYz0eP7yIagNEz1VIl_uggBb2_PvprJTstQpS',
+
+            'target_type'           => 'CEPH',
+            'target_pool'           => 't_pool',
+            'target_object'         => 't_object'
+
+        );
+        $variables{'source_path'} = "$variables{'source_container'}/$variables{'source_object'}";
+        $variables{'target_path'} = "$variables{'target_pool'}/$variables{'target_object'}";
+
+        ## Mocks
+        my %mocks_hash = ();
+
+        ### Namespace : COMMON::ProxyStorage
+        $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
+            track => TRUE,
+            override => LOG_METHODS,
+            override => {
+                '_getConfigurationElement' => sub {
+                    my $key = shift;
+                    return $variables{$key};
+                }
+            }
+        );
+
+        todo 'not_implemented' => sub {
+            # Tests
+            ## Valeur de retour
+            my $method_return = COMMON::ProxyStorage::copy($variables{'source_type'}, $variables{'source_path'}, $variables{'target_type'}, $variables{'target_path'});
+            is($method_return, TRUE, "Returns TRUE.");
+
+            ## Appels au logger
+            foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE') {
+                ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
+            }
+            ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'DEBUG'}), "At least 1 DEBUG log entry.");
+        };
+
+
+        # Reset environment
+        foreach my $mock (keys(%mocks_hash)) {
+            $mocks_hash{$mock} = undef;
+        }
+
+        done_testing;
+    };
+
+
+    subtest ok_swift_to_s3 => sub {
+        # Environment for the test
+        my %variables = (
+            'source_type'           => 'SWIFT',
+            'source_container'      => 's_container',
+            'source_object'         => 's_object',
+            'ROK4_SWIFT_PUBLICURL'  => 'https://cluster.swift.com:8081',
+            'SWIFT_TOKEN'           => 'f0GZyNcnf7_9SDJ31iShwUGzYlLAAlvLN7BQuWHK40YPpqjJ7O7f106ycPnCHYdRxtqQdU8GltNaoxlLk_3PZp4Wv-1r_CurUenWOLsEI-H6NeV65H6oZfPp4VhssTDzEjuk1PfWsVkwSSXBHt69pmPx9UwfMYz0eP7yIagNEz1VIl_uggBb2_PvprJTstQpS',
+
+            'target_type'           => 'S3',
+            'target_bucket'         => 't_bucket',
+            'target_object'         => 't_object',
+            'date'                  => 'Tue, 08 Dec 2020 15:07:27 +0000',
+            'ROK4_S3_URL'           => 'http://url_to_s3_cluster.net',
+            'ROK4_S3_ENDPOINT_HOST' => 'http://url_to_s3_host.net/endpoint',
+            'ROK4_S3_KEY'           => 'KeyToS3',
+            'ROK4_S3_SECRETKEY'     => 'SecretKeyToS3'
+
+        );
+        $variables{'source_path'} = "$variables{'source_container'}/$variables{'source_object'}";
+        $variables{'target_path'} = "$variables{'target_bucket'}/$variables{'target_object'}";
+
+        ## Mocks
+        my %mocks_hash = ();
+
+        ### Namespace : COMMON::ProxyStorage
+        $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
+            track => TRUE,
+            override => LOG_METHODS,
+            override => {
+                '_getConfigurationElement' => sub {
+                    my $key = shift;
+                    return $variables{$key};
+                }
+            }
+        );
+
+        todo 'not_implemented' => sub {
+            # Tests
+            ## Valeur de retour
+            my $method_return = COMMON::ProxyStorage::copy($variables{'source_type'}, $variables{'source_path'}, $variables{'target_type'}, $variables{'target_path'});
+            is($method_return, TRUE, "Returns TRUE.");
+
+            ## Appels au logger
+            foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE') {
+                ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
+            }
+            ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'DEBUG'}), "At least 1 DEBUG log entry.");
+        };
+
+
+        # Reset environment
+        foreach my $mock (keys(%mocks_hash)) {
+            $mocks_hash{$mock} = undef;
+        }
+
+        done_testing;
+    };
+
+
+    subtest ok_swift_to_swift => sub {
+        # Environment for the test
+        my %variables = (
+            'source_type'           => 'SWIFT',
+            'source_container'      => 's_container',
+            'source_object'         => 's_object',
+            'ROK4_SWIFT_PUBLICURL'  => 'https://cluster.swift.com:8081',
+            'SWIFT_TOKEN'           => 'f0GZyNcnf7_9SDJ31iShwUGzYlLAAlvLN7BQuWHK40YPpqjJ7O7f106ycPnCHYdRxtqQdU8GltNaoxlLk_3PZp4Wv-1r_CurUenWOLsEI-H6NeV65H6oZfPp4VhssTDzEjuk1PfWsVkwSSXBHt69pmPx9UwfMYz0eP7yIagNEz1VIl_uggBb2_PvprJTstQpS',
+
+            'target_type'           => 'SWIFT',
+            'target_container'      => 't_container',
+            'target_object'         => 't_object'
+
+        );
+        $variables{'source_path'} = "$variables{'source_container'}/$variables{'source_object'}";
+        $variables{'target_path'} = "$variables{'target_container'}/$variables{'target_object'}";
+
+        ## Mocks
+        my %mocks_hash = ();
+
+        ### Namespace : COMMON::ProxyStorage
+        $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
+            track => TRUE,
+            override => LOG_METHODS,
+            override => {
+                '_getConfigurationElement' => sub {
+                    my $key = shift;
+                    return $variables{$key};
+                },
+                'sendSwiftRequest' => sub {
+                    return HTTP::Response->new();
+                }
+            }
+        );
+
+        ### Namespace : HTTP::Request
+        $mocks_hash{'HTTP::Request'} = mock 'HTTP::Request' => (
+            track => TRUE,
+            override_constructor => {
+                new => 'hash'
+            },
+            add => {
+                'header' => sub {
+                    my $self = shift;
+                    my $key = shift;
+                    my $value = shift;
+                    exists($self->{'headers'}->{$key});
+                    $self->{'headers'}->{$key} = $value;
+                    return $self->{'headers'}->{$key};
+                }
+            }
+        );
+
+        ### Namespace : HTTP::Response
+        $mocks_hash{'HTTP::Response'} = mock 'HTTP::Response' => (
+            track => TRUE,
+            override_constructor => {
+                new => 'hash'
+            },
+            override => {
+                is_success => sub {
+                    my $self = shift;
+                    return TRUE;
+                }
+            }
+        );
+
+
+        # Tests
+        ## Valeur de retour
+        my $method_return = COMMON::ProxyStorage::copy($variables{'source_type'}, $variables{'source_path'}, $variables{'target_type'}, $variables{'target_path'});
+        is($method_return, TRUE, "Returns TRUE.");
+
+        ## Appels au logger
+        foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE') {
+            ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
+        }
+        ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'DEBUG'}), "At least 1 DEBUG log entry.");
+
+        ## Appels liés aux requêtes
+        ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'sendSwiftRequest'}), "Request sent.");
+        is($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'sendSwiftRequest'}[0]{'args'}[0]{'COPY'}, "$variables{'ROK4_SWIFT_PUBLICURL'}/$variables{'source_path'}", "Correct URL.");
+        is($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'sendSwiftRequest'}[0]{'args'}[0]{'headers'}, {'Destination' => $variables{'target_path'}}, "Correct headers.");
+
+
+        # Reset environment
+        foreach my $mock (keys(%mocks_hash)) {
+            $mocks_hash{$mock} = undef;
+        }
+
+        done_testing;
+    };
 
 
     done_testing;
