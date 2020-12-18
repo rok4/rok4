@@ -105,7 +105,7 @@ Dans le cas du stockage objet, certaines variables d'environnement doivent être
 #### Exemple (copie vers une pyramide fichier)
 
 ```
-[ pyramid ]
+[ to ]
 
 pyr_data_path = /home/IGN/PYRAMIDS
 pyr_desc_path = /home/IGN/DESCRIPTOR

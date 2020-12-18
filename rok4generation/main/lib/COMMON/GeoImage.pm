@@ -251,6 +251,23 @@ sub setImagePath {
     $this->{filename} = File::Basename::basename($imagePath);
 }
 
+# Function: getSRS
+sub getSRS {
+  my $this = shift;
+  return $this->{srs};
+}
+
+# Function: getWidth
+sub getWidth {
+  my $this = shift;
+  return $this->{width};
+}
+
+# Function: getHeight
+sub getHeight {
+  my $this = shift;
+  return $this->{height};
+}
 
 # Function: getXmin
 sub getXmin {
@@ -333,27 +350,27 @@ Example:
     (end code)
 =cut
 sub exportForDebug {
-    my $self = shift ;
+    my $this = shift ;
     
     my $export = "";
     
     $export .= sprintf "\nObject BE4::GeoImage :\n";
-    $export .= sprintf "\t Image path : %s\n",$self->{completePath};
-    $export .= sprintf "\t Mask path : %s\n",$self->{maskCompletePath} if (defined $self->{maskCompletePath});
+    $export .= sprintf "\t Image path : %s\n",$this->{completePath};
+    $export .= sprintf "\t Mask path : %s\n",$this->{maskCompletePath} if (defined $this->{maskCompletePath});
 
     $export .= "\t Dimensions (in pixel) :\n";
-    $export .= sprintf "\t\t- width : %s\n",$self->{width};
-    $export .= sprintf "\t\t- height : %s\n",$self->{height};
+    $export .= sprintf "\t\t- width : %s\n",$this->{width};
+    $export .= sprintf "\t\t- height : %s\n",$this->{height};
     
     $export .= "\t Resolution (in SRS unity) :\n";
-    $export .= sprintf "\t\t- x : %s\n",$self->{xres};
-    $export .= sprintf "\t\t- y : %s\n",$self->{yres};
+    $export .= sprintf "\t\t- x : %s\n",$this->{xres};
+    $export .= sprintf "\t\t- y : %s\n",$this->{yres};
     
-    $export .= sprintf "\t Bbox (in SRS '%s' unity) :\n",$self->{imgSrc}->getSRS();
-    $export .= sprintf "\t\t- xmin : %s\n",$self->{bbox}[0];
-    $export .= sprintf "\t\t- ymin : %s\n",$self->{bbox}[1];
-    $export .= sprintf "\t\t- xmax : %s\n",$self->{bbox}[2];
-    $export .= sprintf "\t\t- ymax : %s\n",$self->{bbox}[3];
+    $export .= sprintf "\t Bbox (in SRS '%s' unity) :\n",$this->{srs};
+    $export .= sprintf "\t\t- xmin : %s\n",$this->{xmin};
+    $export .= sprintf "\t\t- ymin : %s\n",$this->{ymin};
+    $export .= sprintf "\t\t- xmax : %s\n",$this->{xmax};
+    $export .= sprintf "\t\t- ymax : %s\n",$this->{ymax};
     
     return $export;
 }

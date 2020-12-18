@@ -63,7 +63,7 @@ Using:
     (end code)
 
 Attributes:
-    id - string - TM identifiant.
+    id - string - TM identifiant (no underscore).
     tms - <COMMON::TileMatrixSet> - TMS to whom it belong
     resolution - double - Ground size of a pixel, using unity of the SRS.
     topLeftCornerX - double - X coordinate of the upper left corner for the level, the grid's origin.

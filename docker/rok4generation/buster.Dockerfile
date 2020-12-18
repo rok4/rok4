@@ -1,5 +1,7 @@
 FROM debian:buster-slim as builder
 
+ARG proxy=
+
 ENV http_proxy=${proxy}
 ENV https_proxy=${proxy}
 ENV ftp_proxy=${proxy}
@@ -21,7 +23,7 @@ RUN apt update && apt -y install  \
     libjpeg-dev \
     libc6-dev \
     librados-dev \
-    perl perl-base \
+    perl-base \
     libgdal-perl libpq-dev gdal-bin \
     libsqlite3-dev git \
     && rm -rf /var/lib/apt/lists/*

@@ -235,9 +235,6 @@ sub prepare {
     $code .= "# Création du dossier temporaire\n";
     $code .= "mkdir -p \${TMP_DIR}\n\n";
 
-    $code .= "# Création de la liste temporaire\n";
-    $code .= "if [ ! -f \"\${TMP_LIST_FILE}\" ] ; then touch \${TMP_LIST_FILE} ; fi\n\n";
-
     if (defined $initialisation) {
         $code .= $initialisation;
     }
@@ -280,6 +277,10 @@ sub close {
         printf $stream "rm -f \${COMMON_TMP_DIR}/list_*.txt\n";
         printf $stream "BackupListFile\n\n";
     }
+
+    printf $stream "if [ -f \"\${progression_file}\" ];then\n";
+    printf $stream "    echo '100' >\$progression_file\n";
+    printf $stream "fi\n\n";
     
     close $stream;
 }
