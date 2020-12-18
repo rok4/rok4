@@ -59,8 +59,7 @@ Attributes:
     PATHIMG - string - Path to images directory.
     images - <COMMON::GeoImage> array - Georeferenced images' ensemble, found in PATHIMG and subdirectories
     srs - string - SRS of the georeferenced images
-    bestResX - double - Best X resolution among all images.
-    bestResY - double - Best Y resolution among all images.
+    bestResImage - <COMMON::GeoImage> - Best resolution image
     pixel - <COMMON::Pixel> - Pixel components of all images, have to be same for each one.
     preprocess_command - string array - elements forming an eventual call to a preprocessing command (optionnal):
         |_ [0] the command itself
@@ -140,8 +139,7 @@ sub new {
         images  => [],
         srs => undef,
         #
-        bestResX => undef,
-        bestResY => undef,
+        bestResImage => undef,
         #
         pixel => undef,
         
@@ -242,7 +240,6 @@ sub computeImageSource {
 
     my $lstGeoImages = $this->{images};
 
-
     my $search = {
         images => [],
     };
@@ -323,8 +320,10 @@ sub computeImageSource {
             }
         }
 
-        $this->{bestResX} = $objGeoImage->getXres() if (! defined $this->{bestResX} || $objGeoImage->getXres() < $this->{bestResX});
-        $this->{bestResY} = $objGeoImage->getYres() if (! defined $this->{bestResY} || $objGeoImage->getYres() < $this->{bestResY});
+        if (! defined $this->{bestResImage} || $objGeoImage->getXres() < $this->{bestResImage}->getXres() 
+                                            || $objGeoImage->getYres() < $this->{bestResImage}->getYres()) {
+            $this->{bestResImage} = $objGeoImage;
+        }
 
         push @$lstGeoImages, $objGeoImage;
     }
@@ -425,6 +424,12 @@ sub getSRS {
 sub getPixel {
     my $this = shift;
     return $this->{pixel};
+}
+
+# Function: getBestResImage
+sub getBestResImage {
+    my $this = shift;
+    return $this->{bestResImage};
 }
 
 # Function: getImages
