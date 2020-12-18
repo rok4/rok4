@@ -153,7 +153,6 @@ sub _init {
     my $this   = shift;
     my $datasource = shift;
 
-    
     return FALSE if (! defined $datasource);
     
     if (! exists($datasource->{filepath_conf}) || ! defined ($datasource->{filepath_conf})) {
@@ -206,6 +205,11 @@ sub _load {
             $this->{type} = $datasource->getType();
         }
 
+        if ($datasource->getBottomID() eq "<AUTO>" && ! $datasource->hasImages()) {
+            ERROR("Auto detect the bottom level is only possible with image source");
+            return FALSE;
+        }
+
         push @{$this->{dataSources}}, $datasource;
     }
 
@@ -229,11 +233,11 @@ From data sources, TMS and parameters, we identify top and bottom :
     - top level = levelID in parameters if defined, top level of TMS otherwise.
 
 For each datasource, we store the order and the ID of the higher level which use this datasource.
-The base level (from which datasource is used) is already known.
+The base level (from which datasource is used) can be determined if the datasource owns a image source.
 
 Example (with 2 data sources) :
-    - DataSource1: from level_18 (order 2) to level_16 (order 4)
-    - DataSource1: from level_15 (order 5) to level_12 (order 8)
+    - DataSource1: from level-18 (order 2) to level-16 (order 4)
+    - DataSource1: from level-15 (order 5) to level-12 (order 8)
 
 There are no superposition between data sources.
 
@@ -279,11 +283,21 @@ sub updateDataSources {
     my $bottomOrder = undef;
     
     foreach my $datasource (@{$this->{dataSources}}) {
-        my $dsBottomID = $datasource->getBottomID;
+        my $dsBottomID = $datasource->getBottomID();
+
+        if ($dsBottomID eq "<AUTO>") {
+            INFO("Bottom level auto detection for an image source...");
+            $dsBottomID = $TMS->getBestLevelID($datasource->getImageSource()->getBestResImage());
+            if (! defined $dsBottomID) {
+                ERROR(sprintf "Cannot auto detect the bottom level from image source best resolution");
+                return (-1, -1);
+            }
+            $datasource->setBottomID($dsBottomID);
+        }
+
         my $dsBottomOrder = $TMS->getOrderfromID($dsBottomID);
         if (! defined $dsBottomOrder) {
-            ERROR(sprintf "The level present in source configuration ('%s') does not exist in the TMS !",
-                $dsBottomID);
+            ERROR(sprintf "The level present in source configuration ('%s') does not exist in the TMS !", $dsBottomID);
             return (-1, -1);
         }
 

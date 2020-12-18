@@ -1,6 +1,6 @@
 ![Logo Rok4](./docs/images/rok4.png)
 
-ROK4 est un projet open-source (sous licence CeCILL-C) développé par les équipes du projet Géoportail de l’Institut National de l’Information Géographique et Forestière. Il contient un serveur (ROK4SERVER), écrit en C++, permettant la diffusion de données images géo-référencées, et une suite d'outils (ROK4GENERATION) permettant de préparer les données utilisées par le serveur.
+ROK4 est un projet open-source (sous licence CeCILL-C) développé par les équipes du projet Géoportail de l’Institut National de l’Information Géographique et Forestière. Il contient un serveur (ROK4SERVER), écrit en C++, permettant la diffusion de données raster ou vecteur, et une suite d'outils (ROK4GENERATION) permettant de préparer les données utilisées par le serveur.
 
 Le serveur implémente les standards ouverts de l’Open Geospatial Consortium (OGC) WMS 1.3.0 et WMTS 1.0.0, ainsi que le TMS (Tile Map Service). Il est utilisé pour l’intégralité de la diffusion des flux images et vecteur tuilé de la dernière version du Géoportail. Répondant aux besoins de diffusion image de l’IGN, ROK4SERVER vise deux objectifs principaux :
 * L’utilisation d’un cache de données raster unique permettant de servir indifféremment des flux WMS, WMTS et TMS
@@ -15,16 +15,11 @@ ROK4GENERATION est un ensemble de scripts de traitement permettant la préparati
 * http://www.ign.fr [@IGNFrance](https://twitter.com/IGNFrance)
 * http://www.geoportail.gouv.fr [@Geoportail](https://twitter.com/Geoportail)
 
-ROK4 Version : 3.8.0-DEVELOP
+ROK4 Version : 3.9.0-DEVELOP
 
-<!-- TOC depthFrom:1 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
-
-- [Fonctionnement général](#fonctionnement-gnral)
+- [Fonctionnement général](#fonctionnement-général)
 - [Compiler et installer le projet ROK4](#compiler-et-installer-le-projet-rok4)
 	- [L'environnement de compilation](#lenvironnement-de-compilation)
-	- [Les librairies](#les-librairies)
-		- [C++](#c)
-		- [Perl](#perl)
 	- [Les commandes externes](#les-commandes-externes)
 	- [La documentation](#la-documentation)
 	- [La compilation et l'installation](#la-compilation-et-linstallation)
@@ -32,13 +27,9 @@ ROK4 Version : 3.8.0-DEVELOP
 		- [Options de compilation](#options-de-compilation)
 			- [Gestion du stockage objet](#gestion-du-stockage-objet)
 			- [Utilisation de Kakadu](#utilisation-de-kakadu)
-			- [Expérimental](#exprimental)
+			- [Expérimental](#expérimental)
 		- [Exemple](#exemple)
 		- [Docker](#docker)
-
-<!-- /TOC -->
-
-
 
 # Fonctionnement général
 
