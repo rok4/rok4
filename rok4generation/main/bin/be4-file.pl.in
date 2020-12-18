@@ -731,7 +731,7 @@ sub doIt {
     }
 
     if ($objDSL->getType() ne "RASTER") {
-        ERROR("BE4 exepect RASTER data sources !");
+        ERROR("BE4 expect RASTER data sources !");
         return FALSE;
     }
     
