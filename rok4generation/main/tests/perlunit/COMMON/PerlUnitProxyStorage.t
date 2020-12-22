@@ -57,8 +57,9 @@ use constant LOG_METHODS => { # Méthodes à surcharger pour les bouchons sur le
 my @LOG_METHODS_NAME = ('TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL', 'ALWAYS');
 
 # Import du bundle de test Test2::Suite
-use Test2::V0 -target => 'COMMON::ProxyStorage';
-use COMMON::ProxyStorage;
+use Test2::V0;
+use Overload::FileCheck ();
+use COMMON::ProxyStorage ();
 
 sub override_env {
     my $hashref = shift;
@@ -71,7 +72,7 @@ sub reset_env {
     %ENV = INITIAL_ENV;
 };
 
-subtest "Tested module : $CLASS" => sub {
+subtest "Tested module : COMMON::ProxyStorage" => sub {
 
     subtest "Tested method : checkEnvironmentVariables()" => sub {
 
@@ -2227,6 +2228,67 @@ subtest "Tested module : $CLASS" => sub {
 
             done_testing;
         };
+
+
+        done_testing;
+    };
+
+    subtest "Tested method : whatIs()" => sub {
+        subtest "File storage, path to directory" => sub {
+            # Environment for the test
+            ## parameters
+            my %variables = (
+                "type" => "FILE",
+                "directory" => "/path/to/directory",
+                "symlink" => "/path/to/symbolic_link",
+                "file" => "/path/to/simple_file"
+            );
+
+            ## mocks
+            Overload::FileCheck::mock_all_file_checks(sub {
+                my ( $check, $path ) = @_;
+
+                if ($check eq "d" && $path =~ /$variables{"directory"}/) {
+                    return Overload::FileCheck::CHECK_IS_TRUE;
+                }
+                elsif ($check eq "d" && $path =~ /($variables{"symlink"}|$variables{"file"})/) {
+                    return Overload::FileCheck::CHECK_IS_FALSE;
+                }
+
+                if ($check eq "l" && $path =~ /$variables{"symlink"}/) {
+                    return Overload::FileCheck::CHECK_IS_TRUE;
+                }
+                elsif ($check eq "l" && $path =~ /($variables{"directory"}|$variables{"file"})/) {
+                    return Overload::FileCheck::CHECK_IS_FALSE;
+                }
+
+                if ($check eq "f" && $path =~ /($variables{"directory"}|$variables{"symlink"}|$variables{"file"})/) {
+                    return Overload::FileCheck::CHECK_IS_TRUE;
+                }
+
+                return Overload::FileCheck::FALLBACK_TO_REAL_OP;
+            });
+
+            # Tests
+            is(COMMON::ProxyStorage::whatIs($variables{"type"}, $variables{"directory"}), 'DIRECTORY', "Directory path recognized");
+            is(COMMON::ProxyStorage::whatIs($variables{"type"}, $variables{"symlink"}), 'LINK', "Symbolic link path recognized");
+            is(COMMON::ProxyStorage::whatIs($variables{"type"}, $variables{"file"}), 'REAL', "Simple file path recognized");
+
+
+            # Ending subtest
+            Overload::FileCheck::unmock_all_file_checks();
+            done_testing;
+        };
+
+
+        subtest "Object storage" => sub {
+            is(COMMON::ProxyStorage::whatIs('CEPH', 'whatever/path'), undef, "CEPH object path returns undef");
+            is(COMMON::ProxyStorage::whatIs('S3', 'whatever/path'), undef, "S3 object path returns undef");
+            is(COMMON::ProxyStorage::whatIs('SWIFT', 'whatever/path'), undef, "SWIFT object path returns undef");
+
+            done_testing;            
+        };
+
 
 
         done_testing;
