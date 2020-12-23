@@ -926,7 +926,8 @@ sub isPresent {
             return FALSE;
         }
 
-        qx(rados -p $poolName stat $objectName 1>/dev/null 2>/dev/null);
+        my @rados_args = ("rados", "-p $poolName", "stat $objectName", "1>/dev/null", "2>/dev/null");
+        system(@rados_args);
         if ($?) {
             return FALSE;
         }
