@@ -77,14 +77,15 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
     subtest "Tested method : checkEnvironmentVariables()" => sub {
 
         subtest "Tested case : file storage, nominal" => sub {
-            # Environment for the test
+            # Préparation du cas de test
             my $main_mock = mock 'COMMON::ProxyStorage' => (
                 track => TRUE,
                 override => LOG_METHODS
             );
             $main_mock->override('_setConfigurationElement' => sub {});
 
-            # Test return value : must be TRUE
+            # Tests
+            ## Valeur de retour
             my $method_return = COMMON::ProxyStorage::checkEnvironmentVariables('FILE');
             is( $method_return, TRUE, "checkEnvironmentVariables('FILE') returns TRUE" );
 
@@ -92,14 +93,14 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             my @main_subs_called = keys( %{$main_mock->sub_tracking()} );
             is( scalar(@main_subs_called), 0, "No call to logger." );
 
-            # Reset environment
+            # Sortie du cas de test
             $main_mock = undef;
 
             done_testing;
         };
 
         subtest "Tested case : ceph object storage, nominal" => sub {
-            # Environment for the test
+            # Préparation du cas de test
             my %temp_env = (
                 'ROK4_CEPH_CONFFILE' => '/etc/ceph/ceph.conf',
                 'ROK4_CEPH_USERNAME' => 'client.admin',
@@ -113,7 +114,8 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             $main_mock->override('_setConfigurationElement' => sub {});
 
 
-            # Test return value : must be TRUE
+            # Tests
+            ## Valeur de retour
             my $method_return = COMMON::ProxyStorage::checkEnvironmentVariables('CEPH');
             is($method_return, TRUE, "checkEnvironmentVariables('CEPH') returns TRUE");
 
@@ -127,7 +129,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             is( scalar(grep(/^($logger_subs)$/, @main_subs_called)), 0, "No call to logger." );
             is( scalar(@{$main_mock->sub_tracking()->{_setConfigurationElement}}), 3, "Calls to setter." );
 
-            # Reset environment
+            # Sortie du cas de test
             reset_env();
             $main_mock = undef;
 
@@ -136,7 +138,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
 
 
         subtest "Tested case : S3 object storage, nominal" => sub {
-            # Environment for the test
+            # Préparation du cas de test
             my %temp_env = (
                 'ROK4_S3_URL' => 'https://url.to.s3_service.com:985',
                 'ROK4_S3_KEY' => 'ThisIsAkey',
@@ -170,7 +172,8 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             );
 
 
-            # Test return value : must be TRUE
+            # Tests
+            ## Valeur de retour
             my $method_return = COMMON::ProxyStorage::checkEnvironmentVariables('S3');
             is($method_return, TRUE, "checkEnvironmentVariables('S3') returns TRUE");
 
@@ -198,7 +201,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             ok( exists($module_scope_UA_var{'UA'}), "Module scope UA variable affectation OK." );
 
 
-            # Reset environment
+            # Sortie du cas de test
             COMMON::ProxyStorage::resetConfiguration();
             reset_env();
             $main_mock = undef;
@@ -210,7 +213,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
         subtest "Tested case : SWIFT object storage, nominal" => sub {
 
             subtest "Subcase : keystone authentication" => sub {
-                # Environment for the test
+                # Préparation du cas de test
                 my %temp_env = (
                     'ROK4_SWIFT_AUTHURL' => 'https://auth.exemple.com:8080/swift/',
                     'ROK4_SWIFT_USER' => 'swift_user_1',
@@ -243,7 +246,8 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
                 );
 
 
-                # Test return value : must be TRUE
+                # Tests
+                ## Valeur de retour
                 my $method_return = COMMON::ProxyStorage::checkEnvironmentVariables('SWIFT', TRUE);
                 is($method_return, TRUE, "checkEnvironmentVariables('SWIFT', TRUE) returns TRUE");
 
@@ -271,7 +275,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
                 ok( exists($module_scope_UA_var{'UA'}), "Module scope UA variable affectation OK." );
 
 
-                # Reset environment
+                # Sortie du cas de test
                 COMMON::ProxyStorage::resetConfiguration();
                 reset_env();
                 $main_mock = undef;
@@ -281,7 +285,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             };
 
             subtest "Subcase : native authentication" => sub {
-                # Environment for the test
+                # Préparation du cas de test
                 my %temp_env = (
                     'ROK4_SWIFT_AUTHURL' => 'https://auth.exemple.com:8080/swift/',
                     'ROK4_SWIFT_USER' => 'swift_user_1',
@@ -312,7 +316,8 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
                 );
 
 
-                # Test return value : must be TRUE
+                # Tests
+                ## Valeur de retour
                 my $method_return = COMMON::ProxyStorage::checkEnvironmentVariables('SWIFT', FALSE);
                 is($method_return, TRUE, "checkEnvironmentVariables('SWIFT', FALSE) returns TRUE");
 
@@ -340,7 +345,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
                 ok( exists($module_scope_UA_var{'UA'}), "Module scope UA variable affectation OK." );
 
 
-                # Reset environment
+                # Sortie du cas de test
                 COMMON::ProxyStorage::resetConfiguration();
                 reset_env();
                 $main_mock = undef;
@@ -356,11 +361,10 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
     };
 
 
-
     subtest "Tested method : getSwiftToken()" => sub {
 
         subtest "Tested case : keystone authentication, nominal" => sub {
-            # Environment for the test
+            # Préparation du cas de test
             my %mocked_module_values = (
                 'ROK4_KEYSTONE_IS_USED' => TRUE,
                 'ROK4_SWIFT_AUTHURL' => 'https://auth.exemple.com:8080/swift/',
@@ -444,7 +448,8 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             $mocked_module_values{'UA'} = LWP::UserAgent->new();
 
 
-            # Test return value : must be TRUE
+            # Tests
+            ## Valeur de retour
             my $method_return = COMMON::ProxyStorage::getSwiftToken();
             is($method_return, TRUE, "getSwiftToken() with keystone returns TRUE");
 
@@ -484,7 +489,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             is( $mocks_hash{'$main'}->sub_tracking()->{_setConfigurationElement}[0]{args}, ['SWIFT_TOKEN', $mocked_module_values{'X-Subject-Token'}], "Swift token set as expected." );
 
 
-            # Reset environment
+            # Sortie du cas de test
             COMMON::ProxyStorage::resetConfiguration();
             reset_env();
             foreach my $mock (keys(%mocks_hash)) {
@@ -496,7 +501,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
 
 
         subtest "Tested case : native authentication, nominal" => sub {
-            # Environment for the test
+            # Préparation du cas de test
             my %mocked_module_values = (
                 'ROK4_KEYSTONE_IS_USED' => FALSE,
                 'ROK4_SWIFT_AUTHURL' => 'https://auth.exemple.com:8080/swift/',
@@ -587,7 +592,8 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             $mocked_module_values{'UA'} = LWP::UserAgent->new();
 
 
-            # Test return value : must be TRUE
+            # Tests
+            ## Valeur de retour
             my $method_return = COMMON::ProxyStorage::getSwiftToken();
             is($method_return, TRUE, "getSwiftToken() without keystone returns TRUE");
 
@@ -605,7 +611,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             is( $mocks_hash{'$main'}->sub_tracking()->{_setConfigurationElement}[1]{args}, ['ROK4_SWIFT_PUBLICURL', $mocked_module_values{'X-Storage-Url'}], "Swift public URL set as expected." );
 
 
-            # Reset environment
+            # Sortie du cas de test
             foreach my $mock (keys(%mocks_hash)) {
                 $mocks_hash{$mock} = undef;
             }
@@ -620,11 +626,10 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
     };
 
 
-
     subtest "Tested method : sendSwiftRequest()" => sub {
         subtest "Tested case : nominal" => sub {
 
-            # Environment for the test
+            # Préparation du cas de test
             my %mocked_module_values = (
                 'UA' => undef,
                 'SWIFT_TOKEN' => 'f0GZyNcnf7_9SDJ31iShwUGzYlLAAlvLN7BQuWHK40YPpqjJ7O7f106ycPnCHYdRxtqQdU8GltNaoxlLk_3PZp4Wv-1r_CurUenWOLsEI-H6NeV65H6oZfPp4VhssTDzEjuk1PfWsVkwSSXBHt69pmPx9UwfMYz0eP7yIagNEz1VIl_uggBb2_PvprJTstQpS'
@@ -707,7 +712,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             is( scalar(grep(/^($logger_subs)$/, @main_subs_called)), 0, "No call to logger." );
 
 
-            # Reset environment
+            # Sortie du cas de test
             foreach my $mock (keys(%mocks_hash)) {
                 $mocks_hash{$mock} = undef;
             }
@@ -723,7 +728,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
 
     subtest "Tested method : returnSwiftToken()" => sub {
         subtest "Tested case : defined_token" => sub {
-            # Environment for the test
+            # Préparation du cas de test
             my $swift_token = 'f0GZyNcnf7_9SDJ31iShwUGzYlLAAlvLN7BQuWHK40YPpqjJ7O7f106ycPnCHYdRxtqQdU8GltNaoxlLk_3PZp4Wv-1r_CurUenWOLsEI-H6NeV65H6oZfPp4VhssTDzEjuk1PfWsVkwSSXBHt69pmPx9UwfMYz0eP7yIagNEz1VIl_uggBb2_PvprJTstQpS';
 
             ## Mocks
@@ -748,7 +753,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             ok( exists($mock_main->sub_tracking()->{DEBUG}), "Call to DEBUG logger." );
 
 
-            # Reset environment
+            # Sortie du cas de test
             $mock_main = undef;
             COMMON::ProxyStorage::resetConfiguration();
 
@@ -756,7 +761,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
         };
 
         subtest "Tested case : undefined_token" => sub {
-            # Environment for the test
+            # Préparation du cas de test
             ## Mocks
             ### Namespace : $main
             my $mock_main = mock 'COMMON::ProxyStorage' => (
@@ -779,7 +784,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             ok( exists($mock_main->sub_tracking()->{DEBUG}), "Call to DEBUG logger." );
 
 
-            # Reset environment
+            # Sortie du cas de test
             $mock_main = undef;
             COMMON::ProxyStorage::resetConfiguration();
 
@@ -789,12 +794,13 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
         done_testing;
     };
 
+
     subtest "Tested method : copy()" => sub {
         # La fonction la plus conséquente.
         # 16 cas sans erreur : {fichier, ceph, s3, swift} -> {fichier, ceph, s3, swift}
 
         subtest "Tested case : file storage to file storage, nominal" => sub {
-            # Environment for the test
+            # Préparation du cas de test
             my %variables = (
                 'source_type' => 'FILE',
                 'source_path' => '/dir/to/source/s_file.pyr',
@@ -851,7 +857,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             is($mocks_hash{'File::Copy'}->sub_tracking()->{'copy'}[0]{'args'}, [$variables{'source_path'}, $variables{'target_path'}], "Correct source and target.");
 
 
-            # Reset environment
+            # Sortie du cas de test
             foreach my $mock (keys(%mocks_hash)) {
                 $mocks_hash{$mock} = undef;
             }
@@ -862,7 +868,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
 
         subtest "Tested case : file storage to CEPH object storage, nominal" => sub {
 
-            # Environment for the test
+            # Préparation du cas de test
             my %variables = (
                 'source_type' => 'FILE',
                 'source_path' => '/dir/to/source/s_file.pyr',
@@ -911,7 +917,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             is($mocks_hash{'*CORE::GLOBAL'}->sub_tracking()->{'system'}[0]{'args'}[2], "put $variables{'target_object'} $variables{'source_path'}", "Correct action.");
 
 
-            # Reset environment
+            # Sortie du cas de test
             foreach my $mock (keys(%mocks_hash)) {
                 $mocks_hash{$mock} = undef;
             }
@@ -922,7 +928,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
 
         subtest "Tested case : file storage to S3 object storage, nominal" => sub {
 
-            # Environment for the test
+            # Préparation du cas de test
             my %variables = (
                 'source_type'           => 'FILE',
                 'source_path'           => '/dir/to/source/s_file.pyr',
@@ -1047,7 +1053,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             };
             like($mocks_hash{'LWP::UserAgent'}->sub_tracking()->{'request'}[0]{'args'}[1]{'headers'}, $expected_request_headers, "Correct headers.");
 
-            # Reset environment
+            # Sortie du cas de test
             foreach my $mock (keys(%mocks_hash)) {
                 $mocks_hash{$mock} = undef;
             }
@@ -1057,7 +1063,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
 
 
         subtest "Tested case : file storage to SWIFT object storage, nominal" =>sub {
-            # Environment for the test
+            # Préparation du cas de test
             my %variables = (
                 'source_type'           => 'FILE',
                 'source_path'           => '/dir/to/source/s_file.pyr',
@@ -1138,7 +1144,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             is($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'sendSwiftRequest'}[0]{'args'}[0]{'PUT'}, "$variables{'ROK4_SWIFT_PUBLICURL'}/$variables{'target_path'}", "Correct URL.");
             is($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'sendSwiftRequest'}[0]{'args'}[0]{'body'}, $variables{'body_content'}, "Correct body.");
 
-            # Reset environment
+            # Sortie du cas de test
             foreach my $mock (keys(%mocks_hash)) {
                 $mocks_hash{$mock} = undef;
             }
@@ -1149,7 +1155,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
 
 
         subtest "Tested case : CEPH object storage to file storage, nominal" => sub {
-            # Environment for the test
+            # Préparation du cas de test
             my %variables = (
                 'source_type'           => 'CEPH',
                 'source_pool'           => 's_pool',
@@ -1214,7 +1220,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             is($mocks_hash{'*CORE::GLOBAL'}->sub_tracking()->{'system'}[0]{'args'}, ["rados", "-p $variables{'source_pool'}", "get $variables{'source_object'} $variables{'target_path'}"], "Pulled from ceph.");
 
 
-            # Reset environment
+            # Sortie du cas de test
             foreach my $mock (keys(%mocks_hash)) {
                 $mocks_hash{$mock} = undef;
             }
@@ -1224,7 +1230,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
 
 
         subtest "Tested case : CEPH object storage to CEPH object storage, nominal" => sub {
-            # Environment for the test
+            # Préparation du cas de test
             my %variables = (
                 'source_type'           => 'CEPH',
                 'common_pool'           => 'c_pool',
@@ -1278,7 +1284,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             is($mocks_hash{'*CORE::GLOBAL'}->sub_tracking()->{'system'}[0]{'args'}, ["rados", "-p $variables{'common_pool'}", "cp $variables{'source_object'} $variables{'target_object'}"], "Object copy inside ceph pool.");
 
 
-            # Reset environment
+            # Sortie du cas de test
             foreach my $mock (keys(%mocks_hash)) {
                 $mocks_hash{$mock} = undef;
             }
@@ -1288,7 +1294,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
 
 
         subtest "Tested case : CEPH object storage to S3 object storage, nominal" => sub {
-            # Environment for the test
+            # Préparation du cas de test
             my %variables = (
                 'source_type'           => 'CEPH',
                 'source_pool'           => 's_pool',
@@ -1347,7 +1353,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             };
 
 
-            # Reset environment
+            # Sortie du cas de test
             foreach my $mock (keys(%mocks_hash)) {
                 $mocks_hash{$mock} = undef;
             }
@@ -1357,7 +1363,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
 
 
         subtest "Tested case : CEPH object storage to SWIFT object storage, nominal" => sub {
-            # Environment for the test
+            # Préparation du cas de test
             my %variables = (
                 'source_type'           => 'CEPH',
                 'source_pool'           => 's_pool',
@@ -1413,7 +1419,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             };
 
 
-            # Reset environment
+            # Sortie du cas de test
             foreach my $mock (keys(%mocks_hash)) {
                 $mocks_hash{$mock} = undef;
             }
@@ -1424,7 +1430,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
 
         subtest "Tested case : S3 object storage to file storage, nominal" => sub {
 
-            # Environment for the test
+            # Préparation du cas de test
             my %variables = (
                 'source_type'           => 'S3',
                 'source_bucket'         => 's_bucket',
@@ -1556,7 +1562,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             like($mocks_hash{'LWP::UserAgent'}->sub_tracking()->{'request'}[0]{'args'}[1]{'headers'}, $expected_request_headers, "Correct headers.");
 
 
-            # Reset environment
+            # Sortie du cas de test
             foreach my $mock (keys(%mocks_hash)) {
                 $mocks_hash{$mock} = undef;
             }
@@ -1566,7 +1572,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
 
 
         subtest "Tested case : S3 object storage to CEPH object storage, nominal" => sub {
-            # Environment for the test
+            # Préparation du cas de test
             my %variables = (
                 'source_type'           => 'S3',
                 'source_bucket'         => 's_bucket',
@@ -1674,7 +1680,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             };
 
 
-            # Reset environment
+            # Sortie du cas de test
             foreach my $mock (keys(%mocks_hash)) {
                 $mocks_hash{$mock} = undef;
             }
@@ -1684,7 +1690,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
 
 
         subtest "Tested case : S3 object storage to S3 object storage, nominal" => sub {
-            # Environment for the test
+            # Préparation du cas de test
             my %variables = (
                 'source_type'           => 'S3',
                 'source_bucket'         => 's_bucket',
@@ -1799,7 +1805,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             like($mocks_hash{'LWP::UserAgent'}->sub_tracking()->{'request'}[0]{'args'}[1]{'headers'}, $expected_request_headers, "Correct headers.");
 
 
-            # Reset environment
+            # Sortie du cas de test
             foreach my $mock (keys(%mocks_hash)) {
                 $mocks_hash{$mock} = undef;
             }
@@ -1809,7 +1815,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
 
 
         subtest "Tested case : S3 object storage to SWIFT object storage, nominal" => sub {
-            # Environment for the test
+            # Préparation du cas de test
             my %variables = (
                 'source_type'           => 'S3',
                 'source_bucket'         => 's_bucket',
@@ -1920,7 +1926,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             };
 
 
-            # Reset environment
+            # Sortie du cas de test
             foreach my $mock (keys(%mocks_hash)) {
                 $mocks_hash{$mock} = undef;
             }
@@ -1930,7 +1936,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
 
 
         subtest "Tested case : SWIFT object storage to file storage, nominal" => sub {
-            # Environment for the test
+            # Préparation du cas de test
             my %variables = (
                 'source_type'           => 'SWIFT',
                 'source_container'      => 's_container',
@@ -2014,7 +2020,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'sendSwiftRequest'}), "Request sent.");
             is($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'sendSwiftRequest'}[0]{'args'}[0]{'GET'}, "$variables{'ROK4_SWIFT_PUBLICURL'}/$variables{'source_path'}", "Correct URL.");
 
-            # Reset environment
+            # Sortie du cas de test
             foreach my $mock (keys(%mocks_hash)) {
                 $mocks_hash{$mock} = undef;
             }
@@ -2022,7 +2028,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
         };
 
         subtest "Tested case : SWIFT object storage to CEPH object storage, nominal" => sub {
-            # Environment for the test
+            # Préparation du cas de test
             my %variables = (
                 'source_type'           => 'SWIFT',
                 'source_container'      => 's_container',
@@ -2067,7 +2073,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             };
 
 
-            # Reset environment
+            # Sortie du cas de test
             foreach my $mock (keys(%mocks_hash)) {
                 $mocks_hash{$mock} = undef;
             }
@@ -2077,7 +2083,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
 
 
         subtest "Tested case : SWIFT object storage to S3 object storage, nominal" => sub {
-            # Environment for the test
+            # Préparation du cas de test
             my %variables = (
                 'source_type'           => 'SWIFT',
                 'source_container'      => 's_container',
@@ -2127,7 +2133,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             };
 
 
-            # Reset environment
+            # Sortie du cas de test
             foreach my $mock (keys(%mocks_hash)) {
                 $mocks_hash{$mock} = undef;
             }
@@ -2137,7 +2143,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
 
 
         subtest "Tested case : SWIFT object storage to SWIFT object storage, nominal" => sub {
-            # Environment for the test
+            # Préparation du cas de test
             my %variables = (
                 'source_type'           => 'SWIFT',
                 'source_container'      => 's_container',
@@ -2221,7 +2227,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             is($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'sendSwiftRequest'}[0]{'args'}[0]{'headers'}, {'Destination' => $variables{'target_path'}}, "Correct headers.");
 
 
-            # Reset environment
+            # Sortie du cas de test
             foreach my $mock (keys(%mocks_hash)) {
                 $mocks_hash{$mock} = undef;
             }
@@ -2233,10 +2239,11 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
         done_testing;
     };
 
+
     subtest "Tested method : whatIs()" => sub {
         subtest "File storage, valid path" => sub {
-            # Environment for the test
-            ## parameters
+            # Préparation du cas de test
+            ## Paramètres divers
             my %variables = (
                 "type" => "FILE",
                 "directory" => "/path/to/directory",
@@ -2278,7 +2285,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             is(COMMON::ProxyStorage::whatIs($variables{"type"}, $variables{"file"}), 'REAL', "Simple file path recognized");
 
 
-            # Ending subtest
+            # Sortie du cas de test
             Overload::FileCheck::unmock_all_file_checks();
             done_testing;
         };
@@ -2299,8 +2306,8 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
 
     subtest "Tested method : isPresent()" => sub {
         subtest "Tested case : file storage, present" => sub {
-            # Environment for the test
-            ## parameters
+            # Préparation du cas de test
+            ## Paramètres divers
             my %variables = (
                 "type"      => "FILE",
                 "directory" => "/path/to/directory",
@@ -2359,7 +2366,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{'DEBUG'}), "At least 1 DEBUG log entry.");
 
 
-            # Ending subtest
+            # Sortie du cas de test
             Overload::FileCheck::unmock_all_file_checks();
             foreach my $mock (keys(%mocks_hash)) {
                 $mocks_hash{$mock} = undef;
@@ -2369,8 +2376,8 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
 
 
         subtest "Tested case : CEPH object storage, present" => sub {
-            # Environment for the test
-            ## parameters
+            # Préparation du cas de test
+            ## Paramètres divers
             my %variables = (
                 'type'      => "CEPH",
                 'pool'      => "test_pool",
@@ -2413,7 +2420,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             is($mocks_hash{'*CORE::GLOBAL'}->sub_tracking()->{'system'}[0]{'args'}, ["rados", "-p $variables{'pool'}", "stat $variables{'object'}", "1>/dev/null", "2>/dev/null"], "Stat on CEPH object.");
 
 
-            # Ending subtest
+            # Sortie du cas de test
             foreach my $mock (keys(%mocks_hash)) {
                 $mocks_hash{$mock} = undef;
             }
@@ -2422,8 +2429,8 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
 
 
         subtest "Tested case : S3 object storage, present" => sub {
-            # Environment for the test
-            ## parameters
+            # Préparation du cas de test
+            ## Paramètres divers
             my %variables = (
                 'type'                  => "S3",
                 'bucket'                => "test_bucket",
@@ -2536,7 +2543,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             like($mocks_hash{'LWP::UserAgent'}->sub_tracking()->{'request'}[0]{'args'}[1]{'headers'}, $expected_request_headers, "Correct headers.");
 
 
-            # Ending subtest
+            # Sortie du cas de test
             foreach my $mock (keys(%mocks_hash)) {
                 $mocks_hash{$mock} = undef;
             }
@@ -2545,8 +2552,8 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
 
 
         subtest "Tested case : SWIFT object storage, present" => sub  {
-            # Environment for the test
-            ## parameters
+            # Préparation du cas de test
+            ## Paramètres divers
             my %variables = (
                 'type'                  => "SWIFT",
                 'container'             => "test_container",
@@ -2638,7 +2645,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             like($mocks_hash{'LWP::UserAgent'}->sub_tracking()->{'request'}[0]{'args'}[1]{'headers'}, $expected_request_headers, "Correct headers.");
 
 
-            # Ending subtest
+            # Sortie du cas de test
             foreach my $mock (keys(%mocks_hash)) {
                 $mocks_hash{$mock} = undef;
             }
@@ -2646,6 +2653,23 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
         };
 
 
+        done_testing;
+    };
+
+
+    subtest "Tested method : getRealData()" => sub {
+
+        subtest "Tested case : file storage, present" => sub {
+
+            # Sortie du cas de test
+            foreach my $mock (keys(%mocks_hash)) {
+                $mocks_hash{$mock} = undef;
+            }
+            done_testing;
+        };
+
+
+        # Fin des tests sur la fonction
         done_testing;
     };
 
