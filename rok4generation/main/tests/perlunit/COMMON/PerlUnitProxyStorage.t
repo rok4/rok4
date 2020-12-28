@@ -55,6 +55,8 @@ use constant LOG_METHODS => { # Méthodes à surcharger pour les bouchons sur le
     ALWAYS => sub { return; }
 };
 my @LOG_METHODS_NAME = ('TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL', 'ALWAYS');
+use constant ROK4_SYMLINK_SIGNATURE_SIZE => 8;
+use constant ROK4_SYMLINK_SIGNATURE => "SYMLINK#";
 
 # Import du bundle de test Test2::Suite
 use Test2::V0;
@@ -2660,6 +2662,163 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
     subtest "Tested method : getRealData()" => sub {
 
         subtest "Tested case : file storage, present" => sub {
+            # Préparation du cas de test
+            ## Paramètres divers
+            my %variables = (
+                "type"          => "FILE",
+                "directory"     => "/path/to/directory",
+                "symlink"       => "/path/to/symbolic_link",
+                "file"          => "/path/to/simple_file",
+                "link_target"   => "/path/to/link_target"
+            );
+
+            ## mocks
+            my %mocks_hash = ();
+
+            ## file tests
+            Overload::FileCheck::mock_all_file_checks(sub {
+                my ( $check, $path ) = @_;
+
+                if ($check eq "e" && $path =~ /($variables{"directory"}|$variables{"symlink"}|$variables{"file"})/) {
+                    return Overload::FileCheck::CHECK_IS_TRUE;
+                }
+
+                if ($check eq "d" && $path =~ /$variables{"directory"}/) {
+                    return Overload::FileCheck::CHECK_IS_TRUE;
+                }
+                elsif ($check eq "d" && $path =~ /($variables{"symlink"}|$variables{"file"})/) {
+                    return Overload::FileCheck::CHECK_IS_FALSE;
+                }
+
+                if ($check eq "l" && $path =~ /$variables{"symlink"}/) {
+                    return Overload::FileCheck::CHECK_IS_TRUE;
+                }
+                elsif ($check eq "l" && $path =~ /($variables{"directory"}|$variables{"file"})/) {
+                    return Overload::FileCheck::CHECK_IS_FALSE;
+                }
+
+                if ($check eq "f" && $path =~ /($variables{"symlink"}|$variables{"file"})/) {
+                    return Overload::FileCheck::CHECK_IS_TRUE;
+                }
+                elsif ($check eq "f" && $path =~ /$variables{"directory"}/) {
+                    return Overload::FileCheck::CHECK_IS_FALSE;
+                }
+
+                return Overload::FileCheck::FALLBACK_TO_REAL_OP;
+            });
+
+            ### Namespace : COMMON::ProxyStorage
+            $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
+                track => TRUE,
+                override => LOG_METHODS
+            );
+
+            ### Namespace : File::Spec::Link
+            $mocks_hash{'File::Spec::Link'} = mock 'File::Spec::Link' => (
+                track => TRUE,
+                override => {
+                    'linked' => sub {
+                        return 'partially_resolved_path';
+                    },
+                    'full_resolve' => sub {
+                        return $variables{"link_target"};
+                    }
+                }
+            );
+
+
+            # Tests
+            ## Valeur de retour
+            is(COMMON::ProxyStorage::getRealData($variables{"type"}, $variables{"symlink"}), $variables{"link_target"}, "Symbolic link target path returned.");
+            is(COMMON::ProxyStorage::getRealData($variables{"type"}, $variables{"file"}), $variables{"file"}, "Simple file path returned unmodified.");
+
+            ## Appels au logger
+            foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE', 'DEBUG') {
+                ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
+            }
+
+
+            # Sortie du cas de test
+            Overload::FileCheck::unmock_all_file_checks();
+            foreach my $mock (keys(%mocks_hash)) {
+                $mocks_hash{$mock} = undef;
+            }
+            done_testing;
+        };
+
+        subtest "Tested case : ceph object storage, present" => sub {
+            # Préparation du cas de test
+            ## Paramètres divers
+            my %variables = (
+                "type"                      => "CEPH",
+                "pool"                      => "test_pool",
+                "link_name"                 => "symbolic_link",
+                "link_target"               => "link_target",
+                "object_name"               => "simple_object",
+                "ROK4_IMAGE_HEADER_SIZE"    => 2048
+            );
+            $variables{"link_path"} = sprintf("%s/%s", $variables{"pool"}, $variables{"link_name"});
+            $variables{"link_target_path"} = sprintf("%s/%s", $variables{"pool"}, $variables{"link_target"});
+            $variables{"link_object_content"} = sprintf("%s%s", ROK4_SYMLINK_SIGNATURE, $variables{"link_target"});
+            $variables{"object_path"} = sprintf("%s/%s", $variables{"pool"}, $variables{"object_name"});
+
+            ## mocks
+            my %mocks_hash = ();
+
+            ### Namespace : COMMON::ProxyStorage
+            $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
+                track => TRUE,
+                override => LOG_METHODS,
+                override => {
+                    '_getConfigurationElement' => sub {
+                        my $key = shift;
+                        return $variables{$key};
+                    },
+                    'getSize' => sub {
+                        my ($type, $path) = @_;
+                        if ($path eq $variables{"link_path"}) {
+                            return ROK4_SYMLINK_SIGNATURE_SIZE + length($variables{"link_target"});
+                        }
+                        elsif ($path eq $variables{"object_path"}) {
+                            return $variables{"ROK4_IMAGE_HEADER_SIZE"} + 4096*4096*3;
+                        }
+                        else {
+                            return undef;
+                        }
+                    }
+                }
+            );
+
+            ### Namespace : *CORE::GLOBAL
+            $mocks_hash{'*CORE::GLOBAL'} = mock '*CORE::GLOBAL' => (
+                track => TRUE,
+                set => {
+                    'readpipe' => sub {
+                        $? = 0;
+                        return $variables{'link_object_content'};
+                    }
+                }
+            );
+
+
+            # Tests
+            ## Valeur de retour
+            is(COMMON::ProxyStorage::getRealData($variables{"type"}, $variables{"link_path"}), $variables{"link_target_path"}, "Symbolic link target path returned.");
+            is(COMMON::ProxyStorage::getRealData($variables{"type"}, $variables{"object_path"}), $variables{"object_path"}, "Simple object path returned unmodified.");
+
+            ## Appels au logger
+            foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE', 'DEBUG') {
+                ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
+            }
+
+            ## Appels internes
+            ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{getSize}), "Object size checked.");
+            is($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{getSize}[0]{'args'}, [$variables{"type"}, $variables{"link_path"}], "Link object size checked.");
+            is($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{getSize}[1]{'args'}, [$variables{"type"}, $variables{"object_path"}], "Simple object size checked.");
+
+            ## Appels système
+            like($mocks_hash{'*CORE::GLOBAL'}->sub_tracking()->{'readpipe'}[0]{'args'}[0], qr(rados.* -p $variables{"pool"}.* get $variables{"link_name"}), "Link object content read.");
+
 
             # Sortie du cas de test
             foreach my $mock (keys(%mocks_hash)) {

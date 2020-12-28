@@ -80,6 +80,7 @@ use File::Basename;
 use File::Copy ();
 use File::Map qw(map_file);
 use File::Path;
+use File::Spec::Link;
 use HTTP::Request::Common;
 use HTTP::Request;
 use HTTP::Response;
