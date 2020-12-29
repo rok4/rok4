@@ -1236,7 +1236,7 @@ sub remove {
     my $path = shift;
 
     if ($type eq "FILE") {
-        qx(rm -r $path);
+        system(("rm", "-r", "$path"));
         if ($? == 0) {return TRUE;}
     }
     elsif ($type eq "CEPH") {
@@ -1244,7 +1244,8 @@ sub remove {
         my ($poolName, @rest) = split("/", $path);
         my $objectName = join("", @rest);
 
-        qx(rados -p $poolName rm $objectName);
+        my @rados_args = ("rados", "-p $poolName", "rm $objectName");
+        system(@rados_args);
         if (! $@) {return TRUE;}
     }
     elsif ($type eq "SWIFT") {
