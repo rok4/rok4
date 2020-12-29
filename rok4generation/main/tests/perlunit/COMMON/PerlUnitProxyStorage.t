@@ -3005,6 +3005,367 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
     };
 
 
+    subtest "Tested method : getSize()" => sub {
+
+        subtest "Tested case : file storage, nominal" => sub {
+            # Préparation du cas de test
+            ## Paramètres divers
+            my %variables = (
+                "type"     => "FILE",
+                "path"     => "/path/to/file",
+                "size"     => 4000*4000*3
+            );
+
+            ## mocks
+            my %mocks_hash = ();
+
+            ## file tests
+            Overload::FileCheck::mock_all_file_checks(sub {
+                my ( $check, $path ) = @_;
+
+                if ($check eq "s"){
+                    if ($path eq $variables{"path"}) {
+                        return $variables{"size"};
+                    }
+                    else {
+                        return 0;
+                    }
+                } 
+
+                return Overload::FileCheck::CHECK_IS_FALSE;
+            });
+
+            ### Namespace : COMMON::ProxyStorage
+            $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
+                track => TRUE,
+                override => LOG_METHODS
+            );
+
+
+            # Tests
+            ## Valeur de retour
+            is(COMMON::ProxyStorage::getSize($variables{"type"}, $variables{"path"}), $variables{"size"}, "File size returned.");
+
+            ## Appels au logger
+            foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE', 'DEBUG') {
+                ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
+            }
+
+
+            # Sortie du cas de test
+            Overload::FileCheck::unmock_all_file_checks();
+            foreach my $mock (keys(%mocks_hash)) {
+                $mocks_hash{$mock} = undef;
+            }
+            done_testing;
+        };
+
+
+        subtest "Tested case : Ceph object storage, nominal" => sub {
+            # Préparation du cas de test
+            ## Paramètres divers
+            my %variables = (
+                "type"          => "CEPH",
+                "pool"          => "test_pool",
+                "object_name"   => "simple_object",
+                "size"          => 4000*4000*3
+            );
+            $variables{"path"} = sprintf("%s/%s", $variables{"pool"}, $variables{"object_name"});
+
+            ## mocks
+            my %mocks_hash = ();
+
+            ### Namespace : COMMON::ProxyStorage
+            $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
+                track => TRUE,
+                override => LOG_METHODS
+            );
+
+            ### Namespace : *CORE::GLOBAL
+            $mocks_hash{'*CORE::GLOBAL'} = mock '*CORE::GLOBAL' => (
+                track => TRUE,
+                set => {
+                    'readpipe' => sub {
+                        $? = 0;
+                        return sprintf("%s mtime 2020-10-01 10:02:38.000000, size %d", $variables{'path'}, $variables{'size'});
+                    }
+                }
+            );
+
+
+            # Tests
+            ## Valeur de retour
+            is(COMMON::ProxyStorage::getSize($variables{"type"}, $variables{"path"}), $variables{"size"}, "Object size returned.");
+
+            ## Appels au logger
+            foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE', 'DEBUG') {
+                ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
+            }
+
+
+            # Sortie du cas de test
+            foreach my $mock (keys(%mocks_hash)) {
+                $mocks_hash{$mock} = undef;
+            }
+            done_testing;
+        };
+
+
+        subtest "Tested case : S3 object storage, nominal" => sub {
+            # Préparation du cas de test
+            ## Paramètres divers
+            my %variables = (
+                "type"                  => "S3",
+                "bucket"                => "test_bucket",
+                "object_name"           => "simple_object",
+                "size"                  => 4000*4000*3,
+                'date'                  => 'Tue, 08 Dec 2020 15:07:27 +0000',
+                'ROK4_S3_URL'           => 'http://url_to_s3_cluster.net',
+                'ROK4_S3_ENDPOINT_HOST' => 'http://url_to_s3_host.net/endpoint',
+                'ROK4_S3_KEY'           => 'KeyToS3',
+                'ROK4_S3_SECRETKEY'     => 'SecretKeyToS3'
+            );
+            $variables{"path"} = sprintf("%s/%s", $variables{"bucket"}, $variables{"object_name"});
+
+            ## mocks
+            my %mocks_hash = ();
+
+            ### Namespace : COMMON::ProxyStorage
+            $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
+                track => TRUE,
+                override => LOG_METHODS,
+                override => {
+                    '_getConfigurationElement' => sub {
+                        my $key = shift;
+                        return $variables{$key};
+                    }
+                }
+            );
+
+            ### Namespace : HTTP::Request
+            $mocks_hash{'HTTP::Request'} = mock 'HTTP::Request' => (
+                track => TRUE,
+                override_constructor => {
+                    'new' => 'hash'
+                },
+                set => {
+                    'header' => sub {
+                        my $self = shift;
+                        my $key = shift;
+                        my $value = shift;
+                        exists($self->{'headers'}->{$key});
+                        $self->{'headers'}->{$key} = $value;
+                        return $self->{'headers'}->{$key};
+                    }
+                }
+            );
+
+            ### Namespace : HTTP::Response
+            $mocks_hash{'HTTP::Response'} = mock 'HTTP::Response' => (
+                track => TRUE,
+                override_constructor => {
+                    'new' => 'hash'
+                },
+                override => {
+                    'is_success' => sub {
+                        return TRUE;
+                    }
+                },
+                set => {
+                    'header' => sub {
+                        my $self = shift;
+                        my $key = shift;
+                        my $value = undef;
+
+                        if ($key = "Content-Length") {
+                            $value = $variables{"size"};
+                        }
+
+                        return $value;
+                    }
+                }
+            );
+
+            ### Namespace : LWP::UserAgent
+            $mocks_hash{'LWP::UserAgent'} = mock 'LWP::UserAgent' => (
+                track => TRUE,
+                override_constructor => {
+                    'new' => 'hash'
+                },
+                override => {
+                    'request' => sub {
+                        return HTTP::Response->new();
+                    }
+                }
+            );
+            $variables{'UA'} = LWP::UserAgent->new();
+
+            ### Namespace : *CORE::GLOBAL
+            $mocks_hash{'*CORE::GLOBAL'} = mock '*CORE::GLOBAL' => (
+                track => TRUE,
+                set => {
+                    'readpipe' => sub {
+                        $? = 0;
+                        return $variables{'date'};
+                    }
+                }
+            );
+
+
+            # Tests
+            ## Valeur de retour
+            is(COMMON::ProxyStorage::getSize($variables{"type"}, $variables{"path"}), $variables{"size"}, "Object size returned.");
+
+            ## Appels au logger
+            foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE', 'DEBUG') {
+                ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
+            }
+
+            ## Appels au shell
+            ok(exists($mocks_hash{'*CORE::GLOBAL'}->sub_tracking()->{'readpipe'}), "qx// called");
+            like($mocks_hash{'*CORE::GLOBAL'}->sub_tracking()->{'readpipe'}[0]{'args'}[0], qr/.*date.*/, "Call to shell 'date'");
+
+            ## Appels liés aux requêtes
+            ok(exists($mocks_hash{'LWP::UserAgent'}->sub_tracking()->{'request'}), "Request sent.");
+            is($mocks_hash{'LWP::UserAgent'}->sub_tracking()->{'request'}[0]{'args'}[1]{'HEAD'}, "$variables{'ROK4_S3_URL'}/$variables{'path'}", "Correct URL.");
+            my $expected_request_headers = {
+                'Host' => $variables{'ROK4_S3_ENDPOINT_HOST'},
+                'Date' => $variables{'date'},
+                'Content-Type' => 'application/octet-stream',
+                'Authorization' => qr/AWS $variables{'ROK4_S3_KEY'}:.+=/
+            };
+            like($mocks_hash{'LWP::UserAgent'}->sub_tracking()->{'request'}[0]{'args'}[1]{'headers'}, $expected_request_headers, "Correct headers.");
+
+
+            # Sortie du cas de test
+            foreach my $mock (keys(%mocks_hash)) {
+                $mocks_hash{$mock} = undef;
+            }
+            done_testing;
+        };
+
+
+        subtest "Tested case : Swift object storage, nominal" => sub {
+            # Préparation du cas de test
+            ## Paramètres divers
+            my %variables = (
+                "type"                  => "SWIFT",
+                "container"             => "test_container",
+                "object_name"           => "simple_object",
+                "size"                  => 4000*4000*3,
+                'ROK4_SWIFT_PUBLICURL'  => 'https://cluster.swift.com:8081',
+                'SWIFT_TOKEN'           => 'f0GZyNcnf7_9SDJ31iShwUGzYlLAAlvLN7BQuWHK40YPpqjJ7O7f106ycPnCHYdRxtqQdU8GltNaoxlLk_3PZp4Wv-1r_CurUenWOLsEI-H6NeV65H6oZfPp4VhssTDzEjuk1PfWsVkwSSXBHt69pmPx9UwfMYz0eP7yIagNEz1VIl_uggBb2_PvprJTstQpS'
+            );
+            $variables{"path"} = sprintf("%s/%s", $variables{"container"}, $variables{"object_name"});
+
+            ## mocks
+            my %mocks_hash = ();
+
+            ### Namespace : COMMON::ProxyStorage
+            $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
+                track => TRUE,
+                override => LOG_METHODS,
+                override => {
+                    '_getConfigurationElement' => sub {
+                        my $key = shift;
+                        return $variables{$key};
+                    }
+                }
+            );
+
+            ### Namespace : HTTP::Request
+            $mocks_hash{'HTTP::Request'} = mock 'HTTP::Request' => (
+                track => TRUE,
+                override_constructor => {
+                    'new' => 'hash'
+                },
+                add => {
+                    'header' => sub {
+                        my $self = shift;
+                        my $key = shift;
+                        my $value = shift;
+                        exists($self->{'headers'}->{$key});
+                        $self->{'headers'}->{$key} = $value;
+                        return $self->{'headers'}->{$key};
+                    }
+                }
+            );
+
+            ### Namespace : HTTP::Response
+            $mocks_hash{'HTTP::Response'} = mock 'HTTP::Response' => (
+                track => TRUE,
+                override_constructor => {
+                    'new' => 'hash'
+                },
+                override => {
+                    'is_success' => sub {
+                        return TRUE;
+                    },
+                    'content' => sub {
+                        return $variables{'link_object_content'}
+                    }
+                },
+                set => {
+                    'header' => sub {
+                        my $self = shift;
+                        my $key = shift;
+                        my $value = undef;
+
+                        if ($key = "Content-Length") {
+                            $value = $variables{"size"};
+                        }
+
+                        return $value;
+                    }
+                }
+            );
+
+            ### Namespace : LWP::UserAgent
+            $mocks_hash{'LWP::UserAgent'} = mock 'LWP::UserAgent' => (
+                track => TRUE,
+                override_constructor => {
+                    'new' => 'hash'
+                },
+                override => {
+                    'request' => sub {
+                        return HTTP::Response->new();
+                    }
+                }
+            );
+            $variables{'UA'} = LWP::UserAgent->new();
+
+
+            # Tests
+            ## Valeur de retour
+            is(COMMON::ProxyStorage::getSize($variables{"type"}, $variables{"path"}), $variables{"size"}, "Object size returned.");
+
+            ## Appels au logger
+            foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE', 'DEBUG') {
+                ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
+            }
+
+            ## Appels liés aux requêtes
+            my $expected_request_headers = {
+                'X-Auth-Token' => $variables{'SWIFT_TOKEN'}
+            };
+            is(scalar(@{$mocks_hash{'LWP::UserAgent'}->sub_tracking()->{'request'}}), 1, "Request sent once.");
+            is($mocks_hash{'LWP::UserAgent'}->sub_tracking()->{'request'}[0]{'args'}[1]{'HEAD'}, "$variables{'ROK4_SWIFT_PUBLICURL'}/$variables{'path'}", "Correct link object URL.");
+            like($mocks_hash{'LWP::UserAgent'}->sub_tracking()->{'request'}[0]{'args'}[1]{'headers'}, $expected_request_headers, "Correct headers.");
+
+
+            # Sortie du cas de test
+            foreach my $mock (keys(%mocks_hash)) {
+                $mocks_hash{$mock} = undef;
+            }
+            done_testing;
+        };
+
+
+        # Fin des tests sur la fonction
+        done_testing;
+    };
+
+
     # Fin des tests sur le module
     done_testing;
 };
