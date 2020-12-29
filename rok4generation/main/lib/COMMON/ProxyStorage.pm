@@ -71,6 +71,12 @@ BEGIN {
             $? = 0;
             return "mock system(@_)";
         };
+        no warnings 'once';
+        *CORE::GLOBAL::symlink = sub {
+            # fonction à surcharger en environnement de test
+            $? = 0;
+            return 1;
+        };
     }
 }
 
@@ -1299,7 +1305,8 @@ sub symLink {
     if ($targetType eq "FILE" && $toType eq "FILE") {
         # create folder
         my $dir = File::Basename::dirname($toPath);
-        qx(mkdir -p $dir);
+        my @system_args = ('mkdir', '-p', $dir);
+        system(@system_args);
         if ($?) {
             ERROR("Cannot create directory '$dir' : $!");
             return undef;
@@ -1342,7 +1349,8 @@ sub symLink {
         }
 
         my $symlink_content = ROK4_SYMLINK_SIGNATURE . $realTarget;
-        eval { qx(echo -n "$symlink_content" | rados -p $toPoolName put $toPath /dev/stdin) };
+        my @system_args = ("echo", "-n \"$symlink_content\"", "|", "rados", "-p $toPoolName", "put $toPath /dev/stdin");
+        eval { system(@system_args) };
 
         if ($@) {
             ERROR("Cannot symlink (make a rados put) object $realTarget with alias $toPath : $@");
