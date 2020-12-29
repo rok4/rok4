@@ -2746,6 +2746,7 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             done_testing;
         };
 
+
         subtest "Tested case : ceph object storage, present" => sub {
             # Préparation du cas de test
             ## Paramètres divers
@@ -2818,6 +2819,177 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
 
             ## Appels système
             like($mocks_hash{'*CORE::GLOBAL'}->sub_tracking()->{'readpipe'}[0]{'args'}[0], qr(rados.* -p $variables{"pool"}.* get $variables{"link_name"}), "Link object content read.");
+
+
+            # Sortie du cas de test
+            foreach my $mock (keys(%mocks_hash)) {
+                $mocks_hash{$mock} = undef;
+            }
+            done_testing;
+        };
+
+
+        subtest "Tested case : s3 object storage, present" => sub {
+            # Préparation du cas de test
+            ## Paramètres divers
+            my %variables = (
+                "type"                      => "S3",
+                "bucket"                    => "test_bucket",
+                "link_name"                 => "symbolic_link",
+                "link_target"               => "link_target",
+                "object_name"               => "simple_object",
+                "ROK4_IMAGE_HEADER_SIZE"    => 2048
+            );
+            $variables{"link_path"} = sprintf("%s/%s", $variables{"bucket"}, $variables{"link_name"});
+            $variables{"link_target_path"} = sprintf("%s/%s", $variables{"bucket"}, $variables{"link_target"});
+            $variables{"link_object_content"} = sprintf("%s%s", ROK4_SYMLINK_SIGNATURE, $variables{"link_target"});
+            $variables{"object_path"} = sprintf("%s/%s", $variables{"bucket"}, $variables{"object_name"});
+
+            ## mocks
+            my %mocks_hash = ();
+
+            ### Namespace : COMMON::ProxyStorage
+            $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
+                track => TRUE,
+                override => LOG_METHODS
+            );
+
+
+            # Tests
+            ## Valeur de retour
+            is(COMMON::ProxyStorage::getRealData($variables{"type"}, $variables{"link_path"}), $variables{"link_path"}, "Symbolic link path returned unmodified.");
+            is(COMMON::ProxyStorage::getRealData($variables{"type"}, $variables{"object_path"}), $variables{"object_path"}, "Simple object path returned unmodified.");
+
+            ## Appels au logger
+            foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE', 'DEBUG') {
+                ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
+            }
+
+
+            # Sortie du cas de test
+            foreach my $mock (keys(%mocks_hash)) {
+                $mocks_hash{$mock} = undef;
+            }
+            done_testing;
+        };
+
+
+        subtest "Tested case : swift object storage, present" => sub {
+            # Préparation du cas de test
+            ## Paramètres divers
+            my %variables = (
+                "type"                      => "SWIFT",
+                "container"                 => "test_container",
+                "link_name"                 => "symbolic_link",
+                "link_target"               => "link_target",
+                "object_name"               => "simple_object",
+                "ROK4_IMAGE_HEADER_SIZE"    => 2048,
+                'ROK4_SWIFT_PUBLICURL'      => 'https://cluster.swift.com:8081',
+                'SWIFT_TOKEN'               => 'f0GZyNcnf7_9SDJ31iShwUGzYlLAAlvLN7BQuWHK40YPpqjJ7O7f106ycPnCHYdRxtqQdU8GltNaoxlLk_3PZp4Wv-1r_CurUenWOLsEI-H6NeV65H6oZfPp4VhssTDzEjuk1PfWsVkwSSXBHt69pmPx9UwfMYz0eP7yIagNEz1VIl_uggBb2_PvprJTstQpS'
+            );
+            $variables{"link_path"} = sprintf("%s/%s", $variables{"container"}, $variables{"link_name"});
+            $variables{"link_target_path"} = sprintf("%s/%s", $variables{"container"}, $variables{"link_target"});
+            $variables{"link_object_content"} = sprintf("%s%s", ROK4_SYMLINK_SIGNATURE, $variables{"link_target"});
+            $variables{"object_path"} = sprintf("%s/%s", $variables{"container"}, $variables{"object_name"});
+
+            ## mocks
+            my %mocks_hash = ();
+
+            ### Namespace : COMMON::ProxyStorage
+            $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
+                track => TRUE,
+                override => LOG_METHODS,
+                override => {
+                    '_getConfigurationElement' => sub {
+                        my $key = shift;
+                        return $variables{$key};
+                    },
+                    'getSize' => sub {
+                        my ($type, $path) = @_;
+                        if ($path eq $variables{"link_path"}) {
+                            return ROK4_SYMLINK_SIGNATURE_SIZE + length($variables{"link_target"});
+                        }
+                        elsif ($path eq $variables{"object_path"}) {
+                            return $variables{"ROK4_IMAGE_HEADER_SIZE"} + 4096*4096*3;
+                        }
+                        else {
+                            return undef;
+                        }
+                    }
+                }
+            );
+
+            ### Namespace : HTTP::Request
+            $mocks_hash{'HTTP::Request'} = mock 'HTTP::Request' => (
+                track => TRUE,
+                override_constructor => {
+                    'new' => 'hash'
+                },
+                add => {
+                    'header' => sub {
+                        my $self = shift;
+                        my $key = shift;
+                        my $value = shift;
+                        exists($self->{'headers'}->{$key});
+                        $self->{'headers'}->{$key} = $value;
+                        return $self->{'headers'}->{$key};
+                    }
+                }
+            );
+
+            ### Namespace : HTTP::Response
+            $mocks_hash{'HTTP::Response'} = mock 'HTTP::Response' => (
+                track => TRUE,
+                override_constructor => {
+                    'new' => 'hash'
+                },
+                override => {
+                    'is_success' => sub {
+                        return TRUE;
+                    },
+                    'content' => sub {
+                        return $variables{'link_object_content'}
+                    }
+                }
+            );
+
+            ### Namespace : LWP::UserAgent
+            $mocks_hash{'LWP::UserAgent'} = mock 'LWP::UserAgent' => (
+                track => TRUE,
+                override_constructor => {
+                    'new' => 'hash'
+                },
+                override => {
+                    'request' => sub {
+                        return HTTP::Response->new();
+                    }
+                }
+            );
+            $variables{'UA'} = LWP::UserAgent->new();
+
+
+            # Tests
+            ## Valeur de retour
+            is(COMMON::ProxyStorage::getRealData($variables{"type"}, $variables{"link_path"}), $variables{"link_target_path"}, "Symbolic link target path returned resolved.");
+            is(COMMON::ProxyStorage::getRealData($variables{"type"}, $variables{"object_path"}), $variables{"object_path"}, "Simple object path returned unmodified.");
+
+            ## Appels au logger
+            foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE', 'DEBUG') {
+                ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
+            }
+
+            ## Appels internes
+            ok(exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{getSize}), "Object size checked.");
+            is($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{getSize}[0]{'args'}, [$variables{"type"}, $variables{"link_path"}], "Link object size checked.");
+            is($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{getSize}[1]{'args'}, [$variables{"type"}, $variables{"object_path"}], "Simple object size checked.");
+
+            ## Appels liés aux requêtes
+            my $expected_request_headers = {
+                'X-Auth-Token' => $variables{'SWIFT_TOKEN'}
+            };
+            is(scalar(@{$mocks_hash{'LWP::UserAgent'}->sub_tracking()->{'request'}}), 1, "Request sent once.");
+            is($mocks_hash{'LWP::UserAgent'}->sub_tracking()->{'request'}[0]{'args'}[1]{'GET'}, "$variables{'ROK4_SWIFT_PUBLICURL'}/$variables{'link_path'}", "Correct link object URL.");
+            like($mocks_hash{'LWP::UserAgent'}->sub_tracking()->{'request'}[0]{'args'}[1]{'headers'}, $expected_request_headers, "Correct headers.");
 
 
             # Sortie du cas de test
