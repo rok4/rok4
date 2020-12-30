@@ -3754,6 +3754,16 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
                 }
             );
 
+            ### Namespace : File::Path
+            $mocks_hash{'File::Path'} = mock 'File::Path' => (
+                track => TRUE,
+                override => {
+                    make_path => sub {
+                        return TRUE;
+                    }
+                }
+            );
+
 
             # Tests
             ## Valeur de retour
@@ -4091,6 +4101,124 @@ subtest "Tested module : COMMON::ProxyStorage" => sub {
             }
             done_testing;
         };
+
+
+        # Fin des tests sur la fonction
+        done_testing;
+    };
+
+
+    subtest "Tested method : hardLink()" => sub {
+        subtest "Tested case : file storage, nominal" => sub {
+            # Préparation du cas de test
+            ## Paramètres divers
+            my %variables = (
+                "type"                      => "FILE",
+                "target_location"           => "/t_path/to/directory",
+                "target_name"               => "t_file.t_ext",
+                "target_resolved_location"  => "/r_path/to/directory",
+                "target_resolved_name"      => "r_file.r_ext",
+                "link_location"             => "/l_path/to/directory",
+                "link_name"                 => "l_file.l_ext"
+            );
+            $variables{"target_path"}           = sprintf("%s/%s", $variables{"target_location"}, $variables{"target_name"});
+            $variables{"target_resolved_path"}  = sprintf("%s/%s", $variables{"target_resolved_location"}, $variables{"target_resolved_name"});
+            $variables{"link_path"}             = sprintf("%s/%s", $variables{"link_location"}, $variables{"link_name"});
+
+            ## mocks
+            my %mocks_hash = ();
+
+            ### file tests
+            Overload::FileCheck::mock_all_file_checks(sub {
+                my ( $check, $path ) = @_;
+
+                if ($check eq "l") {
+                    if ($path =~ /$variables{"target_path"}/) {
+                        return Overload::FileCheck::CHECK_IS_TRUE;
+                    }
+                    elsif ($path =~ /$variables{"target_resolved_path"}/) {
+                        return Overload::FileCheck::CHECK_IS_FALSE;
+                    }
+                }
+                
+                if ($check eq "f") {
+                    if ($path =~ /($variables{"target_path"}|$variables{"target_resolved_path"})/) {
+                        return Overload::FileCheck::CHECK_IS_TRUE;
+                    }
+                    else {
+                        return Overload::FileCheck::CHECK_IS_FALSE;
+                    }
+                }                
+
+                return Overload::FileCheck::FALLBACK_TO_REAL_OP;
+            });
+
+            ### Namespace : COMMON::ProxyStorage
+            $mocks_hash{'COMMON::ProxyStorage'} = mock 'COMMON::ProxyStorage' => (
+                track => TRUE,
+                override => LOG_METHODS
+            );
+
+            ### Namespace : File::Spec::Link
+            $mocks_hash{'File::Spec::Link'} = mock 'File::Spec::Link' => (
+                track => TRUE,
+                override => {
+                    'linked' => sub {
+                        return '/partially/resolved/path';
+                    },
+                    'full_resolve' => sub {
+                        return $variables{"target_resolved_path"};
+                    }
+                }
+            );
+
+            ### Namespace : *CORE::GLOBAL
+            $mocks_hash{'*CORE::GLOBAL'} = mock '*CORE::GLOBAL' => (
+                track => TRUE,
+                set => {
+                    'link' => sub {
+                        $? = 0;
+                        return 1;
+                    }
+                }
+            );
+
+            ### Namespace : File::Path
+            $mocks_hash{'File::Path'} = mock 'File::Path' => (
+                track => TRUE,
+                override => {
+                    make_path => sub {
+                        return TRUE;
+                    }
+                }
+            );
+
+
+            # Tests
+            ## Valeur de retour
+            is(COMMON::ProxyStorage::hardLink($variables{"type"}, $variables{"target_path"}, $variables{"type"}, $variables{"link_path"}), TRUE, "Function returned TRUE when target path is a link.");
+            is(COMMON::ProxyStorage::hardLink($variables{"type"}, $variables{"target_resolved_path"}, $variables{"type"}, $variables{"link_path"}), TRUE, "Function returned TRUE when target path is a simple file.");
+
+            ## Appels au logger
+            foreach my $log_level ('WARN', 'FATAL', 'ERROR', 'INFO', 'TRACE', 'DEBUG') {
+                ok(! exists($mocks_hash{'COMMON::ProxyStorage'}->sub_tracking()->{$log_level}), "No $log_level log entry.");
+            }
+
+            ## Appels système
+            is($mocks_hash{'File::Path'}->sub_tracking()->{'make_path'}[0]{'args'}[0], $variables{"link_location"}, "Link's parent directory created. (target path = link)");
+            is($mocks_hash{'*CORE::GLOBAL'}->sub_tracking()->{'link'}[0]{'args'}, [$variables{"target_resolved_path"}, $variables{"link_path"}], "Link created. (target path = link)");
+            is($mocks_hash{'File::Path'}->sub_tracking()->{'make_path'}[1]{'args'}[0], $variables{"link_location"}, "Link's parent directory created. (target path = simple file)");
+            is($mocks_hash{'*CORE::GLOBAL'}->sub_tracking()->{'link'}[1]{'args'}, [$variables{"target_resolved_path"}, $variables{"link_path"}], "Link created. (target path = simple file)");
+
+
+            # Sortie du cas de test
+            Overload::FileCheck::unmock_all_file_checks();
+            foreach my $mock (keys(%mocks_hash)) {
+                $mocks_hash{$mock} = undef;
+            }
+            done_testing;
+        };
+
 
 
         # Fin des tests sur la fonction

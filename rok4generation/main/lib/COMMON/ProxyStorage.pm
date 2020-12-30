@@ -77,6 +77,12 @@ BEGIN {
             $? = 0;
             return 1;
         };
+        no warnings 'once';
+        *CORE::GLOBAL::link = sub {
+            # fonction à surcharger en environnement de test
+            $? = 0;
+            return 1;
+        };
     }
 }
 
@@ -1302,14 +1308,15 @@ sub symLink {
     my $toType = shift;
     my $toPath = shift;
 
-    if ($targetType eq "FILE" && $toType eq "FILE") {
+    if ($targetType eq "FILE" && $toType eq "FILE") {        
+
         # create folder
         my $dir = File::Basename::dirname($toPath);
-        my @system_args = ('mkdir', '-p', $dir);
-        system(@system_args);
-        if ($?) {
-            ERROR("Cannot create directory '$dir' : $!");
-            return undef;
+        my $errors_list;
+        File::Path::make_path($dir, {error => \$errors_list});
+        if (defined($errors_list) && scalar(@{$errors_list})) {
+            ERROR("Cannot create directory '$dir' : ", $$errors_list[0]{$dir});
+            return FALSE;
         }
 
         my $realTargetPath = getRealData("FILE", $targetPath);
@@ -1413,7 +1420,7 @@ sub symLink {
         return "$targetContainerName/$realTarget";
     }
 
-    ERROR("Symlink can only be done between two file/path using the same storage type (and not $toType -> $targetType)");
+    ERROR("Symbolic linking can only be done between two file/path using the same storage type (and not $toType -> $targetType)");
     return undef;
 }
 
@@ -1432,9 +1439,10 @@ sub hardLink {
 
         # create folder
         my $dir = File::Basename::dirname($toPath);
-        qx(mkdir -p $dir);
-        if ($?) {
-            ERROR("Cannot create directory '$dir' : $!");
+        my $errors_list;
+        File::Path::make_path($dir, {error => \$errors_list});
+        if (defined($errors_list) && scalar(@{$errors_list})) {
+            ERROR("Cannot create directory '$dir' : ", $$errors_list[0]{$dir});
             return FALSE;
         }
 
@@ -1449,8 +1457,7 @@ sub hardLink {
             return FALSE;
         }
 
-        qx(ln $targetPath $toPath);
-        if ($?) {
+        if (! link($realTarget, $toPath)) {
             ERROR("Cannot link (hard) file $targetPath from file $toPath : $!");
             return FALSE;
         }
@@ -1458,7 +1465,7 @@ sub hardLink {
         return TRUE;
     }
 
-    ERROR("Symlink can only be done between two files (and not $toType -> $targetType)");
+    ERROR("Hard linking can only be done between two files (and not $toType -> $targetType)");
     return FALSE;
 }
 
