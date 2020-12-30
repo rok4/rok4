@@ -1488,7 +1488,7 @@ sub getConfiguration {
     my @args = @_;
     my %filtered_configuration = ();
 
-    if (scalar @args >= 1) {
+    if (scalar(@args) >= 1) {
         foreach my $entry (@args) {
             if (exists($configuration{"$entry"})) {
                 $filtered_configuration{"$entry"} = $configuration{"$entry"};
@@ -1526,12 +1526,8 @@ sub _getConfigurationElement {
     if (scalar(@args) != 1) {
         return undef;
     }
-    elsif (! exists($configuration{$args[0]})) {
-        return undef;
-    }
-    else {
-        return $configuration{$args[0]};
-    }
+
+    return $configuration{$args[0]};
 };
 
 =begin nd
@@ -1549,13 +1545,12 @@ Return:
 sub _setConfigurationElement {
     my @args = @_;
 
-    if (scalar(@_) == 2) {
-        $configuration{$args[0]} = $args[1];
-        return TRUE;
-    }
-    else {
+    if (scalar(@_) != 2) {
         return FALSE;
     }
+
+    $configuration{$args[0]} = $args[1];
+    return TRUE;
 };
 
 
