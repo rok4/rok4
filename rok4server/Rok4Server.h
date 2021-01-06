@@ -519,6 +519,17 @@ private:
      * \return response stream
      */
     DataStream* TMSGetLayerMetadata ( Request* request );
+    /**
+     * \~french
+     * \brief Traitement d'une requête GetLayerGDAL TMS
+     * \param[in] request représentation de la requête
+     * \return flux de la réponse
+     * \~english
+     * \brief Process a GetLayerGDAL TMS request
+     * \param[in] request request representation
+     * \return response stream
+     */
+    DataStream* TMSGetLayerGDAL ( Request* request );
 
 
     /**

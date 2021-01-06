@@ -70,6 +70,7 @@ namespace RequestType {
         GETCAPABILITIES,
         GETLAYER,
         GETLAYERMETADATA,
+        GETLAYERGDAL,
         GETMAP,
         GETTILE,
         GETFEATUREINFO,

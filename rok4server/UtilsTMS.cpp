@@ -359,6 +359,78 @@ DataStream* Rok4Server::TMSGetLayerMetadata ( Request* request ) {
     return new MessageDataStream ( res.str(),"application/json" );
 }
 
+/*
+<GDAL_WMS>
+    <Service name="TMS">
+        <ServerUrl>https://rok4.ign.fr/1.0.0/LAYER/${z}/${x}/${y}.png</ServerUrl>
+    </Service>
+    <DataWindow>
+        <UpperLeftX>-20037508.34</UpperLeftX>
+        <UpperLeftY>20037508.34</UpperLeftY>
+        <LowerRightX>20037508.34</LowerRightX>
+        <LowerRightY>-20037508.34</LowerRightY>
+        <TileLevel>18</TileLevel>
+        <TileCountX>1</TileCountX>
+        <TileCountY>1</TileCountY>
+        <YOrigin>top</YOrigin>
+    </DataWindow>
+    <Projection>EPSG:3857</Projection>
+    <BlockSizeX>256</BlockSizeX>
+    <BlockSizeY>256</BlockSizeY>
+    <BandsCount>4</BandsCount>
+    <ZeroBlockHttpCodes>204,404</ZeroBlockHttpCodes>
+</GDAL_WMS>
+*/
+DataStream* Rok4Server::TMSGetLayerGDAL ( Request* request ) {
+
+    Layer* layer;
+    std::string serviceURL;
+    DataStream* errorResp = getLayerParamTMS(request, layer, serviceURL);
+
+    if ( errorResp ) {
+        return errorResp;
+    }
+    errorResp = NULL;
+
+    if (! Rok4Format::isRaster(layer->getDataPyramid()->getFormat())) {
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +layer->getId()+_ ( " non interrogeable (donnee vecteur)." ),"tms" ) );   
+    }
+
+    if (! layer->getDataPyramid()->getTms()->getIsQTree()) {
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer " ) +layer->getId()+_ ( " non interrogeable (Tile Matrix Set non QTree)." ),"tms" ) );   
+    }
+
+    Level* best = layer->getDataPyramid()->getLowestLevel();
+
+    std::ostringstream res;
+    res << "<GDAL_WMS>\n";
+
+    res << "  <Service name=\"TMS\">\n";
+    res << "    <ServerUrl>" << serviceURL << "/" << layer->getId() << "/${z}/${x}/${y}." << Rok4Format::toExtension ( ( layer->getDataPyramid()->getFormat() ) ) << "</ServerUrl>\n";
+    res << "  </Service>\n";
+
+    res << "  <DataWindow>\n";
+    res << "    <UpperLeftX>" << doubleToStr(best->getTm()->getX0()) << "</UpperLeftX>\n";
+    res << "    <UpperLeftY>" << doubleToStr(best->getTm()->getY0()) << "</UpperLeftY>\n";
+    res << "    <LowerRightX>" << doubleToStr(best->getTm()->getX0() + best->getTm()->getMatrixW() * best->getTm()->getTileW() * best->getTm()->getRes()) << "</LowerRightX>\n";
+    res << "    <LowerRightY>" << doubleToStr(best->getTm()->getY0() - best->getTm()->getMatrixH() * best->getTm()->getTileH() * best->getTm()->getRes()) << "</LowerRightY>\n";
+    res << "    <TileLevel>" << best->getTm()->getId() << "</TileLevel>\n";
+    res << "    <TileCountX>1</TileCountX>\n";
+    res << "    <TileCountY>1</TileCountY>\n";
+    res << "    <YOrigin>top</YOrigin>\n";
+    res << "  </DataWindow>\n";
+
+    res << "  <Projection>" << layer->getDataPyramid()->getTms()->getCrs().getProj4Code() << "</Projection>\n";
+    res << "  <BlockSizeX>" << best->getTm()->getTileW() << "</BlockSizeX>\n";
+    res << "  <BlockSizeY>" << best->getTm()->getTileH() << "</BlockSizeY>\n";
+    res << "  <ZeroBlockHttpCodes>204,404</ZeroBlockHttpCodes>\n";
+    res << "  <BandsCount>" << layer->getDataPyramid()->getChannels() << "</BandsCount>\n";
+
+    res << "</GDAL_WMS>\n";
+
+    return new MessageDataStream ( res.str(),"application/xml" );
+}
+
 DataStream* Rok4Server::TMSGetCapabilities ( Request* request ) {
 
 

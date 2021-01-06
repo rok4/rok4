@@ -72,6 +72,33 @@ TileMatrixSet::TileMatrixSet ( const TileMatrixSetXML& t ) {
     keyWords = t.keyWords;
     crs = t.crs;
     tmList = t.listTM;
+    isQTree = true;
+
+    std::set<std::pair<std::string, TileMatrix*>, ComparatorTileMatrix> ascTM = std::set<std::pair<std::string, TileMatrix*>, ComparatorTileMatrix>(tmList.begin(), tmList.end(), compTMAsc);
+    double res = 0;
+    double x0 = 0;
+    double y0 = 0;
+    int tileW = 0;
+    int tileH = 0;
+    for (std::pair<std::string, TileMatrix*> element : ascTM) {
+        TileMatrix* tm = element.second;
+        if (res == 0) {
+            // Niveau du bas, de référence
+            res = tm->getRes();
+            x0 = tm->getX0();
+            y0 = tm->getY0();
+            tileW = tm->getTileW();
+            tileH = tm->getTileH();
+            continue;
+        }
+        if (abs(res * 2 - tm->getRes()) < 0.0001 * res && tm->getX0() == x0 && tm->getY0() == y0 && tm->getTileW() == tileW && tm->getTileH() == tileH) {
+            res = tm->getRes();
+        } else {
+            isQTree = false;
+            break;
+        }
+    }
+
 }
 
 TileMatrixSet::TileMatrixSet ( TileMatrixSet* t ) {
@@ -80,6 +107,7 @@ TileMatrixSet::TileMatrixSet ( TileMatrixSet* t ) {
     abstract = t->abstract;
     keyWords = t->keyWords;
     crs = t->crs;
+    isQTree = t->isQTree;
 
     std::map<std::string, TileMatrix*>::iterator itTM;
     for ( itTM = t->tmList.begin(); itTM != t->tmList.end(); itTM++ ) {
@@ -177,6 +205,10 @@ TileMatrix* TileMatrixSet::getTm(std::string id) {
 
 CRS TileMatrixSet::getCrs() {
     return crs;
+}
+
+bool TileMatrixSet::getIsQTree() {
+    return isQTree;
 }
 
 std::vector<Keyword>* TileMatrixSet::getKeyWords() {
