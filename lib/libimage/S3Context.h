@@ -141,7 +141,7 @@ public:
     S3Context (std::string b);
 
 
-    eContextType getType();
+    ContextType::eContextType getType();
     std::string getTypeStr();
     std::string getTray();
         

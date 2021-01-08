@@ -397,7 +397,7 @@ std::string Level::getPath ( int tilex, int tiley) {
 
 std::string Level::getDirPath ( int tilex, int tiley ) {
 
-    if (context->getType() == FILECONTEXT) {
+    if (context->getType() == ContextType::FILECONTEXT) {
         std::string file = getPath(tilex,tiley);
         return file.substr(0,file.find_last_of("/"));        
     } else {

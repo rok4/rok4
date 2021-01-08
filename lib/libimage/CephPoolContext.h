@@ -129,7 +129,7 @@ public:
      */
     CephPoolContext (std::string pool);
 
-    eContextType getType();
+    ContextType::eContextType getType();
     std::string getTypeStr();
     std::string getTray();
     

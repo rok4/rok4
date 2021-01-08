@@ -364,8 +364,8 @@ bool SwiftContext::writeFull(uint8_t* data, int size, std::string name) {
     return true;
 }
 
-eContextType SwiftContext::getType() {
-    return SWIFTCONTEXT;
+ContextType::eContextType SwiftContext::getType() {
+    return ContextType::SWIFTCONTEXT;
 }
 
 std::string SwiftContext::getTypeStr() {

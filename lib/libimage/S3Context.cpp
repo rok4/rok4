@@ -152,6 +152,23 @@ std::string S3Context::getAuthorizationHeader(std::string toSign) {
     return signature;
 }
 
+/**
+ * \~french \brief Noms court des jours en anglais
+ * \~english \brief Short english day names
+ */
+static const char wday_name[][4] = {
+    "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
+};
+
+/**
+ * \~french \brief Noms court des mois en anglais
+ * \~english \brief Short english month names
+ */
+static const char mon_name[][4] = {
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+};
+
 int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
 
     LOGGER_DEBUG("S3 read : " << size << " bytes (from the " << offset << " one) in the object " << name);
@@ -172,16 +189,16 @@ int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
     std::string fullUrl = url + "/" + bucket_name + "/" + name;
 
     time_t current;
-    char gmt_time[40];
-
-    //On passe en locale="C"  Pour l'autorisation des requètes S3
-    char loc[32] ;
-    strcpy( loc, setlocale(LC_ALL,NULL));  
-    setlocale(LC_ALL, "C");
+    
     time(&current);
-    strftime( gmt_time, sizeof(gmt_time), "%a, %d %b %Y %T %z", gmtime(&current) );
-    //LOGGER_DEBUG("DATE : " << gmt_time);
-    setlocale(LC_ALL, loc); 
+    struct tm * ptm = gmtime ( &current );
+
+    static char gmt_time[40];
+    sprintf(
+        gmt_time, "%s, %d %s %d %.2d:%.2d:%.2d GMT",
+        wday_name[ptm->tm_wday], ptm->tm_mday, mon_name[ptm->tm_mon], 1900 + ptm->tm_year,
+        ptm->tm_hour, ptm->tm_min, ptm->tm_sec
+    );
 
     std::string content_type = "application/octet-stream";
     std::string resource = "/" + bucket_name + "/" + name;
@@ -228,6 +245,7 @@ int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
     LOGGER_DEBUG("S3 READ END (" << size << ") " << pthread_self());
     
     curl_slist_free_all(list);
+    //delete[] gmt_time;
 
     if( CURLE_OK != res) {
         LOGGER_ERROR("Cannot read data from S3 : " << size << " bytes (from the " << offset << " one) in the object " << name);
@@ -289,8 +307,8 @@ bool S3Context::writeFull(uint8_t* data, int size, std::string name) {
     return true;
 }
 
-eContextType S3Context::getType() {
-    return S3CONTEXT;
+ContextType::eContextType S3Context::getType() {
+    return ContextType::S3CONTEXT;
 }
 
 std::string S3Context::getTypeStr() {

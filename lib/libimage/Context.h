@@ -54,6 +54,13 @@
 #include <string.h>
 #include <sstream>
 
+
+/**
+ * \author Institut national de l'information géographique et forestière
+ * \~french \brief Gestion des informations liées au format de canal
+ * \~english \brief Manage informations in connection with sample format
+ */
+namespace ContextType {
 /**
  * \~french \brief Énumération des types de contextes
  * \~english \brief Available context type
@@ -64,6 +71,18 @@ enum eContextType {
     SWIFTCONTEXT,
     S3CONTEXT
 };
+
+/**
+ * \~french \brief Conversion d'un type de contexte vers une chaîne de caractères
+ * \param[in] ct type de contexte à convertir
+ * \return la chaîne de caractère nommant le type de contexte
+ * \~english \brief Convert a context type to a string
+ * \param[in] ct context type to convert
+ * \return string namming the context type
+ */
+std::string toString ( eContextType ct );
+
+}
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -196,7 +215,7 @@ public:
      * \~french \brief Retourne le type du contexte
      * \~english \brief Return the context's type
      */
-    virtual eContextType getType() = 0;
+    virtual ContextType::eContextType getType() = 0;
     /**
      * \~french \brief Retourne le type du contexte, sous forme de texte
      * \~english \brief Return the context's type, as string

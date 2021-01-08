@@ -105,10 +105,8 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
             return;
         }
 
-        context = serverXML->getContextBook()->addContext(FILECONTEXT,"");
-
-        if (! context->connection() ) {
-            LOGGER_ERROR("Impossible de se connecter aux donnees.");
+        context = serverXML->getContextBook()->addContext(ContextType::FILECONTEXT,"");
+        if (context == NULL) {
             return;
         }
     }
@@ -249,9 +247,10 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
             }
             racine = pElem->GetText() ;
 
-            context = serverXML->getContextBook()->addContext(CEPHCONTEXT,poolName);
-
-
+            context = serverXML->getContextBook()->addContext(ContextType::CEPHCONTEXT,poolName);
+            if (context == NULL) {
+                return;
+            }
         }
 
         if (context == NULL) {
@@ -277,7 +276,10 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
                 }
                 racine = pElem->GetText() ;
 
-                context = serverXML->getContextBook()->addContext(S3CONTEXT,bucket);
+                context = serverXML->getContextBook()->addContext(ContextType::S3CONTEXT,bucket);
+                if (context == NULL) {
+                    return;
+                }
 
             }
 
@@ -304,9 +306,10 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
                     }
                     racine = pElem->GetText() ;
 
-                    context = serverXML->getContextBook()->addContext(SWIFTCONTEXT,container);
-
-
+                    context = serverXML->getContextBook()->addContext(ContextType::SWIFTCONTEXT,container);
+                    if (context == NULL) {
+                        return;
+                    }
 
                 } else {
                     LOGGER_ERROR("Level " << id << " sans indication de stockage et pas à la demande. Precisez un baseDir ou un cephContext ou un swiftContext ou un s3Context");
