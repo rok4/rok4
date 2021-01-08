@@ -204,6 +204,8 @@ Pour générer une pyramide raster, il faut renseigner pour chaque niveau de cou
 * Soit le dossier des images géoréférencées
 * Soit le service WMS à interroger
 
+Il est possible de préciser `<AUTO>` à la place de l'identifiant du niveau lorsqu'il s'agit d'une source d'images géoréférencées : on déterminera alors le niveau du TMS correpondant le mieux à la meilleure résolution des images sources.
+
 ### Paramètres
 
 #### Images géoréférencées
@@ -273,8 +275,8 @@ max_height = 2048
 ```
 
 ```
-[ 19 ]
-; Georeferenced images with preprocessing command
+[ <AUTO> ]
+; Georeferenced images
 srs = IGNF:LAMB93
 path_image = /home/IGN/BDORTHOHR/
 ```

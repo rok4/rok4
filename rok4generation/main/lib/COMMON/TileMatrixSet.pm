@@ -620,6 +620,53 @@ sub getOrderfromID {
     }
 }
 
+=begin nd
+Function: getBestLevelID
+
+Returns the best level ID concording to a resolution
+
+Parameters (list):
+    objImg - <COMMON::GeoImage> - Image to determine the best level from its resolutions
+=cut
+sub getBestLevelID {
+    my $this = shift;
+    my $objImg = shift;
+
+    # On reprojete l'étendue de cette image dans la projection du TMS, pour avoir une resolution équivalente
+    my $ct = COMMON::ProxyGDAL::coordinateTransformationFromSpatialReference($objImg->getSRS(), $this->{srs});
+    if (! defined $ct) {
+        ERROR(sprintf "Cannot instanciate the coordinate transformation object %s->%s", $objImg->getSRS(), $this->{srs});
+        return undef;
+    }
+
+    my @bbox = COMMON::ProxyGDAL::convertBBox($ct, $objImg->getBBox()); # (xMin, yMin, xMax, yMax)
+    if ($bbox[0] == 0 && $bbox[2] == 0) {
+        ERROR(sprintf "Impossible to transform BBOX for the image '%s'. Probably limits are reached !", $objImg->getName());
+        return undef;
+    }
+
+    my $xres = ($bbox[2] - $bbox[0]) / $objImg->getWidth();
+    my $yres = ($bbox[3] - $bbox[1]) / $objImg->getHeight();
+    my $res = sqrt($xres * $yres);
+
+    my $best_ratio = undef;
+    my $best_level = undef;
+    # On cherche le niveau avec un ratio le plus proche de 1, ne sortant pas de [0.8, 1.5]
+    while (my ($level, $tm) = each(%{$this->{tileMatrix}})) {
+        my $ratio = $res / $tm->getResolution();
+        if ($ratio < 0.8 || $ratio > 1.5) {
+            next;
+        }
+        if (! defined $best_ratio || abs($ratio - 1) < abs($best_ratio - 1)) {
+            $best_ratio = $ratio;
+            $best_level = $level;
+        }
+    }
+
+    INFO("Best level found : $best_level (ratio $best_ratio)");
+    return $best_level;
+}
+
 ####################################################################################################
 #                             Group: Tile Matrix manager                                           #
 ####################################################################################################
@@ -752,7 +799,7 @@ sub exportForDebug {
     $export .= sprintf "\t TileMatrix Array :\n";
     $export .= sprintf "\t\t     ID    | Order |  Resolution\n";
     $export .= sprintf "\t\t-----------+-------+------------------\n";
-    foreach my $tm ( $this->getTileMatrixByArray ) {
+    foreach my $tm ( $this->getTileMatrixByArray() ) {
         my $id = $tm->getID();
         $export .= sprintf "\t\t %9s |  %-4s | %-14s \n", $id, $this->{levelsBind}->{$id}, $tm->getResolution();
     }

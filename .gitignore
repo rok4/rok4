@@ -5,7 +5,7 @@ build
 *.kate-swp
 .kdev_include_paths
 .DS_Store
-
+.vscode
 lib/libjpeg/libjpeg-turbo-1.2.0/autom4te.cache
 rok4/Pyramid.cpp.autosave
 CMakeLists.txt.user
