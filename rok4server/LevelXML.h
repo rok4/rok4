@@ -85,11 +85,9 @@ class LevelXML : public DocumentXML
 
         Context *context;
 
-
-        std::string baseDir;
+        std::string racine;
         int pathDepth;
 
-        std::string prefix;
 
         /******************* PYRAMIDE VECTEUR *********************/
         std::vector<Table> tables;

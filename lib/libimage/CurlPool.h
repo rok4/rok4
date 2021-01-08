@@ -105,6 +105,7 @@ public:
             pool.insert ( std::pair<pthread_t, CURL*>(i,c) );
             return c;
         } else {
+            curl_easy_reset(it->second);
             return it->second;
         }
     }

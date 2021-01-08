@@ -262,25 +262,21 @@ int main ( int argc, char** argv ) {
             }
             W->setFCGISocket ( sock );
         }
-#if BUILD_OBJECT
-        rok4ConnectObjectContext(W);
-#endif
 
         // Remove Event Lock
         defer_signal--;
         
         W->run(signal_pending);
 
-        // Extinction du serveur
         if ( reload ) {
+            // Rechargement du serveur
             LOGGER_INFO ( _ ( "Rechargement de la configuration" ) );
             sock = W->getFCGISocket();
         } else {
+            // Extinction du serveur
             LOGGER_INFO ( _ ( "Extinction du serveur ROK4" ) );
         }
-#if BUILD_OBJECT
-        rok4DisconnectObjectContext(W);
-#endif
+
         rok4KillServer ( W );
         rok4ReloadLogger();
     }

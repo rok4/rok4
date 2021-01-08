@@ -237,7 +237,7 @@ PullSlab () {
     local input=$1
     local output=$2
 
-    cache2work -c zip -container ${PYR_CONTAINER} ${KEYSTONE_OPTION} $input ${TMP_DIR}/$output
+    cache2work -c zip -container ${PYR_CONTAINER} $input ${TMP_DIR}/$output
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 C2WFUNCTION
@@ -345,7 +345,7 @@ PushSlab () {
     
     if [[ ! ${RM_IMGS[${TMP_DIR}/$workImgName]} ]] ; then
              
-        work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} -container ${PYR_CONTAINER} ${KEYSTONE_OPTION} $imgName
+        work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} -container ${PYR_CONTAINER} $imgName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         
         echo "0/$imgName" >> ${TMP_LIST_FILE}
@@ -361,7 +361,7 @@ PushSlab () {
             
             if [ $mskName ] ; then
                     
-                work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} -container ${PYR_CONTAINER} ${KEYSTONE_OPTION} $mskName
+                work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} -container ${PYR_CONTAINER} $mskName
                 if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
                 echo "0/$mskName" >> ${TMP_LIST_FILE}
                 
@@ -1037,11 +1037,6 @@ sub getScriptInitialization {
     }
     elsif ($pyramid->getStorageType() eq "SWIFT") {
         $string .= sprintf "PYR_CONTAINER=%s\n", $pyramid->getDataContainer();
-        if ($pyramid->keystoneConnection()) {
-            $string .= "KEYSTONE_OPTION=\"-ks\"\n";
-        } else {
-            $string .= "KEYSTONE_OPTION=\"\"\n";
-        }
     }
 
     $string .= sprintf "LIST_FILE=\"%s\"\n", $pyramid->getListFile();

@@ -109,7 +109,6 @@ Valeurs pour `color` : les valeur pour chaque canal sont séparées par des virg
 | CEPH             | pyr_data_pool_name      |                                                                             | obligatoire                      |
 | S3               | pyr_data_bucket_name    |                                                                             | obligatoire                      |
 | SWIFT            | pyr_data_container_name |                                                                             | obligatoire                      |
-| SWIFT            | keystone_connection     | Précise si le jeton d'authentification doit être récupéré via keystone      | `FALSE`                          |
 
 Dans le cas du stockage objet, certaines variables d'environnement doivent être définies sur les machines d'exécution :
 * CEPH
@@ -122,12 +121,13 @@ Dans le cas du stockage objet, certaines variables d'environnement doivent être
     - ROK4_S3_SECRETKEY
 * SWIFT
     - ROK4_SWIFT_AUTHURL
-    - ROK4_SWIFT_ACCOUNT
     - ROK4_SWIFT_USER
     - ROK4_SWIFT_PASSWD
-    - Si connection via keystone
+    - ROK4_SWIFT_PUBLICURL
+    - Si authentification via Swift
+        - ROK4_SWIFT_ACCOUNT
+    - Si connection via keystone (présence de ROK4_KEYSTONE_DOMAINID)
         - ROK4_KEYSTONE_DOMAINID
-        - ROK4_SWIFT_PUBLICURL
         - ROK4_KEYSTONE_PROJECTID
 
 ##### Cas d'une pyramide ancêtre

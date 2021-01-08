@@ -15,9 +15,12 @@ ROK4GENERATION est un ensemble de scripts de traitement permettant la préparati
 * http://www.ign.fr [@IGNFrance](https://twitter.com/IGNFrance)
 * http://www.geoportail.gouv.fr [@Geoportail](https://twitter.com/Geoportail)
 
-ROK4 Version : 3.9.0-DEVELOP
+ROK4 Version : 3.8.1-FEATURE-EV
 
 - [Fonctionnement général](#fonctionnement-général)
+- [Variables d'environnement](#variables-denvironnement)
+	- [Pour le stockage](#pour-le-stockage)
+	- [Pour l'utilisation de CURL](#pour-lutilisation-de-curl)
 - [Compiler et installer le projet ROK4](#compiler-et-installer-le-projet-rok4)
 	- [L'environnement de compilation](#lenvironnement-de-compilation)
 	- [Les commandes externes](#les-commandes-externes)
@@ -47,6 +50,42 @@ Pour que cette pyramide soit diffusée par ROK4SERVER, on va créer un descripte
 * Pour avoir des précisions sur la partie [ROK4SERVER](rok4server/README.md), son déploiement et son utilisation
 * Pour avoir les spécifications d'une [PYRAMIDE](docs/Specification_pyramide_ROK4.md)
 
+# Variables d'environnement
+
+Au fonctionnement du serveur et des outils de génération, plusieurs variables d'environnement sont exploitées.
+
+## Pour le stockage
+
+Afin d'utiliser des stockages objets (CEPH, S3 ou SWIFT), le serveur et les outils vont accéder aux différents clusters grâce aux informations stockées dans les variables d'environnement.
+
+* CEPH
+    - ROK4_CEPH_CONFFILE
+    - ROK4_CEPH_USERNAME
+    - ROK4_CEPH_CLUSTERNAME
+* S3
+    - ROK4_S3_URL
+    - ROK4_S3_KEY
+    - ROK4_S3_SECRETKEY
+* SWIFT
+    - ROK4_SWIFT_AUTHURL
+    - ROK4_SWIFT_USER
+    - ROK4_SWIFT_PASSWD
+    - ROK4_SWIFT_PUBLICURL
+    - Si authentification via Swift
+        - ROK4_SWIFT_ACCOUNT
+    - Si connection via keystone (présence de ROK4_KEYSTONE_DOMAINID)
+        - ROK4_KEYSTONE_DOMAINID
+        - ROK4_KEYSTONE_PROJECTID
+
+Dans le cas du stockage SWIFT ou S3, la variable ROK4_SSL_NO_VERIFY est testée, et la vérification des certificats est désactivée si elle est présente.
+
+
+## Pour l'utilisation de CURL
+
+CURL est utilisé à la fois via l'utilitaire en ligne de commande (dans les scripts Shell de génération) et via la librairie dans les parties en C++ (génération ou serveur). Vont être prise en compte les variables d'environnement HTTP_PROXY, HTTPS_PROXY et NO_PROXY
+
+
+
 # Compiler et installer le projet ROK4
 
 La compilation du projet n’a pour le moment été validée que sous GNU/Linux (Debian 9 et 10 et Centos 7). Le projet utilise des pthreads (threads POSIX).
@@ -59,7 +98,7 @@ Afin de connaître les paquets et librairies à installer, référez vous aux Do
 	* [Debian 9](./docker/rok4server/stretch.Dockerfile)
 	* [Debian 10](./docker/rok4server/buster.Dockerfile)
 	* [Centos 7](./docker/rok4server/centos7.Dockerfile)
-	
+
 * Compilation des outils de génération ROK4 :
 	* [Debian 10](./docker/rok4generation/buster.Dockerfile)
 
@@ -111,13 +150,13 @@ make [install|package]`
 
 #### Gestion du stockage objet
 
-`BUILD_OBJECT (BOOL)` : Il est possible de stocker les pyramides d'images dans des systèmes de stockage objet. Sont gérés CEPH, S3 et SWIFT. Cela implique d'avoir préalablement installé la librairie librados. Ne pas mettre TRUE mais `1` pour que ce soit bien interprété lors de la compilation dans le code. Valeur par défaut : `0`   
+`BUILD_OBJECT (BOOL)` : Il est possible de stocker les pyramides d'images dans des systèmes de stockage objet. Sont gérés CEPH, S3 et SWIFT. Cela implique d'avoir préalablement installé la librairie librados. Ne pas mettre TRUE mais `1` pour que ce soit bien interprété lors de la compilation dans le code. Valeur par défaut : `0`
 
 #### Utilisation de Kakadu
 
 Kakadu est une librairie propriétaire de manipulation d'images JPEG2000. Par défaut c'est OpenJpeg, libre, qui est utilisé.
 
-`KDU_USE (BOOL)` : Active l'utilisation de Kakadu pour la lecture du JPEG2000. Ne pas mettre TRUE mais `1` pour que ce soit bien interprété lors de la compilation dans le code. Valeur par défaut : `0`   
+`KDU_USE (BOOL)` : Active l'utilisation de Kakadu pour la lecture du JPEG2000. Ne pas mettre TRUE mais `1` pour que ce soit bien interprété lors de la compilation dans le code. Valeur par défaut : `0`
 
 `KDU_LIBRARY_PATH (STRING)` : Si kakadu est utilisé, il est possible de fournir le chemin d'un dossier où chercher la librairie (les fichiers libkdu.a et libkdu_aux.a). Les headers sont embarqués dans le projet ROK4 . Valeur par défaut : `/usr/kakadu-6.4`
 

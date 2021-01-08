@@ -55,6 +55,14 @@
 #include "Context.h"
 #include "LibcurlStruct.h"
 
+#define ROK4_S3_URL "ROK4_S3_URL"
+#define ROK4_S3_KEY "ROK4_S3_KEY"
+#define ROK4_S3_SECRETKEY "ROK4_S3_SECRETKEY"
+
+#ifndef ROK4_SSL_NO_VERIFY
+#define ROK4_SSL_NO_VERIFY "ROK4_SSL_NO_VERIFY"
+#endif
+
 /**
  * \author Institut national de l'information géographique et forestière
  * \~french
@@ -92,6 +100,11 @@ private:
      */
     std::string bucket_name;
     
+    /**
+     * \~french \brief  Ne pas vérifier les certificats SSL avec Curl?
+     * \~english \brief Don't verify SSL certificats with Curl ?
+     */
+    bool ssl_no_verify;
 
     /**
      * \~french \brief Calcule la signature à partir du header
@@ -103,22 +116,6 @@ public:
 
     /**
      * \~french
-     * \brief Constructeur pour un contexte S3
-     * \param[in] u URL de l'API, sans protocole
-     * \param[in] k Clé
-     * \param[in] sk Clé secrète
-     * \param[in] b Nom du bucket
-     * \~english
-     * \brief Constructor for S3 context
-     * \param[in] u API's URL, without protocol
-     * \param[in] k Key
-     * \param[in] sk Secret key
-     * \param[in] b Bucket's name
-     */
-    S3Context (std::string u, std::string k, std::string sk, std::string b);
-
-    /**
-     * \~french
      * \brief Constructeur pour un contexte S3, avec les valeur par défaut
      * \details Les valeurs sont récupérées dans les variables d'environnement ou sont celles par défaut
      * <TABLE>
@@ -126,6 +123,7 @@ public:
      * <TR><TD>url</TD><TD>ROK4_S3_URL</TD><TD>localhost:8080</TD>
      * <TR><TD>key</TD><TD>ROK4_S3_KEY</TD><TD>KEY</TD>
      * <TR><TD>secret_key</TD><TD>ROK4_S3_SECRETKEY</TD><TD>SECRETKEY</TD>
+     * <TR><TD>ssl_no_verify</TD><TD>ROK4_SSL_NO_VERIFY</TD><TD>false</TD>
      * </TABLE>
      * \param[in] b Bucket avec lequel on veut communiquer
      * \~english
@@ -136,6 +134,7 @@ public:
      * <TR><TD>url</TD><TD>ROK4_S3_URL</TD><TD>localhost:8080</TD>
      * <TR><TD>key</TD><TD>ROK4_S3_KEY</TD><TD>KEY</TD>
      * <TR><TD>secret_key</TD><TD>ROK4_S3_SECRETKEY</TD><TD>SECRETKEY</TD>
+     * <TR><TD>ssl_no_verify</TD><TD>ROK4_SSL_NO_VERIFY</TD><TD>false</TD>
      * </TABLE>
      * \param[in] b Bucket to use
      */
@@ -154,24 +153,38 @@ public:
         return bucket_name;
     }
 
+    /**
+     * \~french
+     * \brief Lit de la donnée depuis un objet S3
+     * \~english 
+     * \brief read data from S3 object
+     */
     int read(uint8_t* data, int offset, int size, std::string name);
 
     /**
      * \~french
      * \brief Écrit de la donnée dans un objet S3
-     * \details Les données sont en réalité écrites dans #writingBuffer et seront envoyées dans S3 lors de l'appel à #closeToWrite
+     * \details Les données sont en réalité écrites dans #writingBuffer et seront envoyées dans S3 lors de l'appel à #closeToWrite 
+     * \~english
+     * \brief Write data to  S3 object
+     * \details Datas are written to #writingBuffer and send at #closeToWrite call
      */
     bool write(uint8_t* data, int offset, int size, std::string name);
+
     /**
      * \~french
      * \brief Écrit un objet S3
      * \details Les données sont en réalité écrites dans #writingBuffer et seront envoyées dans S3 lors de l'appel à #closeToWrite
+     * \~english
+     * \brief Write S3 object
+     * \details Datas are written to #writingBuffer and send at #closeToWrite call
      */
     bool writeFull(uint8_t* data, int size, std::string name);
 
     virtual bool openToWrite(std::string name);
     virtual bool closeToWrite(std::string name);
 
+    std::string getPath(std::string racine,int x,int y,int pathDepth);
 
     virtual void print() {
         LOGGER_INFO ( "------ S3 Context -------" );
@@ -197,6 +210,7 @@ public:
         return oss.str() ;
     }
     
+
     /**
      * \~french \brief Récupère l'URL publique #public_url et constitue l'en-tête HTTP #authHdr
      * \~english \brief Get public URL #public_url and constitute the HTTP header #authHdr

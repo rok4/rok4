@@ -130,3 +130,41 @@ std::string FileContext::getTypeStr() {
 std::string FileContext::getTray() {
     return root_dir;
 }
+
+/*
+ * Tableau statique des caractères Base36 (pour systeme de fichier non case-sensitive)
+ */
+// static const char* Base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-";
+static const char* Base36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+
+std::string FileContext::getPath(std::string racine,int x,int y,int pathDepth){
+
+    int pos;
+    char path[32];
+    path[sizeof ( path ) - 5] = '.';
+    path[sizeof ( path ) - 4] = 't';
+    path[sizeof ( path ) - 3] = 'i';
+    path[sizeof ( path ) - 2] = 'f';
+    path[sizeof ( path ) - 1] = 0;
+    pos = sizeof ( path ) - 6;
+
+    for ( int d = 0; d < pathDepth; d++ ) {
+        path[pos--] = Base36[y % 36];
+        path[pos--] = Base36[x % 36];
+        path[pos--] = '/';
+        x = x / 36;
+        y = y / 36;
+    }
+    do {             
+        path[pos--] = Base36[y % 36];
+        path[pos--] = Base36[x % 36];
+        x = x / 36;
+        y = y / 36;
+    } while ( x || y );
+    path[pos] = '/';
+
+    return racine + ( path + pos );
+
+}
+

@@ -88,33 +88,33 @@ my $UA;
 
 ### CEPH
 
-my $ROK4_CEPH_CONFFILE;
-my $ROK4_CEPH_USERNAME;
-my $ROK4_CEPH_CLUSTERNAME;
+my $ROK4_CEPH_CONFFILE = undef;
+my $ROK4_CEPH_USERNAME = undef;
+my $ROK4_CEPH_CLUSTERNAME = undef;
 
 ### S3
 
-my $ROK4_S3_URL;
-my $ROK4_S3_KEY;
-my $ROK4_S3_SECRETKEY;
+my $ROK4_S3_URL = undef;
+my $ROK4_S3_KEY = undef;
+my $ROK4_S3_SECRETKEY = undef;
 
-my $ROK4_S3_ENDPOINT_HOST;
+my $ROK4_S3_ENDPOINT_HOST = undef;
 
 ### SWIFT
 # global
-my $ROK4_SWIFT_AUTHURL;
-my $ROK4_SWIFT_USER;
-my $ROK4_SWIFT_PASSWD;
+my $ROK4_SWIFT_AUTHURL = undef;
+my $ROK4_SWIFT_USER = undef;
+my $ROK4_SWIFT_PASSWD = undef;
+my $ROK4_SWIFT_PUBLICURL = undef;
 
-my $SWIFT_TOKEN;
-my $ROK4_SWIFT_PUBLICURL;
+my $SWIFT_TOKEN = undef;
 
 # swift authentication
-my $ROK4_SWIFT_ACCOUNT;
+my $ROK4_SWIFT_ACCOUNT = undef;
 
 # keystone authentication
-my $ROK4_KEYSTONE_DOMAINID;
-my $ROK4_KEYSTONE_PROJECTID;
+my $ROK4_KEYSTONE_DOMAINID = undef;
+my $ROK4_KEYSTONE_PROJECTID = undef;
 
 ### General
 my $ROK4_IMAGE_HEADER_SIZE = 2048;
@@ -133,7 +133,6 @@ Return TRUE if all required environment variables for storage are defined FALSE 
 =cut
 sub checkEnvironmentVariables {
     my $type = shift;
-    my $keystone = shift;
 
     if ($type eq "CEPH") {
 
@@ -169,23 +168,18 @@ sub checkEnvironmentVariables {
             ERROR("Environment variable ROK4_SWIFT_PASSWD is not defined");
             return FALSE;
         }
+        if (! defined $ENV{ROK4_SWIFT_PUBLICURL}) {
+            ERROR("Environment variable ROK4_SWIFT_PUBLICURL is not defined");
+            return FALSE;
+        }
 
         $ROK4_SWIFT_PASSWD = $ENV{ROK4_SWIFT_PASSWD};
         $ROK4_SWIFT_USER = $ENV{ROK4_SWIFT_USER};
         $ROK4_SWIFT_AUTHURL = $ENV{ROK4_SWIFT_AUTHURL};
+        $ROK4_SWIFT_PUBLICURL = $ENV{ROK4_SWIFT_PUBLICURL};
 
-        if ($keystone) {
-            if (! defined $ENV{ROK4_KEYSTONE_DOMAINID}) {
-                ERROR("Environment variable ROK4_KEYSTONE_DOMAINID is not defined");
-                ERROR("We need it for a keystone authentication (swift)");
-                return FALSE;
-            }
-
-            if (! defined $ENV{ROK4_SWIFT_PUBLICURL}) {
-                ERROR("Environment variable ROK4_SWIFT_PUBLICURL is not defined");
-                ERROR("We need it for a keystone authentication (swift)");
-                return FALSE;
-            }
+        if (defined $ENV{ROK4_KEYSTONE_DOMAINID}) {
+            ERROR("Environment variable ROK4_KEYSTONE_DOMAINID is defined : keystone authentication");
 
             if (! defined $ENV{ROK4_KEYSTONE_PROJECTID}) {
                 ERROR("Environment variable ROK4_KEYSTONE_PROJECTID is not defined");
@@ -195,7 +189,6 @@ sub checkEnvironmentVariables {
 
             $ROK4_KEYSTONE_DOMAINID = $ENV{ROK4_KEYSTONE_DOMAINID};
             $ROK4_KEYSTONE_PROJECTID = $ENV{ROK4_KEYSTONE_PROJECTID};
-            $ROK4_SWIFT_PUBLICURL = $ENV{ROK4_SWIFT_PUBLICURL};
         } else {
             
             if (! defined $ENV{ROK4_SWIFT_ACCOUNT}) {
@@ -208,7 +201,19 @@ sub checkEnvironmentVariables {
         }
 
         $UA = LWP::UserAgent->new();
-        $UA->ssl_opts(verify_hostname => 0);
+
+        if (defined $ENV{ROK4_SSL_NO_VERIFY}) {
+            $UA->ssl_opts(verify_hostname => 0);
+        }
+        if (defined $ENV{HTTP_PROXY}) {
+            $UA->proxy('http', $ENV{HTTP_PROXY});
+        }
+        if (defined $ENV{HTTPS_PROXY}) {
+            $UA->proxy('https', $ENV{HTTPS_PROXY});
+        }
+        if (defined $ENV{NO_PROXY}) {
+            $UA->no_proxy(split(/,/, $ENV{NO_PROXY}));
+        }
 
     } elsif ($type eq "S3") {
         
@@ -234,7 +239,18 @@ sub checkEnvironmentVariables {
         $ROK4_S3_ENDPOINT_HOST =~ s/:[0-9]+$//;
 
         $UA = LWP::UserAgent->new();
-        $UA->ssl_opts(verify_hostname => 0);
+        if (defined $ENV{ROK4_SSL_NO_VERIFY}) {
+            $UA->ssl_opts(verify_hostname => 0);
+        }
+        if (defined $ENV{HTTP_PROXY}) {
+            $UA->proxy('http', $ENV{HTTP_PROXY});
+        }
+        if (defined $ENV{HTTPS_PROXY}) {
+            $UA->proxy('https', $ENV{HTTPS_PROXY});
+        }
+        if (defined $ENV{NO_PROXY}) {
+            $UA->no_proxy(split(/,/, $ENV{NO_PROXY}));
+        }
     }
 
     return TRUE;
@@ -248,12 +264,11 @@ sub checkEnvironmentVariables {
 =begin nd
 Function: getSwiftToken
 
-Return TRUE if swift token (with keystone or not) is valid FALSE otherwise
+Return TRUE if swift token is valid FALSE otherwise
 =cut
 sub getSwiftToken {
-    my $keystone = shift;
 
-    if ($keystone) {
+    if (defined $ROK4_KEYSTONE_DOMAINID) {
 
         my $json = sprintf "{\"auth\":{\"scope\": { \"project\": {\"id\": \"%s\"}},\"identity\":{\"methods\":[\"password\"],\"password\":{\"user\":{\"domain\":{\"id\":\"%s\"},\"name\":\"%s\",\"password\":\"%s\"}}}}}",
             $ROK4_KEYSTONE_PROJECTID, $ROK4_KEYSTONE_DOMAINID, $ROK4_SWIFT_USER, $ROK4_SWIFT_PASSWD;
@@ -298,15 +313,9 @@ sub getSwiftToken {
         }
 
         $SWIFT_TOKEN = $response->header("X-Auth-Token");
-        $ROK4_SWIFT_PUBLICURL = $response->header("X-Storage-Url");
         
         if (! defined $SWIFT_TOKEN) {
             ERROR("No token in the swift authentication response");
-            ERROR(Dumper($response));
-            return FALSE;
-        }
-        if (! defined $ROK4_SWIFT_PUBLICURL) {
-            ERROR("No public URL in the swift authentication response");
             ERROR(Dumper($response));
             return FALSE;
         }

@@ -459,8 +459,9 @@ DataStream* Rok4Server::getCapParamWMS ( Request* request, std::string& version 
         //----
     }
     //Do we have the requested version ?
-    if ( version == "1.3.0" || version == "1.1.1" )
+    if ( version == "1.3.0" || version == "1.1.1" ){
         return NULL;
+    }
     
     // Version number negotiation for WMS (should not be done for WMTS)
     // Ref: http://cite.opengeospatial.org/OGCTestData/wms/1.1.1/spec/wms1.1.1.html#basic_elements.version.negotiation
@@ -485,16 +486,15 @@ DataStream* Rok4Server::getCapParamWMS ( Request* request, std::string& version 
     if ( request_l > high_version_l || ( request_l == high_version_l && request_m > high_version_m ) || ( request_l == high_version_l && request_m == high_version_m && request_r > high_version_r ) ) {
         // Version asked is higher than supported version
         version = high_version;
-        return NULL;
-    }
-    //if ( request_l < low_version_l || ( request_l == low_version_l && request_m < low_version_m ) || ( request_l == low_version_l && request_m == low_version_m && request_r < low_version_r ) ) {
-        // Version asked is lower than supported version
+    }else{
         version = low_version;
-        return NULL;
-    //}
+    }
 
-    if ( version!="1.3.0" && version!="1.1.1")
+    if ( version!="1.3.0" && version!="1.1.1"){
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Valeur du parametre VERSION invalide (1.1.1 et 1.3.0 disponibles seulement))" ),"wms" ) );
+    }
+    //normally unreachable code
+    return NULL;
 }
 
 // Prepare WMS GetCapabilities fragments

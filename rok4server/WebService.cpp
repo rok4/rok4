@@ -49,17 +49,14 @@
 #include "LibpngImage.h"
 #include "CurlPool.h"
 
-
-WebService::WebService(std::string url, std::string proxy="", std::string noProxy="", int retry=DEFAULT_RETRY, int interval=DEFAULT_INTERVAL,
-    int timeout=DEFAULT_TIMEOUT):Source(WEBSERVICE), url (url),proxy (proxy),retry (retry), interval (interval), timeout (timeout), noProxy (noProxy){
+WebService::WebService(std::string url, int retry=DEFAULT_RETRY, int interval=DEFAULT_INTERVAL,
+    int timeout=DEFAULT_TIMEOUT):Source(WEBSERVICE), url (url),retry (retry), interval (interval), timeout (timeout){
     responseType = "";
 }
 
 WebService::WebService(WebService* obj) : Source(WEBSERVICE) {
 
     url = obj->url;
-    proxy = obj->proxy;
-    noProxy = obj->noProxy;
     timeout = obj->timeout;
     retry = obj->retry;
     interval = obj->interval;
@@ -124,12 +121,6 @@ RawDataSource * WebService::performRequest(std::string request) {
             curl_easy_setopt(curl, CURLOPT_TIMEOUT, long(timeout));
             curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "identity");
             curl_easy_setopt(curl, CURLOPT_USERAGENT, ROK4_INFO);
-            if (proxy != "") {
-                curl_easy_setopt(curl, CURLOPT_PROXY, proxy.c_str());
-            }
-            if (noProxy != "") {
-                curl_easy_setopt(curl, CURLOPT_NOPROXY, noProxy.c_str());
-            }
             if (userAgent != "") {
                 curl_easy_setopt(curl, CURLOPT_USERAGENT, userAgent.c_str());
             }

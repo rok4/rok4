@@ -386,10 +386,10 @@ Pyramid* ConfLoader::buildBasedPyramid (
     return basedPyramid;
 }
 
-WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Format::eformat_data pyrFormat, Proxy proxy_default, ServicesXML* servicesXML) {
+WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Format::eformat_data pyrFormat, ServicesXML* servicesXML) {
 
     WebService * ws = NULL;
-    std::string url, user, proxy, noProxy,pwd, referer, userAgent, version, layers, styles, format, crs;
+    std::string url, user, pwd, referer, userAgent, version, layers, styles, format, crs;
     std::map<std::string,std::string> options;
     int timeout, retry, interval, channels;
     std::string name,ndValuesStr,value;
@@ -420,20 +420,6 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
     } else {
         LOGGER_ERROR("Une URL doit etre specifiee pour un WebService");
         return NULL;
-    }
-
-    TiXmlElement* sProxy = sWeb->FirstChildElement("proxy");
-    if (sProxy && sProxy->GetText()) {
-        proxy = DocumentXML::getTextStrFromElem(sProxy);
-    } else {
-        proxy = proxy_default.proxyName;
-    }
-
-    sProxy = sWeb->FirstChildElement("noProxy");
-    if (sProxy && sProxy->GetText()) {
-        noProxy = DocumentXML::getTextStrFromElem(sProxy);
-    } else {
-        noProxy = proxy_default.noProxy;
     }
 
     TiXmlElement* sTimeOut = sWeb->FirstChildElement("timeout");
@@ -648,7 +634,7 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
             }
         }
 
-        ws = new WebMapService(url, proxy, noProxy, retry, interval, timeout, version, layers, styles, format, channels, crs, bbox, noDataValues,options);
+        ws = new WebMapService(url, retry, interval, timeout, version, layers, styles, format, channels, crs, bbox, noDataValues,options);
         ws->setResponseType(format);
     } else {
          //On retourne une erreur car le WMS est le seul WebService disponible pour le moment

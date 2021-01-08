@@ -53,7 +53,7 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
     maxTileRow = -1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
     minTileCol = -1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
     maxTileCol = -1; // valeur conventionnelle pour indiquer que cette valeur n'est pas renseignee.
-    prefix = "";
+    racine = "";
 
     context = NULL;
 
@@ -85,13 +85,13 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
     if ( pElem && pElem->GetText()) {
 
         onDir = true;
-        baseDir = pElem->GetText() ;
+        racine = pElem->GetText() ;
         //Relative Path
-        if ( baseDir.compare ( 0,2,"./" ) == 0 ) {
-            baseDir.replace ( 0,1,parentDir );
-        } else if ( baseDir.compare ( 0,1,"/" ) != 0 ) {
-            baseDir.insert ( 0,"/" );
-            baseDir.insert ( 0, parentDir );
+        if ( racine.compare ( 0,2,"./" ) == 0 ) {
+            racine.replace ( 0,1,parentDir );
+        } else if ( racine.compare ( 0,1,"/" ) != 0 ) {
+            racine.insert ( 0,"/" );
+            racine.insert ( 0, parentDir );
         }
 
         pElem = hLvl.FirstChild ( "pathDepth" ).Element();
@@ -105,7 +105,8 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
             return;
         }
 
-        context = new FileContext("");
+        context = serverXML->getContextBook()->addContext(FILECONTEXT,"");
+
         if (! context->connection() ) {
             LOGGER_ERROR("Impossible de se connecter aux donnees.");
             return;
@@ -160,7 +161,7 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
 
             if (pElemSP->ValueStr() == "webService") {
 
-                WebService* ws = ConfLoader::parseWebService(pElemSP,tms->getCrs(),pyr->getFormat(), serverXML->getProxy(), servicesXML);
+                WebService* ws = ConfLoader::parseWebService(pElemSP,tms->getCrs(),pyr->getFormat(), servicesXML);
                 if (ws == NULL) {
                     LOGGER_ERROR("Impossible de charger le WebService indique");
                     return;
@@ -203,7 +204,7 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
 
             if (pElemSP->ValueStr() == "webService") {
 
-                WebService* ws = ConfLoader::parseWebService(pElemSP,tms->getCrs(),pyr->getFormat(), serverXML->getProxy(), servicesXML);
+                WebService* ws = ConfLoader::parseWebService(pElemSP,tms->getCrs(),pyr->getFormat(), servicesXML);
                 if (ws == NULL) {
                     LOGGER_ERROR("Impossible de charger le WebService indique");
                     return;
@@ -241,19 +242,16 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
 
             poolName = pElemCephContext->GetText();
 
-            if (serverXML->getCephContextBook() != NULL) {
-                context = serverXML->getCephContextBook()->addContext(poolName);
-            } else {
-                LOGGER_ERROR ( "L'utilisation d'un cephContext necessite de preciser les informations de connexions dans le server.conf");
-                return;
-            }
-
             pElem = hLvl.FirstChild ( "imagePrefix" ).Element();
             if ( !pElem || ! ( pElem->GetText() ) ) {
                 LOGGER_ERROR ( "imagePrefix absent pour le level " << id << " qui est stocke sur du Ceph");
                 return;
             }
-            prefix = pElem->GetText() ;
+            racine = pElem->GetText() ;
+
+            context = serverXML->getContextBook()->addContext(CEPHCONTEXT,poolName);
+
+
         }
 
         if (context == NULL) {
@@ -272,19 +270,14 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
                     bucket = pElemS3Context->GetText();
                 }
 
-                if (serverXML->getS3ContextBook() != NULL) {
-                    context = serverXML->getS3ContextBook()->addContext(bucket);
-                } else {
-                    LOGGER_ERROR ( "L'utilisation d'un s3Context necessite de preciser les informations de connexions dans le server.conf");
-                    return;
-                }
-
                 pElem = hLvl.FirstChild ( "imagePrefix" ).Element();
                 if ( !pElem || ! ( pElem->GetText() ) ) {
                     LOGGER_ERROR ( "imagePrefix absent pour le level " << id << " qui est stocke sur du S3");
                     return;
                 }
-                prefix = pElem->GetText() ;
+                racine = pElem->GetText() ;
+
+                context = serverXML->getContextBook()->addContext(S3CONTEXT,bucket);
 
             }
 
@@ -295,7 +288,6 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
                 if ( pElem ) {
 
                     std::string container;
-                    bool keystone = false;
 
                     TiXmlElement* pElemSwiftContext = pElem->FirstChildElement ( "containerName" );
                     if ( !pElemSwiftContext  || ! ( pElemSwiftContext->GetText() ) ) {
@@ -305,30 +297,28 @@ LevelXML::LevelXML( TiXmlElement* levelElement, std::string path, ServerXML* ser
                         container = pElemSwiftContext->GetText();
                     }
 
-                    pElemSwiftContext = pElem->FirstChildElement ( "keystoneConnection" );
-                    if ( pElemSwiftContext && pElemSwiftContext->GetText() ) {
-                        keystone = true;
-                    }
-
-                    if (serverXML->getSwiftContextBook() != NULL) {
-                        context = serverXML->getSwiftContextBook()->addContext(container, keystone);
-                    } else {
-                        LOGGER_ERROR ( "L'utilisation d'un swiftContext necessite de preciser les informations de connexions dans le server.conf");
-                        return;
-                    }
-
                     pElem = hLvl.FirstChild ( "imagePrefix" ).Element();
                     if ( !pElem || ! ( pElem->GetText() ) ) {
                         LOGGER_ERROR ( "imagePrefix absent pour le level " << id << " qui est stocke sur du Swift");
                         return;
                     }
-                    prefix = pElem->GetText() ;
+                    racine = pElem->GetText() ;
+
+                    context = serverXML->getContextBook()->addContext(SWIFTCONTEXT,container);
+
+
 
                 } else {
                     LOGGER_ERROR("Level " << id << " sans indication de stockage et pas à la demande. Precisez un baseDir ou un cephContext ou un swiftContext ou un s3Context");
                     return;
                 }
             }
+
+            if (context == NULL) {
+                LOGGER_ERROR("Aucun contexte utilisable");
+                return;
+            }
+
         }
     }
 #endif
@@ -558,10 +548,7 @@ LevelXML::~LevelXML() {
 
     if (! ok) {
         // Ce niveau n'est pas valide, donc n'a pas été utilisé pour créer un objet Level. Il faut donc nettoyer tout ce qui a été créé.
-        if (context) {
-            if (context->getType() == FILECONTEXT) delete context;
-        }
-
+        
         for ( int i = 0; i < sSources.size(); i++ ) {
             Source* pS = sSources.at(i);
             delete pS;

@@ -104,7 +104,6 @@ Attributes:
     data_bucket - string - Name of the (existing) S3 bucket, where to store data if S3 storage type
 
     data_container - string - Name of the (existing) Swift container, where to store data if Swift storage type
-    keystone_connection - boolean - For swift storage, keystone authentication or not ?
 
     data_pool - string - Name of the (existing) CEPH pool, where to store data if CEPH storage type
 
@@ -220,7 +219,6 @@ sub new {
         
         # Pyramide SWIFT
         data_container => undef,
-        keystone_connection => FALSE,
 
         # Pyramide CEPH
         data_pool => undef,
@@ -301,9 +299,6 @@ sub new {
             $this->{storage_type} = "SWIFT";
             $this->{data_container} = $params->{pyr_data_container_name};
 
-            if ( exists $params->{keystone_connection} && defined $params->{keystone_connection} && uc($params->{keystone_connection}) eq "TRUE" ) {
-                $this->{keystone_connection} = TRUE;                
-            }
         }
 
         elsif (exists $params->{pyr_data_pool_name} && defined $params->{pyr_data_pool_name}) {
@@ -473,7 +468,7 @@ sub _readDescriptor {
             $this->{data_bucket} = $this->{levels}->{$oneLevelId}->getS3Info();
         }
         elsif ($storageType eq "SWIFT") {
-            ($this->{data_container}, $this->{keystone_connection}) = $this->{levels}->{$oneLevelId}->getSwiftInfo();
+            $this->{data_container} = $this->{levels}->{$oneLevelId}->getSwiftInfo();
         }
         elsif ($storageType eq "CEPH") {
             $this->{data_pool} = $this->{levels}->{$oneLevelId}->getCephInfo();
@@ -596,7 +591,6 @@ sub addLevel {
 
             prefix => $this->{name},
             container_name => $this->{data_container},
-            keystone_connection => $this->{keystone_connection},
 
             tables => $dbs->getTables()
         };
@@ -695,12 +689,6 @@ sub updateStorageInfos {
         $this->{storage_type} = "SWIFT";
         $this->{data_container} = $params->{pyr_data_container_name};
 
-        if ( exists $params->{keystone_connection} && defined $params->{keystone_connection} && uc($params->{keystone_connection}) eq "TRUE" ) {
-            $this->{keystone_connection} = TRUE;
-        } else {
-            $this->{keystone_connection} = FALSE;
-        }
-
         $this->{data_path} = undef;
         $this->{dir_depth} = undef;
         $this->{data_bucket} = undef;
@@ -708,7 +696,6 @@ sub updateStorageInfos {
 
         $updateLevelParams->{prefix} = $this->{name};
         $updateLevelParams->{container_name} = $this->{data_container};
-        $updateLevelParams->{keystone_connection} = $this->{keystone_connection};
     }
 
 
@@ -891,12 +878,6 @@ sub ownAncestor {
 sub getFormatCode {
     my $this = shift;
     return "TIFF_PBF_MVT";
-}
-
-# Function: keystoneConnection
-sub keystoneConnection {
-    my $this = shift;
-    return $this->{keystone_connection};
 }
 
 # Function: getName

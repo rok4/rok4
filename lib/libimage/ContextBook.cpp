@@ -49,72 +49,62 @@
 
 #include "ContextBook.h"
 
-ContextBook::ContextBook(eContextType type, std::string s1, std::string s2, std::string s3)
-{
-    switch(type) {
-        case CEPHCONTEXT : 
-            contextType = CEPHCONTEXT;
-            ceph_name = s1;
-            ceph_user = s2;
-            ceph_conf = s3;
-            break;
-        case S3CONTEXT : 
-            contextType = S3CONTEXT;
-            s3_url = s1;
-            s3_key = s2;
-            s3_secret_key = s3;
-            break;
-        case SWIFTCONTEXT:
-            contextType = SWIFTCONTEXT;
-            swift_auth = s1;
-            swift_user = s2;
-            swift_passwd = s3;
-            break;
-        default :
-            contextType = CEPHCONTEXT;
-            ceph_name = s1;
-            ceph_user = s2;
-            ceph_conf = s3;
-            break;
-    }
-}
 
-Context * ContextBook::addContext(std::string tray, bool keystone)
+ContextBook::ContextBook(){}
+
+Context * ContextBook::addContext(eContextType type,std::string tray)
 {
     Context* ctx;
-    std::map<std::string, Context*>::iterator it = book.find ( tray );
+    std::pair<eContextType,std::string> key = make_pair(type,tray);
+    LOGGER_DEBUG("On essaye d'ajouter la clé " << key.first <<" / " << key.second );
+
+    std::map<std::pair<eContextType,std::string>, Context*>::iterator it = book.find (key);
     if ( it != book.end() ) {
         //le contenant est déjà existant et donc connecté
         return it->second;
 
     } else {
         //ce contenant n'est pas encore connecté, on va créer la connexion
-
-        switch(contextType) {
-            case CEPHCONTEXT :
-                ctx = new CephPoolContext(ceph_name, ceph_user, ceph_conf, tray);
+        //
+        //on créé le context selon le type de stockage
+        switch(type){
+            case SWIFTCONTEXT:
+                ctx = new SwiftContext(tray);
                 break;
-            case S3CONTEXT : 
-                ctx = new S3Context(s3_url, s3_key, s3_secret_key, tray);
+            case CEPHCONTEXT:
+                ctx = new CephPoolContext(tray);
                 break;
-            case SWIFTCONTEXT :
-                ctx = new SwiftContext(swift_auth, swift_user, swift_passwd, tray, keystone);
+            case S3CONTEXT:
+                ctx = new S3Context(tray);
                 break;
-            default :
+            case FILECONTEXT:
+                ctx = new FileContext(tray);
+                break;
+            default:
+                //ERREUR
+                LOGGER_ERROR("Ce type de contexte n'est pas géré.");
                 return NULL;
         }
 
-        //on ajoute au book
-        book.insert ( std::pair<std::string,Context*>(tray,ctx) );
+        // on connecte pour vérifier que ce contexte est valide
+        if (!(ctx->connection())) {
+            LOGGER_ERROR("Impossible de connecter au contexte");
+            delete ctx;
+            return NULL;
+        }
+
+
+        //LOGGER_DEBUG("On insère ce contexte " << ctx->toString() );
+        book.insert(make_pair(key,ctx));
 
         return ctx;
     }
 
 }
 
-Context * ContextBook::getContext(std::string tray)
+Context * ContextBook::getContext(eContextType type,std::string tray)
 {
-    std::map<std::string, Context*>::iterator it = book.find ( tray );
+    std::map<std::pair<eContextType,std::string>, Context*>::iterator it = book.find (make_pair(type,tray));
     if ( it == book.end() ) {
         LOGGER_ERROR("Le contenant demandé n'a pas été trouvé dans l'annuaire.");
         return NULL;
@@ -127,41 +117,14 @@ Context * ContextBook::getContext(std::string tray)
 
 ContextBook::~ContextBook()
 {
-    std::map<std::string,Context*>::iterator it;
+    std::map<std::pair<eContextType,std::string>,Context*>::iterator it;
     for (it=book.begin(); it!=book.end(); ++it) {
         delete it->second;
         it->second = NULL;
     }
 }
 
-bool ContextBook::connectAllContext()
-{
-    std::map<std::string,Context*>::iterator it;
-    for (it=book.begin(); it!=book.end(); ++it) {
-        if (!(it->second->connection())) {
-            LOGGER_ERROR("Impossible de connecter un contexte");
-        }
-    }
-    return true;
-}
-
-bool ContextBook::reconnectAllContext()
-{
-    std::map<std::string,Context*>::iterator it;
-    for (it=book.begin(); it!=book.end(); ++it) {
-        it->second->closeConnection();
-        if (!(it->second->connection())) {
-            LOGGER_ERROR("Impossible de reconnecter un contexte");
-        }
-    }
-    return true;
-}
-
-void ContextBook::disconnectAllContext()
-{
-    std::map<std::string,Context*>::iterator it;
-    for (it=book.begin(); it!=book.end(); ++it) {
-        it->second->closeConnection();
-    }
+int ContextBook::size(){
+  return book.size();
 }
 

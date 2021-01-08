@@ -54,44 +54,55 @@
 #include "CurlPool.h"
 #include <time.h>
 
-SwiftContext::SwiftContext (std::string auth, std::string user, std::string passwd, std::string container, bool ks) :
-    Context(),
-    auth_url(auth),user_name(user), user_passwd(passwd), container_name(container), keystone_connection (ks)
-{
-}
 
-SwiftContext::SwiftContext (std::string container, bool ks) : Context(), container_name(container), keystone_connection (ks) {
+SwiftContext::SwiftContext (std::string cont) : Context(), ssl_no_verify(false), keystone_auth(false), container_name(cont){
 
-    char* auth = getenv ("ROK4_SWIFT_AUTHURL");
+    char* auth = getenv (ROK4_SWIFT_AUTHURL);
     if (auth == NULL) {
         auth_url.assign("http://localhost:8080/auth/v1.0");
     } else {
         auth_url.assign(auth);
     }
 
-    char* user = getenv ("ROK4_SWIFT_USER");
+    char* user = getenv (ROK4_SWIFT_USER);
     if (user == NULL) {
         user_name.assign("tester");
     } else {
         user_name.assign(user);
     }
 
-    char* passwd = getenv ("ROK4_SWIFT_PASSWD");
+    char* passwd = getenv (ROK4_SWIFT_PASSWD);
     if (passwd == NULL) {
         user_passwd.assign("password");
     } else {
         user_passwd.assign(passwd);
     }
+
+    char* publicu = getenv (ROK4_SWIFT_PUBLICURL);
+    if (publicu == NULL) {
+        public_url.assign("http://localhost:8080/api/v1");
+    } else {
+        public_url.assign(publicu);
+    }
+
+    if(getenv( ROK4_KEYSTONE_DOMAINID ) != NULL){
+        keystone_auth=true;
+    }
+
+    if(getenv( ROK4_SSL_NO_VERIFY ) != NULL){
+        ssl_no_verify=true;
+    }
+
 }
 
 bool SwiftContext::connection() {
 
     if (! connected) {
 
-        if (keystone_connection) {
+        if (keystone_auth) {
             LOGGER_DEBUG("Keystone authentication");
 
-            char* domain = getenv ("ROK4_KEYSTONE_DOMAINID");
+            char* domain = getenv (ROK4_KEYSTONE_DOMAINID);
             if (domain == NULL) {
                 LOGGER_ERROR("We need a domain id (ROK4_KEYSTONE_DOMAINID) for a keystone authentication");
                 return false;
@@ -99,7 +110,7 @@ bool SwiftContext::connection() {
                 domain_id.assign(domain);
             }
 
-            char* project = getenv ("ROK4_KEYSTONE_PROJECTID");
+            char* project = getenv (ROK4_KEYSTONE_PROJECTID);
             if (project == NULL) {
                 LOGGER_ERROR("We need a project id (ROK4_KEYSTONE_PROJECTID) for a keystone authentication");
                 return false;
@@ -107,24 +118,19 @@ bool SwiftContext::connection() {
                 project_id.assign(project);
             }
 
-            char* publicu = getenv ("ROK4_SWIFT_PUBLICURL");
-            if (publicu == NULL) {
-                LOGGER_ERROR("We need a public url (ROK4_SWIFT_PUBLICURL) for a keystone authentication");
-                return false;
-            } else {
-                public_url.assign(publicu);
-            }
-
             CURLcode res;
             struct curl_slist *list = NULL;
+            CURL* curl = CurlPool::getCurlEnv();
 
-            CURL* curl = curl_easy_init();
             curl_easy_setopt(curl, CURLOPT_URL, auth_url.c_str());
-            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+
+            if(ssl_no_verify){
+                curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+            }
 
             // On constitue le header
 
-            char* ct = "Content-Type: application/json";
+            const char* ct = "Content-Type: application/json";
             list = curl_slist_append(list, ct);
 
             // On constitue le body
@@ -151,7 +157,6 @@ bool SwiftContext::connection() {
                 LOGGER_ERROR("Cannot authenticate to Keystone");
                 LOGGER_ERROR(curl_easy_strerror(res));
                 curl_slist_free_all(list);
-                curl_easy_cleanup(curl);
                 return false;
             }
 
@@ -161,7 +166,6 @@ bool SwiftContext::connection() {
                 LOGGER_ERROR("Cannot authenticate to Keystone");
                 LOGGER_ERROR("Response HTTP code : " << http_code);
                 curl_slist_free_all(list);
-                curl_easy_cleanup(curl);
                 return false;
             }
 
@@ -169,13 +173,12 @@ bool SwiftContext::connection() {
             token = std::string(authHdr.token);
 
             curl_slist_free_all(list);
-            curl_easy_cleanup(curl);
 
         } else {
 
             LOGGER_DEBUG("Swift authentication");
 
-            char* account = getenv ("ROK4_SWIFT_ACCOUNT");
+            char* account = getenv (ROK4_SWIFT_ACCOUNT);
             if (account == NULL) {
                 LOGGER_ERROR("We need an account (ROK4_SWIFT_ACCOUNT) for a Swift authentication");
                 return false;
@@ -186,9 +189,12 @@ bool SwiftContext::connection() {
             CURLcode res;
             struct curl_slist *list = NULL;
 
-            CURL* curl = curl_easy_init();
+            CURL* curl = CurlPool::getCurlEnv();
+
             curl_easy_setopt(curl, CURLOPT_URL, auth_url.c_str());
-            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+            if(ssl_no_verify){
+                curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+            }
 
             // On constitue le header et le moyen de récupération des informations (avec les structures de LibcurlStruct)
 
@@ -229,7 +235,6 @@ bool SwiftContext::connection() {
                 LOGGER_ERROR("Cannot authenticate to Swift");
                 LOGGER_ERROR(curl_easy_strerror(res));
                 curl_slist_free_all(list);
-                curl_easy_cleanup(curl);
                 return false;
             }
 
@@ -239,16 +244,13 @@ bool SwiftContext::connection() {
                 LOGGER_ERROR("Cannot authenticate to Swift");
                 LOGGER_ERROR("Response HTTP code : " << http_code);
                 curl_slist_free_all(list);
-                curl_easy_cleanup(curl);
                 return false;
             }
 
-            // On récupère l'URL publique et le token dans le header de la réponse
-            public_url = std::string(authHdr.url);
+            // On récupère le token dans le header de la réponse
             token = std::string(authHdr.token);
 
             curl_slist_free_all(list);
-            curl_easy_cleanup(curl);
         }
 
         connected = true;
@@ -277,7 +279,6 @@ int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
     int lastBytes = offset + size - 1;
 
     CURL* curl = CurlPool::getCurlEnv();
-    //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 
     // On constitue le header et le moyen de récupération des informations (avec les structures de LibcurlStruct)
 
@@ -292,13 +293,15 @@ int SwiftContext::read(uint8_t* data, int offset, int size, std::string name) {
 
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
     curl_easy_setopt(curl, CURLOPT_URL, fullUrl.c_str());
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    if(ssl_no_verify){
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    }
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, data_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &chunk);
 
-    LOGGER_INFO("SWIFT READ START (" << size << ") " << pthread_self());
+    LOGGER_DEBUG("SWIFT READ START (" << size << ") " << pthread_self());
     res = curl_easy_perform(curl);
-    LOGGER_INFO("SWIFT READ END (" << size << ") " << pthread_self());
+    LOGGER_DEBUG("SWIFT READ END (" << size << ") " << pthread_self());
     
     curl_slist_free_all(list);
 
@@ -415,7 +418,9 @@ bool SwiftContext::closeToWrite(std::string name) {
 
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
     curl_easy_setopt(curl, CURLOPT_URL, fullUrl.c_str());
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    if(ssl_no_verify){
+      curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    }
     curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, &((*(it1->second))[0]));
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, it1->second->size());
@@ -426,7 +431,6 @@ bool SwiftContext::closeToWrite(std::string name) {
         LOGGER_ERROR ( "Unable to flush " << it1->second->size() << " bytes in the object " << name );
         LOGGER_ERROR(curl_easy_strerror(res));
         curl_slist_free_all(list);
-        curl_easy_cleanup(curl);
         return false;
     }
 
@@ -436,18 +440,18 @@ bool SwiftContext::closeToWrite(std::string name) {
         LOGGER_ERROR ( "Unable to flush " << it1->second->size() << " bytes in the object " << name );
         LOGGER_ERROR("Response HTTP code : " << http_code);
         curl_slist_free_all(list);
-        curl_easy_cleanup(curl);
         return false;
     }
 
     curl_slist_free_all(list);
-
-
-
 
     LOGGER_DEBUG("Erase the flushed buffer");
     delete it1->second;
     writingBuffers.erase(it1);
 
     return true;
+}
+
+std::string SwiftContext::getPath(std::string racine,int x,int y,int pathDepth){
+    return racine + "_" + std::to_string(x) + "_" + std::to_string(y);
 }

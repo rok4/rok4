@@ -50,26 +50,24 @@
 #include "CephPoolContext.h"
 #include <stdlib.h>
 
-CephPoolContext::CephPoolContext (std::string cluster, std::string user, std::string conf, std::string pool) : Context(), cluster_name(cluster), user_name(user), conf_file(conf), pool_name(pool) {
-}
 
 CephPoolContext::CephPoolContext (std::string pool) : Context(), pool_name(pool) {
 
-    char* cluster = getenv ("ROK4_CEPH_CLUSTERNAME");
+    char* cluster = getenv (ROK4_CEPH_CLUSTERNAME);
     if (cluster == NULL) {
         cluster_name.assign("ceph");
     } else {
         cluster_name.assign(cluster);
     }
 
-    char* user = getenv ("ROK4_CEPH_USERNAME");
+    char* user = getenv (ROK4_CEPH_USERNAME);
     if (user == NULL) {
         user_name.assign("client.admin");
     } else {
         user_name.assign(user);
     }
 
-    char* conf = getenv ("ROK4_CEPH_CONFFILE");
+    char* conf = getenv (ROK4_CEPH_CONFFILE);
     if (conf == NULL) {
         conf_file.assign("/etc/ceph/ceph.conf");
     } else {
@@ -79,43 +77,45 @@ CephPoolContext::CephPoolContext (std::string pool) : Context(), pool_name(pool)
 
 bool CephPoolContext::connection() {
 
+    if (! connected) {
+        uint64_t flags;
+        int ret = 0;
 
-    uint64_t flags;
-    int ret = 0;
+        ret = rados_create2(&cluster, cluster_name.c_str(), user_name.c_str(), flags);
+        if (ret < 0) {
+            LOGGER_ERROR("Couldn't initialize the cluster handle! error " << ret);
+            return false;
+        }
 
-    ret = rados_create2(&cluster, cluster_name.c_str(), user_name.c_str(), flags);
-    if (ret < 0) {
-        LOGGER_ERROR("Couldn't initialize the cluster handle! error " << ret);
-        return false;
+        ret = rados_conf_read_file(cluster, conf_file.c_str());
+        if (ret < 0) {
+            LOGGER_ERROR( "Couldn't read the Ceph configuration file! error " << ret );
+            LOGGER_ERROR (strerror(-ret));
+            LOGGER_ERROR( "Configuration file : " << conf_file );
+            return false;
+        }
+
+        // On met les timeout à 10 minutes
+        rados_conf_set(cluster, "client_mount_timeout", "60");
+        rados_conf_set(cluster, "rados_mon_op_timeout", "60");
+        rados_conf_set(cluster, "rados_osd_op_timeout", "60");
+
+        ret = rados_connect(cluster);
+        if (ret < 0) {
+            LOGGER_ERROR( "Couldn't connect to cluster! error " << ret );
+            return false;
+        }
+
+        ret = rados_ioctx_create(cluster, pool_name.c_str(), &io_ctx);
+        if (ret < 0) {
+            LOGGER_ERROR( "Couldn't set up ioctx! error " << ret );
+            LOGGER_ERROR( "Pool : " << pool_name );
+            rados_shutdown(cluster);
+            return false;
+        }
+
+        connected = true;
     }
-
-    ret = rados_conf_read_file(cluster, conf_file.c_str());
-    if (ret < 0) {
-        LOGGER_ERROR( "Couldn't read the Ceph configuration file! error " << ret );
-        LOGGER_ERROR (strerror(-ret));
-        LOGGER_ERROR( "Configuration file : " << conf_file );
-        return false;
-    }
-
-    // On met les timeout à 10 minutes
-    rados_conf_set(cluster, "client_mount_timeout", "60");
-    rados_conf_set(cluster, "rados_mon_op_timeout", "60");
-    rados_conf_set(cluster, "rados_osd_op_timeout", "60");
-
-    ret = rados_connect(cluster);
-    if (ret < 0) {
-        LOGGER_ERROR( "Couldn't connect to cluster! error " << ret );
-        return false;
-    }
-
-    ret = rados_ioctx_create(cluster, pool_name.c_str(), &io_ctx);
-    if (ret < 0) {
-        LOGGER_ERROR( "Couldn't set up ioctx! error " << ret );
-        LOGGER_ERROR( "Pool : " << pool_name );
-        return false;
-    }
-
-    connected = true;
 
     return true;
 }
@@ -265,3 +265,9 @@ bool CephPoolContext::closeToWrite(std::string name) {
         return true;
     }
 }
+
+std::string CephPoolContext::getPath(std::string racine,int x,int y,int pathDepth){
+    return racine + "_" + std::to_string(x) + "_" + std::to_string(y);
+}
+
+

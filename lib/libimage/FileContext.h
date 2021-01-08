@@ -99,7 +99,8 @@ public:
     std::string getRootDir () {
         return root_dir;
     }
-    
+
+
     int read(uint8_t* data, int offset, int size, std::string name);
     bool write(uint8_t* data, int offset, int size, std::string name);
     bool writeFull(uint8_t* data, int size, std::string name);
@@ -107,7 +108,7 @@ public:
     eContextType getType();
     std::string getTypeStr();
     std::string getTray();
-
+ 
     /**
      * \~french \brief Ouvre le flux #output
      * \~english \brief Open stream #output
@@ -134,6 +135,10 @@ public:
             return true;
         }
     }
+
+
+    std::string getPath(std::string racine,int x,int y,int pathDepth=2);
+
 
     virtual void print() {
         LOGGER_INFO ( "------ File Context -------" );
