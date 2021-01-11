@@ -284,6 +284,6 @@ int main ( int argc, char** argv ) {
     //CURL clean - one time for the whole program
     curl_global_cleanup();
 
-    rok4KillLogger();
+    //rok4KillLogger();
     return 0;
 }

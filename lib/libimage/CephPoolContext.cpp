@@ -103,12 +103,14 @@ bool CephPoolContext::connection() {
         ret = rados_connect(cluster);
         if (ret < 0) {
             LOGGER_ERROR( "Couldn't connect to cluster! error " << ret );
+            LOGGER_ERROR (strerror(-ret));
             return false;
         }
 
         ret = rados_ioctx_create(cluster, pool_name.c_str(), &io_ctx);
         if (ret < 0) {
             LOGGER_ERROR( "Couldn't set up ioctx! error " << ret );
+            LOGGER_ERROR (strerror(-ret));
             LOGGER_ERROR( "Pool : " << pool_name );
             rados_shutdown(cluster);
             return false;
@@ -200,8 +202,8 @@ bool CephPoolContext::writeFull(uint8_t* data, int size, std::string name) {
     return true;
 }
 
-eContextType CephPoolContext::getType() {
-    return CEPHCONTEXT;
+ContextType::eContextType CephPoolContext::getType() {
+    return ContextType::CEPHCONTEXT;
 }
 
 std::string CephPoolContext::getTypeStr() {

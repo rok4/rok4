@@ -174,7 +174,7 @@ public:
      */
     SwiftContext (std::string cont);
 
-    eContextType getType();
+    ContextType::eContextType getType();
     std::string getTypeStr();
     std::string getTray();
           

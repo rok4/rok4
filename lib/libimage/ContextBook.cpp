@@ -52,13 +52,13 @@
 
 ContextBook::ContextBook(){}
 
-Context * ContextBook::addContext(eContextType type,std::string tray)
+Context * ContextBook::addContext(ContextType::eContextType type,std::string tray)
 {
     Context* ctx;
-    std::pair<eContextType,std::string> key = make_pair(type,tray);
-    LOGGER_DEBUG("On essaye d'ajouter la clé " << key.first <<" / " << key.second );
+    std::pair<ContextType::eContextType,std::string> key = make_pair(type,tray);
+    LOGGER_DEBUG("On essaye d'ajouter la clé " << ContextType::toString(key.first) <<" / " << key.second );
 
-    std::map<std::pair<eContextType,std::string>, Context*>::iterator it = book.find (key);
+    std::map<std::pair<ContextType::eContextType,std::string>, Context*>::iterator it = book.find (key);
     if ( it != book.end() ) {
         //le contenant est déjà existant et donc connecté
         return it->second;
@@ -68,16 +68,16 @@ Context * ContextBook::addContext(eContextType type,std::string tray)
         //
         //on créé le context selon le type de stockage
         switch(type){
-            case SWIFTCONTEXT:
+            case ContextType::SWIFTCONTEXT:
                 ctx = new SwiftContext(tray);
                 break;
-            case CEPHCONTEXT:
+            case ContextType::CEPHCONTEXT:
                 ctx = new CephPoolContext(tray);
                 break;
-            case S3CONTEXT:
+            case ContextType::S3CONTEXT:
                 ctx = new S3Context(tray);
                 break;
-            case FILECONTEXT:
+            case ContextType::FILECONTEXT:
                 ctx = new FileContext(tray);
                 break;
             default:
@@ -88,7 +88,7 @@ Context * ContextBook::addContext(eContextType type,std::string tray)
 
         // on connecte pour vérifier que ce contexte est valide
         if (!(ctx->connection())) {
-            LOGGER_ERROR("Impossible de connecter au contexte");
+            LOGGER_ERROR("Impossible de connecter au contexte de type " << ContextType::toString(type) << ", contenant " << tray);
             delete ctx;
             return NULL;
         }
@@ -102,9 +102,9 @@ Context * ContextBook::addContext(eContextType type,std::string tray)
 
 }
 
-Context * ContextBook::getContext(eContextType type,std::string tray)
+Context * ContextBook::getContext(ContextType::eContextType type,std::string tray)
 {
-    std::map<std::pair<eContextType,std::string>, Context*>::iterator it = book.find (make_pair(type,tray));
+    std::map<std::pair<ContextType::eContextType,std::string>, Context*>::iterator it = book.find (make_pair(type,tray));
     if ( it == book.end() ) {
         LOGGER_ERROR("Le contenant demandé n'a pas été trouvé dans l'annuaire.");
         return NULL;
@@ -117,7 +117,7 @@ Context * ContextBook::getContext(eContextType type,std::string tray)
 
 ContextBook::~ContextBook()
 {
-    std::map<std::pair<eContextType,std::string>,Context*>::iterator it;
+    std::map<std::pair<ContextType::eContextType,std::string>,Context*>::iterator it;
     for (it=book.begin(); it!=book.end(); ++it) {
         delete it->second;
         it->second = NULL;

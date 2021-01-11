@@ -105,7 +105,7 @@ public:
     bool write(uint8_t* data, int offset, int size, std::string name);
     bool writeFull(uint8_t* data, int size, std::string name);
 
-    eContextType getType();
+    ContextType::eContextType getType();
     std::string getTypeStr();
     std::string getTray();
  

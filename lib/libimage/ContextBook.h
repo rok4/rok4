@@ -70,7 +70,7 @@ private:
      * \details Key is a pair composed of type of storage and the context's bucket
      */
     //std::map<std::string, Context*> book;
-    std::map<std::pair<eContextType,std::string>,Context*> book;
+    std::map<std::pair<ContextType::eContextType,std::string>,Context*> book;
 
 
 public:
@@ -92,9 +92,9 @@ public:
         oss << "------ Context book -------" << std::endl;
         oss << "\t- context number = " << book.size() << std::endl;
 
-        std::map<std::pair<eContextType,std::string>, Context*>::iterator it = book.begin();
+        std::map<std::pair<ContextType::eContextType,std::string>, Context*>::iterator it = book.begin();
         while (it != book.end()) {
-            std::pair<eContextType,std::string> key = it->first;
+            std::pair<ContextType::eContextType,std::string> key = it->first;
             oss << "\t\t- bucket = " << key.first << "/" << key.second << std::endl;
             oss << it->second->toString() << std::endl;
             it++;
@@ -115,7 +115,7 @@ public:
      * \param[in] type storage type of looked for's context 
      * \param[in] tray Tray's name for which context is wanted
      */
-    Context* getContext(eContextType type,std::string tray);
+    Context* getContext(ContextType::eContextType type,std::string tray);
 
     /**
      * \~french
@@ -132,7 +132,7 @@ public:
      * \param[in] ctx* Context to add
      
      */
-    Context * addContext(eContextType type,std::string tray);
+    Context * addContext(ContextType::eContextType type,std::string tray);
 
 
     /**

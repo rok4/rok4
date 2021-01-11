@@ -36,55 +36,35 @@
  */
 
 /**
- * \file LegendURL.cpp
- * \~french
- * \brief Implémentation de la classe LegendURL gérant les éléments de légendes des documents de capacités
- * \~english
- * \brief Implement the LegendURL Class handling capabilities legends elements
+ * \file Format.cpp
+ ** \~french
+ * \brief Implémentation du namespace ContextType
+ * \details
+ * \li ContextType : gère les types de contextes pour le stockage
+ ** \~english
+ * \brief Implement the namespace ContextType
+ * \details
+ * \li ContextType : managed context type for storage
  */
 
-#include "LegendURL.h"
+#include "Context.h"
+#include <string.h>
 
-LegendURL::LegendURL ( std::string format, std::string href, int width, int height,
-                       double minScaleDenominator, double maxScaleDenominator ) :
-    ResourceLocator ( format, href ) , width ( width ), height ( height ),
-    minScaleDenominator ( minScaleDenominator ), maxScaleDenominator ( maxScaleDenominator ) {
+namespace ContextType {
 
+/**
+ * \~french \brief Noms des types de contextes
+ * \~english \brief Available context type names
+ */
+const char *eContextTypeName[] = {
+    "FILE",
+    "CEPH",
+    "SWIFT",
+    "S3"
+};
+
+std::string toString ( eContextType ct ) {
+    return std::string ( eContextTypeName[ct] );
 }
 
-LegendURL::LegendURL ( const LegendURL& origLUrl ) : ResourceLocator ( origLUrl ) {
-    height = origLUrl.height;
-    width = origLUrl.width;
-    maxScaleDenominator = origLUrl.maxScaleDenominator;
-    minScaleDenominator = origLUrl.minScaleDenominator;
 }
-
-LegendURL& LegendURL::operator= ( const LegendURL& other ) {
-    if ( this != &other ) {
-        ResourceLocator::operator= ( other );
-        this->height = other.height;
-        this->width = other.width;
-        this->maxScaleDenominator = other.maxScaleDenominator;
-        this->minScaleDenominator = other.minScaleDenominator;
-    }
-    return *this;
-}
-
-
-bool LegendURL::operator== ( const LegendURL& other ) const {
-    return ( this->width == other.width && this->height == other.height
-             && this->minScaleDenominator == other.minScaleDenominator
-             && this->maxScaleDenominator == other.maxScaleDenominator
-             && this->getFormat().compare ( other.getFormat() ) == 0
-             && this->getHRef().compare ( other.getHRef() ) == 0 );
-}
-
-bool LegendURL::operator!= ( const LegendURL& other ) const {
-    return ! ( *this == other );
-}
-
-
-LegendURL::~LegendURL() {
-
-}
-
