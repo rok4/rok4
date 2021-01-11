@@ -56,7 +56,7 @@ Context * ContextBook::addContext(ContextType::eContextType type,std::string tra
 {
     Context* ctx;
     std::pair<ContextType::eContextType,std::string> key = make_pair(type,tray);
-    LOGGER_DEBUG("On essaye d'ajouter la clé " << key.first <<" / " << key.second );
+    LOGGER_DEBUG("On essaye d'ajouter la clé " << ContextType::toString(key.first) <<" / " << key.second );
 
     std::map<std::pair<ContextType::eContextType,std::string>, Context*>::iterator it = book.find (key);
     if ( it != book.end() ) {

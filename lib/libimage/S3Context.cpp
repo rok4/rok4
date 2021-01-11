@@ -189,7 +189,7 @@ int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
     std::string fullUrl = url + "/" + bucket_name + "/" + name;
 
     time_t current;
-    
+
     time(&current);
     struct tm * ptm = gmtime ( &current );
 
@@ -360,15 +360,16 @@ bool S3Context::closeToWrite(std::string name) {
     std::string fullUrl = url + "/" + bucket_name + "/" + name;
 
     time_t current;
-    char gmt_time[40];
 
-    //On passe en locale="C"  Pour l'autorisation des requètes S3
-    char loc[32] ;
-    strcpy( loc, setlocale(LC_ALL,NULL));
-    setlocale(LC_ALL, "C");
     time(&current);
-    strftime( gmt_time, sizeof(gmt_time), "%a, %d %b %Y %T %z", gmtime(&current) );
-    setlocale(LC_ALL, loc); 
+    struct tm * ptm = gmtime ( &current );
+
+    static char gmt_time[40];
+    sprintf(
+        gmt_time, "%s, %d %s %d %.2d:%.2d:%.2d GMT",
+        wday_name[ptm->tm_wday], ptm->tm_mday, mon_name[ptm->tm_mon], 1900 + ptm->tm_year,
+        ptm->tm_hour, ptm->tm_min, ptm->tm_sec
+    );
 
     std::string content_type = "application/octet-stream";
     std::string resource = "/" + bucket_name + "/" + name;
