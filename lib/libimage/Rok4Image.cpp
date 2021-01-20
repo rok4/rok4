@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -57,6 +57,7 @@
 #include "Decoder.h"
 #include "Logger.h"
 #include "Utils.h"
+#include "Data.h"
 #include <fcntl.h>
 #include <iostream>
 #include <string>
@@ -459,15 +460,11 @@ Rok4Image::Rok4Image (
 
     rawTileLineSize = tileWidth * pixelSize;
 
-    /* Initialisation des différents buffers : on choisit de mémoriser autant de tuile qu'il y en a dans le sens de la largeur
-     * (pour faciliter la construction d'un ligne à partir des tuiles */
-    memorySize = tileWidthwise;
 
-    memorizedTiles = new uint8_t*[memorySize];
-    memset ( memorizedTiles, 0, memorySize*sizeof ( uint8_t* ) );
+    memorizedTiles = new uint8_t[tileWidthwise * rawTileSize];
+    memset ( memorizedTiles, 0, tileWidthwise * rawTileSize * sizeof ( uint8_t ) );
 
-    memorizedIndex = new int[memorySize];
-    memset ( memorizedIndex, -1, memorySize*sizeof ( int ) );
+    memorizedTilesLine = -1;
 
 }
 
@@ -495,139 +492,117 @@ Rok4Image::Rok4Image ( std::string n, int tpw, int tph, Context* c ) :
 /* ------------------------------------------- LECTURE -------------------------------------------- */
 /* ------------------------------------------------------------------------------------------------ */
 
-uint8_t* Rok4Image::memorizeRawTile ( size_t& size, int tile )
+boolean Rok4Image::memorizeRawTiles ( int tilesLine )
 {    
 
-    if ( tile < 0 || tile >= tilesNumber ) {
-        LOGGER_ERROR ( "Unvalid tile's indice (" << tile << "). Have to be between 0 and " << tilesNumber-1 );
-        size = 0;
-        return NULL;
+    if ( tilesLine < 0 || tilesLine >= tileHeightwise ) {
+        LOGGER_ERROR ( "Unvalid tiles' line indice (" << tilesLine << "). Have to be between 0 and " << tileHeightwise-1 );
+        return false;
     }
 
-    size = rawTileSize;
+    if (memorizedTilesLine == tilesLine) {
+        return true;
+    }
 
-    int index = tile%memorySize;
+    /*
+    On va récupérer l'offset de la première tuile de la ligne, ainsi que calculer la taille totale des tuiles de la ligne
+    pour faire la lecture en une seule fois.
+    Les tuiles ne sont pas parfaitement jointes sur le stockage, car les offset sont callées sur des multiples de 16
+    */
+    int firstTileIndex = tilesLine * tileWidthwise;
+    int firstTileOffset = tilesOffset[firstTileIndex];
 
-    if ( memorizedIndex[index] != tile ) {
-        /* la tuile n'est pas mémorisée, on doit la récupérer et la stocker dans memorizedTiles */
-        LOGGER_DEBUG ( "Not memorized tile (" << tile << "). We read, decompress, and memorize it");
+    int lastTileIndex = firstTileIndex + tileWidthwise - 1;
+    int lastTileOffset = tilesOffset[lastTileIndex];
+    int lastTileSize = tilesByteCounts[lastTileIndex];
 
-        StoreDataSource* encData = new StoreDataSource (name.c_str(), tilesOffset[tile], tilesByteCounts[tile], "", context);
+    StoreDataSource* totalDS = new StoreDataSource (name.c_str(), firstTileOffset, lastTileOffset - firstTileOffset + lastTileSize, "", context);
+    size_t total_size;
+    const uint8_t* enc_data = totalDS->getData(total_size);
+    if (enc_data == NULL) {
+        LOGGER_ERROR("Cannot read tiles line data");
+        return false;
+    }
 
-        DataSource* decData;
+    // On va maintenant décompresser chaque tuile pour la stocker au format brut dans le buffer memorizedTiles
+    for (size_t i = 0; i < tileWidthwise; i++) {
+        // Pour avoir l'offset de lecture de la tuile à décoder dans le buffer total, on utilise l'offset dans la dalle, 
+        // en déduisant l'offset de la première tuile (qui correspond au 0 de notre buffer total)
+        RawDataSource* encDS = new RawDataSource ( enc_data + tilesOffset[firstTileIndex + i] - firstTileOffset, tilesByteCounts[firstTileIndex + i]);
+
+        DataSource* decDS;
         size_t tmpSize;
 
         if ( compression == Compression::NONE ) {
-            decData = encData;
+            decDS = encDS;
         }
         else if ( compression == Compression::JPEG ) {
-            decData = new DataSourceDecoder<JpegDecoder> ( encData );
+            decDS = new DataSourceDecoder<JpegDecoder> ( encDS );
         }
         else if ( compression == Compression::LZW ) {
-            decData = new DataSourceDecoder<LzwDecoder> ( encData );
+            decDS = new DataSourceDecoder<LzwDecoder> ( encDS );
         }
         else if ( compression == Compression::PACKBITS ) {
-            decData = new DataSourceDecoder<PackBitsDecoder> ( encData );
+            decDS = new DataSourceDecoder<PackBitsDecoder> ( encDS );
         }
         else if ( compression == Compression::DEFLATE || compression == Compression::PNG ) {
             /* Avec une telle compression dans l'en-tête TIFF, on peut avoir :
              *       - des tuiles compressée en deflate (format "officiel")
              *       - des tuiles en PNG, format propre à ROK4
              * Pour distinguer les deux cas (pas le même décodeur), on va tester la présence d'un en-tête PNG */
-            const uint8_t* header = encData->getData(tmpSize);
+            const uint8_t* header = encDS->getData(tmpSize);
             if (header == NULL) {
                 LOGGER_ERROR ( "Cannot read header to discrimine PNG and DEFLATE" );
-                return NULL;
+                return false;
             }
             if (memcmp(PNG_HEADER, header, 8)) {
-                decData = new DataSourceDecoder<DeflateDecoder> ( encData );
+                decDS = new DataSourceDecoder<DeflateDecoder> ( encDS );
             } else {
                 compression = Compression::PNG;
-                decData = new DataSourceDecoder<PngDecoder> ( encData );
+                decDS = new DataSourceDecoder<PngDecoder> ( encDS );
             }
         }
         else {
             LOGGER_ERROR ( "Unhandled compression : " << compression );
-            return NULL;
+            return false;
         }
 
-        const uint8_t* data = decData->getData(tmpSize);
+        const uint8_t* dec_data = decDS->getData(tmpSize);
         
-        if (! data || tmpSize == 0) {
-            LOGGER_ERROR("Unable to decompress tile " << tile);
-            return NULL;
+        if (! dec_data || tmpSize == 0) {
+            LOGGER_ERROR("Unable to decompress tile " << i << " of tiles- line " << tilesLine);
+            return false;
         } else if (tmpSize != rawTileSize) {
             LOGGER_WARN("Raw tile size should have been " << rawTileSize << ", and not " << tmpSize);
         }
 
-        if ( ! memorizedTiles[index] ) memorizedTiles[index] = new uint8_t[rawTileSize];
-        memcpy(memorizedTiles[index], data, rawTileSize );
-        memorizedIndex[index] = tile;
+        memcpy(memorizedTiles + i * rawTileSize, dec_data, rawTileSize );
 
-        delete decData;
+        delete decDS;
     }
 
-    return memorizedTiles[index];
-}
+    delete totalDS;
 
-int Rok4Image::getEncodedTile ( uint8_t* buf, int tile )
-{
-
-    if ( tile < 0 || tile >= tilesNumber ) {
-        LOGGER_ERROR ( "Unvalid tile's indice (" << tile << "). Have to be between 0 and " << tilesNumber-1 );
-        return 0;
-    }
-
-    StoreDataSource* encData = new StoreDataSource (name.c_str(), tilesOffset[tile], tilesByteCounts[tile], "", context);
-    size_t realSize;
-
-    const uint8_t* tmp = encData->getData(realSize);
-    if (tmp == NULL) {
-        LOGGER_ERROR ( "Cannot read encoded tile (" << tile << ").");
-        return 0;
-    }
-    memcpy(buf, tmp, realSize);
-    delete encData;
-
-    return realSize;
-}
-
-int Rok4Image::getRawTile ( uint8_t* buf, int tile )
-{
-    if ( tile < 0 || tile >= tilesNumber ) {
-        LOGGER_ERROR ( "Unvalid tile's indice (" << tile << "). Have to be between 0 and " << tilesNumber-1 );
-        return 0;
-    }
-
-    size_t tileSize;
-
-    uint8_t* memoryPlace = memorizeRawTile(tileSize, tile);
-    if (memoryPlace == NULL) {
-        LOGGER_ERROR ( "Cannot read raw tile " << tilesNumber );
-        return 0;
-    }
-
-    buf = new uint8_t[tileSize];
-    memcpy(buf, memoryPlace, tileSize );
-
-    return tileSize;
+    memorizedTilesLine = tilesLine;
+    return true;
 }
 
 template <typename T>
 int Rok4Image::_getline ( T* buffer, int line ) {
-    int tileRow = line / tileHeight;
+    int tilesLine = line / tileHeight;
     int tileLine = line % tileHeight;
-    size_t tileSize;
 
-    // le buffer est déjà alloue
-    
+    if (! memorizeRawTiles (tilesLine)) {
+        LOGGER_ERROR("Cannot read tiles to build line");
+        return 0;
+    }
+
     // Taille d'une ligne de tuile en nombre de case de type T
     int typetTileLineSize = tileWidth * pixelSize / sizeof(T);
 
-    // On mémorise toutes les tuiles qui seront nécessaires pour constituer la ligne
+    // On constitue la ligne à partir des lignes des tuiles
     for ( int tileCol = 0; tileCol < tileWidthwise; tileCol++ ) {
-        uint8_t* mem = memorizeRawTile ( tileSize, tileRow * tileWidthwise + tileCol);
-        memcpy ( buffer + tileCol * typetTileLineSize, mem + tileLine * rawTileLineSize, rawTileLineSize );
+        memcpy ( buffer + tileCol * typetTileLineSize, memorizedTiles + tileCol * rawTileSize + tileLine * rawTileLineSize, rawTileLineSize );
     }
 
     return tileWidthwise * typetTileLineSize;
@@ -643,19 +618,23 @@ int Rok4Image::getline ( uint16_t* buffer, int line ) {
         // On veut la ligne en entiers 16 bits mais l'image lue est sur des entiers 8 bits
         // On convertit
         uint8_t* buffer_t = new uint8_t[width*channels];
-        _getline(buffer_t, line);
+        if (_getline(buffer_t, line) == 0) {
+            return 0;
+        }
         convert ( buffer,buffer_t,width*channels );
         delete [] buffer_t;
-        return width*channels;
+        return width * channels;
     } else if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) {
         return _getline(buffer, line);   
     } else { // float
         // La donnée est en float mais on la veut sur des entiers 16 bits : on met donc un float sur deux entiers 16 bits
-        _getline( buffer, line);
-        return width*channels*2;
+        if (_getline(buffer, line) == 0) {
+            return 0;
+        }
+        return width * channels * 2;
     }
 
-    return width * channels;
+    return 0;
 }
 
 int Rok4Image::getline ( float* buffer, int line ) {
@@ -664,7 +643,9 @@ int Rok4Image::getline ( float* buffer, int line ) {
         // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers sur 8 bits
         // On convertit
         uint8_t* buffer_t = new uint8_t[width*channels];
-        _getline(buffer_t, line);
+        if (_getline(buffer_t, line) == 0) {
+            return 0;
+        }
         convert ( buffer,buffer_t,width*channels );
         delete [] buffer_t;
         return width*channels;
@@ -672,7 +653,9 @@ int Rok4Image::getline ( float* buffer, int line ) {
         // On veut la ligne en flottant pour un réechantillonnage par exemple mais l'image lue est sur des entiers sur 16 bits
         // On convertit
         uint16_t* buffer_t = new uint16_t[width*channels];
-        _getline(buffer_t, line);
+        if (_getline(buffer_t, line) == 0) {
+            return 0;
+        }
         convert ( buffer,buffer_t,width*channels );
         delete [] buffer_t;
         return width*channels;
@@ -1212,69 +1195,6 @@ bool Rok4Image::writeTile( int tileInd, char* pbfpath )
 
     return true;
 }
-
-// Raster write tile alone
-bool Rok4Image::writeTile( int tileCol, int tileRow, uint8_t* data, bool crop )
-{
-
-    if ( tileCol < 0 ) {
-        LOGGER_ERROR ( "Unvalid tile's column to write (" << tileCol << "). Have to be positive" );
-        return false;
-    }
-
-    if ( tileRow < 0 ) {
-        LOGGER_ERROR ( "Unvalid tile's row to write (" << tileCol << "). Have to be positive" );
-        return false;
-    }
-
-    size_t size;
-
-    switch ( compression ) {
-    case Compression::NONE:
-        size = computeRawTile ( Buffer, data );
-        break;
-    case Compression::LZW :
-        size = computeLzwTile ( Buffer, data );
-        break;
-    case Compression::JPEG:
-        size = computeJpegTile ( Buffer, data, crop );
-        break;
-    case Compression::PNG :
-        size = computePngTile ( Buffer, data );
-        break;
-    case Compression::PACKBITS :
-        size = computePackbitsTile ( Buffer, data );
-        break;
-    case Compression::DEFLATE :
-        size = computeDeflateTile ( Buffer, data );
-        break;
-    }
-
-    if ( size == 0 ) return false;
-
-    char tileName[256];
-    sprintf(tileName, "%s_%d_%d", name.c_str(), tileCol, tileRow);
-    LOGGER_DEBUG("Write tile as ceph object " + std::string(tileName));
-
-
-    if (! context->openToWrite(tileName)) {
-        LOGGER_ERROR("Unable to open output " << tileName);
-        return false;
-    }
-
-    if (! context->writeFull(Buffer, size, std::string(tileName))) {
-        LOGGER_ERROR("Impossible to write the independent tile " << tileCol << "," << tileRow);
-        return false;
-    }
-
-    if (! context->closeToWrite(tileName)) {
-        LOGGER_ERROR("Unable to close output " << tileName);
-        return false;
-    }
-
-    return true;
-}
-
 
 size_t Rok4Image::computeRawTile ( uint8_t *buffer, uint8_t *data ) {
     memcpy ( buffer, data, rawTileSize );

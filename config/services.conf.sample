@@ -23,7 +23,7 @@
     <administrativeArea></administrativeArea>
     <postCode>94160</postCode>
     <country>France</country>
-    <electronicMailAddress>geop_services@geoportail.fr</electronicMailAddress>
+    <electronicMailAddress>contact.geoservices@ign.fr</electronicMailAddress>
 
     <!-- Paramètres spécifiques WMS -->
     <name>WMS</name>

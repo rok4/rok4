@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -63,6 +63,7 @@
 #define ROK4_KEYSTONE_PROJECTID "ROK4_KEYSTONE_PROJECTID"
 #define ROK4_SWIFT_PUBLICURL "ROK4_SWIFT_PUBLICURL"
 #define ROK4_SWIFT_ACCOUNT "ROK4_SWIFT_ACCOUNT"
+#define ROK4_SWIFT_TOKEN_FILE "ROK4_SWIFT_TOKEN_FILE"
 
 #ifndef ROK4_SSL_NO_VERIFY
 #define ROK4_SSL_NO_VERIFY "ROK4_SSL_NO_VERIFY"
@@ -137,6 +138,9 @@ private:
      */
     std::string token;
 
+    std::string token_file;
+    bool use_token_from_file;
+
     /**
      * \~french \brief  Ne pas vérifier les certificats SSL avec Curl?
      * \~english \brief Don't verify SSL certificats with Curl ?
@@ -185,7 +189,6 @@ public:
      * \~english
      * \brief Read data from Swift object
      */
-
     int read(uint8_t* data, int offset, int size, std::string name);
 
     /**
@@ -222,8 +225,6 @@ public:
 
     virtual bool openToWrite(std::string name);
     virtual bool closeToWrite(std::string name);
-
-
 
     std::string getPath(std::string racine,int x,int y,int pathDepth);
 
@@ -265,12 +266,33 @@ public:
      */
     bool connection();
 
+    /**
+     * \~french \brief Returne le jeton d'authentification #token
+     * \~english \brief Returns authentification token #token
+     */
+    std::string getAuthToken();
+
     void closeConnection() {
-        connected = false;
+        connected = false;        
+        // On met à jour le fichier de jeton d'authentification Swift s'il a été fourni et que le token utilisé n'est pas celui dedans
+        if(token_file != "" && ! use_token_from_file) {
+            std::fstream token_stream;
+            token_stream.open(token_file, std::ios::out);
+            if ( token_stream.is_open() ) {
+                token_stream << token;
+                token_stream.close();
+                LOGGER_DEBUG( "Token file " << token_file << " updated with new token " << token );
+            } else {
+                LOGGER_WARN("Token file " << token_file << " could not be updated with new token " << token);
+            }
+        }
+        else if(token_file != "") {
+            LOGGER_DEBUG( "Token file " << token_file << " already contains the used token " << token );
+        }
     }
     
     virtual ~SwiftContext() {
-
+        closeConnection();
     }
 };
 

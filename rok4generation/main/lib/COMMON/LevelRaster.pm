@@ -1,7 +1,7 @@
 # Copyright © (2011) Institut national de l'information
 #                    géographique et forestière 
 # 
-# Géoportail SAV <geop_services@geoportail.fr>
+# Géoportail SAV <contact.geoservices@ign.fr>
 # 
 # This software is a computer program whose purpose is to publish geographic
 # data using OGC WMS and WMTS protocol.
@@ -152,7 +152,7 @@ sub new {
     my $type = shift;
     my $params = shift;
     my $descDirectory = shift;
-    
+
     $class= ref($class) || $class;
     # IMPORTANT : if modification, think to update natural documentation (just above)
     my $this = {

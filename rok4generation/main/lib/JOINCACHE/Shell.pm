@@ -1,7 +1,7 @@
 # Copyright © (2011) Institut national de l'information
 #                    géographique et forestière 
 # 
-# Géoportail SAV <geop_services@geoportail.fr>
+# Géoportail SAV <contact.geoservices@ign.fr>
 # 
 # This software is a computer program whose purpose is to publish geographic
 # data using OGC WMS and WMTS protocol.
@@ -173,7 +173,7 @@ OverlayNtiff () {
         return
     fi
 
-    if [ -f ${MNT_CONF_DIR}/$config ]; then
+    if [ -f ${ONT_CONF_DIR}/$config ]; then
         overlayNtiff -f ${ONT_CONF_DIR}/$config ${OVERLAYNTIFF_OPTIONS}
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
         rm -f ${TMP_DIR}/$inTemplate
@@ -183,6 +183,82 @@ OverlayNtiff () {
 
 ONTFUNCTION
 
+my $SWIFT_STORAGE_FUNCTIONS = <<'STORAGEFUNCTIONS';
+LinkSlab () {
+    local target=$1
+    local link=$2
+
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
+
+    # On retire le conteneur des entrées
+    target=`echo -n "$target" | sed "s#${PYR_CONTAINER}/##"`
+    link=`echo -n "$link" | sed "s#${PYR_CONTAINER}/##"`
+
+    GetSwiftToken
+
+    curl_options=""
+    if [[ ! -z $ROK4_SSL_NO_VERIFY ]]; then
+        curl_options="-k"
+    fi
+
+    resource="/${PYR_CONTAINER}/${link}"
+
+    echo -n "SYMLINK#${target}" | curl --fail $curl_options -X PUT -T /dev/stdin -H "${SWIFT_TOKEN}" "${ROK4_SWIFT_PUBLICURL}${resource}"
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+
+PushSlab () {
+    local workImgName=$1
+    local imgName=$2
+    local workMskName=$3
+    local mskName=$4
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${imgName}" == "${last_slab}" ]]; then
+            echo "Last generated image slab found, now we work"
+            work=1
+        elif [[ ! -z $mskName && "${mskName}" == "${last_slab}" ]] ; then
+            echo "Last generated mask slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
+
+    work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} -container ${PYR_CONTAINER} $imgName
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    echo "0/$imgName" >> ${TMP_LIST_FILE}
+    rm -f ${TMP_DIR}/$workImgName
+
+    if [ $workMskName ] ; then
+        work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} -container ${PYR_CONTAINER} $mskName
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        echo "0/$mskName" >> ${TMP_LIST_FILE}
+        rm -f ${TMP_DIR}/$workMskName
+    fi
+
+    print_prog
+}
+
+PullSlab () {
+    local input=$1
+    local output=$2
+
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
+
+    # On retire le conteneur du input
+    input=`echo -n "$input" | sed "s#${PYR_CONTAINER}/##"`
+
+    cache2work -c zip -container ${PYR_CONTAINER} $input ${TMP_DIR}/$output
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+STORAGEFUNCTIONS
+
 my $CEPH_STORAGE_FUNCTIONS = <<'STORAGEFUNCTIONS';
 LinkSlab () {
     local target=$1
@@ -191,6 +267,8 @@ LinkSlab () {
     if [[ "${work}" == "0" ]]; then
         return
     fi
+
+    CheckTokenFile
 
     # On retire le pool des entrées
     target=`echo -n "$target" | sed "s#${PYR_POOL}/##"`
@@ -221,11 +299,13 @@ PushSlab () {
 
     work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} -pool ${PYR_POOL} $imgName
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    echo "0/$imgName" >> ${TMP_LIST_FILE}
     rm -f ${TMP_DIR}/$workImgName
 
     if [ $workMskName ] ; then
         work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} -pool ${PYR_POOL} $mskName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        echo "0/$mskName" >> ${TMP_LIST_FILE}
         rm -f ${TMP_DIR}/$workMskName
     fi
 
@@ -292,6 +372,7 @@ PushSlab () {
 
     work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} ${PYR_DIR}/$imgName
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+    echo "0/$imgName" >> ${TMP_LIST_FILE}
     rm -f ${TMP_DIR}/$workImgName
 
     if [ $workMskName ] ; then
@@ -303,6 +384,7 @@ PushSlab () {
 
         work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} ${PYR_DIR}/$mskName
         if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        echo "0/$mskName" >> ${TMP_LIST_FILE}
         rm -f ${TMP_DIR}/$workMskName
     fi
 
@@ -417,6 +499,14 @@ for (( i = 0; i < __jobs_number__; i++ )); do
     fi
 done
 
+echo "  INFO Lancement du finisher JOINCACHE"
+
+bash ${scripts_directory}/SCRIPT_FINISHER.sh >${scripts_directory}/SCRIPT_FINISHER.sh.log 2>&1
+if [[ $? != "0" ]]; then
+    echo "ERREUR le finisher a échoué"
+    exit 1
+fi
+
 exit 0
 
 MAINSCRIPT
@@ -500,6 +590,7 @@ sub getScriptInitialization {
     $string .= "\"\n";
 
     $string .= "ONT_CONF_DIR=$ONTCONFDIR\n";
+    $string .= sprintf "LIST_FILE=\"%s\"\n", $pyramid->getListFile();
 
     $string .= sprintf "WORK2CACHE_MASK_OPTIONS=\"-c zip -t %s %s\"\n", $pyramid->getTileMatrixSet()->getTileWidth(), $pyramid->getTileMatrixSet()->getTileHeight();
 
@@ -512,21 +603,28 @@ sub getScriptInitialization {
 
     if ($pyramid->getStorageType() eq "FILE") {
         $string .= sprintf "PYR_DIR=%s\n", $pyramid->getDataDir();
+        $string .= $FILE_STORAGE_FUNCTIONS;
+        $string .= $COMMON::Shell::FILE_BACKUPLIST;
     }
     elsif ($pyramid->getStorageType() eq "CEPH") {
         $string .= sprintf "PYR_POOL=%s\n", $pyramid->getDataPool();
+        $string .= $CEPH_STORAGE_FUNCTIONS;
+        $string .= $COMMON::Shell::CEPH_BACKUPLIST;
+    }
+    elsif ($pyramid->getStorageType() eq "SWIFT") {
+        $string .= sprintf "PYR_CONTAINER=%s\n", $pyramid->getDataContainer();
+        $string .= sprintf "ROK4_SWIFT_TOKEN_FILE=\${TMP_DIR}/token.txt\n";
+        $string .= $SWIFT_STORAGE_FUNCTIONS;
+        if (COMMON::ProxyStorage::isSwiftKeystoneAuthentication()) {
+            $string .= $COMMON::Shell::SWIFT_KEYSTONE_TOKEN_FUNCTION;
+        }
+        else {
+            $string .= $COMMON::Shell::SWIFT_NATIVE_TOKEN_FUNCTION;
+        }
+        $string .= $COMMON::Shell::SWIFT_BACKUPLIST;
     }
 
     $string .= "COMMON_TMP_DIR=\"$COMMONTEMPDIR\"\n";
-
-    # Fonctions
-
-    if ($pyramid->getStorageType() eq "FILE") {
-        $string .= $FILE_STORAGE_FUNCTIONS;
-    }
-    elsif ($pyramid->getStorageType() eq "CEPH") {
-        $string .= $CEPH_STORAGE_FUNCTIONS;
-    }
 
     $string .= $ONTFUNCTION;
 

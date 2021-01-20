@@ -1,7 +1,7 @@
 # Copyright © (2011) Institut national de l'information
 #                    géographique et forestière 
 # 
-# Géoportail SAV <geop_services@geoportail.fr>
+# Géoportail SAV <contact.geoservices@ign.fr>
 # 
 # This software is a computer program whose purpose is to publish geographic
 # data using OGC WMS and WMTS protocol.
@@ -918,7 +918,7 @@ sub writeDescriptor {
 
     $this->backupDescriptor();
 
-    return TRUE
+    return TRUE;
 }
 
 
@@ -938,33 +938,11 @@ sub backupDescriptor {
 
     if ($this->{storage_type} eq "FILE") {
         INFO("On ne sauvegarde pas le descripteur de pyramide en mode fichier car des chemins sont en relatif et n'ont pas de sens si le fichier est ailleurs");
+        return TRUE;
     } else {
         my $backupDescFile = sprintf "%s/%s.pyr", $this->getDataRoot(), $this->getName();
-        COMMON::ProxyStorage::copy("FILE", $descFile, $this->{storage_type}, $backupDescFile);
+        return COMMON::ProxyStorage::copy("FILE", $descFile, $this->{storage_type}, $backupDescFile);
     }
-}
-
-
-=begin nd
-Function: backupList
-
-Pyramid's list is stored into the data storage : in the data directory or in the object tray
-
-This file have to be written before calling this function
-=cut
-sub backupList {
-    my $this = shift;
-
-    my $listFile = $this->getListFile();
-
-    my $backupList;
-    if ($this->{storage_type} eq "FILE") {
-        $backupList = sprintf "%s/%s.list", $this->getDataDir(), $this->getName();
-    } else {
-        $backupList = sprintf "%s/%s.list", $this->getDataRoot(), $this->getName();
-    }
-
-    COMMON::ProxyStorage::copy("FILE", $listFile, $this->{storage_type}, $backupList);
 }
 
 
@@ -1591,8 +1569,32 @@ sub flushCachedList {
 
     $this->{cachedListModified} = FALSE;
 
+    $this->backupList();
+
     return TRUE;
-} 
+}
+
+=begin nd
+Function: backupList
+
+Pyramid's list is stored into the data storage : in the data directory or in the object tray
+
+This file have to be written before calling this function
+=cut
+sub backupList {
+    my $this = shift;
+
+    my $listFile = $this->getListFile();
+
+    my $backupList;
+    if ($this->{storage_type} eq "FILE") {
+        $backupList = sprintf "%s/%s.list", $this->getDataDir(), $this->getName();
+    } else {
+        $backupList = sprintf "%s/%s.list", $this->getDataRoot(), $this->getName();
+    }
+
+    COMMON::ProxyStorage::copy("FILE", $listFile, $this->{storage_type}, $backupList);
+}
 
 =begin nd
 Function: getCachedListStats

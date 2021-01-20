@@ -28,7 +28,7 @@ RUN apt update && apt -y install  \
     libsqlite3-dev git \
     && rm -rf /var/lib/apt/lists/*
 
-RUN cpan -T Config::INI::Reader DBI DBD::Pg Data::Dumper Devel::Size Digest::SHA ExtUtils::MakeMaker File::Find::Rule File::Map FindBin Geo::GDAL Geo::OGR Geo::OSR HTTP::Request HTTP::Request::Common HTTP::Response JSON::Parse Log::Log4perl LWP::UserAgent Math::BigFloat Term::ProgressBar Test::More Tie::File XML::LibXML
+RUN cpan -T Config::INI::Reader DBI DBD::Pg Data::Dumper Devel::Size Digest::SHA ExtUtils::MakeMaker File::Find::Rule File::Map FindBin Geo::GDAL Geo::OGR Geo::OSR HTTP::Request HTTP::Request::Common HTTP::Response JSON::Parse Log::Log4perl LWP::UserAgent LWP::Protocol::https Math::BigFloat Term::ProgressBar Test::More Tie::File XML::LibXML JSON
 
 # Compilation et installation de tippecanoe
 

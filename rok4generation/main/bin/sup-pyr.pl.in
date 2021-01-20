@@ -2,7 +2,7 @@
 # Copyright © (2011) Institut national de l'information
 #                    géographique et forestière
 #
-# Géoportail SAV <geop_services@geoportail.fr>
+# Géoportail SAV <contact.geoservices@ign.fr>
 #
 # This software is a computer program whose purpose is to publish geographic
 # data using OGC WMS and WMTS protocol.
@@ -67,6 +67,7 @@ use lib "$Bin/../lib/perl5";
 use COMMON::PyramidRaster;
 use COMMON::PyramidVector;
 use COMMON::ProxyStorage;
+use COMMON::ProxyPyramid;
 
 ################################################################################
 # Constantes
@@ -228,7 +229,7 @@ Use functions :
 =cut
 sub doIt {
 
-    my $objPyramid = COMMON::ProxyPyramid::load($options{pyramid});
+    my $objPyramid = COMMON::ProxyPyramid::load($options{pyr});
 
     if (! defined $objPyramid) {
         ERROR("Cannot create the Pyramid object (neither raster nor vector nor raster on demand)");
@@ -265,7 +266,7 @@ sub doIt {
         if (! ProxyStorage::remove("FILE", $dataDir)) {
             WARN("Impossible de supprimer le dossier $dataDir");
             $issue = TRUE;
-            if ($option{stop}) {
+            if ($options{stop}) {
                 return FALSE;
             }
         }
@@ -345,7 +346,7 @@ sub doIt {
         if (! COMMON::ProxyStorage::remove($storageType, $slab)) {
             
             $issue = TRUE;
-            if ($option{stop}) {
+            if ($options{stop}) {
                 ERROR("Impossible de supprimer la dalle $storageType $slab");
                 close($LIST);
                 return FALSE;

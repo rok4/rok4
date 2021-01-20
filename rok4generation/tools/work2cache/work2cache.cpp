@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -47,6 +47,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <fstream>
 #include <string.h>
 #include "tiffio.h"
 #include "Format.h"
@@ -305,6 +306,7 @@ int main ( int argc, char **argv ) {
 
         LOGGER_DEBUG( std::string("Output is an object in the Ceph pool ") + pool);
         context = new CephPoolContext(pool);
+        context->setAttempts(10);
     } else if (bucket != 0) {
         onS3 = true;
 
@@ -317,8 +319,7 @@ int main ( int argc, char **argv ) {
         onSwift = true;
 
         curl_global_init(CURL_GLOBAL_ALL);
-
-        LOGGER_DEBUG( std::string("Output is an object in the Swift bucket ") + container);
+        LOGGER_DEBUG( std::string("Output is an object in the Swift container ") + container);
         context = new SwiftContext(container);
     } else {
 #endif
@@ -421,6 +422,7 @@ int main ( int argc, char **argv ) {
 #if BUILD_OBJECT
 
     if (onSwift || onS3) {
+
         // Un environnement CURL a été créé et utilisé, il faut le nettoyer
         CurlPool::cleanCurlPool();
         curl_global_cleanup();

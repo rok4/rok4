@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -106,8 +106,8 @@ protected:
     bool connected;
 
     /**
-     * \~french \brief Nombre de tentatives pour une lecture
-     * \~english \brief Attempts number to read
+     * \~french \brief Nombre de tentatives pour en lecture ou écriture
+     * \~english \brief Attempts number to read or write
      */
     int attempts;
 

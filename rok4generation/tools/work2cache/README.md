@@ -23,7 +23,7 @@ La taille de tuile précisée doit être cohérente avec la taille totale de la 
 * `-a <FORMAT>` : format des canaux : float, uint
 * `-b <INTEGER>` : nombre de bits pour un canal : 8, 32
 * `-s <INTEGER>` : nombre de canaux : 1, 2, 3, 4
-* `-crop` : dans le cas d'une compression des données en JPEG, un bloc (16x16 pixels, base d'application de la compression) qui contient un pixel blanc est complètement remplis de blanc
+* `-crop` : dans le cas d'une compression des données en JPEG, un bloc (16x16 pixels, base d'application de la compression) qui contient un pixel blanc est complètement rempli de blanc
 * `-d` : activation des logs de niveau DEBUG
 
 Les options a, b et s doivent être toutes fournies ou aucune.
