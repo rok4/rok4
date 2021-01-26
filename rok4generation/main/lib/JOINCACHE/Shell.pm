@@ -268,8 +268,6 @@ LinkSlab () {
         return
     fi
 
-    CheckTokenFile
-
     # On retire le pool des entrées
     target=`echo -n "$target" | sed "s#${PYR_POOL}/##"`
     link=`echo -n "$link" | sed "s#${PYR_POOL}/##"`
