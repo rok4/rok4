@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -157,7 +157,7 @@ int CephPoolContext::read(uint8_t* data, int offset, int size, std::string name)
     }
 
     if (error) {
-        LOGGER_ERROR ( "Unable to read " << size << " bytes (from the " << offset << " one) in the object " << name  << " after " << attempt << " tries" );
+        LOGGER_ERROR ( "Unable to read " << size << " bytes (from the " << offset << " one) in the Ceph object " << name  << " after " << attempts << " tries" );
     }
 
     return readSize;
@@ -238,38 +238,36 @@ bool CephPoolContext::closeToWrite(std::string name) {
         return false;
     }
 
-
     LOGGER_DEBUG("Write buffered " << it1->second->size() << " bytes in the ceph object " << name);
 
-    int tentative = 1;
-    while(tentative <= 10) {
+    bool ok = true;
+    int attempt = 1;
+    while(attempt <= attempts) {
         int err = rados_write_full(io_ctx,name.c_str(), &((*(it1->second))[0]), it1->second->size());
         if (err < 0) {
-            LOGGER_WARN ( "Try " << tentative );
-            LOGGER_WARN ( "Unable to flush " << it1->second->size() << " bytes in the object " << name );
+            ok = false;
+            LOGGER_WARN ( "Try " << attempt );
+            LOGGER_WARN ("Error code: " << err );
             LOGGER_WARN (strerror(-err));
         } else {
+            ok = true;
             break;
         }
 
-        tentative++;
+        attempt++;
         sleep(60);
     }
 
-    if (tentative == 11) {
-        LOGGER_ERROR ( "Unable to write after 10 tries" );
-        return false;
-    } else {
+    if (ok) {
         LOGGER_DEBUG("Erase the flushed buffer");
         delete it1->second;
         writingBuffers.erase(it1);
-
-        return true;
+    } else {
+        LOGGER_ERROR ( "Unable to flush " << it1->second->size() << " bytes in the object " << name << " after " << attempts << " tries" );
     }
+    return ok;
 }
 
 std::string CephPoolContext::getPath(std::string racine,int x,int y,int pathDepth){
     return racine + "_" + std::to_string(x) + "_" + std::to_string(y);
 }
-
-

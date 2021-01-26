@@ -14,7 +14,7 @@ pyramid: buildlib.pyr buildbin.pyr
 	@ echo "> Ok, Pyramid $* !" ;
 
 buildlib:
-	@(cd . && perl Makefile.PL PREFIX=$(BE4_ENV) LIB=$(BE4_LIB)/perl5 && make -f Makefile) ;
+	@(cd . && perl Makefile.PL INSTALL_BASE=$(BE4_ENV) LIB=$(BE4_LIB)/perl5 && make -f Makefile) ;
 
 buildbin: \
 ./bin/be4-file.pl \
@@ -26,6 +26,7 @@ buildbin: \
 ./bin/4head.pl \
 ./bin/joinCache-file.pl \
 ./bin/joinCache-ceph.pl \
+./bin/joinCache-swift.pl \
 ./bin/tms-toolbox.pl \
 ./bin/sup-pyr.pl \
 ./bin/pyr2pyr.pl \

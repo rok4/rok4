@@ -1,7 +1,7 @@
 # Copyright © (2011) Institut national de l'information
 #                    géographique et forestière 
 # 
-# Géoportail SAV <geop_services@geoportail.fr>
+# Géoportail SAV <contact.geoservices@ign.fr>
 # 
 # This software is a computer program whose purpose is to publish geographic
 # data using OGC WMS and WMTS protocol.
@@ -74,6 +74,7 @@ use File::Path;
 use Data::Dumper;
 
 use COMMON::Harvesting;
+use COMMON::Shell;
 use BE4::Node;
 use COMMON::ProxyStorage;
 
@@ -168,6 +169,86 @@ sub getPersonnalTempDirectory {
     return $PERSONNALTEMPDIR;
 }
 
+
+####################################################################################################
+#                                  Group: SWIFT authentication                                     #
+####################################################################################################
+
+my $SWIFT_KEYSTONE_TOKEN_INITFUNCTION = <<'FUNCTION';
+InitToken (){
+
+    SWIFT_TOKEN=""
+
+    SWIFT_TOKEN=$(curl -s -i -k \
+        -H "Content-Type: application/json" \
+        -X POST \
+        -d '
+    {   "auth": {
+            "scope": {
+                "project": {"id": "'$ROK4_KEYSTONE_PROJECTID'"}
+            },
+            "identity": {
+                "methods": ["password"],
+                "password": {
+                    "user": {
+                        "domain": {"name": "'$ROK4_KEYSTONE_DOMAINID'"},
+                        "password": "'$ROK4_SWIFT_PASSWD'",
+                        "name": "'$ROK4_SWIFT_USER'"
+                    }
+                }
+            }
+        }
+    }' ${ROK4_SWIFT_AUTHURL} | grep "X-Subject-Token")
+
+    # trailing new line removal
+    # sed options :
+    #   :a = create label a to jump back.
+    #   N  = append the next line of input into the pattern space.
+    #   $! = if it's not the last line...
+    #       ba = jump back to label a
+    SWIFT_TOKEN=$(echo "$SWIFT_TOKEN" | sed -E '/^[[:space:]]*$/d' | sed -E 's/^[[:space:]]+//g' | sed -E 's/[[:space:]]+$//g' | sed -E ':a;N;$!ba;s/[\n\r]//g' | sed -E 's/X-Subject-Token/X-Auth-Token/')
+
+    export SWIFT_TOKEN
+    echo ${SWIFT_TOKEN} > ${TMP_DIR}/auth_token.txt
+    sed -E '/^[[:space:]]*$/d' -i ${TMP_DIR}/auth_token.txt
+    sed -E ':a;N;$!ba;s/[\n\r]//g' -i ${TMP_DIR}/auth_token.txt
+
+}
+FUNCTION
+
+my $SWIFT_NATIVE_TOKEN_INITFUNCTION = <<'FUNCTION';
+InitToken (){
+
+    SWIFT_TOKEN=""
+      
+    SWIFT_AUTHSTRING=$(curl -s -i -k \
+        -H "X-Storage-User: '${ROK4_SWIFT_ACCOUNT}':'${ROK4_SWIFT_USER}'");
+        -H "X-Storage-Pass: '${ROK4_SWIFT_PASSWD}'");
+        -H "X-Auth-User: '${ROK4_SWIFT_ACCOUNT}':'${ROK4_SWIFT_USER}'");
+        -H "X-Auth-Key: '${ROK4_SWIFT_PASSWD}'");
+        -X GET \
+        ${ROK4_SWIFT_AUTHURL})
+    SWIFT_TOKEN=$(echo ${SWIFT_AUTHSTRING} | grep "X-Auth-Token")
+    ROK4_SWIFT_PUBLICURL=$(echo ${SWIFT_AUTHSTRING} | grep "X-Storage-Url" | cut -d":" -f2 | tr -cd '[:print:]')
+
+    # trailing new line removal
+    # sed options :
+    #   :a = create label a to jump back.
+    #   N  = append the next line of input into the pattern space.
+    #   $! = if it's not the last line...
+    #       ba = jump back to label a
+    ROK4_SWIFT_PUBLICURL=$(echo "$ROK4_SWIFT_PUBLICURL" | sed -E '/^[[:space:]]*$/d' | sed -E 's/^[[:space:]]+//g' | sed -E 's/[[:space:]]+$//g' | sed -E ':a;N;$!ba;s/[\n\r]//g')
+    SWIFT_TOKEN=$(echo "$SWIFT_TOKEN" | sed -E '/^[[:space:]]*$/d' | sed -E 's/^[[:space:]]+//g' | sed -E 's/[[:space:]]+$//g' | sed -E ':a;N;$!ba;s/[\n\r]//g')
+
+    export SWIFT_TOKEN
+    export ROK4_SWIFT_PUBLICURL
+    echo $SWIFT_TOKEN > ${TMP_DIR}/auth_token.txt
+    sed -E '/^[[:space:]]*$/d' -i ${TMP_DIR}/auth_token.txt
+    sed -E ':a;N;$!ba;s/[\n\r]//g' -i ${TMP_DIR}/auth_token.txt
+
+}
+FUNCTION
+
 ####################################################################################################
 #                                        Group: MERGE N TIFF                                       #
 ####################################################################################################
@@ -200,258 +281,10 @@ MergeNtiff () {
 MNTFUNCTION
 
 ####################################################################################################
-#                                        Group: CACHE TO WORK                                      #
+#                                       Group: CACHE <-> WORK                                      #
 ####################################################################################################
 
-my $FILE_C2WFUNCTION = <<'C2WFUNCTION';
-PullSlab () {
-    if [[ "${work}" == "0" ]]; then
-        return
-    fi
-    local input=$1
-    local output=$2
-
-    cache2work -c zip ${PYR_DIR}/$input ${TMP_DIR}/$output
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-}
-C2WFUNCTION
-
-my $S3_C2WFUNCTION = <<'C2WFUNCTION';
-PullSlab () {
-    if [[ "${work}" == "0" ]]; then
-        return
-    fi
-    local input=$1
-    local output=$2
-
-    cache2work -c zip -bucket ${PYR_BUCKET} $input ${TMP_DIR}/$output
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-}
-C2WFUNCTION
-
-my $SWIFT_C2WFUNCTION = <<'C2WFUNCTION';
-PullSlab () {
-    if [[ "${work}" == "0" ]]; then
-        return
-    fi
-    local input=$1
-    local output=$2
-
-    cache2work -c zip -container ${PYR_CONTAINER} $input ${TMP_DIR}/$output
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-}
-C2WFUNCTION
-
-my $CEPH_C2WFUNCTION = <<'C2WFUNCTION';
-PullSlab () {
-    if [[ "${work}" == "0" ]]; then
-        return
-    fi
-    local input=$1
-    local output=$2
-
-    cache2work -c zip -pool ${PYR_POOL} $input ${TMP_DIR}/$output
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-}
-C2WFUNCTION
-
-####################################################################################################
-#                                        Group: WORK TO CACHE                                      #
-####################################################################################################
-
-my $S3_W2CFUNCTION = <<'W2CFUNCTION';
-BackupListFile () {
-    echo "List file back up to do"
-}
-
-PushSlab () {
-    local postAction=$1
-    local workImgName=$2
-    local imgName=$3
-    local workMskName=$4
-    local mskName=$5
-
-    if [[ "${work}" = "0" ]]; then
-        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
-        if [[ "${imgName}" == "${last_slab}" ]]; then
-            echo "Last generated image slab found, now we work"
-            work=1
-        elif [[ ! -z $mskName && "${mskName}" == "${last_slab}" ]] ; then
-            echo "Last generated mask slab found, now we work"
-            work=1
-        fi
-
-        return
-    fi
-    
-    if [[ ! ${RM_IMGS[${TMP_DIR}/$workImgName]} ]] ; then
-             
-        work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} -bucket ${PYR_BUCKET} $imgName
-        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-        
-        echo "0/$imgName" >> ${TMP_LIST_FILE}
-        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-        
-        if [ "$postAction" == "rm" ] ; then
-            rm ${TMP_DIR}/$workImgName
-        elif [ "$postAction" == "mv" ] ; then
-            mv ${TMP_DIR}/$workImgName ${COMMON_TMP_DIR}/
-        fi
-        
-        if [ $workMskName ] ; then
-            
-            if [ $mskName ] ; then
-                    
-                work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} -bucket ${PYR_BUCKET} $mskName
-                if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-                echo "0/$mskName" >> ${TMP_LIST_FILE}
-                
-            fi
-            
-            if [ "$postAction" == "rm" ] ; then
-                rm ${TMP_DIR}/$workMskName
-            elif [ "$postAction" == "mv" ] ; then
-                mv ${TMP_DIR}/$workMskName ${COMMON_TMP_DIR}/
-            fi
-        fi
-    fi
-}
-W2CFUNCTION
-
-my $SWIFT_W2CFUNCTION = <<'W2CFUNCTION';
-BackupListFile () {
-    echo "List file back up to do"
-}
-
-PushSlab () {
-    local postAction=$1
-    local workImgName=$2
-    local imgName=$3
-    local workMskName=$4
-    local mskName=$5
-
-    if [[ "${work}" = "0" ]]; then
-        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
-        if [[ "${imgName}" == "${last_slab}" ]]; then
-            echo "Last generated image slab found, now we work"
-            work=1
-        elif [[ ! -z $mskName && "${mskName}" == "${last_slab}" ]] ; then
-            echo "Last generated mask slab found, now we work"
-            work=1
-        fi
-
-        return
-    fi
-    
-    if [[ ! ${RM_IMGS[${TMP_DIR}/$workImgName]} ]] ; then
-             
-        work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} -container ${PYR_CONTAINER} $imgName
-        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-        
-        echo "0/$imgName" >> ${TMP_LIST_FILE}
-        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-        
-        if [ "$postAction" == "rm" ] ; then
-            rm ${TMP_DIR}/$workImgName
-        elif [ "$postAction" == "mv" ] ; then
-            mv ${TMP_DIR}/$workImgName ${COMMON_TMP_DIR}/
-        fi
-        
-        if [ $workMskName ] ; then
-            
-            if [ $mskName ] ; then
-                    
-                work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} -container ${PYR_CONTAINER} $mskName
-                if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-                echo "0/$mskName" >> ${TMP_LIST_FILE}
-                
-            fi
-            
-            if [ "$postAction" == "rm" ] ; then
-                rm ${TMP_DIR}/$workMskName
-            elif [ "$postAction" == "mv" ] ; then
-                mv ${TMP_DIR}/$workMskName ${COMMON_TMP_DIR}/
-            fi
-        fi
-    fi
-}
-W2CFUNCTION
-
-
-my $CEPH_W2CFUNCTION = <<'W2CFUNCTION';
-BackupListFile () {
-    local objectName=`basename ${LIST_FILE}`
-    rados -p ${PYR_POOL} put ${objectName} ${LIST_FILE}
-}
-
-PushSlab () {
-    local postAction=$1
-    local workImgName=$2
-    local imgName=$3
-    local workMskName=$4
-    local mskName=$5
-
-    if [[ "${work}" = "0" ]]; then
-        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
-        if [[ "${imgName}" == "${last_slab}" ]]; then
-            echo "Last generated image slab found, now we work"
-            work=1
-        elif [[ ! -z $mskName && "${mskName}" == "${last_slab}" ]] ; then
-            echo "Last generated mask slab found, now we work"
-            work=1
-        fi
-
-        return
-    fi
-    
-    
-    if [[ ! ${RM_IMGS[${TMP_DIR}/$workImgName]} ]] ; then
-             
-        work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} -pool ${PYR_POOL} $imgName
-        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-        
-        echo "0/$imgName" >> ${TMP_LIST_FILE}
-        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-        
-        if [ "$postAction" == "rm" ] ; then
-            rm ${TMP_DIR}/$workImgName
-        elif [ "$postAction" == "mv" ] ; then
-            mv ${TMP_DIR}/$workImgName ${COMMON_TMP_DIR}/
-        fi
-        
-        if [ $workMskName ] ; then
-            
-            if [ $mskName ] ; then
-                    
-                work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} -pool ${PYR_POOL} $mskName
-                if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-                echo "0/$mskName" >> ${TMP_LIST_FILE}
-                
-            fi
-            
-            if [ "$postAction" == "rm" ] ; then
-                rm ${TMP_DIR}/$workMskName
-            elif [ "$postAction" == "mv" ] ; then
-                mv ${TMP_DIR}/$workMskName ${COMMON_TMP_DIR}/
-            fi
-        fi
-    fi
-
-    print_prog
-}
-W2CFUNCTION
-
-
-my $FILE_W2CFUNCTION = <<'W2CFUNCTION';
-BackupListFile () {
-    bn=$(basename ${LIST_FILE})
-    if [ "$(stat -c "%d:%i" ${LIST_FILE})" != "$(stat -c "%d:%i" ${PYR_DIR}/$bn)" ]; then
-        cp ${LIST_FILE} ${PYR_DIR}/
-    else
-        echo "List file is already locate to the backup destination"
-    fi
-}
-
+my $FILE_STORAGE_FUNCTIONS = <<'FUNCTION';
 PushSlab () {
     local postAction=$1
     local workImgName=$2
@@ -516,7 +349,219 @@ PushSlab () {
 
     print_prog
 }
-W2CFUNCTION
+
+PullSlab () {
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
+    local input=$1
+    local output=$2
+
+    cache2work -c zip ${PYR_DIR}/$input ${TMP_DIR}/$output
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+FUNCTION
+
+my $S3_STORAGE_FUNCTIONS = <<'FUNCTION';
+PushSlab () {
+    local postAction=$1
+    local workImgName=$2
+    local imgName=$3
+    local workMskName=$4
+    local mskName=$5
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${imgName}" == "${last_slab}" ]]; then
+            echo "Last generated image slab found, now we work"
+            work=1
+        elif [[ ! -z $mskName && "${mskName}" == "${last_slab}" ]] ; then
+            echo "Last generated mask slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
+    
+    if [[ ! ${RM_IMGS[${TMP_DIR}/$workImgName]} ]] ; then
+             
+        work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} -bucket ${PYR_BUCKET} $imgName
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        
+        echo "0/$imgName" >> ${TMP_LIST_FILE}
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        
+        if [ "$postAction" == "rm" ] ; then
+            rm ${TMP_DIR}/$workImgName
+        elif [ "$postAction" == "mv" ] ; then
+            mv ${TMP_DIR}/$workImgName ${COMMON_TMP_DIR}/
+        fi
+        
+        if [ $workMskName ] ; then
+            
+            if [ $mskName ] ; then
+                    
+                work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} -bucket ${PYR_BUCKET} $mskName
+                if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+                echo "0/$mskName" >> ${TMP_LIST_FILE}
+                
+            fi
+            
+            if [ "$postAction" == "rm" ] ; then
+                rm ${TMP_DIR}/$workMskName
+            elif [ "$postAction" == "mv" ] ; then
+                mv ${TMP_DIR}/$workMskName ${COMMON_TMP_DIR}/
+            fi
+        fi
+    fi
+}
+
+PullSlab () {
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
+    local input=$1
+    local output=$2
+
+    cache2work -c zip -bucket ${PYR_BUCKET} $input ${TMP_DIR}/$output
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+FUNCTION
+
+my $SWIFT_STORAGE_FUNCTIONS = <<'FUNCTION';
+PushSlab () {
+    local postAction=$1
+    local workImgName=$2
+    local imgName=$3
+    local workMskName=$4
+    local mskName=$5
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${imgName}" == "${last_slab}" ]]; then
+            echo "Last generated image slab found, now we work"
+            work=1
+        elif [[ ! -z $mskName && "${mskName}" == "${last_slab}" ]] ; then
+            echo "Last generated mask slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
+    
+    if [[ ! ${RM_IMGS[${TMP_DIR}/$workImgName]} ]] ; then
+        work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} -container ${PYR_CONTAINER} $imgName
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        
+        echo "0/$imgName" >> ${TMP_LIST_FILE}
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        
+        if [ "$postAction" == "rm" ] ; then
+            rm ${TMP_DIR}/$workImgName
+        elif [ "$postAction" == "mv" ] ; then
+            mv ${TMP_DIR}/$workImgName ${COMMON_TMP_DIR}/
+        fi
+        
+        if [ $workMskName ] ; then
+            
+            if [ $mskName ] ; then
+                    
+                work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} -container ${PYR_CONTAINER} $mskName
+                if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+                echo "0/$mskName" >> ${TMP_LIST_FILE}
+                
+            fi
+            
+            if [ "$postAction" == "rm" ] ; then
+                rm ${TMP_DIR}/$workMskName
+            elif [ "$postAction" == "mv" ] ; then
+                mv ${TMP_DIR}/$workMskName ${COMMON_TMP_DIR}/
+            fi
+        fi
+    fi
+}
+
+PullSlab () {
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
+    local input=$1
+    local output=$2
+
+    cache2work -c zip -container ${PYR_CONTAINER} -token ${TMP_DIR}/auth_token.txt $input ${TMP_DIR}/$output
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+FUNCTION
+
+my $CEPH_STORAGE_FUNCTIONS = <<'FUNCTION';
+PushSlab () {
+    local postAction=$1
+    local workImgName=$2
+    local imgName=$3
+    local workMskName=$4
+    local mskName=$5
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${imgName}" == "${last_slab}" ]]; then
+            echo "Last generated image slab found, now we work"
+            work=1
+        elif [[ ! -z $mskName && "${mskName}" == "${last_slab}" ]] ; then
+            echo "Last generated mask slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
+    
+    
+    if [[ ! ${RM_IMGS[${TMP_DIR}/$workImgName]} ]] ; then
+             
+        work2cache ${TMP_DIR}/$workImgName ${WORK2CACHE_IMAGE_OPTIONS} -pool ${PYR_POOL} $imgName
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        
+        echo "0/$imgName" >> ${TMP_LIST_FILE}
+        if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+        
+        if [ "$postAction" == "rm" ] ; then
+            rm ${TMP_DIR}/$workImgName
+        elif [ "$postAction" == "mv" ] ; then
+            mv ${TMP_DIR}/$workImgName ${COMMON_TMP_DIR}/
+        fi
+        
+        if [ $workMskName ] ; then
+            
+            if [ $mskName ] ; then
+                    
+                work2cache ${TMP_DIR}/$workMskName ${WORK2CACHE_MASK_OPTIONS} -pool ${PYR_POOL} $mskName
+                if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+                echo "0/$mskName" >> ${TMP_LIST_FILE}
+                
+            fi
+            
+            if [ "$postAction" == "rm" ] ; then
+                rm ${TMP_DIR}/$workMskName
+            elif [ "$postAction" == "mv" ] ; then
+                mv ${TMP_DIR}/$workMskName ${COMMON_TMP_DIR}/
+            fi
+        fi
+    fi
+
+    print_prog
+}
+
+PullSlab () {
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
+    local input=$1
+    local output=$2
+
+    cache2work -c zip -pool ${PYR_POOL} $input ${TMP_DIR}/$output
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+FUNCTION
+
 
 ####################################################################################################
 #                                        Group: HARVEST IMAGE                                      #
@@ -1026,41 +1071,39 @@ sub getScriptInitialization {
         $string .= "DNT_CONF_DIR=$DNTCONFDIR\n";
     }
 
-    if ($pyramid->getStorageType() eq "FILE") {
-        $string .= sprintf "PYR_DIR=%s\n", $pyramid->getDataDir();
-    }
-    elsif ($pyramid->getStorageType() eq "CEPH") {
-        $string .= sprintf "PYR_POOL=%s\n", $pyramid->getDataPool();
-    }
-    elsif ($pyramid->getStorageType() eq "S3") {
-        $string .= sprintf "PYR_BUCKET=%s\n", $pyramid->getDataBucket();
-    }
-    elsif ($pyramid->getStorageType() eq "SWIFT") {
-        $string .= sprintf "PYR_CONTAINER=%s\n", $pyramid->getDataContainer();
-    }
-
     $string .= sprintf "LIST_FILE=\"%s\"\n", $pyramid->getListFile();
     $string .= "COMMON_TMP_DIR=\"$COMMONTEMPDIR\"\n";
 
-    # Fonctions
-
     $string .= "\n# Pour mémoriser les dalles supprimées\n";
     $string .= "declare -A RM_IMGS\n";
+
+    # Fonctions
     if ($pyramid->getStorageType() eq "FILE") {
-        $string .= $FILE_C2WFUNCTION;
-        $string .= $FILE_W2CFUNCTION;
+        $string .= sprintf "PYR_DIR=%s\n", $pyramid->getDataDir();
+        $string .= $FILE_STORAGE_FUNCTIONS;
+        $string .= $COMMON::Shell::FILE_BACKUPLIST;
     }
     elsif ($pyramid->getStorageType() eq "CEPH") {
-        $string .= $CEPH_C2WFUNCTION;
-        $string .= $CEPH_W2CFUNCTION;
+        $string .= sprintf "PYR_POOL=%s\n", $pyramid->getDataPool();
+        $string .= $CEPH_STORAGE_FUNCTIONS;
+        $string .= $COMMON::Shell::CEPH_BACKUPLIST;
     }
     elsif ($pyramid->getStorageType() eq "S3") {
-        $string .= $S3_C2WFUNCTION;
-        $string .= $S3_W2CFUNCTION;
+        $string .= sprintf "PYR_BUCKET=%s\n", $pyramid->getDataBucket();
+        $string .= $S3_STORAGE_FUNCTIONS;
+        $string .= $COMMON::Shell::S3_BACKUPLIST;
     }
     elsif ($pyramid->getStorageType() eq "SWIFT") {
-        $string .= $SWIFT_C2WFUNCTION;
-        $string .= $SWIFT_W2CFUNCTION;
+        $string .= sprintf "PYR_CONTAINER=%s\n", $pyramid->getDataContainer();
+        $string .= "ROK4_SWIFT_TOKEN_FILE=\${TMP_DIR}/auth_token.txt\n";
+        if (COMMON::ProxyStorage::isSwiftKeystoneAuthentication()) {
+            $string .= $COMMON::Shell::SWIFT_KEYSTONE_TOKEN_FUNCTION;
+        }
+        else {
+            $string .= $COMMON::Shell::SWIFT_NATIVE_TOKEN_FUNCTION;
+        }
+        $string .= $COMMON::Shell::SWIFT_BACKUPLIST;
+        $string .= $SWIFT_STORAGE_FUNCTIONS;
     }
 
     $string .= $MNTFUNCTION;

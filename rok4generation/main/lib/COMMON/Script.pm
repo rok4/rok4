@@ -1,7 +1,7 @@
 # Copyright © (2011) Institut national de l'information
 #                    géographique et forestière 
 # 
-# Géoportail SAV <geop_services@geoportail.fr>
+# Géoportail SAV <contact.geoservices@ign.fr>
 # 
 # This software is a computer program whose purpose is to publish geographic
 # data using OGC WMS and WMTS protocol.
@@ -223,8 +223,8 @@ sub prepare {
     my $this = shift;
     my $initialisation = shift;
 
-    # definition des variables d'environnement du script
-    my $code = sprintf ("# Variables d'environnement\n");
+    my $code = sprintf ("#!/bin/bash\n\n");
+
     $code .= sprintf ("SCRIPT_ID=\"%s\"\n", $this->{id});
     $code .= sprintf ("TMP_DIR=\"%s\"\n", $this->{tempDir});
 

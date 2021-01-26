@@ -1,7 +1,7 @@
 # Copyright © (2011) Institut national de l'information
 #                    géographique et forestière 
 # 
-# Géoportail SAV <geop_services@geoportail.fr>
+# Géoportail SAV <contact.geoservices@ign.fr>
 # 
 # This software is a computer program whose purpose is to publish geographic
 # data using OGC WMS and WMTS protocol.
@@ -63,6 +63,8 @@ use Log::Log4perl qw(:easy);
 use File::Basename;
 use File::Path;
 use Data::Dumper;
+
+use COMMON::Shell;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -131,14 +133,7 @@ sub getPersonnalTempDirectory {
 
 
 my $FILE_PUSH = <<'FUNCTION';
-BackupListFile () {
-    bn=$(basename ${LIST_FILE})
-    if [ "$(stat -c "%d:%i" ${LIST_FILE})" != "$(stat -c "%d:%i" ${PYR_DIR_DST}/$bn)" ]; then
-        cp ${LIST_FILE} ${PYR_DIR_DST}/
-    else
-        echo "List file is already locate to the backup destination"
-    fi
-}
+
 PushSlab () {
     local input=$1
     local output=$2
@@ -159,10 +154,10 @@ PushSlab () {
         return
     fi
 
-    local dir=`dirname ${PYR_DIR_DST}/$output`
+    local dir=`dirname ${PYR_DIR}/$output`
     if [ ! -d $dir ] ; then mkdir -p $dir ; fi
   
-    cp ${PYR_DIR_SRC}/$input ${PYR_DIR_DST}/$output 
+    cp ${PYR_DIR_SRC}/$input ${PYR_DIR}/$output 
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 
     echo "0/${output}" >>${TMP_LIST_FILE}
@@ -198,10 +193,10 @@ PullSlab () {
         return
     fi
 
-    local dir=`dirname ${PYR_DIR_DST}/$output`
+    local dir=`dirname ${PYR_DIR}/$output`
     if [ ! -d $dir ] ; then mkdir -p $dir ; fi
   
-    rados -p ${PYR_POOL_SRC} get $input ${PYR_DIR_DST}/$output 
+    rados -p ${PYR_POOL_SRC} get $input ${PYR_DIR}/$output 
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 
     echo "0/${output}" >>${TMP_LIST_FILE}
@@ -210,11 +205,7 @@ PullSlab () {
 FUNCTION
 
 my $CEPH_PUSH = <<'FUNCTION';
-BackupListFile () {
-    local objectName=`basename ${LIST_FILE}`
-    rados -p ${PYR_POOL_DST} put ${objectName} ${LIST_FILE}
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-}
+
 PushSlab () {
     local input=$1
     local output=$2
@@ -235,7 +226,7 @@ PushSlab () {
         return
     fi
   
-    rados -p ${PYR_POOL_DST} put $output ${PYR_DIR_SRC}/$input
+    rados -p ${PYR_POOL} put $output ${PYR_DIR_SRC}/$input
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 
     echo "0/${output}" >> ${TMP_LIST_FILE}
@@ -244,11 +235,7 @@ PushSlab () {
 FUNCTION
 
 my $CEPH_PUSH_TMP = <<'FUNCTION';
-BackupListFile () {
-    local objectName=`basename ${LIST_FILE}`
-    rados -p ${PYR_POOL_DST} put ${objectName} ${LIST_FILE}
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-}
+
 PushSlab () {
     local output=$1
 
@@ -268,7 +255,7 @@ PushSlab () {
         return
     fi
   
-    rados -p ${PYR_POOL_DST} put $output ${TMP_DIR}/slab.tmp 
+    rados -p ${PYR_POOL} put $output ${TMP_DIR}/slab.tmp 
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 
     echo "0/${output}" >> ${TMP_LIST_FILE}
@@ -277,31 +264,7 @@ PushSlab () {
 FUNCTION
 
 my $S3_PUSH = <<'FUNCTION';
-HOST=$(echo ${ROK4_S3_URL} | sed 's!.*://!!' | sed 's!:[0-9]\+$!!')
-BackupListFile () {
-    local objectName=`basename ${LIST_FILE}`
 
-    resource="/${PYR_BUCKET_DST}/${objectName}"
-    contentType="application/octet-stream"
-    dateValue=`TZ=GMT date -R`
-    stringToSign="PUT\n\n${contentType}\n${dateValue}\n${resource}"
-
-    signature=`echo -en ${stringToSign} | openssl sha1 -hmac ${ROK4_S3_SECRETKEY} -binary | base64`
-
-    curl_options=""
-    if [[ ! -z $ROK4_SSL_NO_VERIFY ]]; then
-        curl_options="-k"
-    fi
-
-    curl $curl_options -X PUT -T "${LIST_FILE}" \
-     -H "Host: ${HOST}" \
-     -H "Date: ${dateValue}" \
-     -H "Content-Type: ${contentType}" \
-     -H "Authorization: AWS ${ROK4_S3_KEY}:${signature}" \
-     ${ROK4_S3_URL}${resource}
-
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-}
 PushSlab () {
     local input=$1
     local output=$2
@@ -322,7 +285,7 @@ PushSlab () {
         return
     fi
     
-    resource="/${PYR_BUCKET_DST}/${output}"
+    resource="/${PYR_BUCKET}/${output}"
     contentType="application/octet-stream"
     dateValue=`TZ=GMT date -R`
     stringToSign="PUT\n\n${contentType}\n${dateValue}\n${resource}"
@@ -334,7 +297,7 @@ PushSlab () {
         curl_options="-k"
     fi
 
-    curl $curl_options -X PUT -T "${PYR_DIR_SRC}/$input" \
+    curl $curl_options  --fail -X PUT -T "${PYR_DIR_SRC}/$input" \
      -H "Host: ${HOST}" \
      -H "Date: ${dateValue}" \
      -H "Content-Type: ${contentType}" \
@@ -349,41 +312,7 @@ PushSlab () {
 FUNCTION
 
 my $SWIFT_PUSH = <<'FUNCTION';
-BackupListFile () {
-    local objectName=`basename ${LIST_FILE}`
 
-    curl_options=""
-    if [[ ! -z $ROK4_SSL_NO_VERIFY ]]; then
-        curl_options="-k"
-    fi
-
-    TOKEN=$(curl -s -i $curl_options \
-        -H "Content-Type: application/json" \
-        -XPOST \
-        -d '
-    {   "auth": {
-            "scope": {
-                "project": {"id": "'$ROK4_KEYSTONE_PROJECTID'"}
-            },
-            "identity": {
-                "methods": ["password"],
-                "password": {
-                    "user": {
-                        "domain": {"id": "'$ROK4_KEYSTONE_DOMAINID'"},
-                        "password": "'$ROK4_SWIFT_PASSWD'",
-                        "name": "'$ROK4_SWIFT_USER'"
-                    }
-                }
-            }
-        }
-    }' $ROK4_SWIFT_AUTHURL | grep "X-Subject-Token" | cut -d":" -f2 | tr -cd '[:print:]')
-
-    resource="/${PYR_CONTAINER_DST}/${objectName}"
-
-    curl $curl_options -X PUT -T "${LIST_FILE}"  -H "X-Auth-Token: ${TOKEN}"  ${ROK4_SWIFT_PUBLICURL}${resource}
-
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-}
 PushSlab () {
     local input=$1
     local output=$2
@@ -404,36 +333,52 @@ PushSlab () {
         return
     fi
 
+    GetSwiftToken
+    
+    resource="/${PYR_CONTAINER}/${output}"
+
     curl_options=""
     if [[ ! -z $ROK4_SSL_NO_VERIFY ]]; then
         curl_options="-k"
     fi
+
+    curl $curl_options  --fail -X PUT -T "${PYR_DIR_SRC}/$input"  -H "${SWIFT_TOKEN}"  ${ROK4_SWIFT_PUBLICURL}${resource}
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+
+    echo "0/${output}" >> ${TMP_LIST_FILE}
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+FUNCTION
+
+my $SWIFT_PUSH_TMP = <<'FUNCTION';
+
+PushSlab () {
+    local output=$1
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${output}" == "${last_slab}" ]]; then
+            echo "Last transfered slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
+    size=`stat -L -c "%s" ${TMP_DIR}/slab.tmp`
+    if [ $? != 0 ] ; then echo "${TMP_DIR}/slab.tmp n'existe pas, on passe" ; return; fi
+    if [ "$size" -le "$SLAB_LIMIT" ] ; then
+        return
+    fi
+
+    GetSwiftToken
     
-    TOKEN=$(curl -s -i $curl_options \
-        -H "Content-Type: application/json" \
-        -XPOST \
-        -d '
-    {   "auth": {
-            "scope": {
-                "project": {"id": "'$ROK4_KEYSTONE_PROJECTID'"}
-            },
-            "identity": {
-                "methods": ["password"],
-                "password": {
-                    "user": {
-                        "domain": {"id": "'$ROK4_KEYSTONE_DOMAINID'"},
-                        "password": "'$ROK4_SWIFT_PASSWD'",
-                        "name": "'$ROK4_SWIFT_USER'"
-                    }
-                }
-            }
-        }
-    }' $ROK4_SWIFT_AUTHURL | grep "X-Subject-Token" | cut -d":" -f2 | tr -cd '[:print:]')
+    resource="/${PYR_CONTAINER}/${output}"
 
-    resource="/${PYR_CONTAINER_DST}/${output}"
-
-    curl $curl_options -X PUT -T "${PYR_DIR_SRC}/$input"  -H "X-Auth-Token: ${TOKEN}"  ${ROK4_SWIFT_PUBLICURL}${resource}
-
+    curl_options=""
+    if [[ ! -z $ROK4_SSL_NO_VERIFY ]]; then
+        curl_options="-k"
+    fi
+    curl $curl_options  --fail -X PUT -T "${TMP_DIR}/slab.tmp"  -H "${SWIFT_TOKEN}"  ${ROK4_SWIFT_PUBLICURL}${resource}
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 
     echo "0/${output}" >> ${TMP_LIST_FILE}
@@ -523,45 +468,77 @@ sub getScriptInitialization {
     my $string = $WORKANDPROG;
 
     $string .= "SLAB_LIMIT=$SLABLIMIT\n";
-    $string .= "SECONDS=0\n";
 
     if ( $pyramidFrom->getStorageType() eq "CEPH" ) {
         $string .= sprintf "PYR_POOL_SRC=%s\n", $pyramidFrom->getDataPool();
 
         if ( $pyramidTo->getStorageType() eq "CEPH" ) {
-            $string .= sprintf "PYR_POOL_DST=%s\n", $pyramidTo->getDataPool();
+            $string .= sprintf "PYR_POOL=%s\n", $pyramidTo->getDataPool();
             $string .= $CEPH_PULL_TMP;
             $string .= $CEPH_PUSH_TMP;
             $string .= $PROCESS_PULL_PUSH;
+            $string .= $COMMON::Shell::CEPH_BACKUPLIST;
         }
         elsif ( $pyramidTo->getStorageType() eq "FILE" ) {
-            $string .= sprintf "PYR_DIR_DST=%s\n", $pyramidTo->getDataDir();
+            $string .= sprintf "PYR_DIR=%s\n", $pyramidTo->getDataDir();
             $string .= $CEPH_PULL;
             $string .= $PROCESS_PULL;
+            $string .= $COMMON::Shell::FILE_BACKUPLIST;
         } 
+        elsif ( $pyramidTo->getStorageType() eq "S3" ) {
+            $string .= sprintf "PYR_BUCKET=%s\n", $pyramidTo->getDataBucket();
+            $string .= $S3_PUSH;
+            $string .= $PROCESS_PUSH;
+            $string .= $COMMON::Shell::S3_BACKUPLIST;
+        }        
+        elsif ( $pyramidTo->getStorageType() eq "SWIFT" ) {
+            $string .= sprintf "ROK4_SWIFT_TOKEN_FILE=\${TMP_DIR}/token.txt\n";
+            $string .= sprintf "PYR_CONTAINER=%s\n", $pyramidTo->getDataContainer();
+            if (COMMON::ProxyStorage::isSwiftKeystoneAuthentication()) {
+                $string .= $COMMON::Shell::SWIFT_KEYSTONE_TOKEN_FUNCTION;
+            }
+            else {
+                $string .= $COMMON::Shell::SWIFT_NATIVE_TOKEN_FUNCTION;
+            }
+            $string .= $CEPH_PULL_TMP;
+            $string .= $SWIFT_PUSH_TMP;
+            $string .= $PROCESS_PULL_PUSH;
+            $string .= $COMMON::Shell::SWIFT_BACKUPLIST;
+        }
     }
     elsif ( $pyramidFrom->getStorageType() eq "FILE" ) {
         $string .= sprintf "PYR_DIR_SRC=%s\n", $pyramidFrom->getDataDir();
 
         if ( $pyramidTo->getStorageType() eq "CEPH" ) {
-            $string .= sprintf "PYR_POOL_DST=%s\n", $pyramidTo->getDataPool();
+            $string .= sprintf "PYR_POOL=%s\n", $pyramidTo->getDataPool();
             $string .= $CEPH_PUSH;
             $string .= $PROCESS_PUSH;
+            $string .= $COMMON::Shell::CEPH_BACKUPLIST;
         }
         elsif ( $pyramidTo->getStorageType() eq "FILE" ) {
-            $string .= sprintf "PYR_DIR_DST=%s\n", $pyramidTo->getDataDir();
+            $string .= sprintf "PYR_DIR=%s\n", $pyramidTo->getDataDir();
             $string .= $FILE_PUSH;
             $string .= $PROCESS_PUSH;
+            $string .= $COMMON::Shell::FILE_BACKUPLIST;
         } 
         elsif ( $pyramidTo->getStorageType() eq "S3" ) {
-            $string .= sprintf "PYR_BUCKET_DST=%s\n", $pyramidTo->getDataBucket();
+            $string .= sprintf "PYR_BUCKET=%s\n", $pyramidTo->getDataBucket();
             $string .= $S3_PUSH;
             $string .= $PROCESS_PUSH;
+            $string .= $COMMON::Shell::S3_BACKUPLIST;
         }        
         elsif ( $pyramidTo->getStorageType() eq "SWIFT" ) {
-            $string .= sprintf "PYR_CONTAINER_DST=%s\n", $pyramidTo->getDataContainer();
+            $string .= sprintf "ROK4_SWIFT_TOKEN_FILE=\${TMP_DIR}/token.txt\n";
+            $string .= sprintf "PYR_CONTAINER=%s\n", $pyramidTo->getDataContainer();
+            if (COMMON::ProxyStorage::isSwiftKeystoneAuthentication()) {
+                $string .= $COMMON::Shell::SWIFT_KEYSTONE_TOKEN_FUNCTION;
+            }
+            else {
+                $string .= $COMMON::Shell::SWIFT_NATIVE_TOKEN_FUNCTION;
+            }
             $string .= $SWIFT_PUSH;
             $string .= $PROCESS_PUSH;
+            $string .= $COMMON::Shell::SWIFT_BACKUPLIST;
         }
     }
 

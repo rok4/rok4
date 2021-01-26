@@ -37,7 +37,7 @@
 ################################################################################
 
 =begin nd
-File: joinCache-ceph.pl
+File: joinCache-swift.pl
 =cut
 
 ################################################################################
@@ -309,8 +309,8 @@ sub config {
 
     # Environment variables
 
-    if (! COMMON::ProxyStorage::checkEnvironmentVariables("CEPH")) {
-        ERROR("Environment variable is missing for a CEPH storage");
+    if (! COMMON::ProxyStorage::checkEnvironmentVariables("SWIFT")) {
+        ERROR("Environment variable is missing for a SWIFT storage");
         return FALSE;
     }
 
@@ -344,8 +344,8 @@ sub validate {
         return FALSE;
     }
 
-    if ($objPyramid->getStorageType() ne "CEPH") {
-        ERROR ("JoinCache-Ceph only handle CEPH output pyramid");
+    if ($objPyramid->getStorageType() ne "SWIFT") {
+        ERROR ("JoinCache-Swift only handle SWIFT output pyramid");
         return FALSE;
     }
     
@@ -447,8 +447,8 @@ sub validateSourcePyramids {
             return FALSE;
         }
 
-        if ($sourcePyramid->getDataPool() ne $this{pyramid}->getDataPool() ) {
-            ERROR (sprintf "Source pyramid (%s) and output pyramid are not on the same pool", $sourcePyramid->getName());
+        if ($sourcePyramid->getDataContainer() ne $this{pyramid}->getDataContainer() ) {
+            ERROR (sprintf "Source pyramid (%s) and output pyramid are not in the same container", $sourcePyramid->getName());
             return FALSE;
         }
 
@@ -507,7 +507,7 @@ sub doIt {
     }
     $this{listStream} = $STREAM;
 
-    printf $STREAM "0=%s\n#\n", $pyramid->getDataPool();
+    printf $STREAM "0=%s\n#\n", $pyramid->getDataContainer();
 
     while( my ($level,$sources) = each(%{$this{composition}}) ) {
         INFO(sprintf "Level %s",$level);
@@ -531,7 +531,7 @@ sub doIt {
             # On va boucler sur toutes les dalles de ce niveau dans cette source, et on vérifiera qu'elle appartient bien à l'extent
 
             my $slabsHash = $source->{pyr}->getLevelSlabs($level);
-            # Hash de la forme { IMAGE => {COL_ROW => pool/slab_object_name} }
+            # Hash de la forme { IMAGE => {COL_ROW => container/slab_object_name} }
 
             while (my ($slabKey, $slabPath) = each(%{$slabsHash->{IMAGE}})) {
 
@@ -631,7 +631,7 @@ sub treatNode {
             $node->linkSlab($sourceImage->{img}, $finalImage);
 
             # Les cibles des liens sont ajoutées dans la liste directement
-            main::storeInList($sourceImage->{img});         
+            main::storeInList($sourceImage->{img});
         } else {
             # We have just one source image, but it is not compatible with the final cache
             # We need to transform it (pull push).
@@ -679,8 +679,8 @@ Parameters:
 sub storeInList {
     my $slabPath = shift;
 
-    my $poolName = $this{pyramid}->getDataPool();
-    $slabPath =~ s/$poolName/0/;
+    my $containerName = $this{pyramid}->getDataContainer();
+    $slabPath =~ s/$containerName/0/;
 
     my $STREAM = $this{listStream};
     print $STREAM "$slabPath\n";

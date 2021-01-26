@@ -2,7 +2,7 @@
 # Copyright © (2011) Institut national de l'information
 #                    géographique et forestière 
 # 
-# Géoportail SAV <geop_services@geoportail.fr>
+# Géoportail SAV <contact.geoservices@ign.fr>
 # 
 # This software is a computer program whose purpose is to publish geographic
 # data using OGC WMS and WMTS protocol.
@@ -98,6 +98,7 @@ Contains be4-swift call options :
     help - To obtain the command's help
     usage - To obtain the command's usage
     properties - Configuration file
+    environment - Environment file
 =cut
 my %options =
 (
@@ -107,9 +108,7 @@ my %options =
     
     # Configuration
     "properties"  => undef, # file properties params (mandatory) !
-    
-    # Only for maintenance !
-    "test" => 0,
+    "environment" => undef  # file environment be4 params (optional) !
 );
 
 =begin nd
@@ -183,7 +182,7 @@ sub main {
 =begin nd
 Function: init
 
-Checks options and initializes the default logger. Check properties file (mandatory).
+Checks options and initializes the default logger. Check environment file (optionnal) and properties file (mandatory).
 =cut
 sub init {
   
@@ -212,7 +211,8 @@ sub init {
             exit 0;
         },
         
-        "properties|conf=s" => \$options{properties}
+        "properties|conf=s" => \$options{properties},
+        "environment|env=s" => \$options{environment}
     ) or do {
         printf "Unappropriate usage\n";
         printf "See documentation here: https://github.com/rok4/rok4\n";
@@ -235,13 +235,19 @@ sub init {
     my $fproperties = File::Spec->rel2abs($options{properties});
     $options{properties} = $fproperties;
     
+    # env : optional !
+    if (defined $options{environment} && $options{environment} ne "") {
+        my $fenvironment = File::Spec->rel2abs($options{environment});
+        $options{environment} = $fenvironment;
+    }
+    
     return TRUE;
 }
 
 =begin nd
 Function: config
 
-Loads properties files and merge parameters. We also check environment variable (object storage configuration).
+Loads properties files and merge parameters. Those in the properties file have priority over those in the environment file.. We also check environment variable (object storage configuration).
 
 See Also:
     <checkParams>
@@ -255,16 +261,90 @@ sub config {
     my $objProp = BE4::PropertiesLoader->new($fprop);
     
     if (! defined $objProp) {
-        ERROR("Can not load properties !");
+        ERROR("Can not load specific properties !");
+        return FALSE;
+    }
+    
+    my %props = $objProp->getAllProperties();
+    
+    if (! scalar keys %props) {
+        ERROR("All parameters properties are empty !");
+        return FALSE;
+    }
+
+    ###################
+
+    my $hashref;
+
+    ###################
+    ALWAYS(">>> Treat optionnal environment ...");
+
+    my $fenv = undef;
+    $fenv = $options{environment} if (defined $options{environment} && $options{environment} ne "");
+
+    if (defined $fenv) {
+        my $objEnv = COMMON::Config->new($fenv);
+
+        if (! defined $objEnv) {
+            ERROR("Can not load environment properties !");
+            return FALSE;
+        }
+
+        my %envs = $objEnv->getConfigurationCopy();
+
+        if (! scalar keys %envs) {
+            ERROR("All parameters environment are empty !");
+            return FALSE;
+        }
+        
+        foreach (keys %{$this{params}}) {
+            my $href = { map %$_, grep ref $_ eq 'HASH', ($envs{$_}, $props{$_}) };
+            $hashref->{$_} = $href;
+        }
+    } else {
+        foreach (keys %{$this{params}}) {
+            my $href = { map %$_, grep ref $_ eq 'HASH', ($props{$_}) };
+            $hashref->{$_} = $href;
+        }
+    }
+
+    ###################
+
+    if (! defined $hashref) {
+        ERROR("Can not merge all parameters of properties !");
         return FALSE;
     }
   
     # save params properties
-    my %params = $objProp->getAllProperties();
-    $this{params} = \%params;
-
+    $this{params} = $hashref;
+    
+    ###################
+    # check parameters
+    
+    my $pyramid     = $this{params}->{pyramid};       # 
+    my $logger      = $this{params}->{logger};        # 
+    my $datasource  = $this{params}->{datasource};    #
+    my $process     = $this{params}->{process};       # 
+    
+    # pyramid
+    if (! defined $pyramid) {
+        ERROR("Parameters Pyramid can not be null !");
+        return FALSE;
+    }
+    
+    # datasource
+    if (! defined $datasource) {
+        ERROR("Parameters Datasource can not be null !");
+        return FALSE;
+    }
+    
+    # process
+    if (! defined $process) {
+        ERROR("Parameters Process can not be null !");
+        return FALSE;
+    }
+    
     # logger
-    my $logger = $this{params}->{logger};
     if (defined $logger) {
     
         my @args;
@@ -272,17 +352,14 @@ sub config {
         my $layout= '%5p : %m (%M) %n';
 
         my $level = $logger->{log_level};
-        $level = "WARN" if (! defined $level);
-
-        my $out;
-        my $logfile = $logger->{log_file};
-        if (defined $logfile) {
-            if (exists $logger->{log_path} && defined $logger->{log_path}) {
-                $logfile = File::Spec->catfile($logger->{log_path}, $logfile);
-            }
-            $out = ">>$logfile";
-        } else {
-            $out = "STDOUT";
+        my $out   = sprintf (">>%s", File::Spec->catfile($logger->{log_path}, $logger->{log_file}))
+            if (! COMMON::CheckUtils::isEmpty($logger->{log_path}) && ! COMMON::CheckUtils::isEmpty($logger->{log_file}));
+        
+        $out   = "STDOUT" if (! defined $out);
+        $level = "WARN"   if (! defined $level);
+        
+        if ($level =~ /(ALL|DEBUG)/) {
+            $layout = '%5p : %m (%M) %n';
         }
         
         # add the param logger by default (user settings !)
@@ -300,12 +377,10 @@ sub config {
                 layout => $layout,
             },
         }
-
-        Log::Log4perl->easy_init(@args);
+        Log::Log4perl->easy_init(@args); 
     }
 
     # Environment variables
-
     if (! COMMON::ProxyStorage::checkEnvironmentVariables("SWIFT")) {
         ERROR("Environment variable is missing for a Swift storage");
         return FALSE;
@@ -613,13 +688,6 @@ sub doIt {
 
     if ($objPyramid->getStorageType() ne "SWIFT") {
         ERROR("New pyramid have to be a SWIFT pyramid !");
-        return FALSE;
-    }
-
-    # Get swift token
-
-    if (! COMMON::ProxyStorage::getSwiftToken()) {
-        ERROR("Cannot get swift token");
         return FALSE;
     }
 

@@ -15,7 +15,7 @@ ROK4GENERATION est un ensemble de scripts de traitement permettant la préparati
 * http://www.ign.fr [@IGNFrance](https://twitter.com/IGNFrance)
 * http://www.geoportail.gouv.fr [@Geoportail](https://twitter.com/Geoportail)
 
-ROK4 Version : 3.8.1-FEATURE-EV
+ROK4 Version : 3.9.0-DEVELOP
 
 - [Fonctionnement général](#fonctionnement-général)
 - [Variables d'environnement](#variables-denvironnement)
@@ -59,26 +59,27 @@ Au fonctionnement du serveur et des outils de génération, plusieurs variables 
 Afin d'utiliser des stockages objets (CEPH, S3 ou SWIFT), le serveur et les outils vont accéder aux différents clusters grâce aux informations stockées dans les variables d'environnement.
 
 * CEPH
-    - ROK4_CEPH_CONFFILE
-    - ROK4_CEPH_USERNAME
-    - ROK4_CEPH_CLUSTERNAME
+    - `ROK4_CEPH_CONFFILE`
+    - `ROK4_CEPH_USERNAME`
+    - `ROK4_CEPH_CLUSTERNAME`
 * S3
-    - ROK4_S3_URL
-    - ROK4_S3_KEY
-    - ROK4_S3_SECRETKEY
+    - `ROK4_S3_URL`
+    - `ROK4_S3_KEY`
+    - `ROK4_S3_SECRETKEY`
 * SWIFT
-    - ROK4_SWIFT_AUTHURL
-    - ROK4_SWIFT_USER
-    - ROK4_SWIFT_PASSWD
-    - ROK4_SWIFT_PUBLICURL
+    - `ROK4_SWIFT_AUTHURL`
+    - `ROK4_SWIFT_USER`
+    - `ROK4_SWIFT_PASSWD`
+    - `ROK4_SWIFT_PUBLICURL`
     - Si authentification via Swift
-        - ROK4_SWIFT_ACCOUNT
-    - Si connection via keystone (présence de ROK4_KEYSTONE_DOMAINID)
-        - ROK4_KEYSTONE_DOMAINID
-        - ROK4_KEYSTONE_PROJECTID
+        - `ROK4_SWIFT_ACCOUNT`
+    - Si connection via keystone (présence de `ROK4_KEYSTONE_DOMAINID`)
+        - `ROK4_KEYSTONE_DOMAINID`
+        - `ROK4_KEYSTONE_PROJECTID`
 
-Dans le cas du stockage SWIFT ou S3, la variable ROK4_SSL_NO_VERIFY est testée, et la vérification des certificats est désactivée si elle est présente.
+Dans le cas du stockage SWIFT ou S3, la variable `ROK4_SSL_NO_VERIFY` est testée, et la vérification des certificats est désactivée si elle est présente.
 
+Dans le cas d'un stockage Swift, la variable d'environnement `ROK4_SWIFT_TOKEN_FILE` est testée. Si elle contient le chemin vers un fichier qui existe, on ne fait pas la demande de jeton d'authentification à la connexion et on mettra en en-tête des requêtes le contenu de ce fichier. Lors de la déconnexion du contexte Swift, on exportera le jeton dans ce fichier si celui-ci a changé.
 
 ## Pour l'utilisation de CURL
 

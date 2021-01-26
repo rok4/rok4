@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -613,7 +613,10 @@ int LibtiffImage::writeImage ( Image* pIn ) {
     if ( bitspersample == 8 && sampleformat == SampleFormat::UINT ) {
         uint8_t* buf_u = ( unsigned char* ) _TIFFmalloc ( width * channels );
         for ( int line = 0; line < height; line++ ) {
-            pIn->getline ( buf_u,line );
+            if (pIn->getline ( buf_u,line ) == 0) {
+                LOGGER_ERROR ( "Cannot read input image line " << line);
+                return -1;
+            }
             if ( TIFFWriteScanline ( tif, buf_u, line, 0 ) < 0 ) {
                 LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
                 return -1;
@@ -624,7 +627,10 @@ int LibtiffImage::writeImage ( Image* pIn ) {
     } else if ( bitspersample == 16 && sampleformat == SampleFormat::UINT ) {
         uint16_t* buf_t = ( uint16_t* ) _TIFFmalloc ( width * pixelSize );
         for ( int line = 0; line < height; line++ ) {
-            pIn->getline ( buf_t,line );
+            if (pIn->getline ( buf_t,line ) == 0) {
+                LOGGER_ERROR ( "Cannot read input image line " << line);
+                return -1;
+            }
             if ( TIFFWriteScanline ( tif, buf_t, line, 0 ) < 0 ) {
                 LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
                 return -1;
@@ -634,7 +640,10 @@ int LibtiffImage::writeImage ( Image* pIn ) {
     } else if ( bitspersample == 32 && sampleformat == SampleFormat::FLOAT ) {
         float* buf_f = ( float* ) _TIFFmalloc ( width * channels * sizeof(float) );
         for ( int line = 0; line < height; line++ ) {
-            pIn->getline ( buf_f,line );
+            if (pIn->getline ( buf_f,line ) == 0) {
+                LOGGER_ERROR ( "Cannot read input image line " << line);
+                return -1;
+            }
             if ( TIFFWriteScanline ( tif, buf_f, line, 0 ) < 0 ) {
                 LOGGER_ERROR ( "Cannot write file " << TIFFFileName ( tif ) << ", line " << line );
                 return -1;

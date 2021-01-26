@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -241,40 +241,29 @@ private:
     int rawTileSize;
 
     /**
-     * \~french \brief Nombre de tuiles mémorisées
-     * \~english \brief Number of memorized tiles
-     */
-    int memorySize;
-
-    /**
      * \~french \brief Buffer contenant les tuiles mémorisées
      * \details On mémorise les tuiles décompressées
-     * Taille : memorySize
      * \~english \brief Buffer containing memorized tiles
      * \details We memorize uncompressed tiles
-     * Size : memorySize
      */
-    uint8_t **memorizedTiles;
+    uint8_t *memorizedTiles;
 
     /**
-     * \~french \brief Buffer précisant pour chaque tuile mémorisée dans memorizedTiles son indice
-     * \details -1 si aucune tuile n'est mémorisée à cet emplacement dans memorizedTiles
-     * Taille : memorySize.
-     * \~english \brief Buffer precising for each memorized tile's indice
-     * \details -1 if no tile is memorized into this place in memorizedTiles
-     * Size : memorySize
+     * \~french \brief Entier précisant la ligne de tuile déjà chargée et décompressée dans memorizedTiles
+     * \details -1 si aucune ligne de tuile n'est mémorisée
+     * \~english \brief Tiles line index, loaded uncompressed in memorizedTiles
+     * \details -1 if no tile is memorized
      */
-    int* memorizedIndex;
+    int memorizedTilesLine;
     
     /**
-     * \~french \brief Mémorise la tuile demandée au format brut (sans compression)
-     * \details Si la tuile est déjà mémorisée dans memorizedTiles (et on le sait grâce à memorizedIndex), on retourne directement l'adresse mémoire.
+     * \~french \brief Mémorise la ligne de tuiles demandée au format brut (sans compression)
+     * \details Si la ligne de tuiles est déjà celle mémorisée dans memorizedTiles (et on le sait grâce à memorizedIndex), on retourne directement OK.
      * \return pointeur vers le tableau contenant la tuile voulue
      * \~english \brief Buffer precising for each memorized tile's indice
      * \return pointer to array containing the wanted tile
      */
-    uint8_t* memorizeRawTile ( size_t& size, int tile );
-
+    boolean memorizeRawTiles ( int tilesLine );
 
     /**
      * \~french \brief Charge l'index des tuiles de l'image ROK4 à lire
@@ -283,7 +272,6 @@ private:
      * \return TRUE if success, FALSE otherwise
      */
     bool loadIndex();
-
 
     /**
      * \~french \brief Compresse les données brutes en RAW
@@ -450,24 +438,6 @@ private:
      * \return TRUE if success, FALSE otherwise
      */
     bool writeTile( int tileInd, char* pbfpath ) ;
-
-    /**
-     * \~french \brief Écrit une tuile indépendante en tant qu'objet Ceph
-     * \details Le nom de l'objet/tuile sera #name _ col _ row
-     * \param[in] tileCol colonne de la tuile à écrire
-     * \param[in] tileRow ligne de la tuile à écrire
-     * \param[in] data données brutes (sans compression) à écrire
-     * \param[in] crop option pour le jpeg (voir #emptyWhiteBlock)
-     * \return VRAI en cas de succès, FAUX sinon
-     * \~english \brief Write a ROK4 tile as a ceph object
-     * \param[in] tileCol tile column
-     * \param[in] tileRow tile row
-     * \param[in] data raw data (no compression) to write
-     * \param[in] crop jpeg option (see #emptyWhiteBlock)
-     * \return TRUE if success, FALSE otherwise
-     */
-    bool writeTile( int tileCol, int tileRow, uint8_t* data, bool crop );
-
 
 protected:
     /** \~french
@@ -636,9 +606,7 @@ public:
      */
     ~Rok4Image() {
         if (! isVector) {
-            for ( int i = 0; i < memorySize; i++ ) if ( memorizedTiles[i] ) delete[] memorizedTiles[i];
             delete[] memorizedTiles;
-            delete[] memorizedIndex;
         }
         delete[] tilesOffset;
         delete[] tilesByteCounts;
@@ -664,22 +632,6 @@ public:
     }
 
     /**************************** Pour la lecture ****************************/
-    /**
-     * \~french
-     * \brief Retourne une tuile décompressée
-     * \param[out] buf buffer contenant la tuile. Doit être alloué.
-     * \param[in] line Indice de la tuile à retourner (0 <= tile < tilesNumber)
-     * \return taille utile du buffer, 0 si erreur
-     */
-    int getRawTile ( uint8_t* buf, int tile );
-    /**
-     * \~french
-     * \brief Retourne une tuile compressée
-     * \param[out] buf buffer contenant la tuile. Doit être alloué.
-     * \param[in] line Indice de la tuile à retourner (0 <= tile < tilesNumber)
-     * \return taille utile du buffer, 0 si erreur
-     */
-    int getEncodedTile ( uint8_t* buf, int tile );
     
     int getline ( uint8_t* buffer, int line );
     int getline ( uint16_t* buffer, int line );

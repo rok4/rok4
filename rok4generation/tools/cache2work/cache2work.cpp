@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -287,7 +287,6 @@ int main ( int argc, char **argv )
     // if ( acc ) {
     //     delete acc;
     // }
-    delete context;
 
 #if BUILD_OBJECT
     if (container != 0 || bucket != 0) {
@@ -295,6 +294,8 @@ int main ( int argc, char **argv )
         curl_global_cleanup();
     }
 #endif
+
+    delete context;
 
     return 0;
 }
