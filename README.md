@@ -15,7 +15,7 @@ ROK4GENERATION est un ensemble de scripts de traitement permettant la préparati
 * http://www.ign.fr [@IGNFrance](https://twitter.com/IGNFrance)
 * http://www.geoportail.gouv.fr [@Geoportail](https://twitter.com/Geoportail)
 
-ROK4 Version : 3.7.3
+ROK4 Version : 3.7.4
 
 - [Fonctionnement général](#fonctionnement-général)
 - [Compiler et installer le projet ROK4](#compiler-et-installer-le-projet-rok4)

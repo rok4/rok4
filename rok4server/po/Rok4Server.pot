@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4 \n"
 "Report-Msgid-Bugs-To: geop_services@geoportail.fr\n"
-"POT-Creation-Date: 2019-11-26 14:25+0100\n"
+"POT-Creation-Date: 2021-02-01 09:52+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -514,16 +514,16 @@ msgstr ""
 msgid "Probleme dans les parametres de la requete getMap"
 msgstr ""
 
-#: Rok4Server.cpp:324 Rok4Server.cpp:1312
+#: Rok4Server.cpp:324 Rok4Server.cpp:1315
 msgid "bbox invalide"
 msgstr ""
 
-#: Rok4Server.cpp:327 Rok4Server.cpp:1315
+#: Rok4Server.cpp:327 Rok4Server.cpp:1318
 msgid "bbox trop grande"
 msgstr ""
 
 #: Rok4Server.cpp:330 Rok4Server.cpp:345 Rok4Server.cpp:819 Rok4Server.cpp:849
-#: Rok4Server.cpp:865 Rok4Server.cpp:881 Rok4Server.cpp:1318
+#: Rok4Server.cpp:865 Rok4Server.cpp:881 Rok4Server.cpp:1321
 msgid "Impossible de repondre a la requete"
 msgstr ""
 
@@ -547,47 +547,47 @@ msgstr ""
 msgid " ne peut etre traite"
 msgstr ""
 
-#: Rok4Server.cpp:1260 Rok4Server.cpp:1282
+#: Rok4Server.cpp:1260 Rok4Server.cpp:1283
 msgid "Probleme dans les parametres de la requete getFeatureInfo"
 msgstr ""
 
-#: Rok4Server.cpp:1357
+#: Rok4Server.cpp:1360
 msgid "Erreur interne."
 msgstr ""
 
-#: Rok4Server.cpp:1362
+#: Rok4Server.cpp:1365
 msgid "Info_format non "
 msgstr ""
 
-#: Rok4Server.cpp:1362
+#: Rok4Server.cpp:1365
 msgid " supporté par la couche "
 msgstr ""
 
-#: Rok4Server.cpp:1419
+#: Rok4Server.cpp:1422
 msgid "Internal server error"
 msgstr ""
 
-#: Rok4Server.cpp:1427
+#: Rok4Server.cpp:1430
 msgid "GFI depuis un SQL non géré."
 msgstr ""
 
-#: Rok4Server.cpp:1429
+#: Rok4Server.cpp:1432
 msgid "ERRORRRRRR !"
 msgstr ""
 
-#: Rok4Server.cpp:1442 Rok4Server.cpp:1446 Rok4Server.cpp:1477
-#: Rok4Server.cpp:1481
+#: Rok4Server.cpp:1445 Rok4Server.cpp:1449 Rok4Server.cpp:1480
+#: Rok4Server.cpp:1484
 msgid " n'est pas prise en charge par ce serveur."
 msgstr ""
 
-#: Rok4Server.cpp:1446
+#: Rok4Server.cpp:1449
 msgid "L'operation "
 msgstr ""
 
-#: Rok4Server.cpp:1497
+#: Rok4Server.cpp:1500
 msgid "Le service est manquant"
 msgstr ""
 
-#: Rok4Server.cpp:1500
+#: Rok4Server.cpp:1503
 msgid "Le service est inconnu pour ce serveur."
 msgstr ""
