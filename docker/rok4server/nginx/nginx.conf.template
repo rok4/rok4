@@ -1,0 +1,16 @@
+upstream rok4server { server middle:9000; }
+                                               
+server {
+    listen 80 default_server;
+
+    location /${ROKSERVER_PREFIX} {
+        fastcgi_pass rok4server;
+        include fastcgi_params;
+        add_header 'Access-Control-Allow-Origin' '*';
+    }
+
+    location / {
+        add_header 'Access-Control-Allow-Origin' '*';
+        root /usr/share/nginx/html/;
+    }
+}

@@ -138,7 +138,6 @@
   <xs:complexType name="levelStorageSwift">
     <xs:sequence>
       <xs:element name="containerName" type="xs:string"/>
-      <xs:element name="keystoneConnection" type="xs:boolean" minOccurs="0" maxOccurs="1"/>
     </xs:sequence>
   </xs:complexType>
 

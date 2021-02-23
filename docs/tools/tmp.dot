@@ -1,0 +1,9 @@
+digraph COMMON_Pixel {
+    node[shape=record,style=filled,fillcolor=gray95]
+    edge[]
+    COMMON_Pixel [label = "{COMMON::Pixel|+ bitspersample: integer\l+ photometric: string\l+ samplesperpixel: integer\l+ sampleformat: string\l|+ new(...)\l+ getPhotometric(...)\l+ getSampleFormat(...)\l+ getBitsPerSample(...)\l+ getSamplesPerPixel(...)\l+ equals(...)\l+ convertible(...)\l+ exportForDebug(...)\l}"]
+    COMMON_ProxyGDAL [label = "{COMMON::ProxyGDAL}"]
+    COMMON_ProxyGDAL -> COMMON_Pixel
+    COMMON_PyramidRasterSpec [label = "{COMMON::PyramidRasterSpec}"]
+    COMMON_PyramidRasterSpec -> COMMON_Pixel
+}

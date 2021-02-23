@@ -1,7 +1,7 @@
 # Copyright © (2011) Institut national de l'information
 #                    géographique et forestière 
 # 
-# Géoportail SAV <geop_services@geoportail.fr>
+# Géoportail SAV <contact.geoservices@ign.fr>
 # 
 # This software is a computer program whose purpose is to publish geographic
 # data using OGC WMS and WMTS protocol.
@@ -191,7 +191,7 @@ Constructor: new
 DataSource constructor. Bless an instance.
 
 Parameters (list):
-    level - string - Base level (bottom) for this data source.
+    level - string - Base level (bottom) for this data source (can be <AUTO> if image source).
     params - hash - Data source parameters (see <_load> for details).
 
 See also:
@@ -296,41 +296,33 @@ sub _load {
         $this->{list} = $params->{list};
     }
 
-    # ImageSource is optionnal
-    my $imagesource = undef;
+    # Un dossier d'image en source ?
     if (exists $params->{path_image}) {
-        $imagesource = COMMON::ImageSource->new($params);
-        if (! defined $imagesource) {
+        $this->{imageSource} = COMMON::ImageSource->new($params);
+        if (! defined $this->{imageSource}) {
             ERROR("Cannot create the ImageSource object");
             return FALSE;
         }
     }
-    $this->{imageSource} = $imagesource;
-
-    # Harvesting is optionnal, but if we have 'wms_layer' parameter, we suppose that we have others
-    my $harvesting = undef;
-    if (exists $params->{wms_layer}) {
-        $harvesting = COMMON::Harvesting->new($params);
-        if (! defined $harvesting) {
+    # Des paramètres de moissonnage WMS comme source ?
+    elsif (exists $params->{wms_layer}) {
+        $this->{harvesting} = COMMON::Harvesting->new($params);
+        if (! defined $this->{harvesting}) {
             ERROR("Cannot create the Harvesting object");
             return FALSE;
         }
     }
-    $this->{harvesting} = $harvesting;
-
-    # DatabaseSource is optionnal, but if we have 'db' parameter, we suppose that we have others
-    my $database = undef;
-    if (exists $params->{db}) {
-        $database = COMMON::DatabaseSource->new($params);
-        if (! defined $database) {
+    # Des paramètres de base de données comme source ?
+    elsif (exists $params->{db}) {
+        $this->{databaseSource} = COMMON::DatabaseSource->new($params);
+        if (! defined $this->{databaseSource}) {
             ERROR("Cannot create the DatabaseSource object");
             return FALSE;
         }
     }
-    $this->{databaseSource} = $database;
-    
-    if (! defined $harvesting && ! defined $imagesource && ! defined $database) {
-        ERROR("A data source must have a ImageSource OR a Harvesting OR a DatabaseSource !");
+    # Sinon c'est une erreur    
+    else {
+        ERROR("A data source must have EITHER a ImageSource OR a Harvesting OR a DatabaseSource !");
         return FALSE;
     }
     
@@ -406,7 +398,6 @@ sub computeGlobalInfo {
             return FALSE ;
         }
         
-        
     } else {
         ERROR("'extent' or 'list' required in the sources configuration file if no image source !");
         return FALSE ;
@@ -431,12 +422,12 @@ sub getSRS {
 =begin nd
 Function: getType
 
-A datasource with a database source and no harvesting source will be considered as a VECTOR source. It's a raster source otherwise
+A datasource with a database source will be considered as a VECTOR source. It's a raster source otherwise
 =cut
 sub getType {
     my $this = shift;
 
-    if (defined $this->{databaseSource} && ! defined $this->{harvesting}) {
+    if (defined $this->{databaseSource}) {
         return "VECTOR";
     } else {
         return "RASTER";
@@ -465,6 +456,12 @@ sub getHarvesting {
 sub getDatabaseSource {
     my $this = shift;
     return $this->{databaseSource};
+}
+
+# Function: getImageSource
+sub getImageSource {
+    my $this = shift;
+    return $this->{imageSource};
 }
 
 # Function: getImages
@@ -534,6 +531,17 @@ sub setBottomOrder {
     my $this = shift;
     my $bottomOrder = shift;
     $this->{bottomOrder} = $bottomOrder;
+}
+=begin nd
+Function: setBottomID
+
+Parameters (list):
+    bottomID - string - Bottom level identifiant to set
+=cut
+sub setBottomID {
+    my $this = shift;
+    my $bottomID = shift;
+    $this->{bottomID} = $bottomID;
 }
 
 =begin nd

@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -77,7 +77,6 @@ std::string help = std::string("\npbf2cache version ") + std::string(ROK4_VERSIO
     "     -ultile upper left tile indices\n"
     "     -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object (ONLY IF OBJECT COMPILATION)\n"
     "     -container Swift container where data is. Then OUTPUT FILE is interpreted as a Swift object name (ONLY IF OBJECT COMPILATION)\n"
-    "     -ks in Swift storage case, activate keystone authentication (ONLY IF OBJECT COMPILATION)\n"
     "     -bucket S3 bucket where data is. Then OUTPUT FILE is interpreted as a S3 object name (ONLY IF OBJECT COMPILATION)\n"
     "     -d debug logger activation\n\n";
 
@@ -130,7 +129,6 @@ int main ( int argc, char **argv ) {
     bool onCeph = false;
     bool onSwift = false;
     bool onS3 = false;
-    bool keystone = false;
 #endif
 
     /* Initialisation des Loggers */
@@ -159,10 +157,6 @@ int main ( int argc, char **argv ) {
                 error("Error in -container option", -1);
             }
             container = argv[i];
-            continue;
-        }
-        if ( !strcmp ( argv[i],"-ks" ) ) {
-            keystone = true;
             continue;
         }
 #endif

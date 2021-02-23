@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -55,26 +55,9 @@
 #include <time.h>
 #include "CurlPool.h"
 
-S3Context::S3Context (std::string u, std::string k, std::string sk, std::string b) :
-    Context(),
-    url(u), key(k), secret_key(sk), bucket_name(b)
-{
-    // On calcule host = url sans le protocole ni le port
+S3Context::S3Context (std::string b) : Context(), ssl_no_verify(false), bucket_name(b) {
 
-    host = url;
-    std::size_t found = host.find("://");
-    if (found != std::string::npos) {
-        host = host.substr(found + 3);
-    }
-    found = host.find(":");
-    if (found != std::string::npos) {
-        host = host.substr(0, found);
-    }
-}
-
-S3Context::S3Context (std::string b) : Context(), bucket_name(b) {
-
-    char* u = getenv ("ROK4_S3_URL");
+    char* u = getenv (ROK4_S3_URL);
     if (u == NULL) {
         url.assign("http://localhost:8080");
     } else {
@@ -93,20 +76,25 @@ S3Context::S3Context (std::string b) : Context(), bucket_name(b) {
         host = host.substr(0, found);
     }    
 
-    char* k = getenv ("ROK4_S3_KEY");
+    char* k = getenv (ROK4_S3_KEY);
     if (k == NULL) {
         key.assign("KEY");
     } else {
         key.assign(k);
     }
 
-    char* sk = getenv ("ROK4_S3_SECRETKEY");
+    char* sk = getenv (ROK4_S3_SECRETKEY);
     if (sk == NULL) {
         secret_key.assign("SECRETKEY");
     } else {
         secret_key.assign(sk);
     }
+
+    if(getenv( ROK4_SSL_NO_VERIFY ) != NULL){
+        ssl_no_verify=true;
+    }
 }
+
 
 bool S3Context::connection() {
     connected = true;
@@ -164,6 +152,23 @@ std::string S3Context::getAuthorizationHeader(std::string toSign) {
     return signature;
 }
 
+/**
+ * \~french \brief Noms court des jours en anglais
+ * \~english \brief Short english day names
+ */
+static const char wday_name[][4] = {
+    "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
+};
+
+/**
+ * \~french \brief Noms court des mois en anglais
+ * \~english \brief Short english month names
+ */
+static const char mon_name[][4] = {
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+};
+
 int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
 
     LOGGER_DEBUG("S3 read : " << size << " bytes (from the " << offset << " one) in the object " << name);
@@ -180,16 +185,20 @@ int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
     int lastBytes = offset + size - 1;
 
     CURL* curl = CurlPool::getCurlEnv();
-    //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
-
 
     std::string fullUrl = url + "/" + bucket_name + "/" + name;
 
     time_t current;
-    char gmt_time[40];
 
     time(&current);
-    strftime( gmt_time, sizeof(gmt_time), "%a, %d %b %Y %T %z", gmtime(&current) );
+    struct tm * ptm = gmtime ( &current );
+
+    static char gmt_time[40];
+    sprintf(
+        gmt_time, "%s, %d %s %d %.2d:%.2d:%.2d GMT",
+        wday_name[ptm->tm_wday], ptm->tm_mday, mon_name[ptm->tm_mon], 1900 + ptm->tm_year,
+        ptm->tm_hour, ptm->tm_min, ptm->tm_sec
+    );
 
     std::string content_type = "application/octet-stream";
     std::string resource = "/" + bucket_name + "/" + name;
@@ -219,19 +228,24 @@ int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
 
     char auth[512];
     sprintf(auth, "Authorization: AWS %s:%s", key.c_str(), signature.c_str());
+
     list = curl_slist_append(list, auth);
 
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
     curl_easy_setopt(curl, CURLOPT_URL, fullUrl.c_str());
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    if(ssl_no_verify){
+      curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    }
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, data_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &chunk);
 
-    LOGGER_INFO("S3 READ START (" << size << ") " << pthread_self());
+
+    LOGGER_DEBUG("S3 READ START (" << size << ") " << pthread_self());
     res = curl_easy_perform(curl);
-    LOGGER_INFO("S3 READ END (" << size << ") " << pthread_self());
+    LOGGER_DEBUG("S3 READ END (" << size << ") " << pthread_self());
     
     curl_slist_free_all(list);
+    //delete[] gmt_time;
 
     if( CURLE_OK != res) {
         LOGGER_ERROR("Cannot read data from S3 : " << size << " bytes (from the " << offset << " one) in the object " << name);
@@ -293,8 +307,8 @@ bool S3Context::writeFull(uint8_t* data, int size, std::string name) {
     return true;
 }
 
-eContextType S3Context::getType() {
-    return S3CONTEXT;
+ContextType::eContextType S3Context::getType() {
+    return ContextType::S3CONTEXT;
 }
 
 std::string S3Context::getTypeStr() {
@@ -303,6 +317,13 @@ std::string S3Context::getTypeStr() {
 
 std::string S3Context::getTray() {
     return bucket_name;
+}
+
+std::string S3Context::getPath(std::string racine,int x,int y,int pathDepth){
+    //std::ostringstream convert;
+    //convert << "_" << x << "_" << y;
+    //convert.str();
+    return racine + "_" + std::to_string(x) + "_" + std::to_string(y);
 }
 
 
@@ -330,7 +351,6 @@ bool S3Context::closeToWrite(std::string name) {
         return false;
     }
 
-
     LOGGER_DEBUG("Write buffered " << it1->second->size() << " bytes in the S3 object " << name);
 
     CURLcode res;
@@ -340,10 +360,16 @@ bool S3Context::closeToWrite(std::string name) {
     std::string fullUrl = url + "/" + bucket_name + "/" + name;
 
     time_t current;
-    char gmt_time[40];
 
     time(&current);
-    strftime( gmt_time, sizeof(gmt_time), "%a, %d %b %Y %T %z", gmtime(&current) );
+    struct tm * ptm = gmtime ( &current );
+
+    static char gmt_time[40];
+    sprintf(
+        gmt_time, "%s, %d %s %d %.2d:%.2d:%.2d GMT",
+        wday_name[ptm->tm_wday], ptm->tm_mday, mon_name[ptm->tm_mon], 1900 + ptm->tm_year,
+        ptm->tm_hour, ptm->tm_min, ptm->tm_sec
+    );
 
     std::string content_type = "application/octet-stream";
     std::string resource = "/" + bucket_name + "/" + name;
@@ -365,7 +391,7 @@ bool S3Context::closeToWrite(std::string name) {
     list = curl_slist_append(list, ct);
 
     char cl[50];
-    sprintf(cl, "Content-Length: %d", it1->second->size());
+    sprintf(cl, "Content-Length: %d",(int)it1->second->size());
     list = curl_slist_append(list, cl);
 
     std::string ex = "Expect:";
@@ -377,7 +403,9 @@ bool S3Context::closeToWrite(std::string name) {
 
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
     curl_easy_setopt(curl, CURLOPT_URL, fullUrl.c_str());
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    if(ssl_no_verify){
+      curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    }
     curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, &((*(it1->second))[0]));
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, it1->second->size());

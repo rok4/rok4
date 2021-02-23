@@ -1,7 +1,7 @@
 # Copyright © (2011) Institut national de l'information
 #                    géographique et forestière 
 # 
-# Géoportail SAV <geop_services@geoportail.fr>
+# Géoportail SAV <contact.geoservices@ign.fr>
 # 
 # This software is a computer program whose purpose is to publish geographic
 # data using OGC WMS and WMTS protocol.
@@ -63,7 +63,7 @@ Using:
     (end code)
 
 Attributes:
-    id - string - TM identifiant.
+    id - string - TM identifiant (no underscore).
     tms - <COMMON::TileMatrixSet> - TMS to whom it belong
     resolution - double - Ground size of a pixel, using unity of the SRS.
     topLeftCornerX - double - X coordinate of the upper left corner for the level, the grid's origin.

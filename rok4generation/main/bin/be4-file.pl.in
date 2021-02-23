@@ -2,7 +2,7 @@
 # Copyright © (2011) Institut national de l'information
 #                    géographique et forestière 
 # 
-# Géoportail SAV <geop_services@geoportail.fr>
+# Géoportail SAV <contact.geoservices@ign.fr>
 # 
 # This software is a computer program whose purpose is to publish geographic
 # data using OGC WMS and WMTS protocol.
@@ -37,7 +37,7 @@
 ################################################################################
 
 =begin nd
-File: be4.pl
+File: be4-file.pl
 =cut
 
 ################################################################################
@@ -144,7 +144,7 @@ See Also:
     <init>, <config>, <doIt>
 =cut
 sub main {
-    printf("BE4: version [%s]\n",$VERSION);
+    printf("BE4-FILE: version [%s]\n",$VERSION);
     # message
     my $message = undef;
 
@@ -731,7 +731,7 @@ sub doIt {
     }
 
     if ($objDSL->getType() ne "RASTER") {
-        ERROR("BE4 exepect RASTER data sources !");
+        ERROR("BE4 expect RASTER data sources !");
         return FALSE;
     }
     

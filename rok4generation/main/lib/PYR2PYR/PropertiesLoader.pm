@@ -1,7 +1,7 @@
 # Copyright © (2011) Institut national de l'information
 #                    géographique et forestière 
 # 
-# Géoportail SAV <geop_services@geoportail.fr>
+# Géoportail SAV <contact.geoservices@ign.fr>
 # 
 # This software is a computer program whose purpose is to publish geographic
 # data using OGC WMS and WMTS protocol.
@@ -192,7 +192,7 @@ sub _check {
 
 
     if ($this->{cfgObject}->whatIs("to", "pyr_name_new") ne "SCALAR") {
-        ERROR("'pyr_name' property is missing");
+        ERROR("'pyr_name_new' property is missing");
         return FALSE; 
     }
     if ($this->{cfgObject}->whatIs("to", "pyr_desc_path") ne "SCALAR") {

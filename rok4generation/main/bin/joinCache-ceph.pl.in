@@ -2,7 +2,7 @@
 # Copyright © (2011) Institut national de l'information
 #                    géographique et forestière
 #
-# Géoportail SAV <geop_services@geoportail.fr>
+# Géoportail SAV <contact.geoservices@ign.fr>
 #
 # This software is a computer program whose purpose is to publish geographic
 # data using OGC WMS and WMTS protocol.
@@ -139,6 +139,7 @@ my %this =
     mergeMethod => undef,
     useMasks => undef,
     scripts => [],
+    jobsNumber => undef,
     currentScript => undef,
 
     composition => undef,
@@ -389,7 +390,23 @@ sub validate {
 
         push(@{$this{scripts}}, $script);
     }
+
+    my $script = COMMON::Script->new({
+        id => "SCRIPT_FINISHER",
+        finisher => TRUE,
+        shellClass => 'JOINCACHE::Shell',
+        initialisation => $scriptInit
+    });
+
+    if (! defined $script) {
+        ERROR ("Cannot create the COMMON::Script object !");
+        return FALSE;
+    }
+
+    push(@{$this{scripts}}, $script);
+
     $this{currentScript} = 0;
+    $this{jobsNumber} = $processSection->{job_number};
 
     ##################
 
@@ -562,8 +579,6 @@ sub doIt {
 
     close($STREAM);
 
-    $this{pyramid}->backupList();
-
     # On ferme tous les scripts
     foreach my $s (@{$this{scripts}}) {
         $s->close();
@@ -615,8 +630,8 @@ sub treatNode {
             # We can just make a symbolic link, in a script
             $node->linkSlab($sourceImage->{img}, $finalImage);
 
-            main::storeInList($sourceImage->{img});
-            
+            # Les cibles des liens sont ajoutées dans la liste directement
+            main::storeInList($sourceImage->{img});         
         } else {
             # We have just one source image, but it is not compatible with the final cache
             # We need to transform it (pull push).
@@ -624,8 +639,7 @@ sub treatNode {
                 ERROR(sprintf "Cannot transform the image");
                 return FALSE;
             }
-
-            main::storeInList($finalImage);
+            # C'est à l'exécution de la commande de conversion que la nouvelle dalle sera ajoutée dans la liste
         }
 
         # Export éventuel du masque : il est forcément dans le bon format, on peut donc le lier.
@@ -642,15 +656,10 @@ sub treatNode {
             ERROR(sprintf "Cannot merge the images");
             return FALSE;
         }
-
-        main::storeInList($finalImage);
-
-        if (defined $finalMask) {
-            main::storeInList($finalMask);
-        }
+        # C'est à l'exécution de la commande de superposition que la nouvelle dalle sera ajoutée dans la liste
     }
-    
-    $this{currentScript} = ($this{currentScript}+1)%(scalar(@{$this{scripts}}));
+
+    $this{currentScript} = ($this{currentScript}+1)%($this{jobsNumber});
 
     return TRUE;
 }
@@ -665,8 +674,7 @@ Function: storeInList
 Writes slab's path in the pyramid's content list and store the root.
 
 Parameters:
-    slabPathEnd - string - End of the slab path (without root).
-    slabPath - string - Full slab path, to store in the file list (with indexed root).
+    slabPath - string - Full slab path, to store in the list (with indexed root).
 =cut
 sub storeInList {
     my $slabPath = shift;

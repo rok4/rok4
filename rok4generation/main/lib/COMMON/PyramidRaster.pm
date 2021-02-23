@@ -1,7 +1,7 @@
 # Copyright © (2011) Institut national de l'information
 #                    géographique et forestière 
 # 
-# Géoportail SAV <geop_services@geoportail.fr>
+# Géoportail SAV <contact.geoservices@ign.fr>
 # 
 # This software is a computer program whose purpose is to publish geographic
 # data using OGC WMS and WMTS protocol.
@@ -116,7 +116,6 @@ Attributes:
     data_bucket - string - Name of the (existing) S3 bucket, where to store data if S3 storage type
 
     data_container - string - Name of the (existing) Swift container, where to store data if Swift storage type
-    keystone_connection - boolean - For swift storage, keystone authentication or not ?
 
     data_pool - string - Name of the (existing) CEPH pool, where to store data if CEPH storage type
 
@@ -240,7 +239,6 @@ sub new {
         
         # Pyramide SWIFT
         data_container => undef,
-        keystone_connection => FALSE,
 
         # Pyramide CEPH
         data_pool => undef,
@@ -320,10 +318,6 @@ sub new {
             #### CAS D'UNE PYRAMIDE SWIFT
             $this->{storage_type} = "SWIFT";
             $this->{data_container} = $params->{pyr_data_container_name};
-
-            if ( exists $params->{keystone_connection} && defined $params->{keystone_connection} && uc($params->{keystone_connection}) eq "TRUE" ) {
-                $this->{keystone_connection} = TRUE;                
-            }
         }
 
         elsif (exists $params->{pyr_data_pool_name} && defined $params->{pyr_data_pool_name}) {
@@ -576,7 +570,7 @@ sub _readDescriptor {
             $this->{data_bucket} = $this->{levels}->{$oneLevelId}->getS3Info();
         }
         elsif ($storageType eq "SWIFT") {
-            ($this->{data_container}, $this->{keystone_connection}) = $this->{levels}->{$oneLevelId}->getSwiftInfo();
+            $this->{data_container} = $this->{levels}->{$oneLevelId}->getSwiftInfo();
         }
         elsif ($storageType eq "CEPH") {
             $this->{data_pool} = $this->{levels}->{$oneLevelId}->getCephInfo();
@@ -678,8 +672,7 @@ sub addLevel {
             size => [$this->{image_width}, $this->{image_height}],
 
             prefix => $this->{name},
-            container_name => $this->{data_container},
-            keystone_connection => $this->{keystone_connection}
+            container_name => $this->{data_container}
         };
     }
 
@@ -780,12 +773,6 @@ sub updateStorageInfos {
         $this->{storage_type} = "SWIFT";
         $this->{data_container} = $params->{pyr_data_container_name};
 
-        if ( exists $params->{keystone_connection} && defined $params->{keystone_connection} && uc($params->{keystone_connection}) eq "TRUE" ) {
-            $this->{keystone_connection} = TRUE;
-        } else {
-            $this->{keystone_connection} = FALSE;
-        }
-
         $this->{data_path} = undef;
         $this->{dir_depth} = undef;
         $this->{data_bucket} = undef;
@@ -793,7 +780,6 @@ sub updateStorageInfos {
 
         $updateLevelParams->{prefix} = $this->{name};
         $updateLevelParams->{container_name} = $this->{data_container};
-        $updateLevelParams->{keystone_connection} = $this->{keystone_connection};
     }
 
 
@@ -932,7 +918,7 @@ sub writeDescriptor {
 
     $this->backupDescriptor();
 
-    return TRUE
+    return TRUE;
 }
 
 
@@ -952,33 +938,11 @@ sub backupDescriptor {
 
     if ($this->{storage_type} eq "FILE") {
         INFO("On ne sauvegarde pas le descripteur de pyramide en mode fichier car des chemins sont en relatif et n'ont pas de sens si le fichier est ailleurs");
+        return TRUE;
     } else {
         my $backupDescFile = sprintf "%s/%s.pyr", $this->getDataRoot(), $this->getName();
-        COMMON::ProxyStorage::copy("FILE", $descFile, $this->{storage_type}, $backupDescFile);
+        return COMMON::ProxyStorage::copy("FILE", $descFile, $this->{storage_type}, $backupDescFile);
     }
-}
-
-
-=begin nd
-Function: backupList
-
-Pyramid's list is stored into the data storage : in the data directory or in the object tray
-
-This file have to be written before calling this function
-=cut
-sub backupList {
-    my $this = shift;
-
-    my $listFile = $this->getListFile();
-
-    my $backupList;
-    if ($this->{storage_type} eq "FILE") {
-        $backupList = sprintf "%s/%s.list", $this->getDataDir(), $this->getName();
-    } else {
-        $backupList = sprintf "%s/%s.list", $this->getDataRoot(), $this->getName();
-    }
-
-    COMMON::ProxyStorage::copy("FILE", $listFile, $this->{storage_type}, $backupList);
 }
 
 
@@ -996,12 +960,6 @@ sub ownAncestor {
 sub ownMasks {
     my $this = shift;
     return $this->{own_masks};
-}
-
-# Function: keystoneConnection
-sub keystoneConnection {
-    my $this = shift;
-    return $this->{keystone_connection};
 }
 
 # Function: getName
@@ -1282,7 +1240,12 @@ Function: loadList
 
 Read the list and store content in an hash as following :
 |   level => {
-|       col_row => full slab path (file or object)
+|       IMAGE => {
+|          col_row => full slab path (file or object)
+|       },
+|       MASK => {
+|          col_row => full slab path (file or object)
+|       }
 |   }
 =cut
 sub loadList {
@@ -1423,7 +1386,7 @@ Function: containSlab
 Precises if the provided slab belongs to the pyramid, using the cached list. Returns the full slab path if present, undef otherwise
 
 Parameters (list):
-    type - strong - IMAGE or MASK
+    type - string - IMAGE or MASK
     level - string - Identifiant of the asked level
     col - integer - Column indice
     row - integer - Row indice
@@ -1446,7 +1409,7 @@ Function: modifySlab
 Replace the full slab path with the local full path. This modification can be made persistent with <flushCachedList>.
 
 Parameters (list):
-    type - strong - IMAGE or MASK
+    type - string - IMAGE or MASK
     level - string - Identifiant of the asked level
     col - integer - Column indice
     row - integer - Row indice
@@ -1482,7 +1445,7 @@ Function: deleteSlab
 Delete the slab path from the cached list. This modification can be made persistent with <flushCachedList>.
 
 Parameters (list):
-    type - strong - IMAGE or MASK
+    type - string - IMAGE or MASK
     level - string - Identifiant of the asked level
     col - integer - Column indice
     row - integer - Row indice
@@ -1606,8 +1569,32 @@ sub flushCachedList {
 
     $this->{cachedListModified} = FALSE;
 
+    $this->backupList();
+
     return TRUE;
-} 
+}
+
+=begin nd
+Function: backupList
+
+Pyramid's list is stored into the data storage : in the data directory or in the object tray
+
+This file have to be written before calling this function
+=cut
+sub backupList {
+    my $this = shift;
+
+    my $listFile = $this->getListFile();
+
+    my $backupList;
+    if ($this->{storage_type} eq "FILE") {
+        $backupList = sprintf "%s/%s.list", $this->getDataDir(), $this->getName();
+    } else {
+        $backupList = sprintf "%s/%s.list", $this->getDataRoot(), $this->getName();
+    }
+
+    COMMON::ProxyStorage::copy("FILE", $listFile, $this->{storage_type}, $backupList);
+}
 
 =begin nd
 Function: getCachedListStats

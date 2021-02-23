@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -47,6 +47,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <fstream>
 #include <string.h>
 #include "tiffio.h"
 #include "Format.h"
@@ -93,7 +94,6 @@ std::string help = std::string("\nwork2cache version ") + std::string(ROK4_VERSI
     "     -t tile size : widthwise and heightwise. Have to be a divisor of the global image's size\n"
     "     -pool Ceph pool where data is. Then OUTPUT FILE is interpreted as a Ceph object ID (ONLY IF OBJECT COMPILATION)\n"
     "     -container Swift container where data is. Then OUTPUT FILE is interpreted as a Swift object name (ONLY IF OBJECT COMPILATION)\n"
-    "     -ks in Swift storage case, activate keystone authentication (ONLY IF OBJECT COMPILATION)\n"
     "     -bucket S3 bucket where data is. Then OUTPUT FILE is interpreted as a S3 object name (ONLY IF OBJECT COMPILATION)\n"
     "     -crop : blocks (used by JPEG compression) wich contain a white pixel are filled with white\n"
     "     -a sample format : (float or uint)\n"
@@ -166,7 +166,6 @@ int main ( int argc, char **argv ) {
     bool onCeph = false;
     bool onSwift = false;
     bool onS3 = false;
-    bool keystone = false;
 #endif
 
     /* Initialisation des Loggers */
@@ -199,10 +198,6 @@ int main ( int argc, char **argv ) {
                 error("Error in -container option", -1);
             }
             container = argv[i];
-            continue;
-        }
-        if ( !strcmp ( argv[i],"-ks" ) ) {
-            keystone = true;
             continue;
         }
 #endif
@@ -302,6 +297,7 @@ int main ( int argc, char **argv ) {
 
         BOOST_LOG_TRIVIAL(debug) << ( std::string("Output is an object in the Ceph pool ") + pool);
         context = new CephPoolContext(pool);
+        context->setAttempts(10);
     } else if (bucket != 0) {
         onS3 = true;
 

@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -186,7 +186,7 @@ int parseCommandLine ( int argc, char** argv ) {
         } else {
             if ( outputImage == 0 ) outputImage = argv[i];
             else {
-                BOOST_LOG_TRIVIAL(error) <<  "Argument must specify just ONE output file" ;
+                LOGGER_ERROR( "Argument must specify just ONE output file" );
                 return -1;
             }
         }

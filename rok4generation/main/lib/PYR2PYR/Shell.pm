@@ -1,7 +1,7 @@
 # Copyright © (2011) Institut national de l'information
 #                    géographique et forestière 
 # 
-# Géoportail SAV <geop_services@geoportail.fr>
+# Géoportail SAV <contact.geoservices@ign.fr>
 # 
 # This software is a computer program whose purpose is to publish geographic
 # data using OGC WMS and WMTS protocol.
@@ -63,6 +63,8 @@ use Log::Log4perl qw(:easy);
 use File::Basename;
 use File::Path;
 use Data::Dumper;
+
+use COMMON::Shell;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -131,13 +133,20 @@ sub getPersonnalTempDirectory {
 
 
 my $FILE_PUSH = <<'FUNCTION';
-BackupListFile () {
-    cp ${LIST_FILE} ${PYR_DIR_DST}/
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-}
+
 PushSlab () {
     local input=$1
     local output=$2
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${output}" == "${last_slab}" ]]; then
+            echo "Last transfered slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
 
     size=`stat -L -c "%s" ${PYR_DIR_SRC}/$input`
     if [ $? != 0 ] ; then echo "$input n'existe pas, on passe" ; return; fi
@@ -145,13 +154,13 @@ PushSlab () {
         return
     fi
 
-    local dir=`dirname ${PYR_DIR_DST}/$output`
+    local dir=`dirname ${PYR_DIR}/$output`
     if [ ! -d $dir ] ; then mkdir -p $dir ; fi
   
-    cp ${PYR_DIR_SRC}/$input ${PYR_DIR_DST}/$output 
+    cp ${PYR_DIR_SRC}/$input ${PYR_DIR}/$output 
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 
-    echo "0/${input}" >>${TMP_LIST_FILE}
+    echo "0/${output}" >>${TMP_LIST_FILE}
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 FUNCTION
@@ -159,6 +168,10 @@ FUNCTION
 my $CEPH_PULL_TMP = <<'FUNCTION';
 PullSlab () {
     local input=$1
+
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
   
     rados -p ${PYR_POOL_SRC} get $input ${TMP_DIR}/slab.tmp
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
@@ -170,23 +183,42 @@ PullSlab () {
     local input=$1
     local output=$2
 
-    local dir=`dirname ${PYR_DIR_DST}/$output`
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${output}" == "${last_slab}" ]]; then
+            echo "Last transfered slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
+
+    local dir=`dirname ${PYR_DIR}/$output`
     if [ ! -d $dir ] ; then mkdir -p $dir ; fi
   
-    rados -p ${PYR_POOL_SRC} get $input ${PYR_DIR_DST}/$output 
+    rados -p ${PYR_POOL_SRC} get $input ${PYR_DIR}/$output 
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+
+    echo "0/${output}" >>${TMP_LIST_FILE}
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 FUNCTION
 
 my $CEPH_PUSH = <<'FUNCTION';
-BackupListFile () {
-    local objectName=`basename ${LIST_FILE}`
-    rados -p ${PYR_POOL_DST} put ${objectName} ${LIST_FILE}
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-}
+
 PushSlab () {
     local input=$1
     local output=$2
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${output}" == "${last_slab}" ]]; then
+            echo "Last transfered slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
 
     size=`stat -L -c "%s" ${PYR_DIR_SRC}/$input`
     if [ $? != 0 ] ; then echo "$input n'existe pas, on passe" ; return; fi
@@ -194,7 +226,7 @@ PushSlab () {
         return
     fi
   
-    rados -p ${PYR_POOL_DST} put $output ${PYR_DIR_SRC}/$input
+    rados -p ${PYR_POOL} put $output ${PYR_DIR_SRC}/$input
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 
     echo "0/${output}" >> ${TMP_LIST_FILE}
@@ -203,13 +235,19 @@ PushSlab () {
 FUNCTION
 
 my $CEPH_PUSH_TMP = <<'FUNCTION';
-BackupListFile () {
-    local objectName=`basename ${LIST_FILE}`
-    rados -p ${PYR_POOL_DST} put ${objectName} ${LIST_FILE}
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-}
+
 PushSlab () {
     local output=$1
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${output}" == "${last_slab}" ]]; then
+            echo "Last transfered slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
 
     size=`stat -L -c "%s" ${TMP_DIR}/slab.tmp`
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
@@ -217,7 +255,7 @@ PushSlab () {
         return
     fi
   
-    rados -p ${PYR_POOL_DST} put $output ${TMP_DIR}/slab.tmp 
+    rados -p ${PYR_POOL} put $output ${TMP_DIR}/slab.tmp 
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 
     echo "0/${output}" >> ${TMP_LIST_FILE}
@@ -226,29 +264,20 @@ PushSlab () {
 FUNCTION
 
 my $S3_PUSH = <<'FUNCTION';
-HOST=$(echo ${ROK4_S3_URL} | sed 's!.*://!!' | sed 's!:[0-9]\+$!!')
-BackupListFile () {
-    local objectName=`basename ${LIST_FILE}`
 
-    resource="/${PYR_BUCKET_DST}/${objectName}"
-    contentType="application/octet-stream"
-    dateValue=`TZ=GMT date -R`
-    stringToSign="PUT\n\n${contentType}\n${dateValue}\n${resource}"
-
-    signature=`echo -en ${stringToSign} | openssl sha1 -hmac ${ROK4_S3_SECRETKEY} -binary | base64`
-
-    curl -k -X PUT -T "${LIST_FILE}" \
-     -H "Host: ${HOST}" \
-     -H "Date: ${dateValue}" \
-     -H "Content-Type: ${contentType}" \
-     -H "Authorization: AWS ${ROK4_S3_KEY}:${signature}" \
-     ${ROK4_S3_URL}${resource}
-
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-}
 PushSlab () {
     local input=$1
     local output=$2
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${output}" == "${last_slab}" ]]; then
+            echo "Last transfered slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
 
     size=`stat -L -c "%s" ${PYR_DIR_SRC}/$input`
     if [ $? != 0 ] ; then echo "${PYR_DIR_SRC}/$input n'existe pas, on passe" ; return; fi
@@ -256,14 +285,19 @@ PushSlab () {
         return
     fi
     
-    resource="/${PYR_BUCKET_DST}/${output}"
+    resource="/${PYR_BUCKET}/${output}"
     contentType="application/octet-stream"
     dateValue=`TZ=GMT date -R`
     stringToSign="PUT\n\n${contentType}\n${dateValue}\n${resource}"
 
     signature=`echo -en ${stringToSign} | openssl sha1 -hmac ${ROK4_S3_SECRETKEY} -binary | base64`
 
-    curl -k -X PUT -T "${PYR_DIR_SRC}/$input" \
+    curl_options=""
+    if [[ ! -z $ROK4_SSL_NO_VERIFY ]]; then
+        curl_options="-k"
+    fi
+
+    curl $curl_options  --fail -X PUT -T "${PYR_DIR_SRC}/$input" \
      -H "Host: ${HOST}" \
      -H "Date: ${dateValue}" \
      -H "Content-Type: ${contentType}" \
@@ -278,71 +312,73 @@ PushSlab () {
 FUNCTION
 
 my $SWIFT_PUSH = <<'FUNCTION';
-BackupListFile () {
-    local objectName=`basename ${LIST_FILE}`
 
-    TOKEN=$(curl -s -ik \
-        -H "Content-Type: application/json" \
-        -XPOST \
-        -d '
-    {   "auth": {
-            "scope": {
-                "project": {"id": "'$ROK4_KEYSTONE_PROJECTID'"}
-            },
-            "identity": {
-                "methods": ["password"],
-                "password": {
-                    "user": {
-                        "domain": {"id": "'$ROK4_KEYSTONE_DOMAINID'"},
-                        "password": "'$ROK4_SWIFT_PASSWD'",
-                        "name": "'$ROK4_SWIFT_USER'"
-                    }
-                }
-            }
-        }
-    }' $ROK4_SWIFT_AUTHURL | grep "X-Subject-Token" | cut -d":" -f2 | tr -cd '[:print:]')
-
-    resource="/${PYR_CONTAINER_DST}/${objectName}"
-
-    curl -k -X PUT -T "${LIST_FILE}"  -H "X-Auth-Token: ${TOKEN}"  ${ROK4_SWIFT_PUBLICURL}${resource}
-
-    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
-}
 PushSlab () {
     local input=$1
     local output=$2
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${output}" == "${last_slab}" ]]; then
+            echo "Last transfered slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
 
     size=`stat -L -c "%s" ${PYR_DIR_SRC}/$input`
     if [ $? != 0 ] ; then echo "${PYR_DIR_SRC}/$input n'existe pas, on passe" ; return; fi
     if [ "$size" -le "$SLAB_LIMIT" ] ; then
         return
     fi
+
+    GetSwiftToken
     
-    TOKEN=$(curl -s -ik \
-        -H "Content-Type: application/json" \
-        -XPOST \
-        -d '
-    {   "auth": {
-            "scope": {
-                "project": {"id": "'$ROK4_KEYSTONE_PROJECTID'"}
-            },
-            "identity": {
-                "methods": ["password"],
-                "password": {
-                    "user": {
-                        "domain": {"id": "'$ROK4_KEYSTONE_DOMAINID'"},
-                        "password": "'$ROK4_SWIFT_PASSWD'",
-                        "name": "'$ROK4_SWIFT_USER'"
-                    }
-                }
-            }
-        }
-    }' $ROK4_SWIFT_AUTHURL | grep "X-Subject-Token" | cut -d":" -f2 | tr -cd '[:print:]')
+    resource="/${PYR_CONTAINER}/${output}"
 
-    resource="/${PYR_CONTAINER_DST}/${output}"
+    curl_options=""
+    if [[ ! -z $ROK4_SSL_NO_VERIFY ]]; then
+        curl_options="-k"
+    fi
 
-    curl -k -X PUT -T "${PYR_DIR_SRC}/$input"  -H "X-Auth-Token: ${TOKEN}"  ${ROK4_SWIFT_PUBLICURL}${resource}
+    curl $curl_options  --fail -X PUT -T "${PYR_DIR_SRC}/$input"  -H "${SWIFT_TOKEN}"  ${ROK4_SWIFT_PUBLICURL}${resource}
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 
+    echo "0/${output}" >> ${TMP_LIST_FILE}
+    if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
+}
+FUNCTION
+
+my $SWIFT_PUSH_TMP = <<'FUNCTION';
+
+PushSlab () {
+    local output=$1
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${output}" == "${last_slab}" ]]; then
+            echo "Last transfered slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
+    size=`stat -L -c "%s" ${TMP_DIR}/slab.tmp`
+    if [ $? != 0 ] ; then echo "${TMP_DIR}/slab.tmp n'existe pas, on passe" ; return; fi
+    if [ "$size" -le "$SLAB_LIMIT" ] ; then
+        return
+    fi
+
+    GetSwiftToken
+    
+    resource="/${PYR_CONTAINER}/${output}"
+
+    curl_options=""
+    if [[ ! -z $ROK4_SSL_NO_VERIFY ]]; then
+        curl_options="-k"
+    fi
+    curl $curl_options  --fail -X PUT -T "${TMP_DIR}/slab.tmp"  -H "${SWIFT_TOKEN}"  ${ROK4_SWIFT_PUBLICURL}${resource}
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 
     echo "0/${output}" >> ${TMP_LIST_FILE}
@@ -357,6 +393,8 @@ ProcessSlab () {
 
     PullSlab $input
     PushSlab $output
+
+    print_prog
 }
 FUNCTION
 
@@ -366,6 +404,8 @@ ProcessSlab () {
     local output=$2
 
     PushSlab $input $output
+
+    print_prog
 }
 FUNCTION
 
@@ -375,12 +415,42 @@ ProcessSlab () {
     local output=$2
 
     PullSlab $input $output
+
+    print_prog
 }
 FUNCTION
 
 ####################################################################################################
 #                                   Group: Export function                                         #
 ####################################################################################################
+
+my $WORKANDPROG = <<'WORKANDPROG';
+progression=-1
+progression_file="$0.prog"
+lines_count=$(wc -l $0 | cut -d' ' -f1)
+start_line=0
+
+print_prog () {
+    tmp=$(( (${BASH_LINENO[-2]} - $start_line) * 100 / (${lines_count} - $start_line) ))
+    if [[ "$tmp" != "$progression" ]]; then
+        progression=$tmp
+        echo "$tmp" >$progression_file
+    fi
+}
+
+work=1
+
+# Test d'existence de la liste temporaire
+if [[ -f "${TMP_LIST_FILE}" ]] ; then 
+    # La liste existe, ce qui suggère que le script a déjà commencé à tourner
+    # On prend la dernière ligne pour connaître la dernière dalle complètement traitée
+    
+    last_slab=$(tail -n 1 ${TMP_LIST_FILE} | sed "s#^0/##")
+    echo "Script ${SCRIPT_ID} recall, work from slab ${last_slab}"
+    work=0
+fi
+
+WORKANDPROG
 
 =begin nd
 Function: getScriptInitialization
@@ -395,51 +465,88 @@ sub getScriptInitialization {
     my $pyramidFrom = shift;
     my $pyramidTo = shift;
 
-    my $string = "SLAB_LIMIT=$SLABLIMIT\n";
-    $string .= "SECONDS=0\n";
+    my $string = $WORKANDPROG;
+
+    $string .= "SLAB_LIMIT=$SLABLIMIT\n";
 
     if ( $pyramidFrom->getStorageType() eq "CEPH" ) {
         $string .= sprintf "PYR_POOL_SRC=%s\n", $pyramidFrom->getDataPool();
 
         if ( $pyramidTo->getStorageType() eq "CEPH" ) {
-            $string .= sprintf "PYR_POOL_DST=%s\n", $pyramidTo->getDataPool();
+            $string .= sprintf "PYR_POOL=%s\n", $pyramidTo->getDataPool();
             $string .= $CEPH_PULL_TMP;
             $string .= $CEPH_PUSH_TMP;
             $string .= $PROCESS_PULL_PUSH;
+            $string .= $COMMON::Shell::CEPH_BACKUPLIST;
         }
         elsif ( $pyramidTo->getStorageType() eq "FILE" ) {
-            $string .= sprintf "PYR_DIR_DST=%s\n", $pyramidTo->getDataDir();
+            $string .= sprintf "PYR_DIR=%s\n", $pyramidTo->getDataDir();
             $string .= $CEPH_PULL;
             $string .= $PROCESS_PULL;
+            $string .= $COMMON::Shell::FILE_BACKUPLIST;
         } 
+        elsif ( $pyramidTo->getStorageType() eq "S3" ) {
+            $string .= sprintf "PYR_BUCKET=%s\n", $pyramidTo->getDataBucket();
+            $string .= $S3_PUSH;
+            $string .= $PROCESS_PUSH;
+            $string .= $COMMON::Shell::S3_BACKUPLIST;
+        }        
+        elsif ( $pyramidTo->getStorageType() eq "SWIFT" ) {
+            $string .= sprintf "ROK4_SWIFT_TOKEN_FILE=\${TMP_DIR}/token.txt\n";
+            $string .= sprintf "PYR_CONTAINER=%s\n", $pyramidTo->getDataContainer();
+            if (COMMON::ProxyStorage::isSwiftKeystoneAuthentication()) {
+                $string .= $COMMON::Shell::SWIFT_KEYSTONE_TOKEN_FUNCTION;
+            }
+            else {
+                $string .= $COMMON::Shell::SWIFT_NATIVE_TOKEN_FUNCTION;
+            }
+            $string .= $CEPH_PULL_TMP;
+            $string .= $SWIFT_PUSH_TMP;
+            $string .= $PROCESS_PULL_PUSH;
+            $string .= $COMMON::Shell::SWIFT_BACKUPLIST;
+        }
     }
     elsif ( $pyramidFrom->getStorageType() eq "FILE" ) {
         $string .= sprintf "PYR_DIR_SRC=%s\n", $pyramidFrom->getDataDir();
 
         if ( $pyramidTo->getStorageType() eq "CEPH" ) {
-            $string .= sprintf "PYR_POOL_DST=%s\n", $pyramidTo->getDataPool();
+            $string .= sprintf "PYR_POOL=%s\n", $pyramidTo->getDataPool();
             $string .= $CEPH_PUSH;
             $string .= $PROCESS_PUSH;
+            $string .= $COMMON::Shell::CEPH_BACKUPLIST;
         }
         elsif ( $pyramidTo->getStorageType() eq "FILE" ) {
-            $string .= sprintf "PYR_DIR_DST=%s\n", $pyramidTo->getDataDir();
+            $string .= sprintf "PYR_DIR=%s\n", $pyramidTo->getDataDir();
             $string .= $FILE_PUSH;
             $string .= $PROCESS_PUSH;
+            $string .= $COMMON::Shell::FILE_BACKUPLIST;
         } 
         elsif ( $pyramidTo->getStorageType() eq "S3" ) {
-            $string .= sprintf "PYR_BUCKET_DST=%s\n", $pyramidTo->getDataBucket();
+            $string .= sprintf "PYR_BUCKET=%s\n", $pyramidTo->getDataBucket();
             $string .= $S3_PUSH;
             $string .= $PROCESS_PUSH;
+            $string .= $COMMON::Shell::S3_BACKUPLIST;
         }        
         elsif ( $pyramidTo->getStorageType() eq "SWIFT" ) {
-            $string .= sprintf "PYR_CONTAINER_DST=%s\n", $pyramidTo->getDataContainer();
+            $string .= sprintf "ROK4_SWIFT_TOKEN_FILE=\${TMP_DIR}/token.txt\n";
+            $string .= sprintf "PYR_CONTAINER=%s\n", $pyramidTo->getDataContainer();
+            if (COMMON::ProxyStorage::isSwiftKeystoneAuthentication()) {
+                $string .= $COMMON::Shell::SWIFT_KEYSTONE_TOKEN_FUNCTION;
+            }
+            else {
+                $string .= $COMMON::Shell::SWIFT_NATIVE_TOKEN_FUNCTION;
+            }
             $string .= $SWIFT_PUSH;
             $string .= $PROCESS_PUSH;
+            $string .= $COMMON::Shell::SWIFT_BACKUPLIST;
         }
     }
 
     $string .= sprintf "LIST_FILE=\"%s\"\n", $pyramidTo->getListFile();
     $string .= "COMMON_TMP_DIR=\"$COMMONTEMPDIR\"\n";
+
+    $string .= "start_line=\$LINENO\n";
+    $string .= "\n";
 
     return $string;
 }
@@ -455,6 +562,12 @@ my $MAIN_SCRIPT = <<'MAINSCRIPT';
 # 0 -> SUCCÈS
 # 1 -> ÉCHEC
 
+###################### PARAMÈTRES ###############################
+frequency=60
+if [[ ! -z $1 ]]; then
+    frequency=$1
+fi
+
 #################################################################
 
 scripts_directory="__scripts_directory__"
@@ -469,9 +582,6 @@ SPLITS_END=()
 SPLITS_EXITCODE=()
 SPLITS_NAME=()
 SPLITS_STATUS=()
-UPLINE=$(tput cuu1)
-ERASELINE=$(tput el)
-TIPEX=""
 
 for (( i = 1; i <= __jobs_number__; i++ )); do
     SPLITS+=("${scripts_directory}/SCRIPT_${i}.sh")
@@ -479,10 +589,7 @@ for (( i = 1; i <= __jobs_number__; i++ )); do
     SPLITS_END+=("0")
     SPLITS_EXITCODE+=("0")
     SPLITS_STATUS+=("En cours")
-    TIPEX="${TIPEX}$UPLINE$ERASELINE"
 done
-
-TIPEX="${TIPEX}\c"
 
 for s in "${SPLITS[@]}"; do
     (bash $s >$s.log 2>&1) &
@@ -491,13 +598,14 @@ for s in "${SPLITS[@]}"; do
 done
 
 
-echo "  INFO Attente de la fin des splits PYR2PYR"
+echo "  INFO Attente de la fin des __jobs_number__ splits PYR2PYR"
 first_time="1"
 while [[ "0" = "0" ]]; do
     still_one="0"
     for (( i = 0; i < __jobs_number__; i++ )); do
         p=${SPLITS_PIDS[$i]}
         e=${SPLITS_END[$i]}
+        n=${SPLITS_NAME[$i]}
 
         if [[ "$e" = "1" ]]; then
             continue
@@ -512,31 +620,21 @@ while [[ "0" = "0" ]]; do
         if [[ "$?" = "0" ]]; then
             SPLITS_EXITCODE[$i]="0"
             SPLITS_STATUS[$i]="Succès"
+            echo "$n -> Succès"
         else
             SPLITS_EXITCODE[$i]=$?
             SPLITS_STATUS[$i]="Échec"
+            echo "$n -> Échec"
         fi
 
         SPLITS_END[$i]="1"
-    done
-
-    if [[ "$first_time" = "1" ]]; then
-        first_time=0
-    else
-        echo -e "$TIPEX"
-    fi
-
-    for (( i = 0; i < __jobs_number__; i++ )); do
-        n=${SPLITS_NAME[$i]}
-        s=${SPLITS_STATUS[$i]}
-        echo "$n -> $s"
     done
 
     if [[ "$still_one" = "0" ]]; then
         break
     fi
 
-    sleep 60
+    sleep $frequency
 done
 
 for (( i = 0; i < __jobs_number__; i++ )); do

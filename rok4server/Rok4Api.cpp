@@ -2,7 +2,7 @@
  * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -515,71 +515,3 @@ void rok4ReloadLogger() {
         acc->close();
     }
 }
-
-
-#if BUILD_OBJECT
-
-/**
-* \brief Connexion aux contexts contenus dans les contextBook du serveur
-*/
-
-int rok4ConnectObjectContext(Rok4Server* server) {
-
-    int error = 1;
-
-    ContextBook *book = server->getCephBook();
-
-    if (book) {
-        if (!book->connectAllContext()) {
-            return error;
-        }
-    }
-
-    book = server->getS3Book();
-
-    if (book) {
-
-        if (!book->connectAllContext()) {
-            return error;
-        }
-
-    }
-
-    book = server->getSwiftBook();
-
-    if (book != NULL) {
-        if (!book->connectAllContext()) {
-            return error;
-        }
-    }
-
-    return 0;
-
-}
-
-/**
-* \brief Deconnexion aux contexts contenus dans les contextBook du serveur
-*/
-
-void rok4DisconnectObjectContext(Rok4Server* server) {
-
-    ContextBook *book = server->getCephBook();
-
-    if (book) {
-        book->disconnectAllContext();
-    }
-
-    book = server->getSwiftBook();
-
-    if (book) {
-        book->disconnectAllContext();
-    }
-
-    book = server->getS3Book();
-
-    if (book) {
-        book->disconnectAllContext();
-    }
-}
-
-#endif

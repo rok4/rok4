@@ -1,51 +1,17 @@
-# Docker
+# Dockerisation du projet ROK4
 
-## Compilation
+Disponible sur [Docker Hub](https://hub.docker.com/u/rok4)
 
-Il faut lancer les commandes de build depuis le dossier racine du code.
+Dockerfiles et images de sortie :
+* `docker/rok4server/buster.Dockerfile` -> `rok4/rok4server:<VERSION>-buster`
+* `docker/rok4server/stretch.Dockerfile` -> `rok4/rok4server:<VERSION>-stretch`
+* `docker/rok4server/centos7.Dockerfile` -> `rok4/rok4server:<VERSION>-centos7`
+* `docker/rok4generation/buster.Dockerfile` -> `rok4/rok4generation:<VERSION>-buster`
 
-### Image debian Buster
-
-Nom de l'image de sortie : `rok4server-debian10`
-
-#### Sans proxy
-
+Utilisation du script `build.sh` :
 ```
-docker build \
-    -f docker/images/debian10.rok4server.dockerfile \
-    -t rok4server-debian10 \
-    .
+./build.sh [--rok4server] [--rok4generation] --os buster|stretch|centos7 [--proxy http://proxy.host:port]
 ```
 
-#### Avec proxy
-
-```
-docker build \
-    -f docker/images/debian10.rok4server.dockerfile \
-    -t rok4server-debian10 \
-    --build-arg http_proxy=http://<PROXY HOST>:<PROXY PORT> \
-    .
-```
-
-### Image centos 7
-
-Nom de l'image de sortie : `rok4server-centos7`
-
-#### Sans proxy
-
-```
-docker build \
-    -f docker/images/centos7.rok4server.dockerfile \
-    -t rok4server-centos7 \
-    .
-```
-
-#### Avec proxy
-
-```
-docker build \
-    -f docker/images/centos7.rok4server.dockerfile \
-    -t rok4server-centos7 \
-    --build-arg http_proxy=http://<PROXY HOST>:<PROXY PORT> \
-    .
-```
+[Utilisation de la partie serveur](./rok4server/README.md)
+[Utilisation de la partie outils](./rok4generation/README.md)

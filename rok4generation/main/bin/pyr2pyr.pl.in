@@ -2,7 +2,7 @@
 # Copyright © (2011) Institut national de l'information
 #                    géographique et forestière
 #
-# Géoportail SAV <geop_services@geoportail.fr>
+# Géoportail SAV <contact.geoservices@ign.fr>
 #
 # This software is a computer program whose purpose is to publish geographic
 # data using OGC WMS and WMTS protocol.
@@ -105,7 +105,9 @@ my %HANDLEDCONVERSION = (
     },
     "CEPH" => {
         "CEPH" => 1,
-        "FILE" => 1
+        "FILE" => 1,
+        "S3" => 1,
+        "SWIFT" => 1
     }
 );
 
@@ -362,8 +364,15 @@ sub doIt {
 
     ############################## LES COMMANDES SHELL
 
-    if (! PYR2PYR::Shell::setGlobals($this{params}->{process}->{job_number}, $this{params}->{process}->{path_temp}, $this{params}->{process}->{path_temp_common}, $this{params}->{process}->{path_shell}, $this{params}->{process}->{slab_limit})) {
-        ERROR ("Impossible d'initialiser la librairie des commandes Shell pour BE4");
+    if (! PYR2PYR::Shell::setGlobals(
+            $this{params}->{process}->{job_number},
+            $this{params}->{process}->{path_temp},
+            $this{params}->{process}->{path_temp_common},
+            $this{params}->{process}->{path_shell},
+            $this{params}->{process}->{slab_limit}
+        )
+    ) {
+        ERROR ("Impossible d'initialiser la librairie des commandes Shell pour PYR2PYR");
         return FALSE;
     }
     my $scriptInit = PYR2PYR::Shell::getScriptInitialization($pyramidFrom, $pyramidTo);
@@ -485,10 +494,14 @@ sub doIt {
             $row = $p[-1];
         }
 
-        my $output = $pyramidTo->getSlabPath($type, $level, $col, $row, FALSE);
+        if ($type ne "NODATA") {
+            my $output = $pyramidTo->getSlabPath($type, $level, $col, $row, FALSE);
 
-        $scripts[$scriptInd]->write("ProcessSlab $input $output\n");
-        $scriptInd = ($scriptInd + 1) % $this{params}->{process}->{job_number};
+            $scripts[$scriptInd]->write("ProcessSlab $input $output\n");
+            $scriptInd = ($scriptInd + 1) % $this{params}->{process}->{job_number};
+        } else {
+            INFO("NODATA tile read for retrocompatibility purposes only, but ignored.");
+        }
     }
 
     close(LIST);
@@ -545,97 +558,3 @@ END {}
 
 1;
 __END__
-
-=begin nd
-Section: Details
-
-Group: Command's options
-
-    --help - Display the link to the technic documentation.
-
-    --usage - Display the link to the technic documentation.
-
-    --version - Display the tool version.
-
-    --conf=path - Path to configuration file of the pyramid. This option is mandatory.
-
-Group: Write a configuration file
-
-A file configuration can be composed of sections and parameters following :
-
-    (start code)
-    [ section ]
-    parameter = value
-    ;comments
-    (end code)
-
-Group: PYR2PYR global configuration file
-
-Properties by section.
-
-Topic: logger
-
-    log_path - Directory path where to write log_file
-    log_file - Path to print too output (in addition to STDOUT). Log file path : *log_path/log_file*
-    log_level - Define importance level from which we print messages. From less to more important : DEBUG - INFO - WARN - ERROR - ALWAYS (WARN by default).
-
-Example:
-    (start code)
-    [ logger ]
-    log_path = /var/log
-    log_file = be4ceph_log_yyyy-mm-dd.txt
-    log_level = INFO
-    (end code)
-
-Topic: from
-
-    pyr_desc_file - Path to the pyramid's descriptor to convert
-    pyr_list_file - Path to the pyramid's list to convert. Only files in this list are processed
-    follow_links - Optionnal. If set to "false", only "real" files are transposed.
-
-Example:
-    (start code)
-    [ from ]
-    pyr_desc_file=/home/ign/DESC/BDORTHO.pyr
-    pyr_list_file=/home/ign/DESC/BDORTHO.list
-    (end code)
-
-Topic: to
-
-    pool_name - Pool (must already exist). If not, bucket_name or container_name mandatory.
-    bucket_name - Bucket (must already exist). If not, pool_name or container_name mandatory.
-    container_name - Container (must already exist). If not, pool_name or bucket_name mandatory.
-    pyr_name - Pyramid's name, used to prefix objects. Mandatory.
-    pyr_desc_path - Directory where new pyramid's descriptor and list are written. Mandatory.
-
-Example:
-    (start code)
-    [ to ]
-    pool_name=PYRAMIDS
-    pyr_name=MONDE12FEUILLES_JPG_PM_TILE
-    pyr_desc_path=/home/visiteur/PYR2PYR/
-    (end code)
-
-Topic: process
-
-    job_number - Level of parallelization for scripts. Mandatory.
-    path_temp - Scripts and temporary lists are written in this directory. Mandatory.
-    slab_limit - Size below which slab is not pushed. Optionnal.
-
-
-Example:
-    (start code)
-    [ process ]
-    path_temp = /home/ign/SCRIPTS
-    job_number = 16
-    (end code)
-
-Group: Externals tools
-
-Scripts' execution needs following tools:
-
-    - rados
-    - openssl
-    - curl
-    
-=cut

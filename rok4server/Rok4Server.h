@@ -2,7 +2,7 @@
  * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -63,10 +63,8 @@
 #include "ServerXML.h"
 #include "ServicesXML.h"
 #include "GetFeatureInfoEncoder.h"
-
-#if BUILD_OBJECT
 #include "ContextBook.h"
-#endif
+
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -86,14 +84,6 @@ private:
      * \~english \brief Threads liste
      */
     std::vector<pthread_t> threads;
-
-#if BUILD_OBJECT
-    /**
-     * \~french \brief Thread de reconnexion des contextes
-     * \~english \brief Contexts reconnection thread
-     */
-    pthread_t reco_thread;
-#endif
 
     /**
      * \~french \brief Connecteur sur le flux FCGI
@@ -159,21 +149,6 @@ private:
      * \return true if present
      */
     static void* thread_loop ( void* arg );
-
-
-#if BUILD_OBJECT
-    /**
-     * \~french
-     * \brief Boucle principale exécutée par le thread de reconnexion des contextes de lecture #reco_thread
-     * \param[in] arg pointeur vers l'instance de Rok4Server
-     * \return true si présent
-     * \~english
-     * \brief Main event loop executed by reconnection thread #reco_thread
-     * \param[in] arg pointer to the Rok4Server instance
-     * \return true if present
-     */
-    static void* thread_reconnection_loop ( void* arg );
-#endif
     
     /**
      * \~french
@@ -713,20 +688,10 @@ public:
      */
     std::vector<std::string>& getWmtsCapaFrag() ;
 
-#if BUILD_OBJECT
     /**
-     * \~french Retourne l'annuaire de contextes ceph
+     * \~french Retourne l'annuaire de contextes 
      */
-    ContextBook* getCephBook() ;
-    /**
-     * \~french Retourne l'annuaire de contextes s3
-     */
-    ContextBook* getS3Book() ;
-    /**
-     * \~french Retourne l'annuaire de contextes swift
-     */
-    ContextBook* getSwiftBook() ;
-#endif
+    ContextBook* getObjectBook() ;
 
     /**
      * \~french
@@ -806,21 +771,6 @@ public:
      * \brief to know if the server responde to WMS request
      */
     bool isWMSSupported();
-    /**
-     * \~french
-     * \brief Pour savoir si le server honore les requêtes WMTS
-     * \~english
-     * \brief to know if the server responde to WMTS request
-     */
-    void setProxy(Proxy pr);
-
-    /**
-     * \~french
-     * \brief Retourne le proxy par defaut
-     * \~english
-     * \brief Return default proxy
-     */
-    Proxy getProxy();
 
     /**
      * \brief Construction du serveur

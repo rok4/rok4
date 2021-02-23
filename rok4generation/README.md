@@ -41,6 +41,10 @@ La suite d'outils ROK4GENERATION permet de générer, mettre à jour, composer, 
 
 Quand un outil est dit parallélisable, c'est qu'il identifie le travail à faire, le partage équitablement et écrit les scripts Shell (nombre configurable). C'est alors l'exécution de ces scripts qui fait réellement le travail (calcul de dalles, copie de pyramide...).
 
+Lorsque l'on est dans ce cas parallélisable, il est possible que les scripts Shell sachent faire de la reprise sur erreur. Dans chaque dossier temporaire individuel, un fichier liste contient le travail déjà réalisé. Au lancement du script, si ce fichier liste existe déjà, il identifie la dernière dalle générée et ignorera toutes les instructions jusqu'à retomber sur cette dalle. On peut donc en cas d'erreur relancer le script sans paramétrage et reprendre où il en était à l'exécution précédente.
+
+De même, un fichier .prog à côté du script peut être mis à jour avec le pourcentage de progression (calculé à partir des lignes du script).
+
 ## Génération de pyramide raster
 
 ### La suite BE4
@@ -51,7 +55,7 @@ Les outils BE4 génèrent une pyramide raster à partir d'images géoréférenc�
 
 Stockages gérés : FICHIER, CEPH, S3, SWIFT
 
-Parallélisable.
+Parallélisable, reprise sur erreur, progression.
 
 Outils internes utilisés :
 * cache2work
@@ -83,7 +87,7 @@ Les outils JOINCACHE génèrent une pyramide raster à partir d'autres pyramide 
 
 Stockages gérés : FICHIER, CEPH, S3
 
-Parallélisable.
+Parallélisable, reprise sur erreur, progression.
 
 Outils internes utilisés :
 * cache2work
@@ -117,7 +121,7 @@ Les outils 4ALAMO génèrent une pyramide vecteur à partir d'une base de donné
 
 Stockages gérés : FICHIER, CEPH
 
-Parallélisable.
+Parallélisable, reprise sur erreur, progression.
 
 Outils internes utilisés :
 * pbf2cache
@@ -170,6 +174,8 @@ Le script `main.sh` permet de lancer proprement tous ces scripts sur la même ma
 
 Stockages gérés : FICHIER, CEPH, S3, SWIFT
 
+Parallélisable.
+
 Types de pyramides gérés : RASTER QTREE
 
 #### Commande
@@ -199,7 +205,7 @@ Conversions possibles :
 * FICHIER -> FICHIER, CEPH, S3, SWIFT
 * CEPH -> CEPH, FICHIER
 
-Parallélisable.
+Parallélisable, reprise sur erreur, progression.
 
 _Étape 1_
 ![PYR2PYR étape 1](../docs/images/ROK4GENERATION/pyr2pyr_part1.png)
@@ -235,6 +241,8 @@ Stockage géré : FICHIER
 Outil : `tms-toolbox.pl`
 
 Ce outil permet de réaliser de nombreuses conversion entre indices de dalles, de tuiles, requêtes getTile ou getMap, liste de fichiers, géométrie WKT... grâce au TMS utilisé (ne nécessite pas de pyramide).
+
+[Détails](./main/bin/tms-toolbox.md)
 
 
 # Outils de manipulation

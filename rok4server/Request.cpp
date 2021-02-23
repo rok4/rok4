@@ -2,7 +2,7 @@
  * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -710,13 +710,13 @@ void Request::determineServiceAndRequest() {
         std::string str_request = it->second;
         std::transform(str_request.begin(), str_request.end(), str_request.begin(), ::tolower);
         if (str_request == "getmap" || str_request == "map") {
-            if (service != ServiceType::SERVICE_UNKNOWN && service != ServiceType::WMS) {
-                // On a une requête getmap avec un service qui ne le gère pas
-                request = RequestType::REQUEST_UNKNOWN;
-            } else {
+            if (service == ServiceType::SERVICE_MISSING || service == ServiceType::WMS) {
                 // On confirme le service WMS (potentiellement non connu dans le cas 1.1.1)
                 service = ServiceType::WMS;
                 request = RequestType::GETMAP;
+            } else {
+                // On a une requête getmap avec un service qui ne le gère pas
+                request = RequestType::REQUEST_UNKNOWN;
             }
         }
         else if (str_request == "gettile") {

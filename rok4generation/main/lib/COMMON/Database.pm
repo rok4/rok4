@@ -1,7 +1,7 @@
 # Copyright © (2011) Institut national de l'information
 #                    géographique et forestière 
 # 
-# Géoportail SAV <geop_services@geoportail.fr>
+# Géoportail SAV <contact.geoservices@ign.fr>
 # 
 # This software is a computer program whose purpose is to publish geographic
 # data using OGC WMS and WMTS protocol.
@@ -924,7 +924,7 @@ Parameter (list):
     table_name - string - Table for which we want to know the geometry column
 
 Return (array)
-    Geometry coumn name and its type, undef if no geometry column for this table
+    Geometry column name and its type, undef if no geometry column for this table
 =cut
 sub get_geometry_column {
     my $this = shift;

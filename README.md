@@ -1,6 +1,6 @@
 ![Logo Rok4](./docs/images/rok4.png)
 
-ROK4 est un projet open-source (sous licence CeCILL-C) développé par les équipes du projet Géoportail de l’Institut National de l’Information Géographique et Forestière. Il contient un serveur (ROK4SERVER), écrit en C++, permettant la diffusion de données images géo-référencées, et une suite d'outils (ROK4GENERATION) permettant de préparer les données utilisées par le serveur.
+ROK4 est un projet open-source (sous licence CeCILL-C) développé par les équipes du projet Géoportail de l’Institut National de l’Information Géographique et Forestière. Il contient un serveur (ROK4SERVER), écrit en C++, permettant la diffusion de données raster ou vecteur, et une suite d'outils (ROK4GENERATION) permettant de préparer les données utilisées par le serveur.
 
 Le serveur implémente les standards ouverts de l’Open Geospatial Consortium (OGC) WMS 1.3.0 et WMTS 1.0.0, ainsi que le TMS (Tile Map Service). Il est utilisé pour l’intégralité de la diffusion des flux images et vecteur tuilé de la dernière version du Géoportail. Répondant aux besoins de diffusion image de l’IGN, ROK4SERVER vise deux objectifs principaux :
 * L’utilisation d’un cache de données raster unique permettant de servir indifféremment des flux WMS, WMTS et TMS
@@ -12,20 +12,17 @@ Le serveur implémente les standards ouverts de l’Open Geospatial Consortium (
 
 ROK4GENERATION est un ensemble de scripts de traitement permettant la préparation et la transformation de données géo-référencées vers le format de pyramide raster (potentiellement à la demande) et vecteur utilisé par ROK4.
 
-* 
 * http://www.ign.fr [@IGNFrance](https://twitter.com/IGNFrance)
 * http://www.geoportail.gouv.fr [@Geoportail](https://twitter.com/Geoportail)
 
-ROK4 Version : 3.6.10-DEVELOP
+ROK4 Version : 3.9.0-DEVELOP
 
-<!-- TOC depthFrom:1 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
-
-- [Fonctionnement général](#fonctionnement-gnral)
+- [Fonctionnement général](#fonctionnement-général)
+- [Variables d'environnement](#variables-denvironnement)
+	- [Pour le stockage](#pour-le-stockage)
+	- [Pour l'utilisation de CURL](#pour-lutilisation-de-curl)
 - [Compiler et installer le projet ROK4](#compiler-et-installer-le-projet-rok4)
 	- [L'environnement de compilation](#lenvironnement-de-compilation)
-	- [Les librairies](#les-librairies)
-		- [C++](#c)
-		- [Perl](#perl)
 	- [Les commandes externes](#les-commandes-externes)
 	- [La documentation](#la-documentation)
 	- [La compilation et l'installation](#la-compilation-et-linstallation)
@@ -33,13 +30,9 @@ ROK4 Version : 3.6.10-DEVELOP
 		- [Options de compilation](#options-de-compilation)
 			- [Gestion du stockage objet](#gestion-du-stockage-objet)
 			- [Utilisation de Kakadu](#utilisation-de-kakadu)
-			- [Expérimental](#exprimental)
+			- [Expérimental](#expérimental)
 		- [Exemple](#exemple)
 		- [Docker](#docker)
-
-<!-- /TOC -->
-
-
 
 # Fonctionnement général
 
@@ -57,86 +50,65 @@ Pour que cette pyramide soit diffusée par ROK4SERVER, on va créer un descripte
 * Pour avoir des précisions sur la partie [ROK4SERVER](rok4server/README.md), son déploiement et son utilisation
 * Pour avoir les spécifications d'une [PYRAMIDE](docs/Specification_pyramide_ROK4.md)
 
+# Variables d'environnement
+
+Au fonctionnement du serveur et des outils de génération, plusieurs variables d'environnement sont exploitées.
+
+## Pour le stockage
+
+Afin d'utiliser des stockages objets (CEPH, S3 ou SWIFT), le serveur et les outils vont accéder aux différents clusters grâce aux informations stockées dans les variables d'environnement.
+
+* CEPH
+    - `ROK4_CEPH_CONFFILE`
+    - `ROK4_CEPH_USERNAME`
+    - `ROK4_CEPH_CLUSTERNAME`
+* S3
+    - `ROK4_S3_URL`
+    - `ROK4_S3_KEY`
+    - `ROK4_S3_SECRETKEY`
+* SWIFT
+    - `ROK4_SWIFT_AUTHURL`
+    - `ROK4_SWIFT_USER`
+    - `ROK4_SWIFT_PASSWD`
+    - `ROK4_SWIFT_PUBLICURL`
+    - Si authentification via Swift
+        - `ROK4_SWIFT_ACCOUNT`
+    - Si connection via keystone (présence de `ROK4_KEYSTONE_DOMAINID`)
+        - `ROK4_KEYSTONE_DOMAINID`
+        - `ROK4_KEYSTONE_PROJECTID`
+
+Dans le cas du stockage SWIFT ou S3, la variable `ROK4_SSL_NO_VERIFY` est testée, et la vérification des certificats est désactivée si elle est présente.
+
+Dans le cas d'un stockage Swift, la variable d'environnement `ROK4_SWIFT_TOKEN_FILE` est testée. Si elle contient le chemin vers un fichier qui existe, on ne fait pas la demande de jeton d'authentification à la connexion et on mettra en en-tête des requêtes le contenu de ce fichier. Lors de la déconnexion du contexte Swift, on exportera le jeton dans ce fichier si celui-ci a changé.
+
+## Pour l'utilisation de CURL
+
+CURL est utilisé à la fois via l'utilitaire en ligne de commande (dans les scripts Shell de génération) et via la librairie dans les parties en C++ (génération ou serveur). Vont être prise en compte les variables d'environnement HTTP_PROXY, HTTPS_PROXY et NO_PROXY
+
+
+
 # Compiler et installer le projet ROK4
 
-La compilation du projet n’a pour le moment été validée que sous GNU/Linux (Debian 8 et 9 et Centos 7). Le projet utilise des pthreads (threads POSIX).
+La compilation du projet n’a pour le moment été validée que sous GNU/Linux (Debian 9 et 10 et Centos 7). Le projet utilise des pthreads (threads POSIX).
 
 ## L'environnement de compilation
 
-Pour la partie C++ :
-* Debian : `sudo apt install build-essential cmake`
-* Centos : `yum install make cmake gcc gcc-c++`
+Afin de connaître les paquets et librairies à installer, référez vous aux Dockerfiles :
 
-Pour la partie Perl :
-* Debian : `sudo apt install perl perl-base`
-* Centos : `yum install perl perl-CPAN`
+* Compilation du serveur ROK4 :
+	* [Debian 9](./docker/rok4server/stretch.Dockerfile)
+	* [Debian 10](./docker/rok4server/buster.Dockerfile)
+	* [Centos 7](./docker/rok4server/centos7.Dockerfile)
 
-## Les librairies
-
-### C++
-
-Pour centos, il est nécessaire d'ajouter un dépôt pour avoir accès aux paquets nécessaires : `yum install -y epel-release`
-
-Les paquets (`Debian`|`Centos`) à installer sont :
-* (`libfcgi-dev`|`fcgi-devel`) pour que le serveur ROK4 gère les requêtes
-* (`gettext`|`gettext`) pour l'internationalisation des logs
-* (`libtinyxml-dev`|`tinyxml-devel`) pour la lecture des configuration XML
-* (`zlib1g-dev`|`zlib-devel`) pour la compression ZIP
-* (`libtiff5-dev`|`libtiff-devel`) pour la lecture et écriture des images TIFF
-* (`libpng16-dev`|`libpng-devel`) pour la lecture des images PNG
-* (`libcurl4-openssl-dev`|`libcurl-devel`) et (`libssl-dev`|`openssl-devel`) pour l'envoi de requête HTTP(S)
-* (`libturbojpeg0-dev`|`turbojpeg-devel`) et (`libjpeg`|`libjpeg-turbo-devel`) pour la lecture des images JPEG
-* (`libopenjp2-7-dev`|`openjpeg2-devel`) pour la lecture des images JPEG2000 si Kakadu n'est pas utilisé
-* (`libc6-dev`|) pour les l'utilisation de thread POSIX
-
-Si la gestion du stockage objet est voulue :
-* (`librados-dev`|`librados2-devel`) pour la lecture et l'écriture d'objets sur un cluster Ceph
-
-### Perl
-
-Les librairies Perl sont installable via l'outil CPAN : `cpan Lib::Perl` (en sudo pour une installation système). Certaines des librairies utilisées sont installées avec le paquet `perl-base`
-
-* Config::INI::Reader
-* Data::Dumper
-* DBI
-* DBD::Pg
-* Devel::Size
-* Digest::SHA
-* ExtUtils::MakeMaker
-* File::Find::Rule
-* File::Map
-* FindBin
-* HTTP::Request
-* HTTP::Request::Common
-* HTTP::Response
-* JSON::Parse
-* Log::Log4perl
-* LWP::UserAgent
-* Math::BigFloat
-* Term::ProgressBar
-* Test::More
-* Tie::File
-* XML::LibXML
-
-On installe les librairies Perl GDAL via le paquet et la librairie pour le driver PostgreSQL :
-* Debian : `apt install libgdal-perl libpq-dev`
-* Centos : `yum install gdal-perl libpqxx-devel`
-
-Soit :
-```
-cpan Config::INI::Reader DBI DBD::Pg Data::Dumper Devel::Size Digest::SHA ExtUtils::MakeMaker File::Find::Rule File::Map FindBin Geo::GDAL Geo::OGR Geo::OSR HTTP::Request HTTP::Request::Common HTTP::Response JSON::Parse Log::Log4perl LWP::UserAgent Math::BigFloat Term::ProgressBar Test::More Tie::File XML::LibXML
-```
-
-Pour savoir où sont cherchées les librairies, exécuter `env -i perl -V`.
-
-Pour vérifier que toutes les librairies nécessaires sont installées, exécuter le script `perl rok4generation/main/verify-dependencies.pl`.
+* Compilation des outils de génération ROK4 :
+	* [Debian 10](./docker/rok4generation/buster.Dockerfile)
 
 ## Les commandes externes
 
 Les outils suivant sont nécessaires aux outils de génération :
 * wget (be4)
 * ogr2ogr (4alamo)
-* tippecanoe (4alamo)
+* tippecanoe (4alamo) : https://github.com/mapbox/tippecanoe.git
 
 ## La documentation
 
@@ -179,13 +151,13 @@ make [install|package]`
 
 #### Gestion du stockage objet
 
-`BUILD_OBJECT (BOOL)` : Il est possible de stocker les pyramides d'images dans des systèmes de stockage objet. Sont gérés CEPH, S3 et SWIFT. Cela implique d'avoir préalablement installé la librairie librados. Ne pas mettre TRUE mais `1` pour que ce soit bien interprété lors de la compilation dans le code. Valeur par défaut : `0`   
+`BUILD_OBJECT (BOOL)` : Il est possible de stocker les pyramides d'images dans des systèmes de stockage objet. Sont gérés CEPH, S3 et SWIFT. Cela implique d'avoir préalablement installé la librairie librados. Ne pas mettre TRUE mais `1` pour que ce soit bien interprété lors de la compilation dans le code. Valeur par défaut : `0`
 
 #### Utilisation de Kakadu
 
 Kakadu est une librairie propriétaire de manipulation d'images JPEG2000. Par défaut c'est OpenJpeg, libre, qui est utilisé.
 
-`KDU_USE (BOOL)` : Active l'utilisation de Kakadu pour la lecture du JPEG2000. Ne pas mettre TRUE mais `1` pour que ce soit bien interprété lors de la compilation dans le code. Valeur par défaut : `0`   
+`KDU_USE (BOOL)` : Active l'utilisation de Kakadu pour la lecture du JPEG2000. Ne pas mettre TRUE mais `1` pour que ce soit bien interprété lors de la compilation dans le code. Valeur par défaut : `0`
 
 `KDU_LIBRARY_PATH (STRING)` : Si kakadu est utilisé, il est possible de fournir le chemin d'un dossier où chercher la librairie (les fichiers libkdu.a et libkdu_aux.a). Les headers sont embarqués dans le projet ROK4 . Valeur par défaut : `/usr/kakadu-6.4`
 
@@ -213,4 +185,4 @@ sudo make install
 
 ### Docker
 
-Le projet propose les Dockerfile permettant la compilation et l'utilisation de ROK4SERVER au sein d'un conteneur. Des configurations pour docker-compose permettent de télécharger des jeux de données conteneurisés et de tester le serveur. Tous les détails sont dans [ici](docker/README.md).
+Le projet propose les Dockerfile permettant la compilation et l'utilisation du serveur et des outils de génération au sein d'un conteneur. Des configurations pour docker-compose permettent de télécharger des jeux de données conteneurisés et de tester le serveur. Tous les détails sont [ici](docker/README.md).

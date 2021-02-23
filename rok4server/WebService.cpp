@@ -2,7 +2,7 @@
  * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -47,18 +47,16 @@
 #include "EmptyImage.h"
 #include "CompoundImage.h"
 #include "LibpngImage.h"
+#include "CurlPool.h"
 
-
-WebService::WebService(std::string url, std::string proxy="", std::string noProxy="", int retry=DEFAULT_RETRY, int interval=DEFAULT_INTERVAL,
-    int timeout=DEFAULT_TIMEOUT):Source(WEBSERVICE), url (url),proxy (proxy),retry (retry), interval (interval), timeout (timeout), noProxy (noProxy){
+WebService::WebService(std::string url, int retry=DEFAULT_RETRY, int interval=DEFAULT_INTERVAL,
+    int timeout=DEFAULT_TIMEOUT):Source(WEBSERVICE), url (url),retry (retry), interval (interval), timeout (timeout){
     responseType = "";
 }
 
 WebService::WebService(WebService* obj) : Source(WEBSERVICE) {
 
     url = obj->url;
-    proxy = obj->proxy;
-    noProxy = obj->noProxy;
     timeout = obj->timeout;
     retry = obj->retry;
     interval = obj->interval;
@@ -78,7 +76,7 @@ WebService::~WebService() {
 RawDataSource * WebService::performRequest(std::string request) {
 
     //----variables
-    CURL *curl;
+    CURL* curl = CurlPool::getCurlEnv();
     CURLcode res, resC, resT;
     long responseCode = 0;
     char* rpType;
@@ -93,121 +91,109 @@ RawDataSource * WebService::performRequest(std::string request) {
 
 
 
-        //----Perform request
-        while (nbPerformed <= retry) {
+    //----Perform request
+    while (nbPerformed <= retry) {
 
-            nbPerformed++;
-            errors = false;
+        nbPerformed++;
+        errors = false;
 
-            LOGGER_DEBUG("Initialization of Curl Handle");
-            //it is one handle - just one per thread - that is a whole theory...
-            curl = curl_easy_init();
-            LOGGER_DEBUG("Initialization of Chunk structure");
-            chunk.memory = (uint8_t*)malloc(1);  /* will be grown as needed by the realloc above */
-            chunk.size = 0;    /* no data at this point */
+        LOGGER_DEBUG("Initialization of Curl Handle");
+        //it is one handle - just one per thread - that is a whole theory...
+        LOGGER_DEBUG("Initialization of Chunk structure");
+        chunk.memory = (uint8_t*)malloc(1);  /* will be grown as needed by the realloc above */
+        chunk.size = 0;    /* no data at this point */
 
-            if(curl) {
+        if(curl) {
 
-                //----Set options
-                LOGGER_DEBUG("Setting options of Curl");
-                curl_easy_setopt(curl, CURLOPT_URL, request.c_str());
-                /* example.com is redirected, so we tell libcurl to follow redirection */
-                curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-                /* Switch on full protocol/debug output while testing, set to 0L to disable */
-                curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
-                /* disable progress meter, set to 0L to enable and disable debug output */
-                curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
-                curl_easy_setopt(curl, CURLOPT_HEADER, 0L);
-                curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
-                /* time to connect - not to receive answer */
-                curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, long(timeout));
-		curl_easy_setopt(curl, CURLOPT_TIMEOUT, long(timeout));
-                curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "identity");
-		curl_easy_setopt(curl, CURLOPT_USERAGENT, ROK4_INFO);
-                if (proxy != "") {
-                    curl_easy_setopt(curl, CURLOPT_PROXY, proxy.c_str());
-                }
-                if (noProxy != "") {
-                    curl_easy_setopt(curl, CURLOPT_NOPROXY, noProxy.c_str());
-                }
-                if (userAgent != "") {
-                    curl_easy_setopt(curl, CURLOPT_USERAGENT, userAgent.c_str());
-                }
-                /* send all data to this function  */
-                curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteInMemoryCallback);
-                /* we pass our 'chunk' struct to the callback function */
-                curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
-                //----
+            //----Set options
+            LOGGER_DEBUG("Setting options of Curl");
+            curl_easy_setopt(curl, CURLOPT_URL, request.c_str());
+            /* example.com is redirected, so we tell libcurl to follow redirection */
+            curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+            /* Switch on full protocol/debug output while testing, set to 0L to disable */
+            curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
+            /* disable progress meter, set to 0L to enable and disable debug output */
+            curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
+            curl_easy_setopt(curl, CURLOPT_HEADER, 0L);
+            curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+            /* time to connect - not to receive answer */
+            curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, long(timeout));
+            curl_easy_setopt(curl, CURLOPT_TIMEOUT, long(timeout));
+            curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "identity");
+            curl_easy_setopt(curl, CURLOPT_USERAGENT, ROK4_INFO);
+            if (userAgent != "") {
+                curl_easy_setopt(curl, CURLOPT_USERAGENT, userAgent.c_str());
+            }
+            /* send all data to this function  */
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteInMemoryCallback);
+            /* we pass our 'chunk' struct to the callback function */
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
+            //----
 
-                LOGGER_DEBUG("Perform the request => (" << nbPerformed << "/" << retry+1 << ") time");
-                /* Perform the request, res will get the return code */
-                res = curl_easy_perform(curl);
+            LOGGER_DEBUG("Perform the request => (" << nbPerformed << "/" << retry+1 << ") time");
+            /* Perform the request, res will get the return code */
+            res = curl_easy_perform(curl);
 
-                LOGGER_DEBUG("Checking for errors");
-                /* Check for errors */
-                if(res == CURLE_OK) {
+            LOGGER_DEBUG("Checking for errors");
+            /* Check for errors */
+            if(res == CURLE_OK) {
 
-                    resC = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &responseCode);
-                    resT = curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &rpType);
-                    if ((resC == CURLE_OK) && responseCode) {
+                resC = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &responseCode);
+                resT = curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &rpType);
+                if ((resC == CURLE_OK) && responseCode) {
 
-                        if (responseCode != 200) {
-                            LOGGER_ERROR("The request returned a " << responseCode << " code");
-                            errors = true;
-                        }
-
-                    } else {
-                        LOGGER_ERROR("curl_easy_getinfo() on response code failed: " << curl_easy_strerror(resC));
+                    if (responseCode != 200) {
+                        LOGGER_ERROR("The request returned a " << responseCode << " code");
                         errors = true;
-                    }
-
-                    if ((resT == CURLE_OK) && rpType) {
-                        std::string rType(rpType);
-                        fType = rType;
-                        if (errors || (this->responseType != "" && this->responseType != rType )) {
-                            LOGGER_ERROR("The request returned with a " << rpType << " content type");
-                            std::string text = "text/";
-                            std::string application = "application/";
-
-                            if (rType.find(text) != std::string::npos || rType.find(application) != std::string::npos) {
-                                LOGGER_ERROR("Content of the answer: " << chunk.memory);
-                            } else {
-                                LOGGER_ERROR("Impossible to read the answer...");
-                            }
-                            errors = true;
-                        }
-                    } else {
-                        LOGGER_ERROR("curl_easy_getinfo() on response type failed: " << curl_easy_strerror(resT));
-                        errors = true;
-                    }
-
-                    /* always cleanup */
-                    curl_easy_cleanup(curl);
-
-                    if (!errors) {
-                        break;
                     }
 
                 } else {
-                    LOGGER_ERROR("curl_easy_perform() failed: " << curl_easy_strerror(res));
+                    LOGGER_ERROR("curl_easy_getinfo() on response code failed: " << curl_easy_strerror(resC));
                     errors = true;
                 }
 
+                if ((resT == CURLE_OK) && rpType) {
+                    std::string rType(rpType);
+                    fType = rType;
+                    if (errors || (this->responseType != "" && this->responseType != rType )) {
+                        LOGGER_ERROR("The request returned with a " << rpType << " content type");
+                        std::string text = "text/";
+                        std::string application = "application/";
 
+                        if (rType.find(text) != std::string::npos || rType.find(application) != std::string::npos) {
+                            LOGGER_ERROR("Content of the answer: " << chunk.memory);
+                        } else {
+                            LOGGER_ERROR("Impossible to read the answer...");
+                        }
+                        errors = true;
+                    }
+                } else {
+                    LOGGER_ERROR("curl_easy_getinfo() on response type failed: " << curl_easy_strerror(resT));
+                    errors = true;
+                }
 
-                //wait before retry - but not the last time
-                if (nbPerformed < retry+1) {
-                    sleep(interval);
-                    free(chunk.memory);
+                if (!errors) {
+                    break;
                 }
 
             } else {
-              LOGGER_ERROR("Impossible d'initialiser Curl");
-              errors = true;
+                LOGGER_ERROR("curl_easy_perform() failed: " << curl_easy_strerror(res));
+                errors = true;
             }
 
+            //wait before retry - but not the last time
+            if (nbPerformed < retry+1) {
+                sleep(interval);
+                free(chunk.memory);
+            }
+
+        } else {
+          LOGGER_ERROR("Impossible d'initialiser Curl");
+          errors = true;
         }
-        //----
+
+    }
+    //----
 
     /* Convert chunk into a DataSource readable by rok4 */
     if (!errors) {

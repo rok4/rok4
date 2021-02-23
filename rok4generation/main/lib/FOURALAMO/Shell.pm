@@ -1,7 +1,7 @@
 # Copyright © (2011) Institut national de l'information
 #                    géographique et forestière 
 # 
-# Géoportail SAV <geop_services@geoportail.fr>
+# Géoportail SAV <contact.geoservices@ign.fr>
 # 
 # This software is a computer program whose purpose is to publish geographic
 # data using OGC WMS and WMTS protocol.
@@ -149,6 +149,10 @@ MakeJson () {
     local sql=$5
     local output=$6
 
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
+
     ogr2ogr -s_srs $srcsrs -f "GeoJSON" ${OGR2OGR_OPTIONS} -clipsrc $bbox_ext -spat $bbox -sql "$sql" ${TMP_DIR}/jsons/${output}.json PG:"$dburl"
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi     
 }
@@ -167,6 +171,10 @@ mkdir -p ${TMP_DIR}/pbfs/
 MakeTiles () {
     local top_level=$1
     local bottom_level=$2
+
+    if [[ "${work}" == "0" ]]; then
+        return
+    fi
 
     rm -r ${TMP_DIR}/pbfs/*
 
@@ -192,36 +200,50 @@ FUNCTION
 use constant PBF2CACHE_W => 1;
 
 
-my $CEPH_P2CFUNCTION = <<'P2CFUNCTION';
-BackupListFile () {
-    local objectName=`basename ${LIST_FILE}`
-    rados -p ${PYR_POOL} put ${objectName} ${LIST_FILE}
-}
-
+my $CEPH_STORAGE_FUNCTIONS = <<'P2CFUNCTION';
 
 PushSlab () {
     local level=$1
     local ulcol=$2
     local ulrow=$3
     local imgName=$4
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${imgName}" == "${last_slab}" ]]; then
+            echo "Last generated image slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
 
     pbf2cache ${PBF2CACHE_OPTIONS} -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow -pool ${PYR_POOL} $imgName
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     echo "0/$imgName" >> ${TMP_LIST_FILE}
+
+    print_prog
 }
 P2CFUNCTION
 
 
-my $FILE_P2CFUNCTION = <<'P2CFUNCTION';
-BackupListFile () {
-    cp ${LIST_FILE} ${PYR_DIR}/
-}
+my $FILE_STORAGE_FUNCTIONS = <<'P2CFUNCTION';
 
 PushSlab () {
     local level=$1
     local ulcol=$2
     local ulrow=$3
     local imgName=$4
+
+    if [[ "${work}" = "0" ]]; then
+        # On regarde si l'image à pousser est la dernière traitée lors d'une exécution précédente
+        if [[ "${imgName}" == "${last_slab}" ]]; then
+            echo "Last generated image slab found, now we work"
+            work=1
+        fi
+
+        return
+    fi
 
     local dir=`dirname ${PYR_DIR}/$imgName`
     if [ ! -d $dir ] ; then mkdir -p $dir ; fi
@@ -229,6 +251,8 @@ PushSlab () {
     pbf2cache ${PBF2CACHE_OPTIONS} -r ${TMP_DIR}/pbfs/${level} -ultile $ulcol $ulrow ${PYR_DIR}/$imgName
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
     echo "0/$imgName" >> ${TMP_LIST_FILE}
+
+    print_prog
 }
 P2CFUNCTION
 
@@ -242,6 +266,12 @@ my $MAIN_SCRIPT = <<'MAINSCRIPT';
 ################### CODES DE RETOUR #############################
 # 0 -> SUCCÈS
 # 1 -> ÉCHEC
+
+###################### PARAMÈTRES ###############################
+frequency=60
+if [[ ! -z $1 ]]; then
+    frequency=$1
+fi
 
 #################################################################
 
@@ -257,9 +287,6 @@ SPLITS_END=()
 SPLITS_EXITCODE=()
 SPLITS_NAME=()
 SPLITS_STATUS=()
-UPLINE=$(tput cuu1)
-ERASELINE=$(tput el)
-TIPEX=""
 
 for (( i = 1; i <= __jobs_number__; i++ )); do
     SPLITS+=("${scripts_directory}/SCRIPT_${i}.sh")
@@ -267,10 +294,7 @@ for (( i = 1; i <= __jobs_number__; i++ )); do
     SPLITS_END+=("0")
     SPLITS_EXITCODE+=("0")
     SPLITS_STATUS+=("En cours")
-    TIPEX="${TIPEX}$UPLINE$ERASELINE"
 done
-
-TIPEX="${TIPEX}\c"
 
 for s in "${SPLITS[@]}"; do
     (bash $s >$s.log 2>&1) &
@@ -278,14 +302,14 @@ for s in "${SPLITS[@]}"; do
     SPLITS_PIDS+=("$split_pid")
 done
 
-
-echo "  INFO Attente de la fin des splits 4ALAMO"
+echo "  INFO Attente de la fin des __jobs_number__ splits 4ALAMO"
 first_time="1"
 while [[ "0" = "0" ]]; do
     still_one="0"
     for (( i = 0; i < __jobs_number__; i++ )); do
         p=${SPLITS_PIDS[$i]}
         e=${SPLITS_END[$i]}
+        n=${SPLITS_NAME[$i]}
 
         if [[ "$e" = "1" ]]; then
             continue
@@ -300,31 +324,21 @@ while [[ "0" = "0" ]]; do
         if [[ "$?" = "0" ]]; then
             SPLITS_EXITCODE[$i]="0"
             SPLITS_STATUS[$i]="Succès"
+            echo "$n -> Succès"
         else
             SPLITS_EXITCODE[$i]=$?
             SPLITS_STATUS[$i]="Échec"
+            echo "$n -> Échec"
         fi
 
         SPLITS_END[$i]="1"
-    done
-
-    if [[ "$first_time" = "1" ]]; then
-        first_time=0
-    else
-        echo -e "$TIPEX"
-    fi
-
-    for (( i = 0; i < __jobs_number__; i++ )); do
-        n=${SPLITS_NAME[$i]}
-        s=${SPLITS_STATUS[$i]}
-        echo "$n -> $s"
     done
 
     if [[ "$still_one" = "0" ]]; then
         break
     fi
 
-    sleep 60
+    sleep $frequency
 done
 
 for (( i = 0; i < __jobs_number__; i++ )); do
@@ -368,6 +382,34 @@ sub getMainScript {
 #                                   Group: Export function                                         #
 ####################################################################################################
 
+my $WORKANDPROG = <<'WORKANDPROG';
+progression=-1
+progression_file="$0.prog"
+lines_count=$(wc -l $0 | cut -d' ' -f1)
+start_line=0
+
+print_prog () {
+    tmp=$(( (${BASH_LINENO[-2]} - $start_line) * 100 / (${lines_count} - $start_line) ))
+    if [[ "$tmp" != "$progression" ]]; then
+        progression=$tmp
+        echo "$tmp" >$progression_file
+    fi
+}
+
+work=1
+
+# Test d'existence de la liste temporaire
+if [[ -f "${TMP_LIST_FILE}" ]] ; then 
+    # La liste existe, ce qui suggère que le script a déjà commencé à tourner
+    # On prend la dernière ligne pour connaître la dernière dalle complètement traitée
+    
+    last_slab=$(tail -n 1 ${TMP_LIST_FILE} | sed "s#^0/##")
+    echo "Script ${SCRIPT_ID} recall, work from slab ${last_slab}"
+    work=0
+fi
+
+WORKANDPROG
+
 =begin nd
 Function: getScriptInitialization
 
@@ -380,8 +422,9 @@ Returns:
 sub getScriptInitialization {
     my $pyramid = shift;
 
+    my $string = $WORKANDPROG;
 
-    my $string = sprintf "LIST_FILE=\"%s\"\n", $pyramid->getListFile();
+    $string .= sprintf "LIST_FILE=\"%s\"\n", $pyramid->getListFile();
     $string .= "COMMON_TMP_DIR=\"$COMMONTEMPDIR\"\n";
 
     $string .= sprintf "OGR2OGR_OPTIONS=\"-a_srs %s -t_srs %s\"\n", $pyramid->getTileMatrixSet()->getSRS(), $pyramid->getTileMatrixSet()->getSRS();
@@ -392,16 +435,21 @@ sub getScriptInitialization {
 
     if ($pyramid->getStorageType() eq "FILE") {
         $string .= sprintf "PYR_DIR=%s\n", $pyramid->getDataDir();
-        $string .= $FILE_P2CFUNCTION;
+        $string .= $FILE_STORAGE_FUNCTIONS;
+        $string .= $COMMON::Shell::FILE_BACKUPLIST;
     }
     elsif ($pyramid->getStorageType() eq "CEPH") {
         $string .= sprintf "PYR_POOL=%s\n", $pyramid->getDataPool();
-        $string .= $CEPH_P2CFUNCTION;
+        $string .= $CEPH_STORAGE_FUNCTIONS;
+        $string .= $COMMON::Shell::CEPH_BACKUPLIST;
     }
 
     $string .= $MAKETILES;
     $string .= $MAKEJSON;
 
+    $string .= "start_line=\$LINENO\n";
+    $string .= "\n";
+    
     return $string;
 }
   
