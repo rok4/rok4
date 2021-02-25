@@ -56,6 +56,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <fstream>
 #include "Format.h"
 #include "FileImage.h"
 #include "Image.h"
@@ -164,7 +165,7 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeImage ( Image* pIn ) {
-        LOGGER_ERROR ( "Cannot write (Z)BIL image" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot write (Z)BIL image" ;
         return -1;
     }
 
@@ -176,7 +177,7 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeImage ( uint8_t* buffer ) {
-        LOGGER_ERROR ( "Cannot write (Z)BIL image" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot write (Z)BIL image" ;
         return -1;
     }
     
@@ -188,7 +189,7 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeImage ( uint16_t* buffer ) {
-        LOGGER_ERROR ( "Cannot write (Z)BIL image" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot write (Z)BIL image" ;
         return -1;
     }
 
@@ -200,7 +201,7 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeImage ( float* buffer)  {
-        LOGGER_ERROR ( "Cannot write (Z)BIL image" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot write (Z)BIL image" ;
         return -1;
     }
 
@@ -213,7 +214,7 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeLine ( uint8_t* buffer, int line ) {
-        LOGGER_ERROR ( "Cannot write (Z)BIL image" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot write (Z)BIL image" ;
         return -1;
     }
     
@@ -226,7 +227,7 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeLine ( uint16_t* buffer, int line) {
-        LOGGER_ERROR ( "Cannot write (Z)BIL image" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot write (Z)BIL image" ;
         return -1;
     }
 
@@ -239,7 +240,7 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeLine ( float* buffer, int line) {
-        LOGGER_ERROR ( "Cannot write (Z)BIL image" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot write (Z)BIL image" ;
         return -1;
     }
 
@@ -263,8 +264,8 @@ public:
      * \brief (Z)BIL image description output
      */
     void print() {
-        LOGGER_INFO ( "" );
-        LOGGER_INFO ( "---------- BilzImage ------------" );
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
+        BOOST_LOG_TRIVIAL(info) <<  "---------- BilzImage ------------" ;
         FileImage::print();
     }
 };
@@ -340,7 +341,7 @@ static bool readHeaderFile(char* imagefilename, int* width, int* height, int* sa
         memcpy(headerfilename+basenamelength, ".HDR", 4);
         header.open ( headerfilename );
         if ( !header ) {
-            LOGGER_ERROR ( "No found header, with extension .hdr or .HDR" );
+            BOOST_LOG_TRIVIAL(error) <<  "No found header, with extension .hdr or .HDR" ;
             return false;
         }
     }
@@ -386,10 +387,10 @@ static bool uncompressedData(uint8_t* compresseddata, int compresseddatasize, ui
     zstream.data_type = Z_BINARY;
     int zinit;
     if ( ( zinit=inflateInit ( &zstream ) ) != Z_OK ) {
-        if ( zinit==Z_MEM_ERROR ) LOGGER_ERROR ( "Decompression DEFLATE : pas assez de memoire" );
-        else if ( zinit==Z_VERSION_ERROR ) LOGGER_ERROR ( "Decompression DEFLATE : versions de zlib incompatibles" );
-        else if ( zinit==Z_STREAM_ERROR ) LOGGER_ERROR ( "Decompression DEFLATE : parametres invalides" );
-        else LOGGER_ERROR ( "Decompression DEFLATE : echec" );
+        if ( zinit==Z_MEM_ERROR ) BOOST_LOG_TRIVIAL(error) <<  "Decompression DEFLATE : pas assez de memoire" ;
+        else if ( zinit==Z_VERSION_ERROR ) BOOST_LOG_TRIVIAL(error) <<  "Decompression DEFLATE : versions de zlib incompatibles" ;
+        else if ( zinit==Z_STREAM_ERROR ) BOOST_LOG_TRIVIAL(error) <<  "Decompression DEFLATE : parametres invalides" ;
+        else BOOST_LOG_TRIVIAL(error) <<  "Decompression DEFLATE : echec" ;
         return false;
     }
 
@@ -402,23 +403,23 @@ static bool uncompressedData(uint8_t* compresseddata, int compresseddatasize, ui
         if ( int err = inflate ( &zstream, Z_SYNC_FLUSH ) ) {
             if ( err == Z_STREAM_END && zstream.avail_in == 0 ) break; // fin du fichier OK.
             if ( zstream.avail_out == 0 ) {
-                LOGGER_ERROR ( "Decompression DEFLATE : le buffer de sortie ne devrait pas être trop petit");
+                BOOST_LOG_TRIVIAL(error) <<  "Decompression DEFLATE : le buffer de sortie ne devrait pas être trop petit";
                 return false;
             }
-            LOGGER_ERROR ( "Decompression DEFLATE : probleme deflate decompression " << err );
+            BOOST_LOG_TRIVIAL(error) <<  "Decompression DEFLATE : probleme deflate decompression " << err ;
             return false;
         }
     }
 
     // Destruction du flux
     if ( inflateEnd ( &zstream ) != Z_OK ) {
-        LOGGER_ERROR ( "Decompression DEFLATE : probleme de liberation du flux" );
+        BOOST_LOG_TRIVIAL(error) <<  "Decompression DEFLATE : probleme de liberation du flux" ;
         return false;
     }
 
     if (zstream.avail_out != 0) {
-        LOGGER_ERROR ( "Decompression DEFLATE : la taille des données décompressée n'est pas celle attendue" );
-        LOGGER_ERROR ( "Il manque " << zstream.avail_out << "octets" );
+        BOOST_LOG_TRIVIAL(error) <<  "Decompression DEFLATE : la taille des données décompressée n'est pas celle attendue" ;
+        BOOST_LOG_TRIVIAL(error) <<  "Il manque " << zstream.avail_out << "octets" ;
         return false;
     }
 

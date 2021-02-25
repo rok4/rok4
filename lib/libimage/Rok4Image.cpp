@@ -55,7 +55,7 @@
 #include "pkbEncoder.h"
 #include "StoreDataSource.h"
 #include "Decoder.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Utils.h"
 #include "Data.h"
 #include <fcntl.h>
@@ -246,14 +246,14 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( std::string name, BoundingB
     size_t tmpSize;
     const uint8_t* hdr = sds->getData(tmpSize);
     if ( hdr == NULL ) {
-        LOGGER_ERROR ( "Cannot read header of Rok4Image " << name );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot read header of Rok4Image " << name ;
         return NULL;
     }
     if ( tmpSize < ROK4_IMAGE_HEADER_SIZE ) {
 
         // S'il s'agit potentiellement d'un objet lien, on verifie d'abord que la signature de ce type d'objet est bien presente dans le header
         if ( strncmp((char*) hdr, ROK4_SYMLINK_SIGNATURE, ROK4_SYMLINK_SIGNATURE_SIZE) != 0 ) {
-            LOGGER_ERROR ( "Erreur lors de la lecture du header, l'objet " << name << " ne correspond pas à un objet lien " );
+            BOOST_LOG_TRIVIAL(error) <<  "Erreur lors de la lecture du header, l'objet " << name << " ne correspond pas à un objet lien " ;
             delete[] hdr;
             return NULL;
         }
@@ -266,18 +266,18 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( std::string name, BoundingB
         name = std::string (tmpName);
         delete sds;
 
-        LOGGER_DEBUG ( "Dalle symbolique détectée : " << originalName << " référence une autre dalle symbolique " << name );
+        BOOST_LOG_TRIVIAL(debug) <<  "Dalle symbolique détectée : " << originalName << " référence une autre dalle symbolique " << name ;
 
         sds = new StoreDataSource(name, 0, ROK4_IMAGE_HEADER_SIZE, "", c);
         hdr = sds->getData(tmpSize);
 
         if ( hdr == NULL) {
-            LOGGER_ERROR ( "Erreur lors de la lecture du header et de l'index dans l'objet/fichier " << name );
+            BOOST_LOG_TRIVIAL(error) <<  "Erreur lors de la lecture du header et de l'index dans l'objet/fichier " << name ;
             delete sds;
             return NULL;
         }
         if ( tmpSize < ROK4_IMAGE_HEADER_SIZE ) {
-            LOGGER_ERROR ( "Erreur lors de la lecture : une dalle symbolique " << originalName << " référence une autre dalle symbolique " << name );
+            BOOST_LOG_TRIVIAL(error) <<  "Erreur lors de la lecture : une dalle symbolique " << originalName << " référence une autre dalle symbolique " << name ;
             delete sds;
             return NULL;
         }
@@ -329,8 +329,8 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( std::string name, BoundingB
         p = ((uint8_t*) hdr)+146;
         sf = *((uint32_t*) p);        
     } else {
-        LOGGER_ERROR ( "Inconsistent TIFF tag " << tagEs );
-        LOGGER_ERROR ( "Unable to read sample format or extra samples for file " << name );
+        BOOST_LOG_TRIVIAL(error) <<  "Inconsistent TIFF tag " << tagEs ;
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to read sample format or extra samples for file " << name ;
         return NULL;
     }
     
@@ -339,14 +339,14 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( std::string name, BoundingB
     /********************** CONTROLES **************************/
 
     if ( ! Rok4Image::canRead ( bitspersample, toROK4SampleFormat ( sf ) ) ) {
-        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( toROK4SampleFormat ( sf ) ) << " and " << bitspersample << " bits per sample" );
-        LOGGER_ERROR ( "\t for the image to read : " << name );
+        BOOST_LOG_TRIVIAL(error) <<  "Not supported sample type : " << SampleFormat::toString ( toROK4SampleFormat ( sf ) ) << " and " << bitspersample << " bits per sample" ;
+        BOOST_LOG_TRIVIAL(error) <<  "\t for the image to read : " << name ;
         return NULL;
     }
 
     if ( resx > 0 && resy > 0 ) {
         if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {
-            LOGGER_ERROR ( "Resolutions, bounding box and real dimensions for image '" << name << "' are not consistent" );
+            BOOST_LOG_TRIVIAL(error) <<  "Resolutions, bounding box and real dimensions for image '" << name << "' are not consistent" ;
             return NULL;
         }
     } else {
@@ -362,7 +362,7 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToRead ( std::string name, BoundingB
     );
 
     if ( ! ri->loadIndex() ) {
-        LOGGER_ERROR ( "Cannot load index of Rok4Image " << name );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot load index of Rok4Image " << name ;
         return NULL;
     }
 
@@ -375,18 +375,18 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToWrite (
     Compression::eCompression compression, int tileWidth, int tileHeight, Context* c  ) {
 
     if (width % tileWidth != 0 || height % tileHeight != 0) {
-        LOGGER_ERROR("Image's dimensions have to be a multiple of tile's dimensions");
+        BOOST_LOG_TRIVIAL(error) << "Image's dimensions have to be a multiple of tile's dimensions";
         return NULL;
     }
 
     if (compression == Compression::JPEG) {
         if (photometric == Photometric::GRAY) {
-            LOGGER_ERROR("Gray JPEG is not handled");
+            BOOST_LOG_TRIVIAL(error) << "Gray JPEG is not handled";
             return NULL;
         }
 
         if (sampleformat != SampleFormat::UINT || bitspersample != 8) {
-            LOGGER_ERROR("JPEG compression just handle 8-bits integer samples");
+            BOOST_LOG_TRIVIAL(error) << "JPEG compression just handle 8-bits integer samples";
             return NULL;
         }
     }
@@ -399,20 +399,20 @@ Rok4Image* Rok4ImageFactory::createRok4ImageToWrite (
 
     if (compression == Compression::PNG) {
         if (sampleformat != SampleFormat::UINT || bitspersample != 8) {
-            LOGGER_ERROR("PNG compression just handle 8-bits integer samples");
+            BOOST_LOG_TRIVIAL(error) << "PNG compression just handle 8-bits integer samples";
             return NULL;
         }
     }
     
     if ( ! Rok4Image::canWrite ( bitspersample, sampleformat ) ) {
-        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( sampleformat ) << " and " << bitspersample << " bits per sample" );
-        LOGGER_ERROR ( "\t for the image to write : " << name );
+        BOOST_LOG_TRIVIAL(error) <<  "Not supported sample type : " << SampleFormat::toString ( sampleformat ) << " and " << bitspersample << " bits per sample" ;
+        BOOST_LOG_TRIVIAL(error) <<  "\t for the image to write : " << name ;
         return NULL;
     }
     
     if ( resx > 0 && resy > 0 ) {
         if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {
-            LOGGER_ERROR ( "Resolutions, bounding box and dimensions for the ROK4 image (to write)'" << name << "' are not consistent" );
+            BOOST_LOG_TRIVIAL(error) <<  "Resolutions, bounding box and dimensions for the ROK4 image (to write)'" << name << "' are not consistent" ;
             return NULL;
         }
     } else {
@@ -496,7 +496,7 @@ boolean Rok4Image::memorizeRawTiles ( int tilesLine )
 {    
 
     if ( tilesLine < 0 || tilesLine >= tileHeightwise ) {
-        LOGGER_ERROR ( "Unvalid tiles' line indice (" << tilesLine << "). Have to be between 0 and " << tileHeightwise-1 );
+        BOOST_LOG_TRIVIAL(error) <<  "Unvalid tiles' line indice (" << tilesLine << "). Have to be between 0 and " << tileHeightwise-1 ;
         return false;
     }
 
@@ -520,7 +520,7 @@ boolean Rok4Image::memorizeRawTiles ( int tilesLine )
     size_t total_size;
     const uint8_t* enc_data = totalDS->getData(total_size);
     if (enc_data == NULL) {
-        LOGGER_ERROR("Cannot read tiles line data");
+        BOOST_LOG_TRIVIAL(error) << "Cannot read tiles line data";
         return false;
     }
 
@@ -552,7 +552,7 @@ boolean Rok4Image::memorizeRawTiles ( int tilesLine )
              * Pour distinguer les deux cas (pas le même décodeur), on va tester la présence d'un en-tête PNG */
             const uint8_t* header = encDS->getData(tmpSize);
             if (header == NULL) {
-                LOGGER_ERROR ( "Cannot read header to discrimine PNG and DEFLATE" );
+                BOOST_LOG_TRIVIAL(error) <<  "Cannot read header to discrimine PNG and DEFLATE" ;
                 return false;
             }
             if (memcmp(PNG_HEADER, header, 8)) {
@@ -563,17 +563,17 @@ boolean Rok4Image::memorizeRawTiles ( int tilesLine )
             }
         }
         else {
-            LOGGER_ERROR ( "Unhandled compression : " << compression );
+            BOOST_LOG_TRIVIAL(error) <<  "Unhandled compression : " << compression ;
             return false;
         }
 
         const uint8_t* dec_data = decDS->getData(tmpSize);
         
         if (! dec_data || tmpSize == 0) {
-            LOGGER_ERROR("Unable to decompress tile " << i << " of tiles- line " << tilesLine);
+            BOOST_LOG_TRIVIAL(error) << "Unable to decompress tile " << i << " of tiles- line " << tilesLine;
             return false;
         } else if (tmpSize != rawTileSize) {
-            LOGGER_WARN("Raw tile size should have been " << rawTileSize << ", and not " << tmpSize);
+            BOOST_LOG_TRIVIAL(warning) << "Raw tile size should have been " << rawTileSize << ", and not " << tmpSize;
         }
 
         memcpy(memorizedTiles + i * rawTileSize, dec_data, rawTileSize );
@@ -593,7 +593,7 @@ int Rok4Image::_getline ( T* buffer, int line ) {
     int tileLine = line % tileHeight;
 
     if (! memorizeRawTiles (tilesLine)) {
-        LOGGER_ERROR("Cannot read tiles to build line");
+        BOOST_LOG_TRIVIAL(error) << "Cannot read tiles to build line";
         return 0;
     }
 
@@ -677,7 +677,7 @@ bool Rok4Image::loadIndex()
     size_t tmpSize;
     uint32_t* index = (uint32_t*) sds->getData(tmpSize);
     if ( tmpSize !=  2 * 4 * tilesNumber ) {
-        LOGGER_ERROR ( "Cannot read index of Rok4Image " << name );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot read index of Rok4Image " << name ;
         return false;
     }
 
@@ -699,22 +699,22 @@ bool Rok4Image::loadIndex()
 int Rok4Image::writeImage ( Image* pIn, bool crop )
 {
     if (isVector) {
-        LOGGER_ERROR("Write image like that is not possible for vector slab");
+        BOOST_LOG_TRIVIAL(error) << "Write image like that is not possible for vector slab";
         return -1;
     }
 
     if (compression != Compression::JPEG && crop) {
-        LOGGER_WARN("Crop option is reserved for JPEG compression");
+        BOOST_LOG_TRIVIAL(warning) << "Crop option is reserved for JPEG compression";
         crop = false;
     }
     
     if (! writeHeader()) {
-        LOGGER_ERROR("Cannot write the ROK4 images header for " << name);
+        BOOST_LOG_TRIVIAL(error) << "Cannot write the ROK4 images header for " << name;
         return -1;
     }
 
     if (! prepareBuffers()) {
-        LOGGER_ERROR("Cannot initialize buffers for " << name);
+        BOOST_LOG_TRIVIAL(error) << "Cannot initialize buffers for " << name;
         return -1;
     }
 
@@ -730,7 +730,7 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
             // On récupère toutes les lignes pour cette ligne de tuiles
             for (int lig = 0; lig < tileHeight; lig++) {
                 if (pIn->getline(lines + lig*imageLineSize, y*tileHeight + lig) == 0) {
-                    LOGGER_ERROR("Error reading the source image's line " << y*tileHeight + lig);
+                    BOOST_LOG_TRIVIAL(error) << "Error reading the source image's line " << y*tileHeight + lig;
                     return -1;                    
                 }
             }
@@ -742,7 +742,7 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
                 int tileInd = y*tileWidthwise + x;
 
                 if (! writeTile(tileInd, tile, crop)) {
-                    LOGGER_ERROR("Error writting tile " << tileInd << " for ROK4 image " << name);
+                    BOOST_LOG_TRIVIAL(error) << "Error writting tile " << tileInd << " for ROK4 image " << name;
                     return -1;
                 }
             }
@@ -756,7 +756,7 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
             // On récupère toutes les lignes pour cette ligne de tuiles
             for (int lig = 0; lig < tileHeight; lig++) {
                 if (pIn->getline(lines + lig*imageLineSize, y*tileHeight + lig) == 0) {
-                    LOGGER_ERROR("Error reading the source image's line " << y*tileHeight + lig);
+                    BOOST_LOG_TRIVIAL(error) << "Error reading the source image's line " << y*tileHeight + lig;
                     return -1;                    
                 }
             }
@@ -769,7 +769,7 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
                 int tileInd = y*tileWidthwise + x;
 
                 if (! writeTile(tileInd, tile, crop)) {
-                    LOGGER_ERROR("Error writting tile " << tileInd << " for ROK4 image " << name);
+                    BOOST_LOG_TRIVIAL(error) << "Error writting tile " << tileInd << " for ROK4 image " << name;
                     return -1;
                 }
             }
@@ -782,7 +782,7 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
             // On récupère toutes les lignes pour cette ligne de tuiles
             for (int lig = 0; lig < tileHeight; lig++) {
                 if (pIn->getline(lines + lig*imageLineSize, y*tileHeight + lig) == 0) {
-                    LOGGER_ERROR("Error reading the source image's line " << y*tileHeight + lig);
+                    BOOST_LOG_TRIVIAL(error) << "Error reading the source image's line " << y*tileHeight + lig;
                     return -1;                    
                 }
             }
@@ -795,7 +795,7 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
                 int tileInd = y*tileWidthwise + x;
 
                 if (! writeTile(tileInd, tile, crop)) {
-                    LOGGER_ERROR("Error writting tile " << tileInd << " for ROK4 image " << name);
+                    BOOST_LOG_TRIVIAL(error) << "Error writting tile " << tileInd << " for ROK4 image " << name;
                     return -1;
                 }
             }
@@ -806,12 +806,12 @@ int Rok4Image::writeImage ( Image* pIn, bool crop )
     delete [] tile;
 
     if (! writeFinal()) {
-        LOGGER_ERROR("Cannot close the ROK4 images (write index) for " << name);
+        BOOST_LOG_TRIVIAL(error) << "Cannot close the ROK4 images (write index) for " << name;
         return -1;
     }
 
     if (! cleanBuffers()) {
-        LOGGER_ERROR("Cannot clean buffers for " << name);
+        BOOST_LOG_TRIVIAL(error) << "Cannot clean buffers for " << name;
         return -1;
     }
     
@@ -822,18 +822,18 @@ int Rok4Image::writePbfTiles ( int ulTileCol, int ulTileRow, char* rootDirectory
 {
 
     if (! isVector) {
-        LOGGER_ERROR("Write PBF tiles in a slab is possible only for vector ROK4 slabs");
+        BOOST_LOG_TRIVIAL(error) << "Write PBF tiles in a slab is possible only for vector ROK4 slabs";
         return -1;
     }
 
     
     if (! writeHeader()) {
-        LOGGER_ERROR("Cannot write the ROK4 images header for " << name);
+        BOOST_LOG_TRIVIAL(error) << "Cannot write the ROK4 images header for " << name;
         return -1;
     }
 
     if (! prepareBuffers()) {
-        LOGGER_ERROR("Cannot initialize buffers for " << name);
+        BOOST_LOG_TRIVIAL(error) << "Cannot initialize buffers for " << name;
         return -1;
     }
 
@@ -842,10 +842,10 @@ int Rok4Image::writePbfTiles ( int ulTileCol, int ulTileRow, char* rootDirectory
         for ( int col = 0; col < tileWidthwise; col++ ) {
             // Constitution du chemin de la tuile PBF à écrire en l'état dans la dalle
             sprintf (pbfpath, "%s/%d/%d.pbf", rootDirectory, ulTileCol + col, ulTileRow + row);
-            LOGGER_DEBUG("Slabization of pbf tile " << pbfpath);
+            BOOST_LOG_TRIVIAL(debug) << "Slabization of pbf tile " << pbfpath;
 
             if (! writeTile(row * tileWidthwise + col, pbfpath)) {
-                LOGGER_ERROR("Error writting PBF tile " << pbfpath);
+                BOOST_LOG_TRIVIAL(error) << "Error writting PBF tile " << pbfpath;
                 return -1;
             }
         }   
@@ -853,12 +853,12 @@ int Rok4Image::writePbfTiles ( int ulTileCol, int ulTileRow, char* rootDirectory
 
 
     if (! writeFinal()) {
-        LOGGER_ERROR("Cannot close the ROK4 images (write index) for " << name);
+        BOOST_LOG_TRIVIAL(error) << "Cannot close the ROK4 images (write index) for " << name;
         return -1;
     }
 
     if (! cleanBuffers()) {
-        LOGGER_ERROR("Cannot clean buffers for " << name);
+        BOOST_LOG_TRIVIAL(error) << "Cannot clean buffers for " << name;
         return -1;
     }
 
@@ -868,7 +868,7 @@ int Rok4Image::writePbfTiles ( int ulTileCol, int ulTileRow, char* rootDirectory
 bool Rok4Image::writeHeader()
 {
     if (! context->openToWrite(name)) {
-        LOGGER_ERROR("Unable to open output " << name);
+        BOOST_LOG_TRIVIAL(error) << "Unable to open output " << name;
         return false;
     }
 
@@ -1051,7 +1051,7 @@ bool Rok4Image::writeFinal() {
     context->write((uint8_t*) tilesByteCounts, ROK4_IMAGE_HEADER_SIZE + 4 * tilesNumber, 4 * tilesNumber, std::string(name));
 
     if (! context->closeToWrite(name)) {
-        LOGGER_ERROR("Unable to close output " << name);
+        BOOST_LOG_TRIVIAL(error) << "Unable to close output " << name;
         return false;
     }
 
@@ -1080,7 +1080,7 @@ bool Rok4Image::writeTile( int tileInd, uint8_t* data, bool crop )
 {
     
     if ( tileInd > tilesNumber || tileInd < 0 ) {
-        LOGGER_ERROR ( "Unvalid tile's indice to write (" << tileInd << "). Have to be between 0 and " << tilesNumber-1 );
+        BOOST_LOG_TRIVIAL(error) <<  "Unvalid tile's indice to write (" << tileInd << "). Have to be between 0 and " << tilesNumber-1 ;
         return false;
     }
 
@@ -1125,7 +1125,7 @@ bool Rok4Image::writeTile( int tileInd, uint8_t* data, bool crop )
     boolean ret = context->write(Buffer, position, size, std::string(name));
 
     if (! ret) {
-        LOGGER_ERROR("Impossible to write the tile " << tileInd);
+        BOOST_LOG_TRIVIAL(error) << "Impossible to write the tile " << tileInd;
         return false;
     }
     position = ( position + size + 15 ) & ~15; // Align the next position on 16byte
@@ -1138,7 +1138,7 @@ bool Rok4Image::writeTile( int tileInd, char* pbfpath )
 {
     
     if ( tileInd > tilesNumber || tileInd < 0 ) {
-        LOGGER_ERROR ( "Unvalid tile's indice to write (" << tileInd << "). Have to be between 0 and " << tilesNumber-1 );
+        BOOST_LOG_TRIVIAL(error) <<  "Unvalid tile's indice to write (" << tileInd << "). Have to be between 0 and " << tilesNumber-1 ;
         return false;
     }
 
@@ -1147,14 +1147,14 @@ bool Rok4Image::writeTile( int tileInd, char* pbfpath )
     std::ifstream ifs(pbfpath, std::ios::binary|std::ios::ate);
 
     if (! ifs.is_open()) {
-        LOGGER_DEBUG("Cannot open PBF tile " << pbfpath);
+        BOOST_LOG_TRIVIAL(debug) << "Cannot open PBF tile " << pbfpath;
         data_size = 0;
     } else {
 
         data_size = ifs.tellg();
 
         if (ifs.bad()) {
-            LOGGER_ERROR("Error reading size fo PBF tile " << pbfpath);
+            BOOST_LOG_TRIVIAL(error) << "Error reading size fo PBF tile " << pbfpath;
             return false;
         }
 
@@ -1164,7 +1164,7 @@ bool Rok4Image::writeTile( int tileInd, char* pbfpath )
         ifs.read(data.data(), data_size);
 
         if (ifs.bad()) {
-            LOGGER_ERROR("Error reading PBF tile " << pbfpath);
+            BOOST_LOG_TRIVIAL(error) << "Error reading PBF tile " << pbfpath;
             return false;
         }
 
@@ -1188,7 +1188,7 @@ bool Rok4Image::writeTile( int tileInd, char* pbfpath )
     boolean ret = context->write((uint8_t*) data.data(), position, data_size, std::string(name));
 
     if (! ret) {
-        LOGGER_ERROR("Impossible to write the tile " << tileInd);
+        BOOST_LOG_TRIVIAL(error) << "Impossible to write the tile " << tileInd;
         return false;
     }
     position = ( position + data_size + 15 ) & ~15; // Align the next position on 16byte

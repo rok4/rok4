@@ -619,16 +619,16 @@ public:
      * \brief ROK4 image description output
      */
     void print() {
-        LOGGER_INFO ( "" );
-        LOGGER_INFO ( "---------- Rok4Image ------------" );
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
+        BOOST_LOG_TRIVIAL(info) <<  "---------- Rok4Image ------------" ;
         Image::print();
-        LOGGER_INFO ( "\t- Compression : " << Compression::toString ( compression ) );
-        LOGGER_INFO ( "\t- Photometric : " << Photometric::toString ( photometric ) );
-        LOGGER_INFO ( "\t- Bits per sample : " << bitspersample );
-        LOGGER_INFO ( "\t- Sample format : " << SampleFormat::toString ( sampleformat ) );
-        LOGGER_INFO ( "\t- tile width = " << tileWidth << ", tile height = " << tileHeight );
-        LOGGER_INFO ( "\t- Image name : " << name );
-        LOGGER_INFO ( "" );
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Compression : " << Compression::toString ( compression ) ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Photometric : " << Photometric::toString ( photometric ) ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Bits per sample : " << bitspersample ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Sample format : " << SampleFormat::toString ( sampleformat ) ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- tile width = " << tileWidth << ", tile height = " << tileHeight ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Image name : " << name ;
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
     }
 
     /**************************** Pour la lecture ****************************/
@@ -679,7 +679,7 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeImage ( uint8_t* buffer ) {
-        LOGGER_ERROR ( "Cannot write ROK4 image from a buffer" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot write ROK4 image from a buffer" ;
         return -1;
     }
 
@@ -691,7 +691,7 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeImage ( uint16_t* buffer ) {
-        LOGGER_ERROR ( "Cannot write ROK4 image from a buffer" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot write ROK4 image from a buffer" ;
         return -1;
     }
 
@@ -703,7 +703,7 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeImage ( float* buffer ) {
-        LOGGER_ERROR ( "Cannot write ROK4 image from a buffer" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot write ROK4 image from a buffer" ;
         return -1;
     }
 
@@ -716,7 +716,7 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeLine ( uint8_t* buffer, int line ) {
-        LOGGER_ERROR ( "Cannot write ROK4 image line by line" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot write ROK4 image line by line" ;
         return -1;
     }
 
@@ -729,7 +729,7 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeLine ( uint16_t* buffer, int line) {
-        LOGGER_ERROR ( "Cannot write ROK4 image line by line" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot write ROK4 image line by line" ;
         return -1;
     }
 
@@ -742,7 +742,7 @@ public:
      * \return 0 en cas de succes, -1 sinon
      */
     int writeLine ( float* buffer, int line) {
-        LOGGER_ERROR ( "Cannot write ROK4 image line by line" );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot write ROK4 image line by line" ;
         return -1;
     }
     

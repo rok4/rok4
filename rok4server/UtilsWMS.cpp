@@ -97,7 +97,7 @@ DataStream* Rok4Server::getMapParamWMS (
     
     //Split layer Element
     std::vector<std::string> vector_layers = split ( str_layers,',' );
-    LOGGER_DEBUG ( _ ( "Nombre de couches demandees =" ) << vector_layers.size() );
+    BOOST_LOG_TRIVIAL(debug) <<  _ ( "Nombre de couches demandees =" ) << vector_layers.size() ;
 
     if ( vector_layers.size() > servicesConf->getLayerLimit() ) {
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le nombre de couche demande excede la valeur du LayerLimit." ),"wms" ) );
@@ -106,7 +106,7 @@ DataStream* Rok4Server::getMapParamWMS (
     for (unsigned int i = 0 ; i < vector_layers.size(); i++ ) {
         if ( Request::containForbiddenChars(vector_layers.at(i)) ) {
             // On a détecté un caractère interdit, on ne met pas le layer fourni dans la réponse pour éviter une injection
-            LOGGER_WARN("Forbidden char detected in WMS layers: " << vector_layers.at(i));
+            BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in WMS layers: " << vector_layers.at(i);
             return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_DEFINED,_ ( "Layer inconnu." ),"wms" ) );
         }
 
@@ -116,7 +116,7 @@ DataStream* Rok4Server::getMapParamWMS (
        
         layers.push_back ( lay );
     }
-    LOGGER_DEBUG ( _ ( "Nombre de couches =" ) << layers.size() );
+    BOOST_LOG_TRIVIAL(debug) <<  _ ( "Nombre de couches =" ) << layers.size() ;
 
     // WIDTH
     std::string strWidth = request->getParam ( "width" );
@@ -157,7 +157,7 @@ DataStream* Rok4Server::getMapParamWMS (
 
     if ( Request::containForbiddenChars(str_crs) ) {
         // On a détecté un caractère interdit, on ne met pas le crs fourni dans la réponse pour éviter une injection
-        LOGGER_WARN("Forbidden char detected in WMS crs: " << str_crs);
+        BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in WMS crs: " << str_crs;
         return new SERDataStream ( new ServiceException ( "",WMS_INVALID_CRS,_ ( "CRS  inconnu" ),"wms" ) );
     }
    
@@ -177,7 +177,7 @@ DataStream* Rok4Server::getMapParamWMS (
 
     if ( Request::containForbiddenChars(format) ) {
         // On a détecté un caractère interdit, on ne met pas le format fourni dans la réponse pour éviter une injection
-        LOGGER_WARN("Forbidden char detected in WMS format: " << format);
+        BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in WMS format: " << format;
         return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Format non gere par le service." ),"wms" ) );
     }
 
@@ -222,7 +222,7 @@ DataStream* Rok4Server::getMapParamWMS (
 
         if ( Request::containForbiddenChars(str_exception) ) {
             // On a détecté un caractère interdit, on ne met pas le str_exception fourni dans la réponse pour éviter une injection
-            LOGGER_WARN("Forbidden char detected in WMS exception: " << str_exception);
+            BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in WMS exception: " << str_exception;
             return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Format d'exception non pris en charge" ),"wms" ) );
         }
 
@@ -243,7 +243,7 @@ DataStream* Rok4Server::getMapParamWMS (
     }
 
     std::vector<std::string> vector_styles = split ( str_styles,',' );
-    LOGGER_DEBUG ( _ ( "Nombre de styles demandes =" ) << vector_styles.size() );
+    BOOST_LOG_TRIVIAL(debug) <<  _ ( "Nombre de styles demandes =" ) << vector_styles.size() ;
     if ( vector_styles.size() != vector_layers.size() ) {
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre STYLES incomplet." ),"wms" ) );
     }
@@ -255,7 +255,7 @@ DataStream* Rok4Server::getMapParamWMS (
 
         if ( Request::containForbiddenChars(vector_styles.at ( k )) ) {
             // On a détecté un caractère interdit, on ne met pas le style fourni dans la réponse pour éviter une injection
-            LOGGER_WARN("Forbidden char detected in WMS styles: " << vector_styles.at ( k ));
+            BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in WMS styles: " << vector_styles.at ( k );
             return new SERDataStream ( new ServiceException ( "",WMS_STYLE_NOT_DEFINED,_ ( "Le style n'est pas gere pour la couche " ) +vector_layers.at ( k ),"wms" ) );
         }
 
@@ -331,7 +331,7 @@ DataStream* Rok4Server::getFeatureInfoParamWMS (
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre QUERY_LAYERS absent." ),"wms" ) );
     //Split layer Element
     std::vector<std::string> queryLayersString = split ( str_query_layer,',' );
-    LOGGER_DEBUG ( _ ( "Nombre de couches demandees =" ) << queryLayersString.size() );
+    BOOST_LOG_TRIVIAL(debug) <<  _ ( "Nombre de couches demandees =" ) << queryLayersString.size() ;
     if ( queryLayersString.size() > 1 ) {
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le nombre de couche interrogée est limité à 1." ),"wms" ) );
     }
@@ -339,7 +339,7 @@ DataStream* Rok4Server::getFeatureInfoParamWMS (
     for (unsigned u1 = 0; u1 < queryLayersString.size(); u1++) {
 
         if ( Request::containForbiddenChars(queryLayersString.at(u1))) {
-            LOGGER_WARN("Forbidden char detected in WMS query_layer : " << queryLayersString.at(u1));
+            BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in WMS query_layer : " << queryLayersString.at(u1);
             return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_DEFINED,_ ( "Query_Layer inconnu." ),"wms" ) );
         }
 
@@ -365,7 +365,7 @@ DataStream* Rok4Server::getFeatureInfoParamWMS (
         query_layers.push_back ( lay );
     }
 
-    LOGGER_DEBUG ( _ ( "Nombre de couches requetées =" ) << query_layers.size() );
+    BOOST_LOG_TRIVIAL(debug) <<  _ ( "Nombre de couches requetées =" ) << query_layers.size() ;
 
 
     // FEATURE_COUNT (facultative)
@@ -430,7 +430,7 @@ DataStream* Rok4Server::getFeatureInfoParamWMS (
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre INFO_FORMAT vide." ),"wms" ) );
     } else {
         if ( Request::containForbiddenChars(info_format)) {
-            LOGGER_WARN("Forbidden char detected in WMS info_format: " << info_format);
+            BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in WMS info_format: " << info_format;
             return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Info_Format non gere par le service." ),"wms" ) );
         }
         if ( ! servicesConf->isInInfoFormatList(info_format) )
@@ -722,7 +722,7 @@ void Rok4Server::buildWMS130Capabilities() {
     }
     // Layer
     if ( serverConf->layersList.empty() ) {
-        LOGGER_WARN ( _ ( "Liste de layers vide" ) );
+        BOOST_LOG_TRIVIAL(warning) <<  _ ( "Liste de layers vide" ) ;
     } else {
         // Parent layer
         TiXmlElement * parentLayerEl = new TiXmlElement ( "Layer" );
@@ -805,7 +805,7 @@ void Rok4Server::buildWMS130Capabilities() {
                             bbox = childLayer->getWMSCRSList() [i].boundingBoxFromGeographic ( childLayer->getWMSCRSList() [i].cropBBoxGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy ) );
                         }
                         CRS crs = childLayer->getWMSCRSList() [i];
-                        LOGGER_DEBUG ("check inverse for "<< crs.getProj4Code());
+                        BOOST_LOG_TRIVIAL(debug) << "check inverse for "<< crs.getProj4Code();
                         //Switch lon lat for EPSG longlat CRS
                         if ( ( crs.getAuthority() =="EPSG" || crs.getAuthority() =="epsg" ) && crs.isLongLat() ) {
                             double doubletmp;
@@ -850,7 +850,7 @@ void Rok4Server::buildWMS130Capabilities() {
                         }
                         CRS crs = servicesConf->getGlobalCRSList()->at ( i );
                         //Switch lon lat for EPSG longlat CRS
-                        LOGGER_DEBUG ("check inverse for "<< crs.getProj4Code());
+                        BOOST_LOG_TRIVIAL(debug) << "check inverse for "<< crs.getProj4Code();
                         if ( ( crs.getAuthority() =="EPSG" || crs.getAuthority() =="epsg" ) && crs.isLongLat() ) {
                             double doubletmp;
                             doubletmp = bbox.xmin;
@@ -922,7 +922,7 @@ void Rok4Server::buildWMS130Capabilities() {
                 }
 
                 // Style
-                LOGGER_DEBUG ( _ ( "Nombre de styles : " ) <<childLayer->getStyles().size() );
+                BOOST_LOG_TRIVIAL(debug) <<  _ ( "Nombre de styles : " ) <<childLayer->getStyles().size() ;
                 if ( childLayer->getStyles().size() != 0 ) {
                     for ( unsigned int i=0; i < childLayer->getStyles().size(); i++ ) {
                         TiXmlElement * styleEl= new TiXmlElement ( "Style" );
@@ -936,7 +936,7 @@ void Rok4Server::buildWMS130Capabilities() {
                             styleEl->LinkEndChild ( DocumentXML::buildTextNode ( "Abstract", style->getAbstracts() [j].c_str() ) );
                         }
                         for ( j=0 ; j < style->getLegendURLs().size(); ++j ) {
-                            LOGGER_DEBUG ( _ ( "LegendURL" ) << style->getId() );
+                            BOOST_LOG_TRIVIAL(debug) <<  _ ( "LegendURL" ) << style->getId() ;
                             LegendURL legendURL = style->getLegendURLs() [j];
                             TiXmlElement* legendURLEl = new TiXmlElement ( "LegendURL" );
 
@@ -951,10 +951,10 @@ void Rok4Server::buildWMS130Capabilities() {
                             if ( legendURL.getHeight() !=0 )
                                 legendURLEl->SetAttribute ( "height", legendURL.getHeight() );
                             styleEl->LinkEndChild ( legendURLEl );
-                            LOGGER_DEBUG ( _ ( "LegendURL OK" ) << style->getId() );
+                            BOOST_LOG_TRIVIAL(debug) <<  _ ( "LegendURL OK" ) << style->getId() ;
                         }
 
-                        LOGGER_DEBUG ( _ ( "Style fini : " ) << style->getId() );
+                        BOOST_LOG_TRIVIAL(debug) <<  _ ( "Style fini : " ) << style->getId() ;
                         childLayerEl->LinkEndChild ( styleEl );
                     }
                 }
@@ -975,12 +975,12 @@ void Rok4Server::buildWMS130Capabilities() {
                  layer->getOpaque();
 
                 */
-                LOGGER_DEBUG ( _ ( "Layer Fini" ) );
+                BOOST_LOG_TRIVIAL(debug) <<  _ ( "Layer Fini" ) ;
                 parentLayerEl->LinkEndChild ( childLayerEl );
             }
         }// for layer
 
-        LOGGER_DEBUG ( _ ( "Layers Fini" ) );
+        BOOST_LOG_TRIVIAL(debug) <<  _ ( "Layers Fini" ) ;
         capabilityEl->LinkEndChild ( parentLayerEl );
     }
 
@@ -1008,7 +1008,7 @@ void Rok4Server::buildWMS130Capabilities() {
     }
     wms130CapaFrag.push_back ( wmsCapaTemplate.substr ( beginPos ) );
     wmsCapaFrag.insert( std::pair<std::string,std::vector<std::string> > ("1.3.0",wms130CapaFrag) );
-    LOGGER_DEBUG ( _ ( "WMS 1.3.0 fini" ) );
+    BOOST_LOG_TRIVIAL(debug) <<  _ ( "WMS 1.3.0 fini" ) ;
 }
 
 //---- WMS 1.1.1
@@ -1199,7 +1199,7 @@ void Rok4Server::buildWMS111Capabilities() {
 
     // Layer
     if ( serverConf->layersList.empty() ) {
-        LOGGER_WARN ( _ ( "Liste de layers vide" ) );
+        BOOST_LOG_TRIVIAL(warning) <<  _ ( "Liste de layers vide" ) ;
     } else {
         // Parent layer
         TiXmlElement * parentLayerEl = new TiXmlElement ( "Layer" );
@@ -1281,7 +1281,7 @@ void Rok4Server::buildWMS111Capabilities() {
                             bbox = childLayer->getWMSCRSList() [i].boundingBoxFromGeographic ( childLayer->getWMSCRSList() [i].cropBBoxGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy ) );
                         }
                         CRS crs = childLayer->getWMSCRSList() [i];
-                        LOGGER_DEBUG ("check inverse for "<< crs.getProj4Code());
+                        BOOST_LOG_TRIVIAL(debug) << "check inverse for "<< crs.getProj4Code();
                         //Switch lon lat for EPSG longlat CRS
                         if ( ( crs.getAuthority() =="EPSG" || crs.getAuthority() =="epsg" ) && crs.isLongLat() ) {
                             double doubletmp;
@@ -1326,7 +1326,7 @@ void Rok4Server::buildWMS111Capabilities() {
                         }
                         CRS crs = servicesConf->getGlobalCRSList()->at ( i );
                         //Switch lon lat for EPSG longlat CRS
-                        LOGGER_DEBUG ("check inverse for "<< crs.getProj4Code());
+                        BOOST_LOG_TRIVIAL(debug) << "check inverse for "<< crs.getProj4Code();
                         if ( ( crs.getAuthority() =="EPSG" || crs.getAuthority() =="epsg" ) && crs.isLongLat() ) {
                             double doubletmp;
                             doubletmp = bbox.xmin;
@@ -1387,7 +1387,7 @@ void Rok4Server::buildWMS111Capabilities() {
                 }
 
                 // Style
-                LOGGER_DEBUG ( _ ( "Nombre de styles : " ) <<childLayer->getStyles().size() );
+                BOOST_LOG_TRIVIAL(debug) <<  _ ( "Nombre de styles : " ) <<childLayer->getStyles().size() ;
                 if ( childLayer->getStyles().size() != 0 ) {
                     for ( unsigned int i=0; i < childLayer->getStyles().size(); i++ ) {
                         TiXmlElement * styleEl= new TiXmlElement ( "Style" );
@@ -1401,7 +1401,7 @@ void Rok4Server::buildWMS111Capabilities() {
                             styleEl->LinkEndChild ( DocumentXML::buildTextNode ( "Abstract", style->getAbstracts() [j].c_str() ) );
                         }
                         for ( j=0 ; j < style->getLegendURLs().size(); ++j ) {
-                            LOGGER_DEBUG ( _ ( "LegendURL" ) << style->getId() );
+                            BOOST_LOG_TRIVIAL(debug) <<  _ ( "LegendURL" ) << style->getId() ;
                             LegendURL legendURL = style->getLegendURLs() [j];
                             TiXmlElement* legendURLEl = new TiXmlElement ( "LegendURL" );
 
@@ -1417,10 +1417,10 @@ void Rok4Server::buildWMS111Capabilities() {
                             if ( legendURL.getHeight() !=0 )
                                 legendURLEl->SetAttribute ( "height", legendURL.getHeight() );
                             styleEl->LinkEndChild ( legendURLEl );
-                            LOGGER_DEBUG ( _ ( "LegendURL OK" ) << style->getId() );
+                            BOOST_LOG_TRIVIAL(debug) <<  _ ( "LegendURL OK" ) << style->getId() ;
                         }
 
-                        LOGGER_DEBUG ( _ ( "Style fini : " ) << style->getId() );
+                        BOOST_LOG_TRIVIAL(debug) <<  _ ( "Style fini : " ) << style->getId() ;
                         childLayerEl->LinkEndChild ( styleEl );
                     }
                 }
@@ -1445,11 +1445,11 @@ void Rok4Server::buildWMS111Capabilities() {
                  layer->getOpaque();
 
                 */
-                LOGGER_DEBUG ( _ ( "Layer Fini" ) );
+                BOOST_LOG_TRIVIAL(debug) <<  _ ( "Layer Fini" ) ;
                 parentLayerEl->LinkEndChild ( childLayerEl );
             }
         }// for layer
-        LOGGER_DEBUG ( _ ( "Layers Fini" ) );
+        BOOST_LOG_TRIVIAL(debug) <<  _ ( "Layers Fini" ) ;
         capabilityEl->LinkEndChild ( parentLayerEl );
     }
 
@@ -1481,7 +1481,7 @@ void Rok4Server::buildWMS111Capabilities() {
     }
     wms111CapaFrag.push_back ( wmsCapaTemplate.substr ( beginPos ) );
     wmsCapaFrag.insert( std::pair<std::string,std::vector<std::string> > ("1.1.1",wms111CapaFrag) );
-    LOGGER_DEBUG ( _ ( "WMS 1.1.1 fini" ) );
+    BOOST_LOG_TRIVIAL(debug) <<  _ ( "WMS 1.1.1 fini" ) ;
 }
 
 DataStream* Rok4Server::WMSGetCapabilities ( Request* request ) {
@@ -1491,7 +1491,7 @@ DataStream* Rok4Server::WMSGetCapabilities ( Request* request ) {
     std::string version;
     DataStream* errorResp = getCapParamWMS ( request, version );
     if ( errorResp ) {
-        LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getCapabilities" ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "Probleme dans les parametres de la requete getCapabilities" ) ;
         return errorResp;
     }
 

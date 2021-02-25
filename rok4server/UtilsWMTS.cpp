@@ -71,7 +71,7 @@ DataSource* Rok4Server::getTileParamWMTS ( Request* request, Layer*& layer, std:
         return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre LAYER absent." ),"wmts" ) );
     
     if ( Request::containForbiddenChars(str_layer)) {
-        LOGGER_WARN("Forbidden char detected in WMTS layer: " << str_layer);
+        BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in WMTS layer: " << str_layer;
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer inconnu." ),"wmts" ) );
     }
 
@@ -86,7 +86,7 @@ DataSource* Rok4Server::getTileParamWMTS ( Request* request, Layer*& layer, std:
         return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre TILEMATRIXSET absent." ),"wmts" ) );
 
     if ( Request::containForbiddenChars(str_tms)) {
-        LOGGER_WARN("Forbidden char detected in WMTS tilematrixset: " << str_tms);
+        BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in WMTS tilematrixset: " << str_tms;
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "TileMatrixSet inconnu." ),"wmts" ) );
     }
 
@@ -103,7 +103,7 @@ DataSource* Rok4Server::getTileParamWMTS ( Request* request, Layer*& layer, std:
         return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre TILEMATRIX absent." ),"wmts" ) );
 
     if ( Request::containForbiddenChars(str_tileMatrix)) {
-        LOGGER_WARN("Forbidden char detected in WMTS tilematrix: " << str_tileMatrix);
+        BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in WMTS tilematrix: " << str_tileMatrix;
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "TileMatrix inconnu pour le TileMatrixSet " ) +str_tms,"wmts" ) );
     }
 
@@ -127,13 +127,13 @@ DataSource* Rok4Server::getTileParamWMTS ( Request* request, Layer*& layer, std:
     // FORMAT
     format = request->getParam ( "format" );
 
-    LOGGER_DEBUG ( _ ( "format requete : " ) << format << _ ( " format pyramide : " ) << Rok4Format::toMimeType ( ( layer->getDataPyramid()->getFormat() ) ) );
+    BOOST_LOG_TRIVIAL(debug) <<  _ ( "format requete : " ) << format << _ ( " format pyramide : " ) << Rok4Format::toMimeType ( ( layer->getDataPyramid()->getFormat() ) ) ;
     if ( format == "" )
         return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre FORMAT absent." ),"wmts" ) );
 
     if ( Request::containForbiddenChars(format) ) {
         // On a détecté un caractère interdit, on ne met pas le format fourni dans la réponse pour éviter une injection
-        LOGGER_WARN("Forbidden char detected in WMTS format: " << format);
+        BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in WMTS format: " << format;
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le format n'est pas gere pour la couche " ) +str_layer,"wmts" ) );
     }
 
@@ -447,11 +447,11 @@ void Rok4Server::buildWMTSCapabilities() {
                     Style* style = layer->getStyles() [i];
                     int j;
                     for ( j=0 ; j < style->getTitles().size(); ++j ) {
-                        LOGGER_DEBUG ( _ ( "Title : " ) << style->getTitles() [j].c_str() );
+                        BOOST_LOG_TRIVIAL(debug) <<  _ ( "Title : " ) << style->getTitles() [j].c_str() ;
                         styleEl->LinkEndChild ( DocumentXML::buildTextNode ( "ows:Title", style->getTitles() [j].c_str() ) );
                     }
                     for ( j=0 ; j < style->getAbstracts().size(); ++j ) {
-                        LOGGER_DEBUG ( _ ( "Abstract : " ) << style->getAbstracts() [j].c_str() );
+                        BOOST_LOG_TRIVIAL(debug) <<  _ ( "Abstract : " ) << style->getAbstracts() [j].c_str() ;
                         styleEl->LinkEndChild ( DocumentXML::buildTextNode ( "ows:Abstract", style->getAbstracts() [j].c_str() ) );
                     }
 
@@ -619,7 +619,7 @@ DataStream* Rok4Server::WMTSGetCapabilities ( Request* request ) {
     std::string version;
     DataStream* errorResp = getCapParamWMTS ( request, version );
     if ( errorResp ) {
-        LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getCapabilities" ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "Probleme dans les parametres de la requete getCapabilities" ) ;
         return errorResp;
     }
 
@@ -671,7 +671,7 @@ DataStream* Rok4Server::getFeatureInfoParamWMTS ( Request* request, Layer*& laye
         return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre INFOFORMAT vide." ),"wmts" ) );
     }else{
         if ( Request::containForbiddenChars(info_format)) {
-            LOGGER_WARN("Forbidden char detected in WMTS info_format: " << info_format);
+            BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in WMTS info_format: " << info_format;
             return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Info_Format non gere par le service." ),"wmts" ) );
         }
 

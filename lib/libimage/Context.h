@@ -50,7 +50,8 @@
 
 #include <map>
 #include <stdint.h>// pour uint8_t
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
+#include <vector>
 #include <string.h>
 #include <sstream>
 

@@ -66,17 +66,11 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
 
     pElem=hRoot.FirstChild ( "logOutput" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
-        std::cerr<<_ ( "Pas de logOutput => logOutput = " ) << DEFAULT_LOG_OUTPUT;
         logOutput = DEFAULT_LOG_OUTPUT;
+        std::cerr<<_ ( "Pas de logOutput => logOutput = " ) << DEFAULT_LOG_OUTPUT;
     } else {
-        std::string strLogOutput= ( DocumentXML::getTextStrFromElem(pElem) );
-        if ( strLogOutput=="rolling_file" ) {
-            logOutput=ROLLING_FILE;
-        } else if ( strLogOutput=="standard_output_stream_for_errors" ) {
-            logOutput=STANDARD_OUTPUT_STREAM_FOR_ERRORS;
-        } else if ( strLogOutput=="static_file" ) {
-            logOutput=STATIC_FILE;
-        } else {
+        logOutput = ( DocumentXML::getTextStrFromElem(pElem) );
+        if ( logOutput != "rolling_file" && logOutput !="standard_output_stream_for_errors" && logOutput !="static_file" ) {
             std::cerr<<_ ( "Le logOutput [" ) << DocumentXML::getTextStrFromElem(pElem) <<_ ( "]  est inconnu." ) <<std::endl;
             return;
         }
@@ -105,11 +99,11 @@ ServerXML::ServerXML(std::string path ) : DocumentXML(path) {
         logLevel = DEFAULT_LOG_LEVEL;
     } else {
         std::string strLogLevel ( pElem->GetText() );
-        if ( strLogLevel=="fatal" ) logLevel=FATAL;
-        else if ( strLogLevel=="error" ) logLevel=ERROR;
-        else if ( strLogLevel=="warn" ) logLevel=WARN;
-        else if ( strLogLevel=="info" ) logLevel=INFO;
-        else if ( strLogLevel=="debug" ) logLevel=DEBUG;
+        if ( strLogLevel=="fatal" ) logLevel=boost::log::trivial::fatal;
+        else if ( strLogLevel=="error" ) logLevel=boost::log::trivial::error;
+        else if ( strLogLevel=="warn" ) logLevel=boost::log::trivial::warning;
+        else if ( strLogLevel=="info" ) logLevel=boost::log::trivial::info;
+        else if ( strLogLevel=="debug" ) logLevel=boost::log::trivial::debug;
         else {
             std::cerr<<_ ( "Le logLevel [" ) << DocumentXML::getTextStrFromElem(pElem) <<_ ( "]  est inconnu." ) <<std::endl;
             return;
@@ -347,10 +341,10 @@ ServerXML::~ServerXML(){
 
 bool ServerXML::isOk() { return ok; }
 
-LogOutput ServerXML::getLogOutput() {return logOutput;}
+std::string ServerXML::getLogOutput() {return logOutput;}
 int ServerXML::getLogFilePeriod() {return logFilePeriod;}
 std::string ServerXML::getLogFilePrefix() {return logFilePrefix;}
-LogLevel ServerXML::getLogLevel() {return logLevel;}
+boost::log::v2_mt_posix::trivial::severity_level ServerXML::getLogLevel() {return logLevel;}
 
 std::string ServerXML::getServicesConfigFile() {return servicesConfigFile;}
 
@@ -381,7 +375,7 @@ void ServerXML::cleanTMSs(std::vector<std::string> ids) {
     for ( itTms = tmsList.begin(); itTms != tmsList.end(); itTms++ ) {
 
         if (find (ids.begin(), ids.end(), itTms->first) == ids.end()) {
-            LOGGER_DEBUG ( _ ( "TMS supprimé : " ) << itTms->first );
+            BOOST_LOG_TRIVIAL(debug) <<  _ ( "TMS supprimé : " ) << itTms->first ;
             // Le TMS n'est pas présent dans la liste d'ids fournie, on le supprime
             delete itTms->second;
             tmsList.erase(itTms);
@@ -417,7 +411,7 @@ void ServerXML::cleanStyles(std::vector<std::string> ids) {
     for ( itSty = stylesList.begin(); itSty != stylesList.end(); itSty++ ) {
 
         if (find (ids.begin(), ids.end(), itSty->first) == ids.end()) {
-            LOGGER_DEBUG ( _ ( "Style supprimé : " ) << itSty->first );
+            BOOST_LOG_TRIVIAL(debug) <<  _ ( "Style supprimé : " ) << itSty->first ;
             // Le style n'est pas présent dans la liste d'ids fournie, on le supprime
             delete itSty->second;
             stylesList.erase(itSty);
@@ -451,7 +445,7 @@ void ServerXML::cleanLayers(std::vector<std::string> ids) {
     for ( itLay = layersList.begin(); itLay != layersList.end(); itLay++ ) {
 
         if (find (ids.begin(), ids.end(), itLay->first) == ids.end()) {
-            LOGGER_DEBUG ( _ ( "Layer supprimé : " ) << itLay->first );
+            BOOST_LOG_TRIVIAL(debug) <<  _ ( "Layer supprimé : " ) << itLay->first ;
             // Le layer n'est pas présent dans la liste d'ids fournie, on le supprime
             delete itLay->second;
             layersList.erase(itLay);

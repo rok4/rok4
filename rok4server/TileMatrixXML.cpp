@@ -46,83 +46,83 @@ TileMatrixXML::TileMatrixXML(std::string tmsId, std::string path, TiXmlElement* 
     TiXmlHandle hTM ( levelElement );
     TiXmlElement* pElemTM = hTM.FirstChild ( "id" ).Element();
     if ( !pElemTM || ! ( pElemTM->GetText() ) ) {
-        LOGGER_ERROR ( _ ( "TileMatrixSet " ) << tmsId << ", TileMatrix sans id!!" );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "TileMatrixSet " ) << tmsId << ", TileMatrix sans id!!" ;
         return;
     }
     id = std::string(pElemTM->GetText());
 
     if ( Request::containForbiddenChars(id) ) {
-        LOGGER_ERROR ( _ ( "TileMatrixSet " ) << tmsId <<_ ( ", un TileMatrix contient des caracteres interdits" ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "TileMatrixSet " ) << tmsId <<_ ( ", un TileMatrix contient des caracteres interdits" ) ;
         return;
     }
 
     pElemTM = hTM.FirstChild ( "resolution" ).Element();
     if ( !pElemTM || ! ( pElemTM->GetText() ) ) {
-        LOGGER_ERROR ( _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( " sans resolution!!" ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( " sans resolution!!" ) ;
         return;
     }
     if ( !sscanf ( pElemTM->GetText(),"%lf",&res ) ) {
-        LOGGER_ERROR ( _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( ": La resolution est inexploitable." ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( ": La resolution est inexploitable." ) ;
         return;
     }
 
     pElemTM = hTM.FirstChild ( "topLeftCornerX" ).Element();
     if ( !pElemTM || ! ( pElemTM->GetText() ) ) {
-        LOGGER_ERROR ( _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( " sans topLeftCornerX!!" ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( " sans topLeftCornerX!!" ) ;
         return;
     }
     if ( !sscanf ( pElemTM->GetText(),"%lf",&x0 ) ) {
-        LOGGER_ERROR ( _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( ": Le topLeftCornerX est inexploitable." ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( ": Le topLeftCornerX est inexploitable." ) ;
         return;
     }
 
     pElemTM = hTM.FirstChild ( "topLeftCornerY" ).Element();
     if ( !pElemTM || ! ( pElemTM->GetText() ) ) {
-        LOGGER_ERROR ( _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( " sans topLeftCornerY!!" ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( " sans topLeftCornerY!!" ) ;
         return;
     }
     if ( !sscanf ( pElemTM->GetText(),"%lf",&y0 ) ) {
-        LOGGER_ERROR ( _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( ": Le topLeftCornerY est inexploitable." ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( ": Le topLeftCornerY est inexploitable." ) ;
         return;
     }
 
     pElemTM = hTM.FirstChild ( "tileWidth" ).Element();
     if ( !pElemTM || ! ( pElemTM->GetText() ) ) {
-        LOGGER_ERROR ( _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( " sans tileWidth!!" ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( " sans tileWidth!!" ) ;
         return;
     }
     if ( !sscanf ( pElemTM->GetText(),"%d",&tileW ) ) {
-        LOGGER_ERROR ( _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( ": Le tileWidth est inexploitable." ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( ": Le tileWidth est inexploitable." ) ;
         return;
     }
 
     pElemTM = hTM.FirstChild ( "tileHeight" ).Element();
     if ( !pElemTM || ! ( pElemTM->GetText() ) ) {
-        LOGGER_ERROR ( _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( " sans tileHeight!!" ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( " sans tileHeight!!" ) ;
         return;
     }
     if ( !sscanf ( pElemTM->GetText(),"%d",&tileH ) ) {
-        LOGGER_ERROR ( _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( ": Le tileHeight est inexploitable." ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( ": Le tileHeight est inexploitable." ) ;
         return;
     }
 
     pElemTM = hTM.FirstChild ( "matrixWidth" ).Element();
     if ( !pElemTM || ! ( pElemTM->GetText() ) ) {
-        LOGGER_ERROR ( _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( " sans MatrixWidth!!" ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( " sans MatrixWidth!!" ) ;
         return;
     }
     if ( !sscanf ( pElemTM->GetText(),"%ld",&matrixW ) ) {
-        LOGGER_ERROR ( _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( ": Le MatrixWidth est inexploitable." ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( ": Le MatrixWidth est inexploitable." ) ;
         return;
     }
 
     pElemTM = hTM.FirstChild ( "matrixHeight" ).Element();
     if ( !pElemTM || ! ( pElemTM->GetText() ) ) {
-        LOGGER_ERROR ( _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( " sans matrixHeight!!" ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "TileMatrixSet " ) << tmsId <<_ ( ", TileMatrix " ) << id <<_ ( " sans matrixHeight!!" ) ;
         return;
     }
     if ( !sscanf ( pElemTM->GetText(),"%ld",&matrixH ) ) {
-        LOGGER_ERROR ( _ ( "TileMatrixSet " ) << tmsId <<_ ( ", tileMatrix " ) << id <<_ ( ": Le matrixHeight est inexploitable." ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "TileMatrixSet " ) << tmsId <<_ ( ", tileMatrix " ) << id <<_ ( ": Le matrixHeight est inexploitable." ) ;
         return;
     }
 

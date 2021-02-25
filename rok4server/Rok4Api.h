@@ -63,8 +63,6 @@ typedef void Rok4Server;
     Rok4Server* rok4ReloadServer ( const char* serverConfigFile, Rok4Server* server, time_t lastReload );
 
     void rok4KillServer ( Rok4Server* server );
-    void rok4ReloadLogger ();
-    void rok4KillLogger ();
 
 #ifdef __cplusplus
 }

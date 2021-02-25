@@ -46,7 +46,7 @@
 #ifndef ASPECT_H
 #define ASPECT_H
 
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #define DEG_TO_RAD      .0174532925199432958
 #include <string>
 #include <cmath>

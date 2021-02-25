@@ -45,7 +45,7 @@
 
 #include "Layer.h"
 #include "Pyramid.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 
 GeographicBoundingBoxWMS::GeographicBoundingBoxWMS() {}
 BoundingBoxWMS::BoundingBoxWMS() {}
@@ -116,7 +116,7 @@ Layer::Layer (Layer* obj, ServerXML* sxml) {
 
     // Détection d'erreurs
     if (dataPyramid->getTms() == NULL) {
-        LOGGER_ERROR("Impossible de cloner la pyramide");
+        BOOST_LOG_TRIVIAL(error) << "Impossible de cloner la pyramide";
         delete dataPyramid;
         dataPyramid = NULL;
         return;
@@ -147,7 +147,7 @@ Layer::Layer (Layer* obj, ServerXML* sxml) {
             // On récupère bien le pointeur vers le nouveau TMS (celui de la nouvelle liste)
             Style* s = sxml->getStyle ( obj->styles.at(i)->getId() );
             if ( s == NULL ) {
-                LOGGER_ERROR ( "Une couche clonée reference un style [" << obj->styles.at(i)->getId() << "] qui n'existe plus." );
+                BOOST_LOG_TRIVIAL(error) <<  "Une couche clonée reference un style [" << obj->styles.at(i)->getId() << "] qui n'existe plus." ;
                 return;
                 // Tester la nullité de la pyramide de donnée en sortie pour faire remonter l'erreur
             } else {

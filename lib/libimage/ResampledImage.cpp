@@ -44,7 +44,7 @@
  */
 
 #include "ResampledImage.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Utils.h"
 #include <tiff.h>
 #include <cmath>

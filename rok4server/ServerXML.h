@@ -68,10 +68,10 @@ class ServerXML : public DocumentXML
 
         bool isOk() ;
 
-        LogOutput getLogOutput() ;
+        std::string getLogOutput() ;
         int getLogFilePeriod() ;
         std::string getLogFilePrefix() ;
-        LogLevel getLogLevel() ;
+        boost::log::v2_mt_posix::trivial::severity_level getLogLevel() ;
 
         std::string getServicesConfigFile() ;
 
@@ -99,11 +99,7 @@ class ServerXML : public DocumentXML
         Layer* getLayer(std::string id) ;
 
 #if BUILD_OBJECT
-        //CEOBJECT
-        //ContextBook* getCephContextBook();
-        //ContextBook* getS3ContextBook();
-        //ContextBook* getSwiftContextBook();
-        ContextBook* getContextBook();
+        ContextBook* getContextBook() ;
 
         int getReconnectionFrequency() ;
 #endif
@@ -122,10 +118,10 @@ class ServerXML : public DocumentXML
         std::string serverConfigFile;
         std::string servicesConfigFile;
 
-        LogOutput logOutput;
+        std::string logOutput;
         std::string logFilePrefix;
         int logFilePeriod;
-        LogLevel logLevel;
+        boost::log::v2_mt_posix::trivial::severity_level logLevel;
 
         int nbThread;
 

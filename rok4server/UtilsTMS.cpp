@@ -98,7 +98,7 @@ DataSource* Rok4Server::getTileParamTMS ( Request* request, Layer*& layer, std::
     std::string str_layer = pathParts.at(tmsVersionPos + 1);
 
     if ( Request::containForbiddenChars(str_layer)) {
-        LOGGER_WARN("Forbidden char detected in TMS layer: " << str_layer);
+        BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in TMS layer: " << str_layer;
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer inconnu." ),"tms" ) );
     }
 
@@ -114,7 +114,7 @@ DataSource* Rok4Server::getTileParamTMS ( Request* request, Layer*& layer, std::
     str_tileMatrix = pathParts.at(tmsVersionPos + 2);
 
     if ( Request::containForbiddenChars(str_tileMatrix)) {
-        LOGGER_WARN("Forbidden char detected in TMS tileMatrix: " << str_tileMatrix);
+        BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in TMS tileMatrix: " << str_tileMatrix;
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "TileMatrix inconnu pour le TileMatrixSet " ) +tms->getId(),"wmts" ) );
     }
 
@@ -148,7 +148,7 @@ DataSource* Rok4Server::getTileParamTMS ( Request* request, Layer*& layer, std::
         return new SERDataSource ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Extension absente." ),"tms" ) );
 
     if ( Request::containForbiddenChars(extension)) {
-        LOGGER_WARN("Forbidden char detected in TMS extension: " << extension);
+        BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in TMS extension: " << extension;
         return new SERDataSource ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "L'extension n'est pas gere pour la couche " ) +str_layer,"tms" ) );
     }
 
@@ -203,7 +203,7 @@ DataStream* Rok4Server::getLayerParamTMS ( Request* request, Layer*& layer, std:
     std::string str_layer = pathParts.at(tmsVersionPos + 1);
 
     if ( Request::containForbiddenChars(str_layer)) {
-        LOGGER_WARN("Forbidden char detected in TMS layer: " << str_layer);
+        BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in TMS layer: " << str_layer;
         return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Layer inconnu." ),"tms" ) );
     }
 

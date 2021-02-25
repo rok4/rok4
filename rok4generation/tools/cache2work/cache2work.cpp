@@ -50,7 +50,10 @@
 
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>
-#include <boost/log/expressions.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
+#include <boost/log/utility/setup/console.hpp>
+namespace logging = boost::log;
+namespace keywords = boost::log::keywords;
 
 #include <curl/curl.h>
 #include "Format.h"
@@ -138,6 +141,12 @@ int main ( int argc, char **argv )
 
     /* Initialisation des Loggers */
     boost::log::core::get()->set_filter( boost::log::trivial::severity >= boost::log::trivial::info );
+    logging::add_common_attributes();
+    boost::log::register_simple_formatter_factory< boost::log::trivial::severity_level, char >("Severity");
+    logging::add_console_log (
+        std::cout,
+        keywords::format = "%Severity%\t%Message%"
+    );
 
     for ( int i = 1; i < argc; i++ ) {
 
@@ -228,7 +237,7 @@ int main ( int argc, char **argv )
     } else if (container != 0) {
         BOOST_LOG_TRIVIAL(debug) <<  std::string("Input is an object in the Swift container ") + container;
         curl_global_init(CURL_GLOBAL_ALL);
-        context = new SwiftContext(container, keystone);
+        context = new SwiftContext(container);
     } else {
 #endif
 

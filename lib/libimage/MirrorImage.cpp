@@ -50,7 +50,7 @@
  */
 
 #include "MirrorImage.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Utils.h"
 
 #ifndef __max
@@ -70,12 +70,12 @@ MirrorImage* MirrorImageFactory::createMirrorImage ( Image* pImageSrc, int posit
     double xmin,ymin,xmax,ymax;
 
     if ( pImageSrc == NULL ) {
-        LOGGER_ERROR ( "Source image is NULL" );
+        BOOST_LOG_TRIVIAL(error) <<  "Source image is NULL" ;
         return NULL;
     }
 
     if ( mirrorSize > pImageSrc->getWidth() || mirrorSize > pImageSrc->getHeight() ) {
-        LOGGER_ERROR ( "Image is smaller than what we need for mirrors (we need "<< mirrorSize << " pixels)" );
+        BOOST_LOG_TRIVIAL(error) <<  "Image is smaller than what we need for mirrors (we need "<< mirrorSize << " pixels)" ;
         return NULL;
     }
 

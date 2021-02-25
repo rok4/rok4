@@ -171,7 +171,7 @@ static const char mon_name[][4] = {
 
 int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
 
-    LOGGER_DEBUG("S3 read : " << size << " bytes (from the " << offset << " one) in the object " << name);
+    BOOST_LOG_TRIVIAL(debug) << "S3 read : " << size << " bytes (from the " << offset << " one) in the object " << name;
 
     // On constitue le moyen de récupération des informations (avec les structures de LibcurlStruct)
 
@@ -240,25 +240,25 @@ int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &chunk);
 
 
-    LOGGER_DEBUG("S3 READ START (" << size << ") " << pthread_self());
+    BOOST_LOG_TRIVIAL(debug) << "S3 READ START (" << size << ") " << pthread_self();
     res = curl_easy_perform(curl);
-    LOGGER_DEBUG("S3 READ END (" << size << ") " << pthread_self());
+    BOOST_LOG_TRIVIAL(debug) << "S3 READ END (" << size << ") " << pthread_self();
     
     curl_slist_free_all(list);
     //delete[] gmt_time;
 
     if( CURLE_OK != res) {
-        LOGGER_ERROR("Cannot read data from S3 : " << size << " bytes (from the " << offset << " one) in the object " << name);
-        LOGGER_ERROR(curl_easy_strerror(res));
+        BOOST_LOG_TRIVIAL(error) << "Cannot read data from S3 : " << size << " bytes (from the " << offset << " one) in the object " << name;
+        BOOST_LOG_TRIVIAL(error) << curl_easy_strerror(res);
         return -1;
     }
 
     long http_code = 0;
     curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
     if (http_code < 200 || http_code > 299) {
-        LOGGER_ERROR("Cannot read data from S3 : " << size << " bytes (from the " << offset << " one) in the object " << name);
-        LOGGER_ERROR("Response HTTP code : " << http_code);
-        LOGGER_ERROR("Response HTTP : " << chunk.data);
+        BOOST_LOG_TRIVIAL(error) << "Cannot read data from S3 : " << size << " bytes (from the " << offset << " one) in the object " << name;
+        BOOST_LOG_TRIVIAL(error) << "Response HTTP code : " << http_code;
+        BOOST_LOG_TRIVIAL(error) << "Response HTTP : " << chunk.data;
         return -1;
     }
 
@@ -268,15 +268,15 @@ int S3Context::read(uint8_t* data, int offset, int size, std::string name) {
 }
 
 bool S3Context::write(uint8_t* data, int offset, int size, std::string name) {
-    LOGGER_DEBUG("S3 write : " << size << " bytes (from the " << offset << " one) in the writing buffer " << name);
+    BOOST_LOG_TRIVIAL(debug) << "S3 write : " << size << " bytes (from the " << offset << " one) in the writing buffer " << name;
 
     std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
     if ( it1 == writingBuffers.end() ) {
         // pas de buffer pour ce nom d'objet
-        LOGGER_ERROR("No writing buffer for the name " << name);
+        BOOST_LOG_TRIVIAL(error) << "No writing buffer for the name " << name;
         return false;
     }
-    LOGGER_DEBUG("old length: " << it1->second->size());
+    BOOST_LOG_TRIVIAL(debug) << "old length: " << it1->second->size();
    
     // Calcul de la taille finale et redimensionnement éventuel du vector
     if (it1->second->size() < size + offset) {
@@ -284,18 +284,18 @@ bool S3Context::write(uint8_t* data, int offset, int size, std::string name) {
     }
 
     memcpy(&((*(it1->second))[0]) + offset, data, size);
-    LOGGER_DEBUG("new length: " << it1->second->size());
+    BOOST_LOG_TRIVIAL(debug) << "new length: " << it1->second->size();
 
     return true;
 }
 
 bool S3Context::writeFull(uint8_t* data, int size, std::string name) {
-    LOGGER_DEBUG("S3 write : " << size << " bytes (one shot) in the writing buffer " << name);
+    BOOST_LOG_TRIVIAL(debug) << "S3 write : " << size << " bytes (one shot) in the writing buffer " << name;
 
     std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
     if ( it1 == writingBuffers.end() ) {
         // pas de buffer pour ce nom d'objet
-        LOGGER_ERROR("No S3 writing buffer for the name " << name);
+        BOOST_LOG_TRIVIAL(error) << "No S3 writing buffer for the name " << name;
         return false;
     }
 
@@ -331,7 +331,7 @@ bool S3Context::openToWrite(std::string name) {
 
     std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
     if ( it1 != writingBuffers.end() ) {
-        LOGGER_ERROR("A S3 writing buffer already exists for the name " << name);
+        BOOST_LOG_TRIVIAL(error) << "A S3 writing buffer already exists for the name " << name;
         return false;
 
     } else {
@@ -347,11 +347,11 @@ bool S3Context::closeToWrite(std::string name) {
 
     std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
     if ( it1 == writingBuffers.end() ) {
-        LOGGER_ERROR("The S3 writing buffer with name " << name << "does not exist, cannot flush it");
+        BOOST_LOG_TRIVIAL(error) << "The S3 writing buffer with name " << name << "does not exist, cannot flush it";
         return false;
     }
 
-    LOGGER_DEBUG("Write buffered " << it1->second->size() << " bytes in the S3 object " << name);
+    BOOST_LOG_TRIVIAL(debug) << "Write buffered " << it1->second->size() << " bytes in the S3 object " << name;
 
     CURLcode res;
     struct curl_slist *list = NULL;
@@ -415,20 +415,20 @@ bool S3Context::closeToWrite(std::string name) {
 
 
     if( CURLE_OK != res) {
-        LOGGER_ERROR ( "Unable to flush " << it1->second->size() << " bytes in the object " << name );
-        LOGGER_ERROR(curl_easy_strerror(res));
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to flush " << it1->second->size() << " bytes in the object " << name ;
+        BOOST_LOG_TRIVIAL(error) << curl_easy_strerror(res);
         return false;
     }
 
     long http_code = 0;
     curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
     if (http_code < 200 || http_code > 299) {
-        LOGGER_ERROR ( "Unable to flush " << it1->second->size() << " bytes in the object " << name );
-        LOGGER_ERROR("Response HTTP code : " << http_code);
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to flush " << it1->second->size() << " bytes in the object " << name ;
+        BOOST_LOG_TRIVIAL(error) << "Response HTTP code : " << http_code;
         return false;
     }
 
-    LOGGER_DEBUG("Erase the flushed buffer");
+    BOOST_LOG_TRIVIAL(debug) << "Erase the flushed buffer";
     delete it1->second;
     writingBuffers.erase(it1);
 

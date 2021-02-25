@@ -270,15 +270,14 @@ int main ( int argc, char** argv ) {
 
         if ( reload ) {
             // Rechargement du serveur
-            LOGGER_INFO ( _ ( "Rechargement de la configuration" ) );
+            BOOST_LOG_TRIVIAL(info) <<  _ ( "Rechargement de la configuration" ) ;
             sock = W->getFCGISocket();
         } else {
             // Extinction du serveur
-            LOGGER_INFO ( _ ( "Extinction du serveur ROK4" ) );
+            BOOST_LOG_TRIVIAL(info) <<  _ ( "Extinction du serveur ROK4" ) ;
         }
 
         rok4KillServer ( W );
-        rok4ReloadLogger();
     }
 
     //CURL clean - one time for the whole program

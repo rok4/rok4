@@ -45,12 +45,12 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
 
     TiXmlDocument doc ( filePath.c_str() );
     if ( !doc.LoadFile() ) {
-        LOGGER_ERROR ( _ ( "Ne peut pas charger le fichier " ) << filePath );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "Ne peut pas charger le fichier " ) << filePath ;
         return;
     }
 
-    LOGGER_INFO ( _ ( "           Ajout du layer " ) << filePath );
-    LOGGER_INFO ( _ ( "           BaseDir Relative to : " ) << parentDir );
+    BOOST_LOG_TRIVIAL(info) <<  _ ( "           Ajout du layer " ) << filePath ;
+    BOOST_LOG_TRIVIAL(info) <<  _ ( "           BaseDir Relative to : " ) << parentDir ;
 
     /********************** Default values */
 
@@ -84,11 +84,11 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
 
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
     if ( !pElem ) {
-        LOGGER_ERROR ( filePath << _ ( " impossible de recuperer la racine." ) );
+        BOOST_LOG_TRIVIAL(error) <<  filePath << _ ( " impossible de recuperer la racine." ) ;
         return;
     }
     if ( strcmp ( pElem->Value(),"layer" ) ) {
-        LOGGER_ERROR ( filePath << _ ( " La racine n'est pas un layer." ) );
+        BOOST_LOG_TRIVIAL(error) <<  filePath << _ ( " La racine n'est pas un layer." ) ;
         return;
     }
     hRoot=TiXmlHandle ( pElem );
@@ -107,7 +107,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
     id=filePath.substr ( idBegin+1, idEnd-idBegin-1 );
 
     if ( Request::containForbiddenChars(id) ) {
-        LOGGER_ERROR ( _ ( "Layer " ) << id <<_ ( " : l'identifiant de la couche contient des caracteres interdits" ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "Layer " ) << id <<_ ( " : l'identifiant de la couche contient des caracteres interdits" ) ;
         return;
     }
 
@@ -144,90 +144,90 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
     // EX_GeographicBoundingBox
     pElem = hRoot.FirstChild ( "EX_GeographicBoundingBox" ).Element();
     if ( !pElem ) {
-        LOGGER_ERROR ( _ ( "Pas de geographicBoundingBox = " ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "Pas de geographicBoundingBox = " ) ;
         return;
     } else {
         // westBoundLongitude
         pElem = hRoot.FirstChild ( "EX_GeographicBoundingBox" ).FirstChild ( "westBoundLongitude" ).Element();
         if ( !pElem  || ! ( pElem->GetText() ) ) {
-            LOGGER_ERROR ( _ ( "Pas de westBoundLongitude" ) );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "Pas de westBoundLongitude" ) ;
             return;
         }
         if ( !sscanf ( pElem->GetText(),"%lf",&geographicBoundingBox.minx ) ) {
-            LOGGER_ERROR ( _ ( "Le westBoundLongitude est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "Le westBoundLongitude est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" ;
             return;
         }
         // southBoundLatitude
         pElem = hRoot.FirstChild ( "EX_GeographicBoundingBox" ).FirstChild ( "southBoundLatitude" ).Element();
         if ( !pElem || ! ( pElem->GetText() ) ) {
-            LOGGER_ERROR ( _ ( "Pas de southBoundLatitude" ) );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "Pas de southBoundLatitude" ) ;
             return;
         }
         if ( !sscanf ( pElem->GetText(),"%lf",&geographicBoundingBox.miny ) ) {
-            LOGGER_ERROR ( _ ( "Le southBoundLatitude est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "Le southBoundLatitude est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" ;
             return;
         }
             // eastBoundLongitude
         pElem = hRoot.FirstChild ( "EX_GeographicBoundingBox" ).FirstChild ( "eastBoundLongitude" ).Element();
         if ( !pElem || ! ( pElem->GetText() ) ) {
-            LOGGER_ERROR ( _ ( "Pas de eastBoundLongitude" ) );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "Pas de eastBoundLongitude" ) ;
             return;
         }
         if ( !sscanf ( pElem->GetText(),"%lf",&geographicBoundingBox.maxx ) ) {
-            LOGGER_ERROR ( _ ( "Le eastBoundLongitude est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "Le eastBoundLongitude est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" ;
             return;
         }
             // northBoundLatitude
         pElem = hRoot.FirstChild ( "EX_GeographicBoundingBox" ).FirstChild ( "northBoundLatitude" ).Element();
         if ( !pElem || ! ( pElem->GetText() ) ) {
-            LOGGER_ERROR ( _ ( "Pas de northBoundLatitude" ) );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "Pas de northBoundLatitude" ) ;
             return;
         }
         if ( !sscanf ( pElem->GetText(),"%lf",&geographicBoundingBox.maxy ) ) {
-            LOGGER_ERROR ( _ ( "Le northBoundLatitude est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "Le northBoundLatitude est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" ;
             return;
         }
     }
 
     pElem = hRoot.FirstChild ( "boundingBox" ).Element();
     if ( !pElem ) {
-        LOGGER_ERROR ( _ ( "Pas de BoundingBox" ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "Pas de BoundingBox" ) ;
     } else {
         if ( ! ( pElem->Attribute ( "CRS" ) ) ) {
-            LOGGER_ERROR ( _ ( "Le CRS est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "Le CRS est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" ;
             return;
         }
         boundingBox.srs=pElem->Attribute ( "CRS" );
         if ( ! ( pElem->Attribute ( "minx" ) ) ) {
-            LOGGER_ERROR ( _ ( "minx attribute is missing" ) );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "minx attribute is missing" ) ;
             return;
         }
         if ( !sscanf ( pElem->Attribute ( "minx" ),"%lf",&boundingBox.minx ) ) {
-            LOGGER_ERROR ( _ ( "Le minx est inexploitable:[" ) << pElem->Attribute ( "minx" ) << "]" );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "Le minx est inexploitable:[" ) << pElem->Attribute ( "minx" ) << "]" ;
             return;
         }
         if ( ! ( pElem->Attribute ( "miny" ) ) ) {
-            LOGGER_ERROR ( _ ( "miny attribute is missing" ) );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "miny attribute is missing" ) ;
             return;
         }
         if ( !sscanf ( pElem->Attribute ( "miny" ),"%lf",&boundingBox.miny ) ) {
-            LOGGER_ERROR ( _ ( "Le miny est inexploitable:[" ) << pElem->Attribute ( "miny" ) << "]" );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "Le miny est inexploitable:[" ) << pElem->Attribute ( "miny" ) << "]" ;
             return;
         }
         if ( ! ( pElem->Attribute ( "maxx" ) ) ) {
-            LOGGER_ERROR ( _ ( "maxx attribute is missing" ) );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "maxx attribute is missing" ) ;
             return;
         }
         if ( !sscanf ( pElem->Attribute ( "maxx" ),"%lf",&boundingBox.maxx ) ) {
-            LOGGER_ERROR ( _ ( "Le maxx est inexploitable:[" ) << pElem->Attribute ( "maxx" ) << "]" );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "Le maxx est inexploitable:[" ) << pElem->Attribute ( "maxx" ) << "]" ;
             return;
         }
         if ( ! ( pElem->Attribute ( "maxy" ) ) ) {
-            LOGGER_ERROR ( _ ( "maxy attribute is missing" ) );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "maxy attribute is missing" ) ;
             return;
         }
         if ( !sscanf ( pElem->Attribute ( "maxy" ),"%lf",&boundingBox.maxy ) ) {
-            LOGGER_ERROR ( _ ( "Le maxy est inexploitable:[" ) << pElem->Attribute ( "maxy" ) << "]" );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "Le maxy est inexploitable:[" ) << pElem->Attribute ( "maxy" ) << "]" ;
             return;
         }
     }
@@ -246,20 +246,20 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
         std::string type;
 
         if ( pElem->QueryStringAttribute ( "type",&type ) != TIXML_SUCCESS ) {
-            LOGGER_ERROR ( filePath << _ ( "MetadataURL type missing" ) );
+            BOOST_LOG_TRIVIAL(error) <<  filePath << _ ( "MetadataURL type missing" ) ;
             continue;
         }
 
         TiXmlHandle hMetadata ( pElem );
         TiXmlElement *pElemMTD = hMetadata.FirstChild ( "Format" ).Element();
         if ( !pElemMTD || !pElemMTD->GetText() ) {
-            LOGGER_ERROR ( filePath << _ ( "MetadataURL Format missing" ) );
+            BOOST_LOG_TRIVIAL(error) <<  filePath << _ ( "MetadataURL Format missing" ) ;
             continue;
         }
         format = pElemMTD->GetText();
         pElemMTD = hMetadata.FirstChild ( "OnlineResource" ).Element();
         if ( !pElemMTD || pElemMTD->QueryStringAttribute ( "xlink:href",&href ) != TIXML_SUCCESS ) {
-            LOGGER_ERROR ( filePath << _ ( "MetadataURL HRef missing" ) );
+            BOOST_LOG_TRIVIAL(error) <<  filePath << _ ( "MetadataURL HRef missing" ) ;
             continue;
         }
 
@@ -267,7 +267,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
     }
 
     if ( metadataURLs.size() == 0 && inspire ) {
-        LOGGER_ERROR ( _ ( "No MetadataURL found in the layer " ) << filePath <<_ ( " : not compatible with INSPIRE!!" ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "No MetadataURL found in the layer " ) << filePath <<_ ( " : not compatible with INSPIRE!!" ) ;
         return;
     }
 
@@ -284,11 +284,11 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
         }
         pyramid = ConfLoader::buildPyramid ( pyramidFilePath, serverXML, servicesXML, true);
         if ( ! pyramid ) {
-            LOGGER_ERROR ( _ ( "La pyramide " ) << pyramidFilePath << _ ( " ne peut etre chargee" ) );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "La pyramide " ) << pyramidFilePath << _ ( " ne peut etre chargee" ) ;
             return;
         }
     } else {
-        LOGGER_ERROR ( _ ( "Aucune pyramide associee au layer " ) << filePath );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "Aucune pyramide associee au layer " ) << filePath ;
         return;
     }
 
@@ -341,7 +341,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
             }else if(getFeatureInfoType.compare("SQL") == 0){
                     // SQL
             }else{
-                LOGGER_ERROR ( filePath << _ ( "La source du GetFeatureInfo n'est pas autorisée." ) );
+                BOOST_LOG_TRIVIAL(error) <<  filePath << _ ( "La source du GetFeatureInfo n'est pas autorisée." ) ;
                 return;
             }
         }
@@ -349,7 +349,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
         std::string inspireStyleName = DEFAULT_STYLE_INSPIRE;
         for ( pElem=hRoot.FirstChild ( "style" ).Element(); pElem; pElem=pElem->NextSiblingElement ( "style" ) ) {
             if ( !pElem || ! ( pElem->GetText() ) ) {
-                LOGGER_ERROR ( _ ( "Pas de style => style = " ) << ( inspire?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE ) );
+                BOOST_LOG_TRIVIAL(error) <<  _ ( "Pas de style => style = " ) << ( inspire?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE ) ;
                 styleName = ( inspire?DEFAULT_STYLE_INSPIRE:DEFAULT_STYLE );
             } else {
                 styleName = DocumentXML::getTextStrFromElem(pElem);
@@ -357,7 +357,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
 
             Style* sty = serverXML->getStyle(styleName);
             if ( sty == NULL ) {
-                LOGGER_ERROR ( _ ( "Style " ) << styleName << _ ( " non defini" ) );
+                BOOST_LOG_TRIVIAL(error) <<  _ ( "Style " ) << styleName << _ ( " non defini" ) ;
                 continue;
             }
 
@@ -374,7 +374,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
 
             Style* sty = serverXML->getStyle(inspireStyleName);
             if ( sty == NULL ) {
-                LOGGER_ERROR ( _ ( "Style " ) << inspireStyleName << _ ( "non defini" ) );
+                BOOST_LOG_TRIVIAL(error) <<  _ ( "Style " ) << inspireStyleName << _ ( "non defini" ) ;
                 return;
             }
             styles.insert ( styles.begin(), sty );
@@ -382,7 +382,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
         }
 
         if ( styles.size() ==0 ) {
-            LOGGER_ERROR ( _ ( "Pas de Style defini, Layer non valide" ) );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "Pas de Style defini, Layer non valide" ) ;
             return;
         }
 
@@ -390,7 +390,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
         if ( !pElem || ! ( pElem->GetText() ) ) {
             minRes=0.;
         } else if ( !sscanf ( pElem->GetText(),"%lf",&minRes ) ) {
-            LOGGER_ERROR ( _ ( "La resolution min est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "La resolution min est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" ;
             return;
         }
 
@@ -398,7 +398,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
         if ( !pElem || ! ( pElem->GetText() ) ) {
             maxRes=0.;
         } else if ( !sscanf ( pElem->GetText(),"%lf",&maxRes ) ) {
-            LOGGER_ERROR ( _ ( "La resolution max est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "La resolution max est inexploitable:[" ) << DocumentXML::getTextStrFromElem(pElem) << "]" ;
             return;
         }
 
@@ -411,7 +411,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
                 CRS crs ( str_crs );
                 bool crsOk=true;
                 if ( !crs.isProj4Compatible() ) {
-                    LOGGER_WARN ( _ ( "Le CRS " ) <<str_crs<<_ ( " n est pas reconnu par Proj4 et n est donc par ajoute aux CRS de la couche" ) );
+                    BOOST_LOG_TRIVIAL(warning) <<  _ ( "Le CRS " ) <<str_crs<<_ ( " n est pas reconnu par Proj4 et n est donc par ajoute aux CRS de la couche" ) ;
                     crsOk = false;
                 } else {
                     //Test if already define in Global CRS
@@ -419,7 +419,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
                     for ( unsigned int k=0; k<servicesXML->getGlobalCRSList()->size(); k++ ) {
                         if ( crs.cmpRequestCode ( servicesXML->getGlobalCRSList()->at ( k ).getRequestCode() ) ) {
                             crsOk = false;
-                            LOGGER_INFO ( _ ( "         CRS " ) <<str_crs << _ ( " already present in global CRS list" ) );
+                            BOOST_LOG_TRIVIAL(info) <<  _ ( "         CRS " ) <<str_crs << _ ( " already present in global CRS list" ) ;
                             break;
                         }
                     }
@@ -429,7 +429,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
                         BoundingBox<double> cropBBox = crs.cropBBoxGeographic ( geographicBoundingBox.minx,geographicBoundingBox.miny,geographicBoundingBox.maxx,geographicBoundingBox.maxy );
                         // Test if the remaining bbox contain useful data
                         if ( cropBBox.xmax - cropBBox.xmin <= 0 || cropBBox.ymax - cropBBox.ymin <= 0 ) {
-                            LOGGER_WARN ( _ ( "         Le CRS " ) <<str_crs<<_ ( " n est pas compatible avec l'emprise de la couche" ) );
+                            BOOST_LOG_TRIVIAL(warning) <<  _ ( "         Le CRS " ) <<str_crs<<_ ( " n est pas compatible avec l'emprise de la couche" ) ;
                             crsOk = false;
                         }
                     }
@@ -444,7 +444,7 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
                             allowedCRS = ConfLoader::isCRSAllowed(servicesXML->getRestrictedCRSList(), str_crs, tmpEquilist);
                         }
                         if (!allowedCRS){
-                            LOGGER_WARN ( _ ( "         Forbiden CRS " ) << str_crs  );
+                            BOOST_LOG_TRIVIAL(warning) <<  _ ( "         Forbiden CRS " ) << str_crs  ;
                             crsOk = false;
                         }
                     }
@@ -458,10 +458,10 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
                             }
                         }
                         if (!found){
-                            LOGGER_INFO ( _ ( "         Adding CRS " ) <<str_crs );
+                            BOOST_LOG_TRIVIAL(info) <<  _ ( "         Adding CRS " ) <<str_crs ;
                             WMSCRSList.push_back ( crs );
                         } else {
-                            LOGGER_WARN ( _ ( "         Already present CRS " ) << str_crs  );
+                            BOOST_LOG_TRIVIAL(warning) <<  _ ( "         Already present CRS " ) << str_crs  ;
                         }
                         std::vector<CRS> tmpEquilist = ConfLoader::getEqualsCRS(servicesXML->getListOfEqualsCRS() , str_crs );
                         for (unsigned int l = 0; l< tmpEquilist.size();l++){
@@ -474,9 +474,9 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
                             }
                             if (!found){
                                 WMSCRSList.push_back( tmpEquilist.at( l ) );
-                                LOGGER_INFO ( _ ( "         Adding Equivalent CRS " ) << tmpEquilist.at( l ).getRequestCode() );
+                                BOOST_LOG_TRIVIAL(info) <<  _ ( "         Adding Equivalent CRS " ) << tmpEquilist.at( l ).getRequestCode() ;
                             } else {
-                                LOGGER_WARN ( _ ( "         Already present CRS " ) << tmpEquilist.at( l ).getRequestCode()  );
+                                BOOST_LOG_TRIVIAL(warning) <<  _ ( "         Already present CRS " ) << tmpEquilist.at( l ).getRequestCode()  ;
                             }
                         }
                     }
@@ -485,11 +485,11 @@ LayerXML::LayerXML(std::string path, ServerXML* serverXML, ServicesXML* services
         }
 
         if ( WMSCRSList.size() ==0 ) {
-            LOGGER_INFO ( filePath <<_ ( ": Aucun CRS specifique autorise pour la couche" ) );
+            BOOST_LOG_TRIVIAL(info) <<  filePath <<_ ( ": Aucun CRS specifique autorise pour la couche" ) ;
         }
         pElem=hRoot.FirstChild ( "resampling" ).Element();
         if ( !pElem || ! ( pElem->GetText() ) ) {
-            LOGGER_ERROR ( _ ( "Pas de resampling => resampling = " ) << DEFAULT_RESAMPLING );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "Pas de resampling => resampling = " ) << DEFAULT_RESAMPLING ;
             resamplingStr = DEFAULT_RESAMPLING;
         } else {
             resamplingStr = DocumentXML::getTextStrFromElem(pElem);

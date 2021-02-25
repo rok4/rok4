@@ -78,7 +78,7 @@ ServicesXML* ConfLoader::buildServicesConf ( std::string servicesConfigFile ) {
 /**********************************************************************************************************/
 
 bool ConfLoader::buildStylesList ( ServerXML* serverXML, ServicesXML* servicesXML ) {
-    LOGGER_INFO ( _ ( "CHARGEMENT DES STYLES" ) );
+    BOOST_LOG_TRIVIAL(info) <<  _ ( "CHARGEMENT DES STYLES" ) ;
 
     // lister les fichier du repertoire styleDir
     std::vector<std::string> styleFiles;
@@ -87,7 +87,7 @@ bool ConfLoader::buildStylesList ( ServerXML* serverXML, ServicesXML* servicesXM
     struct dirent *fileEntry;
     DIR *dir;
     if ( ( dir = opendir ( styleDir.c_str() ) ) == NULL ) {
-        LOGGER_FATAL ( _ ( "Le repertoire des Styles " ) << styleDir << _ ( " n'est pas accessible." ) );
+        BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Le repertoire des Styles " ) << styleDir << _ ( " n'est pas accessible." ) ;
         return false;
     }
     while ( ( fileEntry = readdir ( dir ) ) ) {
@@ -101,7 +101,7 @@ bool ConfLoader::buildStylesList ( ServerXML* serverXML, ServicesXML* servicesXM
     if ( styleFiles.empty() ) {
         // FIXME:
         // Aucun Style presents.
-        LOGGER_FATAL ( _ ( "Aucun fichier *.stl dans le repertoire " ) << styleDir );
+        BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Aucun fichier *.stl dans le repertoire " ) << styleDir ;
         return false;
     }
 
@@ -112,16 +112,16 @@ bool ConfLoader::buildStylesList ( ServerXML* serverXML, ServicesXML* servicesXM
         if ( style ) {
             serverXML->addStyle ( style );
         } else {
-            LOGGER_ERROR ( _ ( "Ne peut charger le style: " ) << styleFiles[i] );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "Ne peut charger le style: " ) << styleFiles[i] ;
         }
     }
 
     if ( serverXML->getNbStyles() ==0 ) {
-        LOGGER_FATAL ( _ ( "Aucun Style n'a pu etre charge!" ) );
+        BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Aucun Style n'a pu etre charge!" ) ;
         return false;
     }
 
-    LOGGER_INFO ( _ ( "NOMBRE DE STYLES CHARGES : " ) << serverXML->getNbStyles() );
+    BOOST_LOG_TRIVIAL(info) <<  _ ( "NOMBRE DE STYLES CHARGES : " ) << serverXML->getNbStyles() ;
 
     return true;
 }
@@ -142,7 +142,7 @@ Style* ConfLoader::buildStyle ( std::string fileName, ServicesXML* servicesXML )
 /**********************************************************************************************************/
 
 bool ConfLoader::buildTMSList ( ServerXML* serverXML ) {
-    LOGGER_INFO ( _ ( "CHARGEMENT DES TMS" ) );
+    BOOST_LOG_TRIVIAL(info) <<  _ ( "CHARGEMENT DES TMS" ) ;
 
     // lister les fichier du repertoire tmsDir
     std::vector<std::string> tmsFiles;
@@ -151,7 +151,7 @@ bool ConfLoader::buildTMSList ( ServerXML* serverXML ) {
     struct dirent *fileEntry;
     DIR *dir;
     if ( ( dir = opendir ( tmsDir.c_str() ) ) == NULL ) {
-        LOGGER_FATAL ( _ ( "Le repertoire des TMS " ) << tmsDir << _ ( " n'est pas accessible." ) );
+        BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Le repertoire des TMS " ) << tmsDir << _ ( " n'est pas accessible." ) ;
         return false;
     }
     while ( ( fileEntry = readdir ( dir ) ) ) {
@@ -167,7 +167,7 @@ bool ConfLoader::buildTMSList ( ServerXML* serverXML ) {
         // Aucun TMS presents. Ce n'est pas necessairement grave si le serveur
         // ne sert pas pour le WMTS et qu'on exploite pas de cache tuile.
         // Cependant pour le moment (07/2010) on ne gere que des caches tuiles
-        LOGGER_FATAL ( _ ( "Aucun fichier *.tms dans le repertoire " ) << tmsDir );
+        BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Aucun fichier *.tms dans le repertoire " ) << tmsDir ;
         return false;
     }
 
@@ -178,16 +178,16 @@ bool ConfLoader::buildTMSList ( ServerXML* serverXML ) {
         if ( tms ) {
             serverXML->addTMS ( tms );
         } else {
-            LOGGER_ERROR ( _ ( "Ne peut charger le tms: " ) << tmsFiles[i] );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "Ne peut charger le tms: " ) << tmsFiles[i] ;
         }
     }
 
     if ( serverXML->getNbTMS() ==0 ) {
-        LOGGER_FATAL ( _ ( "Aucun TMS n'a pu etre charge!" ) );
+        BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Aucun TMS n'a pu etre charge!" ) ;
         return false;
     }
 
-    LOGGER_INFO ( _ ( "NOMBRE DE TMS CHARGES : " ) << serverXML->getNbTMS() );
+    BOOST_LOG_TRIVIAL(info) <<  _ ( "NOMBRE DE TMS CHARGES : " ) << serverXML->getNbTMS() ;
 
     return true;
 }
@@ -208,7 +208,7 @@ TileMatrixSet* ConfLoader::buildTileMatrixSet ( std::string fileName ) {
 
 bool ConfLoader::buildLayersList ( ServerXML* serverXML, ServicesXML* servicesXML ) {
 
-    LOGGER_INFO ( _ ( "CHARGEMENT DES LAYERS" ) );
+    BOOST_LOG_TRIVIAL(info) <<  _ ( "CHARGEMENT DES LAYERS" ) ;
     // lister les fichier du repertoire layerDir
     std::vector<std::string> layerFiles;
     std::string layerDir = serverXML->getLayersDir();
@@ -216,7 +216,7 @@ bool ConfLoader::buildLayersList ( ServerXML* serverXML, ServicesXML* servicesXM
     struct dirent *fileEntry;
     DIR *dir;
     if ( ( dir = opendir ( layerDir.c_str() ) ) == NULL ) {
-        LOGGER_FATAL ( _ ( "Le repertoire " ) << layerDir << _ ( " n'est pas accessible." ) );
+        BOOST_LOG_TRIVIAL(fatal) <<  _ ( "Le repertoire " ) << layerDir << _ ( " n'est pas accessible." ) ;
         return false;
     }
     while ( ( fileEntry = readdir ( dir ) ) ) {
@@ -228,8 +228,8 @@ bool ConfLoader::buildLayersList ( ServerXML* serverXML, ServicesXML* servicesXM
     closedir ( dir );
 
     if ( layerFiles.empty() ) {
-        LOGGER_ERROR ( _ ( "Aucun fichier *.lay dans le repertoire " ) << layerDir );
-        LOGGER_ERROR ( _ ( "Le serveur n'a aucune donnees à servir. Dommage..." ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "Aucun fichier *.lay dans le repertoire " ) << layerDir ;
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "Le serveur n'a aucune donnees à servir. Dommage..." ) ;
         //return false;
     }
 
@@ -240,16 +240,16 @@ bool ConfLoader::buildLayersList ( ServerXML* serverXML, ServicesXML* servicesXM
         if ( layer ) {
             serverXML->addLayer ( layer );
         } else {
-            LOGGER_ERROR ( _ ( "Ne peut charger le layer: " ) << layerFiles[i] );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "Ne peut charger le layer: " ) << layerFiles[i] ;
         }
     }
 
     if ( serverXML->getNbLayers() ==0 ) {
-        LOGGER_ERROR ( _ ( "Aucun layer n'a pu etre charge!" ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "Aucun layer n'a pu etre charge!" ) ;
         //return false;
     }
 
-    LOGGER_INFO ( _ ( "NOMBRE DE LAYERS CHARGES : " ) << serverXML->getNbLayers() );
+    BOOST_LOG_TRIVIAL(info) <<  _ ( "NOMBRE DE LAYERS CHARGES : " ) << serverXML->getNbLayers() ;
     return true;
 }
 
@@ -301,7 +301,7 @@ Pyramid* ConfLoader::buildBasedPyramid (
     if (! sFile || ! sTransparent || ! sStyle || ! sFile->GetText() || ! sTransparent->GetText() || ! sStyle->GetText()) {
         // Il manque un des trois elements necessaires pour initialiser une
         // nouvelle pyramide de base
-        LOGGER_ERROR ( _ ( "Source Pyramid: " ) << basedPyramidFilePath << _ ( " can't be loaded because information are missing" ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "Source Pyramid: " ) << basedPyramidFilePath << _ ( " can't be loaded because information are missing" ) ;
         return NULL;
     }
 
@@ -321,7 +321,7 @@ Pyramid* ConfLoader::buildBasedPyramid (
     Pyramid* basedPyramid = buildPyramid ( basedPyramidFilePath, serverXML, servicesXML, false );
 
     if ( ! basedPyramid) {
-        LOGGER_ERROR ( _ ( "La pyramide source " ) << basedPyramidFilePath << _ ( " ne peut etre chargee" ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "La pyramide source " ) << basedPyramidFilePath << _ ( " ne peut etre chargee" ) ;
         return NULL;
     }
 
@@ -335,7 +335,7 @@ Pyramid* ConfLoader::buildBasedPyramid (
     // On teste le style et on ajoute le normal au pire
     Style* style = serverXML->getStyle(str_style);
     if ( style == NULL ) {
-        LOGGER_ERROR ( _ ( "Style " ) << str_style << _ ( "non defini" ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "Style " ) << str_style << _ ( "non defini" ) ;
         style = serverXML->getStyle("normal");
     }
     basedPyramid->setStyle(style);
@@ -346,7 +346,7 @@ Pyramid* ConfLoader::buildBasedPyramid (
 
     if (levelsRatios.size() == 0) {
         // Aucun niveau dans la pyramide de base ne convient
-        LOGGER_ERROR ( "La pyramide source " << basedPyramidFilePath << " ne contient pas de niveau satisfaisant pour le niveau " << levelOD );
+        BOOST_LOG_TRIVIAL(error) <<  "La pyramide source " << basedPyramidFilePath << " ne contient pas de niveau satisfaisant pour le niveau " << levelOD ;
         delete basedPyramid;
         return NULL;
     }
@@ -365,7 +365,7 @@ Pyramid* ConfLoader::buildBasedPyramid (
     }
 
     if (bestLevel == NULL) {
-        LOGGER_ERROR ( "La pyramide source " << basedPyramidFilePath << " ne contient pas de niveau satisfaisant pour le niveau " << levelOD );
+        BOOST_LOG_TRIVIAL(error) <<  "La pyramide source " << basedPyramidFilePath << " ne contient pas de niveau satisfaisant pour le niveau " << levelOD ;
         delete basedPyramid;
         return NULL;
     }
@@ -402,14 +402,14 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
 
         std::size_t found = url.find(" ");
         if (found!=std::string::npos) {
-            LOGGER_ERROR("Une URL ne peut contenir des espaces");
+            BOOST_LOG_TRIVIAL(error) << "Une URL ne peut contenir des espaces";
             return NULL;
         }
 
         found = url.find("?");
         size_t size = url.size()-1;
         if (found!=std::string::npos && found!=size) {
-            LOGGER_ERROR("Une URL ne peut contenir un ou des '?' hormis le dernier qui est un séparateur");
+            BOOST_LOG_TRIVIAL(error) << "Une URL ne peut contenir un ou des '?' hormis le dernier qui est un séparateur";
             return NULL;
         }
 
@@ -418,7 +418,7 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
         }
 
     } else {
-        LOGGER_ERROR("Une URL doit etre specifiee pour un WebService");
+        BOOST_LOG_TRIVIAL(error) << "Une URL doit etre specifiee pour un WebService";
         return NULL;
     }
 
@@ -479,7 +479,7 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
         if (sVersion && sVersion->GetText()) {
             version = DocumentXML::getTextStrFromElem(sVersion);
         } else {
-            LOGGER_ERROR("Un WMS doit contenir une version");
+            BOOST_LOG_TRIVIAL(error) << "Un WMS doit contenir une version";
             return NULL;
         }
 
@@ -487,7 +487,7 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
         if (sLayers && sLayers->GetText()) {
             layers = DocumentXML::getTextStrFromElem(sLayers);
         } else {
-            LOGGER_ERROR("Un WMS doit contenir un ou des layers séparés par des virgules");
+            BOOST_LOG_TRIVIAL(error) << "Un WMS doit contenir un ou des layers séparés par des virgules";
             return NULL;
         }
 
@@ -495,7 +495,7 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
         if (sStyles && sStyles->GetText()) {
             styles = DocumentXML::getTextStrFromElem(sStyles);
         } else {
-            LOGGER_ERROR("Un WMS doit contenir un ou des styles séparés par des virgules");
+            BOOST_LOG_TRIVIAL(error) << "Un WMS doit contenir un ou des styles séparés par des virgules";
             return NULL;
         }
 
@@ -504,19 +504,19 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
             format = DocumentXML::getTextStrFromElem(sFormat);
             Rok4Format::eformat_data fmt = Rok4Format::fromMimeType(format);
             if (fmt == Rok4Format::UNKNOWN) {
-                LOGGER_ERROR("Un WMS doit être requete dans un format lisible par rok4");
+                BOOST_LOG_TRIVIAL(error) << "Un WMS doit être requete dans un format lisible par rok4";
                 return NULL;
             }
                 //Pour le moment, on autorise que deux formats (jpeg et png)
                 //car les autres ne sont pas gérer correctement par les decodeurs de Rok4
                 //il faudrait notamment creer un decodeur pour le tiff (lecture de l'en-tête, puis decompression)
             if (format != "image/jpeg" && format != "image/png") {
-                LOGGER_ERROR("Un WMS doit être requete en image/jpeg ou image/png");
+                BOOST_LOG_TRIVIAL(error) << "Un WMS doit être requete en image/jpeg ou image/png";
                 return NULL;
             }
         } else {
             format = Rok4Format::toString(pyrFormat);
-            LOGGER_ERROR("Un WMS doit contenir un format. Par défaut => " << format);
+            BOOST_LOG_TRIVIAL(error) << "Un WMS doit contenir un format. Par défaut => " << format;
         }
 
         TiXmlElement* sCrs = sWMS->FirstChildElement("crs");
@@ -528,20 +528,20 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
             std::string pcrs = pyrCRS.getProj4Code();
 
             if (askedCRS != pyrCRS && !servicesXML->are_the_two_CRS_equal(crs,pcrs)) {
-                LOGGER_ERROR("Un WMS doit contenir un crs équivalent à celui de la pyramide en construction");
+                BOOST_LOG_TRIVIAL(error) << "Un WMS doit contenir un crs équivalent à celui de la pyramide en construction";
                 return NULL;
             }
 
         } else {
             crs = pyrCRS.getProj4Code();
-            LOGGER_ERROR("Un WMS doit contenir un crs. Par défaut => " << crs);
+            BOOST_LOG_TRIVIAL(error) << "Un WMS doit contenir un crs. Par défaut => " << crs;
         }
 
         TiXmlElement* sChannels = sWMS->FirstChildElement("channels");
         if (sChannels && sChannels->GetText()) {
             channels = atoi(DocumentXML::getTextStrFromElem(sChannels).c_str());
         } else {
-            LOGGER_ERROR("Un WMS doit contenir un channels");
+            BOOST_LOG_TRIVIAL(error) << "Un WMS doit contenir un channels";
             return NULL;
         }
 
@@ -564,40 +564,40 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
         TiXmlElement* sBbox = sWMS->FirstChildElement("bbox");
         if (sBbox) {
             if ( ! ( sBbox->Attribute ( "minx" ) ) ) {
-                LOGGER_ERROR ( "minx attribute is missing" );
+                BOOST_LOG_TRIVIAL(error) <<  "minx attribute is missing" ;
                 return NULL;
             }
             if ( !sscanf ( sBbox->Attribute ( "minx" ),"%lf",&bbox.xmin) ) {
-                LOGGER_ERROR ( "Le minx est inexploitable:[" << sBbox->Attribute ( "minx" ) << "]" );
+                BOOST_LOG_TRIVIAL(error) <<  "Le minx est inexploitable:[" << sBbox->Attribute ( "minx" ) << "]" ;
                 return NULL;
             }
             if ( ! ( sBbox->Attribute ( "miny" ) ) ) {
-                LOGGER_ERROR ( "miny attribute is missing" );
+                BOOST_LOG_TRIVIAL(error) <<  "miny attribute is missing" ;
                 return NULL;
             }
             if ( !sscanf ( sBbox->Attribute ( "miny" ),"%lf",&bbox.ymin ) ) {
-                LOGGER_ERROR ("Le miny est inexploitable:[" << sBbox->Attribute ( "miny" ) << "]" );
+                BOOST_LOG_TRIVIAL(error) << "Le miny est inexploitable:[" << sBbox->Attribute ( "miny" ) << "]" ;
                 return NULL;
             }
             if ( ! ( sBbox->Attribute ( "maxx" ) ) ) {
-                LOGGER_ERROR (  "maxx attribute is missing"  );
+                BOOST_LOG_TRIVIAL(error) <<   "maxx attribute is missing"  ;
                 return NULL;
             }
             if ( !sscanf ( sBbox->Attribute ( "maxx" ),"%lf",&bbox.xmax ) ) {
-                LOGGER_ERROR (  "Le maxx est inexploitable:["  << sBbox->Attribute ( "maxx" ) << "]" );
+                BOOST_LOG_TRIVIAL(error) <<   "Le maxx est inexploitable:["  << sBbox->Attribute ( "maxx" ) << "]" ;
                 return NULL;
             }
             if ( ! ( sBbox->Attribute ( "maxy" ) ) ) {
-                LOGGER_ERROR (  "maxy attribute is missing" );
+                BOOST_LOG_TRIVIAL(error) <<   "maxy attribute is missing" ;
                 return NULL;
             }
             if ( !sscanf ( sBbox->Attribute ( "maxy" ),"%lf",&bbox.ymax ) ) {
-                LOGGER_ERROR (  "Le maxy est inexploitable:["  << sBbox->Attribute ( "maxy" ) << "]" );
+                BOOST_LOG_TRIVIAL(error) <<   "Le maxy est inexploitable:["  << sBbox->Attribute ( "maxy" ) << "]" ;
                 return NULL;
             }
 
         } else {
-            LOGGER_ERROR("Un WMS doit contenir une bbox");
+            BOOST_LOG_TRIVIAL(error) << "Un WMS doit contenir une bbox";
             return NULL;
         }
 
@@ -625,7 +625,7 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
                 noDataValues.push_back(curVal);
             }
             if (noDataValues.size() < channels) {
-                LOGGER_ERROR("Le nombre de channels indique est different du nombre de noDataValue donne");
+                BOOST_LOG_TRIVIAL(error) << "Le nombre de channels indique est different du nombre de noDataValue donne";
                 return NULL;
             }
         } else {
@@ -638,7 +638,7 @@ WebService *ConfLoader::parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Form
         ws->setResponseType(format);
     } else {
          //On retourne une erreur car le WMS est le seul WebService disponible pour le moment
-        LOGGER_ERROR("Un WebService doit contenir un WMS pour être utilisé");
+        BOOST_LOG_TRIVIAL(error) << "Un WebService doit contenir un WMS pour être utilisé";
         return NULL;
     }
 
@@ -655,7 +655,7 @@ std::vector<std::string> ConfLoader::loadListEqualsCRS(){
     char namebuffer[100];
     strcpy(namebuffer, dirCRS);
     strcat(namebuffer, fileCRS);
-    LOGGER_INFO ( _ ( "Construction de la liste des CRS equivalents depuis " ) << namebuffer );
+    BOOST_LOG_TRIVIAL(info) <<  _ ( "Construction de la liste des CRS equivalents depuis " ) << namebuffer ;
     std::vector<std::string> rawStrVector = loadStringVectorFromFile(std::string(namebuffer));
     std::vector<std::string> strVector;
     // rawStrVector can cointains some unknowned CRS => filtering using Proj4
@@ -679,7 +679,7 @@ std::vector<std::string> ConfLoader::loadListEqualsCRS(){
             //is the new CRS compatible with Proj4 ?
             CRS crs ( crsstr );
             if ( !crs.isProj4Compatible() ) {
-                LOGGER_WARN ( _ ( "The Equivalent CRS [" ) << crsstr << _ ( "] is not present in Proj4" ) );
+                BOOST_LOG_TRIVIAL(warning) <<  _ ( "The Equivalent CRS [" ) << crsstr << _ ( "] is not present in Proj4" ) ;
             } else {
                 targetLine.append( crsstr );
                 targetLine.append( " " );
@@ -701,7 +701,7 @@ std::vector<std::string> ConfLoader::loadStringVectorFromFile(std::string file){
     // We test if the stream is empty
     //   This can happen when the file can't be loaded or when the file is empty
     if ( input.peek() == std::ifstream::traits_type::eof() ) {
-        LOGGER_ERROR ( _ ("Ne peut pas charger le fichier ") << file << _ (" ou fichier vide")  );
+        BOOST_LOG_TRIVIAL(error) <<  _ ("Ne peut pas charger le fichier ") << file << _ (" ou fichier vide")  ;
     }
     
     for( std::string line; getline(input, line); ) {
@@ -746,7 +746,7 @@ std::vector<CRS> ConfLoader::getEqualsCRS(std::vector<std::string> listofequalsC
                     //is the new CRS compatible with Proj4 ?
                     CRS crs ( crsstr );
                     if ( !crs.isProj4Compatible() ) {
-                        LOGGER_DEBUG ( _ ( "The Equivalent CRS [" ) << crsstr << _ ( "] of [" ) << basecrs << _ ( "] is not present in Proj4" ) );
+                        BOOST_LOG_TRIVIAL(debug) <<  _ ( "The Equivalent CRS [" ) << crsstr << _ ( "] of [" ) << basecrs << _ ( "] is not present in Proj4" ) ;
                     } else {
                         returnCRS.push_back( crs );
                     }
@@ -807,7 +807,7 @@ std::string ConfLoader::getTagContentOfFile(std::string file, std::string tag) {
 
     TiXmlDocument doc ( file );
     if ( !doc.LoadFile() ) {
-        LOGGER_ERROR (  "Ne peut pas charger le fichier " << file );
+        BOOST_LOG_TRIVIAL(error) <<   "Ne peut pas charger le fichier " << file ;
         return "";
     }
 
@@ -817,7 +817,7 @@ std::string ConfLoader::getTagContentOfFile(std::string file, std::string tag) {
 
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
     if ( !pElem ) {
-        LOGGER_ERROR ( file << " impossible de recuperer la racine."  );
+        BOOST_LOG_TRIVIAL(error) <<  file << " impossible de recuperer la racine."  ;
         return "";
     }
     if ( pElem->ValueStr() == tag ) {
@@ -844,7 +844,7 @@ std::vector<std::string> ConfLoader::listFileFromDir(std::string directory, std:
     struct dirent *fileEntry;
     DIR *dir;
     if ( ( dir = opendir ( directory.c_str() ) ) == NULL ) {
-        LOGGER_FATAL ( "Le repertoire "  << directory <<  " n'est pas accessible."  );
+        BOOST_LOG_TRIVIAL(fatal) <<  "Le repertoire "  << directory <<  " n'est pas accessible."  ;
         return files;
     }
     while ( ( fileEntry = readdir ( dir ) ) ) {
@@ -856,7 +856,7 @@ std::vector<std::string> ConfLoader::listFileFromDir(std::string directory, std:
     closedir ( dir );
 
     if ( files.empty() ) {
-        LOGGER_ERROR ( "Aucun fichier " << extension << " dans le repertoire "  << directory );
+        BOOST_LOG_TRIVIAL(error) <<  "Aucun fichier " << extension << " dans le repertoire "  << directory ;
         return files;
     }
 

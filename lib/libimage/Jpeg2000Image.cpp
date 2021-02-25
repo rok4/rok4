@@ -50,7 +50,7 @@
  */
 
 #include "Jpeg2000Image.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Utils.h"
 #include "Jpeg2000_library_config.h"
 
@@ -68,15 +68,15 @@ Jpeg2000Image* Jpeg2000ImageFactory::createJpeg2000ImageToRead ( char* filename,
     
 #ifdef KDU_USE
 
-    LOGGER_DEBUG("Driver JPEG2000 : KAKADU");
-    LOGGER_DEBUG("\tThreading : " << KDU_THREADING);
+    BOOST_LOG_TRIVIAL(debug) << "Driver JPEG2000 : KAKADU";
+    BOOST_LOG_TRIVIAL(debug) << "\tThreading : " << KDU_THREADING;
 
     LibkakaduImageFactory DRVKDU;
     return DRVKDU.createLibkakaduImageToRead(filename, bbox, resx, resy);
 
 #else
 
-    LOGGER_DEBUG("Driver JPEG2000 : OPENJPEG");
+    BOOST_LOG_TRIVIAL(debug) << "Driver JPEG2000 : OPENJPEG";
 
     LibopenjpegImageFactory DRVOJ;
     return DRVOJ.createLibopenjpegImageToRead(filename, bbox, resx, resy);

@@ -172,7 +172,7 @@ private:
                 dataSource = 0;
             }
         }
-        //LOGGER_DEBUG("Decoding error, fill with black");
+        //BOOST_LOG_TRIVIAL(debug) << "Decoding error, fill with black";
         return getNoDataline ( buffer, line );
     }
 

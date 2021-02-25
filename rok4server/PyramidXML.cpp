@@ -48,12 +48,12 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
 
     TiXmlDocument doc ( filePath.c_str() );
     if ( !doc.LoadFile() ) {
-        LOGGER_ERROR ( _ ( "Ne peut pas charger le fichier " ) << filePath );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "Ne peut pas charger le fichier " ) << filePath ;
         return;
     }
 
-    LOGGER_INFO ( _ ( "           Ajout de la pyramide : " ) << filePath );
-    LOGGER_INFO ( _ ( "           BaseDir Relative to : " ) << parentDir );
+    BOOST_LOG_TRIVIAL(info) <<  _ ( "           Ajout de la pyramide : " ) << filePath ;
+    BOOST_LOG_TRIVIAL(info) <<  _ ( "           BaseDir Relative to : " ) << parentDir ;
 
 
     /********************** Default values */
@@ -70,11 +70,11 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
 
     pElem=hDoc.FirstChildElement().Element(); //recuperation de la racine.
     if ( !pElem ) {
-        LOGGER_ERROR ( filePath << _ ( " impossible de recuperer la racine." ) );
+        BOOST_LOG_TRIVIAL(error) <<  filePath << _ ( " impossible de recuperer la racine." ) ;
         return;
     }
     if ( strcmp ( pElem->Value(),"Pyramid" ) ) {
-        LOGGER_ERROR ( filePath << _ ( " La racine n'est pas une Pyramid." ) );
+        BOOST_LOG_TRIVIAL(error) <<  filePath << _ ( " La racine n'est pas une Pyramid." ) ;
         return;
     }
     hRoot=TiXmlHandle ( pElem );
@@ -83,14 +83,14 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
     //----TMS
     pElem=hRoot.FirstChild ( "tileMatrixSet" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
-        LOGGER_ERROR ( _ ( "La pyramide [" ) << filePath <<_ ( "] n'a pas de TMS. C'est un probleme." ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "La pyramide [" ) << filePath <<_ ( "] n'a pas de TMS. C'est un probleme." ) ;
         return;
     }
     std::string tmsName= DocumentXML::getTextStrFromElem(pElem);
 
     tms = serverXML->getTMS(tmsName);
     if ( tms == NULL ) {
-        LOGGER_ERROR ( _ ( "La pyramide [" ) << filePath <<_ ( "] reference un TMS [" ) << tmsName <<_ ( "] qui n'existe pas." ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "La pyramide [" ) << filePath <<_ ( "] reference un TMS [" ) << tmsName <<_ ( "] qui n'existe pas." ) ;
         return;
     }
     //----
@@ -98,7 +98,7 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
     //----FORMAT
     pElem=hRoot.FirstChild ( "format" ).Element();
     if ( !pElem || ! ( pElem->GetText() ) ) {
-        LOGGER_ERROR ( _ ( "La pyramide [" ) << filePath <<_ ( "] n'a pas de format." ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "La pyramide [" ) << filePath <<_ ( "] n'a pas de format." ) ;
         return;
     }
     std::string formatStr= DocumentXML::getTextStrFromElem(pElem);
@@ -109,7 +109,7 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
 
     format = Rok4Format::fromString ( formatStr );
     if ( ! ( format ) ) {
-        LOGGER_ERROR ( _ ("Le format [" ) << formatStr <<_ ( "] n'est pas gere." ) );
+        BOOST_LOG_TRIVIAL(error) <<  _ ("Le format [" ) << formatStr <<_ ( "] n'est pas gere." ) ;
         return;
     }
     //----
@@ -122,14 +122,14 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
         //----PHOTOMETRIE
         pElem=hRoot.FirstChild ( "photometric" ).Element();
         if ( !pElem || ! ( pElem->GetText() ) ) {
-            LOGGER_ERROR ( "La pyramide [" << filePath << "] n'a pas de photométrie." );
+            BOOST_LOG_TRIVIAL(error) <<  "La pyramide [" << filePath << "] n'a pas de photométrie." ;
             return;
         }
         std::string photometricStr = DocumentXML::getTextStrFromElem(pElem);
 
         photo = Photometric::fromString ( photometricStr );
         if ( ! ( photo ) ) {
-            LOGGER_ERROR ( filePath << "La photométrie [" << photometricStr << "] n'est pas gere." );
+            BOOST_LOG_TRIVIAL(error) <<  filePath << "La photométrie [" << photometricStr << "] n'est pas gere." ;
             return;
         }
         //----
@@ -138,11 +138,11 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
         //----CHANNELS
         pElem=hRoot.FirstChild ( "channels" ).Element();
         if ( !pElem || ! ( pElem->GetText() ) ) {
-            LOGGER_ERROR ( _ ( "La pyramide [" ) << filePath <<_ ( "] Pas de channels => channels = " ) << DEFAULT_CHANNELS );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "La pyramide [" ) << filePath <<_ ( "] Pas de channels => channels = " ) << DEFAULT_CHANNELS ;
             channels = DEFAULT_CHANNELS;
             return;
         } else if ( !sscanf ( pElem->GetText(),"%d",&channels ) ) {
-            LOGGER_ERROR ( _ ( "La pyramide [" ) << filePath <<_ ( "] : channels=[" ) << DocumentXML::getTextStrFromElem(pElem) <<_ ( "] is not an integer." ) );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "La pyramide [" ) << filePath <<_ ( "] : channels=[" ) << DocumentXML::getTextStrFromElem(pElem) <<_ ( "] is not an integer." ) ;
             return;
         }
         //----
@@ -175,7 +175,7 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
                 noDataValues.push_back(curVal);
             }
             if (noDataValues.size() < channels) {
-                LOGGER_ERROR("Le nombre de channels indique est different du nombre de noDataValue donne");
+                BOOST_LOG_TRIVIAL(error) << "Le nombre de channels indique est different du nombre de noDataValue donne";
                 int min = noDataValues.size();
                 for (int i=min;i<channels;i++) {
                     noDataValues.push_back(DEFAULT_NODATAVALUE);
@@ -202,7 +202,7 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
         //on va vérifier que le level qu'on vient de charger n'a pas déjà été chargé
         std::map<std::string, Level*>::iterator it= levels.find ( levXML->getId() );
         if ( it != levels.end() ) {
-            LOGGER_ERROR ( _ ( "Level: " ) << levXML->getId() << _ ( " has already been loaded" ) );
+            BOOST_LOG_TRIVIAL(error) <<  _ ( "Level: " ) << levXML->getId() << _ ( " has already been loaded" ) ;
             delete levXML;
             return ;
         }
@@ -217,7 +217,7 @@ PyramidXML::PyramidXML(std::string path, ServerXML* serverXML, ServicesXML* serv
     } //if level
 
     if ( levels.size() == 0 ) {
-        LOGGER_ERROR ( _ ( "Aucun level n'a pu etre charge pour la pyramide " ) << filePath );
+        BOOST_LOG_TRIVIAL(error) <<  _ ( "Aucun level n'a pu etre charge pour la pyramide " ) << filePath ;
         return;
     }
 
