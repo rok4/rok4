@@ -23,7 +23,21 @@ FIND_LIBRARY(BOOSTLOGSETUP_LIBRARY NAMES libboost_log_setup.so PATHS
     /usr/local/lib 
     /usr/lib
     /usr/lib64
-    )   
+    ) 
+
+FIND_LIBRARY(BOOSTSYSTEM_LIBRARY NAMES libboost_system.so PATHS
+    /usr/lib/x86_64-linux-gnu/
+    /usr/local/lib 
+    /usr/lib
+    /usr/lib64
+    )  
+
+FIND_LIBRARY(BOOSTFILESYSTEM_LIBRARY NAMES libboost_filesystem.so PATHS
+    /usr/lib/x86_64-linux-gnu/
+    /usr/local/lib 
+    /usr/lib
+    /usr/lib64
+    )
 
 FIND_LIBRARY(BOOSTTHREAD_LIBRARY NAMES libboost_thread.so PATHS
     /usr/lib/x86_64-linux-gnu/
@@ -33,4 +47,4 @@ FIND_LIBRARY(BOOSTTHREAD_LIBRARY NAMES libboost_thread.so PATHS
     )    
 
 INCLUDE( "FindPackageHandleStandardArgs" )
-FIND_PACKAGE_HANDLE_STANDARD_ARGS( "BoostLog" DEFAULT_MSG BOOSTLOG_INCLUDE_DIR BOOSTLOG_LIBRARY BOOSTLOGSETUP_LIBRARY BOOSTTHREAD_LIBRARY)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS( "BoostLog" DEFAULT_MSG BOOSTLOG_INCLUDE_DIR BOOSTLOG_LIBRARY BOOSTLOGSETUP_LIBRARY BOOSTTHREAD_LIBRARY BOOSTFILESYSTEM_LIBRARY BOOSTSYSTEM_LIBRARY)

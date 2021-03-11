@@ -62,7 +62,7 @@ set(DEP_INCLUDE_DIR ${FCGI_INCLUDE_DIR} ${IMAGE_INCLUDE_DIR} ${PROJ_INCLUDE_DIR}
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
 #Listes des bibliothèques à lier avec l'éxecutable à mettre à jour
-set(DEP_LIBRARY fcgi tinyxml image proj zlib tiff png curl boostlog boostlogsetup boostthread)
+set(DEP_LIBRARY fcgi tinyxml image proj zlib tiff png curl boostlog boostlogsetup boostthread boostfilesystem boostsystem)
 
 target_link_libraries(rok4core ${DEP_LIBRARY} )
 target_link_libraries(rok4 rok4core)

@@ -23,6 +23,7 @@ RUN apt update && apt -y install  \
     libjpeg-dev \
     libc6-dev \
     librados-dev \
+    libboost-log-dev libboost-filesystem-dev libboost-system-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Compilation et installation
@@ -42,7 +43,7 @@ WORKDIR /build
 
 RUN cmake -DCMAKE_INSTALL_PREFIX=/ -DBUILD_OBJECT=1 -DBUILD_DOC=0 -DUNITTEST=0 -DDEBUG_BUILD=0 -DBUILD_BE4=0 /sources/ && make && make install && rm -r /sources /build
 
-RUN apt remove -y build-essential cmake libfcgi-dev libtinyxml-dev libopenjp2-7-dev zlib1g-dev libtiff5-dev libpng-dev libcurl4-openssl-dev libssl-dev libturbojpeg0-dev libjpeg-dev libc6-dev librados-dev 
+RUN apt remove -y build-essential cmake libfcgi-dev libtinyxml-dev libboost-log-dev libboost-filesystem-dev libboost-system-dev libopenjp2-7-dev zlib1g-dev libtiff5-dev libpng-dev libcurl4-openssl-dev libssl-dev libturbojpeg0-dev libjpeg-dev libc6-dev librados-dev 
 
 FROM builder
 

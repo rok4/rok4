@@ -56,7 +56,7 @@ include(ROK4Dependencies)
 set(DEP_INCLUDE_DIR ${IMAGE_INCLUDE_DIR} ${BOOSTLOG_INCLUDE_DIR} ${PROJ_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} )
 
 #Listes des bibliothèques à liées avec l'éxecutable à mettre à jour
-set(DEP_LIBRARY tiff proj image boostlog boostlogsetup boostthread)
+set(DEP_LIBRARY tiff proj image boostlog boostlogsetup boostthread boostfilesystem boostsystem)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${DEP_INCLUDE_DIR})
 
