@@ -106,12 +106,14 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
             logging::add_file_log (
                 keywords::file_name = serverXML->getLogFilePrefix()+"-%Y-%m-%d-%H-%M-%S.log",
                 keywords::time_based_rotation = sinks::file::rotation_at_time_interval(boost::posix_time::seconds(serverXML->getLogFilePeriod())),
-                keywords::format = "%TimeStamp%\t%ProcessID%\t%Severity%\t%Message%"
+                keywords::format = "%TimeStamp%\t%ProcessID%\t%Severity%\t%Message%",
+                keywords::auto_flush = true
             );
         } else if ( serverXML->getLogOutput() == "static_file") {
             logging::add_file_log (
                 keywords::file_name = serverXML->getLogFilePrefix(),
-                keywords::format = "%TimeStamp%\t%ProcessID%\t%Severity%\t%Message%"
+                keywords::format = "%TimeStamp%\t%ProcessID%\t%Severity%\t%Message%",
+                keywords::auto_flush = true
             );
         } else if ( serverXML->getLogOutput() == "standard_output_stream_for_errors") {
             logging::add_console_log (

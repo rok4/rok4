@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rok4\n"
 "Report-Msgid-Bugs-To: contact.geoservices@ign.fr\n"
-"POT-Creation-Date: 2021-02-23 20:21+0100\n"
+"POT-Creation-Date: 2021-03-26 18:38+0100\n"
 "PO-Revision-Date: 2014-01-28 09:36+0100\n"
 "Last-Translator: \n"
 "Language-Team: French <kde-i18n-doc@kde.org>\n"
@@ -176,8 +176,8 @@ msgstr ""
 msgid "Type d'encodage inconnu : "
 msgstr "Type d'encodage inconnu : "
 
-#: Level.cpp:482 Level.cpp:485 Rok4Server.cpp:669 Rok4Server.cpp:677
-#: Rok4Server.cpp:837
+#: Level.cpp:482 Level.cpp:485 Rok4Server.cpp:668 Rok4Server.cpp:676
+#: Rok4Server.cpp:836
 msgid "No data found"
 msgstr "Aucune donnée"
 
@@ -224,9 +224,9 @@ msgstr ""
 msgid "Rechargement de la configuration"
 msgstr "Rechargement de la configuration"
 
-#: main.cpp:277 Rok4Api.cpp:127 Rok4Api.cpp:135 Rok4Api.cpp:143 Rok4Api.cpp:151
-#: Rok4Api.cpp:196 Rok4Api.cpp:218 Rok4Api.cpp:293 Rok4Api.cpp:369
-#: Rok4Api.cpp:476
+#: main.cpp:277 Rok4Api.cpp:136 Rok4Api.cpp:144 Rok4Api.cpp:152 Rok4Api.cpp:160
+#: Rok4Api.cpp:204 Rok4Api.cpp:226 Rok4Api.cpp:301 Rok4Api.cpp:377
+#: Rok4Api.cpp:480
 msgid "Extinction du serveur ROK4"
 msgstr "Extinction du serveur ROK4"
 
@@ -430,7 +430,7 @@ msgstr "Fin de la réponse"
 msgid "Nombre incorrect d'octets ecrits dans le flux de sortie"
 msgstr "Nombre incorrect d'octets écrits dans le flux de sortie"
 
-#: Rok4Api.cpp:86 Rok4Api.cpp:173
+#: Rok4Api.cpp:95 Rok4Api.cpp:181
 msgid ""
 "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du "
 "serveur "
@@ -438,40 +438,40 @@ msgstr ""
 "ERREUR FATALE : Impossible d'interpréter le fichier de configuration du "
 "serveur "
 
-#: Rok4Api.cpp:116
+#: Rok4Api.cpp:125
 msgid "Envoi des messages dans la sortie du logger"
 msgstr "Envoi des messages dans la sortie du logger"
 
-#: Rok4Api.cpp:117
+#: Rok4Api.cpp:126
 msgid "*** DEBUT DU FONCTIONNEMENT DU LOGGER ***"
 msgstr "*** DEBUT DU FONCTIONNEMENT DU LOGGER ***"
 
-#: Rok4Api.cpp:120
+#: Rok4Api.cpp:129
 msgid "*** NOUVEAU CLIENT DU LOGGER ***"
 msgstr "*** NOUVEAU CLIENT DU LOGGER ***"
 
-#: Rok4Api.cpp:126 Rok4Api.cpp:195
+#: Rok4Api.cpp:135 Rok4Api.cpp:203
 msgid "Impossible d'interpreter le fichier de conf "
 msgstr "Impossible d'interpréter le fichier de conf "
 
-#: Rok4Api.cpp:134 Rok4Api.cpp:217
+#: Rok4Api.cpp:143 Rok4Api.cpp:225
 msgid "Impossible de charger la conf des TileMatrix"
 msgstr "Impossible de charger la configuration des TileMatrix"
 
-#: Rok4Api.cpp:142
+#: Rok4Api.cpp:151
 msgid "Impossible de charger la conf des Styles"
 msgstr "Impossible de charger la configuration des Styles"
 
-#: Rok4Api.cpp:150
+#: Rok4Api.cpp:159
 msgid "Impossible de charger la conf des Layers/pyramides"
 msgstr "Impossible de charger la configuration des couches/pyramides"
 
-#: Rok4Api.cpp:292
+#: Rok4Api.cpp:300
 #, fuzzy
 msgid "Impossible de charger la conf des styles"
 msgstr "Impossible de charger la configuration des Styles"
 
-#: Rok4Api.cpp:368
+#: Rok4Api.cpp:376
 #, fuzzy
 msgid "Impossible de charger la conf des Layers"
 msgstr "Impossible de charger la configuration des Styles"
@@ -498,113 +498,113 @@ msgstr "Request Content :"
 msgid "Extinction du thread"
 msgstr "Extinction du processus de traitement"
 
-#: Rok4Server.cpp:194
+#: Rok4Server.cpp:193
 #, fuzzy
 msgid "Build WMS Capabilities 1.3.0"
 msgstr "Génération du Capabilities WMS"
 
-#: Rok4Server.cpp:197
+#: Rok4Server.cpp:196
 #, fuzzy
 msgid "Build WMS Capabilities 1.1.1"
 msgstr "Génération du Capabilities WMS"
 
-#: Rok4Server.cpp:202
+#: Rok4Server.cpp:201
 msgid "Build WMTS Capabilities"
 msgstr "Génération du Capabilities WMTS"
 
-#: Rok4Server.cpp:206
+#: Rok4Server.cpp:205
 #, fuzzy
 msgid "Build TMS Capabilities"
 msgstr "Génération du Capabilities WMTS"
 
-#: Rok4Server.cpp:231
+#: Rok4Server.cpp:230
 msgid "Listening on "
 msgstr "Écoute sur "
 
-#: Rok4Server.cpp:277
+#: Rok4Server.cpp:276
 msgid "Probleme dans les parametres de la requete getMap"
 msgstr "Problème dans les paramètres de la requête getMap"
 
-#: Rok4Server.cpp:291 Rok4Server.cpp:1282
+#: Rok4Server.cpp:290 Rok4Server.cpp:1276
 msgid "bbox invalide"
 msgstr "La BoundingBox demandée est invalide"
 
-#: Rok4Server.cpp:294 Rok4Server.cpp:1285
+#: Rok4Server.cpp:293 Rok4Server.cpp:1279
 msgid "bbox trop grande"
 msgstr "La BoundingBox demandée est trop grande"
 
-#: Rok4Server.cpp:297 Rok4Server.cpp:312 Rok4Server.cpp:786 Rok4Server.cpp:816
-#: Rok4Server.cpp:832 Rok4Server.cpp:848 Rok4Server.cpp:1288
+#: Rok4Server.cpp:296 Rok4Server.cpp:311 Rok4Server.cpp:785 Rok4Server.cpp:815
+#: Rok4Server.cpp:831 Rok4Server.cpp:847 Rok4Server.cpp:1282
 msgid "Impossible de repondre a la requete"
 msgstr "Impossible de répondre a la requête"
 
-#: Rok4Server.cpp:306
+#: Rok4Server.cpp:305
 msgid "GetMap de Style : "
 msgstr "GetMap de Style : "
 
-#: Rok4Server.cpp:306
+#: Rok4Server.cpp:305
 msgid " pal size : "
 msgstr " pal size : "
 
-#: Rok4Server.cpp:336
+#: Rok4Server.cpp:335
 msgid "Estompage"
 msgstr "Estompage"
 
-#: Rok4Server.cpp:642
+#: Rok4Server.cpp:641
 msgid "Le format "
 msgstr "Le format ["
 
-#: Rok4Server.cpp:642
+#: Rok4Server.cpp:641
 msgid " ne peut etre traite"
 msgstr " ne peut être traité"
 
-#: Rok4Server.cpp:1227 Rok4Server.cpp:1250
+#: Rok4Server.cpp:1221 Rok4Server.cpp:1244
 #, fuzzy
 msgid "Probleme dans les parametres de la requete getFeatureInfo"
 msgstr "Problème dans les paramètres de la requête getMap"
 
-#: Rok4Server.cpp:1327
+#: Rok4Server.cpp:1321
 #, fuzzy
 msgid "Erreur interne."
 msgstr "Erreur inconnue"
 
-#: Rok4Server.cpp:1332
+#: Rok4Server.cpp:1326
 #, fuzzy
 msgid "Info_format non "
 msgstr "Format "
 
-#: Rok4Server.cpp:1332
+#: Rok4Server.cpp:1326
 #, fuzzy
 msgid " supporté par la couche "
 msgstr " n'est pas géré pour la couche "
 
-#: Rok4Server.cpp:1389
+#: Rok4Server.cpp:1383
 msgid "Internal server error"
 msgstr ""
 
-#: Rok4Server.cpp:1397
+#: Rok4Server.cpp:1391
 msgid "GFI depuis un SQL non géré."
 msgstr ""
 
-#: Rok4Server.cpp:1399
+#: Rok4Server.cpp:1393
 msgid "ERRORRRRRR !"
 msgstr ""
 
-#: Rok4Server.cpp:1412 Rok4Server.cpp:1416 Rok4Server.cpp:1447
-#: Rok4Server.cpp:1451
+#: Rok4Server.cpp:1406 Rok4Server.cpp:1410 Rok4Server.cpp:1441
+#: Rok4Server.cpp:1445
 msgid " n'est pas prise en charge par ce serveur."
 msgstr " n'est pas prise en charge par ce serveur."
 
-#: Rok4Server.cpp:1416
+#: Rok4Server.cpp:1410
 msgid "L'operation "
 msgstr "L'opération "
 
-#: Rok4Server.cpp:1467
+#: Rok4Server.cpp:1461
 #, fuzzy
 msgid "Le service est manquant"
 msgstr "Le service "
 
-#: Rok4Server.cpp:1470
+#: Rok4Server.cpp:1464
 #, fuzzy
 msgid "Le service est inconnu pour ce serveur."
 msgstr " est inconnu pour ce serveur."

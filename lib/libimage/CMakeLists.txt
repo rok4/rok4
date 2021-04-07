@@ -52,7 +52,7 @@ SET(
     FileContext.cpp CurlPool.cpp 
     PaletteConfig.cpp PaletteDataSource.cpp
     Format.cpp TiffHeaderDataSource.cpp StoreDataSource.cpp
-    ConvertedChannelsImage.cpp
+    ConvertedChannelsImage.cpp ContextBook.cpp
 )
 
 # OPTION : 'sources' JPEG2000
@@ -65,7 +65,7 @@ ELSE(KDU_USE)
 ENDIF(KDU_USE)
 
 IF(BUILD_OBJECT)
-  SET(libimage_SRCS ${libimage_SRCS} ContextBook.cpp CephPoolContext.cpp SwiftContext.cpp S3Context.cpp)
+  SET(libimage_SRCS ${libimage_SRCS} CephPoolContext.cpp SwiftContext.cpp S3Context.cpp)
 ENDIF(BUILD_OBJECT)
 
 ADD_LIBRARY(image STATIC ${libimage_SRCS})
