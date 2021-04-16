@@ -194,6 +194,7 @@ file = /home/IGN/source2.pyr
 ## Résumé des fichiers et dossiers manipulés
 
 Avec les configurations mises en exemple (pas le service WMS) :
+
 * La configuration principale `/home/IGN/configuration.txt`
 * La configuration de la source de données `/home/IGN/datasources.txt`
 * Le TMS `/home/IGN/TMS/PM.tms`

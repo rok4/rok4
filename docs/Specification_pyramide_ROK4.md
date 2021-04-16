@@ -3,28 +3,28 @@
 - [Glossaire](#glossaire)
 - [Le Tile Matrix Set](#le-tile-matrix-set)
 - [La pyramide](#la-pyramide)
-	- [Caractéristiques des données](#caractristiques-des-donnes)
-	- [Les sources](#les-sources)
-	- [Les tables](#les-tables)
-	- [Les masques](#les-masques)
-	- [Le descripteur de pyramide](#le-descripteur-de-pyramide)
-		- [Informations globales](#informations-globales)
-		- [Informations par niveau](#informations-par-niveau)
-			- [Pyramide raster](#pyramide-raster)
-			- [Pyramide raster à la demande](#pyramide-raster-la-demande)
-			- [Pyramide vecteur](#pyramide-vecteur)
-	- [L'architecture de stockage](#larchitecture-de-stockage)
-		- [En mode fichier](#en-mode-fichier)
-		- [En mode objet](#en-mode-objet)
-	- [La structure d'une dalle](#la-structure-dune-dalle)
-		- [L'en-tête](#len-tte)
-		- [Les données](#les-donnes)
-			- [Le tuilage](#le-tuilage)
-			- [La compression (cas raster)](#la-compression-cas-raster)
-			- [Cas vecteur](#cas-vecteur)
-			- [Récapitulatif](#rcapitulatif)
-		- [Les références](#les-rfrences)
-	- [Le fichier liste](#le-fichier-liste)
+  - [Caractéristiques des données](#caractéristiques-des-données)
+  - [Les sources](#les-sources)
+  - [Les tables](#les-tables)
+  - [Les masques](#les-masques)
+  - [Le descripteur de pyramide](#le-descripteur-de-pyramide)
+    - [Informations globales](#informations-globales)
+    - [Informations par niveau](#informations-par-niveau)
+      - [Pyramide raster](#pyramide-raster)
+      - [Pyramide raster à la demande](#pyramide-raster-à-la-demande)
+      - [Pyramide vecteur](#pyramide-vecteur)
+  - [L'architecture de stockage](#larchitecture-de-stockage)
+    - [En mode fichier](#en-mode-fichier)
+    - [En mode objet](#en-mode-objet)
+  - [La structure d'une dalle](#la-structure-dune-dalle)
+    - [L'en-tête](#len-tête)
+    - [Les données](#les-données)
+      - [Le tuilage](#le-tuilage)
+      - [La compression (cas raster)](#la-compression-cas-raster)
+      - [Cas vecteur](#cas-vecteur)
+      - [Récapitulatif](#récapitulatif)
+    - [Les références](#les-références)
+  - [Le fichier liste](#le-fichier-liste)
 
 <!-- /TOC -->
 
@@ -69,6 +69,7 @@ Un TM possède un identifiant (chaîne de caractères) unique dans le TMS. Les r
 ![Tile Matrix](./images/SPECIFICATION_PYRAMIDE/TileMatrix.png)
 
 Ce découpage de l'espace en tuile permet de se localiser grâce à des indices (principe du WMTS et du Tile Map Service). Ainsi, une tuile peut être identifiée avec :
+
 * son niveau
 * son indice de colonne (0 pour la première en partant de la gauche)
 * son indice de ligne (0 pour la première en partant du haut)
@@ -80,6 +81,7 @@ On peut passer des coordonnées aux indices facilement. Cette conversion est uti
 Une pyramide est constituée d’un ensemble de niveaux. Chaque niveau de la pyramide correspond à un Tile Matrix, une résolution.
 
 Une pyramide peut être de trois types :
+
 * Les pyramides raster : pyramide contenant de la donnée image. Utilisée par ROK4SERVER, elle peut être diffusée en WMS, WMTS et TMS. ROK4SERVER sait interpréter la donnée contenue dans cette pyramide et peut la réechantillonner, la reprojeter, y appliquer un style.
 * Les pyramides vecteur : pyramide contenant de la donnée vecteur. Utilisée par ROK4SERVER, elle ne peut être diffusée qu'en TMS. ROK4SERVER ne sait pas interpréter la donnée contenue dans les tuiles et ne peut alors que les retourner telles qu'elles sont stockées.
 * Les pyramides raster à la demande : pyramide ne contenant pas de données mais simplement un descripteur. Utilisée par ROK4SERVER, elle ne peut être diffusée qu'en WMTS. Une pyramide à la demande va pour chaque niveau préciser la source de données que ROK4SERVER doit utiliser pour répondre aux requêtes. Vu de l'extérieur, le but est qu'un utilisateur interrogeant ROK4SERVER en WMTS ne sache pas qu'une pyramide à la demande se cache derrière.
@@ -91,6 +93,7 @@ Quand la pyramide contient des tuiles, elles sont regroupées par contiguïté e
 ## Caractéristiques des données
 
 Les caractéristiques globales d'une pyramide raster, à la demande ou non, sont :
+
 * le nombre de canaux par pixel
 * le nombre de bits par canal
 * la photométrie (rgb, gray...)
@@ -98,6 +101,7 @@ Les caractéristiques globales d'une pyramide raster, à la demande ou non, sont
 * la compression des images (aucun, jpeg, lzw, packbit...)
 
 Les caractéristiques globales d'une pyramide vecteur sont :
+
 * le format de la donnée : Mapbox Vector Tile conditionné en PBF.
 
 Ces caractéristiques sont valables pour l'ensemble de la pyramide.
@@ -146,6 +150,7 @@ On notera que le SRS n'est pas renseigné, il l'est indirectement via le TMS.
 ### Informations par niveau
 
 Les niveaux sont renseignés dans l'ordre, du plus haut (moins résolu) au plus bas (meilleure résolution). Les informations suivantes sont présentes pour les 3 types de pyramides :
+
 * L'identifiant du Tile Matrix : code unique du niveau, identique à celui dans le TMS.
 * Le nombre de tuiles, dans la hauteur et dans la largeur, dans une dalle.
 * Les indices des tuiles extrêmes pour ce niveau : au-delà, on sait d'avance qu'il n'y aura pas de données
@@ -317,10 +322,12 @@ Exemple de niveau d'une pyramide vecteur stocké dans un dossier :
 ## L'architecture de stockage
 
 Le serveur ROK4 accède toujours aux données par tuile (via ses indices) :
+
 * en WMTS et TMS, on ne demande qu'une tuile
 * en WMS, à partir de la zone demandée, on liste les tuiles sources nécessaires à la constitution de l'image à retourner
 
 ROK4GENERATION et ROK4SERVER se mettent donc d'accord sur la façon d'agencer les données :
+
 * Le découpage en tuile est défini par le TMS (comme vu plus haut)
 * Le regroupement en dalle est défini dans le descripteur de pyramide : des indices de la tuile, par division euclidienne, on obtient les indices de la dalle, en partant du coin supérieur gauche définit dans le TMS.
 * Reste l'emplacement de stockage de la dalle, que nous allons décrire maintenant
@@ -338,6 +345,7 @@ Toutes les dalles, que ce soit les données ou les masques, sont dans un dossier
 Repartons des indices de la tuile voulue (414, 3134) avec des dalles de 16 tuiles par 16 tuiles : on veut donc accéder à la dalle (25,195). Ces indices sont ensuite convertis en base 36 (avec les chiffres dans cet ordre : 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ) : (24,195) donne ('P', '5F')
 
 On peut être amené à ajouter des 0 pour forcer la longueur de l'écriture en base 36, pour s'adapter à la profondeur d'arborescence voulue ou avoir la même longueur pour les 2 indices. Avec une profondeur d'arborescence de 2, les indices vont être découpés en 3 parties (les deux niveaux de dossier + le nom du fichier). On a donc besoin d'avoir des indices en base 36 sur au moins 3 chiffre : ('00P', '05F'). On obtient le chemin suivant, en relatif à partir de la racine du niveau (que ce soit la donnée ou le masque) : `00/05/PF.tif`. Soit un chemin complet :
+
 * pour la dalle de donnée : `/pyramid/directory/<Pyramid's name>/IMAGE/<level>/00/05/PF.tif`
 * pour la dalle de masque : `/pyramid/directory/<Pyramid's name>/MASK/<level>/00/05/PF.tif`
 
@@ -350,6 +358,7 @@ Pour les pyramides à la demande sans stokage, il n'y a aucune dalle appartenant
 ### En mode objet
 
 En mode objet, le nommage est beaucoup plus simple car on utilise directement les indices de dalle en base 10. Si on reprend la dalle précédente (24,195), on aura les objets suivants :
+
 * pour la dalle de donnée : `<Pyramid's name>_IMG_<level>_24_195`
 * pour la dalle de masque : `<Pyramid's name>_MSK_<level>_24_195`
 
@@ -386,6 +395,7 @@ Pour ce faire, on renseigne l'adresse de début (_TileOffsets_) sur 4 octets et 
 ![Index des tuiles](./images/SPECIFICATION_PYRAMIDE/TiffDonnees.png)
 
 L'en-tête contient les étiquettes :
+
 * TileOffsets : tag 324, type Long, on aura N valeurs, et celles-ci ne tenant pas toutes sur 4 octets, on donne l'adresse à laquelle ces valeurs commencent (ici 2048)
 * TileByteCounts : tag 325, type Long, on aura N valeurs, et celles-ci ne tenant pas toutes sur 4 octets, on donne l'adresse à laquelle ces valeurs commencent (ici 2048 + 4*N)
 
@@ -394,6 +404,7 @@ De cette manière, que ce soit ROK4 en étêtant de 2048 octets, ou les autres p
 #### La compression (cas raster)
 
 Le format TIFF permet officiellement de nombreuses compressions pour des données raster. Cette compression est effectuée sur chaque tuile. ROK4SERVER, pour des données raster, va comprendre l'absence de compression et les compressions :
+
 * sans pertes : LZW, PNG, PackBits, Deflate
 * avec pertes : JPEG
 
@@ -424,6 +435,7 @@ Le fichier liste est un fichier texte (extension .list) au nom de la pyramide et
 Ce fichier est uniquement utilisé par les outils ROK4GENERATION, pour connaître sans avoir à parcourir la pyramide son contenu exact (indispensable lors d'une mise à jour). Dans le cas du stockage objet, où aucun parcours n'est possible, ce fichier est particulièrement précieux puisqu'il ne peut pas être facilement regénéré avec l'outil `create-list`.
 
 Le fichier liste est en deux parties, séparées par un dièse :
+
 * L'en-tête permet de lister et d'indexer les pyramides référencées, c'est-à-dire contenant au moins une des dalles listées. L'index 0 sera pour la pyramide elle même. Ces index sont utilisés dans la liste des dalles pour "factoriser" les racines des pyramides (conteneur dans le cas objet, dossier racine de la pyramide dans le cas fichier).
 * La liste des dalles (données et masques)
 

@@ -21,6 +21,7 @@ Cet outil écrit une dalle à partir des tuiles PBF rangées par coordonnées (`
 ## Exemple
 
 Avec la commande suivante : `pbf2cache -r /home/IGN/pbfs -t 3 2 -ultile 17 36 /home/IGN/output.tif` (on veut 3x2 tuiles dans une dalle, et l'indice de la tuile en haut à gauche est (17,36)), les fichiers suivants seront cherchés et intégrés à la dalle fichier `/home/IGN/output.tif` si présents dans cet ordre :
+
 * `/home/IGN/pbfs/17/36.pbf`
 * `/home/IGN/pbfs/18/36.pbf`
 * `/home/IGN/pbfs/19/36.pbf`

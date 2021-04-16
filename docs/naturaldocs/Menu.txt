@@ -1,0 +1,150 @@
+Format: 1.51
+
+
+Title: ROK4GENERATION
+SubTitle: Perl tools and libraries
+
+Footer: (C) 2019 ROK4 - (R) IGN 2012
+Timestamp: Updated month day, year
+#   m     - One or two digit month.  January is "1"
+#   mm    - Always two digit month.  January is "01"
+#   mon   - Short month word.  January is "Jan"
+#   month - Long month word.  January is "January"
+#   d     - One or two digit day.  1 is "1"
+#   dd    - Always two digit day.  1 is "01"
+#   day   - Day with letter extension.  1 is "1st"
+#   yy    - Two digit year.  2006 is "06"
+#   yyyy  - Four digit year.  2006 is "2006"
+#   year  - Four digit year.  2006 is "2006"
+
+
+# --------------------------------------------------------------------------
+# 
+# Cut and paste the lines below to change the order in which your files
+# appear on the menu.  Don't worry about adding or removing files, Natural
+# Docs will take care of that.
+# 
+# You can further organize the menu by grouping the entries.  Add a
+# "Group: [name] {" line to start a group, and add a "}" to end it.
+# 
+# You can add text and web links to the menu by adding "Text: [text]" and
+# "Link: [name] ([URL])" lines, respectively.
+# 
+# The formatting and comments are auto-generated, so don't worry about
+# neatness when editing the file.  Natural Docs will clean it up the next
+# time it is run.  When working with groups, just deal with the braces and
+# forget about the indentation and comments.
+# 
+# --------------------------------------------------------------------------
+
+
+Link: ROK4GENERATION is the tools part of the ROK4 project  (https://github.com/rok4/rok4)
+
+Group: Tools  {
+
+   File: 4ALAMO-FILE  (no auto-title, bin/4alamo-file.pl)
+   File: 4ALAMO-CEPH  (no auto-title, bin/4alamo-ceph.pl)
+   File: 4HEAD  (no auto-title, bin/4head.pl)
+   File: BE4-FILE  (no auto-title, bin/be4-file.pl)
+   File: BE4-CEPH  (no auto-title, bin/be4-ceph.pl)
+   File: BE4-S3  (no auto-title, bin/be4-s3.pl)
+   File: BE4-SWIFT  (no auto-title, bin/be4-swift.pl)
+   File: JOINCACHE-FILE  (no auto-title, bin/joinCache-file.pl)
+   File: JOINCACHE-CEPH  (no auto-title, bin/joinCache-ceph.pl)
+   File: JOINCACHE-SWIFT  (no auto-title, bin/joinCache-swift.pl)
+   File: PYR2PYR  (no auto-title, bin/pyr2pyr.pl)
+   File: SUP-PYR  (no auto-title, bin/sup-pyr.pl)
+   File: WMTSALAD  (no auto-title, bin/wmtSalaD.pl)
+   File: CREATE-LAYER  (no auto-title, bin/create-layer.pl)
+   File: CREATE-LIST  (no auto-title, bin/create-list.pl)
+   File: TMS-TOOLBOX  (no auto-title, bin/tms-toolbox.pl)
+   }  # Group: Tools
+
+Group: Classes  {
+
+   Group: COMMON  {
+
+      File: Array  (no auto-title, lib/COMMON/Array.pm)
+      File: Base36  (no auto-title, lib/COMMON/Base36.pm)
+      File: CheckUtils  (no auto-title, lib/COMMON/CheckUtils.pm)
+      File: Config  (no auto-title, lib/COMMON/Config.pm)
+      File: Database  (no auto-title, lib/COMMON/Database.pm)
+      File: DatabaseSource  (no auto-title, lib/COMMON/DatabaseSource.pm)
+      File: DataSource  (no auto-title, lib/COMMON/DataSource.pm)
+      File: DataSourceLoader  (no auto-title, lib/COMMON/DataSourceLoader.pm)
+      File: Forest  (no auto-title, lib/COMMON/Forest.pm)
+      File: GeoImage  (no auto-title, lib/COMMON/GeoImage.pm)
+      File: Harvesting  (no auto-title, lib/COMMON/Harvesting.pm)
+      File: ImageSource  (no auto-title, lib/COMMON/ImageSource.pm)
+      File: Layer  (no auto-title, lib/COMMON/Layer.pm)
+      File: LevelRaster  (no auto-title, lib/COMMON/LevelRaster.pm)
+      File: LevelRasterOD  (no auto-title, lib/COMMON/LevelRasterOD.pm)
+      File: LevelVector  (no auto-title, lib/COMMON/LevelVector.pm)
+      File: NNGraph  (no auto-title, lib/COMMON/NNGraph.pm)
+      File: NoData  (no auto-title, lib/COMMON/NoData.pm)
+      File: Pixel  (no auto-title, lib/COMMON/Pixel.pm)
+      File: ProxyGDAL  (no auto-title, lib/COMMON/ProxyGDAL.pm)
+      File: ProxyPyramid  (no auto-title, lib/COMMON/ProxyPyramid.pm)
+      File: ProxyStorage  (no auto-title, lib/COMMON/ProxyStorage.pm)
+      File: PyramidRaster  (no auto-title, lib/COMMON/PyramidRaster.pm)
+      File: PyramidRasterOD  (no auto-title, lib/COMMON/PyramidRasterOD.pm)
+      File: PyramidRasterSpec  (no auto-title, lib/COMMON/PyramidRasterSpec.pm)
+      File: PyramidVector  (no auto-title, lib/COMMON/PyramidVector.pm)
+      File: QTree  (no auto-title, lib/COMMON/QTree.pm)
+      File: Script  (no auto-title, lib/COMMON/Script.pm)
+      File: Shell  (no auto-title, lib/COMMON/Shell.pm)
+      File: TileMatrix  (no auto-title, lib/COMMON/TileMatrix.pm)
+      File: TileMatrixSet  (no auto-title, lib/COMMON/TileMatrixSet.pm)
+      }  # Group: COMMON
+
+   Group: BE4  {
+
+      File: Node  (no auto-title, lib/BE4/Node.pm)
+      File: PropertiesLoader  (no auto-title, lib/BE4/PropertiesLoader.pm)
+      File: Shell  (no auto-title, lib/BE4/Shell.pm)
+      }  # Group: BE4
+
+   Group: JOINCACHE  {
+
+      File: Node  (no auto-title, lib/JOINCACHE/Node.pm)
+      File: PropertiesLoader  (no auto-title, lib/JOINCACHE/PropertiesLoader.pm)
+      File: Shell  (no auto-title, lib/JOINCACHE/Shell.pm)
+      }  # Group: JOINCACHE
+
+   Group: FOURALAMO  {
+
+      File: Node  (no auto-title, lib/FOURALAMO/Node.pm)
+      File: PropertiesLoader  (no auto-title, lib/FOURALAMO/PropertiesLoader.pm)
+      File: Shell  (no auto-title, lib/FOURALAMO/Shell.pm)
+      }  # Group: FOURALAMO
+
+   Group: FOURHEAD  {
+
+      File: Node  (no auto-title, lib/FOURHEAD/Node.pm)
+      File: Shell  (no auto-title, lib/FOURHEAD/Shell.pm)
+      }  # Group: FOURHEAD
+
+   Group: WMTSALAD  {
+
+      File: WmsSource  (no auto-title, lib/WMTSALAD/WmsSource.pm)
+      File: PyrSource  (no auto-title, lib/WMTSALAD/PyrSource.pm)
+      }  # Group: WMTSALAD
+
+   Group: PYR2PYR  {
+
+      File: PropertiesLoader  (no auto-title, lib/PYR2PYR/PropertiesLoader.pm)
+      File: Shell  (no auto-title, lib/PYR2PYR/Shell.pm)
+      }  # Group: PYR2PYR
+
+   }  # Group: Classes
+
+Group: Index  {
+
+   Index: Everything
+   Class Index: Classes
+   File Index: Files
+   Function Index: Functions
+   Variable Index: Variables
+   Constant Index: Constants
+   }  # Group: Index
+

@@ -4,33 +4,37 @@ La suite d'outils ROK4GENERATION permet de générer, mettre à jour, composer, 
 
 <!-- TOC START min:1 max:3 link:true update:true -->
 - [Outils principaux](#outils-principaux)
-    - [Génération de pyramide raster](#génération-de-pyramide-raster)
-        - [La suite BE4](#la-suite-be4)
-        - [La suite JOINCACHE](#la-suite-joincache)
-    - [Génération de pyramide à la demande](#génération-de-pyramide-à-la-demande)
-    - [Génération de pyramide vecteur](#génération-de-pyramide-vecteur)
-        - [La suite 4ALAMO](#la-suite-4alamo)
-    - [Gestion des pyramides](#gestion-des-pyramides)
-        - [Suppression de pyramide](#suppression-de-pyramide)
-        - [Réecriture d'une tête de pyramide](#réecriture-dune-tête-de-pyramide)
-        - [Transfert de pyramide](#transfert-de-pyramide)
-    - [Les outils de débogage](#les-outils-de-débogage)
-        - [Création d'un descripteur de couche](#création-dun-descripteur-de-couche)
-        - [Création du fichier liste d'une pyramide](#création-du-fichier-liste-dune-pyramide)
-        - [Convertisseur TMS](#convertisseur-tms)
+  - [Génération de pyramide raster](#génération-de-pyramide-raster)
+    - [La suite BE4](#la-suite-be4)
+    - [La suite JOINCACHE](#la-suite-joincache)
+  - [Génération de pyramide à la demande](#génération-de-pyramide-à-la-demande)
+  - [Génération de pyramide vecteur](#génération-de-pyramide-vecteur)
+    - [La suite 4ALAMO](#la-suite-4alamo)
+  - [Gestion des pyramides](#gestion-des-pyramides)
+    - [Suppression de pyramide](#suppression-de-pyramide)
+      - [Commande](#commande)
+      - [Options](#options)
+    - [Réecriture d'une tête de pyramide](#réecriture-dune-tête-de-pyramide)
+      - [Commande](#commande-1)
+      - [Options](#options-1)
+    - [Transfert de pyramide](#transfert-de-pyramide)
+  - [Les outils de débogage](#les-outils-de-débogage)
+    - [Création d'un descripteur de couche](#création-dun-descripteur-de-couche)
+    - [Création du fichier liste d'une pyramide](#création-du-fichier-liste-dune-pyramide)
+    - [Convertisseur TMS](#convertisseur-tms)
 - [Outils de manipulation](#outils-de-manipulation)
-    - [Manipulation raster](#manipulation-raster)
-        - [Passage au format de travail d'une dalle ROK4](#passage-au-format-de-travail-dune-dalle-rok4)
-        - [Contrôle d'une image de travail](#contrôle-dune-image-de-travail)
-        - [Fusion d'un dallage d'images](#fusion-dun-dallage-dimages)
-        - [Décimation d'une image](#décimation-dune-image)
-        - [Gestion du nodata](#gestion-du-nodata)
-        - [Sous réechantillonnage de 4 images](#sous-réechantillonnage-de-4-images)
-        - [Réechantillonnage et reprojection d'images](#réechantillonnage-et-reprojection-dimages)
-        - [Superposition d'images](#superposition-dimages)
-        - [Stockage final en dalle](#stockage-final-en-dalle)
-    - [Manipulation vecteur](#manipulation-vecteur)
-        - [Écriture d'une dalle vecteur](#écriture-dune-dalle-vecteur)
+  - [Manipulation raster](#manipulation-raster)
+    - [Passage au format de travail d'une dalle ROK4](#passage-au-format-de-travail-dune-dalle-rok4)
+    - [Contrôle d'une image de travail](#contrôle-dune-image-de-travail)
+    - [Fusion d'un dallage d'images](#fusion-dun-dallage-dimages)
+    - [Décimation d'une image](#décimation-dune-image)
+    - [Gestion du nodata](#gestion-du-nodata)
+    - [Sous réechantillonnage de 4 images](#sous-réechantillonnage-de-4-images)
+    - [Réechantillonnage et reprojection d'images](#réechantillonnage-et-reprojection-dimages)
+    - [Superposition d'images](#superposition-dimages)
+    - [Stockage final en dalle](#stockage-final-en-dalle)
+  - [Manipulation vecteur](#manipulation-vecteur)
+    - [Écriture d'une dalle vecteur](#écriture-dune-dalle-vecteur)
 
 <!-- TOC END -->
 
@@ -58,6 +62,7 @@ Stockages gérés : FICHIER, CEPH, S3, SWIFT
 Parallélisable, reprise sur erreur, progression.
 
 Outils internes utilisés :
+
 * cache2work
 * checkWork
 * composeNtiff
@@ -67,6 +72,7 @@ Outils internes utilisés :
 * work2cache
 
 Outils externes utilisés :
+
 * wget
 
 _Étape 1_
@@ -90,6 +96,7 @@ Stockages gérés : FICHIER, CEPH, S3
 Parallélisable, reprise sur erreur, progression.
 
 Outils internes utilisés :
+
 * cache2work
 * overlayNtiff
 * work2cache
@@ -124,9 +131,11 @@ Stockages gérés : FICHIER, CEPH
 Parallélisable, reprise sur erreur, progression.
 
 Outils internes utilisés :
+
 * pbf2cache
 
 Outils externes utilisés :
+
 * ogr2ogr
 * tippecanoe
 
@@ -202,6 +211,7 @@ Outil : `pyr2pyr.pl`
 Cet outil copie une pyramide d'un stockage à un autre.
 
 Conversions possibles :
+
 * FICHIER -> FICHIER, CEPH, S3, SWIFT
 * CEPH -> CEPH, FICHIER
 

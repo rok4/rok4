@@ -2,19 +2,6 @@
 SET(PARENT_PROJECT_NAME ${PROJECT_NAME})
 #Défini le nom du projet 
 project(cache2work)
-#définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
-#Lecture de la version dans le fichier README 
-if(NOT DEFINED ROK4_VERSION)
-        FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/../../README tmp REGEX "ROK4.*[0-9]+\\.[0-9]+\\.[0-9]+[-]?[S]?[N]?[A]?[P]?[S]?[H]?[O]?[T]?$")
-        STRING(SUBSTRING ${tmp} 15 -1 subtmp)
-        STRING(REPLACE "." ";" ROK4_VERSION ${subtmp})
-endif(NOT DEFINED ROK4_VERSION)
-list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
-list(GET ROK4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
-list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
-
-
-cmake_minimum_required(VERSION 2.6)
 
 ########################################
 #Attention aux chemins

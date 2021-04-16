@@ -1,11 +1,10 @@
 #Défini le nom du projet 
 project(proj)
+
 #définit la version du projet : 0.0.1 MAJOR.MINOR.PATCH
 SET(CPACK_PACKAGE_VERSION_MAJOR "4")
 SET(CPACK_PACKAGE_VERSION_MINOR "8")
 SET(CPACK_PACKAGE_VERSION_PATCH "0")
-
-cmake_minimum_required(VERSION 2.8.4)
 
 ########################################
 #Attention aux chemins

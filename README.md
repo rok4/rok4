@@ -3,6 +3,7 @@
 ROK4 est un projet open-source (sous licence CeCILL-C) développé par les équipes du projet Géoportail de l’Institut National de l’Information Géographique et Forestière. Il contient un serveur (ROK4SERVER), écrit en C++, permettant la diffusion de données raster ou vecteur, et une suite d'outils (ROK4GENERATION) permettant de préparer les données utilisées par le serveur.
 
 Le serveur implémente les standards ouverts de l’Open Geospatial Consortium (OGC) WMS 1.3.0 et WMTS 1.0.0, ainsi que le TMS (Tile Map Service). Il est utilisé pour l’intégralité de la diffusion des flux images et vecteur tuilé de la dernière version du Géoportail. Répondant aux besoins de diffusion image de l’IGN, ROK4SERVER vise deux objectifs principaux :
+
 * L’utilisation d’un cache de données raster unique permettant de servir indifféremment des flux WMS, WMTS et TMS
 * Des performances de traitement d’image et de diffusion accrues
 * La diffusion de tuiles vecteur telles qu'elles sont stockées, sans transformation (TMS uniquement)
@@ -15,7 +16,7 @@ ROK4GENERATION est un ensemble de scripts de traitement permettant la préparati
 * http://www.ign.fr [@IGNFrance](https://twitter.com/IGNFrance)
 * http://www.geoportail.gouv.fr [@Geoportail](https://twitter.com/Geoportail)
 
-ROK4 Version : 3.9.0-DEVELOP
+ROK4 Version : 3.11.0-DEVELOP
 
 - [Fonctionnement général](#fonctionnement-général)
 - [Variables d'environnement](#variables-denvironnement)
@@ -106,6 +107,7 @@ Afin de connaître les paquets et librairies à installer, référez vous aux Do
 ## Les commandes externes
 
 Les outils suivant sont nécessaires aux outils de génération :
+
 * wget (be4)
 * ogr2ogr (4alamo)
 * tippecanoe (4alamo) : https://github.com/mapbox/tippecanoe.git
@@ -142,7 +144,7 @@ make [install|package]`
 
 `BUILD_BE4 (BOOL)` : Compilation de la partie ROK4GENERATION Valeur par défaut : `TRUE`
 
-`BUILD_DOC (BOOL)` : Compilation de la documentation automatique (Doxygen et Naturaldocs). Crée la cible de compilation `make doc` à faire avant `make install`. Valeur par défaut : `TRUE`
+`BUILD_DOC (BOOL)` : Compilation de la documentation automatique (Doxygen, Naturaldocs et mkdocs). Crée la cible de compilation `make doc` à faire avant `make install`. Valeur par défaut : `TRUE`
 
 `UNITTEST (BOOL)` : Compilation des tests unitaires. Crée la cible de compilation `make test`. Valeur par défaut : `FALSE`
 

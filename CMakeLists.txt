@@ -3,23 +3,18 @@ project(Rok4)
 
 #définit la version du projet
 #Lecture de la version de ROK4 dans le fichier du projet
-FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/README.md version_line REGEX "ROK4 Version : [0-9]+\\.[0-9]+\\.[0-9]+(-[A-Za-z]+)?")
-STRING(SUBSTRING ${version_line} 15 -1 version)
+FILE(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/README.md version_line REGEX "ROK4 Version : [0-9A-Za-z\\-_\\.]+")
+STRING(SUBSTRING ${version_line} 15 -1 ROK4_VERSION)
 
-STRING(REPLACE "." ";" ROK4_VERSION ${version})
-list(GET ROK4_VERSION 0 CPACK_PACKAGE_VERSION_MAJOR)
-list(GET ROK4_VERSION 1 CPACK_PACKAGE_VERSION_MINOR)
-list(GET ROK4_VERSION 2 CPACK_PACKAGE_VERSION_PATCH)
+MESSAGE("Version ${ROK4_VERSION}")
 
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8.4)
 
 set_property(GLOBAL PROPERTY ALLOW_DUPLICATE_CUSTOM_TARGETS 1)
 
 if(NOT DEFINED CPACK_INCLUDE_TOPLEVEL_DIRECTORY)
   SET(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0)
 endif(NOT DEFINED CPACK_INCLUDE_TOPLEVEL_DIRECTORY)
-
-cmake_minimum_required(VERSION 2.8.4)
 
 set (CMAKE_CXX_FLAGS "-std=c++11 -lstdc++ -lm")
 
@@ -111,7 +106,7 @@ if(BUILD_DOC)
 
   # Documentation Doxygen
 
-  FILE(GLOB dox_configs ${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile.*.in)
+  FILE(GLOB dox_configs ${CMAKE_CURRENT_SOURCE_DIR}/docs/doxygen/Doxyfile.*.in)
   if(dox_configs)
     find_package(Doxygen)
     if(DOXYGEN_FOUND)
@@ -143,11 +138,9 @@ if(BUILD_DOC)
 
         MESSAGE("  - adding Natuladocs")
         add_custom_command(OUTPUT make_naturaldocs_command 
-          COMMAND mkdir -p ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/Natural/Html 
-          COMMAND mkdir -p ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/Natural/NaturalDocs 
-          COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/docs/MenuND.txt ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/Natural/NaturalDocs/Menu.txt
-          COMMAND naturaldocs -r --input ./ --exclude-input blib/ -img ${CMAKE_CURRENT_SOURCE_DIR}/docs/images --no-auto-group --documented-only --output HTML ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/Natural/Html --project ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/Natural/NaturalDocs
-          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/rok4generation/main/src/)
+          COMMAND mkdir -p ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/naturaldocs/html 
+          COMMAND naturaldocs -r --input ${CMAKE_CURRENT_BINARY_DIR}/rok4generation/main/src/ --exclude-input ${CMAKE_CURRENT_BINARY_DIR}/rok4generation/main/src/blib -img ${CMAKE_CURRENT_SOURCE_DIR}/docs/images --no-auto-group --documented-only --output HTML ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/naturaldocs/html --project ${CMAKE_CURRENT_SOURCE_DIR}/docs/naturaldocs/
+          WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/rok4generation/main/)
 
         add_custom_target(make_naturaldocs_target DEPENDS make_naturaldocs_command)
 
@@ -155,6 +148,25 @@ if(BUILD_DOC)
 
     endif(NATURALDOCS_FOUND)
   endif(BUILD_BE4)
+
+  # Documentation mkdocs
+
+  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/docs/mkdocs/mkdocs.yml")
+    find_package(Mkdocs)
+    if(MKDOCS_FOUND)
+      
+      MESSAGE("  - adding mkdocs")
+            
+      add_custom_command(OUTPUT make_mkdocs_command 
+        COMMAND mkdir -p ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/mkdocs
+        COMMAND LC_ALL=C.UTF-8 mkdocs build --config-file ${CMAKE_CURRENT_SOURCE_DIR}/docs/mkdocs/mkdocs.yml --site-dir ${CMAKE_CURRENT_SOURCE_DIR}/target/docs/mkdocs
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
+      add_custom_target(make_mkdocs_target DEPENDS make_mkdocs_command)
+      add_dependencies(doc make_mkdocs_target)
+          
+    endif(MKDOCS_FOUND)
+  endif()
 
   # Installation
   INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/target/docs/"  DESTINATION share/doc/)
@@ -166,12 +178,12 @@ endif(BUILD_DOC)
 include(${Rok4_SOURCE_DIR}/cmake/Modules/ROK4Dependencies.cmake)
 
 if(BUILD_ROK4)
-MESSAGE(STATUS "Building ROK4 Server")
+  MESSAGE(STATUS "Building ROK4 Server")
   add_subdirectory(rok4server)
 endif(BUILD_ROK4)
 
 if(BUILD_BE4)
-MESSAGE(STATUS "Building generation tools")
+  MESSAGE(STATUS "Building generation tools")
   add_subdirectory(rok4generation)
 endif(BUILD_BE4)
 
