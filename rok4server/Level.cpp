@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -73,10 +73,9 @@ Level::Level ( LevelXML* l, PyramidXML* p ) {
     tm = l->tm;
     format = p->getFormat();
 
-    baseDir = l->baseDir;
+    racine = l->racine;
     pathDepth = l->pathDepth;
     context = l->context;
-    prefix = l->prefix;
 
     tilesPerWidth = l->tilesPerWidth;
     tilesPerHeight = l->tilesPerHeight;
@@ -115,7 +114,7 @@ Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
     }
 
     channels = obj->channels;
-    baseDir = obj->baseDir;
+    racine = obj->racine;
 
     // On clone bien toutes les sources
     for ( int i = 0; i < obj->sSources.size(); i++ ) {
@@ -161,48 +160,17 @@ Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
     context = NULL;
 
     if (obj->context != NULL) {
-        switch ( obj->context->getType() ) {
-            case FILECONTEXT :
-                context = new FileContext("");
-                if (! context->connection() ) {
-                    LOGGER_ERROR("Impossible de se connecter aux donnees.");
-                    tm == NULL;
-                    return;
-                }
-                break;
-#if BUILD_OBJECT
-            case CEPHCONTEXT :
-                if (sxml->getCephContextBook() != NULL) {
-                    context = sxml->getCephContextBook()->addContext(obj->context->getTray());
-                } else {
-                    LOGGER_ERROR ( "L'utilisation d'un cephContext necessite de preciser les informations de connexions dans le server.conf");
-                    tm == NULL;
-                    return;
-                }
-                break;
-            case S3CONTEXT :
-                if (sxml->getS3ContextBook() != NULL) {
-                    context = sxml->getS3ContextBook()->addContext(obj->context->getTray());
-                } else {
-                    LOGGER_ERROR ( "L'utilisation d'un s3Context necessite de preciser les informations de connexions dans le server.conf");
-                    tm == NULL;
-                    return;
-                }
-                break;
-            case SWIFTCONTEXT :
-                if (sxml->getSwiftContextBook() != NULL) {
-                    context = sxml->getSwiftContextBook()->addContext(obj->context->getTray());
-                } else {
-                    LOGGER_ERROR ( "L'utilisation d'un swiftContext necessite de preciser les informations de connexions dans le server.conf");
-                    tm == NULL;
-                    return;
-                }
-                break;
-#endif
-        }
-    }
 
-    prefix = obj->prefix;
+        if (sxml->getContextBook() != NULL) {
+            //TODO : tester ce mode "copie" 
+            context = sxml->getContextBook()->addContext(obj->context->getType(),obj->context->getTray());
+        } else {
+            LOGGER_ERROR ( "Impossible de se connecter aux donnees");
+            tm == NULL;
+            return;
+        }
+
+    }
 
     if (Rok4Format::isRaster(format)) {
         maxTileSize = obj->maxTileSize;
@@ -220,11 +188,6 @@ Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
 Level::~Level() {
 
     // les contextes sont dans des contextBooks
-    // ce sont les contextBooks qui se chargent de détruire les contextes
-    // mais ce n'est pas le cas des FILECONTEXT
-    if (context) {
-        if (context->getType() == FILECONTEXT) delete context;
-    }
 
     for ( int i = 0; i < sSources.size(); i++ ) {
         Source* pS = sSources.at(i);
@@ -412,86 +375,36 @@ Image* Level::getwindow ( ServicesXML* servicesConf, BoundingBox< int64_t > bbox
     else return new CompoundImage ( T );
 }
 
-/*
- * Tableau statique des caractères Base36 (pour systeme de fichier non case-sensitive)
- */
-// static const char* Base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-";
-static const char* Base36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 /*
  * Recuperation du nom de la dalle du cache en fonction de son indice
  */
-std::string Level::getPath ( int tilex, int tiley, int tilesPerW, int tilesPerH ) {
+std::string Level::getPath ( int tilex, int tiley) {
     // Cas normalement filtré en amont (exception WMS/WMTS)
     if ( tilex < 0 || tiley < 0 ) {
         LOGGER_ERROR ( _ ( "Indice de tuile negatif" ) );
         return "";
     }
 
-    std::ostringstream convert;
-    int x,y,pos;
+    int x,y;
 
-    x = tilex / tilesPerW;
-    y = tiley / tilesPerH;
+    x = tilex / tilesPerWidth;
+    y = tiley / tilesPerHeight;
 
+    return context->getPath(racine,x,y,pathDepth);
 
-    switch (context->getType()) {
-        case FILECONTEXT:
-
-            char path[32];
-            path[sizeof ( path ) - 5] = '.';
-            path[sizeof ( path ) - 4] = 't';
-            path[sizeof ( path ) - 3] = 'i';
-            path[sizeof ( path ) - 2] = 'f';
-            path[sizeof ( path ) - 1] = 0;
-            pos = sizeof ( path ) - 6;
-
-            for ( int d = 0; d < pathDepth; d++ ) {
-                path[pos--] = Base36[y % 36];
-                path[pos--] = Base36[x % 36];
-                path[pos--] = '/';
-                x = x / 36;
-                y = y / 36;
-            }
-            do {             
-                path[pos--] = Base36[y % 36];
-                path[pos--] = Base36[x % 36];
-                x = x / 36;
-                y = y / 36;
-            } while ( x || y );
-            path[pos] = '/';
-
-            return baseDir + ( path + pos );
-            break;
-        case CEPHCONTEXT:
-            convert << "_" << x << "_" << y;
-            return prefix + convert.str();
-            break;
-        case S3CONTEXT:
-            convert << "_" << x << "_" << y;
-            return prefix + convert.str();
-            break;
-        case SWIFTCONTEXT:
-            convert << "_" << x << "_" << y;
-            return prefix + convert.str();
-            break;
-        default:
-            return "";
-
-    }
 }
 
 std::string Level::getDirPath ( int tilex, int tiley ) {
 
-    if (context->getType() == FILECONTEXT) {
-        std::string file = getPath(tilex,tiley, tilesPerWidth, tilesPerHeight);
+    if (context->getType() == ContextType::FILECONTEXT) {
+        std::string file = getPath(tilex,tiley);
         return file.substr(0,file.find_last_of("/"));        
     } else {
         LOGGER_ERROR ( _ ( "getDirPath n'a pas de sens dans le cas d'un contexte non fichier" ) );
         return "";
     }
 
-    return "";
 }
 
 /*
@@ -530,7 +443,7 @@ DataSource* Level::getEncodedTile ( int x, int y ) { // TODO: return 0 sur des c
     int n= ( y%tilesPerHeight ) *tilesPerWidth + ( x%tilesPerWidth );
     // Les index sont stockés à partir de l'octet ROK4_IMAGE_HEADER_SIZE
     uint32_t posoff=ROK4_IMAGE_HEADER_SIZE+4*n, possize=ROK4_IMAGE_HEADER_SIZE+tilesPerWidth*tilesPerHeight*4+4*n;
-    std::string path=getPath ( x, y, tilesPerWidth, tilesPerHeight);
+    std::string path=getPath ( x, y);
     LOGGER_DEBUG ( path );
     return new StoreDataSource ( path, posoff, possize, ROK4_IMAGE_HEADER_SIZE + 2*4*tilesPerWidth*tilesPerHeight, Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );
 }

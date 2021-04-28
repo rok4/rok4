@@ -13,18 +13,17 @@ La taille de tuile précisée doit être cohérente avec la taille totale de la 
 
 ## Usage
 
-`work2cache -c <VAL> -t <VAL> <VAL> <INPUT FILE> <OUTPUT FILE/OBJECT> [-pool <POOL NAME>|-bucket <BUCKET NAME>|-container <CONTAINER NAME> [-ks]] [-a <VAL> -s <VAL> -b <VAL>] [-crop]`
+`work2cache -c <VAL> -t <VAL> <VAL> <INPUT FILE> <OUTPUT FILE/OBJECT> [-pool <POOL NAME>|-bucket <BUCKET NAME>|-container <CONTAINER NAME>] [-a <VAL> -s <VAL> -b <VAL>] [-crop]`
 
 * `-c <COMPRESSION>` : compression des données dans l'image TIFF en sortie : jpg, raw (défaut), zip, lzw, pkb, png
 * `-t <INTEGER> <INTEGER>` : taille pixel d'une tuile, enlargeur et hauteur. Doit être un diviseur de la largeur et de la hauteur de l'image en entrée
 * `-pool <POOL NAME>` : précise le nom du pool CEPH dans lequel écrire la dalle
 * `-bucket <BUCKET NAME>` : précise le nom du bucket S3 dans lequel écrire la dalle
 * `-container <CONTAINER NAME>` : précise le nom du conteneur SWIFT dans lequel écrire la dalle
-* `-ks` : dans le cas d'un stockage dans SWIFT, précise si l'on souhaite avoir une authentification keystone
 * `-a <FORMAT>` : format des canaux : float, uint
 * `-b <INTEGER>` : nombre de bits pour un canal : 8, 32
 * `-s <INTEGER>` : nombre de canaux : 1, 2, 3, 4
-* `-crop` : dans le cas d'une compression des données en JPEG, un bloc (16x16 pixels, base d'application de la compression) qui contient un pixel blanc est complètement remplis de blanc
+* `-crop` : dans le cas d'une compression des données en JPEG, un bloc (16x16 pixels, base d'application de la compression) qui contient un pixel blanc est complètement rempli de blanc
 * `-d` : activation des logs de niveau DEBUG
 
 Les options a, b et s doivent être toutes fournies ou aucune.
@@ -38,4 +37,3 @@ La compression PNG a la particularité de ne pas être un standard du TIFF. Une 
 * Stockage CEPH sans conversion : `work2cache input.tif -pool PYRAMIDS -c png -t 256 256 output.tif`
 * Stockage S3 sans conversion : `work2cache input.tif -bucket PYRAMIDS -c png -t 256 256 output.tif`
 * Stockage SWIFT sans conversion : `work2cache input.tif -container PYRAMIDS -c png -t 256 256 output.tif`
-* Stockage SWIFT sans conversion avec authentification keystone : `work2cache input.tif -container PYRAMIDS -ks -c png -t 256 256 output.tif`

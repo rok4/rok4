@@ -2,7 +2,7 @@
  * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -65,11 +65,6 @@ typedef void Rok4Server;
     void rok4KillServer ( Rok4Server* server );
     void rok4ReloadLogger ();
     void rok4KillLogger ();
-
-#if BUILD_OBJECT
-    int rok4ConnectObjectContext(Rok4Server* server);
-    void rok4DisconnectObjectContext(Rok4Server* server);
-#endif
 
 #ifdef __cplusplus
 }

@@ -2,7 +2,7 @@
  * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -93,6 +93,8 @@
 #include "AspectImage.h"
 #include "Aspect.h"
 #include "ConvertedChannelsImage.h"
+#include <thread>         // std::this_thread::sleep_for
+#include <chrono>         // std::chrono::second
 
 void hangleSIGALARM(int id) {
     if(id==SIGALRM) {
@@ -177,31 +179,6 @@ void* Rok4Server::thread_loop ( void* arg ) {
     return 0;
 }
 
-
-#if BUILD_OBJECT
-void* Rok4Server::thread_reconnection_loop ( void* arg ) {
-    Rok4Server* server = ( Rok4Server* ) ( arg );
-
-    while ( server->isRunning() ) {
-
-        sleep(server->getServerConf()->getReconnectionFrequency() * 60);
-
-        if (server->getSwiftBook()) {
-            LOGGER_INFO("Reconnexion des contextes Swift");
-            if (! server->getSwiftBook()->reconnectAllContext()) {
-                LOGGER_FATAL ( "Impossible de reconnecter un contexte swift (recuperer un nouveau token)" );
-            }
-        } else {
-            LOGGER_INFO("Pas d'annuaire Swift");
-        }
-    }
-
-    LOGGER_DEBUG ( _ ( "Extinction du thread de reconnection des contextes" ) );
-    Logger::stopLogger();
-    return 0;
-}
-#endif
-
 Rok4Server::Rok4Server (  ServerXML* serverXML, ServicesXML* servicesXML) {
     
 
@@ -262,9 +239,6 @@ void Rok4Server::run(sig_atomic_t signal_pending) {
     for ( int i = 0; i < threads.size(); i++ ) {
         pthread_create ( & ( threads[i] ), NULL, Rok4Server::thread_loop, ( void* ) this );
     }
-#if BUILD_OBJECT
-    pthread_create ( & reco_thread, NULL, Rok4Server::thread_reconnection_loop, ( void* ) this );
-#endif
     
     if (signal_pending != 0 ) {
         raise( signal_pending );
@@ -272,10 +246,6 @@ void Rok4Server::run(sig_atomic_t signal_pending) {
     
     for ( int i = 0; i < threads.size(); i++ )
         pthread_join ( threads[i], NULL );
-
-#if BUILD_OBJECT
-    pthread_join ( reco_thread, NULL );
-#endif
 }
 
 void Rok4Server::terminate() {
@@ -285,9 +255,6 @@ void Rok4Server::terminate() {
     for ( int i = 0; i < threads.size(); i++ ) {
         pthread_kill ( threads[i], SIGQUIT );
     }
-#if BUILD_OBJECT
-    pthread_kill ( reco_thread, SIGQUIT );
-#endif
 
     CurlPool::cleanCurlPool();
 }
@@ -905,7 +872,7 @@ DataSource *Rok4Server::getTileOnFly(Layer* L, std::string tileMatrix, int tileC
     //---- on verifie certains paramètres pour ne pas effectuer des calculs inutiles
     Level* lev = pyr->getLevel(tileMatrix);
 
-    Spath = lev->getPath(tileCol, tileRow, lev->getTilesPerWidth(), lev->getTilesPerHeight());
+    Spath = lev->getPath(tileCol, tileRow);
     SpathDir = lev->getDirPath(tileCol,tileRow);
     SpathTmp = Spath + ".tmp";
     SpathErr = Spath + ".err";
@@ -1369,7 +1336,7 @@ DataStream* Rok4Server::CommonGetFeatureInfo ( std::string service, Layer* layer
         
     } else if ( getFeatureInfoType.compare( "EXTERNALWMS" ) == 0 ) {
         LOGGER_DEBUG("GFI sur WMS externe");
-        WebService* myWMSV = new WebService(layer->getGFIBaseUrl(),serverConf->proxy.proxyName,serverConf->proxy.noProxy,1,1,10);
+        WebService* myWMSV = new WebService(layer->getGFIBaseUrl(),1,1,10);
         std::stringstream vectorRequest;
         std::string crsstring = crs.getRequestCode();
         if(layer->getGFIForceEPSG()){
@@ -1514,11 +1481,7 @@ std::map<std::string, Style*>& Rok4Server::getStylesList() { return serverConf->
 std::map<std::string,std::vector<std::string> >& Rok4Server::getWmsCapaFrag() { return wmsCapaFrag; }
 std::vector<std::string>& Rok4Server::getWmtsCapaFrag() { return wmtsCapaFrag; }
 
-#if BUILD_OBJECT
-ContextBook* Rok4Server::getCephBook() {return serverConf->getCephContextBook();}
-ContextBook* Rok4Server::getS3Book() {return serverConf->getS3ContextBook();}
-ContextBook* Rok4Server::getSwiftBook() {return serverConf->getSwiftContextBook();}
-#endif
+ContextBook* Rok4Server::getObjectBook() {return serverConf->getContextBook();}
 
 int Rok4Server::getFCGISocket() { return sock; }
 void Rok4Server::setFCGISocket ( int sockFCGI ) { sock = sockFCGI; }
@@ -1526,5 +1489,3 @@ bool Rok4Server::isRunning() { return running ; }
 bool Rok4Server::isWMTSSupported(){ return serverConf->supportWMTS ; }
 bool Rok4Server::isWMSSupported(){ return serverConf->supportWMS ; }
 bool Rok4Server::isTMSSupported(){ return serverConf->supportTMS ; }
-void Rok4Server::setProxy(Proxy pr){ serverConf->proxy = pr ; }
-Proxy Rok4Server::getProxy(){ return serverConf->proxy ; }

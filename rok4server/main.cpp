@@ -2,7 +2,7 @@
  * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -262,25 +262,21 @@ int main ( int argc, char** argv ) {
             }
             W->setFCGISocket ( sock );
         }
-#if BUILD_OBJECT
-        rok4ConnectObjectContext(W);
-#endif
 
         // Remove Event Lock
         defer_signal--;
         
         W->run(signal_pending);
 
-        // Extinction du serveur
         if ( reload ) {
+            // Rechargement du serveur
             LOGGER_INFO ( _ ( "Rechargement de la configuration" ) );
             sock = W->getFCGISocket();
         } else {
+            // Extinction du serveur
             LOGGER_INFO ( _ ( "Extinction du serveur ROK4" ) );
         }
-#if BUILD_OBJECT
-        rok4DisconnectObjectContext(W);
-#endif
+
         rok4KillServer ( W );
         rok4ReloadLogger();
     }
@@ -288,6 +284,6 @@ int main ( int argc, char** argv ) {
     //CURL clean - one time for the whole program
     curl_global_cleanup();
 
-    rok4KillLogger();
+    //rok4KillLogger();
     return 0;
 }

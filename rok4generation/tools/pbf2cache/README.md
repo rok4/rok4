@@ -8,7 +8,7 @@ Cet outil écrit une dalle à partir des tuiles PBF rangées par coordonnées (`
 
 ## Usage
 
-`pbf2cache -r <DIRECTORY> -t <VAL> <VAL> -ultile <VAL> <VAL> <OUTPUT FILE/OBJECT> [-pool <POOL NAME>|-bucket <BUCKET NAME>|-container <CONTAINER NAME> [-ks]] [-d]`
+`pbf2cache -r <DIRECTORY> -t <VAL> <VAL> -ultile <VAL> <VAL> <OUTPUT FILE/OBJECT> [-pool <POOL NAME>|-bucket <BUCKET NAME>|-container <CONTAINER NAME>] [-d]`
 
 * `-r <DIRECTORY>` : dossier contenant l'arborescence de tuiles PBF
 * `-t <VAL> <VAL>` : nombre de tuiles dans une dalle, en largeur et en hauteur
@@ -17,7 +17,6 @@ Cet outil écrit une dalle à partir des tuiles PBF rangées par coordonnées (`
 * `-pool <POOL NAME>` : précise le nom du pool CEPH dans lequel écrire la dalle
 * `-bucket <BUCKET NAME>` : précise le nom du bucket S3 dans lequel écrire la dalle
 * `-container <CONTAINER NAME>` : précise le nom du conteneur SWIFT dans lequel écrire la dalle
-* `-ks` : dans le cas d'un stockage dans SWIFT, précise si l'on souhaite avoir une authentification keystone
 
 ## Exemple
 

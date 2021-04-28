@@ -2,7 +2,7 @@
  * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -158,7 +158,6 @@ public:
      * \param[out] layers ensemble des Layers disponibles
      * \param[in] reprojectionCapability définit si le serveur est capable de reprojeter des données
      * \param[in] servicesConf pointeur vers les configurations globales des services
-     * \param[in] proxy
      * \return faux en cas d'erreur
      * \~english
      * \brief Load Styles from the styleDir directory
@@ -168,7 +167,6 @@ public:
      * \param[out] layers set of available Layers
      * \param[in] reprojectionCapability whether the server can handle reprojection
      * \param[in] servicesConf global services configuration pointer
-     * \param[in] proxy
      * \return false if something went wrong
      */
     static bool buildLayersList (ServerXML* serverXML, ServicesXML* servicesXML );
@@ -181,7 +179,6 @@ public:
      * \param[in] stylesList liste des Styles connus
      * \param[in] reprojectionCapability définit si le serveur est capable de reprojeter des données
      * \param[in] servicesConf pointeur vers les configurations globales du services
-     * \param[in] proxy
      * \return un pointeur vers le Layer nouvellement instancié, NULL en cas d'erreur
      * \~english
      * \brief Create a new Layer from a file
@@ -190,7 +187,6 @@ public:
      * \param[in] stylesList known Styles
      * \param[in] reprojectionCapability whether the server can handle reprojection
      * \param[in] servicesConf global service configuration pointer
-     * \param[in] proxy
      * \return pointer to the newly created Layer, NULL if something went wrong
      */
     static Layer * buildLayer (std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML );
@@ -248,7 +244,6 @@ public:
      * \param[in] tmsList liste des TileMatrixSet connus
      * \param[in] tmsList liste des TileMatrixSets connus
      * \param[in] times vrai si premier appel, faux sinon
-     * \param[in] proxy
      * \return un pointeur vers la Pyramid nouvellement instanciée, NULL en cas d'erreur
      * \~english
      * \brief Create a new Pyramid from a file
@@ -256,7 +251,6 @@ public:
      * \param[in] tmsList known TileMatrixSets
      * \param[in] times true if first call, false in other cases
      * \param[in] stylesList available style list
-     * \param[in] proxy
      * \return pointer to the newly created Pyramid, NULL if something went wrong
      */
     static Pyramid* buildPyramid (std::string fileName, ServerXML* serverXML, ServicesXML* servicesXML, bool times);
@@ -275,7 +269,7 @@ public:
     * \~english
     * \brief Return a WebService from the configuration
     */
-    static WebService *parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Format::eformat_data pyrFormat, Proxy proxy_default, ServicesXML* servicesXML );
+    static WebService *parseWebService(TiXmlElement* sWeb, CRS pyrCRS, Rok4Format::eformat_data pyrFormat, ServicesXML* servicesXML );
     /**
      * \~french
      * \brief Test l'existence d'un fichier

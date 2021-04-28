@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -62,10 +62,9 @@ class Level;
 class Level {
 private:
 
-    std::string baseDir;
+    std::string racine;
     Context* context;
     int pathDepth;        //used only for file context
-    std::string prefix;     //used only for ceph, s3 and swift context
     TileMatrix* tm;
     Rok4Format::eformat_data format; //format d'image des tuiles
     int maxTileSize;
@@ -121,7 +120,7 @@ public:
     std::vector<Source*> getSources() ;
     std::vector<Table>* getTables() ;
 
-    std::string getPath (int tilex, int tiley , int tilesPerW, int tilesPerH);
+    std::string getPath (int tilex, int tiley );
     std::string getDirPath ( int tilex, int tiley );
     int createDirPath ( std::string path );
     Context* getContext() ;

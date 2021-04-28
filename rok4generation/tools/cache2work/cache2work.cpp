@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -82,7 +82,6 @@ std::string help = std::string("\ncache2work version ") + std::string(ROK4_VERSI
     "    -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object (ONLY IF OBJECT COMPILATION)\n"
     "    -bucket S3 bucket where data is. INPUT FILE is interpreted as a S3 object (ONLY IF OBJECT COMPILATION)\n"
     "    -container Swift container where data is. INPUT FILE is interpreted as a Swift object name (ONLY IF OBJECT COMPILATION)\n"
-    "    -ks in Swift storage case, activate keystone authentication (ONLY IF OBJECT COMPILATION)\n"
     "    -d debug logger activation\n\n"
 
     "Example\n"
@@ -132,7 +131,6 @@ int main ( int argc, char **argv )
     bool debugLogger=false;
 
     char *pool = 0, *container = 0, *bucket = 0;
-    bool keystone = false;
 
     /* Initialisation des Loggers */
     Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
@@ -169,10 +167,6 @@ int main ( int argc, char **argv )
                 error("Error in -container option", -1);
             }
             container = argv[i];
-            continue;
-        }
-        if ( !strcmp ( argv[i],"-ks" ) ) {
-            keystone = true;
             continue;
         }
 #endif
@@ -243,7 +237,7 @@ int main ( int argc, char **argv )
     } else if (container != 0) {
         LOGGER_DEBUG( std::string("Input is an object in the Swift container ") + container);
         curl_global_init(CURL_GLOBAL_ALL);
-        context = new SwiftContext(container, keystone);
+        context = new SwiftContext(container);
     } else {
 #endif
 
@@ -293,7 +287,6 @@ int main ( int argc, char **argv )
     // if ( acc ) {
     //     delete acc;
     // }
-    delete context;
 
 #if BUILD_OBJECT
     if (container != 0 || bucket != 0) {
@@ -301,6 +294,8 @@ int main ( int argc, char **argv )
         curl_global_cleanup();
     }
 #endif
+
+    delete context;
 
     return 0;
 }
