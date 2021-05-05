@@ -2,7 +2,7 @@
  * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -44,7 +44,7 @@
  */
 
 #include "Message.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include <iostream>
 
 
@@ -63,13 +63,13 @@ inline std::string xmlnsUri ( std::string t ) {
  */
 std::string genSER ( ServiceException *sex ) {
 
-    LOGGER_DEBUG ( "service=["<<sex->getService() <<"]" ) ;
+    BOOST_LOG_TRIVIAL(debug) <<  "service=["<<sex->getService() <<"]"  ;
 
     std::string msg= "<"+tagName ( sex->getService() ) +" xmlns=\""+xmlnsUri ( sex->getService() ) +"\">\n" ;
     msg+= sex->toString() ;
     msg+= "</"+tagName ( sex->getService() ) +">" ;
 
-    LOGGER_DEBUG ( "SERVICE EXCEPTION : " << msg );
+    BOOST_LOG_TRIVIAL(debug) <<  "SERVICE EXCEPTION : " << msg ;
 
     return msg ;
 }
@@ -80,8 +80,8 @@ std::string genSER ( ServiceException *sex ) {
  */
 std::string genSER ( std::vector<ServiceException*> *sexcp ) {
 
-    // LOGGER_DEBUG ( "sexcp:"<< sexcp << " - size: "<< sexcp->size() << " - [1] : "<< ( *sexcp ) [1] << " - [0] : "<< ( *sexcp ) [0] ) ;
-    // LOGGER_DEBUG ( "[0].getService=["<<sexcp->at ( 0 )->getService() <<"]" ) ;
+    // BOOST_LOG_TRIVIAL(debug) <<  "sexcp:"<< sexcp << " - size: "<< sexcp->size() << " - [1] : "<< ( *sexcp ) [1] << " - [0] : "<< ( *sexcp ) [0]  ;
+    // BOOST_LOG_TRIVIAL(debug) <<  "[0].getService=["<<sexcp->at ( 0 )->getService() <<"]"  ;
 
     //this->_init(&(sexcp->at(0)->getService())) ;
 
@@ -94,7 +94,7 @@ std::string genSER ( std::vector<ServiceException*> *sexcp ) {
     } // i
     msg+= "</"+tagName ( sexcp->at ( 0 )->getService() ) +">" ;
 
-    LOGGER_DEBUG ( "SERVICE EXCEPTION : " << msg );
+    BOOST_LOG_TRIVIAL(debug) <<  "SERVICE EXCEPTION : " << msg ;
 
     return msg ;
 }

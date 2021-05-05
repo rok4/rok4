@@ -2,7 +2,7 @@
  * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -53,7 +53,6 @@
 #include <cmath>
 #include "TileMatrixSet.h"
 #include "Pyramid.h"
-#include "intl.h"
 
 
 int Rok4Server::GetDecimalPlaces ( double dbVal ) {
@@ -82,83 +81,83 @@ DataStream* Rok4Server::getMapParamWMS (
         //le parametre version est prioritaire sur wmtver
         version = request->getParam("wmtver");
         if ( version == "") {
-            return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre VERSION absent." ),"wms" ) );
+            return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre VERSION absent.","wms" ) );
         }
         //----
     }
 
     if ( version != "1.3.0" && version != "1.1.1")
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Valeur du parametre VERSION invalide (1.1.1 et 1.3.0 disponibles seulement))" ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "Valeur du parametre VERSION invalide (1.1.1 et 1.3.0 disponibles seulement))","wms" ) );
 
     // LAYER
     std::string str_layers = request->getParam ( "layers" );
     if ( str_layers == "" )
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre LAYERS absent." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre LAYERS absent.","wms" ) );
     
     //Split layer Element
     std::vector<std::string> vector_layers = split ( str_layers,',' );
-    LOGGER_DEBUG ( _ ( "Nombre de couches demandees =" ) << vector_layers.size() );
+    BOOST_LOG_TRIVIAL(debug) <<   "Nombre de couches demandees =" << vector_layers.size() ;
 
     if ( vector_layers.size() > servicesConf->getLayerLimit() ) {
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le nombre de couche demande excede la valeur du LayerLimit." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "Le nombre de couche demande excede la valeur du LayerLimit.","wms" ) );
     }
 
     for (unsigned int i = 0 ; i < vector_layers.size(); i++ ) {
         if ( Request::containForbiddenChars(vector_layers.at(i)) ) {
             // On a détecté un caractère interdit, on ne met pas le layer fourni dans la réponse pour éviter une injection
-            LOGGER_WARN("Forbidden char detected in WMS layers: " << vector_layers.at(i));
-            return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_DEFINED,_ ( "Layer inconnu." ),"wms" ) );
+            BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in WMS layers: " << vector_layers.at(i);
+            return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_DEFINED, "Layer inconnu.","wms" ) );
         }
 
         Layer* lay = serverConf->getLayer(vector_layers.at(i));
         if ( lay == NULL || ! lay->getWMSAuthorized())
-            return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_DEFINED,_ ( "Layer " ) +vector_layers.at(i)+_ ( " inconnu." ),"wms" ) );
+            return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_DEFINED, "Layer " +vector_layers.at(i)+ " inconnu.","wms" ) );
        
         layers.push_back ( lay );
     }
-    LOGGER_DEBUG ( _ ( "Nombre de couches =" ) << layers.size() );
+    BOOST_LOG_TRIVIAL(debug) <<   "Nombre de couches =" << layers.size() ;
 
     // WIDTH
     std::string strWidth = request->getParam ( "width" );
     if ( strWidth == "" )
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre WIDTH absent." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre WIDTH absent.","wms" ) );
     width=atoi ( strWidth.c_str() );
     if ( width == 0 || width == INT_MAX || width == INT_MIN )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre WIDTH n'est pas une valeur entiere." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre WIDTH n'est pas une valeur entiere.","wms" ) );
     if ( width < 0 )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre WIDTH est negative." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre WIDTH est negative.","wms" ) );
     if ( width > servicesConf->getMaxWidth() )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre WIDTH est superieure a la valeur maximum autorisee par le service." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre WIDTH est superieure a la valeur maximum autorisee par le service.","wms" ) );
 
     // HEIGHT
     std::string strHeight = request->getParam ( "height" );
     if ( strHeight == "" )
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre HEIGHT absent." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre HEIGHT absent.","wms" ) );
     height=atoi ( strHeight.c_str() );
     if ( height == 0 || height == INT_MAX || height == INT_MIN )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre HEIGHT n'est pas une valeur entiere." ),"wms" ) ) ;
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre HEIGHT n'est pas une valeur entiere.","wms" ) ) ;
     if ( height<0 )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre HEIGHT est negative." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre HEIGHT est negative.","wms" ) );
     if ( height>servicesConf->getMaxHeight() )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre HEIGHT est superieure a la valeur maximum autorisee par le service." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre HEIGHT est superieure a la valeur maximum autorisee par le service.","wms" ) );
     
     // CRS
     std::string str_crs;
     if (version == "1.3.0") {
         str_crs = request->getParam ( "crs" );
         if ( str_crs == "" )
-            return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre CRS absent." ),"wms" ) );
+            return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre CRS absent.","wms" ) );
     } else {
         // WMS 1.1.1
         str_crs = request->getParam ( "srs" );
         if ( str_crs == "" )
-            return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre SRS absent." ),"wms" ) );
+            return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre SRS absent.","wms" ) );
     }
 
     if ( Request::containForbiddenChars(str_crs) ) {
         // On a détecté un caractère interdit, on ne met pas le crs fourni dans la réponse pour éviter une injection
-        LOGGER_WARN("Forbidden char detected in WMS crs: " << str_crs);
-        return new SERDataStream ( new ServiceException ( "",WMS_INVALID_CRS,_ ( "CRS  inconnu" ),"wms" ) );
+        BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in WMS crs: " << str_crs;
+        return new SERDataStream ( new ServiceException ( "",WMS_INVALID_CRS, "CRS  inconnu","wms" ) );
     }
    
     // Existence du CRS dans la liste globale de CRS ou de chaque layers
@@ -166,42 +165,42 @@ DataStream* Rok4Server::getMapParamWMS (
     if ( servicesConf->isInGlobalCRSList(&crs) ) {
         for ( unsigned int j = 0; j < layers.size() ; j++ ) {
             if ( layers.at ( j )->isInWMSCRSList(&crs) )
-                return new SERDataStream ( new ServiceException ( "",WMS_INVALID_CRS,_ ( "CRS " ) +str_crs+_ ( " (equivalent PROJ4 " ) +crs.getProj4Code() +_ ( " ) inconnu pour le layer " ) +vector_layers.at ( j ) +".","wms" ) );
+                return new SERDataStream ( new ServiceException ( "",WMS_INVALID_CRS, "CRS " +str_crs+ " (equivalent PROJ4 " +crs.getProj4Code() + " ) inconnu pour le layer " +vector_layers.at ( j ) +".","wms" ) );
         }
     }
 
     // FORMAT
     format = request->getParam ( "format" );
     if ( format == "" )
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre FORMAT absent." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre FORMAT absent.","wms" ) );
 
     if ( Request::containForbiddenChars(format) ) {
         // On a détecté un caractère interdit, on ne met pas le format fourni dans la réponse pour éviter une injection
-        LOGGER_WARN("Forbidden char detected in WMS format: " << format);
-        return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Format non gere par le service." ),"wms" ) );
+        BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in WMS format: " << format;
+        return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT, "Format non gere par le service.","wms" ) );
     }
 
     if ( ! servicesConf->isInFormatList(format) )
-        return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Format " ) +format+_ ( " non gere par le service." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT, "Format " +format+ " non gere par le service.","wms" ) );
 
     // BBOX
     std::string strBbox = request->getParam ( "bbox" );
     if ( strBbox == "" )
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre BBOX absent." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre BBOX absent.","wms" ) );
     std::vector<std::string> coords = split ( strBbox,',' );
 
     if ( coords.size() != 4 )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Parametre BBOX incorrect." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "Parametre BBOX incorrect.","wms" ) );
     double bb[4];
     for ( int i = 0; i < 4; i++ ) {
         if ( sscanf ( coords[i].c_str(),"%lf",&bb[i] ) !=1 )
-            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Parametre BBOX incorrect." ),"wms" ) );
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "Parametre BBOX incorrect.","wms" ) );
         //Test NaN values
         if (bb[i]!=bb[i])
-            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Parametre BBOX incorrect." ),"wms" ) );
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "Parametre BBOX incorrect.","wms" ) );
     }
     if ( bb[0] >= bb[2] || bb[1] >= bb[3] )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Parametre BBOX incorrect." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "Parametre BBOX incorrect.","wms" ) );
 
     bbox.xmin=bb[0];
     bbox.ymin=bb[1];
@@ -222,16 +221,16 @@ DataStream* Rok4Server::getMapParamWMS (
 
         if ( Request::containForbiddenChars(str_exception) ) {
             // On a détecté un caractère interdit, on ne met pas le str_exception fourni dans la réponse pour éviter une injection
-            LOGGER_WARN("Forbidden char detected in WMS exception: " << str_exception);
-            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Format d'exception non pris en charge" ),"wms" ) );
+            BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in WMS exception: " << str_exception;
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "Format d'exception non pris en charge","wms" ) );
         }
 
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Format d'exception " ) +str_exception+_ ( " non pris en charge" ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "Format d'exception " +str_exception+ " non pris en charge","wms" ) );
     }
 
     //STYLES
     if ( ! request->hasParam ( "styles" ) )
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre STYLES absent." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre STYLES absent.","wms" ) );
 
     std::string str_styles = request->getParam ( "styles" );
     if ( str_styles == "" ) {
@@ -243,9 +242,9 @@ DataStream* Rok4Server::getMapParamWMS (
     }
 
     std::vector<std::string> vector_styles = split ( str_styles,',' );
-    LOGGER_DEBUG ( _ ( "Nombre de styles demandes =" ) << vector_styles.size() );
+    BOOST_LOG_TRIVIAL(debug) <<   "Nombre de styles demandes =" << vector_styles.size() ;
     if ( vector_styles.size() != vector_layers.size() ) {
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre STYLES incomplet." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre STYLES incomplet.","wms" ) );
     }
     for ( int k = 0 ; k  < vector_styles.size(); k++ ) {
         if ( vector_styles.at ( k ) == "" ) {
@@ -255,13 +254,13 @@ DataStream* Rok4Server::getMapParamWMS (
 
         if ( Request::containForbiddenChars(vector_styles.at ( k )) ) {
             // On a détecté un caractère interdit, on ne met pas le style fourni dans la réponse pour éviter une injection
-            LOGGER_WARN("Forbidden char detected in WMS styles: " << vector_styles.at ( k ));
-            return new SERDataStream ( new ServiceException ( "",WMS_STYLE_NOT_DEFINED,_ ( "Le style n'est pas gere pour la couche " ) +vector_layers.at ( k ),"wms" ) );
+            BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in WMS styles: " << vector_styles.at ( k );
+            return new SERDataStream ( new ServiceException ( "",WMS_STYLE_NOT_DEFINED, "Le style n'est pas gere pour la couche " +vector_layers.at ( k ),"wms" ) );
         }
 
         Style* s = layers.at ( k )->getStyleByIdentifier(vector_styles.at ( k ));
         if ( s == NULL )
-            return new SERDataStream ( new ServiceException ( "",WMS_STYLE_NOT_DEFINED,_ ( "Le style " ) +vector_styles.at ( k ) +_ ( " n'est pas gere pour la couche " ) +vector_layers.at ( k ),"wms" ) );
+            return new SERDataStream ( new ServiceException ( "",WMS_STYLE_NOT_DEFINED, "Le style " +vector_styles.at ( k ) + " n'est pas gere pour la couche " +vector_layers.at ( k ),"wms" ) );
 
         styles.push_back(s);
     }
@@ -271,10 +270,10 @@ DataStream* Rok4Server::getMapParamWMS (
     if (strDPI != "") {
         dpi = atoi(strDPI.c_str());
         if ( dpi == 0 || dpi == INT_MAX || dpi == INT_MIN ) {
-            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre DPI n'est pas une valeur entiere." ),"wms" ) );
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre DPI n'est pas une valeur entiere.","wms" ) );
         }
         if ( dpi<0 ) {
-            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre DPI est negative." ),"wms" ) );
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre DPI est negative.","wms" ) );
         }
 
     } else {
@@ -328,24 +327,24 @@ DataStream* Rok4Server::getFeatureInfoParamWMS (
     // QUERY_LAYERS
     std::string str_query_layer = request->getParam ( "query_layers" );
     if ( str_query_layer == "" )
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre QUERY_LAYERS absent." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre QUERY_LAYERS absent.","wms" ) );
     //Split layer Element
     std::vector<std::string> queryLayersString = split ( str_query_layer,',' );
-    LOGGER_DEBUG ( _ ( "Nombre de couches demandees =" ) << queryLayersString.size() );
+    BOOST_LOG_TRIVIAL(debug) <<   "Nombre de couches demandees =" << queryLayersString.size() ;
     if ( queryLayersString.size() > 1 ) {
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Le nombre de couche interrogée est limité à 1." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "Le nombre de couche interrogée est limité à 1.","wms" ) );
     }
 
     for (unsigned u1 = 0; u1 < queryLayersString.size(); u1++) {
 
         if ( Request::containForbiddenChars(queryLayersString.at(u1))) {
-            LOGGER_WARN("Forbidden char detected in WMS query_layer : " << queryLayersString.at(u1));
-            return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_DEFINED,_ ( "Query_Layer inconnu." ),"wms" ) );
+            BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in WMS query_layer : " << queryLayersString.at(u1);
+            return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_DEFINED, "Query_Layer inconnu.","wms" ) );
         }
 
         Layer* lay = serverConf->getLayer(queryLayersString.at(u1));
         if ( lay == NULL )
-            return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_DEFINED,_ ( "Query_Layer " ) +queryLayersString.at(u1)+_ ( " inconnu." ),"wms" ) );
+            return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_DEFINED, "Query_Layer " +queryLayersString.at(u1)+ " inconnu.","wms" ) );
     
         bool querylay_is_in_layer = false;
         std::vector<Layer*>::iterator itLay = layers.begin();
@@ -356,16 +355,16 @@ DataStream* Rok4Server::getFeatureInfoParamWMS (
             }
         }
         if (querylay_is_in_layer == false){
-            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Query_Layer " ) +queryLayersString.at(u1)+_ ( " absent de layer." ),"wms" ) );
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "Query_Layer " +queryLayersString.at(u1)+ " absent de layer.","wms" ) );
         }
     
         if (lay->isGetFeatureInfoAvailable() == false){
-            return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_QUERYABLE,_ ( "Query_Layer " ) +queryLayersString.at(u1)+_ ( " non interrogeable." ),"wms" ) );
+            return new SERDataStream ( new ServiceException ( "",WMS_LAYER_NOT_QUERYABLE, "Query_Layer " +queryLayersString.at(u1)+ " non interrogeable.","wms" ) );
         }
         query_layers.push_back ( lay );
     }
 
-    LOGGER_DEBUG ( _ ( "Nombre de couches requetées =" ) << query_layers.size() );
+    BOOST_LOG_TRIVIAL(debug) <<   "Nombre de couches requetées =" << query_layers.size() ;
 
 
     // FEATURE_COUNT (facultative)
@@ -375,9 +374,9 @@ DataStream* Rok4Server::getFeatureInfoParamWMS (
     } else {
         feature_count = atoi ( strFeatureCount.c_str() );
         if ( feature_count == 0 || feature_count == INT_MAX || feature_count == INT_MIN )
-            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre FEATURE_COUNT n'est pas une valeur entiere." ),"wms" ) ) ;
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre FEATURE_COUNT n'est pas une valeur entiere.","wms" ) ) ;
         if ( feature_count<0 )
-            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre FEATURE_COUNT est negative." ),"wms" ) );
+            return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre FEATURE_COUNT est negative.","wms" ) );
     }
 
 
@@ -389,16 +388,16 @@ DataStream* Rok4Server::getFeatureInfoParamWMS (
     } 
     std::string strX = request->getParam ( xi );
     if ( strX == "" ) {
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre X/I absent." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre X/I absent.","wms" ) );
     }
     char c;
     if (sscanf(strX.c_str(), "%d%c", &X, &c) != 1) {
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre X/I n'est pas un entier." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre X/I n'est pas un entier.","wms" ) );
     }
     if ( X<0 )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre X/I est negative." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre X/I est negative.","wms" ) );
     if ( X>width )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre X/I est superieure a la largeur fournie (width)." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre X/I est superieure a la largeur fournie (width).","wms" ) );
     
    
 
@@ -411,15 +410,15 @@ DataStream* Rok4Server::getFeatureInfoParamWMS (
     // version 1.3.0
     std::string strY = request->getParam ( yj );
     if ( strY == "" ) {
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre J/Y absent." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre J/Y absent.","wms" ) );
     }
     if (sscanf(strY.c_str(), "%d%c", &Y, &c) != 1) {
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre J/Y n'est pas un entier." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre J/Y n'est pas un entier.","wms" ) );
     }
     if ( Y<0 )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre J/Y est negative." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre J/Y est negative.","wms" ) );
     if ( Y>height )
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "La valeur du parametre J/Y est superieure a la largeur fournie (height)." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "La valeur du parametre J/Y est superieure a la largeur fournie (height).","wms" ) );
 
     
     
@@ -427,14 +426,14 @@ DataStream* Rok4Server::getFeatureInfoParamWMS (
     unsigned int k;
     info_format = request->getParam ( "info_format" );
     if ( info_format == "" ){
-        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE,_ ( "Parametre INFO_FORMAT vide." ),"wms" ) );
+        return new SERDataStream ( new ServiceException ( "",OWS_MISSING_PARAMETER_VALUE, "Parametre INFO_FORMAT vide.","wms" ) );
     } else {
         if ( Request::containForbiddenChars(info_format)) {
-            LOGGER_WARN("Forbidden char detected in WMS info_format: " << info_format);
-            return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Info_Format non gere par le service." ),"wms" ) );
+            BOOST_LOG_TRIVIAL(warning) << "Forbidden char detected in WMS info_format: " << info_format;
+            return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT, "Info_Format non gere par le service.","wms" ) );
         }
         if ( ! servicesConf->isInInfoFormatList(info_format) )
-            return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT,_ ( "Info_Format " ) +info_format+_ ( " non gere par le service." ),"wms" ) );
+            return new SERDataStream ( new ServiceException ( "",WMS_INVALID_FORMAT, "Info_Format " +info_format+ " non gere par le service.","wms" ) );
     }
 
     return NULL;
@@ -459,8 +458,9 @@ DataStream* Rok4Server::getCapParamWMS ( Request* request, std::string& version 
         //----
     }
     //Do we have the requested version ?
-    if ( version == "1.3.0" || version == "1.1.1" )
+    if ( version == "1.3.0" || version == "1.1.1" ){
         return NULL;
+    }
     
     // Version number negotiation for WMS (should not be done for WMTS)
     // Ref: http://cite.opengeospatial.org/OGCTestData/wms/1.1.1/spec/wms1.1.1.html#basic_elements.version.negotiation
@@ -485,16 +485,15 @@ DataStream* Rok4Server::getCapParamWMS ( Request* request, std::string& version 
     if ( request_l > high_version_l || ( request_l == high_version_l && request_m > high_version_m ) || ( request_l == high_version_l && request_m == high_version_m && request_r > high_version_r ) ) {
         // Version asked is higher than supported version
         version = high_version;
-        return NULL;
-    }
-    //if ( request_l < low_version_l || ( request_l == low_version_l && request_m < low_version_m ) || ( request_l == low_version_l && request_m == low_version_m && request_r < low_version_r ) ) {
-        // Version asked is lower than supported version
+    }else{
         version = low_version;
-        return NULL;
-    //}
+    }
 
-    if ( version!="1.3.0" && version!="1.1.1")
-        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE,_ ( "Valeur du parametre VERSION invalide (1.1.1 et 1.3.0 disponibles seulement))" ),"wms" ) );
+    if ( version!="1.3.0" && version!="1.1.1"){
+        return new SERDataStream ( new ServiceException ( "",OWS_INVALID_PARAMETER_VALUE, "Valeur du parametre VERSION invalide (1.1.1 et 1.3.0 disponibles seulement))","wms" ) );
+    }
+    //normally unreachable code
+    return NULL;
 }
 
 // Prepare WMS GetCapabilities fragments
@@ -722,7 +721,7 @@ void Rok4Server::buildWMS130Capabilities() {
     }
     // Layer
     if ( serverConf->layersList.empty() ) {
-        LOGGER_WARN ( _ ( "Liste de layers vide" ) );
+        BOOST_LOG_TRIVIAL(warning) <<   "Liste de layers vide" ;
     } else {
         // Parent layer
         TiXmlElement * parentLayerEl = new TiXmlElement ( "Layer" );
@@ -805,7 +804,7 @@ void Rok4Server::buildWMS130Capabilities() {
                             bbox = childLayer->getWMSCRSList() [i].boundingBoxFromGeographic ( childLayer->getWMSCRSList() [i].cropBBoxGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy ) );
                         }
                         CRS crs = childLayer->getWMSCRSList() [i];
-                        LOGGER_DEBUG ("check inverse for "<< crs.getProj4Code());
+                        BOOST_LOG_TRIVIAL(debug) << "check inverse for "<< crs.getProj4Code();
                         //Switch lon lat for EPSG longlat CRS
                         if ( ( crs.getAuthority() =="EPSG" || crs.getAuthority() =="epsg" ) && crs.isLongLat() ) {
                             double doubletmp;
@@ -850,7 +849,7 @@ void Rok4Server::buildWMS130Capabilities() {
                         }
                         CRS crs = servicesConf->getGlobalCRSList()->at ( i );
                         //Switch lon lat for EPSG longlat CRS
-                        LOGGER_DEBUG ("check inverse for "<< crs.getProj4Code());
+                        BOOST_LOG_TRIVIAL(debug) << "check inverse for "<< crs.getProj4Code();
                         if ( ( crs.getAuthority() =="EPSG" || crs.getAuthority() =="epsg" ) && crs.isLongLat() ) {
                             double doubletmp;
                             doubletmp = bbox.xmin;
@@ -922,7 +921,7 @@ void Rok4Server::buildWMS130Capabilities() {
                 }
 
                 // Style
-                LOGGER_DEBUG ( _ ( "Nombre de styles : " ) <<childLayer->getStyles().size() );
+                BOOST_LOG_TRIVIAL(debug) <<   "Nombre de styles : " <<childLayer->getStyles().size() ;
                 if ( childLayer->getStyles().size() != 0 ) {
                     for ( unsigned int i=0; i < childLayer->getStyles().size(); i++ ) {
                         TiXmlElement * styleEl= new TiXmlElement ( "Style" );
@@ -936,7 +935,7 @@ void Rok4Server::buildWMS130Capabilities() {
                             styleEl->LinkEndChild ( DocumentXML::buildTextNode ( "Abstract", style->getAbstracts() [j].c_str() ) );
                         }
                         for ( j=0 ; j < style->getLegendURLs().size(); ++j ) {
-                            LOGGER_DEBUG ( _ ( "LegendURL" ) << style->getId() );
+                            BOOST_LOG_TRIVIAL(debug) <<   "LegendURL" << style->getId() ;
                             LegendURL legendURL = style->getLegendURLs() [j];
                             TiXmlElement* legendURLEl = new TiXmlElement ( "LegendURL" );
 
@@ -951,10 +950,10 @@ void Rok4Server::buildWMS130Capabilities() {
                             if ( legendURL.getHeight() !=0 )
                                 legendURLEl->SetAttribute ( "height", legendURL.getHeight() );
                             styleEl->LinkEndChild ( legendURLEl );
-                            LOGGER_DEBUG ( _ ( "LegendURL OK" ) << style->getId() );
+                            BOOST_LOG_TRIVIAL(debug) <<   "LegendURL OK" << style->getId() ;
                         }
 
-                        LOGGER_DEBUG ( _ ( "Style fini : " ) << style->getId() );
+                        BOOST_LOG_TRIVIAL(debug) <<   "Style fini : " << style->getId() ;
                         childLayerEl->LinkEndChild ( styleEl );
                     }
                 }
@@ -975,12 +974,12 @@ void Rok4Server::buildWMS130Capabilities() {
                  layer->getOpaque();
 
                 */
-                LOGGER_DEBUG ( _ ( "Layer Fini" ) );
+                BOOST_LOG_TRIVIAL(debug) <<   "Layer Fini" ;
                 parentLayerEl->LinkEndChild ( childLayerEl );
             }
         }// for layer
 
-        LOGGER_DEBUG ( _ ( "Layers Fini" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "Layers Fini" ;
         capabilityEl->LinkEndChild ( parentLayerEl );
     }
 
@@ -1008,7 +1007,7 @@ void Rok4Server::buildWMS130Capabilities() {
     }
     wms130CapaFrag.push_back ( wmsCapaTemplate.substr ( beginPos ) );
     wmsCapaFrag.insert( std::pair<std::string,std::vector<std::string> > ("1.3.0",wms130CapaFrag) );
-    LOGGER_DEBUG ( _ ( "WMS 1.3.0 fini" ) );
+    BOOST_LOG_TRIVIAL(debug) <<   "WMS 1.3.0 fini" ;
 }
 
 //---- WMS 1.1.1
@@ -1199,7 +1198,7 @@ void Rok4Server::buildWMS111Capabilities() {
 
     // Layer
     if ( serverConf->layersList.empty() ) {
-        LOGGER_WARN ( _ ( "Liste de layers vide" ) );
+        BOOST_LOG_TRIVIAL(warning) <<   "Liste de layers vide" ;
     } else {
         // Parent layer
         TiXmlElement * parentLayerEl = new TiXmlElement ( "Layer" );
@@ -1281,7 +1280,7 @@ void Rok4Server::buildWMS111Capabilities() {
                             bbox = childLayer->getWMSCRSList() [i].boundingBoxFromGeographic ( childLayer->getWMSCRSList() [i].cropBBoxGeographic ( childLayer->getGeographicBoundingBox().minx,childLayer->getGeographicBoundingBox().miny,childLayer->getGeographicBoundingBox().maxx,childLayer->getGeographicBoundingBox().maxy ) );
                         }
                         CRS crs = childLayer->getWMSCRSList() [i];
-                        LOGGER_DEBUG ("check inverse for "<< crs.getProj4Code());
+                        BOOST_LOG_TRIVIAL(debug) << "check inverse for "<< crs.getProj4Code();
                         //Switch lon lat for EPSG longlat CRS
                         if ( ( crs.getAuthority() =="EPSG" || crs.getAuthority() =="epsg" ) && crs.isLongLat() ) {
                             double doubletmp;
@@ -1326,7 +1325,7 @@ void Rok4Server::buildWMS111Capabilities() {
                         }
                         CRS crs = servicesConf->getGlobalCRSList()->at ( i );
                         //Switch lon lat for EPSG longlat CRS
-                        LOGGER_DEBUG ("check inverse for "<< crs.getProj4Code());
+                        BOOST_LOG_TRIVIAL(debug) << "check inverse for "<< crs.getProj4Code();
                         if ( ( crs.getAuthority() =="EPSG" || crs.getAuthority() =="epsg" ) && crs.isLongLat() ) {
                             double doubletmp;
                             doubletmp = bbox.xmin;
@@ -1387,7 +1386,7 @@ void Rok4Server::buildWMS111Capabilities() {
                 }
 
                 // Style
-                LOGGER_DEBUG ( _ ( "Nombre de styles : " ) <<childLayer->getStyles().size() );
+                BOOST_LOG_TRIVIAL(debug) <<   "Nombre de styles : " <<childLayer->getStyles().size() ;
                 if ( childLayer->getStyles().size() != 0 ) {
                     for ( unsigned int i=0; i < childLayer->getStyles().size(); i++ ) {
                         TiXmlElement * styleEl= new TiXmlElement ( "Style" );
@@ -1401,7 +1400,7 @@ void Rok4Server::buildWMS111Capabilities() {
                             styleEl->LinkEndChild ( DocumentXML::buildTextNode ( "Abstract", style->getAbstracts() [j].c_str() ) );
                         }
                         for ( j=0 ; j < style->getLegendURLs().size(); ++j ) {
-                            LOGGER_DEBUG ( _ ( "LegendURL" ) << style->getId() );
+                            BOOST_LOG_TRIVIAL(debug) <<   "LegendURL" << style->getId() ;
                             LegendURL legendURL = style->getLegendURLs() [j];
                             TiXmlElement* legendURLEl = new TiXmlElement ( "LegendURL" );
 
@@ -1417,10 +1416,10 @@ void Rok4Server::buildWMS111Capabilities() {
                             if ( legendURL.getHeight() !=0 )
                                 legendURLEl->SetAttribute ( "height", legendURL.getHeight() );
                             styleEl->LinkEndChild ( legendURLEl );
-                            LOGGER_DEBUG ( _ ( "LegendURL OK" ) << style->getId() );
+                            BOOST_LOG_TRIVIAL(debug) <<   "LegendURL OK" << style->getId() ;
                         }
 
-                        LOGGER_DEBUG ( _ ( "Style fini : " ) << style->getId() );
+                        BOOST_LOG_TRIVIAL(debug) <<   "Style fini : " << style->getId() ;
                         childLayerEl->LinkEndChild ( styleEl );
                     }
                 }
@@ -1445,11 +1444,11 @@ void Rok4Server::buildWMS111Capabilities() {
                  layer->getOpaque();
 
                 */
-                LOGGER_DEBUG ( _ ( "Layer Fini" ) );
+                BOOST_LOG_TRIVIAL(debug) <<   "Layer Fini" ;
                 parentLayerEl->LinkEndChild ( childLayerEl );
             }
         }// for layer
-        LOGGER_DEBUG ( _ ( "Layers Fini" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "Layers Fini" ;
         capabilityEl->LinkEndChild ( parentLayerEl );
     }
 
@@ -1481,7 +1480,7 @@ void Rok4Server::buildWMS111Capabilities() {
     }
     wms111CapaFrag.push_back ( wmsCapaTemplate.substr ( beginPos ) );
     wmsCapaFrag.insert( std::pair<std::string,std::vector<std::string> > ("1.1.1",wms111CapaFrag) );
-    LOGGER_DEBUG ( _ ( "WMS 1.1.1 fini" ) );
+    BOOST_LOG_TRIVIAL(debug) <<   "WMS 1.1.1 fini" ;
 }
 
 DataStream* Rok4Server::WMSGetCapabilities ( Request* request ) {
@@ -1491,7 +1490,7 @@ DataStream* Rok4Server::WMSGetCapabilities ( Request* request ) {
     std::string version;
     DataStream* errorResp = getCapParamWMS ( request, version );
     if ( errorResp ) {
-        LOGGER_ERROR ( _ ( "Probleme dans les parametres de la requete getCapabilities" ) );
+        BOOST_LOG_TRIVIAL(error) <<   "Probleme dans les parametres de la requete getCapabilities" ;
         return errorResp;
     }
 

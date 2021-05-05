@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -50,7 +50,7 @@
  */
 
 #include "BilzImage.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Utils.h"
 
 
@@ -69,12 +69,12 @@ BilzImage* BilzImageFactory::createBilzImageToRead ( char* filename, BoundingBox
     Compression::eCompression comp = Compression::NONE;
     
     if (! readHeaderFile(filename, &width, &height, &channels, &bitspersample)) {
-        LOGGER_ERROR ( "Cannot read header associated to (Z)Bil image " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot read header associated to (Z)Bil image " << filename ;
         return NULL;        
     }
     
     if (width == 0 || height == 0 || channels == 0 || bitspersample == 0) {
-        LOGGER_ERROR ( "Missing or invalid information in the header associated to (Z)Bil image " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Missing or invalid information in the header associated to (Z)Bil image " << filename ;
         return NULL;         
     }
     
@@ -87,7 +87,7 @@ BilzImage* BilzImageFactory::createBilzImageToRead ( char* filename, BoundingBox
             sf = SampleFormat::UINT;
             break;
         default :
-            LOGGER_ERROR ( "Unhandled number of bits per sample (" << bitspersample << ") for image " << filename );
+            BOOST_LOG_TRIVIAL(error) <<  "Unhandled number of bits per sample (" << bitspersample << ") for image " << filename ;
             return NULL;
     }
     
@@ -101,21 +101,21 @@ BilzImage* BilzImageFactory::createBilzImageToRead ( char* filename, BoundingBox
             ph = Photometric::RGB;
             break;
         default :
-            LOGGER_ERROR ( "Unhandled number of samples pixel (" << channels << ") for image " << filename );
+            BOOST_LOG_TRIVIAL(error) <<  "Unhandled number of samples pixel (" << channels << ") for image " << filename ;
             return NULL;
     }
     
     /********************** CONTROLES **************************/
     
     if ( ! BilzImage::canRead ( bitspersample, sf ) ) {
-        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( sf ) << " and " << bitspersample << " bits per sample" );
-        LOGGER_ERROR ( "\t for the image to read : " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Not supported sample type : " << SampleFormat::toString ( sf ) << " and " << bitspersample << " bits per sample" ;
+        BOOST_LOG_TRIVIAL(error) <<  "\t for the image to read : " << filename ;
         return NULL;
     }
 
     if ( resx > 0 && resy > 0 ) {
         if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {
-            LOGGER_ERROR ( "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" );
+            BOOST_LOG_TRIVIAL(error) <<  "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" ;
             return NULL;
         }
     } else {
@@ -128,7 +128,7 @@ BilzImage* BilzImageFactory::createBilzImageToRead ( char* filename, BoundingBox
     
     FILE *file = fopen ( filename, "rb" );
     if ( !file ) {
-        LOGGER_ERROR ( "Unable to open the file (to read) " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to open the file (to read) " << filename ;
         return NULL;
     }
     
@@ -140,15 +140,15 @@ BilzImage* BilzImageFactory::createBilzImageToRead ( char* filename, BoundingBox
     fclose ( file );
 
     if (readdatasize < rawdatasize ) {
-        LOGGER_DEBUG("Data in bil image are compressed (smaller than expected). We try to uncompressed them (deflate).");
+        BOOST_LOG_TRIVIAL(debug) << "Data in bil image are compressed (smaller than expected). We try to uncompressed them (deflate).";
         comp = Compression::DEFLATE;
         
         uint8_t* tmpData = new uint8_t[readdatasize];
         memcpy(tmpData, bilData, readdatasize);
         
         if (! uncompressedData(tmpData, readdatasize, bilData, rawdatasize)) {
-            LOGGER_ERROR ( "Cannot uncompressed data for file " << filename );
-            LOGGER_ERROR ( "Only deflate compression is supported");
+            BOOST_LOG_TRIVIAL(error) <<  "Cannot uncompressed data for file " << filename ;
+            BOOST_LOG_TRIVIAL(error) <<  "Only deflate compression is supported";
             return NULL;
         }
         

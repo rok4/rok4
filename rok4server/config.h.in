@@ -2,7 +2,7 @@
  * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -44,14 +44,13 @@
 #include <cstdlib>
 #include <algorithm>
 
-//#include "intl.h"
-
+//
 #include <cassert>
 // Pour déactiver tous les assert, décommenter la ligne suivante
 // #define NDEBUG
 
 #include <iostream>
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 
 #define ROK4_VERSION "@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@"
 #define ROK4_INFO "ROK4-@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@"
@@ -66,10 +65,10 @@
 #define DEFAULT_SERVER_CONF_PATH   "../config/server.conf"
 #define DEFAULT_SERVICES_CONF_PATH "../config/services.conf"
 
-#define DEFAULT_LOG_OUTPUT ROLLING_FILE
+#define DEFAULT_LOG_OUTPUT "rolling_file"
 #define DEFAULT_LOG_FILE_PREFIX "/var/tmp/rok4"
 #define DEFAULT_LOG_FILE_PERIOD 3600
-#define DEFAULT_LOG_LEVEL  ERROR
+#define DEFAULT_LOG_LEVEL  boost::log::trivial::error
 #define DEFAULT_NB_THREAD  1
 #define DEFAULT_RECONNECTION_FREQUENCY  60
 #define DEFAULT_NB_PROCESS 1

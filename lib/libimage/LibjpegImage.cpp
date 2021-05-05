@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -50,7 +50,7 @@
  */
 
 #include "LibjpegImage.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Utils.h"
 #include "jpeglib.h"
 #include <setjmp.h>
@@ -69,7 +69,7 @@ LibjpegImage* LibjpegImageFactory::createLibjpegImageToRead ( char* filename, Bo
     // Ouverture du fichier bianire en lecture
     FILE *file = fopen ( filename, "rb" );
     if ( !file ) {
-        LOGGER_ERROR ( "Unable to open the file (to read) " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to open the file (to read) " << filename ;
         return NULL;
     }
 
@@ -87,8 +87,8 @@ LibjpegImage* LibjpegImageFactory::createLibjpegImageToRead ( char* filename, Bo
     if (channels == 3) {
         ph = Photometric::RGB;
     } else {
-        LOGGER_ERROR ( "Not supported JPEG sample number : " << channels);
-        LOGGER_ERROR ( "\t for the image to read : " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Not supported JPEG sample number : " << channels;
+        BOOST_LOG_TRIVIAL(error) <<  "\t for the image to read : " << filename ;
         return NULL;
     }
 
@@ -96,7 +96,7 @@ LibjpegImage* LibjpegImageFactory::createLibjpegImageToRead ( char* filename, Bo
     
     if ( resx > 0 && resy > 0 ) {
         if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {
-            LOGGER_ERROR ( "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" );
+            BOOST_LOG_TRIVIAL(error) <<  "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" ;
             return NULL;
         }
     } else {

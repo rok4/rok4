@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -46,7 +46,7 @@
 #include "TiffEncoder.h"
 #include "TiffHeaderDataSource.h"
 #include <cmath>
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Kernel.h"
 #include <vector>
 #include "Pyramid.h"
@@ -54,7 +54,6 @@
 #include "FileContext.h"
 #include "PaletteDataSource.h"
 #include "Format.h"
-#include "intl.h"
 #include "config.h"
 #include <cstddef>
 #include <sys/stat.h>
@@ -73,10 +72,9 @@ Level::Level ( LevelXML* l, PyramidXML* p ) {
     tm = l->tm;
     format = p->getFormat();
 
-    baseDir = l->baseDir;
+    racine = l->racine;
     pathDepth = l->pathDepth;
     context = l->context;
-    prefix = l->prefix;
 
     tilesPerWidth = l->tilesPerWidth;
     tilesPerHeight = l->tilesPerHeight;
@@ -110,12 +108,12 @@ Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
     tm = tms->getTm(obj->tm->getId());
 
     if (tm == NULL) {
-        LOGGER_ERROR ( "Un niveau de pyramide cloné reference un niveau de TMS [" << obj->tm->getId() << "] qui n'existe plus." );
+        BOOST_LOG_TRIVIAL(error) <<  "Un niveau de pyramide cloné reference un niveau de TMS [" << obj->tm->getId() << "] qui n'existe plus." ;
         return;
     }
 
     channels = obj->channels;
-    baseDir = obj->baseDir;
+    racine = obj->racine;
 
     // On clone bien toutes les sources
     for ( int i = 0; i < obj->sSources.size(); i++ ) {
@@ -123,7 +121,7 @@ Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
             Pyramid* pOrig = reinterpret_cast<Pyramid*>(obj->sSources.at(i));
             Pyramid* pS = new Pyramid(pOrig, sxml);
             if (pS->getTms() == NULL) {
-                LOGGER_ERROR("Impossible de cloner la pyramide source pour ce niveau");
+                BOOST_LOG_TRIVIAL(error) << "Impossible de cloner la pyramide source pour ce niveau";
                 tm == NULL;
                 // Tester la nullité du TM en sortie pour faire remonter l'erreur
                 return;
@@ -132,7 +130,7 @@ Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
             // On récupère bien le pointeur vers le nouveau style (celui de la nouvelle liste)
             Style* pSt = sxml->getStyle(pOrig->getStyle()->getId());
             if ( pSt == NULL ) {
-                LOGGER_ERROR ( "Une pyramide source clonée reference un style [" << pOrig->getStyle()->getId() <<  "] qui n'existe plus." );
+                BOOST_LOG_TRIVIAL(error) <<  "Une pyramide source clonée reference un style [" << pOrig->getStyle()->getId() <<  "] qui n'existe plus." ;
                 pSt = sxml->getStyle("normal");
             }
             pS->setStyle(pSt);
@@ -161,48 +159,17 @@ Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
     context = NULL;
 
     if (obj->context != NULL) {
-        switch ( obj->context->getType() ) {
-            case FILECONTEXT :
-                context = new FileContext("");
-                if (! context->connection() ) {
-                    LOGGER_ERROR("Impossible de se connecter aux donnees.");
-                    tm == NULL;
-                    return;
-                }
-                break;
-#if BUILD_OBJECT
-            case CEPHCONTEXT :
-                if (sxml->getCephContextBook() != NULL) {
-                    context = sxml->getCephContextBook()->addContext(obj->context->getTray());
-                } else {
-                    LOGGER_ERROR ( "L'utilisation d'un cephContext necessite de preciser les informations de connexions dans le server.conf");
-                    tm == NULL;
-                    return;
-                }
-                break;
-            case S3CONTEXT :
-                if (sxml->getS3ContextBook() != NULL) {
-                    context = sxml->getS3ContextBook()->addContext(obj->context->getTray());
-                } else {
-                    LOGGER_ERROR ( "L'utilisation d'un s3Context necessite de preciser les informations de connexions dans le server.conf");
-                    tm == NULL;
-                    return;
-                }
-                break;
-            case SWIFTCONTEXT :
-                if (sxml->getSwiftContextBook() != NULL) {
-                    context = sxml->getSwiftContextBook()->addContext(obj->context->getTray());
-                } else {
-                    LOGGER_ERROR ( "L'utilisation d'un swiftContext necessite de preciser les informations de connexions dans le server.conf");
-                    tm == NULL;
-                    return;
-                }
-                break;
-#endif
-        }
-    }
 
-    prefix = obj->prefix;
+        if (sxml->getContextBook() != NULL) {
+            //TODO : tester ce mode "copie" 
+            context = sxml->getContextBook()->addContext(obj->context->getType(),obj->context->getTray());
+        } else {
+            BOOST_LOG_TRIVIAL(error) <<  "Impossible de se connecter aux donnees";
+            tm == NULL;
+            return;
+        }
+
+    }
 
     if (Rok4Format::isRaster(format)) {
         maxTileSize = obj->maxTileSize;
@@ -220,11 +187,6 @@ Level::Level ( Level* obj, ServerXML* sxml, TileMatrixSet* tms) {
 Level::~Level() {
 
     // les contextes sont dans des contextBooks
-    // ce sont les contextBooks qui se chargent de détruire les contextes
-    // mais ce n'est pas le cas des FILECONTEXT
-    if (context) {
-        if (context->getType() == FILECONTEXT) delete context;
-    }
 
     for ( int i = 0; i < sSources.size(); i++ ) {
         Source* pS = sSources.at(i);
@@ -245,7 +207,7 @@ Image* Level::getbbox ( ServicesXML* servicesConf, BoundingBox< double > bbox, i
     grid->bbox.print();
 
     if ( ! ( grid->reproject ( dst_crs.getProj4Code(), src_crs.getProj4Code() ) ) ) {
-        LOGGER_DEBUG("Impossible de reprojeter la grid");
+        BOOST_LOG_TRIVIAL(debug) << "Impossible de reprojeter la grid";
         error = 1; // BBox invalid
         delete grid;
         return 0;
@@ -254,7 +216,7 @@ Image* Level::getbbox ( ServicesXML* servicesConf, BoundingBox< double > bbox, i
     //la reprojection peut marcher alors que la bbox contient des NaN
     //cela arrive notamment lors que la bbox envoyée par l'utilisateur n'est pas dans le crs specifié par ce dernier
     if (grid->bbox.xmin != grid->bbox.xmin || grid->bbox.xmax != grid->bbox.xmax || grid->bbox.ymin != grid->bbox.ymin || grid->bbox.ymax != grid->bbox.ymax ) {
-        LOGGER_DEBUG("Bbox de la grid contenant des NaN");
+        BOOST_LOG_TRIVIAL(debug) << "Bbox de la grid contenant des NaN";
         error = 1;
         delete grid;
         return 0;
@@ -281,7 +243,7 @@ Image* Level::getbbox ( ServicesXML* servicesConf, BoundingBox< double > bbox, i
 
     Image* image = getwindow ( servicesConf, bbox_int, error );
     if ( !image ) {
-        LOGGER_DEBUG ( _ ( "Image invalid !" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "Image invalid !" ;
         return 0;
     }
 
@@ -333,13 +295,13 @@ Image* Level::getbbox ( ServicesXML* servicesConf, BoundingBox< double > bbox, i
 
     Image* imageout = getwindow ( servicesConf, bbox_int, error );
     if ( !imageout ) {
-        LOGGER_DEBUG ( _ ( "Image invalid !" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "Image invalid !" ;
         return 0;
     }
 
     // On affecte la bonne bbox à l'image source afin que la classe de réechantillonnage calcule les bonnes valeurs d'offset
     if (! imageout->setDimensions ( bbox_int.xmax - bbox_int.xmin, bbox_int.ymax - bbox_int.ymin, BoundingBox<double> ( bbox_int ), 1.0, 1.0 ) ) {
-        LOGGER_DEBUG ( _ ( "Dimensions invalid !" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "Dimensions invalid !" ;
         return 0;
     }
 
@@ -364,12 +326,12 @@ Image* Level::getwindow ( ServicesXML* servicesConf, BoundingBox< int64_t > bbox
     int tile_xmax=euclideanDivisionQuotient ( bbox.xmax -1,tm->getTileW() );
     int nbx = tile_xmax - tile_xmin + 1;
     if ( nbx >= servicesConf->getMaxTileX() ) {
-        LOGGER_INFO ( _ ( "Too Much Tile on X axis" ) );
+        BOOST_LOG_TRIVIAL(info) <<   "Too Much Tile on X axis" ;
         error=2;
         return 0;
     }
     if (nbx == 0) {
-        LOGGER_INFO("nbx = 0");
+        BOOST_LOG_TRIVIAL(info) << "nbx = 0";
         error=1;
         return 0;
     }
@@ -378,12 +340,12 @@ Image* Level::getwindow ( ServicesXML* servicesConf, BoundingBox< int64_t > bbox
     int tile_ymax = euclideanDivisionQuotient ( bbox.ymax-1,tm->getTileH() );
     int nby = tile_ymax - tile_ymin + 1;
     if ( nby >= servicesConf->getMaxTileY() ) {
-        LOGGER_INFO ( _ ( "Too Much Tile on Y axis" ) );
+        BOOST_LOG_TRIVIAL(info) <<   "Too Much Tile on Y axis" ;
         error=2;
         return 0;
     }
     if (nby == 0) {
-        LOGGER_INFO("nby = 0");
+        BOOST_LOG_TRIVIAL(info) << "nby = 0";
         error=1;
         return 0;
     }
@@ -412,86 +374,36 @@ Image* Level::getwindow ( ServicesXML* servicesConf, BoundingBox< int64_t > bbox
     else return new CompoundImage ( T );
 }
 
-/*
- * Tableau statique des caractères Base36 (pour systeme de fichier non case-sensitive)
- */
-// static const char* Base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-";
-static const char* Base36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 /*
  * Recuperation du nom de la dalle du cache en fonction de son indice
  */
-std::string Level::getPath ( int tilex, int tiley, int tilesPerW, int tilesPerH ) {
+std::string Level::getPath ( int tilex, int tiley) {
     // Cas normalement filtré en amont (exception WMS/WMTS)
     if ( tilex < 0 || tiley < 0 ) {
-        LOGGER_ERROR ( _ ( "Indice de tuile negatif" ) );
+        BOOST_LOG_TRIVIAL(error) <<   "Indice de tuile negatif" ;
         return "";
     }
 
-    std::ostringstream convert;
-    int x,y,pos;
+    int x,y;
 
-    x = tilex / tilesPerW;
-    y = tiley / tilesPerH;
+    x = tilex / tilesPerWidth;
+    y = tiley / tilesPerHeight;
 
+    return context->getPath(racine,x,y,pathDepth);
 
-    switch (context->getType()) {
-        case FILECONTEXT:
-
-            char path[32];
-            path[sizeof ( path ) - 5] = '.';
-            path[sizeof ( path ) - 4] = 't';
-            path[sizeof ( path ) - 3] = 'i';
-            path[sizeof ( path ) - 2] = 'f';
-            path[sizeof ( path ) - 1] = 0;
-            pos = sizeof ( path ) - 6;
-
-            for ( int d = 0; d < pathDepth; d++ ) {
-                path[pos--] = Base36[y % 36];
-                path[pos--] = Base36[x % 36];
-                path[pos--] = '/';
-                x = x / 36;
-                y = y / 36;
-            }
-            do {             
-                path[pos--] = Base36[y % 36];
-                path[pos--] = Base36[x % 36];
-                x = x / 36;
-                y = y / 36;
-            } while ( x || y );
-            path[pos] = '/';
-
-            return baseDir + ( path + pos );
-            break;
-        case CEPHCONTEXT:
-            convert << "_" << x << "_" << y;
-            return prefix + convert.str();
-            break;
-        case S3CONTEXT:
-            convert << "_" << x << "_" << y;
-            return prefix + convert.str();
-            break;
-        case SWIFTCONTEXT:
-            convert << "_" << x << "_" << y;
-            return prefix + convert.str();
-            break;
-        default:
-            return "";
-
-    }
 }
 
 std::string Level::getDirPath ( int tilex, int tiley ) {
 
-    if (context->getType() == FILECONTEXT) {
-        std::string file = getPath(tilex,tiley, tilesPerWidth, tilesPerHeight);
+    if (context->getType() == ContextType::FILECONTEXT) {
+        std::string file = getPath(tilex,tiley);
         return file.substr(0,file.find_last_of("/"));        
     } else {
-        LOGGER_ERROR ( _ ( "getDirPath n'a pas de sens dans le cas d'un contexte non fichier" ) );
+        BOOST_LOG_TRIVIAL(error) <<   "getDirPath n'a pas de sens dans le cas d'un contexte non fichier" ;
         return "";
     }
 
-    return "";
 }
 
 /*
@@ -530,8 +442,8 @@ DataSource* Level::getEncodedTile ( int x, int y ) { // TODO: return 0 sur des c
     int n= ( y%tilesPerHeight ) *tilesPerWidth + ( x%tilesPerWidth );
     // Les index sont stockés à partir de l'octet ROK4_IMAGE_HEADER_SIZE
     uint32_t posoff=ROK4_IMAGE_HEADER_SIZE+4*n, possize=ROK4_IMAGE_HEADER_SIZE+tilesPerWidth*tilesPerHeight*4+4*n;
-    std::string path=getPath ( x, y, tilesPerWidth, tilesPerHeight);
-    LOGGER_DEBUG ( path );
+    std::string path=getPath ( x, y);
+    BOOST_LOG_TRIVIAL(debug) <<  path ;
     return new StoreDataSource ( path, posoff, possize, ROK4_IMAGE_HEADER_SIZE + 2*4*tilesPerWidth*tilesPerHeight, Rok4Format::toMimeType ( format ), context, Rok4Format::toEncoding( format ) );
 }
 
@@ -558,7 +470,7 @@ DataSource* Level::getDecodedTile ( int x, int y ) {
         return new DataSourceDecoder<DeflateDecoder> ( encData );
     else if ( format==Rok4Format::TIFF_PKB_INT8 || format == Rok4Format::TIFF_PKB_FLOAT32 )
         return new DataSourceDecoder<PackBitsDecoder> ( encData );
-    LOGGER_ERROR ( _ ( "Type d'encodage inconnu : " ) <<format );
+    BOOST_LOG_TRIVIAL(error) <<   "Type d'encodage inconnu : " <<format ;
     return 0;
 }
 
@@ -566,17 +478,17 @@ DataSource* Level::getDecodedTile ( int x, int y ) {
 DataSource* Level::getTile (int x, int y) {
 
     DataSource* source = getEncodedTile ( x, y );
-    if (source == NULL) return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "wmts" ) );
+    if (source == NULL) return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND,  "No data found", "wmts" ) );
 
     size_t size;
-    if (source->getData ( size ) == NULL) return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND, _ ( "No data found" ), "wmts" ) );
+    if (source->getData ( size ) == NULL) return new SERDataSource ( new ServiceException ( "", HTTP_NOT_FOUND,  "No data found", "wmts" ) );
 
     if ( format == Rok4Format::TIFF_RAW_INT8 || format == Rok4Format::TIFF_LZW_INT8 ||
          format == Rok4Format::TIFF_LZW_FLOAT32 || format == Rok4Format::TIFF_ZIP_INT8 ||
          format == Rok4Format::TIFF_PKB_FLOAT32 || format == Rok4Format::TIFF_PKB_INT8
         )
     {
-        LOGGER_DEBUG ( _ ( "GetTile Tiff" ) );
+        BOOST_LOG_TRIVIAL(debug) <<   "GetTile Tiff" ;
         TiffHeaderDataSource* fullTiffDS = new TiffHeaderDataSource ( source,format,channels,tm->getTileW(), tm->getTileH() );
         return fullTiffDS;
     }
@@ -586,7 +498,7 @@ DataSource* Level::getTile (int x, int y) {
 
 Image* Level::getTile ( int x, int y, int left, int top, int right, int bottom ) {
     int pixel_size=1;
-    LOGGER_DEBUG ( _ ( "GetTile Image" ) );
+    BOOST_LOG_TRIVIAL(debug) <<   "GetTile Image" ;
     if ( format==Rok4Format::TIFF_RAW_FLOAT32 || format == Rok4Format::TIFF_LZW_FLOAT32 || format == Rok4Format::TIFF_ZIP_FLOAT32 || format == Rok4Format::TIFF_PKB_FLOAT32 )
         pixel_size=4;
 

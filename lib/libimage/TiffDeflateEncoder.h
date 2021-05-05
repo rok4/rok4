@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -77,19 +77,19 @@ protected:
             case Z_OK :
                 break;
             case Z_MEM_ERROR :
-                LOGGER_DEBUG ( "MEM_ERROR" );
+                BOOST_LOG_TRIVIAL(debug) <<  "MEM_ERROR" ;
                 deflateEnd ( &zstream );
                 return false;              // return 0 en cas d'erreur.
             case Z_STREAM_ERROR :
-                LOGGER_DEBUG ( "STREAM_ERROR" );
+                BOOST_LOG_TRIVIAL(debug) <<  "STREAM_ERROR" ;
                 deflateEnd ( &zstream );
                 return false;              // return 0 en cas d'erreur.
             case Z_VERSION_ERROR :
-                LOGGER_DEBUG ( "VERSION_ERROR" );
+                BOOST_LOG_TRIVIAL(debug) <<  "VERSION_ERROR" ;
                 deflateEnd ( &zstream );
                 return false;              // return 0 en cas d'erreur.
             default :
-                LOGGER_DEBUG ( "OTHER_ERROR" );
+                BOOST_LOG_TRIVIAL(debug) <<  "OTHER_ERROR" ;
                 deflateEnd ( &zstream );
                 return false;              // return 0 en cas d'erreur.
             }
@@ -116,7 +116,7 @@ protected:
     }
     
     virtual void prepareHeader(){
-	LOGGER_DEBUG("TiffDeflateEncoder : preparation de l'en-tete");
+	BOOST_LOG_TRIVIAL(debug) << "TiffDeflateEncoder : preparation de l'en-tete";
 	sizeHeader = TiffHeader::headerSize ( image->getChannels() );
 	header = new uint8_t[sizeHeader];
 	if ( image->getChannels()==1 )
@@ -136,7 +136,7 @@ protected:
     }
     
     virtual void prepareBuffer(){
-	LOGGER_DEBUG("TiffDeflateEncoder : preparation du buffer d'image");
+	BOOST_LOG_TRIVIAL(debug) << "TiffDeflateEncoder : preparation du buffer d'image";
 	tmpBufferSize = image->getWidth() * image->getChannels() * image->getHeight() * 2 * sizeof(T) ;
 	tmpBuffer = new uint8_t[tmpBufferSize];
 	while ( !encode() ) {

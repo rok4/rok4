@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -47,7 +47,7 @@
 #define CURLPOOL_H
 
 #include <stdint.h>// pour uint8_t
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include <map>
 #include <string.h>
 #include <sstream>
@@ -105,6 +105,7 @@ public:
             pool.insert ( std::pair<pthread_t, CURL*>(i,c) );
             return c;
         } else {
+            curl_easy_reset(it->second);
             return it->second;
         }
     }
@@ -114,7 +115,7 @@ public:
      * \~english \brief Print the number of curl objects in the book
      */
     static void printNumCurls () {
-        LOGGER_INFO("Nombre de contextes curl : " << pool.size());
+        BOOST_LOG_TRIVIAL(info) << "Nombre de contextes curl : " << pool.size();
     }
 
     /**

@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -89,12 +89,12 @@ public:
      * \brief Simple compounded image description output
      */
     void print() {
-        LOGGER_INFO ( "" );
-        LOGGER_INFO ( "------ CompoundImage -------" );
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
+        BOOST_LOG_TRIVIAL(info) <<  "------ CompoundImage -------" ;
         Image::print();
-        LOGGER_INFO ( "\t- Number of images = " );
-        LOGGER_INFO ( "\t\t- heightwise = " << images.size());
-        LOGGER_INFO ( "\t\t- widthwise = " << images.at(0).size());
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Number of images = " ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t\t- heightwise = " << images.size();
+        BOOST_LOG_TRIVIAL(info) <<  "\t\t- widthwise = " << images.at(0).size();
     }
 
 };

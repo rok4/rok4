@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -46,7 +46,7 @@
 #ifndef ASPECT_H
 #define ASPECT_H
 
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #define DEG_TO_RAD      .0174532925199432958
 #include <string>
 #include <cmath>

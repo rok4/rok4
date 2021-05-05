@@ -1,7 +1,7 @@
 # Copyright © (2011) Institut national de l'information
 #                    géographique et forestière 
 # 
-# Géoportail SAV <geop_services@geoportail.fr>
+# Géoportail SAV <contact.geoservices@ign.fr>
 # 
 # This software is a computer program whose purpose is to publish geographic
 # data using OGC WMS and WMTS protocol.
@@ -200,12 +200,7 @@ FUNCTION
 use constant PBF2CACHE_W => 1;
 
 
-my $CEPH_P2CFUNCTION = <<'P2CFUNCTION';
-BackupListFile () {
-    local objectName=`basename ${LIST_FILE}`
-    rados -p ${PYR_POOL} put ${objectName} ${LIST_FILE}
-}
-
+my $CEPH_STORAGE_FUNCTIONS = <<'P2CFUNCTION';
 
 PushSlab () {
     local level=$1
@@ -232,15 +227,7 @@ PushSlab () {
 P2CFUNCTION
 
 
-my $FILE_P2CFUNCTION = <<'P2CFUNCTION';
-BackupListFile () {
-    bn=$(basename ${LIST_FILE})
-    if [ "$(stat -c "%d:%i" ${LIST_FILE})" != "$(stat -c "%d:%i" ${PYR_DIR}/$bn)" ]; then
-        cp ${LIST_FILE} ${PYR_DIR}/
-    else
-        echo "List file is already locate to the backup destination"
-    fi
-}
+my $FILE_STORAGE_FUNCTIONS = <<'P2CFUNCTION';
 
 PushSlab () {
     local level=$1
@@ -448,11 +435,13 @@ sub getScriptInitialization {
 
     if ($pyramid->getStorageType() eq "FILE") {
         $string .= sprintf "PYR_DIR=%s\n", $pyramid->getDataDir();
-        $string .= $FILE_P2CFUNCTION;
+        $string .= $FILE_STORAGE_FUNCTIONS;
+        $string .= $COMMON::Shell::FILE_BACKUPLIST;
     }
     elsif ($pyramid->getStorageType() eq "CEPH") {
         $string .= sprintf "PYR_POOL=%s\n", $pyramid->getDataPool();
-        $string .= $CEPH_P2CFUNCTION;
+        $string .= $CEPH_STORAGE_FUNCTIONS;
+        $string .= $COMMON::Shell::CEPH_BACKUPLIST;
     }
 
     $string .= $MAKETILES;

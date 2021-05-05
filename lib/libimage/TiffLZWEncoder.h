@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -55,7 +55,7 @@ protected:
     T* rawBuffer;
     
     virtual void prepareHeader(){
-	LOGGER_DEBUG("TiffLZWEncoder : preparation de l'en-tete");
+	BOOST_LOG_TRIVIAL(debug) << "TiffLZWEncoder : preparation de l'en-tete";
 	sizeHeader = TiffHeader::headerSize ( image->getChannels() );
 	header = new uint8_t[sizeHeader];
 	if ( image->getChannels()==1 )
@@ -75,7 +75,7 @@ protected:
     }
     
     virtual void prepareBuffer(){
-	LOGGER_DEBUG("TiffLZWEncoder : preparation du buffer d'image");
+	BOOST_LOG_TRIVIAL(debug) << "TiffLZWEncoder : preparation du buffer d'image";
 	int linesize = image->getWidth()*image->getChannels();
 	rawBuffer = new T[image->getHeight()*image->getWidth()*image->getChannels()];
 	rawBufferSize = 0;

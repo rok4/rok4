@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -49,74 +49,64 @@
 
 #include "ContextBook.h"
 
-ContextBook::ContextBook(eContextType type, std::string s1, std::string s2, std::string s3)
-{
-    switch(type) {
-        case CEPHCONTEXT : 
-            contextType = CEPHCONTEXT;
-            ceph_name = s1;
-            ceph_user = s2;
-            ceph_conf = s3;
-            break;
-        case S3CONTEXT : 
-            contextType = S3CONTEXT;
-            s3_url = s1;
-            s3_key = s2;
-            s3_secret_key = s3;
-            break;
-        case SWIFTCONTEXT:
-            contextType = SWIFTCONTEXT;
-            swift_auth = s1;
-            swift_user = s2;
-            swift_passwd = s3;
-            break;
-        default :
-            contextType = CEPHCONTEXT;
-            ceph_name = s1;
-            ceph_user = s2;
-            ceph_conf = s3;
-            break;
-    }
-}
 
-Context * ContextBook::addContext(std::string tray, bool keystone)
+ContextBook::ContextBook(){}
+
+Context * ContextBook::addContext(ContextType::eContextType type,std::string tray)
 {
     Context* ctx;
-    std::map<std::string, Context*>::iterator it = book.find ( tray );
+    std::pair<ContextType::eContextType,std::string> key = make_pair(type,tray);
+    BOOST_LOG_TRIVIAL(debug) << "On essaye d'ajouter la clé " << ContextType::toString(key.first) <<" / " << key.second ;
+
+    std::map<std::pair<ContextType::eContextType,std::string>, Context*>::iterator it = book.find (key);
     if ( it != book.end() ) {
         //le contenant est déjà existant et donc connecté
         return it->second;
 
     } else {
         //ce contenant n'est pas encore connecté, on va créer la connexion
-
-        switch(contextType) {
-            case CEPHCONTEXT :
-                ctx = new CephPoolContext(ceph_name, ceph_user, ceph_conf, tray);
+        //
+        //on créé le context selon le type de stockage
+        switch(type){
+            case ContextType::SWIFTCONTEXT:
+                ctx = new SwiftContext(tray);
                 break;
-            case S3CONTEXT : 
-                ctx = new S3Context(s3_url, s3_key, s3_secret_key, tray);
+            case ContextType::CEPHCONTEXT:
+                ctx = new CephPoolContext(tray);
                 break;
-            case SWIFTCONTEXT :
-                ctx = new SwiftContext(swift_auth, swift_user, swift_passwd, tray, keystone);
+            case ContextType::S3CONTEXT:
+                ctx = new S3Context(tray);
                 break;
-            default :
+            case ContextType::FILECONTEXT:
+                ctx = new FileContext(tray);
+                break;
+            default:
+                //ERREUR
+                BOOST_LOG_TRIVIAL(error) << "Ce type de contexte n'est pas géré.";
                 return NULL;
         }
 
-        //on ajoute au book
-        book.insert ( std::pair<std::string,Context*>(tray,ctx) );
+        // on connecte pour vérifier que ce contexte est valide
+        if (!(ctx->connection())) {
+            BOOST_LOG_TRIVIAL(error) << "Impossible de connecter au contexte de type " << ContextType::toString(type) << ", contenant " << tray;
+            delete ctx;
+            return NULL;
+        }
+
+
+        //BOOST_LOG_TRIVIAL(debug) << "On insère ce contexte " << ctx->toString() ;
+        book.insert(make_pair(key,ctx));
 
         return ctx;
     }
 
 }
 
-Context * ContextBook::getContext(std::string tray)
+Context * ContextBook::getContext(ContextType::eContextType type,std::string tray)
 {
-    std::map<std::string, Context*>::iterator it = book.find ( tray );
+    std::map<std::pair<ContextType::eContextType,std::string>, Context*>::iterator it = book.find (make_pair(type,tray));
     if ( it == book.end() ) {
-        LOGGER_ERROR("Le contenant demandé n'a pas été trouvé dans l'annuaire.");
+        BOOST_LOG_TRIVIAL(error) << "Le contenant demandé n'a pas été trouvé dans l'annuaire.";
         return NULL;
     } else {
         //le contenant est déjà existant et donc connecté
@@ -127,41 +117,14 @@ Context * ContextBook::getContext(std::string tray)
 
 ContextBook::~ContextBook()
 {
-    std::map<std::string,Context*>::iterator it;
+    std::map<std::pair<ContextType::eContextType,std::string>,Context*>::iterator it;
     for (it=book.begin(); it!=book.end(); ++it) {
         delete it->second;
         it->second = NULL;
     }
 }
 
-bool ContextBook::connectAllContext()
-{
-    std::map<std::string,Context*>::iterator it;
-    for (it=book.begin(); it!=book.end(); ++it) {
-        if (!(it->second->connection())) {
-            LOGGER_ERROR("Impossible de connecter un contexte");
-        }
-    }
-    return true;
-}
-
-bool ContextBook::reconnectAllContext()
-{
-    std::map<std::string,Context*>::iterator it;
-    for (it=book.begin(); it!=book.end(); ++it) {
-        it->second->closeConnection();
-        if (!(it->second->connection())) {
-            LOGGER_ERROR("Impossible de reconnecter un contexte");
-        }
-    }
-    return true;
-}
-
-void ContextBook::disconnectAllContext()
-{
-    std::map<std::string,Context*>::iterator it;
-    for (it=book.begin(); it!=book.end(); ++it) {
-        it->second->closeConnection();
-    }
+int ContextBook::size(){
+  return book.size();
 }
 

@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -98,12 +98,12 @@ size_t TiffEncoder::read(uint8_t* buffer, size_t size) {
     size_t offset = 0, dataToCopy=0;
     
     if ( !tmpBuffer ) {
-        LOGGER_DEBUG("TiffEncoder : preparation du buffer d'image");
+        BOOST_LOG_TRIVIAL(debug) << "TiffEncoder : preparation du buffer d'image";
         prepareBuffer();
     }
     
     if ( !header ) {
-        LOGGER_DEBUG("TiffEncoder : preparation de l'en-tete");
+        BOOST_LOG_TRIVIAL(debug) << "TiffEncoder : preparation de l'en-tete";
         prepareHeader();
         if ( isGeoTiff ){
             this->header = TiffHeader::insertGeoTags(image, this->header, &(this->sizeHeader) );
@@ -137,12 +137,12 @@ bool TiffEncoder::eof() {
 
 unsigned int TiffEncoder::getLength(){
     if ( !tmpBuffer ) {
-        LOGGER_DEBUG("TiffEncoder : preparation du buffer d'image");
+        BOOST_LOG_TRIVIAL(debug) << "TiffEncoder : preparation du buffer d'image";
         prepareBuffer();
     }
     
     if ( !header ) {
-        LOGGER_DEBUG("TiffEncoder : preparation de l'en-tete");
+        BOOST_LOG_TRIVIAL(debug) << "TiffEncoder : preparation de l'en-tete";
         prepareHeader();
         if ( isGeoTiff ){
             this->header = TiffHeader::insertGeoTags(image, this->header, &(this->sizeHeader) );

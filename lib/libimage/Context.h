@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -50,10 +50,18 @@
 
 #include <map>
 #include <stdint.h>// pour uint8_t
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
+#include <vector>
 #include <string.h>
 #include <sstream>
 
+
+/**
+ * \author Institut national de l'information géographique et forestière
+ * \~french \brief Gestion des informations liées au format de canal
+ * \~english \brief Manage informations in connection with sample format
+ */
+namespace ContextType {
 /**
  * \~french \brief Énumération des types de contextes
  * \~english \brief Available context type
@@ -66,6 +74,18 @@ enum eContextType {
 };
 
 /**
+ * \~french \brief Conversion d'un type de contexte vers une chaîne de caractères
+ * \param[in] ct type de contexte à convertir
+ * \return la chaîne de caractère nommant le type de contexte
+ * \~english \brief Convert a context type to a string
+ * \param[in] ct context type to convert
+ * \return string namming the context type
+ */
+std::string toString ( eContextType ct );
+
+}
+
+/**
  * \author Institut national de l'information géographique et forestière
  * \~french
  * \brief Création d'un contexte de stockage abstrait 
@@ -75,7 +95,7 @@ class Context {
 protected:
 
     /**
-     * \~french \brief Buffers pour les écitures différées
+     * \~french \brief Buffers pour les écritures différées
      * \~english \brief Postponed writings buffers
      */
     std::map<std::string, std::vector<char>*> writingBuffers;
@@ -87,8 +107,8 @@ protected:
     bool connected;
 
     /**
-     * \~french \brief Nombre de tentatives pour une lecture
-     * \~english \brief Attempts number to read
+     * \~french \brief Nombre de tentatives pour en lecture ou écriture
+     * \~english \brief Attempts number to read or write
      */
     int attempts;
 
@@ -196,7 +216,7 @@ public:
      * \~french \brief Retourne le type du contexte
      * \~english \brief Return the context's type
      */
-    virtual eContextType getType() = 0;
+    virtual ContextType::eContextType getType() = 0;
     /**
      * \~french \brief Retourne le type du contexte, sous forme de texte
      * \~english \brief Return the context's type, as string
@@ -208,6 +228,12 @@ public:
      * \~english \brief Return the tray in the context
      */
     virtual std::string getTray() = 0;
+
+    /**
+     * \~french \brief Retourne le chemin pour une tuile X/Y relatif à ce contexte
+     * \~english \brief Return the path for a tile (X/Y) in this context
+     */
+    virtual std::string getPath(std::string racine,int x,int y,int pathDepth = 2) = 0;
 
     /**
      * \~french \brief Sortie des informations sur le contexte

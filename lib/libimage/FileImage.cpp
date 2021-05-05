@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -50,7 +50,7 @@
  */
 
 #include "FileImage.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Utils.h"
 #include "LibtiffImage.h"
 #include "LibpngImage.h"
@@ -69,13 +69,13 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
     pch = strrchr ( name,'.' );
 
     if (pch == NULL) {
-        LOGGER_ERROR ( "Cannot find the dot to determine extension and driver: " << name );
+        BOOST_LOG_TRIVIAL(error) <<  "Cannot find the dot to determine extension and driver: " << name ;
         return NULL;
     }
 
     /********************* TIFF *********************/
     if ( strncmp ( pch+1, "tif", 3 ) == 0 || strncmp ( pch+1, "TIF", 3 ) == 0 ) {
-        LOGGER_DEBUG ( "TIFF image to read : " << name );
+        BOOST_LOG_TRIVIAL(debug) <<  "TIFF image to read : " << name ;
 
         LibtiffImageFactory LTIF;
         return LTIF.createLibtiffImageToRead ( name, bbox, resx, resy );
@@ -84,7 +84,7 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
     // Les masques
     else if ( strncmp ( pch+1, "msk", 3 ) == 0 || strncmp ( pch+1, "MSK", 3 ) == 0 ) {
         /** \~french \warning Les masques sources (fichiers avec l'extension .msk) seront lus comme des images TIFF. */
-        LOGGER_DEBUG ( "TIFF mask to read : " << name );
+        BOOST_LOG_TRIVIAL(debug) <<  "TIFF mask to read : " << name ;
 
         LibtiffImageFactory LTIF;
         return LTIF.createLibtiffImageToRead ( name, bbox, resx, resy );
@@ -92,14 +92,14 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
     
     /******************** (Z)BIL ********************/
     else if ( strncmp ( pch+1, "bil", 3 ) == 0 || strncmp ( pch+1, "BIL", 3 ) == 0) {
-        LOGGER_DEBUG ( "(Z)BIL image to read : " << name );
+        BOOST_LOG_TRIVIAL(debug) <<  "(Z)BIL image to read : " << name ;
 
         BilzImageFactory BZIF;
         return BZIF.createBilzImageToRead ( name, bbox, resx, resy );
     }
     
     else if ( strncmp ( pch+1, "zbil", 4 ) == 0 || strncmp ( pch+1, "ZBIL", 4 ) == 0 ) {
-        LOGGER_DEBUG ( "(Z)BIL image to read : " << name );
+        BOOST_LOG_TRIVIAL(debug) <<  "(Z)BIL image to read : " << name ;
 
         BilzImageFactory BZIF;
         return BZIF.createBilzImageToRead ( name, bbox, resx, resy );
@@ -107,7 +107,7 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
 
     /********************* PNG **********************/
     else if ( strncmp ( pch+1, "png", 3 ) == 0 || strncmp ( pch+1, "PNG", 3 ) == 0 ) {
-        LOGGER_DEBUG ( "PNG image to read : " << name );
+        BOOST_LOG_TRIVIAL(debug) <<  "PNG image to read : " << name ;
 
         LibpngImageFactory LPIF;
         return LPIF.createLibpngImageToRead ( name, bbox, resx, resy );
@@ -115,7 +115,7 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
 
     /********************** JPEG ********************/
     else if ( strncmp ( pch+1, "jpg", 3 ) == 0 || strncmp ( pch+1, "jpeg", 4 ) == 0 || strncmp ( pch+1, "JPEG", 4 ) == 0 || strncmp ( pch+1, "JPG", 3 ) == 0 ) {
-        LOGGER_DEBUG ( "JPEG image to read : " << name );
+        BOOST_LOG_TRIVIAL(debug) <<  "JPEG image to read : " << name ;
         
         LibjpegImageFactory JPGIF;
         return JPGIF.createLibjpegImageToRead ( name, bbox, resx, resy );
@@ -123,7 +123,7 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
 
     /******************* JPEG 2000 ******************/
     else if ( strncmp ( pch+1, "jp2", 3 ) == 0 || strncmp ( pch+1, "JP2", 3 ) == 0 ) {
-        LOGGER_DEBUG ( "JPEG2000 image to read : " << name );
+        BOOST_LOG_TRIVIAL(debug) <<  "JPEG2000 image to read : " << name ;
         
         Jpeg2000ImageFactory J2KIF;
         return J2KIF.createJpeg2000ImageToRead ( name, bbox, resx, resy );
@@ -131,7 +131,7 @@ FileImage* FileImageFactory::createImageToRead ( char* name, BoundingBox< double
 
     /* /!\ Format inconnu en lecture /!\ */
     else {
-        LOGGER_ERROR ( "Unhandled image's extension (" << pch+1 << "), in the file to read : " << name );
+        BOOST_LOG_TRIVIAL(error) <<  "Unhandled image's extension (" << pch+1 << "), in the file to read : " << name ;
         return NULL;
     }
 
@@ -148,7 +148,7 @@ FileImage* FileImageFactory::createImageToWrite (
 
     /********************* TIFF *********************/
     if ( strncmp ( pch+1, "tif", 3 ) == 0 || strncmp ( pch+1, "TIF", 3 ) == 0 ) {
-        LOGGER_DEBUG ( "TIFF image to write : " << name );
+        BOOST_LOG_TRIVIAL(debug) <<  "TIFF image to write : " << name ;
 
         LibtiffImageFactory LTIF;
         return LTIF.createLibtiffImageToWrite (
@@ -160,7 +160,7 @@ FileImage* FileImageFactory::createImageToWrite (
     // Les masques
     else if ( strncmp ( pch+1, "msk", 3 ) == 0 || strncmp ( pch+1, "MSK", 3 ) == 0 ) {
         /** \~french \warning Les masques sources (fichiers avec l'extension .msk) seront écris comme des images TIFF. */
-        LOGGER_DEBUG ( "TIFF mask to write : " << name );
+        BOOST_LOG_TRIVIAL(debug) <<  "TIFF mask to write : " << name ;
 
         LibtiffImageFactory LTIF;
         return LTIF.createLibtiffImageToWrite (
@@ -171,7 +171,7 @@ FileImage* FileImageFactory::createImageToWrite (
 
     /* /!\ Format inconnu en écriture /!\ */
     else {
-        LOGGER_ERROR ( "Unhandled image's extension (" << pch+1 << "), in the file to write : " << name );
+        BOOST_LOG_TRIVIAL(error) <<  "Unhandled image's extension (" << pch+1 << "), in the file to write : " << name ;
         return NULL;
     }
 

@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -38,7 +38,7 @@
 #include <iostream>
 #include <iomanip>
 #include "AscEncoder.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 
 
 size_t AscEncoder::read ( uint8_t *buffer, size_t size ) {
@@ -83,7 +83,7 @@ size_t AscEncoder::read ( uint8_t *buffer, size_t size ) {
                 buffer[sizeof(uint8_t)*i]= (uint8_t) tmp_str.at(i);
             }
         }else{
-          LOGGER_ERROR ( "Too much data to write on 2^21 buffer");
+          BOOST_LOG_TRIVIAL(error) <<  "Too much data to write on 2^21 buffer";
           return tmp_str.size();
         }
 

@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -256,16 +256,16 @@ public:
      * \brief Resampled image description output
      */
     void print() {
-        LOGGER_INFO ( "\t--------- Grid -----------" );
-        LOGGER_INFO ( "\t- Size : " << width << ", " << height );
-        LOGGER_INFO ( "\t- BBOX : " << bbox.toString() );
-        LOGGER_INFO ( "\t- Reprojected points number :" );
-        LOGGER_INFO ( "\t\t- X wise : " << nbx );
-        LOGGER_INFO ( "\t\t- Y wise : " << nby );
-        LOGGER_INFO ( "\t- Last point distance :" );
-        LOGGER_INFO ( "\t\t- X : " << endX );
-        LOGGER_INFO ( "\t\t- Y : " << endY );
-        LOGGER_INFO ( "\t- First line Y-delta :" << deltaY );
+        BOOST_LOG_TRIVIAL(info) <<  "\t--------- Grid -----------" ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Size : " << width << ", " << height ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- BBOX : " << bbox.toString() ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Reprojected points number :" ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t\t- X wise : " << nbx ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t\t- Y wise : " << nby ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Last point distance :" ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t\t- X : " << endX ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t\t- Y : " << endY ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- First line Y-delta :" << deltaY ;
     }
 
 };

@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -52,7 +52,7 @@
  */
 
 #include "ExtendedCompoundImage.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Utils.h"
 #include "EmptyImage.h"
 
@@ -135,12 +135,12 @@ bool ExtendedCompoundImage::addMirrors ( int mirrorSize ) {
     std::vector< Image*>  mirrorImages;
 
     if ( mirrorSize <= 0 ) {
-        LOGGER_ERROR ( "Unable to add mirror : mirror's size negative or null : " << mirrorSize );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to add mirror : mirror's size negative or null : " << mirrorSize ;
         return false;
     }
 
     if ( sourceImages.size() == 0 ) {
-        LOGGER_ERROR ( "Unable to add mirror : no source image" );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to add mirror : no source image" ;
         return false;
     }
 
@@ -148,18 +148,18 @@ bool ExtendedCompoundImage::addMirrors ( int mirrorSize ) {
         for ( int j = 0; j < 4; j++ ) {
             MirrorImage* mirrorImage = MIF.createMirrorImage ( sourceImages.at ( i ), j, mirrorSize );
             if ( mirrorImage == NULL ) {
-                LOGGER_ERROR ( "Unable to calculate image's mirror" );
+                BOOST_LOG_TRIVIAL(error) <<  "Unable to calculate image's mirror" ;
                 return false;
             }
 
             if ( sourceImages.at ( i )->getMask() ) {
                 MirrorImage* mirrorMask = MIF.createMirrorImage ( sourceImages.at ( i )->getMask(), j, mirrorSize );
                 if ( mirrorMask == NULL ) {
-                    LOGGER_ERROR ( "Unable to calculate mask's mirror" );
+                    BOOST_LOG_TRIVIAL(error) <<  "Unable to calculate mask's mirror" ;
                     return false;
                 }
                 if ( ! mirrorImage->setMask ( mirrorMask ) ) {
-                    LOGGER_ERROR ( "Unable to add mask to mirror" );
+                    BOOST_LOG_TRIVIAL(error) <<  "Unable to add mask to mirror" ;
                     return false;
                 }
             }
@@ -187,7 +187,7 @@ bool ExtendedCompoundImage::addMirrors ( int mirrorSize ) {
         ExtendedCompoundMask* newMask = new ExtendedCompoundMask ( this );
 
         if ( ! setMask ( newMask ) ) {
-            LOGGER_ERROR ( "Unable to add mask to ExtendedCompoundImage with mirrors" );
+            BOOST_LOG_TRIVIAL(error) <<  "Unable to add mask to ExtendedCompoundImage with mirrors" ;
             return false;
         }
     }
@@ -207,7 +207,7 @@ bool ExtendedCompoundImage::extendBbox ( BoundingBox< double > otherbbox, int mo
     //XMIN
     if ( otherbbox.xmin < bbox.xmin ) {
         nbPix = ( double ) ceil ( ( bbox.xmin - otherbbox.xmin ) / resx );
-        LOGGER_DEBUG ( "Ajout de " << nbPix << " à gauche" );
+        BOOST_LOG_TRIVIAL(debug) <<  "Ajout de " << nbPix << " à gauche" ;
         width += (int) nbPix;
         newBbox.xmin -= nbPix * resx;
     }
@@ -215,7 +215,7 @@ bool ExtendedCompoundImage::extendBbox ( BoundingBox< double > otherbbox, int mo
     // XMAX
     if ( otherbbox.xmax > bbox.xmax ) {
         nbPix = ( double ) ceil ( ( otherbbox.xmax - bbox.xmax ) / resx );
-        LOGGER_DEBUG ( "Ajout de " << nbPix << " à droite" );
+        BOOST_LOG_TRIVIAL(debug) <<  "Ajout de " << nbPix << " à droite" ;
         width += (int) nbPix;
         newBbox.xmax += nbPix * resx;
     }
@@ -223,7 +223,7 @@ bool ExtendedCompoundImage::extendBbox ( BoundingBox< double > otherbbox, int mo
     //YMIN
     if ( otherbbox.ymin < bbox.ymin ) {
         nbPix = ( double ) ceil ( ( bbox.ymin - otherbbox.ymin ) / resy );
-        LOGGER_DEBUG ( "Ajout de " << nbPix << " en bas" );
+        BOOST_LOG_TRIVIAL(debug) <<  "Ajout de " << nbPix << " en bas" ;
         height += (int) nbPix;
         newBbox.ymin -= nbPix * resy;
     }
@@ -231,7 +231,7 @@ bool ExtendedCompoundImage::extendBbox ( BoundingBox< double > otherbbox, int mo
     // YMAX
     if ( otherbbox.ymax > bbox.ymax ) {
         nbPix = ( double ) ceil ( ( otherbbox.ymax - bbox.ymax ) / resy );
-        LOGGER_DEBUG ( "Ajout de " << nbPix << " en haut" );
+        BOOST_LOG_TRIVIAL(debug) <<  "Ajout de " << nbPix << " en haut" ;
         height += (int) nbPix;
         newBbox.ymax += nbPix * resy;
     }
@@ -239,7 +239,7 @@ bool ExtendedCompoundImage::extendBbox ( BoundingBox< double > otherbbox, int mo
     /******************** ajout de pixels supplémentaires *****************/
 
     if ( morePix > 0 ) {
-        LOGGER_DEBUG("Ajout de " << morePix << " pixels de tous les côtés");
+        BOOST_LOG_TRIVIAL(debug) << "Ajout de " << morePix << " pixels de tous les côtés";
         width += 2*morePix;
         height += 2*morePix;
 
@@ -250,7 +250,7 @@ bool ExtendedCompoundImage::extendBbox ( BoundingBox< double > otherbbox, int mo
     }
     
     if (! Image::dimensionsAreConsistent(resx, resy, width, height, newBbox)) {
-        LOGGER_ERROR ( "Resolutions, new bounding box and new pixels dimensions of the enlarged ExtendedCompoundImage are not consistent" );
+        BOOST_LOG_TRIVIAL(error) <<  "Resolutions, new bounding box and new pixels dimensions of the enlarged ExtendedCompoundImage are not consistent" ;
         return false;
     }
 
@@ -263,7 +263,7 @@ bool ExtendedCompoundImage::extendBbox ( BoundingBox< double > otherbbox, int mo
         ExtendedCompoundMask* newMask = new ExtendedCompoundMask ( this );
 
         if ( ! setMask ( newMask ) ) {
-            LOGGER_ERROR ( "Unable to add mask to enlarged ExtendedCompoundImage" );
+            BOOST_LOG_TRIVIAL(error) <<  "Unable to add mask to enlarged ExtendedCompoundImage" ;
             return false;
         }
     }
@@ -280,16 +280,16 @@ ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage
 
     // On doit forcément avoir une image en entrée, car les dimensions de l'ExtendedCompoundImage sont calculée à partir des sources
     if ( images.size() == 0 ) {
-        LOGGER_ERROR ( "No source images to define compounded image" );
+        BOOST_LOG_TRIVIAL(error) <<  "No source images to define compounded image" ;
         return NULL;
     }
 
     for ( int i=0; i<images.size()-1; i++ ) {
         if ( ! images[i]->isCompatibleWith ( images[i+1] ) ) {
-            LOGGER_ERROR ( "Source images are not consistent" );
-            LOGGER_ERROR ( "Image " << i );
+            BOOST_LOG_TRIVIAL(error) <<  "Source images are not consistent" ;
+            BOOST_LOG_TRIVIAL(error) <<  "Image " << i ;
             images[i]->print();
-            LOGGER_ERROR ( "Image " << i+1 );
+            BOOST_LOG_TRIVIAL(error) <<  "Image " << i+1 ;
             images[i+1]->print();
             return NULL;
         }
@@ -324,17 +324,17 @@ ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage
 
     if ( images.size() == 0 ) {
         // On peut ne pas avoir d'image en entrée, l'ExtendedCompoundImage sera alors pleine de nodata, et le masque sera vide (que des 0)
-        LOGGER_INFO ( "No source images to compose the ExtendedCompoundImage (=> only nodata)" );
+        BOOST_LOG_TRIVIAL(info) <<  "No source images to compose the ExtendedCompoundImage (=> only nodata)" ;
         resx = (bbox.xmax - bbox.xmin) / (double) width;
         resy = (bbox.ymax - bbox.ymin) / (double) height;
     } else {
 
         for ( int i=0; i<images.size()-1; i++ ) {
             if ( ! images[i]->isCompatibleWith ( images[i+1] ) ) {
-                LOGGER_ERROR ( "Source images are not consistent" );
-                LOGGER_ERROR ( "Image " << i );
+                BOOST_LOG_TRIVIAL(error) <<  "Source images are not consistent" ;
+                BOOST_LOG_TRIVIAL(error) <<  "Image " << i ;
                 images[i]->print();
-                LOGGER_ERROR ( "Image " << i+1 );
+                BOOST_LOG_TRIVIAL(error) <<  "Image " << i+1 ;
                 images[i+1]->print();
                 return NULL;
             }
@@ -344,7 +344,7 @@ ExtendedCompoundImage* ExtendedCompoundImageFactory::createExtendedCompoundImage
         resy = images.at(0)->getResY();
         
         if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {
-            LOGGER_ERROR ( "Resolutions, bounding box and dimensions for ExtendedCompoundImage are not consistent" );
+            BOOST_LOG_TRIVIAL(error) <<  "Resolutions, bounding box and dimensions for ExtendedCompoundImage are not consistent" ;
             return NULL;
         }
     }

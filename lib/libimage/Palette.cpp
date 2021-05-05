@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -40,7 +40,7 @@
 #include "zlib.h"
 #include <string.h>
 #include "byteswap.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 
 Colour::Colour ( uint8_t r, uint8_t g, uint8_t b, int a ) : r ( r ), g ( g ), b ( b ), a ( a ) {
 
@@ -76,7 +76,7 @@ Palette::Palette() : pngPaletteInitialised ( false ), rgbContinuous ( false ), a
 Palette::Palette ( size_t pngPaletteSize, uint8_t* pngPaletteData )  : pngPaletteSize ( pngPaletteSize ) ,pngPaletteInitialised ( true ), rgbContinuous ( false ), alphaContinuous ( false ), noAlpha( false ) {
     pngPalette = new uint8_t[pngPaletteSize];
     memcpy ( pngPalette,pngPaletteData,pngPaletteSize );
-    LOGGER_DEBUG ( "Constructor ColourMapSize " << coloursMap.size() );
+    BOOST_LOG_TRIVIAL(debug) <<  "Constructor ColourMapSize " << coloursMap.size() ;
 }
 
 
@@ -95,7 +95,7 @@ Palette::Palette ( const Palette& pal ) : pngPaletteSize ( 0 ) {
     } else {
         pngPalette = NULL;
     }
-    LOGGER_DEBUG ( "Constructor ColourMapSize " << coloursMap.size() );
+    BOOST_LOG_TRIVIAL(debug) <<  "Constructor ColourMapSize " << coloursMap.size() ;
 }
 
 
@@ -103,13 +103,13 @@ Palette::Palette ( const Palette& pal ) : pngPaletteSize ( 0 ) {
  *
  */
 Palette::Palette ( const std::map< double, Colour >& coloursMap, bool rgbContinuous, bool alphaContinuous, bool noAlpha ) : rgbContinuous ( rgbContinuous ), alphaContinuous ( alphaContinuous ), pngPaletteSize ( 0 ) ,pngPalette ( NULL ) ,pngPaletteInitialised ( false ) ,coloursMap ( coloursMap ), noAlpha( noAlpha ) {
-    LOGGER_DEBUG ( "Constructor ColourMapSize " << coloursMap.size() );
+    BOOST_LOG_TRIVIAL(debug) <<  "Constructor ColourMapSize " << coloursMap.size() ;
 }
 
 void Palette::buildPalettePNG() {
-    LOGGER_DEBUG ( "ColourMapSize " << coloursMap.size() );
+    BOOST_LOG_TRIVIAL(debug) <<  "ColourMapSize " << coloursMap.size() ;
     if ( !coloursMap.empty() ) {
-        LOGGER_DEBUG ( "Palette PNG OK" );
+        BOOST_LOG_TRIVIAL(debug) <<  "Palette PNG OK" ;
         std::vector<Colour> colours;
         for ( int k = 0; k < 256 ; ++k ) {
             Colour tmp = getColour ( k );
@@ -182,7 +182,7 @@ void Palette::buildPalettePNG() {
     } else {
         pngPaletteSize=0;
         pngPalette=NULL;
-        LOGGER_DEBUG ( "Palette incompatible avec le PNG" );
+        BOOST_LOG_TRIVIAL(debug) <<  "Palette incompatible avec le PNG" ;
     }
     pngPaletteInitialised = true;
 }

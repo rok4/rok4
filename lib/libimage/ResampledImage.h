@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -352,17 +352,17 @@ public:
      * \brief Resampled image description output
      */
     void print() {
-        LOGGER_INFO ( "" );
-        LOGGER_INFO ( "--------- ResampledImage -----------" );
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
+        BOOST_LOG_TRIVIAL(info) <<  "--------- ResampledImage -----------" ;
         Image::print();
-        LOGGER_INFO ( "\t- Kernel size, x wise = " << Kx << ", y wise = " << Ky );
-        LOGGER_INFO ( "\t- Offsets, dx = " << left << ", dy = " << top );
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Kernel size, x wise = " << Kx << ", y wise = " << Ky ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Offsets, dx = " << left << ", dy = " << top ;
         if ( useMask ) {
-            LOGGER_INFO ( "\t- Use mask in interpolation" );
+            BOOST_LOG_TRIVIAL(info) <<  "\t- Use mask in interpolation" ;
         } else {
-            LOGGER_INFO ( "\t- Doesn't use mask in interpolation" );
+            BOOST_LOG_TRIVIAL(info) <<  "\t- Doesn't use mask in interpolation" ;
         }
-        LOGGER_INFO ( "" );
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
     }
 };
 

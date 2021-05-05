@@ -2,7 +2,7 @@
 * Copyright © (2011) Institut national de l'information
 *                    géographique et forestière
 *
-* Géoportail SAV <geop_services@geoportail.fr>
+* Géoportail SAV <contact.geoservices@ign.fr>
 *
 * This software is a computer program whose purpose is to publish geographic
 * data using OGC WMS and WMTS protocol.
@@ -52,7 +52,7 @@
 
 #include "Jpeg2000_library_config.h"
 #include "LibkakaduImage.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Utils.h"
 #include "kdu_region_decompressor.h"
 
@@ -99,7 +99,7 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     if (box.open(&jp2_src) && (box.get_box_type() == jp2_signature_4cc) ) {
         input = &jp2_in;
         if (! jp2_in.open(&jp2_src)) {
-            LOGGER_ERROR("Unable to open with Kakadu the JPEG2000 image " << filename);
+            BOOST_LOG_TRIVIAL(error) << "Unable to open with Kakadu the JPEG2000 image " << filename;
             return NULL;
         }
         jp2_in.read_header();
@@ -123,27 +123,27 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     for (int i = 0; i < channels; i++) {
         codestream.get_dims(i,dims,true);
         if (dims.size.get_x() != width || dims.size.get_y() != height) {
-            LOGGER_ERROR("All components don't own the same dimensions in JPEG2000 file");
-                LOGGER_ERROR("file : " << filename);
+            BOOST_LOG_TRIVIAL(error) << "All components don't own the same dimensions in JPEG2000 file";
+                BOOST_LOG_TRIVIAL(error) << "file : " << filename;
             return NULL;
         }
         if (codestream.get_bit_depth(i) != bitspersample) {
-            LOGGER_ERROR("All components don't own the same bit depth in JPEG2000 file ");
-            LOGGER_ERROR("file : " << filename);
+            BOOST_LOG_TRIVIAL(error) << "All components don't own the same bit depth in JPEG2000 file ";
+            BOOST_LOG_TRIVIAL(error) << "file : " << filename;
             return NULL;
         }
     }
     
     if (jp2_in.access_palette().get_num_entries() != 0) {
-        LOGGER_ERROR("JPEG2000 image with palette not handled");
-        LOGGER_ERROR("file : " << filename);
+        BOOST_LOG_TRIVIAL(error) << "JPEG2000 image with palette not handled";
+        BOOST_LOG_TRIVIAL(error) << "file : " << filename;
         return NULL;
     }
     
     if (jp2_in.access_channels().get_num_colours() != channels) {
-        LOGGER_DEBUG("num_colours != channels");
-        LOGGER_DEBUG(jp2_in.access_channels().get_num_colours() << " != " << channels);
-        LOGGER_DEBUG("file : " << filename);
+        BOOST_LOG_TRIVIAL(debug) << "num_colours != channels";
+        BOOST_LOG_TRIVIAL(debug) << jp2_in.access_channels().get_num_colours() << " != " << channels;
+        BOOST_LOG_TRIVIAL(debug) << "file : " << filename;
     }
     
     switch(channels) {
@@ -160,8 +160,8 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
             ph = Photometric::RGB;
             break;
         default:
-            LOGGER_ERROR("Cannot determine photometric from the number of samples " << channels);
-            LOGGER_ERROR("file : " << filename);
+            BOOST_LOG_TRIVIAL(error) << "Cannot determine photometric from the number of samples " << channels;
+            BOOST_LOG_TRIVIAL(error) << "file : " << filename;
             return NULL;
     }
     
@@ -178,14 +178,14 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
     /********************** CONTROLES **************************/
 
     if ( ! LibkakaduImage::canRead ( bitspersample, sf ) ) {
-        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( sf ) << " and " << bitspersample << " bits per sample" );
-        LOGGER_ERROR ( "\t for the image to read : " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Not supported sample type : " << SampleFormat::toString ( sf ) << " and " << bitspersample << " bits per sample" ;
+        BOOST_LOG_TRIVIAL(error) <<  "\t for the image to read : " << filename ;
         return NULL;
     }
 
     if ( resx > 0 && resy > 0 ) {
         if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {
-            LOGGER_ERROR ( "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" );
+            BOOST_LOG_TRIVIAL(error) <<  "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" ;
             return NULL;
         }
     } else {
@@ -211,7 +211,7 @@ LibkakaduImage* LibkakaduImageFactory::createLibkakaduImageToRead ( char* filena
         rowsperstrip
     );
     if(!o_LibkakaduImage->init()){
-        LOGGER_ERROR("Failed to itialise kakadu image object.");
+        BOOST_LOG_TRIVIAL(error) << "Failed to itialise kakadu image object.";
         return NULL;
     }
     return o_LibkakaduImage;
@@ -262,7 +262,7 @@ bool LibkakaduImage::init() {
 
     if (!m_Source.open(&jp2_ultimate_src))
     {
-        LOGGER_ERROR("Failed to open image source file.");
+        BOOST_LOG_TRIVIAL(error) << "Failed to open image source file.";
         if (m_codestream.exists())
             m_codestream.destroy();
         if (m_Source.exists())
@@ -288,7 +288,7 @@ bool LibkakaduImage::init() {
     try {
         strip_buffer = new uint8_t[rowsperstrip * width * pixelSize];
     } catch (std::bad_alloc e) {
-        LOGGER_ERROR("Memory allocation error while creating strip buffer.");
+        BOOST_LOG_TRIVIAL(error) << "Memory allocation error while creating strip buffer.";
         if (m_codestream.exists())
             m_codestream.destroy();
         if (m_Source.exists())

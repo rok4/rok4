@@ -2,7 +2,7 @@
  * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -39,6 +39,7 @@
 #define WEBSERVICE_H
 #include <string>
 #include <map>
+#include <vector>
 #include "BoundingBox.h"
 #include "curl/curl.h"
 #include "Image.h"
@@ -59,7 +60,7 @@ static size_t WriteInMemoryCallback(void *contents, size_t size, size_t nmemb, v
   mem->memory = (uint8_t*)realloc(mem->memory, mem->size + realsize + 1);
   if(mem->memory == NULL) {
     /* out of memory! */
-    LOGGER_ERROR("not enough memory (realloc returned NULL)\n");
+    BOOST_LOG_TRIVIAL(error) << "not enough memory (realloc returned NULL)\n";
     return 0;
   }
 
@@ -87,18 +88,6 @@ protected:
      * \~english \brief Server URL
      */
     std::string url;
-
-    /**
-     * \~french \brief Proxy utilisé
-     * \~english \brief Proxy used
-     */
-    std::string proxy;
-
-    /**
-     * \~french \brief noProxy utilisé
-     * \~english \brief noProxy used
-     */
-    std::string noProxy;
 
     /**
      * \~french \brief Temps d'attente lors de l'envoi d'une requête
@@ -168,26 +157,6 @@ public:
      */
     void setUrl (std::string u) {
         url = u;
-    }
-
-    /**
-     * \~french \brief Récupère le proxy
-     * \return proxy
-     * \~english \brief Get the proxy
-     * \return proxy
-     */
-    std::string getProxy(){
-        return proxy;
-    }
-
-    /**
-     * \~french \brief Modifie le proxy
-     * \param[in] proxy
-     * \~english \brief Set the proxy
-     * \param[in] proxy
-     */
-    void setProxy (std::string u) {
-        proxy = u;
     }
 
     /**
@@ -371,8 +340,8 @@ public:
      * \~french \brief Constructeur
      * \~english \brief Constructor
      */
-    WebService(std::string url, std::string proxy, std::string noProxy, int retry, int interval, int timeout);
-
+    WebService(std::string url, int retry, int interval, int timeout);
+    
     /**
      * \~french \brief Constructeur à partir d'un autre
      * \~english \brief Constructor from another
@@ -675,11 +644,12 @@ public:
      * \~french \brief Constructeur
      * \~english \brief Constructor
      */
-    WebMapService(std::string url, std::string proxy, std::string noProxy,int retry, int interval, int timeout, std::string version,std::string layers, std::string styles,std::string format, int channels,
+    WebMapService(std::string url, int retry, int interval, int timeout, std::string version,std::string layers, std::string styles,std::string format, int channels,
                                  std::string crs, BoundingBox<double> bbox, std::vector<int> ndValues,
-                                 std::map<std::string,std::string> options) : WebService(url,proxy,noProxy,retry,interval,timeout),
+                                 std::map<std::string,std::string> options) : WebService(url,retry,interval,timeout),
         version (version), layers (layers), styles (styles), format (format),
         crs (crs), channels (channels), bbox (bbox), ndValues (ndValues),options (options) {}
+
     /**
      * \~french \brief Destructeur
      * \~english \brief Destructor

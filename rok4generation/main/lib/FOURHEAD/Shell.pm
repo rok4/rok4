@@ -1,7 +1,7 @@
 # Copyright © (2011) Institut national de l'information
 #                    géographique et forestière 
 # 
-# Géoportail SAV <geop_services@geoportail.fr>
+# Géoportail SAV <contact.geoservices@ign.fr>
 # 
 # This software is a computer program whose purpose is to publish geographic
 # data using OGC WMS and WMTS protocol.
@@ -60,6 +60,9 @@ use strict;
 use warnings;
 
 use Data::Dumper;
+
+use COMMON::Shell;
+use COMMON::ProxyStorage;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -146,7 +149,7 @@ Merge4tiff () {
 }
 M4TFUNCTION
 
-my $FILE_SLABFUNCTIONS = <<'SLABFUNCTIONS';
+my $FILE_STORAGE_FUNCTIONS = <<'SLABFUNCTIONS';
 PullSlab () {
     local input=$1
     local output=$2
@@ -169,7 +172,7 @@ PushSlab () {
 }
 SLABFUNCTIONS
 
-my $S3_SLABFUNCTIONS = <<'SLABFUNCTIONS';
+my $S3_STORAGE_FUNCTIONS = <<'SLABFUNCTIONS';
 PullSlab () {
     local input=$1
     local output=$2
@@ -188,12 +191,12 @@ PushSlab () {
 }
 SLABFUNCTIONS
 
-my $SWIFT_SLABFUNCTIONS = <<'SLABFUNCTIONS';
+my $SWIFT_STORAGE_FUNCTIONS = <<'SLABFUNCTIONS';
 PullSlab () {
     local input=$1
     local output=$2
 
-    cache2work -c zip -container ${PYR_CONTAINER} ${KEYSTONE_OPTION} $input ${TMP_DIR}/$output
+    cache2work -c zip -container ${PYR_CONTAINER} $input ${TMP_DIR}/$output
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi
 }
 
@@ -202,12 +205,12 @@ PushSlab () {
     local output=$2
     local options=$3
         
-    work2cache ${TMP_DIR}/$input -container ${PYR_CONTAINER} ${KEYSTONE_OPTION} $output ${options}
+    work2cache ${TMP_DIR}/$input -container ${PYR_CONTAINER} $output ${options}
     if [ $? != 0 ] ; then echo $0 : Erreur a la ligne $(( $LINENO - 1)) >&2 ; exit 1; fi   
 }
 SLABFUNCTIONS
 
-my $CEPH_SLABFUNCTIONS = <<'SLABFUNCTIONS';
+my $CEPH_STORAGE_FUNCTIONS = <<'SLABFUNCTIONS';
 PullSlab () {
     local input=$1
     local output=$2
@@ -380,24 +383,25 @@ sub getScriptInitialization {
 
     if ($pyramid->getStorageType() eq "FILE") {
         $string .= sprintf "PYR_DIR=%s\n", $pyramid->getDataDir();
-        $string .= $FILE_SLABFUNCTIONS;
+        $string .= $FILE_STORAGE_FUNCTIONS;
     }
     elsif ($pyramid->getStorageType() eq "CEPH") {
         $string .= sprintf "PYR_POOL=%s\n", $pyramid->getDataPool();
-        $string .= $CEPH_SLABFUNCTIONS;
+        $string .= $CEPH_STORAGE_FUNCTIONS;
     }
     elsif ($pyramid->getStorageType() eq "S3") {
         $string .= sprintf "PYR_BUCKET=%s\n", $pyramid->getDataBucket();
-        $string .= $S3_SLABFUNCTIONS;
+        $string .= $S3_STORAGE_FUNCTIONS;
     }
     elsif ($pyramid->getStorageType() eq "SWIFT") {
         $string .= sprintf "PYR_CONTAINER=%s\n", $pyramid->getDataContainer();
-        if ($pyramid->keystoneConnection()) {
-            $string .= "KEYSTONE_OPTION=\"-ks\"\n";
-        } else {
-            $string .= "KEYSTONE_OPTION=\"\"\n";
+        if (COMMON::ProxyStorage::isSwiftKeystoneAuthentication()) {
+            $string .= $COMMON::Shell::SWIFT_KEYSTONE_TOKEN_FUNCTION;
         }
-        $string .= $SWIFT_SLABFUNCTIONS;
+        else {
+            $string .= $COMMON::Shell::SWIFT_NATIVE_TOKEN_FUNCTION;
+        }
+        $string .= $SWIFT_STORAGE_FUNCTIONS;
     }
 
     $string .= $M4TFUNCTION;

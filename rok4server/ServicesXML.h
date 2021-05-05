@@ -2,7 +2,7 @@
  * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -49,7 +49,6 @@ class ServicesXML;
 #include "CRS.h"
 
 #include "config.h"
-#include "intl.h"
 
 class ServicesXML
 {

@@ -2,7 +2,7 @@
  * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -247,11 +247,11 @@ public:
     std::map<std::string, std::string> params;
 
     void print() {
-        LOGGER_INFO("hostName = " << hostName);
-        LOGGER_INFO("path = " << path);
-        LOGGER_INFO("scheme = " << scheme);
-        LOGGER_INFO("service = " << ServiceType::toString(service));
-        LOGGER_INFO("request = " << RequestType::toString(request));
+        BOOST_LOG_TRIVIAL(info) << "hostName = " << hostName;
+        BOOST_LOG_TRIVIAL(info) << "path = " << path;
+        BOOST_LOG_TRIVIAL(info) << "scheme = " << scheme;
+        BOOST_LOG_TRIVIAL(info) << "service = " << ServiceType::toString(service);
+        BOOST_LOG_TRIVIAL(info) << "request = " << RequestType::toString(request);
     }
     /**
      * \~french

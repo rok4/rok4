@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -47,7 +47,14 @@
 #include <cstdlib>
 #include <iostream>
 #include <string.h>
-#include "Logger.h"
+
+#include <boost/log/core.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
+#include <boost/log/utility/setup/console.hpp>
+namespace logging = boost::log;
+namespace keywords = boost::log::keywords;
+
 #include <curl/curl.h>
 #include "Format.h"
 #include "CurlPool.h"
@@ -82,7 +89,6 @@ std::string help = std::string("\ncache2work version ") + std::string(ROK4_VERSI
     "    -pool Ceph pool where data is. INPUT FILE is interpreted as a Ceph object (ONLY IF OBJECT COMPILATION)\n"
     "    -bucket S3 bucket where data is. INPUT FILE is interpreted as a S3 object (ONLY IF OBJECT COMPILATION)\n"
     "    -container Swift container where data is. INPUT FILE is interpreted as a Swift object name (ONLY IF OBJECT COMPILATION)\n"
-    "    -ks in Swift storage case, activate keystone authentication (ONLY IF OBJECT COMPILATION)\n"
     "    -d debug logger activation\n\n"
 
     "Example\n"
@@ -94,7 +100,7 @@ std::string help = std::string("\ncache2work version ") + std::string(ROK4_VERSI
  * \details L'affichage se fait dans le niveau de logger INFO
  */
 void usage() {
-    LOGGER_INFO (help);
+    BOOST_LOG_TRIVIAL(info) << help;
 }
 
 /**
@@ -104,7 +110,7 @@ void usage() {
  * \param[in] errorCode code de retour
  */
 void error ( std::string message, int errorCode ) {
-    LOGGER_ERROR ( message );
+    BOOST_LOG_TRIVIAL(error) <<  message ;
     usage();
     sleep ( 1 );
     exit ( errorCode );
@@ -132,20 +138,15 @@ int main ( int argc, char **argv )
     bool debugLogger=false;
 
     char *pool = 0, *container = 0, *bucket = 0;
-    bool keystone = false;
 
     /* Initialisation des Loggers */
-    Logger::setOutput ( STANDARD_OUTPUT_STREAM_FOR_ERRORS );
-
-    Accumulator* acc = new StreamAccumulator();
-    Logger::setAccumulator ( INFO , acc );
-    Logger::setAccumulator ( WARN , acc );
-    Logger::setAccumulator ( ERROR, acc );
-    Logger::setAccumulator ( FATAL, acc );
-
-    std::ostream &logw = LOGGER ( WARN );
-    logw.precision ( 16 );
-    logw.setf ( std::ios::fixed,std::ios::floatfield );
+    boost::log::core::get()->set_filter( boost::log::trivial::severity >= boost::log::trivial::info );
+    logging::add_common_attributes();
+    boost::log::register_simple_formatter_factory< boost::log::trivial::severity_level, char >("Severity");
+    logging::add_console_log (
+        std::cout,
+        keywords::format = "%Severity%\t%Message%"
+    );
 
     for ( int i = 1; i < argc; i++ ) {
 
@@ -169,10 +170,6 @@ int main ( int argc, char **argv )
                 error("Error in -container option", -1);
             }
             container = argv[i];
-            continue;
-        }
-        if ( !strcmp ( argv[i],"-ks" ) ) {
-            keystone = true;
             continue;
         }
 #endif
@@ -218,10 +215,7 @@ int main ( int argc, char **argv )
 
     if (debugLogger) {
         // le niveau debug du logger est activé
-        Logger::setAccumulator ( DEBUG, acc);
-        std::ostream &logd = LOGGER ( DEBUG );
-        logd.precision ( 16 );
-        logd.setf ( std::ios::fixed,std::ios::floatfield );
+        boost::log::core::get()->set_filter( boost::log::trivial::severity >= boost::log::trivial::debug );
     }
 
     if ( input == 0 || output == 0 ) {
@@ -233,21 +227,21 @@ int main ( int argc, char **argv )
 #if BUILD_OBJECT
 
     if ( pool != 0 ) {
-        LOGGER_DEBUG( std::string("Input is an object in the Ceph pool ") + pool);
+        BOOST_LOG_TRIVIAL(debug) <<  std::string("Input is an object in the Ceph pool ") + pool;
         context = new CephPoolContext(pool);
         context->setAttempts(10);
     } else if (bucket != 0) {
-        LOGGER_DEBUG( std::string("Input is an object in the S3 bucket ") + bucket);
+        BOOST_LOG_TRIVIAL(debug) <<  std::string("Input is an object in the S3 bucket ") + bucket;
         curl_global_init(CURL_GLOBAL_ALL);
         context = new S3Context(bucket);
     } else if (container != 0) {
-        LOGGER_DEBUG( std::string("Input is an object in the Swift container ") + container);
+        BOOST_LOG_TRIVIAL(debug) <<  std::string("Input is an object in the Swift container ") + container;
         curl_global_init(CURL_GLOBAL_ALL);
-        context = new SwiftContext(container, keystone);
+        context = new SwiftContext(container);
     } else {
 #endif
 
-        LOGGER_DEBUG("Input is a file in a file system");
+        BOOST_LOG_TRIVIAL(debug) << "Input is a file in a file system";
         context = new FileContext("");
 
 #if BUILD_OBJECT
@@ -261,6 +255,7 @@ int main ( int argc, char **argv )
     Rok4ImageFactory R4IF;
     Rok4Image* rok4image = R4IF.createRok4ImageToRead(input, BoundingBox<double>(0.,0.,0.,0.), 0., 0., context);
     if (rok4image == NULL) {
+        delete context;
         error (std::string("Cannot create ROK4 image to read ") + input, 1);
     }
 
@@ -276,7 +271,7 @@ int main ( int argc, char **argv )
         error (std::string("Cannot create image to write ") + output, -1);
     }
 
-    LOGGER_DEBUG ( "Write" );
+    BOOST_LOG_TRIVIAL(debug) <<  "Write" ;
     if (outputImage->writeImage(rok4image) < 0) {
         delete rok4image;
         delete outputImage;
@@ -284,16 +279,10 @@ int main ( int argc, char **argv )
         error("Cannot write image", -1);
     }
 
-    LOGGER_DEBUG ( "Clean" );
+    BOOST_LOG_TRIVIAL(debug) <<  "Clean" ;
     // Nettoyage
     delete rok4image;
     delete outputImage;
-    // Suppression du nettoyage du logger jusqu'à sa refonte
-    // Logger::stopLogger();
-    // if ( acc ) {
-    //     delete acc;
-    // }
-    delete context;
 
 #if BUILD_OBJECT
     if (container != 0 || bucket != 0) {
@@ -301,6 +290,8 @@ int main ( int argc, char **argv )
         curl_global_cleanup();
     }
 #endif
+
+    delete context;
 
     return 0;
 }

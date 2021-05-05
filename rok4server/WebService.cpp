@@ -2,7 +2,7 @@
  * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -49,17 +49,14 @@
 #include "LibpngImage.h"
 #include "CurlPool.h"
 
-
-WebService::WebService(std::string url, std::string proxy="", std::string noProxy="", int retry=DEFAULT_RETRY, int interval=DEFAULT_INTERVAL,
-    int timeout=DEFAULT_TIMEOUT):Source(WEBSERVICE), url (url),proxy (proxy),retry (retry), interval (interval), timeout (timeout), noProxy (noProxy){
+WebService::WebService(std::string url, int retry=DEFAULT_RETRY, int interval=DEFAULT_INTERVAL,
+    int timeout=DEFAULT_TIMEOUT):Source(WEBSERVICE), url (url),retry (retry), interval (interval), timeout (timeout){
     responseType = "";
 }
 
 WebService::WebService(WebService* obj) : Source(WEBSERVICE) {
 
     url = obj->url;
-    proxy = obj->proxy;
-    noProxy = obj->noProxy;
     timeout = obj->timeout;
     retry = obj->retry;
     interval = obj->interval;
@@ -90,7 +87,7 @@ RawDataSource * WebService::performRequest(std::string request) {
     int nbPerformed = 0;
     //----
 
-    LOGGER_INFO("Perform a request");
+    BOOST_LOG_TRIVIAL(info) << "Perform a request";
 
 
 
@@ -100,16 +97,16 @@ RawDataSource * WebService::performRequest(std::string request) {
         nbPerformed++;
         errors = false;
 
-        LOGGER_DEBUG("Initialization of Curl Handle");
+        BOOST_LOG_TRIVIAL(debug) << "Initialization of Curl Handle";
         //it is one handle - just one per thread - that is a whole theory...
-        LOGGER_DEBUG("Initialization of Chunk structure");
+        BOOST_LOG_TRIVIAL(debug) << "Initialization of Chunk structure";
         chunk.memory = (uint8_t*)malloc(1);  /* will be grown as needed by the realloc above */
         chunk.size = 0;    /* no data at this point */
 
         if(curl) {
 
             //----Set options
-            LOGGER_DEBUG("Setting options of Curl");
+            BOOST_LOG_TRIVIAL(debug) << "Setting options of Curl";
             curl_easy_setopt(curl, CURLOPT_URL, request.c_str());
             /* example.com is redirected, so we tell libcurl to follow redirection */
             curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
@@ -124,12 +121,6 @@ RawDataSource * WebService::performRequest(std::string request) {
             curl_easy_setopt(curl, CURLOPT_TIMEOUT, long(timeout));
             curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "identity");
             curl_easy_setopt(curl, CURLOPT_USERAGENT, ROK4_INFO);
-            if (proxy != "") {
-                curl_easy_setopt(curl, CURLOPT_PROXY, proxy.c_str());
-            }
-            if (noProxy != "") {
-                curl_easy_setopt(curl, CURLOPT_NOPROXY, noProxy.c_str());
-            }
             if (userAgent != "") {
                 curl_easy_setopt(curl, CURLOPT_USERAGENT, userAgent.c_str());
             }
@@ -139,11 +130,11 @@ RawDataSource * WebService::performRequest(std::string request) {
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
             //----
 
-            LOGGER_DEBUG("Perform the request => (" << nbPerformed << "/" << retry+1 << ") time");
+            BOOST_LOG_TRIVIAL(debug) << "Perform the request => (" << nbPerformed << "/" << retry+1 << ") time";
             /* Perform the request, res will get the return code */
             res = curl_easy_perform(curl);
 
-            LOGGER_DEBUG("Checking for errors");
+            BOOST_LOG_TRIVIAL(debug) << "Checking for errors";
             /* Check for errors */
             if(res == CURLE_OK) {
 
@@ -152,12 +143,12 @@ RawDataSource * WebService::performRequest(std::string request) {
                 if ((resC == CURLE_OK) && responseCode) {
 
                     if (responseCode != 200) {
-                        LOGGER_ERROR("The request returned a " << responseCode << " code");
+                        BOOST_LOG_TRIVIAL(error) << "The request returned a " << responseCode << " code";
                         errors = true;
                     }
 
                 } else {
-                    LOGGER_ERROR("curl_easy_getinfo() on response code failed: " << curl_easy_strerror(resC));
+                    BOOST_LOG_TRIVIAL(error) << "curl_easy_getinfo() on response code failed: " << curl_easy_strerror(resC);
                     errors = true;
                 }
 
@@ -165,19 +156,19 @@ RawDataSource * WebService::performRequest(std::string request) {
                     std::string rType(rpType);
                     fType = rType;
                     if (errors || (this->responseType != "" && this->responseType != rType )) {
-                        LOGGER_ERROR("The request returned with a " << rpType << " content type");
+                        BOOST_LOG_TRIVIAL(error) << "The request returned with a " << rpType << " content type";
                         std::string text = "text/";
                         std::string application = "application/";
 
                         if (rType.find(text) != std::string::npos || rType.find(application) != std::string::npos) {
-                            LOGGER_ERROR("Content of the answer: " << chunk.memory);
+                            BOOST_LOG_TRIVIAL(error) << "Content of the answer: " << chunk.memory;
                         } else {
-                            LOGGER_ERROR("Impossible to read the answer...");
+                            BOOST_LOG_TRIVIAL(error) << "Impossible to read the answer...";
                         }
                         errors = true;
                     }
                 } else {
-                    LOGGER_ERROR("curl_easy_getinfo() on response type failed: " << curl_easy_strerror(resT));
+                    BOOST_LOG_TRIVIAL(error) << "curl_easy_getinfo() on response type failed: " << curl_easy_strerror(resT);
                     errors = true;
                 }
 
@@ -186,7 +177,7 @@ RawDataSource * WebService::performRequest(std::string request) {
                 }
 
             } else {
-                LOGGER_ERROR("curl_easy_perform() failed: " << curl_easy_strerror(res));
+                BOOST_LOG_TRIVIAL(error) << "curl_easy_perform() failed: " << curl_easy_strerror(res);
                 errors = true;
             }
 
@@ -197,7 +188,7 @@ RawDataSource * WebService::performRequest(std::string request) {
             }
 
         } else {
-          LOGGER_ERROR("Impossible d'initialiser Curl");
+          BOOST_LOG_TRIVIAL(error) << "Impossible d'initialiser Curl";
           errors = true;
         }
 
@@ -206,8 +197,8 @@ RawDataSource * WebService::performRequest(std::string request) {
 
     /* Convert chunk into a DataSource readable by rok4 */
     if (!errors) {
-        LOGGER_DEBUG("Sauvegarde de la donnee");
-        LOGGER_DEBUG("content-type de la reponse: "+ fType);
+        BOOST_LOG_TRIVIAL(debug) << "Sauvegarde de la donnee";
+        BOOST_LOG_TRIVIAL(debug) << "content-type de la reponse: "+ fType;
         rawData = new RawDataSource(chunk.memory, chunk.size, fType,"");
     }
 
@@ -250,7 +241,7 @@ Image * WebMapService::createImageFromRequest(int width, int height, BoundingBox
     //----
 
 
-    LOGGER_INFO("Create an image from a request");
+    BOOST_LOG_TRIVIAL(info) << "Create an image from a request";
 
     //----creation de la requete
     //on adapte la bbox de la future requete aux données
@@ -258,7 +249,7 @@ Image * WebMapService::createImageFromRequest(int width, int height, BoundingBox
 
     //on cree la requete en fonction de la nouvelle bbox
     if (requestBbox.isNull()) {
-        LOGGER_DEBUG ("New Bbox is null");
+        BOOST_LOG_TRIVIAL(debug) << "New Bbox is null";
         EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
         fond->setBbox(bbox);
         delete[] ndvalue;
@@ -302,12 +293,12 @@ Image * WebMapService::createImageFromRequest(int width, int height, BoundingBox
         newHeight += 2;
         newWidth += 2;
 
-        LOGGER_DEBUG ( "New Width = " << newWidth << " " <<  "New Height = " << newHeight );
-        LOGGER_DEBUG (  "ratio_x = "  << ratio_x << " " <<  "ratio_y = " << ratio_y );
+        BOOST_LOG_TRIVIAL(debug) <<  "New Width = " << newWidth << " " <<  "New Height = " << newHeight ;
+        BOOST_LOG_TRIVIAL(debug) <<   "ratio_x = "  << ratio_x << " " <<  "ratio_y = " << ratio_y ;
 
         if ( (1/ratio_x > 5 && newWidth < 3) || (newHeight < 3 && 1/ratio_y > 5) || (newWidth <= 0 || newHeight <= 0)){
             //Too small BBox
-            LOGGER_DEBUG ("New Bbox's size too small. Can't hope to have an image");
+            BOOST_LOG_TRIVIAL(debug) << "New Bbox's size too small. Can't hope to have an image";
             EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
             fond->setBbox(bbox);
             delete[] ndvalue;
@@ -321,7 +312,7 @@ Image * WebMapService::createImageFromRequest(int width, int height, BoundingBox
 
     }
 
-    LOGGER_DEBUG("Request => " << request);
+    BOOST_LOG_TRIVIAL(debug) << "Request => " << request;
     //----
 
     //----on récupère la donnée brute
@@ -331,7 +322,7 @@ Image * WebMapService::createImageFromRequest(int width, int height, BoundingBox
     //----on la transforme en image
     if (rawData) {
 
-        LOGGER_DEBUG("Decode Data");
+        BOOST_LOG_TRIVIAL(debug) << "Decode Data";
         //on la décode
         Rok4Format::eformat_data fmt = Rok4Format::fromMimeType(format);
 
@@ -355,13 +346,13 @@ Image * WebMapService::createImageFromRequest(int width, int height, BoundingBox
                 img = FIF.createLibpngImageToReadFromBuffer(rawStream,requestBbox,resx,resy);
                 delete rawStream;
             } else {
-                LOGGER_ERROR("Impossible de transformer la donnee en flux");
+                BOOST_LOG_TRIVIAL(error) << "Impossible de transformer la donnee en flux";
             }
 
         }
 
         if (img == NULL) {
-            LOGGER_ERROR("Impossible de decoder la donnee source");
+            BOOST_LOG_TRIVIAL(error) << "Impossible de decoder la donnee source";
             EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
             fond->setBbox(bbox);
             delete[] ndvalue;
@@ -415,7 +406,7 @@ Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<
     }
     //----
 
-    LOGGER_INFO("Create an image from a request");
+    BOOST_LOG_TRIVIAL(info) << "Create an image from a request";
 
     //----creation de la requete
     //on adapte la bbox de la future requete aux données
@@ -423,7 +414,7 @@ Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<
 
     //on cree la requete en fonction de la nouvelle bbox
     if (dataBbox.isNull()) {
-        LOGGER_DEBUG ("New Bbox is null");
+        BOOST_LOG_TRIVIAL(debug) << "New Bbox is null";
         EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
         fond->setBbox(bbox);
         delete[] ndvalue;
@@ -467,12 +458,12 @@ Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<
         newHeight += 2;
         newWidth += 2;
 
-        LOGGER_DEBUG ( "New Width = " << newWidth << " " <<  "New Height = " << newHeight );
-        LOGGER_DEBUG (  "ratio_x = "  << ratio_x << " " <<  "ratio_y = " << ratio_y );
+        BOOST_LOG_TRIVIAL(debug) <<  "New Width = " << newWidth << " " <<  "New Height = " << newHeight ;
+        BOOST_LOG_TRIVIAL(debug) <<   "ratio_x = "  << ratio_x << " " <<  "ratio_y = " << ratio_y ;
 
         if ( (1/ratio_x > 5 && newWidth < 3) || (newHeight < 3 && 1/ratio_y > 5) || (newWidth <= 0 || newHeight <= 0)){
             //Too small BBox
-            LOGGER_DEBUG ("New Bbox's size too small. Can't hope to have an image");
+            BOOST_LOG_TRIVIAL(debug) << "New Bbox's size too small. Can't hope to have an image";
             EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
             fond->setBbox(bbox);
             delete[] ndvalue;
@@ -518,7 +509,7 @@ Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<
     }
 
     if (nbRequestH > 1 || nbRequestW > 1) {
-        LOGGER_DEBUG("Multiple request will be performed to compute the image");
+        BOOST_LOG_TRIVIAL(debug) << "Multiple request will be performed to compute the image";
     }
 
 
@@ -541,7 +532,7 @@ Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<
 
             request = createWMSGetMapRequest(requestBbox,newWidth,newHeight);
 
-            LOGGER_DEBUG("Request => " << request);
+            BOOST_LOG_TRIVIAL(debug) << "Request => " << request;
             //----
 
             //----on récupère la donnée brute
@@ -551,7 +542,7 @@ Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<
             //----on la transforme en image
             if (rawData) {
 
-                LOGGER_DEBUG("Decode Data");
+                BOOST_LOG_TRIVIAL(debug) << "Decode Data";
                 //on la décode
                 Rok4Format::eformat_data fmt = Rok4Format::fromMimeType(format);
                 if ( fmt == Rok4Format::TIFF_JPG_INT8 ) {
@@ -574,13 +565,13 @@ Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<
                         img = FIF.createLibpngImageToReadFromBuffer(rawStream,requestBbox,resx,resy);
                         delete rawStream;
                     } else {
-                        LOGGER_ERROR("Impossible de transformer la donnee en flux");
+                        BOOST_LOG_TRIVIAL(error) << "Impossible de transformer la donnee en flux";
                     }
 
                 }
 
                 if (img == NULL) {
-                    LOGGER_ERROR("Impossible de decoder la donnee source");
+                    BOOST_LOG_TRIVIAL(error) << "Impossible de decoder la donnee source";
                     EmptyImage* fond = new EmptyImage(width, height, channels, ndvalue);
                     fond->setBbox(bbox);
                     delete[] ndvalue;
@@ -592,7 +583,7 @@ Image * WebMapService::createSlabFromRequest(int width, int height, BoundingBox<
 
 
             } else {
-                LOGGER_ERROR("No Raw Data...");
+                BOOST_LOG_TRIVIAL(error) << "No Raw Data...";
                 delete[] ndvalue;
                 return finalImage;
             }

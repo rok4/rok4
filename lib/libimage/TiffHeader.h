@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -39,7 +39,7 @@
 #define _TIFFHEADER_
 #include "Format.h"
 #include "Image.h"
-
+#include <vector>
 
 
 namespace TiffHeader {
@@ -617,13 +617,13 @@ static uint8_t* insertGeoTags ( Image* image, uint8_t* header, size_t* sizeHeade
     CRS crs = image->getCRS();
     
     if ( &crs == NULL ){
-        LOGGER_ERROR("L'objet image n'a pas de géoréférencement.");
+        BOOST_LOG_TRIVIAL(error) << "L'objet image n'a pas de géoréférencement.";
         return header;
     }
     
     std::string projName = crs.getProj4Param("proj");
     if ( projName == "" ) {
-      LOGGER_ERROR("La projection de l'image est vide.");
+      BOOST_LOG_TRIVIAL(error) << "La projection de l'image est vide.";
       return header;
     }
     
@@ -676,7 +676,7 @@ static uint8_t* insertGeoTags ( Image* image, uint8_t* header, size_t* sizeHeade
     //GeogSemiMajorAxisGeoKey : into GeoDoubleParams(34736)
     if ( crs.getProj4Param("a") != "" ){
       if ( !sscanf ( crs.getProj4Param("a").c_str(),"%lf",&doubletmp ) ) {
-        LOGGER_ERROR("Impossible de parser le demi grand axe de la definition proj4");
+        BOOST_LOG_TRIVIAL(error) << "Impossible de parser le demi grand axe de la definition proj4";
       } else {
         appendToGeoKeyDirectory(GeoKeyDirectory,&GeoKeyDirectorySize,2057,34736,1,GeoDoubleParamsSize);
         appendToGeoDoubleParams(GeoDoubleParams,&GeoDoubleParamsSize, doubletmp);
@@ -685,7 +685,7 @@ static uint8_t* insertGeoTags ( Image* image, uint8_t* header, size_t* sizeHeade
     //GeogSemiMinorAxisGeoKey : into GeoDoubleParams(34736)
     if ( crs.getProj4Param("b") != "" ){
       if ( !sscanf ( crs.getProj4Param("b").c_str(),"%lf",&doubletmp ) ) {
-        LOGGER_ERROR("Impossible de parser le demi petit axe de la definition proj4");
+        BOOST_LOG_TRIVIAL(error) << "Impossible de parser le demi petit axe de la definition proj4";
       } else {
         appendToGeoKeyDirectory(GeoKeyDirectory,&GeoKeyDirectorySize,2058,34736,1,GeoDoubleParamsSize);
         appendToGeoDoubleParams(GeoDoubleParams,&GeoDoubleParamsSize, doubletmp);
@@ -694,7 +694,7 @@ static uint8_t* insertGeoTags ( Image* image, uint8_t* header, size_t* sizeHeade
     //GeogInvFlatteningGeoKey : into GeoDoubleParams(34736)
     if ( crs.getProj4Param("rf") != "" ){
       if ( !sscanf ( crs.getProj4Param("rf").c_str(),"%lf",&doubletmp ) ) {
-        LOGGER_ERROR("Impossible de parser l'inverse du coefficient d'applatissement de la definition proj4");
+        BOOST_LOG_TRIVIAL(error) << "Impossible de parser l'inverse du coefficient d'applatissement de la definition proj4";
       } else {
         appendToGeoKeyDirectory(GeoKeyDirectory,&GeoKeyDirectorySize,2059,34736,1,GeoDoubleParamsSize);
         appendToGeoDoubleParams(GeoDoubleParams,&GeoDoubleParamsSize, doubletmp);
@@ -703,7 +703,7 @@ static uint8_t* insertGeoTags ( Image* image, uint8_t* header, size_t* sizeHeade
     //GeogPrimeMeridianLongGeoKey : into GeoDoubleParams(34736)
     if ( crs.getProj4Param("pm") != "" ){
       if ( !sscanf ( crs.getProj4Param("pm").c_str(),"%lf",&doubletmp ) ) {
-        LOGGER_ERROR("Impossible de parser le meridien d'origine de la definition proj4");
+        BOOST_LOG_TRIVIAL(error) << "Impossible de parser le meridien d'origine de la definition proj4";
       } else {
         appendToGeoKeyDirectory(GeoKeyDirectory,&GeoKeyDirectorySize,2061,34736,1,GeoDoubleParamsSize);
         appendToGeoDoubleParams(GeoDoubleParams,&GeoDoubleParamsSize, doubletmp);
@@ -723,12 +723,12 @@ static uint8_t* insertGeoTags ( Image* image, uint8_t* header, size_t* sizeHeade
         pos= find+1;
       }
       if ( towgs84V.size() != 3 && towgs84V.size() != 7 ) {
-        LOGGER_ERROR("Le prarametre +towgs84 de la definition proj4 n'a pas le nombre d'elements approprie");
+        BOOST_LOG_TRIVIAL(error) << "Le prarametre +towgs84 de la definition proj4 n'a pas le nombre d'elements approprie";
       }
       double towgs84Dbl[towgs84V.size()];
       for (size_t i = 0; i < towgs84V.size();i++) {
         if ( sscanf ( towgs84V.at(i).c_str(),"%lf",&(towgs84Dbl[i]) ) !=1 ) {
-            LOGGER_ERROR("Impossible de parser un parametre de towgs84 de la definition proj4");
+            BOOST_LOG_TRIVIAL(error) << "Impossible de parser un parametre de towgs84 de la definition proj4";
         }
       }
       
@@ -739,7 +739,7 @@ static uint8_t* insertGeoTags ( Image* image, uint8_t* header, size_t* sizeHeade
       
     }
     //End of Geographic CS Parameter Keys
-    LOGGER_DEBUG("Ajout de la projection "+projName);
+    BOOST_LOG_TRIVIAL(debug) << "Ajout de la projection "+projName;
     if ( projName != "longlat" ) {
         //GeographicTypeGeoKey
         const projParams * myProjParams = NULL;
@@ -791,7 +791,7 @@ static uint8_t* insertGeoTags ( Image* image, uint8_t* header, size_t* sizeHeade
             myProjParams = &VANDG;
         }
         if ( myProjParams == NULL ){
-            LOGGER_ERROR("La projection de l'image n'est pas supportée.");
+            BOOST_LOG_TRIVIAL(error) << "La projection de l'image n'est pas supportée.";
             return header;
         }
         
@@ -812,9 +812,9 @@ static uint8_t* insertGeoTags ( Image* image, uint8_t* header, size_t* sizeHeade
             //Phi0
             if (crs.getProj4Param("zone") != ""){
                 if ( sscanf ( crs.getProj4Param("zone").c_str(),"%lf",&doubletmp ) !=1 ) {
-                    LOGGER_ERROR("Impossible de parser le parametre zone de la definition proj4");
+                    BOOST_LOG_TRIVIAL(error) << "Impossible de parser le parametre zone de la definition proj4";
                 } else {
-                    LOGGER_DEBUG("Ajout du parametre zone avec la valeur "+crs.getProj4Param("zone"));
+                    BOOST_LOG_TRIVIAL(debug) << "Ajout du parametre zone avec la valeur "+crs.getProj4Param("zone");
                     doubletmp = doubletmp * 6 - 183;
                     appendToGeoKeyDirectory(GeoKeyDirectory,&GeoKeyDirectorySize,3080 ,34736,1,GeoDoubleParamsSize);
                     appendToGeoDoubleParams(GeoDoubleParams,&GeoDoubleParamsSize, doubletmp);
@@ -832,7 +832,7 @@ static uint8_t* insertGeoTags ( Image* image, uint8_t* header, size_t* sizeHeade
                     appendToGeoKeyDirectory(GeoKeyDirectory,&GeoKeyDirectorySize,3083 ,34736,1,GeoDoubleParamsSize);
                     appendToGeoDoubleParams(GeoDoubleParams,&GeoDoubleParamsSize, 0.0);
                 } else {
-                    LOGGER_ERROR("Impossible de parser le parametre south/north donc Y0 de la definition proj4");
+                    BOOST_LOG_TRIVIAL(error) << "Impossible de parser le parametre south/north donc Y0 de la definition proj4";
                 }
             }
             //k
@@ -843,9 +843,9 @@ static uint8_t* insertGeoTags ( Image* image, uint8_t* header, size_t* sizeHeade
             for (size_t i = 0; i < myProjParams->nbparam; i ++) {
                 if (crs.getProj4Param(myProjParams->listparam[i].proj) != ""){
                     if ( sscanf ( crs.getProj4Param(myProjParams->listparam[i].proj).c_str(),"%lf",&doubletmp ) !=1 ) {
-                        LOGGER_ERROR("Impossible de parser le parametre " + myProjParams->listparam[i].proj + " de la definition proj4");
+                        BOOST_LOG_TRIVIAL(error) << "Impossible de parser le parametre " + myProjParams->listparam[i].proj + " de la definition proj4";
                     } else {
-                LOGGER_DEBUG("Ajout du parametre "+myProjParams->listparam[i].proj+" avec la valeur "+crs.getProj4Param(myProjParams->listparam[i].proj).c_str());
+                BOOST_LOG_TRIVIAL(debug) << "Ajout du parametre "+myProjParams->listparam[i].proj+" avec la valeur "+crs.getProj4Param(myProjParams->listparam[i].proj).c_str();
                         appendToGeoKeyDirectory(GeoKeyDirectory,&GeoKeyDirectorySize,myProjParams->listparam[i].geotifftag ,34736,1,GeoDoubleParamsSize);
                         appendToGeoDoubleParams(GeoDoubleParams,&GeoDoubleParamsSize, doubletmp);
                     }
@@ -860,7 +860,7 @@ static uint8_t* insertGeoTags ( Image* image, uint8_t* header, size_t* sizeHeade
     
     
     //Close the GeoKeyDirectory and set size
-    LOGGER_DEBUG("Fermeture de GeoKeyDirectory");
+    BOOST_LOG_TRIVIAL(debug) << "Fermeture de GeoKeyDirectory";
     appendToGeoKeyDirectory(GeoKeyDirectory,&GeoKeyDirectorySize,0,0,0,0);
     *(GeoKeyDirectory+3)=(uint16_t) ((GeoKeyDirectorySize-2));
     
@@ -874,27 +874,27 @@ static uint8_t* insertGeoTags ( Image* image, uint8_t* header, size_t* sizeHeade
     new_header = new uint8_t[new_sizeHeader];
     size_t new_offset;
     uint16_t old_nbTag = *(header+8);
-    LOGGER_DEBUG("Copie du début de l'en-tête");
+    BOOST_LOG_TRIVIAL(debug) << "Copie du début de l'en-tête";
     memcpy(new_header,header,10+12*old_nbTag);
     new_offset = 10+12*old_nbTag;
     * ( (uint16_t*) (new_header+8) ) =old_nbTag+5;
-    LOGGER_DEBUG("Mise à jour des pointeurs");
+    BOOST_LOG_TRIVIAL(debug) << "Mise à jour des pointeurs";
     for (uint16_t i = 0;i<old_nbTag;i++) {
         if (((uint32_t)*(new_header+14+i*12)) != 1 ){
             *((uint32_t*)(new_header+18+i*12)) = *((uint32_t*)(new_header+18+i*12))+60;
         }
     }
     
-    LOGGER_DEBUG("Ajout de la partie Geotiff");
+    BOOST_LOG_TRIVIAL(debug) << "Ajout de la partie Geotiff";
     mempcpy(new_header+new_offset, GEOTIFF_HEADER_PART, GEOTIFF_HEADER_PART_SIZE );
     new_offset+=GEOTIFF_HEADER_PART_SIZE;
     
-    LOGGER_DEBUG("Copie IFD et Fin de l'en-tête");
+    BOOST_LOG_TRIVIAL(debug) << "Copie IFD et Fin de l'en-tête";
     memcpy(new_header+new_offset, header+10+12*old_nbTag, *sizeHeader-10-12*old_nbTag);
     new_offset+= *sizeHeader-10-12*old_nbTag;
     
     //append ModelPixelScaleTag
-    LOGGER_DEBUG("Ajout de ModelPixelScaleTag");
+    BOOST_LOG_TRIVIAL(debug) << "Ajout de ModelPixelScaleTag";
     *((uint32_t*)(new_header+10+12*old_nbTag+8)) = (uint32_t) new_offset;
     double* ModelPixelScaleTag;
     ModelPixelScaleTag = new double[3];
@@ -906,7 +906,7 @@ static uint8_t* insertGeoTags ( Image* image, uint8_t* header, size_t* sizeHeade
     delete[] ModelPixelScaleTag;
 
     //append ModelTiepointTag
-    LOGGER_DEBUG("Ajout de ModelTiepointTag");
+    BOOST_LOG_TRIVIAL(debug) << "Ajout de ModelTiepointTag";
     *((uint32_t*)(new_header+10+12*old_nbTag+20)) = (uint32_t) new_offset;
     double* ModelTiepointTag;
     ModelTiepointTag = new double[6];
@@ -921,7 +921,7 @@ static uint8_t* insertGeoTags ( Image* image, uint8_t* header, size_t* sizeHeade
     delete[] ModelTiepointTag;
 
     //append GeoKeyDirectoryTag
-    LOGGER_DEBUG("Ajout de GeoKeyDirectoryTag");
+    BOOST_LOG_TRIVIAL(debug) << "Ajout de GeoKeyDirectoryTag";
     *((uint32_t*)(new_header+10+12*old_nbTag+28)) = (uint32_t) GeoKeyDirectorySize*4;
     *((uint32_t*)(new_header+10+12*old_nbTag+32)) = (uint32_t) new_offset;
     memcpy(new_header+new_offset, GeoKeyDirectory, GeoKeyDirectorySize*4*sizeof(uint16_t));
@@ -929,7 +929,7 @@ static uint8_t* insertGeoTags ( Image* image, uint8_t* header, size_t* sizeHeade
     delete[] GeoKeyDirectory;
   
     //append GeoDoubleParamsTag
-    LOGGER_DEBUG("Ajout de GeoDoubleParamsTag");
+    BOOST_LOG_TRIVIAL(debug) << "Ajout de GeoDoubleParamsTag";
     *((uint32_t*)(new_header+10+12*old_nbTag+40)) = (uint32_t) GeoDoubleParamsSize;
     *((uint32_t*)(new_header+10+12*old_nbTag+44)) = (uint32_t) new_offset;
     memcpy(new_header+new_offset, GeoDoubleParams, GeoDoubleParamsSize*sizeof(double));
@@ -937,7 +937,7 @@ static uint8_t* insertGeoTags ( Image* image, uint8_t* header, size_t* sizeHeade
     delete[] GeoDoubleParams;
 
     //append GeoAsciiParamsTag
-    LOGGER_DEBUG("Ajout de GeoAsciiParamsTag");
+    BOOST_LOG_TRIVIAL(debug) << "Ajout de GeoAsciiParamsTag";
     *((uint32_t*)(new_header+10+12*old_nbTag+52)) = (uint32_t) GeoAsciiParams.size()+1;
     *((uint32_t*)(new_header+10+12*old_nbTag+56)) = (uint32_t) new_offset;
     char* charAscii = const_cast<char*>(GeoAsciiParams.c_str());

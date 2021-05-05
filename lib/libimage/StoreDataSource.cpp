@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -51,7 +51,7 @@
 
 #include "StoreDataSource.h"
 #include <fcntl.h>
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include <cstdio>
 #include <errno.h>
 #include "Rok4Image.h"
@@ -101,7 +101,7 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
         data = new uint8_t[possize];
         int tileSize = context->read(data, posoff, possize, name);
         if (tileSize < 0) {
-            LOGGER_ERROR ( "Erreur lors de la lecture de la tuile dans l'objet (sans passer par l'index) " << name );
+            BOOST_LOG_TRIVIAL(error) <<  "Erreur lors de la lecture de la tuile dans l'objet (sans passer par l'index) " << name ;
             delete[] data;
             data = NULL;
             return NULL;
@@ -114,7 +114,7 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
         int realSize = context->read(indexheader, 0, headerIndexSize, name);
 
         if ( realSize < 0) {
-            LOGGER_ERROR ( "Erreur lors de la lecture du header et de l'index dans l'objet/fichier " << name );
+            BOOST_LOG_TRIVIAL(error) <<  "Erreur lors de la lecture du header et de l'index dans l'objet/fichier " << name ;
             delete[] indexheader;
             return NULL;
         }
@@ -123,7 +123,7 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
 
             // Dans le cas d'un header de type objet lien, on verifie d'abord que la signature concernée est bien presente dans le header de l'objet
             if ( strncmp((char*) indexheader, ROK4_SYMLINK_SIGNATURE, ROK4_SYMLINK_SIGNATURE_SIZE) != 0 ) {
-                LOGGER_ERROR ( "Erreur lors de la lecture du header, l'objet " << name << " ne correspond pas à un objet lien " );
+                BOOST_LOG_TRIVIAL(error) <<  "Erreur lors de la lecture du header, l'objet " << name << " ne correspond pas à un objet lien " ;
                 delete[] indexheader;
                 return NULL;
             }
@@ -135,17 +135,17 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
             tmpName[realSize-ROK4_SYMLINK_SIGNATURE_SIZE] = '\0';
             name = std::string (tmpName);
 
-            LOGGER_DEBUG ( "Dalle symbolique détectée : " << originalName << " référence une autre dalle symbolique " << name );
+            BOOST_LOG_TRIVIAL(debug) <<  "Dalle symbolique détectée : " << originalName << " référence une autre dalle symbolique " << name ;
 
             int realSize = context->read(indexheader, 0, headerIndexSize, name);
 
             if ( realSize < 0) {
-                LOGGER_ERROR ( "Erreur lors de la lecture du header et de l'index dans l'objet/fichier " << name );
+                BOOST_LOG_TRIVIAL(error) <<  "Erreur lors de la lecture du header et de l'index dans l'objet/fichier " << name ;
                 delete[] indexheader;
                 return NULL;
             }
             if ( realSize < ROK4_IMAGE_HEADER_SIZE ) {
-                LOGGER_ERROR ( "Erreur lors de la lecture : une dalle symbolique " << originalName << " référence une autre dalle symbolique " << name );
+                BOOST_LOG_TRIVIAL(error) <<  "Erreur lors de la lecture : une dalle symbolique " << originalName << " référence une autre dalle symbolique " << name ;
                 delete[] indexheader;
                 return NULL;
             }
@@ -160,14 +160,14 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
         // (et qui pourraient indiquer des tailles de tuiles excessives)
 
         if ( tileSize > MAX_TILE_SIZE ) {
-            LOGGER_ERROR ( "Tuile trop volumineuse dans le fichier/objet " << name ) ;
+            BOOST_LOG_TRIVIAL(error) <<  "Tuile trop volumineuse dans le fichier/objet " << name  ;
             delete[] indexheader;
             return NULL;
         }
 
 
         if ( tileSize == 0 ) {
-            LOGGER_DEBUG ( "Tuile non présente dans la dalle (taille nulle) " << name ) ;
+            BOOST_LOG_TRIVIAL(debug) <<  "Tuile non présente dans la dalle (taille nulle) " << name  ;
             delete[] indexheader;
             return NULL;
         }
@@ -177,7 +177,7 @@ const uint8_t* StoreDataSource::getData ( size_t &tile_size ) {
         if (context->read(data, tileOffset, tileSize, name) < 0) {
             delete[] data;
             data = NULL;
-            LOGGER_ERROR ( "Erreur lors de la lecture de la tuile dans l'objet " << name );
+            BOOST_LOG_TRIVIAL(error) <<  "Erreur lors de la lecture de la tuile dans l'objet " << name ;
             delete[] indexheader;
             return NULL;
         }

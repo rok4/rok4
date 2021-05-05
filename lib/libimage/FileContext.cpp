@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -64,20 +64,20 @@ bool FileContext::connection() {
 
 int FileContext::read(uint8_t* data, int offset, int size, std::string name) {
     std::string fullName = root_dir + name;
-    LOGGER_DEBUG("File read : " << size << " bytes (from the " << offset << " one) in the file " << fullName);
+    BOOST_LOG_TRIVIAL(debug) << "File read : " << size << " bytes (from the " << offset << " one) in the file " << fullName;
 
     // Ouverture du fichier
     int fildes = open( fullName.c_str(), O_RDONLY );
     if ( fildes < 0 ) {
-        LOGGER_DEBUG ( "Can't open file " << fullName );
+        BOOST_LOG_TRIVIAL(debug) <<  "Can't open file " << fullName ;
         return -1;
     }
 
     size_t read_size = pread ( fildes, data, size, offset );
 
     if ( read_size != size ) {
-        LOGGER_ERROR ( "Impossible de lire la tuile dans le fichier " << fullName );
-        if ( read_size<0 ) LOGGER_ERROR ( "Code erreur="<<errno );
+        BOOST_LOG_TRIVIAL(error) <<  "Impossible de lire la tuile dans le fichier " << fullName ;
+        if ( read_size<0 ) BOOST_LOG_TRIVIAL(error) <<  "Code erreur="<<errno ;
         close ( fildes );
         return -1;
     }
@@ -90,10 +90,10 @@ int FileContext::read(uint8_t* data, int offset, int size, std::string name) {
 
 bool FileContext::write(uint8_t* data, int offset, int size, std::string name) {
     std::string fullName = root_dir + name;
-    LOGGER_DEBUG("File write : " << size << " bytes (from the " << offset << " one) in the file " << fullName);
+    BOOST_LOG_TRIVIAL(debug) << "File write : " << size << " bytes (from the " << offset << " one) in the file " << fullName;
 
     if ( !output ) {
-        LOGGER_ERROR("Not open output file " << fullName);
+        BOOST_LOG_TRIVIAL(error) << "Not open output file " << fullName;
         return false;
     }
 
@@ -107,10 +107,10 @@ bool FileContext::write(uint8_t* data, int offset, int size, std::string name) {
 
 bool FileContext::writeFull(uint8_t* data, int size, std::string name) {
     std::string fullName = root_dir + name;
-    LOGGER_DEBUG("File write : " << size << " bytes (one shot) in the file " << fullName);
+    BOOST_LOG_TRIVIAL(debug) << "File write : " << size << " bytes (one shot) in the file " << fullName;
 
     if ( !output ) {
-        LOGGER_ERROR("Not open output file " << fullName);
+        BOOST_LOG_TRIVIAL(error) << "Not open output file " << fullName;
         return false;
     }
 
@@ -119,8 +119,8 @@ bool FileContext::writeFull(uint8_t* data, int size, std::string name) {
     return true;
 }
 
-eContextType FileContext::getType() {
-    return FILECONTEXT;
+ContextType::eContextType FileContext::getType() {
+    return ContextType::FILECONTEXT;
 }
 
 std::string FileContext::getTypeStr() {
@@ -130,3 +130,41 @@ std::string FileContext::getTypeStr() {
 std::string FileContext::getTray() {
     return root_dir;
 }
+
+/*
+ * Tableau statique des caractères Base36 (pour systeme de fichier non case-sensitive)
+ */
+// static const char* Base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-";
+static const char* Base36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+
+std::string FileContext::getPath(std::string racine,int x,int y,int pathDepth){
+
+    int pos;
+    char path[32];
+    path[sizeof ( path ) - 5] = '.';
+    path[sizeof ( path ) - 4] = 't';
+    path[sizeof ( path ) - 3] = 'i';
+    path[sizeof ( path ) - 2] = 'f';
+    path[sizeof ( path ) - 1] = 0;
+    pos = sizeof ( path ) - 6;
+
+    for ( int d = 0; d < pathDepth; d++ ) {
+        path[pos--] = Base36[y % 36];
+        path[pos--] = Base36[x % 36];
+        path[pos--] = '/';
+        x = x / 36;
+        y = y / 36;
+    }
+    do {             
+        path[pos--] = Base36[y % 36];
+        path[pos--] = Base36[x % 36];
+        x = x / 36;
+        y = y / 36;
+    } while ( x || y );
+    path[pos] = '/';
+
+    return racine + ( path + pos );
+
+}
+

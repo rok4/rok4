@@ -2,7 +2,7 @@
  * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -36,7 +36,6 @@
  */
 
 class ServerXML;
-struct Proxy;
 
 #ifndef SERVERXML_H
 #define SERVERXML_H
@@ -51,17 +50,11 @@ struct Proxy;
 #include "Style.h"
 
 #include "config.h"
-#include "intl.h"
 #include "Rok4Server.h"
 
 #if BUILD_OBJECT
 #include "ContextBook.h"
 #endif
-
-struct Proxy {
-    std::string proxyName;
-    std::string noProxy;
-};
 
 
 class ServerXML : public DocumentXML
@@ -74,10 +67,10 @@ class ServerXML : public DocumentXML
 
         bool isOk() ;
 
-        LogOutput getLogOutput() ;
+        std::string getLogOutput() ;
         int getLogFilePeriod() ;
         std::string getLogFilePrefix() ;
-        LogLevel getLogLevel() ;
+        boost::log::v2_mt_posix::trivial::severity_level getLogLevel() ;
 
         std::string getServicesConfigFile() ;
 
@@ -105,9 +98,8 @@ class ServerXML : public DocumentXML
         Layer* getLayer(std::string id) ;
 
 #if BUILD_OBJECT
-        ContextBook* getCephContextBook();
-        ContextBook* getS3ContextBook();
-        ContextBook* getSwiftContextBook();
+        ContextBook* getContextBook() ;
+
         int getReconnectionFrequency() ;
 #endif
         
@@ -118,7 +110,6 @@ class ServerXML : public DocumentXML
         bool getSupportWMS() ;
         bool getReprojectionCapability() ;
         int getBacklog() ;
-        Proxy getProxy() ;
         int getTimeKill() ;
 
     protected:
@@ -126,10 +117,10 @@ class ServerXML : public DocumentXML
         std::string serverConfigFile;
         std::string servicesConfigFile;
 
-        LogOutput logOutput;
+        std::string logOutput;
         std::string logFilePrefix;
         int logFilePeriod;
-        LogLevel logLevel;
+        boost::log::v2_mt_posix::trivial::severity_level logLevel;
 
         int nbThread;
 
@@ -186,33 +177,21 @@ class ServerXML : public DocumentXML
 
         int timeKill;
 
+
+        /**
+         * \~french \brief Annuaire des contextes de stockage
+         * \~english \brief Storage context's book
+         */
+        ContextBook* objectBook;
+
+
 #if BUILD_OBJECT
-        std::string cephName;
-        std::string cephUser;
-        std::string cephConf;
-
-        std::string s3URL;
-        std::string s3AccessKey;
-        std::string s3SecretKey;
-
-        std::string swiftAuthUrl;
-        std::string swiftUserName;
-        std::string swiftUserPassword;
 
         int reconnectionFrequency;
 
-        ContextBook* cephBook;
-        ContextBook* s3Book;
-        ContextBook* swiftBook;
 #endif
 
         int nbProcess;
-
-        /**
-         * \~french \brief Proxy utilisé par défaut pour des requêtes WMS
-         * \~english \brief Default proxy used for WMS requests
-         */
-        Proxy proxy;
 
     private:
 

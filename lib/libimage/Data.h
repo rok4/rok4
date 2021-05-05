@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -44,7 +44,7 @@
 #include <cstring> // pour memcpy
 #include <algorithm>
 
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 
 /**
  * Interface abstraite permetant d'encapsuler une source de données.
@@ -320,7 +320,7 @@ public:
     /**
      * Constructeur.
      */
-    RawDataSource ( uint8_t *dat, size_t dataS){
+    RawDataSource ( const uint8_t *dat, size_t dataS){
         dataSize = dataS;
         data = new uint8_t[dataSize];
         memcpy ( data, dat, dataSize );

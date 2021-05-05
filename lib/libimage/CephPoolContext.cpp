@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -50,26 +50,24 @@
 #include "CephPoolContext.h"
 #include <stdlib.h>
 
-CephPoolContext::CephPoolContext (std::string cluster, std::string user, std::string conf, std::string pool) : Context(), cluster_name(cluster), user_name(user), conf_file(conf), pool_name(pool) {
-}
 
 CephPoolContext::CephPoolContext (std::string pool) : Context(), pool_name(pool) {
 
-    char* cluster = getenv ("ROK4_CEPH_CLUSTERNAME");
+    char* cluster = getenv (ROK4_CEPH_CLUSTERNAME);
     if (cluster == NULL) {
         cluster_name.assign("ceph");
     } else {
         cluster_name.assign(cluster);
     }
 
-    char* user = getenv ("ROK4_CEPH_USERNAME");
+    char* user = getenv (ROK4_CEPH_USERNAME);
     if (user == NULL) {
         user_name.assign("client.admin");
     } else {
         user_name.assign(user);
     }
 
-    char* conf = getenv ("ROK4_CEPH_CONFFILE");
+    char* conf = getenv (ROK4_CEPH_CONFFILE);
     if (conf == NULL) {
         conf_file.assign("/etc/ceph/ceph.conf");
     } else {
@@ -79,53 +77,57 @@ CephPoolContext::CephPoolContext (std::string pool) : Context(), pool_name(pool)
 
 bool CephPoolContext::connection() {
 
+    if (! connected) {
+        uint64_t flags;
+        int ret = 0;
 
-    uint64_t flags;
-    int ret = 0;
+        ret = rados_create2(&cluster, cluster_name.c_str(), user_name.c_str(), flags);
+        if (ret < 0) {
+            BOOST_LOG_TRIVIAL(error) << "Couldn't initialize the cluster handle! error " << ret;
+            return false;
+        }
 
-    ret = rados_create2(&cluster, cluster_name.c_str(), user_name.c_str(), flags);
-    if (ret < 0) {
-        LOGGER_ERROR("Couldn't initialize the cluster handle! error " << ret);
-        return false;
+        ret = rados_conf_read_file(cluster, conf_file.c_str());
+        if (ret < 0) {
+            BOOST_LOG_TRIVIAL(error) <<  "Couldn't read the Ceph configuration file! error " << ret ;
+            BOOST_LOG_TRIVIAL(error) << strerror(-ret);
+            BOOST_LOG_TRIVIAL(error) <<  "Configuration file : " << conf_file ;
+            return false;
+        }
+
+        // On met les timeout à 10 minutes
+        rados_conf_set(cluster, "client_mount_timeout", "60");
+        rados_conf_set(cluster, "rados_mon_op_timeout", "60");
+        rados_conf_set(cluster, "rados_osd_op_timeout", "60");
+
+        ret = rados_connect(cluster);
+        if (ret < 0) {
+            BOOST_LOG_TRIVIAL(error) <<  "Couldn't connect to cluster! error " << ret ;
+            BOOST_LOG_TRIVIAL(error) << strerror(-ret);
+            return false;
+        }
+
+        ret = rados_ioctx_create(cluster, pool_name.c_str(), &io_ctx);
+        if (ret < 0) {
+            BOOST_LOG_TRIVIAL(error) <<  "Couldn't set up ioctx! error " << ret ;
+            BOOST_LOG_TRIVIAL(error) << strerror(-ret);
+            BOOST_LOG_TRIVIAL(error) <<  "Pool : " << pool_name ;
+            rados_shutdown(cluster);
+            return false;
+        }
+
+        connected = true;
     }
-
-    ret = rados_conf_read_file(cluster, conf_file.c_str());
-    if (ret < 0) {
-        LOGGER_ERROR( "Couldn't read the Ceph configuration file! error " << ret );
-        LOGGER_ERROR (strerror(-ret));
-        LOGGER_ERROR( "Configuration file : " << conf_file );
-        return false;
-    }
-
-    // On met les timeout à 10 minutes
-    rados_conf_set(cluster, "client_mount_timeout", "60");
-    rados_conf_set(cluster, "rados_mon_op_timeout", "60");
-    rados_conf_set(cluster, "rados_osd_op_timeout", "60");
-
-    ret = rados_connect(cluster);
-    if (ret < 0) {
-        LOGGER_ERROR( "Couldn't connect to cluster! error " << ret );
-        return false;
-    }
-
-    ret = rados_ioctx_create(cluster, pool_name.c_str(), &io_ctx);
-    if (ret < 0) {
-        LOGGER_ERROR( "Couldn't set up ioctx! error " << ret );
-        LOGGER_ERROR( "Pool : " << pool_name );
-        return false;
-    }
-
-    connected = true;
 
     return true;
 }
 
 int CephPoolContext::read(uint8_t* data, int offset, int size, std::string name) {
    
-    LOGGER_DEBUG("Ceph read : " << size << " bytes (from the " << offset << " one) in the object " << name);
+    BOOST_LOG_TRIVIAL(debug) << "Ceph read : " << size << " bytes (from the " << offset << " one) in the object " << name;
 
     if (! connected) {
-        LOGGER_ERROR("Try to read using the unconnected ceph pool context " << pool_name);
+        BOOST_LOG_TRIVIAL(error) << "Try to read using the unconnected ceph pool context " << pool_name;
         return -1;
     }
 
@@ -139,11 +141,11 @@ int CephPoolContext::read(uint8_t* data, int offset, int size, std::string name)
             error = true;
             // Seul le timeout donne lieu à une nouvelle tentative
             if (readSize == -ETIMEDOUT) {
-                LOGGER_WARN ( "Try " << attempt << " timed out" );
+                BOOST_LOG_TRIVIAL(warning) <<  "Try " << attempt << " timed out" ;
             } else {
-                LOGGER_ERROR ( "Try " << attempt << " failed" );
-                LOGGER_ERROR ("Error code: " << readSize );
-                LOGGER_ERROR (strerror(-readSize));
+                BOOST_LOG_TRIVIAL(error) <<  "Try " << attempt << " failed" ;
+                BOOST_LOG_TRIVIAL(error) << "Error code: " << readSize ;
+                BOOST_LOG_TRIVIAL(error) << strerror(-readSize);
                 break;
             }
         } else {
@@ -155,7 +157,7 @@ int CephPoolContext::read(uint8_t* data, int offset, int size, std::string name)
     }
 
     if (error) {
-        LOGGER_ERROR ( "Unable to read " << size << " bytes (from the " << offset << " one) in the object " << name  << " after " << attempt << " tries" );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to read " << size << " bytes (from the " << offset << " one) in the Ceph object " << name  << " after " << attempts << " tries" ;
     }
 
     return readSize;
@@ -163,12 +165,12 @@ int CephPoolContext::read(uint8_t* data, int offset, int size, std::string name)
 
 
 bool CephPoolContext::write(uint8_t* data, int offset, int size, std::string name) {
-    LOGGER_DEBUG("Ceph write : " << size << " bytes (from the " << offset << " one) in the writing buffer " << name);
+    BOOST_LOG_TRIVIAL(debug) << "Ceph write : " << size << " bytes (from the " << offset << " one) in the writing buffer " << name;
 
     std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
     if ( it1 == writingBuffers.end() ) {
         // pas de buffer pour ce nom d'objet
-        LOGGER_ERROR("No writing buffer for the name " << name);
+        BOOST_LOG_TRIVIAL(error) << "No writing buffer for the name " << name;
         return false;
     }
    
@@ -183,12 +185,12 @@ bool CephPoolContext::write(uint8_t* data, int offset, int size, std::string nam
 }
 
 bool CephPoolContext::writeFull(uint8_t* data, int size, std::string name) {
-    LOGGER_DEBUG("Ceph write : " << size << " bytes (one shot) in the writing buffer " << name);
+    BOOST_LOG_TRIVIAL(debug) << "Ceph write : " << size << " bytes (one shot) in the writing buffer " << name;
 
     std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
     if ( it1 == writingBuffers.end() ) {
         // pas de buffer pour ce nom d'objet
-        LOGGER_ERROR("No Ceph writing buffer for the name " << name);
+        BOOST_LOG_TRIVIAL(error) << "No Ceph writing buffer for the name " << name;
         return false;
     }
 
@@ -200,8 +202,8 @@ bool CephPoolContext::writeFull(uint8_t* data, int size, std::string name) {
     return true;
 }
 
-eContextType CephPoolContext::getType() {
-    return CEPHCONTEXT;
+ContextType::eContextType CephPoolContext::getType() {
+    return ContextType::CEPHCONTEXT;
 }
 
 std::string CephPoolContext::getTypeStr() {
@@ -216,7 +218,7 @@ bool CephPoolContext::openToWrite(std::string name) {
 
     std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
     if ( it1 != writingBuffers.end() ) {
-        LOGGER_ERROR("A Ceph writing buffer already exists for the name " << name);
+        BOOST_LOG_TRIVIAL(error) << "A Ceph writing buffer already exists for the name " << name;
         return false;
 
     } else {
@@ -232,36 +234,40 @@ bool CephPoolContext::closeToWrite(std::string name) {
 
     std::map<std::string, std::vector<char>*>::iterator it1 = writingBuffers.find ( name );
     if ( it1 == writingBuffers.end() ) {
-        LOGGER_ERROR("The Ceph writing buffer with name " << name << "does not exist, cannot flush it");
+        BOOST_LOG_TRIVIAL(error) << "The Ceph writing buffer with name " << name << "does not exist, cannot flush it";
         return false;
     }
 
+    BOOST_LOG_TRIVIAL(debug) << "Write buffered " << it1->second->size() << " bytes in the ceph object " << name;
 
-    LOGGER_DEBUG("Write buffered " << it1->second->size() << " bytes in the ceph object " << name);
-
-    int tentative = 1;
-    while(tentative <= 10) {
+    bool ok = true;
+    int attempt = 1;
+    while(attempt <= attempts) {
         int err = rados_write_full(io_ctx,name.c_str(), &((*(it1->second))[0]), it1->second->size());
         if (err < 0) {
-            LOGGER_WARN ( "Try " << tentative );
-            LOGGER_WARN ( "Unable to flush " << it1->second->size() << " bytes in the object " << name );
-            LOGGER_WARN (strerror(-err));
+            ok = false;
+            BOOST_LOG_TRIVIAL(warning) <<  "Try " << attempt ;
+            BOOST_LOG_TRIVIAL(warning) << "Error code: " << err ;
+            BOOST_LOG_TRIVIAL(warning) << strerror(-err);
         } else {
+            ok = true;
             break;
         }
 
-        tentative++;
+        attempt++;
         sleep(60);
     }
 
-    if (tentative == 11) {
-        LOGGER_ERROR ( "Unable to write after 10 tries" );
-        return false;
-    } else {
-        LOGGER_DEBUG("Erase the flushed buffer");
+    if (ok) {
+        BOOST_LOG_TRIVIAL(debug) << "Erase the flushed buffer";
         delete it1->second;
         writingBuffers.erase(it1);
-
-        return true;
+    } else {
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to flush " << it1->second->size() << " bytes in the object " << name << " after " << attempts << " tries" ;
     }
+    return ok;
+}
+
+std::string CephPoolContext::getPath(std::string racine,int x,int y,int pathDepth){
+    return racine + "_" + std::to_string(x) + "_" + std::to_string(y);
 }

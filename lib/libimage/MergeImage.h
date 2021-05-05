@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -58,6 +58,7 @@
 
 #include "Image.h"
 #include <string.h>
+#include <vector>
 #include "Format.h"
 
 /**
@@ -252,12 +253,12 @@ public:
      * \brief Merged image description output
      */
     void print() {
-        LOGGER_INFO ( "" );
-        LOGGER_INFO ( "------ MergeImage -------" );
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
+        BOOST_LOG_TRIVIAL(info) <<  "------ MergeImage -------" ;
         Image::print();
-        LOGGER_INFO ( "\t- Number of images = " << images.size() );
-        LOGGER_INFO ( "\t- Merge method : " << toString ( composition ) << "\n" );
-        LOGGER_INFO ( "\t- Background value : " << bgValue << "\n" );
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Number of images = " << images.size() ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Merge method : " << toString ( composition ) << "\n" ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Background value : " << bgValue << "\n" ;
     }
 };
 
@@ -339,8 +340,8 @@ public:
      * \brief Merged mask description output
      */
     void print() {
-        LOGGER_INFO ( "" );
-        LOGGER_INFO ( "------ MergeMask -------" );
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
+        BOOST_LOG_TRIVIAL(info) <<  "------ MergeMask -------" ;
         Image::print();
     }
 

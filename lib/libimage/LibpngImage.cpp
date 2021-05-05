@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -50,7 +50,7 @@
  */
 
 #include "LibpngImage.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Utils.h"
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -90,14 +90,14 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
     // Ouverture du fichier bianire en lecture
     FILE *file = fopen ( filename, "rb" );
     if ( !file ) {
-        LOGGER_ERROR ( "Unable to open the file (to read) " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Unable to open the file (to read) " << filename ;
         return NULL;
     }
     
     // Vérification de l'en-tête (8 octets), signature du PNG
     size_t size = fread ( header, 1, 8, file );
     if ( png_sig_cmp ( header, 0, 8 ) ) {
-        LOGGER_ERROR ( "Provided file is not recognized as a PNG file " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Provided file is not recognized as a PNG file " << filename ;
         return NULL;
     }
 
@@ -105,18 +105,18 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
     pngStruct = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 
     if (!pngStruct) {
-        LOGGER_ERROR ("Cannot create the PNG reading structure for image " << filename);
+        BOOST_LOG_TRIVIAL(error) << "Cannot create the PNG reading structure for image " << filename;
         return NULL;
     }
 
     pngInfo = png_create_info_struct(pngStruct);
     if (!pngInfo) {
-        LOGGER_ERROR ("Cannot create the PNG informations structure for image " << filename);
+        BOOST_LOG_TRIVIAL(error) << "Cannot create the PNG informations structure for image " << filename;
         return NULL;
     }
 
     if (setjmp(png_jmpbuf(pngStruct))) {
-        LOGGER_ERROR ("Error during PNG image initialization " << filename);
+        BOOST_LOG_TRIVIAL(error) << "Error during PNG image initialization " << filename;
         return NULL;
     }
 
@@ -140,14 +140,14 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
     /********************** CONTROLES **************************/
     
     if ( ! LibpngImage::canRead ( bitspersample, sf ) ) {
-        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( sf ) << " and " << bitspersample << " bits per sample" );
-        LOGGER_ERROR ( "\t for the image to read : " << filename );
+        BOOST_LOG_TRIVIAL(error) <<  "Not supported sample type : " << SampleFormat::toString ( sf ) << " and " << bitspersample << " bits per sample" ;
+        BOOST_LOG_TRIVIAL(error) <<  "\t for the image to read : " << filename ;
         return NULL;
     }
 
     if ( resx > 0 && resy > 0 ) {
         if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {
-            LOGGER_ERROR ( "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" );
+            BOOST_LOG_TRIVIAL(error) <<  "Resolutions, bounding box and real dimensions for image '" << filename << "' are not consistent" ;
             return NULL;
         }
     } else {
@@ -161,7 +161,7 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
     switch ( int(color_type) ) {
         case PNG_COLOR_TYPE_GRAY :
         {
-            LOGGER_DEBUG("Initial PNG color type PNG_COLOR_TYPE_GRAY");
+            BOOST_LOG_TRIVIAL(debug) << "Initial PNG color type PNG_COLOR_TYPE_GRAY";
             channels = 1;
             
             if (bit_depth < 8) {
@@ -172,38 +172,38 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
         }
         case PNG_COLOR_TYPE_GRAY_ALPHA :
         {
-            LOGGER_DEBUG("Initial PNG color type PNG_COLOR_TYPE_GRAY_ALPHA");
+            BOOST_LOG_TRIVIAL(debug) << "Initial PNG color type PNG_COLOR_TYPE_GRAY_ALPHA";
             channels = 2;
             break;            
         }
         case PNG_COLOR_TYPE_RGB :
         {
-            LOGGER_DEBUG("Initial PNG color type PNG_COLOR_TYPE_RGB");
+            BOOST_LOG_TRIVIAL(debug) << "Initial PNG color type PNG_COLOR_TYPE_RGB";
             channels = 3;
             break;
         }
         case PNG_COLOR_TYPE_PALETTE :
         {
-            LOGGER_DEBUG("Initial PNG color type PNG_COLOR_TYPE_PALETTE");
+            BOOST_LOG_TRIVIAL(debug) << "Initial PNG color type PNG_COLOR_TYPE_PALETTE";
             channels = 3;
             png_set_palette_to_rgb (pngStruct);
             break;
         }
         case PNG_COLOR_TYPE_RGB_ALPHA :
         {
-            LOGGER_DEBUG("Initial PNG color type PNG_COLOR_TYPE_RGB_ALPHA");
+            BOOST_LOG_TRIVIAL(debug) << "Initial PNG color type PNG_COLOR_TYPE_RGB_ALPHA";
             channels = 4;
             break;
         }
         default :
         {
-            LOGGER_ERROR("Cannot interpret the color type (" << int(color_type) << ") for the PNG image " << filename);
+            BOOST_LOG_TRIVIAL(error) << "Cannot interpret the color type (" << int(color_type) << ") for the PNG image " << filename;
             return NULL;
         }
     }
     
     if (png_get_valid(pngStruct, pngInfo, PNG_INFO_tRNS)) {
-        LOGGER_DEBUG("Convert tRNS to alpha sample for PNG image");        
+        BOOST_LOG_TRIVIAL(debug) << "Convert tRNS to alpha sample for PNG image";        
         png_set_tRNS_to_alpha(pngStruct);
         channels+=1;
     }
@@ -213,7 +213,7 @@ LibpngImage* LibpngImageFactory::createLibpngImageToRead ( char* filename, Bound
     /************** LECTURE DE L'IMAGE EN ENTIER ***************/
 
     if (setjmp(png_jmpbuf(pngStruct))) {
-        LOGGER_ERROR ("Error reading PNG image " << filename);
+        BOOST_LOG_TRIVIAL(error) << "Error reading PNG image " << filename;
         return NULL;
     }
 
@@ -242,7 +242,7 @@ void ReadDataFromInputStream(png_structp png_ptr, png_bytep outBytes, png_size_t
 
    png_voidp io_ptr = png_get_io_ptr(png_ptr);
    if(io_ptr == NULL) {
-       LOGGER_ERROR("Can't get io pointer");
+       BOOST_LOG_TRIVIAL(error) << "Can't get io pointer";
        return;
     }
 
@@ -250,7 +250,7 @@ void ReadDataFromInputStream(png_structp png_ptr, png_bytep outBytes, png_size_t
    const size_t bytesRead = inputStream.read((uint8_t*)outBytes,(size_t)byteCountToRead);
 
    if((png_size_t)bytesRead != byteCountToRead) {
-        LOGGER_ERROR("Can't get data from stream");
+        BOOST_LOG_TRIVIAL(error) << "Can't get data from stream";
         return;
     }
 }
@@ -267,11 +267,11 @@ LibpngImage* LibpngImageFactory::createLibpngImageToReadFromBuffer ( RawDataStre
     // Vérification de l'en-tête (8 octets), signature du PNG
     size_t read = rawStream->read(header,8);
     if (read < 0) {
-        LOGGER_ERROR ( "Can't read stream");
+        BOOST_LOG_TRIVIAL(error) <<  "Can't read stream";
         return NULL;
     }
     if ( png_sig_cmp ( header, 0, 8 ) ) {
-        LOGGER_ERROR ( "Provided buffer is not recognized as a PNG source ");
+        BOOST_LOG_TRIVIAL(error) <<  "Provided buffer is not recognized as a PNG source ";
         return NULL;
     }
 
@@ -279,18 +279,18 @@ LibpngImage* LibpngImageFactory::createLibpngImageToReadFromBuffer ( RawDataStre
     pngStruct = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 
     if (!pngStruct) {
-        LOGGER_ERROR ("Cannot create the PNG reading structure for image ");
+        BOOST_LOG_TRIVIAL(error) << "Cannot create the PNG reading structure for image ";
         return NULL;
     }
 
     pngInfo = png_create_info_struct(pngStruct);
     if (!pngInfo) {
-        LOGGER_ERROR ("Cannot create the PNG informations structure for image ");
+        BOOST_LOG_TRIVIAL(error) << "Cannot create the PNG informations structure for image ";
         return NULL;
     }
 
     if (setjmp(png_jmpbuf(pngStruct))) {
-        LOGGER_ERROR ("Error during PNG image initialization ");
+        BOOST_LOG_TRIVIAL(error) << "Error during PNG image initialization ";
         return NULL;
     }
 
@@ -314,14 +314,14 @@ LibpngImage* LibpngImageFactory::createLibpngImageToReadFromBuffer ( RawDataStre
     /********************** CONTROLES **************************/
 
     if ( ! LibpngImage::canRead ( bitspersample, sf ) ) {
-        LOGGER_ERROR ( "Not supported sample type : " << SampleFormat::toString ( sf ) << " and " << bitspersample << " bits per sample" );
-        LOGGER_ERROR ( "\t for the image to read : ");
+        BOOST_LOG_TRIVIAL(error) <<  "Not supported sample type : " << SampleFormat::toString ( sf ) << " and " << bitspersample << " bits per sample" ;
+        BOOST_LOG_TRIVIAL(error) <<  "\t for the image to read : ";
         return NULL;
     }
 
     if ( resx > 0 && resy > 0 ) {
         if (! Image::dimensionsAreConsistent(resx, resy, width, height, bbox)) {
-            LOGGER_ERROR ( "Resolutions, bounding box and real dimensions for image are not consistent" );
+            BOOST_LOG_TRIVIAL(error) <<  "Resolutions, bounding box and real dimensions for image are not consistent" ;
             return NULL;
         }
     } else {
@@ -335,7 +335,7 @@ LibpngImage* LibpngImageFactory::createLibpngImageToReadFromBuffer ( RawDataStre
     switch ( int(color_type) ) {
         case PNG_COLOR_TYPE_GRAY :
         {
-            LOGGER_DEBUG("Initial PNG color type PNG_COLOR_TYPE_GRAY");
+            BOOST_LOG_TRIVIAL(debug) << "Initial PNG color type PNG_COLOR_TYPE_GRAY";
             channels = 1;
 
             if (bit_depth < 8) {
@@ -346,38 +346,38 @@ LibpngImage* LibpngImageFactory::createLibpngImageToReadFromBuffer ( RawDataStre
         }
         case PNG_COLOR_TYPE_GRAY_ALPHA :
         {
-            LOGGER_DEBUG("Initial PNG color type PNG_COLOR_TYPE_GRAY_ALPHA");
+            BOOST_LOG_TRIVIAL(debug) << "Initial PNG color type PNG_COLOR_TYPE_GRAY_ALPHA";
             channels = 2;
             break;
         }
         case PNG_COLOR_TYPE_RGB :
         {
-            LOGGER_DEBUG("Initial PNG color type PNG_COLOR_TYPE_RGB");
+            BOOST_LOG_TRIVIAL(debug) << "Initial PNG color type PNG_COLOR_TYPE_RGB";
             channels = 3;
             break;
         }
         case PNG_COLOR_TYPE_PALETTE :
         {
-            LOGGER_DEBUG("Initial PNG color type PNG_COLOR_TYPE_PALETTE");
+            BOOST_LOG_TRIVIAL(debug) << "Initial PNG color type PNG_COLOR_TYPE_PALETTE";
             channels = 3;
             png_set_palette_to_rgb (pngStruct);
             break;
         }
         case PNG_COLOR_TYPE_RGB_ALPHA :
         {
-            LOGGER_DEBUG("Initial PNG color type PNG_COLOR_TYPE_RGB_ALPHA");
+            BOOST_LOG_TRIVIAL(debug) << "Initial PNG color type PNG_COLOR_TYPE_RGB_ALPHA";
             channels = 4;
             break;
         }
         default :
         {
-            LOGGER_ERROR("Cannot interpret the color type (" << int(color_type) << ") for the PNG image ");
+            BOOST_LOG_TRIVIAL(error) << "Cannot interpret the color type (" << int(color_type) << ") for the PNG image ";
             return NULL;
         }
     }
 
     if (png_get_valid(pngStruct, pngInfo, PNG_INFO_tRNS)) {
-        LOGGER_DEBUG("Convert tRNS to alpha sample for PNG image");
+        BOOST_LOG_TRIVIAL(debug) << "Convert tRNS to alpha sample for PNG image";
         png_set_tRNS_to_alpha(pngStruct);
         channels+=1;
     }
@@ -387,7 +387,7 @@ LibpngImage* LibpngImageFactory::createLibpngImageToReadFromBuffer ( RawDataStre
     /************** LECTURE DE L'IMAGE EN ENTIER ***************/
 
     if (setjmp(png_jmpbuf(pngStruct))) {
-        LOGGER_ERROR ("Error reading PNG image ");
+        BOOST_LOG_TRIVIAL(error) << "Error reading PNG image ";
         return NULL;
     }
 

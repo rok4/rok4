@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -110,12 +110,12 @@ public:
      * \brief File image description output
      */
     void print() {
-        LOGGER_INFO ( "" );
-        LOGGER_INFO ( "---------- EmptyImage ------------" );
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
+        BOOST_LOG_TRIVIAL(info) <<  "---------- EmptyImage ------------" ;
         Image::print();
-        LOGGER_INFO ( "\t- Nodata color : " );
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Nodata color : " ;
         for ( int c = 0; c < channels; c++ )
-            LOGGER_INFO ( "\t\t" << color[c] );
+            BOOST_LOG_TRIVIAL(info) <<  "\t\t" << color[c] ;
     }
 };
 

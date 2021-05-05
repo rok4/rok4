@@ -2,7 +2,7 @@
  * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -56,7 +56,7 @@
 
 #include "config.h"
 #include "ProcessFactory.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 
 ProcessFactory::ProcessFactory(int max, std::string f, int time)
 {
@@ -99,14 +99,14 @@ bool ProcessFactory::createProcess() {
 
         } else {
             //can't create a process for any reason
-            LOGGER_WARN("Can't create process...");
-            LOGGER_WARN(errno);
-            LOGGER_WARN(strerror(errno));
+            BOOST_LOG_TRIVIAL(warning) << "Can't create process...";
+            BOOST_LOG_TRIVIAL(warning) << errno;
+            BOOST_LOG_TRIVIAL(warning) << strerror(errno);
         }
 
     } else {
         //can't create child process because max is already taken
-        LOGGER_WARN("Max process already taken... Try again");
+        BOOST_LOG_TRIVIAL(warning) << "Max process already taken... Try again";
     }
 
     return processCreated;
@@ -277,37 +277,6 @@ void ProcessFactory::writeFile() {
         }
 
     }
-}
-
-void ProcessFactory::initializeLogger(std::string file) {
-
-    Accumulator *oldAcc = 0;
-    for ( int i=0; i<=nbLogLevel; i++ ) {
-        if (Logger::getAccumulator(( LogLevel ) i)) {
-             oldAcc = Logger::getAccumulator(( LogLevel ) i);
-             break;
-        }
-    }
-    Accumulator *acc = new StaticFileAccumulator ( file );
-    for ( int i=0; i<=nbLogLevel; i++ ) {
-        if (Logger::getAccumulator(( LogLevel ) i)) {
-             Logger::setCurrentAccumulator(( LogLevel ) i,acc);
-        }
-    }
-    delete oldAcc;
-
-
-}
-
-void ProcessFactory::destroyLogger() {
-    Accumulator *acc = 0;
-    for ( int i=0; i<=nbLogLevel; i++ ) {
-        if (Logger::getAccumulator(( LogLevel ) i)) {
-             acc = Logger::getAccumulator(( LogLevel ) i);
-             break;
-        }
-    }
-    delete acc;
 }
 
 void ProcessFactory::randomSleep() {

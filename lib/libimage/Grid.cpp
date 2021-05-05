@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -47,7 +47,7 @@
 #include <pthread.h>
 
 #include "Grid.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 
 #include <algorithm>
 
@@ -64,7 +64,7 @@
 Grid::Grid ( int width, int height, BoundingBox<double> bbox ) : width ( width ), height ( height ), bbox ( bbox ) {
 
     if (width == 0 || height == 0) {
-        LOGGER_ERROR("One grid's dimension is null");
+        BOOST_LOG_TRIVIAL(error) << "One grid's dimension is null";
     }
 
     nbxReg = 1 + ( width-1 ) /stepInt;
@@ -155,7 +155,7 @@ void Grid::affine_transform ( double Ax, double Bx, double Ay, double By ) {
     }
 
     deltaY = deltaY * fabs ( Ay );
-    LOGGER_DEBUG ( "New first line Y-delta :" << deltaY );
+    BOOST_LOG_TRIVIAL(debug) <<  "New first line Y-delta :" << deltaY ;
 }
 
 double Grid::getRatioY()
@@ -214,7 +214,7 @@ double Grid::getRatioX()
 
 
 bool Grid::reproject ( std::string from_srs, std::string to_srs ) {
-    LOGGER_DEBUG ( from_srs<<" -> " <<to_srs );
+    BOOST_LOG_TRIVIAL(debug) <<  from_srs<<" -> " <<to_srs ;
 
     pthread_mutex_lock ( & mutex_proj );
     projCtx ctx = pj_ctx_alloc();
@@ -224,7 +224,7 @@ bool Grid::reproject ( std::string from_srs, std::string to_srs ) {
         // Initialisation du système de projection source
         int err = pj_ctx_get_errno ( ctx );
         char *msg = pj_strerrno ( err );
-        LOGGER_ERROR ( "erreur d initialisation " << from_srs << " " << msg );
+        BOOST_LOG_TRIVIAL(error) <<  "erreur d initialisation " << from_srs << " " << msg ;
         pj_ctx_free ( ctx );
         pthread_mutex_unlock ( & mutex_proj );
         return false;
@@ -233,17 +233,17 @@ bool Grid::reproject ( std::string from_srs, std::string to_srs ) {
         // Initialisation du système de projection destination
         int err = pj_ctx_get_errno ( ctx );
         char *msg = pj_strerrno ( err );
-        LOGGER_ERROR ( "erreur d initialisation " << to_srs << " " << msg );
+        BOOST_LOG_TRIVIAL(error) <<  "erreur d initialisation " << to_srs << " " << msg ;
         pj_free ( pj_src );
         pj_ctx_free ( ctx );
         pthread_mutex_unlock ( & mutex_proj );
         return false;
     }
 
-    LOGGER_DEBUG ( "Avant (centre du pixel en haut à gauche) "<< gridX[0] << " " << gridY[0] );
-    LOGGER_DEBUG ( "Avant (centre du pixel en haut à droite) "<< gridX[nbx-1] << " " << gridY[nbx-1] );
-    LOGGER_DEBUG ( "Avant (centre du pixel en bas à gauche) "<< gridX[nbx*(nby-1)] << " " << gridY[nbx*(nby-1)] );
-    LOGGER_DEBUG ( "Avant (centre du pixel en bas à droite) "<< gridX[nbx*nby-1] << " " << gridY[nbx*nby-1] );
+    BOOST_LOG_TRIVIAL(debug) <<  "Avant (centre du pixel en haut à gauche) "<< gridX[0] << " " << gridY[0] ;
+    BOOST_LOG_TRIVIAL(debug) <<  "Avant (centre du pixel en haut à droite) "<< gridX[nbx-1] << " " << gridY[nbx-1] ;
+    BOOST_LOG_TRIVIAL(debug) <<  "Avant (centre du pixel en bas à gauche) "<< gridX[nbx*(nby-1)] << " " << gridY[nbx*(nby-1)] ;
+    BOOST_LOG_TRIVIAL(debug) <<  "Avant (centre du pixel en bas à droite) "<< gridX[nbx*nby-1] << " " << gridY[nbx*nby-1] ;
 
     // Note that geographic locations need to be passed in radians, not decimal degrees,
     // and will be returned similarly
@@ -258,7 +258,7 @@ bool Grid::reproject ( std::string from_srs, std::string to_srs ) {
     int code = pj_transform ( pj_src, pj_dst, nbx*nby, 0, gridX, gridY, 0 );
 
     if ( code != 0 ) {
-        LOGGER_ERROR ( "Code erreur proj4 : " << code );
+        BOOST_LOG_TRIVIAL(error) <<  "Code erreur proj4 : " << code ;
         pj_free ( pj_src );
         pj_free ( pj_dst );
         pj_ctx_free ( ctx );
@@ -269,7 +269,7 @@ bool Grid::reproject ( std::string from_srs, std::string to_srs ) {
     // On vérifie que le résultat renvoyé par la reprojection est valide
     for ( int i = 0; i < nbx*nby; i++ ) {
         if ( gridX[i] == HUGE_VAL || gridY[i] == HUGE_VAL ) {
-            LOGGER_ERROR ( "Valeurs retournees par pj_transform invalides" );
+            BOOST_LOG_TRIVIAL(error) <<  "Valeurs retournees par pj_transform invalides" ;
             pj_free ( pj_src );
             pj_free ( pj_dst );
             pj_ctx_free ( ctx );
@@ -284,10 +284,10 @@ bool Grid::reproject ( std::string from_srs, std::string to_srs ) {
             gridY[i] *= RAD_TO_DEG;
         }
 
-    LOGGER_DEBUG ( "Apres (centre du pixel en haut à gauche) "<<gridX[0]<<" "<<gridY[0] );
-    LOGGER_DEBUG ( "Apres (centre du pixel en haut à droite) "<<gridX[nbx-1]<<" "<<gridY[nbx-1] );
-    LOGGER_DEBUG ( "Apres (centre du pixel en bas à gauche) "<<gridX[nbx*(nby-1)]<<" "<<gridY[nbx*(nby-1)] );
-    LOGGER_DEBUG ( "Apres (centre du pixel en bas à droite) "<<gridX[nbx*nby-1]<<" "<<gridY[nbx*nby-1] );
+    BOOST_LOG_TRIVIAL(debug) <<  "Apres (centre du pixel en haut à gauche) "<<gridX[0]<<" "<<gridY[0] ;
+    BOOST_LOG_TRIVIAL(debug) <<  "Apres (centre du pixel en haut à droite) "<<gridX[nbx-1]<<" "<<gridY[nbx-1] ;
+    BOOST_LOG_TRIVIAL(debug) <<  "Apres (centre du pixel en bas à gauche) "<<gridX[nbx*(nby-1)]<<" "<<gridY[nbx*(nby-1)] ;
+    BOOST_LOG_TRIVIAL(debug) <<  "Apres (centre du pixel en bas à droite) "<<gridX[nbx*nby-1]<<" "<<gridY[nbx*nby-1] ;
 
     /****************** Mise à jour de la bbox *********************
      * On n'utilise pas les coordonnées présentent dans les tableaux X et Y car celles ci correspondent
@@ -295,7 +295,7 @@ bool Grid::reproject ( std::string from_srs, std::string to_srs ) {
      * On divise chaque côté de la bbox en la dimensions la plus grande.
      */
     if ( bbox.reproject ( pj_src, pj_dst ) ) {
-        LOGGER_ERROR ( "Erreur reprojection bbox" );
+        BOOST_LOG_TRIVIAL(error) <<  "Erreur reprojection bbox" ;
         pj_free ( pj_src );
         pj_free ( pj_dst );
         pj_ctx_free ( ctx );
@@ -305,7 +305,7 @@ bool Grid::reproject ( std::string from_srs, std::string to_srs ) {
 
     /****************** Mise à jour du deltaY **********************/
     calculateDeltaY();
-    LOGGER_DEBUG ( "New first line Y-delta :" << deltaY );
+    BOOST_LOG_TRIVIAL(debug) <<  "New first line Y-delta :" << deltaY ;
 
     // Nettoyage
     pj_free ( pj_src );

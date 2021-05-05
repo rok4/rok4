@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -57,7 +57,7 @@
 #include <iostream>
 #include "math.h"
 
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Utils.h"
 #include "Image.h"
 
@@ -211,15 +211,15 @@ public:
      * \brief Compounded image description output
      */
     void print() {
-        LOGGER_INFO ( "" );
-        LOGGER_INFO ( "------ DecimatedImage -------" );
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
+        BOOST_LOG_TRIVIAL(info) <<  "------ DecimatedImage -------" ;
         Image::print();
-        LOGGER_INFO ( "\t- Number of picked source pixels : " << numberX);
-        LOGGER_INFO ( "\t- Decimated image offset : " << imageOffsetX);
-        LOGGER_INFO ( "\t- Source image offset : " << sourceOffsetX);
-        LOGGER_INFO ( "\t- X wise ratio : " << ratioX);
-        LOGGER_INFO ( "\t- Y wise ratio : " << ratioY);
-        LOGGER_INFO ( "" );
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Number of picked source pixels : " << numberX;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Decimated image offset : " << imageOffsetX;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Source image offset : " << sourceOffsetX;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- X wise ratio : " << ratioX;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Y wise ratio : " << ratioY;
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
     }
 };
 

@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -39,7 +39,7 @@
 
 #include "PNGEncoder.h"
 #include "byteswap.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include <string.h> // Pour memcpy
 
 
@@ -129,7 +129,7 @@ size_t PNGEncoder::write_IHDR ( uint8_t *buffer, size_t size, uint8_t colortype 
         if ( sizeof ( PNG_HEADER_RGBA ) > size ) return 0;
         memcpy ( buffer, PNG_HEADER_RGBA, sizeof ( PNG_HEADER_RGBA ) ); // cf: http://www.w3.org/TR/PNG/#11IHDR
     } else {
-        LOGGER_ERROR ( "Type de couleur non gere : " << colortype );
+        BOOST_LOG_TRIVIAL(error) <<  "Type de couleur non gere : " << colortype ;
         return 0;
     }
     * ( ( uint32_t* ) ( buffer+16 ) ) = bswap_32 ( image->getWidth() ); // ajoute le champs width
@@ -139,7 +139,7 @@ size_t PNGEncoder::write_IHDR ( uint8_t *buffer, size_t size, uint8_t colortype 
     line++;
     if ( colortype==3 ) {
         if ( sizeof ( PNG_HEADER_PALETTE ) + palette->getPalettePNGSize() > size ) return 0;
-//                      LOGGER_DEBUG("Ajout de la palette, size : " << size << "size final : " << (sizeof(PNG_HEADER_PALETTE) + palette->getPalettePNGSize()));
+//                      BOOST_LOG_TRIVIAL(debug) << "Ajout de la palette, size : " << size << "size final : " << (sizeof(PNG_HEADER_PALETTE) + palette->getPalettePNGSize());
         memcpy ( buffer+ sizeof ( PNG_HEADER_PALETTE ), palette->getPalettePNG(), palette->getPalettePNGSize() );
         return ( sizeof ( PNG_HEADER_PALETTE ) + palette->getPalettePNGSize() );
     }

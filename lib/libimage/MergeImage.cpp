@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -56,7 +56,7 @@
 #include "MergeImage.h"
 
 #include "Utils.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include <cstring>
 #include "Line.h"
 
@@ -150,7 +150,7 @@ int MergeImage::getline ( float* buffer, int line ) {
 MergeImage* MergeImageFactory::createMergeImage ( std::vector< Image* >& images, int channels,
         int* bgValue, int* transparentValue, Merge::eMergeType composition ) {
     if ( images.size() == 0 ) {
-        LOGGER_ERROR ( "No source images to defined merged image" );
+        BOOST_LOG_TRIVIAL(error) <<  "No source images to defined merged image" ;
         return NULL;
     }
 
@@ -159,7 +159,7 @@ MergeImage* MergeImageFactory::createMergeImage ( std::vector< Image* >& images,
 
     for ( int i = 1; i < images.size(); i++ ) {
         if ( images.at ( i )->getWidth() != width || images.at ( i )->getHeight() != height ) {
-            LOGGER_ERROR ( "All images must have same dimensions" );
+            BOOST_LOG_TRIVIAL(error) <<  "All images must have same dimensions" ;
             images.at ( 0 )->print();
             images.at ( i )->print();
             return NULL;
@@ -167,7 +167,7 @@ MergeImage* MergeImageFactory::createMergeImage ( std::vector< Image* >& images,
     }
 
     if ( bgValue == NULL ) {
-        LOGGER_ERROR ( "We have to precise a value used as background in the MergeImage" );
+        BOOST_LOG_TRIVIAL(error) <<  "We have to precise a value used as background in the MergeImage" ;
         return NULL;
     }
 

@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -50,10 +50,11 @@
 #ifndef FILE_CONTEXT_H
 #define FILE_CONTEXT_H
 
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Context.h"
 #include <iostream>
 #include <sys/stat.h>
+#include <fstream>
 
 /**
  * \author Institut national de l'information géographique et forestière
@@ -99,15 +100,16 @@ public:
     std::string getRootDir () {
         return root_dir;
     }
-    
+
+
     int read(uint8_t* data, int offset, int size, std::string name);
     bool write(uint8_t* data, int offset, int size, std::string name);
     bool writeFull(uint8_t* data, int size, std::string name);
 
-    eContextType getType();
+    ContextType::eContextType getType();
     std::string getTypeStr();
     std::string getTray();
-
+ 
     /**
      * \~french \brief Ouvre le flux #output
      * \~english \brief Open stream #output
@@ -135,9 +137,13 @@ public:
         }
     }
 
+
+    std::string getPath(std::string racine,int x,int y,int pathDepth=2);
+
+
     virtual void print() {
-        LOGGER_INFO ( "------ File Context -------" );
-        LOGGER_INFO ( "\t- root directory = " << root_dir );
+        BOOST_LOG_TRIVIAL(info) <<  "------ File Context -------" ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- root directory = " << root_dir ;
     }
 
     virtual std::string toString() {
@@ -155,6 +161,7 @@ public:
     }
     
     virtual ~FileContext() {
+        closeConnection();
     }
 };
 

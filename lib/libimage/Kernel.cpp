@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -45,7 +45,7 @@
 
 #include <cmath>
 #include "Kernel.h"
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 
 int Kernel::weight ( float* W, int& length, double x, int max ) const {
 

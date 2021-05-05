@@ -1,8 +1,8 @@
 /*
- * Copyright © (2011) Institut national de l'information
- *                    géographique et forestière
+ * Copyright ï¿½ (2011) Institut national de l'information
+ *                    gï¿½ographique et forestiï¿½re
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Gï¿½oportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -38,7 +38,7 @@
 /**
  * \file Pente.h
  ** \~french
- * \brief Définition de la classe Pente
+ * \brief Dï¿½finition de la classe Pente
  ** \~english
  * \brief Define class Pente
  */
@@ -46,7 +46,7 @@
 #ifndef PENTE_H
 #define PENTE_H
 
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 
 #include <string>
 
@@ -63,21 +63,21 @@ private:
     std::string algo;
 
     /** \~french
-    * \brief isPente : indique que style est calcul de pente a partir de la donnée
+    * \brief isPente : indique que style est calcul de pente a partir de la donnï¿½e
     ** \~english
     * \brief isPente : indicate that the style is a slope computed from data
     */
     bool isPente;
 
     /** \~french
-    * \brief unit : unité de la pente
+    * \brief unit : unitï¿½ de la pente
     ** \~english
     * \brief unit : slope unit
     */
     std::string unit;
 
     /** \~french
-    * \brief interpolation : interpolation utilisée pour ré-échantilloner les données sources
+    * \brief interpolation : interpolation utilisï¿½e pour rï¿½-ï¿½chantilloner les donnï¿½es sources
     ** \~english
     * \brief interpolation : interpolation used for resampling source data
     */
@@ -150,7 +150,7 @@ public:
 
     /**
      * \~french
-     * \brief Modifie la présence de la pente
+     * \brief Modifie la prï¿½sence de la pente
      * \~english
      * \brief Set pente
      */
@@ -170,7 +170,7 @@ public:
 
     /**
      * \~french
-     * \brief Renvoie la présence de la pente
+     * \brief Renvoie la prï¿½sence de la pente
      * \~english
      * \brief Get pente
      */

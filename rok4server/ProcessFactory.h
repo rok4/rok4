@@ -2,7 +2,7 @@
  * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -356,28 +356,6 @@ public:
      * \brief Write a file with the current pid and current previous pid
      */
     void writeFile();
-
-    /**
-     * \~french
-     * \brief Initialise un logger pour ce processus
-     * En effet, il est impossible de logger dans le logger du processus parent
-     * Pour le moment, on ne log que en static file
-     * \param[in] fichier utilisé pour logger
-     * \~english
-     * \brief Initialize a logger for this processus
-     * It is impossible to log in the parent process
-     * Log for a static file only
-     * \param[in] file used to log
-     */
-    void initializeLogger(std::string file);
-
-    /**
-     * \~french
-     * \brief Détruit le logger initialisé
-     * \~english
-     * \brief Destroy initialized logger
-     */
-    void destroyLogger();
 
     /**
      * \~french

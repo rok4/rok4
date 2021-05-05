@@ -1,0 +1,329 @@
+==48826== Memcheck, a memory error detector
+==48826== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==48826== Using Valgrind-3.15.0 and LibVEX; rerun with -h for copyright info
+==48826== Command: mergeNtiff -f inputs/conf_mask.txt -r ./inputs/ -c zip -i lanczos -n 0,0,255
+==48826== Parent PID: 48825
+==48826== 
+==48826== Mismatched free() / delete / delete []
+==48826==    at 0x483CFBF: operator delete(void*) (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x13F142: loadImages(FileImage**, FileImage**, std::vector<FileImage*, std::allocator<FileImage*> >*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13BE26: main (in /usr/local/bin/mergeNtiff)
+==48826==  Address 0x77b59e0 is 0 bytes inside a block of size 512 alloc'd
+==48826==    at 0x483DD99: calloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x13E009: loadConfiguration(std::vector<bool, std::allocator<bool> >*, std::vector<char*, std::allocator<char*> >*, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > >*, std::vector<BoundingBox<double>, std::allocator<BoundingBox<double> > >*, std::vector<double, std::allocator<double> >*, std::vector<double, std::allocator<double> >*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13EA6D: loadImages(FileImage**, FileImage**, std::vector<FileImage*, std::allocator<FileImage*> >*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13BE26: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Mismatched free() / delete / delete []
+==48826==    at 0x483CFBF: operator delete(void*) (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x13F2D6: loadImages(FileImage**, FileImage**, std::vector<FileImage*, std::allocator<FileImage*> >*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13BE26: main (in /usr/local/bin/mergeNtiff)
+==48826==  Address 0x77b6740 is 0 bytes inside a block of size 512 alloc'd
+==48826==    at 0x483DD99: calloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x13E009: loadConfiguration(std::vector<bool, std::allocator<bool> >*, std::vector<char*, std::allocator<char*> >*, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > >*, std::vector<BoundingBox<double>, std::allocator<BoundingBox<double> > >*, std::vector<double, std::allocator<double> >*, std::vector<double, std::allocator<double> >*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13EA6D: loadImages(FileImage**, FileImage**, std::vector<FileImage*, std::allocator<FileImage*> >*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13BE26: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Mismatched free() / delete / delete []
+==48826==    at 0x483CFBF: operator delete(void*) (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x13F6C1: loadImages(FileImage**, FileImage**, std::vector<FileImage*, std::allocator<FileImage*> >*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13BE26: main (in /usr/local/bin/mergeNtiff)
+==48826==  Address 0x77b5170 is 0 bytes inside a block of size 512 alloc'd
+==48826==    at 0x483DD99: calloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x13E009: loadConfiguration(std::vector<bool, std::allocator<bool> >*, std::vector<char*, std::allocator<char*> >*, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > >*, std::vector<BoundingBox<double>, std::allocator<BoundingBox<double> > >*, std::vector<double, std::allocator<double> >*, std::vector<double, std::allocator<double> >*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13EA6D: loadImages(FileImage**, FileImage**, std::vector<FileImage*, std::allocator<FileImage*> >*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13BE26: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Mismatched free() / delete / delete []
+==48826==    at 0x483CFBF: operator delete(void*) (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x140591: loadImages(FileImage**, FileImage**, std::vector<FileImage*, std::allocator<FileImage*> >*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13BE26: main (in /usr/local/bin/mergeNtiff)
+==48826==  Address 0x77b55b0 is 0 bytes inside a block of size 512 alloc'd
+==48826==    at 0x483DD99: calloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x13E009: loadConfiguration(std::vector<bool, std::allocator<bool> >*, std::vector<char*, std::allocator<char*> >*, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > >*, std::vector<BoundingBox<double>, std::allocator<BoundingBox<double> > >*, std::vector<double, std::allocator<double> >*, std::vector<double, std::allocator<double> >*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13EA6D: loadImages(FileImage**, FileImage**, std::vector<FileImage*, std::allocator<FileImage*> >*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13BE26: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Conditional jump or move depends on uninitialised value(s)
+==48826==    at 0x1BE5CB: ReprojectedImage::getline(unsigned char*, int) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x1DD8A3: int ExtendedCompoundImage::_getline<unsigned char>(unsigned char*, int) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x19E6BE: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Conditional jump or move depends on uninitialised value(s)
+==48826==    at 0x48429FA: memmove (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x4B694D2: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6A685: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6BAA4: deflate (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4AA820B: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7791: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Conditional jump or move depends on uninitialised value(s)
+==48826==    at 0x4842A11: memmove (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x4B694D2: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6A685: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6BAA4: deflate (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4AA820B: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7791: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Conditional jump or move depends on uninitialised value(s)
+==48826==    at 0x4842B8B: memmove (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x4B694D2: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6A685: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6BAA4: deflate (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4AA820B: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7791: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Conditional jump or move depends on uninitialised value(s)
+==48826==    at 0x4842BA1: memmove (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x4B694D2: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6A685: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6BAA4: deflate (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4AA820B: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7791: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Conditional jump or move depends on uninitialised value(s)
+==48826==    at 0x4842A20: memmove (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x4B694D2: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6A685: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6BAA4: deflate (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4AA820B: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7791: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Conditional jump or move depends on uninitialised value(s)
+==48826==    at 0x4842B08: memmove (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x4B694D2: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6A685: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6BAA4: deflate (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4AA820B: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7791: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Conditional jump or move depends on uninitialised value(s)
+==48826==    at 0x4842B0E: memmove (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x4B694D2: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6A685: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6BAA4: deflate (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4AA820B: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7791: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Use of uninitialised value of size 8
+==48826==    at 0x4842B33: memmove (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x4B694D2: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6A685: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6BAA4: deflate (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4AA820B: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7791: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Conditional jump or move depends on uninitialised value(s)
+==48826==    at 0x4842B3F: memmove (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x4B694D2: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6A685: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6BAA4: deflate (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4AA820B: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7791: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Conditional jump or move depends on uninitialised value(s)
+==48826==    at 0x4842B55: memmove (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x4B694D2: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6A685: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6BAA4: deflate (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4AA820B: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7791: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Use of uninitialised value of size 8
+==48826==    at 0x4842B60: memmove (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x4B694D2: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6A685: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6BAA4: deflate (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4AA820B: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7791: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Use of uninitialised value of size 8
+==48826==    at 0x4842B63: memmove (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x4B694D2: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6A685: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6BAA4: deflate (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4AA820B: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7791: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Conditional jump or move depends on uninitialised value(s)
+==48826==    at 0x4842B6E: memmove (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x4B694D2: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6A685: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6BAA4: deflate (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4AA820B: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7791: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Conditional jump or move depends on uninitialised value(s)
+==48826==    at 0x4AA81ED: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7791: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Conditional jump or move depends on uninitialised value(s)
+==48826==    at 0x4842A55: memmove (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x4B694D2: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6A685: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6BAA4: deflate (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4AA820B: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7791: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Use of uninitialised value of size 8
+==48826==    at 0x4842A83: memmove (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x4B694D2: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6A685: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6BAA4: deflate (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4AA820B: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7791: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Conditional jump or move depends on uninitialised value(s)
+==48826==    at 0x4842AA5: memmove (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x4B694D2: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6A685: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6BAA4: deflate (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4AA820B: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7791: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Conditional jump or move depends on uninitialised value(s)
+==48826==    at 0x4842ABC: memmove (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x4B694D2: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6A685: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6BAA4: deflate (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4AA820B: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7791: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Use of uninitialised value of size 8
+==48826==    at 0x4842AD6: memmove (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x4B694D2: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6A685: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6BAA4: deflate (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4AA820B: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7791: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Use of uninitialised value of size 8
+==48826==    at 0x4842AD9: memmove (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x4B694D2: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6A685: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6BAA4: deflate (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4AA820B: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7791: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Conditional jump or move depends on uninitialised value(s)
+==48826==    at 0x4842AE4: memmove (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x4B694D2: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6A685: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6BAA4: deflate (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4AA820B: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7791: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Conditional jump or move depends on uninitialised value(s)
+==48826==    at 0x4842AFD: memmove (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x4B694D2: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6A685: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6BAA4: deflate (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4AA820B: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7791: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Use of uninitialised value of size 8
+==48826==    at 0x4842B30: memmove (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x4B694D2: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6A685: ??? (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4B6BAA4: deflate (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4AA820B: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7791: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Conditional jump or move depends on uninitialised value(s)
+==48826==    at 0x4B6BA49: deflate (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4AA8388: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4A8227F: TIFFFlushData (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7662: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Syscall param write(buf) points to uninitialised byte(s)
+==48826==    at 0x4C24297: write (write.c:26)
+==48826==    by 0x4AA994E: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA6CF2: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA808E: TIFFFlushData1 (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA8353: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4A8227F: TIFFFlushData (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA7662: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826==  Address 0x793dd88 is 136 bytes inside a block of size 28,848 alloc'd
+==48826==    at 0x483B7F3: malloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==48826==    by 0x4AA7520: TIFFWriteBufferSetup (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4AA77C0: TIFFWriteScanline (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19E69B: LibtiffImage::writeImage(Image*) (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C357: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== Conditional jump or move depends on uninitialised value(s)
+==48826==    at 0x4B6BA49: deflate (in /usr/lib/x86_64-linux-gnu/libz.so.1.2.11)
+==48826==    by 0x4AA8388: ??? (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4A8227F: TIFFFlushData (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4A822C0: TIFFFlush (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4A681A4: TIFFCleanup (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x4A681CC: TIFFClose (in /usr/lib/x86_64-linux-gnu/libtiff.so.5.5.0)
+==48826==    by 0x19ED1D: LibtiffImage::~LibtiffImage() (in /usr/local/bin/mergeNtiff)
+==48826==    by 0x13C4DF: main (in /usr/local/bin/mergeNtiff)
+==48826== 
+==48826== 
+==48826== HEAP SUMMARY:
+==48826==     in use at exit: 658 bytes in 11 blocks
+==48826==   total heap usage: 11,849 allocs, 11,838 frees, 10,521,575 bytes allocated
+==48826== 
+==48826== LEAK SUMMARY:
+==48826==    definitely lost: 0 bytes in 0 blocks
+==48826==    indirectly lost: 0 bytes in 0 blocks
+==48826==      possibly lost: 0 bytes in 0 blocks
+==48826==    still reachable: 658 bytes in 11 blocks
+==48826==         suppressed: 0 bytes in 0 blocks
+==48826== Rerun with --leak-check=full to see details of leaked memory
+==48826== 
+==48826== Use --track-origins=yes to see where uninitialised values come from
+==48826== For lists of detected and suppressed errors, rerun with: -s
+==48826== ERROR SUMMARY: 1076817 errors from 31 contexts (suppressed: 18772928 from 180)

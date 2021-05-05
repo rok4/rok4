@@ -2,7 +2,7 @@
  * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -57,8 +57,16 @@
 #include "Pyramid.h"
 #include "TileMatrixSet.h"
 #include "TileMatrix.h"
-#include "intl.h"
 #include "Context.h"
+
+#include <boost/log/core.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
+#include <boost/log/utility/setup/file.hpp>
+#include <boost/log/utility/setup/console.hpp>
+namespace logging = boost::log;
+namespace keywords = boost::log::keywords;
+namespace sinks = boost::log::sinks;
 
 #if BUILD_OBJECT
 #include "ContextBook.h"
@@ -83,78 +91,77 @@ Rok4Server* rok4InitServer ( const char* serverConfigFile ) {
 
     ServerXML* serverXML = ConfLoader::buildServerConf(strServerConfigFile);
     if ( ! serverXML->isOk() ) {
-        std::cerr<<_ ( "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " ) <<strServerConfigFile<<std::endl;
+        std::cerr<< "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " <<strServerConfigFile<<std::endl;
         return NULL;
     }
 
     if ( ! loggerInitialised ) {
-        Logger::setOutput ( serverXML->getLogOutput() );
+        /* Initialisation des Loggers */
+        boost::log::core::get()->set_filter( boost::log::trivial::severity >= serverXML->getLogLevel() );
+        logging::add_common_attributes();
+        boost::log::register_simple_formatter_factory< boost::log::trivial::severity_level, char >("Severity");
 
-        // Initialisation du logger
-        Accumulator *acc=0;
-        switch ( serverXML->getLogOutput() ) {
-            case ROLLING_FILE :
-                acc = new RollingFileAccumulator ( serverXML->getLogFilePrefix(), serverXML->getLogFilePeriod() );
-                break;
-            case STATIC_FILE :
-                acc = new StaticFileAccumulator ( serverXML->getLogFilePrefix() );
-                break;
-            case STANDARD_OUTPUT_STREAM_FOR_ERRORS :
-                acc = new StreamAccumulator();
-                break;
+        if ( serverXML->getLogOutput() == "rolling_file") {
+            logging::add_file_log (
+                keywords::file_name = serverXML->getLogFilePrefix()+"-%Y-%m-%d-%H-%M-%S.log",
+                keywords::time_based_rotation = sinks::file::rotation_at_time_interval(boost::posix_time::seconds(serverXML->getLogFilePeriod())),
+                keywords::format = "%TimeStamp%\t%ProcessID%\t%Severity%\t%Message%",
+                keywords::auto_flush = true
+            );
+        } else if ( serverXML->getLogOutput() == "static_file") {
+            logging::add_file_log (
+                keywords::file_name = serverXML->getLogFilePrefix(),
+                keywords::format = "%TimeStamp%\t%ProcessID%\t%Severity%\t%Message%",
+                keywords::auto_flush = true
+            );
+        } else if ( serverXML->getLogOutput() == "standard_output_stream_for_errors") {
+            logging::add_console_log (
+                std::cout,
+                keywords::format = "%TimeStamp%\t%ProcessID%\t%Severity%\t%Message%"
+            );
         }
 
-        // Attention : la fonction Logger::setAccumulator n'est pas threadsafe
-        for ( int i=0; i <= serverXML->getLogLevel(); i++ ) {
-            Logger::setAccumulator ( ( LogLevel ) i, acc );
-        }
-
-        std::ostream &log = LOGGER ( DEBUG );
-        log.precision ( 8 );
-        log.setf ( std::ios::fixed,std::ios::floatfield );
-
-        std::cout<< _ ( "Envoi des messages dans la sortie du logger" ) << std::endl;
-        LOGGER_INFO ( _ ( "*** DEBUT DU FONCTIONNEMENT DU LOGGER ***" ) );
-        loggerInitialised=true;
+        std::cout<<  "Envoi des messages dans la sortie du logger" << std::endl;
+        BOOST_LOG_TRIVIAL(info) <<   "*** DEBUT DU FONCTIONNEMENT DU LOGGER ***" ;
+        loggerInitialised = true;
     } else {
-        LOGGER_INFO ( _ ( "*** NOUVEAU CLIENT DU LOGGER ***" ) );
+        BOOST_LOG_TRIVIAL(info) <<   "*** NOUVEAU CLIENT DU LOGGER ***" ;
     }
 
     // Construction des parametres de service
     ServicesXML* servicesXML = ConfLoader::buildServicesConf ( serverXML->getServicesConfigFile() );
     if ( ! servicesXML->isOk() ) {
-        LOGGER_FATAL ( _ ( "Impossible d'interpreter le fichier de conf " ) << serverXML->getServicesConfigFile() );
-        LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
+        BOOST_LOG_TRIVIAL(fatal) <<   "Impossible d'interpreter le fichier de conf " << serverXML->getServicesConfigFile() ;
+        BOOST_LOG_TRIVIAL(fatal) <<   "Extinction du serveur ROK4" ;
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
         return NULL;
     }
 
     // Chargement des TMS
     if ( ! ConfLoader::buildTMSList ( serverXML ) ) {
-        LOGGER_FATAL ( _ ( "Impossible de charger la conf des TileMatrix" ) );
-        LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
+        BOOST_LOG_TRIVIAL(fatal) <<   "Impossible de charger la conf des TileMatrix" ;
+        BOOST_LOG_TRIVIAL(fatal) <<   "Extinction du serveur ROK4" ;
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
         return NULL;
     }
 
     //Chargement des styles
     if ( ! ConfLoader::buildStylesList ( serverXML, servicesXML ) ) {
-        LOGGER_FATAL ( _ ( "Impossible de charger la conf des Styles" ) );
-        LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
+        BOOST_LOG_TRIVIAL(fatal) <<   "Impossible de charger la conf des Styles" ;
+        BOOST_LOG_TRIVIAL(fatal) <<   "Extinction du serveur ROK4" ;
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
         return NULL;
     }
 
     // Chargement des layers
     if ( ! ConfLoader::buildLayersList ( serverXML, servicesXML ) ) {
-        LOGGER_FATAL ( _ ( "Impossible de charger la conf des Layers/pyramides" ) );
-        LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
+        BOOST_LOG_TRIVIAL(fatal) <<   "Impossible de charger la conf des Layers/pyramides" ;
+        BOOST_LOG_TRIVIAL(fatal) <<   "Extinction du serveur ROK4" ;
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
         return NULL;
     }
 
     // Instanciation du serveur
-    Logger::stopLogger();
     return new Rok4Server ( serverXML, servicesXML );
 }
 
@@ -162,15 +169,15 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
 
     std::string strServerConfigFile = serverConfigFile;
 
-    LOGGER_DEBUG("Rechargement de la conf");
+    BOOST_LOG_TRIVIAL(debug) << "Rechargement de la conf";
     //--- server.conf
-    LOGGER_DEBUG("Rechargement du server.conf");
+    BOOST_LOG_TRIVIAL(debug) << "Rechargement du server.conf";
 
     time_t lastModServerConf = ConfLoader::getLastModifiedDate(strServerConfigFile);
 
     ServerXML* newServerXML = ConfLoader::buildServerConf(strServerConfigFile);
     if ( ! newServerXML->isOk() ) {
-        std::cerr<<_ ( "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " ) <<strServerConfigFile<<std::endl;
+        std::cerr<< "ERREUR FATALE : Impossible d'interpreter le fichier de configuration du serveur " <<strServerConfigFile<<std::endl;
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
         return NULL;
     }
@@ -178,22 +185,22 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
     if (lastModServerConf > lastReload) {
         //fichier modifié, on recharge particulièrement le logger et on doit vérifier que les fichiers et dossiers
         //indiqués sont les mêmes qu'avant
-        LOGGER_DEBUG("Server.conf modifie");
+        BOOST_LOG_TRIVIAL(debug) << "Server.conf modifie";
         // TODO: Reload du logger si nécessaire
 
     } else {
         //fichier non modifié, il n'y a rien à faire
-        LOGGER_DEBUG("Server.conf non modifie");
+        BOOST_LOG_TRIVIAL(debug) << "Server.conf non modifie";
 
     }
 
     //--- service.conf
-    LOGGER_DEBUG("Rechargement du service.conf et des fichiers associes (listofequalcrs.txt et restrictedcrslist.txt)");
+    BOOST_LOG_TRIVIAL(debug) << "Rechargement du service.conf et des fichiers associes (listofequalcrs.txt et restrictedcrslist.txt)";
     // Construction des parametres de service
     ServicesXML* newServicesXML = ConfLoader::buildServicesConf ( newServerXML->getServicesConfigFile() );
     if ( ! newServicesXML->isOk() ) {
-        LOGGER_FATAL ( _ ( "Impossible d'interpreter le fichier de conf " ) << newServerXML->getServicesConfigFile() );
-        LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
+        BOOST_LOG_TRIVIAL(fatal) <<   "Impossible d'interpreter le fichier de conf " << newServerXML->getServicesConfigFile() ;
+        BOOST_LOG_TRIVIAL(fatal) <<   "Extinction du serveur ROK4" ;
         sleep ( 1 );    // Pour laisser le temps au logger pour se vider
         return NULL;
     }
@@ -205,17 +212,17 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
     std::string fileName;
 
     //--- TMS
-    LOGGER_DEBUG("Rechargement des TMS");
+    BOOST_LOG_TRIVIAL(debug) << "Rechargement des TMS";
 
     if (newServerXML->getTmsDir() != oldServer->getServerConf()->getTmsDir()) {
         // Le dossier des TMS a changé
         // on recharge tout comme à l'initialisation
         
-        LOGGER_DEBUG("Rechargement complet du nouveau dossier" << newServerXML->getTmsDir());
+        BOOST_LOG_TRIVIAL(debug) << "Rechargement complet du nouveau dossier" << newServerXML->getTmsDir();
 
         if ( ! ConfLoader::buildTMSList ( newServerXML ) ) {
-            LOGGER_FATAL ( _ ( "Impossible de charger la conf des TileMatrix" ) );
-            LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
+            BOOST_LOG_TRIVIAL(fatal) <<   "Impossible de charger la conf des TileMatrix" ;
+            BOOST_LOG_TRIVIAL(fatal) <<   "Extinction du serveur ROK4" ;
             sleep ( 1 );    // Pour laisser le temps au logger pour se vider
             return NULL;
         }
@@ -250,7 +257,7 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
                     if (tms != NULL) {
                         newServerXML->addTMS(tms);
                     } else {
-                        LOGGER_ERROR("Impossible de charger " << listOfFile[i]);
+                        BOOST_LOG_TRIVIAL(error) << "Impossible de charger " << listOfFile[i];
                     }
 
                 } else {
@@ -263,14 +270,14 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
                         if (tms != NULL) {
                             newServerXML->addTMS(tms);
                         } else {
-                            LOGGER_ERROR("Impossible de charger " << listOfFile[i]);
+                            BOOST_LOG_TRIVIAL(error) << "Impossible de charger " << listOfFile[i];
                         }
                     }
                 }
             }
         } else {
             //aucun fichier dans le dossier
-            LOGGER_FATAL ( "Aucun fichier .tms dans le dossier " << newServerXML->getTmsDir() );
+            BOOST_LOG_TRIVIAL(fatal) <<  "Aucun fichier .tms dans le dossier " << newServerXML->getTmsDir() ;
             sleep ( 1 );    // Pour laisser le temps au logger pour se vider
             return NULL;
         }
@@ -280,17 +287,17 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
     }
 
     //--- STYLES
-    LOGGER_DEBUG("Rechargement des styles");
+    BOOST_LOG_TRIVIAL(debug) << "Rechargement des styles";
 
     if (newServerXML->getStylesDir() != oldServer->getServerConf()->getStylesDir()) {
         // Le dossier des styles a changé
         // on recharge tout comme à l'initialisation
         
-        LOGGER_DEBUG("Rechargement complet du nouveau dossier" << newServerXML->getStylesDir());
+        BOOST_LOG_TRIVIAL(debug) << "Rechargement complet du nouveau dossier" << newServerXML->getStylesDir();
 
         if ( ! ConfLoader::buildStylesList ( newServerXML, newServicesXML ) ) {
-            LOGGER_FATAL ( _ ( "Impossible de charger la conf des styles" ) );
-            LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
+            BOOST_LOG_TRIVIAL(fatal) <<   "Impossible de charger la conf des styles" ;
+            BOOST_LOG_TRIVIAL(fatal) <<   "Extinction du serveur ROK4" ;
             sleep ( 1 );    // Pour laisser le temps au logger pour se vider
             return NULL;
         }
@@ -325,7 +332,7 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
                     if (sty != NULL) {
                         newServerXML->addStyle(sty);
                     } else {
-                        LOGGER_ERROR("Impossible de charger " << listOfFile[i]);
+                        BOOST_LOG_TRIVIAL(error) << "Impossible de charger " << listOfFile[i];
                     }
 
                 } else {
@@ -338,14 +345,14 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
                         if (sty != NULL) {
                             newServerXML->addStyle(sty);
                         } else {
-                            LOGGER_ERROR("Impossible de charger " << listOfFile[i]);
+                            BOOST_LOG_TRIVIAL(error) << "Impossible de charger " << listOfFile[i];
                         }
                     }
                 }
             }
         } else {
             //aucun fichier dans le dossier
-            LOGGER_FATAL ( "Aucun fichier .stl dans le dossier " << newServerXML->getStylesDir() );
+            BOOST_LOG_TRIVIAL(fatal) <<  "Aucun fichier .stl dans le dossier " << newServerXML->getStylesDir() ;
             sleep ( 1 );    // Pour laisser le temps au logger pour se vider
             return NULL;
         }
@@ -356,38 +363,38 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
 
 
     //--- Layers
-    LOGGER_DEBUG("Rechargement des Layers");
+    BOOST_LOG_TRIVIAL(debug) << "Rechargement des Layers";
 
     if (newServerXML->getLayersDir() != oldServer->getServerConf()->getLayersDir()) {
         // Le dossier des layers a changé
         // on recharge tout comme à l'initialisation
 
-        LOGGER_DEBUG("Rechargement complet du nouveau dossier" << newServerXML->getLayersDir());
+        BOOST_LOG_TRIVIAL(debug) << "Rechargement complet du nouveau dossier" << newServerXML->getLayersDir();
 
         if ( ! ConfLoader::buildLayersList ( newServerXML, newServicesXML ) ) {
-            LOGGER_FATAL ( _ ( "Impossible de charger la conf des Layers" ) );
-            LOGGER_FATAL ( _ ( "Extinction du serveur ROK4" ) );
+            BOOST_LOG_TRIVIAL(fatal) <<   "Impossible de charger la conf des Layers" ;
+            BOOST_LOG_TRIVIAL(fatal) <<   "Extinction du serveur ROK4" ;
             sleep ( 1 );    // Pour laisser le temps au logger pour se vider
             return NULL;
         }
 
     } else {
 
-        LOGGER_DEBUG("Copie des anciens layers");
+        BOOST_LOG_TRIVIAL(debug) << "Copie des anciens layers";
         //Copie de l'ancien serveur
         std::map<std::string,Layer* >::iterator lv;
 
         for (lv = oldServer->getLayerList().begin(); lv != oldServer->getLayerList().end(); lv++) {
             Layer* lay = new Layer(lv->second, newServerXML );
             if (lay->getDataPyramid() == NULL) {
-                LOGGER_ERROR("Impossible de cloner le layer " << lv->first);
+                BOOST_LOG_TRIVIAL(error) << "Impossible de cloner le layer " << lv->first;
                 delete lay;
             } else {
                 newServerXML->addLayer(lay);
             }
         }
 
-        LOGGER_DEBUG("Lecture du dossier");
+        BOOST_LOG_TRIVIAL(debug) << "Lecture du dossier";
 
         //Lecture du dossier et chargement de ce qui a changé
         listOfFile = ConfLoader::listFileFromDir(newServerXML->getLayersDir(), ".lay");
@@ -409,12 +416,12 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
                     if (lay != NULL) {
                         newServerXML->addLayer(lay);
                     } else {
-                        LOGGER_ERROR("Impossible de charger " << listOfFile[i]);
+                        BOOST_LOG_TRIVIAL(error) << "Impossible de charger " << listOfFile[i];
                     }
 
                 } else {
                     //fichier non modifié
-                    LOGGER_DEBUG("Fichier layer non modifie");
+                    BOOST_LOG_TRIVIAL(debug) << "Fichier layer non modifie";
                     Layer* lay = newServerXML->getLayer(fileName);
                     if (lay == NULL) {
                         // mais qui n'était pas là au dernier chargement
@@ -424,14 +431,14 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
                         if (l != NULL) {
                             newServerXML->addLayer(l);
                         } else {
-                            LOGGER_ERROR("Impossible de charger " << listOfFile[i]);
+                            BOOST_LOG_TRIVIAL(error) << "Impossible de charger " << listOfFile[i];
                         }
                     } else {
 
                         //on teste si le .pyr a changé
                         std::string strPyrFile = lay->getDataPyramidFilePath();
 
-                        LOGGER_DEBUG("Verification du fichier pyr" << strPyrFile);
+                        BOOST_LOG_TRIVIAL(debug) << "Verification du fichier pyr" << strPyrFile;
                         lastMod = ConfLoader::getLastModifiedDate(strPyrFile);
 
                         if (lastMod > lastReload) {
@@ -443,7 +450,7 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
                             if (lay != NULL) {
                                 newServerXML->addLayer(lay);
                             } else {
-                                LOGGER_ERROR("Impossible de charger le layer " << listOfFile[i]);
+                                BOOST_LOG_TRIVIAL(error) << "Impossible de charger le layer " << listOfFile[i];
                             }
                         }
                     }
@@ -452,7 +459,7 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
             }
         } else {
             //aucun fichier dans le dossier
-            LOGGER_FATAL ( "Aucun fichier .lay dans le dossier " << newServerXML->getLayersDir() );
+            BOOST_LOG_TRIVIAL(fatal) <<  "Aucun fichier .lay dans le dossier " << newServerXML->getLayersDir() ;
             sleep ( 1 );    // Pour laisser le temps au logger pour se vider
             return NULL;
         }
@@ -460,10 +467,6 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
         // On supprime de la liste des layers tous ceux dont l'id ne se retrouve pas dans la liste des noms de fichiers
         newServerXML->cleanLayers(listOfFileNames);
     }
-
-    LOGGER_DEBUG("Arret du logger");
-    Logger::stopLogger();
-    LOGGER_DEBUG("Logger arrete");
 
     return new Rok4Server ( newServerXML, newServicesXML );
 }
@@ -473,7 +476,7 @@ Rok4Server* rok4ReloadServer (const char* serverConfigFile, Rok4Server* oldServe
 */
 
 void rok4KillServer ( Rok4Server* server ) {
-    LOGGER_INFO ( _ ( "Extinction du serveur ROK4" ) );
+    BOOST_LOG_TRIVIAL(info) <<   "Extinction du serveur ROK4" ;
 
     //Clear proj4 cache
     pj_clear_initcache();
@@ -481,105 +484,3 @@ void rok4KillServer ( Rok4Server* server ) {
     delete server;
 }
 
-/**
- * \brief Extinction du Logger
- */
-void rok4KillLogger() {
-    loggerInitialised = false;
-    Accumulator* acc = NULL;
-    for ( int i=0; i<= nbLogLevel ; i++ )
-        if ( Logger::getAccumulator ( ( LogLevel ) i ) ) {
-            acc = Logger::getAccumulator ( ( LogLevel ) i );
-            break;
-        }
-    Logger::stopLogger();
-    if ( acc ) {
-        acc->stop();
-        acc->destroy();
-        delete acc;
-    }
-
-}
-
-/**
- * \brief Fermeture des descripteurs de fichiers
- */
-void rok4ReloadLogger() {
-    Accumulator* acc = NULL;
-    for ( int i=0; i<= nbLogLevel ; i++ )
-        if ( Logger::getAccumulator ( ( LogLevel ) i ) ) {
-            acc = Logger::getAccumulator ( ( LogLevel ) i );
-            break;
-        }
-    if ( acc ) {
-        acc->close();
-    }
-}
-
-
-#if BUILD_OBJECT
-
-/**
-* \brief Connexion aux contexts contenus dans les contextBook du serveur
-*/
-
-int rok4ConnectObjectContext(Rok4Server* server) {
-
-    int error = 1;
-
-    ContextBook *book = server->getCephBook();
-
-    if (book) {
-        if (!book->connectAllContext()) {
-            return error;
-        }
-    }
-
-    book = server->getS3Book();
-
-    if (book) {
-
-        if (!book->connectAllContext()) {
-            return error;
-        }
-
-    }
-
-    book = server->getSwiftBook();
-
-    if (book != NULL) {
-        if (!book->connectAllContext()) {
-            return error;
-        }
-    }
-
-    return 0;
-
-}
-
-/**
-* \brief Deconnexion aux contexts contenus dans les contextBook du serveur
-*/
-
-void rok4DisconnectObjectContext(Rok4Server* server) {
-
-    ContextBook *book = server->getCephBook();
-
-    if (book) {
-        book->disconnectAllContext();
-    }
-
-    book = server->getSwiftBook();
-
-    if (book) {
-        book->disconnectAllContext();
-    }
-
-    book = server->getS3Book();
-
-    if (book) {
-        book->disconnectAllContext();
-    }
-}
-
-#endif

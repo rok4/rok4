@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -59,7 +59,7 @@
 #include <iostream>
 #include "math.h"
 
-#include "Logger.h"
+#include <boost/log/trivial.hpp>
 #include "Utils.h"
 #include "Format.h"
 #include "Image.h"
@@ -367,17 +367,17 @@ public:
      * \brief Compounded image description output
      */
     void print() {
-        LOGGER_INFO ( "" );
-        LOGGER_INFO ( "------ ExtendedCompoundImage -------" );
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
+        BOOST_LOG_TRIVIAL(info) <<  "------ ExtendedCompoundImage -------" ;
         Image::print();
-        LOGGER_INFO ( "\t- Number of images = " << sourceImages.size() << ", whose " << mirrorsNumber << " mirrors" );
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Number of images = " << sourceImages.size() << ", whose " << mirrorsNumber << " mirrors" ;
         
-        LOGGER_INFO ( "\t\t- offsets : line, c0, c1, c2");
+        BOOST_LOG_TRIVIAL(info) <<  "\t\t- offsets : line, c0, c1, c2";
         for ( int i = 0; i < ( int ) sourceImages.size(); i++ ) {
-            LOGGER_INFO ( "\t\t- image " << i << " : " << rowsOffsets[i] << ", " << c0s[i] << ", " << c1s[i] << ", " << c2s[i]);
+            BOOST_LOG_TRIVIAL(info) <<  "\t\t- image " << i << " : " << rowsOffsets[i] << ", " << c0s[i] << ", " << c1s[i] << ", " << c2s[i];
             sourceImages[i]->print(); 
         }
-        LOGGER_INFO ( "" );
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
     }
 };
 
@@ -494,8 +494,8 @@ public:
      * \brief Compounded mask description output
      */
     void print() {
-        LOGGER_INFO ( "" );
-        LOGGER_INFO ( "------ ExtendedCompoundMask -------" );
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
+        BOOST_LOG_TRIVIAL(info) <<  "------ ExtendedCompoundMask -------" ;
         Image::print();
     }
 

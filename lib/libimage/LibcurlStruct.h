@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -113,7 +113,7 @@ static size_t data_callback(void *contents, size_t size, size_t nmemb, void *use
     mem->data = (char*)realloc(mem->data, mem->size + realsize + 1);
     if(mem->data == NULL) {
         /* out of memory! */
-        LOGGER_ERROR("not enough memory (realloc returned NULL)");
+        BOOST_LOG_TRIVIAL(error) << "not enough memory (realloc returned NULL)";
         return 0;
     }
 

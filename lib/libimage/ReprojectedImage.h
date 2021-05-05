@@ -2,7 +2,7 @@
  * Copyright © (2011) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -395,19 +395,19 @@ public:
      * \brief Reprojected image description output
      */
     void print() {
-        LOGGER_INFO ( "" );
-        LOGGER_INFO ( "--------- ReprojectedImage -----------" );
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
+        BOOST_LOG_TRIVIAL(info) <<  "--------- ReprojectedImage -----------" ;
         Image::print();
-        LOGGER_INFO ( "\t- Kernel size, x wise = " << Kx << ", y wise = " << Ky );
-        LOGGER_INFO ( "\t- Ratio, x wise = " << ratioX << ", y wise = " << ratioY );
-        LOGGER_INFO ( "\t- Source lines buffer size = " << memorizedLines );
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Kernel size, x wise = " << Kx << ", y wise = " << Ky ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Ratio, x wise = " << ratioX << ", y wise = " << ratioY ;
+        BOOST_LOG_TRIVIAL(info) <<  "\t- Source lines buffer size = " << memorizedLines ;
         if ( useMask ) {
-            LOGGER_INFO ( "\t- Use mask in interpolation" );
+            BOOST_LOG_TRIVIAL(info) <<  "\t- Use mask in interpolation" ;
         } else {
-            LOGGER_INFO ( "\t- Doesn't use mask in interpolation" );
+            BOOST_LOG_TRIVIAL(info) <<  "\t- Doesn't use mask in interpolation" ;
         }
         grid->print();
-        LOGGER_INFO ( "" );
+        BOOST_LOG_TRIVIAL(info) <<  "" ;
     }
 
 };

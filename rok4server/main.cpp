@@ -2,7 +2,7 @@
  * Copyright © (2011-2013) Institut national de l'information
  *                    géographique et forestière
  *
- * Géoportail SAV <geop_services@geoportail.fr>
+ * Géoportail SAV <contact.geoservices@ign.fr>
  *
  * This software is a computer program whose purpose is to publish geographic
  * data using OGC WMS and WMTS protocol.
@@ -72,7 +72,6 @@
 #include <bits/signum.h>
 #include <sys/time.h>
 #include <locale>
-#include "intl.h"
 #include <limits>
 #include "config.h"
 #include "curl/curl.h"
@@ -102,7 +101,7 @@ volatile timeval signal_timestamp;
  * \brief Display the command line parameters
  */
 void usage() {
-    std::cerr<<_ ( "Usage : rok4 [-f server_config_file]" ) <<std::endl;
+    std::cerr<< "Usage : rok4 [-f server_config_file]" <<std::endl;
 }
 
 /**
@@ -127,11 +126,11 @@ void reloadConfig ( int signum ) {
         signal_timestamp.tv_sec = begin.tv_sec;
         signal_timestamp.tv_usec = begin.tv_usec;
         reload = true;
-        std::cout<< _ ( "Rechargement du serveur rok4" ) << "["<< getpid() <<"]" <<std::endl;
+        std::cout<<  "Rechargement du serveur rok4" << "["<< getpid() <<"]" <<std::endl;
         time_t tmpTime = time(NULL);
         Wtmp = rok4ReloadServer ( serverConfigFile.c_str(), W, lastReload );
         if ( !Wtmp ){
-            std::cout<< _ ( "Erreur lors du rechargement du serveur rok4" ) << "["<< getpid() <<"]" <<std::endl;
+            std::cout<<  "Erreur lors du rechargement du serveur rok4" << "["<< getpid() <<"]" <<std::endl;
             return;
         }
         lastReload = tmpTime;
@@ -208,9 +207,6 @@ int main ( int argc, char** argv ) {
     setlocale ( LC_MONETARY,"" );
     setlocale ( LC_TIME,"" );
 
-    //  textdomain("Rok4Server");
-    bindtextdomain ( DOMAINNAME, getlocalepath().c_str() );
-
     //CURL initialization - one time for the whole program
     curl_global_init(CURL_GLOBAL_ALL);
 
@@ -227,7 +223,7 @@ int main ( int argc, char** argv ) {
             switch ( argv[i][1] ) {
             case 'f': // fichier de configuration du serveur
                 if ( i++ >= argc ) {
-                    std::cerr<<_ ( "Erreur sur l'option -f" ) <<std::endl;
+                    std::cerr<< "Erreur sur l'option -f" <<std::endl;
                     usage();
                     return 1;
                 }
@@ -243,7 +239,7 @@ int main ( int argc, char** argv ) {
     // Demarrage du serveur
     while ( reload ) {
         reload = false;
-        std::cout<< _ ( "Lancement du serveur rok4" ) << "["<< getpid() <<"]" <<std::endl;
+        std::cout<<  "Lancement du serveur rok4" << "["<< getpid() <<"]" <<std::endl;
        
         if ( firstStart ) {
             lastReload = time(NULL);
@@ -254,40 +250,35 @@ int main ( int argc, char** argv ) {
             W->initFCGI();
             firstStart = false;
         } else {
-            std::cout<< _ ( "Mise a jour de la configuration" ) << "["<< getpid() <<"]" <<std::endl;
+            std::cout<<  "Mise a jour de la configuration" << "["<< getpid() <<"]" <<std::endl;
             if ( Wtmp ) {
-                std::cout<< _ ( "Bascule des serveurs" ) << "["<< getpid() <<"]" <<std::endl;
+                std::cout<<  "Bascule des serveurs" << "["<< getpid() <<"]" <<std::endl;
                 W = Wtmp;
                 Wtmp = 0;
             }
             W->setFCGISocket ( sock );
         }
-#if BUILD_OBJECT
-        rok4ConnectObjectContext(W);
-#endif
 
         // Remove Event Lock
         defer_signal--;
         
         W->run(signal_pending);
 
-        // Extinction du serveur
         if ( reload ) {
-            LOGGER_INFO ( _ ( "Rechargement de la configuration" ) );
+            // Rechargement du serveur
+            BOOST_LOG_TRIVIAL(info) <<   "Rechargement de la configuration" ;
             sock = W->getFCGISocket();
         } else {
-            LOGGER_INFO ( _ ( "Extinction du serveur ROK4" ) );
+            // Extinction du serveur
+            BOOST_LOG_TRIVIAL(info) <<   "Extinction du serveur ROK4" ;
         }
-#if BUILD_OBJECT
-        rok4DisconnectObjectContext(W);
-#endif
+
         rok4KillServer ( W );
-        rok4ReloadLogger();
     }
 
     //CURL clean - one time for the whole program
     curl_global_cleanup();
 
-    rok4KillLogger();
+    //rok4KillLogger();
     return 0;
 }
