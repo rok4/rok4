@@ -65,6 +65,7 @@ namespace RequestType {
         "GetCapabilities",
         "GetLayer",
         "GetLayerMetadata",
+        "GetLayerGdal",
         "GetMap",
         "GetTile",
         "GetFeatureInfo",
@@ -695,6 +696,11 @@ void Request::determineServiceAndRequest() {
             else if (tmsVersionPos == pathParts.size() - 3 && pathParts.back() == "metadata.json") {
                 // la version est en avant dernière position, on veut le détail de la couche
                 request = RequestType::GETLAYERMETADATA;
+            }
+
+            else if (tmsVersionPos == pathParts.size() - 3 && pathParts.back() == "gdal.xml") {
+                // la version est en avant dernière position, on veut le détail de la couche
+                request = RequestType::GETLAYERGDAL;
             }
 
             else if (tmsVersionPos == pathParts.size() - 5) {

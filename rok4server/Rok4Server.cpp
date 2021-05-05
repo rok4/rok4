@@ -1423,6 +1423,8 @@ void Rok4Server::processTMS ( Request* request, FCGX_Request&  fcgxRequest ) {
         S.sendresponse ( TMSGetLayer ( request ), &fcgxRequest );
     } else if ( request->request == RequestType::GETLAYERMETADATA ) {
         S.sendresponse ( TMSGetLayerMetadata ( request ), &fcgxRequest );
+    } else if ( request->request == RequestType::GETLAYERGDAL ) {
+        S.sendresponse ( TMSGetLayerGDAL ( request ), &fcgxRequest );
     } else {
         S.sendresponse ( new SERDataStream ( new ServiceException ( "",OWS_OPERATION_NOT_SUPORTED, std::string ( "L'operation n'est pas prise en charge par ce serveur." ) + ROK4_INFO,"tms" ) ),&fcgxRequest );
     }
